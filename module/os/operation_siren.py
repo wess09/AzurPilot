@@ -527,6 +527,9 @@ class OperationSiren(OSMap):
         if not getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
             return
             
+        # 初始化上次通知的阈值记录（首次调用时为 None）
+        if not hasattr(self, '_last_notified_ap_threshold'):
+            self._last_notified_ap_threshold = None
         
         # 获取当前行动力总量
         current_ap = self._action_point_total
@@ -546,36 +549,35 @@ class OperationSiren(OSMap):
             if current_ap >= threshold:
                 current_threshold = threshold
                 break
-
-        # 查询是否为首次调用
-        if hasattr(self, '_last_notified_ap_threshold'):
         
-        
-            # 如果跨越了阈值区间，发送推送通知
-            if current_threshold != self._last_notified_ap_threshold:
-                if current_threshold is not None:
-                    # 判断是升至还是降至该阈值
-                    if self._last_notified_ap_threshold < current_threshold:
-                        # 行动力增加，升至更高阈值
-                        direction = "升至"
-                    else:
-                        # 行动力减少，降至较低阈值
-                        direction = "降至"
-                    
-                    self.notify_push(
-                        title="[Alas] 行动力阈值变化",
-                        content=f"行动力{direction}{current_threshold}+ (当前: {current_ap})"
-                    )
+        # 如果跨越了阈值区间，发送推送通知
+        if current_threshold != self._last_notified_ap_threshold:
+            if current_threshold is not None:
+                # 判断是升至还是降至该阈值
+                if self._last_notified_ap_threshold is None:
+                    # 首次检测，直接通知当前所在区间
+                    direction = "当前"
+                elif self._last_notified_ap_threshold < current_threshold:
+                    # 行动力增加，升至更高阈值
+                    direction = "升至"
                 else:
-                    # 降到最低阈值以下
-                    lowest = min(thresholds)
-                    self.notify_push(
-                        title="[Alas] 行动力阈值变化", 
-                        content=f"行动力降至{lowest}以下 (当前: {current_ap})"
-                    )
+                    # 行动力减少，降至较低阈值
+                    direction = "降至"
+                
+                self.notify_push(
+                    title="[Alas] 行动力阈值变化",
+                    content=f"行动力{direction}{current_threshold}+ (当前: {current_ap})"
+                )
+            elif self._last_notified_ap_threshold is not None:
+                # 降到最低阈值以下
+                lowest = min(thresholds)
+                self.notify_push(
+                    title="[Alas] 行动力阈值变化", 
+                    content=f"行动力降至{lowest}以下 (当前: {current_ap})"
+                )
             
-        # 更新上次通知的阈值记录
-        self._last_notified_ap_threshold = current_threshold
+            # 更新上次通知的阈值记录
+            self._last_notified_ap_threshold = current_threshold
 
     def os_meowfficer_farming(self):
         """
