@@ -168,3 +168,50 @@ pre.rich-traceback-code {
 *[style*="--dashboard-limit--"]{
     color: #777777;
 }
+
+/* Timeline Log View - Light Mode Overrides */
+
+.log-item {
+    --line-color: #e4e4e7; /* Zinc-200 */
+}
+
+.log-title {
+    color: #18181b; /* Zinc-900 */
+}
+
+.log-time {
+    color: #52525b; /* Zinc-600 */
+}
+
+/* Dots - Light background, colored border */
+.log-dot {
+    background-color: #ffffff;
+    border-color: #a1a1aa; /* Zinc-400 default */
+}
+
+.log-item.info .log-dot {
+    border-color: #3b82f6; /* Blue-500 */
+    background-color: #eff6ff; /* Blue-50 */
+}
+
+.log-item.success .log-dot {
+    border-color: #10b981; /* Emerald-500 */
+    background-color: #ecfdf5; /* Emerald-50 */
+}
+
+.log-item.warning .log-dot {
+    border-color: #f59e0b; /* Amber-500 */
+    background-color: #fffbeb; /* Amber-50 */
+}
+
+.log-item.error .log-dot {
+    border-color: #ef4444; /* Red-500 */
+    background-color: #fef2f2; /* Red-50 */
+}
+
+/* Subtitle (Code/Traceback) - Light container */
+.log-subtitle {
+    background-color: #f4f4f5; /* Zinc-100 */
+    border: 1px solid #e4e4e7; /* Zinc-200 */
+    color: #3f3f46; /* Zinc-700 */
+}
