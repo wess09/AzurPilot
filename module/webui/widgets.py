@@ -120,7 +120,7 @@ class RichLog:
 
         # Parse log line: Level Time │ Message or Level Time | Message
         # Example: INFO 10:42:00 │ Commission #4 completed
-        match = re.match(r'^(\w+)\s+(\d{2}:\d{2}:\d{2}(?:\.\d{3})?)\s+[│|]\s+(.*)$', clean_text, re.DOTALL)
+        match = re.match(r'^\s*(\w+)\s+(\d{2}:\d{2}:\d{2}(?:\.\d{3})?)\s+[│|]\s+(.*)$', clean_text, re.DOTALL)
 
         if match:
             level, time_str, message = match.groups()
