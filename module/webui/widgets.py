@@ -4,6 +4,7 @@ import copy
 import json
 import pywebio.pin
 import random
+import re
 import string
 from typing import Any, Callable, Dict, Generator, List, Optional, TYPE_CHECKING, Union
 
@@ -108,17 +109,77 @@ class RichLog:
             self.terminal_theme = LIGHT_TERMINAL_THEME
 
     def render(self, renderable: ConsoleRenderable) -> str:
-        with self.console.capture():
+        with self.console.capture() as capture:
             self.console.print(renderable)
+        
+        # Get raw text for parsing
+        text = capture.get()
+        # Remove ANSI codes for parsing
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        clean_text = ansi_escape.sub('', text).strip()
 
-        html = self.console.export_html(
-            theme=self.terminal_theme,
-            clear=True,
-            code_format=LOG_CODE_FORMAT,
-            inline_styles=True,
-        )
-        # print(html)
-        return html
+        # Parse log line: Level Time │ Message
+        # Example: INFO 10:42:00 │ Commission #4 completed
+        match = re.match(r'^(\w+)\s+(\d{2}:\d{2}:\d{2}(?:\.\d{3})?)\s+│\s+(.*)$', clean_text, re.DOTALL)
+
+        if match:
+            level, time_str, message = match.groups()
+            
+            # Message splitting for title/subtitle
+            lines = message.split('\n')
+            title = lines[0]
+            subtitle = '\n'.join(lines[1:]) if len(lines) > 1 else ""
+
+            # Determine class based on level
+            level_upper = level.upper()
+            if level_upper == 'INFO':
+                status_class = 'info'
+            elif level_upper == 'WARNING':
+                status_class = 'warning'
+            elif level_upper == 'ERROR' or level_upper == 'CRITICAL':
+                status_class = 'error'
+            elif level_upper == 'SUCCESS':
+                status_class = 'success'
+            else:
+                status_class = 'info'
+
+            # Format time (remove milliseconds for cleaner look if present)
+            display_time = time_str.split('.')[0]
+            
+            # Convert to HH:mm format
+            try:
+                h, m, _ = display_time.split(':')
+                display_time = f"{h}:{m}"
+            except:
+                pass
+
+            # Escape HTML in title and subtitle
+            import html as html_module
+            title = html_module.escape(title)
+            subtitle = html_module.escape(subtitle) if subtitle else ""
+
+            html = f'''
+            <div class="log-item {status_class}">
+                <div class="log-line"></div>
+                <div class="log-time">{display_time}</div>
+                <div class="log-dot"></div>
+                <div class="log-content">
+                    <div class="log-title">{title}</div>
+                    {f'<div class="log-subtitle">{subtitle}</div>' if subtitle else ''}
+                </div>
+            </div>
+            '''
+            return html
+
+        else:
+            # Fallback to rich HTML export for non-standard lines (tracebacks, etc)
+            html = self.console.export_html(
+                theme=self.terminal_theme,
+                clear=True,
+                code_format=LOG_CODE_FORMAT,
+                inline_styles=True,
+            )
+            return html
 
     def extend(self, text):
         if text:

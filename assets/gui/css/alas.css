@@ -647,3 +647,141 @@ pre.rich-traceback-code {
     background: var(--alas-content-bg) !important;
     color: var(--alas-content-text) !important;
 }
+
+/* Timeline Log View */
+/* Process/Workflow Timeline Style */
+/* Target the inner content DIV where logs are appended */
+#pywebio-scope-log > div, #pywebio-scope-mns_log > div, .log-container {
+    width: 100%;
+    padding: 20px 0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.log-item {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    padding-bottom: 24px;
+    --dot-size: 14px;
+    --line-width: 2px;
+    --time-width: 65px; /* Compact width for HH:mm */
+    --gap: 40px; /* 22px gap: 4px space + 14px dot + 4px space */
+    --line-color: #3f3f46; /* Zinc-700 */
+    --line-pos: calc(var(--time-width) + var(--gap) / 2 - var(--line-width) / 2);
+    --dot-pos: calc(var(--time-width) + var(--gap) / 2 - var(--dot-size) / 2);
+}
+
+.log-item:last-child {
+    padding-bottom: 0;
+}
+
+/* Timestamp */
+.log-time {
+    font-family: 'Roboto Mono', 'SF Mono', monospace;
+    font-size: 0.8rem;
+    color: #71717a; /* Zinc-500 */
+    width: var(--time-width);
+    flex-shrink: 0;
+    text-align: right;
+    padding-top: 2px;
+    font-weight: 500;
+}
+
+/* Connecting Line */
+.log-line {
+    position: absolute;
+    left: var(--line-pos);
+    top: calc(3px + var(--dot-size) / 2); /* Start from center of current dot */
+    bottom: calc(-100% - 3px - var(--dot-size) / 2); /* Extend past item to center of next dot */
+    width: var(--line-width);
+    background-color: var(--line-color);
+    z-index: 0;
+}
+
+.log-item:first-child .log-line {
+    top: calc(3px + var(--dot-size) / 2); /* Start at center of first dot */
+}
+
+.log-item:last-child .log-line {
+    display: none; /* No line after last item */
+}
+
+/* Workflow Node/Dot */
+.log-dot {
+    width: var(--dot-size);
+    height: var(--dot-size);
+    border-radius: 50%;
+    background-color: #27272a; /* Zinc-800 center */
+    border: 3px solid #52525b; /* Zinc-600 border default */
+    position: absolute;
+    left: var(--dot-pos);
+    top: 3px;
+    z-index: 1;
+    box-shadow: 0 0 0 4px rgba(0,0,0,0.1); /* Subtle ring */
+}
+
+/* Status Colors */
+.log-item.info .log-dot {
+    border-color: #3b82f6; /* Blue */
+    background-color: #1e3a8a; /* Darker blue center */
+}
+
+.log-item.success .log-dot {
+    border-color: #10b981; /* Green */
+    background-color: #064e3b; /* Darker green center */
+}
+
+.log-item.warning .log-dot {
+    border-color: #f59e0b; /* Amber */
+    background-color: #78350f; /* Darker amber center */
+}
+
+.log-item.error .log-dot {
+    border-color: #ef4444; /* Red */
+    background-color: #7f1d1d; /* Darker red center */
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2); /* Red glow */
+}
+
+/* Content Area */
+.log-content {
+    margin-left: var(--gap);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding-top: 0;
+}
+
+.log-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e4e4e7; /* Zinc-200 */
+    line-height: 1.4;
+    transition: color 0.2s;
+}
+
+/* Subtitle / Traceback Card */
+.log-subtitle {
+    font-size: 0.8rem;
+    color: #a1a1aa; /* Zinc-400 */
+    margin-top: 8px;
+    white-space: pre-wrap;
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    background-color: #18181b; /* Zinc-900 */
+    border: 1px solid #27272a; /* Zinc-800 */
+    border-radius: 6px;
+    padding: 10px;
+    width: 100%;
+    overflow-x: auto;
+    line-height: 1.5;
+}
+
+/* Hover Effects for "Interactive" Feel */
+.log-item:hover .log-dot {
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
+.log-item:hover .log-title {
+    color: #fff;
+}
+
