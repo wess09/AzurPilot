@@ -390,3 +390,54 @@ body::after {
     background-color: #C41E3A; /* Slightly different red */
     animation: lantern-swing 4s infinite ease-in-out alternate-reverse;
 }
+
+/* Timeline Log View - Socialism/CNY Theme Overrides */
+
+.log-item {
+    --line-color: #F2C76E; /* Gold Line */
+}
+
+.log-title {
+    color: #4A1919; /* Dark Brownish-Red */
+    font-weight: bold;
+}
+
+.log-time {
+    color: #8B4513; /* Brown */
+    font-family: "Microsoft YaHei", monospace; /* Consistent font */
+}
+
+/* Dots - White background, Gold border default */
+.log-dot {
+    background-color: #ffffff;
+    border-color: #F2C76E; 
+}
+
+.log-item.info .log-dot {
+    border-color: #3b82f6; /* Keep Blue for Info */
+    background-color: #eff6ff;
+}
+
+.log-item.success .log-dot {
+    border-color: #10b981; /* Keep Green for Success */
+    background-color: #ecfdf5;
+}
+
+.log-item.warning .log-dot {
+    border-color: #F2C76E; /* Theme Gold for Warning */
+    background-color: #FFFBF0;
+}
+
+.log-item.error .log-dot {
+    border-color: #D9363E; /* Theme Red for Error */
+    background-color: #FFF0F0;
+    box-shadow: 0 0 0 4px rgba(217, 54, 62, 0.2);
+}
+
+/* Subtitle (Code/Traceback) */
+.log-subtitle {
+    background-color: #FFFBF0; /* Warm Cream */
+    border: 1px solid #F2C76E; /* Gold Border */
+    color: #5D2525; /* Brown Text */
+    border-radius: 4px;
+}
