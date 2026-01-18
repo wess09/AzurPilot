@@ -5,7 +5,7 @@ from module.island.project_data import *
 from module.island.project import IslandProjectRun
 from module.island.transport import IslandTransportRun
 from module.logger import logger
-from module.ui.page import page_dormmenu, page_island, page_island_phone, page_main
+from module.ui.page import page_island_phone, page_main
 
 
 class Island(IslandProjectRun, IslandTransportRun):
