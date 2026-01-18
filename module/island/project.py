@@ -612,8 +612,8 @@ class IslandProjectRun(IslandUI):
                     continue
 
                 button = PROJECT_START
-                timer_offset = {'cn':100, 'en':60}[server.server]
-                self.appear(button, offset=(timer_offset, 0))
+                # the offset of OCR_PRODUCTION_TIME is determined by PROJECT_START
+                self.appear(button, offset=(100, 0))
                 offset = tuple(np.subtract(button.button, button._button)[:2])
                 product = IslandProduct(self.device.image, new=True, offset=offset)
                 if product == last:
