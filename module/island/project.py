@@ -4,6 +4,7 @@ import re
 import numpy as np
 from scipy import signal
 
+import module.config.server as server
 from module.base.button import Button, ButtonGrid
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, crop, random_rectangle_vector, rgb2gray
@@ -15,12 +16,14 @@ from module.logger import logger
 from module.map.map_grids import SelectedGrids
 from module.ocr.ocr import Duration, Ocr
 
-
 class ProjectNameOcr(Ocr):
     def after_process(self, result):
         result = super().after_process(result)
-        result = result.replace('主', '丰')
-        result = re.sub(r'[^\u4e00-\u9fff]', '', result)
+        if server.server == 'cn':
+            result = result.replace('主', '丰')
+            result = re.sub(r'[^\u4e00-\u9fff]', '', result)
+        elif server.server == 'en':
+            result =  re.sub(r"[\s'-]+", "", result).lower()
         return result
 
 
@@ -66,7 +69,9 @@ class IslandProject:
             return
 
         # name
-        area = (self.x1 - 446, self.y1, self.x1 - 326, self.y2)
+        dx = {'cn':326, 'en':137}[server.server]
+        dy = {'cn':0,   'en':2}[server.server]
+        area = (self.x1 - 446, self.y1, self.x1 - dx, self.y2+dy)
         button = Button(area=area, color=(), button=area, name='PROJECT_NAME')
         ocr = ProjectNameOcr(button, lang='cnocr')
         self.name = ocr.ocr(self.image)
@@ -75,7 +80,7 @@ class IslandProject:
             return
 
         # id
-        keys = list(name_to_slot_cn.keys())
+        keys = list(name_to_slot.keys())
         if self.name in keys:
             self.id = keys.index(self.name) + 1
         else:
@@ -83,7 +88,7 @@ class IslandProject:
             return
 
         # max slot
-        self.max_slot = name_to_slot_cn.get(self.name, 2)
+        self.max_slot = name_to_slot.get(self.name, 2)
 
         # available slot
         area = (self.x1 - 383, self.y1 + 60, self.x1 - 39, self.y1 + 118)
@@ -173,12 +178,16 @@ class IslandProduct:
 class ItemNameOcr(Ocr):
     def after_process(self, result):
         result = super().after_process(result)
-        result = result.replace('蛮', '蜜').replace('茉', '末').replace('汗', '汁').replace('纠', '组')
-        result = re.sub(r'[^\u4e00-\u9fff]', '', result)
-        if '冰咖' in result:
-            result = '冰咖啡'
-        if '莓果香橙' in result:
-            result = '莓果香橙甜点组'
+        if server.server == 'cn':
+            result = result.replace('蛮', '蜜').replace('茉', '末').replace('汗', '汁').replace('纠', '组')
+            result = re.sub(r'[^\u4e00-\u9fff]', '', result)
+            if '冰咖' in result:
+                result = '冰咖啡'
+            if '莓果香橙' in result:
+                result = '莓果香橙甜点组'
+        elif server.server == 'en':
+            result = re.sub(r"[\s'-]+", "", result)
+            result = result.lower()
         return result
 
 
@@ -192,7 +201,7 @@ class ProductItem:
     # All buttons on this page to click
     item_buttons: ButtonGrid
 
-    def __init__(self, image, y, get_button=True):
+    def __init__(self, image, y, parent_project_id, get_button=True):
         """
         Args:
             image:
@@ -205,6 +214,7 @@ class ProductItem:
         self.name = None
         self.button = None
         self.items = []
+        self.parent_project_id = parent_project_id
         self.parse_item(get_button=get_button)
 
     def parse_item(self, get_button):
@@ -230,7 +240,7 @@ class ProductItem:
             self.item_buttons = ButtonGrid(origin=(x1, origin_y), delta=(0, delta),
                                            button_shape=(x2 - x1, y2 - y1),
                                            grid_shape=(1, shape_y), name='ITEMS')
-            self.items = [ProductItem(self.image, (item.area[1], item.area[3]), get_button=False)
+            self.items = [ProductItem(self.image, (item.area[1], item.area[3]), self.parent_project_id, get_button=False)
                           for item in self.item_buttons.buttons]
         else:
             self.ocr_name(y1, y2)
@@ -267,8 +277,27 @@ class ProductItem:
         button = Button(area=area, color=(), button=area, name='ITEM_NAME')
         ocr = ItemNameOcr(button, lang='cnocr', letter=(70, 70, 70))
         self.name = ocr.ocr(self.image)
-        if not self.name or self.name not in deep_values(items_data_cn, depth=2):
+        if server.server == 'cn' and (not self.name or self.name not in deep_values(items_data, depth=2)):
             self.valid = False
+        elif server.server == 'en':
+            self.valid = False
+            if not self.name:
+                return
+            for value in list(items_data[self.parent_project_id].values()):
+                can_scroll = len(value) > 13
+                vmatcher = re.sub(r"[\s'-]+", "", value).lower()
+                if self.name == vmatcher:
+                    logger.info(f'Product with valid name: {self.name} (exact matched {value})')
+                    self.name = value
+                    self.valid = True
+                    break
+                elif self.name[1:-1] in vmatcher and (len(self.name) > 12 and can_scroll):
+                    logger.info(f'Product with valid name: {self.name} (scroll matched {value})')
+                    self.name = value
+                    self.valid = True
+                    break
+            if not self.valid:
+                logger.info(f'Product with invalid name: {self.name}')
 
     def __eq__(self, other):
         """
@@ -467,7 +496,7 @@ class IslandProjectRun(IslandUI):
     def get_character_check_button(character):
         return globals().get(f'PROJECT_{character.upper()}_CHECK', PRODUCT_MANJUU_CHECK)
 
-    def get_current_product(self):
+    def get_current_product(self, project_id):
         """
         Get currently selected product on self.device.image.
 
@@ -485,9 +514,9 @@ class IslandProjectRun(IslandUI):
         }
         peaks, _ = signal.find_peaks(line, **parameters)
         peaks = np.array(peaks) + y_top
-        return ProductItem(self.device.image, peaks)
+        return ProductItem(self.device.image, peaks, project_id)
 
-    def product_select(self, option, trial=2, skip_first_screenshot=True):
+    def product_select(self, option, project_id, trial=2, skip_first_screenshot=True):
         """
         Select a product in items list.
 
@@ -509,7 +538,7 @@ class IslandProjectRun(IslandUI):
             else:
                 self.device.screenshot()
 
-            current = self.get_current_product()
+            current = self.get_current_product(project_id)
             if trial > 0 and not len(current.items):
                 trial -= 1
                 continue
@@ -581,7 +610,8 @@ class IslandProjectRun(IslandUI):
                     continue
 
                 button = PROJECT_START
-                self.appear(button, offset=(100, 0))
+                timer_offset = {'cn':100, 'en':60}[server.server]
+                self.appear(button, offset=(timer_offset, 0))
                 offset = tuple(np.subtract(button.button, button._button)[:2])
                 product = IslandProduct(self.device.image, new=True, offset=offset)
                 if product == last:
@@ -641,7 +671,7 @@ class IslandProjectRun(IslandUI):
 
             self.island_drag_next_page((0, -500), ISLAND_PROJECT_SWIPE.area, 0.6)
 
-    def project_receive_and_start(self, proj, button, character, option, ensure=True):
+    def project_receive_and_start(self, proj, button, character, option, project_id, ensure=True):
         """
         Receive and start a project is in the current page.
 
@@ -657,7 +687,7 @@ class IslandProjectRun(IslandUI):
         if not self.project_character_select(character):
             logger.warning('Island select role failed due to game bug, retrying')
             return False
-        if not self.product_select(option):
+        if not self.product_select(option, project_id):
             return True
         if not self.product_select_confirm():
             self.character = 'manjuu'
@@ -695,7 +725,7 @@ class IslandProjectRun(IslandUI):
             if option == 0:
                 slot_option.append(None)
                 continue
-            slot_option.append(deep_get(items_data_cn, [proj_id, option]))
+            slot_option.append(deep_get(items_data, [proj_id, option]))
         return slot_option
 
     def island_project_run(self, names, trial=2, skip_first_screenshot=True):
@@ -747,7 +777,7 @@ class IslandProjectRun(IslandUI):
                     # retry 3 times because of a game bug
                     for _ in range(3):
                         ensure = not end or index != option_num - 1
-                        if self.project_receive_and_start(proj, button, self.character, option, ensure):
+                        if self.project_receive_and_start(proj, button, self.character, option, proj.id, ensure):
                             break
                 timeout.reset()
 

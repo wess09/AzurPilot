@@ -19,7 +19,7 @@ class Island(IslandProjectRun, IslandTransportRun):
             list[str]: a list of name for island receive
         """
         if any(config):
-            return [name for add, name in zip(config, list(name_to_slot_cn.keys())) if add]
+            return [name for add, name in zip(config, list(name_to_slot.keys())) if add]
         else:
             return []
 
@@ -56,7 +56,7 @@ class Island(IslandProjectRun, IslandTransportRun):
             self.config.task_delay(success=False)
 
     def run(self):
-        if server.server in ['cn']:
+        if server.server in ['cn', 'en']:
             transport = False
             project_config = [self.config.__getattribute__(f'Island{i}_Receive') for i in range(1, 16)]
             project = any(project_config)
