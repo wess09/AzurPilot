@@ -328,10 +328,10 @@ EventShop:
 Commission:
   Scheduler:
     Enable:
-      type: lock
-      value: true
-      option: [true]
-      option_bold: [true]
+      type: state               # 【修改1】lock → state（解锁可修改）
+      value: true               # 默认启用（可保留）
+      option: [ true, false ]     # 【修改2】新增false选项（支持关闭）
+      option_bold: [ true, false ] # 【修改3】补充false的加粗配置
     SuccessInterval: 30-60
     FailureInterval: 30-60
     ServerUpdate: 00:00
@@ -340,13 +340,13 @@ Tactical:
     SuccessInterval: 30-60
     FailureInterval: 120-240
     ServerUpdate: 00:00
-Research:
+Research:                       # 科研任务
   Scheduler:
     Enable:
-      type: lock
-      value: true
-      option: [true]
-      option_bold: [true]
+      type: state               # 【修改1】lock → state（解锁可修改）
+      value: true               # 默认启用（可保留）
+      option: [true, false]     # 【修改2】新增false选项（支持关闭）
+      option_bold: [true, false] # 【修改3】补充false的加粗配置
     SuccessInterval: 30-60
     FailureInterval: 30-60
     ServerUpdate: 00:00

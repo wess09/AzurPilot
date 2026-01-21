@@ -7177,7 +7177,7 @@
     "Scheduler": {
       "Enable": {
         "type": "checkbox",
-        "value": false,
+        "value": true,
         "option": [
           true,
           false
@@ -7338,7 +7338,7 @@
     "Scheduler": {
       "Enable": {
         "type": "checkbox",
-        "value": false,
+        "value": true,
         "option": [
           true,
           false
