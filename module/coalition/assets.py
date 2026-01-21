@@ -64,3 +64,114 @@ NEONCITY_SWITCH_MULTI = Button(area={'cn': (1087, 458, 1217, 486), 'en': (1085, 
 NEONCITY_SWITCH_SINGLE = Button(area={'cn': (940, 458, 1071, 486), 'en': (947, 462, 1070, 482), 'jp': (975, 459, 1046, 484), 'tw': (940, 458, 1071, 486)}, color={'cn': (230, 181, 62), 'en': (178, 139, 48), 'jp': (197, 149, 52), 'tw': (230, 181, 62)}, button={'cn': (940, 458, 1071, 486), 'en': (947, 462, 1070, 482), 'jp': (975, 459, 1046, 484), 'tw': (940, 458, 1071, 486)}, file={'cn': './assets/cn/coalition/NEONCITY_SWITCH_SINGLE.png', 'en': './assets/en/coalition/NEONCITY_SWITCH_SINGLE.png', 'jp': './assets/jp/coalition/NEONCITY_SWITCH_SINGLE.png', 'tw': './assets/cn/coalition/NEONCITY_SWITCH_SINGLE.png'})
 NEONCITY_UI_BACK = Button(area={'cn': (30, 45, 73, 88), 'en': (30, 45, 73, 88), 'jp': (30, 45, 73, 88), 'tw': (30, 45, 73, 88)}, color={'cn': (54, 55, 57), 'en': (54, 55, 57), 'jp': (54, 55, 57), 'tw': (54, 55, 57)}, button={'cn': (30, 45, 73, 88), 'en': (30, 45, 73, 88), 'jp': (30, 45, 73, 88), 'tw': (30, 45, 73, 88)}, file={'cn': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'en': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'jp': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'tw': './assets/cn/coalition/NEONCITY_UI_BACK.png'})
 NEONCITY_UI_HOME = Button(area={'cn': (1208, 43, 1251, 86), 'en': (1208, 43, 1251, 86), 'jp': (1208, 43, 1251, 86), 'tw': (1208, 43, 1251, 86)}, color={'cn': (74, 74, 77), 'en': (74, 74, 77), 'jp': (74, 74, 77), 'tw': (74, 74, 77)}, button={'cn': (1208, 43, 1251, 86), 'en': (1208, 43, 1251, 86), 'jp': (1208, 43, 1251, 86), 'tw': (1208, 43, 1251, 86)}, file={'cn': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'en': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'jp': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'tw': './assets/cn/coalition/NEONCITY_UI_HOME.png'})
+Light_Shadow_Fashion_AREA1 = Button(
+    area={'cn': (167, 494, 227, 554)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (167, 494, 227, 554)},
+    file={'cn': './assets/cn/coalition/DAL_AREA1.png'}
+)
+Light_Shadow_Fashion_AREA2 = Button(
+    area={'cn': (407, 378, 467, 438)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (407, 378, 467, 438)},
+    file={'cn': './assets/cn/coalition/DAL_AREA2.png'}
+)
+Light_Shadow_Fashion_AREA3 = Button(
+    area={'cn': (787, 488, 847, 548)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (787, 488, 847, 548)},
+    file={'cn': './assets/cn/coalition/DAL_AREA3.png'}
+)
+Light_Shadow_Fashion_AREA4 = Button(
+    area={'cn': (904, 245, 964, 305)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (904, 245, 964, 305)},
+    file={'cn': './assets/cn/coalition/DAL_AREA4.png'}
+)
+Light_Shadow_Fashion_AREA5 = Button(
+    area={'cn': (552, 130, 612, 190)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (552, 130, 612, 190)},
+    file={'cn': './assets/cn/coalition/DAL_AREA5.png'}
+)
+Light_Shadow_Fashion_AREA6 = Button(
+    area={'cn': (656, 303, 716, 363)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (656, 303, 716, 363)},
+    file={'cn': './assets/cn/coalition/DAL_AREA6.png'}
+)
+# 场景4：在20260122活动的难度选择页面 → 点击难度退出按钮
+Light_Shadow_Fashion_EXIT = Button(
+    area={'cn': (1208, 70, 1244, 107)},
+    color={'cn': (122, 158, 172)},
+    button={'cn': (1208, 70, 1244, 107)},
+    file={'cn': './assets/cn/coalition/DAL_DIFFICULTY_EXIT.png'}
+)
+##根据活动名称，返回对应的舰队准备页面按钮
+Light_Shadow_Fashion_PREPARATION = Button(
+    area={'cn': (1016, 529, 1100, 550)},
+    color={'cn': (135, 215, 236)},
+    button={'cn': (1016, 529, 1100, 550)},
+    file={'cn': './assets/cn/coalition/DAL_FLEET_PREPARATION.png'}
+)
+Light_Shadow_Fashion_HARD = Button(
+    area={'cn': (893, 582, 1109, 611)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (893, 582, 1109, 611)},
+    file={'cn': './assets/cn/coalition/DAL_HARD.png'}
+)
+Light_Shadow_Fashion_NORMAL = Button(
+    area={'cn': (600, 583, 818, 610)},
+    color={'cn': (255, 255, 255)},
+    button={'cn': (600, 583, 818, 610)},
+    file={'cn': './assets/cn/coalition/DAL_NORMAL.png'}
+)
+Light_Shadow_Fashion_PT_OCR = Button(
+    area={'cn': (1190, 130, 1274, 161)},
+    color={'cn': (79, 86, 72)},
+    button={'cn': (1190, 130, 1274, 161)},
+    file={'cn': './assets/cn/coalition/DAL_PT_OCR.png'}
+)
+Light_Shadow_Fashion_SWITCH_MULTI = Button(
+    area={'cn': (1060, 473, 1204, 500)},
+    color={'cn': (225, 225, 225)},
+    button={'cn': (1060, 473, 1204, 500)},
+    file={'cn': './assets/cn/coalition/DAL_SWITCH_MULTI.png'}
+)
+Light_Shadow_Fashion_SWITCH_SINGLE = Button(
+    area={'cn': (910, 473, 1055, 500)},
+    color={'cn': (223, 223, 223)},
+    button={'cn': (910, 473, 1055, 500)},
+    file={'cn': './assets/cn/coalition/DAL_SWITCH_SINGLE.png'}
+)
+"""
+仅保留中文服（cn）配置的舰队异常检测按钮定义
+EMPTY_FLAGSHIP: 旗舰位置为空的检测按钮
+EMPTY_VANGUARD: 先锋位置为空的检测按钮
+FLEET_NOT_PREPARED: 舰队未准备完成的检测按钮
+"""
+from module.base.button import Button  # 需确保导入Button类
+
+# 旗舰位置为空的检测按钮（仅保留中文服配置）
+Light_Shadow_Fashion_EMPTY_FLAGSHIP = Button(
+    area={'cn': (247, 237, 277, 267)},
+    color={'cn': (76, 64, 56)},
+    button={'cn': (247, 237, 277, 267)},
+    file={'cn': './assets/cn/coalition/EMPTY_FLAGSHIP.png'}
+)
+
+# 先锋位置为空的检测按钮（仅保留中文服配置）
+Light_Shadow_Fashion_EMPTY_VANGUARD = Button(
+    area={'cn': (515, 237, 545, 267)},
+    color={'cn': (52, 52, 53)},
+    button={'cn': (515, 237, 545, 267)},
+    file={'cn': './assets/cn/coalition/EMPTY_VANGUARD.png'}
+)
+
+# 舰队未准备完成的检测按钮（仅保留中文服配置）
+Light_Shadow_Fashion_FLEET_NOT_PREPARED = Button(
+    area={'cn': (1008, 310, 1110, 334)},
+    color={'cn': (106, 106, 112)},
+    button={'cn': (1008, 310, 1110, 334)},
+    file={'cn': './assets/cn/coalition/FLEET_NOT_PREPARED.png'}
+)

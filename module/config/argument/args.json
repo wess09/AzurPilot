@@ -3584,22 +3584,22 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_cn": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_en": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_jp": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_bold": [
-          "coalition_20251120"
+          "coalition_20260122"
         ]
       },
       "Mode": {
@@ -6954,22 +6954,22 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_cn": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_en": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_jp": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_bold": [
-          "coalition_20251120"
+          "coalition_20260122"
         ]
       },
       "Mode": {
@@ -7175,13 +7175,11 @@
   "Commission": {
     "Scheduler": {
       "Enable": {
-        "type": "lock",
+        "type": "checkbox",
         "value": true,
         "option": [
-          true
-        ],
-        "option_bold": [
-          true
+          true,
+          false
         ]
       },
       "NextRun": {
@@ -7338,13 +7336,11 @@
   "Research": {
     "Scheduler": {
       "Enable": {
-        "type": "lock",
+        "type": "checkbox",
         "value": true,
         "option": [
-          true
-        ],
-        "option_bold": [
-          true
+          true,
+          false
         ]
       },
       "NextRun": {

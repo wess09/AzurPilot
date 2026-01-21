@@ -323,36 +323,36 @@ EventShop:
     FailureInterval: 30
     ServerUpdate: 00:00
 
-# ==================== Reward ====================
-
-Commission:
+# ==================== 奖励领取配置 ====================
+# 各类日常奖励、任务、商店的自动执行策略
+Commission:                     # 委托任务
   Scheduler:
     Enable:
-      type: lock
-      value: true
-      option: [true]
-      option_bold: [true]
+      type: state               # 【修改1】lock → state（解锁可修改）
+      value: true               # 默认启用（可保留）
+      option: [true, false]     # 【修改2】新增false选项（支持关闭）
+      option_bold: [true, false] # 【修改3】补充false的加粗配置
     SuccessInterval: 30-60
     FailureInterval: 30-60
     ServerUpdate: 00:00
-Tactical:
+Tactical:                       # 战术学院
   Scheduler:
     SuccessInterval: 30-60
-    FailureInterval: 120-240
+    FailureInterval: 120-240    # 失败后间隔较长（避免频繁重试）
     ServerUpdate: 00:00
-Research:
+Research:                       # 科研任务
   Scheduler:
     Enable:
-      type: lock
+      type: state
       value: true
-      option: [true]
-      option_bold: [true]
+      option: [true, false]
+      option_bold: [true, false]
     SuccessInterval: 30-60
     FailureInterval: 30-60
     ServerUpdate: 00:00
-Dorm:
+Dorm:                           # 后宅（独立于Hospital的基础调度）
   Scheduler:
-    SuccessInterval: 278
+    SuccessInterval: 278        # 固定间隔278秒执行
     FailureInterval: 278
     ServerUpdate: 00:00
 Meowfficer:
