@@ -13,6 +13,39 @@ class OpsiMeowfficerFarming(OSMap):
         Recommend 3 or 5 for higher meowfficer searching point per action points ratio.
         """
         logger.hr(f'OS meowfficer farming, hazard_level={self.config.OpsiMeowfficerFarming_HazardLevel}', level=1)
+        
+        # ===== 任务开始前黄币检查 =====
+        # 如果启用了CL1且黄币充足，直接返回CL1，不执行短猫
+        if self.is_cl1_enabled:
+            yellow_coins = self.get_yellow_coins()
+            return_threshold = self.config.cross_get(
+                keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.OperationCoinsReturnThreshold',
+                default=None
+            )
+            if return_threshold is None:
+                # 使用 cross_get 正确读取嵌套配置
+                cl1_preserve = self.config.cross_get(
+                    keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                    default=100000
+                )
+                return_threshold = cl1_preserve
+            # 使用 cross_get 正确读取嵌套配置
+            cl1_preserve = self.config.cross_get(
+                keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                default=100000
+            )
+            # 新逻辑：返回阈值 = CL1黄币不足阈值 + 黄币充足返回侵蚀1阈值
+            return_threshold = cl1_preserve + return_threshold
+            logger.info(f'【任务开始前黄币检查】黄币={yellow_coins}, 阈值={return_threshold}')
+            if yellow_coins >= return_threshold:
+                logger.info(f'黄币充足 ({yellow_coins} >= {return_threshold})，跳过短猫相接，返回侵蚀1')
+                with self.config.multi_set():
+                    # 禁用短猫任务的调度器，防止被重新调度
+                    self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
+                    self.config.task_call('OpsiHazard1Leveling')
+                self.config.task_stop()
+                return
+        
         if self.is_cl1_enabled and self.config.OpsiMeowfficerFarming_ActionPointPreserve < 500:
             logger.info('With CL1 leveling enabled, set action point preserve to 500')
             self.config.OpsiMeowfficerFarming_ActionPointPreserve = 500
@@ -55,8 +88,27 @@ class OpsiMeowfficerFarming(OSMap):
                 # When not running CL1 and use oil
                 keep_current_ap = True
                 check_rest_ap = True
-                if self.is_cl1_enabled and self.get_yellow_coins() >= self.config.OpsiHazard1Leveling_OperationCoinsPreserve:
-                    check_rest_ap = False
+                if self.is_cl1_enabled:
+                    yellow_coins = self.get_yellow_coins()
+                    return_threshold = self.config.cross_get(
+                        keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.OperationCoinsReturnThreshold',
+                        default=None
+                    )
+                    if return_threshold is None:
+                        cl1_preserve = self.config.cross_get(
+                            keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                            default=100000
+                        )
+                        return_threshold = cl1_preserve
+                    # 使用 cross_get 正确读取嵌套配置
+                    cl1_preserve = self.config.cross_get(
+                        keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                        default=100000
+                    )
+                    # 新逻辑：返回阈值 = CL1黄币不足阈值 + 黄币充足返回侵蚀1阈值
+                    return_threshold = cl1_preserve + return_threshold
+                    if yellow_coins >= return_threshold:
+                        check_rest_ap = False
                 if not self.is_cl1_enabled and self.config.OpsiGeneral_BuyActionPointLimit > 0:
                     keep_current_ap = False
                 if self.is_cl1_enabled and self.cl1_enough_yellow_coins:
@@ -180,6 +232,42 @@ class OpsiMeowfficerFarming(OSMap):
                 #        logger.warning(f'重新进入目标海域失败: {e2}')
 
                 self.config.check_task_switch()
+                
+                logger.info(f'【黄币检查】is_cl1_enabled={self.is_cl1_enabled}')
+                # ===== 循环中黄币充足检查 =====
+                # 在每次循环后检查黄币是否充足，如果充足则返回侵蚀1
+                if self.is_cl1_enabled:
+                    yellow_coins = self.get_yellow_coins()
+                    return_threshold = self.config.cross_get(
+                        keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.OperationCoinsReturnThreshold',
+                        default=None
+                    )
+                    if return_threshold is None:
+                        cl1_preserve = self.config.cross_get(
+                            keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                            default=100000
+                        )
+                        return_threshold = cl1_preserve
+                    # 使用 cross_get 正确读取嵌套配置
+                    cl1_preserve = self.config.cross_get(
+                        keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                        default=100000
+                    )
+                    # 新逻辑：返回阈值 = CL1黄币不足阈值 + 黄币充足返回侵蚀1阈值
+                    return_threshold = cl1_preserve + return_threshold
+                    if yellow_coins >= return_threshold:
+                        logger.info(f'短猫相接中黄币充足 ({yellow_coins} >= {return_threshold})，切换回侵蚀1继续执行')
+                        self.notify_push(
+                            title="[Alas] 短猫相接 - 黄币充足",
+                            content=f"黄币 {yellow_coins} 达到阈值 {return_threshold}\n切换回侵蚀1继续执行"
+                        )
+                        with self.config.multi_set():
+                            # 禁用短猫任务的调度器，防止被重新调度
+                            self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
+                            self.config.task_call('OpsiHazard1Leveling')
+                        self.config.task_stop()
+                        return
+                
                 continue
 
             zones = self.zone_select(hazard_level=self.config.OpsiMeowfficerFarming_HazardLevel) \
@@ -196,3 +284,40 @@ class OpsiMeowfficerFarming(OSMap):
             self.run_auto_search()
             self.handle_after_auto_search()
             self.config.check_task_switch()
+            
+            logger.info(f'【黄币检查】is_cl1_enabled={self.is_cl1_enabled}')
+            # ===== 循环中黄币充足检查 =====
+            # 在每次循环后检查黄币是否充足，如果充足则返回侵蚀1
+            if self.is_cl1_enabled:
+                yellow_coins = self.get_yellow_coins()
+                return_threshold = self.config.cross_get(
+                    keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.OperationCoinsReturnThreshold',
+                    default=None
+                )
+                if return_threshold is None:
+                    cl1_preserve = self.config.cross_get(
+                        keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                        default=100000
+                    )
+                    return_threshold = cl1_preserve
+                # 使用 cross_get 正确读取嵌套配置
+                cl1_preserve = self.config.cross_get(
+                    keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+                    default=100000
+                )
+                # 新逻辑：返回阈值 = CL1黄币不足阈值 + 黄币充足返回侵蚀1阈值
+                return_threshold = cl1_preserve + return_threshold
+                if yellow_coins >= return_threshold:
+                    logger.info(f'短猫相接中黄币充足 ({yellow_coins} >= {return_threshold})，切换回侵蚀1继续执行')
+                    self.notify_push(
+                        title="[Alas] 短猫相接 - 黄币充足",
+                        content=f"黄币 {yellow_coins} 达到阈值 {return_threshold}\n切换回侵蚀1继续执行"
+                    )
+                    with self.config.multi_set():
+                        # 禁用短猫任务的调度器，防止被重新调度
+                        self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
+                        self.config.task_call('OpsiHazard1Leveling')
+                    self.config.task_stop()
+                    return
+            
+            continue

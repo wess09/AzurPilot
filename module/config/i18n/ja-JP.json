@@ -4035,6 +4035,10 @@
     "APPreserveUntilReset": {
       "name": "OpsiMeowfficerFarming.APPreserveUntilReset.name",
       "help": "OpsiMeowfficerFarming.APPreserveUntilReset.help"
+    },
+    "OperationCoinsReturnThreshold": {
+      "name": "OpsiMeowfficerFarming.OperationCoinsReturnThreshold.name",
+      "help": "OpsiMeowfficerFarming.OperationCoinsReturnThreshold.help"
     }
   },
   "OpsiHazard1Leveling": {

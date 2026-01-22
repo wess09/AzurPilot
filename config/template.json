@@ -2182,7 +2182,8 @@
       "HazardLevel": 5,
       "TargetZone": 0,
       "StayInZone": false,
-      "APPreserveUntilReset": false
+      "APPreserveUntilReset": false,
+      "OperationCoinsReturnThreshold": 100000
     },
     "OpsiFleet": {
       "Fleet": 1,

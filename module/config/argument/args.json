@@ -6964,6 +6964,7 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
+          "coalition_20251120",
           "coalition_20260122"
         ],
         "option_cn": [
@@ -6979,6 +6980,7 @@
           "coalition_20251120"
         ],
         "option_bold": [
+          "coalition_20251120",
           "coalition_20260122"
         ]
       },
@@ -11219,6 +11221,10 @@
       "APPreserveUntilReset": {
         "type": "checkbox",
         "value": false
+      },
+      "OperationCoinsReturnThreshold": {
+        "type": "input",
+        "value": 100000
       }
     },
     "OpsiFleet": {

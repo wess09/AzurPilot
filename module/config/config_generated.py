@@ -674,6 +674,7 @@ class GeneratedConfig:
     OpsiMeowfficerFarming_TargetZone = 0
     OpsiMeowfficerFarming_StayInZone = False
     OpsiMeowfficerFarming_APPreserveUntilReset = False
+    OpsiMeowfficerFarming_OperationCoinsReturnThreshold = 100000
 
     # Group `OpsiHazard1Leveling`
     OpsiHazard1Leveling_TargetZone = 0  # 0, 44, 22
