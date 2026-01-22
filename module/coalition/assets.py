@@ -64,3 +64,27 @@ NEONCITY_SWITCH_MULTI = Button(area={'cn': (1087, 458, 1217, 486), 'en': (1085, 
 NEONCITY_SWITCH_SINGLE = Button(area={'cn': (940, 458, 1071, 486), 'en': (947, 462, 1070, 482), 'jp': (975, 459, 1046, 484), 'tw': (940, 458, 1071, 486)}, color={'cn': (230, 181, 62), 'en': (178, 139, 48), 'jp': (197, 149, 52), 'tw': (230, 181, 62)}, button={'cn': (940, 458, 1071, 486), 'en': (947, 462, 1070, 482), 'jp': (975, 459, 1046, 484), 'tw': (940, 458, 1071, 486)}, file={'cn': './assets/cn/coalition/NEONCITY_SWITCH_SINGLE.png', 'en': './assets/en/coalition/NEONCITY_SWITCH_SINGLE.png', 'jp': './assets/jp/coalition/NEONCITY_SWITCH_SINGLE.png', 'tw': './assets/cn/coalition/NEONCITY_SWITCH_SINGLE.png'})
 NEONCITY_UI_BACK = Button(area={'cn': (30, 45, 73, 88), 'en': (30, 45, 73, 88), 'jp': (30, 45, 73, 88), 'tw': (30, 45, 73, 88)}, color={'cn': (54, 55, 57), 'en': (54, 55, 57), 'jp': (54, 55, 57), 'tw': (54, 55, 57)}, button={'cn': (30, 45, 73, 88), 'en': (30, 45, 73, 88), 'jp': (30, 45, 73, 88), 'tw': (30, 45, 73, 88)}, file={'cn': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'en': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'jp': './assets/cn/coalition/NEONCITY_UI_BACK.png', 'tw': './assets/cn/coalition/NEONCITY_UI_BACK.png'})
 NEONCITY_UI_HOME = Button(area={'cn': (1208, 43, 1251, 86), 'en': (1208, 43, 1251, 86), 'jp': (1208, 43, 1251, 86), 'tw': (1208, 43, 1251, 86)}, color={'cn': (74, 74, 77), 'en': (74, 74, 77), 'jp': (74, 74, 77), 'tw': (74, 74, 77)}, button={'cn': (1208, 43, 1251, 86), 'en': (1208, 43, 1251, 86), 'jp': (1208, 43, 1251, 86), 'tw': (1208, 43, 1251, 86)}, file={'cn': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'en': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'jp': './assets/cn/coalition/NEONCITY_UI_HOME.png', 'tw': './assets/cn/coalition/NEONCITY_UI_HOME.png'})
+
+
+##关卡入口按钮
+##Light_Shadow_Fashion_EASY # 普通关卡 - 简单难度
+##Light_Shadow_Fashion_EX # 挑战关卡 - EX 难度
+##Light_Shadow_Fashion_HARD # 普通关卡 - 困难难度
+##Light_Shadow_Fashion_NORMAL # 普通关卡 - 普通难度
+##Light_Shadow_Fashion_SP # 特殊关卡 - SP 难度
+##模式切换按钮
+##Light_Shadow_Fashion_MODE_BATTLE # 战斗模式（与剧情模式映射反向）
+##Light_Shadow_Fashion_MODE_STORY # 剧情模式（与战斗模式映射反向）
+##舰队切换按钮
+##Light_Shadow_Fashion_SWITCH_MULTI # 多舰队模式切换
+##Light_Shadow_Fashion_SWITCH_SINGLE # 单舰队模式切换
+##功能 / 交互按钮（含笔误修复原 ACEDEMY）
+##Light_Shadow_Fashion_FLEET_PREPARATION # 舰队准备界面入口（修复原命名笔误 ACEDEMY）
+##Light_Shadow_Fashion_PT_OCR # PT 值 OCR 识别区域
+##页面导航按钮
+##COALITION_Light_Shadow_Fashion_BACK # 光影时尚活动返回按钮
+##COALITION_Light_Shadow_Fashion_HOME # 光影时尚活动返回主页按钮
+##关卡跳转 / 校验按钮
+##COALITION_Light_Shadow_Fashion_CAMPAIGN_CHECK # 光影时尚活动关卡页面校验按钮
+##COALITION_Light_Shadow_Fashion_GOTO_CAMPAIGN # 光影时尚活动前往关卡按钮
+##COALITION_Light_Shadow_Fashion_MAIN_CHECK # 光影时尚活动主页面校验按钮

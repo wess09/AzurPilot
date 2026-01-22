@@ -27,6 +27,9 @@ class CoalitionUI(Combat):
     def in_coalition_20251120_difficulty_selection(self):
         return self.appear(DAL_DIFFICULTY_EXIT, offset=(20, 20))
 
+    def in_coalition_20260122_difficulty_selection(self):
+        return self.appear(COALITION_Light_Shadow_Fashion_BACK, offset=(20, 20))
+
     def coalition_ensure_mode(self, event, mode):
         """
         Args:
@@ -51,6 +54,10 @@ class CoalitionUI(Combat):
             mode_switch.add_state('battle', NEONCITY_MODE_BATTLE)
         elif event == 'coalition_20251120':
             logger.info('Coalition event coalition_20251120 has no mode switch')
+        elif event == 'coalition_20260122':
+            mode_switch = NeoncitySwitch('CoalitionMode', offset=(20, 20))
+            mode_switch.add_state('story', Light_Shadow_Fashion_MODE_STORY)
+            mode_switch.add_state('battle', Light_Shadow_Fashion_MODE_BATTLE)
             return
         else:
             logger.error(f'MODE_SWITCH is not defined in event {event}')
@@ -85,6 +92,9 @@ class CoalitionUI(Combat):
         elif event == 'coalition_20251120':
             fleet_switch.add_state('single', DAL_SWITCH_SINGLE)
             fleet_switch.add_state('multi', DAL_SWITCH_MULTI)
+        elif event == 'coalition_20260122':
+            fleet_switch.add_state('single', Light_Shadow_Fashion_SWITCH_SINGLE)
+            fleet_switch.add_state('multi', Light_Shadow_Fashion_SWITCH_MULTI)
         else:
             logger.error(f'FLEET_SWITCH is not defined in event {event}')
             raise ScriptError
@@ -137,6 +147,12 @@ class CoalitionUI(Combat):
             ('coalition_20251120', 'area4-hard'): DAL_AREA4,
             ('coalition_20251120', 'area5-hard'): DAL_AREA5,
             ('coalition_20251120', 'area6-hard'): DAL_AREA6,
+
+            ('coalition_20260122', 'easy'): Light_Shadow_Fashion_EASY,
+            ('coalition_20260122', 'normal'): Light_Shadow_Fashion_NORMAL,
+            ('coalition_20260122', 'hard'): Light_Shadow_Fashion_HARD,
+            ('coalition_20260122', 'sp'): Light_Shadow_Fashion_SP,
+            ('coalition_20260122', 'ex'): Light_Shadow_Fashion_EX,
         }
         stage = stage.lower()
         try:
@@ -216,6 +232,12 @@ class CoalitionUI(Combat):
             ('coalition_20251120', 'area4-hard'): 3,
             ('coalition_20251120', 'area5-hard'): 3,
             ('coalition_20251120', 'area6-hard'): 4,
+
+            ('coalition_20260122', 'easy'): 1,
+            ('coalition_20260122', 'normal'): 1,
+            ('coalition_20260122', 'hard'): 1,
+            ('coalition_20260122', 'sp'): 1,
+            ('coalition_20260122', 'ex'): 1,
         }
         stage = stage.lower()
         try:
@@ -241,6 +263,8 @@ class CoalitionUI(Combat):
             return NEONCITY_FLEET_PREPARATION
         elif event == 'coalition_20251120':
             return DAL_FLEET_PREPARATION
+        elif event == 'coalition_20260122':
+            return Light_Shadow_Fashion_FLEET_PREPARATION
         else:
             logger.error(f'FLEET_PREPARATION is not defined in event {event}')
             raise ScriptError
@@ -266,6 +290,9 @@ class CoalitionUI(Combat):
                 return False
         if event == 'coalition_20250626':
             if stage in ['easy', 'sp', 'ex']:
+                return False
+        if event == 'coalition_20260122':
+            if stage in ['easy', 'normal', 'sp', 'ex']:
                 return False
 
         self.coalition_ensure_fleet(event, mode)
@@ -295,6 +322,9 @@ class CoalitionUI(Combat):
                 continue
             if self.appear_then_click(DAL_DIFFICULTY_EXIT, offset=(20, 20), interval=3):
                 logger.info(f'{DAL_DIFFICULTY_EXIT} -> {DAL_DIFFICULTY_EXIT}')
+                continue
+            if self.appear_then_click(COALITION_Light_Shadow_Fashion_BACK, offset=(20, 20), interval=3):
+                logger.info(f'{COALITION_Light_Shadow_Fashion_BACK} -> {COALITION_Light_Shadow_Fashion_BACK}')
                 continue
 
     def enter_map(self, event, stage, mode, skip_first_screenshot=True):

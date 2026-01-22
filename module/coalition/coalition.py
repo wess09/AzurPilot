@@ -39,6 +39,20 @@ class DALPtOcr(Digit):
             pass
         return super().after_process(result)
 
+class LightPtOcr(Digit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.alphabet += ':'
+
+    def after_process(self, result):
+        logger.attr(self.name, result)
+        try:
+            # 累计: 840
+            result = result.rsplit(':')[1]
+        except IndexError:
+            pass
+        return super().after_process(result)
+
 
 class Coalition(CoalitionCombat, CampaignEvent):
     run_count: int
@@ -59,6 +73,8 @@ class Coalition(CoalitionCombat, CampaignEvent):
             ocr = Digit(NEONCITY_PT_OCR, name='OCR_PT', lang='cnocr', letter=(208, 208, 208), threshold=128)
         elif event == 'coalition_20251120':
             ocr = DALPtOcr(DAL_PT_OCR, name='OCR_PT' ,letter=(255, 213, 69), threshold=128)
+        elif event == 'coalition_20261122':
+            ocr = LightPtOcr(Light_Shadow_Fashion_PT_OCR, name='OCR_PT' ,letter=(255, 213, 69), threshold=128)
         else:
             logger.error(f'ocr object is not defined in event {event}')
             raise ScriptError
