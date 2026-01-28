@@ -271,7 +271,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.info('At least one ship is below threshold '
                         f'{str(int(self.config.OpsiGeneral_RepairThreshold * 100))}%, '
                         'retreating to nearest azur port for repairs')
-            self.fleet_repair(revert=revert)
+            self.handle_fleet_repair_by_config(revert=revert)
             self.hp_reset()
             return True
         else:
