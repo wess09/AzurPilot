@@ -30,13 +30,14 @@ class OpsiObscure(CoinTaskMixin, OSMap):
         )
         self.zone_init()
         self.fleet_set(self.config.OpsiFleet_Fleet)
-        self.os_order_execute(
-            recon_scan=True,
-            submarine_call=self.config.OpsiFleet_Submarine)
-        self.run_auto_search(rescan='current')
+        with self.config.temporary(_disable_task_switch=True):
+            self.os_order_execute(
+                recon_scan=True,
+                submarine_call=self.config.OpsiFleet_Submarine)
+            self.run_auto_search(rescan='current')
 
-        self.map_exit()
-        self.handle_after_auto_search()
+            self.map_exit()
+            self.handle_after_auto_search()
 
     def os_obscure(self):
         # ===== 任务开始前黄币检查 =====
