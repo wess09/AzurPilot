@@ -137,6 +137,7 @@ class OpsiHazard1Leveling(OSMap):
 
     def os_hazard1_leveling(self):
         logger.hr('OS hazard 1 leveling', level=1)
+        logger.hr("ANTIGRAVITY DEBUG: Verifying hazard_leveling.py version loaded - TIMESTAMP: 2026-01-29 19:55")
         # Without these enabled, CL1 gains 0 profits
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=True,
@@ -355,7 +356,13 @@ class OpsiHazard1Leveling(OSMap):
                 self._solved_map_event = set()
                 self._solved_fleet_mechanism = False
                 self.clear_question()
-                self.map_rescan()
+                logger.info("DEBUG: Before map_rescan - IF YOU SEE THIS, CODE IS UPDATED")
+                try:
+                    self.map_rescan()
+                    logger.info("DEBUG: After map_rescan - IF YOU SEE THIS, IT RETURNED")
+                except Exception as e:
+                    logger.error(f"CRITICAL ERROR in map_rescan: {e}", exc_info=True)
+                
                 logger.info("DEBUG: map_rescan finished, entering fixed patrol block")
 
                 # ===== 舰队移动搜索（如果启用且没有发现事件）=====
