@@ -353,7 +353,9 @@ class OpsiHazard1Leveling(OSMap):
                 self.map_rescan()
 
                 # ===== 舰队移动搜索（如果启用且没有发现事件）=====
-                if self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
+                exec_fixed_config = self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan
+                logger.info(f"DEBUGCHECK: config_fixed={exec_fixed_config}, solved={self._solved_map_event}")
+                if exec_fixed_config:
                     exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
                     logger.info(f"DEBUG: exec_fixed={exec_fixed}, solved_map_event={self._solved_map_event}")
                     # 只有在第一次重扫没有发现事件时才执行舰队移动
