@@ -17,13 +17,21 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             if self._handle_no_content_and_try_other_tasks('深渊海域', '深渊海域没有更多可执行内容'):
                 return
         
-        if get_os_reset_remain() == 0:
-            logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
-            self.config.task_delay(minute=150, server_update=True)
+        # 根据是否启用智能调度选择关闭或推迟任务
+        if getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
+            # 智能调度开启：关闭任务，由智能调度统一管理
+            logger.info('深渊海域任务完成（智能调度已启用），禁用任务调度')
+            self.config.cross_set(keys='OpsiAbyssal.Scheduler.Enable', value=False)
             self.config.task_stop()
         else:
-            self.config.task_delay(server_update=True)
-            self.config.task_stop()
+            # 智能调度关闭：推迟任务到下次运行
+            if get_os_reset_remain() == 0:
+                logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
+                self.config.task_delay(minute=150, server_update=True)
+                self.config.task_stop()
+            else:
+                self.config.task_delay(server_update=True)
+                self.config.task_stop()
 
     def clear_abyssal(self):
         """

@@ -319,7 +319,7 @@ class CoinTaskMixin:
         Returns:
             bool: True if handled (should return early), False otherwise
         """
-        logger.info(f'{log_message}，禁用任务')
+        logger.info(f'{log_message}，准备结束当前任务')
         
         # Get the actual task name from config.task.command instead of class name
         # This ensures we get the correct task name even if self is an OperationSiren instance
@@ -336,11 +336,12 @@ class CoinTaskMixin:
                         task_name = cls.__name__
                         break
         
-        logger.info(f'禁用任务: {task_name}')
+        logger.info(f'处理任务: {task_name}')
         
-        # Check if we should try other tasks (yellow coins insufficient)
+        # Check if we should try other tasks (yellow coins insufficient, only when smart scheduling enabled)
         should_try_other = False
-        if self.is_cl1_enabled and self.config.OpsiScheduling_EnableSmartScheduling:
+        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        if self.is_cl1_enabled and smart_enabled:
             yellow_coins = self.get_yellow_coins()
             cl1_preserve = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE,
@@ -350,21 +351,43 @@ class CoinTaskMixin:
                 should_try_other = True
                 logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，尝试其他黄币补充任务')
         
-        # Disable current task and try other tasks if needed
-        # Use multi_set to ensure all changes are saved atomically
+        # 智能调度开启：关闭当前任务（并在需要时尝试其他补黄币任务）
+        # 智能调度关闭：推迟当前任务到下次运行，而不是关闭
         with self.config.multi_set():
-            # Disable current task and delay its NextRun to prevent immediate re-selection
-            # Delay to a far future time (e.g., 30 days) to ensure it won't be selected soon
-            far_future = datetime.now() + timedelta(days=30)
-            self.config.cross_set(keys=f'{task_name}.Scheduler.Enable', value=False)
-            self.config.cross_set(keys=f'{task_name}.Scheduler.NextRun', value=far_future)
-            
-            if should_try_other:
-                # Try other tasks, but ensure current task stays disabled
-                self._try_other_coin_tasks(task_name)
-                # Re-disable current task and delay NextRun again to ensure it stays disabled
+            if smart_enabled:
+                # Disable current task and delay its NextRun to prevent immediate re-selection
+                far_future = datetime.now() + timedelta(days=30)
+                logger.info(f'智能调度已启用，禁用任务 {task_name} 并将下次运行时间延迟到 {far_future}')
                 self.config.cross_set(keys=f'{task_name}.Scheduler.Enable', value=False)
                 self.config.cross_set(keys=f'{task_name}.Scheduler.NextRun', value=far_future)
+                
+                if should_try_other:
+                    # Try other tasks, but ensure current task stays disabled
+                    self._try_other_coin_tasks(task_name)
+                    # Re-disable current task and delay NextRun again to ensure it stays disabled
+                    self.config.cross_set(keys=f'{task_name}.Scheduler.Enable', value=False)
+                    self.config.cross_set(keys=f'{task_name}.Scheduler.NextRun', value=far_future)
+            else:
+                # 智能调度未启用：推迟当前任务，而不是关闭
+                logger.info(f'智能调度未启用，对任务 {task_name} 执行延迟而非关闭')
+                try:
+                    # 针对不同任务做更友好的默认延迟策略
+                    from module.config.utils import get_os_reset_remain  # type: ignore
+                except Exception:
+                    get_os_reset_remain = None
+                
+                if task_name in ('OpsiObscure', 'OpsiAbyssal') and get_os_reset_remain is not None:
+                    remain = get_os_reset_remain()
+                    if remain == 0:
+                        logger.info(f'{task_name} 没有更多可执行内容，距离大世界重置不足1天，延迟2.5小时后再运行')
+                        self.config.task_delay(minute=150, server_update=True)
+                    else:
+                        logger.info(f'{task_name} 没有更多可执行内容，延迟到下次服务器刷新后再运行')
+                        self.config.task_delay(server_update=True)
+                else:
+                    # 默认：延迟到下次服务器刷新
+                    logger.info(f'{task_name} 没有更多可执行内容，延迟到下次服务器刷新后再运行')
+                    self.config.task_delay(server_update=True)
         
         # Stop the current task
         self.config.task_stop()
