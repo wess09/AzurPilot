@@ -208,6 +208,9 @@ class CoinTaskMixin:
         """
         Check if yellow coins are sufficient and return to CL1 if so.
         
+        This check only runs when smart scheduling is enabled. When smart scheduling
+        is disabled, tasks should run independently without automatic switching.
+        
         Args:
             context: Context string for logging (e.g., "任务开始前", "循环中")
             task_display_name: Display name for the task in notification (e.g., "隐秘海域")
@@ -216,6 +219,13 @@ class CoinTaskMixin:
             bool: True if returned to CL1, False otherwise
         """
         if not self.is_cl1_enabled:
+            return False
+
+        # Only perform yellow coin check when smart scheduling is enabled
+        # When smart scheduling is disabled, tasks should run independently
+        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        if not smart_enabled:
+            logger.info('智能调度未启用，跳过黄币检查，任务独立运行')
             return False
 
         if not self._is_operation_coins_return_threshold_applicable():
@@ -306,6 +316,52 @@ class CoinTaskMixin:
         self.config.task_call('OpsiHazard1Leveling')
         self.config.task_stop()
     
+    def _finish_task_with_smart_scheduling(self, task_name, task_display_name=None, consider_reset_remain=True):
+        """
+        根据智能调度状态完成任务：智能调度开启时禁用任务，关闭时延迟任务。
+        
+        Args:
+            task_name: 任务名称（如 'OpsiObscure'）
+            task_display_name: 任务显示名称（如 '隐秘海域'），用于日志，如果为 None 则使用 task_name
+            consider_reset_remain: 是否考虑大世界重置剩余时间（仅对 OpsiObscure 和 OpsiAbyssal 有效）
+        
+        Returns:
+            bool: 是否已处理（True 表示已调用 task_stop，调用者应 return）
+        """
+        if task_display_name is None:
+            task_display_name = task_name
+        
+        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        
+        if smart_enabled:
+            # 智能调度开启：关闭任务，由智能调度统一管理
+            logger.info(f'{task_display_name}任务完成（智能调度已启用），禁用任务调度')
+            self.config.cross_set(keys=f'{task_name}.Scheduler.Enable', value=False)
+            self.config.task_stop()
+        else:
+            # 智能调度关闭：推迟任务到下次运行
+            if consider_reset_remain and task_name in ('OpsiObscure', 'OpsiAbyssal'):
+                try:
+                    from module.config.utils import get_os_reset_remain  # type: ignore
+                    remain = get_os_reset_remain()
+                    if remain == 0:
+                        logger.info(f'{task_display_name}任务完成，距离大世界重置不足1天，延迟2.5小时后再运行')
+                        self.config.task_delay(minute=150, server_update=True)
+                    else:
+                        logger.info(f'{task_display_name}任务完成，延迟到下次服务器刷新后再运行')
+                        self.config.task_delay(server_update=True)
+                except ImportError:
+                    # 如果无法导入 get_os_reset_remain，使用默认延迟策略
+                    logger.info(f'{task_display_name}任务完成，延迟到下次服务器刷新后再运行')
+                    self.config.task_delay(server_update=True)
+            else:
+                # 默认：延迟到下次服务器刷新
+                logger.info(f'{task_display_name}任务完成，延迟到下次服务器刷新后再运行')
+                self.config.task_delay(server_update=True)
+            self.config.task_stop()
+        
+        return True
+    
     def _handle_no_content_and_try_other_tasks(self, task_display_name, log_message):
         """
         Handle case when task has no content to execute.
@@ -373,7 +429,7 @@ class CoinTaskMixin:
                 try:
                     # 针对不同任务做更友好的默认延迟策略
                     from module.config.utils import get_os_reset_remain  # type: ignore
-                except Exception:
+                except ImportError:
                     get_os_reset_remain = None
                 
                 if task_name in ('OpsiObscure', 'OpsiAbyssal') and get_os_reset_remain is not None:

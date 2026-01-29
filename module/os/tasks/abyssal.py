@@ -1,4 +1,3 @@
-from module.config.utils import get_os_reset_remain
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.os.map import OSMap
@@ -18,20 +17,7 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
                 return
         
         # 根据是否启用智能调度选择关闭或推迟任务
-        if getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
-            # 智能调度开启：关闭任务，由智能调度统一管理
-            logger.info('深渊海域任务完成（智能调度已启用），禁用任务调度')
-            self.config.cross_set(keys='OpsiAbyssal.Scheduler.Enable', value=False)
-            self.config.task_stop()
-        else:
-            # 智能调度关闭：推迟任务到下次运行
-            if get_os_reset_remain() == 0:
-                logger.info('Just less than 1 day to OpSi reset, delay 2.5 hours')
-                self.config.task_delay(minute=150, server_update=True)
-                self.config.task_stop()
-            else:
-                self.config.task_delay(server_update=True)
-                self.config.task_stop()
+        self._finish_task_with_smart_scheduling('OpsiAbyssal', '深渊海域', consider_reset_remain=True)
 
     def clear_abyssal(self):
         """

@@ -1,4 +1,3 @@
-from module.config.utils import get_os_reset_remain
 from module.logger import logger
 from module.os.map import OSMap
 from module.os.tasks.coin_task_mixin import CoinTaskMixin
@@ -58,22 +57,8 @@ class OpsiObscure(CoinTaskMixin, OSMap):
             
             # 如果 ForceRun=False，根据是否启用智能调度选择关闭或推迟任务
             if not self.config.OpsiObscure_ForceRun:
-                if getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
-                    # 智能调度开启：关闭任务，由智能调度统一管理
-                    logger.info('隐秘海域任务完成（智能调度已启用），禁用任务调度')
-                    self.config.cross_set(keys='OpsiObscure.Scheduler.Enable', value=False)
-                    self.config.task_stop()
-                else:
-                    # 智能调度关闭：推迟任务到下次运行
-                    remain = get_os_reset_remain()
-                    if remain == 0:
-                        logger.info('隐秘海域任务完成，距离大世界重置不足1天，延迟2.5小时后再运行')
-                        self.config.task_delay(minute=150, server_update=True)
-                    else:
-                        logger.info('隐秘海域任务完成，延迟到下次服务器刷新后再运行')
-                        self.config.task_delay(server_update=True)
-                    self.config.task_stop()
-                break
+                if self._finish_task_with_smart_scheduling('OpsiObscure', '隐秘海域', consider_reset_remain=True):
+                    break
             
             self.config.check_task_switch()
             continue
