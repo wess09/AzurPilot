@@ -345,12 +345,14 @@ class OpsiHazard1Leveling(OSMap):
             search_completed = self.run_strategic_search()
 
             # 只有战略搜索正常完成时才执行重扫（被中断时不执行）
+            logger.info(f"DEBUG: search_completed={search_completed}")
             if search_completed:
                 # ===== 第一次重扫：战略搜索后的完整镜头重扫 =====
                 self._solved_map_event = set()
                 self._solved_fleet_mechanism = False
                 self.clear_question()
                 self.map_rescan()
+                logger.info("DEBUG: map_rescan finished, entering fixed patrol block")
 
                 # ===== 舰队移动搜索（如果启用且没有发现事件）=====
                 # [Antigravity Fix] 强制开启，解决中文配置文件无法读取修改的问题
