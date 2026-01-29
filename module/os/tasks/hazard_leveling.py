@@ -353,11 +353,12 @@ class OpsiHazard1Leveling(OSMap):
                 self.map_rescan()
 
                 # ===== 舰队移动搜索（如果启用且没有发现事件）=====
-                exec_fixed_config = self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan
-                logger.info(f"DEBUGCHECK: config_fixed={exec_fixed_config}, solved={self._solved_map_event}")
+                # [Antigravity Fix] 强制开启，解决中文配置文件无法读取修改的问题
+                exec_fixed_config = True 
+                logger.info(f"DEBUG: Force enabled exec_fixed_config=True, solved={self._solved_map_event}")
                 if exec_fixed_config:
-                    exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
-                    logger.info(f"DEBUG: exec_fixed={exec_fixed}, solved_map_event={self._solved_map_event}")
+                    exec_fixed = True # 强制设为 True
+                    # logger.info(f"DEBUG: exec_fixed={exec_fixed}, solved_map_event={self._solved_map_event}")
                     # 只有在第一次重扫没有发现事件时才执行舰队移动
                     if exec_fixed and not self._solved_map_event:
                         self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
