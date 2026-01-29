@@ -105,6 +105,25 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             self.config.override(OpsiFleet_Fleet=self.config.cross_get('OpsiHazard1Leveling.OpsiFleet.Fleet'))
             self.fleet_set(self.config.OpsiFleet_Fleet)
             self.run_auto_search()
+
+            # [Antigravity Fix] 针对侵蚀1任务初次进入时的补丁
+            # 在 run_auto_search 之后，如果是在做侵蚀1，强制检查是否需要定点巡逻
+            # 只有当 OpsiHazard1Leveling 任务启用且配置开启时才执行
+            is_hazard1_task = self.config.task.command == 'OpsiHazard1Leveling'
+            if is_hazard1_task and self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
+                exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
+                if exec_fixed:
+                    # 注意：os_init 里的 run_auto_search 之后，通常没有 solved_map_event 的状态残留
+                    # 我们可以认为如果没有战斗（run_auto_search 只是跑路），那么也许需要定点
+                    # 但稳妥起见，直接调用 _execute_fixed_patrol_scan，它内部会有检查
+                    # 不过为了避免刚打完怪就去定点，这里最好有个判断。
+                    # 由于 self.run_auto_search() 跑完意味着“没有怪了”或者“打完了”，
+                    # 此时是最适合做定点移动的时候。
+                    self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
+                    # 定点移动后，最好 re-scan 一下，虽然 os_init 马上结束了，
+                    # 但为了保持状态一致性，还是扫一下为好
+                    self.map_rescan()
+
             self.handle_after_auto_search()
             self.config.override(OpsiFleet_Fleet=OpsiFleet_Fleet)
         elif self.zone.zone_id == 154:

@@ -137,7 +137,6 @@ class OpsiHazard1Leveling(OSMap):
 
     def os_hazard1_leveling(self):
         logger.hr('OS hazard 1 leveling', level=1)
-        logger.hr("ANTIGRAVITY DEBUG: Verifying hazard_leveling.py version loaded - TIMESTAMP: 2026-01-29 19:55")
         # Without these enabled, CL1 gains 0 profits
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=True,
@@ -346,32 +345,22 @@ class OpsiHazard1Leveling(OSMap):
             search_completed = self.run_strategic_search()
 
             # 只有战略搜索正常完成时才执行重扫（被中断时不执行）
-            logger.info(f"DEBUG: search_completed={search_completed}")
-            # [Antigravity Fix] 即使 search_completed 为 False (例如首次进入时状态切换导致的中断)，
-            # 也强制尝试后续的重扫和定点巡逻，以确保任务不被跳过。
+            # [Antigravity Fix] 即使 search_completed 为 False ()，
+            # 也尝试后续的重扫和定点巡逻，以确保任务不被跳过。
             if True: 
-                if not search_completed:
-                    logger.warning("Strategic search returned False, but proceeding with rescan/patrol anyway.")
+                if not search_completed and search_completed is not None:
+                    # search_completed could be None if run_strategic_search returns nothing (though it returns bool)
+                     logger.warning("Strategic search returned False, but proceeding with rescan/patrol anyway.")
+
                 # ===== 第一次重扫：战略搜索后的完整镜头重扫 =====
                 self._solved_map_event = set()
                 self._solved_fleet_mechanism = False
                 self.clear_question()
-                logger.info("DEBUG: Before map_rescan - IF YOU SEE THIS, CODE IS UPDATED")
-                try:
-                    self.map_rescan()
-                    logger.info("DEBUG: After map_rescan - IF YOU SEE THIS, IT RETURNED")
-                except Exception as e:
-                    logger.error(f"CRITICAL ERROR in map_rescan: {e}", exc_info=True)
-                
-                logger.info("DEBUG: map_rescan finished, entering fixed patrol block")
+                self.map_rescan()
 
                 # ===== 舰队移动搜索（如果启用且没有发现事件）=====
-                # [Antigravity Fix] 强制开启，解决中文配置文件无法读取修改的问题
-                exec_fixed_config = True 
-                logger.info(f"DEBUG: Force enabled exec_fixed_config=True, solved={self._solved_map_event}")
-                if exec_fixed_config:
-                    exec_fixed = True # 强制设为 True
-                    # logger.info(f"DEBUG: exec_fixed={exec_fixed}, solved_map_event={self._solved_map_event}")
+                if self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
+                    exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
                     # 只有在第一次重扫没有发现事件时才执行舰队移动
                     if exec_fixed and not self._solved_map_event:
                         self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
