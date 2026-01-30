@@ -104,7 +104,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             OpsiFleet_Fleet = self.config.OpsiFleet_Fleet
             self.config.override(OpsiFleet_Fleet=self.config.cross_get('OpsiHazard1Leveling.OpsiFleet.Fleet'))
             self.fleet_set(self.config.OpsiFleet_Fleet)
-            self.run_auto_search()
+            self.run_strategic_search()
 
             # [Antigravity Fix] 针对侵蚀1任务初次进入时的补丁
             # 在 run_auto_search 之后，如果是在做侵蚀1，强制检查是否需要定点巡逻
