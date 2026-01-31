@@ -1,4 +1,3 @@
-from module.config.utils import get_os_reset_remain
 from module.logger import logger
 from module.os.map import OSMap
 from module.os.tasks.coin_task_mixin import CoinTaskMixin
@@ -57,11 +56,10 @@ class OpsiObscure(CoinTaskMixin, OSMap):
                 if self._check_yellow_coins_and_return_to_cl1("循环中", "隐秘海域"):
                     return
             
-            # 如果 ForceRun=False，任务完成后禁用任务
+            # 如果 ForceRun=False，根据是否启用智能调度选择关闭或推迟任务
             if not self.config.OpsiObscure_ForceRun:
-                logger.info('隐秘海域任务完成，禁用任务')
-                self.config.cross_set(keys='OpsiObscure.Scheduler.Enable', value=False)
-                break
+                if self._finish_task_with_smart_scheduling('OpsiObscure', '隐秘海域', consider_reset_remain=True):
+                    break
             
             self.config.check_task_switch()
             continue
