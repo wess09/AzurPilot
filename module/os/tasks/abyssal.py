@@ -46,15 +46,16 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             STORY_OPTION=0
         )
         self.zone_init()
-        result = self.run_abyssal()
-        if not result:
-            raise RequestHumanTakeover
+        with self.config.temporary(_disable_task_switch=True):
+            result = self.run_abyssal()
+            if not result:
+                raise RequestHumanTakeover
 
-        self.handle_fleet_repair_by_config(revert=False)
-        
-        # 检查是否还有更多深渊记录器
-        with self.config.temporary(STORY_ALLOW_SKIP=False):
-            has_more = self.storage_get_next_item('ABYSSAL', use_logger=False) is not None
+            self.handle_fleet_repair_by_config(revert=False)
+            
+            # 检查是否还有更多深渊记录器
+            with self.config.temporary(STORY_ALLOW_SKIP=False):
+                has_more = self.storage_get_next_item('ABYSSAL', use_logger=False) is not None
         self.delay_abyssal(result=has_more)
 
     def os_abyssal(self):

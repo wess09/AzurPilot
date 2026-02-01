@@ -105,6 +105,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             logger.info("Using template config, which is read only")
             self.auto_update = False
             self.task = name_to_function("template")
+        self._disable_task_switch = False
         self.init_task(task)
 
     def init_task(self, task=None):

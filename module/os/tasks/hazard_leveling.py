@@ -345,7 +345,13 @@ class OpsiHazard1Leveling(OSMap):
             search_completed = self.run_strategic_search()
 
             # 只有战略搜索正常完成时才执行重扫（被中断时不执行）
-            if search_completed:
+            # [Antigravity Fix] 即使 search_completed 为 False ()，
+            # 也尝试后续的重扫和定点巡逻，以确保任务不被跳过。
+            if True: 
+                if not search_completed and search_completed is not None:
+                    # search_completed could be None if run_strategic_search returns nothing (though it returns bool)
+                     logger.warning("Strategic search returned False, but proceeding with rescan/patrol anyway.")
+
                 # ===== 第一次重扫：战略搜索后的完整镜头重扫 =====
                 self._solved_map_event = set()
                 self._solved_fleet_mechanism = False

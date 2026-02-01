@@ -104,7 +104,27 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             OpsiFleet_Fleet = self.config.OpsiFleet_Fleet
             self.config.override(OpsiFleet_Fleet=self.config.cross_get('OpsiHazard1Leveling.OpsiFleet.Fleet'))
             self.fleet_set(self.config.OpsiFleet_Fleet)
-            self.run_auto_search()
+            # [Antigravity Fix] 改用计划作战 -> 扫描全图 -> 没怪则强制移动 -> 再扫图
+            self.run_strategic_search()
+
+            # 第一次重扫：检查是否还有事件
+            self._solved_map_event = set()
+            self._solved_fleet_mechanism = False
+            self.map_rescan()
+
+            # 强制移动逻辑：仅在 OpsiHazard1Leveling 且配置开启时生效
+            is_hazard1_task = self.config.task.command == 'OpsiHazard1Leveling'
+            if is_hazard1_task and self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
+                # 只有在第一次重扫没有发现事件时才执行舰队移动
+                if not self._solved_map_event:
+                    # _execute_fixed_patrol_scan 内部会再次检查 ExecuteFixedPatrolScan 的配置
+                    # 这里强制传入 True 以确保逻辑被调用（只要外层配置开启了）
+                    self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
+                    
+                    # 第二次重扫：舰队移动后再次重扫
+                    self._solved_map_event = set()
+                    self.map_rescan()
+
             self.handle_after_auto_search()
             self.config.override(OpsiFleet_Fleet=OpsiFleet_Fleet)
         elif self.zone.zone_id == 154:
@@ -271,7 +291,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.info('At least one ship is below threshold '
                         f'{str(int(self.config.OpsiGeneral_RepairThreshold * 100))}%, '
                         'retreating to nearest azur port for repairs')
-            self.fleet_repair(revert=revert)
+            self.handle_fleet_repair_by_config(revert=revert)
             self.hp_reset()
             return True
         else:

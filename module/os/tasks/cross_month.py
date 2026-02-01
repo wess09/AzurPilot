@@ -48,7 +48,8 @@ class OpsiCrossMonth(OSMap):
             return False
 
         self.is_in_opsi_explore = false_func
-        self.config.task_switched = false_func
+        # self.config.task_switched = false_func
+        self.config.override(_disable_task_switch=True)
 
         logger.hr('OpSi clear daily', level=1)
         self.config.override(

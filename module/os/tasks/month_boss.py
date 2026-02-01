@@ -65,15 +65,16 @@ class OpsiMonthBoss(OSMap):
 
         # combat
         logger.hr("Month Boss goto", level=2)
-        self.globe_goto(154)
-        self.go_month_boss_room(is_normal=is_normal)
-        result = self.boss_clear(has_fleet_step=True, is_month=True)
+        with self.config.temporary(_disable_task_switch=True):
+            self.globe_goto(154)
+            self.go_month_boss_room(is_normal=is_normal)
+            result = self.boss_clear(has_fleet_step=True, is_month=True)
 
-        # end
-        logger.hr("Month Boss repair", level=2)
-        self.handle_fleet_repair_by_config(revert=False)
-        self.handle_fleet_resolve(revert=False)
-        self.month_boss_delay(is_normal=is_normal, result=result)
+            # end
+            logger.hr("Month Boss repair", level=2)
+            self.handle_fleet_repair_by_config(revert=False)
+            self.handle_fleet_resolve(revert=False)
+            self.month_boss_delay(is_normal=is_normal, result=result)
 
     def month_boss_delay(self, is_normal=True, result=True):
         """
