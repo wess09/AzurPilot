@@ -31,6 +31,40 @@ class CoinTaskMixin:
     # Task name used for "short cat" (meowfficer farming)
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'
     
+    def _is_smart_scheduling_enabled(self) -> bool:
+        """
+        统一判断是否启用了智能调度。
+        
+        优先读取全局配置项 OpsiScheduling_EnableSmartScheduling；
+        若未设置或为 False，则回退读取侵蚀1下的
+        OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling。
+        这样可以保证在补黄币任务（短猫 / 隐秘 / 深渊 / 要塞）中，
+        与侵蚀1使用同一套智能调度开关。
+        """
+        # 1) 全局配置字段（GUI 新配置直接挂在这里）
+        smart = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', None)
+        if isinstance(smart, bool):
+            if smart:
+                return True
+        # 2) 回退到侵蚀1下的配置字段（老配置或部分实例只写在这里）
+        try:
+            fallback = self.config.cross_get(
+                keys='OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling',
+                default=None
+            )
+        except Exception:
+            fallback = None
+        if isinstance(fallback, bool):
+            return fallback
+        if isinstance(fallback, str):
+            v = fallback.strip().lower()
+            if v in ('true', '1', 'yes', 'y', 'on'):
+                return True
+            if v in ('false', '0', 'no', 'n', 'off'):
+                return False
+        # 默认视为未开启
+        return False
+    
     def notify_push(self, title, content):
         """
         Send push notification (smart scheduling feature).
@@ -46,7 +80,7 @@ class CoinTaskMixin:
             - Title will be formatted as "[Alas <instance_name>] original_title"
         """
         # Check if smart scheduling is enabled
-        if not self.config.OpsiScheduling_EnableSmartScheduling:
+        if not self._is_smart_scheduling_enabled():
             return
         # Check if Opsi mail notification is enabled
         if not self.config.OpsiGeneral_NotifyOpsiMail:
@@ -223,7 +257,7 @@ class CoinTaskMixin:
 
         # Only perform yellow coin check when smart scheduling is enabled
         # When smart scheduling is disabled, tasks should run independently
-        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        smart_enabled = self._is_smart_scheduling_enabled()
         if not smart_enabled:
             logger.info('智能调度未启用，跳过黄币检查，任务独立运行')
             return False
@@ -331,7 +365,7 @@ class CoinTaskMixin:
         if task_display_name is None:
             task_display_name = task_name
         
-        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        smart_enabled = self._is_smart_scheduling_enabled()
         
         if smart_enabled:
             # 智能调度开启：关闭任务，由智能调度统一管理
@@ -396,7 +430,7 @@ class CoinTaskMixin:
         
         # Check if we should try other tasks (yellow coins insufficient, only when smart scheduling enabled)
         should_try_other = False
-        smart_enabled = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False)
+        smart_enabled = self._is_smart_scheduling_enabled()
         if self.is_cl1_enabled and smart_enabled:
             yellow_coins = self.get_yellow_coins()
             cl1_preserve = self.config.cross_get(
