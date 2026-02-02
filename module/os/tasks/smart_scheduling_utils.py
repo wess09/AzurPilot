@@ -32,8 +32,10 @@ def is_smart_scheduling_enabled(config) -> bool:
     # 1) 全局配置字段（GUI 新配置直接挂在这里）
     smart_raw = getattr(config, 'OpsiScheduling_EnableSmartScheduling', None)
     smart = _parse_bool_flag(smart_raw)
-    if smart is not None:
-        return smart
+    # 只在全局显式为 True 时立即返回；False/未设置继续走回退逻辑，
+    # 以便兼容仅在 OpsiHazard1Leveling.OpsiScheduling 下写入开关的旧配置。
+    if smart is True:
+        return True
 
     # 2) 回退到侵蚀1下的配置字段（老配置或部分实例只写在这里）
     try:
