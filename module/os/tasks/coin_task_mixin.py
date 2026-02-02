@@ -31,6 +31,25 @@ class CoinTaskMixin:
     # Task name used for "short cat" (meowfficer farming)
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'
     
+    def _parse_bool_flag(self, value):
+        """
+        将配置值解析为布尔值。
+        
+        支持:
+            - 直接的 bool
+            - 常见字符串形式: "true/false", "1/0", "yes/no", "y/n", "on/off"
+        解析失败时返回 None，由调用方决定默认行为。
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if v in ('true', '1', 'yes', 'y', 'on'):
+                return True
+            if v in ('false', '0', 'no', 'n', 'off'):
+                return False
+        return None
+    
     def _is_smart_scheduling_enabled(self) -> bool:
         """
         统一判断是否启用了智能调度。
@@ -42,26 +61,26 @@ class CoinTaskMixin:
         与侵蚀1使用同一套智能调度开关。
         """
         # 1) 全局配置字段（GUI 新配置直接挂在这里）
-        smart = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', None)
-        if isinstance(smart, bool):
-            if smart:
-                return True
+        smart_raw = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', None)
+        smart = self._parse_bool_flag(smart_raw)
+        if smart is not None:
+            return smart
         # 2) 回退到侵蚀1下的配置字段（老配置或部分实例只写在这里）
         try:
-            fallback = self.config.cross_get(
+            fallback_raw = self.config.cross_get(
                 keys='OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling',
                 default=None
             )
-        except Exception:
-            fallback = None
-        if isinstance(fallback, bool):
+        except (AttributeError, KeyError) as e:
+            logger.debug(f'读取 OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling 失败: {e}')
+            fallback_raw = None
+        except Exception as e:
+            # 理论上 cross_get 不应抛出其他异常，记录日志以便排查配置问题
+            logger.warning(f'读取智能调度回退配置时出现异常: {e}')
+            fallback_raw = None
+        fallback = self._parse_bool_flag(fallback_raw)
+        if fallback is not None:
             return fallback
-        if isinstance(fallback, str):
-            v = fallback.strip().lower()
-            if v in ('true', '1', 'yes', 'y', 'on'):
-                return True
-            if v in ('false', '0', 'no', 'n', 'off'):
-                return False
         # 默认视为未开启
         return False
     
