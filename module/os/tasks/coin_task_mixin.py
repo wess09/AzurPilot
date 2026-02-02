@@ -55,10 +55,10 @@ class CoinTaskMixin:
         统一判断是否启用了智能调度。
         
         优先读取全局配置项 OpsiScheduling_EnableSmartScheduling；
-        若未设置或为 False，则回退读取侵蚀1下的
+        若全局未设置，则回退读取侵蚀1下的
         OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling。
-        这样可以保证在补黄币任务（短猫 / 隐秘 / 深渊 / 要塞）中，
-        与侵蚀1使用同一套智能调度开关。
+        这样可以保证侵蚀1与所有补黄币任务（短猫 / 隐秘 / 深渊 / 要塞）
+        使用同一套智能调度开关读取逻辑。
         """
         # 1) 全局配置字段（GUI 新配置直接挂在这里）
         smart_raw = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', None)

@@ -14,6 +14,53 @@ from module.os_handler.action_point import ActionPointLimit
 
 
 class OpsiHazard1Leveling(OSMap):
+    def _parse_bool_flag(self, value):
+        """
+        将配置值解析为布尔值。
+        
+        支持:
+            - 直接的 bool
+            - 常见字符串形式: "true/false", "1/0", "yes/no", "y/n", "on/off"
+        解析失败时返回 None，由调用方决定默认行为。
+        """
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            v = value.strip().lower()
+            if v in ('true', '1', 'yes', 'y', 'on'):
+                return True
+            if v in ('false', '0', 'no', 'n', 'off'):
+                return False
+        return None
+    
+    def _is_smart_scheduling_enabled(self) -> bool:
+        """
+        统一判断是否启用了智能调度（侵蚀1与补黄币任务共享的开关逻辑）。
+        
+        优先读取全局配置项 OpsiScheduling_EnableSmartScheduling；
+        若全局未设置，则回退读取
+        OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling。
+        """
+        smart_raw = getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', None)
+        smart = self._parse_bool_flag(smart_raw)
+        if smart is not None:
+            return smart
+        try:
+            fallback_raw = self.config.cross_get(
+                keys='OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling',
+                default=None
+            )
+        except (AttributeError, KeyError) as e:
+            logger.debug(f'读取 OpsiHazard1Leveling.OpsiScheduling.EnableSmartScheduling 失败: {e}')
+            fallback_raw = None
+        except Exception as e:
+            logger.warning(f'读取侵蚀1智能调度配置时出现异常: {e}')
+            fallback_raw = None
+        fallback = self._parse_bool_flag(fallback_raw)
+        if fallback is not None:
+            return fallback
+        return False
+    
     def notify_push(self, title, content):
         """
         发送推送通知（智能调度功能）
@@ -29,7 +76,7 @@ class OpsiHazard1Leveling(OSMap):
             - 标题会自动格式化为 "[Alas <实例名>] 原标题" 的形式
         """
         # 检查是否启用智能调度
-        if not self.config.OpsiScheduling_EnableSmartScheduling:
+        if not self._is_smart_scheduling_enabled():
             return
         # 检查是否启用推送大世界相关邮件
         if not self.config.OpsiGeneral_NotifyOpsiMail:
@@ -80,7 +127,7 @@ class OpsiHazard1Leveling(OSMap):
             - 行动力从 1200 降至 900，会推送"降至1000以下"
         """
         # 检查是否启用智能调度
-        if not getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
+        if not self._is_smart_scheduling_enabled():
             return
                     
         # 获取当前行动力总量
@@ -162,7 +209,7 @@ class OpsiHazard1Leveling(OSMap):
             # ===== 智能调度: 黄币检查与任务切换 =====
             # 检查黄币是否低于保留值
             yellow_coins = self.get_yellow_coins()
-            if self.config.OpsiScheduling_EnableSmartScheduling:
+            if self._is_smart_scheduling_enabled():
                 # 启用了智能调度
                 if yellow_coins < self.config.OpsiHazard1Leveling_OperationCoinsPreserve:
                     logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {self.config.OpsiHazard1Leveling_OperationCoinsPreserve}), 需要执行短猫相接')
@@ -312,7 +359,7 @@ class OpsiHazard1Leveling(OSMap):
 
             # ===== 智能调度: 最低行动力保留检查 =====
             # 检查当前行动力是否低于最低保留值
-            if getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
+            if self._is_smart_scheduling_enabled():
                 min_reserve = self.config.OpsiHazard1Leveling_MinimumActionPointReserve
                 if self._action_point_total < min_reserve:
                     logger.warning(f'【智能调度】行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
