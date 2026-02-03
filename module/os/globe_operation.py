@@ -154,10 +154,6 @@ class GlobeOperation(ActionPointHandler):
         Returns:
             list[Button]:
         """
-        # 增加等待时间以确保所有选项都被加载
-        import time
-        time.sleep(0.3)
-
         record = 0
         for _ in range(5):
             selection = self.get_zone_select()
