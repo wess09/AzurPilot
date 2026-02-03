@@ -154,6 +154,10 @@ class GlobeOperation(ActionPointHandler):
         Returns:
             list[Button]:
         """
+        # 增加等待时间以确保所有选项都被加载
+        import time
+        time.sleep(0.3)
+
         record = 0
         for _ in range(5):
             selection = self.get_zone_select()
@@ -235,9 +239,20 @@ class GlobeOperation(ActionPointHandler):
 
             button = get_button(selection)
             if button is None:
-                logger.warning('No such zone type to select, fallback to default')
-                types = ('SAFE', 'DANGEROUS')
-                button = get_button(selection)
+                # 获取所有可用的区域类型（不含SELECT_前缀）
+                available_types = [sel.name.replace('SELECT_', '') for sel in selection]
+                logger.warning(
+                    f'Zone type {types} not found in selection, '
+                    f'available types: {available_types}, '
+                    f'fallback to first available type'
+                )
+                # 回退到第一个可用的类型，而不是默认的SAFE/DANGEROUS组合
+                if selection:
+                    button = selection[0]
+                    logger.info(f'Fallback to first available type: {button.name}')
+                else:
+                    logger.warning('No zone type selection available')
+                    return False
 
             self.zone_select_execute(button)
             if self.pinned_to_name(button) == self.get_zone_pinned_name():
