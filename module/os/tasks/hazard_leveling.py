@@ -202,7 +202,7 @@ class OpsiHazard1Leveling(OSMap):
                         smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
                         if smart_ap_preserve > 0:
                             meow_ap_preserve = smart_ap_preserve
-                    
+
                     # 检查行动力是否足够执行短猫相接
                     _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
                     if self._action_point_total < meow_ap_preserve:
@@ -237,10 +237,10 @@ class OpsiHazard1Leveling(OSMap):
                             # 兼容旧配置路径
                             legacy_path = 'OpsiHazard1Leveling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
                             apply_to_all = self.config.cross_get(keys=legacy_path, default=None)
-                            if apply_to_all is None:
-                                if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
-                                    apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
-                                else:
+                        if apply_to_all is None:
+                            if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
+                                apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
+                            else:
                                     # 如果属性也不存在，使用默认值False（只启用短猫）
                                     apply_to_all = False
                         logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')

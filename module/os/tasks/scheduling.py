@@ -57,12 +57,16 @@ class CoinTaskMixin:
     ALL_COIN_TASKS = ['OpsiObscure', 'OpsiAbyssal', 'OpsiStronghold', 'OpsiMeowfficerFarming']
     
     # 配置路径常量
-    CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve'
+    CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OperationCoinsPreserve'
     CONFIG_PATH_RETURN_THRESHOLD = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThreshold'
     CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
     # 智能调度新增配置路径
     CONFIG_PATH_SMART_CL1_PRESERVE = 'OpsiScheduling.SmartScheduling.OperationCoinsPreserve'
     CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.SmartScheduling.ActionPointPreserve'
+    
+    # 各任务的配置路径常量（集中管理，避免硬编码）
+    CONFIG_PATH_MEOW_AP_PRESERVE = 'OpsiMeowfficerFarming.ActionPointPreserve'
+    CONFIG_PATH_CL1_MIN_AP_RESERVE = 'OpsiHazard1Leveling.MinimumActionPointReserve'
     
     # 短猫相接任务名称
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'
@@ -489,7 +493,7 @@ class CoinTaskMixin:
         return True
 
 
-class OpsiScheduling(OSMap):
+class OpsiScheduling(CoinTaskMixin, OSMap):
     """
     智能调度任务主类
     
@@ -543,7 +547,7 @@ class OpsiScheduling(OSMap):
             
             # 获取短猫相接的行动力保留值
             meow_ap_preserve = self.config.cross_get(
-                keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
+                keys=self.CONFIG_PATH_MEOW_AP_PRESERVE,
                 default=1000
             )
             
@@ -566,7 +570,7 @@ class OpsiScheduling(OSMap):
         
         # 获取侵蚀1的最低行动力保留值
         min_ap_reserve = self.config.cross_get(
-            keys='OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve',
+            keys=self.CONFIG_PATH_CL1_MIN_AP_RESERVE,
             default=200
         )
         
