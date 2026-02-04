@@ -311,18 +311,11 @@ class OpsiHazard1Leveling(OSMap):
                         self.config.task_stop()
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
-                # 未启用智能调度，保持原有逻辑
+                # 未启用智能调度时，不自动跳转短猫相接
+                # 侵蚀1会继续正常运行，直到行动力不足才停止
                 cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
                 if yellow_coins < cl1_preserve:
-                    logger.info(f'Reach the limit of yellow coins, preserve={cl1_preserve}')
-                    with self.config.multi_set():
-                        self.config.task_delay(server_update=True)
-                        if not self.is_in_opsi_explore():
-                            # 黄币不足时自动调用短猫相接（不依赖 is_task_enabled / NextRun 状态）
-                            # 行为预期：设置 OpsiMeowfficerFarming.Enable=True 且 NextRun=NOW
-                            self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
-                            self.config.task_call('OpsiMeowfficerFarming')
-                    self.config.task_stop()
+                    logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，侵蚀1继续运行（未启用智能调度，不跳转短猫）')
 
             # 获取当前区域
             self.get_current_zone()
