@@ -311,11 +311,11 @@ class OpsiHazard1Leveling(OSMap):
                         self.config.task_stop()
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
-                # 未启用智能调度时，黄币不足直接关闭任务
+                # 未启用智能调度时，黄币不足推迟任务
                 cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
                 if yellow_coins < cl1_preserve:
-                    logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，关闭侵蚀1任务')
-                    self.config.task_stop()
+                    logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀1任务至服务器刷新')
+                    self.config.task_delay(server_update=True)
 
             # 获取当前区域
             self.get_current_zone()
