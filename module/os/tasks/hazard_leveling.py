@@ -332,30 +332,29 @@ class OpsiHazard1Leveling(OSMap):
             # 在设置行动力后检查是否跨越阈值并推送通知
             self.check_and_notify_action_point_threshold()
 
-            # ===== 智能调度: 最低行动力保留检查 =====
+            # ===== 最低行动力保留检查 =====
             # 检查当前行动力是否低于最低保留值
             # 使用 OS_ACTION_POINT_PRESERVE，因为它已经包含了智能调度覆盖的逻辑
-            if is_smart_scheduling_enabled(self.config):
-                min_reserve = self.config.OS_ACTION_POINT_PRESERVE
-                if self._action_point_total < min_reserve:
-                    logger.warning(f'【智能调度】行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
+            min_reserve = self.config.OS_ACTION_POINT_PRESERVE
+            if self._action_point_total < min_reserve:
+                logger.warning(f'行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
 
-                    _previous_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousApInsufficient', False)
-                    if _previous_ap_insufficient == False:
-                        _previous_ap_insufficient = True
-                        self.notify_push(
-                            title="[Alas] 侵蚀1 - 行动力低于最低保留",
-                            content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，推迟任务"
-                        )
-                    else:
-                        logger.info('上次检查行动力低于最低保留，跳过推送邮件')
-
-                    logger.info('推迟侵蚀1任务1小时')
-                    self.config.task_delay(minute=60)
-                    self.config.task_stop()
+                _previous_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousApInsufficient', False)
+                if _previous_ap_insufficient == False:
+                    _previous_ap_insufficient = True
+                    self.notify_push(
+                        title="[Alas] 侵蚀1 - 行动力低于最低保留",
+                        content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，推迟任务"
+                    )
                 else:
-                    _previous_ap_insufficient = False
-                self.config.OpsiHazard1_PreviousApInsufficient = _previous_ap_insufficient
+                    logger.info('上次检查行动力低于最低保留，跳过推送邮件')
+
+                logger.info('推迟侵蚀1任务1小时')
+                self.config.task_delay(minute=60)
+                self.config.task_stop()
+            else:
+                _previous_ap_insufficient = False
+            self.config.OpsiHazard1_PreviousApInsufficient = _previous_ap_insufficient
 
             if self.config.OpsiHazard1Leveling_TargetZone != 0:
                 zone = self.config.OpsiHazard1Leveling_TargetZone
