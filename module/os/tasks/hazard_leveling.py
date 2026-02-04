@@ -149,7 +149,7 @@ class OpsiHazard1Leveling(OSMap):
         while True:
             try:
                 self.config.OS_ACTION_POINT_PRESERVE = int(self.config.cross_get(
-                    keys='OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve',
+                    keys='OpsiHazard1Leveling.MinimumActionPointReserve',
                     default=200
                 ))
             except Exception:
