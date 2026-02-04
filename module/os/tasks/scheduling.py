@@ -181,12 +181,6 @@ class CoinTaskMixin:
             default=None
         )
         
-        # 如果 cross_get 返回 None，尝试直接属性访问
-        if return_threshold_config is None and hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThreshold'):
-            attr_value = self.config.OpsiScheduling_OperationCoinsReturnThreshold
-            if attr_value is not None:
-                return_threshold_config = attr_value
-        
         logger.info(f'OperationCoinsReturnThreshold 配置值: {return_threshold_config}, CL1保留值: {cl1_preserve}')
         
         # 如果值为 0，禁用黄币检查
@@ -518,7 +512,7 @@ class OpsiScheduling(OSMap):
         
         # 获取侵蚀1任务的黄币保留值
         cl1_preserve = self.config.cross_get(
-            keys='OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve',
+            keys=self.CONFIG_PATH_CL1_PRESERVE,
             default=100000
         )
         
@@ -538,7 +532,7 @@ class OpsiScheduling(OSMap):
             
             # 获取短猫相接的行动力保留值
             meow_ap_preserve = self.config.cross_get(
-                keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
+                keys='OpsiMeowfficerFarming.ActionPointPreserve',
                 default=1000
             )
             
@@ -561,7 +555,7 @@ class OpsiScheduling(OSMap):
         
         # 获取侵蚀1的最低行动力保留值
         min_ap_reserve = self.config.cross_get(
-            keys='OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve',
+            keys='OpsiHazard1Leveling.MinimumActionPointReserve',
             default=200
         )
         
@@ -588,8 +582,8 @@ class OpsiScheduling(OSMap):
             return
         
         push_config = self.config.Error_OnePushConfig
-        if not push_config or 'provider: null' in push_config or 'provider:null' in push_config:
-            logger.warning("推送配置未设置，跳过推送")
+        if not self._is_push_config_valid(push_config):
+            logger.warning("推送配置未设置或 provider 为 null，跳过推送")
             return
         
         instance_name = getattr(self.config, 'config_name', 'Alas')
@@ -615,8 +609,8 @@ class OpsiScheduling(OSMap):
             return
         
         push_config = self.config.Error_OnePushConfig
-        if not push_config or 'provider: null' in push_config or 'provider:null' in push_config:
-            logger.warning("推送配置未设置，跳过推送")
+        if not self._is_push_config_valid(push_config):
+            logger.warning("推送配置未设置或 provider 为 null，跳过推送")
             return
         
         instance_name = getattr(self.config, 'config_name', 'Alas')
@@ -709,8 +703,8 @@ class OpsiScheduling(OSMap):
             return
         
         push_config = self.config.Error_OnePushConfig
-        if not push_config or 'provider: null' in push_config or 'provider:null' in push_config:
-            logger.warning("推送配置未设置，跳过推送")
+        if not self._is_push_config_valid(push_config):
+            logger.warning("推送配置未设置或 provider 为 null，跳过推送")
             return
         
         instance_name = getattr(self.config, 'config_name', 'Alas')
@@ -758,8 +752,8 @@ class OpsiScheduling(OSMap):
             return
         
         push_config = self.config.Error_OnePushConfig
-        if not push_config or 'provider: null' in push_config or 'provider:null' in push_config:
-            logger.warning("推送配置未设置，跳过推送")
+        if not self._is_push_config_valid(push_config):
+            logger.warning("推送配置未设置或 provider 为 null，跳过推送")
             return
         
         instance_name = getattr(self.config, 'config_name', 'Alas')
