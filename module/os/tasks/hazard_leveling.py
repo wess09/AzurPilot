@@ -154,6 +154,16 @@ class OpsiHazard1Leveling(OSMap):
                 ))
             except Exception:
                 self.config.OS_ACTION_POINT_PRESERVE = 200
+
+            # ===== 智能调度: 行动力保留覆盖 =====
+            # 如果启用了智能调度且设置了行动力保留值，优先使用智能调度的配置
+            if is_smart_scheduling_enabled(self.config):
+                if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+                    smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+                    if smart_ap_preserve > 0:
+                        logger.info(f'【智能调度】行动力保留使用智能调度配置: {smart_ap_preserve} (原配置: {self.config.OS_ACTION_POINT_PRESERVE})')
+                        self.config.OS_ACTION_POINT_PRESERVE = smart_ap_preserve
+
             if self.config.is_task_enabled('OpsiAshBeacon') \
                     and not self._ash_fully_collected \
                     and self.config.OpsiAshBeacon_EnsureFullyCollected:
@@ -219,16 +229,20 @@ class OpsiHazard1Leveling(OSMap):
                         # 检查黄币阈值适用范围配置
                         # 如果关闭，只启用短猫相接；如果开启，启用所有黄币补充任务
                         apply_to_all = self.config.cross_get(
-                            keys='OpsiHazard1Leveling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
+                            keys='OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
                             default=None
                         )
                         # 如果cross_get返回None，尝试直接属性访问
                         if apply_to_all is None:
-                            if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
-                                apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
-                            else:
-                                # 如果属性也不存在，使用默认值True
-                                apply_to_all = True
+                            # 兼容旧配置路径
+                            legacy_path = 'OpsiHazard1Leveling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
+                            apply_to_all = self.config.cross_get(keys=legacy_path, default=None)
+                            if apply_to_all is None:
+                                if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
+                                    apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
+                                else:
+                                    # 如果属性也不存在，使用默认值False（只启用短猫）
+                                    apply_to_all = False
                         logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')
                         
                         task_names = {
@@ -327,8 +341,9 @@ class OpsiHazard1Leveling(OSMap):
 
             # ===== 智能调度: 最低行动力保留检查 =====
             # 检查当前行动力是否低于最低保留值
+            # 使用 OS_ACTION_POINT_PRESERVE，因为它已经包含了智能调度覆盖的逻辑
             if is_smart_scheduling_enabled(self.config):
-                min_reserve = self.config.OpsiHazard1Leveling_MinimumActionPointReserve
+                min_reserve = self.config.OS_ACTION_POINT_PRESERVE
                 if self._action_point_total < min_reserve:
                     logger.warning(f'【智能调度】行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
 

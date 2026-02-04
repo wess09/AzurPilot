@@ -58,6 +58,16 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         ap_checked = False
         while True:
             self.config.OS_ACTION_POINT_PRESERVE = preserve
+
+            # ===== 智能调度: 行动力保留覆盖 =====
+            # 如果启用了智能调度且设置了行动力保留值，优先使用智能调度的配置
+            if is_smart_scheduling_enabled(self.config):
+                if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+                    smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+                    if smart_ap_preserve > 0:
+                        logger.info(f'【智能调度】行动力保留使用智能调度配置: {smart_ap_preserve} (原配置: {self.config.OS_ACTION_POINT_PRESERVE})')
+                        self.config.OS_ACTION_POINT_PRESERVE = smart_ap_preserve
+
             if self.config.is_task_enabled('OpsiAshBeacon') \
                     and not self._ash_fully_collected \
                     and self.config.OpsiAshBeacon_EnsureFullyCollected:
