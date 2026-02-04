@@ -57,9 +57,12 @@ class CoinTaskMixin:
     ALL_COIN_TASKS = ['OpsiObscure', 'OpsiAbyssal', 'OpsiStronghold', 'OpsiMeowfficerFarming']
     
     # 配置路径常量
-    CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OpsiHazard1Leveling.OperationCoinsPreserve'
+    CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OperationCoinsPreserve'
     CONFIG_PATH_RETURN_THRESHOLD = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThreshold'
     CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
+    # 智能调度新增配置路径
+    CONFIG_PATH_SMART_CL1_PRESERVE = 'OpsiScheduling.SmartScheduling.OperationCoinsPreserve'
+    CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.SmartScheduling.ActionPointPreserve'
     
     # 短猫相接任务名称
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'

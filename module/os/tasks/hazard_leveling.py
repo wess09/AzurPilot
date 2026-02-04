@@ -298,14 +298,7 @@ class OpsiHazard1Leveling(OSMap):
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
                 # 未启用智能调度，保持原有逻辑
-                if is_smart_scheduling_enabled(self.config):
-                    # 智能调度模式下使用智能调度配置的黄币保留值
-                    if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
-                        cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
-                    else:
-                        cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
-                else:
-                    cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+                cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
                 if yellow_coins < cl1_preserve:
                     logger.info(f'Reach the limit of yellow coins, preserve={cl1_preserve}')
                     with self.config.multi_set():
