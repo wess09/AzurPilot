@@ -159,6 +159,16 @@ class CoinTaskMixin:
         """
         if not self.is_cl1_enabled:
             return None, None
+
+        # 未启用智能调度时：禁用黄币返回检查（补黄币任务独立运行到行动力不足才停止）
+        # 但仍返回侵蚀1自身的保留值用于日志/复用
+        if not is_smart_scheduling_enabled(self.config):
+            cl1_preserve = self.config.cross_get(
+                keys=self.CONFIG_PATH_CL1_PRESERVE,
+                default=100000
+            )
+            logger.info('智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查')
+            return None, cl1_preserve
         
         # 检查适用范围开关
         if not self._is_operation_coins_return_threshold_applicable():
@@ -216,25 +226,19 @@ class CoinTaskMixin:
     
     def _get_smart_scheduling_action_point_preserve(self):
         """
-        获取智能调度模式下的行动力保留值
+        获取智能调度模式下的行动力保留“覆盖值”。
+
+        注意：此处不做回退。
+        - 返回值 > 0：表示启用智能调度覆盖值（由调用方决定覆盖哪个任务的阀值）
+        - 返回值 == 0：表示不覆盖，调用方应回退到各自任务的原配置
 
         Returns:
-            int: 保留的行动力数量，如果为 0 则使用原配置
+            int: 智能调度行动力保留覆盖值（0 表示不覆盖）
         """
         preserve = self.config.cross_get(
             keys=self.CONFIG_PATH_SMART_AP_PRESERVE,
             default=0
         )
-        if preserve == 0:
-            # 使用原配置（侵蚀1的 MinimumActionPointReserve）
-            original_preserve = self.config.cross_get(
-                keys='OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve',
-                default=200
-            )
-            logger.info(f'【智能调度】行动力保留使用原配置: {original_preserve} (智能调度配置为0或不生效)')
-            preserve = original_preserve
-        else:
-            logger.info(f'【智能调度】行动力保留使用智能调度配置: {preserve}')
         return preserve
     
     def _get_current_coin_task_name(self):
@@ -268,51 +272,50 @@ class CoinTaskMixin:
     def _check_yellow_coins_and_return_to_cl1(self, context="循环中", task_display_name=None):
         """
         检查黄币是否充足，如果充足则返回 CL1
-        
+
         Args:
             context: 上下文字符串（如 "任务开始前"、"循环中"）
             task_display_name: 任务显示名称（如 "隐秘海域"）
-        
+
         Returns:
             bool: True 表示已返回 CL1，False 表示未返回
         """
-        if not self.is_cl1_enabled:
-            return False
-        
-        # 仅在启用智能调度时执行黄币检查
+        # 未启用智能调度时，跳过黄币充足检查，短猫会一直运行到行动力不足才停止
         smart_enabled = is_smart_scheduling_enabled(self.config)
         if not smart_enabled:
-            logger.info('智能调度未启用，跳过黄币检查，任务独立运行')
             return False
-        
-        if not self._is_operation_coins_return_threshold_applicable():
+
+        if not self.is_cl1_enabled:
             return False
-        
+
+        # 获取智能调度配置
         return_threshold, cl1_preserve = self._get_operation_coins_return_threshold()
-        
-        # 如果检查被禁用（return_threshold 为 None），跳过
+        # return_threshold 为 None 表示禁用黄币检查（OperationCoinsReturnThreshold=0 或其他禁用条件）
         if return_threshold is None:
             logger.info('OperationCoinsReturnThreshold 为 0，跳过黄币检查，仅使用行动力阈值控制')
             return False
-        
+
+        # 获取当前黄币数量
         yellow_coins = self.get_yellow_coins()
+
         logger.info(f'【{context}黄币检查】黄币={yellow_coins}, CL1保留值={cl1_preserve}, 阈值=CL1保留值+{return_threshold - cl1_preserve}={return_threshold}')
-        
+
         if yellow_coins >= return_threshold:
             logger.info(f'黄币充足 ({yellow_coins} >= {return_threshold})，切换回侵蚀1继续执行')
-            
+
             # 获取任务显示名称
             if task_display_name is None:
                 task_name = self.__class__.__name__
                 task_display_name = self.TASK_NAMES.get(task_name, task_name)
-            
+
             self.notify_push(
                 title=f"[Alas] {task_display_name} - 黄币充足",
                 content=f"黄币 {yellow_coins} 达到阈值 {return_threshold}\n切换回侵蚀1继续执行"
             )
             self._disable_all_coin_tasks_and_return_to_cl1()
             return True
-        
+
+        # 黄币不足，继续执行当前任务
         return False
     
     # ==================== 任务切换相关方法 ====================

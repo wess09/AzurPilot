@@ -318,11 +318,10 @@ class OpsiHazard1Leveling(OSMap):
                     with self.config.multi_set():
                         self.config.task_delay(server_update=True)
                         if not self.is_in_opsi_explore():
-                            cd = self.nearest_task_cooling_down
-                            if cd is None:
-                                for task in ['OpsiAbyssal', 'OpsiStronghold', 'OpsiObscure', 'OpsiMeowfficerFarming']:
-                                    if self.config.is_task_enabled(task):
-                                        self.config.task_call(task)
+                            # 黄币不足时自动调用短猫相接（不依赖 is_task_enabled / NextRun 状态）
+                            # 行为预期：设置 OpsiMeowfficerFarming.Enable=True 且 NextRun=NOW
+                            self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
+                            self.config.task_call('OpsiMeowfficerFarming')
                     self.config.task_stop()
 
             # 获取当前区域
