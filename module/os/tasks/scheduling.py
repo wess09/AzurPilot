@@ -645,6 +645,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         切换到黄币补充任务
         """
         # 检查黄币阈值适用范围配置
+        # 默认值定义在 args.json (value: false)，表示仅短猫相接任务会应用黄币返回阈值
         apply_to_all = self.config.cross_get(
             keys='OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
             default=False
