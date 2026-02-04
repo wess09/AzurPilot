@@ -238,19 +238,13 @@ class GlobeOperation(ActionPointHandler):
                 # 获取所有可用的区域类型（不含SELECT_前缀）
                 available_types = [sel.name.replace('SELECT_', '') for sel in selection]
                 logger.warning(
-                    f'Zone type {self.config.StoryZoneGetTo.SHIPYARD_WARP_TARGET} not found in selection, '
+                    f'Zone type {types} not found in selection, '
                     f'available types: {available_types}, '
                     f'fallback to first available type'
                 )
                 # 回退到第一个可用的类型，而不是默认的SAFE/DANGEROUS组合
                 if selection:
-                    # 仍然通过 get_button 走一遍标准映射/归一化逻辑，避免类型/结构不一致
-                    button = self.get_button(selection[0])
-                    if not button:
-                        logger.warning(
-                            'Failed to resolve button from first available selection via get_button'
-                        )
-                        return False
+                    button = selection[0]
                     logger.info(f'Fallback to first available type: {button.name}')
                 else:
                     logger.warning('No zone type selection available')
