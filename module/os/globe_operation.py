@@ -214,6 +214,8 @@ class GlobeOperation(ActionPointHandler):
 
         if isinstance(types, str):
             types = [types]
+        # Store requested type before modification for logging
+        requested_type = types[0] if types else None
 
         def get_button(selection_):
             for typ in types:
@@ -236,16 +238,19 @@ class GlobeOperation(ActionPointHandler):
             button = get_button(selection)
             if button is None:
                 # 获取所有可用的区域类型（不含SELECT_前缀）
-                available_types = [sel.name.replace('SELECT_', '') for sel in selection]
+                available_types = [getattr(sel, 'name', str(sel)).replace('SELECT_', '') for sel in selection]
                 logger.warning(
-                    f'Zone type {types} not found in selection, '
+                    f'Zone type {requested_type} not found in selection, '
                     f'available types: {available_types}, '
                     f'fallback to first available type'
                 )
                 # 回退到第一个可用的类型，而不是默认的SAFE/DANGEROUS组合
                 if selection:
-                    button = selection[0]
-                    logger.info(f'Fallback to first available type: {button.name}')
+                    # 确保 selection[0] 是有效的按钮对象
+                    first = selection[0]
+                    if hasattr(first, 'name'):
+                        button = first
+                        logger.info(f'Fallback to first available type: {button.name}')
                 else:
                     logger.warning('No zone type selection available')
                     return False
