@@ -316,6 +316,7 @@ class OpsiHazard1Leveling(OSMap):
                 if yellow_coins < cl1_preserve:
                     logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀1任务至服务器刷新')
                     self.config.task_delay(server_update=True)
+                    self.config.task_stop()
 
             # 获取当前区域
             self.get_current_zone()
