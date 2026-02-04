@@ -262,6 +262,10 @@
       "name": "CL1 Leveling",
       "help": ""
     },
+    "OpsiScheduling": {
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
+    },
     "OpsiCrossMonth": {
       "name": "Cross Month Daily",
       "help": "    ALAS will enter OpSi 10min before OpSi reset, wait until OpSi reset but not exit OpSi. Then do the daily, obscure, abyssal and meowfficer farming to get extra gold plates. When running dailies, settings in task \"OpSiDaily\" are used, the rest function are the same.\n    IMPORTANT: Please do not touch the game while ALAS is waiting for OpSi reset."
@@ -4135,23 +4139,29 @@
       "name": "OpsiScheduling._info.name",
       "help": "OpsiScheduling._info.help"
     },
-    "EnableSmartScheduling": {
-      "name": "OpsiScheduling.EnableSmartScheduling.name",
-      "help": "OpsiScheduling.EnableSmartScheduling.help"
-    },
-    "ActionPointNotifyLevels": {
-      "name": "OpsiScheduling.ActionPointNotifyLevels.name",
-      "help": "OpsiScheduling.ActionPointNotifyLevels.help"
-    },
-    "OperationCoinsReturnThreshold": {
-      "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
-    },
-    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-      "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
-      "True": "True",
-      "False": "False"
+    "SmartScheduling": {
+      "ActionPointNotifyLevels": {
+        "name": "OpsiScheduling.ActionPointNotifyLevels.name",
+        "help": "OpsiScheduling.ActionPointNotifyLevels.help"
+      },
+      "OperationCoinsReturnThreshold": {
+        "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
+        "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
+      },
+      "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
+        "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
+        "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
+        "True": "True",
+        "False": "False"
+      },
+      "OperationCoinsPreserve": {
+        "name": "Smart Scheduling - CL1 Coins Preserve",
+        "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
+      },
+      "ActionPointPreserve": {
+        "name": "Smart Scheduling - AP Preserve",
+        "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
+      }
     }
   },
   "IslandSeasonTask": {
@@ -4452,6 +4462,34 @@
       "Clear": "消除",
       "EnterPassword": "パスワードを入力してください",
       "ChooseFile": "ファイルを選択してください"
+    }
+  },
+  "SmartScheduling": {
+    "_info": {
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
+    },
+    "ActionPointNotifyLevels": {
+      "name": "OpsiScheduling.ActionPointNotifyLevels.name",
+      "help": "OpsiScheduling.ActionPointNotifyLevels.help"
+    },
+    "OperationCoinsReturnThreshold": {
+      "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
+      "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
+    },
+    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
+      "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
+      "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
+      "True": "True",
+      "False": "False"
+    },
+    "OperationCoinsPreserve": {
+      "name": "Smart Scheduling - CL1 Coins Preserve",
+      "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
+    },
+    "ActionPointPreserve": {
+      "name": "Smart Scheduling - AP Preserve",
+      "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
     }
   }
 }

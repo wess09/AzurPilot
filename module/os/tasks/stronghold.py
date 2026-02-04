@@ -3,7 +3,7 @@ from module.logger import logger
 from module.os.fleet import BossFleet
 from module.os.map import OSMap
 from module.os_handler.assets import OS_SUBMARINE_EMPTY
-from module.os.tasks.coin_task_mixin import CoinTaskMixin
+from module.os.tasks.scheduling import CoinTaskMixin
 from module.ui.page import page_os
 
 

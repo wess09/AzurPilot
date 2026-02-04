@@ -11390,10 +11390,67 @@
         "value": false
       }
     },
-    "OpsiScheduling": {
-      "EnableSmartScheduling": {
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    }
+  },
+  "OpsiScheduling": {
+    "Scheduler": {
+      "Enable": {
         "type": "checkbox",
-        "value": false
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "NextRun": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "Command": {
+        "type": "input",
+        "value": "OpsiScheduling",
+        "display": "hide"
+      },
+      "SuccessInterval": {
+        "type": "input",
+        "value": 0,
+        "display": "hide"
+      },
+      "FailureInterval": {
+        "type": "input",
+        "value": 120,
+        "display": "hide"
+      },
+      "ServerUpdate": {
+        "type": "input",
+        "value": "00:00",
+        "display": "hide"
+      }
+    },
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    },
+    "SmartScheduling": {
+      "OperationCoinsPreserve": {
+        "type": "input",
+        "value": 100000
+      },
+      "ActionPointPreserve": {
+        "type": "input",
+        "value": 500
       },
       "ActionPointNotifyLevels": {
         "type": "input",
@@ -11411,14 +11468,6 @@
           true,
           false
         ]
-      }
-    },
-    "Storage": {
-      "Storage": {
-        "type": "storage",
-        "value": {},
-        "valuetype": "ignore",
-        "display": "disabled"
       }
     }
   },

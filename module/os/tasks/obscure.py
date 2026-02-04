@@ -1,6 +1,6 @@
 from module.logger import logger
 from module.os.map import OSMap
-from module.os.tasks.coin_task_mixin import CoinTaskMixin
+from module.os.tasks.scheduling import CoinTaskMixin
 
 
 class OpsiObscure(CoinTaskMixin, OSMap):

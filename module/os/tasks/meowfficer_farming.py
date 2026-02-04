@@ -5,7 +5,8 @@ from module.logger import logger
 from module.map.map_grids import SelectedGrids
 from module.os.map import OSMap
 from module.os_handler.action_point import ActionPointLimit
-from module.os.tasks.coin_task_mixin import CoinTaskMixin
+from module.os.tasks.scheduling import CoinTaskMixin
+from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
@@ -95,10 +96,16 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 
                 # ===== 智能调度: 短猫相接行动力不足检查 =====
                 # 检查当前行动力是否低于配置的保留值
-                if getattr(self.config, 'OpsiScheduling_EnableSmartScheduling', False):
+                if is_smart_scheduling_enabled(self.config):
+                    # 获取行动力保留值（优先使用智能调度配置）
+                    ap_preserve = self.config.OpsiMeowfficerFarming_ActionPointPreserve
+                    if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+                        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+                        if smart_ap_preserve > 0:
+                            ap_preserve = smart_ap_preserve
 
-                    if self._action_point_total < self.config.OpsiMeowfficerFarming_ActionPointPreserve:
-                        logger.info(f'【智能调度】短猫相接行动力不足 ({self._action_point_total} < {self.config.OpsiMeowfficerFarming_ActionPointPreserve})')
+                    if self._action_point_total < ap_preserve:
+                        logger.info(f'【智能调度】短猫相接行动力不足 ({self._action_point_total} < {ap_preserve})')
                         
                         # 获取当前黄币数量
                         yellow_coins = self.get_yellow_coins()
@@ -107,12 +114,12 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         if self.is_cl1_enabled:
                             self.notify_push(
                                 title="[Alas] 短猫相接 - 切换至侵蚀1",
-                                content=f"行动力 {self._action_point_total} 不足 (需要 {self.config.OpsiMeowfficerFarming_ActionPointPreserve})\n黄币: {yellow_coins}\n推迟短猫1小时，切换至侵蚀1继续执行"
+                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟短猫1小时，切换至侵蚀1继续执行"
                             )
                         else:
                             self.notify_push(
                                 title="[Alas] 短猫相接 - 行动力不足",
-                                content=f"行动力 {self._action_point_total} 不足 (需要 {self.config.OpsiMeowfficerFarming_ActionPointPreserve})\n黄币: {yellow_coins}\n推迟1小时"
+                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟1小时"
                             )
                         
                         # 推迟短猫1小时

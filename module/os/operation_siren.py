@@ -9,6 +9,7 @@ from module.os.tasks.hazard_leveling import OpsiHazard1Leveling
 from module.os.tasks.meowfficer_farming import OpsiMeowfficerFarming
 from module.os.tasks.month_boss import OpsiMonthBoss
 from module.os.tasks.obscure import OpsiObscure
+from module.os.tasks.scheduling import OpsiScheduling
 from module.os.tasks.shop import OpsiShop
 from module.os.tasks.stronghold import OpsiStronghold
 from module.os.tasks.voucher import OpsiVoucher
@@ -20,6 +21,7 @@ class OperationSiren(
     OpsiVoucher,
     OpsiMeowfficerFarming,
     OpsiHazard1Leveling,
+    OpsiScheduling,
     OpsiObscure,
     OpsiAbyssal,
     OpsiArchive,

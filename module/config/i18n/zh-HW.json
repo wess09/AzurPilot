@@ -262,6 +262,10 @@
       "name": "侵蚀1 极致练级",
       "help": ""
     },
+    "OpsiScheduling": {
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
+    },
     "OpsiCrossMonth": {
       "name": "跨月无缝衔接",
       "help": "    基于毫秒级时间同步，Alas将在重置前10分钟介入，通过驻留进程实现跨月无缝流转。自动完成跨周期的高价值任务链（每日/隐秘/深渊/短猫）以最大化金菜产出。\n    核心提示：系统执行跨月驻留协议期间，请勿进行人工干预，以免破坏进程保活。"
@@ -4135,23 +4139,29 @@
       "name": "OpsiScheduling._info.name",
       "help": "OpsiScheduling._info.help"
     },
-    "EnableSmartScheduling": {
-      "name": "OpsiScheduling.EnableSmartScheduling.name",
-      "help": "OpsiScheduling.EnableSmartScheduling.help"
-    },
-    "ActionPointNotifyLevels": {
-      "name": "OpsiScheduling.ActionPointNotifyLevels.name",
-      "help": "OpsiScheduling.ActionPointNotifyLevels.help"
-    },
-    "OperationCoinsReturnThreshold": {
-      "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
-    },
-    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-      "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
-      "True": "True",
-      "False": "False"
+    "SmartScheduling": {
+      "ActionPointNotifyLevels": {
+        "name": "OpsiScheduling.ActionPointNotifyLevels.name",
+        "help": "OpsiScheduling.ActionPointNotifyLevels.help"
+      },
+      "OperationCoinsReturnThreshold": {
+        "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
+        "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
+      },
+      "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
+        "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
+        "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
+        "True": "True",
+        "False": "False"
+      },
+      "OperationCoinsPreserve": {
+        "name": "Smart Scheduling - CL1 Coins Preserve",
+        "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
+      },
+      "ActionPointPreserve": {
+        "name": "Smart Scheduling - AP Preserve",
+        "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
+      }
     }
   },
   "IslandSeasonTask": {
@@ -4452,6 +4462,34 @@
       "Clear": "Gui.Text.Clear",
       "EnterPassword": "Gui.Text.EnterPassword",
       "ChooseFile": "Gui.Text.ChooseFile"
+    }
+  },
+  "SmartScheduling": {
+    "_info": {
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
+    },
+    "ActionPointNotifyLevels": {
+      "name": "OpsiScheduling.ActionPointNotifyLevels.name",
+      "help": "OpsiScheduling.ActionPointNotifyLevels.help"
+    },
+    "OperationCoinsReturnThreshold": {
+      "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
+      "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
+    },
+    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
+      "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
+      "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
+      "True": "True",
+      "False": "False"
+    },
+    "OperationCoinsPreserve": {
+      "name": "Smart Scheduling - CL1 Coins Preserve",
+      "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
+    },
+    "ActionPointPreserve": {
+      "name": "Smart Scheduling - AP Preserve",
+      "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
     }
   }
 }

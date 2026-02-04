@@ -698,11 +698,11 @@ class GeneratedConfig:
     OpsiCheckLeveling_LastRun = datetime.datetime(2020, 1, 1, 0, 0)
     OpsiCheckLeveling_DelayAfterFull = False
 
-    # Group `OpsiScheduling`
-    OpsiScheduling_EnableSmartScheduling = False
-    OpsiScheduling_ActionPointNotifyLevels = '500,1000,2000,3000'
-    OpsiScheduling_OperationCoinsReturnThreshold = 30000
-    OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks = True  # True, False
+    # Group `OpsiScheduling.SmartScheduling`
+    OpsiScheduling_SmartScheduling_EnableSmartScheduling = False
+    OpsiScheduling_SmartScheduling_ActionPointNotifyLevels = '500,1000,2000,3000'
+    OpsiScheduling_SmartScheduling_OperationCoinsReturnThreshold = 30000
+    OpsiScheduling_SmartScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks = True  # True, False
 
     # Group `IslandSeasonTask`
     IslandSeasonTask_TaskDict = None

@@ -11,6 +11,7 @@ from module.os.map import OSMap
 from module.os.ship_exp import ship_info_get_level_exp
 from module.os.ship_exp_data import LIST_SHIP_EXP
 from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
+from module.os.tasks.scheduling import CoinTaskMixin
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -166,8 +167,13 @@ class OpsiHazard1Leveling(OSMap):
             yellow_coins = self.get_yellow_coins()
             if is_smart_scheduling_enabled(self.config):
                 # 启用了智能调度
-                if yellow_coins < self.config.OpsiHazard1Leveling_OperationCoinsPreserve:
-                    logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {self.config.OpsiHazard1Leveling_OperationCoinsPreserve}), 需要执行短猫相接')
+                # 使用智能调度配置的黄币保留值（如果设置了的话）
+                if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
+                    cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
+                else:
+                    cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+                if yellow_coins < cl1_preserve:
+                    logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
 
                     # 先获取当前行动力数据（包含箱子里的行动力）
                     # 需要先进入行动力界面才能读取数据
@@ -181,6 +187,12 @@ class OpsiHazard1Leveling(OSMap):
                         default=1000
                     ))
 
+                    # 获取智能调度配置的行动力保留值
+                    if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+                        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+                        if smart_ap_preserve > 0:
+                            meow_ap_preserve = smart_ap_preserve
+                    
                     # 检查行动力是否足够执行短猫相接
                     _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
                     if self._action_point_total < meow_ap_preserve:
@@ -191,7 +203,7 @@ class OpsiHazard1Leveling(OSMap):
                             _previous_coins_ap_insufficient = True
                             self.notify_push(
                                 title="[Alas] 侵蚀1 - 黄币与行动力双重不足",
-                                content=f"黄币 {yellow_coins} 低于保留值 {self.config.OpsiHazard1Leveling_OperationCoinsPreserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n推迟任务"
+                                content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n推迟任务"
                             )
                         else:
                             logger.info('上次检查行动力不足，跳过推送邮件')
@@ -268,7 +280,7 @@ class OpsiHazard1Leveling(OSMap):
                         task_names_str = '、'.join([task_names.get(task, task) for task in available_tasks])
                         self.notify_push(
                             title="[Alas] 侵蚀1 - 切换至黄币补充任务",
-                            content=f"黄币 {yellow_coins} 低于保留值 {self.config.OpsiHazard1Leveling_OperationCoinsPreserve}\n行动力: {self._action_point_total} (需要 {meow_ap_preserve})\n切换至{task_names_str}获取黄币"
+                            content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力: {self._action_point_total} (需要 {meow_ap_preserve})\n切换至{task_names_str}获取黄币"
                         )
 
                         with self.config.multi_set():
@@ -286,8 +298,16 @@ class OpsiHazard1Leveling(OSMap):
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
                 # 未启用智能调度，保持原有逻辑
-                if yellow_coins < self.config.OpsiHazard1Leveling_OperationCoinsPreserve:
-                    logger.info(f'Reach the limit of yellow coins, preserve={self.config.OpsiHazard1Leveling_OperationCoinsPreserve}')
+                if is_smart_scheduling_enabled(self.config):
+                    # 智能调度模式下使用智能调度配置的黄币保留值
+                    if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
+                        cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
+                    else:
+                        cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+                else:
+                    cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+                if yellow_coins < cl1_preserve:
+                    logger.info(f'Reach the limit of yellow coins, preserve={cl1_preserve}')
                     with self.config.multi_set():
                         self.config.task_delay(server_update=True)
                         if not self.is_in_opsi_explore():

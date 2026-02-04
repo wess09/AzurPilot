@@ -654,6 +654,9 @@ class ConfigUpdater:
         new = {}
 
         for keys, data in deep_iter(self.args, depth=3):
+            # Skip non-dict items (leaf values like strings, numbers, etc.)
+            if not isinstance(data, dict):
+                continue
             value = deep_get(old, keys=keys, default=data['value'])
             typ = data['type']
             display = data.get('display')
