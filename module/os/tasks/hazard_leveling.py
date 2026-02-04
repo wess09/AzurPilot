@@ -147,13 +147,10 @@ class OpsiHazard1Leveling(OSMap):
         #if not self.config.is_task_enabled('OpsiMeowfficerFarming'):
         #    self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
         while True:
-            try:
-                self.config.OS_ACTION_POINT_PRESERVE = int(self.config.cross_get(
-                    keys='OpsiHazard1Leveling.MinimumActionPointReserve',
-                    default=200
-                ))
-            except Exception:
-                self.config.OS_ACTION_POINT_PRESERVE = 200
+            # 使用 config_generated.py 中生成的属性来读取行动力保留值
+            self.config.OS_ACTION_POINT_PRESERVE = int(getattr(
+                self.config, 'OpsiHazard1Leveling_MinimumActionPointReserve', 200
+            ))
 
             # ===== 智能调度: 行动力保留覆盖 =====
             # 如果启用了智能调度且设置了行动力保留值，优先使用智能调度的配置
@@ -335,6 +332,12 @@ class OpsiHazard1Leveling(OSMap):
             # ===== 最低行动力保留检查 =====
             # 检查当前行动力是否低于最低保留值
             # 使用 OS_ACTION_POINT_PRESERVE，因为它已经包含了智能调度覆盖的逻辑
+
+            # 先获取当前行动力数据（包含箱子里的行动力）
+            self.action_point_enter()
+            self.action_point_safe_get()
+            self.action_point_quit()
+
             min_reserve = self.config.OS_ACTION_POINT_PRESERVE
             if self._action_point_total < min_reserve:
                 logger.warning(f'行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
