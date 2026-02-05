@@ -16,7 +16,7 @@ from module.ocr.ocr import Digit, DigitCounter
 from module.raid.assets import *
 from module.raid.combat import RaidCombat
 from module.ui.assets import RAID_CHECK
-from module.ui.page import page_rpg_stage
+from module.ui.page import page_rpg_stage, page_campaign_menu
 from module.log_res import LogRes
 
 
@@ -377,6 +377,35 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
 
     def is_raid_rpg(self):
         return self.config.Campaign_Event == 'raid_20240328'
+
+    def get_oil(self, skip_first_screenshot=True, update=False):
+        """
+        Override get_oil to handle raid_20240328 UI issue.
+        For raid_20240328, navigate to page_campaign_menu to get oil,
+        then return to original page.
+
+        Args:
+            skip_first_screenshot (bool):
+            update (bool):
+
+        Returns:
+            int: Oil amount
+        """
+        if not self.is_raid_rpg():
+            return super().get_oil(skip_first_screenshot=skip_first_screenshot, update=update)
+
+        logger.info('RPG raid detected, navigate to page_campaign_menu to get oil')
+        current_page = self.ui_get_current_page()
+
+        self.ui_ensure(page_campaign_menu)
+        oil = super().get_oil(skip_first_screenshot=True, update=update)
+
+        if current_page == page_rpg_stage:
+            logger.info('Return to page_rpg_stage')
+            self.ui_ensure(page_rpg_stage)
+            self.raid_rpg_swipe()
+
+        return oil
 
     def raid_rpg_swipe(self, skip_first_screenshot=True):
         """
