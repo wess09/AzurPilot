@@ -11,6 +11,62 @@ from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
     
+    def _check_action_point_preserve(self):
+        """
+        检查行动力是否低于保留值（智能调度模式下）
+        
+        Returns:
+            bool: True 表示行动力不足，已处理并停止任务；False 表示行动力充足
+        """
+        if not is_smart_scheduling_enabled(self.config):
+            return False
+        
+        # 获取行动力保留值（优先使用智能调度配置）
+        ap_preserve = self.config.OpsiMeowfficerFarming_ActionPointPreserve
+        if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+            smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+            if smart_ap_preserve > 0:
+                ap_preserve = smart_ap_preserve
+
+        # 获取当前行动力（确保获取最新值）
+        self.action_point_enter()
+        self.action_point_safe_get()
+        self.action_point_quit()
+        
+        if self._action_point_total < ap_preserve:
+            logger.info(f'【智能调度】短猫相接行动力不足 ({self._action_point_total} < {ap_preserve})')
+            
+            # 获取当前黄币数量
+            yellow_coins = self.get_yellow_coins()
+            
+            # 推送通知
+            if self.is_cl1_enabled:
+                self.notify_push(
+                    title="[Alas] 短猫相接 - 切换至侵蚀1",
+                    content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟短猫1小时，切换至侵蚀1继续执行"
+                )
+            else:
+                self.notify_push(
+                    title="[Alas] 短猫相接 - 行动力不足",
+                    content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟1小时"
+                )
+            
+            # 推迟短猫1小时
+            logger.info('推迟短猫相接1小时')
+            self.config.task_delay(minute=60)
+            
+            # 如果启用了侵蚀1，立即切换回侵蚀1继续执行
+            if self.is_cl1_enabled:
+                logger.info('切换回侵蚀1继续执行')
+                with self.config.multi_set():
+                    self.config.task_call('OpsiHazard1Leveling')
+            
+            # 停止当前短猫任务
+            self.config.task_stop()
+            return True
+        
+        return False
+    
     def os_meowfficer_farming(self):
         """
         Recommend 3 or 5 for higher meowfficer searching point per action points ratio.
@@ -106,44 +162,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 
                 # ===== 智能调度: 短猫相接行动力不足检查 =====
                 # 检查当前行动力是否低于配置的保留值
-                if is_smart_scheduling_enabled(self.config):
-                    # 获取行动力保留值（优先使用智能调度配置）
-                    ap_preserve = self.config.OpsiMeowfficerFarming_ActionPointPreserve
-                    if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
-                        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
-                        if smart_ap_preserve > 0:
-                            ap_preserve = smart_ap_preserve
-
-                    if self._action_point_total < ap_preserve:
-                        logger.info(f'【智能调度】短猫相接行动力不足 ({self._action_point_total} < {ap_preserve})')
-                        
-                        # 获取当前黄币数量
-                        yellow_coins = self.get_yellow_coins()
-                        
-                        # 推送通知
-                        if self.is_cl1_enabled:
-                            self.notify_push(
-                                title="[Alas] 短猫相接 - 切换至侵蚀1",
-                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟短猫1小时，切换至侵蚀1继续执行"
-                            )
-                        else:
-                            self.notify_push(
-                                title="[Alas] 短猫相接 - 行动力不足",
-                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币: {yellow_coins}\n推迟1小时"
-                            )
-                        
-                        # 推迟短猫1小时
-                        logger.info('推迟短猫相接1小时')
-                        self.config.task_delay(minute=60)
-                        
-                        # 如果启用了侵蚀1，立即切换回侵蚀1继续执行
-                        if self.is_cl1_enabled:
-                            logger.info('切换回侵蚀1继续执行')
-                            with self.config.multi_set():
-                                self.config.task_call('OpsiHazard1Leveling')
-                        
-                        # 停止当前短猫任务
-                        self.config.task_stop()
+                if self._check_action_point_preserve():
+                    return
 
             # (1252, 1012) is the coordinate of zone 134 (the center zone) in os_globe_map.png
             if self.config.OpsiMeowfficerFarming_TargetZone != 0 and not self.config.OpsiMeowfficerFarming_StayInZone:
@@ -163,6 +183,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         self.map_rescan()
                     self.handle_after_auto_search()
                     self.config.check_task_switch()
+                    
+                    # ===== 智能调度: 循环中行动力不足检查 =====
+                    if self._check_action_point_preserve():
+                        return
                 continue
 
             if self.config.OpsiMeowfficerFarming_StayInZone:
@@ -216,6 +240,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
 
                 self.config.check_task_switch()
                 
+                # ===== 智能调度: 循环中行动力不足检查 =====
+                if self._check_action_point_preserve():
+                    return
+                
                 # ===== 循环中黄币充足检查 =====
                 # 在每次循环后检查黄币是否充足，如果充足则返回侵蚀1
                 if self._check_yellow_coins_and_return_to_cl1("循环中", "短猫相接"):
@@ -237,6 +265,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             self.run_auto_search()
             self.handle_after_auto_search()
             self.config.check_task_switch()
+            
+            # ===== 智能调度: 循环中行动力不足检查 =====
+            if self._check_action_point_preserve():
+                return
             
             # ===== 循环中黄币充足检查 =====
             # 在每次循环后检查黄币是否充足，如果充足则返回侵蚀1
