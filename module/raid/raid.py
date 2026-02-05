@@ -231,7 +231,8 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
             if self.appear(BATTLE_PREPARATION, offset=(30, 20)):
                 if self.handle_combat_automation_set(auto=auto == 'combat_auto'):
                     continue
-                check_oil()
+                if not self.is_raid_rpg():
+                    check_oil()
                 check_coin()
             if self.handle_raid_ticket_use():
                 continue
@@ -341,6 +342,49 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
 
         logger.hr('Raid End')
 
+    def raid_execute_once_with_oil_check(self, mode, raid):
+        """
+        Execute raid once with oil check before entering battle.
+        For raid_20240328, get oil before entering battle to avoid UI issues.
+
+        Args:
+            mode:
+            raid:
+
+        Returns:
+            in: page_raid
+            out: page_raid
+        """
+        logger.hr('Raid Execute')
+        self.config.override(
+            Campaign_Name=f'{raid}_{mode}',
+            Campaign_UseAutoSearch=False,
+            Fleet_FleetOrder='fleet1_all_fleet2_standby'
+        )
+
+        if mode == 'ex':
+            backup = self.config.temporary(
+                Submarine_Fleet=1,
+                Submarine_Mode='every_combat'
+            )
+
+        self.emotion.check_reduce(1)
+
+        if self.is_raid_rpg():
+            logger.info('RPG raid: get oil before entering battle')
+            self.ui_ensure(page_campaign_menu)
+            CampaignEvent.get_oil(self, skip_first_screenshot=True, update=False)
+            self.ui_ensure(page_rpg_stage)
+            self.raid_rpg_swipe()
+
+        self.raid_enter(mode=mode, raid=raid)
+        self.combat(balance_hp=False, expected_end=self.raid_expected_end)
+
+        if mode == 'ex':
+            backup.recover()
+
+        logger.hr('Raid End')
+
     def get_event_pt(self):
         """
         Returns:
@@ -377,35 +421,6 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
 
     def is_raid_rpg(self):
         return self.config.Campaign_Event == 'raid_20240328'
-
-    def get_oil(self, skip_first_screenshot=True, update=False):
-        """
-        Override get_oil to handle raid_20240328 UI issue.
-        For raid_20240328, navigate to page_campaign_menu to get oil,
-        then return to original page.
-
-        Args:
-            skip_first_screenshot (bool):
-            update (bool):
-
-        Returns:
-            int: Oil amount
-        """
-        if not self.is_raid_rpg():
-            return super().get_oil(skip_first_screenshot=skip_first_screenshot, update=update)
-
-        logger.info('RPG raid detected, navigate to page_campaign_menu to get oil')
-        current_page = self.ui_get_current_page()
-
-        self.ui_ensure(page_campaign_menu)
-        oil = super().get_oil(skip_first_screenshot=True, update=update)
-
-        if current_page == page_rpg_stage:
-            logger.info('Return to page_rpg_stage')
-            self.ui_ensure(page_rpg_stage)
-            self.raid_rpg_swipe()
-
-        return oil
 
     def raid_rpg_swipe(self, skip_first_screenshot=True):
         """

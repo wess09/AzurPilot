@@ -122,7 +122,10 @@ class RaidRun(Raid, CampaignEvent):
             self.device.stuck_record_clear()
             self.device.click_record_clear()
             try:
-                self.raid_execute_once(mode=mode, raid=name)
+                if self.is_raid_rpg():
+                    self.raid_execute_once_with_oil_check(mode=mode, raid=name)
+                else:
+                    self.raid_execute_once(mode=mode, raid=name)
             except OilExhausted:
                 logger.hr('Triggered stop condition: Oil limit')
                 self.config.task_delay(minute=(120, 240))
