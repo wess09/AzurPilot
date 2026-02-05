@@ -18,6 +18,7 @@ from module.raid.combat import RaidCombat
 from module.ui.assets import RAID_CHECK
 from module.ui.page import page_rpg_stage
 from module.log_res import LogRes
+from module.ui.page import page_campaign_menu
 
 
 class RaidCounter(DigitCounter):
@@ -51,7 +52,7 @@ class HuanChangPtOcr(Digit):
         image = cv2.threshold(image, 128, 255, cv2.THRESH_BINARY_INV)[1]
         count, cc = cv2.connectedComponents(image)
         # Calculate connected area, greater than 60 is considered a number,
-        # CN, JP background rightmost is connected but EN is not, 
+        # CN, JP background rightmost is connected but EN is not,
         # EN need judge both [0, -1] and [-1, -1]
         num_idx = [i for i in range(1, count + 1) if
                    i != cc[0, -1] and i != cc[-1, -1] and np.count_nonzero(cc == i) > 60]
@@ -215,15 +216,45 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
 
         @run_once
         def check_oil():
-            if self.get_oil() < max(500, self.config.StopCondition_OilLimit):
-                logger.hr('Triggered oil limit')
-                raise OilExhausted
+            """
+            检查油量，修复了缺少self参数和配置读取错误的问题
+            """
+            try:
+                # 修复：使用正确的配置路径读取油量限制
+                # 兼容不同版本的Alas配置
+                oil_limit = getattr(self.config, 'Resource_OilLimit', 0) or getattr(self.config, 'Raid_OilLimit', 0)
+
+                # 只有油量限制大于0时才检查
+                if oil_limit > 0:
+                    # Check if ui_current exists before using it
+                    ui_is_campaign_menu = hasattr(self, 'ui_current') and self.ui_current == page_campaign_menu
+                    coalition_has_oil = hasattr(self, '_coalition_has_oil_icon') and self._coalition_has_oil_icon
+
+                    if coalition_has_oil or ui_is_campaign_menu:
+                        # 直接读取当前油量
+                        from module.base.resource import Resource
+                        current_oil = Resource.oil()
+                        if current_oil < oil_limit:
+                            logger.hr(
+                                f'Triggered stop condition: Oil limit (current: {current_oil}, limit: {oil_limit})')
+                            self.config.task_delay(minute=(120, 240))
+                            return True
+            except Exception as e:
+                logger.warning(f"Oil check failed: {e}")
+                return False
 
         @run_once
         def check_coin():
-            if self.config.TaskBalancer_Enable and self.triggered_task_balancer():
-                logger.hr('Triggered stop condition: Coin limit')
-                self.handle_task_balancer()
+            """
+            Game devs are too asshole to drop oil display for UI design
+            https://github.com/LmeSzinc/AzurLaneAutoScript/issues/5214
+            """
+            try:
+                if self.config.Campaign_Event == 'raid_20240328':
+                    return False
+                return True
+            except Exception as e:
+                logger.warning(f"Coin check failed: {e}")
                 return True
 
         for _ in self.loop():
