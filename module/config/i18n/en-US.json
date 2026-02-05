@@ -264,7 +264,7 @@
     },
     "OpsiScheduling": {
       "name": "Smart Scheduling",
-      "help": ""
+      "help": "Operation Siren smart scheduling function"
     },
     "OpsiCrossMonth": {
       "name": "Cross Month Daily",
@@ -4137,7 +4137,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "Smart Scheduling",
-      "help": ""
+      "help": "Operation Siren smart scheduling function"
     },
     "SmartScheduling": {
       "ActionPointNotifyLevels": {
