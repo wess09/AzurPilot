@@ -277,3 +277,4 @@ To add a new event, add a new row in here, and run `python -m module.config.conf
 | 20260115   | event 20231221 cn        | Light-Chasing Sea of Stars Rerun             | 复刻星海逐光               | Light-Chasing Sea of Stars Rerun                   | 光追う星の海（復刻）                 | -                          |
 | 20260122   | coalition 20260122       | Light & Shadow Fashion Shoot!                | 光影风尚-拍摄进行时        | Light & Shadow Fashion Shoot!                      | 特集写真-撮影進行中                  | -                          |
 | 20260122   | event 20220526 cn        | Pledge of the Radiant Court                  | -                          | -                                                  | -                                    | 泠誓光庭                   |
+| 20260205   | raid 20240328            | From Zero to Hero Rerun                      | 复刻从零开始的魔王讨伐之旅 | From Zero to Hero Rerun                            | ゼロから頑張る魔王討伐（復刻）       | -                          |
