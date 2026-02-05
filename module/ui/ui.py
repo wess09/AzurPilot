@@ -561,9 +561,9 @@ class UI(InfoHandler):
             self.device.click(GOTO_MAIN)
             return True
 
-        # RPG event (raid_20240328)
-        # if self.appear_then_click(RPG_STATUS_POPUP, offset=(30, 30), interval=3):
-        #     return True
+        ##RPG event (raid_20240328)
+        if self.appear_then_click(RPG_STATUS_POPUP, offset=(30, 30), interval=3):
+            return True
         # Hospital event (20250327)
         # if self.appear_then_click(HOSIPITAL_CLUE_CHECK, offset=(20, 20), interval=2):
         #     return True
@@ -571,7 +571,7 @@ class UI(InfoHandler):
         #     return True
         # Neon city (coalition_20250626)
         # FASHION (coalition_20260122) reuse NEONCITY
-        if self.appear(NEONCITY_FLEET_PREPARATION, offset=(20, 20), interval=3):
+        ##if self.appear(NEONCITY_FLEET_PREPARATION, offset=(20, 20), interval=3):
             logger.info(f'{NEONCITY_FLEET_PREPARATION} -> {NEONCITY_PREPARATION_EXIT}')
             self.device.click(NEONCITY_PREPARATION_EXIT)
             return True
