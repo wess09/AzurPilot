@@ -264,7 +264,7 @@
     },
     "OpsiScheduling": {
       "name": "智能调度",
-      "help": "大世界智能调度功能，用于协调侵蚀1练级与黄币补充任务之间的切换\n启用后将根据黄币和行动力自动在不同任务之间切换并发送推送通知"
+      "help": ""
     },
     "OpsiCrossMonth": {
       "name": "跨月每日",
@@ -4138,7 +4138,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "智能调度",
-      "help": "大世界智能调度功能，用于协调侵蚀1练级与黄币补充任务之间的切换\n启用后将根据黄币和行动力自动在不同任务之间切换并发送推送通知"
+      "help": ""
     },
     "SmartScheduling": {
       "ActionPointNotifyLevels": {

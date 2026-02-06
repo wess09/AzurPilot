@@ -264,7 +264,7 @@
     },
     "OpsiScheduling": {
       "name": "Smart Scheduling",
-      "help": "Operation Siren smart scheduling function"
+      "help": ""
     },
     "OpsiCrossMonth": {
       "name": "Cross Month Daily",
