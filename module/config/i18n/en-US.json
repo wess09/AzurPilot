@@ -4138,7 +4138,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "Smart Scheduling",
-      "help": "Operation Siren smart scheduling function"
+      "help": "Smart scheduling function to coordinate between CL1 leveling and coin acquisition tasks\n\nWork Cycle:\n• CL1 detects insufficient coins & sufficient AP → switch to coin acquisition tasks\n• After accumulating target coins → switch back to CL1 and disable all coin tasks\n\nThreshold Control:\n• Coin Threshold: Controls the cycle between CL1 and coin tasks\n• AP Threshold: Mainly delays tasks when AP is too low\n\nSpecial Rules:\n• Insufficient coins & AP → delay 1 hour and send notification\n• AP insufficient in coin tasks → delay all coin tasks and switch back to CL1\n• CL1 AP below minimum → delay 1 hour and send notification\n• AP crossing thresholds → send push notification"
     },
     "SmartScheduling": {
       "ActionPointNotifyLevels": {
