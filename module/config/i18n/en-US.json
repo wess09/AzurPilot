@@ -79,7 +79,7 @@
       "help": ""
     },
     "Raid": {
-      "name": "Raid",
+      "name": "From Zero to Hero",
       "help": ""
     },
     "Hospital": {
@@ -1396,19 +1396,19 @@
   },
   "HospitalEvent": {
     "_info": {
-      "name": "HospitalEvent._info.name",
-      "help": "HospitalEvent._info.help"
+      "name": "Raid Event Settings",
+      "help": ""
     },
     "Mode": {
-      "name": "HospitalEvent.Mode.name",
-      "help": "HospitalEvent.Mode.help",
-      "easy": "easy",
-      "normal": "normal",
-      "hard": "hard"
+      "name": "Difficulty",
+      "help": "",
+      "easy": "Noon",
+      "normal": "Dusk",
+      "hard": "Night"
     },
     "Stage": {
-      "name": "HospitalEvent.Stage.name",
-      "help": "HospitalEvent.Stage.help",
+      "name": "Map Name",
+      "help": "",
       "T1": "T1",
       "T2": "T2",
       "T3": "T3",
