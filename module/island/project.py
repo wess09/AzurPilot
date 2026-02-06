@@ -16,6 +16,12 @@ from module.island.ui import IslandUI
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
 from module.ocr.ocr import Duration, Ocr
+from module.ui.switch import Switch
+
+
+ROLE_SORTING = Switch('Role_sorting')
+ROLE_SORTING.add_state('Ascending', check_button=ROLE_SORT_ASC, click_button=ROLE_SORTING_CLICK)
+ROLE_SORTING.add_state('Descending', check_button=ROLE_SORT_DESC, click_button=ROLE_SORTING_CLICK)
 
 
 class ProjectNameOcr(Ocr):
@@ -465,7 +471,8 @@ class IslandProjectRun(IslandUI):
             bool: if selected
         """
         logger.info('Island select role')
-        timeout = Timer(1.5, count=3).start()
+        ROLE_SORTING.set('Descending', main=self)
+        timeout = Timer(5, count=3).start()
         count = 0
         while 1:
             if skip_first_screenshot:
@@ -484,8 +491,14 @@ class IslandProjectRun(IslandUI):
                 return self._project_character_select(click_button, check_button)
             else:
                 name = ' '.join(map(lambda x: x.capitalize(), character.split('_')))
-                logger.info(f'No character {name} found')
-                if count >= 2:
+                # retry 2 times for character select
+                if 1 <= count < 3:
+                    logger.info(f'No character {name} was found, try reversed order')
+                    ROLE_SORTING.set('Ascending', main=self)
+                # select manjuu after 4 trials
+                elif count >= 3:
+                    logger.info(f'No character {name} was found, use manjuu')
+                    ROLE_SORTING.set('Ascending', main=self)
                     character = 'manjuu'
                 count += 1
                 continue
