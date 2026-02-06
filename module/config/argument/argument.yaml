@@ -510,6 +510,12 @@ _Island:
   IslandOption11: &IslandOption11
     value: 0
     option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ]
+  IslandOption12: &IslandOption12
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
+  IslandOption16: &IslandOption16
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ]
   IslandCharacter: &IslandCharacter
     value: manjuu
     option:
@@ -555,6 +561,14 @@ Island2:
   Character4: *IslandCharacter
 Island3:
   Receive: false
+  Option1: *IslandOption16
+  Character1: *IslandCharacter
+  Option2: *IslandOption16
+  Character2: *IslandCharacter
+  Option3: *IslandOption16
+  Character3: *IslandCharacter
+Island4:
+  Receive: false
   Option1: *IslandOption6
   Character1: *IslandCharacter
   Option2: *IslandOption6
@@ -563,7 +577,7 @@ Island3:
   Character3: *IslandCharacter
   Option4: *IslandOption6
   Character4: *IslandCharacter
-Island4:
+Island5:
   Receive: false
   Option1: *IslandOption4
   Character1: *IslandCharacter
@@ -573,22 +587,16 @@ Island4:
   Character3: *IslandCharacter
   Option4: *IslandOption4
   Character4: *IslandCharacter
-Island5:
-  Receive: false
-  Option1: *IslandOption9
-  Character1: *IslandCharacter
-  Option2: *IslandOption9
-  Character2: *IslandCharacter
-  Option3: *IslandOption9
-  Character3: *IslandCharacter
-  Option4: *IslandOption9
-  Character4: *IslandCharacter
 Island6:
   Receive: false
   Option1: *IslandOption7
   Character1: *IslandCharacter
   Option2: *IslandOption7
   Character2: *IslandCharacter
+  Option3: *IslandOption7
+  Character3: *IslandCharacter
+  Option4: *IslandOption7
+  Character4: *IslandCharacter
 Island7:
   Receive: false
   Option1: *IslandOption9
@@ -597,27 +605,27 @@ Island7:
   Character2: *IslandCharacter
 Island8:
   Receive: false
+  Option1: *IslandOption12
+  Character1: *IslandCharacter
+  Option2: *IslandOption12
+  Character2: *IslandCharacter
+Island9:
+  Receive: false
   Option1: *IslandOption11
   Character1: *IslandCharacter
   Option2: *IslandOption11
   Character2: *IslandCharacter
-Island9:
+Island10:
+  Receive: false
+  Option1: *IslandOption10
+  Character1: *IslandCharacter
+  Option2: *IslandOption10
+  Character2: *IslandCharacter
+Island11:
   Receive: false
   Option1: *IslandOption9
   Character1: *IslandCharacter
   Option2: *IslandOption9
-  Character2: *IslandCharacter
-Island10:
-  Receive: false
-  Option1: *IslandOption7
-  Character1: *IslandCharacter
-  Option2: *IslandOption7
-  Character2: *IslandCharacter
-Island11:
-  Receive: false
-  Option1: *IslandOption5
-  Character1: *IslandCharacter
-  Option2: *IslandOption5
   Character2: *IslandCharacter
 Island12:
   Receive: false
@@ -627,17 +635,23 @@ Island12:
   Character2: *IslandCharacter
 Island13:
   Receive: false
+  Option1: *IslandOption6
+  Character1: *IslandCharacter
+  Option2: *IslandOption6
+  Character2: *IslandCharacter
+Island14:
+  Receive: false
   Option1: *IslandOption4
   Character1: *IslandCharacter
   Option2: *IslandOption4
   Character2: *IslandCharacter
-Island14:
+Island15:
   Receive: false
   Option1: *IslandOption9
   Character1: *IslandCharacter
   Option2: *IslandOption9
   Character2: *IslandCharacter
-Island15:
+Island16:
   Receive: false
   Option1: *IslandOption9
   Character1: *IslandCharacter
