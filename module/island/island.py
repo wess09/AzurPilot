@@ -58,7 +58,8 @@ class Island(IslandProjectRun, IslandTransportRun):
     def run(self):
         if server.server in ['cn', 'en']:
             transport = False
-            project_config = [self.config.__getattribute__(f'Island{i}_Receive') for i in range(1, 16)]
+            project_config = [self.config.__getattribute__(f'Island{i}_Receive')
+                              for i in range(1, len(name_to_slot) + 1)]
             project = any(project_config)
             names = self.island_config_to_names(project_config)
             if transport or project:
