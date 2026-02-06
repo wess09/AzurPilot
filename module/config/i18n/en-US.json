@@ -264,7 +264,7 @@
     },
     "OpsiScheduling": {
       "name": "Smart Scheduling",
-      "help": ""
+      "help": "【Overview】\nSmart scheduling coordinates automatic switching between CL1 leveling and coin acquisition tasks\n\n【Task Flow】\n1. Smart Scheduling Start → Check coins and action point status\n2. Insufficient Coins → Auto-switch to coin acquisition tasks\n3. Sufficient Coins → Auto-switch back to CL1 leveling\n4. Coin Task Complete → Check return threshold to decide switch or continue\n\n【Threshold Configuration】\n• Coins Preserve, Coins Return Threshold, AP Preserve, AP Notify Thresholds\n\n【Special Rules】\n• Insufficient Coins + Insufficient AP → Delay 1 hour + push notification\n• AP insufficient in coin tasks → Delay all coin tasks + switch back to CL1\n• CL1 AP too low → Delay 1 hour + push notification\n• AP crossing thresholds → Send push notification\n\n【Configuration Tips】\n• Coins Preserve: 20000-100000\n• Return Increment: 30000-50000\n• AP Preserve: 500-1500"
     },
     "OpsiCrossMonth": {
       "name": "Cross Month Daily",
