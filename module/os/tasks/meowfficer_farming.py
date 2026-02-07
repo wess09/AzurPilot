@@ -202,18 +202,17 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                             self.config.task_stop()
                             return
                         else:
-                            # 情况2：行动力不足且黄币也不足 → 延迟短猫时间
-                            logger.info(f'【优化】黄币不足 ({yellow_coins} < {cl1_preserve})，延迟短猫相接时间')
+                            # 情况2：行动力不足且黄币也不足 → 直接禁用短猫
+                            logger.info(f'【优化】黄币不足 ({yellow_coins} < {cl1_preserve})，直接禁用短猫相接')
                             
                             # 推送通知
                             self.notify_push(
                                 title="[Alas] 短猫相接 - 行动力与黄币双重不足",
-                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币 {yellow_coins} 不足 (小于 {cl1_preserve})\n推迟短猫1小时"
+                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n黄币 {yellow_coins} 不足 (小于 {cl1_preserve})\n直接禁用短猫相接，等待下次CL1检查"
                             )
                             
-                            # 推迟短猫1小时
-                            logger.info('推迟短猫相接1小时')
-                            self.config.task_delay(minute=60)
+                            # 直接禁用短猫相接任务
+                            self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
                             
                             # 停止当前短猫任务
                             self.config.task_stop()
