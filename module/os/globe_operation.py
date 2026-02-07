@@ -244,13 +244,11 @@ class GlobeOperation(ActionPointHandler):
                     f'available types: {available_types}, '
                     f'fallback to first available type'
                 )
-                # 回退到第一个可用的类型，而不是默认的SAFE/DANGEROUS组合
+                # 回退到第一个可用的类型，然后重新调用 get_button 获取正确的按钮对象
                 if selection:
-                    # 确保 selection[0] 是有效的按钮对象
-                    first = selection[0]
-                    if hasattr(first, 'name'):
-                        button = first
-                        logger.info(f'Fallback to first available type: {button.name}')
+                    types = (self.pinned_to_name(selection[0]),)
+                    button = get_button(selection)
+                    logger.info(f'Fallback to first available type: {self.pinned_to_name(selection[0])}')
                 else:
                     logger.warning('No zone type selection available')
                     return False
