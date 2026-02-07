@@ -167,15 +167,21 @@ class CoinTaskMixin:
         # 未启用智能调度时：禁用黄币返回检查（补黄币任务独立运行到行动力不足才停止）
         # 但仍返回侵蚀1自身的保留值用于日志/复用
         if not is_smart_scheduling_enabled(self.config):
-            cl1_preserve = self.config.cross_get(
+            # 直接使用 GeneratedConfig 属性获取 CL1 任务实际设置的保留值
+            cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+            
+            # 检查是否在配置文件中实际设置了值（不是默认值）
+            config_file_value = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE
             )
-            if cl1_preserve is None:
-                # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
-                cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
-                logger.info(f'智能调度未启用，CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve}')
+            if config_file_value is not None and config_file_value != cl1_preserve:
+                # 配置文件中设置了不同的值，使用配置文件中的值
+                logger.info(f'智能调度未启用，使用CL1任务配置文件设置: {config_file_value}')
+                cl1_preserve = config_file_value
             else:
-                logger.info(f'智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查 (CL1保留值: {cl1_preserve})')
+                # 使用 GeneratedConfig 中的值（可能是默认值，也可能是用户设置的值）
+                logger.info(f'智能调度未启用，使用CL1任务实际配置: {cl1_preserve}')
+            
             return None, cl1_preserve
         
         # 检查适用范围开关
@@ -227,16 +233,22 @@ class CoinTaskMixin:
         )
         if preserve == 0:
             # 使用原配置（CL1配置的黄币保留值）
-            cl1_preserve_original = self.config.cross_get(
+            # 直接使用 GeneratedConfig 属性获取 CL1 任务实际设置的保留值
+            cl1_preserve_original = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+            
+            # 检查是否在配置文件中实际设置了值（不是默认值）
+            # 如果用户实际设置了值（比如130000），应该使用该值而不是默认的100000
+            config_file_value = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE
             )
-            if cl1_preserve_original is None:
-                # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
-                cl1_preserve_original = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
-                logger.info(f'【智能调度】CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve_original}')
+            if config_file_value is not None and config_file_value != cl1_preserve_original:
+                # 配置文件中设置了不同的值，使用配置文件中的值
+                logger.info(f'【智能调度】黄币保留使用CL1任务配置文件设置: {config_file_value} (智能调度配置为0)')
+                preserve = config_file_value
             else:
-                logger.info(f'【智能调度】黄币保留使用CL1原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
-            preserve = cl1_preserve_original
+                # 使用 GeneratedConfig 中的值（可能是默认值，也可能是用户设置的值）
+                logger.info(f'【智能调度】黄币保留使用CL1任务实际配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
+                preserve = cl1_preserve_original
         else:
             logger.info(f'【智能调度】黄币保留使用智能调度配置: {preserve}')
         return preserve

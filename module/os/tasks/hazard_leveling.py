@@ -313,13 +313,21 @@ class OpsiHazard1Leveling(OSMap):
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
                 # 未启用智能调度时，黄币不足推迟任务
-                cl1_preserve = self.config.cross_get(
+                # 直接使用 GeneratedConfig 属性获取 CL1 任务实际设置的保留值
+                cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+                
+                # 检查是否在配置文件中实际设置了值（不是默认值）
+                config_file_value = self.config.cross_get(
                     keys='OpsiHazard1Leveling.OperationCoinsPreserve'
                 )
-                if cl1_preserve is None:
-                    # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
-                    cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
-                    logger.info(f'CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve}')
+                if config_file_value is not None and config_file_value != cl1_preserve:
+                    # 配置文件中设置了不同的值，使用配置文件中的值
+                    logger.info(f'使用CL1任务配置文件设置: {config_file_value}')
+                    cl1_preserve = config_file_value
+                else:
+                    # 使用 GeneratedConfig 中的值（可能是默认值，也可能是用户设置的值）
+                    logger.info(f'使用CL1任务实际配置: {cl1_preserve}')
+                
                 if yellow_coins < cl1_preserve:
                     logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀1任务至服务器刷新')
                     self.config.task_delay(server_update=True)
