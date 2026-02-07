@@ -172,145 +172,66 @@ class OpsiHazard1Leveling(OSMap):
             # ===== 智能调度: 黄币检查与任务切换 =====
             # 检查黄币是否低于保留值
             yellow_coins = self.get_yellow_coins()
+            
+            # 获取CL1黄币保留值
             if is_smart_scheduling_enabled(self.config):
                 # 启用了智能调度
-                # 使用智能调度配置的黄币保留值（如果设置了的话）
                 if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
                     cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
                 else:
                     cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
-                
-                if yellow_coins < cl1_preserve:
-                    logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
+            else:
+                # 智能调度关闭，使用CL1原配置
+                cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+            
+            if yellow_coins < cl1_preserve:
+                logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
 
-                    # 先获取当前行动力数据（包含箱子里的行动力）
-                    # 需要先进入行动力界面才能读取数据
-                    self.action_point_enter()
-                    self.action_point_safe_get()
-                    self.action_point_quit()
+                # 先获取当前行动力数据（包含箱子里的行动力）
+                # 需要先进入行动力界面才能读取数据
+                self.action_point_enter()
+                self.action_point_safe_get()
+                self.action_point_quit()
 
-                    # 使用 cross_get 读取短猫相接任务的行动力保留值（而非当前任务的配置）
-                    meow_ap_preserve = int(self.config.cross_get(
-                        keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
-                        default=1000
-                    ))
+                # 使用 cross_get 读取短猫相接任务的行动力保留值（而非当前任务的配置）
+                meow_ap_preserve = int(self.config.cross_get(
+                    keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
+                    default=1000
+                ))
 
-                    # 获取智能调度配置的行动力保留值
-                    if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
-                        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
-                        if smart_ap_preserve > 0:
-                            logger.info(f'【智能调度】短猫行动力保留使用智能调度配置: {smart_ap_preserve} (原短猫配置: {meow_ap_preserve})')
-                            meow_ap_preserve = smart_ap_preserve
-                        else:
-                            logger.info(f'【智能调度】行动力保留使用短猫原配置: {meow_ap_preserve} (智能调度配置为0)')
+                # 检查行动力是否足够执行短猫相接
+                _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
+                if self._action_point_total < meow_ap_preserve:
+                    # 行动力也不足，推迟并推送通知
+                    logger.warning(f'行动力不足以执行短猫 ({self._action_point_total} < {meow_ap_preserve})')
 
-                    # 检查行动力是否足够执行短猫相接
-                    _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
-                    if self._action_point_total < meow_ap_preserve:
-                        # 行动力也不足，推迟并推送通知
-                        logger.warning(f'行动力不足以执行短猫 ({self._action_point_total} < {meow_ap_preserve})')
-
-                        if _previous_coins_ap_insufficient == False:
-                            _previous_coins_ap_insufficient = True
-                            self.notify_push(
-                                title="[Alas] 侵蚀1 - 黄币与行动力双重不足",
-                                content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n推迟任务"
-                            )
-                        else:
-                            logger.info('上次检查行动力不足，跳过推送邮件')
-
-                        logger.info('推迟侵蚀1任务1小时')
-                        self.config.task_delay(minute=60)
-                        self.config.task_stop()
-                    else:
-                        # 行动力充足，切换到短猫相接
-                        logger.info(f'行动力充足 ({self._action_point_total}), 切换到黄币补充任务获取黄币')
-                        _previous_coins_ap_insufficient = False
-                        
-                        # 检查黄币阈值适用范围配置
-                        # 默认值定义在 args.json (value: false)，表示仅短猫相接任务会应用黄币返回阈值
-                        apply_to_all = self.config.cross_get(
-                            keys='OpsiScheduling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
-                            default=None
-                        )
-                        # 如果cross_get返回None（表示用户未在配置文件中设置此值），尝试兼容旧配置路径
-                        if apply_to_all is None:
-                            legacy_path = 'OpsiHazard1Leveling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
-                            apply_to_all = self.config.cross_get(keys=legacy_path, default=None)
-                        # 如果所有路径都无法获取值，最终回退到 args.json 中定义的默认值 False
-                        if apply_to_all is None:
-                            if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
-                                apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
-                            else:
-                                # 回退到 args.json 中定义的默认值 false（仅启用短猫）
-                                apply_to_all = False
-                        logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')
-                        
-                        task_names = {
-                            'OpsiMeowfficerFarming': '短猫相接',
-                            'OpsiObscure': '隐秘海域',
-                            'OpsiAbyssal': '深渊海域',
-                            'OpsiStronghold': '塞壬要塞'
-                        }
-                        
-                        # 根据配置决定启用哪些任务
-                        if apply_to_all:
-                            # 开启：启用所有黄币补充任务（短猫、隐秘海域、深渊海域、塞壬要塞）
-                            all_coin_tasks = ['OpsiMeowfficerFarming', 'OpsiObscure', 'OpsiAbyssal', 'OpsiStronghold']
-                            logger.info('黄币阈值适用范围：四任务，将启用所有黄币补充任务')
-                        else:
-                            # 关闭：仅启用短猫相接
-                            all_coin_tasks = ['OpsiMeowfficerFarming']
-                            logger.info('黄币阈值适用范围：仅短猫，将只启用短猫相接任务')
-                        
-                        # 自动启用黄币补充任务的调度器
-                        enabled_tasks = []
-                        auto_enabled_tasks = []
-                        with self.config.multi_set():
-                            for task in all_coin_tasks:
-                                if self.config.is_task_enabled(task):
-                                    enabled_tasks.append(task)
-                                    logger.info(f'黄币补充任务已启用: {task_names.get(task, task)}')
-                                else:
-                                    # 自动启用未启用的任务
-                                    logger.info(f'自动启用黄币补充任务: {task_names.get(task, task)}')
-                                    self.config.cross_set(keys=f'{task}.Scheduler.Enable', value=True)
-                                    auto_enabled_tasks.append(task)
-                        
-                        # 合并所有任务（已启用 + 自动启用）
-                        available_tasks = enabled_tasks + auto_enabled_tasks
-                        
-                        if auto_enabled_tasks:
-                            auto_enabled_names = '、'.join([task_names.get(task, task) for task in auto_enabled_tasks])
-                            logger.info(f'已自动启用以下黄币补充任务: {auto_enabled_names}')
-                        
-                        if not available_tasks:
-                            # 理论上不应该到达这里，因为我们已经自动启用了所有任务
-                            logger.error('无法启用任何黄币补充任务，这是一个错误状态')
-                            self.config.task_delay(minute=60)
-                            self.config.task_stop()
-                            self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
-                            return
-                        
-                        task_names_str = '、'.join([task_names.get(task, task) for task in available_tasks])
+                    if _previous_coins_ap_insufficient == False:
+                        _previous_coins_ap_insufficient = True
                         self.notify_push(
-                            title="[Alas] 侵蚀1 - 切换至黄币补充任务",
-                            content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力: {self._action_point_total} (需要 {meow_ap_preserve})\n切换至{task_names_str}获取黄币"
+                            title="[Alas] 侵蚀1 - 黄币与行动力双重不足",
+                            content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n推迟任务"
                         )
+                    else:
+                        logger.info('上次检查行动力不足，跳过推送邮件')
 
-                        with self.config.multi_set():
-                            # 启用所有可用的黄币补充任务
-                            for task in available_tasks:
-                                self.config.task_call(task)
-                            
-                            cd = self.nearest_task_cooling_down
-                            if cd is not None:
-                                # 有冷却任务时，同时延迟侵蚀1任务到冷却任务之后
-                                # 避免侵蚀1在黄币补充任务被延迟后立即再次运行导致无限循环
-                                logger.info(f'有冷却任务 {cd.command}，延迟侵蚀1到 {cd.next_run}')
-                                self.config.task_delay(target=cd.next_run)
-                        self.config.task_stop()
-                    self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
+                    logger.info('推迟侵蚀1任务1小时')
+                    self.config.task_delay(minute=60)
+                    self.config.task_stop()
+                else:
+                    # 行动力充足，切换到短猫相接
+                    logger.info(f'行动力充足 ({self._action_point_total}), 切换到短猫相接')
+                    _previous_coins_ap_insufficient = False
+                    
+                    # 智能调度关闭时，直接启用短猫相接任务
+                    if not is_smart_scheduling_enabled(self.config):
+                        logger.info('【智能调度关闭】直接启用短猫相接任务')
+                        self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
+                    
+                    # 切换到短猫相接任务
+                    with self.config.multi_set():
+                        self.config.task_call('OpsiMeowfficerFarming')
+                    self.config.task_stop()
+                self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
                 # 未启用智能调度时，黄币不足推迟任务
                 # 直接使用 GeneratedConfig 属性获取 CL1 任务实际设置的保留值
