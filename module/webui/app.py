@@ -1624,6 +1624,7 @@ class AlasGUI(Frame):
             Alas 是一款免费开源软件，如果你在任何渠道付费购买了Alas，请退款。
             Project repository 项目地址：`https://github.com/LmeSzinc/AzurLaneAutoScript`
             禁止在 Alas官方仓库 Alas官方群 Alas官方社区 提及本分支！
+            有任何问题请加群，加群链接：`https://addgroup.nanoda.work`
             """
             ).style("text-align: center")
 
