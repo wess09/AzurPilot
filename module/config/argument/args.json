@@ -3170,21 +3170,23 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
+          "raid_20240328",
           "raid_20250116"
         ],
         "option_cn": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_en": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_jp": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_tw": [
           "raid_20250116"
         ],
         "option_bold": [
+          "raid_20240328",
           "raid_20250116"
         ]
       },
@@ -3544,202 +3546,6 @@
       }
     }
   },
-  "HospitalEvent": {
-    "Scheduler": {
-      "Enable": {
-        "type": "checkbox",
-        "value": false,
-        "option": [
-          true,
-          false
-        ]
-      },
-      "NextRun": {
-        "type": "datetime",
-        "value": "2020-01-01 00:00:00",
-        "validate": "datetime"
-      },
-      "Command": {
-        "type": "input",
-        "value": "HospitalEvent",
-        "display": "hide"
-      },
-      "SuccessInterval": {
-        "type": "input",
-        "value": 0,
-        "display": "hide"
-      },
-      "FailureInterval": {
-        "type": "input",
-        "value": 120,
-        "display": "hide"
-      },
-      "ServerUpdate": {
-        "type": "input",
-        "value": "00:00",
-        "display": "hide"
-      }
-    },
-    "HospitalEvent": {
-      "Mode": {
-        "type": "select",
-        "value": "hard",
-        "option": [
-          "easy",
-          "normal",
-          "hard"
-        ]
-      },
-      "Stage": {
-        "type": "select",
-        "value": "T1",
-        "option": [
-          "T1",
-          "T2",
-          "T3",
-          "T4",
-          "ESP"
-        ]
-      }
-    },
-    "StopCondition": {
-      "RunCount": {
-        "type": "input",
-        "value": 0,
-        "display": "hide"
-      },
-      "MapAchievement": {
-        "type": "select",
-        "value": "non_stop",
-        "option": [
-          "non_stop",
-          "non_stop_clear_all",
-          "100_percent_clear",
-          "map_3_stars",
-          "threat_safe",
-          "threat_safe_without_3_stars"
-        ],
-        "display": "hide"
-      },
-      "StageIncrease": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "GetNewShip": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "ReachLevel": {
-        "type": "input",
-        "value": 0,
-        "display": "hide"
-      }
-    },
-    "Emotion": {
-      "Mode": {
-        "type": "select",
-        "value": "calculate",
-        "option": [
-          "calculate",
-          "ignore",
-          "calculate_ignore"
-        ]
-      },
-      "Fleet1Value": {
-        "type": "input",
-        "value": 119
-      },
-      "Fleet1Record": {
-        "type": "datetime",
-        "value": "2020-01-01 00:00:00",
-        "validate": "datetime",
-        "display": "disabled"
-      },
-      "Fleet1Control": {
-        "type": "select",
-        "value": "prevent_yellow_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet1Onsen": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet2Value": {
-        "type": "input",
-        "value": 119,
-        "display": "hide"
-      },
-      "Fleet2Record": {
-        "type": "datetime",
-        "value": "2020-01-01 00:00:00",
-        "validate": "datetime",
-        "display": "hide"
-      },
-      "Fleet2Control": {
-        "type": "select",
-        "value": "prevent_yellow_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet2Onsen": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      }
-    },
-    "Storage": {
-      "Storage": {
-        "type": "storage",
-        "value": {},
-        "valuetype": "ignore",
-        "display": "disabled"
-      }
-    }
-  },
   "Coalition": {
     "Scheduler": {
       "Enable": {
@@ -3786,7 +3592,6 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "coalition_20251120",
           "coalition_20260122"
         ],
         "option_cn": [
@@ -3799,10 +3604,9 @@
           "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20251120"
+          "coalition_20260122"
         ],
         "option_bold": [
-          "coalition_20251120",
           "coalition_20260122"
         ]
       },
@@ -4208,9 +4012,11 @@
           "war_archives_20220728_cn",
           "war_archives_20220915_cn",
           "war_archives_20221222_cn",
+          "war_archives_20230223_cn",
           "war_archives_20231026_cn"
         ],
         "option_cn": [
+          "war_archives_20230223_cn",
           "war_archives_20221222_cn",
           "war_archives_20220915_cn",
           "war_archives_20231026_cn",
@@ -4256,6 +4062,7 @@
           "war_archives_20181020_en"
         ],
         "option_en": [
+          "war_archives_20230223_cn",
           "war_archives_20221222_cn",
           "war_archives_20220915_cn",
           "war_archives_20231026_cn",
@@ -4301,6 +4108,7 @@
           "war_archives_20181020_en"
         ],
         "option_jp": [
+          "war_archives_20230223_cn",
           "war_archives_20221222_cn",
           "war_archives_20220915_cn",
           "war_archives_20231026_cn",
@@ -4346,6 +4154,7 @@
           "war_archives_20181020_en"
         ],
         "option_tw": [
+          "war_archives_20230223_cn",
           "war_archives_20221222_cn",
           "war_archives_20220915_cn",
           "war_archives_20231026_cn",
@@ -7181,21 +6990,23 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
+          "raid_20240328",
           "raid_20250116"
         ],
         "option_cn": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_en": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_jp": [
-          "raid_20250116"
+          "raid_20240328"
         ],
         "option_tw": [
           "raid_20250116"
         ],
         "option_bold": [
+          "raid_20240328",
           "raid_20250116"
         ]
       },
