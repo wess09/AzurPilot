@@ -35,13 +35,6 @@ class OpsiObscure(CoinTaskMixin, OSMap):
                 submarine_call=self.config.OpsiFleet_Submarine)
             self.run_auto_search(rescan='current')
 
-            # [Antigravity Feature] 添加全图扫描（仅扫图，不移动）
-            self._solved_map_event = set()
-            self._solved_fleet_mechanism = False
-            self.map_rescan()
-            # 扫描后如果有发现，再次执行自动寻敌以收集资源（rescan=False 防止死循环）
-            self.run_auto_search(rescan=False)
-
             self.map_exit()
             self.handle_after_auto_search()
 
