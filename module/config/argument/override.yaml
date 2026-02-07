@@ -481,6 +481,16 @@ OpsiHazard1Leveling:
     ServerUpdate: 00:00, 12:00
   OpsiFleet:
     Submarine: false
+OpsiScheduling:
+  Scheduler:
+    NextRun:
+      display: hide
+    SuccessInterval:
+      display: hide
+    FailureInterval:
+      display: hide
+    ServerUpdate:
+      display: hide
 
 # ==================== Tool ====================
 

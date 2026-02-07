@@ -2228,11 +2228,25 @@
       "LastRun": "2020-01-01 00:00:00",
       "DelayAfterFull": false
     },
+    "Storage": {
+      "Storage": {}
+    }
+  },
+  "OpsiScheduling": {
+    "Scheduler": {
+      "Enable": false,
+      "NextRun": "2020-01-01 00:00:00",
+      "Command": "OpsiScheduling",
+      "SuccessInterval": 0,
+      "FailureInterval": 120,
+      "ServerUpdate": "00:00"
+    },
     "OpsiScheduling": {
-      "EnableSmartScheduling": false,
+      "OperationCoinsPreserve": 100000,
+      "ActionPointPreserve": 500,
       "ActionPointNotifyLevels": "500,1000,2000,3000",
       "OperationCoinsReturnThreshold": 30000,
-      "OperationCoinsReturnThresholdApplyToAllCoinTasks": true
+      "OperationCoinsReturnThresholdApplyToAllCoinTasks": false
     },
     "Storage": {
       "Storage": {}

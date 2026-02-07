@@ -4140,35 +4140,13 @@
       "name": "OpsiScheduling._info.name",
       "help": "OpsiScheduling._info.help"
     },
-    "SmartScheduling": {
-      "ActionPointNotifyLevels": {
-        "name": "OpsiScheduling.ActionPointNotifyLevels.name",
-        "help": "OpsiScheduling.ActionPointNotifyLevels.help"
-      },
-      "OperationCoinsReturnThreshold": {
-        "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
-        "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
-      },
-      "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-        "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
-        "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
-        "True": "True",
-        "False": "False"
-      },
-      "OperationCoinsPreserve": {
-        "name": "Smart Scheduling - CL1 Coins Preserve",
-        "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
-      },
-      "ActionPointPreserve": {
-        "name": "Smart Scheduling - AP Preserve",
-        "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
-      }
-    }
-  },
-  "IslandSeasonTask": {
-    "_info": {
-      "name": "IslandSeasonTask._info.name",
-      "help": "IslandSeasonTask._info.help"
+    "OperationCoinsPreserve": {
+      "name": "OpsiScheduling.OperationCoinsPreserve.name",
+      "help": "OpsiScheduling.OperationCoinsPreserve.help"
+    },
+    "ActionPointPreserve": {
+      "name": "OpsiScheduling.ActionPointPreserve.name",
+      "help": "OpsiScheduling.ActionPointPreserve.help"
     },
     "ActionPointNotifyLevels": {
       "name": "OpsiScheduling.ActionPointNotifyLevels.name",
@@ -4483,34 +4461,13 @@
       "Clear": "消除",
       "EnterPassword": "パスワードを入力してください",
       "ChooseFile": "ファイルを選択してください"
-    }
-  },
-  "SmartScheduling": {
-    "_info": {
-      "name": "OpsiScheduling._info.name",
-      "help": "OpsiScheduling._info.help"
     },
-    "ActionPointNotifyLevels": {
-      "name": "OpsiScheduling.ActionPointNotifyLevels.name",
-      "help": "OpsiScheduling.ActionPointNotifyLevels.help"
-    },
-    "OperationCoinsReturnThreshold": {
-      "name": "OpsiScheduling.OperationCoinsReturnThreshold.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThreshold.help"
-    },
-    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-      "name": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.name",
-      "help": "OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks.help",
-      "True": "True",
-      "False": "False"
-    },
-    "OperationCoinsPreserve": {
-      "name": "Smart Scheduling - CL1 Coins Preserve",
-      "help": "Coins to preserve in Hazard Leveling when smart scheduling is enabled\nThis setting overrides the coins preserve setting in Hazard Leveling task\nSet to 0 to use original setting"
-    },
-    "ActionPointPreserve": {
-      "name": "Smart Scheduling - AP Preserve",
-      "help": "Action points to preserve when smart scheduling is enabled\nApplies to all tasks: Hazard Leveling, Meowfficer Farming, and other coin tasks\nSet to 0 to use original setting"
+    "OpsiScheduling": {
+      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
+      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "ActionPointNotifyLevels": "Gui.OpsiScheduling.ActionPointNotifyLevels",
+      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
+      "OperationCoinsReturnThresholdApplyToAllCoinTasks": "Gui.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks"
     }
   }
 }

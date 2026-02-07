@@ -328,7 +328,7 @@ Opsi:
       - OpsiCheckLeveling
     OpsiScheduling:
       - Scheduler
-      - SmartScheduling
+      - OpsiScheduling
     OpsiCrossMonth:
       - Scheduler
 

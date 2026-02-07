@@ -4140,29 +4140,27 @@
       "name": "智能调度",
       "help": "大世界智能调度功能，用于协调侵蚀1练级与黄币补充任务之间的切换\n启用后将根据黄币和行动力自动在不同任务之间切换并发送推送通知"
     },
-    "SmartScheduling": {
-      "ActionPointNotifyLevels": {
-        "name": "行动力推送阈值",
-        "help": "行动力升至或降至这些阈值时会发送推送通知\n使用逗号分隔多个阈值，例如: 500,1000,2000,3000\n注意：需要在 Alas - 错误处理 中配置推送通知才能生效"
-      },
-      "OperationCoinsReturnThreshold": {
-        "name": "黄币补充任务需补充的黄币数",
-        "help": "侵蚀1黄币不足后，需要短猫相接/隐秘海域/深渊海域/塞壬要塞补充多少黄币才返回侵蚀1\n计算公式：返回阈值 = 侵蚀1保留值 + 此值\n例如：侵蚀1保留值=100000，此值=50000，则任务运行到黄币≥150000时返回CL1\n特殊值：填 0 表示禁用黄币检查，任务只使用行动力阈值控制"
-      },
-      "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-        "name": "黄币阈值适用范围",
-        "help": "开启：此黄币返回阈值同时应用于短猫相接、隐秘海域、深渊海域、塞壬要塞\n关闭：仅短猫相接使用此黄币返回阈值，其它三个任务不做黄币达标就返回侵蚀1的检查",
-        "True": "True",
-        "False": "False"
-      },
-      "OperationCoinsPreserve": {
-        "name": "智能调度-侵蚀1黄币保留",
-        "help": "开启智能调度时，侵蚀1练级保留的黄币阀值\n此设置优先级高于侵蚀1任务中的黄币保留值\n填 0 表示使用原配置"
-      },
-      "ActionPointPreserve": {
-        "name": "智能调度-行动力保留",
-        "help": "开启智能调度时，所有任务保留的行动力阀值\n同时作用于侵蚀1练级、短猫相接和其他黄币补充任务\n填 0 表示使用原配置"
-      }
+    "OperationCoinsPreserve": {
+      "name": "侵蚀1黄币最低保留",
+      "help": "侵蚀1练级时低于此值时会自动切换至黄币补充任务，开启智能调度时此设置会覆盖侵蚀1练级下的黄币阈值"
+    },
+    "ActionPointPreserve": {
+      "name": "行动力最低保留",
+      "help": "智能调度切换任务时，侵蚀1和所有黄币补充任务保留的最低行动力值\n建议设置不低于 500，开启智能调度时此设置会覆盖侵蚀1和短猫任务下的行动力阈值"
+    },
+    "ActionPointNotifyLevels": {
+      "name": "行动力推送阈值",
+      "help": "行动力升至或降至这些阈值时会发送推送通知\n使用逗号分隔多个阈值，例如: 500,1000,2000,3000\n注意：需要在 Alas - 错误处理 中配置推送通知才能生效"
+    },
+    "OperationCoinsReturnThreshold": {
+      "name": "黄币补充任务需补充的黄币数",
+      "help": "侵蚀1黄币不足后，需要短猫相接补充多少黄币才返回侵蚀1\n计算公式：返回阈值 = 侵蚀1黄币最低保留 + 此值\n例如：侵蚀1黄币最低保留=100000，此值=50000，则任务运行到黄币≥150000时返回CL1"
+    },
+    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
+      "name": "黄币阈值适用范围：四任务/仅短猫",
+      "help": "开启：此黄币返回阈值同时应用于短猫相接、隐秘海域、深渊海域、塞壬要塞；关闭：仅短猫相接使用此黄币返回阈值，其它三个任务不做黄币达标就返回侵蚀1的检查；智能调度中，黄币不足时只启用短猫相接任务，不启用其他三个任务",
+      "True": "已启用",
+      "False": "未启用"
     }
   },
   "IslandSeasonTask": {
@@ -4463,34 +4461,13 @@
       "Clear": "清除",
       "EnterPassword": "输入密码",
       "ChooseFile": "选择文件"
-    }
-  },
-  "SmartScheduling": {
-    "_info": {
-      "name": "智能调度",
-      "help": "大世界智能调度功能，用于协调侵蚀1练级与黄币补充任务之间的切换\n启用后将根据黄币和行动力自动在不同任务之间切换并发送推送通知"
     },
-    "ActionPointNotifyLevels": {
-      "name": "行动力推送阈值",
-      "help": "行动力升至或降至这些阈值时会发送推送通知\n使用逗号分隔多个阈值，例如: 500,1000,2000,3000\n注意：需要在 Alas - 错误处理 中配置推送通知才能生效"
-    },
-    "OperationCoinsReturnThreshold": {
-      "name": "黄币补充任务需补充的黄币数",
-      "help": "侵蚀1黄币不足后，需要短猫相接/隐秘海域/深渊海域/塞壬要塞补充多少黄币才返回侵蚀1\n计算公式：返回阈值 = 侵蚀1保留值 + 此值\n例如：侵蚀1保留值=100000，此值=50000，则任务运行到黄币≥150000时返回CL1\n特殊值：填 0 表示禁用黄币检查，任务只使用行动力阈值控制"
-    },
-    "OperationCoinsReturnThresholdApplyToAllCoinTasks": {
-      "name": "黄币阈值适用范围",
-      "help": "开启：此黄币返回阈值同时应用于短猫相接、隐秘海域、深渊海域、塞壬要塞\n关闭：仅短猫相接使用此黄币返回阈值，其它三个任务不做黄币达标就返回侵蚀1的检查",
-      "True": "True",
-      "False": "False"
-    },
-    "OperationCoinsPreserve": {
-      "name": "智能调度-侵蚀1黄币保留",
-      "help": "开启智能调度时，侵蚀1练级保留的黄币阀值\n此设置优先级高于侵蚀1任务中的黄币保留值\n填 0 表示使用原配置"
-    },
-    "ActionPointPreserve": {
-      "name": "智能调度-行动力保留",
-      "help": "开启智能调度时，所有任务保留的行动力阀值\n同时作用于侵蚀1练级、短猫相接和其他黄币补充任务\n填 0 表示使用原配置"
+    "OpsiScheduling": {
+      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
+      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "ActionPointNotifyLevels": "Gui.OpsiScheduling.ActionPointNotifyLevels",
+      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
+      "OperationCoinsReturnThresholdApplyToAllCoinTasks": "Gui.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks"
     }
   }
 }

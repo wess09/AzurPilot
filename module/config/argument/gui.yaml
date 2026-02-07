@@ -160,3 +160,10 @@ Text:
   Clear:
   EnterPassword:
   ChooseFile:
+
+OpsiScheduling:
+  OperationCoinsPreserve:
+  ActionPointPreserve:
+  ActionPointNotifyLevels:
+  OperationCoinsReturnThreshold:
+  OperationCoinsReturnThresholdApplyToAllCoinTasks:

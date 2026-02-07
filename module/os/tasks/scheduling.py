@@ -58,11 +58,11 @@ class CoinTaskMixin:
     
     # 配置路径常量
     CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OperationCoinsPreserve'
-    CONFIG_PATH_RETURN_THRESHOLD = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThreshold'
-    CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL = 'OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
+    CONFIG_PATH_RETURN_THRESHOLD = 'OpsiScheduling.OpsiScheduling.OperationCoinsReturnThreshold'
+    CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL = 'OpsiScheduling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
     # 智能调度新增配置路径
-    CONFIG_PATH_SMART_CL1_PRESERVE = 'OpsiScheduling.SmartScheduling.OperationCoinsPreserve'
-    CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.SmartScheduling.ActionPointPreserve'
+    CONFIG_PATH_SMART_CL1_PRESERVE = 'OpsiScheduling.OpsiScheduling.OperationCoinsPreserve'
+    CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.OpsiScheduling.ActionPointPreserve'
     
     # 各任务的配置路径常量（集中管理，避免硬编码）
     CONFIG_PATH_MEOW_AP_PRESERVE = 'OpsiMeowfficerFarming.ActionPointPreserve'
@@ -647,7 +647,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         # 检查黄币阈值适用范围配置
         # 默认值定义在 args.json (value: false)，表示仅短猫相接任务会应用黄币返回阈值
         apply_to_all = self.config.cross_get(
-            keys='OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
+            keys='OpsiScheduling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
             default=False
         )
         
