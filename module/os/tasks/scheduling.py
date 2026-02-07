@@ -217,12 +217,11 @@ class CoinTaskMixin:
             default=0
         )
         if preserve == 0:
-            # 使用原配置
+            # 使用原配置（CL1配置的黄币保留值）
             cl1_preserve_original = self.config.cross_get(
-                keys=self.CONFIG_PATH_CL1_PRESERVE,
-                default=100000
+                keys=self.CONFIG_PATH_CL1_PRESERVE
             )
-            logger.info(f'【智能调度】黄币保留使用原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
+            logger.info(f'【智能调度】黄币保留使用CL1原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
             preserve = cl1_preserve_original
         else:
             logger.info(f'【智能调度】黄币保留使用智能调度配置: {preserve}')

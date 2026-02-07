@@ -112,7 +112,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
                         smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
                         if smart_ap_preserve > 0:
+                            logger.info(f'【智能调度】短猫行动力保留使用智能调度配置: {smart_ap_preserve} (原短猫配置: {ap_preserve})')
                             ap_preserve = smart_ap_preserve
+                        else:
+                            logger.info(f'【智能调度】短猫行动力保留使用短猫原配置: {ap_preserve} (智能调度配置为0)')
 
                     if self._action_point_total < ap_preserve:
                         logger.info(f'【智能调度】短猫相接行动力不足 ({self._action_point_total} < {ap_preserve})')

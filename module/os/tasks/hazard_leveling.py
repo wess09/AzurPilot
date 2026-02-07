@@ -198,7 +198,10 @@ class OpsiHazard1Leveling(OSMap):
                     if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
                         smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
                         if smart_ap_preserve > 0:
+                            logger.info(f'【智能调度】短猫行动力保留使用智能调度配置: {smart_ap_preserve} (原短猫配置: {meow_ap_preserve})')
                             meow_ap_preserve = smart_ap_preserve
+                        else:
+                            logger.info(f'【智能调度】行动力保留使用短猫原配置: {meow_ap_preserve} (智能调度配置为0)')
 
                     # 检查行动力是否足够执行短猫相接
                     _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
