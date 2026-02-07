@@ -220,7 +220,7 @@ class CoinTaskMixin:
             keys=self.CONFIG_PATH_SMART_CL1_PRESERVE,
             default=0
         )
-        logger.info(f'【智能调度配置检查】智能调度黄币保留配置: {smart_config}')
+        logger.debug(f'【智能调度配置检查】智能调度黄币保留配置: {smart_config}')
 
         if smart_config == 0:
             # 使用原配置
@@ -249,7 +249,7 @@ class CoinTaskMixin:
             keys=self.CONFIG_PATH_SMART_AP_PRESERVE,
             default=0
         )
-        logger.info(f'【智能调度配置检查】智能调度行动力保留配置: {smart_ap}')
+        logger.debug(f'【智能调度配置检查】智能调度行动力保留配置: {smart_ap}')
         return smart_ap
     
     def _get_current_coin_task_name(self):
@@ -544,9 +544,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         self.action_point_quit()
         
         current_ap = self._action_point_total
-        
-        logger.info(f'【智能调度初始检查】黄币: {yellow_coins}, 保留值: {cl1_preserve}')
-        logger.info(f'【智能调度初始检查】行动力: {current_ap}')
+
+        logger.debug(f'【智能调度初始检查】黄币: {yellow_coins}, 保留值: {cl1_preserve}')
+        logger.debug(f'【智能调度初始检查】行动力: {current_ap}')
         
         # 检查是否需要执行黄币补充任务
         if yellow_coins < cl1_preserve:
@@ -654,10 +654,14 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         # 检查黄币阈值适用范围配置
         # 默认值定义在 args.json (value: false)，表示仅短猫相接任务会应用黄币返回阈值
         apply_to_all = self.config.cross_get(
-            keys='OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
-            default=False
+            keys=self.CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL,
+            default=None
         )
-        
+        # 兼容性处理：None 表示配置未设置，使用默认值 False
+        if apply_to_all is None:
+            apply_to_all = False
+            logger.debug('【智能调度】黄币阈值适用范围配置未设置，使用默认值 False')
+
         logger.info(f'【智能调度】黄币阈值适用范围配置: {apply_to_all}')
         
         task_names = {

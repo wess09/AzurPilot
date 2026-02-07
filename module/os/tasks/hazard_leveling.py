@@ -172,7 +172,7 @@ class OpsiHazard1Leveling(OSMap):
             # ===== 智能调度: 黄币检查与任务切换 =====
             # 检查黄币是否低于保留值
             yellow_coins = self.get_yellow_coins()
-            logger.info(f'【智能调度】当前黄币: {yellow_coins}')
+            logger.debug(f'【智能调度】当前黄币: {yellow_coins}')
 
             if is_smart_scheduling_enabled(self.config):
                 # 启用了智能调度
@@ -182,7 +182,7 @@ class OpsiHazard1Leveling(OSMap):
                 else:
                     cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
 
-                logger.info(f'【智能调度】黄币保留阈值: {cl1_preserve}')
+                logger.debug(f'【智能调度】黄币保留阈值: {cl1_preserve}')
 
                 if yellow_coins < cl1_preserve:
                     logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
@@ -194,23 +194,24 @@ class OpsiHazard1Leveling(OSMap):
                     self.action_point_quit()
 
                     # 使用 cross_get 读取短猫相接任务的行动力保留值（而非当前任务的配置）
+                    from module.os.tasks.scheduling import CoinTaskMixin
                     meow_ap_preserve = int(self.config.cross_get(
-                        keys='OpsiMeowfficerFarming.ActionPointPreserve',
+                        keys=CoinTaskMixin.CONFIG_PATH_MEOW_AP_PRESERVE,
                         default=1000
                     ))
-                    logger.info(f'【智能调度配置检查】短猫行动力保留配置: {meow_ap_preserve}')
+                    logger.debug(f'【智能调度配置检查】短猫行动力保留配置: {meow_ap_preserve}')
 
                     # 获取智能调度配置的行动力保留值
                     if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
                         smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
-                        logger.info(f'【智能调度配置检查】智能调度行动力保留配置: {smart_ap_preserve}')
+                        logger.debug(f'【智能调度配置检查】智能调度行动力保留配置: {smart_ap_preserve}')
                         if smart_ap_preserve > 0:
                             meow_ap_preserve = smart_ap_preserve
                             logger.info(f'【智能调度】行动力保留使用智能调度配置: {smart_ap_preserve}')
                         else:
-                            logger.info(f'【智能调度】行动力保留使用短猫配置: {meow_ap_preserve}')
+                            logger.debug(f'【智能调度】行动力保留使用短猫配置: {meow_ap_preserve}')
 
-                    logger.info(f'【智能调度】最终行动力保留阈值: {meow_ap_preserve}')
+                    logger.debug(f'【智能调度】最终行动力保留阈值: {meow_ap_preserve}')
 
                     # 检查行动力是否足够执行短猫相接
                     _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
@@ -236,10 +237,15 @@ class OpsiHazard1Leveling(OSMap):
                         _previous_coins_ap_insufficient = False
                         
                         # 使用配置常量读取黄币阈值适用范围配置
+                        from module.os.tasks.scheduling import CoinTaskMixin
                         apply_to_all = self.config.cross_get(
-                            keys='OpsiScheduling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
-                            default=False
+                            keys=CoinTaskMixin.CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL,
+                            default=None
                         )
+                        # 兼容性处理：None 表示配置未设置，使用默认值 False
+                        if apply_to_all is None:
+                            apply_to_all = False
+                            logger.debug('【智能调度】黄币阈值适用范围配置未设置，使用默认值 False')
                         logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')
                         
                         task_names = {
