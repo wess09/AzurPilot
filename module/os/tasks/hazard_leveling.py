@@ -237,7 +237,7 @@ class OpsiHazard1Leveling(OSMap):
                         
                         # 使用配置常量读取黄币阈值适用范围配置
                         apply_to_all = self.config.cross_get(
-                            keys='OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
+                            keys='OpsiScheduling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
                             default=False
                         )
                         logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')
