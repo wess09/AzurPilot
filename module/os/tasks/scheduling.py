@@ -170,7 +170,12 @@ class CoinTaskMixin:
             cl1_preserve = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE
             )
-            logger.info(f'智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查 (CL1保留值: {cl1_preserve})')
+            if cl1_preserve is None:
+                # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
+                cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+                logger.info(f'智能调度未启用，CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve}')
+            else:
+                logger.info(f'智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查 (CL1保留值: {cl1_preserve})')
             return None, cl1_preserve
         
         # 检查适用范围开关
@@ -226,9 +231,11 @@ class CoinTaskMixin:
                 keys=self.CONFIG_PATH_CL1_PRESERVE
             )
             if cl1_preserve_original is None:
-                logger.info(f'【智能调度】CL1黄币保留配置为空，跳过黄币检查')
-                return None
-            logger.info(f'【智能调度】黄币保留使用CL1原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
+                # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
+                cl1_preserve_original = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+                logger.info(f'【智能调度】CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve_original}')
+            else:
+                logger.info(f'【智能调度】黄币保留使用CL1原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
             preserve = cl1_preserve_original
         else:
             logger.info(f'【智能调度】黄币保留使用智能调度配置: {preserve}')

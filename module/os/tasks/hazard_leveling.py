@@ -180,10 +180,7 @@ class OpsiHazard1Leveling(OSMap):
                 else:
                     cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
                 
-                # 检查 cl1_preserve 是否为 None，如果是则跳过黄币检查
-                if cl1_preserve is None:
-                    logger.info('【智能调度】黄币保留配置为空，跳过黄币检查')
-                elif yellow_coins < cl1_preserve:
+                if yellow_coins < cl1_preserve:
                     logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
 
                     # 先获取当前行动力数据（包含箱子里的行动力）
@@ -316,8 +313,14 @@ class OpsiHazard1Leveling(OSMap):
                     self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
             else:
                 # 未启用智能调度时，黄币不足推迟任务
-                cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
-                if cl1_preserve is not None and yellow_coins < cl1_preserve:
+                cl1_preserve = self.config.cross_get(
+                    keys='OpsiHazard1Leveling.OperationCoinsPreserve'
+                )
+                if cl1_preserve is None:
+                    # 如果配置文件中没有该值，使用 GeneratedConfig 中的默认值
+                    cl1_preserve = getattr(self.config, 'OpsiHazard1Leveling_OperationCoinsPreserve', 100000)
+                    logger.info(f'CL1黄币保留配置文件中未设置，使用默认值: {cl1_preserve}')
+                if yellow_coins < cl1_preserve:
                     logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀1任务至服务器刷新')
                     self.config.task_delay(server_update=True)
                     self.config.task_stop()
