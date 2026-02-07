@@ -17,6 +17,22 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         """
         logger.hr(f'OS meowfficer farming, hazard_level={self.config.OpsiMeowfficerFarming_HazardLevel}', level=1)
         
+        # ===== 优化：任务开始前行动力检查 =====
+        # 在智能调度关闭时，如果行动力不足，临时禁用短猫相接任务
+        if not is_smart_scheduling_enabled(self.config):
+            # 获取当前行动力数据
+            self.action_point_enter()
+            self.action_point_safe_get()
+            self.action_point_quit()
+            
+            # 检查行动力是否足够执行短猫
+            ap_preserve = self.config.OpsiMeowfficerFarming_ActionPointPreserve
+            if self._action_point_total < ap_preserve:
+                logger.info(f'【优化】行动力不足 ({self._action_point_total} < {ap_preserve})，临时禁用短猫相接')
+                self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
+                self.config.task_stop()
+                return
+        
         # ===== 任务开始前黄币检查 =====
         # 如果启用了CL1且黄币充足，直接返回CL1，不执行短猫
         # 如果 OperationCoinsReturnThreshold 为 0，则禁用黄币检查，只使用行动力阈值控制
@@ -147,6 +163,34 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         
                         # 停止当前短猫任务
                         self.config.task_stop()
+                        return
+                
+                # ===== 优化：智能调度关闭时的行动力不足检查 =====
+                # 在智能调度关闭时，如果行动力不足，临时禁用短猫相接任务
+                if not is_smart_scheduling_enabled(self.config):
+                    ap_preserve = self.config.OpsiMeowfficerFarming_ActionPointPreserve
+                    if self._action_point_total < ap_preserve:
+                        logger.info(f'【优化】行动力不足 ({self._action_point_total} < {ap_preserve})，临时禁用短猫相接')
+                        
+                        # 推送通知
+                        if self.is_cl1_enabled:
+                            self.notify_push(
+                                title="[Alas] 短猫相接 - 临时禁用",
+                                content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n临时禁用短猫相接，等待行动力恢复"
+                            )
+                        
+                        # 临时禁用短猫相接任务
+                        self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=False)
+                        
+                        # 如果启用了侵蚀1，立即切换回侵蚀1继续执行
+                        if self.is_cl1_enabled:
+                            logger.info('切换回侵蚀1继续执行')
+                            with self.config.multi_set():
+                                self.config.task_call('OpsiHazard1Leveling')
+                        
+                        # 停止当前短猫任务
+                        self.config.task_stop()
+                        return
 
             # (1252, 1012) is the coordinate of zone 134 (the center zone) in os_globe_map.png
             if self.config.OpsiMeowfficerFarming_TargetZone != 0 and not self.config.OpsiMeowfficerFarming_StayInZone:

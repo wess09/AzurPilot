@@ -223,7 +223,7 @@ class OpsiHazard1Leveling(OSMap):
                         self.config.task_delay(minute=60)
                         self.config.task_stop()
                     else:
-                        # 行动力充足，切换到黄币补充任务获取黄币
+                        # 行动力充足，切换到短猫相接
                         logger.info(f'行动力充足 ({self._action_point_total}), 切换到黄币补充任务获取黄币')
                         _previous_coins_ap_insufficient = False
                         
