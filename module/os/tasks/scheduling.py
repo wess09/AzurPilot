@@ -168,10 +168,9 @@ class CoinTaskMixin:
         # 但仍返回侵蚀1自身的保留值用于日志/复用
         if not is_smart_scheduling_enabled(self.config):
             cl1_preserve = self.config.cross_get(
-                keys=self.CONFIG_PATH_CL1_PRESERVE,
-                default=100000
+                keys=self.CONFIG_PATH_CL1_PRESERVE
             )
-            logger.info('智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查')
+            logger.info(f'智能调度未启用，禁用 OperationCoinsReturnThreshold 黄币返回检查 (CL1保留值: {cl1_preserve})')
             return None, cl1_preserve
         
         # 检查适用范围开关
@@ -182,6 +181,11 @@ class CoinTaskMixin:
 
         # 获取并缓存 CL1 保留值（优先使用智能调度配置）
         cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
+        
+        # 如果 CL1 保留值为 None，跳过黄币检查
+        if cl1_preserve is None:
+            logger.info('CL1黄币保留配置为空，禁用黄币检查')
+            return None, None
 
         # 从 OpsiScheduling 配置读取黄币返回阈值
         return_threshold_config = self.config.cross_get(
@@ -221,6 +225,9 @@ class CoinTaskMixin:
             cl1_preserve_original = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE
             )
+            if cl1_preserve_original is None:
+                logger.info(f'【智能调度】CL1黄币保留配置为空，跳过黄币检查')
+                return None
             logger.info(f'【智能调度】黄币保留使用CL1原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
             preserve = cl1_preserve_original
         else:
