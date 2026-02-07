@@ -190,7 +190,7 @@ class OpsiHazard1Leveling(OSMap):
 
                     # 使用 cross_get 读取短猫相接任务的行动力保留值（而非当前任务的配置）
                     meow_ap_preserve = int(self.config.cross_get(
-                        keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
+                        keys='OpsiMeowfficerFarming.ActionPointPreserve',
                         default=1000
                     ))
 
@@ -223,23 +223,11 @@ class OpsiHazard1Leveling(OSMap):
                         logger.info(f'行动力充足 ({self._action_point_total}), 切换到黄币补充任务获取黄币')
                         _previous_coins_ap_insufficient = False
                         
-                        # 检查黄币阈值适用范围配置
-                        # 默认值定义在 args.json (value: false)，表示仅短猫相接任务会应用黄币返回阈值
+                        # 使用配置常量读取黄币阈值适用范围配置
                         apply_to_all = self.config.cross_get(
-                            keys='OpsiScheduling.SmartScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
-                            default=None
+                            keys='OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks',
+                            default=False
                         )
-                        # 如果cross_get返回None（表示用户未在配置文件中设置此值），尝试兼容旧配置路径
-                        if apply_to_all is None:
-                            legacy_path = 'OpsiHazard1Leveling.OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
-                            apply_to_all = self.config.cross_get(keys=legacy_path, default=None)
-                        # 如果所有路径都无法获取值，最终回退到 args.json 中定义的默认值 False
-                        if apply_to_all is None:
-                            if hasattr(self.config, 'OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks'):
-                                apply_to_all = self.config.OpsiScheduling_OperationCoinsReturnThresholdApplyToAllCoinTasks
-                            else:
-                                # 回退到 args.json 中定义的默认值 false（仅启用短猫）
-                                apply_to_all = False
                         logger.info(f'【智能调度】黄币阈值适用范围配置读取: {apply_to_all}')
                         
                         task_names = {

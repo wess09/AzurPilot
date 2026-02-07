@@ -57,13 +57,15 @@ class CoinTaskMixin:
     ALL_COIN_TASKS = ['OpsiObscure', 'OpsiAbyssal', 'OpsiStronghold', 'OpsiMeowfficerFarming']
     
     # 配置路径常量
+    # Alas 配置 JSON 结构: OpsiScheduling.OpsiScheduling.OperationCoinsPreserve
+    # 使用单层路径（对应 config_generated.py 中的属性名）
     CONFIG_PATH_CL1_PRESERVE = 'OpsiHazard1Leveling.OperationCoinsPreserve'
     CONFIG_PATH_RETURN_THRESHOLD = 'OpsiScheduling.OperationCoinsReturnThreshold'
     CONFIG_PATH_RETURN_THRESHOLD_APPLY_ALL = 'OpsiScheduling.OperationCoinsReturnThresholdApplyToAllCoinTasks'
     # 智能调度新增配置路径
     CONFIG_PATH_SMART_CL1_PRESERVE = 'OpsiScheduling.OperationCoinsPreserve'
     CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.ActionPointPreserve'
-    
+
     # 各任务的配置路径常量（集中管理，避免硬编码）
     CONFIG_PATH_MEOW_AP_PRESERVE = 'OpsiMeowfficerFarming.ActionPointPreserve'
     CONFIG_PATH_CL1_MIN_AP_RESERVE = 'OpsiHazard1Leveling.MinimumActionPointReserve'
