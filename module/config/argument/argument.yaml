@@ -528,9 +528,14 @@ _Island:
       - akashi
       - ying_swei
       - chao_ho
+      - william_d_porter
+      - chen_hai
       - unicorn
       - cheshire
       - amagi_chan
+      - helena
+      - atago
+      - friedrich_der_grobe
 Island1:
   Receive: false
   Option1: *IslandOption8
