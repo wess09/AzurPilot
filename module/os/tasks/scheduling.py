@@ -214,25 +214,27 @@ class CoinTaskMixin:
         Returns:
             int: 保留的黄币数量，如果为 0 则使用原配置
         """
-        preserve = self.config.cross_get(
+        smart_config = self.config.cross_get(
             keys=self.CONFIG_PATH_SMART_CL1_PRESERVE,
             default=0
         )
-        if preserve == 0:
+        logger.info(f'【智能调度配置检查】智能调度黄币保留配置: {smart_config}')
+
+        if smart_config == 0:
             # 使用原配置
             cl1_preserve_original = self.config.cross_get(
                 keys=self.CONFIG_PATH_CL1_PRESERVE,
                 default=100000
             )
-            logger.info(f'【智能调度】黄币保留使用原配置: {cl1_preserve_original} (智能调度配置为0或不生效)')
-            preserve = cl1_preserve_original
+            logger.info(f'【智能调度】智能调度配置为0，使用侵蚀1原配置: {cl1_preserve_original}')
+            return cl1_preserve_original
         else:
-            logger.info(f'【智能调度】黄币保留使用智能调度配置: {preserve}')
-        return preserve
+            logger.info(f'【智能调度】使用智能调度配置的黄币保留值: {smart_config}')
+            return smart_config
     
     def _get_smart_scheduling_action_point_preserve(self):
         """
-        获取智能调度模式下的行动力保留“覆盖值”。
+        获取智能调度模式下的行动力保留"覆盖值"。
 
         注意：此处不做回退。
         - 返回值 > 0：表示启用智能调度覆盖值（由调用方决定覆盖哪个任务的阀值）
@@ -241,11 +243,12 @@ class CoinTaskMixin:
         Returns:
             int: 智能调度行动力保留覆盖值（0 表示不覆盖）
         """
-        preserve = self.config.cross_get(
+        smart_ap = self.config.cross_get(
             keys=self.CONFIG_PATH_SMART_AP_PRESERVE,
             default=0
         )
-        return preserve
+        logger.info(f'【智能调度配置检查】智能调度行动力保留配置: {smart_ap}')
+        return smart_ap
     
     def _get_current_coin_task_name(self):
         """
