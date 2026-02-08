@@ -345,6 +345,9 @@ class IslandProjectRun(IslandUI):
                                   for button in TEMPLATE_PROJECT.match_multi(image_gray)])
         return projects.select(valid=True)
 
+    def is_in_enter_page(self):
+        return self.image_color_count(ROLE_SELECT_TITLE_AREA, color=(57, 189, 255), threshold=221, count=8000)
+
     def project_receive(self, button):
         """
         Receive a project and enter role select page.
@@ -359,9 +362,9 @@ class IslandProjectRun(IslandUI):
         self.interval_clear([ISLAND_MANAGEMENT_CHECK, PROJECT_COMPLETE,
                              GET_ITEMS_ISLAND, ROLE_SELECT_ENTER])
         success = False
-        enter = True
         click_timer = Timer(5, count=10).start()
         for _ in self.loop():
+            # UI additional
             if self.island_in_management(interval=5):
                 self.device.click(button)
                 click_timer.reset()
@@ -375,33 +378,37 @@ class IslandProjectRun(IslandUI):
                 click_timer.reset()
                 continue
 
-            if enter and self.appear_then_click(ROLE_SELECT_ENTER, threshold=10, interval=2):
+            # Enter page
+            if self.is_in_enter_page() and \
+                    self.appear_then_click(ROLE_SELECT_ENTER, threshold=10, interval=2):
                 success = True
                 self.interval_clear(GET_ITEMS_ISLAND)
                 click_timer.reset()
                 continue
 
             if self.appear_then_click(PROJECT_COMPLETE, offset=(20, 20), interval=1):
+                self.device.sleep(0.1)
                 success = True
-                enter = False
+                # enter = False
                 self.interval_clear(GET_ITEMS_ISLAND)
                 self.interval_reset(ROLE_SELECT_ENTER)
                 click_timer.reset()
                 continue
 
             if self.handle_get_items():
-                enter = True
+                # enter = True
                 self.interval_clear(ROLE_SELECT_ENTER)
                 click_timer.reset()
                 continue
 
             # handle island level up
-            if not enter and click_timer.reached():
+            if click_timer.reached():
                 self.device.click(GET_ITEMS_ISLAND)
                 self.device.sleep(0.3)
                 click_timer.reset()
                 continue
 
+            # End
             if self.appear(ROLE_SELECT_CONFIRM, offset=(20, 20)):
                 break
 
