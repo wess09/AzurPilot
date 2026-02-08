@@ -63,7 +63,6 @@ class Island(IslandProjectRun, IslandTransportRun):
             project = any(project_config)
             names = self.island_config_to_names(project_config)
             if transport or project:
-                self.ui_goto_island()
                 self.ui_ensure(page_island_phone)
                 self.island_run(transport=transport, project=project, names=names)
                 self.ui_goto(page_main, get_ship=False)

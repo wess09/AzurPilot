@@ -367,6 +367,7 @@ class IslandProjectRun(IslandUI):
             # UI additional
             if self.island_in_management(interval=5):
                 self.device.click(button)
+                self.device.sleep(0.1)
                 click_timer.reset()
                 continue
 
@@ -387,16 +388,13 @@ class IslandProjectRun(IslandUI):
                 continue
 
             if self.appear_then_click(PROJECT_COMPLETE, offset=(20, 20), interval=1):
-                self.device.sleep(0.1)
                 success = True
-                # enter = False
                 self.interval_clear(GET_ITEMS_ISLAND)
                 self.interval_reset(ROLE_SELECT_ENTER)
                 click_timer.reset()
                 continue
 
             if self.handle_get_items():
-                # enter = True
                 self.interval_clear(ROLE_SELECT_ENTER)
                 click_timer.reset()
                 continue
