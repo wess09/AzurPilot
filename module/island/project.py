@@ -345,7 +345,7 @@ class IslandProjectRun(IslandUI):
                                   for button in TEMPLATE_PROJECT.match_multi(image_gray)])
         return projects.select(valid=True)
 
-    def project_receive(self, button, skip_first_screenshot=True):
+    def project_receive(self, button):
         """
         Receive a project and enter role select page.
 
@@ -361,12 +361,7 @@ class IslandProjectRun(IslandUI):
         success = False
         enter = True
         click_timer = Timer(5, count=10).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if self.island_in_management(interval=5):
                 self.device.click(button)
                 click_timer.reset()
@@ -429,12 +424,7 @@ class IslandProjectRun(IslandUI):
             click_button (Button): character button to click
             check_button (Button):
         """
-        skip_first_screenshot=True
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
+        for _ in self.loop():
             if self.appear(check_button, offset=(20, 20)):
                 break
             if self.appear(ROLE_SELECT_CONFIRM, offset=(20, 20), interval=2):
@@ -442,12 +432,8 @@ class IslandProjectRun(IslandUI):
                 continue
 
         self.interval_clear(ROLE_SELECT_CONFIRM)
-        skip_first_screenshot=True
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
+
+        for _ in self.loop():
             # End
             if self.appear(ISLAND_AMOUNT_MAX, offset=(20, 20)):
                 return True
@@ -459,13 +445,12 @@ class IslandProjectRun(IslandUI):
                 self.interval_clear(ISLAND_MANAGEMENT_CHECK)
                 continue
 
-    def project_character_select(self, character='manjuu', skip_first_screenshot=True):
+    def project_character_select(self, character='manjuu'):
         """
         Select a role to produce.
 
         Args:
             character (str): character name to select
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if selected
@@ -474,12 +459,7 @@ class IslandProjectRun(IslandUI):
         ROLE_SORTING.set('Descending', main=self)
         timeout = Timer(5, count=3).start()
         count = 0
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if timeout.reached():
                 self.ui_ensure_management_page()
                 return False
@@ -531,28 +511,23 @@ class IslandProjectRun(IslandUI):
         peaks = np.array(peaks) + y_top
         return ProductItem(self.device.image, peaks, project_id)
 
-    def product_select(self, option, project_id, trial=2, skip_first_screenshot=True):
+    def product_select(self, option, project_id, trial=2):
         """
         Select a product in items list.
 
         Args:
             option (str): option to select
             trail (int): retry times
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if selected
         """
         logger.hr('Island Select Product')
-        last = None
+        last_item = None
+        bottom_item = None
         retry = trial
         click_interval = Timer(1)
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             current = self.get_current_product(project_id)
             if trial > 0 and not len(current.items):
                 trial -= 1
@@ -574,7 +549,7 @@ class IslandProjectRun(IslandUI):
                         click_interval.reset()
                     drag = False
             
-            if last == current.items[-1]:
+            if bottom_item == current.items[-1]:
                 if retry > 0:
                     retry -= 1
                     continue
@@ -582,17 +557,20 @@ class IslandProjectRun(IslandUI):
                 self.ui_ensure_management_page()
                 return False
 
+            # clear record if current product is different during 2 drags
+            if last_item is not None and last_item != current:
+                self.device.click_record.pop()
+                self.device.click_record.pop()
+
             if drag:
-                last = current.items[-1]
-                self.device.click(last.button)
+                last_item = current
+                bottom_item = current.items[-1]
+                self.device.click(bottom_item.button)
                 self.island_drag_next_page((0, -300), ISLAND_PRODUCT_ITEMS.area, 0.5)
 
-    def product_select_confirm(self, skip_first_screenshot=True):
+    def product_select_confirm(self):
         """
         Start the product after product selected.
-
-        Args:
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if success
@@ -601,12 +579,7 @@ class IslandProjectRun(IslandUI):
         last = None
         success = False
         timeout = Timer(1.5, count=3).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if timeout.reached():
                 break
 
@@ -743,14 +716,13 @@ class IslandProjectRun(IslandUI):
             slot_option.append(deep_get(items_data, [proj_id, option]))
         return slot_option
 
-    def island_project_run(self, names, trial=2, skip_first_screenshot=True):
+    def island_project_run(self, names, trial=2):
         """
         Execute island run to receive and start project.
 
         Args:
             names (list[str]): a list of name for island receive
             trial (int): retry times
-            skip_first_screenshot (bool):
 
         Returns:
             list[timedelta]: future finish timedelta
@@ -758,12 +730,7 @@ class IslandProjectRun(IslandUI):
         logger.hr('Island Project Run', level=1)
         end = False
         timeout = Timer(3, count=3).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if timeout.reached():
                 break
 

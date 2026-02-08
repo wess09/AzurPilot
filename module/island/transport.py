@@ -155,6 +155,7 @@ class IslandTransport:
         info = ', '.join([f'{k}: {v}' for k, v in info.items()])
         return info
 
+
 class TransportItem:
     # If the item is enough to submit and not in blacklist
     load: bool
@@ -211,6 +212,7 @@ class TransportItem:
         info = {'Load': self.load, 'Refresh': self.refresh}
         info = ', '.join([f'{k}: {v}' for k, v in info.items()])
         return info
+
 
 class IslandTransportRun(IslandUI):
     @cached_property
@@ -272,12 +274,9 @@ class IslandTransportRun(IslandUI):
         logger.info('trials of transport commission detect exhausted, stop')
         return commissions.select(valid=True)
 
-    def transport_receive(self, skip_first_screenshot=True):
+    def transport_receive(self):
         """
         Receive all transport missions from transport page.
-
-        Args:
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if received
@@ -288,12 +287,7 @@ class IslandTransportRun(IslandUI):
         success = True
         click_timer = Timer(5, count=10).start()
         confirm_timer = Timer(1, count=2).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if self.handle_info_bar():
                 click_timer.reset()
                 confirm_timer.reset()
@@ -334,13 +328,12 @@ class IslandTransportRun(IslandUI):
 
         return success
 
-    def transport_refresh(self, comm, skip_first_screenshot=True):
+    def transport_refresh(self, comm):
         """
         Refresh the specific transport mission from transport page.
 
         Args:
             comm (IslandTransport): the commission to refresh
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if success
@@ -349,12 +342,7 @@ class IslandTransportRun(IslandUI):
         self.interval_clear([TRANSPORT_REFRESH, POPUP_CONFIRM_WHITE])
         success = True
         confirm_timer = Timer(1, count=2).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if self.appear_then_click(TRANSPORT_REFRESH, offset=comm.offset, interval=2):
                 continue
 
@@ -370,13 +358,12 @@ class IslandTransportRun(IslandUI):
                 confirm_timer.reset()
         return success
 
-    def transport_start(self, comm, skip_first_screenshot=True):
+    def transport_start(self, comm):
         """
         Start the specific transport mission from transport page.
 
         Args:
             comm (IslandTransport): the commission to start
-            skip_first_screenshot (bool):
 
         Returns:
             bool: if success
@@ -385,12 +372,7 @@ class IslandTransportRun(IslandUI):
         self.interval_clear([GET_ITEMS_ISLAND, TRANSPORT_START, POPUP_CANCEL_WHITE])
         success = True
         confirm_timer = Timer(1, count=2).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             if self.appear_then_click(TRANSPORT_START, offset=comm.offset, interval=2):
                 success = False
                 confirm_timer.reset()
