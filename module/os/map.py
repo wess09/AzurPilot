@@ -412,6 +412,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     fleet_index.append(index)
                     if fleet_current_index == index:
                         break
+                # CL1 and some custom filter setups may not include current fleet in
+                # OpsiFleetFilter_Filter. Ensure current fleet can still use repair pack.
+                if fleet_current_index not in fleet_index:
+                    fleet_index.append(fleet_current_index)
                 if submarine_fleet not in fleet_index and submarine_fleet in fleet_all_index:
                     fleet_index.append(submarine_fleet)
                 elif submarine_fleet in fleet_index:
