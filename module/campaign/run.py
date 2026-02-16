@@ -178,8 +178,8 @@ class CampaignRun(CampaignEvent, ShopStatus):
             # d3 remains as d3 for standard logic
             elif name == 'd3':
                 logger.info('Stage name d3 using standard logic')
-        # For GemsFarming and ThreeOilLowCost, auto choose events or main chapters
-        if self.config.task.command in ['GemsFarming', 'ThreeOilLowCost']:
+        # For GemsFarming, auto choose events or main chapters
+        if self.config.task.command == 'GemsFarming':
             if self.stage_is_main(name):
                 logger.info(f'Stage name {name} is from campaign_main')
                 folder = 'campaign_main'

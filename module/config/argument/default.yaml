@@ -32,6 +32,3 @@ EventD:
 # ==================== DailyMission ====================
 
 # ==================== Opsi ====================
-ThreeOilLowCost:
-  Scheduler:
-    Enable: true

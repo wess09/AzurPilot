@@ -199,7 +199,6 @@ YukikazeTaskManager:
       > OpsiMeowfficerFarming
       > GemsFarming
       > OpsiHazard1Leveling
-      > ThreeOilLowCost
 OneClickRetire:
   KeepLimitBreak:
     value: keep_limit_break
@@ -415,7 +414,7 @@ TaskBalancer:
   CoinLimit: 10000
   TaskCall:
     value: Main
-    option: [Main, Main2, Main3, GemsFarming, ThreeOilLowCost]
+    option: [Main, Main2, Main3]
 EventDaily:
   StageFilter: |-
     A1 > A2 > A3
@@ -1699,56 +1698,6 @@ C124LargeLeveling:
     - 4
     - 5
 GemsFarming:
-  ChangeFlagship:
-    value: ship_equip
-    option:
-    - ship
-    - ship_equip
-  CommonCV:
-    value: any
-    option:
-    - custom
-    - any
-    - eagle
-    - langley
-    - bogue
-    - ranger
-    - hermes
-  CommonCVFilter: bogue > ranger > langley > hermes
-  ChangeVanguard:
-    value: ship_equip
-    option:
-    - disabled
-    - ship
-    - ship_equip
-  CommonDD:
-    value: any
-    option:
-    - custom
-    - any
-    - favourite
-    - aulick_or_foote
-    - cassin_or_downes
-    - z20_or_z21
-    - DDG
-  CommonDDFilter: z20 > z21 > aulick > foote > cassin > downes
-  EquipmentCode:
-    type: textarea
-    mode: yaml
-    value: 'DD: null
-
-      bogue: null
-
-      hermes: null
-
-      langley: null
-
-      ranger: null'
-  ALLowHighFlagshipLevel: false
-  ALLowLowVanguardLevel: false
-  DelayTaskIFNoFlagship: false
-  CommissionLimit: false
-ThreeOilLowCost:
   ChangeFlagship:
     value: ship_equip
     option:

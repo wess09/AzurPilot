@@ -66,10 +66,6 @@
       "name": "紧急委托",
       "help": ""
     },
-    "ThreeOilLowCost": {
-      "name": "三油低耗",
-      "help": "使用三油低耗阵容进行战斗，在旗舰达到32级时自动更换旗舰并退役。"
-    },
     "EventGeneral": {
       "name": "活动通用",
       "help": ""
@@ -659,7 +655,7 @@
     },
     "TaskPriorityAdjustment": {
       "name": "任务优先级调整",
-      "help": "Restart    # 重启游戏\n> OpsiCrossMonth    # 大世界跨月每日\n> Commission > Tactical > Research    # 委托 > 战术学院 > 科研\n> Exercise    # 演习\n> Dorm > Meowfficer > Guild > Gacha    # 后宅 > 指挥喵 > 大舰队 > 每日抽卡\n> Reward    # 收获\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island    # 通用商店 > 其他商店 > 开发船坞 > 白嫖奖励 > 岛屿计划\n> PrivateQuarters    # 宿舍计划\n> OpsiExplore    # 每月开荒\n> Minigame > Awaken    # 小游戏 > 认知觉醒\n> OpsiAshBeacon    # meta作战\n> OpsiDaily > OpsiShop > OpsiVoucher    # 大世界日常 > 港口商店 > 兑换商店\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive    # 深渊海域 > 塞壬要塞 > 隐秘海域 > 档案坐标\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss     # 每日挑战 > 困难图 > meta作战 > meta支援 > 月度boss\n> Sos > EventSp > EventA > EventB > EventC > EventD    # Sos > 活动每日SP > 活动每日A > 活动每日B > 活动每日C > 活动每日D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort    # 共斗活动每日 > 共斗活动sp > 作战档案 > 商船护航\n> Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3    # 活动图 > 活动图2 > 共斗活动 > Hospital > 共斗活动 > 主线 > 主线2 > 主线3\n> OpsiMeowfficerFarming    # 短猫相接\n> GemsFarming    # 刷紧急委托\n> ThreeOilLowCost    # 三油低耗\n> OpsiHazard1Leveling    # 侵蚀一练级"
+      "help": "Restart    # 重启游戏\n> OpsiCrossMonth    # 大世界跨月每日\n> Commission > Tactical > Research    # 委托 > 战术学院 > 科研\n> Exercise    # 演习\n> Dorm > Meowfficer > Guild > Gacha    # 后宅 > 指挥喵 > 大舰队 > 每日抽卡\n> Reward    # 收获\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island    # 通用商店 > 其他商店 > 开发船坞 > 白嫖奖励 > 岛屿计划\n> PrivateQuarters    # 宿舍计划\n> OpsiExplore    # 每月开荒\n> Minigame > Awaken    # 小游戏 > 认知觉醒\n> OpsiAshBeacon    # meta作战\n> OpsiDaily > OpsiShop > OpsiVoucher    # 大世界日常 > 港口商店 > 兑换商店\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive    # 深渊海域 > 塞壬要塞 > 隐秘海域 > 档案坐标\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss     # 每日挑战 > 困难图 > meta作战 > meta支援 > 月度boss\n> Sos > EventSp > EventA > EventB > EventC > EventD    # Sos > 活动每日SP > 活动每日A > 活动每日B > 活动每日C > 活动每日D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort    # 共斗活动每日 > 共斗活动sp > 作战档案 > 商船护航\n> Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3    # 活动图 > 活动图2 > 共斗活动 > Hospital > 共斗活动 > 主线 > 主线2 > 主线3\n> OpsiMeowfficerFarming    # 短猫相接\n> GemsFarming    # 刷紧急委托\n> OpsiHazard1Leveling    # 侵蚀一练级"
     }
   },
   "OneClickRetire": {
@@ -4317,75 +4313,6 @@
       "help": "游戏被强制结束后自动登录游戏"
     }
   },
-  "ThreeOilLowCost": {
-    "_info": {
-      "name": "三油低耗设置",
-      "help": "使用三油低耗阵容进行战斗，在旗舰达到32级时自动更换旗舰并退役。"
-    },
-    "ChangeFlagship": {
-      "name": "更换旗舰",
-      "help": "当旗舰等级>=32或心情值过低时更换旗舰。",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonCV": {
-      "name": "指定旗舰航母",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "自定义旗舰航母过滤器",
-      "help": "使用自定义过滤器需将 \"指定旗舰航母\" 设置为 \"custom\"。"
-    },
-    "ChangeVanguard": {
-      "name": "更换前排",
-      "help": "当前排心情值过低时更换前排，选择不更换则会强制低心情出击。",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "指定前排",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "自定义前排过滤器",
-      "help": "使用自定义过滤器需将 \"指定前排\" 设置为 \"custom\"。"
-    },
-    "EquipmentCode": {
-      "name": "装备码",
-      "help": "仅当选择“更换舰船 + 装备”时生效。"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "仅更换满级后排",
-      "help": "打开后，更换旗舰时仅会选择100级的白皮轻航。"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "可更换低等级前排",
-      "help": "打开后，前排等级限制改为30级以上。"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "没有可更换的旗舰时推迟任务",
-      "help": "更换旗舰时，若找不到满足条件的白皮航母，则推迟任务。"
-    },
-    "CommissionLimit": {
-      "name": "防止紧急委托数量过多",
-      "help": "在7x24运行时防止紧急委托数量过多做不完每日委托。"
-    }
-  },
   "Storage": {
     "_info": {
       "name": "任务状态",
@@ -4440,7 +4367,8 @@
       "Translate": "翻译",
       "Update": "更新器",
       "Remote": "远程控制",
-      "Utils": "工具"
+      "Utils": "工具",
+      "Announcement": "公告"
     },
     "Overview": {
       "Scheduler": "调度器",

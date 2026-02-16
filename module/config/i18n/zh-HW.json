@@ -66,10 +66,6 @@
       "name": "晶体结构深度挖掘",
       "help": ""
     },
-    "ThreeOilLowCost": {
-      "name": "三油低耗",
-      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
-    },
     "EventGeneral": {
       "name": "活动通用底层",
       "help": ""
@@ -106,6 +102,10 @@
       "name": "历史档案回溯",
       "help": "由于历史数据接口缺乏维护，自动开荒协议可能存在兼容性波动。如遇异常阻断，建议人工介入完成初始化，随后接管自律寻敌系统。"
     },
+    "CoalitionSp": {
+      "name": "特别寻踪行动 SP",
+      "help": ""
+    },
     "EventA": {
       "name": "周期作业 A区",
       "help": ""
@@ -128,10 +128,6 @@
     },
     "RaidDaily": {
       "name": "常态化共斗流",
-      "help": ""
-    },
-    "CoalitionSp": {
-      "name": "特别寻踪行动 SP",
       "help": ""
     },
     "Commission": {
@@ -410,7 +406,6 @@
       "cn_android-25": "[国服] 水仙行动",
       "cn_android-26": "[国服] 冬月计划",
       "cn_android-27": "[国服] 长弓计划",
-      "cn_android-28": "[国服] 裁决协议",
       "cn_ios-0": "[国服] 夏威夷",
       "cn_ios-1": "[国服] 珊瑚海",
       "cn_ios-2": "[国服] 中途岛",
@@ -830,7 +825,6 @@
       "raid_20240130": "Spring Festive Fiasco",
       "raid_20240328": "From Zero to Hero Rerun",
       "raid_20250116": "Spring Fashion Festa",
-      "raid_20260212": "Spring Auction Adventure",
       "war_archives_20180607_cn": "archives Ink Stained Steel Sakura",
       "war_archives_20180726_cn": "archives Iris of Light and Dark",
       "war_archives_20181020_en": "archives Strive Wish and Strategize",
@@ -4315,75 +4309,6 @@
     "AutoRestart": {
       "name": "GameManager.AutoRestart.name",
       "help": "GameManager.AutoRestart.help"
-    }
-  },
-  "ThreeOilLowCost": {
-    "_info": {
-      "name": "三油低耗設定",
-      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
-    },
-    "ChangeFlagship": {
-      "name": "更換旗艦",
-      "help": "當旗艦等級>=32或心情值過低時更換旗艦。",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonCV": {
-      "name": "指定旗艦航母",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "自定義旗艦航母過濾器",
-      "help": "使用自定義過濾器需將 \"指定旗艦航母\" 設置為 \"custom\"。"
-    },
-    "ChangeVanguard": {
-      "name": "更換前排",
-      "help": "當前排心情值過低時更換前排，選擇不更換則會強制低心情出擊。",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "指定前排",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "自定義前排過濾器",
-      "help": "使用自定義過濾器需將 \"指定前排\" 設置為 \"custom\"。"
-    },
-    "EquipmentCode": {
-      "name": "裝備碼",
-      "help": "僅當選擇“更換艦船 + 裝備”時生效。"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "僅更換滿級後排",
-      "help": "打開後，更換旗艦時僅會選擇100級的白皮輕航。"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "可更換低等級前排",
-      "help": "打開後，前排等級限制改為30級以上。"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "沒有可更換的旗艦時推遲任務",
-      "help": "更換旗艦時，若找不到滿足條件的白皮航母，則推遲任務。"
-    },
-    "CommissionLimit": {
-      "name": "防止緊急委託數量過多",
-      "help": "在7x24運行時防止緊急委託數量過多做不完每日委託。"
     }
   },
   "Storage": {

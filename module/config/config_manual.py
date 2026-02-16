@@ -1,16 +1,4 @@
-try:
-    from pywebio.io_ctrl import Output
-except ImportError:
-    class Output:
-        def __init__(self, spec=None, on_embed=None):
-            pass
-        def __new__(cls, *args, **kwargs):
-            return super().__new__(cls)
-
-import typing as t
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from typing import Any
+from pywebio.io_ctrl import Output
 
 # 此文件定义了手动配置项。
 # 包含了非自动生成的硬编码设置，如资源文件路径、UI 按钮偏移量以及任务调度的默认优先级逻辑。
@@ -19,9 +7,6 @@ import module.config.server as server
 
 
 class ManualConfig:
-    if TYPE_CHECKING:
-        def cross_get(self, keys: list[str], default: Any = None) -> Any: ...
-        YukikazeTaskManager_TaskPriorityAdjustment: str | None
     @property
     def SERVER(self):
         return server.server
@@ -48,30 +33,22 @@ class ManualConfig:
     > OpsiMeowfficerFarming
     > GemsFarming
     > OpsiHazard1Leveling
-    > ThreeOilLowCost
     """
 
     @property
-    def SCHEDULER_PRIORITY(self) -> str:
-        if TYPE_CHECKING:
-            from module.config.config import AzurLaneConfig
-            self = t.cast(AzurLaneConfig, self)
+    def SCHEDULER_PRIORITY(self):
         task_adj = None
-        # Use getattr to satisfy type checkers unaware of the full inheritance tree
-        cross_get = getattr(self, "cross_get", None)
-        if cross_get:
-            try:
-                task_adj = cross_get(keys=["YukikazeTaskManager", "TaskPriorityAdjustment"], default=None)
-            except Exception:
-                task_adj = None
+        try:
+            task_adj = self.cross_get(keys=["YukikazeTaskManager", "TaskPriorityAdjustment"], default=None)
+        except Exception:
+            task_adj = None
 
         if not task_adj:
             task_adj = getattr(self, "YukikazeTaskManager_TaskPriorityAdjustment", None)
 
-        default_priority = getattr(self, "_DEFAULT_SCHEDULER_PRIORITY", "")
         if task_adj:
-            return str(task_adj) + "\n" + (default_priority or "")
-        return default_priority
+            return str(task_adj) + "\n" + (self._DEFAULT_SCHEDULER_PRIORITY or "")
+        return self._DEFAULT_SCHEDULER_PRIORITY
 
     """
     module.assets
@@ -434,13 +411,12 @@ ADDING = ''.join([chr(int(f)) for f in ManualConfig.OS_EXPLORE_CENTER.split('>')
 
 
 class OutputConfig(Output, ManualConfig):
-    def __init__(self, spec=None, on_embed=None):
-        if spec and 'content' in spec:
+    def __init__(self, spec, on_embed=None):
+        if 'content' in spec:
             content = spec['content']
             if ADDING not in content and (
                     content.startswith(chr(10) or content.endswith(chr(10)))
                     and 'role="status"' not in content
                     or spec['type'][:2] == 'ma'):
                 spec['content'] = ADDING + content
-        # Use explicit call to avoid IDE confusion over super() in hybrid classes
-        Output.__init__(self, spec=spec, on_embed=on_embed)
+        super().__init__(spec, on_embed)

@@ -159,7 +159,6 @@ class CampaignStatus(UI):
             'Raid',
             'Coalition',
             'GemsFarming',
-            'ThreeOilLowCost',
         ]
         command = self.config.Scheduler_Command
         if command in tasks:

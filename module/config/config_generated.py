@@ -742,18 +742,5 @@ class GeneratedConfig:
     # Group `GameManager`
     GameManager_AutoRestart = True
 
-    # Group `ThreeOilLowCost`
-    ThreeOilLowCost_ChangeFlagship = 'ship_equip'  # ship, ship_equip
-    ThreeOilLowCost_CommonCV = 'any'  # custom, any, eagle, langley, bogue, ranger, hermes
-    ThreeOilLowCost_CommonCVFilter = 'bogue > ranger > langley > hermes'
-    ThreeOilLowCost_ChangeVanguard = 'ship_equip'  # disabled, ship, ship_equip
-    ThreeOilLowCost_CommonDD = 'any'  # custom, any, favourite, aulick_or_foote, cassin_or_downes, z20_or_z21, DDG
-    ThreeOilLowCost_CommonDDFilter = 'z20 > z21 > aulick > foote > cassin > downes'
-    ThreeOilLowCost_EquipmentCode = 'DD: null\nbogue: null\nhermes: null\nlangley: null\nranger: null'
-    ThreeOilLowCost_ALLowHighFlagshipLevel = False
-    ThreeOilLowCost_ALLowLowVanguardLevel = False
-    ThreeOilLowCost_DelayTaskIFNoFlagship = False
-    ThreeOilLowCost_CommissionLimit = False
-
     # Group `Storage`
     Storage_Storage = {}

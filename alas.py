@@ -21,9 +21,6 @@ from module.logger import logger
 from module.notify import handle_notify
 
 
-RESTART_SENSITIVE_TASKS = ['Commission', 'Research']
-
-
 class AzurLaneAutoScript:
     stop_event: threading.Event = None
 
@@ -530,11 +527,6 @@ class AzurLaneAutoScript:
             name=self.config.Campaign_Name, folder=self.config.Campaign_Event, mode=self.config.Campaign_Mode)
 
     def gems_farming(self):
-        from module.campaign.gems_farming import GemsFarming
-        GemsFarming(config=self.config, device=self.device).run(
-            name=self.config.Campaign_Name, folder=self.config.Campaign_Event, mode=self.config.Campaign_Mode)
-
-    def three_oil_low_cost(self):
         from module.campaign.gems_farming import GemsFarming
         GemsFarming(config=self.config, device=self.device).run(
             name=self.config.Campaign_Name, folder=self.config.Campaign_Event, mode=self.config.Campaign_Mode)

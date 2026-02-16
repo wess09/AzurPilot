@@ -34,7 +34,7 @@ ARCHIVES_PREFIX = {
 }
 MAINS = ['Main', 'Main2', 'Main3']
 EVENTS = ['Event', 'Event2', 'EventA', 'EventB', 'EventC', 'EventD', 'EventSp']
-GEMS_FARMINGS = ['GemsFarming', 'ThreeOilLowCost']
+GEMS_FARMINGS = ['GemsFarming']
 RAIDS = ['Raid', 'RaidDaily']
 WAR_ARCHIVES = ['WarArchives']
 COALITIONS = ['Coalition', 'CoalitionSp']
@@ -676,7 +676,7 @@ class ConfigUpdater:
         if not is_template:
             for task in EVENTS + GEMS_FARMINGS + RAIDS + COALITIONS:
                 opts = deep_get(self.args, keys=f'{task}.Campaign.Event.option_{server}', default=[])
-                if opts and not deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') in opts:
+                if not deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') in opts:
                     deep_set(new,
                              keys=f'{task}.Campaign.Event',
                              value=opts[0])

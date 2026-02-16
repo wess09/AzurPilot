@@ -66,10 +66,6 @@
       "name": "刷緊急委託",
       "help": ""
     },
-    "ThreeOilLowCost": {
-      "name": "三油低耗",
-      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
-    },
     "EventGeneral": {
       "name": "活動通用",
       "help": ""
@@ -88,6 +84,10 @@
     },
     "Hospital": {
       "name": "深谷来信劇情",
+      "help": ""
+    },
+    "Coalition": {
+      "name": "光影風尚-拍攝進行時",
       "help": ""
     },
     "Coalition": {
@@ -4315,75 +4315,6 @@
     "AutoRestart": {
       "name": "自動登錄",
       "help": "遊戲被強制結束後自動登錄遊戲"
-    }
-  },
-  "ThreeOilLowCost": {
-    "_info": {
-      "name": "三油低耗設定",
-      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
-    },
-    "ChangeFlagship": {
-      "name": "更換旗艦",
-      "help": "當旗艦等級>=32或心情值過低時更換旗艦。",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonCV": {
-      "name": "指定旗艦航母",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "自定義旗艦航母過濾器",
-      "help": "使用自定義過濾器需將 \"指定旗艦航母\" 設置為 \"custom\"。"
-    },
-    "ChangeVanguard": {
-      "name": "更換前排",
-      "help": "當前排心情值過低時更換前排，選擇不更換則會強制低心情出擊。",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "指定前排",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "自定義前排過濾器",
-      "help": "使用自定義過濾器需將 \"指定前排\" 設置為 \"custom\"。"
-    },
-    "EquipmentCode": {
-      "name": "裝備碼",
-      "help": "僅當選擇“更換艦船 + 裝備”時生效。"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "僅更換滿級後排",
-      "help": "打開後，更換旗艦時僅會選擇100級的白皮輕航。"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "可更換低等級前排",
-      "help": "打開後，前排等級限制改為30級以上。"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "沒有可更換的旗艦時推遲任務",
-      "help": "更換旗艦時，若找不到滿足條件的白皮航母，則推遲任務。"
-    },
-    "CommissionLimit": {
-      "name": "防止緊急委託數量過多",
-      "help": "在7x24運行時防止緊急委託數量過多做不完每日委託。"
     }
   },
   "Storage": {

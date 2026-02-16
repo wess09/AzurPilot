@@ -55,14 +55,6 @@ Farm:
       - Fleet
       - Submarine
       - Emotion
-    ThreeOilLowCost:
-      - Scheduler
-      - GemsFarming
-      - Campaign
-      - StopCondition
-      - Fleet
-      - Submarine
-      - Emotion
 Event:
   menu: collapse
   page: setting

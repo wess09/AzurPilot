@@ -66,10 +66,6 @@
       "name": "Commission Farming",
       "help": ""
     },
-    "ThreeOilLowCost": {
-      "name": "三油低燃費",
-      "help": "3油消費の低コスト編成を使用して出撃し、旗艦のLv32到達時に自動で交代を行う機能です。"
-    },
     "EventGeneral": {
       "name": "イベント共通設定",
       "help": ""
@@ -88,6 +84,10 @@
     },
     "Hospital": {
       "name": "病院探訪ストーリー",
+      "help": ""
+    },
+    "Coalition": {
+      "name": "特集写真-撮影進行中",
       "help": ""
     },
     "Coalition": {
@@ -4315,75 +4315,6 @@
     "AutoRestart": {
       "name": "GameManager.AutoRestart.name",
       "help": "GameManager.AutoRestart.help"
-    }
-  },
-  "ThreeOilLowCost": {
-    "_info": {
-      "name": "三油低燃費の設定",
-      "help": "3油消費の低コスト編成を使用して出撃し、旗艦のLv32到達時に自動で退役・交代を行う機能です。"
-    },
-    "ChangeFlagship": {
-      "name": "旗艦交代",
-      "help": "旗艦のLvが32以上、または心情(Emotion)が低下した際に交代します。",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonCV": {
-      "name": "旗艦の白レア空母優先度",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "カスタム旗艦空母フィルター",
-      "help": "カスタムフィルターを使用するには「指定旗艦航母」を「custom」に設定してください。"
-    },
-    "ChangeVanguard": {
-      "name": "前衛交代",
-      "help": "前衛の心情(Emotion)が低下した際に交代します。交代しない場合はそのまま出撃を続けます。",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "前衛の白レア駆逐優先度",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "カスタム前衛フィルター",
-      "help": "カスタムフィルターを使用するには「指定前排」を「custom」に設定してください。"
-    },
-    "EquipmentCode": {
-      "name": "装備コード",
-      "help": "「交代艦船 + 装備」を選択した場合のみ有効です。"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "旗艦をLv100(白レア)に限定する",
-      "help": "ONにすると、旗艦交代時にLV100の白レア軽空母のみを選択します。"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "低レベルの前衛を許可する",
-      "help": "ONにすると、前衛のレベル制限を30以上に緩和します。"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "旗艦が見つからない場合に遅延させる",
-      "help": "交代可能な旗艦が見つからない場合、タスクを後回しにします。"
-    },
-    "CommissionLimit": {
-      "name": "委託を制限する",
-      "help": "緊急委託が多すぎてデイリー委託が終わらないのを防ぎます。"
     }
   },
   "Storage": {

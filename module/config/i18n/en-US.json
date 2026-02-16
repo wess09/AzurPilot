@@ -66,10 +66,6 @@
       "name": "Commission Farming",
       "help": ""
     },
-    "ThreeOilLowCost": {
-      "name": "3-Oil Low Cost",
-      "help": ""
-    },
     "EventGeneral": {
       "name": "Event General",
       "help": ""
@@ -658,8 +654,8 @@
       "help": "任务相关的优先级与调度设置。"
     },
     "TaskPriorityAdjustment": {
-      "name": "Task Priority Adjustment",
-      "help": "Restart    # Restart game\n> OpsiCrossMonth    # OpSi daily after reset\n> Commission > Tactical > Research    # Commission > Tactical > Research\n> Exercise    # Exercise\n> Dorm > Meowfficer > Guild > Gacha    # Dorm > Meowfficer > Guild > Gacha\n> Reward    # Reward\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island    # Shop Frequent > Other Shop > Shipyard > Freebies > Island\n> PrivateQuarters    # Private Quarters\n> OpsiExplore    # OpSi monthly explore\n> Minigame > Awaken    # Minigame > Awaken\n> OpsiAshBeacon    # META battle\n> OpsiDaily > OpsiShop > OpsiVoucher    # OpSi Daily > OpSi Port Shop > OpSi Voucher Shop\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive    # Abyssal > Stronghold > Obscure > Archive\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss     # Daily > Hard > META battle > META assist > Monthly boss\n> Sos > EventSp > EventA > EventB > EventC > EventD    # Sos > Event SP > Event A > Event B > Event C > Event D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort    # Raid Daily > Raid SP > War Archives > Maritime Escort\n> Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3    # Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3\n> OpsiMeowfficerFarming    # Meowfficer Farming\n> GemsFarming    # Commission Farming\n> ThreeOilLowCost    # 3-Oil Low Cost\n> OpsiHazard1Leveling    # CL1 Leveling"
+      "name": "任务优先级调整",
+      "help": "Restart    # 重启游戏\n> OpsiCrossMonth    # 大世界跨月每日\n> Commission > Tactical > Research    # 委托 > 战术学院 > 科研\n> Exercise    # 演习\n> Dorm > Meowfficer > Guild > Gacha    # 后宅 > 指挥喵 > 大舰队 > 每日抽卡\n> Reward    # 收获\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island    # 通用商店 > 其他商店 > 开发船坞 > 白嫖奖励 > 岛屿计划\n> PrivateQuarters    # 宿舍计划\n> OpsiExplore    # 每月开荒\n> Minigame > Awaken    # 小游戏 > 认知觉醒\n> OpsiAshBeacon    # meta作战\n> OpsiDaily > OpsiShop > OpsiVoucher    # 大世界日常 > 港口商店 > 兑换商店\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive    # 深渊海域 > 塞壬要塞 > 隐秘海 > 档案坐标\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss    # 每日挑战 > 困难图 > meta作战 > meta支援 > 月度boss\n> Sos > EventSp > EventA > EventB > EventC > EventD    # Sos > 活动每日SP > 活动每日A > 活动每日B > 活动每日C > 活动每日D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort    # 共斗活动每日 > 共斗活动sp > 作战档案 > 商船护航\n> Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3    # 活动图 > 活动图2 > 共斗活动 > Hospital > 共斗活动 > 主线 > 主线2 > 主线3\n> OpsiMeowfficerFarming    # 短猫相接\n> GemsFarming    # 刷紧急委托\n> OpsiHazard1Leveling    # 侵蚀一练级"
     }
   },
   "OneClickRetire": {
@@ -4315,75 +4311,6 @@
     "AutoRestart": {
       "name": "Automatic Login",
       "help": "Log back into the game when the game has been ended."
-    }
-  },
-  "ThreeOilLowCost": {
-    "_info": {
-      "name": "ThreeOilLowCost._info.name",
-      "help": "ThreeOilLowCost._info.help"
-    },
-    "ChangeFlagship": {
-      "name": "ThreeOilLowCost.ChangeFlagship.name",
-      "help": "ThreeOilLowCost.ChangeFlagship.help",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonCV": {
-      "name": "ThreeOilLowCost.CommonCV.name",
-      "help": "ThreeOilLowCost.CommonCV.help",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "ThreeOilLowCost.CommonCVFilter.name",
-      "help": "ThreeOilLowCost.CommonCVFilter.help"
-    },
-    "ChangeVanguard": {
-      "name": "ThreeOilLowCost.ChangeVanguard.name",
-      "help": "ThreeOilLowCost.ChangeVanguard.help",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "ThreeOilLowCost.CommonDD.name",
-      "help": "ThreeOilLowCost.CommonDD.help",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "ThreeOilLowCost.CommonDDFilter.name",
-      "help": "ThreeOilLowCost.CommonDDFilter.help"
-    },
-    "EquipmentCode": {
-      "name": "ThreeOilLowCost.EquipmentCode.name",
-      "help": "ThreeOilLowCost.EquipmentCode.help"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "ThreeOilLowCost.ALLowHighFlagshipLevel.name",
-      "help": "ThreeOilLowCost.ALLowHighFlagshipLevel.help"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "ThreeOilLowCost.ALLowLowVanguardLevel.name",
-      "help": "ThreeOilLowCost.ALLowLowVanguardLevel.help"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "ThreeOilLowCost.DelayTaskIFNoFlagship.name",
-      "help": "ThreeOilLowCost.DelayTaskIFNoFlagship.help"
-    },
-    "CommissionLimit": {
-      "name": "ThreeOilLowCost.CommissionLimit.name",
-      "help": "ThreeOilLowCost.CommissionLimit.help"
     }
   },
   "Storage": {
