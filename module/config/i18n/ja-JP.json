@@ -3335,7 +3335,8 @@
       "help": "ShipyardDr.ResearchSeries.help",
       "2": "2",
       "3": "3",
-      "4": "4"
+      "4": "4",
+      "5": "5"
     },
     "ShipIndex": {
       "name": "ShipyardDr.ShipIndex.name",
@@ -3369,7 +3370,8 @@
       "2": "2",
       "3": "3",
       "4": "4",
-      "5": "5"
+      "5": "5",
+      "6": "6"
     },
     "ShipIndex": {
       "name": "Shipyard.ShipIndex.name",

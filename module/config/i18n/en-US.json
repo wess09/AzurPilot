@@ -3335,7 +3335,8 @@
       "help": "",
       "2": "DR2",
       "3": "DR3",
-      "4": "DR4"
+      "4": "DR4",
+      "5": "DR5"
     },
     "ShipIndex": {
       "name": "Ship Index",
@@ -3369,7 +3370,8 @@
       "2": "PR2",
       "3": "PR3",
       "4": "PR4",
-      "5": "PR5"
+      "5": "PR5",
+      "6": "PR6"
     },
     "ShipIndex": {
       "name": "Ship Index",
