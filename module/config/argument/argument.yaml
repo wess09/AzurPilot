@@ -1077,6 +1077,15 @@ OpsiMeowfficerFarming:
     value: 0
   StayInZone: false
   APPreserveUntilReset: false
+  SirenDetectorSearch_Enable: false
+  SirenDetectorSearch_HazardLevel:
+    value: 5
+    option: [5, 6]
+  SirenDetectorSearch_StopAfterFound: 0
+  SirenDetectorSearch_FoundZones:
+    type: textarea
+    display: disabled
+    value: ""
 OpsiHazard1Leveling:
   TargetZone:
     value: 0
@@ -2857,6 +2866,15 @@ OpsiMeowfficerFarming:
     value: 0
   StayInZone: false
   APPreserveUntilReset: false
+  SirenDetectorSearch_Enable: false
+  SirenDetectorSearch_HazardLevel:
+    value: 5
+    option: [5, 6]
+  SirenDetectorSearch_StopAfterFound: 0
+  SirenDetectorSearch_FoundZones:
+    type: textarea
+    display: disabled
+    value: ""
 OpsiHazard1Leveling:
   TargetZone:
     value: 0

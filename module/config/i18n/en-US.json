@@ -4046,6 +4046,24 @@
     "APPreserveUntilReset": {
       "name": "OpsiMeowfficerFarming.APPreserveUntilReset.name",
       "help": "OpsiMeowfficerFarming.APPreserveUntilReset.help"
+    },
+    "SirenDetectorSearch_Enable": {
+      "name": "OpsiMeowfficerFarming.SirenDetectorSearch_Enable.name",
+      "help": "OpsiMeowfficerFarming.SirenDetectorSearch_Enable.help"
+    },
+    "SirenDetectorSearch_HazardLevel": {
+      "name": "OpsiMeowfficerFarming.SirenDetectorSearch_HazardLevel.name",
+      "help": "OpsiMeowfficerFarming.SirenDetectorSearch_HazardLevel.help",
+      "5": "5",
+      "6": "6"
+    },
+    "SirenDetectorSearch_StopAfterFound": {
+      "name": "OpsiMeowfficerFarming.SirenDetectorSearch_StopAfterFound.name",
+      "help": "OpsiMeowfficerFarming.SirenDetectorSearch_StopAfterFound.help"
+    },
+    "SirenDetectorSearch_FoundZones": {
+      "name": "OpsiMeowfficerFarming.SirenDetectorSearch_FoundZones.name",
+      "help": "OpsiMeowfficerFarming.SirenDetectorSearch_FoundZones.help"
     }
   },
   "OpsiHazard1Leveling": {

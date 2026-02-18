@@ -11,6 +11,161 @@ from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
     
+    def _should_skip_siren_research(self, grid):
+        """
+        重写父类方法，在塞壬探测装置搜索模式下跳过使用塞壬探测装置
+        """
+        # 如果开启了塞壬探测装置搜索模式，跳过使用塞壬探测装置
+        if self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+            if hasattr(grid, 'is_scanning_device') and grid.is_scanning_device:
+                logger.info(f'[短猫任务] 在塞壬探测装置搜索模式下，跳过使用塞壬探测装置')
+                return True
+        
+        # 调用父类方法
+        return super()._should_skip_siren_research(grid)
+    
+    def map_rescan_current(self, drop=None):
+        """
+        重写父类方法，在塞壬探测装置搜索模式下跳过使用塞壬探测装置
+        """
+        # 如果开启了塞壬探测装置搜索模式，在检查塞壬探测装置时跳过处理
+        if self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+            # 确保视图已初始化
+            if not hasattr(self, 'view') or self.view is None:
+                self._view_init()
+            try:
+                self._update_view()
+            except Exception:
+                pass
+            grids = self.view.select(is_scanning_device=True)
+            if grids and grids[0].is_scanning_device:
+                # 标记为已处理，避免使用塞壬探测装置
+                if not hasattr(self, '_solved_map_event'):
+                    self._solved_map_event = set()
+                if 'is_scanning_device' not in self._solved_map_event:
+                    logger.info('[短猫任务] 在塞壬探测装置搜索模式下，跳过使用塞壬探测装置')
+                    self._solved_map_event.add('is_scanning_device')
+        
+        # 调用父类方法
+        return super().map_rescan_current(drop=drop)
+    
+    def _handle_siren_detector_at_map(self, zone_id):
+        """
+        进入地图后检查是否有塞壬探测装置
+        如果发现，记录该海域，并标记为已处理以避免自律时使用它
+        只需要记录该海域，不需要特殊处理
+        
+        Args:
+            zone_id: 当前海域ID
+        
+        Returns:
+            bool: 如果发现塞壬探测装置，返回是否已达到指定数量（达到数量返回True，否则返回False）
+                 如果没有发现，返回False
+        """
+        if not self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+            return False
+        
+        # 更新地图视图
+        self.update()
+        self.view.predict()
+        
+        # 扫描整个地图寻找塞壬探测装置
+        grids = self.view.select(is_scanning_device=True)
+        logger.info(f'塞壬探测装置检查: 发现 {len(grids) if grids else 0} 个可疑格子')
+        
+        if grids and grids[0].is_scanning_device:
+            logger.hr(f'在海域 {zone_id} 发现塞壬探测装置', level=2)
+            
+            # 记录到配置中
+            zone_str = f'{zone_id}'
+            current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+            found_count = 0
+            if current_str is None:
+                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
+                found_count = 1
+            else:
+                # 检查是否已经记录过该海域
+                if zone_str not in str(current_str):
+                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
+                    # 计算已找到的数量（逗号分隔的数量+1）
+                    found_count = len(str(current_str).split(',')) + 1
+                else:
+                    # 已经记录过，计算当前数量
+                    found_count = len(str(current_str).split(','))
+            logger.info(f'已记录塞壬探测装置海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
+            logger.info(f'当前已找到塞壬探测装置数量: {found_count}')
+            
+            # 标记为已处理，避免自律时使用塞壬探测装置
+            # 在短猫任务的塞壬探测装置搜索模式下，只记录海域，不使用装置
+            if not hasattr(self, '_solved_map_event'):
+                self._solved_map_event = set()
+            self._solved_map_event.add('is_scanning_device')
+            logger.info('已标记塞壬探测装置为已处理，自律时将跳过使用')
+            
+            # 检查是否达到指定数量
+            stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
+            if stop_after_found > 0 and found_count >= stop_after_found:
+                logger.hr(f'已找到 {found_count} 个塞壬探测装置，达到设定数量 {stop_after_found}，停止搜索模式', level=1)
+                return True
+            
+            return False
+        
+        return False
+    
+    def _handle_siren_detector_after_auto_search(self, zone_id):
+        """
+        自律结束后检查是否有塞壬探测装置
+        如果发现，只记录该海域，标记为已处理，不触发自律
+        
+        Args:
+            zone_id: 当前海域ID
+        """
+        if not self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+            return
+        
+        # 检查 map 对象是否存在，如果不存在则先初始化地图数据
+        if not hasattr(self, 'map') or not self.map.grids:
+            logger.warning('自律后地图数据未加载，正在初始化...')
+            self.map_data_init(map_=None)
+            self.update()
+            self.view.predict()
+        
+        # 扫描整个地图寻找塞壬探测装置
+        grids = self.view.select(is_scanning_device=True)
+        logger.info(f'自律后塞壬探测装置检查: 发现 {len(grids) if grids else 0} 个可疑格子')
+        
+        if grids and grids[0].is_scanning_device:
+            logger.hr(f'在海域 {zone_id} 发现塞壬探测装置（自律后）', level=2)
+            
+            # 记录到配置中
+            zone_str = f'{zone_id}'
+            current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+            found_count = 0
+            if current_str is None:
+                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
+                found_count = 1
+            else:
+                # 检查是否已经记录过该海域
+                if zone_str not in str(current_str):
+                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
+                    found_count = len(str(current_str).split(',')) + 1
+                else:
+                    found_count = len(str(current_str).split(','))
+            logger.info(f'已记录塞壬探测装置海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
+            logger.info(f'当前已找到塞壬探测装置数量: {found_count}')
+            
+            # 标记为已处理，避免再次触发自律
+            if not hasattr(self, '_solved_map_event'):
+                self._solved_map_event = set()
+            self._solved_map_event.add('is_scanning_device')
+            logger.info('已标记塞壬探测装置为已处理，自律时将跳过使用')
+            
+            # 检查是否达到指定数量
+            stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
+            if stop_after_found > 0 and found_count >= stop_after_found:
+                logger.hr(f'已找到 {found_count} 个塞壬探测装置，达到设定数量 {stop_after_found}，停止搜索模式', level=1)
+                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
+    
     def os_meowfficer_farming(self):
         """
         Recommend 3 or 5 for higher meowfficer searching point per action points ratio.
@@ -145,8 +300,20 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         # 停止当前短猫任务
                         self.config.task_stop()
 
+            # ===== 塞壬探测装置搜索模式 =====
+            # 优先检查塞壬探测装置搜索模式，即使设置了 TargetZone 也会先执行搜索
+            siren_search_enabled = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable
+            logger.info(f'塞壬探测装置搜索模式检查：SirenDetectorSearch_Enable={siren_search_enabled}')
+            if siren_search_enabled:
+                # 临时禁用指定海域计划作战（StayInZone），强制使用普通短猫模式
+                self._original_stay_in_zone = self.config.OpsiMeowfficerFarming_StayInZone
+                if self._original_stay_in_zone:
+                    self.config.OpsiMeowfficerFarming_StayInZone = False
+                    logger.info('塞壬探测装置搜索模式：临时禁用指定海域计划作战')
+
             # (1252, 1012) is the coordinate of zone 134 (the center zone) in os_globe_map.png
-            if self.config.OpsiMeowfficerFarming_TargetZone != 0 and not self.config.OpsiMeowfficerFarming_StayInZone:
+            # 只有在塞壬探测装置搜索模式未开启时才执行 TargetZone 分支
+            if not siren_search_enabled and self.config.OpsiMeowfficerFarming_TargetZone != 0 and not self.config.OpsiMeowfficerFarming_StayInZone:
                 try:
                     zone = self.name_to_zone(self.config.OpsiMeowfficerFarming_TargetZone)
                 except ScriptError:
@@ -165,7 +332,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     self.config.check_task_switch()
                 continue
 
-            if self.config.OpsiMeowfficerFarming_StayInZone:
+            # 如果开启了塞壬探测装置搜索模式，直接跳过 StayInZone 分支
+            if self.config.OpsiMeowfficerFarming_StayInZone and not siren_search_enabled:
                 if self.config.OpsiMeowfficerFarming_TargetZone == 0:
                     logger.warning('StayInZone 已启用但未设置 TargetZone，跳过本次出击')
                     self.config.task_delay(server_update=True)
@@ -223,18 +391,154 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 
                 continue
 
-            zones = self.zone_select(hazard_level=self.config.OpsiMeowfficerFarming_HazardLevel) \
-                .delete(SelectedGrids([self.zone])) \
-                .delete(SelectedGrids(self.zones.select(is_port=True))) \
-                .sort_by_clock_degree(center=(1252, 1012), start=self.zone.location)
+            # ===== 塞壬探测装置搜索 =====
+            # 如果开启了自动寻找塞壬探测装置功能，使用配置的侵蚀等级来选择海域
+            siren_search_enabled = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable
+            if siren_search_enabled:
+                # 使用塞壬探测装置搜索的侵蚀等级（只在中心海域中选择）
+                hazard_level = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_HazardLevel
+                logger.hr(f'塞壬探测装置搜索模式, hazard_level={hazard_level} (仅在中心海域)', level=1)
+                # 先选择中心海域（region 5），然后筛选指定侵蚀等级
+                zones = self.zones.select(region=5, hazard_level=hazard_level) \
+                    .delete(SelectedGrids([self.zone])) \
+                    .delete(SelectedGrids(self.zones.select(is_port=True))) \
+                    .sort_by_clock_degree(center=(1252, 1012), start=self.zone.location)
+            else:
+                hazard_level = self.config.OpsiMeowfficerFarming_HazardLevel
+                zones = self.zone_select(hazard_level=hazard_level) \
+                    .delete(SelectedGrids([self.zone])) \
+                    .delete(SelectedGrids(self.zones.select(is_port=True))) \
+                    .sort_by_clock_degree(center=(1252, 1012), start=self.zone.location)
 
             logger.hr(f'OS meowfficer farming, zone_id={zones[0].zone_id}', level=1)
-            self.globe_goto(zones[0])
+            current_zone_id = zones[0].zone_id
+            # 塞壬探测装置搜索模式只选择安全海域
+            if siren_search_enabled:
+                self.globe_goto(zones[0], types='SAFE')
+            else:
+                self.globe_goto(zones[0])
             self.fleet_set(self.config.OpsiFleet_Fleet)
             self.os_order_execute(
                 recon_scan=False,
                 submarine_call=self.config.OpsiFleet_Submarine)
-            self.run_auto_search()
+            
+            # ===== 塞壬探测装置搜索模式核心逻辑 =====
+            # 1. 先用二队卡住一个敌人（fleet_mechanism）
+            # 2. 换回短猫指定的一队进行自律
+            # 3. 自律结束后检查是否有塞壬探测装置
+            # 4. 如果发现 - 记录海域，不处理卡住的敌人
+            # 5. 如果没发现 - 处理卡住的敌人（fleet_mechanism）
+            if siren_search_enabled:
+                # 临时禁用塞壬研究功能，避免触发自律
+                self._original_siren_research_enable = self.config.cross_get(
+                    keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", default=False)
+                self.config.cross_set(
+                    keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", value=False)
+                logger.info('塞壬探测装置搜索模式：临时禁用塞壬研究功能')
+                
+                # ===== 步骤1: 用二队卡住敌人 =====
+                logger.info('塞壬探测装置搜索模式：使用二队卡住敌人')
+                # 切换到二队（直接使用舰队编号2）
+                self.fleet_set(2)
+                # 临时禁用塞壬研究功能，避免触发
+                self.config.cross_set(
+                    keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", value=False)
+                
+                # 使用 os_auto_search_daemon_until_combat 卡住敌人
+                # 这个函数会一直搜索直到遇到敌人，然后自动进入战斗
+                logger.info('塞壬探测装置搜索模式：二队开始寻敌直到遇到敌人')
+                try:
+                    self.os_auto_search_daemon_until_combat(drop=None)
+                    logger.info('塞壬探测装置搜索模式：遇到敌舰，二队卡位完成')
+                except Exception as e:
+                    logger.info(f'塞壬探测装置搜索模式：二队寻敌异常={e}，可能没有敌人')
+                
+                # 切换回一队
+                self.fleet_set(1)
+                
+                # ===== 步骤2: 换回一队进行自律 =====
+                logger.info('塞壬探测装置搜索模式：换回一队进行自律')
+                self.fleet_set(self.config.OpsiFleet_Fleet)
+                # 恢复塞壬研究功能设置（供一队使用）
+                if hasattr(self, '_original_siren_research_enable'):
+                    self.config.cross_set(
+                        keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable",
+                        value=self._original_siren_research_enable)
+                # 执行一队自律（默认会进行地图扫描，处理随机事件）
+                logger.info('塞壬探测装置搜索模式：一队执行自律，开始处理随机事件')
+                self.run_auto_search()
+                logger.info(f'塞壬探测装置搜索模式：一队自律结束，_solved_map_event={self._solved_map_event}')
+                
+                # ===== 步骤3: 自律结束后检查塞壬探测装置 =====
+                # 检查是否发现了塞壬探测装置（通过 _solved_map_event 判断）
+                # 注意：map_rescan 是在 run_auto_search 内部调用的，由于塞壬研究功能已禁用，
+                # 发现塞壬探测装置时会跳过处理并记录到 _solved_map_event
+                if 'is_scanning_device' in self._solved_map_event:
+                    logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（已跳过处理）', level=2)
+                    siren_detector_found = True
+                    
+                    # 记录到配置中
+                    zone_str = f'{current_zone_id}'
+                    current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+                    found_count = 0
+                    if current_str is None:
+                        self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
+                        found_count = 1
+                    else:
+                        if zone_str not in str(current_str):
+                            self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
+                            found_count = len(str(current_str).split(',')) + 1
+                        else:
+                            found_count = len(str(current_str).split(','))
+                    logger.info(f'已记录塞壬探测装置海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
+                    logger.info(f'当前已找到塞壬探测装置数量: {found_count}')
+                    
+                    # 检查是否达到设定数量
+                    stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
+                    if stop_after_found > 0 and found_count >= stop_after_found:
+                        logger.hr(f'已找到 {found_count} 个塞壬探测装置，达到设定数量 {stop_after_found}，停止搜索模式', level=1)
+                        # 关闭塞壬探测装置搜索模式
+                        self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
+                        # 恢复塞壬研究功能
+                        if hasattr(self, '_original_siren_research_enable'):
+                            self.config.cross_set(
+                                keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable",
+                                value=self._original_siren_research_enable)
+                        # 恢复指定海域计划作战设置
+                        if hasattr(self, '_original_stay_in_zone'):
+                            self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
+                        # 不处理卡住的敌人，直接跳过本次出击
+                        self.handle_after_auto_search()
+                        self.config.check_task_switch()
+                        continue
+                else:
+                    siren_detector_found = False
+                
+                # 如果没有发现塞壬探测装置，二队自律寻敌解决卡住的敌人
+                if not siren_detector_found:
+                    logger.info('未发现塞壬探测装置，二队自律寻敌解决卡住的敌人')
+                    # 切换到二队进行自律寻敌
+                    self.fleet_set(2)
+                    # 二队自律寻敌会自动解决卡住的敌人
+                    self.os_auto_search_run(drop=None)
+                    # 处理完后换回一队
+                    self.fleet_set(self.config.OpsiFleet_Fleet)
+                
+                # 恢复塞壬研究功能设置
+                if hasattr(self, '_original_siren_research_enable'):
+                    self.config.cross_set(
+                        keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable",
+                        value=self._original_siren_research_enable)
+                    logger.info(f'塞壬探测装置搜索模式结束：恢复塞壬研究功能为 {self._original_siren_research_enable}')
+                
+                # 恢复指定海域计划作战设置
+                if hasattr(self, '_original_stay_in_zone'):
+                    self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
+                    logger.info(f'塞壬探测装置搜索模式结束：恢复指定海域计划作战为 {self._original_stay_in_zone}')
+            else:
+                # 普通模式：直接执行自律搜索
+                self.run_auto_search()
+            
             self.handle_after_auto_search()
             self.config.check_task_switch()
             
