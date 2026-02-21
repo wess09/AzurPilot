@@ -4159,6 +4159,14 @@
     "SirenBug_CountLimit": {
       "name": "OpsiSirenBug.SirenBug_CountLimit.name",
       "help": "OpsiSirenBug.SirenBug_CountLimit.help"
+    },
+    "SirenBug_CrossDay": {
+      "name": "OpsiSirenBug.SirenBug_CrossDay.name",
+      "help": "OpsiSirenBug.SirenBug_CrossDay.help"
+    },
+    "SirenBug_AutoDisable": {
+      "name": "OpsiSirenBug.SirenBug_AutoDisable.name",
+      "help": "OpsiSirenBug.SirenBug_AutoDisable.help"
     }
   },
   "OpsiCheckLeveling": {

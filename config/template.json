@@ -2371,7 +2371,9 @@
       "DisableTaskSwitchDuringBug": false,
       "SirenBug_DailyCount": 0,
       "SirenBug_DailyCountRecord": "2020-01-01 00:00:00",
-      "SirenBug_CountLimit": 0
+      "SirenBug_CountLimit": 0,
+      "SirenBug_CrossDay": false,
+      "SirenBug_AutoDisable": false
     },
     "OpsiFleet": {
       "Fleet": 1,

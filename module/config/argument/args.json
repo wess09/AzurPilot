@@ -12256,6 +12256,14 @@
       "SirenBug_CountLimit": {
         "type": "input",
         "value": 0
+      },
+      "SirenBug_CrossDay": {
+        "type": "checkbox",
+        "value": false
+      },
+      "SirenBug_AutoDisable": {
+        "type": "checkbox",
+        "value": false
       }
     },
     "OpsiFleet": {

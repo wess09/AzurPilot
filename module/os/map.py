@@ -1664,11 +1664,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
     def _handle_siren_bug_reinteract(self, drop=None):
         # 23:55 - 00:05 跳过处理
-        from datetime import datetime, time as dt_time
-        now = datetime.now()
-        if now.time() >= dt_time(23, 55) or now.time() <= dt_time(0, 5):
-            logger.info(f'当前时间: {now.strftime("%H:%M")}, 跳过塞壬研究装置BUG利用')
-            return
+        if getattr(self.config, 'OpsiSirenBug_SirenBug_CrossDay', False):
+            from datetime import datetime, time as dt_time
+            now = datetime.now()
+            if now.time() >= dt_time(23, 55) or now.time() <= dt_time(0, 5):
+                logger.info(f'当前时间: {now.strftime("%H:%M")}, 跳过塞壬研究装置BUG利用')
+                return
         
         # 侵蚀一塞壬研究装置处理后，跳转指定高侵蚀区域触发塞壬研究装置消耗两次紫币，最后返回侵蚀一自律   
         try:
@@ -1842,7 +1843,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
                 if not device_handled:
                     logger.warning(f'区域{siren_bug_zone}未找到塞壬研究装置，跳过后续操作')
-                    self.config.OpsiSirenBug_SirenBug_Enable = False
+
+                    # 没找到吊机自动关闭bug利用
+                    if getattr(self.config, 'OpsiSirenBug_SirenBug_AutoDisable', False):
+                        self.config.OpsiSirenBug_SirenBug_Enable = False
+
                     raise RuntimeError('未找到塞壬研究装置')
 
             # Increase bug count
