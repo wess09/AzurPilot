@@ -436,22 +436,25 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", value=False)
                 logger.info('塞壬探测装置搜索模式：临时禁用塞壬研究功能')
                 
-                # ===== 步骤1: 用二队卡住敌人 =====
-                logger.info('塞壬探测装置搜索模式：使用二队卡住敌人')
-                # 切换到二队（直接使用舰队编号2）
-                self.fleet_set(2)
+                # ===== 步骤1: 用卡位舰队卡住敌人 =====
+                # 获取配置的卡位舰队编号
+                block_fleet = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock
+                logger.info(f'塞壬探测装置搜索模式：使用 {block_fleet} 队卡住敌人')
+                # 切换到卡位舰队
+                self.fleet_set(block_fleet)
                 # 临时禁用塞壬研究功能，避免触发
                 self.config.cross_set(
                     keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", value=False)
                 
                 # 使用 os_auto_search_daemon_until_combat 卡住敌人
                 # 这个函数会一直搜索直到遇到敌人，然后自动进入战斗
-                logger.info('塞壬探测装置搜索模式：二队开始寻敌直到遇到敌人')
+                block_fleet = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock
+                logger.info(f'塞壬探测装置搜索模式：{block_fleet}队开始寻敌直到遇到敌人')
                 try:
                     self.os_auto_search_daemon_until_combat(drop=None)
-                    logger.info('塞壬探测装置搜索模式：遇到敌舰，二队卡位完成')
+                    logger.info(f'塞壬探测装置搜索模式：遇到敌舰，{block_fleet}队卡位完成')
                 except Exception as e:
-                    logger.info(f'塞壬探测装置搜索模式：二队寻敌异常={e}，可能没有敌人')
+                    logger.info(f'塞壬探测装置搜索模式：{block_fleet}队寻敌异常={e}，可能没有敌人')
                 
                 # 切换回一队
                 self.fleet_set(1)
@@ -530,12 +533,13 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         self.config.check_task_switch()
                         continue
                 
-                # 如果没有发现塞壬探测装置，二队自律寻敌解决卡住的敌人
+                # 如果没有发现塞壬探测装置，卡位舰队自律寻敌解决卡住的敌人
                 if not siren_detector_found:
-                    logger.info('未发现塞壬探测装置，二队自律寻敌解决卡住的敌人')
-                    # 切换到二队进行自律寻敌
-                    self.fleet_set(2)
-                    # 二队自律寻敌会自动解决卡住的敌人
+                    block_fleet = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock
+                    logger.info(f'未发现塞壬探测装置，{block_fleet}队自律寻敌解决卡住的敌人')
+                    # 切换到卡位舰队进行自律寻敌
+                    self.fleet_set(block_fleet)
+                    # 卡位舰队自律寻敌会自动解决卡住的敌人
                     self.os_auto_search_run(drop=None)
                     # 处理完后换回一队
                     self.fleet_set(self.config.OpsiFleet_Fleet)

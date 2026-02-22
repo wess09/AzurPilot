@@ -12138,6 +12138,16 @@
         "type": "input",
         "value": 0
       },
+      "SirenDetectorSearch_FleetForBlock": {
+        "type": "select",
+        "value": 2,
+        "option": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
       "SirenDetectorSearch_FoundZones": {
         "type": "textarea",
         "value": "",
