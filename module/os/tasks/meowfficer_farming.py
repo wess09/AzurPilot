@@ -35,6 +35,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 self._view_init()
             try:
                 self._update_view()
+                # 需要调用 predict 才能正确检测塞壬探测装置
+                self.view.predict()
             except Exception as e:
                 logger.warning(f'[短猫任务] 更新视图失败: {e}')
             grids = self.view.select(is_scanning_device=True)
