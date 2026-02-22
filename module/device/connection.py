@@ -44,6 +44,9 @@ def retry(func):
             # Can't handle
             except RequestHumanTakeover:
                 break
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # When adb server was killed
             except ConnectionResetError as e:
                 logger.error(e)
@@ -74,6 +77,14 @@ def retry(func):
                 def init():
                     pass
 
+        if func.__name__ in [
+            'adb_connect', 'adb_reconnect', 'adb_start_server',
+            'screenshot', 'screenshot_adb', 'screenshot_uiautomator2', 'screenshot_ascreencap',
+            'screenshot_droidcast', 'screenshot_droidcast_raw', 'screenshot_scrcpy',
+            'screenshot_nemu_ipc', 'screenshot_ldopengl',
+        ]:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover
 

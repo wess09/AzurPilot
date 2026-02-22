@@ -47,8 +47,8 @@
       "help": ""
     },
     "Restart": {
-      "name": "重啟設定",
-      "help": ""
+      "name": "Task.Restart.name",
+      "help": "Task.Restart.help"
     },
     "Main": {
       "name": "主線圖",
@@ -85,6 +85,10 @@
     "Raid": {
       "name": "共鬥活動",
       "help": ""
+    },
+    "RaidScuttle": {
+      "name": "Task.RaidScuttle.name",
+      "help": "Task.RaidScuttle.help"
     },
     "Hospital": {
       "name": "深谷来信劇情",
@@ -540,6 +544,22 @@
     "ScreenshotLength": {
       "name": "出錯時，保留最後 X 張截圖",
       "help": ""
+    },
+    "GameStuckRestart": {
+      "name": "Error.GameStuckRestart.name",
+      "help": "Error.GameStuckRestart.help"
+    },
+    "GameStuckThreshold": {
+      "name": "Error.GameStuckThreshold.name",
+      "help": "Error.GameStuckThreshold.help"
+    },
+    "AdbOfflineRestart": {
+      "name": "Error.AdbOfflineRestart.name",
+      "help": "Error.AdbOfflineRestart.help"
+    },
+    "AdbOfflineThreshold": {
+      "name": "Error.AdbOfflineThreshold.name",
+      "help": "Error.AdbOfflineThreshold.help"
     }
   },
   "Optimization": {
@@ -1345,7 +1365,9 @@
       "help": "提醒: 玩家需提前設定好被調用的任務，否則將不會作用",
       "Main": "主線圖",
       "Main2": "主線圖-2",
-      "Main3": "主線圖-3"
+      "Main3": "主線圖-3",
+      "GemsFarming": "GemsFarming",
+      "ThreeOilLowCost": "ThreeOilLowCost"
     }
   },
   "EventDaily": {
@@ -1378,6 +1400,19 @@
     "UseTicket": {
       "name": "使用演習券",
       "help": ""
+    }
+  },
+  "RaidScuttle": {
+    "_info": {
+      "name": "RaidScuttle._info.name",
+      "help": "RaidScuttle._info.help"
+    },
+    "Sacrifice": {
+      "name": "RaidScuttle.Sacrifice.name",
+      "help": "RaidScuttle.Sacrifice.help",
+      "vanguard": "vanguard",
+      "flagship": "flagship",
+      "vanguard_flagship": "vanguard_flagship"
     }
   },
   "RaidDaily": {
@@ -3335,7 +3370,9 @@
       "help": "",
       "2": "二期科研",
       "3": "三期科研",
-      "4": "四期科研"
+      "4": "四期科研",
+      "5": "5",
+      "6": "6"
     },
     "ShipIndex": {
       "name": "艦船序號",
@@ -3369,7 +3406,8 @@
       "2": "二期科研",
       "3": "三期科研",
       "4": "四期科研",
-      "5": "五期科研"
+      "5": "五期科研",
+      "6": "6"
     },
     "ShipIndex": {
       "name": "艦船序號",
@@ -4335,73 +4373,18 @@
       "help": "遊戲被強制結束後自動登錄遊戲"
     }
   },
-  "ThreeOilLowCost": {
+  "EmulatorManagement": {
     "_info": {
-      "name": "三油低耗設定",
-      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
+      "name": "EmulatorManagement._info.name",
+      "help": "EmulatorManagement._info.help"
     },
-    "ChangeFlagship": {
-      "name": "更換旗艦",
-      "help": "當旗艦等級>=32或心情值過低時更換旗艦。",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
+    "ScheduledEmulatorRestart": {
+      "name": "EmulatorManagement.ScheduledEmulatorRestart.name",
+      "help": "EmulatorManagement.ScheduledEmulatorRestart.help"
     },
-    "CommonCV": {
-      "name": "指定旗艦航母",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "eagle": "eagle",
-      "langley": "langley",
-      "bogue": "bogue",
-      "ranger": "ranger",
-      "hermes": "hermes"
-    },
-    "CommonCVFilter": {
-      "name": "自定義旗艦航母過濾器",
-      "help": "使用自定義過濾器需將 \"指定旗艦航母\" 設置為 \"custom\"。"
-    },
-    "ChangeVanguard": {
-      "name": "更換前排",
-      "help": "當前排心情值過低時更換前排，選擇不更換則會強制低心情出擊。",
-      "disabled": "disabled",
-      "ship": "ship",
-      "ship_equip": "ship_equip"
-    },
-    "CommonDD": {
-      "name": "指定前排",
-      "help": "",
-      "custom": "custom",
-      "any": "any",
-      "favourite": "favourite",
-      "aulick_or_foote": "aulick_or_foote",
-      "cassin_or_downes": "cassin_or_downes",
-      "z20_or_z21": "z20_or_z21",
-      "DDG": "DDG"
-    },
-    "CommonDDFilter": {
-      "name": "自定義前排過濾器",
-      "help": "使用自定義過濾器需將 \"指定前排\" 設置為 \"custom\"。"
-    },
-    "EquipmentCode": {
-      "name": "裝備碼",
-      "help": "僅當選擇“更換艦船 + 裝備”時生效。"
-    },
-    "ALLowHighFlagshipLevel": {
-      "name": "僅更換滿級後排",
-      "help": "打開後，更換旗艦時僅會選擇100級的白皮輕航。"
-    },
-    "ALLowLowVanguardLevel": {
-      "name": "可更換低等級前排",
-      "help": "打開後，前排等級限制改為30級以上。"
-    },
-    "DelayTaskIFNoFlagship": {
-      "name": "沒有可更換的旗艦時推遲任務",
-      "help": "更換旗艦時，若找不到滿足條件的白皮航母，則推遲任務。"
-    },
-    "CommissionLimit": {
-      "name": "防止緊急委託數量過多",
-      "help": "在7x24運行時防止緊急委託數量過多做不完每日委託。"
+    "RestartIntervalHours": {
+      "name": "EmulatorManagement.RestartIntervalHours.name",
+      "help": "EmulatorManagement.RestartIntervalHours.help"
     }
   },
   "Storage": {
@@ -4456,6 +4439,7 @@
     "MenuDevelop": {
       "HomePage": "主頁",
       "Translate": "翻譯",
+      "Announcement": "Gui.MenuDevelop.Announcement",
       "Update": "更新器",
       "Remote": "遠程控制",
       "Utils": "工具"

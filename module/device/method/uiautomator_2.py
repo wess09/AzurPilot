@@ -17,7 +17,7 @@ from module.config.server import DICT_PACKAGE_TO_ACTIVITY
 from module.device.connection import Connection
 from module.device.method.utils import (ImageTruncated, PackageNotInstalled, RETRY_TRIES, handle_adb_error,
                                         handle_unknown_host_service, possible_reasons, retry_sleep)
-from module.exception import RequestHumanTakeover
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 
@@ -90,12 +90,22 @@ def retry(func):
 
                 def init():
                     pass
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # Unknown
             except Exception as e:
                 logger.exception(e)
 
                 def init():
                     pass
+
+        if func.__name__ in [
+            '_app_start_u2_am', '_app_start_u2_monkey',
+            'screenshot_uiautomator2',
+        ]:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
 
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover

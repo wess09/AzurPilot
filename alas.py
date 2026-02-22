@@ -35,6 +35,58 @@ class AzurLaneAutoScript:
         # Failure count of tasks
         # Key: str, task name, value: int, failure count
         self.failure_record = {}
+        # Restart counters
+        self.consecutive_game_stuck = 0
+        self.consecutive_adb_offline = 0
+        # Scheduled emulator restart
+        self.last_emulator_restart_time = time.time()
+
+    def _try_restart_emulator(self):
+        """
+        Try to restart the emulator if AdbOfflineRestart is enabled and threshold not reached.
+        
+        Uses the existing self.device object if available, as it has emulator_instance cached.
+        If not available, falls back to a fresh PlatformWindows instance.
+        
+        Returns:
+            bool: True if emulator was restarted, False if restart not possible.
+        """
+        if not self.config.Error_AdbOfflineRestart:
+            logger.warning('AdbOfflineRestart is disabled, cannot auto-restart emulator')
+            return False
+        
+        self.consecutive_adb_offline += 1
+        limit = int(self.config.Error_AdbOfflineThreshold)
+        logger.warning(f'EmulatorNotRunningError: consecutive count {self.consecutive_adb_offline}/{limit}')
+        
+        if self.consecutive_adb_offline > limit:
+            logger.critical(f'EmulatorNotRunningError: Restart limit ({limit}) reached')
+            return False
+        
+        logger.hr('Restarting Emulator', level=1)
+        try:
+            # Try to get existing device object
+            device = self.__dict__.get('device', None)
+            if device is None:
+                # Fallback: create a PlatformWindows object
+                # Note: This might still trigger some detection but is the best fallback if device is missing
+                from module.device.platform.platform_windows import PlatformWindows
+                device = PlatformWindows(self.config)
+            
+            logger.info('Stopping emulator...')
+            device.emulator_stop()
+            time.sleep(5)
+            logger.info('Starting emulator...')
+            device.emulator_start()
+            logger.info('Emulator restart complete')
+            
+            # Clear cached device so next access creates a fresh connection
+            if 'device' in self.__dict__:
+                del_cached_property(self, 'device')
+            return True
+        except Exception as e:
+            logger.error(f'Failed to restart emulator: {e}')
+            return False
 
     @cached_property
     def config(self):
@@ -54,11 +106,12 @@ class AzurLaneAutoScript:
             from module.device.device import Device
             device = Device(config=self.config)
             return device
+        except EmulatorNotRunningError:
+            logger.critical('Emulator is not running during device initialization')
+            logger.critical('Please start the emulator and try again')
+            exit(1)
         except RequestHumanTakeover:
             logger.critical('Request human takeover')
-            exit(1)
-        except EmulatorNotRunningError:
-            logger.critical('EmulatorNotRunningError')
             exit(1)
         except Exception as e:
             logger.exception(e)
@@ -174,6 +227,18 @@ class AzurLaneAutoScript:
             # 可恢复错误：游戏卡住或点击过多，重启即可
             logger.error(e)
             self.save_error_log()
+
+            if self.config.Error_GameStuckRestart:
+                self.consecutive_game_stuck += 1
+                limit = int(self.config.Error_GameStuckThreshold)
+                logger.warning(f'GameStuckError: {self.consecutive_game_stuck}/{limit}')
+                if self.consecutive_game_stuck >= limit:
+                    logger.warning('Game stuck too many times, restarting emulator...')
+                    if self._try_restart_emulator():
+                        self.consecutive_game_stuck = 0
+                        self.config.task_call('Restart')
+                        return 'recoverable'
+
             logger.warning(f'Game stuck, {self.device.package} will be restarted in 10 seconds')
             logger.warning('If you are playing by hand, please stop Alas')
             handle_notify(
@@ -223,6 +288,28 @@ class AzurLaneAutoScript:
             )
             # exit(1)
             raise
+        except EmulatorNotRunningError:
+            # 模拟器离线/死机，尝试自动重启模拟器
+            logger.error('EmulatorNotRunningError during task execution')
+            self.save_error_log()
+            if self._try_restart_emulator():
+                # 重启成功，调度 Restart 任务重新启动游戏
+                self.config.task_call('Restart')
+                handle_notify(
+                    self.config.Error_OnePushConfig,
+                    title=f"Alas <{self.config_name}> 警告",
+                    content=f"<{self.config_name}> 模拟器离线 - 已自动重启模拟器",
+                )
+                return 'recoverable'
+            else:
+                # 重启失败或未启用，终止程序
+                logger.critical('Emulator not running and auto-restart failed or disabled')
+                handle_notify(
+                    self.config.Error_OnePushConfig,
+                    title=f"Alas <{self.config_name}> crashed",
+                    content=f"<{self.config_name}> EmulatorNotRunningError",
+                )
+                exit(1)
         except RequestHumanTakeover:
             logger.critical('Request human takeover')
             handle_notify(
@@ -498,6 +585,10 @@ class AzurLaneAutoScript:
         from module.raid.run import RaidRun
         RaidRun(config=self.config, device=self.device).run()
 
+    def raid_scuttle(self):
+        from module.raid.scuttle import RaidScuttleRun
+        RaidScuttleRun(config=self.config, device=self.device).run()
+
     def hospital(self):
         from module.event_hospital.hospital import Hospital
         Hospital(config=self.config, device=self.device).run()
@@ -682,6 +773,22 @@ class AzurLaneAutoScript:
                     del_cached_property(self, 'config')
                     logger.info('Server or network is recovered. Restart game client')
                     self.config.task_call('Restart')
+                # Check scheduled emulator restart (between tasks, won't interrupt running task)
+                if self.config.EmulatorManagement_ScheduledEmulatorRestart:
+                    elapsed_hours = (time.time() - self.last_emulator_restart_time) / 3600
+                    interval = self.config.EmulatorManagement_RestartIntervalHours
+                    if elapsed_hours >= interval:
+                        logger.hr('Scheduled Emulator Restart', level=1)
+                        logger.info(f'Emulator has been running for {elapsed_hours:.1f} hours, '
+                                    f'scheduled restart interval is {interval} hours')
+                        if self._try_restart_emulator():
+                            self.last_emulator_restart_time = time.time()
+                            self.config.task_call('Restart')
+                            del_cached_property(self, 'config')
+                            continue
+                        else:
+                            logger.warning('Scheduled emulator restart failed, continuing normally')
+
                 # Get task
                 task = self.get_next_task()
                 # Init device and change server
@@ -740,6 +847,8 @@ class AzurLaneAutoScript:
                 if success == True:
                     del_cached_property(self, 'config')
                     consecutive_global_failures = 0 # Reset global failure counter on successful task
+                    self.consecutive_game_stuck = 0
+                    self.consecutive_adb_offline = 0
                     continue
                 elif success == 'recoverable' or self.config.Error_HandleError:
                     # 可恢复错误或启用了错误处理，继续循环

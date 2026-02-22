@@ -11,7 +11,7 @@ from module.device.method.minitouch import insert_swipe
 from module.device.method.scrcpy.core import ScrcpyCore, ScrcpyError
 from module.device.method.uiautomator_2 import Uiautomator2
 from module.device.method.utils import RETRY_TRIES, handle_adb_error, handle_unknown_host_service, retry_sleep
-from module.exception import RequestHumanTakeover
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 
@@ -68,6 +68,9 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # Unknown, probably a trucked image
             except Exception as e:
                 logger.exception(e)
@@ -75,6 +78,9 @@ def retry(func):
                 def init():
                     pass
 
+        if func.__name__ in ['screenshot_scrcpy']:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover
 

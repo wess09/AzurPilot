@@ -17,7 +17,7 @@ from module.device.method.minitouch import insert_swipe, random_rectangle_point
 from module.device.method.pool import JobTimeout, WORKER_POOL
 from module.device.method.utils import RETRY_TRIES, retry_sleep
 from module.device.platform import Platform
-from module.exception import RequestHumanTakeover
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 
@@ -194,12 +194,19 @@ def retry(func):
 
                 def init():
                     self.reconnect()
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # Unknown, probably a trucked image
             except Exception as e:
                 logger.exception(e)
 
                 def init():
                     pass
+
+        if func.__name__ in ['connect_with_retry', 'screenshot', 'down', 'up']:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
 
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover

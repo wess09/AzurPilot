@@ -12,7 +12,7 @@ from module.base.timer import Timer
 from module.device.method.uiautomator_2 import ProcessInfo, Uiautomator2
 from module.device.method.utils import (
     ImageTruncated, PackageNotInstalled, RETRY_TRIES, handle_adb_error, handle_unknown_host_service, retry_sleep)
-from module.exception import RequestHumanTakeover
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 
@@ -80,6 +80,9 @@ def retry(func):
 
                 def init():
                     pass
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # Unknown
             except Exception as e:
                 logger.exception(e)
@@ -87,6 +90,9 @@ def retry(func):
                 def init():
                     pass
 
+        if func.__name__ in ['screenshot_droidcast', 'screenshot_droidcast_raw']:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover
 

@@ -1,7 +1,7 @@
 from module.base.timer import Timer
 from module.combat.assets import *
 from module.exception import CampaignEnd
-from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM
+from module.handler.assets import POPUP_CANCEL, POPUP_CONFIRM, STORY_SKIP_3
 from module.logger import logger
 from module.os.assets import GLOBE_GOTO_MAP
 from module.os_handler.assets import *
@@ -124,10 +124,41 @@ class MapEventHandler(EnemySearchingHandler):
             return 'ash_popup'
         if self.handle_urgent_commission(drop=drop):
             return 'urgent_commission'
-        if self.handle_story_skip():
+        if self.handle_story_skip(drop=drop):
             return 'story_skip'
 
         return ''
+
+    _story_timeout = Timer(60)
+
+    def handle_story_skip(self, drop=None):
+        if super().handle_story_skip(drop):
+            self._story_timeout.reset()
+            return True
+
+        if self.appear(STORY_SKIP_3, offset=(20, 20), interval=0):
+            if self._story_timeout.reached():
+                logger.warning('Wait for story option timeout')
+                self._story_timeout.reset()
+
+                # Restart
+                self.device.app_stop()
+                self.device.app_start()
+
+                from module.handler.login import LoginHandler
+                LoginHandler(self.config, self.device).handle_app_login()
+
+                from module.ui.page import page_os
+                self.ui_ensure(page_os)
+
+                return True
+
+            if not self._story_timeout.started():
+                self._story_timeout.start()
+        else:
+            self._story_timeout.reset()
+
+        return False
 
     _os_in_map_confirm_timer = Timer(1.5, count=3)
 

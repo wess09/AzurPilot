@@ -247,52 +247,61 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 logger.warning(f'Emulator start timeout')
                 return False
 
-            # Check emulator window showing up
-            # logger.info([get_focused_window(), get_window_title(get_focused_window())])
-            if current_window != 0 and new_window == 0:
-                new_window = get_focused_window()
-                if current_window != new_window:
-                    logger.info(f'New window showing up: {new_window}, focus back')
-                    set_focus_window(current_window)
-                else:
-                    new_window = 0
+            try:
+                # Check emulator window showing up
+                # logger.info([get_focused_window(), get_window_title(get_focused_window())])
+                if current_window != 0 and new_window == 0:
+                    new_window = get_focused_window()
+                    if current_window != new_window:
+                        logger.info(f'New window showing up: {new_window}, focus back')
+                        set_focus_window(current_window)
+                    else:
+                        new_window = 0
 
-            # Check device connection
-            devices = self.list_device().select(serial=serial)
-            # logger.info(devices)
-            if devices:
-                device: AdbDeviceWithStatus = devices.first_or_none()
-                if device.status == 'device':
-                    # Emulator online
-                    pass
-                if device.status == 'offline':
-                    self.adb_client.disconnect(serial)
+                # Check device connection
+                devices = self.list_device().select(serial=serial)
+                # logger.info(devices)
+                if devices:
+                    device: AdbDeviceWithStatus = devices.first_or_none()
+                    if device.status == 'device':
+                        # Emulator online
+                        pass
+                    if device.status == 'offline':
+                        self.adb_client.disconnect(serial)
+                        adb_connect()
+                        continue
+                else:
+                    # Try to connect
                     adb_connect()
                     continue
-            else:
-                # Try to connect
-                adb_connect()
-                continue
-            show_online(devices.first_or_none())
+                show_online(devices.first_or_none())
 
-            # Check command availability
-            try:
-                pong = self.adb_shell(['echo', 'pong'])
-            except Exception as e:
+                # Check command availability
+                try:
+                    pong = self.adb_shell(['echo', 'pong'])
+                except Exception as e:
+                    logger.info(e)
+                    continue
+                show_ping(pong)
+
+                # Check azuelane package
+                packages = self.list_known_packages(show_log=False)
+                if len(packages):
+                    pass
+                else:
+                    continue
+                show_package(packages)
+
+                # All check passed
+                break
+            except (ConnectionResetError, ConnectionAbortedError) as e:
+                # [WinError 10054] 远程主机强迫关闭了一个现有的连接。
+                # Occurs frequent when emulator is starting
                 logger.info(e)
                 continue
-            show_ping(pong)
-
-            # Check azuelane package
-            packages = self.list_known_packages(show_log=False)
-            if len(packages):
-                pass
-            else:
+            except Exception as e:
+                logger.exception(e)
                 continue
-            show_package(packages)
-
-            # All check passed
-            break
 
         if new_window != 0 and new_window != current_window:
             logger.info(f'Minimize new window: {new_window}')

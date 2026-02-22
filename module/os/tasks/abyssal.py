@@ -11,11 +11,7 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         Args:
             result(bool): If still have abyssal loggers.
         """
-        if not result:
-            # 没有更多深渊记录器 - handle and try other tasks if needed
-            if self._handle_no_content_and_try_other_tasks('深渊海域', '深渊海域没有更多可执行内容'):
-                return
-        
+        # 无论是否有更多深渊记录器，都处理任务完成
         # 根据是否启用智能调度选择关闭或推迟任务
         self._finish_task_with_smart_scheduling('OpsiAbyssal', '深渊海域', consider_reset_remain=True)
 

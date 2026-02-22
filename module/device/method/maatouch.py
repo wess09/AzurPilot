@@ -11,7 +11,7 @@ from module.base.utils import *
 from module.device.connection import Connection
 from module.device.method.minitouch import Command, CommandBuilder, insert_swipe
 from module.device.method.utils import RETRY_TRIES, handle_adb_error, retry_sleep
-from module.exception import RequestHumanTakeover
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 
@@ -84,6 +84,9 @@ def retry(func):
 
                 def init():
                     del_cached_property(self, '_maatouch_builder')
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # Unknown, probably a trucked image
             except Exception as e:
                 logger.exception(e)
@@ -91,6 +94,9 @@ def retry(func):
                 def init():
                     pass
 
+        if func.__name__ in ['_maatouch_builder']:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover
 

@@ -496,14 +496,23 @@ def get_localstorage(key):
 
 
 def re_fullmatch(pattern, string):
+    if isinstance(pattern, list):
+        if len(pattern) == 2:
+            try:
+                val = float(string)
+                min_val, max_val = float(pattern[0]), float(pattern[1])
+                return min_val <= val <= max_val
+            except (ValueError, TypeError):
+                return False
+        return string in pattern
     if pattern == "datetime":
         try:
-            datetime.datetime.fromisoformat(string)
+            datetime.datetime.fromisoformat(str(string))
             return True
         except ValueError:
             return False
     # elif:
-    return re.fullmatch(pattern=pattern, string=string)
+    return re.fullmatch(pattern=pattern, string=str(string))
 
 
 def get_next_time(t: datetime.time):

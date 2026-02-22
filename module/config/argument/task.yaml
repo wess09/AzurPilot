@@ -8,6 +8,7 @@ Alas:
       - Error
       - Optimization
       - DropRecord
+      - EmulatorManagement
     General:
       - Retirement
       - OneClickRetire
@@ -16,6 +17,7 @@ Alas:
       - YukikazeTaskManager
     Restart:
       - Scheduler
+      - Restart
 Farm:
   menu: collapse
   page: setting
@@ -93,6 +95,15 @@ Event:
       - Raid
       - Campaign
       - StopCondition
+      - Emotion
+    RaidScuttle:
+      - Scheduler
+      - RaidScuttle
+      - Raid
+      - Campaign
+      - StopCondition
+      - Fleet
+      - Submarine
       - Emotion
     Hospital:
       - Scheduler

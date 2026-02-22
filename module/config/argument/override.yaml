@@ -235,7 +235,40 @@ Raid:
     Fleet2Control: prevent_yellow_face
     Fleet2Recover: not_in_dormitory
     Fleet2Oath: false
-    Fleet2Onsen: false
+RaidScuttle:
+  Campaign:
+    Name: dynamic
+    Event:
+      type: state
+    Mode: normal
+    UseClearMode: true
+    UseFleetLock: true
+    UseAutoSearch: false
+    Use2xBook: false
+    AmbushEvade: true
+  StopCondition:
+    MapAchievement: non_stop
+    StageIncrease: false
+    GetNewShip: false
+    ReachLevel: 0
+  Fleet:
+    Fleet1: 1
+    Fleet1Formation: double_line
+    Fleet1Step: 3
+    Fleet2: 2
+    Fleet2Formation: double_line
+    Fleet2Mode: combat_auto
+    Fleet2Step: 3
+    FleetOrder: fleet1_all_fleet2_standby
+  Submarine:
+    DistanceToBoss: 2_grid_to_boss
+  Emotion:
+    Fleet1Control: prevent_yellow_face
+    Fleet2Value: 119
+    Fleet2Record: 2020-01-01 00:00:00
+    Fleet2Control: prevent_yellow_face
+    Fleet2Recover: not_in_dormitory
+    Fleet2Oath: false
 Hospital:
   StopCondition:
     RunCount: 0

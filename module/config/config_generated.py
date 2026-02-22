@@ -102,6 +102,10 @@ class GeneratedConfig:
     Error_StrictRestart = False
     Error_OnePushConfig = 'provider: null'
     Error_ScreenshotLength = 1
+    Error_GameStuckRestart = False
+    Error_GameStuckThreshold = 3
+    Error_AdbOfflineRestart = False
+    Error_AdbOfflineThreshold = 3
 
     # Group `Optimization`
     Optimization_ScreenshotInterval = 0.3
@@ -240,7 +244,7 @@ class GeneratedConfig:
     # Group `TaskBalancer`
     TaskBalancer_Enable = False
     TaskBalancer_CoinLimit = 10000
-    TaskBalancer_TaskCall = 'Main'  # Main, Main2, Main3
+    TaskBalancer_TaskCall = 'Main'  # Main, Main2, Main3, GemsFarming, ThreeOilLowCost
 
     # Group `EventDaily`
     EventDaily_StageFilter = 'A1 > A2 > A3'
@@ -249,6 +253,9 @@ class GeneratedConfig:
     # Group `Raid`
     Raid_Mode = 'hard'  # easy, normal, hard, ex
     Raid_UseTicket = False
+
+    # Group `RaidScuttle`
+    RaidScuttle_Sacrifice = 'vanguard'  # vanguard, flagship, vanguard_flagship
 
     # Group `RaidDaily`
     RaidDaily_StageFilter = 'hard > normal > easy'
@@ -524,13 +531,13 @@ class GeneratedConfig:
     CoreShop_Filter = 'Array'
 
     # Group `ShipyardDr`
-    ShipyardDr_ResearchSeries = 2  # 2, 3, 4
+    ShipyardDr_ResearchSeries = 2  # 2, 3, 4, 5, 6
     ShipyardDr_ShipIndex = 0  # 0, 1, 2, 3, 4, 5, 6
     ShipyardDr_BuyAmount = 2
     ShipyardDr_LastRun = datetime.datetime(2020, 1, 1, 0, 0)
 
     # Group `Shipyard`
-    Shipyard_ResearchSeries = 1  # 1, 2, 3, 4, 5
+    Shipyard_ResearchSeries = 1  # 1, 2, 3, 4, 5, 6
     Shipyard_ShipIndex = 0  # 0, 1, 2, 3, 4, 5, 6
     Shipyard_BuyAmount = 2
     Shipyard_LastRun = datetime.datetime(2020, 1, 1, 0, 0)
@@ -746,18 +753,9 @@ class GeneratedConfig:
     # Group `GameManager`
     GameManager_AutoRestart = True
 
-    # Group `ThreeOilLowCost`
-    ThreeOilLowCost_ChangeFlagship = 'ship_equip'  # ship, ship_equip
-    ThreeOilLowCost_CommonCV = 'any'  # custom, any, eagle, langley, bogue, ranger, hermes
-    ThreeOilLowCost_CommonCVFilter = 'bogue > ranger > langley > hermes'
-    ThreeOilLowCost_ChangeVanguard = 'ship_equip'  # disabled, ship, ship_equip
-    ThreeOilLowCost_CommonDD = 'any'  # custom, any, favourite, aulick_or_foote, cassin_or_downes, z20_or_z21, DDG
-    ThreeOilLowCost_CommonDDFilter = 'z20 > z21 > aulick > foote > cassin > downes'
-    ThreeOilLowCost_EquipmentCode = 'DD: null\nbogue: null\nhermes: null\nlangley: null\nranger: null'
-    ThreeOilLowCost_ALLowHighFlagshipLevel = False
-    ThreeOilLowCost_ALLowLowVanguardLevel = False
-    ThreeOilLowCost_DelayTaskIFNoFlagship = False
-    ThreeOilLowCost_CommissionLimit = False
+    # Group `EmulatorManagement`
+    EmulatorManagement_ScheduledEmulatorRestart = False
+    EmulatorManagement_RestartIntervalHours = 4
 
     # Group `Storage`
     Storage_Storage = {}

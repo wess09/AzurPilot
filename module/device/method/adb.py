@@ -33,6 +33,9 @@ def retry(func):
             # Can't handle
             except RequestHumanTakeover:
                 break
+            # Can't handle - must propagate to trigger emulator restart
+            except EmulatorNotRunningError:
+                raise
             # When adb server was killed
             except ConnectionResetError as e:
                 logger.error(e)
@@ -62,15 +65,6 @@ def retry(func):
 
                 def init():
                     pass
-            except EmulatorNotRunningError as e:
-                logger.exception(e)
-                import sys
-                if sys.platform == 'win32':
-                    from module.device.platform.platform_windows import PlatformWindows
-                    PlatformWindows(self.config.config_name).emulator_start()
-
-                    def init():
-                        pass
             # Unknown
             except Exception as e:
                 logger.exception(e)
@@ -78,6 +72,12 @@ def retry(func):
                 def init():
                     pass
 
+        if func.__name__ in [
+            'screenshot_adb', 'screenshot_adb_nc',
+            '_app_start_adb_am', '_app_start_adb_monkey',
+        ]:
+            logger.critical(f'Retry {func.__name__}() failed')
+            raise EmulatorNotRunningError
         logger.critical(f'Retry {func.__name__}() failed')
         raise RequestHumanTakeover
 
