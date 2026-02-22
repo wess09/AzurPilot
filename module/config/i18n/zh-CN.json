@@ -4067,7 +4067,7 @@
     },
     "SirenDetectorSearch_FoundZones": {
       "name": "已找到的塞壬探测装置海域",
-      "help": "记录已找到塞壬探测装置的海域，用于查看和管理"
+      "help": "已找到的塞壬探测装置海域，如果对应海域的塞壬探测装置已经被使用，则可以手动删除对应海域的记录"
     }
   },
   "OpsiHazard1Leveling": {
