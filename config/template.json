@@ -2340,6 +2340,7 @@
       "SirenDetectorSearch_Enable": false,
       "SirenDetectorSearch_HazardLevel": 5,
       "SirenDetectorSearch_StopAfterFound": 0,
+      "SirenDetectorSearch_FleetForBlock": 2,
       "SirenDetectorSearch_FoundZones": null
     },
     "OpsiFleet": {
