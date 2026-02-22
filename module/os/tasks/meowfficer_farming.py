@@ -481,37 +481,23 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（自律过程中检测到）', level=2)
                     siren_detector_found = True
                 else:
-                    # _solved_map_event 中没有记录，需要使用地图全图扫描来检测塞壬探测装置
+                    # _solved_map_event 中没有记录，需要检测塞壬探测装置
                     # 因为塞壬探测装置在雷达上不以问号形式显示，clear_question 不会处理它
-                    # 使用手动遍历地图的方式检测，而不是调用 map_rescan（会触发自律）
-                    logger.info('塞壬探测装置搜索模式：使用手动遍历地图检测塞壬探测装置')
+                    # 使用当前视野检测，不滑动地图（避免战斗后滑动导致问题）
+                    logger.info('塞壬探测装置搜索模式：检测当前视野中的塞壬探测装置')
                     siren_detector_found = False
                     
-                    # 获取所有摄像头位置
-                    camera_queue = self.map.camera_data
-                    logger.info(f'塞壬探测装置搜索模式：共有 {len(camera_queue)} 个摄像头位置需要检测')
+                    # 检测当前视野中的塞壬探测装置
+                    grids = self.view.select(is_scanning_device=True)
+                    logger.info(f'塞壬探测装置搜索模式：当前视野发现 {len(grids) if grids else 0} 个可疑格子')
                     
-                    # 遍历所有摄像头位置
-                    for camera_pos in camera_queue:
-                        # 滑动到该摄像头位置
-                        if camera_pos != self.camera:
-                            self.focus_to(camera_pos, swipe_limit=(6, 5))
-                            self.focus_to_grid_center(0.3)
-                            self.device.screenshot()
-                            self.update()
-                        
-                        # 检测当前视野中的塞壬探测装置
-                        grids = self.view.select(is_scanning_device=True)
-                        if grids and grids[0].is_scanning_device:
-                            grid = grids[0]
-                            logger.info(f'塞壬探测装置搜索模式：在 {camera_pos} 位置发现塞壬探测装置 {grid}')
-                            # 标记为已处理
-                            self._solved_map_event.add('is_scanning_device')
-                            siren_detector_found = True
-                            break
-                    
-                    if siren_detector_found:
-                        logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（手动全图扫描检测到）', level=2)
+                    if grids and grids[0].is_scanning_device:
+                        grid = grids[0]
+                        logger.info(f'塞壬探测装置搜索模式：在当前视野发现塞壬探测装置 {grid}')
+                        # 标记为已处理
+                        self._solved_map_event.add('is_scanning_device')
+                        siren_detector_found = True
+                        logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（当前视野检测到）', level=2)
                 
                 # 如果发现塞壬探测装置，记录到配置中
                 if siren_detector_found:
