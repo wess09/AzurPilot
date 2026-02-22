@@ -1087,7 +1087,6 @@ OpsiMeowfficerFarming:
     option: [1, 2, 3, 4]
   SirenDetectorSearch_FoundZones:
     type: textarea
-    display: disabled
     value: ""
 OpsiHazard1Leveling:
   TargetZone:
@@ -1762,12 +1761,6 @@ GemsFarming:
   DelayTaskIFNoFlagship: false
   CommissionLimit: false
 ThreeOilLowCost:
-  Scheduler:
-    Enable:
-      type: checkbox
-      value: false
-      option: [true, false]
-
   ChangeFlagship:
     value: ship_equip
     option:
@@ -2876,7 +2869,6 @@ OpsiMeowfficerFarming:
   SirenDetectorSearch_StopAfterFound: 0
   SirenDetectorSearch_FoundZones:
     type: textarea
-    display: disabled
     value: ""
 OpsiHazard1Leveling:
   TargetZone:

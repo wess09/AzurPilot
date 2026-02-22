@@ -102,10 +102,6 @@ class GeneratedConfig:
     Error_StrictRestart = False
     Error_OnePushConfig = 'provider: null'
     Error_ScreenshotLength = 1
-    Error_GameStuckRestart = False
-    Error_GameStuckThreshold = 3
-    Error_AdbOfflineRestart = False
-    Error_AdbOfflineThreshold = 3
 
     # Group `Optimization`
     Optimization_ScreenshotInterval = 0.3
@@ -130,7 +126,7 @@ class GeneratedConfig:
     Retirement_RetireMode = 'one_click_retire'  # one_click_retire, enhance, old_retire
 
     # Group `YukikazeTaskManager`
-    YukikazeTaskManager_TaskPriorityAdjustment = 'Restart\n> OpsiCrossMonth\n> Commission > Tactical > Research\n> Exercise\n> Dorm > Meowfficer > Guild > Gacha\n> Reward\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island\n> PrivateQuarters\n> OpsiExplore\n> Minigame > Awaken\n> OpsiAshBeacon\n> OpsiDaily > OpsiShop > OpsiVoucher\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss\n> Sos > EventSp > EventA > EventB > EventC > EventD\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort\n> Event > Event2 > Raid > Hospital > HospitalEvent > Coalition > Main > Main2 > Main3\n> OpsiMeowfficerFarming\n> GemsFarming\n> OpsiHazard1Leveling\n> ThreeOilLowCost'
+    YukikazeTaskManager_TaskPriorityAdjustment = 'Restart\n> OpsiCrossMonth\n> Commission > Tactical > Research\n> Exercise\n> Dorm > Meowfficer > Guild > Gacha\n> Reward\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island\n> PrivateQuarters\n> OpsiExplore\n> Minigame > Awaken\n> OpsiAshBeacon\n> OpsiDaily > OpsiShop > OpsiVoucher\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss\n> Sos > EventSp > EventA > EventB > EventC > EventD\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort\n> Event > Event2 > Raid > Hospital > HospitalEvent > Coalition > Main > Main2 > Main3\n> OpsiMeowfficerFarming\n> GemsFarming\n> OpsiHazard1Leveling > ThreeOilLowCost'
 
     # Group `OneClickRetire`
     OneClickRetire_KeepLimitBreak = 'keep_limit_break'  # keep_limit_break, do_not_keep
@@ -244,7 +240,7 @@ class GeneratedConfig:
     # Group `TaskBalancer`
     TaskBalancer_Enable = False
     TaskBalancer_CoinLimit = 10000
-    TaskBalancer_TaskCall = 'Main'  # Main, Main2, Main3, GemsFarming, ThreeOilLowCost
+    TaskBalancer_TaskCall = 'Main'  # Main, Main2, Main3
 
     # Group `EventDaily`
     EventDaily_StageFilter = 'A1 > A2 > A3'
@@ -253,9 +249,6 @@ class GeneratedConfig:
     # Group `Raid`
     Raid_Mode = 'hard'  # easy, normal, hard, ex
     Raid_UseTicket = False
-
-    # Group `RaidScuttle`
-    RaidScuttle_Sacrifice = 'vanguard'  # vanguard, flagship, vanguard_flagship
 
     # Group `RaidDaily`
     RaidDaily_StageFilter = 'hard > normal > easy'
@@ -531,13 +524,13 @@ class GeneratedConfig:
     CoreShop_Filter = 'Array'
 
     # Group `ShipyardDr`
-    ShipyardDr_ResearchSeries = 2  # 2, 3, 4, 5, 6
+    ShipyardDr_ResearchSeries = 2  # 2, 3, 4
     ShipyardDr_ShipIndex = 0  # 0, 1, 2, 3, 4, 5, 6
     ShipyardDr_BuyAmount = 2
     ShipyardDr_LastRun = datetime.datetime(2020, 1, 1, 0, 0)
 
     # Group `Shipyard`
-    Shipyard_ResearchSeries = 1  # 1, 2, 3, 4, 5, 6
+    Shipyard_ResearchSeries = 1  # 1, 2, 3, 4, 5
     Shipyard_ShipIndex = 0  # 0, 1, 2, 3, 4, 5, 6
     Shipyard_BuyAmount = 2
     Shipyard_LastRun = datetime.datetime(2020, 1, 1, 0, 0)
@@ -684,7 +677,6 @@ class GeneratedConfig:
     OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
     OpsiMeowfficerFarming_SirenDetectorSearch_HazardLevel = 5  # 5, 6
     OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound = 0
-    OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock = 2  # 1, 2, 3, 4
     OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = None
 
     # Group `OpsiHazard1Leveling`
@@ -754,9 +746,18 @@ class GeneratedConfig:
     # Group `GameManager`
     GameManager_AutoRestart = True
 
-    # Group `EmulatorManagement`
-    EmulatorManagement_ScheduledEmulatorRestart = False
-    EmulatorManagement_RestartIntervalHours = 4
+    # Group `ThreeOilLowCost`
+    ThreeOilLowCost_ChangeFlagship = 'ship_equip'  # ship, ship_equip
+    ThreeOilLowCost_CommonCV = 'any'  # custom, any, eagle, langley, bogue, ranger, hermes
+    ThreeOilLowCost_CommonCVFilter = 'bogue > ranger > langley > hermes'
+    ThreeOilLowCost_ChangeVanguard = 'ship_equip'  # disabled, ship, ship_equip
+    ThreeOilLowCost_CommonDD = 'any'  # custom, any, favourite, aulick_or_foote, cassin_or_downes, z20_or_z21, DDG
+    ThreeOilLowCost_CommonDDFilter = 'z20 > z21 > aulick > foote > cassin > downes'
+    ThreeOilLowCost_EquipmentCode = 'DD: null\nbogue: null\nhermes: null\nlangley: null\nranger: null'
+    ThreeOilLowCost_ALLowHighFlagshipLevel = False
+    ThreeOilLowCost_ALLowLowVanguardLevel = False
+    ThreeOilLowCost_DelayTaskIFNoFlagship = False
+    ThreeOilLowCost_CommissionLimit = False
 
     # Group `Storage`
     Storage_Storage = {}

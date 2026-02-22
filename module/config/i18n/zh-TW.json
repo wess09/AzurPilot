@@ -544,22 +544,6 @@
     "ScreenshotLength": {
       "name": "出錯時，保留最後 X 張截圖",
       "help": ""
-    },
-    "GameStuckRestart": {
-      "name": "Error.GameStuckRestart.name",
-      "help": "Error.GameStuckRestart.help"
-    },
-    "GameStuckThreshold": {
-      "name": "Error.GameStuckThreshold.name",
-      "help": "Error.GameStuckThreshold.help"
-    },
-    "AdbOfflineRestart": {
-      "name": "Error.AdbOfflineRestart.name",
-      "help": "Error.AdbOfflineRestart.help"
-    },
-    "AdbOfflineThreshold": {
-      "name": "Error.AdbOfflineThreshold.name",
-      "help": "Error.AdbOfflineThreshold.help"
     }
   },
   "Optimization": {
@@ -1365,9 +1349,7 @@
       "help": "提醒: 玩家需提前設定好被調用的任務，否則將不會作用",
       "Main": "主線圖",
       "Main2": "主線圖-2",
-      "Main3": "主線圖-3",
-      "GemsFarming": "GemsFarming",
-      "ThreeOilLowCost": "ThreeOilLowCost"
+      "Main3": "主線圖-3"
     }
   },
   "EventDaily": {
@@ -1400,19 +1382,6 @@
     "UseTicket": {
       "name": "使用演習券",
       "help": ""
-    }
-  },
-  "RaidScuttle": {
-    "_info": {
-      "name": "RaidScuttle._info.name",
-      "help": "RaidScuttle._info.help"
-    },
-    "Sacrifice": {
-      "name": "RaidScuttle.Sacrifice.name",
-      "help": "RaidScuttle.Sacrifice.help",
-      "vanguard": "vanguard",
-      "flagship": "flagship",
-      "vanguard_flagship": "vanguard_flagship"
     }
   },
   "RaidDaily": {
@@ -3370,9 +3339,7 @@
       "help": "",
       "2": "二期科研",
       "3": "三期科研",
-      "4": "四期科研",
-      "5": "5",
-      "6": "6"
+      "4": "四期科研"
     },
     "ShipIndex": {
       "name": "艦船序號",
@@ -3406,8 +3373,7 @@
       "2": "二期科研",
       "3": "三期科研",
       "4": "四期科研",
-      "5": "五期科研",
-      "6": "6"
+      "5": "五期科研"
     },
     "ShipIndex": {
       "name": "艦船序號",
@@ -4373,18 +4339,73 @@
       "help": "遊戲被強制結束後自動登錄遊戲"
     }
   },
-  "EmulatorManagement": {
+  "ThreeOilLowCost": {
     "_info": {
-      "name": "EmulatorManagement._info.name",
-      "help": "EmulatorManagement._info.help"
+      "name": "ThreeOilLowCost._info.name",
+      "help": "ThreeOilLowCost._info.help"
     },
-    "ScheduledEmulatorRestart": {
-      "name": "EmulatorManagement.ScheduledEmulatorRestart.name",
-      "help": "EmulatorManagement.ScheduledEmulatorRestart.help"
+    "ChangeFlagship": {
+      "name": "ThreeOilLowCost.ChangeFlagship.name",
+      "help": "ThreeOilLowCost.ChangeFlagship.help",
+      "ship": "ship",
+      "ship_equip": "ship_equip"
     },
-    "RestartIntervalHours": {
-      "name": "EmulatorManagement.RestartIntervalHours.name",
-      "help": "EmulatorManagement.RestartIntervalHours.help"
+    "CommonCV": {
+      "name": "ThreeOilLowCost.CommonCV.name",
+      "help": "ThreeOilLowCost.CommonCV.help",
+      "custom": "custom",
+      "any": "any",
+      "eagle": "eagle",
+      "langley": "langley",
+      "bogue": "bogue",
+      "ranger": "ranger",
+      "hermes": "hermes"
+    },
+    "CommonCVFilter": {
+      "name": "ThreeOilLowCost.CommonCVFilter.name",
+      "help": "ThreeOilLowCost.CommonCVFilter.help"
+    },
+    "ChangeVanguard": {
+      "name": "ThreeOilLowCost.ChangeVanguard.name",
+      "help": "ThreeOilLowCost.ChangeVanguard.help",
+      "disabled": "disabled",
+      "ship": "ship",
+      "ship_equip": "ship_equip"
+    },
+    "CommonDD": {
+      "name": "ThreeOilLowCost.CommonDD.name",
+      "help": "ThreeOilLowCost.CommonDD.help",
+      "custom": "custom",
+      "any": "any",
+      "favourite": "favourite",
+      "aulick_or_foote": "aulick_or_foote",
+      "cassin_or_downes": "cassin_or_downes",
+      "z20_or_z21": "z20_or_z21",
+      "DDG": "DDG"
+    },
+    "CommonDDFilter": {
+      "name": "ThreeOilLowCost.CommonDDFilter.name",
+      "help": "ThreeOilLowCost.CommonDDFilter.help"
+    },
+    "EquipmentCode": {
+      "name": "ThreeOilLowCost.EquipmentCode.name",
+      "help": "ThreeOilLowCost.EquipmentCode.help"
+    },
+    "ALLowHighFlagshipLevel": {
+      "name": "ThreeOilLowCost.ALLowHighFlagshipLevel.name",
+      "help": "ThreeOilLowCost.ALLowHighFlagshipLevel.help"
+    },
+    "ALLowLowVanguardLevel": {
+      "name": "ThreeOilLowCost.ALLowLowVanguardLevel.name",
+      "help": "ThreeOilLowCost.ALLowLowVanguardLevel.help"
+    },
+    "DelayTaskIFNoFlagship": {
+      "name": "ThreeOilLowCost.DelayTaskIFNoFlagship.name",
+      "help": "ThreeOilLowCost.DelayTaskIFNoFlagship.help"
+    },
+    "CommissionLimit": {
+      "name": "ThreeOilLowCost.CommissionLimit.name",
+      "help": "ThreeOilLowCost.CommissionLimit.help"
     }
   },
   "Storage": {

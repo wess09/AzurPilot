@@ -544,22 +544,6 @@
     "ScreenshotLength": {
       "name": "出错时，保留最后 X 张截图",
       "help": ""
-    },
-    "GameStuckRestart": {
-      "name": "游戏卡死时重启模拟器",
-      "help": "在游戏连续卡死（触发GameStuckError）达到指定次数后，尝试重启模拟器。可能有助于解决模拟器假死或显存溢出等问题。"
-    },
-    "GameStuckThreshold": {
-      "name": "游戏卡死重启阈值",
-      "help": "连续卡死多少次后触发重启。"
-    },
-    "AdbOfflineRestart": {
-      "name": "检测不到设备时重启模拟器",
-      "help": "在连续检测不到设备（ADB离线或连接失败）达到指定次数后，尝试重启模拟器。"
-    },
-    "AdbOfflineThreshold": {
-      "name": "检测不到设备重启阈值",
-      "help": "连续检测不到设备多少次后触发重启。"
     }
   },
   "Optimization": {
@@ -1365,9 +1349,7 @@
       "help": "提醒: 玩家需提前设置好被调用的任务，否则将不会作用",
       "Main": "主线图",
       "Main2": "主线图-2",
-      "Main3": "主线图-3",
-      "GemsFarming": "刷紧急委托",
-      "ThreeOilLowCost": "三油低耗"
+      "Main3": "主线图-3"
     }
   },
   "EventDaily": {
@@ -1400,19 +1382,6 @@
     "UseTicket": {
       "name": "使用演习券",
       "help": ""
-    }
-  },
-  "RaidScuttle": {
-    "_info": {
-      "name": "共斗沉船",
-      "help": ""
-    },
-    "Sacrifice": {
-      "name": "牺牲船位置",
-      "help": "",
-      "vanguard": "前排",
-      "flagship": "旗舰",
-      "vanguard_flagship": "前排+旗舰"
     }
   },
   "RaidDaily": {
@@ -3370,9 +3339,7 @@
       "help": "",
       "2": "二期科研",
       "3": "三期科研",
-      "4": "四期科研",
-      "5": "五期科研",
-      "6": "六期科研"
+      "4": "四期科研"
     },
     "ShipIndex": {
       "name": "舰船序号",
@@ -3406,8 +3373,7 @@
       "2": "二期科研",
       "3": "三期科研",
       "4": "四期科研",
-      "5": "五期科研",
-      "6": "六期科研"
+      "5": "五期科研"
     },
     "ShipIndex": {
       "name": "舰船序号",
@@ -4099,14 +4065,6 @@
       "name": "寻找 X 个塞壬探测装置后停止",
       "help": "寻找到指定数量的塞壬探测装置后，停止搜索并回到正常短猫流程\n设置为 0 表示不限制，会一直搜索直到行动力不足"
     },
-    "SirenDetectorSearch_FleetForBlock": {
-      "name": "卡位舰队",
-      "help": "在塞壬探测装置搜索模式下，使用指定舰队卡住敌人\n使用不同于短猫相接的舰队进行卡位，请设置和短猫任务不同的舰队",
-      "1": "1 ",
-      "2": "2 ",
-      "3": "3 ",
-      "4": "4 "
-    },
     "SirenDetectorSearch_FoundZones": {
       "name": "已找到的塞壬探测装置海域",
       "help": "记录已找到塞壬探测装置的海域，用于查看和管理"
@@ -4381,18 +4339,73 @@
       "help": "游戏被强制结束后自动登录游戏"
     }
   },
-  "EmulatorManagement": {
+  "ThreeOilLowCost": {
     "_info": {
-      "name": "模拟器管理",
-      "help": ""
+      "name": "ThreeOilLowCost._info.name",
+      "help": "ThreeOilLowCost._info.help"
     },
-    "ScheduledEmulatorRestart": {
-      "name": "定时重启模拟器",
-      "help": "启用后，每隔指定时间自动重启模拟器，避免长时间运行导致的内存泄漏或卡顿问题。重启会等当前任务完成后再执行。"
+    "ChangeFlagship": {
+      "name": "ThreeOilLowCost.ChangeFlagship.name",
+      "help": "ThreeOilLowCost.ChangeFlagship.help",
+      "ship": "ship",
+      "ship_equip": "ship_equip"
     },
-    "RestartIntervalHours": {
-      "name": "重启间隔（小时）",
-      "help": "每隔多少小时自动重启一次模拟器。"
+    "CommonCV": {
+      "name": "ThreeOilLowCost.CommonCV.name",
+      "help": "ThreeOilLowCost.CommonCV.help",
+      "custom": "custom",
+      "any": "any",
+      "eagle": "eagle",
+      "langley": "langley",
+      "bogue": "bogue",
+      "ranger": "ranger",
+      "hermes": "hermes"
+    },
+    "CommonCVFilter": {
+      "name": "ThreeOilLowCost.CommonCVFilter.name",
+      "help": "ThreeOilLowCost.CommonCVFilter.help"
+    },
+    "ChangeVanguard": {
+      "name": "ThreeOilLowCost.ChangeVanguard.name",
+      "help": "ThreeOilLowCost.ChangeVanguard.help",
+      "disabled": "disabled",
+      "ship": "ship",
+      "ship_equip": "ship_equip"
+    },
+    "CommonDD": {
+      "name": "ThreeOilLowCost.CommonDD.name",
+      "help": "ThreeOilLowCost.CommonDD.help",
+      "custom": "custom",
+      "any": "any",
+      "favourite": "favourite",
+      "aulick_or_foote": "aulick_or_foote",
+      "cassin_or_downes": "cassin_or_downes",
+      "z20_or_z21": "z20_or_z21",
+      "DDG": "DDG"
+    },
+    "CommonDDFilter": {
+      "name": "ThreeOilLowCost.CommonDDFilter.name",
+      "help": "ThreeOilLowCost.CommonDDFilter.help"
+    },
+    "EquipmentCode": {
+      "name": "ThreeOilLowCost.EquipmentCode.name",
+      "help": "ThreeOilLowCost.EquipmentCode.help"
+    },
+    "ALLowHighFlagshipLevel": {
+      "name": "ThreeOilLowCost.ALLowHighFlagshipLevel.name",
+      "help": "ThreeOilLowCost.ALLowHighFlagshipLevel.help"
+    },
+    "ALLowLowVanguardLevel": {
+      "name": "ThreeOilLowCost.ALLowLowVanguardLevel.name",
+      "help": "ThreeOilLowCost.ALLowLowVanguardLevel.help"
+    },
+    "DelayTaskIFNoFlagship": {
+      "name": "ThreeOilLowCost.DelayTaskIFNoFlagship.name",
+      "help": "ThreeOilLowCost.DelayTaskIFNoFlagship.help"
+    },
+    "CommissionLimit": {
+      "name": "ThreeOilLowCost.CommissionLimit.name",
+      "help": "ThreeOilLowCost.CommissionLimit.help"
     }
   },
   "Storage": {
