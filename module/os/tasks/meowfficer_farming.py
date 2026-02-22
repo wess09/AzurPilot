@@ -438,6 +438,9 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 self.config.cross_set(
                     keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable", value=False)
                 logger.info('塞壬探测装置搜索模式：临时禁用塞壬研究功能')
+                # 设置标志位，让 story_skip 在整个搜索过程中遇到塞壬探测装置选项时点击第3个选项（离开）
+                self.config._disable_siren_research = True
+                logger.info('塞壬探测装置搜索模式：设置 _disable_siren_research 标志，整个搜索过程中遇到塞壬探测装置选项时将选择离开')
                 
                 # ===== 步骤1: 用卡位舰队卡住敌人 =====
                 # 获取配置的卡位舰队编号
@@ -529,6 +532,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                             self.config.cross_set(
                                 keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable",
                                 value=self._original_siren_research_enable)
+                        # 清除 _disable_siren_research 标志
+                        if hasattr(self.config, '_disable_siren_research'):
+                            delattr(self.config, '_disable_siren_research')
+                            logger.info('塞壬探测装置搜索模式结束：清除 _disable_siren_research 标志')
                         # 恢复指定海域计划作战设置
                         if hasattr(self, '_original_stay_in_zone'):
                             self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
@@ -554,6 +561,11 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable",
                         value=self._original_siren_research_enable)
                     logger.info(f'塞壬探测装置搜索模式结束：恢复塞壬研究功能为 {self._original_siren_research_enable}')
+                
+                # 清除 _disable_siren_research 标志
+                if hasattr(self.config, '_disable_siren_research'):
+                    delattr(self.config, '_disable_siren_research')
+                    logger.info('塞壬探测装置搜索模式结束：清除 _disable_siren_research 标志')
                 
                 # 恢复指定海域计划作战设置
                 if hasattr(self, '_original_stay_in_zone'):
