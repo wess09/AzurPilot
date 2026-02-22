@@ -487,10 +487,6 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     logger.info('塞壬探测装置搜索模式：使用手动遍历地图检测塞壬探测装置')
                     siren_detector_found = False
                     
-                    # 初始化地图数据
-                    self.map_data_init(map_=None)
-                    self.update()
-                    
                     # 获取所有摄像头位置
                     camera_queue = self.map.camera_data
                     logger.info(f'塞壬探测装置搜索模式：共有 {len(camera_queue)} 个摄像头位置需要检测')
