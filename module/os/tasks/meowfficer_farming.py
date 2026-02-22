@@ -470,14 +470,32 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 logger.info(f'塞壬探测装置搜索模式：一队自律结束，_solved_map_event={self._solved_map_event}')
                 
                 # ===== 步骤3: 自律结束后检查塞壬探测装置 =====
-                # 检查是否发现了塞壬探测装置（通过 _solved_map_event 判断）
-                # 注意：map_rescan 是在 run_auto_search 内部调用的，由于塞壬研究功能已禁用，
-                # 发现塞壬探测装置时会跳过处理并记录到 _solved_map_event
+                # 由于塞壬探测装置在雷达上不以问号形式显示，需要显式使用地图扫描来检测
+                siren_detector_found = False
+                
+                # 先检查 _solved_map_event 是否有记录
                 if 'is_scanning_device' in self._solved_map_event:
-                    logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（已跳过处理）', level=2)
+                    logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（自律过程中检测到）', level=2)
                     siren_detector_found = True
+                else:
+                    # _solved_map_event 中没有记录，需要显式使用地图扫描来检测塞壬探测装置
+                    # 因为塞壬探测装置在雷达上不以问号形式显示，clear_question 不会处理它
+                    logger.info('塞壬探测装置搜索模式：_solved_map_event 中无记录，显式使用地图扫描检测')
+                    self.map_data_init(map_=None)
+                    self.update()
+                    self.view.predict()
                     
-                    # 记录到配置中
+                    grids = self.view.select(is_scanning_device=True)
+                    logger.info(f'塞壬探测装置搜索模式：地图扫描发现 {len(grids) if grids else 0} 个可疑格子')
+                    
+                    if grids and grids[0].is_scanning_device:
+                        logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置（地图扫描检测到）', level=2)
+                        # 标记为已处理
+                        self._solved_map_event.add('is_scanning_device')
+                        siren_detector_found = True
+                
+                # 如果发现塞壬探测装置，记录到配置中
+                if siren_detector_found:
                     zone_str = f'{current_zone_id}'
                     current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
                     found_count = 0
@@ -511,8 +529,6 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         self.handle_after_auto_search()
                         self.config.check_task_switch()
                         continue
-                else:
-                    siren_detector_found = False
                 
                 # 如果没有发现塞壬探测装置，二队自律寻敌解决卡住的敌人
                 if not siren_detector_found:
