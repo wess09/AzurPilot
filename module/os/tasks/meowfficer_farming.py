@@ -35,15 +35,16 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 self._view_init()
             try:
                 self._update_view()
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f'[短猫任务] 更新视图失败: {e}')
             grids = self.view.select(is_scanning_device=True)
+            logger.info(f'[短猫任务] map_rescan_current 检测到 {len(grids) if grids else 0} 个可疑格子')
             if grids and grids[0].is_scanning_device:
                 # 标记为已处理，避免使用塞壬探测装置
                 if not hasattr(self, '_solved_map_event'):
                     self._solved_map_event = set()
                 if 'is_scanning_device' not in self._solved_map_event:
-                    logger.info('[短猫任务] 在塞壬探测装置搜索模式下，跳过使用塞壬探测装置')
+                    logger.info(f'[短猫任务] 在塞壬探测装置搜索模式下，发现塞壬探测装置 {grids[0]}，跳过使用')
                     self._solved_map_event.add('is_scanning_device')
         
         # 调用父类方法
