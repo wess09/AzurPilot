@@ -254,4 +254,4 @@ console.bat
 .vscode/*
 
 # Pylance configuration file
-pyrightconfig.json
+pyrightconfig.json.DS_Store
