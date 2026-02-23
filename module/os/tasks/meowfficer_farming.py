@@ -401,10 +401,20 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 # 使用塞壬探测装置搜索的侵蚀等级（只在中心海域中选择）
                 hazard_level = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_HazardLevel
                 logger.hr(f'塞壬探测装置搜索模式, hazard_level={hazard_level} (仅在中心海域)', level=1)
+                
+                # 获取已记录的海域列表（排除已发现塞壬探测装置的海域）
+                found_zones_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+                excluded_zones = []
+                if found_zones_str:
+                    excluded_zones = [self.zones.select(zone_id=int(z.strip()))[0] 
+                                     for z in str(found_zones_str).split(',') if z.strip()]
+                    logger.info(f'已记录的海域，将排除: {excluded_zones}')
+                
                 # 先选择中心海域（region 5），然后筛选指定侵蚀等级
                 zones = self.zones.select(region=5, hazard_level=hazard_level) \
                     .delete(SelectedGrids([self.zone])) \
                     .delete(SelectedGrids(self.zones.select(is_port=True))) \
+                    .delete(SelectedGrids(excluded_zones)) \
                     .sort_by_clock_degree(center=(1252, 1012), start=self.zone.location)
             else:
                 hazard_level = self.config.OpsiMeowfficerFarming_HazardLevel
