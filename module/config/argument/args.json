@@ -12578,6 +12578,10 @@
         "type": "input",
         "value": 0
       },
+      "SirenBug_Grid": {
+        "type": "input",
+        "value": null
+      },
       "DisableTaskSwitchDuringBug": {
         "type": "checkbox",
         "value": false,

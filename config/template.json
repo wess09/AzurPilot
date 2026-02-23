@@ -2370,6 +2370,7 @@
       "SirenBug_Enable": false,
       "SirenBug_Type": "dangerous",
       "SirenBug_Zone": 0,
+      "SirenBug_Grid": null,
       "DisableTaskSwitchDuringBug": false,
       "SirenBug_DailyCount": 0,
       "SirenBug_DailyCountRecord": "2020-01-01 00:00:00",

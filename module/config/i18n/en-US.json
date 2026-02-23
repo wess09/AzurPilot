@@ -4471,6 +4471,10 @@
       "name": "OpsiSirenBug.SirenBug_Zone.name",
       "help": "OpsiSirenBug.SirenBug_Zone.help"
     },
+    "SirenBug_Grid": {
+      "name": "OpsiSirenBug.SirenBug_Grid.name",
+      "help": "OpsiSirenBug.SirenBug_Grid.help"
+    },
     "DisableTaskSwitchDuringBug": {
       "name": "OpsiSirenBug.DisableTaskSwitchDuringBug.name",
       "help": "OpsiSirenBug.DisableTaskSwitchDuringBug.help",

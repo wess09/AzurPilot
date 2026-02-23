@@ -1126,6 +1126,7 @@ OpsiSirenBug:
     value: dangerous
     option: [dangerous, safe]
   SirenBug_Zone: 0
+  SirenBug_Grid: null
   DisableTaskSwitchDuringBug:
     type: checkbox
     value: false
