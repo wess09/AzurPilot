@@ -1764,6 +1764,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
                         if target_loc in self.map:
                             grid = self.convert_global_to_local(target_loc)
+                            self._solved_map_event = set()
                             find_device_timer = Timer(30, count=1).start()
                             while not find_device_timer.reached() and not device_handled:
                                 if self._handle_siren_bug_device(grid):
@@ -1820,8 +1821,6 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
                             find_device_timer.reset()
                             camera_queue = self.map.camera_data
-                            if 'is_scanning_device' in self._solved_map_event:
-                                self._solved_map_event.remove('is_scanning_device')
                             time.sleep(1.0)
 
                         time.sleep(0.5)
@@ -1954,6 +1953,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             # 首先检测是否遇到的是柱子
             if self.appear_then_click(REWARD_BOX_THIRD_OPTION, offset=(20, 20), interval=3):
                 logger.warning('[Bug利用] 检测到宝箱选项，重新开始寻找装置')
+                if 'is_scanning_device' in self._solved_map_event:
+                    self._solved_map_event.remove('is_scanning_device')
                 return False  
 
             # 第1次：选择第2个选项
