@@ -1665,7 +1665,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
     def _handle_siren_bug_reinteract(self, drop=None):
         # 23:55 - 00:05 跳过处理
         if getattr(self.config, 'OpsiSirenBug_SirenBug_CrossDay', False):
-            from datetime import datetime, time as dt_time
+            from datetime import time as dt_time
             now = datetime.now()
             if now.time() >= dt_time(23, 55) or now.time() <= dt_time(0, 5):
                 logger.info(f'当前时间: {now.strftime("%H:%M")}, 跳过塞壬研究装置BUG利用')
