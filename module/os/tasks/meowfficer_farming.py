@@ -406,9 +406,21 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 found_zones_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
                 excluded_zones = []
                 if found_zones_str:
-                    excluded_zones = [self.zones.select(zone_id=int(z.strip()))[0] 
-                                     for z in str(found_zones_str).split(',') if z.strip()]
-                    logger.info(f'已记录的海域，将排除: {excluded_zones}')
+                    for z in str(found_zones_str).split(','):
+                        z = z.strip()
+                        if not z:
+                            continue
+                        try:
+                            zone_id = int(z)
+                            selected = self.zones.select(zone_id=zone_id)
+                            if selected:
+                                excluded_zones.append(selected[0])
+                            else:
+                                logger.warning(f'无效的zone_id: {zone_id}, 在self.zones中未找到, 跳过')
+                        except ValueError:
+                            logger.warning(f'非法的zone_id格式: "{z}", 无法转换为整数, 跳过')
+                    if excluded_zones:
+                        logger.info(f'已记录的海域，将排除: {excluded_zones}')
                 
                 # 先选择中心海域（region 5），然后筛选指定侵蚀等级
                 zones = self.zones.select(region=5, hazard_level=hazard_level) \
