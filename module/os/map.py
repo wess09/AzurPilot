@@ -98,6 +98,19 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.warning('OS is in a special zone type, while SAFE and DANGEROUS are acceptable')
             self.map_exit()
 
+        # 如果当前海域是塞壬Bug利用海域，回到最近港口
+        siren_bug_zone = getattr(self.config, 'OpsiSirenBug_SirenBug_Zone', 0)
+        if siren_bug_zone:
+            try:
+                siren_bug_zone = self.name_to_zone(siren_bug_zone)
+            except Exception:
+                logger.warning(f'无法解析SirenBug目标区域: {siren_bug_zone}')
+            else:
+                if self.zone == siren_bug_zone:
+                    logger.info('检测到当前海域为塞壬Bug利用海域，回到最近港口')
+                    self.globe_goto(self.zone_nearest_azur_port(self.zone), types=('SAFE', 'DANGEROUS'), refresh=False)
+                    return
+
         # Clear current zone
         if self.zone.zone_id in [22, 44]:
             logger.info('In zone 22, 44, run first auto search')
@@ -1650,6 +1663,14 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
 
     def _handle_siren_bug_reinteract(self, drop=None):
+        # 23:55 - 00:05 跳过处理
+        if getattr(self.config, 'OpsiSirenBug_SirenBug_CrossDay', False):
+            from datetime import datetime, time as dt_time
+            now = datetime.now()
+            if now.time() >= dt_time(23, 55) or now.time() <= dt_time(0, 5):
+                logger.info(f'当前时间: {now.strftime("%H:%M")}, 跳过塞壬研究装置BUG利用')
+                return
+        
         # 侵蚀一塞壬研究装置处理后，跳转指定高侵蚀区域触发塞壬研究装置消耗两次紫币，最后返回侵蚀一自律   
         try:
             siren_research_enable = self.config.cross_get(keys="OpsiHazard1Leveling.OpsiSirenBug.SirenResearch_Enable")
@@ -1822,6 +1843,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
                 if not device_handled:
                     logger.warning(f'区域{siren_bug_zone}未找到塞壬研究装置，跳过后续操作')
+
+                    # 没找到吊机自动关闭bug利用
+                    if getattr(self.config, 'OpsiSirenBug_SirenBug_AutoDisable', False):
+                        self.config.OpsiSirenBug_SirenBug_Enable = False
+
                     raise RuntimeError('未找到塞壬研究装置')
 
             # Increase bug count

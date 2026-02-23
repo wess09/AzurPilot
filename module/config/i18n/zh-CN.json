@@ -4159,6 +4159,14 @@
     "SirenBug_CountLimit": {
       "name": "自动处理阈值(实验性)",
       "help": "实验性功能，可能导致把塞壬研究装置刷没，刷没后果自负\n当利用Bug次数达到设置阈值时，使用当前舰队卡住敌舰并使用另一舰队收菜。设为0则不启用该功能"
+    },
+    "SirenBug_CrossDay": {
+      "name": "跨日暂停Bug利用",
+      "help": "每天23:55至次日00:05暂停Bug利用，避免跨日断网导致的刷没吊机"
+    },
+    "SirenBug_AutoDisable": {
+      "name": "未找到塞壬装置时自动关闭Bug利用",
+      "help": "万一吊机消失，避免反复进入吊机海域浪费行动力"
     }
   },
   "OpsiCheckLeveling": {
