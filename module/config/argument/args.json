@@ -8759,48 +8759,6 @@
         "display": "hide"
       }
     },
-    "IslandTransport": {
-      "SubmitCarrot": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitCotton": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitFlex": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitFreshMeat": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitManjuu": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitMilk": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitNapaCabbage": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitOnion": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitPoultry": {
-        "type": "checkbox",
-        "value": true
-      },
-      "SubmitStrawberries": {
-        "type": "checkbox",
-        "value": true
-      }
-    },
     "Island1": {
       "Receive": {
         "type": "checkbox",
@@ -8834,9 +8792,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -8867,9 +8830,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option3": {
@@ -8900,9 +8868,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option4": {
@@ -8933,9 +8906,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -8965,9 +8943,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -8991,9 +8974,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option3": {
@@ -9017,9 +9005,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option4": {
@@ -9043,9 +9036,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9064,7 +9062,17 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
         ]
       },
       "Character1": {
@@ -9080,9 +9088,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9095,7 +9108,17 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
         ]
       },
       "Character2": {
@@ -9111,9 +9134,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option3": {
@@ -9126,7 +9154,17 @@
           3,
           4,
           5,
-          6
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
         ]
       },
       "Character3": {
@@ -9142,40 +9180,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
-        ]
-      },
-      "Option4": {
-        "type": "select",
-        "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
-      },
-      "Character4": {
-        "type": "select",
-        "value": "manjuu",
-        "option": [
-          "manjuu",
-          "saratoga",
-          "new_jersey",
-          "tashkent",
-          "lemalin",
-          "shimakaze",
-          "akashi",
-          "ying_swei",
-          "chao_ho",
-          "unicorn",
-          "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9192,7 +9204,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character1": {
@@ -9208,9 +9222,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9221,7 +9240,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character2": {
@@ -9237,9 +9258,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option3": {
@@ -9250,7 +9276,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character3": {
@@ -9266,9 +9294,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option4": {
@@ -9279,7 +9312,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character4": {
@@ -9295,9 +9330,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9314,12 +9354,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character1": {
@@ -9335,9 +9370,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9348,12 +9388,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character2": {
@@ -9369,9 +9404,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option3": {
@@ -9382,12 +9422,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character3": {
@@ -9403,9 +9438,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option4": {
@@ -9416,12 +9456,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character4": {
@@ -9437,9 +9472,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9475,9 +9515,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9507,9 +9552,88 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      },
+      "Option3": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      "Character3": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      },
+      "Option4": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ]
+      },
+      "Character4": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9547,9 +9671,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9581,9 +9710,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9607,6 +9741,96 @@
           8,
           9,
           10,
+          11,
+          12
+        ]
+      },
+      "Character1": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      },
+      "Option2": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ]
+      },
+      "Character2": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      }
+    },
+    "Island9": {
+      "Receive": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Option1": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
           11
         ]
       },
@@ -9623,9 +9847,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9659,83 +9888,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
-        ]
-      }
-    },
-    "Island9": {
-      "Receive": {
-        "type": "checkbox",
-        "value": false
-      },
-      "Option1": {
-        "type": "select",
-        "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
-        ]
-      },
-      "Character1": {
-        "type": "select",
-        "value": "manjuu",
-        "option": [
-          "manjuu",
-          "saratoga",
-          "new_jersey",
-          "tashkent",
-          "lemalin",
-          "shimakaze",
-          "akashi",
-          "ying_swei",
-          "chao_ho",
-          "unicorn",
-          "cheshire",
-          "amagi_chan"
-        ]
-      },
-      "Option2": {
-        "type": "select",
-        "value": 0,
-        "option": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
-        ]
-      },
-      "Character2": {
-        "type": "select",
-        "value": "manjuu",
-        "option": [
-          "manjuu",
-          "saratoga",
-          "new_jersey",
-          "tashkent",
-          "lemalin",
-          "shimakaze",
-          "akashi",
-          "ying_swei",
-          "chao_ho",
-          "unicorn",
-          "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9755,7 +9915,10 @@
           4,
           5,
           6,
-          7
+          7,
+          8,
+          9,
+          10
         ]
       },
       "Character1": {
@@ -9771,9 +9934,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9787,7 +9955,10 @@
           4,
           5,
           6,
-          7
+          7,
+          8,
+          9,
+          10
         ]
       },
       "Character2": {
@@ -9803,9 +9974,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9823,7 +9999,11 @@
           2,
           3,
           4,
-          5
+          5,
+          6,
+          7,
+          8,
+          9
         ]
       },
       "Character1": {
@@ -9839,9 +10019,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9853,7 +10038,11 @@
           2,
           3,
           4,
-          5
+          5,
+          6,
+          7,
+          8,
+          9
         ]
       },
       "Character2": {
@@ -9869,9 +10058,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9906,9 +10100,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9937,9 +10136,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -9956,7 +10160,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character1": {
@@ -9972,9 +10178,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -9985,7 +10196,9 @@
           1,
           2,
           3,
-          4
+          4,
+          5,
+          6
         ]
       },
       "Character2": {
@@ -10001,9 +10214,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -10020,12 +10238,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character1": {
@@ -10041,9 +10254,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -10054,12 +10272,7 @@
           1,
           2,
           3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9
+          4
         ]
       },
       "Character2": {
@@ -10075,9 +10288,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },
@@ -10115,9 +10333,14 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       },
       "Option2": {
@@ -10149,9 +10372,98 @@
           "akashi",
           "ying_swei",
           "chao_ho",
+          "william_d_porter",
+          "chen_hai",
           "unicorn",
           "cheshire",
-          "amagi_chan"
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      }
+    },
+    "Island16": {
+      "Receive": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Option1": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "Character1": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
+        ]
+      },
+      "Option2": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ]
+      },
+      "Character2": {
+        "type": "select",
+        "value": "manjuu",
+        "option": [
+          "manjuu",
+          "saratoga",
+          "new_jersey",
+          "tashkent",
+          "lemalin",
+          "shimakaze",
+          "akashi",
+          "ying_swei",
+          "chao_ho",
+          "william_d_porter",
+          "chen_hai",
+          "unicorn",
+          "cheshire",
+          "amagi_chan",
+          "helena",
+          "atago",
+          "friedrich_der_grobe"
         ]
       }
     },

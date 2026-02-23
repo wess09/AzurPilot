@@ -1707,18 +1707,6 @@
       "FailureInterval": 120,
       "ServerUpdate": "00:00"
     },
-    "IslandTransport": {
-      "SubmitCarrot": true,
-      "SubmitCotton": true,
-      "SubmitFlex": true,
-      "SubmitFreshMeat": true,
-      "SubmitManjuu": true,
-      "SubmitMilk": true,
-      "SubmitNapaCabbage": true,
-      "SubmitOnion": true,
-      "SubmitPoultry": true,
-      "SubmitStrawberries": true
-    },
     "Island1": {
       "Receive": false,
       "Option1": 0,
@@ -1748,9 +1736,7 @@
       "Option2": 0,
       "Character2": "manjuu",
       "Option3": 0,
-      "Character3": "manjuu",
-      "Option4": 0,
-      "Character4": "manjuu"
+      "Character3": "manjuu"
     },
     "Island4": {
       "Receive": false,
@@ -1779,7 +1765,11 @@
       "Option1": 0,
       "Character1": "manjuu",
       "Option2": 0,
-      "Character2": "manjuu"
+      "Character2": "manjuu",
+      "Option3": 0,
+      "Character3": "manjuu",
+      "Option4": 0,
+      "Character4": "manjuu"
     },
     "Island7": {
       "Receive": false,
@@ -1838,6 +1828,13 @@
       "Character2": "manjuu"
     },
     "Island15": {
+      "Receive": false,
+      "Option1": 0,
+      "Character1": "manjuu",
+      "Option2": 0,
+      "Character2": "manjuu"
+    },
+    "Island16": {
       "Receive": false,
       "Option1": 0,
       "Character1": "manjuu",

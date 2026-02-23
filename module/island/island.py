@@ -5,7 +5,7 @@ from module.island.project_data import *
 from module.island.project import IslandProjectRun
 from module.island.transport import IslandTransportRun
 from module.logger import logger
-from module.ui.page import page_dormmenu, page_island, page_island_phone, page_main
+from module.ui.page import page_island_phone, page_main
 
 
 class Island(IslandProjectRun, IslandTransportRun):
@@ -19,7 +19,7 @@ class Island(IslandProjectRun, IslandTransportRun):
             list[str]: a list of name for island receive
         """
         if any(config):
-            return [name for add, name in zip(config, list(name_to_slot_cn.keys())) if add]
+            return [name for add, name in zip(config, list(name_to_slot.keys())) if add]
         else:
             return []
 
@@ -56,13 +56,13 @@ class Island(IslandProjectRun, IslandTransportRun):
             self.config.task_delay(success=False)
 
     def run(self):
-        if server.server in ['cn']:
+        if server.server in ['cn', 'en']:
             transport = False
-            project_config = [self.config.__getattribute__(f'Island{i}_Receive') for i in range(1, 16)]
+            project_config = [self.config.__getattribute__(f'Island{i}_Receive')
+                              for i in range(1, len(name_to_slot) + 1)]
             project = any(project_config)
             names = self.island_config_to_names(project_config)
             if transport or project:
-                self.ui_goto_island()
                 self.ui_ensure(page_island_phone)
                 self.island_run(transport=transport, project=project, names=names)
                 self.ui_goto(page_main, get_ship=False)
