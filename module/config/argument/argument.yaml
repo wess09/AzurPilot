@@ -1089,6 +1089,18 @@ OpsiMeowfficerFarming:
     value: 0
   StayInZone: false
   APPreserveUntilReset: false
+  SirenDetectorSearch_Enable: false
+  SirenDetectorSearch_HazardLevel:
+    value: 5
+    option: [5, 6]
+  SirenDetectorSearch_FleetForBlock:
+    value: 2
+    option: [ 1, 2, 3, 4 ]
+  SirenDetectorSearch_StopAfterFound:
+    value: 0
+  SirenDetectorSearch_FoundZones:
+    type: textarea
+    value: ""
 OpsiHazard1Leveling:
   TargetZone:
     value: 0

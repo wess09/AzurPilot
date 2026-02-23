@@ -12121,6 +12121,36 @@
       "APPreserveUntilReset": {
         "type": "checkbox",
         "value": false
+      },
+      "SirenDetectorSearch_Enable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "SirenDetectorSearch_HazardLevel": {
+        "type": "select",
+        "value": 5,
+        "option": [
+          5,
+          6
+        ]
+      },
+      "SirenDetectorSearch_FleetForBlock": {
+        "type": "select",
+        "value": 2,
+        "option": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "SirenDetectorSearch_StopAfterFound": {
+        "type": "input",
+        "value": 0
+      },
+      "SirenDetectorSearch_FoundZones": {
+        "type": "textarea",
+        "value": ""
       }
     },
     "OpsiFleet": {
