@@ -23,6 +23,7 @@ from module.os_handler.assets import AUTO_SEARCH_OS_MAP_OPTION_OFF, AUTO_SEARCH_
     AUTO_SEARCH_OS_MAP_OPTION_ON, AUTO_SEARCH_REWARD, REWARD_BOX_THIRD_OPTION
 from module.os_handler.storage import StorageHandler
 from module.os_handler.strategic import StrategicSearchHandler
+from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 from module.ui.assets import GOTO_MAIN, BACK_ARROW
 from module.ui.page import page_os
 
@@ -634,6 +635,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         """
         Keeping enough startup AP to run CL1.
         """
+        # 检查智能调度是否启用，如果启用则由智能调度模块统一管理任务切换
+        # 这里不应该直接切换到 CL1
+        if is_smart_scheduling_enabled(self.config):
+            return
+        
         if self.is_cl1_enabled and get_os_reset_remain() > 2 and self.cl1_enough_yellow_coins:
             preserve = self.config.cross_get(keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve')
             logger.info(f'Keep {preserve} AP when CL1 available')
