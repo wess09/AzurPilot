@@ -224,8 +224,13 @@ class UI(InfoHandler):
         logger.warning(f"Supported page: {[str(page) for page in Page.iter_pages()]}")
         logger.warning('Supported page: Any page with a "HOME" button on the upper-right')
         logger.critical("Please switch to a supported page before starting Alas")
+        logger.critical('无法前往游戏主界面，不支持从当前游戏界面启动。'
+                        'Alas 可以自动切换到需要的游戏界面, 但是只允许在这些界面下启动：'
+                        '主界面，出击，编队，演习，每日，活动，SP 活动，任务领取。共斗活动。'
+                        'Alas 也可以在右上角有 “一键回港” 按钮的界面下启动。'
+                        '游戏中大部分界面都有这个按钮，除了主界面本身，后宅，指挥喵。')
         
-        # ======【需求2】未知页面自动重启======
+        # 未知页面自动重启
         logger.warning("Unknown page detected, try to restart game")
         from module.handler.login import LoginHandler
         login_handler = LoginHandler(config=self.config, device=self.device)
@@ -235,7 +240,6 @@ class UI(InfoHandler):
         login_handler.device.app_start()
         login_handler.handle_app_login()
         return self.ui_get_current_page(skip_first_screenshot=True)
-        # ======【需求2】结束======
 
     def ui_goto(self, destination, get_ship=True, offset=(30, 30), skip_first_screenshot=True):
         """

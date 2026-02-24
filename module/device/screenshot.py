@@ -246,6 +246,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
             else:
                 logger.critical(f'Resolution not supported: {width}x{height}')
                 logger.critical('Please set emulator resolution to 1280x720')
+                logger.critical('不支持的分辨率，Alas 需要在 1280x720 下运行。')
                 raise RequestHumanTakeover
 
     def check_screen_black(self):
@@ -267,6 +268,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
             elif self.config.Emulator_ScreenshotMethod == 'uiautomator2':
                 logger.warning(f'Received pure black screenshots from emulator, color: {color}')
                 logger.warning('Uninstall minicap and retry')
+                logger.warning('截图为纯黑色。通常是设备处于锁屏状态，或者当前模拟器不支持当前截图方式。')
                 self.uninstall_minicap()
                 self._screen_black_checked = False
                 return False

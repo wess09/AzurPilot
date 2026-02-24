@@ -510,6 +510,8 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 logger.critical('No ship retired')
                 logger.critical('Please configure your "Quick Retire Options" in game, '
                                 'make sure it can select ships to retire')
+                logger.critical('仅使用一键退役时，未退役任何船只，脚本停止运行。'
+                                '若要继续运行，请开启游戏中的一键退役功能，并手动选定对应稀有度的船只参与退役。')
                 raise RequestHumanTakeover
         elif mode == 'old_retire':
             self.handle_dock_cards_loading()
@@ -519,6 +521,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 logger.critical('No ship retired')
                 logger.critical('Please configure your retirement settings in Alas, '
                                 'make sure it can select ships to retire')
+                logger.critical('未退役任何船只，脚本停止运行。若要继续运行，请在 Alas 设置中开启对应稀有度的船只参与退役。')
                 raise RequestHumanTakeover
         else:
             raise ScriptError(

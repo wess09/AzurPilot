@@ -209,6 +209,7 @@ class GridPredictor:
                 logger.warning(f'Enemy detection template not found: {name}')
                 logger.warning('Please create it with dev_tools/relative_record.py or dev_tools/relative_crop.py, '
                                'then place it under ./assets/<server>/template')
+                logger.warning('未找到精英敌人的识别模板。通常是活动地图还未完全适配，请等待 Alas 更新。')
                 raise ScriptError(f'Enemy detection template not found: {name}')
 
             short_name = name[6:] if name.startswith('Siren_') else name

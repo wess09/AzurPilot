@@ -175,6 +175,7 @@ class AlOcr(CnOcr):
         logger.warning(f'Ocr model not prepared: {model_dir}')
         logger.warning(f'Required files: {model_files}')
         logger.critical('Please check if required files of pre-trained OCR model exist')
+        logger.critical('未找到 OCR 模型，或 OCR 模型不符合要求。')
         raise RequestHumanTakeover
 
     def _get_module(self, context):

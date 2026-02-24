@@ -814,6 +814,8 @@ class Connection(ConnectionAttr):
                 run_once(self.check_mumu_bridge_network)()
                 # No such device
                 logger.warning('No such device exists, please restart the emulator or set a correct serial')
+                logger.warning('该模拟器 Serial 不存在，请重启模拟器或设置正确的 Serial。')
+                logger.warning('ADB 无法连接至该模拟器，或是模拟器未启动。')
                 raise EmulatorNotRunningError
 
         # Failed to connect

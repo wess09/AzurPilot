@@ -50,6 +50,7 @@ class CampaignRun(CampaignEvent, ShopStatus):
             self.module = importlib.import_module('.' + name, f'campaign.{folder}')
         except ModuleNotFoundError:
             logger.warning(f'Map file not found: campaign.{folder}.{name}')
+            logger.warning('未找到地图文件。通常是用户出击未适配的地图，或者运行目录有误。')
             if not os.path.exists(f'./campaign/{folder}'):
                 logger.warning(f'Folder not exists: ./campaign/{folder}')
             else:
