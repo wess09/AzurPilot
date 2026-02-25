@@ -155,6 +155,20 @@ class CoinTaskMixin:
         
         return True
     
+    def check_and_notify_action_point_threshold(self):
+        """
+        发送行动力变化推送通知。
+        需要类中包含 _action_point_total 属性。
+        """
+        if not hasattr(self, '_action_point_total'):
+            return
+            
+        current_ap = self._action_point_total
+        self.notify_push(
+            title="[Alas] 行动力出现变化！",
+            content=f"当前行动力: {current_ap}"
+        )
+    
     # ==================== 黄币阈值相关方法 ====================
     
     def _get_operation_coins_return_threshold(self):

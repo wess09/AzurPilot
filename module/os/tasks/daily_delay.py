@@ -1,24 +1,24 @@
 """
-OpsiDailyDelay - 大世界任务延后模块（延后cl1任务）
+OpsiDailyDelay - 大世界任务延后模块（延后cl1和短猫连接任务）
 
-在每日0点服务器重启前的可配置时间段内，将cl1任务自动延后至次日0点重启完成后再执行。
+在每日0点服务器重启前的可配置时间段内，将cl1和短猫连接任务自动延后至次日0点重启完成后再执行。
 
 功能说明:
     1. 定时触发 - 在每日0点前X分钟自动触发（X可配置，范围1-60分钟，默认5分钟）
-    2. 任务过滤 - 只延后cl1（OpsiHazard1Leveling）任务
-    3. 任务延后 - 将cl1任务延后到0点后执行
+    2. 任务过滤 - 只延后cl1（OpsiHazard1Leveling）和短猫（OpsiMeowfficerFarming）任务
+    3. 任务延后 - 将cl1和短猫连接任务延后到0点后执行
     4. 状态暂存 - 保存任务状态，支持断点续传
 
 任务层级:
     - OpsiDailyDelay 是和 OpsiCrossMonth 相同层级的调度器
-    - 它负责在每日0点前延后cl1任务，避免任务在服务器重启时中断
+    - 它负责在每日0点前延后cl1和短猫连接任务，避免任务在服务器重启时中断
 
 配置项:
-    - Scheduler.Enable: 任务启用开关（启用此任务即启用cl1任务延后功能）
+    - Scheduler.Enable: 任务启用开关（启用此任务即启用cl1和短猫连接任务延后功能）
     - OpsiDailyDelay.TriggerMinutesBeforeReset: 提前触发时间（分钟，默认5，范围1-60）
 
 此模块包含:
-    - OpsiDailyDelay: cl1任务延后主类
+    - OpsiDailyDelay: cl1和短猫连接任务延后主类
 """
 import json
 import os
@@ -31,17 +31,18 @@ from module.os.map import OSMap
 
 class OpsiDailyDelay(OSMap):
     """
-    cl1任务延后主类
+    cl1和短猫连接任务延后主类
     
     功能:
     - 在每日0点前X分钟自动触发
-    - 延后cl1（OpsiHazard1Leveling）任务到0点后
+    - 延后cl1（OpsiHazard1Leveling）和短猫（OpsiMeowfficerFarming）连接任务到0点后
     - 保存任务状态，支持断点续传
     """
     
-    # 需要延后的任务列表（只延后cl1）
+    # 需要延后的任务列表（只延后cl1和短猫）
     DELAYED_TASKS = [
         'OpsiHazard1Leveling',  # cl1（侵蚀一练级）
+        'OpsiMeowfficerFarming',  # 短猫（短猫相接）
     ]
     
     # 任务状态文件路径
@@ -80,8 +81,8 @@ class OpsiDailyDelay(OSMap):
         # 获取下次0点时间（服务器时间）
         next_reset = get_server_next_update("00:00")
         
-        # 恢复时间为0点后
-        recovery_time = next_reset
+        # 恢复时间为0点后5分钟
+        recovery_time = next_reset + timedelta(minutes=5)
         
         return recovery_time
     
@@ -91,7 +92,7 @@ class OpsiDailyDelay(OSMap):
         """
         判断任务是否应该被延后
         
-        只延后cl1（OpsiHazard1Leveling）任务
+        只延后cl1（OpsiHazard1Leveling）和短猫（OpsiMeowfficerFarming）连接任务
         
         Args:
             task_name: 任务名称
@@ -99,7 +100,7 @@ class OpsiDailyDelay(OSMap):
         Returns:
             bool: True表示应该延后，False表示不应该延后
         """
-        # 只延后cl1任务
+        # 只延后cl1和短猫任务
         if task_name not in self.DELAYED_TASKS:
             return False
         
@@ -109,10 +110,10 @@ class OpsiDailyDelay(OSMap):
     
     def _save_task_status(self, task_name, original_next_run, delayed_next_run):
         """
-        保存cl1任务状态
+        保存cl1或短猫连接任务状态
         
         Args:
-            task_name: 任务名称（cl1）
+            task_name: 任务名称（cl1或短猫）
             original_next_run: 原始NextRun时间
             delayed_next_run: 延后后的NextRun时间
         """
@@ -141,10 +142,10 @@ class OpsiDailyDelay(OSMap):
     
     def _load_task_status(self, task_name):
         """
-        加载cl1任务状态
+        加载cl1或短猫连接任务状态
         
         Args:
-            task_name: 任务名称（cl1）
+            task_name: 任务名称（cl1或短猫）
             
         Returns:
             dict: 任务状态，如果不存在则返回None
@@ -196,10 +197,10 @@ class OpsiDailyDelay(OSMap):
     
     def _delay_task(self, task_name, delay_to):
         """
-        延后cl1任务到指定时间
+        延后cl1或短猫连接任务到指定时间
         
         Args:
-            task_name: 任务名称（cl1）
+            task_name: 任务名称（cl1或短猫）
             delay_to: 延后到的时间（datetime对象）
             
         Returns:
@@ -224,7 +225,7 @@ class OpsiDailyDelay(OSMap):
     
     def _delay_all_pending_tasks(self, delay_to):
         """
-        延后所有待执行的cl1任务
+        延后所有待执行的cl1和短猫连接任务
         
         Args:
             delay_to: 延后到的时间（datetime对象）
@@ -242,7 +243,7 @@ class OpsiDailyDelay(OSMap):
         if not all_tasks:
             return 0
         
-        # 延后cl1任务
+        # 延后cl1和短猫连接任务
         delayed_count = 0
         for task in all_tasks:
             task_name = task.command
@@ -258,10 +259,10 @@ class OpsiDailyDelay(OSMap):
     
     def _restore_task(self, task_name):
         """
-        恢复cl1任务到原始时间
+        恢复cl1或短猫连接任务到原始时间
         
         Args:
-            task_name: 任务名称（cl1）
+            task_name: 任务名称（cl1或短猫）
             
         Returns:
             bool: 是否成功恢复
@@ -288,7 +289,7 @@ class OpsiDailyDelay(OSMap):
     
     def _restore_all_delayed_tasks(self):
         """
-        恢复所有延后的cl1任务
+        恢复所有延后的cl1和短猫连接任务
         
         Returns:
             int: 成功恢复的任务数量
@@ -342,15 +343,15 @@ class OpsiDailyDelay(OSMap):
         任务结束处理
         
         1. 返回大世界港区（如NY港区、利维浦港区等）
-        2. 延后cl1任务到0点后
+        2. 延后cl1和短猫连接任务到0点后
         3. 延迟到下次触发时间（0点前X分钟）
         4. 停止任务（不返回主界面）
         """
         # 返回大世界港区
         self._return_to_port()
         
-        # 延后cl1任务
-        self._delay_cl1()
+        # 延后cl1和短猫连接任务
+        self._delay_cl1_and_short_cat()
         
         # 获取提前触发时间
         trigger_minutes = self.config.cross_get(keys=self.CONFIG_PATH_TRIGGER_MINUTES)
@@ -377,22 +378,26 @@ class OpsiDailyDelay(OSMap):
         # 停止任务（不返回主界面）
         self.config.task_stop()
     
-    def _delay_cl1(self):
+    def _delay_cl1_and_short_cat(self):
         """
-        延后cl1任务到0点后
+        延后cl1和短猫连接任务到0点后
         
-        将cl1（OpsiHazard1Leveling）任务延后到0点后
+        将cl1（OpsiHazard1Leveling）和短猫（OpsiMeowfficerFarming）连接任务延后到0点后5分钟
         """
         try:
             # 获取下次0点时间
             next_reset = get_server_next_update("00:00")
             
-            # 计算延后时间（0点后）
-            delay_time = next_reset
+            # 计算延后时间（0点后5分钟）
+            delay_time = next_reset + timedelta(minutes=5)
             
             # 延后cl1任务
             if 'OpsiHazard1Leveling' in self.DELAYED_TASKS:
                 self._delay_task('OpsiHazard1Leveling', delay_time)
+            
+            # 延后短猫任务
+            if 'OpsiMeowfficerFarming' in self.DELAYED_TASKS:
+                self._delay_task('OpsiMeowfficerFarming', delay_time)
         except Exception as e:
             pass
     
@@ -430,12 +435,12 @@ class OpsiDailyDelay(OSMap):
     
     def opsi_daily_delay(self):
         """
-        cl1任务延后主任务
+        cl1和短猫连接任务延后主任务
         
         执行流程:
         1. 计算触发时间
         2. 检查是否在触发时间窗口内
-        3. 延后cl1任务到0点后
+        3. 延后cl1和短猫连接任务到0点后
         4. 等待到0点
         5. 恢复所有延后的任务
         6. 任务结束（不返回主界面）
@@ -464,10 +469,10 @@ class OpsiDailyDelay(OSMap):
         
         # Now we are X minutes before OpSi reset
         
-        # 计算恢复时间（0点后）
-        recovery_time = next_reset
+        # 计算恢复时间（0点后5分钟）
+        recovery_time = next_reset + timedelta(minutes=5)
         
-        # 延后cl1任务
+        # 延后cl1和短猫连接任务
         delayed_count = self._delay_all_pending_tasks(recovery_time)
         
         while True:
@@ -478,6 +483,9 @@ class OpsiDailyDelay(OSMap):
             else:
                 self.device.sleep(min(remain, 60))
                 continue
+        
+        # 等待5分钟，确保服务器重启完成
+        self.device.sleep(300)
         
         # 恢复所有延后的任务
         restored_count = self._restore_all_delayed_tasks()

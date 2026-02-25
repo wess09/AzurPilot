@@ -15,84 +15,238 @@ from module.os.tasks.scheduling import CoinTaskMixin
 from module.os_handler.action_point import ActionPointLimit
 
 
-class OpsiHazard1Leveling(OSMap):
-    
-    def notify_push(self, title, content):
-        """
-        发送推送通知（智能调度功能）
-        
-        Args:
-            title (str): 通知标题（会自动添加实例名称前缀）
-            content (str): 通知内容
-            
-        Notes:
-            - 仅在启用智能调度时生效
-            - 需要在配置中设置 Error_OnePushConfig 才能发送推送
-            - 使用 onepush 库发送通知到配置的推送渠道
-            - 标题会自动格式化为 "[Alas <实例名>] 原标题" 的形式
-        """
-        # 检查是否启用智能调度
-        if not is_smart_scheduling_enabled(self.config):
-            return
-        # 检查是否启用推送大世界相关邮件
-        if not self.config.OpsiGeneral_NotifyOpsiMail:
-            return
-            
-        # 检查是否配置了推送
-        # 默认值是 'provider: null'，需要检查 provider 是否有效
-        push_config = self.config.Error_OnePushConfig
-        if not push_config or 'provider: null' in push_config or 'provider:null' in push_config:
-            logger.warning("推送配置未设置或 provider 为 null，跳过推送。请在 Alas 设置 -> 错误处理 -> OnePush 配置中设置有效的推送渠道。")
-            return
-        
-        # 获取实例名称并格式化标题
-        instance_name = getattr(self.config, 'config_name', 'Alas')
-        # 如果标题已经包含 [Alas]，替换为带实例名的版本
-        if title.startswith('[Alas]'):
-            formatted_title = f"[Alas <{instance_name}>]{title[6:]}"
-        else:
-            formatted_title = f"[Alas <{instance_name}>] {title}"
-            
-        try:
-            success = notify_handle_notify(
-                self.config.Error_OnePushConfig,
-                title=formatted_title,
-                content=content
-            )
-            if success:
-                logger.info(f"✓ 推送通知成功: {formatted_title}")
-            else:
-                logger.warning(f"✗ 推送通知失败: {formatted_title}")
-        except Exception as e:
-            logger.error(f"推送通知异常: {e}")
+class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
 
-    def check_and_notify_action_point_threshold(self):
-        """
-        发送行动力推送通知（每次调用都发送）
-        """
-        # 检查是否启用智能调度
-        # if not is_smart_scheduling_enabled(self.config):
-        #     return
-                    
-        # 获取当前行动力总量
-        current_ap = self._action_point_total
+
+    def _cl1_smart_scheduling_check(self, yellow_coins):
+        """处理智能调度中的黄币检查与任务切换"""
+        if not is_smart_scheduling_enabled(self.config):
+            # 未启用智能调度时，凭证不足则推迟任务
+            cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
+            if yellow_coins < cl1_preserve:
+                logger.info(f'[智能调度] 作战补给凭证不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀 1 任务至次日')
+                self.config.task_delay(server_update=True)
+                self.config.task_stop()
+            return
+
+        # 优先使用智能调度的黄币保留值
+        if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
+            cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
+        else:
+            cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
         
-        # 直接发送推送通知
-        self.notify_push(
-            title="[Alas] 行动力通知",
-            content=f"当前行动力: {current_ap}"
-        )
+        if yellow_coins < cl1_preserve:
+            logger.info(f'[智能调度] 作战补给凭证不足 ({yellow_coins} < {cl1_preserve})，需要获取凭证')
+
+            # 进入行动力界面读取当前行动力数据
+            self.action_point_enter()
+            self.action_point_safe_get()
+            self.action_point_quit()
+
+            # 读取短猫相接任务的行动力保留值
+            meow_ap_preserve = int(self.config.cross_get(
+                keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
+                default=1000
+            ))
+
+            # 覆盖为智能调度的行动力保留值
+            if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
+                smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+                if smart_ap_preserve > 0:
+                    meow_ap_preserve = smart_ap_preserve
+
+            # 检查行动力是否足以执行补充任务
+            _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
+            if self._action_point_total < meow_ap_preserve:
+                logger.warning(f'行动力不足以执行短猫 ({self._action_point_total} < {meow_ap_preserve})')
+
+                if not _previous_coins_ap_insufficient:
+                    _previous_coins_ap_insufficient = True
+                    self.notify_push(
+                        title="[Alas] 智能调度 - 警告",
+                        content=f"作战补给凭证 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n任务已推迟"
+                    )
+                else:
+                    logger.info('上次检查行动力不足，跳过推送通知')
+
+                logger.info('推迟任务 50 分钟')
+                self.config.task_delay(minute=50)
+                self.config.task_stop()
+            else:
+                # 行动力充足，切换到预设计的补充任务
+                logger.info(f'[智能调度] 行动力充足 ({self._action_point_total})，开始执行补充任务')
+                _previous_coins_ap_insufficient = False
+                
+                task_enable_config = {
+                    'OpsiMeowfficerFarming': self.config.cross_get(
+                        keys='OpsiScheduling.OpsiScheduling.EnableMeowfficerFarming',
+                        default=True
+                    ),
+                    'OpsiObscure': self.config.cross_get(
+                        keys='OpsiScheduling.OpsiScheduling.EnableObscure',
+                        default=False
+                    ),
+                    'OpsiAbyssal': self.config.cross_get(
+                        keys='OpsiScheduling.OpsiScheduling.EnableAbyssal',
+                        default=False
+                    ),
+                    'OpsiStronghold': self.config.cross_get(
+                        keys='OpsiScheduling.OpsiScheduling.EnableStronghold',
+                        default=False
+                    ),
+                }
+                
+                task_names = {
+                    'OpsiMeowfficerFarming': '短猫相接',
+                    'OpsiObscure': '隐秘海域',
+                    'OpsiAbyssal': '深渊海域',
+                    'OpsiStronghold': '塞壬要塞'
+                }
+                
+                all_coin_tasks = [task for task, enabled in task_enable_config.items() if enabled]
+                if not all_coin_tasks:
+                    logger.warning('[智能调度] 未启用任何作战补给凭证补充任务，将执行短猫相接')
+                    all_coin_tasks = ['OpsiMeowfficerFarming']
+                
+                enabled_names = '、'.join([task_names.get(task, task) for task in all_coin_tasks])
+                logger.info(f'[智能调度] 启用的补充任务: {enabled_names}')
+                
+                enabled_tasks = []
+                auto_enabled_tasks = []
+                with self.config.multi_set():
+                    for task in all_coin_tasks:
+                        if self.config.is_task_enabled(task):
+                            enabled_tasks.append(task)
+                            logger.info(f'[智能调度] 凭证补充已启用: {task_names.get(task, task)}')
+                        else:
+                            logger.info(f'[智能调度] 自动启用补充任务: {task_names.get(task, task)}')
+                            self.config.cross_set(keys=f'{task}.Scheduler.Enable', value=True)
+                            auto_enabled_tasks.append(task)
+                
+                available_tasks = enabled_tasks + auto_enabled_tasks
+                if auto_enabled_tasks:
+                    auto_enabled_names = '、'.join([task_names.get(task, task) for task in auto_enabled_tasks])
+                    logger.info(f'[智能调度] 已自动启用以下补充任务: {auto_enabled_names}')
+                
+                if not available_tasks:
+                    logger.error('[智能调度] 无法启用任何补充任务，处于异常状态')
+                    self.config.task_delay(minute=60)
+                    self.config.task_stop()
+                    self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
+                    return
+                
+                task_names_str = '、'.join([task_names.get(task, task) for task in available_tasks])
+                self.notify_push(
+                    title="[Alas info] 智能调度 - 切换至凭证补充任务",
+                    content=f"作战补给凭证 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力: {self._action_point_total} (需要 {meow_ap_preserve})\n切换至 {task_names_str} 获取凭证"
+                )
+
+                with self.config.multi_set():
+                    for task in available_tasks:
+                        self.config.task_call(task)
+                    
+                    cd = self.nearest_task_cooling_down
+                    if cd is not None:
+                        logger.info(f'[智能调度] 检测到冷却中的任务 {cd.command}，延迟侵蚀 1 任务至 {cd.next_run}')
+                        self.config.task_delay(target=cd.next_run)
+                self.config.task_stop()
+            self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
+
+    def _cl1_ap_check(self):
+        """最低行动力保留检查"""
+        self.action_point_enter()
+        self.action_point_safe_get()
+        self.action_point_quit()
+
+        min_reserve = self.config.OS_ACTION_POINT_PRESERVE
+        if self._action_point_total < min_reserve:
+            logger.warning(f'[智能调度] 行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
+
+            _previous_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousApInsufficient', False)
+            if not _previous_ap_insufficient:
+                _previous_ap_insufficient = True
+                self.notify_push(
+                    title="[Alas info] 智能调度 - 行动力低于最低保留",
+                    content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，已推迟任务"
+                )
+            else:
+                logger.info('上次检查行动力低于最低保留，跳过推送通知')
+
+            logger.info('[智能调度] 推迟侵蚀 1 任务 50 分钟')
+            self.config.task_delay(minute=50)
+            self.config.task_stop()
+        else:
+            _previous_ap_insufficient = False
+        self.config.OpsiHazard1_PreviousApInsufficient = _previous_ap_insufficient
+
+    def _cl1_run_battle(self):
+        """执行侵蚀 1 实际战斗逻辑"""
+        if self.config.OpsiHazard1Leveling_TargetZone != 0:
+            zone = self.config.OpsiHazard1Leveling_TargetZone
+        else:
+            zone = 22
+        logger.hr(f'OS hazard 1 leveling, zone_id={zone}', level=1)
+        if self.zone.zone_id != zone or not self.is_zone_name_hidden:
+            self.globe_goto(self.name_to_zone(zone), types='SAFE', refresh=True)
+        self.fleet_set(self.config.OpsiFleet_Fleet)
+        search_completed = self.run_strategic_search()
+
+        # 无论战略搜索是否正常完成，都执行后续重扫和巡逻，以确保任务不被遗漏
+        if True: 
+            if not search_completed and search_completed is not None:
+                 logger.warning("战略搜索返回 False，但仍将继续执行重扫/巡逻")
+
+            self._solved_map_event = set()
+            self._solved_fleet_mechanism = False
+            self.clear_question()
+            self.map_rescan()
+
+            if self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
+                exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
+                if exec_fixed and not self._solved_map_event:
+                    self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
+                    self._solved_map_event = set()
+                    self.clear_question()
+                    self.map_rescan()
+
+        self.handle_after_auto_search()
+        solved_events = getattr(self, '_solved_map_event', set())
+        if 'is_akashi' in solved_events:
+            try:
+                from module.statistics.cl1_database import db as cl1_db
+                instance_name = getattr(self.config, 'config_name', 'default')
+                cl1_db.increment_akashi_encounter(instance_name)
+                logger.info('已成功在数据库中增加侵蚀 1 明石遭遇次数')
+            except Exception:
+                logger.exception('无法将侵蚀 1 明石遭遇数据存入数据库')
+
+    def _cl1_handle_telemetry(self):
+        """处理遥测数据提交"""
+        try:
+            if not getattr(self.config, 'DropRecord_TelemetryReport', True):
+                logger.info('[错误] 遥测上报已关闭')
+            else:
+                from module.statistics.cl1_data_submitter import get_cl1_submitter
+                instance_name = getattr(self.config, 'config_name', None)
+                submitter = get_cl1_submitter(instance_name=instance_name)
+                raw_data = submitter.collect_data()
+                if raw_data.get('battle_count', 0) > 0:
+                    metrics = submitter.calculate_metrics(raw_data)
+                    submitter.submit_data(metrics)
+                    logger.info(f'侵蚀 1 数据提交已排队，实例名称: {instance_name}')
+        except Exception as e:
+            logger.debug(f'侵蚀 1 数据提交失败: {e}')
 
     def os_hazard1_leveling(self):
+        """执行大世界侵蚀 1 练级任务。"""
         logger.hr('OS hazard 1 leveling', level=1)
-        # Without these enabled, CL1 gains 0 profits
+        # 启用随机事件以获得收益
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=True,
         )
-        #if not self.config.is_task_enabled('OpsiMeowfficerFarming'):
-        #    self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
+
         while True:
-            # 使用 config_generated.py 中生成的属性来读取行动力保留值
+            # 读取行动力保留值
             self.config.OS_ACTION_POINT_PRESERVE = int(getattr(
                 self.config, 'OpsiHazard1Leveling_MinimumActionPointReserve', 200
             ))
@@ -100,302 +254,68 @@ class OpsiHazard1Leveling(OSMap):
             if self.config.is_task_enabled('OpsiAshBeacon') \
                     and not self._ash_fully_collected \
                     and self.config.OpsiAshBeacon_EnsureFullyCollected:
-                logger.info('Ash beacon not fully collected, ignore action point limit temporarily')
+                logger.info('余烬信标未收集满，暂时忽略行动力限制')
                 self.config.OS_ACTION_POINT_PRESERVE = 0
             logger.attr('OS_ACTION_POINT_PRESERVE', self.config.OS_ACTION_POINT_PRESERVE)
 
-
-            # ===== 智能调度: 黄币检查与任务切换 =====
-            # 检查黄币是否低于保留值
+            # ===== 智能调度：黄币检查与任务切换 =====
             yellow_coins = self.get_yellow_coins()
-            if is_smart_scheduling_enabled(self.config):
-                # 启用了智能调度
-                # 使用智能调度配置的黄币保留值（如果设置了的话）
-                if hasattr(self, '_get_smart_scheduling_operation_coins_preserve'):
-                    cl1_preserve = self._get_smart_scheduling_operation_coins_preserve()
-                else:
-                    cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
-                if yellow_coins < cl1_preserve:
-                    logger.info(f'【智能调度】黄币不足 ({yellow_coins} < {cl1_preserve}), 需要执行短猫相接')
-
-                    # 先获取当前行动力数据（包含箱子里的行动力）
-                    # 需要先进入行动力界面才能读取数据
-                    self.action_point_enter()
-                    self.action_point_safe_get()
-                    self.action_point_quit()
-
-                    # 使用 cross_get 读取短猫相接任务的行动力保留值（而非当前任务的配置）
-                    meow_ap_preserve = int(self.config.cross_get(
-                        keys='OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve',
-                        default=1000
-                    ))
-
-                    # 获取智能调度配置的行动力保留值
-                    if hasattr(self, '_get_smart_scheduling_action_point_preserve'):
-                        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
-                        if smart_ap_preserve > 0:
-                            meow_ap_preserve = smart_ap_preserve
-
-                    # 检查行动力是否足够执行短猫相接
-                    _previous_coins_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousCoinsApInsufficient', False)
-                    if self._action_point_total < meow_ap_preserve:
-                        # 行动力也不足，推迟并推送通知
-                        logger.warning(f'行动力不足以执行短猫 ({self._action_point_total} < {meow_ap_preserve})')
-
-                        if _previous_coins_ap_insufficient == False:
-                            _previous_coins_ap_insufficient = True
-                            self.notify_push(
-                                title="[Alas] 侵蚀1 - 黄币与行动力双重不足",
-                                content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n推迟任务"
-                            )
-                        else:
-                            logger.info('上次检查行动力不足，跳过推送邮件')
-
-                        logger.info('推迟侵蚀1任务1小时')
-                        self.config.task_delay(minute=60)
-                        self.config.task_stop()
-                    else:
-                        # 行动力充足，切换到黄币补充任务获取黄币
-                        logger.info(f'行动力充足 ({self._action_point_total}), 切换到黄币补充任务获取黄币')
-                        _previous_coins_ap_insufficient = False
-                        
-                        # 读取四个独立任务开关配置
-                        task_enable_config = {
-                            'OpsiMeowfficerFarming': self.config.cross_get(
-                                keys='OpsiScheduling.OpsiScheduling.EnableMeowfficerFarming',
-                                default=True
-                            ),
-                            'OpsiObscure': self.config.cross_get(
-                                keys='OpsiScheduling.OpsiScheduling.EnableObscure',
-                                default=False
-                            ),
-                            'OpsiAbyssal': self.config.cross_get(
-                                keys='OpsiScheduling.OpsiScheduling.EnableAbyssal',
-                                default=False
-                            ),
-                            'OpsiStronghold': self.config.cross_get(
-                                keys='OpsiScheduling.OpsiScheduling.EnableStronghold',
-                                default=False
-                            ),
-                        }
-                        
-                        task_names = {
-                            'OpsiMeowfficerFarming': '短猫相接',
-                            'OpsiObscure': '隐秘海域',
-                            'OpsiAbyssal': '深渊海域',
-                            'OpsiStronghold': '塞壬要塞'
-                        }
-                        
-                        # 获取智能调度中启用的任务列表
-                        all_coin_tasks = [task for task, enabled in task_enable_config.items() if enabled]
-                        
-                        if not all_coin_tasks:
-                            logger.warning('智能调度中没有启用任何黄币补充任务，默认启用短猫相接')
-                            all_coin_tasks = ['OpsiMeowfficerFarming']
-                        
-                        enabled_names = '、'.join([task_names.get(task, task) for task in all_coin_tasks])
-                        logger.info(f'【智能调度】启用的黄币补充任务: {enabled_names}')
-                        
-                        # 自动启用黄币补充任务的调度器
-                        enabled_tasks = []
-                        auto_enabled_tasks = []
-                        with self.config.multi_set():
-                            for task in all_coin_tasks:
-                                if self.config.is_task_enabled(task):
-                                    enabled_tasks.append(task)
-                                    logger.info(f'黄币补充任务已启用: {task_names.get(task, task)}')
-                                else:
-                                    # 自动启用未启用的任务
-                                    logger.info(f'自动启用黄币补充任务: {task_names.get(task, task)}')
-                                    self.config.cross_set(keys=f'{task}.Scheduler.Enable', value=True)
-                                    auto_enabled_tasks.append(task)
-                        
-                        # 合并所有任务（已启用 + 自动启用）
-                        available_tasks = enabled_tasks + auto_enabled_tasks
-                        
-                        if auto_enabled_tasks:
-                            auto_enabled_names = '、'.join([task_names.get(task, task) for task in auto_enabled_tasks])
-                            logger.info(f'已自动启用以下黄币补充任务: {auto_enabled_names}')
-                        
-                        if not available_tasks:
-                            # 理论上不应该到达这里，因为我们已经自动启用了所有任务
-                            logger.error('无法启用任何黄币补充任务，这是一个错误状态')
-                            self.config.task_delay(minute=60)
-                            self.config.task_stop()
-                            self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
-                            return
-                        
-                        task_names_str = '、'.join([task_names.get(task, task) for task in available_tasks])
-                        self.notify_push(
-                            title="[Alas] 侵蚀1 - 切换至黄币补充任务",
-                            content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力: {self._action_point_total} (需要 {meow_ap_preserve})\n切换至{task_names_str}获取黄币"
-                        )
-
-                        with self.config.multi_set():
-                            # 启用所有可用的黄币补充任务
-                            for task in available_tasks:
-                                self.config.task_call(task)
-                            
-                            cd = self.nearest_task_cooling_down
-                            if cd is not None:
-                                # 有冷却任务时，同时延迟侵蚀1任务到冷却任务之后
-                                # 避免侵蚀1在黄币补充任务被延迟后立即再次运行导致无限循环
-                                logger.info(f'有冷却任务 {cd.command}，延迟侵蚀1到 {cd.next_run}')
-                                self.config.task_delay(target=cd.next_run)
-                        self.config.task_stop()
-                    self.config.OpsiHazard1_PreviousCoinsApInsufficient = _previous_coins_ap_insufficient
-            else:
-                # 未启用智能调度时，黄币不足推迟任务
-                cl1_preserve = self.config.OpsiHazard1Leveling_OperationCoinsPreserve
-                if yellow_coins < cl1_preserve:
-                    logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，推迟侵蚀1任务至服务器刷新')
-                    self.config.task_delay(server_update=True)
-                    self.config.task_stop()
+            self._cl1_smart_scheduling_check(yellow_coins)
 
             # 获取当前区域
             self.get_current_zone()
 
-            # Preset action point to 70
-            # When running CL1 oil is for running CL1, not meowfficer farming
+            # 侵蚀 1 练级时，行动力优先用于此任务，而非短猫。
             keep_current_ap = True
             if self.config.OpsiGeneral_BuyActionPointLimit > 0:
                 keep_current_ap = False
             self.action_point_set(cost=120, keep_current_ap=keep_current_ap, check_rest_ap=True)
 
-            # ===== 智能调度: 行动力阈值推送检查 =====
-            # 在设置行动力后检查是否跨越阈值并推送通知
+            # ===== 智能调度：行动力阈值推送检查 =====
             self.check_and_notify_action_point_threshold()
 
             # ===== 最低行动力保留检查 =====
-            # 检查当前行动力是否低于最低保留值
-            # 使用 OS_ACTION_POINT_PRESERVE，因为它已经包含了智能调度覆盖的逻辑
+            self._cl1_ap_check()
 
-            # 先获取当前行动力数据（包含箱子里的行动力）
-            self.action_point_enter()
-            self.action_point_safe_get()
-            self.action_point_quit()
+            # ===== 执行侵蚀 1 实际战斗逻辑 =====
+            self._cl1_run_battle()
 
-            min_reserve = self.config.OS_ACTION_POINT_PRESERVE
-            if self._action_point_total < min_reserve:
-                logger.warning(f'行动力低于最低保留 ({self._action_point_total} < {min_reserve})')
-
-                _previous_ap_insufficient = getattr(self.config, 'OpsiHazard1_PreviousApInsufficient', False)
-                if _previous_ap_insufficient == False:
-                    _previous_ap_insufficient = True
-                    self.notify_push(
-                        title="[Alas] 侵蚀1 - 行动力低于最低保留",
-                        content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，推迟任务"
-                    )
-                else:
-                    logger.info('上次检查行动力低于最低保留，跳过推送邮件')
-
-                logger.info('推迟侵蚀1任务1小时')
-                self.config.task_delay(minute=60)
-                self.config.task_stop()
-            else:
-                _previous_ap_insufficient = False
-            self.config.OpsiHazard1_PreviousApInsufficient = _previous_ap_insufficient
-
-            if self.config.OpsiHazard1Leveling_TargetZone != 0:
-                zone = self.config.OpsiHazard1Leveling_TargetZone
-            else:
-                zone = 22
-            logger.hr(f'OS hazard 1 leveling, zone_id={zone}', level=1)
-            if self.zone.zone_id != zone or not self.is_zone_name_hidden:
-                self.globe_goto(self.name_to_zone(zone), types='SAFE', refresh=True)
-            self.fleet_set(self.config.OpsiFleet_Fleet)
-            search_completed = self.run_strategic_search()
-
-            # 只有战略搜索正常完成时才执行重扫（被中断时不执行）
-            # [Antigravity Fix] 即使 search_completed 为 False ()，
-            # 也尝试后续的重扫和定点巡逻，以确保任务不被跳过。
-            if True: 
-                if not search_completed and search_completed is not None:
-                    # search_completed could be None if run_strategic_search returns nothing (though it returns bool)
-                     logger.warning("Strategic search returned False, but proceeding with rescan/patrol anyway.")
-
-                # ===== 第一次重扫：战略搜索后的完整镜头重扫 =====
-                self._solved_map_event = set()
-                self._solved_fleet_mechanism = False
-                self.clear_question()
-                self.map_rescan()
-
-                # ===== 舰队移动搜索（如果启用且没有发现事件）=====
-                if self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
-                    exec_fixed = getattr(self.config, 'OpsiHazard1Leveling_ExecuteFixedPatrolScan', False)
-                    # 只有在第一次重扫没有发现事件时才执行舰队移动
-                    if exec_fixed and not self._solved_map_event:
-                        self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
-                        # ===== 第二次重扫：舰队移动后再次重扫 =====
-                        self._solved_map_event = set()
-                        self.clear_question()
-                        self.map_rescan()
-
-            self.handle_after_auto_search()
-            solved_events = getattr(self, '_solved_map_event', set())
-            if 'is_akashi' in solved_events:
-                try:
-                    from module.statistics.cl1_database import db as cl1_db
-                    instance_name = getattr(self.config, 'config_name', 'default')
-                    cl1_db.increment_akashi_encounter(instance_name)
-                    logger.info('Successfully incremented CL1 akashi encounter in DB')
-                except Exception:
-                    logger.exception('Failed to persist CL1 akashi encounter to DB')
-
-
-            # 每次循环结束后提交CL1数据
-            try:
-                # 检查遥测上报开关
-                if not getattr(self.config, 'DropRecord_TelemetryReport', True):
-                    logger.info('Telemetry report disabled by config')
-                else:
-                    from module.statistics.cl1_data_submitter import get_cl1_submitter
-                    # 获取当前实例名称，确保使用正确的数据文件路径
-                    instance_name = self.config.config_name if hasattr(self.config, 'config_name') else None
-                    submitter = get_cl1_submitter(instance_name=instance_name)
-                    # 不检查时间间隔,每次循环都提交
-                    raw_data = submitter.collect_data()
-                    if raw_data.get('battle_count', 0) > 0:
-                        metrics = submitter.calculate_metrics(raw_data)
-                        submitter.submit_data(metrics)
-                        logger.info(f'CL1 data submission queued for instance: {instance_name}')
-            except Exception as e:
-                logger.debug(f'CL1 data submission failed: {e}')
+            # ===== 处理遥测数据提交 =====
+            self._cl1_handle_telemetry()
 
             self.config.check_task_switch()
 
     def os_check_leveling(self):
+        """检查大世界阵容练级进度。"""
         logger.hr('OS check leveling', level=1)
         logger.attr('OpsiCheckLeveling_LastRun', self.config.OpsiCheckLeveling_LastRun)
         time_run = self.config.OpsiCheckLeveling_LastRun + timedelta(days=1)
-        logger.info(f'Task OpsiCheckLeveling run time is {time_run}')
+        logger.info(f'练级检查下次运行时间: {time_run}')
         if datetime.now().replace(microsecond=0) < time_run:
-            logger.info('Not running time, skip')
+            logger.info('未到运行时间，跳过')
             return
         target_level = self.config.OpsiCheckLeveling_TargetLevel
         if not isinstance(target_level, int) or target_level < 0 or target_level > 125:
-            logger.error(f'Invalid target level: {target_level}, must be an integer between 0 and 125')
+            logger.error(f'目标等级无效: {target_level}，必须是 0 到 125 之间的整数')
             raise ScriptError(f'Invalid opsi ship target level: {target_level}')
         if target_level == 0:
-            logger.info('Target level is 0, skip')
+            logger.info('目标等级为 0，跳过')
             return
 
-        logger.attr('Fleet to check', self.config.OpsiFleet_Fleet)
+        logger.attr('待检查舰队', self.config.OpsiFleet_Fleet)
         self.fleet_set(self.config.OpsiFleet_Fleet)
         self.equip_enter(FLEET_FLAGSHIP)
         all_full_exp = True
         
-        # 收集所有舰船数据
         ship_data_list = []
         position = 1
 
-        while 1:
+        while True:
             self.device.screenshot()
             level, exp = ship_info_get_level_exp(main=self)
             total_exp = LIST_SHIP_EXP[level - 1] + exp
-            logger.info(f'Position: {position}, Level: {level}, Exp: {exp}, Total Exp: {total_exp}, Target Exp: {LIST_SHIP_EXP[target_level - 1]}')
+            logger.info(f'位置: {position}, 等级: {level}, 经验: {exp}, 总经验: {total_exp}, 目标经验: {LIST_SHIP_EXP[target_level - 1]}')
             
-            # 保存舰船数据
             ship_data_list.append({
                 'position': position,
                 'level': level,
@@ -410,15 +330,12 @@ class OpsiHazard1Leveling(OSMap):
                 break
             position += 1
 
-        # 保存所有舰船数据到JSON
         try:
             from module.statistics.ship_exp_stats import save_ship_exp_data
             from module.statistics.opsi_month import get_opsi_stats
             
-            # 获取当前实例名称
             instance_name = self.config.config_name if hasattr(self.config, 'config_name') else None
             
-            # 使用实例名获取战绩，确保战斗场次正确
             current_battles = get_opsi_stats(instance_name=instance_name).summary().get('total_battles', 0)
             
             save_ship_exp_data(
@@ -429,18 +346,17 @@ class OpsiHazard1Leveling(OSMap):
                 instance_name=instance_name  # 指定实例名称保存数据
             )
         except Exception as e:
-            logger.warning(f'Failed to save ship exp data: {e}')
+            logger.warning(f'保存舰船经验数据失败: {e}')
 
         if all_full_exp:
-            logger.info(f'All ships in fleet {self.config.OpsiFleet_Fleet} are full exp, '
-                        f'level {target_level} or above')
+            logger.info(f'舰队 {self.config.OpsiFleet_Fleet} 的所有舰船均已满经验（等级 {target_level} 或更高）')
             self.notify_push(
-                title=f"check leveling passed",
-                content=f"<{self.config.config_name}> {self.config.task} reached level limit {target_level} or above."
+                title="练级检查通过",
+                content=f"<{self.config.config_name}> {self.config.task} 已达到等级限制 {target_level}。"
             )
         self.ui_back(appear_button=EQUIPMENT_OPEN, check_button=self.is_in_map)
         self.config.OpsiCheckLeveling_LastRun = datetime.now().replace(microsecond=0)
         if all_full_exp and self.config.OpsiCheckLeveling_DelayAfterFull:
-            logger.info('Delay task after all ships are full exp')
+            logger.info('所有舰船满经验后延迟任务')
             self.config.task_delay(server_update=True)
             self.config.task_stop()
