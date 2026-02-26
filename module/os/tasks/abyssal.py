@@ -19,36 +19,33 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         """
         now = datetime.now()
         
-        # Get tasks that require submarine call
-        tasks = self.config.pending_task + self.config.waiting_task
-        
-        # Check if any task has submarine call cooldown
-        for task in tasks:
-            if task.enable and hasattr(task, 'next_run'):
-                # If next_run is within 60 minutes from now, submarine is on cooldown
-                if task.next_run and task.next_run > now and (task.next_run - now) <= timedelta(minutes=60):
-                    logger.info(f'检测到潜艇冷却：任务 {task.command} 的下次运行时间为 {task.next_run}')
-                    return True, task.next_run
-        
-        # Check if submarine_call was recently used
-        # Look for tasks with submarine call enabled
+        # Tasks that can potentially use submarines
         submarine_tasks = ['OpsiExplore', 'OpsiDaily', 'OpsiObscure', 'OpsiAbyssal', 
                           'OpsiArchive', 'OpsiStronghold', 'OpsiMeowfficerFarming', 'OpsiMonthBoss']
+        
+        # Get all tasks
+        all_tasks = self.config.pending_task + self.config.waiting_task
+        task_map = {task.command: task for task in all_tasks}
+        
         for task_name in submarine_tasks:
-            task = self.config.get_task(task_name)
-            if task and task.enable:
-                # Check if task has submarine call enabled
-                submarine_enabled = False
-                if hasattr(task, 'OpsiFleet') and task.OpsiFleet.Submarine:
-                    submarine_enabled = True
-                elif hasattr(task, 'OpsiFleetFilter') and 'submarine' in task.OpsiFleetFilter.Filter.lower():
-                    submarine_enabled = True
-                
-                if submarine_enabled and task.next_run:
-                    time_diff = task.next_run - now
-                    if 0 < time_diff <= timedelta(minutes=60):
-                        logger.info(f'检测到潜艇冷却：任务 {task_name} 的下次运行时间为 {task.next_run}')
-                        return True, task.next_run
+            task = task_map.get(task_name)
+            if not task or not task.enable:
+                continue
+            
+            # Check if task has submarine call enabled using cross_get
+            submarine_enabled = self.config.cross_get(f"{task_name}.OpsiFleet.Submarine", default=False)
+            if not submarine_enabled:
+                # Check OpsiFleetFilter.Filter
+                filter_str = self.config.cross_get(f"{task_name}.OpsiFleetFilter.Filter", default="")
+                if "submarine" not in filter_str.lower():
+                    continue
+            
+            # Task has submarine call enabled, check if it's on cooldown
+            if task.next_run and task.next_run > now:
+                time_diff = task.next_run - now
+                if time_diff <= timedelta(minutes=60):
+                    logger.info(f'检测到潜艇冷却：任务 {task_name} 的下次运行时间为 {task.next_run}')
+                    return True, task.next_run
         
         logger.info('潜艇冷却检查通过，未检测到潜艇冷却')
         return False, None
