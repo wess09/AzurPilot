@@ -8,6 +8,28 @@ from module.os.tasks.scheduling import CoinTaskMixin
 
 class OpsiAbyssal(CoinTaskMixin, OSMap):
     
+    def _is_submarine_task(self, task_name):
+        """
+        Check if a task uses submarine.
+        
+        Args:
+            task_name (str): Task name to check.
+            
+        Returns:
+            bool: True if task uses submarine.
+        """
+        # Check OpsiFleet.Submarine
+        submarine_enabled = self.config.cross_get(f"{task_name}.OpsiFleet.Submarine", default=False)
+        if submarine_enabled:
+            return True
+        
+        # Check OpsiFleetFilter.Filter
+        filter_str = self.config.cross_get(f"{task_name}.OpsiFleetFilter.Filter", default="")
+        if filter_str and "submarine" in filter_str.lower():
+            return True
+        
+        return False
+    
     def _check_submarine_cooldown(self):
         """
         Check if submarine is on cooldown.
@@ -32,18 +54,14 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             if not task or not task.enable:
                 continue
             
-            # Check if task has submarine call enabled using cross_get
-            submarine_enabled = self.config.cross_get(f"{task_name}.OpsiFleet.Submarine", default=False)
-            if not submarine_enabled:
-                # Check OpsiFleetFilter.Filter
-                filter_str = self.config.cross_get(f"{task_name}.OpsiFleetFilter.Filter", default="")
-                if "submarine" not in filter_str.lower():
-                    continue
+            # Check if task uses submarine
+            if not self._is_submarine_task(task_name):
+                continue
             
             # Task has submarine call enabled, check if it's on cooldown
             if task.next_run and task.next_run > now:
                 time_diff = task.next_run - now
-                if time_diff <= timedelta(minutes=60):
+                if timedelta(0) < time_diff <= timedelta(minutes=60):
                     logger.info(f'检测到潜艇冷却：任务 {task_name} 的下次运行时间为 {task.next_run}')
                     return True, task.next_run
         
