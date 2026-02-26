@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.os.map import OSMap
@@ -5,6 +7,76 @@ from module.os.tasks.scheduling import CoinTaskMixin
 
 
 class OpsiAbyssal(CoinTaskMixin, OSMap):
+    
+    def _check_submarine_cooldown(self):
+        """
+        Check if submarine is on cooldown.
+        
+        Returns:
+            tuple: (is_cooldown, cooldown_end_time)
+                - is_cooldown: True if submarine is on cooldown
+                - cooldown_end_time: datetime when cooldown ends, None if not on cooldown
+        """
+        now = datetime.now()
+        
+        # Get tasks that require submarine call
+        tasks = self.config.pending_task + self.config.waiting_task
+        
+        # Check if any task has submarine call cooldown
+        for task in tasks:
+            if task.enable and hasattr(task, 'next_run'):
+                # If next_run is within 60 minutes from now, submarine is on cooldown
+                if task.next_run and task.next_run > now and (task.next_run - now) <= timedelta(minutes=60):
+                    logger.info(f'检测到潜艇冷却：任务 {task.command} 的下次运行时间为 {task.next_run}')
+                    return True, task.next_run
+        
+        # Check if submarine_call was recently used
+        # Look for tasks with submarine call enabled
+        submarine_tasks = ['OpsiExplore', 'OpsiDaily', 'OpsiObscure', 'OpsiAbyssal', 
+                          'OpsiArchive', 'OpsiStronghold', 'OpsiMeowfficerFarming', 'OpsiMonthBoss']
+        for task_name in submarine_tasks:
+            task = self.config.get_task(task_name)
+            if task and task.enable:
+                # Check if task has submarine call enabled
+                submarine_enabled = False
+                if hasattr(task, 'OpsiFleet') and task.OpsiFleet.Submarine:
+                    submarine_enabled = True
+                elif hasattr(task, 'OpsiFleetFilter') and 'submarine' in task.OpsiFleetFilter.Filter.lower():
+                    submarine_enabled = True
+                
+                if submarine_enabled and task.next_run:
+                    time_diff = task.next_run - now
+                    if 0 < time_diff <= timedelta(minutes=60):
+                        logger.info(f'检测到潜艇冷却：任务 {task_name} 的下次运行时间为 {task.next_run}')
+                        return True, task.next_run
+        
+        logger.info('潜艇冷却检查通过，未检测到潜艇冷却')
+        return False, None
+    
+    def _delay_until_submarine_cooldown_end(self, cooldown_end_time):
+        """
+        Delay abyssal task until submarine cooldown ends.
+        
+        Args:
+            cooldown_end_time: datetime when submarine cooldown ends
+        """
+        logger.hr('Submarine cooldown detected', level=1)
+        logger.info(f'潜艇冷却结束时间：{cooldown_end_time}')
+        logger.info('延时深渊任务到潜艇冷却结束')
+        
+        # Calculate delay duration
+        now = datetime.now()
+        delay_seconds = int((cooldown_end_time - now).total_seconds())
+        delay_minutes = delay_seconds // 60
+        
+        if delay_minutes <= 0:
+            delay_minutes = 1
+        
+        logger.info(f'延时 {delay_minutes} 分钟到潜艇冷却结束')
+        
+        # Delay task
+        self.config.task_delay(minute=delay_minutes)
+        self.config.task_stop()
     
     def delay_abyssal(self, result=True):
         """
@@ -28,6 +100,13 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         """
         logger.hr('OS clear abyssal', level=1)
         self.cl1_ap_preserve()
+        
+        # ===== 检查潜艇冷却 =====
+        # 在使用深渊记录器前检查潜艇冷却，如果潜艇在冷却中，延时到冷却结束
+        is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
+        if is_cooldown:
+            self._delay_until_submarine_cooldown_end(cooldown_end_time)
+            return
 
         with self.config.temporary(STORY_ALLOW_SKIP=False):
             result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
@@ -42,7 +121,15 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             STORY_OPTION=0
         )
         self.zone_init()
+        
+        # ===== 进入深渊地图后禁止任务切换 =====
+        # 在进入深渊地图后立即禁止所有任务切换，直到打完 boss
+        logger.info('进入深渊地图，禁止所有任务切换')
         with self.config.temporary(_disable_task_switch=True):
+            # ===== 禁止退出深渊地图 =====
+            # 在打完 boss 前禁止退出深渊地图
+            logger.info('打完 boss 前禁止退出深渊地图')
+            
             result = self.run_abyssal()
             if not result:
                 raise RequestHumanTakeover
@@ -52,6 +139,7 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             # 检查是否还有更多深渊记录器
             with self.config.temporary(STORY_ALLOW_SKIP=False):
                 has_more = self.storage_get_next_item('ABYSSAL', use_logger=False) is not None
+        
         self.delay_abyssal(result=has_more)
 
     def os_abyssal(self):
