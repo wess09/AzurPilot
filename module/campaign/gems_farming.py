@@ -18,10 +18,18 @@ from module.equipment.equipment_code import EquipmentCodeHandler
 from module.equipment.fleet_equipment import FleetEquipment, OCR_FLEET_INDEX
 from module.exception import CampaignEnd, ScriptError, RequestHumanTakeover
 from module.retire.retirement import Retirement, TEMPLATE_COMMON_CV, TEMPLATE_COMMON_DD
-from module.retire.assets import DOCK_CHECK, DOCK_SHIP_DOWN, TEMPLATE_BOGUE, TEMPLATE_HERMES, TEMPLATE_LANGLEY, TEMPLATE_RANGER, TEMPLATE_CASSIN_1, TEMPLATE_CASSIN_2, TEMPLATE_DOWNES_1, TEMPLATE_DOWNES_2, TEMPLATE_AULICK, TEMPLATE_FOOTE
+from module.retire.assets import DOCK_CHECK, DOCK_SHIP_DOWN
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_OFF
 from module.logger import logger
 from module.map.assets import FLEET_PREPARATION, MAP_PREPARATION
+from module.retire.assets import (
+    DOCK_CHECK, DOCK_SHIP_DOWN,
+    TEMPLATE_BOGUE, TEMPLATE_HERMES, TEMPLATE_LANGLEY, TEMPLATE_RANGER,
+    TEMPLATE_CASSIN_1, TEMPLATE_CASSIN_2, TEMPLATE_DOWNES_1, TEMPLATE_DOWNES_2,
+    TEMPLATE_AULICK, TEMPLATE_FOOTE
+)
+# TEMPLATE_COMMON_CV and TEMPLATE_COMMON_DD are both used in function find_custom_candidates
+from module.retire.retirement import Retirement, TEMPLATE_COMMON_CV, TEMPLATE_COMMON_DD
 from module.retire.scanner import ShipScanner
 from module.ui.assets import BACK_ARROW, FLEET_CHECK
 from module.ui.page import page_fleet
@@ -688,9 +696,8 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def triggered_stop_condition(self, oil_check=True):
         # Lv32 limit
-        if self._trigger_lv32 or (
-                self.change_flagship and self.campaign.config.LV32_TRIGGERED
-                and not self.config.GemsFarming_ALLowHighFlagshipLevel):
+        if self.change_flagship and self.campaign.config.LV32_TRIGGERED \
+                and not self.config.GemsFarming_ALLowHighFlagshipLevel:
             self._trigger_lv32 = True
             logger.hr('TRIGGERED LV32 LIMIT')
             return True
@@ -729,13 +736,8 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
             total (int):
         """
         self.config.STOP_IF_REACH_LV32 = self.change_flagship
-        # Initial check for flagship level.
-        # Force a flagship change at the beginning if flagship change is enabled.
-        # This solves the problem that the script starts with a level 32 flagship but doesn't retire it.
-        initial_check = self.change_flagship and not self.config.GemsFarming_ALLowHighFlagshipLevel
         while 1:
-            self._trigger_lv32 = initial_check
-            initial_check = False
+            self._trigger_lv32 = False
             is_limit = self.config.StopCondition_RunCount
             try:
                 super().run(name=name, folder=folder, total=total)

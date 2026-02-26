@@ -1,6 +1,6 @@
 import re
 
-from module.base.button import Button, ButtonGrid
+from module.base.button import ButtonGrid
 from module.base.filter import Filter
 from module.base.timer import Timer
 from module.base.utils import color_similar, get_color, resize
@@ -8,15 +8,7 @@ from module.combat.assets import GET_ITEMS_1
 from module.exception import RequestHumanTakeover, ScriptError
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_OFF, AUTO_SEARCH_MAP_OPTION_ON
 from module.logger import logger
-from module.retire.assets import (
-    DOCK_CHECK, DOCK_SHIP_DOWN, EQUIP_CONFIRM, EQUIP_CONFIRM_2,
-    GET_ITEMS_1_RETIREMENT_SAVE, IN_RETIREMENT_CHECK, ONE_CLICK_RETIREMENT,
-    RETIRE_APPEAR_1, RETIRE_APPEAR_2, RETIRE_APPEAR_3, RETIRE_COIN,
-    RETIRE_CONFIRM_SCROLL_AREA, SHIP_CONFIRM, SHIP_CONFIRM_2, SR_SSR_CONFIRM,
-    TEMPLATE_AULICK, TEMPLATE_BOGUE, TEMPLATE_CASSIN_1, TEMPLATE_CASSIN_2,
-    TEMPLATE_DOWNES_1, TEMPLATE_DOWNES_2, TEMPLATE_FOOTE, TEMPLATE_HERMES,
-    TEMPLATE_LANGLEY, TEMPLATE_RANGER, TEMPLATE_Z20, TEMPLATE_Z21
-)
+from module.retire.assets import *
 from module.retire.enhancement import Enhancement
 from module.retire.scanner import ShipScanner
 from module.retire.setting import QuickRetireSettingHandler
@@ -72,7 +64,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     @property
     def retire_keep_common_cv(self):
-        return self.config.is_task_enabled('GemsFarming') or self.config.is_task_enabled('ThreeOilLowCost')
+        return self.config.is_task_enabled('GemsFarming')
 
     def _retirement_choose(self, amount=10, target_rarity=('N',)):
         """
@@ -365,11 +357,11 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         Common CV whose level > 1, fleet is none and status is free
         will be regarded as targets.
         """
-        logger.info('Retire abandoned flagships of GemsFarming/ThreeOilLowCost')
+        logger.info('Retire abandoned flagships of GemsFarming')
 
-        gems_farming_enable: bool = self.config.is_task_enabled('GemsFarming') or self.config.is_task_enabled('ThreeOilLowCost')
+        gems_farming_enable: bool = self.config.is_task_enabled('GemsFarming')
         if not gems_farming_enable:
-            logger.info('Not in GemsFarming/ThreeOilLowCost, skip')
+            logger.info('Not in GemsFarming, skip')
             return 0
 
         self.dock_favourite_set(wait_loading=False)
@@ -588,8 +580,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         ship_type = ship_type.upper()
         filter_obj: Filter = globals()[f'COMMON_{ship_type}_FILTER']
         templates = globals()[f'TEMPLATE_COMMON_{ship_type}']
-        command = self.config.task.command if hasattr(self.config, 'task') and self.config.task else 'GemsFarming'
-        key = f'{command}.GemsFarming.Common{ship_type}Filter'
+        key = f'GemsFarming.GemsFarming.Common{ship_type}Filter'
         default = self.config.__getattribute__(f'COMMON_{ship_type}_FILTER')
 
         while 1:
