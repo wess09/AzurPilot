@@ -495,8 +495,8 @@ class RewardCommission(UI, InfoHandler):
         logger.hr('Reward receive')
 
         reward = False
-        click_timer = Timer(2)
-        fuel_maxed_check_times = 3
+        click_timer = Timer(1)
+        fuel_maxed_check_times = 2
         fuel_maxed_detected_count = 0
 
         with self.stat.new(
