@@ -496,7 +496,7 @@ class RewardCommission(UI, InfoHandler):
 
         reward = False
         click_timer = Timer(1)
-        fuel_maxed_check_times = 2
+        fuel_maxed_check_times = 5
         fuel_maxed_detected_count = 0
 
         with self.stat.new(
