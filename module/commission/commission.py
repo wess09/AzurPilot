@@ -492,21 +492,13 @@ class RewardCommission(UI, InfoHandler):
             logger.info('No commission chose')
 
     def commission_receive(self, skip_first_screenshot=True):
-        """
-        Args:
-            skip_first_screenshot:
-
-        Returns:
-            bool: If rewarded.
-
-        Pages:
-            in: page_reward
-            out: page_commission
-        """
         logger.hr('Reward receive')
 
         reward = False
-        click_timer = Timer(1)
+        click_timer = Timer(2)
+        fuel_maxed_check_times = 3
+        fuel_maxed_detected_count = 0
+
         with self.stat.new(
                 'commission', method=self.config.DropRecord_CommissionRecord
         ) as drop:
@@ -516,10 +508,7 @@ class RewardCommission(UI, InfoHandler):
                 else:
                     self.device.screenshot()
 
-                # End
                 if self.ui_page_appear(page_commission, offset=(20, 20)):
-                    # Leaving at page_commission
-                    # Commission rewards may appear too slow, causing stuck in UI switching
                     break
 
                 for button in [EXP_INFO_S_REWARD, GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3]:
@@ -531,52 +520,60 @@ class RewardCommission(UI, InfoHandler):
                         self.device.click(REWARD_SAVE_CLICK)
                         click_timer.reset()
                         reward = True
+                        fuel_maxed_detected_count = 0
                         continue
                 if click_timer.reached() and self.appear_then_click(REWARD_1, offset=(20, 20), interval=1):
                     self.interval_reset(GET_SHIP)
                     click_timer.reset()
                     reward = True
+                    fuel_maxed_detected_count = 0
                     continue
                 if click_timer.reached() and self.appear_then_click(REWARD_1_WHITE, offset=(20, 20), interval=1):
                     self.interval_reset(GET_SHIP)
                     click_timer.reset()
                     reward = True
+                    fuel_maxed_detected_count = 0
                     continue
                 if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION, offset=(20, 20)):
                     self.interval_reset(GET_SHIP)
                     click_timer.reset()
+                    fuel_maxed_detected_count = 0
                     continue
                 if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION_WHITE, offset=(20, 20)):
                     self.interval_reset(GET_SHIP)
                     click_timer.reset()
+                    fuel_maxed_detected_count = 0
                     continue
                 if self.ui_main_appear_then_click(page_reward, interval=3):
                     self.interval_reset(GET_SHIP)
-                    # no need to reset click_timer, just instant click REWARD_1
-                    # click_timer.reset()
+                    fuel_maxed_detected_count = 0
                     continue
-                if self.appear(FUEL_MAXED):
-                    logger.info("Fuel maxed, skip reward receive")
-                    # Debug logic for FUEL_MAXED false positive
-                    from module.base.utils import get_color, color_similar
-                    _color = get_color(self.device.image, FUEL_MAXED.area)
-                    _diff = np.max(np.abs(np.array(_color) - np.array(FUEL_MAXED.color)))
-                    logger.info(f"FUEL_MAXED triggered. Detected color: {_color}, Expected: {FUEL_MAXED.color}, Max Diff: {_diff} (Threshold: 10)")
-                    
-                    # Save the EXACT image frame that triggered the condition
-                    import os
-                    from PIL import Image
-                    os.makedirs('log/error', exist_ok=True)
-                    debug_image_path = f"log/error/FUEL_MAXED_debug_{int(time.time())}.png"
-                    Image.fromarray(self.device.image).save(debug_image_path)
-                    logger.info(f"Saved triggering frame to {debug_image_path}")
-                    
-                    self.config.cross_set('Dorm.Dorm.BuyFood', True)
-                    self.config.task_call('Dorm')
-                    self.config.task_delay(minute=1)
-                    self.config.task_stop()
-                    break
-                # Check GET_SHIP at last to handle random white background at page_main
+
+                if self.appear(FUEL_MAXED, offset=(20, 20), interval=1):
+                    fuel_maxed_detected_count += 1
+                    logger.info(f"FUEL_MAXED detected {fuel_maxed_detected_count}/{fuel_maxed_check_times} times")
+                    if fuel_maxed_detected_count >= fuel_maxed_check_times:
+                        logger.info("Fuel maxed confirmed, skip reward receive")
+                        from module.base.utils import get_color, color_similar
+                        _color = get_color(self.device.image, FUEL_MAXED.area)
+                        _diff = np.max(np.abs(np.array(_color) - np.array(FUEL_MAXED.color)))
+                        logger.info(
+                            f"FUEL_MAXED triggered. Detected color: {_color}, Expected: {FUEL_MAXED.color}, Max Diff: {_diff} (Threshold: 10)")
+                        import os
+                        from PIL import Image
+                        os.makedirs('log/error', exist_ok=True)
+                        debug_image_path = f"log/error/FUEL_MAXED_debug_{int(time.time())}.png"
+                        Image.fromarray(self.device.image).save(debug_image_path)
+                        logger.info(f"Saved triggering frame to {debug_image_path}")
+
+                        self.config.cross_set('Dorm.Dorm.BuyFood', True)
+                        self.config.task_call('Dorm')
+                        self.config.task_delay(minute=1)
+                        self.config.task_stop()
+                        break
+                else:
+                    fuel_maxed_detected_count = 0
+
                 for button in [GET_SHIP]:
                     if click_timer.reached() and self.appear(button, interval=1):
                         self.ensure_no_info_bar(timeout=1)
@@ -586,9 +583,11 @@ class RewardCommission(UI, InfoHandler):
                         self.device.click(REWARD_SAVE_CLICK)
                         click_timer.reset()
                         reward = True
+                        fuel_maxed_detected_count = 0
                         continue
                 if click_timer.reached() and self.ui_additional():
                     click_timer.reset()
+                    fuel_maxed_detected_count = 0
                     continue
 
         return reward
