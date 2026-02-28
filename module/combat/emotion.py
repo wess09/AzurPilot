@@ -177,12 +177,15 @@ class Emotion:
         self.using_public = self._handle_public()
     
     def _handle_public(self):
-        if not getattr(self.config, 'PublicEmotion_Enable') or not getattr(self.config, 'PublicEmotion_Tasks'):
+        if not getattr(self.config, 'PublicEmotion_Enable'):
             return False
         
         tasks = getattr(self.config, 'PublicEmotion_Tasks')
-        tasks = tasks.split(',')
-        tasks = [task.strip() for task in tasks]
+
+        if not tasks:
+            return False
+
+        tasks = [task.strip() for task in tasks.split(',')]
 
         if self.config.task.command not in tasks:
             return False

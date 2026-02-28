@@ -150,7 +150,7 @@
       "Tasks": null,
       "FleetValue": 119,
       "FleetRecord": "2020-01-01 00:00:00",
-      "FleetControl": "prevent_red_face",
+      "FleetControl": "prevent_yellow_face",
       "FleetRecover": "not_in_dormitory",
       "FleetOath": false,
       "FleetOnsen": false
