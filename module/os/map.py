@@ -1765,10 +1765,24 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                         target_grid = target_grid.upper()
                         target_loc = location_ensure(target_grid)
                         
-                        logger.info(f'指定了塞壬研究装置位置: {target_grid}，直接处理')
+                        # 避免目标在地图边缘导致 focus_to 死循环
+                        # 如果目标在边缘，则聚焦到向内一格的位置
+                        focus_loc = list(target_loc)
+                        shape = self.map.shape
+                        if focus_loc[0] <= 0:
+                            focus_loc[0] = 1
+                        elif focus_loc[0] >= shape[0]:
+                            focus_loc[0] = shape[0] - 1
+                        if focus_loc[1] <= 0:
+                            focus_loc[1] = 1
+                        elif focus_loc[1] >= shape[1]:
+                            focus_loc[1] = shape[1] - 1
+                        focus_loc = tuple(focus_loc)
+
+                        logger.info(f'指定了塞壬研究装置位置: {target_grid}，聚焦位置: {focus_loc}，直接处理')
 
                         # 滑动到目标视角
-                        self.focus_to(target_loc, swipe_limit=(6, 5))
+                        self.focus_to(focus_loc, swipe_limit=(6, 5))
                         self.focus_to_grid_center(0.3)
                         self.device.screenshot()
                         self.update()
@@ -1943,7 +1957,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         self.device.click(grid)
         
         # 等待剧情选项出现（表示舰队已到达装置并触发剧情）
-        option_wait_timer = Timer(10, count=20).start()
+        option_wait_timer = Timer(20, count=40).start()
         options_found = False
         while not option_wait_timer.reached():
             self.device.screenshot()
