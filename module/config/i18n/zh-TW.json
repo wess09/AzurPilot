@@ -513,7 +513,9 @@
       "MuMuPlayer": "MuMu模擬器",
       "MuMuPlayerX": "MuMu模擬器X",
       "MuMuPlayer12": "MuMu模擬器12",
-      "MEmuPlayer": "逍遙模擬器"
+      "MEmuPlayer": "逍遙模擬器",
+      "BlueStacksAir": "BlueStacksAir",
+      "MuMuPro": "MuMuPro"
     },
     "name": {
       "name": "模擬器實例名稱",

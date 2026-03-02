@@ -161,6 +161,10 @@ class EmulatorBase:
     MuMuPlayer12 = 'MuMuPlayer12'
     MuMuPlayerFamily = [MuMuPlayer, MuMuPlayerX, MuMuPlayer12]
     MEmuPlayer = 'MEmuPlayer'
+    # Mac emulators
+    BlueStacksAir = 'BlueStacksAir'
+    MuMuPro = 'MuMuPro'
+    MacEmulatorFamily = [BlueStacksAir, MuMuPro]
 
     @classmethod
     def path_to_type(cls, path: str) -> str:
