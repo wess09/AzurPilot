@@ -164,17 +164,24 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 raise Exception('BlueStacks Air app not found')
 
         elif instance == EmulatorMac.MuMuPro:
-            # MuMu on macOS: start the MuMuEmulator.app directly
+            # MuMu on macOS:正确的启动流程
+            # 1. open -a MuMuPlayer.app - 启动主程序
+            # 2. mumutool open 0 - 启动模拟器实例
             app_path = EmulatorMac.find_app_bundle('MuMu')
             if app_path:
-                # Check for MuMuEmulator.app structure (newer versions)
-                mumu_emulator_app = os.path.join(app_path, 'Contents/MacOS/MuMuEmulator.app')
-                if os.path.exists(mumu_emulator_app):
-                    # Use open command to launch MuMuEmulator.app
-                    self.execute(f'open "{mumu_emulator_app}"', wait=False)
+                # Step 1: Launch MuMuPlayer app (main program)
+                self.execute(f'open -a "{app_path}"', wait=False)
+                time.sleep(3)
+                # Step 2: Use mumutool to start the emulator instance
+                mumu_bin_path = os.path.join(app_path, 'Contents/MacOS/mumutool')
+                if os.path.exists(mumu_bin_path):
+                    self.execute(f'"{mumu_bin_path}" open 0', wait=False)
                 else:
-                    # Fallback: try older MuMuPlayer structure
-                    self.execute(f'open -a "{app_path}"', wait=False)
+                    logger.warning(f'mumutool not found at {mumu_bin_path}, using fallback')
+                    # Fallback: try MuMuEmulator.app structure
+                    mumu_emulator_app = os.path.join(app_path, 'Contents/MacOS/MuMuEmulator.app')
+                    if os.path.exists(mumu_emulator_app):
+                        self.execute(f'open "{mumu_emulator_app}"', wait=False)
             else:
                 raise Exception('MuMu Pro app not found')
 
