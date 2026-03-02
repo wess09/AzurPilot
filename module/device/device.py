@@ -6,7 +6,7 @@ from datetime import datetime
 
 from lxml import etree
 
-from module.device.env import IS_WINDOWS
+from module.device.env import IS_WINDOWS, IS_MACINTOSH
 # Patch pkg_resources before importing adbutils and uiautomator2
 from module.device.pkg_resources import get_distribution
 
@@ -109,6 +109,13 @@ class Device(Screenshot, Control, AppControl, Input):
         # Auto-fill emulator info
         if IS_WINDOWS and self.config.EmulatorInfo_Emulator == 'auto':
             _ = self.emulator_instance
+
+        # Boost running emulator priority on Mac
+        if IS_MACINTOSH:
+            try:
+                self.platform.boost_running_emulator_priority()
+            except Exception as e:
+                logger.warning(f'Failed to boost emulator priority: {e}')
 
         self.screenshot_interval_set()
         self.method_check()

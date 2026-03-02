@@ -78,7 +78,7 @@ class AzurLaneAutoScript:
                     device = PlatformMac(self.config)
                 else:
                     from module.device.platform.platform_windows import PlatformWindows
-                device = PlatformWindows(self.config)
+                    device = PlatformWindows(self.config)
             
             logger.info('Stopping emulator...')
             device.emulator_stop()
