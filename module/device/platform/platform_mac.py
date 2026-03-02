@@ -91,19 +91,17 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 raise Exception('BlueStacks Air app not found')
 
         elif instance == EmulatorMac.MuMuPro:
-            # MuMu on macOS requires two steps:
-            # 1. Start MuMuPlayer.app (required for mumutool to work)
-            # 2. Use mumutool to open the emulator instance
+            # MuMu on macOS: start the MuMuEmulator.app directly
             app_path = EmulatorMac.find_app_bundle('MuMu')
             if app_path:
-                # Step 1: Start MuMuPlayer in background
-                self.execute(f'open -a "{app_path}"', wait=False)
-                # Give MuMuPlayer a moment to initialize
-                import time
-                time.sleep(2)
-                # Step 2: Use mumutool to open emulator instance 0
-                mumutool = os.path.join(app_path, 'Contents/MacOS/mumutool')
-                self.execute(f'"{mumutool}" open 0', wait=True)
+                # Check for MuMuEmulator.app structure (newer versions)
+                mumu_emulator_app = os.path.join(app_path, 'Contents/MacOS/MuMuEmulator.app')
+                if os.path.exists(mumu_emulator_app):
+                    # Use open command to launch MuMuEmulator.app
+                    self.execute(f'open "{mumu_emulator_app}"', wait=False)
+                else:
+                    # Fallback: try older MuMuPlayer structure
+                    self.execute(f'open -a "{app_path}"', wait=False)
             else:
                 raise Exception('MuMu Pro app not found')
 
@@ -126,14 +124,11 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 self.execute('osascript -e \'tell application "BlueStacks" to quit\'', wait=True)
         
         elif instance == EmulatorMac.MuMuPro:
-            # Use mumutool to gracefully close the emulator
-            app_path = EmulatorMac.find_app_bundle('MuMu')
-            if app_path:
-                mumutool = os.path.join(app_path, 'Contents/MacOS/mumutool')
-                self.execute(f'"{mumutool}" close 0', wait=True)
-            else:
-                # Fallback: kill processes
-                self.kill_process_by_regex(r'MuMu')
+            # Use osascript to quit gracefully first
+            self.execute('osascript -e \'tell application "MuMu" to quit\'', wait=True)
+            time.sleep(2)
+            # Then kill any remaining MuMu processes
+            self.kill_process_by_regex(r'MuMuEmulator|MuMuPlayer')
         
         else:
             # Generic fallback: kill by process name from instance
