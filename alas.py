@@ -40,7 +40,7 @@ class AzurLaneAutoScript:
         self.consecutive_game_stuck = 0
         self.consecutive_adb_offline = 0
         # Scheduled emulator restart
-        self.last_emulator_restart_time = 0  # Set to 0 to trigger immediate restart
+        self.last_emulator_restart_time = time.time()
 
     def _try_restart_emulator(self):
         """
