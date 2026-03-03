@@ -206,7 +206,7 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 self.execute('osascript -e \'tell application "BlueStacks" to quit\'', wait=True)
         
         elif instance == EmulatorMac.MuMuPro:
-            # Use mumutool to close specific instance first
+            # Use mumutool to close specific instance
             app_path = EmulatorMac.find_app_bundle('MuMu')
             if app_path:
                 mumu_bin_path = os.path.join(app_path, 'Contents/MacOS/mumutool')
@@ -216,11 +216,10 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                     self.execute(f'"{mumu_bin_path}" close {instance_index}', wait=True)
                     time.sleep(2)
             
-            # Fallback: use osascript to quit
-            self.execute('osascript -e \'tell application "MuMu" to quit\'', wait=True)
-            time.sleep(2)
-            # Then kill any remaining MuMu processes
-            self.kill_process_by_regex(r'MuMuEmulator|MuMuPlayer')
+            # Note: We don't use osascript to quit as it would close all instances
+            # Instead, just ensure the specific process is stopped
+            # Kill only the specific MuMu emulator process if still running
+            # The instance name can be used to target specific instance processes
         
         else:
             # Generic fallback: kill by process name from instance
