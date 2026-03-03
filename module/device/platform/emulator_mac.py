@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import subprocess
@@ -7,6 +8,7 @@ import psutil
 
 from module.device.platform.emulator_base import EmulatorBase, EmulatorInstanceBase, EmulatorManagerBase
 from module.device.platform.utils import cached_property
+from module.logger import logger
 
 
 def abspath(path):
@@ -164,43 +166,61 @@ class EmulatorMac(EmulatorBase):
                 )
         
         elif self == EmulatorMac.MuMuPro:
-            # MuMu Pro typically uses port 16384 + 32*n
+            # MuMu Pro on macOS
+            # Use mumutool to get instance list and ports
             app_path = self.find_app_bundle('MuMu')
             if app_path:
-                # Find vms directory
-                vms_base = os.path.join(os.path.dirname(os.path.dirname(app_path)), 'vms')
-                if os.path.exists(vms_base):
-                    for folder in os.listdir(vms_base):
-                        folder_path = os.path.join(vms_base, folder)
-                        if os.path.isdir(folder_path):
-                            # Try to find port from config
-                            config_file = os.path.join(folder_path, 'config.ini')
-                            if os.path.exists(config_file):
-                                try:
-                                    with open(config_file, 'r', encoding='utf-8', errors='ignore') as f:
-                                        content = f.read()
-                                        port_match = re.search(r'port=(\d+)', content)
-                                        if port_match:
-                                            port = port_match.group(1)
-                                        else:
-                                            port = '16384'
-                                except Exception:
-                                    port = '16384'
-                            else:
-                                port = '16384'
-                            
-                            yield EmulatorInstanceMac(
-                                serial=f'127.0.0.1:{port}',
-                                name=folder,
-                                path=app_path + '/Contents/MacOS/MuMuEmulator.app/Contents/MacOS/MuMuEmulator'
-                            )
-                else:
-                    # Default instance
-                    yield EmulatorInstanceMac(
-                        serial='127.0.0.1:16384',
-                        name='MuMuPro',
-                        path=app_path + '/Contents/MacOS/MuMuEmulator.app/Contents/MacOS/MuMuEmulator'
-                    )
+                mumu_bin_path = os.path.join(app_path, 'Contents/MacOS/mumutool')
+                if os.path.exists(mumu_bin_path):
+                    try:
+                        # Use 'mumutool info all' to get all instances
+                        result = subprocess.run(
+                            [mumu_bin_path, 'info', 'all'],
+                            capture_output=True,
+                            text=True,
+                            timeout=10
+                        )
+                        if result.returncode == 0 and result.stdout.strip():
+                            try:
+                                data = json.loads(result.stdout)
+                                if data.get('errcode') == 0 and 'return' in data:
+                                    return_data = data['return']
+                                    if 'results' in return_data:
+                                        # Multiple instances
+                                        devices = return_data['results']
+                                    elif 'count' in return_data and return_data['count'] == 1:
+                                        # Single instance (not in results array)
+                                        devices = [return_data]
+                                    else:
+                                        devices = []
+                                    
+                                    for dev in devices:
+                                        index = dev.get('index', 0)
+                                        # Use adb_port if available, otherwise calculate from index
+                                        adb_port = dev.get('adb_port', 16384 + index * 32)
+                                        name = dev.get('name', f'MuMuPro-{index}')
+                                        state = dev.get('state', 'unknown')
+                                        yield EmulatorInstanceMac(
+                                            serial=f'127.0.0.1:{adb_port}',
+                                            name=name,
+                                            path=app_path + '/Contents/MacOS/MuMuEmulator.app/Contents/MacOS/MuMuEmulator',
+                                            index=index,
+                                            state=state
+                                        )
+                                    return
+                            except json.JSONDecodeError:
+                                pass
+                    except (subprocess.TimeoutExpired, Exception) as e:
+                        logger.debug(f'mumutool info all command failed: {e}')
+
+                # Fallback: Default instance
+                yield EmulatorInstanceMac(
+                    serial='127.0.0.1:16384',
+                    name='MuMuPro',
+                    path=app_path + '/Contents/MacOS/MuMuEmulator.app/Contents/MacOS/MuMuEmulator',
+                    index=0,
+                    state='unknown'
+                )
 
     def iter_adb_binaries(self) -> list:
         """

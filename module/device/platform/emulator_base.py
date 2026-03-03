@@ -59,6 +59,9 @@ class EmulatorInstanceBase:
     name: str
     # Path to emulator .exe
     path: str
+    # Additional fields for specific emulators (optional)
+    index: int = 0
+    state: str = ''
 
     def __str__(self):
         return f'{self.type}(serial="{self.serial}", name="{self.name}", path="{self.path}")'

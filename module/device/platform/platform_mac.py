@@ -164,18 +164,20 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 raise Exception('BlueStacks Air app not found')
 
         elif instance == EmulatorMac.MuMuPro:
-            # MuMu on macOS:正确的启动流程
+            # MuMu on macOS: 正确的启动流程
             # 1. open -a MuMuPlayer.app - 启动主程序
-            # 2. mumutool open 0 - 启动模拟器实例
+            # 2. mumutool open <index> - 启动模拟器实例
             app_path = EmulatorMac.find_app_bundle('MuMu')
             if app_path:
                 # Step 1: Launch MuMuPlayer app (main program)
                 self.execute(f'open -a "{app_path}"', wait=False)
                 time.sleep(3)
-                # Step 2: Use mumutool to start the emulator instance
+                # Step 2: Use mumutool to start the specific emulator instance
                 mumu_bin_path = os.path.join(app_path, 'Contents/MacOS/mumutool')
                 if os.path.exists(mumu_bin_path):
-                    self.execute(f'"{mumu_bin_path}" open 0', wait=False)
+                    # Use instance.index to open specific instance
+                    instance_index = getattr(instance, 'index', 0)
+                    self.execute(f'"{mumu_bin_path}" open {instance_index}', wait=False)
                 else:
                     logger.warning(f'mumutool not found at {mumu_bin_path}, using fallback')
                     # Fallback: try MuMuEmulator.app structure
@@ -204,7 +206,17 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 self.execute('osascript -e \'tell application "BlueStacks" to quit\'', wait=True)
         
         elif instance == EmulatorMac.MuMuPro:
-            # Use osascript to quit gracefully first
+            # Use mumutool to close specific instance first
+            app_path = EmulatorMac.find_app_bundle('MuMu')
+            if app_path:
+                mumu_bin_path = os.path.join(app_path, 'Contents/MacOS/mumutool')
+                if os.path.exists(mumu_bin_path):
+                    # Use instance.index to close specific instance
+                    instance_index = getattr(instance, 'index', 0)
+                    self.execute(f'"{mumu_bin_path}" close {instance_index}', wait=True)
+                    time.sleep(2)
+            
+            # Fallback: use osascript to quit
             self.execute('osascript -e \'tell application "MuMu" to quit\'', wait=True)
             time.sleep(2)
             # Then kill any remaining MuMu processes
