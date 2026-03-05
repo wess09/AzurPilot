@@ -274,8 +274,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-log-bar, 
 #pywebio-scope-log,
 .container-log,
-#pywebio-scope-groups > *:not(#pywebio-scope-navigator),
-#pywebio-scope-groups > div:not(#pywebio-scope-navigator) {
+#pywebio-scope-groups > *:not(#pywebio-scope-navigator) {
 	background-color: var(--alas-apple-card-bg) !important;
 	border-radius: var(--radius-lg) !important;
 	border: 1px solid rgba(0, 0, 0, 0.04) !important;
@@ -310,7 +309,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	transition: all var(--transition-normal) !important;
 }
 #pywebio-scope-navigator .btn:hover {
-	background-color: #f5f5f7 !important;
+	background-color: var(--alas-apple-bg) !important;
 	border-color: rgba(0, 0, 0, 0.12) !important;
 	box-shadow: var(--alas-apple-shadow) !important;
 }
@@ -325,8 +324,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-log-bar:hover, 
 #pywebio-scope-log:hover,
 .container-log:hover,
-#pywebio-scope-groups > *:not(#pywebio-scope-navigator):hover,
-#pywebio-scope-groups > div:not(#pywebio-scope-navigator):hover {
+#pywebio-scope-groups > *:not(#pywebio-scope-navigator):hover {
 	box-shadow: var(--alas-apple-shadow-md) !important;
 }
 /* ================= Buttons ================= */
@@ -370,7 +368,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 }
 /* 次要按钮：白底灰边 */
 .btn-secondary, .btn-light {
-	background-color: #ffffff !important;
+	background-color: var(--alas-apple-card-bg) !important;
 	color: var(--alas-apple-text) !important;
 	box-shadow: var(--alas-apple-shadow-xs) !important;
 	border: 1px solid rgba(0, 0, 0, 0.12) !important;
@@ -407,7 +405,7 @@ details > summary {
 }
 
 details > summary:hover {
-	color: #1d1d1f !important;
+	color: var(--alas-apple-text) !important;
 }
 
 /* 隐藏默认的三角标记 */
@@ -433,7 +431,7 @@ details > summary::-webkit-details-marker {
 	transition: background-color var(--transition-fast), color var(--transition-fast) !important;
 }
 /* 子菜单项缩进 */
-	details .btn-menu {
+details .btn-menu {
 	margin-left: 16px !important; 
 	width: calc(100% - 24px) !important;
 	font-size: 13px !important;
@@ -491,7 +489,7 @@ h1, h2, h3, h4, h5, h6 {
 	margin: 6px 0 !important;
 }
 /* 下拉选择框样式 */
-	select.form-control, select {
+select.form-control, select {
 	border-radius: var(--radius-md) !important;
 	border: 1px solid rgba(0, 0, 0, 0.15) !important;
 	background-color: var(--alas-apple-card-bg) !important;
@@ -568,7 +566,7 @@ select.form-control:focus, select:focus {
 	border: 1px solid rgba(0,0,0,0.05) !important;
 	border-radius: 16px !important;
 	padding: 20px !important;
-	color: #1d1d1f !important;
+	color: var(--alas-apple-text) !important;
 	line-height: 1.6;
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
 }
@@ -581,7 +579,7 @@ select.form-control:focus, select:focus {
 	padding: 0 !important;
 }
 /* 修复特定按钮的颜色样式 */
-	button[style*="--menu-Overview--"] {
+button[style*="--menu-Overview--"] {
 	border-left: none !important;
 }
 
