@@ -162,7 +162,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	padding: var(--spacing-md) var(--spacing-lg) !important;
 }
 /* 优化多列布局：响应式三栏网格系统 */
-#pywebio-scope-_groups {
+#pywebio-scope-groups {
 	grid-template-columns: minmax(0.1rem, 0.1fr) minmax(20rem, 5fr) minmax(15rem, 1fr) !important;
 	grid-auto-flow: column !important;
 	gap: var(--spacing-lg) !important;
