@@ -1516,8 +1516,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
             self.focus_to(target_grid.location)
             self.update()
-            clickable_grid_group = self.view.select(location=target_loc)
-            if not clickable_grid_group:
+            try:
+                clickable_grid = self.convert_global_to_local(target_loc)
+            except KeyError:
                 logger.warning(f'已将视角移动到 {target_loc}，但在视野中找不到可点击的格子。')
                 continue
 
@@ -1528,7 +1529,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     except Exception:
                         pass
                     time.sleep(0.1)
-                    self.device.click(clickable_grid_group[0])
+                    self.device.click(clickable_grid)
                     self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4))
                     logger.info(f'舰队 {fleet_index} 已到达 {target_grid}。')
                     break
@@ -1549,7 +1550,6 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                                 self.device.back()
                             except Exception:
                                 pass
-                            time.sleep(0.25)
                         self.device.screenshot()
                         try:
                             self.ui_ensure(page_os)
@@ -1557,12 +1557,15 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                             self.update()
                         except Exception:
                             logger.debug('重建视图失败（soft recovery）', exc_info=True)
-                        clickable_grid_group = self.view.select(location=target_loc)
-                        if clickable_grid_group:
+                        try:
+                            clickable_grid = self.convert_global_to_local(target_loc)
+                        except KeyError:
+                            clickable_grid = None
+                        if clickable_grid:
                             logger.info('软恢复后找到格子，重试点击')
                             try:
                                 time.sleep(0.3)
-                                self.device.click(clickable_grid_group[0])
+                                self.device.click(clickable_grid)
                                 self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4))
                                 logger.info('软恢复成功，舰队已到达')
                                 break
@@ -1585,10 +1588,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                                 self.update()
                             except Exception:
                                 logger.debug('重建地图数据失败（app restart）', exc_info=True)
-                            clickable_grid_group = self.view.select(location=target_loc)
-                            if clickable_grid_group:
+                            try:
+                                clickable_grid = self.convert_global_to_local(target_loc)
+                            except KeyError:
+                                clickable_grid = None
+                            if clickable_grid:
                                 time.sleep(0.3)
-                                self.device.click(clickable_grid_group[0])
+                                self.device.click(clickable_grid)
                                 self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4))
                                 logger.info('重启应用后恢复成功，舰队已到达')
                                 break
