@@ -352,10 +352,13 @@ class AlasGUI(Frame):
         self.init_menu(name=task)
         self.set_title(t(f"Task.{task}.name"))
 
-        if task in ("OpsiHazard1Leveling",):
+        # 智能调度显示所有统计，侵蚀1练级只显示每日经验检测
+        if task in ("OpsiScheduling", "OpsiHazard1Leveling"):
             def _render_opsi_stats():
                 try:
-                    from module.statistics.opsi_month import get_opsi_stats, compute_monthly_cl1_akashi_ap
+                    from module.statistics.opsi_month import get_opsi_stats, compute_monthly_cl1_akashi_ap, get_ap_timeline
+                    from module.statistics.cl1_database import db as cl1_db
+                    from module.statistics.ship_exp_stats import get_ship_exp_stats
                     # 使用当前实例名称获取统计数据
                     instance_name = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
                     s = get_opsi_stats(instance_name=instance_name).summary()
@@ -364,7 +367,63 @@ class AlasGUI(Frame):
                         put_text(f"Failed to load OpSi stats: {e}")
                     return
 
-                labels = ["月份", "战斗场次", "战斗轮次", "出击消耗", "遇见明石次数", "遇见明石概率", "平均体力", "净赚体力", "循环效率"]
+                # 侵蚀1练级只显示每日经验检测
+                if task == "OpsiHazard1Leveling":
+                    try:
+                        exp_stats = get_ship_exp_stats(instance_name=instance_name)
+                        exp_data = exp_stats.data
+                        ships_data = exp_data.get("ships", []) if exp_data else []
+                        target_level = exp_data.get("target_level", 125) if exp_data else 125
+                        last_check_time = exp_data.get("last_check_time", "-") if exp_data else "-"
+                    except Exception as e:
+                        with use_scope("opsi_stats", clear=True):
+                            put_text(f"Failed to load exp stats: {e}")
+                        return
+
+                    with use_scope("opsi_stats", clear=True):
+                        put_html('<div style="margin-top:12px; margin-bottom:8px; font-weight:600">每日经验检测</div>')
+                        put_row([put_text(f"检测时间: {last_check_time}"), put_text(f"目标等级: {target_level}")])
+                        if ships_data:
+                            exp_labels = ["舰位", "等级", "当前经验", "总经验", "距目标经验", "还需出击", "预计时间"]
+                            exp_rows = []
+                            from module.statistics.ship_exp_stats import LIST_SHIP_EXP
+                            for ship in ships_data:
+                                position = ship.get("position", "-")
+                                level = ship.get("level", "-")
+                                current_exp = ship.get("current_exp", "-")
+                                total_exp = ship.get("total_exp", "-")
+                                exp_needed = ship.get("exp_needed", 0)
+                                battles_needed = ship.get("battles_needed", 0)
+                                time_needed = ship.get("time_needed", 0)
+
+                                if exp_needed > 0:
+                                    if time_needed < 60:
+                                        time_str = f"{time_needed:.0f}分钟"
+                                    else:
+                                        time_str = f"{time_needed/60:.1f}小时"
+                                else:
+                                    time_str = "已满"
+
+                                exp_rows.append([
+                                    position, level, current_exp, total_exp,
+                                    exp_needed if exp_needed > 0 else "-",
+                                    battles_needed if battles_needed > 0 else "-",
+                                    time_str
+                                ])
+
+                            html = '<table style="width:100%; border-collapse:collapse;">'
+                            html += '<thead><tr>' + ''.join([f'<th style="text-align:left;padding:6px">{l}</th>' for l in exp_labels]) + '</tr></thead>'
+                            html += '<tbody>'
+                            for row in exp_rows:
+                                html += '<tr>' + ''.join([f'<td style="text-align:center;padding:6px">{v}</td>' for v in row]) + '</tr>'
+                            html += '</tbody></table>'
+                            put_html(html)
+                        else:
+                            put_html('<div style="color:#888; margin:12px 0">暂无经验数据，运行侵蚀1练级后将自动记录</div>')
+                    return
+
+                # 智能调度显示所有统计
+                labels = ["月份", "战斗场次", "战斗轮次", "出击消耗", "遇见明石次数", "遇见明石概率", "平均体力", "净赚体力", "循环效率", "平均战斗时间", "平均一轮时长"]
                 month = s.get("month", "-")
                 total = s.get("total_battles", "-")
                 try:
@@ -422,7 +481,18 @@ class AlasGUI(Frame):
                 except Exception:
                     loop_eff = "-"
 
-                values = [month, tb, rounds, sortie_cost, ak, akashi_rate, avg_ap, net_ap, loop_eff]
+                # 获取侵蚀1的平均时长
+                try:
+                    exp_stats = get_ship_exp_stats(instance_name=instance_name)
+                    avg_cl1_battle_time = exp_stats.get_average_battle_time()
+                    avg_cl1_round_time = exp_stats.get_average_round_time()
+                    avg_cl1_battle_str = f"{avg_cl1_battle_time:.1f}秒"
+                    avg_cl1_round_str = f"{avg_cl1_round_time:.1f}秒"
+                except Exception:
+                    avg_cl1_battle_str = "-"
+                    avg_cl1_round_str = "-"
+
+                values = [month, tb, rounds, sortie_cost, ak, akashi_rate, avg_ap, net_ap, loop_eff, avg_cl1_battle_str, avg_cl1_round_str]
 
                 table = [labels, values]
 
@@ -434,6 +504,45 @@ class AlasGUI(Frame):
                     html += '<tbody><tr>' + ''.join([f'<td style="text-align:center;padding:6px">{v}</td>' for v in values]) + '</tr></tbody>'
                     html += '</table>'
                     put_html(html)
+
+                    # ========== 短猫统计数据 ==========
+                    try:
+                        from datetime import datetime
+                        now = datetime.now()
+                        meow_data = cl1_db.get_meow_stats(instance_name or "default", now.year, now.month)
+                    except Exception as e:
+                        meow_data = {}
+
+                    meow_battle_count = meow_data.get("battle_count", 0)
+                    meow_avg_time = meow_data.get("avg_round_time", 0.0)
+                    meow_round_times = meow_data.get("round_times", [])
+
+                    try:
+                        meow_rounds = int(meow_battle_count) // 2 if meow_battle_count else 0
+                    except Exception:
+                        meow_rounds = 0
+
+                    if meow_round_times:
+                        avg_time_str = f"{meow_avg_time:.1f}秒"
+                    else:
+                        avg_time_str = "-"
+
+                    meow_values = [
+                        meow_data.get("month", "-"),
+                        meow_battle_count,
+                        meow_rounds,
+                        avg_time_str,
+                        avg_time_str,  # 平均一轮短猫时长
+                    ]
+                    meow_labels = ["月份", "战斗场次", "出击轮次", "平均战斗时间", "平均一轮短猫时长"]
+
+                    put_html('<div style="margin-top:20px; margin-bottom:8px; font-weight:600">短猫相接数据收集</div>')
+                    html_meow = '<table style="width:100%; border-collapse:collapse;">'
+                    html_meow += '<thead><tr>' + ''.join([f'<th style="text-align:left;padding:6px">{l}</th>' for l in meow_labels]) + '</tr></thead>'
+                    html_meow += '<tbody><tr>' + ''.join([f'<td style="text-align:center;padding:6px">{v}</td>' for v in meow_values]) + '</tr></tbody>'
+                    html_meow += '</table>'
+                    put_html(html_meow)
+
                     def export_opsi_csv(save_to_desktop: bool = True):
                         import io
                         try:
@@ -1005,9 +1114,11 @@ cv.addEventListener("mousemove", function(e) {
                         put_button("刷新", onclick=_render_ap_chart, color="off"),
                     ], size="auto")
 
-            put_scope("ap_chart", [])
-            _render_ap_chart()
-            self.task_handler.add(_render_ap_chart, 60, True)
+            # 只在 OpsiScheduling 任务下显示体力K线图
+            if task == "OpsiScheduling":
+                put_scope("ap_chart", [])
+                _render_ap_chart()
+                self.task_handler.add(_render_ap_chart, 60, True)
 
             # ========== 舰船经验检测表格 ==========
             def _render_ship_exp():
@@ -1084,9 +1195,10 @@ cv.addEventListener("mousemove", function(e) {
                     with use_scope("ship_exp_table", clear=True):
                         put_text(f"加载舰船经验数据失败: {e}")
 
-            put_scope("ship_exp_table", [])
-            _render_ship_exp()
-            self.task_handler.add(_render_ship_exp, 60, True)
+                if task == "OpsiScheduling":
+                    put_scope("ship_exp_table", [])
+                    _render_ship_exp()
+                    self.task_handler.add(_render_ship_exp, 60, True)
 
         put_scope("_groups", [put_none(), put_scope("groups"), put_scope("navigator")])
 
