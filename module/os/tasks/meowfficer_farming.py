@@ -326,6 +326,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             .delete(SelectedGrids(self.zones.select(is_port=True))) \
             .delete(SelectedGrids(excluded_zones)) \
             .sort_by_clock_degree(center=(1252, 1012), start=self.zone.location)
+        
+        if not zones:
+            logger.warning(f'探测装置搜索模式：未找到符合条件的海域 (侵蚀等级 {hazard_level})')
+            return False
             
         logger.hr(f'OS meowfficer farming, zone_id={zones[0].zone_id}', level=1)
         current_zone_id = zones[0].zone_id
