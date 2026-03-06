@@ -291,7 +291,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         # This is because when a ship dies (shows wrench icon), its HP is set to 0
         # So threshold=0 would still trigger repair for dead ships, which may not be intended
         if trigger_threshold <= 0:
-            logger.info(f'Repair threshold is {trigger_threshold}, skip fleet repair')
+            logger.info(f'Repair threshold: {repair_threshold}, Repair pack threshold: {repair_pack_threshold}, '
+                        f'Trigger threshold: {trigger_threshold}, skip fleet repair')
             return False
         if self.is_in_special_zone():
             logger.info('OS is in a special zone type, skip fleet repair')
@@ -428,9 +429,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         else:
             trigger_threshold = repair_threshold
 
-        # If threshold is negative, skip repair entirely
-        if trigger_threshold < 0:
-            logger.info('Repair threshold is negative, skip fleet repair')
+        # Threshold <= 0 means disable repair entirely
+        # This is because when a ship dies (shows wrench icon), its HP is set to 0
+        # So threshold=0 would still trigger repair for dead ships, which may not be intended
+        if trigger_threshold <= 0:
+            logger.info(f'Repair threshold: {repair_threshold}, Repair pack threshold: {repair_pack_threshold}, '
+                        f'Trigger threshold: {trigger_threshold}, skip fleet repair')
             return False
 
         if use_repair_pack:
