@@ -287,7 +287,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         else:
             trigger_threshold = repair_threshold
 
-        if trigger_threshold < 0:
+        # Threshold <= 0 means disable repair entirely
+        # This is because when a ship dies (shows wrench icon), its HP is set to 0
+        # So threshold=0 would still trigger repair for dead ships, which may not be intended
+        if trigger_threshold <= 0:
+            logger.info(f'Repair threshold is {trigger_threshold}, skip fleet repair')
             return False
         if self.is_in_special_zone():
             logger.info('OS is in a special zone type, skip fleet repair')
@@ -410,7 +414,26 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.warning(f'OpsiDaily.SkipSirenResearchMission is not supported in {self.config.SERVER}')
             self.config.OpsiGeneral_UseRepairPack = False
 
-        if self.config.OpsiGeneral_UseRepairPack:
+        # Check repair thresholds before proceeding
+        repair_threshold = float(self.config.OpsiGeneral_RepairThreshold)
+        repair_pack_threshold = float(self.config.OpsiGeneral_RepairPackThreshold)
+        use_repair_pack = bool(self.config.OpsiGeneral_UseRepairPack) and self.config.SERVER in ['cn']
+
+        if use_repair_pack:
+            # When repair packs are enabled, use the stricter trigger threshold
+            if repair_threshold < 0:
+                trigger_threshold = repair_pack_threshold
+            else:
+                trigger_threshold = max(repair_threshold, repair_pack_threshold)
+        else:
+            trigger_threshold = repair_threshold
+
+        # If threshold is negative, skip repair entirely
+        if trigger_threshold < 0:
+            logger.info('Repair threshold is negative, skip fleet repair')
+            return False
+
+        if use_repair_pack:
             if fleet_index is None:
                 fleet_current_index = self.fleet_selector.get()
                 submarine_fleet = self.storage_fleet_selector.SUBMARINE_FLEET
