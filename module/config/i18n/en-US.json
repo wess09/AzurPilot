@@ -4652,6 +4652,17 @@
       "help": "OpsiScheduling.EnableStronghold.help",
       "True": "True",
       "False": "False"
+    },
+    "MeowAdvanceMode": {
+      "name": "Meow Advance Mode",
+      "help": "Calculate advance start time based on historical consumption rate",
+      "aggressive": "Aggressive",
+      "balanced": "Balanced",
+      "conservative": "Conservative"
+    },
+    "MeowAdvanceEnable": {
+      "name": "OpsiScheduling.MeowAdvanceEnable.name",
+      "help": "OpsiScheduling.MeowAdvanceEnable.help"
     }
   },
   "OpsiDailyDelay": {

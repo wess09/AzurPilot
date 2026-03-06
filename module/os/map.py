@@ -646,10 +646,15 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
     _auto_search_battle_count = 0
     _auto_search_round_timer = 0
     _cl1_auto_search_battle_count = 0
+    _meow_auto_search_battle_count = 0
+    _meow_auto_search_round_timer = 0
 
     def on_auto_search_battle_count_reset(self):
         self._auto_search_battle_count = 0
         self._auto_search_round_timer = 0
+        self._cl1_auto_search_battle_count = 0
+        self._meow_auto_search_battle_count = 0
+        self._meow_auto_search_round_timer = 0
 
     def on_auto_search_battle_count_add(self):
         self._auto_search_battle_count += 1
@@ -681,6 +686,80 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     except Exception:
                         logger.exception('Failed to record cl1 round time')
                 self._auto_search_round_timer = time.time()
+
+        # 短猫任务数据收集
+        if getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False):
+            try:
+                try:
+                    self._meow_auto_search_battle_count += 1
+                except Exception:
+                    self._meow_auto_search_battle_count = 1
+                logger.attr('meow_battle_count', self._meow_auto_search_battle_count)
+                try:
+                    from module.statistics.cl1_database import db as cl1_db
+                    instance_name = getattr(self.config, 'config_name', 'default')
+                    cl1_db.increment_meow_battle_count(instance_name)
+                except Exception:
+                    logger.debug('Failed to persist monthly meow battle increment', exc_info=True)
+            except Exception:
+                logger.debug('Failed to update meow battle counter', exc_info=True)
+
+            # 短猫每轮消耗120AP，每两场战斗算一轮
+            # 短猫也记录轮次时间（每两场战斗记录一次）
+            if self._auto_search_battle_count % 2 == 1:
+                if self._meow_auto_search_round_timer:
+                    cost = round(time.time() - self._meow_auto_search_round_timer, 2)
+                    logger.attr('Meow time cost', f'{cost}s/round')
+                    try:
+                        from module.statistics.cl1_database import db as cl1_db
+                        instance_name = getattr(self.config, 'config_name', 'default')
+                        cl1_db.add_meow_round_time(instance_name, cost)
+                    except Exception:
+                        logger.debug('Failed to record meow round time', exc_info=True)
+                self._meow_auto_search_round_timer = time.time()
+
+    def on_meow_search_start(self):
+        """
+        短猫任务：每次开始新海域搜索时调用
+        记录搜索开始时间
+        """
+        if not (getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False)):
+            return
+
+        # 开始新的搜索计时
+        self._meow_search_start_time = time.time()
+        logger.debug('Meow search started, timer reset')
+
+    def on_meow_search_end(self):
+        """
+        短猫任务：每次完成海域搜索后调用
+        记录搜索耗时（一轮的耗时）
+        """
+        if not (getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False)):
+            return
+
+        start_time = getattr(self, '_meow_search_start_time', None)
+        if start_time is None:
+            logger.debug('Meow search start time not recorded, skip')
+            return
+
+        duration = time.time() - start_time
+
+        # 过滤异常值（太短或太长的搜索）
+        if duration < 1 or duration > 1800:  # 1秒~30分钟
+            logger.debug(f'Meow search duration {duration:.1f}s out of range, not recorded')
+            self._meow_search_start_time = None
+            return
+
+        logger.attr('Meow search duration', f'{duration:.1f}s')
+        try:
+            from module.statistics.cl1_database import db as cl1_db
+            instance_name = getattr(self.config, 'config_name', 'default')
+            cl1_db.add_meow_round_time(instance_name, duration)
+        except Exception:
+            logger.debug('Failed to record meow search duration', exc_info=True)
+
+        self._meow_search_start_time = None
 
     def get_current_cl1_battle_count(self):
         return int(getattr(self, '_cl1_auto_search_battle_count', 0))

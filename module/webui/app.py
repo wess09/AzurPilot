@@ -543,6 +543,37 @@ class AlasGUI(Frame):
                     html_meow += '</table>'
                     put_html(html_meow)
 
+                    # ========== 短猫提前开始建议 ==========
+                    try:
+                        from module.os.tasks.scheduling import OpsiScheduling
+                        # 创建临时实例来调用计算方法
+                        scheduling = OpsiScheduling(self.config, task='OpsiScheduling')
+                        advance_calc = scheduling.get_meow_advance_calculation()
+                    except Exception as e:
+                        advance_calc = {}
+
+                    if advance_calc:
+                        mode_name = advance_calc.get('mode_name', '-')
+                        current_ap = advance_calc.get('current_ap', '-')
+                        meow_round_ap = advance_calc.get('meow_round_ap', '-')
+                        avg_meow_round_time = advance_calc.get('avg_meow_round_time', 0)
+                        available_rounds = advance_calc.get('available_rounds', 0)
+                        hours_ahead = advance_calc.get('hours_ahead', 0)
+                        recommendation = advance_calc.get('recommendation', '-')
+
+                        put_html('<div style="margin-top:20px; margin-bottom:8px; font-weight:600">短猫提前开始建议</div>')
+                        put_row([
+                            put_text(f"当前AP: {current_ap}"),
+                            put_text(f"每轮消耗: {meow_round_ap} AP"),
+                            put_text(f"可运行轮数: {available_rounds:.1f}轮"),
+                        ])
+                        put_row([
+                            put_text(f"平均每轮耗时: {avg_meow_round_time:.1f}秒"),
+                            put_text(f"当前模式: {mode_name}"),
+                            put_text(f"建议提前: {hours_ahead:.1f}小时"),
+                        ])
+                        put_html(f'<div style="margin-top:8px; padding:8px; background:#f5f5f5; border-radius:4px;">{recommendation}</div>')
+
                     def export_opsi_csv(save_to_desktop: bool = True):
                         import io
                         try:

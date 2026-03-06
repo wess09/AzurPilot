@@ -4652,6 +4652,17 @@
       "help": "OpsiScheduling.EnableStronghold.help",
       "True": "True",
       "False": "False"
+    },
+    "MeowAdvanceMode": {
+      "name": "OpsiScheduling.MeowAdvanceMode.name",
+      "help": "OpsiScheduling.MeowAdvanceMode.help",
+      "aggressive": "aggressive",
+      "balanced": "balanced",
+      "conservative": "conservative"
+    },
+    "MeowAdvanceEnable": {
+      "name": "OpsiScheduling.MeowAdvanceEnable.name",
+      "help": "OpsiScheduling.MeowAdvanceEnable.help"
     }
   },
   "OpsiDailyDelay": {

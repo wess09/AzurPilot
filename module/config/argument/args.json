@@ -12897,6 +12897,19 @@
           true,
           false
         ]
+      },
+      "MeowAdvanceMode": {
+        "type": "select",
+        "value": "balanced",
+        "option": [
+          "aggressive",
+          "balanced",
+          "conservative"
+        ]
+      },
+      "MeowAdvanceEnable": {
+        "type": "checkbox",
+        "value": false
       }
     },
     "Storage": {
