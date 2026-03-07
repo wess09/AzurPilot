@@ -775,17 +775,31 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.debug('Failed to get end action point')
             end_ap = None
 
-        start_ap = getattr(self, '_meow_search_start_ap', None)
-
         duration = time.time() - start_time
 
-        # 直接使用战斗次数作为轮数（每个侵蚀等级对应的战斗次数固定）
-        rounds = getattr(self, '_meow_auto_search_battle_count', 0)
-        if rounds > 0:
-            logger.debug(f'Meow search: battle count (rounds) = {rounds}')
+        # 根据侵蚀等级获取每轮战斗次数，计算真正的单轮时间
+        # 侵蚀2、3：每轮2次战斗；侵蚀4、5、6：每轮3次战斗
+        battles_per_round = 2  # 默认值
+        try:
+            if hasattr(self, 'zone') and hasattr(self.zone, 'hazard_level'):
+                hazard_level = self.zone.hazard_level
+                # 根据侵蚀等级确定每轮战斗次数
+                if hazard_level in [2, 3]:
+                    battles_per_round = 2
+                elif hazard_level in [4, 5, 6]:
+                    battles_per_round = 3
+                logger.debug(f'Hazard level: {hazard_level}, battles per round: {battles_per_round}')
+        except Exception:
+            logger.debug('Failed to get hazard level, using default battles per round')
+
+        # 计算单轮时间
+        battle_count = getattr(self, '_meow_auto_search_battle_count', 0)
+        if battle_count > 0:
+            # 单轮时间 = 总时间 / (战斗次数 / 每轮战斗次数) = 总时间 * 每轮战斗次数 / 战斗次数
+            rounds = battle_count / battles_per_round
             duration = duration / rounds
             logger.debug(f'Meow search total duration: {time.time() - start_time:.1f}s, '
-                         f'rounds: {rounds}, per round: {duration:.1f}s')
+                         f'battles: {battle_count}, rounds: {rounds}, per round: {duration:.1f}s')
 
         # 过滤异常值（太短或太长的搜索）
         if duration < 1 or duration > 1800:  # 1秒~30分钟
