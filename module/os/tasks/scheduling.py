@@ -78,6 +78,7 @@ class CoinTaskMixin:
     
     # 短猫相接任务名称
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'
+    AP_NOTIFY_MIN_INTERVAL_MINUTES = 30
     
     # ==================== 推送通知相关方法 ====================
     
@@ -157,6 +158,21 @@ class CoinTaskMixin:
                     return False
         
         return True
+
+    def _can_send_ap_notification(self, key):
+        """
+        限制体力相关推送的最小发送间隔，避免高频通知。
+        """
+        now = datetime.now()
+        last_notify = getattr(self.config, key, None)
+        min_interval = timedelta(minutes=self.AP_NOTIFY_MIN_INTERVAL_MINUTES)
+        if last_notify and now - last_notify < min_interval:
+            logger.info(
+                f"Skip AP notification ({key}, last: {last_notify}, wait {self.AP_NOTIFY_MIN_INTERVAL_MINUTES}m)"
+            )
+            return False
+        setattr(self.config, key, now)
+        return True
     
     def check_and_notify_action_point_threshold(self):
         """
@@ -184,10 +200,13 @@ class CoinTaskMixin:
         except Exception:
             logger.exception('Failed to report stamina')
 
-        self.notify_push(
-            title="[Alas] 行动力出现变化！",
-            content=f"当前行动力: {current_ap}"
-        )
+
+        if self._can_send_ap_notification('_last_ap_notification_time'):
+            self.notify_push(
+                title="[Alas] 行动力出现变化！",
+                content=f"当前行动力: {current_ap}"
+            )
+
     
     # ==================== 黄币阈值相关方法 ====================
     
@@ -316,55 +335,6 @@ class CoinTaskMixin:
         
         return enabled_tasks
 
-    def _get_coin_task_cooldown_end(self, task_name, cooldown_minutes=60):
-        """
-        获取黄币任务的冷却结束时间（仅识别短时CD，默认60分钟内）。
-
-        Args:
-            task_name (str): 任务名
-            cooldown_minutes (int): 视为冷却的最大分钟数
-
-        Returns:
-            datetime | None: 若在冷却中返回结束时间，否则返回 None
-        """
-        now = datetime.now()
-        enabled = bool(self.config.cross_get(keys=f'{task_name}.Scheduler.Enable', default=False))
-        if not enabled:
-            return None
-
-        next_run = self.config.cross_get(keys=f'{task_name}.Scheduler.NextRun', default=None)
-        if not isinstance(next_run, datetime):
-            return None
-        if next_run <= now:
-            return None
-
-        if next_run - now <= timedelta(minutes=cooldown_minutes):
-            return next_run
-        return None
-
-    def _split_coin_tasks_by_cooldown(self, task_list, cooldown_minutes=60):
-        """
-        将任务列表拆分为“可立即执行”和“冷却中”两组。
-
-        Args:
-            task_list (list[str]): 待检查任务列表
-            cooldown_minutes (int): 视为冷却的最大分钟数
-
-        Returns:
-            tuple[list[str], dict[str, datetime]]:
-                - runnable_tasks: 可立即唤起的任务
-                - cooling_tasks: 冷却中的任务及其结束时间
-        """
-        runnable_tasks = []
-        cooling_tasks = {}
-        for task in task_list:
-            cooldown_end = self._get_coin_task_cooldown_end(task, cooldown_minutes=cooldown_minutes)
-            if cooldown_end is None:
-                runnable_tasks.append(task)
-            else:
-                cooling_tasks[task] = cooldown_end
-        return runnable_tasks, cooling_tasks
-    
     def _is_operation_coins_return_threshold_applicable(self):
         """
         判断当前任务是否应该应用黄币返回阈值
@@ -463,10 +433,6 @@ class CoinTaskMixin:
             if task == current_task_name:
                 continue
             if self.config.is_task_enabled(task):
-                cooldown_end = self._get_coin_task_cooldown_end(task)
-                if cooldown_end is not None:
-                    logger.info(f'跳过冷却中的黄币补充任务: {task}，冷却至 {cooldown_end}')
-                    continue
                 task_display = self.TASK_NAMES.get(task, task)
                 logger.info(f'尝试调用黄币补充任务: {task_display}')
                 self.config.task_call(task)
@@ -478,10 +444,6 @@ class CoinTaskMixin:
             if task == current_task_name:
                 continue
             if self.config.is_task_enabled(task):
-                cooldown_end = self._get_coin_task_cooldown_end(task)
-                if cooldown_end is not None:
-                    logger.info(f'跳过冷却中的黄币补充任务: {task}，冷却至 {cooldown_end}')
-                    continue
                 task_display = self.TASK_NAMES.get(task, task)
                 logger.info(f'尝试调用黄币补充任务: {task_display}')
                 self.config.task_call(task)
@@ -723,6 +685,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         
         if not self.config.OpsiGeneral_NotifyOpsiMail:
             return
+
+        if not self._can_send_ap_notification('_last_ap_coins_insufficient_notification_time'):
+            return
         
         push_config = self.config.Error_OnePushConfig
         if not self._is_push_config_valid(push_config):
@@ -749,6 +714,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             return
         
         if not self.config.OpsiGeneral_NotifyOpsiMail:
+            return
+
+        if not self._can_send_ap_notification('_last_ap_insufficient_notification_time'):
             return
         
         push_config = self.config.Error_OnePushConfig
@@ -815,33 +783,17 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             self.config.task_stop()
             return
         
-        runnable_tasks, cooling_tasks = self._split_coin_tasks_by_cooldown(available_tasks)
-        if cooling_tasks:
-            for task, next_run in cooling_tasks.items():
-                logger.info(f'黄币补充任务冷却中，暂不唤起: {task_names.get(task, task)} -> {next_run}')
-
-        if not runnable_tasks:
-            nearest_cd_end = min(cooling_tasks.values()) if cooling_tasks else None
-            if nearest_cd_end is not None:
-                logger.info(f'可用黄币任务均在冷却中，延迟智能调度到 {nearest_cd_end}')
-                self.config.task_delay(target=nearest_cd_end)
-            else:
-                logger.error('没有可唤起的黄币补充任务（非冷却）')
-                self.config.task_delay(minute=60)
-            self.config.task_stop()
-            return
-
-        task_names_str = '、'.join([task_names.get(task, task) for task in runnable_tasks])
+        task_names_str = '、'.join([task_names.get(task, task) for task in available_tasks])
         self._notify_switch_to_coin_task(yellow_coins, current_ap, cl1_preserve, meow_ap_preserve, task_names_str)
         
         with self.config.multi_set():
-            for task in runnable_tasks:
+            for task in available_tasks:
                 self.config.task_call(task)
 
-            if cooling_tasks:
-                nearest_cd_end = min(cooling_tasks.values())
-                logger.info(f'存在冷却中的黄币任务，延迟智能调度到 {nearest_cd_end}')
-                self.config.task_delay(target=nearest_cd_end)
+            cd = self.nearest_task_cooling_down
+            if cd is not None:
+                logger.info(f'有冷却任务 {cd.command}，延迟智能调度到 {cd.next_run}')
+                self.config.task_delay(target=cd.next_run)
         
         self.config.task_stop()
     
@@ -902,6 +854,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             return
         
         if not self.config.OpsiGeneral_NotifyOpsiMail:
+            return
+
+        if not self._can_send_ap_notification('_last_ap_threshold_notification_time'):
             return
         
         push_config = self.config.Error_OnePushConfig
