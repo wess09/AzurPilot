@@ -717,7 +717,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self._auto_search_round_timer = time.time()
 
         # 短猫任务数据收集
-        if getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False):
+        if getattr(self, '_meow_searching_active', False) and getattr(self, '_meow_time_recording_enabled', False):
             try:
                 try:
                     self._meow_auto_search_battle_count += 1
@@ -736,10 +736,19 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
     def on_meow_search_start(self):
         """
         短猫任务：每次开始新海域搜索时调用
-        记录搜索开始时间
+        记录搜索开始时间和行动力
         """
-        if not (getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False)):
+        if not (getattr(self, '_meow_searching_active', False) and getattr(self, '_meow_time_recording_enabled', False)):
             return
+
+        # 记录开始时的行动力
+        try:
+            self.get_current_ap()
+            self._meow_search_start_ap = self._action_point_total
+            logger.debug(f'Meow search started, AP: {self._meow_search_start_ap}')
+        except Exception:
+            self._meow_search_start_ap = None
+            logger.debug('Failed to get start action point')
 
         # 开始新的搜索计时
         self._meow_search_start_time = time.time()
@@ -748,9 +757,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
     def on_meow_search_end(self):
         """
         短猫任务：每次完成海域搜索后调用
-        记录搜索耗时（一轮的耗时）
+        通过行动力变化计算实际轮数，记录单轮时间
         """
-        if not (getattr(self, 'is_in_task_meow', False) and getattr(self, 'is_meow_enabled', False)):
+        if not (getattr(self, '_meow_searching_active', False) and getattr(self, '_meow_time_recording_enabled', False)):
             return
 
         start_time = getattr(self, '_meow_search_start_time', None)
@@ -758,12 +767,56 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.debug('Meow search start time not recorded, skip')
             return
 
+        # 记录结束时的行动力
+        try:
+            self.get_current_ap()
+            end_ap = self._action_point_total
+        except Exception:
+            logger.debug('Failed to get end action point')
+            end_ap = None
+
+        start_ap = getattr(self, '_meow_search_start_ap', None)
+
         duration = time.time() - start_time
+
+        # 获取当前海域的侵蚀等级，计算每轮AP消耗
+        meow_round_ap = 30  # 默认值
+        try:
+            if hasattr(self, 'zone') and hasattr(self.zone, 'hazard_level'):
+                hazard_level = self.zone.hazard_level
+                # 根据侵蚀等级计算AP消耗
+                ap_map = {1: 5, 2: 10, 3: 15, 4: 20, 5: 30, 6: 40}
+                meow_round_ap = ap_map.get(hazard_level, 30)
+                logger.debug(f'Hazard level: {hazard_level}, AP per round: {meow_round_ap}')
+        except Exception:
+            logger.debug('Failed to get hazard level, using default AP per round')
+
+        # 通过行动力变化计算轮数
+        rounds = 0
+        if start_ap is not None and end_ap is not None:
+            ap_consumed = start_ap - end_ap
+            if ap_consumed > 0:
+                rounds = ap_consumed // meow_round_ap  # 每轮消耗AP，向下取整
+                logger.debug(f'Meow search: start AP={start_ap}, end AP={end_ap}, '
+                             f'consumed={ap_consumed}, rounds={rounds}')
+        else:
+            # 如果无法获取行动力，使用战斗次数估算
+            battle_count = getattr(self, '_meow_auto_search_battle_count', 0)
+            if battle_count > 0:
+                rounds = battle_count
+                logger.debug(f'Meow search: using battle count as rounds: {rounds}')
+
+        # 计算单轮时间
+        if rounds > 0:
+            duration = duration / rounds
+            logger.debug(f'Meow search total duration: {time.time() - start_time:.1f}s, '
+                         f'rounds: {rounds}, per round: {duration:.1f}s')
 
         # 过滤异常值（太短或太长的搜索）
         if duration < 1 or duration > 1800:  # 1秒~30分钟
             logger.debug(f'Meow search duration {duration:.1f}s out of range, not recorded')
             self._meow_search_start_time = None
+            self._meow_search_start_ap = None
             return
 
         logger.attr('Meow search duration', f'{duration:.1f}s')
@@ -775,6 +828,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.debug('Failed to record meow search duration', exc_info=True)
 
         self._meow_search_start_time = None
+        self._meow_search_start_ap = None
 
     def get_current_cl1_battle_count(self):
         return int(getattr(self, '_cl1_auto_search_battle_count', 0))

@@ -243,6 +243,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             self.globe_goto(zone, types='SAFE', refresh=True)
             self.fleet_set(self.config.OpsiFleet_Fleet)
             # 开始短猫搜索计时
+            self._meow_searching_active = True
+            self._meow_time_recording_enabled = True
             self.on_meow_search_start()
             if self.run_strategic_search():
                 self._solved_map_event = set()
@@ -278,7 +280,12 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         self.action_point_set(cost=120, keep_current_ap=keep_current_ap, check_rest_ap=True)
         self.fleet_set(self.config.OpsiFleet_Fleet)
         self.os_order_execute(recon_scan=False, submarine_call=self.config.OpsiFleet_Submarine)
-        
+
+        # 开始短猫搜索计时
+        self._meow_searching_active = True
+        self._meow_time_recording_enabled = True
+        self.on_meow_search_start()
+
         search_completed = False
         try:
             search_completed = self.run_strategic_search()
@@ -286,9 +293,6 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             raise
         except Exception as e:
             logger.warning(f'战略搜索异常: {e}')
-
-        # 开始短猫搜索计时
-        self.on_meow_search_start()
 
         if search_completed:
             self._solved_map_event = set()
@@ -384,6 +388,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         
         logger.info('探测装置搜索：换回主队执行自律')
         # 开始短猫搜索计时
+        self._meow_searching_active = True
+        self._meow_time_recording_enabled = True
         self.on_meow_search_start()
         self.run_auto_search()
         logger.info(f'探测装置搜索：自律完成，标记事件: {self._solved_map_event}')
@@ -482,6 +488,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         self.os_order_execute(recon_scan=False, submarine_call=self.config.OpsiFleet_Submarine)
 
         # 开始短猫搜索计时
+        self._meow_searching_active = True
+        self._meow_time_recording_enabled = True
         self.on_meow_search_start()
 
         self.run_auto_search()
