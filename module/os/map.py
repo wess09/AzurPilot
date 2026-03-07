@@ -779,35 +779,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
         duration = time.time() - start_time
 
-        # 获取当前海域的侵蚀等级，计算每轮AP消耗
-        meow_round_ap = 30  # 默认值
-        try:
-            if hasattr(self, 'zone') and hasattr(self.zone, 'hazard_level'):
-                hazard_level = self.zone.hazard_level
-                # 根据侵蚀等级计算AP消耗
-                ap_map = {1: 5, 2: 10, 3: 15, 4: 20, 5: 30, 6: 40}
-                meow_round_ap = ap_map.get(hazard_level, 30)
-                logger.debug(f'Hazard level: {hazard_level}, AP per round: {meow_round_ap}')
-        except Exception:
-            logger.debug('Failed to get hazard level, using default AP per round')
-
-        # 通过行动力变化计算轮数
-        rounds = 0
-        if start_ap is not None and end_ap is not None:
-            ap_consumed = start_ap - end_ap
-            if ap_consumed > 0:
-                rounds = ap_consumed // meow_round_ap  # 每轮消耗AP，向下取整
-                logger.debug(f'Meow search: start AP={start_ap}, end AP={end_ap}, '
-                             f'consumed={ap_consumed}, rounds={rounds}')
-        else:
-            # 如果无法获取行动力，使用战斗次数估算
-            battle_count = getattr(self, '_meow_auto_search_battle_count', 0)
-            if battle_count > 0:
-                rounds = battle_count
-                logger.debug(f'Meow search: using battle count as rounds: {rounds}')
-
-        # 计算单轮时间
+        # 直接使用战斗次数作为轮数（每个侵蚀等级对应的战斗次数固定）
+        rounds = getattr(self, '_meow_auto_search_battle_count', 0)
         if rounds > 0:
+            logger.debug(f'Meow search: battle count (rounds) = {rounds}')
             duration = duration / rounds
             logger.debug(f'Meow search total duration: {time.time() - start_time:.1f}s, '
                          f'rounds: {rounds}, per round: {duration:.1f}s')
