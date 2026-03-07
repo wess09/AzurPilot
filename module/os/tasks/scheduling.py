@@ -644,7 +644,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         
         # 检查是否启用月末行动力自动清理功能
         meow_advance_enable = self.config.cross_get(
-            keys='OpsiScheduling.OpsiScheduling.MeowMonthlyCleanupEnable'
+            keys='OpsiScheduling.OpsiScheduling.MeowStartEarlyEnable'
         ) or False
         
         if meow_advance_enable:
@@ -889,7 +889,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             模式字符串: aggressive(激进), balanced(均衡), conservative(保守)
         """
         return self.config.cross_get(
-            keys='OpsiScheduling.OpsiScheduling.MeowMonthlyCleanupMode'
+            keys='OpsiScheduling.OpsiScheduling.MeowStartEarlyMode'
         ) or 'balanced'
 
     def _should_start_meow_early(self, current_ap: int) -> tuple:
@@ -992,7 +992,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
 
         # 获取当前模式
         mode = self.config.cross_get(
-            keys='OpsiScheduling.OpsiScheduling.MeowMonthlyCleanupMode'
+            keys='OpsiScheduling.OpsiScheduling.MeowStartEarlyMode'
         ) or 'balanced'
 
         # 模式对应的提前倍数
