@@ -4653,16 +4653,16 @@
       "True": "True",
       "False": "False"
     },
-    "MeowAdvanceMode": {
-      "name": "OpsiScheduling.MeowAdvanceMode.name",
-      "help": "OpsiScheduling.MeowAdvanceMode.help",
+    "MeowStartEarlyMode": {
+      "name": "OpsiScheduling.MeowStartEarlyMode.name",
+      "help": "OpsiScheduling.MeowStartEarlyMode.help",
       "aggressive": "aggressive",
       "balanced": "balanced",
       "conservative": "conservative"
     },
-    "MeowAdvanceEnable": {
-      "name": "OpsiScheduling.MeowAdvanceEnable.name",
-      "help": "OpsiScheduling.MeowAdvanceEnable.help"
+    "MeowStartEarlyEnable": {
+      "name": "OpsiScheduling.MeowStartEarlyEnable.name",
+      "help": "OpsiScheduling.MeowStartEarlyEnable.help"
     }
   },
   "OpsiDailyDelay": {
@@ -5012,7 +5012,9 @@
       "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
       "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
       "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
-      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold"
+      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
+      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode",
+      "MeowStartEarlyEnable": "Gui.OpsiScheduling.MeowStartEarlyEnable"
     }
   }
 }

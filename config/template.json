@@ -2444,8 +2444,8 @@
       "EnableObscure": false,
       "EnableAbyssal": false,
       "EnableStronghold": false,
-      "MeowAdvanceMode": "balanced",
-      "MeowAdvanceEnable": false
+      "MeowStartEarlyMode": "balanced",
+      "MeowStartEarlyEnable": false
     },
     "Storage": {
       "Storage": {}

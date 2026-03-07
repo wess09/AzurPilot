@@ -12898,7 +12898,7 @@
           false
         ]
       },
-      "MeowAdvanceMode": {
+      "MeowStartEarlyMode": {
         "type": "select",
         "value": "balanced",
         "option": [
@@ -12907,7 +12907,7 @@
           "conservative"
         ]
       },
-      "MeowAdvanceEnable": {
+      "MeowStartEarlyEnable": {
         "type": "checkbox",
         "value": false
       }
