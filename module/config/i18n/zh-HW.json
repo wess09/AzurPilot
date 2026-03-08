@@ -1,395 +1,395 @@
 {
   "Menu": {
     "Alas": {
-      "name": "Alas",
+      "name": "港区智慧中枢",
       "help": ""
     },
     "Farm": {
-      "name": "Farm",
+      "name": "全域作战引擎",
       "help": ""
     },
     "Event": {
-      "name": "Event",
+      "name": "周期性业务流",
       "help": ""
     },
     "EventDaily": {
-      "name": "Event Daily",
+      "name": "每日高频任务",
       "help": ""
     },
     "Reward": {
-      "name": "Reward",
+      "name": "资源归集",
       "help": ""
     },
     "DailyMission": {
-      "name": "Daily Mission",
+      "name": "常态化日常",
       "help": ""
     },
     "Opsi": {
-      "name": "OpSi",
+      "name": "开放世界探索协议",
       "help": ""
     },
     "Island": {
-      "name": "Island Plan",
-      "help": ""
+      "name": "Menu.Island.name",
+      "help": "Menu.Island.help"
     },
     "Tool": {
-      "name": "Tools",
+      "name": "生态工具箱",
       "help": ""
     }
   },
   "Task": {
     "Alas": {
-      "name": "Alas",
+      "name": "中枢参数调优",
       "help": ""
     },
     "General": {
-      "name": "General",
+      "name": "全局底层配置",
       "help": ""
     },
     "Restart": {
-      "name": "Restart Settings",
-      "help": ""
+      "name": "Task.Restart.name",
+      "help": "Task.Restart.help"
     },
     "Main": {
-      "name": "Main",
+      "name": "主线攻坚方案",
       "help": ""
     },
     "Main2": {
-      "name": "Main-2",
+      "name": "主线攻坚方案 II",
       "help": ""
     },
     "Main3": {
-      "name": "Main-3",
+      "name": "主线攻坚方案 III",
       "help": ""
     },
     "GemsFarming": {
-      "name": "Commission Farming",
+      "name": "晶体结构深度挖掘",
       "help": ""
     },
     "ThreeOilLowCost": {
-      "name": "3-Oil Low Cost",
-      "help": ""
+      "name": "三油低耗",
+      "help": "使用三油低耗陣容進行戰鬥，在旗艦達到32級時自動更換旗艦並退役。"
     },
     "EventGeneral": {
-      "name": "Event General",
+      "name": "活动通用底层",
       "help": ""
     },
     "Event": {
-      "name": "Event",
+      "name": "活动作战流 A",
       "help": ""
     },
     "Event2": {
-      "name": "Event-2",
+      "name": "活动作战流 B",
       "help": ""
     },
     "Raid": {
-      "name": "Raid",
+      "name": "分布式共斗协议",
       "help": ""
     },
     "RaidScuttle": {
-      "name": "Raid Scuttle",
-      "help": ""
+      "name": "Task.RaidScuttle.name",
+      "help": "Task.RaidScuttle.help"
     },
     "Hospital": {
-      "name": "Valley Hospital",
+      "name": "深谷通讯链路",
       "help": ""
     },
     "Coalition": {
-      "name": "Light & Shadow Fashion Shoot",
+      "name": "联合演训矩阵",
       "help": ""
     },
     "MaritimeEscort": {
-      "name": "Maritime Escort",
+      "name": "商路护航保障",
       "help": ""
     },
     "EventShop": {
-      "name": "Event Shop",
+      "name": "物资交换节点",
       "help": ""
     },
     "WarArchives": {
-      "name": "War Archives",
-      "help": "Due to the lack of maintenance of war archives, continuous clear may not work normally, if Alas runs abnormally, Please manually finish clearing and use auto search"
+      "name": "历史档案回溯",
+      "help": "由于历史数据接口缺乏维护，自动开荒协议可能存在兼容性波动。如遇异常阻断，建议人工介入完成初始化，随后接管自律寻敌系统。"
     },
     "EventA": {
-      "name": "Event Daily A",
+      "name": "周期作业 A区",
       "help": ""
     },
     "EventB": {
-      "name": "Event Daily B",
+      "name": "周期作业 B区",
       "help": ""
     },
     "EventC": {
-      "name": "Event Daily C",
+      "name": "周期作业 C区",
       "help": ""
     },
     "EventD": {
-      "name": "Event Daily D",
+      "name": "周期作业 D区",
       "help": ""
     },
     "EventSp": {
-      "name": "Event Daily SP",
+      "name": "高优特勤作业 SP",
       "help": ""
     },
     "RaidDaily": {
-      "name": "Raid Daily",
+      "name": "常态化共斗流",
       "help": ""
     },
     "CoalitionSp": {
-      "name": "Light & Shadow Fashion Shoot SP",
+      "name": "特别寻踪行动 SP",
       "help": ""
     },
     "Commission": {
-      "name": "Commission",
+      "name": "远洋委托调度",
       "help": ""
     },
     "Tactical": {
-      "name": "Tactical",
+      "name": "战术赋能中心",
       "help": ""
     },
     "Research": {
-      "name": "Research",
+      "name": "尖端科研矩阵",
       "help": ""
     },
     "Dorm": {
-      "name": "Dorm",
+      "name": "全场景生活空间",
       "help": ""
     },
     "Meowfficer": {
-      "name": "Meowfficer",
+      "name": "生物辅助终端",
       "help": ""
     },
     "Guild": {
-      "name": "Guild",
+      "name": "大舰队互联生态",
       "help": ""
     },
     "Reward": {
-      "name": "Reward",
+      "name": "全链路资源回收",
       "help": ""
     },
     "Awaken": {
-      "name": "Awaken",
+      "name": "心智认知觉醒",
       "help": ""
     },
     "Island": {
-      "name": "Island Plan",
-      "help": "Requires Island Level 18 and unlocked Integrated Management Panel"
+      "name": "Island",
+      "help": "Task.Island.help"
     },
     "Daily": {
-      "name": "Daily",
+      "name": "高频日常挑战",
       "help": ""
     },
     "Hard": {
-      "name": "Hard",
+      "name": "高难攻坚模式",
       "help": ""
     },
     "Exercise": {
-      "name": "Exercise",
+      "name": "模拟演训对抗",
       "help": ""
     },
     "ShopFrequent": {
-      "name": "Shop Frequent",
+      "name": "核心供应链",
       "help": ""
     },
     "ShopOnce": {
-      "name": "Shop Once",
+      "name": "次级供应链",
       "help": ""
     },
     "Shipyard": {
-      "name": "Shipyard",
+      "name": "舰船建造工坊",
       "help": ""
     },
     "Gacha": {
-      "name": "Gacha",
+      "name": "量子构建 (抽卡)",
       "help": ""
     },
     "Freebies": {
-      "name": "Freebies",
+      "name": "福利自动感知",
       "help": ""
     },
     "Minigame": {
-      "name": "Minigame",
-      "help": "Receive credits and spend them"
+      "name": "轻量化娱乐组件",
+      "help": "基于资源溢出感知算法：当游戏币未达存储阈值时自动采集；当资源充沛且奖励未饱和时，智能接管小游戏进程。"
     },
     "PrivateQuarters": {
-      "name": "Private Quarters",
+      "name": "生活空间交互计划",
       "help": ""
     },
     "OpsiGeneral": {
-      "name": "OpSi General",
-      "help": "Ensure the following settings in Azur Lane:\nReduce TB Guidance: On\nAuto use items during Auto Search: On\nAuto Mode in secured zones: Off\nStory Autoplay: Enabled\nText Auto-Scroll Speed: Very Fast"
+      "name": "大世界通用底层",
+      "help": ""
     },
     "OpsiAshBeacon": {
-      "name": "META Battles",
+      "name": "META 协同作战",
       "help": ""
     },
     "OpsiAshAssist": {
-      "name": "META Assists",
+      "name": "META 分布式支援",
       "help": ""
     },
     "OpsiExplore": {
-      "name": "OpSi Explore",
+      "name": "月度全域开荒",
       "help": ""
     },
     "OpsiShop": {
-      "name": "OpSi Shop",
+      "name": "港区物资枢纽",
       "help": ""
     },
     "OpsiVoucher": {
-      "name": "OpSi Voucher",
+      "name": "票据兑换中心",
       "help": ""
     },
     "OpsiDaily": {
-      "name": "OpSi Daily",
+      "name": "大世界常态业务",
       "help": ""
     },
     "OpsiObscure": {
-      "name": "Obscure Zones",
+      "name": "隐秘海域探测",
       "help": ""
     },
     "OpsiAbyssal": {
-      "name": "Abyssal Zones",
+      "name": "深渊高危作业",
       "help": ""
     },
     "OpsiArchive": {
-      "name": "Archive Zones",
-      "help": "Clear archive zones. Archive zones are AP free.\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "档案坐标解析",
+      "help": "调用白票供应链自动解析档案坐标并执行。该区域基于零能耗技术（不消耗行动力）。\n前置环境要求：\n- 大世界主线全链路贯通 + 模拟战/试验场闭环\n- 激活开荒任务流或部署战役信息记录仪（5000油组件）"
     },
     "OpsiStronghold": {
-      "name": "Siren Strongholds",
+      "name": "要塞攻坚战",
       "help": ""
     },
     "OpsiMonthBoss": {
-      "name": "Monthly Boss",
-      "help": "To clear (easy/difficult) monthly bosses, the following conditions must be met to use this function:\n- Clear the main task of the big world\n- Enable the Great World Land Reclamation Mission or use the Battle Information Recorder (5000 oil props)\nIf the easy difficulty fails, the attack will be repeated according to the submarine settings; if the difficult difficulty fails, the mission will be terminated directly"
+      "name": "月度旗舰决战",
+      "help": ""
     },
     "OpsiMeowfficerFarming": {
-      "name": "Meowfficer Farming",
+      "name": "短猫任务流转",
       "help": ""
     },
     "OpsiHazard1Leveling": {
-      "name": "CL1 Leveling",
+      "name": "侵蚀1 极致练级",
       "help": ""
     },
     "OpsiScheduling": {
-      "name": "Smart Scheduling",
-      "help": "Operation Siren smart scheduling function"
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
     },
     "OpsiCrossMonth": {
-      "name": "Cross Month Daily",
-      "help": "    ALAS will enter OpSi 10min before OpSi reset, wait until OpSi reset but not exit OpSi. Then do the daily, obscure, abyssal and meowfficer farming to get extra gold plates. When running dailies, settings in task \"OpSiDaily\" are used, the rest function are the same.\n    IMPORTANT: Please do not touch the game while ALAS is waiting for OpSi reset."
+      "name": "跨月无缝衔接",
+      "help": "    基于毫秒级时间同步，Alas将在重置前10分钟介入，通过驻留进程实现跨月无缝流转。自动完成跨周期的高价值任务链（每日/隐秘/深渊/短猫）以最大化金菜产出。\n    核心提示：系统执行跨月驻留协议期间，请勿进行人工干预，以免破坏进程保活。"
     },
     "OpsiDailyDelay": {
-      "name": "OpSi Daily Delay",
-      "help": ""
+      "name": "Task.OpsiDailyDelay.name",
+      "help": "Task.OpsiDailyDelay.help"
     },
     "IslandInfo": {
-      "name": "Island Info",
-      "help": ""
+      "name": "Task.IslandInfo.name",
+      "help": "Task.IslandInfo.help"
     },
     "IslandSeasonTask": {
-      "name": "Island Season Task",
-      "help": ""
+      "name": "Task.IslandSeasonTask.name",
+      "help": "Task.IslandSeasonTask.help"
     },
     "Daemon": {
-      "name": "Normal Semi-auto",
+      "name": "半自动辅助驾驶",
       "help": ""
     },
     "OpsiDaemon": {
-      "name": "OpSi Semi-auto",
+      "name": "大世界辅助驾驶",
       "help": ""
     },
     "EventStory": {
-      "name": "Event Story",
+      "name": "剧情速通模块",
       "help": ""
     },
     "BoxDisassemble": {
-      "name": "Box Disassemble",
-      "help": ""
+      "name": "Task.BoxDisassemble.name",
+      "help": "Task.BoxDisassemble.help"
     },
     "Benchmark": {
-      "name": "Performance Test",
+      "name": "算力性能评测",
       "help": ""
     },
     "AzurLaneUncensored": {
-      "name": "[CN] Uncensored Patch",
+      "name": "视觉体验增强",
       "help": ""
     },
     "GameManager": {
-      "name": "Game Manager(WIP)",
+      "name": "应用生命周期管理 (Beta)",
       "help": ""
     }
   },
   "Scheduler": {
     "_info": {
-      "name": "Scheduler",
+      "name": "全局任务调度器",
       "help": ""
     },
     "Enable": {
-      "name": "Enable Task",
-      "help": "Join this task to scheduler.\nTask commission, research, reward are force to enable.",
-      "True": "Enabled",
-      "False": "False"
+      "name": "激活该业务流",
+      "help": "将此任务接入中央调度系统。\n注：委托、科研、收获等基础服务已固化为常驻进程，强制开启。",
+      "True": "已激活",
+      "False": "未激活"
     },
     "NextRun": {
-      "name": "Next Run",
-      "help": "Updated automatically after completing the task to set next scheduled run, typically not manually modified\nHowever you can force immediate scheduling if text field cleared"
+      "name": "智能规划时间",
+      "help": "基于算法自动研判的执行时间点。清除数据将触发即时响应。"
     },
     "Command": {
-      "name": "Command",
+      "name": "内核任务标识",
       "help": ""
     },
     "SuccessInterval": {
-      "name": "Success Interval",
-      "help": "After successful, postpone next run for X minutes"
+      "name": "成功后冷却周期 (Min)",
+      "help": ""
     },
     "FailureInterval": {
-      "name": "Failure Interval",
-      "help": "After failure, postpone next run for X minutes"
+      "name": "异常后重试周期 (Min)",
+      "help": ""
     },
     "ServerUpdate": {
-      "name": "Server Update",
-      "help": "Series of server refresh time(s) as to when this task will next run, this is automatically converted to respective time zone, generally do not need to modify"
+      "name": "服务器刷新锚点",
+      "help": "任务完成闭环后，自动挂起至服务器刷新时间点。\n支持全时区自动换算，无需人工干预。"
     }
   },
   "Emulator": {
     "_info": {
-      "name": "Emulator Settings",
+      "name": "虚拟化终端配置",
       "help": ""
     },
     "Serial": {
-      "name": "Serial",
-      "help": "Common emulator Serial can be queried in the list below\nUse \"auto\" to auto-detect emulators, but if multiple emulators are running or use emulators that do not support auto-detect, \"auto\" cannot be used and serial must be filled in manually\nDefault serial for select emulators:\n- BlueStacks 127.0.0.1:5555\n- BlueStacks4 Hyper-V use \"bluestacks4-hyperv\", \"bluestacks4-hyperv-2\" for multi instance, and so on\n- BlueStacks5 Hyper-V use \"bluestacks5-hyperv\", \"bluestacks5-hyperv-1\" for multi instance, and so on\n- NoxPlayer 127.0.0.1:62001\n- NoxPlayer64bit 127.0.0.1:59865\n- MuMuPlayer/MuMuPlayer X 127.0.0.1:7555\n- MuMuPlayer12 127.0.0.1:16384\n- MuMu Pro (macOS) 127.0.0.1:16384, multi-instance: 127.0.0.1:16416, 127.0.0.1:16448 ...\n- MemuPlayer 127.0.0.1:21503\n- LDPlayer emulator-5554 or 127.0.0.1:5555\nIf there are multiple emulator instances running, the default is reserved for one of them and the others will use different serials to avoid conflicts\nOpen console.bat and run `adb devices` to find them or follow the emulator's official tutorial"
+      "name": "终端通讯标识 (Serial)",
+      "help": "支持主流模拟器协议的自动发现与连接。\n填入 \"auto\" 启用智能设备嗅探，多实例场景下建议手动指定地址以确保连接稳定性。\n\n标准终端协议列表：\n- 蓝叠 (Bluestacks): 127.0.0.1:5555\n- 蓝叠Hyper-V架构: 填 \"bluestacks4-hyperv\" 激活自动握手\n- 夜神 (Nox): 127.0.0.1:62001\n- MuMu深度适配版: 127.0.0.1:7555\n- 雷电 (LDPlayer): emulator-5554 或端口 5555\n多开场景请通过 console.bat 调用 `adb devices` 获取真实设备指纹。"
     },
     "PackageName": {
-      "name": "Game Server",
-      "help": "Manual select is required if multiple game clients are installed on emulator",
-      "auto": "Auto-detect",
-      "com.bilibili.azurlane": "CN",
-      "com.YoStarEN.AzurLane": "EN",
-      "com.YoStarJP.AzurLane": "JP",
-      "com.hkmanjuu.azurlane.gp": "TW",
-      "com.bilibili.blhx.huawei": "CN com.bilibili.blhx.huawei",
-      "com.bilibili.blhx.honor": "CN com.bilibili.blhx.honor",
-      "com.bilibili.blhx.mi": "CN com.bilibili.blhx.mi",
-      "com.tencent.tmgp.bilibili.blhx": "CN com.tencent.tmgp.bilibili.blhx",
-      "com.bilibili.blhx.baidu": "CN com.bilibili.blhx.baidu",
-      "com.bilibili.blhx.qihoo": "CN com.bilibili.blhx.qihoo",
-      "com.bilibili.blhx.nearme.gamecenter": "CN com.bilibili.blhx.nearme.gamecenter",
-      "com.bilibili.blhx.vivo": "CN com.bilibili.blhx.vivo",
-      "com.bilibili.blhx.mz": "CN com.bilibili.blhx.mz",
-      "com.bilibili.blhx.dl": "CN com.bilibili.blhx.dl",
-      "com.bilibili.blhx.lenovo": "CN com.bilibili.blhx.lenovo",
-      "com.bilibili.blhx.uc": "CN com.bilibili.blhx.uc",
-      "com.bilibili.blhx.mzw": "CN com.bilibili.blhx.mzw",
-      "com.yiwu.blhx.yx15": "CN com.yiwu.blhx.yx15",
-      "com.bilibili.blhx.m4399": "CN com.bilibili.blhx.m4399",
-      "com.bilibili.blhx.bilibiliMove": "CN com.bilibili.blhx.bilibiliMove",
-      "com.hkmanjuu.azurlane.gp.mc": "TW com.hkmanjuu.azurlane.gp.mc"
+      "name": "应用包名映射",
+      "help": "当终端存在多应用实例时，需明确指定目标服务。",
+      "auto": "智能识别",
+      "com.bilibili.azurlane": "国服 (CN)",
+      "com.YoStarEN.AzurLane": "国际服 (EN)",
+      "com.YoStarJP.AzurLane": "日服 (JP)",
+      "com.hkmanjuu.azurlane.gp": "台服 (TW)",
+      "com.bilibili.blhx.huawei": "国服 (CN) com.bilibili.blhx.huawei",
+      "com.bilibili.blhx.honor": "国服 (CN) com.bilibili.blhx.honor",
+      "com.bilibili.blhx.mi": "国服 (CN) com.bilibili.blhx.mi",
+      "com.tencent.tmgp.bilibili.blhx": "国服 (CN) com.tencent.tmgp.bilibili.blhx",
+      "com.bilibili.blhx.baidu": "国服 (CN) com.bilibili.blhx.baidu",
+      "com.bilibili.blhx.qihoo": "国服 (CN) com.bilibili.blhx.qihoo",
+      "com.bilibili.blhx.nearme.gamecenter": "国服 (CN) com.bilibili.blhx.nearme.gamecenter",
+      "com.bilibili.blhx.vivo": "国服 (CN) com.bilibili.blhx.vivo",
+      "com.bilibili.blhx.mz": "国服 (CN) com.bilibili.blhx.mz",
+      "com.bilibili.blhx.dl": "国服 (CN) com.bilibili.blhx.dl",
+      "com.bilibili.blhx.lenovo": "国服 (CN) com.bilibili.blhx.lenovo",
+      "com.bilibili.blhx.uc": "国服 (CN) com.bilibili.blhx.uc",
+      "com.bilibili.blhx.mzw": "国服 (CN) com.bilibili.blhx.mzw",
+      "com.yiwu.blhx.yx15": "国服 (CN) com.yiwu.blhx.yx15",
+      "com.bilibili.blhx.m4399": "国服 (CN) com.bilibili.blhx.m4399",
+      "com.bilibili.blhx.bilibiliMove": "国服 (CN) com.bilibili.blhx.bilibiliMove",
+      "com.hkmanjuu.azurlane.gp.mc": "台服 (TW) com.hkmanjuu.azurlane.gp.mc"
     },
     "ServerName": {
-      "name": "Server in Game Client",
-      "help": "Select the server where you are in the game to enable server status detection\nScript will hang up when server is being maintained or network is broken",
-      "disabled": "disabled",
+      "name": "逻辑服务器节点",
+      "help": "绑定游戏内服务器以激活“实时状态监测”功能。\n当感知到服务器维护或网络波动时，自动挂起进程直至链路恢复。",
+      "disabled": "禁用监测模块",
       "cn_android-0": "[国服] 莱茵演习",
       "cn_android-1": "[国服] 巴巴罗萨",
       "cn_android-2": "[国服] 霸王行动",
@@ -461,99 +461,99 @@
       "jp-17": "[JP] スイートバン"
     },
     "ScreenshotMethod": {
-      "name": "Screenshot Method",
-      "help": "When using auto-select, a benchmark will be performed and automatically changed to the fastest screenshot method.\nGeneral speed: DroidCast_raw >> aScreenCap_nc > ADB_nc >>> aScreenCap > uiautomator2 ~= ADB.\nRun Tools - Performance Test to find the fastest method.",
-      "auto": "Auto-select the fastest",
-      "ADB": "ADB ",
+      "name": "视觉感知方案",
+      "help": "启用自动选择时，将通过基准测试自动切换至极速渲染模式。\n性能梯队: DroidCast_raw (遥遥领先) >> aScreenCap_nc > ADB_nc >>> aScreenCap > uiautomator2 ~= ADB\n建议运行“生态工具箱 - 性能评测”以寻找最佳适配方案。",
+      "auto": "AI 智能选择",
+      "ADB": "ADB 基础传输",
       "ADB_nc": "ADB_nc",
       "uiautomator2": "uiautomator2",
       "aScreenCap": "aScreenCap",
       "aScreenCap_nc": "aScreenCap_nc",
       "DroidCast": "DroidCast",
-      "DroidCast_raw": "DroidCast_raw",
+      "DroidCast_raw": "DroidCast 原始流 (极速)",
       "nemu_ipc": "nemu_ipc",
       "ldopengl": "ldopengl"
     },
     "ControlMethod": {
-      "name": "Control Method",
-      "help": "Speed: minitouch > Hermit >>> uiautomator2 ~= ADB\nminitouch is recommended, hermit is not recommended unless on vmos",
-      "ADB": "ADB",
+      "name": "触控指令映射方案",
+      "help": "响应速度: minitouch (毫秒级) > Hermit >>> uiautomator2 ~= ADB\n推荐使用 minitouch 以获得极致跟手体验。",
+      "ADB": "ADB 指令",
       "uiautomator2": "uiautomator2",
-      "minitouch": "minitouch",
+      "minitouch": "Minitouch 直通",
       "Hermit": "Hermit",
-      "MaaTouch": "MaaTouch"
+      "MaaTouch": "MaaTouch 触控"
     },
     "ScreenshotDedithering": {
-      "name": "Image Color De-dithering",
-      "help": "Enable when running Alas on phones"
+      "name": "画面去抖动算法",
+      "help": "针对移动端真机屏幕的色彩优化开关"
     },
     "AdbRestart": {
-      "name": "Try to restart adb when no device found",
-      "help": ""
+      "name": "ADB 服务自愈机制",
+      "help": "当设备连接丢失时尝试重启 ADB 桥接服务"
     }
   },
   "EmulatorInfo": {
     "_info": {
-      "name": "Emulator Settings",
-      "help": "The following values are auto-filled according to \"Serial\", if you don’t understand, please don't modify them"
+      "name": "EmulatorInfo._info.name",
+      "help": "EmulatorInfo._info.help"
     },
     "Emulator": {
-      "name": "Emulator Type",
-      "help": "",
-      "auto": "Auto-detect",
-      "NoxPlayer": "Nox Player",
-      "NoxPlayer64": "Nox Player 64bit",
-      "BlueStacks4": "BlueStacks 4",
-      "BlueStacks5": "BlueStacks 5",
-      "BlueStacks4HyperV": "BlueStacks 4 Hyper-V",
-      "BlueStacks5HyperV": "BlueStacks 5 Hyper-V",
-      "LDPlayer3": "LD Player 3",
-      "LDPlayer4": "LD Player 4",
-      "LDPlayer9": "LD Player 9",
-      "MuMuPlayer": "MuMu Player",
-      "MuMuPlayerX": "MuMu Player X",
-      "MuMuPlayer12": "MuMu Player 12",
-      "MEmuPlayer": "MEmu Player",
+      "name": "EmulatorInfo.Emulator.name",
+      "help": "EmulatorInfo.Emulator.help",
+      "auto": "auto",
+      "NoxPlayer": "NoxPlayer",
+      "NoxPlayer64": "NoxPlayer64",
+      "BlueStacks4": "BlueStacks4",
+      "BlueStacks5": "BlueStacks5",
+      "BlueStacks4HyperV": "BlueStacks4HyperV",
+      "BlueStacks5HyperV": "BlueStacks5HyperV",
+      "LDPlayer3": "LDPlayer3",
+      "LDPlayer4": "LDPlayer4",
+      "LDPlayer9": "LDPlayer9",
+      "MuMuPlayer": "MuMuPlayer",
+      "MuMuPlayerX": "MuMuPlayerX",
+      "MuMuPlayer12": "MuMuPlayer12",
+      "MEmuPlayer": "MEmuPlayer",
       "BlueStacksAir": "BlueStacksAir",
       "MuMuPro": "MuMuPro"
     },
     "name": {
-      "name": "Emulator Instance Name",
-      "help": ""
+      "name": "EmulatorInfo.name.name",
+      "help": "EmulatorInfo.name.help"
     },
     "path": {
-      "name": "Emulator Installation Path",
-      "help": ""
+      "name": "EmulatorInfo.path.name",
+      "help": "EmulatorInfo.path.help"
     }
   },
   "Error": {
     "_info": {
-      "name": "Debug Settings",
+      "name": "调试与异常捕获",
       "help": ""
     },
     "HandleError": {
-      "name": "Enable Exception Handling",
-      "help": "Handles select exceptions, will retreat if in battle"
+      "name": "启用异常熔断机制",
+      "help": "智能处理部分运行时异常，遇到严重错误自动执行战术撤退"
     },
     "SaveError": {
-      "name": "Record Exception",
-      "help": "Records exception and log into directory for review or sharing"
+      "name": "黑匣子记录 (Log/截图)",
+      "help": "保留故障现场数据"
     },
     "StrictRestart": {
       "name": "Error.StrictRestart.name",
       "help": "Error.StrictRestart.help"
     },
     "SaveErrorCount": {
-      "name": "Error storage limit",
-      "help": "Error logs that exceed will be deleted, unlimited if it is negative"
+      "name": "Error.SaveErrorCount.name",
+      "help": "Error.SaveErrorCount.help"
     },
     "OnePushConfig": {
-      "name": "Error notify config",
-      "help": "When Alas cannot handle exception, send a message through Onepush. Configuration document: \nhttps://github.com/LmeSzinc/AzurLaneAutoScript/wiki/Onepush-configuration-%5BEN%5D"
+      "name": "全场景消息推送",
+      "help": "触发不可逆异常时，通过 Onepush 中台分发告警信息。配置指南：https://..."
     },
     "ScreenshotLength": {
-      "name": "Record Screenshot(s)",
-      "help": "Number of screenshots saved when exception occurs"
+      "name": "Error.ScreenshotLength.name",
+      "help": "Error.ScreenshotLength.help"
     },
     "GameStuckRestart": {
       "name": "Error.GameStuckRestart.name",
@@ -574,91 +574,91 @@
   },
   "Optimization": {
     "_info": {
-      "name": "Optimization Settings",
+      "name": "性能调优与体验",
       "help": ""
     },
     "ScreenshotInterval": {
-      "name": "Take Screenshots Every X Second(s)",
-      "help": "Minimum interval between 2 screenshots, limited in 0.1 ~ 0.3, can help reduce CPU on high-end PCs"
+      "name": "视觉采样间隔 (秒)",
+      "help": "定义两次视觉感知之间的最小时间片，建议值 0.1~0.3，有效降低高算力设备负载"
     },
     "CombatScreenshotInterval": {
-      "name": "Take Screenshots Every X Second(s) In Combat",
-      "help": "Minimum interval between 2 screenshots, limited in 0.3 ~ 1.0, can help reduce CPU during battle"
+      "name": "战斗场景采样降频",
+      "help": "战斗状态下的视觉采样间隔 (0.3~1.0)，平衡战斗帧率与CPU功耗"
     },
     "TaskHoardingDuration": {
-      "name": "Hoard Tasks For X Minute(s)",
-      "help": "By purposely not adding ready tasks to pending, allows for larger subsets to be built and run en masse at a later time\nCan reduce the frequency of operating AL"
+      "name": "任务批处理队列 (分钟)",
+      "help": "启用任务囤积策略，减少碎片化操作。\n触发后等待 X 分钟，进行批量化集中处理，提升收菜效率。"
     },
     "WhenTaskQueueEmpty": {
-      "name": "When Task Queue is Empty",
-      "help": "Close AL when there are no pending tasks, can help reduce CPU",
-      "stay_there": "Stay There",
-      "goto_main": "Goto Main Page",
-      "close_game": "Close Game"
+      "name": "空闲状态策略",
+      "help": "任务队列清空后的系统行为，深度优化待机功耗。",
+      "stay_there": "保持当前状态",
+      "goto_main": "返回主交互界面",
+      "close_game": "释放游戏进程"
     }
   },
   "DropRecord": {
     "_info": {
-      "name": "Drop Record Settings",
+      "name": "数据资产记录",
       "help": ""
     },
     "SaveFolder": {
-      "name": "Drop Save Directory",
-      "help": ""
+      "name": "DropRecord.SaveFolder.name",
+      "help": "DropRecord.SaveFolder.help"
     },
     "AzurStatsID": {
-      "name": "AzurStat ID",
-      "help": "Used to identify your upload to <https://azur-stats.lyoko.io>, the ID consists of random characters and can be changed at any time"
+      "name": "AzurStat 身份标识",
+      "help": "上传至云端统计平台时的客户端指纹\n由随机哈希字符组成，支持用户自定义"
     },
     "API": {
-      "name": "Upload API",
-      "help": "If CN users cannot connect to AzurStat, recommend to use \"reverse proxy\"",
-      "default": "Default (Cloudflare)",
-      "cn_gz_reverse_proxy": "Reverse proxy (Guangzhou, South China)"
+      "name": "数据上行链路",
+      "help": "如遇网络连通性问题，可切换至国内反向代理节点",
+      "default": "默认线路 (Cloudflare)",
+      "cn_gz_reverse_proxy": "国内加速链路 (广州)"
     },
     "ResearchRecord": {
-      "name": "Research Record",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save",
-      "upload": "Upload",
-      "save_and_upload": "Save and upload"
+      "name": "DropRecord.ResearchRecord.name",
+      "help": "DropRecord.ResearchRecord.help",
+      "do_not": "do_not",
+      "save": "save",
+      "upload": "upload",
+      "save_and_upload": "save_and_upload"
     },
     "CommissionRecord": {
-      "name": "Commission Record",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save",
-      "upload": "Upload",
-      "save_and_upload": "Save and upload"
+      "name": "DropRecord.CommissionRecord.name",
+      "help": "DropRecord.CommissionRecord.help",
+      "do_not": "do_not",
+      "save": "save",
+      "upload": "upload",
+      "save_and_upload": "save_and_upload"
     },
     "CombatRecord": {
-      "name": "Combat Record",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save"
+      "name": "战斗掉落视觉归档",
+      "help": "启用后将延长结算界面的停留时间以进行精准截图\n注意：自律寻敌模式下该策略不生效",
+      "do_not": "不操作",
+      "save": "本地归档"
     },
     "OpsiRecord": {
-      "name": "OpSi Record",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save",
-      "upload": "Upload",
-      "save_and_upload": "Save and upload"
+      "name": "DropRecord.OpsiRecord.name",
+      "help": "DropRecord.OpsiRecord.help",
+      "do_not": "do_not",
+      "save": "save",
+      "upload": "upload",
+      "save_and_upload": "save_and_upload"
     },
     "MeowfficerBuy": {
-      "name": "Meowfficer Buy",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save"
+      "name": "DropRecord.MeowfficerBuy.name",
+      "help": "DropRecord.MeowfficerBuy.help",
+      "do_not": "do_not",
+      "save": "save"
     },
     "MeowfficerTalent": {
-      "name": "Meowfficer Talent",
-      "help": "",
-      "do_not": "Do nothing",
-      "save": "Save",
-      "upload": "Upload",
-      "save_and_upload": "Save and upload"
+      "name": "DropRecord.MeowfficerTalent.name",
+      "help": "DropRecord.MeowfficerTalent.help",
+      "do_not": "do_not",
+      "save": "save",
+      "upload": "upload",
+      "save_and_upload": "save_and_upload"
     },
     "TelemetryReport": {
       "name": "DropRecord.TelemetryReport.name",
@@ -671,22 +671,22 @@
   },
   "Log": {
     "_info": {
-      "name": "Log",
-      "help": "General settings, effective after the scheduler is restarted"
+      "name": "Log._info.name",
+      "help": "Log._info.help"
     },
     "LogKeepCount": {
-      "name": "Count of log rotation",
-      "help": "Number of days to rotate logs"
+      "name": "Log.LogKeepCount.name",
+      "help": "Log.LogKeepCount.help"
     },
     "LogBackUpMethod": {
-      "name": "Log backup method",
-      "help": "Back up logs or delete expired logs directly",
+      "name": "Log.LogBackUpMethod.name",
+      "help": "Log.LogBackUpMethod.help",
       "delete": "delete",
-      "zip": "create zip in ./log/bak",
-      "copy": "copy to ./log/bak"
+      "zip": "zip",
+      "copy": "copy"
     },
     "ZipMethod": {
-      "name": "Zip Method",
+      "name": "Log.ZipMethod.name",
       "help": "Log.ZipMethod.help",
       "bz2": "bz2",
       "gzip": "gzip",
@@ -696,15 +696,15 @@
   },
   "Retirement": {
     "_info": {
-      "name": "Retirement Settings",
-      "help": ""
+      "name": "Retirement._info.name",
+      "help": "Retirement._info.help"
     },
     "RetireMode": {
-      "name": "Retirement Mode",
-      "help": "If mode is one click retire, in game retire settings are enforced\nIf mode is enhance but unable to do so, will fallback to one click retire as default",
-      "one_click_retire": "One-click Retire",
-      "enhance": "Enhance",
-      "old_retire": "Old Retire"
+      "name": "Retirement.RetireMode.name",
+      "help": "Retirement.RetireMode.help",
+      "one_click_retire": "one_click_retire",
+      "enhance": "enhance",
+      "old_retire": "old_retire"
     }
   },
   "PublicEmotion": {
@@ -754,87 +754,87 @@
   },
   "YukikazeTaskManager": {
     "_info": {
-      "name": "雪风大人的任务管理",
-      "help": "任务相关的优先级与调度设置。"
+      "name": "智慧任务编排中枢",
+      "help": "核心任务的优先级调度与动态资源分配逻辑。"
     },
     "TaskPriorityAdjustment": {
-      "name": "Task Priority Adjustment",
-      "help": "Restart    # Restart game\n> OpsiCrossMonth    # OpSi daily after reset\n> Commission > Tactical > Research    # Commission > Tactical > Research\n> Exercise    # Exercise\n> Dorm > Meowfficer > Guild > Gacha    # Dorm > Meowfficer > Guild > Gacha\n> Reward    # Reward\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island    # Shop Frequent > Other Shop > Shipyard > Freebies > Island\n> PrivateQuarters    # Private Quarters\n> OpsiExplore    # OpSi monthly explore\n> Minigame > Awaken    # Minigame > Awaken\n> OpsiAshBeacon    # META battle\n> OpsiDaily > OpsiShop > OpsiVoucher    # OpSi Daily > OpSi Port Shop > OpSi Voucher Shop\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive    # Abyssal > Stronghold > Obscure > Archive\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss     # Daily > Hard > META battle > META assist > Monthly boss\n> Sos > EventSp > EventA > EventB > EventC > EventD    # Sos > Event SP > Event A > Event B > Event C > Event D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort    # Raid Daily > Raid SP > War Archives > Maritime Escort\n> Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3    # Event > Event2 > Raid > Hospital > Coalition > Main > Main2 > Main3\n> OpsiMeowfficerFarming    # Meowfficer Farming\n> GemsFarming    # Commission Farming\n> ThreeOilLowCost    # 3-Oil Low Cost\n> OpsiHazard1Leveling    # CL1 Leveling"
+      "name": "任务优先级拓扑图",
+      "help": "定义全场景业务流的执行权重 (Restart > Opsi > ...)"
     }
   },
   "OneClickRetire": {
     "_info": {
-      "name": "One-click Retire Settings",
-      "help": "Only applies to \"One-click Retire\""
+      "name": "OneClickRetire._info.name",
+      "help": "OneClickRetire._info.help"
     },
     "KeepLimitBreak": {
-      "name": "Keep Copies of Max LB Ships",
-      "help": "If you own multiple copies of a ship that has not been fully Limit Broken, this option determines what you want to do with those copies.\nIf one-click retire cannot retire ships, please set to \"Don't Keep\"",
-      "keep_limit_break": "Keep Enough to Max LB",
-      "do_not_keep": "Don't Keep"
+      "name": "OneClickRetire.KeepLimitBreak.name",
+      "help": "OneClickRetire.KeepLimitBreak.help",
+      "keep_limit_break": "keep_limit_break",
+      "do_not_keep": "do_not_keep"
     }
   },
   "Enhance": {
     "_info": {
-      "name": "Enhance Settings",
-      "help": "Only applies to \"Enhance\""
+      "name": "Enhance._info.name",
+      "help": "Enhance._info.help"
     },
     "ShipToEnhance": {
-      "name": "Ship to Enhance",
-      "help": "",
-      "all": "Enhance All Ships",
-      "favourite": "Enhance Favourite Ships Only"
+      "name": "Enhance.ShipToEnhance.name",
+      "help": "Enhance.ShipToEnhance.help",
+      "all": "all",
+      "favourite": "favourite"
     },
     "Filter": {
-      "name": "Ship Type(s) Filter for Enhance",
-      "help": "\"cv > bb > ...\"; may substitute a type with \"?\" to have Alas select a type at random\nMust enter at least 1 whitespace character to disable type filtering"
+      "name": "Enhance.Filter.name",
+      "help": "Enhance.Filter.help"
     },
     "CheckPerCategory": {
-      "name": "Number Checked Per Category for Enhance",
-      "help": "Restricts the number of ships to be checked per category before moving onto the next if any\nSuitable enhance material is checked continously until reaching the unenhanceable state (in battle or stat full), after which this number is decremented for the current session\nRecommend to configure 3+ if there are non-max level ships in active fleet else <= 2 is generally sufficient"
+      "name": "Enhance.CheckPerCategory.name",
+      "help": "Enhance.CheckPerCategory.help"
     }
   },
   "OldRetire": {
     "_info": {
-      "name": "Old Retire Settings",
-      "help": "Only applies to \"Old Retire\".\nNote that old retire is based on rarity, it will retire Bulins"
+      "name": "OldRetire._info.name",
+      "help": "OldRetire._info.help"
     },
     "N": {
-      "name": "Retire Common",
-      "help": ""
+      "name": "OldRetire.N.name",
+      "help": "OldRetire.N.help"
     },
     "R": {
-      "name": "Retire Rare",
-      "help": ""
+      "name": "OldRetire.R.name",
+      "help": "OldRetire.R.help"
     },
     "SR": {
-      "name": "Retire Elite",
-      "help": ""
+      "name": "OldRetire.SR.name",
+      "help": "OldRetire.SR.help"
     },
     "SSR": {
-      "name": "Retire Super Rare",
-      "help": ""
+      "name": "OldRetire.SSR.name",
+      "help": "OldRetire.SSR.help"
     },
     "RetireAmount": {
-      "name": "Retire Amount",
-      "help": "",
-      "retire_all": "Retire All",
-      "retire_10": "Retire 10"
+      "name": "OldRetire.RetireAmount.name",
+      "help": "OldRetire.RetireAmount.help",
+      "retire_all": "retire_all",
+      "retire_10": "retire_10"
     }
   },
   "Campaign": {
     "_info": {
-      "name": "Level Settings",
+      "name": "战役参数配置",
       "help": ""
     },
     "Name": {
-      "name": "Level Name",
-      "help": "7-2, 12-4, or SP4; case insensitive; if the level is missing, please wait for next update"
+      "name": "作战目标标识",
+      "help": "支持输入如 7-2, 12-4, D3, SP4 等战役代码\n智能解析：输入 7-2-3 可激活 7-2 三战撤退策略"
     },
     "Event": {
-      "name": "Event Name",
-      "help": "Automatically selects to the latest event",
-      "campaign_main": "campaign_main",
+      "name": "活动映射表",
+      "help": "自动锚定最新活动周期",
+      "campaign_main": "主线战役",
       "coalition_20230323": "Frostfall",
       "coalition_20240627": "Welcome to Little Academy",
       "coalition_20250626": "The Neon City Investigator",
@@ -978,30 +978,30 @@
       "war_archives_20231026_cn": "archives Tempesta and the Fountain of Youth"
     },
     "Mode": {
-      "name": "Level Mode",
-      "help": "Only configurable in Farm Main",
-      "normal": "normal",
-      "hard": "hard"
+      "name": "战役难度分级",
+      "help": "仅适用于主线地图",
+      "normal": "标准模式",
+      "hard": "困难模式"
     },
     "UseClearMode": {
-      "name": "Use Clear Mode",
+      "name": "启用周回自律协议",
       "help": ""
     },
     "UseFleetLock": {
-      "name": "Use Fleet Lock",
-      "help": ""
+      "name": "Campaign.UseFleetLock.name",
+      "help": "Campaign.UseFleetLock.help"
     },
     "UseAutoSearch": {
-      "name": "Use Auto Search",
+      "name": "启用自律寻敌算法",
       "help": ""
     },
     "Use2xBook": {
-      "name": "Use High-Efficiency Combat Logistics Plan",
-      "help": "Twice the oil consumption but also twice the exp and drops"
+      "name": "高效作战指令书",
+      "help": "双倍燃油消耗，双倍产出结算，效率翻倍"
     },
     "AmbushEvade": {
-      "name": "Evade Ambush(es)",
-      "help": ""
+      "name": "Campaign.AmbushEvade.name",
+      "help": "Campaign.AmbushEvade.help"
     },
     "UseRecommendFleet": {
       "name": "Campaign.UseRecommendFleet.name",
@@ -1010,48 +1010,48 @@
   },
   "StopCondition": {
     "_info": {
-      "name": "Stop Condition Settings",
-      "help": "After triggering any of following conditions, the current task will be stopped"
+      "name": "任务熔断条件",
+      "help": "触发任意预设条件，立即终止当前业务流"
     },
     "OilLimit": {
-      "name": "Keep Oil Above X",
-      "help": "Delay current task if oil is found to be below this number"
+      "name": "低油量保护机制",
+      "help": "石油低于阈值时触发任务挂起，待资源补足后自动恢复"
     },
     "RunCount": {
-      "name": "Run Level X Time(s)",
-      "help": "Automatically decreases by 1 for every completion and stops the current task upon reaching zero; saving as 0 implies unlimited runs until a different stop condition is met"
+      "name": "循环次数限制",
+      "help": "设定最大执行次数，倒序计数，归零即止\n0 为无限循环模式"
     },
     "MapAchievement": {
-      "name": "Level Achievement",
-      "help": "Stop current task if level has been 100% Clear, 3 Stars, Threat Safe, or Threat Safe without 3 Stars. Non-stop implies no achievement requirement and loops until different stop condition is met",
-      "non_stop": "Non-stop",
+      "name": "成就达成自动停止",
+      "help": "基于地图进度的智能判断：100%探索、三星达成或安全海域认证",
+      "non_stop": "持续运行",
       "non_stop_clear_all": "non_stop_clear_all",
-      "100_percent_clear": "100% Clear",
-      "map_3_stars": "100% Clear + 3 Stars",
-      "threat_safe": "100% Clear + 3 Stars + Threat Safe",
-      "threat_safe_without_3_stars": "100% Clear + Threat Safe"
+      "100_percent_clear": "100_percent_clear",
+      "map_3_stars": "map_3_stars",
+      "threat_safe": "全指标达成 (100% + 三星 + 安全海域)",
+      "threat_safe_without_3_stars": "threat_safe_without_3_stars"
     },
     "StageIncrease": {
-      "name": "Enable Continuous Clear",
-      "help": "Suited for 100% Clear, requires sufficient fleet strength and satisfying level attribute restrictions for every level involved\n1-1 to 15-4, A1 to A3, B1 to B3, C1 to C3, D1 to D3, T1 to T6, SP1 to SP4"
+      "name": "自适应开荒推进",
+      "help": "开启后激活自动推进逻辑，达成当前关卡目标后自动前往下一关卡。\n前置条件：舰队练度达标且满足海域属性限制。\n支持全系图谱：1-1至15-4，A/B/C/D图，SP图等。"
     },
     "GetNewShip": {
-      "name": "New Ship Get",
-      "help": "Stop current task if detected new ship has been acquired"
+      "name": "StopCondition.GetNewShip.name",
+      "help": "StopCondition.GetNewShip.help"
     },
     "ReachLevel": {
-      "name": "Level X Reached",
-      "help": "Stop current task if any ship under level X has reached level X; saving as 0 implies no limit to the level."
+      "name": "StopCondition.ReachLevel.name",
+      "help": "StopCondition.ReachLevel.help"
     }
   },
   "Fleet": {
     "_info": {
-      "name": "Fleet Settings",
-      "help": "Fleet 1 == Mob Fleet, Fleet 2 == Boss Fleet"
+      "name": "舰队编组配置",
+      "help": ""
     },
     "Fleet1": {
-      "name": "Fleet 1 Number",
-      "help": "",
+      "name": "Fleet.Fleet1.name",
+      "help": "Fleet.Fleet1.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -1060,32 +1060,32 @@
       "6": "6"
     },
     "Fleet1Formation": {
-      "name": "Fleet 1 Formation",
+      "name": "一队战术阵型",
       "help": "",
-      "line_ahead": "line_ahead",
-      "double_line": "double_line",
-      "diamond": "diamond"
+      "line_ahead": "单纵突击",
+      "double_line": "复纵防御",
+      "diamond": "轮形防空"
     },
     "Fleet1Mode": {
-      "name": "Fleet 1 Mode",
+      "name": "一队作战模态",
       "help": "",
-      "combat_auto": "combat_auto",
-      "combat_manual": "combat_manual",
-      "stand_still_in_the_middle": "stand_still_in_the_middle",
+      "combat_auto": "全自动自律",
+      "combat_manual": "手动操作接管",
+      "stand_still_in_the_middle": "中场静态部署",
       "hide_in_bottom_left": "hide_in_bottom_left"
     },
     "Fleet1Step": {
-      "name": "Fleet 1 Step Number",
-      "help": "Restrict tile step movement in non-cleared levels to configured number",
+      "name": "Fleet.Fleet1Step.name",
+      "help": "Fleet.Fleet1Step.help",
       "2": "2",
       "3": "3",
       "4": "4",
       "5": "5"
     },
     "Fleet2": {
-      "name": "Fleet 2 Number",
-      "help": "",
-      "0": "do_not_use",
+      "name": "Fleet.Fleet2.name",
+      "help": "Fleet.Fleet2.help",
+      "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -1094,142 +1094,142 @@
       "6": "6"
     },
     "Fleet2Formation": {
-      "name": "Fleet 2 Formation",
-      "help": "",
+      "name": "Fleet.Fleet2Formation.name",
+      "help": "Fleet.Fleet2Formation.help",
       "line_ahead": "line_ahead",
       "double_line": "double_line",
       "diamond": "diamond"
     },
     "Fleet2Mode": {
-      "name": "Fleet 2 Mode",
-      "help": "",
+      "name": "Fleet.Fleet2Mode.name",
+      "help": "Fleet.Fleet2Mode.help",
       "combat_auto": "combat_auto",
       "combat_manual": "combat_manual",
       "stand_still_in_the_middle": "stand_still_in_the_middle",
       "hide_in_bottom_left": "hide_in_bottom_left"
     },
     "Fleet2Step": {
-      "name": "Fleet 2 Step Number",
-      "help": "Restrict tile step movement in non-cleared levels to configured number",
+      "name": "Fleet.Fleet2Step.name",
+      "help": "Fleet.Fleet2Step.help",
       "2": "2",
       "3": "3",
       "4": "4",
       "5": "5"
     },
     "FleetOrder": {
-      "name": "Fleet Roles",
-      "help": "With non-auto-search, alas will pick up question marks and ammunition\nWith non-auto-search and battle <=4, Alas will force the use of \"fleet1_all_fleet2_standby\"",
-      "fleet1_mob_fleet2_boss": "fleet1_mob_fleet2_boss",
-      "fleet1_boss_fleet2_mob": "fleet1_boss_fleet2_mob",
-      "fleet1_all_fleet2_standby": "fleet1_all_fleet2_standby",
+      "name": "双舰队协同策略",
+      "help": "定义两支舰队的职能分配与切换逻辑\n非自律模式下智能拾取物资；4战及以下场景强制执行单队清全图策略",
+      "fleet1_mob_fleet2_boss": "一队道中 / 二队决战",
+      "fleet1_boss_fleet2_mob": "一队决战 / 二队道中",
+      "fleet1_all_fleet2_standby": "一队全权负责 / 二队待机",
       "fleet1_standby_fleet2_all": "fleet1_standby_fleet2_all"
     }
   },
   "Submarine": {
     "_info": {
-      "name": "Submarine Settings",
+      "name": "潜艇作战配置",
       "help": ""
     },
     "Fleet": {
-      "name": "Submarine Fleet Number",
-      "help": "",
-      "0": "Don't Use",
+      "name": "Submarine.Fleet.name",
+      "help": "Submarine.Fleet.help",
+      "0": "0",
       "1": "1",
       "2": "2"
     },
     "Mode": {
-      "name": "Submarine Mode",
-      "help": "Effective only when auto search disabled. Reminder: 'Hunt and Boss' is actually a mix of 'Hunt Only' and 'Boss Only', it does hunt and summon submarines at boss if available.",
-      "do_not_use": "Don't Use",
-      "hunt_only": "Hunt Only",
-      "boss_only": "BOSS Only",
-      "hunt_and_boss": "Hunt and BOSS",
-      "every_combat": "Every Combat"
+      "name": "潜艇支援方案",
+      "help": "非自律寻敌模式下的潜艇调用逻辑。\n注意：'狩猎及决战' 模式为复合策略，将在道中进行游猎并在BOSS战发起总攻。",
+      "do_not_use": "do_not_use",
+      "hunt_only": "hunt_only",
+      "boss_only": "boss_only",
+      "hunt_and_boss": "全场景支援 (狩猎+决战)",
+      "every_combat": "every_combat"
     },
     "AutoSearchMode": {
-      "name": "Submarine Roles in Auto Search",
-      "help": "Effective only for auto search",
-      "sub_standby": "Standby",
-      "sub_auto_call": "Auto Call"
+      "name": "Submarine.AutoSearchMode.name",
+      "help": "Submarine.AutoSearchMode.help",
+      "sub_standby": "sub_standby",
+      "sub_auto_call": "sub_auto_call"
     },
     "DistanceToBoss": {
-      "name": "Before BOSS battle move the submarine near BOSS",
-      "help": "Effective only if \"Submarine Mode\" is \"BOSS Only\" or \"Hunt and BOSS\"\nSelecting \"X Grids To BOSS\" needs to ensure that the submarine hunting range can cover the BOSS. Distance is calculated using the Manhattan Distance. Selecting \"Use Open Ocean Support\" requires submarine with aforementioned skill",
-      "to_boss_position": "To BOSS Location",
-      "1_grid_to_boss": "1 Grid To BOSS",
-      "2_grid_to_boss": "2 Grids To BOSS",
-      "use_open_ocean_support": "Use Open Ocean Support"
+      "name": "潜艇机动部署逻辑",
+      "help": "BOSS战前潜艇的机动位置选择\n基于曼哈顿距离算法计算位移，选择'远洋支援'需配备具备该技能的舰船(U522/达芬奇)",
+      "to_boss_position": "to_boss_position",
+      "1_grid_to_boss": "1_grid_to_boss",
+      "2_grid_to_boss": "2_grid_to_boss",
+      "use_open_ocean_support": "启用远洋打击支援"
     }
   },
   "Emotion": {
     "_info": {
-      "name": "Emotion Settings",
-      "help": "At least one or both \"Calculate Emotion Consumption\" and \"Ignore Low Emotion Warning\" is used for these settings to be enabled"
+      "name": "心情值监控体系",
+      "help": ""
     },
     "Mode": {
-      "name": "Emotion Settings",
+      "name": "心情管理策略",
       "help": "",
-      "calculate": "Calculate Emotion Consumption",
-      "ignore": "Ignore Low Emotion Warning",
-      "calculate_ignore": "Calculate + Ignore"
+      "calculate": "精准计算心情消耗",
+      "ignore": "强制执行 (无视红脸告警)",
+      "calculate_ignore": "记录消耗但强制执行"
     },
     "Fleet1Value": {
-      "name": "Fleet 1 Emotion Value",
-      "help": ""
+      "name": "Emotion.Fleet1Value.name",
+      "help": "Emotion.Fleet1Value.help"
     },
     "Fleet1Record": {
-      "name": "Fleet 1 Emotion Record",
-      "help": ""
+      "name": "Emotion.Fleet1Record.name",
+      "help": "Emotion.Fleet1Record.help"
     },
     "Fleet1Control": {
-      "name": "Fleet 1 Emotion Control",
-      "help": "Measures will be taken to ensure control is maintained i.e. wait for recovery in level or stop current task if others can be executed while waiting",
-      "keep_exp_bonus": "Keep Happy Bonus (>120)",
-      "prevent_green_face": "Keep Content (>40)",
-      "prevent_yellow_face": "Prevent Moody (>30)",
-      "prevent_red_face": "Prevent Exhausted (>20)"
+      "name": "一队心情阈值控制",
+      "help": "",
+      "keep_exp_bonus": "维持经验加成态 (>120)",
+      "prevent_green_face": "绿脸保护线 (>40)",
+      "prevent_yellow_face": "prevent_yellow_face",
+      "prevent_red_face": "红脸熔断线 (>0)"
     },
     "Fleet1Recover": {
-      "name": "Fleet 1 Recover Location",
-      "help": "Configure accordingly to accurately calculate emotion",
-      "not_in_dormitory": "Docks (20/hr)",
-      "dormitory_floor_1": "Dorm Floor 1 (40/hr)",
-      "dormitory_floor_2": "Dorm Floor 2 (50/hr)"
+      "name": "Emotion.Fleet1Recover.name",
+      "help": "Emotion.Fleet1Recover.help",
+      "not_in_dormitory": "not_in_dormitory",
+      "dormitory_floor_1": "dormitory_floor_1",
+      "dormitory_floor_2": "dormitory_floor_2"
     },
     "Fleet1Oath": {
-      "name": "Fleet 1 All Oath",
-      "help": "+10/hr emotion recovery is included into calculation"
+      "name": "Emotion.Fleet1Oath.name",
+      "help": "Emotion.Fleet1Oath.help"
     },
     "Fleet1Onsen": {
       "name": "Emotion.Fleet1Onsen.name",
       "help": "Emotion.Fleet1Onsen.help"
     },
     "Fleet2Value": {
-      "name": "Fleet 2 Emotion Value",
-      "help": ""
+      "name": "Emotion.Fleet2Value.name",
+      "help": "Emotion.Fleet2Value.help"
     },
     "Fleet2Record": {
-      "name": "Fleet 2 Emotion Record",
-      "help": ""
+      "name": "Emotion.Fleet2Record.name",
+      "help": "Emotion.Fleet2Record.help"
     },
     "Fleet2Control": {
-      "name": "Fleet 2 Emotion Control",
-      "help": "Measures will be taken to ensure control is maintained i.e. wait for recovery in level or stop current task if others can be executed while waiting",
-      "keep_exp_bonus": "Keep Happy Bonus (>120)",
-      "prevent_green_face": "Keep Content (>40)",
-      "prevent_yellow_face": "Prevent Moody (>30)",
-      "prevent_red_face": "Prevent Exhausted (>20)"
+      "name": "Emotion.Fleet2Control.name",
+      "help": "Emotion.Fleet2Control.help",
+      "keep_exp_bonus": "keep_exp_bonus",
+      "prevent_green_face": "prevent_green_face",
+      "prevent_yellow_face": "prevent_yellow_face",
+      "prevent_red_face": "prevent_red_face"
     },
     "Fleet2Recover": {
-      "name": "Fleet 2 Recover Location",
-      "help": "",
-      "not_in_dormitory": "Docks (20/hr)",
-      "dormitory_floor_1": "Dorm Floor 1 (40/hr)",
-      "dormitory_floor_2": "Dorm Floor 2 (50/hr)"
+      "name": "Emotion.Fleet2Recover.name",
+      "help": "Emotion.Fleet2Recover.help",
+      "not_in_dormitory": "not_in_dormitory",
+      "dormitory_floor_1": "dormitory_floor_1",
+      "dormitory_floor_2": "dormitory_floor_2"
     },
     "Fleet2Oath": {
-      "name": "Fleet 2 All Oath",
-      "help": "+10/hr emotion recovery is included into calculation"
+      "name": "Emotion.Fleet2Oath.name",
+      "help": "Emotion.Fleet2Oath.help"
     },
     "Fleet2Onsen": {
       "name": "Emotion.Fleet2Onsen.name",
@@ -1238,83 +1238,83 @@
   },
   "HpControl": {
     "_info": {
-      "name": "HP Control Settings",
-      "help": "Effective only if fleet lock is disabled"
+      "name": "生存能力管理",
+      "help": "仅在禁用阵容锁定时生效"
     },
     "UseHpBalance": {
-      "name": "Use HP Balance",
-      "help": "Enable monitor of HP across the front row ships and re-position them if needed"
+      "name": "启用血量动态平衡",
+      "help": "智能调度：将低血量单位转移至保护位，高血量单位前置承伤"
     },
     "UseEmergencyRepair": {
-      "name": "Use Emergency Repair",
+      "name": "使用损管工具",
       "help": ""
     },
     "UseLowHpRetreat": {
-      "name": "Use Low HP Retreat",
-      "help": ""
+      "name": "HpControl.UseLowHpRetreat.name",
+      "help": "HpControl.UseLowHpRetreat.help"
     },
     "HpBalanceThreshold": {
-      "name": "HP Balance Threshold",
-      "help": "If the difference in HP volume is found greater than this threshold then Alas will re-position the ships"
+      "name": "HpControl.HpBalanceThreshold.name",
+      "help": "HpControl.HpBalanceThreshold.help"
     },
     "HpBalanceWeight": {
-      "name": "HP Balance Weight",
-      "help": "Assists in Alas to accurately monitor the HP volume\nEnter your fleet data in the exemplified order \"front-most, middle, back-most\" --> \"6000, 3000, 4000\" (no quotations)"
+      "name": "先锋承伤权重矩阵",
+      "help": "针对不同肉度先锋的算法微调，格式：1000, 1000, 1000"
     },
     "RepairUseSingleThreshold": {
-      "name": "Single Emergency Repair Use Threshold",
-      "help": "Use one repair kit if any one ship's HP is below this threshold"
+      "name": "HpControl.RepairUseSingleThreshold.name",
+      "help": "HpControl.RepairUseSingleThreshold.help"
     },
     "RepairUseMultiThreshold": {
-      "name": "Multi Emergency Repair Use Threshold",
-      "help": "Use all repair kits if the sum HP volume back or front row is below this threshold"
+      "name": "HpControl.RepairUseMultiThreshold.name",
+      "help": "HpControl.RepairUseMultiThreshold.help"
     },
     "LowHpRetreatThreshold": {
-      "name": "Low HP Retreat Threshold",
-      "help": "Retreat if the sum HP volume back or front row is below this threshold"
+      "name": "HpControl.LowHpRetreatThreshold.name",
+      "help": "HpControl.LowHpRetreatThreshold.help"
     }
   },
   "EnemyPriority": {
     "_info": {
-      "name": "Enemy Priority ",
-      "help": "Customize the priority of the enemy you want to fight"
+      "name": "智能索敌算法",
+      "help": "自定义敌方目标的打击优先级逻辑"
     },
     "EnemyScaleBalanceWeight": {
-      "name": "Enemy Priority",
-      "help": "First clear the enemies on the mob to the boss, and then clean up other enemies according to priority",
-      "default_mode": "According to map file",
-      "S3_enemy_first": "3-Stars enemies first",
-      "S1_enemy_first": "1-Star enemies first"
+      "name": "目标优先权策略",
+      "help": "基于路径规划算法，优先清理通往BOSS路径上的障碍，再根据权重清理其他目标",
+      "default_mode": "依据地图元数据",
+      "S3_enemy_first": "大型目标优先 (高收益)",
+      "S1_enemy_first": "小型目标优先 (快速清理)"
     }
   },
   "C11AffinityFarming": {
     "_info": {
-      "name": "C1-1 Affinity Farm Settings",
-      "help": "After entering, repeatedly moves between tiles to initiate ambush encounters"
+      "name": "C11AffinityFarming._info.name",
+      "help": "C11AffinityFarming._info.help"
     },
     "RunCount": {
-      "name": "Encounter Count",
-      "help": "Number of encounters until retreat and repeating again, recommended 32+"
+      "name": "C11AffinityFarming.RunCount.name",
+      "help": "C11AffinityFarming.RunCount.help"
     }
   },
   "C72MysteryFarming": {
     "_info": {
-      "name": "C7-2 Mystery Farm Settings",
-      "help": "Performs minimum number of battles to acquire all mystery tiles then retreat and repeating again"
+      "name": "C72MysteryFarming._info.name",
+      "help": "C72MysteryFarming._info.help"
     },
     "StepOnA3": {
-      "name": "Step A3",
-      "help": "Effectively prevents mystery on A2 from being blocked"
+      "name": "C72MysteryFarming.StepOnA3.name",
+      "help": "C72MysteryFarming.StepOnA3.help"
     }
   },
   "C122MediumLeveling": {
     "_info": {
-      "name": "C12-2 Medium Level Farm Settings",
-      "help": "Use low strength fleet to level up at 12-2 and retreat after fighting all non-large escorts\nImprove exp/oil consumption ratio by reducing strength of fleet"
+      "name": "C122MediumLeveling._info.name",
+      "help": "C122MediumLeveling._info.help"
     },
     "LargeEnemyTolerance": {
-      "name": "Large Enemy Tolerance",
-      "help": "Number of large enemy battle(s) allowed before retreating",
+      "name": "C122MediumLeveling.LargeEnemyTolerance.name",
+      "help": "C122MediumLeveling.LargeEnemyTolerance.help",
       "0": "0",
       "1": "1",
       "2": "2",
@@ -1323,27 +1323,27 @@
   },
   "C124LargeLeveling": {
     "_info": {
-      "name": "C12-4 Large Level Farm Settings",
-      "help": "Use high strength fleet to level up at 12-4 and retreat after fighting all escorts\nImprove exp/oil consumption ratio by reducing strength of fleet"
+      "name": "C124LargeLeveling._info.name",
+      "help": "C124LargeLeveling._info.help"
     },
     "NonLargeEnterTolerance": {
-      "name": "Non-Large Enter Tolerance",
-      "help": "Retreat after configured number of battles if no large escorts are detected",
+      "name": "C124LargeLeveling.NonLargeEnterTolerance.name",
+      "help": "C124LargeLeveling.NonLargeEnterTolerance.help",
       "0": "0",
       "1": "1",
       "2": "2"
     },
     "NonLargeRetreatTolerance": {
-      "name": "Non-Large Retreat Tolerance",
-      "help": "Number of battles allowed against non-large escorts after no remaining large escorts are detected",
+      "name": "C124LargeLeveling.NonLargeRetreatTolerance.name",
+      "help": "C124LargeLeveling.NonLargeRetreatTolerance.help",
       "0": "0",
       "1": "1",
       "2": "2",
       "10": "10"
     },
     "PickupAmmo": {
-      "name": "Pick Up Ammo",
-      "help": "Number of battles before picking up ammo",
+      "name": "C124LargeLeveling.PickupAmmo.name",
+      "help": "C124LargeLeveling.PickupAmmo.help",
       "3": "3",
       "4": "4",
       "5": "5"
@@ -1351,18 +1351,18 @@
   },
   "GemsFarming": {
     "_info": {
-      "name": "Commission Farming Settings",
-      "help": "Warning: This task allows players to get a small amount of gems, but not an efficient way to farm.\nPlayers who have recently started Azur Lane are easily superstitious about 0LB and low oil consumption, while being ignorant about character leveling.\nRunning this function will only make you feel fulfilled however in reality your account will not actually progress very much.\nThe main purpose of this task is to get extra cubes for players with a formed lineup. Please rationally treat gems as a by-product.\n\nFleet 1 is expected to consist of 1 0LB CV/CVL and 1 0LB Vanguard, Fleet 2 is expected to consist of support ships such as New Jersey or Shinano to provide external battle assistance.\nFor information about the drop mechanism/rate of urgent commissions, you can refer to <https://bbs.nga.cn/read.php?tid=27134956> (in Chinese Simplified)"
+      "name": "晶体结构深度挖掘",
+      "help": "高能预警：本功能仅提供微量钻石产出，非高效获取途径。\n建议：仅供阵容成型的资深指挥官使用，将钻石视为副产物，切勿迷信低耗而忽视角色养成。\n\n核心逻辑：\n- 旗舰等级>=32 触发自动轮换机制\n- 基于 NGA 算法模型优化委托收益 (A3 > A1 > 2-4 > 2-1)\n- 一队承担全部战斗负荷，二队提供跨维支援"
     },
     "ChangeFlagship": {
-      "name": "Change Flagship",
-      "help": "Change flagship if flagship level >= 32 or either flagship or vanguard are emotion exhausted. If you choose not to change, your fleet will ignore the low emotion warning and continue combat.\nSwitch out to new common CV/CVL whose level is in range of 1 to 31, after current has reached level 32+. Meanwhile, abandoned flagships will be retired. Any common CV/CVL whose level is 2+ will be regarded as targets. Do confirm that your own ships which is not a target has been locked\n\nThe flagship's equipment is replaced when being switched out by first recording the current setup\nOnly populated equipment slots will be replaced. If the CV/CVL preference has been configured, all 5 slots will be populated otherwise only the auxiliary slots will be populated.",
-      "ship": "Change Ship",
-      "ship_equip": "Change Ship + Gears"
+      "name": "旗舰智能轮换",
+      "help": "当旗舰触达等级上限(32)或心情红线时，自动从船坞检索符合条件的低耗航母(Lv 1-31)进行接替。\n系统将自动迁移旗舰装备，实现无缝战力继承。",
+      "ship": "ship",
+      "ship_equip": "深度轮换 (舰船+装备)"
     },
     "CommonCV": {
-      "name": "Flagship Common CV/CVL Preference",
-      "help": "",
+      "name": "GemsFarming.CommonCV.name",
+      "help": "GemsFarming.CommonCV.help",
       "custom": "custom",
       "any": "any",
       "eagle": "eagle",
@@ -1376,21 +1376,21 @@
       "help": "GemsFarming.CommonCVFilter.help"
     },
     "ChangeVanguard": {
-      "name": "Change Vanguard",
-      "help": "Change vanguard if flagship or vanguard are emotion exhausted. If you choose not to change, your fleet will ignore the low emotion warning and continue combat.\nSwitch out to new level 100(70) common vanguard from eagle or ironblood after current flagship has reached level 32+ (Only CN players'0 limit break ship can reach level 100)\n\nThe vanguard's equipment is replaced when being switched out by first recording the current setup. Only populated equipment slots will be replaced.",
-      "disabled": "Don't Change",
-      "ship": "Change Ship",
-      "ship_equip": "Change Ship + Gears"
+      "name": "GemsFarming.ChangeVanguard.name",
+      "help": "GemsFarming.ChangeVanguard.help",
+      "disabled": "disabled",
+      "ship": "ship",
+      "ship_equip": "ship_equip"
     },
     "CommonDD": {
-      "name": "Flagship Common DD Preference",
-      "help": "",
+      "name": "GemsFarming.CommonDD.name",
+      "help": "GemsFarming.CommonDD.help",
       "custom": "custom",
       "any": "any",
-      "favourite": "Favourite Ships Only",
-      "aulick_or_foote": "Aulick or Foote",
-      "cassin_or_downes": "Cassin or Downes",
-      "z20_or_z21": "Z20 or Z21",
+      "favourite": "favourite",
+      "aulick_or_foote": "aulick_or_foote",
+      "cassin_or_downes": "cassin_or_downes",
+      "z20_or_z21": "z20_or_z21",
       "DDG": "DDG"
     },
     "CommonDDFilter": {
@@ -1398,8 +1398,8 @@
       "help": "GemsFarming.CommonDDFilter.help"
     },
     "EquipmentCode": {
-      "name": "Gear Code",
-      "help": "Only works when 'Change Ship + Gears' is chosen.\nWhen substituting down CV/CVL/DD, if corresponding gear code is not provided, alas will export it\nWhen substituting up corresponding CV/CVL/DD, if corresponding gear code is not provided, alas will use exported gear code from previous ship; otherwise alas will use gear code in the config\nBluestacks users need to enable virtual keyboard first.\nSee https://support.bluestacks.com/hc/en-us/articles/360061968892-How-to-use-a-virtual-on-screen-keyboard-on-BlueStacks-5"
+      "name": "装备代码映射",
+      "help": "定义换装时的标准装备配置码。\n蓝叠模拟器用户需激活虚拟键盘映射以支持代码注入。"
     },
     "ALLowHighFlagshipLevel": {
       "name": "GemsFarming.ALLowHighFlagshipLevel.name",
@@ -1414,77 +1414,77 @@
       "help": "GemsFarming.DelayTaskIFNoFlagship.help"
     },
     "CommissionLimit": {
-      "name": "Prevent Too Many Urgent Commissions",
-      "help": "When running 7x24, prevent having a lot of urgent commissions and not being able to complete daily commissions. It is recommended to select only short-terms and high-yields in the commission filter"
+      "name": "GemsFarming.CommissionLimit.name",
+      "help": "GemsFarming.CommissionLimit.help"
     }
   },
   "EventGeneral": {
     "_info": {
-      "name": "Event General Settings",
+      "name": "活动通用底层",
       "help": ""
     },
     "PtLimit": {
-      "name": "Event PT Limit",
-      "help": "When the total PT reaches the given value, disable all event tasks. 0 means no limit. Cannot trigger instantly when using auto search\nWith this enabled, you only need to enable all the event tasks, and you don't need to count how many times to run"
+      "name": "活动 PT 熔断阈值",
+      "help": "当累计 PT 触达设定值时，自动阻断所有活动任务。开启后实现“目标导向”的自动化管理。"
     },
     "TimeLimit": {
-      "name": "Event Time Limit",
-      "help": "When the local time exceeds the given value, disable all event tasks. '2020-01-01 00:00:00' means no limit and the time will be reset once it's triggered\nThis can prevent the occurrence of forgetting to disable event tasks after the event ends"
+      "name": "时间窗口限制",
+      "help": "设定任务截止时间戳，超时自动终止。防止活动结束后产生无效指令。"
     }
   },
   "TaskBalancer": {
     "_info": {
-      "name": "Task Balancer Settings",
-      "help": "Prevent coin shortage when farming event maps."
+      "name": "资源动态平衡器",
+      "help": "防止单一任务导致物资枯竭"
     },
     "Enable": {
-      "name": "Enable Task Balancer",
-      "help": "When enabled, the coin amount will be checked after each run."
+      "name": "启用平衡算法",
+      "help": "每次出击后执行物资校验"
     },
     "CoinLimit": {
-      "name": "Keep Coin Above X",
-      "help": "Start chosen task if coin is found to be below this number."
+      "name": "TaskBalancer.CoinLimit.name",
+      "help": "TaskBalancer.CoinLimit.help"
     },
     "TaskCall": {
-      "name": "Call task X if out of coin",
-      "help": "Reminder: Players need to check task config before running, or TaskCall may not work.",
+      "name": "物资匮乏时回调任务",
+      "help": "触发低资源保护时，自动跳转至指定任务模块 (如主线图) 获取资源",
       "Main": "Main",
-      "Main2": "Main-2",
-      "Main3": "Main-3",
+      "Main2": "Main2",
+      "Main3": "Main3",
       "GemsFarming": "GemsFarming",
       "ThreeOilLowCost": "ThreeOilLowCost"
     }
   },
   "EventDaily": {
     "_info": {
-      "name": "Event Daily Settings",
-      "help": ""
+      "name": "EventDaily._info.name",
+      "help": "EventDaily._info.help"
     },
     "StageFilter": {
-      "name": "Event Daily Stage Filter",
-      "help": ""
+      "name": "EventDaily.StageFilter.name",
+      "help": "EventDaily.StageFilter.help"
     },
     "LastStage": {
-      "name": "Last Event Daily Stage",
-      "help": "Automatically updated, skips completed levels in the filter, and resets at server reset time (00:00)"
+      "name": "EventDaily.LastStage.name",
+      "help": "EventDaily.LastStage.help"
     }
   },
   "Raid": {
     "_info": {
-      "name": "Raid Settings",
-      "help": ""
+      "name": "Raid._info.name",
+      "help": "Raid._info.help"
     },
     "Mode": {
-      "name": "Raid Mode",
-      "help": "",
-      "easy": "Easy",
-      "normal": "Normal",
-      "hard": "Hard",
-      "ex": "EX"
+      "name": "Raid.Mode.name",
+      "help": "Raid.Mode.help",
+      "easy": "easy",
+      "normal": "normal",
+      "hard": "hard",
+      "ex": "ex"
     },
     "UseTicket": {
-      "name": "Use Ticket(s)",
-      "help": ""
+      "name": "Raid.UseTicket.name",
+      "help": "Raid.UseTicket.help"
     }
   },
   "RaidScuttle": {
@@ -1502,22 +1502,22 @@
   },
   "RaidDaily": {
     "_info": {
-      "name": "Raid Daily Settings",
-      "help": "Recommend manual play for faster contribution and climbing of prize ladder as raid points are awarded proportionally by speed\nEnable task if slow contribution and climbing is acceptable\nFleet compositions must be made manually for each difficulty"
+      "name": "RaidDaily._info.name",
+      "help": "RaidDaily._info.help"
     },
     "StageFilter": {
-      "name": "Raid Daily Stage Filter",
-      "help": "Generally does not need to be modified or re-arranged but can do so if desired\nCan save on oil consumption if less are attacked\nSupports EX difficulty if specified, submarine is force called to increase clearing rate"
+      "name": "RaidDaily.StageFilter.name",
+      "help": "RaidDaily.StageFilter.help"
     }
   },
   "Hospital": {
     "_info": {
-      "name": "Event Settings",
-      "help": ""
+      "name": "Hospital._info.name",
+      "help": "Hospital._info.help"
     },
     "UseRecommendFleet": {
-      "name": "Use Fleet Recommendation",
-      "help": "If turned off, you need to manually prepare fleets of all 15 stages in advance"
+      "name": "Hospital.UseRecommendFleet.name",
+      "help": "Hospital.UseRecommendFleet.help"
     }
   },
   "HospitalEvent": {
@@ -1544,225 +1544,225 @@
   },
   "MaritimeEscort": {
     "_info": {
-      "name": "Maritime Escort",
-      "help": "Enter then retreat, get about 70% of maximum rewards"
+      "name": "MaritimeEscort._info.name",
+      "help": "MaritimeEscort._info.help"
     },
     "Enable": {
-      "name": "Enable maritime Escort",
-      "help": ""
+      "name": "MaritimeEscort.Enable.name",
+      "help": "MaritimeEscort.Enable.help"
     }
   },
   "Coalition": {
     "_info": {
-      "name": "Event Settings",
-      "help": "Fleets must be prepared manually in game before running"
+      "name": "Coalition._info.name",
+      "help": "Coalition._info.help"
     },
     "Mode": {
-      "name": "Mode",
-      "help": "SP needs to use event daily SP to run",
+      "name": "Coalition.Mode.name",
+      "help": "Coalition.Mode.help",
       "easy": "easy",
       "normal": "normal",
       "hard": "hard",
       "sp": "sp"
     },
     "Fleet": {
-      "name": "Fleet",
-      "help": "",
-      "single": "Solo Challenge",
-      "multi": "Coalition Battle"
+      "name": "Coalition.Fleet.name",
+      "help": "Coalition.Fleet.help",
+      "single": "single",
+      "multi": "multi"
     }
   },
   "EventShop": {
     "_info": {
-      "name": "Event Shop Settings",
-      "help": ""
+      "name": "EventShop._info.name",
+      "help": "EventShop._info.help"
     },
     "UnlockSSRShip": {
-      "name": "Unlock SSR Ship",
-      "help": ""
+      "name": "EventShop.UnlockSSRShip.name",
+      "help": "EventShop.UnlockSSRShip.help"
     },
     "BuyURShip": {
-      "name": "Buy X UR Ship(s)",
-      "help": "",
+      "name": "EventShop.BuyURShip.name",
+      "help": "EventShop.BuyURShip.help",
       "0": "0",
       "1": "1",
       "2": "2"
     },
     "PresetFilter": {
-      "name": "Event Shop Filter",
-      "help": "Generally does not need to be modified.",
-      "all": "All",
-      "custom": "Custom"
+      "name": "EventShop.PresetFilter.name",
+      "help": "EventShop.PresetFilter.help",
+      "all": "all",
+      "custom": "custom"
     },
     "CustomFilter": {
-      "name": "Custom Filter",
-      "help": "To use your own filter, set \"Event Shop Filter\" to \"Custom\". All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_en>"
+      "name": "EventShop.CustomFilter.name",
+      "help": "EventShop.CustomFilter.help"
     }
   },
   "Commission": {
     "_info": {
-      "name": "Commission Settings",
-      "help": ""
+      "name": "Commission._info.name",
+      "help": "Commission._info.help"
     },
     "PresetFilter": {
-      "name": "Preset Filter Select",
-      "help": "People without a basic knowledge of commission drops rates and spawn are recommended to use pre-optimized presets instead of writing custom filters\nIf the commission farming is running 24 hours a day, the (7x24 Commission Farming) filter should be used\nIt is not recommended to use the oil priority filter while running commission farming",
-      "cube": "Gems > Cube > Oil",
-      "cube_24h": "Gems > Cube > Oil (7x24 Commission Farming)",
-      "chip": "Gems > Chip > Cube",
-      "chip_24h": "Gems > Chip > Cube (7x24 Commission Farming)",
-      "oil": "Gems > Oil > Cube",
-      "custom": "Custom"
+      "name": "Commission.PresetFilter.name",
+      "help": "Commission.PresetFilter.help",
+      "cube": "cube",
+      "cube_24h": "cube_24h",
+      "chip": "chip",
+      "chip_24h": "chip_24h",
+      "oil": "oil",
+      "custom": "custom"
     },
     "CustomFilter": {
-      "name": "Custom Commission Priority",
-      "help": "To use your own filter, set \"Preset Filter Select\" to \"Custom\". All options have been defined at  <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_en>"
+      "name": "Commission.CustomFilter.name",
+      "help": "Commission.CustomFilter.help"
     },
     "DoMajorCommission": {
-      "name": "Do Major Commissions",
-      "help": "1200 oil commission is now outdated, the yield is very low, it is recommended to disable"
+      "name": "Commission.DoMajorCommission.name",
+      "help": "Commission.DoMajorCommission.help"
     }
   },
   "Tactical": {
     "_info": {
-      "name": "Tactical Academy Settings",
-      "help": ""
+      "name": "Tactical._info.name",
+      "help": "Tactical._info.help"
     },
     "TacticalFilter": {
-      "name": "Tactical Book Priority",
-      "help": "Generally does not need to be modified or re-arranged but can do so if desired"
+      "name": "Tactical.TacticalFilter.name",
+      "help": "Tactical.TacticalFilter.help"
     },
     "RapidTrainingSlot": {
-      "name": "Use Rapid Training",
-      "help": "During events, use rapid training 10 times",
-      "do_not_use": "Don't Use",
-      "slot_1": "Use on Slot #1",
-      "slot_2": "Use on Slot #2",
-      "slot_3": "Use on Slot #3",
-      "slot_4": "Use on Slot #4"
+      "name": "Tactical.RapidTrainingSlot.name",
+      "help": "Tactical.RapidTrainingSlot.help",
+      "do_not_use": "do_not_use",
+      "slot_1": "slot_1",
+      "slot_2": "slot_2",
+      "slot_3": "slot_3",
+      "slot_4": "slot_4"
     }
   },
   "ControlExpOverflow": {
     "_info": {
-      "name": "Control EXP Overflow Settings",
-      "help": "Control waste amount of EXP on a specific book tier to save on time\nFor example, if remain = 1100, use ColorT3_Exp despite losing out on 100 EXP"
+      "name": "ControlExpOverflow._info.name",
+      "help": "ControlExpOverflow._info.help"
     },
     "Enable": {
-      "name": "Enable",
-      "help": "Disable for no overflow across all tiers\nOtherwise enable then set specific tier's overflow for customization"
+      "name": "ControlExpOverflow.Enable.name",
+      "help": "ControlExpOverflow.Enable.help"
     },
     "T4Allow": {
-      "name": "T4 Overflow Allow",
-      "help": "0 ~ any positive integer"
+      "name": "ControlExpOverflow.T4Allow.name",
+      "help": "ControlExpOverflow.T4Allow.help"
     },
     "T3Allow": {
-      "name": "T3 Overflow Allow",
-      "help": "0 ~ any positive integer"
+      "name": "ControlExpOverflow.T3Allow.name",
+      "help": "ControlExpOverflow.T3Allow.help"
     },
     "T2Allow": {
-      "name": "T2 Overflow Allow",
-      "help": "0 ~ any positive integer"
+      "name": "ControlExpOverflow.T2Allow.name",
+      "help": "ControlExpOverflow.T2Allow.help"
     },
     "T1Allow": {
-      "name": "T1 Overflow Allow",
-      "help": "0 ~ any positive integer"
+      "name": "ControlExpOverflow.T1Allow.name",
+      "help": "ControlExpOverflow.T1Allow.help"
     }
   },
   "AddNewStudent": {
     "_info": {
-      "name": "Level Skills",
-      "help": "When there is a vacant position in the Tactical Academy, the 1st slot ship girl in dock will be assigned as a student and improve any non-max level skill"
+      "name": "AddNewStudent._info.name",
+      "help": "AddNewStudent._info.help"
     },
     "Enable": {
-      "name": "Enable",
-      "help": ""
+      "name": "AddNewStudent.Enable.name",
+      "help": "AddNewStudent.Enable.help"
     },
     "Favorite": {
-      "name": "Use Favorite Filter",
-      "help": "During student selection apply the favorite filter\nThereby, giving priority to certain ship girls\nApply the favorite status to a ship girl in-game"
+      "name": "AddNewStudent.Favorite.name",
+      "help": "AddNewStudent.Favorite.help"
     }
   },
   "Research": {
     "_info": {
-      "name": "Research Academy Settings",
-      "help": "For convenience a few preset filters are provided\nHowever it is recommended to use \"custom\" and author your own priority for projects\nNote that combined with other settings, Alas will choose projects that satisfy all the conditions. For example, if \"Use Cube\" is disabled but your list consists of projects that cost cubes, Alas will not choose them"
+      "name": "尖端科研矩阵",
+      "help": "基于多因子过滤算法，Alas 将寻找同时满足所有约束条件的科研项目。\n实现了逻辑解耦：修改资源消耗开关无需调整复杂的过滤器字符串。"
     },
     "UseCube": {
-      "name": "Use Cube",
-      "help": "Allow to undertake projects that require cubes",
-      "always_use": "Always Use",
-      "only_05_hour": "0.5 Hour+No project available",
-      "only_no_project": "Only no project available",
-      "do_not_use": "Don't Use"
+      "name": "魔方投入策略",
+      "help": "",
+      "always_use": "无限制投入",
+      "only_05_hour": "仅在 0.5h 且无其他项目时投入",
+      "only_no_project": "only_no_project",
+      "do_not_use": "禁止投入"
     },
     "UseCoin": {
-      "name": "Use Coin",
-      "help": "Allow to undertake projects that require coins",
-      "always_use": "Always Use",
-      "only_05_hour": "0.5 Hour+No project available",
-      "only_no_project": "Only no project available",
-      "do_not_use": "Don't Use"
+      "name": "Research.UseCoin.name",
+      "help": "Research.UseCoin.help",
+      "always_use": "always_use",
+      "only_05_hour": "only_05_hour",
+      "only_no_project": "only_no_project",
+      "do_not_use": "do_not_use"
     },
     "UsePart": {
-      "name": "Use Part/Plate",
-      "help": "Allow to undertake projects that require parts/plates",
-      "always_use": "Always Use",
-      "only_05_hour": "0.5 Hour+No project available",
-      "only_no_project": "Only no project available",
-      "do_not_use": "Don't Use"
+      "name": "Research.UsePart.name",
+      "help": "Research.UsePart.help",
+      "always_use": "always_use",
+      "only_05_hour": "only_05_hour",
+      "only_no_project": "only_no_project",
+      "do_not_use": "do_not_use"
     },
     "AllowDelay": {
-      "name": "Delay research when resources are insufficient",
-      "help": "When the resources are insufficient, Alas will delay research until the conditions are met or research queue is about to be emptied, which will not cause the research to stop\nIf the resources are insufficient for a long time or the time of running alas is not long enough, you can cancel this option to keep the research queue full"
+      "name": "资源不足挂起机制",
+      "help": "资源匮乏时智能推迟科研任务，而非终止队列，确保科研流水线永不亦停。"
     },
     "PresetFilter": {
-      "name": "Preset Filter Select",
-      "help": "See research drops rates and spawn rates in https://azur-stats.lyoko.io/. People without a basic knowledge of these are recommended to use pre-optimized presets instead of writing custom filters",
+      "name": "智能科研过滤器",
+      "help": "建议使用预置的优化算法。科研产出大数据支持：https://azur-stats.lyoko.io/",
       "custom": "custom",
-      "series_8_blueprint_305": "Series 8 Blueprints+305",
-      "series_8_blueprint_only": "Series 8 Blueprints Only",
-      "series_8_305_only": "Series 8 305 Only",
-      "series_7_blueprint_la9": "Series 7 Blueprints+La9",
-      "series_7_blueprint_only": "Series 7 Blueprints Only",
-      "series_7_la9_only": "Series 7 La9 Only",
-      "series_6_blueprint_203": "Series 6 Blueprints+203",
-      "series_6_blueprint_only": "Series 6 Blueprints Only",
-      "series_6_203_only": "Series 6 203 Only",
-      "series_5_blueprint_152": "Series 5 Blueprints+152",
-      "series_5_blueprint_only": "Series 5 Blueprints Only",
-      "series_5_152_only": "Series 5 152 Only",
-      "series_4_blueprint_tenrai": "Series 4 Blueprints+Tenrai",
-      "series_4_blueprint_only": "Series 4 Blueprints Only",
-      "series_4_tenrai_only": "Series 4 Tenrai Only",
-      "series_3_blueprint_234": "Series 3 Blueprints+234",
-      "series_3_blueprint_only": "Series 3 Blueprints Only",
-      "series_3_234_only": "Series 3 234 Only",
-      "series_2_than_3_457_234": "Series 2+3 457+234",
-      "series_2_blueprint_457": "Series 2 Blueprints+457",
-      "series_2_blueprint_only": "Series 2 Blueprints Only",
-      "series_2_457_only": "Series 2 457 Only"
+      "series_8_blueprint_305": "八期科研 蓝图+305 混合策略",
+      "series_8_blueprint_only": "series_8_blueprint_only",
+      "series_8_305_only": "series_8_305_only",
+      "series_7_blueprint_la9": "series_7_blueprint_la9",
+      "series_7_blueprint_only": "series_7_blueprint_only",
+      "series_7_la9_only": "series_7_la9_only",
+      "series_6_blueprint_203": "series_6_blueprint_203",
+      "series_6_blueprint_only": "series_6_blueprint_only",
+      "series_6_203_only": "series_6_203_only",
+      "series_5_blueprint_152": "series_5_blueprint_152",
+      "series_5_blueprint_only": "series_5_blueprint_only",
+      "series_5_152_only": "series_5_152_only",
+      "series_4_blueprint_tenrai": "series_4_blueprint_tenrai",
+      "series_4_blueprint_only": "series_4_blueprint_only",
+      "series_4_tenrai_only": "series_4_tenrai_only",
+      "series_3_blueprint_234": "series_3_blueprint_234",
+      "series_3_blueprint_only": "series_3_blueprint_only",
+      "series_3_234_only": "series_3_234_only",
+      "series_2_than_3_457_234": "二期/三期 跨代兼顾 (457+234)",
+      "series_2_blueprint_457": "series_2_blueprint_457",
+      "series_2_blueprint_only": "series_2_blueprint_only",
+      "series_2_457_only": "series_2_457_only"
     },
     "CustomFilter": {
-      "name": "Custom Research Priority",
-      "help": "To use your own filter, set \"Preset Filter Select\" to \"custom\". All options have been defined at  <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_en>"
+      "name": "Research.CustomFilter.name",
+      "help": "Research.CustomFilter.help"
     }
   },
   "Dorm": {
     "_info": {
-      "name": "Dorm Settings",
-      "help": ""
+      "name": "Dorm._info.name",
+      "help": "Dorm._info.help"
     },
     "Collect": {
-      "name": "Collect Coins and Loves",
-      "help": ""
+      "name": "Dorm.Collect.name",
+      "help": "Dorm.Collect.help"
     },
     "Feed": {
-      "name": "Restock Dorm Snacks",
-      "help": ""
+      "name": "Dorm.Feed.name",
+      "help": "Dorm.Feed.help"
     },
     "FeedFilter": {
-      "name": "Snack Filter",
-      "help": "Generally does not need to be modified or re-arranged but can do so if desired"
+      "name": "Dorm.FeedFilter.name",
+      "help": "Dorm.FeedFilter.help"
     },
     "BuyFood": {
       "name": "Dorm.BuyFood.name",
@@ -1771,158 +1771,158 @@
   },
   "BuyFurniture": {
     "_info": {
-      "name": "Event furniture Settings",
-      "help": "Buy time-limited furniture from dorm furniture shop during the event"
+      "name": "BuyFurniture._info.name",
+      "help": "BuyFurniture._info.help"
     },
     "Enable": {
-      "name": "Buy event furniture",
-      "help": ""
+      "name": "BuyFurniture.Enable.name",
+      "help": "BuyFurniture.Enable.help"
     },
     "BuyOption": {
-      "name": "Buy Option",
-      "help": "buy set: buy one piece for each piece of furniture; buy all: Buy all furniture. Both buy options will remove the set of furniture from the forefront of the store. If buy set, remaining furniture will need to be manually buy. Difference in furniture price between the two options is not significant, Recommended to use buy all. This operation will not buy diamond furniture",
+      "name": "BuyFurniture.BuyOption.name",
+      "help": "BuyFurniture.BuyOption.help",
       "set": "set",
       "all": "all"
     },
     "LastRun": {
-      "name": "Last Check Time",
-      "help": "The time of the last check is recorded here to prevent the task from running repeatedly. Check interval is 6 days. This value is automatically recorded and generally does not need to be modified."
+      "name": "BuyFurniture.LastRun.name",
+      "help": "BuyFurniture.LastRun.help"
     }
   },
   "Meowfficer": {
     "_info": {
-      "name": "Mewofficer Settings",
-      "help": ""
+      "name": "Meowfficer._info.name",
+      "help": "Meowfficer._info.help"
     },
     "BuyAmount": {
-      "name": "Buy Amount",
-      "help": "The 1st meowfficer box purchase everyday is free"
+      "name": "Meowfficer.BuyAmount.name",
+      "help": "Meowfficer.BuyAmount.help"
     },
     "FortChoreMeowfficer": {
-      "name": "Do Fort Chores",
-      "help": "Completes all 3 chores; clean, feed, and play with meowfficer to get fort exp"
+      "name": "Meowfficer.FortChoreMeowfficer.name",
+      "help": "Meowfficer.FortChoreMeowfficer.help"
     }
   },
   "MeowfficerTrain": {
     "_info": {
-      "name": "Meowfficer Training Settings",
-      "help": ""
+      "name": "MeowfficerTrain._info.name",
+      "help": "MeowfficerTrain._info.help"
     },
     "Enable": {
-      "name": "Enable Meowfficer Training",
-      "help": ""
+      "name": "MeowfficerTrain.Enable.name",
+      "help": "MeowfficerTrain.Enable.help"
     },
     "Mode": {
-      "name": "Meowfficer Training Mode",
-      "help": "Train Seamlessly means collecting trained meowfficer(s) every 2.5 ~ 3.5 hours.\nTrain Once a Day means collecting 1 trained meowfficer each day; emptying the training queue and do the enhancing on Sunday in order to finish weekly mission.",
-      "seamlessly": "Train Seamlessly",
-      "once_a_day": "Train Once a Day"
+      "name": "MeowfficerTrain.Mode.name",
+      "help": "MeowfficerTrain.Mode.help",
+      "seamlessly": "seamlessly",
+      "once_a_day": "once_a_day"
     },
     "RetainTalentedGold": {
-      "name": "Retain Talented SR Meowfficer(s)",
-      "help": "During collection, SR cats are examined for special talent abilities i.e. has no tiers or is colored rainbow.\nIf detected these are locked to prevent being used as feed material. Players must manually check and enhance themselves an SR meowfficer's personal skill."
+      "name": "MeowfficerTrain.RetainTalentedGold.name",
+      "help": "MeowfficerTrain.RetainTalentedGold.help"
     },
     "RetainTalentedPurple": {
-      "name": "Retain Talented Elite Meowfficer(s)",
-      "help": "During collection, Elite cats are examined for special talent abilities i.e. has no tiers or is colored rainbow.\nIf detected these are locked to prevent being used as feed material. Players must manually check and enhance themselves an Elite meowfficer's personal skill."
+      "name": "MeowfficerTrain.RetainTalentedPurple.name",
+      "help": "MeowfficerTrain.RetainTalentedPurple.help"
     },
     "EnhanceIndex": {
-      "name": "Enhance Index",
-      "help": "Index of target meowfficer to enhance. Limited in 1 ~ 12; indices are in ascending order from left to right of the 4 x 3 grid."
+      "name": "MeowfficerTrain.EnhanceIndex.name",
+      "help": "MeowfficerTrain.EnhanceIndex.help"
     },
     "MaxFeedLevel": {
-      "name": "Do not use meowfficer larger than level X as enhancing materials",
-      "help": "The X value is limited to 1 to 30"
+      "name": "MeowfficerTrain.MaxFeedLevel.name",
+      "help": "MeowfficerTrain.MaxFeedLevel.help"
     }
   },
   "GuildLogistics": {
     "_info": {
-      "name": "Guild Logistics Settings",
-      "help": "Master or Officers must choose a guild mission manually"
+      "name": "GuildLogistics._info.name",
+      "help": "GuildLogistics._info.help"
     },
     "Enable": {
-      "name": "Enable Guild Logistics",
-      "help": "Enables the following:\n- Accept and complete guild missions\n- Submit items in exchange for guild coins\n- Collect other guild rewards"
+      "name": "GuildLogistics.Enable.name",
+      "help": "GuildLogistics.Enable.help"
     },
     "SelectNewMission": {
-      "name": "Select A New Fleet Mission",
-      "help": "This account must be a guild master or officer to use this.\nThe easiest mission Siren Subjugation III is selected by default, and the objective is to defeat 300 enemies\n(Not supported, please contact an EN developer if you would like to assist in alleviating this)"
+      "name": "GuildLogistics.SelectNewMission.name",
+      "help": "GuildLogistics.SelectNewMission.help"
     },
     "ExchangeFilter": {
-      "name": "Item Exchange Filter",
-      "help": "Generally does not need to be modified or re-arranged but can do so if desired\nIf there is an item that you lack, priority for that exchange is lowered"
+      "name": "GuildLogistics.ExchangeFilter.name",
+      "help": "GuildLogistics.ExchangeFilter.help"
     }
   },
   "GuildOperation": {
     "_info": {
-      "name": "Guild Operation Settings",
+      "name": "大舰队联合作战",
       "help": ""
     },
     "Enable": {
-      "name": "Enable Guild Operation",
-      "help": "Enables the following:\n- Start new / Join ongoing guild operations\n- Dispatch ships to complete objectives\n- Optionally attack guild boss when available"
+      "name": "GuildOperation.Enable.name",
+      "help": "GuildOperation.Enable.help"
     },
     "SelectNewOperation": {
-      "name": "Start New Guild Operations",
-      "help": "This account must be a guild master or officer to use this.\nThe most rewarding operation Solomon Air-Sea Battle is selected by default"
+      "name": "自动发起新战役",
+      "help": "权限校验：需具备舰队司令或副司令权限。\n默认策略：自动锚定奖励最优的“达古康纳尔岛海空战”。"
     },
     "NewOperationMaxDate": {
-      "name": "Don't Start Guild Operation After Date X of Every Month",
-      "help": "Only takes effect when \"Start New Guild Operations\" is enabled.\nStarting a third operation in the same month is not recommended. Members are limited in joining up to 2 operations each month; a third operation will unlikely be finished as most cannot participate and spill over to the following month. This will affect the evaluation of the dispatch event, resulting in a reduction of the final reward"
+      "name": "GuildOperation.NewOperationMaxDate.name",
+      "help": "GuildOperation.NewOperationMaxDate.help"
     },
     "JoinThreshold": {
-      "name": "Join Threshold",
-      "help": "0.0 ~ 1.0\n0.5 means only join when progress is less than halfway through\n1 means join regardless of current progress even if basically finished\nRemember you are limited to joining only 2 on a monthly basis\nMaximize rewards and participation by joining newly started operations"
+      "name": "参战进度阈值",
+      "help": "0.0 ~ 1.0。智能判定加入时机，例如 '0.5' 表示仅在进度未过半时介入。"
     },
     "AttackBoss": {
-      "name": "Attack Guild Boss",
-      "help": ""
+      "name": "GuildOperation.AttackBoss.name",
+      "help": "GuildOperation.AttackBoss.help"
     },
     "BossFleetRecommend": {
-      "name": "Enable Fleet Recommend",
-      "help": "This will automatically select your own ships to fill all 6 ship slots\nRecommended to keep disabled to form your own fleet along with fellow member's support units\nHowever if members are frequently changing their support units, may be worth to enable otherwise attacks only with 4 ships"
+      "name": "GuildOperation.BossFleetRecommend.name",
+      "help": "GuildOperation.BossFleetRecommend.help"
     }
   },
   "Reward": {
     "_info": {
-      "name": "Reward Settings",
-      "help": ""
+      "name": "Reward._info.name",
+      "help": "Reward._info.help"
     },
     "CollectOil": {
-      "name": "Collect Oil",
-      "help": ""
+      "name": "Reward.CollectOil.name",
+      "help": "Reward.CollectOil.help"
     },
     "CollectCoin": {
-      "name": "Collect Coin",
-      "help": ""
+      "name": "Reward.CollectCoin.name",
+      "help": "Reward.CollectCoin.help"
     },
     "CollectExp": {
-      "name": "Collect Experience Books",
-      "help": ""
+      "name": "Reward.CollectExp.name",
+      "help": "Reward.CollectExp.help"
     },
     "CollectMission": {
-      "name": "Collect Mission Rewards",
-      "help": ""
+      "name": "Reward.CollectMission.name",
+      "help": "Reward.CollectMission.help"
     },
     "CollectWeeklyMission": {
-      "name": "Collect Weekly Mission Rewards",
-      "help": ""
+      "name": "Reward.CollectWeeklyMission.name",
+      "help": "Reward.CollectWeeklyMission.help"
     }
   },
   "Awaken": {
     "_info": {
-      "name": "Cognitive Awakening Settings",
-      "help": "Awaken all ships in dock til cognitive chips/arrays exhausted"
+      "name": "Awaken._info.name",
+      "help": "Awaken._info.help"
     },
     "LevelCap": {
-      "name": "To Level Cap",
-      "help": "",
-      "level120": "Lv.120",
-      "level125": "Lv.125"
+      "name": "Awaken.LevelCap.name",
+      "help": "Awaken.LevelCap.help",
+      "level120": "level120",
+      "level125": "level125"
     },
     "Favourite": {
-      "name": "Awaken Favourite Ships Only",
-      "help": ""
+      "name": "Awaken.Favourite.name",
+      "help": "Awaken.Favourite.help"
     }
   },
   "Island1": {
@@ -3527,92 +3527,92 @@
   },
   "GeneralShop": {
     "_info": {
-      "name": "General Shop Settings",
+      "name": "核心军需供应链",
       "help": ""
     },
     "UseGems": {
-      "name": "Use Gems",
-      "help": ""
+      "name": "GeneralShop.UseGems.name",
+      "help": "GeneralShop.UseGems.help"
     },
     "Refresh": {
-      "name": "Allow Shop Refresh",
-      "help": "Refreshing will consume 50 gems"
+      "name": "GeneralShop.Refresh.name",
+      "help": "GeneralShop.Refresh.help"
     },
     "BuySkinBox": {
-      "name": "Buy Equip Skin Boxes",
-      "help": "In order to reduce maintenance costs, the skin box selectors in the filter will not be updated with the game, but Alas will consider any unknown items with a quantity of 1 and consume 7000 coins as skin boxes and buy them."
+      "name": "GeneralShop.BuySkinBox.name",
+      "help": "GeneralShop.BuySkinBox.help"
     },
     "ConsumeCoins": {
-      "name": "Consume Spilled Coins",
-      "help": "Buy all items when the coins exceed 550000"
+      "name": "溢出物资自动熔断",
+      "help": "当物资储备超过 550,000 时，自动触发扫货逻辑，将溢出资源转化为资产。"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>"
+      "name": "GeneralShop.Filter.name",
+      "help": "GeneralShop.Filter.help"
     }
   },
   "GuildShop": {
     "_info": {
-      "name": "Guild Shop Settings",
-      "help": ""
+      "name": "GuildShop._info.name",
+      "help": "GuildShop._info.help"
     },
     "Refresh": {
-      "name": "Allow Shop Refresh",
-      "help": "Refreshing will consume 50 guild coins, these are not valuable and it is recommended to have this enabled"
+      "name": "GuildShop.Refresh.name",
+      "help": "GuildShop.Refresh.help"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>\nHowever unlike other shops you cannot specify the exact item, you are limited to just category and grade\nThe select options below are used to substitute this incapability"
+      "name": "GuildShop.Filter.name",
+      "help": "GuildShop.Filter.help"
     },
     "BOX_T3": {
-      "name": "Faction Preference BoxT3",
-      "help": "",
+      "name": "GuildShop.BOX_T3.name",
+      "help": "GuildShop.BOX_T3.help",
       "eagle": "eagle",
       "royal": "royal",
       "sakura": "sakura",
       "ironblood": "ironblood"
     },
     "BOX_T4": {
-      "name": "Faction Preference BoxT4",
-      "help": "",
+      "name": "GuildShop.BOX_T4.name",
+      "help": "GuildShop.BOX_T4.help",
       "eagle": "eagle",
       "royal": "royal",
       "sakura": "sakura",
       "ironblood": "ironblood"
     },
     "BOOK_T2": {
-      "name": "Color Preference BookT2",
-      "help": "",
+      "name": "GuildShop.BOOK_T2.name",
+      "help": "GuildShop.BOOK_T2.help",
       "red": "red",
       "blue": "blue",
       "yellow": "yellow"
     },
     "BOOK_T3": {
-      "name": "Color Preference BookT3",
-      "help": "",
+      "name": "GuildShop.BOOK_T3.name",
+      "help": "GuildShop.BOOK_T3.help",
       "red": "red",
       "blue": "blue",
       "yellow": "yellow"
     },
     "RETROFIT_T2": {
-      "name": "Type Preference RetrofitT2",
-      "help": "",
+      "name": "GuildShop.RETROFIT_T2.name",
+      "help": "GuildShop.RETROFIT_T2.help",
       "dd": "dd",
       "cl": "cl",
       "bb": "bb",
       "cv": "cv"
     },
     "RETROFIT_T3": {
-      "name": "Type Preference RetrofitT3",
-      "help": "",
+      "name": "GuildShop.RETROFIT_T3.name",
+      "help": "GuildShop.RETROFIT_T3.help",
       "dd": "dd",
       "cl": "cl",
       "bb": "bb",
       "cv": "cv"
     },
     "PLATE_T2": {
-      "name": "Type Preference PlateT2",
-      "help": "",
+      "name": "GuildShop.PLATE_T2.name",
+      "help": "GuildShop.PLATE_T2.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3620,8 +3620,8 @@
       "plane": "plane"
     },
     "PLATE_T3": {
-      "name": "Type Preference PlateT3",
-      "help": "",
+      "name": "GuildShop.PLATE_T3.name",
+      "help": "GuildShop.PLATE_T3.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3629,8 +3629,8 @@
       "plane": "plane"
     },
     "PLATE_T4": {
-      "name": "Type Preference PlateT4",
-      "help": "",
+      "name": "GuildShop.PLATE_T4.name",
+      "help": "GuildShop.PLATE_T4.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3638,8 +3638,8 @@
       "plane": "plane"
     },
     "PR1": {
-      "name": "PR1 BP Preference",
-      "help": "",
+      "name": "GuildShop.PR1.name",
+      "help": "GuildShop.PR1.help",
       "neptune": "neptune",
       "monarch": "monarch",
       "ibuki": "ibuki",
@@ -3648,16 +3648,16 @@
       "saintlouis": "saintlouis"
     },
     "PR2": {
-      "name": "PR2 BP Preference",
-      "help": "",
+      "name": "GuildShop.PR2.name",
+      "help": "GuildShop.PR2.help",
       "seattle": "seattle",
       "georgia": "georgia",
       "kitakaze": "kitakaze",
       "gascogne": "gascogne"
     },
     "PR3": {
-      "name": "PR3 BP Preference",
-      "help": "",
+      "name": "GuildShop.PR3.name",
+      "help": "GuildShop.PR3.help",
       "cheshire": "cheshire",
       "mainz": "mainz",
       "odin": "odin",
@@ -3666,40 +3666,40 @@
   },
   "MedalShop2": {
     "_info": {
-      "name": "Medal Shop Settings",
-      "help": ""
+      "name": "MedalShop2._info.name",
+      "help": "MedalShop2._info.help"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>\nDifferent from other shops, the below select options assist with filling the unknowns for the vague items 'Retrofit' and 'Plate'\nFurthermore restricted for 'Plate', there are both specific and wild types\nIf you are targeting a specific type then use a string combination such as 'PlateGeneralT3 > PlateWildT3' otherwise 'PlateT3' will purchase every available T3 Plate\nFor research blueprints it is adviseable to use 'DR > PR', players should convert surplus into Prototype Core currency"
+      "name": "MedalShop2.Filter.name",
+      "help": "MedalShop2.Filter.help"
     },
     "RETROFIT_T1": {
-      "name": "Type Preference RetrofitT1",
-      "help": "",
+      "name": "MedalShop2.RETROFIT_T1.name",
+      "help": "MedalShop2.RETROFIT_T1.help",
       "dd": "dd",
       "cl": "cl",
       "bb": "bb",
       "cv": "cv"
     },
     "RETROFIT_T2": {
-      "name": "Type Preference RetrofitT2",
-      "help": "",
+      "name": "MedalShop2.RETROFIT_T2.name",
+      "help": "MedalShop2.RETROFIT_T2.help",
       "dd": "dd",
       "cl": "cl",
       "bb": "bb",
       "cv": "cv"
     },
     "RETROFIT_T3": {
-      "name": "Type Preference RetrofitT3",
-      "help": "",
+      "name": "MedalShop2.RETROFIT_T3.name",
+      "help": "MedalShop2.RETROFIT_T3.help",
       "dd": "dd",
       "cl": "cl",
       "bb": "bb",
       "cv": "cv"
     },
     "PLATE_T1": {
-      "name": "Type Preference PlateT1",
-      "help": "",
+      "name": "MedalShop2.PLATE_T1.name",
+      "help": "MedalShop2.PLATE_T1.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3707,8 +3707,8 @@
       "plane": "plane"
     },
     "PLATE_T2": {
-      "name": "Type Preference PlateT2",
-      "help": "",
+      "name": "MedalShop2.PLATE_T2.name",
+      "help": "MedalShop2.PLATE_T2.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3716,8 +3716,8 @@
       "plane": "plane"
     },
     "PLATE_T3": {
-      "name": "Type Preference PlateT3",
-      "help": "",
+      "name": "MedalShop2.PLATE_T3.name",
+      "help": "MedalShop2.PLATE_T3.help",
       "general": "general",
       "gun": "gun",
       "torpedo": "torpedo",
@@ -3727,46 +3727,46 @@
   },
   "MeritShop": {
     "_info": {
-      "name": "Merit Shop Settings",
-      "help": ""
+      "name": "MeritShop._info.name",
+      "help": "MeritShop._info.help"
     },
     "Refresh": {
-      "name": "Allow Shop Refresh",
-      "help": "Refreshing will consume 50 gems"
+      "name": "MeritShop.Refresh.name",
+      "help": "MeritShop.Refresh.help"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>"
+      "name": "MeritShop.Filter.name",
+      "help": "MeritShop.Filter.help"
     }
   },
   "CoreShop": {
     "_info": {
-      "name": "Core Shop Settings",
-      "help": ""
+      "name": "CoreShop._info.name",
+      "help": "CoreShop._info.help"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>\nHowever unlike other shops, only Chip and Array are supported\nALAS does not browse, scroll, or recognize any other items displayed besides those two"
+      "name": "CoreShop.Filter.name",
+      "help": "CoreShop.Filter.help"
     }
   },
   "ShipyardDr": {
     "_info": {
-      "name": "DR Blueprints Purchase Settings",
-      "help": "Purchase research blueprints every day, discount of DR and PRY blueprints are counted independently."
+      "name": "ShipyardDr._info.name",
+      "help": "ShipyardDr._info.help"
     },
     "ResearchSeries": {
-      "name": "Research Series",
-      "help": "",
-      "2": "DR2",
-      "3": "DR3",
-      "4": "DR4",
-      "5": "DR5",
+      "name": "ShipyardDr.ResearchSeries.name",
+      "help": "ShipyardDr.ResearchSeries.help",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5",
       "6": "6"
     },
     "ShipIndex": {
-      "name": "Ship Index",
-      "help": "Position varies depending on progress, so must manually verify the target ship's position yourself\nStarting from left to right; 1 ~ 6",
-      "0": "Don't buy",
+      "name": "ShipyardDr.ShipIndex.name",
+      "help": "ShipyardDr.ShipIndex.help",
+      "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -3775,33 +3775,33 @@
       "6": "6"
     },
     "BuyAmount": {
-      "name": "Buy Amount",
-      "help": "The 1st and 2nd purchase everyday are free\nDiscounts are applied to the 3rd and onwards, gradually minimizing until full price\nExact discounts found at <https://azurlane.koumakan.jp/wiki/Research#Enhancing>"
+      "name": "ShipyardDr.BuyAmount.name",
+      "help": "ShipyardDr.BuyAmount.help"
     },
     "LastRun": {
-      "name": "Last Purchase Time",
-      "help": "Because AL does not display how many blueprints have been purchased today, the time of the last purchase is recorded here to prevent the task from running repeatedly. This value is automatically recorded and generally does not need to be modified."
+      "name": "ShipyardDr.LastRun.name",
+      "help": "ShipyardDr.LastRun.help"
     }
   },
   "Shipyard": {
     "_info": {
-      "name": "PRY Blueprints Purchase Settings",
-      "help": ""
+      "name": "Shipyard._info.name",
+      "help": "Shipyard._info.help"
     },
     "ResearchSeries": {
-      "name": "Research Series",
-      "help": "",
-      "1": "PR1",
-      "2": "PR2",
-      "3": "PR3",
-      "4": "PR4",
-      "5": "PR5",
+      "name": "Shipyard.ResearchSeries.name",
+      "help": "Shipyard.ResearchSeries.help",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5",
       "6": "6"
     },
     "ShipIndex": {
-      "name": "Ship Index",
-      "help": "Position varies depending on progress, so must manually verify the target ship's position yourself\nStarting from left to right; 1 ~ 6",
-      "0": "Don't buy",
+      "name": "Shipyard.ShipIndex.name",
+      "help": "Shipyard.ShipIndex.help",
+      "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -3810,22 +3810,22 @@
       "6": "6"
     },
     "BuyAmount": {
-      "name": "Buy Amount",
-      "help": "The 1st and 2nd purchase everyday are free\nDiscounts are applied to the 3rd and onwards, gradually minimizing until full price\nExact discounts found at <https://azurlane.koumakan.jp/Research#Strengthening>"
+      "name": "Shipyard.BuyAmount.name",
+      "help": "Shipyard.BuyAmount.help"
     },
     "LastRun": {
-      "name": "Last Purchase Time",
-      "help": "Because AL does not display how many blueprints have been purchased today, the time of the last purchase is recorded here to prevent the task from running repeatedly. This value is automatically recorded and generally does not need to be modified."
+      "name": "Shipyard.LastRun.name",
+      "help": "Shipyard.LastRun.help"
     }
   },
   "Gacha": {
     "_info": {
-      "name": "Gacha Settings",
-      "help": "Submit new build order(s) for daily achievement\nPrevious orders will be dequeued before submission to allow for maximum inputs and if any are still in progress, drills will be used to expedite them\nRetirement settings will be enforced if dock is full"
+      "name": "Gacha._info.name",
+      "help": "Gacha._info.help"
     },
     "Pool": {
-      "name": "Pool",
-      "help": "",
+      "name": "Gacha.Pool.name",
+      "help": "Gacha.Pool.help",
       "light": "light",
       "heavy": "heavy",
       "special": "special",
@@ -3833,8 +3833,8 @@
       "wishing_well": "wishing_well"
     },
     "Amount": {
-      "name": "Amount",
-      "help": "",
+      "name": "Gacha.Amount.name",
+      "help": "Gacha.Amount.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -3847,139 +3847,139 @@
       "10": "10"
     },
     "UseTicket": {
-      "name": "Use Build Ticket(s)",
-      "help": "Use build tickets first for event pool. Use cubes if tickets run out or build general pools"
+      "name": "Gacha.UseTicket.name",
+      "help": "Gacha.UseTicket.help"
     },
     "UseDrill": {
-      "name": "Use Drill(s)",
-      "help": "Expedite the recently submitted orders"
+      "name": "Gacha.UseDrill.name",
+      "help": "Gacha.UseDrill.help"
     }
   },
   "BattlePass": {
     "_info": {
-      "name": "Battle Pass Settings",
-      "help": ""
+      "name": "BattlePass._info.name",
+      "help": "BattlePass._info.help"
     },
     "Collect": {
-      "name": "Collect Cruise Missions Rewards",
-      "help": ""
+      "name": "BattlePass.Collect.name",
+      "help": "BattlePass.Collect.help"
     }
   },
   "DataKey": {
     "_info": {
-      "name": "Data Key Settings",
-      "help": ""
+      "name": "DataKey._info.name",
+      "help": "DataKey._info.help"
     },
     "Collect": {
-      "name": "Collect Data Key",
-      "help": ""
+      "name": "DataKey.Collect.name",
+      "help": "DataKey.Collect.help"
     },
     "ForceCollect": {
-      "name": "Force Collect Data Key",
-      "help": "Force collect data key when data key is full to eliminate red dots"
+      "name": "DataKey.ForceCollect.name",
+      "help": "DataKey.ForceCollect.help"
     }
   },
   "Mail": {
     "_info": {
-      "name": "Mail Settings",
-      "help": ""
+      "name": "Mail._info.name",
+      "help": "Mail._info.help"
     },
     "ClaimMerit": {
-      "name": "Claim Merit Mails",
-      "help": ""
+      "name": "Mail.ClaimMerit.name",
+      "help": "Mail.ClaimMerit.help"
     },
     "ClaimMaintenance": {
-      "name": "Claim Maintenance Mails",
+      "name": "Mail.ClaimMaintenance.name",
       "help": "Mail.ClaimMaintenance.help"
     },
     "ClaimTradeLicense": {
-      "name": "Claim Trade License Mails",
-      "help": ""
+      "name": "Mail.ClaimTradeLicense.name",
+      "help": "Mail.ClaimTradeLicense.help"
     },
     "DeleteCollected": {
-      "name": "Delete Collected Mail Rewards",
-      "help": "Delete the already collected mail entries\nMark any entries \"important\" in-game to avoid accidental deletion"
+      "name": "Mail.DeleteCollected.name",
+      "help": "Mail.DeleteCollected.help"
     }
   },
   "SupplyPack": {
     "_info": {
-      "name": "Supply Pack Settings",
-      "help": ""
+      "name": "SupplyPack._info.name",
+      "help": "SupplyPack._info.help"
     },
     "Collect": {
-      "name": "Collect Weekly Free Supply Pack",
-      "help": ""
+      "name": "SupplyPack.Collect.name",
+      "help": "SupplyPack.Collect.help"
     },
     "DayOfWeek": {
-      "name": "Days of the week",
-      "help": "Alas will delay free supply pack buying until the value\nIt is recommended to set it to weekdays, or alas may miss the purchase",
-      "0": "Monday",
-      "1": "Tuesday",
-      "2": "Wednesday",
-      "3": "Thursday",
-      "4": "Friday",
-      "5": "Saturday",
-      "6": "Sunday"
+      "name": "SupplyPack.DayOfWeek.name",
+      "help": "SupplyPack.DayOfWeek.help",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5",
+      "6": "6"
     }
   },
   "Minigame": {
     "_info": {
-      "name": "",
-      "help": ""
+      "name": "Minigame._info.name",
+      "help": "Minigame._info.help"
     },
     "Collect": {
-      "name": "Enable",
-      "help": ""
+      "name": "Minigame.Collect.name",
+      "help": "Minigame.Collect.help"
     }
   },
   "PrivateQuarters": {
     "_info": {
-      "name": "Private Quarters Settings",
-      "help": "Execute the automated task relating to the private quarters feature\nToggle desired subtasks, can enable just 1 or both"
+      "name": "PrivateQuarters._info.name",
+      "help": "PrivateQuarters._info.help"
     },
     "BuyRoses": {
-      "name": "Buy Weekly Roses",
-      "help": "On week reset, roses will be available for purchase\nThe purchase is made in bulk wholsesale or none at all\nMinimum of 24K coin is required, if not enough subtask will be delayed to the next day and try again then"
+      "name": "PrivateQuarters.BuyRoses.name",
+      "help": "PrivateQuarters.BuyRoses.help"
     },
     "BuyCake": {
-      "name": "Buy Weekly Cake",
-      "help": "Ditto, minimum of 210 gems is required however"
+      "name": "PrivateQuarters.BuyCake.name",
+      "help": "PrivateQuarters.BuyCake.help"
     },
     "TargetInteract": {
-      "name": "Enable Daily Interact",
-      "help": "Enables execution of the interation sequence with target ship girl"
+      "name": "PrivateQuarters.TargetInteract.name",
+      "help": "PrivateQuarters.TargetInteract.help"
     },
     "TargetShip": {
-      "name": "Choose Ship Girl",
-      "help": "Select the target ship girl for interaction sequence",
-      "anchorage": "Anchorage",
-      "noshiro": "Noshiro",
-      "sirius": "Sirius",
-      "new_jersey": "New Jersey",
-      "taihou": "Taihou",
-      "aegir": "Aegir"
+      "name": "PrivateQuarters.TargetShip.name",
+      "help": "PrivateQuarters.TargetShip.help",
+      "anchorage": "anchorage",
+      "noshiro": "noshiro",
+      "sirius": "sirius",
+      "new_jersey": "new_jersey",
+      "taihou": "taihou",
+      "aegir": "aegir"
     }
   },
   "Daily": {
     "_info": {
-      "name": "Daily Settings",
-      "help": ""
+      "name": "Daily._info.name",
+      "help": "Daily._info.help"
     },
     "UseDailySkip": {
-      "name": "Use Daily Skip",
-      "help": "Requires S Rank for respective missions to be unlocked\nIf not unlocked, then Alas will automatically fallback to traditional steps to complete the mission"
+      "name": "Daily.UseDailySkip.name",
+      "help": "Daily.UseDailySkip.help"
     },
     "EscortMission": {
-      "name": "Escort Mission Preference",
-      "help": "",
+      "name": "Daily.EscortMission.name",
+      "help": "Daily.EscortMission.help",
       "skip": "skip",
       "first": "first",
       "second": "second",
       "third": "third"
     },
     "EscortMissionFleet": {
-      "name": "Escort Mission Fleet",
-      "help": "",
+      "name": "Daily.EscortMissionFleet.name",
+      "help": "Daily.EscortMissionFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -3988,16 +3988,16 @@
       "6": "6"
     },
     "AdvanceMission": {
-      "name": "Advance Mission Preference",
-      "help": "",
+      "name": "Daily.AdvanceMission.name",
+      "help": "Daily.AdvanceMission.help",
       "skip": "skip",
       "first": "first",
       "second": "second",
       "third": "third"
     },
     "AdvanceMissionFleet": {
-      "name": "Advance Mission Fleet",
-      "help": "",
+      "name": "Daily.AdvanceMissionFleet.name",
+      "help": "Daily.AdvanceMissionFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -4006,16 +4006,16 @@
       "6": "6"
     },
     "FierceAssault": {
-      "name": "Fierce Assault Preference",
-      "help": "",
+      "name": "Daily.FierceAssault.name",
+      "help": "Daily.FierceAssault.help",
       "skip": "skip",
       "first": "first",
       "second": "second",
       "third": "third"
     },
     "FierceAssaultFleet": {
-      "name": "Fierce Assault Fleet",
-      "help": "",
+      "name": "Daily.FierceAssaultFleet.name",
+      "help": "Daily.FierceAssaultFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -4024,16 +4024,16 @@
       "6": "6"
     },
     "TacticalTraining": {
-      "name": "Tactical Training Preference",
-      "help": "",
+      "name": "Daily.TacticalTraining.name",
+      "help": "Daily.TacticalTraining.help",
       "skip": "skip",
       "first": "first",
       "second": "second",
       "third": "third"
     },
     "TacticalTrainingFleet": {
-      "name": "Tactical Training Fleet",
-      "help": "",
+      "name": "Daily.TacticalTrainingFleet.name",
+      "help": "Daily.TacticalTrainingFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -4042,23 +4042,23 @@
       "6": "6"
     },
     "SupplyLineDisruption": {
-      "name": "Supply Line Disruption Preference",
-      "help": "This will be skipped if daily skip has not been unlocked",
+      "name": "Daily.SupplyLineDisruption.name",
+      "help": "Daily.SupplyLineDisruption.help",
       "skip": "skip",
       "first": "first",
       "second": "second",
       "third": "third"
     },
     "ModuleDevelopment": {
-      "name": "Module Development Preference",
-      "help": "",
+      "name": "Daily.ModuleDevelopment.name",
+      "help": "Daily.ModuleDevelopment.help",
       "skip": "skip",
       "first": "first",
       "second": "second"
     },
     "ModuleDevelopmentFleet": {
-      "name": "Module Development Fleet",
-      "help": "",
+      "name": "Daily.ModuleDevelopmentFleet.name",
+      "help": "Daily.ModuleDevelopmentFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -4067,15 +4067,15 @@
       "6": "6"
     },
     "EmergencyModuleDevelopment": {
-      "name": "Emergency Module Development Preference",
-      "help": "",
+      "name": "Daily.EmergencyModuleDevelopment.name",
+      "help": "Daily.EmergencyModuleDevelopment.help",
       "skip": "skip",
       "first": "first",
       "second": "second"
     },
     "EmergencyModuleDevelopmentFleet": {
-      "name": "Emergency Module Development Fleet",
-      "help": "",
+      "name": "Daily.EmergencyModuleDevelopmentFleet.name",
+      "help": "Daily.EmergencyModuleDevelopmentFleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
@@ -4086,24 +4086,24 @@
   },
   "Hard": {
     "_info": {
-      "name": "Hard Settings",
-      "help": "Hard mode for chapter must be unlocked, stage must be in 100% CLEAR condition, and auto search is enabled temporarily.\nUse Farm Main task to assist unlocking and achieving 100% CLEAR conditions"
+      "name": "Hard._info.name",
+      "help": "Hard._info.help"
     },
     "HardStage": {
-      "name": "Hard Stage",
-      "help": "11-4, 12-2, 12-4, and etc."
+      "name": "Hard.HardStage.name",
+      "help": "Hard.HardStage.help"
     },
     "HardFleet": {
-      "name": "Hard Fleet",
-      "help": "Must in game manually set up the fleet and ensure level attribute restrictions are satisfied",
+      "name": "Hard.HardFleet.name",
+      "help": "Hard.HardFleet.help",
       "1": "1",
       "2": "2"
     }
   },
   "Exercise": {
     "_info": {
-      "name": "Exercise Settings",
-      "help": "Runs exercise and automatically retreats when sum HP volume is low"
+      "name": "Exercise._info.name",
+      "help": "Exercise._info.help"
     },
     "DelayUntilHoursBeforeNextUpdate": {
       "name": "Exercise.DelayUntilHoursBeforeNextUpdate.name",
@@ -4116,54 +4116,54 @@
       "12": "12"
     },
     "OpponentChooseMode": {
-      "name": "Opponent Choose Mode",
-      "help": "",
-      "max_exp": "Most Exp.",
-      "easiest": "Easiest",
-      "leftmost": "Highest ranking",
-      "easiest_else_exp": "Easiest else Exp."
+      "name": "Exercise.OpponentChooseMode.name",
+      "help": "Exercise.OpponentChooseMode.help",
+      "max_exp": "max_exp",
+      "easiest": "easiest",
+      "leftmost": "leftmost",
+      "easiest_else_exp": "easiest_else_exp"
     },
     "OpponentTrial": {
-      "name": "Each Opponent Try X Time(s)",
-      "help": "1 ~ Positive Infinity"
+      "name": "Exercise.OpponentTrial.name",
+      "help": "Exercise.OpponentTrial.help"
     },
     "ExerciseStrategy": {
-      "name": "Exercise Strategy (Keep X number remains)",
-      "help": "If keeping 5 number remains, will try admiral at set time and clear number remains at last recover",
-      "aggressive": "Clear exercise remains",
-      "fri18": "Keep 5 until Friday 18pm",
-      "sat0": "Keep 5 until Saturday 12am",
-      "sat12": "Keep 5 until Saturday 12pm",
-      "sat18": "Keep 5 until Saturday 18pm",
-      "sun0": "Keep 5 until Sunday 12am",
-      "sun12": "Keep 5 until Sunday 12pm",
-      "sun18": "Keep 5 until Sunday 18pm"
+      "name": "Exercise.ExerciseStrategy.name",
+      "help": "Exercise.ExerciseStrategy.help",
+      "aggressive": "aggressive",
+      "fri18": "fri18",
+      "sat0": "sat0",
+      "sat12": "sat12",
+      "sat18": "sat18",
+      "sun0": "sun0",
+      "sun12": "sun12",
+      "sun18": "sun18"
     },
     "LowHpThreshold": {
-      "name": "Low HP Threshold",
-      "help": "0.0 ~ 1.0\nChecks the top HP bar"
+      "name": "Exercise.LowHpThreshold.name",
+      "help": "Exercise.LowHpThreshold.help"
     },
     "LowHpConfirmWait": {
-      "name": "Low HP Confirm Wait",
-      "help": "After HP is below the threshold, Alas will confirm the retreat after the configured period of time\nRecommend 1.0 ~ 3.0\nFor cases if both you and the opponent are on the verge but waiting an additional seconds can be the difference between victory or loss"
+      "name": "Exercise.LowHpConfirmWait.name",
+      "help": "Exercise.LowHpConfirmWait.help"
     },
     "OpponentRefreshValue": {
-      "name": "Refreshed X Time(s)",
-      "help": "Automatically updated, resets back to 0 daily\nIf you manually refresh, you should update this count"
+      "name": "Exercise.OpponentRefreshValue.name",
+      "help": "Exercise.OpponentRefreshValue.help"
     },
     "OpponentRefreshRecord": {
-      "name": "Last Refresh Record",
-      "help": ""
+      "name": "Exercise.OpponentRefreshRecord.name",
+      "help": "Exercise.OpponentRefreshRecord.help"
     }
   },
   "Sos": {
     "_info": {
-      "name": "SOS Settings",
-      "help": ""
+      "name": "Sos._info.name",
+      "help": "Sos._info.help"
     },
     "Chapter": {
-      "name": "SOS Chapter",
-      "help": "",
+      "name": "Sos.Chapter.name",
+      "help": "Sos.Chapter.help",
       "3": "3",
       "4": "4",
       "5": "5",
@@ -4176,40 +4176,40 @@
   },
   "OpsiAshAssist": {
     "_info": {
-      "name": "META Assist Settings",
-      "help": "Limited to 3 everyday"
+      "name": "OpsiAshAssist._info.name",
+      "help": "OpsiAshAssist._info.help"
     },
     "Tier": {
-      "name": "Target Level Beacons >= X",
-      "help": "If target level beacon cannot be found, Alas will choose the next available level beacon regardless of conditions"
+      "name": "OpsiAshAssist.Tier.name",
+      "help": "OpsiAshAssist.Tier.help"
     }
   },
   "OpsiGeneral": {
     "_info": {
-      "name": "OpSi General Settings",
-      "help": "All OpSi activities will use these settings"
+      "name": "大世界通用配置",
+      "help": "所有大世界业务流共享的底层参数"
     },
     "UseLogger": {
-      "name": "Use Logger(s)",
-      "help": "Use all coordinate loggers when entering the storage"
+      "name": "启用全域坐标记录仪",
+      "help": "进入仓库时自动激活所有坐标记录设备，扩展探测视野"
     },
     "BuyActionPointLimit": {
-      "name": "Buy AP X time(s)",
-      "help": "Maximum number of buying AP.",
-      "0": "Don't buy",
-      "1": "1 (1000oil, 100AP)",
-      "2": "2 (2000oil, 200AP)",
-      "3": "3 (4000oil, 400AP)",
-      "4": "4 (6000oil, 600AP)",
-      "5": "5 (10000oil, 1000AP)"
+      "name": "行动力补给策略",
+      "help": "定义行动力购买的频次上限",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4",
+      "5": "5次 (10000油 -> 1000行动力 满载)"
     },
     "OilLimit": {
-      "name": "Keep Oil Above X",
-      "help": "Refrain buying AP if below this number"
+      "name": "OpsiGeneral.OilLimit.name",
+      "help": "OpsiGeneral.OilLimit.help"
     },
     "RepairThreshold": {
-      "name": "Repair Threshold",
-      "help": "After completion of an OpSi map; if any one ship's HP is below threshold, retreat back to nearest port for repairs\n0.0 ~ 1.0"
+      "name": "OpsiGeneral.RepairThreshold.name",
+      "help": "OpsiGeneral.RepairThreshold.help"
     },
     "UseRepairPack": {
       "name": "OpsiGeneral.UseRepairPack.name",
@@ -4220,12 +4220,12 @@
       "help": "OpsiGeneral.RepairPackThreshold.help"
     },
     "DoRandomMapEvent": {
-      "name": "Do Random Map Events",
-      "help": "Rescan the whole map after auto search, purchase akashi's shop, use siren logging tower, use siren scanning device, unlock mechanism that require 2 fleets,"
+      "name": "地图随机事件响应",
+      "help": "自律寻敌结束后执行二次扫描：覆盖明石商店、塞壬信息收集、探测装置激活及双舰队机关解锁。"
     },
     "AkashiShopFilter": {
-      "name": "Akashi Shop Filter",
-      "help": "Generally does not need to be modified or re-arranged but can do so if desired\nBuy AP boxes and Purple Coins"
+      "name": "OpsiGeneral.AkashiShopFilter.name",
+      "help": "OpsiGeneral.AkashiShopFilter.help"
     },
     "NotifyOpsiMail": {
       "name": "OpsiGeneral.NotifyOpsiMail.name",
@@ -4234,76 +4234,76 @@
   },
   "OpsiAshBeacon": {
     "_info": {
-      "name": "META Battle Settings",
+      "name": "META 协同作战",
       "help": ""
     },
     "AttackMode": {
-      "name": "META Battle",
-      "help": "",
-      "current": "Current",
-      "current_dossier": "Current + Dossier"
+      "name": "OpsiAshBeacon.AttackMode.name",
+      "help": "OpsiAshBeacon.AttackMode.help",
+      "current": "current",
+      "current_dossier": "current_dossier"
     },
     "OneHitMode": {
-      "name": "One Hit Mode",
-      "help": "Strike each beacon only once, then call for support every half hour thereafter\nNot effective in META dossiers"
+      "name": "一击脱离战术",
+      "help": "对每个信标执行单次打击，随后转入每30分钟的支援呼叫模式 (档案信标除外)"
     },
     "DossierAutoAttackMode": {
-      "name": "Use Auto Attack Mode in META Dossier",
-      "help": "Use Auto Attack Mode after the first battle"
+      "name": "OpsiAshBeacon.DossierAutoAttackMode.name",
+      "help": "OpsiAshBeacon.DossierAutoAttackMode.help"
     },
     "RequestAssist": {
-      "name": "Request Assists",
-      "help": "Before the attack, request assists from friends, guild and world\nNot effective in META dossiers"
+      "name": "OpsiAshBeacon.RequestAssist.name",
+      "help": "OpsiAshBeacon.RequestAssist.help"
     },
     "EnsureFullyCollected": {
-      "name": "Ensure 200 Beacon Data Fully Collected",
-      "help": "Ignore AP limit setting temporarily before ash beacon fully collected. \"Meowfficer Farming\" must be enabled"
+      "name": "全量数据采集保障",
+      "help": "强制收集满每日 200 信标数据。未达标前，系统将暂时忽略行动力保留设置 (需配合短猫任务流)。"
     },
     "AutoCollectShip": {
-      "name": "Automatically acquire new META ships",
-      "help": "Automatically acquire new META ships when claiming rewards. If disabled, the \"Sync\" button will not be clicked, and rewards must be claimed manually."
+      "name": "OpsiAshBeacon.AutoCollectShip.name",
+      "help": "OpsiAshBeacon.AutoCollectShip.help"
     }
   },
   "OpsiFleetFilter": {
     "_info": {
-      "name": "Fleet Settings",
-      "help": ""
+      "name": "OpsiFleetFilter._info.name",
+      "help": "OpsiFleetFilter._info.help"
     },
     "Filter": {
-      "name": "Fleet Filter",
-      "help": "All fleets take turns to attack the boss. If one fleet is dead, change to another.\nPlease make sure fleets are powerful enough to kill the boss eventually.\nUse \"CallSubmarine\" to call submarines before the attack, but run interval will be increased to 60 minutes."
+      "name": "OpsiFleetFilter.Filter.name",
+      "help": "OpsiFleetFilter.Filter.help"
     }
   },
   "OpsiFleet": {
     "_info": {
-      "name": "Fleet Settings",
-      "help": ""
+      "name": "OpsiFleet._info.name",
+      "help": "OpsiFleet._info.help"
     },
     "Fleet": {
-      "name": "Fleet",
-      "help": "",
+      "name": "OpsiFleet.Fleet.name",
+      "help": "OpsiFleet.Fleet.help",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
     },
     "Submarine": {
-      "name": "Call Submarine",
-      "help": "If enabled, interval increases from 30 to 60 minutes instead"
+      "name": "OpsiFleet.Submarine.name",
+      "help": "OpsiFleet.Submarine.help"
     }
   },
   "OpsiExplore": {
     "_info": {
-      "name": "OpSi Explore Settings",
-      "help": "At the beginning of each month OpSi is reset\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\nEach zone will be visited in a clockwise direction every 27 minutes until world has been been completely opened\nNo need to consume 5000 oil for special radar in OpSi voucher shop"
+      "name": "月度全域开荒",
+      "help": "每月初执行大世界全图谱点亮。基于 27分钟 间隔的智能冷却算法，确保空域搜索效率最大化。\n硬性门槛：大世界主线通关 + 模拟战/试验场完备。"
     },
     "SpecialRadar": {
-      "name": "OpSi Data Logger Bought (5k oil item)",
-      "help": "Purchase Operation Siren Data Logger is not a must, enable if you have purchased.\nAllows Alas to explore OpSi continously without having to wait 27 minutes between each zone clear\nCannot be selected when not purchased and used manually"
+      "name": "战役记录仪已部署",
+      "help": "检测是否已购入 5000油 道具"
     },
     "ForceRun": {
-      "name": "Force Run",
-      "help": "Ignore interval, clear all obscure zones, and use AP to submit scan orders (and submarine if enabled)\nGenerally not needed to force run, just run in intervals unless in a rush"
+      "name": "OpsiExplore.ForceRun.name",
+      "help": "OpsiExplore.ForceRun.help"
     },
     "IfSkipSirenResearch": {
       "name": "OpsiExplore.IfSkipSirenResearch.name",
@@ -4318,27 +4318,27 @@
       "help": "OpsiExplore.SkipedSirenResearch.help"
     },
     "LastZone": {
-      "name": "Last Zone Completed",
-      "help": "Automatically updated with map ID\nReplace with 0 to reset progress\nAlready completed zones will be skipped\nSupports either Zone ID or Name in CN/EN/JP/TW, i.e. \"51\", \"NA Ocean SE Sector E\""
+      "name": "OpsiExplore.LastZone.name",
+      "help": "OpsiExplore.LastZone.help"
     }
   },
   "OpsiShop": {
     "_info": {
-      "name": "OpSi Shop Settings",
-      "help": "Completes OpSi daily activities\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop\nAvailable only in the next month after clearing OpSi story, i.e., after the port shop becomes a new version of the shop"
+      "name": "OpsiShop._info.name",
+      "help": "OpsiShop._info.help"
     },
     "PresetFilter": {
-      "name": "OpSi Shop Filter",
-      "help": "Generally does not need to be modified. Use \"High value items and META material\"` if Voucher Coins spilled or \"Without META materials\" if you are newcomer.\nHigh value items include ActionPoint, Logger and T4 or higher items; META materials include METABook and META enhance materials.",
-      "max_benefit": "High value items",
-      "max_benefit_meta": "High value items and META materials",
-      "no_meta": "Not to buy META materials",
-      "all": "All",
+      "name": "OpsiShop.PresetFilter.name",
+      "help": "OpsiShop.PresetFilter.help",
+      "max_benefit": "max_benefit",
+      "max_benefit_meta": "max_benefit_meta",
+      "no_meta": "no_meta",
+      "all": "all",
       "custom": "custom"
     },
     "CustomFilter": {
-      "name": "Custom Research Priority",
-      "help": "To use your own filter, set \"OpSi Shop Filter Select\" to \"custom\". All options have been defined at  <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_en>"
+      "name": "OpsiShop.CustomFilter.name",
+      "help": "OpsiShop.CustomFilter.help"
     },
     "DisableBeforeDate": {
       "name": "OpsiShop.DisableBeforeDate.name",
@@ -4347,26 +4347,26 @@
   },
   "OpsiVoucher": {
     "_info": {
-      "name": "OpSi Voucher Settings",
-      "help": "Buy monthly items from the OpSi voucher shop\nThe following must be satisfied:\n- OpSi story and practice battles must be complete"
+      "name": "OpsiVoucher._info.name",
+      "help": "OpsiVoucher._info.help"
     },
     "Filter": {
-      "name": "Item Filter",
-      "help": "All options have been defined at <https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string>"
+      "name": "OpsiVoucher.Filter.name",
+      "help": "OpsiVoucher.Filter.help"
     }
   },
   "OpsiDaily": {
     "_info": {
-      "name": "OpSi Daily Settings",
-      "help": "Completes OpSi daily activities\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "OpsiDaily._info.name",
+      "help": "OpsiDaily._info.help"
     },
     "DoMission": {
-      "name": "Do Port Mission(s)",
-      "help": "Accept and complete mission(s) from ports"
+      "name": "OpsiDaily.DoMission.name",
+      "help": "OpsiDaily.DoMission.help"
     },
     "UseTuningSample": {
-      "name": "Use Tuning Samples",
-      "help": "Use all tuning samples and quality tuning samples"
+      "name": "OpsiDaily.UseTuningSample.name",
+      "help": "OpsiDaily.UseTuningSample.help"
     },
     "SkipSirenResearchMission": {
       "name": "OpsiDaily.SkipSirenResearchMission.name",
@@ -4383,40 +4383,40 @@
   },
   "OpsiObscure": {
     "_info": {
-      "name": "OpSi Obscure Settings",
-      "help": "Clear obscure zones every 27 minutes\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "OpsiObscure._info.name",
+      "help": "OpsiObscure._info.help"
     },
     "SkipHazard2Obscure": {
       "name": "OpsiObscure.SkipHazard2Obscure.name",
       "help": "OpsiObscure.SkipHazard2Obscure.help"
     },
     "ForceRun": {
-      "name": "Force Run",
-      "help": "Ignore interval, clear all obscure zones, and use AP to submit scan orders (and submarine if enabled)\nGenerally not needed to force run, just run in intervals unless in a rush"
+      "name": "OpsiObscure.ForceRun.name",
+      "help": "OpsiObscure.ForceRun.help"
     }
   },
   "OpsiAbyssal": {
     "_info": {
-      "name": "OpSi Abyssal Settings",
-      "help": "Clear abyssal zones\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "OpsiAbyssal._info.name",
+      "help": "OpsiAbyssal._info.help"
     },
     "ForceRun": {
-      "name": "Force Run",
-      "help": "Ignore interval, clear all abyssal zones, and use AP to submit scan orders (and submarine if enabled)\nGenerally not needed to force run, just run in intervals unless in a rush"
+      "name": "OpsiAbyssal.ForceRun.name",
+      "help": "OpsiAbyssal.ForceRun.help"
     }
   },
   "OpsiStronghold": {
     "_info": {
-      "name": "OpSi Siren Stronghold Settings",
-      "help": "Clear the weekly siren strongholds\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "OpsiStronghold._info.name",
+      "help": "OpsiStronghold._info.help"
     },
     "SubmarineEveryCombat": {
       "name": "OpsiStronghold.SubmarineEveryCombat.name",
       "help": "OpsiStronghold.SubmarineEveryCombat.help"
     },
     "ForceRun": {
-      "name": "Force Run",
-      "help": "Ignore interval, clear all siren strongholds, and use AP to submit scan orders (and submarine if enabled)\nGenerally not needed to force run, just run in intervals unless in a rush"
+      "name": "OpsiStronghold.ForceRun.name",
+      "help": "OpsiStronghold.ForceRun.help"
     },
     "HasStronghold": {
       "name": "OpsiStronghold.HasStronghold.name",
@@ -4425,50 +4425,50 @@
   },
   "OpsiMonthBoss": {
     "_info": {
-      "name": "Monthly Boss",
-      "help": "To clear (normal/hard) monthly bosses, the following conditions must be met to use this function:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop\nIf failed on normal boss, attack until cleared; if failed on hard boss, stop task directly"
+      "name": "OpsiMonthBoss._info.name",
+      "help": "OpsiMonthBoss._info.help"
     },
     "Mode": {
-      "name": "Difficulty of clearing monthly bosses",
-      "help": "",
+      "name": "OpsiMonthBoss.Mode.name",
+      "help": "OpsiMonthBoss.Mode.help",
       "normal": "normal",
-      "normal_hard": "normal + hard"
+      "normal_hard": "normal_hard"
     },
     "CheckAdaptability": {
-      "name": "Only attack boss when adaptability >= 203/203/156",
-      "help": ""
+      "name": "OpsiMonthBoss.CheckAdaptability.name",
+      "help": "OpsiMonthBoss.CheckAdaptability.help"
     },
     "ForceRun": {
-      "name": "Force Run",
-      "help": "Ignore interval, clear all abyssal zones, and use AP to submit scan orders (and submarine if enabled)\nGenerally not needed to force run, just run in intervals unless in a rush"
+      "name": "OpsiMonthBoss.ForceRun.name",
+      "help": "OpsiMonthBoss.ForceRun.help"
     }
   },
   "OpsiMeowfficerFarming": {
     "_info": {
-      "name": "OpSi Meowfficer Farm Settings",
-      "help": "Attack target zones of the specified hazard level in a clockwise direction\nThe following must be satisfied:\n- OpSi story and practice battles must be complete\n- Task OpSi Explore enabled or consuming 5000 oil for special radar in OpSi voucher shop"
+      "name": "OpsiMeowfficerFarming._info.name",
+      "help": "OpsiMeowfficerFarming._info.help"
     },
     "ActionPointPreserve": {
-      "name": "Keep X Amount of AP",
-      "help": "Stops task if total AP (including AP boxes in inventory) is below this number, 1000 is recommended\nThis value will be auto reduced to 300 at 3 days before OpSi reset, or 1000 if CL1 leveling enabled, and to 0 at day before reset"
+      "name": "OpsiMeowfficerFarming.ActionPointPreserve.name",
+      "help": "OpsiMeowfficerFarming.ActionPointPreserve.help"
     },
     "HazardLevel": {
-      "name": "Target Zone Hazard Level",
-      "help": "Recommend 3 or 5 as these have higher meowfficer ratio to AP cost",
+      "name": "OpsiMeowfficerFarming.HazardLevel.name",
+      "help": "OpsiMeowfficerFarming.HazardLevel.help",
       "2": "2",
       "3": "3",
       "4": "4",
       "5": "5",
       "6": "6",
-      "10": "Center Zones"
+      "10": "10"
     },
     "TargetZone": {
-      "name": "Target Zone ID",
-      "help": "Supports either Zone ID or Name in CN/EN/JP/TW, i.e. \"51\", \"NA Ocean SE Sector E\"\nIf specified, Alas will loop on this same zone after each clear\nUse default value 0 or clear the field to remove the specification\nZone information can be acquired from <./module/os/map_data.py>"
+      "name": "OpsiMeowfficerFarming.TargetZone.name",
+      "help": "OpsiMeowfficerFarming.TargetZone.help"
     },
     "StayInZone": {
-      "name": "指定海域计划作战",
-      "help": "雪风大人温馨提示:打开这个功能并指定海域后，将会在指定海域进行计划作战，不会再回到港口nanoda!侵蚀三推荐NA海域东南B，侵蚀五推荐卡利比安海B或者C nanoda!"
+      "name": "OpsiMeowfficerFarming.StayInZone.name",
+      "help": "OpsiMeowfficerFarming.StayInZone.help"
     },
     "APPreserveUntilReset": {
       "name": "OpsiMeowfficerFarming.APPreserveUntilReset.name",
@@ -4503,31 +4503,31 @@
   },
   "OpsiHazard1Leveling": {
     "_info": {
-      "name": "CL1 leveling",
-      "help": "Consume operation coins to gain a lot of experience and a little action points.\nRecommended to carry 1-2 pre-loaded CV to obtain the highest average hourly benefit.\n\nTo avoid being unable to buying goods from port shops, Alas will retain 100,000 operation coins\nSince buying action points at the mystery shop requires a large number of operation coins, this function will be supplemented by running meowfficer farming with overflow action points."
+      "name": "OpsiHazard1Leveling._info.name",
+      "help": "OpsiHazard1Leveling._info.help"
     },
     "TargetZone": {
-      "name": "Target Zone ID",
-      "help": "Only attack target zone, which can be used to avoid the event that the map cannot be refreshed due to game bug",
-      "0": "No Specification",
-      "44": "44 | West Continental Shelf D",
-      "22": "22 | NA Ocean SW Sector B"
+      "name": "OpsiHazard1Leveling.TargetZone.name",
+      "help": "OpsiHazard1Leveling.TargetZone.help",
+      "0": "0",
+      "44": "44",
+      "22": "22"
     },
     "OperationCoinsPreserve": {
       "name": "OpsiHazard1Leveling.OperationCoinsPreserve.name",
       "help": "OpsiHazard1Leveling.OperationCoinsPreserve.help"
     },
     "MinimumActionPointReserve": {
-      "name": "保留 X 点行动力",
-      "help": "搏一搏，单车变摩托，雪风大人已经把幸运分给指挥官了nanoda，上吧nanoda！"
+      "name": "OpsiHazard1Leveling.MinimumActionPointReserve.name",
+      "help": "OpsiHazard1Leveling.MinimumActionPointReserve.help"
     },
     "ExecuteFixedPatrolScan": {
-      "name": "舰队强制移动",
-      "help": "雪风大人温馨提示：开启后，将强制移动舰队以免找不到明石，指挥官你也不想因为找不到明石导致坠机nanoda？打开这个功能轻轻松松达到50万+海里每月nanoda，指挥官还在等什么nanoda!"
+      "name": "OpsiHazard1Leveling.ExecuteFixedPatrolScan.name",
+      "help": "OpsiHazard1Leveling.ExecuteFixedPatrolScan.help"
     },
     "Cl1Filter": {
-      "name": "明石购买筛选",
-      "help": "侵蚀一明石一般只购买体力nanoda"
+      "name": "OpsiHazard1Leveling.Cl1Filter.name",
+      "help": "OpsiHazard1Leveling.Cl1Filter.help"
     },
     "RecordNonCL1AP": {
       "name": "OpsiHazard1Leveling.RecordNonCL1AP.name",
@@ -4590,26 +4590,26 @@
   },
   "OpsiCheckLeveling": {
     "_info": {
-      "name": "Daily Leveling Check",
-      "help": "Check if all ships in current fleet have received enough experience to reach the target level\nIf yes, then Alas will push a message.\n'Error notify config' should be set first."
+      "name": "OpsiCheckLeveling._info.name",
+      "help": "OpsiCheckLeveling._info.help"
     },
     "TargetLevel": {
-      "name": "Push when all ships received enough experience to reach target level X",
-      "help": "0 means no limit"
+      "name": "OpsiCheckLeveling.TargetLevel.name",
+      "help": "OpsiCheckLeveling.TargetLevel.help"
     },
     "LastRun": {
-      "name": "Last Check Time",
-      "help": "Automatically updated with the last check time, generally does not need to be modified"
+      "name": "OpsiCheckLeveling.LastRun.name",
+      "help": "OpsiCheckLeveling.LastRun.help"
     },
     "DelayAfterFull": {
-      "name": "Delay task when target level reached",
-      "help": ""
+      "name": "OpsiCheckLeveling.DelayAfterFull.name",
+      "help": "OpsiCheckLeveling.DelayAfterFull.help"
     }
   },
   "OpsiScheduling": {
     "_info": {
-      "name": "Smart Scheduling",
-      "help": "Operation Siren smart scheduling function"
+      "name": "OpsiScheduling._info.name",
+      "help": "OpsiScheduling._info.help"
     },
     "UseSmartSchedulingOperationCoinsPreserve": {
       "name": "OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve.name",
@@ -4652,17 +4652,6 @@
       "help": "OpsiScheduling.EnableStronghold.help",
       "True": "True",
       "False": "False"
-    },
-    "MeowStartEarlyMode": {
-      "name": "OpsiScheduling.MeowStartEarlyMode.name",
-      "help": "OpsiScheduling.MeowStartEarlyMode.help",
-      "aggressive": "aggressive",
-      "balanced": "balanced",
-      "conservative": "conservative"
-    },
-    "MeowStartEarlyEnable": {
-      "name": "OpsiScheduling.MeowStartEarlyEnable.name",
-      "help": "OpsiScheduling.MeowStartEarlyEnable.help"
     }
   },
   "OpsiDailyDelay": {
@@ -4692,12 +4681,12 @@
   },
   "IslandSeasonTask": {
     "_info": {
-      "name": "Island Season Task Info",
-      "help": ""
+      "name": "IslandSeasonTask._info.name",
+      "help": "IslandSeasonTask._info.help"
     },
     "TaskDict": {
-      "name": "Island Season Task Dict",
-      "help": ""
+      "name": "IslandSeasonTask.TaskDict.name",
+      "help": "IslandSeasonTask.TaskDict.help"
     }
   },
   "IslandTechnology": {
@@ -4712,37 +4701,37 @@
   },
   "Daemon": {
     "_info": {
-      "name": "Semi-auto Clicking",
-      "help": "Useful when attacking a stage that has not yet been adapted by Alas, can save on tons of manual clicks\nAlas will click combat preparation, click combat drop, skip story, auto-retire, and close popups\nYou only need to move your attacking fleet if movement is restricted and choose the enemies yourself"
+      "name": "半自动辅助驾驶",
+      "help": "针对未适配关卡的智能辅助系统。\nAlas 将接管战斗准备、结算交互、剧情跳过、自动退役及弹窗拦截。指挥官仅需专注于核心战术——选择敌人。"
     },
     "EnterMap": {
-      "name": "Auto Click Stage Preparation",
-      "help": "Prepare your fleets before running this tool if enabled"
+      "name": "进图准备自动交互",
+      "help": "使用前请确保出击编队已就绪"
     }
   },
   "OpsiDaemon": {
     "_info": {
-      "name": "OpSi Semi-auto Clicking",
-      "help": "Useful when attacking logger zones or OpSi story, can save on tons of manual clicks\nAlas will click combat preparation, click combat drop, skip story, and close popups\nYou only need to choose the enemies and switch to different zones yourself"
+      "name": "OpsiDaemon._info.name",
+      "help": "OpsiDaemon._info.help"
     },
     "RepairShip": {
-      "name": "Repair Ships When Nearing Port",
-      "help": "Once a fleet is in range of a port, Alas will enter, repair your ships, then exit\nWhen it is done, please move the fleet away and out of range from the port within 30s, otherwise the actions will be repeated"
+      "name": "OpsiDaemon.RepairShip.name",
+      "help": "OpsiDaemon.RepairShip.help"
     },
     "SelectEnemy": {
-      "name": "Clear nearby enemies and resources",
-      "help": "Clean nearby enemies and resources, and find new enemies or materials after cleaning, which usually clears the entire map. If some of them haven't been cleared, you need to solve them manually"
+      "name": "OpsiDaemon.SelectEnemy.name",
+      "help": "OpsiDaemon.SelectEnemy.help"
     }
   },
   "EventStory": {
     "_info": {
-      "name": "Event Story",
-      "help": "Complete the event story, only applicable to events aired on or after 20241219, please wait for about 3 minutes"
+      "name": "EventStory._info.name",
+      "help": "EventStory._info.help"
     },
     "SkipBattle": {
-      "name": "Kill game to skip battles",
-      "help": "",
-      "True": "Enabled",
+      "name": "EventStory.SkipBattle.name",
+      "help": "EventStory.SkipBattle.help",
+      "True": "True",
       "False": "False"
     }
   },
@@ -4778,44 +4767,44 @@
   },
   "Benchmark": {
     "_info": {
-      "name": "Performance Test",
-      "help": "Test which screenshot method and click method combination is the fastest and best for you.\nSpeed can vary on the emulator being used and your PC build.\nAfter testing, select the fastest screenshot and control method in \"Alas\" - \"Emulator Settings\""
+      "name": "算力性能评测",
+      "help": "基准测试套件：评估不同截图与控制方案的响应延迟。\n系统将根据您的硬件环境（模拟器/PC配置）推荐最优解，极致释放性能。"
     },
     "DeviceType": {
-      "name": "Device Type",
+      "name": "终端形态",
       "help": "",
-      "emulator": "Emulators",
-      "plone_cloud_with_adb": "Phone clouds with public network ADB",
-      "phone_cloud_without_adb": "Phone clouds without public network ADB",
-      "android_phone": "Android Phones",
-      "android_phone_vmos": "Android Phones (VMOS emulator)"
+      "emulator": "通用模拟器",
+      "plone_cloud_with_adb": "云手机 (公网ADB链路)",
+      "phone_cloud_without_adb": "phone_cloud_without_adb",
+      "android_phone": "物理安卓终端",
+      "android_phone_vmos": "android_phone_vmos"
     },
     "TestScene": {
-      "name": "Test Scene",
-      "help": "",
-      "screenshot_click": "Screenshot + Click speed tests",
-      "screenshot": "Screenshot speed tests",
-      "click": "Click speed tests"
+      "name": "Benchmark.TestScene.name",
+      "help": "Benchmark.TestScene.help",
+      "screenshot_click": "screenshot_click",
+      "screenshot": "screenshot",
+      "click": "click"
     }
   },
   "AzurLaneUncensored": {
     "_info": {
-      "name": "[CN] Uncensored Patch",
-      "help": "Applicable to CN only\nAzurLaneUncensored files are downloaded if not present otherwise updated to the latest revision\nThese files are then pushed into the emulator and restarts AL afterwards to complete the patching process"
+      "name": "AzurLaneUncensored._info.name",
+      "help": "AzurLaneUncensored._info.help"
     },
     "Repository": {
-      "name": "AzurLaneUncensored Repository",
-      "help": "Do not need to modify\nGithub: <https://github.com/LmeSzinc/AzurLaneUncensored>\nCN mirror: <https://e.coding.net/llop18870/alas/AzurLaneUncensored.git>"
+      "name": "AzurLaneUncensored.Repository.name",
+      "help": "AzurLaneUncensored.Repository.help"
     }
   },
   "GameManager": {
     "_info": {
-      "name": "Game Manager",
-      "help": "This is a semi-finished product, currently only implemented to force close the game and start it after closing."
+      "name": "GameManager._info.name",
+      "help": "GameManager._info.help"
     },
     "AutoRestart": {
-      "name": "Automatic Login",
-      "help": "Log back into the game when the game has been ended."
+      "name": "GameManager.AutoRestart.name",
+      "help": "GameManager.AutoRestart.help"
     }
   },
   "EmulatorManagement": {
@@ -4834,8 +4823,8 @@
   },
   "Storage": {
     "_info": {
-      "name": "Task status",
-      "help": "Store internal status of the task. Clear manually when the task is abnormal"
+      "name": "Storage._info.name",
+      "help": "Storage._info.help"
     },
     "Storage": {
       "name": "Storage.Storage.name",
@@ -4844,54 +4833,54 @@
   },
   "Gui": {
     "Aside": {
-      "Install": "Install",
-      "Home": "Home",
-      "Develop": "Develop",
-      "Performance": "Perf.",
-      "Setting": "Settings",
-      "AddAlas": "Add"
+      "Install": "部署",
+      "Home": "驾驶舱",
+      "Develop": "极客模式",
+      "Performance": "性能监控",
+      "Setting": "全局参数",
+      "AddAlas": "新建实例"
     },
     "Button": {
-      "Start": "Start",
-      "Stop": "Stop",
-      "ScrollON": "Auto Scroll ON",
-      "ScrollOFF": "Auto Scroll OFF",
-      "DashboardON": "Dashboard ON",
-      "DashboardOFF": "Dashboard OFF",
-      "ClearLog": "Clear Log",
-      "Setting": "Setting",
-      "CheckUpdate": "Check update",
-      "ClickToUpdate": "Click to update",
-      "RetryUpdate": "Retry update",
-      "CancelUpdate": "Cancel update"
+      "Start": "一键启动",
+      "Stop": "终止进程",
+      "ScrollON": "智能滚动 [ON]",
+      "ScrollOFF": "智能滚动 [OFF]",
+      "DashboardON": "折叠面板",
+      "DashboardOFF": "展开面板",
+      "ClearLog": "清空日志流",
+      "Setting": "参数配置",
+      "CheckUpdate": "检查固件更新",
+      "ClickToUpdate": "执行升级",
+      "RetryUpdate": "重试升级链路",
+      "CancelUpdate": "取消升级"
     },
     "Toast": {
-      "DisableTranslateMode": "Click here to disable translate mode",
-      "ConfigSaved": "Config saved",
-      "AlasIsRunning": "Scheduler is already running",
-      "ClickToUpdate": "New update available, click here to update"
+      "DisableTranslateMode": "点击关闭实时翻译",
+      "ConfigSaved": "配置参数已持久化",
+      "AlasIsRunning": "调度核心正在运行中",
+      "ClickToUpdate": "检测到新版本，即刻体验！"
     },
     "Status": {
-      "Running": "Running",
-      "Inactive": "Inactive",
-      "Warning": "Warning",
-      "Updating": "Waiting Update"
+      "Running": "正在执行业务流",
+      "Inactive": "系统待机中",
+      "Warning": "异常阻断",
+      "Updating": "固件升级中"
     },
     "MenuAlas": {
-      "Overview": "Overview",
-      "Log": "Logs"
+      "Overview": "总览",
+      "Log": "日志"
     },
     "MenuDevelop": {
-      "HomePage": "Home",
-      "Translate": "Translate",
+      "HomePage": "主页",
+      "Translate": "翻译",
       "Announcement": "Gui.MenuDevelop.Announcement",
-      "Update": "Updater",
-      "Remote": "Remote access",
-      "Utils": "Utils"
+      "Update": "更新",
+      "Remote": "远程",
+      "Utils": "工具"
     },
     "Overview": {
-      "Scheduler": "Scheduler",
-      "Dashboard": "Dashboard",
+      "Scheduler": "调度视图",
+      "Dashboard": "数据仪表盘",
       "SecondsAgo": "Gui.Overview.SecondsAgo",
       "MinutesAgo": "Gui.Overview.MinutesAgo",
       "HoursAgo": "Gui.Overview.HoursAgo",
@@ -4911,98 +4900,98 @@
       "Medal": "Gui.Overview.Medal",
       "Core": "Gui.Overview.Core",
       "GuildCoin": "Gui.Overview.GuildCoin",
-      "Log": "Log",
-      "Running": "Running",
-      "Pending": "Pending",
-      "Waiting": "Waiting",
-      "NoTask": "No Task"
+      "Log": "运行日志",
+      "Running": "运行态",
+      "Pending": "排队中",
+      "Waiting": "等待态",
+      "NoTask": "空闲"
     },
     "Dashboard": {
-      "TimeError": "Time error",
-      "JustNow": "Just now",
-      "SecondsAgo": "Seconds ago",
-      "MinutesAgo": "Minutes ago",
-      "HoursAgo": "Hours ago",
-      "DaysAgo": "Days ago",
-      "MonthsAgo": "Months ago",
-      "YearsAgo": "Years ago",
-      "LongTimeAgo": "Long time ago",
-      "NoData": "No data",
-      "Oil": "Oil",
-      "Coin": "Coin",
-      "Gem": "Gem",
-      "Cube": "Cube",
-      "Pt": "Event Pt",
-      "YellowCoin": "Operation Supply Coin",
-      "PurpleCoin": "Special Item Token",
-      "ActionPoint": "Action Point",
-      "Merit": "Merit",
-      "Medal": "Medal",
-      "Core": "Core Data",
-      "GuildCoin": "Guild Coin"
+      "TimeError": "时钟同步异常",
+      "JustNow": "刚刚",
+      "SecondsAgo": "秒前",
+      "MinutesAgo": "分钟前",
+      "HoursAgo": "小时前",
+      "DaysAgo": "天前",
+      "MonthsAgo": "月前",
+      "YearsAgo": "年前",
+      "LongTimeAgo": "很久之前",
+      "NoData": "无数据",
+      "Oil": "石油储量",
+      "Coin": "物资资产",
+      "Gem": "钻石储备",
+      "Cube": "魔方储备",
+      "Pt": "活动PT",
+      "YellowCoin": "压制凭证 (黄币)",
+      "PurpleCoin": "特装凭证 (紫币)",
+      "ActionPoint": "大世界动能",
+      "Merit": "功勋值",
+      "Medal": "勋章储备",
+      "Core": "核心数据",
+      "GuildCoin": "舰队币"
     },
     "AddAlas": {
-      "PopupTitle": "Add new config",
-      "NewName": "New name",
-      "CopyFrom": "Copy from existing config",
-      "Confirm": "Add",
-      "FileExist": "A config with the same name exists, please choose another one",
-      "InvalidChar": "Config name cannot contain any of the following characters: .\\/:*?\"<>|",
-      "InvalidPrefixTemplate": "Config name cannot start with 'template'",
-      "Manage": "Manage"
+      "PopupTitle": "新建配置实例",
+      "NewName": "实例标识符",
+      "CopyFrom": "克隆自现有配置",
+      "Confirm": "确认创建",
+      "FileExist": "实例名称冲突，请重命名",
+      "InvalidChar": "Gui.AddAlas.InvalidChar",
+      "InvalidPrefixTemplate": "Gui.AddAlas.InvalidPrefixTemplate",
+      "Manage": "实例管理"
     },
     "AppManage": {
-      "PageTitle": "Manage config",
-      "TitleNew": "New config",
-      "NewName": "Config name",
-      "CopyFrom": "Copy from existing config",
-      "NameExist": "A config with the same name exists, please choose another one",
-      "InvalidChar": "Config name cannot contain any of the following characters: .\\/:*?\"<>|",
-      "InvalidPrefixTemplate": "Config name cannot start with 'template'",
-      "Back": "Back",
-      "New": "New",
-      "Import": "Import",
-      "Export": "Export",
-      "Delete": "Delete",
-      "OverrideWarning": "This will override the current config!",
-      "ImportSuccess": "Import succeeded",
-      "NewSuccess": "Add config succeeded",
-      "Name": "Name",
-      "Mod": "Mod",
-      "Actions": "Actions"
+      "PageTitle": "多实例管理中心",
+      "TitleNew": "新建配置",
+      "NewName": "Gui.AppManage.NewName",
+      "CopyFrom": "Gui.AppManage.CopyFrom",
+      "NameExist": "Gui.AppManage.NameExist",
+      "InvalidChar": "Gui.AppManage.InvalidChar",
+      "InvalidPrefixTemplate": "Gui.AppManage.InvalidPrefixTemplate",
+      "Back": "Gui.AppManage.Back",
+      "New": "Gui.AppManage.New",
+      "Import": "导入配置",
+      "Export": "导出配置",
+      "Delete": "销毁实例",
+      "OverrideWarning": "操作将覆盖现有配置，是否继续？",
+      "ImportSuccess": "Gui.AppManage.ImportSuccess",
+      "NewSuccess": "Gui.AppManage.NewSuccess",
+      "Name": "Gui.AppManage.Name",
+      "Mod": "Gui.AppManage.Mod",
+      "Actions": "Gui.AppManage.Actions"
     },
     "Update": {
-      "UpToDate": "Latest version",
-      "HaveUpdate": "A new version is available",
-      "UpdateStart": "Start update",
-      "UpdateWait": "Waiting for all alas complete current task",
-      "UpdateRun": "Updating",
-      "UpdateSuccess": "Update succeeded, restarting",
-      "UpdateFailed": "Update failed. Logs can be found in ./log/*_gui.txt",
-      "UpdateChecking": "Checking for updates",
-      "UpdateCancel": "Update canceled, restarting Alas",
-      "UpdateFinish": "Update succeeded, please restart manually",
-      "Local": "Local",
-      "Upstream": "Upstream",
-      "Author": "Author",
-      "Time": "Commit time",
-      "Message": "Commit message",
-      "DisabledWarn": "Updater module is disabled. You need to manually restart Alas to update",
-      "DetailedHistory": "Detailed Commit History"
+      "UpToDate": "当前已是最新旗舰版本",
+      "HaveUpdate": "发现新版本，建议立即升级",
+      "UpdateStart": "启动升级程序",
+      "UpdateWait": "等待业务流闭环...",
+      "UpdateRun": "核心组件升级中",
+      "UpdateSuccess": "升级成功，正在执行热重启",
+      "UpdateFailed": "升级受阻，请查阅日志流",
+      "UpdateChecking": "云端版本校验中",
+      "UpdateCancel": "Gui.Update.UpdateCancel",
+      "UpdateFinish": "Gui.Update.UpdateFinish",
+      "Local": "本地版本",
+      "Upstream": "上游仓库",
+      "Author": "贡献者",
+      "Time": "Gui.Update.Time",
+      "Message": "Gui.Update.Message",
+      "DisabledWarn": "Gui.Update.DisabledWarn",
+      "DetailedHistory": "查看详细变更日志"
     },
     "Remote": {
-      "Running": "Remote access on",
-      "NotRunning": "Not running, server disconnected or offline",
-      "NotEnable": "Disabled, set webui password in deploy.yaml and enable remote access",
-      "EntryPoint": "Entry point:",
-      "ConfigureHint": "Configuration tutorial:",
-      "SSHNotInstall": "No SSH command in your system. Please refer to the tutorial to download or install one"
+      "Running": "远程服务在线",
+      "NotRunning": "服务离线 (连接中断)",
+      "NotEnable": "未激活远程控制模块",
+      "EntryPoint": "远程访问入口:",
+      "ConfigureHint": "配置指引:",
+      "SSHNotInstall": "系统缺失 SSH 组件，请安装以激活完整功能"
     },
     "Text": {
-      "InvalidFeedBack": "Invalid format. Example: {0}",
-      "Clear": "Clear",
-      "EnterPassword": "Enter password",
-      "ChooseFile": "Choose file"
+      "InvalidFeedBack": "Gui.Text.InvalidFeedBack",
+      "Clear": "Gui.Text.Clear",
+      "EnterPassword": "Gui.Text.EnterPassword",
+      "ChooseFile": "Gui.Text.ChooseFile"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
@@ -5012,9 +5001,7 @@
       "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
       "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
       "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
-      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
-      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode",
-      "MeowStartEarlyEnable": "Gui.OpsiScheduling.MeowStartEarlyEnable"
+      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold"
     }
   }
 }
