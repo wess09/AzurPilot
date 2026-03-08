@@ -668,7 +668,7 @@
         "value": false
       },
       "Tasks": {
-        "type": "input",
+        "type": "textarea",
         "value": null
       },
       "FleetValue": {
@@ -12153,7 +12153,8 @@
       },
       "MissionZones": {
         "type": "stored",
-        "value": null
+        "value": null,
+        "display": "hide"
       }
     },
     "OpsiFleet": {
