@@ -69,79 +69,6 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 continue
         return count
 
-    @classmethod
-    def renice_process_by_regex(cls, regex: str, priority: int = -20) -> int:
-        """
-        Change priority of processes matching the given regex.
-        
-        Args:
-            regex: Regex pattern to match process names
-            priority: Nice value (-20 highest, 19 lowest). Use -20 for highest priority.
-            
-        Returns:
-            int: Number of processes reniced
-        """
-        count = 0
-        for proc in psutil.process_iter():
-            try:
-                name = proc.name()
-                if re.search(regex, name, re.IGNORECASE):
-                    pid = proc.pid
-                    # Use sudo renice to set priority (requires admin password)
-                    result = subprocess.run(
-                        f'sudo -n renice -n {priority} -p {pid}',
-                        shell=True,
-                        capture_output=True,
-                        text=True
-                    )
-                    if result.returncode == 0:
-                        logger.info(f'Reniced process {name} (PID: {pid}) to priority {priority}')
-                        count += 1
-                    else:
-                        logger.warning(f'Failed to renice {name}: {result.stderr.strip()}')
-            except (psutil.AccessDenied, psutil.NoSuchProcess):
-                continue
-        return count
-
-    def boost_emulator_priority(self, instance: EmulatorInstanceMac):
-        """
-        Boost emulator process priority after starting.
-        
-        Args:
-            instance: The emulator instance to boost
-        """
-        if instance == EmulatorMac.BlueStacksAir:
-            time.sleep(3)
-            self.renice_process_by_regex(r'BlueStacks', -20)
-        
-        elif instance == EmulatorMac.MuMuPro:
-            time.sleep(3)
-            self.renice_process_by_regex(r'MuMuEmulator|MuMuPlayer', -20)
-        
-        else:
-            if instance.name:
-                time.sleep(3)
-                self.renice_process_by_regex(instance.name, -20)
-
-    def boost_running_emulator_priority(self):
-        """
-        Boost priority of currently running emulator.
-        Call this when Alas starts and detects an already running emulator.
-        """
-        # Try to boost MuMu processes
-        count = self.renice_process_by_regex(r'MuMuEmulator|MuMuPlayer', -20)
-        if count > 0:
-            logger.info(f'Boosted priority for {count} MuMu process(es)')
-            return
-        
-        # Try to boost BlueStacks processes
-        count = self.renice_process_by_regex(r'BlueStacks', -20)
-        if count > 0:
-            logger.info(f'Boosted priority for {count} BlueStacks process(es)')
-            return
-        
-        logger.info('No running emulator processes found to boost')
-
     def _emulator_start(self, instance: EmulatorInstanceMac):
         """
         Start a emulator without error handling
@@ -322,8 +249,6 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
             # Start
             if self._emulator_function_wrapper(self._emulator_start):
                 # Success
-                # Boost emulator process priority
-                self.boost_emulator_priority(self.emulator_instance)
                 self.emulator_start_watch()
                 return True
             else:
