@@ -376,11 +376,21 @@ def put_arg_stored(kwargs: T_Output_Kwargs) -> Output:
     kwargs["disabled"] = True
 
     values = kwargs.pop("value", {})
-    time_ = values.pop("time", "")
 
-    rows = [product_stored_row(kwargs, key, value) for key, value in values.items() if value]
-    if time_:
-        rows += [product_stored_row(kwargs, "time", time_)]
+    # Handle both dictionary format and plain string format
+    # Dictionary format: {"time": "...", "key1": "value1", "key2": "value2", ...}
+    # Plain string format: "actual_value"
+    if isinstance(values, str):
+        # Plain string format - just display the value directly
+        rows = [product_stored_row(kwargs, "value", values)] if values else []
+    elif isinstance(values, dict):
+        time_ = values.pop("time", "")
+        rows = [product_stored_row(kwargs, key, value) for key, value in values.items() if value]
+        if time_:
+            rows += [product_stored_row(kwargs, "time", time_)]
+    else:
+        rows = []
+
     return put_scope(
         f"arg_container-stored-{name}",
         [
