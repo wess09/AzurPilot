@@ -730,6 +730,24 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     cl1_db.increment_meow_battle_count(instance_name)
                 except Exception:
                     logger.debug('Failed to persist monthly meow battle increment', exc_info=True)
+
+                # 记录单场战斗时间（每次战斗结束都记录）
+                if getattr(self, '_meow_battle_timer', None):
+                    battle_duration = round(time.time() - self._meow_battle_timer, 2)
+                    # 过滤异常值（太短或太长的战斗）
+                    if 5 < battle_duration < 600:  # 5秒~10分钟
+                        logger.attr('Meow battle duration', f'{battle_duration:.1f}s')
+                        try:
+                            from module.statistics.cl1_database import db as cl1_db
+                            instance_name = getattr(self.config, 'config_name', 'default')
+                            cl1_db.add_meow_battle_time(instance_name, battle_duration)
+                        except Exception:
+                            logger.debug('Failed to record meow battle time', exc_info=True)
+                    else:
+                        logger.debug(f'Meow battle duration {battle_duration:.1f}s out of range, not recorded')
+                # 重置计时器
+                self._meow_battle_timer = time.time()
+
             except Exception:
                 logger.debug('Failed to update meow battle counter', exc_info=True)
 

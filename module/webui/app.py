@@ -359,8 +359,13 @@ class AlasGUI(Frame):
                     from module.statistics.opsi_month import get_opsi_stats, compute_monthly_cl1_akashi_ap, get_ap_timeline
                     from module.statistics.cl1_database import db as cl1_db
                     from module.statistics.ship_exp_stats import get_ship_exp_stats
-                    # 使用当前实例名称获取统计数据
+                    # 使用当前实例名称获取统计数据，确保不为空
                     instance_name = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
+                    if not instance_name:
+                        # 使用第一个可用的实例
+                        from module.config.utils import alas_instance
+                        all_instances = alas_instance()
+                        instance_name = all_instances[0] if all_instances else None
                     s = get_opsi_stats(instance_name=instance_name).summary()
                 except Exception as e:
                     with use_scope("opsi_stats", clear=True):
@@ -486,13 +491,35 @@ class AlasGUI(Frame):
                     exp_stats = get_ship_exp_stats(instance_name=instance_name)
                     avg_cl1_battle_time = exp_stats.get_average_battle_time()
                     avg_cl1_round_time = exp_stats.get_average_round_time()
+                    exp_per_hour = exp_stats.get_exp_per_hour()
+                    today_stats = exp_stats.get_today_stats()
+                    
+                    # 今日统计
+                    if today_stats:
+                        today_battles = today_stats.get('battle_count', 0)
+                        today_exp = today_stats.get('total_exp_gained', 0)
+                        today_run_time = int(today_stats.get('total_run_time', 0) // 60)
+                        today_exp_str = f"{today_exp:,}"
+                        today_run_str = f"{today_run_time}分钟"
+                    else:
+                        today_battles = 0
+                        today_exp_str = "-"
+                        today_run_str = "-"
+                    
                     avg_cl1_battle_str = f"{avg_cl1_battle_time:.1f}秒"
                     avg_cl1_round_str = f"{avg_cl1_round_time:.1f}秒"
+                    exp_per_hour_str = f"{exp_per_hour:.0f}/小时"
                 except Exception:
                     avg_cl1_battle_str = "-"
                     avg_cl1_round_str = "-"
+                    exp_per_hour_str = "-"
+                    today_battles = 0
+                    today_exp_str = "-"
+                    today_run_str = "-"
 
-                values = [month, tb, rounds, sortie_cost, ak, akashi_rate, avg_ap, net_ap, loop_eff, avg_cl1_battle_str, avg_cl1_round_str]
+                labels = ["月份", "战斗场次", "战斗轮次", "出击消耗", "遇见明石次数", "遇见明石概率", "平均体力", "净赚体力", "循环效率", "经验效率", "平均战斗时间", "平均一轮时长", "今日战斗", "今日经验", "今日运行"]
+
+                values = [month, tb, rounds, sortie_cost, ak, akashi_rate, avg_ap, net_ap, loop_eff, exp_per_hour_str, avg_cl1_battle_str, avg_cl1_round_str, today_battles, today_exp_str, today_run_str]
 
                 table = [labels, values]
 
@@ -513,12 +540,13 @@ class AlasGUI(Frame):
                     except Exception as e:
                         meow_data = {}
 
+                    meow_round_times = meow_data.get("round_times", [])
                     meow_battle_count = meow_data.get("battle_count", 0)
                     meow_avg_time = meow_data.get("avg_round_time", 0.0)
-                    meow_round_times = meow_data.get("round_times", [])
+                    meow_avg_battle_time = meow_data.get("avg_battle_time", 0.0)
 
                     try:
-                        meow_rounds = int(meow_battle_count) // 2 if meow_battle_count else 0
+                        meow_rounds = len(meow_round_times) if meow_round_times else 0
                     except Exception:
                         meow_rounds = 0
 
@@ -527,12 +555,17 @@ class AlasGUI(Frame):
                     else:
                         avg_time_str = "-"
 
+                    if meow_avg_battle_time > 0:
+                        avg_battle_time_str = f"{meow_avg_battle_time:.1f}秒"
+                    else:
+                        avg_battle_time_str = "-"
+
                     meow_values = [
                         meow_data.get("month", "-"),
                         meow_battle_count,
                         meow_rounds,
-                        avg_time_str,
-                        avg_time_str,  # 平均一轮短猫时长
+                        avg_battle_time_str,  # 平均单场战斗时间
+                        avg_time_str,         # 平均一轮短猫时长
                     ]
                     meow_labels = ["月份", "战斗场次", "出击轮次", "平均战斗时间", "平均一轮短猫时长"]
 
@@ -686,6 +719,10 @@ class AlasGUI(Frame):
                 try:
                     from module.statistics.opsi_month import get_ap_timeline
                     instance_name = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
+                    if not instance_name:
+                        from module.config.utils import alas_instance
+                        all_instances = alas_instance()
+                        instance_name = all_instances[0] if all_instances else None
                     timeline = get_ap_timeline(instance_name=instance_name)
                 except Exception as e:
                     with use_scope("ap_chart", clear=True):
@@ -1156,8 +1193,13 @@ cv.addEventListener("mousemove", function(e) {
                 try:
                     from module.statistics.ship_exp_stats import get_ship_exp_stats
                     from module.statistics.opsi_month import get_opsi_stats as get_opsi_stats_func
-                    # 使用当前实例名称获取统计数据
+                    # 使用当前实例名称获取统计数据，确保不为空
                     instance_name = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
+                    if not instance_name:
+                        # 使用第一个可用的实例
+                        from module.config.utils import alas_instance
+                        all_instances = alas_instance()
+                        instance_name = all_instances[0] if all_instances else None
                     stats = get_ship_exp_stats(instance_name=instance_name)
                     if not stats.data or not stats.data.get('ships'):
                         with use_scope("ship_exp_table", clear=True):
@@ -1212,6 +1254,8 @@ cv.addEventListener("mousemove", function(e) {
                                 put_text(f"今日经验: {today_stats.get('total_exp_gained', 0)}"),
                                 put_text(f"今日运行: {run_minutes}分钟"),
                             ])
+                        else:
+                            put_text("暂无今日战斗数据，运行战斗后将自动更新")
                         
                         html = '<table style="width:100%; border-collapse:collapse; margin-top:8px;">'
                         html += '<thead><tr>' + ''.join([f'<th style="text-align:left;padding:6px;border-bottom:1px solid #ddd">{l}</th>' for l in labels]) + '</tr></thead>'

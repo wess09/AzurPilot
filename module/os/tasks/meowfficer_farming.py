@@ -245,6 +245,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             # 开始短猫搜索计时
             self._meow_searching_active = True
             self._meow_time_recording_enabled = True
+            import time as time_module
+            self._meow_battle_timer = time_module.time()
             self.on_meow_search_start()
             if self.run_strategic_search():
                 self._solved_map_event = set()
@@ -284,6 +286,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         # 开始短猫搜索计时
         self._meow_searching_active = True
         self._meow_time_recording_enabled = True
+        import time as time_module
+        self._meow_battle_timer = time_module.time()
         self.on_meow_search_start()
 
         search_completed = False
@@ -390,6 +394,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         # 开始短猫搜索计时
         self._meow_searching_active = True
         self._meow_time_recording_enabled = True
+        import time as time_module
+        self._meow_battle_timer = time_module.time()
         self.on_meow_search_start()
         self.run_auto_search()
         logger.info(f'探测装置搜索：自律完成，标记事件: {self._solved_map_event}')
@@ -490,6 +496,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         # 开始短猫搜索计时
         self._meow_searching_active = True
         self._meow_time_recording_enabled = True
+        import time as time_module
+        self._meow_battle_timer = time_module.time()
         self.on_meow_search_start()
 
         self.run_auto_search()

@@ -117,6 +117,7 @@ class Cl1Database:
             # 短猫数据
             'meow_battle_count': 0,
             'meow_round_times': [],
+            'meow_battle_times': [],  # 短猫单场战斗时间
         }
 
     def save_stats(self, instance: str, month: str, data: Dict[str, Any]):
@@ -300,6 +301,29 @@ class Cl1Database:
         data['meow_round_times'] = times
         self.save_stats(instance, month, data)
 
+    def add_meow_battle_time(self, instance: str, duration: float):
+        """记录短猫单场战斗时间
+
+        Args:
+            instance: 实例名称
+            duration: 战斗耗时（秒）
+        """
+        month = datetime.now().strftime('%Y-%m')
+        data = self.get_stats(instance, month)
+
+        if 'meow_battle_times' not in data:
+            data['meow_battle_times'] = []
+
+        times = data['meow_battle_times']
+        times.append(round(duration, 2))
+
+        # 只保留最近100个样本
+        if len(times) > 100:
+            times = times[-100:]
+
+        data['meow_battle_times'] = times
+        self.save_stats(instance, month, data)
+
     def get_meow_stats(self, instance: str, year: int = None, month: int = None) -> Dict[str, Any]:
         """获取短猫统计数据
 
@@ -321,17 +345,25 @@ class Cl1Database:
 
         battle_count = int(data.get('meow_battle_count', 0))
         round_times = data.get('meow_round_times', [])
+        battle_times = data.get('meow_battle_times', [])
 
-        # 计算平均战斗时间
+        # 计算平均每轮时间
         avg_round_time = 0.0
         if round_times:
             avg_round_time = round(sum(round_times) / len(round_times), 2)
+
+        # 计算平均单场战斗时间
+        avg_battle_time = 0.0
+        if battle_times:
+            avg_battle_time = round(sum(battle_times) / len(battle_times), 2)
 
         return {
             'month': key,
             'battle_count': battle_count,
             'round_times': round_times,
             'avg_round_time': avg_round_time,
+            'battle_times': battle_times,
+            'avg_battle_time': avg_battle_time,
         }
 
 
