@@ -536,12 +536,15 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
 
             # ===== 塞壬探测装置搜索 / 普通短猫搜索主逻辑 =====
             if siren_search_enabled:
-                if self._meow_handle_siren_detector_search():
-                    # 恢复 StayInZone 设置
+                if not self._meow_handle_siren_detector_search():
+                    # 未找到符合条件的海域，执行普通短猫搜索
+                    logger.info('探测装置搜索未找到目标海域，切换到普通短猫搜索')
+                    self._meow_handle_normal_search()
+                else:
+                    # 找到装置，恢复 StayInZone 设置
                     if self._original_stay_in_zone:
                         self.config.OpsiMeowfficerFarming_StayInZone = True
                         logger.info('探测装置搜索完成：恢复指定海域计划作战')
-                    continue
             else:
                 self._meow_handle_normal_search()
             
