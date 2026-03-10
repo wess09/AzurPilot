@@ -10,6 +10,87 @@ from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
+
+    def _get_zone_hazard_level(self, zone_id):
+        selected = self.zones.select(zone_id=int(zone_id))
+        if not selected:
+            return None
+        return selected[0].hazard_level
+
+    def _parse_siren_found_zones(self):
+        """
+        Parse found zones as level-aware records.
+
+        Supported formats in config:
+        - New format: "5:151,6:153"
+        - Legacy format: "151,153" (will be mapped by real zone hazard level)
+        """
+        found = {5: set(), 6: set()}
+        raw = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+        if not raw:
+            return found
+
+        for token in str(raw).split(','):
+            token = token.strip()
+            if not token:
+                continue
+
+            if ':' in token:
+                level_text, zone_text = token.split(':', 1)
+                try:
+                    level = int(level_text.strip())
+                    zone_id = int(zone_text.strip())
+                except ValueError:
+                    logger.warning(f'忽略非法分级海域记录: "{token}"')
+                    continue
+
+                real_level = self._get_zone_hazard_level(zone_id)
+                if real_level in (5, 6):
+                    found[real_level].add(zone_id)
+                else:
+                    logger.warning(f'忽略无效海域ID: {zone_id} (不在中心海域5/6级)')
+                continue
+
+            try:
+                zone_id = int(token)
+            except ValueError:
+                logger.warning(f'忽略非法海域 ID 格式: "{token}"')
+                continue
+
+            real_level = self._get_zone_hazard_level(zone_id)
+            if real_level in (5, 6):
+                found[real_level].add(zone_id)
+            else:
+                logger.warning(f'忽略无效海域ID: {zone_id} (不在中心海域5/6级)')
+
+        return found
+
+    def _dump_siren_found_zones(self, found):
+        tokens = []
+        for level in (5, 6):
+            for zone_id in sorted(found.get(level, set())):
+                tokens.append(f'{level}:{zone_id}')
+        return ','.join(tokens) if tokens else None
+
+    def _record_siren_found_zone(self, zone_id):
+        """
+        Record one zone in level-aware format.
+
+        Returns:
+            tuple[int, int, bool]: (zone_hazard_level, count_in_that_level, added)
+        """
+        level = self._get_zone_hazard_level(zone_id)
+        if level not in (5, 6):
+            logger.warning(f'海域 {zone_id} 不属于中心海域5/6级，跳过记录')
+            return 0, 0, False
+
+        found = self._parse_siren_found_zones()
+        before = len(found[level])
+        found[level].add(int(zone_id))
+        added = len(found[level]) > before
+
+        self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = self._dump_siren_found_zones(found)
+        return level, len(found[level]), added
     
     def _should_skip_siren_research(self, grid):
         """判断是否应跳过塞壬研究（在搜索模式下）。
@@ -73,22 +154,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         
         if grids and grids[0].is_scanning_device:
             logger.hr(f'在海域 {zone_id} 发现塞壬探测装置', level=2)
-            
-            zone_str = str(zone_id)
-            current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
-            found_count = 0
-            if current_str is None:
-                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
-                found_count = 1
-            else:
-                if zone_str not in str(current_str):
-                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
-                    found_count = len(str(current_str).split(',')) + 1
-                else:
-                    found_count = len(str(current_str).split(','))
-            
+            level, found_count, _ = self._record_siren_found_zone(zone_id)
+
             logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-            logger.info(f'已找到数量: {found_count}')
+            logger.info(f'已找到数量(侵蚀{level}): {found_count}')
             
             if not hasattr(self, '_solved_map_event'):
                 self._solved_map_event = set()
@@ -97,7 +166,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             
             stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
             if stop_after_found > 0 and found_count >= stop_after_found:
-                logger.hr(f'已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
+                logger.hr(f'侵蚀{level}已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
                 return True
             
             return False
@@ -124,22 +193,10 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         
         if grids and grids[0].is_scanning_device:
             logger.hr(f'在海域 {zone_id} 发现塞壬探测装置（自律后）', level=2)
-            
-            zone_str = str(zone_id)
-            current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
-            found_count = 0
-            if current_str is None:
-                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
-                found_count = 1
-            else:
-                if zone_str not in str(current_str):
-                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
-                    found_count = len(str(current_str).split(',')) + 1
-                else:
-                    found_count = len(str(current_str).split(','))
-            
+            level, found_count, _ = self._record_siren_found_zone(zone_id)
+
             logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-            logger.info(f'已找到数量: {found_count}')
+            logger.info(f'已找到数量(侵蚀{level}): {found_count}')
             
             if not hasattr(self, '_solved_map_event'):
                 self._solved_map_event = set()
@@ -148,7 +205,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             
             stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
             if stop_after_found > 0 and found_count >= stop_after_found:
-                logger.hr(f'已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
+                logger.hr(f'侵蚀{level}已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
                 self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
     
     def _meow_ap_and_scheduling_check(self, preserve, ap_checked):
@@ -321,22 +378,17 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
     def _meow_handle_siren_detector_search(self):
         hazard_level = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_HazardLevel
         logger.hr(f'探测装置搜索模式，当前侵蚀等级: {hazard_level} (仅中心海域)', level=1)
-        
-        found_zones_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
+
         excluded_zones = []
-        if found_zones_str:
-            for z in str(found_zones_str).split(','):
-                z = z.strip()
-                if not z: continue
-                try:
-                    zone_id = int(z)
-                    selected = self.zones.select(zone_id=zone_id)
-                    if selected: excluded_zones.append(selected[0])
-                except ValueError:
-                    logger.warning(f'忽略非法海域 ID 格式: "{z}"')
-            
-            if excluded_zones:
-                logger.info(f'已找到海域，将排除: {excluded_zones}')
+        found = self._parse_siren_found_zones()
+        level_zone_ids = sorted(found.get(hazard_level, set()))
+        for zone_id in level_zone_ids:
+            selected = self.zones.select(zone_id=zone_id)
+            if selected:
+                excluded_zones.append(selected[0])
+
+        if excluded_zones:
+            logger.info(f'侵蚀{hazard_level}已找到海域，将排除: {excluded_zones}')
         
         # 在中心海域 (region 5) 中筛选
         zones = self.zones.select(region=5, hazard_level=hazard_level) \
@@ -407,25 +459,14 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
 
         # 步骤 5. 记录与收尾
         if siren_detector_found:
-            zone_str = str(current_zone_id)
-            current_str = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones
-            found_count = 0
-            if current_str is None:
-                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = zone_str
-                found_count = 1
-            else:
-                if zone_str not in str(current_str):
-                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones = str(current_str) + ',' + zone_str
-                    found_count = len(str(current_str).split(',')) + 1
-                else:
-                    found_count = len(str(current_str).split(','))
+            level, found_count, _ = self._record_siren_found_zone(current_zone_id)
             
             logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-            logger.info(f'累计发现数量: {found_count}')
+            logger.info(f'累计发现数量(侵蚀{level}): {found_count}')
             
             stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
             if stop_after_found > 0 and found_count >= stop_after_found:
-                logger.hr(f'达成目标数量 {stop_after_found}，关闭搜索模式', level=1)
+                logger.hr(f'侵蚀{level}达成目标数量 {stop_after_found}，关闭搜索模式', level=1)
                 self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
                 
                 if hasattr(self, '_original_siren_research_enable'):

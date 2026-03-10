@@ -13094,7 +13094,11 @@
       },
       "SirenDetectorSearch_StopAfterFound": {
         "type": "input",
-        "value": 0
+        "value": 1,
+        "validate": [
+          1,
+          4
+        ]
       },
       "SirenDetectorSearch_FoundZones": {
         "type": "textarea",

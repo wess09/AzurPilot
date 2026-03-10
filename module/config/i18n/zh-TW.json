@@ -5044,17 +5044,6 @@
       "EnterPassword": "輸入密碼",
       "ChooseFile": "選擇檔案"
     },
-    "OpsiScheduling": {
-      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
-      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
-      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
-      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
-      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
-      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
-      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
-      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
-      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
-    },
     "Stat": {
       "LoadApDataFailed": "加载体力数据失败: {e}",
       "NoApData": "暂无体力变化数据，运行侵蚀1任务后将自动记录",
@@ -5121,7 +5110,6 @@
       "SecondUnit": "秒",
       "HourUnit": "小时",
       "MinuteUnit": "分钟",
-      "TodayBattleUnit": "场",
       "ExportModuleLoadFailed": "导出失败：无法加载统计模块：{e}",
       "CsvHeaderAkashiRate": "遇见明石概率(%)",
       "CsvHeaderLoopEfficiency": "循环效率(%)",
@@ -5134,11 +5122,23 @@
       "ShipExpProgressTitle": "每日经验检测：识别到的舰娘等级与升级进度",
       "LastCheckTime": "上次检查时间: {value}",
       "AvgOpsiRoundTime": "平均一轮侵蚀1时长: {value}{unit}",
+      "TodayBattleUnit": "场",
       "NoTodayBattleData": "暂无今日战斗数据，运行战斗后将自动更新",
       "LoadShipExpFailed": "加载舰船经验数据失败: {e}",
       "TargetExpRequired": "目标等级所需经验",
       "BattlesCompleted": "已战斗场次",
       "ExpRemaining": "还需经验"
+    },
+    "OpsiScheduling": {
+      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
+      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
+      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
+      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
+      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
+      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
+      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
+      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
     }
   }
 }

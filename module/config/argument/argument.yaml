@@ -1155,7 +1155,8 @@ OpsiMeowfficerFarming:
     value: 2
     option: [ 1, 2, 3, 4 ]
   SirenDetectorSearch_StopAfterFound:
-    value: 0
+    value: 1
+    validate: [1, 4]
   SirenDetectorSearch_FoundZones:
     type: textarea
     value: ""

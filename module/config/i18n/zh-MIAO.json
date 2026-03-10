@@ -5044,17 +5044,6 @@
       "EnterPassword": "输入秘密口令喵",
       "ChooseFile": "挑选档案喵"
     },
-    "OpsiScheduling": {
-      "UseSmartSchedulingOperationCoinsPreserve": "🧠 天才智能切换开关",
-      "OperationCoinsPreserve": "💰 黄币工资保底线",
-      "ActionPointPreserve": "🔋 行动力应急底线",
-      "OperationCoinsReturnThreshold": "📈 攒够多少钱就回家",
-      "EnableMeowfficerFarming": "🐾 猫猫干活啦",
-      "EnableObscure": "🌫️ 带路去探险",
-      "EnableAbyssal": "🐙 挑战大怪兽",
-      "EnableStronghold": "🏰 目标：塞壬要塞",
-      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
-    },
     "Stat": {
       "LoadApDataFailed": "加载体力数据失败: {e}",
       "NoApData": "暂无体力变化数据，运行侵蚀1任务后将自动记录",
@@ -5121,7 +5110,6 @@
       "SecondUnit": "秒",
       "HourUnit": "小时",
       "MinuteUnit": "分钟",
-      "TodayBattleUnit": "场",
       "ExportModuleLoadFailed": "导出失败：无法加载统计模块：{e}",
       "CsvHeaderAkashiRate": "遇见明石概率(%)",
       "CsvHeaderLoopEfficiency": "循环效率(%)",
@@ -5134,11 +5122,23 @@
       "ShipExpProgressTitle": "每日经验检测：识别到的舰娘等级与升级进度",
       "LastCheckTime": "上次检查时间: {value}",
       "AvgOpsiRoundTime": "平均一轮侵蚀1时长: {value}{unit}",
+      "TodayBattleUnit": "场",
       "NoTodayBattleData": "暂无今日战斗数据，运行战斗后将自动更新",
       "LoadShipExpFailed": "加载舰船经验数据失败: {e}",
       "TargetExpRequired": "目标等级所需经验",
       "BattlesCompleted": "已战斗场次",
       "ExpRemaining": "还需经验"
+    },
+    "OpsiScheduling": {
+      "UseSmartSchedulingOperationCoinsPreserve": "🧠 天才智能切换开关",
+      "OperationCoinsPreserve": "💰 黄币工资保底线",
+      "ActionPointPreserve": "🔋 行动力应急底线",
+      "OperationCoinsReturnThreshold": "📈 攒够多少钱就回家",
+      "EnableMeowfficerFarming": "🐾 猫猫干活啦",
+      "EnableObscure": "🌫️ 带路去探险",
+      "EnableAbyssal": "🐙 挑战大怪兽",
+      "EnableStronghold": "🏰 目标：塞壬要塞",
+      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
     }
   }
 }

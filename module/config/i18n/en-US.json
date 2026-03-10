@@ -5044,17 +5044,6 @@
       "EnterPassword": "Enter password",
       "ChooseFile": "Select file"
     },
-    "OpsiScheduling": {
-      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
-      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
-      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
-      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
-      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
-      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
-      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
-      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
-      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
-    },
     "Stat": {
       "LoadApDataFailed": "Failed to load AP data: {e}",
       "NoApData": "No AP change data yet. Data will be recorded after running OpSi-1.",
@@ -5121,7 +5110,6 @@
       "SecondUnit": "s",
       "HourUnit": "h",
       "MinuteUnit": "m",
-      "TodayBattleUnit": "",
       "ExportModuleLoadFailed": "Export failed: cannot load stats module: {e}",
       "CsvHeaderAkashiRate": "Akashi Rate (%)",
       "CsvHeaderLoopEfficiency": "Loop Efficiency (%)",
@@ -5134,11 +5122,23 @@
       "ShipExpProgressTitle": "Daily EXP Check: Detected Ship Levels and Progress",
       "LastCheckTime": "Last check time: {value}",
       "AvgOpsiRoundTime": "Avg OpSi-1 round time: {value}{unit}",
+      "TodayBattleUnit": "",
       "NoTodayBattleData": "No battle data for today yet. It will update automatically after battles.",
       "LoadShipExpFailed": "Failed to load ship EXP data: {e}",
       "TargetExpRequired": "EXP required for target level",
       "BattlesCompleted": "Battles completed",
       "ExpRemaining": "EXP remaining"
+    },
+    "OpsiScheduling": {
+      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
+      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
+      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
+      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
+      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
+      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
+      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
+      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
     }
   }
 }

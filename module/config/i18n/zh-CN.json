@@ -4526,11 +4526,11 @@
     },
     "SirenDetectorSearch_StopAfterFound": {
       "name": "寻找 X 个塞壬探测装置后停止",
-      "help": "寻找并记录到指定数量的塞壬探测装置后，停止搜索并回到正常短猫流程（ 实际上找了x个装置的数量是由下面的记录表决定的，如果记录表为空，则找x个装置后停止）记录中有y个装置，则找x-y个装置后停止\n设置为 0 表示不限制，会一直搜索直到行动力不足"
+      "help": "寻找并记录到指定数量的塞壬探测装置后，停止搜索并回到正常短猫流程。\n统计和停止条件按当前所选侵蚀等级（5级/6级）分别计算，不会混算。\n警告：此项最小值为 1，不可填写 0。\n中心海域中 5 级海域有 4 个，6 级海域有 4 个。填写数量不能大于当前所选侵蚀等级的实际海域数量（最大 4）。"
     },
     "SirenDetectorSearch_FoundZones": {
       "name": "已找到的塞壬探测装置海域",
-      "help": "已找到的塞壬探测装置海域，如果对应海域的塞壬探测装置已经被使用，则可以手动删除对应海域的记录"
+      "help": "已找到的塞壬探测装置海域，会按侵蚀等级分开记录并分开排除。若对应海域的塞壬探测装置已经被使用，可手动删除该海域记录。"
     }
   },
   "OpsiHazard1Leveling": {
@@ -5044,17 +5044,6 @@
       "EnterPassword": "输入密码",
       "ChooseFile": "选择文件"
     },
-    "OpsiScheduling": {
-      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
-      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
-      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
-      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
-      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
-      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
-      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
-      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
-      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
-    },
     "Stat": {
       "LoadApDataFailed": "加载体力数据失败: {e}",
       "NoApData": "暂无体力变化数据，运行侵蚀1任务后将自动记录",
@@ -5121,7 +5110,6 @@
       "SecondUnit": "秒",
       "HourUnit": "小时",
       "MinuteUnit": "分钟",
-      "TodayBattleUnit": "场",
       "ExportModuleLoadFailed": "导出失败：无法加载统计模块：{e}",
       "CsvHeaderAkashiRate": "遇见明石概率(%)",
       "CsvHeaderLoopEfficiency": "循环效率(%)",
@@ -5134,11 +5122,23 @@
       "ShipExpProgressTitle": "每日经验检测：识别到的舰娘等级与升级进度",
       "LastCheckTime": "上次检查时间: {value}",
       "AvgOpsiRoundTime": "平均一轮侵蚀1时长: {value}{unit}",
+      "TodayBattleUnit": "场",
       "NoTodayBattleData": "暂无今日战斗数据，运行战斗后将自动更新",
       "LoadShipExpFailed": "加载舰船经验数据失败: {e}",
       "TargetExpRequired": "目标等级所需经验",
       "BattlesCompleted": "已战斗场次",
       "ExpRemaining": "还需经验"
+    },
+    "OpsiScheduling": {
+      "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
+      "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
+      "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
+      "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
+      "EnableObscure": "Gui.OpsiScheduling.EnableObscure",
+      "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
+      "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
+      "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
     }
   }
 }
