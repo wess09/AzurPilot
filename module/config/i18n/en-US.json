@@ -4693,14 +4693,14 @@
     },
     "MeowStartEarlyMode": {
       "name": "Month-End AP Auto-Cleanup Mode",
-      "help": "Aggressive (×0.8): Start later, saves AP but may miss refresh; Balanced (×1.2): Normal advance, balances safety and efficiency; Conservative (×1.5): Start earlier, prioritizes safety but may waste AP",
+      "help": "Advance hours = (Current AP / 30 × historical average time per Meow run) × mode multiplier, then compared with time remaining until next month Operation Siren reset; Aggressive (×0.8) starts less in advance, Balanced (×1.2) is neutral, Conservative (×1.5) starts more in advance",
       "aggressive": "Aggressive",
       "balanced": "Balanced",
       "conservative": "Conservative"
     },
     "MeowStartEarlyEnable": {
       "name": "Enable Month-End AP Auto-Cleanup",
-      "help": "Based on historical AP consumption rate, automatically determine whether to start the Meowfficer Farming task early to clean up excess AP at month-end."
+      "help": "Automatically decides whether to start Meowfficer Farming early for month-end AP cleanup based on historical Meow timing and current AP; the decision target is the next month Operation Siren reset time, not daily server refresh."
     }
   },
   "OpsiDailyDelay": {

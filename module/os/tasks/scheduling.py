@@ -914,7 +914,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
                 return (False, "数据不足")
 
             # 获取模式
-            mode = self._get_meow_start_early_mode()
+            mode = self._get_meow_monthly_cleanup_mode()
             multiplier_map = {
                 'aggressive': 0.8,
                 'balanced': 1.2,
@@ -944,26 +944,21 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
                 # 行动力不足，应该开始
                 return (True, "行动力不足，需要现在开始短猫")
 
-            # 获取当前时间
-            from datetime import datetime, timedelta
+            # 以“下个月大世界刷新时间”为基准，而不是每日服务器刷新时间
+            from datetime import datetime
+            from module.config.utils import get_os_next_reset
+
             now = datetime.now()
-            reset_hour = 4  # 碧蓝航线服务器刷新时间是4点
-
-            # 计算到服务器刷新的时间
-            if now.hour >= reset_hour:
-                next_reset = datetime(now.year, now.month, now.day, reset_hour) + timedelta(days=1)
-            else:
-                next_reset = datetime(now.year, now.month, now.day, reset_hour)
-
+            next_reset = get_os_next_reset()
             hours_to_reset = (next_reset - now).total_seconds() / 3600
 
-            # 如果距离刷新时间小于需要提前的时间，说明应该开始短猫了
+            # 如果距离大世界重置时间小于需要提前的时间，说明应该开始短猫了
             if hours_to_reset < advance_hours:
-                reason = f"距离刷新还有{hours_to_reset:.1f}小时，需要提前{advance_hours:.1f}小时开始"
+                reason = f"距离大世界重置还有{hours_to_reset:.1f}小时，需要提前{advance_hours:.1f}小时开始"
                 return (True, reason)
 
             # 正常情况
-            return (False, f"预计{hours_to_reset:.1f}小时后行动力耗尽，无需提前")
+            return (False, f"距离大世界重置还有{hours_to_reset:.1f}小时，无需提前")
 
         except Exception as e:
             logger.debug(f"判断短猫提前开始失败: {e}")
