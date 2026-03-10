@@ -187,6 +187,10 @@ class AzurStats:
             5: 3,
             6: 3
         }
+        limits = {
+            'OperationCoin': 20000,
+            'Coins': 500,
+        }
 
         if genre not in allowed_genre:
             return False
@@ -213,6 +217,13 @@ class AzurStats:
                 'is_meow': d.tag == 'meow'
             } for d in results.DataOpsiItems
         ]
+        
+        for item in items:
+            limit = limits.get(item['item'], 100)
+            if item['amount'] > limit:
+                logger.info(f'[Azurstat] [{filename}] 数据异常')
+                return False
+                
 
         logger.info(f'[Azurstat] [{filename}] items: {items}')
         
