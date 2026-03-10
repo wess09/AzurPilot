@@ -13095,10 +13095,7 @@
       "SirenDetectorSearch_StopAfterFound": {
         "type": "input",
         "value": 1,
-        "validate": [
-          1,
-          4
-        ]
+        "validate": "^[1-4]$"
       },
       "SirenDetectorSearch_FoundZones": {
         "type": "textarea",

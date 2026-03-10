@@ -502,28 +502,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                         logger.info('探测装置搜索：全图扫描未发现装置')
 
                 # 步骤 5. 记录与收尾
-                if siren_detector_found:
-                    level, found_count, added = self._record_siren_found_zone(current_zone_id)
-                    if not level:
-                        _restore_siren_search_state()
-                        return False
-                    
-                    logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-                    if added:
-                        logger.info(f'累计发现数量(侵蚀{level}): {found_count}')
-                    else:
-                        logger.info(f'侵蚀{level}海域 {current_zone_id} 已存在记录，当前数量: {found_count}')
-                    
-                    if stop_after_found > 0 and found_count >= stop_after_found:
-                        logger.hr(f'侵蚀{level}达成目标数量 {stop_after_found}，关闭搜索模式', level=1)
-                        self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
-                        _restore_siren_search_state()
-                        self.handle_after_auto_search()
-                        # 结束短猫搜索计时
-                    self.on_meow_search_end()
-                    self.config.check_task_switch()
-                    return True
-                else:
+                if not siren_detector_found:
                     # 未发现时的后续处理：由卡位舰队清理残局
                     block_fleet = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock
                     logger.info(f'未发现装置，由舰队 {block_fleet} 执行清理，继续搜索下一个海域')
@@ -531,8 +510,29 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     self.os_auto_search_run(drop=None)
                     self.fleet_set(self.config.OpsiFleet_Fleet)
                     # 此处不恢复状态，继续while循环搜索下一个zone
-                
-                # for循环完成后（无论发现与否），如果没有返回True，则继续while循环
+                    continue
+
+                level, found_count, added = self._record_siren_found_zone(current_zone_id)
+                if not level:
+                    _restore_siren_search_state()
+                    return False
+
+                logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
+                if added:
+                    logger.info(f'累计发现数量(侵蚀{level}): {found_count}')
+                else:
+                    logger.info(f'侵蚀{level}海域 {current_zone_id} 已存在记录，当前数量: {found_count}')
+
+                if stop_after_found > 0 and found_count >= stop_after_found:
+                    logger.hr(f'侵蚀{level}达成目标数量 {stop_after_found}，关闭搜索模式', level=1)
+                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
+                    _restore_siren_search_state()
+                    self.handle_after_auto_search()
+
+                # 仅在找到探测装置后结束本轮并返回
+                self.on_meow_search_end()
+                self.config.check_task_switch()
+                return True
 
         _restore_siren_search_state()
 
