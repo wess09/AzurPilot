@@ -330,6 +330,8 @@
         const UPDATE_INTERVAL = 10000; // 每 10 秒刷新一次
         let currentInstance = 'alas';
         let chartView = 'day'; // 'line', 'day', 'month'
+        let fetchTimer = null;
+        let fetchInFlight = false;
 
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('instance')) {
@@ -410,6 +412,11 @@
         };
 
         async function fetchData() {
+            if (fetchInFlight || document.hidden) {
+                return;
+            }
+
+            fetchInFlight = true;
             try {
                 const statsRes = await fetch(`/api/cl1_stats?instance=${currentInstance}`);
                 const statsData = await statsRes.json();
@@ -434,7 +441,23 @@
                 elErrorMsg.style.display = 'block';
                 elStatusDot.style.backgroundColor = '#ef4444';
                 elStatusDot.style.boxShadow = '0 0 10px #ef4444';
+            } finally {
+                fetchInFlight = false;
             }
+        }
+
+        function stopPolling() {
+            if (fetchTimer !== null) {
+                clearInterval(fetchTimer);
+                fetchTimer = null;
+            }
+        }
+
+        function startPolling() {
+            if (fetchTimer !== null) {
+                return;
+            }
+            fetchTimer = setInterval(fetchData, UPDATE_INTERVAL);
         }
 
         function updateStatsUI(stats) {
@@ -737,9 +760,21 @@
             }
         }
 
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopPolling();
+                return;
+            }
+
+            fetchData();
+            startPolling();
+        });
+
         // 初始化
         fetchData();
-        setInterval(fetchData, UPDATE_INTERVAL);
+        if (!document.hidden) {
+            startPolling();
+        }
     </script>
 </body>
 

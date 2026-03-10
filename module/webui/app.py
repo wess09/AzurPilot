@@ -212,6 +212,7 @@ class AlasGUI(Frame):
         # rendered state cache
         self.rendered_cache = []
         self.inst_cache = []
+        self._overview_snapshot = None
         self.load_home = False
         self.af_flag = False
         self._last_announcement_id = None
@@ -1121,6 +1122,7 @@ class AlasGUI(Frame):
     def alas_overview(self) -> None:
         self.init_menu(name="Overview")
         self.set_title(t(f"Gui.MenuAlas.Overview"))
+        self._overview_snapshot = None
 
         put_scope("overview", [put_scope("schedulers"), put_scope("logs")])
 
@@ -1399,6 +1401,16 @@ class AlasGUI(Frame):
             running = []
             pending = []
         waiting = self.alas_config.waiting_task
+
+        snapshot = {
+            "running": tuple((task.command, task.next_run) for task in running),
+            "pending": tuple((task.command, task.next_run) for task in pending),
+            "waiting": tuple((task.command, task.next_run) for task in waiting),
+            "alive": self.alas.alive,
+        }
+        if self._overview_snapshot == snapshot:
+            return
+        self._overview_snapshot = snapshot
 
         def put_task(func: Function):
             with use_scope(f"overview-task_{func.command}"):
@@ -2315,7 +2327,6 @@ class AlasGUI(Frame):
         self.task_handler.add(self.state_switch.g(), 2)
         self.task_handler.add(self.set_aside_status, 2)
         self.task_handler.add(visibility_state_switch.g(), 15)
-        self.task_handler.add(update_switch.g(), 1)
         self.task_handler.add(update_switch.g(), 1)
         
         # 公告检查功能（非阻塞）
