@@ -271,8 +271,24 @@ class Cl1Database:
 
     # ========== 短猫数据记录方法 ==========
 
-    def increment_meow_battle_count(self, instance: str, delta: int = 1):
-        """增加短猫战斗次数"""
+    def increment_meow_battle_count(self, instance: str, hazard_level: int = None):
+        """增加短猫有效战斗轮数
+
+        Args:
+            instance: 实例名称
+            hazard_level: 侵蚀等级，用于换算有效战斗轮数（2-3: 每轮2次, 4-6: 每轮3次）
+        """
+        # 根据侵蚀等级换算有效战斗轮数
+        # 侵蚀2-3: 每轮2次战斗 -> 有效轮数 = 战斗次数 / 2
+        # 侵蚀4-6: 每轮3次战斗 -> 有效轮数 = 战斗次数 / 3
+        if hazard_level is not None and hazard_level in [2, 3, 4, 5, 6]:
+            if hazard_level in [2, 3]:
+                delta = 0.5  # 2次战斗算1轮
+            else:  # 4, 5, 6
+                delta = 1 / 3  # 3次战斗算1轮
+        else:
+            delta = 1  # 默认直接加1
+
         month = datetime.now().strftime('%Y-%m')
         data = self.get_stats(instance, month)
         data['meow_battle_count'] = data.get('meow_battle_count', 0) + delta

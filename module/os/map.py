@@ -810,6 +810,14 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
         # 短猫任务数据收集
         if getattr(self, '_meow_searching_active', False) and getattr(self, '_meow_time_recording_enabled', False):
+            # 获取侵蚀等级用于换算有效战斗轮数
+            hazard_level = None
+            try:
+                if hasattr(self, 'zone') and hasattr(self.zone, 'hazard_level'):
+                    hazard_level = self.zone.hazard_level
+            except Exception:
+                logger.debug('Failed to get hazard level for battle count')
+
             try:
                 try:
                     self._meow_auto_search_battle_count += 1
@@ -819,7 +827,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 try:
                     from module.statistics.cl1_database import db as cl1_db
                     instance_name = getattr(self.config, 'config_name', 'default')
-                    cl1_db.increment_meow_battle_count(instance_name)
+                    cl1_db.increment_meow_battle_count(instance_name, hazard_level)
                 except Exception:
                     logger.debug('Failed to persist monthly meow battle increment', exc_info=True)
 
