@@ -413,7 +413,16 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         
         self.config._disable_siren_research = True
         logger.info('探测装置搜索：已设置离开标志，遇到装置选项时将选择离开')
-        
+
+        def _restore_siren_search_state():
+            if hasattr(self, '_original_siren_research_enable'):
+                self.config.OpsiSirenBug_SirenResearch_Enable = self._original_siren_research_enable
+            if hasattr(self.config, '_disable_siren_research'):
+                delattr(self.config, '_disable_siren_research')
+            if hasattr(self, '_original_stay_in_zone'):
+                self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
+                logger.info(f'探测装置搜索：恢复 StayInZone={self._original_stay_in_zone}')
+
         # 获取目标数量
         stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
         
@@ -440,6 +449,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             
             if not zones:
                 logger.warning(f'探测装置搜索模式：无更多符合条件的海域 (侵蚀等级 {hazard_level})')
+                _restore_siren_search_state()
                 break  # 无可搜zones，退出外层while循环
             
             # 内层循环：逐个搜索该轮的zones
@@ -495,6 +505,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 if siren_detector_found:
                     level, found_count, added = self._record_siren_found_zone(current_zone_id)
                     if not level:
+                        _restore_siren_search_state()
                         return False
                     
                     logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
@@ -506,16 +517,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     if stop_after_found > 0 and found_count >= stop_after_found:
                         logger.hr(f'侵蚀{level}达成目标数量 {stop_after_found}，关闭搜索模式', level=1)
                         self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
-                        
-                        if hasattr(self, '_original_siren_research_enable'):
-                            self.config.OpsiSirenBug_SirenResearch_Enable = self._original_siren_research_enable
-                        
-                        if hasattr(self.config, '_disable_siren_research'):
-                            delattr(self.config, '_disable_siren_research')
-                        
-                        if hasattr(self, '_original_stay_in_zone'):
-                            self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
-                        
+                        _restore_siren_search_state()
                         self.handle_after_auto_search()
                         # 结束短猫搜索计时
                     self.on_meow_search_end()
@@ -531,8 +533,8 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     # 此处不恢复状态，继续while循环搜索下一个zone
                 
                 # for循环完成后（无论发现与否），如果没有返回True，则继续while循环
-            self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
-            logger.info(f'探测装置搜索：恢复 StayInZone={self._original_stay_in_zone}')
+
+        _restore_siren_search_state()
 
         # 结束短猫搜索计时
         self.on_meow_search_end()
