@@ -730,7 +730,7 @@ class AlasGUI(Frame):
                     meow_data = {}
 
                 meow_round_times = meow_data.get("round_times", [])
-                meow_battle_count = int(meow_data.get("battle_count", 0))
+                meow_battle_count = round(meow_data.get("battle_count", 0))
                 meow_avg_time = meow_data.get("avg_round_time", 0.0)
                 meow_avg_battle_time = meow_data.get("avg_battle_time", 0.0)
 
