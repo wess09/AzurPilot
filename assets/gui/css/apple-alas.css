@@ -1012,12 +1012,6 @@ select {
 	animation-delay: 0.15s;
 }
 
-#pywebio-scope-opsi_stats:hover,
-#pywebio-scope-ap_chart:hover,
-#pywebio-scope-ship_exp_table:hover {
-	transform: translateY(-3px) !important;
-}
-
 /* === 导航器按钮弹性动画 === */
 #pywebio-scope-navigator .btn {
 	transition:
