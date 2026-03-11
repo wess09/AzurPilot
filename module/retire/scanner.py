@@ -1071,6 +1071,6 @@ class DockScanner(ShipScanner):
             out: page_dock
         """
         self.scanner.enable('fleet')
-        self.scanner.set_limitation(fleet=None)
+        self.scanner.set_limitation(fleet=fleet)
         self.multi_scan(main)
-        return [ship for ship in self._results if ship.fleet == fleet]
+        return self._results

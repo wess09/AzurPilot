@@ -16,6 +16,26 @@ from module.ocr.ocr import Ocr
 SYMBOLS = set('`~_"\'“”‘’—–―‖，,。；;：:！？!?（）()[]【】<>《》…•ˇ′=|^*')
 ALLOWED_RE = re.compile(r'^[\u4e00-\u9fff\u3040-\u30ffA-Za-z0-9\-\.·]+$')
 
+# 缓存补扫 OCR，避免大批量处理中重复初始化相同配置。
+_RESCAN_OCR_CACHE: Dict[Tuple[str, Tuple[int, int, int], int, int, int], Ocr] = {}
+_RESCAN_OCR_CACHE_MAX = 16
+
+
+def _get_rescan_ocr(lang: str, letter: Tuple[int, int, int], threshold: int, width: int, height: int) -> Ocr:
+    key = (lang, letter, threshold, width, height)
+    cached = _RESCAN_OCR_CACHE.get(key)
+    if cached is not None:
+        return cached
+
+    if len(_RESCAN_OCR_CACHE) >= _RESCAN_OCR_CACHE_MAX:
+        # 控制缓存大小，避免长期运行占用过多内存。
+        _RESCAN_OCR_CACHE.pop(next(iter(_RESCAN_OCR_CACHE)))
+
+    ocr = Ocr(buttons=[(0, 0, width, height)], lang=lang, letter=letter, threshold=threshold)
+    ocr.SHOW_LOG = False
+    _RESCAN_OCR_CACHE[key] = ocr
+    return ocr
+
 
 def _normalize_for_match(name: str) -> str:
     text = (name or '').strip()
@@ -147,8 +167,6 @@ def _rescan_ocr_from_image(
         return '', 'unresolved', 0.0
 
     lang = 'jp' if server.server == 'jp' else 'cnocr'
-    button = [(0, 0, w, h)]
-
     # 多组参数做“真补扫”，覆盖白字/粉字和略放宽阈值
     ocr_configs = [
         ((255, 255, 255), 144),
@@ -161,8 +179,7 @@ def _rescan_ocr_from_image(
 
     for letter, threshold in ocr_configs:
         try:
-            ocr = Ocr(buttons=button, lang=lang, letter=letter, threshold=threshold)
-            ocr.SHOW_LOG = False
+            ocr = _get_rescan_ocr(lang=lang, letter=letter, threshold=threshold, width=w, height=h)
             out = ocr.ocr(name_image)
             text = out[0] if isinstance(out, list) else out
             normalized = _normalize_for_match(str(text or ''))
