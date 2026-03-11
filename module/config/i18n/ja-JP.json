@@ -5127,7 +5127,10 @@
       "LoadShipExpFailed": "Failed to load ship EXP data: {e}",
       "TargetExpRequired": "EXP required for target level",
       "BattlesCompleted": "Battles completed",
-      "ExpRemaining": "EXP remaining"
+      "ExpRemaining": "EXP remaining",
+      "StartCleanupTime": "Gui.Stat.StartCleanupTime",
+      "NextOsReset": "Gui.Stat.NextOsReset",
+      "MeowAutoCleanupStatus": "Gui.Stat.MeowAutoCleanupStatus"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",

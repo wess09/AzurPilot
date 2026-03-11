@@ -5127,7 +5127,10 @@
       "LoadShipExpFailed": "加载舰船经验数据失败: {e}",
       "TargetExpRequired": "目标等级所需经验",
       "BattlesCompleted": "已战斗场次",
-      "ExpRemaining": "还需经验"
+      "ExpRemaining": "还需经验",
+      "StartCleanupTime": "Gui.Stat.StartCleanupTime",
+      "NextOsReset": "Gui.Stat.NextOsReset",
+      "MeowAutoCleanupStatus": "Gui.Stat.MeowAutoCleanupStatus"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",

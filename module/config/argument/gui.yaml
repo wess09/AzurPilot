@@ -248,6 +248,9 @@ Stat:
   TargetExpRequired:
   BattlesCompleted:
   ExpRemaining:
+  StartCleanupTime:
+  NextOsReset:
+  MeowAutoCleanupStatus:
 
 OpsiScheduling:
   UseSmartSchedulingOperationCoinsPreserve:
