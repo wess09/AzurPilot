@@ -785,32 +785,124 @@ class AlasGUI(Frame):
                 try:
                     from module.os.tasks.scheduling import OpsiScheduling
                     # 创建临时实例来调用计算方法
-                    scheduling = OpsiScheduling(self.config, task='OpsiScheduling')
-                    advance_calc = scheduling.get_meow_advance_calculation()
+                    config_for_stat = self.alas_config if hasattr(self, 'alas_config') else None
+                    if config_for_stat is not None:
+                        scheduling = OpsiScheduling(config_for_stat, task='OpsiScheduling')
+                        advance_calc = scheduling.get_meow_advance_calculation()
+                    else:
+                        advance_calc = {}
                 except Exception as e:
+                    logger.warning(f"短猫提前建议计算失败，使用WebUI兜底计算: {e}")
                     advance_calc = {}
 
-                if advance_calc:
-                    mode_name = advance_calc.get('mode_name', '-')
-                    current_ap = advance_calc.get('current_ap', '-')
-                    meow_round_ap = advance_calc.get('meow_round_ap', '-')
-                    avg_meow_round_time = advance_calc.get('avg_meow_round_time', 0)
-                    available_rounds = advance_calc.get('available_rounds', 0)
-                    hours_ahead = advance_calc.get('hours_ahead', 0)
-                    recommendation = advance_calc.get('recommendation', '-')
+                # 兜底：即使调度实例初始化失败，也尽量从统计快照计算建议，避免显示全为空
+                if not advance_calc:
+                    try:
+                        from datetime import datetime, timedelta
+                        from module.config.utils import get_os_next_reset
+                        from module.statistics.cl1_database import db as cl1_db
+                        from module.statistics.opsi_month import get_ap_timeline
 
-                    put_html(build_title_block(t("Gui.Stat.MeowAdvanceAdviceTitle"), margin_top=20, margin_bottom=8))
-                    put_row([
-                        put_text(t("Gui.Stat.CurrentAP", value=current_ap)),
-                        put_text(t("Gui.Stat.ApPerRound", value=meow_round_ap)),
-                        put_text(t("Gui.Stat.AvailableRounds", value=f"{available_rounds:.1f}", unit=t("Gui.Stat.RoundUnit"))),
-                    ])
-                    put_row([
-                        put_text(t("Gui.Stat.AvgRoundDuration", value=f"{avg_meow_round_time:.1f}", unit=t("Gui.Stat.SecondUnit"))),
-                        put_text(t("Gui.Stat.CurrentMode", value=mode_name)),
-                        put_text(t("Gui.Stat.RecommendAhead", value=f"{hours_ahead:.1f}", unit=t("Gui.Stat.HourUnit"))),
-                    ])
-                    put_html(build_recommendation_box(recommendation))
+                        config_for_stat = self.alas_config if hasattr(self, 'alas_config') else None
+                        mode = 'balanced'
+                        if config_for_stat is not None and hasattr(config_for_stat, 'cross_get'):
+                            mode = config_for_stat.cross_get(
+                                keys='OpsiScheduling.OpsiScheduling.MeowStartEarlyMode'
+                            ) or 'balanced'
+
+                        mode_names = {
+                            'aggressive': '激进',
+                            'balanced': '均衡',
+                            'conservative': '保守',
+                        }
+                        multiplier_map = {
+                            'aggressive': 0.8,
+                            'balanced': 1.2,
+                            'conservative': 1.5,
+                        }
+                        multiplier = multiplier_map.get(mode, 1.2)
+
+                        instance_name_stat = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else 'default'
+                        meow_data_fallback = cl1_db.get_meow_stats(instance_name_stat)
+                        avg_meow_round_time = float(meow_data_fallback.get('avg_round_time', 0) or 0)
+
+                        ap_timeline = get_ap_timeline(instance_name=instance_name_stat)
+                        current_ap = int(ap_timeline[-1].get('ap', 0)) if ap_timeline else 0
+
+                        meow_round_ap = 30
+                        available_rounds = (current_ap / meow_round_ap) if meow_round_ap else 0
+                        base_hours_ahead = (available_rounds * avg_meow_round_time) / 3600 if avg_meow_round_time > 0 else 0
+                        hours_ahead = max(0, min(base_hours_ahead * multiplier, 168))
+
+                        now = datetime.now()
+                        next_reset = get_os_next_reset()
+                        start_cleanup_dt = next_reset - timedelta(hours=hours_ahead)
+                        if start_cleanup_dt < now:
+                            start_cleanup_dt = now
+
+                        if avg_meow_round_time == 0:
+                            recommendation = '数据不足，无法计算建议'
+                        elif current_ap < meow_round_ap:
+                            recommendation = '行动力不足一轮短猫消耗'
+                        else:
+                            recommendation = (
+                                f"当前AP {current_ap} 可运行 {available_rounds:.1f} 轮短猫，"
+                                f"约 {base_hours_ahead:.1f} 小时"
+                            )
+
+                        advance_calc = {
+                            'mode': mode,
+                            'mode_name': mode_names.get(mode, '均衡'),
+                            'multiplier': multiplier,
+                            'current_ap': current_ap,
+                            'meow_round_ap': meow_round_ap,
+                            'avg_meow_round_time': round(avg_meow_round_time, 1) if avg_meow_round_time else 0,
+                            'available_rounds': round(available_rounds, 1),
+                            'hours_ahead': round(hours_ahead, 1),
+                            'start_cleanup_time': start_cleanup_dt.strftime('%m-%d %H:%M'),
+                            'next_os_reset_time': next_reset.strftime('%m-%d %H:%M'),
+                            'recommendation': f"{recommendation}（WebUI兜底计算）",
+                        }
+                    except Exception as e:
+                        logger.warning(f"WebUI兜底计算短猫建议失败: {e}")
+                        advance_calc = {}
+
+                config_for_stat = self.alas_config if hasattr(self, 'alas_config') else None
+                meow_advance_enable = False
+                if config_for_stat is not None and hasattr(config_for_stat, 'cross_get'):
+                    meow_advance_enable = config_for_stat.cross_get(
+                        keys='OpsiScheduling.OpsiScheduling.MeowStartEarlyEnable'
+                    ) or False
+                mode_name = advance_calc.get('mode_name', '-')
+                current_ap = advance_calc.get('current_ap', '-')
+                meow_round_ap = advance_calc.get('meow_round_ap', '-')
+                avg_meow_round_time = advance_calc.get('avg_meow_round_time', 0)
+                available_rounds = advance_calc.get('available_rounds', 0)
+                hours_ahead = advance_calc.get('hours_ahead', 0)
+                start_cleanup_time = advance_calc.get('start_cleanup_time', '-')
+                next_os_reset_time = advance_calc.get('next_os_reset_time', '-')
+                recommendation = advance_calc.get('recommendation', '数据不足，无法计算建议')
+
+                if not meow_advance_enable:
+                    recommendation = f"{recommendation}（当前未开启自动提前清理，仅供参考）"
+
+                put_html(build_title_block(t("Gui.Stat.MeowAdvanceAdviceTitle"), margin_top=20, margin_bottom=8))
+                put_row([
+                    put_text(t("Gui.Stat.CurrentAP", value=current_ap)),
+                    put_text(t("Gui.Stat.ApPerRound", value=meow_round_ap)),
+                    put_text(t("Gui.Stat.AvailableRounds", value=f"{available_rounds:.1f}", unit=t("Gui.Stat.RoundUnit"))),
+                ])
+                put_row([
+                    put_text(t("Gui.Stat.AvgRoundDuration", value=f"{avg_meow_round_time:.1f}", unit=t("Gui.Stat.SecondUnit"))),
+                    put_text(t("Gui.Stat.CurrentMode", value=mode_name)),
+                    put_text(t("Gui.Stat.RecommendAhead", value=f"{hours_ahead:.1f}", unit=t("Gui.Stat.HourUnit"))),
+                ])
+                put_row([
+                    put_text(f"建议开始清理时间: {start_cleanup_time}"),
+                    put_text(f"下次大世界重置: {next_os_reset_time}"),
+                    put_text(f"自动提前清理: {'已开启' if meow_advance_enable else '未开启'}"),
+                ])
+                put_html(build_recommendation_box(recommendation))
 
                 def export_opsi_csv(save_to_desktop: bool = True):
                     import io
