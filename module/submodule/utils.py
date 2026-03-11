@@ -22,6 +22,7 @@ def get_available_func():
         'AzurLaneUncensored',
         'Benchmark',
         'GameManager',
+        'DockScan',
     )
 
 def get_available_mod():

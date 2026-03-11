@@ -30,6 +30,8 @@ else:
     CARD_LEVEL_GRIDS = CARD_GRIDS.crop(area=(74, 5, 136, 27), name='LEVEL')
     CARD_EMOTION_GRIDS = CARD_GRIDS.crop(area=(21, 29, 71, 48), name='EMOTION')
 CARD_EMOTION_STATUS_GRIDS = CARD_GRIDS.crop(area=(113, 57, 135, 77), name='EMOTION_STATUS')
+# 舰名区域在卡片中下部，过低会截到背景纹理导致 OCR 乱码
+CARD_NAME_GRIDS = CARD_GRIDS.crop(area=(8, 160, 130, 184), name='NAME')
 EMOTION_RED = (255, 122, 109)
 EMOTION_YELLOW = (255, 194, 115)
 EMOTION_GREEN = (148, 232, 104)

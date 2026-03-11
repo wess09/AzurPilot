@@ -16,7 +16,7 @@ from module.base.utils import (color_similar, crop, extract_letters, get_color,
                                random_rectangle_point)
 from module.combat.level import LevelOcr
 from module.logger import logger
-from module.ocr.ocr import Digit
+from module.ocr.ocr import Digit, Ocr
 from module.retire.assets import (DOCK_CHECK, SHIP_DETAIL_CHECK,
                                   TEMPLATE_FLEET_1, TEMPLATE_FLEET_2,
                                   TEMPLATE_FLEET_3, TEMPLATE_FLEET_4,
@@ -24,7 +24,7 @@ from module.retire.assets import (DOCK_CHECK, SHIP_DETAIL_CHECK,
                                   TEMPLATE_IN_BATTLE, TEMPLATE_IN_COMMISSION, TEMPLATE_IN_HARD,
                                   TEMPLATE_IN_EVENT_FLEET)
 from module.retire.dock import (CARD_EMOTION_GRIDS, CARD_EMOTION_STATUS_GRIDS, CARD_GRIDS,
-                                CARD_LEVEL_GRIDS, CARD_RARITY_GRIDS, DOCK_SCROLL,
+                                CARD_LEVEL_GRIDS, CARD_NAME_GRIDS, CARD_RARITY_GRIDS, DOCK_SCROLL,
                                 EMOTION_RED, EMOTION_YELLOW, EMOTION_GREEN)
 
 
@@ -60,6 +60,8 @@ class Ship:
     emotion: int = 0
     fleet: int = 0
     status: str = ''
+    name: str = ''
+    name_image: Any = field(default=None, repr=False)
     button: Any = None
     hash_: str = field(default='', repr=False)
 
@@ -422,6 +424,125 @@ class HashGenerator(Scanner):
         pass
 
 
+class NameScanner(Scanner):
+    """
+    Ship name scanner using OCR.
+    Recognizes ship names from dock cards.
+    Uses flexible letter color matching to handle various game rendering.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+        self._results = []
+        self.grids = CARD_NAME_GRIDS
+        if server.server == 'jp':
+            lang = 'jp'
+        else:
+            lang = 'cnocr'
+        self.ocr_white = Ocr(
+            buttons=[button.area for button in self.grids.buttons],
+            lang=lang,
+            letter=(255, 255, 255),
+            threshold=144,
+        )
+        # 婚舰名称常见为偏粉色字体，单独做一次OCR以减少漏识别。
+        self.ocr_pink = Ocr(
+            buttons=[button.area for button in self.grids.buttons],
+            lang=lang,
+            letter=(236, 210, 205),
+            threshold=136,
+        )
+        self.ocr_white.SHOW_LOG = False
+        self.ocr_pink.SHOW_LOG = False
+
+    @staticmethod
+    def _name_score(name: str) -> int:
+        if name == 'Unknown':
+            return -999
+
+        cjk_count = sum(1 for ch in name if '\u4e00' <= ch <= '\u9fff')
+        alnum_count = sum(1 for ch in name if ch.isalnum())
+        punct_count = len(name) - cjk_count - alnum_count
+
+        # 以中文/字母数字为主加分，标点符号减分。
+        return cjk_count * 3 + alnum_count * 2 - punct_count * 2
+
+    def _merge_name(self, white_name: str, pink_name: str) -> str:
+        white_norm = self._normalize_name(white_name)
+        pink_norm = self._normalize_name(pink_name)
+
+        if white_norm == pink_norm:
+            return white_norm
+
+        white_score = self._name_score(white_norm)
+        pink_score = self._name_score(pink_norm)
+        return white_norm if white_score >= pink_score else pink_norm
+
+    @staticmethod
+    def _normalize_name(name: str) -> str:
+        text = (name or '').strip()
+        if not text:
+            return 'Unknown'
+
+        compact = ''.join(ch for ch in text if not ch.isspace())
+        if not compact:
+            return 'Unknown'
+
+        cjk_count = sum(1 for ch in compact if '\u4e00' <= ch <= '\u9fff')
+        alnum_count = sum(1 for ch in compact if ch.isalnum())
+        punct_count = len(compact) - cjk_count - alnum_count
+
+        if cjk_count == 0 and alnum_count <= 1:
+            return 'Unknown'
+        if cjk_count == 0 and punct_count >= alnum_count:
+            return 'Unknown'
+
+        return compact
+
+    def _scan(self, image) -> List:
+        """
+        Scan ship names using OCR.
+        
+        Returns:
+            List: List of ship names for each card
+        """
+        if not self.grids.buttons:
+            return []
+            
+        try:
+            white_names = self.ocr_white.ocr(image)
+            pink_names = self.ocr_pink.ocr(image)
+
+            if isinstance(white_names, str):
+                white_names = [white_names]
+            if isinstance(pink_names, str):
+                pink_names = [pink_names]
+
+            count = len(self.grids.buttons)
+            white_names = list(white_names) if isinstance(white_names, list) else []
+            pink_names = list(pink_names) if isinstance(pink_names, list) else []
+
+            # 对齐长度，避免OCR返回数量与按钮数量不一致。
+            if len(white_names) < count:
+                white_names.extend([''] * (count - len(white_names)))
+            if len(pink_names) < count:
+                pink_names.extend([''] * (count - len(pink_names)))
+
+            return [self._merge_name(white_names[i], pink_names[i]) for i in range(count)]
+        except Exception as e:
+            logger.debug(f'NameScanner OCR error: {e}')
+            return ['Unknown'] * len(self.grids.buttons)
+
+    def limit_value(self, value) -> str:
+        return value if value else 'any'
+
+    def move(self, vector) -> None:
+        """Update button positions when scanning area moves"""
+        super().move(vector)
+        buttons = [button.area for button in self.grids.buttons]
+        self.ocr_white.buttons = buttons
+        self.ocr_pink.buttons = buttons
+
+
 class ShipScanner(Scanner):
     """
     Ship Scanner is designed to use with an "Initial" page_dock, which means there cannot be
@@ -487,6 +608,7 @@ class ShipScanner(Scanner):
             'rarity': RarityScanner(),
             'fleet': FleetScanner(),
             'status': StatusScanner(),
+            'name': NameScanner(),
             'hash': HashGenerator(),
         }
 
@@ -497,6 +619,12 @@ class ShipScanner(Scanner):
         for scanner in self.sub_scanners.values():
             scanner.scan(image, cached=True)
 
+        # 为后处理阶段提供“真补扫”输入：每张卡片对应的舰名区域截图
+        name_images = [
+            crop(image, button.area, copy=True)
+            for button in self.sub_scanners['name'].grids.buttons
+        ]
+
         candidates: List[Ship] = [
             Ship(
                 level=level,
@@ -504,15 +632,19 @@ class ShipScanner(Scanner):
                 rarity=rarity,
                 fleet=fleet,
                 status=status,
+                name=name,
+                name_image=name_image,
                 button=button,
                 hash_=hash_)
-            for level, emotion, rarity, fleet, status, button, hash_ in
+            for level, emotion, rarity, fleet, status, name, name_image, button, hash_ in
             zip(
                 self.sub_scanners['level'].results,
                 self.sub_scanners['emotion'].results,
                 self.sub_scanners['rarity'].results,
                 self.sub_scanners['fleet'].results,
                 self.sub_scanners['status'].results,
+                self.sub_scanners['name'].results,
+                name_images,
                 self.grids.buttons,
                 self.sub_scanners['hash'].results)
         ]
@@ -605,6 +737,9 @@ class DockScanner(ShipScanner):
     SCAN_ZONES: Dict[str, Tuple[int, int, int, int]] = {
         'dock': (93, 55, 1219, 719),
     }
+    MAX_SCAN_ROUNDS: int = 180
+    MAX_BOTTOM_NO_NEW_ROUNDS: int = 4
+
     def __init__(self, zone: str = 'dock', test_name: str = '') -> None:
         self._results = []
         self.scan_zone: Tuple[int, int, int, int] = self.SCAN_ZONES[zone]
@@ -620,6 +755,8 @@ class DockScanner(ShipScanner):
         self._no_change: int = 0
         self.last_results = []
         self.retry: int = 0
+        self.scan_rounds: int = 0
+        self.bottom_no_new_rounds: int = 0
 
         self.scanner = ShipScanner(emotion=False, fleet=False, status=False)
 
@@ -741,17 +878,17 @@ class DockScanner(ShipScanner):
         if main.appear(SHIP_DETAIL_CHECK, offset=(30, 30)):
             main.ui_back(DOCK_CHECK)
 
-    def _scan(self, image) -> None:
+    def _scan(self, image) -> int:
         bound = self._find_bound(image)
         if len(bound) == 1:
             # No ship appears
             self._stable = True
-            return
+            return 0
         elif len(bound) == 2:
             if self.bound != bound:
                 self._stable = False
                 self.bound = bound
-                return
+                return 0
         else:
             self.bound.clear()
 
@@ -772,6 +909,7 @@ class DockScanner(ShipScanner):
         else:
             self.retry = 0
 
+        inc = 0
         if all([old.hash_ == new.hash_ for new, old in zip(results, self.last_results)]):
             self._stable = True
             inc = self._remove_duplicate(results)
@@ -792,6 +930,7 @@ class DockScanner(ShipScanner):
                     self.debug_info['ocr_mistake'] += 1
 
         self.last_results = results
+        return inc
 
     def multi_scan(self, main) -> None:
         """
@@ -810,6 +949,8 @@ class DockScanner(ShipScanner):
         the position of those blanks.
         """
         from module.retire.enhancement import OCR_DOCK_AMOUNT
+        self.scan_rounds = 0
+        self.bottom_no_new_rounds = 0
         self.debug_info['dock_size'], _, _ = OCR_DOCK_AMOUNT.ocr(main.device.image)
 
         if DOCK_SCROLL.appear(main):
@@ -820,24 +961,47 @@ class DockScanner(ShipScanner):
 
         start_time = time.time()
         while True:
+            self.scan_rounds += 1
+            if self.scan_rounds > self.MAX_SCAN_ROUNDS:
+                logger.warning(f'Dock scan reached max rounds ({self.MAX_SCAN_ROUNDS}), stop scanning to avoid dead loop')
+                break
+
+            inc = 0
             while not self.stable:
                 main.device.screenshot()
                 self.ensure_in_dock(main)
-                self._scan(main.device.image)
+                inc = self._scan(main.device.image)
+
+            has_scroll = DOCK_SCROLL.appear(main)
+            at_bottom = has_scroll and DOCK_SCROLL.at_bottom(main)
+            if inc > 0:
+                self.bottom_no_new_rounds = 0
+            elif at_bottom:
+                self.bottom_no_new_rounds += 1
+            else:
+                self.bottom_no_new_rounds = 0
+
+            if not has_scroll:
+                break
+            if self.bottom_no_new_rounds >= self.MAX_BOTTOM_NO_NEW_ROUNDS:
+                logger.info(f'Dock scan converged at bottom after {self.bottom_no_new_rounds} no-new rounds')
+                break
+            if at_bottom and self.no_change():
+                break
 
             click_zone_index = random_normal_distribution_int(0, 6)
             start = random_rectangle_point((
                 240 + click_zone_index * 165, 555, 250 + click_zone_index * 165, 719
             ))
-            end = (start[0], start[1] - self.moving_distance)
+            moving_distance = self.moving_distance
+            if at_bottom:
+                moving_distance = limit_in(moving_distance, 80, 140)
+            end = (start[0], start[1] - moving_distance)
             sharp_end = (end[0] - 165, end[1])
             main.device.swipe(start, end)
             main.device.click_record.pop()
             main.device.swipe(end, sharp_end)
             main.device.click_record.pop()
-
-            if not DOCK_SCROLL.appear(main) or (DOCK_SCROLL.at_bottom(main) and self.no_change()):
-                break
         end_time = time.time()
         self.debug_info['time'] = end_time - start_time
         self.debug_info['ship_count'] = len(self._results)
@@ -872,14 +1036,41 @@ class DockScanner(ShipScanner):
         """
         Please use multi_scan() instead.
         """
-        pass
+        logger.warning('DockScanner.scan() is not available. Use multi_scan() instead.')
 
-    def scan_one_fleet(self, fleet: int = None) -> List[Ship]:
+    def scan_whole_dock(self, main) -> List[Ship]:
         """
-        Scan all ships in a certain fleet.
-        It fleet is not specified, use self.fleet.
-        """
-        pass
+        Scan all ships in the dock.
 
-    def scan_whole_dock(self) -> List[Ship]:
-        pass
+        Args:
+            main: The AzurLaneAutoScript instance.
+
+        Returns:
+            List[Ship]: All ships in the dock.
+
+        Pages:
+            in: page_dock
+            out: page_dock
+        """
+        self.multi_scan(main)
+        return self._results
+
+    def scan_one_fleet(self, main, fleet: int) -> List[Ship]:
+        """
+        Scan all ships in the dock and return those belonging to a specific fleet.
+
+        Args:
+            main: The AzurLaneAutoScript instance.
+            fleet (int): Fleet number to filter. 1-6.
+
+        Returns:
+            List[Ship]: Ships belonging to the specified fleet.
+
+        Pages:
+            in: page_dock
+            out: page_dock
+        """
+        self.scanner.enable('fleet')
+        self.scanner.set_limitation(fleet=None)
+        self.multi_scan(main)
+        return [ship for ship in self._results if ship.fleet == fleet]

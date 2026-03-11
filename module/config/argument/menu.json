@@ -122,7 +122,8 @@
       "BoxDisassemble",
       "Benchmark",
       "AzurLaneUncensored",
-      "GameManager"
+      "GameManager",
+      "DockScan"
     ]
   }
 }

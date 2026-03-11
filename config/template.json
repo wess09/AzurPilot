@@ -2677,5 +2677,11 @@
     "Storage": {
       "Storage": {}
     }
+  },
+  "DockScan": {
+    "DockScan": {},
+    "Storage": {
+      "Storage": {}
+    }
   }
 }

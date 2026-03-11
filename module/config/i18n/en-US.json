@@ -325,6 +325,10 @@
     "GameManager": {
       "name": "Game Manager (Incomplete)",
       "help": ""
+    },
+    "DockScan": {
+      "name": "Dock Scan",
+      "help": "Scan all ships in the dock and show rarity and level distribution.\nOutput files are saved in the Alas root directory, and exact paths are shown in logs."
     }
   },
   "Scheduler": {
@@ -5160,6 +5164,16 @@
     "Misc": {
       "Enabled": "Enabled",
       "Disabled": "Disabled"
+    }
+  },
+  "DockScan": {
+    "_info": {
+      "name": "Dock Scan",
+      "help": "Scan all ships in the dock and display rarity and level distribution statistics.\nMake sure you are on the dock page before starting.\nOutput files are saved in the Alas root directory, and exact paths are shown in logs."
+    },
+    "PostProcess": {
+      "name": "Enable Post Process",
+      "help": "Automatically run name matching and unresolved export after scanning.\nOutput files are saved in the Alas root directory."
     }
   }
 }
