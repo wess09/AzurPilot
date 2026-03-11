@@ -5127,7 +5127,10 @@
       "LoadShipExpFailed": "Failed to load ship EXP data: {e}",
       "TargetExpRequired": "EXP required for target level",
       "BattlesCompleted": "Battles completed",
-      "ExpRemaining": "EXP remaining"
+      "ExpRemaining": "EXP remaining",
+      "StartCleanupTime": "Suggested cleanup start: {value}",
+      "NextOsReset": "Next OS reset: {value}",
+      "MeowAutoCleanupStatus": "Auto early cleanup: {value}"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
@@ -5139,6 +5142,10 @@
       "EnableAbyssal": "Gui.OpsiScheduling.EnableAbyssal",
       "EnableStronghold": "Gui.OpsiScheduling.EnableStronghold",
       "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
+    },
+    "Misc": {
+      "Enabled": "Enabled",
+      "Disabled": "Disabled"
     }
   }
 }

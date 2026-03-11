@@ -822,7 +822,11 @@ class AlasGUI(Frame):
                         }
                         multiplier = multiplier_map.get(mode, 1.2)
 
-                        instance_name_stat = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else 'default'
+                        instance_name_stat = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
+                        if not instance_name_stat:
+                            from module.config.utils import alas_instance
+                            _all_instances = alas_instance()
+                            instance_name_stat = _all_instances[0] if _all_instances else 'default'
                         meow_data_fallback = cl1_db.get_meow_stats(instance_name_stat)
                         avg_meow_round_time = float(meow_data_fallback.get('avg_round_time', 0) or 0)
 
@@ -898,9 +902,10 @@ class AlasGUI(Frame):
                     put_text(t("Gui.Stat.RecommendAhead", value=f"{hours_ahead:.1f}", unit=t("Gui.Stat.HourUnit"))),
                 ])
                 put_row([
-                    put_text(f"建议开始清理时间: {start_cleanup_time}"),
-                    put_text(f"下次大世界重置: {next_os_reset_time}"),
-                    put_text(f"自动提前清理: {'已开启' if meow_advance_enable else '未开启'}"),
+                    put_text(t("Gui.Stat.StartCleanupTime", value=start_cleanup_time)),
+                    put_text(t("Gui.Stat.NextOsReset", value=next_os_reset_time)),
+                    put_text(t("Gui.Stat.MeowAutoCleanupStatus",
+                               value=t("Gui.Misc.Enabled") if meow_advance_enable else t("Gui.Misc.Disabled"))),
                 ])
                 put_html(build_recommendation_box(recommendation))
 

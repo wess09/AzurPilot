@@ -5127,7 +5127,10 @@
       "LoadShipExpFailed": "加载舰船经验数据失败: {e}",
       "TargetExpRequired": "目标等级所需经验",
       "BattlesCompleted": "已战斗场次",
-      "ExpRemaining": "还需经验"
+      "ExpRemaining": "还需经验",
+      "StartCleanupTime": "建议开始清理时间: {value}",
+      "NextOsReset": "下次大世界重置: {value}",
+      "MeowAutoCleanupStatus": "自动提前清理: {value}"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "🧠 天才智能切换开关",
@@ -5139,6 +5142,10 @@
       "EnableAbyssal": "🐙 挑战大怪兽",
       "EnableStronghold": "🏰 目标：塞壬要塞",
       "MeowStartEarlyMode": "Gui.OpsiScheduling.MeowStartEarlyMode"
+    },
+    "Misc": {
+      "Enabled": "已开启",
+      "Disabled": "未开启"
     }
   }
 }
