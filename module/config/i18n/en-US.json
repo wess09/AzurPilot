@@ -286,6 +286,10 @@
       "name": "OpSi Task Delay+",
       "help": "    Within a configurable time period before the daily server restart at 0:00 (default is 5 minutes, triggered at 23:55), automatically delays the currently running Corrosion 1 and Meowfficer Farming tasks until after the restart at 0:00 the next day."
     },
+    "OpsiSimulator": {
+      "name": "Task.OpsiSimulator.name",
+      "help": "Task.OpsiSimulator.help"
+    },
     "IslandInfo": {
       "name": "Island Info (Incomplete)",
       "help": "Island Dashboard (Incomplete)"
@@ -4868,6 +4872,16 @@
     "RestartIntervalHours": {
       "name": "Restart interval (hours)",
       "help": "Automatically restart the simulator every few hours."
+    }
+  },
+  "OpsiSimulatorParameters": {
+    "_info": {
+      "name": "OpsiSimulatorParameters._info.name",
+      "help": "OpsiSimulatorParameters._info.help"
+    },
+    "Samples": {
+      "name": "OpsiSimulatorParameters.Samples.name",
+      "help": "OpsiSimulatorParameters.Samples.help"
     }
   },
   "Storage": {

@@ -286,6 +286,10 @@
       "name": "💤 零点避风港计划",
       "help": "    在服务器零点重启前的几分钟（默认23:55），人会把正在进行的侵蚀一和短猫任务按暂停，等重启完了再继续，真是个聪明的决策喵！"
     },
+    "OpsiSimulator": {
+      "name": "Task.OpsiSimulator.name",
+      "help": "Task.OpsiSimulator.help"
+    },
     "IslandInfo": {
       "name": "📊 岛屿情报板(未完工)",
       "help": "装修中，指挥官请稍后再来喵~"
@@ -4868,6 +4872,16 @@
     "RestartIntervalHours": {
       "name": "⏳ 午睡时间表 (小时)",
       "help": "每隔几个小时让模拟器去充电（重启）一次喵？"
+    }
+  },
+  "OpsiSimulatorParameters": {
+    "_info": {
+      "name": "OpsiSimulatorParameters._info.name",
+      "help": "OpsiSimulatorParameters._info.help"
+    },
+    "Samples": {
+      "name": "OpsiSimulatorParameters.Samples.name",
+      "help": "OpsiSimulatorParameters.Samples.help"
     }
   },
   "Storage": {

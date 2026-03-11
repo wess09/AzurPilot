@@ -2583,6 +2583,14 @@
       "Storage": {}
     }
   },
+  "OpsiSimulator": {
+    "OpsiSimulatorParameters": {
+      "Samples": 1000
+    },
+    "Storage": {
+      "Storage": {}
+    }
+  },
   "IslandInfo": {
     "IslandSeasonTask": {
       "TaskDict": null

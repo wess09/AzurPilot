@@ -286,6 +286,10 @@
       "name": "セイレーン作戦タスク延期+",
       "help": "    毎日0時のサーバー再起動前の設定可能な時間帯（デフォルトは5分、23:55にトリガー）に、現在進行中の侵蝕1と指揮ニャファームタスクを翌日0時の再起動完了後まで自動的に延期します。"
     },
+    "OpsiSimulator": {
+      "name": "Task.OpsiSimulator.name",
+      "help": "Task.OpsiSimulator.help"
+    },
     "IslandInfo": {
       "name": "島嶼情報（未完成）",
       "help": "島嶼ダッシュボード（未完成）"
@@ -4868,6 +4872,16 @@
     "RestartIntervalHours": {
       "name": "再起動間隔 (時間)",
       "help": "数時間ごとにシミュレーターを自動的に再起動します。"
+    }
+  },
+  "OpsiSimulatorParameters": {
+    "_info": {
+      "name": "OpsiSimulatorParameters._info.name",
+      "help": "OpsiSimulatorParameters._info.help"
+    },
+    "Samples": {
+      "name": "OpsiSimulatorParameters.Samples.name",
+      "help": "OpsiSimulatorParameters.Samples.help"
     }
   },
   "Storage": {

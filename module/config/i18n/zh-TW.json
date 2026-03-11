@@ -286,6 +286,10 @@
       "name": "大世界任務延後+",
       "help": "    在每日0點伺服器重啟前的可配置時間段內（預設為5分鍾，即23:55觸發），將當前進行中的侵蝕一和短貓任務自動延後至次日0點重啟完成後再執行   "
     },
+    "OpsiSimulator": {
+      "name": "Task.OpsiSimulator.name",
+      "help": "Task.OpsiSimulator.help"
+    },
     "IslandInfo": {
       "name": "島嶼資訊(未完成)",
       "help": "島嶼儀表盤(未完成)"
@@ -4868,6 +4872,16 @@
     "RestartIntervalHours": {
       "name": "重啟間隔（小時）",
       "help": "每隔多少小時自動重啟一次模擬器。"
+    }
+  },
+  "OpsiSimulatorParameters": {
+    "_info": {
+      "name": "OpsiSimulatorParameters._info.name",
+      "help": "OpsiSimulatorParameters._info.help"
+    },
+    "Samples": {
+      "name": "OpsiSimulatorParameters.Samples.name",
+      "help": "OpsiSimulatorParameters.Samples.help"
     }
   },
   "Storage": {

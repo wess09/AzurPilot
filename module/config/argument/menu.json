@@ -100,7 +100,8 @@
       "OpsiHazard1Leveling",
       "OpsiScheduling",
       "OpsiCrossMonth",
-      "OpsiDailyDelay"
+      "OpsiDailyDelay",
+      "OpsiSimulator"
     ]
   },
   "Island": {

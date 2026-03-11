@@ -1297,3 +1297,5 @@ EmulatorManagement:
   RestartIntervalHours:
     value: 4
     validate: [1, 24]
+OpsiSimulatorParameters:
+  Samples: 1000

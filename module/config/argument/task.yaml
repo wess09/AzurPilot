@@ -365,6 +365,8 @@ Opsi:
     OpsiDailyDelay:
       - Scheduler
       - OpsiDailyDelay
+    OpsiSimulator:
+      - OpsiSimulatorParameters
 
 # =================== Island ===================
 Island:

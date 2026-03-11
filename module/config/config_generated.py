@@ -789,5 +789,8 @@ class GeneratedConfig:
     EmulatorManagement_ScheduledEmulatorRestart = False
     EmulatorManagement_RestartIntervalHours = 4
 
+    # Group `OpsiSimulatorParameters`
+    OpsiSimulatorParameters_Samples = 1000
+
     # Group `Storage`
     Storage_Storage = {}
