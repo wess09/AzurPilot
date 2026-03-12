@@ -29,3 +29,7 @@
 ~~因为本来是自用来着 没想公开~~
 
  [有任何问题请加 QQ 群](https://addgroup.nanoda.work/#/)
+
+## 🔧 Recent Fixes
+
+- Fixed issue #200: 短猫提前开始时夜间模式未正常生效
