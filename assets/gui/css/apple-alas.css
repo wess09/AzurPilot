@@ -40,7 +40,7 @@ Modern Apple Style Theme for Alas - Refined v2
 	/* === 字体栈 === */
 	/* 优先使用等宽字体 Maple Mono，回退到常用中文字体 */
 	/* 全局界面字体（只需要修改这里即可全局调整） */
-	--alas-font-stack: "Maple Mono NF CN ExtraBold", "Noto Sans SC", "Microsoft YaHei", "SimHei", sans-serif;
+	--alas-font-stack: "LXGW WenKai Mono", "Maple Mono NF CN ExtraBold", "Noto Sans SC", "Microsoft YaHei", "SimHei", sans-serif;
 	/* === 间距系统 === */
 	/* 统一管理内外边距，保持视觉一致性 */
 	--spacing-xs: 4px;
@@ -649,7 +649,7 @@ select {
 /* ================= Logs ================= */
 /* 日志区域：等宽字体，淡背景 */
 #pywebio-scope-log {
-	font-family: var(--alas-font-stack) !important;
+	font-family: 'JetBrains Mono NL', var(--alas-font-stack) !important;
 	font-size: 13px !important;
 	background-color: #fbfbfd !important;
 }
@@ -1012,12 +1012,6 @@ select {
 	animation-delay: 0.15s;
 }
 
-#pywebio-scope-opsi_stats:hover,
-#pywebio-scope-ap_chart:hover,
-#pywebio-scope-ship_exp_table:hover {
-	transform: translateY(-3px) !important;
-}
-
 /* === 导航器按钮弹性动画 === */
 #pywebio-scope-navigator .btn {
 	transition:
@@ -1166,14 +1160,6 @@ details[open]>summary::after {
 	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
 }
 
-/* ================= Scheduler Bar ================= */
-/* 调度栏：重置为透明 */
-#pywebio-scope-scheduler-bar {
-	background: transparent !important;
-	border: none !important;
-	box-shadow: none !important;
-	padding: 0 !important;
-}
 
 /* 修复特定按钮的颜色样式 */
 button[style*="--menu-Overview--"] {
