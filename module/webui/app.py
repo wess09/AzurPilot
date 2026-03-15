@@ -760,23 +760,35 @@ class AlasGUI(Frame):
                 put_html(build_simple_table(meow_labels, [meow_values]))
 
                 # ========== 短猫相接收获 ==========
-                all_data = AzurStats.load_meowofficer_farming()
-                meow_rows = []
-                for row in all_data:
-                    if row[1] > 0:
-                        meow_row = [
-                            int(row[0]),
-                            datetime.fromtimestamp(row[1]).strftime('%Y-%m-%d %H:%M:%S'),
-                            int(row[2])
-                        ] + list(row[3:])
+                put_scope("meow_loot_scope")
 
-                        meow_rows.append(meow_row)
+                def _refresh_meowofficer_farming():
+                    AzurStats.get_meowofficer_farming()
+                    _render_meowofficer_farming()
 
-                put_html(build_title_block(t("Gui.Stat.MeowLootTitle"), margin_top=20, margin_bottom=8))
-                if meow_rows:
-                    put_html(build_simple_table(AzurStats.meowofficer_farming_labels, meow_rows))
-                else:
-                    put_html(build_muted_notice(t("Gui.Stat.NoMeowDataNotice")))
+                def _render_meowofficer_farming():
+                    with use_scope("meow_loot_scope", clear=True):
+                        all_data = AzurStats.load_meowofficer_farming()
+                        meow_rows = []
+                        for row in all_data:
+                            if row[2] > 0:
+                                meow_row = [
+                                    int(row[0]),
+                                    datetime.fromtimestamp(row[1]).strftime('%Y-%m-%d %H:%M:%S'),
+                                    int(row[2])
+                                ] + list(row[3:])
+
+                                meow_rows.append(meow_row)
+
+                        put_html(build_title_block(t("Gui.Stat.MeowLootTitle"), margin_top=20, margin_bottom=8))
+                        if meow_rows:
+                            put_html(build_simple_table(AzurStats.meowofficer_farming_labels, meow_rows))
+                        else:
+                            put_html(build_muted_notice(t("Gui.Stat.NoMeowDataNotice")))
+
+                        put_button(t("Gui.Stat.Refresh"), onclick=_refresh_meowofficer_farming, color="off")
+
+                _render_meowofficer_farming()
 
                 # ========== 短猫提前开始建议 ==========
                 try:
