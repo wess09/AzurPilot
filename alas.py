@@ -101,7 +101,7 @@ class AzurLaneAutoScript:
             config = AzurLaneConfig(config_name=self.config_name)
             return config
         except RequestHumanTakeover:
-            logger.critical('Request human takeover')
+            logger.critical('错误 请求人类接管')
             exit(1)
         except Exception as e:
             logger.exception(e)
@@ -114,7 +114,7 @@ class AzurLaneAutoScript:
             device = Device(config=self.config)
             return device
         except RequestHumanTakeover:
-            logger.critical('Request human takeover')
+            logger.critical('错误 请求人类接管')
             exit(1)
         except Exception as e:
             logger.exception(e)

@@ -307,14 +307,16 @@ class CoalitionUI(Combat):
         clicked = self.coalition_set_fleet(event, mode)
 
         if self.appear(FLEET_NOT_PREPARED, offset=(20, 20)):
-            logger.critical('FLEET_NOT_PREPARED')
-            logger.critical('Please prepare you fleets before running coalition battles')
+            logger.critical('舰队未就绪')
+            logger.critical('请先就绪舰队')
             raise RequestHumanTakeover
         if self.appear(EMPTY_FLAGSHIP, offset=(20, 20)):
-            logger.critical('EMPTY_FLAGSHIP, Please prepare you fleets before running coalition battles')
+            logger.critical('舰队未就绪')
+            logger.critical('请先就绪舰队')
             raise RequestHumanTakeover
         if self.appear(EMPTY_VANGUARD, offset=(20, 20)):
-            logger.critical('EMPTY_VANGUARD, Please prepare you fleets before running coalition battles')
+            logger.critical('舰队未就绪')
+            logger.critical('请先就绪舰队')
             raise RequestHumanTakeover
 
         return clicked
@@ -372,20 +374,17 @@ class CoalitionUI(Combat):
         for _ in self.loop():
             # Check errors
             if campaign_click > 5:
-                logger.critical(f"Failed to enter {button}, too many click on {button}")
-                logger.critical("Possible reason #1: You haven't cleared previous stage to unlock the stage.")
+                logger.critical(f"无法进入 {button}，点击次数过多")
+                logger.critical("可能的原因1: 你还没有通关前置关卡，无法解锁该关卡。")
                 raise RequestHumanTakeover
             if campaign_difficulty_click > 5:
-                logger.critical(f"Failed to enter {button_difficulty}, too many click on {button_difficulty}")
-                logger.critical("Possible reason #1: The difficulty asset is not correct.")
+                logger.critical(f"无法进入 {button_difficulty}，点击次数过多")
+                logger.critical("可能的原因1: 难度资源的图片不正确。")
                 raise RequestHumanTakeover
             if fleet_click > 5:
-                logger.critical(f"Failed to enter {button}, too many click on FLEET_PREPARATION")
-                logger.critical("Possible reason #1: "
-                                "Your fleets haven't satisfied the stat restrictions of this stage.")
-                logger.critical("Possible reason #2: "
-                                "This stage can only be farmed once a day, "
-                                "but it's the second time that you are entering")
+                logger.critical(f"无法进入 {button}，点击次数过多")
+                logger.critical("可能的原因1: 你的舰队未达到该关卡的属性要求。")
+                logger.critical("可能的原因2: 该关卡每天只能进入一次，但这是你第二次尝试进入。")
                 raise RequestHumanTakeover
 
             # End

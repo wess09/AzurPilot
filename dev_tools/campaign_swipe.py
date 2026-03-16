@@ -70,7 +70,7 @@ class SwipeSimulate:
             break
 
         if swipe_base is None:
-            logger.critical('Unable to get swipe_base')
+            logger.critical('无法获取到网格基准')
             exit(1)
         else:
             return swipe_base

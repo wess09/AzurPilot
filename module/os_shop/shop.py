@@ -185,8 +185,7 @@ class OSShop(PortShop, AkashiShop):
                 break
 
             if retry.reached():
-                logger.critical('OCR_SHOP_AMOUNT resulted error; '
-                                'asset may be compromised')
+                logger.critical('OCR_SHOP_AMOUNT 识别结果错误，请检查资源文件')
                 raise ScriptError
         retry.reset()
 

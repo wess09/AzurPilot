@@ -232,8 +232,8 @@ class Enhancement(Dock):
                 state_list.clear()
             state_list.append(state)
             if len(state_list) > 30:
-                logger.critical(f'Too many state transitions: {state_list}')
-                raise GameStuckError('Too many state transitions')
+                logger.critical(f'状态机循环次数过多: {state_list}')
+                raise GameStuckError('状态机循环次数过多')
 
             try:
                 state = locals()[state]()

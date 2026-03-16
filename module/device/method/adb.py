@@ -76,9 +76,9 @@ def retry(func):
             'screenshot_adb', 'screenshot_adb_nc',
             '_app_start_adb_am', '_app_start_adb_monkey',
         ]:
-            logger.critical(f'Retry {func.__name__}() failed')
+            logger.critical(f'重试 {func.__name__}() 失败')
             raise EmulatorNotRunningError
-        logger.critical(f'Retry {func.__name__}() failed')
+        logger.critical(f'重试 {func.__name__}() 失败')
         raise RequestHumanTakeover
 
     return retry_wrapper

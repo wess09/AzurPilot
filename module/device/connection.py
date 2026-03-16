@@ -83,9 +83,9 @@ def retry(func):
             'screenshot_droidcast', 'screenshot_droidcast_raw', 'screenshot_scrcpy',
             'screenshot_nemu_ipc', 'screenshot_ldopengl',
         ]:
-            logger.critical(f'Retry {func.__name__}() failed')
+            logger.critical(f'重试 {func.__name__}() 失败')
             raise EmulatorNotRunningError
-        logger.critical(f'Retry {func.__name__}() failed')
+        logger.critical(f'重试 {func.__name__}() 失败')
         raise RequestHumanTakeover
 
     return retry_wrapper
@@ -186,8 +186,8 @@ class Connection(ConnectionAttr):
     @Config.when(DEVICE_OVER_HTTP=True)
     def adb_command(self, cmd, timeout=10):
         logger.critical(
-            f'Trying to execute {cmd}, '
-            f'but adb_command() is not available when connecting over http: {self.serial}, '
+            f'尝试执行 {cmd}, '
+            f'但 adb_command() 在通过 http 连接时不可用: {self.serial}, '
         )
         raise RequestHumanTakeover
 
@@ -1092,11 +1092,11 @@ class Connection(ConnectionAttr):
         # Auto device detection
         if self.config.Emulator_Serial == 'auto':
             if available.count == 0:
-                logger.critical('No available device found, auto device detection cannot work, '
-                                'please set an exact serial in Alas.Emulator.Serial instead of using "auto"')
+                logger.critical('没有找到可用设备，自动设备检测无法工作，'
+                                '请在 Alas.Emulator.Serial 中设置一个确切的序列号，而不是使用 "auto"')
                 raise RequestHumanTakeover
             elif available.count == 1:
-                logger.info(f'Auto device detection found only one device, using it')
+                logger.info(f'自动设备检测只找到一个设备，正在使用它')
                 self.config.Emulator_Serial = self.serial = available[0].serial
                 del_cached_property(self, 'adb')
             elif available.count == 2 \
@@ -1109,8 +1109,8 @@ class Connection(ConnectionAttr):
                 self.config.Emulator_Serial = self.serial = remain.serial
                 del_cached_property(self, 'adb')
             else:
-                logger.critical('Multiple devices found, auto device detection cannot decide which to choose, '
-                                'please copy one of the available devices listed above to Alas.Emulator.Serial')
+                logger.critical('找到多个设备，自动设备检测无法决定选择哪个，'
+                                '请将下面列出的可用设备之一复制到 Alas.Emulator.Serial 中')
                 raise RequestHumanTakeover
 
         # Handle LDPlayer
@@ -1241,15 +1241,15 @@ class Connection(ConnectionAttr):
             for package in packages:
                 logger.info(package)
         else:
-            logger.info(f'No available packages on device "{self.serial}"')
+            logger.info(f'在设备 "{self.serial}" 上没有找到可用包')
 
         # Auto package detection
         if len(packages) == 0:
-            logger.critical(f'No AzurLane package found, '
-                            f'please confirm AzurLane has been installed on device "{self.serial}"')
+            logger.critical(f'没有找到碧蓝航线包，'
+                            f'请确认碧蓝航线已安装在设备 "{self.serial}" 上')
             raise RequestHumanTakeover
         if len(packages) == 1:
-            logger.info('Auto package detection found only one package, using it')
+            logger.info('自动包检测只找到一个包，正在使用它')
             self.package = packages[0]
             # Set config
             if set_config:

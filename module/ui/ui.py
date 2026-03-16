@@ -453,10 +453,9 @@ class UI(InfoHandler):
         # - Open exchange shop? handle_popup_confirm() click confirm
         # - EXCHANGE_CHECK, click BACK_ARROW
         if self._opsi_reset_fleet_preparation_click >= 5:
-            logger.critical("Failed to confirm OpSi fleets, too many click on RESET_FLEET_PREPARATION")
-            logger.critical("Possible reason #1: You haven't set any fleets in operation siren")
-            logger.critical(
-                "Possible reason #2: Your fleets haven't satisfied the level restrictions in operation siren")
+            logger.critical("无法确认大世界出击舰队，RESET_FLEET_PREPARATION 点击次数过多")
+            logger.critical("可能原因 #1: 您尚未在大世界中设置任何舰队")
+            logger.critical("可能原因 #2: 您的舰队尚未满足大世界的等级限制")
             raise RequestHumanTakeover
         if self.appear_then_click(RESET_TICKET_POPUP, offset=(30, 30), interval=3):
             return True

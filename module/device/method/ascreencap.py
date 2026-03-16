@@ -73,9 +73,9 @@ def retry(func):
                     pass
 
         if func.__name__ in ['screenshot_ascreencap', 'screenshot_ascreencap_nc']:
-            logger.critical(f'Retry {func.__name__}() failed')
+            logger.critical(f'重试 {func.__name__}() 失败')
             raise EmulatorNotRunningError
-        logger.critical(f'Retry {func.__name__}() failed')
+        logger.critical(f'重试 {func.__name__}() 失败')
         raise RequestHumanTakeover
 
     return retry_wrapper

@@ -7,7 +7,7 @@ from module.submodule.utils import *
 def load_mod(name):
     dir_name = get_mod_dir(name)
     if dir_name is None:
-        logger.critical("No function matched")
+        logger.critical("未找到对应的功能模块")
         return
 
     return importlib.import_module('.' + name, 'submodule.' + dir_name)

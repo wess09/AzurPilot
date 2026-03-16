@@ -51,9 +51,9 @@ class CampaignABCD(EventBase):
                 if str(e) == 'Campaign name error':
                     task = self.config.task.command
                     logger.critical(
-                        f'Cannot find stage "{stage}". '
-                        f'Task "{task}" is for 3X daily PT, if you have not unlock {stage}, '
-                        f'you should use task "Event" to unlock it instead of using task "{task}"')
+                        f'无法找到关卡 "{stage}". '
+                        f'任务 "{task}" 是用于 3 倍日常PT的，如果您还没有解锁 {stage}，'
+                        f'应该使用任务 "Event" 来解锁它，而不是使用任务 "{task}"')
                     raise RequestHumanTakeover
                 else:
                     raise

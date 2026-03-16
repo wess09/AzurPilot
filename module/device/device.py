@@ -88,15 +88,15 @@ class Device(Screenshot, Control, AppControl, Input):
                 break
             except EmulatorNotRunningError:
                 if trial >= 3:
-                    logger.critical('Failed to start emulator after 3 trial')
+                    logger.critical('错误 3 次尝试后未能启动模拟器')
                     raise RequestHumanTakeover
                 # Try to start emulator
                 if self.emulator_instance is not None:
                     self.emulator_start()
                 else:
                     logger.critical(
-                        f'No emulator with serial "{self.config.Emulator_Serial}" found, '
-                        f'please set a correct serial'
+                        f'错误 未找到序列号为 "{self.config.Emulator_Serial}" 的模拟器，'
+                        f'请设置一个正确的序列号'
                     )
                     raise RequestHumanTakeover
 
@@ -387,8 +387,8 @@ class Device(Screenshot, Control, AppControl, Input):
 
     def app_start(self):
         if not self.config.Error_HandleError:
-            logger.critical('No app stop/start, because HandleError disabled')
-            logger.critical('Please enable Alas.Error.HandleError or manually login to AzurLane')
+            logger.critical('错误 没有启动/停止应用，因为 HandleError 已禁用')
+            logger.critical('请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
             raise RequestHumanTakeover
         super().app_start()
         self.stuck_record_clear()
@@ -396,8 +396,8 @@ class Device(Screenshot, Control, AppControl, Input):
 
     def app_stop(self):
         if not self.config.Error_HandleError:
-            logger.critical('No app stop/start, because HandleError disabled')
-            logger.critical('Please enable Alas.Error.HandleError or manually login to AzurLane')
+            logger.critical('错误 没有启动/停止应用，因为 HandleError 已禁用')
+            logger.critical('请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
             raise RequestHumanTakeover
         super().app_stop()
         self.stuck_record_clear()

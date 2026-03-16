@@ -198,7 +198,7 @@ class LoginHandler(UI):
         
         # --- 如果所有尝试均以失败告终，则抛出异常 ---
         if not is_restart_success:
-            logger.critical(f"Failed to start app after {RESTART_TRIES} attempts. This might be a serious issue.")
+            logger.critical(f"重试 {RESTART_TRIES} 次后仍无法启动应用。这可能是严重问题。")
             from module.exception import RequestHumanTakeover
             raise RequestHumanTakeover("App restart failed repeatedly")
         self.handle_app_login()

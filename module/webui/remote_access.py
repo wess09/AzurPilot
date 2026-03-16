@@ -70,7 +70,7 @@ def remote_access_service(
         _ssh_process = Popen(args, stdout=PIPE, stderr=PIPE)
     except FileNotFoundError as e:
         logger.critical(
-            f"Cannot find SSH executable {bin}, please install OpenSSH or specify SSHExecutable in deploy.yaml"
+            f"无法找到SSH可执行文件{bin}，请安装OpenSSH或在deploy.yaml中指定SSHExecutable"
         )
         _ssh_notfound = True
         return

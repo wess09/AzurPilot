@@ -49,7 +49,7 @@ def check_running_directory():
         exit(1)
     # C:/Users/<user>/AppData/Local/Temp/Rar$EXa9248.23428/AzurLaneAutoScript
     if 'Temp/Rar' in file or 'Local/Temp' in file:
-        logger.critical('Please unzip ALAS installer first')
+        logger.critical('请先解压Alas的压缩包，再安装Alas')
         exit(1)
 
 

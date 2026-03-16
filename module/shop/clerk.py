@@ -87,7 +87,7 @@ class ShopClerk(ShopBase, Retirement):
         try:
             return getattr(self.config, f'{class_name}_{ugroup}{postfix}')
         except Exception:
-            logger.critical(f'No configuration with name '
+            logger.critical(f'未找到配置文件: '
                             f'\'{class_name}_{ugroup}{postfix}\'')
             raise
 
@@ -108,8 +108,8 @@ class ShopClerk(ShopBase, Retirement):
         # Item group must belong in SELECT_ITEM_INFO_MAP
         group = item.group
         if group not in SELECT_ITEM_INFO_MAP:
-            logger.critical(f'Unexpected item group \'{group}\'; '
-                            f'expected one of {SELECT_ITEM_INFO_MAP.keys()}')
+            logger.critical(f'意外的物品组 \'{group}\'; '
+                            f'预期为 {SELECT_ITEM_INFO_MAP.keys()}')
             raise ScriptError
 
         # Get configured choice for item
@@ -127,8 +127,7 @@ class ShopClerk(ShopBase, Retirement):
             else:
                 return item_info['grid'].buttons[index]
         except Exception:
-            logger.critical(f'SELECT_ITEM_INFO_MAP may be malformed; '
-                            f'item group \'{group}\' entry is compromised')
+            logger.critical(f'SELECT_ITEM_INFO_MAP 配置错误，请检查资源文件')
             raise ScriptError
 
     def shop_buy_select_execute(self, item):
@@ -159,9 +158,7 @@ class ShopClerk(ShopBase, Retirement):
                 break
 
         if not limit:
-            logger.critical(f'{item.name}\'s stock count cannot be '
-                            'extracted. Advised to re-cut the asset '
-                            'OCR_SHOP_SELECT_STOCK')
+            logger.critical(f'{item.name} 的库存数量无法提取，请检查资源文件 OCR_SHOP_SELECT_STOCK')
             raise ScriptError
 
         # Click in intervals until plus/minus are onscreen
@@ -240,8 +237,7 @@ class ShopClerk(ShopBase, Retirement):
                 break
 
         if not limit:
-            logger.critical('OCR_SHOP_AMOUNT resulted in zero (0); '
-                            'asset may be compromised')
+            logger.critical('OCR_SHOP_AMOUNT 识别结果为零（0），请检查资源文件')
             raise ScriptError
 
         # Adjust purchase amount if needed

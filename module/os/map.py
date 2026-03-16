@@ -1012,9 +1012,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         for _ in self.loop():
             # End
             if not unlock_checked and unlock_check_timer.reached():
-                logger.critical('Unable to use auto search in current zone')
-                logger.critical('Please finish the story mode of OpSi to unlock auto search '
-                                'before using any OpSi functions')
+                logger.critical('无法在当前区域使用自动搜索')
+                logger.critical('请先完成大世界剧情以解锁自动搜索功能，然后再使用任何大世界功能')
                 raise RequestHumanTakeover
             if self.is_in_map():
                 self.device.stuck_record_clear()
@@ -1114,9 +1113,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         for _ in self.loop():
             # End
             if not unlock_checked and unlock_check_timer.reached():
-                logger.critical('Unable to use auto search in current zone')
-                logger.critical('Please finish the story mode of OpSi to unlock auto search '
-                                'before using any OpSi functions')
+                logger.critical('无法在当前区域使用自动搜索')
+                logger.critical('请先完成大世界剧情以解锁自动搜索功能，然后再使用任何大世界功能')
                 raise RequestHumanTakeover
             if self.is_in_map():
                 self.device.stuck_record_clear()

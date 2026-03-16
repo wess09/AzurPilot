@@ -57,9 +57,8 @@ class CampaignRun(CampaignEvent, ShopStatus):
                 files = map_files(folder)
                 logger.warning(f'Existing files: {files}')
 
-            logger.critical(f'Possible reason #1: This event ({folder}) does not have {name}')
-            logger.critical(f'Possible reason #2: You are using an old Alas, '
-                            'please check for update, or make map files yourself using dev_tools/map_extractor.py')
+            logger.critical(f'可能的原因1: 这个活动 ({folder}) 没有 {name}')
+            logger.critical(f'可能的原因2: 你使用的Alas版本太旧，请检查更新，或者使用dev_tools/map_extractor.py自行制作地图文件')
             raise RequestHumanTakeover
 
         config = copy.deepcopy(self.config).merge(self.module.Config())

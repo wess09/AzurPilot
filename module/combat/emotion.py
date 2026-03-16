@@ -146,9 +146,7 @@ class FleetEmotion:
                 If already recovered, return time in the past.
         """
         if self.control == 'keep_exp_bonus' and self.recover == 'not_in_dormitory':
-            logger.critical(f'Fleet {self.fleet} Emotion Control=\"Keep Happy Bonus\" and '
-                            f'Fleet {self.fleet} Recover Location=\"Docks\" can not be used together, '
-                            'please check your emotion settings')
+            logger.critical(f'舰队 {self.fleet} 的情绪控制设置为“保持开心加成”，且恢复地点设置为“港区”，两者不能同时使用，请检查情绪设置')
             raise RequestHumanTakeover
         # In 14-4 with 2X book, expected emotion reduce is 32, can't keep happy bonus (>120),
         # otherwise will infinite task delay

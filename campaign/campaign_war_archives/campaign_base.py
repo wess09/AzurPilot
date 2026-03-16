@@ -111,8 +111,7 @@ class CampaignBase(CampaignBase_):
                 self.ui_click(entrance, appear_button=WAR_ARCHIVES_CHECK, check_button=WAR_ARCHIVES_CAMPAIGN_CHECK,
                               skip_first_screenshot=True)
             else:
-                logger.critical('Respective server may not yet support the chosen War Archives campaign, '
-                                'check back in the next app update')
+                logger.critical('当前服务器可能不支持该活动，请稍后再试')
                 raise RequestHumanTakeover
 
         # Subsequent runs all set False

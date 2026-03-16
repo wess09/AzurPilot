@@ -161,5 +161,5 @@ class OpsiStronghold(CoinTaskMixin, OSMap):
             else:
                 continue
 
-        logger.critical('Unable to clear boss, fleets exhausted')
+        logger.critical('无法击败boss，舰队已耗尽')
         return False
