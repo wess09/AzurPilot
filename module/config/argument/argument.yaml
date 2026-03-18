@@ -1301,6 +1301,8 @@ OpsiSimulatorParameters:
     option:
       level3: 3
       level5: 5
+  CrossWeek: true
+  BuyAp: true
   Cl1Coin: 170
   Meow3Coin: 750
   Meow5Coin: 1700

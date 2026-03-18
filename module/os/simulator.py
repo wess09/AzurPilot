@@ -98,15 +98,9 @@ class OSSimulator:
         # 预计之后使用azurstat统计数据，目前先这样吧（
         
         # 目前包括吊机
-        hazard_level = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.MeowHazardLevel', 'level5')
-        if hazard_level == 'level3':
-            self.meow_hazard_level = 3
-        else:
-            self.meow_hazard_level = 5
-
-        cl1_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Cl1Coin', 170)
-        meow3_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow3Coin', 750)
-        meow5_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow5Coin', 1700)
+        cl1_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Cl1Coin')
+        meow3_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow3Coin')
+        meow5_coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow5Coin')
         self.coin_expectation = {
             1: cl1_coin,
             3: meow3_coin,
@@ -114,7 +108,7 @@ class OSSimulator:
         }
         self.logger.info(f'每轮对应侵蚀等级期望获得黄币: {self.coin_expectation}')
         
-        self.akashi_probability = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.AkashiProbability', 0.05)
+        self.akashi_probability = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.AkashiProbability')
         self.logger.info(f'遇见明石概率: {self.akashi_probability}')
 
         self.daily_reward = 6520
@@ -140,7 +134,11 @@ class OSSimulator:
         self.time_use_ratio = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.TimeUseRatio')
         self.logger.info(f'时间利用率: {self.time_use_ratio}')
         
-        self._get_azurstat_data() # 在 get_paras 中调用，确保初始化的 self.meow_hazard_level 能被后续使用
+        hazard_level = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.MeowHazardLevel', 'level5')
+        if hazard_level == 'level3':
+            self.meow_hazard_level = 3
+        else:
+            self.meow_hazard_level = 5
         self.logger.info(f'短猫侵蚀等级: {self.meow_hazard_level}')
         
         log_res = LogRes(self.config)
@@ -166,6 +164,12 @@ class OSSimulator:
         ])
         self.logger.info(f'初始黄币: {coin}')
         self.logger.info(f'初始行动力: {ap}')
+
+        self.cross_week = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.CrossWeek')
+        self.logger.info(f'是否计算跨周: {self.cross_week}')
+
+        self.buy_ap = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.BuyAp')
+        self.logger.info(f'每周是否购买行动力: {self.buy_ap}')
         
         self.coin_preserve = self.config.cross_get('OpsiScheduling.OpsiScheduling.OperationCoinsPreserve')
         self.logger.info(f'保留黄币: {self.coin_preserve}')
@@ -178,91 +182,37 @@ class OSSimulator:
         self.logger.info(f'实例名: {self.instance_name}')
         
         if self.meow_hazard_level == 3:
-            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow3Time', 0)
+            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow3Time')
             if not self.meow_time:
                 # 尝试从数据库获取短猫统计，如果不区分等级则统一使用平均值
                 self.meow_time = db.get_meow_stats(self.instance_name).get('avg_round_time', 100)
         else: # hazard level 5
-            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow5Time', 0)
+            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow5Time')
             if not self.meow_time:
                 self.meow_time = db.get_meow_stats(self.instance_name).get('avg_round_time', 200)
         
         self.logger.info(f'每轮短猫时间: {self.meow_time}')
 
-        self.cl1_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Cl1Time', 0)
+        self.cl1_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Cl1Time')
         if not self.cl1_time:
             self.cl1_time = get_ship_exp_stats(self.instance_name).get_average_round_time()
         self.logger.info(f'每轮侵蚀1时间: {self.cl1_time}')
         
-        # 修正后的单轮时间：包含了因“时间利用率”不足而产生的空闲时间，用于正确计算AP的自然恢复
         self.days_until_next_monday = self._get_days_until_next_monday()
         self.logger.info(f'距离下周一还有多少天: {self.days_until_next_monday}')
 
         # 调试模式开关：设置为 True 则取消随机性，按照期望值计算演化
         self.deterministic = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Deterministic', False)
-
         if self.deterministic:
             self.samples = 1
             self.logger.info('调试模式：使用确定性计算。采样数已强制设置为 1 以提高计算速度。')
             self.logger.info('（不使用随机概率，按期望演化）')
 
-        log_res = LogRes(self.config)
-        ap = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.InitialAp')
-        if not ap:
-            ap = log_res.group('ActionPoint')
-            ap = ap['Total'] if ap and 'Total' in ap else 0
-        coin = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.InitialCoin')
-        if not coin:
-            coin = log_res.group('YellowCoin')
-            coin = coin['Value'] if coin and 'Value' in coin else 0
-
-        self.initial_state = np.array([
-            np.ones(self.samples) * ap,    # ap
-            np.ones(self.samples) * coin, # coin
-            np.zeros(self.samples), # status (cl1: 0, meow: 1, crashed: 2, done: 3)
-            np.zeros(self.samples), # used_time
-            np.zeros(self.samples), # has_crashed
-            np.zeros(self.samples), # has_earned_coin
-            np.zeros(self.samples), # meow_count
-            np.zeros(self.samples), # cl1_count
-            np.zeros(self.samples) # passed_days
-        ])
-        self.logger.info(f'初始黄币: {coin}')
-        self.logger.info(f'初始行动力: {ap}')
-
-        self.coin_preserve = self.config.cross_get('OpsiScheduling.OpsiScheduling.OperationCoinsPreserve')
-        self.logger.info(f'保留黄币: {self.coin_preserve}')
-        self.ap_preserve = self.config.cross_get('OpsiScheduling.OpsiScheduling.ActionPointPreserve')
-        self.logger.info(f'保留行动力: {self.ap_preserve}')
-        self.coin_threshold = self.config.cross_get('OpsiScheduling.OpsiScheduling.OperationCoinsReturnThreshold')
-        self.logger.info(f'短猫直到获得多少黄币: {self.coin_threshold}')
-
-        self.instance_name = getattr(self.config, 'config_name', 'default')
-        self.logger.info(f'实例名: {self.instance_name}')
-
-        if self.meow_hazard_level == 3:
-            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow3Time', 0)
-            if not self.meow_time:
-                # 尝试从数据库获取短猫统计，如果不区分等级则统一使用平均值
-                self.meow_time = db.get_meow_stats(self.instance_name).get('avg_round_time', 100)
-        else: # hazard level 5
-            self.meow_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Meow5Time', 0)
-            if not self.meow_time:
-                self.meow_time = db.get_meow_stats(self.instance_name).get('avg_round_time', 200)
-
-        self.logger.info(f'每轮短猫时间: {self.meow_time}')
-
-        self.cl1_time = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.Cl1Time', 0)
-        if not self.cl1_time:
-            self.cl1_time = get_ship_exp_stats(self.instance_name).get_average_round_time()
-        self.logger.info(f'每轮侵蚀1时间: {self.cl1_time}')
-
         # 修正后的单轮时间：包含了因“时间利用率”不足而产生的空闲时间，用于正确计算AP的自然恢复
         self.modified_meow_time = self.meow_time / self.time_use_ratio
         self.modified_cl1_time = self.cl1_time / self.time_use_ratio
 
-        self.buy_ap = self.config.cross_get('OpsiSimulator.OpsiSimulatorParameters.BuyAp', True)
-        self.logger.info(f'每周是否购买行动力: {self.buy_ap}')
+        self._get_azurstat_data()
     
     @property
     def is_running(self):
@@ -338,7 +288,7 @@ class OSSimulator:
             return
 
         # Create a random mask for Akashi encounters, which is a subset of the base_mask
-        rand_array = np.random.rand(state.shape[1])
+        rand_array = np.random.rand(self.samples)
         akashi_mask = (rand_array < self.akashi_probability) & base_mask
         n_akashi = np.sum(akashi_mask)
         
@@ -420,7 +370,7 @@ class OSSimulator:
             
             # 从侵蚀1切换到短猫
             # 触发条件：当前处于侵蚀1，且黄币跌破保留值
-            to_meow_base_mask = is_cl1 & (now_state[self.COIN] < self.coin_preserve)
+            to_meow_mask = is_cl1 & (now_state[self.COIN] < self.coin_preserve)
             
             # 从短猫切换到侵蚀1
             # 触发条件：当前处于短猫，且黄币由于短猫补充后，已经超过了 (保留值 + 单次目标值)
@@ -431,17 +381,8 @@ class OSSimulator:
             to_cl1_mask |= is_crashed & (now_state[self.AP] >= self.AP_COSTS[1])
             
             # 从侵蚀1或者短猫切换到坠机
-            # 触发条件：
-            # 1. 连侵蚀1都跑不起了（AP < 5）
-            # 2. 黄币低于保留值需要补猫，但 AP 也低于保留值（没钱也没豆，且金币不能为负，无法购买 AP）
-            to_crashed_mask = (is_cl1 | is_meow) & (now_state[self.AP] < self.AP_COSTS[1])
-            to_crashed_mask |= is_cl1 & (now_state[self.COIN] < self.coin_preserve) & (now_state[self.AP] < self.ap_preserve)
-            
-            # 应用短猫切换的额外限制：只有在 AP 高于保留值时才允许切换去短猫
-            to_meow_mask = to_meow_base_mask & (now_state[self.AP] >= self.ap_preserve)
-            
-            # 如果正在短猫但 AP 掉到了保留值以下，强制切回侵蚀1（即便金币还没攒够）
-            to_cl1_mask |= is_meow & (now_state[self.AP] < self.ap_preserve)
+            # 触发条件：行动力低于行动力保留值停止所有，等待行动力自然回复
+            to_crashed_mask = (is_cl1 | is_meow) & (now_state[self.AP] < self.ap_preserve)
             
             # 2. 应用状态转移
             now_state[self.STATUS][to_meow_mask] = self.STATUS_MEOW
@@ -462,18 +403,20 @@ class OSSimulator:
                 now_state[self.PASSED_DAYS][cross_day_mask] += 1
                 now_state[self.COIN][cross_day_mask] += self.daily_reward
 
-                cross_week_mask = (sim_days - self.days_until_next_monday) % 7 == 0
-                if np.any(cross_week_mask & cross_day_mask):
-                    if self.buy_ap:
-                        now_state[self.AP][cross_day_mask & cross_week_mask] += 800
-                    else:
+                if self.cross_week:
+                    cross_week_mask = (sim_days - self.days_until_next_monday) % 7 == 0
+                    if np.any(cross_week_mask & cross_day_mask):
+                        if self.buy_ap:
+                            now_state[self.AP][cross_day_mask & cross_week_mask] += 1000
+                        
+                        # 每周要塞（应该没人没200行动力吧？
                         now_state[self.AP][cross_day_mask & cross_week_mask] -= 200
-                    now_state[self.COIN][cross_day_mask & cross_week_mask] += self.stronghold_reward
+                        now_state[self.COIN][cross_day_mask & cross_week_mask] += self.stronghold_reward
             
             # 5. 标记完成状态
             now_state[self.STATUS][now_state[self.USED_TIME] >= self.total_time] = self.STATUS_DONE
 
-             # 6. 记录历史数据
+            # 6. 记录历史数据
             if self.draw_setting == 'single_sample':
                 current_time_0 = now_state[self.USED_TIME][0]
                 if current_time_0 > last_time_0:
@@ -492,6 +435,8 @@ class OSSimulator:
         return now_state
     
     def _handle_result(self, result):
+        self.logger.info('====================模拟结果====================')
+
         self.result_cl1_count = np.average(result[self.CL1_COUNT])
         self.logger.info(f'[模拟结果] 侵蚀1次数: {self.result_cl1_count}')
         self.result_meow_count = np.average(result[self.MEOW_COUNT])
@@ -506,9 +451,9 @@ class OSSimulator:
         self.logger.info(f'[模拟结果] 最终行动力: {self.result_ap}')
         self.result_coin = np.average(result[self.COIN])
         self.logger.info(f'[模拟结果] 最终黄币: {self.result_coin}')
+
         # 获取样本总数，防止请求的 5 个超出范围
-        n_samples = result.shape[1]
-        top_k = min(5, n_samples)
+        top_k = min(5, self.samples)
         
         # 找到 AP 最低的 5 个索引
         # np.argsort 默认升序，即前 5 个是最小的
@@ -613,7 +558,7 @@ class OSSimulator:
         ax3 = ax1.twinx()
         ax3.spines['right'].set_position(('outward', 60))
         ax3.plot(times, meow_probs, color='orange', linestyle='--', label='短猫概率', linewidth=1.5)
-        ax3.plot(times, crash_probs, color='red', linestyle='-.', label='坠过机概率', linewidth=1.5)
+        ax3.plot(times, crash_probs, color='red', linestyle='-.', label='坠机概率', linewidth=1.5)
         ax3.set_ylabel('概率', color='black')
         ax3.tick_params(axis='y', labelcolor='black')
         ax3.set_ylim(0, 1.05)

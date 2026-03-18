@@ -4914,6 +4914,14 @@
       "level3": "level3",
       "level5": "level5"
     },
+    "CrossWeek": {
+      "name": "OpsiSimulatorParameters.CrossWeek.name",
+      "help": "OpsiSimulatorParameters.CrossWeek.help"
+    },
+    "BuyAp": {
+      "name": "OpsiSimulatorParameters.BuyAp.name",
+      "help": "OpsiSimulatorParameters.BuyAp.help"
+    },
     "Cl1Coin": {
       "name": "OpsiSimulatorParameters.Cl1Coin.name",
       "help": "OpsiSimulatorParameters.Cl1Coin.help"

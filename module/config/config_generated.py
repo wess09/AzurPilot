@@ -797,6 +797,8 @@ class GeneratedConfig:
     OpsiSimulatorParameters_InitialAp = 0
     OpsiSimulatorParameters_InitialCoin = 0
     OpsiSimulatorParameters_MeowHazardLevel = 'level5'  # level3, level5
+    OpsiSimulatorParameters_CrossWeek = True
+    OpsiSimulatorParameters_BuyAp = True
     OpsiSimulatorParameters_Cl1Coin = 170
     OpsiSimulatorParameters_Meow3Coin = 750
     OpsiSimulatorParameters_Meow5Coin = 1700

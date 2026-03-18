@@ -13678,6 +13678,14 @@
           "level5": 5
         }
       },
+      "CrossWeek": {
+        "type": "checkbox",
+        "value": true
+      },
+      "BuyAp": {
+        "type": "checkbox",
+        "value": true
+      },
       "Cl1Coin": {
         "type": "input",
         "value": 170
