@@ -2167,6 +2167,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                             logger.info(f'找到塞壬研究装置: {grid}')
                             device_found = True
 
+                            grid_str = str(grid)
+                            current_grid = self.config.cross_get(keys=f"{task}.OpsiSirenBug.SirenBug_Grid", default=None)
+                            if current_grid != grid_str:
+                                self.config.cross_set(keys=f"{task}.OpsiSirenBug.SirenBug_Grid", value=grid_str)
+                                logger.info(f'已自动更新塞壬研究装置坐标配置: {grid_str}')
+
                             if self._handle_siren_bug_device(grid):
                                 device_handled = True
                                 break
