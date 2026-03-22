@@ -11,6 +11,7 @@ try:
     from rapidocr import RapidOCR, OCRVersion
 except Exception as e:
     logger.critical(f'Failed to load OCR dependencies: {e}')
+    logger.critical(f'无法加载 OCR 模型，如错误信息包含 DLL load failed while 请安装微软 C++ 运行库 https://aka.ms/vs/17/release/vc_redist.x64.exe')
     # Define dummy classes to prevent ImportErrors in other modules
     class RapidOCR:
         pass
