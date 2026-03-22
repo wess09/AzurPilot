@@ -123,7 +123,7 @@ class LevelOcr(Digit):
         # BT.601
         luma_trans = (0.299, 0.587, 0.114)
         luma_bg = np.dot(bg, luma_trans)
-        image = cv2.subtract(image, (*bg, 0)).dot(luma_trans).round().astype(np.uint8)
+        image = cv2.subtract(image, bg).dot(luma_trans).round().astype(np.uint8)
         image = cv2.subtract(255, cv2.multiply(image, 255 / (255 - luma_bg)))
         # Find 'L' to strip 'LV.'.
         # Return an empty image if 'L' is not found.

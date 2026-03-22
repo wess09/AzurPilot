@@ -32,7 +32,7 @@ class PtOcr(Ocr):
             np.ndarray: Shape (width, height)
         """
         # Use MAX(r, g, b)
-        r, g, b = cv2.split(cv2.subtract((255, 255, 255, 0), image))
+        r, g, b = cv2.split(cv2.subtract((255, 255, 255), image))
         image = cv2.min(cv2.min(r, g), b)
         # Remove background, 0-192 => 0-255
         image = cv2.multiply(image, 255 / 192)
