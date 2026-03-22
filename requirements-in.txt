@@ -3,8 +3,6 @@ scipy
 pillow
 opencv-python>=4.8.0
 imageio
-
-# Device connection
 adbutils
 uiautomator2
 uiautomator2cache
@@ -32,7 +30,7 @@ pycryptodome
 typing_extensions>=4.8.0
 pydantic>=2.5.0
 rapidocr
-onnxruntime-directml # 在Mac Linux安装时请用onnxruntime或onnxruntime-gpu
+onnxruntime-directml
 watchdog>=2.0.0
 numba
-pip==26.0.1
+pip
