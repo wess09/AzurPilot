@@ -121,6 +121,7 @@
       "EventStory",
       "BoxDisassemble",
       "Benchmark",
+      "OcrBenchmark",
       "AzurLaneUncensored",
       "GameManager"
     ]

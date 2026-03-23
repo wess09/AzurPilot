@@ -318,6 +318,10 @@
       "name": "性能测试",
       "help": ""
     },
+    "OcrBenchmark": {
+      "name": "OCR性能测试",
+      "help": ""
+    },
     "AzurLaneUncensored": {
       "name": "反和谐",
       "help": ""

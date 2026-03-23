@@ -318,6 +318,10 @@
       "name": "パフォーマンステスト",
       "help": ""
     },
+    "OcrBenchmark": {
+      "name": "Task.OcrBenchmark.name",
+      "help": "Task.OcrBenchmark.help"
+    },
     "AzurLaneUncensored": {
       "name": "検閲解除",
       "help": ""

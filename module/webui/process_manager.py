@@ -158,6 +158,9 @@ class ProcessManager:
         # Remove fake PIL module, because subprocess will use it
         remove_fake_pil_module()
 
+        # Set environment variable so eager modules (like al_ocr.py) can read the configuration early
+        os.environ['ALAS_CONFIG_NAME'] = config_name
+
         AzurLaneConfig.stop_event = e
         try:
             # Run alas

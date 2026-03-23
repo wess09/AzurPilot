@@ -318,6 +318,10 @@
       "name": "🏎️ 港区运行性能测试",
       "help": "看看 Alas 的跑鞋够不够快喵！"
     },
+    "OcrBenchmark": {
+      "name": "Task.OcrBenchmark.name",
+      "help": "Task.OcrBenchmark.help"
+    },
     "AzurLaneUncensored": {
       "name": "💕 港区秘密美化",
       "help": "嘘——这就是不可言说的魔法效果喵~"

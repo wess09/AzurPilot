@@ -2679,6 +2679,11 @@
       "Storage": {}
     }
   },
+  "OcrBenchmark": {
+    "Storage": {
+      "Storage": {}
+    }
+  },
   "AzurLaneUncensored": {
     "AzurLaneUncensored": {
       "Repository": "https://gitee.com/LmeSzinc/AzurLaneUncensored"

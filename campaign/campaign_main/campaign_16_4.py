@@ -2,7 +2,7 @@ from module.campaign.campaign_base import CampaignBase
 from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
 from module.logger import logger
-from campaign_16_1 import Config as ConfigBase
+from .campaign_16_1 import Config as ConfigBase
 
 MAP = CampaignMap('16-4')
 MAP.shape = 'K8'
@@ -69,10 +69,6 @@ class Config(ConfigBase):
     MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = True
     MAP_HAS_MYSTERY = True
-    MAP_CHAPTER_SWITCH_20241219 = True
-    STAGE_ENTRANCE = ['half', '20240725']
-    MAP_HAS_MODE_SWITCH = True
-    STAGE_INCREASE_AB = True
     MAP_WALK_USE_CURRENT_FLEET = True
     # ===== End of generated config =====
 

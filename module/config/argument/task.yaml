@@ -395,6 +395,8 @@ Tool:
       - BoxDisassemble
     Benchmark:
       - Benchmark
+    OcrBenchmark:
+      - OcrBenchmark
     AzurLaneUncensored:
       - AzurLaneUncensored
     GameManager:
