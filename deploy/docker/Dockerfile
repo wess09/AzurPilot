@@ -1,11 +1,11 @@
-# docker build -t alas:latest -f deploy/docker/Dockerfile deploy/docker/
+# docker build -t alas:latest -f deploy/docker/Dockerfile .
 # docker run -v ${PWD}:/app/AzurLaneAutoScript -p 22267:22267 --name alas -it --rm alas
 
-FROM python:3.7-slim-bullseye
+FROM python:3.14-slim
 
 WORKDIR /app/AzurLaneAutoScript
 
-COPY requirements.txt /tmp/requirements.txt
+COPY requirements-linux.txt /tmp/requirements.txt
 
 # Install system dependencies
 RUN apt update \
