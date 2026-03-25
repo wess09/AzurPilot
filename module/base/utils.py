@@ -1119,6 +1119,45 @@ def extract_white_letters(image, threshold=128):
 
 
 
+def crop_to_text_width(image, threshold=200, padding=2):
+    """Crop image width to tightly fit text content, keeping full height.
+
+    Designed for OCR-preprocessed grayscale images (output of extract_letters),
+    where text pixels have low values and background pixels are 255.
+    Finds the leftmost and rightmost columns that contain text, then crops
+    the image to that range with a small safety padding to ensure no text
+    is ever cut off.
+
+    Args:
+        image (np.ndarray): Grayscale image, shape (height, width).
+            Pixel values should be 0~255, where lower values indicate text.
+        threshold (int): Pixels with value < threshold are considered text.
+            Default 200 to safely capture anti-aliased edges.
+        padding (int): Extra pixels to keep on each side as safety margin.
+            Default 2. Increase if text appears clipped.
+
+    Returns:
+        np.ndarray: Width-cropped image with the same height.
+            Returns the original image if no text is detected.
+    """
+    h, w = image.shape[:2]
+
+    # Column-wise minimum: each column's darkest pixel
+    col_min = np.min(image, axis=0)
+    # Flatten to 1D if image has extra dimensions
+    if col_min.ndim > 1:
+        col_min = np.min(col_min, axis=-1)
+
+    text_cols = np.where(col_min < threshold)[0]
+    if len(text_cols) == 0:
+        return image
+
+    left = max(text_cols[0] - padding, 0)
+    right = min(text_cols[-1] + padding + 1, w)
+
+    return image[:, left:right]
+
+
 def color_mapping(image, max_multiply=2):
     """
     Mapping color to 0-255.

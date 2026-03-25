@@ -95,6 +95,8 @@ class Ocr:
         else:
             image_list = [self.pre_process(crop(image, area)) for area in self.buttons]
 
+        image_list = [crop_to_text_width(i) for i in image_list]
+
         # This will show the images feed to OCR model
         # self.cnocr.debug(image_list)
 
