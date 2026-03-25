@@ -565,7 +565,47 @@ class Cl1Database:
             'battle_times': battle_times,
             'avg_battle_time': avg_battle_time,
         }
+    def async_get_stats(self, instance: str, month: str):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.get_stats, instance, month)
+
+    def async_save_stats(self, instance: str, month: str, data: Dict[str, Any]):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.save_stats, instance, month, data)
+
+    def async_increment_battle_count(self, instance: str, delta: int = 1):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.increment_battle_count, instance, delta)
+
+    def async_increment_akashi_encounter(self, instance: str):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.increment_akashi_encounter, instance)
+
+    def async_add_akashi_ap_entry(self, instance: str, amount: int, base: int, count: int, source: str):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.add_akashi_ap_entry, instance, amount, base, count, source)
+
+    def async_add_ap_snapshot(self, instance: str, ap_current: int, source: str = 'cl1'):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.add_ap_snapshot, instance, ap_current, source)
+
+    def async_increment_meow_battle_count(self, instance: str, hazard_level: int = None, delta: float = None):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.increment_meow_battle_count, instance, hazard_level, delta)
+
+    def async_add_meow_round_time(self, instance: str, duration: float, hazard_level: int = None):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.add_meow_round_time, instance, duration, hazard_level)
+
+    def async_add_meow_battle_time(self, instance: str, duration: float):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.add_meow_battle_time, instance, duration)
+
+    def async_get_meow_stats(self, instance: str, year: int = None, month: int = None):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.get_meow_stats, instance, year, month)
 
 
 # 单例实例
 db = Cl1Database()
+

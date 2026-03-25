@@ -18,7 +18,7 @@ from typing import Dict, List, Optional, Any
 # Import fake module before import pywebio to avoid importing unnecessary module PIL
 from module.webui.fake_pil_module import import_fake_pil_module
 from module.statistics.azurstats import AzurStats
-from module.os.simulator import OSSimulator
+from module.os_simulator.simulator import OSSimulator
 
 import_fake_pil_module()
 

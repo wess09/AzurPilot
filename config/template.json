@@ -95,6 +95,7 @@
       "AdbOfflineThreshold": 3
     },
     "Optimization": {
+      "UseOcrGpuAcceleration": true,
       "ScreenshotInterval": 0.3,
       "CombatScreenshotInterval": 1.0,
       "TaskHoardingDuration": 0,
@@ -2585,7 +2586,7 @@
   },
   "OpsiSimulator": {
     "OpsiSimulatorParameters": {
-      "Samples": 1000,
+      "Samples": 100000,
       "Draw": "do_not",
       "TotalTime": 0,
       "TimeUseRatio": 0.8,
@@ -2674,6 +2675,11 @@
       "DeviceType": "emulator",
       "TestScene": "screenshot_click"
     },
+    "Storage": {
+      "Storage": {}
+    }
+  },
+  "OcrBenchmark": {
     "Storage": {
       "Storage": {}
     }

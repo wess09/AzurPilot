@@ -2,8 +2,8 @@ from module.campaign.campaign_base import CampaignBase
 from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
 from module.logger import logger
-from .campaign_16_base import CampaignBase
-from .campaign_16_base import Config as ConfigBase
+from .campaign_16_1 import Config as ConfigBase
+
 MAP = CampaignMap('16-4')
 MAP.shape = 'K8'
 MAP.camera_data = ['D2', 'D6', 'H2', 'H6']
@@ -61,30 +61,21 @@ A8, B8, C8, D8, E8, F8, G8, H8, I8, J8, K8, \
 
 class Config(ConfigBase):
     # ===== Start of generated config =====
+    MAP_SIREN_TEMPLATE = ['0']
+    MOVABLE_ENEMY_TURN = (2,)
+    MAP_HAS_SIREN = True
+    MAP_HAS_MOVABLE_ENEMY = True
     MAP_HAS_MAP_STORY = False
     MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = True
-    # ===== End of generated config =====
-
-    INTERNAL_LINES_FIND_PEAKS_PARAMETERS = {
-        'height': (120, 255 - 17),
-        'width': (0.9, 10),
-        'prominence': 10,
-        'distance': 35,
-    }
-    EDGE_LINES_FIND_PEAKS_PARAMETERS = {
-        'height': (255 - 50, 255),
-        'prominence': 10,
-        'distance': 50,
-        'wlen': 1000
-    }
-    INTERNAL_LINES_HOUGHLINES_THRESHOLD = 25
-    EDGE_LINES_HOUGHLINES_THRESHOLD = 25
+    MAP_HAS_MYSTERY = True
     MAP_WALK_USE_CURRENT_FLEET = True
+    # ===== End of generated config =====
 
 
 class Campaign(CampaignBase):
     MAP = MAP
+    ENEMY_FILTER = '1L > 1M > 1E > 1C > 2L > 2M > 2E > 2C > 3L > 3M > 3E > 3C'
 
     def battle_0(self):
         if self.clear_siren():

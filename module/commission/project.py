@@ -254,8 +254,9 @@ class Commission:
         self.genre = self.commission_name_parse(self.name)
 
         # Suffix
-        ocr = SuffixOcr(button, lang='azur_lane', letter=(255, 255, 255), threshold=128, alphabet='IV')
-        self.suffix = self.beautify_name(ocr.ocr(self.image))
+        # ocr = SuffixOcr(button, lang='azur_lane', letter=(255, 255, 255), threshold=128, alphabet='IV')
+        # self.suffix = self.beautify_name(ocr.ocr(self.image))
+        self.suffix = self.beautify_name(''.join(c for c in result[-4:] if c in 'IV'))
 
         # Duration time
         area = area_offset((290, 68, 390, 95), self.area[0:2])

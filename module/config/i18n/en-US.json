@@ -318,6 +318,10 @@
       "name": "Performance Test",
       "help": ""
     },
+    "OcrBenchmark": {
+      "name": "Task.OcrBenchmark.name",
+      "help": "Task.OcrBenchmark.help"
+    },
     "AzurLaneUncensored": {
       "name": "Uncensor",
       "help": ""
@@ -585,13 +589,17 @@
       "name": "Optimization Settings",
       "help": ""
     },
+    "UseOcrGpuAcceleration": {
+      "name": "Enable OCR GPU Acceleration",
+      "help": "Use DirectML based GPU acceleration to significantly improve OCR recognition speed. If you encounter crashes or errors due to incompatibility, please disable it."
+    },
     "ScreenshotInterval": {
       "name": "Slow Down Screenshot Speed to X Seconds per Frame",
-      "help": "Minimum interval between two screenshots, limited to 0.1 ~ 0.3. Can reduce CPU usage on high-spec computers."
+      "help": "Minimum interval between two screenshots, limited to 0.001 ~ 0.3. Can reduce CPU usage on high-spec computers."
     },
     "CombatScreenshotInterval": {
       "name": "Slow Down Combat Screenshot Speed to X Seconds per Frame",
-      "help": "Minimum interval between two screenshots, limited to 0.3 ~ 1.0. Can reduce CPU usage during combat."
+      "help": "Minimum interval between two screenshots, limited to 0.001 ~ 1.0. Can reduce CPU usage during combat."
     },
     "TaskHoardingDuration": {
       "name": "Hoard Tasks for X Minutes",

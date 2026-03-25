@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 
 from module.base.button import Button
@@ -98,7 +99,7 @@ class OSCamera(OSMapOperation, Camera):
 
         try:
             self.view.load(self.device.image)
-        except (MapDetectionError, AttributeError) as e:
+        except (MapDetectionError, AttributeError, cv2.error) as e:
             logger.warning(e)
             logger.warning('Assuming camera is focused on grid center')
 

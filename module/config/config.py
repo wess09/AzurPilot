@@ -582,6 +582,12 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         Raises:
             TaskEnd:
         """
+        try:
+            from module.base.async_executor import async_executor
+            async_executor.flush(timeout=2.0)
+        except Exception:
+            pass
+
         if message:
             raise TaskEnd(message)
         else:

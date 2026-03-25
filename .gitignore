@@ -20,6 +20,8 @@ config/reloadflag
 config/reloadalas
 test.py
 test/
+debug_ocr/
+PaddleOCR
 
 # Created by .ignore support plugin (hsz.mobi)
 

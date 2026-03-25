@@ -444,6 +444,10 @@
       }
     },
     "Optimization": {
+      "UseOcrGpuAcceleration": {
+        "type": "checkbox",
+        "value": true
+      },
       "ScreenshotInterval": {
         "type": "input",
         "value": 0.3
@@ -2082,8 +2086,8 @@
         "type": "select",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "display": "hide",
         "option_cn": [
@@ -2096,11 +2100,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -3423,8 +3427,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -3436,11 +3440,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -3833,8 +3837,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -3846,11 +3850,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -6155,8 +6159,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -6168,11 +6172,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -6582,8 +6586,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -6595,11 +6599,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -7009,8 +7013,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -7022,11 +7026,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -7436,8 +7440,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -7449,11 +7453,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -7853,8 +7857,8 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ],
         "option_cn": [
           "event_20240229_cn"
@@ -7866,11 +7870,11 @@
           "event_20240229_cn"
         ],
         "option_tw": [
-          "event_20260226_cn"
+          "event_20220728_cn"
         ],
         "option_bold": [
-          "event_20240229_cn",
-          "event_20260226_cn"
+          "event_20220728_cn",
+          "event_20240229_cn"
         ]
       },
       "Mode": {
@@ -13639,7 +13643,7 @@
     "OpsiSimulatorParameters": {
       "Samples": {
         "type": "input",
-        "value": 1000
+        "value": 100000
       },
       "Draw": {
         "type": "select",
@@ -13912,6 +13916,16 @@
         ]
       }
     },
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    }
+  },
+  "OcrBenchmark": {
     "Storage": {
       "Storage": {
         "type": "storage",

@@ -318,6 +318,10 @@
       "name": "性能测试",
       "help": ""
     },
+    "OcrBenchmark": {
+      "name": "OCR性能测试",
+      "help": ""
+    },
     "AzurLaneUncensored": {
       "name": "反和谐",
       "help": ""
@@ -585,13 +589,17 @@
       "name": "优化设置",
       "help": ""
     },
+    "UseOcrGpuAcceleration": {
+      "name": "启用 GPU 加速",
+      "help": "使用 GPU 来大幅提升文字识别速度。如果遇到不兼容导致闪退或报错，请关闭。"
+    },
     "ScreenshotInterval": {
       "name": "放慢截图速度至 X 秒一张",
-      "help": "执行两次截图之间的最小间隔，限制在 0.1 ~ 0.3，对于高配置电脑能降低 CPU 占用"
+      "help": "执行两次截图之间的最小间隔，限制在 0.001 ~ 0.3，对于高配置电脑能降低 CPU 占用"
     },
     "CombatScreenshotInterval": {
       "name": "战斗中放慢截图速度至 X 秒一张",
-      "help": "执行两次截图之间的最小间隔，限制在 0.3 ~ 1.0，能降低战斗时的 CPU 占用"
+      "help": "执行两次截图之间的最小间隔，限制在 0.001 ~ 1.0，能降低战斗时的 CPU 占用"
     },
     "TaskHoardingDuration": {
       "name": "囤积任务 X 分钟",

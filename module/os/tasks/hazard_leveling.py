@@ -215,9 +215,10 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             try:
                 from module.statistics.cl1_database import db as cl1_db
                 instance_name = getattr(self.config, 'config_name', 'default')
-                cl1_db.increment_akashi_encounter(instance_name)
+                cl1_db.async_increment_akashi_encounter(instance_name)
                 month_key = datetime.now().strftime('%Y-%m')
-                data = cl1_db.get_stats(instance_name, month_key)
+                future = cl1_db.async_get_stats(instance_name, month_key)
+                data = future.result(timeout=5.0)
                 logger.attr('cl1_akashi_monthly', data.get('akashi_encounters', 0))
             except Exception:
                 logger.exception('Failed to persist CL1 akashi monthly count')
@@ -229,16 +230,23 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if not getattr(self.config, 'DropRecord_TelemetryReport', True):
                 logger.info('[错误] 遥测上报已关闭')
             else:
-                from module.statistics.cl1_data_submitter import get_cl1_submitter
-                instance_name = getattr(self.config, 'config_name', None)
-                submitter = get_cl1_submitter(instance_name=instance_name)
-                raw_data = submitter.collect_data()
-                if raw_data.get('battle_count', 0) > 0:
-                    metrics = submitter.calculate_metrics(raw_data)
-                    submitter.submit_data(metrics)
-                    logger.info(f'侵蚀 1 数据提交已排队，实例名称: {instance_name}')
+                def run_telemetry():
+                    try:
+                        from module.statistics.cl1_data_submitter import get_cl1_submitter
+                        instance_name = getattr(self.config, 'config_name', None)
+                        submitter = get_cl1_submitter(instance_name=instance_name)
+                        raw_data = submitter.collect_data()
+                        if raw_data.get('battle_count', 0) > 0:
+                            metrics = submitter.calculate_metrics(raw_data)
+                            submitter.submit_data(metrics)
+                            logger.info(f'侵蚀 1 数据提交已排队，实例名称: {instance_name}')
+                    except Exception as e:
+                        logger.debug(f'侵蚀 1 数据提交后台执行失败: {e}')
+
+                from module.base.async_executor import async_executor
+                async_executor.submit(run_telemetry)
         except Exception as e:
-            logger.debug(f'侵蚀 1 数据提交失败: {e}')
+            logger.debug(f'侵蚀 1 数据提交触发失败: {e}')
 
     def os_hazard1_leveling(self):
         """执行大世界侵蚀 1 练级任务。"""

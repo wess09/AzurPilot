@@ -743,7 +743,7 @@ def rgb2hsv(image):
         np.ndarray: Hue (0~360), Saturation (0~100), Value (0~100).
     """
     image = cv2.cvtColor(image, cv2.COLOR_RGB2HSV).astype(float)
-    cv2.multiply(image, (360 / 180, 100 / 255, 100 / 255, 0), dst=image)
+    cv2.multiply(image, (360 / 180, 100 / 255, 100 / 255), dst=image)
     return image
 
 
@@ -1024,12 +1024,12 @@ def color_similarity_2d(image, color):
     # r, g, b = cv2.split(cv2.subtract((*color, 0), image))
     # negative = cv2.max(cv2.max(r, g), b)
     # return cv2.subtract(255, cv2.add(positive, negative))
-    diff = cv2.subtract(image, (*color, 0))
+    diff = cv2.subtract(image, color)
     r, g, b = cv2.split(diff)
     cv2.max(r, g, dst=r)
     cv2.max(r, b, dst=r)
     positive = r
-    cv2.subtract((*color, 0), image, dst=diff)
+    cv2.subtract(color, image, dst=diff)
     r, g, b = cv2.split(diff)
     cv2.max(r, g, dst=r)
     cv2.max(r, b, dst=r)
@@ -1072,12 +1072,12 @@ def extract_letters(image, letter=(255, 255, 255), threshold=128):
     # r, g, b = cv2.split(cv2.subtract((*letter, 0), image))
     # negative = cv2.max(cv2.max(r, g), b)
     # return cv2.multiply(cv2.add(positive, negative), 255.0 / threshold)
-    diff = cv2.subtract(image, (*letter, 0))
+    diff = cv2.subtract(image, letter)
     r, g, b = cv2.split(diff)
     cv2.max(r, g, dst=r)
     cv2.max(r, b, dst=r)
     positive = r
-    cv2.subtract((*letter, 0), image, dst=diff)
+    cv2.subtract(letter, image, dst=diff)
     r, g, b = cv2.split(diff)
     cv2.max(r, g, dst=r)
     cv2.max(r, b, dst=r)
@@ -1102,7 +1102,7 @@ def extract_white_letters(image, threshold=128):
     # minimum = cv2.min(cv2.min(r, g), b)
     # maximum = cv2.max(cv2.max(r, g), b)
     # return cv2.multiply(cv2.add(maximum, cv2.subtract(maximum, minimum)), 255.0 / threshold)
-    r, g, b = cv2.split(cv2.subtract((255, 255, 255, 0), image))
+    r, g, b = cv2.split(cv2.subtract((255, 255, 255), image))
     maximum = cv2.max(r, g)
     cv2.min(r, g, dst=r)
     cv2.max(maximum, b, dst=maximum)

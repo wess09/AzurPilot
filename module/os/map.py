@@ -3,6 +3,7 @@
 import time
 import inspect
 from sys import maxsize
+from threading import Thread
 
 import inflection
 
@@ -283,6 +284,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self.ensure_no_zone_pinned()
                 return False
         self.zone_type_select(types=types)
+        # 点击太快碧蓝反应不过来
+        time.sleep(0.01)
         self.globe_enter(zone)
         # IN_MAP
         if hasattr(self, 'zone'):
@@ -790,7 +793,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 try:
                     from module.statistics.cl1_database import db as cl1_db
                     instance_name = getattr(self.config, 'config_name', 'default')
-                    cl1_db.increment_battle_count(instance_name)
+                    cl1_db.async_increment_battle_count(instance_name)
                 except Exception:
                     logger.debug('Failed to persist monthly CL1 battle increment', exc_info=True)
             except Exception:
@@ -834,7 +837,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 try:
                     from module.statistics.cl1_database import db as cl1_db
                     instance_name = getattr(self.config, 'config_name', 'default')
-                    cl1_db.increment_meow_battle_count(instance_name, hazard_level)
+                    cl1_db.async_increment_meow_battle_count(instance_name, hazard_level)
                 except Exception:
                     logger.debug('Failed to persist monthly meow battle increment', exc_info=True)
 
@@ -847,7 +850,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                         try:
                             from module.statistics.cl1_database import db as cl1_db
                             instance_name = getattr(self.config, 'config_name', 'default')
-                            cl1_db.add_meow_battle_time(instance_name, battle_duration)
+                            cl1_db.async_add_meow_battle_time(instance_name, battle_duration)
                         except Exception:
                             logger.debug('Failed to record meow battle time', exc_info=True)
                     else:
@@ -946,7 +949,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     )
                 except Exception:
                     hazard_level = None
-            cl1_db.add_meow_round_time(instance_name, duration, hazard_level)
+            cl1_db.async_add_meow_round_time(instance_name, duration, hazard_level)
         except Exception:
             logger.debug('Failed to record meow search duration', exc_info=True)
 
@@ -2129,13 +2132,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                                 # 设计说明：这里有意重置计时器，允许在路径持续可恢复时长期尝试，
                                 # 避免因固定超时提前放弃。
                                 find_device_timer.reset()
-                                time.sleep(1.0)
-                                
                                 self.map_init(map_=None)
                                 self.focus_to(focus_loc, swipe_limit=(6, 5))
                                 grid = self.convert_global_to_local(target_loc)
-
-                                time.sleep(0.5)
                         else:
                             logger.warning(f'目标 {target_grid} 不在地图中')
 
@@ -2174,12 +2173,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                             # 设计说明：命中装置但处理未完成时重置计时器，
                             # 该流程按“可恢复优先”策略持续重试。
                             find_device_timer.reset()
-                            time.sleep(1.0)
-                            
                             self.map_init(map_=None)
                             camera_queue = self.map.camera_data
-
-                        time.sleep(0.5)
 
                     if not device_handled:
                         if not device_found:
@@ -2204,10 +2199,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             try:
                 if hasattr(self, 'notify_push'):
                     zone_type_text = "安全海域" if siren_bug_type == 'safe' else "普通海域"
-                    self.notify_push(
-                        title="[Alas] 塞壬Bug利用 - 完成",
-                        content=f"已完成塞壬研究装置Bug利用\\n目标区域: {target_zone} ({zone_type_text})\\n已返回侵蚀一区域"
-                    )
+                    Thread(
+                        target=self.notify_push,
+                        kwargs={
+                            "title": "[Alas] 塞壬Bug利用 - 完成",
+                            "content": f"已完成塞壬研究装置Bug利用\\n目标区域: {target_zone} ({zone_type_text})\\n已返回侵蚀一区域"
+                        }
+                    ).start()
             except Exception as notify_err:
                 logger.debug(f'发送成功通知失败: {notify_err}')
             
@@ -2228,10 +2226,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 logger.info('自动收菜完成，返回正常任务流程')
                 try:
                     if hasattr(self, 'notify_push'):
-                        self.notify_push(
-                            title="[Alas] 塞壬Bug利用 - 自动收菜完成",
-                            content=f"已达到塞壬研究装置Bug利用阈值，自动收菜完成"
-                        )
+                        Thread(
+                            target=self.notify_push,
+                            kwargs={
+                                "title": "[Alas] 塞壬Bug利用 - 自动收菜完成",
+                                "content": f"已达到塞壬研究装置Bug利用阈值，自动收菜完成"
+                            }
+                        ).start()
                 except Exception as notify_err:
                     logger.debug(f'发送自动收菜完成通知失败: {notify_err}')
 
@@ -2264,10 +2265,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             # 发送失败通知
             try:
                 if hasattr(self, 'notify_push'):
-                    self.notify_push(
-                        title="[Alas] 塞壬Bug利用 - 失败",
-                        content=f"塞壬研究装置BUG利用失败\\n错误: {str(e)}\\n请检查日志"
-                    )
+                    Thread(
+                        target=self.notify_push,
+                        kwargs={
+                            "title": "[Alas] 塞壬Bug利用 - 失败",
+                            "content": f"塞壬研究装置BUG利用失败\\n错误: {str(e)}\\n请检查日志"
+                        }
+                    ).start()
             except Exception as notify_err:
                 logger.debug(f'发送失败通知失败: {notify_err}')
             

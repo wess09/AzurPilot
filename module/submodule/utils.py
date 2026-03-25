@@ -21,6 +21,7 @@ def get_available_func():
         'BoxDisassemble',
         'AzurLaneUncensored',
         'Benchmark',
+        'OcrBenchmark',
         'GameManager',
     )
 

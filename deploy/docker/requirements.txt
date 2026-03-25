@@ -11,7 +11,7 @@ uiautomator2==2.16.17
 uiautomator2cache==0.3.0.1
 wrapt==1.13.1
 retrying
-lz4
+lz4==4.4.5
 # av==10.0.0  # Installed separately in Dockerfile with --no-build-isolation
 psutil==5.9.3
 

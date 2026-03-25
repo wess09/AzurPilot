@@ -1,245 +1,128 @@
 import os
-
-import cv2
 import numpy as np
+import cv2
 from PIL import Image
 
 from module.exception import RequestHumanTakeover
 from module.logger import logger
+from module.config.config import AzurLaneConfig
 
 try:
-    logger.info('Loading OCR dependencies')
-    from cnocr import CnOcr
-    from cnocr.cn_ocr import (check_model_name, data_dir, gen_network, load_module,
-                              read_charset)
-    from cnocr.fit.ctc_metrics import CtcMetrics
-    from cnocr.hyperparams.cn_hyperparams import CnHyperparams as Hyperparams
+    from rapidocr import RapidOCR, OCRVersion
 except Exception as e:
     logger.critical(f'Failed to load OCR dependencies: {e}')
-    # Define dummy classes to prevent ImportErrors in other modules
-    class CnOcr:
-        pass
+    logger.critical('无法加载 OCR 依赖，如错误信息包含 DLL load failed while 请安装微软 C++ 运行库 https://aka.ms/vs/17/release/vc_redist.x64.exe')
+    raise RequestHumanTakeover
 
-from module.device.pkg_resources import PACKAGE_CACHE
+USE_GPU = False
+config_name = os.environ.get('ALAS_CONFIG_NAME')
+if config_name:
+    config = AzurLaneConfig(config_name)
+    val = config.Optimization_UseOcrGpuAcceleration
+    if val is False:
+        logger.info(f'OCR GPU acceleration disabled by config/{config_name}.json')
+        USE_GPU = False
+    else:
+        USE_GPU = True
 
+class CnModel:
+    def __init__(self):
+        self.params = {
+            "Global.use_det": False,
+            "Global.use_cls": False,
+            "Det.model_path": None,
+            "Cls.model_path": None,
+            "Rec.ocr_version": OCRVersion.PPOCRV5,
+            "Rec.model_path": "bin/ocr_models/zh-CN/alocr-zh-cn-v2.5.dtk.onnx",
+            "Rec.rec_keys_path": "bin/ocr_models/zh-CN/cn.txt",
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
+        }
+        self.model = RapidOCR(params=self.params)
 
-def get_mxnet_context():
-    for dist in PACKAGE_CACHE.dict_installed_packages.values():
-        # mxnet_cu101
-        if dist.dist.startswith('mxnet_cu'):
-            logger.info(f'MXNet gpu package: {dist.dist}=={dist.version} found, using it')
-            return 'gpu'
+class EnModel:
+    def __init__(self):
+        self.params = {
+            "Global.use_det": False,
+            "Global.use_cls": False,
+            "Det.model_path": None,
+            "Cls.model_path": None,
+            "Rec.ocr_version": OCRVersion.PPOCRV4,
+            "Rec.model_path": "bin/ocr_models/en-US/alocr-en-us-v2.0.nvc.onnx",
+            "Rec.rec_keys_path": "bin/ocr_models/en-US/en.txt",
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
+        }
+        self.model = RapidOCR(params=self.params)
 
-    return 'cpu'
+cn_model = CnModel()
+en_model = EnModel()
 
-
-class AlOcr(CnOcr):
-    # 'cpu' or 'gpu'
-    # To use predict in gpu, the gpu version of mxnet must be installed.
-    CNOCR_CONTEXT = get_mxnet_context()
-
-    def __init__(
-            self,
-            model_name='densenet-lite-gru',
-            model_epoch=None,
-            cand_alphabet=None,
-            root=data_dir(),
-            context='cpu',
-            name=None,
-    ):
-        self._args = (model_name, model_epoch, cand_alphabet, root, context, name)
+class AlOcr:
+    def __init__(self, **kwargs):
+        self.model = None
+        self.name = kwargs.get('name', 'en')
+        self.params = {}
         self._model_loaded = False
+        logger.info(f"Created AlOcr instance: name='{self.name}', kwargs={kwargs}, PID={os.getpid()}")
 
-    def init(self,
-             model_name='densenet-lite-gru',
-             model_epoch=None,
-             cand_alphabet=None,
-             root=data_dir(),
-             context='cpu',
-             name=None,
-             ):
-        """
+    def init(self):
+        if self.name in ['cn', 'zhcn']:
+            self.model = cn_model.model
+        else:
+            self.model = en_model.model
+        self._model_loaded = True
 
-        :param model_name: 模型名称
-        :param model_epoch: 模型迭代次数
-        :param cand_alphabet: 待识别字符所在的候选集合。默认为 `None`，表示不限定识别字符范围
-        :param root: 模型文件所在的根目录。
-            Linux/Mac下默认值为 `~/.cnocr`，表示模型文件所处文件夹类似 `~/.cnocr/1.1.0/conv-lite-fc-0027`。
-            Windows下默认值为 ``。
-        :param context: 'cpu', or 'gpu'。表明预测时是使用CPU还是GPU。默认为CPU。
-        :param name: 正在初始化的这个实例名称。如果需要同时初始化多个实例，需要为不同的实例指定不同的名称。
-        """
-        check_model_name(model_name)
-        self._model_name = model_name
-        self._model_file_prefix = '{}-{}'.format(self.MODEL_FILE_PREFIX, model_name)
-        self._model_epoch = model_epoch
-
-        self._model_dir = root  # Change folder structure.
-        self._assert_and_prepare_model_files()
-        self._alphabet, self._inv_alph_dict = read_charset(
-            os.path.join(self._model_dir, 'label_cn.txt')
-        )
-
-        self._cand_alph_idx = None
-        # Alphabet will be set before calling ocr.
-        # self.set_cand_alphabet(cand_alphabet)
-
-        self._hp = Hyperparams()
-        self._hp._loss_type = None  # infer mode
-        self._hp._num_classes = len(self._alphabet)
-        # 传入''的话，也改成传入None
-        self._net_prefix = None if name == '' else name
-
-        self._mod = self._get_module(AlOcr.CNOCR_CONTEXT)
+    def _ensure_loaded(self):
+        if not self._model_loaded:
+            self.init()
 
     def ocr(self, img_fp):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        return super().ocr(img_fp)
+        logger.info(f"[VERBOSE] AlOcr.ocr: Ensure loaded...")
+        self._ensure_loaded()
+            
+        try:
+            res = self.model(img_fp)
+            if hasattr(res, 'txts') and res.txts:
+                return res.txts[0]
+            return ""
+        except Exception as e:
+            logger.error(f"AlOcr.ocr exception: {e}")
+            raise
 
     def ocr_for_single_line(self, img_fp):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        return super().ocr_for_single_line(img_fp)
+        return self.ocr(img_fp)
 
     def ocr_for_single_lines(self, img_list):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        return super().ocr_for_single_lines(img_list)
+        self._ensure_loaded()
+        results = []
+        for i, img in enumerate(img_list):
+            try:
+                res = self.model(img)
+                if hasattr(res, 'txts') and res.txts:
+                    results.append(res.txts[0])
+                else:
+                    results.append("")
+            except Exception as e:
+                logger.error(f"AlOcr.ocr_for_single_lines exception on image {i}: {e}")
+                raise
+        return results
 
     def set_cand_alphabet(self, cand_alphabet):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        return super().set_cand_alphabet(cand_alphabet)
-
-    """
-    Atomic version of the OCR methods above
-    handling set_cand_alphabet inside
-    """
+        pass
 
     def atomic_ocr(self, img_fp, cand_alphabet=None):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        super().set_cand_alphabet(cand_alphabet)
-
-        return super().ocr(img_fp)
-
-    def atomic_ocr_for_single_line(self, img_fp, cand_alphabet=None):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        super().set_cand_alphabet(cand_alphabet)
-
-        return super().ocr_for_single_line(img_fp)
-
-    def atomic_ocr_for_single_lines(self, img_list, cand_alphabet=None):
-        if not self._model_loaded:
-            self.init(*self._args)
-            self._model_loaded = True
-
-        super().set_cand_alphabet(cand_alphabet)
-
-        return super().ocr_for_single_lines(img_list)
-
-    def _assert_and_prepare_model_files(self):
-        model_dir = self._model_dir
-        model_files = [
-            'label_cn.txt',
-            '%s-%04d.params' % (self._model_file_prefix, self._model_epoch),
-            '%s-symbol.json' % self._model_file_prefix,
-        ]
-        file_prepared = True
-        for f in model_files:
-            f = os.path.join(model_dir, f)
-            if not os.path.exists(f):
-                file_prepared = False
-                logger.warning('can not find file %s', f)
-                break
-
-        if file_prepared:
-            return
-
-        # Disable auto downloading cnocr models when model not found.
-        # get_model_file(model_dir)
-        logger.warning(f'Ocr model not prepared: {model_dir}')
-        logger.warning(f'Required files: {model_files}')
-        logger.critical('Please check if required files of pre-trained OCR model exist')
-        logger.critical('未找到 OCR 模型，或 OCR 模型不符合要求。')
-        raise RequestHumanTakeover
-
-    def _get_module(self, context):
-        network, self._hp = gen_network(self._model_name, self._hp, self._net_prefix)
-        hp = self._hp
-        prefix = os.path.join(self._model_dir, self._model_file_prefix)
-        data_names = ['data']
-        data_shapes = [(data_names[0], (hp.batch_size, 1, hp.img_height, hp.img_width))]
-        logger.info('Loading OCR model: %s' % self._model_dir)  # Change log appearance.
-        mod = load_module(
-            prefix,
-            self._model_epoch,
-            data_names,
-            data_shapes,
-            network=network,
-            net_prefix=self._net_prefix,
-            context=context,
-        )
-        return mod
-
-    def _preprocess_img_array(self, img):
-        """
-        :param img: image array with type mx.nd.NDArray or np.ndarray,
-        with shape [height, width] or [height, width, channel].
-        channel should be 1 (gray image) or 3 (color image).
-
-        :return: np.ndarray, with shape (1, height, width)
-        """
-        # Resize image using `cv2.resize` instead of `mxnet.image.imresize`
-        new_width = int(round(self._hp.img_height / img.shape[0] * img.shape[1]))
-        img = cv2.resize(img, (new_width, self._hp.img_height))
-        img = np.expand_dims(img, 0).astype('float32') / 255.0
-        return img
-
-    def _gen_line_pred_chars(self, line_prob, img_width, max_img_width):
-        """
-        Get the predicted characters.
-        :param line_prob: with shape of [seq_length, num_classes]
-        :param img_width:
-        :param max_img_width:
-        :return:
-        """
-        class_ids = np.argmax(line_prob, axis=-1)
-
-        class_ids *= np.max(line_prob, axis=-1) > 0.5  # Delete low confidence result
-
-        if img_width < max_img_width:
-            comp_ratio = self._hp.seq_len_cmpr_ratio
-            end_idx = img_width // comp_ratio
-            if end_idx < len(class_ids):
-                class_ids[end_idx:] = 0
-        prediction, start_end_idx = CtcMetrics.ctc_label(class_ids.tolist())
-        alphabet = self._alphabet
-        res = [alphabet[p] if alphabet[p] != '<space>' else ' ' for p in prediction]
-
+        res = self.ocr(img_fp)
+        if cand_alphabet:
+            res = ''.join([c for c in res if c in cand_alphabet])
         return res
 
-    def debug(self, img_list):
-        """
-        Args:
-            img_list: List of numpy array, (height, width)
-        """
-        self.init(*self._args)
-        img_list = [(self._preprocess_img_array(img) * 255.0).astype(np.uint8) for img in img_list]
-        img_list, img_widths = self._pad_arrays(img_list)
-        image = cv2.hconcat(img_list)[0, :, :]
-        Image.fromarray(image).show()
+    def atomic_ocr_for_single_line(self, img_fp, cand_alphabet=None):
+        res = self.ocr_for_single_line(img_fp)
+        if cand_alphabet:
+            res = ''.join([c for c in res if c in cand_alphabet])
+        return res
+
+    def atomic_ocr_for_single_lines(self, img_list, cand_alphabet=None):
+        results = self.ocr_for_single_lines(img_list)
+        if cand_alphabet:
+            results = [''.join([c for c in res if c in cand_alphabet]) for res in results]
+        return results

@@ -624,6 +624,10 @@ class AzurLaneAutoScript:
         from module.daemon.benchmark import run_benchmark
         run_benchmark(config=self.config)
 
+    def ocr_benchmark(self):
+        from module.daemon.ocr_benchmark import run_ocr_benchmark
+        run_ocr_benchmark(config=self.config)
+
     def game_manager(self):
         from module.daemon.game_manager import GameManager
         GameManager(config=self.config, device=self.device, task="GameManager").run()

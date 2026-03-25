@@ -155,11 +155,8 @@ class ApiClient:
         """
         if not enabled:
             return
-        threading.Thread(
-            target=cls._submit_bug_log,
-            args=(content, log_type),
-            daemon=True
-        ).start()
+        from module.base.async_executor import async_executor
+        async_executor.submit(cls._submit_bug_log, content, log_type)
     
     @staticmethod
     def _submit_cl1_data(data: Dict[str, Any], timeout: int):
@@ -204,11 +201,8 @@ class ApiClient:
             data: 包含device_id和统计数据的字典
             timeout: 请求超时时间（秒），默认10秒
         """
-        threading.Thread(
-            target=cls._submit_cl1_data,
-            args=(data, timeout),
-            daemon=True
-        ).start()
+        from module.base.async_executor import async_executor
+        async_executor.submit(cls._submit_cl1_data, data, timeout)
     
     @staticmethod
     def _report_stamina(stamina: float, timeout: int):
@@ -249,11 +243,8 @@ class ApiClient:
             stamina: 当前体力值
             timeout: 请求超时时间（秒），默认5秒
         """
-        threading.Thread(
-            target=cls._report_stamina,
-            args=(stamina, timeout),
-            daemon=True
-        ).start()
+        from module.base.async_executor import async_executor
+        async_executor.submit(cls._report_stamina, stamina, timeout)
     
     @classmethod
     def get_announcement(cls, timeout: int = 1, current_id: int = None) -> Optional[Dict[str, Any]]:

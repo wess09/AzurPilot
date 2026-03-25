@@ -19,6 +19,28 @@ class MissionAtCurrentZone(Exception):
 class MissionHandler(GlobeOperation, ZoneManager):
     _os_mission_submitted = False
 
+    def _os_find_checkout_offset_skip_monthly_boss(self, checkout_offset):
+        """
+        Find a mission checkout row that is not monthly boss.
+
+        Args:
+            checkout_offset (tuple): Initial checkout button offset.
+
+        Returns:
+            tuple | None: Offset for a non-monthly-boss mission row.
+                Returns None if no valid mission row found.
+        """
+        row_offset = checkout_offset
+        # Mission rows are vertically aligned with about 110px interval.
+        # Scan several rows to handle monthly boss not being at the first row.
+        for _ in range(8):
+            has_checkout = self.match_template_color(MISSION_CHECKOUT, offset=row_offset, similarity=0.78)
+            if has_checkout and not self.appear(MISSION_MONTHLY_BOSS, offset=row_offset):
+                return row_offset
+            row_offset = area_offset(row_offset, (0, 110))
+
+        return None
+
     def get_mission_zone(self):
         """
         Returns:
@@ -134,17 +156,9 @@ class MissionHandler(GlobeOperation, ZoneManager):
                 or False if no more mission.
         """
         checkout_offset = self.os_mission_enter(skip_siren_mission=skip_siren_mission)
-
-        if self.appear(MISSION_MONTHLY_BOSS, offset=checkout_offset):
-            # If monthly BOSS hasn't been killed, there is always a task.
-            logger.info('Monthly BOSS mission found, checking missions bellow it')
-            checkout_offset = area_offset(checkout_offset, (0, 110))
-
-        if not self.match_template_color(MISSION_CHECKOUT, offset=checkout_offset, similarity=0.78):
-            # If not having enough items to claim a mission,
-            # there will still be MISSION_CHECKOUT, but button is transparent.
-            # So here needs to use both template matching and color detection.
-            logger.info('No more OS missions')
+        checkout_offset = self._os_find_checkout_offset_skip_monthly_boss(checkout_offset)
+        if checkout_offset is None:
+            logger.info('No more non-monthly-boss OS missions')
             self.os_mission_quit()
             return False
 

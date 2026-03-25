@@ -109,6 +109,11 @@ class OpsiDaily(OSMap):
         """
         logger.hr('OS finish daily mission', level=1)
         count = 0
+        # Guard against infinite refresh loops on port-type daily missions that
+        # auto-search cannot finish (e.g. dialogue/pickup/shop interactions).
+        stuck_port_zone_id = None
+        stuck_port_retry = 0
+        abort_due_to_stuck_port = False
         while True:
             result = self.os_get_next_mission(skip_siren_mission=skip_siren_mission)
             if not result:
@@ -130,15 +135,43 @@ class OpsiDaily(OSMap):
             else:
                 interrupt = None
             try:
-                self.run_auto_search(question, rescan, interrupt=interrupt)
+                finished_combat = self.run_auto_search(question, rescan, interrupt=interrupt)
                 self.handle_after_auto_search()
             except TaskEnd:
                 self.ui_ensure(page_os)
                 if keep_mission_zone:
                     self.os_daily_set_keep_mission_zone()
+                finished_combat = 0
+
+            # Detect repeated no-progress loops at ports and stop this run early.
+            # This prevents endless "refresh current zone" ping-pong.
+            if self.zone.is_port and finished_combat == 0 and result in (
+                    'already_at_mission_zone', 'pinned_at_mission_zone'):
+                zone_id = self.zone.zone_id
+                if stuck_port_zone_id == zone_id:
+                    stuck_port_retry += 1
+                else:
+                    stuck_port_zone_id = zone_id
+                    stuck_port_retry = 1
+
+                if stuck_port_retry >= 3:
+                    logger.warning(
+                        f'Port mission appears stuck in zone {zone_id} '
+                        f'({self.zone}). Auto-search made no progress after '
+                        f'{stuck_port_retry} retries. Stop OpsiDaily to avoid '
+                        f'infinite zone refresh loop.')
+                    abort_due_to_stuck_port = True
+                    break
+            else:
+                stuck_port_zone_id = None
+                stuck_port_retry = 0
             count += 1
             if not keep_mission_zone:
                 self.config.check_task_switch()
+
+        if abort_due_to_stuck_port:
+            # Return 0 to let outer OpsiDaily flow exit this round cleanly.
+            return 0
 
         return count
 
