@@ -419,9 +419,17 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 self.config.OpsiSirenBug_SirenResearch_Enable = self._original_siren_research_enable
             if hasattr(self.config, '_disable_siren_research'):
                 delattr(self.config, '_disable_siren_research')
-            if hasattr(self, '_original_stay_in_zone'):
-                self.config.OpsiMeowfficerFarming_StayInZone = self._original_stay_in_zone
-                logger.info(f'探测装置搜索：恢复 StayInZone={self._original_stay_in_zone}')
+            # 清理忽略标记（不修改配置本身）
+            if hasattr(self, '_siren_search_ignore_stay_in_zone'):
+                try:
+                    delattr(self, '_siren_search_ignore_stay_in_zone')
+                except Exception:
+                    pass
+            if hasattr(self, '_original_siren_research_enable'):
+                try:
+                    delattr(self, '_original_siren_research_enable')
+                except Exception:
+                    pass
 
         # 获取目标数量
         stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
@@ -626,10 +634,11 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             siren_search_enabled = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable
             logger.info(f'探测装置搜索模式状态: {siren_search_enabled}')
             if siren_search_enabled:
-                self._original_stay_in_zone = self.config.OpsiMeowfficerFarming_StayInZone
-                if self._original_stay_in_zone:
-                    self.config.OpsiMeowfficerFarming_StayInZone = False
-                    logger.info('探测装置搜索模式：临时禁用指定海域计划作战')
+                # 强制在搜索期间忽略已开启的指定海域计划作战，但不修改实际配置
+                if not getattr(self, '_siren_search_ignore_stay_in_zone', False):
+                    self._siren_search_ignore_stay_in_zone = True
+                    if self.config.OpsiMeowfficerFarming_StayInZone:
+                        logger.info('探测装置搜索模式：临时忽略指定海域计划作战（不修改配置）')
 
             # ===== 传统目标海域模式 =====
             if not siren_search_enabled and self.config.OpsiMeowfficerFarming_TargetZone != 0 and not self.config.OpsiMeowfficerFarming_StayInZone:
@@ -649,10 +658,13 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                     logger.info('探测装置搜索未找到目标海域，切换到普通短猫搜索')
                     self._meow_handle_normal_search()
                 else:
-                    # 找到装置，恢复 StayInZone 设置
-                    if self._original_stay_in_zone:
-                        self.config.OpsiMeowfficerFarming_StayInZone = True
-                        logger.info('探测装置搜索完成：恢复指定海域计划作战')
+                    # 找到装置，移除忽略标记并保持配置不变
+                    if getattr(self, '_siren_search_ignore_stay_in_zone', False):
+                        try:
+                            delattr(self, '_siren_search_ignore_stay_in_zone')
+                        except Exception:
+                            pass
+                        logger.info('探测装置搜索完成：恢复指定海域计划作战（配置未被关闭）')
             else:
                 self._meow_handle_normal_search()
             
