@@ -35,7 +35,7 @@ class CnModel:
             "Det.model_path": None,
             "Cls.model_path": None,
             "Rec.ocr_version": OCRVersion.PPOCRV5,
-            "Rec.model_path": "bin/ocr_models/zh-CN/alocr-zh-cn-v2.5.dtk.onnx",
+            "Rec.model_path": "bin/ocr_models/zh-CN/alocr-zh-cn-v3.dtk.onnx",
             "Rec.rec_keys_path": "bin/ocr_models/zh-CN/cn.txt",
             "EngineConfig.onnxruntime.use_dml": USE_GPU
         }
