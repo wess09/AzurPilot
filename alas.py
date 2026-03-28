@@ -320,6 +320,17 @@ class AzurLaneAutoScript:
             with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
                 f.writelines(lines)
             self.keep_last_errlog(config_folder, self.config.Error_SaveErrorCount)
+            
+            # LLM Error Analysis
+            if self.config.Error_LlmAnalysis:
+                try:
+                    from module.llm import analyze_exception
+                    import sys
+                    _, exc_value, _ = sys.exc_info()
+                    if exc_value is not None:
+                        analyze_exception(self.config, exc_value)
+                except Exception as e:
+                    logger.error(f'LLM Analysis failed: {e}')
 
     def restart(self):
         from module.handler.login import LoginHandler

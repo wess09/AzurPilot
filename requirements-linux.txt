@@ -98,3 +98,4 @@ zerorpc==0.6.3
 zope-event==4.6
 zope-interface==5.5.2
 lz4==4.4.5
+openai

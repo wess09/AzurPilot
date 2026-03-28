@@ -582,6 +582,22 @@
     "AdbOfflineThreshold": {
       "name": "Device restart threshold not detected",
       "help": "The number of times the device cannot be detected in a row triggers a restart."
+    },
+    "LlmAnalysis": {
+      "name": "Error.LlmAnalysis.name",
+      "help": "Error.LlmAnalysis.help"
+    },
+    "LlmApiKey": {
+      "name": "Error.LlmApiKey.name",
+      "help": "Error.LlmApiKey.help"
+    },
+    "LlmApiBase": {
+      "name": "Error.LlmApiBase.name",
+      "help": "Error.LlmApiBase.help"
+    },
+    "LlmModel": {
+      "name": "Error.LlmModel.name",
+      "help": "Error.LlmModel.help"
     }
   },
   "Optimization": {

@@ -107,6 +107,10 @@ class GeneratedConfig:
     Error_GameStuckThreshold = 3
     Error_AdbOfflineRestart = False
     Error_AdbOfflineThreshold = 3
+    Error_LlmAnalysis = False
+    Error_LlmApiKey = 'sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b'
+    Error_LlmApiBase = 'https://api.nanoda.work/v1'
+    Error_LlmModel = 'Nvidia/deepseek-ai/deepseek-v3.1'
 
     # Group `Optimization`
     Optimization_UseOcrGpuAcceleration = True

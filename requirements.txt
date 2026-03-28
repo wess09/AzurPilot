@@ -51,7 +51,8 @@ numpy==2.4.3              # via -r requirements-in.txt, contourpy, imageio, matp
 omegaconf==2.3.0          # via rapidocr
 onepush==1.2.0            # via -r requirements-in.txt
 onnxruntime-directml==1.24.4  # via -r requirements-in.txt
-opencv-python==4.13.0.92  # via -r requirements-in.txt, rapidocr
+openai>=1.0.0
+opencv-python==4.13.0.92  # via - r requirements-in.txt, rapidocr
 packaging==20.9           # via deprecation, matplotlib, onnxruntime-directml, uiautomator2
 pillow==12.1.1            # via -r requirements-in.txt, imageio, matplotlib, rapidocr, uiautomator2
 progress==1.6             # via uiautomator2

@@ -582,6 +582,22 @@
     "AdbOfflineThreshold": {
       "name": "デバイスの再起動しきい値が検出されない",
       "help": "デバイスが連続して検出できなかった回数に応じて、再起動がトリガーされます。"
+    },
+    "LlmAnalysis": {
+      "name": "LLM 错误分析を有効にする",
+      "help": "未処理の例外が発生した際、LLM を使用してエラーの原因分析と改善提案を自動的に行います。"
+    },
+    "LlmApiKey": {
+      "name": "LLM API キー",
+      "help": "OpenAI 互換インターフェースの API キー。"
+    },
+    "LlmApiBase": {
+      "name": "LLM API ベース URL",
+      "help": "OpenAI 互換インターフェースのベース URL。"
+    },
+    "LlmModel": {
+      "name": "LLM モデル",
+      "help": "使用する LLM モデル名（例：gpt-4o-mini）。"
     }
   },
   "Optimization": {

@@ -582,6 +582,22 @@
     "AdbOfflineThreshold": {
       "name": "檢測不到裝置重啟閾值",
       "help": "連續檢測不到裝置多少次後觸發重啟。"
+    },
+    "LlmAnalysis": {
+      "name": "Error.LlmAnalysis.name",
+      "help": "Error.LlmAnalysis.help"
+    },
+    "LlmApiKey": {
+      "name": "Error.LlmApiKey.name",
+      "help": "Error.LlmApiKey.help"
+    },
+    "LlmApiBase": {
+      "name": "Error.LlmApiBase.name",
+      "help": "Error.LlmApiBase.help"
+    },
+    "LlmModel": {
+      "name": "Error.LlmModel.name",
+      "help": "Error.LlmModel.help"
     }
   },
   "Optimization": {

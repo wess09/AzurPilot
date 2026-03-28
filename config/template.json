@@ -92,7 +92,11 @@
       "GameStuckRestart": false,
       "GameStuckThreshold": 3,
       "AdbOfflineRestart": false,
-      "AdbOfflineThreshold": 3
+      "AdbOfflineThreshold": 3,
+      "LlmAnalysis": false,
+      "LlmApiKey": "sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b",
+      "LlmApiBase": "https://api.nanoda.work/v1",
+      "LlmModel": "Nvidia/deepseek-ai/deepseek-v3.1"
     },
     "Optimization": {
       "UseOcrGpuAcceleration": true,

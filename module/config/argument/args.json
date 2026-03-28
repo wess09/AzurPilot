@@ -441,6 +441,23 @@
           1,
           10
         ]
+      },
+      "LlmAnalysis": {
+        "type": "checkbox",
+        "value": false
+      },
+      "LlmApiKey": {
+        "type": "textarea",
+        "value": "sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b"
+      },
+      "LlmApiBase": {
+        "type": "textarea",
+        "value": "https://api.nanoda.work/v1"
+      },
+      "LlmModel": {
+        "type": "input",
+        "value": "Nvidia/deepseek-ai/deepseek-v3.1",
+        "valuetype": "str"
       }
     },
     "Optimization": {

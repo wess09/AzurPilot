@@ -582,6 +582,22 @@
     "AdbOfflineThreshold": {
       "name": "⏳ 找回联络员等待期限",
       "help": "连续找不见多少次后就放弃并重启喵？"
+    },
+    "LlmAnalysis": {
+      "name": "Error.LlmAnalysis.name",
+      "help": "Error.LlmAnalysis.help"
+    },
+    "LlmApiKey": {
+      "name": "Error.LlmApiKey.name",
+      "help": "Error.LlmApiKey.help"
+    },
+    "LlmApiBase": {
+      "name": "Error.LlmApiBase.name",
+      "help": "Error.LlmApiBase.help"
+    },
+    "LlmModel": {
+      "name": "Error.LlmModel.name",
+      "help": "Error.LlmModel.help"
     }
   },
   "Optimization": {
