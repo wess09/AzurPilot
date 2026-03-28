@@ -298,39 +298,50 @@ class AzurLaneAutoScript:
         from module.base.utils import save_image
         from module.handler.sensitive_info import (handle_sensitive_image,
                                                    handle_sensitive_logs)
-        if self.config.Error_SaveError:
+                                                   
+        # LLM Error Analysis - 放到最前面，防止后面截图保存时二次崩溃导致分析没跑
+        try:
+            if hasattr(self, 'config') and getattr(self.config, 'Error_LlmAnalysis', False):
+                from module.llm import analyze_exception
+                import sys
+                _, exc_value, _ = sys.exc_info()
+                if exc_value is not None:
+                    analyze_exception(self.config, exc_value)
+        except Exception as e:
+            logger.error(f'LLM Analysis failed: {e}')
+
+        if getattr(self.config, 'Error_SaveError', False):
             config_folder = pathlib.Path(f"./log/error/{self.config_name}")
             folder = config_folder.joinpath(str(int(time.time() * 1000)))
             folder.mkdir(parents=True, exist_ok=True)
             logger.warning(f'保存错误日志: {folder}')
 
-            for data in self.device.screenshot_deque:
-                image_time = datetime.strftime(data['time'], '%Y-%m-%d_%H-%M-%S-%f')
-                image = handle_sensitive_image(data['image'])
-                save_image(image, f'{folder}/{image_time}.png')
-            with open(logger.log_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                start = 0
-                for index, line in enumerate(lines):
-                    line = line.strip(' \r\t\n')
-                    if re.match('^═{15,}$', line):
-                        start = index
-                lines = lines[start - 2:]
-                lines = handle_sensitive_logs(lines)
-            with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
-                f.writelines(lines)
-            self.keep_last_errlog(config_folder, self.config.Error_SaveErrorCount)
-            
-            # LLM Error Analysis
-            if self.config.Error_LlmAnalysis:
-                try:
-                    from module.llm import analyze_exception
-                    import sys
-                    _, exc_value, _ = sys.exc_info()
-                    if exc_value is not None:
-                        analyze_exception(self.config, exc_value)
-                except Exception as e:
-                    logger.error(f'LLM Analysis failed: {e}')
+            try:
+                # 只在已经初始化了设备时才尝试保存截图，避免按需初始化时二次崩溃
+                if 'device' in self.__dict__:
+                    for data in self.device.screenshot_deque:
+                        image_time = datetime.strftime(data['time'], '%Y-%m-%d_%H-%M-%S-%f')
+                        image = handle_sensitive_image(data['image'])
+                        save_image(image, f'{folder}/{image_time}.png')
+            except Exception as e:
+                logger.error(f"Save error screenshot failed: {e}")
+
+            try:
+                with open(logger.log_file, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                    start = 0
+                    for index, line in enumerate(lines):
+                        line = line.strip(' \r\t\n')
+                        if re.match('^═{15,}$', line):
+                            start = index
+                    lines = lines[start - 2:]
+                    lines = handle_sensitive_logs(lines)
+                with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
+                    f.writelines(lines)
+            except Exception as e:
+                logger.error(f"Save error logs failed: {e}")
+                
+            self.keep_last_errlog(config_folder, getattr(self.config, 'Error_SaveErrorCount', 0))
 
     def restart(self):
         from module.handler.login import LoginHandler
@@ -844,6 +855,15 @@ class AzurLaneAutoScript:
                 logger.error("调度器循环中发生意外的全局异常！")
                 import traceback
                 logger.error(traceback.format_exc()) # 打印完整的错误堆栈
+                
+                # 即使没有达到重启或失败上限，也第一时间自动请求分析崩溃原因
+                try:
+                    if hasattr(self, 'config') and getattr(self.config, 'Error_LlmAnalysis', False):
+                        from module.llm import analyze_exception
+                        analyze_exception(self.config, e)
+                except Exception as ex:
+                    logger.error(f'LLM Analysis failed: {ex}')
+
                 logger.warning(
                     f">>> 这是第 {consecutive_global_failures} 次连续全局失败，共 {MAX_GLOBAL_FAILURES} 次。"
                 )

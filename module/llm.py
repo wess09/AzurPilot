@@ -2,6 +2,10 @@ import traceback
 import os
 from module.logger import logger
 
+import hashlib
+
+_analyzed_errors_cache = {}
+
 def analyze_exception(config, e):
     """
     Analyze the exception using LLM.
@@ -12,6 +16,26 @@ def analyze_exception(config, e):
     """
     if not hasattr(config, 'Error_LlmAnalysis') or not config.Error_LlmAnalysis:
         return
+        
+    tb = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+    
+    # 错误去重：计算当前堆栈报错的哈希值，如果最近已经分析过，直接跳过，防止浪费 API 和时间
+    error_hash = hashlib.md5(tb.encode('utf-8')).hexdigest()
+    if error_hash in _analyzed_errors_cache:
+        cached_result = _analyzed_errors_cache[error_hash]
+        model = getattr(config, 'Error_LlmModel', 'gpt-4o-mini')
+        logger.hr('LLM 错误分析', level=1)
+        logger.info('该错误已被 LLM 分析过，直接复用上次的分析结果以节省 API...')
+        logger.info(f"\n[LLM 分析报告 (由 {model} 提供, 复用缓存)]\n{cached_result}\n")
+        logger.hr('LLM 分析结束', level=1)
+        return
+        
+    # 加入缓存占位符，防止等待期间如果又疯狂连续报错导致重复发送请求
+    _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。"
+    # 控制缓存大小，防止内存泄漏（保留最近 50 个报错记录）
+    if len(_analyzed_errors_cache) > 50:
+        _analyzed_errors_cache.clear()
+        _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。"
     
     api_key = getattr(config, 'Error_LlmApiKey', '')
     api_base = getattr(config, 'Error_LlmApiBase', 'https://api.openai.com/v1')
@@ -75,7 +99,9 @@ def analyze_exception(config, e):
         )
         
         analysis = response.choices[0].message.content.strip()
-        logger.info(f"\n[LLM 分析报告]\n{analysis}\n")
+        # 覆写真正的成果进字典
+        _analyzed_errors_cache[error_hash] = analysis
+        logger.info(f"\n[LLM 分析报告 (由 {model} 提供)]\n{analysis}\n")
         logger.hr('LLM 分析结束', level=1)
         
     except ImportError:

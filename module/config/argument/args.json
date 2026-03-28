@@ -456,7 +456,7 @@
       },
       "LlmModel": {
         "type": "input",
-        "value": "Nvidia/deepseek-ai/deepseek-v3.1",
+        "value": "Nvidia/qwen/qwen2.5-coder-32b-instruct",
         "valuetype": "str"
       }
     },
