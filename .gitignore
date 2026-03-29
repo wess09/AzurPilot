@@ -262,3 +262,4 @@ pyrightconfig.json
 ### macOS template
 .DS_Store
 /ocr_debug
+/Alasio
