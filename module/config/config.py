@@ -10,7 +10,7 @@ from module.config.config_generated import GeneratedConfig
 from module.config.config_manual import ManualConfig, OutputConfig
 from module.config.config_updater import ConfigUpdater, ensure_time, get_server_next_update, nearest_future
 from module.config.deep import deep_get, deep_set
-from module.config.utils import DEFAULT_TIME, dict_to_kv, filepath_config, get_os_reset_remain, path_to_arg
+from module.config.utils import DEFAULT_TIME, dict_to_kv, filepath_config, get_os_reset_remain, path_to_arg, is_good_gpu
 from module.config.watcher import ConfigWatcher
 from module.exception import RequestHumanTakeover, ScriptError
 from module.logger import logger
@@ -180,6 +180,14 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         # Override arguments
         for arg, value in self.overridden.items():
             super().__setattr__(arg, value)
+
+
+    @property
+    def ocr_device(self) -> str:
+        val = self.Optimization_OcrDevice
+        if val == 'auto':
+            return 'gpu' if is_good_gpu() else 'cpu'
+        return val
 
     @property
     def hoarding(self):

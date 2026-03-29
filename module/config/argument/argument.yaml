@@ -160,7 +160,9 @@ Error:
     value: "Nvidia/deepseek-ai/deepseek-v3.1"
     valuetype: str
 Optimization:
-  UseOcrGpuAcceleration: true
+  OcrDevice: 
+    value: auto
+    option: [auto, cpu, gpu]
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
   TaskHoardingDuration: 0

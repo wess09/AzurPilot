@@ -605,9 +605,12 @@
       "name": "🚀 动力室管理 (优化设置)",
       "help": "帮指挥官节省电脑体力和脑力喵！"
     },
-    "UseOcrGpuAcceleration": {
-      "name": "启用 GPU 加速",
-      "help": "使用 GPU 来大幅提升文字识别速度。如果遇到不兼容导致闪退或报错，请关闭。"
+    "OcrDevice": {
+      "name": "Optimization.OcrDevice.name",
+      "help": "Optimization.OcrDevice.help",
+      "auto": "auto",
+      "cpu": "cpu",
+      "gpu": "gpu"
     },
     "ScreenshotInterval": {
       "name": "🐢 寻路截图放慢步子",

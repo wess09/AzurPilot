@@ -605,9 +605,12 @@
       "name": "Optimization Settings",
       "help": ""
     },
-    "UseOcrGpuAcceleration": {
-      "name": "Enable OCR GPU Acceleration",
-      "help": "Use DirectML based GPU acceleration to significantly improve OCR recognition speed. If you encounter crashes or errors due to incompatibility, please disable it."
+    "OcrDevice": {
+      "name": "Optimization.OcrDevice.name",
+      "help": "Optimization.OcrDevice.help",
+      "auto": "auto",
+      "cpu": "cpu",
+      "gpu": "gpu"
     },
     "ScreenshotInterval": {
       "name": "Slow Down Screenshot Speed to X Seconds per Frame",

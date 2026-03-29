@@ -456,14 +456,19 @@
       },
       "LlmModel": {
         "type": "input",
-        "value": "Nvidia/qwen/qwen2.5-coder-32b-instruct",
+        "value": "Nvidia/deepseek-ai/deepseek-v3.1",
         "valuetype": "str"
       }
     },
     "Optimization": {
-      "UseOcrGpuAcceleration": {
-        "type": "checkbox",
-        "value": true
+      "OcrDevice": {
+        "type": "select",
+        "value": "auto",
+        "option": [
+          "auto",
+          "cpu",
+          "gpu"
+        ]
       },
       "ScreenshotInterval": {
         "type": "input",

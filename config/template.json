@@ -99,7 +99,7 @@
       "LlmModel": "Nvidia/deepseek-ai/deepseek-v3.1"
     },
     "Optimization": {
-      "UseOcrGpuAcceleration": true,
+      "OcrDevice": "auto",
       "ScreenshotInterval": 0.3,
       "CombatScreenshotInterval": 1.0,
       "TaskHoardingDuration": 0,

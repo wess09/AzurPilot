@@ -11,6 +11,8 @@ import yaml
 import module.config.server as server_
 from deploy.atomic import atomic_read_text, atomic_read_bytes, atomic_write
 from module.submodule.utils import *
+from module.base.decorator import run_once
+from module.logger import logger
 
 LANGUAGES = ['zh-CN', 'zh-MIAO', 'en-US', 'ja-JP', 'zh-TW']
 SERVER_TO_LANG = {
@@ -373,8 +375,6 @@ def get_os_reset_remain():
     Returns:
         int: number of days before next opsi reset
     """
-    from module.logger import logger
-
     next_reset = get_os_next_reset()
     now = datetime.now()
     logger.attr('OpsiNextReset', next_reset)
@@ -625,5 +625,35 @@ def readable_time(before: str, value: str) -> str:
     else:
         timedata['time_name'] = 'LongTimeAgo'
     return timedata
+
+@run_once
+def is_good_gpu():
+    if os.name != 'nt':
+        logger.info("当前系统为非Windows，不使用gpu")
+        return False
+
+    try:
+        import subprocess
+
+        res = subprocess.run(['powershell', '-NoProfile', '-Command',
+                              'Get-CimInstance Win32_VideoController | ForEach-Object { $_.AdapterRAM }'],
+                             capture_output=True, text=True, check=True)
+        for line in res.stdout.splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    # AdapterRAM is in bytes, 1GB = 1073741824 bytes
+                    if int(line) >= 1073741824:
+                        logger.info("检测到高性能gpu")
+                        return True
+                except (ValueError, TypeError):
+                    continue
+        logger.info("未检测到高性能gpu")
+        return False
+    except Exception:
+        logger.warning("检测gpu性能失败")
+        return False
+    
+
 if __name__ == '__main__':
     get_os_reset_remain()

@@ -605,9 +605,12 @@
       "name": "优化设置",
       "help": ""
     },
-    "UseOcrGpuAcceleration": {
-      "name": "启用 GPU 加速",
-      "help": "使用 GPU 来大幅提升文字识别速度。如果遇到不兼容导致闪退或报错，请关闭。"
+    "OcrDevice": {
+      "name": "OCR设备",
+      "help": "选择OCR设备，不推荐任何没有独立显卡的用户使用GPU，除非你知道自己在做什么\n非Windows系统目前不支持GPU\n自动选择：当显存超过1G时使用GPU，否则使用CPU",
+      "auto": "自动选择",
+      "cpu": "CPU",
+      "gpu": "GPU"
     },
     "ScreenshotInterval": {
       "name": "放慢截图速度至 X 秒一张",

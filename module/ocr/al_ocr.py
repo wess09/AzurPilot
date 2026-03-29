@@ -18,17 +18,10 @@ except Exception as e:
     logger.critical("如果上述方法都无法解决，请加群获取支持")
     raise RequestHumanTakeover
 
-USE_GPU = False
-config_name = os.environ.get("ALAS_CONFIG_NAME")
-if config_name:
-    config = AzurLaneConfig(config_name)
-    val = config.Optimization_UseOcrGpuAcceleration
-    if val is False:
-        logger.info(f"OCR GPU acceleration disabled by config/{config_name}.json")
-        USE_GPU = False
-    else:
-        USE_GPU = True
 
+config_name = os.environ.get("ALAS_CONFIG_NAME")
+config = AzurLaneConfig(config_name)
+USE_GPU = config.ocr_device == 'gpu'
 
 class CnModel:
     def __init__(self):
@@ -40,9 +33,7 @@ class CnModel:
             "Rec.ocr_version": OCRVersion.PPOCRV5,
             "Rec.model_path": "bin/ocr_models/zh-CN/alocr-zh-cn-v3.dtk.onnx",
             "Rec.rec_keys_path": "bin/ocr_models/zh-CN/cn.txt",
-            "EngineConfig.onnxruntime.use_dml": USE_GPU,
-            # 设置为 0 (ORT_DISABLE_ALL) 以完全禁用图优化，避免 DirectML 的识别精度损失
-            "EngineConfig.onnxruntime.graph_optimization_level": 0 if USE_GPU else 99,
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
         }
         self.model = RapidOCR(params=self.params)
 
@@ -57,9 +48,7 @@ class EnModel:
             "Rec.ocr_version": OCRVersion.PPOCRV4,
             "Rec.model_path": "bin/ocr_models/en-US/alocr-en-us-v2.6.nvc.onnx",
             "Rec.rec_keys_path": "bin/ocr_models/en-US/en.txt",
-            "EngineConfig.onnxruntime.use_dml": USE_GPU,
-            # 设置为 0 (ORT_DISABLE_ALL) 以完全禁用图优化，避免 DirectML 的识别精度损失
-            "EngineConfig.onnxruntime.graph_optimization_level": 0 if USE_GPU else 99,
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
         }
         self.model = RapidOCR(params=self.params)
 
@@ -74,9 +63,7 @@ class JpModel:
             "Rec.ocr_version": OCRVersion.PPOCRV5,
             "Rec.model_path": "bin/ocr_models/JP/JP.onnx",
             "Rec.rec_keys_path": "bin/ocr_models/JP/ppocrv5_dict.txt",
-            "EngineConfig.onnxruntime.use_dml": USE_GPU,
-            # 设置为 0 (ORT_DISABLE_ALL) 以完全禁用图优化，避免 DirectML 的识别精度损失
-            "EngineConfig.onnxruntime.graph_optimization_level": 0 if USE_GPU else 99,
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
         }
         self.model = RapidOCR(params=self.params)
 
@@ -91,9 +78,7 @@ class TwModel:
             "Rec.ocr_version": OCRVersion.PPOCRV5,
             "Rec.model_path": "bin/ocr_models/TW/TW.onnx",
             "Rec.rec_keys_path": "bin/ocr_models/TW/ppocrv5_dict.txt",
-            "EngineConfig.onnxruntime.use_dml": USE_GPU,
-            # 设置为 0 (ORT_DISABLE_ALL) 以完全禁用图优化，避免 DirectML 的识别精度损失
-            "EngineConfig.onnxruntime.graph_optimization_level": 0 if USE_GPU else 99,
+            "EngineConfig.onnxruntime.use_dml": USE_GPU
         }
         self.model = RapidOCR(params=self.params)
 

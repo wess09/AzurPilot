@@ -605,9 +605,12 @@
       "name": "最佳化設定",
       "help": ""
     },
-    "UseOcrGpuAcceleration": {
-      "name": "啟用 GPU 加速",
-      "help": "使用 GPU 加速來大幅提升文字辨識速度。如果遇到不相容導致閃退或報錯，請關閉。"
+    "OcrDevice": {
+      "name": "Optimization.OcrDevice.name",
+      "help": "Optimization.OcrDevice.help",
+      "auto": "auto",
+      "cpu": "cpu",
+      "gpu": "gpu"
     },
     "ScreenshotInterval": {
       "name": "放慢截圖速度至 X 秒一張",

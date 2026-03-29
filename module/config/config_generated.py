@@ -113,7 +113,7 @@ class GeneratedConfig:
     Error_LlmModel = 'Nvidia/deepseek-ai/deepseek-v3.1'
 
     # Group `Optimization`
-    Optimization_UseOcrGpuAcceleration = True
+    Optimization_OcrDevice = 'auto'  # auto, cpu, gpu
     Optimization_ScreenshotInterval = 0.3
     Optimization_CombatScreenshotInterval = 1.0
     Optimization_TaskHoardingDuration = 0

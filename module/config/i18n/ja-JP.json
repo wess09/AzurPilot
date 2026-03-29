@@ -605,9 +605,12 @@
       "name": "最適化設定",
       "help": ""
     },
-    "UseOcrGpuAcceleration": {
-      "name": "启用 GPU 加速",
-      "help": "开启GPU加速"
+    "OcrDevice": {
+      "name": "Optimization.OcrDevice.name",
+      "help": "Optimization.OcrDevice.help",
+      "auto": "auto",
+      "cpu": "cpu",
+      "gpu": "gpu"
     },
     "ScreenshotInterval": {
       "name": "スクリーンショット速度をX秒に1枚に減速",
