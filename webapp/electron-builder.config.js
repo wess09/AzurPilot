@@ -18,6 +18,17 @@ const config = {
   extraMetadata: {
     version: process.env.VITE_APP_VERSION,
   },
+  win: {
+    target: [
+      {
+        target: 'portable',
+        arch: ['x64'],
+      },
+    ],
+  },
+  portable: {
+    artifactName: '${productName}_Portable_${version}.${ext}',
+  },
 };
 
 module.exports = config;

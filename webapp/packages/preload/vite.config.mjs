@@ -1,18 +1,18 @@
-import {node} from '../../electron-vendors.config.json';
-import {join} from 'path';
-import {builtinModules} from 'module';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { builtinModules } from 'module';
+import { fileURLToPath } from 'url';
+import { defineConfig } from 'vite';
 
-const PACKAGE_ROOT = __dirname;
-
+const { chrome } = JSON.parse(readFileSync(new URL('../../electron-vendors.config.json', import.meta.url)));
+const PACKAGE_ROOT = fileURLToPath(new URL('.', import.meta.url));
 
 /**
- * @type {import('vite').UserConfig}
  * @see https://vitejs.dev/config/
  */
-const config = {
+export default defineConfig({
   mode: process.env.MODE,
   root: PACKAGE_ROOT,
-  envDir: process.cwd(),
   resolve: {
     alias: {
       '/@/': join(PACKAGE_ROOT, 'src') + '/',
@@ -20,7 +20,7 @@ const config = {
   },
   build: {
     sourcemap: 'inline',
-    target: `node${node}`,
+    target: `chrome${chrome}`,
     outDir: 'dist',
     assetsDir: '.',
     minify: process.env.MODE === 'development' ? false : 'terser',
@@ -38,7 +38,6 @@ const config = {
     rollupOptions: {
       external: [
         'electron',
-        'electron-devtools-installer',
         ...builtinModules,
       ],
       output: {
@@ -48,6 +47,4 @@ const config = {
     emptyOutDir: true,
     brotliSize: false,
   },
-};
-
-export default config;
+});

@@ -12,7 +12,7 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-app.disableHardwareAcceleration();
+// app.disableHardwareAcceleration();
 
 // Install "Vue.js devtools"
 if (import.meta.env.MODE === 'development') {
@@ -157,25 +157,24 @@ function loadURL() {
    */
   const pageUrl = import.meta.env.MODE === 'development' && import.meta.env.VITE_DEV_SERVER_URL !== undefined
     ? import.meta.env.VITE_DEV_SERVER_URL
-    : new URL('../renderer/dist/index.html', 'file://' + __dirname).toString();
+    : new URL('../../renderer/dist/index.html', 'file://' + __dirname).toString();
 
   mainWindow?.loadURL(pageUrl);
 }
 
 
-alas.on('stderr', function (message: string) {
-  /**
-   * Receive logs, judge if Alas is ready
-   * For starlette backend, there will have:
-   * `INFO:     Uvicorn running on http://0.0.0.0:22267 (Press CTRL+C to quit)`
-   * Or backend has started already
-   * `[Errno 10048] error while attempting to bind on address ('0.0.0.0', 22267): `
-   */
-  if (message.includes('Application startup complete') || message.includes('bind on address')) {
-    alas.removeAllListeners('stderr');
-    loadURL()
+const readyListener = (data: any) => {
+  const message = data.toString();
+  console.log(message);
+  if (message.includes('Application startup complete') || message.includes('bind on address') || message.includes('Uvicorn running on')) {
+    alas.stdout.removeAllListeners('data');
+    alas.stderr.removeAllListeners('data');
+    loadURL();
   }
-});
+};
+
+alas.stdout.on('data', readyListener);
+alas.stderr.on('data', readyListener);
 
 
 app.on('second-instance', () => {

@@ -31,14 +31,17 @@
    1. CSS 变量定义
    ========================================== */
 
-   /* 引入 Google Fonts 字体：Inter，包含常规、中等和半粗字重 */
+/* 引入 Google Fonts 字体：Inter，包含常规、中等和半粗字重 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
 :root {
 	/* === 色彩系统 === */
 	--alas-apple-bg: #f5f5f7;
+	--alas-apple-bg-image: url("/static/assets/gui/css/bj.jpg");
 	--alas-apple-bg-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-	--alas-apple-card-bg: #ffffff;
+	--alas-apple-card-bg: rgba(255, 255, 255, 0.72);
+	--alas-apple-card-bg-solid: #ffffff;
+	--alas-apple-glass-border: rgba(255, 255, 255, 0.4);
 	--alas-apple-text: #1d1d1f;
 	--alas-apple-text-secondary: #86868b;
 	--alas-apple-text-tertiary: #6e6e73;
@@ -109,9 +112,11 @@ html {
 
 body {
 	background-color: var(--alas-apple-bg) !important;
-	background-image: var(--alas-apple-bg-noise) !important;
-	background-repeat: repeat !important;
-	background-size: 256px 256px !important;
+	background-image: var(--alas-apple-bg-image) !important;
+	background-repeat: no-repeat !important;
+	background-size: cover !important;
+	background-attachment: fixed !important;
+	background-position: center !important;
 	font-family: var(--alas-font-stack) !important;
 	color: var(--alas-apple-text) !important;
 	-webkit-font-smoothing: antialiased;
@@ -121,6 +126,10 @@ body {
 
 body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	font-family: var(--alas-font-stack) !important;
+}
+
+#pywebio-scope-content {
+	background-color: transparent !important;
 }
 
 /* ==========================================
@@ -174,29 +183,53 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 
 /* --- 4.1 侧边栏（磨砂玻璃效果）--- */
 #pywebio-scope-aside {
-	background-color: rgba(245, 245, 247, 0.65) !important;
-	backdrop-filter: blur(30px) saturate(180%);
-	-webkit-backdrop-filter: blur(30px) saturate(180%);
+	background-color: rgba(245, 245, 247, 0.75) !important;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 	border-right: 1px solid rgba(0, 0, 0, 0.06) !important;
 	padding-top: 20px !important;
 	transition: background-color var(--ease-spring-slow), backdrop-filter var(--ease-spring-slow) !important;
 	will-change: background-color, backdrop-filter;
 }
 
-/* 菜单容器 */
+/* 菜单容器 - 毛玻璃效果 */
 #pywebio-scope-menu {
-	background-color: var(--alas-apple-card-bg) !important;
+	background-color: rgba(245, 245, 247, 0.65) !important;
+	backdrop-filter: blur(20px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
 	border: none !important;
+	border-right: 1px solid rgba(255, 255, 255, 0.3) !important;
 	box-shadow: none !important;
-	padding-top: 20px !important;
-	border-radius: 0 !important;
+	padding: 12px 6px !important;
 }
 
-#pywebio-scope-menu * {
+/* 菜单内部子元素保持透明，不遮挡模糊 */
+#pywebio-scope-menu *,
+#pywebio-scope-menu details,
+#pywebio-scope-menu summary {
 	background-color: transparent !important;
 	border: none !important;
 	box-shadow: none !important;
-	border-radius: 0 !important;
+	outline: none !important;
+}
+
+/* 侧边栏折叠项标题 */
+#pywebio-scope-menu summary {
+	font-weight: 600 !important;
+	font-size: 15px !important;
+	color: var(--alas-apple-text-secondary) !important;
+	padding: 8px 12px !important;
+	cursor: pointer;
+	list-style: none;
+	transition: color 0.2s ease;
+}
+
+#pywebio-scope-menu summary:hover {
+	color: var(--alas-apple-text) !important;
+}
+
+#pywebio-scope-menu summary::-webkit-details-marker {
+	display: none;
 }
 
 #pywebio-scope-menu [id^="pywebio-scope-"] {
@@ -210,9 +243,9 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 
 /* --- 4.2 顶部导航栏 --- */
 #pywebio-scope-header {
-	background-color: rgba(255, 255, 255, 0.72) !important;
-	backdrop-filter: blur(30px) saturate(180%);
-	-webkit-backdrop-filter: blur(30px) saturate(180%);
+	background-color: rgba(255, 255, 255, 0.8) !important;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 	box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8), 0 1px 8px rgba(0, 0, 0, 0.04) !important;
 	height: 56px !important;
@@ -236,7 +269,9 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 
 #pywebio-scope-navigator .btn {
 	background-color: var(--alas-apple-card-bg) !important;
-	border: 1px solid rgba(0, 0, 0, 0.06) !important;
+	backdrop-filter: blur(10px) saturate(180%);
+	-webkit-backdrop-filter: blur(10px) saturate(180%);
+	border: 1px solid var(--alas-apple-glass-border) !important;
 	border-radius: var(--radius-md) !important;
 	box-shadow: var(--alas-apple-shadow-xs) !important;
 	margin: 6px 0 !important;
@@ -284,8 +319,10 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 .container-log,
 #pywebio-scope-groups>*:not(#pywebio-scope-navigator) {
 	background-color: var(--alas-apple-card-bg) !important;
+	backdrop-filter: blur(16px) saturate(180%);
+	-webkit-backdrop-filter: blur(16px) saturate(180%);
 	border-radius: var(--radius-lg) !important;
-	border: 1px solid rgba(0, 0, 0, 0.04) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
 	box-shadow: var(--alas-apple-shadow) !important;
 	padding: var(--spacing-md) !important;
 	margin-bottom: var(--spacing-md) !important;
@@ -309,14 +346,43 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 /* 卡片基类 */
 .apple-card {
 	background-color: var(--alas-apple-card-bg) !important;
+	backdrop-filter: blur(20px) saturate(180%);
+	-webkit-backdrop-filter: blur(20px) saturate(180%);
 	border-radius: var(--radius-lg) !important;
-	border: 1px solid rgba(0, 0, 0, 0.04) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
 	box-shadow: var(--alas-apple-shadow) !important;
 	padding: var(--spacing-md) !important;
 	margin-bottom: var(--spacing-md) !important;
 	transition: box-shadow var(--ease-spring-normal), transform var(--ease-spring-fast) !important;
 	will-change: box-shadow, transform;
 }
+
+/* --- 5.1 日志区域专项适配 --- */
+.container-log {
+	background-color: rgba(255, 255, 255, 0.85) !important;
+	backdrop-filter: blur(10px) saturate(150%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+	border: 1px solid rgba(255, 255, 255, 0.5) !important;
+	border-radius: var(--radius-lg) !important;
+	display: block !important;
+	opacity: 1 !important;
+	padding: 20px !important;
+	margin: 10px !important;
+	min-height: 240px !important;
+	box-shadow: var(--alas-apple-shadow-lg) !important;
+}
+
+#pywebio-scope-log div,
+#pywebio-scope-log pre,
+#pywebio-scope-log code,
+#pywebio-scope-log * {
+	background: transparent !important;
+	background-color: transparent !important;
+	opacity: 1 !important;
+	font-family: var(--alas-font-mono) !important;
+	line-height: 1.5 !important;
+}
+
 
 .apple-card:hover {
 	box-shadow: var(--alas-apple-shadow-md) !important;
@@ -327,27 +393,86 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 }
 
 /* 卡片入场动画延迟 */
-#pywebio-scope-groups>*:nth-child(1) { animation-delay: 0.04s; }
-#pywebio-scope-groups>*:nth-child(2) { animation-delay: 0.08s; }
-#pywebio-scope-groups>*:nth-child(3) { animation-delay: 0.12s; }
-#pywebio-scope-groups>*:nth-child(4) { animation-delay: 0.16s; }
-#pywebio-scope-groups>*:nth-child(5) { animation-delay: 0.20s; }
-#pywebio-scope-groups>*:nth-child(6) { animation-delay: 0.24s; }
-#pywebio-scope-groups>*:nth-child(7) { animation-delay: 0.28s; }
-#pywebio-scope-groups>*:nth-child(8) { animation-delay: 0.32s; }
-#pywebio-scope-groups>*:nth-child(9) { animation-delay: 0.36s; }
-#pywebio-scope-groups>*:nth-child(10) { animation-delay: 0.40s; }
-#pywebio-scope-groups>*:nth-child(11) { animation-delay: 0.44s; }
-#pywebio-scope-groups>*:nth-child(12) { animation-delay: 0.48s; }
-#pywebio-scope-groups>*:nth-child(13) { animation-delay: 0.52s; }
-#pywebio-scope-groups>*:nth-child(14) { animation-delay: 0.56s; }
-#pywebio-scope-groups>*:nth-child(n+15) { animation-delay: 0.60s; }
+#pywebio-scope-groups>*:nth-child(1) {
+	animation-delay: 0.04s;
+}
 
-#pywebio-scope-running { animation-delay: 0.05s; }
-#pywebio-scope-pending { animation-delay: 0.10s; }
-#pywebio-scope-waiting { animation-delay: 0.15s; }
-#pywebio-scope-log-bar { animation-delay: 0.20s; }
-#pywebio-scope-log, .container-log { animation-delay: 0.25s; }
+#pywebio-scope-groups>*:nth-child(2) {
+	animation-delay: 0.08s;
+}
+
+#pywebio-scope-groups>*:nth-child(3) {
+	animation-delay: 0.12s;
+}
+
+#pywebio-scope-groups>*:nth-child(4) {
+	animation-delay: 0.16s;
+}
+
+#pywebio-scope-groups>*:nth-child(5) {
+	animation-delay: 0.20s;
+}
+
+#pywebio-scope-groups>*:nth-child(6) {
+	animation-delay: 0.24s;
+}
+
+#pywebio-scope-groups>*:nth-child(7) {
+	animation-delay: 0.28s;
+}
+
+#pywebio-scope-groups>*:nth-child(8) {
+	animation-delay: 0.32s;
+}
+
+#pywebio-scope-groups>*:nth-child(9) {
+	animation-delay: 0.36s;
+}
+
+#pywebio-scope-groups>*:nth-child(10) {
+	animation-delay: 0.40s;
+}
+
+#pywebio-scope-groups>*:nth-child(11) {
+	animation-delay: 0.44s;
+}
+
+#pywebio-scope-groups>*:nth-child(12) {
+	animation-delay: 0.48s;
+}
+
+#pywebio-scope-groups>*:nth-child(13) {
+	animation-delay: 0.52s;
+}
+
+#pywebio-scope-groups>*:nth-child(14) {
+	animation-delay: 0.56s;
+}
+
+#pywebio-scope-groups>*:nth-child(n+15) {
+	animation-delay: 0.60s;
+}
+
+#pywebio-scope-running {
+	animation-delay: 0.05s;
+}
+
+#pywebio-scope-pending {
+	animation-delay: 0.10s;
+}
+
+#pywebio-scope-waiting {
+	animation-delay: 0.15s;
+}
+
+#pywebio-scope-log-bar {
+	animation-delay: 0.20s;
+}
+
+#pywebio-scope-log,
+.container-log {
+	animation-delay: 0.25s;
+}
 
 /* ==========================================
    6. 按钮样式
@@ -397,10 +522,12 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 /* 次要按钮（白底灰边） */
 .btn-secondary,
 .btn-light {
-	background-color: var(--alas-apple-card-bg) !important;
+	background-color: rgba(255, 255, 255, 0.5) !important;
+	backdrop-filter: blur(10px) saturate(180%);
+	-webkit-backdrop-filter: blur(10px) saturate(180%);
 	color: var(--alas-apple-text) !important;
 	box-shadow: var(--alas-apple-shadow-xs) !important;
-	border: 1px solid rgba(0, 0, 0, 0.12) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
 }
 
 .btn-secondary:hover,
@@ -452,8 +579,10 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 .form-control,
 input:not([type="checkbox"]):not([type="radio"]) {
 	border-radius: var(--radius-md) !important;
-	border: 1px solid rgba(0, 0, 0, 0.15) !important;
-	background-color: var(--alas-apple-card-bg) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
+	background-color: rgba(255, 255, 255, 0.4) !important;
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
 	padding: 8px 12px !important;
 	font-size: 15px !important;
 	letter-spacing: -0.01em !important;
@@ -472,56 +601,76 @@ input:not([type="checkbox"]):not([type="radio"]):focus {
 }
 
 /* --- 7.2 选择框 --- */
+select,
 select.form-control,
-select {
+.bootstrap-select>select {
+	position: relative !important;
+	display: block !important;
+	width: 100% !important;
+	height: auto !important;
+	opacity: 1 !important;
+	z-index: 1 !important;
+
+	background-color: rgba(255, 255, 255, 0.45) !important;
+	backdrop-filter: blur(10px);
+	-webkit-backdrop-filter: blur(10px);
+
+	border: 1px solid var(--alas-apple-glass-border) !important;
 	border-radius: var(--radius-md) !important;
-	border: 1px solid rgba(0, 0, 0, 0.15) !important;
-	background-color: var(--alas-apple-card-bg) !important;
+	box-shadow: var(--alas-apple-shadow-xs) !important;
+
+	color: var(--alas-apple-text) !important;
 	padding: 8px 32px 8px 12px !important;
+	margin: 6px 0 !important;
+
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	-moz-appearance: none !important;
+
 	background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3cpath stroke='%236e6e73' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3c/svg%3E") !important;
 	background-position: right 10px center !important;
 	background-repeat: no-repeat !important;
 	background-size: 16px 16px !important;
-	appearance: none !important;
-	-webkit-appearance: none !important;
-	-moz-appearance: none !important;
+
 	transition: border-color var(--transition-normal), box-shadow var(--transition-normal), background-color var(--transition-normal) !important;
-	margin: 6px 0 !important;
 }
 
-/* Bootstrap-select 插件样式修复 */
+/* Bootstrap-select 插件样式修复 - 彻底清除外层容器视觉 */
 .bootstrap-select {
 	border: none !important;
 	padding: 0 !important;
+	margin: 0 !important;
 	background: transparent !important;
-}
-
-.bootstrap-select>select {
-	position: unset !important;
-	bottom: unset !important;
-	left: unset !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	outline: none !important;
 	width: 100% !important;
-	height: unset !important;
-	padding: 8px 32px 8px 12px !important;
-	opacity: 1 !important;
-	z-index: auto !important;
-	border-radius: var(--radius-md) !important;
-	border: 1px solid var(--alas-apple-border-color) !important;
-	background-color: var(--alas-apple-card-bg) !important;
-	font-size: 15px !important;
-	letter-spacing: -0.01em !important;
-	color: var(--alas-apple-text) !important;
-	box-shadow: var(--alas-apple-shadow-xs) !important;
-	background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3cpath stroke='%236e6e73' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3c/svg%3E") !important;
-	background-position: right 10px center !important;
-	background-repeat: no-repeat !important;
-	background-size: 16px 16px !important;
-	appearance: none !important;
-	-webkit-appearance: none !important;
-	-moz-appearance: none !important;
-	transition: border-color var(--transition-normal), box-shadow var(--transition-normal) !important;
+	position: relative !important;
 }
 
+/* 防止 div 类型的 .form-control 容器产生视觉边框 */
+div.form-control {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	backdrop-filter: none !important;
+	-webkit-backdrop-filter: none !important;
+	border-radius: 0 !important;
+	outline: none !important;
+}
+
+/* 清除表单组包裹层的多余样式 */
+.form-group {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	border-radius: 0 !important;
+}
+
+select:focus,
+select.form-control:focus,
 .bootstrap-select>select:focus {
 	border-color: var(--alas-apple-accent) !important;
 	box-shadow: 0 0 0 5px rgba(0, 122, 255, 0.12), var(--alas-apple-shadow-md) !important;
@@ -529,7 +678,38 @@ select {
 	background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3cpath stroke='%23007aff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3c/svg%3E") !important;
 }
 
-/* 隐藏 Bootstrap-select 多余元素 */
+/* --- 7.5 菜单按钮 (Apple 风格) --- */
+.btn-menu {
+	display: block !important;
+	width: 100% !important;
+	text-align: left !important;
+	padding: 10px 16px !important;
+	margin: 2px 0 !important;
+	font-size: 14px !important;
+	font-weight: 500 !important;
+	color: var(--alas-apple-text) !important;
+	border-radius: var(--radius-sm) !important;
+	background: transparent !important;
+	border: none !important;
+	transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-menu:hover {
+	background-color: rgba(0, 0, 0, 0.04) !important;
+	transform: translateX(4px);
+}
+
+.btn-menu-active {
+	background-color: rgba(0, 122, 255, 0.12) !important;
+	color: var(--alas-apple-accent) !important;
+	font-weight: 600 !important;
+	box-shadow: inset 0 0 0 1px rgba(0, 122, 255, 0.1) !important;
+}
+
+.btn-menu-active:hover {
+	background-color: rgba(0, 122, 255, 0.18) !important;
+}
+
 .bootstrap-select .btn.dropdown-toggle,
 .bootstrap-select .filter-option,
 .bootstrap-select .dropdown-toggle {
@@ -816,9 +996,17 @@ details[open]>summary::after {
 	box-shadow: var(--alas-apple-shadow-md) !important;
 }
 
-#pywebio-scope-opsi_stats { animation-delay: 0.05s; }
-#pywebio-scope-ap_chart { animation-delay: 0.10s; }
-#pywebio-scope-ship_exp_table { animation-delay: 0.15s; }
+#pywebio-scope-opsi_stats {
+	animation-delay: 0.05s;
+}
+
+#pywebio-scope-ap_chart {
+	animation-delay: 0.10s;
+}
+
+#pywebio-scope-ship_exp_table {
+	animation-delay: 0.15s;
+}
 
 /* 表格样式 */
 #pywebio-scope-opsi_stats table,
@@ -901,13 +1089,14 @@ details[open]>summary::after {
 #pywebio-scope-log {
 	font-family: 'JetBrains Mono NL', monospace !important;
 	font-size: 13px !important;
-	background-color: #fbfbfd !important;
-	border: 1px solid rgba(0, 0, 0, 0.05) !important;
-	border-radius: 16px !important;
+	background-color: var(--alas-apple-card-bg) !important;
+	backdrop-filter: blur(20px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
+	border-radius: var(--radius-lg) !important;
 	padding: 20px !important;
-	color: var(--alas-apple-text) !important;
 	line-height: 1.6;
-	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03) !important;
+	box-shadow: var(--alas-apple-shadow-md) !important;
 }
 
 /* ==========================================
@@ -920,9 +1109,11 @@ details[open]>summary::after {
 		transform: scale(0.95);
 		opacity: 0;
 	}
+
 	50% {
 		transform: scale(1.02);
 	}
+
 	100% {
 		transform: scale(1);
 		opacity: 1;
@@ -935,18 +1126,23 @@ details[open]>summary::after {
 		transform: scale(0.3);
 		opacity: 0;
 	}
+
 	20% {
 		transform: scale(1.1);
 	}
+
 	40% {
 		transform: scale(0.9);
 	}
+
 	60% {
 		transform: scale(1.03);
 	}
+
 	80% {
 		transform: scale(0.97);
 	}
+
 	100% {
 		transform: scale(1);
 		opacity: 1;
@@ -959,6 +1155,7 @@ details[open]>summary::after {
 		transform: translateY(20px);
 		opacity: 0;
 	}
+
 	100% {
 		transform: translateY(0);
 		opacity: 1;
@@ -971,6 +1168,7 @@ details[open]>summary::after {
 		transform: scale(0.9);
 		opacity: 0;
 	}
+
 	100% {
 		transform: scale(1);
 		opacity: 1;
@@ -979,9 +1177,12 @@ details[open]>summary::after {
 
 /* 脉冲动画 */
 @keyframes ios-pulse {
-	0%, 100% {
+
+	0%,
+	100% {
 		transform: scale(1);
 	}
+
 	50% {
 		transform: scale(1.05);
 	}
@@ -989,9 +1190,12 @@ details[open]>summary::after {
 
 /* 呼吸动画 */
 @keyframes ios-breathe {
-	0%, 100% {
+
+	0%,
+	100% {
 		opacity: 1;
 	}
+
 	50% {
 		opacity: 0.85;
 	}
@@ -1002,9 +1206,11 @@ details[open]>summary::after {
 	0% {
 		background-position: 0% 50%;
 	}
+
 	50% {
 		background-position: 100% 50%;
 	}
+
 	100% {
 		background-position: 0% 50%;
 	}
@@ -1012,10 +1218,13 @@ details[open]>summary::after {
 
 /* 渐变脉冲动画 */
 @keyframes gradient-pulse {
-	0%, 100% {
+
+	0%,
+	100% {
 		background-size: 200% 200%;
 		background-position: left center;
 	}
+
 	50% {
 		background-size: 200% 200%;
 		background-position: right center;
@@ -1027,6 +1236,7 @@ details[open]>summary::after {
 	0% {
 		background-position: -200% 0;
 	}
+
 	100% {
 		background-position: 200% 0;
 	}
@@ -1038,6 +1248,7 @@ details[open]>summary::after {
 		transform: scale(0);
 		opacity: 0.6;
 	}
+
 	100% {
 		transform: scale(2.5);
 		opacity: 0;
@@ -1049,6 +1260,7 @@ details[open]>summary::after {
 	0% {
 		transform: rotate(0deg);
 	}
+
 	100% {
 		transform: rotate(360deg);
 	}
@@ -1065,7 +1277,12 @@ details[open]>summary::after {
    ========================================== */
 
 /* 标题样式 */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	font-weight: 600 !important;
 	color: var(--alas-apple-text);
 	margin-bottom: var(--spacing-md) !important;
@@ -1087,21 +1304,65 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* 动画延迟工具类 */
-.anim-delay-1 { animation-delay: 0.04s; }
-.anim-delay-2 { animation-delay: 0.08s; }
-.anim-delay-3 { animation-delay: 0.12s; }
-.anim-delay-4 { animation-delay: 0.16s; }
-.anim-delay-5 { animation-delay: 0.20s; }
-.anim-delay-6 { animation-delay: 0.24s; }
-.anim-delay-7 { animation-delay: 0.28s; }
-.anim-delay-8 { animation-delay: 0.32s; }
-.anim-delay-9 { animation-delay: 0.36s; }
-.anim-delay-10 { animation-delay: 0.40s; }
-.anim-delay-11 { animation-delay: 0.44s; }
-.anim-delay-12 { animation-delay: 0.48s; }
-.anim-delay-13 { animation-delay: 0.52s; }
-.anim-delay-14 { animation-delay: 0.56s; }
-.anim-delay-15 { animation-delay: 0.60s; }
+.anim-delay-1 {
+	animation-delay: 0.04s;
+}
+
+.anim-delay-2 {
+	animation-delay: 0.08s;
+}
+
+.anim-delay-3 {
+	animation-delay: 0.12s;
+}
+
+.anim-delay-4 {
+	animation-delay: 0.16s;
+}
+
+.anim-delay-5 {
+	animation-delay: 0.20s;
+}
+
+.anim-delay-6 {
+	animation-delay: 0.24s;
+}
+
+.anim-delay-7 {
+	animation-delay: 0.28s;
+}
+
+.anim-delay-8 {
+	animation-delay: 0.32s;
+}
+
+.anim-delay-9 {
+	animation-delay: 0.36s;
+}
+
+.anim-delay-10 {
+	animation-delay: 0.40s;
+}
+
+.anim-delay-11 {
+	animation-delay: 0.44s;
+}
+
+.anim-delay-12 {
+	animation-delay: 0.48s;
+}
+
+.anim-delay-13 {
+	animation-delay: 0.52s;
+}
+
+.anim-delay-14 {
+	animation-delay: 0.56s;
+}
+
+.anim-delay-15 {
+	animation-delay: 0.60s;
+}
 
 /* 特定按钮修复 */
 button[style*="--menu-Overview--"] {
@@ -1114,6 +1375,7 @@ button[style*="--menu-Overview--"] {
 
 /* 减少动画偏好支持 */
 @media (prefers-reduced-motion: reduce) {
+
 	*,
 	*::before,
 	*::after {
