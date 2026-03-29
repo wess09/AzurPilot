@@ -629,7 +629,7 @@ def readable_time(before: str, value: str) -> str:
 @run_once
 def is_good_gpu():
     if os.name != 'nt':
-        logger.info("当前系统为非Windows，不使用gpu")
+        logger.info("当前系统为非 Windows，不使用 GPU")
         return False
 
     try:
@@ -644,14 +644,14 @@ def is_good_gpu():
                 try:
                     # AdapterRAM is in bytes, 1GB = 1073741824 bytes
                     if int(line) >= 1073741824:
-                        logger.info("检测到高性能gpu")
+                        logger.info("检测到高性能 GPU")
                         return True
                 except (ValueError, TypeError):
                     continue
-        logger.info("未检测到高性能gpu")
+        logger.info("未检测到高性能 GPU")
         return False
     except Exception:
-        logger.warning("检测gpu性能失败")
+        logger.warning("检测 GPU 性能失败")
         return False
     
 

@@ -164,7 +164,7 @@ class AlOcr:
             logger.warning(f"Failed to save OCR debug image: {e}")
 
     def ocr(self, img_fp):
-        logger.info(f"[VERBOSE] AlOcr.ocr: Ensure loaded...")
+        logger.debug(f"[VERBOSE] AlOcr.ocr: Ensure loaded...")
         self._ensure_loaded()
 
         try:
