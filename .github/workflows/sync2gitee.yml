@@ -1,5 +1,4 @@
-# 通过 Github actions， 在 Github 仓库的每一次 commit 后自动同步到 Gitee 上.
-name: sync2gitee
+name: sync2mirror
 on:
   push:
     branches:
@@ -8,9 +7,12 @@ on:
 jobs:
   repo-sync:
     env:
-      dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
-      dst_token: ${{ secrets.GITEE_TOKEN }}
+      gitee_key: ${{ secrets.GITEE_PRIVATE_KEY }}
+      gitee_token: ${{ secrets.GITEE_TOKEN }}
       gitee_user: ${{ secrets.GITEE_USER }}
+      gitcode_key: ${{ secrets.GITCODE_PRIVATE_KEY }}
+      gitcode_token: ${{ secrets.GITCODE_TOKEN }}
+      gitcode_user: ${{ secrets.GITCODE_USER }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -19,23 +21,26 @@ jobs:
 
       - name: sync github -> gitee
         uses: Yikun/hub-mirror-action@master
-        if: env.dst_key && env.dst_token && env.gitee_user
+        if: env.gitee_key && env.gitee_token && env.gitee_user
         with:
-          # 必选，需要同步的 Github 用户（源）
           src: 'github/${{ github.repository_owner }}'
-          # 必选，需要同步到的 Gitee 用户（目的）
           dst: 'gitee/${{ secrets.GITEE_USER }}'
-          # 必选，Gitee公钥对应的私钥，https://gitee.com/profile/sshkeys
           dst_key: ${{ secrets.GITEE_PRIVATE_KEY }}
-          # 必选，Gitee对应的用于创建仓库的token，https://gitee.com/profile/personal_access_tokens
-          dst_token:  ${{ secrets.GITEE_TOKEN }}
-          # 如果是组织，指定组织即可，默认为用户 user
+          dst_token: ${{ secrets.GITEE_TOKEN }}
           account_type: user
-          # 直接取当前项目的仓库名
           static_list: ${{ github.event.repository.name }}
-          # 还有黑、白名单，静态名单机制，可以用于更新某些指定库
-          # static_list: 'repo_name,repo_name2'
-          # black_list: 'repo_name,repo_name2'
-          # white_list: 'repo_name,repo_name2'
           mappings: "AzurLaneAutoScript=>AzurLaneAutoScript1"
+          force_update: true
+
+      - name: sync github -> gitcode
+        uses: Yikun/hub-mirror-action@master
+        if: env.gitcode_key && env.gitcode_token && env.gitcode_user
+        with:
+          src: 'github/${{ github.repository_owner }}'
+          dst: 'gitcode/${{ secrets.GITCODE_USER }}'
+          dst_key: ${{ secrets.GITCODE_PRIVATE_KEY }}
+          dst_token: ${{ secrets.GITCODE_TOKEN }}
+          account_type: user
+          static_list: ${{ github.event.repository.name }}
+          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
           force_update: true
