@@ -2,13 +2,66 @@
 # Define arguments.
 # --------------------
 
+# ==================== Dashboard ====================
+Oil:
+  Value: 0
+  Limit: 0
+  Color: ^000000
+  Record: 2020-01-01 00:00:00
+Coin:
+  Value: 0
+  Limit: 0
+  Color: ^FFAA33
+  Record: 2020-01-01 00:00:00
+Gem:
+  Value: 0
+  Color: ^FF3333
+  Record: 2020-01-01 00:00:00
+Pt:
+  Value: 0
+  Color: ^00BFFF
+  Record: 2020-01-01 00:00:00
+YellowCoin:
+  Value: 0
+  Color: ^FF8800
+  Record: 2020-01-01 00:00:00
+PurpleCoin:
+  Value: 0
+  Color: ^7700BB
+  Record: 2020-01-01 00:00:00
+ActionPoint:
+  Value: 0
+  Total: 0
+  Color: ^0000FF
+  Record: 2020-01-01 00:00:00
+Merit:
+  Value: 0
+  Color: ^FFFF00
+  Record: 2020-01-01 00:00:00
+Cube:
+  Value: 0
+  Color: ^33FFFF
+  Record: 2020-01-01 00:00:00
+Core:
+  Value: 0
+  Color: ^AAAAAA
+  Record: 2020-01-01 00:00:00
+Medal:
+  Value: 0
+  Color: ^FFDD00
+  Record: 2020-01-01 00:00:00
+GuildCoin:
+  Value: 0
+  Color: ^AAAAAA
+  Record: 2020-01-01 00:00:00
+
 # ==================== Alas ====================
 
 Scheduler:
   Enable:
     type: checkbox
     value: false
-    option: [ true, false ]
+    option: [true, false]
   NextRun: 2020-01-01 00:00:00
   Command: Alas
   SuccessInterval:
@@ -26,55 +79,52 @@ Emulator:
     valuetype: str
   PackageName:
     value: auto
-    option: [ auto, ]
+    option: [auto]
   ServerName:
     value: disabled
-    option: [ disabled, ]
+    option: [disabled]
   ScreenshotMethod:
     value: auto
-    option: [
-      auto,
-      ADB,
-      ADB_nc,
-      uiautomator2,
-      aScreenCap,
-      aScreenCap_nc,
-      DroidCast,
-      DroidCast_raw,
-      nemu_ipc,
-      ldopengl,
-    ]
+    option:
+      [
+        auto,
+        ADB,
+        ADB_nc,
+        uiautomator2,
+        aScreenCap,
+        aScreenCap_nc,
+        DroidCast,
+        DroidCast_raw,
+        nemu_ipc,
+        ldopengl,
+      ]
   ControlMethod:
     value: MaaTouch
-    option: [
-      ADB,
-      uiautomator2,
-      minitouch,
-      Hermit,
-      MaaTouch,
-    ]
+    option: [ADB, uiautomator2, minitouch, Hermit, MaaTouch]
   ScreenshotDedithering: false
   AdbRestart: false
 EmulatorInfo:
   Emulator:
     value: auto
-    option: [
-      auto,
-      NoxPlayer,
-      NoxPlayer64,
-      BlueStacks4,
-      BlueStacks5,
-      BlueStacks4HyperV,
-      BlueStacks5HyperV,
-      LDPlayer3,
-      LDPlayer4,
-      LDPlayer9,
-      LDPlayer14,
-      MuMuPlayer,
-      MuMuPlayerX,
-      MuMuPlayer12,
-      MEmuPlayer,
-    ]
+    option:
+      [
+        auto,
+        NoxPlayer,
+        NoxPlayer64,
+        BlueStacks4,
+        BlueStacks5,
+        BlueStacks4HyperV,
+        BlueStacks5HyperV,
+        LDPlayer3,
+        LDPlayer4,
+        LDPlayer9,
+        MuMuPlayer,
+        MuMuPlayerX,
+        MuMuPlayer12,
+        MEmuPlayer,
+        BlueStacksAir,
+        MuMuPro,
+      ]
   name:
     value: null
     type: textarea
@@ -84,54 +134,136 @@ EmulatorInfo:
 Error:
   HandleError: true
   SaveError: true
+  StrictRestart: false
+  SaveErrorCount: 30
   OnePushConfig:
     type: textarea
     mode: yaml
-    value: 'provider: null'
+    value: "provider: null"
   ScreenshotLength: 1
+  GameStuckRestart: false
+  GameStuckThreshold:
+    value: 3
+    validate: [1, 10]
+  AdbOfflineRestart: false
+  AdbOfflineThreshold:
+    value: 3
+    validate: [1, 10]
+  LlmAnalysis: false
+  LlmApiKey:
+    type: textarea
+    value: "sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b"
+  LlmApiBase:
+    type: textarea
+    value: "https://api.nanoda.work/v1"
+  LlmModel:
+    value: "Nvidia/deepseek-ai/deepseek-v3.1"
+    valuetype: str
 Optimization:
+  OcrDevice: 
+    value: auto
+    option: [auto, cpu, gpu]
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
   TaskHoardingDuration: 0
   WhenTaskQueueEmpty:
     value: goto_main
-    option: [ stay_there, goto_main, close_game ]
+    option: [stay_there, goto_main, close_game]
 DropRecord:
   SaveFolder: ./screenshots
   AzurStatsID: null
   API:
     value: default
-    option: [ default, cn_gz_reverse_proxy]
+    option: [default, cn_gz_reverse_proxy]
   ResearchRecord:
     value: do_not
-    option: [ do_not, save, upload, save_and_upload ]
+    option: [do_not, save, upload, save_and_upload]
   CommissionRecord:
     value: do_not
-    option: [ do_not, save, upload, save_and_upload ]
+    option: [do_not, save, upload, save_and_upload]
   CombatRecord:
     value: do_not
-    option: [ do_not, save ]
+    option: [do_not, save]
   OpsiRecord:
-    value: do_not
-    option: [ do_not, save, upload, save_and_upload ]
+    value: upload
+    option: [do_not, save, upload, save_and_upload]
   MeowfficerBuy:
     value: do_not
-    option: [ do_not, save ]
+    option: [do_not, save]
   MeowfficerTalent:
     value: do_not
-    option: [ do_not, save, upload, save_and_upload ]
+    option: [do_not, save, upload, save_and_upload]
+  TelemetryReport: true
+  BugReport: true
+Log:
+  LogKeepCount: 7
+  LogBackUpMethod:
+    value: delete
+    option: [ delete, zip, copy ]
+  ZipMethod:
+    value: bz2
+    option: [ bz2, gzip, xz, zip ]
 Retirement:
   RetireMode:
     value: one_click_retire
-    option: [ one_click_retire, enhance, old_retire ]
+    option: [one_click_retire, enhance, old_retire]
+PublicEmotion:
+  Enable: false
+  Tasks:
+    type: textarea
+    value: null
+  FleetValue: 119
+  FleetRecord:
+    value: 2020-01-01 00:00:00
+    display: disabled
+  FleetControl:
+    value: prevent_yellow_face
+    option:
+      [
+        keep_exp_bonus,
+        prevent_green_face,
+        prevent_yellow_face,
+        prevent_red_face,
+      ]
+  FleetRecover:
+    value: not_in_dormitory
+    option: [not_in_dormitory, dormitory_floor_1, dormitory_floor_2]
+  FleetOath: false
+  FleetOnsen: false
+YukikazeTaskManager:
+  TaskPriorityAdjustment:
+    type: textarea
+    value: |-
+      Restart
+      > OpsiCrossMonth > OpsiDailyDelay
+      > Commission > Tactical > Research
+      > Exercise
+      > Dorm > Meowfficer > Guild > Gacha
+      > Reward
+      > ShopFrequent > ShopOnce > Shipyard > Freebies > Island
+      > PrivateQuarters
+      > OpsiExplore
+      > Minigame > Awaken
+      > OpsiAshBeacon
+      > OpsiDaily > OpsiShop > OpsiVoucher
+      > OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive
+      > Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss
+      > Sos > EventSp > EventA > EventB > EventC > EventD
+      > RaidDaily > CoalitionSp > WarArchives > MaritimeEscort
+      > Event > Event2 > Event3 > Raid > Hospital > HospitalEvent > Coalition > RaidScuttle > Main > Main2 > Main3
+      > OpsiMeowfficerFarming
+      > GemsFarming
+      > Ambush11
+      > OpsiHazard1Leveling
+      > ThreeOilLowCost
 OneClickRetire:
   KeepLimitBreak:
     value: keep_limit_break
-    option: [ keep_limit_break, do_not_keep ]
+    option: [keep_limit_break, do_not_keep]
 Enhance:
   ShipToEnhance:
     value: all
-    option: [ all, favourite ]
+    option: [all, favourite]
   Filter:
   CheckPerCategory: 5
 OldRetire:
@@ -141,7 +273,7 @@ OldRetire:
   SSR: false
   RetireAmount:
     value: retire_all
-    option: [ retire_all, retire_10 ]
+    option: [retire_all, retire_10]
 
 # ==================== Farm ====================
 
@@ -149,91 +281,113 @@ Campaign:
   Name: 12-4
   Event:
     value: campaign_main
-    option: [ campaign_main ]
+    option: [campaign_main]
   Mode:
     value: normal
-    option: [ normal, hard ]
+    option: [normal, hard]
   UseClearMode: true
   UseFleetLock: true
   UseAutoSearch: true
   Use2xBook: false
   AmbushEvade: true
+  UseRecommendFleet: false
 StopCondition:
   OilLimit: 1000
   RunCount: 0
   MapAchievement:
     value: non_stop
-    option: [ non_stop, 100_percent_clear, map_3_stars, threat_safe, threat_safe_without_3_stars ]
+    option: [ non_stop, non_stop_clear_all, 100_percent_clear, map_3_stars, threat_safe, threat_safe_without_3_stars ]
   StageIncrease: false
   GetNewShip: false
   ReachLevel: 0
 Fleet:
   Fleet1:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   Fleet1Formation:
     value: double_line
-    option: [ line_ahead, double_line, diamond ]
+    option: [line_ahead, double_line, diamond]
   Fleet1Mode:
     value: combat_auto
     option: [ combat_auto, combat_manual, stand_still_in_the_middle, hide_in_bottom_left, hide_in_upper_left ]
   Fleet1Step:
     value: 3
-    option: [ 2, 3, 4, 5 ]
+    option: [2, 3, 4, 5]
   Fleet2:
     value: 2
-    option: [ 0, 1, 2, 3, 4, 5, 6 ]
+    option: [0, 1, 2, 3, 4, 5, 6]
   Fleet2Formation:
     value: double_line
-    option: [ line_ahead, double_line, diamond ]
+    option: [line_ahead, double_line, diamond]
   Fleet2Mode:
     value: combat_auto
     option: [ combat_auto, combat_manual, stand_still_in_the_middle, hide_in_bottom_left, hide_in_upper_left ]
   Fleet2Step:
     value: 2
-    option: [ 2, 3, 4, 5 ]
+    option: [2, 3, 4, 5]
   FleetOrder:
     value: fleet1_mob_fleet2_boss
-    option: [ fleet1_mob_fleet2_boss, fleet1_boss_fleet2_mob, fleet1_all_fleet2_standby, fleet1_standby_fleet2_all ]
+    option:
+      [
+        fleet1_mob_fleet2_boss,
+        fleet1_boss_fleet2_mob,
+        fleet1_all_fleet2_standby,
+        fleet1_standby_fleet2_all,
+      ]
 Submarine:
   Fleet:
     value: 0
-    option: [ 0, 1, 2 ]
+    option: [0, 1, 2]
   Mode:
     value: do_not_use
-    option: [ do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat ]
+    option: [do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat]
   AutoSearchMode:
     value: sub_standby
-    option: [ sub_standby, sub_auto_call ]
+    option: [sub_standby, sub_auto_call]
   DistanceToBoss:
-    value: '2_grid_to_boss'
-    option: [ to_boss_position, 1_grid_to_boss, 2_grid_to_boss, use_open_ocean_support ]
+    value: "2_grid_to_boss"
+    option:
+      [to_boss_position, 1_grid_to_boss, 2_grid_to_boss, use_open_ocean_support]
 Emotion:
   Mode:
     value: calculate
-    option: [ calculate, ignore, calculate_ignore ]
+    option: [calculate, ignore, calculate_ignore]
   Fleet1Value: 119
   Fleet1Record:
     value: 2020-01-01 00:00:00
     display: disabled
   Fleet1Control:
     value: prevent_yellow_face
-    option: [ keep_exp_bonus, prevent_green_face, prevent_yellow_face, prevent_red_face ]
+    option:
+      [
+        keep_exp_bonus,
+        prevent_green_face,
+        prevent_yellow_face,
+        prevent_red_face,
+      ]
   Fleet1Recover:
     value: not_in_dormitory
-    option: [ not_in_dormitory, dormitory_floor_1, dormitory_floor_2 ]
+    option: [not_in_dormitory, dormitory_floor_1, dormitory_floor_2]
   Fleet1Oath: false
+  Fleet1Onsen: false
   Fleet2Value: 119
   Fleet2Record:
     value: 2020-01-01 00:00:00
     display: disabled
   Fleet2Control:
     value: prevent_yellow_face
-    option: [ keep_exp_bonus, prevent_green_face, prevent_yellow_face, prevent_red_face ]
+    option:
+      [
+        keep_exp_bonus,
+        prevent_green_face,
+        prevent_yellow_face,
+        prevent_red_face,
+      ]
   Fleet2Recover:
     value: not_in_dormitory
-    option: [ not_in_dormitory, dormitory_floor_1, dormitory_floor_2 ]
+    option: [not_in_dormitory, dormitory_floor_1, dormitory_floor_2]
   Fleet2Oath: false
+  Fleet2Onsen: false
 HpControl:
   UseHpBalance: false
   UseEmergencyRepair: false
@@ -246,7 +400,7 @@ HpControl:
 EnemyPriority:
   EnemyScaleBalanceWeight:
     value: default_mode
-    option: [ default_mode, S3_enemy_first, S1_enemy_first ]
+    option: [default_mode, S3_enemy_first, S1_enemy_first]
 C11AffinityFarming:
   RunCount: 32
 C72MysteryFarming:
@@ -254,28 +408,53 @@ C72MysteryFarming:
 C122MediumLeveling:
   LargeEnemyTolerance:
     value: 1
-    option: [ 0, 1, 2, 10 ]
+    option: [0, 1, 2, 10]
 C124LargeLeveling:
   NonLargeEnterTolerance:
     value: 1
-    option: [ 0, 1, 2 ]
+    option: [0, 1, 2]
   NonLargeRetreatTolerance:
     value: 1
-    option: [ 0, 1, 2, 10 ]
+    option: [0, 1, 2, 10]
   PickupAmmo:
     value: 3
-    option: [ 3, 4, 5 ]
+    option: [3, 4, 5]
 GemsFarming:
+  ChangeFlagship:
+    value: ship_equip
+    option: [ ship, ship_equip ]
   CommonCV:
     value: any
-    option: [ any, langley, bogue, ranger, hermes ]
+    option: [ custom, any, eagle, langley, bogue, ranger, hermes ]
+  CommonCVFilter: |-
+    bogue > ranger > langley > hermes
   ChangeVanguard:
-    value: ship
-    option: [ disabled, ship ]
+    value: ship_equip
+    option: [ disabled, ship, ship_equip ]
   CommonDD:
     value: any
-    option: [ any, favourite, aulick_or_foote , cassin_or_downes, z20_or_z21 ]
-  CommissionLimit: true
+    option: [ custom, any, favourite, aulick_or_foote , cassin_or_downes, z20_or_z21, DDG]
+  CommonDDFilter: |-
+    z20 > z21 > aulick > foote > cassin > downes
+  EquipmentCode:
+    type: textarea
+    mode: yaml
+    value: |-
+      DD: null
+      bogue: null
+      hermes: null
+      langley: null
+      ranger: null
+  ALLowHighFlagshipLevel: false
+  ALLowLowVanguardLevel: false
+  DelayTaskIFNoFlagship: false
+  CommissionLimit: false
+  VanguardLevelMin:
+    value: 1
+    validate: [1, 125]
+  VanguardLevelMax:
+    value: 125
+    validate: [1, 125]
 
 # ==================== Event ====================
 
@@ -287,7 +466,7 @@ TaskBalancer:
   CoinLimit: 10000
   TaskCall:
     value: Main
-    option: [ Main, Main2, Main3 ]
+    option: [Main, Main2, Main3, GemsFarming, ThreeOilLowCost]
 EventDaily:
   StageFilter: |-
     A1 > A2 > A3
@@ -295,13 +474,24 @@ EventDaily:
 Raid:
   Mode:
     value: hard
-    option: [ easy, normal, hard, ex ]
+    option: [easy, normal, hard, ex]
   UseTicket: false
+RaidScuttle:
+  Sacrifice:
+    value: vanguard
+    option: [ vanguard, flagship, vanguard_flagship ]
 RaidDaily:
   StageFilter: |-
     hard > normal > easy
 Hospital:
   UseRecommendFleet: true
+HospitalEvent:
+  Mode:
+    value: hard
+    option: [ easy, normal, hard ]
+  Stage:
+    value: T1
+    option: [ T1, T2, T3, T4, ESP ]
 MaritimeEscort:
   Enable: true
 Coalition:
@@ -311,7 +501,23 @@ Coalition:
   Fleet:
     value: single
     option: [ single, multi ]
-
+EventShop:
+  UnlockSSRShip: true
+  BuyURShip:
+    value: 2
+    option: [ 0, 1, 2 ]
+  PresetFilter:
+    value: all
+    option: [ all, custom ]
+  CustomFilter: |-
+    EquipUR > EquipSSR > Cube > GachaTicket
+    > Array > Chip > CatT3 
+    > Meta > SkinBox
+    > Oil > Coin > Medal > ExpBookT1 > FoodT1
+    > DR > PR
+    > AugmentCore > AugmentEnhanceT2 > AugmentChangeT2 > AugmentChangeT1
+    > CatT2 > CatT1 > PlateGeneralT3 > PlateT3 > BoxT4
+    > ShipSSR
 
 # ==================== Reward ====================
 
@@ -353,7 +559,7 @@ Tactical:
     > first
   RapidTrainingSlot:
     value: do_not_use
-    option: [ do_not_use, slot_1, slot_2, slot_3, slot_4 ]
+    option: [do_not_use, slot_1, slot_2, slot_3, slot_4]
 ControlExpOverflow:
   Enable: true
   T4Allow: 100
@@ -367,13 +573,13 @@ AddNewStudent:
 Research:
   UseCube:
     value: only_05_hour
-    option: [ always_use, only_05_hour, only_no_project, do_not_use ]
+    option: [always_use, only_05_hour, only_no_project, do_not_use]
   UseCoin:
     value: always_use
-    option: [ always_use, only_05_hour, only_no_project, do_not_use ]
+    option: [always_use, only_05_hour, only_no_project, do_not_use]
   UsePart:
     value: always_use
-    option: [ always_use, only_05_hour, only_no_project, do_not_use ]
+    option: [always_use, only_05_hour, only_no_project, do_not_use]
   AllowDelay: true
   PresetFilter:
     value: series_8_blueprint_305
@@ -412,12 +618,15 @@ Dorm:
   Collect: true
   Feed: true
   FeedFilter: 20000 > 10000 > 5000 > 3000 > 2000 > 1000
+  BuyFood:
+    value: false
+    display: disabled
 BuyFurniture:
   Enable: false
   BuyOption:
     type: select
     value: all
-    option: [ set, all ]
+    option: [set, all]
   LastRun: 2020-01-01 00:00:00
 Meowfficer:
   BuyAmount: 1
@@ -426,7 +635,7 @@ MeowfficerTrain:
   Enable: false
   Mode:
     value: seamlessly
-    option: [ seamlessly, once_a_day ]
+    option: [seamlessly, once_a_day]
   RetainTalentedGold: true
   RetainTalentedPurple: true
   EnhanceIndex: 1
@@ -451,14 +660,192 @@ Reward:
   CollectCoin: true
   CollectExp: true
   CollectMission: true
-  CollectWeeklyMission: true
+  CollectWeeklyMission: false
 Awaken:
   LevelCap:
     value: level120
-    option: [ level120, level125 ]
+    option: [level120, level125]
   Favourite:
     value: false
+_Island:
+  IslandOption4: &IslandOption4
+    value: 0
+    option: [ 0, 1, 2, 3, 4]
+  IslandOption5: &IslandOption5
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5]
+  IslandOption6: &IslandOption6
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6]
+  IslandOption7: &IslandOption7
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7]
+  IslandOption8: &IslandOption8
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8 ]
+  IslandOption9: &IslandOption9
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+  IslandOption10: &IslandOption10
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+  IslandOption11: &IslandOption11
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ]
+  IslandOption12: &IslandOption12
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 ]
+  IslandOption16: &IslandOption16
+    value: 0
+    option: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ]
+  IslandCharacter: &IslandCharacter
+    value: manjuu
+    option:
+      - manjuu
+      - saratoga
+      - new_jersey
+      - tashkent
+      - lemalin
+      - shimakaze
+      - akashi
+      - ying_swei
+      - chao_ho
+      - william_d_porter
+      - chen_hai
+      - unicorn
+      - cheshire
+      - amagi_chan
+      - helena
+      - atago
+      - friedrich_der_grobe
+Island1:
+  Receive: false
+  Option1: *IslandOption8
+  Character1: *IslandCharacter
+  Option2: *IslandOption8
+  Character2: *IslandCharacter
+  Option3: *IslandOption8
+  Character3: *IslandCharacter
+  Option4: *IslandOption8
+  Character4: *IslandCharacter
+Island2:
+  Receive: false
+  Option1:
+    value: 0
+    option: [ 0, 1 ]
+  Character1: *IslandCharacter
+  Option2:
+    value: 0
+    option: [ 0, 2 ]
+  Character2: *IslandCharacter
+  Option3:
+    value: 0
+    option: [ 0, 3 ]
+  Character3: *IslandCharacter
+  Option4:
+    value: 0
+    option: [ 0, 4 ]
+  Character4: *IslandCharacter
+Island3:
+  Receive: false
+  Option1: *IslandOption16
+  Character1: *IslandCharacter
+  Option2: *IslandOption16
+  Character2: *IslandCharacter
+  Option3: *IslandOption16
+  Character3: *IslandCharacter
+Island4:
+  Receive: false
+  Option1: *IslandOption6
+  Character1: *IslandCharacter
+  Option2: *IslandOption6
+  Character2: *IslandCharacter
+  Option3: *IslandOption6
+  Character3: *IslandCharacter
+  Option4: *IslandOption6
+  Character4: *IslandCharacter
+Island5:
+  Receive: false
+  Option1: *IslandOption4
+  Character1: *IslandCharacter
+  Option2: *IslandOption4
+  Character2: *IslandCharacter
+  Option3: *IslandOption4
+  Character3: *IslandCharacter
+  Option4: *IslandOption4
+  Character4: *IslandCharacter
+Island6:
+  Receive: false
+  Option1: *IslandOption7
+  Character1: *IslandCharacter
+  Option2: *IslandOption7
+  Character2: *IslandCharacter
+  Option3: *IslandOption7
+  Character3: *IslandCharacter
+  Option4: *IslandOption7
+  Character4: *IslandCharacter
+Island7:
+  Receive: false
+  Option1: *IslandOption9
+  Character1: *IslandCharacter
+  Option2: *IslandOption9
+  Character2: *IslandCharacter
+Island8:
+  Receive: false
+  Option1: *IslandOption12
+  Character1: *IslandCharacter
+  Option2: *IslandOption12
+  Character2: *IslandCharacter
+Island9:
+  Receive: false
+  Option1: *IslandOption11
+  Character1: *IslandCharacter
+  Option2: *IslandOption11
+  Character2: *IslandCharacter
+Island10:
+  Receive: false
+  Option1: *IslandOption10
+  Character1: *IslandCharacter
+  Option2: *IslandOption10
+  Character2: *IslandCharacter
+Island11:
+  Receive: false
+  Option1: *IslandOption9
+  Character1: *IslandCharacter
+  Option2: *IslandOption9
+  Character2: *IslandCharacter
+Island12:
+  Receive: false
+  Option1: *IslandOption6
+  Character1: *IslandCharacter
+  Option2: *IslandOption6
+  Character2: *IslandCharacter
+Island13:
+  Receive: false
+  Option1: *IslandOption6
+  Character1: *IslandCharacter
+  Option2: *IslandOption6
+  Character2: *IslandCharacter
+Island14:
+  Receive: false
+  Option1: *IslandOption4
+  Character1: *IslandCharacter
+  Option2: *IslandOption4
+  Character2: *IslandCharacter
+Island15:
+  Receive: false
+  Option1: *IslandOption9
+  Character1: *IslandCharacter
+  Option2: *IslandOption9
+  Character2: *IslandCharacter
+Island16:
+  Receive: false
+  Option1: *IslandOption9
+  Character1: *IslandCharacter
+  Option2: *IslandOption9
+  Character2: *IslandCharacter
 GeneralShop:
+  Enable: true
   UseGems: false
   Refresh: false
   BuySkinBox: false
@@ -468,46 +855,48 @@ GeneralShop:
     > Cube
     > FoodT6 > FoodT5
 GuildShop:
+  Enable: true
   Refresh: true
   Filter: |-
     PlateT4 > BookT3 > PR > CatT3 > Chip > BookT2 > Retrofit > FoodT6 > FoodT5 > CatT2 > BoxT4
   BOX_T3:
     value: ironblood
-    option: [ eagle, royal, sakura, ironblood ]
+    option: [eagle, royal, sakura, ironblood]
   BOX_T4:
     value: ironblood
-    option: [ eagle, royal, sakura, ironblood ]
+    option: [eagle, royal, sakura, ironblood]
   BOOK_T2:
     value: red
-    option: [ red, blue, yellow ]
+    option: [red, blue, yellow]
   BOOK_T3:
     value: red
-    option: [ red, blue, yellow ]
+    option: [red, blue, yellow]
   RETROFIT_T2:
     value: cl
-    option: [ dd, cl, bb, cv ]
+    option: [dd, cl, bb, cv]
   RETROFIT_T3:
     value: cl
-    option: [ dd, cl, bb, cv ]
+    option: [dd, cl, bb, cv]
   PLATE_T2:
     value: general
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
   PLATE_T3:
     value: general
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
   PLATE_T4:
     value: gun
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
   PR1:
     value: neptune
-    option: [ neptune, monarch, ibuki, izumo, roon, saintlouis ]
+    option: [neptune, monarch, ibuki, izumo, roon, saintlouis]
   PR2:
     value: seattle
-    option: [ seattle, georgia, kitakaze, gascogne ]
+    option: [seattle, georgia, kitakaze, gascogne]
   PR3:
     value: cheshire
-    option: [ cheshire, mainz, odin, champagne ]
+    option: [cheshire, mainz, odin, champagne]
 MedalShop2:
+  Enable: true
   Filter: |-
     DR > PR
     > BookRedT3 > BookYellowT3 > BookBlueT3
@@ -517,36 +906,38 @@ MedalShop2:
     > PlateGeneralT3 > PlateWildT3
   RETROFIT_T1:
     value: cl
-    option: [ dd, cl, bb, cv ]
+    option: [dd, cl, bb, cv]
   RETROFIT_T2:
     value: cl
-    option: [ dd, cl, bb, cv ]
+    option: [dd, cl, bb, cv]
   RETROFIT_T3:
     value: cl
-    option: [ dd, cl, bb, cv ]
+    option: [dd, cl, bb, cv]
   PLATE_T1:
     value: general
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
   PLATE_T2:
     value: general
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
   PLATE_T3:
     value: general
-    option: [ general, gun, torpedo, antiair, plane ]
+    option: [general, gun, torpedo, antiair, plane]
 MeritShop:
+  Enable: true
   Refresh: false
   Filter: |-
     Cube
 CoreShop:
+  Enable: true
   Filter: |-
     Array
 ShipyardDr:
   ResearchSeries:
     value: 2
-    option: [ 2, 3, 4, 5 ]
+    option: [ 2, 3, 4, 5, 6 ]
   ShipIndex:
     value: 0
-    option: [ 0, 1, 2, 3, 4, 5, 6 ]
+    option: [0, 1, 2, 3, 4, 5, 6]
   BuyAmount: 2
   LastRun: 2020-01-01 00:00:00
 Shipyard:
@@ -555,16 +946,16 @@ Shipyard:
     option: [ 1, 2, 3, 4, 5, 6 ]
   ShipIndex:
     value: 0
-    option: [ 0, 1, 2, 3, 4, 5, 6 ]
+    option: [0, 1, 2, 3, 4, 5, 6]
   BuyAmount: 2
   LastRun: 2020-01-01 00:00:00
 Gacha:
   Pool:
     value: light
-    option: [ light, heavy, special, event, wishing_well ]
+    option: [light, heavy, special, event, wishing_well]
   Amount:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
+    option: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
   UseTicket: true
   UseDrill: false
 BattlePass:
@@ -581,7 +972,7 @@ SupplyPack:
   Collect: true
   DayOfWeek:
     value: 0
-    option: [ 0, 1, 2, 3, 4, 5, 6 ]
+    option: [0, 1, 2, 3, 4, 5, 6]
 Minigame:
   Collect: false
 PrivateQuarters:
@@ -597,56 +988,59 @@ Daily:
   UseDailySkip: true
   EscortMission:
     value: first
-    option: [ skip, first, second, third ]
+    option: [skip, first, second, third]
   EscortMissionFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   AdvanceMission:
     value: first
-    option: [ skip, first, second, third ]
+    option: [skip, first, second, third]
   AdvanceMissionFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   FierceAssault:
     value: first
-    option: [ skip, first, second, third ]
+    option: [skip, first, second, third]
   FierceAssaultFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   TacticalTraining:
     value: second
-    option: [ skip, first, second, third ]
+    option: [skip, first, second, third]
   TacticalTrainingFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   SupplyLineDisruption:
     value: second
-    option: [ skip, first, second, third ]
+    option: [skip, first, second, third]
   ModuleDevelopment:
     value: first
-    option: [ skip, first, second ]
+    option: [skip, first, second]
   ModuleDevelopmentFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
   EmergencyModuleDevelopment:
     value: first
-    option: [ skip, first, second ]
+    option: [skip, first, second]
   EmergencyModuleDevelopmentFleet:
     value: 1
-    option: [ 1, 2, 3, 4, 5, 6 ]
+    option: [1, 2, 3, 4, 5, 6]
 Hard:
   HardStage: 11-4
   HardFleet:
     value: 1
-    option: [ 1, 2 ]
+    option: [1, 2]
 Exercise:
+  DelayUntilHoursBeforeNextUpdate:
+    value: 12
+    option: [ 1, 2, 3, 4, 5, 12]
   OpponentChooseMode:
     value: max_exp
-    option: [ max_exp, easiest, leftmost, easiest_else_exp ]
+    option: [max_exp, easiest, leftmost, easiest_else_exp]
   OpponentTrial: 1
   ExerciseStrategy:
     value: aggressive
-    option: [ aggressive, fri18, sat0, sat12, sat18, sun0, sun12, sun18 ]
+    option: [aggressive, fri18, sat0, sat12, sat18, sun0, sun12, sun18]
   LowHpThreshold: 0.4
   LowHpConfirmWait: 0.1
   OpponentRefreshValue: 0
@@ -654,7 +1048,7 @@ Exercise:
 Sos:
   Chapter:
     value: 3
-    option: [ 3, 4, 5, 6, 7, 8, 9, 10 ]
+    option: [3, 4, 5, 6, 7, 8, 9, 10]
 
 # ==================== Opsi ====================
 
@@ -664,31 +1058,42 @@ OpsiGeneral:
   UseLogger: true
   BuyActionPointLimit:
     value: 0
-    option: [ 0, 1, 2, 3, 4, 5 ]
+    option: [0, 1, 2, 3, 4, 5]
   OilLimit: 1000
   RepairThreshold: 0.4
+  UseRepairPack: false
+  RepairPackThreshold: 0.9
   DoRandomMapEvent: true
   AkashiShopFilter: |-
-    ActionPoint > PurpleCoins
+    ActionPoint
+  NotifyOpsiMail: true
 OpsiAshBeacon:
   AttackMode:
     value: current
-    option: [ current, current_dossier ]
+    option: [current, current_dossier]
   OneHitMode: true
   DossierAutoAttackMode: false
   RequestAssist: true
   EnsureFullyCollected: true
+  AutoCollectShip: true
 OpsiFleetFilter:
   Filter: |-
     Fleet-4 > CallSubmarine > Fleet-2 > Fleet-3 > Fleet-1
 OpsiFleet:
   Fleet:
     value: 1
-    option: [ 1, 2, 3, 4 ]
+    option: [1, 2, 3, 4]
   Submarine: false
 OpsiExplore:
   SpecialRadar: false
   ForceRun: false
+  IfSkipSirenResearch:
+    value: 0
+    option: [ 0, 6, 65, 654 ]
+  SkipedSirenResearch:
+    type: textarea
+    display: disabled
+    value: ""
   LastZone: 0
 OpsiShop:
   PresetFilter:
@@ -704,35 +1109,157 @@ OpsiShop:
     > GearDesignPlanT3 > PlateRandomT4 > DevelopmentMaterialT3 > GearDesignPlanT2 > GearPart
     > OrdnanceTestingReportT3 > OrdnanceTestingReportT2 > DevelopmentMaterialT2 > OrdnanceTestingReportT1
     > METARedBook > CrystallizedHeatResistantSteel > NanoceramicAlloy > NeuroplasticProstheticArm > SupercavitationGenerator
+  DisableBeforeDate: 0
 OpsiVoucher:
   Filter: |-
     LoggerAbyssal > LoggerObscure > Book > Coin > Fragment
 OpsiDaily:
   DoMission: true
   UseTuningSample: true
+  SkipSirenResearchMission: false
+  KeepMissionZone: false
+  MissionZones:
+    type: stored
+    value: null
+    display: hide
+  CollectTargetReward: false
 OpsiObscure:
+  SkipHazard2Obscure: false
   ForceRun: false
 OpsiAbyssal:
   ForceRun: false
 OpsiStronghold:
+  SubmarineEveryCombat: false
   ForceRun: false
+  HasStronghold:
+    type: stored
+    value: True
+    display: hide
 OpsiMonthBoss:
   Mode:
     value: normal
-    option: [ normal, normal_hard ]
+    option: [normal, normal_hard]
   CheckAdaptability: true
   ForceRun: false
 OpsiMeowfficerFarming:
   ActionPointPreserve: 1000
   HazardLevel:
     value: 5
-    option: [ 3, 4, 5, 6, 10 ]
+    option: [ 2, 3, 4, 5, 6, 10 ]
   TargetZone:
     value: 0
+  StayInZone: false
+  APPreserveUntilReset: false
+  SirenDetectorSearch_Enable: false
+  SirenDetectorSearch_HazardLevel:
+    value: 5
+    option: [5, 6]
+  SirenDetectorSearch_FleetForBlock:
+    value: 2
+    option: [ 1, 2, 3, 4 ]
+  SirenDetectorSearch_StopAfterFound:
+    value: 1
+    validate: ^[1-4]$
+  SirenDetectorSearch_FoundZones:
+    type: textarea
+    value: ""
+OpsiTarget:
+  TargetFarming: false
+  TargetZone:
+    value: 0
+  LastRun: 2020-01-01 00:00:00
 OpsiHazard1Leveling:
   TargetZone:
     value: 0
     option: [ 0, 44, 22 ]
+  OperationCoinsPreserve: 100000
+  MinimumActionPointReserve: 200
+  ExecuteFixedPatrolScan: false
+  Cl1Filter: |-
+    ActionPoint
+  RecordNonCL1AP: true
+OpsiSirenBug:
+  SirenResearch_Enable: false
+  SirenBug_Enable: false
+  SirenBug_Type:
+    value: dangerous
+    option: [dangerous, safe]
+  SirenBug_Zone: 0
+  SirenBug_Grid: null
+  SirenBug_SyncDailyCount:
+    type: checkbox
+    value: false
+    option: [true, false]
+  DisableTaskSwitchDuringBug:
+    type: checkbox
+    value: false
+    option: [true, false]
+  SirenBug_DailyCount: 0
+  SirenBug_DailyCountRecord: 2020-01-01 00:00:00
+  SirenBug_CountLimit: 0
+  SirenBug_CrossDay: false
+  SirenBug_AutoDisable: false
+
+OpsiCheckLeveling:
+  TargetLevel: 0
+  LastRun: 2020-01-01 00:00:00
+  DelayAfterFull: false
+OpsiScheduling:
+  UseSmartSchedulingOperationCoinsPreserve:
+    type: checkbox
+    value: false
+    option: [true, false]
+  OperationCoinsPreserve:
+    value: 0
+  ActionPointPreserve:
+    value: 500
+
+  OperationCoinsReturnThreshold:
+    value: 0
+  EnableMeowfficerFarming:
+    type: checkbox
+    value: true
+    option: [true, false]
+  EnableObscure:
+    type: checkbox
+    value: false
+    option: [true, false]
+  EnableAbyssal:
+    type: checkbox
+    value: false
+    option: [true, false]
+  EnableStronghold:
+    type: checkbox
+    value: false
+    option: [true, false]
+
+  # 短猫提前开始模式
+  MeowStartEarlyMode:
+    # 激进模式: 0.8倍提前时间, 均衡模式: 1.2倍, 保守模式: 1.5倍
+    value: balanced
+    option:
+      - aggressive
+      - balanced
+      - conservative
+  MeowStartEarlyEnable:
+    # 是否启用短猫提前开始功能
+    value: false
+    type: checkbox
+
+OpsiDailyDelay:
+  TriggerMinutesBeforeReset:
+    value: 5
+    option: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 45, 60]
+
+# =================== Island ====================
+IslandSeasonTask:
+  TaskDict:
+    type: textarea
+    value: |-
+IslandTechnology:
+  TechnologyStatus:
+    type: textarea
+    value: |-
 
 # ==================== Tools ====================
 
@@ -746,22 +1273,61 @@ EventStory:
     type: checkbox
     value: false
     option: [ true, false ]
+BoxDisassemble:
+  UsePurpleBox: false
+  PurpleBoxLimit: 100
+  UseBlueBox: false
+  BlueBoxLimit: 1000
+  UseWhiteBox: true
+  WhiteBoxLimit: 2000
 Benchmark:
   DeviceType:
     value: emulator
-    option: [
-      emulator,
-      plone_cloud_with_adb,
-      phone_cloud_without_adb,
-      android_phone,
-      android_phone_vmos,
-    ]
+    option:
+      [
+        emulator,
+        plone_cloud_with_adb,
+        phone_cloud_without_adb,
+        android_phone,
+        android_phone_vmos,
+      ]
   TestScene:
     value: screenshot_click
-    option: [ screenshot_click, screenshot, click ]
+    option: [screenshot_click, screenshot, click]
 AzurLaneUncensored:
   Repository:
     value: https://gitee.com/LmeSzinc/AzurLaneUncensored
     display: disabled
 GameManager:
   AutoRestart: true
+EmulatorManagement:
+  ScheduledEmulatorRestart: false
+  RestartIntervalHours:
+    value: 4
+    validate: [1, 24]
+OpsiSimulatorParameters:
+  Samples: 100000
+  Draw:
+    value: do_not
+    option: [do_not, single_sample, multi_sample]
+  TotalTime: 0
+  TimeUseRatio:
+    value: 0.8
+    validate: [0, 1]
+  InitialAp: 0
+  InitialCoin: 0
+  MeowHazardLevel:
+    value: level5
+    option:
+      level3: 3
+      level5: 5
+  CrossWeek: true
+  BuyAp: true
+  Cl1Coin: 170
+  Meow3Coin: 750
+  Meow5Coin: 1700
+  AkashiProbability: 0.05
+  Cl1Time: 0
+  Meow3Time: 0
+  Meow5Time: 0
+  Deterministic: false

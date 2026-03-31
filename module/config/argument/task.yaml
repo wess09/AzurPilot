@@ -1,12 +1,6 @@
-# --------------------
-# Define argument group of tasks.
-# --------------------
-
-# ==================== Alas ====================
-
 Alas:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     Alas:
       - Emulator
@@ -14,19 +8,21 @@ Alas:
       - Error
       - Optimization
       - DropRecord
+      - EmulatorManagement
     General:
+      - Log
       - Retirement
       - OneClickRetire
       - Enhance
       - OldRetire
+      - PublicEmotion
+      - YukikazeTaskManager
     Restart:
       - Scheduler
-
-# ==================== Farm ====================
-
+      - Restart
 Farm:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     Main:
       - Scheduler
@@ -61,12 +57,27 @@ Farm:
       - Campaign
       - StopCondition
       - Fleet
-
-# ==================== Event ====================
-
+      - Submarine
+      - Emotion
+    ThreeOilLowCost:
+      - Scheduler
+      - GemsFarming
+      - Campaign
+      - StopCondition
+      - Fleet
+      - Submarine
+      - Emotion
+    Ambush11:
+      - Scheduler
+      - GemsFarming
+      - Campaign
+      - StopCondition
+      - Fleet
+      - Submarine
+      - Emotion
 Event:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     EventGeneral:
       - EventGeneral
@@ -89,11 +100,29 @@ Event:
       - Emotion
       - HpControl
       - EnemyPriority
+    Event3:
+      - Scheduler
+      - Campaign
+      - StopCondition
+      - Fleet
+      - Submarine
+      - Emotion
+      - HpControl
+      - EnemyPriority
     Raid:
       - Scheduler
       - Raid
       - Campaign
       - StopCondition
+      - Emotion
+    RaidScuttle:
+      - Scheduler
+      - RaidScuttle
+      - Raid
+      - Campaign
+      - StopCondition
+      - Fleet
+      - Submarine
       - Emotion
     Hospital:
       - Scheduler
@@ -109,6 +138,9 @@ Event:
     MaritimeEscort:
       - Scheduler
       - MaritimeEscort
+    EventShop:
+      - Scheduler
+      - EventShop
     WarArchives:
       - Scheduler
       - Campaign
@@ -118,13 +150,9 @@ Event:
       - Emotion
       - HpControl
       - EnemyPriority
-
-
-# ==================== EventDaily ====================
-
 EventDaily:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     EventA:
       - Scheduler
@@ -191,8 +219,8 @@ EventDaily:
 # ==================== Reward ====================
 
 Reward:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     Commission:
       - Scheduler
@@ -223,12 +251,28 @@ Reward:
     Awaken:
       - Scheduler
       - Awaken
-
-# ==================== DailyMission ====================
-
+    Island:
+      - Scheduler
+      - IslandTransport
+      - Island1
+      - Island2
+      - Island3
+      - Island4
+      - Island5
+      - Island6
+      - Island7
+      - Island8
+      - Island9
+      - Island10
+      - Island11
+      - Island12
+      - Island13
+      - Island14
+      - Island15
+      - Island16
 DailyMission:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     Daily:
       - Scheduler
@@ -266,12 +310,9 @@ DailyMission:
     PrivateQuarters:
       - Scheduler
       - PrivateQuarters
-
-# ==================== Opsi ====================
-
 Opsi:
-  menu: 'collapse'
-  page: 'setting'
+  menu: collapse
+  page: setting
   tasks:
     OpsiGeneral:
       - OpsiGeneral
@@ -317,19 +358,42 @@ Opsi:
     OpsiMeowfficerFarming:
       - Scheduler
       - OpsiMeowfficerFarming
+      - OpsiSirenBug
+      - OpsiTarget
       - OpsiFleet
     OpsiHazard1Leveling:
       - Scheduler
       - OpsiHazard1Leveling
+      - OpsiSirenBug
       - OpsiFleet
+      - OpsiCheckLeveling
+    OpsiScheduling:
+      - Scheduler
+      - OpsiScheduling
     OpsiCrossMonth:
+      - Scheduler
+    OpsiDailyDelay:
+      - Scheduler
+      - OpsiDailyDelay
+    OpsiSimulator:
+      - OpsiSimulatorParameters
+
+# =================== Island ===================
+Island:
+  menu: "collapse"
+  page: "setting"
+  tasks:
+    IslandInfo:
+      - IslandSeasonTask
+      - IslandTechnology
+    IslandSeasonTask:
       - Scheduler
 
 # ==================== Tool ====================
 
 Tool:
-  menu: 'collapse'
-  page: 'tool'
+  menu: collapse
+  page: tool
   tasks:
     Daemon:
       - Daemon
@@ -337,9 +401,29 @@ Tool:
       - OpsiDaemon
     EventStory:
       - EventStory
+    BoxDisassemble:
+      - BoxDisassemble
     Benchmark:
       - Benchmark
+    OcrBenchmark:
+      - OcrBenchmark
     AzurLaneUncensored:
       - AzurLaneUncensored
     GameManager:
       - GameManager
+Dashboard:
+  page: dashboard
+  tasks:
+    Dashboard:
+      - Oil
+      - Coin
+      - Gem
+      - Pt
+      - Cube
+      - ActionPoint
+      - YellowCoin
+      - PurpleCoin
+      - Core
+      - Medal
+      - Merit
+      - GuildCoin

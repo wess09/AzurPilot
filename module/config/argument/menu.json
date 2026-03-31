@@ -15,7 +15,9 @@
       "Main",
       "Main2",
       "Main3",
-      "GemsFarming"
+      "GemsFarming",
+      "ThreeOilLowCost",
+      "Ambush11"
     ]
   },
   "Event": {
@@ -25,10 +27,13 @@
       "EventGeneral",
       "Event",
       "Event2",
+      "Event3",
       "Raid",
+      "RaidScuttle",
       "Hospital",
       "Coalition",
       "MaritimeEscort",
+      "EventShop",
       "WarArchives"
     ]
   },
@@ -56,7 +61,8 @@
       "Meowfficer",
       "Guild",
       "Reward",
-      "Awaken"
+      "Awaken",
+      "Island"
     ]
   },
   "DailyMission": {
@@ -93,7 +99,18 @@
       "OpsiMonthBoss",
       "OpsiMeowfficerFarming",
       "OpsiHazard1Leveling",
-      "OpsiCrossMonth"
+      "OpsiScheduling",
+      "OpsiCrossMonth",
+      "OpsiDailyDelay",
+      "OpsiSimulator"
+    ]
+  },
+  "Island": {
+    "menu": "collapse",
+    "page": "setting",
+    "tasks": [
+      "IslandInfo",
+      "IslandSeasonTask"
     ]
   },
   "Tool": {
@@ -103,7 +120,9 @@
       "Daemon",
       "OpsiDaemon",
       "EventStory",
+      "BoxDisassemble",
       "Benchmark",
+      "OcrBenchmark",
       "AzurLaneUncensored",
       "GameManager"
     ]
