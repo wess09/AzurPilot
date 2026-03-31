@@ -1464,6 +1464,56 @@ class AlasGUI(Frame):
             scope="scheduler_btn",
         )
 
+        # April Fools: runaway start button
+        if getattr(self, "af_flag", False):
+            run_js("""
+(function(){
+    var surrendered = false;
+    var bar = document.getElementById('pywebio-scope-scheduler-bar');
+    if (!bar) return;
+    bar.style.position = 'relative';
+    bar.style.overflow = 'hidden';
+
+    var flag = document.createElement('button');
+    flag.textContent = '🏳️';
+    flag.title = 'I give up...';
+    flag.style.cssText = 'border:none;background:transparent;font-size:1.1rem;cursor:pointer;padding:0 4px;margin:auto 2px;opacity:0.45;transition:opacity .2s;flex-shrink:0;';
+    flag.onmouseenter = function(){ flag.style.opacity='1'; };
+    flag.onmouseleave = function(){ flag.style.opacity='0.45'; };
+    flag.onclick = function(){
+        surrendered = true;
+        flag.style.display = 'none';
+        var b = bar.querySelector('.btn-on');
+        if(b){ b.style.transition='transform .35s cubic-bezier(.34,1.56,.64,1)'; b.style.transform=''; }
+    };
+    bar.appendChild(flag);
+
+    bar.addEventListener('mousemove', function(e){
+        if (surrendered) return;
+        var btn = bar.querySelector('.btn-on');
+        if (!btn) return;
+        var r = btn.getBoundingClientRect();
+        var bx = r.left + r.width/2, by = r.top + r.height/2;
+        var dx = bx - e.clientX, dy = by - e.clientY;
+        var dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 100 && dist > 1) {
+            var pr = bar.getBoundingClientRect();
+            var push = 100 - dist;
+            var nx = dx/dist * push, ny = dy/dist * push * 0.3;
+            var cur = btn.style.transform.match(/translate\\(([^,]+)px,\\s*([^)]+)px\\)/);
+            var ox = cur ? parseFloat(cur[1]) : 0, oy = cur ? parseFloat(cur[2]) : 0;
+            var tx = ox + nx, ty = oy + ny;
+            var maxX = (pr.width - r.width) / 2 - 4;
+            var maxY = (pr.height - r.height) / 2;
+            tx = Math.max(-maxX, Math.min(maxX, tx));
+            ty = Math.max(-maxY, Math.min(maxY, ty));
+            btn.style.transition = 'transform .13s ease-out';
+            btn.style.transform = 'translate('+tx+'px,'+ty+'px)';
+        }
+    });
+})();
+""")
+
         log = RichLog("log")
         self._log = log
         self._log.dashboard_arg_group = LogRes(self.alas_config).groups
