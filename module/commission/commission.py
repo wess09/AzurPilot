@@ -527,6 +527,8 @@ class RewardCommission(UI, InfoHandler):
                 logger.info('Commission income: no reward images collected')
                 return
 
+            COMMISSION_TRACKED_ITEMS = ['Gem', 'Cube', 'Chip', 'Oil', 'Coin']
+
             logger.info(f'Commission income: processing {len(images)} reward screenshot(s)')
             for idx, image in enumerate(images):
                 try:
@@ -548,6 +550,9 @@ class RewardCommission(UI, InfoHandler):
                     recognized = []
                     for item in grid.items:
                         if item.is_known_item() and item.name not in ('DefaultItem',):
+                            if item.name not in COMMISSION_TRACKED_ITEMS:
+                                logger.info(f'Commission income: screenshot[{idx}] ignored {item.name} (not tracked)')
+                                continue
                             merged_items[item.name] = merged_items.get(item.name, 0) + item.amount
                             item_count += 1
                             recognized.append(f'{item.name}x{item.amount}')

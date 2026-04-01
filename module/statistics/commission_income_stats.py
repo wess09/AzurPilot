@@ -28,7 +28,6 @@ COMMISSION_ITEM_NAME_MAP = {
     'Cubes': 'Cube',
     'CognitiveChips': 'Chip',
     'Coins': 'Coin',
-    'DecorCoins': 'Coin',
 }
 
 
