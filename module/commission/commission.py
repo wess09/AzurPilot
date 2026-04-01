@@ -493,21 +493,34 @@ class RewardCommission(UI, InfoHandler):
 
     def _record_commission_income(self):
         try:
-            from module.statistics.get_items import GetItemsStatistics, ITEM_GROUP
+            from module.statistics.get_items import (
+                GetItemsStatistics, ITEM_GRIDS_1_ODD, ITEM_GRIDS_1_EVEN,
+                ITEM_GRIDS_2, ITEM_GRIDS_3
+            )
+            from module.statistics.item import ItemGrid, Item
             from module.statistics.cl1_database import db as cl1_db
+            from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3
+            from module.handler.assets import INFO_BAR_1
+            from module.statistics.assets import GET_ITEMS_ODD
+            from module.base.utils import crop, rgb2gray
             import os
+            import numpy as np
 
-            template_folder = os.path.join('.', 'assets', 'stats_basic')
+            template_folder = os.path.join('.', 'assets', 'stats_commission_items')
             if not os.path.exists(template_folder):
                 logger.info('Commission income: template folder not found, skip')
                 return
 
-            get_items = GetItemsStatistics()
-            get_items.load_template_folder(template_folder)
+            grid = ItemGrid(None, {}, template_area=(40, 21, 89, 70), amount_area=(50, 71, 91, 92))
+            grid.item_class = Item
+            grid.similarity = 0.92
+            grid.load_template_folder(template_folder)
 
-            if not ITEM_GROUP.templates:
+            if not grid.templates:
                 logger.info('Commission income: no templates loaded, skip')
                 return
+
+            get_items = GetItemsStatistics()
 
             merged_items = {}
             item_count = 0
@@ -520,9 +533,23 @@ class RewardCommission(UI, InfoHandler):
             logger.info(f'Commission income: processing {len(images)} reward screenshot(s)')
             for idx, image in enumerate(images):
                 try:
-                    items = get_items.stats_get_items(image)
+                    if INFO_BAR_1.appear_on(image):
+                        logger.info(f'Commission income: screenshot[{idx}] has info_bar, skip')
+                        continue
+                    grid.grids = None
+                    if GET_ITEMS_1.match(image, offset=(5, 0)):
+                        is_odd = get_items._stats_get_items_is_odd(image)
+                        grid.grids = ITEM_GRIDS_1_ODD if is_odd else ITEM_GRIDS_1_EVEN
+                    elif GET_ITEMS_2.match(image, offset=(5, 0)):
+                        grid.grids = ITEM_GRIDS_2
+                    elif GET_ITEMS_3.match(image, offset=(5, 0)):
+                        grid.grids = ITEM_GRIDS_3
+                    else:
+                        logger.info(f'Commission income: screenshot[{idx}] not a get_items page, skip')
+                        continue
+                    grid.predict(image)
                     recognized = []
-                    for item in items:
+                    for item in grid.items:
                         if item.is_known_item() and item.name not in ('DefaultItem',):
                             merged_items[item.name] = merged_items.get(item.name, 0) + item.amount
                             item_count += 1
@@ -569,7 +596,11 @@ class RewardCommission(UI, InfoHandler):
                     if self.appear(button, interval=1):
                         self.ensure_no_info_bar(timeout=1)
                         drop.add(self.device.image)
-                        if button is not EXP_INFO_S_REWARD:
+                        if button is EXP_INFO_S_REWARD:
+                            if self._commission_reward_images:
+                                self._record_commission_income()
+                                self._commission_reward_images = []
+                        else:
                             self._commission_reward_images.append(self.device.image.copy())
                             logger.info(f'Commission income: collected reward screenshot (trigger={button.name})')
 
