@@ -529,6 +529,13 @@ class RewardCommission(UI, InfoHandler):
 
             COMMISSION_TRACKED_ITEMS = ['Gem', 'Cube', 'Chip', 'Oil', 'Coin']
 
+            COMMISSION_ITEM_NAME_MAP = {
+                'Gems': 'Gem',
+                'Cubes': 'Cube',
+                'CognitiveChips': 'Chip',
+                'Coins': 'Coin',
+            }
+
             logger.info(f'Commission income: processing {len(images)} reward screenshot(s)')
             for idx, image in enumerate(images):
                 try:
@@ -550,12 +557,13 @@ class RewardCommission(UI, InfoHandler):
                     recognized = []
                     for item in grid.items:
                         if item.is_known_item() and item.name not in ('DefaultItem',):
-                            if item.name not in COMMISSION_TRACKED_ITEMS:
+                            mapped_name = COMMISSION_ITEM_NAME_MAP.get(item.name, item.name)
+                            if mapped_name not in COMMISSION_TRACKED_ITEMS:
                                 logger.info(f'Commission income: screenshot[{idx}] ignored {item.name} (not tracked)')
                                 continue
-                            merged_items[item.name] = merged_items.get(item.name, 0) + item.amount
+                            merged_items[mapped_name] = merged_items.get(mapped_name, 0) + item.amount
                             item_count += 1
-                            recognized.append(f'{item.name}x{item.amount}')
+                            recognized.append(f'{mapped_name}x{item.amount}')
                     if recognized:
                         logger.info(f'Commission income: screenshot[{idx}] recognized {len(recognized)} item(s): {", ".join(recognized)}')
                     else:
