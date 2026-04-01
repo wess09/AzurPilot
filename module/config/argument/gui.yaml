@@ -251,6 +251,22 @@ Stat:
   StartCleanupTime:
   NextOsReset:
   MeowAutoCleanupStatus:
+  CommissionIncomeTitle:
+  CommissionIncomeMonth:
+  CommissionIncomeWeek:
+  CommissionIncomeDay:
+  CommissionIncomeNoData:
+  CommissionIncomeItemGem:
+  CommissionIncomeItemCube:
+  CommissionIncomeItemChip:
+  CommissionIncomeItemOil:
+  CommissionIncomeItemCoin:
+  CommissionIncomeHeaderItem:
+  CommissionIncomeHeaderTotal:
+  CommissionIncomeHeaderCount:
+  CommissionIncomeHeaderAvg:
+  CommissionIncomeTotalCommissions:
+  CommissionIncomeRecentTitle:
 
 OpsiScheduling:
   UseSmartSchedulingOperationCoinsPreserve:

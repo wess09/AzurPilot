@@ -101,7 +101,6 @@
       "OpsiHazard1Leveling",
       "OpsiScheduling",
       "OpsiCrossMonth",
-      "OpsiDailyDelay",
       "OpsiSimulator"
     ]
   },

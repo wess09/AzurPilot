@@ -119,6 +119,8 @@ class Cl1Database:
             'meow_battle_count': 0,
             'meow_round_times': [],
             'meow_battle_times': [],  # 短猫单场战斗时间
+            # 委托收益数据
+            'commission_income_entries': [],
         }
 
     def _normalize_meow_round_times(self, round_times: List[Any]) -> List[Dict[str, Any]]:
@@ -604,6 +606,62 @@ class Cl1Database:
     def async_get_meow_stats(self, instance: str, year: int = None, month: int = None):
         from module.base.async_executor import async_executor
         return async_executor.submit(self.get_meow_stats, instance, year, month)
+
+    # ========== 委托收益数据记录方法 ==========
+
+    def add_commission_income(self, instance: str, items: Dict[str, int], commission_count: int = 1):
+        """记录一次委托收益
+
+        Args:
+            instance: 实例名称
+            items: 物品字典，如 {'Gem': 30, 'Cube': 1, 'Chip': 10, 'Oil': 500, 'Coin': 800}
+            commission_count: 本次结算的委托数量
+        """
+        month = datetime.now().strftime('%Y-%m')
+        data = self.get_stats(instance, month)
+
+        entry = {
+            'ts': datetime.now().isoformat(),
+            'items': {k: int(v) for k, v in items.items() if v > 0},
+            'commission_count': int(commission_count),
+        }
+
+        entries = data.get('commission_income_entries', [])
+        entries.append(entry)
+        if len(entries) > 5000:
+            entries = entries[-5000:]
+        data['commission_income_entries'] = entries
+        self.save_stats(instance, month, data)
+
+    def get_commission_income(self, instance: str, year: int = None, month: int = None) -> List[Dict[str, Any]]:
+        """获取指定月份的委托收益条目列表
+
+        Args:
+            instance: 实例名称
+            year: 年份，默认当前年
+            month: 月份，默认当前月
+
+        Returns:
+            委托收益条目列表，每个条目包含 ts, items, commission_count
+        """
+        if year is None or month is None:
+            now = datetime.now()
+            if year is None:
+                year = now.year
+            if month is None:
+                month = now.month
+
+        month_key = f"{year:04d}-{month:02d}"
+        data = self.get_stats(instance, month_key)
+        return data.get('commission_income_entries', [])
+
+    def async_add_commission_income(self, instance: str, items: Dict[str, int], commission_count: int = 1):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.add_commission_income, instance, items, commission_count)
+
+    def async_get_commission_income(self, instance: str, year: int = None, month: int = None):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.get_commission_income, instance, year, month)
 
 
 # 单例实例

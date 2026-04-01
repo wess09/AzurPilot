@@ -17,14 +17,13 @@ from module.os.tasks.stronghold import OpsiStronghold
 from module.os.tasks.month_boss import OpsiMonthBoss
 from module.os.tasks.explore import OpsiExplore
 from module.os.tasks.cross_month import OpsiCrossMonth
-from module.os.tasks.daily_delay import OpsiDailyDelay
 
 
 class OperationSiren(
     OpsiDaily, OpsiShop, OpsiVoucher, OpsiMeowfficerFarming,
     OpsiHazard1Leveling, OpsiScheduling, OpsiObscure, OpsiAbyssal,
     OpsiArchive, OpsiStronghold, OpsiMonthBoss, OpsiExplore,
-    OpsiCrossMonth, OpsiDailyDelay,
+    OpsiCrossMonth,
 ):
     """Operation Siren main class that combines all task modules."""
 

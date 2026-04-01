@@ -372,9 +372,6 @@ Opsi:
       - OpsiScheduling
     OpsiCrossMonth:
       - Scheduler
-    OpsiDailyDelay:
-      - Scheduler
-      - OpsiDailyDelay
     OpsiSimulator:
       - OpsiSimulatorParameters
 

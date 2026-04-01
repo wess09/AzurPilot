@@ -286,10 +286,6 @@
       "name": "月跨ぎデイリー",
       "help": "    Alasはセイレーン作戦の月跨ぎリセットの10分前にセイレーン作戦に入り、リセットを待ちますが退出しません。その後、新しい日のセイレーン作戦デイリー、隠秘海域、深淵海域と指揮ニャファームを完了して、追加の報酬を獲得します。セイレーン作戦デイリーを実行する場合は「セイレーン作戦-デイリー」タスク設定に従い、その他も同様です。\n    重要：Alasが月跨ぎを待っている間は、ゲームを操作しないでください。"
     },
-    "OpsiDailyDelay": {
-      "name": "セイレーン作戦タスク延期+",
-      "help": "    毎日0時のサーバー再起動前の設定可能な時間帯（デフォルトは5分、23:55にトリガー）に、現在進行中の侵蝕1と指揮ニャファームタスクを翌日0時の再起動完了後まで自動的に延期します。"
-    },
     "OpsiSimulator": {
       "name": "Task.OpsiSimulator.name",
       "help": "Task.OpsiSimulator.help"
@@ -799,7 +795,7 @@
     },
     "TaskPriorityAdjustment": {
       "name": "タスクの優先度の調整",
-      "help": "再起動 # ゲームを再起動します\n> OpsiCrossMonth > OpsiDailyDelay # セイレーン作戦月跨ぎ > セイレーン作戦タスク延期\n> 委託 > 戦術 > 研究 # 委託 > 戦術学院 > 研究\n> 演習 # 演習\n> 後宅 > 指揮ニャ > 大艦隊 > ガチャ # 後宅 > 指揮ニャ > 大艦隊 > デイリー建造\n> 報酬 # 収穫\n> ShopFrequent > ShopOnce > 造船所 > 景品 > アイランド # よく使うショップ > その他のショップ > 開発ドック > 景品特典 > アイランドプラン\n> PrivateQuarters # ルームプラン\n> OpsiExplore # 毎月の探索\n> ミニゲーム > 覚醒 # ミニゲーム > 認知覚醒\n> OpsiAshBeacon # META戦闘\n> OpsiDaily > OpsiShop > OpsiVoucher # セイレーン作戦デイリー > 港湾ショップ > 引換ショップ\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive # 深淵 > セイレーン要塞 > 隠された海域 > アーカイブ座標\n> デイリー > ハード > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss # デイリー > ハードマップ > META戦闘 > METAサポート > マンスリーボス\n> Sos > EventSp > EventA > EventB > EventC > EventD # Sos > イベントデイリーSP > イベントデイリーA > イベントデイリーB > イベントデイリーC > イベントデイリーD\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort # 共闘デイリー > 共闘SP > 作戦アーカイブ > 商船護衛\n> イベント > イベント2 > 共闘 > Hospital > HospitalEvent > Coalition > RaidScuttle > メイン > メイン2 > メイン3 # イベントマップ > イベントマップ2 > 共闘 > 病院イベント > 共闘イベント > 連合 > 共闘沈船 > メインステージ > メインステージ2 > メインステージ3\n> OpsiMeowfficerFarming # 指揮ニャ収集\n> GemsFarming # 緊急委託周回\n> OpsiHazard1Leveling # 侵蝕1レベリング\n> ThreeOilLowCost # 3燃料低コスト"
+      "help": "再起動 # ゲームを再起動します\n> OpsiCrossMonth # セイレーン作戦月跨ぎ\n> 委託 > 戦術 > 研究 # 委託 > 戦術学院 > 研究\n> 演習 # 演習\n> 後宅 > 指揮ニャ > 大艦隊 > ガチャ # 後宅 > 指揮ニャ > 大艦隊 > デイリー建造\n> 報酬 # 収穫\n> ShopFrequent > ShopOnce > 造船所 > 景品 > アイランド # よく使うショップ > その他のショップ > 開発ドック > 景品特典 > アイランドプラン\n> PrivateQuarters # ルームプラン\n> OpsiExplore # 毎月の探索\n> ミニゲーム > 覚醒 # ミニゲーム > 認知覚醒\n> OpsiAshBeacon # META戦闘\n> OpsiDaily > OpsiShop > OpsiVoucher # セイレーン作戦デイリー > 港湾ショップ > 引換ショップ\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive # 深淵 > セイレーン要塞 > 隠された海域 > アーカイブ座標\n> デイリー > ハード > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss # デイリー > ハードマップ > META戦闘 > METAサポート > マンスリーボス\n> Sos > EventSp > EventA > EventB > EventC > EventD # Sos > イベントデイリーSP > イベントデイリーA > イベントデイリーB > イベントデイリーC > イベントデイリーD\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort # 共闘デイリー > 共闘SP > 作戦アーカイブ > 商船護衛\n> イベント > イベント2 > 共闘 > Hospital > HospitalEvent > Coalition > RaidScuttle > メイン > メイン2 > メイン3 # イベントマップ > イベントマップ2 > 共闘 > 病院イベント > 共闘イベント > 連合 > 共闘沈船 > メインステージ > メインステージ2 > メインステージ3\n> OpsiMeowfficerFarming # 指揮ニャ収集\n> GemsFarming # 緊急委託周回\n> OpsiHazard1Leveling # 侵蝕1レベリング\n> ThreeOilLowCost # 3燃料低コスト"
     }
   },
   "OneClickRetire": {
@@ -4768,31 +4764,6 @@
       "help": "過去の AP 消費率に基づいて、月末に過剰なモビリティをクリーンアップするためにショート キャット タスクを事前に開始する必要があるかどうかを自動的に判断します。"
     }
   },
-  "OpsiDailyDelay": {
-    "_info": {
-      "name": "大きな世界ミッションは延期される",
-      "help": "毎日 0:00 にサーバーが再起動されるまでの構成可能な期間内では、翌日の 0:00 に再起動が完了するまで、Erosion One および Short Cat タスクは自動的に延期されます。"
-    },
-    "TriggerMinutesBeforeReset": {
-      "name": "アドバンストリガー時間 (分)",
-      "help": "毎日 0 時の何分前にタスクを遅延させるか、範囲は 1 ～ 60 分、デフォルトは 5 分です。",
-      "1": "1",
-      "2": "2",
-      "3": "3",
-      "4": "4",
-      "5": "5",
-      "6": "6",
-      "7": "7",
-      "8": "8",
-      "9": "9",
-      "10": "10",
-      "15": "15",
-      "20": "20",
-      "30": "30",
-      "45": "45",
-      "60": "60"
-    }
-  },
   "IslandSeasonTask": {
     "_info": {
       "name": "シーズンタスク",
@@ -5274,7 +5245,23 @@
       "ExpRemaining": "EXP remaining",
       "StartCleanupTime": "Suggested cleanup start: {value}",
       "NextOsReset": "Next OS reset: {value}",
-      "MeowAutoCleanupStatus": "Auto early cleanup: {value}"
+      "MeowAutoCleanupStatus": "Auto early cleanup: {value}",
+      "CommissionIncomeTitle": "Gui.Stat.CommissionIncomeTitle",
+      "CommissionIncomeMonth": "Gui.Stat.CommissionIncomeMonth",
+      "CommissionIncomeWeek": "Gui.Stat.CommissionIncomeWeek",
+      "CommissionIncomeDay": "Gui.Stat.CommissionIncomeDay",
+      "CommissionIncomeNoData": "Gui.Stat.CommissionIncomeNoData",
+      "CommissionIncomeItemGem": "Gui.Stat.CommissionIncomeItemGem",
+      "CommissionIncomeItemCube": "Gui.Stat.CommissionIncomeItemCube",
+      "CommissionIncomeItemChip": "Gui.Stat.CommissionIncomeItemChip",
+      "CommissionIncomeItemOil": "Gui.Stat.CommissionIncomeItemOil",
+      "CommissionIncomeItemCoin": "Gui.Stat.CommissionIncomeItemCoin",
+      "CommissionIncomeHeaderItem": "Gui.Stat.CommissionIncomeHeaderItem",
+      "CommissionIncomeHeaderTotal": "Gui.Stat.CommissionIncomeHeaderTotal",
+      "CommissionIncomeHeaderCount": "Gui.Stat.CommissionIncomeHeaderCount",
+      "CommissionIncomeHeaderAvg": "Gui.Stat.CommissionIncomeHeaderAvg",
+      "CommissionIncomeTotalCommissions": "Gui.Stat.CommissionIncomeTotalCommissions",
+      "CommissionIncomeRecentTitle": "Gui.Stat.CommissionIncomeRecentTitle"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",

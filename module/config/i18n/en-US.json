@@ -286,10 +286,6 @@
       "name": "Cross-Month Daily",
       "help": "    Alas will enter Operation Siren 10 minutes before the cross-month reset, wait for the reset without exiting, then complete the new day's OpSi daily, Obscured Zone, Abyssal Zone and Meowfficer Farming to earn extra rewards. When running OpSi Daily, it follows the \"OpSi - Daily\" task settings, and likewise for others.\n    Important: Do not operate the game while Alas is waiting for the cross-month reset."
     },
-    "OpsiDailyDelay": {
-      "name": "OpSi Task Delay+",
-      "help": "    Within a configurable time period before the daily server restart at 0:00 (default is 5 minutes, triggered at 23:55), automatically delays the currently running Corrosion 1 and Meowfficer Farming tasks until after the restart at 0:00 the next day."
-    },
     "OpsiSimulator": {
       "name": "Task.OpsiSimulator.name",
       "help": "Task.OpsiSimulator.help"
@@ -799,7 +795,7 @@
     },
     "TaskPriorityAdjustment": {
       "name": "Task priority adjustment",
-      "help": "Restart # Restart the game\n> OpsiCrossMonth > OpsiDailyDelay # Operation Siren Cross-Month Daily > Operation Siren Task Delay\n> Commission > Tactical > Research # Commission > Tactical Academy > Research\n> Exercise # Exercise\n> Dorm > Meowfficer > Guild > Gacha # Backyard > Meowfficer > Guild > Daily Gacha\n> Reward # Rewards\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island # General Shop > Other Shops > Development Shipyard > Freebie Rewards > Island Plan\n> PrivateQuarters # Quarters Plan\n> OpsiExplore # Monthly Exploration\n> Minigame > Awaken # Minigame > Cognitive Awakening\n> OpsiAshBeacon # META Combat\n> OpsiDaily > OpsiShop > OpsiVoucher # Operation Siren Daily > Port Shop > Exchange Shop\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive # Abyssal Zone > Siren Stronghold > Obscured Zone > Archive Coordinates\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss # Daily Challenge > Hard Mode > META Combat > META Assist > Monthly Boss\n> Sos > EventSp > EventA > EventB > EventC > EventD # SOS > Event Daily SP > Event Daily A > Event Daily B > Event Daily C > Event Daily D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort # Raid Daily > Coalition SP > War Archives > Maritime Escort\n> Event > Event2 > Raid > Hospital > HospitalEvent > Coalition > RaidScuttle > Main > Main2 > Main3 # Event Map > Event Map 2 > Raid > Hospital Event > Raid > Raid Scuttle > Main Campaign > Main Campaign 2 > Main Campaign 3\n> OpsiMeowfficerFarming # Meowfficer Farming\n> GemsFarming # Gems Farming\n> OpsiHazard1Leveling # Corrosion 1 Leveling\n> ThreeOilLowCost # 3-Oil Low Cost"
+      "help": "Restart # Restart the game\n> OpsiCrossMonth # Operation Siren Cross-Month Daily\n> Commission > Tactical > Research # Commission > Tactical Academy > Research\n> Exercise # Exercise\n> Dorm > Meowfficer > Guild > Gacha # Backyard > Meowfficer > Guild > Daily Gacha\n> Reward # Rewards\n> ShopFrequent > ShopOnce > Shipyard > Freebies > Island # General Shop > Other Shops > Development Shipyard > Freebie Rewards > Island Plan\n> PrivateQuarters # Quarters Plan\n> OpsiExplore # Monthly Exploration\n> Minigame > Awaken # Minigame > Cognitive Awakening\n> OpsiAshBeacon # META Combat\n> OpsiDaily > OpsiShop > OpsiVoucher # Operation Siren Daily > Port Shop > Exchange Shop\n> OpsiAbyssal > OpsiStronghold > OpsiObscure > OpsiArchive # Abyssal Zone > Siren Stronghold > Obscured Zone > Archive Coordinates\n> Daily > Hard > OpsiAshBeacon > OpsiAshAssist > OpsiMonthBoss # Daily Challenge > Hard Mode > META Combat > META Assist > Monthly Boss\n> Sos > EventSp > EventA > EventB > EventC > EventD # SOS > Event Daily SP > Event Daily A > Event Daily B > Event Daily C > Event Daily D\n> RaidDaily > CoalitionSp > WarArchives > MaritimeEscort # Raid Daily > Coalition SP > War Archives > Maritime Escort\n> Event > Event2 > Raid > Hospital > HospitalEvent > Coalition > RaidScuttle > Main > Main2 > Main3 # Event Map > Event Map 2 > Raid > Hospital Event > Raid > Raid Scuttle > Main Campaign > Main Campaign 2 > Main Campaign 3\n> OpsiMeowfficerFarming # Meowfficer Farming\n> GemsFarming # Gems Farming\n> OpsiHazard1Leveling # Corrosion 1 Leveling\n> ThreeOilLowCost # 3-Oil Low Cost"
     }
   },
   "OneClickRetire": {
@@ -4768,31 +4764,6 @@
       "help": "Automatically decides whether to start Meowfficer Farming early for month-end AP cleanup based on historical Meow timing and current AP; the decision target is the next month Operation Siren reset time, not daily server refresh."
     }
   },
-  "OpsiDailyDelay": {
-    "_info": {
-      "name": "Operation Siren Task Delay",
-      "help": "Within the configurable time period before the daily 0:00 server reset, Corrosion 1 and Meowfficer Farming tasks will be automatically delayed until the reset at 0:00 the next day is completed."
-    },
-    "TriggerMinutesBeforeReset": {
-      "name": "Advance Trigger Time (Minutes)",
-      "help": "How many minutes before daily 0:00 to trigger task delay, range is 1-60 minutes, default is 5 minutes",
-      "1": "1",
-      "2": "2",
-      "3": "3",
-      "4": "4",
-      "5": "5",
-      "6": "6",
-      "7": "7",
-      "8": "8",
-      "9": "9",
-      "10": "10",
-      "15": "15",
-      "20": "20",
-      "30": "30",
-      "45": "45",
-      "60": "60"
-    }
-  },
   "IslandSeasonTask": {
     "_info": {
       "name": "Season tasks",
@@ -5274,7 +5245,23 @@
       "ExpRemaining": "EXP remaining",
       "StartCleanupTime": "Suggested cleanup start: {value}",
       "NextOsReset": "Next OS reset: {value}",
-      "MeowAutoCleanupStatus": "Auto early cleanup: {value}"
+      "MeowAutoCleanupStatus": "Auto early cleanup: {value}",
+      "CommissionIncomeTitle": "Commission Income",
+      "CommissionIncomeMonth": "This Month",
+      "CommissionIncomeWeek": "This Week",
+      "CommissionIncomeDay": "Today",
+      "CommissionIncomeNoData": "No commission income data yet. It will update automatically after commissions.",
+      "CommissionIncomeItemGem": "Gem",
+      "CommissionIncomeItemCube": "Cube",
+      "CommissionIncomeItemChip": "Chip",
+      "CommissionIncomeItemOil": "Oil",
+      "CommissionIncomeItemCoin": "Coin",
+      "CommissionIncomeHeaderItem": "Item",
+      "CommissionIncomeHeaderTotal": "Total",
+      "CommissionIncomeHeaderCount": "Commissions",
+      "CommissionIncomeHeaderAvg": "Avg/Run",
+      "CommissionIncomeTotalCommissions": "Total commissions: {value}",
+      "CommissionIncomeRecentTitle": "Recent Commissions"
     },
     "OpsiScheduling": {
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",

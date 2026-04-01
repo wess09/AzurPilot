@@ -716,3 +716,20 @@ pre.rich-traceback-code {
     font-family: 'JetBrains Mono NL', monospace;
     line-height: 1;
 }
+
+#pywebio-scope-commission_income {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+#pywebio-scope-commission_income > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+#pywebio-scope-commission_income table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+}

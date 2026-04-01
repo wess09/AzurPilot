@@ -110,10 +110,3 @@ class OSCampaignRun(OSMapOperation):
             campaign.os_cross_month()
         except ActionPointLimit:
             campaign.os_cross_month_end()
-
-    def opsi_daily_delay(self):
-        campaign = self.load_campaign()
-        try:
-            campaign.opsi_daily_delay()
-        except Exception:
-            campaign.opsi_daily_delay_end()

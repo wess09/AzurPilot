@@ -491,11 +491,104 @@ class RewardCommission(UI, InfoHandler):
         if not self.daily_choose and not self.urgent_choose:
             logger.info('No commission chose')
 
+    def _record_commission_income(self):
+        try:
+            from module.statistics.get_items import (
+                GetItemsStatistics, ITEM_GRIDS_1_ODD, ITEM_GRIDS_1_EVEN,
+                ITEM_GRIDS_2, ITEM_GRIDS_3
+            )
+            from module.statistics.item import ItemGrid, Item
+            from module.statistics.cl1_database import db as cl1_db
+            from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3
+            from module.handler.assets import INFO_BAR_1
+            import os
+
+            template_folder = os.path.join('.', 'assets', 'stats_commission_items')
+            if not os.path.exists(template_folder):
+                logger.info('Commission income: template folder not found, skip')
+                return
+
+            grid = ItemGrid(None, {}, template_area=(40, 21, 89, 70), amount_area=(50, 71, 91, 92))
+            grid.item_class = Item
+            grid.similarity = 0.92
+            grid.load_template_folder(template_folder)
+
+            if not grid.templates:
+                logger.info('Commission income: no templates loaded, skip')
+                return
+
+            get_items = GetItemsStatistics()
+
+            merged_items = {}
+            item_count = 0
+
+            images = getattr(self, '_commission_reward_images', None)
+            if not images:
+                logger.info('Commission income: no reward images collected')
+                return
+
+            COMMISSION_TRACKED_ITEMS = ['Gem', 'Cube', 'Chip', 'Oil', 'Coin']
+
+            COMMISSION_ITEM_NAME_MAP = {
+                'Gems': 'Gem',
+                'Cubes': 'Cube',
+                'CognitiveChips': 'Chip',
+                'Coins': 'Coin',
+            }
+
+            logger.info(f'Commission income: processing {len(images)} reward screenshot(s)')
+            for idx, image in enumerate(images):
+                try:
+                    if INFO_BAR_1.appear_on(image):
+                        logger.info(f'Commission income: screenshot[{idx}] has info_bar, skip')
+                        continue
+                    grid.grids = None
+                    if GET_ITEMS_1.match(image, offset=(5, 0)):
+                        is_odd = get_items._stats_get_items_is_odd(image)
+                        grid.grids = ITEM_GRIDS_1_ODD if is_odd else ITEM_GRIDS_1_EVEN
+                    elif GET_ITEMS_2.match(image, offset=(5, 0)):
+                        grid.grids = ITEM_GRIDS_2
+                    elif GET_ITEMS_3.match(image, offset=(5, 0)):
+                        grid.grids = ITEM_GRIDS_3
+                    else:
+                        logger.info(f'Commission income: screenshot[{idx}] not a get_items page, skip')
+                        continue
+                    grid.predict(image)
+                    recognized = []
+                    for item in grid.items:
+                        if item.is_known_item() and item.name not in ('DefaultItem',):
+                            mapped_name = COMMISSION_ITEM_NAME_MAP.get(item.name, item.name)
+                            if mapped_name not in COMMISSION_TRACKED_ITEMS:
+                                logger.info(f'Commission income: screenshot[{idx}] ignored {item.name} (not tracked)')
+                                continue
+                            merged_items[mapped_name] = merged_items.get(mapped_name, 0) + item.amount
+                            item_count += 1
+                            recognized.append(f'{mapped_name}x{item.amount}')
+                    if recognized:
+                        logger.info(f'Commission income: screenshot[{idx}] recognized {len(recognized)} item(s): {", ".join(recognized)}')
+                    else:
+                        logger.info(f'Commission income: screenshot[{idx}] no known items recognized')
+                except Exception as e:
+                    logger.info(f'Commission income: screenshot[{idx}] recognition failed: {e}')
+                    continue
+
+            if merged_items:
+                instance = self.config.config_name
+                cl1_db.add_commission_income(instance, merged_items, commission_count=1)
+                item_str = ', '.join([f'{k}x{v}' for k, v in merged_items.items()])
+                logger.info(f'Commission income recorded: {item_str} (instance={instance})')
+            else:
+                logger.info('Commission income: no known items recognized from all screenshots')
+
+        except Exception as e:
+            logger.warning(f'Commission income recording failed: {e}')
+
     def commission_receive(self, skip_first_screenshot=True):
         logger.hr('Reward receive')
 
         reward = False
         click_timer = Timer(1)
+        self._commission_reward_images = []
 
         with self.stat.new(
                 'commission', method=self.config.DropRecord_CommissionRecord
@@ -513,6 +606,13 @@ class RewardCommission(UI, InfoHandler):
                     if self.appear(button, interval=1):
                         self.ensure_no_info_bar(timeout=1)
                         drop.add(self.device.image)
+                        if button is EXP_INFO_S_REWARD:
+                            if self._commission_reward_images:
+                                self._record_commission_income()
+                                self._commission_reward_images = []
+                        else:
+                            self._commission_reward_images.append(self.device.image.copy())
+                            logger.info(f'Commission income: collected reward screenshot (trigger={button.name})')
 
                         REWARD_SAVE_CLICK.name = button.name
                         self.device.click(REWARD_SAVE_CLICK)
@@ -593,6 +693,9 @@ class RewardCommission(UI, InfoHandler):
                 if click_timer.reached() and self.ui_additional():
                     click_timer.reset()
                     continue
+
+        if reward:
+            self._record_commission_income()
 
         return reward
 
