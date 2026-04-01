@@ -400,9 +400,14 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             logger.info('At least one ship is below threshold '
                         f'{str(int(trigger_threshold * 100))}%, '
                         'start fleet repair by current config')
-            self.handle_fleet_repair_by_config(revert=revert, trigger_threshold=trigger_threshold)
+            repaired = self.handle_fleet_repair_by_config(
+                revert=revert, trigger_threshold=trigger_threshold
+            )
             self.hp_reset()
-            return True
+            if repaired:
+                return True
+            logger.info('Fleet repair triggered but no actual repair was performed')
+            return False
         else:
             logger.info('No ship found to be below threshold '
                         f'{str(int(trigger_threshold * 100))}%, '

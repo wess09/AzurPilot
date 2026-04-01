@@ -235,55 +235,55 @@
       "help": ""
     },
     "OpsiExplore": {
-      "name": "每年开荒+",
+      "name": "每月开荒+",
       "help": ""
     },
     "OpsiShop": {
-      "name": "小世界商店+",
+      "name": "大世界商店+",
       "help": ""
     },
     "OpsiVoucher": {
-      "name": "黑票商店",
+      "name": "白票商店",
       "help": ""
     },
     "OpsiDaily": {
-      "name": "大世界-每日+",
+      "name": "大世界每日+",
       "help": ""
     },
     "OpsiObscure": {
-      "name": "非常秘密的海域",
+      "name": "隐秘海域",
       "help": ""
     },
     "OpsiAbyssal": {
-      "name": "向着星辰与深渊",
+      "name": "深渊坐标",
       "help": ""
     },
     "OpsiArchive": {
-      "name": "碧蓝档案",
+      "name": "档案坐标",
       "help": "从白票商店购买档案坐标并运行，档案海域不消耗行动力\n使用此功能前必须满足以下条件：\n- 通关大世界主线并完成模拟战+塞壬试验场\n- 启用大世界开荒任务或使用战役信息记录仪（5000油道具）"
     },
     "OpsiStronghold": {
-      "name": "要塞塞壬",
+      "name": "塞壬要塞",
       "help": ""
     },
     "OpsiMonthBoss": {
-      "name": "日度Boss",
+      "name": "月度Boss",
       "help": ""
     },
     "OpsiMeowfficerFarming": {
-      "name": "长猫相接+",
+      "name": "耄耋相接+",
       "help": ""
     },
     "OpsiHazard1Leveling": {
-      "name": "侵蚀1降级+",
+      "name": "侵蚀1练级+",
       "help": "使用本功能前务必观看教程视频，否则后果自负"
     },
     "OpsiScheduling": {
-      "name": "大聪明调度+",
+      "name": "智能调度+",
       "help": "大世界智能调度功能，用于协调侵蚀1练级与黄币补充任务之间的切换\n启用后将根据黄币和行动力自动在不同任务之间切换并发送推送通知"
     },
     "OpsiCrossMonth": {
-      "name": "跨日每月",
+      "name": "跨月每日",
       "help": "    Alas将在大世界跨月重置之前10分钟进入大世界，等待大世界重置但不退出大世界，然后完成新一天的大世界每日、隐秘海域、深渊海域和短猫相接，以获得额外的金菜。运行大世界每日时，按\"大世界每日\"任务设置运行，其余同理。\n    重要：Alas等待跨月期间，请不要操作游戏。"
     },
     "OpsiDailyDelay": {
@@ -526,6 +526,7 @@
       "LDPlayer3": "雷电模拟器3",
       "LDPlayer4": "雷电模拟器4",
       "LDPlayer9": "雷电模拟器9",
+      "LDPlayer14": "LDPlayer14",
       "MuMuPlayer": "MuMu模拟器",
       "MuMuPlayerX": "MuMu模拟器X",
       "MuMuPlayer12": "MuMu模拟器12",
