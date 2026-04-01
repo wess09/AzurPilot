@@ -23,6 +23,14 @@ COMMISSION_ITEM_META = {
     'Coin': {'color': '#ffa502', 'order': 4},
 }
 
+COMMISSION_ITEM_NAME_MAP = {
+    'Gems': 'Gem',
+    'Cubes': 'Cube',
+    'CognitiveChips': 'Chip',
+    'Coins': 'Coin',
+    'DecorCoins': 'Coin',
+}
+
 
 def _parse_ts(ts_str: str) -> Optional[datetime]:
     try:
@@ -114,10 +122,11 @@ def get_commission_income_summary(
         total_commissions += entry.get('commission_count', 1)
         items = entry.get('items', {})
         for item_name, amount in items.items():
-            if item_name not in COMMISSION_TRACKED_ITEMS:
+            mapped_name = COMMISSION_ITEM_NAME_MAP.get(item_name, item_name)
+            if mapped_name not in COMMISSION_TRACKED_ITEMS:
                 continue
-            totals[item_name] = totals.get(item_name, 0) + int(amount)
-            counts[item_name] = counts.get(item_name, 0) + 1
+            totals[mapped_name] = totals.get(mapped_name, 0) + int(amount)
+            counts[mapped_name] = counts.get(mapped_name, 0) + 1
 
     items_summary = {}
     detail_rows = []

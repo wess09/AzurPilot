@@ -1132,6 +1132,7 @@ class AlasGUI(Frame):
                     get_commission_income_summary,
                     get_recent_commission_entries,
                     COMMISSION_ITEM_META,
+                    COMMISSION_ITEM_NAME_MAP,
                 )
                 instance_name = self.alas_name if hasattr(self, 'alas_name') and self.alas_name else None
                 if not instance_name:
@@ -1208,16 +1209,17 @@ class AlasGUI(Frame):
                                 time_str = ts[:16] if ts else '--'
                             items = entry.get('items', {})
                             item_parts = []
-                            for item_name in ['Gem', 'Cube', 'Chip', 'Oil', 'Coin']:
-                                amount = items.get(item_name)
-                                if amount and int(amount) > 0:
-                                    meta = COMMISSION_ITEM_META.get(item_name, {'color': '#888'})
-                                    display = item_name_map.get(item_name, item_name)
-                                    item_parts.append(
-                                        f'<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {meta["color"]}; margin-right: 4px; vertical-align: middle;"></span>'
-                                        f'<span style="color: #444;">{display}</span>'
-                                        f'<span style="color: #888; margin-left: 2px;">x{int(amount)}</span>'
-                                    )
+                            for raw_name, amount in items.items():
+                                if not amount or int(amount) <= 0:
+                                    continue
+                                mapped_name = COMMISSION_ITEM_NAME_MAP.get(raw_name, raw_name)
+                                meta = COMMISSION_ITEM_META.get(mapped_name, {'color': '#888'})
+                                display = item_name_map.get(mapped_name, mapped_name)
+                                item_parts.append(
+                                    f'<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {meta["color"]}; margin-right: 4px; vertical-align: middle;"></span>'
+                                    f'<span style="color: #444;">{display}</span>'
+                                    f'<span style="color: #888; margin-left: 2px;">x{int(amount)}</span>'
+                                )
                             items_str = ' '.join(item_parts) if item_parts else '<span style="color: #999;">--</span>'
                             recent_html += (
                                 f'<div style="display: flex; align-items: center; padding: 5px 0; border-bottom: 1px solid #f0f0f0;">'
