@@ -79,7 +79,7 @@ def retry(func):
                 logger.error(e)
 
                 def init():
-                    pass
+                    self.droidcast_init()
             # Can't handle - must propagate to trigger emulator restart
             except EmulatorNotRunningError:
                 raise
@@ -143,15 +143,7 @@ class DroidCast(Uiautomator2):
         if self.is_mumu_over_version_356:
             w, h = self.droidcast_width, self.droidcast_height
             if self.orientation == 0:
-                return f'http://127.0.0.1:{self._droidcast_port}{url}?width={w}&height={h}'
-            elif self.orientation == 1:
-                return f'http://127.0.0.1:{self._droidcast_port}{url}?width={h}&height={w}'
-            else:
-                # logger.warning('DroidCast receives invalid device orientation')
-                pass
-
-        return f'http://127.0.0.1:{self._droidcast_port}{url}'
-
+            raise ImageTruncated(str(e) + '\nIf your emulator resolution not 1280x720, please set emulator resolution to 1280x720')
     def droidcast_init(self):
         logger.hr('DroidCast init')
         self.droidcast_stop()
@@ -161,7 +153,7 @@ class DroidCast(Uiautomator2):
         self.adb_push(self.config.DROIDCAST_FILEPATH_LOCAL, self.config.DROIDCAST_FILEPATH_REMOTE)
 
         logger.info('Starting DroidCast apk')
-        # DroidCast_raw-release-1.0.apk
+        # DroidCast_raw-release-1.1.apk
         # CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main > /dev/null
         # adb shell CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main
         resp = self.u2_shell_background([
@@ -264,8 +256,15 @@ class DroidCast(Uiautomator2):
                 if image is not None:
                     raise DroidCastVersionIncompatible(
                         'Requesting screenshots from `DroidCast_raw` but server is `DroidCast`')
-            # ValueError: cannot reshape array of size 0 into shape (720,1280)
-            raise ImageTruncated(str(e)+'\nIf your emulator resolution not 1280x720, please set emulator resolution to 1280x720')
+            if shape is not None:
+                expected_bytes = int(shape[0] * shape[1] * 2)
+            else:
+                expected_bytes = 0
+            raise ImageTruncated(
+                f'{e}\n'
+                f'DroidCast_raw payload invalid, expected {expected_bytes} bytes for RGB565 {shape}, got {len(image)} bytes. '
+                'Please check DroidCast_raw status and adb forward, then retry.'
+            )
 
         # Convert RGB565 to RGB888
         # https://blog.csdn.net/happy08god/article/details/10516871
@@ -312,7 +311,7 @@ class DroidCast(Uiautomator2):
                 if resp.status_code == 404:
                     logger.attr('DroidCast', 'online')
                     return True
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                 logger.attr('DroidCast', 'offline')
 
         logger.warning('Wait DroidCast startup timeout, assume started')
