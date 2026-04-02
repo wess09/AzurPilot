@@ -241,7 +241,7 @@ class DroidCast(Uiautomator2):
 
         rotate = self.is_mumu_over_version_356 and self.orientation == 1
 
-        image = self.droidcast_session.get(self.droidcast_raw_url(), timeout=5).content
+        image = self.droidcast_session.get(self.droidcast_raw_url(), timeout=3).content
         # DroidCast_raw returns a RGB565 bitmap
 
         try:
@@ -304,7 +304,7 @@ class DroidCast(Uiautomator2):
         """
         Wait until DroidCast startup completed.
         """
-        timeout = Timer(20).start()
+        timeout = Timer(10).start()
         while 1:
             self.sleep(0.25)
             if timeout.reached():
