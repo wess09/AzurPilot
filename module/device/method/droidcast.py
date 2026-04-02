@@ -264,7 +264,10 @@ class DroidCast(Uiautomator2):
                 if image is not None:
                     raise DroidCastVersionIncompatible(
                         'Requesting screenshots from `DroidCast_raw` but server is `DroidCast`')
-            expected_bytes = int(shape[0] * shape[1] * 2)
+            if shape is not None:
+                expected_bytes = int(shape[0] * shape[1] * 2)
+            else:
+                expected_bytes = 0
             raise ImageTruncated(
                 f'{e}\n'
                 f'DroidCast_raw payload invalid, expected {expected_bytes} bytes for RGB565 {shape}, got {len(image)} bytes. '
