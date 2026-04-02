@@ -79,7 +79,7 @@ def retry(func):
                 logger.error(e)
 
                 def init():
-                    pass
+                    self.droidcast_init()
             # Can't handle - must propagate to trigger emulator restart
             except EmulatorNotRunningError:
                 raise
@@ -161,7 +161,7 @@ class DroidCast(Uiautomator2):
         self.adb_push(self.config.DROIDCAST_FILEPATH_LOCAL, self.config.DROIDCAST_FILEPATH_REMOTE)
 
         logger.info('Starting DroidCast apk')
-        # DroidCast_raw-release-1.0.apk
+        # DroidCast_raw-release-1.1.apk
         # CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main > /dev/null
         # adb shell CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main
         resp = self.u2_shell_background([
@@ -241,7 +241,7 @@ class DroidCast(Uiautomator2):
 
         rotate = self.is_mumu_over_version_356 and self.orientation == 1
 
-        image = self.droidcast_session.get(self.droidcast_raw_url(), timeout=3).content
+        image = self.droidcast_session.get(self.droidcast_raw_url(), timeout=5).content
         # DroidCast_raw returns a RGB565 bitmap
 
         try:
@@ -264,8 +264,12 @@ class DroidCast(Uiautomator2):
                 if image is not None:
                     raise DroidCastVersionIncompatible(
                         'Requesting screenshots from `DroidCast_raw` but server is `DroidCast`')
-            # ValueError: cannot reshape array of size 0 into shape (720,1280)
-            raise ImageTruncated(str(e)+'\nIf your emulator resolution not 1280x720, please set emulator resolution to 1280x720')
+            expected_bytes = int(shape[0] * shape[1] * 2)
+            raise ImageTruncated(
+                f'{e}\n'
+                f'DroidCast_raw payload invalid, expected {expected_bytes} bytes for RGB565 {shape}, got {len(image)} bytes. '
+                'Please check DroidCast_raw status and adb forward, then retry.'
+            )
 
         # Convert RGB565 to RGB888
         # https://blog.csdn.net/happy08god/article/details/10516871
@@ -300,7 +304,7 @@ class DroidCast(Uiautomator2):
         """
         Wait until DroidCast startup completed.
         """
-        timeout = Timer(10).start()
+        timeout = Timer(20).start()
         while 1:
             self.sleep(0.25)
             if timeout.reached():
@@ -312,7 +316,7 @@ class DroidCast(Uiautomator2):
                 if resp.status_code == 404:
                     logger.attr('DroidCast', 'online')
                     return True
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                 logger.attr('DroidCast', 'offline')
 
         logger.warning('Wait DroidCast startup timeout, assume started')
