@@ -299,20 +299,31 @@ class DroidCast(Uiautomator2):
     def droidcast_wait_startup(self):
         """
         Wait until DroidCast startup completed.
+        For DroidCast_raw v1.1, try /screenshot endpoint to verify service is running.
         """
-        timeout = Timer(10).start()
+        timeout = Timer(15).start()
+        endpoint = '/screenshot' if self.config.DROIDCAST_VERSION == 'DroidCast_raw' else '/'
+        
         while 1:
             self.sleep(0.25)
             if timeout.reached():
                 break
 
             try:
-                resp = self.droidcast_session.get(self.droidcast_url('/'), timeout=3)
-                # Route `/` is unavailable, but 404 means startup completed
-                if resp.status_code == 404:
-                    logger.attr('DroidCast', 'online')
-                    return True
-            except requests.exceptions.ConnectionError:
+                resp = self.droidcast_session.get(self.droidcast_raw_url(endpoint) if self.config.DROIDCAST_VERSION == 'DroidCast_raw' else self.droidcast_url(endpoint), timeout=3)
+                
+                if self.config.DROIDCAST_VERSION == 'DroidCast':
+                    # Route `/` is unavailable, but 404 means startup completed (DroidCast v1.0)
+                    if resp.status_code == 404:
+                        logger.attr('DroidCast', 'online')
+                        return True
+                else:
+                    # For DroidCast_raw, any successful response (including partial data) indicates startup
+                    # v1.0 may give 404, v1.1 may give 200 with data
+                    if resp.status_code in (200, 404):
+                        logger.attr('DroidCast', 'online')
+                        return True
+            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
                 logger.attr('DroidCast', 'offline')
 
         logger.warning('Wait DroidCast startup timeout, assume started')
