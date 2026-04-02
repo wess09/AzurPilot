@@ -143,15 +143,7 @@ class DroidCast(Uiautomator2):
         if self.is_mumu_over_version_356:
             w, h = self.droidcast_width, self.droidcast_height
             if self.orientation == 0:
-                return f'http://127.0.0.1:{self._droidcast_port}{url}?width={w}&height={h}'
-            elif self.orientation == 1:
-                return f'http://127.0.0.1:{self._droidcast_port}{url}?width={h}&height={w}'
-            else:
-                # logger.warning('DroidCast receives invalid device orientation')
-                pass
-
-        return f'http://127.0.0.1:{self._droidcast_port}{url}'
-
+            raise ImageTruncated(str(e) + '\nIf your emulator resolution not 1280x720, please set emulator resolution to 1280x720')
     def droidcast_init(self):
         logger.hr('DroidCast init')
         self.droidcast_stop()
