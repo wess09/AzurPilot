@@ -8,6 +8,17 @@ from module.ocr.ocr import Digit, DigitYuv
 from module.statistics.utils import *
 
 
+ITEM_AMOUNT_RANGES = {
+    'Gem': (1, 200),
+    'Cube': (1, 50),
+    'Chip': (1, 50),
+    'Oil': (1, 1000),
+    'Coin': (1, 5000),
+}
+
+ITEM_OCR_MIN_CONFIDENCE = 0.85
+
+
 class AmountOcr(Digit):
     def pre_process(self, image):
         """
@@ -348,15 +359,43 @@ class ItemGrid:
             list[Item]:
         """
         self._load_image(image)
-        if amount:
-            amount_list = [item.crop(self.amount_area) for item in self.items]
-            amount_list = self.amount_ocr.ocr(amount_list, direct_ocr=True)
-            for item, a in zip(self.items, amount_list):
-                item.amount = a
         if name:
             name_list = [self.match_template(item.image) for item in self.items]
             for item, n in zip(self.items, name_list):
                 item.name = n
+        if amount:
+            amount_list = [item.crop(self.amount_area) for item in self.items]
+            amount_results = self.amount_ocr.ocr_with_score(amount_list, direct_ocr=True)
+            for idx, (item, (a, score)) in enumerate(zip(self.items, amount_results)):
+                need_retry = False
+                retry_reason = ""
+                
+                if score < ITEM_OCR_MIN_CONFIDENCE:
+                    need_retry = True
+                    retry_reason = f"low confidence: {score:.2f}"
+                
+                min_val, max_val = ITEM_AMOUNT_RANGES.get(item.name, (1, 9999))
+                if not (min_val <= a <= max_val):
+                    need_retry = True
+                    retry_reason = f"out of range [{min_val}, {max_val}]"
+                
+                if need_retry:
+                    logger.warning(f'Item {item.name} amount {a} {retry_reason}, retrying OCR')
+                    retry_a, retry_score = self.amount_ocr.ocr_with_score(amount_list[idx:idx+1], direct_ocr=True)
+                    retry_a = retry_a[0] if isinstance(retry_a, tuple) else retry_a
+                    retry_score = retry_score[0] if isinstance(retry_score, tuple) else retry_score
+                    
+                    if isinstance(retry_a, tuple):
+                        retry_a, retry_score = retry_a
+                    
+                    if min_val <= retry_a <= max_val:
+                        logger.info(f'Item {item.name} retry OCR succeeded: {a} -> {retry_a} (score: {retry_score:.2f})')
+                        item.amount = retry_a
+                    else:
+                        logger.warning(f'Item {item.name} retry OCR still invalid: {retry_a}, using original value {a}')
+                        item.amount = a
+                else:
+                    item.amount = a
         if cost:
             cost_list = [self.match_cost_template(item) for item in self.items]
             self.items = [item for item, c in zip(self.items, cost_list) if c is not None]

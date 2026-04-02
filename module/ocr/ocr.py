@@ -112,6 +112,38 @@ class Ocr:
 
         return result_list
 
+    def ocr_with_score(self, image, direct_ocr=False):
+        """
+        OCR with confidence score.
+        
+        Args:
+            image (np.ndarray, list[np.ndarray]):
+            direct_ocr (bool): True to skip preprocess.
+
+        Returns:
+            If single button: (result, score)
+            If multiple buttons: [(result, score), ...]
+        """
+        start_time = time.time()
+
+        if direct_ocr:
+            image_list = [self.pre_process(i) for i in image]
+        else:
+            image_list = [self.pre_process(crop(image, area)) for area in self.buttons]
+        
+        image_list = [crop_to_text(i) for i in image_list]
+
+        result_list = self.cnocr.ocr_for_single_lines_with_score(image_list)
+        result_list = [(self.after_process(''.join(r) if isinstance(r, list) else r), s) for r, s in result_list]
+
+        if len(self.buttons) == 1:
+            result_list = result_list[0]
+        if self.SHOW_LOG:
+            logger.attr(name='%s %ss' % (self.name, float2str(time.time() - start_time)),
+                        text=str(result_list))
+
+        return result_list
+
 
 class OcrYuv(Ocr):
     """

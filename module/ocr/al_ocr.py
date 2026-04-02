@@ -190,6 +190,24 @@ class AlOcr:
             logger.error(f"AlOcr.ocr exception: {e}")
             raise
 
+    def ocr_with_score(self, img_fp):
+        self._ensure_loaded()
+
+        try:
+            res = self.model(img_fp)
+            txt = ""
+            score = 0.0
+            if hasattr(res, "txts") and res.txts:
+                txt = res.txts[0]
+            if hasattr(res, "scores") and res.scores:
+                score = res.scores[0]
+
+            self._save_debug_image(img_fp, txt)
+            return txt, score
+        except Exception as e:
+            logger.error(f"AlOcr.ocr_with_score exception: {e}")
+            raise
+
     def ocr_for_single_line(self, img_fp):
         return self.ocr(img_fp)
 
@@ -207,6 +225,26 @@ class AlOcr:
                 self._save_debug_image(img, txt)
             except Exception as e:
                 logger.error(f"AlOcr.ocr_for_single_lines exception on image {i}: {e}")
+                raise
+        return results
+
+    def ocr_for_single_lines_with_score(self, img_list):
+        self._ensure_loaded()
+        results = []
+        for i, img in enumerate(img_list):
+            try:
+                res = self.model(img)
+                txt = ""
+                score = 0.0
+                if hasattr(res, "txts") and res.txts:
+                    txt = res.txts[0]
+                if hasattr(res, "scores") and res.scores:
+                    score = res.scores[0]
+
+                results.append((txt, score))
+                self._save_debug_image(img, txt)
+            except Exception as e:
+                logger.error(f"AlOcr.ocr_for_single_lines_with_score exception on image {i}: {e}")
                 raise
         return results
 
