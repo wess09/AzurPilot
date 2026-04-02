@@ -381,12 +381,11 @@ class ItemGrid:
                 
                 if need_retry:
                     logger.warning(f'Item {item.name} amount {a} {retry_reason}, retrying OCR')
-                    retry_a, retry_score = self.amount_ocr.ocr_with_score(amount_list[idx:idx+1], direct_ocr=True)
-                    retry_a = retry_a[0] if isinstance(retry_a, tuple) else retry_a
-                    retry_score = retry_score[0] if isinstance(retry_score, tuple) else retry_score
-                    
-                    if isinstance(retry_a, tuple):
-                        retry_a, retry_score = retry_a
+                    retry_result = self.amount_ocr.ocr_with_score(amount_list[idx:idx+1], direct_ocr=True)
+                    if isinstance(retry_result, list):
+                        retry_a, retry_score = retry_result[0]
+                    else:
+                        retry_a, retry_score = retry_result
                     
                     if min_val <= retry_a <= max_val:
                         logger.info(f'Item {item.name} retry OCR succeeded: {a} -> {retry_a} (score: {retry_score:.2f})')
