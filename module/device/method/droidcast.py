@@ -161,7 +161,7 @@ class DroidCast(Uiautomator2):
         self.adb_push(self.config.DROIDCAST_FILEPATH_LOCAL, self.config.DROIDCAST_FILEPATH_REMOTE)
 
         logger.info('Starting DroidCast apk')
-        # DroidCast_raw-release-1.0.apk
+        # DroidCast_raw-release-1.1.apk
         # CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main > /dev/null
         # adb shell CLASSPATH=/data/local/tmp/DroidCast_raw.apk app_process / ink.mol.droidcast_raw.Main
         resp = self.u2_shell_background([
