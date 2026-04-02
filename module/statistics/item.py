@@ -7,8 +7,19 @@ from module.logger import logger
 from module.ocr.ocr import Digit, DigitYuv
 from module.statistics.utils import *
 
+ITEM_AMOUNT_MAX = {
+    'Chip': 50,
+    'Gem': 100,
+    'Cube': 20,
+    'Oil': 1000,
+    'Coin': 5000,
+}
+DEFAULT_AMOUNT_MAX = 9999
+
 
 class AmountOcr(Digit):
+    MAX_RETRY = 3
+
     def pre_process(self, image):
         """
         Args:
@@ -19,6 +30,70 @@ class AmountOcr(Digit):
         """
         image = extract_white_letters(image, threshold=self.threshold)
         return image.astype(np.uint8)
+
+    def ocr_with_validation(self, image, item_name=None, direct_ocr=False):
+        """
+        OCR with validation: retry up to 3 times if exceeds max, 
+        then truncate last digit if still invalid.
+
+        Args:
+            image: Image or list of images
+            item_name: Item name for max value lookup
+            direct_ocr: Skip crop if True
+
+        Returns:
+            int: Validated amount
+        """
+        max_val = ITEM_AMOUNT_MAX.get(item_name, DEFAULT_AMOUNT_MAX)
+
+        if direct_ocr:
+            images = [self.pre_process(image)]
+        else:
+            images = [self.pre_process(crop(image, area)) for area in self.buttons]
+        images = [crop_to_text(i) for i in images]
+
+        result_str = self.cnocr.atomic_ocr_for_single_lines(images, self.alphabet)[0]
+        amount = self.after_process(result_str)
+
+        if amount <= max_val:
+            return amount
+
+        for retry in range(self.MAX_RETRY):
+            logger.warning(f'{item_name} amount {amount} exceeds max {max_val}, retry {retry + 1}/{self.MAX_RETRY}')
+            result_str = self.cnocr.atomic_ocr_for_single_lines(images, self.alphabet)[0]
+            amount = self.after_process(result_str)
+            if amount <= max_val:
+                logger.info(f'{item_name} amount validated after {retry + 1} retries: {amount}')
+                return amount
+
+        if amount > max_val and amount >= 10:
+            truncated = int(str(amount)[:-1])
+            logger.warning(f'{item_name} amount {amount} still exceeds max after {self.MAX_RETRY} retries, '
+                          f'truncating to {truncated}')
+            return truncated
+
+        return amount
+
+    def ocr_batch_with_validation(self, image_list, item_names=None, direct_ocr=True):
+        """
+        Batch OCR with validation for each item.
+
+        Args:
+            image_list: List of images
+            item_names: List of item names (parallel to images)
+            direct_ocr: Skip crop if True
+
+        Returns:
+            list[int]: Validated amounts
+        """
+        if item_names is None:
+            item_names = [None] * len(image_list)
+
+        results = []
+        for image, item_name in zip(image_list, item_names):
+            amount = self.ocr_with_validation(image, item_name=item_name, direct_ocr=direct_ocr)
+            results.append(amount)
+        return results
 
 
 AMOUNT_OCR = AmountOcr([], threshold=96, name='Amount_ocr')
@@ -348,15 +423,18 @@ class ItemGrid:
             list[Item]:
         """
         self._load_image(image)
-        if amount:
-            amount_list = [item.crop(self.amount_area) for item in self.items]
-            amount_list = self.amount_ocr.ocr(amount_list, direct_ocr=True)
-            for item, a in zip(self.items, amount_list):
-                item.amount = a
         if name:
             name_list = [self.match_template(item.image) for item in self.items]
             for item, n in zip(self.items, name_list):
                 item.name = n
+        if amount:
+            amount_images = [item.crop(self.amount_area) for item in self.items]
+            item_names = [item.name for item in self.items]
+            amount_list = self.amount_ocr.ocr_batch_with_validation(
+                amount_images, item_names=item_names, direct_ocr=True
+            )
+            for item, a in zip(self.items, amount_list):
+                item.amount = a
         if cost:
             cost_list = [self.match_cost_template(item) for item in self.items]
             self.items = [item for item, c in zip(self.items, cost_list) if c is not None]
