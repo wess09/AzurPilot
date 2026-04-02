@@ -226,6 +226,11 @@ class AlasGUI(Frame):
     @use_scope("aside", clear=True)
     def set_aside(self) -> None:
         # TODO: update put_icon_buttons()
+
+        current_date = datetime.now().date()
+        if current_date.month == 4 and current_date.day == 1:
+            self.af_flag = True
+
         put_icon_buttons(
             Icon.DEVELOP,
             "false",
@@ -250,9 +255,6 @@ class AlasGUI(Frame):
             onclick=[lambda: go_app("manage", new_window=False)],
         )
 
-        current_date = datetime.now().date()
-        if current_date.month == 4 and current_date.day == 1:
-            self.af_flag = True
 
     @use_scope("aside_instance")
     def set_aside_status(self) -> None:
@@ -1152,6 +1154,13 @@ class AlasGUI(Frame):
                     'Oil': t("Gui.Stat.CommissionIncomeItemOil"),
                     'Coin': t("Gui.Stat.CommissionIncomeItemCoin"),
                 }
+                item_icon_map = {
+                    'Gem': 'static/assets/gui/icon/icon_1.png',
+                    'Cube': 'static/assets/gui/icon/icon_2.png',
+                    'Chip': 'static/assets/gui/icon/icon_3.png',
+                    'Oil': 'static/assets/gui/icon/icon_4.png',
+                    'Coin': 'static/assets/gui/icon/icon_5.png',
+                }
 
                 period = self._commission_income_period
                 summary = get_commission_income_summary(instance_name, period=period)
@@ -1165,6 +1174,13 @@ class AlasGUI(Frame):
                             width: 100% !important;
                             max-width: 100% !important;
                         }
+                        #commission_income_container img {
+                            background: transparent !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                        }
                     </style>
                     <div id="commission_income_container" style="padding: 0; width: 100%; box-sizing: border-box;">
                     '''
@@ -1177,10 +1193,18 @@ class AlasGUI(Frame):
                     html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 12px; margin-bottom: 20px; width: 100%;">'
                     for row in rows:
                         display_name = item_name_map.get(row['name'], row['name'])
+                        icon_path = item_icon_map.get(row['name'], '')
                         total_str = f'+{row["total"]:,}' if row['total'] > 0 else '0'
+                        
+                        icon_html = (
+                            f'<div style="width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: {row["color"]}1a; border-radius: 8px; flex-shrink: 0;">'
+                            f'<img src="{icon_path}" style="width: 24px; height: 24px; object-fit: contain; background: transparent;">'
+                            f'</div>'
+                        ) if icon_path else f'<div style="width: 12px; height: 12px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>'
+                        
                         html += f'''
                         <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fafafa; border-radius: 6px; border: 1px solid #eee;">
-                            <div style="width: 12px; height: 12px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>
+                            {icon_html}
                             <div style="display: flex; flex-direction: column; gap: 1px;">
                                 <span style="font-size: 0.78rem; color: #888;">{display_name}</span>
                                 <span style="font-size: 1.15rem; font-weight: 400; color: #333;">{total_str}</span>
@@ -1217,8 +1241,16 @@ class AlasGUI(Frame):
                             if row['total'] == 0:
                                 continue
                             display_name = item_name_map.get(row['name'], row['name'])
+                            icon_path = item_icon_map.get(row['name'], '')
+                            
+                            icon_html = (
+                                f'<div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: {row["color"]}1a; border-radius: 4px; flex-shrink: 0;">'
+                                f'<img src="{icon_path}" style="width: 18px; height: 18px; object-fit: contain; background: transparent;">'
+                                f'</div>'
+                            ) if icon_path else f'<div style="width: 8px; height: 8px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>'
+                            
                             html2 += '<tr style="border-bottom: 1px solid #f0f0f0;">'
-                            html2 += f'<td style="padding: 7px 10px;"><div style="display: flex; align-items: center; gap: 6px;"><div style="width: 8px; height: 8px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>{display_name}</div></td>'
+                            html2 += f'<td style="padding: 7px 10px;"><div style="display: flex; align-items: center; gap: 6px;">{icon_html}{display_name}</div></td>'
                             html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace;">{row["total"]:,}</td>'
                             html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #666;">{row["count"]}</td>'
                             html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #666;">{row["avg"]}</td>'
@@ -1251,10 +1283,18 @@ class AlasGUI(Frame):
                                 if mapped_name not in COMMISSION_TRACKED_ITEMS:
                                     continue
                                 meta = COMMISSION_ITEM_META.get(mapped_name, {'color': '#888'})
+                                icon_path = item_icon_map.get(mapped_name, '')
                                 display = item_name_map.get(mapped_name, mapped_name)
+                                
+                                icon_html = (
+                                    f'<div style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; background: {meta["color"]}1a; border-radius: 4px; margin-right: 6px; vertical-align: middle;">'
+                                    f'<img src="{icon_path}" style="width: 16px; height: 16px; object-fit: contain; background: transparent;">'
+                                    f'</div>'
+                                ) if icon_path else f'<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {meta["color"]}; margin-right: 4px;"></span>'
+                                
                                 item_parts.append(
-                                    f'<span style="display: inline-flex; align-items: center; margin-right: 12px;">'
-                                    f'<span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: {meta["color"]}; margin-right: 4px;"></span>'
+                                    f'<span style="display: inline-flex; align-items: center; margin-right: 12px; height: 24px;">'
+                                    f'{icon_html}'
                                     f'<span style="color: #444;">{display}</span>'
                                     f'<span style="color: #888; margin-left: 2px;">x{int(amount)}</span>'
                                     f'</span>'
