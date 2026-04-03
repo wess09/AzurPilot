@@ -150,6 +150,14 @@ class AScreenCap(Connection):
     def __uncompress(self, screenshot):
         raw_compressed_data = self._ascreencap_reposition_byte_pointer(screenshot)
 
+        # Guard: ensure header present
+        if raw_compressed_data is None or len(raw_compressed_data) < 20:
+            text = 'aScreenCap returned incomplete data or empty payload'
+            logger.warning(text)
+            if raw_compressed_data is not None and len(raw_compressed_data) < 500:
+                logger.warning(f'Unexpected screenshot: {raw_compressed_data}')
+            raise AscreencapError(text)
+
         # See headers in:
         # https://github.com/ClnViewer/Android-fast-screen-capture#streamimage-compressed---header-format-using
         compressed_data_header = np.frombuffer(raw_compressed_data[0:20], dtype=np.uint32)
@@ -166,8 +174,11 @@ class AScreenCap(Connection):
         from lz4.block import decompress
         data = decompress(raw_compressed_data[20:], uncompressed_size=uncompressed_size)
 
+        if data is None or len(data) == 0:
+            raise ImageTruncated('Empty uncompressed data from aScreenCap')
+
         image = np.frombuffer(data, dtype=np.uint8)
-        if image is None:
+        if image is None or image.size == 0:
             raise ImageTruncated('Empty image after reading from buffer')
 
         # Equivalent to cv2.imdecode()

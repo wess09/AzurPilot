@@ -241,8 +241,13 @@ class DroidCast(Uiautomator2):
 
         rotate = self.is_mumu_over_version_356 and self.orientation == 1
 
-        image = self.droidcast_session.get(self.droidcast_raw_url(), timeout=3).content
+        resp = self.droidcast_session.get(self.droidcast_raw_url(), timeout=3)
+        image = resp.content
         # DroidCast_raw returns a RGB565 bitmap
+
+        # Guard against empty/None content to avoid TypeError in np.frombuffer
+        if image is None or len(image) == 0:
+            raise ImageTruncated('Empty image content from DroidCast_raw')
 
         try:
             arr = np.frombuffer(image, dtype=np.uint16)
@@ -255,7 +260,7 @@ class DroidCast(Uiautomator2):
             else:
                 arr = arr.reshape(shape)
         except ValueError as e:
-            if len(image) < 500:
+            if image is not None and len(image) < 500:
                 logger.warning(f'Unexpected screenshot: {image}')
             # Try to load as `DroidCast`
             image = np.frombuffer(image, np.uint8)
@@ -299,31 +304,20 @@ class DroidCast(Uiautomator2):
     def droidcast_wait_startup(self):
         """
         Wait until DroidCast startup completed.
-        For DroidCast_raw v1.1, try /screenshot endpoint to verify service is running.
         """
-        timeout = Timer(15).start()
-        endpoint = '/screenshot' if self.config.DROIDCAST_VERSION == 'DroidCast_raw' else '/'
-        
+        timeout = Timer(10).start()
         while 1:
             self.sleep(0.25)
             if timeout.reached():
                 break
 
             try:
-                resp = self.droidcast_session.get(self.droidcast_raw_url(endpoint) if self.config.DROIDCAST_VERSION == 'DroidCast_raw' else self.droidcast_url(endpoint), timeout=3)
-                
-                if self.config.DROIDCAST_VERSION == 'DroidCast':
-                    # Route `/` is unavailable, but 404 means startup completed (DroidCast v1.0)
-                    if resp.status_code == 404:
-                        logger.attr('DroidCast', 'online')
-                        return True
-                else:
-                    # For DroidCast_raw, any successful response (including partial data) indicates startup
-                    # v1.0 may give 404, v1.1 may give 200 with data
-                    if resp.status_code in (200, 404):
-                        logger.attr('DroidCast', 'online')
-                        return True
-            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+                resp = self.droidcast_session.get(self.droidcast_url('/'), timeout=3)
+                # Route `/` is unavailable, but 404 means startup completed
+                if resp.status_code == 404:
+                    logger.attr('DroidCast', 'online')
+                    return True
+            except requests.exceptions.ConnectionError:
                 logger.attr('DroidCast', 'offline')
 
         logger.warning('Wait DroidCast startup timeout, assume started')

@@ -133,8 +133,12 @@ class Uiautomator2(Connection):
     @retry
     def screenshot_uiautomator2(self):
         image = self.u2.screenshot(format='raw')
+        # Guard against None/empty response
+        if image is None or len(image) == 0:
+            raise ImageTruncated('Empty image content from uiautomator2')
+
         image = np.frombuffer(image, np.uint8)
-        if image is None:
+        if image is None or image.size == 0:
             raise ImageTruncated('Empty image after reading from buffer')
 
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
