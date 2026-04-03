@@ -52,6 +52,57 @@ from module.logger import logger
 
 RETRY_TRIES = 5
 RETRY_DELAY = 3
+IMAGE_TRUNCATED_THRESHOLD = 3
+
+# Track consecutive ImageTruncated counts per device serial
+_image_truncated_counts: dict = {}
+
+def report_image_truncated(serial: str) -> int:
+    if serial is None:
+        return 0
+    cnt = _image_truncated_counts.get(serial, 0) + 1
+    _image_truncated_counts[serial] = cnt
+    return cnt
+
+def reset_image_truncated(serial: str) -> None:
+    if serial in _image_truncated_counts:
+        del _image_truncated_counts[serial]
+
+def handle_image_truncated(obj, exc: Exception) -> None:
+    """
+    Central handler for ImageTruncated: increment counter and try recovery when
+    threshold reached. `obj` is expected to be a device/connection instance
+    that may implement `droidcast_init`, `adb_reconnect`, `ascreencap_init`, etc.
+    This function performs immediate recovery actions and resets the counter.
+    """
+    serial = getattr(obj, 'serial', None)
+    cnt = report_image_truncated(serial)
+    logger.error(f'ImageTruncated occurred ({cnt}) for device {serial}: {exc}')
+
+    if cnt >= IMAGE_TRUNCATED_THRESHOLD:
+        logger.warning(f'ImageTruncated reached threshold ({IMAGE_TRUNCATED_THRESHOLD}) for {serial}, attempting recovery')
+        # Try specific recoveries in order of likelihood
+        try:
+            if hasattr(obj, 'droidcast_init'):
+                logger.info('Attempting to restart DroidCast service')
+                try:
+                    obj.droidcast_init()
+                except Exception:
+                    logger.exception('Failed to restart DroidCast')
+            # Try ascreencap init if available
+            if hasattr(obj, 'ascreencap_init'):
+                try:
+                    obj.ascreencap_init()
+                except Exception:
+                    logger.exception('Failed to init ascreencap')
+            # Reconnect adb as a final attempt
+            if hasattr(obj, 'adb_reconnect'):
+                try:
+                    obj.adb_reconnect()
+                except Exception:
+                    logger.exception('Failed to adb_reconnect')
+        finally:
+            reset_image_truncated(serial)
 
 # Patch uiautomator2 appdir
 u2.init.appdir = os.path.dirname(uiautomator2cache.__file__)

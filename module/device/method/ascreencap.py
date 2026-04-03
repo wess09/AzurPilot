@@ -58,7 +58,8 @@ def retry(func):
                     break
             # ImageTruncated
             except ImageTruncated as e:
-                logger.error(e)
+                from module.device.method.utils import handle_image_truncated
+                handle_image_truncated(self, e)
 
                 def init():
                     pass

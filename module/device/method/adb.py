@@ -61,7 +61,8 @@ def retry(func):
                     self.detect_package()
             # ImageTruncated
             except ImageTruncated as e:
-                logger.error(e)
+                from module.device.method.utils import handle_image_truncated
+                handle_image_truncated(self, e)
 
                 def init():
                     pass
@@ -140,8 +141,11 @@ class Adb(Connection):
         # which would cause image decode problem. So i check and remove the header there.
         screenshot = remove_prefix(screenshot, b'long long=8 fun*=10\n')
 
+        if screenshot is None or len(screenshot) == 0:
+            raise ImageTruncated('Empty screenshot payload in __load_screenshot')
+
         image = np.frombuffer(screenshot, np.uint8)
-        if image is None:
+        if image is None or image.size == 0:
             raise ImageTruncated('Empty image after reading from buffer')
 
         image = cv2.imdecode(image, cv2.IMREAD_COLOR)
