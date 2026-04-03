@@ -93,12 +93,18 @@ def load_screencap(data):
         np.ndarray:
     """
     # Load data
+    if data is None or len(data) < 12:
+        raise ImageTruncated('Empty or incomplete screencap data')
+
     header = np.frombuffer(data[0:12], dtype=np.uint32)
     channel = 4  # screencap sends an RGBA image
     width, height, _ = header  # Usually to be 1280, 720, 1
 
+    if data is None or len(data) == 0:
+        raise ImageTruncated('Empty image data from screencap')
+
     image = np.frombuffer(data, dtype=np.uint8)
-    if image is None:
+    if image is None or image.size == 0:
         raise ImageTruncated('Empty image after reading from buffer')
 
     try:
