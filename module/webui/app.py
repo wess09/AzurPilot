@@ -1185,7 +1185,7 @@ class AlasGUI(Frame):
                     <div id="commission_income_container" style="padding: 0; width: 100%; box-sizing: border-box;">
                     '''
 
-                    html += f'<div style="font-size: 1rem; font-weight: 500; color: #333; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #eee;">{t("Gui.Stat.CommissionIncomeTitle")}</div>'
+                    html += f'<div style="font-size: 1rem; font-weight: 500; color: inherit; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.2);">{t("Gui.Stat.CommissionIncomeTitle")}</div>'
 
                     rows = summary.get('detail_rows', [])
                     has_data = rows and not all(r['total'] == 0 for r in rows)
@@ -1203,11 +1203,11 @@ class AlasGUI(Frame):
                         ) if icon_path else f'<div style="width: 12px; height: 12px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>'
                         
                         html += f'''
-                        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: #fafafa; border-radius: 6px; border: 1px solid #eee;">
+                        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: rgba(128, 128, 128, 0.05); border-radius: 6px; border: 1px solid rgba(128, 128, 128, 0.15);">
                             {icon_html}
                             <div style="display: flex; flex-direction: column; gap: 1px;">
-                                <span style="font-size: 0.78rem; color: #888;">{display_name}</span>
-                                <span style="font-size: 1.15rem; font-weight: 400; color: #333;">{total_str}</span>
+                                <span style="font-size: 0.78rem; opacity: 0.65;">{display_name}</span>
+                                <span style="font-size: 1.15rem; font-weight: 400; color: inherit;">{total_str}</span>
                             </div>
                         </div>'''
                     html += '</div>'
@@ -1226,15 +1226,15 @@ class AlasGUI(Frame):
 
                     html2 = '<div style="width: 100% !important; max-width: none !important; display: block !important; box-sizing: border-box;">'
                     if not has_data:
-                        html2 += f'<p style="margin: 12px 0; color: #999; font-size: 13px;">{t("Gui.Stat.CommissionIncomeNoData")}</p>'
+                        html2 += f'<p style="margin: 12px 0; opacity: 0.6; font-size: 13px;">{t("Gui.Stat.CommissionIncomeNoData")}</p>'
                     else:
                         html2 += '<table style="width: 100% !important; max-width: none !important; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; display: table;">'
                         html2 += '<colgroup><col style="width: 40%;"><col style="width: 20%;"><col style="width: 20%;"><col style="width: 20%;"></colgroup>'
                         html2 += '<thead><tr>'
-                        html2 += f'<th style="text-align: left; padding: 8px 10px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0; font-weight: 500; color: #555; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderItem")}</th>'
-                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0; font-weight: 500; color: #555; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderTotal")}</th>'
-                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0; font-weight: 500; color: #555; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderCount")}</th>'
-                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: #f7f7f7; border-bottom: 1px solid #e0e0e0; font-weight: 500; color: #555; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderAvg")}</th>'
+                        html2 += f'<th style="text-align: left; padding: 8px 10px; background: rgba(128, 128, 128, 0.1); border-bottom: 1px solid rgba(128, 128, 128, 0.2); font-weight: 500; opacity: 0.8; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderItem")}</th>'
+                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: rgba(128, 128, 128, 0.1); border-bottom: 1px solid rgba(128, 128, 128, 0.2); font-weight: 500; opacity: 0.8; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderTotal")}</th>'
+                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: rgba(128, 128, 128, 0.1); border-bottom: 1px solid rgba(128, 128, 128, 0.2); font-weight: 500; opacity: 0.8; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderCount")}</th>'
+                        html2 += f'<th style="text-align: right; padding: 8px 10px; background: rgba(128, 128, 128, 0.1); border-bottom: 1px solid rgba(128, 128, 128, 0.2); font-weight: 500; opacity: 0.8; font-size: 0.8rem;">{t("Gui.Stat.CommissionIncomeHeaderAvg")}</th>'
                         html2 += '</tr></thead><tbody>'
 
                         for row in rows:
@@ -1249,11 +1249,11 @@ class AlasGUI(Frame):
                                 f'</div>'
                             ) if icon_path else f'<div style="width: 8px; height: 8px; border-radius: 50%; background: {row["color"]}; flex-shrink: 0;"></div>'
                             
-                            html2 += '<tr style="border-bottom: 1px solid #f0f0f0;">'
+                            html2 += '<tr style="border-bottom: 1px solid rgba(128, 128, 128, 0.1);">'
                             html2 += f'<td style="padding: 7px 10px;"><div style="display: flex; align-items: center; gap: 6px;">{icon_html}{display_name}</div></td>'
                             html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace;">{row["total"]:,}</td>'
-                            html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #666;">{row["count"]}</td>'
-                            html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; color: #666;">{row["avg"]}</td>'
+                            html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; opacity: 0.7;">{row["count"]}</td>'
+                            html2 += f'<td style="padding: 7px 10px; text-align: right; font-family: monospace; opacity: 0.7;">{row["avg"]}</td>'
                             html2 += '</tr>'
 
                         html2 += '</tbody></table>'
@@ -1264,8 +1264,8 @@ class AlasGUI(Frame):
 
                     html3 = '<div style="width: 100% !important; max-width: none !important; display: block !important; box-sizing: border-box;">'
                     if recent:
-                        html3 += f'<div style="height: 1px; background: #eee; margin: 24px 0;"></div>'
-                        html3 += f'<div style="font-size: 0.9rem; font-weight: 500; color: #333; margin-bottom: 10px;">{t("Gui.Stat.CommissionIncomeRecentTitle")}</div>'
+                        html3 += f'<div style="height: 1px; background: rgba(128, 128, 128, 0.2); margin: 24px 0;"></div>'
+                        html3 += f'<div style="font-size: 0.9rem; font-weight: 500; color: inherit; margin-bottom: 10px;">{t("Gui.Stat.CommissionIncomeRecentTitle")}</div>'
                         html3 += '<div style="font-size: 13px; width: 100%;">'
                         for entry in recent:
                             ts = entry.get('ts', '')
@@ -1295,20 +1295,20 @@ class AlasGUI(Frame):
                                 item_parts.append(
                                     f'<span style="display: inline-flex; align-items: center; margin-right: 12px; height: 24px;">'
                                     f'{icon_html}'
-                                    f'<span style="color: #444;">{display}</span>'
-                                    f'<span style="color: #888; margin-left: 2px;">x{int(amount)}</span>'
+                                    f'<span style="color: inherit;">{display}</span>'
+                                    f'<span style="opacity: 0.65; margin-left: 2px;">x{int(amount)}</span>'
                                     f'</span>'
                                 )
-                            items_str = ''.join(item_parts) if item_parts else '<span style="color: #999;">--</span>'
+                            items_str = ''.join(item_parts) if item_parts else '<span style="opacity: 0.6;">--</span>'
                             html3 += (
-                                f'<div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">'
-                                f'<span style="color: #888; min-width: 80px; font-size: 12px;">{time_str}</span>'
+                                f'<div style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(128, 128, 128, 0.1);">'
+                                f'<span style="opacity: 0.65; min-width: 80px; font-size: 12px;">{time_str}</span>'
                                 f'<span style="flex: 1;">{items_str}</span>'
                                 f'</div>'
                             )
                         html3 += '</div>'
 
-                    html3 += f'<p style="font-size: 0.75rem; color: #aaa; margin-top: 10px;">{t("Gui.Stat.CommissionIncomeTotalCommissions", value=summary["total_commissions"])}</p>'
+                    html3 += f'<p style="font-size: 0.75rem; opacity: 0.5; margin-top: 10px;">{t("Gui.Stat.CommissionIncomeTotalCommissions", value=summary["total_commissions"])}</p>'
                     html3 += '</div>'
                     put_html(html3, scope="commission_income")
 
@@ -2466,18 +2466,18 @@ class AlasGUI(Frame):
         with use_scope("ROOT"):
             popup("更新提醒", [
                 put_html(f'''
-                    <div style="text-align: center; padding: 15px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                    <div style="text-align: center; padding: 15px 0; font-family: \'Segoe UI\', Tahoma, Geneva, Verdana, sans-serif;">
                         <div style="margin-bottom: 20px;">
-                            <div style="width: 50px; height: 50px; background: #fff0f0; border-radius: 25px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 50px; height: 50px; background: rgba(240, 62, 62, 0.1); border-radius: 25px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e03131" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                             </div>
                         </div>
-                        <div style="font-size: 1.8rem; font-weight: 800; color: #343a40; margin-bottom: 10px;">有可用更新！</div>
-                        <div style="font-size: 0.95rem; color: #868e96; margin-bottom: 25px; line-height: 1.5;">发现新版本，建议立即更新以<br>获得最佳的脚本运行体验。</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: inherit; margin-bottom: 10px;">有可用更新！</div>
+                        <div style="font-size: 0.95rem; opacity: 0.8; margin-bottom: 25px; line-height: 1.5;">发现新版本，建议立即更新以<br>获得最佳的脚本运行体验。</div>
                         
-                        <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 0 15px 25px; text-align: left; border: 1px solid #dee2e6;">
-                            <div style="font-weight: 700; color: #495057; margin-bottom: 5px;">✨ 温馨提示:</div>
-                            <div style="font-size: 0.85rem; color: #495057;">
+                        <div style="background: rgba(128, 128, 128, 0.05); border-radius: 10px; padding: 15px; margin: 0 15px 25px; text-align: left; border: 1px solid rgba(128, 128, 128, 0.15);">
+                            <div style="font-weight: 700; color: inherit; margin-bottom: 5px;">✨ 温馨提示:</div>
+                            <div style="font-size: 0.85rem; color: inherit;">
                                 • 为确保脚本稳定性和安全性，请及时进行更新。<br>
                             </div>
                         </div>
@@ -2893,16 +2893,16 @@ class AlasGUI(Frame):
                             put_html('''
                                 <div style="text-align: center; padding: 15px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
                                     <div style="margin-bottom: 20px;">
-                                        <div style="width: 50px; height: 50px; background: #fff0f0; border-radius: 25px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
+                                        <div style="width: 50px; height: 50px; background: rgba(240, 62, 62, 0.1); border-radius: 25px; margin: 0 auto; display: flex; align-items: center; justify-content: center;">
                                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e03131" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                                         </div>
                                     </div>
-                                    <div style="font-size: 1.8rem; font-weight: 800; color: #343a40; margin-bottom: 10px;">有可用更新！</div>
-                                    <div style="font-size: 0.95rem; color: #868e96; margin-bottom: 25px; line-height: 1.5;">发现新版本，建议立即更新以获得最佳的脚本运行体验。</div>
+                                    <div style="font-size: 1.8rem; font-weight: 800; color: inherit; margin-bottom: 10px;">有可用更新！</div>
+                                    <div style="font-size: 0.95rem; opacity: 0.8; margin-bottom: 25px; line-height: 1.5;">发现新版本，建议立即更新以获得最佳的脚本运行体验。</div>
                                     
-                                    <div style="background: #f8f9fa; border-radius: 10px; padding: 15px; margin: 0 15px 25px; text-align: left; border: 1px solid #dee2e6;">
-                                        <div style="font-weight: 700; color: #495057; margin-bottom: 5px;">✨ 温馨提示:</div>
-                                        <div style="font-size: 0.85rem; color: #495057;">
+                                    <div style="background: rgba(128, 128, 128, 0.05); border-radius: 10px; padding: 15px; margin: 0 15px 25px; text-align: left; border: 1px solid rgba(128, 128, 128, 0.15);">
+                                        <div style="font-weight: 700; color: inherit; margin-bottom: 5px;">✨ 温馨提示:</div>
+                                        <div style="font-size: 0.85rem; color: inherit;">
                                             • 为确保脚本稳定性和安全性，请及时进行更新。<br>
                                         </div>
                                     </div>

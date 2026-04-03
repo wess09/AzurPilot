@@ -14,7 +14,7 @@ ITEM_AMOUNT_MAX = {
     'Oil': 1000,
     'Coin': 5000,
 }
-DEFAULT_AMOUNT_MAX = 9999
+DEFAULT_AMOUNT_MAX = 2147483645
 
 
 class AmountOcr(Digit):
