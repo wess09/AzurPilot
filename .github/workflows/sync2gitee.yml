@@ -13,6 +13,12 @@ jobs:
       gitcode_key: ${{ secrets.GITCODE_PRIVATE_KEY }}
       gitcode_token: ${{ secrets.GITCODE_TOKEN }}
       gitcode_user: ${{ secrets.GITCODE_USER }}
+      gitcode_key_2: ${{ secrets.GITCODE_PRIVATE_KEY_1 }}
+      gitcode_token_2: ${{ secrets.GITCODE_TOKEN_2 }}
+      gitcode_user_2: ${{ secrets.GITCODE_USER_2 }}
+      gitcode_key_3: ${{ secrets.GITCODE_PRIVATE_KEY_2 }}
+      gitcode_token_3: ${{ secrets.GITCODE_TOKEN_1 }}
+      gitcode_user_3: ${{ secrets.GITCODE_USER_1 }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -40,6 +46,32 @@ jobs:
           dst: 'gitcode/${{ secrets.GITCODE_USER }}'
           dst_key: ${{ secrets.GITCODE_PRIVATE_KEY }}
           dst_token: ${{ secrets.GITCODE_TOKEN }}
+          account_type: user
+          static_list: ${{ github.event.repository.name }}
+          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
+          force_update: true
+
+      - name: sync github -> gitcode2
+        uses: Yikun/hub-mirror-action@master
+        if: env.gitcode_key_2 && env.gitcode_token_2 && env.gitcode_user_2
+        with:
+          src: 'github/${{ github.repository_owner }}'
+          dst: 'gitcode/${{ secrets.GITCODE_USER_2 }}'
+          dst_key: ${{ secrets.GITCODE_PRIVATE_KEY_1 }}
+          dst_token: ${{ secrets.GITCODE_TOKEN_2 }}
+          account_type: user
+          static_list: ${{ github.event.repository.name }}
+          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
+          force_update: true
+      
+      - name: sync github -> gitcode3
+        uses: Yikun/hub-mirror-action@master
+        if: env.gitcode_key_3 && env.gitcode_token_3 && env.gitcode_user_3
+        with:
+          src: 'github/${{ github.repository_owner }}'
+          dst: 'gitcode/${{ secrets.GITCODE_USER_1 }}'
+          dst_key: ${{ secrets.GITCODE_PRIVATE_KEY_2 }}
+          dst_token: ${{ secrets.GITCODE_TOKEN_1 }}
           account_type: user
           static_list: ${{ github.event.repository.name }}
           mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"

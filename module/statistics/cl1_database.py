@@ -9,7 +9,7 @@ from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Hash import SHA256
 
-from module.base.device_id import get_device_id
+from module.base.device_id import get_device_id, get_old_device_id
 from module.logger import logger
 
 class Cl1Database:
@@ -28,7 +28,8 @@ class Cl1Database:
 
         self._ensure_dir()
         self._init_db()
-        self._encryption_key = self._derive_key()
+        self._encryption_key = self._derive_key(get_device_id())
+        self._check_key_migration()
         self._auto_migrate()
 
     def _ensure_dir(self):
@@ -56,11 +57,65 @@ class Cl1Database:
         except Exception as e:
             logger.exception(f"Failed to initialize CL1 database: {e}")
 
-    def _derive_key(self) -> bytes:
+    def _derive_key(self, device_id: str) -> bytes:
         """基于 device_id 派生 256 位 AES 密钥"""
-        device_id = get_device_id()
         salt = b'AlasCl1SecureStorage' # 固定盐
         return PBKDF2(device_id.encode(), salt, dkLen=32, count=1000, hmac_hash_module=SHA256)
+
+    def _check_key_migration(self):
+        """
+        探测 device_id 变更并进行全库重加密迁移
+        """
+        old_id = get_old_device_id()
+        if not old_id:
+            return
+
+        logger.info("Starting local database migration (Device ID changed)...")
+        old_key = self._derive_key(old_id)
+        
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT instance, month, encrypted_blob FROM cl1_data")
+                rows = cursor.fetchall()
+
+                if not rows:
+                    return
+
+                logger.info(f"Re-encrypting {len(rows)} entries with new key...")
+                updated_rows = []
+                for instance, month, blob in rows:
+                    # 1. 用旧密钥解密
+                    data = self._decrypt_with_key(blob, old_key)
+                    if data:
+                        # 2. 用新密钥重加密 (self._encrypt 使用的是当前 self._encryption_key)
+                        new_blob = self._encrypt(data)
+                        updated_rows.append((new_blob, instance, month))
+                
+                # 批量写回
+                if updated_rows:
+                    cursor.executemany(
+                        "UPDATE cl1_data SET encrypted_blob = ? WHERE instance = ? AND month = ?",
+                        updated_rows
+                    )
+                    conn.commit()
+                    logger.info("Local database migration completed successfully.")
+        except Exception as e:
+            logger.error(f"Failed to migrate database to new device_id: {e}")
+
+    def _decrypt_with_key(self, blob: bytes, key: bytes) -> Optional[Dict[str, Any]]:
+        """辅助方法：使用指定密钥进行解密"""
+        if not blob or len(blob) < 32:
+            return None
+        try:
+            nonce = blob[:16]
+            tag = blob[16:32]
+            ciphertext = blob[32:]
+            cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+            plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+            return json.loads(plaintext.decode('utf-8'))
+        except Exception:
+            return None
 
     def _encrypt(self, data: Dict[str, Any]) -> bytes:
         """使用 AES-GCM 加密数据"""
