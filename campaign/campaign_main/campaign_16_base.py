@@ -80,7 +80,7 @@ class CampaignBase(CampaignBase_):
             sub_view=sub_view,
             sub_hunt=sub_hunt,
         )
-        logger.attr("Map has air attack", self.strategy_has_air_attack())
+        logger.attr("Map has air strike", self.strategy_has_air_strike())
 
     def _map_swipe(self, vector, box=(239, 159, 1175, 628)):
         # Left border to 239, avoid swiping on support fleet
@@ -128,8 +128,8 @@ class CampaignBase(CampaignBase_):
             bool: If selected.
         
         Pages:
-            in: AIR_ATTACK_CONFIRM
-            out: AIR_ATTACK_CONFIRM
+            in: AIR_STRIKE_CONFIRM
+            out: AIR_STRIKE_CONFIRM
         """
         location = location_ensure(location)
 
@@ -154,7 +154,7 @@ class CampaignBase(CampaignBase_):
             if clicked_count >= 1:
                 break
             # Click
-            if interval.reached() and self.is_in_strategy_air_attack():
+            if interval.reached() and self.is_in_strategy_air_strike():
                 self.device.click(grid)
                 clicked_count += 1
                 interval.reset()
@@ -178,13 +178,13 @@ class CampaignBase(CampaignBase_):
             return False
 
         self.strategy_open()
-        if not self.strategy_has_air_attack():
+        if not self.strategy_has_air_strike():
             logger.warning(f'No remain air attack trials, will abandon attacking')
             self.strategy_close()
             return False
-        self.strategy_air_attack_enter()
+        self.strategy_air_strike_enter()
         self._air_attack(location)
-        self.strategy_air_attack_confirm()
+        self.strategy_air_strike_confirm()
         self.strategy_close(skip_first_screenshot=False)
         return True
 

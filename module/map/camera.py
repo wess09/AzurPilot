@@ -115,9 +115,9 @@ class Camera(MapOperation):
             if not self.is_in_map() \
                     and not self.is_in_strategy_submarine_move() \
                     and not self.is_in_strategy_mob_move() \
-                    and not self.is_in_strategy_air_attack():
+                    and not self.is_in_strategy_air_strike():
                 logger.warning('Image to detect is not in_map')
-                raise MapDetectionError('Image to detect is not in_map')
+                raise MapDetectionError('Image to detect is not_in_map')
             self.view.load(self.device.image)
         except MapDetectionError as e:
             if self.info_bar_count():

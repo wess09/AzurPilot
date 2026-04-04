@@ -260,58 +260,58 @@ class StrategyHandler(InfoHandler):
             if self.appear_then_click(MOB_MOVE_CANCEL, offset=(20, 20), interval=5):
                 continue
 
-    def is_in_strategy_air_attack(self):
+    def is_in_strategy_air_strike(self):
         """
         Returns:
             bool:
         """
-        return self.appear(AIR_ATTACK_CONFIRM, offset=(20, 20))
+        return self.appear(AIR_STRIKE_CONFIRM, offset=(20, 20))
 
-    def strategy_has_air_attack(self):
+    def strategy_has_air_strike(self):
         """
         Pages:
             in: STRATEGY_OPENED
             out: STRATEGY_OPENED
         """
-        if self.match_template_color(AIR_ATTACK_ENTER, offset=MOB_MOVE_OFFSET):
+        if self.match_template_color(AIR_STRIKE_ENTER, offset=(150, 200)):
             return True
         else:
             return False
 
-    def strategy_air_attack_enter(self, skip_first_screenshot=True):
+    def strategy_air_strike_enter(self, skip_first_screenshot=True):
         """
         Pages:
-            in: STRATEGY_OPENED, AIR_ATTACK_ENTER
-            out: AIR_ATTACK_CONFIRM
+            in: STRATEGY_OPENED, AIR_STRIKE_ENTER
+            out: AIR_STRIKE_CONFIRM
         """
-        logger.info('Air attack enter')
+        logger.info('Air strike enter')
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
 
-            if self.appear(AIR_ATTACK_CONFIRM, offset=(20, 20)):
+            if self.appear(AIR_STRIKE_CONFIRM, offset=(20, 20)):
                 break
 
-            if self.appear_then_click(AIR_ATTACK_ENTER, offset=MOB_MOVE_OFFSET, interval=5):
+            if self.appear_then_click(AIR_STRIKE_ENTER, offset=(150, 200), interval=5):
                 continue
 
-    def strategy_air_attack_confirm(self, skip_first_screenshot=True):
+    def strategy_air_strike_confirm(self, skip_first_screenshot=True):
         """
         Pages:
-            in: AIR_ATTACK_CONFIRM
-            out: STRATEGY_OPENED, AIR_ATTACK_ENTER
+            in: AIR_STRIKE_CONFIRM
+            out: STRATEGY_OPENED, AIR_STRIKE_ENTER
         """
-        logger.info('Air attack confirm')
+        logger.info('Air strike confirm')
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
 
-            if self.appear(AIR_ATTACK_ENTER, offset=MOB_MOVE_OFFSET):
+            if self.appear(AIR_STRIKE_ENTER, offset=(150, 200)):
                 break
 
-            if self.appear_then_click(AIR_ATTACK_CONFIRM, offset=(20, 20), interval=5):
+            if self.appear_then_click(AIR_STRIKE_CONFIRM, offset=(20, 20), interval=5):
                 continue
