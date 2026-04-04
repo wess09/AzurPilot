@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+﻿from datetime import datetime, timedelta
 
 from module.exception import RequestHumanTakeover
 from module.logger import logger
@@ -115,13 +115,18 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         """
         logger.hr('OS clear abyssal', level=1)
         self.cl1_ap_preserve()
+        if self.config.OpsiAbyssal_ForceRun:
+            logger.info('OS abyssal finish is under force run')
         
         # ===== 检查潜艇冷却 =====
         # 在使用深渊记录器前检查潜艇冷却，如果潜艇在冷却中，延时到冷却结束
-        is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
-        if is_cooldown:
-            self._delay_until_submarine_cooldown_end(cooldown_end_time)
-            return
+        if not self.config.OpsiAbyssal_ForceRun:
+            is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
+            if is_cooldown:
+                self._delay_until_submarine_cooldown_end(cooldown_end_time)
+                return
+        else:
+            logger.info('Skip submarine cooldown check due to OpsiAbyssal.ForceRun=True')
 
         with self.config.temporary(STORY_ALLOW_SKIP=False):
             result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)

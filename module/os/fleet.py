@@ -788,13 +788,14 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     logger.info('Fleet left boss, current fleet found')
                     break
 
-    def boss_clear(self, has_fleet_step=True, is_month=False):
+    def boss_clear(self, has_fleet_step=True, is_month=False, allow_submarine_call=True):
         """
         All fleets take turns in attacking the boss.
 
         Args:
             has_fleet_step (bool):
             is_month (bool)
+            allow_submarine_call (bool):
 
         Returns:
             bool: If success to clear.
@@ -814,7 +815,10 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             for fleet in fleets:
                 logger.hr(f'Turn: {fleet}', level=2)
                 if not isinstance(fleet, BossFleet):
-                    self.os_order_execute(recon_scan=False, submarine_call=True)
+                    if allow_submarine_call:
+                        self.os_order_execute(recon_scan=False, submarine_call=True)
+                    else:
+                        logger.info(f'Skip fleet-filter order `{fleet}` in abyssal')
                     continue
 
                 # Switch fleet
@@ -876,6 +880,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
     def run_abyssal(self):
         """
         Handle double confirms and attack abyssal (siren logger) boss.
+        Abyssal does not use submarine orders even if the fleet filter contains
+        a `CallSubmarine` entry.
 
         Returns:
             bool: If success to clear.
@@ -903,7 +909,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 logger.info('No boss at front, retry question_goto')
                 continue
 
-        result = self.boss_clear(has_fleet_step=True)
+        result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False)
         return result
 
     def get_stronghold_percentage(self):
