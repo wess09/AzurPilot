@@ -7,9 +7,7 @@ from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.config.config import AzurLaneConfig
 
-try:
-    from rapidocr import RapidOCR, OCRVersion
-except Exception as e:
+def handle_ocr_error(e):
     logger.critical(f"Failed to load OCR dependencies: {e}")
     logger.critical(
         "无法加载 OCR 依赖，请安装微软 C++ 运行库 https://aka.ms/vs/17/release/vc_redist.x64.exe"
@@ -17,6 +15,12 @@ except Exception as e:
     logger.critical("也有可能是 GPU 不支持加速引起，请尝试关闭 GPU 加速")
     logger.critical("如果上述方法都无法解决，请加群获取支持")
     raise RequestHumanTakeover
+
+
+try:
+    from rapidocr import RapidOCR, OCRVersion
+except Exception as e:
+    handle_ocr_error(e)
 
 
 config_name = os.environ.get("ALAS_CONFIG_NAME")
@@ -83,19 +87,25 @@ class TwModel:
         self.model = RapidOCR(params=self.params)
 
 
-cn_model = CnModel()
-en_model = EnModel()
-jp_model = JpModel()
-tw_model = TwModel()
+try:
+    cn_model = CnModel()
+    en_model = EnModel()
+    jp_model = JpModel()
+    tw_model = TwModel()
+except Exception as e:
+    handle_ocr_error(e)
 
 def reset_ocr_model():
     global cn_model, en_model, jp_model, tw_model, USE_GPU
     USE_GPU = config.ocr_device == 'gpu'
     logger.info(f"Resetting OCR models, USE_GPU={USE_GPU}")
-    cn_model = CnModel()
-    en_model = EnModel()
-    jp_model = JpModel()
-    tw_model = TwModel()
+    try:
+        cn_model = CnModel()
+        en_model = EnModel()
+        jp_model = JpModel()
+        tw_model = TwModel()
+    except Exception as e:
+        handle_ocr_error(e)
 
 
 class AlOcr:
