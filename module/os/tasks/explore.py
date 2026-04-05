@@ -40,6 +40,7 @@ class OpsiExplore(OSMap):
             logger.info('To run again, clear OpsiExplore.Scheduler.NextRun and set OpsiExplore.OpsiExplore.LastZone=0')
             with self.config.multi_set():
                 self.config.OpsiExplore_LastZone = 0
+                self.config.OpsiExplore_ExploreProgress = '已完成百分之100.00'
                 self.config.OpsiExplore_SpecialRadar = False
                 self.config.task_delay(target=next_reset)
                 self.config.task_call('OpsiDaily', force_call=False)
@@ -48,22 +49,33 @@ class OpsiExplore(OSMap):
             self.config.task_stop()
 
         logger.hr('OS explore', level=1)
-        order = [int(f.strip(' \t\r\n')) for f in self.config.OS_EXPLORE_FILTER.split('>')]
+        full_order = [int(f.strip(' \t\r\n')) for f in self.config.OS_EXPLORE_FILTER.split('>')]
+        total_zones = len(full_order)
         # Convert user input
         try:
             last_zone = self.name_to_zone(self.config.OpsiExplore_LastZone).zone_id
         except ScriptError:
             logger.warning(f'Invalid OpsiExplore_LastZone={self.config.OpsiExplore_LastZone}, re-explore')
             last_zone = 0
+
         # Start from last zone
-        if last_zone in order:
-            order = order[order.index(last_zone) + 1:]
+        if last_zone in full_order:
+            index = full_order.index(last_zone)
+            completed_count = index + 1
+            order = full_order[index + 1:]
+            if total_zones > 0:
+                percentage = completed_count / total_zones * 100
+                self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
             logger.info(f'Last zone: {self.name_to_zone(last_zone)}, next zone: {order[:1]}')
         elif last_zone == 0:
+            completed_count = 0
+            order = full_order
+            self.config.OpsiExplore_ExploreProgress = '已完成百分之0.00'
             logger.info(f'First run, next zone: {order[:1]}')
             self.config.OpsiExplore_SkipedSirenResearch = ''
         else:
             raise ScriptError(f'Invalid last_zone: {last_zone}')
+
         if not len(order):
             end()
 
@@ -72,7 +84,10 @@ class OpsiExplore(OSMap):
         for zone in order:
             # Check if zone already unlock safe zone
             if not self.globe_goto(zone, stop_if_safe=True):
-                logger.info(f'Zone cleared: {self.name_to_zone(zone)}')
+                completed_count += 1
+                if total_zones > 0:
+                    percentage = completed_count / total_zones * 100
+                    self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
                 self.config.OpsiExplore_LastZone = zone
                 continue
 
@@ -90,7 +105,10 @@ class OpsiExplore(OSMap):
 
             finished_combat = self.run_auto_search(question = False, rescan = 'full')
             self.config.OpsiExplore_LastZone = zone
-            logger.info(f'Zone cleared: {self.name_to_zone(zone)}')
+            completed_count += 1
+            if total_zones > 0:
+                percentage = completed_count / total_zones * 100
+                self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
             if finished_combat == 0:
                 logger.warning('Zone cleared but did not finish any combat')
                 self._os_explore_failed_zone.append(zone)

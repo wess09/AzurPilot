@@ -1084,6 +1084,10 @@ OpsiExplore:
     display: disabled
     value: ""
   LastZone: 0
+  ExploreProgress:
+    type: textarea
+    display: disabled
+    value: ""
 OpsiShop:
   PresetFilter:
     value: max_benefit_meta
