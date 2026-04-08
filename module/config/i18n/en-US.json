@@ -4391,6 +4391,10 @@
     "LastZone": {
       "name": "Last completed zone",
       "help": "Automatically updated value. Fill in 0 to reset progress. After reset, already explored sea zones will be automatically skipped.\nSupports sea zone ID, CN/EN/JP/TW server zone names, e.g. \"51\", \"NA Ocean SE Sector E\""
+    },
+    "ExploreProgress": {
+      "name": "OpsiExplore.ExploreProgress.name",
+      "help": "OpsiExplore.ExploreProgress.help"
     }
   },
   "OpsiShop": {

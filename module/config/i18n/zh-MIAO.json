@@ -4391,6 +4391,10 @@
     "LastZone": {
       "name": "🏁 上一次完成的海域",
       "help": "自动更新的进度条喵！如果想重新开始，填个0就好啦~\n支持海域ID或者名字，比如 \"51\" 或者 \"NA海域东南E\" 都可以哒！"
+    },
+    "ExploreProgress": {
+      "name": "OpsiExplore.ExploreProgress.name",
+      "help": "OpsiExplore.ExploreProgress.help"
     }
   },
   "OpsiShop": {

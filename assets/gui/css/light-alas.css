@@ -1,1499 +1,225 @@
-/* =======================================================================================
-  tip：设计核心原则
-坚守简洁性原则，所有设计元素均围绕light主体功能展开，剔除冗余装饰、多余线条及无关配色，
-优先保证主体辨识度和使用便捷性，拒绝过度设计，实现“功能优先、视觉极简”的设计目标。
-======================================================================================= */
-
-/* ============================================================
-   ① 字体资源声明模块
-   功能：定义全局使用的自定义字体（MiSans + JetBrains Mono NL）
-   说明：MiSans 用于界面文本，JetBrains Mono NL 用于代码/日志显示
-   ============================================================ */
-
-@font-face {
-    font-family: 'MiSans';
-    src: url('/static/assets/spa/MiSans-Demibold.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-
-@font-face {
-    font-family: 'JetBrains Mono NL';
-    src: url('/static/assets/spa/JetBrainsMonoNL-Regular.ttf') format('truetype');
-    font-weight: normal;
-    font-style: normal;
-}
-
-
-/* ============================================================
-   ①⑤ CSS 自定义属性（设计令牌）模块
-   功能：集中定义主题颜色、圆角、阴影、过渡动画等设计令牌
-   优势：便于主题切换、全局统一调整、提升可维护性
-   使用方式：var(--变量名) 引用
-   ============================================================ */
-
-:root {
-    /* ---------- 主题色板 ---------- */
-    --color-accent: #1677FF;                  /* 主色调（品牌蓝）*/
-    --color-accent-hover: #4A9DEC;            /* 悬停/焦点蓝 */
-    --color-accent-soft: #e8f4fd;             /* 柔和蓝背景 */
-
-    /* ---------- 文本色阶 ---------- */
-    --color-text-primary: #1F1F1F;            /* 主文本（深黑）*/
-    --color-text-secondary: #666666;          /* 次要文本（中灰）*/
-    --color-text-tertiary: #333333;           /* 三级文本（深灰）*/
-    --color-text-muted: #5A5A5A;              /* 弱化文本 */
-    --color-text-dark: #3B3B3B;               /* 深色文字（按钮）*/
-    --color-text-watermark: #676767;          /* 水印文字 */
-
-    /* ---------- 背景色阶 ---------- */
-    --color-bg-body: #F5F6F7;                 /* 页面背景 */
-    --color-bg-card: #FFFFFF;                 /* 卡片背景（白色）*/
-    --color-bg-input: #F3F3F3;                /* 输入框背景 */
-    --color-bg-aside: #FAFAFB;                /* 侧边栏背景 */
-
-    /* ---------- 边框色阶 ---------- */
-    --color-border: #E8E8E8;                  /* 标准边框 */
-    --color-border-light: #EDEDED;            /* 浅边框 */
-    --color-border-lighter: #F0F0F0;          /* 极浅边框 */
-    --color-border-input: #c8c8c8;            /* 输入框边框 */
-
-    /* ---------- 状态颜色 ---------- */
-    --color-danger: #dc3545;                  /* 危险/错误红 */
-    --color-placeholder: #A0A0A0;             /* 占位符文字 */
-    --color-scrollbar: #C8C8C8;               /* 滚动条滑块 */
-    --color-scrollbar-hover: #A0A0A0;         /* 滚动条悬停 */
-
-    /* ---------- 圆角系统 ---------- */
-    --radius-sm: 8px;                         /* 小圆角（按钮、输入框）*/
-    --radius-md: 10px;                        /* 中圆角（表单控件）*/
-    --radius-lg: 12px;                        /* 大圆角（卡片、面板）*/
-
-    /* ---------- 阴影系统 ---------- */
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);     /* 轻阴影（卡片默认）*/
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);     /* 中阴影（悬停状态）*/
-    --shadow-focus-blue: 0px 0px 0px 7px rgb(74, 157, 236, 20%);  /* 蓝色聚焦光晕 */
-    --shadow-focus-red: 0 0 0 2px rgba(220, 53, 69, 0.15);        /* 红色错误光晕 */
-    --shadow-btn-hover: 0 4px 12px rgba(22, 119, 255, 0.25);      /* 按钮悬停阴影 */
-
-    /* ---------- 过渡动画系统 ---------- */
-    --transition-fast: 0.15s ease;            /* 快速过渡（微交互）*/
-    --transition-normal: 0.2s ease;           /* 标准过渡（悬停、颜色变化）*/
-    --transition-normal-in-out: 0.2s ease-in-out;  /* 标准缓入缓出 */
-    --transition-slow: 0.5s ease;             /* 慢速过渡（复杂动画）*/
-}
-
-
-/* ============================================================
-   ② 全局基础重置模块
-   功能：设置全局字体、背景色、文字颜色等基础样式
-   覆盖范围：body 元素、全局文本选择、焦点可见性状态
-   ============================================================ */
-
-/* 全局字体继承规则 - 排除日志区域和代码行以保持等宽字体 */
-body *:not(#pywebio-scope-log):not(#pywebio-scope-log *):not(.CodeMirror-line):not(pre.rich-traceback-code) {
-    font-family: 'MiSans', "Microsoft YaHei", sans-serif !important;
-}
-
-/* 页面主体样式 - 浅色主题基础配置 */
-body {
-    font-family: 'MiSans', "Microsoft YaHei", sans-serif !important;
-    margin-top: 0;
-    margin-bottom: 0;
-    background-color: var(--color-bg-body);          /* 浅灰背景色 */
-    color: var(--color-text-primary);                 /* 深色主文本 */
-}
-
-/* 隐藏页面底部 footer 元素 */
-footer {
-    display: none;
-}
-
-/* 移除按钮默认焦点阴影，使用自定义焦点样式替代 */
-.btn:focus {
-    box-shadow: unset;
-}
-
-/* 自定义文本选中高亮效果 - 品牌蓝色背景 */
-::selection {
-    background-color: var(--color-accent);          /* 品牌主色调 */
-    color: #FFFFFF;                     /* 白色文字 */
-}
-
-/* 键盘导航焦点环 - 无障碍访问支持 */
-:focus-visible {
-    outline: 2px solid var(--color-accent);         /* 蓝色轮廓 */
-    outline-offset: 2px;                /* 轮廓偏移量 */
-}
-
-
-/* ============================================================
-   ③ 详情/折叠组件模块 (details/summary)
-   功能：控制 <details> 折叠面板的外观和行为
-   样式特点：透明背景、悬停变色、展开时底部边框分隔
-   ============================================================ */
-
-/* 详情容器 - 移除默认边框和内边距 */
-details {
-    border: unset !important;
-    padding-bottom: unset !important;
-    margin-bottom: .25rem !important;
-}
-
-/* 展开状态的详情面板 - 底部分隔线 */
-details[open] > summary {
-    border-bottom: 1px solid var(--color-border-lighter) !important;
-}
-
-/* 展开状态的内容区 - 左侧缩进 */
-details[open] > div {
-    margin-left: 0.75rem;
-}
-
-/* 摘要标题栏 - 可点击的折叠触发器 */
-summary {
-    background-color: transparent !important;
-    font-weight: 500;
-    color: var(--color-text-tertiary);                     /* 中灰色文本 */
-    cursor: pointer;                    /* 手型光标指示可交互 */
-    transition: color var(--transition-normal);         /* 颜色过渡动画 */
-}
-
-/* 悬停状态 - 变为主题蓝色 */
-summary:hover {
-    color: var(--color-accent);
-}
-
-
-/* ============================================================
-   ④ 导航按钮组模块
-   功能：菜单导航按钮 (.btn-menu) 和侧边功能按钮 (.btn-aside)
-   设计风格：扁平化、圆角矩形、悬停高亮效果
-   ============================================================ */
-
-/* 菜单导航按钮 - 用于主导航菜单项 */
-.btn-menu {
-    font-weight: 500;
-    background-color: transparent;       /* 透明背景 */
-    padding: .625rem 1rem;              /* 垂直10px 水平16px */
-    border-radius: var(--radius-sm);                  /* 圆角 */
-    border: none;                        /* 无边框 */
-    transition: background-color var(--transition-normal-in-out), color var(--transition-normal-in-out);
-    white-space: pre-wrap;               /* 保留换行符 */
-    text-align: left;
-    margin: .125rem .5rem;               /* 外边距 */
-    color: var(--color-text-primary);                      /* 深色文字 */
-}
-
-/* 菜单按钮激活/悬停状态 - 浅蓝背景+蓝色文字 */
 .btn-menu:hover,
 .btn-menu-active {
-    font-weight: 600;                    /* 加粗 */
-    background-color: var(--color-accent-soft);           /* 浅蓝背景 */
-    color: var(--color-accent);                       /* 主题蓝文字 */
+    background-color: #e8e8f8;
+    color: #1a1861;
 }
 
-/* 侧边功能按钮 - 用于侧边栏图标按钮 */
-.btn-aside {
-    width: 4rem;                          /* 固定宽度64px */
-    font-weight: 500;
-    font-size: .8rem;                     /* 小号字体 */
-    background-color: transparent;
-    padding: 32px 0 0 0;                 /* 顶部大内边距 */
-    border-top-left-radius: 0;
-    border-top-right-radius: var(--radius-md);
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: var(--radius-md);
-    border: none;
-    transition: background-color var(--transition-normal-in-out), color var(--transition-normal-in-out);
-    margin: 0;
-    text-align: center;                   /* 居中对齐 */
-    color: var(--color-text-muted);                        /* 中灰色 */
-}
-
-/* 侧边按钮激活/悬停状态 */
 .btn-aside:hover,
 .btn-aside-active {
-    font-weight: 600;
-    background-color: var(--color-accent-soft);            /* 浅蓝背景 */
-    color: var(--color-accent);                        /* 主题蓝文字 */
+    background-color: #e8e8f8;
+    color: #1a1861;
 }
 
-/* 页面级导航按钮 - 用于子页面导航列表 */
-.btn-navigator {
-    border-radius: var(--radius-sm);
-    margin: .15rem !important;
-    padding: .35rem .85rem;             /* 较大的点击区域 */
-    width: calc(100% - .5rem);            /* 减去左右margin的全宽 */
-    text-align: left;
-    transition: background-color var(--transition-normal), color var(--transition-normal), transform var(--transition-fast);
-    border: none;
-    color: var(--color-text-tertiary);
-}
-
-/* 导航按钮悬停 - 颜色变化 */
-.btn-navigator:hover {
-    font-weight: 600;
-    background-color: var(--color-accent-soft);             /* 浅蓝 */
-    color: var(--color-accent);                         /* 主题蓝 */
-}
-
-
-/* ============================================================
-   ⑤ 开关切换按钮模块 (.btn-on / .btn-off)
-   功能：任务开关控件，支持开启/关闭两种状态
-   设计重构：从 alas.css 的组合选择器拆分为独立选择器
-   注意事项：原组合选择器的 margin 属性需单独补充
-   ============================================================ */
-
-/* 开启状态按钮 (.btn-on) 和关闭状态按钮 (.btn-off) 共用基础样式 */
-/* 使用逗号分隔的选择器合并重复属性，减少代码冗余 */
-.btn-on,
 .btn-off {
-    appearance: none;                      /* 移除浏览器默认外观 */
-    background-color: transparent;
-    border: 2px solid var(--color-border-input);             /* 浅灰色边框 */
-    border-radius: var(--radius-sm);                    /* 圆角 */
-    box-sizing: border-box;                /* 包含边框的盒模型 */
-    color: var(--color-text-dark);                         /* 深灰文字 */
-    cursor: pointer;                       /* 手型光标 */
-    font-size: 17px;                        /* 字体大小 */
-    font-weight: 500;                       /* 中等字重 */
-    line-height: normal;                    /* 正常行高 */
-    padding: .35rem 1.0rem;                /* 内边距 */
-    text-align: center;                     /* 居中文字 */
-    position: relative;                     /* 相对定位 */
-    margin: .125rem .25rem;                 /* 补充原组合选择器的外边距 */
+    background-color: #ffffff;
+    border: 1px solid #79747e;
+    color: #4e4c97;
 }
 
-/* 开启按钮悬停 - 上浮动画效果 */
-.btn-on:hover,
-.btn-off:hover {
-    color: #000000;                         /* 纯黑文字 */
-    transform: translateY(-3px);           /* 向上浮动2px */
+.btn-on {
+    background-color: #4e4c97;
+    border: 1px solid #4e4c97;
+    color: white;
 }
 
-
-/* ============================================================
-   ⑥ 主操作按钮模块
-   功能：主要操作按钮（如提交、确认等）的增强样式
-   特效：悬停时上浮 + 阴影扩散的组合动效
-   ============================================================ */
-
-.pywebio .btn-primary,
-.pywebio .btn-outline-primary {
-    border-radius: var(--radius-sm) !important;          /* 统一圆角 */
-    font-weight: 500 !important;
-    padding: .5rem 1.25rem !important;       /* 统一内边距 */
-    transition: all var(--transition-normal) !important;     /* 统一过渡时间 */
+.btn-on:hover {
+    box-shadow: 0 1px 3px 1px rgba(0, 0, 0, 0.15), 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    background-color: #3f3d79;
 }
 
-/* 主按钮悬停 - 上浮1px + 蓝色阴影扩散 */
-.pywebio .btn-primary:hover {
-    transform: translateY(-1px);            /* 微上浮 */
-    box-shadow: var(--shadow-btn-hover);  /* 蓝色光晕阴影 */
+.btn-navigator {
+    background-color: #ffffff;
 }
 
-
-/* ============================================================
-   ⑦ 表单控件系统模块
-   功能：统一所有表单元素（输入框、下拉框、复选框）的视觉风格
-   设计理念：从 Material Design 底部边框改为现代带边框输入框
-   子模块：
-     - 7.1 文本输入框 (.form-control)
-     - 7.2 下拉选择框 (select)
-     - 7.3 表单辅助元素
-   ============================================================ */
-
-/* ---------- 7.1 文本输入框 ---------- */
-
-/* 基础输入框样式 - 现代化带边框设计 */
-.form-control {
-    border: 2px solid transparent !important;          /* 默认透明边框 */
-    width: 100% !important;                            /* 全宽 */
-    height: 2.5rem !important;                         /* 固定高度40px */
-    padding-left: 0.8em !important;                    /* 左侧内边距 */
-    outline: none !important;                          /* 移除默认轮廓 */
-    overflow: hidden !important;                       /* 隐藏溢出 */
-    background-color: var(--color-bg-input) !important;              /* 浅灰背景 */
-    border-radius: var(--radius-md) !important;                    /* 圆角 */
-    transition: all var(--transition-slow) !important;                   /* 所有属性过渡 */
+.btn-navigator:hover {
+    background-color: #e8e8f8;
+    color: #1a1861;
 }
 
-/* 输入框占位符文字颜色 */
-.form-control::placeholder {
-    color: var(--color-placeholder) !important;                          /* 浅灰色占位符 */
+.hr-group {
+    background-color: #eaecef !important;
 }
 
-/* 只读输入框 - 透明化处理，禁用交互 */
-.form-control[readonly] {
-    pointer-events: none !important;                   /* 禁用鼠标事件 */
-    border-color: transparent !important;              /* 透明边框 */
-    background-color: transparent !important;          /* 透明背景 */
+.hr-task-group-line {
+    border-top-color: #d0d0d0;
 }
 
-/* 输入框聚焦状态 - 蓝色边框 + 光晕效果 */
+.hr-task-group-text {
+    color: #777777;
+}
+
+.form-control,
+.bootstrap-select>select {
+    border-bottom: 1px solid #8e8e8e;
+    background-color: #f6f6f9 !important;
+}
+
 .form-control:focus {
-    border: 2px solid var(--color-accent-hover) !important;              /* 蓝色边框 */
-    box-shadow: var(--shadow-focus-blue) !important;  /* 蓝色光晕 */
-    background-color: white !important;                /* 白色背景 */
+    background-color: #e8e8f8 !important;
+    border-bottom: 2px solid #4e4c97;
+    box-shadow: none;
 }
 
-/* 校验失败输入框 - 红色边框 + 红色光晕 */
-.form-control.is-invalid:focus {
-    box-shadow: var(--shadow-focus-red) !important;  /* 红色光晕 */
-    border-color: var(--color-danger) !important;                   /* 危险红色 */
+#pywebio-scope-dashboard input {
+    background-color: #f6f6f9 !important;
 }
 
-/* ---------- 7.2 下拉选择框 ---------- */
-
-/* 下拉选择框统一样式 - 覆盖原生浏览器样式 */
-/* 同时作用于：原生 select、带 form-control 类的 select、bootstrap-select 内的 select */
-select,
-select.form-control,
-.bootstrap-select > select {
-    position: static !important;            /* 重置定位 */
-    width: 100% !important;                 /* 全宽 */
-    height: 2.5rem !important;              /* 与输入框一致的高度 */
-    opacity: 1 !important;                  /* 完全不透明 */
-    z-index: 1 !important;                  /* 层级 */
-    border: 2px solid transparent !important;  /* 默认透明边框 */
-    background-color: var(--color-bg-input) !important;   /* 浅灰背景 */
-    border-radius: var(--radius-md) !important;         /* 圆角 */
-    padding: 0 2rem 0 0.8em !important;     /* 右侧留出箭头空间 */
-    outline: none !important;               /* 移除默认轮廓 */
-    overflow: hidden !important;            /* 隐藏溢出 */
-    appearance: none !important;            /* 移除原生外观 */
-    -webkit-appearance: none !important;    /* Safari/Chrome 兼容 */
-    /* 自定义 SVG 下拉箭头 - 使用 Data URI 内嵌 */
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3cpath stroke='%236e6e73' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3c/svg%3e") !important;
-    background-position: right .75rem center !important;  /* 箭头位置 */
-    background-repeat: no-repeat !important;
-    background-size: 16px 16px !important;  /* 箭头尺寸 */
-    box-sizing: border-box !important;
-    text-align: left !important;
-    text-overflow: ellipsis !important;     /* 文本过长省略号 */
-    transition: all var(--transition-slow) !important;        /* 过渡动画 */
-}
-
-/* 下拉选择框聚焦状态 - 与输入框一致的蓝色边框+光晕 */
-select:focus,
-select.form-control:focus,
-.bootstrap-select > select:focus {
-    border: 2px solid var(--color-accent-hover) !important;
-    box-shadow: var(--shadow-focus-blue) !important;
-    background-color: white !important;
-}
-
-/* 校验失败的下拉框 - 调整右侧padding以容纳错误图标 */
-select.form-control.is-invalid {
-    padding-right: 3rem !important;          /* 增加右侧空间 */
-    background-position: right 1.5rem center !important;  /* 调整箭头位置 */
-}
-
-/* 隐藏 Bootstrap 原生下拉按钮及其内部文本元素 - 多重防御 */
-button.btn.dropdown-toggle,
-.bootstrap-select .btn.dropdown-toggle,
-.bootstrap-select .filter-option,
-.bootstrap-select .dropdown-toggle,
-.bootstrap-select .dropdown-toggle .filter-option,
-.bootstrap-select .dropdown-toggle .bs-caret {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    min-height: 0 !important;
-    max-height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-    position: absolute !important;
-    left: -9999px !important;
-    top: -9999px !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-/* Bootstrap-select 插件样式修复 - 彻底清除外层容器视觉 */
-.bootstrap-select {
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    outline: none !important;
-    width: 100% !important;
-    position: relative !important;
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
-}
-
-/* 精确隐藏 .bootstrap-select 内除 select 外的所有直接子元素（button、dropdown-menu 容器等） */
-.bootstrap-select > :not(select) {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    overflow: hidden !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    position: absolute !important;
-    left: -9999px !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-}
-
-/* 唯独保留 select 可见 */
-.bootstrap-select > select {
-    display: block !important;
-    visibility: visible !important;
-    position: relative !important;
-    left: auto !important;
-    opacity: 1 !important;
-}
-
-/* 防止 div 类型的 .form-control 容器产生视觉边框 */
-div.form-control {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    outline: none !important;
-    padding: 0 !important;
-}
-
-
-
-/* ---------- 7.3 表单辅助元素 ---------- */
-
-/* 校验错误提示文字 */
-.invalid-feedback {
-    margin-top: .25rem;
-    font-size: .85rem;
-    color: var(--color-danger);                          /* 危险红色 */
-}
-
-/* 复选框样式 - iOS 开关样式 */
+/* --- MD3 开关样式开始 --- */
 input[type="checkbox"] {
-    width: 50px;
-    height: 25px;
-    appearance: none;
-    -webkit-appearance: none;
-    background-color: #e9e9eb;
-    border-radius: 25px;
-    border: none;
+    appearance: none !important;
+    -webkit-appearance: none !important;
     position: relative;
+    width: 52px !important;
+    height: 32px !important;
+    background-color: #ffffff !important;
+    border: 2px solid #79747e !important;
+    border-radius: 100px !important;
     cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.15s ease;
-}
-
-input[type="checkbox"]:hover {
-    transform: scale(1.05);
-}
-
-input[type="checkbox"]:active {
-    transform: scale(0.98);
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
+    vertical-align: middle;
+    outline: none !important;
 }
 
 input[type="checkbox"]::before {
-    content: "";
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    height: 21px;
-    width: 21px;
-    background-color: #fff;
-    border-radius: 50%;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 6px !important;
+    transform: translateY(-50%) !important;
+    width: 16px !important;
+    height: 16px !important;
+    background-color: #79747e !important;
+    border-radius: 50% !important;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1) !important;
 }
 
 input[type="checkbox"]:checked {
-    background-color: #34c759;
+    background-color: #4e4c97 !important;
+    border-color: #4e4c97 !important;
 }
 
 input[type="checkbox"]:checked::before {
-    transform: translateX(25px);
+    left: calc(100% - 26px) !important;
+    width: 20px !important;
+    height: 20px !important;
+    background-color: white !important;
 }
 
-/* 表单标签 - 行内显示 */
-label {
-    display: inline;
+input[type="checkbox"]:active::before {
+    width: 24px !important;
 }
 
-/* 表单组容器 - 移除底部间距 */
-.form-group {
-    margin-bottom: 0 !important;
+/* --- MD3 开关样式结束 --- */
+
+#pywebio-scope-dashboard input {
+    background-color: white !important;
 }
 
-
-/* ============================================================
-   ⑧ 页面布局框架模块
-   功能：定义整体页面的 Grid/Flexbox 布局结构
-   核心容器：#pywebio-scope-ROOT（根网格容器）
-   布局模式：CSS Grid 双行结构（头部 + 主内容区）
-   ============================================================ */
-
-/* PyWebIO 通用容器重置 */
-.pywebio {
-    padding-top: 0;
-    padding-bottom: 0;
-    min-height: unset;
+select {
+    background-image: url("data:image/png;base64,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");
 }
 
-/* 输入/输出容器调整 */
-#input-container {
-    margin-bottom: 0;
+.state>select {
+    border-bottom: 0;
+    background-image: none;
+    pointer-events: none;
 }
 
-#output-container {
-    padding-left: 0;
-    padding-right: 0;
-    margin-bottom: 0;
-    max-width: initial;                       /* 移除最大宽度限制 */
+.state-bold>select {
+    font-weight: bold;
+    color: #7a77bb;
 }
 
-/* 通用容器 - 使用视口高度作为最大宽度参考 */
-.container {
-    max-width: 100vh;
+.state-light>select {
+    color: #777777;
 }
 
-/* 分组分隔线通用样式 */
-.hr-group {
-    margin-top: .375rem !important;
-    margin-bottom: .375rem !important;
+[id^="pywebio-scope-arg_stored-stored-value-"]>div>input {
+    border-bottom: none;
+    background-color: transparent !important;
 }
 
-/* 根级网格容器 - 占满整个视口高度 */
-#pywebio-scope-ROOT {
-    height: 100vh;                           /* 全视口高度 */
-    display: grid;                           /* Grid布局 */
-    grid-auto-flow: row;                     /* 行方向排列 */
-    grid-template-rows: auto 1fr;            /* 头部自适应 + 主内容区弹性填充 */
+textarea {
+    border: 1px solid lightgrey;
 }
 
-/* 内容区域容器 - Flex横向布局 */
-#pywebio-scope-contents {
-    margin-top: 0;
-    overflow-y: auto;                        /* 垂直滚动 */
-    display: flex;                           /* Flex布局 */
-    scrollbar-gutter: stable;                 /* 预留滚动条空间 */
+.CodeMirror-wrap {
+    border: 1px solid lightgrey;
 }
 
-/* 三列内容布局：左侧空白 | 中间主区域 | 右侧信息面板 */
-#pywebio-scope-_groups {
-    height: 100%;
-    display: grid;
-    grid-auto-flow: column;                  /* 列方向排列 */
-    grid-template-columns: 0 minmax(25rem, 5fr) 1fr;  /* 0宽 | 最小25rem弹性 | 1fr */
-    scrollbar-gutter: stable;                 /* 预留滚动条空间 */
+.aside-icon>path {
+    fill: #2c2c2c;
 }
 
-
-/* ============================================================
-   ⑨ 头部导航栏模块
-   功能：页面顶部的四列网格布局（图标 | 侧边栏 | 标题 | 状态）
-   列宽比例：4.4rem : 4rem : auto : 1fr
-   ============================================================ */
-
-#pywebio-scope-header {
-    z-index: 100;                            /* 最高层级 */
-    display: grid;
-    grid-auto-flow: column;                  /* 列方向排列 */
-    grid-template-columns: 4.4rem 4rem auto 1fr !important;  /* 四列固定比例 */
+.container-log {
+    background-color: #ffffff !important;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 头部图标单元格 */
-*[style*="--header-icon--"] {
-    margin: .25rem auto .25rem;              /* 垂直居中 */
-    border-radius: var(--radius-lg);                     /* 圆角 */
+pre.rich-traceback-code {
+    background-color: #ffffff;
+    color: #616161;
 }
-
-/* 头部标题文本 */
-*[style*="--header-text--"] {
-    font-size: 1rem;
-    font-weight: 600;                         /* 半粗体 */
-    margin: auto !important;                  /* 居中对齐 */
-    color: var(--color-text-primary);                            /* 深色文字 */
-}
-
-/* 标题区域容器 */
-#pywebio-scope-header_title {
-    margin: auto;                             /* 居中 */
-}
-
-/* 标题段落文字 */
-#pywebio-scope-header_title > p {
-    font-size: 1.2rem;
-    font-weight: 600;
-    margin: auto;                             /* 居中 */
-    overflow: hidden;                         /* 隐藏溢出 */
-    text-align: center;                       /* 文字居中 */
-    color: var(--color-text-primary);
-}
-
-/* 状态指示区域 */
-#pywebio-scope-header_status {
-    padding-top: 3px;
-    margin-top: auto;                         /* 垂直居中 */
-    margin-bottom: auto;
-}
-
-/* 状态区域内联元素间距调整 */
-#pywebio-scope-header_status > div > div + div + p {
-    margin: 0;
-}
-
-
-/* ============================================================
-   ⑩ 侧边面板模块
-   功能：左侧图标式侧边栏，用于快速功能切换
-   视觉特征：浅灰背景、右侧分隔线
-   ============================================================ */
-
-#pywebio-scope-aside {
-    z-index: 91;                              /* 高层级 */
-    padding-left: .25rem;
-    padding-right: .25rem;
-    padding-top: 1rem;
-    overflow-y: auto;                         /* 内容过多时可滚动 */
-    flex-shrink: 0;                           /* 不压缩 */
-    background-color: var(--color-bg-aside);                /* 极浅灰背景 */
-    border-right: 1px solid var(--color-border-light);          /* 右侧分隔线 */
-}
-
-/* 侧边栏状态指示点 */
-.side_status {
-    position: relative;
-    width: 18px;
-    height: 18px;
-    bottom: -8px;                             /* 相对偏移 */
-    left: 4px;
-}
-
-
-/* ============================================================
-   ⑪ 菜单导航模块
-   功能：二级菜单导航栏，位于侧边栏右侧
-   视觉特征：白色卡片背景、右上圆角、右侧分隔线
-   ============================================================ */
-
-#pywebio-scope-menu {
-    z-index: 90;                              /* 次高层级 */
-    padding-left: .5rem;
-    padding-right: .5rem;
-    padding-top: 1.2rem;
-    overflow-y: auto;
-    width: 12rem;                             /* 固定宽度192px */
-    flex-shrink: 0;                           /* 不压缩 */
-    background-color: var(--color-bg-card);                /* 白色卡片背景 */
-    border-right: 1px solid var(--color-border-light);          /* 右侧分隔线 */
-    border-top-right-radius: var(--radius-lg);            /* 右上圆角 */
-    border-bottom-right-radius: var(--radius-lg);         /* 右下圆角 */
-}
-
-
-/* ============================================================
-   ⑫ 主内容区域模块
-   功能：页面中央的主要内容展示区域
-   背景：浅灰色以区分于白色卡片
-   ============================================================ */
 
 #pywebio-scope-content {
-    overflow: auto;                           /* 内容溢出时滚动 */
-    padding: .75rem 1rem .75rem 1rem;         /* 内边距 */
-    flex-grow: 1;                             /* 弹性填充剩余空间 */
-    background-color: var(--color-bg-body);                /* 浅灰背景 */
-    scrollbar-gutter: stable;                 /* 预留滚动条空间，防止布局抖动 */
+    background-color: #f9f9f9;
 }
 
-
-/* ============================================================
-   ⑬ 任务卡片组模块
-   功能：单个任务配置组的卡片容器样式
-   特效：悬停时阴影提升 + 平滑过渡动画
-   子模块：
-     - 13.1 任务组卡片基础样式
-     - 13.2 任务组内部元素
-     - 13.3 特殊布局（岛屿模式）
-   ============================================================ */
-
-/* ---------- 13.1 任务组卡片基础样式 ---------- */
-
-/* 任务组卡片 - 白色背景 + 轻阴影 */
 [id^="pywebio-scope-group_"] {
-    margin-top: .375rem;
-    margin-bottom: .375rem;
-    padding: 1rem 1.125rem;                  /* 内边距 */
-    border-radius: var(--radius-lg);                      /* 圆角 */
-    background-color: var(--color-bg-card);                /* 白色卡片 */
-    box-shadow: var(--shadow-sm);  /* 极轻阴影 */
-    transition: box-shadow var(--transition-normal), transform var(--transition-fast);  /* 阴影过渡 */
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 任务组悬停 - 阴影提升效果 */
-[id^="pywebio-scope-group_"]:hover {
-    box-shadow: var(--shadow-md);  /* 加深阴影 */
-}
-
-/* ---------- 13.2 任务组内部元素 ---------- */
-
-/* 任务组标题 */
-[id^="pywebio-scope-group_"] > p {
-    font-size: 1.2rem;
-    font-weight: 600;                          /* 半粗体 */
-    margin: 0 .25rem 0 .25rem !important;
-    color: var(--color-text-primary);
-}
-
-/* 任务组副标题/描述 */
-[id^="pywebio-scope-group_"] > p + p {
-    font-size: .85rem;
-    margin: .2rem .25rem .1rem .25rem !important;
-    color: var(--color-text-secondary);                            /* 中灰文字 */
-}
-
-/* 任务组信息面板文字 */
-#pywebio-scope-group__info > p {
-    font-size: .85rem !important;
-    font-weight: 400;                          /* 正常字重 */
-    color: var(--color-text-secondary);
-}
-
-/* 参数标题样式 */
-*[style*="--arg-title--"] {
-    font-size: 1rem;
-    font-weight: 500;
-    margin: 0 .25rem !important;
-    overflow-wrap: break-word;                 /* 长单词换行 */
-    color: var(--color-text-primary);
-}
-
-/* 参数帮助提示文字 */
-*[style*="--arg-help--"] {
-    font-size: .85rem;
-    margin: .2rem .25rem .1rem !important;
-    overflow-wrap: break-word;
-    color: var(--color-text-secondary);
-}
-
-/* 参数输入框容器 */
-[id^="pywebio-scope-arg_container-"] {
-    display: grid;
-    margin: .125rem 0;
-}
-
-/* 复选框和存储类参数容器 - 更大的垂直间距 */
-[id^="pywebio-scope-arg_container-checkbox-"],
-[id^="pywebio-scope-arg_container-storage-"] {
-    display: grid;
-    margin: .375rem 0;
-}
-
-/* 输入框内联样式覆盖 */
-*[style*="--input--"] {
-    margin: 0;
-    padding-right: .25rem;
-}
-
-/* ---------- 13.3 特殊布局：岛屿模式（双列网格）---------- */
-
-/* 岛屿任务组 - 两列等宽布局 */
-[id^="pywebio-scope-group_Island"] {
-    display: grid;
-    grid-template-columns: 1fr 1fr;           /* 双列等宽 */
-    column-gap: 5%                            /* 列间距 */
-}
-
-/* Enable/Receive 类选项跨两列显示 */
-[id^="pywebio-scope-group_Island"] > [id*="Enable"],
-[id^="pywebio-scope-group_Island"] > [id*="Receive"] {
-    display: grid;
-    grid-column: 1 / -1;                      /* 跨所有列 */
-}
-
-/* 其他参数容器双列排列 */
-[id^="pywebio-scope-group_Island"] > [id^="pywebio-scope-arg_container-"]:not([id*="Enable"]):not([id*="Receive"]) {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-}
-
-/* 守护进程概览中的任务组 - 更紧凑的内边距 */
 #pywebio-scope-daemon-overview [id^="pywebio-scope-group_"] {
-    margin-top: 0;
-    margin-bottom: 0;
-    padding: .375rem .625rem;                 /* 更紧凑 */
+    border: 0;
+    box-shadow: none;
 }
 
+#pywebio-scope-aside {
+    background-color: white;
+    border-right: 1px solid lightgrey;
+}
 
-/* ============================================================
-   ⑭ 状态面板模块
-   功能：运行中/等待中/待处理三种状态的任务列表面板
-   布局：Grid三行结构（标题 + 描述 + 任务列表）
-   ============================================================ */
+#pywebio-scope-menu {
+    box-shadow: 0 0 8px rgba(0, 0, 0, .1);
+    background-color: white;
+}
 
-/* 状态面板通用样式 - 运行/等待/待处理共用 */
-#pywebio-scope-running,
-#pywebio-scope-pending,
-#pywebio-scope-waiting,
+#pywebio-scope-navigator {
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
 #pywebio-scope-scheduler-bar,
 #pywebio-scope-stat-bar,
 #pywebio-scope-log-bar,
 #pywebio-scope-log,
-#pywebio-scope-image-container,
-#pywebio-scope-daemon-overview #pywebio-scope-groups {
-    font-weight: 500;
-    margin: 0.375rem;
-    padding: 0.875rem 1rem;
-    border-radius: var(--radius-lg);
-    background-color: var(--color-bg-card);                /* 白色卡片 */
-    box-shadow: var(--shadow-sm);  /* 轻阴影 */
-}
-
-/* 工具栏类面板 - Flex横向布局（调度器/统计/图片/日志工具栏）*/
-#pywebio-scope-scheduler-bar,
-#pywebio-scope-stat-bar,
-#pywebio-scope-image-container,
-#pywebio-scope-log-bar {
-    display: flex;
-    align-items: center;                      /* 垂直居中 */
-    justify-content: space-between;           /* 两端对齐 */
-}
-
-/* 日志工具栏 - 支持换行 */
-#pywebio-scope-log-bar {
-    flex-wrap: wrap;
-}
-
-/* 日志工具栏按钮组 - Grid列向排列 */
-#pywebio-scope-log-bar-btns {
-    display: grid;
-    grid-auto-flow: column;
-}
-
-/* 日志工具栏内的分组线占满宽度 */
-#pywebio-scope-log-bar .hr-group {
-    width: 100%;
-}
-
-/* 运行/等待/待处理面板 - Grid三行布局 */
 #pywebio-scope-running,
 #pywebio-scope-pending,
-#pywebio-scope-waiting {
-    display: grid;
-    grid-auto-flow: row;
-    grid-template-rows: auto auto 1fr;        /* 标题自适应 | 描述自适应 | 列表填充 */
+#pywebio-scope-waiting,
+#pywebio-scope-image-container,
+#pywebio-scope-daemon-overview #pywebio-scope-groups {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-family: 'JetBrains Mono NL', monospace !important;
 }
 
-/* 状态面板标题 */
-#pywebio-scope-running > p,
-#pywebio-scope-pending > p,
-#pywebio-scope-waiting > p {
-    font-size: 1.1rem;                        /* 缩小标题字号 */
-    font-weight: 500;
-    margin: 0 0 .375rem 0 !important;          /* 缩减底部间距 */
-    color: var(--color-text-primary);
+#pywebio-scope-header {
+    box-shadow: 0 0 8px rgba(0, 0, 0, .2);
 }
 
-/* 状态任务列表容器 - 可滚动 */
-#pywebio-scope-running_tasks,
-#pywebio-scope-pending_tasks,
-#pywebio-scope-waiting_tasks {
-    overflow-y: auto;
-    height: 100%;                             /* 填满剩余空间 */
+*[style*="--arg-help--"],
+[id^="pywebio-scope-group_"]>p+p {
+    color: #777777;
 }
 
-/* 任务组分隔线组件 */
-.hr-task-group-box {
-    display: flex;
-    align-items: center;                      /* 垂直居中 */
-    margin-bottom: .375rem;                   /* 缩减间距 */
-}
-
-/* 分隔线 - 弹性填充 */
-.hr-task-group-line {
-    border-top: 1px solid var(--color-border);            /* 浅灰线条 */
-    flex-grow: 1;                             /* 弹性增长 */
-}
-
-/* 分隔线中间文字 */
-.hr-task-group-text {
-    margin: 0 .375rem;                        /* 缩减间距 */
-    font-size: .8rem;                         /* 缩小字号 */
-    font-weight: 500;
-    color: var(--color-text-secondary);
-}
-
-/* 状态指示点 - 圆形标记 */
-.status-point {
-    margin: 37% 50% 63% 50%;                  /* 居中定位 */
-    width: .75rem;
-    height: .75rem;
-    border-radius: 50%;                       /* 圆形 */
-}
-
-
-/* ============================================================
-   ⑮ 仪表板数据模块
-   功能：数据统计仪表板的网格布局和数据展示样式
-   布局：响应式Grid自动适配列数
-   ============================================================ */
-
-/* 仪表板容器 - 响应式网格 */
-#pywebio-scope-dashboard {
-    font-weight: 400;
-    width: 100%;
-    display: grid;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));  /* 自动列数，最小160px */
-    gap: .5rem;                               /* 间距 */
-}
-
-/* 仪表板内的输入框 - 移除内边距 */
-#pywebio-scope-dashboard .form-control {
-    padding: 0 0 0;
-}
-
-/* 仪表板数值显示 */
-*[style*="--dashboard-value--"] {
-    font-size: 1.2rem;
-    font-weight: 400;
-    margin: 0 0 0 0.6rem !important;
-    font-family: 'MiSans', "Arial", serif !important;
-}
-
-/* 仪表板总计数值 */
-*[style*="--dashboard-total--"] {
-    font-size: 1.2rem;
-    font-weight: 400;
-    margin: 0 0 0 0.15rem !important;
-    font-family: 'MiSans', "Arial", serif !important;
-}
-
-/* 仪表板帮助提示文字 */
 *[style*="--dashboard-help--"] {
-    font-size: .8rem;
-    margin: 0 0 0 0.6rem !important;
-    font-family: 'MiSans', "Arial", serif !important;
+    color: #777777;
 }
 
-/* 仪表板限制值文字 */
 *[style*="--dashboard-limit--"] {
-    font-weight: 400;
-    font-size: .9rem;
-    margin: 0 0 0 0 !important;
-    vertical-align: text-bottom;              /* 文本底部对齐 */
-    overflow-wrap: normal;                    /* 正常换行 */
-    font-family: 'MiSans', "Arial", serif !important;
+    color: #777777;
 }
-
-
-/* ============================================================
-   ⑯ 日志输出区域模块
-   功能：程序运行日志的显示容器
-   特殊功能：版本号和设备ID水印（伪元素实现）
-   子模块：
-     - 16.1 日志容器框架
-     - 16.2 日志内容区
-     - 16.3 水印显示
-   ============================================================ */
-
-/* ---------- 16.1 日志容器框架 ---------- */
-
-/* 日志外层容器 - 相对定位以支撑水印绝对定位 */
-#pywebio-scope-log-container {
-    position: relative;
-    overflow: hidden !important;              /* 隐藏溢出（水印可能超出）*/
-    display: flex;
-    flex-direction: column;                   /* 列方向Flex */
-}
-
-/* ---------- 16.2 日志内容区 ---------- */
-
-/* 日志内容区 - 等宽字体、紧凑行高 */
-#pywebio-scope-log {
-    position: relative;
-    overflow-y: auto;                         /* 垂直滚动 */
-    height: 100%;                             /* 填满容器 */
-    flex: 1;                                  /* 弹性填充 */
-    line-height: 1.2;                         /* 紧凑行高 */
-    font-size: 0.85rem;                       /* 小号字体 */
-    font-family: 'JetBrains Mono NL', Menlo, consolas, DejaVu Sans Mono, Courier New, monospace !important;  /* 等宽字体 */
-    white-space: pre;                         /* 保留预格式化 */
-}
-
-/* 日志面板集合容器 - Grid双行布局（工具栏+日志区）*/
-#pywebio-scope-logs {
-    display: grid;
-    grid-auto-flow: column;                   /* 列方向 */
-    height: 100%;
-    overflow-y: auto;
-    grid-template-rows: auto 1fr;             /* 工具栏自适应 | 日志区填充 */
-}
-
-/* ---------- 16.3 水印显示 ---------- */
-
-/* 版本号水印 - 右下角位置 */
-#pywebio-scope-log-container::before {
-    content: var(--version);                  /* CSS变量注入版本号 */
-    position: absolute;
-    bottom: 1.4rem;
-    right: 8px;
-    font-size: 1.2rem;
-    font-weight: normal;
-    color: var(--color-text-watermark);                            /* 中灰色 */
-    opacity: 0.5;                              /* 半透明 */
-    white-space: nowrap;
-    pointer-events: none;                      /* 不干扰鼠标事件 */
-    z-index: 999;                              /* 最高层级 */
-    font-family: 'JetBrains Mono NL', monospace;
-    line-height: 1;
-    margin-bottom: 8px;
-    margin-right: 5px;
-}
-
-/* 设备ID水印 - 版本号下方 */
-#pywebio-scope-log-container::after {
-    content: var(--device-id);                /* CSS变量注入设备ID */
-    position: absolute;
-    bottom: 4px;
-    right: 8px;
-    font-size: 1.2rem;
-    font-weight: normal;
-    color: var(--color-text-watermark);
-    opacity: 0.5;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 999;
-    font-family: 'JetBrains Mono NL', monospace;
-    line-height: 1;
-    margin-bottom: 8px;
-    margin-right: 5px;
-}
-
-
-/* ============================================================
-   ⑰ 代码编辑器模块
-   功能：CodeMirror 代码编辑器和异常堆栈跟踪的样式定制
-   字体：强制使用 JetBrains Mono NL 等宽字体
-   ============================================================ */
-
-/* CodeMirror 编辑器实例 */
-.CodeMirror {
-    height: auto !important;                   /* 高度自适应内容 */
-}
-
-/* CodeMirror 代码行 */
-.CodeMirror-line {
-    font-family: 'JetBrains Mono NL', SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace !important;
-}
-
-/* 异常堆栈跟踪代码块 */
-pre.rich-traceback-code {
-    padding-top: 0;
-    padding-bottom: 0;
-    font-family: 'JetBrains Mono NL', Menlo, consolas, DejaVu Sans Mono, Courier New, monospace !important;
-    font-size: 0.85rem;
-    line-height: 1.2;
-}
-
-/* 异常堆栈跟踪内联代码 */
-code.rich-traceback {
-    padding: 0;
-}
-
-
-/* ============================================================
-   ⑱ 通知提示框模块
-   功能：Toastify 通知消息的位置调整
-   说明：顶部留出头部导航的空间
-   ============================================================ */
-
-.toastify-center,
-.toastify-right,
-.toastify-left {
-    margin-top: 3.3125rem;                    /* 约53px，避开头部高度 */
-}
-
-
-/* ============================================================
-   ⑲ 图标元素模块
-   功能：应用图标和侧边图标的尺寸规范
-   ============================================================ */
-
-/* 应用主图标（42x42px方形）*/
-.alas-icon,
-.alas-icon > image {
-    width: 42px;
-    height: 42px;
-}
-
-/* 侧边栏小图标（32x32px）*/
-.aside-icon {
-    width: 2rem;
-    height: 2rem;
-}
-
-
-/* ============================================================
-   ⑳ 滚动条美化模块
-   功能：自定义 WebKit 内核浏览器的滚动条外观
-   适用浏览器：Chrome / Edge Chromium / Safari
-   样式特点：细窄滚动条（5px）、圆角滑块、悬停变深
-   注意：Firefox 需要额外添加 scrollbar-width 属性
-   ============================================================ */
-
-/* 滚动条轨道 - 尺寸和透明轨道 */
-::-webkit-scrollbar {
-    width: 5px;                                /* 垂直滚动条宽度 */
-    height: 5px;                               /* 水平滚动条高度 */
-}
-
-/* 滚动条滑动轨道背景 - 透明 */
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-/* 滚动条滑块（拖动手柄）*/
-::-webkit-scrollbar-thumb {
-    background: var(--color-scrollbar);                       /* 浅灰色 */
-    border-radius: 10px;                       /* 圆角 */
-    transition: background var(--transition-normal);          /* 颜色过渡 */
-}
-
-/* 滑块悬停状态 - 加深颜色 */
-::-webkit-scrollbar-thumb:hover {
-    background: var(--color-scrollbar-hover);                  /* 中灰色 */
-}
-
-/* 滚动条角落 - 透明（水平+垂直交汇处）*/
-::-webkit-scrollbar-corner {
-    background: transparent;
-}
-
-
-/* ============================================================
-   ㉑ 动画关键帧模块
-   功能：定义可复用的 CSS 动画关键帧
-   当前包含：旋转动画（用于加载指示器）
-   ============================================================ */
-
-/* 旋转动画 - 应用于加载状态指示器 */
-.anim-rotate {
-    animation: rotate-keyframes 0.4s linear infinite  /* 0.4秒一圈，匀速无限循环 */
-}
-
-/* 360度旋转关键帧定义 */
-@keyframes rotate-keyframes {
-    100% {
-        transform: rotate(360deg)
-    }
-}
-
-
-/* ============================================================
-   ㉒ 加载动画模块
-   功能：各种加载状态指示器的样式定义
-   类型：生长动画、边框旋转动画、边框填充动画
-   ============================================================ */
-
-/* 加载指示器 - 生长缩放动画 */
-*[style*="--loading-grow--"] {
-    width: 1.5rem;
-    height: 1.5rem;
-}
-
-/* 加载指示器 - 边框旋转动画（空心圆环）*/
-*[style*="--loading-border--"] {
-    width: 1.5rem;
-    height: 1.5rem;
-    border: .2em solid currentColor;          /* 使用当前文字颜色 */
-    border-right-color: transparent;          /* 右侧透明形成缺口 */
-}
-
-/* 加载指示器 - 边框填充动画（实心圆环）*/
-*[style*="--loading-border-fill--"] {
-    width: 1.5rem;
-    height: 1.5rem;
-    border: .2em solid currentColor;          /* 完整边框 */
-}
-
-
-/* ============================================================
-   ㉓ 概览与其他面板模块
-   功能：任务概览面板、调度器、委托收入表格等的特殊布局
-   ============================================================ */
-
-/* 任务概览面板 - Grid纵向布局 */
-#pywebio-scope-overview {
-    height: 100%;
-    overflow: auto;                            /* 内容溢出滚动 */
-    display: grid;
-}
-
-/* 概览无任务提示文字 */
-*[style*="--overview-notask-text--"] {
-    text-align: center;                        /* 居中 */
-    font-size: 0.9rem;
-    color: var(--color-placeholder);                             /* 浅灰色 */
-}
-
-/* 单个任务项 - Grid横向布局（内容+操作按钮）*/
-[id^="pywebio-scope-overview-task_"] {
-    display: grid;
-    grid-auto-flow: column;                    /* 列方向 */
-    grid-template-columns: 1fr auto;           /* 内容弹性 | 按钮固定 */
-    align-items: center;                        /* 垂直居中 */
-    margin: .0625rem .25rem;                 /* 缩减外边距 */
-    padding: .1rem .2rem;                     /* 缩减内边距 */
-    border-radius: var(--radius-sm);
-    transition: background-color var(--transition-fast);
-}
-
-/* 任务项悬停 - 浅灰背景高亮 */
-[id^="pywebio-scope-overview-task_"]:hover {
-    background-color: #ebebeb;
-}
-
-/* 守护进程概览容器 */
-#pywebio-scope-daemon-overview {
-    display: grid;
-    height: 100%;
-    overflow-y: auto;
-}
-
-/* 调度器面板容器 */
-#pywebio-scope-schedulers {
-    display: grid;
-}
-
-/* Bootstrap Select 标题选项隐藏 */
-.bs-title-option {
-    display: none;
-}
-
-/* 导航器面板 - 最大宽度限制 + 卡片样式 */
-#pywebio-scope-navigator {
-    margin: .5rem .75rem;
-    height: min-content;                       /* 最小内容高度 */
-    max-width: 15rem;                          /* 最大240px */
-    border-radius: var(--radius-lg);
-    background-color: var(--color-bg-card);                 /* 白色卡片 */
-    box-shadow: var(--shadow-sm);
-}
-
-/* 日志容器卡片 - 强制优先级样式 */
-.container-log {
-    border-radius: var(--radius-lg) !important;
-    margin: .5rem !important;
-    padding: 1.125rem !important;
-    background-color: var(--color-bg-card) !important;
-    box-shadow: var(--shadow-sm) !important;
-}
-
-/* 委托收入表格 - 卡片背景样式 */
-#pywebio-scope-commission_income {
-    width: 100% !important;
-    max-width: 100% !important;
-    background-color: var(--color-bg-card);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-border-light);
-    box-shadow: var(--shadow-sm);
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-#pywebio-scope-commission_income > div {
-    width: 100% !important;
-    max-width: 100% !important;
-    display: block !important;
-}
-
-#pywebio-scope-commission_income table {
-    width: 100% !important;
-    max-width: 100% !important;
-    table-layout: fixed !important;            /* 固定表格布局算法 */
-}
-
-
-/* ============================================================
-   ㉔ CSS变量覆盖工具类模块
-   功能：通过CSS变量实现动态主题切换的颜色覆盖
-   用途： updater 更新检查器的内容区域颜色适配
-   ============================================================ */
-
-/* 强制文字颜色覆盖 */
-.alas-force-text,
-.alas-force-text * {
-    color: var(--alas-content-text) !important;
-}
-
-/* 强制背景+文字颜色双重覆盖 */
-.alas-force-bg,
-.alas-force-bg * {
-    background: var(--alas-content-bg) !important;
-    color: var(--alas-content-text) !important;
-}
-
-/* Updater 更新检查器各组件颜色覆盖 */
-#pywebio-scope-updater_info,
-#pywebio-scope-updater_state,
-#pywebio-scope-updater_loading,
-#pywebio-scope-updater_btn,
-#pywebio-scope-updater_detail,
-#pywebio-scope-updater_info *,
-#pywebio-scope-updater_state *,
-#pywebio-scope-updater_loading *,
-#pywebio-scope-updater_btn *,
-#pywebio-scope-updater_detail * {
-    background: var(--alas-content-bg) !important;
-    color: var(--alas-content-text) !important;
-}
-
-/* ==========================================
-   9. 表格样式
-   ========================================== */
-
-/* 统计板块容器 */
-#pywebio-scope-opsi_stats,
-#pywebio-scope-ap_chart,
-#pywebio-scope-ship_exp_table {
-	background-color: var(--color-bg-card) !important;
-	backdrop-filter: blur(16px) saturate(180%);
-	-webkit-backdrop-filter: blur(16px) saturate(180%);
-	border-radius: var(--radius-lg) !important;
-	border: 1px solid var(--color-border-light) !important;
-	box-shadow: var(--shadow-sm) !important;
-	padding: 1rem !important;
-	margin: 0 0 1rem 0 !important;
-	transition: box-shadow var(--transition-normal);
-	animation: ios-slide-up ease both;
-	will-change: transform, opacity;
-}
-
-#pywebio-scope-opsi_stats:hover,
-#pywebio-scope-ap_chart:hover,
-#pywebio-scope-ship_exp_table:hover {
-	box-shadow: var(--shadow-md) !important;
-}
-
-#pywebio-scope-opsi_stats {
-	animation-delay: 0.05s;
-}
-
-#pywebio-scope-ap_chart {
-	animation-delay: 0.10s;
-}
-
-#pywebio-scope-ship_exp_table {
-	animation-delay: 0.15s;
-}
-
-/* 表格样式 */
-#pywebio-scope-opsi_stats table,
-#pywebio-scope-ship_exp_table table {
-	width: 100% !important;
-	border-collapse: separate !important;
-	border-spacing: 0 !important;
-	margin: 1rem 0 !important;
-}
-
-#pywebio-scope-opsi_stats th,
-#pywebio-scope-ship_exp_table th {
-	background-color: var(--color-bg-input) !important;
-	color: var(--color-text-secondary) !important;
-	font-weight: 600 !important;
-	font-size: 12px !important;
-	text-transform: uppercase !important;
-	letter-spacing: 0.05em !important;
-	padding: 0.25rem .5rem !important;
-	text-align: left !important;
-	border: none !important;
-	border-bottom: 2px solid var(--color-border-light) !important;
-}
-
-#pywebio-scope-opsi_stats th:first-child,
-#pywebio-scope-ship_exp_table th:first-child {
-	border-top-left-radius: var(--radius-sm) !important;
-}
-
-#pywebio-scope-opsi_stats th:last-child,
-#pywebio-scope-ship_exp_table th:last-child {
-	border-top-right-radius: var(--radius-sm) !important;
-}
-
-#pywebio-scope-opsi_stats td,
-#pywebio-scope-ship_exp_table td {
-	padding: 1rem !important;
-	color: var(--color-text-primary) !important;
-	font-size: 14px !important;
-	border: none !important;
-	border-bottom: 1px solid var(--color-border-light) !important;
-	background-color: transparent !important;
-}
-
-#pywebio-scope-opsi_stats tr:last-child td,
-#pywebio-scope-ship_exp_table tr:last-child td {
-	border-bottom: none !important;
-}
-
-#pywebio-scope-opsi_stats tr,
-#pywebio-scope-ship_exp_table tr {
-	transition: background-color var(--transition-fast) ease;
-	will-change: background-color;
-}
-
-#pywebio-scope-opsi_stats tr:hover td,
-#pywebio-scope-ship_exp_table tr:hover td {
-	background-color: rgba(0, 122, 255, 0.06) !important;
-}
-
-/* 统计板块文本 */
-#pywebio-scope-opsi_stats>div:first-child,
-#pywebio-scope-ship_exp_table>div:first-child {
-	font-size: 16px !important;
-	font-weight: 600 !important;
-	color: var(--color-text-primary) !important;
-	margin-bottom: 1rem !important;
-}
-
-#pywebio-scope-opsi_stats .pywebio-row,
-#pywebio-scope-ship_exp_table .pywebio-row {
-	margin: 1rem 0 !important;
-	gap: .5rem !important;
-}
-
-/* 更新信息板块 */
-#pywebio-scope-updater_info,
-#pywebio-scope-updater_detail {
-	background-color: transparent !important;
-	backdrop-filter: blur(16px) saturate(180%);
-	-webkit-backdrop-filter: blur(16px) saturate(180%);
-	border-radius: var(--radius-lg) !important;
-	border: 1px solid var(--color-border-light) !important;
-	box-shadow: var(--shadow-sm) !important;
-	padding: 1rem !important;
-	margin-bottom: 1rem !important;
-	position: relative !important;
-}
-
-#pywebio-scope-updater_info::before,
-#pywebio-scope-updater_detail::before {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border-radius: inherit;
-	background-color: rgba(255, 255, 255, 0.55);
-	pointer-events: none;
-	z-index: 0;
-}
-
-#pywebio-scope-updater_info>*,
-#pywebio-scope-updater_detail>* {
-	position: relative !important;
-	z-index: 1 !important;
-}
-
