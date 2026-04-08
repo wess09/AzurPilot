@@ -550,12 +550,12 @@ class RewardCommission(UI, InfoHandler):
                         logger.info(f'Commission income: screenshot[{idx}] has info_bar, skip')
                         continue
                     grid.grids = None
-                    if GET_ITEMS_1.match(image, offset=(5, 0)):
+                    if GET_ITEMS_1.match_template_color(image, offset=(5, 0)):
                         is_odd = get_items._stats_get_items_is_odd(image)
                         grid.grids = ITEM_GRIDS_1_ODD if is_odd else ITEM_GRIDS_1_EVEN
-                    elif GET_ITEMS_2.match(image, offset=(5, 0)):
+                    elif GET_ITEMS_2.match_template_color(image, offset=(5, 0)):
                         grid.grids = ITEM_GRIDS_2
-                    elif GET_ITEMS_3.match(image, offset=(5, 0)):
+                    elif GET_ITEMS_3.match_template_color(image, offset=(5, 0)):
                         grid.grids = ITEM_GRIDS_3
                     else:
                         logger.info(f'Commission income: screenshot[{idx}] not a get_items page, skip')

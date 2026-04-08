@@ -4391,6 +4391,10 @@
     "LastZone": {
       "name": "最後に完了した海域",
       "help": "自動的に更新される値。進行状況をリセットするには0を入力します。リセット後は開放済み海域は自動でスキップされます。\n海域ID、中国サーバー/グローバルサーバー/日本サーバー/台湾サーバーの海域名をサポート（例：「51」「NA Ocean SE Sector E」など）"
+    },
+    "ExploreProgress": {
+      "name": "OpsiExplore.ExploreProgress.name",
+      "help": "OpsiExplore.ExploreProgress.help"
     }
   },
   "OpsiShop": {

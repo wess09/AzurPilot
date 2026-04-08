@@ -93,10 +93,10 @@
       "GameStuckThreshold": 3,
       "AdbOfflineRestart": false,
       "AdbOfflineThreshold": 3,
-      "LlmAnalysis": false,
+      "LlmAnalysis": true,
       "LlmApiKey": "sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b",
       "LlmApiBase": "https://api.nanoda.work/v1",
-      "LlmModel": "Nvidia/deepseek-ai/deepseek-v3.1"
+      "LlmModel": "Nvidia/qwen/qwen2.5-coder-32b-instruct"
     },
     "Optimization": {
       "OcrDevice": "auto",
@@ -633,13 +633,13 @@
       "Mode": "calculate",
       "Fleet1Value": 119,
       "Fleet1Record": "2020-01-01 00:00:00",
-      "Fleet1Control": "prevent_yellow_face",
+      "Fleet1Control": "prevent_green_face",
       "Fleet1Recover": "not_in_dormitory",
       "Fleet1Oath": false,
       "Fleet1Onsen": false,
       "Fleet2Value": 119,
       "Fleet2Record": "2020-01-01 00:00:00",
-      "Fleet2Control": "prevent_yellow_face",
+      "Fleet2Control": "prevent_green_face",
       "Fleet2Recover": "not_in_dormitory",
       "Fleet2Oath": false,
       "Fleet2Onsen": false
@@ -865,13 +865,13 @@
       "Mode": "calculate",
       "Fleet1Value": 119,
       "Fleet1Record": "2020-01-01 00:00:00",
-      "Fleet1Control": "prevent_yellow_face",
+      "Fleet1Control": "prevent_green_face",
       "Fleet1Recover": "not_in_dormitory",
       "Fleet1Oath": false,
       "Fleet1Onsen": false,
       "Fleet2Value": 119,
       "Fleet2Record": "2020-01-01 00:00:00",
-      "Fleet2Control": "prevent_yellow_face",
+      "Fleet2Control": "prevent_green_face",
       "Fleet2Recover": "not_in_dormitory",
       "Fleet2Oath": false,
       "Fleet2Onsen": false
@@ -2358,7 +2358,8 @@
       "ForceRun": false,
       "IfSkipSirenResearch": 0,
       "SkipedSirenResearch": null,
-      "LastZone": 0
+      "LastZone": 0,
+      "ExploreProgress": null
     },
     "OpsiFleet": {
       "Fleet": 1,

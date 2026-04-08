@@ -150,7 +150,7 @@ Error:
   AdbOfflineThreshold:
     value: 3
     validate: [1, 10]
-  LlmAnalysis: false
+  LlmAnalysis: true
   LlmApiKey:
     type: textarea
     value: "sk-O6ZQRe5T4NJVV8gdVTFHTZAI3Q8ZKtJMWdrrKeGljw3zUX4b"
@@ -158,7 +158,7 @@ Error:
     type: textarea
     value: "https://api.nanoda.work/v1"
   LlmModel:
-    value: "Nvidia/deepseek-ai/deepseek-v3.1"
+    value: "Nvidia/qwen/qwen2.5-coder-32b-instruct"
     valuetype: str
 Optimization:
   OcrDevice: 

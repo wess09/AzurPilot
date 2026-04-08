@@ -333,9 +333,16 @@ class Enhancement(Dock):
             out: the page before retirement popup
         """
         total = self.enhance_ships()
-        _, remain, _ = OCR_DOCK_AMOUNT.ocr(self.device.image)
+        
+        # 确保在DOCK_CHECK界面执行OCR
+        if self.appear(DOCK_CHECK, offset=(20, 20)):
+            _, remain, _ = OCR_DOCK_AMOUNT.ocr(self.device.image)
+        else:
+            # 如果不在DOCK_CHECK界面，使用默认值
+            logger.warning('Not in DOCK_CHECK interface, using default remain value')
+            remain = 10  # 默认值，避免触发退役逻辑
 
-        self.dock_quit()
+        # 移除多余的dock_quit()，因为enhance_ships()已经调用了_enhance_quit()
         self.config.DOCK_FULL_TRIGGERED = True
 
         return total, remain

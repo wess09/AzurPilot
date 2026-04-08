@@ -436,11 +436,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 self.map_cat_attack_timer.reset()
                 return False
             if self.appear(IN_RETIREMENT_CHECK, offset=(20, 20), interval=10):
-                self._retire_handler(mode='one_click_retire')
-                self._unable_to_enhance = False
-                self.interval_reset(IN_RETIREMENT_CHECK)
-                self.map_cat_attack_timer.reset()
-                return True
+                try:
+                    self._retire_handler(mode='one_click_retire')
+                    self._unable_to_enhance = False
+                    self.interval_reset(IN_RETIREMENT_CHECK)
+                    self.map_cat_attack_timer.reset()
+                    return True
+                except Exception as e:
+                    logger.warning(f'Retirement failed: {e}')
+                    self._unable_to_enhance = False  # 防止无限循环
+                    return False
         elif self.config.Retirement_RetireMode == 'enhance':
             if self.appear_then_click(RETIRE_APPEAR_3, offset=(20, 20), interval=3):
                 self.interval_clear(DOCK_CHECK)
@@ -449,18 +454,23 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 return False
             if self.appear(DOCK_CHECK, offset=(20, 20), interval=10):
                 self.handle_dock_cards_loading()
-                total, remain = self._enhance_handler()
-                if not total:
-                    logger.info(
-                        'No ship to enhance, but dock full, will try retire')
-                    self._unable_to_enhance = True
-                logger.info(f'The remaining spare dock amount is {remain}')
-                if remain < 3:
-                    logger.info('Too few spare docks, retire next time')
-                    self._unable_to_enhance = True
-                self.interval_reset(DOCK_CHECK)
-                self.map_cat_attack_timer.reset()
-                return True
+                try:
+                    total, remain = self._enhance_handler()
+                    if not total:
+                        logger.info(
+                            'No ship to enhance, but dock full, will try retire')
+                        self._unable_to_enhance = True
+                    logger.info(f'The remaining spare dock amount is {remain}')
+                    if remain < 3:
+                        logger.info('Too few spare docks, retire next time')
+                        self._unable_to_enhance = True
+                    self.interval_reset(DOCK_CHECK)
+                    self.map_cat_attack_timer.reset()
+                    return True
+                except Exception as e:
+                    logger.warning(f'Enhancement failed: {e}')
+                    self._unable_to_enhance = True  # 尝试退役
+                    return False
         else:
             if self.appear_then_click(RETIRE_APPEAR_1, offset=(20, 20), interval=3):
                 self.interval_clear(IN_RETIREMENT_CHECK)
@@ -468,11 +478,15 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 self.map_cat_attack_timer.reset()
                 return False
             if self.appear(IN_RETIREMENT_CHECK, offset=(20, 20), interval=10):
-                self._retire_handler()
-                self._unable_to_enhance = False
-                self.interval_reset(IN_RETIREMENT_CHECK)
-                self.map_cat_attack_timer.reset()
-                return True
+                try:
+                    self._retire_handler()
+                    self._unable_to_enhance = False
+                    self.interval_reset(IN_RETIREMENT_CHECK)
+                    self.map_cat_attack_timer.reset()
+                    return True
+                except Exception as e:
+                    logger.warning(f'Retirement failed: {e}')
+                    return False
 
         return False
 
