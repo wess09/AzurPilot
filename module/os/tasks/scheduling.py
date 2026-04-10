@@ -211,20 +211,18 @@ class CoinTaskMixin:
 
         if self._can_send_ap_notification('_last_ap_notification_time'):
             previous_ap = getattr(self, '_last_ap_notification_ap', None)
-            content_lines = [f"当前行动力: {current_ap}"]
+            content = f"当前行动力: {current_ap}"
 
             if previous_ap is not None:
                 ap_delta = current_ap - previous_ap
-                if ap_delta > 0:
-                    content_lines.append(f"增加{ap_delta}")
-                elif ap_delta < 0:
-                    content_lines.append(f"下跌{abs(ap_delta)}")
+                if ap_delta >= 0:
+                    content = f"当前行动力: {current_ap} 增加{ap_delta}"
                 else:
-                    content_lines.append("")
+                    content = f"当前行动力: {current_ap} 下跌{abs(ap_delta)}"
 
             pushed = self.notify_push(
                 title="[Alas] 行动力出现变化！",
-                content="\n".join(content_lines)
+                content=content
             )
             if pushed:
                 self._last_ap_notification_ap = current_ap
