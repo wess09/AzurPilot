@@ -133,9 +133,9 @@ class GeneratedConfig:
     DropRecord_BugReport = True
 
     # Group `Log`
-    Log_LogKeepCount = 7
-    Log_LogBackUpMethod = 'delete'  # delete, zip, copy
-    Log_ZipMethod = 'bz2'  # bz2, gzip, xz, zip
+    Log_LogKeepCount = 3
+    Log_LogBackUpMethod = 'zip'  # delete, zip, copy
+    Log_ZipMethod = 'zip'  # bz2, gzip, xz, zip
 
     # Group `Retirement`
     Retirement_RetireMode = 'one_click_retire'  # one_click_retire, enhance, old_retire
