@@ -132,6 +132,7 @@ class RichLog:
             soft_wrap=True,
         )
         self.timeline_steps = []
+        self.processed_renderables_total = 0
         if State.theme == "dark":
             self.terminal_theme = DARK_TERMINAL_THEME
         else:
@@ -163,6 +164,8 @@ class RichLog:
                 self.scroll()
 
     def reset(self):
+        self.timeline_steps = []
+        self.processed_renderables_total = 0
         run_js(f"""$("#pywebio-scope-{self.scope}>div").empty();""")
 
     def scroll(self) -> None:
@@ -265,6 +268,10 @@ class RichLog:
             "last_message": "",
         }
 
+    @staticmethod
+    def _drop_step_details(step: Dict[str, Any]) -> None:
+        step["details"] = []
+
     def _ensure_step(self, title: Optional[str] = None) -> Dict[str, Any]:
         if not self.timeline_steps:
             self.timeline_steps.append(
@@ -273,6 +280,7 @@ class RichLog:
         elif title and self.timeline_steps[-1]["title"] != title:
             if self.timeline_steps[-1]["status"] == "active":
                 self.timeline_steps[-1]["status"] = "completed"
+            self._drop_step_details(self.timeline_steps[-1])
             self.timeline_steps.append(self._create_step(title, status="active"))
         elif title and self.timeline_steps[-1]["title"] == title:
             if self.timeline_steps[-1]["status"] != "failed":
@@ -322,8 +330,10 @@ class RichLog:
 
         if pm.state == 3:
             last_step["status"] = "failed"
+            self._drop_step_details(last_step)
         elif last_step["status"] == "active":
             last_step["status"] = "completed"
+            self._drop_step_details(last_step)
 
     @staticmethod
     def _status_meta(status: str) -> Dict[str, str]:
@@ -357,11 +367,20 @@ class RichLog:
         items = []
         for index, step in enumerate(self.timeline_steps, start=1):
             status = self._status_meta(step["status"])
-            detail_html = "".join(step["details"])
             summary_text = step["last_message"] or "等待更多日志..."
             summary_text = html.escape(summary_text[:140])
             title = html.escape(step["title"])
             log_count = f"{step['line_count']} 条"
+            detail_section = ""
+
+            if step["status"] == "active":
+                detail_html = "".join(step["details"])
+                detail_section = (
+                    '<details class="alas-log-step-details">'
+                    '<summary>详细日志</summary>'
+                    f'<div class="alas-log-step-details-body">{detail_html}</div>'
+                    '</details>'
+                )
 
             items.append(
                 f"""
@@ -376,10 +395,7 @@ class RichLog:
                         </div>
                         <div class="alas-log-step-subtitle">步骤 {index} · {log_count}</div>
                         <div class="alas-log-step-summary">{summary_text}</div>
-                        <details class="alas-log-step-details">
-                            <summary>详细日志</summary>
-                            <div class="alas-log-step-details-body">{detail_html}</div>
-                        </details>
+                        {detail_section}
                     </div>
                 </div>
                 """
@@ -387,17 +403,29 @@ class RichLog:
 
         return '<div class="alas-log-timeline">' + "".join(items) + "</div>"
 
-    def _rebuild_timeline(self, renderables: List[ConsoleRenderable], pm: ProcessManager) -> None:
-        self.timeline_steps = []
-        for renderable in renderables:
-            self._ingest_renderable(renderable)
-        self._sync_process_state(pm)
+    def _refresh_timeline(self) -> None:
         run_js(
             """$("#pywebio-scope-{scope}>div").html(html);""".format(scope=self.scope),
             html=self._render_timeline_html(),
         )
         if self.keep_bottom:
             self.scroll()
+
+    def _rebuild_timeline(self, renderables: List[ConsoleRenderable], pm: ProcessManager) -> None:
+        self.timeline_steps = []
+        self.processed_renderables_total = 0
+        for renderable in renderables:
+            self._ingest_renderable(renderable)
+        self._sync_process_state(pm)
+        self.processed_renderables_total = getattr(pm, "renderables_total", len(renderables))
+        self._refresh_timeline()
+
+    def _catch_up_timeline(self, renderables: List[ConsoleRenderable], pm: ProcessManager) -> None:
+        for renderable in renderables:
+            self._ingest_renderable(renderable)
+        self.processed_renderables_total = getattr(pm, "renderables_total", len(pm.renderables))
+        self._sync_process_state(pm)
+        self._refresh_timeline()
 
     def set_dashboard_display(self, b: bool) -> None:
         # use for lambda callback function. Copied.
@@ -457,9 +485,23 @@ class RichLog:
         try:
             last_snapshot = None
             while True:
-                snapshot = (len(pm.renderables), pm.alive, pm.state)
+                total_renderables = getattr(pm, "renderables_total", len(pm.renderables))
+                snapshot = (total_renderables, pm.alive, pm.state)
                 if snapshot != last_snapshot:
-                    self._rebuild_timeline(pm.renderables[:], pm)
+                    if self.processed_renderables_total == 0:
+                        self._rebuild_timeline(pm.renderables[:], pm)
+                    else:
+                        new_count = total_renderables - self.processed_renderables_total
+                        if new_count < 0:
+                            self._rebuild_timeline(pm.renderables[:], pm)
+                        elif new_count > len(pm.renderables):
+                            self._catch_up_timeline(pm.renderables[:], pm)
+                        else:
+                            for renderable in pm.renderables[-new_count:] if new_count else []:
+                                self._ingest_renderable(renderable)
+                            self.processed_renderables_total = total_renderables
+                            self._sync_process_state(pm)
+                            self._refresh_timeline()
                     last_snapshot = snapshot
                 yield
         except SessionException:

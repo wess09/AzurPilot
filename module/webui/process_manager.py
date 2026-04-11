@@ -33,6 +33,7 @@ class ProcessManager:
         self.renderables: List[ConsoleRenderable] = []
         self.renderables_max_length = 400
         self.renderables_reduce_length = 80
+        self.renderables_total = 0
         self._process: Process = None
         self._process_locks: Dict[str, threading.Lock] = {}
         self.thd_log_queue_handler: threading.Thread = None
@@ -78,6 +79,7 @@ class ProcessManager:
                 self.renderables.append(
                     f"[{self.config_name}] exited. Reason: Manual stop\n"
                 )
+                self.renderables_total += 1
             if self.thd_log_queue_handler is not None:
                 self.thd_log_queue_handler.join(timeout=1)
                 if self.thd_log_queue_handler.is_alive():
@@ -93,6 +95,7 @@ class ProcessManager:
             except queue.Empty:
                 continue
             self.renderables.append(log)
+            self.renderables_total += 1
             if len(self.renderables) > self.renderables_max_length:
                 self.renderables = self.renderables[self.renderables_reduce_length :]
         logger.info("End of log queue handler loop")
