@@ -21,6 +21,30 @@
 9. 一些奇怪的小东西awa
 10. 迁移至 Python 3.14
 11. 更换 OCR 模型 支持 GPU 加速推理
+12. Alas MCP 服务
+
+## MCP 服务
+
+本地
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://127.0.0.1:22267/mcp/sse"
+    }
+  }
+}
+```
+云服务器或内网
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://[IP_ADDRESS]/mcp/sse"
+    }
+  }
+}
+```
 
 *侵蚀1功能：大部分来自下面
 ## 部分功能（大部分）来自[Zuosizhu(仪表盘等)](https://github.com/Zuosizhu/Alas-with-Dashboard)，[guoh064(大世界等)](https://github.com/guoh064/AzurLaneAutoScript)，[sui-feng-cb(岛屿等)](https://github.com/sui-feng-cb/AzurLaneAutoScript), [雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)
