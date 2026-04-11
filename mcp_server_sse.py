@@ -93,7 +93,17 @@ async def list_tools() -> List[Tool]:
                     "task": {"type": "string"},
                     "group": {"type": "string"},
                     "arg": {"type": "string"},
-                    "value": {"type": "any"}
+                    "value": {
+                        "oneOf": [
+                            {"type": "string"},
+                            {"type": "number"},
+                            {"type": "boolean"},
+                            {"type": "object"},
+                            {"type": "array"},
+                            {"type": "null"}
+                        ],
+                        "description": "新的配置值"
+                    }
                 },
                 "required": ["instance", "task", "group", "arg", "value"]
             }

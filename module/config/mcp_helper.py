@@ -38,17 +38,11 @@ class McpConfigHelper:
             if group_name == "Storage": # Skip storage
                 continue
                 
-            group_info = spec_i18n.get("_info", {})
-            if not group_info and group_name in spec_i18n:
-                # Some groups might have their own top-level entry or be sub-keys
-                pass
-
-            # Group localized info
-            group_display = group_name
-            group_help = ""
-            if group_name in spec_i18n:
-                 group_display = spec_i18n[group_name].get("_info", {}).get("name", group_name)
-                 group_help = spec_i18n[group_name].get("_info", {}).get("help", "")
+            # Resolve group i18n metadata once
+            group_meta = spec_i18n.get(group_name, {})
+            info = group_meta.get("_info", {})
+            group_display = info.get("name", group_name)
+            group_help = info.get("help", "")
 
             group_result = {
                 "display_name": group_display,
