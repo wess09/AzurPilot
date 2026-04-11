@@ -1767,15 +1767,6 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 continue
         return False
 
-    def _fixed_patrol_refresh_context(self, patrol_locations):
-        """根据当前海域刷新强制移动上下文，避免跨图复用旧进度。"""
-        zone_id = getattr(getattr(self, 'zone', None), 'zone_id', None)
-        context = (zone_id, tuple(patrol_locations))
-        if getattr(self, '_fixed_patrol_progress_context', None) != context:
-            self._fixed_patrol_progress_context = context
-            self._fixed_patrol_progress = {}
-        return self._fixed_patrol_progress
-
     def _get_fixed_patrol_candidate_grids(self, target_loc, occupied_locations=None):
         """为强制移动生成候选落点，主目标失败后尝试移动到附近空位。"""
         occupied = set(occupied_locations or [])
@@ -1953,7 +1944,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             return
 
         patrol_locations = [(2, 0), (3, 0), (4, 0), (5, 0)]  # 对应 C1, D1, E1, F1
-        progress = self._fixed_patrol_refresh_context(patrol_locations)
+        progress = {}
 
         for i, target_loc in enumerate(patrol_locations):
             fleet_index = i + 1
