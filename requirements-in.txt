@@ -12,7 +12,7 @@ jellyfish
 pyyaml
 inflection
 pywebio
-starlette
+starlette==0.25.0
 anyio
 uvicorn[standard]
 aiofiles
@@ -36,3 +36,5 @@ pip
 lz4
 setuptools
 openai
+mcp==0.9.1
+sse-starlette==3.0.3

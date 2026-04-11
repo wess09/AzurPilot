@@ -3213,6 +3213,7 @@ def app():
             return
         app_manage()
 
+    from mcp_server_sse import app as mcp_app
     app = asgi_app(
         applications=[index, manage],
         cdn=cdn,
@@ -3226,5 +3227,6 @@ def app():
         ],
         on_shutdown=[clearup],
     )
+    app.mount("/mcp", mcp_app)
 
     return app

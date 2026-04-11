@@ -124,6 +124,9 @@ def func(ev: Optional[Event]):
         raise
 
 
+
+
+
 if __name__ == "__main__":
     # 设置multiprocessing启动方式为spawn（macOS兼容性要求）
     try:
@@ -158,7 +161,6 @@ if __name__ == "__main__":
 
                 if restart_triggered:
                     logger.info("重启事件触发，终止当前服务...")
-                    process.kill()
                     process.join(timeout=5)
                     if process.is_alive():
                         logger.warning("无法终止服务进程，强制退出")
@@ -171,12 +173,21 @@ if __name__ == "__main__":
             if process.is_alive():
                 process.terminate()
                 process.join(timeout=3)
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=3)
 
         # 最终清理
+        if process.is_alive():
+            process.kill()
+            process.join()
         if process.is_alive():
             process.kill()
             process.join()
         logger.info("Alas Web服务已成功退出")
     else:
         # 非重载模式：直接运行
-        func(None)
+        try:
+            func(None)
+        finally:
+            pass
