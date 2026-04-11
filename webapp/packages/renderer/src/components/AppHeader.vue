@@ -14,8 +14,6 @@
   import {defineComponent} from 'vue';
   import {BorderOutlined, CloseOutlined, MinusOutlined, ArrowDownOutlined} from '@ant-design/icons-vue';
 
-  const ipcRenderer = require('electron').ipcRenderer;
-
   export default defineComponent({
     name: 'AppHeader',
     components: {
@@ -26,16 +24,16 @@
     },
     methods: {
       trayWin() {
-        ipcRenderer.send('window-tray');
+        window.electron.windowControls.tray();
       },
       minimizeWin() {
-        ipcRenderer.send('window-min');
+        window.electron.windowControls.minimize();
       },
       maximizeWin() {
-        ipcRenderer.send('window-max');
+        window.electron.windowControls.maximize();
       },
       closeWin() {
-        ipcRenderer.send('window-close');
+        window.electron.windowControls.close();
       },
     },
   });

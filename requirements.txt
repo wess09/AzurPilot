@@ -6,7 +6,6 @@
 #
 adbutils==0.11.0          # via -r requirements-in.txt, uiautomator2
 aiofiles==23.1.0          # via -r requirements-in.txt
-alas-webapp==0.3.7.0      # via -r requirements-in.txt
 annotated-types==0.7.0    # via pydantic
 antlr4-python3-runtime==4.9.3  # via omegaconf
 anyio==3.6.2              # via -r requirements-in.txt, httpx, openai, starlette, watchfiles

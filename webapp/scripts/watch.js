@@ -3,6 +3,9 @@
 const {createServer, build, createLogger} = require('vite');
 const electronPath = require('electron');
 const {spawn} = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const yaml = require('yaml');
 
 
 /** @type 'production' | 'development' | 'test' */
@@ -11,6 +14,22 @@ const mode = process.env.MODE = process.env.MODE || 'development';
 
 /** @type {import('vite').LogLevel} */
 const LOG_LEVEL = 'warn';
+
+
+// 读取 deploy.yaml 获取后端端口，注入给渲染进程
+function getWebuiUrl() {
+  try {
+    const deployPath = path.resolve(__dirname, '../../config/deploy.yaml');
+    const content = fs.readFileSync(deployPath, 'utf8');
+    const config = yaml.parse(content);
+    const port = config?.Deploy?.Webui?.WebuiPort ?? 22267;
+    return `http://127.0.0.1:${port}`;
+  } catch (e) {
+    return 'http://127.0.0.1:22267';
+  }
+}
+
+const VITE_WEBUI_URL = getWebuiUrl();
 
 
 /** @type {import('vite').InlineConfig} */
@@ -62,7 +81,7 @@ const setupMainPackageWatcher = (viteDevServer) => {
 
   return getWatcher({
     name: 'reload-app-on-main-package-change',
-    configFile: 'packages/main/vite.config.js',
+    configFile: 'packages/main/vite.config.mjs',
     writeBundle() {
       if (spawnProcess !== null) {
         spawnProcess.kill('SIGINT');
@@ -86,7 +105,7 @@ const setupMainPackageWatcher = (viteDevServer) => {
 const setupPreloadPackageWatcher = (viteDevServer) => {
   return getWatcher({
     name: 'reload-page-on-preload-package-change',
-    configFile: 'packages/preload/vite.config.js',
+    configFile: 'packages/preload/vite.config.mjs',
     writeBundle() {
       viteDevServer.ws.send({
         type: 'full-reload',
@@ -99,7 +118,10 @@ const setupPreloadPackageWatcher = (viteDevServer) => {
   try {
     const viteDevServer = await createServer({
       ...sharedConfig,
-      configFile: 'packages/renderer/vite.config.js',
+      configFile: 'packages/renderer/vite.config.mjs',
+      define: {
+        'import.meta.env.VITE_WEBUI_URL': JSON.stringify(VITE_WEBUI_URL),
+      },
     });
 
     await viteDevServer.listen();

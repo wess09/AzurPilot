@@ -2,8 +2,10 @@ import {app, Menu, Tray, BrowserWindow, ipcMain, globalShortcut} from 'electron'
 import {URL} from 'url';
 import {PyShell} from '/@/pyshell';
 import {webuiArgs, webuiPath, dpiScaling} from '/@/config';
+import {join} from 'path';
 
 const path = require('path');
+const {existsSync} = require('fs');
 
 const isSingleInstance = app.requestSingleInstanceLock();
 
@@ -12,13 +14,21 @@ if (!isSingleInstance) {
   process.exit(0);
 }
 
-// app.disableHardwareAcceleration();
+// Keep Chromium on the accelerated path instead of falling back to software rendering.
+// `ignore-gpu-blocklist` bypasses Electron/Chromium's internal GPU blacklist,
+// and `use-angle=d3d11` nudges Windows to use the Direct3D-backed ANGLE path.
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('use-angle', 'd3d11');
+}
 
 // Install "Vue.js devtools"
 if (import.meta.env.MODE === 'development') {
   app.whenReady()
     .then(() => import('electron-devtools-installer'))
-    .then(({default: installExtension, VUEJS3_DEVTOOLS}) => installExtension(VUEJS3_DEVTOOLS, {
+    .then(({default: installExtension, VUEJS_DEVTOOLS_BETA}) => installExtension(VUEJS_DEVTOOLS_BETA, {
       loadExtensionOptions: {
         allowFileAccess: true,
       },
@@ -37,7 +47,21 @@ alas.end(function (err: string) {
 
 let mainWindow: BrowserWindow | null = null;
 
+const pickFirstExistingPath = (candidates: string[]) => {
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return candidates[0];
+};
+
 const createWindow = async () => {
+  const preloadPath = pickFirstExistingPath([
+    join(__dirname, '../../preload/dist/index.cjs'),
+    join(__dirname, '../../packages/preload/dist/index.cjs'),
+  ]);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 880,
@@ -45,10 +69,10 @@ const createWindow = async () => {
     frame: false,
     icon: path.join(__dirname, './buildResources/icon.ico'),
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,   // Spectron tests can't work with contextIsolation: true
-      nativeWindowOpen: true,
-      // preload: join(__dirname, '../../preload/dist/index.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: false,
+      preload: preloadPath,
     },
   });
 
@@ -62,7 +86,6 @@ const createWindow = async () => {
     mainWindow?.show();
 
     // Hide menu
-    const {Menu} = require('electron');
     Menu.setApplicationMenu(null);
 
     if (import.meta.env.MODE === 'development') {
@@ -155,11 +178,16 @@ function loadURL() {
    * Vite dev server for development.
    * `file://../renderer/index.html` for production and test
    */
-  const pageUrl = import.meta.env.MODE === 'development' && import.meta.env.VITE_DEV_SERVER_URL !== undefined
-    ? import.meta.env.VITE_DEV_SERVER_URL
-    : new URL('../../renderer/dist/index.html', 'file://' + __dirname).toString();
+  if (import.meta.env.MODE === 'development' && import.meta.env.VITE_DEV_SERVER_URL !== undefined) {
+    mainWindow?.loadURL(import.meta.env.VITE_DEV_SERVER_URL);
+    return;
+  }
 
-  mainWindow?.loadURL(pageUrl);
+  const pagePath = pickFirstExistingPath([
+    join(__dirname, '../../renderer/dist/index.html'),
+    join(__dirname, '../../packages/renderer/dist/index.html'),
+  ]);
+  mainWindow?.loadFile(pagePath);
 }
 
 
@@ -206,4 +234,3 @@ if (import.meta.env.PROD) {
     .then(({autoUpdater}) => autoUpdater.checkForUpdatesAndNotify())
     .catch((e) => console.error('Failed check updates:', e));
 }
-

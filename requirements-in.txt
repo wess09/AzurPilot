@@ -17,7 +17,6 @@ anyio
 uvicorn[standard]
 aiofiles
 pypresence
-alas-webapp
 rich
 zerorpc
 pyzmq

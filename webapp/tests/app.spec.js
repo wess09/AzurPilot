@@ -6,6 +6,11 @@ const {strict: assert} = require('assert');
   const electronApp = await electron.launch({args: ['.']});
 
   /**
+   * Wait until the first renderer window exists before reading BrowserWindow state.
+   */
+  const page = await electronApp.firstWindow();
+
+  /**
    * App main window state
    * @type {{isVisible: boolean; isDevToolsOpened: boolean; isCrashed: boolean}}
    */
@@ -30,12 +35,6 @@ const {strict: assert} = require('assert');
   assert.ok(windowState.isVisible, 'Main window not visible');
   assert.ok(!windowState.isDevToolsOpened, 'DevTools opened');
   assert.ok(!windowState.isCrashed, 'Window crashed');
-
-  /**
-   * Rendered Main window web-page
-   * @type {Page}
-   */
-  const page = await electronApp.firstWindow();
 
 
   // Check web-page content
