@@ -33,7 +33,7 @@ class ManualConfig:
     > Exercise
     > Dorm > Meowfficer > Guild > Gacha
     > Reward
-    > ShopFrequent > EventShop > ShopOnce > Shipyard > Freebies > Island
+    > ShopFrequent > EventShop > ShopOnce > Shipyard > Freebies
     > PrivateQuarters
     > OpsiExplore
     > Minigame > Awaken

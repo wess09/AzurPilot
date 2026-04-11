@@ -1629,7 +1629,7 @@
       "help": ""
     },
     "BuyURShip": {
-      "name": "購買X只UR艦船",
+      "name": "購買X艘UR艦船",
       "help": "",
       "0": "0",
       "1": "1",
@@ -1637,13 +1637,13 @@
     },
     "PresetFilter": {
       "name": "活動商店過濾器",
-      "help": "一般預設全買即可",
+      "help": "一般不需要修改",
       "all": "全部",
       "custom": "自定義"
     },
     "CustomFilter": {
-      "name": "自定義過濾器",
-      "help": "使用自定義過濾器需將“活動商店過濾器”設定為“自定義”，並閱讀 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn"
+      "name": "自定義活動商店過濾器",
+      "help": "使用自定義過濾器需將 \"活動商店過濾器\" 設定為 \"自定義過濾器\"，並閱讀 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn"
     }
   },
   "Commission": {

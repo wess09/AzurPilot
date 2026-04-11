@@ -602,11 +602,11 @@
     "Log": {
       "LogKeepCount": {
         "type": "input",
-        "value": 7
+        "value": 3
       },
       "LogBackUpMethod": {
         "type": "select",
-        "value": "delete",
+        "value": "zip",
         "option": [
           "delete",
           "zip",
@@ -615,7 +615,7 @@
       },
       "ZipMethod": {
         "type": "select",
-        "value": "bz2",
+        "value": "zip",
         "option": [
           "bz2",
           "gzip",
@@ -9136,8 +9136,7 @@
       },
       "Fleet2Onsen": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       }
     },
     "Storage": {

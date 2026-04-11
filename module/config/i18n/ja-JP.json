@@ -111,7 +111,7 @@
       "help": ""
     },
     "EventShop": {
-      "name": "イベントストア",
+      "name": "イベント商店",
       "help": ""
     },
     "WarArchives": {
@@ -1621,29 +1621,29 @@
   },
   "EventShop": {
     "_info": {
-      "name": "イベントショップ",
-      "help": ""
+      "name": "EventShop._info.name",
+      "help": "EventShop._info.help"
     },
     "UnlockSSRShip": {
-      "name": "SSR艦船をアンロックする",
-      "help": ""
+      "name": "EventShop.UnlockSSRShip.name",
+      "help": "EventShop.UnlockSSRShip.help"
     },
     "BuyURShip": {
-      "name": "UR艦船をX隻購入する",
-      "help": "",
+      "name": "EventShop.BuyURShip.name",
+      "help": "EventShop.BuyURShip.help",
       "0": "0",
       "1": "1",
       "2": "2"
     },
     "PresetFilter": {
-      "name": "イベントショップフィルター",
-      "help": "通常、デフォルトですべて購入します。",
-      "all": "全部",
-      "custom": "カスタム"
+      "name": "EventShop.PresetFilter.name",
+      "help": "EventShop.PresetFilter.help",
+      "all": "all",
+      "custom": "custom"
     },
     "CustomFilter": {
-      "name": "カスタムフィルター",
-      "help": "カスタムフィルターを使用するには、「イベントショップフィルター」を「カスタム」に設定し、https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn を読む必要があります。"
+      "name": "EventShop.CustomFilter.name",
+      "help": "EventShop.CustomFilter.help"
     }
   },
   "Commission": {

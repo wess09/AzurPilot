@@ -193,9 +193,9 @@ class CoinTaskMixin:
         current_ap = self._action_point_total
 
         # 保存体力快照到数据库（用于 WebUI 体力变化曲线图）
+        instance_name = getattr(self.config, 'config_name', 'default')
         try:
             from module.statistics.cl1_database import db as cl1_db
-            instance_name = getattr(self.config, 'config_name', 'default')
             source = 'cl1' if getattr(self, 'is_in_task_cl1_leveling', False) else 'meow'
             cl1_db.async_add_ap_snapshot(instance_name, current_ap, source=source)
         except Exception:
@@ -210,22 +210,34 @@ class CoinTaskMixin:
 
 
         if self._can_send_ap_notification('_last_ap_notification_time'):
-            previous_ap = getattr(self, '_last_ap_notification_ap', None)
+            previous_ap = None
+            try:
+                from module.statistics.cl1_database import db as cl1_db
+                last_notification = cl1_db.get_last_ap_notification(instance_name)
+                if isinstance(last_notification, dict):
+                    previous_ap = last_notification.get('ap')
+            except Exception:
+                logger.exception('Failed to load last AP notification')
+
             content = f"当前行动力: {current_ap}"
 
             if previous_ap is not None:
                 ap_delta = current_ap - previous_ap
                 if ap_delta >= 0:
-                    content = f"当前行动力: {current_ap} 增加{ap_delta}"
+                    content = f"当前行动力: {current_ap} 上涨{ap_delta}行动力"
                 else:
-                    content = f"当前行动力: {current_ap} 下跌{abs(ap_delta)}"
+                    content = f"当前行动力: {current_ap} 下跌{abs(ap_delta)}行动力"
 
             pushed = self.notify_push(
                 title="[Alas] 行动力出现变化！",
                 content=content
             )
             if pushed:
-                self._last_ap_notification_ap = current_ap
+                try:
+                    from module.statistics.cl1_database import db as cl1_db
+                    cl1_db.async_set_last_ap_notification(instance_name, current_ap)
+                except Exception:
+                    logger.exception('Failed to save last AP notification')
 
     
     # ==================== 黄币阈值相关方法 ====================
