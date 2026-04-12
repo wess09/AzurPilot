@@ -1832,9 +1832,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 if target_grid.location == primary_target:
                     logger.info(f'舰队 {fleet_index} 已到达 {target_grid}。')
                 else:
-                        logger.info(f'舰队 {fleet_index} 主目标 {self.map[primary_target]} 失败，已改停靠至备用点 {target_grid}。')
+                    logger.info(f'舰队 {fleet_index} 主目标 {self.map[primary_target]} 失败，已改停靠至备用点 {target_grid}。')
                 return True
             except (MapWalkError, GameTooManyClickError) as e:
+                if isinstance(e, MapWalkError) and str(e) == 'walk_out_of_step':
+                    logger.warning(f'舰队 {fleet_index} 前往 {target_grid} 超出移动范围，放弃当前候选点并尝试其他落点')
+                    return False
                 logger.warning(f'舰队移动异常: {e}，尝试强制恢复（{try_idx + 1}/2）')
                 recovered = False
                 try:
