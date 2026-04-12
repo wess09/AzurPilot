@@ -1,3 +1,5 @@
+# 此文件处理大世界（Operation Siren）模式下的地图导航与海域管理。
+# 包括全球地图切换、海域初始化、处理各种地图减益状态以及海域自动搜索的守护逻辑。
 import time
 import inspect
 from sys import maxsize
@@ -162,6 +164,25 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
         # Init
         self.zone_init()
+        # CL1 hazard leveling pre-scan
+        #try:
+        #    if getattr(self, "is_in_task_cl1_leveling", False) or getattr(self, "is_cl1_enabled", False):
+        #        logger.info("Detected CL1 leveling on enter: run auto-search then full map rescan to clear events")
+        #        try:
+        #            self.run_auto_search(question=True, rescan='full', after_auto_search=True)
+        #        except CampaignEnd:
+        #        except RequestHumanTakeover:
+        #            logger.warning("Require human takeover during CL1 pre-scan, aborting auto-scan")
+        #        except Exception as e:
+        #            logger.exception(e)
+        #        try:
+        #            self.map_rescan(rescan_mode='full')
+        #        except Exception as e:
+        #            logger.exception(e)
+        #except Exception:
+        #    logger.debug("CL1 pre-scan check skipped due to unexpected condition")
+            
+        # self.map_init()
         self.hp_reset()
         self.handle_after_auto_search()
         self.handle_current_fleet_resolve(revert=False)
@@ -1299,8 +1320,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         """
         if hasattr(grid, 'is_scanning_device') and grid.is_scanning_device:
             if not self._is_siren_research_enabled:
+                logger.info(f'[预检查] 格子 {grid} 是塞壬研究装置,但功能未开启,跳过')
                 return True
             else:
+                logger.info(f'[预检查] 格子 {grid} 是塞壬研究装置,功能已开启,继续处理')
         return False
 
     def _should_skip_siren_research_for_explore(self):
@@ -1318,13 +1341,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         # 根据海域难度决定是否跳过
         hazard_level = self.zone.hazard_level
         if skip_level == 6 and hazard_level == 6:
-            logger.info(f'[月度开荒] 侵蚀等级 {hazard_level} = 6, Skip Scanning Device')
+            logger.info(f'[月度开荒] 海域危险度 {hazard_level} = 6, 跳过塞壬研究装置')
             return True
         if skip_level == 65 and hazard_level >= 5:
-            logger.info(f'[月度开荒] 侵蚀等级 {hazard_level} >= 5, Skip Scanning Device')
+            logger.info(f'[月度开荒] 海域危险度 {hazard_level} >= 5, 跳过塞壬研究装置')
             return True
         if skip_level == 654 and hazard_level >= 4:
-            logger.info(f'[月度开荒] 侵蚀等级 {hazard_level} >= 4, Skip Scanning Device')
+            logger.info(f'[月度开荒] 海域危险度 {hazard_level} >= 4, 跳过塞壬研究装置')
             return True
         return False
 
@@ -1355,6 +1378,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
             grid = self.convert_radar_to_local(grid)
             
+            # ========== 移动前检查：是否为塞壬研究装置且功能未开启 ==========
             if self._should_skip_siren_research(grid):
                 self._solved_map_event.add('is_scanning_device')
                 return True
@@ -1371,29 +1395,31 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self._solved_map_event.add('is_logging_tower')
                 return True
             elif 'event' in result and (grid.is_scanning_device or self.is_siren_device_confirmed):
-                # 地图检测:检测到扫描装置
-                logger.hr('OS Scanning Device', level=2)
-                logger.info(f'[MAP] Grid {grid} is identified as scanning device')
-                logger.info(f'[MAP] Move result: {result}')
+                # ========== 地图检测:检测到扫描装置 ==========
+                logger.hr('检测到扫描装置,开始处理', level=2)
+                logger.info(f'[地图检测] 格子 {grid} 被识别为扫描装置 (grid.is_scanning_device=True)')
+                logger.info(f'[地图检测] 移动结果: {result}')
 
-                # 配置检查
+                # ========== 配置检查 ==========
                 task, _ = self._get_siren_bug_task_pair()
                 siren_research_enabled = self.config.cross_get(keys=f"{task}.OpsiSirenBug.SirenResearch_Enable")
                 if not siren_research_enabled:
-                    logger.info('Skip Scanning Device')
+                    logger.warning('[配置检查] 塞壬研究装置功能已禁用,标记但不处理')
                     self._solved_map_event.add('is_scanning_device')
                     return True
 
-                # 装置处理                 
+                # ========== 装置处理 ==========
+                # 选项点击已由 wait_until_walk_stable -> info_handler.story_skip 处理
+                
                 # 执行自律寻敌
-                logger.info('[Scanning Device] Execute auto search')
+                logger.info('[装置处理] 步骤1: 执行自律寻敌')
                 self.os_auto_search_run(drop=drop)
                 
                 # 标记处理
                 self._solved_map_event.add('is_scanning_device')
                 
                 # Bug利用
-                logger.info('[Scanning Device] Check if bug exploitation is needed')
+                logger.info('[装置处理] 步骤2: 检查是否需要执行Bug利用')
                 self._handle_siren_bug_reinteract(drop=drop)
                 
                 return True
@@ -1489,12 +1515,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 drop.add(self.device.image)
                 self.hp_reset()
                 self.hp_get()
-                return True
+                return True  # 正常完成
             except TaskEnd:
+                # 任务切换，让异常继续向上传播
                 raise
             except Exception as e:
                 logger.warning(f'Strategic search interrupted: {e}')
-                return False
+                return False  # 被中断
             finally:
                 if drop.count <= 1:
                     drop.clear()
