@@ -132,6 +132,9 @@ class RichLog:
             soft_wrap=True,
         )
         self.timeline_steps = []
+        self.timeline_steps_max_length = 800
+        self.timeline_steps_reduce_length = 200
+        self.detail_lines_max_length = 120
         self.processed_renderables_total = 0
         if State.theme == "dark":
             self.terminal_theme = DARK_TERMINAL_THEME
@@ -263,21 +266,21 @@ class RichLog:
         return {
             "title": title,
             "status": status,
-            "details": [],
             "line_count": 0,
             "last_message": "",
+            "summary_message": "",
+            "detail_lines": [],
             "has_error": False,
         }
-
-    @staticmethod
-    def _drop_step_details(step: Dict[str, Any]) -> None:
-        step["details"] = []
 
     def _finalize_step(self, step: Dict[str, Any], terminal_status: Optional[str] = None) -> None:
         status = terminal_status or ("warning" if step.get("has_error") else "completed")
         step["status"] = status
-        if status == "completed":
-            self._drop_step_details(step)
+
+    @classmethod
+    def _trim_timeline_steps(cls, timeline_steps: List[Dict[str, Any]], max_length: int, reduce_length: int) -> None:
+        if len(timeline_steps) > max_length:
+            del timeline_steps[:reduce_length]
 
     def _ensure_step(self, title: Optional[str] = None) -> Dict[str, Any]:
         if not self.timeline_steps:
@@ -291,10 +294,26 @@ class RichLog:
         elif title and self.timeline_steps[-1]["title"] == title:
             if self.timeline_steps[-1]["status"] != "failed":
                 self.timeline_steps[-1]["status"] = "active"
+        self._trim_timeline_steps(
+            self.timeline_steps,
+            self.timeline_steps_max_length,
+            self.timeline_steps_reduce_length,
+        )
         return self.timeline_steps[-1]
 
+    def _pick_summary_message(self, detail_lines: List[str], fallback: str = "") -> str:
+        for line in reversed(detail_lines):
+            if self._is_error_text(line):
+                return line
+        return detail_lines[-1] if detail_lines else fallback
+
+    def _append_detail_lines(self, step: Dict[str, Any], raw_lines: List[str]) -> None:
+        lines = step["detail_lines"]
+        lines.extend(raw_lines)
+        if len(lines) > self.detail_lines_max_length:
+            del lines[: len(lines) - self.detail_lines_max_length]
+
     def _ingest_renderable(self, renderable: ConsoleRenderable) -> None:
-        html_content = self.render(renderable)
         text_content = self._render_text(renderable)
         task_title, is_strong_boundary = self._extract_task_title(text_content)
 
@@ -305,17 +324,18 @@ class RichLog:
         else:
             step = self.timeline_steps[-1]
 
-        if html_content:
-            step["details"].append(
-                f'<div class="alas-log-entry">{html_content}</div>'
-            )
-
-        detail_lines = [self._normalize_spaces(line) for line in text_content.splitlines()]
-        detail_lines = [line for line in detail_lines if line]
-        step["line_count"] += len(detail_lines)
+        raw_lines = [line.rstrip() for line in text_content.splitlines()]
+        raw_lines = [line for line in raw_lines if line.strip()]
+        detail_lines = [self._normalize_spaces(line) for line in raw_lines]
+        step["line_count"] += len(raw_lines)
 
         if detail_lines:
             step["last_message"] = detail_lines[-1]
+            step["summary_message"] = self._pick_summary_message(
+                detail_lines,
+                fallback=step["summary_message"],
+            )
+            self._append_detail_lines(step, raw_lines)
 
         if self._is_error_text(text_content):
             step["has_error"] = True
@@ -380,18 +400,19 @@ class RichLog:
         items = []
         for index, step in enumerate(self.timeline_steps, start=1):
             status = self._status_meta(step["status"])
-            summary_text = step["last_message"] or "等待更多日志..."
+            summary_text = step["summary_message"] or step["last_message"] or "等待更多日志..."
             summary_text = html.escape(summary_text[:140])
             title = html.escape(step["title"])
             log_count = f"{step['line_count']} 条"
             detail_section = ""
 
-            if step["status"] in ("active", "warning", "failed") and step["details"]:
-                detail_html = "".join(step["details"])
+            if step["status"] == "failed" and step["detail_lines"]:
+                detail_text = "\n".join(step["detail_lines"])
+                detail_html = html.escape(detail_text)
                 detail_section = (
-                    f'<details class="alas-log-step-details" data-step-index="{index}">'
+                    f'<details class="alas-log-step-details" data-step-index="{index}" open>'
                     '<summary>详细日志</summary>'
-                    f'<div class="alas-log-step-details-body">{detail_html}</div>'
+                    f'<div class="alas-log-step-details-body"><div class="alas-log-entry"><pre>{detail_html}</pre></div></div>'
                     '</details>'
                 )
 

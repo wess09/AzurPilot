@@ -313,13 +313,18 @@ pre.rich-traceback-code {
 
 /* 深色模式下失败摘要（错误信息块）改为深色底 */
 .alas-log-step-summary {
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.1);
+    color: #d1d5db;
+    background: rgba(148, 163, 184, 0.12);
 }
 
 .alas-log-step.is-warning .alas-log-step-summary {
     color: #fcd34d;
     background: rgba(245, 158, 11, 0.12);
+}
+
+.alas-log-step.is-failed .alas-log-step-summary {
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.1);
 }
 
 .alas-log-step-details > summary:hover {

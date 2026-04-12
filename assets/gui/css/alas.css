@@ -753,19 +753,19 @@ pre.rich-traceback-code {
     font-size: 12px;
     border-radius: 6px;
     padding: 7px 10px;
-    color: #A32D2D;
-    background: #FCEBEB;
+    color: var(--alas-timeline-text);
+    background: rgba(148, 163, 184, 0.08);
     font-family: 'JetBrains Mono NL', monospace !important;
 }
 
-/* 只在失败/需关注状态显示行内摘要，正常/完成状态隐藏 */
 .alas-log-step.is-warning .alas-log-step-summary {
     color: var(--alas-timeline-warning-badge-text);
     background: var(--alas-timeline-warning-badge-bg);
 }
 
-.alas-log-step:not(.is-failed):not(.is-warning) .alas-log-step-summary {
-    display: none;
+.alas-log-step.is-failed .alas-log-step-summary {
+    color: var(--alas-timeline-failed-badge-text);
+    background: var(--alas-timeline-failed-badge-bg);
 }
 
 .alas-log-step-details {
