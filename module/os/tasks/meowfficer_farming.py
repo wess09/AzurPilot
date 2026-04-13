@@ -199,13 +199,13 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             zone_id: 海域 ID
             device_type: 装置类型 ('detection' 或 'reconnaissance')
         """
-        if device_type == self.SIREN_DEVICE_TYPE_RECONNAISSANCE:
-            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬信息收集装置，不参与搜索统计')
-            return None, 0, False
-        elif device_type == self.SIREN_DEVICE_TYPE_DETECTION:
-            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬探测装置，进行搜索统计')
+        if device_type == self.SIREN_DEVICE_TYPE_DETECTION:
+            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬探测装置（无资源），进行搜索统计')
             level, found_count, added = self._record_siren_found_zone(zone_id)
             return level, found_count, added
+        elif device_type == self.SIREN_DEVICE_TYPE_RECONNAISSANCE:
+            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬信息收集装置（可获得资源），不参与搜索统计')
+            return None, 0, False
         else:
             logger.warning(f'[装置判断] 未知装置类型: {device_type}')
             return None, 0, False
