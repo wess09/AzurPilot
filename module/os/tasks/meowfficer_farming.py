@@ -125,6 +125,7 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
             if hasattr(grid, 'is_scanning_device') and grid.is_scanning_device:
                 # 在搜索模式下，记录当前装置待处理
                 self._current_siren_device_grid = grid
+                self._current_siren_device_zone = getattr(getattr(self, 'zone', None), 'zone_id', None)
                 self._current_siren_device_zone = self.zone_id
                 logger.info('[短猫任务] 发现可疑格子，标记待判断装置类型')
                 return False  # 允许交互，之后根据结果判断类型
