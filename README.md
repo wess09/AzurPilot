@@ -46,6 +46,41 @@
 }
 ```
 
+## 当前可用的 MCP 工具（共 18 个）：
+
+实例管理
+
+- mcp_alas_list_instances - 列出所有实例
+- mcp_alas_get_status - 获取实例状态
+- mcp_alas_start_instance - 启动实例
+- mcp_alas_stop_instance - 停止实例
+
+任务管理
+
+- mcp_alas_list_tasks - 列出所有任务
+- mcp_alas_get_task_help - 获取任务帮助
+- mcp_alas_trigger_task - 触发任务
+- mcp_alas_get_scheduler_queue - 获取调度队列
+- mcp_alas_clear_scheduler_queue - 清空调度队列
+
+监控与信息
+
+- mcp_alas_get_current_running_task - 获取当前运行任务
+- mcp_alas_get_resources - 获取资源状态
+- mcp_alas_get_config - 获取实例配置
+- mcp_alas_get_recent_logs - 获取最近日志
+- mcp_alas_get_screenshot - 获取截图
+
+配置管理
+
+- mcp_alas_update_config - 更新配置
+
+维护工具
+
+- mcp_alas_restart_emulator - 重启模拟器
+- mcp_alas_restart_adb - 重启 ADB
+- mcp_alas_update_alas - 更新 ALAS
+
 *侵蚀1功能：大部分来自下面
 ## 部分功能（大部分）来自[Zuosizhu(仪表盘等)](https://github.com/Zuosizhu/Alas-with-Dashboard)，[guoh064(大世界等)](https://github.com/guoh064/AzurLaneAutoScript)，[sui-feng-cb(岛屿等)](https://github.com/sui-feng-cb/AzurLaneAutoScript), [雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)
 
