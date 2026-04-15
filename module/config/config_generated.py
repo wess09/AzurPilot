@@ -734,6 +734,7 @@ class GeneratedConfig:
     OpsiSirenBug_SirenResearch_Enable = False
     OpsiSirenBug_SirenBug_Enable = False
     OpsiSirenBug_SirenBug_Type = 'dangerous'  # dangerous, safe
+    OpsiSirenBug_SirenBug_Mode = 'resource'  # resource, enemy
     OpsiSirenBug_SirenBug_Zone = 0
     OpsiSirenBug_SirenBug_Grid = None
     OpsiSirenBug_SirenBug_SyncDailyCount = False  # True, False

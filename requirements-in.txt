@@ -36,6 +36,8 @@ numba
 pip
 lz4
 setuptools
+importlib_resources>=6.0.0
+importlib_metadata>=8.0.0
 openai
 mcp==0.9.1
 sse-starlette==3.0.3

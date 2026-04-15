@@ -1425,7 +1425,7 @@ class AlasGUI(Frame):
             label_on=t("Gui.Button.Stop"),
             label_off=t("Gui.Button.Start"),
             onclick_on=self.simulator.interrupt,
-            onclick_off=self.simulator.start,
+            onclick_off=self._simulator_start,
             get_state=lambda: self.simulator.is_running,
             color_on="off",
             color_off="on",
@@ -1567,6 +1567,16 @@ class AlasGUI(Frame):
             color="navigator",
         )
 
+    def _alas_start(self):
+        self.alas.start(None, updater.event)
+        if os.environ.get("DEMO") == "1":
+            threading.Timer(5, self.alas.stop).start()
+
+    def _simulator_start(self):
+        self.simulator.start()
+        if os.environ.get("DEMO") == "1":
+            threading.Timer(5, self.simulator.interrupt).start()
+
     @use_scope("content", clear=True)
     def alas_overview(self) -> None:
         self.init_menu(name="Overview")
@@ -1627,7 +1637,7 @@ class AlasGUI(Frame):
             label_on=t("Gui.Button.Stop"),
             label_off=t("Gui.Button.Start"),
             onclick_on=lambda: self.alas.stop(),
-            onclick_off=lambda: self.alas.start(None, updater.event),
+            onclick_off=self._alas_start,
             get_state=lambda: self.alas.alive,
             color_on="off",
             color_off="on",
@@ -1812,6 +1822,9 @@ class AlasGUI(Frame):
             config_name: str,
             config_updater: AzurLaneConfig = State.config_updater,
     ) -> None:
+        if os.environ.get("DEMO") == "1":
+            return
+
         try:
             skip_time_record = False
             valid = []
@@ -2442,7 +2455,7 @@ class AlasGUI(Frame):
                 )
                 if (
                         State.deploy_config.EnableRemoteAccess
-                        and State.deploy_config.Password
+                        and (State.deploy_config.Password or os.environ.get("DEMO") == "1")
                 ):
                     put_text(t("Gui.Remote.NotRunning"), scope="remote_state")
                 else:
@@ -3130,7 +3143,7 @@ def startup():
         start_ocr_server_process(State.deploy_config.OcrServerPort)
     if (
             State.deploy_config.EnableRemoteAccess
-            and State.deploy_config.Password is not None
+            and (State.deploy_config.Password is not None or os.environ.get("DEMO") == "1")
     ):
         task_handler.add(RemoteAccess.keep_ssh_alive(), 60)
 

@@ -11,6 +11,10 @@ from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
     SIREN_DETECTOR_HAZARD_LEVELS = (5, 6)
+    
+    # 装置类型常量
+    SIREN_DEVICE_TYPE_DETECTION = 'detection'      # 塞壬探测装置
+    SIREN_DEVICE_TYPE_RECONNAISSANCE = 'reconnaissance'  # 塞壬信息收集装置
 
     def _clone_siren_found(self, found):
         return {level: set(found.get(level, set())) for level in self.SIREN_DETECTOR_HAZARD_LEVELS}
@@ -119,8 +123,11 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         """
         if self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
             if hasattr(grid, 'is_scanning_device') and grid.is_scanning_device:
-                logger.info('[短猫任务] 塞壬探测装置搜索模式下，跳过使用塞壬探测装置')
-                return True
+                # 在搜索模式下，记录当前装置待处理
+                self._current_siren_device_grid = grid
+                self._current_siren_device_zone = self.zone_id
+                logger.info('[短猫任务] 发现可疑格子，标记待判断装置类型')
+                return False  # 允许交互，之后根据结果判断类型
         
         return super()._should_skip_siren_research(grid)
     
@@ -145,13 +152,14 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 if not hasattr(self, '_solved_map_event'):
                     self._solved_map_event = set()
                 if 'is_scanning_device' not in self._solved_map_event:
-                    logger.info(f'[短猫任务] 搜索模式发现塞壬探测装置 {grids[0]}，跳过使用')
+                    logger.info(f'[短猫任务] 搜索模式发现可疑格子 {grids[0]}，标记待判断')
+                    # 暂时标记为已处理，之后根据交互结果判断类型
                     self._solved_map_event.add('is_scanning_device')
         
         return super().map_rescan_current(drop=drop)
     
     def _handle_siren_detector_at_map(self, zone_id):
-        """进入地图后检查是否有塞壬探测装置。
+        """进入地图后检查是否有塞壬装置（待交互判断类型）。
 
         Args:
             zone_id: 当前海域 ID。
@@ -166,36 +174,44 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         self.view.predict()
         
         grids = self.view.select(is_scanning_device=True)
-        logger.info(f'塞壬探测装置检查: 发现 {len(grids) if grids else 0} 个可疑格子')
+        logger.info(f'塞壬装置检查: 发现 {len(grids) if grids else 0} 个可疑格子')
         
         if grids and grids[0].is_scanning_device:
-            logger.hr(f'在海域 {zone_id} 发现塞壬探测装置', level=2)
-            level, found_count, added = self._record_siren_found_zone(zone_id)
-            if not level:
-                return False
-
-            logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-            if added:
-                logger.info(f'已找到数量(侵蚀{level}): {found_count}')
-            else:
-                logger.info(f'侵蚀{level}海域 {zone_id} 已存在记录，当前数量: {found_count}')
+            logger.hr(f'在海域 {zone_id} 发现可疑格子，标记待交互判断', level=2)
+            # 记录当前格子，用于交互后判断装置类型
+            self._current_siren_device_zone = zone_id
+            self._current_siren_device_grid = grids[0]
+            # 暂不记录，等待交互完成后判断类型
             
             if not hasattr(self, '_solved_map_event'):
                 self._solved_map_event = set()
+            # 标记为已处理，防止重复检查
             self._solved_map_event.add('is_scanning_device')
-            logger.info('已将探测装置标记为已处理，自律中将跳过')
-            
-            stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
-            if stop_after_found > 0 and found_count >= stop_after_found:
-                logger.hr(f'侵蚀{level}已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
-                return True
             
             return False
         
         return False
     
+    def _record_siren_device_type(self, zone_id, device_type):
+        """根据装置类型记录装置。
+        
+        Args:
+            zone_id: 海域 ID
+            device_type: 装置类型 ('detection' 或 'reconnaissance')
+        """
+        if device_type == self.SIREN_DEVICE_TYPE_DETECTION:
+            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬探测装置（无资源），进行搜索统计')
+            level, found_count, added = self._record_siren_found_zone(zone_id)
+            return level, found_count, added
+        elif device_type == self.SIREN_DEVICE_TYPE_RECONNAISSANCE:
+            logger.info(f'[装置判断] 海域 {zone_id} 的装置为塞壬信息收集装置（可获得资源），不参与搜索统计')
+            return None, 0, False
+        else:
+            logger.warning(f'[装置判断] 未知装置类型: {device_type}')
+            return None, 0, False
+    
     def _handle_siren_detector_after_auto_search(self, zone_id):
-        """自律结束后检查是否有塞壬探测装置。
+        """自律结束后检查是否有塞壬装置。
 
         Args:
             zone_id: 当前海域 ID。
@@ -213,29 +229,77 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
         logger.info(f'自律后检测发现 {len(grids) if grids else 0} 个可疑格子')
         
         if grids and grids[0].is_scanning_device:
-            logger.hr(f'在海域 {zone_id} 发现塞壬探测装置（自律后）', level=2)
-            level, found_count, added = self._record_siren_found_zone(zone_id)
-            if not level:
-                return
-
-            logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
-            if added:
-                logger.info(f'已找到数量(侵蚀{level}): {found_count}')
-            else:
-                logger.info(f'侵蚀{level}海域 {zone_id} 已存在记录，当前数量: {found_count}')
+            logger.hr(f'在海域 {zone_id} 发现可疑格子（自律后）', level=2)
+            # 记录当前格子，用于交互后判断装置类型
+            self._current_siren_device_zone = zone_id
+            self._current_siren_device_grid = grids[0]
+            # 暂不记录，等待交互完成后判断类型
             
             if not hasattr(self, '_solved_map_event'):
                 self._solved_map_event = set()
             self._solved_map_event.add('is_scanning_device')
-            logger.info('已将探测装置标记为已处理，防止自律重复触发')
+            logger.info('已标记格子待交互判断')
+    
+    def handle_siren_device_interaction_result(self, result):
+        """处理塞壬装置交互结果，判断装置类型。
+        
+        Args:
+            result: wait_until_walk_stable 返回的结果集合
             
-            stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
-            if stop_after_found > 0 and found_count >= stop_after_found:
-                logger.hr(f'侵蚀{level}已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
-                self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
+        Returns:
+            str: 装置类型 ('detection', 'reconnaissance', 或 None)
+        """
+        # 检查是否存在待判断的装置
+        if not hasattr(self, '_current_siren_device_zone'):
+            return None
+            
+        zone_id = self._current_siren_device_zone
+        device_type = None
+        
+        # 关键判断逻辑：如果出现 map_get_items，说明破坏了信息收集装置（获得AP/资源）
+        if 'map_get_items' in result:
+            device_type = self.SIREN_DEVICE_TYPE_RECONNAISSANCE
+            logger.info(f'[装置交互] 检测到获得物品事件，判定为信息收集装置')
+        else:
+            # 否则判定为探测装置
+            device_type = self.SIREN_DEVICE_TYPE_DETECTION
+            logger.info(f'[装置交互] 未检测到获得物品事件，判定为探测装置')
+        
+        # 追踪装置类型，用于搜索流程判断
+        self._last_siren_device_type = device_type
+        
+        # 根据装置类型进行记录
+        level, found_count, added = self._record_siren_device_type(zone_id, device_type)
+        
+        # 如果是探测装置且需要检查停止条件
+        if device_type == self.SIREN_DEVICE_TYPE_DETECTION:
+            if level:
+                logger.info(f'已记录海域: {self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FoundZones}')
+                if added:
+                    logger.info(f'已找到数量(侵蚀{level}): {found_count}')
+                else:
+                    logger.info(f'侵蚀{level}海域 {zone_id} 已存在记录，当前数量: {found_count}')
+                
+                stop_after_found = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_StopAfterFound
+                if stop_after_found > 0 and found_count >= stop_after_found:
+                    logger.hr(f'侵蚀{level}已找到 {found_count} 个探测装置，达到设定目标 {stop_after_found}，停止搜索模式', level=1)
+                    self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable = False
+        
+        # 清理临时变量
+        if hasattr(self, '_current_siren_device_zone'):
+            delattr(self, '_current_siren_device_zone')
+        if hasattr(self, '_current_siren_device_grid'):
+            delattr(self, '_current_siren_device_grid')
+        
+        return device_type
     
     def _meow_ap_and_scheduling_check(self, preserve, ap_checked):
         """Action point check and scheduling check"""
+        # ===== 塞壬装置交互判断 =====
+        # 在 Meowfficer 搜索模式下，检查是否需要判断装置类型
+        if self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable and hasattr(self, '_current_siren_device_zone'):
+            logger.info('[短猫任务] AP检查前：检查待处理的装置交互')
+        
         self.config.OS_ACTION_POINT_PRESERVE = preserve
 
         # ===== 智能调度：行动力保留覆盖 =====
@@ -498,28 +562,44 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
                 # 步骤 4. 结果检测：检查是否有塞壬探测装置
                 siren_detector_found = False
                 if 'is_scanning_device' in self._solved_map_event:
-                    logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置 (自律检测)', level=2)
+                    logger.hr(f'在海域 {current_zone_id} 发现塞壬装置', level=2)
                     siren_detector_found = True
                 else:
                     logger.info('探测装置搜索：正通过全图扫描进行最后确认')
                     self.map_rescan(rescan_mode='full')
                     if 'is_scanning_device' in self._solved_map_event:
-                        logger.hr(f'在海域 {current_zone_id} 发现塞壬探测装置 (全图扫描)', level=2)
+                        logger.hr(f'在海域 {current_zone_id} 发现塞壬装置 (全图扫描)', level=2)
                         siren_detector_found = True
                     else:
                         logger.info('探测装置搜索：全图扫描未发现装置')
 
-                # 步骤 5. 记录与收尾
-                if not siren_detector_found:
-                    # 未发现时的后续处理：由卡位舰队清理残局
+                # 步骤 5. 装置类型判断
+                # 根据是否有 map_get_items 事件判断装置类型
+                # - 如果有 map_get_items：信息收集装置（交互获得资源）
+                # - 否则：探测装置（无资源）
+                is_reconnaissance_device = 'map_get_items' in self._solved_map_event
+                
+                # 步骤 6. 记录与收尾
+                if not siren_detector_found or is_reconnaissance_device:
+                    # 两种情况需要由卡位舰队清理：
+                    # 1. 未发现任何装置
+                    # 2. 发现的是信息收集装置（已交互获得资源，不参与统计）
+                    if is_reconnaissance_device:
+                        logger.hr(f'海域 {current_zone_id} 发现塞壬信息收集装置，已获得资源，不参与探测装置统计', level=2)
+                    else:
+                        logger.info(f'海域 {current_zone_id} 未发现任何装置')
+                    
                     block_fleet = self.config.OpsiMeowfficerFarming_SirenDetectorSearch_FleetForBlock
-                    logger.info(f'未发现装置，由舰队 {block_fleet} 执行清理，继续搜索下一个海域')
+                    logger.info(f'由舰队 {block_fleet} 执行清理，继续搜索下一个海域')
                     self.fleet_set(block_fleet)
                     self.os_auto_search_run(drop=None)
                     self.fleet_set(self.config.OpsiFleet_Fleet)
+                    
                     # 此处不恢复状态，继续while循环搜索下一个zone
                     continue
 
+                # 只有探测装置（无 map_get_items 事件）才记录
+                logger.info(f'海域 {current_zone_id} 发现塞壬探测装置，记录为已发现')
                 level, found_count, added = self._record_siren_found_zone(current_zone_id)
                 if not level:
                     _restore_siren_search_state()

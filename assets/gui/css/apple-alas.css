@@ -325,7 +325,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
    5. 卡片样式
    ========================================== */
 
-/* 通用卡片样式 - 排除日志区域的所有容器以免冲突 */
+/* 通用卡片样式 */
 [id^="pywebio-scope-group_"]:not(#pywebio-scope-menu):not(#pywebio-scope-aside):not(#pywebio-scope-navigator),
 #pywebio-scope-running,
 #pywebio-scope-pending,
@@ -333,7 +333,10 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-scheduler-bar,
 #pywebio-scope-stat-bar,
 #pywebio-scope-image-container,
-#pywebio-scope-groups>*:not(#pywebio-scope-navigator):not(#pywebio-scope-log-bar):not(#pywebio-scope-log):not(.container-log) {
+#pywebio-scope-log-bar,
+#pywebio-scope-log,
+.container-log,
+#pywebio-scope-groups>*:not(#pywebio-scope-navigator) {
 	background-color: var(--alas-apple-card-bg) !important;
 	backdrop-filter: blur(16px) saturate(180%);
 	-webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -354,6 +357,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-waiting:hover,
 #pywebio-scope-log-bar:hover,
 #pywebio-scope-log:hover,
+.container-log:hover,
 #pywebio-scope-groups>*:not(#pywebio-scope-navigator):hover {
 	box-shadow: var(--alas-apple-shadow-lg) !important;
 }
@@ -372,78 +376,30 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	will-change: box-shadow, transform;
 }
 
-/* container-log 必须彻底重置，以免干扰内部拼接 */
+/* --- 5.1 日志区域专项适配 --- */
 .container-log {
-	background: none !important;
-	border: none !important;
-	border-radius: 0 !important;
-	padding: 0 !important;
-	margin: 0 !important;
-	box-shadow: none !important;
+	background-color: rgba(255, 255, 255, 0.85) !important;
+	backdrop-filter: blur(10px) saturate(150%) !important;
+	-webkit-backdrop-filter: blur(10px) saturate(150%) !important;
+	border: 1px solid rgba(255, 255, 255, 0.5) !important;
+	border-radius: var(--radius-lg) !important;
 	display: block !important;
+	opacity: 1 !important;
+	padding: 20px !important;
+	margin: 10px !important;
+	min-height: 240px !important;
+	box-shadow: var(--alas-apple-shadow-lg) !important;
 }
 
-/* log-bar 和 log 将通过以下方式拼接成一体： */
-/* 这里的通用属性已经由于加入了上方通用选择器而被定义，下面只修正圆角和拼接 */
-
-#pywebio-scope-log-bar {
-    background-color: var(--alas-apple-card-bg) !important;
-    backdrop-filter: blur(16px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
-    border: 1px solid var(--alas-apple-glass-border) !important;
-    box-shadow: var(--alas-apple-shadow) !important;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
-    margin-bottom: 0 !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
-    padding: var(--spacing-md) !important;
-}
-
-#pywebio-scope-log {
-    background-color: rgba(255, 255, 255, 0.6) !important; /* 加深一点，确保可见 */
-    backdrop-filter: blur(20px) saturate(180%) !important;
-    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-    border: 1px solid var(--alas-apple-glass-border) !important;
-    border-top: none !important; 
-    box-shadow: var(--alas-apple-shadow) !important;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
-    margin-top: 0 !important;
-    padding: 0 !important;
-    overflow: hidden !important;
-    min-height: 200px !important; /* 确保空状态也有足够高度展示背景 */
-}
-
-/* 强制清除内容区及其子层级的顶部圆角 */
-#pywebio-scope-log,
-#pywebio-scope-log > div,
-#pywebio-scope-log .alas-log-empty,
-#pywebio-scope-log .card,
-#pywebio-scope-log .alas-log-step {
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-}
-
-/* 空状态的特殊背景处理：给它一点层次感 */
-#pywebio-scope-log .alas-log-empty {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
-    padding: 40px var(--spacing-md) !important;
-}
-
-/* log 区域所有元素：重置为主字体（覆盖 alas.css 的全局 monospace 规则） */
+#pywebio-scope-log div,
+#pywebio-scope-log pre,
+#pywebio-scope-log code,
 #pywebio-scope-log * {
 	background: transparent !important;
 	background-color: transparent !important;
 	opacity: 1 !important;
-	font-family: 'MiSans', "Microsoft YaHei", sans-serif !important;
+	font-family: var(--alas-font-mono) !important;
 	line-height: 1.5 !important;
-    color: #2c2c2e;
-}
-
-/* 只有真实日志行使用等宽字体 */
-#pywebio-scope-log .alas-log-entry,
-#pywebio-scope-log .alas-log-entry * {
-	font-family: 'JetBrains Mono NL', SFMono-Regular, Menlo, Consolas, monospace !important;
-	font-size: 11.5px !important;
 }
 
 
@@ -532,7 +488,8 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	animation-delay: 0.20s;
 }
 
-#pywebio-scope-log {
+#pywebio-scope-log,
+.container-log {
 	animation-delay: 0.25s;
 }
 
@@ -1195,7 +1152,18 @@ details[open]>summary::after {
    10. 日志区域
    ========================================== */
 
-/* --- 1202-1213 行的冗余 #pywebio-scope-log 已删除，相关逻辑已迁移至 5.1 专项适配区 --- */
+#pywebio-scope-log {
+	font-family: 'JetBrains Mono NL', monospace !important;
+	font-size: 13px !important;
+	background-color: var(--alas-apple-card-bg) !important;
+	backdrop-filter: blur(20px) saturate(180%) !important;
+	-webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+	border: 1px solid var(--alas-apple-glass-border) !important;
+	border-radius: var(--radius-lg) !important;
+	padding: 20px !important;
+	line-height: 1.6;
+	box-shadow: var(--alas-apple-shadow-md) !important;
+}
 
 /* ==========================================
    11. 动画定义
@@ -1481,33 +1449,4 @@ button[style*="--menu-Overview--"] {
 		animation-iteration-count: 1 !important;
 		transition-duration: 0.01ms !important;
 	}
-}
-
-:root {
-	--alas-timeline-line: rgba(120, 120, 128, 0.24);
-	--alas-timeline-line-fade: rgba(120, 120, 128, 0.06);
-	--alas-timeline-text: var(--alas-apple-text);
-	--alas-timeline-muted: var(--alas-apple-text-secondary);
-	--alas-timeline-card-bg: rgba(255, 255, 255, 0.72);
-	--alas-timeline-card-border: rgba(255, 255, 255, 0.45);
-	--alas-timeline-card-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
-	--alas-timeline-details-bg: rgba(255, 255, 255, 0.56);
-	--alas-timeline-details-border: rgba(120, 120, 128, 0.14);
-	--alas-timeline-entry-bg: rgba(255, 255, 255, 0.74);
-	--alas-timeline-entry-border: rgba(120, 120, 128, 0.12);
-
-	--alas-timeline-active-bg: linear-gradient(180deg, rgba(255, 244, 220, 0.82), rgba(255, 250, 235, 0.74));
-	--alas-timeline-active-border: rgba(255, 159, 10, 0.35);
-	--alas-timeline-active-badge-bg: rgba(255, 159, 10, 0.16);
-	--alas-timeline-active-badge-text: #9a5b00;
-
-	--alas-timeline-completed-bg: linear-gradient(180deg, rgba(227, 252, 239, 0.82), rgba(241, 253, 246, 0.74));
-	--alas-timeline-completed-border: rgba(48, 209, 88, 0.32);
-	--alas-timeline-completed-badge-bg: rgba(48, 209, 88, 0.14);
-	--alas-timeline-completed-badge-text: #177245;
-
-	--alas-timeline-failed-bg: linear-gradient(180deg, rgba(255, 232, 230, 0.84), rgba(255, 242, 241, 0.76));
-	--alas-timeline-failed-border: rgba(255, 69, 58, 0.32);
-	--alas-timeline-failed-badge-bg: rgba(255, 69, 58, 0.14);
-	--alas-timeline-failed-badge-text: #b42318;
 }

@@ -1,11 +1,9 @@
 import copy
 # 此文件定义了 WebUI 中使用的各种自定义交互图形组件（Widgets）。
 # 包含彩色实时日志渲染器（RichLog）、状态感知切换按钮以及图标按钮组等高度定制化的可视化组件。
-import html
 import json
 import pywebio.pin
 import random
-import re
 import string
 from typing import Any, Callable, Dict, Generator, List, Optional, TYPE_CHECKING, Union
 
@@ -13,7 +11,6 @@ from pywebio.exceptions import SessionException
 from pywebio.io_ctrl import Output
 from pywebio.output import *
 from pywebio.session import eval_js, local, run_js
-from rich.console import Console
 from rich.console import ConsoleRenderable
 
 from module.logger import HTMLConsole, Highlighter, WEB_THEME
@@ -82,23 +79,6 @@ class ScrollableCode:
 
 class RichLog:
     last_display_time: dict
-    KEYWORD_TITLE_MAP = [
-        (("侵蚀 1", "侵蚀1", "hazard 1 leveling", "cl1"), "OpsiHazard1Leveling"),
-        (("短猫", "meowfficer farming"), "OpsiMeowfficerFarming"),
-        (("深渊", "abyssal"), "OpsiAbyssal"),
-        (("隐秘", "obscure"), "OpsiObscure"),
-        (("要塞", "stronghold"), "OpsiStronghold"),
-        (("委托", "commission"), "Commission"),
-        (("科研", "research"), "Research"),
-        (("演习", "exercise"), "Exercise"),
-        (("宿舍", "dorm"), "Dorm"),
-        (("收获", "reward", "领取奖励", "get items"), "Reward"),
-        (("商店", "shop"), "ShopFrequent"),
-        (("免费", "freebies"), "Freebies"),
-        (("公会", "guild"), "Guild"),
-        (("建造", "gacha"), "Gacha"),
-        (("重启", "restart", "app login", "app restart"), "Restart"),
-    ]
 
     def __init__(self, scope, font_width="0.559") -> None:
         self.scope = scope
@@ -123,19 +103,6 @@ class RichLog:
         self.first_display = True
         self.last_display_time = {}
         self.dashboard_arg_group = None
-        self.text_console = Console(
-            force_terminal=False,
-            force_interactive=False,
-            no_color=True,
-            highlight=False,
-            width=120,
-            soft_wrap=True,
-        )
-        self.timeline_steps = []
-        self.timeline_steps_max_length = 800
-        self.timeline_steps_reduce_length = 200
-        self.detail_lines_max_length = 120
-        self.processed_renderables_total = 0
         if State.theme == "dark":
             self.terminal_theme = DARK_TERMINAL_THEME
         else:
@@ -167,8 +134,6 @@ class RichLog:
                 self.scroll()
 
     def reset(self):
-        self.timeline_steps = []
-        self.processed_renderables_total = 0
         run_js(f"""$("#pywebio-scope-{self.scope}>div").empty();""")
 
     def scroll(self) -> None:
@@ -182,301 +147,6 @@ class RichLog:
     def set_scroll(self, b: bool) -> None:
         # use for lambda callback function
         self.keep_bottom = b
-
-    def _render_text(self, renderable: ConsoleRenderable) -> str:
-        with self.text_console.capture() as capture:
-            self.text_console.print(renderable)
-        return capture.get()
-
-    @staticmethod
-    def _normalize_spaces(text: str) -> str:
-        return re.sub(r"\s+", " ", text).strip()
-
-    @classmethod
-    def _map_task_name(cls, task_name: str) -> str:
-        translated = t(f"Task.{task_name}.name")
-        if translated == f"Task.{task_name}.name":
-            return task_name
-        return translated
-
-    @classmethod
-    def _keyword_category(cls, text: str) -> Optional[str]:
-        lowered = text.lower()
-        for keywords, task_name in cls.KEYWORD_TITLE_MAP:
-            if any(keyword.lower() in lowered for keyword in keywords):
-                return cls._map_task_name(task_name)
-        return None
-
-    def _extract_task_title(self, text: str) -> tuple[Optional[str], bool]:
-        scheduler_start = re.search(r"调度器:\s*开始任务\s*`?([A-Za-z0-9_]+)`?", text)
-        if scheduler_start:
-            return self._map_task_name(scheduler_start.group(1)), True
-
-        task_bind = re.search(r"\[Task\]\s*([A-Za-z0-9_]+)", text)
-        if task_bind:
-            return self._map_task_name(task_bind.group(1)), True
-
-        category = self._keyword_category(text)
-        if category:
-            return category, False
-
-        for raw_line in text.splitlines():
-            line = self._normalize_spaces(raw_line)
-            if not line:
-                continue
-
-            matched = re.search(r"<<<\s*(.*?)\s*>>>", line)
-            if matched:
-                title = self._normalize_spaces(matched.group(1))
-                if title:
-                    category = self._keyword_category(title)
-                    if category:
-                        return category, False
-
-            if any(char in raw_line for char in ("═", "─")):
-                stripped = re.sub(r"^[\s═─\-│]+|[\s═─\-│]+$", "", raw_line).strip()
-                stripped = self._normalize_spaces(stripped)
-                if 2 <= len(stripped) <= 80:
-                    category = self._keyword_category(stripped)
-                    if category:
-                        return category, False
-
-        return None, False
-
-    @staticmethod
-    def _is_error_text(text: str) -> bool:
-        return any(
-            token in text
-            for token in (
-                " ERROR ",
-                " CRITICAL ",
-                "Traceback",
-                "Exception",
-                "RuntimeError",
-                "ValueError",
-                "AssertionError",
-                "更新失败",
-                "执行失败",
-                "崩溃",
-                "报错",
-            )
-        )
-
-    def _create_step(self, title: str, status: str = "active") -> Dict[str, Any]:
-        return {
-            "title": title,
-            "status": status,
-            "line_count": 0,
-            "last_message": "",
-            "summary_message": "",
-            "detail_lines": [],
-            "has_error": False,
-        }
-
-    def _finalize_step(self, step: Dict[str, Any], terminal_status: Optional[str] = None) -> None:
-        status = terminal_status or ("warning" if step.get("has_error") else "completed")
-        step["status"] = status
-
-    @classmethod
-    def _trim_timeline_steps(cls, timeline_steps: List[Dict[str, Any]], max_length: int, reduce_length: int) -> None:
-        if len(timeline_steps) > max_length:
-            del timeline_steps[:reduce_length]
-
-    def _ensure_step(self, title: Optional[str] = None) -> Dict[str, Any]:
-        if not self.timeline_steps:
-            self.timeline_steps.append(
-                self._create_step(title or "启动中", status="active")
-            )
-        elif title and self.timeline_steps[-1]["title"] != title:
-            if self.timeline_steps[-1]["status"] == "active":
-                self._finalize_step(self.timeline_steps[-1])
-            self.timeline_steps.append(self._create_step(title, status="active"))
-        elif title and self.timeline_steps[-1]["title"] == title:
-            if self.timeline_steps[-1]["status"] != "failed":
-                self.timeline_steps[-1]["status"] = "active"
-        self._trim_timeline_steps(
-            self.timeline_steps,
-            self.timeline_steps_max_length,
-            self.timeline_steps_reduce_length,
-        )
-        return self.timeline_steps[-1]
-
-    def _pick_summary_message(self, detail_lines: List[str], fallback: str = "") -> str:
-        for line in reversed(detail_lines):
-            if self._is_error_text(line):
-                return line
-        return detail_lines[-1] if detail_lines else fallback
-
-    def _append_detail_lines(self, step: Dict[str, Any], raw_lines: List[str]) -> None:
-        lines = step["detail_lines"]
-        lines.extend(raw_lines)
-        if len(lines) > self.detail_lines_max_length:
-            del lines[: len(lines) - self.detail_lines_max_length]
-
-    def _ingest_renderable(self, renderable: ConsoleRenderable) -> None:
-        text_content = self._render_text(renderable)
-        task_title, is_strong_boundary = self._extract_task_title(text_content)
-
-        if not self.timeline_steps:
-            step = self._ensure_step(task_title)
-        elif is_strong_boundary and task_title:
-            step = self._ensure_step(task_title)
-        else:
-            step = self.timeline_steps[-1]
-
-        raw_lines = [line.rstrip() for line in text_content.splitlines()]
-        raw_lines = [line for line in raw_lines if line.strip()]
-        detail_lines = [self._normalize_spaces(line) for line in raw_lines]
-        step["line_count"] += len(raw_lines)
-
-        if detail_lines:
-            step["last_message"] = detail_lines[-1]
-            step["summary_message"] = self._pick_summary_message(
-                detail_lines,
-                fallback=step["summary_message"],
-            )
-            self._append_detail_lines(step, raw_lines)
-
-        if self._is_error_text(text_content):
-            step["has_error"] = True
-            if step["status"] == "active":
-                step["status"] = "warning"
-
-    def _sync_process_state(self, pm: ProcessManager) -> None:
-        if not self.timeline_steps:
-            if pm.alive:
-                self.timeline_steps.append(self._create_step("运行中", status="active"))
-            elif pm.state == 3:
-                self.timeline_steps.append(self._create_step("运行失败", status="failed"))
-            return
-
-        last_step = self.timeline_steps[-1]
-        if pm.alive:
-            if last_step["status"] not in ("failed", "warning"):
-                last_step["status"] = "active"
-            return
-
-        if pm.state == 3:
-            last_step["status"] = "failed"
-            last_step["has_error"] = True
-        else:
-            self._finalize_step(last_step)
-
-    @staticmethod
-    def _status_meta(status: str) -> Dict[str, str]:
-        if status == "failed":
-            return {
-                "class_name": "is-failed",
-                "label": "执行失败",
-                "icon": "x",
-            }
-        if status == "warning":
-            return {
-                "class_name": "is-warning",
-                "label": "需关注",
-                "icon": "warn",
-            }
-        if status == "active":
-            return {
-                "class_name": "is-active",
-                "label": "正在执行",
-                "icon": "spinner",
-            }
-        return {
-            "class_name": "is-completed",
-            "label": "已完成",
-            "icon": "dot",
-        }
-
-    def _render_timeline_html(self) -> str:
-        if not self.timeline_steps:
-            return (
-                '<div class="alas-log-empty">'
-                '<div class="alas-log-empty-title">暂无运行任务</div>'
-                '<div class="alas-log-empty-subtitle">任务开始后会在这里显示时间线</div>'
-                "</div>"
-            )
-
-        items = []
-        for index, step in enumerate(self.timeline_steps, start=1):
-            status = self._status_meta(step["status"])
-            summary_text = step["summary_message"] or step["last_message"] or "等待更多日志..."
-            summary_text = html.escape(summary_text[:140])
-            title = html.escape(step["title"])
-            log_count = f"{step['line_count']} 条"
-            detail_section = ""
-
-            if step["status"] == "failed" and step["detail_lines"]:
-                detail_text = "\n".join(step["detail_lines"])
-                detail_html = html.escape(detail_text)
-                detail_section = (
-                    f'<details class="alas-log-step-details" data-step-index="{index}" open>'
-                    '<summary>详细日志</summary>'
-                    f'<div class="alas-log-step-details-body"><div class="alas-log-entry"><pre>{detail_html}</pre></div></div>'
-                    '</details>'
-                )
-
-            items.append(
-                f"""
-                <div class="alas-log-step {status['class_name']}">
-                    <div class="alas-log-step-marker">
-                        <span class="alas-log-step-icon {status['icon']}"></span>
-                    </div>
-                    <div class="alas-log-step-main">
-                        <div class="alas-log-step-head">
-                            <div class="alas-log-step-title">{title}</div>
-                            <div class="alas-log-step-badge">{status['label']}</div>
-                        </div>
-                        <div class="alas-log-step-subtitle">步骤 {index} · {log_count}</div>
-                        <div class="alas-log-step-summary">{summary_text}</div>
-                        {detail_section}
-                    </div>
-                </div>
-                """
-            )
-
-        return '<div class="alas-log-timeline">' + "".join(items) + "</div>"
-
-    def _refresh_timeline(self) -> None:
-        run_js(
-            """
-            const container = $("#pywebio-scope-{scope}>div");
-            const openStepIndexes = container
-                .find(".alas-log-step-details[open]")
-                .map(function () {{ return $(this).attr("data-step-index"); }})
-                .get();
-            container.html(html);
-            openStepIndexes.forEach(function (stepIndex) {{
-                container
-                    .find('.alas-log-step-details[data-step-index="' + stepIndex + '"]')
-                    .prop("open", true);
-            }});
-            """.format(scope=self.scope),
-            html=self._render_timeline_html(),
-        )
-        if self.keep_bottom:
-            self.scroll()
-
-    def _sync_timeline_from_process(self, pm: ProcessManager) -> None:
-        self.timeline_steps = copy.deepcopy(getattr(pm, "timeline_steps", []))
-        self.processed_renderables_total = getattr(pm, "renderables_total", 0)
-        self._refresh_timeline()
-
-    def _rebuild_timeline(self, renderables: List[ConsoleRenderable], pm: ProcessManager) -> None:
-        self.timeline_steps = []
-        self.processed_renderables_total = 0
-        for renderable in renderables:
-            self._ingest_renderable(renderable)
-        self._sync_process_state(pm)
-        self.processed_renderables_total = getattr(pm, "renderables_total", len(renderables))
-        self._refresh_timeline()
-
-    def _catch_up_timeline(self, renderables: List[ConsoleRenderable], pm: ProcessManager) -> None:
-        for renderable in renderables:
-            self._ingest_renderable(renderable)
-        self.processed_renderables_total = getattr(pm, "renderables_total", len(pm.renderables))
-        self._sync_process_state(pm)
-        self._refresh_timeline()
 
     def set_dashboard_display(self, b: bool) -> None:
         # use for lambda callback function. Copied.
@@ -534,30 +204,22 @@ class RichLog:
     def put_log(self, pm: ProcessManager) -> Generator:
         yield
         try:
-            last_snapshot = None
             while True:
-                total_renderables = getattr(pm, "renderables_total", len(pm.renderables))
-                timeline_version = getattr(pm, "timeline_version", 0)
-                snapshot = (total_renderables, timeline_version, pm.alive, pm.state)
-                if snapshot != last_snapshot:
-                    if timeline_version:
-                        self._sync_timeline_from_process(pm)
-                    elif self.processed_renderables_total == 0:
-                        self._rebuild_timeline(pm.renderables[:], pm)
-                    else:
-                        new_count = total_renderables - self.processed_renderables_total
-                        if new_count < 0:
-                            self._rebuild_timeline(pm.renderables[:], pm)
-                        elif new_count > len(pm.renderables):
-                            self._catch_up_timeline(pm.renderables[:], pm)
-                        else:
-                            for renderable in pm.renderables[-new_count:] if new_count else []:
-                                self._ingest_renderable(renderable)
-                            self.processed_renderables_total = total_renderables
-                            self._sync_process_state(pm)
-                            self._refresh_timeline()
-                    last_snapshot = snapshot
-                yield
+                last_idx = len(pm.renderables)
+                html = "".join(map(self.render, pm.renderables[:]))
+                self.reset()
+                self.extend(html)
+                counter = last_idx
+                while counter < pm.renderables_max_length * 2:
+                    yield
+                    idx = len(pm.renderables)
+                    if idx < last_idx:
+                        last_idx -= pm.renderables_reduce_length
+                    if idx != last_idx:
+                        html = "".join(map(self.render, pm.renderables[last_idx:idx]))
+                        self.extend(html)
+                        counter += idx - last_idx
+                        last_idx = idx
         except SessionException:
             pass
 

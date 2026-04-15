@@ -35,6 +35,8 @@ httpx==0.28.1             # via mcp, openai
 httpx-sse==0.4.3          # via mcp
 idna==3.4                 # via anyio, httpx, requests
 imageio==2.26.0           # via -r requirements-in.txt
+importlib-metadata==8.0.0 # via -r requirements-in.txt
+importlib-resources==6.0.0 # via -r requirements-in.txt
 inflection==0.5.1         # via -r requirements-in.txt
 jellyfish==0.9.0          # via -r requirements-in.txt
 jiter==0.13.0             # via openai

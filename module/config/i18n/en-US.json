@@ -4650,6 +4650,12 @@
       "dangerous": "Normal Zone",
       "safe": "Safe Zone"
     },
+    "SirenBug_Mode": {
+      "name": "Detection Method for Siren Research Device",
+      "help": "Choose the detection method for Siren Research Device. When detecting hidden resources, the second option is selected. When detecting hidden enemies, the first option is selected",
+      "resource": "Detect Hidden Resources",
+      "enemy": "Detect Hidden Enemies"
+    },
     "SirenBug_Zone": {
       "name": "Bug Exploit Zone Name or ID",
       "help": "Designate high-Corrosion zones where Siren Research Devices have spawned\nSupports zone ID, CN/EN/JP/TW zone names, e.g. \"51\", \"NA Ocean SE Sector E\"\nFill in default value 0, or clear the value to cancel"

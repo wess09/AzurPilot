@@ -1400,6 +1400,21 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 logger.info(f'[地图检测] 格子 {grid} 被识别为扫描装置 (grid.is_scanning_device=True)')
                 logger.info(f'[地图检测] 移动结果: {result}')
 
+                # ========== 方案 B: 装置类型判断（仅在支持的模式下） ==========
+                # 检查是否在 Meowfficer 搜索模式下，并进行装置类型判断
+                try:
+                    if hasattr(self, 'config') and hasattr(self.config, 'OpsiMeowfficerFarming_SirenDetectorSearch_Enable'):
+                        if self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+                            if hasattr(self, 'handle_siren_device_interaction_result'):
+                                logger.hr('【方案B】装置类型判断开始', level=2)
+                                device_type = self.handle_siren_device_interaction_result(result)
+                                if device_type == 'reconnaissance':
+                                    logger.info('【方案B】装置已判定为信息收集装置，不进行搜索记录')
+                                elif device_type == 'detection':
+                                    logger.info('【方案B】装置已判定为探测装置，已进行搜索记录')
+                except Exception as e:
+                    logger.warning(f'【方案B】装置判断过程出现异常: {e}')
+
                 # ========== 配置检查 ==========
                 task, _ = self._get_siren_bug_task_pair()
                 siren_research_enabled = self.config.cross_get(keys=f"{task}.OpsiSirenBug.SirenResearch_Enable")
@@ -2174,6 +2189,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             
             logger.info(f'当前区域: {source_zone}, 目标区域: {target_zone}')
             count, sync_state = self._get_siren_bug_effective_daily_count()
+            
+            # 读取探测策略
+            siren_bug_mode = self.config.cross_get(
+                keys=f"{task}.OpsiSirenBug.SirenBug_Mode",
+                default='resource'
+            )
 
             # 跳转至指定高侵蚀区域
             with self.config.temporary(STORY_ALLOW_SKIP=False):
@@ -2181,11 +2202,14 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self.globe_goto(target_zone, types=(siren_bug_type.upper(),), refresh=True)
                 self.zone_init()
                 
-                # Siren bug count sleep
-                if count > 0:
+                # Siren bug count sleep - 仅在探测资源模式时生效
+                if count > 0 and siren_bug_mode == 'resource':
                     logger.info(f'塞壬 Bug 今日已使用 {count} 次，自律前等待 {count} 秒')
                     logger.info('【设计说明】等待秒数与当日计数绑定，用于节奏控制与行为可观测性')
+                    logger.info('【模式说明】此等待仅在探测资源模式时生效')
                     time.sleep(count)
+                elif count > 0:
+                    logger.info(f'塞壬 Bug 今日已使用 {count} 次，当前模式为探测敌人，跳过等待')
 
                 target_grid = self.config.cross_get(keys=f"{task}.OpsiSirenBug.SirenBug_Grid", default=None)
                 device_found = False
@@ -2312,12 +2336,37 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 logger.info(f'已达到塞壬Bug自动处理阈值 ({count_limit}次)，开始自动收菜')
                 # 禁用塞壬研究装置的处理
                 self.config._disable_siren_research = True
+                
+                # 术语说明：
+                # - 主舰队（主舰队卡位舰队）：OpsiFleet_Fleet，用于探测敌人和卡位
+                # - 收菜舰队：与主舰队不同的舰队，用于清理战斗和收菜
+                main_fleet = self.config.OpsiFleet_Fleet
+                harvest_fleet = 1 if main_fleet != 1 else 2
+                
                 if siren_bug_type == 'safe':
+                    logger.info(f'[安全海域收菜] 步骤1: 主舰队({main_fleet})探测敌人进行卡位')
+                    # 使用主舰队卡位敌人
                     self.os_auto_search_daemon_until_combat()
-                    logger.info('遇到敌舰，卡位完成')
-                    self.fleet_set(1 if self.config.OpsiFleet_Fleet != 1 else 2)
-                self.os_auto_search_run()
-                self.fleet_set(self.config.OpsiFleet_Fleet)
+                    logger.info(f'[安全海域收菜] 步骤2: 遇到敌舰，卡位完成')
+                    
+                    # 切换到收菜舰队进行收菜
+                    logger.info(f'[安全海域收菜] 步骤3: 切换到收菜舰队({harvest_fleet})进行收菜')
+                    self.fleet_set(harvest_fleet)
+                    self.os_auto_search_run()
+                    
+                    # 切换回主舰队
+                    logger.info(f'[安全海域收菜] 步骤4: 切换回主舰队({main_fleet})')
+                    self.fleet_set(main_fleet)
+                else:
+                    logger.info(f'[普通海域收菜] 步骤1: 切换到收菜舰队({harvest_fleet})进行收菜')
+                    # 普通海域切换到收菜舰队进行收菜
+                    self.fleet_set(harvest_fleet)
+                    self.os_auto_search_run()
+                    
+                    # 切换回主舰队
+                    logger.info(f'[普通海域收菜] 步骤2: 切换回主舰队({main_fleet})')
+                    self.fleet_set(main_fleet)
+                
                 self._reset_siren_bug_daily_count(sync_state=sync_state)
                 # 恢复塞壬研究装置的处理
                 self.config._disable_siren_research = False
@@ -2391,6 +2440,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         """处理单个塞壬研究装置交互。
 
         点击目标格后等待行走与事件触发，依据是否确认处理成功返回结果。
+        根据 SirenBug_Mode 配置选择探测策略：
+        - 'enemy': 探测隐藏的敌人（两次第1选项）
+        - 'resource': 探测隐藏的资源（两次第2选项，默认）
 
         Args:
             grid: 目标装置所在的可点击网格对象。
@@ -2407,7 +2459,17 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         # 移动舰队至塞壬研究装置，触发剧情
         self.device.click(grid)
 
-        with self.config.temporary(STORY_ALLOW_SKIP=False, OS_SIREN_DEVICE_USAGE='use_twice'):
+        # 根据 SirenBug_Mode 配置选择探测策略
+        task, _ = self._get_siren_bug_task_pair()
+        siren_bug_mode = self.config.cross_get(
+            keys=f"{task}.OpsiSirenBug.SirenBug_Mode",
+            default='resource'
+        )
+        # 根据策略选择状态值
+        usage_value = 'use_first_twice' if siren_bug_mode == 'enemy' else 'use_twice'
+        logger.info(f'[塞壬Bug装置] 选择探测策略: {siren_bug_mode} (状态值: {usage_value})')
+
+        with self.config.temporary(STORY_ALLOW_SKIP=False, OS_SIREN_DEVICE_USAGE=usage_value):
             result = self.wait_until_walk_stable(
                 drop=drop, walk_out_of_step=False, confirm_timer=Timer(3, count=4))
             
@@ -2417,7 +2479,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             raise RuntimeError('处理塞壬研究装置未触发事件')
             
         if self.is_siren_device_confirmed:
-            logger.info('已成功到达并处理塞壬研究装置')
+            log_msg = '(策略: 探测敌人)' if siren_bug_mode == 'enemy' else '(策略: 探测资源)'
+            logger.info(f'已成功到达并处理塞壬研究装置 {log_msg}')
             self._solved_map_event.add('is_scanning_device')
             return True
         

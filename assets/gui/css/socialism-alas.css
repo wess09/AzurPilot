@@ -209,10 +209,12 @@ textarea, .CodeMirror {
 
 /* Logs */
 .container-log {
-    background-color: #fff9f9 !important;
-    border: none !important;
-    color: #4A1919 !important;
-    box-shadow: inset 0 2px 6px rgba(217, 54, 62, 0.08);
+    background-color: #fff !important;
+    border: 1px solid #F2C76E;
+    border-left: 4px solid #D9363E;
+    color: #333 !important;
+    box-shadow: inset 0 0 10px rgba(242, 199, 110, 0.1);
+    border-radius: 4px;
 }
 
 pre.rich-traceback-code {
@@ -294,18 +296,6 @@ pre.rich-traceback-code {
     border-radius: 6px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.02);
     font-family: 'JetBrains Mono NL', monospace !important;
-}
-
-#pywebio-scope-log-bar {
-    border-bottom: none !important;
-    border-bottom-left-radius: 0 !important;
-    border-bottom-right-radius: 0 !important;
-}
-
-#pywebio-scope-log {
-    border-top: 1px dashed #F2C76E !important;
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
 }
 
 /* Special Text */
@@ -401,45 +391,4 @@ body::after {
     right: 110px; /* To the left of the main one */
     background-color: #C41E3A; /* Slightly different red */
     animation: lantern-swing 4s infinite ease-in-out alternate-reverse;
-}
-
-:root {
-    --alas-timeline-line: rgba(217, 54, 62, 0.24);
-    --alas-timeline-line-fade: rgba(242, 199, 110, 0.08);
-    --alas-timeline-text: #5a1f12;
-    --alas-timeline-muted: rgba(90, 31, 18, 0.7);
-    --alas-timeline-card-bg: rgba(255, 251, 240, 0.92);
-    --alas-timeline-card-border: rgba(242, 199, 110, 0.44);
-    --alas-timeline-card-shadow: 0 10px 24px rgba(217, 54, 62, 0.08);
-    --alas-timeline-details-bg: rgba(255, 248, 230, 0.92);
-    --alas-timeline-details-border: rgba(242, 199, 110, 0.24);
-    --alas-timeline-entry-bg: rgba(255, 255, 255, 0.9);
-    --alas-timeline-entry-border: rgba(217, 54, 62, 0.12);
-
-    --alas-timeline-active-bg: linear-gradient(180deg, rgba(255, 244, 220, 0.92), rgba(255, 237, 204, 0.82));
-    --alas-timeline-active-border: rgba(242, 199, 110, 0.58);
-    --alas-timeline-active-badge-bg: rgba(242, 199, 110, 0.2);
-    --alas-timeline-active-badge-text: #8a4b08;
-
-    --alas-timeline-completed-bg: linear-gradient(180deg, rgba(236, 253, 245, 0.94), rgba(220, 252, 231, 0.84));
-    --alas-timeline-completed-border: rgba(34, 197, 94, 0.3);
-    --alas-timeline-completed-badge-bg: rgba(34, 197, 94, 0.14);
-    --alas-timeline-completed-badge-text: #166534;
-
-    --alas-timeline-failed-bg: linear-gradient(180deg, rgba(254, 242, 242, 0.94), rgba(254, 226, 226, 0.84));
-    --alas-timeline-failed-border: rgba(217, 54, 62, 0.34);
-    --alas-timeline-failed-badge-bg: rgba(217, 54, 62, 0.14);
-    --alas-timeline-failed-badge-text: #a61b2b;
-
-    --alas-timeline-node-bg: rgba(242, 199, 110, 0.2);
-    --alas-timeline-node-border: rgba(242, 199, 110, 0.8);
-    --alas-timeline-completed-node-bg: rgba(34, 197, 94, 0.15);
-    --alas-timeline-completed-node-border: #22c55e;
-    --alas-timeline-completed-line: rgba(34, 197, 94, 0.5);
-    --alas-timeline-active-node-bg: rgba(242, 199, 110, 0.3);
-    --alas-timeline-active-node-border: #F2C76E;
-    --alas-timeline-active-line: #F2C76E;
-    --alas-timeline-failed-node-bg: rgba(217, 54, 62, 0.15);
-    --alas-timeline-failed-node-border: #D9363E;
-    --alas-timeline-failed-line: #D9363E;
 }

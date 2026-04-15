@@ -87,6 +87,10 @@ idna==3.4
     #   requests
 imageio==2.26.0
     # via -r requirements-in.txt
+importlib-metadata==8.0.0
+    # via -r requirements-in.txt
+importlib-resources==6.0.0
+    # via -r requirements-in.txt
 inflection==0.5.1
     # via -r requirements-in.txt
 jellyfish==0.9.0

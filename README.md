@@ -1,6 +1,10 @@
 **| [English](README_en.md) | 简体中文 | [日本語](README_jp.md) |**
 
-# AzurLaneAutoScript
+# AzurPilot
+
+碧蓝航线小助手，无缝委托科研，全自动大世界 基于 AzurLaneAutoScript 二次修改 感觉用原名不太好 所以改了（ 本质上还是ALAS 
+
+[下载链接](https://alas.nanoda.work/download.html)
 
 我们屁眼通红(Python)真的太有实力了
 

@@ -166,9 +166,9 @@ textarea {
 
 /* --- 内容容器与 Scope --- */
 .container-log {
-    background-color: #1e1f22 !important;
-    border: none !important;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4) !important;
+    background-color: #2b2d31 !important;
+    border: 1px solid #1e1f22;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 pre.rich-traceback-code {
@@ -224,16 +224,6 @@ pre.rich-traceback-code {
     font-family: 'JetBrains Mono NL', monospace !important;
 }
 
-#pywebio-scope-log-bar {
-    border-bottom: none !important;
-    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2) !important;
-}
-
-#pywebio-scope-log {
-    border-top: 1px dashed #1e1f22 !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
-}
-
 #pywebio-scope-header {
     background-color: #202225;
     border-bottom: 1px solid #36393f;
@@ -252,81 +242,4 @@ pre.rich-traceback-code {
 
 *[style*="--dashboard-limit--"] {
     color: #adb5bd;
-}
-
-
-:root {
-    /* --- 深色主题时间轴变量 --- */
-    --alas-timeline-line: rgba(148, 163, 184, 0.2);
-    --alas-timeline-text: #e5e7eb;
-    --alas-timeline-muted: rgba(209, 213, 219, 0.6);
-
-    /* 卡片：半透明深色底 */
-    --alas-timeline-card-bg: rgba(33, 37, 43, 0.82);
-    --alas-timeline-card-border: rgba(148, 163, 184, 0.12);
-    --alas-timeline-card-shadow: none;
-    --alas-timeline-details-bg: rgba(15, 18, 24, 0.7);
-    --alas-timeline-details-border: rgba(148, 163, 184, 0.12);
-    --alas-timeline-entry-bg: transparent;
-    --alas-timeline-entry-border: transparent;
-
-    /* 节点 */
-    --alas-timeline-node-bg: #2d333b;
-    --alas-timeline-node-border: #444c56;
-
-    /* 完成状态 */
-    --alas-timeline-completed-bg: rgba(33, 37, 43, 0.82);
-    --alas-timeline-completed-border: rgba(34, 197, 94, 0.22);
-    --alas-timeline-completed-badge-bg: rgba(34, 197, 94, 0.12);
-    --alas-timeline-completed-badge-text: #86efac;
-    --alas-timeline-completed-node-bg: rgba(34, 197, 94, 0.15);
-    --alas-timeline-completed-node-border: #22c55e;
-    --alas-timeline-completed-line: rgba(34, 197, 94, 0.4);
-
-    /* 运行中状态 */
-    --alas-timeline-active-bg: rgba(33, 37, 43, 0.82);
-    --alas-timeline-active-border: rgba(56, 138, 221, 0.4);
-    --alas-timeline-active-badge-bg: rgba(56, 138, 221, 0.14);
-    --alas-timeline-active-badge-text: #93c5fd;
-    --alas-timeline-active-node-bg: rgba(56, 138, 221, 0.15);
-    --alas-timeline-active-node-border: #388ADD;
-    --alas-timeline-active-line: rgba(56, 138, 221, 0.4);
-
-    /* 需关注状态 */
-    --alas-timeline-warning-bg: rgba(33, 37, 43, 0.82);
-    --alas-timeline-warning-border: rgba(245, 158, 11, 0.3);
-    --alas-timeline-warning-badge-bg: rgba(245, 158, 11, 0.14);
-    --alas-timeline-warning-badge-text: #fcd34d;
-    --alas-timeline-warning-node-bg: rgba(245, 158, 11, 0.15);
-    --alas-timeline-warning-node-border: #f59e0b;
-    --alas-timeline-warning-line: rgba(245, 158, 11, 0.4);
-
-    /* 失败状态 */
-    --alas-timeline-failed-bg: rgba(33, 37, 43, 0.82);
-    --alas-timeline-failed-border: rgba(239, 68, 68, 0.3);
-    --alas-timeline-failed-badge-bg: rgba(239, 68, 68, 0.14);
-    --alas-timeline-failed-badge-text: #fca5a5;
-    --alas-timeline-failed-node-bg: rgba(239, 68, 68, 0.15);
-    --alas-timeline-failed-node-border: #ef4444;
-    --alas-timeline-failed-line: rgba(239, 68, 68, 0.4);
-}
-
-/* 深色模式下失败摘要（错误信息块）改为深色底 */
-.alas-log-step-summary {
-    color: #d1d5db;
-    background: rgba(148, 163, 184, 0.12);
-}
-
-.alas-log-step.is-warning .alas-log-step-summary {
-    color: #fcd34d;
-    background: rgba(245, 158, 11, 0.12);
-}
-
-.alas-log-step.is-failed .alas-log-step-summary {
-    color: #fca5a5;
-    background: rgba(239, 68, 68, 0.1);
-}
-
-.alas-log-step-details > summary:hover {
-    color: #ffffff;
 }
