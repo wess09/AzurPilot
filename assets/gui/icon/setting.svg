@@ -1,13 +1,17 @@
 <svg class="aside-icon icon-setting" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="512" cy="512" r="160" fill="none" stroke="currentColor" stroke-width="80"></circle>
-    <g fill="currentColor">
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(0, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(45, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(90, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(135, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(180, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(225, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(270, 512, 512)"></rect>
-        <rect x="462" y="60" width="100" height="220" rx="50" transform="rotate(315, 512, 512)"></rect>
+    <defs>
+        <mask id="gear-hole">
+            <rect width="1024" height="1024" fill="white" />
+            <circle cx="512" cy="512" r="175" fill="black" />
+        </mask>
+    </defs>
+    
+    <g mask="url(#gear-hole)" fill="currentColor">
+        <circle cx="512" cy="512" r="320" />
+        
+        <rect x="432" y="72" width="160" height="880" rx="60" transform="rotate(0, 512, 512)" />
+        <rect x="432" y="72" width="160" height="880" rx="60" transform="rotate(45, 512, 512)" />
+        <rect x="432" y="72" width="160" height="880" rx="60" transform="rotate(90, 512, 512)" />
+        <rect x="432" y="72" width="160" height="880" rx="60" transform="rotate(135, 512, 512)" />
     </g>
 </svg>

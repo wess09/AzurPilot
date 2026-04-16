@@ -1,7 +1,31 @@
-<svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="50" fill="#4A90E2" />
-  <g fill="none" stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M 50 72 L 50 26" />
-    <path d="M 30 46 L 50 26 L 70 46" />
-  </g>
+<svg class="aside-icon icon-run-update-fly" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <mask id="play-mask-hole">
+            <rect width="1024" height="1024" fill="white" />
+            <circle cx="740" cy="740" r="320" fill="black" />
+        </mask>
+        
+        <clipPath id="badge-circle-clip">
+            <circle cx="740" cy="740" r="260" />
+        </clipPath>
+    </defs>
+
+    <path mask="url(#play-mask-hole)" d="M320 200c-40-22-90 6-90 52v520c0 46 50 74 90 52l440-260c40-22 40-78 0-100L320 200z" fill="none" stroke="currentColor" stroke-width="80" stroke-linejoin="round" stroke-linecap="round"></path>
+
+    <circle cx="740" cy="740" r="260" fill="#4A90E2" />
+
+    <g clip-path="url(#badge-circle-clip)">
+        <g fill="none" stroke="white" stroke-width="60" stroke-linecap="round" stroke-linejoin="round">
+            <animateTransform 
+                attributeName="transform" 
+                type="translate" 
+                from="0 400" 
+                to="0 -400" 
+                dur="1.2s" 
+                repeatCount="indefinite" />
+            
+            <path d="M 740 854 L 740 615" /> 
+            <path d="M 636 719 L 740 615 L 844 719" /> 
+        </g>
+    </g>
 </svg>

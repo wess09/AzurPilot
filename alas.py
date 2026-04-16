@@ -677,7 +677,7 @@ class AzurLaneAutoScript:
             if self.stop_event is not None:
                 if self.stop_event.is_set():
                     logger.info("检测到更新事件")
-                    logger.info(f"[{self.config_name}] 已退出。原因: 更新")
+                    logger.info(f"[{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                     exit(0)
 
             time.sleep(5)
@@ -758,7 +758,7 @@ class AzurLaneAutoScript:
                 if self.stop_event is not None:
                     if self.stop_event.is_set():
                         logger.info("检测到更新事件")
-                        logger.info(f"Alas [{self.config_name}] 已退出。")
+                        logger.info(f"Alas [{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                         break
                 # 检查游戏服务器维护
                 self.checker.wait_until_available()

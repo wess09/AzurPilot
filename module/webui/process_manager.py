@@ -4,6 +4,7 @@ import argparse
 import os
 import queue
 import threading
+import time
 from multiprocessing import Process
 from typing import Dict, List, Union
 
@@ -36,6 +37,35 @@ class ProcessManager:
         self._process: Process = None
         self._process_locks: Dict[str, threading.Lock] = {}
         self.thd_log_queue_handler: threading.Thread = None
+        self._state_override: int = None
+        self._state_override_deadline: float = None
+
+    def set_state_override(self, state: int, duration: float = 10) -> None:
+        """
+        Force a temporary ui state for icon testing.
+        """
+        if state not in (1, 2, 3, 4):
+            raise ValueError(f"Invalid state override: {state}")
+        self._state_override = state
+        if duration and duration > 0:
+            self._state_override_deadline = time.time() + duration
+        else:
+            self._state_override_deadline = None
+
+    def clear_state_override(self) -> None:
+        self._state_override = None
+        self._state_override_deadline = None
+
+    def _get_state_override(self) -> Union[int, None]:
+        if self._state_override is None:
+            return None
+        if (
+            self._state_override_deadline is not None
+            and time.time() >= self._state_override_deadline
+        ):
+            self.clear_state_override()
+            return None
+        return self._state_override
 
     def start(self, func, ev: threading.Event = None) -> None:
         if not self.alive:
@@ -106,6 +136,9 @@ class ProcessManager:
 
     @property
     def state(self) -> int:
+        override_state = self._get_state_override()
+        if override_state is not None:
+            return override_state
         if self.alive:
             return 1
         elif len(self.renderables) == 0:
@@ -115,11 +148,15 @@ class ProcessManager:
             with console.capture() as capture:
                 console.print(self.renderables[-1])
             s = capture.get().strip()
-            if s.endswith("Reason: Manual stop"):
+            if ("Reason: Manual stop" in s) or ("原因: 手动停止" in s):
                 return 2
-            elif s.endswith("Reason: Finish"):
+            elif ("Reason: Finish" in s) or ("原因: 完成" in s):
                 return 2
-            elif s.endswith("Reason: Update"):
+            elif (
+                ("Reason: Update" in s)
+                or ("原因: 更新" in s)
+                or ("检测到更新事件" in s)
+            ):
                 return 4
             else:
                 return 3
