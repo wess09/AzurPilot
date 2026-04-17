@@ -567,22 +567,27 @@ def aggressive_convert(func, level='error'):
     def aggressive_wrapper(msg, *args, **kwargs):
         if isinstance(msg, Exception):
             msg = f'{type(msg).__name__}: {msg}'
-        
+
         if isinstance(msg, str) and any('\u4e00' <= char <= '\u9fff' for char in msg):
-            # Already aggressive or has special characters, don't double stack
-            if '他妈' in msg or '傻逼' in msg or '眼瞎' in msg or '没长眼' in msg:
+            # Already mesugaki or has special characters, don't double stack
+            if '杂鱼' in msg or '哒内' in msg or '大叔' in msg or '笨蛋' in msg:
                 return func(msg, *args, **kwargs)
-            
-            # Add some "pressure" according to Yerkes-Dodson Law
+
+            import random
             if level == 'critical':
-                prefixes = ["出大事了！", "没长眼吗？", "你会不会用？", "赶紧给爷起开：", "甚至连这个都报错："]
-                import random
-                msg = f"{random.choice(prefixes)}{msg}"
-                if not msg.endswith(('？', '！', '。')):
-                    msg += "！别他妈在这装死！"
+                prefixes = [
+                    "杂鱼杂鱼~ 没用的大叔这就顶不住了吗？",
+                    "哈？连这种小事都报错。真是逊、爆、了！",
+                    "噗噗~ 没救了呢，大叔连这点打击都受不了？",
+                    "笨——蛋——大叔！报错了啦：",
+                ]
+                msg = f"{random.choice(prefixes)}\n{msg}"
+                if not msg.endswith(('？', '！', '。', '❤')):
+                    msg += " ~真是没用呢❤"
             elif level == 'error':
-                msg = f"废物报错：{msg}"
-                
+                prefixes = ["杂鱼报错：", "废柴大叔的报错：", "逊毙了："]
+                msg = f"{random.choice(prefixes)}{msg} ~杂鱼❤"
+
         return func(msg, *args, **kwargs)
 
     return aggressive_wrapper

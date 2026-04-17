@@ -230,7 +230,7 @@ class ProcessManager:
             elif func in get_available_mod_func():
                 getattr(load_mod(get_func_mod(func)), inflection.underscore(func))(config_name)
             else:
-                logger.critical(f"未找到对应的功能模块: {func}")
+                logger.critical(f"杂鱼大叔，连功能模块都找不到吗？{func} 这种东西根本不存在啦~")
             logger.info(f"[{config_name}] exited. Reason: Finish\n")
         except Exception as e:
             logger.exception(e)

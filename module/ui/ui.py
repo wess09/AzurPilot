@@ -223,10 +223,10 @@ class UI(InfoHandler):
         logger.warning("Starting from current page is not supported")
         logger.warning(f"Supported page: {[str(page) for page in Page.iter_pages()]}")
         logger.warning('Supported page: Any page with a "HOME" button on the upper-right')
-        logger.critical("你是不是没长脑子？连主界面都进不去，Alas 是你爹，但不是你妈，没义务处理你这种巨婴行为。")
-        logger.critical("听好了，废物：要么滚去【主界面、出击、编队、演习、每日、活动、任务】这些正常的界面启动，"
-                        "要么找个带『一键回港』按钮的界面再按开始。这游戏大部分地方都有，你要是连这都找不到，建议直接把号删了止损。"
-                        "看懂了吗？傻逼？别在这儿浪费老子的算力了，赶紧去改！")
+        logger.critical("杂鱼大叔~ 这么大个人了连主界面都进不去吗？噗噗，简直像个迷路的小宝宝❤")
+        logger.critical("听好了，笨蛋大叔：要么滚去正常的界面启动，"
+                        "要么找个带『一键回港』按钮的界面再求我。你要是连这都找不到，建议直接把号删了止损。")
+        logger.critical("看懂了吗？废材？不要再浪费我的算力了，赶紧去改！")
         
         # 未知页面自动重启
         logger.warning("Unknown page detected, try to restart game")
@@ -451,9 +451,9 @@ class UI(InfoHandler):
         # - Open exchange shop? handle_popup_confirm() click confirm
         # - EXCHANGE_CHECK, click BACK_ARROW
         if self._opsi_reset_fleet_preparation_click >= 5:
-            logger.critical("无法确认大世界出击舰队，RESET_FLEET_PREPARATION 点你大爷点！别他妈按了！")
-            logger.critical("没长眼吗？ #1: 建议检查您是否在大世界中设置了舰队")
-            logger.critical("没长眼吗？ #2: 建议检查您的舰队准入门槛（等级限制）")
+            logger.critical("无法确认大世界出击舰队，大叔你还点？是在玩打地鼠吗？真是逊毙了！")
+            logger.critical("哎呀呀，大叔是眼花了还是没长脑子？ #1: 建议检查您是否在大世界中设置了舰队")
+            logger.critical("笨——蛋——大叔！ #2: 建议检查您的舰队准入门槛（等级限制）")
             raise RequestHumanTakeover
         if self.appear_then_click(RESET_TICKET_POPUP, offset=(30, 30), interval=3):
             return True

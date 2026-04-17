@@ -2706,7 +2706,7 @@ class AlasGUI(Frame):
             # show something
             put_markdown(
                 """
-            Alas 是一款免费开源软件，如果你在任何渠道付费购买了 Alas，那你一定是个大傻逼。
+            Alas 是一款免费开源软件，如果你在任何渠道付费购买了 Alas，那你一定是个被骗了的超级大杂鱼呢❤
             Alas is free and open-source software. If you paid for Alas through any channel, please request a refund.
             Alasは無料のオープンソースソフトウェアです。Alasをいずれかのチャネルから購入された場合は、返金をリクエストしてください。
             Alas는 무료 오픈 소스 소프트웨어입니다. 어떤 경로로든 Alas를 유료로 구매하셨다면 환불을 요청해 주세요.

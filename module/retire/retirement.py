@@ -515,9 +515,9 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     total = self.retire_ships_one_click()
             total += self.retire_gems_farming_flagships(keep_one=total > 0)
             if not total:
-                logger.critical('没他妈任何船退役，你是来搞笑的吗？')
-                logger.critical('赶紧把游戏里的“一键退役”配置好！不配置在这跑尼玛呢！')
-                logger.critical('脚本因为你没配置退役停了，赶紧去求奶奶告奶奶教你怎么点！')
+                logger.critical('杂鱼大叔~ 根本没有船可以退役啦，你是来表演冷笑话的吗？❤')
+                logger.critical('赶紧把游戏里的“一键退役”配置好啦！不配置的话，难道大叔想让我亲手帮你点吗？❤')
+                logger.critical('哼，因为大叔太笨没配置好退役，脚本只能停掉了呢。赶紧去求求谁教教你怎么操作吧~')
                 raise RequestHumanTakeover
         elif mode == 'old_retire':
             self.handle_dock_cards_loading()
