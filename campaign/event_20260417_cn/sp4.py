@@ -1,4 +1,4 @@
-from module.campaign.campaign_base import CampaignBase
+from .campaign_base import CampaignBase
 from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
 from module.logger import logger
@@ -7,7 +7,7 @@ from .sp1 import Config as ConfigBase
 MAP = CampaignMap('SP4')
 MAP.shape = 'I8'
 MAP.camera_data = ['D3', 'D6', 'F3', 'F6']
-MAP.camera_data_spawn_point = ['F6', 'D6']
+MAP.camera_data_spawn_point = ['D6']
 MAP.map_data = """
     -- -- -- ++ ++ ++ -- -- --
     -- ++ ME -- MB -- ME ++ --
@@ -49,7 +49,7 @@ A8, B8, C8, D8, E8, F8, G8, H8, I8, \
 
 class Config(ConfigBase):
     # ===== Start of generated config =====
-    MAP_SIREN_TEMPLATE = []
+    MAP_SIREN_TEMPLATE = ['Cheshire', 'Nakhimov']
     MOVABLE_ENEMY_TURN = (2,)
     MAP_HAS_SIREN = True
     MAP_HAS_MOVABLE_ENEMY = True
@@ -57,12 +57,11 @@ class Config(ConfigBase):
     MAP_HAS_FLEET_STEP = True
     MAP_HAS_AMBUSH = False
     MAP_HAS_MYSTERY = False
-    MAP_CHAPTER_SWITCH_20241219 = True
-    STAGE_ENTRANCE = ['half', '20240725']
-    MAP_HAS_MODE_SWITCH = False
-    STAGE_INCREASE_AB = True
-    MAP_WALK_USE_CURRENT_FLEET = True
     # ===== End of generated config =====
+
+    MAP_SWIPE_MULTIPLY = (1.084, 1.104)
+    MAP_SWIPE_MULTIPLY_MINITOUCH = (1.048, 1.067)
+    MAP_SWIPE_MULTIPLY_MAATOUCH = (1.017, 1.036)
 
 
 class Campaign(CampaignBase):

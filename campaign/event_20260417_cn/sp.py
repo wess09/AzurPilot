@@ -3,19 +3,20 @@ from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
 from module.logger import logger
 
-MAP = CampaignMap('SP1')
-MAP.shape = 'I8'
-MAP.camera_data = ['D2', 'D6', 'F2', 'F6']
-MAP.camera_data_spawn_point = ['F2']
+MAP = CampaignMap('VSP')
+MAP.shape = 'I9'
+MAP.camera_data = ['D3', 'D6', 'E3', 'E6']
+MAP.camera_data_spawn_point = ['D3', 'D6']
 MAP.map_data = """
-    -- -- -- ME -- -- -- ++ ++
-    ME -- ME ++ Me -- SP -- ++
-    -- ME -- ++ -- -- -- SP --
-    -- ++ -- Me -- MS -- -- --
-    -- -- -- -- -- ++ ++ ++ ME
-    -- MB -- __ -- Me -- ME --
-    ME -- ME -- -- -- ME -- --
-    ++ ++ ++ -- ME ++ -- ME --
+    ++ ++ -- ++ ++ ++ -- ++ ++
+    ++ ++ -- ME -- ME -- ++ ++
+    ++ ME -- -- -- -- -- ME ++
+    SP -- -- MS -- ME -- -- --
+    -- __ MS -- ++ -- -- MB --
+    SP -- -- MS -- ME -- -- --
+    ++ ME -- -- -- -- -- ME ++
+    ++ ++ -- ME -- ME -- ++ ++
+    ++ ++ -- ++ ++ ++ -- ++ ++
 """
 MAP.weight_data = """
     50 50 50 50 50 50 50 50 50
@@ -26,13 +27,17 @@ MAP.weight_data = """
     50 50 50 50 50 50 50 50 50
     50 50 50 50 50 50 50 50 50
     50 50 50 50 50 50 50 50 50
+    50 50 50 50 50 50 50 50 50
 """
 MAP.spawn_data = [
-    {'battle': 0, 'enemy': 2, 'siren': 1},
-    {'battle': 1, 'enemy': 2},
-    {'battle': 2, 'enemy': 1},
-    {'battle': 3, 'enemy': 1},
-    {'battle': 4, 'boss': 1},
+    {'battle': 0, 'enemy': 12, 'siren': 3},
+    {'battle': 1},
+    {'battle': 2},
+    {'battle': 3},
+    {'battle': 4},
+    {'battle': 5},
+    {'battle': 6},
+    {'battle': 7, 'boss': 1},
 ]
 A1, B1, C1, D1, E1, F1, G1, H1, I1, \
 A2, B2, C2, D2, E2, F2, G2, H2, I2, \
@@ -42,19 +47,23 @@ A5, B5, C5, D5, E5, F5, G5, H5, I5, \
 A6, B6, C6, D6, E6, F6, G6, H6, I6, \
 A7, B7, C7, D7, E7, F7, G7, H7, I7, \
 A8, B8, C8, D8, E8, F8, G8, H8, I8, \
+A9, B9, C9, D9, E9, F9, G9, H9, I9, \
     = MAP.flatten()
 
 
 class Config:
     # ===== Start of generated config =====
-    MAP_SIREN_TEMPLATE = ['Bremerton']
+    MAP_SIREN_TEMPLATE = ['Lexington2', 'Yorktown2']
     MOVABLE_ENEMY_TURN = (2,)
     MAP_HAS_SIREN = True
     MAP_HAS_MOVABLE_ENEMY = True
     MAP_HAS_MAP_STORY = False
-    MAP_HAS_FLEET_STEP = True
+    MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = False
     MAP_HAS_MYSTERY = False
+    STAR_REQUIRE_1 = 0
+    STAR_REQUIRE_2 = 0
+    STAR_REQUIRE_3 = 0
     # ===== End of generated config =====
 
     MAP_CHAPTER_SWITCH_20241219_SPEX = True
@@ -71,9 +80,8 @@ class Config:
         'distance': 50,
         'wlen': 1000
     }
-    MAP_SWIPE_MULTIPLY = (1.188, 1.210)
-    MAP_SWIPE_MULTIPLY_MINITOUCH = (1.149, 1.170)
-    MAP_SWIPE_MULTIPLY_MAATOUCH = (1.116, 1.136)
+    MAP_IS_ONE_TIME_STAGE = True
+
 
 class Campaign(CampaignBase):
     MAP = MAP
@@ -82,10 +90,25 @@ class Campaign(CampaignBase):
     def battle_0(self):
         if self.clear_siren():
             return True
+        if self.clear_filter_enemy(self.ENEMY_FILTER, preserve=2):
+            return True
+
+        return self.battle_default()
+
+    def battle_5(self):
+        if self.clear_siren():
+            return True
         if self.clear_filter_enemy(self.ENEMY_FILTER, preserve=0):
             return True
 
         return self.battle_default()
 
-    def battle_4(self):
-        return self.clear_boss()
+    def battle_7(self):
+        return self.fleet_boss.clear_boss()
+
+    def _expected_end(self, expected):
+        # after 4th battle, no enemy search but has event animation
+        # we wait until event animation appears, otherwise next map walk will click on animation popup
+        if self.battle_count == 3:
+            return self.event_animation_end
+        return super()._expected_end(expected)
