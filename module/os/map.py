@@ -1611,6 +1611,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 logger.info(f'[月度开荒] 已记录跳过塞壬研究装置的海域: {self.config.OpsiExplore_SkipedSirenResearch}')
                 self._solved_map_event.add('is_scanning_device')
                 return True
+
+            if self.config.task.command == 'OpsiMeowfficerFarming' and self.config.OpsiMeowfficerFarming_SirenDetectorSearch_Enable:
+                self._solved_map_event.add('is_scanning_device')
+                return True
             
             # ========== 移动并处理 ==========
             logger.info(f'[移动装置] 开始移动到装置位置: {grid}')
