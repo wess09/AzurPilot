@@ -35,7 +35,7 @@ jobs:
           dst_token: ${{ secrets.GITEE_TOKEN }}
           account_type: user
           static_list: ${{ github.event.repository.name }}
-          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript1"
+          mappings: "AzurPilot=>AzurLaneAutoScript1"
           force_update: true
 
       - name: sync github -> gitcode
@@ -48,7 +48,7 @@ jobs:
           dst_token: ${{ secrets.GITCODE_TOKEN }}
           account_type: user
           static_list: ${{ github.event.repository.name }}
-          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
+          mappings: "AzurPilot=>AzurLaneAutoScript"
           force_update: true
 
       - name: sync github -> gitcode2
@@ -61,7 +61,7 @@ jobs:
           dst_token: ${{ secrets.GITCODE_TOKEN_2 }}
           account_type: user
           static_list: ${{ github.event.repository.name }}
-          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
+          mappings: "AzurPilot=>AzurLaneAutoScript"
           force_update: true
       
       - name: sync github -> gitcode3
@@ -74,5 +74,5 @@ jobs:
           dst_token: ${{ secrets.GITCODE_TOKEN_1 }}
           account_type: user
           static_list: ${{ github.event.repository.name }}
-          mappings: "AzurLaneAutoScript=>AzurLaneAutoScript"
+          mappings: "AzurPilot=>AzurLaneAutoScript"
           force_update: true

@@ -1,9 +1,6 @@
-<svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="50" fill="#2ECC71" />
-  <circle cx="50" cy="50" r="6" fill="white" />
-  <g fill="none" stroke="white" stroke-width="12" stroke-linecap="round">
-    <animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="2s" repeatCount="indefinite"/>
-    <path d="M 50 22 A 28 28 0 0 1 78 50" />
-    <path d="M 50 78 A 28 28 0 0 1 22 50" />
-  </g>
+<svg class="aside-icon icon-running-state" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="512" cy="512" r="420" fill="none" stroke="#2ECC71" stroke-width="120" stroke-linecap="round" stroke-dasharray="800 2640">
+        <animateTransform attributeName="transform" type="rotate" from="0 512 512" to="360 512 512" dur="1.2s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="312" y="312" width="400" height="400" rx="80" fill="currentColor" />
 </svg>

@@ -459,7 +459,17 @@ class InfoHandler(ModuleBase):
                         if usage == 'never':
                             select = options[2]
                             logger.info('[Story] 点击第3个选项')
+                        elif usage in ('use_first_twice', 'use_first_once'):
+                            # 策略A: 探测隐藏的敌人（两次第1个选项）
+                            select = options[0]
+                            logger.info('[Story] 点击第1个选项')
+                            
+                            if usage == 'use_first_twice':
+                                self.config.OS_SIREN_DEVICE_USAGE = 'use_first_once'
+                            elif usage == 'use_first_once':
+                                self.config.OS_SIREN_DEVICE_USAGE = 'never'
                         else:
+                            # 策略B: 探测隐藏的资源（两次第2个选项）
                             select = options[1]
                             logger.info('[Story] 点击第2个选项')
                             

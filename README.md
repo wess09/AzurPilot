@@ -1,12 +1,54 @@
 **| [English](README_en.md) | 简体中文 | [日本語](README_jp.md) |**
 
-# AzurLaneAutoScript
+# AzurPilot
+
+碧蓝航线小助手，无缝委托科研，全自动大世界 基于 AzurLaneAutoScript 二次修改 感觉用原名不太好 所以改了（ 本质上还是ALAS 
+
+[下载链接](https://alas.nanoda.work/download.html)
 
 我们屁眼通红(Python)真的太有实力了
 
 此分支是[雪风源（目前仓库已删库）](https://gitee.com/yukikaze21/AzurLaneAutoScriptyukikaze21)的 fork 分支 [原版雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)
 
 - 注：之前fork了[原版雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)你可以在这个仓库查看雪风的提交 下面的雪风源也是 fork 版
+
+## 修改游戏设置
+
+使用前**必须**对照这个表格修改游戏内的设置，~~正常玩过游戏的都这么设置~~。
+
+> 对着改的意思是，这是统一的标准，照着给定的内容执行，不要问为什么，不允许有不一样的。
+
+主界面 => 右下角：设置 => 左侧边栏：选项
+
+| 设置名称                            | 值   |
+| ----------------------------------- | ---- |
+| 帧数设置                            | 60帧 |
+| 大型作战设置 - 减少TB引导           | 开   |
+| 大型作战设置 - 自律时自动提交道具   | 开   |
+| 大型作战设置 - 安全海域默认开启自律 | 关   |
+| 剧情自动播放                        | 开启 |
+| 剧情自动播放速度调整                | 特快 |
+| 待机模式设置 - 启用待机模式         | 关    |
+| 其他设置 - 重复角色获得提示         | 关   |
+| 其他设置 - 快速更换二次确认界面     | 关   |
+| 其他设置 - 展示结算角色             | 关   |
+
+大世界 => 右上角：雷达 => 指令模块(order)：潜艇支援：
+| 设置名称                                                 | 值               |
+| -------------------------------------------------------- | ---------------- |
+| X 消耗时潜艇出击  |取消勾选|
+
+主界面 => 右下角：建造 => 左侧边栏： 退役 => 左侧齿轮图标：一键退役设置：
+
+| 设置名称                                                 | 值               |
+| -------------------------------------------------------- | ---------------- |
+| 选择优先级1                                              | R                |
+| 选择优先级2                                              | SR               |
+| 选择优先级3                                              | N                |
+| 「拥有」满星的同名舰船时，保留几艘符合退役条件的同名舰船 | 不保留           |
+| 「没有」满星的同名舰船时，保留几艘符合退役条件的同名舰船 | 满星所需或不保留 |
+
+将角色设备的装备外观移除，以免影响图像识别
 
 ## 添加了
 
@@ -21,6 +63,65 @@
 9. 一些奇怪的小东西awa
 10. 迁移至 Python 3.14
 11. 更换 OCR 模型 支持 GPU 加速推理
+12. Alas MCP 服务
+
+## MCP 服务
+
+本地
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://127.0.0.1:22267/mcp/sse"
+    }
+  }
+}
+```
+云服务器或内网
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://[IP_ADDRESS]/mcp/sse"
+    }
+  }
+}
+```
+
+## 当前可用的 MCP 工具（共 18 个）：
+
+实例管理
+
+- mcp_alas_list_instances - 列出所有实例
+- mcp_alas_get_status - 获取实例状态
+- mcp_alas_start_instance - 启动实例
+- mcp_alas_stop_instance - 停止实例
+
+任务管理
+
+- mcp_alas_list_tasks - 列出所有任务
+- mcp_alas_get_task_help - 获取任务帮助
+- mcp_alas_trigger_task - 触发任务
+- mcp_alas_get_scheduler_queue - 获取调度队列
+- mcp_alas_clear_scheduler_queue - 清空调度队列
+
+监控与信息
+
+- mcp_alas_get_current_running_task - 获取当前运行任务
+- mcp_alas_get_resources - 获取资源状态
+- mcp_alas_get_config - 获取实例配置
+- mcp_alas_get_recent_logs - 获取最近日志
+- mcp_alas_get_screenshot - 获取截图
+
+配置管理
+
+- mcp_alas_update_config - 更新配置
+
+维护工具
+
+- mcp_alas_restart_emulator - 重启模拟器
+- mcp_alas_restart_adb - 重启 ADB
+- mcp_alas_update_alas - 更新 ALAS
 
 *侵蚀1功能：大部分来自下面
 ## 部分功能（大部分）来自[Zuosizhu(仪表盘等)](https://github.com/Zuosizhu/Alas-with-Dashboard)，[guoh064(大世界等)](https://github.com/guoh064/AzurLaneAutoScript)，[sui-feng-cb(岛屿等)](https://github.com/sui-feng-cb/AzurLaneAutoScript), [雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)

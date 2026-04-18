@@ -122,6 +122,21 @@ def func(ev: Optional[Event]):
     except Exception as e:
         logger.error(f"Uvicorn服务崩溃: {str(e)}")
         raise
+def _stop_process(process, timeout=5):
+    """
+    Safely stop a multiprocessing.Process with escalating termination.
+    """
+    if not process or not process.is_alive():
+        return
+
+    logger.info(f"正在停止服务进程 (PID: {process.pid})...")
+    process.terminate()
+    process.join(timeout=timeout)
+
+    if process.is_alive():
+        logger.warning(f"服务进程 (PID: {process.pid}) 超时未退出，强制终止...")
+        process.kill()
+        process.join(timeout=3)
 
 
 if __name__ == "__main__":
@@ -158,24 +173,17 @@ if __name__ == "__main__":
 
                 if restart_triggered:
                     logger.info("重启事件触发，终止当前服务...")
-                    process.kill()
-                    process.join(timeout=5)
-                    if process.is_alive():
-                        logger.warning("无法终止服务进程，强制退出")
+                    _stop_process(process)
                     break
                 elif not process.is_alive():
                     logger.error("Alas Web服务意外退出")
                     should_exit = True
 
             # 确保子进程完全退出
-            if process.is_alive():
-                process.terminate()
-                process.join(timeout=3)
+            _stop_process(process)
 
-        # 最终清理
-        if process.is_alive():
-            process.kill()
-            process.join()
+        # 最终清理（预防性）
+        _stop_process(process)
         logger.info("Alas Web服务已成功退出")
     else:
         # 非重载模式：直接运行

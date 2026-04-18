@@ -49,6 +49,8 @@ EVENT_SHOP_SCROLL = EventShopScroll(
     color=(44, 48, 56),
     name="EVENT_SHOP_SCROLL"
 )
+EVENT_SHOP_SCROLL.drag_threshold = 0.1
+EVENT_SHOP_SCROLL.edge_threshold = 0.12
 
 
 if server.server == 'tw':
@@ -60,12 +62,8 @@ else:
 OCR_EVENT_SHOP_DEADLINE = Ocr(SHOP_EVENT_DEADLINE, lang='cnocr', letter=EVENT_SHOP_DEADLINE_COLOR,
                               alphabet='0123456789.:~-', name="OCR_EVENT_SHOP_DEADLINE")
 
-if server.server == 'jp':
-    OCR_EVENT_SHOP_PT = Digit(SHOP_OCR_BALANCE, lang='cnocr', letter=(110, 120, 130), name='OCR_EVENT_SHOP_PT')
-    OCR_EVENT_SHOP_URPT = Digit(SHOP_OCR_BALANCE_SECOND, lang='cnocr', letter=(110, 120, 130), name='OCR_EVENT_SHOP_URPT')
-else:
-    OCR_EVENT_SHOP_PT = Digit(SHOP_OCR_BALANCE, letter=(100, 100, 100), name='OCR_EVENT_SHOP_PT')
-    OCR_EVENT_SHOP_URPT = Digit(SHOP_OCR_BALANCE_SECOND, letter=(100, 100, 100), name='OCR_EVENT_SHOP_URPT')
+OCR_EVENT_SHOP_PT = Digit(SHOP_OCR_BALANCE, letter=(100, 100, 100), name='OCR_EVENT_SHOP_PT')
+OCR_EVENT_SHOP_URPT = Digit(SHOP_OCR_BALANCE_SECOND, letter=(100, 100, 100), name='OCR_EVENT_SHOP_URPT')
 
 
 class EventShopUI(UI):

@@ -4,13 +4,13 @@ import typing as t
 import os
 import traceback
 
-import imageio
 from PIL import ImageDraw
 
 from module.base.decorator import cached_property
 from module.base.resource import Resource
 from module.base.utils import *
 from module.config.server import VALID_SERVER
+from module.logger import logger
 
 
 class Button(Resource):
@@ -156,6 +156,7 @@ class Button(Resource):
         if not self._match_init:
             if self.is_gif:
                 self.image = []
+                import imageio
                 for image in imageio.mimread(self.file):
                     image = image[:, :, :3].copy() if len(image.shape) == 3 else image
                     image = crop(image, self.area)
@@ -322,7 +323,6 @@ class Button(Resource):
             res = cv2.matchTemplate(self.image_luma, image_luma, cv2.TM_CCOEFF_NORMED)
             _, sim, _, point = cv2.minMaxLoc(res)
             self._button_offset = area_offset(self._button, offset[:2] + np.array(point))
-            print(sim, similarity)
             return sim > similarity
 
     def match_template_color(self, image, offset=(20, 20), similarity=0.85, threshold=30):

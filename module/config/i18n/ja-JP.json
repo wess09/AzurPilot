@@ -111,7 +111,7 @@
       "help": ""
     },
     "EventShop": {
-      "name": "イベントストア",
+      "name": "イベント商店",
       "help": ""
     },
     "WarArchives": {
@@ -958,6 +958,7 @@
       "event_20251218_cn": "天穹に響く音謡",
       "event_20260226_cn": "春色旅籠Online",
       "event_20260326_cn": "ワンダラー募集計画",
+      "event_20260417_cn": "バケーションレーン・きらめく砂浜",
       "raid_20200624": "特別演習超空強襲波（復刻）",
       "raid_20210708": "交錯する新たな波 (復刻)",
       "raid_20220127": "秘密事件調査",
@@ -1621,29 +1622,29 @@
   },
   "EventShop": {
     "_info": {
-      "name": "イベントショップ",
-      "help": ""
+      "name": "EventShop._info.name",
+      "help": "EventShop._info.help"
     },
     "UnlockSSRShip": {
-      "name": "SSR艦船をアンロックする",
-      "help": ""
+      "name": "EventShop.UnlockSSRShip.name",
+      "help": "EventShop.UnlockSSRShip.help"
     },
     "BuyURShip": {
-      "name": "UR艦船をX隻購入する",
-      "help": "",
+      "name": "EventShop.BuyURShip.name",
+      "help": "EventShop.BuyURShip.help",
       "0": "0",
       "1": "1",
       "2": "2"
     },
     "PresetFilter": {
-      "name": "イベントショップフィルター",
-      "help": "通常、デフォルトですべて購入します。",
-      "all": "全部",
-      "custom": "カスタム"
+      "name": "EventShop.PresetFilter.name",
+      "help": "EventShop.PresetFilter.help",
+      "all": "all",
+      "custom": "custom"
     },
     "CustomFilter": {
-      "name": "カスタムフィルター",
-      "help": "カスタムフィルターを使用するには、「イベントショップフィルター」を「カスタム」に設定し、https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn を読む必要があります。"
+      "name": "EventShop.CustomFilter.name",
+      "help": "EventShop.CustomFilter.help"
     }
   },
   "Commission": {
@@ -4649,6 +4650,12 @@
       "help": "行きたい海域が安全な海域か通常の海域かを選択します。",
       "dangerous": "普通海域",
       "safe": "安全な海域"
+    },
+    "SirenBug_Mode": {
+      "name": "セイレーン研究装置との相互作用方法",
+      "help": "セイレーン研究装置との相互作用方法を選択します。隠されたリソースを検出する場合は2番目のオプションが選択され、隠された敵を検出する場合は1番目のオプションが選択されます",
+      "resource": "隠されたリソースを検出",
+      "enemy": "隠された敵を検出"
     },
     "SirenBug_Zone": {
       "name": "バグが悪用されている領域の名前または ID",

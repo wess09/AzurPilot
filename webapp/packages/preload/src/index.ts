@@ -1,4 +1,4 @@
-import {contextBridge} from 'electron';
+import {contextBridge, ipcRenderer} from 'electron';
 
 const apiKey = 'electron';
 /**
@@ -6,6 +6,20 @@ const apiKey = 'electron';
  */
 const api: ElectronApi = {
   versions: process.versions,
+  windowControls: {
+    tray() {
+      ipcRenderer.send('window-tray');
+    },
+    minimize() {
+      ipcRenderer.send('window-min');
+    },
+    maximize() {
+      ipcRenderer.send('window-max');
+    },
+    close() {
+      ipcRenderer.send('window-close');
+    },
+  },
 };
 
 /**

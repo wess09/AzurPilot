@@ -8,26 +8,37 @@ from deploy.Windows.logger import Progress, logger
 
 class AppManager(DeployConfig):
     @staticmethod
-    def app_asar_replace(folder, path='./toolkit/WebApp/resources/app.asar'):
+    def app_asar_replace(
+            folder,
+            source_paths=(
+                './webapp/app.asar',
+            ),
+            target_path='./toolkit/WebApp/resources/app.asar',
+    ):
         """
         Args:
             folder (str): Path to AzurLaneAutoScript
-            path (str): Path from AzurLaneAutoScript to app.asar
+            source_paths (tuple[str]): Candidate source path from git workspace
+            target_path (str): Path from AzurLaneAutoScript to app.asar
 
         Returns:
             bool: If updated.
         """
-        source = os.path.abspath(os.path.join(folder, path))
+        source = os.path.abspath(os.path.join(folder, target_path))
         logger.info(f'Old file: {source}')
 
-        try:
-            import alas_webapp
-        except ImportError:
-            logger.info(f'Dependency alas_webapp not exists, skip updating')
+        update = None
+        for rel_path in source_paths:
+            candidate = os.path.abspath(os.path.join(folder, rel_path))
+            if os.path.isfile(candidate):
+                update = candidate
+                break
+        if update is None:
+            logger.info(
+                f'No git-built app.asar found in {list(source_paths)}, skip updating'
+            )
             return False
 
-        update = alas_webapp.app_file()
-        logger.info(f'New version: {alas_webapp.__version__}')
         logger.info(f'New file: {update}')
 
         if os.path.exists(source):
@@ -53,5 +64,5 @@ class AppManager(DeployConfig):
             Progress.UpdateAlasApp()
             return False
 
-        # self.app_asar_replace(os.getcwd())
-        # Progress.UpdateAlasApp()
+        self.app_asar_replace(os.getcwd())
+        Progress.UpdateAlasApp()

@@ -444,8 +444,8 @@ class Uiautomator2(Connection):
         if width == 720 and height == 1280:
             return (width, height)
 
-        logger.critical(f'傻逼你自己看这分辨率对吗: {width}x{height}')
-        logger.critical('给我他妈的改成 1280x720')
+        logger.critical(f"大叔，你看着分辨率对吗: {width}x{height}。真是个连分辨率都不会设的杂鱼呢❤")
+        logger.critical("乖乖给我改成 1280x720 哦，不然我可不理你了❤")
         raise RequestHumanTakeover
 
     @retry

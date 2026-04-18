@@ -33,7 +33,7 @@ class ManualConfig:
     > Exercise
     > Dorm > Meowfficer > Guild > Gacha
     > Reward
-    > ShopFrequent > EventShop > ShopOnce > Shipyard > Freebies > Island
+    > ShopFrequent > EventShop > ShopOnce > Shipyard > Freebies
     > PrivateQuarters
     > OpsiExplore
     > Minigame > Awaken
@@ -163,6 +163,7 @@ class ManualConfig:
     # Events from 20240725 to 20241219 introduced new chapter switches
     MAP_CHAPTER_SWITCH_20241219 = False
     MAP_CHAPTER_SWITCH_20241219_SP = False
+    MAP_CHAPTER_SWITCH_20241219_SPEX = False
     MAP_CHAPTER_SWITCH_20260326 = False
     # Since event_20241219_cn chapter B unlocks event startup
     # which means chapter AB are continuous

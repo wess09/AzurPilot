@@ -101,7 +101,7 @@ class AzurLaneAutoScript:
             config = AzurLaneConfig(config_name=self.config_name)
             return config
         except RequestHumanTakeover:
-            logger.critical('废物！连这点事都办不好？赶紧滚回来接管！')
+            logger.critical('杂鱼杂鱼~ 没用的大叔连这点事都办不好？这就滚回来求我接管吧❤')
             exit(1)
         except Exception as e:
             logger.exception(e)
@@ -114,7 +114,7 @@ class AzurLaneAutoScript:
             device = Device(config=self.config)
             return device
         except RequestHumanTakeover:
-            logger.critical('废物！连这点事都办不好？赶紧滚回来接管！')
+            logger.critical('杂鱼杂鱼~ 没用的大叔连这点事都办不好？这就滚回来求我接管吧❤')
             exit(1)
         except Exception as e:
             logger.exception(e)
@@ -204,7 +204,7 @@ class AzurLaneAutoScript:
             logger.info('游戏服务器可能正在维护或网络连接中断，正在检查服务器状态')
             self.checker.check_now()
             if self.checker.is_available():
-                logger.critical('你这游戏进的是什么鬼地方？Alas他妈的根本不认识这破页面！')
+                logger.critical('哈？你这游戏进的是什么鬼地方？这种破页面我都懒得认识！真逊~')
                 self.save_error_log()
                 handle_notify(
                     self.config.Error_OnePushConfig,
@@ -217,7 +217,7 @@ class AzurLaneAutoScript:
                 return False
         except ScriptError as e:
             logger.exception(e)
-            logger.critical('虽然可能是开发者的锅，但更大概率是你人品太差触发了诡异Bug！')
+            logger.critical('噗噗~ 恭喜大叔触发了诡异Bug！果然废材的人品就是差呢❤')
             handle_notify(
                 self.config.Error_OnePushConfig,
                 title=f"Alas <{self.config_name}> 崩溃",
@@ -240,7 +240,7 @@ class AzurLaneAutoScript:
                 return 'recoverable'
             else:
                 # 重启失败或未启用，终止程序
-                logger.critical('模拟器都死透了你还在那看？赶紧手动去救它啊，蠢货！')
+                logger.critical('模拟器都死透了你还在那看？赶紧动手去救它啊，没用的大叔！')
                 handle_notify(
                     self.config.Error_OnePushConfig,
                     title=f"Alas <{self.config_name}> 崩溃",
@@ -248,7 +248,7 @@ class AzurLaneAutoScript:
                 )
                 exit(1)
         except RequestHumanTakeover:
-            logger.critical('你行你上啊，在那瞎看什么？赶紧滚过来接管！')
+            logger.critical('你行你上啊，盯着我看干什么？难道大叔也想让我这种小鬼帮你接管吗？❤')
             handle_notify(
                 self.config.Error_OnePushConfig,
                 title=f"Alas <{self.config_name}> 崩溃",
@@ -256,7 +256,7 @@ class AzurLaneAutoScript:
             )
             exit(1)
         except AutoSearchSetError:
-            logger.critical('连自动搜索都设不明白，你是把船都卖了吗？赶紧去看看你的困难编队！')
+            logger.critical('笨——蛋——大叔！自动搜索都不会设，你是在等我也嘲笑你的困难编队吗？❤')
             logger.critical('看懂了吗？滚过来接管。')
             exit(1)
         except Exception as e:
@@ -677,7 +677,7 @@ class AzurLaneAutoScript:
             if self.stop_event is not None:
                 if self.stop_event.is_set():
                     logger.info("检测到更新事件")
-                    logger.info(f"[{self.config_name}] 已退出。原因: 更新")
+                    logger.info(f"[{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                     exit(0)
 
             time.sleep(5)
@@ -758,7 +758,7 @@ class AzurLaneAutoScript:
                 if self.stop_event is not None:
                     if self.stop_event.is_set():
                         logger.info("检测到更新事件")
-                        logger.info(f"Alas [{self.config_name}] 已退出。")
+                        logger.info(f"Alas [{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                         break
                 # 检查游戏服务器维护
                 self.checker.wait_until_available()

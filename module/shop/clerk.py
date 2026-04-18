@@ -87,8 +87,7 @@ class ShopClerk(ShopBase, Retirement):
         try:
             return getattr(self.config, f'{class_name}_{ugroup}{postfix}')
         except Exception:
-            logger.critical(f'未找到配置文件: '
-                            f'\'{class_name}_{ugroup}{postfix}\'')
+            logger.critical(f"大叔，连配置文件都找不到吗？没有 \'{class_name}_{ugroup}{postfix}\' 这种东西啦！❤")
             raise
 
     def shop_get_select(self, item):
@@ -108,8 +107,7 @@ class ShopClerk(ShopBase, Retirement):
         # Item group must belong in SELECT_ITEM_INFO_MAP
         group = item.group
         if group not in SELECT_ITEM_INFO_MAP:
-            logger.critical(f'意外的物品组 \'{group}\'; '
-                            f'预期为 {SELECT_ITEM_INFO_MAP.keys()}')
+            logger.critical(f"哈？物品组 \'{group}\' 是什么鬼？大叔你是活在哪个次元？❤")
             raise ScriptError
 
         # Get configured choice for item
@@ -127,7 +125,7 @@ class ShopClerk(ShopBase, Retirement):
             else:
                 return item_info['grid'].buttons[index]
         except Exception:
-            logger.critical(f'SELECT_ITEM_INFO_MAP 配置错误，请检查资源文件')
+            logger.critical(f"SELECT_ITEM_INFO_MAP 配置出了这么大的错，大叔你是不是偷偷把资源文件卖了换酒喝了？❤")
             raise ScriptError
 
     def shop_buy_select_execute(self, item):
@@ -158,7 +156,7 @@ class ShopClerk(ShopBase, Retirement):
                 break
 
         if not limit:
-            logger.critical(f'{item.name} 的库存数量无法提取，请检查资源文件 OCR_SHOP_SELECT_STOCK')
+            logger.critical(f"噗噗~ 连 {item.name} 的库存都数不明白，大叔你还是回幼儿园重修数学吧❤")
             raise ScriptError
 
         # Click in intervals until plus/minus are onscreen
@@ -237,7 +235,7 @@ class ShopClerk(ShopBase, Retirement):
                 break
 
         if not limit:
-            logger.critical('OCR_SHOP_AMOUNT 识别结果为零（0），请检查资源文件')
+            logger.critical("OCR_SHOP_AMOUNT 识别出来是 0 诶？难道大叔你已经穷得连底裤都没了吗？❤")
             raise ScriptError
 
         # Adjust purchase amount if needed

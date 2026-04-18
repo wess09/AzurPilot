@@ -197,12 +197,12 @@ DropRecord:
   TelemetryReport: true
   BugReport: true
 Log:
-  LogKeepCount: 7
+  LogKeepCount: 3
   LogBackUpMethod:
-    value: delete
+    value: zip
     option: [ delete, zip, copy ]
   ZipMethod:
-    value: bz2
+    value: zip
     option: [ bz2, gzip, xz, zip ]
 Retirement:
   RetireMode:
@@ -1177,6 +1177,9 @@ OpsiSirenBug:
   SirenBug_Type:
     value: dangerous
     option: [dangerous, safe]
+  SirenBug_Mode:
+    value: resource
+    option: [resource, enemy]
   SirenBug_Zone: 0
   SirenBug_Grid: null
   SirenBug_SyncDailyCount:

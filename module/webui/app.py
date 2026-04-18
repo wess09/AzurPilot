@@ -222,6 +222,8 @@ class AlasGUI(Frame):
         self._announcement_force = False
         self.simulator = OSSimulator()
         self._simulator_logger_pm = None
+        self._overview_log = None
+        self._overview_log_config_name = None
 
     @use_scope("aside", clear=True)
     def set_aside(self) -> None:
@@ -262,13 +264,21 @@ class AlasGUI(Frame):
 
         def update(name, seq):
             with use_scope(f"alas-instance-{seq}", clear=True):
-                icon_html = Icon.RUN
                 rendered_state = ProcessManager.get_manager(name).state
+                if rendered_state == 1:
+                    icon_html = Icon.RUNNING
+                elif rendered_state == 3:
+                    icon_html = Icon.ERROR
+                elif rendered_state == 4:
+                    icon_html = Icon.UPDATE
+                else:
+                    icon_html = Icon.RUN
+                status_signal = "false" if rendered_state in (1, 3, 4) else "true"
                 if rendered_state == 1 and getattr(self, "af_flag", False):
                     icon_html = icon_html[:31] + ' anim-rotate' + icon_html[31:]
-                rendered_state = put_icon_buttons(
+                put_icon_buttons(
                     icon_html,
-                    "true",
+                    status_signal,
                     buttons=[{"label": name, "value": name, "color": "aside"}],
                     onclick=self.ui_alas,
                 )
@@ -1358,6 +1368,7 @@ class AlasGUI(Frame):
                     self.renderables = []
                     self.renderables_max_length = 2000
                     self.renderables_reduce_length = 1000
+                    self.renderables_total = 0
             self._simulator_logger_pm = SimulatorLogger()
 
         pm = self._simulator_logger_pm
@@ -1366,6 +1377,7 @@ class AlasGUI(Frame):
             def emit(self, record):
                 msg = self.format(record)
                 pm.renderables.append(msg + '\n')
+                pm.renderables_total += 1
                 if len(pm.renderables) > pm.renderables_max_length:
                     del pm.renderables[:pm.renderables_reduce_length]
 
@@ -1421,7 +1433,7 @@ class AlasGUI(Frame):
             label_on=t("Gui.Button.Stop"),
             label_off=t("Gui.Button.Start"),
             onclick_on=self.simulator.interrupt,
-            onclick_off=self.simulator.start,
+            onclick_off=self._simulator_start,
             get_state=lambda: self.simulator.is_running,
             color_on="off",
             color_off="on",
@@ -1563,6 +1575,16 @@ class AlasGUI(Frame):
             color="navigator",
         )
 
+    def _alas_start(self):
+        self.alas.start(None, updater.event)
+        if os.environ.get("DEMO") == "1":
+            threading.Timer(5, self.alas.stop).start()
+
+    def _simulator_start(self):
+        self.simulator.start()
+        if os.environ.get("DEMO") == "1":
+            threading.Timer(5, self.simulator.interrupt).start()
+
     @use_scope("content", clear=True)
     def alas_overview(self) -> None:
         self.init_menu(name="Overview")
@@ -1623,7 +1645,7 @@ class AlasGUI(Frame):
             label_on=t("Gui.Button.Stop"),
             label_off=t("Gui.Button.Start"),
             onclick_on=lambda: self.alas.stop(),
-            onclick_off=lambda: self.alas.start(None, updater.event),
+            onclick_off=self._alas_start,
             get_state=lambda: self.alas.alive,
             color_on="off",
             color_off="on",
@@ -1680,7 +1702,14 @@ class AlasGUI(Frame):
 })();
 """)
 
-        log = RichLog("log")
+        if self._overview_log is None or self._overview_log_config_name != self.alas_name:
+            self._overview_log = RichLog("log")
+            self._overview_log_config_name = self.alas_name
+        else:
+            self._overview_log.scope = "log"
+        log = self._overview_log
+        log.first_display = True
+        log.last_display_time = {}
         self._log = log
         self._log.dashboard_arg_group = LogRes(self.alas_config).groups
 
@@ -1754,6 +1783,7 @@ class AlasGUI(Frame):
         self.task_handler.add(self.alas_update_overview_task, 10, True)
         if 'Maa' not in self.ALAS_ARGS:
             self.task_handler.add(self.alas_update_dashboard, 10, True)
+            self.alas_update_dashboard(True)
         if hasattr(self, 'alas') and self.alas is not None:
             self.task_handler.add(log.put_log(self.alas), 0.25, True)
 
@@ -1800,6 +1830,9 @@ class AlasGUI(Frame):
             config_name: str,
             config_updater: AzurLaneConfig = State.config_updater,
     ) -> None:
+        if os.environ.get("DEMO") == "1":
+            return
+
         try:
             skip_time_record = False
             valid = []
@@ -1984,8 +2017,6 @@ class AlasGUI(Frame):
 
             if group_name not in self._log.last_display_time.keys():
                 self._log.last_display_time[group_name] = ''
-            if self._log.last_display_time[group_name] == delta and not self._log.first_display:
-                continue
             self._log.last_display_time[group_name] = delta
 
             # if self._log.first_display:
@@ -2384,6 +2415,50 @@ class AlasGUI(Frame):
         put_button(label=t("GUI测试 抛出异常事件"), onclick=raise_exception)
         put_button(label=t("预览更新弹窗"), onclick=self._preview_update_popup)
 
+        def _get_debug_target_instance() -> Optional[str]:
+            if getattr(self, "alas_name", ""):
+                return self.alas_name
+            all_instances = alas_instance()
+            if all_instances:
+                return all_instances[0]
+            return None
+
+        def _refresh_debug_status():
+            self.set_aside_status()
+            if hasattr(self, "state_switch"):
+                try:
+                    self.state_switch.switch()
+                except Exception:
+                    pass
+
+        def _mock_icon_state(state: int, seconds: int = 10):
+            target = _get_debug_target_instance()
+            if not target:
+                toast("未找到可用实例，无法模拟图标状态", color="warning")
+                return
+            ProcessManager.get_manager(target).set_state_override(state, duration=seconds)
+            _refresh_debug_status()
+            toast(f"已为 {target} 模拟状态 {state}（{seconds}s）", color="info")
+
+        def _clear_mock_icon_state():
+            target = _get_debug_target_instance()
+            if not target:
+                toast("未找到可用实例，无法清除模拟状态", color="warning")
+                return
+            ProcessManager.get_manager(target).clear_state_override()
+            _refresh_debug_status()
+            toast(f"已清除 {target} 的图标状态模拟", color="success")
+
+        put_buttons(
+            buttons=[
+                {"label": "模拟运行图标(10s)", "value": 1, "color": "success"},
+                {"label": "模拟错误图标(10s)", "value": 3, "color": "danger"},
+                {"label": "模拟更新图标(10s)", "value": 4, "color": "warning"},
+            ],
+            onclick=lambda state: _mock_icon_state(state, 10),
+        )
+        put_button(label="清除图标模拟状态", onclick=_clear_mock_icon_state, color="secondary")
+
         def _force_restart():
             if State.restart_event is not None:
                 toast(t("Gui.Toast.AlasRestart"), duration=0, color="error")
@@ -2432,7 +2507,7 @@ class AlasGUI(Frame):
                 )
                 if (
                         State.deploy_config.EnableRemoteAccess
-                        and State.deploy_config.Password
+                        and (State.deploy_config.Password or os.environ.get("DEMO") == "1")
                 ):
                     put_text(t("Gui.Remote.NotRunning"), scope="remote_state")
                 else:
@@ -2631,7 +2706,7 @@ class AlasGUI(Frame):
             # show something
             put_markdown(
                 """
-            Alas 是一款免费开源软件，如果你在任何渠道付费购买了 Alas，那你一定是个大傻逼。
+            Alas 是一款免费开源软件，如果你在任何渠道付费购买了 Alas，那你一定是个被骗了的超级大杂鱼呢❤
             Alas is free and open-source software. If you paid for Alas through any channel, please request a refund.
             Alasは無料のオープンソースソフトウェアです。Alasをいずれかのチャネルから購入された場合は、返金をリクエストしてください。
             Alas는 무료 오픈 소스 소프트웨어입니다. 어떤 경로로든 Alas를 유료로 구매하셨다면 환불을 요청해 주세요.
@@ -3120,7 +3195,7 @@ def startup():
         start_ocr_server_process(State.deploy_config.OcrServerPort)
     if (
             State.deploy_config.EnableRemoteAccess
-            and State.deploy_config.Password is not None
+            and (State.deploy_config.Password is not None or os.environ.get("DEMO") == "1")
     ):
         task_handler.add(RemoteAccess.keep_ssh_alive(), 60)
 
@@ -3203,6 +3278,7 @@ def app():
             return
         app_manage()
 
+    from mcp_server_sse import app as mcp_app
     app = asgi_app(
         applications=[index, manage],
         cdn=cdn,
@@ -3216,5 +3292,6 @@ def app():
         ],
         on_shutdown=[clearup],
     )
+    app.mount("/mcp", mcp_app)
 
     return app

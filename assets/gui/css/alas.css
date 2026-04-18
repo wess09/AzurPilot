@@ -729,6 +729,19 @@ pre.rich-traceback-code {
     max-width: 100% !important;
 }
 
+.simple-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+.simple-table-wrap .simple-table {
+    width: max-content;
+    min-width: 100%;
+}
+
 #pywebio-scope-commission_income > div {
     width: 100% !important;
     max-width: 100% !important;

@@ -407,6 +407,35 @@ class Cl1Database:
         data['ap_snapshots'] = snapshots
         self.save_stats(instance, month, data)
 
+    def get_last_ap_notification(self, instance: str) -> Optional[Dict[str, Any]]:
+        """获取最近一次成功推送时记录的行动力值。"""
+        current_month = datetime.now().strftime('%Y-%m')
+        current_data = self.get_stats(instance, current_month)
+        last_notification = current_data.get('last_ap_notification')
+        if isinstance(last_notification, dict) and 'ap' in last_notification:
+            return last_notification
+
+        rows = self._list_stats_rows(instance=instance)
+        for _, month_key in reversed(rows):
+            if month_key == current_month:
+                continue
+            data = self.get_stats(instance, month_key)
+            last_notification = data.get('last_ap_notification')
+            if isinstance(last_notification, dict) and 'ap' in last_notification:
+                return last_notification
+
+        return None
+
+    def set_last_ap_notification(self, instance: str, ap_current: int):
+        """记录最近一次成功推送时的行动力值。"""
+        month = datetime.now().strftime('%Y-%m')
+        data = self.get_stats(instance, month)
+        data['last_ap_notification'] = {
+            'ts': datetime.now().isoformat(),
+            'ap': int(ap_current),
+        }
+        self.save_stats(instance, month, data)
+
     def migrate_from_json(self, json_path: Path, instance: str):
         """从 JSON 文件迁移数据到数据库"""
         if not json_path.exists():
@@ -646,6 +675,10 @@ class Cl1Database:
         from module.base.async_executor import async_executor
         return async_executor.submit(self.add_ap_snapshot, instance, ap_current, source)
 
+    def async_set_last_ap_notification(self, instance: str, ap_current: int):
+        from module.base.async_executor import async_executor
+        return async_executor.submit(self.set_last_ap_notification, instance, ap_current)
+
     def async_increment_meow_battle_count(self, instance: str, hazard_level: int = None, delta: float = None):
         from module.base.async_executor import async_executor
         return async_executor.submit(self.increment_meow_battle_count, instance, hazard_level, delta)
@@ -721,4 +754,3 @@ class Cl1Database:
 
 # 单例实例
 db = Cl1Database()
-

@@ -1,12 +1,13 @@
 # 此文件处理大世界（Operation Siren）模式下的行动力（Action Point, AP）管理。
 # 包含行动力数值 OCR 识别、药剂（AP Box）库存解析以及自动购买或使用补给的交互逻辑。
 from datetime import datetime
+from datetime import timedelta
 
 import module.config.server as server
 from module.base.button import ButtonGrid
 from module.base.timer import Timer
 from module.base.utils import *
-from module.config.utils import get_server_next_update
+from module.config.utils import get_server_next_update, server_time_offset
 from module.logger import logger
 from module.ocr.ocr import Digit, DigitCounter
 from module.os_handler.assets import *
@@ -112,6 +113,23 @@ class ActionPointHandler(UI, MapEventHandler):
     _action_point_box = [0, 0, 0, 0]
     _action_point_current = 0
     _action_point_total = 0
+
+    @staticmethod
+    def _is_in_month_end_purchase_block_week():
+        """
+        Block weekly AP purchases during the natural week (Mon-Sun) that contains
+        the last day of the current server month. Purchase becomes available again
+        after entering the next month.
+        """
+        diff = server_time_offset()
+        server_now = datetime.now() - diff
+        next_month = (server_now.replace(day=28) + timedelta(days=4)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        month_end = next_month.replace(day=1) - timedelta(days=1)
+        current_week_start = server_now.date() - timedelta(days=server_now.weekday())
+        month_end_week_start = month_end.date() - timedelta(days=month_end.weekday())
+        return current_week_start == month_end_week_start
 
     def _is_in_action_point(self):
         return self.appear(ACTION_POINT_USE, offset=(20, 20))
@@ -314,6 +332,9 @@ class ActionPointHandler(UI, MapEventHandler):
         buy_max = 5  # In current version of AL, players can buy 5 times of AP in a week.
         buy_count = buy_max - current
         buy_limit = self.config.OpsiGeneral_BuyActionPointLimit
+        if self._is_in_month_end_purchase_block_week():
+            logger.info('Skip buying action points this week because it is the month-end block week')
+            return False
         if buy_count >= buy_limit:
             logger.info('Reach the limit to buy action points this week')
             return False

@@ -12,12 +12,11 @@ jellyfish
 pyyaml
 inflection
 pywebio
-starlette
+starlette==0.25.0
 anyio
 uvicorn[standard]
 aiofiles
 pypresence
-alas-webapp
 rich
 zerorpc
 pyzmq
@@ -30,10 +29,15 @@ pycryptodome
 typing_extensions>=4.8.0
 pydantic>=2.5.0
 rapidocr
-onnxruntime-directml
+onnxruntime-directml; sys_platform == "win32"
+onnxruntime; sys_platform != "win32"
 watchdog>=2.0.0
 numba
 pip
 lz4
 setuptools
+importlib_resources>=6.0.0
+importlib_metadata>=8.0.0
 openai
+mcp==0.9.1
+sse-starlette==3.0.3

@@ -927,7 +927,7 @@
       "event_20220526_cn": "泠誓光庭",
       "event_20220728_cn": "復刻雄鷹的敘事歌",
       "event_20220818_cn": "遠匯點作戰",
-      "event_20220915_cn": "紫絳槿嵐",
+      "event_20220915_cn": "復刻紫絳槿嵐",
       "event_20221124_cn": "復刻鍊金術士與秘密遺跡群島",
       "event_20221222_cn": "定向折疊",
       "event_20230223_cn": "湮燼塵墟",
@@ -958,6 +958,7 @@
       "event_20251218_cn": "響徹於天穹之音",
       "event_20260226_cn": "春滿客棧Online",
       "event_20260326_cn": "漫遊者招募計劃",
+      "event_20260417_cn": "Vacation Lane – Beachside Brilliance",
       "raid_20200624": "特別演習埃塞克斯級(復刻)",
       "raid_20210708": "復刻穿越彼方的水線",
       "raid_20220127": "演習神秘事件調查",
@@ -1629,7 +1630,7 @@
       "help": ""
     },
     "BuyURShip": {
-      "name": "購買X只UR艦船",
+      "name": "購買X艘UR艦船",
       "help": "",
       "0": "0",
       "1": "1",
@@ -1637,13 +1638,13 @@
     },
     "PresetFilter": {
       "name": "活動商店過濾器",
-      "help": "一般預設全買即可",
+      "help": "一般不需要修改",
       "all": "全部",
       "custom": "自定義"
     },
     "CustomFilter": {
-      "name": "自定義過濾器",
-      "help": "使用自定義過濾器需將“活動商店過濾器”設定為“自定義”，並閱讀 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn"
+      "name": "自定義活動商店過濾器",
+      "help": "使用自定義過濾器需將 \"活動商店過濾器\" 設定為 \"自定義過濾器\"，並閱讀 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn"
     }
   },
   "Commission": {
@@ -4649,6 +4650,12 @@
       "help": "選擇前往的海域是安全海域還是普通海域",
       "dangerous": "普通海域",
       "safe": "安全海域"
+    },
+    "SirenBug_Mode": {
+      "name": "與塞壬探測裝置的互動方式",
+      "help": "選擇與塞壬裝置的互動方式。互動時探測資源對應選擇第二個選項，探測敵人對應選擇第一個選項",
+      "resource": "探測隱藏的資源",
+      "enemy": "探測隱藏的敵人"
     },
     "SirenBug_Zone": {
       "name": "利用 Bug 的海域名稱或 ID",

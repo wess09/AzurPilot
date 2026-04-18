@@ -1,4 +1,18 @@
-<svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="50" cy="50" r="50" fill="#E74C3C" />
-  <path d="M 32 32 L 68 68 M 68 32 L 32 68" fill="none" stroke="white" stroke-width="14" stroke-linecap="round" />
+<svg class="aside-icon icon-run-error" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <mask id="play-error-mask-fixed">
+            <rect width="1024" height="1024" fill="white" />
+            <circle cx="740" cy="740" r="320" fill="black" />
+        </mask>
+    </defs>
+
+    <path mask="url(#play-error-mask-fixed)" d="M320 200c-40-22-90 6-90 52v520c0 46 50 74 90 52l440-260c40-22 40-78 0-100L320 200z" fill="none" stroke="currentColor" stroke-width="80" stroke-linejoin="round" stroke-linecap="round"></path>
+
+    <g class="error-badge">
+        <circle cx="740" cy="740" r="260" fill="#FF4D4F" />
+        <g stroke="white" stroke-width="80" stroke-linecap="round">
+            <line x1="630" y1="630" x2="850" y2="850" />
+            <line x1="850" y1="630" x2="630" y2="850" />
+        </g>
+    </g>
 </svg>

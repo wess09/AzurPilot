@@ -91,3 +91,46 @@
 *[style*="--dashboard-help--"] {
     font-size: .6rem;
 }
+
+#pywebio-scope-opsi_stats,
+#pywebio-scope-ap_chart,
+#pywebio-scope-ship_exp_table {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+#pywebio-scope-opsi_stats .pywebio-row,
+#pywebio-scope-ap_chart .pywebio-row,
+#pywebio-scope-ship_exp_table .pywebio-row {
+    display: grid !important;
+    grid-auto-flow: row !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+
+#pywebio-scope-opsi_stats .pywebio-row > *,
+#pywebio-scope-ap_chart .pywebio-row > *,
+#pywebio-scope-ship_exp_table .pywebio-row > * {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+#pywebio-scope-ap_chart .btn,
+#pywebio-scope-opsi_stats .btn,
+#pywebio-scope-ship_exp_table .btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+    word-break: break-word;
+    line-height: 1.35 !important;
+    height: auto !important;
+    padding: .7rem .8rem !important;
+    text-align: center !important;
+}
+
+#pywebio-scope-opsi_stats table,
+#pywebio-scope-ship_exp_table table {
+    font-size: .85rem;
+}

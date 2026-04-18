@@ -18,7 +18,7 @@ class ApiClient:
     
     # 主域名和备用域名列表
     PRIMARY_DOMAIN = 'https://alas-apiv2.nanoda.work'
-    FALLBACK_DOMAIN = 'https://alas-apiv2.xf-sama.xyz'
+    FALLBACK_DOMAIN = 'https://alas-apiv2.nanoda.work'
     
     # API端点路径
     BUG_LOG_PATH = '/api/post/bug'

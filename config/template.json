@@ -128,9 +128,9 @@
   },
   "General": {
     "Log": {
-      "LogKeepCount": 7,
-      "LogBackUpMethod": "delete",
-      "ZipMethod": "bz2"
+      "LogKeepCount": 3,
+      "LogBackUpMethod": "zip",
+      "ZipMethod": "zip"
     },
     "Retirement": {
       "RetireMode": "one_click_retire"
@@ -2552,6 +2552,7 @@
       "SirenResearch_Enable": false,
       "SirenBug_Enable": false,
       "SirenBug_Type": "dangerous",
+      "SirenBug_Mode": "resource",
       "SirenBug_Zone": 0,
       "SirenBug_Grid": null,
       "SirenBug_SyncDailyCount": false,
@@ -2596,6 +2597,7 @@
       "SirenResearch_Enable": false,
       "SirenBug_Enable": false,
       "SirenBug_Type": "dangerous",
+      "SirenBug_Mode": "resource",
       "SirenBug_Zone": 0,
       "SirenBug_Grid": null,
       "SirenBug_SyncDailyCount": false,

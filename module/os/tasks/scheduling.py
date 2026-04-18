@@ -97,19 +97,22 @@ class CoinTaskMixin:
             - 需要在配置中设置 Error_OnePushConfig 才能发送推送
             - 使用 onepush 库发送通知到配置的推送渠道
             - 标题会自动格式化为 "[Alas <实例名>] 原标题" 的形式
+
+        Returns:
+            bool: True 表示推送成功发送，False 表示未发送或发送失败
         """
         # 检查是否启用智能调度
         if not is_smart_scheduling_enabled(self.config):
-            return
+            return False
         # 检查是否启用推送大世界相关邮件
         if not self.config.OpsiGeneral_NotifyOpsiMail:
-            return
+            return False
         
         # 检查是否配置了推送
         push_config = self.config.Error_OnePushConfig
         if not self._is_push_config_valid(push_config):
             logger.warning("推送配置未设置或 provider 为 null，跳过推送。请在 Alas 设置 -> 错误处理 -> OnePush 配置中设置有效的推送渠道。")
-            return
+            return False
         
         # 获取实例名称并格式化标题
         instance_name = getattr(self.config, 'config_name', 'Alas')
@@ -127,10 +130,13 @@ class CoinTaskMixin:
             )
             if success:
                 logger.info(f"推送通知成功: {formatted_title}")
+                return True
             else:
                 logger.warning(f"推送通知失败: {formatted_title}")
+                return False
         except Exception as e:
             logger.error(f"推送通知异常: {e}")
+            return False
     
     def _is_push_config_valid(self, push_config):
         """
@@ -187,9 +193,9 @@ class CoinTaskMixin:
         current_ap = self._action_point_total
 
         # 保存体力快照到数据库（用于 WebUI 体力变化曲线图）
+        instance_name = getattr(self.config, 'config_name', 'default')
         try:
             from module.statistics.cl1_database import db as cl1_db
-            instance_name = getattr(self.config, 'config_name', 'default')
             source = 'cl1' if getattr(self, 'is_in_task_cl1_leveling', False) else 'meow'
             cl1_db.async_add_ap_snapshot(instance_name, current_ap, source=source)
         except Exception:
@@ -204,10 +210,34 @@ class CoinTaskMixin:
 
 
         if self._can_send_ap_notification('_last_ap_notification_time'):
-            self.notify_push(
+            previous_ap = None
+            try:
+                from module.statistics.cl1_database import db as cl1_db
+                last_notification = cl1_db.get_last_ap_notification(instance_name)
+                if isinstance(last_notification, dict):
+                    previous_ap = last_notification.get('ap')
+            except Exception:
+                logger.exception('Failed to load last AP notification')
+
+            content = f"当前行动力: {current_ap}"
+
+            if previous_ap is not None:
+                ap_delta = current_ap - previous_ap
+                if ap_delta >= 0:
+                    content = f"当前行动力: {current_ap} 上涨{ap_delta}行动力"
+                else:
+                    content = f"当前行动力: {current_ap} 下跌{abs(ap_delta)}行动力"
+
+            pushed = self.notify_push(
                 title="[Alas] 行动力出现变化！",
-                content=f"当前行动力: {current_ap}"
+                content=content
             )
+            if pushed:
+                try:
+                    from module.statistics.cl1_database import db as cl1_db
+                    cl1_db.async_set_last_ap_notification(instance_name, current_ap)
+                except Exception:
+                    logger.exception('Failed to save last AP notification')
 
     
     # ==================== 黄币阈值相关方法 ====================
