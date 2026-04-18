@@ -4564,14 +4564,6 @@
       "5": "5",
       "6": "6"
     },
-    "SirenDetectorSearch_FleetForBlock": {
-      "name": "Blocking Fleet",
-      "help": "Fleet used to block enemies to avoid being interrupted during search. Please choose a different fleet from the Meowfficer Farming mission.",
-      "1": "1",
-      "2": "2",
-      "3": "3",
-      "4": "4"
-    },
     "SirenDetectorSearch_StopAfterFound": {
       "name": "Stop After Finding X Siren Detection Devices",
       "help": "After finding and recording the specified number of Siren Detection Devices, stop the search and return to the normal Meowfficer Farming process. (The actual count is determined by the record table below. If the record table is empty, stops after finding X devices. If there are Y devices in the record, stops after finding X-Y devices.)\nSet to 0 for no limit, search will continue until AP is insufficient."

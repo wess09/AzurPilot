@@ -219,12 +219,12 @@ class OSGridPredictor(GridPredictor):
     def predict_enemy_genre(self):
         image = rgb2gray(self.relative_crop((-0.5, -1, 0.5, 0), shape=(60, 60)))
         for name, template in self._os_template_enemy.items():
-            if template.match(image):
+            if template.match(image, similarity=0.9):
                 return name
 
         image = rgb2gray(self.relative_crop((-0.5, -2, 0.5, -1), shape=(60, 60)))
         for name, template in self._os_template_enemy_upper.items():
-            if template.match(image):
+            if template.match(image, similarity=0.9):
                 return name
 
         return None

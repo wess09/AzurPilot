@@ -4564,14 +4564,6 @@
       "5": "5",
       "6": "6"
     },
-    "SirenDetectorSearch_FleetForBlock": {
-      "name": "OpsiMeowfficerFarming.SirenDetectorSearch_FleetForBlock.name",
-      "help": "OpsiMeowfficerFarming.SirenDetectorSearch_FleetForBlock.help",
-      "1": "1",
-      "2": "2",
-      "3": "3",
-      "4": "4"
-    },
     "SirenDetectorSearch_StopAfterFound": {
       "name": "OpsiMeowfficerFarming.SirenDetectorSearch_StopAfterFound.name",
       "help": "OpsiMeowfficerFarming.SirenDetectorSearch_StopAfterFound.help"
