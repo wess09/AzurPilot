@@ -98,9 +98,33 @@ class DeployConfig(ConfigModel):
         self.config = poor_yaml_read(DEPLOY_TEMPLATE)
         self.config_template = copy.deepcopy(self.config)
         origin = poor_yaml_read(self.file)
-        self.config.update(origin)
+        
+        # 递归更新配置
+        def update_dict(target, source):
+            for k, v in source.items():
+                if k in target and isinstance(target[k], dict) and isinstance(v, dict):
+                    update_dict(target[k], v)
+                else:
+                    target[k] = v
+        
+        update_dict(self.config, origin)
 
-        for key, value in self.config.items():
+        # 处理 Deploy 嵌套（如果存在）
+        deploy_config = self.config.get('Deploy', self.config)
+
+        # 处理扁平配置（向后兼容）
+        flat_config = {}
+        def flatten_dict(d, prefix=''):
+            for k, v in d.items():
+                if isinstance(v, dict):
+                    flatten_dict(v, prefix + k + '.')
+                else:
+                    flat_config[prefix + k] = v
+        
+        flatten_dict(deploy_config)
+
+        # 复制配置到属性
+        for key, value in flat_config.items():
             if hasattr(self, key):
                 super().__setattr__(key, value)
 

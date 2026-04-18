@@ -67,14 +67,42 @@ def poor_yaml_read(file):
     """
     content = atomic_read_text(file)
     data = {}
-    regex = re.compile(r'^(.*?):(.*?)$')
+    indent_stack = []
+    current_dict = data
+    
     for line in content.splitlines():
-        line = line.strip('\n\r\t ').replace('\\', '/')
+        # 去除行尾的换行符、制表符和空格，保留缩进空格
+        line = line.rstrip('\n\r\t ')
         if line.startswith('#'):
             continue
-        result = re.match(regex, line)
+        
+        # 计算缩进级别（使用所有空白字符）
+        indent = len(line) - len(line.lstrip())
+        line = line.lstrip()
+        
+        if not line:
+            continue
+        
+        result = re.match(r'^(.*?):(.*?)$', line)
         if result:
-            k, v = result.group(1), result.group(2).strip('\n\r\t\' ')
+            k, v = result.group(1), result.group(2).strip()
+            
+            # 管理缩进栈
+            while indent_stack:
+                if indent_stack[-1][0] < indent:
+                    # 栈顶缩进小于当前行，说明当前是子节点，保持当前字典
+                    break
+                else:
+                    # 栈顶缩进大于等于当前行，弹出栈顶
+                    # 如果是大于，说明是返回父节点；如果是等于，说明是同级节点
+                    indent_stack.pop()
+            
+            # 如果缩进栈不为空，使用栈顶的字典作为当前字典
+            if indent_stack:
+                current_dict = indent_stack[-1][1]
+            else:
+                current_dict = data
+            
             if v:
                 if v.lower() == 'null':
                     v = None
@@ -84,7 +112,14 @@ def poor_yaml_read(file):
                     v = True
                 elif v.isdigit():
                     v = int(v)
-                data[k] = v
+                current_dict[k] = v
+            else:
+                # 嵌套字典
+                new_dict = {}
+                current_dict[k] = new_dict
+                # 将新字典添加到缩进栈
+                indent_stack.append((indent, new_dict))
+                current_dict = new_dict
 
     return data
 
