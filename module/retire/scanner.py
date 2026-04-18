@@ -682,7 +682,7 @@ class DockScanner(ShipScanner):
         start = 0
         for i in range(len(gap_seq) - 1):
             if gap_seq[i + 1] - gap_seq[i] > 50 and i + 1 - start > 10:
-                bound.append(np.mean(gap_seq[start : i + 1]).astype(np.int))
+                bound.append(np.mean(gap_seq[start : i + 1]).astype(int))
                 start = i + 1
         if len(bound) > 1:
             # The last line is not credible

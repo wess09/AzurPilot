@@ -19,11 +19,17 @@ anyio==4.13.0
     #   sse-starlette
     #   starlette
     #   watchfiles
+attrs==26.1.0
+    # via
+    #   jsonschema
+    #   referencing
 certifi==2026.2.25
     # via
     #   httpcore
     #   httpx
     #   requests
+cffi==2.0.0
+    # via cryptography
 chardet==7.4.1
     # via -r requirements-in.txt
 charset-normalizer==3.4.7
@@ -34,6 +40,8 @@ colorlog==6.10.1
     # via rapidocr
 contourpy==1.3.3
     # via matplotlib
+cryptography==46.0.7
+    # via pyjwt
 cycler==0.12.1
     # via matplotlib
 decorator==5.2.1
@@ -66,7 +74,7 @@ httpx==0.28.1
     #   openai
 httpx-sse==0.4.3
     # via mcp
-idna==3.11
+idna==3.7
     # via
     #   anyio
     #   httpx
@@ -83,6 +91,10 @@ jellyfish==1.2.1
     # via -r requirements-in.txt
 jiter==0.14.0
     # via openai
+jsonschema==4.26.0
+    # via mcp
+jsonschema-specifications==2025.9.1
+    # via jsonschema
 kiwisolver==1.5.0
     # via matplotlib
 llvmlite==0.47.0
@@ -95,7 +107,7 @@ markdown-it-py==4.0.0
     # via rich
 matplotlib==3.10.8
     # via -r requirements-in.txt
-mcp==0.9.1
+mcp==1.23.0
     # via -r requirements-in.txt
 mdurl==0.1.2
     # via markdown-it-py
@@ -150,6 +162,8 @@ psutil==7.2.2
     # via -r requirements-in.txt
 pyclipper==1.4.0
     # via rapidocr
+pycparser==3.0
+    # via cffi
 pycryptodome==3.23.0
     # via
     #   -r requirements-in.txt
@@ -159,10 +173,17 @@ pydantic==2.12.5
     #   -r requirements-in.txt
     #   mcp
     #   openai
+    #   pydantic-settings
 pydantic-core==2.41.5
     # via pydantic
+pydantic-settings==2.13.1
+    # via mcp
 pygments==2.20.0
-    # via rich
+    # via
+    #   -r requirements-in.txt
+    #   rich
+pyjwt==2.12.1
+    # via mcp
 pyparsing==3.3.2
     # via matplotlib
 pypresence==4.6.1
@@ -172,7 +193,11 @@ pysocks==1.7.1
 python-dateutil==2.9.0.post0
     # via matplotlib
 python-dotenv==1.2.2
-    # via uvicorn
+    # via
+    #   pydantic-settings
+    #   uvicorn
+python-multipart==0.0.26
+    # via mcp
 pywebio==1.8.4
     # via -r requirements-in.txt
 pyyaml==6.0.3
@@ -187,6 +212,10 @@ pyzmq==27.1.0
     #   zerorpc
 rapidocr==3.8.1
     # via -r requirements-in.txt
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
 requests==2.33.1
     # via
     #   adbutils
@@ -201,6 +230,10 @@ retrying==1.4.2
     # via -r requirements-in.txt
 rich==15.0.0
     # via -r requirements-in.txt
+rpds-py==0.30.0
+    # via
+    #   jsonschema
+    #   referencing
 scipy==1.17.1
     # via -r requirements-in.txt
 setuptools==82.0.1
@@ -217,7 +250,7 @@ sse-starlette==3.0.3
     # via
     #   -r requirements-in.txt
     #   mcp
-starlette==0.25.0
+starlette==0.49.1
     # via
     #   -r requirements-in.txt
     #   mcp
@@ -232,12 +265,16 @@ tqdm==4.67.3
 typing-extensions==4.15.0
     # via
     #   -r requirements-in.txt
+    #   mcp
     #   openai
     #   pydantic
     #   pydantic-core
     #   typing-inspection
 typing-inspection==0.4.2
-    # via pydantic
+    # via
+    #   mcp
+    #   pydantic
+    #   pydantic-settings
 ua-parser==1.0.2
     # via user-agents
 ua-parser-builtins==202603
@@ -251,7 +288,9 @@ urllib3==2.6.3
 user-agents==2.2.0
     # via pywebio
 uvicorn==0.44.0
-    # via -r requirements-in.txt
+    # via
+    #   -r requirements-in.txt
+    #   mcp
 uvloop==0.22.1
     # via uvicorn
 watchdog==6.0.0
@@ -264,6 +303,8 @@ wrapt==2.1.2
     # via -r requirements-in.txt
 zerorpc==0.6.3
     # via -r requirements-in.txt
+zipp==3.23.1
+    # via importlib-metadata
 zope-event==6.1
     # via gevent
 zope-interface==8.3

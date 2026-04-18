@@ -31,7 +31,7 @@ class EventShopScroll(Scroll):
             self.area[2] + delta_x,
             self.area[3]
         )
-        image = main.image_crop(area, copy=False).astype(np.float)
+        image = main.image_crop(area, copy=False).astype(float)
         baseline_color = np.mean(image[:, [0, -1], :], axis=1)
         masked_color = image[:, image.shape[1] // 2, :]
         background_mask = background_transparency * np.array(self.color) + (1 - background_transparency) * baseline_color

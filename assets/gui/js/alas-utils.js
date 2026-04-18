@@ -25,6 +25,17 @@
 // 截图查看器（点击截图放大、缩放、拖拽）
 // ============================================================
 (function () {
+    function sanitizeUrl(url) {
+        if (!url) return '';
+        var protocol = url.split(':')[0].toLowerCase().trim();
+        if (['javascript', 'data', 'vbscript'].indexOf(protocol) !== -1) {
+            // Only allow data:image/ for base64 images
+            if (url.startsWith('data:image/')) return url;
+            return '';
+        }
+        return url;
+    }
+
     function ensureScreenshotModal() {
         if (document.getElementById('screenshot-modal')) return;
         var modal = document.createElement('div');
@@ -146,7 +157,7 @@
             var mi = document.getElementById('screenshot-modal-img');
             if (!m || !mi) return;
             var src = img.getAttribute('data-modal-src') || img.src;
-            mi.src = src;
+            mi.src = sanitizeUrl(src);
             m.dataset.scale = 1;
             m.dataset.tx = 0;
             m.dataset.ty = 0;
@@ -222,7 +233,7 @@
         // Content (Text or Iframe)
         if (isWeb) {
             var iframe = document.createElement('iframe');
-            iframe.src = url;
+            iframe.src = sanitizeUrl(url);
             iframe.style.cssText = 'flex:1;border:none;width:100%;background:#f5f5f5;border-radius:4px;';
             modal.appendChild(iframe);
         } else {

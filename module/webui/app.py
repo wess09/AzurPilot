@@ -2995,11 +2995,12 @@ class AlasGUI(Frame):
         
         # 公告检查功能（非阻塞）
         def announcement_checker():
+            from module.base.api_client import ApiClient
             logger.info("公告检查任务启动")
             th = yield  # 获取任务处理器引用
             # 首次检查：触发异步获取
             self._start_announcement_fetch(force=False)
-            next_periodic_check = time.time() + 5
+            next_periodic_check = time.time() + ApiClient.ANNOUNCEMENT_CHECK_INTERVAL
             th._task.delay = 0.1   # 始终保持短间隔轮询
             yield
             while True:
@@ -3008,7 +3009,7 @@ class AlasGUI(Frame):
                 # 定期触发新的异步获取
                 if not self._announcement_fetching and time.time() >= next_periodic_check:
                     self._start_announcement_fetch(force=False)
-                    next_periodic_check = time.time() + 5
+                    next_periodic_check = time.time() + ApiClient.ANNOUNCEMENT_CHECK_INTERVAL
                 yield
 
         # 添加公告检查任务（初始延迟5秒）

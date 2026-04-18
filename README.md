@@ -65,6 +65,12 @@
 11. 更换 OCR 模型 支持 GPU 加速推理
 12. Alas MCP 服务
 
+## 多平台启动器说明
+
+启动器项目 https://github.com/wess09/alas-launcher fork于 https://github.com/swordfeng/alas-launcher 进行了部分修改
+
+严格遵守上游许可证延续使用 GPL-3 协议开源
+
 ## MCP 服务
 
 本地

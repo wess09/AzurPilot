@@ -26,6 +26,9 @@ class ApiClient:
     ANNOUNCEMENT_PATH = '/api/get/announcement'
     STAMINA_REPORT_PATH = '/api/stamina/report'
     
+    # 公告检查间隔（秒），1.5分钟 = 90秒
+    ANNOUNCEMENT_CHECK_INTERVAL = 90
+    
     @classmethod
     def _get_endpoints(cls, path: str) -> List[str]:
         """
