@@ -270,7 +270,7 @@ sse-starlette==3.0.3
     # via
     #   -r requirements-in.txt
     #   mcp
-starlette==0.41.3
+starlette==0.49.1
     # via
     #   -r requirements-in.txt
     #   mcp
