@@ -278,6 +278,7 @@ class ModuleBase:
                 self.device.sleep(self.config.WAIT_BEFORE_SAVING_SCREEN_SHOT)
                 self.device.screenshot()
                 self.device.save_screenshot(genre=genre)
+            self.device.sleep(0.1)  # 因为点击太快被多退役了一艘联动金船惨案QAQ
             self.device.click(button)
         return appear
 
