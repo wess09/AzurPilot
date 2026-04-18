@@ -245,7 +245,7 @@ starlette==0.25.0
     #   mcp
 sympy==1.14.0
     # via onnxruntime
-tornado==6.2
+tornado==6.5.5
     # via pywebio
 tqdm==4.67.3
     # via
