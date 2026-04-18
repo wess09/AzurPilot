@@ -37,7 +37,7 @@ mxnet==1.6.0
 
 # Webui
 pywebio==1.6.2
-starlette==0.14.2
+starlette==0.49.1
 uvicorn[standard]==0.17.6
 zerorpc==0.6.3
 pyzmq==22.3.0

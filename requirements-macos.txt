@@ -179,7 +179,9 @@ pydantic-core==2.41.5
 pydantic-settings==2.13.1
     # via mcp
 pygments==2.20.0
-    # via rich
+    # via
+    #   -r requirements-in.txt
+    #   rich
 pyjwt==2.12.1
     # via mcp
 pyparsing==3.3.2

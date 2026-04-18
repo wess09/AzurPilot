@@ -41,3 +41,4 @@ importlib_metadata>=8.0.0
 openai
 mcp==1.23.0
 sse-starlette==3.0.3
+pygments>=2.20.0
