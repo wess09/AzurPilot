@@ -187,7 +187,7 @@ pyzmq==27.1.0
     #   zerorpc
 rapidocr==3.8.1
     # via -r requirements-in.txt
-requests==2.33.1
+requests==2.33.0
     # via
     #   adbutils
     #   onepush
