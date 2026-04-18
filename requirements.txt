@@ -97,7 +97,7 @@ typing-inspection==0.4.2  # via pydantic
 ua-parser==0.16.1         # via user-agents
 uiautomator2==2.16.17     # via -r requirements-in.txt
 uiautomator2cache==0.3.0.1  # via -r requirements-in.txt
-urllib3==1.26.14          # via requests
+urllib3==2.6.3          # via requests
 user-agents==2.2.0        # via pywebio
 uvicorn==0.20.0           # via -r requirements-in.txt
 watchdog==6.0.0           # via -r requirements-in.txt

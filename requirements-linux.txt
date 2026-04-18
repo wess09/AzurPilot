@@ -266,7 +266,7 @@ uiautomator2==2.16.17
     # via -r requirements-in.txt
 uiautomator2cache==0.3.0.1
     # via -r requirements-in.txt
-urllib3==1.26.14
+urllib3==2.6.3
     # via requests
 user-agents==2.2.0
     # via pywebio
