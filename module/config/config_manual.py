@@ -164,6 +164,7 @@ class ManualConfig:
     MAP_CHAPTER_SWITCH_20241219 = False
     MAP_CHAPTER_SWITCH_20241219_SP = False
     MAP_CHAPTER_SWITCH_20241219_SPEX = False
+    MAP_CHAPTER_SWITCH_20260326 = False
     # Since event_20241219_cn chapter B unlocks event startup
     # which means chapter AB are continuous
     STAGE_INCREASE_AB = False

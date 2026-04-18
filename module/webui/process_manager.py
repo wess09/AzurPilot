@@ -145,18 +145,37 @@ class ProcessManager:
             return 2
         else:
             console = Console(no_color=True)
-            with console.capture() as capture:
-                console.print(self.renderables[-1])
-            s = capture.get().strip()
+            tail = self.renderables[-8:]
+            rendered_tail = []
+            for renderable in tail:
+                with console.capture() as capture:
+                    console.print(renderable)
+                rendered_tail.append(capture.get().strip())
+            s = rendered_tail[-1] if rendered_tail else ""
+            tail_text = "\n".join(rendered_tail)
+
             if ("Reason: Manual stop" in s) or ("原因: 手动停止" in s):
                 return 2
-            elif ("Reason: Finish" in s) or ("原因: 完成" in s):
-                return 2
-            elif (
+
+            update_marker_hit = (
                 ("Reason: Update" in s)
                 or ("原因: 更新" in s)
                 or ("检测到更新事件" in s)
-            ):
+            )
+            update_tail_hit = (
+                ("Reason: Update" in tail_text)
+                or ("原因: 更新" in tail_text)
+                or ("检测到更新事件" in tail_text)
+            )
+            if update_marker_hit:
+                return 4
+
+            if ("Reason: Finish" in s) or ("原因: 完成" in s):
+                # In update flow, some code paths may append "Finish" after update-exit logs.
+                if update_tail_hit:
+                    return 4
+                return 2
+            elif update_tail_hit:
                 return 4
             else:
                 return 3
@@ -231,9 +250,12 @@ class ProcessManager:
                 getattr(load_mod(get_func_mod(func)), inflection.underscore(func))(config_name)
             else:
                 logger.critical(f"杂鱼大叔，连功能模块都找不到吗？{func} 这种东西根本不存在啦~")
-            logger.info(f"[{config_name}] exited. Reason: Finish\n")
-        except Exception as e:
-            logger.exception(e)
+            if e is not None and e.is_set():
+                logger.info(f"[{config_name}] exited. Reason: Update\n")
+            else:
+                logger.info(f"[{config_name}] exited. Reason: Finish\n")
+        except Exception as ex:
+            logger.exception(ex)
 
     @classmethod
     def running_instances(cls) -> List["ProcessManager"]:
