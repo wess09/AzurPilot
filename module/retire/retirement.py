@@ -437,7 +437,8 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 return False
             if self.appear(IN_RETIREMENT_CHECK, offset=(20, 20), interval=10):
                 try:
-                    self._retire_handler(mode='one_click_retire')
+                    # 移除硬编码的退役模式参数，使用配置的默认模式
+                    self._retire_handler()
                     self._unable_to_enhance = False
                     self.interval_reset(IN_RETIREMENT_CHECK)
                     self.map_cat_attack_timer.reset()
@@ -486,6 +487,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     return True
                 except Exception as e:
                     logger.warning(f'Retirement failed: {e}')
+                    self._unable_to_enhance = False  # 防止无限循环
                     return False
 
         return False
@@ -504,6 +506,11 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         """
         if mode is None:
             mode = self.config.Retirement_RetireMode
+        
+        # 当模式为 'enhance' 时，使用 'one_click_retire' 作为默认退役模式
+        if mode == 'enhance':
+            logger.info('Retirement mode is set to enhance, using one_click_retire as fallback')
+            mode = 'one_click_retire'
 
         if mode == 'one_click_retire':
             total = self.retire_ships_one_click()
@@ -544,7 +551,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 raise RequestHumanTakeover
         else:
             raise ScriptError(
-                f'Unknown retire mode: {self.config.Retirement_RetireMode}')
+                f'Unknown retire mode: {mode}')
 
         self._retirement_quit()
         self.config.DOCK_FULL_TRIGGERED = True
