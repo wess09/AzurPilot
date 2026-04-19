@@ -611,9 +611,18 @@ class RewardCommission(UI, InfoHandler):
 
                 for button in [EXP_INFO_S_REWARD, GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3]:
                     if self.appear(button, interval=1):
+                        self.ensure_no_info_bar(timeout=1)
+
                         if drop:
-                            self.ensure_no_info_bar(timeout=1)
                             drop.add(self.device.image)
+
+                        if button is EXP_INFO_S_REWARD:
+                            if self._commission_reward_images:
+                                self._record_commission_income()
+                                self._commission_reward_images = []
+                        else:
+                            self._commission_reward_images.append(self.device.image.copy())
+                            logger.info(f'Commission income: collected reward screenshot (trigger={button.name})')
 
                         REWARD_SAVE_CLICK.name = button.name
                         self.device.click(REWARD_SAVE_CLICK)

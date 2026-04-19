@@ -251,11 +251,14 @@ class TaskHandler:
     def stop(self) -> None:
         self.remove_pending_task()
         self._alive = False
-        self._thread.join(timeout=2)
-        if not self._thread.is_alive():
-            logger.info("Finish task handler")
+        if threading.current_thread() is not self._thread:
+            self._thread.join(timeout=2)
+            if not self._thread.is_alive():
+                logger.info("Finish task handler")
+            else:
+                logger.warning("Task handler does not stop within 2 seconds")
         else:
-            logger.warning("Task handler does not stop within 2 seconds")
+            logger.info("Task handler stop called from within its own thread, skipping join")
 
 
 class WebIOTaskHandler(TaskHandler):
