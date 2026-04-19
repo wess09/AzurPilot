@@ -431,29 +431,9 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                     else:
                         adb_path = "adb"
                 
-                # 安全验证 adb_path
-                if adb_path == "adb":
-                    # 使用系统默认 adb，相对安全
-                    safe_adb_path = "adb"
-                else:
-                    # 规范化路径，确保安全
-                    adb_path = os.path.abspath(adb_path)
-                    adb_path = os.path.normpath(adb_path)
-                    
-                    # 验证路径是否存在且是可执行文件
-                    if not os.path.exists(adb_path):
-                        raise FileNotFoundError(f"ADB path {adb_path} does not exist")
-                    
-                    # 检查路径是否在项目目录内，防止目录遍历攻击
-                    project_root = os.path.abspath(os.path.dirname(__file__))
-                    if not adb_path.startswith(project_root):
-                        raise ValueError(f"ADB path {adb_path} is outside project directory")
-                    
-                    safe_adb_path = adb_path
-                
-                subprocess.run([safe_adb_path, "kill-server"], check=False)
-                subprocess.run([safe_adb_path, "start-server"], check=False)
-                return [TextContent(type="text", text=f"Success: Restarted ADB service using {safe_adb_path}.")]
+                subprocess.run([adb_path, "kill-server"], check=False)
+                subprocess.run([adb_path, "start-server"], check=False)
+                return [TextContent(type="text", text=f"Success: Restarted ADB service using {adb_path}.")]
             except Exception as e:
                 return [TextContent(type="text", text=f"Error: {str(e)}")]
 
