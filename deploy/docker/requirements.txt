@@ -206,7 +206,7 @@ pypresence==4.2.1
     # via -r requirements-in.txt
 python-dateutil==2.9.0.post0
     # via matplotlib
-python-dotenv==1.0.0
+python-dotenv==1.2.2
     # via
     #   pydantic-settings
     #   uvicorn

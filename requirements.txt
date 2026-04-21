@@ -79,7 +79,7 @@ pyjwt==2.12.1             # via mcp
 pyparsing==3.0.9          # via matplotlib, packaging
 pypresence==4.2.1         # via -r requirements-in.txt
 python-dateutil==2.9.0.post0  # via matplotlib
-python-dotenv==1.0.0      # via pydantic-settings, uvicorn
+python-dotenv==1.2.2      # via pydantic-settings, uvicorn
 python-multipart==0.0.26  # via mcp
 pywebio==1.7.1            # via -r requirements-in.txt
 pywin32==311              # via mcp
