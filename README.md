@@ -132,12 +132,6 @@
 *侵蚀1功能：大部分来自下面
 ## 部分功能（大部分）来自[Zuosizhu(仪表盘等)](https://github.com/Zuosizhu/Alas-with-Dashboard)，[guoh064(大世界等)](https://github.com/guoh064/AzurLaneAutoScript)，[sui-feng-cb(岛屿等)](https://github.com/sui-feng-cb/AzurLaneAutoScript), [雪风源](https://gitee.com/wqeaxc/AzurLaneAutoScriptyukikaze21)
 
-## 感谢某不知名 AI IDE
-
-注：本项目大量使用 **AI生成** 代码质量极其垃圾 **可能存在未知Bug**
-
-~~因为本来是自用来着 没想公开~~
-
  [有任何问题请加 QQ 群](https://addgroup.nanoda.work/#/)
 
  # OCR 模型
@@ -174,3 +168,46 @@ v2.5 zh-cn
 异构加速卡BW 64G
 NVIDIA Tesla A800 80G
 训练时间: 5h
+
+## 感谢
+感谢以下开发者对本项目做出的贡献
+
+
+<a href="https://github.com/wess09/AzurPilot/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=wess09/AzurPilot&max=1000" />
+</a>
+
+感谢以下开发者对启动器项目做出的贡献
+
+<a href="https://github.com/wess09/alas-launcher/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=wess09/alas-launcher&max=1000" />
+</a>
+
+## 感谢某不知名 AI IDE
+
+注：本项目大量使用 **AI生成** 代码质量极其垃圾 **可能存在未知Bug**
+
+~~因为本来是自用来着 没想公开~~
+
+
+## 感谢以下 AI 模型
+
+Gemini 3 Flash
+
+Gemini 3.1Pro
+
+Claude Opus 4.5
+
+Claude Sonnet 4.5
+
+GPT 5.4
+
+GPT 5.3-codex
+
+Qwen 3 Max
+
+DeepSeek v3.2
+
+Kimi K2.5
+
+GLM 4.7
