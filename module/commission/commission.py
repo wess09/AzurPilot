@@ -23,6 +23,7 @@ from module.ui.scroll import Scroll
 from module.ui.switch import Switch
 from module.ui.ui import UI
 from module.ui_white.assets import REWARD_1_WHITE, REWARD_GOTO_COMMISSION_WHITE
+from datetime import timedelta
 
 COMMISSION_SWITCH = Switch('Commission_switch', is_selector=True)
 COMMISSION_SWITCH.add_state('daily', COMMISSION_DAILY)
@@ -129,8 +130,8 @@ class RewardCommission(UI, InfoHandler):
         for comm in total:
             if comm.genre == 'daily_event':
                 self.max_commission = 5
-        running_count = int(
-            np.sum([1 for c in total if c.status == 'running']))
+        running_list = [c for c in total if c.status == 'running']
+        running_count = len(running_list)
         logger.attr('Running', f'{running_count}/{self.max_commission}')
 
         # Load filter string
@@ -167,6 +168,29 @@ class RewardCommission(UI, InfoHandler):
                 logger.attr('Filter_sort', ' > '.join([str(c) for c in run]))
             else:
                 logger.info('Not enough commissions to run')
+
+        # 优先处理快过期重要委托
+        if 'expire' in run:
+            logger.info('尝试提前快过期委托')
+
+            valid_runs = [c for c in run if isinstance(c, Commission)]
+            queue = running_list + valid_runs[:self.max_commission - running_count]
+
+            if queue:
+                min_duration_time = queue[0].duration
+                for c in queue:
+                    if c.duration < min_duration_time:
+                        min_duration_time = c.duration
+            else:
+                min_duration_time = timedelta(seconds=0)
+            logger.attr('Min Duration Time', min_duration_time)
+
+            expire_index = run.grids.index('expire')
+            important = run[:expire_index].filter(lambda c: isinstance(c, Commission) and c.expire)
+            priority = [c for c in important if c.expire < min_duration_time]
+            run = run.delete(SelectedGrids(['expire']))
+            run = SelectedGrids(priority).add_by_eq(run)
+            logger.attr('Filter_sort', ' > '.join([str(c) for c in run]))
 
         self.comm_choose = run
         if running_count >= self.max_commission:

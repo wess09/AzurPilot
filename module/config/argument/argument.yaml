@@ -527,6 +527,7 @@ Commission:
     > UrgentCube-2:15 > UrgentCube-4
     > ExtraDrill-1 > UrgentCube-6 > ExtraCube-1:30
     > ExtraDrill-2:40 > ExtraDrill-0:20
+    > expire
     > Major > DailyChip > DailyResource
     > ExtraPart-0:30 > ExtraOil-1 > UrgentBox-6
     > ExtraCube-3 > ExtraPart-1 > UrgentBox-3
