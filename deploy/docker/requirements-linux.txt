@@ -115,7 +115,7 @@ llvmlite==0.46.0
     # via numba
 logzero==1.7.0
     # via uiautomator2
-lxml==6.0.2
+lxml==6.1.0
     # via uiautomator2
 lz4==4.4.5
     # via -r requirements-in.txt
@@ -206,7 +206,7 @@ pypresence==4.2.1
     # via -r requirements-in.txt
 python-dateutil==2.9.0.post0
     # via matplotlib
-python-dotenv==1.0.0
+python-dotenv==1.2.2
     # via
     #   pydantic-settings
     #   uvicorn

@@ -99,7 +99,7 @@ kiwisolver==1.5.0
     # via matplotlib
 llvmlite==0.47.0
     # via numba
-lxml==6.0.3
+lxml==6.1.0
     # via uiautomator2
 lz4==4.4.5
     # via -r requirements-in.txt
