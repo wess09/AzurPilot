@@ -169,12 +169,27 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
                                       'gacha_goto_pool')
         elif target_pool == 'event':
             gacha_bottom_navbar = self._gacha_bottom_navbar(is_build=True)
-            if gacha_bottom_navbar.get_total(main=self) == 3:
+            total = gacha_bottom_navbar.get_total(main=self)
+            if total == 3:
                 logger.warning('\'event\' is not available, default '
                                'to \'light\' pool')
                 target_pool = 'light'
             else:
-                self.gacha_bottom_navbar_ensure(left=1, is_build=True)
+                # 检查是否有多个活动池
+                # 当有多个活动池时，活动池按钮可能不在 left=1 的位置
+                # 尝试找到第一个活动池按钮
+                active, minimum, maximum = gacha_bottom_navbar.get_info(main=self)
+                if active is not None:
+                    # 从左侧开始查找活动池按钮
+                    for i in range(minimum, maximum + 1):
+                        # 点击当前按钮并检查是否为活动池
+                        self.gacha_bottom_navbar_ensure(left=i, is_build=True)
+                        # 检查是否成功切换到活动池
+                        if self.appear(BUILD_TICKET_CHECK, offset=(30, 30)):
+                            break
+                else:
+                    # 如果无法获取导航栏信息，默认使用 left=1
+                    self.gacha_bottom_navbar_ensure(left=1, is_build=True)
         elif target_pool in ['heavy', 'special']:
             if target_pool == 'heavy':
                 self.gacha_bottom_navbar_ensure(right=2, is_build=True)

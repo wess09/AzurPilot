@@ -14,7 +14,7 @@ class CampaignBase(CampaignBase_):
         ) > self.MAP_ENEMY_SEARCHING_OVERLAY_TRANSPARENCY_THRESHOLD
 
     def handle_exp_info(self):
-        # Random background hits EXP_INFO_B
+        # Skip handling EXP_INFO on event page
         if self.ui_page_appear(page_event):
             return False
         return super().handle_exp_info()
