@@ -28,8 +28,6 @@ Main3:
     Event: campaign_main
 GemsFarming:
   Campaign:
-    Event:
-      value: campaign_main
     Mode: normal
     UseClearMode: true
     UseFleetLock: true
@@ -144,14 +142,10 @@ Ambush11:
 Event:
   Campaign:
     Mode: normal
-    Event:
-      type: state
     AmbushEvade: true
 Event2:
   Campaign:
     Mode: normal
-    Event:
-      type: state
     AmbushEvade: true
 EventA:
   Scheduler:
@@ -160,8 +154,6 @@ EventA:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -178,8 +170,6 @@ EventB:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -196,8 +186,6 @@ EventC:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -214,8 +202,6 @@ EventD:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -232,8 +218,6 @@ EventSp:
     ServerUpdate: 00:00
   Campaign:
     Name: sp
-    Event:
-      type: state
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -248,8 +232,6 @@ EventSp:
 Raid:
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     UseClearMode: true
     UseFleetLock: true
@@ -339,8 +321,6 @@ RaidDaily:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
-    Event:
-      type: state
     Mode: normal
     UseClearMode: true
     UseFleetLock: true
@@ -371,8 +351,6 @@ Coalition:
     FailureInterval: 30
     ServerUpdate: 00:00
   Campaign:
-    Event:
-      type: state
     Name: dynamic
     Event:
       type: state
@@ -404,8 +382,6 @@ CoalitionSp:
     ServerUpdate: 00:00
   Campaign:
     Name: sp
-    Event:
-      type: state
     Mode: normal
     UseClearMode: true
     UseFleetLock: true
