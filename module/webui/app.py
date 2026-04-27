@@ -1519,15 +1519,9 @@ class AlasGUI(Frame):
             output_kwargs["value"] = value
             # Options
             options = output_kwargs.pop("option", [])
-            server = to_server(deep_get(config, 'Alas.Emulator.PackageName', 'cn'))
-            available_events = deep_get(self.ALAS_ARGS, keys=f'{task}.{group_name}.{arg_name}.option_{server}')
-            if available_events is not None:
-                options = [opt for opt in options if opt in available_events]
-            
             server_options = output_kwargs.get(f"option_{server}")
             if output_kwargs["widget_type"] == "select" and isinstance(server_options, list) and server_options:
                 options = server_options
-            
             output_kwargs["options"] = options
             if (
                 task == "GemsFarming"
