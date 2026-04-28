@@ -72,7 +72,7 @@ class ImageExtractor:
             logger.warning(f'{file} has wrong resolution: {size}')
         bbox = get_bbox(image)
         mean = get_color(image=image, area=bbox)
-        mean = tuple(np.rint(mean).astype(int))
+        mean = tuple(int(x) for x in np.rint(mean))
         return bbox, mean
 
     def load(self, server='cn'):
@@ -123,7 +123,7 @@ class TemplateExtractor(ImageExtractor):
         image = load_image(file)
         bbox = get_bbox(image)
         mean = get_color(image=image, area=bbox)
-        mean = tuple(np.rint(mean).astype(int))
+        mean = tuple(int(x) for x in np.rint(mean))
         return bbox, mean
 
     @property
