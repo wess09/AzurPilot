@@ -65,7 +65,7 @@ def finish_battle_timer(config: Any, source: str | None) -> float | None:
         return None
 
 
-def record_ap_snapshot(config: Any, ap_current: int, source: str) -> None:
+def record_ap_snapshot(config: Any, ap_current: int, source: str, distance: int = None) -> None:
     """按来源记录行动力快照。"""
     try:
         from module.statistics.cl1_database import db as cl1_db
@@ -74,6 +74,7 @@ def record_ap_snapshot(config: Any, ap_current: int, source: str) -> None:
             instance_name_from_config(config),
             ap_current,
             source=source,
+            distance=distance,
         )
     except Exception:
         logger.exception("Failed to save AP snapshot")

@@ -557,13 +557,14 @@ class Cl1Database:
         data["akashi_ap"] = data.get("akashi_ap", 0) + amount
         self.save_stats(instance, month, data)
 
-    def add_ap_snapshot(self, instance: str, ap_current: int, source: str = "cl1"):
+    def add_ap_snapshot(self, instance: str, ap_current: int, source: str = "cl1", distance: int = None):
         """记录行动力快照（真实剩余体力），并计算虚拟资产
 
         Args:
             instance: 实例名称
             ap_current: 当前行动力剩余
             source: 数据来源标记 (cl1 / meow 等)
+            distance: 海里数（可选）
         """
         month = datetime.now().strftime("%Y-%m")
         data = self.get_stats(instance, month)
@@ -604,6 +605,8 @@ class Cl1Database:
             "virtual_asset": round(virtual_asset, 2),
             "source": source,
         }
+        if distance is not None:
+            snapshot["distance"] = int(distance)
 
         snapshots = data.get("ap_snapshots", [])
         snapshots.append(snapshot)
@@ -1122,11 +1125,11 @@ class Cl1Database:
         )
 
     def async_add_ap_snapshot(
-        self, instance: str, ap_current: int, source: str = "cl1"
+        self, instance: str, ap_current: int, source: str = "cl1", distance: int = None
     ):
         from module.base.async_executor import async_executor
 
-        return async_executor.submit(self.add_ap_snapshot, instance, ap_current, source)
+        return async_executor.submit(self.add_ap_snapshot, instance, ap_current, source, distance)
 
     def async_set_last_ap_notification(self, instance: str, ap_current: int):
         from module.base.async_executor import async_executor

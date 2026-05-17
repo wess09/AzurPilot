@@ -3661,6 +3661,18 @@
       "help": "當檢測到滿經驗後，將本任務推遲指定的時間"
     }
   },
+  "OpsiSeaMiles": {
+    "_info": {
+      "name": "OpsiSeaMiles._info.name",
+      "help": "OpsiSeaMiles._info.help"
+    },
+    "Enable": {
+      "name": "OpsiSeaMiles.Enable.name",
+      "help": "OpsiSeaMiles.Enable.help",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "OpsiFleetAutoChange": {
     "_info": {
       "name": "OpsiFleetAutoChange._info.name",

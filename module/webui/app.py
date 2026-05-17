@@ -632,6 +632,8 @@ class AlasGUI(Frame):
             purple_coins_list = []
             coins_sources_list = []
 
+            distance_list = []
+
             virtual_asset_list = []
             virtual_asset_ts_list = []
             asset_list = []
@@ -639,6 +641,21 @@ class AlasGUI(Frame):
             show_coins = False
             coins_stats_html = ""
             coins_legend_html = ""
+
+            distance_raw_points = []
+            if current_view in ("line", "detail"):
+                for pt in timeline:
+                    distance_val = pt.get("distance")
+                    if distance_val is not None:
+                        ts_raw = pt.get("ts", "")
+                        try:
+                            distance_dt = _dt.fromisoformat(ts_raw)
+                            distance_raw_points.append({
+                                "dt": distance_dt,
+                                "distance": int(distance_val),
+                            })
+                        except Exception:
+                            continue
 
             if coins_timeline and chart_points and current_view in ("line", "detail"):
                 coins_raw_points = []
@@ -717,6 +734,44 @@ class AlasGUI(Frame):
                         coins_stats_html += f'<div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:4px; font-size:12px; color:#aaa;"><span>紫币: <b style="color:#ce93d8">{pc_cur}</b></span><span>变化: <b style="color:{pc_change_color}">{pc_change_sign}{pc_change}</b></span><span>最高: <b style="color:#ef5350">{pc_max}</b></span><span>最低: <b style="color:#26a69a">{pc_min}</b></span></div>'
                         coins_legend_html += '<span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:2px; background:#ce93d8; border-radius:1px; border-top:1px dashed #ce93d8;"></span>紫币</span>'
 
+            # Process distance timeline (align with chart_points like coins)
+            if distance_raw_points and chart_points and current_view in ("line", "detail"):
+                distance_raw_points.sort(key=lambda p: p["dt"])
+                distance_idx = 0
+                distance_last = len(distance_raw_points) - 1
+                for p in chart_points:
+                    while distance_idx < distance_last:
+                        cur_delta = abs(
+                            (
+                                distance_raw_points[distance_idx]["dt"] - p["dt"]
+                            ).total_seconds()
+                        )
+                        next_delta = abs(
+                            (
+                                distance_raw_points[distance_idx + 1]["dt"] - p["dt"]
+                            ).total_seconds()
+                        )
+                        if next_delta > cur_delta:
+                            break
+                        distance_idx += 1
+                    distance_point = distance_raw_points[distance_idx]
+                    distance_list.append(distance_point["distance"])
+
+                if distance_list:
+                    valid_distance = [v for v in distance_list if v is not None]
+                    if valid_distance:
+                        d_cur = valid_distance[-1]
+                        d_change = (
+                            valid_distance[-1] - valid_distance[0] if len(valid_distance) >= 2 else 0
+                        )
+                        d_change_color = "#ef5350" if d_change >= 0 else "#26a69a"
+                        d_change_sign = "+" if d_change >= 0 else ""
+                        d_max = max(valid_distance)
+                        d_min = min(valid_distance)
+
+                        coins_stats_html += f'<div style="display:flex; flex-wrap:wrap; gap:12px; margin-bottom:4px; font-size:12px; color:#aaa;"><span>海里数: <b style="color:#1565c0">{d_cur}</b></span><span>变化: <b style="color:{d_change_color}">{d_change_sign}{d_change}</b></span><span>最高: <b style="color:#ef5350">{d_max}</b></span><span>最低: <b style="color:#26a69a">{d_min}</b></span></div>'
+                        coins_legend_html += '<span style="display:flex; align-items:center; gap:4px;"><span style="width:12px; height:2px; background:#1565c0; border-radius:1px;"></span>海里数</span>'
+
             # Process virtual asset timeline
             if virtual_asset_timeline and current_view in ("line", "detail"):
                 for pt in virtual_asset_timeline:
@@ -773,6 +828,7 @@ class AlasGUI(Frame):
                 or asset_list
                 or yellow_coins_list
                 or purple_coins_list
+                or distance_list
             ):
                 show_coins = True
 
@@ -826,6 +882,7 @@ class AlasGUI(Frame):
                 .replace("__VIRTUAL_ASSET_TS__", _json.dumps(virtual_asset_ts_list))
                 .replace("__ASSET__", _json.dumps(asset_list))
                 .replace("__ASSET_TS__", _json.dumps(asset_ts_list))
+                .replace("__DISTANCE__", _json.dumps(distance_list))
                 .replace("__SHOW_COINS__", "true" if show_coins else "false")
             )
             from pywebio.session import run_js

@@ -2652,6 +2652,9 @@
       "CustomCheckPositions": null,
       "DelayAfterFull": false
     },
+    "OpsiSeaMiles": {
+      "Enable": false
+    },
     "OpsiFleetAutoChange": {
       "Enable": false,
       "CooldownHours": 24,

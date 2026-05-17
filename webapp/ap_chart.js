@@ -62,6 +62,8 @@
     var lineAsset = __ASSET__;
     var lineAssetTs = __ASSET_TS__;
     var hasAssetSeries = lineAsset && lineAsset.length > 0;
+    var lineDistance = __DISTANCE__;
+    var hasDistanceSeries = lineDistance && lineDistance.length > 0;
 
     var nn = chartType === 'line' ? ap.length : labels.length;
     if (nn < 1) return;
@@ -151,7 +153,7 @@
         // ---- 紫币独立轴 ----
         var hasPurpleAxis = showCoins && chartType === 'line' && hasPurpleCoins;
         // ---- 组合轴（黄币 + 虚拟资产 + 资产共用） ----
-        var hasCombined = showCoins && chartType === 'line' && (hasYellowCoins || hasVirtualAssetSeries || hasAssetSeries);
+        var hasCombined = showCoins && chartType === 'line' && (hasYellowCoins || hasVirtualAssetSeries || hasAssetSeries || hasDistanceSeries);
         var hasExtra = hasPurpleAxis || hasCombined;
         var combinedMin = 0, combinedMax = -Infinity;
         function scanRange(arr) {
@@ -164,6 +166,7 @@
             if (hasYellowCoins) scanRange(yellowCoins);
             if (hasVirtualAssetSeries) scanRange(lineVirtualAsset);
             if (hasAssetSeries) scanRange(lineAsset);
+            if (hasDistanceSeries) scanRange(lineDistance);
             if (combinedMax === -Infinity) combinedMax = 1000;
             var combinedRng = combinedMax - combinedMin || 1;
             combinedMax += combinedRng * 0.08;
@@ -185,7 +188,8 @@
             { has: hasPurpleCoins, data: purpleCoins, yFn: yOfPurple, dash: [4, 2] },
             { has: hasYellowCoins, data: yellowCoins, yFn: yOfCombined, dash: [4, 2] },
             { has: hasVirtualAssetSeries, data: lineVirtualAsset, ts: lineVirtualAssetTs, yFn: yOfCombined, dash: [5, 3] },
-            { has: hasAssetSeries, data: lineAsset, ts: lineAssetTs, yFn: yOfCombined, dash: [5, 3] }
+            { has: hasAssetSeries, data: lineAsset, ts: lineAssetTs, yFn: yOfCombined, dash: [5, 3] },
+            { has: hasDistanceSeries, data: lineDistance, yFn: yOfCombined, dash: [] }
         ];
 
         // Y 坐标映射
@@ -231,7 +235,7 @@
                 ctx.lineWidth = 1.5;
                 ctx.lineJoin = "round";
                 ctx.setLineDash(sd.dash);
-                ctx.strokeStyle = ["#ce93d8", "#ffd54f", "#4fc3f7", "#81c784"][ci];
+                ctx.strokeStyle = ["#ce93d8", "#ffd54f", "#4fc3f7", "#81c784", "#1565c0"][ci];
                 ctx.beginPath();
                 var started = false;
 
@@ -543,6 +547,10 @@
                         drawBead(lineAsset[closestIdx_a], "#81c784", yOfCombined);
                 }
 
+                // 海里数 bead
+                if (hasDistanceSeries && idx < lineDistance.length && lineDistance[idx] !== null && lineDistance[idx] !== undefined)
+                    drawBead(lineDistance[idx], "#1565c0", yOfCombined);
+
                 oc.setTransform(1, 0, 0, 1, 0, 0);
 
                 var diff = idx > 0 ? (ap[idx] - ap[idx - 1]) : 0;
@@ -611,6 +619,15 @@
                     if (closestIdx !== -1 && closestDist < 600000) {
                         tooltipRows.push({ parts: [{ type: 'text', value: "资产: " }, { type: 'bold', value: lineAsset[closestIdx].toFixed(1), style: { color: "#81c784" } }] });
                     }
+                }
+
+                // 海里数 tooltip
+                if (hasDistanceSeries && idx < lineDistance.length && lineDistance[idx] !== null && lineDistance[idx] !== undefined) {
+                    var d = lineDistance[idx];
+                    var dDiff = idx > 0 && lineDistance[idx - 1] !== null && lineDistance[idx - 1] !== undefined ? (d - lineDistance[idx - 1]) : 0;
+                    var dColor = dDiff >= 0 ? "#ef5350" : "#26a69a";
+                    var dDiffStr = (dDiff >= 0 ? "+" : "") + dDiff;
+                    tooltipRows.push({ parts: [{ type: 'text', value: "海里数: " }, { type: 'bold', value: String(d), style: { color: "#1565c0" } }, { type: 'text', value: " (" + dDiffStr + ")", style: { color: dColor } }] });
                 }
 
                 setTooltipContent(tipEl, tooltipRows);

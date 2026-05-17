@@ -12971,6 +12971,16 @@
         "value": false
       }
     },
+    "OpsiSeaMiles": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "OpsiFleetAutoChange": {
       "Enable": {
         "type": "checkbox",

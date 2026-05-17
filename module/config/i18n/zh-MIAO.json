@@ -3661,6 +3661,18 @@
       "help": "检测到满经验后将本任务推迟指定时间喵。"
     }
   },
+  "OpsiSeaMiles": {
+    "_info": {
+      "name": "OpsiSeaMiles._info.name",
+      "help": "OpsiSeaMiles._info.help"
+    },
+    "Enable": {
+      "name": "OpsiSeaMiles.Enable.name",
+      "help": "OpsiSeaMiles.Enable.help",
+      "True": "True",
+      "False": "False"
+    }
+  },
   "OpsiFleetAutoChange": {
     "_info": {
       "name": "OpsiFleetAutoChange._info.name",

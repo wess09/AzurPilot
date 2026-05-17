@@ -756,6 +756,9 @@ class GeneratedConfig:
     OpsiCheckLeveling_CustomCheckPositions = None
     OpsiCheckLeveling_DelayAfterFull = False
 
+    # Group `OpsiSeaMiles`
+    OpsiSeaMiles_Enable = False  # True, False
+
     # Group `OpsiFleetAutoChange`
     OpsiFleetAutoChange_Enable = False  # True, False
     OpsiFleetAutoChange_CooldownHours = 24  # 12, 24, 48, 72

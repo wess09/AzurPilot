@@ -367,6 +367,7 @@ Opsi:
       - OpsiSirenBug
       - OpsiFleet
       - OpsiCheckLeveling
+      - OpsiSeaMiles
       - OpsiFleetAutoChange
     OpsiScheduling:
       - Scheduler
