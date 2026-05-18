@@ -492,13 +492,16 @@ class AlasGUI(Frame):
                     dt = _dt.fromisoformat(ts_raw)
                 except Exception:
                     continue
-                raw_points.append(
-                    {
-                        "dt": dt,
-                        "ap": int(pt.get("ap", 0)),
-                        "source": pt.get("source", "-"),
-                    }
-                )
+                ap_value = int(pt.get("ap", 0))
+                # 过滤掉ap=0的数据点（海里数检测时的占位数据）
+                if ap_value > 0:
+                    raw_points.append(
+                        {
+                            "dt": dt,
+                            "ap": ap_value,
+                            "source": pt.get("source", "-"),
+                        }
+                    )
 
             if not raw_points:
                 with use_scope("ap_chart", clear=True):
