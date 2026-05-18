@@ -952,6 +952,36 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 self.config.task_delay(server_update=True)
                 self.config.task_stop()
 
+    def _get_current_ap(self):
+        """
+        获取当前行动力
+        
+        Returns:
+            int: 当前行动力，失败时返回0
+        """
+        try:
+            logger.info("进入行动力弹窗")
+            self.action_point_enter()
+            
+            logger.info("获取行动力数据")
+            self.action_point_safe_get()
+            
+            ap_current = getattr(self, '_action_point_current', 0)
+            logger.info(f"当前行动力: {ap_current}")
+            
+            logger.info("退出行动力弹窗")
+            self.action_point_quit()
+            
+            return ap_current
+            
+        except Exception as e:
+            logger.error(f"获取行动力失败: {e}")
+            try:
+                self.action_point_quit()
+            except Exception:
+                pass
+            return 0
+
     def detect_and_record_sea_miles(self):
         """
         检测并记录海里数
@@ -966,6 +996,11 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if not self.is_in_map():
                 logger.info("当前不在大世界地图，返回大世界地图")
                 self.ui_back(check_button=self.is_in_map)
+            
+            # 获取当前行动力
+            logger.info("获取当前行动力")
+            ap_current = self._get_current_ap()
+            logger.info(f"当前行动力: {ap_current}")
             
             logger.info("进入情报页面")
             skip_first_screenshot = True
@@ -999,7 +1034,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             from module.statistics.opsi_runtime import record_ap_snapshot
             record_ap_snapshot(
                 config=self.config,
-                ap_current=0,
+                ap_current=ap_current,
                 source='sea_miles',
                 distance=sea_miles
             )
