@@ -5,7 +5,9 @@ on:
     # 每半小时运行一次
     - cron: '*/30 * * * *'
   workflow_dispatch:
-
+# 关键：授予写入权限
+permissions:
+  contents: write
 jobs:
   sync:
     runs-on: ubuntu-latest
