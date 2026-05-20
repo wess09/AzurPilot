@@ -1,5 +1,7 @@
 import asyncio
 from functools import partial, wraps
+import sys
+
 
 from module.logger import logger
 from module.webui.setting import cached_class_property
@@ -28,16 +30,20 @@ def wrap(func):
 
 
 def patch_executor():
-    """
-    Limit pool size in loop.run_in_executor
-    so starlette.staticfiles -> aiofiles won't create tons of threads
-    """
     try:
         import aiofiles
     except ImportError:
         return
 
-    loop = asyncio.get_event_loop()
+    if sys.version_info >= (3, 7):
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+    else:
+        loop = asyncio.get_event_loop()
+
     loop.set_default_executor(CachedThreadPoolExecutor.executor)
 
 
