@@ -9,8 +9,8 @@ MAP.shape = 'H9'
 MAP.camera_data = ['D2', 'D6', 'D7', 'E2', 'E6', 'E7']
 MAP.camera_data_spawn_point = ['D2', 'D6']
 MAP.map_data = """
-    -- -- ++ -- -- ME -- --
-    -- -- ++ Me Me -- -- --
+    -- -- ++ -- -- ME ++ ++
+    -- -- ++ Me Me -- ++ ++
     ++ ++ ++ -- -- ME -- --
     SP -- -- MS -- -- -- --
     -- -- MS -- __ Me ++ --

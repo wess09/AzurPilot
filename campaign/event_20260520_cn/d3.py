@@ -9,10 +9,10 @@ MAP.shape = 'I9'
 MAP.camera_data = ['D3', 'D7', 'F3', 'F7']
 MAP.camera_data_spawn_point = ['F7', 'D7']
 MAP.map_data = """
-    ++ ++ ++ -- -- -- ++ ++ ++
-    -- -- ME -- -- -- ME -- --
-    -- ME -- ME -- ME -- ME --
-    -- ++ -- -- ++ -- -- ++ --
+    ++ ++ ++ ++ ++ ++ ++ ++ ++
+    -- -- ME ++ ++ ++ ME -- ++
+    -- ME -- ME ++ ME -- ME ++
+    -- ++ -- -- ++ -- -- ++ ++
     ME ++ Me -- -- -- Me ++ ME
     -- Me -- -- MB -- -- Me --
     -- -- MS -- MS -- MS -- --
