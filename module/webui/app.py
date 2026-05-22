@@ -774,20 +774,34 @@ class AlasGUI(Frame):
 
             # Process virtual asset timeline
             if virtual_asset_timeline and current_view in ("line", "detail"):
+                from calendar import monthrange as _monthrange
+
                 for pt in virtual_asset_timeline:
                     ts_raw = pt.get("ts", "")
                     va_val = pt.get("virtual_asset")
                     a_val = pt.get("asset")
                     if ts_raw and va_val is not None:
                         try:
-                            va_val = float(va_val)
                             va_dt = _dt.fromisoformat(ts_raw)
-                            virtual_asset_list.append(va_val)
+                            ap_for_asset = int(pt.get("ap_total", pt.get("ap", 0)) or 0)
+                            yellow_coin_for_asset = int(pt.get("yellow_coin", 0) or 0)
+                            cl5_efficiency = 1700.0 / 30.0
+                            asset_value = ap_for_asset * cl5_efficiency + yellow_coin_for_asset
+                            month_end = va_dt.replace(
+                                day=_monthrange(va_dt.year, va_dt.month)[1],
+                                hour=23,
+                                minute=59,
+                                second=59,
+                                microsecond=0,
+                            )
+                            virtual_asset_value = asset_value + max(
+                                0,
+                                (month_end - va_dt).total_seconds(),
+                            ) / 600.0 * cl5_efficiency
+                            virtual_asset_list.append(virtual_asset_value)
                             virtual_asset_ts_list.append(int(va_dt.timestamp() * 1000))
-                            # 从同一条快照中提取 asset
-                            if a_val is not None:
-                                asset_list.append(float(a_val))
-                                asset_ts_list.append(int(va_dt.timestamp() * 1000))
+                            asset_list.append(asset_value)
+                            asset_ts_list.append(int(va_dt.timestamp() * 1000))
                         except (TypeError, ValueError, Exception):
                             continue
 
@@ -1617,7 +1631,9 @@ class AlasGUI(Frame):
 
                         ap_timeline = get_ap_timeline(instance_name=instance_name_stat)
                         current_ap = (
-                            int(ap_timeline[-1].get("ap", 0)) if ap_timeline else 0
+                            int(ap_timeline[-1].get("ap_total", ap_timeline[-1].get("ap", 0)))
+                            if ap_timeline
+                            else 0
                         )
 
                         meow_round_ap = 30

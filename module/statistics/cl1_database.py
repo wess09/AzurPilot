@@ -2,6 +2,7 @@
 import sqlite3
 import json
 import os
+from contextlib import suppress
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional, Tuple
@@ -14,6 +15,14 @@ from module.logger import logger
 
 
 class Cl1Database:
+    @staticmethod
+    def _coerce_int(value: Any) -> int:
+        return int(value)
+
+    @staticmethod
+    def _coerce_float(value: Any) -> float:
+        return float(value)
+
     def _empty_siren_research_devices(self) -> dict:
         return {"cl1": 0, "meow": {}}
 
@@ -44,11 +53,9 @@ class Cl1Database:
         devices = self._normalize_siren_research_devices(data)
         if source == "meow":
             if hazard_level is None:
-                return sum(
-                    int(value or 0) for value in devices.get("meow", {}).values()
-                )
-            return int(devices.get("meow", {}).get(str(int(hazard_level)), 0) or 0)
-        return int(devices.get("cl1", 0) or 0)
+                return sum(devices.get("meow", {}).values())
+            return devices.get("meow", {}).get(str(self._coerce_int(hazard_level)), 0)
+        return devices.get("cl1", 0)
 
     def add_siren_research_device(
         self, instance: str, source: str = "cl1", hazard_level: int = None
@@ -68,7 +75,7 @@ class Cl1Database:
             devices["cl1"] = devices.get("cl1", 0) + 1
         elif source == "meow":
             meow = devices.get("meow", {})
-            key = str(int(hazard_level or 0))
+            key = str(self._coerce_int(hazard_level or 0))
             meow[key] = int(meow.get(key, 0) or 0) + 1
             devices["meow"] = meow
         data["siren_research_devices"] = devices
@@ -79,7 +86,7 @@ class Cl1Database:
         entries.append({
             "ts": datetime.now().isoformat(),
             "source": source,
-            "hazard_level": int(hazard_level or 0) if source == "meow" else None,
+            "hazard_level": self._coerce_int(hazard_level or 0) if source == "meow" else None,
         })
         if len(entries) > 5000:
             entries = entries[-5000:]
@@ -163,8 +170,7 @@ class Cl1Database:
                 updated_rows = []
                 for instance, month, blob in rows:
                     # 1. 用旧密钥解密
-                    data = self._decrypt_with_key(blob, old_key)
-                    if data:
+                    if data := self._decrypt_with_key(blob, old_key):
                         # 2. 用新密钥重加密 (self._encrypt 使用的是当前 self._encryption_key)
                         new_blob = self._encrypt(data)
                         updated_rows.append((new_blob, instance, month))
@@ -180,17 +186,20 @@ class Cl1Database:
         except Exception as e:
             logger.error(f"Failed to migrate database to new device_id: {e}")
 
+    def _decrypt_payload(self, blob: bytes, key: bytes) -> Dict[str, Any]:
+        nonce = blob[:16]
+        tag = blob[16:32]
+        ciphertext = blob[32:]
+        cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
+        plaintext = cipher.decrypt_and_verify(ciphertext, tag)
+        return json.loads(plaintext.decode("utf-8"))
+
     def _decrypt_with_key(self, blob: bytes, key: bytes) -> Optional[Dict[str, Any]]:
         """辅助方法：使用指定密钥进行解密"""
         if not blob or len(blob) < 32:
             return None
         try:
-            nonce = blob[:16]
-            tag = blob[16:32]
-            ciphertext = blob[32:]
-            cipher = AES.new(key, AES.MODE_GCM, nonce=nonce)
-            plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-            return json.loads(plaintext.decode("utf-8"))
+            return self._decrypt_payload(blob, key)
         except Exception:
             return None
 
@@ -212,12 +221,7 @@ class Cl1Database:
         if not blob or len(blob) < 32:
             return None
         try:
-            nonce = blob[:16]
-            tag = blob[16:32]
-            ciphertext = blob[32:]
-            cipher = AES.new(self._encryption_key, AES.MODE_GCM, nonce=nonce)
-            plaintext = cipher.decrypt_and_verify(ciphertext, tag)
-            return json.loads(plaintext.decode("utf-8"))
+            return self._decrypt_payload(blob, self._encryption_key)
         except (ValueError, KeyError) as e:
             logger.error(f"Decryption failed (Tamper detected or Wrong key): {e}")
             return None
@@ -235,10 +239,8 @@ class Cl1Database:
                     (instance, month),
                 )
                 row = cursor.fetchone()
-                if row:
-                    data = self._decrypt(row[0])
-                    if data:
-                        return data
+                if row and (data := self._decrypt(row[0])):
+                    return data
         except Exception as e:
             logger.error(f"Failed to query stats for {instance} {month}: {e}")
 
@@ -289,11 +291,7 @@ class Cl1Database:
     @staticmethod
     def _get_meow_battles_per_round(hazard_level: Optional[int]) -> Optional[int]:
         """根据侵蚀等级返回每轮战斗次数。"""
-        if hazard_level in [2, 3]:
-            return 2
-        if hazard_level in [4, 5, 6]:
-            return 3
-        return None
+        return 2 if hazard_level in {2, 3} else 3 if hazard_level in {4, 5, 6} else None
 
     def _normalize_meow_hazard_stats(
         self, data: Dict[str, Any]
@@ -309,7 +307,7 @@ class Cl1Database:
                 hazard_level = int(hazard_key)
             except (TypeError, ValueError):
                 continue
-            if hazard_level not in [2, 3, 4, 5, 6] or not isinstance(bucket, dict):
+            if hazard_level not in {2, 3, 4, 5, 6} or not isinstance(bucket, dict):
                 continue
 
             round_times = bucket.get("round_times", [])
@@ -320,9 +318,9 @@ class Cl1Database:
                 if isinstance(entry, (int, float)):
                     normalized_round_times.append(float(entry))
                 elif isinstance(entry, dict) and isinstance(
-                    entry.get("duration"), (int, float)
+                    duration := entry.get("duration"), (int, float)
                 ):
-                    normalized_round_times.append(float(entry.get("duration")))
+                    normalized_round_times.append(float(duration))
 
             battle_times = bucket.get("battle_times", [])
             if not isinstance(battle_times, list):
@@ -332,9 +330,9 @@ class Cl1Database:
                 if isinstance(entry, (int, float)):
                     normalized_battle_times.append(float(entry))
                 elif isinstance(entry, dict) and isinstance(
-                    entry.get("duration"), (int, float)
+                    duration := entry.get("duration"), (int, float)
                 ):
-                    normalized_battle_times.append(float(entry.get("duration")))
+                    normalized_battle_times.append(float(duration))
 
             try:
                 battle_raw_count = int(bucket.get("battle_raw_count", 0) or 0)
@@ -384,7 +382,7 @@ class Cl1Database:
         for entry in round_times:
             if isinstance(entry, dict):
                 hazard_level = entry.get("hazard_level")
-                if hazard_level in [2, 3, 4, 5, 6]:
+                if hazard_level in {2, 3, 4, 5, 6}:
                     hazard_levels.append(hazard_level)
 
         if not hazard_levels:
@@ -432,10 +430,12 @@ class Cl1Database:
         by_battle_times = len(battle_times) if battle_times else 0
         should_save = False
 
-        need_backfill = raw_battle_count is None
-        if estimated_from_rounds is not None and current_raw > 0:
-            if current_raw < int(estimated_from_rounds * 0.85):
-                need_backfill = True
+        need_backfill = (
+            raw_battle_count is None
+            or estimated_from_rounds is not None
+            and current_raw > 0
+            and current_raw < int(estimated_from_rounds * 0.85)
+        )
 
         if need_backfill:
             candidates = [
@@ -443,25 +443,23 @@ class Cl1Database:
                 for candidate in [current_raw, estimated_from_rounds, by_battle_times]
                 if candidate is not None
             ]
-            raw_battle_count = (
-                max(candidates) if candidates else int(round(effective_rounds))
-            )
+            raw_battle_count = max(candidates, default=int(round(effective_rounds)))
             data["meow_battle_raw_count"] = int(raw_battle_count)
             should_save = True
 
-            if inferred_divisor in [2, 3] and effective_rounds > 0:
+            if inferred_divisor in {2, 3} and effective_rounds > 0:
                 data["meow_battle_count"] = round(
-                    int(raw_battle_count) / inferred_divisor, 2
+                    raw_battle_count / inferred_divisor, 2
                 )
                 effective_rounds = float(data["meow_battle_count"])
         else:
             raw_battle_count = current_raw
 
-        if int(raw_battle_count) > 0 and effective_rounds > 0:
-            ratio = float(raw_battle_count) / float(effective_rounds)
+        if raw_battle_count > 0 and effective_rounds > 0:
+            ratio = raw_battle_count / effective_rounds
             if ratio > 5:
-                divisor_for_fix = inferred_divisor if inferred_divisor in [2, 3] else 3
-                fixed_rounds = round(int(raw_battle_count) / divisor_for_fix, 2)
+                divisor_for_fix = inferred_divisor if inferred_divisor in {2, 3} else 3
+                fixed_rounds = round(raw_battle_count / divisor_for_fix, 2)
                 if abs(fixed_rounds - effective_rounds) > 0.01:
                     data["meow_battle_count"] = fixed_rounds
                     effective_rounds = float(fixed_rounds)
@@ -628,28 +626,30 @@ class Cl1Database:
         yellow_coin = 0
         yellow_coin_snapshots = data.get("yellow_coin_snapshots", [])
         if yellow_coin_snapshots:
-            try:
+            with suppress(Exception):
                 yellow_coin = int(yellow_coin_snapshots[-1].get("yellow_coin", 0))
-            except Exception:
-                pass
 
-        # 资产 = AP × 效率 + 黄币
-        asset = ap_current * cl5_efficiency + yellow_coin
+        # 资产按可用总体力计算，包含行动力箱子。
+        ap_current = self._coerce_int(ap_current)
+        if ap_total is not None:
+            ap_total = self._coerce_int(ap_total)
+        ap_for_asset = ap_total if ap_total is not None else ap_current
+        asset = ap_for_asset * cl5_efficiency + yellow_coin
         # 虚拟资产 = 资产 + 时间加成
         virtual_asset = asset + virtual_asset_added
 
         snapshot = {
             "ts": now.isoformat(),
-            "ap": int(ap_current),
-            "yellow_coin": int(yellow_coin),
+            "ap": ap_current,
+            "yellow_coin": yellow_coin,
             "asset": round(asset, 2),
             "virtual_asset": round(virtual_asset, 2),
             "source": source,
         }
         if distance is not None:
-            snapshot["distance"] = int(distance)
+            snapshot["distance"] = self._coerce_int(distance)
         if ap_total is not None:
-            snapshot["ap_total"] = int(ap_total)
+            snapshot["ap_total"] = ap_total
 
         snapshots = data.get("ap_snapshots", [])
         snapshots.append(snapshot)
@@ -681,7 +681,7 @@ class Cl1Database:
         data = self.get_stats(instance, month)
         data["last_ap_notification"] = {
             "ts": datetime.now().isoformat(),
-            "ap": int(ap_current),
+            "ap": self._coerce_int(ap_current),
         }
         self.save_stats(instance, month, data)
 
@@ -697,20 +697,19 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         data = self.get_stats(instance, month)
+        yellow_coin = self._coerce_int(yellow_coin)
 
         snapshot = {
             "ts": datetime.now().isoformat(),
-            "yellow_coin": int(yellow_coin),
+            "yellow_coin": yellow_coin,
             "source": source,
         }
 
         snapshots = data.get("yellow_coin_snapshots", [])
         if snapshots:
-            try:
-                if int(snapshots[-1].get("yellow_coin", -1)) == int(yellow_coin):
+            with suppress(Exception):
+                if snapshots[-1].get("yellow_coin", -1) == yellow_coin:
                     return
-            except Exception:
-                pass
         snapshots.append(snapshot)
         data["yellow_coin_snapshots"] = snapshots
         self.save_stats(instance, month, data)
@@ -732,28 +731,26 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         data = self.get_stats(instance, month)
+        yellow_coins = self._coerce_int(yellow_coins)
+        purple_coins = self._coerce_int(purple_coins) if purple_coins is not None else None
 
         snapshot = {
             "ts": datetime.now().isoformat(),
-            "yellow_coins": int(yellow_coins),
+            "yellow_coins": yellow_coins,
             "source": source,
         }
         if purple_coins is not None:
-            snapshot["purple_coins"] = int(purple_coins)
+            snapshot["purple_coins"] = purple_coins
 
         snapshots = data.get("coins_snapshots", [])
         if snapshots:
-            try:
+            with suppress(Exception):
                 last = snapshots[-1]
-                if int(last.get("yellow_coins", -1)) == int(yellow_coins):
-                    if purple_coins is not None and int(
-                        last.get("purple_coins", -1)
-                    ) == int(purple_coins):
+                if last.get("yellow_coins", -1) == yellow_coins:
+                    if purple_coins is not None and last.get("purple_coins", -1) == purple_coins:
                         return
                     if purple_coins is None and "purple_coins" not in last:
                         return
-            except Exception:
-                pass
         snapshots.append(snapshot)
         # 保留最近 500 条记录，避免数据过大
         if len(snapshots) > 500:
@@ -790,10 +787,11 @@ class Cl1Database:
 
             # JSON 格式比较杂乱，需要按月份归档
             # 格式可能是: {"2026-02": 10, "2026-02-akashi": 1, "2026-02-akashi-ap": 120, "2026-02-akashi-ap-entries": [...]}
-            months = set()
-            for key in old_data.keys():
-                if len(key) >= 7 and key[4] == "-":
-                    months.add(key[:7])
+            months = {
+                key[:7]
+                for key in old_data
+                if len(key) >= 7 and key[4] == "-"
+            }
 
             for month in months:
                 # 首先检查数据库是否已有数据，避免覆盖
@@ -879,10 +877,10 @@ class Cl1Database:
         if delta is not None:
             # 直接使用 delta，保持向后兼容
             try:
-                delta = float(delta)
+                delta = self._coerce_float(delta)
             except Exception:
                 delta = 1
-        elif hazard_level is not None and hazard_level in [2, 3, 4, 5, 6]:
+        elif hazard_level in {2, 3, 4, 5, 6}:
             battles_per_round = self._get_meow_battles_per_round(hazard_level)
             delta = (1 / battles_per_round) if battles_per_round else 1
         else:
@@ -893,13 +891,13 @@ class Cl1Database:
         data["meow_battle_raw_count"] = data.get("meow_battle_raw_count", 0) + 1
         data["meow_battle_count"] = data.get("meow_battle_count", 0) + delta
 
-        if hazard_level in [2, 3, 4, 5, 6]:
+        if hazard_level in {2, 3, 4, 5, 6}:
             hazard_stats = self._normalize_meow_hazard_stats(data)
             bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
             bucket["battle_raw_count"] = int(bucket.get("battle_raw_count", 0) or 0) + 1
             bucket["effective_rounds"] = float(
                 bucket.get("effective_rounds", 0) or 0
-            ) + float(delta)
+            ) + delta
             data["meow_hazard_stats"] = hazard_stats
 
         self.save_stats(instance, month, data)
@@ -915,7 +913,7 @@ class Cl1Database:
             hazard_level: 侵蚀等级，用于计算出击轮次（2-6）
         """
         # 验证 hazard_level 是否在有效范围内
-        if hazard_level is not None and hazard_level not in [2, 3, 4, 5, 6]:
+        if hazard_level is not None and hazard_level not in {2, 3, 4, 5, 6}:
             logger.debug(f"Invalid hazard_level {hazard_level}, ignoring")
             hazard_level = None
 
@@ -936,7 +934,7 @@ class Cl1Database:
 
         data["meow_round_times"] = normalized_times
 
-        if hazard_level in [2, 3, 4, 5, 6]:
+        if hazard_level in {2, 3, 4, 5, 6}:
             hazard_stats = self._normalize_meow_hazard_stats(data)
             bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
             round_times = bucket.get("round_times", [])
@@ -958,7 +956,7 @@ class Cl1Database:
             duration: 战斗耗时（秒）
             hazard_level: 侵蚀等级（2-6），用于分级统计
         """
-        if hazard_level is not None and hazard_level not in [2, 3, 4, 5, 6]:
+        if hazard_level is not None and hazard_level not in {2, 3, 4, 5, 6}:
             logger.debug(f"Invalid hazard_level {hazard_level}, ignoring")
             hazard_level = None
 
@@ -977,7 +975,7 @@ class Cl1Database:
 
         data["meow_battle_times"] = times
 
-        if hazard_level in [2, 3, 4, 5, 6]:
+        if hazard_level in {2, 3, 4, 5, 6}:
             hazard_stats = self._normalize_meow_hazard_stats(data)
             bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
             battle_times = bucket.get("battle_times", [])
@@ -1045,13 +1043,13 @@ class Cl1Database:
         hazard_round_samples: Dict[int, List[float]] = {3: [], 5: []}
         for entry in normalized_round_times:
             hl = entry.get("hazard_level")
-            if hl in [2, 3, 4, 5, 6]:
+            if hl in {2, 3, 4, 5, 6}:
                 hazard_sample_total += 1
-            if hl in [3, 5]:
+            if hl in {3, 5}:
                 hazard_round_samples[hl].append(entry["duration"])
 
         by_hazard: Dict[str, Dict[str, Any]] = {}
-        for hl in [3, 5]:
+        for hl in (3, 5):
             key_name = str(hl)
             bucket = hazard_stats.get(key_name, {})
 
@@ -1073,8 +1071,7 @@ class Cl1Database:
             hz_round_times = [
                 float(v) for v in hz_round_times if isinstance(v, (int, float))
             ]
-            if not hz_round_times:
-                hz_round_times = hazard_round_samples[hl]
+            hz_round_times = hz_round_times or hazard_round_samples[hl]
 
             hz_battle_times = (
                 bucket.get("battle_times", [])
@@ -1162,14 +1159,11 @@ class Cl1Database:
         }
 
         # 请求指定侵蚀等级时，将该等级数据提升到顶层
-        if hazard_level is not None:
-            hl_key = str(hazard_level)
-            if hl_key in by_hazard:
-                hl_data = by_hazard[hl_key]
-                result["battle_count"] = hl_data["battle_count"]
-                result["effective_rounds"] = hl_data["effective_rounds"]
-                result["avg_round_time"] = hl_data["avg_round_time"]
-                result["avg_battle_time"] = hl_data["avg_battle_time"]
+        if hazard_level is not None and (hl_data := by_hazard.get(str(hazard_level))):
+            result["battle_count"] = hl_data["battle_count"]
+            result["effective_rounds"] = hl_data["effective_rounds"]
+            result["avg_round_time"] = hl_data["avg_round_time"]
+            result["avg_battle_time"] = hl_data["avg_battle_time"]
 
         return result
 
@@ -1281,10 +1275,11 @@ class Cl1Database:
         month = datetime.now().strftime("%Y-%m")
         data = self.get_stats(instance, month)
 
+        commission_count = self._coerce_int(commission_count)
         entry = {
             "ts": datetime.now().isoformat(),
-            "items": {k: int(v) for k, v in items.items() if v > 0},
-            "commission_count": int(commission_count),
+            "items": {k: self._coerce_int(v) for k, v in items.items() if v > 0},
+            "commission_count": commission_count,
         }
 
         entries = data.get("commission_income_entries", [])
@@ -1309,10 +1304,8 @@ class Cl1Database:
         """
         if year is None or month is None:
             now = datetime.now()
-            if year is None:
-                year = now.year
-            if month is None:
-                month = now.month
+            year = year or now.year
+            month = month or now.month
 
         month_key = f"{year:04d}-{month:02d}"
         data = self.get_stats(instance, month_key)

@@ -1034,22 +1034,29 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
     # ========== 短猫提前开始计算 ==========
 
     def _get_current_action_point_value(self) -> tuple[int, str]:
-        """获取当前行动力，避免依赖统计模块。
+        """获取当前可用总体力，包含行动力箱子。
 
         Returns:
             tuple[int, str]: (行动力数值, 数据来源)
-            - 数据来源: realtime / cache / none
+            - 数据来源: cache / dashboard / none
         """
-        try:
-            return int(self.get_action_point()), 'realtime'
-        except Exception:
-            cached_ap = getattr(self, '_action_point_total', None)
-            if cached_ap is None:
-                return 0, 'none'
+        cached_ap = getattr(self, '_action_point_total', None)
+        if cached_ap is not None:
             try:
                 return int(cached_ap), 'cache'
             except Exception:
-                return 0, 'none'
+                pass
+
+        try:
+            dashboard_ap = self.config.cross_get(
+                keys='Dashboard.ActionPoint.Total', default=0
+            )
+            if dashboard_ap:
+                return int(dashboard_ap), 'dashboard'
+        except Exception:
+            pass
+
+        return 0, 'none'
 
     def _get_meow_avg_round_time_seconds(self) -> tuple[float, str]:
         """获取短猫平均每轮耗时（秒）。
