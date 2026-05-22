@@ -3088,6 +3088,8 @@ class AlasGUI(Frame):
 
             if group_name not in self._log.last_display_time.keys():
                 self._log.last_display_time[group_name] = ""
+            if self._log.last_display_time[group_name] == delta and not self._log.first_display:
+                continue
             self._log.last_display_time[group_name] = delta
 
             # if self._log.first_display:
