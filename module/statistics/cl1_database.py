@@ -17,10 +17,12 @@ from module.logger import logger
 class Cl1Database:
     @staticmethod
     def _coerce_int(value: Any) -> int:
+        """严格转换为 int；无效输入由调用方按上下文捕获处理。"""
         return int(value)
 
     @staticmethod
     def _coerce_float(value: Any) -> float:
+        """严格转换为 float；无效输入由调用方按上下文捕获处理。"""
         return float(value)
 
     def _empty_siren_research_devices(self) -> dict:

@@ -1040,20 +1040,19 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             tuple[int, str]: (行动力数值, 数据来源)
             - 数据来源: cache / dashboard / none
         """
-        cached_ap = getattr(self, '_action_point_total', None)
-        if cached_ap:
+        if '_action_point_total' in self.__dict__:
             try:
-                return int(cached_ap), 'cache'
+                return int(self.__dict__['_action_point_total']), 'cache'
             except (TypeError, ValueError):
                 pass
 
         try:
             dashboard_ap = self.config.cross_get(
-                keys='Dashboard.ActionPoint.Total', default=0
+                keys='Dashboard.ActionPoint.Total', default=None
             )
-            if dashboard_ap:
+            if dashboard_ap is not None:
                 return int(dashboard_ap), 'dashboard'
-        except Exception:
+        except (TypeError, ValueError):
             pass
 
         return 0, 'none'

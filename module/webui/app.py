@@ -801,7 +801,7 @@ class AlasGUI(Frame):
 
                 for pt in virtual_asset_timeline:
                     ts_raw = pt.get("ts", "")
-                    if ts_raw and pt.get("virtual_asset") is not None:
+                    if ts_raw:
                         try:
                             va_dt = _dt.fromisoformat(ts_raw)
                             asset_value = _snapshot_float(pt, "asset")

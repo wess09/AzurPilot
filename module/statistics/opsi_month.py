@@ -224,9 +224,11 @@ def get_virtual_asset_timeline(
     year: int | None = None, month: int | None = None, instance_name: str | None = None
 ) -> list:
     """
-    Get virtual asset timeline from ap_snapshots that contain virtual_asset data.
+    Get virtual asset timeline from AP snapshots.
 
-    Returns sorted list of snapshots with 'ts' and 'virtual_asset' fields.
+    Existing asset/virtual_asset snapshot fields are the display source of truth.
+    Older snapshots without these fields are still returned so the WebUI can
+    reconstruct them for display.
     """
     now = datetime.now()
     if year is None:
@@ -237,6 +239,4 @@ def get_virtual_asset_timeline(
 
     data = cl1_db.get_stats(instance_name or "default", key_prefix)
     snapshots = data.get("ap_snapshots", [])
-    return sorted(
-        [s for s in snapshots if "virtual_asset" in s], key=lambda e: e.get("ts", "")
-    )
+    return sorted([s for s in snapshots if s.get("ts")], key=lambda e: e.get("ts", ""))
