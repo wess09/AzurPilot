@@ -1041,10 +1041,10 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             - 数据来源: cache / dashboard / none
         """
         cached_ap = getattr(self, '_action_point_total', None)
-        if cached_ap is not None:
+        if cached_ap:
             try:
                 return int(cached_ap), 'cache'
-            except Exception:
+            except (TypeError, ValueError):
                 pass
 
         try:

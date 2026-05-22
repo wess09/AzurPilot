@@ -53,9 +53,14 @@ class Cl1Database:
         devices = self._normalize_siren_research_devices(data)
         if source == "meow":
             if hazard_level is None:
-                return sum(devices.get("meow", {}).values())
-            return devices.get("meow", {}).get(str(self._coerce_int(hazard_level)), 0)
-        return devices.get("cl1", 0)
+                return sum(
+                    self._coerce_int(value or 0)
+                    for value in devices.get("meow", {}).values()
+                )
+            return self._coerce_int(
+                devices.get("meow", {}).get(str(self._coerce_int(hazard_level)), 0) or 0
+            )
+        return self._coerce_int(devices.get("cl1", 0) or 0)
 
     def add_siren_research_device(
         self, instance: str, source: str = "cl1", hazard_level: int = None
@@ -626,7 +631,7 @@ class Cl1Database:
         yellow_coin = 0
         yellow_coin_snapshots = data.get("yellow_coin_snapshots", [])
         if yellow_coin_snapshots:
-            with suppress(Exception):
+            with suppress(ValueError, TypeError, IndexError, KeyError):
                 yellow_coin = int(yellow_coin_snapshots[-1].get("yellow_coin", 0))
 
         # 资产按可用总体力计算，包含行动力箱子。
@@ -707,8 +712,8 @@ class Cl1Database:
 
         snapshots = data.get("yellow_coin_snapshots", [])
         if snapshots:
-            with suppress(Exception):
-                if snapshots[-1].get("yellow_coin", -1) == yellow_coin:
+            with suppress(ValueError, TypeError, IndexError, KeyError):
+                if self._coerce_int(snapshots[-1].get("yellow_coin", -1)) == yellow_coin:
                     return
         snapshots.append(snapshot)
         data["yellow_coin_snapshots"] = snapshots
@@ -744,10 +749,13 @@ class Cl1Database:
 
         snapshots = data.get("coins_snapshots", [])
         if snapshots:
-            with suppress(Exception):
+            with suppress(ValueError, TypeError, IndexError, KeyError):
                 last = snapshots[-1]
-                if last.get("yellow_coins", -1) == yellow_coins:
-                    if purple_coins is not None and last.get("purple_coins", -1) == purple_coins:
+                if self._coerce_int(last.get("yellow_coins", -1)) == yellow_coins:
+                    if (
+                        purple_coins is not None
+                        and self._coerce_int(last.get("purple_coins", -1)) == purple_coins
+                    ):
                         return
                     if purple_coins is None and "purple_coins" not in last:
                         return
