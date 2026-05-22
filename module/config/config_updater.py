@@ -528,8 +528,8 @@ class ConfigGenerator:
 
         linux = {
             'GitExecutable': '/usr/bin/git',
-            'PythonExecutable': 'python',
-            'RequirementsFile': './deploy/headless/requirements.txt',
+            'PythonExecutable': './.venv/bin/python',
+            'RequirementsFile': 'requirements-linux.txt',
             'AdbExecutable': '/usr/bin/adb',
             'SSHExecutable': '/usr/bin/ssh',
             'ReplaceAdb': 'false'

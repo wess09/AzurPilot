@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from typing import Callable, Generic, TypeVar
 
 from deploy.atomic import atomic_read_text, atomic_write
@@ -8,6 +9,12 @@ T = TypeVar("T")
 
 DEPLOY_CONFIG = './config/deploy.yaml'
 DEPLOY_TEMPLATE = './deploy/template'
+
+
+def get_deploy_template():
+    if sys.platform.startswith('linux'):
+        return './config/deploy.template-linux.yaml'
+    return DEPLOY_TEMPLATE
 
 
 class cached_property(Generic[T]):

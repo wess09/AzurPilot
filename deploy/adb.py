@@ -17,11 +17,10 @@ IGNORE_SERIAL = [
 def show_fix_tip(module):
     logger.info(f"""
     To fix this:
-    1. Open console.bat
-    2. Execute the following commands:
-        pip uninstall -y {module}
-        pip install --no-cache-dir {module}
-    3. Re-open Alas.exe
+    1. Re-run the launcher so uv can refresh the local .venv
+    2. If the problem persists, run:
+        uv pip install --python ./.venv/bin/python --reinstall-package {module} -r requirements-linux.txt
+    3. Re-open AzurPilot
     """)
 
 

@@ -5,6 +5,10 @@ import json
 import datetime
 from typing import List, Optional, Dict, Any
 
+from deploy.uv import ensure_uv_environment
+
+ensure_uv_environment()
+
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware

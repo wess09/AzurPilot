@@ -58,6 +58,17 @@ AzurPilot 是基于 AzurLaneAutoScript 修改而来的碧蓝航线自动化辅�
   <img src="doc/GUI.png" alt="GUI Preview" width="800">
 </div>
 
+## Linux / macOS 启动
+
+本项目在类 Unix 平台使用 `uv` 管理本地 Python 环境。安装 `uv` 后可直接运行：
+
+```bash
+python gui.py
+```
+
+入口脚本会创建 `.venv` 并按当前平台同步 `requirements-linux.txt` 或
+`requirements-macos.txt`，不会向系统 Python 执行 `pip install`。
+
 ## 重要说明
 
 本项目包含大量自动化逻辑和图像识别相关功能。使用前请确保已经按照本文档完成游戏内设置，否则可能导致识别失败、流程异常或任务无法正常执行。

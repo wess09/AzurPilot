@@ -101,7 +101,7 @@ def analyze_exception(config, e):
         logger.hr('LLM 分析结束', level=1)
         
     except ImportError:
-        logger.error('未安装 openai 库。请运行: pip install openai')
+        logger.error('未安装 openai 库。请重新运行入口脚本，让 uv 同步项目依赖')
     except Exception as ex:
         # Avoid circular logging issues, use a simpler error log if LLM itself failed
         logger.error(f'LLM 分析调用失败: {ex}')

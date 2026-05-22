@@ -27,8 +27,8 @@ Deploy:
   Python:
     # Filepath of python executable `python.exe`
     # [Easy installer] Use './toolkit/python.exe'
-    # [Other] Use you own python, and its version should be 3.7.6 64bit
-    PythonExecutable: python
+    # [Other] Use your own python, preferably managed by uv in .venv
+    PythonExecutable: ./.venv/bin/python
     # URL of pypi mirror
     # [CN user] Use 'https://mirrors.aliyun.com/pypi/simple' for faster and more stable download
     # [Other] Use null
@@ -39,7 +39,7 @@ Deploy:
     # Path to requirements.txt
     # [In most cases] Use 'requirements.txt'
     # [In AidLux] Use './deploy/AidLux/{version}/requirements.txt', version is default to 0.92
-    RequirementsFile: ./deploy/headless/requirements.txt
+    RequirementsFile: requirements-linux.txt
 
   Adb:
     # Filepath of ADB executable `adb.exe`

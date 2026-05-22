@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 import sys
 import typing as t
 from dataclasses import dataclass
@@ -65,8 +66,35 @@ class PipManager(DeployConfig):
     def pip(self):
         return f'"{self.python}" -m pip'
 
+    @cached_property
+    def uv(self):
+        exe = shutil.which('uv')
+        if exe:
+            return exe.replace("\\", "/")
+        return None
+
     def execute_pip(self, args):
         cmd = [self.python, '-m', 'pip'] + list(map(str, args))
+        command = subprocess.list2cmdline(cmd)
+        logger.info(command)
+        process = subprocess.Popen(cmd, shell=False)
+        process.communicate()
+        if process.returncode:
+            logger.info(f"[ failure ], error_code: {process.returncode}")
+            self.show_error(command)
+            raise ExecutionError
+        logger.info(f"[ success ]")
+        return True
+
+    def execute_uv_pip(self, args):
+        if not self.uv:
+            if sys.platform == 'win32':
+                logger.warning('uv is not available, fallback to python -m pip on Windows')
+                return self.execute_pip(args)
+            logger.critical('uv is required to install dependencies without modifying system Python')
+            raise ExecutionError
+
+        cmd = [self.uv, 'pip'] + list(map(str, args))
         command = subprocess.list2cmdline(cmd)
         logger.info(command)
         process = subprocess.Popen(cmd, shell=False)
@@ -146,21 +174,32 @@ class PipManager(DeployConfig):
         logger.hr('Check Python', 1)
         self.execute(f'"{self.python}" --version')
 
-        arg = []
+        uv_arg = []
+        pip_arg = []
         if self.PypiMirror:
             mirror = self.PypiMirror
-            arg += ['-i', mirror]
+            uv_arg += ['--default-index', mirror]
+            pip_arg += ['-i', mirror]
             # Trust http mirror or skip ssl verify
             if 'http:' in mirror or not self.SSLVerify:
-                arg += ['--trusted-host', urlparse(mirror).hostname]
+                hostname = urlparse(mirror).hostname
+                uv_arg += ['--allow-insecure-host', hostname]
+                pip_arg += ['--trusted-host', hostname]
         elif not self.SSLVerify:
-            arg += ['--trusted-host', 'pypi.org']
-            arg += ['--trusted-host', 'files.pythonhosted.org']
+            uv_arg += ['--allow-insecure-host', 'pypi.org']
+            uv_arg += ['--allow-insecure-host', 'files.pythonhosted.org']
+            pip_arg += ['--trusted-host', 'pypi.org']
+            pip_arg += ['--trusted-host', 'files.pythonhosted.org']
 
         # Don't update pip, just leave it.
         # logger.hr('Update pip', 1)
         # self.execute(f'"{self.pip}" install --upgrade pip{arg}')
-        arg += ['--disable-pip-version-check']
+        pip_arg += ['--disable-pip-version-check']
 
         logger.hr('Update Dependencies', 1)
-        self.execute_pip(['install', '-r', self.requirements_file] + arg)
+        if self.uv:
+            self.execute_uv_pip(
+                ['install', '--python', self.python, '-r', self.requirements_file] + uv_arg
+            )
+        else:
+            self.execute_uv_pip(['install', '-r', self.requirements_file] + pip_arg)

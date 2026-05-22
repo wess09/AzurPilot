@@ -10,6 +10,10 @@ import threading
 import time
 from datetime import datetime, timedelta
 
+from deploy.uv import ensure_uv_environment
+
+ensure_uv_environment()
+
 import inflection
 from cached_property import cached_property
 

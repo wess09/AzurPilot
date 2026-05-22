@@ -1,3 +1,7 @@
+from deploy.uv import ensure_uv_environment
+
+ensure_uv_environment()
+
 from deploy.patch import pre_checks
 
 pre_checks()

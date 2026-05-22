@@ -4,6 +4,10 @@ import threading
 from multiprocessing import Event, Process, set_start_method
 from typing import Optional
 
+from deploy.uv import ensure_uv_environment
+
+ensure_uv_environment()
+
 if sys.platform != "win32":
     import resource
     try:

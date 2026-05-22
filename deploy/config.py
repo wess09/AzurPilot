@@ -1,4 +1,5 @@
 import copy
+import sys
 from typing import Optional, Union
 
 from deploy.logger import logger
@@ -77,6 +78,7 @@ class DeployConfig(ConfigModel):
             file (str): User deploy config.
         """
         self.file = file
+        self.template_file = get_deploy_template()
         self.config = {}
         self.config_template = {}
         self.read()
@@ -98,7 +100,7 @@ class DeployConfig(ConfigModel):
         """
         Read and update deploy config, copy `self.configs` to properties.
         """
-        self.config = poor_yaml_read(DEPLOY_TEMPLATE)
+        self.config = poor_yaml_read(self.template_file)
         self.config_template = copy.deepcopy(self.config)
         origin = poor_yaml_read(self.file)
         self.config.update(origin)
@@ -113,7 +115,7 @@ class DeployConfig(ConfigModel):
             self.write()
 
     def write(self):
-        poor_yaml_write(self.config, self.file)
+        poor_yaml_write(self.config, self.file, template_file=self.template_file)
 
     def config_redirect(self):
         """
@@ -154,6 +156,12 @@ class DeployConfig(ConfigModel):
             super().__setattr__('Repository', 'https://github.com/wess09/AzurPilot')
         if self.Repository in ['cn']:
             super().__setattr__('Repository', GIT_OVER_CDN_REPOSITORY)
+        if (
+            sys.platform.startswith('linux')
+            and self.RequirementsFile in ['./deploy/headless/requirements.txt', 'deploy/headless/requirements.txt']
+        ):
+            self.RequirementsFile = 'requirements-linux.txt'
+            self.config['RequirementsFile'] = 'requirements-linux.txt'
 
     def filepath(self, key):
         """

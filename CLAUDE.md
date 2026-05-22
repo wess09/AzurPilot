@@ -10,19 +10,19 @@ AzurLaneAutoScript (ALAS / AzurPilot) is an automation framework for the mobile 
 
 ## Commands
 
-This project uses **uv** for Python dependency management and script execution. All Python commands should be run via `uv run`.
+This project uses **uv** for Python dependency management. Linux/macOS entry points bootstrap a local `.venv` automatically.
 
 ### Environment Setup
 ```bash
 uv venv                                        # Create virtual environment
-uv pip install -r requirements-linux.txt       # Linux
-uv pip install -r requirements.txt             # Windows
+uv pip sync requirements-linux.txt             # Linux
+uv pip sync requirements.txt                   # Windows
 ```
 
 ### Running the Application
 ```bash
-uv run gui.py          # Start WebUI server (default port 22267)
-uv run alas.py          # Run scheduler directly (headless)
+python gui.py           # Start WebUI server; bootstraps .venv with uv on Linux/macOS
+python alas.py          # Run scheduler directly; bootstraps .venv with uv on Linux/macOS
 ```
 
 ### Linting
@@ -328,10 +328,10 @@ page_main.link(button=MAIN_GOTO_REWARD, destination=page_reward)
 - `++` land (impassable), `--` ocean, `SP` fleet spawn, `ME` enemy possible, `MB` boss possible, `MM` mystery enemy, `MA` ammo pickup, `MS` Siren/elite spawn
 
 ## Python Dependencies
-All dependency management uses **uv**. Direct dependencies are declared in `requirements-in.txt`, compiled via `uv pip compile` into platform-specific lockfiles (`requirements.txt`, `requirements-linux.txt`, `requirements-macos.txt`). Install with `uv pip install -r requirements-<platform>.txt`. Always use `uv run` to execute Python scripts within the managed environment.
+All dependency management uses **uv**. Direct dependencies are declared in `requirements-in.txt`, compiled via `uv pip compile` into platform-specific lockfiles (`requirements.txt`, `requirements-linux.txt`, `requirements-macos.txt`). Sync with `uv pip sync requirements-<platform>.txt`, or run the Linux/macOS entry points directly and let them bootstrap `.venv`.
 
 ## Webapp (Electron)
 Separate frontend in `webapp/` — Vue 3 + Ant Design Vue + Electron. Uses pnpm, Vite, electron-builder. Lint with `pnpm lint`, typecheck with `pnpm typecheck`, test with `pnpm test`.
 
 ## CI
-GitHub Actions uses `uv` for dependency management: `uv venv` + `uv pip install`. Runs: ruff lint, `button_extract.py`, `config_updater.py` (checks for uncommitted diffs), Docker publish, upstream sync.
+GitHub Actions uses `uv` for dependency management: `uv venv` + `uv pip sync`. Runs: ruff lint, `button_extract.py`, `config_updater.py` (checks for uncommitted diffs), Docker publish, upstream sync.
