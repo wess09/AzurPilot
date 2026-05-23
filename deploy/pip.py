@@ -1,5 +1,6 @@
 import subprocess
 import shutil
+import shlex
 import sys
 import typing as t
 from dataclasses import dataclass
@@ -75,8 +76,9 @@ class PipManager(DeployConfig):
 
     def execute_pip(self, args):
         cmd = [self.python, '-m', 'pip'] + list(map(str, args))
-        command = subprocess.list2cmdline(cmd)
+        command = shlex.join(cmd)
         logger.info(command)
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         process = subprocess.Popen(cmd, shell=False)
         process.communicate()
         if process.returncode:
@@ -88,15 +90,13 @@ class PipManager(DeployConfig):
 
     def execute_uv_pip(self, args):
         if not self.uv:
-            if sys.platform == 'win32':
-                logger.warning('uv is not available, fallback to python -m pip on Windows')
-                return self.execute_pip(args)
             logger.critical('uv is required to install dependencies without modifying system Python')
             raise ExecutionError
 
         cmd = [self.uv, 'pip'] + list(map(str, args))
-        command = subprocess.list2cmdline(cmd)
+        command = shlex.join(cmd)
         logger.info(command)
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         process = subprocess.Popen(cmd, shell=False)
         process.communicate()
         if process.returncode:
@@ -183,8 +183,9 @@ class PipManager(DeployConfig):
             # Trust http mirror or skip ssl verify
             if 'http:' in mirror or not self.SSLVerify:
                 hostname = urlparse(mirror).hostname
-                uv_arg += ['--allow-insecure-host', hostname]
-                pip_arg += ['--trusted-host', hostname]
+                if hostname:
+                    uv_arg += ['--allow-insecure-host', hostname]
+                    pip_arg += ['--trusted-host', hostname]
         elif not self.SSLVerify:
             uv_arg += ['--allow-insecure-host', 'pypi.org']
             uv_arg += ['--allow-insecure-host', 'files.pythonhosted.org']
@@ -201,5 +202,9 @@ class PipManager(DeployConfig):
             self.execute_uv_pip(
                 ['install', '--python', self.python, '-r', self.requirements_file] + uv_arg
             )
+        elif sys.platform == 'win32':
+            logger.warning('uv is not available, fallback to python -m pip on Windows')
+            self.execute_pip(['install', '-r', self.requirements_file] + pip_arg)
         else:
-            self.execute_uv_pip(['install', '-r', self.requirements_file] + pip_arg)
+            logger.critical('uv is required to install dependencies without modifying system Python')
+            raise ExecutionError

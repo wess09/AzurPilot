@@ -1,5 +1,6 @@
 import hashlib
 import os
+import shlex
 import shutil
 import subprocess
 import sys
@@ -156,7 +157,9 @@ def _uv_index_args(root: Path):
 
 
 def _run(command, root: Path):
-    print("+ " + subprocess.list2cmdline([str(part) for part in command]))
+    command = [str(part) for part in command]
+    print("+ " + shlex.join(command))
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
     subprocess.run(command, cwd=str(root), check=True)
 
 

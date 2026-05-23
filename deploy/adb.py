@@ -15,11 +15,15 @@ IGNORE_SERIAL = [
 
 
 def show_fix_tip(module):
+    from deploy.uv import requirements_path, venv_python
+
+    python = venv_python()
+    requirements = requirements_path()
     logger.info(f"""
     To fix this:
     1. Re-run the launcher so uv can refresh the local .venv
     2. If the problem persists, run:
-        uv pip install --python ./.venv/bin/python --reinstall-package {module} -r requirements-linux.txt
+        uv pip install --python "{python}" --reinstall-package {module} -r "{requirements}"
     3. Re-open AzurPilot
     """)
 

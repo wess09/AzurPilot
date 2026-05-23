@@ -1,7 +1,7 @@
 import sys
 import typing as t
 
-from deploy.utils import poor_yaml_read, poor_yaml_write, DEPLOY_TEMPLATE
+from deploy.utils import get_deploy_template, poor_yaml_read, poor_yaml_write
 
 """
 Set config/deploy.yaml with commands like
@@ -22,7 +22,8 @@ def get_args() -> t.Dict[str, str]:
 
 
 def config_set(output='./config/deploy.yaml'):
-    data = poor_yaml_read(DEPLOY_TEMPLATE)
+    template = get_deploy_template()
+    data = poor_yaml_read(template)
     data.update(poor_yaml_read(output))
     for k, v in get_args().items():
         if k in data:
@@ -30,7 +31,7 @@ def config_set(output='./config/deploy.yaml'):
             data[k] = v
         else:
             print(f'{k} not exist')
-    poor_yaml_write(data, file=output)
+    poor_yaml_write(data, file=output, template_file=template)
 
 
 if __name__ == '__main__':
