@@ -3,8 +3,9 @@
 #
 # 重要：PyWebIO 的 put_html 输出原始 HTML，与 PyWebIO 组件在 DOM 中是平级兄弟节点，
 # 不能互相嵌套。因此卡片布局通过 CSS 定位 PyWebIO scope 容器实现，不使用 raw HTML wrapper。
-import subprocess
 import os
+import shutil
+import subprocess
 
 from pywebio.output import (
     clear,
@@ -1269,16 +1270,45 @@ class OOBEWizard:
         return options
 
     @staticmethod
-    def _detect_adb_devices():
-        adb = getattr(State.deploy_config, "AdbExecutable", None) or "adb"
-        candidates = [adb]
-        if adb != "adb" and not os.path.isabs(adb):
-            candidates.insert(0, os.path.abspath(adb))
-        if adb != "adb":
-            candidates.append("adb")
+    def _resolve_adb_executable(executable):
+        if not executable:
+            return None
 
-        for executable in candidates:
+        executable = os.fspath(executable).strip()
+        if not executable:
+            return None
+
+        has_path_separator = os.path.sep in executable
+        if os.path.altsep:
+            has_path_separator = has_path_separator or os.path.altsep in executable
+
+        if os.path.isabs(executable) or has_path_separator:
+            path = os.path.abspath(os.path.expanduser(executable))
+            return path if os.path.isfile(path) else None
+
+        return shutil.which(executable)
+
+    @classmethod
+    def _iter_adb_executables(cls):
+        candidates = [
+            getattr(State.deploy_config, "AdbExecutable", None) or "adb",
+            "adb",
+        ]
+        seen = set()
+        for candidate in candidates:
+            executable = cls._resolve_adb_executable(candidate)
+            if not executable or executable in seen:
+                continue
+            seen.add(executable)
+            yield executable
+
+    @classmethod
+    def _detect_adb_devices(cls):
+        for executable in cls._iter_adb_executables():
             try:
+                # The executable is resolved to an existing file or PATH entry above,
+                # and arguments are passed as argv with shell=False.
+                # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
                 result = subprocess.run(
                     [executable, "devices"],
                     capture_output=True,
