@@ -4038,19 +4038,19 @@
       "AddAlas": "新增喵"
     },
     "Button": {
-      "Start": "Gui.Button.Start",
-      "Stop": "Gui.Button.Stop",
-      "ScrollON": "Gui.Button.ScrollON",
-      "ScrollOFF": "Gui.Button.ScrollOFF",
-      "DashboardON": "Gui.Button.DashboardON",
-      "DashboardOFF": "Gui.Button.DashboardOFF",
-      "ClearLog": "Gui.Button.ClearLog",
-      "Setting": "Gui.Button.Setting",
-      "CheckUpdate": "Gui.Button.CheckUpdate",
-      "ClickToUpdate": "Gui.Button.ClickToUpdate",
-      "RetryUpdate": "Gui.Button.RetryUpdate",
-      "CancelUpdate": "Gui.Button.CancelUpdate",
-      "Open": "Gui.Button.Open"
+      "Start": "启动喵 (｀・ω・´)9",
+      "Stop": "停止喵 (´；ω；｀)",
+      "ScrollON": "自动滚动 开",
+      "ScrollOFF": "自动滚动 关",
+      "DashboardON": "折叠喵",
+      "DashboardOFF": "展开喵",
+      "ClearLog": "清空日志喵",
+      "Setting": "设置喵",
+      "CheckUpdate": "检查更新喵",
+      "ClickToUpdate": "进行更新喵 (｡•̀ᴗ-)✧",
+      "RetryUpdate": "重试更新喵",
+      "CancelUpdate": "取消更新喵",
+      "Open": "打开喵"
     },
     "Toast": {
       "DisableTranslateMode": "点这里关翻译模式喵",

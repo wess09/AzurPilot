@@ -4038,19 +4038,19 @@
       "AddAlas": "New"
     },
     "Button": {
-      "Start": "Gui.Button.Start",
-      "Stop": "Gui.Button.Stop",
-      "ScrollON": "Gui.Button.ScrollON",
-      "ScrollOFF": "Gui.Button.ScrollOFF",
-      "DashboardON": "Gui.Button.DashboardON",
-      "DashboardOFF": "Gui.Button.DashboardOFF",
-      "ClearLog": "Gui.Button.ClearLog",
-      "Setting": "Gui.Button.Setting",
-      "CheckUpdate": "Gui.Button.CheckUpdate",
-      "ClickToUpdate": "Gui.Button.ClickToUpdate",
-      "RetryUpdate": "Gui.Button.RetryUpdate",
-      "CancelUpdate": "Gui.Button.CancelUpdate",
-      "Open": "Gui.Button.Open"
+      "Start": "Start",
+      "Stop": "Stop",
+      "ScrollON": "Auto Scroll ON",
+      "ScrollOFF": "Auto Scroll OFF",
+      "DashboardON": "Collapse",
+      "DashboardOFF": "Expand",
+      "ClearLog": "Clear Log",
+      "Setting": "Settings",
+      "CheckUpdate": "Check for Updates",
+      "ClickToUpdate": "Update Now",
+      "RetryUpdate": "Retry Update",
+      "CancelUpdate": "Cancel Update",
+      "Open": "Open"
     },
     "Toast": {
       "DisableTranslateMode": "Click here to turn off translation mode",
