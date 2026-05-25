@@ -4037,6 +4037,21 @@
       "Setting": "设置喵",
       "AddAlas": "新增喵"
     },
+    "Button": {
+      "Start": "Gui.Button.Start",
+      "Stop": "Gui.Button.Stop",
+      "ScrollON": "Gui.Button.ScrollON",
+      "ScrollOFF": "Gui.Button.ScrollOFF",
+      "DashboardON": "Gui.Button.DashboardON",
+      "DashboardOFF": "Gui.Button.DashboardOFF",
+      "ClearLog": "Gui.Button.ClearLog",
+      "Setting": "Gui.Button.Setting",
+      "CheckUpdate": "Gui.Button.CheckUpdate",
+      "ClickToUpdate": "Gui.Button.ClickToUpdate",
+      "RetryUpdate": "Gui.Button.RetryUpdate",
+      "CancelUpdate": "Gui.Button.CancelUpdate",
+      "Open": "Gui.Button.Open"
+    },
     "Toast": {
       "DisableTranslateMode": "点这里关翻译模式喵",
       "ConfigSaved": "设置已保存喵 (｡•ᴗ•｡)♡",

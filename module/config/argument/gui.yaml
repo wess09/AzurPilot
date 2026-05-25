@@ -10,6 +10,19 @@ Aside:
   AddAlas:
 
 Button:
+  Start:
+  Stop:
+  ScrollON:
+  ScrollOFF:
+  DashboardON:
+  DashboardOFF:
+  ClearLog:
+  Setting:
+  CheckUpdate:
+  ClickToUpdate:
+  RetryUpdate:
+  CancelUpdate:
+  Open:
 
 Toast:
   DisableTranslateMode:

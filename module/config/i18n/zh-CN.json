@@ -4037,6 +4037,21 @@
       "Setting": "设置",
       "AddAlas": "新增"
     },
+    "Button": {
+      "Start": "Gui.Button.Start",
+      "Stop": "Gui.Button.Stop",
+      "ScrollON": "Gui.Button.ScrollON",
+      "ScrollOFF": "Gui.Button.ScrollOFF",
+      "DashboardON": "Gui.Button.DashboardON",
+      "DashboardOFF": "Gui.Button.DashboardOFF",
+      "ClearLog": "Gui.Button.ClearLog",
+      "Setting": "Gui.Button.Setting",
+      "CheckUpdate": "Gui.Button.CheckUpdate",
+      "ClickToUpdate": "Gui.Button.ClickToUpdate",
+      "RetryUpdate": "Gui.Button.RetryUpdate",
+      "CancelUpdate": "Gui.Button.CancelUpdate",
+      "Open": "Gui.Button.Open"
+    },
     "Toast": {
       "DisableTranslateMode": "点击这里关闭翻译模式",
       "ConfigSaved": "设置已保存",

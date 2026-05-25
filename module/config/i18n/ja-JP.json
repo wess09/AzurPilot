@@ -4037,6 +4037,21 @@
       "Setting": "設定",
       "AddAlas": "新しい"
     },
+    "Button": {
+      "Start": "Gui.Button.Start",
+      "Stop": "Gui.Button.Stop",
+      "ScrollON": "Gui.Button.ScrollON",
+      "ScrollOFF": "Gui.Button.ScrollOFF",
+      "DashboardON": "Gui.Button.DashboardON",
+      "DashboardOFF": "Gui.Button.DashboardOFF",
+      "ClearLog": "Gui.Button.ClearLog",
+      "Setting": "Gui.Button.Setting",
+      "CheckUpdate": "Gui.Button.CheckUpdate",
+      "ClickToUpdate": "Gui.Button.ClickToUpdate",
+      "RetryUpdate": "Gui.Button.RetryUpdate",
+      "CancelUpdate": "Gui.Button.CancelUpdate",
+      "Open": "Gui.Button.Open"
+    },
     "Toast": {
       "DisableTranslateMode": "翻訳モードをオフにするにはここをクリックしてください",
       "ConfigSaved": "設定が保存されました",
