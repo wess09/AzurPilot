@@ -4037,21 +4037,6 @@
       "Setting": "Settings",
       "AddAlas": "New"
     },
-    "Button": {
-      "Start": "Start",
-      "Stop": "Stop",
-      "ScrollON": "Auto Scroll ON",
-      "ScrollOFF": "Auto Scroll OFF",
-      "DashboardON": "Collapse",
-      "DashboardOFF": "Expand",
-      "ClearLog": "Clear Log",
-      "Setting": "Settings",
-      "CheckUpdate": "Check for Updates",
-      "ClickToUpdate": "Update Now",
-      "RetryUpdate": "Retry Update",
-      "CancelUpdate": "Cancel Update",
-      "Open": "Open"
-    },
     "Toast": {
       "DisableTranslateMode": "Click here to turn off translation mode",
       "ConfigSaved": "Settings saved",
@@ -4176,7 +4161,8 @@
       "Time": "Commit Time",
       "Message": "Commit Message",
       "DisabledWarn": "The update module is not enabled, you need to manually restart Alas to update",
-      "DetailedHistory": "Detailed commit history"
+      "DetailedHistory": "Detailed commit history",
+      "AutoUpdate": "Auto Update"
     },
     "Remote": {
       "Running": "Running",

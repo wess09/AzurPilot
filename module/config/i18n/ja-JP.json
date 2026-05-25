@@ -4037,21 +4037,6 @@
       "Setting": "設定",
       "AddAlas": "新しい"
     },
-    "Button": {
-      "Start": "起動する",
-      "Stop": "停止",
-      "ScrollON": "自動スクロールオン",
-      "ScrollOFF": "自動スクロールオフ",
-      "DashboardON": "折り畳み",
-      "DashboardOFF": "拡大する",
-      "ClearLog": "ログをクリアする",
-      "Setting": "設定",
-      "CheckUpdate": "アップデートをチェックする",
-      "ClickToUpdate": "アップデートを行う",
-      "RetryUpdate": "更新を再試行します",
-      "CancelUpdate": "更新をキャンセルする",
-      "Open": "開く"
-    },
     "Toast": {
       "DisableTranslateMode": "翻訳モードをオフにするにはここをクリックしてください",
       "ConfigSaved": "設定が保存されました",
@@ -4176,7 +4161,8 @@
       "Time": "提出時間",
       "Message": "情報の送信",
       "DisabledWarn": "更新モジュールが有効になっていません。更新するには手動で再起動する必要があります。",
-      "DetailedHistory": "詳細なコミット履歴"
+      "DetailedHistory": "詳細なコミット履歴",
+      "AutoUpdate": "自動更新"
     },
     "Remote": {
       "Running": "ランニング",
