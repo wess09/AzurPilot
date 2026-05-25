@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Benchmark AzurPilot OCR recognition models with ONNX Runtime and ncnn.
 
-This is an experimental tool. It intentionally keeps ncnn optional so the
-normal AzurPilot dependency set remains CPU-only on Linux.
+This tool verifies the ncnn OCR runtime against the legacy ONNX Runtime
+baseline and records latency, accuracy, and power data.
 
 Examples:
     # CPU baseline with the current RapidOCR/ONNX path.
@@ -403,14 +403,22 @@ class NcnnRecognizer:
 
 
 class OnnxCpuRecognizer:
-    def __init__(self, model_name: str):
-        from module.ocr.al_ocr import AlOcr
+    def __init__(self, spec: ModelSpec):
+        from rapidocr import OCRVersion
+        from module.ocr.al_ocr import _create_legacy_ocr
 
-        self.ocr = AlOcr(name=model_name)
-        self.ocr.init()
+        ocr_version = OCRVersion.PPOCRV4 if spec.name == "en" else OCRVersion.PPOCRV5
+        self.ocr = _create_legacy_ocr(
+            str(spec.onnx_path),
+            str(spec.keys_path),
+            ocr_version,
+        )
 
     def __call__(self, image_or_path: str | Path | np.ndarray) -> str:
-        return self.ocr.ocr(image_or_path)
+        res = self.ocr(image_or_path)
+        if hasattr(res, "txts") and res.txts:
+            return res.txts[0]
+        return ""
 
 
 def resolve_tool(tool: str) -> str:
@@ -679,7 +687,7 @@ def run_one_backend(
     recognizer = None
     try:
         if backend == "onnx-cpu":
-            recognizer = OnnxCpuRecognizer(spec.name)
+            recognizer = OnnxCpuRecognizer(spec)
         elif backend in {"ncnn-cpu", "ncnn-vulkan"}:
             recognizer = NcnnRecognizer(
                 spec,

@@ -16,7 +16,6 @@ dev_tools/debug_tools
 /campaign/test/
 /toolkit
 *.lock
-!uv.lock
 config/reloadflag
 config/reloadalas
 test.py
@@ -29,7 +28,6 @@ test/*
 debug_ocr/
 PaddleOCR
 .trae
-uv.lock
 
 # Created by .ignore support plugin (hsz.mobi)
 

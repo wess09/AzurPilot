@@ -41,3 +41,9 @@ v3 zh-cn
 训练信息:
 异构加速卡BW 64G
 训练时间: 2h
+
+## ncnn
+`ncnn/` 目录保存从现有 ONNX 识别模型转换得到的运行时模型。
+当前 EN 和 zh-CN 单行识别已迁移到 ncnn CPU / Vulkan，使用 `Add.227`
+预 Softmax 输出以降低延迟；JP/TW 识别模型仍使用 legacy RapidOCR 路径，
+直到完成对应转换和准确率验证。

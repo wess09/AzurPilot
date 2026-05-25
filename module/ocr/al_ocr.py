@@ -25,6 +25,7 @@ try:
     from rapidocr.ch_ppocr_rec import TextRecognizer
     from rapidocr.cal_rec_boxes import CalRecBoxes
     from rapidocr.utils.load_image import LoadImage
+    from module.ocr.ncnn_ocr import NcnnRecOCR, supports_ncnn_model
 except Exception as e:
     handle_ocr_error(e)
 
@@ -128,7 +129,7 @@ class RecOnlyOCR(RapidOCR):
         self.cfg = cfg
 
 
-def _create_ocr(model_path, rec_keys_path, ocr_version):
+def _create_legacy_ocr(model_path, rec_keys_path, ocr_version):
     ocr_device = config.ocr_device
     use_dml = os.name == 'nt' and ocr_device == 'gpu'
     use_coreml = ocr_device == 'ane'
@@ -147,6 +148,12 @@ def _create_ocr(model_path, rec_keys_path, ocr_version):
     return RecOnlyOCR(params=params)
 
 
+def _create_ocr(name, model_path, rec_keys_path, ocr_version):
+    if supports_ncnn_model(name):
+        return NcnnRecOCR(name, device=config.ocr_device)
+    return _create_legacy_ocr(model_path, rec_keys_path, ocr_version)
+
+
 # 懒加载：模块级不再创建模型，首次 init() 时才加载
 _cn_model = None
 _en_model = None
@@ -159,6 +166,7 @@ def _get_model(name):
     if name in ("cn", "zhcn"):
         if _cn_model is None:
             _cn_model = _create_ocr(
+                "cn",
                 "bin/ocr_models/zh-CN/alocr-zh-cn-v3.dtk.onnx",
                 "bin/ocr_models/zh-CN/cn.txt",
                 OCRVersion.PPOCRV5,
@@ -167,6 +175,7 @@ def _get_model(name):
     elif name == "jp":
         if _jp_model is None:
             _jp_model = _create_ocr(
+                "jp",
                 "bin/ocr_models/JP/JP.onnx",
                 "bin/ocr_models/JP/ppocrv5_dict.txt",
                 OCRVersion.PPOCRV5,
@@ -175,6 +184,7 @@ def _get_model(name):
     elif name == "tw":
         if _tw_model is None:
             _tw_model = _create_ocr(
+                "tw",
                 "bin/ocr_models/TW/TW.onnx",
                 "bin/ocr_models/TW/ppocrv5_dict.txt",
                 OCRVersion.PPOCRV5,
@@ -183,6 +193,7 @@ def _get_model(name):
     else:
         if _en_model is None:
             _en_model = _create_ocr(
+                "en",
                 "bin/ocr_models/en-US/alocr-en-us-v2.6.nvc.onnx",
                 "bin/ocr_models/en-US/en.txt",
                 OCRVersion.PPOCRV4,
@@ -235,6 +246,10 @@ def reset_ocr_model():
     def _reset():
         global _cn_model, _en_model, _jp_model, _tw_model
         logger.info("Resetting OCR models")
+        for model in (_cn_model, _en_model, _jp_model, _tw_model):
+            close = getattr(model, "close", None)
+            if close is not None:
+                close()
         _cn_model = None
         _en_model = None
         _jp_model = None
@@ -338,7 +353,6 @@ class AlOcr:
         return _run_ocr_queued(self._ocr_direct, img_fp)
 
     def _det_direct(self, img_fp):
-        self._ensure_loaded()
         self._ensure_det_loaded()
 
         try:

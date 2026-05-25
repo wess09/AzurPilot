@@ -1,7 +1,6 @@
 import copy
 import operator
 import os
-import platform
 import sys
 import threading
 from datetime import datetime, timedelta
@@ -196,8 +195,6 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
     def ocr_device(self) -> str:
         val = self.Optimization_OcrDevice
         if val == 'auto':
-            if sys.platform == 'darwin' and platform.machine() == 'arm64':
-                return 'ane'
             return 'gpu' if is_good_gpu() else 'cpu'
         if val == 'ane' and sys.platform != 'darwin':
             logger.warning("当前系统非 macOS，不使用 Apple Neural Engine")

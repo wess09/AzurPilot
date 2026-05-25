@@ -1,7 +1,5 @@
 import os
-import platform
 import shutil
-import sys
 import time
 import cv2
 from rich.table import Table
@@ -230,12 +228,14 @@ class OcrBenchmark:
             str: Best OCR device for this machine.
         """
         logger.hr('Simple OCR Benchmark', level=1)
-        if sys.platform == 'darwin' and platform.machine() == 'arm64':
-            logger.info('Testing OCR with ANE...')
-            device = 'ane'
-        else:
-            logger.info('Testing OCR with GPU...')
-            device = 'gpu'
+        from module.ocr.ncnn_ocr import has_ncnn_vulkan_gpu
+
+        if not has_ncnn_vulkan_gpu():
+            logger.info('No ncnn Vulkan GPU detected, use CPU.')
+            return 'cpu'
+
+        logger.info('Testing OCR with ncnn Vulkan GPU...')
+        device = 'gpu'
         res = self._run_single('en', 'sets_num', 'sets_num', ocr_device=device)
 
         if res and res['accuracy'] >= 100.0:

@@ -1,19 +1,19 @@
 # ncnn OCR 基准测试说明
 
-本文档说明 `test/ncnn_ocr_benchmark.py` 这个实验性 OCR 基准测试。它的目的不是立刻决定迁移，而是收集不同平台、不同 GPU/后端上的真实延迟、功耗和准确率数据，判断 AzurPilot 的 OCR 是否值得迁移到 ncnn。
+本文档说明 `test/ncnn_ocr_benchmark.py` 这个 OCR 基准测试。EN/CN 单行识别已迁移到 ncnn；该脚本继续用于复测不同平台、不同 GPU/后端上的真实延迟、功耗和准确率，防止迁移后出现性能或准确率回退。
 
-当前 ncnn 的主要吸引点是：可以通过 Vulkan 在多个平台上使用相对统一的 GPU 后端。它可能减少平台分支，但是否值得引入，还要看各平台实测效率。
+当前 ncnn 的主要吸引点是：可以通过 Vulkan 在多个平台上使用相对统一的 GPU 后端。它减少了 DirectML/CoreML/CUDA/ROCm 等平台分支，但仍需要各平台实测数据来决定默认策略。
 
 ## 为什么测试 ncnn
 
-当前加速路径大致是分平台的：
+迁移前的加速路径大致是分平台的，迁移后仍需用它们作为对照：
 
 | 平台 | 当前可能路径 | 说明 |
 | --- | --- | --- |
 | Windows | ONNX Runtime DirectML | 基于 DX12，适合 Windows，但不能迁移到 Linux。 |
 | macOS arm64 | ONNX Runtime CoreML / ANE | 可能很好地利用 Apple Silicon/ANE，但依然是平台独有实现。 |
 | Linux | ONNX Runtime CPU | 没有轻量GPU支持，引入cuda/rocm将导致数GiB的依赖，且其与系统级软件包高度绑定，实现复杂度过高。 |
-| 全平台 | 实验性ncnn CPU / Vulkan | 理论上可覆盖 Linux、Windows、Android 的 Vulkan 设备；macOS 需要单独验证，通常要考虑 MoltenVK。 |
+| 全平台 | ncnn CPU / Vulkan | 理论上可覆盖 Linux、Windows、Android 的 Vulkan 设备；macOS 需要单独验证，通常要考虑 MoltenVK。 |
 
 需要回答的问题不是简单的“Vulkan 是否更快”，而是：
 
