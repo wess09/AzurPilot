@@ -3526,7 +3526,7 @@ class AlasGUI(Frame):
                     ],
                 ),
             ],
-        ).style("display: flex; align-items: center;")
+        ).style("display: flex; align-items: center; gap: 8px;")
         pin_on_change("auto_update_toggle", onchange=lambda v: setattr(
             State.deploy_config, "AutoUpdate", bool(v)
         ))
