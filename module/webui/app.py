@@ -3514,15 +3514,19 @@ class AlasGUI(Frame):
         auto_update_val = State.deploy_config.AutoUpdate
         put_row(
             content=[
-                put_text(t("Gui.Update.AutoUpdate")),
+                put_text(t("Gui.Update.AutoUpdate")).style("margin: auto 0;"),
                 None,
-                put_checkbox(
-                    "auto_update_toggle",
-                    options=[{"label": "", "value": "on"}],
-                    value=["on"] if auto_update_val else [],
+                put_scope(
+                    "auto_update_toggle_scope",
+                    [
+                        put_checkbox(
+                            "auto_update_toggle",
+                            options=[{"label": "", "value": "on", "selected": auto_update_val}],
+                        ).style("text-align: center"),
+                    ],
                 ),
             ],
-            size="auto 1fr auto",
+            size="auto 1fr 60px",
         )
         pin_on_change("auto_update_toggle", onchange=lambda v: setattr(
             State.deploy_config, "AutoUpdate", bool(v)
