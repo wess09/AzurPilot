@@ -20,7 +20,6 @@ class LogRes:
     def __setattr__(self, key, value):
         if key in self.groups:
             _key_group = f'Dashboard.{key}'
-            _mod = False
             original = deep_get(self.config.data, keys=_key_group)
             if isinstance(value, int):
                 if original['Value'] != value:
@@ -37,11 +36,15 @@ class LogRes:
                         except Exception:
                             logger.exception('Failed to save yellow coin snapshot')
             elif isinstance(value, dict):
+                changed = False
                 for value_name, _value in value.items():
-                    if _value == original[value_name]:
+                    original_value = original.get(value_name) if isinstance(original, dict) else None
+                    if _value == original_value:
                         continue
                     _key = _key_group + f'.{value_name}'
                     self.config.modified[_key] = _value
+                    changed = True
+                if changed:
                     _key_time = _key_group + f'.Record'
                     _time = datetime.now().replace(microsecond=0)
                     self.config.modified[_key_time] = _time
