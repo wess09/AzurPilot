@@ -56,10 +56,9 @@ class OpsiObscure(CoinTaskMixin, OSMap):
                 if self._check_yellow_coins_and_return_to_cl1("循环中", "隐秘海域"):
                     return
             
-            # 如果 ForceRun=False，根据是否启用智能调度选择关闭或推迟任务
+            # 非强制模式每次只清一个隐秘海域，保留 os_order_execute 写入的侦查/潜艇冷却。
             if not self.config.OpsiObscure_ForceRun:
-                if self._finish_task_with_smart_scheduling('OpsiObscure', '隐秘海域', consider_reset_remain=True):
-                    break
+                break
             
             self.config.check_task_switch()
             continue

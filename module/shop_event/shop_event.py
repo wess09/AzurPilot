@@ -7,7 +7,14 @@ from module.shop.assets import NAV_GENERAL, NAV_EVENT
 from module.shop_event.assets import NO_NAV_EVENT_CHECK
 from module.shop_event.clerk import EventShopClerk, ItemNotFoundError
 from module.shop_event.item import EventShopItem, UR_SHIP_PRICES_IN_URPT, COIN_PRICE_IN_URPT, URPT_PRICE_IN_PT
-from module.shop_event.selector import EVENT_SHOP_PRESET_FILTER, FILTER
+from module.shop_event.selector import (
+    EVENT_SHOP_PRESET_FILTER,
+    FILTER,
+    parse_filter_amount,
+    strip_filter_amount,
+    parse_filter_tokens,
+    rebuild_filter_tokens,
+)
 from module.ui.assets import SHOP_GOTO_MUNITIONS
 from module.ui.page import page_shop, page_munitions
 
@@ -184,6 +191,22 @@ class EventShop(EventShopClerk):
             logger.error(f"Unknown cost type: {item.cost} for item: {str(item)}")
             return 0
 
+    @staticmethod
+    def item_filter_key(item: EventShopItem) -> str:
+        return ''.join(str(value or '') for value in (item.group, item.sub_genre, item.tier))
+
+    @staticmethod
+    def item_filter_amount_key(item: EventShopItem, filter_amount: dict) -> str:
+        keys = [
+            ''.join(str(value or '') for value in (item.group, item.sub_genre, item.tier)),
+            ''.join(str(value or '') for value in (item.group, item.sub_genre)),
+            str(item.group or ''),
+        ]
+        for key in keys:
+            if key in filter_amount:
+                return key
+        return ''
+
     def _run(self):
         """
         Pages:
@@ -205,7 +228,9 @@ class EventShop(EventShopClerk):
             filter = self.config.EventShop_CustomFilter
         else:
             filter = EVENT_SHOP_PRESET_FILTER[self.config.EventShop_PresetFilter]
-        FILTER.load(filter)
+        filter_amount = parse_filter_amount(filter)
+        filter_tokens = parse_filter_tokens(filter)
+        FILTER.load(strip_filter_amount(filter))
         items = FILTER.apply(items)
         items += urpt_related_items
         if not len(items):
@@ -214,10 +239,25 @@ class EventShop(EventShopClerk):
         logger.attr('Item_sort', ' > '.join([str(item) for item in items]))
         self.get_current_pts()
         logger.attr("Pt_preserved", self.pt_preserved)
+        bought_amount = {}
         for item in items:
             logger.hr(f"Attempting to buy item: {str(item)}", level=3)
+            filter_amount_key = self.item_filter_amount_key(item, filter_amount)
+            amount_limit = filter_amount.get(filter_amount_key)
+            already_bought = bought_amount.get(filter_amount_key, 0) if filter_amount_key else 0
+            remaining_limit = (
+                None
+                if amount_limit is None
+                else max(amount_limit - already_bought, 0)
+            )
+            if remaining_limit is not None and remaining_limit <= 0:
+                logger.info(f"Reach filter amount limit for item: {str(item)}")
+                continue
+
             affordable_amount = self.calculate_affordable_amount(item)
-            if affordable_amount <= 0:
+            target_amount = item.count if remaining_limit is None else min(item.count, remaining_limit)
+            buy_amount = min(affordable_amount, target_amount)
+            if buy_amount <= 0:
                 logger.warning(f"Cannot afford to buy any of item: {str(item)}.")
                 if self.is_event_ended:
                     logger.info("Event is ended, skip this item and continue to try buying other items.")
@@ -225,9 +265,11 @@ class EventShop(EventShopClerk):
                 else:
                     logger.info("Event is not ended, stopping further purchases to avoid overspending.")
                     break
-            elif affordable_amount < item.count:
-                logger.warning(f"Can only afford to buy {affordable_amount} of item: {str(item)}.")
-                self.event_shop_buy_item(item, amount=affordable_amount)
+            elif buy_amount < target_amount:
+                logger.warning(f"Can only afford to buy {buy_amount} of item: {str(item)}.")
+                self.event_shop_buy_item(item, amount=buy_amount)
+                if filter_amount_key:
+                    bought_amount[filter_amount_key] = already_bought + buy_amount
                 if self.is_event_ended:
                     logger.info("Event is ended, continue to try buying other items.")
                     self.get_current_pts()
@@ -236,9 +278,36 @@ class EventShop(EventShopClerk):
                     logger.info("Event is not ended, stopping further purchases to avoid overspending.")
                     break
             else:
-                self.event_shop_buy_item(item)
+                if buy_amount < item.count:
+                    self.event_shop_buy_item(item, amount=buy_amount)
+                else:
+                    self.event_shop_buy_item(item)
+                if filter_amount_key:
+                    bought_amount[filter_amount_key] = already_bought + buy_amount
                 logger.info(f"Successfully bought item: {str(item)}")
                 self.get_current_pts()
+
+        # Consume custom filter amounts based on actual purchased quantities.
+        if self.config.EventShop_PresetFilter == 'custom' and filter_tokens:
+            changed = False
+            for token in filter_tokens:
+                amount = token.get('amount')
+                key = token.get('key')
+                if amount is None or not key:
+                    continue
+                consumed = int(bought_amount.get(key, 0))
+                if consumed <= 0:
+                    continue
+                token['amount'] = max(int(amount) - consumed, 0)
+                changed = True
+            if changed:
+                new_filter = rebuild_filter_tokens(filter_tokens)
+                logger.attr('EventShop_Filter_Consumed', new_filter if new_filter else '(empty)')
+                self.config.EventShop_CustomFilter = new_filter
+                if not new_filter.strip():
+                    logger.info('Event shop custom filter fully consumed, disabling EventShop task.')
+                    self.config.Scheduler_Enable = False
+                    self.config.task_stop()
         return True
 
     def run(self):
@@ -272,6 +341,8 @@ class EventShop(EventShopClerk):
                 try:
                     self.pt_preserved = 0
                     self._run()
+                    if self.config.task_switched():
+                        return True
                     break
                 except ItemNotFoundError:
                     if count >= 2:
@@ -283,5 +354,7 @@ class EventShop(EventShopClerk):
                     continue
             del_cached_property(self, 'is_event_ended')
             del_cached_property(self, 'event_shop_has_urpt')
+            if self.config.task_switched():
+                return True
         self.config.task_delay(server_update=True)
         return True

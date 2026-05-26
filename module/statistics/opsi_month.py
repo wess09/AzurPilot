@@ -217,7 +217,32 @@ __all__ = [
     "get_ap_timeline",
     "get_coins_timeline",
     "get_virtual_asset_timeline",
+    "get_resource_timeline",
 ]
+
+
+def get_resource_timeline(
+    instance_name: str | None = None, limit: int = 500
+) -> list:
+    """
+    获取所有资源的快照时间序列数据，用于绘制资源变化趋势图。
+
+    返回按时间排序的数据点列表，每个数据点包含:
+    - ts: ISO 格式时间戳
+    - oil, coin, gem, pt, cube, core, medal, merit, guild_coin,
+      action_point, yellow_coin, purple_coin: 各资源数值（可能为 None）
+
+    Args:
+        instance_name: 实例名称
+        limit: 最大返回条数
+
+    Returns:
+        list[dict]: 时间序列数据点
+    """
+    from module.statistics.resource_stats import get_resource_timeline as _get_timeline
+
+    instance_name = instance_name or "default"
+    return _get_timeline(instance=instance_name, limit=limit)
 
 
 def get_virtual_asset_timeline(

@@ -2,7 +2,7 @@ from module.base.decorator import cached_property
 from module.campaign.assets import CHAPTER_NEXT, CHAPTER_PREV
 from module.campaign.campaign_base import CampaignBase
 from module.campaign.run import CampaignRun
-from module.combat.assets import BATTLE_PREPARATION
+from module.combat.assets import BATTLE_PREPARATION, EXP_INFO_C, EXP_INFO_D, OPTS_INFO_D
 from module.combat.emotion import Emotion
 from module.equipment.assets import (
     EMPTY_SHIP_R,
@@ -99,6 +99,22 @@ class GemsCampaignOverride(CampaignBase):
                     self.enter_map_cancel()
                     break
             raise CampaignEnd('Emotion withdraw')
+
+    def handle_exp_info(self):
+        if self.is_combat_executing():
+            return False
+        if super().handle_exp_info():
+            return True
+        if self.appear_then_click(EXP_INFO_C, threshold=10):
+            self.device.sleep((0.25, 0.5))
+            return True
+        if self.appear_then_click(EXP_INFO_D):
+            self.device.sleep((0.25, 0.5))
+            return True
+        if self.appear_then_click(OPTS_INFO_D, offset=True, similarity=0.9):
+            self.device.sleep((0.25, 0.5))
+            return True
+        return False
 
 
 class GemsEquipmentHandler(EquipmentCodeHandler):

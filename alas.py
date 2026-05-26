@@ -3,6 +3,7 @@
 # 用于解决 Unknown ui page 、短暂网络不良等 无需人工修复的偶发意外情形，避免调度器直接终止
 # Modified: run, loop
 # Last Updated: 2025-09-01 00:03
+import json
 import os
 import re
 import shutil
@@ -17,9 +18,39 @@ from module.base.decorator import del_cached_property
 from module.base.api_client import ApiClient
 from module.config.config import AzurLaneConfig, TaskEnd
 from module.config.deep import deep_get, deep_set
+from module.config.utils import filepath_i18n, read_file
 from module.exception import *
 from module.logger import logger
 from module.notify import handle_notify, notify_webui
+
+# 缓存 i18n 任务名查找
+_i18n_task_names = None
+def _get_task_display_name(task_command):
+    """从 i18n 获取任务的本地化显示名，找不到则返回英文名"""
+    global _i18n_task_names
+    if _i18n_task_names is None:
+        _i18n_task_names = {}
+        try:
+            # 优先使用 deploy.yaml 中配置的语言，否则默认 zh-CN
+            deploy_cfg = read_file('./config/deploy.yaml')
+            lang = 'zh-CN'
+            if isinstance(deploy_cfg, dict):
+                lang = deploy_cfg.get('Language', 'zh-CN')
+        except Exception:
+            lang = 'zh-CN'
+
+        try:
+            i18n_file = filepath_i18n(lang)
+            if os.path.exists(i18n_file):
+                with open(i18n_file, encoding='utf-8') as f:
+                    data = json.load(f)
+                _i18n_task_names = {
+                    k: v.get('name', k)
+                    for k, v in data.get('Task', {}).items()
+                }
+        except Exception:
+            pass
+    return _i18n_task_names.get(task_command, task_command)
 
 
 RESTART_SENSITIVE_TASKS = ['Commission', 'Research']
@@ -979,6 +1010,25 @@ class AzurLaneAutoScript:
                 success = self.run(inflection.underscore(task))
                 logger.info(f'调度器: 结束任务 `{task}`')
                 self.is_first_task = False
+
+                # 每任务推送通知（须在 config_generated 刷新前读取）
+                if success is not None:
+                    try:
+                        if getattr(self.config, 'Scheduler_PushNotification', False):
+                            if success == True:
+                                status = '成功'
+                            elif success == 'recoverable':
+                                status = '成功（有可恢复错误需关注）'
+                            else:
+                                status = '失败'
+                            task_display = _get_task_display_name(task)
+                            handle_notify(
+                                self.config.Error_OnePushConfig,
+                                title=f"[Alas] <{self.config_name}> {task_display} {status}",
+                                content=f"<{self.config_name}> 任务 {task_display} —— {status}",
+                            )
+                    except Exception:
+                        logger.warning('每任务推送通知异常，已跳过')
 
                 # 检查失败
                 # 单个任务连续失败三次终止程序

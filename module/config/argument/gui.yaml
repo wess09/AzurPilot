@@ -276,6 +276,10 @@ Stat:
   CommissionIncomeHeaderAvg:
   CommissionIncomeTotalCommissions:
   CommissionIncomeRecentTitle:
+  ResourceChartTitle:
+  LoadResourceDataFailed:
+  NoResourceData:
+  NoValidResourceData:
 
 Tactical:
   SkillAutoSwitch:

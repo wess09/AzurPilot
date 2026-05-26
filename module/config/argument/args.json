@@ -796,6 +796,14 @@
           true
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -834,6 +842,14 @@
   "Main": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -1241,6 +1257,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -1641,6 +1665,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -2034,6 +2066,14 @@
   "GemsFarming": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -2535,6 +2575,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -3023,6 +3071,14 @@
   "Ambush11": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -3537,6 +3593,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -3957,6 +4021,14 @@
   "Event2": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -4391,6 +4463,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -4817,6 +4897,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -5079,6 +5167,14 @@
   "RaidScuttle": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -5489,6 +5585,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -5670,6 +5774,14 @@
   "Coalition": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -5944,6 +6056,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -5988,6 +6108,14 @@
   "EventShop": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -6060,6 +6188,14 @@
   "WarArchives": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -6753,6 +6889,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -7190,6 +7334,14 @@
   "EventB": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -7641,6 +7793,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -8078,6 +8238,14 @@
   "EventD": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -8529,6 +8697,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -8964,6 +9140,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -9217,6 +9401,14 @@
   "CoalitionSp": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -9492,6 +9684,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -9556,6 +9756,14 @@
   "Tactical": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -9662,6 +9870,14 @@
   "Research": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -9791,6 +10007,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -9867,6 +10091,14 @@
   "Meowfficer": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -9963,6 +10195,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -10048,6 +10288,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -10115,6 +10363,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -10167,6 +10423,14 @@
   "Island": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -10675,6 +10939,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -10866,6 +11138,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -10918,6 +11198,14 @@
   "Exercise": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -11029,6 +11317,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11093,6 +11389,14 @@
   "ShopOnce": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -11379,6 +11683,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11495,6 +11807,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11570,6 +11890,14 @@
   "Freebies": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -11675,6 +12003,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11713,6 +12049,14 @@
   "PrivateQuarters": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -11864,6 +12208,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11939,6 +12291,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -11983,6 +12343,14 @@
   "OpsiExplore": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12070,6 +12438,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -12136,6 +12512,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -12180,6 +12564,14 @@
   "OpsiDaily": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12275,6 +12667,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -12346,6 +12746,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -12396,6 +12804,14 @@
   "OpsiArchive": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12457,6 +12873,14 @@
   "OpsiStronghold": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12530,6 +12954,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -12592,6 +13024,14 @@
   "OpsiMeowfficerFarming": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12723,6 +13163,14 @@
   "OpsiHazard1Leveling": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -12924,6 +13372,14 @@
           false
         ]
       },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "NextRun": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
@@ -13034,6 +13490,14 @@
   "OpsiCrossMonth": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [
@@ -13194,6 +13658,14 @@
   "IslandSeasonTask": {
     "Scheduler": {
       "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
         "type": "checkbox",
         "value": false,
         "option": [

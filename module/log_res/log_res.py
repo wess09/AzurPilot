@@ -36,7 +36,10 @@ class LogRes:
                             cl1_db.async_add_yellow_coin_snapshot(instance_name, int(value), source='dashboard')
                         except Exception:
                             logger.exception('Failed to save yellow coin snapshot')
+                    # 记录全量资源快照
+                    self._record_all_resource_snapshot({key: value})
             elif isinstance(value, dict):
+                _mod = False
                 for value_name, _value in value.items():
                     if _value == original[value_name]:
                         continue
@@ -45,9 +48,43 @@ class LogRes:
                     _key_time = _key_group + f'.Record'
                     _time = datetime.now().replace(microsecond=0)
                     self.config.modified[_key_time] = _time
+                    _mod = True
+                if _mod:
+                    # 记录全量资源快照
+                    value_to_record = value.get('Value') if isinstance(value, dict) else None
+                    if value_to_record is not None:
+                        self._record_all_resource_snapshot({key: value_to_record})
+                    else:
+                        self._record_all_resource_snapshot()
         else:
             logger.info('No such resource on dashboard')
             super().__setattr__(name=key, value=value)
+
+    def _record_all_resource_snapshot(self, overrides=None):
+        """读取当前所有 Dashboard 资源值并记录快照"""
+        try:
+            from module.statistics.resource_stats import record_resource_snapshot
+            instance_name = getattr(self.config, 'config_name', 'default')
+            overrides = overrides or {}
+            resources = {}
+            for group_name in self.groups:
+                if group_name in overrides:
+                    value = overrides[group_name]
+                elif f'Dashboard.{group_name}.Value' in self.config.modified:
+                    value = self.config.modified[f'Dashboard.{group_name}.Value']
+                else:
+                    group_data = deep_get(self.config.data, f'Dashboard.{group_name}')
+                    if not isinstance(group_data, dict):
+                        continue
+                    value = group_data.get('Value')
+                if value is not None:
+                    try:
+                        resources[group_name] = int(value)
+                    except (TypeError, ValueError):
+                        pass
+            record_resource_snapshot(instance_name, resources)
+        except Exception:
+            logger.exception('Failed to record resource snapshot')
 
     def group(self, name):
         return deep_get(self.config.data, f'Dashboard.{name}')

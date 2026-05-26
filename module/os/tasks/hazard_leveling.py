@@ -383,7 +383,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 zone = self.config.OpsiHazard1Leveling_TargetZone
                 if self.zone.zone_id != zone or not self.is_zone_name_hidden:
                     self.globe_goto(self.name_to_zone(zone), types="SAFE", refresh=True)
-            elif self.zone.hazard_level > 5 or not self.is_zone_name_hidden:
+            elif self.zone.hazard_level != 1 or not self.is_zone_name_hidden:
                 self.globe_goto(self.name_to_zone(22), types="SAFE", refresh=True)
             self.fleet_set(self.config.OpsiFleet_Fleet)
 

@@ -148,7 +148,7 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         config_file = Path("./config").joinpath(f"{cfg_name}.json")
         if config_file.exists():
             try:
-                with config_file.open("r") as f:
+                with config_file.open("r", encoding="utf-8") as f:
                     config = json.load(f)
                     log_config = config.get("General", {}).get("Log", {})
                     count = log_config.get("LogKeepCount", 7)

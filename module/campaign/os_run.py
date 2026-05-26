@@ -13,33 +13,39 @@ class OSCampaignRun(OSMapOperation):
         campaign.os_init()
         return campaign
 
+    def delay_opsi_tasks_after_ap_limit(self, error):
+        delay_minutes = getattr(error, 'delay_minutes', None)
+        if delay_minutes is not None:
+            logger.info(f'Delay OpSi AP tasks for {delay_minutes} minutes until action points recover')
+        self.config.opsi_task_delay(ap_limit=True, ap_limit_minutes=delay_minutes)
+
     def opsi_explore(self):
         try:
             campaign = self.load_campaign()
             campaign.os_explore()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_shop(self):
         try:
             campaign = self.load_campaign()
             campaign.os_shop()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_voucher(self):
         try:
             campaign = self.load_campaign()
             campaign.os_voucher()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_daily(self):
         try:
             campaign = self.load_campaign()
             campaign.os_daily()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_meowfficer_farming(self):
         try:
@@ -66,8 +72,8 @@ class OSCampaignRun(OSMapOperation):
         try:
             campaign = self.load_campaign()
             campaign.os_obscure()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_month_boss(self):
         if self.config.SERVER in ['tw']:
@@ -79,29 +85,29 @@ class OSCampaignRun(OSMapOperation):
         try:
             campaign = self.load_campaign()
             campaign.clear_month_boss()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_abyssal(self):
         try:
             campaign = self.load_campaign()
             campaign.os_abyssal()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_archive(self):
         try:
             campaign = self.load_campaign()
             campaign.os_archive()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_stronghold(self):
         try:
             campaign = self.load_campaign()
             campaign.os_stronghold()
-        except ActionPointLimit:
-            self.config.opsi_task_delay(ap_limit=True)
+        except ActionPointLimit as e:
+            self.delay_opsi_tasks_after_ap_limit(e)
 
     def opsi_cross_month(self):
         campaign = self.load_campaign()

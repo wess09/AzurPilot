@@ -346,6 +346,12 @@
       "True": "已启用",
       "False": "False"
     },
+    "PushNotification": {
+      "name": "推送通知",
+      "help": "启用后，任务完成时会通过 OnePush 推送成功或失败通知",
+      "True": "已启用",
+      "False": "关闭"
+    },
     "NextRun": {
       "name": "下一次运行时间",
       "help": "自动计算的数值，不需要手动修改。清空后将立即运行"
@@ -4296,7 +4302,11 @@
       "CommissionIncomeHeaderCount": "委托次数",
       "CommissionIncomeHeaderAvg": "平均/次",
       "CommissionIncomeTotalCommissions": "委托总次数: {value}",
-      "CommissionIncomeRecentTitle": "最近委托记录"
+      "CommissionIncomeRecentTitle": "最近委托记录",
+      "ResourceChartTitle": "全资源变化趋势",
+      "LoadResourceDataFailed": "加载资源数据失败: {e}",
+      "NoResourceData": "暂无资源变化数据，运行脚本后将自动记录",
+      "NoValidResourceData": "暂无有效资源数据"
     },
     "Tactical": {
       "SkillAutoSwitch": "Gui.Tactical.SkillAutoSwitch"

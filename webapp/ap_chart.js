@@ -66,6 +66,7 @@
     var hasDistanceSeries = lineDistance && lineDistance.length > 0;
 
     var seriesVisible = [true, true, true, true, true, true];
+    var _isSelecting = false;
     var seriesColors = ["#64b5f6", "#ce93d8", "#ffd54f", "#06b6d4", "#22d3ee", "#1565c0"];
     var seriesNames = ["体力", "紫币", "黄币", "虚拟资产", "资产", "海里数"];
 
@@ -380,6 +381,7 @@
 
         // ======== 鼠标交互：十字线 + 滚珠 + 提示框 ========
         cv.addEventListener("mousemove", function (e) {
+            if (_isSelecting) return;
             var rect = cv.getBoundingClientRect();
             var mx_ = e.clientX - rect.left;
             var my_ = e.clientY - rect.top;
@@ -637,14 +639,15 @@
                 if (!item) return;
                 var idx = parseInt(item.getAttribute("data-series"), 10);
                 if (isNaN(idx) || idx < 0 || idx >= seriesVisible.length) return;
-                var only = true;
+                // 独立切换：只开关当前点中的序列，不影响其他
+                seriesVisible[idx] = !seriesVisible[idx];
+                // 确保至少一条序列可见
+                var anyVisible = false;
                 for (var si = 0; si < seriesVisible.length; si++) {
-                    if (si !== idx && seriesVisible[si]) { only = false; break; }
+                    if (seriesVisible[si]) { anyVisible = true; break; }
                 }
-                if (only && seriesVisible[idx]) {
+                if (!anyVisible) {
                     for (var si = 0; si < seriesVisible.length; si++) seriesVisible[si] = true;
-                } else {
-                    for (var si = 0; si < seriesVisible.length; si++) seriesVisible[si] = (si === idx);
                 }
                 legendEl.querySelectorAll(".ap-legend-item").forEach(function (li, i) {
                     var si = parseInt(li.getAttribute("data-series"), 10);
@@ -747,30 +750,93 @@
             var isDragging = false;
             var dragStartX = 0;
             var dragStartPan = 0;
+            var selStartX = 0;
 
             cv.addEventListener("mousedown", function (e) {
+                if (e.button !== 0) return;
+                var rect = cv.getBoundingClientRect();
+                var my = e.clientY - rect.top;
                 isDragging = true;
                 dragStartX = e.clientX;
+            if (my <= H - 40) {
+                // 图表区域 -> 选区缩放（不检查缩放状态，始终可选区）
+                _isSelecting = true;
+                selStartX = e.clientX;
+                cv.style.cursor = "crosshair";
+            } else {
+                // 底部时间轴区域 -> 拖动平移
+                _isSelecting = false;
                 dragStartPan = panOffset;
                 cv.style.cursor = "grabbing";
+            }
             });
 
             document.addEventListener("mousemove", function (e) {
                 if (!isDragging) return;
-                var dx = e.clientX - dragStartX;
-                var visibleCount = Math.ceil(nn / zoomLevel);
-                var xScale = gW / Math.max(visibleCount - 1, 1);
-                var newPan = dragStartPan - dx / xScale;
-                var maxPan = Math.max(0, nn - visibleCount);
-                panOffset = Math.max(0, Math.min(maxPan, newPan));
-                renderDetailChart();
+                if (_isSelecting) {
+                    // 选区矩形占满图表高度
+                    var rect = cv.getBoundingClientRect();
+                    var mx = e.clientX - rect.left;
+                    var sx = selStartX - rect.left;
+
+                    oc.setTransform(1, 0, 0, 1, 0, 0);
+                    oc.clearRect(0, 0, ovCv.width, ovCv.height);
+                    oc.scale(dpr, dpr);
+
+                    var rx = Math.min(sx, mx);
+                    var rw = Math.abs(mx - sx);
+
+                    oc.fillStyle = "rgba(100, 181, 246, 0.08)";
+                    oc.fillRect(rx, pad.t, rw, gH);
+                    oc.strokeStyle = "rgba(100, 181, 246, 0.5)";
+                    oc.lineWidth = 1.5;
+                    oc.setLineDash([4, 3]);
+                    oc.strokeRect(rx, pad.t, rw, gH);
+                    oc.setLineDash([]);
+                } else {
+                    var dx = e.clientX - dragStartX;
+                    var visibleCount = Math.ceil(nn / zoomLevel);
+                    var xScale = gW / Math.max(visibleCount - 1, 1);
+                    var newPan = dragStartPan - dx / xScale;
+                    var maxPan = Math.max(0, nn - visibleCount);
+                    panOffset = Math.max(0, Math.min(maxPan, newPan));
+                    renderDetailChart();
+                }
             });
 
-            document.addEventListener("mouseup", function () {
-                if (isDragging) {
-                    isDragging = false;
-                    cv.style.cursor = "crosshair";
+            document.addEventListener("mouseup", function (e) {
+                if (!isDragging) return;
+                isDragging = false;
+
+                if (_isSelecting) {
+                    _isSelecting = false;
+                    var rect = cv.getBoundingClientRect();
+                    var mx = e.clientX - rect.left;
+                    var dragPx = Math.abs(mx - (selStartX - rect.left));
+
+                    if (dragPx > 15) {
+                        var x1 = Math.max(pad.l, Math.min(W - pad.r, selStartX - rect.left));
+                        var x2 = Math.max(pad.l, Math.min(W - pad.r, mx));
+                        var startPx = Math.min(x1, x2);
+                        var endPx = Math.max(x1, x2);
+
+                        var startIdx = Math.round(panOffset + (startPx - pad.l) / gW * (Math.ceil(nn / zoomLevel) - 1));
+                        var endIdx = Math.round(panOffset + (endPx - pad.l) / gW * (Math.ceil(nn / zoomLevel) - 1));
+                        startIdx = Math.max(0, Math.min(nn - 1, startIdx));
+                        endIdx = Math.max(0, Math.min(nn - 1, endIdx));
+
+                        if (endIdx > startIdx) {
+                            panOffset = startIdx;
+                            zoomLevel = nn / (endIdx - startIdx);
+                            renderDetailChart();
+                        }
+                    }
+
+                    oc.setTransform(1, 0, 0, 1, 0, 0);
+                    oc.clearRect(0, 0, ovCv.width, ovCv.height);
                 }
+
+                cv.style.cursor = "crosshair";
             });
 
             cv.addEventListener("wheel", function (e) {
@@ -792,6 +858,12 @@
                     renderDetailChart();
                 }
             }, { passive: false });
+
+            cv.addEventListener("dblclick", function () {
+                zoomLevel = 1.0;
+                panOffset = 0;
+                renderDetailChart();
+            });
 
             var zoomInBtn = document.getElementById(chartId + "_zoom_in");
             var zoomOutBtn = document.getElementById(chartId + "_zoom_out");

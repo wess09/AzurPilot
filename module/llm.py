@@ -23,16 +23,16 @@ def analyze_exception(config, e):
     if error_hash in _analyzed_errors_cache:
         cached_result = _analyzed_errors_cache[error_hash]
         model = getattr(config, 'Error_LlmModel', 'gpt-4o-mini')
-        logger.hr('LLM 错误分析', level=1)
-        logger.info('该错误已被 LLM 分析过，直接复用上次的分析结果以节省 API...')
-        logger.info(f"\n[LLM 分析报告 (由 {model} 提供, 复用缓存)]\n{cached_result}\n")
+        logger.hr('LLM 错误分析（严禁提交此模块的相关日志 群内机器人检测到将自动移出群聊）', level=1)
+        logger.info('该错误已被 LLM 分析过，直接复用上次的分析结果以节省 API （严禁提交此模块的相关日志 群内机器人检测到将自动移出群聊） ...')
+        logger.info(f"\n[LLM 分析报告 (由 {model} 提供, 复用缓存)（严禁提交此模块的相关日志 群内机器人检测到将自动移出群聊）]\n{cached_result}\n")
         logger.hr('LLM 分析结束', level=1)
         return
         
-    _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。"
+    _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。（严禁提交此模块的相关日志 群内机器人检测到将自动移出群聊）"
     if len(_analyzed_errors_cache) > 50:
         _analyzed_errors_cache.clear()
-        _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。"
+        _analyzed_errors_cache[error_hash] = "该错误正在被 LLM 分析中或上次分析失败，暂无结果。（严禁提交此模块的相关日志 群内机器人检测到将自动移出群聊）"
     
     api_key = getattr(config, 'Error_LlmApiKey', '')
     api_base = getattr(config, 'Error_LlmApiBase', 'https://api.openai.com/v1')

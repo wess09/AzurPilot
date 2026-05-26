@@ -346,6 +346,12 @@
       "True": "已啟用",
       "False": "False"
     },
+    "PushNotification": {
+      "name": "推送通知",
+      "help": "啟用後，任務完成時會通過 OnePush 推送成功或失敗通知",
+      "True": "已啟用",
+      "False": "關閉"
+    },
     "NextRun": {
       "name": "下一次執行時間",
       "help": "自動計算的數值，不需要手動修改。清空後將立即執行"
@@ -4296,7 +4302,11 @@
       "CommissionIncomeHeaderCount": "Gui.Stat.CommissionIncomeHeaderCount",
       "CommissionIncomeHeaderAvg": "Gui.Stat.CommissionIncomeHeaderAvg",
       "CommissionIncomeTotalCommissions": "Gui.Stat.CommissionIncomeTotalCommissions",
-      "CommissionIncomeRecentTitle": "Gui.Stat.CommissionIncomeRecentTitle"
+      "CommissionIncomeRecentTitle": "Gui.Stat.CommissionIncomeRecentTitle",
+      "ResourceChartTitle": "全資源變化趨勢",
+      "LoadResourceDataFailed": "Gui.Stat.LoadResourceDataFailed",
+      "NoResourceData": "Gui.Stat.NoResourceData",
+      "NoValidResourceData": "Gui.Stat.NoValidResourceData"
     },
     "Tactical": {
       "SkillAutoSwitch": "Gui.Tactical.SkillAutoSwitch"

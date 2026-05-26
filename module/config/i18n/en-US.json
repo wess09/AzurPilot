@@ -346,6 +346,12 @@
       "True": "Enabled",
       "False": "False"
     },
+    "PushNotification": {
+      "name": "Push Notification",
+      "help": "Send push notification via OnePush when a task completes, including success or failure status",
+      "True": "Enabled",
+      "False": "Disabled"
+    },
     "NextRun": {
       "name": "Next run time",
       "help": "The value is automatically calculated and does not need to be modified manually. Will run immediately after clearing"
@@ -4296,7 +4302,11 @@
       "CommissionIncomeHeaderCount": "Commissions",
       "CommissionIncomeHeaderAvg": "Avg/Run",
       "CommissionIncomeTotalCommissions": "Total commissions: {value}",
-      "CommissionIncomeRecentTitle": "Recent Commissions"
+      "CommissionIncomeRecentTitle": "Recent Commissions",
+      "ResourceChartTitle": "All Resources Trend",
+      "LoadResourceDataFailed": "Failed to load resource data: {e}",
+      "NoResourceData": "No resource data yet. It will be recorded automatically when the script runs.",
+      "NoValidResourceData": "No valid resource data"
     },
     "Tactical": {
       "SkillAutoSwitch": "Gui.Tactical.SkillAutoSwitch"

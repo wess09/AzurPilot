@@ -346,6 +346,12 @@
       "True": "有効",
       "False": "False"
     },
+    "PushNotification": {
+      "name": "プッシュ通知",
+      "help": "有効にすると、タスク完了時に OnePush で成功・失敗通知を送信します",
+      "True": "有効",
+      "False": "無効"
+    },
     "NextRun": {
       "name": "次回実行時間",
       "help": "自動計算された値です。手動で変更する必要はありません。クリアすると即座に実行されます"
@@ -4296,7 +4302,11 @@
       "CommissionIncomeHeaderCount": "Gui.Stat.CommissionIncomeHeaderCount",
       "CommissionIncomeHeaderAvg": "Gui.Stat.CommissionIncomeHeaderAvg",
       "CommissionIncomeTotalCommissions": "Gui.Stat.CommissionIncomeTotalCommissions",
-      "CommissionIncomeRecentTitle": "Gui.Stat.CommissionIncomeRecentTitle"
+      "CommissionIncomeRecentTitle": "Gui.Stat.CommissionIncomeRecentTitle",
+      "ResourceChartTitle": "全リソース推移",
+      "LoadResourceDataFailed": "Gui.Stat.LoadResourceDataFailed",
+      "NoResourceData": "Gui.Stat.NoResourceData",
+      "NoValidResourceData": "Gui.Stat.NoValidResourceData"
     },
     "Tactical": {
       "SkillAutoSwitch": "Gui.Tactical.SkillAutoSwitch"
