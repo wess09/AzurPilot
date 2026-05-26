@@ -1,0 +1,318 @@
+7767517
+316 355
+Input                    x                        0 1 x
+Convolution              Conv.0                   1 1 x p2o.pd_op.conv2d.0.0 0=16 1=3 3=2 4=1 5=1 6=432
+ConvolutionDepthWise     Conv.1                   1 1 p2o.pd_op.conv2d.0.0 p2o.pd_op.depthwise_conv2d.0.0 0=16 1=3 4=1 5=1 6=144 7=16
+BinaryOp                 Mul.0                    1 1 p2o.pd_op.depthwise_conv2d.0.0 Mul.1 0=2 1=1 2=1.271984e+00
+BinaryOp                 Add.2                    1 1 Mul.1 Add.3 1=1 2=5.468956e-01
+Split                    splitncnn_1              1 2 Add.3 Add.3_splitncnn_0 Add.3_splitncnn_1
+HardSigmoid              HardSigmoid.0            1 1 Add.3_splitncnn_1 HardSigmoid.1 0=1.666667e-01
+BinaryOp                 Mul.2                    2 1 HardSigmoid.1 Add.3_splitncnn_0 p2o.pd_op.hardswish.0.0 0=2
+BinaryOp                 Mul.3                    1 1 p2o.pd_op.hardswish.0.0 Mul.4 0=2 1=1 2=1.964952e-02
+BinaryOp                 Add.4                    1 1 Mul.4 Add.5 1=1 2=3.459693e-04
+Convolution              Conv.2                   1 1 Add.5 p2o.pd_op.conv2d.1.0 0=32 1=1 5=1 6=512
+BinaryOp                 Mul.5                    1 1 p2o.pd_op.conv2d.1.0 Mul.6 0=2 1=1 2=1.772828e+00
+BinaryOp                 Add.8                    1 1 Mul.6 Add.9 1=1 2=9.254249e-01
+Split                    splitncnn_2              1 2 Add.9 Add.9_splitncnn_0 Add.9_splitncnn_1
+HardSigmoid              HardSigmoid.2            1 1 Add.9_splitncnn_1 HardSigmoid.3 0=1.666667e-01
+BinaryOp                 Mul.7                    2 1 HardSigmoid.3 Add.9_splitncnn_0 p2o.pd_op.hardswish.1.0 0=2
+BinaryOp                 Mul.8                    1 1 p2o.pd_op.hardswish.1.0 Mul.9 0=2 1=1 2=1.399024e-01
+BinaryOp                 Add.10                   1 1 Mul.9 Add.11 1=1 2=-2.480792e-01
+ConvolutionDepthWise     Conv.3                   1 1 Add.11 p2o.pd_op.depthwise_conv2d.1.0 0=32 1=3 4=1 5=1 6=288 7=32
+BinaryOp                 Mul.10                   1 1 p2o.pd_op.depthwise_conv2d.1.0 Mul.11 0=2 1=1 2=1.768576e+00
+BinaryOp                 Add.14                   1 1 Mul.11 Add.15 1=1 2=8.441443e-01
+Split                    splitncnn_3              1 2 Add.15 Add.15_splitncnn_0 Add.15_splitncnn_1
+HardSigmoid              HardSigmoid.4            1 1 Add.15_splitncnn_1 HardSigmoid.5 0=1.666667e-01
+BinaryOp                 Mul.12                   2 1 HardSigmoid.5 Add.15_splitncnn_0 p2o.pd_op.hardswish.2.0 0=2
+BinaryOp                 Mul.13                   1 1 p2o.pd_op.hardswish.2.0 Mul.14 0=2 1=1 2=7.189294e-03
+BinaryOp                 Add.16                   1 1 Mul.14 Add.17 1=1 2=-4.149975e-04
+Convolution              Conv.4                   1 1 Add.17 p2o.pd_op.conv2d.2.0 0=64 1=1 5=1 6=2048
+BinaryOp                 Mul.15                   1 1 p2o.pd_op.conv2d.2.0 Mul.16 0=2 1=1 2=1.794424e+00
+BinaryOp                 Add.20                   1 1 Mul.16 Add.21 1=1 2=7.768192e-01
+Split                    splitncnn_4              1 2 Add.21 Add.21_splitncnn_0 Add.21_splitncnn_1
+HardSigmoid              HardSigmoid.6            1 1 Add.21_splitncnn_1 HardSigmoid.7 0=1.666667e-01
+BinaryOp                 Mul.17                   2 1 HardSigmoid.7 Add.21_splitncnn_0 p2o.pd_op.hardswish.3.0 0=2
+BinaryOp                 Mul.18                   1 1 p2o.pd_op.hardswish.3.0 Mul.19 0=2 1=1 2=3.267068e-01
+BinaryOp                 Add.22                   1 1 Mul.19 Add.23 1=1 2=-3.521812e-01
+ConvolutionDepthWise     Conv.5                   1 1 Add.23 p2o.pd_op.depthwise_conv2d.2.0 0=64 1=3 4=1 5=1 6=576 7=64
+BinaryOp                 Mul.20                   1 1 p2o.pd_op.depthwise_conv2d.2.0 Mul.21 0=2 1=1 2=2.363461e+00
+BinaryOp                 Add.26                   1 1 Mul.21 Add.27 1=1 2=2.602974e-01
+Split                    splitncnn_5              1 2 Add.27 Add.27_splitncnn_0 Add.27_splitncnn_1
+HardSigmoid              HardSigmoid.8            1 1 Add.27_splitncnn_1 HardSigmoid.9 0=1.666667e-01
+BinaryOp                 Mul.22                   2 1 HardSigmoid.9 Add.27_splitncnn_0 p2o.pd_op.hardswish.4.0 0=2
+BinaryOp                 Mul.23                   1 1 p2o.pd_op.hardswish.4.0 Mul.24 0=2 1=1 2=4.332757e-03
+BinaryOp                 Add.28                   1 1 Mul.24 Add.29 1=1 2=-8.101207e-04
+Convolution              Conv.6                   1 1 Add.29 p2o.pd_op.conv2d.3.0 0=64 1=1 5=1 6=4096
+BinaryOp                 Mul.25                   1 1 p2o.pd_op.conv2d.3.0 Mul.26 0=2 1=1 2=1.817136e+00
+BinaryOp                 Add.32                   1 1 Mul.26 Add.33 1=1 2=4.075440e-01
+Split                    splitncnn_6              1 2 Add.33 Add.33_splitncnn_0 Add.33_splitncnn_1
+HardSigmoid              HardSigmoid.10           1 1 Add.33_splitncnn_1 HardSigmoid.11 0=1.666667e-01
+BinaryOp                 Mul.27                   2 1 HardSigmoid.11 Add.33_splitncnn_0 p2o.pd_op.hardswish.5.0 0=2
+BinaryOp                 Mul.28                   1 1 p2o.pd_op.hardswish.5.0 Mul.29 0=2 1=1 2=3.742134e-01
+BinaryOp                 Add.34                   1 1 Mul.29 Add.35 1=1 2=-9.791716e-02
+ConvolutionDepthWise     Conv.7                   1 1 Add.35 p2o.pd_op.depthwise_conv2d.3.0 0=64 1=3 13=2 4=1 5=1 6=576 7=64
+BinaryOp                 Mul.30                   1 1 p2o.pd_op.depthwise_conv2d.3.0 Mul.31 0=2 1=1 2=1.742171e+00
+BinaryOp                 Add.38                   1 1 Mul.31 Add.39 1=1 2=8.743250e-01
+Split                    splitncnn_7              1 2 Add.39 Add.39_splitncnn_0 Add.39_splitncnn_1
+HardSigmoid              HardSigmoid.12           1 1 Add.39_splitncnn_1 HardSigmoid.13 0=1.666667e-01
+BinaryOp                 Mul.32                   2 1 HardSigmoid.13 Add.39_splitncnn_0 p2o.pd_op.hardswish.6.0 0=2
+BinaryOp                 Mul.33                   1 1 p2o.pd_op.hardswish.6.0 Mul.34 0=2 1=1 2=5.622864e-03
+BinaryOp                 Add.40                   1 1 Mul.34 Add.41 1=1 2=6.771270e-04
+Convolution              Conv.8                   1 1 Add.41 p2o.pd_op.conv2d.4.0 0=128 1=1 5=1 6=8192
+BinaryOp                 Mul.35                   1 1 p2o.pd_op.conv2d.4.0 Mul.36 0=2 1=1 2=1.449235e+00
+BinaryOp                 Add.44                   1 1 Mul.36 Add.45 1=1 2=2.349243e-01
+Split                    splitncnn_8              1 2 Add.45 Add.45_splitncnn_0 Add.45_splitncnn_1
+HardSigmoid              HardSigmoid.14           1 1 Add.45_splitncnn_1 HardSigmoid.15 0=1.666667e-01
+BinaryOp                 Mul.37                   2 1 HardSigmoid.15 Add.45_splitncnn_0 p2o.pd_op.hardswish.7.0 0=2
+BinaryOp                 Mul.38                   1 1 p2o.pd_op.hardswish.7.0 Mul.39 0=2 1=1 2=6.399397e-01
+BinaryOp                 Add.46                   1 1 Mul.39 Add.47 1=1 2=-1.029511e-01
+ConvolutionDepthWise     Conv.9                   1 1 Add.47 p2o.pd_op.depthwise_conv2d.4.0 0=128 1=3 4=1 5=1 6=1152 7=128
+BinaryOp                 Mul.40                   1 1 p2o.pd_op.depthwise_conv2d.4.0 Mul.41 0=2 1=1 2=2.017954e+00
+BinaryOp                 Add.50                   1 1 Mul.41 Add.51 1=1 2=-1.112822e-02
+Split                    splitncnn_9              1 2 Add.51 Add.51_splitncnn_0 Add.51_splitncnn_1
+HardSigmoid              HardSigmoid.16           1 1 Add.51_splitncnn_1 HardSigmoid.17 0=1.666667e-01
+BinaryOp                 Mul.42                   2 1 HardSigmoid.17 Add.51_splitncnn_0 p2o.pd_op.hardswish.8.0 0=2
+BinaryOp                 Mul.43                   1 1 p2o.pd_op.hardswish.8.0 Mul.44 0=2 1=1 2=6.269099e-03
+BinaryOp                 Add.52                   1 1 Mul.44 Add.53 1=1 2=-7.216813e-05
+Convolution              Conv.10                  1 1 Add.53 p2o.pd_op.conv2d.5.0 0=128 1=1 5=1 6=16384
+BinaryOp                 Mul.45                   1 1 p2o.pd_op.conv2d.5.0 Mul.46 0=2 1=1 2=1.683360e+00
+BinaryOp                 Add.56                   1 1 Mul.46 Add.57 1=1 2=-2.089815e-02
+Split                    splitncnn_10             1 2 Add.57 Add.57_splitncnn_0 Add.57_splitncnn_1
+HardSigmoid              HardSigmoid.18           1 1 Add.57_splitncnn_1 HardSigmoid.19 0=1.666667e-01
+BinaryOp                 Mul.47                   2 1 HardSigmoid.19 Add.57_splitncnn_0 p2o.pd_op.hardswish.9.0 0=2
+BinaryOp                 Mul.48                   1 1 p2o.pd_op.hardswish.9.0 Mul.49 0=2 1=1 2=5.263434e-01
+BinaryOp                 Add.58                   1 1 Mul.49 Add.59 1=1 2=1.544535e-02
+ConvolutionDepthWise     Conv.11                  1 1 Add.59 p2o.pd_op.depthwise_conv2d.5.0 0=128 1=3 3=2 13=1 4=1 5=1 6=1152 7=128
+BinaryOp                 Mul.50                   1 1 p2o.pd_op.depthwise_conv2d.5.0 Mul.51 0=2 1=1 2=1.780641e+00
+BinaryOp                 Add.62                   1 1 Mul.51 Add.63 1=1 2=5.682976e-01
+Split                    splitncnn_11             1 2 Add.63 Add.63_splitncnn_0 Add.63_splitncnn_1
+HardSigmoid              HardSigmoid.20           1 1 Add.63_splitncnn_1 HardSigmoid.21 0=1.666667e-01
+BinaryOp                 Mul.52                   2 1 HardSigmoid.21 Add.63_splitncnn_0 p2o.pd_op.hardswish.10.0 0=2
+BinaryOp                 Mul.53                   1 1 p2o.pd_op.hardswish.10.0 Mul.54 0=2 1=1 2=3.597393e-03
+BinaryOp                 Add.64                   1 1 Mul.54 Add.65 1=1 2=-1.563728e-04
+Convolution              Conv.12                  1 1 Add.65 p2o.pd_op.conv2d.6.0 0=240 1=1 5=1 6=30720
+BinaryOp                 Mul.55                   1 1 p2o.pd_op.conv2d.6.0 Mul.56 0=2 1=1 2=1.105133e+00
+BinaryOp                 Add.68                   1 1 Mul.56 Add.69 1=1 2=7.538854e-02
+Split                    splitncnn_12             1 2 Add.69 Add.69_splitncnn_0 Add.69_splitncnn_1
+HardSigmoid              HardSigmoid.22           1 1 Add.69_splitncnn_1 HardSigmoid.23 0=1.666667e-01
+BinaryOp                 Mul.57                   2 1 HardSigmoid.23 Add.69_splitncnn_0 p2o.pd_op.hardswish.11.0 0=2
+BinaryOp                 Mul.58                   1 1 p2o.pd_op.hardswish.11.0 Mul.59 0=2 1=1 2=1.539064e-01
+BinaryOp                 Add.70                   1 1 Mul.59 Add.71 1=1 2=-5.150688e-03
+ConvolutionDepthWise     Conv.13                  1 1 Add.71 p2o.pd_op.depthwise_conv2d.6.0 0=240 1=5 4=2 5=1 6=6000 7=240
+BinaryOp                 Mul.60                   1 1 p2o.pd_op.depthwise_conv2d.6.0 Mul.61 0=2 1=1 2=1.523272e+00
+BinaryOp                 Add.74                   1 1 Mul.61 Add.75 1=1 2=-4.862777e-01
+Split                    splitncnn_13             1 2 Add.75 Add.75_splitncnn_0 Add.75_splitncnn_1
+HardSigmoid              HardSigmoid.24           1 1 Add.75_splitncnn_1 HardSigmoid.25 0=1.666667e-01
+BinaryOp                 Mul.62                   2 1 HardSigmoid.25 Add.75_splitncnn_0 p2o.pd_op.hardswish.12.0 0=2
+BinaryOp                 Mul.63                   1 1 p2o.pd_op.hardswish.12.0 Mul.64 0=2 1=1 2=2.400140e-02
+BinaryOp                 Add.76                   1 1 Mul.64 Add.77 1=1 2=-8.432071e-04
+Convolution              Conv.14                  1 1 Add.77 p2o.pd_op.conv2d.7.0 0=240 1=1 5=1 6=57600
+BinaryOp                 Mul.65                   1 1 p2o.pd_op.conv2d.7.0 Mul.66 0=2 1=1 2=1.685607e+00
+BinaryOp                 Add.80                   1 1 Mul.66 Add.81 1=1 2=-1.958055e-01
+Split                    splitncnn_14             1 2 Add.81 Add.81_splitncnn_0 Add.81_splitncnn_1
+HardSigmoid              HardSigmoid.26           1 1 Add.81_splitncnn_1 HardSigmoid.27 0=1.666667e-01
+BinaryOp                 Mul.67                   2 1 HardSigmoid.27 Add.81_splitncnn_0 p2o.pd_op.hardswish.13.0 0=2
+BinaryOp                 Mul.68                   1 1 p2o.pd_op.hardswish.13.0 Mul.69 0=2 1=1 2=5.903183e-01
+BinaryOp                 Add.82                   1 1 Mul.69 Add.83 1=1 2=3.767531e-02
+ConvolutionDepthWise     Conv.15                  1 1 Add.83 p2o.pd_op.depthwise_conv2d.7.0 0=240 1=5 4=2 5=1 6=6000 7=240
+BinaryOp                 Mul.70                   1 1 p2o.pd_op.depthwise_conv2d.7.0 Mul.71 0=2 1=1 2=1.995297e+00
+BinaryOp                 Add.86                   1 1 Mul.71 Add.87 1=1 2=6.350403e-02
+Split                    splitncnn_15             1 2 Add.87 Add.87_splitncnn_0 Add.87_splitncnn_1
+HardSigmoid              HardSigmoid.28           1 1 Add.87_splitncnn_1 HardSigmoid.29 0=1.666667e-01
+BinaryOp                 Mul.72                   2 1 HardSigmoid.29 Add.87_splitncnn_0 p2o.pd_op.hardswish.14.0 0=2
+BinaryOp                 Mul.73                   1 1 p2o.pd_op.hardswish.14.0 Mul.74 0=2 1=1 2=4.303599e-03
+BinaryOp                 Add.88                   1 1 Mul.74 Add.89 1=1 2=-2.507610e-04
+Convolution              Conv.16                  1 1 Add.89 p2o.pd_op.conv2d.8.0 0=240 1=1 5=1 6=57600
+BinaryOp                 Mul.75                   1 1 p2o.pd_op.conv2d.8.0 Mul.76 0=2 1=1 2=1.747087e+00
+BinaryOp                 Add.92                   1 1 Mul.76 Add.93 1=1 2=-5.064010e-01
+Split                    splitncnn_16             1 2 Add.93 Add.93_splitncnn_0 Add.93_splitncnn_1
+HardSigmoid              HardSigmoid.30           1 1 Add.93_splitncnn_1 HardSigmoid.31 0=1.666667e-01
+BinaryOp                 Mul.77                   2 1 HardSigmoid.31 Add.93_splitncnn_0 p2o.pd_op.hardswish.15.0 0=2
+BinaryOp                 Mul.78                   1 1 p2o.pd_op.hardswish.15.0 Mul.79 0=2 1=1 2=4.309758e-01
+BinaryOp                 Add.94                   1 1 Mul.79 Add.95 1=1 2=1.178891e-01
+ConvolutionDepthWise     Conv.17                  1 1 Add.95 p2o.pd_op.depthwise_conv2d.8.0 0=240 1=5 4=2 5=1 6=6000 7=240
+BinaryOp                 Mul.80                   1 1 p2o.pd_op.depthwise_conv2d.8.0 Mul.81 0=2 1=1 2=1.804542e+00
+BinaryOp                 Add.98                   1 1 Mul.81 Add.99 1=1 2=9.616392e-01
+Split                    splitncnn_17             1 2 Add.99 Add.99_splitncnn_0 Add.99_splitncnn_1
+HardSigmoid              HardSigmoid.32           1 1 Add.99_splitncnn_1 HardSigmoid.33 0=1.666667e-01
+BinaryOp                 Mul.82                   2 1 HardSigmoid.33 Add.99_splitncnn_0 p2o.pd_op.hardswish.16.0 0=2
+BinaryOp                 Mul.83                   1 1 p2o.pd_op.hardswish.16.0 Mul.84 0=2 1=1 2=4.619265e-03
+BinaryOp                 Add.100                  1 1 Mul.84 Add.101 1=1 2=2.388520e-05
+Convolution              Conv.18                  1 1 Add.101 p2o.pd_op.conv2d.9.0 0=240 1=1 5=1 6=57600
+BinaryOp                 Mul.85                   1 1 p2o.pd_op.conv2d.9.0 Mul.86 0=2 1=1 2=1.764694e+00
+BinaryOp                 Add.104                  1 1 Mul.86 Add.105 1=1 2=-5.110388e-01
+Split                    splitncnn_18             1 2 Add.105 Add.105_splitncnn_0 Add.105_splitncnn_1
+HardSigmoid              HardSigmoid.34           1 1 Add.105_splitncnn_1 HardSigmoid.35 0=1.666667e-01
+BinaryOp                 Mul.87                   2 1 HardSigmoid.35 Add.105_splitncnn_0 p2o.pd_op.hardswish.17.0 0=2
+BinaryOp                 Mul.88                   1 1 p2o.pd_op.hardswish.17.0 Mul.89 0=2 1=1 2=4.624167e-01
+BinaryOp                 Add.106                  1 1 Mul.89 Add.107 1=1 2=1.312796e-01
+ConvolutionDepthWise     Conv.19                  1 1 Add.107 p2o.pd_op.depthwise_conv2d.9.0 0=240 1=5 4=2 5=1 6=6000 7=240
+BinaryOp                 Mul.90                   1 1 p2o.pd_op.depthwise_conv2d.9.0 Mul.91 0=2 1=1 2=1.686810e+00
+BinaryOp                 Add.110                  1 1 Mul.91 Add.111 1=1 2=9.528682e-01
+Split                    splitncnn_19             1 2 Add.111 Add.111_splitncnn_0 Add.111_splitncnn_1
+HardSigmoid              HardSigmoid.36           1 1 Add.111_splitncnn_1 HardSigmoid.37 0=1.666667e-01
+BinaryOp                 Mul.92                   2 1 HardSigmoid.37 Add.111_splitncnn_0 p2o.pd_op.hardswish.18.0 0=2
+BinaryOp                 Mul.93                   1 1 p2o.pd_op.hardswish.18.0 Mul.94 0=2 1=1 2=6.637580e-03
+BinaryOp                 Add.112                  1 1 Mul.94 Add.113 1=1 2=5.537644e-05
+Convolution              Conv.20                  1 1 Add.113 p2o.pd_op.conv2d.10.0 0=240 1=1 5=1 6=57600
+BinaryOp                 Mul.95                   1 1 p2o.pd_op.conv2d.10.0 Mul.96 0=2 1=1 2=1.809781e+00
+BinaryOp                 Add.116                  1 1 Mul.96 Add.117 1=1 2=-6.122773e-01
+Split                    splitncnn_20             1 2 Add.117 Add.117_splitncnn_0 Add.117_splitncnn_1
+HardSigmoid              HardSigmoid.38           1 1 Add.117_splitncnn_1 HardSigmoid.39 0=1.666667e-01
+BinaryOp                 Mul.97                   2 1 HardSigmoid.39 Add.117_splitncnn_0 p2o.pd_op.hardswish.19.0 0=2
+BinaryOp                 Mul.98                   1 1 p2o.pd_op.hardswish.19.0 Mul.99 0=2 1=1 2=6.903111e-01
+BinaryOp                 Add.118                  1 1 Mul.99 Add.119 1=1 2=1.929629e-01
+ConvolutionDepthWise     Conv.21                  1 1 Add.119 p2o.pd_op.depthwise_conv2d.10.0 0=240 1=5 13=2 4=2 5=1 6=6000 7=240
+BinaryOp                 Mul.100                  1 1 p2o.pd_op.depthwise_conv2d.10.0 Mul.101 0=2 1=1 2=1.762186e+00
+BinaryOp                 Add.122                  1 1 Mul.101 Add.123 1=1 2=4.685791e-01
+Split                    splitncnn_21             1 2 Add.123 Add.123_splitncnn_0 Add.123_splitncnn_1
+HardSigmoid              HardSigmoid.40           1 1 Add.123_splitncnn_1 HardSigmoid.41 0=1.666667e-01
+BinaryOp                 Mul.102                  2 1 HardSigmoid.41 Add.123_splitncnn_0 p2o.pd_op.hardswish.20.0 0=2
+BinaryOp                 Mul.103                  1 1 p2o.pd_op.hardswish.20.0 Mul.104 0=2 1=1 2=1.277598e+00
+BinaryOp                 Add.124                  1 1 Mul.104 Add.125 1=1 2=-7.434360e-01
+Split                    splitncnn_22             1 2 Add.125 Add.125_splitncnn_0 Add.125_splitncnn_1
+Pooling                  GlobalAveragePool.0      1 1 Add.125_splitncnn_1 p2o.pd_op.pool2d.0.0 0=1 4=1
+InnerProduct             Conv.22                  1 1 p2o.pd_op.pool2d.0.0 p2o.pd_op.relu.0.0 0=60 1=1 2=14400 9=1
+InnerProduct             Conv.23                  1 1 p2o.pd_op.relu.0.0 p2o.pd_op.conv2d.12.0 0=240 1=1 2=14400
+HardSigmoid              HardSigmoid.42           1 1 p2o.pd_op.conv2d.12.0 p2o.pd_op.hardsigmoid.0.0 0=1.666667e-01
+BinaryOp                 Mul.105                  2 1 Add.125_splitncnn_0 p2o.pd_op.hardsigmoid.0.0 Mul.106 0=2
+Convolution              Conv.24                  1 1 Mul.106 p2o.pd_op.conv2d.13.0 0=480 1=1 5=1 6=115200
+BinaryOp                 Mul.107                  1 1 p2o.pd_op.conv2d.13.0 Mul.108 0=2 1=1 2=2.028193e+00
+BinaryOp                 Add.132                  1 1 Mul.108 Add.133 1=1 2=-3.651479e-01
+Split                    splitncnn_23             1 2 Add.133 Add.133_splitncnn_0 Add.133_splitncnn_1
+HardSigmoid              HardSigmoid.43           1 1 Add.133_splitncnn_1 HardSigmoid.44 0=1.666667e-01
+BinaryOp                 Mul.109                  2 1 HardSigmoid.44 Add.133_splitncnn_0 p2o.pd_op.hardswish.21.0 0=2
+BinaryOp                 Mul.110                  1 1 p2o.pd_op.hardswish.21.0 Mul.111 0=2 1=1 2=7.862927e-01
+BinaryOp                 Add.134                  1 1 Mul.111 Add.135 1=1 2=4.737953e-02
+ConvolutionDepthWise     Conv.25                  1 1 Add.135 p2o.pd_op.depthwise_conv2d.11.0 0=480 1=5 4=2 5=1 6=12000 7=480
+BinaryOp                 Mul.112                  1 1 p2o.pd_op.depthwise_conv2d.11.0 Mul.113 0=2 1=1 2=2.119084e+00
+BinaryOp                 Add.138                  1 1 Mul.113 Add.139 1=1 2=2.250157e-01
+Split                    splitncnn_24             1 2 Add.139 Add.139_splitncnn_0 Add.139_splitncnn_1
+HardSigmoid              HardSigmoid.45           1 1 Add.139_splitncnn_1 HardSigmoid.46 0=1.666667e-01
+BinaryOp                 Mul.114                  2 1 HardSigmoid.46 Add.139_splitncnn_0 p2o.pd_op.hardswish.22.0 0=2
+BinaryOp                 Mul.115                  1 1 p2o.pd_op.hardswish.22.0 Mul.116 0=2 1=1 2=2.010391e+00
+BinaryOp                 Add.140                  1 1 Mul.116 Add.141 1=1 2=-1.217419e+00
+Split                    splitncnn_25             1 2 Add.141 Add.141_splitncnn_0 Add.141_splitncnn_1
+Pooling                  GlobalAveragePool.1      1 1 Add.141_splitncnn_1 p2o.pd_op.pool2d.1.0 0=1 4=1
+InnerProduct             Conv.26                  1 1 p2o.pd_op.pool2d.1.0 p2o.pd_op.relu.1.0 0=120 1=1 2=57600 9=1
+InnerProduct             Conv.27                  1 1 p2o.pd_op.relu.1.0 p2o.pd_op.conv2d.15.0 0=480 1=1 2=57600
+HardSigmoid              HardSigmoid.47           1 1 p2o.pd_op.conv2d.15.0 p2o.pd_op.hardsigmoid.1.0 0=1.666667e-01
+BinaryOp                 Mul.117                  2 1 Add.141_splitncnn_0 p2o.pd_op.hardsigmoid.1.0 Mul.118 0=2
+Convolution              Conv.28                  1 1 Mul.118 p2o.pd_op.conv2d.16.0 0=480 1=1 5=1 6=230400
+BinaryOp                 Mul.119                  1 1 p2o.pd_op.conv2d.16.0 Mul.120 0=2 1=1 2=1.922865e+00
+BinaryOp                 Add.148                  1 1 Mul.120 Add.149 1=1 2=-7.738071e-01
+Split                    splitncnn_26             1 2 Add.149 Add.149_splitncnn_0 Add.149_splitncnn_1
+HardSigmoid              HardSigmoid.48           1 1 Add.149_splitncnn_1 HardSigmoid.49 0=1.666667e-01
+BinaryOp                 Mul.121                  2 1 HardSigmoid.49 Add.149_splitncnn_0 p2o.pd_op.hardswish.23.0 0=2
+BinaryOp                 Mul.122                  1 1 p2o.pd_op.hardswish.23.0 Mul.123 0=2 1=1 2=6.357350e-01
+BinaryOp                 Add.150                  1 1 Mul.123 Add.151 1=1 2=1.343891e-01
+ConvolutionDepthWise     Conv.29                  1 1 Add.151 p2o.pd_op.depthwise_conv2d.12.0 0=480 1=5 13=2 4=2 5=1 6=12000 7=480
+BinaryOp                 Mul.124                  1 1 p2o.pd_op.depthwise_conv2d.12.0 Mul.125 0=2 1=1 2=1.449085e+00
+BinaryOp                 Add.154                  1 1 Mul.125 Add.155 1=1 2=1.360383e+00
+Split                    splitncnn_27             1 2 Add.155 Add.155_splitncnn_0 Add.155_splitncnn_1
+HardSigmoid              HardSigmoid.50           1 1 Add.155_splitncnn_1 HardSigmoid.51 0=1.666667e-01
+BinaryOp                 Mul.126                  2 1 HardSigmoid.51 Add.155_splitncnn_0 p2o.pd_op.hardswish.24.0 0=2
+BinaryOp                 Mul.127                  1 1 p2o.pd_op.hardswish.24.0 Mul.128 0=2 1=1 2=5.025585e-03
+BinaryOp                 Add.156                  1 1 Mul.128 Add.157 1=1 2=4.011863e-04
+Convolution              Conv.30                  1 1 Add.157 p2o.pd_op.conv2d.17.0 0=480 1=1 5=1 6=230400
+BinaryOp                 Mul.129                  1 1 p2o.pd_op.conv2d.17.0 Mul.130 0=2 1=1 2=2.454981e+00
+BinaryOp                 Add.160                  1 1 Mul.130 Add.161 1=1 2=-5.776395e-01
+Split                    splitncnn_28             1 2 Add.161 Add.161_splitncnn_0 Add.161_splitncnn_1
+HardSigmoid              HardSigmoid.52           1 1 Add.161_splitncnn_1 HardSigmoid.53 0=1.666667e-01
+BinaryOp                 Mul.131                  2 1 HardSigmoid.53 Add.161_splitncnn_0 p2o.pd_op.hardswish.25.0 0=2
+BinaryOp                 Mul.132                  1 1 p2o.pd_op.hardswish.25.0 Mul.133 0=2 1=1 2=1.566990e-01
+BinaryOp                 Add.162                  1 1 Mul.133 Add.163 1=1 2=3.140670e-02
+ConvolutionDepthWise     Conv.31                  1 1 Add.163 p2o.pd_op.depthwise_conv2d.13.0 0=480 1=5 4=2 5=1 6=12000 7=480
+BinaryOp                 Mul.134                  1 1 p2o.pd_op.depthwise_conv2d.13.0 Mul.135 0=2 1=1 2=1.852424e+00
+BinaryOp                 Add.166                  1 1 Mul.135 Add.167 1=1 2=1.046002e-01
+Split                    splitncnn_29             1 2 Add.167 Add.167_splitncnn_0 Add.167_splitncnn_1
+HardSigmoid              HardSigmoid.54           1 1 Add.167_splitncnn_1 HardSigmoid.55 0=1.666667e-01
+BinaryOp                 Mul.136                  2 1 HardSigmoid.55 Add.167_splitncnn_0 p2o.pd_op.hardswish.26.0 0=2
+BinaryOp                 Mul.137                  1 1 p2o.pd_op.hardswish.26.0 Mul.138 0=2 1=1 2=3.103064e-01
+BinaryOp                 Add.168                  1 1 Mul.138 Add.169 1=1 2=1.177588e-04
+Convolution              Conv.32                  1 1 Add.169 p2o.pd_op.conv2d.18.0 0=480 1=1 5=1 6=230400
+BinaryOp                 Mul.139                  1 1 p2o.pd_op.conv2d.18.0 Mul.140 0=2 1=1 2=3.588922e+00
+BinaryOp                 Add.172                  1 1 Mul.140 Add.173 1=1 2=-4.557737e-01
+Split                    splitncnn_30             1 2 Add.173 Add.173_splitncnn_0 Add.173_splitncnn_1
+HardSigmoid              HardSigmoid.56           1 1 Add.173_splitncnn_1 HardSigmoid.57 0=1.666667e-01
+BinaryOp                 Mul.141                  2 1 HardSigmoid.57 Add.173_splitncnn_0 p2o.pd_op.hardswish.27.0 0=2
+BinaryOp                 Mul.142                  1 1 p2o.pd_op.hardswish.27.0 Mul.143 0=2 1=1 2=3.254672e+00
+BinaryOp                 Add.174                  1 1 Mul.143 Add.175 1=1 2=-4.169015e-02
+Pooling                  AveragePool.0            1 1 Add.175 p2o.pd_op.pool2d.2.0 0=1 1=2 11=3 2=2 12=3 5=1
+ExpandDims               Unsqueeze.0              1 1 p2o.pd_op.pool2d.2.0 helper.unsqueeze.0 -23303=1,0
+Squeeze                  Squeeze.0                1 1 helper.unsqueeze.0 p2o.pd_op.assign.0.0 -23303=1,0
+Split                    splitncnn_31             1 2 p2o.pd_op.assign.0.0 p2o.pd_op.assign.0.0_splitncnn_0 p2o.pd_op.assign.0.0_splitncnn_1
+Convolution              Conv.33                  1 1 p2o.pd_op.assign.0.0_splitncnn_1 p2o.pd_op.conv2d.19.0 0=60 1=3 11=1 4=1 14=0 5=1 6=86400
+Swish                    Mul.144                  1 1 p2o.pd_op.conv2d.19.0 p2o.pd_op.swish.0.0
+Convolution              Conv.34                  1 1 p2o.pd_op.swish.0.0 p2o.pd_op.conv2d.20.0 0=120 1=1 5=1 6=7200
+Swish                    Mul.145                  1 1 p2o.pd_op.conv2d.20.0 p2o.pd_op.swish.1.0
+Reshape                  Reshape.32               1 1 p2o.pd_op.swish.1.0 p2o.pd_op.flatten.0.0 0=-1 1=120
+Permute                  Transpose.0              1 1 p2o.pd_op.flatten.0.0 p2o.pd_op.transpose.0.0 0=1
+Split                    splitncnn_32             1 2 p2o.pd_op.transpose.0.0 p2o.pd_op.transpose.0.0_splitncnn_0 p2o.pd_op.transpose.0.0_splitncnn_1
+LayerNorm                Add.180                  1 1 p2o.pd_op.transpose.0.0_splitncnn_1 Add.181 0=120 1=1.000000e-05
+InnerProduct             MatMul.0                 1 1 Add.181 Add.183 0=360 1=1 2=43200
+Reshape                  Reshape.35               1 1 Add.183 p2o.pd_op.reshape.32.0 0=120 1=3 2=-1
+Permute                  Transpose.1              1 1 p2o.pd_op.reshape.32.0 p2o.pd_op.transpose.1.0
+Split                    splitncnn_33             1 3 p2o.pd_op.transpose.1.0 p2o.pd_op.transpose.1.0_splitncnn_0 p2o.pd_op.transpose.1.0_splitncnn_1 p2o.pd_op.transpose.1.0_splitncnn_2
+Crop                     Slice.3                  1 1 p2o.pd_op.transpose.1.0_splitncnn_2 helper.slice.3
+Squeeze                  Squeeze.2                1 1 helper.slice.3 p2o.pd_op.slice.1.0 -23303=1,0
+BinaryOp                 Mul.148                  1 1 p2o.pd_op.slice.1.0 Mul.149 0=2 1=1 2=2.581989e-01
+Crop                     Slice.4                  1 1 p2o.pd_op.transpose.1.0_splitncnn_1 helper.slice.4
+Squeeze                  Squeeze.3                1 1 helper.slice.4 p2o.pd_op.slice.2.0 -23303=1,0
+Crop                     Slice.5                  1 1 p2o.pd_op.transpose.1.0_splitncnn_0 helper.slice.5
+Squeeze                  Squeeze.4                1 1 helper.slice.5 p2o.pd_op.slice.3.0 -23303=1,0
+Permute                  Transpose.2              1 1 p2o.pd_op.slice.2.0 p2o.pd_op.transpose.2.0 0=1
+Gemm                     MatMul.1                 2 1 Mul.149 p2o.pd_op.transpose.2.0 p2o.pd_op.matmul.1.0
+Softmax                  Softmax.0                1 1 p2o.pd_op.matmul.1.0 p2o.pd_op.softmax.0.0 0=2 1=1
+Gemm                     MatMul.2                 2 1 p2o.pd_op.softmax.0.0 p2o.pd_op.slice.3.0 p2o.pd_op.matmul.2.0
+Permute                  Transpose.3              1 1 p2o.pd_op.matmul.2.0 p2o.pd_op.transpose.3.0 0=2
+Reshape                  Reshape.36               1 1 p2o.pd_op.transpose.3.0 p2o.pd_op.reshape.33.0 0=120 1=-1
+InnerProduct             MatMul.3                 1 1 p2o.pd_op.reshape.33.0 Add.187 0=120 1=1 2=14400
+BinaryOp                 Add.188                  2 1 p2o.pd_op.transpose.0.0_splitncnn_0 Add.187 Add.189
+Split                    splitncnn_34             1 2 Add.189 Add.189_splitncnn_0 Add.189_splitncnn_1
+LayerNorm                Add.192                  1 1 Add.189_splitncnn_1 Add.193 0=120 1=1.000000e-05
+InnerProduct             MatMul.4                 1 1 Add.193 Add.195 0=240 1=1 2=28800
+Swish                    Mul.152                  1 1 Add.195 p2o.pd_op.swish.2.0
+InnerProduct             MatMul.5                 1 1 p2o.pd_op.swish.2.0 Add.197 0=120 1=1 2=28800
+BinaryOp                 Add.198                  2 1 Add.189_splitncnn_0 Add.197 Add.199
+Split                    splitncnn_35             1 2 Add.199 Add.199_splitncnn_0 Add.199_splitncnn_1
+LayerNorm                Add.202                  1 1 Add.199_splitncnn_1 Add.203 0=120 1=1.000000e-05
+InnerProduct             MatMul.6                 1 1 Add.203 Add.205 0=360 1=1 2=43200
+Reshape                  Reshape.41               1 1 Add.205 p2o.pd_op.reshape.34.0 0=120 1=3 2=-1
+Permute                  Transpose.4              1 1 p2o.pd_op.reshape.34.0 p2o.pd_op.transpose.4.0
+Split                    splitncnn_36             1 3 p2o.pd_op.transpose.4.0 p2o.pd_op.transpose.4.0_splitncnn_0 p2o.pd_op.transpose.4.0_splitncnn_1 p2o.pd_op.transpose.4.0_splitncnn_2
+Crop                     Slice.8                  1 1 p2o.pd_op.transpose.4.0_splitncnn_2 helper.slice.8
+Squeeze                  Squeeze.5                1 1 helper.slice.8 p2o.pd_op.slice.4.0 -23303=1,0
+BinaryOp                 Mul.155                  1 1 p2o.pd_op.slice.4.0 Mul.156 0=2 1=1 2=2.581989e-01
+Crop                     Slice.9                  1 1 p2o.pd_op.transpose.4.0_splitncnn_1 helper.slice.9
+Squeeze                  Squeeze.6                1 1 helper.slice.9 p2o.pd_op.slice.5.0 -23303=1,0
+Crop                     Slice.10                 1 1 p2o.pd_op.transpose.4.0_splitncnn_0 helper.slice.10
+Squeeze                  Squeeze.7                1 1 helper.slice.10 p2o.pd_op.slice.6.0 -23303=1,0
+Permute                  Transpose.5              1 1 p2o.pd_op.slice.5.0 p2o.pd_op.transpose.5.0 0=1
+Gemm                     MatMul.7                 2 1 Mul.156 p2o.pd_op.transpose.5.0 p2o.pd_op.matmul.7.0
+Softmax                  Softmax.1                1 1 p2o.pd_op.matmul.7.0 p2o.pd_op.softmax.1.0 0=2 1=1
+Gemm                     MatMul.8                 2 1 p2o.pd_op.softmax.1.0 p2o.pd_op.slice.6.0 p2o.pd_op.matmul.8.0
+Permute                  Transpose.6              1 1 p2o.pd_op.matmul.8.0 p2o.pd_op.transpose.6.0 0=2
+Reshape                  Reshape.42               1 1 p2o.pd_op.transpose.6.0 p2o.pd_op.reshape.35.0 0=120 1=-1
+InnerProduct             MatMul.9                 1 1 p2o.pd_op.reshape.35.0 Add.209 0=120 1=1 2=14400
+BinaryOp                 Add.210                  2 1 Add.199_splitncnn_0 Add.209 Add.211
+Split                    splitncnn_37             1 2 Add.211 Add.211_splitncnn_0 Add.211_splitncnn_1
+LayerNorm                Add.214                  1 1 Add.211_splitncnn_1 Add.215 0=120 1=1.000000e-05
+InnerProduct             MatMul.10                1 1 Add.215 Add.217 0=240 1=1 2=28800
+Swish                    Mul.159                  1 1 Add.217 p2o.pd_op.swish.3.0
+InnerProduct             MatMul.11                1 1 p2o.pd_op.swish.3.0 Add.219 0=120 1=1 2=28800
+BinaryOp                 Add.220                  2 1 Add.211_splitncnn_0 Add.219 Add.221
+LayerNorm                Add.224                  1 1 Add.221 Add.225 0=120 1=1.000000e-06
+Reshape                  Reshape.48               1 1 Add.225 p2o.pd_op.reshape.36.0 0=120 1=40 2=1
+Permute                  Transpose.7              1 1 p2o.pd_op.reshape.36.0 p2o.pd_op.transpose.7.0 0=4
+Convolution              Conv.35                  1 1 p2o.pd_op.transpose.7.0 p2o.pd_op.conv2d.21.0 0=480 1=1 5=1 6=57600
+Swish                    Mul.162                  1 1 p2o.pd_op.conv2d.21.0 p2o.pd_op.swish.4.0
+Concat                   Concat.3                 2 1 p2o.pd_op.assign.0.0_splitncnn_0 p2o.pd_op.swish.4.0 Concat.4
+Convolution              Conv.36                  1 1 Concat.4 p2o.pd_op.conv2d.22.0 0=60 1=3 11=1 4=1 14=0 5=1 6=172800
+Swish                    Mul.163                  1 1 p2o.pd_op.conv2d.22.0 p2o.pd_op.swish.5.0
+Convolution              Conv.37                  1 1 p2o.pd_op.swish.5.0 p2o.pd_op.conv2d.23.0 0=120 1=1 5=1 6=7200
+Swish                    Mul.164                  1 1 p2o.pd_op.conv2d.23.0 p2o.pd_op.swish.6.0
+Squeeze                  Squeeze.8                1 1 p2o.pd_op.swish.6.0 p2o.pd_op.squeeze.0.0 -23303=1,1
+Permute                  Transpose.8              1 1 p2o.pd_op.squeeze.0.0 p2o.pd_op.transpose.8.0 0=1
+InnerProduct             MatMul.12                1 1 p2o.pd_op.transpose.8.0 Add.227 0=97 1=1 2=11640
+Softmax                  Softmax.2                1 1 Add.227 fetch_name_0 0=1 1=1

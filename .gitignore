@@ -17,11 +17,15 @@ dev_tools/debug_tools
 /campaign/test/
 /toolkit
 *.lock
-!uv.lock
 config/reloadflag
 config/reloadalas
 test.py
 test/
+!test/
+test/*
+!test/ncnn_ocr_benchmark.py
+!test/ncnn_models
+!test/ncnn_ocr_benchmark.zh-CN.md
 debug_ocr/
 PaddleOCR
 .trae
@@ -303,3 +307,6 @@ cursor-helper/**/review/reports/files/
 # - cursor-helper/**/review/reports/summary/** （总结性评审报告）
 # - cursor-helper/**/fix/fix_report.md （修复报告）
 # - cursor-helper/**/organize-rules/** （规则整理报告）
+
+AGENTS.md
+RTK.md

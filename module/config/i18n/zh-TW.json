@@ -648,12 +648,11 @@
       "help": ""
     },
     "OcrDevice": {
-      "name": "Optimization.OcrDevice.name",
-      "help": "Optimization.OcrDevice.help",
-      "auto": "auto",
+      "name": "OCR 裝置",
+      "help": "選擇 OCR 裝置。GPU 使用 ncnn Vulkan 後端，需可被 ncnn 偵測到的 Vulkan 裝置。自動選擇會在可用時使用 GPU，否則使用 CPU。",
+      "auto": "自動選擇",
       "cpu": "CPU",
-      "gpu": "GPU",
-      "ane": "ANE (Apple)"
+      "gpu": "GPU"
     },
     "ScreenshotInterval": {
       "name": "放慢截圖速度至 X 秒一張",

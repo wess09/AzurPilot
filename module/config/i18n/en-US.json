@@ -648,12 +648,11 @@
       "help": ""
     },
     "OcrDevice": {
-      "name": "Optimization.OcrDevice.name",
-      "help": "Optimization.OcrDevice.help",
+      "name": "OCR Device",
+      "help": "Choose the OCR device. GPU uses the ncnn Vulkan backend and requires a Vulkan device detected by ncnn. Auto uses GPU when available, otherwise CPU.",
       "auto": "Auto",
       "cpu": "CPU",
-      "gpu": "GPU",
-      "ane": "ANE (Apple)"
+      "gpu": "GPU"
     },
     "ScreenshotInterval": {
       "name": "Slow Down Screenshot Speed to X Seconds per Frame",
