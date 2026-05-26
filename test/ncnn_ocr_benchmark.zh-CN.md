@@ -1,6 +1,6 @@
 # ncnn OCR 基准测试说明
 
-本文档说明 `test/ncnn_ocr_benchmark.py` 这个 OCR 基准测试。EN/CN 单行识别已迁移到 ncnn；该脚本继续用于复测不同平台、不同 GPU/后端上的真实延迟、功耗和准确率，防止迁移后出现性能或准确率回退。
+本文档说明 `test/ncnn_ocr_benchmark.py` 这个 OCR 基准测试。EN/CN/JP/TW 单行识别已迁移到 ncnn；该脚本继续用于复测不同平台、不同 GPU/后端上的真实延迟、功耗和准确率，防止迁移后出现性能或准确率回退。
 
 当前 ncnn 的主要吸引点是：可以通过 Vulkan 在多个平台上使用相对统一的 GPU 后端。它减少了 DirectML/CoreML/CUDA/ROCm 等平台分支，但仍需要各平台实测数据来决定默认策略。
 
@@ -18,6 +18,7 @@
 需要回答的问题不是简单的“Vulkan 是否更快”，而是：
 
 - EN/CN 基准集是否都保持 `100%` 准确率？
+- JP/TW 转换后的模型是否能稳定加载和推理？
 - 延迟是否足够低，值得引入新的推理路径？
 - 能耗是否下降，还是只是把 CPU 工作转移到 GPU？
 - AMD、NVIDIA、Intel、Apple、Windows 等环境上的表现是否稳定？
@@ -27,13 +28,13 @@
 Python 侧依赖：
 
 ```bash
-uv pip install ncnn onnx onnxsim
+rtk uv pip install ncnn onnx onnxsim
 ```
 
 部分发行版的 `ncnn` 包不提供 `onnx2ncnn`。如果没有该工具，需要从 ncnn 源码构建工具。在本次测试环境中，源码位于 `/tmp/ncnn`。
-> 当然其实可以直接使用我装换后的版本,位于`test/ncnn_models`
+> 生产使用的已转换版本位于 `bin/ocr_models/ncnn`；`test/ncnn_models` 仅保留早期实验产物。
 ```bash
-cmake -S /tmp/ncnn -B /tmp/ncnn/build-tools -G Ninja \
+rtk cmake -S /tmp/ncnn -B /tmp/ncnn/build-tools -G Ninja \
   -DNCNN_BUILD_TOOLS=ON \
   -DNCNN_BUILD_EXAMPLES=OFF \
   -DNCNN_BUILD_BENCHMARK=OFF \
@@ -41,7 +42,7 @@ cmake -S /tmp/ncnn -B /tmp/ncnn/build-tools -G Ninja \
   -DNCNN_VULKAN=OFF \
   -DNCNN_PYTHON=OFF
 
-cmake --build /tmp/ncnn/build-tools --target onnx2ncnn ncnnoptimize
+rtk cmake --build /tmp/ncnn/build-tools --target onnx2ncnn ncnnoptimize
 ```
 
 构建完成后应能找到：
@@ -56,31 +57,32 @@ cmake --build /tmp/ncnn/build-tools --target onnx2ncnn ncnnoptimize
 将项目内置的 ONNX 识别模型转换为 ncnn param/bin：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --convert \
+  --convert-only \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --onnx2ncnn /tmp/ncnn/build-tools/tools/onnx/onnx2ncnn \
   --ncnnoptimize /tmp/ncnn/build-tools/tools/ncnnoptimize \
-  --backend ncnn-cpu \
-  --models en cn \
-  --accuracy-limit 10 \
-  --count 10 \
-  --warmup 2
+  --models en cn jp tw
 ```
 
 脚本转换流程：
 
 - 使用固定输入形状 `[1, 3, 48, 320]` 简化 ONNX。
 - 使用 `onnx2ncnn` 转换。
-- 使用 `ncnnoptimize` 优化。
 - 修补 `onnx2ncnn` 无法正确表达的 AzurPilot OCR attention 子图。
+- EN/CN 使用 `ncnnoptimize` 后再修补；JP/TW 的 raw 图需要先修补动态 slice/attention，且当前直接落盘 raw-patched 图，避免 `ncnnoptimize` 破坏输入 blob。
+
+目前仓库只内置 EN/CN 的验证集。JP/TW 可通过 `--convert-only` 完成转换，并用生产 `NcnnRecOCR` 做加载/推理 smoke test。
 
 ## 测试指令
 
 运行所有本机可用后端：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend all \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --models en cn \
   --count 100 \
   --warmup 5
@@ -89,10 +91,11 @@ cmake --build /tmp/ncnn/build-tools --target onnx2ncnn ncnnoptimize
 指定 Vulkan GPU。我的测试机中，`GPU1` 是独显：
 
 ```bash
-vulkaninfo --summary
+rtk vulkaninfo --summary
 
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend ncnn-vulkan \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --gpu-index 1 \
   --models en cn \
   --count 100 \
@@ -102,8 +105,9 @@ vulkaninfo --summary
 只测试 ncnn CPU：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend ncnn-cpu \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --models en cn \
   --count 100 \
   --warmup 5
@@ -112,36 +116,39 @@ vulkaninfo --summary
 只测试当前 RapidOCR / ONNX Runtime 路径：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend onnx-cpu \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --models en cn \
   --count 100 \
   --warmup 5
 ```
 
-注意：脚本中的 `onnx-cpu` 表示当前 `AlOcr` baseline。Windows/macOS 环境下交流结果时，需要额外记录实际 `ocr_device`、ONNX Runtime provider 或系统是否启用了 DirectML/CoreML/ANE。
+注意：脚本中的 `onnx-cpu` 表示迁移前的 RapidOCR / ONNX Runtime baseline，仅用于实验对照；生产单行识别不再回退到该路径。
 
 ## 当前准确率安全默认值
 
 当前默认值以准确率优先：
 
 ```bash
---output-name Add.227
+--output-name auto
 --ncnn-fp16 model
 ```
 
-`Add.227` 是最终 softmax 前的 logits。CTC 解码只依赖 argmax，softmax 不改变 argmax。跳过最终 softmax 对 CN 很重要，因为 CN 最终分类头有 `18385` 个类别。
+`--output-name auto` 会按模型选择最终 softmax 前的 logits：EN/CN 使用 `Add.227`，JP/TW 使用 `Add.223`。CTC 解码只依赖 argmax，softmax 不改变 argmax。跳过最终 softmax 对 CN/JP/TW 很重要，因为这些模型的最终分类头有 `18385` 个类别。
 
 `--ncnn-fp16 model` 当前含义：
 
 - `en`：关闭 fp16，因为 RX6800S 上 fp16 曾造成少量准确率损失。
 - `cn`：使用 ncnn auto fp16，因为 CN 保持 `1000/1000`，并且速度更快。
+- `jp/tw`：关闭 fp16，优先保持实验分支的转换稳定性。
 
 测试原始 post-softmax 输出：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend ncnn-vulkan \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --gpu-index 1 \
   --models cn \
   --output-name fetch_name_0
@@ -150,8 +157,9 @@ vulkaninfo --summary
 强制 fp32：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend ncnn-vulkan \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --gpu-index 1 \
   --models en cn \
   --ncnn-fp16 off
@@ -165,7 +173,7 @@ vulkaninfo --summary
 - Mesa RADV
 - CPU AMD Ryzen 9 6900HS
 - GPU AMD Radeon RX 6800S，使用 `--gpu-index 1`
-- ncnn 输出 blob：`Add.227`
+- ncnn 输出 blob：`auto`，EN/CN 对应 `Add.227`
 - ncnn fp16 策略：`model`
 
 当前本机结果：
@@ -208,8 +216,9 @@ vulkaninfo --summary
 有 Vulkan 的协作者建议先运行：
 
 ```bash
-.venv/bin/python test/ncnn_ocr_benchmark.py \
+rtk .venv/bin/python test/ncnn_ocr_benchmark.py \
   --backend all \
+  --ncnn-model-dir bin/ocr_models/ncnn \
   --models en cn \
   --count 100 \
   --warmup 5 \

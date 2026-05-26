@@ -642,12 +642,11 @@
       "help": ""
     },
     "OcrDevice": {
-      "name": "OCR设备选择",
-      "help": "",
+      "name": "OCR デバイス",
+      "help": "OCR デバイスを選択します。GPU は ncnn Vulkan バックエンドを使用し、ncnn が検出できる Vulkan デバイスが必要です。自動では利用可能な場合 GPU、それ以外は CPU を使用します。",
       "auto": "自動",
       "cpu": "CPU",
-      "gpu": "GPU",
-      "ane": "ANE (Apple)"
+      "gpu": "GPU"
     },
     "ScreenshotInterval": {
       "name": "スクリーンショット速度をX秒に1枚に減速",

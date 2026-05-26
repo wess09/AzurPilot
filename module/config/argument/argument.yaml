@@ -183,7 +183,7 @@ Error:
 Optimization:
   OcrDevice: 
     value: auto
-    option: [auto, cpu, gpu, ane]
+    option: [auto, cpu, gpu]
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
   TaskHoardingDuration: 0

@@ -40,6 +40,9 @@ if str(REPO_ROOT) not in sys.path:
 
 import cv2
 import numpy as np
+from rapidocr import OCRVersion, RapidOCR
+from rapidocr.cal_rec_boxes import CalRecBoxes
+from rapidocr.ch_ppocr_rec import TextRecognizer
 from rapidocr.ch_ppocr_rec.utils import CTCLabelDecode
 from rapidocr.main import resize_image_within_bounds
 from rapidocr.utils.load_image import LoadImage
@@ -52,6 +55,7 @@ class ModelSpec:
     dataset_subdir: str
     onnx_path: Path
     keys_path: Path
+    ncnn_output_name: str = "Add.227"
 
 
 @dataclass
@@ -101,18 +105,26 @@ MODELS = {
         onnx_path=REPO_ROOT / "bin/ocr_models/zh-CN/alocr-zh-cn-v3.dtk.onnx",
         keys_path=REPO_ROOT / "bin/ocr_models/zh-CN/cn.txt",
     ),
+    "jp": ModelSpec(
+        name="jp",
+        dataset_prefix="",
+        dataset_subdir="",
+        onnx_path=REPO_ROOT / "bin/ocr_models/JP/JP.onnx",
+        keys_path=REPO_ROOT / "bin/ocr_models/JP/ppocrv5_dict.txt",
+        ncnn_output_name="Add.223",
+    ),
+    "tw": ModelSpec(
+        name="tw",
+        dataset_prefix="",
+        dataset_subdir="",
+        onnx_path=REPO_ROOT / "bin/ocr_models/TW/TW.onnx",
+        keys_path=REPO_ROOT / "bin/ocr_models/TW/ppocrv5_dict.txt",
+        ncnn_output_name="Add.223",
+    ),
 }
 
 INPUT_SHAPE = (1, 3, 48, 320)
 
-ATTENTION_SLICE_STARTS = {
-    "Slice.3": 0,
-    "Slice.4": 1,
-    "Slice.5": 2,
-    "Slice.8": 0,
-    "Slice.9": 1,
-    "Slice.10": 2,
-}
 ATTENTION_SQUEEZES = {
     "Squeeze.2",
     "Squeeze.3",
@@ -121,6 +133,114 @@ ATTENTION_SQUEEZES = {
     "Squeeze.6",
     "Squeeze.7",
 }
+
+
+def make_param_line(
+    op: str,
+    name: str,
+    inputs: list[str],
+    outputs: list[str],
+    params: list[str] | None = None,
+) -> str:
+    values = [op, name, str(len(inputs)), str(len(outputs)), *inputs, *outputs]
+    if params:
+        values.extend(params)
+    return f"{op:<24} {name:<24} " + " ".join(values[2:])
+
+
+def parse_param_line(line: str) -> tuple[str, str, list[str], list[str], list[str]] | None:
+    parts = line.split()
+    if len(parts) < 4:
+        return None
+
+    op, name = parts[0], parts[1]
+    try:
+        input_count = int(parts[2])
+        output_count = int(parts[3])
+    except ValueError:
+        return None
+
+    input_start = 4
+    output_start = input_start + input_count
+    param_start = output_start + output_count
+    if len(parts) < param_start:
+        return None
+
+    return (
+        op,
+        name,
+        parts[input_start:output_start],
+        parts[output_start:param_start],
+        parts[param_start:],
+    )
+
+
+def static_slice_start(input_blob: str) -> int | None:
+    if "_splitncnn_" not in input_blob:
+        return None
+    if "p2o.pd_op.transpose.1.0_splitncnn_" not in input_blob and (
+        "p2o.pd_op.transpose.4.0_splitncnn_" not in input_blob
+    ):
+        return None
+
+    suffix = input_blob.rsplit("_splitncnn_", 1)[1]
+    if suffix not in {"0", "1", "2"}:
+        return None
+    return 2 - int(suffix)
+
+
+ATTENTION_BLOCKS = {
+    "0": {
+        "q": "p2o.pd_op.slice.1.0",
+        "k": "p2o.pd_op.slice.2.0",
+        "v": "p2o.pd_op.slice.3.0",
+        "k_transpose": "Transpose.2",
+        "qk_matmul": "MatMul.1",
+        "softmax": "Softmax.0",
+        "v_matmul": "MatMul.2",
+        "k_transpose_blob": "p2o.pd_op.transpose.2.0",
+        "softmax_blob": "p2o.pd_op.softmax.0.0",
+    },
+    "1": {
+        "q": "p2o.pd_op.slice.4.0",
+        "k": "p2o.pd_op.slice.5.0",
+        "v": "p2o.pd_op.slice.6.0",
+        "k_transpose": "Transpose.5",
+        "qk_matmul": "MatMul.7",
+        "softmax": "Softmax.1",
+        "v_matmul": "MatMul.8",
+        "k_transpose_blob": "p2o.pd_op.transpose.5.0",
+        "softmax_blob": "p2o.pd_op.softmax.1.0",
+    },
+}
+
+
+def normalize_dynamic_param_line(line: str) -> str:
+    parsed = parse_param_line(line)
+    if parsed is None:
+        return line
+
+    op, name, inputs, outputs, _ = parsed
+    if op == "ExpandDims" and inputs and outputs:
+        return make_param_line(op, name, [inputs[0]], outputs, ["-23303=1,0"])
+
+    if op == "Crop" and inputs and outputs:
+        start = static_slice_start(inputs[0])
+        if start is not None:
+            return make_param_line(
+                op,
+                name,
+                [inputs[0]],
+                outputs,
+                [f"-23309=1,{start}", f"-23310=1,{start + 1}", "-23311=1,1"],
+            )
+
+    if op == "Squeeze" and inputs and outputs:
+        if len(inputs) > 1 or name in ATTENTION_SQUEEZES:
+            axis = 0 if outputs[0] == "p2o.pd_op.assign.0.0" else 1
+            return make_param_line(op, name, [inputs[0]], outputs, [f"-23303=1,{axis}"])
+
+    return line
 
 
 def read_text(path: Path) -> str:
@@ -272,7 +392,7 @@ class NcnnRecognizer:
         self.load_image = LoadImage()
         self.decoder = CTCLabelDecode(character_path=spec.keys_path)
         self.input_name = input_name
-        self.output_name = output_name
+        self.output_name = spec.ncnn_output_name if output_name == "auto" else output_name
         self.input_layout = input_layout
         self.class_count = len(self.decoder.character)
         self.gpu_index = gpu_index
@@ -402,17 +522,47 @@ class NcnnRecognizer:
         )
 
 
+class BenchmarkRecOnlyOCR(RapidOCR):
+    def _initialize(self, cfg):
+        self.text_score = cfg.Global.text_score
+        self.min_height = cfg.Global.min_height
+        self.width_height_ratio = cfg.Global.width_height_ratio
+
+        self.use_det = False
+        self.text_det = None
+
+        self.use_cls = False
+        self.text_cls = None
+
+        self.use_rec = cfg.Global.use_rec
+        cfg.Rec.engine_cfg = cfg.EngineConfig[cfg.Rec.engine_type.value]
+        cfg.Rec.font_path = cfg.Global.font_path
+        cfg.Rec.model_root_dir = cfg.Global.get("model_root_dir", os.getcwd())
+        self.text_rec = TextRecognizer(cfg.Rec)
+
+        self.load_img = LoadImage()
+        self.max_side_len = cfg.Global.max_side_len
+        self.min_side_len = cfg.Global.min_side_len
+
+        self.cal_rec_boxes = CalRecBoxes()
+        self.return_word_box = cfg.Global.return_word_box
+        self.return_single_char_box = cfg.Global.return_single_char_box
+        self.cfg = cfg
+
+
 class OnnxCpuRecognizer:
     def __init__(self, spec: ModelSpec):
-        from rapidocr import OCRVersion
-        from module.ocr.al_ocr import _create_legacy_ocr
-
         ocr_version = OCRVersion.PPOCRV4 if spec.name == "en" else OCRVersion.PPOCRV5
-        self.ocr = _create_legacy_ocr(
-            str(spec.onnx_path),
-            str(spec.keys_path),
-            ocr_version,
-        )
+        params = {
+            "Global.use_det": False,
+            "Global.use_cls": False,
+            "Det.model_path": None,
+            "Cls.model_path": None,
+            "Rec.ocr_version": ocr_version,
+            "Rec.model_path": str(spec.onnx_path),
+            "Rec.rec_keys_path": str(spec.keys_path),
+        }
+        self.ocr = BenchmarkRecOnlyOCR(params=params)
 
     def __call__(self, image_or_path: str | Path | np.ndarray) -> str:
         res = self.ocr(image_or_path)
@@ -460,107 +610,168 @@ def patch_alocr_attention_lines(lines: list[str]) -> tuple[list[str], int, int]:
     body: list[str] = []
     added_layers = 0
     added_blobs = 0
+    q_outputs: dict[str, str] = {}
 
     for line in lines:
-        parts = line.split()
-        if len(parts) >= 2 and parts[0] == "Crop" and parts[1] in ATTENTION_SLICE_STARTS:
-            start = ATTENTION_SLICE_STARTS[parts[1]]
-            line += f" -23309=1,{start} -23310=1,{start + 1} -23311=1,1"
+        line = normalize_dynamic_param_line(line)
+        parsed = parse_param_line(line)
+        if parsed is None:
+            body.append(line)
+            continue
 
-        if len(parts) >= 2 and parts[0] == "Squeeze" and parts[1] in ATTENTION_SQUEEZES:
-            line = line.replace("-23303=1,0", "-23303=1,1")
+        op, name, inputs, outputs, _ = parsed
 
-        if len(parts) >= 2 and parts[0] == "BinaryOp" and parts[1] == "Mul.148":
+        q_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if op == "BinaryOp" and spec["q"] in inputs and outputs
+            ),
+            None,
+        )
+        if q_block is not None:
+            q_output = outputs[0]
+            q_outputs[q_block] = q_output
             body.append(line)
             body.extend(
                 [
-                    "Reshape                  HeadReshape.0q          1 1 Mul.149 Mul.149.reshape_heads 0=15 1=8 2=-1",
-                    "Permute                  HeadPermute.0q          1 1 Mul.149.reshape_heads Mul.149.heads 0=2",
+                    make_param_line(
+                        "Reshape",
+                        f"HeadReshape.{q_block}q",
+                        [q_output],
+                        [f"{q_output}.reshape_heads"],
+                        ["0=15", "1=8", "2=-1"],
+                    ),
+                    make_param_line(
+                        "Permute",
+                        f"HeadPermute.{q_block}q",
+                        [f"{q_output}.reshape_heads"],
+                        [f"{q_output}.heads"],
+                        ["0=2"],
+                    ),
                 ]
             )
             added_layers += 2
             added_blobs += 2
             continue
 
-        if len(parts) >= 2 and parts[0] == "BinaryOp" and parts[1] == "Mul.155":
+        v_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if op == "Squeeze" and outputs == [spec["v"]]
+            ),
+            None,
+        )
+        if v_block is not None:
+            v_blob = ATTENTION_BLOCKS[v_block]["v"]
             body.append(line)
             body.extend(
                 [
-                    "Reshape                  HeadReshape.1q          1 1 Mul.156 Mul.156.reshape_heads 0=15 1=8 2=-1",
-                    "Permute                  HeadPermute.1q          1 1 Mul.156.reshape_heads Mul.156.heads 0=2",
+                    make_param_line(
+                        "Reshape",
+                        f"HeadReshape.{v_block}v",
+                        [v_blob],
+                        [f"{v_blob}.reshape_heads"],
+                        ["0=15", "1=8", "2=-1"],
+                    ),
+                    make_param_line(
+                        "Permute",
+                        f"HeadPermute.{v_block}v",
+                        [f"{v_blob}.reshape_heads"],
+                        [f"{v_blob}.heads"],
+                        ["0=2"],
+                    ),
                 ]
             )
             added_layers += 2
             added_blobs += 2
             continue
 
-        if len(parts) >= 2 and parts[0] == "Squeeze" and parts[1] == "Squeeze.4":
-            body.append(line)
-            body.extend(
-                [
-                    "Reshape                  HeadReshape.0v          1 1 p2o.pd_op.slice.3.0 p2o.pd_op.slice.3.0.reshape_heads 0=15 1=8 2=-1",
-                    "Permute                  HeadPermute.0v          1 1 p2o.pd_op.slice.3.0.reshape_heads p2o.pd_op.slice.3.0.heads 0=2",
-                ]
-            )
-            added_layers += 2
-            added_blobs += 2
-            continue
-
-        if len(parts) >= 2 and parts[0] == "Squeeze" and parts[1] == "Squeeze.7":
-            body.append(line)
-            body.extend(
-                [
-                    "Reshape                  HeadReshape.1v          1 1 p2o.pd_op.slice.6.0 p2o.pd_op.slice.6.0.reshape_heads 0=15 1=8 2=-1",
-                    "Permute                  HeadPermute.1v          1 1 p2o.pd_op.slice.6.0.reshape_heads p2o.pd_op.slice.6.0.heads 0=2",
-                ]
-            )
-            added_layers += 2
-            added_blobs += 2
-            continue
-
-        if len(parts) >= 2 and parts[0] == "Permute" and parts[1] == "Transpose.2":
+        k_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if op == "Permute" and name == spec["k_transpose"]
+            ),
+            None,
+        )
+        if k_block is not None:
+            k_blob = ATTENTION_BLOCKS[k_block]["k"]
             body.append(
-                "Reshape                  HeadReshape.0k          1 1 p2o.pd_op.slice.2.0 p2o.pd_op.slice.2.0.reshape_heads 0=15 1=8 2=-1"
+                make_param_line(
+                    "Reshape",
+                    f"HeadReshape.{k_block}k",
+                    [k_blob],
+                    [f"{k_blob}.reshape_heads"],
+                    ["0=15", "1=8", "2=-1"],
+                )
             )
             body.append(
-                "Permute                  Transpose.2              1 1 p2o.pd_op.slice.2.0.reshape_heads p2o.pd_op.transpose.2.0 0=2"
+                make_param_line(
+                    "Permute",
+                    name,
+                    [f"{k_blob}.reshape_heads"],
+                    outputs,
+                    ["0=2"],
+                )
             )
             added_layers += 1
             added_blobs += 1
             continue
 
-        if len(parts) >= 2 and parts[0] == "Permute" and parts[1] == "Transpose.5":
+        qk_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if name == spec["qk_matmul"]
+            ),
+            None,
+        )
+        if qk_block is not None:
+            spec = ATTENTION_BLOCKS[qk_block]
+            q_output = q_outputs.get(qk_block, inputs[0] if inputs else spec["q"])
             body.append(
-                "Reshape                  HeadReshape.1k          1 1 p2o.pd_op.slice.5.0 p2o.pd_op.slice.5.0.reshape_heads 0=15 1=8 2=-1"
-            )
-            body.append(
-                "Permute                  Transpose.5              1 1 p2o.pd_op.slice.5.0.reshape_heads p2o.pd_op.transpose.5.0 0=2"
-            )
-            added_layers += 1
-            added_blobs += 1
-            continue
-
-        if len(parts) >= 2 and parts[0] == "Gemm" and parts[1] == "MatMul.1":
-            body.append(
-                "MatMul                   MatMul.1                 2 1 Mul.149.heads p2o.pd_op.transpose.2.0 p2o.pd_op.matmul.1.0 0=1"
-            )
-            continue
-
-        if len(parts) >= 2 and parts[0] == "Gemm" and parts[1] == "MatMul.2":
-            body.append(
-                "MatMul                   MatMul.2                 2 1 p2o.pd_op.softmax.0.0 p2o.pd_op.slice.3.0.heads p2o.pd_op.matmul.2.0 0=0"
-            )
-            continue
-
-        if len(parts) >= 2 and parts[0] == "Gemm" and parts[1] == "MatMul.7":
-            body.append(
-                "MatMul                   MatMul.7                 2 1 Mul.156.heads p2o.pd_op.transpose.5.0 p2o.pd_op.matmul.7.0 0=1"
+                make_param_line(
+                    "MatMul",
+                    name,
+                    [f"{q_output}.heads", spec["k_transpose_blob"]],
+                    outputs,
+                    ["0=1"],
+                )
             )
             continue
 
-        if len(parts) >= 2 and parts[0] == "Gemm" and parts[1] == "MatMul.8":
+        softmax_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if op == "Softmax" and name == spec["softmax"]
+            ),
+            None,
+        )
+        if softmax_block is not None:
+            body.append(make_param_line("Softmax", name, inputs, outputs, ["0=2", "1=1"]))
+            continue
+
+        v_matmul_block = next(
+            (
+                block_id
+                for block_id, spec in ATTENTION_BLOCKS.items()
+                if name == spec["v_matmul"]
+            ),
+            None,
+        )
+        if v_matmul_block is not None:
+            spec = ATTENTION_BLOCKS[v_matmul_block]
             body.append(
-                "MatMul                   MatMul.8                 2 1 p2o.pd_op.softmax.1.0 p2o.pd_op.slice.6.0.heads p2o.pd_op.matmul.8.0 0=0"
+                make_param_line(
+                    "MatMul",
+                    name,
+                    [spec["softmax_blob"], f"{spec['v']}.heads"],
+                    outputs,
+                    ["0=0"],
+                )
             )
             continue
 
@@ -590,6 +801,8 @@ def convert_model(spec: ModelSpec, output_dir: Path, onnx2ncnn: str, ncnnoptimiz
         raw_bin_path = temp_dir / f"{spec.name}.raw.bin"
         opt_param_path = temp_dir / f"{spec.name}.param"
         opt_bin_path = temp_dir / f"{spec.name}.bin"
+        patched_raw_param_path = temp_dir / f"{spec.name}.patched.raw.param"
+        patched_raw_bin_path = temp_dir / f"{spec.name}.patched.raw.bin"
 
         simplify_onnx_model(spec, simplified_path)
         subprocess.run(
@@ -597,17 +810,31 @@ def convert_model(spec: ModelSpec, output_dir: Path, onnx2ncnn: str, ncnnoptimiz
             cwd=REPO_ROOT,
             check=True,
         )
-        subprocess.run(
-            [ncnnoptimize_path, str(raw_param_path), str(raw_bin_path), str(opt_param_path), str(opt_bin_path), "0"],
-            cwd=REPO_ROOT,
-            check=True,
-        )
-        patch_alocr_attention(opt_param_path)
-        shutil.copy2(opt_param_path, param_path)
-        shutil.copy2(opt_bin_path, bin_path)
+
+        try:
+            subprocess.run(
+                [ncnnoptimize_path, str(raw_param_path), str(raw_bin_path), str(opt_param_path), str(opt_bin_path), "0"],
+                cwd=REPO_ROOT,
+                check=True,
+            )
+            patch_alocr_attention(opt_param_path)
+            shutil.copy2(opt_param_path, param_path)
+            shutil.copy2(opt_bin_path, bin_path)
+            return
+        except subprocess.CalledProcessError:
+            pass
+
+        shutil.copy2(raw_param_path, patched_raw_param_path)
+        shutil.copy2(raw_bin_path, patched_raw_bin_path)
+        patch_alocr_attention(patched_raw_param_path)
+        shutil.copy2(patched_raw_param_path, param_path)
+        shutil.copy2(patched_raw_bin_path, bin_path)
 
 
 def extract_dataset(spec: ModelSpec, work_dir: Path) -> list[tuple[Path, str]]:
+    if not spec.dataset_prefix or not spec.dataset_subdir:
+        raise FileNotFoundError(f"No benchmark dataset is configured for model '{spec.name}'")
+
     archive = REPO_ROOT / "module/daemon" / f"{spec.dataset_prefix}.tar"
     if not archive.is_file():
         raise FileNotFoundError(f"Missing benchmark archive: {archive}")
@@ -800,15 +1027,16 @@ def parse_args(argv: Iterable[str]) -> argparse.Namespace:
     parser.add_argument("--models", nargs="+", choices=sorted(MODELS), default=["en", "cn"])
     parser.add_argument("--ncnn-model-dir", type=Path, default=REPO_ROOT / "test/ncnn_models")
     parser.add_argument("--convert", action="store_true", help="Run onnx2ncnn before benchmarking ncnn backends.")
+    parser.add_argument("--convert-only", action="store_true", help="Convert models and exit without running datasets.")
     parser.add_argument("--onnx2ncnn", default="onnx2ncnn", help="onnx2ncnn executable name or path.")
     parser.add_argument("--ncnnoptimize", default="ncnnoptimize", help="ncnnoptimize executable name or path.")
     parser.add_argument("--input-name", default="x", help="ncnn input blob name.")
     parser.add_argument(
         "--output-name",
-        default="Add.227",
+        default="auto",
         help=(
-            "ncnn output blob name. The default extracts pre-softmax logits; "
-            "use fetch_name_0 to include the final softmax."
+            "ncnn output blob name. auto extracts each model's pre-softmax logits; "
+            "use fetch_name_0 to include the final softmax for EN/CN converted models."
         ),
     )
     parser.add_argument("--input-layout", choices=["nchw", "chw"], default="nchw")
@@ -817,7 +1045,7 @@ def parse_args(argv: Iterable[str]) -> argparse.Namespace:
         "--ncnn-fp16",
         choices=["model", "auto", "off"],
         default="model",
-        help="ncnn fp16 policy; model uses fp16 for cn and fp32 for en.",
+        help="ncnn fp16 policy; model uses fp16 for cn and fp32 for en/jp/tw.",
     )
     parser.add_argument("--ncnn-packing", choices=["auto", "off"], default="auto")
     parser.add_argument("--threads", type=int, default=max(1, (os.cpu_count() or 2) // 2))
@@ -837,13 +1065,28 @@ def main(argv: Iterable[str] = sys.argv[1:]) -> int:
     if args.convert:
         for model_name in args.models:
             convert_model(MODELS[model_name], args.ncnn_model_dir, args.onnx2ncnn, args.ncnnoptimize)
+        if args.convert_only:
+            return 0
 
     results: list[BenchResult] = []
     with tempfile.TemporaryDirectory(prefix="azurpilot-ncnn-bench-") as temp:
         work_dir = Path(temp)
         for model_name in args.models:
             spec = MODELS[model_name]
-            cases = extract_dataset(spec, work_dir)
+            try:
+                cases = extract_dataset(spec, work_dir)
+            except FileNotFoundError as exc:
+                for backend in expanded_backends(args.backend):
+                    results.append(
+                        BenchResult(
+                            backend=backend,
+                            model=spec.name,
+                            dataset=spec.dataset_prefix,
+                            status="SKIP",
+                            note=str(exc),
+                        )
+                    )
+                continue
             for backend in expanded_backends(args.backend):
                 if backend.startswith("ncnn") and not (
                     args.ncnn_model_dir / f"{spec.name}.param"

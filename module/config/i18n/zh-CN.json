@@ -643,11 +643,10 @@
     },
     "OcrDevice": {
       "name": "OCR设备",
-      "help": "选择OCR设备，不推荐任何没有独立显卡的用户使用GPU，除非你知道自己在做什么\nGPU 使用 ncnn Vulkan 后端，适用于可被 ncnn 枚举到的 Vulkan 设备；ANE 仅作为 macOS 上的旧版兼容选项\n自动选择：检测到可用 ncnn Vulkan GPU 时使用GPU，否则使用CPU",
+      "help": "选择OCR设备，不推荐任何没有独立显卡的用户使用GPU，除非你知道自己在做什么\nGPU 使用 ncnn Vulkan 后端，适用于可被 ncnn 枚举到的 Vulkan 设备\n自动选择：检测到可用 ncnn Vulkan GPU 时使用GPU，否则使用CPU",
       "auto": "自动选择",
       "cpu": "CPU",
-      "gpu": "GPU",
-      "ane": "ANE (Apple)"
+      "gpu": "GPU"
     },
     "ScreenshotInterval": {
       "name": "放慢截图速度至 X 秒一张",

@@ -18,7 +18,6 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 MODEL_ROOT = REPO_ROOT / "bin/ocr_models/ncnn"
 REC_IMAGE_SHAPE = (3, 48, 320)
 INPUT_NAME = "x"
-OUTPUT_NAME = "Add.227"
 
 
 @dataclass(frozen=True)
@@ -27,6 +26,7 @@ class NcnnRecModelSpec:
     param_path: Path
     bin_path: Path
     keys_path: Path
+    output_name: str
     disable_fp16: bool = False
 
 
@@ -36,6 +36,7 @@ MODEL_SPECS = {
         param_path=MODEL_ROOT / "en.param",
         bin_path=MODEL_ROOT / "en.bin",
         keys_path=REPO_ROOT / "bin/ocr_models/en-US/en.txt",
+        output_name="Add.227",
         disable_fp16=True,
     ),
     "cn": NcnnRecModelSpec(
@@ -43,6 +44,23 @@ MODEL_SPECS = {
         param_path=MODEL_ROOT / "cn.param",
         bin_path=MODEL_ROOT / "cn.bin",
         keys_path=REPO_ROOT / "bin/ocr_models/zh-CN/cn.txt",
+        output_name="Add.227",
+    ),
+    "jp": NcnnRecModelSpec(
+        name="jp",
+        param_path=MODEL_ROOT / "jp.param",
+        bin_path=MODEL_ROOT / "jp.bin",
+        keys_path=REPO_ROOT / "bin/ocr_models/JP/ppocrv5_dict.txt",
+        output_name="Add.223",
+        disable_fp16=True,
+    ),
+    "tw": NcnnRecModelSpec(
+        name="tw",
+        param_path=MODEL_ROOT / "tw.param",
+        bin_path=MODEL_ROOT / "tw.bin",
+        keys_path=REPO_ROOT / "bin/ocr_models/TW/ppocrv5_dict.txt",
+        output_name="Add.223",
+        disable_fp16=True,
     ),
 }
 
@@ -194,13 +212,12 @@ class NcnnRecOCR:
 
     def _create_net(self) -> None:
         if self.device == "gpu":
-            try:
-                self.gpu_index = _resolve_gpu_index(self.ncnn, self.gpu_index)
-                self.use_vulkan = True
-            except Exception as e:
-                logger.warning(f"ncnn Vulkan unavailable, fallback OCR to CPU: {e}")
-        elif self.device == "ane":
-            logger.warning("ncnn OCR does not use Apple Neural Engine; fallback OCR to CPU")
+            self.gpu_index = _resolve_gpu_index(self.ncnn, self.gpu_index)
+            self.use_vulkan = True
+        elif self.device == "cpu":
+            self.use_vulkan = False
+        else:
+            raise RuntimeError(f"Unsupported OCR device for ncnn: {self.device}")
 
         self.net = self.ncnn.Net()
         if hasattr(self.net, "opt"):
@@ -251,8 +268,8 @@ class NcnnRecOCR:
         line_results, _ = self.decoder(preds)
         text = line_results[0][0]
 
-        # Add.227 is pre-softmax logits. CTC argmax is identical, but confidence
-        # is not calibrated after skipping Softmax for latency.
+        # The configured output is pre-softmax logits. CTC argmax is identical,
+        # but confidence is not calibrated after skipping Softmax for latency.
         score = 1.0 if text else 0.0
         return TextRecOutput(
             imgs=[img],
@@ -272,11 +289,13 @@ class NcnnRecOCR:
         if isinstance(ret, int) and ret != 0:
             raise RuntimeError(f"ncnn input('{INPUT_NAME}') failed with code {ret}")
 
-        extracted = ex.extract(OUTPUT_NAME)
+        extracted = ex.extract(self.spec.output_name)
         if isinstance(extracted, tuple):
             status, mat_out = extracted
             if isinstance(status, int) and status != 0:
-                raise RuntimeError(f"ncnn extract('{OUTPUT_NAME}') failed with code {status}")
+                raise RuntimeError(
+                    f"ncnn extract('{self.spec.output_name}') failed with code {status}"
+                )
         else:
             mat_out = extracted
 

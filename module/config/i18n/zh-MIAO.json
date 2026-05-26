@@ -643,11 +643,10 @@
     },
     "OcrDevice": {
       "name": "OCR设备选择 (´・ω・`)",
-      "help": "OCR跑在CPU/GPU/ANE上。GPU使用ncnn Vulkan后端；ANE仅作为macOS旧版兼容选项。自动：检测到可用ncnn Vulkan GPU就用GPU，否则CPU。",
+      "help": "OCR跑在CPU/GPU上。GPU使用ncnn Vulkan后端。自动：检测到可用ncnn Vulkan GPU就用GPU，否则CPU。",
       "auto": "自动判断 (｀・ω・´)",
       "cpu": "CPU喵",
-      "gpu": "GPU喵",
-      "ane": "ANE (Apple)喵"
+      "gpu": "GPU喵"
     },
     "ScreenshotInterval": {
       "name": "放慢截图至 X 秒一张 (´-ω-`)zzz",
