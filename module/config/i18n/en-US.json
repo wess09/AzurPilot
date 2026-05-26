@@ -649,10 +649,18 @@
     },
     "OcrDevice": {
       "name": "OCR Device",
-      "help": "Choose the OCR device. GPU uses the ncnn Vulkan backend and requires a Vulkan device detected by ncnn. Auto uses GPU when available, otherwise CPU.",
+      "help": "Choose the OCR device. GPU uses Windows DirectML, ANE uses macOS Apple Neural Engine. Auto: Apple Silicon Mac uses ANE, GPU when VRAM > 1GB on Windows, otherwise CPU.",
       "auto": "Auto",
       "cpu": "CPU",
-      "gpu": "GPU"
+      "gpu": "GPU",
+      "ane": "ANE (Apple)"
+    },
+    "OcrBackend": {
+      "name": "OCR Backend",
+      "help": "Choose the OCR inference engine. ONNX Runtime uses the ONNX Runtime backend, ncnn uses the ncnn Vulkan backend. Auto defaults to ONNX Runtime.",
+      "auto": "Auto (ONNX Runtime)",
+      "onnxruntime": "ONNX Runtime",
+      "ncnn": "ncnn (Vulkan)"
     },
     "ScreenshotInterval": {
       "name": "Slow Down Screenshot Speed to X Seconds per Frame",

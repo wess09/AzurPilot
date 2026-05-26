@@ -649,10 +649,18 @@
     },
     "OcrDevice": {
       "name": "OCR 裝置",
-      "help": "選擇 OCR 裝置。GPU 使用 ncnn Vulkan 後端，需可被 ncnn 偵測到的 Vulkan 裝置。自動選擇會在可用時使用 GPU，否則使用 CPU。",
+      "help": "選擇 OCR 裝置。GPU 用 Windows DirectML，ANE 用 macOS Apple Neural Engine。自動：Apple Silicon Mac 使用 ANE，Windows VRAM > 1GB 用 GPU，否則 CPU。",
       "auto": "自動選擇",
       "cpu": "CPU",
-      "gpu": "GPU"
+      "gpu": "GPU",
+      "ane": "ANE (Apple)"
+    },
+    "OcrBackend": {
+      "name": "OCR 後端",
+      "help": "選擇 OCR 推理引擎。onnxruntime 使用 ONNX Runtime，ncnn 使用 ncnn Vulkan 後端。自動預設為 onnxruntime。",
+      "auto": "自動 (onnxruntime)",
+      "onnxruntime": "ONNX Runtime",
+      "ncnn": "ncnn (Vulkan)"
     },
     "ScreenshotInterval": {
       "name": "放慢截圖速度至 X 秒一張",

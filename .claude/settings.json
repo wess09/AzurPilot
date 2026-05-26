@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "*",
+      "PowerShell(cd \"C:\\\\Users\\\\AzurLane\\\\Desktop\\\\Projects\\\\AzurLaneAutoScript\"; $tmp = \\(New-TemporaryFile\\).FullName; git show \"00f585879^:module/config/i18n/zh-CN.json\" | Out-File -FilePath $tmp -Encoding UTF8; python -c \"import json,sys; d=json.load\\(open\\(r'$tmp','r',encoding='utf-8'\\)\\); print\\(json.dumps\\(d['Optimization']['OcrDevice'],indent=2,ensure_ascii=False\\)\\)\")"
+    ]
+  }
+}

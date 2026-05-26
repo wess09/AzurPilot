@@ -1,6 +1,8 @@
 import copy
 import operator
 import os
+import platform
+import sys
 import threading
 from datetime import datetime, timedelta
 
@@ -191,10 +193,24 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
 
 
     @property
+    def ocr_backend(self) -> str:
+        val = self.Optimization_OcrBackend
+        if val == 'auto':
+            return 'onnxruntime'
+        return val
+
+    @property
     def ocr_device(self) -> str:
         val = self.Optimization_OcrDevice
         if val == 'auto':
-            return 'gpu' if is_good_gpu() else 'cpu'
+            if self.ocr_backend == 'onnxruntime':
+                if sys.platform == 'darwin' and platform.machine() == 'arm64':
+                    return 'ane'
+                return 'gpu' if is_good_gpu() else 'cpu'
+            else:
+                # ncnn backend: check Vulkan GPU availability
+                from module.ocr.ncnn_ocr import has_ncnn_vulkan_gpu
+                return 'gpu' if has_ncnn_vulkan_gpu() else 'cpu'
         return val
 
     @property

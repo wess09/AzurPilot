@@ -185,9 +185,12 @@ Error:
     value: "Nvidia/qwen/qwen2.5-coder-32b-instruct"
     valuetype: str
 Optimization:
-  OcrDevice: 
+  OcrDevice:
     value: auto
-    option: [auto, cpu, gpu]
+    option: [auto, cpu, gpu, ane]
+  OcrBackend:
+    value: auto
+    option: [auto, onnxruntime, ncnn]
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
   TaskHoardingDuration: 0

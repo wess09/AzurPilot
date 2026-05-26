@@ -649,10 +649,18 @@
     },
     "OcrDevice": {
       "name": "OCR设备选择 (´・ω・`)",
-      "help": "OCR跑在CPU/GPU上。GPU使用ncnn Vulkan后端。自动：检测到可用ncnn Vulkan GPU就用GPU，否则CPU。",
+      "help": "OCR跑在CPU/GPU/ANE上。GPU用Windows DirectML，ANE用macOS Neural Engine。自动：Apple Silicon选ANE，Windows显存>1G选GPU，否则CPU。",
       "auto": "自动判断 (｀・ω・´)",
       "cpu": "CPU喵",
-      "gpu": "GPU喵"
+      "gpu": "GPU喵",
+      "ane": "ANE喵 (Apple)"
+    },
+    "OcrBackend": {
+      "name": "OCR后端喵 (≧∇≦)ﾉ",
+      "help": "选OCR推理引擎喵。onnxruntime用ONNX Runtime，ncnn用ncnn Vulkan后端喵。自动默认onnxruntime喵。",
+      "auto": "自动 (onnxruntime) 喵",
+      "onnxruntime": "ONNX Runtime 喵",
+      "ncnn": "ncnn (Vulkan) 喵"
     },
     "ScreenshotInterval": {
       "name": "放慢截图至 X 秒一张 (´-ω-`)zzz",

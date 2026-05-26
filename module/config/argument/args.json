@@ -501,7 +501,17 @@
         "option": [
           "auto",
           "cpu",
-          "gpu"
+          "gpu",
+          "ane"
+        ]
+      },
+      "OcrBackend": {
+        "type": "select",
+        "value": "auto",
+        "option": [
+          "auto",
+          "onnxruntime",
+          "ncnn"
         ]
       },
       "ScreenshotInterval": {

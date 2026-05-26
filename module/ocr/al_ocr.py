@@ -21,7 +21,10 @@ def handle_ocr_error(e):
 
 
 try:
-    from rapidocr import RapidOCR
+    from rapidocr import RapidOCR, OCRVersion
+    from rapidocr.utils.output import RapidOCROutput
+    from rapidocr.ch_ppocr_rec import TextRecognizer
+    from rapidocr.cal_rec_boxes import CalRecBoxes
     from rapidocr.ch_ppocr_det import TextDetector, TextDetOutput
     from rapidocr.utils.load_image import LoadImage
     from rapidocr.utils.process_img import get_rotate_crop_image
@@ -31,6 +34,36 @@ except Exception as e:
 
 
 DET_DEBUG = False
+
+
+class RecOnlyOCR(RapidOCR):
+    """只加载识别模型，跳过 det 和 cls 的 ONNX 模型加载。"""
+
+    def _initialize(self, cfg):
+        self.text_score = cfg.Global.text_score
+        self.min_height = cfg.Global.min_height
+        self.width_height_ratio = cfg.Global.width_height_ratio
+
+        self.use_det = False
+        self.text_det = None
+
+        self.use_cls = False
+        self.text_cls = None
+
+        self.use_rec = cfg.Global.use_rec
+        cfg.Rec.engine_cfg = cfg.EngineConfig[cfg.Rec.engine_type.value]
+        cfg.Rec.font_path = cfg.Global.font_path
+        cfg.Rec.model_root_dir = cfg.Global.get("model_root_dir", os.getcwd())
+        self.text_rec = TextRecognizer(cfg.Rec)
+
+        self.load_img = LoadImage()
+        self.max_side_len = cfg.Global.max_side_len
+        self.min_side_len = cfg.Global.min_side_len
+
+        self.cal_rec_boxes = CalRecBoxes()
+        self.return_word_box = cfg.Global.return_word_box
+        self.return_single_char_box = cfg.Global.return_single_char_box
+        self.cfg = cfg
 
 
 config_name = os.environ.get("ALAS_CONFIG_NAME") or "alas"
@@ -99,10 +132,58 @@ def _run_ocr_queued(func, *args, **kwargs):
     return job.result
 
 
+def _get_onnx_model_params(name):
+    """Return (model_path, rec_keys_path, ocr_version) for the given language."""
+    if name in ("cn", "zhcn"):
+        return (
+            "bin/ocr_models/zh-CN/alocr-zh-cn-v3.dtk.onnx",
+            "bin/ocr_models/zh-CN/cn.txt",
+            OCRVersion.PPOCRV5,
+        )
+    elif name == "jp":
+        return (
+            "bin/ocr_models/JP/JP.onnx",
+            "bin/ocr_models/JP/ppocrv5_dict.txt",
+            OCRVersion.PPOCRV5,
+        )
+    elif name == "tw":
+        return (
+            "bin/ocr_models/TW/TW.onnx",
+            "bin/ocr_models/TW/ppocrv5_dict.txt",
+            OCRVersion.PPOCRV5,
+        )
+    else:
+        return (
+            "bin/ocr_models/en-US/alocr-en-us-v2.6.nvc.onnx",
+            "bin/ocr_models/en-US/en.txt",
+            OCRVersion.PPOCRV4,
+        )
+
+
 def _create_ocr(name):
-    if not supports_ncnn_model(name):
-        raise ValueError(f"Unsupported ncnn OCR model: {name}")
-    return NcnnRecOCR(name, device=config.ocr_device)
+    backend = config.ocr_backend
+    if backend == 'ncnn':
+        if not supports_ncnn_model(name):
+            raise ValueError(f"Unsupported ncnn OCR model: {name}")
+        return NcnnRecOCR(name, device=config.ocr_device)
+    else:
+        ocr_device = config.ocr_device
+        use_dml = os.name == 'nt' and ocr_device == 'gpu'
+        use_coreml = ocr_device == 'ane'
+        model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name)
+        params = {
+            "Global.use_det": False,
+            "Global.use_cls": False,
+            "Det.model_path": None,
+            "Cls.model_path": None,
+            "Rec.ocr_version": ocr_version,
+            "Rec.model_path": model_path,
+            "Rec.rec_keys_path": rec_keys_path,
+            "EngineConfig.onnxruntime.use_dml": use_dml,
+            "EngineConfig.onnxruntime.use_coreml": use_coreml,
+            "EngineConfig.onnxruntime.coreml_ep_cfg.MLComputeUnits": "CPUAndNeuralEngine",
+        }
+        return RecOnlyOCR(params=params)
 
 
 # 懒加载：模块级不再创建模型，首次 init() 时才加载
@@ -164,7 +245,29 @@ class DetOnlyOCR(RapidOCR):
         self.cfg = cfg
 
 
-def _create_det_ocr():
+def _create_det_ocr_for_onnx(name):
+    """Create full RapidOCR instance (det + rec) for ONNX backend."""
+    ocr_device = config.ocr_device
+    use_dml = os.name == 'nt' and ocr_device == 'gpu'
+    use_coreml = ocr_device == 'ane'
+    model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name)
+    params = {
+        "Global.use_det": True,
+        "Global.use_cls": False,
+        "Det.model_path": DET_MODEL_PATH,
+        "Cls.model_path": None,
+        "Rec.ocr_version": ocr_version,
+        "Rec.model_path": model_path,
+        "Rec.rec_keys_path": rec_keys_path,
+        "EngineConfig.onnxruntime.use_dml": use_dml,
+        "EngineConfig.onnxruntime.use_coreml": use_coreml,
+        "EngineConfig.onnxruntime.coreml_ep_cfg.MLComputeUnits": "CPUAndNeuralEngine",
+    }
+    return RapidOCR(params=params)
+
+
+def _create_det_ocr_for_ncnn():
+    """Create DetOnlyOCR for ncnn backend."""
     params = {
         "Global.use_det": True,
         "Global.use_cls": False,
@@ -176,11 +279,18 @@ def _create_det_ocr():
     return DetOnlyOCR(params=params)
 
 
-def _get_det_model():
-    key = "det"
-    if key not in _det_model_cache:
-        _det_model_cache[key] = _create_det_ocr()
-    return _det_model_cache[key]
+def _get_det_model(name):
+    """Get detection model. For ONNX, keyed by language; for ncnn, single shared."""
+    backend = config.ocr_backend
+    if backend == 'ncnn':
+        key = "det"
+        if key not in _det_model_cache:
+            _det_model_cache[key] = _create_det_ocr_for_ncnn()
+        return _det_model_cache[key]
+    else:
+        if name not in _det_model_cache:
+            _det_model_cache[name] = _create_det_ocr_for_onnx(name)
+        return _det_model_cache[name]
 
 
 def reset_ocr_model():
@@ -222,7 +332,7 @@ class AlOcr:
 
     def _ensure_det_loaded(self):
         if not self._det_loaded:
-            self._det_model = _get_det_model()
+            self._det_model = _get_det_model(self.name)
             self._det_loaded = True
 
     def _save_debug_image(self, img, result):
@@ -298,29 +408,45 @@ class AlOcr:
         self._ensure_det_loaded()
 
         try:
-            det_res = self._det_model(img_fp, use_det=True, use_cls=False, use_rec=False)
-            if not isinstance(det_res, TextDetOutput) or det_res.boxes is None:
+            if config.ocr_backend == 'ncnn':
+                det_res = self._det_model(img_fp, use_det=True, use_cls=False, use_rec=False)
+                if not isinstance(det_res, TextDetOutput) or det_res.boxes is None:
+                    return []
+
+                img = self.model.load_image(img_fp)
+                results = []
+                for box in det_res.boxes:
+                    crop = get_rotate_crop_image(img, np.asarray(box, dtype=np.float32))
+                    rec_res = self.model(crop)
+                    if not getattr(rec_res, "txts", None):
+                        continue
+
+                    txt = rec_res.txts[0]
+                    if not txt.strip():
+                        continue
+
+                    score = rec_res.scores[0] if getattr(rec_res, "scores", None) else 1.0
+                    results.append((txt, box.tolist(), float(score)))
+
+                if DET_DEBUG:
+                    self._save_det_debug(img_fp, results)
+
+                return results
+            else:
+                # ONNX: full RapidOCR pipeline (det + rec in one call)
+                res = self._det_model(img_fp, use_det=True, use_rec=True)
+                if isinstance(res, RapidOCROutput) and res.boxes is not None:
+                    results = []
+                    txts = res.txts if res.txts is not None else ("",) * len(res.boxes)
+                    scores = res.scores if res.scores is not None else (0.0,) * len(res.boxes)
+                    for box, txt, score in zip(res.boxes, txts, scores):
+                        results.append((txt, box.tolist(), float(score)))
+
+                    if DET_DEBUG:
+                        self._save_det_debug(img_fp, results)
+
+                    return results
                 return []
-
-            img = self.model.load_image(img_fp)
-            results = []
-            for box in det_res.boxes:
-                crop = get_rotate_crop_image(img, np.asarray(box, dtype=np.float32))
-                rec_res = self.model(crop)
-                if not getattr(rec_res, "txts", None):
-                    continue
-
-                txt = rec_res.txts[0]
-                if not txt.strip():
-                    continue
-
-                score = rec_res.scores[0] if getattr(rec_res, "scores", None) else 1.0
-                results.append((txt, box.tolist(), float(score)))
-
-            if DET_DEBUG:
-                self._save_det_debug(img_fp, results)
-
-            return results
         except Exception as e:
             logger.error(f"AlOcr.det exception: {e}")
             raise

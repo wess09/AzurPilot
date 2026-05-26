@@ -649,10 +649,18 @@
     },
     "OcrDevice": {
       "name": "OCR デバイス",
-      "help": "OCR デバイスを選択します。GPU は ncnn Vulkan バックエンドを使用し、ncnn が検出できる Vulkan デバイスが必要です。自動では利用可能な場合 GPU、それ以外は CPU を使用します。",
+      "help": "OCR デバイスを選択します。GPU は Windows DirectML、ANE は macOS Apple Neural Engine です。自動：Apple Silicon Mac は ANE、Windows VRAM > 1GB は GPU、それ以外は CPU。",
       "auto": "自動",
       "cpu": "CPU",
-      "gpu": "GPU"
+      "gpu": "GPU",
+      "ane": "ANE (Apple)"
+    },
+    "OcrBackend": {
+      "name": "OCR バックエンド",
+      "help": "OCR 推論エンジンを選択します。onnxruntime は ONNX Runtime、ncnn は ncnn Vulkan バックエンドを使用します。自動では onnxruntime が使用されます。",
+      "auto": "自動 (onnxruntime)",
+      "onnxruntime": "ONNX Runtime",
+      "ncnn": "ncnn (Vulkan)"
     },
     "ScreenshotInterval": {
       "name": "スクリーンショット速度をX秒に1枚に減速",

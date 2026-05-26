@@ -107,6 +107,7 @@
     },
     "Optimization": {
       "OcrDevice": "auto",
+      "OcrBackend": "auto",
       "ScreenshotInterval": 0.3,
       "CombatScreenshotInterval": 1.0,
       "TaskHoardingDuration": 0,
