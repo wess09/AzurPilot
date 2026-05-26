@@ -1,3 +1,4 @@
+import atexit
 import math
 import threading
 import time
@@ -98,8 +99,24 @@ def _load_ncnn():
     return _ncnn
 
 
+_gpu_instance_registered = False
+
+
+def _destroy_gpu_instance():
+    """atexit handler: destroy the global ncnn GPU instance cleanly."""
+    global _gpu_instance_created, _gpu_instance_registered
+    try:
+        ncnn = _load_ncnn()
+        destroy = getattr(ncnn, "destroy_gpu_instance", None)
+        if destroy is not None and _gpu_instance_created:
+            destroy()
+            _gpu_instance_created = False
+    except Exception:
+        pass
+
+
 def _ensure_gpu_instance(ncnn) -> None:
-    global _gpu_instance_created
+    global _gpu_instance_created, _gpu_instance_registered
     if _gpu_instance_created:
         return
 
@@ -108,6 +125,9 @@ def _ensure_gpu_instance(ncnn) -> None:
             create_gpu_instance = getattr(ncnn, "create_gpu_instance", None)
             if create_gpu_instance is not None:
                 create_gpu_instance()
+                if not _gpu_instance_registered:
+                    atexit.register(_destroy_gpu_instance)
+                    _gpu_instance_registered = True
             _gpu_instance_created = True
 
 
