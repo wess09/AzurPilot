@@ -112,7 +112,6 @@ from module.webui.utils import (
 )
 from module.webui.widgets import (
     BinarySwitchButton,
-    RichLog,
     T_Output_Kwargs,
     put_icon_buttons,
     put_loading_text,
@@ -221,7 +220,6 @@ class AlasGUI(Frame):
     ALAS_MENU: Dict[str, Dict[str, List[str]]]
     ALAS_ARGS: Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
     theme = "default"
-    _log = RichLog
 
     def initial(self) -> None:
         self.ALAS_MENU = read_file(filepath_args("menu", self.alas_mod))
@@ -254,9 +252,10 @@ class AlasGUI(Frame):
         self._announcement_force = False
         self._update_notified = False
         self.simulator = OSSimulator()
-        self._simulator_logger_pm = None
-        self._overview_log = None
-        self._overview_log_config_name = None
+        self._dashboard_display = True
+        self._dashboard_first_display = True
+        self._dashboard_last_display_time = {}
+        self._dashboard_arg_group = []
 
     @use_scope("aside", clear=True)
     def set_aside(self) -> None:
@@ -2751,42 +2750,10 @@ class AlasGUI(Frame):
         self.simulator.set_config(self.alas_config)
         self._last_os_simulator_figure = None
 
-        if self._simulator_logger_pm is None:
-
-            class SimulatorLogger:
-                def __init__(self):
-                    self.renderables = []
-                    self.renderables_max_length = 2000
-                    self.renderables_reduce_length = 1000
-                    self.renderables_total = 0
-
-            self._simulator_logger_pm = SimulatorLogger()
-
-        pm = self._simulator_logger_pm
-        import logging
-
-        class ListHandler(logging.Handler):
-            def emit(self, record):
-                msg = self.format(record)
-                pm.renderables.append(msg + "\n")
-                pm.renderables_total += 1
-                if len(pm.renderables) > pm.renderables_max_length:
-                    del pm.renderables[: pm.renderables_reduce_length]
-
-        # Remove existing handlers to avoid duplication on page refresh
+        # 移除旧版前端日志处理器，避免页面刷新后继续向已隐藏的日志面板写入。
         for h in self.simulator.logger.handlers[:]:
             if getattr(h, "is_webui_simulator_handler", False):
                 self.simulator.logger.removeHandler(h)
-
-        handler = ListHandler()
-        handler.setFormatter(
-            logging.Formatter(
-                fmt="%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S",
-            )
-        )
-        handler.is_webui_simulator_handler = True
-        self.simulator.logger.addHandler(handler)
 
         put_scope(
             "scheduler-bar",
@@ -2800,34 +2767,6 @@ class AlasGUI(Frame):
 
         put_scope("figure_display")
 
-        put_scope(
-            "logs",
-            [
-                put_scope(
-                    "log-bar",
-                    [
-                        put_text(t("Gui.Overview.Log")).style(
-                            "font-size: 1.25rem; margin: auto .5rem auto;"
-                        ),
-                        put_scope(
-                            "log-bar-btns",
-                            [
-                                put_scope("log_scroll_btn"),
-                                put_button(
-                                    label="截图预览",
-                                    onclick=lambda: run_js(
-                                        f"window.alasToggleLivePreview({json.dumps(self.alas_name)});"
-                                    ),
-                                    color="off",
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                put_scope("log-container", [put_scope("log", [put_html("")])]),
-            ],
-        )
-
         switch_scheduler = BinarySwitchButton(
             label_on=t("Gui.Button.Stop"),
             label_off=t("Gui.Button.Start"),
@@ -2839,20 +2778,6 @@ class AlasGUI(Frame):
             scope="scheduler_btn",
         )
         self.task_handler.add(switch_scheduler.g(), 1, True)
-
-        log = RichLog("log")
-        log.console.width = log.get_width()
-        switch_log_scroll = BinarySwitchButton(
-            label_on=t("Gui.Button.ScrollON"),
-            label_off=t("Gui.Button.ScrollOFF"),
-            onclick_on=lambda: log.set_scroll(False),
-            onclick_off=lambda: log.set_scroll(True),
-            get_state=lambda: log.keep_bottom,
-            color_on="on",
-            color_off="off",
-            scope="log_scroll_btn",
-        )
-        self.task_handler.add(switch_log_scroll.g(), 1, True)
 
         def _update_simulator_figure():
             # Prevent flicker by checking if figure has changed
@@ -2882,8 +2807,6 @@ class AlasGUI(Frame):
                     pass  # Clear the image
 
         self.task_handler.add(_update_simulator_figure, 0.5, True)
-
-        self.task_handler.add(log.put_log(pm), 0.25, True)
 
     @use_scope("groups")
     def set_group(self, group, arg_dict, config, task):
@@ -3015,7 +2938,10 @@ class AlasGUI(Frame):
         self.set_title(t(f"Gui.MenuAlas.Overview"))
         self._overview_snapshot = None
 
-        put_scope("overview", [put_scope("schedulers"), put_scope("logs")])
+        overview_content = [put_scope("schedulers")]
+        if "Maa" not in self.ALAS_ARGS:
+            overview_content.append(put_scope("overview_dashboard"))
+        put_scope("overview", overview_content)
 
         with use_scope("schedulers"):
             put_scope(
@@ -3126,111 +3052,57 @@ class AlasGUI(Frame):
 })();
 """)
 
-        if (
-            self._overview_log is None
-            or self._overview_log_config_name != self.alas_name
-        ):
-            self._overview_log = RichLog("log")
-            self._overview_log_config_name = self.alas_name
-        else:
-            self._overview_log.scope = "log"
-        log = self._overview_log
-        log.first_display = True
-        log.last_display_time = {}
-        self._log = log
-        self._log.dashboard_arg_group = LogRes(self.alas_config).groups
+        self._dashboard_first_display = True
+        self._dashboard_last_display_time = {}
+        self._dashboard_arg_group = LogRes(self.alas_config).groups
 
-        with use_scope("logs"):
-            if "Maa" in self.ALAS_ARGS:
-                (
-                    put_scope(
-                        "log-bar",
-                        [
-                            put_text(t("Gui.Overview.Log")).style(
-                                "font-size: 1.25rem; margin: auto .5rem auto;"
-                            ),
-                            put_scope(
-                                "log-bar-btns",
-                                [
-                                    put_scope("log_scroll_btn"),
-                                ],
-                            ),
-                        ],
-                    ),
-                )
-            else:
-                (
-                    put_scope(
-                        "log-bar",
-                        [
-                            put_text(t("Gui.Overview.Log")).style(
-                                "font-size: 1.25rem; margin: auto .5rem auto;"
-                            ),
-                            put_scope(
-                                "log-bar-btns",
-                                [
-                                    put_scope("log_scroll_btn"),
-                                    put_button(
-                                        label="截图预览",
-                                        onclick=lambda: run_js(
-                                            f"window.alasToggleLivePreview({json.dumps(self.alas_name)});"
-                                        ),
-                                        color="off",
+        if "Maa" not in self.ALAS_ARGS:
+            with use_scope("overview_dashboard"):
+                put_scope(
+                    "dashboard-bar",
+                    [
+                        put_text(t("Gui.Overview.Dashboard")).style(
+                            "font-size: 1.25rem; margin: auto .5rem auto;"
+                        ),
+                        put_scope(
+                            "dashboard-bar-btns",
+                            [
+                                put_button(
+                                    label="截图预览",
+                                    onclick=lambda: run_js(
+                                        f"window.alasToggleLivePreview({json.dumps(self.alas_name)});"
                                     ),
-                                    put_scope("dashboard_btn"),
-                                ],
-                            ),
-                            put_html('<hr class="hr-group">'),
-                            put_scope("dashboard"),
-                        ],
-                    ),
+                                    color="off",
+                                ),
+                                put_scope("dashboard_btn"),
+                            ],
+                        ),
+                        put_html('<hr class="hr-group">'),
+                        put_scope("dashboard"),
+                    ],
                 )
-            # version
-            local_commit = updater.get_commit(short_sha1=True)
-            version = local_commit[0] if local_commit and local_commit[0] else "Unknown"
-            put_scope("log-container", [put_scope("log", [put_html("")])]).style(
-                f"--device-id: '{get_device_id()}'; --version: 'Ver.{version}';"
+
+            switch_dashboard = BinarySwitchButton(
+                label_on=t("Gui.Button.DashboardON"),
+                label_off=t("Gui.Button.DashboardOFF"),
+                onclick_on=lambda: self.set_dashboard_display(False),
+                onclick_off=lambda: self.set_dashboard_display(True),
+                get_state=lambda: self._dashboard_display,
+                color_on="off",
+                color_off="on",
+                scope="dashboard_btn",
             )
-
-        log.console.width = log.get_width()
-
-        switch_log_scroll = BinarySwitchButton(
-            label_on=t("Gui.Button.ScrollON"),
-            label_off=t("Gui.Button.ScrollOFF"),
-            onclick_on=lambda: log.set_scroll(False),
-            onclick_off=lambda: log.set_scroll(True),
-            get_state=lambda: log.keep_bottom,
-            color_on="on",
-            color_off="off",
-            scope="log_scroll_btn",
-        )
-        switch_dashboard = BinarySwitchButton(
-            label_on=t("Gui.Button.DashboardON"),
-            label_off=t("Gui.Button.DashboardOFF"),
-            onclick_on=lambda: self.set_dashboard_display(False),
-            onclick_off=lambda: self.set_dashboard_display(True),
-            get_state=lambda: log.display_dashboard,
-            color_on="off",
-            color_off="on",
-            scope="dashboard_btn",
-        )
         self.task_handler.add(switch_scheduler.g(), 1, True)
-        self.task_handler.add(switch_log_scroll.g(), 1, True)
         if "Maa" not in self.ALAS_ARGS:
             self.task_handler.add(switch_dashboard.g(), 1, True)
         self.task_handler.add(self.alas_update_overview_task, 10, True)
         if "Maa" not in self.ALAS_ARGS:
             self.task_handler.add(self.alas_update_dashboard, 10, True)
             self.alas_update_dashboard(True)
-        if hasattr(self, "alas") and self.alas is not None:
-            self.task_handler.add(log.put_log(self.alas), 0.25, True)
 
     def set_dashboard_display(self, b):
-        self._log.set_dashboard_display(b)
-        self.alas_update_dashboard(True)
-
-    def set_dashboard_display(self, b):
-        self._log.set_dashboard_display(b)
+        self._dashboard_display = b
+        self._dashboard_first_display = True
         self.alas_update_dashboard(True)
 
     def _init_alas_config_watcher(self) -> None:
@@ -3432,7 +3304,7 @@ class AlasGUI(Frame):
         x = 0
         _num = 10000 if num is None else num
         _arg_group = (
-            self._log.dashboard_arg_group
+            self._dashboard_arg_group
             if groups_to_display is None
             else groups_to_display
         )
@@ -3476,13 +3348,16 @@ class AlasGUI(Frame):
             else:
                 delta = timedelta_to_text(time_delta(value_time - time_now))
 
-            if group_name not in self._log.last_display_time.keys():
-                self._log.last_display_time[group_name] = ""
-            if self._log.last_display_time[group_name] == delta and not self._log.first_display:
+            if group_name not in self._dashboard_last_display_time.keys():
+                self._dashboard_last_display_time[group_name] = ""
+            if (
+                self._dashboard_last_display_time[group_name] == delta
+                and not self._dashboard_first_display
+            ):
                 continue
-            self._log.last_display_time[group_name] = delta
+            self._dashboard_last_display_time[group_name] = delta
 
-            # if self._log.first_display:
+            # if self._dashboard_first_display:
             # Handle width
             # value_width = len(value) * 0.7 + 0.6 if value != 'None' else 4.5
             # value_width = str(value_width/1.12) + 'rem' if self.is_mobile else str(value_width) + 'rem'
@@ -3540,26 +3415,24 @@ class AlasGUI(Frame):
             x += 1
             if x >= _num:
                 break
-        if self._log.first_display:
-            self._log.first_display = False
+        if self._dashboard_first_display:
+            self._dashboard_first_display = False
 
     def alas_update_dashboard(self, _clear=False):
         if not self.visible:
             return
         with use_scope("dashboard", clear=_clear):
-            if not self._log.display_dashboard:
+            if not self._dashboard_display:
                 self._update_dashboard(
                     num=4, groups_to_display=["Oil", "Coin", "Gem", "Pt"]
                 )
-            elif self._log.display_dashboard:
+            elif self._dashboard_display:
                 self._update_dashboard()
 
     @use_scope("content", clear=True)
     def alas_daemon_overview(self, task: str) -> None:
         self.init_menu(name=task)
         self.set_title(t(f"Task.{task}.name"))
-
-        log = RichLog("log")
 
         if self.is_mobile:
             put_scope(
@@ -3568,8 +3441,6 @@ class AlasGUI(Frame):
                     put_scope("scheduler-bar"),
                     put_scope("stat-bar"),
                     put_scope("groups"),
-                    put_scope("log-bar"),
-                    put_scope("log", [put_html("")]),
                 ],
             )
         else:
@@ -3582,17 +3453,14 @@ class AlasGUI(Frame):
                         [
                             put_scope(
                                 "_daemon_upper",
-                                [put_scope("scheduler-bar"), put_scope("log-bar")],
+                                [put_scope("scheduler-bar"), put_scope("stat-bar")],
                             ),
                             put_scope("groups"),
-                            put_scope("log", [put_html("")]),
                         ],
                     ),
                     put_none(),
                 ],
             )
-
-        log.console.width = log.get_width()
 
         with use_scope("scheduler-bar"):
             put_text(t("Gui.Overview.Scheduler")).style(
@@ -3621,62 +3489,13 @@ class AlasGUI(Frame):
             scope="scheduler_btn",
         )
 
-        with use_scope("log-bar"):
-            put_text(t("Gui.Overview.Log")).style(
-                "font-size: 1.25rem; margin: auto .5rem auto;"
-            )
-            put_scope(
-                "log-bar-btns",
-                [
-                    put_scope("log_scroll_btn"),
-                    put_button(
-                        label="截图预览",
-                        onclick=lambda: run_js(
-                            f"window.alasToggleLivePreview({json.dumps(self.alas_name)});"
-                        ),
-                        color="off",
-                    ),
-                ],
-            )
-
-        switch_log_scroll = BinarySwitchButton(
-            label_on=t("Gui.Button.ScrollON"),
-            label_off=t("Gui.Button.ScrollOFF"),
-            onclick_on=lambda: log.set_scroll(False),
-            onclick_off=lambda: log.set_scroll(True),
-            get_state=lambda: log.keep_bottom,
-            color_on="on",
-            color_off="off",
-            scope="log_scroll_btn",
-        )
-
         config = self.alas_config.read_file(self.alas_name)
         for group, arg_dict in deep_iter(self.ALAS_ARGS[task], depth=1):
             if group[0] == "Storage":
                 continue
             self.set_group(group, arg_dict, config, task)
 
-        run_js(
-            """
-            $("#pywebio-scope-log").css(
-                "grid-row-start",
-                -2 - $("#pywebio-scope-_daemon").children().filter(
-                    function(){
-                        return $(this).css("display") === "none";
-                    }
-                ).length
-            );
-            $("#pywebio-scope-log").css(
-                "grid-row-end",
-                -1
-            );
-        """
-        )
-
         self.task_handler.add(switch_scheduler.g(), 1, True)
-        self.task_handler.add(switch_log_scroll.g(), 1, True)
-        if hasattr(self, "alas") and self.alas is not None:
-            self.task_handler.add(log.put_log(self.alas), 0.25, True)
 
     @use_scope("menu", clear=True)
     def dev_set_menu(self) -> None:

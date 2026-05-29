@@ -51,7 +51,7 @@
 
 #pywebio-scope-overview {
     grid-auto-flow: row;
-    grid-template-rows: 100% 100%;
+    grid-template-rows: auto auto;
 }
 
 #pywebio-scope-daemon-overview {

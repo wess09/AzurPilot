@@ -285,6 +285,7 @@ pre.rich-traceback-code {
 /* Status Panels */
 #pywebio-scope-scheduler-bar,
 #pywebio-scope-stat-bar,
+#pywebio-scope-dashboard-bar,
 #pywebio-scope-log-bar,
 #pywebio-scope-log,
 #pywebio-scope-running,

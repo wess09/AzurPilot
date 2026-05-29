@@ -333,6 +333,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-scheduler-bar,
 #pywebio-scope-stat-bar,
 #pywebio-scope-image-container,
+#pywebio-scope-dashboard-bar,
 #pywebio-scope-log-bar,
 #pywebio-scope-log,
 .container-log,
@@ -355,6 +356,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 #pywebio-scope-running:hover,
 #pywebio-scope-pending:hover,
 #pywebio-scope-waiting:hover,
+#pywebio-scope-dashboard-bar:hover,
 #pywebio-scope-log-bar:hover,
 #pywebio-scope-log:hover,
 .container-log:hover,
@@ -484,6 +486,7 @@ body *:not(#pywebio-scope-log):not(#pywebio-scope-log *) {
 	animation-delay: 0.15s;
 }
 
+#pywebio-scope-dashboard-bar,
 #pywebio-scope-log-bar {
 	animation-delay: 0.20s;
 }
