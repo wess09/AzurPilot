@@ -117,3 +117,9 @@ body {
 #pywebio-scope-waiting>p {
     margin: 0 0.3125rem 0 !important;
 }
+
+/* 10. 恢复“运行中”卡片在无任务状态下的经典高度 (9.5rem)，并使其底边对齐右侧仪表盘底边 */
+#pywebio-scope-running {
+    min-height: 9.5rem !important;
+}
+
