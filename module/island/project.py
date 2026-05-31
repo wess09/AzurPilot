@@ -220,6 +220,76 @@ class ProductItem:
     # 当前页面所有物品的按钮网格
     item_buttons: ButtonGrid
 
+    @staticmethod
+    def _normalize_product_text(text):
+        text = str(text or '').lower()
+        return re.sub(r'[\W_]+', '', text)
+
+    @classmethod
+    def resolve_product_name(cls, detected, known_names):
+        normalized = cls._normalize_product_text(detected)
+        if not normalized:
+            return None
+        for name in known_names:
+            product = cls._normalize_product_text(name)
+            if normalized == product:
+                return name
+            if len(product) >= 2 and product in normalized:
+                return name
+        return None
+
+    @classmethod
+    def empty(cls, image, parent_project_id):
+        item = cls.__new__(cls)
+        item.image = image
+        item.y = []
+        item.valid = True
+        item.name = None
+        item.button = None
+        item.parent_project_id = parent_project_id
+        item.items = []
+        item.item_buttons = None
+        return item
+
+    @classmethod
+    def from_ocr_results(cls, image, parent_project_id, product_order):
+        item = cls.empty(image, parent_project_id)
+        detector = AlOcr(name='zhcn' if server.server == 'cn' else 'en')
+        try:
+            det_results = detector.det(image)
+        except Exception as e:
+            logger.warning(f'Product OCR fallback failed: {e}')
+            det_results = []
+
+        left, top, right, bottom = ISLAND_PRODUCT_ITEMS.area
+        seen = set()
+        for txt, box, score in det_results:
+            xs = [point[0] for point in box]
+            ys = [point[1] for point in box]
+            cx = sum(xs) / len(xs)
+            cy = sum(ys) / len(ys)
+            if not (left <= cx <= right and top <= cy <= bottom):
+                continue
+            resolved = cls.resolve_product_name(txt, product_order)
+            if not resolved:
+                continue
+            normalized = cls._normalize_product_text(resolved)
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            y1 = int(max(top, cy - 65))
+            y2 = int(min(bottom, cy + 65))
+            area = (left + 20, y1, right - 20, y2)
+            row = cls.empty(image, parent_project_id)
+            row.y = (y1, y2)
+            row.name = resolved
+            row.button = Button(area=area, color=(), button=area, name=f'ISLAND_ITEM_{resolved}')
+            item.items.append(row)
+
+        if item.items:
+            logger.info(f'Product OCR fallback rows: {[row.name for row in item.items]}')
+        return item
+
     def __init__(self, image, y, parent_project_id, get_button=True):
         """
         初始化产品物品对象。
@@ -733,7 +803,13 @@ class IslandProjectRun(IslandUI):
         }
         peaks, _ = signal.find_peaks(line, **parameters)
         peaks = np.array(peaks) + y_top
-        return ProductItem(self.device.image, peaks, project_id)
+        product_order = list(items_data.get(project_id, {}).values())
+        if len(peaks) < 2:
+            return ProductItem.from_ocr_results(self.device.image, project_id, product_order)
+        current = ProductItem(self.device.image, peaks, project_id)
+        if not any(item.valid and item.name for item in current.items):
+            return ProductItem.from_ocr_results(self.device.image, project_id, product_order)
+        return current
 
     def product_select(self, option, project_id, trial=2):
         """
@@ -771,6 +847,9 @@ class IslandProjectRun(IslandUI):
                         self.device.click(item.button)
                         self.device.sleep(0.2)
                         click_interval.reset()
+                        # OCR fallback rows cannot report the selected item; the confirm step validates the click.
+                        if not current.name:
+                            return True
                     drag = False
             
             if bottom_item == current.items[-1]:
