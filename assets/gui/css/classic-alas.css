@@ -1,6 +1,54 @@
 /* 经典怀旧主题 (Classic ALAS Theme) */
 
-/* 1. 将所有按钮、卡片、滚动容器的圆角完全恢复为直角 (border-radius: 0) */
+/* 1. 强制打通嵌套日志容器的高度和 Flex 继承链，确保日志区域撑满且滚动条可被正确触发 */
+#pywebio-scope-log-container > div {
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* 2. 还原日志区域外层卡片：无阴影、直角、灰色边框大日志底座风格 */
+#pywebio-scope-log-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid lightgrey !important; /* 还原旧版灰色卡片边框 */
+    background-color: #ffffff !important;   /* 确保外层充当大白框的底座 */
+}
+
+/* 3. 内层仅保留内容滚动和内边距，移除背景与自身边框，避免视觉重叠 */
+#pywebio-scope-log {
+    background-color: transparent !important; /* 设为透明，透出外层的白色 */
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0.5rem !important;
+    height: 100% !important;
+    overflow-y: auto !important; /* 确保高度正常后自发生成滚动条 */
+}
+
+/* 4. 安全隐藏新版仪表盘（避免 JS 报错阻断日志流），同时让日志向上填满 */
+#pywebio-scope-dashboard {
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* 5. 隐藏切换仪表盘的折叠按钮本身 */
+#pywebio-scope-dashboard-btn,
+.dashboard-btn {
+    display: none !important;
+}
+
+/* 6. 将所有按钮、卡片、滚动容器的圆角完全恢复为直角 (border-radius: 0) */
 .btn,
 .btn-menu,
 .btn-aside,
@@ -15,15 +63,14 @@ pre.rich-traceback-code,
 #pywebio-scope-scheduler-bar,
 #pywebio-scope-stat-bar,
 #pywebio-scope-log-bar,
-#pywebio-scope-log,
-#pywebio-scope-log-container,
 #pywebio-scope-image-container,
 #pywebio-scope-navigator,
 [id^="pywebio-scope-group_"] {
     border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
-/* 2. 侧边栏和主菜单的左侧竖线选中效果，移除新版的药丸形选中背景 */
+/* 7. 侧边栏和主菜单的左侧竖线选中效果，移除新版的药丸形选中背景 */
 .btn-menu {
     border-radius: 0 !important;
     margin: 0 !important;
@@ -34,7 +81,7 @@ pre.rich-traceback-code,
 .btn-menu:hover,
 .btn-menu-active {
     font-weight: bold !important;
-    border-left: 3px solid !important;
+    border-left: 3px solid #4e4c97 !important;
     padding-right: .625rem !important;
     background-color: transparent !important; /* 经典版选中没有背景颜色 */
 }
@@ -48,63 +95,17 @@ pre.rich-traceback-code,
 }
 .btn-aside:hover,
 .btn-aside-active {
-    border-left: 4px solid !important;
+    border-left: 4px solid #4e4c97 !important;
     padding-left: 3px !important;
     background-color: transparent !important; /* 经典版选中没有背景颜色 */
 }
 
-/* 3. 经典亮色主题背景：恢复为细格子背景图 */
+/* 8. 经典亮色主题背景：恢复为细格子背景图 */
 body {
     background-image: url("data:image/png;base64,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") !important;
 }
 
-/* 4. 去除多余的阴影并还原旧版卡片的灰色边框 */
-.container-log,
-[id^="pywebio-scope-group_"],
-#pywebio-scope-navigator,
-#pywebio-scope-running,
-#pywebio-scope-pending,
-#pywebio-scope-waiting,
-#pywebio-scope-scheduler-bar,
-#pywebio-scope-stat-bar,
-#pywebio-scope-log-bar,
-#pywebio-scope-log,
-#pywebio-scope-image-container,
-#pywebio-scope-navigator,
-#pywebio-scope-daemon-overview #pywebio-scope-groups {
-    box-shadow: none !important;
-    border: 1px solid lightgrey !important;
-}
-
-/* 5. 隐藏统计显示区域，让日志向上自适应填满 */
-#pywebio-scope-dashboard,
-#pywebio-scope-dashboard-btn {
-    display: none !important;
-}
-
-/* 6. 日志输出框优化：完全去边距（padding 和 margin），使之直接铺满 */
-.container-log {
-    margin: 0 !important;
-    padding: 0.25rem 0.5rem !important;
-}
-#pywebio-scope-log-container {
-    padding: 0 !important;
-    margin: 0 !important;
-}
-#pywebio-scope-log {
-    border: none !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0.5rem !important;
-}
-
-/* 7. 页头总览的风格微调 */
-#pywebio-scope-header {
-    box-shadow: 0 0 8px rgba(0, 0, 0, .1) !important;
-}
-
-/* 8. 按钮的经典边框和颜色恢复 */
+/* 9. 按钮的经典边框和颜色恢复 */
 .btn-off {
     background-color: white !important;
     border: 1px solid lightgrey !important;
@@ -116,7 +117,7 @@ body {
     color: white !important;
 }
 
-/* 9. 还原调度器组内部元素的紧凑间距，但保留原版字体大小设置 */
+/* 10. 还原调度器组内部元素的紧凑间距，但保留原版字号 */
 #pywebio-scope-groups [id^="pywebio-scope-group_"] {
     margin: 0 !important;
     padding: 0.3125rem !important;
