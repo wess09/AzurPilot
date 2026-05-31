@@ -410,7 +410,7 @@ def add_css(filepath):
 
 
 def _read(path):
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -420,6 +420,7 @@ class Icon:
     """
 
     ALAS = _read(filepath_icon("alas"))
+    ALAS_CLASSIC = _read(filepath_icon("alas-classic"))
     SETTING = _read(filepath_icon("setting"))
     RUN = _read(filepath_icon("run"))
     DEVELOP = _read(filepath_icon("develop"))

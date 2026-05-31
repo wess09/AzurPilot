@@ -1,0 +1,79 @@
+/* 经典怀旧主题 (Classic ALAS Theme) */
+
+/* 1. 将所有按钮和卡片的圆角恢复为直角 (border-radius: 0) */
+.btn-menu,
+.btn-aside,
+.btn-off,
+.btn-on,
+.btn-navigator,
+.container-log,
+pre.rich-traceback-code,
+#pywebio-scope-running,
+#pywebio-scope-pending,
+#pywebio-scope-waiting {
+    border-radius: 0 !important;
+}
+
+/* 2. 侧边栏和主菜单的左侧竖线选中效果 */
+.btn-menu:hover,
+.btn-menu-active {
+    font-weight: bold !important;
+    border-left: 3px solid !important;
+    padding-right: .625rem !important;
+}
+
+.btn-aside:hover,
+.btn-aside-active {
+    border-left: 4px solid !important;
+    padding-left: 3px !important;
+    font-weight: bold !important;
+}
+
+/* 3. 字体和内边距调整，使布局更加紧凑 */
+#pywebio-scope-groups [id^="pywebio-scope-group_"] {
+    margin: 0 !important;
+    padding: 0.3125rem !important;
+}
+
+#pywebio-scope-running>p,
+#pywebio-scope-pending>p,
+#pywebio-scope-waiting>p {
+    font-size: 1rem !important;
+    font-weight: bold !important;
+    margin: 0 0.3125rem 0 !important;
+}
+
+*[style*="--arg-title--"] {
+    font-size: .875rem !important;
+}
+
+/* 4. 按钮和边框经典颜色恢复 */
+.btn-off {
+    background-color: white !important;
+    border: 1px solid lightgrey !important;
+    color: #4e4c97 !important;
+}
+.btn-on {
+    background-color: #4e4c97 !important;
+    border: 1px solid lightgrey !important;
+    color: white !important;
+}
+
+/* 5. 经典亮色主题背景：恢复为浅灰色纹理或纯白，覆盖掉 Apple 主题的背景图 */
+body {
+    background-image: url("data:image/png;base64,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") !important;
+}
+
+/* 6. 去除所有由于苹果主题引入的模糊与毛玻璃效果 */
+#pywebio-scope-schedulers,
+#pywebio-scope-running,
+#pywebio-scope-pending,
+#pywebio-scope-waiting,
+.container-log,
+#pywebio-scope-log {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: white !important;
+    box-shadow: none !important;
+    border: 1px solid lightgrey !important;
+}

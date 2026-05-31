@@ -1,4 +1,4 @@
-﻿# 此文件是 Alas WebUI 的核心逻辑入口类文件。
+# 此文件是 Alas WebUI 的核心逻辑入口类文件。
 # 基于 PyWebIO 框架构建了整个可视化控制台，包括任务配置渲染、仪表盘展示、多实例切换及实时日志流转发等前端功能。
 import os
 import re
@@ -378,6 +378,8 @@ class AlasGUI(Frame):
         if theme == "socialism":
             pywebio_theme = "default"
         if theme == "apple":
+            pywebio_theme = "default"
+        if theme == "classic":
             pywebio_theme = "default"
 
         webconfig(theme=pywebio_theme)
@@ -4382,6 +4384,7 @@ class AlasGUI(Frame):
                     {"label": "Dark", "value": "dark", "color": "dark"},
                     {"label": "新春 ", "value": "socialism", "color": "danger"},
                     {"label": "Apple", "value": "apple", "color": "primary"},
+                    {"label": "经典怀旧", "value": "classic", "color": "info"},
                 ],
                 onclick=lambda t: set_theme(t),
             ).style("text-align: center")
@@ -4539,9 +4542,11 @@ class AlasGUI(Frame):
 
         if self.theme == "dark":
             add_css(filepath_css("dark-alas"))
-
         elif self.theme == "socialism":
             add_css(filepath_css("socialism-alas"))
+        elif self.theme == "classic":
+            add_css(filepath_css("light-alas"))
+            add_css(filepath_css("classic-alas"))
         else:
             add_css(filepath_css("light-alas"))
 

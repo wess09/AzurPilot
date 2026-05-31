@@ -74,10 +74,12 @@ class Frame(Base):
     @staticmethod
     @use_scope("ROOT", clear=True)
     def _show() -> None:
+        from module.webui.setting import State
+        alas_icon = Icon.ALAS_CLASSIC if State.theme == "classic" else Icon.ALAS
         put_scope(
             "header",
             [
-                put_html(Icon.ALAS).style("--header-icon--"),
+                put_html(alas_icon).style("--header-icon--"),
                 put_text("港区OA").style("--header-text--"),
                 put_scope("header_status"),
                 put_scope("header_title"),
