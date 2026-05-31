@@ -79,8 +79,8 @@ class Frame(Base):
         put_scope(
             "header",
             [
-                put_html(alas_icon).style("--header-icon--"),
-                put_text("港区OA").style("--header-text--"),
+                put_html(Icon.ALAS).style("--header-icon--"),
+                put_text("Alas").style("--header-text--"),
                 put_scope("header_status"),
                 put_scope("header_title"),
             ],
