@@ -1,10 +1,9 @@
 /* 经典怀旧主题 (Classic ALAS Theme) */
 
-/* 1. 全局字体与粗细重置：覆盖新版粗体 MiSans，恢复系统默认秀气无衬线字体 */
+/* 1. 全局字体类型重置：屏蔽新版粗体 MiSans，恢复系统默认清秀的无衬线字体 */
 body,
 body *:not(#pywebio-scope-log):not(#pywebio-scope-log *):not(.CodeMirror-line):not(pre.rich-traceback-code) {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft YaHei", sans-serif !important;
-    font-weight: normal;
 }
 
 /* 2. 将所有按钮、卡片、滚动容器的圆角完全恢复为直角 (border-radius: 0) */
@@ -36,7 +35,6 @@ pre.rich-traceback-code,
     margin: 0 !important;
     padding: .0625rem .75rem !important;
     border-left: 0 solid !important;
-    font-size: 0.85rem !important;
     transition: border .05s ease-in-out, padding .05s ease-in-out !important;
 }
 .btn-menu:hover,
@@ -123,20 +121,8 @@ body {
     border: 1px solid lightgrey !important;
     color: white !important;
 }
-.btn-navigator {
-    font-size: 0.85rem !important;
-}
 
-/* 10. 调整间距更紧凑，配合直角风格 */
-#pywebio-scope-groups [id^="pywebio-scope-group_"] {
-    margin: 0 !important;
-    padding: 0.3125rem !important;
-}
-*[style*="--arg-title--"] {
-    font-size: .875rem !important;
-}
-
-/* 11. 经典粗体文字显式恢复，保证局部排版对比度 */
+/* 10. 经典粗体文字显式恢复，保证局部排版对比度（去除全局 font-weight 强置） */
 .btn-menu-active,
 .btn-aside-active,
 *[style*="--header-text--"],
@@ -148,23 +134,7 @@ body {
     font-weight: bold !important;
 }
 
-/* 12. 各级面板标题与字号微调 */
-*[style*="--header-text--"] {
-    font-size: 1.25rem !important;
-}
-#pywebio-scope-header_title > p {
-    font-size: 1.05rem !important;
-}
-[id^="pywebio-scope-group_"] > p {
-    font-size: 1.1rem !important;
-}
-#pywebio-scope-running > p,
-#pywebio-scope-pending > p,
-#pywebio-scope-waiting > p {
-    font-size: 1.05rem !important;
-}
-
-/* 13. 日志文本的字号和行高优化，恢复经典等宽字体并缩小使其紧凑 */
+/* 11. 日志文本的字号和行高优化，恢复经典等宽字体并缩小使其紧凑 */
 #pywebio-scope-log,
 pre.rich-traceback-code {
     font-family: Menlo, Consolas, "DejaVu Sans Mono", "Courier New", monospace !important;
