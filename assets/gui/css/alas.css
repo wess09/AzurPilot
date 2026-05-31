@@ -507,6 +507,10 @@ pre.rich-traceback-code {
     grid-template-rows: auto auto 1fr;
 }
 
+#pywebio-scope-running {
+    min-height: 7.2rem;
+}
+
 #pywebio-scope-running>p,
 #pywebio-scope-pending>p,
 #pywebio-scope-waiting>p {
