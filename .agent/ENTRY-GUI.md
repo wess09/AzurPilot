@@ -97,7 +97,7 @@ State.restart_event = ev
 #### 阶段 3: 命令行参数解析 (L42-L78)
 
 ```python
-parser = argparse.ArgumentParser(description="Alas web service")
+parser = argparse.ArgumentParser(description="AzurPilot web service")
 ```
 
 **完整参数列表**:
@@ -106,7 +106,7 @@ parser = argparse.ArgumentParser(description="Alas web service")
 |---|---|---|---|---|
 | `--host` | - | `str` | 监听主机 | `State.deploy_config.WebuiHost` -> `"0.0.0.0"` |
 | `--port` | `-p` | `int` | 监听端口 | `State.deploy_config.WebuiPort` -> `22267` |
-| `--key` | `-k` | `str` | Alas 密码 | 无密码 |
+| `--key` | `-k` | `str` | AzurPilot 密码 | 无密码 |
 | `--cdn` | - | `flag` | 使用 jsdelivr CDN | `False` |
 | `--electron` | - | `flag` | Electron 客户端模式 | `False` |
 | `--ssl-key` | - | `str` | SSL 密钥文件路径 | `None` |

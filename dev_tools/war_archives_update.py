@@ -273,6 +273,6 @@ if __name__ == '__main__':
     Step 1:
         Run these code.
     """
-    # Ensure running in Alas root folder
+    # Ensure running in AzurPilot root folder
     os.chdir(os.path.join(os.path.dirname(__file__), '../'))
     updater.run()

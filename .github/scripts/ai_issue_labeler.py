@@ -13,7 +13,7 @@ from openai import OpenAI
 LABELS = [
     {
         "name": "Alas is not to blame / 这不怪Alas",
-        "description": "Bugs from Azur Lane game client, not caused by Alas.",
+        "description": "Bugs from Azur Lane game client, not caused by AzurPilot.",
     },
     {
         "name": "asking a question / 提问",
@@ -572,7 +572,7 @@ def classify_issue(issue, label_catalog):
         - Use wrong settings or usages / 错误设置或错误使用 for incorrect configuration or usage.
         - Use misunderstandings / 理解偏差 for misunderstanding a feature or option.
         - Use further information required / 需要提供更多信息 when the report lacks enough information.
-        - Use Alas is not to blame / 这不怪Alas only when the issue is caused by the Azur Lane game client rather than Alas.
+        - Use Alas is not to blame / 这不怪Alas only when the issue is caused by the Azur Lane game client rather than AzurPilot.
         - Use emulator issue / 模拟器问题 only when the emulator is the likely cause.
         - Use assets issue / 资源适配问题 only when asset matching/adaptation is the likely issue.
         - Use hard to reproduce / 难以复现 only when the issue is explicitly intermittent or difficult to reproduce.

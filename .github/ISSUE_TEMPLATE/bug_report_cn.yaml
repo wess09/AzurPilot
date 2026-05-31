@@ -13,7 +13,7 @@ body:
         required: true
       - label: 我已经阅读了 Wiki 中的 常见问题(FAQ)
         required: true
-      - label: 我正在使用最新版的 Alas
+      - label: 我正在使用最新版的 AzurPilot
         required: true
   - type: textarea
     id: describe

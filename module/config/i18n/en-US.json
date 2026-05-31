@@ -39,7 +39,7 @@
   },
   "Task": {
     "Alas": {
-      "name": "Alas Settings",
+      "name": "AzurPilot Settings",
       "help": ""
     },
     "General": {
@@ -116,7 +116,7 @@
     },
     "WarArchives": {
       "name": "War Archives",
-      "help": "Due to lack of maintenance for War Archives, the clearing function may not work properly. If you find Alas running abnormally, please complete the clearing manually and then use the auto-search function."
+      "help": "Due to lack of maintenance for War Archives, the clearing function may not work properly. If you find AzurPilot running abnormally, please complete the clearing manually and then use the auto-search function."
     },
     "EventA": {
       "name": "Daily Map A",
@@ -284,7 +284,7 @@
     },
     "OpsiCrossMonth": {
       "name": "Cross-Month Daily",
-      "help": "    Alas will enter Operation Siren 10 minutes before the cross-month reset, wait for the reset without exiting, then complete the new day's OpSi daily, Obscured Zone, Abyssal Zone and Meowfficer Farming to earn extra rewards. When running OpSi Daily, it follows the \"OpSi - Daily\" task settings, and likewise for others.\n    Important: Do not operate the game while Alas is waiting for the cross-month reset."
+      "help": "    AzurPilot will enter Operation Siren 10 minutes before the cross-month reset, wait for the reset without exiting, then complete the new day's OpSi daily, Obscured Zone, Abyssal Zone and Meowfficer Farming to earn extra rewards. When running OpSi Daily, it follows the \"OpSi - Daily\" task settings, and likewise for others.\n    Important: Do not operate the game while AzurPilot is waiting for the cross-month reset."
     },
     "OpsiSimulator": {
       "name": "Task.OpsiSimulator.name",
@@ -595,7 +595,7 @@
     },
     "StrictRestart": {
       "name": "Prohibit restarting when errors occur in sensitive tasks",
-      "help": "Stop Alas when an error occurs while running sensitive tasks instead of restarting the game\nSensitive tasks include hidden sea areas, abyssal sea areas, and cross-month daily tasks."
+      "help": "Stop AzurPilot when an error occurs while running sensitive tasks instead of restarting the game\nSensitive tasks include hidden sea areas, abyssal sea areas, and cross-month daily tasks."
     },
     "SaveErrorCount": {
       "name": "Error Log storage upper limit",
@@ -1815,7 +1815,7 @@
   "Research": {
     "_info": {
       "name": "Research",
-      "help": "When filters work with other settings, Alas looks for items that satisfy all user settings simultaneously.\nFor example, if you set the research filter to `H1 > D2.5 > shortest` (including research that consumes cubes), but also set it not to allow cube consumption, the final result is that Alas will not select research that consumes cubes. When you suddenly want to use cubes, you only need to enable cube consumption without modifying the filter, which is more convenient."
+      "help": "When filters work with other settings, AzurPilot looks for items that satisfy all user settings simultaneously.\nFor example, if you set the research filter to `H1 > D2.5 > shortest` (including research that consumes cubes), but also set it not to allow cube consumption, the final result is that AzurPilot will not select research that consumes cubes. When you suddenly want to use cubes, you only need to enable cube consumption without modifying the filter, which is more convenient."
     },
     "UseCube": {
       "name": "Use Cubes",
@@ -1847,7 +1847,7 @@
     },
     "AllowDelay": {
       "name": "Delay research when resources are insufficient",
-      "help": "When resources are insufficient, Alas will delay research until conditions are met or the research queue is about to be cleared, which will not cause research to stop.\nIf resources remain insufficient for a long time or Alas is not running long enough, you can disable this option to keep the research queue full."
+      "help": "When resources are insufficient, AzurPilot will delay research until conditions are met or the research queue is about to be cleared, which will not cause research to stop.\nIf resources remain insufficient for a long time or AzurPilot is not running long enough, you can disable this option to keep the research queue full."
     },
     "PresetFilter": {
       "name": "Research filter",
@@ -2594,7 +2594,7 @@
     },
     "BuySkinBox": {
       "name": "Buy appearance equipment box",
-      "help": "To reduce maintenance costs, the appearance box selector in the filter will not be updated with the game, but Alas will treat any unknown item with a quantity of 1 and consuming 7000 supplies as an appearance box and purchase it."
+      "help": "To reduce maintenance costs, the appearance box selector in the filter will not be updated with the game, but AzurPilot will treat any unknown item with a quantity of 1 and consuming 7000 supplies as an appearance box and purchase it."
     },
     "ConsumeCoins": {
       "name": "Consumption of overflow supplies",
@@ -3569,7 +3569,7 @@
     },
     "TargetZone": {
       "name": "Target Zone ID",
-      "help": "Supports either Zone ID or Name in CN/EN/JP/TW, i.e. \"51\", \"NA Ocean SE Sector E\"\nIf specified, Alas will loop on this same zone after each clear\nUse default value 0 or clear the field to remove the specification\nZone information can be acquired from <./module/os/map_data.py>"
+      "help": "Supports either Zone ID or Name in CN/EN/JP/TW, i.e. \"51\", \"NA Ocean SE Sector E\"\nIf specified, AzurPilot will loop on this same zone after each clear\nUse default value 0 or clear the field to remove the specification\nZone information can be acquired from <./module/os/map_data.py>"
     },
     "LastRun": {
       "name": "Last Collect Time",
@@ -3579,7 +3579,7 @@
   "OpsiHazard1Leveling": {
     "_info": {
       "name": "Corrosion 1 Leveling",
-      "help": "Consume Combat Supply Vouchers to gain large amounts of EXP and small amounts of Action Points\nIt is recommended to bring 1-2 preloaded carriers to obtain the highest hourly income.\n\nSome safety restrictions of the original Alas have been lifted, please set parameters carefully"
+      "help": "Consume Combat Supply Vouchers to gain large amounts of EXP and small amounts of Action Points\nIt is recommended to bring 1-2 preloaded carriers to obtain the highest hourly income.\n\nSome safety restrictions of the original AzurPilot have been lifted, please set parameters carefully"
     },
     "TargetZone": {
       "name": "Target Zone",
@@ -3653,7 +3653,7 @@
   "OpsiCheckLeveling": {
     "_info": {
       "name": "Operation Siren Fleet EXP Check",
-      "help": "Check whether all ships in the sortie fleet have gained full experience, and if so, send a push notification.\nYou need to configure \"Error Push Settings\" in Alas settings first."
+      "help": "Check whether all ships in the sortie fleet have gained full experience, and if so, send a push notification.\nYou need to configure \"Error Push Settings\" in AzurPilot settings first."
     },
     "TargetLevel": {
       "name": "Push when all ships can level up to this level (0 means no limit)",
@@ -3709,7 +3709,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "Smart Scheduling",
-      "help": "Operation Siren smart scheduling function, used to coordinate switching between Corrosion 1 Leveling and yellow coin replenishment tasks.\nOnce enabled, it will automatically switch between different tasks and send push notifications based on coins and Action Points.\n\nSome safety restrictions of the original Alas have been lifted, please set parameters carefully"
+      "help": "Operation Siren smart scheduling function, used to coordinate switching between Corrosion 1 Leveling and yellow coin replenishment tasks.\nOnce enabled, it will automatically switch between different tasks and send push notifications based on coins and Action Points.\n\nSome safety restrictions of the original AzurPilot have been lifted, please set parameters carefully"
     },
     "UseSmartSchedulingOperationCoinsPreserve": {
       "name": "Obtain X Combat Supply Vouchers",
@@ -3776,7 +3776,7 @@
     },
     "TaskDict": {
       "name": "task list",
-      "help": "Alas will automatically export the list"
+      "help": "AzurPilot will automatically export the list"
     }
   },
   "IslandTechnology": {
@@ -3786,7 +3786,7 @@
     },
     "TechnologyStatus": {
       "name": "Technology list",
-      "help": "Alas will automatically export the list"
+      "help": "AzurPilot will automatically export the list"
     }
   },
   "Daemon": {
@@ -3806,7 +3806,7 @@
     },
     "RepairShip": {
       "name": "Automatically repair ships when approaching port",
-      "help": "After manually moving the team to the port, Alas will help repair the ship\nAfter the repair is completed, the team needs to move out of the port within 30 seconds, otherwise the ship will be repaired again."
+      "help": "After manually moving the team to the port, AzurPilot will help repair the ship\nAfter the repair is completed, the team needs to move out of the port within 30 seconds, otherwise the ship will be repaired again."
     },
     "SelectEnemy": {
       "name": "Clear nearby enemies and supplies",
@@ -3858,7 +3858,7 @@
   "Benchmark": {
     "_info": {
       "name": "Performance testing",
-      "help": "Test which screenshot scheme and control scheme is faster, speed varies based on emulator and computer configuration\nAfter the test is completed, select the fastest screenshot and control scheme in \"Alas\" - \"Simulator Settings\""
+      "help": "Test which screenshot scheme and control scheme is faster, speed varies based on emulator and computer configuration\nAfter the test is completed, select the fastest screenshot and control scheme in \"AzurPilot\" - \"Simulator Settings\""
     },
     "DeviceType": {
       "name": "Device type",
@@ -4171,19 +4171,19 @@
       "UpToDate": "Already the latest version",
       "HaveUpdate": "A new version is available",
       "UpdateStart": "Start updating",
-      "UpdateWait": "Wait for all Alas to complete the current task",
+      "UpdateWait": "Wait for all AzurPilot to complete the current task",
       "UpdateRun": "Updating",
       "UpdateSuccess": "Update successful, restarting",
       "UpdateFailed": "Update failed, error log can be found in ./log/*_gui.txt",
       "UpdateChecking": "Checking for updates",
-      "UpdateCancel": "Cancel update and restart Alas",
+      "UpdateCancel": "Cancel update and restart AzurPilot",
       "UpdateFinish": "Update successful, please restart manually",
       "Local": "Local",
       "Upstream": "Upstream",
       "Author": "Author",
       "Time": "Commit Time",
       "Message": "Commit Message",
-      "DisabledWarn": "The update module is not enabled, you need to manually restart Alas to update",
+      "DisabledWarn": "The update module is not enabled, you need to manually restart AzurPilot to update",
       "DetailedHistory": "Detailed commit history"
     },
     "Remote": {
