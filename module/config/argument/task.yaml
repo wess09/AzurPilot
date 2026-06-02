@@ -251,25 +251,6 @@ Reward:
     Awaken:
       - Scheduler
       - Awaken
-    Island:
-      - Scheduler
-      - IslandTransport
-      - Island1
-      - Island2
-      - Island3
-      - Island4
-      - Island5
-      - Island6
-      - Island7
-      - Island8
-      - Island9
-      - Island10
-      - Island11
-      - Island12
-      - Island13
-      - Island14
-      - Island15
-      - Island16
 DailyMission:
   menu: collapse
   page: setting
@@ -376,16 +357,67 @@ Opsi:
     OpsiSimulator:
       - OpsiSimulatorParameters
 
-# =================== Island ===================
+# ==================== Island ====================
+
 Island:
-  menu: "collapse"
-  page: "setting"
+  menu: 'collapse'
+  page: 'setting'
   tasks:
-    IslandInfo:
-      - IslandSeasonTask
-      - IslandTechnology
-    IslandSeasonTask:
+    IslandPlan:
       - Scheduler
+      - IslandPlan
+    IslandBusiness:
+      - Scheduler
+      - IslandBusinessShop1
+      - IslandBusinessShop2
+      - IslandBusinessShop3
+      - IslandBusinessShop4
+      - IslandBusinessShop5
+    IslandFarm:
+      - Scheduler
+      - IslandFarm
+      - IslandOrchard
+      - IslandNursery
+    IslandRancher:
+      - Scheduler
+      - IslandRancher
+      - IslandFishery
+    IslandMineForest:
+      - Scheduler
+      - IslandMine
+      - IslandForest
+    IslandRestaurant:
+      - Scheduler
+      - IslandRestaurant
+      - IslandRestaurantNextTask
+    IslandTeahouse:
+      - Scheduler
+      - IslandTeahouse
+      - IslandTeahouseNextTask
+    IslandGrill:
+      - Scheduler
+      - IslandGrill
+      - IslandGrillNextTask
+    IslandJuuEatery:
+      - Scheduler
+      - IslandJuuEatery
+      - IslandJuuEateryNextTask
+    IslandJuuCoffee:
+      - Scheduler
+      - IslandJuuCoffee
+      - IslandJuuCoffeeNextTask
+    IslandManufacture:
+      - Scheduler
+      - WoodProcessing
+      - ElectronicProcessing
+      - Industrial
+      - Handmade
+    IslandDailyGather:
+      - Scheduler
+      - IslandDailyGather
+    IslandAirDrop:
+      - Scheduler
+      - IslandAirDrop
 
 # ==================== Tool ====================
 

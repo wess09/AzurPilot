@@ -398,140 +398,6 @@ class GeneratedConfig:
     Awaken_LevelCap = 'level120'  # level120, level125
     Awaken_Favourite = False
 
-    # 配置组 `Island1`
-    Island1_Receive = False
-    Island1_Option1 = None
-    Island1_Character1 = '工作啾'
-    Island1_Option2 = None
-    Island1_Character2 = '工作啾'
-    Island1_Option3 = None
-    Island1_Character3 = '工作啾'
-    Island1_Option4 = None
-    Island1_Character4 = '工作啾'
-
-    # 配置组 `Island2`
-    Island2_Receive = False
-    Island2_Option1 = 0  # 0, 1
-    Island2_Character1 = '工作啾'
-    Island2_Option2 = 0  # 0, 2
-    Island2_Character2 = '工作啾'
-    Island2_Option3 = 0  # 0, 3
-    Island2_Character3 = '工作啾'
-    Island2_Option4 = 0  # 0, 4
-    Island2_Character4 = '工作啾'
-
-    # 配置组 `Island3`
-    Island3_Receive = False
-    Island3_Option1 = None
-    Island3_Character1 = '工作啾'
-    Island3_Option2 = None
-    Island3_Character2 = '工作啾'
-    Island3_Option3 = None
-    Island3_Character3 = '工作啾'
-
-    # 配置组 `Island4`
-    Island4_Receive = False
-    Island4_Option1 = None
-    Island4_Character1 = '工作啾'
-    Island4_Option2 = None
-    Island4_Character2 = '工作啾'
-    Island4_Option3 = None
-    Island4_Character3 = '工作啾'
-    Island4_Option4 = None
-    Island4_Character4 = '工作啾'
-
-    # 配置组 `Island5`
-    Island5_Receive = False
-    Island5_Option1 = None
-    Island5_Character1 = '工作啾'
-    Island5_Option2 = None
-    Island5_Character2 = '工作啾'
-    Island5_Option3 = None
-    Island5_Character3 = '工作啾'
-    Island5_Option4 = None
-    Island5_Character4 = '工作啾'
-
-    # 配置组 `Island6`
-    Island6_Receive = False
-    Island6_Option1 = None
-    Island6_Character1 = '工作啾'
-    Island6_Option2 = None
-    Island6_Character2 = '工作啾'
-    Island6_Option3 = None
-    Island6_Character3 = '工作啾'
-    Island6_Option4 = None
-    Island6_Character4 = '工作啾'
-
-    # 配置组 `Island7`
-    Island7_Receive = False
-    Island7_Option1 = None
-    Island7_Character1 = '工作啾'
-    Island7_Option2 = None
-    Island7_Character2 = '工作啾'
-
-    # 配置组 `Island8`
-    Island8_Receive = False
-    Island8_Option1 = None
-    Island8_Character1 = '工作啾'
-    Island8_Option2 = None
-    Island8_Character2 = '工作啾'
-
-    # 配置组 `Island9`
-    Island9_Receive = False
-    Island9_Option1 = None
-    Island9_Character1 = '工作啾'
-    Island9_Option2 = None
-    Island9_Character2 = '工作啾'
-
-    # 配置组 `Island10`
-    Island10_Receive = False
-    Island10_Option1 = None
-    Island10_Character1 = '工作啾'
-    Island10_Option2 = None
-    Island10_Character2 = '工作啾'
-
-    # 配置组 `Island11`
-    Island11_Receive = False
-    Island11_Option1 = None
-    Island11_Character1 = '工作啾'
-    Island11_Option2 = None
-    Island11_Character2 = '工作啾'
-
-    # 配置组 `Island12`
-    Island12_Receive = False
-    Island12_Option1 = None
-    Island12_Character1 = '工作啾'
-    Island12_Option2 = None
-    Island12_Character2 = '工作啾'
-
-    # 配置组 `Island13`
-    Island13_Receive = False
-    Island13_Option1 = None
-    Island13_Character1 = '工作啾'
-    Island13_Option2 = None
-    Island13_Character2 = '工作啾'
-
-    # 配置组 `Island14`
-    Island14_Receive = False
-    Island14_Option1 = None
-    Island14_Character1 = '工作啾'
-    Island14_Option2 = None
-    Island14_Character2 = '工作啾'
-
-    # 配置组 `Island15`
-    Island15_Receive = False
-    Island15_Option1 = None
-    Island15_Character1 = '工作啾'
-    Island15_Option2 = None
-    Island15_Character2 = '工作啾'
-
-    # 配置组 `Island16`
-    Island16_Receive = False
-    Island16_Option1 = None
-    Island16_Character1 = '工作啾'
-    Island16_Option2 = None
-    Island16_Character2 = '工作啾'
-
     # 配置组 `GeneralShop`
     GeneralShop_Enable = True
     GeneralShop_UseGems = False
@@ -779,11 +645,235 @@ class GeneratedConfig:
     OpsiScheduling_MeowStartEarlyEnable = False
     OpsiScheduling_VirtualAssetPreserve = 0
 
-    # 配置组 `IslandSeasonTask`
-    IslandSeasonTask_TaskDict = None
+    # 配置组 `IslandPlan`
+    IslandPlan_Season = 'spring'  # spring, summer, autumn, winter
 
-    # 配置组 `IslandTechnology`
-    IslandTechnology_TechnologyStatus = None
+    # 配置组 `IslandFarm`
+    IslandFarm_Positions = 3  # 1, 2, 3, 4
+    IslandFarm_MinFarm = 660
+    IslandFarm_PlantPotatoes = 4  # 0, 1, 2, 3, 4
+
+    # 配置组 `IslandOrchard`
+    IslandOrchard_Positions = 4  # 1, 2, 3, 4
+    IslandOrchard_MinOrchard = 300
+    IslandOrchard_IgnoreAvocado = True
+    IslandOrchard_PlantRubber = 0  # 0, 1, 2, 3, 4
+    IslandOrchard_AmagiChanRubber = False
+
+    # 配置组 `IslandNursery`
+    IslandNursery_Positions = 2  # 1, 2
+    IslandNursery_MinNursery = 0
+    IslandNursery_IgnorePineapple = True
+    IslandNursery_PlantLavender = 2  # 0, 1, 2
+
+    # 配置组 `IslandRancher`
+    IslandRancher_MinChicken = 300
+    IslandRancher_MinPork = 300
+    IslandRancher_Milk = True
+    IslandRancher_RancherFilter = 'WorkerJuu'
+    IslandRancher_Wool = True
+
+    # 配置组 `IslandFishery`
+    IslandFishery_Positions = 3  # 1, 2, 3
+    IslandFishery_MinBass = 50
+    IslandFishery_MinYellowfinTuna = 50
+    IslandFishery_MinShell = 50
+    IslandFishery_MinShrimp = 50
+    IslandFishery_MinCrab = 50
+    IslandFishery_MinSquid = 50
+    IslandFishery_MinSeaCucumber = 50
+    IslandFishery_PlantYellowfinTuna = 3  # 0, 1, 2, 3
+    IslandFishery_RancherFilter = 'WorkerJuu'
+
+    # 配置组 `IslandMine`
+    IslandMine_Mining1 = 'Silver'  # None, Copper, Aluminium, Iron, Sulphur, Silver
+    IslandMine_Mining2 = 'Silver'  # None, Copper, Aluminium, Iron, Sulphur, Silver
+    IslandMine_Mining3 = 'Silver'  # None, Copper, Aluminium, Iron, Sulphur, Silver
+    IslandMine_Mining4 = 'Silver'  # None, Copper, Aluminium, Iron, Sulphur, Silver
+
+    # 配置组 `IslandForest`
+    IslandForest_Felling1 = 'Elegant'  # None, Practical, Selected, Elegant
+    IslandForest_Felling2 = 'Elegant'  # None, Practical, Selected, Elegant
+    IslandForest_Felling3 = 'Elegant'  # None, Practical, Selected, Elegant
+    IslandForest_Felling4 = 'Elegant'  # None, Practical, Selected, Elegant
+
+    # 配置组 `IslandRestaurant`
+    IslandRestaurant_PostNumber = 2  # 1, 2
+    IslandRestaurant_ChefFilter = 'WorkerJuu'
+    IslandRestaurant_DoubleBambooShoots = False
+    IslandRestaurant_Meal1 = 'tofu_meat'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber1 = 6
+    IslandRestaurant_Meal2 = 'hearty_meal'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber2 = 6
+    IslandRestaurant_Meal3 = 'omurice'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber3 = 6
+    IslandRestaurant_Meal4 = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber4 = 0
+    IslandRestaurant_Meal5 = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber5 = 0
+    IslandRestaurant_Meal6 = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber6 = 0
+    IslandRestaurant_Meal7 = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber7 = 0
+    IslandRestaurant_Meal8 = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+    IslandRestaurant_MealNumber8 = 0
+
+    # 配置组 `IslandRestaurantNextTask`
+    IslandRestaurantNextTask_AwayCook = 'None'  # None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal, double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish
+
+    # 配置组 `IslandTeahouse`
+    IslandTeahouse_PostNumber = 2  # 1, 2
+    IslandTeahouse_ChefFilter = 'WorkerJuu'
+    IslandTeahouse_Seasonal = False
+    IslandTeahouse_Meal1 = 'floral_fruity'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber1 = 6
+    IslandTeahouse_Meal2 = 'lavender_tea'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber2 = 6
+    IslandTeahouse_Meal3 = 'strawberry_lemon'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber3 = 6
+    IslandTeahouse_Meal4 = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber4 = 0
+    IslandTeahouse_Meal5 = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber5 = 0
+    IslandTeahouse_Meal6 = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber6 = 0
+    IslandTeahouse_Meal7 = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber7 = 0
+    IslandTeahouse_Meal8 = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+    IslandTeahouse_MealNumber8 = 0
+
+    # 配置组 `IslandTeahouseNextTask`
+    IslandTeahouseNextTask_AwayCook = 'None'  # None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea
+
+    # 配置组 `IslandGrill`
+    IslandGrill_PostNumber = 1  # 1, 2
+    IslandGrill_ChefFilter = 'WorkerJuu'
+    IslandGrill_Meal1 = 'double_energy'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber1 = 6
+    IslandGrill_Meal2 = 'steak_bowl'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber2 = 6
+    IslandGrill_Meal3 = 'stir_fried_chicken'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber3 = 6
+    IslandGrill_Meal4 = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber4 = 0
+    IslandGrill_Meal5 = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber5 = 0
+    IslandGrill_Meal6 = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber6 = 0
+    IslandGrill_Meal7 = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber7 = 0
+    IslandGrill_Meal8 = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandGrill_MealNumber8 = 0
+
+    # 配置组 `IslandGrillNextTask`
+    IslandGrillNextTask_AwayCook = 'None'  # None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy
+
+    # 配置组 `IslandJuuEatery`
+    IslandJuuEatery_PostNumber = 1  # 1, 2
+    IslandJuuEatery_ChefFilter = 'WorkerJuu'
+    IslandJuuEatery_Meal1 = 'berry_orange'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber1 = 6
+    IslandJuuEatery_Meal2 = 'succulently_sweet'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber2 = 6
+    IslandJuuEatery_Meal3 = 'rice_mango'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber3 = 6
+    IslandJuuEatery_Meal4 = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber4 = 0
+    IslandJuuEatery_Meal5 = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber5 = 0
+    IslandJuuEatery_Meal6 = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber6 = 0
+    IslandJuuEatery_Meal7 = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber7 = 0
+    IslandJuuEatery_Meal8 = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandJuuEatery_MealNumber8 = 0
+
+    # 配置组 `IslandJuuEateryNextTask`
+    IslandJuuEateryNextTask_AwayCook = 'None'  # None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+
+    # 配置组 `IslandJuuCoffee`
+    IslandJuuCoffee_PostNumber = 2  # 1, 2
+    IslandJuuCoffee_ChefFilter = 'WorkerJuu'
+    IslandJuuCoffee_Friedrich = False
+    IslandJuuCoffee_Meal1 = 'wake_up_call'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber1 = 6
+    IslandJuuCoffee_Meal2 = 'cheese'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber2 = 6
+    IslandJuuCoffee_Meal3 = 'fruity_fruitier'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber3 = 6
+    IslandJuuCoffee_Meal4 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber4 = 0
+    IslandJuuCoffee_Meal5 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber5 = 0
+    IslandJuuCoffee_Meal6 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber6 = 0
+    IslandJuuCoffee_Meal7 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber7 = 0
+    IslandJuuCoffee_Meal8 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandJuuCoffee_MealNumber8 = 0
+
+    # 配置组 `IslandJuuCoffeeNextTask`
+    IslandJuuCoffeeNextTask_AwayCook = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+
+    # 配置组 `WoodProcessing`
+    WoodProcessing_Positions = 2  # 0, 1, 2
+
+    # 配置组 `ElectronicProcessing`
+    ElectronicProcessing_Positions = 2  # 0, 1, 2
+
+    # 配置组 `Industrial`
+    Industrial_Positions = 2  # 0, 1, 2
+
+    # 配置组 `Handmade`
+    Handmade_Positions = 2  # 0, 1, 2
+
+    # 配置组 `IslandAirDrop`
+    IslandAirDrop_LastSteal = datetime.datetime(2020, 1, 1, 0, 0)
+
+    # 配置组 `IslandBusinessShop1`
+    IslandBusinessShop1_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop1_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop1_Product1 = 'None'  # None, double_bamboo_shoots, tofu_meat, tofu_combo, hearty_meal, fo_tiao, amaranth_rice_ball
+    IslandBusinessShop1_Product2 = 'None'  # None, double_bamboo_shoots, tofu_meat, tofu_combo, hearty_meal, fo_tiao, amaranth_rice_ball
+    IslandBusinessShop1_Product3 = 'None'  # None, double_bamboo_shoots, tofu_meat, tofu_combo, hearty_meal, fo_tiao, amaranth_rice_ball
+    IslandBusinessShop1_Product4 = 'None'  # None, double_bamboo_shoots, tofu_meat, tofu_combo, hearty_meal, fo_tiao, amaranth_rice_ball
+    IslandBusinessShop1_Product5 = 'None'  # None, double_bamboo_shoots, tofu_meat, tofu_combo, hearty_meal, fo_tiao, amaranth_rice_ball
+
+    # 配置组 `IslandBusinessShop2`
+    IslandBusinessShop2_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop2_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop2_Product1 = 'None'  # None, spring_flower_tea, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, watermelon_juice
+    IslandBusinessShop2_Product2 = 'None'  # None, spring_flower_tea, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, watermelon_juice
+    IslandBusinessShop2_Product3 = 'None'  # None, spring_flower_tea, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, watermelon_juice
+    IslandBusinessShop2_Product4 = 'None'  # None, spring_flower_tea, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, watermelon_juice
+    IslandBusinessShop2_Product5 = 'None'  # None, spring_flower_tea, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, watermelon_juice
+
+    # 配置组 `IslandBusinessShop3`
+    IslandBusinessShop3_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop3_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop3_Product1 = 'None'  # None, orchard_duo, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandBusinessShop3_Product2 = 'None'  # None, orchard_duo, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandBusinessShop3_Product3 = 'None'  # None, orchard_duo, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandBusinessShop3_Product4 = 'None'  # None, orchard_duo, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+    IslandBusinessShop3_Product5 = 'None'  # None, orchard_duo, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice
+
+    # 配置组 `IslandBusinessShop4`
+    IslandBusinessShop4_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop4_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop4_Product1 = 'None'  # None, roasted_skewer, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandBusinessShop4_Product2 = 'None'  # None, roasted_skewer, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandBusinessShop4_Product3 = 'None'  # None, roasted_skewer, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandBusinessShop4_Product4 = 'None'  # None, roasted_skewer, stir_fried_chicken, steak_bowl, carnival, double_energy
+    IslandBusinessShop4_Product5 = 'None'  # None, roasted_skewer, stir_fried_chicken, steak_bowl, carnival, double_energy
+
+    # 配置组 `IslandBusinessShop5`
+    IslandBusinessShop5_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop5_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao
+    IslandBusinessShop5_Product1 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product2 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product3 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product4 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product5 = 'None'  # None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
 
     # 配置组 `Daemon`
     Daemon_EnterMap = True
