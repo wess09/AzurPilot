@@ -170,3 +170,10 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
                            f'falling back to ADB swipe may cause unexpected behaviour')
             self.swipe_adb(p1, p2, duration=ensure_time(swipe_duration * 2))
             self.click(Button(area=(), color=(), button=area_offset(point_random, p2), name=name), False)
+
+    def island_swipe_hold(self, p1, p2, hold_time):
+        p1, p2 = ensure_int(p1, p2)
+        hold_time = ensure_time(hold_time)
+        method = self.config.Emulator_ControlMethod
+        if method == 'minitouch':
+            self.island_swipe_hold_minitouch(p1, p2, hold_time)
