@@ -74,6 +74,8 @@ class ScrollableCode:
     def reset(self) -> None:
         run_js(r"""$("\#{dom_id}>code").empty();""".format(dom_id=self.id))
 
+    last_display_time: dict
+
     def set_scroll(self, b: bool) -> None:
         # 用于 lambda 回调函数中设置是否保持滚动到底部
         self.keep_bottom = b
@@ -135,6 +137,11 @@ class RichLog:
             )
             if self.keep_bottom:
                 self.scroll()
+
+    def set_dashboard_display(self, b: bool) -> None:
+        # use for lambda callback function. Copied.
+        self.display_dashboard = b
+        self.first_display = True
 
     def reset(self):
         run_js(f"""$("#pywebio-scope-{self.scope}>div").empty();""")
