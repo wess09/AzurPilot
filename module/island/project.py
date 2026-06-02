@@ -1629,7 +1629,8 @@ class IslandProjectRun(IslandUI):
             if proj_id == self.RANCH_PROJECT_ID:
                 raw_candidates = self.parse_config_list(raw)
                 fixed_raw = raw_candidates[0] if raw_candidates else raw
-                candidates = [self.resolve_product_option(proj_id, fixed_raw)]
+                resolved = self.resolve_product_option(proj_id, fixed_raw)
+                candidates = [resolved] if resolved else []
                 cursor_key = None
                 cursor_before = 0
                 cursor_after = 0
