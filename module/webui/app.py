@@ -64,6 +64,7 @@ from module.config.deep import deep_get, deep_iter, deep_set
 from module.config.env import IS_ON_PHONE_CLOUD
 from module.config.server import to_server
 from module.config.utils import (
+    DEFAULT_CONFIG_NAME,
     alas_instance,
     alas_template,
     dict_to_kv,
@@ -3989,7 +3990,7 @@ class AlasGUI(Frame):
         def _test_notify_update():
             from module.notify.notify import notify_webui
 
-            instance = getattr(self, "alas_name", "alas")
+            instance = getattr(self, "alas_name", DEFAULT_CONFIG_NAME)
             notify_webui(
                 instance=instance,
                 title="发现更新喵！",
@@ -4001,7 +4002,7 @@ class AlasGUI(Frame):
         def _test_notify_announcement():
             from module.notify.notify import notify_webui
 
-            instance = getattr(self, "alas_name", "alas")
+            instance = getattr(self, "alas_name", DEFAULT_CONFIG_NAME)
             notify_webui(
                 instance=instance,
                 title="新公告喵！",
@@ -4020,7 +4021,7 @@ class AlasGUI(Frame):
             config = load_config(instance)
             success = handle_notify(
                 config.Error_OnePushConfig,
-                title=f"Alas <{instance}> 崩溃",
+                title=f"AzurPilot <{instance}> 崩溃",
                 content=f"<{instance}> 开发者错误推送测试",
             )
             if success:
@@ -5146,6 +5147,4 @@ def app():
     app.mount("/mcp", mcp_app)
 
     return app
-
-
 

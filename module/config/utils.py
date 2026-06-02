@@ -29,6 +29,7 @@ SERVER_TO_TIMEZONE = {
     'tw': timedelta(hours=8),
 }
 DEFAULT_TIME = datetime(2023, 1, 1, 0, 0)
+DEFAULT_CONFIG_NAME = 'ap'
 
 
 # https://stackoverflow.com/questions/8640959/how-can-i-control-what-scalar-form-pyyaml-uses-for-my-data/15423007
@@ -204,7 +205,7 @@ def alas_instance():
     out.extend(list_mod_instance())
 
     if not len(out):
-        out = ['alas']
+        out = [DEFAULT_CONFIG_NAME]
 
     return out
 

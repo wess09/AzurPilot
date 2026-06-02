@@ -98,7 +98,7 @@ class CoinTaskMixin:
         Notes:
             - 仅在启用智能调度时生效
             - 启动器推送和 OnePush 推送分别由各自配置控制
-            - 标题会自动格式化为 "[Alas <实例名>] 原标题" 的形式
+            - 标题会自动格式化为 "[AzurPilot <实例名>] 原标题" 的形式
 
         Returns:
             bool: True 表示推送成功发送，False 表示未发送或发送失败
@@ -113,11 +113,17 @@ class CoinTaskMixin:
             return False
 
         # 获取实例名称并格式化标题
-        instance_name = getattr(self.config, 'config_name', 'Alas')
-        if title.startswith('[Alas]'):
-            formatted_title = f"[Alas <{instance_name}>]{title[6:]}"
+        instance_name = getattr(self.config, 'config_name', 'AzurPilot')
+        if title.startswith('[AzurPilot]'):
+            formatted_title = f"[AzurPilot <{instance_name}>]{title[len('[AzurPilot]'):]}"
+        elif title.startswith('[AzurPilot info]'):
+            formatted_title = f"[AzurPilot <{instance_name}>]{title[len('[AzurPilot info]'):]}"
+        elif title.startswith('[Alas]'):
+            formatted_title = f"[AzurPilot <{instance_name}>]{title[len('[Alas]'):]}"
+        elif title.startswith('[Alas info]'):
+            formatted_title = f"[AzurPilot <{instance_name}>]{title[len('[Alas info]'):]}"
         else:
-            formatted_title = f"[Alas <{instance_name}>] {title}"
+            formatted_title = f"[AzurPilot <{instance_name}>] {title}"
 
         webui_success = False
         if launcher_enabled:
@@ -148,7 +154,7 @@ class CoinTaskMixin:
             else self.config.Error_OnePushConfig
         )
         if not self._is_push_config_valid(push_config):
-            logger.warning("推送配置未设置或 provider 为 null，跳过 OnePush 推送。请在 Alas 设置 -> 错误处理 -> OnePush 配置中设置有效的推送渠道。")
+            logger.warning("推送配置未设置或 provider 为 null，跳过 OnePush 推送。请在 AzurPilot 设置 -> 错误处理 -> OnePush 配置中设置有效的推送渠道。")
             return webui_success
 
         try:
@@ -172,7 +178,7 @@ class CoinTaskMixin:
         启动器通知走更轻一点的本地文案，OnePush 仍保留原始标题和正文。
         """
         plain_title = title.strip()
-        for prefix in ('[Alas info]', '[Alas]'):
+        for prefix in ('[AzurPilot info]', '[AzurPilot]', '[Alas info]', '[Alas]'):
             if plain_title.startswith(prefix):
                 plain_title = plain_title[len(prefix):].strip()
                 break
@@ -277,7 +283,7 @@ class CoinTaskMixin:
                     content = f"当前行动力: {current_ap} 下跌{abs(ap_delta)}行动力"
 
             pushed = self.notify_push(
-                title="[Alas] 行动力出现变化！",
+                title="[AzurPilot] 行动力出现变化！",
                 content=content
             )
             if pushed:
@@ -569,7 +575,7 @@ class CoinTaskMixin:
                 task_display_name = self.TASK_NAMES.get(task_name, task_name)
 
             self.notify_push(
-                title=f"[Alas] {task_display_name} - 黄币充足",
+                title=f"[AzurPilot] {task_display_name} - 黄币充足",
                 content=f"黄币 {yellow_coins} 达到阈值 {return_threshold}\n切换回侵蚀1继续执行"
             )
             self._disable_all_coin_tasks_and_return_to_cl1()
@@ -874,7 +880,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
                         self.config.task_call('OpsiMeowfficerFarming')
 
                     self.notify_push(
-                        title='[Alas] 月末行动力清理 - 强制短猫',
+                        title='[AzurPilot] 月末行动力清理 - 强制短猫',
                         content=f'触发条件: {reason}\n当前行动力: {current_ap}\n已强制开启并调度短猫相接'
                     )
                     self.config.task_stop()
@@ -905,7 +911,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             return
         
         self.notify_push(
-            title="[Alas] 智能调度 - 黄币与行动力双重不足",
+            title="[AzurPilot] 智能调度 - 黄币与行动力双重不足",
             content=f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {current_ap} 不足 (需要 {meow_ap_preserve})\n推迟任务"
         )
     
@@ -920,7 +926,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             return
         
         self.notify_push(
-            title="[Alas] 智能调度 - 行动力不足",
+            title="[AzurPilot] 智能调度 - 行动力不足",
             content=f"当前行动力 {current_ap} 低于最低保留 {min_reserve}，推迟任务"
         )
     
@@ -993,7 +999,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             return
 
         self.notify_push(
-            title="[Alas] 智能调度 - 切换至黄币补充任务",
+            title="[AzurPilot] 智能调度 - 切换至黄币补充任务",
             content=(f"黄币 {yellow_coins} 低于保留值 {cl1_preserve}\n"
                      f"行动力: {current_ap} (需要 {meow_ap_preserve})\n"
                      f"切换至{task_names}获取黄币")
