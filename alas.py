@@ -541,6 +541,58 @@ class AzurLaneAutoScript:
         from module.island.island import Island
         Island(config=self.config, device=self.device).run()
 
+    def island_mine_forest(self):
+        from module.island.island_mine_forest import IslandMineForest
+        IslandMineForest(config=self.config, device=self.device).run()
+
+    def island_farm(self):
+        from module.island.island_farm import IslandFarm
+        IslandFarm(config=self.config, device=self.device).run()
+
+    def island_rancher(self):
+        from module.island.island_rancher import IslandRancher
+        IslandRancher(config=self.config, device=self.device).run()
+
+    def island_fishery(self):
+        from module.island.island_fishery import IslandFishery
+        IslandFishery(config=self.config, device=self.device).run()
+
+    def island_grill(self):
+        from module.island.island_grill import IslandGrill
+        IslandGrill(config=self.config, device=self.device).run()
+
+    def island_teahouse(self):
+        from module.island.island_teahouse import IslandTeahouse
+        IslandTeahouse(config=self.config, device=self.device).run()
+
+    def island_restaurant(self):
+        from module.island.island_restaurant import IslandRestaurant
+        IslandRestaurant(config=self.config, device=self.device).run()
+
+    def island_juu_coffee(self):
+        from module.island.island_juu_coffee import IslandJuuCoffee
+        IslandJuuCoffee(config=self.config, device=self.device).run()
+
+    def island_juu_eatery(self):
+        from module.island.island_juu_eatery import IslandJuuEatery
+        IslandJuuEatery(config=self.config, device=self.device).run()
+
+    def island_daily_gather(self):
+        from module.island.island_daily_gather import IslandDailyGather
+        IslandDailyGather(config=self.config, device=self.device).run()
+
+    def island_manufacture(self):
+        from module.island.island_manufacture import IslandManufacture
+        IslandManufacture(config=self.config, device=self.device).run()
+
+    def island_air_drop(self):
+        from module.island.island_air_drop import IslandAirDrop
+        IslandAirDrop(config=self.config, device=self.device).run()
+
+    def island_business(self):
+        from module.island.island_business import IslandBusiness
+        IslandBusiness(config=self.config, device=self.device).run()
+
     def daily(self):
         from module.daily.daily import Daily
         Daily(config=self.config, device=self.device).run()

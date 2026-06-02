@@ -36,7 +36,7 @@ def random_rho(dis):
 def insert_swipe(p0, p3, speed=15, min_distance=10):
     """
     在起点和终点之间插入路径点，首先生成一条三次贝塞尔曲线。
-
+    First generate a cubic bézier curve
     Args:
         p0: 起点坐标。
         p3: 终点坐标。
@@ -54,8 +54,9 @@ def insert_swipe(p0, p3, speed=15, min_distance=10):
     p0 = np.array(p0)
     p3 = np.array(p3)
 
-    # 贝塞尔曲线的随机控制点
     distance = np.linalg.norm(p3 - p0)
+
+    # 贝塞尔曲线的随机控制点
     p1 = 2 / 3 * p0 + 1 / 3 * p3 + random_theta() * random_rho(distance * 0.1)
     p2 = 1 / 3 * p0 + 2 / 3 * p3 + random_theta() * random_rho(distance * 0.1)
 
@@ -717,5 +718,15 @@ class Minitouch(Connection):
         builder.move(*p2).commit().wait(140)
         builder.send()
 
+    def island_swipe_hold_minitouch(self, p1, p2, hold_time):
+        points = insert_swipe(p0=p1, p3=p2)
+        builder = self.minitouch_builder
+        builder.down(*points[0]).commit().wait(10)
+        builder.send()
+        for point in points[1:]:
+            builder.move(*point).commit().wait(10)
+        builder.send()
+        builder.wait(hold_time)
+        builder.send()
         builder.up().commit()
         builder.send()
