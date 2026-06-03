@@ -1662,7 +1662,6 @@ class IslandProjectRun(IslandUI):
                     if not self.option_is_empty(option)
                 ]
                 candidates = [option for option in candidates if option]
-                candidates = self.dedupe_options(candidates)
                 cursor_key = self.product_cursor_key(proj_id, proj_slot)
                 signature = self.product_option_signature(candidates)
                 cursor_before = self.get_product_cursor(proj_id, proj_slot, signature=signature)
@@ -1733,7 +1732,15 @@ class IslandProjectRun(IslandUI):
                     self.character = ', '.join(character_info['candidates']) or str(character_info['raw'])
                     logger.attr('Character', self.character)
                     slot_started = False
+                    skipped_options = set()
                     for current_option in self.product_candidate_sequence(option_info):
+                        option_key = str(current_option['option'])
+                        if option_key in skipped_options:
+                            logger.info(
+                                f'Product {current_option["option"]} already failed in this slot, '
+                                'skip duplicate candidate'
+                            )
+                            continue
                         logger.attr('Product', current_option['option'])
                         last_status = None
                         attempt_count = 0
@@ -1768,6 +1775,7 @@ class IslandProjectRun(IslandUI):
                                 f'Product {current_option["option"]} failed after {attempt_count} attempts: '
                                 f'{last_status}, try next candidate'
                             )
+                        skipped_options.add(option_key)
                     if self.projects_dirty:
                         break
                 timeout.reset()
