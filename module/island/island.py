@@ -10,6 +10,13 @@ from module.handler.login import LoginHandler
 from module.ui.ui import *
 from module.logger import logger
 
+# 岗位产品选择滑动惯性消除安全区域
+SELECT_PRODUCT_INERTIA_STOP = Button(
+    area=(), color=(),
+    button=(468, 400, 476, 500),
+    file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
+)
+
 class Island(SelectCharacter):
     def __init__(self, *args, **kwargs):
         # 调用两个父类的初始化
@@ -251,6 +258,10 @@ class Island(SelectCharacter):
 
             # 如果都不匹配，则滑动寻找
             self.device.swipe_vector(vector=(0, -200), box=(333, 142, 431, 602), name="SelectionUpSwipe")
+            # 点击安全区域消除滑动惯性，防止截图时列表仍在滚动
+            self.device.sleep(0.3)
+            self.device.click(SELECT_PRODUCT_INERTIA_STOP)
+            self.device.sleep(0.2)
             attempt += 1
 
         return False

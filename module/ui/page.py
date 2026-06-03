@@ -289,16 +289,6 @@ page_private_quarters = Page(PRIVATE_QUARTERS_CHECK)
 page_dormmenu.link(button=DORMMENU_GOTO_PRIVATE_QUARTERS, destination=page_private_quarters)
 page_private_quarters.link(button=PQ_GOTO_MAIN, destination=page_main)
 
-# 岛屿
-page_island = Page(ISLAND_CHECK)
-page_dormmenu.link(button=DORMMENU_GOTO_ISLAND, destination=page_island)
-
-# 岛屿手机
-page_island_phone = Page(ISLAND_PHONE_CHECK)
-page_island.link(button=ISLAND_GOTO_ISLAND_PHONE, destination=page_island_phone)
-page_island_phone.link(button=ISLAND_PHONE_GOTO_MAIN, destination=page_main)
-page_island_phone.link(button=ISLAND_PHONE_GOTO_ISLAND, destination=page_island)
-
 # 游戏室与选择游戏
 page_game_room = Page(GAME_ROOM_CHECK)
 page_academy.link(button=ACADEMY_GOTO_GAME_ROOM, destination=page_game_room)
@@ -380,9 +370,11 @@ page_island_map = Page(ISLAND_MAP_CHECK)
 page_island_visit = Page(ISLAND_VISIT_CHECK)
 page_island_mill = Page(ISLAND_MILL_CHECK)
 page_island_season = Page(ISLAND_SEASON_CHECK)
+page_island_phone = Page(ISLAND_PHONE_CHECK)
 
 page_dormmenu.link(button=DORMMENU_GOTO_ISLAND, destination=page_island)
 page_island_message.link(button=DORMMENU_GOTO_ISLAND_MESSAGE, destination=page_island)
+page_island.link(button=ISLAND_GOTO_ISLAND_PHONE, destination=page_island_phone)
 page_island.link(button=ISLAND_GOTO_MANAGEMENT, destination=page_island_management)
 page_island.link(button=ISLAND_GOTO_SHOP, destination=page_island_shop)
 page_island_management.link(button=ISLAND_MANAGEMENT_GOTO_ISLAND, destination=page_island)
@@ -401,3 +393,6 @@ page_island_management.link(button=ISLAND_MANAGEMENT_GOTO_VISIT, destination=pag
 page_island_visit.link(button=ISLAND_VISIT_GOTO_MANAGEMENT, destination=page_island_management)
 page_island_mill.link(button=ISLAND_MILL_GOTO_ISLAND, destination=page_island)
 page_island_season.link(button=ISLAND_SEASON_GOTO_ISLAND, destination=page_island)
+page_island_phone.link(button=ISLAND_PHONE_GOTO_MAIN, destination=page_main)
+page_island_phone.link(button=ISLAND_PHONE_GOTO_ISLAND, destination=page_island)
+page_island_phone.link(button=ISLAND_PHONE_GOTO_ISLAND_MANAGE, destination=page_island_management)

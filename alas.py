@@ -1009,7 +1009,6 @@ class AzurLaneAutoScript:
                         del_cached_property(self, 'config')
                         continue
                 elif method == 'stay_there':
-                    logger.info('等待期间停留在原地')
                     release_resources()
                     self.device.release_during_wait()
                     if not self.wait_until(task.next_run):
