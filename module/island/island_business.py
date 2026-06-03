@@ -1,4 +1,4 @@
-import os
+﻿import os
 from module.island.island import Island
 from module.island.assets import *
 from module.island_business.assets import *
@@ -15,7 +15,7 @@ from module.ocr.ocr import Duration
 
 # ==================== 经营剩余时间 OCR 区域（深蓝按钮上方） ====================
 BUSINESS_REMAIN_TIME_AREA = Button(
-    area=(), color=(),
+    area=(1061, 100, 1118, 120), color=(),
     button=(1061, 100, 1118, 120),
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
