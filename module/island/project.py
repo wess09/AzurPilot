@@ -811,7 +811,7 @@ class IslandProjectRun(IslandUI):
 
         return success
 
-    def _project_character_select(self, click_button, check_button=None):
+    def _project_character_select(self, click_button=None, check_button=None):
         """
         为岛屿项目选择指定角色。
 
@@ -819,7 +819,8 @@ class IslandProjectRun(IslandUI):
         """
         click_timeout = Timer(1.5).start()
         confirm_clicked = False
-        self.device.click(click_button)
+        if click_button is not None:
+            self.device.click(click_button)
 
         for _ in self.loop(skip_first=False, timeout=6):
             if self.appear(ISLAND_AMOUNT_MAX, offset=(20, 20)):
@@ -834,6 +835,8 @@ class IslandProjectRun(IslandUI):
 
             if confirm_visible:
                 if check_button is not None and not self.appear(check_button, offset=(20, 20)):
+                    if click_button is None:
+                        return False
                     if click_timeout.reached():
                         logger.info('Character check mismatch, re-clicking character')
                         self.device.click(click_button)
@@ -850,6 +853,9 @@ class IslandProjectRun(IslandUI):
                 continue
 
             if not confirm_clicked and click_timeout.reached():
+                if click_button is None:
+                    logger.warning('ROLE_SELECT_CONFIRM not appeared for selected character')
+                    return False
                 logger.info('ROLE_SELECT_CONFIRM not appeared, re-clicking character')
                 self.device.click(click_button)
                 click_timeout.reset()
@@ -857,6 +863,18 @@ class IslandProjectRun(IslandUI):
 
         logger.warning('Island select role verification timeout')
         return False
+
+    def _project_character_confirm_if_selected(self, character):
+        check_button = self.get_character_check_button(character)
+        if check_button is None:
+            return False
+        if not self.appear(ROLE_SELECT_CONFIRM, offset=(20, 20)):
+            return False
+        if not self.appear(check_button, offset=(20, 20)):
+            return False
+
+        logger.info(f'Character {self.readable_character_name(character)} already selected')
+        return self._project_character_select(check_button=check_button)
 
     def project_character_select(self, character='manjuu'):
         """
@@ -897,6 +915,8 @@ class IslandProjectRun(IslandUI):
                 for candidate in candidates:
                     if candidate in unavailable:
                         continue
+                    if self._project_character_confirm_if_selected(candidate):
+                        return candidate
                     logger.debug(f'Checking character candidate: {self.readable_character_name(candidate)}')
                     result = self._project_character_select_from_cards(
                         candidate, image, cards, grid_checked=grid_checked
