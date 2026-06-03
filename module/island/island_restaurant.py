@@ -90,7 +90,14 @@ class IslandRestaurant(IslandShopBase):
              'post_action': POST_FO_TIAO},
             {'name': 'onion_fish', 'template': TEMPLATE_ONION_FISH, 'var_name': 'onion_fish',
              'selection': SELECT_ONION_FISH, 'selection_check': SELECT_ONION_FISH_CHECK,
-             'post_action': POST_ONION_FISH}
+             'post_action': POST_ONION_FISH},
+            # 季节限定菜品（需在 shop_items 中注册，以支持季节自动切换和配置读取）
+            {'name': 'asparagus_shrimp', 'template': TEMPLATE_ASPARAGUS_SHRIMP, 'var_name': 'asparagus_shrimp',
+             'selection': SELECT_ASPARAGUS_SHRIMP, 'selection_check': SELECT_ASPARAGUS_SHRIMP_CHECK,
+             'post_action': POST_ASPARAGUS_SHRIMP},
+            {'name': 'tomato_egg', 'template': TEMPLATE_TOMATO_EGG, 'var_name': 'tomato_egg',
+             'selection': SELECT_TOMATO_EGG, 'selection_check': SELECT_TOMATO_EGG_CHECK,
+             'post_action': POST_TOMATO_EGG},
         ])
 
         # 设置套餐组成

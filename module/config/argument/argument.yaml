@@ -701,155 +701,6 @@ Awaken:
     option: [level120, level125]
   Favourite:
     value: false
-_Island:
-  IslandOption4: &IslandOption4
-    value: ""
-  IslandOption5: &IslandOption5
-    value: ""
-  IslandOption6: &IslandOption6
-    value: ""
-  IslandOption7: &IslandOption7
-    value: ""
-  IslandOption8: &IslandOption8
-    value: ""
-  IslandOption9: &IslandOption9
-    value: ""
-  IslandOption10: &IslandOption10
-    value: ""
-  IslandOption11: &IslandOption11
-    value: ""
-  IslandOption12: &IslandOption12
-    value: ""
-  IslandOption16: &IslandOption16
-    value: ""
-  IslandCharacter: &IslandCharacter
-    value: 工作啾
-Island1:
-  Receive: false
-  Option1: *IslandOption8
-  Character1: *IslandCharacter
-  Option2: *IslandOption8
-  Character2: *IslandCharacter
-  Option3: *IslandOption8
-  Character3: *IslandCharacter
-  Option4: *IslandOption8
-  Character4: *IslandCharacter
-Island2:
-  Receive: false
-  Option1:
-    value: 0
-    option: [ 0, 1 ]
-  Character1: *IslandCharacter
-  Option2:
-    value: 0
-    option: [ 0, 2 ]
-  Character2: *IslandCharacter
-  Option3:
-    value: 0
-    option: [ 0, 3 ]
-  Character3: *IslandCharacter
-  Option4:
-    value: 0
-    option: [ 0, 4 ]
-  Character4: *IslandCharacter
-Island3:
-  Receive: false
-  Option1: *IslandOption16
-  Character1: *IslandCharacter
-  Option2: *IslandOption16
-  Character2: *IslandCharacter
-  Option3: *IslandOption16
-  Character3: *IslandCharacter
-Island4:
-  Receive: false
-  Option1: *IslandOption6
-  Character1: *IslandCharacter
-  Option2: *IslandOption6
-  Character2: *IslandCharacter
-  Option3: *IslandOption6
-  Character3: *IslandCharacter
-  Option4: *IslandOption6
-  Character4: *IslandCharacter
-Island5:
-  Receive: false
-  Option1: *IslandOption4
-  Character1: *IslandCharacter
-  Option2: *IslandOption4
-  Character2: *IslandCharacter
-  Option3: *IslandOption4
-  Character3: *IslandCharacter
-  Option4: *IslandOption4
-  Character4: *IslandCharacter
-Island6:
-  Receive: false
-  Option1: *IslandOption7
-  Character1: *IslandCharacter
-  Option2: *IslandOption7
-  Character2: *IslandCharacter
-  Option3: *IslandOption7
-  Character3: *IslandCharacter
-  Option4: *IslandOption7
-  Character4: *IslandCharacter
-Island7:
-  Receive: false
-  Option1: *IslandOption9
-  Character1: *IslandCharacter
-  Option2: *IslandOption9
-  Character2: *IslandCharacter
-Island8:
-  Receive: false
-  Option1: *IslandOption12
-  Character1: *IslandCharacter
-  Option2: *IslandOption12
-  Character2: *IslandCharacter
-Island9:
-  Receive: false
-  Option1: *IslandOption11
-  Character1: *IslandCharacter
-  Option2: *IslandOption11
-  Character2: *IslandCharacter
-Island10:
-  Receive: false
-  Option1: *IslandOption10
-  Character1: *IslandCharacter
-  Option2: *IslandOption10
-  Character2: *IslandCharacter
-Island11:
-  Receive: false
-  Option1: *IslandOption9
-  Character1: *IslandCharacter
-  Option2: *IslandOption9
-  Character2: *IslandCharacter
-Island12:
-  Receive: false
-  Option1: *IslandOption6
-  Character1: *IslandCharacter
-  Option2: *IslandOption6
-  Character2: *IslandCharacter
-Island13:
-  Receive: false
-  Option1: *IslandOption6
-  Character1: *IslandCharacter
-  Option2: *IslandOption6
-  Character2: *IslandCharacter
-Island14:
-  Receive: false
-  Option1: *IslandOption4
-  Character1: *IslandCharacter
-  Option2: *IslandOption4
-  Character2: *IslandCharacter
-Island15:
-  Receive: false
-  Option1: *IslandOption9
-  Character1: *IslandCharacter
-  Option2: *IslandOption9
-  Character2: *IslandCharacter
-Island16:
-  Receive: false
-  Option1: *IslandOption9
-  Character1: *IslandCharacter
-  Option2: *IslandOption9
-  Character2: *IslandCharacter
 GeneralShop:
   Enable: true
   UseGems: false
@@ -1257,15 +1108,536 @@ OpsiScheduling:
     type: checkbox
   VirtualAssetPreserve: 0
 
-# =================== Island ====================
-IslandSeasonTask:
-  TaskDict:
-    type: textarea
-    value: |-
-IslandTechnology:
-  TechnologyStatus:
-    type: textarea
-    value: |-
+# ==================== Island ====================
+IslandPlan:
+  Season:
+    value: spring
+    option: [ spring, summer, autumn, winter ]
+IslandFarm:
+  Positions:
+    value: 3
+    option: [ 1, 2, 3, 4 ]
+  MinFarm: 660
+  PlantPotatoes:
+    value: 4
+    option: [ 0, 1, 2, 3, 4 ]
+IslandOrchard:
+  Positions:
+    value: 4
+    option: [ 1, 2, 3, 4 ]
+  MinOrchard: 300
+  IgnoreAvocado: true
+  PlantRubber:
+    value: 0
+    option: [ 0, 1, 2, 3, 4 ]
+  AmagiChanRubber: false
+IslandNursery:
+  Positions:
+    value: 2
+    option: [ 1, 2 ]
+  MinNursery: 0
+  IgnorePineapple: true
+  PlantLavender:
+    value: 2
+    option: [ 0, 1, 2 ]
+IslandRancher:
+  MinChicken: 300
+  MinPork: 300
+  Milk: true
+  RancherFilter: |-
+    WorkerJuu
+  Wool: true
+IslandFishery:
+  Positions:
+    value: 3
+    option: [ 1, 2, 3 ]
+  MinBass: 50
+  MinYellowfinTuna: 50
+  MinShell: 50
+  MinShrimp: 50
+  MinCrab: 50
+  MinSquid: 50
+  MinSeaCucumber: 50
+  PlantYellowfinTuna:
+    value: 3
+    option: [ 0, 1, 2, 3 ]
+  RancherFilter: |-
+    WorkerJuu
+IslandMine:
+  Mining1:
+    value: Silver
+    option: [ None, Copper, Aluminium, Iron, Sulphur, Silver ]
+  Mining2:
+    value: Silver
+    option: [ None, Copper, Aluminium, Iron, Sulphur, Silver ]
+  Mining3:
+    value: Silver
+    option: [ None, Copper, Aluminium, Iron, Sulphur, Silver ]
+  Mining4:
+    value: Silver
+    option: [ None, Copper, Aluminium, Iron, Sulphur, Silver ]
+IslandForest:
+  Felling1:
+    value: Elegant
+    option: [ None, Practical, Selected, Elegant ]
+  Felling2:
+    value: Elegant
+    option: [ None, Practical, Selected, Elegant ]
+  Felling3:
+    value: Elegant
+    option: [ None, Practical, Selected, Elegant ]
+  Felling4:
+    value: Elegant
+    option: [ None, Practical, Selected, Elegant ]
+IslandRestaurant:
+  PostNumber:
+    value: 2
+    option: [ 1, 2 ]
+  ChefFilter: |-
+    WorkerJuu
+  DoubleBambooShoots: false
+  Meal1:
+    value: tofu_meat
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber1:
+    value: 6
+  Meal2:
+    value: hearty_meal
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber2:
+    value: 6
+  Meal3:
+    value: omurice
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber3:
+    value: 6
+  Meal4:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber4:
+    value: 0
+  Meal5:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber5:
+    value: 0
+  Meal6:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber6:
+    value: 0
+  Meal7:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber7:
+    value: 0
+  Meal8:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+  MealNumber8:
+    value: 0
+IslandRestaurantNextTask:
+  AwayCook:
+    value: None
+    option: [ None, tofu, omurice, cabbage_tofu, salad, tofu_meat, tofu_combo, hearty_meal , double_bamboo_shoots, asparagus_shrimp, fish_chip, fo_tiao, onion_fish]
+IslandTeahouse:
+  PostNumber:
+    value: 2
+    option: [ 1, 2 ]
+  ChefFilter: |-
+    WorkerJuu
+  Seasonal: false
+  Meal1:
+    value: floral_fruity
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber1:
+    value: 6
+  Meal2:
+    value: lavender_tea
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber2:
+    value: 6
+  Meal3:
+    value: strawberry_lemon
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber3:
+    value: 6
+  Meal4:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber4:
+    value: 0
+  Meal5:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber5:
+    value: 0
+  Meal6:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber6:
+    value: 0
+  Meal7:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber7:
+    value: 0
+  Meal8:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+  MealNumber8:
+    value: 0
+IslandTeahouseNextTask:
+  AwayCook:
+    value: None
+    option: [ None, apple_juice, banana_mango, honey_lemon, strawberry_lemon, strawberry_honey, floral_fruity, fruit_paradise, lavender_tea, sunny_honey, winter_jasmine_tea]
+IslandGrill:
+  PostNumber:
+    value: 1
+    option: [ 1, 2 ]
+  ChefFilter: |-
+    WorkerJuu
+  Meal1:
+    value: double_energy
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy  ]
+  MealNumber1:
+    value: 6
+  Meal2:
+    value: steak_bowl
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber2:
+    value: 6
+  Meal3:
+    value: stir_fried_chicken
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber3:
+    value: 6
+  Meal4:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber4:
+    value: 0
+  Meal5:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber5:
+    value: 0
+  Meal6:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber6:
+    value: 0
+  Meal7:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber7:
+    value: 0
+  Meal8:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+  MealNumber8:
+    value: 0
+IslandGrillNextTask:
+  AwayCook:
+    value: None
+    option: [ None, roasted_skewer, chicken_potato, carrot_omelette, stir_fried_chicken, steak_bowl, carnival, double_energy ]
+IslandJuuEatery:
+  PostNumber:
+    value: 1
+    option: [ 1, 2 ]
+  ChefFilter: |-
+    WorkerJuu
+  Meal1:
+    value: berry_orange
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber1:
+    value: 6
+  Meal2:
+    value: succulently_sweet
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber2:
+    value: 6
+  Meal3:
+    value: rice_mango
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber3:
+    value: 6
+  Meal4:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber4:
+    value: 0
+  Meal5:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber5:
+    value: 0
+  Meal6:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber6:
+    value: 0
+  Meal7:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber7:
+    value: 0
+  Meal8:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+  MealNumber8:
+    value: 0
+IslandJuuEateryNextTask:
+  AwayCook:
+    value: None
+    option: [ None, apple_pie, corn_cup, orange_pie, banana_crepe, orchard_duo, rice_mango, succulently_sweet, berry_orange, strawberry_charlotte, seafood_rice ]
+IslandJuuCoffee:
+  PostNumber:
+    value: 2
+    option: [ 1, 2 ]
+  ChefFilter: |-
+    WorkerJuu
+  Friedrich: false
+  Meal1:
+    value: wake_up_call
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber1:
+    value: 6
+  Meal2:
+    value: cheese
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber2:
+    value: 6
+  Meal3:
+    value: fruity_fruitier
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber3:
+    value: 6
+  Meal4:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber4:
+    value: 0
+  Meal5:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber5:
+    value: 0
+  Meal6:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber6:
+    value: 0
+  Meal7:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber7:
+    value: 0
+  Meal8:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+  MealNumber8:
+    value: 0
+IslandJuuCoffeeNextTask:
+  AwayCook:
+    value: None
+    option: [ None, iced_coffee, omelette, cheese, latte, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier ]
+WoodProcessing:
+  Positions:
+    value: 2
+    option: [ 0, 1, 2 ]
+ElectronicProcessing:
+  Positions:
+    value: 2
+    option: [ 0, 1, 2 ]
+Industrial:
+  Positions:
+    value: 2
+    option: [ 0, 1, 2 ]
+Handmade:
+  Positions:
+    value: 2
+    option: [ 0, 1, 2 ]
+IslandAirDrop:
+  LastSteal: 2020-01-01 00:00:00
+
+# ---------- Island Business Shops ----------
+_IslandBusinessChar: &IslandBusinessChar
+  type: select
+  value: None
+  option:
+    - None
+    - WorkerJuu
+    - Cheshire
+    - YingSwei
+    - Saratoga
+    - Akashi
+    - NewJersey
+    - Tashkent
+    - LeMalin
+    - Shimakaze
+    - Amagi_chan
+    - Unicorn
+    - ChaoHo
+    - ChenHai
+    - WilliamDPorter
+    - Helena
+    - Friedrich
+    - Atago
+    - Yixian
+    - August
+    - Eugen
+    - Hood
+    - Javelin
+    - Laffey
+    - Explorer
+    - Navigator
+    - OceanCrosser
+    - FeiYun
+    - Takao
+
+_IslandBusinessProduct1: &IslandBusinessProduct1
+  type: select
+  value: None
+  option:
+    - None
+    - double_bamboo_shoots
+    - tofu_meat
+    - tofu_combo
+    - hearty_meal
+    - fo_tiao
+    - amaranth_rice_ball
+
+_IslandBusinessProduct2: &IslandBusinessProduct2
+  type: select
+  value: None
+  option:
+    - None
+    - spring_flower_tea
+    - strawberry_lemon
+    - strawberry_honey
+    - floral_fruity
+    - fruit_paradise
+    - lavender_tea
+    - sunny_honey
+    - watermelon_juice
+
+_IslandBusinessProduct3: &IslandBusinessProduct3
+  type: select
+  value: None
+  option:
+    - None
+    - orchard_duo
+    - succulently_sweet
+    - berry_orange
+    - strawberry_charlotte
+    - seafood_rice
+
+_IslandBusinessProduct4: &IslandBusinessProduct4
+  type: select
+  value: None
+  option:
+    - None
+    - roasted_skewer
+    - stir_fried_chicken
+    - steak_bowl
+    - carnival
+    - double_energy
+
+_IslandBusinessProduct5: &IslandBusinessProduct5
+  type: select
+  value: None
+  option:
+    - None
+    - iced_coffee
+    - omelette
+    - cheese
+    - latte
+    - citrus_coffee
+    - strawberry_milkshake
+    - morning_light
+    - wake_up_call
+    - fruity_fruitier
+
+IslandBusinessShop1:
+  Char1:
+    <<: *IslandBusinessChar
+  Char2:
+    <<: *IslandBusinessChar
+  Product1:
+    <<: *IslandBusinessProduct1
+  Product2:
+    <<: *IslandBusinessProduct1
+  Product3:
+    <<: *IslandBusinessProduct1
+  Product4:
+    <<: *IslandBusinessProduct1
+  Product5:
+    <<: *IslandBusinessProduct1
+
+IslandBusinessShop2:
+  Char1:
+    <<: *IslandBusinessChar
+  Char2:
+    <<: *IslandBusinessChar
+  Product1:
+    <<: *IslandBusinessProduct2
+  Product2:
+    <<: *IslandBusinessProduct2
+  Product3:
+    <<: *IslandBusinessProduct2
+  Product4:
+    <<: *IslandBusinessProduct2
+  Product5:
+    <<: *IslandBusinessProduct2
+
+IslandBusinessShop3:
+  Char1:
+    <<: *IslandBusinessChar
+  Char2:
+    <<: *IslandBusinessChar
+  Product1:
+    <<: *IslandBusinessProduct3
+  Product2:
+    <<: *IslandBusinessProduct3
+  Product3:
+    <<: *IslandBusinessProduct3
+  Product4:
+    <<: *IslandBusinessProduct3
+  Product5:
+    <<: *IslandBusinessProduct3
+
+IslandBusinessShop4:
+  Char1:
+    <<: *IslandBusinessChar
+  Char2:
+    <<: *IslandBusinessChar
+  Product1:
+    <<: *IslandBusinessProduct4
+  Product2:
+    <<: *IslandBusinessProduct4
+  Product3:
+    <<: *IslandBusinessProduct4
+  Product4:
+    <<: *IslandBusinessProduct4
+  Product5:
+    <<: *IslandBusinessProduct4
+
+IslandBusinessShop5:
+  Char1:
+    <<: *IslandBusinessChar
+  Char2:
+    <<: *IslandBusinessChar
+  Product1:
+    <<: *IslandBusinessProduct5
+  Product2:
+    <<: *IslandBusinessProduct5
+  Product3:
+    <<: *IslandBusinessProduct5
+  Product4:
+    <<: *IslandBusinessProduct5
+  Product5:
+    <<: *IslandBusinessProduct5
 
 # ==================== Tools ====================
 

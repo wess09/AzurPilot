@@ -415,7 +415,7 @@ pre.rich-traceback-code {
 
 [id^="pywebio-scope-group_Island"] {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     column-gap: 5%
 }
 
@@ -427,7 +427,7 @@ pre.rich-traceback-code {
 
 [id^="pywebio-scope-group_Island"]>[id^="pywebio-scope-arg_container-"]:not([id*="Enable"]):not([id*="Receive"]) {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
 }
 
 #pywebio-scope-navigator {

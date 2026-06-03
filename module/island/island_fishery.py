@@ -243,7 +243,10 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
         logger.info("已进入渔具商店页签")
 
     def buy_fry(self, product, quantity=1):
-        """购买鱼苗，一次购买 quantity 个（不超过 buy_max 上限）"""
+        """购买鱼苗，一次购买 quantity 个（不超过 buy_max 上限）
+
+        对齐种子商店 buy_seeds 的简洁风格。
+        """
         item_config = self.name_to_config[product]
         target_tab = item_config['tab']
         shop_button = item_config['shop']
@@ -253,95 +256,21 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
         # 切换到对应页签（淡水/海水/其他）
         self.switch_tab(target_tab)
 
-        logger.info(f"  [buy_fry] 开始购买{product} x{buy_qty}")
-        loop_count = 0
+        logger.info(f"购买 {product} x{buy_qty}")
+
+        # 点击商品，等待购物弹窗出现
         while 1:
             self.device.screenshot()
-            loop_count += 1
-            
-            # 使用模板匹配检测购买弹窗
             if self.appear(ISLAND_SHOPPING_CHECK):
                 break
-            
-            # 每3次打印调试信息
-            if loop_count % 3 == 1:
-                import numpy as np
-                arr = np.array(self.device.image)
-                # 检测ISLAND_SHOPPING_CHECK区域
-                sc_area = ISLAND_SHOPPING_CHECK.area
-                a = sc_area.get('cn', sc_area) if isinstance(sc_area, dict) else sc_area
-                crop = arr[a[1]:a[3], a[0]:a[2]]
-                mask = np.any(crop > 10, axis=2)
-                if mask.any():
-                    avg = crop[mask].mean(axis=0)
-                    logger.info(f"  [buy_fry] ISLAND_SHOPPING_CHECK区域颜色=({avg[0]:.0f},{avg[1]:.0f},{avg[2]:.0f})")
-                # 尝试匹配shop_button
-                btn_appear = self.appear(shop_button)
-                logger.info(f"  [buy_fry] shop_button({product}) appear={btn_appear}")
-            
-            # 使用appear_then_click尝试点击
-            self.appear_then_click(shop_button, interval=0.3)
+            if self.appear_then_click(shop_button, interval=0.3):
+                pass
 
+        # 设置购买数量
         if self.appear(ISLAND_SHOPPING_CHECK):
             self.set_buy_number(buy_qty)
 
-        # 购买确认流程
-        logger.info("  [buy_fry] 进入购买确认流程")
-        confirm_loop = 0
-        while 1:
-            self.device.screenshot()
-            confirm_loop += 1
-            import numpy as np
-            arr = np.array(self.device.image)
-            
-            shop_check = self.appear(ISLAND_FRY_SHOP_CHECK, offset=1)
-            confirm_appear = self.appear(ISLAND_SHOP_CONFIRM)
-            get_appear = self.appear(ISLAND_SHOP_GET)
-            
-            # 每2次循环打印状态
-            if confirm_loop % 2 == 1:
-                logger.info(f"  [buy_fry] 确认循环#{confirm_loop}: SHOP_CHECK={shop_check}, CONFIRM={confirm_appear}, GET={get_appear}")
-                # 打印关键区域颜色
-                for name, area in [('SHOP_CHECK',ISLAND_FRY_SHOP_CHECK.area),('CONFIRM',ISLAND_SHOP_CONFIRM.area),('SHOP_GET',ISLAND_SHOP_GET.area)]:
-                    a = area.get('cn', area) if isinstance(area, dict) else area
-                    crop = arr[a[1]:a[3], a[0]:a[2]]
-                    mask = np.any(crop > 10, axis=2)
-                    if mask.any():
-                        avg = crop[mask].mean(axis=0)
-                        logger.info(f"  [buy_fry]   {name}区域{a}颜色=({avg[0]:.0f},{avg[1]:.0f},{avg[2]:.0f})")
-            
-            if shop_check:
-                logger.info("  [buy_fry] ISLAND_SHOP_CHECK检测成功，完成购买")
-                break
-            
-            if confirm_appear:
-                logger.info("  [buy_fry] ISLAND_SHOP_CONFIRM出现，点击确认")
-                _click_area(self.device, ISLAND_SHOP_CONFIRM.area)
-                self.device.sleep(0.5)
-                _click_area(self.device, ISLAND_SHOP_CONFIRM.area)
-                self.device.sleep(0.5)
-                continue
-            
-            if get_appear:
-                logger.info("  [buy_fry] ISLAND_SHOP_GET出现，点击确认关闭奖励")
-                confirm_area = ISLAND_SHOP_CONFIRM.area
-                ca = confirm_area.get('cn', confirm_area) if isinstance(confirm_area, dict) else confirm_area
-                cx, cy = (ca[0]+ca[2])//2, (ca[1]+ca[3])//2
-                logger.info(f"  [buy_fry] 直接点击坐标({cx},{cy})")
-                self.device.click(cx, cy)
-                self.device.sleep(0.5)
-                continue
-            
-            # 都检测不到时尝试直接点击
-            if confirm_loop <= 3:
-                ca = ISLAND_SHOP_CONFIRM.area.get('cn', ISLAND_SHOP_CONFIRM.area) if isinstance(ISLAND_SHOP_CONFIRM.area, dict) else ISLAND_SHOP_CONFIRM.area
-                logger.info(f"  [buy_fry] 无检测命中，尝试直接点击区域{ca}")
-                _click_area(self.device, ISLAND_SHOP_CONFIRM.area)
-                self.device.sleep(0.5)
-
-        if self.appear(ISLAND_SHOPPING_CHECK):
-            self.set_buy_number(buy_qty)
-
+        # 确认购买
         while 1:
             self.device.screenshot()
             if self.appear(ISLAND_FRY_SHOP_CHECK, offset=1):

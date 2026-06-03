@@ -1,4 +1,4 @@
-import os
+﻿import os
 from module.island.island import Island
 from module.island.assets import *
 from module.island_business.assets import *
@@ -10,6 +10,15 @@ from module.base.template import Template
 from module.base.utils import crop
 from module.island.island_season import SEASONAL_ITEMS
 from datetime import datetime, timedelta
+from module.ocr.ocr import Duration
+
+
+# ==================== 经营剩余时间 OCR 区域（深蓝按钮上方） ====================
+BUSINESS_REMAIN_TIME_AREA = Button(
+    area=(1061, 100, 1118, 120), color=(),
+    button=(1061, 100, 1118, 120),
+    file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
+)
 
 
 # ==================== 美食评审安全区域（仅坐标，无需截图） ====================
@@ -203,10 +212,13 @@ class IslandBusiness(Island):
         self.device.sleep(1)
         logger.info("切换到经营页签")
         self.post_manage_mode(POST_MANAGE_BUSINESS)
-        self.device.sleep(1)
+        self.device.sleep(3)
         
         # 处理每日首次进入可能出现的美食评审界面
         self._handle_food_review()
+        
+        # 标记本轮是否曾处理过蓝色开始经营按钮
+        self._has_seen_blue = False
         
         # 无限循环处理，直到所有商店处理完毕（灰色按钮/经营中状态会 return 退出）
         while True:
@@ -216,6 +228,7 @@ class IslandBusiness(Island):
             status = self._check_start_button_status()
             
             if status == 'blue':
+                self._has_seen_blue = True
                 logger.info("检测到蓝色按钮，点击进入商店")
                 self.device.click(BUSINESS_START_BUTTON_BLUE)
                 self.device.sleep(1)
@@ -233,7 +246,6 @@ class IslandBusiness(Island):
                     self.device.click(ISLAND_BACK)
                     self.device.sleep(1)
                     continue
-                
                 self._confirm_business_start()
                 # 经营完成后重新进入经营页签，自动切换到下一个商店
                 self.post_manage_mode(POST_MANAGE_BUSINESS)
@@ -244,9 +256,26 @@ class IslandBusiness(Island):
                 self.post_manage_mode(POST_MANAGE_BUSINESS)
                 self.device.sleep(0.5)
             elif status == 'darkblue':
-                logger.info("经营中，延后检测")
-                next_time = self._calculate_darkblue_delay()
-                self.config.task_delay(target=next_time)
+                if self._has_seen_blue:
+                    # 此前处理过蓝色按钮（已启动经营），返回后按钮变深蓝 → 正常退出
+                    logger.info("经营已启动，正常退出")
+                    self._set_task_delay()
+                    return
+                # 首次识别到深蓝（所有商店已在经营中）→ OCR 剩余时间并精确延时
+                logger.info("经营中，检测剩余时间")
+                ocr_remain = Duration(BUSINESS_REMAIN_TIME_AREA, lang='azur_lane',
+                                      letter=(255, 255, 255), threshold=128,
+                                      name='OCR_BUSINESS_REMAIN')
+                remain = ocr_remain.ocr(self.device.image)
+                if remain and remain.total_seconds() > 0:
+                    # 剩余时间 + 5分钟余量
+                    delay_seconds = remain.total_seconds() + 300
+                    logger.info(f"经营剩余 {remain}，延时 {delay_seconds / 60:.1f} 分钟后检测")
+                    self.config.task_delay(minute=delay_seconds / 60)
+                else:
+                    logger.warning("剩余时间OCR失败，使用默认2小时延时")
+                    next_time = self._calculate_darkblue_delay()
+                    self.config.task_delay(target=next_time)
                 return
             elif status == 'gray':
                 logger.info("不可经营，延后至明天0点")
@@ -356,18 +385,26 @@ class IslandBusiness(Island):
             return 'yellow'
         if self.appear(BUSINESS_START_BUTTON_DARKBLUE, offset=30):
             return 'darkblue'
-        if self.appear(BUSINESS_START_BUTTON_GRAY, offset=30):
-            return 'gray'
-        return None
+        # 三个可经营按钮都未识别到 → 视为灰色不可经营状态
+        return 'gray'
     
     def _claim_business_reward(self):
         logger.info("领取经营奖励")
         # 第1步：点击黄色按钮进入结算界面
         self.device.click(BUSINESS_START_BUTTON_YELLOW)
         self.device.sleep(1)
+        # 如果黄色奖励按钮还在，继续点击直到消失
+        self.device.screenshot()
+        for _ in range(5):
+            if self.appear(BUSINESS_START_BUTTON_YELLOW, offset=30):
+                logger.info("黄色奖励按钮仍在，再次点击")
+                self.device.click(BUSINESS_START_BUTTON_YELLOW)
+                self.device.sleep(1)
+                self.device.screenshot()
+            else:
+                break
         
         # 第2步：等待"经营结算"按钮出现并点击（未出现时点安全区域）
-        self.device.screenshot()
         timeout = 0
         while not self.appear(BUSINESS_SETTLEMENT, offset=30):
             timeout += 1
@@ -396,11 +433,20 @@ class IslandBusiness(Island):
         self.device.click(BUSINESS_REWARD_SAFE_AREA)
         self.device.sleep(1)
         
-        # 第4步：等待"获得物品"出现，点击安全区域（未出现时点安全区域，超时不return直接走下一步）
+        # 第4步：等待"获得物品"出现，点击安全区域（同时检测是否已跳过此步或回到经营界面）
         self.device.screenshot()
         timeout = 0
         obtained = False
         while not self.appear(BUSINESS_OBTAINED_ITEMS, offset=30):
+            # 如果已经出现返回按钮，说明已跳过获得物品步骤，直接进入第5步
+            if self.appear(ISLAND_BACK, offset=30):
+                logger.info("检测到返回按钮，跳过获得物品步骤")
+                obtained = True
+                break
+            # 如果已经退出到经营界面，直接退出
+            if self.appear(POST_MANAGE_BUSINESS, offset=30) or self.appear(POST_MANAGE_PRODUCTION, offset=30):
+                logger.info("已回到经营界面，退出领取")
+                return
             timeout += 1
             if timeout > 10:
                 logger.warning("等待获得物品图片超时，跳过")
@@ -414,10 +460,14 @@ class IslandBusiness(Island):
             self.device.click(BUSINESS_REWARD_SAFE_AREA)
             self.device.sleep(1)
         
-        # 第5步：等待ISLAND_BACK出现并点击返回（未出现时点安全区域）
+        # 第5步：等待ISLAND_BACK出现并点击返回（同时检测是否已回到经营界面）
         self.device.screenshot()
         timeout = 0
         while not self.appear(ISLAND_BACK, offset=30):
+            # 如果已经退出到经营界面，直接退出
+            if self.appear(POST_MANAGE_BUSINESS, offset=30) or self.appear(POST_MANAGE_PRODUCTION, offset=30):
+                logger.info("已回到经营界面，退出领取")
+                return
             timeout += 1
             if timeout > 10:
                 logger.warning("等待ISLAND_BACK超时，跳过")
@@ -621,6 +671,14 @@ class IslandBusiness(Island):
             logger.info("确认经营")
             self.device.click(start_button)
             self.device.sleep(1)
+            # 确认经营后检测并跳过可能的周常/PT奖励弹窗
+            self.device.screenshot()
+            for _ in range(3):
+                if self.handle_popup_single('BUSINESS'):
+                    self.device.sleep(0.5)
+                    self.device.screenshot()
+                else:
+                    break
             self.device.click(ISLAND_BACK)
             self.device.sleep(1)
             self.device.screenshot()
@@ -634,8 +692,7 @@ class IslandBusiness(Island):
             self.config.task_delay(minute=0, task=t)
     
     def _set_task_delay(self):
-        t = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        self.config.task_delay(target=t)
+        self.config.task_delay(minute=60 * 8)
 
 
 if __name__ == "__main__":
