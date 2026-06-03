@@ -19,6 +19,7 @@ from module.webui.fake_pil_module import *
 import_fake_pil_module()
 
 from module.logger import logger, set_file_logger, set_func_logger
+from module.config.utils import DEFAULT_CONFIG_NAME
 from module.submodule.submodule import load_mod
 from module.submodule.utils import get_available_func, get_available_mod, get_available_mod_func, get_config_mod, \
     get_func_mod, list_mod_instance
@@ -28,7 +29,7 @@ from module.webui.setting import State
 class ProcessManager:
     _processes: Dict[str, "ProcessManager"] = {}
 
-    def __init__(self, config_name: str = "alas") -> None:
+    def __init__(self, config_name: str = DEFAULT_CONFIG_NAME) -> None:
         self.config_name = config_name
         self._renderable_queue: queue.Queue[ConsoleRenderable] = State.manager.Queue()
         self.renderables: List[ConsoleRenderable] = []

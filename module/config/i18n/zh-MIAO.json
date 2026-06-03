@@ -641,7 +641,7 @@
     },
     "StrictRestart": {
       "name": "敏感任务出错禁止重启 (｀ε´)",
-      "help": "隐秘、深渊、跨月每日出错时停止Alas而不是重启喵，避免损失。"
+      "help": "隐秘、深渊、跨月每日出错时停止AzurPilot而不是重启喵，避免损失。"
     },
     "SaveErrorCount": {
       "name": "错误日志保留数 (´・ω・`)",
@@ -691,7 +691,7 @@
   "Optimization": {
     "_info": {
       "name": "优化魔法 (。-`ω´-)✧",
-      "help": "让Alas跑得更流畅喵~"
+      "help": "让AzurPilot跑得更流畅喵~"
     },
     "OcrDevice": {
       "name": "OCR设备选择 (´・ω・`)",
@@ -1498,7 +1498,7 @@
   "GemsFarming": {
     "_info": {
       "name": "1-1刷伏击配置 (紧急委托赚钻石) (´⊙ω⊙`)",
-      "help": "警告: 少量钻石获取方式，非高效手段。萌新别迷信低耗，角色养成才重要。阵形成型玩家可获取额外魔方，钻石当副产品喵。\n旗舰32级后更换旗舰。委托油比 A3 > A1 > 2-4 > 2-1，活动图更好。一队完成战斗，前排百级零破驱逐输出装，后排33级以下零破白航母。二队跨队支援。\n无法设置舰队职能时：有错误推送就停止任务并通知，否则直接停止Alas，防石油消耗。"
+      "help": "警告: 少量钻石获取方式，非高效手段。萌新别迷信低耗，角色养成才重要。阵形成型玩家可获取额外魔方，钻石当副产品喵。\n旗舰32级后更换旗舰。委托油比 A3 > A1 > 2-4 > 2-1，活动图更好。一队完成战斗，前排百级零破驱逐输出装，后排33级以下零破白航母。二队跨队支援。\n无法设置舰队职能时：有错误推送就停止任务并通知，否则直接停止AzurPilot，防石油消耗。"
     },
     "ChangeFlagship": {
       "name": "更换旗舰 (｀・ω・´)ゞ",
@@ -1861,7 +1861,7 @@
   "Research": {
     "_info": {
       "name": "科研项目选择 (。-`ω´-)✧",
-      "help": "当过滤器与设置共同作用时，Alas找满足所有条件的项目。如设过滤器 `H1 > D2.5 > shortest` 且禁魔方，最终不会选耗魔方项目。想切魔方只需打开，不必改过滤器。"
+      "help": "当过滤器与设置共同作用时，AzurPilot找满足所有条件的项目。如设过滤器 `H1 > D2.5 > shortest` 且禁魔方，最终不会选耗魔方项目。想切魔方只需打开，不必改过滤器。"
     },
     "UseCube": {
       "name": "使用魔方喵",
@@ -3113,7 +3113,7 @@
   "OpsiHazard1Leveling": {
     "_info": {
       "name": "侵蚀1练级（赛博股票） (´⊙ω⊙`)",
-      "help": "消耗作战补给凭证获取大量经验和少量行动力。推荐1-2艘预装填航母。原版Alas的防呆限制已解除，请谨慎设置喵。"
+      "help": "消耗作战补给凭证获取大量经验和少量行动力。推荐1-2艘预装填航母。原版AzurPilot的防呆限制已解除，请谨慎设置喵。"
     },
     "TargetZone": {
       "name": "指定海域 (规避BUG) (｀・ω・´)",
@@ -3243,7 +3243,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "智能调度+（雪风特调） (｡>﹏<｡)",
-      "help": "协调侵蚀1练级与黄币补充任务自动切换，并推送通知。原版Alas防呆限制已解除，谨慎设置喵。"
+      "help": "协调侵蚀1练级与黄币补充任务自动切换，并推送通知。原版AzurPilot防呆限制已解除，谨慎设置喵。"
     },
     "UseSmartSchedulingOperationCoinsPreserve": {
       "name": "获取 X 个作战补给凭证 (´・ω・`)",
@@ -3430,6 +3430,9 @@
     "Wool": {
       "name": "IslandRancher.Wool.name",
       "help": "IslandRancher.Wool.help"
+    "TaskDict": {
+      "name": "任务列表喵",
+      "help": "AzurPilot会自动导出喵。"
     }
   },
   "IslandFishery": {
@@ -5218,6 +5221,9 @@
       "morning_light": "morning_light",
       "wake_up_call": "wake_up_call",
       "fruity_fruitier": "fruity_fruitier"
+    "TechnologyStatus": {
+      "name": "科技列表喵",
+      "help": "AzurPilot会自动导出喵。"
     }
   },
   "Daemon": {
@@ -5770,7 +5776,7 @@
       "ImportTitle": "导入旧数据喵",
       "ImportHint": "如果以前用过 AzurPilot 或 ALAS，可以直接导入旧配置继续用喵。",
       "ImportCardTitle": "保留旧设置喵",
-      "ImportCardText": "会读取旧 JSON 配置，迁移到当前版本后写入 config/alas.json 喵。",
+      "ImportCardText": "会读取旧 JSON 配置，迁移到当前版本后写入 config/ap.json 喵。",
       "ImportDetected": "检测到的旧配置喵",
       "ImportManual": "手动输入路径喵",
       "ImportPath": "旧配置路径喵",

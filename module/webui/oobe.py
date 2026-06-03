@@ -760,7 +760,7 @@ class OOBEWizard:
         self.emulator_serial = "127.0.0.1:5555"
         self.package_name = "com.bilibili.azurlane"
         self.server_name = "cn_android-0"
-        self.config_name = "alas"
+        self.config_name = "ap"
         self.screenshot_method = "auto"
         existing_lang = getattr(State.deploy_config, "Language", None)
         if existing_lang:

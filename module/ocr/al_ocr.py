@@ -8,6 +8,7 @@ from PIL import Image
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 from module.config.config import AzurLaneConfig
+from module.config.utils import DEFAULT_CONFIG_NAME
 
 
 def handle_ocr_error(e):
@@ -66,7 +67,7 @@ class RecOnlyOCR(RapidOCR):
         self.cfg = cfg
 
 
-config_name = os.environ.get("ALAS_CONFIG_NAME") or "alas"
+config_name = os.environ.get("ALAS_CONFIG_NAME") or DEFAULT_CONFIG_NAME
 config = AzurLaneConfig(config_name)
 
 

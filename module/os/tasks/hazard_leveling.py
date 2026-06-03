@@ -115,7 +115,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 _previous_coins_ap_insufficient = True
                 notify_content = f"作战补给凭证 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n任务已推迟"
                 self.notify_push(
-                    title="[Alas] 智能调度 - 警告",
+                    title="[AzurPilot] 智能调度 - 警告",
                     content=notify_content,
                 )
             else:
@@ -217,7 +217,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if virtual_asset_preserve > 0:
                 notify_content += f"\n虚拟资产: {virtual_asset:.0f} (保留值 {virtual_asset_preserve})"
             self.notify_push(
-                title="[Alas info] 智能调度 - 切换至凭证补充任务",
+                title="[AzurPilot info] 智能调度 - 切换至凭证补充任务",
                 content=notify_content,
             )
 
@@ -250,7 +250,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if not _previous_ap_insufficient:
                 _previous_ap_insufficient = True
                 self.notify_push(
-                    title="[Alas info] 智能调度 - 行动力低于最低保留",
+                    title="[AzurPilot info] 智能调度 - 行动力低于最低保留",
                     content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，已推迟任务",
                 )
             else:

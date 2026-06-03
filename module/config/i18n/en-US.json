@@ -1498,7 +1498,7 @@
   "GemsFarming": {
     "_info": {
       "name": "Urgent Commission Farming",
-      "help": "Warning: This feature allows players to obtain a small amount of diamonds, but is not an efficient way to obtain diamonds.\nPlayers who have been playing Azur Lane for a short time can easily become superstitious about zero breakage and low consumption, while neglecting character development.\nRunning this function will only make you feel very fulfilled, but your account will actually have zero improvement.\nThe main purpose of this function is to allow players with a formed lineup to obtain additional Rubik's Cubes. Please treat diamonds rationally as a by-product.\n\nThis feature will replace the flagship after flagship level 32\nRegarding the emergency commission refresh mechanism, you can read https://bbs.nga.cn/read.php?tid=27134956\nCommissioned fuel consumption ratio: A3 > A1 > 2-4 > 2-1. It is recommended to choose the activity diagram when there is an activity diagram. 2-1 will pick the question mark to have more supplies.\nOne team will complete all battles. The front row should be level 100 zero-break destroyer with output equipment, and the back row should be level 33 and below white-skin zero-break aircraft carriers.\nThe second team should provide cross-team support (cross-team barrage, cross-team assistance)\n\nWhen the fleet function cannot be set, the mission should be stopped in the following ways to avoid cross-team attacks and a large amount of oil being consumed:\nIf error push is set, a task stop message will be pushed and the task will be stopped.\nIf error push is not set, Alas will be stopped directly."
+      "help": "Warning: This feature allows players to obtain a small amount of diamonds, but is not an efficient way to obtain diamonds.\nPlayers who have been playing Azur Lane for a short time can easily become superstitious about zero breakage and low consumption, while neglecting character development.\nRunning this function will only make you feel very fulfilled, but your account will actually have zero improvement.\nThe main purpose of this function is to allow players with a formed lineup to obtain additional Rubik's Cubes. Please treat diamonds rationally as a by-product.\n\nThis feature will replace the flagship after flagship level 32\nRegarding the emergency commission refresh mechanism, you can read https://bbs.nga.cn/read.php?tid=27134956\nCommissioned fuel consumption ratio: A3 > A1 > 2-4 > 2-1. It is recommended to choose the activity diagram when there is an activity diagram. 2-1 will pick the question mark to have more supplies.\nOne team will complete all battles. The front row should be level 100 zero-break destroyer with output equipment, and the back row should be level 33 and below white-skin zero-break aircraft carriers.\nThe second team should provide cross-team support (cross-team barrage, cross-team assistance)\n\nWhen the fleet function cannot be set, the mission should be stopped in the following ways to avoid cross-team attacks and a large amount of oil being consumed:\nIf error push is set, a task stop message will be pushed and the task will be stopped.\nIf error push is not set, AzurPilot will be stopped directly."
     },
     "ChangeFlagship": {
       "name": "Change Flagship",
@@ -5223,7 +5223,7 @@
   "Daemon": {
     "_info": {
       "name": "semi-automatic click",
-      "help": "It is useful when attacking unadapted levels, which can reduce a lot of manual operations.\nAlas will help you click to prepare for battle, click to settle the battle, skip the plot, automatically retire, and close various pop-up windows. You just need to select the enemy manually."
+      "help": "It is useful when attacking unadapted levels, which can reduce a lot of manual operations.\nAzurPilot will help you click to prepare for battle, click to settle the battle, skip the plot, automatically retire, and close various pop-up windows. You just need to select the enemy manually."
     },
     "EnterMap": {
       "name": "Automatically click to enter picture preparation",
@@ -5233,7 +5233,7 @@
   "OpsiDaemon": {
     "_info": {
       "name": "Big world semi-automatic",
-      "help": "It is useful when attacking the abyss of the big world (red treasure box map) or completing the main line of the big world, which can reduce a lot of manual operations.\nAlas will help you click to prepare for the battle, click to settle the battle, skip the plot, and close various pop-up windows. You just need to manually select enemies and manually switch sea areas."
+      "help": "It is useful when attacking the abyss of the big world (red treasure box map) or completing the main line of the big world, which can reduce a lot of manual operations.\nAzurPilot will help you click to prepare for the battle, click to settle the battle, skip the plot, and close various pop-up windows. You just need to manually select enemies and manually switch sea areas."
     },
     "RepairShip": {
       "name": "Automatically repair ships when approaching port",
@@ -5770,7 +5770,7 @@
       "ImportTitle": "Import Existing Data",
       "ImportHint": "If you used AzurPilot or ALAS before, import your old config and continue from there.",
       "ImportCardTitle": "Keep Your Settings",
-      "ImportCardText": "Import reads an old JSON config, migrates it to the current version, and writes config/alas.json.",
+      "ImportCardText": "Import reads an old JSON config, migrates it to the current version, and writes config/ap.json.",
       "ImportDetected": "Detected Configs",
       "ImportManual": "Enter path manually",
       "ImportPath": "Old Config Path",

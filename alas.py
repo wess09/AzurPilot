@@ -13,7 +13,7 @@ from module.base.decorator import del_cached_property
 from module.base.api_client import ApiClient
 from module.config.config import AzurLaneConfig, TaskEnd
 from module.config.deep import deep_get, deep_set
-from module.config.utils import filepath_i18n, read_file
+from module.config.utils import DEFAULT_CONFIG_NAME, filepath_i18n, read_file
 from module.exception import *
 from module.logger import logger
 from module.notify import handle_notify, notify_webui
@@ -53,7 +53,7 @@ def _get_task_display_name(task_command):
 class AzurLaneAutoScript:
     stop_event: threading.Event = None
 
-    def __init__(self, config_name='alas'):
+    def __init__(self, config_name=DEFAULT_CONFIG_NAME):
         logger.hr('Start', level=0)
         self.config_name = config_name
         # 跳过启动后的第一次 Restart 任务

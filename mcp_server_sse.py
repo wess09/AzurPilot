@@ -25,7 +25,7 @@ import re
 from io import BytesIO
 
 from module.config.config import AzurLaneConfig
-from module.config.utils import alas_instance
+from module.config.utils import DEFAULT_CONFIG_NAME, alas_instance
 from module.webui.process_manager import ProcessManager
 from module.config.mcp_helper import McpConfigHelper
 from module.webui.setting import State
@@ -409,7 +409,7 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
                 return [TextContent(type="text", text=error_msg)]
 
         elif name == "restart_adb":
-            inst = arguments.get("instance", "alas")
+            inst = arguments.get("instance", DEFAULT_CONFIG_NAME)
             try:
                 # 尝试从 deploy.yaml 获取 ADB 路径
                 adb_path = State.deploy_config.AdbExecutable

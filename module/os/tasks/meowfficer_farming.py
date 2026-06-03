@@ -82,12 +82,12 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
 
                     if self.is_cl1_enabled:
                         self.notify_push(
-                            title="[Alas] 短猫相接 - 切换至侵蚀 1",
+                            title="[AzurPilot] 短猫相接 - 切换至侵蚀 1",
                             content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n补充凭证: {yellow_coins}\n推迟短猫 1 小时，切换至侵蚀 1"
                         )
                     else:
                         self.notify_push(
-                            title="[Alas] 短猫相接 - 行动力不足",
+                            title="[AzurPilot] 短猫相接 - 行动力不足",
                             content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n凭证: {yellow_coins}\n任务推迟 1 小时"
                         )
 

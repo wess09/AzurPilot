@@ -1,12 +1,12 @@
 import os
 from datetime import datetime
 
-from module.config.utils import filepath_config, DEFAULT_TIME
+from module.config.utils import DEFAULT_CONFIG_NAME, filepath_config, DEFAULT_TIME
 from module.logger import logger
 
 
 class ConfigWatcher:
-    config_name = 'alas'
+    config_name = DEFAULT_CONFIG_NAME
     start_mtime = DEFAULT_TIME
 
     def start_watching(self) -> None:
