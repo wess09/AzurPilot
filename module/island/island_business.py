@@ -302,7 +302,8 @@ class IslandBusiness(Island):
                 return
             elif status == 'gray':
                 logger.info("不可经营，延后至明天0点")
-                self._set_task_delay()
+                tomorrow = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                self.config.task_delay(target=tomorrow)
                 return
             else:
                 logger.info("按钮状态未知，跳过")
