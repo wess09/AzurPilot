@@ -3430,6 +3430,7 @@
     "Wool": {
       "name": "IslandRancher.Wool.name",
       "help": "IslandRancher.Wool.help"
+    },
     "TaskDict": {
       "name": "任务列表喵",
       "help": "AzurPilot会自动导出喵。"
@@ -5221,6 +5222,7 @@
       "morning_light": "morning_light",
       "wake_up_call": "wake_up_call",
       "fruity_fruitier": "fruity_fruitier"
+    },
     "TechnologyStatus": {
       "name": "科技列表喵",
       "help": "AzurPilot会自动导出喵。"
