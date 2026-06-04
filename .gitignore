@@ -10,6 +10,7 @@ config/*.json
 config/*.db
 config/tmp*
 !config/template*.json
+config/data/
 *.pyw
 dev_tools/debug_tools
 .idea
@@ -29,6 +30,12 @@ test/*
 debug_ocr/
 PaddleOCR
 .trae
+# Runtime bootstrap (ADB, git binaries)
+bootstrap/
+# Android/Termux deploy scripts
+deploy/Termux/
+# Generated launcher script
+deploy/launcher/Alas-gui.bat
 
 # Created by .ignore support plugin (hsz.mobi)
 
@@ -251,6 +258,12 @@ $RECYCLE.BIN/
 *.msix
 *.msm
 *.msp
+
+# InnoSetup uninstaller artifacts
+unins000.*
+
+# Compiled launcher binary
+alas-launcher.exe
 
 # Windows shortcuts
 *.lnk

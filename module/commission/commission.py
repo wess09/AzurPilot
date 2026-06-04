@@ -757,17 +757,28 @@ class RewardCommission(UI, InfoHandler):
             logger.info('No commission running')
             self.config.task_delay(success=False)
 
-        # 延迟钻石 farming 任务
-        if self.config.is_task_enabled('GemsFarming') and \
-                self.config.cross_get(keys='GemsFarming.GemsFarming.CommissionLimit', default=False):
+        # 延迟钻石 farming / 三油低耗任务
+        gems_limit = self.config.is_task_enabled('GemsFarming') and \
+            self.config.cross_get(keys='GemsFarming.GemsFarming.CommissionLimit', default=False)
+        three_oil_limit = self.config.is_task_enabled('ThreeOilLowCost') and \
+            self.config.cross_get(keys='ThreeOilLowCost.GemsFarming.CommissionLimit', default=False)
+        if gems_limit or three_oil_limit:
             daily = self.daily.select(category_str='daily', status='pending').count
             filtered_urgent = self.comm_choose.intersect_by_eq(self.urgent.select(status='pending')).count
             filtered_extra = self.comm_choose.intersect_by_eq(self.daily.select(category_str='extra', status='pending')).count
             logger.info(f'Daily commission: {daily}, filtered_urgent: {filtered_urgent}, filtered_extra: {filtered_extra}')
             future = nearest_future(future_finish) if len(future_finish) else None
             if daily > 0 and filtered_urgent >= 1:
-                logger.info('Having daily commissions to do, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                if gems_limit:
+                    logger.info('Having daily commissions to do, delay task `GemsFarming`')
+                    self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                if three_oil_limit:
+                    logger.info('Having daily commissions to do, delay task `ThreeOilLowCost`')
+                    self.config.task_delay(minute=None if future else 120, target=future, task='ThreeOilLowCost')
             elif filtered_urgent >= 4:
-                logger.info('Having too many urgent commissions, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                if gems_limit:
+                    logger.info('Having too many urgent commissions, delay task `GemsFarming`')
+                    self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                if three_oil_limit:
+                    logger.info('Having too many urgent commissions, delay task `ThreeOilLowCost`')
+                    self.config.task_delay(minute=None if future else 120, target=future, task='ThreeOilLowCost')
