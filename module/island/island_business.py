@@ -192,7 +192,18 @@ class IslandBusiness(Island):
         return Button(area=new_area, color=button.color,
                       button=new_button, file=button.file)
     
-    def _appear_at_positions(self, button, offset=30):
+    def _appear_at_positions(self, button, offset=0):
+        """
+        在正常位置和偏移位置（美食评审模式）检测按钮。
+        使用颜色检测而非模板匹配，避免 match() 修改 button._button_offset 导致点击坐标产生非预期的纵向偏移。
+
+        Args:
+            button: 待检测的按钮。
+            offset: 固定为 0 确保使用颜色检测（appear_on），不修改按钮的内部偏移状态。
+
+        Returns:
+            Button: 检测到的按钮实例，或 None。
+        """
         self.device.screenshot()
         if self.appear(button, offset=offset):
             return button
