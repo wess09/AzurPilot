@@ -3342,6 +3342,7 @@
       "2": "2",
       "3": "3",
       "4": "4"
+    },
     "TaskDict": {
       "name": "任務列表",
       "help": "AzurPilot會自動匯出列表"
@@ -5221,6 +5222,7 @@
       "morning_light": "morning_light",
       "wake_up_call": "wake_up_call",
       "fruity_fruitier": "fruity_fruitier"
+    },
     "TechnologyStatus": {
       "name": "科技列表",
       "help": "AzurPilot會自動匯出列表"
