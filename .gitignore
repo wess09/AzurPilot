@@ -29,7 +29,7 @@ test/*
 debug_ocr/
 PaddleOCR
 .trae
-
+docs/
 # Created by .ignore support plugin (hsz.mobi)
 
 ### JetBrains template

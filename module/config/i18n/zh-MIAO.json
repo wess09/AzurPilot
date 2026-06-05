@@ -3430,9 +3430,6 @@
     "Wool": {
       "name": "IslandRancher.Wool.name",
       "help": "IslandRancher.Wool.help"
-    "TaskDict": {
-      "name": "任务列表喵",
-      "help": "AzurPilot会自动导出喵。"
     }
   },
   "IslandFishery": {
@@ -4961,12 +4958,12 @@
   },
   "IslandBusinessShop4": {
     "_info": {
-      "name": "IslandBusinessShop4._info.name",
-      "help": "IslandBusinessShop4._info.help"
+      "name": "烏魚烤肉喵",
+      "help": ""
     },
     "Char1": {
-      "name": "IslandBusinessShop4.Char1.name",
-      "help": "IslandBusinessShop4.Char1.help",
+      "name": "角色1喵",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -4998,8 +4995,8 @@
       "Takao": "Takao"
     },
     "Char2": {
-      "name": "IslandBusinessShop4.Char2.name",
-      "help": "IslandBusinessShop4.Char2.help",
+      "name": "角色2喵",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5031,64 +5028,64 @@
       "Takao": "Takao"
     },
     "Product1": {
-      "name": "IslandBusinessShop4.Product1.name",
-      "help": "IslandBusinessShop4.Product1.help",
-      "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "name": "餐品1喵",
+      "help": "",
+      "None": "無喵",
+      "roasted_skewer": "烤肉串喵",
+      "stir_fried_chicken": "炒雞丁喵",
+      "steak_bowl": "牛排飯喵",
+      "carnival": "狂歡套餐喵",
+      "double_energy": "雙倍能量喵"
     },
     "Product2": {
-      "name": "IslandBusinessShop4.Product2.name",
-      "help": "IslandBusinessShop4.Product2.help",
-      "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "name": "餐品2喵",
+      "help": "",
+      "None": "無喵",
+      "roasted_skewer": "烤肉串喵",
+      "stir_fried_chicken": "炒雞丁喵",
+      "steak_bowl": "牛排飯喵",
+      "carnival": "狂歡套餐喵",
+      "double_energy": "雙倍能量喵"
     },
     "Product3": {
-      "name": "IslandBusinessShop4.Product3.name",
-      "help": "IslandBusinessShop4.Product3.help",
-      "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "name": "餐品3喵",
+      "help": "",
+      "None": "無喵",
+      "roasted_skewer": "烤肉串喵",
+      "stir_fried_chicken": "炒雞丁喵",
+      "steak_bowl": "牛排飯喵",
+      "carnival": "狂歡套餐喵",
+      "double_energy": "雙倍能量喵"
     },
     "Product4": {
-      "name": "IslandBusinessShop4.Product4.name",
-      "help": "IslandBusinessShop4.Product4.help",
-      "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "name": "餐品4喵",
+      "help": "",
+      "None": "無喵",
+      "roasted_skewer": "烤肉串喵",
+      "stir_fried_chicken": "炒雞丁喵",
+      "steak_bowl": "牛排飯喵",
+      "carnival": "狂歡套餐喵",
+      "double_energy": "雙倍能量喵"
     },
     "Product5": {
-      "name": "IslandBusinessShop4.Product5.name",
-      "help": "IslandBusinessShop4.Product5.help",
-      "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "name": "餐品5喵",
+      "help": "",
+      "None": "無喵",
+      "roasted_skewer": "烤肉串喵",
+      "stir_fried_chicken": "炒雞丁喵",
+      "steak_bowl": "牛排飯喵",
+      "carnival": "狂歡套餐喵",
+      "double_energy": "雙倍能量喵"
     }
   },
   "IslandBusinessShop5": {
     "_info": {
-      "name": "IslandBusinessShop5._info.name",
-      "help": "IslandBusinessShop5._info.help"
+      "name": "啾咖啡喵",
+      "help": ""
     },
     "Char1": {
-      "name": "IslandBusinessShop5.Char1.name",
-      "help": "IslandBusinessShop5.Char1.help",
+      "name": "角色1喵",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5120,8 +5117,8 @@
       "Takao": "Takao"
     },
     "Char2": {
-      "name": "IslandBusinessShop5.Char2.name",
-      "help": "IslandBusinessShop5.Char2.help",
+      "name": "角色2喵",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5153,77 +5150,74 @@
       "Takao": "Takao"
     },
     "Product1": {
-      "name": "IslandBusinessShop5.Product1.name",
-      "help": "IslandBusinessShop5.Product1.help",
-      "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "name": "餐品1喵",
+      "help": "",
+      "None": "無喵",
+      "iced_coffee": "冰咖啡喵",
+      "omelette": "蛋餅喵",
+      "cheese": "芝士喵",
+      "latte": "拿鐵喵",
+      "citrus_coffee": "柑橘咖啡喵",
+      "strawberry_milkshake": "草莓奶昔喵",
+      "morning_light": "晨光咖啡喵",
+      "wake_up_call": "叫醒咖啡喵",
+      "fruity_fruitier": "水果特飲喵"
     },
     "Product2": {
-      "name": "IslandBusinessShop5.Product2.name",
-      "help": "IslandBusinessShop5.Product2.help",
-      "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "name": "餐品2喵",
+      "help": "",
+      "None": "無喵",
+      "iced_coffee": "冰咖啡喵",
+      "omelette": "蛋餅喵",
+      "cheese": "芝士喵",
+      "latte": "拿鐵喵",
+      "citrus_coffee": "柑橘咖啡喵",
+      "strawberry_milkshake": "草莓奶昔喵",
+      "morning_light": "晨光咖啡喵",
+      "wake_up_call": "叫醒咖啡喵",
+      "fruity_fruitier": "水果特飲喵"
     },
     "Product3": {
-      "name": "IslandBusinessShop5.Product3.name",
-      "help": "IslandBusinessShop5.Product3.help",
-      "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "name": "餐品3喵",
+      "help": "",
+      "None": "無喵",
+      "iced_coffee": "冰咖啡喵",
+      "omelette": "蛋餅喵",
+      "cheese": "芝士喵",
+      "latte": "拿鐵喵",
+      "citrus_coffee": "柑橘咖啡喵",
+      "strawberry_milkshake": "草莓奶昔喵",
+      "morning_light": "晨光咖啡喵",
+      "wake_up_call": "叫醒咖啡喵",
+      "fruity_fruitier": "水果特飲喵"
     },
     "Product4": {
-      "name": "IslandBusinessShop5.Product4.name",
-      "help": "IslandBusinessShop5.Product4.help",
-      "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "name": "餐品4喵",
+      "help": "",
+      "None": "無喵",
+      "iced_coffee": "冰咖啡喵",
+      "omelette": "蛋餅喵",
+      "cheese": "芝士喵",
+      "latte": "拿鐵喵",
+      "citrus_coffee": "柑橘咖啡喵",
+      "strawberry_milkshake": "草莓奶昔喵",
+      "morning_light": "晨光咖啡喵",
+      "wake_up_call": "叫醒咖啡喵",
+      "fruity_fruitier": "水果特飲喵"
     },
     "Product5": {
-      "name": "IslandBusinessShop5.Product5.name",
-      "help": "IslandBusinessShop5.Product5.help",
-      "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
-    "TechnologyStatus": {
-      "name": "科技列表喵",
-      "help": "AzurPilot会自动导出喵。"
+      "name": "餐品5喵",
+      "help": "",
+      "None": "無喵",
+      "iced_coffee": "冰咖啡喵",
+      "omelette": "蛋餅喵",
+      "cheese": "芝士喵",
+      "latte": "拿鐵喵",
+      "citrus_coffee": "柑橘咖啡喵",
+      "strawberry_milkshake": "草莓奶昔喵",
+      "morning_light": "晨光咖啡喵",
+      "wake_up_call": "叫醒咖啡喵",
+      "fruity_fruitier": "水果特飲喵"
     }
   },
   "Daemon": {

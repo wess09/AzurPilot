@@ -4958,12 +4958,12 @@
   },
   "IslandBusinessShop4": {
     "_info": {
-      "name": "IslandBusinessShop4._info.name",
-      "help": "IslandBusinessShop4._info.help"
+      "name": "Squid BBQ",
+      "help": ""
     },
     "Char1": {
-      "name": "IslandBusinessShop4.Char1.name",
-      "help": "IslandBusinessShop4.Char1.help",
+      "name": "Character 1",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -4995,8 +4995,8 @@
       "Takao": "Takao"
     },
     "Char2": {
-      "name": "IslandBusinessShop4.Char2.name",
-      "help": "IslandBusinessShop4.Char2.help",
+      "name": "Character 2",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5028,64 +5028,64 @@
       "Takao": "Takao"
     },
     "Product1": {
-      "name": "IslandBusinessShop4.Product1.name",
-      "help": "IslandBusinessShop4.Product1.help",
+      "name": "Product 1",
+      "help": "",
       "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "roasted_skewer": "Roasted Skewer",
+      "stir_fried_chicken": "Stir-fried Chicken",
+      "steak_bowl": "Steak Bowl",
+      "carnival": "Carnival",
+      "double_energy": "Double Energy"
     },
     "Product2": {
-      "name": "IslandBusinessShop4.Product2.name",
-      "help": "IslandBusinessShop4.Product2.help",
+      "name": "Product 2",
+      "help": "",
       "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "roasted_skewer": "Roasted Skewer",
+      "stir_fried_chicken": "Stir-fried Chicken",
+      "steak_bowl": "Steak Bowl",
+      "carnival": "Carnival",
+      "double_energy": "Double Energy"
     },
     "Product3": {
-      "name": "IslandBusinessShop4.Product3.name",
-      "help": "IslandBusinessShop4.Product3.help",
+      "name": "Product 3",
+      "help": "",
       "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "roasted_skewer": "Roasted Skewer",
+      "stir_fried_chicken": "Stir-fried Chicken",
+      "steak_bowl": "Steak Bowl",
+      "carnival": "Carnival",
+      "double_energy": "Double Energy"
     },
     "Product4": {
-      "name": "IslandBusinessShop4.Product4.name",
-      "help": "IslandBusinessShop4.Product4.help",
+      "name": "Product 4",
+      "help": "",
       "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "roasted_skewer": "Roasted Skewer",
+      "stir_fried_chicken": "Stir-fried Chicken",
+      "steak_bowl": "Steak Bowl",
+      "carnival": "Carnival",
+      "double_energy": "Double Energy"
     },
     "Product5": {
-      "name": "IslandBusinessShop4.Product5.name",
-      "help": "IslandBusinessShop4.Product5.help",
+      "name": "Product 5",
+      "help": "",
       "None": "None",
-      "roasted_skewer": "roasted_skewer",
-      "stir_fried_chicken": "stir_fried_chicken",
-      "steak_bowl": "steak_bowl",
-      "carnival": "carnival",
-      "double_energy": "double_energy"
+      "roasted_skewer": "Roasted Skewer",
+      "stir_fried_chicken": "Stir-fried Chicken",
+      "steak_bowl": "Steak Bowl",
+      "carnival": "Carnival",
+      "double_energy": "Double Energy"
     }
   },
   "IslandBusinessShop5": {
     "_info": {
-      "name": "IslandBusinessShop5._info.name",
-      "help": "IslandBusinessShop5._info.help"
+      "name": "Juu Coffee",
+      "help": ""
     },
     "Char1": {
-      "name": "IslandBusinessShop5.Char1.name",
-      "help": "IslandBusinessShop5.Char1.help",
+      "name": "Character 1",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5117,8 +5117,8 @@
       "Takao": "Takao"
     },
     "Char2": {
-      "name": "IslandBusinessShop5.Char2.name",
-      "help": "IslandBusinessShop5.Char2.help",
+      "name": "Character 2",
+      "help": "",
       "None": "None",
       "WorkerJuu": "WorkerJuu",
       "Cheshire": "Cheshire",
@@ -5150,74 +5150,74 @@
       "Takao": "Takao"
     },
     "Product1": {
-      "name": "IslandBusinessShop5.Product1.name",
-      "help": "IslandBusinessShop5.Product1.help",
+      "name": "Product 1",
+      "help": "",
       "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "iced_coffee": "Iced Coffee",
+      "omelette": "Omelette",
+      "cheese": "Cheese",
+      "latte": "Latte",
+      "citrus_coffee": "Citrus Coffee",
+      "strawberry_milkshake": "Strawberry Milkshake",
+      "morning_light": "Morning Light",
+      "wake_up_call": "Wake-up Call",
+      "fruity_fruitier": "Fruity Fruitier"
     },
     "Product2": {
-      "name": "IslandBusinessShop5.Product2.name",
-      "help": "IslandBusinessShop5.Product2.help",
+      "name": "Product 2",
+      "help": "",
       "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "iced_coffee": "Iced Coffee",
+      "omelette": "Omelette",
+      "cheese": "Cheese",
+      "latte": "Latte",
+      "citrus_coffee": "Citrus Coffee",
+      "strawberry_milkshake": "Strawberry Milkshake",
+      "morning_light": "Morning Light",
+      "wake_up_call": "Wake-up Call",
+      "fruity_fruitier": "Fruity Fruitier"
     },
     "Product3": {
-      "name": "IslandBusinessShop5.Product3.name",
-      "help": "IslandBusinessShop5.Product3.help",
+      "name": "Product 3",
+      "help": "",
       "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "iced_coffee": "Iced Coffee",
+      "omelette": "Omelette",
+      "cheese": "Cheese",
+      "latte": "Latte",
+      "citrus_coffee": "Citrus Coffee",
+      "strawberry_milkshake": "Strawberry Milkshake",
+      "morning_light": "Morning Light",
+      "wake_up_call": "Wake-up Call",
+      "fruity_fruitier": "Fruity Fruitier"
     },
     "Product4": {
-      "name": "IslandBusinessShop5.Product4.name",
-      "help": "IslandBusinessShop5.Product4.help",
+      "name": "Product 4",
+      "help": "",
       "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "iced_coffee": "Iced Coffee",
+      "omelette": "Omelette",
+      "cheese": "Cheese",
+      "latte": "Latte",
+      "citrus_coffee": "Citrus Coffee",
+      "strawberry_milkshake": "Strawberry Milkshake",
+      "morning_light": "Morning Light",
+      "wake_up_call": "Wake-up Call",
+      "fruity_fruitier": "Fruity Fruitier"
     },
     "Product5": {
-      "name": "IslandBusinessShop5.Product5.name",
-      "help": "IslandBusinessShop5.Product5.help",
+      "name": "Product 5",
+      "help": "",
       "None": "None",
-      "iced_coffee": "iced_coffee",
-      "omelette": "omelette",
-      "cheese": "cheese",
-      "latte": "latte",
-      "citrus_coffee": "citrus_coffee",
-      "strawberry_milkshake": "strawberry_milkshake",
-      "morning_light": "morning_light",
-      "wake_up_call": "wake_up_call",
-      "fruity_fruitier": "fruity_fruitier"
+      "iced_coffee": "Iced Coffee",
+      "omelette": "Omelette",
+      "cheese": "Cheese",
+      "latte": "Latte",
+      "citrus_coffee": "Citrus Coffee",
+      "strawberry_milkshake": "Strawberry Milkshake",
+      "morning_light": "Morning Light",
+      "wake_up_call": "Wake-up Call",
+      "fruity_fruitier": "Fruity Fruitier"
     }
   },
   "Daemon": {
