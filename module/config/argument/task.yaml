@@ -364,7 +364,6 @@ Island:
   page: 'setting'
   tasks:
     IslandPlan:
-      - Scheduler
       - IslandPlan
     IslandBusiness:
       - Scheduler

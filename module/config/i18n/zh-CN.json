@@ -287,7 +287,7 @@
       "help": "使用蒙特卡洛算法估算在当前状态下持续进行侵蚀循环一段时间后的结果，该功能不会影响AzurPilot正常运行\n模型所用参数均取自AzurPilot配置和统计，请确保正确配置了智能调度等大世界设置\n目前为测试版本，结果不具备太多参考价值\n关于奸商售卖行动力的模型无足够充分的证据支撑。具体来讲，这里认为奸商卖6种行动力箱子满足超几何分布X~H(6,6,24)\n关于坠机：这里坠机是指整个模拟流程中行动力低于智能调度中设置的行动力保留阈值至少一次。若低于该阈值，模拟器将停止侵蚀循环等待行动力自然回复"
     },
     "IslandPlan": {
-      "name": "岛屿计划全局配置",
+      "name": "全局配置",
       "help": "岛屿计划的全局配置，包括季节设定"
     },
     "IslandBusiness": {
@@ -3425,7 +3425,7 @@
     },
     "RancherFilter": {
       "name": "使用角色",
-      "help": "以>连接，例如肇和 新泽西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 应瑞：YingSwei\n恶毒：LeMalin > 独角兽：Unicorn > 岛风：Shimakaze > 柴郡：Cheshire\n镇海：ChenHai > 威廉D波特：WilliamDPorter\n海伦娜：Helena > 大帝：Friedrich > 愛宕：Atago"
+      "help": "以>连接，例如肇和 新泽西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 应瑞：YingSwei\n恶毒：LeMalin > 独角兽：Unicorn > 岛风：Shimakaze > 柴郡：Cheshire\n镇海：ChenHai > 威廉D波特：WilliamDPorter\n海伦娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奥古斯特：August > 欧根亲王：Eugen > 胡德：Hood > 标枪：Javelin > 拉菲：Laffey > 探索者：Explorer > 领航员：Navigator > 领洋者：OceanCrosser > 飞云：FeiYun > 高雄：Takao"
     },
     "Wool": {
       "name": "养羊",
@@ -3482,7 +3482,7 @@
     },
     "RancherFilter": {
       "name": "使用角色",
-      "help": "以>连接，例如肇和 新泽西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 应瑞：YingSwei\n恶毒：LeMalin > 独角兽：Unicorn > 岛风：Shimakaze > 柴郡：Cheshire\n镇海：ChenHai > 威廉D波特：WilliamDPorter\n海伦娜：Helena > 大帝：Friedrich > 愛宕：Atago"
+      "help": "以>连接，例如肇和 新泽西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 应瑞：YingSwei\n恶毒：LeMalin > 独角兽：Unicorn > 岛风：Shimakaze > 柴郡：Cheshire\n镇海：ChenHai > 威廉D波特：WilliamDPorter\n海伦娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奥古斯特：August > 欧根亲王：Eugen > 胡德：Hood > 标枪：Javelin > 拉菲：Laffey > 探索者：Explorer > 领航员：Navigator > 领洋者：OceanCrosser > 飞云：FeiYun > 高雄：Takao"
     }
   },
   "IslandMine": {
@@ -3542,7 +3542,7 @@
       "None": "None",
       "Practical": "实用之木",
       "Selected": "精选之木",
-      "Elegant": "优雅之木"
+      "Elegant": "典雅之木"
     },
     "Felling2": {
       "name": "伐木2",
@@ -3550,7 +3550,7 @@
       "None": "None",
       "Practical": "实用之木",
       "Selected": "精选之木",
-      "Elegant": "优雅之木"
+      "Elegant": "典雅之木"
     },
     "Felling3": {
       "name": "伐木3",
@@ -3558,7 +3558,7 @@
       "None": "None",
       "Practical": "实用之木",
       "Selected": "精选之木",
-      "Elegant": "优雅之木"
+      "Elegant": "典雅之木"
     },
     "Felling4": {
       "name": "伐木4",
@@ -3566,7 +3566,7 @@
       "None": "None",
       "Practical": "实用之木",
       "Selected": "精选之木",
-      "Elegant": "优雅之木"
+      "Elegant": "典雅之木"
     }
   },
   "IslandRestaurant": {
