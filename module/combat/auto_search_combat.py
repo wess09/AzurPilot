@@ -5,7 +5,7 @@ from module.combat.combat import Combat
 from module.exception import CampaignEnd
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_ON, GET_MISSION
 from module.logger import logger
-from module.map.assets import WITHDRAW, SWITCH_OVER, FLEET_WITHDRAW, FLEET_SWITCH_CONFIRM
+from module.map.assets import WITHDRAW, SWITCH_OVER, FLEET_WITHDRAW, FLEET_SWITCH_CONFIRM, FLEET_WITHDRAW_BOSS
 from module.map.map_operation import MapOperation
 
 
@@ -354,6 +354,9 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                     while True:
                         self.device.screenshot()
                         if self.appear_then_click(FLEET_WITHDRAW, offset=(30, 30)):
+                            break
+                        if self.appear(FLEET_WITHDRAW_BOSS, offset=(30, 30)):
+                            self.withdraw()
                             break
                         if self.appear_then_click(SWITCH_OVER, interval=2):
                             continue
