@@ -263,7 +263,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
             self.device.screenshot()
             if self.appear(ISLAND_SHOPPING_CHECK):
                 break
-            if self.appear_then_click(shop_button, interval=0.3):
+            if self.appear_then_click(shop_button, interval=1.2):
                 pass
 
         # 设置购买数量

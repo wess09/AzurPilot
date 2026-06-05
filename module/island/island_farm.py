@@ -337,7 +337,7 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
             self.device.screenshot()
             if self.appear(ISLAND_SHOPPING_CHECK):
                 break
-            if self.appear_then_click(seed_button, interval=0.3):
+            if self.appear_then_click(seed_button, interval=1.2):
                 pass
         if self.appear(ISLAND_SHOPPING_CHECK):
             self.set_buy_number(target)

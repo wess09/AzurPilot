@@ -193,11 +193,34 @@ class IslandBusiness(Island):
                       button=new_button, file=button.file)
     
     def _appear_at_positions(self, button, offset=30):
+        """
+        在正常位置和偏移位置（美食评审模式）检测按钮。
+
+        保留模板匹配能力（offset=30）以应对界面背景变化或微小位置偏差。
+        在检测前后调用 button.clear_offset() 清理 match() 设置的 _button_offset，
+        避免污染全局按钮常量导致后续点击坐标偏移。
+
+        _get_review_button 返回新建的局部 Button 实例，无需清理。
+
+        Args:
+            button: 待检测的按钮。
+            offset: 模板匹配搜索范围，默认 30。
+
+        Returns:
+            Button: 检测到的按钮实例，或 None。
+        """
         self.device.screenshot()
+        # 清理残留偏移，确保以干净状态进入检测
+        button.clear_offset()
         if self.appear(button, offset=offset):
+            # match() 已修改 _button_offset，清理后返回确保点击坐标正确
+            button.clear_offset()
             return button
+        # 清理 match() 可能设置的偏移，确保 _get_review_button 读到原始坐标
+        button.clear_offset()
         review_btn = self._get_review_button(button)
         if review_btn and self.appear(review_btn, offset=offset):
+            # review_btn 是新建局部实例，无需清理
             return review_btn
         return None
     
@@ -279,7 +302,8 @@ class IslandBusiness(Island):
                 return
             elif status == 'gray':
                 logger.info("不可经营，延后至明天0点")
-                self._set_task_delay()
+                tomorrow = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                self.config.task_delay(target=tomorrow)
                 return
             else:
                 logger.info("按钮状态未知，跳过")
