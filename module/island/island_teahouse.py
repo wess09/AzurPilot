@@ -34,25 +34,29 @@ class IslandTeahouse(IslandShopBase):
         self.seasonal_high_priority_drink = None  # 对标迎春花茶/西瓜汁
         seasonal_items = self.season_config.get_seasonal_items('teahouse') if hasattr(self, 'season_config') else []
 
-        # 位置1饮品（对标迎春花茶）：高优先级，固定坐标点
-        if 'spring_flower_tea' in seasonal_items:
-            self.seasonal_high_priority_drink = {
-                'name': 'spring_flower_tea', 'cn_name': '迎春花茶',
-                'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
-                'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
-            }
-        elif 'watermelon_juice' in seasonal_items:
-            self.seasonal_high_priority_drink = {
-                'name': 'watermelon_juice', 'cn_name': '西瓜汁',
-                'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
-                'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
-            }
+        if old_seasonal_enabled:
+            # 仅当「迎春花茶」开关开启时，才设置高优先级季节饮品
+            # 位置1饮品（对标迎春花茶）：高优先级，固定坐标点
+            if 'spring_flower_tea' in seasonal_items:
+                self.seasonal_high_priority_drink = {
+                    'name': 'spring_flower_tea', 'cn_name': '迎春花茶',
+                    'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
+                    'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
+                }
+            elif 'watermelon_juice' in seasonal_items:
+                self.seasonal_high_priority_drink = {
+                    'name': 'watermelon_juice', 'cn_name': '西瓜汁',
+                    'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
+                    'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
+                }
 
-        if self.seasonal_high_priority_drink:
-            self.special_food = self.seasonal_high_priority_drink['name']
-            logger.info(f"季节高优先级饮品: {self.seasonal_high_priority_drink['cn_name']}")
-        elif old_seasonal_enabled:
-            self.special_food = 'winter_jasmine_tea'
+            if self.seasonal_high_priority_drink:
+                self.special_food = self.seasonal_high_priority_drink['name']
+                logger.info(f"季节高优先级饮品: {self.seasonal_high_priority_drink['cn_name']}")
+            else:
+                self.special_food = 'winter_jasmine_tea'
+        else:
+            logger.info("迎春花茶优先生产已关闭，跳过季节限定饮品")
 
         # 设置商品列表
         self.shop_items = []
@@ -340,8 +344,9 @@ class IslandTeahouse(IslandShopBase):
                 logger.info(f"基础需求生产计划: {self.to_post_products}")
 
             # ================================================================
-            #  阶段：高优先级季节饮品
-            #  在所有基础需求之前单独生产，确保最高优先级
+            #  阶段：高优先级季节饮品（受「迎春花茶」开关控制）
+            #  开关开启时：在基础需求之前单独生产季节饮品，确保最高优先级
+            #  开关关闭时：直接进入基础需求生产
             # ================================================================
             if self.seasonal_high_priority_drink:
                 drink_name = self.seasonal_high_priority_drink['name']
@@ -351,11 +356,13 @@ class IslandTeahouse(IslandShopBase):
                 self.to_post_products = {drink_name: 6}
                 logger.info(f"单独安排{drink_cn}生产: {self.to_post_products}")
 
-            self.schedule_production()
+                self.schedule_production()
 
-            # 恢复剩余的基础需求生产计划
-            self.to_post_products = temp_products
-            logger.info(f"剩余基础需求生产计划: {self.to_post_products}")
+                # 恢复剩余的基础需求生产计划
+                self.to_post_products = temp_products
+                logger.info(f"剩余基础需求生产计划: {self.to_post_products}")
+            else:
+                logger.info("迎春花茶优先生产已关闭，直接处理基础需求")
 
             # ============ 安排基础需求生产 ============
             if self.to_post_products:

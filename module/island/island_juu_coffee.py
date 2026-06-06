@@ -140,10 +140,11 @@ class IslandJuuCoffee(IslandShopBase):
     def _is_friedrich_available(self):
         """
         只读检查大帝(Friedrich)是否可用于生产（空闲且有体力），不进行任何选择操作。
+        仅匹配 Friedrich 的模板，不做全量角色扫描。
         """
         screenshot = self.device.screenshot()
-        all_characters = self.recognize_all_characters(screenshot)
-        for char_info in all_characters:
+        target_characters = self.recognize_target_characters(screenshot, ["Friedrich"])
+        for char_info in target_characters:
             if char_info["character_name"] == "Friedrich":
                 available = not char_info["is_working"] and char_info["has_stamina"]
                 logger.info(f"大帝(Friedrich)状态: working={char_info['is_working']}, stamina={char_info['has_stamina']}, 可用={available}")
@@ -166,6 +167,7 @@ class IslandJuuCoffee(IslandShopBase):
                 if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                     break
                 if self.appear_then_click(ISLAND_POST_SELECT, offset=1):
+                    self.device.sleep(0.5)
                     continue
             if not self._is_friedrich_available():
                 logger.warning(f"醒神套餐({product})需要大帝(Friedrich)但不可用，跳过生产")

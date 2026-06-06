@@ -16,7 +16,7 @@ class SelectCharacter(UI):
         )
 
         # 定义状态检测区域（相对于每个角色按钮）
-        self.character_area_relative = (32, 14, 118, 65)
+        self.character_area_relative = (25, 10, 125, 72)
         self.working_area_relative = (15, 65, 105, 95)
         self.stamina_area_relative = (26, 139, 27, 140)
         # (18, 139, 19, 140)>25
@@ -74,10 +74,55 @@ class SelectCharacter(UI):
 
         return results
 
-    def _recognize_character_status(self, screenshot, button):
-        """识别单个角色的状态"""
+    def recognize_target_characters(self, screenshot, character_names):
+        """
+        只识别指定角色在网格中的位置和状态，跳过其他角色
+
+        Args:
+            screenshot: 游戏截图
+            character_names (list): 需要识别的角色名列表
+
+        Returns:
+            list: 包含匹配角色信息的字典列表
+        """
+        results = []
+
+        # 过滤出需要识别的模板子集
+        target_templates = {
+            name: self.character_templates[name]
+            for name in character_names
+            if name in self.character_templates
+        }
+
+        if not target_templates:
+            return results
+
+        for row, col, button in self.select_character_grid.generate():
+            character_status = self._recognize_character_status(
+                screenshot, button, character_targets=target_templates
+            )
+            if character_status:
+                results.append({
+                    "grid_position": (row, col),
+                    "button_area": button.area,
+                    **character_status
+                })
+
+        return results
+
+    def _recognize_character_status(self, screenshot, button, character_targets=None):
+        """识别单个角色的状态
+
+        Args:
+            screenshot: 游戏截图
+            button: 角色按钮
+            character_targets (dict, optional): 限定的角色模板字典 {name: template}，
+                                                为 None 时检查所有角色
+        """
         # 1. 识别角色身份
-        character_name = self._recognize_character_identity(screenshot, button)
+        character_name = self._recognize_character_identity(
+            screenshot, button, character_targets=character_targets
+        )
         if not character_name:
             return None  # 该位置没有角色
 
@@ -97,17 +142,27 @@ class SelectCharacter(UI):
             "is_selected": is_selected
         }
 
-    def _recognize_character_identity(self, screenshot, button):
-        """识别角色身份"""
+    def _recognize_character_identity(self, screenshot, button, character_targets=None):
+        """识别角色身份
+
+        Args:
+            screenshot: 游戏截图
+            button: 角色按钮
+            character_targets (dict, optional): 限定的角色模板字典 {name: template}，
+                                                为 None 时检查所有角色
+        """
         # 获取角色识别区域
         char_area = self._get_absolute_area(button, self.character_area_relative)
         char_image = crop(screenshot, char_area)
 
-        # 遍历所有角色模板进行匹配
+        # 确定要匹配的模板集合
+        templates_to_check = character_targets if character_targets is not None else self.character_templates
+
+        # 遍历目标角色模板进行匹配
         best_match = None
         best_similarity = 0.0
 
-        for char_name, template in self.character_templates.items():
+        for char_name, template in templates_to_check.items():
             similarity = template.match(char_image, similarity=0.8)
             if similarity > best_similarity and similarity >= 0.8:
                 best_similarity = similarity
@@ -155,14 +210,6 @@ class SelectCharacter(UI):
 
         return available
 
-    def find_specific_character(self, screenshot, character_name="WorkerJuu"):
-        """查找指定角色的位置信息"""
-        all_characters = self.recognize_all_characters(screenshot)
-        for char_info in all_characters:
-            if char_info["character_name"] == character_name:
-                return char_info["grid_position"]
-        return None
-
     def find_working_characters(self, screenshot):
         """查找工作中的角色"""
         all_characters = self.recognize_all_characters(screenshot)
@@ -199,12 +246,28 @@ class SelectCharacter(UI):
         Returns:
             tuple: (row, col) 或 None
         """
+        # 如果传入了空列表，回退到全量匹配
+        if not character_list:
+            logger.info("角色列表为空，回退到全量匹配")
+            screenshot = self.device.screenshot()
+            all_characters = self.recognize_all_characters(screenshot)
+            for char_info in all_characters:
+                if (not char_info["is_working"] and
+                        char_info["has_stamina"]):
+                    return char_info["grid_position"]
+            return None
+
+        # 计算需要识别的角色集合（包含列表角色+最终回退的WorkerJuu）
+        target_names = list(character_list)
+        if "WorkerJuu" not in target_names:
+            target_names.append("WorkerJuu")
+
         screenshot = self.device.screenshot()
-        all_characters = self.recognize_all_characters(screenshot)
+        target_characters = self.recognize_target_characters(screenshot, target_names)
 
         # 构建角色名到状态的映射
         character_dict = {}
-        for char_info in all_characters:
+        for char_info in target_characters:
             character_dict[char_info["character_name"]] = char_info
         logger.info(f"工作速度筛选下角色状态: {character_dict}")
         # 优先按列表顺序检查指定角色
@@ -221,11 +284,11 @@ class SelectCharacter(UI):
         if not self.select_character_filter():
             return None
         screenshot = self.device.screenshot()
-        all_characters = self.recognize_all_characters(screenshot)
+        target_characters = self.recognize_target_characters(screenshot, target_names)
 
         # 构建角色名到状态的映射
         character_dict = {}
-        for char_info in all_characters:
+        for char_info in target_characters:
             character_dict[char_info["character_name"]] = char_info
         logger.info(f"体力筛选下角色状态: {character_dict}")
         # 优先按列表顺序检查指定角色
@@ -243,6 +306,14 @@ class SelectCharacter(UI):
             worker_info = character_dict["WorkerJuu"]
             return worker_info["grid_position"]
 
+        return None
+
+    def find_specific_character(self, screenshot, character_name="WorkerJuu"):
+        """查找指定角色的位置信息，只检查目标角色的模板，不做全量匹配"""
+        target_characters = self.recognize_target_characters(screenshot, [character_name])
+        for char_info in target_characters:
+            if char_info["character_name"] == character_name:
+                return char_info["grid_position"]
         return None
 
     def select_character(self, character_list="WorkerJuu"):

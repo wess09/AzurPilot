@@ -319,6 +319,7 @@ class Island(SelectCharacter):
                 self.device.sleep(0.5)
                 continue
             if self.appear_then_click(ISLAND_POST_SELECT,offset=1):
+                self.device.sleep(0.5)
                 continue
             if self.appear(ISLAND_SELECT_CHARACTER_CHECK,offset=1):
                 if self.select_character():
@@ -360,6 +361,7 @@ class Island(SelectCharacter):
             if self.appear(ISLAND_POST_CHECK) or self.appear(ISLAND_POST_VACANT_CHECK):
                 return True
             if self.appear_then_click(post,offset=300):
+                self.device.sleep(0.5)
                 continue
             self.device.sleep(0.5)
     def post_manage_up_swipe(self,distance):

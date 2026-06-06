@@ -200,7 +200,8 @@ class IslandBusiness(Island):
         在检测前后调用 button.clear_offset() 清理 match() 设置的 _button_offset，
         避免污染全局按钮常量导致后续点击坐标偏移。
 
-        _get_review_button 返回新建的局部 Button 实例，无需清理。
+        review_btn 虽然是新建的局部 Button 实例，但 appear() 内部调用 match()
+        会就地修改 review_btn._button_offset，因此返回前必须清理。
 
         Args:
             button: 待检测的按钮。
@@ -220,7 +221,8 @@ class IslandBusiness(Island):
         button.clear_offset()
         review_btn = self._get_review_button(button)
         if review_btn and self.appear(review_btn, offset=offset):
-            # review_btn 是新建局部实例，无需清理
+            # match() 修改了 review_btn._button_offset，必须清理后再返回
+            review_btn.clear_offset()
             return review_btn
         return None
     
@@ -282,6 +284,8 @@ class IslandBusiness(Island):
                 if self._has_seen_blue:
                     # 此前处理过蓝色按钮（已启动经营），返回后按钮变深蓝 → 正常退出
                     logger.info("经营已启动，正常退出")
+                    # 整个经营模块结束，重置所有生产任务延时使其立即补充商品
+                    self._trigger_shop_refill()
                     self._set_task_delay()
                     return
                 # 首次识别到深蓝（所有商店已在经营中）→ OCR 剩余时间并精确延时
@@ -430,6 +434,7 @@ class IslandBusiness(Island):
         
         # 第2步：等待"经营结算"按钮出现并点击（未出现时点安全区域）
         timeout = 0
+        self.device.sleep(1)
         while not self.appear(BUSINESS_SETTLEMENT, offset=30):
             timeout += 1
             if timeout > 10:
@@ -477,7 +482,7 @@ class IslandBusiness(Island):
                 obtained = True
                 break
             self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(0.5)
+            self.device.sleep(1)
             self.device.screenshot()
         if not obtained:
             logger.info("检测到获得物品")
@@ -497,11 +502,23 @@ class IslandBusiness(Island):
                 logger.warning("等待ISLAND_BACK超时，跳过")
                 return
             self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(0.5)
+            self.device.sleep(1)
             self.device.screenshot()
         logger.info("检测到返回按钮，点击结束领取")
         self.device.click(ISLAND_BACK)
-        self.device.sleep(0.5)
+        self.device.sleep(1)
+        # 点完后确保回到经营页签，如果检测不到经营选中页签则继续点击返回按钮
+        self.device.screenshot()
+        confirm_timeout = 0
+        while not self.appear(POST_MANAGE_BUSINESS, offset=30):
+            confirm_timeout += 1
+            if confirm_timeout > 10:
+                logger.warning("返回后检测经营选中页签超时，跳过")
+                break
+            logger.info("未检测到经营选中页签，继续点击返回按钮")
+            self.device.click(ISLAND_BACK)
+            self.device.sleep(1)
+            self.device.screenshot()
     
     def _select_business_characters(self):
         for slot_idx in range(2):
@@ -625,16 +642,19 @@ class IslandBusiness(Island):
     def _find_best_character(self):
         """
         在全区域 (55, 139, 878, 563) 内进行模板匹配查找角色。
+        只匹配 character_priority 中指定的角色，不做全量扫描。
         返回 (角色名, Button) 或 None。
         """
         s = self.device.image
         area_img = crop(s, self.BUSINESS_CHARACTER_AREA)
         best = (None, None, 0.0)  # (name, button, similarity)
-        
-        for n, t in self.character_templates.items():
-            if n not in self.character_priority:
+
+        # 只遍历优先级列表中的角色模板，跳过不在优先级中的角色
+        for name in self.character_priority:
+            template = self.character_templates.get(name)
+            if template is None:
                 continue
-            sim, btn = t.match_result(area_img)
+            sim, btn = template.match_result(area_img)
             if sim >= 0.8 and sim > best[2]:
                 # 创建新 Button，坐标从裁剪区域偏移回全屏坐标
                 old_area = btn.area
@@ -643,8 +663,8 @@ class IslandBusiness(Island):
                             old_area[2] + self.BUSINESS_CHARACTER_AREA[0],
                             old_area[3] + self.BUSINESS_CHARACTER_AREA[1])
                 offset_btn = Button(area=new_area, color=btn.color, button=new_area, file=btn.file)
-                best = (n, offset_btn, sim)
-        
+                best = (name, offset_btn, sim)
+
         if best[0] is not None:
             return (best[0], best[1])
         return None

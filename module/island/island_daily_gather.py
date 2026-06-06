@@ -304,7 +304,7 @@ class IslandDailyGather(Island):
 
     def _select_first_idle_character(self):
         """
-        从当前角色列表中按网格位置顺序选择第一个"非工作中"的角色
+        从当前角色列表中按网格位置顺序选择第一个"非工作中且非选中"的角色
         注：采集界面的角色选择没有黄鸡角色
 
         Returns:
@@ -317,18 +317,18 @@ class IslandDailyGather(Island):
             logger.warning("未检测到任何角色")
             return False
 
-        # 按网格位置排序，选择第一个非工作中的角色
+        # 按网格位置排序，选择第一个非工作中且非选中的角色
         for char_info in characters:
-            if not char_info["is_working"]:
+            if not char_info["is_working"] and not char_info["is_selected"]:
                 row, col = char_info["grid_position"]
-                logger.info(f"选择非工作角色: {char_info['character_name']} (位置: {row},{col})")
+                logger.info(f"选择空闲且未选中角色: {char_info['character_name']} (位置: {row},{col})")
                 button = self.select_character_grid[row, col]
                 self.device.click(button)
                 self.device.sleep(0.3)
                 return True
 
-        # 所有角色都在工作中
-        logger.warning("所有角色均在工作中，无法选择空闲角色")
+        # 所有角色都在工作中或已被选中
+        logger.warning("所有角色均在工作中或已被选中，无法选择空闲角色")
         return False
 
     def _click_depart(self):

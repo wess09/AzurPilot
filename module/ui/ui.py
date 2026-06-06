@@ -507,8 +507,11 @@ class UI(InfoHandler):
             return True
 
         # 主界面和奖励页面弹窗
-        if self.ui_page_main_popups(get_ship=get_ship):
-            return True
+        # 仅在非岛屿页面时处理，避免岛屿页面的 UI 元素被误检测为 GET_SHIP/GET_ITEMS
+        # 例如岛屿管理界面的邮箱按钮与 GET_SHIP 检测区域 (1104,610,1110,630) 重叠
+        if not (hasattr(self, 'ui_current') and self.ui_current and 'island' in self.ui_current.name):
+            if self.ui_page_main_popups(get_ship=get_ship):
+                return True
 
         # 剧情跳过
         if self.handle_story_skip():
