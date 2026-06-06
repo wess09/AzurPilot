@@ -305,7 +305,7 @@ class Island(SelectCharacter):
             if self.appear(ERROR1,offset=30):
                 self.device.click(POST_CLOSE)
                 self.island_error = True
-                continue
+                return False
             if self.appear(ISLAND_GET,offset=1):
                 self.device.click(ISLAND_POST_SAFE_AREA)
                 continue
@@ -333,6 +333,9 @@ class Island(SelectCharacter):
                     self.device.sleep(0.3)
                     self.device.click(POST_ADD_ORDER)
                     self.device.sleep(0.5)
+                else:
+                    self.device.click(POST_CLOSE)
+                    return False
                 continue
             if (
                     (self.appear(ISLAND_POST_CHECK, offset=30) or self.appear(ISLAND_POST_VACANT_CHECK, offset=30))
@@ -341,13 +344,13 @@ class Island(SelectCharacter):
                     and not self.appear(ISLAND_POST_SELECT, offset=30)
             ):
                 self.device.click(POST_CLOSE)
-                break
+                return True
             if (
                     self.ui_page_appear(page_island_postmanage)
                     and not self.appear(ISLAND_POST_CHECK, offset=30)
                     and not self.appear(ISLAND_POST_VACANT_CHECK, offset=30)
             ):
-                break
+                return True
 
     def post_open(self,post):
         template = TEMPLATE_POST_LOCK
@@ -459,6 +462,5 @@ class Island(SelectCharacter):
                     break
         logger.info(f"尝试{max_attempts}次后仍然失败")
         return False
-
 
 
