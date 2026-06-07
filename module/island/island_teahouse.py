@@ -54,7 +54,7 @@ class IslandTeahouse(IslandShopBase):
                 self.special_food = self.seasonal_high_priority_drink['name']
                 logger.info(f"季节高优先级饮品: {self.seasonal_high_priority_drink['cn_name']}")
             else:
-                self.special_food = 'winter_jasmine_tea'
+                self.special_food = 'spring_flower_tea'
         else:
             logger.info("迎春花茶优先生产已关闭，跳过季节限定饮品")
 
