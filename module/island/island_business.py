@@ -418,7 +418,7 @@ class IslandBusiness(Island):
     
     def _claim_business_reward(self):
         logger.info("领取经营奖励")
-        # 第1步：点击黄色按钮进入结算界面
+        # 点击黄色按钮进入结算界面
         self.device.click(BUSINESS_START_BUTTON_YELLOW)
         self.device.sleep(1)
         # 如果黄色奖励按钮还在，继续点击直到消失
@@ -432,93 +432,54 @@ class IslandBusiness(Island):
             else:
                 break
         
-        # 第2步：等待"经营结算"按钮出现并点击（未出现时点安全区域）
-        timeout = 0
+        # 统一截图-检测循环，处理从结算到回到经营界面的整个流程
+        # 每次循环检测当前界面状态，执行对应操作，直到回到经营页签
         self.device.sleep(1)
-        while not self.appear(BUSINESS_SETTLEMENT, offset=30):
-            timeout += 1
-            if timeout > 10:
-                logger.warning("等待经营结算按钮超时，跳过")
+        timeout = 0
+        while True:
+            if timeout > 40:
+                logger.warning("领取奖励流程超时，跳过")
                 return
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(0.5)
+            
             self.device.screenshot()
-        logger.info("检测到经营结算按钮")
-        self.device.click(BUSINESS_SETTLEMENT)
-        self.device.sleep(1)
-        
-        # 第3步：等待"销售情况"出现，点击安全区域（未出现时点安全区域）
-        self.device.screenshot()
-        timeout = 0
-        while not self.appear(BUSINESS_SALES_STATUS, offset=30):
-            timeout += 1
-            if timeout > 10:
-                logger.warning("等待销售情况图片超时，跳过")
-                return
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(0.5)
-            self.device.screenshot()
-        logger.info("检测到销售情况")
-        self.device.click(BUSINESS_REWARD_SAFE_AREA)
-        self.device.sleep(1)
-        
-        # 第4步：等待"获得物品"出现，点击安全区域（同时检测是否已跳过此步或回到经营界面）
-        self.device.screenshot()
-        timeout = 0
-        obtained = False
-        while not self.appear(BUSINESS_OBTAINED_ITEMS, offset=30):
-            # 如果已经出现返回按钮，说明已跳过获得物品步骤，直接进入第5步
-            if self.appear(ISLAND_BACK, offset=30):
-                logger.info("检测到返回按钮，跳过获得物品步骤")
-                obtained = True
-                break
-            # 如果已经退出到经营界面，直接退出
+            
+            # 已回到经营页签 → 退出
             if self.appear(POST_MANAGE_BUSINESS, offset=30) or self.appear(POST_MANAGE_PRODUCTION, offset=30):
                 logger.info("已回到经营界面，退出领取")
                 return
+            
+            # 检测到"经营结算"按钮 → 优先处理结算（必须在 ISLAND_BACK 之前检测，
+            # 防止结算界面出现时返回按钮也被检测到而导致提前退出）
+            elif self.appear(BUSINESS_SETTLEMENT, offset=30):
+                logger.info("检测到经营结算按钮")
+                self.device.click(BUSINESS_SETTLEMENT)
+                self.device.sleep(1)
+            
+            # 检测到"获得物品" → 点击安全区域
+            elif self.appear(BUSINESS_OBTAINED_ITEMS, offset=30):
+                logger.info("检测到获得物品")
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(1)
+            
+            # 检测到"销售情况" → 点击安全区域
+            elif self.appear(BUSINESS_SALES_STATUS, offset=30):
+                logger.info("检测到销售情况")
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(1)
+            
+            # 检测到返回按钮 → 点击返回
+            elif self.appear(ISLAND_BACK, offset=30):
+                logger.info("检测到返回按钮，点击返回")
+                self.device.click(ISLAND_BACK)
+                self.device.sleep(1)
+            
+            # 无识别的界面元素，点击安全区域等待
+            else:
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(0.5)
+            
+            # 统一在循环末尾递增 timeout，确保每次循环仅递增一次
             timeout += 1
-            if timeout > 10:
-                logger.warning("等待获得物品图片超时，跳过")
-                obtained = True
-                break
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(1)
-            self.device.screenshot()
-        if not obtained:
-            logger.info("检测到获得物品")
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(1)
-        
-        # 第5步：等待ISLAND_BACK出现并点击返回（同时检测是否已回到经营界面）
-        self.device.screenshot()
-        timeout = 0
-        while not self.appear(ISLAND_BACK, offset=30):
-            # 如果已经退出到经营界面，直接退出
-            if self.appear(POST_MANAGE_BUSINESS, offset=30) or self.appear(POST_MANAGE_PRODUCTION, offset=30):
-                logger.info("已回到经营界面，退出领取")
-                return
-            timeout += 1
-            if timeout > 10:
-                logger.warning("等待ISLAND_BACK超时，跳过")
-                return
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(1)
-            self.device.screenshot()
-        logger.info("检测到返回按钮，点击结束领取")
-        self.device.click(ISLAND_BACK)
-        self.device.sleep(1)
-        # 点完后确保回到经营页签，如果检测不到经营选中页签则继续点击返回按钮
-        self.device.screenshot()
-        confirm_timeout = 0
-        while not self.appear(POST_MANAGE_BUSINESS, offset=30):
-            confirm_timeout += 1
-            if confirm_timeout > 10:
-                logger.warning("返回后检测经营选中页签超时，跳过")
-                break
-            logger.info("未检测到经营选中页签，继续点击返回按钮")
-            self.device.click(ISLAND_BACK)
-            self.device.sleep(1)
-            self.device.screenshot()
     
     def _select_business_characters(self):
         for slot_idx in range(2):
