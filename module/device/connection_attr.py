@@ -169,7 +169,12 @@ class ConnectionAttr:
     def is_mumu_family(self):
         # 127.0.0.1:7555
         # 127.0.0.1:16384 + 32*n
-        return self.serial == '127.0.0.1:7555' or self.is_mumu12_family
+        # MuMu Pro on macOS may expose a generic emulator-* serial instead.
+        return (
+            self.serial == '127.0.0.1:7555'
+            or self.is_mumu12_family
+            or self.config.EmulatorInfo_Emulator == 'MuMuPro'
+        )
 
     @cached_property
     def is_ldplayer_bluestacks_family(self):
