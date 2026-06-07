@@ -757,17 +757,25 @@ class RewardCommission(UI, InfoHandler):
             logger.info('No commission running')
             self.config.task_delay(success=False)
 
-        # 延迟钻石 farming 任务
-        if self.config.is_task_enabled('GemsFarming') and \
-                self.config.cross_get(keys='GemsFarming.GemsFarming.CommissionLimit', default=False):
+        # 延迟钻石 farming / 三油低耗任务
+        # 遍历使用 GemsFarming 配置组的任务，检查是否启用且开启了 CommissionLimit
+        limit_tasks = [
+            task for task in ['GemsFarming', 'ThreeOilLowCost']
+            if self.config.is_task_enabled(task)
+            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False)
+        ]
+
+        if limit_tasks:
             daily = self.daily.select(category_str='daily', status='pending').count
             filtered_urgent = self.comm_choose.intersect_by_eq(self.urgent.select(status='pending')).count
             filtered_extra = self.comm_choose.intersect_by_eq(self.daily.select(category_str='extra', status='pending')).count
             logger.info(f'Daily commission: {daily}, filtered_urgent: {filtered_urgent}, filtered_extra: {filtered_extra}')
             future = nearest_future(future_finish) if len(future_finish) else None
             if daily > 0 and filtered_urgent >= 1:
-                logger.info('Having daily commissions to do, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                for task in limit_tasks:
+                    logger.info(f"Having daily commissions to do, delay task '{task}'")
+                    self.config.task_delay(minute=None if future else 120, target=future, task=task)
             elif filtered_urgent >= 4:
-                logger.info('Having too many urgent commissions, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                for task in limit_tasks:
+                    logger.info(f"Having too many urgent commissions, delay task '{task}'")
+                    self.config.task_delay(minute=None if future else 120, target=future, task=task)
