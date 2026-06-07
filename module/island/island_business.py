@@ -448,41 +448,38 @@ class IslandBusiness(Island):
                 logger.info("已回到经营界面，退出领取")
                 return
             
-            # 检测到返回按钮 → 点击返回
-            if self.appear(ISLAND_BACK, offset=30):
-                logger.info("检测到返回按钮，点击返回")
-                self.device.click(ISLAND_BACK)
-                self.device.sleep(1)
-                timeout += 1
-                continue
-            
-            # 检测到"获得物品" → 点击安全区域
-            if self.appear(BUSINESS_OBTAINED_ITEMS, offset=30):
-                logger.info("检测到获得物品")
-                self.device.click(BUSINESS_REWARD_SAFE_AREA)
-                self.device.sleep(1)
-                timeout += 1
-                continue
-            
-            # 检测到"销售情况" → 点击安全区域
-            if self.appear(BUSINESS_SALES_STATUS, offset=30):
-                logger.info("检测到销售情况")
-                self.device.click(BUSINESS_REWARD_SAFE_AREA)
-                self.device.sleep(1)
-                timeout += 1
-                continue
-            
-            # 检测到"经营结算"按钮 → 点击结算
-            if self.appear(BUSINESS_SETTLEMENT, offset=30):
+            # 检测到"经营结算"按钮 → 优先处理结算（必须在 ISLAND_BACK 之前检测，
+            # 防止结算界面出现时返回按钮也被检测到而导致提前退出）
+            elif self.appear(BUSINESS_SETTLEMENT, offset=30):
                 logger.info("检测到经营结算按钮")
                 self.device.click(BUSINESS_SETTLEMENT)
                 self.device.sleep(1)
-                timeout += 1
-                continue
+            
+            # 检测到"获得物品" → 点击安全区域
+            elif self.appear(BUSINESS_OBTAINED_ITEMS, offset=30):
+                logger.info("检测到获得物品")
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(1)
+            
+            # 检测到"销售情况" → 点击安全区域
+            elif self.appear(BUSINESS_SALES_STATUS, offset=30):
+                logger.info("检测到销售情况")
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(1)
+            
+            # 检测到返回按钮 → 点击返回
+            elif self.appear(ISLAND_BACK, offset=30):
+                logger.info("检测到返回按钮，点击返回")
+                self.device.click(ISLAND_BACK)
+                self.device.sleep(1)
             
             # 无识别的界面元素，点击安全区域等待
-            self.device.click(BUSINESS_REWARD_SAFE_AREA)
-            self.device.sleep(0.5)
+            else:
+                self.device.click(BUSINESS_REWARD_SAFE_AREA)
+                self.device.sleep(0.5)
+            
+            # 统一在循环末尾递增 timeout，确保每次循环仅递增一次
+            timeout += 1
     
     def _select_business_characters(self):
         for slot_idx in range(2):
