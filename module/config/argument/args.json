@@ -14229,11 +14229,7 @@
         "value": "None",
         "option": [
           "None",
-          "iced_coffee",
-          "omelette",
           "cheese",
-          "latte",
-          "citrus_coffee",
           "strawberry_milkshake",
           "morning_light",
           "wake_up_call",
@@ -14245,11 +14241,7 @@
         "value": "None",
         "option": [
           "None",
-          "iced_coffee",
-          "omelette",
           "cheese",
-          "latte",
-          "citrus_coffee",
           "strawberry_milkshake",
           "morning_light",
           "wake_up_call",
@@ -14261,11 +14253,7 @@
         "value": "None",
         "option": [
           "None",
-          "iced_coffee",
-          "omelette",
           "cheese",
-          "latte",
-          "citrus_coffee",
           "strawberry_milkshake",
           "morning_light",
           "wake_up_call",
@@ -14277,11 +14265,7 @@
         "value": "None",
         "option": [
           "None",
-          "iced_coffee",
-          "omelette",
           "cheese",
-          "latte",
-          "citrus_coffee",
           "strawberry_milkshake",
           "morning_light",
           "wake_up_call",
@@ -14293,11 +14277,7 @@
         "value": "None",
         "option": [
           "None",
-          "iced_coffee",
-          "omelette",
           "cheese",
-          "latte",
-          "citrus_coffee",
           "strawberry_milkshake",
           "morning_light",
           "wake_up_call",
@@ -15120,7 +15100,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber1": {
@@ -15141,7 +15121,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber2": {
@@ -15162,7 +15142,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber3": {
@@ -15183,7 +15163,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber4": {
@@ -15204,7 +15184,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber5": {
@@ -15225,7 +15205,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber6": {
@@ -15246,7 +15226,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber7": {
@@ -15267,7 +15247,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       },
       "MealNumber8": {
@@ -15290,7 +15270,7 @@
           "fruit_paradise",
           "lavender_tea",
           "sunny_honey",
-          "winter_jasmine_tea"
+          "spring_flower_tea"
         ]
       }
     },

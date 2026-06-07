@@ -3812,7 +3812,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber1": {
       "name": "IslandTeahouse.MealNumber1.name",
@@ -3831,7 +3831,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber2": {
       "name": "IslandTeahouse.MealNumber2.name",
@@ -3850,7 +3850,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber3": {
       "name": "IslandTeahouse.MealNumber3.name",
@@ -3869,7 +3869,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber4": {
       "name": "IslandTeahouse.MealNumber4.name",
@@ -3888,7 +3888,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber5": {
       "name": "IslandTeahouse.MealNumber5.name",
@@ -3907,7 +3907,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber6": {
       "name": "IslandTeahouse.MealNumber6.name",
@@ -3926,7 +3926,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber7": {
       "name": "IslandTeahouse.MealNumber7.name",
@@ -3945,7 +3945,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     },
     "MealNumber8": {
       "name": "IslandTeahouse.MealNumber8.name",
@@ -3970,7 +3970,7 @@
       "fruit_paradise": "fruit_paradise",
       "lavender_tea": "lavender_tea",
       "sunny_honey": "sunny_honey",
-      "winter_jasmine_tea": "winter_jasmine_tea"
+      "spring_flower_tea": "spring_flower_tea"
     }
   },
   "IslandGrill": {
@@ -5153,11 +5153,7 @@
       "name": "商品1",
       "help": "",
       "None": "なし",
-      "iced_coffee": "アイスコーヒー",
-      "omelette": "オムレツ",
       "cheese": "チーズ",
-      "latte": "ラテ",
-      "citrus_coffee": "シトラスコーヒー",
       "strawberry_milkshake": "ストロベリーミルクセーキ",
       "morning_light": "モーニングライト",
       "wake_up_call": "ウェイクアップコール",
@@ -5167,11 +5163,7 @@
       "name": "商品2",
       "help": "",
       "None": "なし",
-      "iced_coffee": "アイスコーヒー",
-      "omelette": "オムレツ",
       "cheese": "チーズ",
-      "latte": "ラテ",
-      "citrus_coffee": "シトラスコーヒー",
       "strawberry_milkshake": "ストロベリーミルクセーキ",
       "morning_light": "モーニングライト",
       "wake_up_call": "ウェイクアップコール",
@@ -5181,11 +5173,7 @@
       "name": "商品3",
       "help": "",
       "None": "なし",
-      "iced_coffee": "アイスコーヒー",
-      "omelette": "オムレツ",
       "cheese": "チーズ",
-      "latte": "ラテ",
-      "citrus_coffee": "シトラスコーヒー",
       "strawberry_milkshake": "ストロベリーミルクセーキ",
       "morning_light": "モーニングライト",
       "wake_up_call": "ウェイクアップコール",
@@ -5195,11 +5183,7 @@
       "name": "商品4",
       "help": "",
       "None": "なし",
-      "iced_coffee": "アイスコーヒー",
-      "omelette": "オムレツ",
       "cheese": "チーズ",
-      "latte": "ラテ",
-      "citrus_coffee": "シトラスコーヒー",
       "strawberry_milkshake": "ストロベリーミルクセーキ",
       "morning_light": "モーニングライト",
       "wake_up_call": "ウェイクアップコール",
@@ -5209,11 +5193,7 @@
       "name": "商品5",
       "help": "",
       "None": "なし",
-      "iced_coffee": "アイスコーヒー",
-      "omelette": "オムレツ",
       "cheese": "チーズ",
-      "latte": "ラテ",
-      "citrus_coffee": "シトラスコーヒー",
       "strawberry_milkshake": "ストロベリーミルクセーキ",
       "morning_light": "モーニングライト",
       "wake_up_call": "ウェイクアップコール",
