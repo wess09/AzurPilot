@@ -92,7 +92,7 @@ class IslandManufacture(IslandShopBase):
             self.shop_items.extend(category['items'])
 
         # 初始化需求列表（制造业不需要外部配置的需求）
-        self.post_products = {}
+        self.post_products = []
 
         # 设置配置（使用4个参数，删除任务相关配置）
         self.setup_config(

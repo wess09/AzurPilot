@@ -28,7 +28,7 @@ class IslandShopBase(Island, WarehouseOCR):
         self.name_to_config = {}
         self.posts = {}
         self.post_check_meal = {}  # 岗位生产中的产品
-        self.post_products = {}
+        self.post_products = []  # 有序列表，允许同名餐品出现在多个槽位
         self.warehouse_counts = {}  # 仓库识别到的产品
         self.to_post_products = {}
         self.current_totals = {}
@@ -112,7 +112,7 @@ class IslandShopBase(Island, WarehouseOCR):
         self.config_post_number = config_post_number
 
         # 读取8种餐品需求
-        self.post_products = {}
+        self.post_products = []
 
         for i in range(1, 9):  # 1到8
             meal_key = f'{self.config_meal_prefix}{i}'
@@ -121,7 +121,7 @@ class IslandShopBase(Island, WarehouseOCR):
             meal_name = getattr(self.config, meal_key, None)
             if meal_name is not None and meal_name != "None":
                 meal_number = getattr(self.config, number_key, 0)
-                self.post_products[meal_name] = meal_number
+                self.post_products.append((meal_name, meal_number))
 
     def initialize_shop(self):
         """初始化店铺，子类必须在__init__中调用"""
@@ -292,6 +292,41 @@ class IslandShopBase(Island, WarehouseOCR):
 
     # ============ 核心逻辑 ============
 
+    def _compute_base_demands(self):
+        """计算基础需求：按槽位顺序处理，同名餐品后续槽位只补差额。
+
+        将结果写入 self.to_post_products 并更新 self.current_totals
+        为满足所有阶段最高目标后的剩余库存。
+        """
+        # ============ 基础需求计算 ============
+        logger.info("阶段：基础需求")
+
+        self.to_post_products = {}
+        # virtual_totals 用于模拟按槽位顺序扣除库存后的剩余值，
+        # 确保同名餐品的后续槽位只补差额，不重复计算已分配给前序槽位的库存
+        virtual_totals = dict(self.current_totals)
+
+        for name, target in self.post_products:
+            current = virtual_totals.get(name, 0)
+            if current < target:
+                deficit = target - current
+                if name in self.to_post_products:
+                    self.to_post_products[name] += deficit
+                else:
+                    self.to_post_products[name] = deficit
+                virtual_totals[name] = target
+
+        # 更新 current_totals 为满足所有阶段最高目标后的剩余库存
+        max_targets = {}
+        for name, target in self.post_products:
+            max_targets[name] = max(max_targets.get(name, 0), target)
+        for name, max_target in max_targets.items():
+            current = self.current_totals.get(name, 0)
+            if current < max_target:
+                self.current_totals[name] = 0
+            else:
+                self.current_totals[name] = current - max_target
+
     def run(self):
         self.island_error = False
         self.goto_postmanage()
@@ -321,7 +356,8 @@ class IslandShopBase(Island, WarehouseOCR):
 
             # 计算当前总库存
             self.current_totals = {}
-            for item in set(self.post_products.keys()) | set(self.post_check_meal.keys()) | set(
+            all_product_names = set(name for name, _ in self.post_products)
+            for item in all_product_names | set(self.post_check_meal.keys()) | set(
                     self.warehouse_counts.keys()):
                 self.current_totals[item] = self.post_check_meal.get(item, 0) + self.warehouse_counts.get(item, 0)
 
@@ -330,22 +366,11 @@ class IslandShopBase(Island, WarehouseOCR):
             logger.info(f"仓库库存: {self.warehouse_counts}")
             logger.info(f"生产中库存: {self.post_check_meal}")
             logger.info(f"当前总库存: {self.current_totals}")
-            logger.info(f"基础需求配置: {self.post_products}")
+            logger.info(f"基础需求配置（共{len(self.post_products)}个槽位）: {self.post_products}")
             logger.info("===============")
 
-            # 清空待生产列表
-            self.to_post_products = {}
+            self._compute_base_demands()
 
-            # ============ 基础需求计算 ============
-            logger.info("阶段：基础需求")
-            # 计算基础需求
-            for item, target in self.post_products.items():
-                current = self.current_totals.get(item, 0)
-                if current < target:
-                    self.to_post_products[item] = target - current
-                    self.current_totals[item] = 0
-                else:
-                    self.current_totals[item] = current - target
             logger.info(f"待完成备餐: {self.to_post_products}")
             logger.info(f"当前剩余库存: {self.current_totals}")
             # ============ 处理套餐分解 ============
