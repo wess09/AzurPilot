@@ -298,6 +298,9 @@ class IslandShopBase(Island, WarehouseOCR):
         将结果写入 self.to_post_products 并更新 self.current_totals
         为满足所有阶段最高目标后的剩余库存。
         """
+        # ============ 基础需求计算 ============
+        logger.info("阶段：基础需求")
+
         self.to_post_products = {}
         virtual_totals = dict(self.current_totals)
 
@@ -364,8 +367,6 @@ class IslandShopBase(Island, WarehouseOCR):
             logger.info(f"基础需求配置（共{len(self.post_products)}个槽位）: {self.post_products}")
             logger.info("===============")
 
-            # ============ 基础需求计算 ============
-            logger.info("阶段：基础需求")
             self._compute_base_demands()
 
             logger.info(f"待完成备餐: {self.to_post_products}")

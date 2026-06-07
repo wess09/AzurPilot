@@ -308,8 +308,6 @@ class IslandRestaurant(IslandShopBase):
             logger.info(f"基础需求配置（共{len(self.post_products)}个槽位）: {self.post_products}")
             logger.info("===============")
 
-            # ============ 基础需求计算 ============
-            logger.info("阶段：基础需求")
             self._compute_base_demands()
 
             logger.info(f"待完成备餐: {self.to_post_products}")
