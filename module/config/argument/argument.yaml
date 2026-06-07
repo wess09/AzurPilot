@@ -1552,11 +1552,7 @@ _IslandBusinessProduct5: &IslandBusinessProduct5
   value: None
   option:
     - None
-    - iced_coffee
-    - omelette
     - cheese
-    - latte
-    - citrus_coffee
     - strawberry_milkshake
     - morning_light
     - wake_up_call
