@@ -302,6 +302,8 @@ class IslandShopBase(Island, WarehouseOCR):
         logger.info("阶段：基础需求")
 
         self.to_post_products = {}
+        # virtual_totals 用于模拟按槽位顺序扣除库存后的剩余值，
+        # 确保同名餐品的后续槽位只补差额，不重复计算已分配给前序槽位的库存
         virtual_totals = dict(self.current_totals)
 
         for name, target in self.post_products:
