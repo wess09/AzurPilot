@@ -22,25 +22,58 @@ class IslandMineForest(Island,LoginHandler):
         "Natural": (SELECT_NATURAL, SELECT_NATURAL_CHECK, POST_NATURAL),
     }
 
-    def run_single_post(self, post_id, product_name, time_var_name):
-        """运行单个岗位，包含完整的处理逻辑"""
-        self.post_close()
-        self.post_open(post_id)
+    def _record_working_time(self, time_var_name):
+        """记录当前岗位的完成时间。"""
+        time_work = Duration(ISLAND_WORKING_TIME)
+        time_value = time_work.ocr(self.device.image)
+        if not hasattr(time_value, 'total_seconds'):
+            logger.warning(f'岗位处于工作中，但剩余时间识别结果无效: {time_value}')
+            return False
+
+        if time_value.total_seconds() > 0:
+            setattr(self, time_var_name, datetime.now() + time_value)
+            return True
+
+        logger.warning('岗位处于工作中，但无法识别剩余时间，跳过本次计时')
+        return False
+
+    def _post_is_working_after_refresh(self):
+        """刷新岗位画面并检查是否已经进入工作中。"""
         self.device.sleep(0.5)
         self.device.screenshot()
-        selection, selection_check, post_check = self.PRODUCT_CONFIGS.get(product_name, (None, None, None))
-        if self.appear(ISLAND_WORKING) and not self.appear(post_check):
-            time_work = Duration(ISLAND_WORKING_TIME)
-            time_value = time_work.ocr(self.device.image)
-            setattr(self, time_var_name, datetime.now() + time_value)
+        return self.appear(ISLAND_WORKING)
+
+    def run_single_post(self, post_id, product_name, time_var_name):
+        """运行单个岗位，包含完整的处理逻辑"""
+        selection, selection_check, _ = self.PRODUCT_CONFIGS.get(product_name, (None, None, None))
+        if selection is None:
+            logger.warning(f'未知的矿山林场产物配置: {product_name}，跳过岗位')
+            return
+
+        self.post_close()
+        if not self.post_open(post_id):
+            logger.warning(f'岗位未解锁或无法打开，跳过: {post_id}')
+            return
+
+        if self._post_is_working_after_refresh():
+            self._record_working_time(time_var_name)
+            self.post_close()
+            return
+
+        if not self.post_get_and_add(selection, selection_check):
+            self.post_close()
+            return
+
+        if not self.post_open(post_id):
+            logger.warning(f'添加生产后无法打开岗位，跳过: {post_id}')
+            self.post_close()
+            return
+
+        if self._post_is_working_after_refresh():
+            self._record_working_time(time_var_name)
         else:
-            self.post_get_and_add(selection, selection_check)
-            self.post_open(post_id)
-            self.device.sleep(0.5)
-            self.device.screenshot()
-            time_work = Duration(ISLAND_WORKING_TIME)
-            time_value = time_work.ocr(self.device.image)
-            setattr(self, time_var_name, datetime.now() + time_value)
+            logger.warning(f'岗位未进入工作中状态，跳过计时: {post_id}')
+
         self.post_close()
 
     def run(self):
