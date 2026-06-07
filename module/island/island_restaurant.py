@@ -308,33 +308,9 @@ class IslandRestaurant(IslandShopBase):
             logger.info(f"基础需求配置（共{len(self.post_products)}个槽位）: {self.post_products}")
             logger.info("===============")
 
-            # 清空待生产列表
-            self.to_post_products = {}
-
             # ============ 基础需求计算 ============
             logger.info("阶段：基础需求")
-            # 计算基础需求（按槽位顺序处理，同名餐品后续槽位只补差额）
-            virtual_totals = dict(self.current_totals)
-            for name, target in self.post_products:
-                current = virtual_totals.get(name, 0)
-                if current < target:
-                    deficit = target - current
-                    if name in self.to_post_products:
-                        self.to_post_products[name] += deficit
-                    else:
-                        self.to_post_products[name] = deficit
-                    virtual_totals[name] = target
-
-            # 更新 current_totals 为满足所有阶段最高目标后的剩余库存
-            max_targets = {}
-            for name, target in self.post_products:
-                max_targets[name] = max(max_targets.get(name, 0), target)
-            for name, max_target in max_targets.items():
-                current = self.current_totals.get(name, 0)
-                if current < max_target:
-                    self.current_totals[name] = 0
-                else:
-                    self.current_totals[name] = current - max_target
+            self._compute_base_demands()
 
             logger.info(f"待完成备餐: {self.to_post_products}")
             logger.info(f"当前剩余库存: {self.current_totals}")
