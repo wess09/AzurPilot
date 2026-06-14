@@ -1,15 +1,16 @@
-from module.logger import logger
-from module.campaign.campaign_base import CampaignBase
+﻿from module.logger import logger
 from module.map.map_grids import SelectedGrids, RoadGrids
 
 from .campaign_16_base import CampaignBase, CampaignMap
 from .campaign_16_base import Config as ConfigBase
+
 
 MAP = CampaignMap('16-3')
 MAP.shape = 'K6'
 MAP.camera_data = ['D3', 'E4', 'G2', 'H2']
 MAP.camera_data_spawn_point = ['C5']
 MAP.camera_sight = (-2, -1, 3, 2)
+
 MAP.map_data = """
     -- -- ++ ++ ++ -- -- ME ++ -- MB
     -- ME -- ++ -- ME -- -- ++ -- --
@@ -18,6 +19,7 @@ MAP.map_data = """
     SP -- -- ++ -- ME ++ -- -- -- --
     SP -- -- ME ME -- ++ -- -- -- ++
 """
+
 MAP.weight_data = """
     50 50 50 50 50 50 50 50 50 50 50
     50 50 50 50 50 50 50 50 50 50 50
@@ -26,6 +28,7 @@ MAP.weight_data = """
     50 50 50 50 50 50 50 50 50 50 50
     50 50 50 50 50 50 50 50 50 50 50
 """
+
 MAP.spawn_data = [
     {'battle': 0, 'enemy': 3},
     {'battle': 1, 'enemy': 6},
@@ -36,6 +39,7 @@ MAP.spawn_data = [
     {'battle': 6},
     {'battle': 7, 'boss': 1},
 ]
+
 MAP.spawn_data_loop = [
     {'battle': 0, 'enemy': 3},
     {'battle': 1, 'enemy': 6},
@@ -44,23 +48,21 @@ MAP.spawn_data_loop = [
     {'battle': 4},
     {'battle': 5, 'boss': 1},
 ]
+
 A1, B1, C1, D1, E1, F1, G1, H1, I1, J1, K1, \
 A2, B2, C2, D2, E2, F2, G2, H2, I2, J2, K2, \
 A3, B3, C3, D3, E3, F3, G3, H3, I3, J3, K3, \
 A4, B4, C4, D4, E4, F4, G4, H4, I4, J4, K4, \
 A5, B5, C5, D5, E5, F5, G5, H5, I5, J5, K5, \
-A6, B6, C6, D6, E6, F6, G6, H6, I6, J6, K6, \
-    = MAP.flatten()
+A6, B6, C6, D6, E6, F6, G6, H6, I6, J6, K6 = MAP.flatten()
 
 road_main = RoadGrids([G4, H4])
 
 
 class Config(ConfigBase):
-    # ===== Start of generated config =====
     MAP_HAS_MAP_STORY = False
     MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = True
-    # ===== End of generated config =====
 
     INTERNAL_LINES_FIND_PEAKS_PARAMETERS = {
         'height': (120, 255 - 17),
@@ -68,17 +70,20 @@ class Config(ConfigBase):
         'prominence': 10,
         'distance': 35,
     }
+
     EDGE_LINES_FIND_PEAKS_PARAMETERS = {
         'height': (255 - 50, 255),
         'prominence': 10,
         'distance': 50,
         'wlen': 1000
     }
+
     INTERNAL_LINES_HOUGHLINES_THRESHOLD = 25
     EDGE_LINES_HOUGHLINES_THRESHOLD = 25
-    MAP_WALK_USE_CURRENT_FLEET = True
 
+    MAP_WALK_USE_CURRENT_FLEET = True
     MAP_ENSURE_EDGE_INSIGHT_CORNER = 'bottom-left'
+
     MAP_SWIPE_MULTIPLY = (1.180, 1.202)
     MAP_SWIPE_MULTIPLY_MINITOUCH = (1.141, 1.162)
     MAP_SWIPE_MULTIPLY_MAATOUCH = (1.108, 1.128)
@@ -90,8 +95,13 @@ class Campaign(CampaignBase):
 
     def map_init(self, map_):
         super().map_init(map_)
-        self.map_has_mob_move = self.use_support_fleet and self.map_is_clear_mode
-        self.use_single_fleet = 'standby' in self.config.Fleet_FleetOrder
+
+        # ✅ 关键修复：新版字段
+        self.map_has_mob_move = getattr(self, 'has_support_fleet', False) and self.map_is_clear_mode
+
+        # ✅ 防 config 字段不存在崩溃
+        fleet_order = getattr(self.config, "Fleet_FleetOrder", "")
+        self.use_single_fleet = 'standby' in str(fleet_order)
 
     def battle_0(self):
         if self.map_has_mob_move:
@@ -109,9 +119,10 @@ class Campaign(CampaignBase):
                 self.fleet_ensure(index=3 - self.fleet_boss_index)
             return self.clear_chosen_enemy(G4)
 
-        if self.use_support_fleet and not self.map_is_clear_mode:
+        if getattr(self, 'has_support_fleet', False) and not self.map_is_clear_mode:
             self.goto(C3)
             self.air_strike(E3)
+
         return self.clear_chosen_enemy(D3)
 
     def battle_2(self):
@@ -125,14 +136,17 @@ class Campaign(CampaignBase):
         if boss:
             if not self.check_accessibility(boss[0], fleet='boss'):
                 return self.clear_roadblocks([road_main])
-            if self.use_support_fleet and not self.map_is_clear_mode:
-                # at this stage the most right zone should be accessible
+
+            if getattr(self, 'has_support_fleet', False) and not self.map_is_clear_mode:
                 self.goto(K5)
                 self.air_strike(J6)
+
             return self.fleet_boss.clear_boss()
+
         if self.clear_roadblocks([road_main]):
             return True
+
         if self.clear_any_enemy(genre=("Light",), strongest=True):
             return True
-        
+
         return self.battle_default()
