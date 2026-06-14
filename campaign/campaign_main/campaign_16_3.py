@@ -1,4 +1,5 @@
 from module.logger import logger
+
 from module.map.map_grids import SelectedGrids, RoadGrids
 
 from .campaign_16_base import CampaignBase, CampaignMap
@@ -96,32 +97,48 @@ class Campaign(CampaignBase):
     def map_init(self, map_):
         super().map_init(map_)
 
-        # ✅ 关键修复：新版字段
-        self.map_has_mob_move = getattr(self, 'has_support_fleet', False) and self.map_is_clear_mode
+        # air attack 只允许触发一次
+        self._air_attack_used = False
 
-        # ✅ 防 config 字段不存在崩溃
-        fleet_order = getattr(self.config, "Fleet_FleetOrder", "") or ""
-        self.use_single_fleet = 'standby' in fleet_order
+        # 支援舰队移动开关
+        self.enable_support_fleet_move = (
+            getattr(self, 'has_support_fleet', False)
+            and self.map_is_clear_mode
+        )
+
+        # 单舰队模式
+        fleet_order = getattr(self.config, "Fleet_FleetOrder", None)
+        self.use_single_fleet = (
+            isinstance(fleet_order, str)
+            and 'standby' in fleet_order.lower()
+        )
 
     def battle_0(self):
-        if self.map_has_mob_move:
+        if self.enable_support_fleet_move:
             if self.mob_move(C3, C2):
                 return self.clear_chosen_enemy(D6)
-            self.map_has_mob_move = False
+            self.enable_support_fleet_move = False
 
         return self.clear_chosen_enemy(C3)
 
     def battle_1(self):
-        if self.map_has_mob_move:
+        if self.enable_support_fleet_move:
             self.mob_move(E6, E5)
+
             if not self.use_single_fleet:
                 self.fleet_boss.goto(F4)
                 self.fleet_ensure(index=3 - self.fleet_boss_index)
+
             return self.clear_chosen_enemy(G4)
 
-        if getattr(self, 'has_support_fleet', False) and not self.map_is_clear_mode:
+        if (
+            getattr(self, 'has_support_fleet', False)
+            and not self.map_is_clear_mode
+            and not self._air_attack_used
+        ):
             self.goto(C3)
             self.air_attack(E3)
+            self._air_attack_used = True
 
         return self.clear_chosen_enemy(D3)
 
@@ -137,9 +154,14 @@ class Campaign(CampaignBase):
             if not self.check_accessibility(boss[0], fleet='boss'):
                 return self.clear_roadblocks([road_main])
 
-            if getattr(self, 'has_support_fleet', False) and not self.map_is_clear_mode:
+            if (
+                getattr(self, 'has_support_fleet', False)
+                and not self.map_is_clear_mode
+                and not self._air_attack_used
+            ):
                 self.goto(K5)
                 self.air_attack(J6)
+                self._air_attack_used = True
 
             return self.fleet_boss.clear_boss()
 
