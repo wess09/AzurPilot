@@ -100,8 +100,8 @@ class Campaign(CampaignBase):
         self.map_has_mob_move = getattr(self, 'has_support_fleet', False) and self.map_is_clear_mode
 
         # ✅ 防 config 字段不存在崩溃
-        fleet_order = getattr(self.config, "Fleet_FleetOrder", "")
-        self.use_single_fleet = 'standby' in str(fleet_order)
+        fleet_order = getattr(self.config, "Fleet_FleetOrder", "") or ""
+        self.use_single_fleet = 'standby' in fleet_order
 
     def battle_0(self):
         if self.map_has_mob_move:
