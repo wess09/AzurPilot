@@ -121,7 +121,7 @@ class Campaign(CampaignBase):
 
         if getattr(self, 'has_support_fleet', False) and not self.map_is_clear_mode:
             self.goto(C3)
-            self.air_strike(E3)
+            self.air_attack(E3)
 
         return self.clear_chosen_enemy(D3)
 
