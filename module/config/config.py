@@ -337,7 +337,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         limit_next_run(["OpsiArchive"], limit=now + timedelta(days=7, seconds=-1))
         # IslandPearlSell 按周调度，合法 NextRun 可能超过 24 小时。
         limit_next_run(["IslandPearlSell"], limit=now + timedelta(days=8, seconds=-1))
-        limit_next_run(self.args.keys(), limit=now + timedelta(hours=24, seconds=-1))
+        # 注意：全局 24 小时上限已移除。各任务专属限制（Commission 12h、Research 24h、Opsi 31d 等）保留。
 
         """
         强制覆盖任意配置项。
