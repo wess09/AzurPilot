@@ -89,18 +89,9 @@ class Switch:
         Returns:
             str: 状态名称或 'unknown'。
         """
-        # 标准检测：根据 offset 决定用模板匹配或颜色检测
         for data in self.state_list:
             if main.appear(data['check_button'], offset=data['offset'], similarity=data['similarity']):
                 return data['state']
-
-        # 降级检测：若标准检测使用了模板匹配（offset 非零）且失败，
-        # 回退到颜色检测。这可以处理模板图片过时但按钮颜色未变的情况。
-        for data in self.state_list:
-            if data['offset']:
-                if main.appear(data['check_button'], offset=0, threshold=10):
-                    logger.info(f'{self.name} 降级到颜色检测，状态: {data["state"]}')
-                    return data['state']
 
         return 'unknown'
 
@@ -133,6 +124,24 @@ class Switch:
                 return row
 
         raise ScriptError(f'Switch {self.name} received an invalid state: {state}')
+
+    def _check_state_by_color(self, state, main):
+        """
+        用颜色检测验证指定状态是否激活。
+        仅在模板匹配失败时作为降级手段，不会扩大检测范围。
+
+        Args:
+            state (str): 目标状态名称。
+            main (ModuleBase): 模块基类实例。
+
+        Returns:
+            bool: 颜色匹配成功返回 True。
+        """
+        data = self.get_data(state)
+        if main.appear(data['check_button'], offset=0, threshold=5):
+            logger.info(f'{self.name} 颜色检测确认状态: {state}')
+            return True
+        return False
 
     def handle_additional(self, main):
         """
@@ -196,6 +205,10 @@ class Switch:
                                    f'asset should be re-verified')
                     has_unknown = True
                     unknown_timer.reset()
+                    # 颜色检测降级：只对目标状态做颜色验证，
+                    # 不扩大检测范围，不污染 get() 的返回值
+                    if self._check_state_by_color(state, main):
+                        return changed
                 # 如果 unknown_timer 从未触发，不点击未知状态（可能是切换动画）。
                 # 如果 unknown_timer 曾触发过一次，则忽略未知状态直接点击目标状态
                 # （可能是尚未添加的新状态）。
