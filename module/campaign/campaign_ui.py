@@ -164,15 +164,25 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
 
         Args:
             mode (str): 'combat' 或 'story'。
+
+        Returns:
+            bool: 模式确认成功返回 True，超时或未知状态返回 False。
         """
         if mode in ['normal', 'hard', 'ex', 'combat']:
-            if not MODE_SWITCH_20241219.set('combat', main=self):
-                logger.info(f'{MODE_SWITCH_20241219.name} set 未产生点击，'
-                            f'假设已经是 combat 模式，继续执行')
+            MODE_SWITCH_20241219.set('combat', main=self)
+            current = MODE_SWITCH_20241219.get(main=self)
+            if current != 'combat':
+                logger.warning(f'{MODE_SWITCH_20241219.name} 未能确认 combat 模式，'
+                               f'当前状态: {current}')
+                return False
+            return True
         elif mode in ['story']:
             MODE_SWITCH_20241219.set('story', main=self)
+            current = MODE_SWITCH_20241219.get(main=self)
+            return current == 'story'
         else:
             logger.warning(f'Unknown campaign mode: {mode}')
+            return False
 
     def campaign_ensure_aside_20241219(self, chapter):
         """
@@ -318,23 +328,27 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
                 self.config.override(Campaign_Mode='hard')
             # part1、part2、sp、ex
             if mode == 'story':
-                self.campaign_ensure_mode_20241219('story')
+                if not self.campaign_ensure_mode_20241219('story'):
+                    return False
                 return True
             if chapter in ['a', 'c', 't']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_aside_20241219('part1')
                 self.campaign_ensure_chapter(chapter)
                 return True
             if chapter in ['b', 'd', 'ttl']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_aside_20241219('part2')
                 self.campaign_ensure_chapter(chapter)
                 return True
             if chapter in ['ex_sp']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_aside_20241219('sp')
                 self.campaign_ensure_chapter(chapter)
                 return True
@@ -342,12 +356,14 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
             # 将其路由到 page_event 并保持默认侧边栏。
             if chapter in ['sp']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_chapter(chapter)
                 return True
             if chapter in ['ex_ex']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_aside_20241219('ex')
                 self.campaign_ensure_chapter(chapter)
                 return True
@@ -357,14 +373,16 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
             # (空)、normal、sp、(空)
             if chapter in ['sp', 't', 'ht']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 # normal 位于 part2 的位置
                 self.campaign_ensure_aside_20241219('part2')
                 self.campaign_ensure_chapter(chapter)
                 return True
             if chapter in ['ex_sp']:
                 self.ui_goto_event()
-                self.campaign_ensure_mode_20241219('combat')
+                if not self.campaign_ensure_mode_20241219('combat'):
+                    return False
                 self.campaign_ensure_aside_20241219('sp')
                 self.campaign_ensure_chapter(chapter)
                 return True
@@ -376,20 +394,16 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
                 ASIDE_SWITCH_20241219.offset = area_offset((-20, -20, 20, 20), (0, -37))
                 if chapter in ['sp', 't', 'ht']:
                     self.ui_goto_event()
-                    self.campaign_ensure_mode_20241219('combat')
+                    if not self.campaign_ensure_mode_20241219('combat'):
+                        return False
                     # normal 位于 part2 的位置
                     self.campaign_ensure_aside_20241219('part2')
                     self.campaign_ensure_chapter(chapter)
                     return True
                 if chapter in ['ex_sp']:
                     self.ui_goto_event()
-                    self.campaign_ensure_mode_20241219('combat')
-                    self.campaign_ensure_aside_20241219('sp')
-                    self.campaign_ensure_chapter(chapter)
-                    return True
-                if chapter in ['ex_sp']:
-                    self.ui_goto_event()
-                    self.campaign_ensure_mode_20241219('combat')
+                    if not self.campaign_ensure_mode_20241219('combat'):
+                        return False
                     self.campaign_ensure_aside_20241219('sp')
                     self.campaign_ensure_chapter(chapter)
                     return True
