@@ -25,7 +25,7 @@ def retry(func):
     def retry_wrapper(self, *args, **kwargs):
         """
         Args:
-            self (Adb):
+            self (DroidCast):
         """
         init = None
         for _ in range(RETRY_TRIES):
@@ -34,16 +34,16 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # ADB 服务被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -54,13 +54,13 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # Package not installed
+            # 应用未安装
             except PackageNotInstalled as e:
                 logger.error(e)
 
                 def init():
                     self.detect_package()
-            # DroidCast not running
+            # DroidCast 未运行
             # requests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
             # ReadTimeout: HTTPConnectionPool(host='127.0.0.1', port=20482): Read timed out. (read timeout=3)
             except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
@@ -68,23 +68,23 @@ def retry(func):
 
                 def init():
                     self.droidcast_init()
-            # DroidCastVersionIncompatible
+            # DroidCast 版本不兼容
             except DroidCastVersionIncompatible as e:
                 logger.error(e)
 
                 def init():
                     self.droidcast_init()
-            # ImageTruncated
+            # 图像数据截断
             except ImageTruncated as e:
                 from module.device.method.utils import handle_image_truncated
                 handle_image_truncated(self, e)
 
                 def init():
                     pass
-            # Can't handle - must propagate to trigger emulator restart
+            # 无法处理 - 必须向上抛出以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # Unknown
+            # 未知异常
             except Exception as e:
                 logger.exception(e)
 
@@ -102,8 +102,8 @@ def retry(func):
 
 class DroidCast(Uiautomator2):
     """
-    DroidCast, another screenshot method, https://github.com/rayworks/DroidCast
-    DroidCast_raw, a modified version of DroidCast sending raw bitmap and png, https://github.com/Torther/DroidCastS
+    DroidCast 截图方案，https://github.com/rayworks/DroidCast
+    DroidCast_raw，DroidCast 的修改版本，发送原始位图和 PNG，https://github.com/Torther/DroidCastS
     """
 
     _droidcast_port: int = 0
@@ -113,18 +113,18 @@ class DroidCast(Uiautomator2):
     @cached_property
     def droidcast_session(self):
         session = requests.Session()
-        session.trust_env = False  # Ignore proxy
+        session.trust_env = False  # 忽略代理
         self._droidcast_port = self.adb_forward('tcp:53516')
         return session
 
     """
-    Check APIs from source code:
+    可用 API 参考源码：
     https://github.com/Torther/DroidCast_raw/blob/DroidCast_raw/app/src/main/java/ink/mol/droidcast_raw/KtMain.kt
-    Available APIs:
+    可用接口：
     - /screenshot
-        To get a RGB565 bitmap
+        获取 RGB565 位图
     - /preview
-        To get PNG screenshots.
+        获取 PNG 截图
     """
 
     def droidcast_url(self, url='/preview'):
@@ -192,7 +192,7 @@ class DroidCast(Uiautomator2):
             w, h = self.resolution_uiautomator2(cal_rotation=False)
             self.get_orientation()
             # 720, 1280
-            # mumu12 > 3.5.6 is always a vertical device
+            # mumu12 > 3.5.6 始终为竖屏设备
             self.droidcast_width, self.droidcast_height = w, h
             logger.info(f'Droicast resolution: {(w, h)}')
 
@@ -244,15 +244,15 @@ class DroidCast(Uiautomator2):
 
         resp = self.droidcast_session.get(self.droidcast_raw_url(), timeout=3)
         image = resp.content
-        # DroidCast_raw returns a RGB565 bitmap
+        # DroidCast_raw 返回 RGB565 位图
 
-        # Guard against empty/None content to avoid TypeError in np.frombuffer
+        # 防止空内容导致 np.frombuffer 抛出 TypeError
         if image is None or len(image) == 0:
             raise ImageTruncated('Empty image content from DroidCast_raw')
 
-        # DroidCast returned a short error message instead of raw bitmap data
-        # e.g. b':(  Failed to generate the screenshot on device / emulator: ...'
-        # Raise ConnectionError to immediately trigger droidcast_init in the retry handler
+        # DroidCast 返回了短错误信息而非原始位图数据
+        # 例如 b':(  Failed to generate the screenshot on device / emulator: ...'
+        # 抛出 ConnectionError 以在重试处理器中立即触发 droidcast_init
         if len(image) < 500:
             logger.warning(f'Unexpected screenshot: {image}')
             raise requests.exceptions.ConnectionError(f'DroidCast service error: {image!r}')
@@ -262,13 +262,13 @@ class DroidCast(Uiautomator2):
             if rotate:
                 arr = arr.reshape(shape)
                 # arr = cv2.rotate(arr, cv2.ROTATE_90_CLOCKWISE)
-                # A little bit faster?
+                # 稍微快一点？
                 arr = cv2.transpose(arr)
                 cv2.flip(arr, 1, dst=arr)
             else:
                 arr = arr.reshape(shape)
         except ValueError as e:
-            # Try to load as `DroidCast`
+            # 尝试作为 `DroidCast` 格式加载
             image = np.frombuffer(image, np.uint8)
             if image is not None:
                 image = cv2.imdecode(image, cv2.IMREAD_COLOR)
@@ -278,7 +278,7 @@ class DroidCast(Uiautomator2):
             # ValueError: cannot reshape array of size 0 into shape (720,1280)
             raise ImageTruncated(str(e)+'\nIf your emulator resolution not 1280x720, please set emulator resolution to 1280x720')
 
-        # Convert RGB565 to RGB888
+        # 将 RGB565 转换为 RGB888
         # https://blog.csdn.net/happy08god/article/details/10516871
 
         # r = (arr & 0b1111100000000000) >> (11 - 3)
@@ -292,9 +292,9 @@ class DroidCast(Uiautomator2):
         # b = b.astype(np.uint8)
         # image = cv2.merge([r, g, b])
 
-        # The same as the code above but costs about 2.7ms instead of 16ms.
-        # Note that cv2.convertScaleAbs is 5x fast as cv2.multiply, cv2.add is 8x fast as cv2.convertScaleAbs
-        # Note that cv2.convertScaleAbs includes rounding
+        # 与上方代码功能相同，但耗时约 2.7ms 而非 16ms。
+        # 注意 cv2.convertScaleAbs 比 cv2.multiply 快 5 倍，cv2.add 比 cv2.convertScaleAbs 快 8 倍
+        # 注意 cv2.convertScaleAbs 包含四舍五入
         tmp = np.empty_like(arr)
         cv2.bitwise_and(arr, 0b1111100000000000, dst=tmp)
         r = cv2.convertScaleAbs(tmp, alpha=0.0040283203125)  # 0.00390625 * 1.03125
@@ -308,9 +308,7 @@ class DroidCast(Uiautomator2):
         return image
 
     def droidcast_wait_startup(self):
-        """
-        Wait until DroidCast startup completed.
-        """
+        """等待 DroidCast 启动完成。"""
         timeout = Timer(10).start()
         while 1:
             self.sleep(0.25)
@@ -319,7 +317,7 @@ class DroidCast(Uiautomator2):
 
             try:
                 resp = self.droidcast_session.get(self.droidcast_url('/'), timeout=3)
-                # Route `/` is unavailable, but 404 means startup completed
+                # 路由 `/` 不可用，但 404 表示启动已完成
                 if resp.status_code == 404:
                     logger.attr('DroidCast', 'online')
                     return True
@@ -331,17 +329,15 @@ class DroidCast(Uiautomator2):
 
     def droidcast_uninstall(self):
         """
-        Stop DroidCast processes and remove DroidCast APK.
-        DroidCast hasn't been installed but a JAVA class call, uninstall is a file delete.
+        停止 DroidCast 进程并删除 DroidCast APK。
+        DroidCast 并非真正安装，而是通过 JAVA 类调用，卸载即删除文件。
         """
         self.droidcast_stop()
         logger.info('Removing DroidCast')
         self.adb_shell(["rm", self.config.DROIDCAST_FILEPATH_REMOTE])
 
     def _iter_droidcast_proc(self) -> t.Iterable[ProcessInfo]:
-        """
-        List all DroidCast processes.
-        """
+        """列出所有 DroidCast 进程。"""
         processes = self.proc_list_uiautomator2()
         for proc in processes:
             if 'com.rayworks.droidcast.Main' in proc.cmdline:
@@ -352,9 +348,7 @@ class DroidCast(Uiautomator2):
                 yield proc
 
     def droidcast_stop(self):
-        """
-        Stop DroidCast processes.
-        """
+        """停止 DroidCast 进程。"""
         logger.info('Stopping DroidCast')
         for proc in self._iter_droidcast_proc():
             logger.info(f'Kill pid={proc.pid}')

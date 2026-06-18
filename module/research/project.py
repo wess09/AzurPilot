@@ -4,7 +4,7 @@ from scipy import signal
 
 from module.base.decorator import cached_property
 from module.base.utils import *
-from module.device.method.utils import remove_suffix
+from module.device.method.utils import removesuffix
 from module.logger import logger
 from module.ocr.ocr import Duration, Ocr
 from module.research.assets import *
@@ -22,13 +22,13 @@ RESEARCH_DETAIL_GENRE = [DETAIL_GENRE_B, DETAIL_GENRE_C, DETAIL_GENRE_D, DETAIL_
 
 def get_research_series_old(image, series_button=RESEARCH_SERIES):
     """
-    Get research series using a simple color detection.
-    Counting white lines to detect Roman numerals.
+    使用简单的颜色检测获取科研系列。
+    通过计算白色线条数来检测罗马数字。
 
     -------               --- --   --
-     | | |   --> 3 lines   |   \   /   --> 3 lines
+     | | |   --> 3 条线    |   \   /   --> 3 条线
      | | |                 |   \   /
-     | | |   --> 3 lines   |    \ /    --> 2 lines
+     | | |   --> 3 条线    |    \ /    --> 2 条线
     -------               ---    v
 
     Args:
@@ -36,13 +36,13 @@ def get_research_series_old(image, series_button=RESEARCH_SERIES):
         series_button:
 
     Returns:
-        list[int]: Such as [1, 1, 1, 2, 3]
+        list[int]: 如 [1, 1, 1, 2, 3]
     """
     result = []
-    # Set 'prominence = 50' to ignore possible noise.
-    # 2021.07.18 Letter IV is now smaller than I, II, III, since the maintenance in 07.15.
-    #   The "/" of the "V" in IV become darker because of anti-aliasing.
-    #   So lower height to 160 to have a better detection.
+    # 设置 'prominence = 50' 以忽略可能的噪声。
+    # 2021.07.18 自 07.15 维护后，字母 IV 比 I、II、III 更小。
+    #   IV 中 "V" 的 "/" 因抗锯齿变得更暗。
+    #   因此将高度降低到 160 以获得更好的检测效果。
     parameters = {'height': 160, 'prominence': 50, 'width': 1}
 
     for button in series_button:
@@ -51,7 +51,7 @@ def get_research_series_old(image, series_button=RESEARCH_SERIES):
         upper, lower = max(peaks), min(peaks)
         # print(peaks)
 
-        # Remove noise like [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2]
+        # 去除类似 [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2] 的噪声
         if upper == 3 and lower == 2 and peaks.count(3) <= 2:
             upper = 2
 
@@ -107,12 +107,12 @@ def _get_research_series(img):
 
 def get_research_series(image, series_button=RESEARCH_SERIES):
     """
-        Args:
+    Args:
         image (np.ndarray):
         series_button:
 
     Returns:
-        list[int]: Such as [1, 1, 1, 2, 3]
+        list[int]: 如 [1, 1, 1, 2, 3]
     """
     result = []
     for button in series_button:
@@ -131,7 +131,7 @@ def get_research_name(image, ocr=OCR_RESEARCH):
         ocr (Ocr):
 
     Returns:
-        list[str]: Such as ['D-057-UL', 'D-057-UL', 'D-057-UL', 'D-057-UL', 'D-057-UL']
+        list[str]: 如 ['D-057-UL', 'D-057-UL', 'D-057-UL', 'D-057-UL', 'D-057-UL']
     """
     names = ocr.ocr(image)
     if not isinstance(names, list):
@@ -145,7 +145,7 @@ def get_research_finished(image):
         image (np.ndarray):
 
     Returns:
-        int: Index of the finished project, 0 to 4. Return None if no project finished.
+        int: 已完成项目的索引，0 到 4。如果没有已完成项目则返回 None。
     """
     for index in [2, 1, 3, 0, 4]:
         button = RESEARCH_STATUS[index]
@@ -155,9 +155,9 @@ def get_research_finished(image):
             continue
         color_index = np.argmax(color)  # R, G, B
         if color_index == 1:
-            return index  # Green
+            return index  # 绿色
         elif color_index == 2:
-            continue  # Blue
+            continue  # 蓝色
         else:
             logger.warning(f'Unexpected color: {color}')
             continue
@@ -168,9 +168,9 @@ def get_research_finished(image):
 def parse_time(string):
     """
     Args:
-        string (str): Such as 01:00:00, 05:47:10, 17:50:51.
+        string (str): 如 01:00:00, 05:47:10, 17:50:51。
     Returns:
-        timedelta: datetime.timedelta instance.
+        timedelta: datetime.timedelta 实例。
     """
     result = re.search('(\d+):(\d+):(\d+)', string)
     if not result:
@@ -184,11 +184,11 @@ def parse_time(string):
 def match_template(image, template, area, offset=30, similarity=0.85):
     """
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
         template (np.ndarray):
-        area (tuple): Crop area of image.
-        offset (int, tuple): Detection area offset.
-        similarity (float): 0-1. Similarity. Lower than this value will return float(0).
+        area (tuple): 图像裁剪区域。
+        offset (int, tuple): 检测区域偏移量。
+        similarity (float): 0-1。相似度。低于此值将返回 float(0)。
     Returns:
         similarity (float):
     """
@@ -207,25 +207,25 @@ def match_template(image, template, area, offset=30, similarity=0.85):
 
 def get_research_series_jp_old(image):
     """
-    Almost the same as get_research_series except the button area.
+    与 get_research_series 基本相同，区别在于按钮区域。
 
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
     Returns:
-        str: Series like "S4"
+        str: 系列编号，如 "S4"
     """
-    # Set 'prominence = 50' to ignore possible noise.
+    # 设置 'prominence = 50' 以忽略可能的噪声。
     parameters = {'height': 160, 'prominence': 50, 'width': 1}
 
     area = SERIES_DETAIL.area
-    # Resize is not needed because only one area will be checked in JP server.
+    # JP 服务器只需检查一个区域，无需缩放。
     im = color_similarity_2d(crop(image, area, copy=False), color=(255, 255, 255))
     peaks = [len(signal.find_peaks(row, **parameters)[0]) for row in im[5:-5]]
     upper, lower = max(peaks), min(peaks)
     # print(upper, lower)
 
-    # Remove noise like [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2]
+    # 去除类似 [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 2] 的噪声
     if upper == 3 and lower == 2 and peaks.count(3) <= 2:
         upper = 2
 
@@ -248,7 +248,7 @@ def get_research_series_jp(image):
         image:
 
     Returns:
-        str: Series like "S4"
+        str: 系列编号，如 "S4"
     """
     series = get_detail_series(image)
     return f'S{series}'
@@ -257,10 +257,10 @@ def get_research_series_jp(image):
 def get_research_duration_jp(image):
     """
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
     Returns:
-        duration (int): number of seconds
+        duration (int): 秒数
     """
     ocr = Duration(DURATION_DETAIL)
     duration = ocr.ocr(image).total_seconds()
@@ -270,7 +270,7 @@ def get_research_duration_jp(image):
 def get_research_genre_jp(image):
     """
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
     Returns:
         genre (string):
@@ -288,13 +288,13 @@ def get_research_genre_jp(image):
 
 def get_research_cost_jp(image):
     """
-    When the research has 1 cost item, the size of it is 78*78.
-    When the research has 2 cost items, the size of each is 77*77.
-    However, templates of coins, cubes, and plates differ a lot with each other,
-    so simply setting a lower threshold while matching can do the job.
+    当科研有 1 个消耗项时，其尺寸为 78x78。
+    当科研有 2 个消耗项时，每个尺寸为 77x77。
+    但金币、魔方和部件的模板差异较大，
+    因此在匹配时简单设置较低的阈值即可。
 
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
     Returns:
         costs (string): dict
@@ -319,7 +319,7 @@ def get_research_cost_jp(image):
                 costs[cost] = True
                 continue
 
-    # Rename keys to be the same as attrs of ResearchProjectJp.
+    # 重命名键以匹配 ResearchProjectJp 的属性名
     costs['need_coin'] = costs.pop('coin')
     costs['need_cube'] = costs.pop('cube')
     costs['need_part'] = costs.pop('plate')
@@ -328,11 +328,11 @@ def get_research_cost_jp(image):
 
 def get_research_ship_jp(image):
     """
-    Notice that 2.5, 5, and 8 hours' D research have 4 items, while 0.5 hours' one has 3,
-    so the button DETAIL_BLUEPRINT should not cover only the first one of 4 items.
+    注意 2.5、5 和 8 小时的 D 系列科研有 4 个物品，而 0.5 小时的有 3 个，
+    因此 DETAIL_BLUEPRINT 按钮不应只覆盖 4 个物品中的第一个。
 
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
     Returns:
         ship (string):
@@ -358,14 +358,14 @@ def get_research_ship_jp(image):
 def research_jp_detect(image):
     """
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
-    Return:
+    Returns:
         project (ResearchProjectJp):
     """
     project = ResearchProjectJp()
     project.series = get_research_series_jp(image)
-    project.duration = remove_suffix(str(get_research_duration_jp(image) / 3600), '.0')
+    project.duration = removesuffix(str(get_research_duration_jp(image) / 3600), '.0')
     if project.duration == '':
         project.duration = '0'
     project.genre = get_research_genre_jp(image)
@@ -385,9 +385,9 @@ def research_jp_detect(image):
 def research_detect(image):
     """
     Args:
-        image (np.ndarray): Screenshot
+        image (np.ndarray): 截图
 
-    Return:
+    Returns:
         list[ResearchProject]:
     """
     projects = []
@@ -420,7 +420,7 @@ class ResearchProject:
         '|napoli|nakhimov'
         '|goudenleeuw|mecklenburg'
     )
-    # Generate with:
+    # 使用以下代码生成：
     """
     out = []
     for row in LIST_RESEARCH_PROJECT:
@@ -447,8 +447,8 @@ class ResearchProject:
     def __init__(self, name, series):
         """
         Args:
-            name (str): Such as 'D-057-UL'
-            series (int): Such as 1, 2, 3
+            name (str): 如 'D-057-UL'
+            series (int): 如 1, 2, 3
         """
         self.valid = True
         # '4'
@@ -465,15 +465,14 @@ class ResearchProject:
         self.number = ''
         # '0.5'
         self.duration = '24'
-        # Ship face, like 'Azuma'
+        # 舰船头像，如 'Azuma'
         self.ship = ''
-        # 'dr' or 'pry'
+        # 'dr' 或 'pry'
         self.ship_rarity = ''
         self.need_coin = False
         self.need_cube = False
         self.need_part = False
-        # Project requirements, like:
-        # 'Scrap 8 pieces of gear.'
+        # 项目要求，如 'Scrap 8 pieces of gear.'
         self.task = ''
 
         matched = False
@@ -544,9 +543,9 @@ class ResearchProject:
             # LC-038-RF -> C-038-RF
             prefix = prefix.replace('LC', 'C')
 
-            # S3 D-022-MI (S3-Drake-0.5) detected as 'D-022-ML', because of Drake's white cloth.
+            # S3 D-022-MI (S3-Drake-0.5) 因 Drake 的白色衣物被识别为 'D-022-ML'
             suffix = suffix.replace('ML', 'MI').replace('MIL', 'MI').replace('M1', 'MI')
-            # S4 D-063-UL (S4-hakuryu-0.5) detected as 'D-063-0C'
+            # S4 D-063-UL (S4-hakuryu-0.5) 被识别为 'D-063-0C'
             # D-057-DC -> D-057-UL
             suffix = suffix.replace('0C', 'UL').replace('UC', 'UL')
             suffix = suffix.replace('DC5', 'UL').replace('DC3', 'UL').replace('DC', 'UL')
@@ -555,14 +554,14 @@ class ResearchProject:
 
             if suffix == 'U':
                 suffix = 'UL'
-            # TW ocr errors, convert B to D
+            # TW 服务器 OCR 错误，将 B 转换为 D
             if prefix == 'B' and number in ResearchProject.D_PROJECT_NUMBERS:
-                # Keep B-397-RF, S7 D-397-MI and S* B-397-RF shares 397
+                # 保留 B-397-RF，S7 D-397-MI 和 S* B-397-RF 共享 397
                 if number == '397' and suffix == 'RF':
                     pass
                 else:
                     prefix = 'D'
-            # I-483-RF revised to -483-RF -> D-483-RF
+            # I-483-RF 修正为 -483-RF -> D-483-RF
             if prefix == '' and number in ResearchProject.D_PROJECT_NUMBERS:
                 prefix = 'D'
             # L-153-MI -> C-153-MI
@@ -570,7 +569,7 @@ class ResearchProject:
                 prefix = 'C'
             return '-'.join([prefix, number, suffix])
         elif len(parts) == 2:
-            # Trying to insert '-', for results like H339-MI
+            # 尝试插入 '-'，处理类似 H339-MI 的结果
             if name[0].isalpha() and name[1].isdigit():
                 return self.check_name(f'{name[0]}-{name[1:]}')
         return name
@@ -578,8 +577,8 @@ class ResearchProject:
     def get_data(self, name, series):
         """
         Args:
-            name (str): Such as 'D-057-UL'
-            series (int): Such as 1, 2, 3
+            name (str): 如 'D-057-UL'
+            series (int): 如 1, 2, 3
 
         Yields:
             dict:
@@ -598,7 +597,7 @@ class ResearchProject:
                         yield data
 
         if name.startswith('D'):
-            # Letter 'C' may recognized as 'D', because project card is shining.
+            # 字母 'C' 可能因项目卡片反光被识别为 'D'
             name1 = 'C' + self.name[1:]
             for data in LIST_RESEARCH_PROJECT:
                 if (data['series'] == series) and (data['name'] == name1):
@@ -613,8 +612,8 @@ class ResearchProject:
 
     @cached_property
     def equipment_amount(self):
-        # Scrap 8 pieces of gear.
-        # Scrap 15 pieces of gear.
+        # 拆解 8 件装备。
+        # 拆解 15 件装备。
         if '8 piece' in self.task:
             return 8
         elif '15 piece' in self.task:
@@ -686,8 +685,8 @@ class ResearchProjectJp:
     @cached_property
     def equipment_amount(self):
         if self.genre == 'E' and self.duration == '2':
-            # JP has no research names, can't distinguish E-031-MI and E-315-MI,
-            # return the max value 15
+            # JP 服务器没有科研名称，无法区分 E-031-MI 和 E-315-MI，
+            # 返回最大值 15
             return 15
         else:
             return 0

@@ -249,7 +249,7 @@ class Enhancement(Dock):
         of types listed in ENHANCE_ORDER_STRING
 
         Invalid types are treated as requesting
-        from ALAS to choose a valid one at random
+        from AzurPilot to choose a valid one at random
 
         Pages:
             in: page_dock
@@ -292,7 +292,7 @@ class Enhancement(Dock):
             if ship_type is not None and ship_type not in VALID_SHIP_TYPES:
                 if len(available_ship_types) == 0:
                     logger.info(
-                        'No more ship types for ALAS to choose from, skipping iteration')
+                        'No more ship types for AzurPilot to choose from, skipping iteration')
                     continue
                 ship_type = choice(available_ship_types)
                 available_ship_types.remove(ship_type)

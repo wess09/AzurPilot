@@ -15,7 +15,7 @@ class ExecutionError(Exception):
 
 
 class ConfigModel:
-    # Git
+    # Git 配置
     Repository: str = "https://github.com/wess09/AzurPilot"
     Branch: str = "master"
     GitExecutable: str = "./.venv/Scripts/git/cmd/git.exe" if sys.platform == "win32" else "./.venv/bin/git"
@@ -23,38 +23,38 @@ class ConfigModel:
     SSLVerify: bool = False
     AutoUpdate: bool = True
 
-    # Python
+    # Python 配置
     PythonExecutable: str = "./.venv/Scripts/python.exe" if sys.platform == "win32" else "./.venv/bin/python"
     PypiMirror: Optional[str] = None
     InstallDependencies: bool = True
 
-    # Adb
+    # ADB 配置
     AdbExecutable: str = "./.venv/Scripts/adb.exe" if sys.platform == "win32" else "./.venv/bin/adb"
     ReplaceAdb: bool = True
     AutoConnect: bool = True
     InstallUiautomator2: bool = True
 
-    # Ocr
+    # OCR 配置
     UseOcrServer: bool = False
     StartOcrServer: bool = False
     OcrServerPort: int = 22268
     OcrClientAddress: str = "127.0.0.1:22268"
 
-    # Update
+    # 更新配置
     EnableReload: bool = True
     CheckUpdateInterval: int = 5
     AutoRestartTime: str = "03:50"
 
-    # Misc
+    # 杂项
     DiscordRichPresence: bool = False
 
-    # Remote Access
+    # 远程访问
     EnableRemoteAccess: bool = False
     SSHUser: Optional[str] = None
     SSHServer: Optional[str] = None
     SSHExecutable: Optional[str] = None
 
-    # Webui
+    # WebUI 配置
     WebuiHost: str = "0.0.0.0"
     WebuiPort: int = 22267
     WebuiSSLKey: Optional[str] = None
@@ -66,15 +66,16 @@ class ConfigModel:
     CDN: Union[str, bool] = False
     Run: Optional[str] = None
 
-    # Dynamic
+    # 动态配置
     GitOverCdn: bool = False
 
 
 class DeployConfig(ConfigModel):
     def __init__(self, file=DEPLOY_CONFIG):
-        """
+        """初始化部署配置。
+
         Args:
-            file (str): User deploy config.
+            file (str): 用户部署配置文件路径。
         """
         self.file = file
         self.template_file = get_deploy_template()
@@ -96,9 +97,7 @@ class DeployConfig(ConfigModel):
         logger.info(f"Rest of the configs are the same as default")
 
     def read(self):
-        """
-        Read and update deploy config, copy `self.configs` to properties.
-        """
+        """读取并更新部署配置，将配置值复制到属性。"""
         self.config = poor_yaml_read(self.template_file)
         self.config_template = copy.deepcopy(self.config)
         origin = poor_yaml_read(self.file)
@@ -117,8 +116,9 @@ class DeployConfig(ConfigModel):
         poor_yaml_write(self.config, self.file, template_file=self.template_file)
 
     def config_redirect(self):
-        """
-        Redirect deploy config, must be called after each `read()`
+        """部署配置重定向，处理旧配置到新配置的迁移。
+
+        每次 `read()` 之后必须调用。
         """
         if self.Repository in [
             'https://gitee.com/LmeSzinc/AzurLaneAutoScript',
@@ -143,8 +143,7 @@ class DeployConfig(ConfigModel):
             self.PypiMirror = 'https://mirrors.aliyun.com/pypi/simple'
             self.config['PypiMirror'] = 'https://mirrors.aliyun.com/pypi/simple'
 
-        # Bypass webui.config.DeployConfig.__setattr__()
-        # Don't write these into deploy.yaml
+        # 绕过 webui.config.DeployConfig.__setattr__()，不写入 deploy.yaml
         super().__setattr__(
             'GitOverCdn',
             self.Repository == GIT_OVER_CDN_REPOSITORY and self.Branch == 'master'
@@ -157,12 +156,13 @@ class DeployConfig(ConfigModel):
             super().__setattr__('Repository', GIT_OVER_CDN_REPOSITORY)
 
     def filepath(self, key):
-        """
+        """根据配置键获取绝对文件路径。
+
         Args:
-            key (str):
+            key (str): 配置键名。
 
         Returns:
-            str: Absolute filepath.
+            str: 绝对文件路径。
         """
         return (
             os.path.abspath(os.path.join(self.root_filepath, self.config[key]))
@@ -181,15 +181,15 @@ class DeployConfig(ConfigModel):
         )
 
     def execute(self, command, allow_failure=False, output=True):
-        """
+        """执行系统命令。
+
         Args:
-            command (str):
-            allow_failure (bool):
-            output(bool):
+            command (str): 要执行的命令。
+            allow_failure (bool): 是否允许失败。
+            output (bool): 是否显示输出。
 
         Returns:
-            bool: If success.
-                Terminate installation if failed to execute and not allow_failure.
+            bool: 是否成功。失败且不允许失败时终止安装流程。
         """
         command = command.replace(r"\\", "/").replace("\\", "/").replace('"', '"')
         if not output:
@@ -215,6 +215,6 @@ class DeployConfig(ConfigModel):
         logger.info(f"Last command: {command}")
         logger.info(
             "Please check your deploy settings in config/deploy.yaml "
-            "and re-open Alas.exe"
+            "and re-open AzurPilot.exe"
         )
         logger.info("Take the screenshot of entire window if you need help")

@@ -13,78 +13,47 @@ MEOWFFICER_COINS = Digit(OCR_MEOWFFICER_COINS, letter=(99, 69, 41), threshold=64
 
 
 class MeowfficerBuy(MeowfficerBase):
-    def meow_get_buy_count(self) -> int:
+    def meow_choose(self, count) -> bool:
         """
-        OCR remaining buys and coins, combine with user configs to decide
-        how many meowfficer boxes to buy this run.
-
-        Baseline: buy up to Meowfficer_BuyAmount per day.
-        Overflow: when Meowfficer_OverflowCoins is not -1 and current coins
-        exceed it, keep buying extra boxes until coins drop to threshold or
-        today's quota runs out. The 1st box per day is free.
-
-        Pages:
-            in: page_meowfficer
-
-        Returns:
-            int: 0 to BUY_MAX, number of boxes to buy now.
-        """
-        self.device.screenshot()
-        remain, bought, total = MEOWFFICER.ocr(self.device.image)
-        coins = MEOWFFICER_COINS.ocr(self.device.image)
-        logger.attr('Meowfficer_remain', remain)
-        logger.attr('Meowfficer_coins', coins)
-
-        if total != BUY_MAX:
-            logger.warning(f'Invalid meowfficer buy limit: {total}, revise to {BUY_MAX}')
-            total = BUY_MAX
-            bought = total - remain
-
-        today_left = max(0, total - bought)
-        if today_left <= 0:
-            logger.info(f'Already bought {bought}/{total} today, stopped')
-            return 0
-
-        # Baseline buy
-        baseline = min(max(0, self.config.Meowfficer_BuyAmount - bought), today_left)
-
-        # Overflow buy
-        overflow_th = self.config.Meowfficer_OverflowCoins
-        extra = 0
-        if overflow_th != -1 and coins > overflow_th:
-            extra = -(-(coins - overflow_th) // BUY_PRIZE)
-            extra = min(extra, today_left - baseline)
-            extra = max(0, extra)
-
-        count = baseline + extra
-
-        # Cap by affordable coins, the 1st box per day is free
-        free = 1 if bought == 0 else 0
-        affordable = coins // BUY_PRIZE + free
-        if count > affordable:
-            logger.info(f'Current coins only afford to buy {affordable}')
-            count = affordable
-
-        logger.info(
-            f'Meowfficer buy plan: count={count}, baseline={baseline}, '
-            f'overflow={extra}, bought={bought}/{total}, coins={coins}'
-        )
-        return count
-
-    def meow_choose(self, count) -> None:
-        """
-        Navigate to MEOWFFICER_BUY and set buy index to `count`.
-
         Pages:
             in: page_meowfficer
             out: MEOWFFICER_BUY
 
         Args:
-            count (int): 1 to BUY_MAX.
+            count (int): 0 to 15.
+
+        Returns:
+            bool: If success.
         """
+        remain, bought, total = MEOWFFICER.ocr(self.device.image)
+        logger.attr('Meowfficer_remain', remain)
+
+        # Check buy status
+        if total != BUY_MAX:
+            logger.warning(f'Invalid meowfficer buy limit: {total}, revise to {BUY_MAX}')
+            total = BUY_MAX
+            bought = total - remain
+        if bought > 0:
+            if bought >= count:
+                logger.info(f'Already bought {bought} today, stopped')
+                return False
+            else:
+                count -= bought
+                logger.info(f'Already bought {bought} today, only need to buy {count} more')
+
+        # Check coins
+        coins = MEOWFFICER_COINS.ocr(self.device.image)
+        if (coins < BUY_PRIZE) and (remain < total):
+            logger.info('Not enough coins to buy one, stopped')
+            return False
+        elif (count - int(remain == total)) * BUY_PRIZE > coins:
+            count = coins // BUY_PRIZE + int(remain == total)
+            logger.info(f'Current coins only enough to buy {count}')
+
         self.meow_enter(MEOWFFICER_BUY_ENTER, check_button=MEOWFFICER_BUY)
         self.ui_ensure_index(count, letter=MEOWFFICER_CHOOSE, prev_button=MEOWFFICER_BUY_PREV,
                              next_button=MEOWFFICER_BUY_NEXT, skip_first_screenshot=True)
+        return True
 
     def meow_confirm(self, skip_first_screenshot=True) -> None:
         """
@@ -93,6 +62,7 @@ class MeowfficerBuy(MeowfficerBase):
             out: page_meowfficer
         """
         # Here uses a simple click, to avoid clicking MEOWFFICER_BUY multiple times.
+        # Retry logic is in meow_buy()
         logger.hr('Meow confirm')
         executed = False
         with self.stat.new(
@@ -132,17 +102,87 @@ class MeowfficerBuy(MeowfficerBase):
                 if self.match_template_color(MEOWFFICER_BUY_ENTER, offset=(20, 20)):
                     break
 
-    def meow_buy(self) -> None:
+    def meow_buy(self) -> bool:
         """
-        Buy meowfficer boxes according to baseline and optional overflow plan.
-
         Pages:
             in: page_meowfficer
             out: page_meowfficer
         """
         logger.hr('Meowfficer buy', level=1)
-        count = self.meow_get_buy_count()
-        if count <= 0:
+
+        for _ in range(3):
+            if self.meow_choose(count=self.config.Meowfficer_BuyAmount):
+                self.meow_confirm()
+            else:
+                return True
+
+        logger.warning('Too many trial in meowfficer buy, stopped.')
+        return False
+
+    def meow_overflow_buy(self, overflow_coins):
+        """金币溢出时购买猫箱，直到金币降至阈值以下。
+
+        根据当前金币与溢出阈值的差值计算需要购买的猫箱数量，
+        考虑每日15个购买限制和首抽免费机制。
+        不依赖金币OCR判断是否触发购买（由调用方判断），
+        仅负责在指挥喵界面执行购买操作。
+
+        Args:
+            overflow_coins (int): 金币溢出阈值，金币超过此值时购买猫箱
+
+        Pages:
+            in: page_meowfficer
+            out: page_meowfficer
+        """
+        logger.hr('Meowfficer overflow buy', level=1)
+
+        # OCR识别剩余购买次数
+        remain, bought, total = MEOWFFICER.ocr(self.device.image)
+        logger.attr('Meowfficer_remain', remain)
+        logger.attr('Meowfficer_bought', bought)
+
+        # 每日限制检查
+        if total != BUY_MAX:
+            logger.warning(f'Invalid meowfficer buy limit: {total}, revise to {BUY_MAX}')
+            total = BUY_MAX
+            bought = total - remain
+
+        if bought >= BUY_MAX:
+            logger.info(f'Already bought {bought} today, reached daily limit, skip')
             return
-        self.meow_choose(count)
-        self.meow_confirm()
+
+        # OCR识别金币
+        coins = MEOWFFICER_COINS.ocr(self.device.image)
+        logger.attr('Meowfficer_coins', coins)
+
+        if coins <= overflow_coins:
+            logger.info(f'Coins {coins} <= threshold {overflow_coins}, skip')
+            return
+
+        # 计算溢出购买数量
+        today_left = total - bought
+        # 向上取整：需要购买多少个猫箱才能将金币降到阈值以下
+        overflow_count = -(-(coins - overflow_coins) // BUY_PRIZE)
+        # 限制在今日剩余数量内
+        count = min(overflow_count, today_left)
+
+        # 考虑首抽免费：如果剩余=总数（一个都没买），第一个免费
+        free = 1 if remain == total else 0
+        # 检查金币是否足够
+        affordable = coins // BUY_PRIZE + free
+        if count > affordable:
+            count = affordable
+            logger.info(f'Coins only enough for {count} meowfficers')
+
+        if count <= 0:
+            logger.info('No meowfficer to buy, skip')
+            return
+
+        logger.info(f'Overflow buy count: {count} (overflow_count={overflow_count}, today_left={today_left})')
+
+        # 执行购买
+        # 传入总共需要达到的数量（已买 + 还需买），meow_choose 会自动计算差额
+        if self.meow_choose(count=count + bought):
+            self.meow_confirm()
+        else:
+            logger.info('Meowfficer overflow buy skipped by meow_choose')

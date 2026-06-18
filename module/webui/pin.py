@@ -1,11 +1,12 @@
 """
-Copy from pywebio.pin
-Add **other_html_attrs to put_xxx()
+PyWebIO Pin 交互组件的扩展封装。
+
+基于 pywebio.pin 进行二次开发，为所有 put_xxx() 函数添加 **other_html_attrs 参数，
+支持传入自定义 HTML 属性。提供针对 Alas 配置系统的各种输入控件（如下拉选择框、
+数字输入及开关等）的自动化渲染与数值同步转换。
 """
 
 from pywebio.io_ctrl import Output
-# 此文件专门封装了 PyWebIO 的 Pin 交互组件类库文件。
-# 提供针对 Alas 配置系统的各种输入控件（如下拉选择框、数字输入及开关等）的自动化渲染与数值同步转换。
 from module.webui.utils import *
 from pywebio.output import OutputPosition
 from pywebio.pin import _pin_output, check_dom_name_value, pin_update
@@ -13,7 +14,7 @@ from pywebio.pin import _pin_output, check_dom_name_value, pin_update
 
 def put_input(name, type='text', *, label='', value=None, placeholder=None, readonly=None, datalist=None,
               help_text=None, scope=None, position=OutputPosition.BOTTOM, **other_html_attrs) -> Output:
-    """Output an input widget. Refer to: `pywebio.input.input()`"""
+    """输出文本输入控件。参数详见 `pywebio.input.input()`。"""
     from pywebio.input import input
     check_dom_name_value(name, 'pin `name`')
     single_input_return = input(name=name, label=label, value=value, type=type, placeholder=placeholder,
@@ -23,7 +24,7 @@ def put_input(name, type='text', *, label='', value=None, placeholder=None, read
 
 def put_textarea(name, *, label='', rows=6, code=None, maxlength=None, minlength=None, value=None, placeholder=None,
                  readonly=None, help_text=None, scope=None, position=OutputPosition.BOTTOM, **other_html_attrs) -> Output:
-    """Output a textarea widget. Refer to: `pywebio.input.textarea()`"""
+    """输出多行文本输入控件。参数详见 `pywebio.input.textarea()`。"""
     from pywebio.input import textarea
     check_dom_name_value(name, 'pin `name`')
     single_input_return = textarea(
@@ -34,7 +35,7 @@ def put_textarea(name, *, label='', rows=6, code=None, maxlength=None, minlength
 
 def put_select(name, options=None, *, label='', multiple=None, value=None, help_text=None,
                scope=None, position=OutputPosition.BOTTOM, **other_html_attrs) -> Output:
-    """Output a select widget. Refer to: `pywebio.input.select()`"""
+    """输出下拉选择控件。参数详见 `pywebio.input.select()`。"""
     from pywebio.input import select
     check_dom_name_value(name, 'pin `name`')
     single_input_return = select(name=name, options=options, label=label, multiple=multiple,
@@ -44,7 +45,7 @@ def put_select(name, options=None, *, label='', multiple=None, value=None, help_
 
 def put_checkbox(name, options=None, *, label='', inline=None, value=None, help_text=None,
                  scope=None, position=OutputPosition.BOTTOM, **other_html_attrs) -> Output:
-    """Output a checkbox widget. Refer to: `pywebio.input.checkbox()`"""
+    """输出复选框控件。参数详见 `pywebio.input.checkbox()`。"""
     from pywebio.input import checkbox
     check_dom_name_value(name, 'pin `name`')
     single_input_return = checkbox(name=name, options=options, label=label, inline=inline, value=value,

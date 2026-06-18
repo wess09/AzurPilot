@@ -87,7 +87,7 @@ class DropStatistics(BattleStatusStatistics, GetItemsStatistics):
 
 """
 Args:
-    FOLDER:   Alas drop screenshot folder.
+    FOLDER:   AzurPilot drop screenshot folder.
               Examples: '<your_drop_screenshot_folder>/campaign_7_2'
     CSV_FILE: Csv file to save.
               Examples: 'c72.csv'

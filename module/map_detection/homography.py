@@ -13,8 +13,7 @@ from module.map_detection.utils_assets import *
 
 
 class Homography:
-    """
-    Homography transformation
+    """单应性变换。
 
     Examples:
         hm = Homography(AzurLaneConfig('template'))
@@ -33,18 +32,18 @@ class Homography:
     """
 
     """
-    Output
+    输出
     """
     image: np.ndarray
     config: AzurLaneConfig
-    # Four edges in bool, or has attribute __bool__
+    # 四条边缘线，bool 类型或具有 __bool__ 属性
     left_edge: int
     right_edge: int
     lower_edge: int
     upper_edge: int
 
     """
-    Private
+    私有属性
     """
     homo_storage: tuple
     homo_data: np.ndarray
@@ -59,7 +58,7 @@ class Homography:
     def __init__(self, config):
         """
         Args:
-            config (AzurLaneConfig):
+            config (AzurLaneConfig): 配置对象。
         """
         self.config = config
         self.homo_loaded = False
@@ -73,7 +72,7 @@ class Homography:
         image = cv2.warpPerspective(mask, self.homo_data, self.homo_size)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
         image = cv2.erode(image, kernel).astype('uint8')
-        # Remove edges, perspective transform may produce aliasing
+        # 移除边缘，透视变换可能产生锯齿
         pad = 2
         image[:pad, :] = 0
         image[-pad:, :] = 0
@@ -82,9 +81,10 @@ class Homography:
         return image
 
     def load(self, image):
-        """
+        """加载图像并执行检测。
+
         Args:
-            image (np.ndarray): Shape (720, 1280, 3)
+            image (np.ndarray): 截图图像，形状 (720, 1280, 3)。
         """
         if not self.homo_loaded:
             self.load_homography(storage=self.config.HOMO_STORAGE, image=image)
@@ -92,12 +92,13 @@ class Homography:
         self.detect(image)
 
     def load_homography(self, storage=None, perspective=None, image=None, file=None):
-        """
+        """从多种数据源加载单应性变换参数。
+
         Args:
-            storage (tuple): ((x, y), [upper-left, upper-right, bottom-left, bottom-right])
-            perspective (Perspective):
-            image (np.ndarray):
-            file (str): File path of image
+            storage (tuple): 存储格式 ((x, y), [左上, 右上, 左下, 右下])。
+            perspective (Perspective): 透视检测器实例。
+            image (np.ndarray): 截图图像。
+            file (str): 图像文件路径。
         """
         if storage is not None:
             self.find_homography(*storage)
@@ -121,21 +122,22 @@ class Homography:
             raise MapDetectionError('No data feed to load_homography, please input at least one.')
 
     def find_homography(self, size, src_pts, overflow=True):
-        """
+        """计算单应性变换矩阵。
+
         Args:
-            size (tuple): (x, y)
-            src_pts (list[tuple]): [upper-left, upper-right, bottom-left, bottom-right]
-            overflow (bool): True if get full transformed image, false if get valid area only.
+            size (tuple): 网格尺寸 (x, y)。
+            src_pts (list[tuple]): 源角点 [左上, 右上, 左下, 右下]。
+            overflow (bool): True 获取完整变换图像，False 仅获取有效区域。
         """
         self.homo_storage = (size, [(x, y) for x, y in np.round(src_pts, 3)])
         logger.attr('homo_storage', self.homo_storage)
 
-        # Generate perspective data
+        # 生成透视变换数据
         src_pts = np.array(src_pts) - self.config.DETECTING_AREA[:2]
         dst_pts = src_pts[0] + area2corner((0, 0, *np.multiply(size, self.config.HOMO_TILE)))
         homo = cv2.getPerspectiveTransform(src_pts.astype(np.float32), dst_pts.astype(np.float32))
 
-        # Re-generate to align image to upper-left
+        # 重新生成以将图像对齐到左上角
         area = area2corner(self.config.DETECTING_AREA) - self.config.DETECTING_AREA[:2]
         transformed = perspective_transform(area, data=homo)
         if overflow:
@@ -154,30 +156,31 @@ class Homography:
         self.homo_loaded = True
 
     def detect(self, image):
-        """
+        """对截图执行单应性变换检测。
+
         Args:
-            image (np.ndarray): Screenshot.
+            image (np.ndarray): 截图图像。
 
         Returns:
-            bool: If success.
+            bool: 是否检测成功。
         """
         start_time = time.time()
         self.image = image
 
-        # Image initialization
+        # 图像初始化
         image = rgb2gray(crop(image, self.config.DETECTING_AREA, copy=False))
 
-        # Perspective transform
+        # 透视变换
         image_trans = cv2.warpPerspective(image, self.homo_data, self.homo_size)
 
-        # Edge detection
+        # 边缘检测
         image_edge = cv2.Canny(image_trans, *self.config.HOMO_CANNY_THRESHOLD)
         cv2.bitwise_and(image_edge, self.ui_mask_homo_stroke, dst=image_edge)
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
         cv2.morphologyEx(image_edge, cv2.MORPH_CLOSE, kernel, dst=image_edge)
         # Image.fromarray(image_edge, mode='L').show()
 
-        # Find free tile
+        # 查找空闲瓦片
         if self.search_tile_center(image_edge, threshold_good=self.config.HOMO_CENTER_GOOD_THRESHOLD,
                                    threshold=self.config.HOMO_CENTER_THRESHOLD):
             pass
@@ -190,7 +193,7 @@ class Homography:
 
         self.homo_loca %= self.config.HOMO_TILE
 
-        # Detect map edges
+        # 检测地图边缘
         self.lower_edge, self.upper_edge, self.left_edge, self.right_edge = False, False, False, False
         self._map_edge_count = (0, 0)
         if self.config.HOMO_EDGE_DETECT:
@@ -203,7 +206,7 @@ class Homography:
             cv2.bitwise_and(image_edge, self.ui_mask_homo_stroke, dst=image_edge)
             self.detect_edges(image_edge, hough_th=self.config.HOMO_EDGE_HOUGHLINES_THRESHOLD)
 
-        # Log
+        # 日志输出
         time_cost = round(time.time() - start_time, 3)
         logger.info('%ss  %s   edge_lines: %s hori, %s vert' % (
             float2str(time_cost), '_' if self.lower_edge else ' ',
@@ -215,19 +218,18 @@ class Homography:
                     )
 
     def search_tile_center(self, image, threshold_good=0.9, threshold=0.8, encourage=1.0):
-        """
-        Search for the center of empty tile.
-        Note: This is the main method.
-        `len(res[res > 0.8])` is 3x faster than `np.sum(res > 0.8)`
+        """搜索空闲瓦片的中心位置。
+        注意: 这是主要方法。
+        `len(res[res > 0.8])` 比 `np.sum(res > 0.8)` 快 3 倍。
 
         Args:
-            image (np.ndarray): Monochrome image.
-            threshold_good (float);
-            threshold (float):
-            encourage (int, float):
+            image (np.ndarray): 灰度图像。
+            threshold_good (float): 良好匹配阈值。
+            threshold (float): 匹配阈值。
+            encourage (int, float): 拟合鼓励值。
 
         Returns:
-            bool: If success.
+            bool: 是否搜索成功。
         """
         threshold_good = lower_template_match_similarity(threshold_good)
         threshold = lower_template_match_similarity(threshold)
@@ -251,18 +253,17 @@ class Homography:
         return message != 'bad match'
 
     def search_tile_corner(self, image, threshold=0.8, encourage=1.0):
-        """
-        Search for the corner of empty tile.
-        This is a fallback method, almost no need.
-        Note: This method has a difference in 0.5 ~ 1.0 pixel.
+        """搜索空闲瓦片的角点位置。
+        这是备用方法，几乎不需要使用。
+        注意: 此方法有 0.5 ~ 1.0 像素的误差。
 
         Args:
-            image (np.ndarray): Monochrome image.
-            threshold (float):
-            encourage (int, float):
+            image (np.ndarray): 灰度图像。
+            threshold (float): 匹配阈值。
+            encourage (int, float): 拟合鼓励值。
 
         Returns:
-            bool: If success.
+            bool: 是否搜索成功。
         """
         threshold = lower_template_match_similarity(threshold)
         similarity = 0
@@ -287,31 +288,30 @@ class Homography:
         return message != 'bad match'
 
     def search_tile_rectangle(self, image, threshold=10, encourage=5.1, close_kernel=(5, 10, 15, 20, 25)):
-        """
-        Search for the corner of empty tile.
-        This is a fallback method for fallback method, almost almost no need.
-        Note: This method may have a difference in about 2 pixels.
+        """搜索空闲瓦片的矩形位置。
+        这是备用方法的备用方法，几乎完全不需要使用。
+        注意: 此方法可能有约 2 像素的误差。
 
         Args:
-            image (np.ndarray): Monochrome image.
-            threshold (int): Number of rectangles.
-            encourage (int, float):
-            close_kernel (tuple[int]): Kernel size use in morphology close
+            image (np.ndarray): 灰度图像。
+            threshold (int): 矩形数量阈值。
+            encourage (int, float): 拟合鼓励值。
+            close_kernel (tuple[int]): 形态学闭运算使用的核大小。
 
         Returns:
-            bool: If success.
+            bool: 是否搜索成功。
         """
         location = np.array([])
         for kernel in close_kernel:
-            # Re-creating closed image
+            # 重新创建闭运算图像
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel, kernel))
             image_closed = cv2.morphologyEx(image, cv2.MORPH_CLOSE, kernel)
-            # Find rectangles
+            # 查找矩形
             contours, _ = cv2.findContours(image_closed, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
             rectangle = np.array([cv2.boundingRect(cv2.convexHull(cont).astype(np.float32)) for cont in contours])
 
             try:
-                # Filter out correct rectangles
+                # 筛选出正确的矩形
                 rectangle = rectangle[(rectangle[:, 2] > 100) & (rectangle[:, 3] > 100)]
                 shape = rectangle[:, 2:]
                 diff = np.abs(shape - np.round(shape / self.config.HOMO_TILE) * self.config.HOMO_TILE)
@@ -332,14 +332,13 @@ class Homography:
         return message != 'bad match'
 
     def detect_edges(self, image, hough_th=120, theta_th=0.005, edge_th=9):
-        """
-        Detect map edges
+        """检测地图边缘。
 
         Args:
-            image (np.ndarray): Monochrome image.
-            hough_th (int): cv2.HoughLines threshold.
-            theta_th (float): Lines theta threshold, in degree.
-            edge_th (int): Edge threshold, in pixel.
+            image (np.ndarray): 灰度图像。
+            hough_th (int): cv2.HoughLines 阈值。
+            theta_th (float): 线段角度阈值，单位为度。
+            edge_th (int): 边缘阈值，单位为像素。
         """
         lines = cv2.HoughLines(image, 1, np.pi / 180, hough_th)
         if lines is None:
@@ -378,8 +377,10 @@ class Homography:
         self.left_edge, self.right_edge = separate_edges(vert, inner=self.map_inner[0])
 
     def generate(self, edge_th=9):
-        """
-        Yields (tuple): ((x, y), [upper-left, upper-right, bottom-left, bottom-right])
+        """生成网格坐标和对应的四角点。
+
+        Yields:
+            tuple: ((x, y), [左上, 右上, 左下, 右下])。
         """
         area = [
             self.left_edge - edge_th if self.left_edge else 0,
@@ -399,9 +400,10 @@ class Homography:
             yield data
 
     def to_perspective(self):
-        """
+        """将单应性变换结果转换为透视线段。
+
         Returns:
-            (Lines, Lines): Horizontal lines, vertical lines.
+            (Lines, Lines): 水平线段和垂直线段。
         """
         grids = {}
         for loca, points in self.generate():

@@ -27,7 +27,7 @@ class CampaignNameError(Exception):
 
 
 class ScriptError(Exception):
-    # This is likely to be a mistake of developers, but sometimes a random issue
+    # 通常是开发者的代码错误，但也可能是偶发的随机问题
     pass
 
 
@@ -40,8 +40,8 @@ class GameStuckError(Exception):
 
 
 class GameBugError(Exception):
-    # An error has occurred in Azur Lane game client. Alas is unable to handle.
-    # A restart should fix it.
+    # 碧蓝航线游戏客户端发生错误，AzurPilot 无法自行处理。
+    # 通常重启游戏即可恢复。
     pass
 
 
@@ -62,8 +62,8 @@ class GamePageUnknownError(Exception):
 
 
 class RequestHumanTakeover(Exception):
-    # Request human takeover
-    # Alas is unable to handle such error, probably because of wrong settings.
+    # 请求人工接管
+    # AzurPilot 无法处理此类错误，可能是由于配置错误导致。
     pass
 
 

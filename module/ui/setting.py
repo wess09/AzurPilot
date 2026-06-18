@@ -12,20 +12,20 @@ from module.logger import logger
 class Setting:
     def __init__(self, name='Setting', main: ModuleBase = None):
         self.name = name
-        # Alas module object
+        # Alas 模块对象
         self.main: ModuleBase = main
-        # Reset options before setting any options
+        # 设置选项前先重置为默认值
         self.reset_first = True
-        # Deselect active options
+        # 是否需要取消已激活的选项
         self.need_deselect = False
-        # (setting, opiton_name): option_button
+        # (设置名, 选项名): 选项按钮
         # {
         #     ('sort', 'rarity'): Button(),
         #     ('sort', 'level'): Button(),
         #     ('sort', 'total'): Button(),
         # }
         self.settings: t.Dict[(str, str), Button] = {}
-        # setting: option_name
+        # 设置名: 选项名
         # {
         #     'sort': 'rarity',
         #     'index': 'all',
@@ -34,15 +34,13 @@ class Setting:
 
     def add_setting(self, setting, option_buttons, option_names, option_default):
         """
+        添加一组设置选项。
+
         Args:
-            setting (str):
-                Name of the setting
-            option_buttons (list[Button], ButtonGrid):
-                List of buttons produced by ButtonGrid.buttons
-            option_names (list[str]):
-                Name of each options, `option_names` and `options` must has the same length.
-            option_default (str):
-                Name of the default option, must in `option_names`
+            setting (str): 设置名称。
+            option_buttons (list[Button], ButtonGrid): 选项按钮列表，可由 ButtonGrid.buttons 生成。
+            option_names (list[str]): 每个选项的名称，长度必须与 option_buttons 一致。
+            option_default (str): 默认选项名称，必须在 option_names 中。
         """
         if isinstance(option_buttons, ButtonGrid):
             option_buttons = option_buttons.buttons
@@ -60,13 +58,15 @@ class Setting:
 
     def _product_setting_status(self, **kwargs) -> t.Dict[Button, bool]:
         """
+        生成每个选项按钮的目标激活状态。
+
         Args:
-            **kwargs: Key: setting, value: required option or a list of them
-                `sort=['rarity', 'level'], ...` or `sort='rarity'`,
-                or `sort=None` means don't change this setting
+            **kwargs: 键为设置名，值为所需选项或选项列表。
+                例如 `sort=['rarity', 'level']` 或 `sort='rarity'`，
+                `sort=None` 表示不更改该设置。
 
         Returns:
-            dict: Key: option_button, value: whether should be active
+            dict: 键为选项按钮，值为是否应激活。
         """
         # Add defaults
         required_options = copy.deepcopy(self.settings_default)
@@ -86,6 +86,8 @@ class Setting:
 
     def show_active_buttons(self):
         """
+        记录当前激活的选项按钮。
+
         Logs:
             [Setting] sort/rarity, sort/level
         """
@@ -99,11 +101,13 @@ class Setting:
 
     def get_buttons_to_click(self, status: t.Dict[Button, bool]) -> t.List[Button]:
         """
+        根据目标状态计算需要点击的按钮列表。
+
         Args:
-            status: Key: option_button, value: whether should be active
+            status: 键为选项按钮，值为是否应激活。
 
         Returns:
-            Buttons to click
+            list[Button]: 需要点击的按钮列表。
         """
         click = []
         for option_button, enable in status.items():
@@ -117,13 +121,15 @@ class Setting:
 
     def _set_execute(self, **kwargs):
         """
+        执行设置选项的切换，带超时和重试机制。
+
         Args:
-            **kwargs: Key: setting, value: required option or a list of them
-                `sort=['rarity', 'level'], ...` or `sort='rarity'`,
-                or `sort=None` means don't change this setting
+            **kwargs: 键为设置名，值为所需选项或选项列表。
+                例如 `sort=['rarity', 'level']` 或 `sort='rarity'`，
+                `sort=None` 表示不更改该设置。
 
         Returns:
-            bool: If success the set
+            bool: 是否设置成功。
         """
         status = self._product_setting_status(**kwargs)
 
@@ -138,7 +144,7 @@ class Setting:
                 self.main.device.screenshot()
 
             if timeout.reached():
-                logger.warning(f'Set {self.name} options timeout, assuming current options are correct.')
+                logger.warning(f'设置 {self.name} 选项超时，假定当前选项已正确。')
                 return False
 
             self.show_active_buttons()
@@ -153,13 +159,15 @@ class Setting:
 
     def set(self, **kwargs):
         """
+        设置选项，若 reset_first 为 True 则先重置为默认值。
+
         Args:
-            **kwargs: Key: setting, value: required option or a list of them
-                `sort=['rarity', 'level'], ...` or `sort='rarity'`,
-                or `sort=None` means don't change this setting
+            **kwargs: 键为设置名，值为所需选项或选项列表。
+                例如 `sort=['rarity', 'level']` 或 `sort='rarity'`，
+                `sort=None` 表示不更改该设置。
 
         Returns:
-            bool: If success the set
+            bool: 是否设置成功。
         """
         if self.reset_first:
             self._set_execute()  # Reset options

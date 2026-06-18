@@ -4,9 +4,7 @@ from functools import wraps
 
 
 def timer(function):
-    """
-    Decorator to time a function, for debug only
-    """
+    """计时装饰器，仅用于调试。"""
 
     @wraps(function)
     def function_timer(*args, **kwargs):
@@ -20,12 +18,13 @@ def timer(function):
 
 
 def future_time(string):
-    """
+    """解析时间字符串，返回未来最近的对应时刻。
+
     Args:
-        string (str): Such as 14:59.
+        string (str): 时间字符串，如 "14:59"。
 
     Returns:
-        datetime.datetime: Time with given hour, minute in the future.
+        datetime.datetime: 未来最近的对应时分时刻。
     """
     hour, minute = [int(x) for x in string.split(':')]
     future = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
@@ -34,12 +33,13 @@ def future_time(string):
 
 
 def past_time(string):
-    """
+    """解析时间字符串，返回过去最近的对应时刻。
+
     Args:
-        string (str): Such as 14:59.
+        string (str): 时间字符串，如 "14:59"。
 
     Returns:
-        datetime.datetime: Time with given hour, minute in the past.
+        datetime.datetime: 过去最近的对应时分时刻。
     """
     hour, minute = [int(x) for x in string.split(':')]
     past = datetime.now().replace(hour=hour, minute=minute, second=0, microsecond=0)
@@ -48,12 +48,13 @@ def past_time(string):
 
 
 def future_time_range(string):
-    """
+    """解析时间范围字符串，返回未来的起止时刻。
+
     Args:
-        string (str): Such as 23:30-06:30.
+        string (str): 时间范围字符串，如 "23:30-06:30"。
 
     Returns:
-        tuple(datetime.datetime): (time start, time end).
+        tuple[datetime.datetime, datetime.datetime]: (起始时刻, 结束时刻)。
     """
     start, end = [future_time(s) for s in string.split('-')]
     if start > end:
@@ -62,25 +63,30 @@ def future_time_range(string):
 
 
 def time_range_active(time_range):
-    """
+    """判断当前时间是否在给定时间范围内。
+
     Args:
-        time_range(tuple(datetime.datetime)): (time start, time end).
+        time_range (tuple[datetime.datetime, datetime.datetime]): (起始时刻, 结束时刻)。
 
     Returns:
-        bool:
+        bool: 当前时间在范围内返回 True。
     """
     return time_range[0] < datetime.now() < time_range[1]
 
 
 class Timer:
+    """双重计时器，同时支持时间计数和访问计数。
+
+    访问计数可以在慢速设备上提供鲁棒性——当截图耗时超过计时器限制时，
+    仍能通过访问次数判断是否达到触发条件。
+    """
+
     def __init__(self, limit, count=0):
-        """
-        Dual timer for time count and access count.
-        Access count can provide robustness on slow devices where screen shot time cost > timer.limit
+        """初始化计时器。
 
         Args:
-            limit (int | float): Timer limit
-            count (int): Timer access count. Default to 0.
+            limit (int | float): 时间限制（秒）。
+            count (int): 访问次数限制，默认为 0。
         """
         self.limit = limit
         self.count = count
@@ -89,26 +95,30 @@ class Timer:
 
     @classmethod
     def from_seconds(cls, limit, speed=0.5):
-        """
-        Create timer from given seconds
+        """根据给定秒数创建计时器，自动计算访问次数。
 
         Args:
-            limit (int | float):
-            speed (int | float): Approximate screen shot time cost
-                if time cost > 0.5s, device is considered slow
+            limit (int | float): 时间限制（秒）。
+            speed (int | float): 近似截图耗时（秒）。
+                如果耗时超过 0.5 秒，设备被视为慢速设备。
         """
         count = int(limit / speed)
         return cls(limit, count=count)
 
     def start(self):
-        """
-        Start current timer.
-        If timer not started, reached() always return True. So we can have fast first try on:
+        """启动计时器。
 
+        如果计时器未启动，reached() 始终返回 True，从而实现首次快速尝试：
+
+        ```python
         interval = Timer(2)
         while 1:
             if interval.reached():
                 pass
+        ```
+
+        Returns:
+            Timer: 自身实例，支持链式调用。
         """
         if self._start <= 0:
             self._start = time()
@@ -117,16 +127,18 @@ class Timer:
         return self
 
     def started(self):
-        """
+        """判断计时器是否已启动。
+
         Returns:
-            bool:
+            bool: 已启动返回 True。
         """
         return self._start > 0
 
     def current_time(self):
-        """
+        """获取计时器自启动以来经过的时间。
+
         Returns:
-            float:
+            float: 经过的秒数，未启动时返回 0.0。
         """
         if self._start > 0:
             diff = time() - self._start
@@ -137,49 +149,64 @@ class Timer:
             return 0.
 
     def current_count(self):
-        """
+        """获取当前访问计数。
+
         Returns:
-            int:
+            int: 当前访问次数。
         """
         return self._access
 
     def add_count(self):
+        """手动增加一次访问计数。
+
+        Returns:
+            Timer: 自身实例，支持链式调用。
+        """
         self._access += 1
         return self
 
     def reached(self):
-        """
+        """判断计时器是否已达到触发条件。
+
+        每次调用 reached() 都会被计为一次访问。
+        需要同时满足访问次数和时间限制才会返回 True。
+
         Returns:
-            bool:
+            bool: 达到条件返回 True；计时器未启动时始终返回 True（用于首次快速尝试）。
         """
-        # each reached() call is consider as an access
+        # 每次 reached() 调用计为一次访问
         self._access += 1
         if self._start > 0:
             return self._access > self.count and time() - self._start > self.limit
         else:
-            # not started, return True for fast first try
+            # 未启动时返回 True，实现首次快速尝试
             return True
 
     def reset(self):
-        """
-        Reset the timer as if it just started
+        """重置计时器，如同刚刚启动。
+
+        Returns:
+            Timer: 自身实例，支持链式调用。
         """
         self._start = time()
         self._access = 0
         return self
 
     def clear(self):
-        """
-        Reset the timer as if it never started
+        """清除计时器，如同从未启动。
+
+        Returns:
+            Timer: 自身实例，支持链式调用。
         """
         self._start = 0.
         self._access = self.count
         return self
 
     def reached_and_reset(self):
-        """
+        """判断是否达到触发条件，达到则自动重置。
+
         Returns:
-            bool:
+            bool: 达到条件并已重置返回 True，否则返回 False。
         """
         if self.reached():
             self.reset()
@@ -188,14 +215,13 @@ class Timer:
             return False
 
     def wait(self):
-        """
-        Wait until timer reached.
-        """
+        """阻塞等待直到计时器达到时间限制。"""
         diff = self._start + self.limit - time()
         if diff > 0:
             sleep(diff)
 
     def show(self):
+        """通过日志输出计时器当前状态。"""
         from module.logger import logger
         logger.info(str(self))
 

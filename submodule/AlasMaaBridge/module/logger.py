@@ -14,14 +14,13 @@ class CallbackDetails:
 
     @classmethod
     def show_nested(cls, msg, task):
-        """
-        Log nested task chain like:
+        """记录嵌套任务链的层级关系。
 
-        INFO │ => StageNavigationTask
-        INFO │ --=> 1-7
-        INFO │ ----=> Episode1
-        INFO │ ------=> StageTheme
-        INFO │ ------<= StageTheme
+        通过缩进展示任务的父子层级，便于调试和追踪任务执行流程。
+
+        Args:
+            msg: MAA 回调消息类型，包含 SubTaskStart 或 SubTaskCompleted。
+            task: 当前任务名称。
         """
         if 'SubTaskStart' in msg:
             suffix = '=>'
@@ -86,8 +85,16 @@ class CallbackDetails:
 
 
 def parse_callback(msg, details):
-    """
-    Prettify MAA callback logs
+    """解析并美化 MAA 回调日志。
+
+    根据消息类型格式化输出，区分错误、子任务、任务链等不同类型。
+
+    Args:
+        msg: MAA 回调消息类型。
+        details: 回调消息的详细信息字典。
+
+    Returns:
+        bool: 是否成功解析了该回调消息。
     """
     msg = str(msg)
     details = CallbackDetails(details)

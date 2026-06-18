@@ -71,5 +71,5 @@ class Progress:
     AdbReplace = Percentage(80)
     AdbConnect = Percentage(95)
 
-    # Must have a 100%
+    # 必须有一个 100% 的完成状态
     Finish = Percentage(100)

@@ -50,7 +50,9 @@ def get_technology_tab_and_position(index):
 
 class IslandTechnologyHandler(IslandUI):
     """
-    Currently only supports checking tab 2,3,4,5,6.
+    岛屿科技树处理器。
+
+    目前仅支持检查标签页 2,3,4,5,6。
     """
     def get_technology_view_position(self, tab):
         globe_view = load_image(f'./assets/island/technology/technology_chart_{tab}.png')

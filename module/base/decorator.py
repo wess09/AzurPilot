@@ -7,10 +7,9 @@ T = TypeVar("T")
 
 
 class Config:
-    """
-    Decorator that calls different function with a same name according to config.
+    """根据配置调用同名不同实现的装饰器。
 
-    func_list likes:
+    func_list 结构示例:
     func_list = {
         'func1': [
             {'options': {'ENABLE': True}, 'func': 1},
@@ -24,7 +23,7 @@ class Config:
     def when(cls, **kwargs):
         """
         Args:
-            **kwargs: Any option in AzurLaneConfig.
+            **kwargs: AzurLaneConfig 中的任意配置项。
 
         Examples:
             @Config.when(USE_ONE_CLICK_RETIREMENT=True)
@@ -56,9 +55,9 @@ class Config:
             def wrapper(self, *args, **kwargs):
                 """
                 Args:
-                    self: ModuleBase instance.
-                    *args:
-                    **kwargs:
+                    self: ModuleBase 实例。
+                    *args: 位置参数。
+                    **kwargs: 关键字参数。
                 """
                 for record in cls.func_list[name]:
 
@@ -78,13 +77,13 @@ class Config:
 
 
 class cached_property(Generic[T]):
-    """
-    cached-property from https://github.com/pydanny/cached-property
-    Add typing support
+    """带类型支持的缓存属性装饰器。
 
-    A property that is only computed once per instance and then replaces itself
-    with an ordinary attribute. Deleting the attribute resets the property.
-    Source: https://github.com/bottlepy/bottle/commit/fa7733e075da0d790d809aa3d2f53071897e6f76
+    来源: https://github.com/pydanny/cached-property
+    原始实现: https://github.com/bottlepy/bottle/commit/fa7733e075da0d790d809aa3d2f53071897e6f76
+
+    每个实例只计算一次属性值，之后替换为普通属性。
+    删除该属性后会重置缓存。
     """
 
     def __init__(self, func: Callable[..., T]):
@@ -99,12 +98,11 @@ class cached_property(Generic[T]):
 
 
 def del_cached_property(obj, name):
-    """
-    Delete a cached property safely.
+    """安全地删除缓存属性。
 
     Args:
-        obj:
-        name (str):
+        obj: 目标对象。
+        name: 属性名称。
     """
     try:
         del obj.__dict__[name]
@@ -113,44 +111,44 @@ def del_cached_property(obj, name):
 
 
 def has_cached_property(obj, name):
-    """
-    Check if a property is cached.
+    """检查属性是否已被缓存。
 
     Args:
-        obj:
-        name (str):
+        obj: 目标对象。
+        name: 属性名称。
+
+    Returns:
+        如果属性已缓存则返回 True，否则返回 False。
     """
     return name in obj.__dict__
 
 
 def set_cached_property(obj, name, value):
-    """
-    Set a cached property.
+    """设置缓存属性。
 
     Args:
-        obj:
-        name (str):
-        value:
+        obj: 目标对象。
+        name: 属性名称。
+        value: 属性值。
     """
     obj.__dict__[name] = value
 
 
 def function_drop(rate=0.5, default=None):
-    """
-    Drop function calls to simulate random emulator stuck, for testing purpose.
+    """随机丢弃函数调用，用于模拟模拟器卡死的测试场景。
 
     Args:
-        rate (float): 0 to 1. Drop rate.
-        default: Default value to return if dropped.
+        rate: 丢弃概率，取值范围 0 到 1。
+        default: 被丢弃时返回的默认值。
 
     Examples:
         @function_drop(0.3)
         def click(self, button, record_check=True):
             pass
 
-        30% possibility:
+        30% 概率:
         INFO | Dropped: module.device.device.Device.click(REWARD_GOTO_MAIN, record_check=True)
-        70% possibility:
+        70% 概率:
         INFO | Click (1091,  628) @ REWARD_GOTO_MAIN
     """
     from module.logger import logger
@@ -179,8 +177,7 @@ def function_drop(rate=0.5, default=None):
 
 
 def run_once(f):
-    """
-    Run a function only once, no matter how many times it has been called.
+    """确保函数只执行一次，无论被调用多少次。
 
     Examples:
         @run_once

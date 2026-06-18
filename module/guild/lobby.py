@@ -14,16 +14,18 @@ from module.ui.assets import GUILD_CHECK
 class GuildLobby(GuildBase):
     def guild_lobby_get_report(self):
         """
+        获取大舰队报告入口按钮。
+
         Returns:
-            Button: Button to enter guild report.
+            Button: 进入大舰队报告的按钮，如果不存在则返回 None。
         """
-        # Find red color in the area of GUILD_REPORT_AVAILABLE
+        # 在 GUILD_REPORT_AVAILABLE 区域内查找红色
         image = color_similarity_2d(self.image_crop(GUILD_REPORT_AVAILABLE, copy=False), color=(255, 8, 8))
         points = np.array(np.where(image > 221)).T[:, ::-1]
         if len(points):
-            # The center of red dot
+            # 红点的中心位置
             points = Points(points).group(threshold=40) + GUILD_REPORT_AVAILABLE.area[:2]
-            # Shift to the center of report icon
+            # 偏移到报告图标的中心
             area = area_offset((-51, -45, -13, 0), offset=points[0])
             return Button(area=area, color=(255, 255, 255), button=area, name='GUILD_REPORT')
         else:
@@ -31,16 +33,14 @@ class GuildLobby(GuildBase):
 
     def _guild_lobby_collect(self, skip_first_screenshot=True):
         """
-        Performs collect actions if report rewards
-        are present in lobby
-        If already in page_guild but not lobby,
-        this will timeout check and collect next time
-        These rewards are queued and do not need to be
-        collected immediately
+        收集大舰队大厅中的报告奖励。
+
+        如果报告奖励存在则执行收取操作。如果已在 page_guild 但不在大厅界面，
+        将超时并在下次运行时收取。这些奖励会排队等待，无需立即收取。
 
         Pages:
-            in: ANY
-            out: ANY
+            in: 任意页面
+            out: 任意页面
         """
         confirm_timer = Timer(1.5, count=3).start()
         click_timer = Timer(3)
@@ -77,7 +77,7 @@ class GuildLobby(GuildBase):
                 confirm_timer.reset()
                 continue
 
-            # End
+            # 结束
             if self.appear(GUILD_CHECK, offset=(20, 20)):
                 if confirm_timer.reached():
                     break
@@ -86,7 +86,7 @@ class GuildLobby(GuildBase):
 
     def guild_lobby(self):
         """
-        Execute all actions in lobby
+        执行大舰队大厅中的所有操作。
 
         Pages:
             in: GUILD_LOBBY

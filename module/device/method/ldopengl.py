@@ -35,21 +35,21 @@ def bytes_to_str(b: bytes) -> str:
 
 @dataclass
 class DataLDPlayerInfo:
-    # Emulator instance index, starting from 0
+    # 模拟器实例索引，从 0 开始
     index: int
-    # Instance name
+    # 实例名称
     name: str
-    # Handle of top window
+    # 顶层窗口句柄
     topWnd: int
-    # Handle of bind window
+    # 绑定窗口句柄
     bndWnd: int
-    # If instance is running, 1 for True, 0 for False
+    # 实例是否正在运行，1 表示是，0 表示否
     sysboot: int
-    # PID of the instance process, or -1 if instance is not running
+    # 实例进程的 PID，未运行时为 -1
     playerpid: int
-    # PID of the vbox process, or -1 if instance is not running
+    # vbox 进程的 PID，未运行时为 -1
     vboxpid: int
-    # Resolution
+    # 分辨率
     width: int
     height: int
     dpi: int
@@ -71,8 +71,8 @@ class LDConsole:
     def __init__(self, ld_folder: str):
         """
         Args:
-            ld_folder: Installation path of MuMu12, e.g. E:/ProgramFiles/LDPlayer9
-                which should have a `ldconsole.exe` in it.
+            ld_folder: 雷电模拟器安装路径，例如 E:/ProgramFiles/LDPlayer9，
+                该目录下应包含 `ldconsole.exe`。
         """
         self.ld_console = os.path.abspath(os.path.join(ld_folder, './ldconsole.exe'))
 
@@ -117,11 +117,11 @@ class LDConsole:
             if not row:
                 continue
             info = row.split(b',')
-            # check parts
+            # 检查字段数
             if len(info) != 10:
                 logger.warning(f'ldplayer info does not have 10 parts: "{row}"')
                 continue
-            # build info
+            # 构建信息
             try:
                 info = DataLDPlayerInfo(*info)
             except Exception as e:
@@ -134,12 +134,11 @@ class IScreenShotClass:
     def __init__(self, ptr):
         self.ptr = ptr
 
-        # Define in class since ctypes.WINFUNCTYPE is windows only
+        # 在类中定义，因为 ctypes.WINFUNCTYPE 仅在 Windows 上可用
         cap_type = ctypes.WINFUNCTYPE(ctypes.c_void_p)
         release_type = ctypes.WINFUNCTYPE(None)
         self.class_cap = cap_type(1, "IScreenShotClass_Cap")
-        # Keep reference count
-        # so __del__ won't have an empty IScreenShotClass_Cap
+        # 保持引用计数，防止 __del__ 时 IScreenShotClass_Cap 为空
         self.class_release = release_type(2, "IScreenShotClass_Release")
 
     def cap(self):
@@ -163,20 +162,20 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 不可处理
             except RequestHumanTakeover:
                 break
-            # Can't handle
+            # 不可处理
             except LDOpenGLIncompatible as e:
                 logger.error(e)
                 break
-            # NemuIpcError
+            # LDOpenGLError
             except LDOpenGLError as e:
                 logger.error(e)
 
                 def init():
                     pass
-            # Unknown, probably a trucked image
+            # 未知异常，可能是损坏的图像
             except Exception as e:
                 logger.exception(e)
 
@@ -193,8 +192,8 @@ class LDOpenGLImpl:
     def __init__(self, ld_folder: str, instance_id: int):
         """
         Args:
-            ld_folder: Installation path of MuMu12, e.g. E:/ProgramFiles/LDPlayer9
-            instance_id: Emulator instance ID, starting from 0
+            ld_folder: 雷电模拟器安装路径，例如 E:/ProgramFiles/LDPlayer9
+            instance_id: 模拟器实例 ID，从 0 开始
         """
         ldopengl_dll = os.path.abspath(os.path.join(ld_folder, './ldopengl64.dll'))
         logger.info(
@@ -203,7 +202,7 @@ class LDOpenGLImpl:
             f'ldopengl_dll={ldopengl_dll}, '
             f'instance_id={instance_id}'
         )
-        # Load dll
+        # 加载 DLL
         try:
             self.lib = ctypes.WinDLL(ldopengl_dll)
         except OSError as e:
@@ -218,13 +217,13 @@ class LDOpenGLImpl:
                     f'ldopengl_dll={ldopengl_dll} exist, '
                     f'but cannot be loaded'
                 )
-        # Get info after loading DLL, so DLL existence can act as a version check
+        # 加载 DLL 后获取信息，这样 DLL 是否存在可作为版本检查
         self.console = LDConsole(ld_folder)
         self.info = self.get_player_info_by_index(instance_id)
 
         self.lib.CreateScreenShotInstance.restype = ctypes.c_void_p
 
-        # Get screenshot instance
+        # 获取截图实例
         instance_ptr = ctypes.c_void_p(self.lib.CreateScreenShotInstance(instance_id, self.info.playerpid))
         self.screenshot_instance = IScreenShotClass(instance_ptr)
 
@@ -243,7 +242,7 @@ class LDOpenGLImpl:
             if info.index == instance_id:
                 logger.info(f'Match LDPlayer instance: {info}')
                 if not info.sysboot:
-                    raise LDOpenGLError('Trying to connect LDPlayer instance but emulator is not running')
+                    raise LDOpenGLError('尝试连接雷电模拟器实例，但模拟器未运行')
                 return info
         raise LDOpenGLError(f'No LDPlayer instance with index {instance_id}')
 
@@ -251,15 +250,15 @@ class LDOpenGLImpl:
     def screenshot(self):
         """
         Returns:
-            np.ndarray: Image array in BGR color space
-                Note that image is upside down
+            np.ndarray: BGR 色彩空间的图像数组。
+                注意图像是上下颠倒的。
         """
         width, height = self.info.width, self.info.height
 
         img_ptr = self.screenshot_instance.cap()
-        # ValueError: NULL pointer access
+        # ValueError: 空指针访问
         if img_ptr is None:
-            raise LDOpenGLError('Empty image pointer')
+            raise LDOpenGLError('图像指针为空')
 
         img = ctypes.cast(img_ptr, ctypes.POINTER(ctypes.c_ubyte * (height * width * 3))).contents
 
@@ -269,14 +268,14 @@ class LDOpenGLImpl:
     @staticmethod
     def serial_to_id(serial: str):
         """
-        Predict instance ID from serial
-        E.g.
+        从 serial 推断实例 ID。
+        例如:
             "127.0.0.1:5555" -> 0
             "127.0.0.1:5557" -> 1
             "emulator-5554" -> 0
 
         Returns:
-            int: instance_id, or None if failed to predict
+            int: instance_id，推断失败时返回 None
         """
         serial, _ = get_serial_pair(serial)
         if serial is None:
@@ -294,9 +293,9 @@ class LDOpenGL(Platform):
     @cached_property
     def ldopengl(self):
         """
-        Initialize a ldopengl implementation
+        初始化 ldopengl 实现。
         """
-        # Try existing settings first
+        # 优先使用已有设置
         if self.config.EmulatorInfo_path:
             folder = os.path.abspath(os.path.join(self.config.EmulatorInfo_path, '../'))
             index = LDOpenGLImpl.serial_to_id(self.serial)
@@ -308,13 +307,13 @@ class LDOpenGL(Platform):
                     )
                 except (LDOpenGLIncompatible, LDOpenGLError) as e:
                     logger.error(e)
-                    logger.error('Emulator info incorrect')
+                    logger.error('模拟器信息不正确')
 
-        # Search emulator instance
-        # with E:/ProgramFiles/LDPlayer9/dnplayer.exe
-        # installation path is E:/ProgramFiles/LDPlayer9
+        # 搜索模拟器实例
+        # 例如 E:/ProgramFiles/LDPlayer9/dnplayer.exe
+        # 安装路径为 E:/ProgramFiles/LDPlayer9
         if self.emulator_instance is None:
-            logger.error('Unable to use LDOpenGL because emulator instance not found')
+            logger.error('无法使用 LDOpenGL，因为未找到模拟器实例')
             raise RequestHumanTakeover
         try:
             return LDOpenGLImpl(
@@ -323,7 +322,7 @@ class LDOpenGL(Platform):
             )
         except (LDOpenGLIncompatible, LDOpenGLError) as e:
             logger.error(e)
-            logger.error('Unable to initialize LDOpenGL')
+            logger.error('无法初始化 LDOpenGL')
             raise RequestHumanTakeover
 
     def ldopengl_available(self) -> bool:
@@ -344,12 +343,11 @@ class LDOpenGL(Platform):
     def screenshot_ldopengl(self):
         image = self.ldopengl.screenshot()
 
-        # Pointer data has different pixel order (positive y-axis upwards)
-        # we need to flip it vertically first
+        # 指针数据的像素排列顺序不同（y 轴正方向向上），需要先垂直翻转
         image = cv2.flip(image, 0)
 
         # 方向处理已统一在screenshot.py的_handle_orientated_image()方法中处理，避免重复旋转
 
-        # Convert color space from BGR to RGB
+        # 将色彩空间从 BGR 转换为 RGB
         cv2.cvtColor(image, cv2.COLOR_BGR2RGB, dst=image)
         return image

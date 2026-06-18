@@ -9,19 +9,20 @@ from module.template.assets import *
 
 class GridPredictor:
     def __init__(self, location, image, corner, config):
-        """
+        """初始化网格预测器。
+
         Args:
-            location (tuple): Grid location, (x, y).
-            image (np.ndarray): Shape (720, 1280, 3)
-            corner (np.ndarray): shape (4, 2), [upper-left, upper-right, bottom-left, bottom-right]
-            config (AzurLaneConfig):
+            location (tuple): 网格坐标，(x, y)。
+            image (np.ndarray): 截图图像，形状 (720, 1280, 3)。
+            corner (np.ndarray): 四角点坐标，形状 (4, 2)，[左上, 右上, 左下, 右下]。
+            config (AzurLaneConfig): 配置对象。
         """
         self.location = location
         self.image = image
         self.corner = corner
         self.config = config
 
-        # Calculate directly is faster than calling existing functions.
+        # 直接计算比调用现有函数更快。
         x0, y0, x1, y1, x2, y2, x3, y3 = corner.flatten()
         divisor = x0 - x1 + x2 - x3
         x = (x0 * x2 - x1 * x3) / divisor
@@ -43,13 +44,14 @@ class GridPredictor:
         self.homo_invt = cv2.invert(self.homo_data)[1]
 
     def screen2grid(self, points):
-        """
+        """将屏幕坐标转换为海面网格坐标。
+
         Args:
-            points (np.ndarray): Coordinates from screen, [[x1, y1], [x2, y2], ...]
+            points (np.ndarray): 屏幕坐标，[[x1, y1], [x2, y2], ...]。
 
         Returns:
-            np.ndarray: Coordinates from sea surface, [[x1, y1], [x2, y2], ...]
-                Coordinate zero point is the upper-left corner.
+            np.ndarray: 海面网格坐标，[[x1, y1], [x2, y2], ...]。
+                坐标原点为左上角。
             (0, 0) +------+
                    |      |
                    |      |
@@ -58,13 +60,14 @@ class GridPredictor:
         return perspective_transform(points, self.homo_data) / self.config.HOMO_TILE
 
     def grid2screen(self, points):
-        """
+        """将海面网格坐标转换为屏幕坐标。
+
         Args:
-            points (np.ndarray): Coordinates from sea surface, [[x1, y1], [x2, y2], ...]
-                See Also screen2grid().
+            points (np.ndarray): 海面网格坐标，[[x1, y1], [x2, y2], ...]。
+                参见 screen2grid()。
 
         Returns:
-            np.ndarray: Coordinates from screen, [[x1, y1], [x2, y2], ...]
+            np.ndarray: 屏幕坐标，[[x1, y1], [x2, y2], ...]。
         """
         return perspective_transform(np.multiply(points, self.config.HOMO_TILE), self.homo_invt)
 
@@ -111,32 +114,33 @@ class GridPredictor:
                 self.enemy_scale = 0
 
     def relative_crop(self, area, shape=None):
-        """Crop image and rescale to target shape. Eliminate the effect of perspective.
+        """裁剪图像并缩放到目标尺寸，消除透视变形的影响。
 
         Args:
-            area (tuple): upper_left_x, upper_left_y, bottom_right_x, bottom_right_y, such as (-1, -1, 1, 1).
-            shape (tuple): Output image shape, (width, height).
+            area (tuple): 相对区域坐标 (左上x, 左上y, 右下x, 右下y)，如 (-1, -1, 1, 1)。
+            shape (tuple): 输出图像尺寸，(宽, 高)。
 
         Returns:
-            np.ndarray: Shape (height, width, channel).
+            np.ndarray: 形状 (高, 宽, 通道)。
         """
         area = self._image_center + np.array(area) * self._image_a
         image = crop(self.image, area=np.rint(area).astype(int), copy=False)
         if shape is not None:
-            # Follow the default re-sampling filter in pillow, which is BICUBIC.
+            # 使用 pillow 默认的重采样滤波器，即 BICUBIC。
             image = cv2.resize(image, shape, interpolation=cv2.INTER_CUBIC)
         return image
 
     def relative_rgb_count(self, area, color, shape=(50, 50), threshold=221):
-        """
+        """统计相对区域内匹配目标 RGB 颜色的像素数量。
+
         Args:
-            area (tuple): upper_left_x, upper_left_y, bottom_right_x, bottom_right_y, such as (-1, -1, 1, 1).
-            color (tuple): Target RGB.
-            shape (tuple): Output image shape, (width, height).
-            threshold (int): 0-255. The bigger, the more similar. 255 means the same color.
+            area (tuple): 相对区域坐标 (左上x, 左上y, 右下x, 右下y)，如 (-1, -1, 1, 1)。
+            color (tuple): 目标 RGB 颜色。
+            shape (tuple): 输出图像尺寸，(宽, 高)。
+            threshold (int): 阈值 0-255，越大越严格，255 表示完全相同。
 
         Returns:
-            int: Number of matched pixels.
+            int: 匹配的像素数量。
         """
         mask = color_similarity_2d(self.relative_crop(area, shape=shape), color=color)
         cv2.inRange(mask, threshold, 255, dst=mask)
@@ -144,32 +148,32 @@ class GridPredictor:
         return count
 
     def relative_hsv_count(self, area, h=(0, 360), s=(0, 100), v=(0, 100), shape=(50, 50)):
-        """
+        """统计相对区域内匹配目标 HSV 颜色范围的像素数量。
+
         Args:
-            area (tuple): upper_left_x, upper_left_y, bottom_right_x, bottom_right_y, such as (-1, -1, 1, 1).
-            h (tuple): Hue.
-            s (tuple): Saturation.
-            v (tuple): Value.
-            shape (tuple): Output image shape, (width, height).
+            area (tuple): 相对区域坐标 (左上x, 左上y, 右下x, 右下y)，如 (-1, -1, 1, 1)。
+            h (tuple): 色相范围。
+            s (tuple): 饱和度范围。
+            v (tuple): 明度范围。
+            shape (tuple): 输出图像尺寸，(宽, 高)。
 
         Returns:
-            int: Number of matched pixels.
+            int: 匹配的像素数量。
         """
         image = self.relative_crop(area, shape=shape)
         cv2.cvtColor(image, cv2.COLOR_RGB2HSV, dst=image)
         lower = (h[0] / 2, s[0] * 2.55, v[0] * 2.55)
         upper = (h[1] / 2 + 1, s[1] * 2.55 + 1, v[1] * 2.55 + 1)
-        # Don't set `dst`, output image is (50, 50) but `image` is (50, 50, 3)
+        # 不要设置 `dst`，输出图像为 (50, 50) 但 `image` 为 (50, 50, 3)
         image = cv2.inRange(image, lower, upper)
         count = cv2.countNonZero(image)
         return count
 
     def predict_enemy_scale(self):
-        """
-        Detect the icon on the upper-left which shows enemy scale: Large, Middle, Small.
+        """检测左上角显示敌人规模的图标：大型、中型、小型。
 
         Returns:
-            int: 1: Small, 2: Middle, 3: Large, 0: Unknown.
+            int: 1: 小型, 2: 中型, 3: 大型, 0: 未知。
         """
         image = self.relative_crop((-0.415 - 0.7, -0.62 - 0.7, -0.415, -0.62), shape=(50, 50))
         red = color_similarity_2d(image, (255, 130, 132))
@@ -206,11 +210,11 @@ class GridPredictor:
         scaling_dic = self.config.MAP_ENEMY_GENRE_DETECTION_SCALING
         for name, template in self.template_enemy_genre.items():
             if template is None:
-                logger.warning(f'Enemy detection template not found: {name}')
-                logger.warning('Please create it with dev_tools/relative_record.py or dev_tools/relative_crop.py, '
-                               'then place it under ./assets/<server>/template')
-                logger.warning('未找到精英敌人的识别模板。通常是活动地图还未完全适配，请等待 Alas 更新。')
-                raise ScriptError(f'Enemy detection template not found: {name}')
+                logger.warning(f'敌人识别模板未找到: {name}')
+                logger.warning('请使用 dev_tools/relative_record.py 或 dev_tools/relative_crop.py 创建模板，'
+                               '然后放置到 ./assets/<server>/template 目录下')
+                logger.warning('未找到精英敌人的识别模板。通常是活动地图还未完全适配，请等待 AzurPilot 更新。')
+                raise ScriptError(f'敌人识别模板未找到: {name}')
 
             short_name = name[6:] if name.startswith('Siren_') else name
             scaling = scaling_dic.get(short_name, 1)
@@ -234,7 +238,7 @@ class GridPredictor:
         if TEMPLATE_ENEMY_BOSS.match(image, similarity=0.75):
             return True
 
-        # Small boss icon
+        # 小型 Boss 图标
         if self.relative_hsv_count(area=(0.03, -0.15, 0.63, 0.15), h=(358 - 3, 358 + 3), shape=(50, 20)) > 100:
             image = self.relative_crop((0.03, -0.15, 0.63, 0.15), shape=(50, 20))
             image = color_similarity_2d(image, color=(255, 77, 82))
@@ -261,15 +265,16 @@ class GridPredictor:
         return TEMPLATE_CAUGHT_BY_SIREN.match(image, similarity=0.6)
 
     def predict_mystery(self):
-        """
+        """预测网格是否为神秘事件。
+
         Returns:
-            bool: True if is mystery.
+            bool: True 表示是神秘事件。
         """
-        # cyan question mark
+        # 青色问号
         if self.relative_rgb_count(
                 area=(-0.3, -2, 0.3, -0.6), color=(148, 255, 247), shape=(20, 50)) > 50:
             return True
-        # white background
+        # 白色背景
         # if self.relative_rgb_count(
         #         area=(-0.7, -1.7, 0.7, -0.3), color=(239, 239, 239), shape=(50, 50)) > 700:
         #     return True
@@ -308,7 +313,7 @@ class GridPredictor:
         return False
 
     def predict_submarine_move(self):
-        # Detect the orange arrow in submarine movement mode.
+        # 检测潜艇移动模式下的橙色箭头。
         return self.relative_rgb_count((-0.5, -1, 0.5, 0), color=(231, 138, 49), shape=(60, 60)) > 200
 
     def predict_mob_move_icon(self):
@@ -334,13 +339,14 @@ class GridPredictor:
         return color[0] > 235
 
     def is_similar_to(self, grid, similarity=0.9):
-        """
+        """判断当前网格是否与另一个网格相似。
+
         Args:
-            grid (GridPredictor): Another Grid instance.
-            similarity (float): 0 to 1.
+            grid (GridPredictor): 另一个网格实例。
+            similarity (float): 相似度阈值，0 到 1。
 
         Returns:
-            bool: If current grid is similar to another.
+            bool: 当前网格是否与另一个网格相似。
         """
         if not self.is_in_detecting_area or not grid.is_in_detecting_area:
             return False

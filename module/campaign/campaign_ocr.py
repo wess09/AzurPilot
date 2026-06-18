@@ -14,17 +14,19 @@ from module.template.assets import *
 class CampaignOcr(ModuleBase):
     stage_entrance = {}
     campaign_chapter: str = '0'
-    # An approximate area where stages will appear for faster template matching
+    # 关卡入口的大致区域，用于加速模板匹配
     _stage_detect_area = (87, 117, 1151, 636)
 
     @staticmethod
     def _campaign_get_chapter_index(name):
         """
+        获取章节索引。
+
         Args:
-            name (str, int):
+            name (str, int): 章节名称或索引。
 
         Returns:
-            int
+            int: 章节索引。
         """
         if isinstance(name, int):
             return name
@@ -40,18 +42,18 @@ class CampaignOcr(ModuleBase):
 
     @staticmethod
     def _campaign_ocr_result_process(result):
-        # The result will be like '7--2', because tha dash in game is '–' not '-'
+        # OCR 结果可能为 '7--2'，因为游戏中使用的是 '–' 而非 '-'
         result = result.replace('--', '-').replace('--', '-').lstrip('-')
 
-        # Replace wrong 'I' from results like 'I1-1', '1I-1', 'I-I', '11-I', 'I4-4', to '1'
-        # while keeping results like 'isp-2', 'sp1'
+        # 修正 OCR 将 '1' 误识别为 'I' 的情况，如 'I1-1'、'1I-1'、'I-I' 等
+        # 同时保留 'isp-2'、'sp1' 等含字母的正常结果
         def replace_func(match):
             segment = match.group(0)
             return segment.replace('I', '1')
 
         result = re.sub(r'[0-9I]+-[0-9I]+', replace_func, result, count=1)
 
-        # Convert '72' to '7-2'
+        # 将 '72' 转换为 '7-2'
         if len(result) == 2 and result[0].isdigit():
             result = '-'.join(result)
 
@@ -61,11 +63,13 @@ class CampaignOcr(ModuleBase):
     @staticmethod
     def _campaign_separate_name(name):
         """
+        分离关卡名称为章节名和关卡索引。
+
         Args:
-            name (str): Stage name in lowercase, such as 7-2, d3, sp3.
+            name (str): 小写关卡名称，如 7-2、d3、sp3。
 
         Returns:
-            tuple[str]: Campaign_name and stage index in lowercase, Such as ['7', '2'], ['d', '3'], ['sp', '3'].
+            tuple[str]: (章节名, 关卡索引)，均为小写。如 ['7', '2']、['d', '3']、['sp', '3']。
         """
         name = name.strip('-')
         if name == 'sp':
@@ -89,20 +93,20 @@ class CampaignOcr(ModuleBase):
     def campaign_match_multi(self, template, image, stage_image=None, name_offset=(75, 9), name_size=(60, 16),
                              name_letter=(255, 255, 255), name_thresh=128, similarity=0.85):
         """
-        Find stage entrances from the given image.
+        从给定图像中查找关卡入口。
 
         Args:
-            template (Template):
-            image: Screenshot
-            stage_image: Screenshot to find stage entrance.
-            name_offset (tuple[int]):
-            name_size (tuple[int]):
-            name_letter (tuple[int]):
-            name_thresh (int):
-            similarity (float):
+            template (Template): 模板图像。
+            image: 截图。
+            stage_image: 用于查找关卡入口的截图。
+            name_offset (tuple[int]): 关卡名称偏移量。
+            name_size (tuple[int]): 关卡名称区域大小。
+            name_letter (tuple[int]): 关卡名称字母颜色。
+            name_thresh (int): 关卡名称二值化阈值。
+            similarity (float): 模板匹配相似度阈值。
 
         Returns:
-            list[Button]: Stage clear buttons.
+            list[Button]: 关卡通关状态按钮列表。
         """
         digits = []
         stage_image = image if stage_image is None else stage_image
@@ -113,11 +117,11 @@ class CampaignOcr(ModuleBase):
             button_name = button.crop(area=name_area, image=image)
             name = extract_letters(button_name.image, letter=name_letter, threshold=name_thresh)
             button_name = button_name.crop(area=self._extract_stage_name(name))
-            # To each Button instance:
-            # button.area: Area of stage name, such as '3-4'. Temporarily replaced for OCR.
-            # button.color: Color of stage icon, such as 'CLEAR' and '%'.
-            # button.button: Area of stage icon, such as 'CLEAR' and '%'.
-            # button.name: 'STAGE', a meaningless name.
+            # 对每个 Button 实例：
+            # button.area: 关卡名称区域，如 '3-4'。临时替换用于 OCR。
+            # button.color: 关卡图标颜色，如 'CLEAR' 和 '%'。
+            # button.button: 关卡图标区域，如 'CLEAR' 和 '%'。
+            # button.name: 'STAGE'，无实际意义的名称。
             button.load_color(image)
             button.area = button_name.area
             digits.append(button)
@@ -188,14 +192,14 @@ class CampaignOcr(ModuleBase):
     @Config.when(SERVER=None)
     def campaign_extract_name_image(self, image):
         """
-        Find all stage entrance and handle event differences.
-        Stage entrance setting, refers to ManualConfig.STAGE_ENTRANCE
+        查找所有关卡入口并处理活动差异。
+        关卡入口设置参见 ManualConfig.STAGE_ENTRANCE。
 
         Args:
-            image: Screenshot
+            image: 截图。
 
         Returns:
-            list[Button]: List of Buttons of stage entrance.
+            list[Button]: 关卡入口按钮列表。
         """
         digits = []
 
@@ -205,7 +209,7 @@ class CampaignOcr(ModuleBase):
                 image, self._stage_image_gray,
                 name_offset=(75, 9), name_size=(60, 16)
             )
-            # 2024.04.11 Game client bugged with random broken assets around TEMPLATE_STAGE_CLEAR
+            # 2024.04.11 游戏客户端出现 bug，TEMPLATE_STAGE_CLEAR 周围出现随机损坏的素材
             # digits += self.campaign_match_multi(
             #     TEMPLATE_STAGE_CLEAR_SMALL,
             #     image, self._stage_image_gray,
@@ -262,18 +266,20 @@ class CampaignOcr(ModuleBase):
     @staticmethod
     def _extract_stage_name(image):
         """
+        从完整关卡名称图像中提取关卡编号区域。
+
         Args:
-            image: Cropped image of full stage name, such as '3-4 Counterattack!'
+            image: 裁剪后的完整关卡名称图像，如 '3-4 Counterattack!'。
 
         Returns:
-            Area of stage name, such as the coordinate of '3-4' in the input image.
+            关卡名称区域坐标，如输入图像中 '3-4' 的坐标。
         """
         x_skip = 10
         interval = 5
         x_color = np.convolve(np.mean(image, axis=0), np.ones(interval), 'valid') / interval
         x_list = np.where(x_color[x_skip:] > 245)[0]
         if x_list is None or len(x_list) == 0:
-            logger.warning('No interval between digit and text.')
+            logger.warning('数字与文本之间未找到间隔。')
             area = (0, 0, image.shape[1], image.shape[0])
         else:
             area = (0, 0, x_list[0] + 1 + x_skip, image.shape[0])
@@ -281,13 +287,13 @@ class CampaignOcr(ModuleBase):
 
     def _get_stage_name(self, image):
         """
-        Parse stage names from a given image.
-        Set attributes:
-        self.campaign_chapter: str, Name of current chapter.
-        self.stage_entrance: dict. Key, str, stage name. Value, Button, button to enter stage.
+        从给定图像中解析关卡名称。
+        设置属性：
+        self.campaign_chapter: str，当前章节名称。
+        self.stage_entrance: dict，键为关卡名称(str)，值为进入关卡的按钮(Button)。
 
         Args:
-            image (np.ndarray):
+            image (np.ndarray): 截图。
         """
         self.stage_entrance = {}
         del_cached_property(self, '_stage_image')
@@ -296,7 +302,7 @@ class CampaignOcr(ModuleBase):
         del_cached_property(self, '_stage_image')
         del_cached_property(self, '_stage_image_gray')
         if len(buttons) == 0:
-            logger.info('No stage found.')
+            logger.info('未找到关卡。')
             raise CampaignNameError
 
         ocr = Ocr(buttons, name='campaign', letter=(255, 255, 255), threshold=128,
@@ -318,12 +324,12 @@ class CampaignOcr(ModuleBase):
             # ['0F', 'F-IB', 'IGI']
             raise CampaignNameError
 
-        # After OCR, recover button attributes.
-        # These buttons are ready to be stage entrances for `MapOperation.enter_map()`
-        # button.area: Area of stage name, such as 'CLEAR' and '%'.
-        # button.color: Color of stage icon.
-        # button.button: Area of stage icon.
-        # button.name: Stage name, from OCR results.
+        # OCR 完成后恢复按钮属性。
+        # 这些按钮将作为 `MapOperation.enter_map()` 的关卡入口。
+        # button.area: 关卡图标区域，如 'CLEAR' 和 '%'。
+        # button.color: 关卡图标颜色。
+        # button.button: 关卡图标区域。
+        # button.name: 关卡名称，来自 OCR 结果。
         for name, button in zip(result, buttons):
             button.area = button.button
             button.name = name
@@ -334,8 +340,10 @@ class CampaignOcr(ModuleBase):
 
     def handle_get_chapter_additional(self):
         """
+        获取章节时的额外处理。
+
         Returns:
-            bool: If clicked
+            bool: 是否进行了点击操作。
         """
         if self.appear(WITHDRAW, offset=(30, 30)):
             logger.warning(f'get_chapter_index: WITHDRAW appears')
@@ -343,13 +351,13 @@ class CampaignOcr(ModuleBase):
 
     def get_chapter_index(self, skip_first_screenshot=True):
         """
-        A tricky method for ui_ensure_index
+        获取当前章节索引，供 ui_ensure_index 使用。
 
         Args:
-            skip_first_screenshot:
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            int: Chapter index.
+            int: 章节索引。
         """
         timeout = Timer(2, count=4).start()
         while 1:

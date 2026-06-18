@@ -14,25 +14,26 @@ from module.map.map_grids import SelectedGrids
 
 
 class EmulatorInfo(BaseModel):
+    """模拟器信息配置模型。"""
     emulator: str = ''
     name: str = ''
     path: str = ''
 
-    # For APIs of chinac.com, a phone cloud platform.
+    # 用于 chinac.com 云手机平台的 API
     # access_key: SecretStr = ''
     # secret: SecretStr = ''
 
 
 def serial_to_id(serial: str):
     """
-    Predict instance ID from serial
-    E.g.
+    根据 serial 推算实例 ID。
+    例如:
         "127.0.0.1:16384" -> 0
         "127.0.0.1:16416" -> 1
-        Port from 16414 to 16418 -> 1
+        端口 16414 到 16418 -> 1
 
     Returns:
-        int: instance_id, or None if failed to predict
+        int: 实例 ID，推算失败则返回 None
     """
     try:
         port = int(serial.split(':')[1])
@@ -48,8 +49,8 @@ def serial_to_id(serial: str):
 
 class PlatformBase(Connection, EmulatorManagerBase):
     """
-    Base interface of a platform, platform can be various operating system or phone clouds.
-    For each `Platform` class, the following APIs must be implemented.
+    平台基类，平台可以是不同操作系统或云手机服务。
+    每个 `Platform` 子类必须实现以下 API:
     - all_emulators()
     - all_emulator_instances()
     - emulator_start()
@@ -59,8 +60,8 @@ class PlatformBase(Connection, EmulatorManagerBase):
     def __init__(self, config, *, connect: bool = True):
         """
         Args:
-            config: AzurLaneConfig or config name
-            connect: Whether to immediately establish ADB connection.
+            config: AzurLaneConfig 实例或配置名称
+            connect: 是否立即建立 ADB 连接
         """
         if connect:
             super().__init__(config)
@@ -70,19 +71,25 @@ class PlatformBase(Connection, EmulatorManagerBase):
 
     def emulator_start(self):
         """
-        Start a emulator, until startup completed.
-        - Retry is required.
-        - Using bored sleep to wait startup is forbidden.
+        启动模拟器，直到启动完成。
+        - 需要支持重试。
+        - 禁止使用无聊的 sleep 来等待启动。
         """
         logger.info(f'Current platform {sys.platform} does not support emulator_start, skip')
 
     def emulator_stop(self):
         """
-        Stop a emulator.
+        停止模拟器。
         """
         logger.info(f'Current platform {sys.platform} does not support emulator_stop, skip')
 
     def run_remote_ssh_command(self, command=None):
+        """
+        通过远程 SSH 执行命令。
+
+        Args:
+            command: 要执行的远程命令
+        """
         if not getattr(self.config, 'EmulatorInfo_EnableRemoteSSH', False):
             logger.info('Remote SSH is not enabled (EnableRemoteSSH=False), skip')
             return
@@ -102,9 +109,9 @@ class PlatformBase(Connection, EmulatorManagerBase):
 
         logger.hr('Remote SSH Command', level=1)
         target = f'{user}@{host}' if user else host
-        # -n: Redirects stdin from /dev/null
-        # -T: Disable pseudo-terminal allocation
-        # BatchMode to avoid hanging on password prompts
+        # -n: 将 stdin 重定向到 /dev/null
+        # -T: 禁用伪终端分配
+        # BatchMode: 避免在密码提示时挂起
         cmd = ['ssh', '-n', '-T', '-p', str(port), '-o', 'StrictHostKeyChecking=no', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10']
 
         key_file = None
@@ -141,7 +148,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
 
-            # Store stderr to show only if it fails
+            # 缓存 stderr 输出，仅在失败时显示
             stderr_content = []
 
             import threading
@@ -160,7 +167,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
             stdout_thread.start()
 
             try:
-                # Main thread waits for the process to exit
+                # 主线程等待进程退出
                 process.wait(timeout=30)
             except subprocess.TimeoutExpired:
                 process.kill()
@@ -186,6 +193,12 @@ class PlatformBase(Connection, EmulatorManagerBase):
 
     @cached_property
     def emulator_info(self) -> EmulatorInfo:
+        """
+        从配置中解析模拟器信息。
+
+        Returns:
+            EmulatorInfo: 模拟器信息
+        """
         emulator = self.config.EmulatorInfo_Emulator
         if emulator == 'auto':
             emulator = ''
@@ -211,8 +224,10 @@ class PlatformBase(Connection, EmulatorManagerBase):
     @cached_property
     def emulator_instance(self) -> t.Optional[EmulatorInstanceBase]:
         """
+        查找并返回当前配置对应的模拟器实例。
+
         Returns:
-            EmulatorInstanceBase: Emulator instance or None
+            EmulatorInstanceBase: 模拟器实例，未找到则返回 None
         """
         data = self.emulator_info
         old_info = dict(
@@ -220,7 +235,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
             path=data.path,
             name=data.name,
         )
-        # Redirect emulator-5554 to 127.0.0.1:5555
+        # 将 emulator-5554 重定向到 127.0.0.1:5555
         serial = self.serial
         port_serial, _ = get_serial_pair(self.serial)
         if port_serial is not None:
@@ -233,7 +248,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
             emulator=data.emulator,
         )
 
-        # Write complete emulator data
+        # 写入完整的模拟器数据
         if instance is not None:
             new_info = dict(
                 emulator=instance.type,
@@ -257,14 +272,16 @@ class PlatformBase(Connection, EmulatorManagerBase):
             emulator: str = None
     ) -> t.Optional[EmulatorInstanceBase]:
         """
+        通过序列号、名称、路径和类型查找模拟器实例。
+
         Args:
-            serial: Serial like "127.0.0.1:5555"
-            name: Instance name like "Nougat64"
-            path: Emulator install path like "C:/Program Files/BlueStacks_nxt/HD-Player.exe"
-            emulator: Emulator type defined in Emulator class, like "BlueStacks5"
+            serial: 序列号，如 "127.0.0.1:5555"
+            name: 实例名称，如 "Nougat64"
+            path: 模拟器安装路径，如 "C:/Program Files/BlueStacks_nxt/HD-Player.exe"
+            emulator: 模拟器类型，定义在 Emulator 类中，如 "BlueStacks5"
 
         Returns:
-            EmulatorInstance: Emulator instance or None if no instances not found.
+            EmulatorInstanceBase: 模拟器实例，未找到则返回 None
         """
         logger.hr('Find emulator instance', level=2)
         if emulator == 'SSH':
@@ -273,7 +290,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 name=name or '',
                 path=path or '',
             )
-            # Monkey patch type for SSH instance
+            # 为 SSH 实例临时修改 type 属性
             instance.__dict__['type'] = 'SSH'
             logger.hr('Emulator instance', level=2)
             logger.info(f'Found emulator instance (SSH): {instance}')
@@ -284,7 +301,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
             logger.info(instance)
         search_args = dict(serial=serial)
 
-        # Search by serial
+        # 按序列号搜索
         select = instances.select(**search_args)
         if select.count == 0:
             logger.warning(f'No emulator instance with {search_args}, serial invalid')
@@ -295,22 +312,20 @@ class PlatformBase(Connection, EmulatorManagerBase):
             logger.info(f'Found emulator instance: {instance}')
             return instance
 
-        # Additional fixup for MuMu12
-        # MuMu12 may have 127.0.0.1:7555 in vbox config but user setting serial=127.0.0.1:16xxx
-        # If that happens, we check if serial pairs with instance_id
+        # MuMu12 的额外修复
+        # MuMu12 的 vbox 配置中可能是 127.0.0.1:7555，但用户设置的 serial 是 127.0.0.1:16xxx
+        # 此时检查 serial 是否与 instance_id 匹配
         instance_id = serial_to_id(self.serial)
         if instance_id is not None:
             select = instances.select(MuMuPlayer12_id=instance_id)
-            # No logs for if select.count == 1:
-            # because this is just a trial
+            # 当 select.count == 1 时不输出日志，因为这只是一次试探性匹配
             if select.count == 1:
                 instance = select[0]
                 logger.hr('Emulator instance', level=2)
                 logger.info(f'Found emulator instance: {instance}')
                 return instance
 
-        # search by emulator type first, which is the easiest setting for user to setup, so more trustworthy
-        # Multiple instances in given serial, name and path, search by emulator
+        # 在多个同序列号实例中，优先按模拟器类型搜索（用户最容易配置的选项，更可靠）
         if emulator:
             search_args['type'] = emulator
             select = instances.select(**search_args)
@@ -323,7 +338,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 logger.info(f'Found emulator instance: {instance}')
                 return instance
 
-        # Multiple instances in given serial, search by name
+        # 多个同序列号实例，按名称搜索
         if name:
             search_args['name'] = name
             select = instances.select(**search_args)
@@ -336,7 +351,7 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 logger.info(f'Found emulator instance: {instance}')
                 return instance
 
-        # Multiple instances in given serial and name, search by path
+        # 多个同序列号和名称的实例，按路径搜索
         if path:
             search_args['path'] = path
             select = instances.select(**search_args)
@@ -349,14 +364,14 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 logger.info(f'Found emulator instance: {instance}')
                 return instance
 
-        # Still too many instances, search from running emulators
+        # 仍然有多个实例，从正在运行的模拟器中查找
         running = remove_duplicated_path(list(self.iter_running_emulator()))
         logger.info('Running emulators')
         for exe in running:
             logger.info(exe)
         if len(running) == 1:
             logger.info('Only one running emulator')
-            # Same as searching path
+            # 等同于按路径搜索
             search_args['path'] = running[0]
             select = instances.select(**search_args)
             if select.count == 0:
@@ -368,6 +383,6 @@ class PlatformBase(Connection, EmulatorManagerBase):
                 logger.info(f'Found emulator instance: {instance}')
                 return instance
 
-        # Still too many instances
+        # 仍然有多个实例
         logger.warning(f'Found multiple emulator instances with {search_args}')
         return None

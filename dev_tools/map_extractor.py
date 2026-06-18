@@ -8,7 +8,7 @@ from module.logger import logger
 from module.map.utils import *
 
 """
-This an auto-tool to extract map files used in Alas.
+This an auto-tool to extract map files used in AzurPilot.
 """
 
 DIC_SIREN_NAME_CHI_TO_ENG = {
@@ -769,7 +769,7 @@ class ChapterTemplate:
 
 
 """
-This an auto-tool to extract map files used in Alas.
+This an auto-tool to extract map files used in AzurPilot.
 
 Git clone https://github.com/AzurLaneTools/AzurLaneLuaScripts, to get the decrypted scripts.
 Arguments:

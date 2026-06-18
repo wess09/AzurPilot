@@ -30,24 +30,22 @@ def empty_function(*args, **kwargs):
     pass
 
 
-# cnocr will set root logger in cnocr.utils
-# Delete logging.basicConfig to avoid logging the same message twice.
+# cnocr 会在 cnocr.utils 中设置 root logger
+# 删除 logging.basicConfig 以避免日志消息重复输出。
 logging.basicConfig = empty_function
-logging.raiseExceptions = True  # Set True if wanna see encode errors on console
+logging.raiseExceptions = True  # 设为 True 可在控制台看到编码错误
 
-# Remove HTTP keywords (GET, POST etc.)
+# 移除 HTTP 关键字（GET、POST 等）避免日志高亮误判
 RichHandler.KEYWORDS = []
 
 
 class RichFileHandler(RichHandler):
-    # Rename
+    # 重命名，用于区分文件日志处理器
     pass
 
 
 class RichRenderableHandler(RichHandler):
-    """
-    Pass renderable into a function
-    """
+    """将渲染对象传递给回调函数的日志处理器。"""
 
     def __init__(self, *args, func: Callable[[ConsoleRenderable], None] = None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -90,7 +88,7 @@ class RichRenderableHandler(RichHandler):
             record=record, traceback=traceback, message_renderable=message_renderable
         )
 
-        # Directly put renderable into function
+        # 直接将渲染对象传入回调函数
         self._func(log_renderable)
 
     def handle(self, record: logging.LogRecord) -> bool:
@@ -121,25 +119,25 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
             tracebacks_extra_lines=3,
             highlighter=NullHighlighter(),
         )
-        # Keep the same format
+        # 保持一致的日志格式
         self.richd.setFormatter(
             logging.Formatter(
                 fmt="%(asctime)s.%(msecs)03d | %(levelname)s | %(message)s",
                 datefmt="%Y-%m-%d %H:%M:%S",
             )
         )
-        # To handle the API of alas.save_error_log()
+        # 用于兼容 alas.save_error_log() 接口
         self.log_file = None
-        # For expire method
+        # 用于 expire 方法
         self.pname = pname
         self.bak = bak_method.lower()
         self.compression = zip_method.lower()
 
-        # Override the initial rolloverAt and rich.console.file
+        # 覆盖初始 rolloverAt 和 rich.console.file
         self.rolloverAt = time.time()
         self.doRollover()
-        
-        # Close unnecessary stream
+
+        # 关闭不必要的文件流
         self.stream.close()
         self.stream = None
     
@@ -166,9 +164,9 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         return count, bak_method, zip_method
 
     def getFilesToDelete(self) -> List[Path]:
-        """
-        Determine the files to delete when rolling over.\n
-        Override the original method to use RichHandler and keep the same format
+        """确定日志轮转时需要删除的旧日志文件。
+
+        覆盖原始方法，使用 RichHandler 并保持统一的日志格式。
         """
         dirName, baseName = os.path.split(self.baseFilename)
         fileNames = os.listdir(dirName)
@@ -188,9 +186,9 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         return result
 
     def doRollover(self) -> None:
-        """
-        Do a rollover.\n
-        Override the original method to use RichHandler
+        """执行日志轮转。
+
+        覆盖原始方法，使用 RichHandler 处理日志输出。
         """
         if self.richd.console:
             self.richd.console.file.close()
@@ -227,15 +225,15 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         newRolloverAt = self.computeRollover(currentTime)
         while newRolloverAt <= currentTime:
             newRolloverAt = newRolloverAt + self.interval
-        # If DST changes and midnight or weekly rollover, adjust for this.
+        # 如果跨越夏令时边界且为午夜或周轮转，需要调整时间
         if (self.when == "MIDNIGHT" or self.when.startswith("W")) and not self.utc:
             dstAtRollover = time.localtime(newRolloverAt)[-1]
             if dstNow != dstAtRollover:
                 if (
                     not dstNow
-                ):  # DST kicks in before next rollover, so we need to deduct an hour
+                ):  # 夏令时在下次轮转前生效，需要减去一小时
                     addend = -3600
-                else:  # DST bows out before next rollover, so we need to add an hour
+                else:  # 夏令时在下次轮转前结束，需要加上一小时
                     addend = 3600
                 newRolloverAt += addend
         self.rolloverAt = newRolloverAt
@@ -243,13 +241,12 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         self.log_file = str(newPath.resolve())
 
     def expire(self, files: List[Path]) -> None:
-        """
-        Remove or backup the expired log files\n
+        """删除或备份过期的日志文件。
 
-        Template:
-            2021-08-01_alas.txt...2021-08-07_alas.txt   ->  bak/2021-08-01~2021-08-07_alas.tar.bz2  \n
-            2021-08-01_gui.txt                          ->  bak/2021-08-01_gui.zip                  \n
-            2021-08-01_gui.txt(copy)                    ->  bak/2021-08-01_gui.txt(copy)            \n
+        处理模板:
+            2021-08-01_alas.txt...2021-08-07_alas.txt   ->  bak/2021-08-01~2021-08-07_alas.tar.bz2
+            2021-08-01_gui.txt                          ->  bak/2021-08-01_gui.zip
+            2021-08-01_gui.txt(copy)                    ->  bak/2021-08-01_gui.txt(copy)
         """
         basePath = Path(self.baseFilename)
         bakPath = basePath.parent / "bak"
@@ -301,9 +298,9 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
 
 
 class HTMLConsole(Console):
-    """
-    Force full feature console
-    but not working lol :(
+    """强制启用完整功能的控制台（用于 Web 输出）。
+
+    注意：目前部分功能尚未生效。
     """
 
     @property
@@ -346,7 +343,7 @@ WEB_THEME = Theme({
     "rule.text": Style(bold=True),
 })
 
-# Logger init
+# 日志初始化
 logger_debug = False
 logger = logging.getLogger('alas')
 logger.setLevel(logging.DEBUG if logger_debug else logging.INFO)
@@ -357,13 +354,13 @@ console_formatter = logging.Formatter(
 web_formatter = logging.Formatter(
     fmt='%(asctime)s.%(msecs)03d │ %(message)s', datefmt='%H:%M:%S')
 
-# Add console logger
+# 添加控制台日志处理器
 # console = logging.StreamHandler(stream=sys.stdout)
 # console.setFormatter(formatter)
 # console.flush = sys.stdout.flush
 # logger.addHandler(console)
 
-# Add rich console logger
+# 添加 Rich 控制台日志处理器
 stdout_console = console = Console()
 console_hdlr = RichHandler(
     show_path=False,
@@ -375,10 +372,10 @@ console_hdlr = RichHandler(
 console_hdlr.setFormatter(console_formatter)
 logger.addHandler(console_hdlr)
 
-# Ensure running in Alas root folder
+# 确保运行在 AzurPilot 根目录下
 os.chdir(os.path.join(os.path.dirname(__file__), '../'))
 
-# Add file logger
+# 添加文件日志处理器
 pyw_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
 
 
@@ -402,13 +399,13 @@ def _set_file_logger(name=pyw_name):
 def set_file_logger(name=pyw_name):
     if "_" in name:
         name = name.split("_", 1)[0]
-    # Handler Windows : Windows have "SyncManager-N:N", "MainProcess", "Process-N", "gui" 4 Processes
-    # There have no process named "SyncManager", only "MainProcess" on Linux
+    # Windows 下有 "SyncManager-N:N"、"MainProcess"、"Process-N"、"gui" 四种进程
+    # Linux 下没有 "SyncManager" 进程，只有 "MainProcess"
     if os.name == "nt":
-        # These process needn't to save log file on Windows
+        # Windows 下这些进程无需保存日志文件
         processes = ["SyncManager-", "MainProcess", "Process-"]
         pname = multiprocessing.current_process().name.replace(":", "_")
-        # Each process should only call once when alas start.
+        # 每个进程在 AzurPilot 启动时只应调用一次。
         if any(isinstance(hdlr, RichTimedRotatingHandler) for hdlr in logger.handlers):
             return
     else:
@@ -416,7 +413,7 @@ def set_file_logger(name=pyw_name):
         pname = name
         for hdlr in logger.handlers:
             if isinstance(hdlr, RichTimedRotatingHandler):
-                # Each process should only call once when alas start.
+                # 每个进程在 AzurPilot 启动时只应调用一次。
                 if hdlr.pname == name:
                     return
                 else:
@@ -478,8 +475,9 @@ def set_func_logger(func):
 def _get_renderables(
         self: Console, *objects, sep=" ", end="\n", justify=None, emoji=None, markup=None, highlight=None,
 ) -> List[ConsoleRenderable]:
-    """
-    Refer to rich.console.Console.print()
+    """获取可渲染对象列表。
+
+    参考 rich.console.Console.print() 的实现。
     """
     if not objects:
         objects = (NewLine(),)
@@ -558,9 +556,9 @@ def show():
     logger.info(r'True, False, None')
     logger.info(r'E:/path\\to/alas/alas.exe, /root/alas/, ./relative/path/log.txt')
     local_var1 = 'This is local variable'
-    # Line before exception
+    # 异常发生前的行
     raise Exception("Exception")
-    # Line below exception
+    # 异常发生后的行
 
 
 def aggressive_convert(func, level='error'):
@@ -569,7 +567,7 @@ def aggressive_convert(func, level='error'):
             msg = f'{type(msg).__name__}: {msg}'
 
         if isinstance(msg, str) and any('\u4e00' <= char <= '\u9fff' for char in msg):
-            # Already mesugaki or has special characters, don't double stack
+            # 已经包含傲娇语气或特殊字符的消息，不重复叠加
             if '杂鱼' in msg or '哒内' in msg or '大叔' in msg or '笨蛋' in msg:
                 return func(msg, *args, **kwargs)
 

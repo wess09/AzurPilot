@@ -12,10 +12,10 @@ set "_pyBin=%_root%\.venv\Scripts"
 set "_GitBin=%_root%\.venv\Scripts\git\cmd"
 set "PATH=%_pyBin%;%_GitBin%;%PATH%"
 
-title Alas Updater
+title AzurPilot Updater
 "%_pyBin%\python.exe" -m deploy.installer
 if %errorlevel% neq 0 (
     pause >nul
 ) else (
-    start "Alas" "%_pyBin%\pythonw.exe" "%_root%\gui.py" --electron
+    start "AzurPilot" "%_pyBin%\pythonw.exe" "%_root%\gui.py" --electron
 )

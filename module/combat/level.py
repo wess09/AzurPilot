@@ -18,7 +18,7 @@ class Level(ModuleBase):
     def lv(self):
         """
         Returns:
-            list[int]:
+            list[int]: 各位置的等级列表。
         """
         return self._lv
 
@@ -26,14 +26,12 @@ class Level(ModuleBase):
     def lv(self, value):
         """
         Args:
-            value (list[int]):
+            value (list[int]): 各位置的等级列表。
         """
         self._lv = value
 
     def lv_reset(self):
-        """
-        Call this method after enter map.
-        """
+        """进入地图后调用此方法重置等级数据。"""
         self._lv = [-1] * 6
         self._lv_before_battle = [-1] * 6
 
@@ -50,12 +48,13 @@ class Level(ModuleBase):
         return ButtonGrid(origin=(58, 128), delta=(0, 100), button_shape=(46, 19), grid_shape=(1, 6))
 
     def lv_get(self, after_battle=False):
-        """
+        """获取各位置的等级。
+
         Args:
-            after_battle (bool): True if called after battle else False.
+            after_battle (bool): 是否在战斗后调用。
 
         Returns:
-            list[int]:
+            list[int]: 各位置的等级列表。
         """
         if not self.config.StopCondition_ReachLevel and not self.config.STOP_IF_REACH_LV32:
             return [-1] * 6
@@ -106,27 +105,26 @@ class Level(ModuleBase):
 
 class LevelOcr(Digit):
     def pre_process(self, image):
-        # Check the max value of red channel to find out whether the image is masked.
-        # It would be no larger than COLOR_MASKED[0]=107 iff masked.
-        # Crop before checking to cut off the "need repair" icon while preserving upper part of char 'V'.
+        # 检查红色通道最大值以判断图像是否被遮罩。
+        # 被遮罩时红色通道最大值不超过 COLOR_MASKED[0]=107。
+        # 先裁剪再检查，去除"需要修理"图标同时保留字符 'V' 的上半部分。
         max_red = image[:8, :, 0].max()
         if max_red <= COLOR_MASKED[0]:
-            # The mask on low hp ships turns COLOR_WHITE=(255, 255, 255) to COLOR_MASKED=(107, 105, 107),
-            # so multiply all channels by a scalar can turn them back.
+            # 低血量舰船的遮罩将 COLOR_WHITE=(255, 255, 255) 变为 COLOR_MASKED=(107, 105, 107)
+            # 通过乘以标量将所有通道恢复。
             scalar = np.mean(COLOR_WHITE) / np.mean(COLOR_MASKED)
             image = cv2.addWeighted(image, scalar, image, 0, 0)
 
-        # Deal with the blue background of chars before converting to greyscale.
-        # The background is semi-transparent. It turns (0, 0, 0) to (33, 65, 115), and (255, 255, 255)
-        # to (107, 138, 189). We use the middle point (70, 102, 152).
+        # 转灰度前处理字符的蓝色背景。
+        # 背景是半透明的，将 (0, 0, 0) 变为 (33, 65, 115)，(255, 255, 255) 变为 (107, 138, 189)。
+        # 使用中点 (70, 102, 152)。
         bg = (70, 102, 152)
-        # BT.601
+        # BT.601 亮度转换
         luma_trans = (0.299, 0.587, 0.114)
         luma_bg = np.dot(bg, luma_trans)
         image = cv2.subtract(image, bg).dot(luma_trans).round().astype(np.uint8)
         image = cv2.subtract(255, cv2.multiply(image, 255 / (255 - luma_bg)))
-        # Find 'L' to strip 'LV.'.
-        # Return an empty image if 'L' is not found.
+        # 找到 'L' 以去除 'LV.' 前缀。如果未找到 'L' 则返回空图像。
         if server.server != 'jp':
             letter_l = np.nonzero(image[9:15, :].max(axis=0) < 127)[0]
             if len(letter_l):
@@ -136,7 +134,7 @@ class LevelOcr(Digit):
         else:
             letter_l = np.nonzero(image[5:11, :].max(axis=0) < 63)[0]
             if len(letter_l):
-                first_digit = letter_l[0] + 23  # maximal size in dock and minimal size in sea grid
+                first_digit = letter_l[0] + 23  # 船坞中最大尺寸，海域网格中最小尺寸
                 if first_digit + 3 < 70:  # LV_GRID_MAIN.button_shape[0] = 46
                     image = image[:, first_digit:]
                     image = cv2.copyMakeBorder(image, 2, 2, 2, 2, cv2.BORDER_CONSTANT, value=(255, 255, 255))
@@ -147,8 +145,8 @@ class LevelOcr(Digit):
         result = result.replace('I', '1').replace('D', '0').replace('S', '5')
         result = result.replace('B', '8')
 
-        # No correction log, cause levels are usually empty
-        # Like: [23, 0, 0, 100, 0, 0]
+        # 不记录修正日志，因为等级通常为空
+        # 如: [23, 0, 0, 100, 0, 0]
         result = int(result) if result else 0
 
         return result

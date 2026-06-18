@@ -15,12 +15,12 @@ GUILD_OPERATIONS_PROGRESS = DigitCounter(OCR_GUILD_OPERATIONS_PROGRESS, letter=(
 class GuildOperations(GuildBase):
     def _guild_operations_ensure(self, skip_first_screenshot=True):
         """
-        Ensure guild operation is loaded
-        After entering guild operation, background loaded first, then dispatch/boss
+        确保大舰队作战已加载。
+
+        进入大舰队作战后，先加载背景，然后显示派遣/Boss 界面。
 
         Returns:
-            bool: True if success to enter operation
-                False if fund insufficient
+            bool: True 表示成功进入作战，False 表示资金不足。
         """
         logger.attr('Guild master/official', self.config.GuildOperation_SelectNewOperation)
         confirm_timer = Timer(1.5, count=3).start()
@@ -31,11 +31,11 @@ class GuildOperations(GuildBase):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束
             if click_count > 5:
-                # Info bar showing `none4302`.
-                # Probably because guild operation has been started by another guild officer already.
-                # Enter guild page again should fix the issue.
+                # 信息栏显示 `none4302`。
+                # 可能是因为大舰队作战已被其他军官开启。
+                # 重新进入大舰队页面应该可以修复此问题。
                 logger.warning(
                     'Unable to start/join guild operation, '
                     'probably because guild operation has been started by another guild officer already')
@@ -81,15 +81,14 @@ class GuildOperations(GuildBase):
 
     def _handle_guild_operations_start(self):
         """
-        Start a new guild operation.
-        Current account must be a guild master or officer.
+        开启新的大舰队作战。
 
-        Starting the third operation of every month is not recommended. Members can only join 2 operations each month,
-        most of them can't participate in the dispatch in the third. This will affect the evaluation of the dispatch
-        event, resulting in a reduction in the final reward.
+        当前账号必须是大舰队司令或军官。不建议每月开启第三次作战，
+        成员每月只能参与 2 次作战，大多数人无法参与第三次派遣，
+        这会影响派遣事件的评价，导致最终奖励减少。
 
         Returns:
-            bool: If clicked.
+            bool: 是否点击了按钮。
         """
         if not self.config.GuildOperation_SelectNewOperation:
             return False
@@ -100,14 +99,14 @@ class GuildOperations(GuildBase):
             logger.info(f'No new guild operations because, today\'s date {today} >= limit {limit}')
             return False
 
-        # Hard-coded to select The most rewarding operation Solomon Air-Sea Battle.
+        # 硬编码选择奖励最丰厚的作战：所罗门海空战
         if self.appear_then_click(GUILD_OPERATIONS_SOLOMON, offset=(20, 20), interval=3):
             return True
-        # Goto the new operation that just started
-        # Example page switches:
+        # 前往刚开启的新作战
+        # 页面切换示例：
         # - GUILD_OPERATIONS_SOLOMON
         # - GUILD_OPERATIONS_NEW
-        # - handle_popup_confirm(), confirm to consume guild fund.
+        # - handle_popup_confirm(), 确认消耗大舰队资金
         # - GUILD_OPERATIONS_JOIN
         # - GUILD_OPERATIONS_ACTIVE_CHECK
         if self.appear_then_click(GUILD_OPERATIONS_NEW, offset=(20, 20), interval=3):
@@ -117,8 +116,10 @@ class GuildOperations(GuildBase):
 
     def _guild_operation_fund_insufficient(self):
         """
+        检查大舰队资金是否不足。
+
         Returns:
-            bool: True if insufficient
+            bool: True 表示资金不足。
 
         Pages:
             in: GUILD_OPERATIONS_NEW
@@ -132,12 +133,14 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_get_mode(self):
         """
+        判断当前加载的是哪种作战菜单。
+
         Returns:
-            int: Determine which operations menu has loaded
-                0 - No ongoing operations, Officers/Elites/Leader must select one to begin
-                1 - Operations available, displaying a state diagram/web of operations
-                2 - Guild Raid Boss active
-                Otherwise None if unable to ensure or determine the menu at all
+            int: 当前作战模式。
+                0 - 没有进行中的作战，军官/精英/司令需要选择一个开始
+                1 - 作战可用，显示作战状态图/作战网络
+                2 - 大舰队突袭 Boss 已激活
+                None - 无法确认或识别菜单
 
         Pages:
             in: GUILD_OPERATIONS
@@ -163,19 +166,20 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_get_entrance(self):
         """
-        Get 2 entrance button of guild dispatch
-        If operation is on the top, after clicking expand button, operation chain moves downward, and enter button
-        appears on the top. So we need to detect two buttons in real time.
+        获取大舰队派遣的 2 个入口按钮。
+
+        如果作战在顶部，点击展开按钮后作战链条向下移动，进入按钮出现在顶部，
+        因此需要实时检测这两个按钮。
 
         Returns:
-            list[Button], list[Button]: Expand button, enter button
+            list[Button], list[Button]: 展开按钮列表，进入按钮列表。
 
         Pages:
             in: page_guild, guild operation, operation map (GUILD_OPERATIONS_ACTIVE_CHECK)
         """
-        # Where whole operation mission chain is
+        # 整个作战任务链条所在的区域
         detection_area = (152, 135, 1280, 630)
-        # Offset inside to avoid clicking on edge
+        # 向内偏移以避免点击边缘
         pad = 5
 
         list_expand = []
@@ -196,19 +200,19 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_dispatch_swipe(self, forward=True, skip_first_screenshot=True):
         """
-        Although AL will auto focus to active dispatch, but it's bugged.
-        It can't reach the operations behind.
-        So this method will swipe behind, and focus to active dispatch.
-        Force to use minitouch, because uiautomator2 will need longer swipes.
+        滑动查找活跃的派遣作战。
+
+        虽然碧蓝航线会自动聚焦到活跃派遣，但存在 bug，无法到达后面的作战，
+        因此需要手动滑动并聚焦到活跃派遣。强制使用 minitouch，因为 uiautomator2 需要更长的滑动距离。
 
         Args:
-            forward (bool): direction of horizontal swipe
-            skip_first_screenshot (bool):
+            forward (bool): 水平滑动方向。
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Returns:
-            bool: If found active dispatch.
+            bool: 是否找到活跃派遣。
         """
-        # Where whole operation mission chain is
+        # 整个作战任务链条所在的区域
         detection_area = (152, 135, 1280, 630)
         direction_vector = (-600, 0) if forward else (600, 0)
 
@@ -232,13 +236,15 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_dispatch_enter(self, skip_first_screenshot=True):
         """
+        进入作战派遣准备界面。
+
         Returns:
-            bool: If entered
+            bool: 是否成功进入。
 
         Pages:
             in: page_guild, guild operation, operation map (GUILD_OPERATIONS_ACTIVE_CHECK)
-                After entering guild operation, game will auto located to active operation.
-                It is the main operation on chain that will be located to, side operations will be ignored.
+                进入大舰队作战后，游戏会自动定位到活跃作战，
+                定位的是链条上的主作战，侧作战会被忽略。
             out: page_guild, guild operation, operation dispatch preparation (GUILD_DISPATCH_RECOMMEND)
         """
         timer_1 = Timer(2, count=5)
@@ -280,26 +286,26 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_get_dispatch(self):
         """
-        Get the button to switch available dispatch
-        In previous version, this function detects the red dot on the switch.
-        But the red dot may not shows for unknown reason sometimes, so we detect the switch itself.
+        获取切换可用派遣舰队的按钮。
+
+        早期版本检测切换按钮上的红点，但红点有时因未知原因不显示，因此改为检测切换按钮本身。
 
         Returns:
-            Button: Button to switch available dispatch. None if already reach the most right fleet.
+            Button: 切换可用派遣的按钮。如果已到达最右侧舰队则返回 None。
 
         Pages:
             in: page_guild, guild operation, operation dispatch preparation (GUILD_DISPATCH_RECOMMEND)
         """
-        # Fleet switch, for 4 situation
+        # 舰队切换，4 种情况
         #          | 1 |
         #       | 1 | | 2 |
         #    | 1 | | 2 | | 3 |
         # | 1 | | 2 | | 3 | | 4 |
-        #   0  1  2  3  4  5  6   buttons in switch_grid
+        #   0  1  2  3  4  5  6   switch_grid 中的按钮
         switch_grid = ButtonGrid(origin=(573.5, 381), delta=(20.5, 0), button_shape=(11, 24), grid_shape=(7, 1))
-        # Color of inactive fleet switch
+        # 非活跃舰队切换的颜色
         color_active = (74, 117, 222)
-        # Color of current fleet
+        # 当前舰队的颜色
         color_inactive = (33, 48, 66)
 
         text = []
@@ -315,7 +321,7 @@ class GuildOperations(GuildBase):
                 text.append(f'[ {index} ]')
                 button = switch
 
-        # log example: | 1 | | 2 | [ 3 ]
+        # 日志示例：| 1 | | 2 | [ 3 ]
         text = ' '.join(text)
         logger.attr('Dispatch_fleet', text)
         if text.endswith(']'):
@@ -326,7 +332,7 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_dispatch_switch_fleet(self, skip_first_screenshot=True):
         """
-        Switch to the fleet on most right
+        切换到最右侧的舰队。
 
         Pages:
             in: page_guild, guild operation, operation dispatch preparation (GUILD_DISPATCH_RECOMMEND)
@@ -345,13 +351,13 @@ class GuildOperations(GuildBase):
                 logger.info('Dispatching the first fleet, skip switching')
             else:
                 self.device.click(button)
-                # Wait for the click animation, which will mess up _guild_operations_get_dispatch()
+                # 等待点击动画完成，否则会干扰 _guild_operations_get_dispatch() 的检测
                 self.device.sleep((0.5, 0.6))
                 continue
 
     def _guild_operations_dispatch_execute(self, skip_first_screenshot=True):
         """
-        Executes the dispatch sequence
+        执行派遣序列。
 
         Pages:
             in: page_guild, guild operation, operation dispatch preparation (GUILD_DISPATCH_RECOMMEND)
@@ -365,13 +371,13 @@ class GuildOperations(GuildBase):
                 self.device.screenshot()
 
             if self.appear(GUILD_DISPATCH_FLEET_UNFILLED, offset=(20, 20), interval=3):
-                # Don't use offset here, because GUILD_DISPATCH_FLEET_UNFILLED only has a difference in colors
-                # Use long interval because the game needs a few seconds to choose the ships
+                # 此处不使用 offset，因为 GUILD_DISPATCH_FLEET_UNFILLED 仅在颜色上有差异
+                # 使用较长的 interval，因为游戏需要几秒钟来选择舰船
                 self.device.click(GUILD_DISPATCH_RECOMMEND)
                 continue
             if not dispatched and self.appear(GUILD_DISPATCH_FLEET, offset=(20, 20), interval=3):
-                # GUILD_DISPATCH_FLEET and GUILD_DISPATCH_FLEET_UNFILLED has same feature but different colors
-                # check background blue for double check
+                # GUILD_DISPATCH_FLEET 和 GUILD_DISPATCH_FLEET_UNFILLED 特征相同但颜色不同
+                # 通过检查背景蓝色进行二次确认
                 if self.image_color_count(GUILD_DISPATCH_FLEET, color=(82, 93, 221), threshold=235, count=500):
                     self.device.click(GUILD_DISPATCH_FLEET)
                 else:
@@ -382,25 +388,25 @@ class GuildOperations(GuildBase):
                 dispatched = True
                 continue
 
-            # End
+            # 结束
             if self.appear(GUILD_DISPATCH_IN_PROGRESS):
-                # In first dispatch, it will show GUILD_DISPATCH_IN_PROGRESS
+                # 首次派遣时，会显示 GUILD_DISPATCH_IN_PROGRESS
                 logger.info('Fleet dispatched, dispatch in progress')
                 break
             if dispatched and self.appear(GUILD_DISPATCH_FLEET, offset=(20, 20), interval=3):
-                # GUILD_DISPATCH_FLEET and GUILD_DISPATCH_FLEET_UNFILLED has same feature but different colors
-                # check background blue for double check
+                # GUILD_DISPATCH_FLEET 和 GUILD_DISPATCH_FLEET_UNFILLED 特征相同但颜色不同
+                # 通过检查背景蓝色进行二次确认
                 if self.image_color_count(GUILD_DISPATCH_FLEET, color=(82, 93, 221), threshold=235, count=500):
-                    # In the rest of the dispatch, it will show GUILD_DISPATCH_FLEET
-                    # We can't ensure that fleet has dispatched,
-                    # because GUILD_DISPATCH_FLEET still shows after clicking recommend before dispatching
-                    # _guild_operations_dispatch() will retry it if haven't dispatched
+                    # 后续派遣会显示 GUILD_DISPATCH_FLEET
+                    # 无法确认舰队是否已派遣，
+                    # 因为点击推荐后派遣前也会显示 GUILD_DISPATCH_FLEET
+                    # _guild_operations_dispatch() 会在未派遣时重试
                     logger.info('Fleet dispatched')
                     break
 
     def _guild_operations_dispatch_exit(self, skip_first_screenshot=True):
         """
-        Exit to operation map
+        退出到作战地图。
 
         Pages:
             in: page_guild, guild operation, operation dispatch preparation (GUILD_DISPATCH_RECOMMEND)
@@ -419,17 +425,17 @@ class GuildOperations(GuildBase):
                 self.device.click(GUILD_DISPATCH_CLOSE)
                 continue
             if self.appear(GUILD_DISPATCH_IN_PROGRESS, interval=2):
-                # No offset here, GUILD_DISPATCH_IN_PROGRESS is a colored button
+                # 此处不使用 offset，GUILD_DISPATCH_IN_PROGRESS 是一个有颜色的按钮
                 self.device.click(GUILD_DISPATCH_CLOSE)
                 continue
 
-            # End
+            # 结束
             if self.appear(GUILD_OPERATIONS_ACTIVE_CHECK):
                 break
 
     def _guild_operations_dispatch(self):
         """
-        Run guild dispatch
+        执行大舰队派遣。
 
         Pages:
             in: page_guild, guild operation, operation map (GUILD_OPERATIONS_ACTIVE_CHECK)
@@ -461,11 +467,10 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_boss_preparation(self, az, skip_first_screenshot=True):
         """
-        Execute preparation sequence for guild raid boss
+        执行大舰队突袭 Boss 的准备序列。
 
-        az is a GuildCombat instance to handle combat various
-        interfaces. Independently created to avoid conflicts
-        or override methods of parent/child objects
+        az 是一个 GuildCombat 实例，用于处理各种战斗界面。
+        独立创建以避免与父/子对象的方法冲突或覆盖。
 
         Pages:
             in: GUILD_OPERATIONS_BOSS
@@ -483,7 +488,7 @@ class GuildOperations(GuildBase):
                 continue
 
             if self.appear(GUILD_DISPATCH_FLEET, offset=(20, 20), interval=3):
-                # Button does not appear greyed out even when empty fleet composition
+                # 即使舰队编队为空，按钮也不会显示为灰色
                 if dispatch_count < 5:
                     self.device.click(GUILD_DISPATCH_FLEET)
                     dispatch_count += 1
@@ -497,7 +502,7 @@ class GuildOperations(GuildBase):
                 if self.info_bar_count() and self.appear_then_click(GUILD_DISPATCH_RECOMMEND_2, interval=3):
                     continue
 
-            # Only print once when detected
+            # 仅在首次检测到时打印
             if not is_loading:
                 if az.is_combat_loading():
                     self.device.screenshot_interval_set('combat')
@@ -507,7 +512,7 @@ class GuildOperations(GuildBase):
             if az.handle_combat_automation_confirm():
                 continue
 
-            # End
+            # 结束
             pause = az.is_combat_executing()
             if pause:
                 logger.attr('BattleUI', pause)
@@ -515,8 +520,7 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_boss_combat(self):
         """
-        Execute combat sequence
-        If battle could not be prepared, exit
+        执行 Boss 战斗序列。如果战斗无法准备则退出。
 
         Pages:
             in: GUILD_OPERATIONS_BOSS
@@ -534,8 +538,10 @@ class GuildOperations(GuildBase):
 
     def _guild_operations_boss_available(self):
         """
+        检查大舰队 Boss 是否可用。
+
         Returns:
-            bool:
+            bool: Boss 是否可用。
         """
         appear = self.image_color_count(GUILD_BOSS_AVAILABLE, color=(140, 243, 99), threshold=221, count=10)
         if appear:
@@ -551,10 +557,10 @@ class GuildOperations(GuildBase):
         if not entered:
             logger.info(f'Guild operation run success: {entered}')
             return False
-        # Determine the mode of operations, currently 3 are available
+        # 判断作战模式，目前有 3 种
         operations_mode = self._guild_operations_get_mode()
 
-        # Execute actions based on the detected mode
+        # 根据检测到的模式执行对应操作
         result = True
         if operations_mode == 0:
             pass

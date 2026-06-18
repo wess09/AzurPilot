@@ -12,11 +12,13 @@ def abspath(path):
 
 def get_serial_pair(serial):
     """
+    根据 serial 推导对应的 serial 对。
+
     Args:
-        serial (str):
+        serial (str): 设备序列号
 
     Returns:
-        str, str: `127.0.0.1:5555+{X}` and `emulator-5554+{X}`, 0 <= X <= 32
+        tuple: `127.0.0.1:5555+{X}` 和 `emulator-5554+{X}`，其中 0 <= X <= 32
     """
     if serial.startswith('127.0.0.1:'):
         try:
@@ -38,11 +40,13 @@ def get_serial_pair(serial):
 
 def remove_duplicated_path(paths):
     """
+    去除重复路径（大小写不敏感），保留第一次出现的原始大小写形式。
+
     Args:
-        paths (list[str]):
+        paths (list[str]): 路径列表
 
     Returns:
-        list[str]:
+        list[str]: 去重后的路径列表
     """
     paths = sorted(set(paths))
     dic = {}
@@ -53,13 +57,14 @@ def remove_duplicated_path(paths):
 
 @dataclass
 class EmulatorInstanceBase:
-    # Serial for adb connection
+    """模拟器实例的基类数据结构。"""
+    # ADB 连接用的序列号
     serial: str
-    # Emulator instance name, used for start/stop emulator
+    # 模拟器实例名称，用于启停模拟器
     name: str
-    # Path to emulator .exe
+    # 模拟器 .exe 文件路径
     path: str
-    # Additional fields for specific emulators (optional)
+    # 特定模拟器的附加字段（可选）
     index: int = 0
     state: str = ''
 
@@ -70,7 +75,7 @@ class EmulatorInstanceBase:
     def type(self) -> str:
         """
         Returns:
-            str: Emulator type, such as Emulator.NoxPlayer
+            str: 模拟器类型，如 Emulator.NoxPlayer
         """
         return self.emulator.type
 
@@ -78,7 +83,7 @@ class EmulatorInstanceBase:
     def emulator(self):
         """
         Returns:
-            Emulator:
+            EmulatorBase: 当前实例对应的模拟器对象
         """
         return EmulatorBase(self.path)
 
@@ -100,13 +105,13 @@ class EmulatorInstanceBase:
     @cached_property
     def MuMuPlayer12_id(self):
         """
-        Convert MuMu 12 instance name to instance id.
-        Example names:
+        将 MuMu 12 实例名称转换为实例 ID。
+        示例名称:
             MuMuPlayer-12.0-3
             YXArkNights-12.0-1
 
         Returns:
-            int: Instance ID, or None if this is not a MuMu 12 instance
+            int: 实例 ID，如果不是 MuMu 12 实例则返回 None
         """
         res = re.search(r'MuMuPlayer(?:Global)?-12.0-(\d+)', self.name)
         if res:
@@ -119,24 +124,26 @@ class EmulatorInstanceBase:
 
     def mumu_vms_config(self, file):
         """
+        获取 MuMu 虚拟机配置文件的绝对路径。
+
         Args:
-            file (str): Such as customer_config.json
+            file (str): 配置文件名，如 customer_config.json
 
         Returns:
-            str: Absolute filepath to the file
+            str: 配置文件的绝对路径
         """
         return self.emulator.abspath(f'../vms/{self.name}/configs/{file}')
 
     @cached_property
     def LDPlayer_id(self):
         """
-        Convert LDPlayer instance name to instance id.
-        Example names:
+        将雷电模拟器实例名称转换为实例 ID。
+        示例名称:
             leidian0
             leidian1
 
         Returns:
-            int: Instance ID, or None if this is not a LDPlayer instance
+            int: 实例 ID，如果不是雷电模拟器实例则返回 None
         """
         res = re.search(r'leidian(\d+)', self.name)
         if res:
@@ -146,7 +153,8 @@ class EmulatorInstanceBase:
 
 
 class EmulatorBase:
-    # Values here must match those in argument.yaml EmulatorInfo.Emulator.option
+    """模拟器基类，定义模拟器类型常量和通用接口。"""
+    # 此处的值必须与 argument.yaml 中 EmulatorInfo.Emulator.option 保持一致
     NoxPlayer = 'NoxPlayer'
     NoxPlayer64 = 'NoxPlayer64'
     NoxPlayerFamily = [NoxPlayer, NoxPlayer64]
@@ -165,7 +173,7 @@ class EmulatorBase:
     MuMuPlayer12 = 'MuMuPlayer12'
     MuMuPlayerFamily = [MuMuPlayer, MuMuPlayerX, MuMuPlayer12]
     MEmuPlayer = 'MEmuPlayer'
-    # Mac emulators
+    # Mac 模拟器
     BlueStacksAir = 'BlueStacksAir'
     MuMuPro = 'MuMuPro'
     MacEmulatorFamily = [BlueStacksAir, MuMuPro]
@@ -174,35 +182,40 @@ class EmulatorBase:
     @classmethod
     def path_to_type(cls, path: str) -> str:
         """
+        根据 .exe 文件路径判断模拟器类型。
+
         Args:
-            path: Path to .exe file
+            path: .exe 文件路径
 
         Returns:
-            str: Emulator type, such as Emulator.NoxPlayer,
-                or '' if this is not a emulator.
+            str: 模拟器类型，如 Emulator.NoxPlayer；如果不是模拟器则返回空字符串
         """
         return ''
 
     def iter_instances(self) -> t.Iterable[EmulatorInstanceBase]:
         """
+        遍历当前模拟器中发现的所有实例。
+
         Yields:
-            EmulatorInstance: Emulator instances found in this emulator
+            EmulatorInstanceBase: 模拟器实例
         """
         pass
 
     def iter_adb_binaries(self) -> t.Iterable[str]:
         """
+        遍历当前模拟器中找到的 adb 二进制文件路径。
+
         Yields:
-            str: Filepath to adb binaries found in this emulator
+            str: adb 二进制文件的绝对路径
         """
         pass
 
     def __init__(self, path):
-        # Path to .exe file
+        # .exe 文件路径
         self.path = path.replace('\\', '/')
-        # Path to emulator folder
+        # 模拟器安装目录
         self.dir = os.path.dirname(path)
-        # str: Emulator type, or '' if this is not a emulator.
+        # str: 模拟器类型，如果不是模拟器则为空字符串
         self.type = self.__class__.path_to_type(path)
 
     def __eq__(self, other):
@@ -231,63 +244,77 @@ class EmulatorBase:
     @classmethod
     def is_emulator(cls, path: str) -> bool:
         """
+        判断给定路径是否为模拟器。
+
         Args:
-            path: Path to .exe file.
+            path: .exe 文件路径
 
         Returns:
-            bool: If this is a emulator.
+            bool: 是否为模拟器
         """
         return bool(cls.path_to_type(path))
 
     def list_folder(self, folder, is_dir=False, ext=None):
         """
-        Safely list files in a folder
+        安全地列出文件夹中的文件。
 
         Args:
-            folder:
-            is_dir:
-            ext:
+            folder: 文件夹路径（相对于模拟器目录）
+            is_dir: 是否只列目录
+            ext: 文件扩展名过滤
 
         Returns:
-            list[str]:
+            list[str]: 文件路径列表
         """
         folder = self.abspath(folder)
         return list(iter_folder(folder, is_dir=is_dir, ext=ext))
 
 
 class EmulatorManagerBase:
+    """模拟器管理器基类，提供模拟器发现和枚举的通用接口。"""
+
     @staticmethod
     def iter_running_emulator():
         """
+        遍历正在运行的模拟器可执行文件路径。
+
         Yields:
-            str: Path to emulator executables, may contains duplicate values
+            str: 模拟器可执行文件路径，可能包含重复值
         """
         return
 
     @cached_property
     def all_emulators(self) -> t.List[EmulatorBase]:
         """
-        Get all emulators installed on current computer.
+        获取当前计算机上安装的所有模拟器。
+
+        Returns:
+            list[EmulatorBase]: 模拟器列表
         """
         return []
 
     @cached_property
     def all_emulator_instances(self) -> t.List[EmulatorInstanceBase]:
         """
-        Get all emulator instances installed on current computer.
+        获取当前计算机上安装的所有模拟器实例。
+
+        Returns:
+            list[EmulatorInstanceBase]: 模拟器实例列表
         """
         return []
 
     @cached_property
     def all_emulator_serials(self) -> t.List[str]:
         """
+        获取当前计算机上所有可能的设备序列号。
+
         Returns:
-            list[str]: All possible serials on current computer.
+            list[str]: 序列号列表
         """
         out = []
         for emulator in self.all_emulator_instances:
             out.append(emulator.serial)
-            # Also add serial like `emulator-5554`
+            # 同时添加 `emulator-5554` 格式的序列号
             port_serial, emu_serial = get_serial_pair(emulator.serial)
             if emu_serial:
                 out.append(emu_serial)
@@ -296,8 +323,10 @@ class EmulatorManagerBase:
     @cached_property
     def all_adb_binaries(self) -> t.List[str]:
         """
+        获取当前计算机上所有模拟器的 adb 二进制文件路径。
+
         Returns:
-            list[str]: All adb binaries of emulators on current computer.
+            list[str]: adb 二进制文件路径列表
         """
         out = []
         for emulator in self.all_emulators:

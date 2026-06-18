@@ -11,14 +11,14 @@ class Navbar:
                  inactive_threshold=180, active_count=100, inactive_count=50, name=None):
         """
         Args:
-            grids (ButtonGrid):
-            active_color (tuple[int, int, int]):
-            inactive_color (tuple[int, int, int]):
-            active_threshold (int):
-            inactive_threshold (int):
-            active_count (int):
-            inactive_count (int):
-            name (str):
+            grids (ButtonGrid): 标签按钮网格。
+            active_color (tuple[int, int, int]): 激活状态的 RGB 颜色。
+            inactive_color (tuple[int, int, int]): 非激活状态的 RGB 颜色。
+            active_threshold (int): 激活状态的颜色匹配阈值。
+            inactive_threshold (int): 非激活状态的颜色匹配阈值。
+            active_count (int): 激活状态的最小像素计数。
+            inactive_count (int): 非激活状态的最小像素计数。
+            name (str): 导航栏名称。
         """
         self.grids = grids
         self.active_color = active_color
@@ -31,35 +31,41 @@ class Navbar:
 
     def is_button_active(self, button, main):
         """
+        检测按钮是否处于激活状态。
+
         Args:
-            button (Button):
-            main (ModuleBase):
+            button (Button): 要检测的按钮。
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            bool:
+            bool: 是否激活。
         """
         return main.image_color_count(
                     button, color=self.active_color, threshold=self.active_threshold, count=self.active_count)
 
     def is_button_inactive(self, button, main):
         """
+        检测按钮是否处于非激活状态。
+
         Args:
-            button (Button):
-            main (ModuleBase):
+            button (Button): 要检测的按钮。
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            bool:
+            bool: 是否非激活。
         """
         return main.image_color_count(
             button, color=self.inactive_color, threshold=self.inactive_threshold, count=self.inactive_count)
 
     def get_info(self, main):
         """
+        获取导航栏信息：当前激活项、最左项和最右项的索引。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            int, int, int: Index of the active nav item, leftmost nav item, and rightmost nav item.
+            int, int, int: 激活项索引、最左项索引、最右项索引。
         """
         total = []
         active = []
@@ -90,21 +96,25 @@ class Navbar:
 
     def get_active(self, main):
         """
+        获取当前激活的导航项索引。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            int: Index of the active nav item.
+            int: 激活项的索引。
         """
         return self.get_info(main=main)[0]
 
     def get_total(self, main):
         """
+        获取可见的导航项总数。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            int: Numbers of nav items that appears
+            int: 可见导航项的数量。
         """
         _, left, right = self.get_info(main=main)
         if left is None or right is None:
@@ -113,21 +123,19 @@ class Navbar:
 
     def _shop_obstruct_handle(self, main):
         """
-        IFF in shop, then remove obstructions
-        in shop view if any
+        仅在商店中时，处理商店界面的遮挡物。
 
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            bool:
+            bool: 是否处理了遮挡物。
         """
-        # Check name, identifies if NavBar
-        # instance belongs to shop module
+        # 通过名称判断导航栏是否属于商店模块
         if self.name not in ['SHOP_BOTTOM_NAVBAR', 'GUILD_SIDE_NAVBAR']:
             return False
 
-        # Handle shop obstructions
+        # 处理商店遮挡物
         if main.appear(GET_SHIP, interval=1):
             main.device.click(SHOP_CLICK_SAFE_AREA)
             return True
@@ -142,18 +150,18 @@ class Navbar:
 
     def set(self, main, left=None, right=None, upper=None, bottom=None, skip_first_screenshot=True):
         """
-        Set nav bar from 1 direction.
+        从一个方向设置导航栏到指定位置。
 
         Args:
-            main (ModuleBase):
-            left (int): Index of nav item counted from left. Start from 1.
-            right (int): Index of nav item counted from right. Start from 1.
-            upper (int): Index of nav item counted from upper. Start from 1.
-            bottom (int): Index of nav item counted from bottom. Start from 1.
-            skip_first_screenshot (bool):
+            main (ModuleBase): 模块基类实例。
+            left (int): 从左数的导航项索引，从 1 开始。
+            right (int): 从右数的导航项索引，从 1 开始。
+            upper (int): 从上数的导航项索引，从 1 开始。
+            bottom (int): 从下数的导航项索引，从 1 开始。
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Returns:
-            bool: If success
+            bool: 是否设置成功。
         """
         if left is None and right is None and upper is None and bottom is None:
             logger.warning('Invalid index to set, must set an index from 1 direction')
@@ -187,8 +195,8 @@ class Navbar:
 
             active, minimum, maximum = self.get_info(main=main)
             logger.info(f'Nav item active: {active} from range ({minimum}, {maximum})')
-            # Get None when receiving a pure black screenshot.
-            # Active is None could be because of slow animation
+            # 收到纯黑截图时会返回 None
+            # Active 为 None 可能是因为动画尚未加载完成
             if active is None or minimum is None or maximum is None:
                 continue
 

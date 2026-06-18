@@ -41,11 +41,13 @@ class MailWhite(UI):
 
     def _mail_enter(self, skip_first_screenshot=True):
         """
-        Returns:
-            int: If having mails
+        进入邮件页面。
 
-        Page:
-            in: page_main_white or MAIL_MANAGE
+        Returns:
+            int: 是否有邮件。
+
+        Pages:
+            in: page_main_white 或 MAIL_MANAGE
             out: MAIL_BATCH_CLAIM
         """
         logger.info('Mail enter')
@@ -84,8 +86,10 @@ class MailWhite(UI):
 
     def _mail_quit(self, skip_first_screenshot=True):
         """
-        Page:
-            in: Any page in page_mail
+        退出邮件页面。
+
+        Pages:
+            in: page_mail 中的任意页面
             out: page_main_white
         """
         logger.info('Mail quit')
@@ -132,12 +136,14 @@ class MailWhite(UI):
 
     def _mail_claim_execute(self, skip_first_screenshot=True):
         """
-        Page:
+        执行邮件批量领取。
+
+        Pages:
             in: MAIL_BATCH_CLAIM
-            out: page_main_white, may have info_bar
+            out: page_main_white，可能带有 info_bar
 
         Returns:
-            int: If success to claim
+            int: 是否领取成功。
         """
         self.handle_info_bar()
         self.interval_clear([
@@ -173,6 +179,8 @@ class MailWhite(UI):
 
     def _mail_delete(self, skip_first_screenshot=True):
         """
+        批量删除已领取的邮件。
+
         Pages:
             in: MAIL_BATCH_DELETE
             out: MAIL_BATCH_DELETE
@@ -202,7 +210,7 @@ class MailWhite(UI):
             if self._handle_mail_reward():
                 continue
 
-        # info_bar appears if mail success to delete and no mail deleted
+        # 成功删除邮件或无邮件可删时会出现 info_bar
         return True
 
     def mail_claim(
@@ -213,8 +221,16 @@ class MailWhite(UI):
             delete=True,
     ):
         """
+        领取邮件奖励。
+
+        Args:
+            merit (bool): 是否领取功勋邮件。
+            maintenance (bool): 是否领取维护补偿邮件。
+            trade_license (bool): 是否领取贸易许可证邮件。
+            delete (bool): 是否删除已领取的邮件。
+
         Pages:
-            in: page_main_white or MAIL_MANAGE
+            in: page_main_white 或 MAIL_MANAGE
             out: MAIL_BATCH_CLAIM
         """
         if not self._mail_enter():
@@ -257,7 +273,7 @@ class MailWhite(UI):
             logger.warning('Nothing to claim')
             return False
 
-        # Must using white UI
+        # 必须使用白色主题 UI
         self.ui_ensure(page_main)
         if self.appear(page_main_white.check_button, offset=(30, 30)):
             logger.info('At page_main_white')
@@ -269,7 +285,7 @@ class MailWhite(UI):
             logger.warning('Unknown page_main, cannot enter mail page')
             return False
 
-        # Claim
+        # 领取
         self.mail_claim(
             merit=merit,
             maintenance=maintenance,

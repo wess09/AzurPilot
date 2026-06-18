@@ -26,10 +26,12 @@ class UI(InfoHandler):
 
     def ui_page_appear(self, page, offset=(30, 30), interval=0):
         """
+        检测指定页面是否出现在屏幕上。
+
         Args:
-            page (Page):
-            offset:
-            interval:
+            page (Page): 要检测的页面。
+            offset: 匹配偏移量。
+            interval: 检测间隔。
         """
         if page == page_main:
             if self.appear(page_main_white.check_button, offset=offset, interval=interval):
@@ -37,8 +39,7 @@ class UI(InfoHandler):
             if self.appear(page_main.check_button, offset=(5, 5), interval=interval):
                 return True
             return False
-        # shitty EN localization changing font width of ACADEMY title,
-        # check other buttons also
+        # 英文本地化导致学院标题字体宽度变化，需要额外检查其他按钮
         if self.config.SERVER == 'en' and page == page_academy:
             if self.appear(ACADEMY_GOTO_MUNITIONS, offset=offset, interval=interval):
                 return True
@@ -49,13 +50,15 @@ class UI(InfoHandler):
 
     def ui_main_appear_then_click(self, page, offset=(30, 30), interval=3):
         """
+        检测主界面是否出现，若出现则点击前往目标页面的按钮。
+
         Args:
-            page: Destination page
-            offset:
-            interval:
+            page: 目标页面。
+            offset: 匹配偏移量。
+            interval: 检测间隔。
 
         Returns:
-            bool: If clicked
+            bool: 是否点击了按钮。
         """
         if self.appear(page_main.check_button, offset=offset, interval=interval):
             button = page_main.links[page]
@@ -87,15 +90,17 @@ class UI(InfoHandler):
             skip_first_screenshot=False,
     ):
         """
+        点击按钮并等待目标画面出现。
+
         Args:
-            click_button (Button):
-            check_button (Button, callable):
-            appear_button (Button, callable):
-            additional (callable):
-            confirm_wait (int, float):
-            offset (bool, int, tuple):
-            retry_wait (int, float):
-            skip_first_screenshot (bool):
+            click_button (Button): 要点击的按钮。
+            check_button (Button, callable): 用于确认页面已切换的检测按钮或回调。
+            appear_button (Button, callable): 点击前需先出现的按钮，默认为 click_button。
+            additional (callable): 额外的弹窗处理回调。
+            confirm_wait (int, float): 确认等待时间（秒）。
+            offset (bool, int, tuple): 匹配偏移量。
+            retry_wait (int, float): 重试等待时间（秒）。
+            skip_first_screenshot (bool): 是否跳过首次截图。
         """
         logger.hr("UI click")
         if appear_button is None:
@@ -130,12 +135,14 @@ class UI(InfoHandler):
 
     def ui_process_check_button(self, check_button, offset=(30, 30)):
         """
+        处理检测按钮，支持 Button、callable、列表或元组等多种类型。
+
         Args:
-            check_button (Button, callable, list[Button], tuple[Button]):
-            offset:
+            check_button (Button, callable, list[Button], tuple[Button]): 检测按钮或回调。
+            offset: 匹配偏移量。
 
         Returns:
-            bool:
+            bool: 是否检测到目标。
         """
         if isinstance(check_button, Button):
             return self.appear(check_button, offset=offset)
@@ -151,11 +158,13 @@ class UI(InfoHandler):
 
     def ui_get_current_page(self, skip_first_screenshot=True):
         """
+        获取当前所在的 UI 页面。
+
         Args:
-            skip_first_screenshot:
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            Page:
+            Page: 当前页面对象。
         """
         logger.info("UI get current page")
 
@@ -180,11 +189,11 @@ class UI(InfoHandler):
             else:
                 self.device.screenshot()
 
-            # End
+            # 超时退出
             if timeout.reached():
                 break
 
-            # Known pages
+            # 已知页面检测
             for page in Page.iter_pages():
                 if page.check_button is None:
                     continue
@@ -193,7 +202,7 @@ class UI(InfoHandler):
                     self.ui_current = page
                     return page
 
-            # Unknown page but able to handle
+            # 未知页面但可以处理
             logger.info("Unknown ui page")
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30), interval=2):
                 timeout.reset()
@@ -210,12 +219,12 @@ class UI(InfoHandler):
 
             app_check()
             minicap_check()
-            # continuously check rotation
+            # 持续检查屏幕旋转
             if orientation_timer.reached():
                 self.device.get_orientation()
                 orientation_timer.reset()
 
-        # Unknown page, need manual switching
+        # 未知页面，需要手动切换
         logger.warning("Unknown ui page")
         logger.attr("EMULATOR__SCREENSHOT_METHOD", self.config.Emulator_ScreenshotMethod)
         logger.attr("EMULATOR__CONTROL_METHOD", self.config.Emulator_ControlMethod)
@@ -241,13 +250,15 @@ class UI(InfoHandler):
 
     def ui_goto(self, destination, get_ship=True, offset=(30, 30), skip_first_screenshot=True):
         """
+        导航到目标页面，使用 A* 寻路算法找到最短路径。
+
         Args:
-            destination (Page):
-            get_ship:
-            offset:
-            skip_first_screenshot:
+            destination (Page): 目标页面。
+            get_ship: 是否处理获得舰船的弹窗。
+            offset: 匹配偏移量。
+            skip_first_screenshot: 是否跳过首次截图。
         """
-        # Create connection
+        # 初始化页面连接
         Page.init_connection(destination)
         self.interval_clear(list(Page.iter_check_buttons()))
 
@@ -259,12 +270,12 @@ class UI(InfoHandler):
             else:
                 self.device.screenshot()
 
-            # Destination page
+            # 到达目标页面
             if self.ui_page_appear(page=destination, offset=offset):
                 logger.info(f'Page arrive: {destination}')
                 break
 
-            # Other pages
+            # 其他页面：按 A* 路径点击导航
             clicked = False
             for page in Page.iter_pages():
                 if page.parent is None or page.check_button is None:
@@ -279,21 +290,23 @@ class UI(InfoHandler):
             if clicked:
                 continue
 
-            # Additional
+            # 处理额外弹窗
             if self.ui_additional(get_ship=get_ship):
                 continue
 
-        # Reset connection
+        # 重置页面连接
         Page.clear_connection()
 
     def ui_ensure(self, destination, skip_first_screenshot=True):
         """
+        确保当前在目标页面，若不在则导航过去。
+
         Args:
-            destination (Page):
-            skip_first_screenshot:
+            destination (Page): 目标页面。
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            bool: If UI switched.
+            bool: 是否发生了页面切换。
         """
         logger.hr("UI ensure")
         self.ui_get_current_page(skip_first_screenshot=skip_first_screenshot)
@@ -328,14 +341,16 @@ class UI(InfoHandler):
             interval=(0.2, 0.3),
     ):
         """
+        确保翻页到指定索引位置，通过 OCR 识别当前页码并点击翻页按钮。
+
         Args:
-            index (int):
-            letter (Ocr, callable): OCR button.
-            next_button (Button):
-            prev_button (Button):
-            skip_first_screenshot (bool):
-            fast (bool): Default true. False when index is not continuous.
-            interval (tuple, int, float): Seconds between two click.
+            index (int): 目标索引。
+            letter (Ocr, callable): OCR 识别器或回调函数。
+            next_button (Button): 下一页按钮。
+            prev_button (Button): 上一页按钮。
+            skip_first_screenshot (bool): 是否跳过首次截图。
+            fast (bool): 默认为 True。当索引不连续时设为 False。
+            interval (tuple, int, float): 两次点击之间的间隔（秒）。
         """
         logger.hr("UI ensure index")
         retry = Timer(1, count=2)
@@ -377,13 +392,16 @@ class UI(InfoHandler):
 
     def ui_page_main_popups(self, get_ship=True):
         """
-        Handle popups appear at page_main, page_reward
+        处理主界面和奖励页面出现的弹窗。
+
+        Args:
+            get_ship: 是否处理获得舰船的弹窗。
         """
-        # Guild popup
+        # 大舰队弹窗
         if self.handle_guild_popup_cancel():
             return True
 
-        # Daily reset
+        # 每日重置公告
         if self.appear_then_click(LOGIN_ANNOUNCE, offset=(30, 30), interval=3):
             return True
         if self.appear_then_click(LOGIN_ANNOUNCE_2, offset=(30, 30), interval=3):
@@ -401,28 +419,28 @@ class UI(InfoHandler):
             logger.info(f'UI additional: {EVENT_LIST_CHECK} -> {GOTO_MAIN}')
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30)):
                 return True
-        # Monthly pass is about to expire
+        # 月卡即将到期
         if self.appear_then_click(MONTHLY_PASS_NOTICE, offset=(30, 30), interval=3):
             return True
-        # Battle pass is about to expire and player has uncollected battle pass rewards
+        # 通行券即将到期且玩家有未领取的通行券奖励
         if self.appear_then_click(BATTLE_PASS_NOTICE, offset=(30, 30), interval=3):
             return True
-        # Popup that advertise you to buy battle pass
-        # 2024.12.19, PURCHASE_POPUP at main page becomes BATTLE_PASS_NEW_SEASON
+        # 购买通行券的广告弹窗
+        # 2024.12.19，主界面的 PURCHASE_POPUP 变为 BATTLE_PASS_NEW_SEASON
         # if self.appear_then_click(PURCHASE_POPUP, offset=(44, -77, 84, -37), interval=3):
         #     return True
-        # Popup that tells you new battle pass season is aired
+        # 通行券新赛季通知弹窗
         if self.appear(BATTLE_PASS_NEW_SEASON, offset=(30, 30), interval=3):
             logger.info(f'UI additional: {BATTLE_PASS_NEW_SEASON} -> {BACK_ARROW}')
             self.device.click(BACK_ARROW)
             return True
-        # Item expired offset=(37, 72), skin expired, offset=(24, 68)
+        # 物品过期 offset=(37, 72)，皮肤过期 offset=(24, 68)
         if self.handle_popup_single(offset=(-6, 48, 54, 88), name='ITEM_EXPIRED'):
             return True
-        # Mail full popup
+        # 邮箱已满弹窗
         if self.handle_popup_single_white():
             return True
-        # Routed from confirm click
+        # 从确认点击误入的页面
         if self.appear(SHIPYARD_CHECK, offset=(30, 30), interval=5):
             logger.info(f'UI additional: {SHIPYARD_CHECK} -> {GOTO_MAIN}')
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30)):
@@ -431,7 +449,7 @@ class UI(InfoHandler):
             logger.info(f'UI additional: {META_CHECK} -> {GOTO_MAIN}')
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30)):
                 return True
-        # Mistaken click
+        # 误点击
         if self.appear(PLAYER_CHECK, offset=(30, 30), interval=3):
             logger.info(f'UI additional: {PLAYER_CHECK} -> {GOTO_MAIN}')
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30)):
@@ -443,13 +461,13 @@ class UI(InfoHandler):
 
     def ui_page_os_popups(self):
         """
-        Handle popups appear at page_os
+        处理大世界页面出现的弹窗。
         """
-        # Opsi reset
-        # - Opsi has reset, handle_story_skip() clicks confirm
-        # - RESET_TICKET_POPUP
-        # - Open exchange shop? handle_popup_confirm() click confirm
-        # - EXCHANGE_CHECK, click BACK_ARROW
+        # 大世界重置流程：
+        # - 大世界已重置，handle_story_skip() 点击确认
+        # - RESET_TICKET_POPUP 弹窗
+        # - 是否打开兑换商店？handle_popup_confirm() 点击确认
+        # - EXCHANGE_CHECK 页面，点击返回箭头
         if self._opsi_reset_fleet_preparation_click >= 5:
             logger.critical("无法确认大世界出击舰队，大叔你还点？是在玩打地鼠吗？真是逊毙了！")
             logger.critical("哎呀呀，大叔是眼花了还是没长脑子？ #1: 建议检查您是否在大世界中设置了舰队")
@@ -472,40 +490,42 @@ class UI(InfoHandler):
 
     def ui_additional(self, get_ship=True):
         """
-        Handle all annoying popups during UI switching.
+        处理 UI 切换过程中出现的各种弹窗。
 
         Args:
-            get_ship:
+            get_ship: 是否处理获得舰船的弹窗。
         """
-        # Popups appear at page_os
-        # Has a popup_confirm variant
-        # so must take precedence
+        # 大世界页面弹窗
+        # 包含 popup_confirm 变体，必须优先处理
         if self.ui_page_os_popups():
             return True
 
-        # Research popup, lost connection popup
+        # 科研弹窗、断线重连弹窗
         if self.handle_popup_confirm("UI_ADDITIONAL"):
             return True
         if self.handle_urgent_commission():
             return True
 
-        # Popups appear at page_main, page_reward
-        if self.ui_page_main_popups(get_ship=get_ship):
-            return True
+        # 主界面和奖励页面弹窗
+        # 仅在非岛屿页面时处理，避免岛屿页面的 UI 元素被误检测为 GET_SHIP/GET_ITEMS
+        # 例如岛屿管理界面的邮箱按钮与 GET_SHIP 检测区域 (1104,610,1110,630) 重叠
+        if not (hasattr(self, 'ui_current') and self.ui_current and 'island' in self.ui_current.name):
+            if self.ui_page_main_popups(get_ship=get_ship):
+                return True
 
-        # Story
+        # 剧情跳过
         if self.handle_story_skip():
             return True
 
-        # Game tips
-        # Event commission in Vacation Lane.
-        # 2025.05.29 game tips that infos skin feature when you enter dock
+        # 游戏提示
+        # 度假村的活动委托提示
+        # 2025.05.29 进入船坞时出现的皮肤功能提示
         if self.appear(GAME_TIPS, offset=(30, 30), interval=2):
             logger.info(f'UI additional: {GAME_TIPS} -> {GOTO_MAIN}')
             self.device.click(GOTO_MAIN)
             return True
 
-        # Dorm popup
+        # 后宅弹窗
         if self.appear(DORM_INFO, offset=(30, 30), similarity=0.75, interval=3):
             self.device.click(DORM_INFO)
             return True
@@ -514,7 +534,7 @@ class UI(InfoHandler):
         if self.appear_then_click(DORM_TROPHY_CONFIRM, offset=(30, 30), interval=3):
             return True
 
-        # Meowfficer popup
+        # 指挥喵弹窗
         if self.appear_then_click(MEOWFFICER_INFO, offset=(30, 30), interval=3):
             self.interval_reset(GET_SHIP)
             return True
@@ -524,7 +544,7 @@ class UI(InfoHandler):
             self.interval_reset(GET_SHIP)
             return True
 
-        # Campaign preparation
+        # 战役准备界面
         if self.appear(MAP_PREPARATION, offset=(30, 30), interval=3) \
                 or self.appear(FLEET_PREPARATION, offset=(20, 50), interval=3) \
                 or self.appear(RAID_FLEET_PREPARATION, offset=(30, 30), interval=3):
@@ -535,14 +555,14 @@ class UI(InfoHandler):
         if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
             return True
         if self.appear(WITHDRAW, offset=(30, 30), interval=3):
-            # Poor wait here, to handle a game client bug after the game patch in 2022-04-07
-            # To re-produce this game bug (100% success):
-            # - Enter any stage, 12-4 for example
-            # - Stop and restart game
-            # - Run task `Main` in Alas
-            # - Alas switches to page_campaign and retreat from an existing stage
-            # - Game client freezes at page_campaign W12, clicking anywhere on the screen doesn't get responses
-            # - Restart game client again fix the issue
+            # 此处等待是为了处理 2022-04-07 游戏更新后的客户端 bug
+            # 复现步骤（100% 成功）：
+            # - 进入任意关卡，如 12-4
+            # - 停止并重启游戏
+            # - 运行 Alas 的 Main 任务
+            # - Alas 切换到 page_campaign 并从已有关卡撤退
+            # - 游戏客户端在 page_campaign W12 界面卡死，点击屏幕无响应
+            # - 再次重启游戏客户端可修复此问题
             logger.info("WITHDRAW button found, wait until map loaded to prevent bugs in game client")
             self.device.sleep(2)
             self.device.screenshot()
@@ -553,28 +573,28 @@ class UI(InfoHandler):
                 logger.warning("WITHDRAW button does not exist anymore")
                 self.interval_reset(WITHDRAW)
 
-        # Login
+        # 登录相关
         if self.appear_then_click(LOGIN_CHECK, offset=(30, 30), interval=3):
             return True
         if self.appear_then_click(MAINTENANCE_ANNOUNCE, offset=(30, 30), interval=3):
             return True
 
-        # Mistaken click
+        # 误点击
         if self.appear(EXERCISE_PREPARATION, interval=3):
             logger.info(f'UI additional: {EXERCISE_PREPARATION} -> {GOTO_MAIN}')
             self.device.click(GOTO_MAIN)
             return True
 
-        # RPG event (raid_20240328)
+        # RPG 活动 (raid_20240328)
         # if self.appear_then_click(RPG_STATUS_POPUP, offset=(30, 30), interval=3):
         #     return True
-        # Hospital event (20250327)
+        # 医院活动 (20250327)
         # if self.appear_then_click(HOSIPITAL_CLUE_CHECK, offset=(20, 20), interval=2):
         #     return True
         # if self.appear_then_click(HOSPITAL_BATTLE_EXIT, offset=(20, 20), interval=2):
         #     return True
-        # Neon city (coalition_20250626)
-        # FASHION (coalition_20260122) reuse NEONCITY
+        # 霓虹都市 (coalition_20250626)
+        # 时尚联动 (coalition_20260122) 复用 NEONCITY
         # if self.appear(NEONCITY_FLEET_PREPARATION, offset=(20, 20), interval=3):
         #     logger.info(f'{NEONCITY_FLEET_PREPARATION} -> {NEONCITY_PREPARATION_EXIT}')
         #     self.device.click(NEONCITY_PREPARATION_EXIT)
@@ -583,10 +603,10 @@ class UI(InfoHandler):
         # if self.appear_then_click(DAL_DIFFICULTY_EXIT, offset=(20, 20), interval=3):
         #     return True
 
-        # Idle page
+        # 空闲页面
         if self.handle_idle_page():
             return True
-        # Switch on ui_white, no offset just color match
+        # 白色主题 UI 切换，无偏移量仅颜色匹配
         if self.appear(MAIN_GOTO_MEMORIES_WHITE, interval=3):
             logger.info(f'UI additional: {MAIN_GOTO_MEMORIES_WHITE} -> {MAIN_TAB_SWITCH_WHITE}')
             self.device.click(MAIN_TAB_SWITCH_WHITE)
@@ -596,8 +616,10 @@ class UI(InfoHandler):
 
     def handle_idle_page(self):
         """
+        处理空闲页面（如待机动画），点击回到主界面。
+
         Returns:
-            bool: If handled
+            bool: 是否处理了空闲页面。
         """
         timer = self.get_interval_timer(IDLE, interval=3)
         if not timer.reached():
@@ -621,10 +643,10 @@ class UI(InfoHandler):
 
     def ui_button_interval_reset(self, button):
         """
-        Reset interval of some button to avoid mistaken clicks
+        重置某些按钮的检测间隔，防止误点击。
 
         Args:
-            button (Button):
+            button (Button): 刚点击过的按钮。
         """
         if button == MEOWFFICER_GOTO_DORMMENU:
             self.interval_reset(GET_SHIP)
@@ -643,7 +665,7 @@ class UI(InfoHandler):
             self.interval_reset(REWARD_GOTO_TACTICAL)
         if button in [MAIN_GOTO_CAMPAIGN, MAIN_GOTO_CAMPAIGN_WHITE]:
             self.interval_reset(GET_SHIP)
-            # Shinano event has the same title as raid
+            # 信浓活动与突袭有相同的标题
             self.interval_reset(RAID_CHECK)
         if button == SHOP_GOTO_SUPPLY_PACK:
             self.interval_reset(EXCHANGE_CHECK)

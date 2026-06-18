@@ -59,19 +59,21 @@ class Daily(Combat, DailyEquipment):
 
     def get_daily_stage_and_fleet(self):
         """
+        获取每日任务的关卡和舰队配置。
+
         Returns:
-            int: Stage index, 0 to 3
-            int: Fleet index, 1 to 6
+            int: 关卡索引，0 到 3。
+            int: 舰队索引，1 到 6。
         """
         if self.emergency_module_development:
-            # Meaning of daily_current
-            # 1 Emergency Module Development 限时兵装训练
-            # 2 Escort Mission 商船护送
-            # 3 Advance Mission 海域突进
-            # 4 Fierce Assault 斩首行动
-            # 5 Tactical Training 战术研修
-            # 6 Supply Line Disruption 破交作战
-            # 7 Module Development 兵装训练
+            # daily_current 含义
+            # 1 限时兵装训练 Emergency Module Development
+            # 2 商船护送 Escort Mission
+            # 3 海域突进 Advance Mission
+            # 4 斩首行动 Fierce Assault
+            # 5 战术研修 Tactical Training
+            # 6 破交作战 Supply Line Disruption
+            # 7 兵装训练 Module Development
             fleets = [
                 0,
                 self.config.Daily_EmergencyModuleDevelopmentFleet,
@@ -79,7 +81,7 @@ class Daily(Combat, DailyEquipment):
                 self.config.Daily_AdvanceMissionFleet,
                 self.config.Daily_FierceAssaultFleet,
                 self.config.Daily_TacticalTrainingFleet,
-                0,  # Supply Line Disruption, which needs to be done manually or to be done by daily skip
+                0,  # 破交作战，需要手动完成或通过每日跳过
                 self.config.Daily_ModuleDevelopmentFleet,
                 0
             ]
@@ -95,20 +97,20 @@ class Daily(Combat, DailyEquipment):
                 0
             ]
         else:
-            # Meaning of daily_current
-            # 1 Tactical Training 战术研修
-            # 2 Supply Line Disruption 破交作战
-            # 3 Module Development 兵装训练
-            # 4 (not open)
-            # 5 Escort Mission 商船护送
-            # 6 Advance Mission 海域突进
-            # 7 Fierce Assault 斩首行动
+            # daily_current 含义
+            # 1 战术研修 Tactical Training
+            # 2 破交作战 Supply Line Disruption
+            # 3 兵装训练 Module Development
+            # 4 (未开放)
+            # 5 商船护送 Escort Mission
+            # 6 海域突进 Advance Mission
+            # 7 斩首行动 Fierce Assault
             fleets = [
                 0,
                 self.config.Daily_TacticalTrainingFleet,
-                0,  # Supply Line Disruption, which needs to be done manually or to be done by daily skip
+                0,  # 破交作战，需要手动完成或通过每日跳过
                 self.config.Daily_ModuleDevelopmentFleet,
-                0,  # Empty
+                0,  # 空
                 self.config.Daily_EscortMissionFleet,
                 self.config.Daily_AdvanceMissionFleet,
                 self.config.Daily_FierceAssaultFleet,
@@ -119,7 +121,7 @@ class Daily(Combat, DailyEquipment):
                 self.config.Daily_TacticalTraining,
                 self.config.Daily_SupplyLineDisruption,
                 self.config.Daily_ModuleDevelopment,
-                0,  # Empty
+                0,  # 空
                 self.config.Daily_EscortMission,
                 self.config.Daily_AdvanceMission,
                 self.config.Daily_FierceAssault,
@@ -155,13 +157,15 @@ class Daily(Combat, DailyEquipment):
 
     def daily_execute(self, remain=3, stage=1, fleet=1):
         """
+        执行每日任务。
+
         Args:
-            remain (int): Remain daily challenge count.
-            stage (int): Index of stage counted from top, 1 to 3.
-            fleet (int): Index of fleet to use.
+            remain (int): 剩余每日挑战次数。
+            stage (int): 从上到下的关卡索引，1 到 3。
+            fleet (int): 使用的舰队索引。
 
         Returns:
-            bool: True if success, False if daily locked.
+            bool: 成功返回 True，每日任务锁定返回 False。
 
         Pages:
             in: page_daily
@@ -196,7 +200,7 @@ class Daily(Combat, DailyEquipment):
                 logger.info('Submarine daily skip not unlocked, skip')
                 self.ui_click(click_button=BACK_ARROW, check_button=daily_enter_check, skip_first_screenshot=True)
                 break
-            # Execute classic daily run
+            # 执行经典每日任务
             self.ui_ensure_index(fleet, letter=OCR_DAILY_FLEET_INDEX, prev_button=DAILY_FLEET_PREV,
                                  next_button=DAILY_FLEET_NEXT, fast=False, skip_first_screenshot=True)
             self.combat(emotion_reduce=False, save_get_items=False, expected_end=daily_end, balance_hp=False)
@@ -208,16 +212,18 @@ class Daily(Combat, DailyEquipment):
 
     def daily_enter(self, button, skip_first_screenshot=True):
         """
+        进入每日任务。
+
         Args:
-            button (Button): Daily entrance
-            skip_first_screenshot (bool):
+            button (Button): 每日任务入口按钮。
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Returns:
-            bool: True if combat appear. False if daily skip unlocked, skipped daily, received rewards.
+            bool: 战斗画面出现返回 True，每日跳过已解锁/已跳过/已领取奖励返回 False。
 
         Pages:
             in: DAILY_ENTER_CHECK
-            out: DAILY_ENTER_CHECK or combat_appear
+            out: DAILY_ENTER_CHECK 或 combat_appear
         """
         reward_received = False
         while 1:
@@ -245,7 +251,7 @@ class Daily(Combat, DailyEquipment):
             if self.handle_popup_confirm('DAILY_SKIP'):
                 continue
 
-            # End
+            # 结束
             if self.appear(DAILY_SKIP, offset=(20, 20)):
                 if reward_received:
                     return False
@@ -313,7 +319,6 @@ class Daily(Combat, DailyEquipment):
             else:
                 self.daily_execute(remain=remain, stage=stage, fleet=fleet)
                 self.daily_check()
-                # The order of daily tasks will be disordered after execute a daily, exit and re-enter to reset.
                 # 打完一次之后每日任务的顺序会乱掉, 退出再进入来重置顺序.
                 self.ui_goto(page_campaign_menu)
                 break
@@ -333,13 +338,15 @@ class Daily(Combat, DailyEquipment):
 
     def run(self):
         """
+        运行每日任务。
+
         Pages:
-            in: Any page
+            in: 任意页面
             out: page_daily
         """
         # self.equipment_take_on()
         self.daily_run()
         # self.equipment_take_off()
 
-        # Cannot stay in page_daily, because order is disordered.
+        # 不能停留在 page_daily，因为顺序会乱掉。
         self.config.task_delay(server_update=True)

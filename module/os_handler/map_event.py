@@ -15,7 +15,7 @@ from module.ui.switch import Switch
 
 class FleetLockSwitch(Switch):
     def handle_additional(self, main):
-        # A game bug that AUTO_SEARCH_REWARD from the last cleared zone popups
+        # 游戏 bug：上一个已清除海域的 AUTO_SEARCH_REWARD 弹出
         if main.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
             return True
         return False
@@ -85,7 +85,7 @@ class MapEventHandler(EnemySearchingHandler):
         return False
 
     def handle_os_game_tips(self):
-        # Close game tips the first time enabling auto search
+        # 关闭首次开启自动搜索时的游戏提示
         if self.appear_then_click(OS_GAME_TIPS, offset=(20, 20), interval=3):
             return True
 
@@ -94,7 +94,7 @@ class MapEventHandler(EnemySearchingHandler):
     def handle_ash_popup(self):
         name = 'ASH'
         # 2021.12.09
-        # Ash popup no longer shows red letters, so change it to letter `Ashes Coordinates`
+        # 余烬弹窗不再显示红色文字，改为检测 "Ashes Coordinates" 文字
         if self.appear(POPUP_CONFIRM, offset=self._popup_offset) \
                 and self.appear(POPUP_CANCEL, offset=self._popup_offset, interval=2) \
                 and self.appear(ASH_POPUP_CHECK, offset=(20, 20)):
@@ -108,11 +108,13 @@ class MapEventHandler(EnemySearchingHandler):
 
     def handle_map_event(self, drop=None):
         """
+        处理大世界地图事件。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落图像对象。
 
         Returns:
-            str: Event that handled
+            str: 已处理的事件名称。
         """
         # 优先处理阻塞性确认弹窗,避免卡住状态循环
         # 处理指挥猫搜寻时退出海域的确认弹窗 (issue #100)
@@ -149,7 +151,7 @@ class MapEventHandler(EnemySearchingHandler):
                 logger.warning('Wait for story option timeout')
                 self._story_timeout.reset()
 
-                # Restart
+                # 重启应用
                 self.device.app_stop()
                 self.device.app_start()
 
@@ -172,8 +174,10 @@ class MapEventHandler(EnemySearchingHandler):
 
     def handle_os_in_map(self):
         """
+        确认是否已返回大世界地图。
+
         Returns:
-            bool: If is in map and confirmed.
+            bool: 是否在地图中并已确认。
         """
         if self.is_in_map():
             if self._os_in_map_confirm_timer.reached():
@@ -196,11 +200,13 @@ class MapEventHandler(EnemySearchingHandler):
 
     def os_auto_search_quit(self, drop=None):
         """
+        退出大世界自动搜索。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落图像对象。
 
         Returns:
-            bool: True if current map cleared
+            bool: 当前地图是否已清除。
         """
         confirm_timer = Timer(1.2, count=3).start()
         cleared = False
@@ -223,20 +229,20 @@ class MapEventHandler(EnemySearchingHandler):
                 confirm_timer.reset()
                 continue
             if self.appear_then_click(GLOBE_GOTO_MAP, offset=(20, 20), interval=2):
-                # Sometimes entered globe map after clicking AUTO_SEARCH_REWARD
-                # because of duplicated clicks and clicks to places outside the map
+                # 有时点击 AUTO_SEARCH_REWARD 后会意外进入地球仪地图
+                # 因为重复点击或点击到地图外部区域
                 confirm_timer.reset()
                 continue
-            # Donno why but it just entered storage, exit it anyway
-            # Equivalent to is_in_storage, but can't inherit StorageHandler here
-            # STORAGE_CHECK is a duplicate name, this is the os_handler/STORAGE_CHECK, not handler/STORAGE_CHECK
+            # 不知为何进入了仓库，直接退出
+            # 等效于 is_in_storage，但此处无法继承 StorageHandler
+            # STORAGE_CHECK 是重复名称，这里是 os_handler/STORAGE_CHECK，不是 handler/STORAGE_CHECK
             if self.appear(STORAGE_CHECK, offset=(20, 20), interval=5):
                 logger.info(f'{STORAGE_CHECK} -> {BACK_ARROW}')
                 self.device.click(BACK_ARROW)
                 confirm_timer.reset()
                 continue
 
-            # End
+            # 结束
             if self.is_in_map():
                 if confirm_timer.reached():
                     break
@@ -247,12 +253,14 @@ class MapEventHandler(EnemySearchingHandler):
 
     def handle_os_auto_search_map_option(self, drop=None, enable: Optional[bool] = True):
         """
+        处理大世界自动搜索地图选项。
+
         Args:
-            drop (DropImage):
-            enable (bool): True/False, or None for doing nothing.
+            drop (DropImage): 掉落图像对象。
+            enable (bool): True/False，或 None 表示不操作。
 
         Returns:
-            bool: If clicked.
+            bool: 是否点击了选项。
         """
         if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF, offset=(5, 120)):
             if self.info_bar_count() >= 2:
@@ -267,10 +275,10 @@ class MapEventHandler(EnemySearchingHandler):
         if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50)):
             self.device.screenshot_interval_set()
             if self.os_auto_search_quit(drop=drop):
-                # No more items on current map
+                # 当前地图没有更多物品
                 raise CampaignEnd
             else:
-                # Auto search stopped but map hasn't been cleared
+                # 自动搜索已停止但地图未清除
                 return True
 
         if enable is None:
@@ -280,7 +288,7 @@ class MapEventHandler(EnemySearchingHandler):
                 self.device.click(AUTO_SEARCH_OS_MAP_OPTION_OFF)
                 self.interval_reset(AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED)
                 return True
-            # Game client bugged sometimes, AUTO_SEARCH_OS_MAP_OPTION_OFF grayed out but still functional
+            # 游戏客户端有时会 bug，AUTO_SEARCH_OS_MAP_OPTION_OFF 灰显但仍可点击
             if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED, offset=(5, 120), interval=3):
                 self.device.click(AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED)
                 self.interval_reset(AUTO_SEARCH_OS_MAP_OPTION_OFF)
@@ -294,14 +302,16 @@ class MapEventHandler(EnemySearchingHandler):
 
     def handle_os_map_fleet_lock(self, enable=None):
         """
+        处理大世界地图舰队锁定。
+
         Args:
-            enable (bool): Default to None, use Campaign_UseFleetLock.
+            enable (bool): 默认为 None，使用 Campaign_UseFleetLock 配置。
 
         Returns:
-            bool: If switched.
+            bool: 是否切换了锁定状态。
         """
-        # Fleet lock depends on if it appear on map, not depends on map status.
-        # Because if already in map, there's no map status,
+        # 舰队锁定取决于是否在地图上显示，而非地图状态
+        # 因为如果已在地图中，则没有地图状态
         if not fleet_lock.appear(main=self):
             logger.info('No fleet lock option.')
             return False

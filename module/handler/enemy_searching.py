@@ -9,12 +9,12 @@ from module.ui.assets import CAMPAIGN_CHECK, EVENT_CHECK, SP_CHECK
 
 
 class EnemySearchingHandler(InfoHandler):
-    MAP_ENEMY_SEARCHING_OVERLAY_TRANSPARENCY_THRESHOLD = 0.5  # Usually (0.70, 0.80).
+    MAP_ENEMY_SEARCHING_OVERLAY_TRANSPARENCY_THRESHOLD = 0.5  # 通常值为 (0.70, 0.80)
     MAP_ENEMY_SEARCHING_TIMEOUT_SECOND = 5
     in_stage_timer = Timer(0.5, count=2)
     stage_entrance = None
 
-    map_is_100_percent_clear = False  # Will be override in fast_forward.py
+    map_is_100_percent_clear = False  # 将在 fast_forward.py 中被覆盖
 
     def enemy_searching_color_initial(self):
         pass
@@ -53,9 +53,9 @@ class EnemySearchingHandler(InfoHandler):
 
     def is_stage_page_has_entrance(self):
         """
-        Has any stage entrance, which means stage page is fully loaded
+        检查关卡页面是否有关卡入口，即页面是否已完全加载。
         """
-        # campaign_extract_name_image in CampaignOcr.
+        # campaign_extract_name_image 位于 CampaignOcr 中
         try:
             if hasattr(self, 'campaign_extract_name_image'):
                 del_cached_property(self, '_stage_image')
@@ -79,28 +79,30 @@ class EnemySearchingHandler(InfoHandler):
 
     def is_event_animation(self):
         """
-        Animation in events after cleared an enemy.
+        检查是否有活动中的动画（击败敌人后的动画）。
 
         Returns:
-            bool: If animation appearing.
+            bool: 是否正在播放动画。
         """
         return False
 
     def handle_auto_search_exit(self, drop=None) -> bool:
         """
-        A placeholder, will be override in AutoSearchHandler.
-        AutoSearchHandler inherits EnemySearchingHandler,
-        but handle_in_map_with_enemy_searching() requires handle_auto_search_exit() to handle unexpected situation.
+        占位方法，将在 AutoSearchHandler 中被覆盖。
+        AutoSearchHandler 继承了 EnemySearchingHandler，
+        但 handle_in_map_with_enemy_searching() 需要调用 handle_auto_search_exit() 来处理意外情况。
         """
         return False
 
     def handle_in_map_with_enemy_searching(self, drop=None):
         """
+        处理地图中敌人搜索动画出现的情况。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落记录对象。
 
         Returns:
-            bool: If handled.
+            bool: 是否进行了处理。
         """
         if not self.is_in_map():
             return False
@@ -116,8 +118,7 @@ class EnemySearchingHandler(InfoHandler):
             else:
                 timeout.reset()
 
-            # Stage might ends,
-            # although here expects an enemy searching animation.
+            # 关卡可能已经结束，尽管此处预期出现敌人搜索动画
             if self.handle_in_stage():
                 return True
             if self.handle_auto_search_exit(drop=drop):
@@ -125,7 +126,7 @@ class EnemySearchingHandler(InfoHandler):
                 timeout.reset()
                 continue
 
-            # Popups
+            # 弹窗处理
             if self.handle_vote_popup():
                 timeout.limit = 10
                 timeout.reset()
@@ -143,7 +144,7 @@ class EnemySearchingHandler(InfoHandler):
                 timeout.reset()
                 continue
 
-            # End
+            # 结束条件
             if self.enemy_searching_appear():
                 appeared = True
             else:
@@ -162,11 +163,13 @@ class EnemySearchingHandler(InfoHandler):
 
     def handle_in_map_no_enemy_searching(self, drop=None):
         """
+        处理地图中未出现敌人搜索动画的情况。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落记录对象。
 
         Returns:
-            bool: If handled.
+            bool: 是否进行了处理。
         """
         if not self.is_in_map():
             return False
@@ -178,15 +181,14 @@ class EnemySearchingHandler(InfoHandler):
             if not self.is_in_map():
                 timeout.reset()
 
-            # Stage might ends,
-            # although here expects an enemy searching animation.
+            # 关卡可能已经结束，尽管此处预期出现敌人搜索动画
             if self.handle_in_stage():
                 return True
             if self.handle_auto_search_exit(drop=drop):
                 timeout.reset()
                 continue
 
-            # Popups
+            # 弹窗处理
             if self.handle_vote_popup():
                 timeout.reset()
                 continue
@@ -200,7 +202,7 @@ class EnemySearchingHandler(InfoHandler):
                 timeout.reset()
                 continue
 
-            # End
+            # 结束条件
             if timeout.reached():
                 logger.info('No enemy searching in map.')
                 break

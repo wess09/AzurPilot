@@ -1,8 +1,10 @@
 """
-This file stores server, such as 'cn', 'en'.
-Use 'import module.config.server as server' to import, don't use 'from xxx import xxx'.
+服务器配置模块。
+
+存储全局服务器选择（如 'cn'、'en'）。
+使用 'import module.config.server as server' 导入，不要使用 'from xxx import xxx'。
 """
-server = 'cn'  # Setting default to cn, will avoid errors when using dev_tools
+server = 'cn'  # 默认设为 cn，避免开发工具使用时出错
 
 VALID_SERVER = ['cn', 'en', 'jp', 'tw']
 VALID_PACKAGE = {
@@ -12,7 +14,7 @@ VALID_PACKAGE = {
     'com.hkmanjuu.azurlane.gp': 'tw',
 }
 VALID_CHANNEL_PACKAGE = {
-    # App stores
+    # 应用商店
     'com.bilibili.blhx.huawei': ('cn', '华为'),
     'com.bilibili.blhx.honor': ('cn', '荣耀'),
     'com.bilibili.blhx.mi': ('cn', '小米'),
@@ -24,17 +26,17 @@ VALID_CHANNEL_PACKAGE = {
     'com.bilibili.blhx.mz': ('cn', '魅族'),
     'com.bilibili.blhx.dl': ('cn', '当乐'),
     'com.bilibili.blhx.lenovo': ('cn', '联想'),
-    # 'com.bilibili.blhx.letv': ('cn', '乐视'),  # Not confirmed
-    # 'com.bilibili.blhx.gionee': ('cn', '金立'),  # Not confirmed
+    # 'com.bilibili.blhx.letv': ('cn', '乐视'),  # 未确认
+    # 'com.bilibili.blhx.gionee': ('cn', '金立'),  # 未确认
 
-    # 3rd party gaming platforms
+    # 第三方游戏平台
     'com.bilibili.blhx.uc': ('cn', 'UC九游'),
     'com.bilibili.blhx.mzw': ('cn', '拇指玩'),
     'com.yiwu.blhx.yx15': ('cn', '一五游戏'),
     'com.bilibili.blhx.m4399': ('cn', '4399'),
     'com.bilibili.blhx.bilibiliMove': ('cn', '迁移'),
 
-    # Tw
+    # 台服
     'com.hkmanjuu.azurlane.gp.mc': ('tw', 'MyCard'),
 }
 DICT_PACKAGE_TO_ACTIVITY = {
@@ -44,7 +46,7 @@ DICT_PACKAGE_TO_ACTIVITY = {
     'com.YoStarEN.AzurLane': 'com.manjuu.azurlane.PrePermissionActivity',
     'com.YoStarJP.AzurLane': 'com.manjuu.azurlane.PrePermissionActivity',
     'com.hkmanjuu.azurlane.gp': 'com.manjuu.azurlane.PrePermissionActivity',
-    # App stores
+    # 应用商店
     'com.bilibili.blhx.huawei': 'com.manjuu.azurlane.SplashActivity',
     'com.bilibili.blhx.mi': 'com.manjuu.azurlane.SplashActivity',
     'com.tencent.tmgp.bilibili.blhx': 'com.manjuu.azurlane.SplashActivity',
@@ -56,14 +58,14 @@ DICT_PACKAGE_TO_ACTIVITY = {
     'com.bilibili.blhx.dl': 'com.manjuu.azurlane.SplashActivity',
     'com.bilibili.blhx.lenovo': 'com.manjuu.azurlane.SplashActivity',
 
-    # 3rd party gaming platforms
+    # 第三方游戏平台
     'com.bilibili.blhx.uc': 'com.manjuu.azurlane.SplashActivity',
     'com.bilibili.blhx.mzw': 'com.manjuu.azurlane.SplashActivity',
     'com.yiwu.blhx.yx15': 'com.manjuu.azurlane.SplashActivity',
     'com.bilibili.blhx.m4399': 'com.manjuu.azurlane.SplashActivity',
     'com.bilibili.blhx.bilibiliMove': 'com.manjuu.azurlane.SplashActivity',
 
-    # Tw
+    # 台服
     'com.hkmanjuu.azurlane.gp.mc': 'com.manjuu.azurlane.PrePermissionActivity',
 }
 VALID_SERVER_LIST = {
@@ -81,7 +83,7 @@ VALID_SERVER_LIST = {
         '莱特湾', '硫磺岛', '冲绳岛', '阿留申群岛', '马耳他'
     ],
     'cn_channel': [
-        '皇家巡游', '大西洋宪章', '十字军行动', '龙骑兵行动', '冥王星行动'
+        '皇家巡游', '大西洋宪章', '十字军行动', '龙骑兵行动', '冥王星行动', '群岛计划',
     ],
     'en': [
         'Avrora', 'Lexington', 'Sandy', 'Washington', 'Amagi',
@@ -98,11 +100,10 @@ VALID_SERVER_LIST = {
 
 def set_server(package_or_server: str):
     """
-    Change server and this will effect globally,
-    including assets and server specific methods.
+    设置全局服务器，影响资源文件和服务器特定方法。
 
     Args:
-        package_or_server: package name or server.
+        package_or_server: 包名或服务器名称。
     """
     global server
     server = to_server(package_or_server)
@@ -113,8 +114,8 @@ def set_server(package_or_server: str):
 
 def to_server(package_or_server: str) -> str:
     """
-    Convert package/server to server.
-    To unknown packages, consider they are a CN channel servers.
+    将包名或服务器名称转换为服务器标识。
+    无法识别的包名默认视为 CN 渠道服。
     """
     if package_or_server in VALID_SERVER:
         return package_or_server
@@ -128,7 +129,7 @@ def to_server(package_or_server: str) -> str:
 
 def to_package(package_or_server: str) -> str:
     """
-    Convert package/server to package.
+    将包名或服务器名称转换为包名。
     """
     package_or_server = package_or_server.lower()
     if package_or_server in VALID_PACKAGE:

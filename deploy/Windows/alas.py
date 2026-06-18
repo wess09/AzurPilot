@@ -26,13 +26,14 @@ class AlasManager(DeployConfig):
         return process
 
     def iter_process_by_names(self, names, in_alas=False) -> t.Iterable[DataProcessInfo]:
-        """
+        """按进程名遍历匹配的进程。
+
         Args:
-            names (str, list[str]): process name, such as 'alas.exe'
-            in_alas (bool): If the output process must in Alas
+            names (str, list[str]): 进程名，如 'alas.exe'。
+            in_alas (bool): 是否只返回属于当前 AzurPilot 实例的进程。
 
         Yields:
-            DataProcessInfo:
+            DataProcessInfo: 匹配的进程信息。
         """
         if not isinstance(names, list):
             names = [names]
@@ -59,7 +60,7 @@ class AlasManager(DeployConfig):
 
     def alas_kill(self):
         for _ in range(10):
-            logger.hr(f'Kill existing Alas', 0)
+            logger.hr(f'Kill existing AzurPilot', 0)
             proc_list = list(self.iter_process_by_names(['python.exe'], in_alas=True))
             if not len(proc_list):
                 Progress.KillExisting()
@@ -68,7 +69,7 @@ class AlasManager(DeployConfig):
                 logger.info(proc)
                 self.kill_process(proc)
 
-        logger.warning('Unable to kill existing Alas, skip')
+        logger.warning('Unable to kill existing AzurPilot, skip')
         Progress.KillExisting()
         return False
 

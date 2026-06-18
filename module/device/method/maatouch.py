@@ -33,18 +33,18 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # ADB 服务被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
                     del_cached_property(self, '_maatouch_builder')
-            # MaaTouchSyncTimeout
-            # Probably because adb server was killed
+            # MaaTouch 同步超时
+            # 可能是因为 ADB 服务被终止
             except MaaTouchSyncTimeout as e:
                 logger.error(e)
 
@@ -52,14 +52,14 @@ def retry(func):
                     self.adb_reconnect()
                     del_cached_property(self, '_maatouch_builder')
                     self.reset_maatouch()
-            # Emulator closed
+            # 模拟器关闭
             except ConnectionAbortedError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
                     del_cached_property(self, '_maatouch_builder')
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -72,7 +72,7 @@ def retry(func):
                         del_cached_property(self, '_maatouch_builder')
                 else:
                     break
-            # MaaTouchNotInstalledError: Received "Aborted" from MaaTouch
+            # MaaTouchNotInstalledError: 从 MaaTouch 收到 "Aborted"
             except MaaTouchNotInstalledError as e:
                 logger.error(e)
 
@@ -84,10 +84,10 @@ def retry(func):
 
                 def init():
                     del_cached_property(self, '_maatouch_builder')
-            # Can't handle - must propagate to trigger emulator restart
+            # 无法处理 - 必须向上抛出以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # Unknown, probably a trucked image
+            # 未知异常，可能是图像损坏
             except Exception as e:
                 logger.exception(e)
 
@@ -112,7 +112,7 @@ class MaatouchBuilder(CommandBuilder):
     ):
         """
         Args:
-            device (MaaTouch):
+            device (MaaTouch): MaaTouch 设备实例。
         """
 
         super().__init__(device, contact, handle_orientation)
@@ -137,7 +137,7 @@ class MaaTouchSyncTimeout(Exception):
 
 class MaaTouch(Connection):
     """
-    Control method that implements the same as scrcpy and has an interface similar to minitouch.
+    实现与 scrcpy 相同功能、接口类似 minitouch 的控制方案。
     https://github.com/MaaAssistantArknights/MaaTouch
     """
     max_x: int
@@ -155,20 +155,20 @@ class MaaTouch(Connection):
 
     @property
     def maatouch_builder(self):
-        # Wait init thread
+        # 等待初始化线程完成
         if self._maatouch_init_thread is not None:
             self._maatouch_init_thread.join()
             del self._maatouch_init_thread
             self._maatouch_init_thread = None
 
-        # Return an empty builder
+        # 返回空的 builder
         self._maatouch_builder.clear()
         return self._maatouch_builder
 
     def early_maatouch_init(self):
         """
-        Start a thread to init maatouch connection while the Alas instance just starting to take screenshots
-        This would speed up the first click 0.2 ~ 0.4s.
+        在 Alas 实例开始截图时启动线程初始化 maatouch 连接。
+        这将加速首次点击约 0.2 ~ 0.4 秒。
         """
         if has_cached_property(self, '_maatouch_builder'):
             return
@@ -182,8 +182,8 @@ class MaaTouch(Connection):
 
     def on_orientation_change_maatouch(self):
         """
-        MaaTouch caches devices orientation at its startup
-        A restart is required when orientation changed
+        MaaTouch 在启动时缓存设备方向。
+        方向改变时需要重启。
         """
         if self._maatouch_orientation is None:
             return
@@ -200,7 +200,7 @@ class MaaTouch(Connection):
         max_contacts = 2
         max_pressure = 50
 
-        # Try to close existing stream
+        # 尝试关闭已有连接
         if self._maatouch_stream is not None:
             try:
                 self._maatouch_stream.close()
@@ -210,7 +210,7 @@ class MaaTouch(Connection):
         if self._maatouch_stream_storage is not None:
             del self._maatouch_stream_storage
 
-        # MaaTouch caches devices orientation at its startup
+        # MaaTouch 在启动时缓存设备方向
         super(MaaTouch, self).get_orientation()
         self._maatouch_orientation = self.orientation
 
@@ -220,7 +220,7 @@ class MaaTouch(Connection):
             stream=True,
             recvall=False
         )
-        # Prevent shell stream from being deleted causing socket close
+        # 防止 shell stream 被删除导致 socket 关闭
         self._maatouch_stream_storage = stream
         stream = stream.conn
         stream.settimeout(10)
@@ -229,8 +229,8 @@ class MaaTouch(Connection):
         retry_timeout = Timer(5).start()
         while 1:
             # v <version>
-            # protocol version, usually it is 1. needn't use this
-            # get maatouch server info
+            # 协议版本，通常为 1，无需使用
+            # 获取 maatouch 服务端信息
             socket_out = stream.makefile()
 
             # ^ <max-contacts> <max-x> <max-y> <max-pressure>
@@ -253,7 +253,7 @@ class MaaTouch(Connection):
                         'probably because MaaTouch is not installed'
                     )
                 else:
-                    # maatouch may not start that fast
+                    # maatouch 可能启动没那么快
                     self.sleep(1)
                     continue
 
@@ -268,7 +268,7 @@ class MaaTouch(Connection):
         # _, pid = out.split(" ")
         # self._maatouch_pid = pid
 
-        # Timeout 2s for sync
+        # 同步超时 2 秒
         stream.settimeout(2)
         logger.info(
             "MaaTouch stream connected"
@@ -289,26 +289,26 @@ class MaaTouch(Connection):
         builder.clear()
 
     def maatouch_send_sync(self, builder: MaatouchBuilder, mode=2):
-        # Set inject mode to the last command
+        # 设置最后一条命令的注入模式
         for command in builder.commands[::-1]:
             if command.operation in ['r', 'd', 'm', 'u']:
                 command.mode = mode
                 break
 
-        # add maatouch sync command: 's <timestamp>\n'
+        # 添加 maatouch 同步命令：'s <timestamp>\n'
         timestamp = str(int(time.time() * 1000))
         builder.commands.insert(0, Command(
             's', text=timestamp
         ))
 
-        # Send
+        # 发送
         content = builder.to_maatouch_sync()
         # logger.info("send operation: {}".format(content.replace("\n", "\\n")))
         byte_content = content.encode('utf-8')
         self._maatouch_stream.sendall(byte_content)
         self._maatouch_stream.recv(0)
 
-        # Wait until operations finished
+        # 等待操作完成
         # start = time.time()
         socket_out = self._maatouch_stream.makefile()
         max_trial = 3

@@ -39,15 +39,15 @@ def lines_detect(image):
         image:
 
     Returns:
-        np.ndarray: Coordinate Y of the white lines under each commission.
+        np.ndarray: 每个委托下方白色分割线的 Y 坐标。
     """
-    # Find white lines under each commission to locate them.
-    # (597, 0, 619, 720) is somewhere with white lines only.
+    # 通过查找每个委托下方的白色分割线来定位委托位置。
+    # (597, 0, 619, 720) 是只有白色分割线的区域。
     color_height = np.mean(rgb2gray(crop(image, (597, 0, 619, 720), copy=False)), axis=1)
     parameters = {'height': 200, 'distance': 100}
     peaks, _ = signal.find_peaks(color_height, **parameters)
-    # 67 is the height of commission list header
-    # 117 is the height of one commission card.
+    # 67 是委托列表头部的高度
+    # 117 是单个委托卡片的高度。
     peaks = [y for y in peaks if y > 67 + 117]
     return np.array(peaks)
 
@@ -62,7 +62,7 @@ class RewardCommission(UI, InfoHandler):
 
     def _commission_detect(self, image):
         """
-        Get all commissions from an image.
+        从图像中获取所有委托。
 
         Args:
             image (np.ndarray):
@@ -84,8 +84,8 @@ class RewardCommission(UI, InfoHandler):
     def commission_detect(self, trial=1, area=None, skip_first_screenshot=True):
         """
         Args:
-            trial (int): Retry if has one invalid commission,
-                         usually because info_bar didn't disappear completely.
+            trial (int): 遇到无效委托时重试次数，
+                         通常是因为 info_bar 未完全消失。
             area (tuple):
             skip_first_screenshot (bool):
 
@@ -120,13 +120,13 @@ class RewardCommission(UI, InfoHandler):
             urgent (SelectedGrids):
 
         Returns:
-            SelectedGrids, SelectedGrids: Chosen daily commission, Chosen urgent commission
+            SelectedGrids, SelectedGrids: 选中的每日委托，选中的紧急委托
         """
         self.comm_choose = SelectedGrids([])
-        # Count Commission
+        # 统计委托数量
         total = daily.add_by_eq(urgent)
-        # Commissions with higher suffix are always below those with smaller suffix
-        # Reverse the commission list to choose commissions with higher suffix first
+        # 后缀编号较大的委托总是在较小编号的下方
+        # 反转委托列表以优先选择后缀编号较大的委托
         total = total[::-1]
         self.max_commission = 4
         for comm in total:
@@ -136,7 +136,7 @@ class RewardCommission(UI, InfoHandler):
         running_count = len(running_list)
         logger.attr('Running', f'{running_count}/{self.max_commission}')
 
-        # Load filter string
+        # 加载过滤器字符串
         preset = self.config.Commission_PresetFilter
         if preset == 'custom':
             string = self.config.Commission_CustomFilter
@@ -152,13 +152,13 @@ class RewardCommission(UI, InfoHandler):
             string = DICT_FILTER_PRESET[preset]
         logger.attr('Commission Filter', preset)
 
-        # Filter
+        # 过滤
         COMMISSION_FILTER.load(string)
         run = COMMISSION_FILTER.apply(total.grids, func=self._commission_check)
         logger.attr('Filter_sort', ' > '.join([str(c) for c in run]))
         run = SelectedGrids(run)
 
-        # Add shortest
+        # 添加最短时间委托
         if self.config.Commission_AddShortest == False and preset == 'custom':
             logger.info('Not enough commissions to run')
         else:
@@ -168,7 +168,7 @@ class RewardCommission(UI, InfoHandler):
                     logger.info('Not enough commissions to run, add shortest daily commissions')
                     COMMISSION_FILTER.load(SHORTEST_FILTER)
                     shortest = COMMISSION_FILTER.apply(daily[::-1], func=self._commission_check)
-                    # Reverse the daily list to choose better commissions
+                    # 反转每日委托列表以选择更好的委托
                     run = no_shortest.add_by_eq(SelectedGrids(shortest))
                     logger.attr('Filter_sort', ' > '.join([str(c) for c in run]))
                 else:
@@ -201,7 +201,7 @@ class RewardCommission(UI, InfoHandler):
         if running_count >= self.max_commission:
             return SelectedGrids([]), SelectedGrids([])
 
-        # Separate daily and urgent
+        # 分离每日和紧急委托
         run = run[:self.max_commission - running_count]
         daily_choose = run.intersect_by_eq(daily)
         urgent_choose = run.intersect_by_eq(urgent)
@@ -233,9 +233,9 @@ class RewardCommission(UI, InfoHandler):
 
     def _commission_ensure_mode(self, mode):
         if COMMISSION_SWITCH.set(mode, main=self):
-            # If daily list has commissions > 4, usually to be 5, and 1 <= urgent <= 4
-            # commission list will have an animation to scroll,
-            # which causes the topmost one undetected.
+            # 当每日委托列表超过 4 个（通常为 5 个），且紧急委托在 1 到 4 个之间时，
+            # 委托列表会出现滚动动画，
+            # 导致最顶部的委托无法被检测到。
             if not COMMISSION_SCROLL.appear(main=self) or COMMISSION_SCROLL.cal_position(main=self) < 0.05 or COMMISSION_SCROLL.length / COMMISSION_SCROLL.total > 0.98:
                 pre_peaks = lines_detect(self.device.image)
                 self.device.screenshot()
@@ -284,7 +284,7 @@ class RewardCommission(UI, InfoHandler):
     def _commission_scan_list(self):
         """
         Returns:
-            SelectedGrids: SelectedGrids containing Commission objects
+            SelectedGrids: 包含 Commission 对象的 SelectedGrids
         """
         self.device.click_record_clear()
         commission = SelectedGrids([])
@@ -292,7 +292,7 @@ class RewardCommission(UI, InfoHandler):
             new = self.commission_detect(trial=2)
             commission = commission.add_by_eq(new)
 
-            # End
+            # 结束
             if not self._commission_swipe():
                 break
 
@@ -306,7 +306,7 @@ class RewardCommission(UI, InfoHandler):
             out: page_commission
         """
         logger.hr('Commission scan', level=1)
-        # Urgent list is lazy loaded. Check it first for a force update.
+        # 紧急委托列表是懒加载的，先切换以强制刷新。
         self._commission_ensure_mode('urgent')
 
         logger.hr('Scan daily', level=2)
@@ -320,11 +320,11 @@ class RewardCommission(UI, InfoHandler):
             self._commission_ensure_mode('urgent')
             self._commission_swipe_to_top()
             urgent = self._commission_scan_list()
-            # Convert extra commission to night
+            # 将额外委托转换为夜间委托
             urgent.call('convert_to_night')
 
-            # Not in 21:00~03:00, but scanned night commissions
-            # Probably some outdated commissions, a refresh should solve it
+            # 不在 21:00~03:00 时间段，但扫描到了夜间委托
+            # 可能是过期委托，刷新即可解决
             if datetime.now() - get_server_next_update('21:00') > timedelta(hours=6):
                 night = urgent.select(category_str='night')
                 if night:
@@ -332,7 +332,7 @@ class RewardCommission(UI, InfoHandler):
                     for comm in night:
                         logger.attr('Commission', comm)
                     logger.info('Re-scan urgent commission list')
-                    # Poor sleep but acceptable in rare cases
+                    # 虽然不是最佳方式，但在罕见情况下可以接受
                     self.device.sleep(2)
                     self._commission_ensure_mode('daily')
                     continue
@@ -355,7 +355,7 @@ class RewardCommission(UI, InfoHandler):
 
     def _commission_start_click(self, comm, is_urgent=False, skip_first_screenshot=True):
         """
-        Start a commission.
+        启动一个委托。
 
         Args:
             comm (Commission):
@@ -363,7 +363,7 @@ class RewardCommission(UI, InfoHandler):
             skip_first_screenshot:
 
         Returns:
-            bool: If success
+            bool: 是否成功
 
         Pages:
             in: page_commission
@@ -380,17 +380,17 @@ class RewardCommission(UI, InfoHandler):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束
             if self.info_bar_count():
                 break
             if count >= 3:
-                # Restart game and handle commission recommend bug.
-                # After you click "Recommend", your ships appear and then suddenly disappear.
-                # At the same time, the icon of commission is flashing.
+                # 重启游戏以处理委托推荐 bug。
+                # 点击"推荐"后，舰船出现后突然消失。
+                # 同时委托图标闪烁。
                 logger.warning('Triggered commission list flashing bug')
                 raise GameStuckError('Triggered commission list flashing bug')
 
-            # Click
+            # 点击
             if self.match_template_color(COMMISSION_START, offset=(5, 20), interval=7):
                 self.device.click(COMMISSION_START)
                 self.interval_reset(COMMISSION_ADVICE)
@@ -400,18 +400,18 @@ class RewardCommission(UI, InfoHandler):
                 self.interval_reset(COMMISSION_ADVICE)
                 comm_timer.reset()
                 continue
-            # Accidentally entered dock
+            # 误入船坞
             if self.appear(DOCK_CHECK, offset=(20, 20), interval=3):
                 logger.info(f'equip_enter {DOCK_CHECK} -> {BACK_ARROW}')
                 self.device.click(BACK_ARROW)
                 comm_timer.reset()
                 continue
-            # Check if is the right commission
+            # 检查是否是正确的委托
             if self.appear(COMMISSION_ADVICE, offset=(5, 20), interval=7):
                 area = (0, 0, image_size(self.device.image)[0], COMMISSION_ADVICE.button[1])
                 current = self.commission_detect(area=area)
                 if is_urgent:
-                    current.call('convert_to_night')  # Convert extra commission to night
+                    current.call('convert_to_night')  # 将额外委托转换为夜间委托
                 if current.count >= 1:
                     current = current[0]
                     if current == comm:
@@ -427,7 +427,7 @@ class RewardCommission(UI, InfoHandler):
                 self.interval_clear(COMMISSION_START)
                 comm_timer.reset()
                 continue
-            # Enter
+            # 进入委托
             if comm_timer.reached():
                 self.device.click(comm.button)
                 self.device.sleep(0.3)
@@ -453,10 +453,10 @@ class RewardCommission(UI, InfoHandler):
             for _ in range(15):
                 new = self.commission_detect(trial=2)
                 if is_urgent:
-                    new.call('convert_to_night')  # Convert extra commission to night
+                    new.call('convert_to_night')  # 将额外委托转换为夜间委托
 
-                # Update commission position.
-                # In different scans, they have the same information, but have different locations.
+                # 更新委托位置。
+                # 不同扫描中委托信息相同，但位置可能不同。
                 current = None
                 for new_comm in new:
                     if new_comm == comm:
@@ -471,7 +471,7 @@ class RewardCommission(UI, InfoHandler):
                         failed = False
                         break
 
-                # End
+                # 结束条件
                 if not self._commission_swipe():
                     break
 
@@ -492,7 +492,7 @@ class RewardCommission(UI, InfoHandler):
 
     def commission_start(self):
         """
-        Scan and Start all chosen commissions.
+        扫描并启动所有选定的委托。
 
         Pages:
             in: page_commission
@@ -522,11 +522,11 @@ class RewardCommission(UI, InfoHandler):
 
     def _record_commission_income(self):
         """
-        Record the income (items) from commission rewards.
+        记录委托奖励的收入（物品）。
 
-        This function analyzes screenshots collected in `_commission_reward_images` during reward collection,
-        identifies specific items (Gems, Cubes, Chips, Oil, Coins), aggregates their counts, and
-        saves the statistics to the database.
+        分析委托奖励收集过程中在 `_commission_reward_images` 中截取的截图，
+        识别特定物品（钻石、心智魔方、心智单元、石油、金币），
+        汇总数量并保存到数据库。
         """
         try:
             from module.statistics.get_items import (
@@ -708,7 +708,7 @@ class RewardCommission(UI, InfoHandler):
     def commission_receive(self):
         """
         Returns:
-            bool: If rewarded.
+            bool: 是否领取了奖励。
 
         Pages:
             in: page_reward
@@ -731,9 +731,9 @@ class RewardCommission(UI, InfoHandler):
             in: Any
             out: page_commission
         """
-        # Fix: If stuck in TACTICAL_CLASS_START (skill book selection), click cancel to exit
-        # TACTICAL_CHECK is falsely detected in TACTICAL_CLASS_START, causing A* navigation
-        # to choose BACK_ARROW which does not lead to page_reward from this page
+        # 修复：如果卡在 TACTICAL_CLASS_START（技能书选择界面），点击取消退出
+        # TACTICAL_CHECK 在 TACTICAL_CLASS_START 中被误检测，导致 A* 导航
+        # 选择 BACK_ARROW，但从该页面无法导航到 page_reward
         self.device.screenshot()
         if self.appear(TACTICAL_CLASS_START, offset=(30, 30)):
             logger.info('Detected TACTICAL_CLASS_START, clicking cancel to exit')
@@ -742,12 +742,12 @@ class RewardCommission(UI, InfoHandler):
         self.ui_ensure(page_reward)
         self.commission_receive()
 
-        # info_bar appears when get ship in Launch Ceremony commissions
-        # This is a game bug, the info_bar shows get ship, will appear over and over again, until you click get_ship.
+        # 在启航仪式委托获得舰船时会出现信息栏
+        # 这是游戏 bug，信息栏反复显示获得舰船，直到点击 get_ship 才消失
         self.handle_info_bar()
         self.commission_start()
 
-        # Scheduler
+        # 调度
         total = self.daily.add_by_eq(self.urgent)
         future_finish = sorted([f for f in total.get('finish_time') if f is not None])
         logger.info(f'Commission finish: {[str(f) for f in future_finish]}')
@@ -757,17 +757,25 @@ class RewardCommission(UI, InfoHandler):
             logger.info('No commission running')
             self.config.task_delay(success=False)
 
-        # Delay GemsFarming
-        if self.config.is_task_enabled('GemsFarming') and \
-                self.config.cross_get(keys='GemsFarming.GemsFarming.CommissionLimit', default=False):
+        # 延迟钻石 farming / 三油低耗任务
+        # 遍历使用 GemsFarming 配置组的任务，检查是否启用且开启了 CommissionLimit
+        limit_tasks = [
+            task for task in ['GemsFarming', 'ThreeOilLowCost']
+            if self.config.is_task_enabled(task)
+            and self.config.cross_get(keys=f'{task}.GemsFarming.CommissionLimit', default=False)
+        ]
+
+        if limit_tasks:
             daily = self.daily.select(category_str='daily', status='pending').count
             filtered_urgent = self.comm_choose.intersect_by_eq(self.urgent.select(status='pending')).count
             filtered_extra = self.comm_choose.intersect_by_eq(self.daily.select(category_str='extra', status='pending')).count
             logger.info(f'Daily commission: {daily}, filtered_urgent: {filtered_urgent}, filtered_extra: {filtered_extra}')
             future = nearest_future(future_finish) if len(future_finish) else None
             if daily > 0 and filtered_urgent >= 1:
-                logger.info('Having daily commissions to do, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                for task in limit_tasks:
+                    logger.info(f"Having daily commissions to do, delay task '{task}'")
+                    self.config.task_delay(minute=None if future else 120, target=future, task=task)
             elif filtered_urgent >= 4:
-                logger.info('Having too many urgent commissions, delay task `GemsFarming`')
-                self.config.task_delay(minute=None if future else 120, target=future, task='GemsFarming')
+                for task in limit_tasks:
+                    logger.info(f"Having too many urgent commissions, delay task '{task}'")
+                    self.config.task_delay(minute=None if future else 120, target=future, task=task)

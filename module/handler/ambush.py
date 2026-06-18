@@ -13,7 +13,7 @@ TEMPLATE_MAP_WALK_OUT_OF_STEP.pre_process = info_letter_preprocess
 
 class AmbushHandler(Combat):
     MAP_AMBUSH_OVERLAY_TRANSPARENCY_THRESHOLD = 0.40
-    MAP_AIR_RAID_OVERLAY_TRANSPARENCY_THRESHOLD = 0.35  # Usually (0.50, 0.53)
+    MAP_AIR_RAID_OVERLAY_TRANSPARENCY_THRESHOLD = 0.35  # 通常值为 (0.50, 0.53)
     MAP_AIR_RAID_CONFIRM_SECOND = 0.5
 
     def ambush_color_initial(self):
@@ -30,7 +30,7 @@ class AmbushHandler(Combat):
 
     def _handle_air_raid(self):
         """
-        Wait until air raid disappeared
+        等待空袭动画消失。
         """
         logger.info('Map air raid')
         disappear = Timer(self.MAP_AIR_RAID_CONFIRM_SECOND).start()
@@ -38,11 +38,11 @@ class AmbushHandler(Combat):
 
         while 1:
             self.device.screenshot()
-            # Timeout
+            # 超时处理
             if timeout.reached():
                 logger.warning('_handle_air_raid timeout, assume air raid disappeared')
                 break
-            # Disappeared
+            # 检测是否消失
             if self._air_raid_appear():
                 disappear.reset()
             else:
@@ -51,11 +51,11 @@ class AmbushHandler(Combat):
 
     def _handle_ambush_evade(self):
         logger.info('Map ambushed')
-        # Wait MAP_AMBUSH_EVADE
+        # 等待 MAP_AMBUSH_EVADE 出现
         self.wait_until_appear(MAP_AMBUSH_EVADE, offset=(30, 30))
         self.handle_info_bar()
 
-        # Click MAP_AMBUSH_EVADE
+        # 点击 MAP_AMBUSH_EVADE
         skip_first_screenshot = True
         while 1:
             if skip_first_screenshot:
@@ -63,14 +63,14 @@ class AmbushHandler(Combat):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.info_bar_count():
                 break
 
             if self.appear_then_click(MAP_AMBUSH_EVADE, offset=(30, 30), interval=3):
                 continue
 
-        # Handle evade success and failures
+        # 处理回避成功和失败
         image = info_letter_preprocess(self.image_crop(INFO_BAR_DETECT, copy=False))
         if TEMPLATE_AMBUSH_EVADE_SUCCESS.match(image):
             logger.attr('Ambush_evade', 'success')
@@ -85,10 +85,10 @@ class AmbushHandler(Combat):
 
     def _handle_ambush_attack(self):
         logger.info('Map ambushed')
-        # Wait MAP_AMBUSH_ATTACK
+        # 等待 MAP_AMBUSH_ATTACK 出现
         self.wait_until_appear(MAP_AMBUSH_ATTACK, offset=(30, 30))
 
-        # Click MAP_AMBUSH_ATTACK
+        # 点击 MAP_AMBUSH_ATTACK
         skip_first_screenshot = True
         while 1:
             if skip_first_screenshot:
@@ -96,7 +96,7 @@ class AmbushHandler(Combat):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.combat_appear():
                 break
 
@@ -107,7 +107,7 @@ class AmbushHandler(Combat):
             if self.handle_retirement():
                 continue
 
-        # In battle
+        # 进入战斗
         logger.attr('Ambush_evade', 'attack')
         self.combat(expected_end='no_searching', fleet_index=self.fleet_show_index)
 

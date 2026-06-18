@@ -9,7 +9,7 @@ from module.logger import logger
 class Freebies(ModuleBase):
     def run(self):
         """
-        Run all freebie related modules
+        运行所有免费福利相关模块。
         """
         if self.config.BattlePass_Collect:
             logger.hr('Battle pass', level=1)

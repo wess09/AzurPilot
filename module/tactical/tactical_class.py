@@ -28,9 +28,9 @@ else:
 
 class ExpOnBookSelect(DigitCounter):
     def pre_process(self, image):
-        # Image is like `NEXT:1900+500/5800`, 500 is green and others are in white
+        # 图像格式类似 `NEXT:1900+500/5800`，其中 500 为绿色，其余为白色
 
-        # Find green letters
+        # 查找绿色字母
         hsv = rgb2hsv(image)
         h = (60, 180)
         s = (50, 100)
@@ -38,38 +38,35 @@ class ExpOnBookSelect(DigitCounter):
         lower = (h[0], s[0], v[0])
         upper = (h[1], s[1], v[1])
         green = np.mean(cv2.inRange(hsv, lower, upper), axis=0)
-        # Convert to gray scale
+        # 转换为灰度图
         r, g, b = cv2.split(image)
         image = cv2.max(cv2.max(r, g), b)
-        # Paint `+500` to white
+        # 将 `+500` 部分涂黑
         matched = np.where(green > 0.5)[0]
         if len(matched):
             image[:, matched[0] - 8:matched[-1] + 2] = 0
 
         image = 255 - image
 
-        # Strip `Next:`
+        # 去除左侧 `Next:` 文字
         if server.server == 'en':
-            # Bold `Next:`
-            image = image_left_strip(image, threshold=105, length=46)
-        elif server.server == 'jp':
-            # Wide `Next:`
-            image = image_left_strip(image, threshold=105, length=55)
-        else:
-            image = image_left_strip(image, threshold=105, length=42)
-        return image
+            # EN 服加粗的 `Next:`
+            return image_left_strip(image, threshold=105, length=46)
+        if server.server == 'jp':
+            # JP 服较宽的 `Next:`
+            return image_left_strip(image, threshold=105, length=55)
+        return image_left_strip(image, threshold=105, length=42)
 
     def after_process(self, result):
         result = super().after_process(result)
 
         if result.endswith("580"):
-            new = result[:-3] + "5800"
+            new = f'{result[:-3]}5800'
             logger.info(f'ExpOnBookSelect result {result} is revised to {new}')
             result = new
         if '/' not in result:
             for exp in [5800, 4400, 3200, 2200, 1400, 800, 400, 200, 100]:
-                res = re.match(rf'^(\d+){exp}$', result)
-                if res:
+                if res := re.match(rf'^(\d+){exp}$', result):
                     # 10005800 -> 1000/5800
                     new = f'{res.group(1)}/{exp}'
                     logger.info(f'ExpOnBookSelect result {result} is revised to {new}')
@@ -81,22 +78,20 @@ class ExpOnBookSelect(DigitCounter):
 
 class ExpOnSkillSelect(Ocr):
     def pre_process(self, image):
-        # Convert to gray scale
+        # 转换为灰度图
         r, g, b = cv2.split(image)
         image = cv2.max(cv2.max(r, g), b)
 
         image = 255 - image
 
-        # Strip `Next:`
+        # 去除左侧 `Next:` 文字
         if server.server == 'en':
-            # Bold `Next:`
-            image = image_left_strip(image, threshold=105, length=46)
-        elif server.server == 'jp':
-            # Wide `Next:`
-            image = image_left_strip(image, threshold=105, length=53)
-        else:
-            image = image_left_strip(image, threshold=105, length=42)
-        return image
+            # EN 服加粗的 `Next:`
+            return image_left_strip(image, threshold=105, length=46)
+        if server.server == 'jp':
+            # JP 服较宽的 `Next:`
+            return image_left_strip(image, threshold=105, length=53)
+        return image_left_strip(image, threshold=105, length=42)
 
 
 SKILL_EXP = ExpOnBookSelect(buttons=OCR_SKILL_EXP)
@@ -115,20 +110,20 @@ BOOK_FILTER = Filter(
 
 class Book:
     color_genre = {
-        1: (214, 69, 74),  # Offensive, red
-        2: (115, 178, 255),  # Defensive, blue
-        3: (247, 190, 99),  # Support, yellow
+        1: (214, 69, 74),  # 攻击，红色
+        2: (115, 178, 255),  # 防御，蓝色
+        3: (247, 190, 99),  # 辅助，黄色
     }
     genre_name = {
-        1: 'Red',  # Offensive, red
-        2: 'Blue',  # Defensive, blue
-        3: 'Yellow',  # Support, yellow
+        1: 'Red',  # 攻击，红色
+        2: 'Blue',  # 防御，蓝色
+        3: 'Yellow',  # 辅助，黄色
     }
     color_tier = {
-        1: (104, 181, 238),  # T1, blue
-        2: (151, 129, 203),  # T2, purple
-        3: (235, 208, 120),  # T3, gold
-        4: (225, 181, 212),  # T4, rainbow
+        1: (104, 181, 238),  # T1，蓝色
+        2: (151, 129, 203),  # T2，紫色
+        3: (235, 208, 120),  # T3，金色
+        4: (225, 181, 212),  # T4，彩虹
     }
     exp_tier = {
         0: 0,
@@ -140,20 +135,22 @@ class Book:
 
     def __init__(self, image, button):
         """
+        根据教材图像识别其类型、等级和经验加成。
+
         Args:
-            image (np.ndarray):
-            button (Button):
+            image (np.ndarray): 完整截图
+            button (Button): 教材对应的按钮区域
         """
         image = crop(image, button.area, copy=False)
-        # UI update in 20250814, input item image size is (64, 64), but default
-        # input is (98, 98), if image is not enlarged, get_color result is 0, book will ouput 'BookUnknownTn'
+        # 20250814 UI 更新后，输入物品图像大小为 (64, 64)，但默认
+        # 输入为 (98, 98)，如果不放大图像，get_color 结果为 0，会输出 'BookUnknownTn'
         if image_size(image) < (98, 98):
             image = resize(image, (98, 98))
         self.button = button
 
-        # During the test of 40 random screenshots,
-        # when the threshold range is 50-70, the test can all pass,
-        # but it must not exceed 75, otherwise the rainbow will be recognized as purple
+        # 在 40 张随机截图的测试中，
+        # 阈值范围 50-70 时全部通过，
+        # 但不能超过 75，否则彩虹品质会被误识别为紫色
         self.genre = 0
         color = get_color(image, (65, 35, 72, 42))
         for key, value in self.color_genre.items():
@@ -167,7 +164,7 @@ class Book:
                 self.tier = key
 
         color = color_similarity_2d(crop(image, (15, 0, 97, 13), copy=False), color=(148, 251, 99))
-        self.exp = bool(np.sum(color > 221) > 50)
+        self.exp = np.sum(color > 221) > 50
 
         self.valid = bool(self.genre and self.tier)
         self.genre_str = self.genre_name.get(self.genre, "unknown")
@@ -179,16 +176,18 @@ class Book:
 
     def check_selected(self, image):
         """
+        检查该教材是否已被选中。
+
         Args:
-            image (np.ndarray): Screenshot
+            image (np.ndarray): 截图
         """
         area = self.button.area
-        check_area = tuple([area[0], area[3] + 2, area[2], area[3] + 4])
+        check_area = (area[0], area[3] + 2, area[2], area[3] + 4)
         im = rgb2gray(crop(image, check_area, copy=False))
-        return True if np.mean(im) > 127 else False
+        return np.mean(im) > 127
 
     def __str__(self):
-        # Example: Red_T3_Exp
+        # 示例：Red_T3_Exp
         text = f'{self.genre_str}_{self.tier_str}'
         if self.exp:
             text += '_Exp'
@@ -202,12 +201,12 @@ class RewardTacticalClass(Dock):
 
     def _tactical_books_get(self, skip_first_screenshot=True):
         """
-        Get books. Handle loadings, wait 10 times at max.
-        When TACTICAL_CLASS_START appears, game may stuck in loading, wait and retry detection.
-        If loading still exists, raise ScriptError.
+        获取教材列表。处理加载状态，最多等待 15 次。
+        当 TACTICAL_CLASS_START 出现时，游戏可能卡在加载中，等待并重试检测。
+        如果持续加载则抛出 ScriptError。
 
         Returns:
-            BookGroup:
+            SelectedGrids: 可用教材列表，如果不在 TACTICAL_CLASS_START 则返回 False
 
         Pages:
             in: TACTICAL_CLASS_START
@@ -220,7 +219,7 @@ class RewardTacticalClass(Dock):
             else:
                 self.device.screenshot()
 
-            self.handle_info_bar()  # info_bar appears when get ship in Launch Ceremony commissions
+            self.handle_info_bar()  # 在启航典礼委托中获得舰船时会出现 info_bar
             if not self.appear(TACTICAL_CLASS_START, offset=(30, 30)):
                 logger.info('Not in TACTICAL_CLASS_START anymore, exit')
                 return False
@@ -233,23 +232,20 @@ class RewardTacticalClass(Dock):
             # End
             if books and books.count == prev.count:
                 return books
-            else:
-                prev = books
-                if n % 3 == 0:
-                    self.device.sleep(3)
-                continue
+            prev = books
+            if n % 3 == 0:
+                self.device.sleep(3)
 
         logger.warning('No book found.')
         raise ScriptError('No book found, after 15 attempts.')
 
     def _tactical_book_select(self, book, skip_first_screenshot=True):
         """
-        Select the target book onscreen
-        Updates current image if needed
+        选中屏幕上指定的教材。必要时更新当前截图。
 
         Args:
-            book (Book):
-            skip_first_screenshot (bool):
+            book (Book): 目标教材对象
+            skip_first_screenshot (bool): 是否跳过首次截图
         """
         logger.info(f'Book select {book}')
         interval = Timer(2, count=6)
@@ -270,35 +266,30 @@ class RewardTacticalClass(Dock):
 
     def _tactical_books_filter_exp(self):
         """
-        Complex filter to remove specific grade
-        books from self.books based on current
-        progress of the tactical skill.
+        根据当前战术技能的进度，从 self.books 中过滤掉会导致经验溢出的教材。
         """
-        # Read 'current' and 'remain' will be inaccurate
-        # since first exp_value is factored into it
+        # 读取的 'current' 和 'remain' 不够精确
+        # 因为第一本教材的经验值已计入其中
         current, remain, total = SKILL_EXP.ocr(self.device.image)
 
-        # Max level in progress; so selective books
-        # should be removed to prevent waste
+        # 即将达到10级满级，需要移除特定教材以防止经验浪费
         if total == 5800:
             logger.info('About to reach level 10; will remove '
                         'detected books based on actual '
                         f'progress: {current}/{total}; {remain}')
 
             def filter_exp_func(book):
-                # Retain at least non-T1 bonus books if nothing else
+                # 保留至少一本非 T1 的加成教材（如果别无选择）
                 if book.exp_value == 100:
                     return True
 
-                # Acquire 'overflow' for respective tier book if enabled
+                # 获取对应等级教材允许的经验溢出量（如果已启用）
                 overflow = 0
                 if self.config.ControlExpOverflow_Enable:
                     overflow = getattr(self.config, f'ControlExpOverflow_T{book.tier}Allow')
 
-                # Remove book if sum to be gained exceeds total (+ overflow)
-                if (current + book.exp_value) > (total + overflow):
-                    return False
-                return True
+                # 如果当前经验加上教材经验超过总量（加溢出量），则移除该教材
+                return (current + book.exp_value) <= (total + overflow)
 
             before = self.books.count
             self.books = SelectedGrids([book for book in self.books if filter_exp_func(book)])
@@ -324,6 +315,18 @@ class RewardTacticalClass(Dock):
             logger.warning(f'Failed to check skill max level: {e}')
         return False
 
+    def _wait_until_appear(self, button, offset, attempts=5):
+        for _ in range(attempts):
+            self.device.screenshot()
+            if self.appear(button, offset=offset):
+                return True
+            self.device.sleep((0.3, 0.5))
+        return False
+
+    def _return_to_tactical_page(self):
+        self.device.click(BACK_ARROW)
+        self.device.sleep((0.3, 0.5))
+
     def _try_switch_to_next_skill(self):
         """
         当前技能已满级时，尝试切换到同舰娘的下一个非满级技能。
@@ -344,12 +347,7 @@ class RewardTacticalClass(Dock):
         self.device.sleep((0.5, 1.0))
 
         # 等待技能选择界面加载
-        for _ in range(5):
-            self.device.screenshot()
-            if self.appear(SKILL_CONFIRM, offset=(20, 20)):
-                break
-            self.device.sleep((0.3, 0.5))
-        else:
+        if not self._wait_until_appear(SKILL_CONFIRM, offset=(20, 20)):
             logger.warning('Failed to return to SKILL_CONFIRM after cancel')
             return False
 
@@ -357,8 +355,7 @@ class RewardTacticalClass(Dock):
         selected_skill = self.find_not_full_level_skill(skip_first_screenshot=True)
         if selected_skill is None:
             logger.info('No other non-max skill available for this ship, return to tactical page')
-            self.device.click(BACK_ARROW)
-            self.device.sleep((0.3, 0.5))
+            self._return_to_tactical_page()
             return False
 
         # 选中并确认新技能
@@ -367,23 +364,19 @@ class RewardTacticalClass(Dock):
         self.device.click(SKILL_CONFIRM)
 
         # 等待教材选择界面加载
-        for _ in range(5):
-            self.device.screenshot()
-            if self.appear(TACTICAL_CLASS_START, offset=(30, 30)):
-                logger.info('Entered TACTICAL_CLASS_START after skill switch')
-                return True
-            self.device.sleep((0.3, 0.5))
+        if self._wait_until_appear(TACTICAL_CLASS_START, offset=(30, 30)):
+            logger.info('Entered TACTICAL_CLASS_START after skill switch')
+            return True
         logger.warning('Failed to enter TACTICAL_CLASS_START after skill switch')
-        self.device.click(BACK_ARROW)
-        self.device.sleep((0.3, 0.5))
+        self._return_to_tactical_page()
         return False
 
     def _tactical_books_choose(self):
         """
-        Choose tactical book according to config.
+        根据配置选择战术教材。
 
         Returns:
-            int: If success
+            int: 是否成功选择教材
 
         Pages:
             in: TACTICAL_CLASS_START
@@ -396,44 +389,44 @@ class RewardTacticalClass(Dock):
                 return False
 
             self.device.click_record_clear()
-            # Ensure first book is focused
-            # For slow PCs, selection may have changed
+            # 确保第一本教材被选中
+            # 对于较慢的电脑，选中状态可能已改变
             first = self.books[0]
             self._tactical_book_select(first)
 
-            # Apply complex filter, modifies self.books
+            # 应用经验溢出过滤，会修改 self.books
             self._tactical_books_filter_exp()
 
-            # Apply configuration filter, does not modify self.books
+            # 应用配置过滤器，不修改 self.books
             BOOK_FILTER.load(self.config.Tactical_TacticalFilter)
             books = BOOK_FILTER.apply(self.books.grids)
             logger.attr('Book_sort', ' > '.join([str(book) for book in books]))
 
-            # Choose applicable book if any
-            # Otherwise cancel altogether
-            if len(books):
-                book = books[0]
-                if str(book) != 'first':
-                    self._tactical_book_select(book)
-                else:
-                    logger.info('Choose first book')
-                    self._tactical_book_select(first)
-                logger.info(f'_tactical_books_choose -> {TACTICAL_CLASS_START}')
-                self.device.click(TACTICAL_CLASS_START)
-                return True
+            # 如果有可用教材则选择，否则检测是否因为技能已满级
+            if not books:
+                # 无教材可选时，检测是否因为技能已满级（受 SkillAutoSwitch 配置控制）
+                if not self.config.Tactical_SkillAutoSwitch:
+                    break
+                if retry >= MAX_SWITCH_RETRIES:
+                    logger.warning('Max skill switch retries reached')
+                    break
+                if not self._is_current_skill_max(skip_first_screenshot=True):
+                    break
+                logger.info('No books because skill is max, try switch to next skill')
+                if not self._try_switch_to_next_skill():
+                    break
+                logger.info('Switched to next skill, re-enter book choose')
+                continue
 
-            # 无教材可选时，检测是否因为技能已满级（受 SkillAutoSwitch 配置控制）
-            if not self.config.Tactical_SkillAutoSwitch:
-                break
-            if retry >= MAX_SWITCH_RETRIES:
-                logger.warning('Max skill switch retries reached')
-                break
-            if not self._is_current_skill_max(skip_first_screenshot=True):
-                break
-            logger.info('No books because skill is max, try switch to next skill')
-            if not self._try_switch_to_next_skill():
-                break
-            logger.info('Switched to next skill, re-enter book choose')
+            book = books[0]
+            if str(book) != 'first':
+                self._tactical_book_select(book)
+            else:
+                logger.info('Choose first book')
+                self._tactical_book_select(first)
+            logger.info(f'_tactical_books_choose -> {TACTICAL_CLASS_START}')
+            self.device.click(TACTICAL_CLASS_START)
+            return True
 
         logger.info('Cancel tactical')
         logger.info(f'_tactical_books_choose -> {TACTICAL_CLASS_CANCEL}')
@@ -442,8 +435,10 @@ class RewardTacticalClass(Dock):
 
     def handle_rapid_training(self):
         """
+        处理急速训练按钮。
+
         Returns:
-            bool: If handled
+            bool: 是否处理了急速训练
         """
         slot = self.config.Tactical_RapidTrainingSlot
         if slot == 'slot_1':
@@ -461,16 +456,14 @@ class RewardTacticalClass(Dock):
         offset = (slot * 220 - 20, -20, slot * 220 + 20, 20)
         if self.appear(RAPID_TRAINING, offset=offset, interval=1):
             self.device.click(RAPID_TRAINING)
-            # Clear interval to enter _tactical_books_choose fast
+            # 清除间隔计时器以便快速进入教材选择
             self.interval_clear(TACTICAL_CLASS_START, interval=2)
             return True
 
         return False
 
     def _tactical_get_finish(self):
-        """
-        Get the future finish time.
-        """
+        """获取战术学院的完成时间。"""
         logger.hr('Tactical get finish')
         grids = ButtonGrid(
             origin=(421, 596), delta=(223, 0), button_shape=(139, 27), grid_shape=(4, 1), name='TACTICAL_REMAIN')
@@ -481,22 +474,166 @@ class RewardTacticalClass(Dock):
         buttons = [b for b, s in zip(grids.buttons, is_running) if s]
         ocr = Duration(buttons, letter=(148, 255, 99), name='TACTICAL_REMAIN')
         remains = ocr.ocr(self.device.image)
-        remains = [remains] if not isinstance(remains, list) else remains
+        remains = remains if isinstance(remains, list) else [remains]
 
         now = datetime.now()
         self.tactical_finish = [(now + remain).replace(microsecond=0) for remain in remains if remain.total_seconds()]
         logger.info(f'Tactical finish: {[str(f) for f in self.tactical_finish]}')
         return self.tactical_finish
 
+    def _handle_tactical_add_new_student(self, study_finished):
+        if study_finished:
+            return False
+        if not self.appear(TACTICAL_CHECK, offset=(20, 20)):
+            return False
+        if not self.appear_then_click(ADD_NEW_STUDENT, offset=(800, 20), interval=1):
+            return False
+
+        self.interval_reset([TACTICAL_CHECK, RAPID_TRAINING])
+        self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION, DOCK_CHECK, SKILL_CONFIRM])
+        return True
+
+    def _handle_tactical_finish(self, book_empty, empty_confirm):
+        # sometimes you have TACTICAL_CHECK without black-blurred background
+        # TACTICAL_CLASS_CANCEL and TACTICAL_CHECK appears
+        if not self.appear(TACTICAL_CHECK, offset=(20, 20), interval=2) \
+                or self.appear(TACTICAL_CLASS_START, offset=(20, 20)):
+            empty_confirm.reset()
+            return False, False
+
+        self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION])
+        if book_empty:
+            self.device.click(BACK_ARROW)
+            self.interval_reset(TACTICAL_CHECK)
+            return True, False
+        if self._tactical_get_finish():
+            self.device.click(BACK_ARROW)
+            self.interval_reset(TACTICAL_CHECK)
+            empty_confirm.reset()
+            return True, True
+
+        self.interval_clear(TACTICAL_CHECK)
+        if empty_confirm.reached():
+            self.device.click(BACK_ARROW)
+            empty_confirm.reset()
+            return True, True
+        return False, False
+
+    def _handle_tactical_popups(self):
+        if self.appear_then_click(REWARD_2, offset=(20, 20), interval=3):
+            self.interval_reset(REWARD_2_WHITE)
+            return True, False
+        if self.appear_then_click(REWARD_2_WHITE, offset=(20, 20), interval=3):
+            self.interval_reset(REWARD_2)
+            return True, False
+        if self.appear_then_click(REWARD_GOTO_TACTICAL, offset=(20, 20), interval=3):
+            self.interval_reset(REWARD_GOTO_TACTICAL_WHITE)
+            return True, False
+        if self.appear_then_click(REWARD_GOTO_TACTICAL_WHITE, offset=(20, 20), interval=3):
+            self.interval_reset(REWARD_GOTO_TACTICAL)
+            return True, False
+        if self.ui_main_appear_then_click(page_reward, interval=3):
+            return True, False
+        if self.handle_popup_confirm('TACTICAL'):
+            self.interval_reset([BOOK_EMPTY_POPUP])
+            return True, False
+        if self.handle_urgent_commission():
+            # Only one button in the middle, when skill reach max level.
+            return True, self.config.Tactical_SkillAutoSwitch
+        if self.ui_page_main_popups():
+            self.interval_reset([BOOK_EMPTY_POPUP])
+            return True, False
+        # Similar to handle_mission_popup_ack, but battle pass item expire popup has a different ACK button
+        if self.appear(MISSION_POPUP_GO, offset=self._popup_offset, interval=2):
+            self.device.click(MISSION_POPUP_ACK)
+            return True, False
+        return False, False
+
+    def _handle_tactical_books_start(self):
+        if not self.appear(TACTICAL_CLASS_START, offset=(30, 30), interval=2):
+            return False, False
+
+        study_finished = False
+        if self._tactical_books_choose():
+            self.dock_select_index = 0
+            self.interval_reset([TACTICAL_CLASS_START, BOOK_EMPTY_POPUP])
+            self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION])
+        else:
+            study_finished = True
+        return True, study_finished
+
+    def _handle_tactical_dock(self):
+        if not self.appear(DOCK_CHECK, offset=(20, 20), interval=3):
+            return False, False
+        if self.dock_selected():
+            # When you click a ship from page_main -> dock,
+            # this ship will be selected default in tactical dock,
+            # so we need click BACK_ARROW to clear selected state
+            logger.info('Having pre-selected ship in dock, re-enter')
+            self.device.click(BACK_ARROW)
+            self.interval_reset([BOOK_EMPTY_POPUP, DOCK_CHECK], interval=3)
+            return True, False
+
+        study_finished = False
+        # If not enable or can not fina a suitable ship
+        if not self.config.AddNewStudent_Enable:
+            logger.info('Not going to learn skill but in dock, close it')
+            study_finished = True
+            self.device.click(BACK_ARROW)
+        elif not self.select_suitable_ship():
+            study_finished = True
+            self.device.click(BACK_ARROW)
+        # reset DOCK_CHECK to Timer(3)
+        self.interval_timer.pop(DOCK_CHECK.name, None)
+        self.interval_reset([BOOK_EMPTY_POPUP, DOCK_CHECK], interval=3)
+        return True, study_finished
+
+    def _handle_tactical_skill_confirm(self, pending_skill_auto_switch):
+        if not self.appear(SKILL_CONFIRM, offset=(20, 20), interval=3):
+            return False, False, pending_skill_auto_switch
+
+        study_finished = False
+        if pending_skill_auto_switch or self.config.AddNewStudent_Enable:
+            pending_skill_auto_switch = False
+            if not self._tactical_skill_choose():
+                study_finished = True
+                self.device.click(BACK_ARROW)
+        else:
+            logger.info('Not going to learn skill but having SKILL_CONFIRM, close it')
+            study_finished = True
+            self.device.click(BACK_ARROW)
+        self.interval_reset([BOOK_EMPTY_POPUP, SKILL_CONFIRM], interval=3)
+        return True, study_finished, pending_skill_auto_switch
+
+    def _handle_tactical_meta(self):
+        if not self.appear(TACTICAL_META, offset=(200, 20), interval=3):
+            return False
+
+        logger.info('META skill found, exit')
+        self.device.click(BACK_ARROW)
+        # Select the next ship in `select_suitable_ship()`
+        self.dock_select_index += 1
+        # Avoid exit tactical between exiting meta skill to select new ship
+        self.interval_reset([TACTICAL_CHECK, BOOK_EMPTY_POPUP])
+        self.interval_clear(ADD_NEW_STUDENT)
+        return True
+
+    def _handle_tactical_book_empty(self):
+        if not self.appear(BOOK_EMPTY_POPUP, offset=(20, 20), interval=3):
+            return False
+
+        self.device.click(BOOK_EMPTY_POPUP)
+        return True
+
     def tactical_class_receive(self, skip_first_screenshot=True):
         """
-        Receive tactical rewards and fill books.
+        收取战术学院奖励并填充教材。
 
         Args:
-            skip_first_screenshot (bool):
+            skip_first_screenshot (bool): 是否跳过首次截图
 
         Returns:
-            bool: If rewarded.
+            bool: 是否已领取奖励
 
         Pages:
             in: page_reward, TACTICAL_CLASS_START
@@ -505,8 +642,9 @@ class RewardTacticalClass(Dock):
         logger.hr('Tactical class receive', level=1)
         received = False
         study_finished = not self.config.AddNewStudent_Enable
+        pending_skill_auto_switch = False
         book_empty = False
-        # tactical cards can't be loaded that fast, confirm if it's empty.
+        # 战术卡片加载较慢，通过计时器确认是否真的为空
         empty_confirm = Timer(0.6, count=2).start()
         while 1:
             if skip_first_screenshot:
@@ -514,138 +652,50 @@ class RewardTacticalClass(Dock):
             else:
                 self.device.screenshot()
 
-            # End
             if received and self.appear(REWARD_CHECK, offset=(20, 20)):
                 break
 
-            # Learn new skills
-            if not study_finished and self.appear(TACTICAL_CHECK, offset=(20, 20)):
-                # Tactical page, has empty position
-                if self.appear_then_click(ADD_NEW_STUDENT, offset=(800, 20), interval=1):
-                    self.interval_reset([TACTICAL_CHECK, RAPID_TRAINING])
-                    self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION, DOCK_CHECK, SKILL_CONFIRM])
-                    continue
+            if self._handle_tactical_add_new_student(study_finished):
+                continue
             if self.handle_rapid_training():
                 self.interval_reset(TACTICAL_CHECK)
                 self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION, DOCK_CHECK, SKILL_CONFIRM])
                 continue
 
-            # Get finish time
-            # sometimes you have TACTICAL_CHECK without black-blurred background
-            # TACTICAL_CLASS_CANCEL and TACTICAL_CHECK appears
-            if not self.appear(TACTICAL_CLASS_START, offset=(20, 20)) \
-                    and self.appear(TACTICAL_CHECK, offset=(20, 20), interval=2):
-                self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION])
-                if book_empty:
-                    self.device.click(BACK_ARROW)
-                    self.interval_reset(TACTICAL_CHECK)
-                    continue
-                if self._tactical_get_finish():
-                    self.device.click(BACK_ARROW)
-                    self.interval_reset(TACTICAL_CHECK)
-                    empty_confirm.reset()
-                    received = True
-                    continue
-                else:
-                    self.interval_clear(TACTICAL_CHECK)
-                    if empty_confirm.reached():
-                        self.device.click(BACK_ARROW)
-                        empty_confirm.reset()
-                        received = True
-                        continue
-            else:
-                empty_confirm.reset()
+            # 获取完成时间
+            # 有时 TACTICAL_CHECK 出现但没有黑色模糊背景
+            # 此时 TACTICAL_CLASS_CANCEL 和 TACTICAL_CHECK 同时显示
+            handled, finished = self._handle_tactical_finish(book_empty, empty_confirm)
+            if handled:
+                received = received or finished
+                continue
 
-            # Popups
-            if self.appear_then_click(REWARD_2, offset=(20, 20), interval=3):
-                self.interval_reset(REWARD_2_WHITE)
+            handled, auto_switch = self._handle_tactical_popups()
+            if handled:
+                pending_skill_auto_switch = pending_skill_auto_switch or auto_switch
                 continue
-            if self.appear_then_click(REWARD_2_WHITE, offset=(20, 20), interval=3):
-                self.interval_reset(REWARD_2)
+
+            handled, finished = self._handle_tactical_books_start()
+            if handled:
+                study_finished = study_finished or finished
                 continue
-            if self.appear_then_click(REWARD_GOTO_TACTICAL, offset=(20, 20), interval=3):
-                self.interval_reset(REWARD_GOTO_TACTICAL_WHITE)
-                continue
-            if self.appear_then_click(REWARD_GOTO_TACTICAL_WHITE, offset=(20, 20), interval=3):
-                self.interval_reset(REWARD_GOTO_TACTICAL)
-                continue
-            if self.ui_main_appear_then_click(page_reward, interval=3):
-                continue
-            if self.handle_popup_confirm('TACTICAL'):
-                self.interval_reset([BOOK_EMPTY_POPUP])
-                continue
-            if self.handle_urgent_commission():
-                # Only one button in the middle, when skill reach max level.
-                continue
-            if self.ui_page_main_popups():
-                self.interval_reset([BOOK_EMPTY_POPUP])
-                continue
-            # Similar to handle_mission_popup_ack, but battle pass item expire popup has a different ACK button
-            if self.appear(MISSION_POPUP_GO, offset=self._popup_offset, interval=2):
-                self.device.click(MISSION_POPUP_ACK)
-                continue
-            if self.appear(TACTICAL_CLASS_START, offset=(30, 30), interval=2):
-                if self._tactical_books_choose():
-                    self.dock_select_index = 0
-                    self.interval_reset([TACTICAL_CLASS_START, BOOK_EMPTY_POPUP])
-                    self.interval_clear([POPUP_CONFIRM, POPUP_CANCEL, GET_MISSION])
-                else:
-                    study_finished = True
-                continue
-            # 2025.05.29 game tips that infos skin feature when you enter dock
+
+            # 2025.05.29 进入船坞时游戏弹出皮肤功能提示
             if self.handle_game_tips():
                 return True
-            if self.appear(DOCK_CHECK, offset=(20, 20), interval=3):
-                if self.dock_selected():
-                    # When you click a ship from page_main -> dock,
-                    # this ship will be selected default in tactical dock,
-                    # so we need click BACK_ARROW to clear selected state
-                    logger.info('Having pre-selected ship in dock, re-enter')
-                    self.device.click(BACK_ARROW)
-                    self.interval_reset([BOOK_EMPTY_POPUP, DOCK_CHECK], interval=3)
-                    continue
-                # If not enable or can not fina a suitable ship
-                if self.config.AddNewStudent_Enable:
-                    if self.select_suitable_ship():
-                        pass
-                    else:
-                        study_finished = True
-                        self.device.click(BACK_ARROW)
-                else:
-                    logger.info('Not going to learn skill but in dock, close it')
-                    study_finished = True
-                    self.device.click(BACK_ARROW)
-                # reset DOCK_CHECK to Timer(3)
-                self.interval_timer.pop(DOCK_CHECK.name, None)
-                self.interval_reset([BOOK_EMPTY_POPUP, DOCK_CHECK], interval=3)
+
+            handled, finished = self._handle_tactical_dock()
+            if handled:
+                study_finished = study_finished or finished
                 continue
-            if self.appear(SKILL_CONFIRM, offset=(20, 20), interval=3):
-                # If not enable or can not find a skill
-                if self.config.AddNewStudent_Enable:
-                    if self._tactical_skill_choose():
-                        pass
-                    else:
-                        study_finished = True
-                        self.device.click(BACK_ARROW)
-                else:
-                    logger.info('Not going to learn skill but having SKILL_CONFIRM, close it')
-                    study_finished = True
-                    self.device.click(BACK_ARROW)
-                self.interval_reset([BOOK_EMPTY_POPUP, SKILL_CONFIRM], interval=3)
+
+            handled, finished, pending_skill_auto_switch = self._handle_tactical_skill_confirm(pending_skill_auto_switch)
+            if handled:
+                study_finished = study_finished or finished
                 continue
-            if self.appear(TACTICAL_META, offset=(200, 20), interval=3):
-                # If meta's skill page, it's inappropriate
-                logger.info('META skill found, exit')
-                self.device.click(BACK_ARROW)
-                # Select the next ship in `select_suitable_ship()`
-                self.dock_select_index += 1
-                # Avoid exit tactical between exiting meta skill to select new ship
-                self.interval_reset([TACTICAL_CHECK, BOOK_EMPTY_POPUP])
-                self.interval_clear(ADD_NEW_STUDENT)
+            if self._handle_tactical_meta():
                 continue
-            # No books
-            if self.appear(BOOK_EMPTY_POPUP, offset=(20, 20), interval=3):
-                self.device.click(BOOK_EMPTY_POPUP)
+            if self._handle_tactical_book_empty():
                 study_finished = True
                 received = True
                 book_empty = True
@@ -659,12 +709,11 @@ class RewardTacticalClass(Dock):
 
     def _tactical_skill_select(self, selected_skill, skip_first_screenshot=True):
         """
-        Select the target skill onscreen
-        Updates current image if needed
+        选中屏幕上指定的技能。必要时更新当前截图。
 
         Args:
-            selected_skill: button
-            skip_first_screenshot (bool):
+            selected_skill: 目标技能的 Button 对象
+            skip_first_screenshot (bool): 是否跳过首次截图
         """
         logger.info('Tactical skill select')
         while 1:
@@ -682,16 +731,16 @@ class RewardTacticalClass(Dock):
     @staticmethod
     def check_skill_selected(button, image):
         area = button.area
-        check_area = tuple([area[0], area[3] + 2, area[2], area[3] + 4])
+        check_area = (area[0], area[3] + 2, area[2], area[3] + 4)
         im = rgb2gray(crop(image, check_area, copy=False))
-        return True if np.mean(im) > 127 else False
+        return np.mean(im) > 127
 
     def _tactical_skill_choose(self):
         """
-        Choose a not full level skill.
+        选择一个未满级的技能。
 
         Returns:
-            bool: Find or not
+            bool: 是否找到可用技能
 
         Pages:
             in: SKILL_CONFIRM
@@ -700,38 +749,38 @@ class RewardTacticalClass(Dock):
         logger.hr('Tactical skill choose')
         selected_skill = self.find_not_full_level_skill()
 
-        # If can't select a skill, think this ship no need study
+        # 找不到可用技能，认为该舰船无需学习
         if selected_skill is None:
             logger.info('No available skill to learn')
             return False
 
-        # If select a skill, think it not full level and should start or continue
-        # Here should check selected or not
+        # 选中技能说明未满级，应开始或继续学习
+        # 这里需要检查是否已选中
         self._tactical_skill_select(selected_skill)
         self.device.click(SKILL_CONFIRM)
 
         return True
 
     def select_suitable_ship(self):
-        logger.hr(f'Select suitable ship')
+        logger.hr('Select suitable ship')
 
-        # Set if favorite from config
+        # 根据配置设置收藏筛选
         self.dock_favourite_set(enable=self.config.AddNewStudent_Favorite, wait_loading=False)
 
-        # reset filter; naturally skip meta ships this way
+        # 重置筛选器；自然跳过 META 舰船
         self.dock_filter_set(
             faction=[v for k, v in self.dock_filter.settings if k == 'faction' and v not in ['all', 'meta']]
         )
 
-        # No ship in dock
+        # 船坞中没有舰船
         if self.appear(DOCK_EMPTY, offset=(30, 30)):
             logger.info('Dock is empty or favorite ships is empty')
             return False
 
-        # Ship cards may slow to show, like:
+        # 舰船卡片加载可能较慢，例如：
         # [0, 0, 120, 120, 120, 120, 0, 0, 0, 0, 0, 0, 0, 0]
         # [12, 0, 0, 120, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        # Wait until they turn into
+        # 等待其变为
         # [120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120]
         level_ocr = LevelOcr(CARD_LEVEL_GRIDS.buttons, name='DOCK_LEVEL_OCR', threshold=64)
         list_level = []
@@ -755,7 +804,7 @@ class RewardTacticalClass(Dock):
 
         should_select_button = None
         for button, level in list(zip(CARD_GRIDS.buttons, list_level))[self.dock_select_index:]:
-            # Select ship LV > 1 only
+            # 仅选择等级 >= min_level 的舰船
             if level >= min_level:
                 should_select_button = button
                 break
@@ -764,14 +813,14 @@ class RewardTacticalClass(Dock):
             logger.info(f'No ships with level >= {min_level} in dock')
             return False
 
-        # select a ship
+        # 选择舰船
         self.dock_select_one(should_select_button, skip_first_screenshot=True)
-        # Confirm selected ship
-        # Clear interval if alas have just selected and exited from a meta skill
+        # 确认选中的舰船
+        # 如果刚刚从 META 技能中退出，清除间隔计时器
         self.interval_clear(SHIP_CONFIRM)
 
-        # Removed the use of TACTICAL_SKILL_LIST, cause EN uses "Select skills"
-        # in normal skill list but "Choose skills" in META skill list
+        # 已移除 TACTICAL_SKILL_LIST 的使用，因为 EN 服普通技能列表用 "Select skills"
+        # 而 META 技能列表用 "Choose skills"
         def check_button():
             if self.appear(SKILL_CONFIRM, offset=(30, 30)):
                 return True
@@ -784,10 +833,10 @@ class RewardTacticalClass(Dock):
 
     def find_not_full_level_skill(self, skip_first_screenshot=True):
         """
-        Check up to three skills in the list, find a skill whose level is not max
+        检查列表中最多三个技能，找到一个未满级的技能。
 
         Returns:
-            Selected skill's button
+            选中技能的 Button 对象
 
         Pages:
             in: SKILL_CONFIRM
@@ -801,8 +850,7 @@ class RewardTacticalClass(Dock):
         skill_level_list = skill_level_ocr.ocr(self.device.image)
         for skill_button, skill_level in list(zip(SKILL_GRIDS.buttons, skill_level_list)):
             level = skill_level.upper().replace(' ', '')
-            # Empty skill slot
-            # Probably because all favourite ships have their skill leveled max.
+            # 空技能槽位，可能是因为所有收藏舰娘的技能已满级
             # '———l', '—l'
             if not level:
                 continue
@@ -810,10 +858,10 @@ class RewardTacticalClass(Dock):
                 continue
             if re.search(r'[—一]+', level):
                 continue
-            # Use 'MA' as a part of `MAX`.
-            # SKILL_LEVEL_GRIDS may move a little lower for unknown reason, OCR results are like:
-            # ['NEXT:MA', 'NEXT:/1D]', 'NEXT:MA'] (Actually: `NEXT:MAX, NEXT:0/100, NEXT:MAX`)
-            # ['NEXT:MA', 'NEX T:/ 14[]]', 'NEXT:MA']  (Actually: `NEXT:MAX, NEXT:150/1400, NEXT:MAX`)
+            # 使用 'MA' 作为 `MAX` 的一部分
+            # SKILL_LEVEL_GRIDS 可能因未知原因向下偏移，OCR 结果示例：
+            # ['NEXT:MA', 'NEXT:/1D]', 'NEXT:MA']（实际：`NEXT:MAX, NEXT:0/100, NEXT:MAX`）
+            # ['NEXT:MA', 'NEX T:/ 14[]]', 'NEXT:MA']（实际：`NEXT:MAX, NEXT:150/1400, NEXT:MAX`）
             if 'MA' not in level:
                 logger.attr('LEVEL', 'EMPTY' if len(level) == 0 else level)
                 return skill_button
@@ -822,6 +870,8 @@ class RewardTacticalClass(Dock):
 
     def run(self):
         """
+        运行战术学院任务。
+
         Pages:
             in: Any
             out: page_tactical

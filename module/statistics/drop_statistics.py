@@ -48,9 +48,7 @@ class DropStatistics:
 
     @cached_property
     def csv_overwrite_check(self):
-        """
-        Remove existing csv file. This method only run once.
-        """
+        """移除已存在的 CSV 文件，此方法仅执行一次。"""
         if DropStatistics.CSV_OVERWRITE:
             if os.path.exists(self.csv_file):
                 logger.info(f'Remove existing csv file: {self.csv_file}')
@@ -58,10 +56,7 @@ class DropStatistics:
         return True
 
     def parse_template(self, file):
-        """
-        Extract template from a single file.
-        New templates will be given an auto-increased ID.
-        """
+        """从单个文件中提取模板，新模板会分配自增 ID。"""
         images = unpack(load_image(file))
         for image in images:
             if self.get_items.appear_on(image):
@@ -70,14 +65,13 @@ class DropStatistics:
                 self.campaign_bonus.extract_template(image, folder=self.template_folder)
 
     def parse_drop(self, file):
-        """
-        Parse a single file.
+        """解析单个截图文件，提取掉落数据。
 
         Args:
-            file (str):
+            file (str): 截图文件路径。
 
         Yields:
-            list: [timestamp, campaign, enemy_name, drop_type, item, amount]
+            list: 每行为 [时间戳, 关卡, 敌人名称, 掉落类型, 物品名, 数量]。
         """
         ts = os.path.splitext(os.path.basename(file))[0]
         campaign = os.path.basename(os.path.abspath(os.path.join(file, '../')))
@@ -94,11 +88,10 @@ class DropStatistics:
                     yield [ts, campaign, enemy_name, 'CAMPAIGN_BONUS', item.name, item.amount]
 
     def extract_template(self, campaign):
-        """
-        Extract images from a given folder.
+        """从指定关卡文件夹中提取模板图像。
 
         Args:
-            campaign (str):
+            campaign (str): 关卡名称。
         """
         print('')
         logger.hr(f'Extract templates from {campaign}', level=1)
@@ -114,11 +107,10 @@ class DropStatistics:
                 continue
 
     def extract_drop(self, campaign):
-        """
-        Parse images from a given folder.
+        """从指定关卡文件夹中解析掉落数据并写入 CSV。
 
         Args:
-            campaign (str):
+            campaign (str): 关卡名称。
         """
         print('')
         logger.hr(f'extract drops from {campaign}', level=1)
@@ -140,50 +132,48 @@ class DropStatistics:
 
 
 if __name__ == '__main__':
-    # Drop screenshot folder. Default to './screenshots'
+    # 掉落截图文件夹，默认为 './screenshots'
     DropStatistics.DROP_FOLDER = './screenshots'
-    # Folder to load templates and save new templates.
-    # This will load {DROP_FOLDER}/{TEMPLATE_FOLDER}.
-    # If folder doesn't exist, auto copy from './assets/stats_basic'
+    # 模板文件夹，用于加载和保存模板
+    # 路径为 {DROP_FOLDER}/{TEMPLATE_FOLDER}
+    # 若文件夹不存在，会自动从 './assets/stats_basic' 复制
     DropStatistics.TEMPLATE_FOLDER = 'campaign_13_1_template'
-    # 'cpu' or 'gpu', default to 'cpu'.
-    # Use 'gpu' for faster prediction, but you must have the gpu version of mxnet installed.
+    # 'cpu' 或 'gpu'，默认 'cpu'
+    # 使用 'gpu' 可加速预测，但需安装 GPU 版本的 mxnet
     DropStatistics.CNOCR_CONTEXT = 'cpu'
-    # Name of the output csv file.
-    # This will write to {DROP_FOLDER}/{CSV_FILE}.
+    # 输出 CSV 文件名
+    # 路径为 {DROP_FOLDER}/{CSV_FILE}
     DropStatistics.CSV_FILE = 'drop_results.csv'
-    # If True, remove existing file before extraction.
+    # 为 True 时，提取前删除已有文件
     DropStatistics.CSV_OVERWRITE = True
-    # Usually to be 'utf-8'.
-    # For better Chinese export to Excel, use 'gbk'.
+    # 通常为 'utf-8'
+    # 导出到 Excel 中文乱码时使用 'gbk'
     DropStatistics.CSV_ENCODING = 'gbk'
-    # campaign names to export under DROP_FOLDER.
-    # This will load {DROP_FOLDER}/{CAMPAIGN}.
-    # Just a demonstration here, you should modify it to your own.
+    # DROP_FOLDER 下要导出的关卡名称列表
+    # 路径为 {DROP_FOLDER}/{CAMPAIGN}
+    # 以下仅为示例，请根据实际情况修改
     CAMPAIGNS = ['campaign_13_1']
 
     stat = DropStatistics()
 
     """
-    Step 1:
-        Uncomment these code and run.
-        After run, comment again.
+    步骤 1：
+        取消注释以下代码并运行，运行后重新注释。
     """
     # for i in CAMPAIGNS:
     #     stat.extract_template(i)
 
     """
-    Step 2:
-        Goto {DROP_FOLDER}/{TEMPLATE_FOLDER}.
-        Manually rename the templates you interested in.
+    步骤 2：
+        前往 {DROP_FOLDER}/{TEMPLATE_FOLDER}
+        手动重命名你感兴趣的模板文件。
     """
     pass
 
     """
-    Step 3:
-        Uncomment these code and run.
-        After run, comment again.
-        Results are saved in {DROP_FOLDER}/{CSV_FILE}.
+    步骤 3：
+        取消注释以下代码并运行，运行后重新注释。
+        结果保存在 {DROP_FOLDER}/{CSV_FILE} 中。
     """
     for i in CAMPAIGNS:
         stat.extract_drop(i)

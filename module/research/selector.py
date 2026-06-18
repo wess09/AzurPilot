@@ -33,9 +33,9 @@ FILTER = Filter(FILTER_REGEX, FILTER_ATTR, FILTER_PRESET)
 
 
 class ResearchSelector(ResearchUI):
-    # List of current research projects
+    # 当前科研项目列表
     projects: list
-    # From StorageHandler
+    # 来自 StorageHandler
     storage_has_boxes = True
 
     def research_cube_preserve_triggered(self):
@@ -60,19 +60,19 @@ class ResearchSelector(ResearchUI):
             else:
                 self.device.screenshot()
 
-            # DETAIL_NEXT appears even when the research detail page is not fully loaded.
+            # DETAIL_NEXT 在科研详情页未完全加载时也会出现
             if not self.appear(DETAIL_NEXT, offset=(20, 20)):
                 if click_timer.reached():
                     self.device.click(RESEARCH_ENTRANCE[index])
                     click_timer.reset()
             else:
-                # Check RESEARCH_COST_CHECKER to ensure that the research detail page is fully loaded.
+                # 检查 RESEARCH_COST_CHECKER 以确保科研详情页已完全加载
                 self.wait_until_appear(RESEARCH_COST_CHECKER, offset=(20, 20), skip_first_screenshot=True)
                 break
 
     def _research_jp_detect(self, skip_first_screenshot=True):
         """
-        Wraps research_jp_detect() with error handling
+        包装 research_jp_detect()，增加错误处理。
 
         Args:
             skip_first_screenshot:
@@ -102,8 +102,8 @@ class ResearchSelector(ResearchUI):
     @Config.when(SERVER='jp')
     def research_detect(self):
         """
-        We do not need a screenshot here actually. 'image' is a null argument.
-        Adding this argument is just to eusure all "research_detect" have the same arguments.
+        实际上此处不需要截图。'image' 是一个空参数。
+        添加此参数仅是为了确保所有 "research_detect" 具有相同的参数签名。
         """
         projects = []
         proj_sorted = []
@@ -111,22 +111,22 @@ class ResearchSelector(ResearchUI):
         for _ in range(5):
             self.device.click_record_clear()
             """
-            Every time entering the 4th(mid-right) entrance,
-            all research subjects shift 1 position from right to left.
+            每次进入第 4 个（中右侧）入口时，
+            所有科研项目会从右向左移动 1 个位置。
             """
             self.research_goto_detail(3)
             """
-            'image' is a null argument as described above.
-            What we need here is the current screen 'self.device.image'.
+            'image' 是上述的空参数。
+            我们需要的是当前屏幕 'self.device.image'。
             """
             project = self._research_jp_detect()
             logger.attr('Project', project)
             projects.append(project)
             self.research_detail_quit()
         """
-        page_research should remain the same as before.
-        Since we entered the 4th entrance first,
-        the indexes from left to right are (2, 3, 4, 0, 1).
+        page_research 应与之前保持一致。
+        由于我们首先进入了第 4 个入口，
+        从左到右的索引为 (2, 3, 4, 0, 1)。
         """
         for pos in range(5):
             proj_sorted.append(projects[(pos + 2) % 5])
@@ -144,10 +144,10 @@ class ResearchSelector(ResearchUI):
                 break
 
             if sum([p.valid for p in projects]) < 5:
-                # Leftmost research series covered by battle pass info, see #1037
+                # 最左侧的科研系列被战令信息遮挡，参见 #1037
                 logger.info('Invalid project detected')
                 logger.info('Probably because of battle pass info or too fast screenshot')
-                # A rare case, poor sleep is acceptable
+                # 罕见情况，少量 sleep 可以接受
                 self.device.sleep(1)
                 self.device.screenshot()
                 continue
@@ -159,10 +159,10 @@ class ResearchSelector(ResearchUI):
     def research_sort_filter(self, enforce=False):
         """
         Returns:
-            list: A list of ResearchProject objects and preset strings,
-                such as [object, object, object, 'reset']
+            list: ResearchProject 对象和预设字符串的列表，
+                如 [object, object, object, 'reset']
         """
-        # Load filter string
+        # 加载过滤器字符串
         preset = self.config.Research_PresetFilter
         cube_preserve = self.research_cube_preserve_triggered()
         if preset == 'custom':
@@ -186,20 +186,20 @@ class ResearchSelector(ResearchUI):
             self.config.Research_UsePart))
         logger.attr('Allow delay', self.config.Research_AllowDelay)
 
-        # Case insensitive
+        # 不区分大小写
         string = string.lower()
-        # Filter uses `hakuryu`, but allows both `hakuryu` and `hakuryuu`
+        # 过滤器使用 'hakuryu'，但同时允许 'hakuryu' 和 'hakuryuu'
         string = string.replace('hakuryuu', 'hakuryu')
-        # Allow both `fastest` and `shortest`
+        # 允许 'fastest' 和 'shortest' 两种写法
         string = string.replace('fastest', 'shortest')
-        # Allow both `PR` and `PRY`
+        # 允许 'PR' 和 'PRY' 两种写法
         string = re.sub(r'pr([\d\- >])', r'pry\1', string)
 
         FILTER.load(string)
         priority = FILTER.apply(self.projects, func=partial(
             self._research_check, enforce=enforce, cube_preserve=cube_preserve))
 
-        # Log
+        # 日志
         logger.attr('Filter_sort', ' > '.join([str(project) for project in priority]))
         return priority
 
@@ -214,7 +214,7 @@ class ResearchSelector(ResearchUI):
         if not project.valid:
             return False
 
-        # Check project consumption
+        # 检查项目消耗
         is_05 = str(project.duration) == '0.5'
         if project.need_cube:
             if cube_preserve:
@@ -240,23 +240,23 @@ class ResearchSelector(ResearchUI):
             if self.config.Research_UsePart == 'only_05_hour' and not is_05 and not enforce:
                 return False
 
-        # Reasons to ignore B series and E-2:
-        # - Can't guarantee research condition satisfied.
-        #   You may get nothing after a day of running, because you didn't complete the precondition.
-        # - Low income from B series research.
-        #   Gold B-4 basically equivalent to C-12, but needs a lot of oil.
+        # 忽略 B 系列和 E-2 的原因：
+        # - 无法保证科研条件被满足。
+        #   可能运行一天后因未完成前置条件而一无所获。
+        # - B 系列科研收益低。
+        #   金色 B-4 基本等同于 C-12，但需要大量石油。
 
         if project.genre.upper() == 'B':
             return False
-        # T series require commission
-        # 2022.05.08 Allow T series researches because commission is now force to enable
-        # 2022.07.17 Disallow T again cause they can't be queued unless pre-conditions satisfied
+        # T 系列需要委托
+        # 2022.05.08 允许 T 系列科研，因为委托现已强制启用
+        # 2022.07.17 再次禁止 T 系列，除非满足前置条件否则无法加入队列
         if project.genre.upper() == 'T':
             return False
-        # 2021.08.19 Allow E-2 to disassemble tech boxes, but JP still remains the same.
-        # 2022.08.23 Allow all E-2, disassemble equipment is now supported
-        #   Ignore E-2 if don't have any boxes in storage to disassemble,
-        #   Or will enter a loop of starting research, trying to disassemble, cancel research
+        # 2021.08.19 允许 E-2 拆解科技箱，但 JP 服务器保持不变
+        # 2022.08.23 允许所有 E-2，现已支持拆解装备
+        #   如果仓库中没有可拆解的箱子则忽略 E-2，
+        #   否则会陷入启动科研、尝试拆解、取消科研的循环
         if not self.storage_has_boxes:
             if self.config.SERVER == 'jp':
                 if project.genre.upper() == 'E' and str(project.duration) != '6':
@@ -270,8 +270,8 @@ class ResearchSelector(ResearchUI):
     def research_sort_shortest(self, enforce):
         """
         Returns:
-            list: A list of ResearchProject objects and preset strings,
-                such as [object, object, object, 'reset']
+            list: ResearchProject 对象和预设字符串的列表，
+                如 [object, object, object, 'reset']
         """
         cube_preserve = self.research_cube_preserve_triggered()
         FILTER.load(FILTER_STRING_SHORTEST)
@@ -284,8 +284,8 @@ class ResearchSelector(ResearchUI):
     def research_sort_cheapest(self, enforce):
         """
         Returns:
-            list: A list of ResearchProject objects and preset strings,
-                such as [object, object, object, 'reset']
+            list: ResearchProject 对象和预设字符串的列表，
+                如 [object, object, object, 'reset']
         """
         cube_preserve = self.research_cube_preserve_triggered()
         FILTER.load(FILTER_STRING_CHEAPEST)

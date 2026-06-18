@@ -19,14 +19,14 @@ class DatedDuration(Ocr):
 
     def ocr(self, image, direct_ocr=False):
         """
-        Do OCR on a dated duration, such as `10d 01:30:30` or `7日01:30:30`.
+        对带日期的时长进行 OCR 识别，如 `10d 01:30:30` 或 `7日01:30:30`。
 
         Args:
-            image:
-            direct_ocr:
+            image: 截图图像。
+            direct_ocr: 是否直接进行 OCR。
 
         Returns:
-            list, datetime.timedelta: timedelta object, or a list of it.
+            datetime.timedelta 或其列表：时间差对象。
         """
         result_list = super().ocr(image, direct_ocr=direct_ocr)
         if not isinstance(result_list, list):
@@ -39,11 +39,13 @@ class DatedDuration(Ocr):
     @staticmethod
     def parse_time(string):
         """
+        解析带日期的时长字符串。
+
         Args:
-            string (str): `10d 01:30:30` or `7日01:30:30`
+            string (str): 时长字符串，如 `10d 01:30:30` 或 `7日01:30:30`。
 
         Returns:
-            datetime.timedelta:
+            datetime.timedelta: 解析后的时间差对象。
         """
         import re
         result = re.search(r'(\d{1,2})\D?(\d{1,2}):?(\d{2}):?(\d{2})', string)
@@ -62,7 +64,7 @@ class DatedDurationYuv(DatedDuration, OcrYuv):
 OCR_EXERCISE_REMAIN = Digit(OCR_EXERCISE_REMAIN, letter=(173, 247, 74), threshold=128)
 OCR_PERIOD_REMAIN = DatedDuration(OCR_PERIOD_REMAIN, letter=(255, 255, 255), threshold=128)
 ADMIRAL_TRIAL_HOUR_INTERVAL = {
-    # "aggressive": [336, 0]
+    # "aggressive": [336, 0]  # 激进模式
     "sun18": [6, 0],
     "sun12": [12, 6],
     "sun0": [24, 12],
@@ -101,12 +103,13 @@ class Exercise(ExerciseCombat):
             return [0, 1, 2, 3]
 
     def _exercise_once(self):
-        """Execute exercise once.
+        """
+        执行一次演习。
 
-        This method handles exercise refresh and exercise failure.
+        处理对手刷新和演习失败的情况。
 
         Returns:
-            bool: True if success to defeat one opponent. False if failed to defeat any opponent and refresh exhausted.
+            bool: 击败一个对手返回 True，所有对手均未击败且刷新次数耗尽返回 False。
         """
         self._opponent_fleet_check_all()
         while 1:
@@ -123,12 +126,13 @@ class Exercise(ExerciseCombat):
             self._opponent_fleet_check_all()
 
     def _exercise_easiest_else_exp(self):
-        """Try easiest first, if unable to beat easiest opponent then switch to max exp opponent and accept the loss.
+        """
+        优先选择最简单的对手，若无法击败则切换到最大经验对手并接受失败。
 
-        This method handles exercise refresh and exercise failure.
+        处理对手刷新和演习失败的情况。
 
         Returns:
-            bool: True if success to defeat one opponent. False if failed to defeat any opponent and refresh exhausted.
+            bool: 击败一个对手返回 True，所有对手均未击败且刷新次数耗尽返回 False。
         """
         method = "easiest_else_exp"
         restore = self.config.Exercise_LowHpThreshold
@@ -155,38 +159,41 @@ class Exercise(ExerciseCombat):
 
     def _get_opponent_change_count(self):
         """
-        Same day, count set to last known change count or 6 i.e. no refresh
-        New day, count set to 0 i.e. can change up to 5 times
+        获取对手刷新次数。
+
+        同一天内，计数设为上次记录的刷新次数或 6（即不再刷新）。
+        新的一天，计数重置为 0（即最多可刷新 5 次）。
 
         Returns:
-            int:
+            int: 当前对手刷新次数。
         """
         record = self.config.Exercise_OpponentRefreshRecord
         update = get_server_last_update('00:00')
         if record.date() == update.date():
-            # Same Day
+            # 同一天
             return self.config.Exercise_OpponentRefreshValue
         else:
-            # New Day
+            # 新的一天
             self.config.set_record(Exercise_OpponentRefreshValue=0)
             return 0
 
-    def server_support_ocr_reset_remain(self) -> bool:
-        return self.config.SERVER in ['cn', 'en', 'jp']
-
     def _get_exercise_reset_remain(self):
         """
+        获取演习重置剩余时间。
+
         Returns:
-            datetime.timedelta
+            datetime.timedelta: 重置剩余时间。
         """
         result = OCR_PERIOD_REMAIN.ocr(self.device.image)
         return result
 
     def _get_exercise_strategy(self):
         """
+        获取演习策略。
+
         Returns:
-            int: ExercisePreserve, X times to remain
-            list, int: Admiral trial time period
+            int: 保留次数，即剩余演习次数阈值。
+            list, int: 将军试炼时间区间。
         """
         if self.config.Exercise_ExerciseStrategy == "aggressive":
             preserve = 0
@@ -206,22 +213,17 @@ class Exercise(ExerciseCombat):
         logger.attr('Exercise_ExerciseStrategy', self.config.Exercise_ExerciseStrategy)
         self.preserve, admiral_interval = self._get_exercise_strategy()
 
-        if not self.server_support_ocr_reset_remain():
-            logger.info(f'Server {self.config.SERVER} does not yet support OCR exercise reset remain time')
-            logger.info('Please contact the developer to improve as soon as possible')
-            remain_time = datetime.timedelta(days=0)
-        else:
-            remain_time = OCR_PERIOD_REMAIN.ocr(self.device.image)
+        remain_time = OCR_PERIOD_REMAIN.ocr(self.device.image)
         logger.info(f'Exercise period remain: {remain_time}')
 
         if admiral_interval is not None and remain_time:
             admiral_start, admiral_end = admiral_interval
 
-            if admiral_start > int(remain_time.total_seconds() // 3600) >= admiral_end:  # set time for getting admiral
+            if admiral_start > int(remain_time.total_seconds() // 3600) >= admiral_end:  # 达到将军试炼设定时间
                 logger.info('Reach set time for admiral trial, using all attempts.')
                 self.preserve = 0
                 forced_run =True
-            elif int(remain_time.total_seconds() // 3600) < 6:  # if not set to "sun18", still depleting at sunday 18pm.
+            elif int(remain_time.total_seconds() // 3600) < 6:  # 未设置为 "sun18" 时，仍在周日 18 点前消耗
                 logger.info('Exercise period remain less than 6 hours, using all attempts.')
                 self.preserve = 0
                 forced_run = True
@@ -231,7 +233,7 @@ class Exercise(ExerciseCombat):
         else:
             forced_run = False
 
-        # Delay task to the configured time
+        # 延迟到设定时间执行任务
         if ((get_server_next_update(server_update) - datetime.datetime.now()).seconds >
             3600 * self.config.Exercise_DelayUntilHoursBeforeNextUpdate)\
                 and not forced_run:
@@ -257,7 +259,7 @@ class Exercise(ExerciseCombat):
 
         # self.equipment_take_off_when_finished()
 
-        # Scheduler
+        # 调度器
         with self.config.multi_set():
             self.config.set_record(Exercise_OpponentRefreshValue=self.opponent_change_count)
             if self.remain <= self.preserve or self.opponent_change_count >= 5:

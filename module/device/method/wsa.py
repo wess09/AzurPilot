@@ -25,10 +25,10 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 不可处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # adb server 被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
@@ -45,13 +45,13 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # Package not installed
+            # 包未安装
             except PackageNotInstalled as e:
                 logger.error(e)
 
                 def init():
                     self.detect_package()
-            # Unknown, probably a trucked image
+            # 未知异常，可能是损坏的图像
             except Exception as e:
                 logger.exception(e)
 
@@ -70,12 +70,12 @@ class WSA(Connection):
     def app_current_wsa(self):
         """
         Returns:
-            str: Package name.
+            str: 包名。
 
         Raises:
             OSError
         """
-        # try: adb shell dumpsys activity top
+        # 尝试: adb shell dumpsys activity top
         _activityRE = re.compile(
             r'ACTIVITY (?P<package>[^\s]+)/(?P<activity>[^/\s]+) \w+ pid=(?P<pid>\d+)'
         )
@@ -98,7 +98,7 @@ class WSA(Connection):
             display (int):
 
         Returns:
-            bool: If success to start
+            bool: 是否成功启动
         """
         if not package_name:
             package_name = self.package
@@ -107,7 +107,7 @@ class WSA(Connection):
         result = self.adb_shell(['am', 'start', '--display', display, f'{package_name}/{activity_name}'])
         if 'Activity not started' in result or 'does not exist' in result:
             # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] pkg=xxx }
-            # Error: Activity not started, unable to resolve Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 pkg=xxx }
+            # Error: Activity not started, unable to resolve Intent { ... }
 
             # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.bilibili.azurlane/xxx }
             # Error type 3
@@ -115,7 +115,7 @@ class WSA(Connection):
             logger.error(result)
             raise PackageNotInstalled(package_name)
         else:
-            # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.bilibili.azurlane/com.manjuu.azurlane.MainActivity }
+            # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=.../... }
             return True
 
     @retry
@@ -136,9 +136,9 @@ class WSA(Connection):
     @retry
     def get_display_id(self):
         """
-            Returns:
-                0: Could not find
-                int: Display id of the game
+        Returns:
+            0: 未找到
+            int: 游戏的 display id
         """
         try:
             get_dump_sys_display = str(self.adb_shell(['dumpsys', 'display']))
@@ -146,7 +146,7 @@ class WSA(Connection):
             display_id = int(display_id_list[0])
             return display_id
         except IndexError:
-            return 0  # When game running on display 0, its display id could not be found
+            return 0  # 当游戏运行在 display 0 上时，其 display id 无法被找到
 
     @retry
     def display_resize_wsa(self, display):

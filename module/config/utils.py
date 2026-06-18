@@ -29,11 +29,12 @@ SERVER_TO_TIMEZONE = {
     'tw': timedelta(hours=8),
 }
 DEFAULT_TIME = datetime(2023, 1, 1, 0, 0)
+DEFAULT_CONFIG_NAME = 'ap'
 
 
 # https://stackoverflow.com/questions/8640959/how-can-i-control-what-scalar-form-pyyaml-uses-for-my-data/15423007
 def str_presenter(dumper, data):
-    if len(data.splitlines()) > 1:  # check for multiline string
+    if len(data.splitlines()) > 1:  # 多行字符串使用块样式
         return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
     return dumper.represent_scalar('tag:yaml.org,2002:str', data)
 
@@ -73,14 +74,14 @@ def filepath_code():
 
 def read_file(file):
     """
-    Read a file, support both .yaml and .json format.
-    Return empty dict if file not exists.
+    读取文件，支持 .yaml 和 .json 格式。
+    文件不存在时返回空字典。
 
     Args:
-        file (str):
+        file (str): 文件路径。
 
     Returns:
-        dict, list:
+        dict, list: 解析后的数据。
     """
     print(f'read: {file}')
     if file.endswith('.json'):
@@ -103,11 +104,11 @@ def read_file(file):
 
 def write_file(file, data):
     """
-    Write data into a file, supports both .yaml and .json format.
+    将数据写入文件，支持 .yaml 和 .json 格式。
 
     Args:
-        file (str):
-        data (dict, list):
+        file (str): 文件路径。
+        data (dict, list): 要写入的数据。
     """
     print(f'write: {file}')
     if file.endswith('.json'):
@@ -127,13 +128,15 @@ def write_file(file, data):
 
 def iter_folder(folder, is_dir=False, ext=None):
     """
+    遍历文件夹中的文件或子目录。
+
     Args:
-        folder (str):
-        is_dir (bool): True to iter directories only
-        ext (str): File extension, such as `.yaml`
+        folder (str): 目标文件夹路径。
+        is_dir (bool): 为 True 时仅遍历子目录。
+        ext (str): 文件扩展名过滤，如 `.yaml`。
 
     Yields:
-        str: Absolute path of files
+        str: 文件的绝对路径。
     """
     for file in os.listdir(folder):
         sub = os.path.join(folder, file)
@@ -168,9 +171,11 @@ def is_oobe_needed():
 
 def alas_template():
     """
-        Returns:
-            list[str]: Name of all Alas instances, except `template`.
-        """
+    获取所有 Alas 模板实例名称。
+
+    Returns:
+        list[str]: 除 `template` 外的所有 Alas 模板实例名称。
+    """
     out = []
     for file in os.listdir('./config'):
         name, extension = os.path.splitext(file)
@@ -184,8 +189,10 @@ def alas_template():
 
 def alas_instance():
     """
+    获取所有 Alas 实例名称。
+
     Returns:
-        list[str]: Name of all Alas instances, except `template`.
+        list[str]: 除 `template` 外的所有 Alas 实例名称。
     """
     out = []
     for file in os.listdir('./config'):
@@ -198,21 +205,21 @@ def alas_instance():
     out.extend(list_mod_instance())
 
     if not len(out):
-        out = ['alas']
+        out = [DEFAULT_CONFIG_NAME]
 
     return out
 
 
 def parse_value(value, data):
     """
-    Convert a string to float, int, datetime, if possible.
+    尝试将字符串转换为 float、int 或 datetime。
 
     Args:
-        value (str):
-        data (dict):
+        value (str): 待转换的值。
+        data (dict): 参数定义数据，包含 `option` 等字段。
 
     Returns:
-
+        转换后的值，无法转换时返回原值。
     """
     if 'option' in data:
         if value not in data['option']:
@@ -244,19 +251,21 @@ def parse_value(value, data):
 
 def data_to_type(data, **kwargs):
     """
-    | Condition                            | Type     |
-    | ------------------------------------ | -------- |
-    | Value is bool                        | checkbox |
-    | Arg has options                      | select   |
-    | `Filter` is in name (in data['arg']) | textarea |
-    | Rest of the args                     | input    |
+    根据参数定义推断对应的 GUI 控件类型。
+
+    | 条件                              | 类型     |
+    | ---------------------------------- | -------- |
+    | 值为 bool                          | checkbox |
+    | 参数有选项列表                      | select   |
+    | 名称中包含 `Filter`（data['arg']）  | textarea |
+    | 其他参数                           | input    |
 
     Args:
-        data (dict):
-        kwargs: Any additional properties
+        data (dict): 参数定义数据。
+        kwargs: 附加属性。
 
     Returns:
-        str:
+        str: GUI 控件类型字符串。
     """
     kwargs.update(data)
     if isinstance(kwargs['value'], bool):
@@ -271,36 +280,40 @@ def data_to_type(data, **kwargs):
 
 def data_to_path(data):
     """
+    将参数数据转换为配置路径字符串。
+
     Args:
-        data (dict):
+        data (dict): 包含 `func`、`group`、`arg` 键的字典。
 
     Returns:
-        str: <func>.<group>.<arg>
+        str: 格式为 `<func>.<group>.<arg>` 的路径。
     """
     return '.'.join([data.get(attr, '') for attr in ['func', 'group', 'arg']])
 
 
 def path_to_arg(path):
     """
-    Convert dictionary keys in .yaml files to argument names in config.
+    将 .yaml 文件中的字典键转换为配置中的参数名。
 
     Args:
-        path (str): Such as `Scheduler.ServerUpdate`
+        path (str): 如 `Scheduler.ServerUpdate`。
 
     Returns:
-        str: Such as `Scheduler_ServerUpdate`
+        str: 如 `Scheduler_ServerUpdate`。
     """
     return path.replace('.', '_')
 
 
 def dict_to_kv(dictionary, allow_none=True):
     """
+    将字典转换为 key=value 格式的字符串。
+
     Args:
-        dictionary: Such as `{'path': 'Scheduler.ServerUpdate', 'value': True}`
-        allow_none (bool):
+        dictionary: 如 `{'path': 'Scheduler.ServerUpdate', 'value': True}`。
+        allow_none (bool): 是否包含值为 None 的键。
 
     Returns:
-        str: Such as `path='Scheduler.ServerUpdate', value=True`
+        str: 如 `path='Scheduler.ServerUpdate', value=True`。
     """
     return ', '.join([f'{k}={repr(v)}' for k, v in dictionary.items() if allow_none or v is not None])
 
@@ -311,30 +324,27 @@ def server_timezone() -> timedelta:
 
 def server_time_offset() -> timedelta:
     """
-    To convert local time to server time:
-        server_time = local_time + server_time_offset()
-    To convert server time to local time:
-        local_time = server_time - server_time_offset()
+    计算本地时间与服务器时间的偏移量。
+
+    本地时间转服务器时间：server_time = local_time + server_time_offset()
+    服务器时间转本地时间：local_time = server_time - server_time_offset()
     """
     return datetime.now(timezone.utc).astimezone().utcoffset() - server_timezone()
 
 
 def random_normal_distribution_int(a, b, n=3):
     """
-    A non-numpy implementation of the `random_normal_distribution_int` in module.base.utils
+    生成区间内的正态分布随机整数（不依赖 numpy 的实现）。
 
-
-    Generate a normal distribution int within the interval.
-    Use the average value of several random numbers to
-    simulate normal distribution.
+    使用多个随机数的平均值模拟正态分布。
 
     Args:
-        a (int): The minimum of the interval.
-        b (int): The maximum of the interval.
-        n (int): The amount of numbers in simulation. Default to 3.
+        a (int): 区间最小值。
+        b (int): 区间最大值。
+        n (int): 模拟用的随机数个数，默认为 3。
 
     Returns:
-        int
+        int: 正态分布随机整数。
     """
     if a < b:
         output = sum([random.randint(a, b) for _ in range(n)]) / n
@@ -344,15 +354,16 @@ def random_normal_distribution_int(a, b, n=3):
 
 
 def ensure_time(second, n=3, precision=3):
-    """Ensure to be time.
+    """
+    确保输入为时间值，支持区间随机。
 
     Args:
-        second (int, float, tuple): time, such as 10, (10, 30), '10, 30'
-        n (int): The amount of numbers in simulation. Default to 5.
-        precision (int): Decimals.
+        second (int, float, tuple): 时间值，如 10、(10, 30)、'10, 30'。
+        n (int): 模拟用的随机数个数，默认为 3。
+        precision (int): 小数精度。
 
     Returns:
-        float:
+        float: 处理后的时间值。
     """
     if isinstance(second, tuple):
         multiply = 10 ** precision
@@ -374,10 +385,10 @@ def ensure_time(second, n=3, precision=3):
 
 def get_os_next_reset():
     """
-    Get the first day of next month.
+    获取下个月的第一天（大世界重置时间）。
 
     Returns:
-        datetime.datetime
+        datetime.datetime: 下次重置的本地时间。
     """
     diff = server_time_offset()
     server_now = datetime.now() - diff
@@ -389,8 +400,10 @@ def get_os_next_reset():
 
 def get_os_reset_remain():
     """
+    获取距离大世界下次重置的剩余天数。
+
     Returns:
-        int: number of days before next opsi reset
+        int: 剩余天数。
     """
     next_reset = get_os_next_reset()
     now = datetime.now()
@@ -403,11 +416,13 @@ def get_os_reset_remain():
 
 def get_server_next_update(daily_trigger):
     """
+    获取服务器下次更新时间。
+
     Args:
-        daily_trigger (list[str], str): [ "00:00", "12:00", "18:00",]
+        daily_trigger (list[str], str): 每日触发时间列表，如 ["00:00", "12:00", "18:00"]。
 
     Returns:
-        datetime.datetime
+        datetime.datetime: 下次更新的本地时间。
     """
     if isinstance(daily_trigger, str):
         daily_trigger = daily_trigger.replace(' ', '').split(',')
@@ -427,11 +442,13 @@ def get_server_next_update(daily_trigger):
 
 def get_server_last_update(daily_trigger):
     """
+    获取服务器上次更新时间。
+
     Args:
-        daily_trigger (list[str], str): [ "00:00", "12:00", "18:00",]
+        daily_trigger (list[str], str): 每日触发时间列表，如 ["00:00", "12:00", "18:00"]。
 
     Returns:
-        datetime.datetime
+        datetime.datetime: 上次更新的本地时间。
     """
     if isinstance(daily_trigger, str):
         daily_trigger = daily_trigger.replace(' ', '').split(',')
@@ -451,15 +468,15 @@ def get_server_last_update(daily_trigger):
 
 def nearest_future(future, interval=120):
     """
-    Get the neatest future time.
-    Return the last one if two things will finish within `interval`.
+    获取最近的未来时间点。
+    若多个时间点在 `interval` 秒内完成，则返回最晚的一个。
 
     Args:
-        future (list[datetime.datetime]):
-        interval (int): Seconds
+        future (list[datetime.datetime]): 未来时间点列表。
+        interval (int): 合并间隔，单位为秒。
 
     Returns:
-        datetime.datetime:
+        datetime.datetime: 最终选择的时间点。
     """
     future = [datetime.fromisoformat(f) if isinstance(f, str) else f for f in future]
     future = sorted(future)
@@ -473,22 +490,20 @@ def nearest_future(future, interval=120):
 
 def get_nearest_weekday_date(target):
     """
-    Get nearest weekday date starting
-    from current date
+    获取从当前日期起最近的目标星期几的日期。
 
     Args:
-        target (int): target weekday to
-                      calculate
+        target (int): 目标星期几（0=周一, 6=周日）。
 
     Returns:
-        datetime.datetime
+        datetime.datetime: 最近的目标星期几的本地时间。
     """
     diff = server_time_offset()
     server_now = datetime.now() - diff
 
     days_ahead = target - server_now.weekday()
     if days_ahead <= 0:
-        # Target day has already happened
+        # 目标日期已过，跳到下周
         days_ahead += 7
     server_reset = (server_now + timedelta(days=days_ahead)) \
         .replace(hour=0, minute=0, second=0, microsecond=0)
@@ -499,8 +514,10 @@ def get_nearest_weekday_date(target):
 
 def get_server_weekday():
     """
+    获取服务器当前是星期几。
+
     Returns:
-        int: The server's current day of the week
+        int: 星期几（0=周一, 6=周日）。
     """
     diff = server_time_offset()
     server_now = datetime.now() - diff
@@ -510,8 +527,10 @@ def get_server_weekday():
 
 def get_server_monthday():
     """
+    获取服务器当前是几号。
+
     Returns:
-        int: The server's current day of the month
+        int: 月份中的天数。
     """
     diff = server_time_offset()
     server_now = datetime.now() - diff
@@ -521,24 +540,28 @@ def get_server_monthday():
 
 def random_id(length=32):
     """
+    生成随机 ID。
+
     Args:
-        length (int):
+        length (int): ID 长度，默认为 32。
 
     Returns:
-        str: Random azurstat id.
+        str: 随机 AzurStat ID。
     """
     return ''.join(random.sample(string.ascii_lowercase + string.digits, length))
 
 
 def to_list(text, length=1):
     """
+    将文本转换为整数列表。
+
     Args:
-        text (str): Such as `1, 2, 3`
-        length (int): If there's only one digit, return a list expanded to given length,
-            i.e. text='3', length=5, returns `[3, 3, 3, 3, 3]`
+        text (str): 逗号分隔的数字文本，如 `1, 2, 3`。
+        length (int): 单个数字时扩展为指定长度的列表，
+            如 text='3', length=5 返回 `[3, 3, 3, 3, 3]`。
 
     Returns:
-        list[int]:
+        list[int]: 整数列表。
     """
     if text.isdigit():
         return [int(text)] * length
@@ -548,14 +571,13 @@ def to_list(text, length=1):
 
 def type_to_str(typ):
     """
-    Convert any types or any objects to a string。
-    Remove <> to prevent them from being parsed as HTML tags.
+    将任意类型或对象转换为字符串。
 
     Args:
-        typ:
+        typ: 类型或对象。
 
     Returns:
-        str: Such as `int`, 'datetime.datetime'.
+        str: 类型名称，如 `int`、`datetime.datetime`。
     """
     if not isinstance(typ, type):
         typ = type(typ).__name__
@@ -564,20 +586,13 @@ def type_to_str(typ):
 
 def time_delta(_timedelta):
     """
-    Output the delta between two times
+    计算两个时间之间的差值，按年/月/日/时/分/秒拆分。
 
     Args:
-        _timedelta : datetime.timedelta
+        _timedelta (datetime.timedelta): 时间差。
 
     Returns:
-        dict :  {
-                 'Y' : int,
-                 'M' : int,
-                 'D' : int,
-                 'h' : int,
-                 'm' : int,
-                 's' : int
-        }
+        dict: 拆分后的时间差字典，包含 'Y'、'M'、'D'、'h'、'm'、's' 键。
     """
     _time_delta = abs(_timedelta.total_seconds())
     d_base = datetime(2010, 1, 1, 0, 0, 0)
@@ -606,7 +621,7 @@ def time_delta(_timedelta):
 
 def readable_time(before: str, value: str) -> str:
     """
-    Output the delta between two times
+    计算两个时间之间的差值，返回人类可读的时间描述。
     """
     timedata = {
         'value': value,
@@ -659,7 +674,7 @@ def is_good_gpu():
             line = line.strip()
             if line:
                 try:
-                    # AdapterRAM is in bytes, 1GB = 1073741824 bytes
+                    # AdapterRAM 单位为字节，1GB = 1073741824 字节
                     if int(line) >= 1073741824:
                         logger.info("检测到高性能 GPU")
                         return True

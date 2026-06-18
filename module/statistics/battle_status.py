@@ -13,15 +13,16 @@ class BattleStatusStatistics:
         return Ocr(ENEMY_NAME, lang='cnocr', threshold=128, name='ENEMY_NAME')
 
     def stats_battle_status(self, image):
-        """
+        """从战斗状态截图中识别敌人名称。
+
         Args:
-            image (np.ndarray):
+            image (np.ndarray): 战斗状态截图。
 
         Returns:
-            str: Enemy name, such as '中型主力舰队'.
+            str: 敌人名称，如 '中型主力舰队'。
         """
         result = self.ocr_object.ocr(image)
-        # Delete wrong OCR result
+        # 删除 OCR 误识别的字符
         for letter in '-一个―~(':
             result = result.replace(letter, '')
 

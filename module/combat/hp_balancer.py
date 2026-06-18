@@ -16,7 +16,7 @@ class HPBalancer(ModuleBase):
     fleet_show_index = 1
     _hp = {}
     _hp_has_ship = {}
-    # Color that shows on HP bar.
+    # HP 条上显示的颜色。
     COLOR_HP_GREEN = (156, 235, 57)
     COLOR_HP_RED = (99, 44, 24)
 
@@ -24,7 +24,7 @@ class HPBalancer(ModuleBase):
     def hp(self):
         """
         Returns:
-            list[float]:
+            list[float]: 各舰船的 HP 值列表。
         """
         return self._hp[self.fleet_current_index]
 
@@ -32,7 +32,7 @@ class HPBalancer(ModuleBase):
     def hp(self, value):
         """
         Args:
-            value (list[float]):
+            value (list[float]): 各舰船的 HP 值列表。
         """
         self._hp[self.fleet_current_index] = value
 
@@ -40,7 +40,7 @@ class HPBalancer(ModuleBase):
     def hp_has_ship(self):
         """
         Returns:
-            list[bool]:
+            list[bool]: 各位置是否有舰船。
         """
         return self._hp_has_ship[self.fleet_current_index]
 
@@ -48,18 +48,18 @@ class HPBalancer(ModuleBase):
     def hp_has_ship(self, value):
         """
         Args:
-            value (list[float]):
+            value (list[float]): 各位置是否有舰船。
         """
         self._hp_has_ship[self.fleet_current_index] = value
 
     def _calculate_hp(self, area):
-        """Calculate hp according to color.
+        """根据颜色计算 HP。
 
         Args:
-            area (tuple):
+            area (tuple): HP 条的区域坐标。
 
         Returns:
-            float: HP.
+            float: HP 百分比。
         """
         data = max(
             color_bar_percentage(self.device.image, area=area, prev_color=self.COLOR_HP_RED),
@@ -68,7 +68,7 @@ class HPBalancer(ModuleBase):
         return data
 
     def _hp_grid(self):
-        # Location of six HP bar, according to respective server for campaign
+        # 六个 HP 条的位置，根据不同服务器的战役界面调整
         if self.config.SERVER == 'en':
             return ButtonGrid(origin=(35, 190), delta=(0, 100), button_shape=(66, 4), grid_shape=(1, 6))
         elif self.config.SERVER == 'jp':
@@ -77,15 +77,15 @@ class HPBalancer(ModuleBase):
             return ButtonGrid(origin=(35, 206), delta=(0, 100), button_shape=(66, 4), grid_shape=(1, 6))
 
     def hp_get(self):
-        """Get current HP from screenshot.
+        """从截图获取当前 HP。
 
         Returns:
-            list: HP(float) of 6 ship.
+            list: 6 艘舰船的 HP（float）。
 
         Logs:
             [HP]  98% ____ ____  98%  98%  98%
         """
-        # Chinese comma
+        # 中文逗号修正
         weight = self.config.HpControl_HpBalanceWeight
         if '，' in self.config.HpControl_HpBalanceWeight:
             weight = self.config.HpControl_HpBalanceWeight.replace('，', ',')
@@ -108,19 +108,16 @@ class HPBalancer(ModuleBase):
         return self.hp
 
     def hp_reset(self):
-        """
-        Call this method after enter map.
-        """
+        """进入地图后调用此方法重置 HP 数据。"""
         self._hp = {}
         self._hp_has_ship = {}
 
     def _scout_position_change(self, p1, p2):
-        """Exchange KAN-SEN's position.
-        It need to move up and down a little, even though it moves to the right location.
+        """交换舰船位置。即使移动到正确位置，也需要稍微上下移动。
 
         Args:
-            p1 (int): Origin position [0, 2].
-            p2 (int): Target position [0, 2].
+            p1 (int): 原始位置 [0, 2]。
+            p2 (int): 目标位置 [0, 2]。
         """
         logger.info('scout_position_change (%s, %s)' % (p1, p2))
         self.device.drag(p1=SCOUT_POSITION[p1], p2=SCOUT_POSITION[p2], segments=3)
@@ -164,12 +161,11 @@ class HPBalancer(ModuleBase):
 
     @Config.when(DEVICE_CONTROL_METHOD='minitouch')
     def _gen_exchange_step(self, target):
-        """
-        Minitouch swiping is more like human, when it drag the first ship to the third ship,
-        [0, 1, 2] becomes [1, 2, 0], while in adb/uiautomator2, it becomes [2, 1, 0].
+        """minitouch 拖拽更接近人类操作。当把第一个舰船拖到第三个位置时，
+        [0, 1, 2] 变为 [1, 2, 0]，而 adb/uiautomator2 下变为 [2, 1, 0]。
 
         Args:
-            target (list[int]): Such as [2, 0, 1].
+            target (list[int]): 目标排列，如 [2, 0, 1]。
         """
         diff = np.array(target) - np.array((0, 1, 2))
         count = np.count_nonzero(diff)
@@ -191,14 +187,14 @@ class HPBalancer(ModuleBase):
                 yield tuple(np.nonzero(diff)[0])
         elif count == 0:
             # [0, 1, 2]
-            # Target is the same as origin. Do nothing
+            # 目标与原始排列相同，无需操作
             pass
 
     @Config.when(DEVICE_CONTROL_METHOD=None)
     def _gen_exchange_step(self, target):
         """
         Args:
-            target (list[int]): Such as [2, 0, 1].
+            target (list[int]): 目标排列，如 [2, 0, 1]。
         """
         diff = np.array(target) - np.array((0, 1, 2))
         count = np.count_nonzero(diff)
@@ -217,7 +213,7 @@ class HPBalancer(ModuleBase):
             yield tuple(np.nonzero(diff)[0])
         elif count == 0:
             # [0, 1, 2]
-            # Target is the same as origin. Do nothing
+            # 目标与原始排列相同，无需操作
             pass
 
     def hp_balance(self):

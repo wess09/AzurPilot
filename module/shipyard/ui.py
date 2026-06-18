@@ -24,7 +24,7 @@ class ShipyardNavbar(Navbar):
     def is_button_active(self, button, main):
         if main.image_color_count(button, color=(33, 113, 222), threshold=221, count=400):
             return True
-        # Color on Odin's shoulder
+        # 奥丁肩部区域的颜色
         if main.image_color_count(button, color=(41, 85, 165), threshold=221, count=400):
             return True
         return False
@@ -33,12 +33,13 @@ class ShipyardNavbar(Navbar):
 class ShipyardUI(UI):
     def _shipyard_cannot_strengthen(self):
         """
-        Shorthand for appear if a ship can no longer
-        be strengthened either in 'DEV' or 'FATE'
-        interface
+        检测舰船是否无法继续强化。
+
+        在 DEV 或 FATE 界面中，判断当前舰船是否已达
+        到当前等级的最大强化程度，无法继续消耗蓝图。
 
         Returns:
-            bool if appear
+            bool: 是否出现无法强化的提示
         """
         if self.appear(SHIPYARD_PROGRESS_DEV, offset=(20, 20)) \
                 or self.appear(SHIPYARD_PROGRESS_FATE, offset=(20, 20)) \
@@ -51,10 +52,10 @@ class ShipyardUI(UI):
 
     def _shipyard_get_append(self):
         """
-        Shorthand to get the appropriate append/post-fix
+        获取当前所处的开发阶段后缀。
 
         Returns:
-            string 'FATE' or 'DEV'
+            str: 'FATE' 或 'DEV'
         """
         if self.appear(SHIPYARD_IN_FATE, offset=(20, 20)):
             return 'FATE'
@@ -63,19 +64,18 @@ class ShipyardUI(UI):
 
     def _shipyard_get_total(self):
         """
-        Retrieve read total value
-        in current game screen; dynamic
-        UI varies between PR season
+        获取当前界面中的蓝图总数读值。
+
+        游戏 UI 在不同 PR 季节间有差异，且 DEV/FATE
+        阶段的按钮布局不同，需要动态检测并生成 OCR 区域。
 
         Returns:
-            Button, Button, int (ocr read value)
+            tuple: (plus 按钮, minus 按钮, OCR 识别的数值)
         """
-        # Game UI is messy here. Situation varies with DEV/FATE and MAX button.
-        # Having a MAX button is like:
-        # | - |   0   | + | | MAX |
-        # Not having a MAX button is like:
-        # | - |       0       | + |
-        # Here make a dynamic detection, and produce new ocr area.
+        # 游戏 UI 在此处较为复杂，DEV/FATE 与 MAX 按钮的有无会导致不同布局。
+        # 有 MAX 按钮时: | - |   0   | + | | MAX |
+        # 无 MAX 按钮时: | - |       0       | + |
+        # 动态检测并生成新的 OCR 区域。
         append = self._shipyard_get_append()
         ocr = globals()[f'OCR_SHIPYARD_TOTAL_{append}']
         minus = globals()[f'SHIPYARD_MINUS_{append}']
@@ -89,16 +89,17 @@ class ShipyardUI(UI):
 
     def _shipyard_ensure_index(self, count, skip_first_screenshot=True):
         """
-        Primitive 'ui_ensure_index'-like implementation
+        调整蓝图消耗数量到目标值。
 
-        Try to adjust for all of count if interface allows
-        for it otherwise leave as the number allowed
+        类似 ui_ensure_index 的实现，尝试将消耗数量调整到
+        count。若界面不允许消耗全部数量，则保留允许的最大值。
 
         Args:
-            count (int): Target number to ensure index
+            count (int): 目标消耗数量
+            skip_first_screenshot (bool): 是否跳过首次截图
 
         Returns:
-            int remaining BPs that cannot be consumed
+            int: 无法消耗的剩余蓝图数量，None 表示异常
         """
         if count < 0:
             logger.warning('_shipyard_ensure_index --> Non-positive '
@@ -128,14 +129,15 @@ class ShipyardUI(UI):
 
     def _shipyard_get_bp_count(self, index=0):
         """
+        获取指定位置舰船的蓝图数量。
+
         Args:
-            index (int): Target index's BP count
+            index (int): 目标舰船位置（从 1 开始）
 
         Returns:
-            Ocr'ed count for index
+            int: OCR 识别的蓝图数量
         """
-        # index(config.SHIPYARD_INDEX) start from 1
-        # Base Case
+        # index(config.SHIPYARD_INDEX) 从 1 开始
         if index <= 0 or index > len(SHIPYARD_BP_COUNT_GRID.buttons):
             logger.warning(f'Cannot parse for count from index {index}')
             return -1
@@ -146,8 +148,10 @@ class ShipyardUI(UI):
 
     def _shipyard_in_ui(self):
         """
+        检测当前是否在船坞界面内。
+
         Returns:
-            bool whether in appropriate shipyard ui area
+            bool: 是否处于船坞 UI 区域
         """
         if self.appear(SHIPYARD_CHECK, offset=(20, 20)):
             return True
@@ -160,14 +164,15 @@ class ShipyardUI(UI):
 
     def _shipyard_set_series(self, series=1, skip_first_screenshot=True):
         """
+        设置当前显示的科研系列。
+
         Args:
-            series (int): Target research series to set view
-            skip_first_screenshot (bool):
+            series (int): 目标科研系列编号
+            skip_first_screenshot (bool): 是否跳过首次截图
 
         Returns:
-            bool whether successful
+            bool: 是否设置成功
         """
-        # Base Case
         if series <= 0 or series > len(SHIPYARD_SERIES_GRID.buttons):
             logger.warning(f'Research Series {series} is not selectable')
             return False
@@ -185,9 +190,9 @@ class ShipyardUI(UI):
     @cached_property
     def _shipyard_bottom_navbar(self):
         """
-        Shipyard bottom nav bar used to switch between ships within a selected series
-        Location varies on own's research progress, so users
-        must verify the index for themselves
+        船坞底部导航栏，用于在选定系列内切换舰船。
+
+        位置因用户的科研进度而异，用户需自行确认索引。
         """
         return ShipyardNavbar(
             grids=SHIPYARD_FACE_GRID,
@@ -195,16 +200,17 @@ class ShipyardUI(UI):
 
     def shipyard_bottom_navbar_ensure(self, left=None, right=None, skip_first_screenshot=True):
         """
-        Ensure transition to target ship's page in interface
-        according to index
+        确保导航到指定索引的舰船页面。
+
+        根据索引切换底部导航栏，等待界面完全过渡。
 
         Args:
-            left (int):
-            right (int):
-            skip_first_screenshot (bool):
+            left (int): 目标舰船索引
+            right (int): 目标舰船索引（右侧）
+            skip_first_screenshot (bool): 是否跳过首次截图
 
         Returns:
-            bool, whether Navbar was successfully set
+            bool: 导航栏是否设置成功
         """
         if left is None and right is not None:
             left = right
@@ -218,8 +224,7 @@ class ShipyardUI(UI):
         if self._shipyard_bottom_navbar.set(self, left=left, right=right, skip_first_screenshot=skip_first_screenshot):
             ensured = True
 
-        # After navbar set, wait until
-        # full transition for delayed assets
+        # 导航栏设置后，等待界面完全过渡
         confirm_timer = Timer(1.5, count=3).start()
         while 1:
             if skip_first_screenshot:
@@ -227,7 +232,7 @@ class ShipyardUI(UI):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束
             if self._shipyard_in_ui():
                 if confirm_timer.reached():
                     break
@@ -238,13 +243,15 @@ class ShipyardUI(UI):
 
     def shipyard_set_focus(self, series=1, index=1, skip_first_screenshot=True):
         """
+        设置船坞焦点到指定系列和舰船。
+
         Args:
-            series (int): Target research series to set view
-            index (int): Target index to set view
-            skip_first_screenshot (bool):
+            series (int): 目标科研系列编号
+            index (int): 目标舰船索引
+            skip_first_screenshot (bool): 是否跳过首次截图
 
         Returns:
-            bool whether successful
+            bool: 是否设置成功
         """
         if series > 2 and index > 5:
             logger.warning(f'Research Series {series} is limited to indexes 1-5, cannot set focus to index {index}')
@@ -254,11 +261,12 @@ class ShipyardUI(UI):
 
     def _shipyard_get_ship(self, skip_first_screenshot=True):
         """
-        Handles screen transitions to get the completely
-        researched ship
+        处理获取已完成研发的舰船的界面过渡。
+
+        Pages: in: SHIPYARD_RESEARCH_COMPLETE, out: SHIPYARD_CONFIRM_DEV
 
         Args:
-            skip_first_screenshot (bool):
+            skip_first_screenshot (bool): 是否跳过首次截图
         """
         from module.combat.assets import GET_SHIP
 
@@ -294,11 +302,13 @@ class ShipyardUI(UI):
 
     def _shipyard_buy_confirm(self, text, skip_first_screenshot=True):
         """
-        Handles screen transitions to use/buy BPs
+        处理使用/购买蓝图的界面过渡。
+
+        Pages: in: SHIPYARD_CONFIRM_DEV/FATE, out: 船坞界面
 
         Args:
-            text (str): for handle_popup_confirm
-            skip_first_screenshot (bool):
+            text (str): 弹窗确认标识文本
+            skip_first_screenshot (bool): 是否跳过首次截图
         """
         success = False
         append = self._shipyard_get_append()
@@ -314,6 +324,7 @@ class ShipyardUI(UI):
                 self.device.screenshot()
 
             if ocr_timer.reached():
+                # 未能检测到正常退出，回退到 OCR 检查
                 logger.warning('Failed to detect for normal exit routine, resort to OCR check')
                 _, _, current = self._shipyard_get_total()
                 if not current:
@@ -346,7 +357,7 @@ class ShipyardUI(UI):
                 confirm_timer.reset()
                 continue
 
-            # A popup of FATE info shows when ship DEV finished entering FATE
+            # DEV 完成进入 FATE 时会弹出 FATE 信息
             if self.appear_then_click(LOGIN_ANNOUNCE, offset=area_pad((-300, 127, -300, 127), pad=-50), interval=3):
                 self.interval_reset(button)
                 success = True
@@ -354,7 +365,7 @@ class ShipyardUI(UI):
                 confirm_timer.reset()
                 continue
 
-            # End
+            # 结束
             if success and self._shipyard_in_ui():
                 if confirm_timer.reached():
                     break
@@ -363,10 +374,13 @@ class ShipyardUI(UI):
 
     def _shipyard_buy_enter(self):
         """
-        Transitions to appropriate buying interface
+        进入蓝图购买界面。
+
+        检查当前舰船是否已完成研发，若研发完成则获取舰船，
+        若有 FATE 阶段则进入 FATE 界面。
 
         Returns:
-            bool whether entered
+            bool: 是否成功进入购买界面
         """
         if self.appear(SHIPYARD_RESEARCH_INCOMPLETE, offset=(20, 20)) \
                 or self.appear(SHIPYARD_RESEARCH_IN_PROGRESS, offset=(20, 20)):
@@ -385,8 +399,10 @@ class ShipyardUI(UI):
 
     def _shipyard_get_coin(self):
         """
+        获取当前金币数量。
+
         Returns:
-            int: Coin amount
+            int: 金币数量
         """
         if self.ui_page_appear(page_main_white):
             return MAIN_OCR_COIN.ocr(self.device.image)

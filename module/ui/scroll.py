@@ -17,10 +17,10 @@ class Scroll:
     def __init__(self, area, color, is_vertical=True, name='Scroll'):
         """
         Args:
-            area (Button, tuple): A button or area of the whole scroll.
-            color (tuple): RGB of the scroll
-            is_vertical (bool): True if vertical, false if horizontal.
-            name (str):
+            area (Button, tuple): 滚动条整体的按钮或区域。
+            color (tuple): 滚动条的 RGB 颜色。
+            is_vertical (bool): True 为垂直滚动条，False 为水平滚动条。
+            name (str): 滚动条名称。
         """
         if isinstance(area, Button):
             name = area.name
@@ -34,18 +34,20 @@ class Scroll:
             self.total = self.area[3] - self.area[1]
         else:
             self.total = self.area[2] - self.area[0]
-        # Just default value, will change in match_color()
+        # 默认值，会在 match_color() 中更新
         self.length = self.total / 2
         self.drag_interval = Timer(1, count=2)
         self.drag_timeout = Timer(5, count=10)
 
     def match_color(self, main):
         """
+        通过颜色匹配识别滚动条位置，返回掩码数组。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            np.ndarray: Shape (n,), dtype bool.
+            np.ndarray: 形状 (n,)，dtype bool，标记滚动条所在的行列。
         """
         image = main.image_crop(self.area, copy=False)
         image = color_similarity_2d(image, color=self.color)
@@ -55,11 +57,13 @@ class Scroll:
 
     def cal_position(self, main):
         """
+        计算滚动条当前位置。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            float: 0 to 1.
+            float: 位置值，0 到 1 之间。
         """
         mask = self.match_color(main)
         middle = np.mean(np.where(mask)[0])
@@ -72,15 +76,14 @@ class Scroll:
 
     def position_to_screen(self, position, random_range=(-0.05, 0.05)):
         """
-        Convert scroll position to screen coordinates.
-        Call cal_position() or match_color() to get length, before calling this.
+        将滚动条位置转换为屏幕坐标。调用前需先调用 cal_position() 或 match_color() 获取 length。
 
         Args:
-            position (int, float):
-            random_range (tuple):
+            position (int, float): 滚动条位置，0 到 1 之间。
+            random_range (tuple): 随机偏移范围。
 
         Returns:
-            tuple[int]: (upper_left_x, upper_left_y, bottom_right_x, bottom_right_y)
+            tuple[int]: (左上角 x, 左上角 y, 右下角 x, 右下角 y)。
         """
         position = np.add(position, random_range)
         middle = position * (self.total - self.length) + self.length / 2
@@ -103,11 +106,13 @@ class Scroll:
 
     def appear(self, main):
         """
+        检测滚动条是否出现在屏幕上。
+
         Args:
-            main (ModuleBase):
+            main (ModuleBase): 模块基类实例。
 
         Returns:
-            bool
+            bool: 是否出现。
         """
         return np.mean(self.match_color(main)) > 0.1
 
@@ -119,17 +124,17 @@ class Scroll:
 
     def set(self, position, main, random_range=(-0.05, 0.05), distance_check=True, skip_first_screenshot=True):
         """
-        Set scroll to a specific position.
+        设置滚动条到指定位置。
 
         Args:
-            position (float, int): 0 to 1.
-            main (ModuleBase):
-            random_range (tuple(int, float)):
-            distance_check (bool): Whether to drop short swipes
-            skip_first_screenshot:
+            position (float, int): 目标位置，0 到 1 之间。
+            main (ModuleBase): 模块基类实例。
+            random_range (tuple(int, float)): 随机偏移范围。
+            distance_check (bool): 是否跳过过短的滑动。
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            bool: If dragged.
+            bool: 是否执行了拖拽操作。
         """
         logger.info(f'{self.name} set to {position}')
         self.drag_interval.clear()
@@ -153,7 +158,7 @@ class Scroll:
                 self.drag_timeout.reset()
             else:
                 if self.drag_timeout.reached():
-                    logger.warning('Scroll disappeared, assume scroll set')
+                    logger.warning('滚动条消失，假定已设置完成')
                     break
                 else:
                     continue
@@ -175,13 +180,13 @@ class Scroll:
 
     def drag_page(self, page, main, random_range=(-0.05, 0.05), skip_first_screenshot=True):
         """
-        Drag scroll forward or backward.
+        向前或向后拖拽滚动条翻页。
 
         Args:
-            page (int, float): Relative position to drag. 1.0 means next page, -1.0 means previous page.
-            main (ModuleBase):
-            random_range (tuple[float]):
-            skip_first_screenshot:
+            page (int, float): 相对拖拽量。1.0 表示下一页，-1.0 表示上一页。
+            main (ModuleBase): 模块基类实例。
+            random_range (tuple[float]): 随机偏移范围。
+            skip_first_screenshot: 是否跳过首次截图。
         """
         if not skip_first_screenshot:
             main.device.screenshot()
@@ -202,12 +207,14 @@ class Scroll:
 class AdaptiveScroll(Scroll):
     def __init__(self, area, parameters: dict = None, background=5, is_vertical=True, name='Scroll'):
         """
+        自适应滚动条，通过峰值检测自动识别滚动条位置。
+
         Args:
-            area (Button, tuple): A button or area of the whole scroll.
-            parameters (dict): Parameters passing to scipy.find_peaks
-            background (int):
-            is_vertical (bool): True if vertical, false if horizontal.
-            name (str):
+            area (Button, tuple): 滚动条整体的按钮或区域。
+            parameters (dict): 传递给 scipy.find_peaks 的参数。
+            background (int): 背景扩展像素数。
+            is_vertical (bool): True 为垂直滚动条，False 为水平滚动条。
+            name (str): 滚动条名称。
         """
         if parameters is None:
             parameters = {}

@@ -11,14 +11,15 @@ from typing import Dict, List, Union
 import inflection
 from rich.console import Console, ConsoleRenderable
 
-# Since this file does not run under the same process or subprocess of app.py
-# the following code needs to be repeated
-# Import fake module before import pywebio to avoid importing unnecessary module PIL
+# 由于本文件不在 app.py 的同一进程或子进程中运行，
+# 以下代码需要重复执行。
+# 在导入 pywebio 之前先导入伪造模块，避免加载不必要的 PIL 模块。
 from module.webui.fake_pil_module import *
 
 import_fake_pil_module()
 
 from module.logger import logger, set_file_logger, set_func_logger
+from module.config.utils import DEFAULT_CONFIG_NAME
 from module.submodule.submodule import load_mod
 from module.submodule.utils import get_available_func, get_available_mod, get_available_mod_func, get_config_mod, \
     get_func_mod, list_mod_instance
@@ -28,7 +29,7 @@ from module.webui.setting import State
 class ProcessManager:
     _processes: Dict[str, "ProcessManager"] = {}
 
-    def __init__(self, config_name: str = "alas") -> None:
+    def __init__(self, config_name: str = DEFAULT_CONFIG_NAME) -> None:
         self.config_name = config_name
         self._renderable_queue: queue.Queue[ConsoleRenderable] = State.manager.Queue()
         self.renderables: List[ConsoleRenderable] = []
@@ -42,7 +43,11 @@ class ProcessManager:
 
     def set_state_override(self, state: int, duration: float = 10) -> None:
         """
-        Force a temporary ui state for icon testing.
+        强制设置临时的 UI 状态，用于图标测试。
+
+        Args:
+            state: 状态值（1=运行中, 2=停止, 3=错误, 4=更新）
+            duration: 覆盖持续时间（秒），为 0 或 None 时持续生效直到手动清除
         """
         if state not in (1, 2, 3, 4):
             raise ValueError(f"Invalid state override: {state}")
@@ -171,7 +176,7 @@ class ProcessManager:
                 return 4
 
             if ("Reason: Finish" in s) or ("原因: 完成" in s):
-                # In update flow, some code paths may append "Finish" after update-exit logs.
+                # 在更新流程中，部分代码路径可能会在更新退出日志之后追加 "Finish"。
                 if update_tail_hit:
                     return 4
                 return 2
@@ -183,7 +188,13 @@ class ProcessManager:
     @classmethod
     def get_manager(cls, config_name: str) -> "ProcessManager":
         """
-        Create a new alas if not exists.
+        获取指定配置名称的进程管理器，不存在时自动创建。
+
+        Args:
+            config_name: 配置实例名称（如 'alas'）
+
+        Returns:
+            对应的 ProcessManager 实例。
         """
         if config_name not in cls._processes:
             cls._processes[config_name] = ProcessManager(config_name)
@@ -205,31 +216,31 @@ class ProcessManager:
                 pass
         parser = argparse.ArgumentParser()
         parser.add_argument(
-            "--electron", action="store_true", help="Runs by electron client."
+            "--electron", action="store_true", help="由 Electron 客户端运行时启用此参数。"
         )
         args, _ = parser.parse_known_args()
         State.electron = args.electron
 
-        # Setup logger
+        # 初始化日志器
         set_file_logger(name=config_name)
         if State.electron:
-            # https://github.com/LmeSzinc/AzurLaneAutoScript/issues/2051
-            logger.info("Electron detected, remove log output to stdout")
+            # 参考 https://github.com/LmeSzinc/AzurLaneAutoScript/issues/2051
+            logger.info("检测到 Electron 环境，移除标准输出日志处理器")
             from module.logger import console_hdlr
             logger.removeHandler(console_hdlr)
         set_func_logger(func=q.put)
 
         from module.config.config import AzurLaneConfig
 
-        # Remove fake PIL module, because subprocess will use it
+        # 移除伪造的 PIL 模块，子进程需要使用真正的 PIL
         remove_fake_pil_module()
 
-        # Set environment variable so eager modules (like al_ocr.py) can read the configuration early
+        # 设置环境变量，使预加载模块（如 al_ocr.py）可以提前读取配置
         os.environ['ALAS_CONFIG_NAME'] = config_name
 
         AzurLaneConfig.stop_event = e
         try:
-            # Run alas
+            # 运行 AzurPilot
             if func == "alas":
                 from alas import AzurLaneAutoScript
 
@@ -270,12 +281,15 @@ class ProcessManager:
         instances: List[Union["ProcessManager", str]] = None, ev: threading.Event = None
     ):
         """
-        After update and reload, or failed to perform an update,
-        restart all alas that running before update
+        更新重载后（或更新失败时），重启所有更新前正在运行的 AzurPilot 实例。
+
+        Args:
+            instances: 需要重启的实例列表，元素为 ProcessManager 或配置名称字符串。
+            ev: 用于通知子进程执行更新的事件对象。
         """
         logger.hr("Restart alas")
 
-        # Load MOD_CONFIG_DICT
+        # 加载 MOD_CONFIG_DICT
         list_mod_instance()
 
         if instances is None:

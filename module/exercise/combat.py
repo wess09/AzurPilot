@@ -27,7 +27,7 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                 self.device.click(BATTLE_PREPARATION)
                 continue
 
-            # End
+            # 结束
             pause = self.is_combat_executing()
             if pause:
                 logger.attr('BattleUI', pause)
@@ -35,8 +35,10 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
 
     def _combat_execute(self):
         """
+        执行战斗。
+
         Returns:
-            bool: True if wins. False if quit.
+            bool: 胜利返回 True，退出返回 False。
         """
         logger.info('Combat execute')
         self.device.stuck_record_clear()
@@ -44,14 +46,14 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
         self.low_hp_confirm_timer = Timer(1.5, count=2).start()
         show_hp_timer = Timer(5)
         pause_interval = Timer(0.5, count=1)
-        # Pause button to identify battle UI theme
+        # 暂停按钮用于识别战斗 UI 主题
         pause = None
         success = True
         end = False
-        battle_status_detected = False  # Track if in post battle screen
+        battle_status_detected = False  # 是否在战斗结算画面
         while 1:
             self.device.screenshot()
-            # End
+            # 结束
             if self._in_exercise() or self.appear(BATTLE_PREPARATION, offset=(20, 20)):
                 logger.hr('Combat end')
                 if not end:
@@ -65,7 +67,7 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                     pause = p
             else:
                 self.low_hp_confirm_timer.reset()
-                # Finish - S or D rank
+                # 结算 - S 或 D 评价
                 if self.appear(BATTLE_STATUS_S, interval=1):
                     logger.info(f'{BATTLE_STATUS_S} -> {CLICK_SAFE_AREA}')
                     self.device.click(CLICK_SAFE_AREA)
@@ -82,7 +84,7 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                     logger.info("Exercise LOST")
                     continue
 
-            # Only handle GET_ITEMS_1 after battle status
+            # 仅在战斗结算后处理 GET_ITEMS_1
             if battle_status_detected and self.appear(GET_ITEMS_1, offset=(30, 30), interval=1):
                 logger.info(f'{GET_ITEMS_1} -> {CLICK_SAFE_AREA}')
                 self.device.click(CLICK_SAFE_AREA)
@@ -95,13 +97,13 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                 logger.info(f'{EXP_INFO_D} -> {CLICK_SAFE_AREA}')
                 self.device.click(CLICK_SAFE_AREA)
                 continue
-            # Last D rank screen
+            # 最后的 D 评价画面
             if self.appear_then_click(OPTS_INFO_D, offset=(30, 30), interval=1):
                 success = True
                 end = True
                 logger.info("Exercise LOST")
                 continue
-            # Quit
+            # 退出
             if self.handle_combat_quit():
                 pause_interval.reset()
                 success = False
@@ -121,7 +123,7 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                     if show_hp_timer.reached():
                         show_hp_timer.reset()
                         self._show_hp()
-            # bunch of popup handlers
+            # 弹窗处理
             if self.handle_popup_confirm('EXERCISE_COMBAT_EXECUTE'):
                 continue
             if self.handle_urgent_commission():
@@ -136,8 +138,10 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
 
     def _choose_opponent(self, index, skip_first_screenshot=True):
         """
+        选择对手。
+
         Args:
-            index (int): From left to right. 0 to 3.
+            index (int): 从左到右，0 到 3。
         """
         logger.hr('Opponent: %s' % str(index))
         opponent_timer = Timer(5)
@@ -159,7 +163,7 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
                 opponent_timer.reset()
                 continue
 
-            # End
+            # 结束
             if self.appear(BATTLE_PREPARATION, offset=(20, 20)):
                 break
 
@@ -169,11 +173,13 @@ class ExerciseCombat(HpDaemon, OpponentChoose, ExerciseEquipment, Combat):
 
     def _combat(self, opponent):
         """
+        执行一次战斗。
+
         Args:
-            opponent(int): From left to right. 0 to 3.
+            opponent(int): 从左到右，0 到 3。
 
         Returns:
-            bool: True if wins. False if challenge times exhausted.
+            bool: 胜利返回 True，挑战次数耗尽返回 False。
         """
         self._choose_opponent(opponent)
 

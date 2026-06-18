@@ -20,19 +20,22 @@ TARGET_SWITCH.add_state('unfinished', TARGET_UNFINISHED_ON)
 ZONE_ID = Digit(OCR_TARGET_ZONE_ID, name='TARGET_ZONE_ID')
 
 class OSTarget:
+    """大世界目标数据。"""
     def is_file(self, zone, index):
+        """判断是否为文件类目标。"""
         return not isinstance(DIC_OS_TARGET[zone][index], bool)
-    
+
     def is_safe(self, zone, index):
+        """判断是否为安全目标。"""
         return DIC_OS_TARGET[zone][index] == True
 
 class OSTargetHandler(OSTarget, Combat, UI):
     def _receive_reward_all(self, skip_first_screenshot=True):
         """
-        Receive all target rewards if there are two or more.
-        
+        领取所有目标奖励（如果有两个或更多）。
+
         Returns:
-            bool: if received
+            bool: 是否领取成功。
         """
         confirm_timer = Timer(1, count=3).start()
         received = False
@@ -62,12 +65,12 @@ class OSTargetHandler(OSTarget, Combat, UI):
     
     def find_unreceived_zone(self, skip_first_screenshot=True):
         """
-        Switch to zone with reward if only one needs to be collected.
+        切换到有奖励的海域（如果只有一个需要领取）。
 
         Returns:
-            bool: if found
+            bool: 是否找到。
         """
-        # Ensure at all zone list
+        # 确保在所有海域列表中
         TARGET_SWITCH.set('all', main=self)
 
         while 1:
@@ -76,10 +79,10 @@ class OSTargetHandler(OSTarget, Combat, UI):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束
             if self.appear(TARGET_RECEIVE_SINGLE):
                 return True
-            
+
             if not self.appear(TARGET_PREVIOUS_REWARD) and not self.appear(TARGET_NEXT_REWARD):
                 return False
 
@@ -90,10 +93,10 @@ class OSTargetHandler(OSTarget, Combat, UI):
                      
     def _receive_reward_single(self, skip_first_screenshot=True):
         """
-        Receive single target reward.
-        
+        领取单个目标奖励。
+
         Returns:
-            bool: if received
+            bool: 是否领取成功。
         """
         confirm_timer = Timer(1, count=3).start()
         received = False
@@ -121,10 +124,10 @@ class OSTargetHandler(OSTarget, Combat, UI):
 
     def receive_reward(self):
         """
-        Receive target rewards.
-        
+        领取目标奖励。
+
         Returns:
-            bool: if received.
+            bool: 是否领取成功。
         """
         logger.hr('OS Achievement Reward Receive', level=2)
         TARGET_SWITCH.set('all', main=self)
@@ -152,11 +155,11 @@ class OSTargetHandler(OSTarget, Combat, UI):
     
     def scan_current_zone(self):
         """
-        Scan current zone information.
-        
+        扫描当前海域信息。
+
         Returns:
-            zone_id: int
-            finished: list(bool)
+            zone_id: 海域 ID。
+            finished: 完成状态列表。
         """
         zone_id = ZONE_ID.ocr(self.device.image)
         finished = [self._is_finished(button.area) for button in self._star_grid().buttons]
@@ -165,14 +168,14 @@ class OSTargetHandler(OSTarget, Combat, UI):
 
     def find_unfinished_safe_star_zone(self, skip_first_screenshot=True):
         """
-        Find a zone with unfinished safe star by searching through unfinished zone.
-        
+        通过搜索未完成的海域，查找有未完成安全星标的海域。
+
         Returns:
-            found_zone(int): The zone id with unfinished safe star. If such zone does not exist, return 0.
+            int: 有未完成安全星标的海域 ID，如果不存在则返回 0。
         """
         last_zone = self.config.OpsiTarget_TargetZone
         info_timer = Timer(1)
-        
+
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -184,7 +187,7 @@ class OSTargetHandler(OSTarget, Combat, UI):
 
             zone_id, finished = self.scan_current_zone()
 
-            if zone_id >= last_zone:                
+            if zone_id >= last_zone:
                 for index in range(1, 5):
                     if not finished[index]:
                         if self.is_file(zone_id, index):
@@ -198,7 +201,7 @@ class OSTargetHandler(OSTarget, Combat, UI):
                             continue
             if self.appear(TARGET_NEXT_ZONE):
                 self.device.click(TARGET_NEXT_ZONE)
-                # It is possible to click more than 15 times.
+                # 可能点击超过 15 次
                 self.device.click_record.pop()
                 info_timer.reset()
                 continue

@@ -27,25 +27,22 @@ class EmulatorManager(AlasManager):
         return EmulatorManager()
 
     def adb_kill(self):
-        # Just kill it, because some adb don't obey.
+        # 直接杀进程，因为部分 ADB 不遵守 kill-server 协议
         logger.hr('Kill all known ADB', level=2)
         for proc in self.iter_process_by_names([
-            # Most emulator use this
             'adb.exe',
-            # NoxPlayer 夜神模拟器
             'nox_adb.exe',
-            # MumuPlayer MuMu模拟器
             'adb_server.exe',
-            # Bluestacks 蓝叠模拟器
             'HD-Adb.exe'
         ]):
             logger.info(proc)
             self.kill_process(proc)
 
     def adb_devices(self):
-        """
+        """获取当前 ADB 已连接的设备列表。
+
         Returns:
-            list[DataAdbDevice]: Connected devices in adb
+            list[DataAdbDevice]: 已连接的设备列表。
         """
         logger.hr('Adb deivces', level=2)
         result = self.subprocess_execute([self.adb, 'devices'])
@@ -63,17 +60,15 @@ class EmulatorManager(AlasManager):
         return devices
 
     def brute_force_connect(self):
-        """
-        Brute-force connect all available emulator instances
-        """
+        """暴力连接所有可用的模拟器实例。"""
         devices = self.adb_devices()
 
-        # Disconnect offline devices
+        # 断开离线设备
         for device in devices:
             if device.status == 'offline':
                 self.subprocess_execute([self.adb, 'disconnect', device.serial])
 
-        # Get serial
+        # 获取所有模拟器序列号
         list_serial = self.emulator_manager.all_emulator_serials
 
         logger.hr('Brute force connect', level=2)
@@ -95,14 +90,14 @@ class EmulatorManager(AlasManager):
 
     @staticmethod
     def adb_path_to_backup(adb, new_backup=True):
-        """
+        """获取 ADB 的备份文件路径。
+
         Args:
-            adb (str): Filepath to an adb binary
-            new_backup (bool): True to return a new backup path,
-                False to return an existing backup
+            adb (str): ADB 二进制文件路径。
+            new_backup (bool): True 返回新的备份路径，False 返回已有的备份路径。
 
         Returns:
-            str: Filepath to its backup file
+            str: 备份文件路径。
         """
         for n in range(10):
             backup = f'{adb}.bak{n}' if n else f'{adb}.bak'
@@ -117,7 +112,7 @@ class EmulatorManager(AlasManager):
                 else:
                     continue
 
-        # Too many backups, override the first one
+        # 备份数量过多时覆盖第一个
         return f'{adb}.bak'
 
     def iter_adb_to_replace(self) -> t.Iterable[str]:
@@ -129,9 +124,9 @@ class EmulatorManager(AlasManager):
                 yield adb
 
     def adb_replace(self):
-        """
-        Backup the adb in emulator folder to xxx.bak, replace it with your adb.
-        `adb kill-server` must be called before replacing.
+        """将模拟器目录中的 ADB 备份并替换为指定的 ADB。
+
+        替换前必须先调用 `adb kill-server`。
         """
         replace = list(self.iter_adb_to_replace())
         if not replace:
@@ -151,9 +146,7 @@ class EmulatorManager(AlasManager):
                 logger.warning(f'Failed to replace {adb}, {e}')
 
     def adb_recover(self):
-        """
-        Revert `adb_replace()`
-        """
+        """恢复 ADB 替换，将备份文件还原到原始位置。"""
         for adb in self.emulator_manager.all_adb_binaries:
             logger.info(f'Recovering {adb}')
             bak = self.adb_path_to_backup(adb, new_backup=False)

@@ -119,14 +119,14 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
     def run(self):
         logger.hr(self.ENTRANCE, level=2)
 
-        # Enter map
+        # 进入地图
         self.map_get_info(star=True)
         logger.attr('Map Battle', self._map_battle)
         self.emotion.check_reduce(self._map_battle)
         self.ENTRANCE.area = self.ENTRANCE.button
         self.enter_map(self.ENTRANCE, mode=self.config.Campaign_Mode)
 
-        # Map init
+        # 地图初始化
         if not self.map_is_auto_search:
             self.handle_map_fleet_lock()
             self.map_init(self.MAP)
@@ -137,7 +137,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
             self.lv_reset()
             self.lv_get()
 
-        # Run
+        # 执行战斗
         for _ in range(20):
             try:
                 if not self.map_is_auto_search:
@@ -148,7 +148,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
                 logger.hr('Campaign end')
                 return True
 
-        # Exception
+        # 异常处理
         logger.warning('Battle function exhausted.')
         if self.config.Error_HandleError:
             logger.warning('ScriptError, Battle function exhausted, Withdrawing')
@@ -163,8 +163,10 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
     @Config.when(MAP_CLEAR_ALL_THIS_TIME=False)
     def _map_battle(self):
         """
+        获取当前地图的战斗次数（仅计算到 Boss 出现前）。
+
         Returns:
-            int: Battle on this map.
+            int: 当前地图的战斗次数。
         """
         for data in self.MAP.spawn_data:
             if 'boss' in data:
@@ -180,8 +182,10 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
     @Config.when(MAP_CLEAR_ALL_THIS_TIME=True)
     def _map_battle(self):
         """
+        获取当前地图的总战斗次数（全清模式，计算所有敌人）。
+
         Returns:
-            int: Battle on this map.
+            int: 当前地图的总战斗次数。
         """
         battle_count = 0
         for data in self.MAP.spawn_data:

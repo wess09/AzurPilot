@@ -25,16 +25,16 @@ class ModuleBase:
 
     def __init__(self, config, device=None, task=None):
         """
+        初始化模块基类，绑定配置和设备。
+
         Args:
-            config (AzurLaneConfig, str):
-                Name of the user config under ./config
-            device (Device, str):
-                To reuse a device.
-                If None, create a new Device object.
-                If str, create a new Device object and use the given device as serial.
-            task (str):
-                Bind a task only for dev purpose. Usually to be None for auto task scheduling.
-                If None, use default configs.
+            config: 配置对象或配置名称。
+                传入 AzurLaneConfig 实例直接使用，传入 str 则从 ./config/ 下加载。
+            device: 设备对象、设备序列号或 None。
+                传入 Device 实例复用已有设备，传入 str 以指定模拟器序列号，
+                None 则自动创建新设备。
+            task: 绑定的任务名称，仅用于开发调试。
+                自动调度时通常为 None，使用默认配置。
         """
         if isinstance(config, AzurLaneConfig):
             self.config = config
@@ -70,26 +70,24 @@ class ModuleBase:
 
     def early_ocr_import(self):
         """
-        Start a thread to import cnocr and mxnet while the Alas instance just starting to take screenshots
-        The import is paralleled since taking screenshot is I/O-bound while importing is CPU-bound,
-        thus would speed up the startup 0.5 ~ 1.0s and even 5s on slow PCs.
+        异步预导入 OCR 模型。
+
+        在实例刚启动截图时，后台线程预先加载 cnocr 等 OCR 依赖。
+        截图是 I/O 密集型，导入是 CPU 密集型，两者并行可加速启动 0.5~5 秒。
         """
         return
 
     @cached_class_property
     def worker(self):
         """
-        A thread pool to run things at background
+        后台线程池，用于执行非阻塞的后台任务。
 
         Examples:
-        ```
-        def func(image):
-            logger.info('Update thread start')
-            with self.config.multi_set():
-                self.dungeon_get_simuni_point(image)
-                self.dungeon_update_stamina(image)
-        ModuleBase.worker.submit(func, self.device.image)
-        ```
+            >>> def func(image):
+            ...     with self.config.multi_set():
+            ...         self.dungeon_get_simuni_point(image)
+            ...         self.dungeon_update_stamina(image)
+            >>> ModuleBase.worker.submit(func, self.device.image)
         """
         logger.hr('Creating worker')
         from concurrent.futures import ThreadPoolExecutor
@@ -104,31 +102,29 @@ class ModuleBase:
 
     def loop(self, skip_first=True, timeout=None):
         """
-        A syntactic sugar to start a state loop
+        状态循环的语法糖，每次迭代自动截图。
 
         Args:
-            skip_first (bool): Usually to be True to reuse the previous screenshot
-            timeout (int | float | Timer): Seconds of timeout or a Timer object
+            skip_first: 为 True 时复用上一次截图，避免冗余捕获。
+            timeout: 超时秒数或 Timer 对象，超时后自动退出循环。
 
         Yields:
-            np.ndarray: screenshot
+            np.ndarray: 当前截图。
 
         Examples:
-            # state machine that handle clicking until destination
-            for _ in self.loop():
-                if self.appear(...):
-                    break
-                if self.appear_then_click(...):
-                    continue
+            基本状态循环：
+            >>> for _ in self.loop():
+            ...     if self.appear(END_CONDITION):
+            ...         break
+            ...     if self.appear_then_click(BUTTON_A):
+            ...         continue
 
-        Examples:
-            # state machine with timeout
-            for _ in self.loop(timeout=2):
-                if self.appear(...):
-                    logger.info('Wait success')
-                    break
-            else:
-                logger.warning('Wait timeout')
+            带超时的状态循环：
+            >>> for _ in self.loop(timeout=2):
+            ...     if self.appear(END_CONDITION):
+            ...         break
+            >>> else:
+            ...     logger.warning('等待超时')
         """
         if timeout is not None:
             if isinstance(timeout, Timer):
@@ -154,13 +150,13 @@ class ModuleBase:
 
     def loop_hierarchy(self, skip_first=True):
         """
-        A syntactic sugar to start a hierarchy state loop
+        层级结构状态循环的语法糖，每次迭代自动获取 UI 层级树。
 
         Args:
-            skip_first (bool): Usually to be True to reuse the previous hierarchy
+            skip_first: 为 True 时复用上一次层级数据。
 
         Yields:
-            etree._Element: hierarchy
+            etree._Element: 当前 UI 层级树。
         """
         while 1:
             if skip_first:
@@ -171,13 +167,13 @@ class ModuleBase:
 
     def loop_screenshot_hierarchy(self, skip_first=True):
         """
-        A syntactic sugar to start a state loop that takes screenshots and dump hierarchy
+        同时获取截图和层级树的状态循环语法糖。
 
         Args:
-            skip_first (bool): Usually to be True to reuse the previous screenshot
+            skip_first: 为 True 时复用上一次截图和层级数据。
 
         Yields:
-            tuple[np.ndarray, etree._Element]: screenshot, hierarchy
+            tuple[np.ndarray, etree._Element]: (截图, UI层级树)。
         """
         while 1:
             if skip_first:
@@ -189,29 +185,23 @@ class ModuleBase:
 
     def appear(self, button, offset: Union[bool, int, Tuple[int, int]] = 0, interval=0, similarity=0.85, threshold=10):
         """
+        检测按钮/模板/层级元素是否出现在当前截图上。
+
+        支持三种检测模式：
+        - 颜色检测（默认）：通过区域平均颜色判断
+        - 模板匹配（offset 非零）：通过图像模板匹配判断
+        - 层级检测（HierarchyButton）：通过 xpath 查找 UI 层级树
+
         Args:
-            button (Button, Template, HierarchyButton, str):
-            offset (bool, int):
-            interval (int, float): interval between two active events.
-            similarity (int, float): 0 to 1.
-            threshold (int, float): 0 to 255 if not use offset, smaller means more similar
+            button: 待检测的 Button、Template、HierarchyButton 或 xpath 字符串。
+            offset: 启用模板匹配的偏移量。
+                False/0 表示使用颜色检测，True 使用默认偏移，int/tuple 指定偏移范围。
+            interval: 两次检测之间的最小间隔秒数，防止快速重复触发。
+            similarity: 模板匹配相似度阈值，0~1。
+            threshold: 颜色检测容差，0~255，值越小要求越严格。
 
         Returns:
-            bool:
-
-        Examples:
-            Image detection:
-            ```
-            self.device.screenshot()
-            self.appear(Button(area=(...), color=(...), button=(...))
-            self.appear(Template(file='...')
-            ```
-
-            Hierarchy detection (detect elements with xpath):
-            ```
-            self.device.dump_hierarchy()
-            self.appear('//*[@resource-id="..."]')
-            ```
+            bool: 元素是否出现。
         """
         button = self.ensure_button(button)
         self.device.stuck_record_add(button)
@@ -241,15 +231,19 @@ class ModuleBase:
 
     def match_template_color(self, button, offset=(20, 20), interval=0, similarity=0.85, threshold=30):
         """
+        同时使用模板匹配和颜色检测来判断按钮是否出现。
+
+        与 `appear()` 不同，此方法要求模板匹配和颜色检测同时通过。
+
         Args:
-            button (Button):
-            offset (bool, int):
-            interval (int, float): interval between two active events.
-            similarity (int, float): 0 to 1.
-            threshold (int, float): 0 to 255 if not use offset, smaller means more similar
+            button: 待检测的 Button 实例。
+            offset: 模板匹配的偏移范围。
+            interval: 两次检测之间的最小间隔秒数。
+            similarity: 模板匹配相似度阈值，0~1。
+            threshold: 颜色检测容差，0~255。
 
         Returns:
-            bool:
+            bool: 按钮是否出现。
         """
         button = self.ensure_button(button)
         self.device.stuck_record_add(button)
@@ -329,11 +323,15 @@ class ModuleBase:
                 break
 
     def image_crop(self, button, copy=True):
-        """Extract the area from image.
+        """
+        从当前截图中裁剪指定区域。
 
         Args:
-            button(Button, tuple): Button instance or area tuple.
-            copy:
+            button: Button 实例或区域元组 (x1, y1, x2, y2)。
+            copy: 是否复制裁剪结果，False 时返回原图视图以节省内存。
+
+        Returns:
+            np.ndarray: 裁剪后的图像。
         """
         if isinstance(button, Button):
             return crop(self.device.image, button.area, copy=copy)
@@ -344,14 +342,16 @@ class ModuleBase:
 
     def image_color_count(self, button, color, threshold=221, count=50):
         """
+        统计指定区域中接近目标颜色的像素数量，判断是否达标。
+
         Args:
-            button (Button, tuple): Button instance or area.
-            color (tuple): RGB.
-            threshold: 255 means colors are the same, the lower the worse.
-            count (int): Pixels count.
+            button: Button 实例、区域元组或 np.ndarray 图像。
+            color: 目标 RGB 颜色值。
+            threshold: 颜色相似度容差，255 表示完全相同，值越小要求越严格。
+            count: 像素数量阈值，超过此数返回 True。
 
         Returns:
-            bool:
+            bool: 匹配像素数是否超过阈值。
         """
         if isinstance(button, np.ndarray):
             image = button
@@ -361,22 +361,22 @@ class ModuleBase:
 
     def image_color_button(self, area, color, color_threshold=250, encourage=5, name='COLOR_BUTTON'):
         """
-        Find an area with pure color on image, convert into a Button.
+        在指定区域中查找纯色区域，将其转换为可点击的 Button。
 
         Args:
-            area (tuple[int]): Area to search from
-            color (tuple[int]): Target color
-            color_threshold (int): 0-255, 255 means exact match
-            encourage (int): Radius of button
-            name (str): Name of the button
+            area: 搜索区域 (x1, y1, x2, y2)。
+            color: 目标 RGB 颜色值。
+            color_threshold: 颜色匹配容差，0~255，255 表示精确匹配。
+            encourage: 生成按钮的半径。
+            name: 按钮名称。
 
         Returns:
-            Button: Or None if nothing matched.
+            Button: 匹配成功返回 Button 实例，否则返回 None。
         """
         image = color_similarity_2d(self.image_crop(area, copy=False), color=color)
         points = np.array(np.where(image > color_threshold)).T[:, ::-1]
         if points.shape[0] < encourage ** 2:
-            # Not having enough pixels to match
+            # 匹配像素不足，无法生成有效按钮
             return None
 
         point = fit_points(points, mod=image_size(image), encourage=encourage)
@@ -437,9 +437,9 @@ class ModuleBase:
     @image_file.setter
     def image_file(self, value):
         """
-        For development.
-        Load image from local file system and set it to self.device.image
-        Test an image without taking a screenshot from emulator.
+        从本地文件加载测试图像，用于开发调试。
+
+        将图片加载到 self.device.image，无需连接模拟器即可测试图像识别逻辑。
         """
         if isinstance(value, Image.Image):
             value = np.array(value)
@@ -447,14 +447,14 @@ class ModuleBase:
             value = load_image(value)
 
         width, height = image_size(value)
-        set_template_match_non_native_720p(width != 1280 or height != 720)
+        set_template_match_non_native_720p(width != 1280 or height != 720, resolution=(width, height))
         self.device.image = value
 
     def set_server(self, server):
         """
-        For development.
-        Change server and this will effect globally,
-        including assets and server specific methods.
+        切换游戏服务器，全局生效（仅用于开发调试）。
+
+        切换后影响资源文件路径和服务器特定方法的分发。
         """
         package = to_package(server)
         self.device.package = package

@@ -52,11 +52,13 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def _fleet_preparation_get(self):
         """
+        获取舰队准备界面当前选中的侧边栏索引。
+
         Returns:
             int:
-                1 for formation
-                2 for meowfficers
-                3 for auto search setting
+                1 表示编队
+                2 表示指挥喵
+                3 表示自动搜索设置
         """
         current = 0
         total = 0
@@ -79,16 +81,17 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def fleet_preparation_sidebar_ensure(self, index):
         """
+        确保舰队准备界面切换到指定的侧边栏标签。
+
         Args:
             index (int):
-                1 for formation
-                2 for meowfficers
-                3 for auto search setting
+                1 表示编队
+                2 表示指挥喵
+                3 表示自动搜索设置
 
         Returns:
-            bool: whether sidebar could be ensured
-                  at most 3 attempts are made before
-                  return False otherwise True
+            bool: 是否成功切换到目标侧边栏，最多尝试 3 次，
+                  超过则返回 False，成功则返回 True。
         """
         if index <= 0 or index > 5:
             logger.warning(f'Sidebar index cannot be ensured, {index}, limit 1 through 5 only')
@@ -110,11 +113,13 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def _auto_search_set_click(self, setting):
         """
+        点击自动搜索设置选项。
+
         Args:
-            setting (str):
+            setting (str): 目标设置名称。
 
         Returns:
-            bool: If selected to the correct option.
+            bool: 是否已选中正确的选项。
         """
         active = []
 
@@ -141,15 +146,17 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def auto_search_setting_ensure(self, setting, skip_first_screenshot=True):
         """
+        确保自动搜索设置切换到指定选项。
+
         Args:
             setting (str):
-                fleet1_mob_fleet2_boss, fleet1_boss_fleet2_mob, fleet1_all_fleet2_standby, fleet1_standby_fleet2_all, sub_auto_call, sub_standby
-            skip_first_screenshot (bool):
+                fleet1_mob_fleet2_boss, fleet1_boss_fleet2_mob, fleet1_all_fleet2_standby,
+                fleet1_standby_fleet2_all, sub_auto_call, sub_standby
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
-            Returns:
-                bool: whether sidebar could be ensured
-                      at most 3 attempts are made before
-                      return False otherwise True
+        Returns:
+            bool: 是否成功切换到目标设置，最多尝试 5 次，
+                  超过则返回 False，成功则返回 True。
         """
         counter = 0
         while 1:
@@ -168,23 +175,25 @@ class AutoSearchHandler(EnemySearchingHandler):
                 continue
 
     _auto_search_offset = (5, 5)
-    # Move 213px left when MULTIPLE_SORTIE appears
+    # 当 MULTIPLE_SORTIE 出现时向左偏移 213px
     _auto_search_menu_offset = (250, 30)
 
     def is_auto_search_running(self):
         """
+        判断自动搜索是否正在运行。
+
         Returns:
-            bool:
+            bool: 自动搜索是否已开启。
         """
         return self.appear(AUTO_SEARCH_MAP_OPTION_ON, offset=self._auto_search_offset) \
                and self.appear(AUTO_SEARCH_MAP_OPTION_ON)
 
     def handle_auto_search_map_option(self):
         """
-        Ensure auto search option in map is ON
+        确保地图中的自动搜索选项已开启。
 
         Returns:
-            bool: If clicked
+            bool: 是否进行了点击操作。
         """
         if self.appear(AUTO_SEARCH_MAP_OPTION_OFF, offset=self._auto_search_offset) \
                 and self.appear_then_click(AUTO_SEARCH_MAP_OPTION_OFF, interval=2):
@@ -194,8 +203,10 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def is_in_auto_search_menu(self):
         """
+        判断是否处于自动搜索菜单界面。
+
         Returns:
-            bool:
+            bool: 是否在自动搜索菜单中。
         """
         return AUTO_SEARCH_MENU_CONTINUE.match_luma(self.device.image, offset=self._auto_search_menu_offset)
 
@@ -204,14 +215,16 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def handle_auto_search_exit(self, drop=None):
         """
+        处理自动搜索菜单的退出操作。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落记录对象。
 
         Returns:
-            bool
+            bool: 是否执行了退出操作。
         """
         if self.appear(AUTO_SEARCH_MENU_EXIT, offset=self._auto_search_menu_offset, interval=2):
-            # Poor implementation here
+            # 此处实现较粗糙
             if drop:
                 drop.handle_add(main=self, before=4)
             self.device.click(AUTO_SEARCH_MENU_EXIT)
@@ -222,9 +235,9 @@ class AutoSearchHandler(EnemySearchingHandler):
 
     def ensure_auto_search_exit(self, skip_first_screenshot=True):
         """
-        Page:
+        Pages:
             in: is_in_auto_search_menu
-            out: page_campaign or page_event or page_sp
+            out: page_campaign 或 page_event 或 page_sp
         """
         if not self.is_in_auto_search_menu():
             return False
@@ -241,7 +254,7 @@ class AutoSearchHandler(EnemySearchingHandler):
                 if self.handle_auto_search_exit(drop=drop):
                     continue
 
-                # End
+                # 结束条件
                 if self.is_in_stage():
                     break
 

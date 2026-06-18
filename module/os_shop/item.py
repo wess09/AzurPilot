@@ -6,6 +6,12 @@ from module.statistics.item import Item, ItemGrid
 
 
 class PriceOcr(DigitYuv):
+    """商店价格 OCR 识别器。
+
+    修正常见 OCR 错误：I→1, D→0, S→5, B→8，
+    处理前导零的情况。
+    """
+
     def after_process(self, result):
         result = result.replace('I', '1').replace('D', '0').replace('S', '5')
         result = result.replace('B', '8')
@@ -20,6 +26,11 @@ class PriceOcr(DigitYuv):
 
 
 class CounterOcr(Ocr):
+    """商店计数器 OCR 识别器。
+
+    识别形如 `14/15` 的计数器文本，返回当前值和总值。
+    """
+
     def __init__(self, buttons, lang='azur_lane', letter=(255, 255, 255), threshold=128, alphabet='0123456789/IDSB',
                  name=None):
         super().__init__(buttons, lang=lang, letter=letter, threshold=threshold, alphabet=alphabet, name=name)
@@ -31,15 +42,14 @@ class CounterOcr(Ocr):
         return result
 
     def ocr(self, image, direct_ocr=False):
-        """
-        Do OCR on a counter, such as `14/15`, and returns 14, 15
+        """识别计数器文本，如 `14/15`，返回 [当前值, 总值]。
 
         Args:
-            image:
-            direct_ocr:
+            image: 待识别的图像。
+            direct_ocr: 是否直接进行 OCR 识别。
 
         Returns:
-            list[list[int]: [[current, total]].
+            list[list[int]]: 识别结果列表，每个元素为 [当前值, 总值]。
         """
         result_list = super().ocr(image, direct_ocr=direct_ocr)
         if isinstance(result_list, list):
@@ -71,6 +81,7 @@ class CounterOcr(Ocr):
             return [int(i) for i in parts]
 
 
+# 根据服务器选择不同的价格 OCR 配置
 COUNTER_OCR = CounterOcr([], threshold=96, name='Counter_ocr')
 if server.server in ['jp']:
     PRICE_OCR = PriceOcr([], letter=(245, 214, 58), threshold=32, name='Price_ocr')
@@ -79,6 +90,11 @@ else:
 
 
 class OSShopItem(Item):
+    """大世界商店物品类。
+
+    扩展基础物品类，增加商店索引、滚动位置、库存计数等属性。
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._shop_index = None
@@ -88,6 +104,7 @@ class OSShopItem(Item):
 
     @property
     def shop_index(self):
+        """获取商店索引。"""
         return self._shop_index
 
     @shop_index.setter
@@ -96,6 +113,7 @@ class OSShopItem(Item):
 
     @property
     def scroll_pos(self):
+        """获取滚动位置。"""
         return self._scroll_pos
 
     @scroll_pos.setter
@@ -103,6 +121,13 @@ class OSShopItem(Item):
         self._scroll_pos = value
 
     def is_known_item(self) -> bool:
+        """判断是否为已知物品。
+
+        排除默认物品、空物品和纯数字名称的物品。
+
+        Returns:
+            bool: 是已知物品返回 True，否则返回 False。
+        """
         if self.name == 'DefaultItem':
             return False
         elif 'Empty' in self.name:
@@ -130,6 +155,11 @@ class OSShopItem(Item):
 
 
 class OSShopItemGrid(ItemGrid):
+    """大世界商店物品网格类。
+
+    支持物品识别、计数器 OCR、商店索引和滚动位置记录。
+    """
+
     item_class = OSShopItem
 
     def __init__(self, grids, templates, template_area=(40, 21, 89, 70), amount_area=(60, 71, 91, 92),
@@ -141,15 +171,19 @@ class OSShopItemGrid(ItemGrid):
         self.counter_area = counter_area
 
     def predict(self, image, counter=False, shop_index=None, scroll_pos=None) -> List[OSShopItem]:
-        """
+        """预测图像中的商店物品。
+
+        识别物品的名称、数量、成本和价格，可选择性地识别计数器、
+        商店索引和滚动位置。
+
         Args:
-            image (np.ndarray):
-            counter (bool): If predict item counter.
-            shop_index (bool): If predict shop index.
-            scroll_pos (bool): If predict scroll position.
+            image: 待识别的图像。
+            counter: 是否识别物品计数器。
+            shop_index: 商店索引，用于记录物品所在商店。
+            scroll_pos: 滚动位置，用于记录物品在滚动条中的位置。
 
         Returns:
-            list[Item]:
+            list[OSShopItem]: 识别到的物品列表。
         """
         super().predict(image, name=True, amount=True, cost=True, price=True)
         if counter and len(self.items):

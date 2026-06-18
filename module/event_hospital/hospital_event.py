@@ -17,12 +17,15 @@ ASIDE_SWITCH_HOSPITAL.add_state('hard', CHAPTER_HOSPITAL_HARD)
 
 
 class HospitalEvent(Hospital, RaidRun):
+    """医院活动事件处理器，继承 Hospital 和 RaidRun。"""
+
     raid_name = 'raid_20250327'
 
     def campaign_ensure_aside_hospital(self, chapter):
-        """
+        """确保医院活动难度标签正确设置。
+
         Args:
-            chapter: 'easy', 'normal', 'hard'
+            chapter: 难度，'easy'、'normal' 或 'hard'。
         """
         if chapter in ['easy', 'normal', 'hard']:
             ASIDE_SWITCH_HOSPITAL.set(chapter, main=self)
@@ -30,9 +33,12 @@ class HospitalEvent(Hospital, RaidRun):
             logger.warning(f'Unknown campaign aside: {chapter}')
 
     def hospital_expected_end(self):
-        """
+        """判断医院活动战斗是否结束（突袭模式）。
+
+        检测到医院主页时判定结束，处理各种返回按钮。
+
         Returns:
-            bool: If combat ended
+            bool: 战斗是否已结束。
         """
         if self.ui_page_appear(page_hospital, interval=2):
             return True
@@ -51,11 +57,14 @@ class HospitalEvent(Hospital, RaidRun):
         return False
 
     def raid_enter(self, stage, raid, skip_first_screenshot=True):
-        """
+        """进入突袭关卡。
+
+        点击入口进入舰队准备界面，同时检查 PT 限制。
+
         Args:
-            stage:
-            raid:
-            skip_first_screenshot:
+            stage: 关卡编号，如 'T1'、'T2'。
+            raid: 突袭名称。
+            skip_first_screenshot: 是否跳过首次截图复用上一状态。
 
         Pages:
             in: page_raid
@@ -68,12 +77,12 @@ class HospitalEvent(Hospital, RaidRun):
             else:
                 self.device.screenshot()
 
-            # End
+            # 到达舰队准备界面
             if self.appear(RAID_FLEET_PREPARATION, offset=(30, 30)):
                 break
 
             if self.ui_page_appear(page_hospital):
-                # Check PT when entrance appear
+                # 入口出现时检查 PT 限制
                 if self.event_pt_limit_triggered():
                     self.config.task_stop()
                 self.device.click(entrance)
@@ -86,12 +95,14 @@ class HospitalEvent(Hospital, RaidRun):
                 continue
 
     def raid_execute_once(self, mode, raid, stage):
-        """
-        Args:
-            mode:
-            raid:
+        """执行一次突袭战斗。
 
-        Returns:
+        Args:
+            mode: 难度模式。
+            raid: 突袭名称。
+            stage: 关卡编号。
+
+        Pages:
             in: page_raid
             out: page_raid
         """
@@ -112,12 +123,13 @@ class HospitalEvent(Hospital, RaidRun):
         logger.hr('Raid End')
 
     def run(self, name='', mode='', stage='', total=0):
-        """
+        """医院活动突袭主入口。
+
         Args:
-            name (str): Raid name, such as 'raid_20200624'
-            mode (str): Raid mode, such as 'hard', 'normal', 'easy'
-            stage (str): Raid stage, such as 'T1', 'T2'
-            total (int): Total run count
+            name: 突袭名称，如 'raid_20250327'。
+            mode: 难度模式，如 'hard'、'normal'、'easy'。
+            stage: 关卡编号，如 'T1'、'T2'。
+            total: 总运行次数限制。
         """
         name = name if name else self.raid_name
         mode = mode if mode else self.config.HospitalEvent_Mode
@@ -128,29 +140,29 @@ class HospitalEvent(Hospital, RaidRun):
         self.run_count = 0
         self.run_limit = self.config.StopCondition_RunCount
         while 1:
-            # End
+            # 达到总次数限制
             if total and self.run_count == total:
                 break
             if self.event_time_limit_triggered():
                 self.config.task_stop()
 
-            # Log
+            # 日志
             logger.hr(f'{name}_{mode}_{stage}', level=2)
             if self.config.StopCondition_RunCount > 0:
                 logger.info(f'Count remain: {self.config.StopCondition_RunCount}')
             else:
                 logger.info(f'Count: {self.run_count}')
 
-            # End
+            # 停止条件检查
             if self.triggered_stop_condition():
                 break
 
-            # UI ensure
+            # 确保 UI 状态
             self.device.stuck_record_clear()
             self.device.click_record_clear()
             self.ui_ensure(page_hospital)
 
-            # Run
+            # 执行突袭
             self.device.stuck_record_clear()
             self.device.click_record_clear()
             try:
@@ -165,13 +177,13 @@ class HospitalEvent(Hospital, RaidRun):
                 logger.info(str(e))
                 break
 
-            # After run
+            # 运行后处理
             self.run_count += 1
             if self.config.StopCondition_RunCount:
                 self.config.StopCondition_RunCount -= 1
-            # End
+            # 停止条件检查
             if self.triggered_stop_condition():
                 break
-            # Scheduler
+            # 调度器检查
             if self.config.task_switched():
                 self.config.task_stop()

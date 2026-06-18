@@ -30,22 +30,22 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # ADB 服务被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # When ascreencap is not installed
+            # ascreencap 未安装时
             except AscreencapError as e:
                 logger.error(e)
 
                 def init():
                     self.ascreencap_init()
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -56,17 +56,17 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # ImageTruncated
+            # 图像数据截断
             except ImageTruncated as e:
                 from module.device.method.utils import handle_image_truncated
                 handle_image_truncated(self, e)
 
                 def init():
                     pass
-            # Can't handle - must propagate to trigger emulator restart
+            # 无法处理 - 必须向上抛出以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # Unknown
+            # 未知异常
             except Exception as e:
                 logger.exception(e)
 
@@ -124,9 +124,9 @@ class AScreenCap(Connection):
         self.adb_shell(['rm', self.config.ASCREENCAP_FILEPATH_REMOTE])
 
     def _ascreencap_reposition_byte_pointer(self, byte_array):
-        """Method to return the sanitized version of ascreencap stdout for devices
-            that suffers from linker warnings. The correct pointer location will be saved
-            for subsequent screen refreshes
+        """
+        返回经过清理的 ascreencap 标准输出，用于存在链接器警告的设备。
+        正确的指针位置会被保存，供后续屏幕刷新使用。
         """
         while byte_array[self.__bytepointer:self.__bytepointer + 4] != b'BMZ1':
             self.__bytepointer += 1
@@ -151,7 +151,7 @@ class AScreenCap(Connection):
     def __uncompress(self, screenshot):
         raw_compressed_data = self._ascreencap_reposition_byte_pointer(screenshot)
 
-        # Guard: ensure header present
+        # 确保头部数据存在
         if raw_compressed_data is None or len(raw_compressed_data) < 20:
             text = 'aScreenCap returned incomplete data or empty payload'
             logger.warning(text)
@@ -159,7 +159,7 @@ class AScreenCap(Connection):
                 logger.warning(f'Unexpected screenshot: {raw_compressed_data}')
             raise AscreencapError(text)
 
-        # See headers in:
+        # 头部格式参考：
         # https://github.com/ClnViewer/Android-fast-screen-capture#streamimage-compressed---header-format-using
         compressed_data_header = np.frombuffer(raw_compressed_data[0:20], dtype=np.uint32)
         if compressed_data_header[0] != 828001602:
@@ -182,15 +182,15 @@ class AScreenCap(Connection):
         if image is None or image.size == 0:
             raise ImageTruncated('Empty image after reading from buffer')
 
-        # Equivalent to cv2.imdecode()
+        # 等同于 cv2.imdecode()
         try:
             image = image[-int(width * height * channel):].reshape(height, width, channel)
         except ValueError as e:
             # ValueError: cannot reshape array of size 0 into shape (720,1280,4)
             raise ImageTruncated(str(e))
 
-        # flip without `dst=image`
-        # np.frombuffer creates a read-only memory view, we need to create a writable copy here
+        # 不使用 `dst=image` 进行翻转
+        # np.frombuffer 创建的是只读内存视图，此处需要创建可写的副本
         image = cv2.flip(image, 0)
         if image is None:
             raise ImageTruncated('Empty image after cv2.flip')

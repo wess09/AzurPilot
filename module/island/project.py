@@ -39,25 +39,27 @@ class ProjectNameOcr(Ocr):
 
 
 class IslandProject:
-    # If success to parse project
+    # 是否成功解析项目
     valid: bool
-    # OCR result
+    # OCR 识别结果（项目名称）
     name: str
-    # Project workplace id
+    # 项目工作场所 ID
     id: int
-    # max slot that the workplace has
+    # 工作场所最大槽位数
     max_slot: int
-    # available slots that the workplace has
+    # 工作场所可用槽位数
     slot: int
-    # buttons of all available slots
+    # 所有可用槽位的按钮
     slot_buttons: ButtonGrid
 
     def __init__(self, image, image_gray, button):
         """
+        初始化岛屿项目对象，解析项目信息。
+
         Args:
-            image:
-            image_gray:
-            button:
+            image: 原始截图
+            image_gray: 灰度截图
+            button: 项目模板匹配到的按钮
         """
         self.image = image
         self.image_gray = image_gray
@@ -67,19 +69,19 @@ class IslandProject:
         self.project_parse()
 
     def project_parse(self):
-        # invalid
+        # 无效项目判断
         if self.y2 + 110 >= 653:
             self.valid = False
             return
 
-        # locked
+        # 检查是否锁定
         area = (self.x1 - 228, self.y1 + 57, self.x1 - 195, self.y1 + 95)
         image = crop(self.image_gray, area, copy=False)
         if TEMPLATE_PROJECT_LOCKED.match(image):
             self.valid = False
             return
 
-        # name
+        # OCR 识别项目名称
         dx = {'cn': 326, 'en': 137}[server.server]
         dy = {'cn': 0, 'en': 2}[server.server]
         area = (self.x1 - 446, self.y1, self.x1 - dx, self.y2 + dy)
@@ -90,7 +92,7 @@ class IslandProject:
             self.valid = False
             return
 
-        # id
+        # 根据名称查找项目 ID
         keys = list(name_to_slot.keys())
         if self.name in keys:
             self.id = keys.index(self.name) + 1
@@ -98,10 +100,10 @@ class IslandProject:
             self.valid = False
             return
 
-        # max slot
+        # 获取最大槽位数
         self.max_slot = name_to_slot.get(self.name, 2)
 
-        # available slot
+        # 计算可用槽位数
         area = (self.x1 - 383, self.y1 + 60, self.x1 - 39, self.y1 + 118)
         image = crop(self.image_gray, area, copy=False)
         locked = TEMPLATE_SLOT_LOCKED.match_multi(image)
@@ -110,17 +112,19 @@ class IslandProject:
             self.valid = False
             return
 
-        # slot grids
+        # 生成槽位按钮网格
         self.slot_buttons = ButtonGrid(origin=(self.x1 - 383, self.y1 + 60), delta=(95, 0),
                                        button_shape=(58, 58), grid_shape=(self.slot, 1), name='PROJECT_SLOT')
 
     def __eq__(self, other):
         """
+        比较两个岛屿项目是否相同。
+
         Args:
-            other (IslandProject):
+            other (IslandProject): 另一个项目对象
 
         Returns:
-            bool:
+            bool: 是否相等
         """
         if not isinstance(other, IslandProject):
             return False
@@ -138,9 +142,9 @@ class IslandProject:
 
 
 class IslandProduct:
-    # Duration to run this product
+    # 产品生产持续时间
     duration: timedelta
-    # If success to parse product duration
+    # 是否成功解析产品时长
     valid: bool
 
     def __init__(self, image, offset=None, new=False):
@@ -169,11 +173,13 @@ class IslandProduct:
 
     def __eq__(self, other):
         """
+        比较两个产品是否相同（基于时长阈值）。
+
         Args:
-            other (IslandProduct):
+            other (IslandProduct): 另一个产品对象
 
         Returns:
-            bool:
+            bool: 是否相等
         """
         if not isinstance(other, IslandProduct):
             return False
@@ -190,14 +196,22 @@ class ItemNameOcr(Ocr):
     def after_process(self, result):
         result = super().after_process(result)
         if server.server == 'cn':
-            result = result.replace('蛮', '蜜').replace('汗', '汁').replace('纠', '组').replace('离', '禽').replace('莱', '菜').replace('内', '肉').replace('克', '苋')
+            result = result.replace('蛮', '蜜').replace('汗', '汁').replace('纠', '组').replace('离', '禽').replace('莱', '菜').replace('内', '肉').replace('克', '苋').replace('蛟', '鲛')
             result = re.sub(r'[^\u4e00-\u9fff]', '', result)
             if '冰咖' in result:
                 result = '冰咖啡'
-            if '莓果香橙' in result:
+            elif '莓果香橙' in result:
                 result = '莓果香橙甜点组'
-            if '莉精油' in result:
+            elif '莉精油' in result:
                 result = '茉莉精油'
+            elif '胡萝下' == result:
+                result = '胡萝卜'
+            elif '草莓奶缘' == result:
+                result = '草莓奶绿'
+            elif '红鱼' == result:
+                result = '红鲷鱼'
+            elif '黑鱼' == result:
+                result = '黑鲷鱼'
         elif server.server == 'en':
             result = re.sub(r"[\s'-]+", "", result)
             result = result.lower()
@@ -205,21 +219,93 @@ class ItemNameOcr(Ocr):
 
 
 class ProductItem:
-    # OCR result
+    # OCR 识别结果（物品名称）
     name: str
-    # If success to parse item name
+    # 是否成功解析物品名称
     valid: bool
-    # Button to click for the current item
+    # 当前物品的点击按钮
     button: Button
-    # All buttons on this page to click
+    # 当前页面所有物品的按钮网格
     item_buttons: ButtonGrid
+
+    @staticmethod
+    def _normalize_product_text(text):
+        text = str(text or '').lower()
+        return re.sub(r'[\W_]+', '', text)
+
+    @classmethod
+    def resolve_product_name(cls, detected, known_names):
+        normalized = cls._normalize_product_text(detected)
+        if not normalized:
+            return None
+        for name in known_names:
+            product = cls._normalize_product_text(name)
+            if normalized == product:
+                return name
+            if len(product) >= 2 and product in normalized:
+                return name
+        return None
+
+    @classmethod
+    def empty(cls, image, parent_project_id):
+        item = cls.__new__(cls)
+        item.image = image
+        item.y = []
+        item.valid = True
+        item.name = None
+        item.button = None
+        item.parent_project_id = parent_project_id
+        item.items = []
+        item.item_buttons = None
+        return item
+
+    @classmethod
+    def from_ocr_results(cls, image, parent_project_id, product_order):
+        item = cls.empty(image, parent_project_id)
+        detector = AlOcr(name='zhcn' if server.server == 'cn' else 'en')
+        try:
+            det_results = detector.det(image)
+        except Exception as e:
+            logger.warning(f'Product OCR fallback failed: {e}')
+            det_results = []
+
+        left, top, right, bottom = ISLAND_PRODUCT_ITEMS.area
+        seen = set()
+        for txt, box, score in det_results:
+            xs = [point[0] for point in box]
+            ys = [point[1] for point in box]
+            cx = sum(xs) / len(xs)
+            cy = sum(ys) / len(ys)
+            if not (left <= cx <= right and top <= cy <= bottom):
+                continue
+            resolved = cls.resolve_product_name(txt, product_order)
+            if not resolved:
+                continue
+            normalized = cls._normalize_product_text(resolved)
+            if normalized in seen:
+                continue
+            seen.add(normalized)
+            y1 = int(max(top, cy - 65))
+            y2 = int(min(bottom, cy + 65))
+            area = (left + 20, y1, right - 20, y2)
+            row = cls.empty(image, parent_project_id)
+            row.y = (y1, y2)
+            row.name = resolved
+            row.button = Button(area=area, color=(), button=area, name=f'ISLAND_ITEM_{resolved}')
+            item.items.append(row)
+
+        if item.items:
+            logger.info(f'Product OCR fallback rows: {[row.name for row in item.items]}')
+        return item
 
     def __init__(self, image, y, parent_project_id, get_button=True):
         """
+        初始化产品物品对象。
+
         Args:
-            image:
-            y (int):
-            get_button (bool): if parse other items in the current page
+            image: 截图图像
+            y (int): 物品的纵向坐标
+            get_button (bool): 是否解析当前页面的其他物品
         """
         self.image = image
         self.y = y
@@ -237,11 +323,11 @@ class ProductItem:
 
         y1, y2 = self.y
 
-        # name
+        # OCR 识别物品名称
         if get_button:
             self.ocr_name(y1, y2)
 
-        # button
+        # 生成物品按钮
         x1, x2 = ISLAND_PRODUCT_ITEMS.area[0] + 20, ISLAND_PRODUCT_ITEMS.area[2] - 20
         area = (x1, y1, x2, y2)
         self.button = Button(area=area, color=(), button=area, name='ISLAND_ITEM')
@@ -262,13 +348,15 @@ class ProductItem:
     @staticmethod
     def grid_num(delta, y1, y2):
         """
+        计算当前网格上方和下方的网格数量。
+
         Args:
-            delta (int): grid delta
-            y1 (int):
-            y2 (int):
+            delta (int): 网格间距
+            y1 (int): 网格顶部坐标
+            y2 (int): 网格底部坐标
 
         Returns:
-            tuple(int, int): grids above and below current grid
+            tuple(int, int): (上方网格数, 下方网格数)
         """
         up = 0
         down = 0
@@ -282,9 +370,11 @@ class ProductItem:
 
     def ocr_name(self, y1, y2):
         """
+        对指定区域进行 OCR 识别物品名称。
+
         Args:
-            y1 (int):
-            y2 (int):
+            y1 (int): 区域顶部坐标
+            y2 (int): 区域底部坐标
         """
         area = (300, y1 + 14, 440, y2 - 84)
         button = Button(area=area, color=(), button=area, name='ITEM_NAME')
@@ -314,11 +404,13 @@ class ProductItem:
 
     def __eq__(self, other):
         """
+        比较两个产品物品是否相同。
+
         Args:
-            other (ProductItem):
+            other (ProductItem): 另一个物品对象
 
         Returns:
-            bool:
+            bool: 是否相等
         """
         if not isinstance(other, ProductItem):
             return False
@@ -333,18 +425,19 @@ class ProductItem:
 class IslandProjectRun(IslandUI):
     DEBUG_ISLAND_PROJECT = False
     project = SelectedGrids([])
+    projects_dirty = False
     total = SelectedGrids([])
     character: str
 
     def project_detect(self, image):
         """
-        Get all projects from an image.
+        从截图中检测所有岛屿项目。
 
         Args:
-            image (np.ndarray):
+            image (np.ndarray): 截图图像
 
         Returns:
-            SelectedGrids:
+            SelectedGrids: 有效项目列表
         """
         image_gray = rgb2gray(image)
         projects = SelectedGrids([IslandProject(image, image_gray, button)
@@ -353,12 +446,12 @@ class IslandProjectRun(IslandUI):
 
     def ensure_project(self, name, trial=7, skip_first_screenshot=True):
         """
-        Ensure the specific project is in the current page.
+        确保指定项目出现在当前页面，通过滚动查找。
 
         Args:
-            name (str|IslandProject): the project name to ensure
-            trial (int): retry times
-            skip_first_screenshot (bool):
+            name (str|IslandProject): 需要确保的项目名称
+            trial (int): 重试次数
+            skip_first_screenshot (bool): 是否跳过首次截图
         """
         logger.hr('Project ensure')
         if isinstance(name, IslandProject):
@@ -384,6 +477,7 @@ class IslandProjectRun(IslandUI):
                     self.drag_page((0, -500), ISLAND_PROJECT_SWIPE.area, 0.6)
                 else:
                     self.drag_page((0, 500), ISLAND_PROJECT_SWIPE.area, 0.6)
+                self.projects_dirty = True
                 continue
             else:
                 logger.warning(f'Wrong project name {name}, skip ensuring')
@@ -391,12 +485,12 @@ class IslandProjectRun(IslandUI):
 
     def drag_page(self, vector, box, sleep=0.5):
         """
-        Drag the management page.
+        拖拽管理页面。
 
         Args:
-            vector (tuple):
-            box (tuple):
-            sleep (float):
+            vector (tuple): 拖拽方向向量
+            box (tuple): 拖拽区域边界框
+            sleep (float): 拖拽后等待时间
         """
         p1, p2 = random_rectangle_vector(vector, box=box, random_range=(0, -5, 0, 5))
         self.device.drag(p1, p2, segments=2, shake=(0, 25), point_random=(0, 0, 0, 0), shake_random=(0, -5, 0, 5))
@@ -407,13 +501,13 @@ class IslandProjectRun(IslandUI):
 
     def project_receive(self, button):
         """
-        Receive a project and enter role select page.
+        领取项目奖励并进入角色选择页面。
 
         Args:
-            button (Button): project button to click
+            button (Button): 项目按钮
 
         Returns:
-            bool: if success
+            bool: 是否成功领取
         """
         self.device.click_record_clear()
         self.interval_clear([ISLAND_MANAGEMENT_CHECK, PROJECT_COMPLETE,
@@ -422,11 +516,12 @@ class IslandProjectRun(IslandUI):
         click_timer = Timer(5, count=10).start()
         _stuck_get_items_count = 0
         for _ in self.loop():
-            # UI additional
+            # UI 额外处理
             if self.island_in_management(interval=5):
                 self.device.click(button)
                 self.device.sleep(0.1)
                 click_timer.reset()
+                success = False
                 continue
 
             if self.appear_then_click(ISLAND_MANAGEMENT, offset=(20, 20), interval=2):
@@ -437,7 +532,7 @@ class IslandProjectRun(IslandUI):
                 click_timer.reset()
                 continue
 
-            # Enter page
+            # 进入角色选择页面
             if self.is_in_enter_page() and \
                     self.appear_then_click(ROLE_SELECT_ENTER, threshold=10, interval=2):
                 success = True
@@ -460,7 +555,7 @@ class IslandProjectRun(IslandUI):
                 click_timer.reset()
                 continue
 
-            # handle island level up
+            # 处理岛屿升级弹窗
             if click_timer.reached():
                 _stuck_get_items_count += 1
                 if _stuck_get_items_count >= 3:
@@ -470,7 +565,7 @@ class IslandProjectRun(IslandUI):
                 click_timer.reset()
                 continue
 
-            # End
+            # 结束条件
             if self.appear(ROLE_SELECT_CONFIRM, offset=(20, 20)):
                 break
 
@@ -487,24 +582,25 @@ class IslandProjectRun(IslandUI):
 
     def _project_character_select(self, click_button, check_button=None):
         """
-        Select a specific character for an island project.
-        Click character, wait for confirm, re-click if confirm doesn't appear.
+        为岛屿项目选择指定角色。
+
+        点击角色按钮，等待确认，如果确认按钮未出现则重新点击。
 
         Args:
-            click_button (Button): character button to click
-            check_button: (unused, kept for compatibility)
+            click_button (Button): 角色按钮
+            check_button: 未使用，保留兼容性
         """
         click_timeout = Timer(1.5).start()
         confirm_clicked = False
         self.device.click(click_button)
-        self.device.sleep(0.5)  # wait for UI to settle
+        self.device.sleep(0.5)  # 等待 UI 稳定
 
         for _ in self.loop():
-            self.device.screenshot()  # force fresh screenshot
-            # End
+            self.device.screenshot()  # 强制获取新截图
+            # 结束条件
             if self.appear(ISLAND_AMOUNT_MAX, offset=(20, 20)):
                 return True
-            # game bug that page returns to ISLAND_MANAGEMENT_CHECK after clicking ROLE_SELECT_CONFIRM
+            # 游戏 bug：点击 ROLE_SELECT_CONFIRM 后页面可能返回到 ISLAND_MANAGEMENT_CHECK
             if self.island_in_management():
                 return False
 
@@ -525,38 +621,39 @@ class IslandProjectRun(IslandUI):
 
     def project_character_select(self, character='manjuu'):
         """
-        Select a role to produce.
+        选择生产角色。
 
         Args:
-            character (str): character name to select
+            character (str): 角色名称
 
         Returns:
-            bool: if selected
+            bool: 是否成功选择
         """
         logger.info('Island select role')
-        timeout = Timer(5, count=3).start()
+        timeout = Timer(8, count=7).start()
         swipe_count = 0
         target_name = CHARACTER_NAME_MAP.get(character, {}).get(server.server,
                        CHARACTER_NAME_MAP.get(character, {}).get('cn', character))
+        target_name_orig = target_name
         det_ocr = AlOcr(name='zhcn' if server.server == 'cn' else 'en')
         for _ in self.loop():
             if timeout.reached():
                 self.ui_ensure_management_page()
                 return False
 
-            image = self.image_crop((0, 0, 910, 1280), copy=False)
+            image = self.image_crop((0, 0, 910, 720), copy=False)
             det_results = det_ocr.det(image)
             if det_results:
-                # Group results into character cards to identify "Working" status
+                # 将识别结果分组为角色卡片以识别"工作中"状态
                 cards = self._group_character_cards(det_results)
 
-                # Check debug switch
+                # 检查调试开关
                 if self.DEBUG_ISLAND_PROJECT:
                     self._save_island_debug(image, cards)
 
                 found_busy = False
                 for card in cards:
-                    if target_name in card['name'] or card['name'] in target_name:
+                    if target_name in card['name'] or (card['name'] in target_name and len(card['name']) > 1):
                         if card['working']:
                             logger.info(f'Character {card["name"]} is working')
                             found_busy = True
@@ -573,23 +670,16 @@ class IslandProjectRun(IslandUI):
                         click_button = Button(area=(cx, cy, cx, cy), color=(), button=(cx, cy, cx, cy), name=f'CHAR_{character}')
                         return self._project_character_select(click_button)
 
-                if found_busy:
-                    logger.info(f'{target_name} unavailable, use manjuu')
-                    character = 'manjuu'
-                    target_name = CHARACTER_NAME_MAP.get(character, {}).get(server.server,
-                                   CHARACTER_NAME_MAP.get(character, {}).get('cn', character))
-                    self.drag_page((0, -300), (200, 300, 700, 550), 0.3)
-                    self.device.sleep(0.5)
-                    continue
-
-            name = ' '.join(map(lambda x: x.capitalize(), character.split('_')))
-            if swipe_count < 5:
-                logger.info(f'No character {name} found, swiping down ({swipe_count + 1}/5)')
+            if swipe_count < 5 and not found_busy:
+                logger.info(f'No character {target_name_orig} found, swiping down ({swipe_count + 1}/5)')
                 self.drag_page((0, -250), (200, 300, 700, 550), 0.6)
                 self.device.sleep(0.5)
                 swipe_count += 1
             else:
-                logger.info(f'No character {name} was found, use manjuu')
+                if found_busy:
+                    logger.info(f'{target_name_orig} unavailable, use manjuu')
+                else:
+                    logger.info(f'No character {target_name_orig} was found, use manjuu')
                 character = 'manjuu'
                 target_name = CHARACTER_NAME_MAP.get(character, {}).get(server.server,
                                CHARACTER_NAME_MAP.get(character, {}).get('cn', character))
@@ -659,6 +749,30 @@ class IslandProjectRun(IslandUI):
                 card_box = [[x_min - 10, y_min - 100], [x_max + 10, y_min - 100], [x_max + 10, y_max + 10], [x_min - 10, y_max + 10]]
                 working = False
 
+            if server.server == 'cn':
+                txt = txt.rstrip(".…:!iI·;")
+                if len(txt) > 3 and txt[2] == '者':
+                    # 探索者艾/探索者一艾
+                    txt = txt[:3]
+                if txt == '工': # 阻止技能等级C误匹配到工作啾
+                    txt = 'C'
+                elif txt == 'C作啾':
+                    txt = '工作啾'
+                elif txt == '飞会' or txt == '飞去' or txt == '3去' or txt == 'K云':
+                    txt = '飞云'
+                elif stamina is not None and (txt == 'Z' or txt == '3Z' or txt == 'SZ' or txt == '会'):
+                    txt = '飞云'
+                elif txt == '恶喜' or txt == '恶善':
+                    txt = '恶毒'
+                elif stamina is not None and txt == '恶':
+                    txt = '恶毒'
+                elif txt.startswith('海伦'):
+                    txt = '海伦娜'
+                elif txt.startswith('领航品'):
+                    txt = '领航员'
+                elif txt.startswith('独角'):
+                    txt = '独角兽'
+
             cards.append({
                 'name': txt,
                 'name_box': box,
@@ -670,7 +784,7 @@ class IslandProjectRun(IslandUI):
 
     def _save_island_debug(self, image, cards):
         """
-        Save debug image with merged character card boxes.
+        保存带有角色卡片框的调试图像。
         """
         folder = 'debug_img'
         if not os.path.exists(folder):
@@ -680,18 +794,18 @@ class IslandProjectRun(IslandUI):
         if len(draw.shape) == 2:
             draw = cv2.cvtColor(draw, cv2.COLOR_GRAY2BGR)
         elif draw.shape[2] == 3:
-            # ALAS uses RGB internally, cv2 needs BGR for saving
+            # AzurPilot 内部使用 RGB，cv2 保存需要 BGR
             draw = cv2.cvtColor(draw, cv2.COLOR_RGB2BGR)
 
         for card in cards:
             pts = np.array(card['card_box'], dtype=np.int32).reshape((-1, 1, 2))
-            # BGR: Red if working, Green if free
+            # BGR: 红色表示工作中，绿色表示空闲
             color = (0, 0, 255) if card['working'] else (0, 255, 0)
             cv2.polylines(draw, [pts], True, color, 2)
 
             name = card['name']
             label = f"{name}{'(BUSY)' if card['working'] else ''}"
-            # Draw text
+            # 绘制文字标签
             x, y = int(pts[0][0][0]), int(pts[0][0][1])
             cv2.putText(draw, label, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 1)
 
@@ -702,15 +816,15 @@ class IslandProjectRun(IslandUI):
 
     def get_current_product(self, project_id):
         """
-        Get currently selected product on self.device.image.
+        获取当前截图中选中的产品。
 
         Returns:
-            ProductItem: currently selected item
+            ProductItem: 当前选中的物品
         """
         image = self.image_crop(ISLAND_PRODUCT_ITEMS, copy=False)
         y_top = ISLAND_PRODUCT_ITEMS.area[1]
         line = cv2.reduce(image, 1, cv2.REDUCE_AVG)
-        # blue line
+        # 检测蓝色分隔线
         line = color_similarity_2d(line, color=(57, 189, 255))[:, 0]
         parameters = {
             'height': 200,
@@ -718,18 +832,24 @@ class IslandProjectRun(IslandUI):
         }
         peaks, _ = signal.find_peaks(line, **parameters)
         peaks = np.array(peaks) + y_top
-        return ProductItem(self.device.image, peaks, project_id)
+        product_order = list(items_data.get(project_id, {}).values())
+        if len(peaks) < 2:
+            return ProductItem.from_ocr_results(self.device.image, project_id, product_order)
+        current = ProductItem(self.device.image, peaks, project_id)
+        if not any(item.valid and item.name for item in current.items):
+            return ProductItem.from_ocr_results(self.device.image, project_id, product_order)
+        return current
 
     def product_select(self, option, project_id, trial=2):
         """
-        Select a product in items list.
+        在物品列表中选择指定产品。
 
         Args:
-            option (str): option to select
-            trail (int): retry times
+            option (str): 要选择的产品名称
+            trial (int): 重试次数
 
         Returns:
-            bool: if selected
+            bool: 是否成功选择
         """
         logger.hr('Island Select Product')
         last_item = None
@@ -756,6 +876,9 @@ class IslandProjectRun(IslandUI):
                         self.device.click(item.button)
                         self.device.sleep(0.2)
                         click_interval.reset()
+                        # OCR fallback rows cannot report the selected item; the confirm step validates the click.
+                        if not current.name:
+                            return True
                     drag = False
             
             if bottom_item == current.items[-1]:
@@ -766,7 +889,7 @@ class IslandProjectRun(IslandUI):
                 self.ui_ensure_management_page()
                 return False
 
-            # clear record if current product is different during 2 drags
+            # 连续两次拖拽中如果产品不同则清除记录
             if last_item is not None and last_item != current:
                 self.device.click_record.pop()
                 self.device.click_record.pop()
@@ -779,10 +902,10 @@ class IslandProjectRun(IslandUI):
 
     def product_select_confirm(self):
         """
-        Start the product after product selected.
+        产品选择确认后启动生产。
 
         Returns:
-            bool: if success
+            bool: 是否成功启动
         """
         logger.info('Island product confirm')
         last = None
@@ -807,7 +930,7 @@ class IslandProjectRun(IslandUI):
                     continue
 
                 button = PROJECT_START
-                # the offset of OCR_PRODUCTION_TIME is determined by PROJECT_START
+                # OCR_PRODUCTION_TIME 的偏移量由 PROJECT_START 决定
                 self.appear(button, offset=(100, 0))
                 offset = tuple(np.subtract(button.button, button._button)[:2])
                 product = IslandProduct(self.device.image, new=True, offset=offset)
@@ -831,14 +954,14 @@ class IslandProjectRun(IslandUI):
 
     def project_receive_and_start(self, proj, button, character, option, project_id, ensure=True):
         """
-        Receive and start a project is in the current page.
+        领取并启动当前页面上的项目。
 
         Args:
-            proj (IslandProject): the project to ensure
-            button (Button): project button to click
-            character (str): character to select
-            option (str): option to select
-            ensure (bool): whether to call ensure_project() after project start
+            proj (IslandProject): 项目对象
+            button (Button): 项目按钮
+            character (str): 角色名称
+            option (str): 产品选项
+            ensure (bool): 启动后是否调用 ensure_project()
         """
         if not self.project_receive(button):
             return True
@@ -858,11 +981,13 @@ class IslandProjectRun(IslandUI):
 
     def island_project_character(self, project: IslandProject):
         """
+        获取项目的角色配置列表。
+
         Args:
-            project (IslandProject):
-        
+            project (IslandProject): 项目对象
+
         Returns:
-            list[str]: a list of options of characters
+            list[str]: 各槽位的角色名称列表
         """
         proj_id = project.id
         return [self.config.__getattribute__(f'Island{proj_id}_Character{proj_slot}')
@@ -870,11 +995,13 @@ class IslandProjectRun(IslandUI):
 
     def island_project_option(self, project: IslandProject):
         """
+        获取项目的产品配置列表。
+
         Args:
-            project (IslandProject):
-        
+            project (IslandProject): 项目对象
+
         Returns:
-            list[str]: a list of options of production items
+            list[str]: 各槽位的产品名称列表
         """
         slot_option = []
         proj_id = project.id
@@ -891,14 +1018,14 @@ class IslandProjectRun(IslandUI):
 
     def island_project_run(self, names, trial=2):
         """
-        Execute island run to receive and start project.
+        执行岛屿项目流程：领取和启动项目。
 
         Args:
-            names (list[str]): a list of name for island receive
-            trial (int): retry times
+            names (list[str]): 需要收取的岛屿名称列表
+            trial (int): 检测失败重试次数
 
         Returns:
-            list[timedelta]: future finish timedelta
+            list[timedelta]: 未来完成时间列表
         """
         logger.hr('Island Project Run', level=1)
         self.ensure_project(names[0])
@@ -915,6 +1042,7 @@ class IslandProjectRun(IslandUI):
             projects: SelectedGrids = projects.filter(
                 lambda proj: proj.name in names and proj.name not in self.project.get('name'))
             self.project = self.project.add_by_eq(projects)
+            self.projects_dirty = False
 
             for proj in projects:
                 logger.hr('Island Project')
@@ -935,8 +1063,14 @@ class IslandProjectRun(IslandUI):
                         ensure = not end or index != option_num - 1
                         if self.project_receive_and_start(proj, button, self.character, option, proj.id, ensure):
                             break
+                        if self.projects_dirty:
+                            break
                 timeout.reset()
+                if self.projects_dirty:
+                    break
 
+            if self.projects_dirty:
+                continue
             if end:
                 break
             self.drag_page((0, -500), ISLAND_PROJECT_SWIPE.area, 0.6)

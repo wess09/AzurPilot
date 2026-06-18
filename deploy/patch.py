@@ -33,18 +33,14 @@ def site_package_file(*parts):
 
 
 def patch_trust_env(file):
-    """
-    People use proxies, but they never realize that proxy software leaves a
-    global proxy pointing to itself even when the software is not running.
-    In most situations we set `session.trust_env = False` in requests, but this
-    does not effect the `pip` command.
+    """修补 requests 库的 trust_env 设置。
 
-    To handle untrusted user environment for good. We patch the code file in
-    requests directly. Of course, the patch only effect the python env inside
-    Alas.
+    用户的代理软件即使未运行也会留下全局代理设置。
+    虽然在代码中设置了 `session.trust_env = False`，但这不影响 pip 命令。
+    因此直接修补 requests 源码，将 trust_env 强制设为 False。
 
     Returns:
-        bool: If patched.
+        bool: 是否已修补。
     """
     if os.path.exists(file):
         with open(file, 'r', encoding='utf-8') as f:
@@ -63,39 +59,28 @@ def patch_trust_env(file):
 
 
 def check_running_directory():
-    """
-    An fool-proof mechanism.
-    Show error if user is running Easy Install in compressing software,
-    since Alas can't install in temp directories.
+    """防呆检查：检测是否在压缩软件的临时目录中运行。
+
+    如果用户直接在压缩软件中运行安装器，会因临时目录导致安装失败。
     """
     file = __file__.replace(r"\\", "/").replace("\\", "/")
     # C:/Users/<user>/AppData/Local/Temp/360zip$temp/360$3/AzurLaneAutoScript
     if 'Temp/360zip' in file:
-        logger.critical('请先解压Alas的压缩包，再安装Alas')
+        logger.critical('请先解压AzurPilot的压缩包，再安装AzurPilot')
         exit(1)
     # C:/Users/<user>/AppData/Local/Temp/Rar$EXa9248.23428/AzurLaneAutoScript
     if 'Temp/Rar' in file or 'Local/Temp' in file:
-        logger.critical('Please unzip ALAS installer first')
+        logger.critical('Please unzip AzurPilot installer first')
         exit(1)
 
 
 def patch_uiautomator2():
-    """
-    uiautomator2 download assets from https://tool.appetizer.io first then fallback to https://github.com/openatx.
-    https://tool.appetizer.io is added to bypass the wall in China but https://tool.appetizer.io is slow outside of CN
-    plus some CN users cannot access it for unknown reason.
+    """修补 uiautomator2 的资源下载路径。
 
-    So we patch `uiautomator2/init.py` to a local assets cache `uiautomator2cache/cache`.
-        appdir = os.path.join(os.path.expanduser('~'), '.uiautomator2')
-    to:
-        appdir = os.path.abspath(os.path.join(__file__, '../../uiautomator2cache'))
+    uiautomator2 默认从 tool.appetizer.io 或 github.com/openatx 下载资源，
+    但这些地址在国内可能不可用或速度慢。因此修补为使用本地缓存 uiautomator2cache/cache。
 
-    And we also remove minicap installations since emulators doesn't need it.
-        for url in self.minicap_urls:
-            self.push_url(url)
-    to:
-        for url in []:
-            self.push_url(url)
+    同时移除 minicap 安装，因为模拟器不需要它。
     """
     cache_dir = site_package_file('uiautomator2cache', 'cache')
     init_file = site_package_file('uiautomator2', 'init.py')
@@ -109,7 +94,7 @@ def patch_uiautomator2():
     with open(init_file, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Patch minicap_urls
+    # 修补 minicap_urls
     res = re.search(r'self.minicap_urls', content)
     if res:
         content = re.sub(r'self.minicap_urls', '[]', content)
@@ -118,7 +103,7 @@ def patch_uiautomator2():
     else:
         logger.info(f'{init_file} minicap_urls no need to patch')
 
-    # Patch appdir
+    # 修补 appdir
     if cache_dir and os.path.exists(cache_dir):
         res = re.search(r'appdir ?=(.*)\n', content)
         if res:
@@ -134,7 +119,7 @@ def patch_uiautomator2():
     else:
         logger.info('uiautomator2cache is not installed skip patching')
 
-    # Save file
+    # 保存文件
     if modified:
         with open(init_file, 'w', encoding='utf-8') as f:
             f.write(content)
@@ -142,9 +127,10 @@ def patch_uiautomator2():
 
 
 def patch_apkutils2():
-    """
-    `adbutils/mixin.py` `ShellMixin.install` imports `apkutils2`, but `apkutils2` does not provide wheel files,
-    it may failed to install for unknown reasons. Since we never used that method, we just remove the import.
+    """移除 adbutils 中对 apkutils2 的导入。
+
+    adbutils/mixin.py 的 ShellMixin.install 导入了 apkutils2，但 apkutils2 不提供 wheel 文件，
+    可能因未知原因安装失败。由于我们从不使用该方法，直接移除该导入。
     """
     mixin = site_package_file('adbutils', 'mixin.py')
     if not mixin:

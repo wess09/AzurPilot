@@ -1,3 +1,11 @@
+"""
+模拟器运行时的猴子补丁。
+
+- 限制线程池大小，防止 aiofiles 创建过多线程
+- 修正 Python 3.7 下 subprocess._communicate 的 IndexError
+- 统一 mimetype 表，避免读取用户环境中的污染数据
+"""
+
 import asyncio
 from functools import partial, wraps
 
@@ -6,6 +14,8 @@ from module.webui.setting import cached_class_property
 
 
 class CachedThreadPoolExecutor:
+    """缓存的线程池执行器，作为全局单例供 loop.run_in_executor 使用。"""
+
     @cached_class_property
     def executor(cls):
         from concurrent.futures.thread import ThreadPoolExecutor
@@ -15,6 +25,7 @@ class CachedThreadPoolExecutor:
 
 
 def wrap(func):
+    """将同步函数包装为异步函数，在 CachedThreadPoolExecutor 中执行。"""
     @wraps(func)
     async def run(*args, loop=None, executor=None, **kwargs):
         if loop is None:
@@ -29,8 +40,10 @@ def wrap(func):
 
 def patch_executor():
     """
-    Limit pool size in loop.run_in_executor
-    so starlette.staticfiles -> aiofiles won't create tons of threads
+    限制 loop.run_in_executor 的线程池大小。
+
+    防止 starlette.staticfiles → aiofiles 在每次请求时创建新线程，
+    导致线程数持续增长。
     """
     try:
         import aiofiles
@@ -48,19 +61,19 @@ def patch_executor():
 
 def patch_mimetype():
     """
-    Patch mimetype db to use the builtin table instead of reading from environment.
+    修补 mimetype 数据库，使用内置表而非从环境变量读取。
 
-    By default, mimetype reads user configured mimetype table from environment. It's good for server but bad on our
-    side, because we deploy on user's machine which may have polluted environment. To have a consistent behaviour on
-    all deployment, we use the builtin mimetype table only.
+    默认情况下，mimetype 会读取用户环境中配置的 MIME 类型表。
+    这对服务器环境是合理的，但 AzurPilot 部署在用户本地机器上，
+    环境可能已被污染。为保证所有部署行为一致，仅使用内置 MIME 表。
     """
     import mimetypes
-    # lock as inited
+    # 标记为已初始化，阻止后续从环境读取
     mimetypes.inited = True
-    # create a new clean instance
+    # 创建全新的干净实例
     db = mimetypes.MimeTypes(filenames=())
     mimetypes._db = db
-    # override global variable
+    # 用内置数据覆盖全局变量
     mimetypes.encodings_map = db.encodings_map
     mimetypes.suffix_map = db.suffix_map
     mimetypes.types_map = db.types_map[True]
@@ -69,12 +82,12 @@ def patch_mimetype():
 
 def fix_py37_subprocess_communicate():
     """
-    Monkey patch for subprocess.Popen._communicate on Windows Python 3.7
-    Fixes: IndexError: list index out of range
+    为 Windows Python 3.7 的 subprocess.Popen._communicate 打补丁。
 
-    This bug is fixed on python>=3.8, so we backport the fix
+    修复 IndexError: list index out of range 错误。
+    此 bug 在 Python >= 3.8 中已修复，此处反向移植该修复。
 
-    Ref:
+    参考：
         https://github.com/LmeSzinc/AzurLaneAutoScript/issues/5226
         https://bugs.python.org/issue43423
         https://github.com/python/cpython/pull/24777
@@ -87,8 +100,7 @@ def fix_py37_subprocess_communicate():
         return
 
     def _communicate_fixed(self, input, endtime, orig_timeout):
-        # Start reader threads feeding into a list hanging off of this
-        # object, unless they've already been started.
+        # 启动读取线程，将输出收集到列表中（如果尚未启动）
         if self.stdout and not hasattr(self, "_stdout_buff"):
             self._stdout_buff = []
             self.stdout_thread = \
@@ -107,9 +119,7 @@ def fix_py37_subprocess_communicate():
         if self.stdin:
             self._stdin_write(input)
 
-        # Wait for the reader threads, or time out.  If we time out, the
-        # threads remain reading and the fds left open in case the user
-        # calls communicate again.
+        # 等待读取线程完成，超时则保留线程以便后续再次调用 communicate
         if self.stdout is not None:
             self.stdout_thread.join(self._remaining_time(endtime))
             if self.stdout_thread.is_alive():
@@ -119,8 +129,7 @@ def fix_py37_subprocess_communicate():
             if self.stderr_thread.is_alive():
                 raise subprocess.TimeoutExpired(self.args, orig_timeout)
 
-        # Collect the output from and close both pipes, now that we know
-        # both have been read successfully.
+        # 收集输出并关闭管道
         stdout = None
         stderr = None
         if self.stdout:
@@ -130,12 +139,9 @@ def fix_py37_subprocess_communicate():
             stderr = self._stderr_buff
             self.stderr.close()
 
-        # All data exchanged.  Translate lists into strings.
-
-        # --- FIX START ---
+        # 将列表转换为字符串（修复点）
         stdout = stdout[0] if stdout else None
         stderr = stderr[0] if stderr else None
-        # --- FIX END ---
 
         return (stdout, stderr)
 

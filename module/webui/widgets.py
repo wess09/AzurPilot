@@ -32,8 +32,10 @@ if TYPE_CHECKING:
 
 class ScrollableCode:
     """
-    https://github.com/pywebio/PyWebIO/discussions/21
-    Deprecated
+    可滚动的代码显示组件。
+
+    参考 https://github.com/pywebio/PyWebIO/discussions/21
+    已废弃，建议使用 RichLog 替代。
     """
 
     def __init__(self, keep_bottom: bool = True) -> None:
@@ -72,8 +74,10 @@ class ScrollableCode:
     def reset(self) -> None:
         run_js(r"""$("\#{dom_id}>code").empty();""".format(dom_id=self.id))
 
+    last_display_time: dict
+
     def set_scroll(self, b: bool) -> None:
-        # use for lambda callback function
+        # 用于 lambda 回调函数中设置是否保持滚动到底部
         self.keep_bottom = b
 
 
@@ -94,6 +98,7 @@ class RichLog:
             highlighter=Highlighter(),
             theme=WEB_THEME,
         )
+        # 以下为已废弃的宽度回调相关代码，保留供参考
         # self.callback_id = output_register_callback(
         #     self._callback_set_width, serial_mode=True)
         # self._callback_thread = None
@@ -118,7 +123,7 @@ class RichLog:
             code_format=LOG_CODE_FORMAT,
             inline_styles=True,
         )
-        # print(html)
+        # 调试：打印生成的 HTML
         return html
 
     def extend(self, text):
@@ -133,6 +138,11 @@ class RichLog:
             if self.keep_bottom:
                 self.scroll()
 
+    def set_dashboard_display(self, b: bool) -> None:
+        # use for lambda callback function. Copied.
+        self.display_dashboard = b
+        self.first_display = True
+
     def reset(self):
         run_js(f"""$("#pywebio-scope-{self.scope}>div").empty();""")
 
@@ -145,11 +155,11 @@ class RichLog:
         )
 
     def set_scroll(self, b: bool) -> None:
-        # use for lambda callback function
+        # 用于 lambda 回调函数中设置是否保持滚动到底部
         self.keep_bottom = b
 
     def set_dashboard_display(self, b: bool) -> None:
-        # use for lambda callback function. Copied.
+        # 用于 lambda 回调函数中设置是否显示仪表盘
         self.display_dashboard = b
         self.first_display = True
 
@@ -172,6 +182,7 @@ class RichLog:
         width = eval_js(js)
         return 80 if width is None else 128 if width > 128 else int(width)
 
+    # 以下为已废弃的窗口宽度自适应回调代码，保留供参考
     # def _register_resize_callback(self):
     #     js = """
     #     WebIO.pushData(
@@ -237,21 +248,19 @@ class BinarySwitchButton(Switch):
             color_off="secondary",
     ):
         """
+        初始化二态切换按钮。
+
         Args:
-            get_state:
-                (Callable):
-                    return True to represent state `ON`
-                    return False tp represent state `OFF`
-                (Generator):
-                    yield True to change btn state to `ON`
-                    yield False to change btn state to `OFF`
-            label_on: label to show when state is `ON`
-            label_off:
-            onclick_on: function to call when state is `ON`
-            onclick_off:
-            color_on: button color when state is `ON`
-            color_off:
-            scope: scope for button, just for button **only**
+            get_state: 获取当前状态。
+                (Callable): 返回 True 表示开启状态，返回 False 表示关闭状态。
+                (Generator): yield True 切换到开启状态，yield False 切换到关闭状态。
+            label_on: 开启状态时显示的按钮文本。
+            label_off: 关闭状态时显示的按钮文本。
+            onclick_on: 开启状态时的点击回调函数。
+            onclick_off: 关闭状态时的点击回调函数。
+            color_on: 开启状态时的按钮颜色。
+            color_off: 关闭状态时的按钮颜色。
+            scope: 按钮的 PyWebIO 作用域，仅用于此按钮。
         """
         self.scope = scope
         status = {
@@ -279,7 +288,7 @@ class BinarySwitchButton(Switch):
         put_button(label=label, onclick=onclick, color=color, scope=self.scope)
 
 
-# aside buttons
+# 侧边栏图标按钮
 
 
 def put_icon_buttons(
@@ -344,7 +353,7 @@ def get_title_help(kwargs: T_Output_Kwargs) -> Output:
     return res
 
 
-# args input widget
+# 参数输入组件
 def put_arg_input(kwargs: T_Output_Kwargs) -> Output:
     name: str = kwargs["name"]
     options: List = kwargs.get("options")
@@ -470,7 +479,7 @@ def put_arg_textarea(kwargs: T_Output_Kwargs) -> Output:
 
 
 def put_arg_checkbox(kwargs: T_Output_Kwargs) -> Output:
-    # Not real checkbox, use as a switch (on/off)
+    # 非真正复选框，用作开关（开/关）
     name: str = kwargs["name"]
     value: str = kwargs["value"]
     _: str = kwargs.pop("invalid_feedback", None)
@@ -527,11 +536,44 @@ def put_arg_storage(kwargs: T_Output_Kwargs) -> Optional[Output]:
     )
 
 
+def put_arg_multiselect(kwargs: T_Output_Kwargs) -> Output:
+    """多选组件：使用竖向复选框组实现多选，交互直观。
+
+    支持 options 和 options_label，value 为选中值的列表（如 [1, 3, 5]）。
+    每个选项渲染为一个独立的 checkbox，竖向排列避免横向布局的点击区域冲突。
+    """
+    name: str = kwargs["name"]
+    value: list = kwargs.get("value", [])
+    if not isinstance(value, list):
+        value = [value] if value else []
+    options: List[str] = kwargs.get("options", [])
+    options_label: List[str] = kwargs.pop("options_label", [])
+    _: str = kwargs.pop("invalid_feedback", None)
+    # 从 kwargs 中移除多余的键，避免传递给 put_checkbox 造成冲突
+    for key in ("disabled", "value", "options"):
+        kwargs.pop(key, None)
+
+    checkbox_options = [{
+        "label": opt_label,
+        "value": opt,
+        "selected": opt in value,
+    } for opt, opt_label in zip(options, options_label)]
+
+    return put_scope(
+        f"arg_container-multiselect-{name}",
+        [
+            get_title_help(kwargs),
+            put_checkbox(**kwargs, options=checkbox_options).style("--input--"),
+        ],
+    )
+
+
 _widget_type_to_func: Dict[str, Callable] = {
     "input": put_arg_input,
     "lock": put_arg_state,
     "datetime": put_arg_input,  # TODO
     "select": put_arg_select,
+    "multiselect": put_arg_multiselect,
     "textarea": put_arg_textarea,
     "checkbox": put_arg_checkbox,
     "storage": put_arg_storage,

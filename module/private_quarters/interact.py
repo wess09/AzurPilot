@@ -8,9 +8,9 @@ from module.ui.ui import UI
 
 
 class PQInteract(UI):
-    # Key: str, target ship name
-    # Value: list[Button], button instances
-    #        (Room_Entrance, Page_Locale)
+    # 可选目标舰娘映射表
+    # 键: 舰娘名称字符串
+    # 值: (房间入口按钮, 所在场景页面按钮) 的元组
     available_targets = {
         'anchorage': (PRIVATE_QUARTERS_SHIP_ANCHORAGE, PRIVATE_QUARTERS_PAGE_LOCALE_BEACH),
         'noshiro': (PRIVATE_QUARTERS_SHIP_NOSHIRO, PRIVATE_QUARTERS_PAGE_LOCALE_BEACH),
@@ -22,15 +22,17 @@ class PQInteract(UI):
 
     def _pq_handle_dialogue(self):
         """
-        Handles dialogue sequence of target
-        After the addition of Taihou this sequence
-        has been discovered lagging on rare cases
-        Hence this call is used in other states
-        besides on room enter
+        处理目标舰娘的对话序列。
+
+        加入大凤后发现此序列偶尔会卡顿，
+        因此在进入房间之外的其他状态也会调用。
+
+        Pages:
+            in: 私人宿舍房间内
+            out: 私人宿舍房间内（对话结束）
         """
 
-        # Helper funcs to hold off spam clicking until loading
-        # state is not present
+        # 辅助函数：等待加载状态消失后再点击
         def after_loading_state():
             return not self.appear(PRIVATE_QUARTERS_LOADING_CHECK, offset=(20, 20))
 
@@ -49,13 +51,16 @@ class PQInteract(UI):
 
     def _pq_target_appear(self):
         """
-        Callable wrapper to validate target's appearance
-        offset=(100, 100) detectable for anchorage, noshiro, sirus, new_jersey, and taihou
-        When more ships added may need to adjust or capture specific bubble position per
-        ship, can use the available_targets to store similarly into tuples instead
+        检测目标舰娘是否出现在房间中。
+
+        使用 offset=(100, 100) 可检测安克雷奇、能代、天狼星、新泽西和大凤。
+        新增舰娘时可能需要调整偏移或为每艘舰娘单独截取气泡位置。
 
         Returns:
-            bool
+            bool: 目标是否出现
+
+        Pages:
+            in: 私人宿舍房间内
         """
         settle_timer = Timer(1.5, count=3).start()
         skip_first_screenshot = True
@@ -65,19 +70,18 @@ class PQInteract(UI):
             else:
                 self.device.screenshot()
 
-            # End, success
+            # 结束条件：成功
             if self.appear(PRIVATE_QUARTERS_ROOM_TARGET_CHECK_1, offset=(100, 100)):
                 return True
             if self.appear(PRIVATE_QUARTERS_ROOM_TARGET_CHECK_2, offset=(100, 100)):
                 return True
 
-            # End, failed expired wait time
+            # 结束条件：等待超时失败
             if settle_timer.reached():
                 return False
 
             if self.appear(PRIVATE_QUARTERS_ROOM_CHECK, offset=(20, 20)):
-                # Factor in couple drag up actions to
-                # counter odd default distance/zoom on target
+                # 向上拖拽以修正默认视角与目标的距离/缩放
                 p1, p2 = random_rectangle_vector(
                     (0, -30), box=PRIVATE_QUARTERS_ROOM_SAFE_CLICK_AREA.area,
                     random_range=(-10, -10, 10, 10), padding=5)
@@ -86,19 +90,23 @@ class PQInteract(UI):
                                  shake_random=(0, -5, 0, 5))
                 settle_timer.reset()
             else:
-                # Absence of check likely means dialogue is ongoing
+                # 未检测到 CHECK 按钮，可能正在对话中
                 self._pq_handle_dialogue()
                 settle_timer.reset()
 
     def _pq_goto_room_seek(self, target_ship):
         """
-        Execute seek room routine
+        在私人宿舍主页左右翻页，寻找目标舰娘所在场景。
 
         Args:
-            target_ship (str):
+            target_ship (str): 目标舰娘名称
 
         Returns:
-            bool
+            bool: 是否找到目标页面
+
+        Pages:
+            in: 私人宿舍主页
+            out: 私人宿舍主页（目标场景页面）
         """
         target_title = target_ship.title().replace('_', ' ')
         if target_ship not in self.available_targets:
@@ -114,13 +122,12 @@ class PQInteract(UI):
         page_btn = self.available_targets[target_ship][1]
         logger.hr(f'Seek {target_title}\'s Page', level=2)
 
-        # Depending on current page position
-        # Search left then right or reverse order
+        # 根据当前位置决定翻页方向：先左后右或先右后左
         directions = [PRIVATE_QUARTERS_PAGE_LEFT, PRIVATE_QUARTERS_PAGE_RIGHT]
         if not self.appear(PRIVATE_QUARTERS_PAGE_LEFT, offset=(20, 20)):
             directions.reverse()
 
-        # Execute page seek
+        # 执行翻页查找
         skip_first_screenshot = True
         self.interval_clear(directions)
         settle_timer = Timer(1.5, count=3).start()
@@ -131,18 +138,17 @@ class PQInteract(UI):
                 else:
                     self.device.screenshot()
 
-                # End, success
+                # 结束条件：成功
                 if self.appear(page_btn, offset=(20, 20)):
                     logger.info(f'Reached {target_title}\'s page')
                     return True
 
-                # Enable interval delay to confirm page after click
+                # 使用间隔延迟确认页面切换
                 if self.appear_then_click(direction, offset=(20, 20), interval=1):
                     settle_timer.reset()
                     continue
 
-                # No more page clicks past interval 1
-                # Thus can safely go the other direction
+                # 间隔到期无新点击，可安全切换方向
                 if settle_timer.reached():
                     break
 
@@ -151,7 +157,10 @@ class PQInteract(UI):
 
     def _pq_goto_room_check(self):
         """
-        Callable wrapper for whether is loading or blocked by download asset popup
+        检测是否处于加载中或被资源下载弹窗阻塞。
+
+        Returns:
+            bool: True 表示仍在加载或被阻塞
         """
         if self.appear(PRIVATE_QUARTERS_LOADING_CHECK, offset=(20, 20)):
             return True
@@ -161,17 +170,21 @@ class PQInteract(UI):
 
     def _pq_goto_room_enter(self, target_ship):
         """
-        Execute enter room routine
+        点击目标舰娘的房间入口，进入房间。
+
+        点击后会等待加载画面或资源下载弹窗出现。
 
         Args:
-            target_ship (str):
+            target_ship (str): 目标舰娘名称
 
         Returns:
-            bool
+            bool: 是否成功进入房间
+
+        Pages:
+            in: 私人宿舍主页（目标场景页面）
+            out: 私人宿舍房间内
         """
-        # Initiate goto into target's room
-        # Ensure either loading or popup
-        # prompt appears after click
+        # 点击进入目标房间，确保加载画面或弹窗出现
         target_title = target_ship.title().replace('_', ' ')
         if target_ship not in self.available_targets:
             logger.error(f'Unsupported target ship: {target_title}, '
@@ -191,18 +204,15 @@ class PQInteract(UI):
             offset=(20, 20),
             skip_first_screenshot=True)
 
-        # If was download asset popup
-        # Terminate the run
+        # 如果弹出资源下载提示，终止运行
         if self.handle_popup_cancel('PRIVATE_QUARTERS_DOWNLOAD_ASSET', offset=(20, 20)):
             logger.error(f'Cannot enter {target_title}\'s room, please download the necessary assets first')
             return False
 
-        # Fully enter into target's room
-        # through click progression
+        # 通过点击推进对话，完全进入房间
         self._pq_handle_dialogue()
 
-        # If target's intimacy is maxed
-        # Terminate the run
+        # 如果目标好感度已满，终止运行
         if self.appear(PRIVATE_QUARTERS_ROOM_TARGET_INTIMACY_MAX, offset=(20, 20)):
             logger.warning(
                 f'{target_title}\'s intimacy is maxed, configure to new target or turn off subtask altogether')
@@ -212,10 +222,15 @@ class PQInteract(UI):
 
     def _pq_goto_room_exit(self):
         """
-        Execute room exit routine
+        退出当前房间，返回私人宿舍主页。
+
+        退出前会处理可能残留的对话。
+
+        Pages:
+            in: 私人宿舍房间内
+            out: 私人宿舍主页
         """
-        # Rare case in the middle of dialogue, so address
-        # before initiating room exit
+        # 退出前处理可能残留的对话
         if (not self.appear(PRIVATE_QUARTERS_ROOM_CHECK, offset=(20, 20)) and
             not self.appear(PRIVATE_QUARTERS_INTERACT, offset=(0, 60))):
                 self._pq_handle_dialogue()
@@ -232,11 +247,16 @@ class PQInteract(UI):
 
     def pq_interact(self):
         """
-        Execute target interact routine
-        offset=(0, 60) to account for y-position of asset
-        Depending on intimacy level, the asset may shift
+        执行目标舰娘的完整互动流程。
+
+        分三个阶段：点击舰娘触发对话 -> 重复 3 次互动循环 -> 退出房间。
+        offset=(0, 60) 用于适配不同好感度下按钮的 Y 轴偏移。
+
+        Pages:
+            in: 私人宿舍房间内
+            out: 私人宿舍主页
         """
-        # Click target ship girl for 1st stage sequence
+        # 第一阶段：点击舰娘触发对话序列
         logger.hr(f'Interact Start', level=2)
         click_timer = Timer(1.5, count=3).start()
         skip_first_screenshot = True
@@ -246,7 +266,7 @@ class PQInteract(UI):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.appear(PRIVATE_QUARTERS_INTERACT, offset=(0, 60)):
                 break
 
@@ -254,7 +274,7 @@ class PQInteract(UI):
                 self.device.click(PRIVATE_QUARTERS_ROOM_TARGET_CLICK_AREA)
                 click_timer.reset()
 
-        # Repeat 2nd and 3rd stage sequence 3 times
+        # 第二、三阶段：重复互动循环 3 次
         for i in range(1, 4):
             logger.hr(f'Interact Loop {i}/3', level=3)
             self.interval_clear([PRIVATE_QUARTERS_INTERACT_CHECK,
@@ -266,7 +286,7 @@ class PQInteract(UI):
                 else:
                     self.device.screenshot()
 
-                # End
+                # 结束条件
                 if self.appear(PRIVATE_QUARTERS_INTERACT_CHECK, offset=(20, 20)):
                     break
 
@@ -280,7 +300,7 @@ class PQInteract(UI):
                 else:
                     self.device.screenshot()
 
-                # End
+                # 结束条件
                 if self.appear(PRIVATE_QUARTERS_INTERACT, offset=(0, 60)):
                     break
 
@@ -293,16 +313,21 @@ class PQInteract(UI):
 
     def pq_goto_room(self, target_ship, retry=3):
         """
-        Execute goto target's room routine
-        Try again if target absent in initial load
-        Limit to at most configured 'retry' count
+        导航到目标舰娘的房间。
+
+        先翻页找到目标场景，再进入房间检测舰娘是否出现。
+        若初始加载时目标未出现，会退出重试。
 
         Args:
-            target_ship (str):
-            retry  (int):
+            target_ship (str): 目标舰娘名称
+            retry (int): 最大重试次数
 
         Returns:
-            bool
+            bool: 是否成功进入目标舰娘在场的房间
+
+        Pages:
+            in: 私人宿舍主页
+            out: 私人宿舍房间内（成功时）/ 私人宿舍主页（失败时）
         """
         success = False
         target_title = target_ship.title().replace('_', ' ')

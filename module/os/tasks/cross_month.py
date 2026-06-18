@@ -17,7 +17,7 @@ class OpsiCrossMonth(OSMap):
         now = datetime.now()
         logger.attr('OpsiNextReset', next_reset)
 
-        # Check start time
+        # 检查开始时间
         if next_reset < now:
             raise ScriptError(f'Invalid OpsiNextReset: {next_reset} < {now}')
         if next_reset - now > timedelta(days=3):
@@ -29,9 +29,9 @@ class OpsiCrossMonth(OSMap):
                          'Running OpsiCrossMonth is meaningless, stopped.')
             self.os_cross_month_end()
 
-        # Now we are 10min before OpSi reset
+        # 距离大世界重置还有 10 分钟
         logger.hr('Wait until OpSi reset', level=1)
-        logger.warning('ALAS is now waiting for next OpSi reset, please DO NOT touch the game during wait')
+        logger.warning('AzurPilot is now waiting for next OpSi reset, please DO NOT touch the game during wait')
         while True:
             logger.info(f'Wait until {next_reset}')
             now = datetime.now()
@@ -48,7 +48,6 @@ class OpsiCrossMonth(OSMap):
             return False
 
         self.is_in_opsi_explore = false_func
-        # self.config.task_switched = false_func
         self.config.override(_disable_task_switch=True)
 
         logger.hr('OpSi clear daily', level=1)
@@ -56,19 +55,17 @@ class OpsiCrossMonth(OSMap):
             OpsiGeneral_DoRandomMapEvent=True,
             OpsiFleet_Fleet=self.config.cross_get('OpsiDaily.OpsiFleet.Fleet'),
             OpsiFleet_Submarine=False,
-            # Daily
+            # 每日任务
             OpsiDaily_SkipSirenResearchMission=False,
             OpsiDaily_KeepMissionZone=False,
         )
         count = 0
         empty_trial = 0
         while True:
-            # If unable to receive more dailies, finish them and try again.
+            # 如果无法接收更多每日任务，先完成已有任务再重试
             success = self.os_mission_overview_accept()
-            # Re-init zone name
-            # MISSION_ENTER appear from the right,
-            # need to confirm that the animation has ended,
-            # or it will click on MAP_GOTO_GLOBE
+            # 重新初始化区域名称
+            # MISSION_ENTER 从右侧出现，需确认动画结束，否则会点击到 MAP_GOTO_GLOBE
             self.zone_init()
             if empty_trial >= 5:
                 logger.warning('No Opsi dailies found within 5 min, stop waiting')
@@ -89,12 +86,12 @@ class OpsiCrossMonth(OSMap):
             HOMO_EDGE_DETECT=False,
             STORY_OPTION=0,
             OpsiGeneral_UseLogger=True,
-            # Obscure
+            # 隐秘海域
             OpsiObscure_SkipHazard2Obscure=self.config.cross_get('OpsiObscure.OpsiObscure.SkipHazard2Obscure'),
             OpsiObscure_ForceRun=True,
             OpsiFleet_Fleet=self.config.cross_get('OpsiObscure.OpsiFleet.Fleet'),
             OpsiFleet_Submarine=False,
-            # Abyssal
+            # 深渊海域
             OpsiFleetFilter_Filter=self.config.cross_get('OpsiAbyssal.OpsiFleetFilter.Filter'),
             OpsiAbyssal_ForceRun=True,
         )
@@ -132,7 +129,7 @@ class OpsiCrossMonth(OSMap):
             OpsiGeneral_BuyActionPointLimit=0,
             HOMO_EDGE_DETECT=True,
             STORY_OPTION=-2,
-            # Meowfficer farming
+            # 短猫相接
             OpsiFleet_Fleet=self.config.cross_get('OpsiMeowfficerFarming.OpsiFleet.Fleet'),
             OpsiFleet_Submarine=False,
             OpsiMeowfficerFarming_ActionPointPreserve=0,

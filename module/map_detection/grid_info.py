@@ -2,25 +2,24 @@ from module.base.utils import location2node
 
 
 class GridInfo:
-    """
-    Class that gather basic information of a grid in map_v1.
+    """收集 map_v1 中网格基本信息的类。
 
-    Visit 碧蓝航线WIKI(Chinese Simplified) http://wiki.biligame.com/blhx, to get basic info of a map_v1.
-    For example, visit http://wiki.biligame.com/blhx/7-2, to know more about campaign 7-2,
-    which includes boss point, enemy spawn point.
+    访问碧蓝航线WIKI http://wiki.biligame.com/blhx 可获取地图基本信息。
+    例如访问 http://wiki.biligame.com/blhx/7-2 可了解战役 7-2 的详情，
+    包括 Boss 点位和敌人刷新点。
 
-    A grid contains these unchangeable properties which can known from WIKI.
-    | print_name | property_name            | description             |
+    网格包含以下可从 WIKI 获取的固定属性。
+    | 显示名     | 属性名                   | 说明                    |
     |------------|--------------------------|-------------------------|
-    | ++         | is_land                  | fleet can't go to land  |
-    | --         | is_sea                   | sea                     |
-    | __         | is_submarine_spawn_point | submarine spawn point   |
-    | SP         | is_spawn_point           | fleet may spawns here   |
-    | ME         | may_enemy                | enemy may spawns here   |
-    | MB         | may_boss                 | boss may spawns here    |
-    | MM         | may_mystery              | mystery may spawns here |
-    | MA         | may_ammo                 | fleet can get ammo here |
-    | MS         | may_siren                | Siren/Elite enemy spawn |
+    | ++         | is_land                  | 舰队无法进入陆地        |
+    | --         | is_sea                   | 海洋                    |
+    | __         | is_submarine_spawn_point | 潜艇刷新点              |
+    | SP         | is_spawn_point           | 舰队可能在此刷新        |
+    | ME         | may_enemy                | 敌人可能在此刷新        |
+    | MB         | may_boss                 | Boss 可能在此刷新       |
+    | MM         | may_mystery              | 神秘事件可能在此刷新    |
+    | MA         | may_ammo                 | 舰队可在此获取弹药      |
+    | MS         | may_siren                | 塞壬/精英敌人刷新点     |
     """
     is_os = False
 
@@ -51,18 +50,18 @@ class GridInfo:
     maze_nearby = None  # SelectedGrids
 
     enemy_scale = 0
-    enemy_genre = None  # Light, Main, Carrier, Treasure, Enemy(unknown)
+    enemy_genre = None  # Light, Main, Carrier, Treasure, Enemy(未知)
 
     is_cleared = False
     is_caught_by_siren = False
-    is_carrier = False  # Is carrier spawn in mystery
-    is_movable = False  # Is movable enemy
-    is_mechanism_trigger = False  # Mechanism has triggered
-    is_mechanism_block = False  # Blocked by mechanism
+    is_carrier = False  # 是否为神秘事件中刷新的航母
+    is_movable = False  # 是否为可移动敌人
+    is_mechanism_trigger = False  # 机关是否已触发
+    is_mechanism_block = False  # 是否被机关阻挡
     mechanism_trigger = None  # SelectedGrids
     mechanism_block = None  # SelectedGrids
-    mechanism_wait = 2  # Seconds to wait the mechanism unlock animation
-    is_fortress = False  # Machine fortress
+    mechanism_wait = 2  # 等待机关解锁动画的秒数
+    is_fortress = False  # 机械要塞
     is_flare = False
     is_missile_attack = False
     may_bouncing_enemy = False
@@ -108,7 +107,7 @@ class GridInfo:
         if self.is_siren:
             if not self.enemy_genre:
                 return 'SU'
-            # enemy_genre is like "Siren_xxx"
+            # enemy_genre 的格式类似 "Siren_xxx"
             name = self.enemy_genre[6:]
             if '_' in name:
                 _, _, name = name.partition('_')
@@ -183,16 +182,17 @@ class GridInfo:
         return self.cost < 20
 
     def merge(self, info, mode='normal'):
-        """
+        """将扫描到的网格信息合并到当前网格。
+
         Args:
-            info (GridInfo):
-            mode (str): Scan mode, such as 'init', 'normal', 'carrier', 'movable'
+            info (GridInfo): 待合并的网格信息。
+            mode (str): 扫描模式，如 'init'、'normal'、'carrier'、'movable'。
 
         Returns:
-            bool: If success.
+            bool: 是否合并成功。
         """
-        # Submarines can be anywhere, so no success/failure in merging info
-        # But expects submarines at spawn points to be found at the beginning
+        # 潜艇可能出现在任何位置，因此合并信息没有成功/失败之分
+        # 但期望潜艇在刷新点处能被尽早发现
         if info.is_submarine:
             if self.is_submarine_spawn_point:
                 self.is_submarine = True
@@ -210,8 +210,8 @@ class GridInfo:
                 if info.is_current_fleet:
                     self.is_current_fleet = True
                 if mode == 'init' and info.is_enemy:
-                    # on init scan, we allow a grid to be both is_fleet and is_enemy
-                    # so fixup_submarine_fleet can info
+                    # 在初始扫描时，允许网格同时为 is_fleet 和 is_enemy
+                    # 以便 fixup_submarine_fleet 获取信息
                     pass
                 else:
                     return True
@@ -238,14 +238,14 @@ class GridInfo:
                 return False
         if info.is_enemy:
             if self.is_fortress:
-                # Fortress can be a normal enemy
+                # 要塞可以是普通敌人
                 return True
             elif not self.is_land and (self.may_enemy or self.is_carrier or mode == 'decoy'):
                 self.is_enemy = True
                 if info.enemy_scale and not self.enemy_scale:
                     self.enemy_scale = info.enemy_scale
                 if info.enemy_scale == 3 and self.enemy_scale == 2:
-                    # But allow 3 overwrites 2
+                    # 但允许 3 覆盖 2
                     self.enemy_scale = info.enemy_scale
                 if info.enemy_genre and not (info.enemy_genre == 'Enemy' and self.enemy_genre):
                     self.enemy_genre = info.enemy_genre
@@ -286,16 +286,14 @@ class GridInfo:
             elif self.may_enemy:
                 self.is_enemy = True
                 return True
-            # Allow wrong predictions
+            # 允许错误的预测
             # else:
             #     return False
 
         return True
 
     def wipe_out(self):
-        """
-        Call this method when a fleet step on grid.
-        """
+        """当舰队踏上网格时调用此方法，清除网格上的敌人/事件信息。"""
         self.is_enemy = False
         self.enemy_scale = 0
         self.enemy_genre = None
@@ -312,9 +310,7 @@ class GridInfo:
             self.mechanism_block.set(is_mechanism_block=False)
 
     def reset(self):
-        """
-        Call this method after entering a map.
-        """
+        """进入地图后调用此方法，重置网格所有状态。"""
         self.wipe_out()
         self.is_fleet = False
         self.is_current_fleet = False
@@ -327,10 +323,10 @@ class GridInfo:
         self.may_bouncing_enemy = False
 
     def covered_grid(self):
-        """Relative coordinate of the covered grid.
+        """获取被遮挡网格的相对坐标。
 
         Returns:
-            list[tuple]:
+            list[tuple]: 被遮挡网格的相对坐标列表。
         """
         if self.is_current_fleet:
             return [(0, -1), (0, -2)]
@@ -340,12 +336,13 @@ class GridInfo:
         return []
 
     def distance_to(self, other):
-        """
+        """计算到另一个网格的曼哈顿距离。
+
         Args:
-            other (GridInfo):
+            other (GridInfo): 目标网格。
 
         Returns:
-            int: Manhattan distance
+            int: 曼哈顿距离。
         """
         l1 = self.location
         l2 = other.location

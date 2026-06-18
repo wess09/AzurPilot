@@ -13,11 +13,13 @@ from module.ui_white.assets import POPUP_CANCEL_WHITE, POPUP_CONFIRM_WHITE, POPU
 
 def info_letter_preprocess(image):
     """
+    对信息栏文字图像进行预处理，调整对比度。
+
     Args:
-        image (np.ndarray):
+        image: 输入图像。
 
     Returns:
-        np.ndarray
+        处理后的 uint8 图像。
     """
     image = image.astype(float)
     image = (image - 64) / 0.75
@@ -29,18 +31,18 @@ def info_letter_preprocess(image):
 
 class InfoHandler(ModuleBase):
     """
-    Class to handle all kinds of message.
+    处理游戏中各类弹窗和消息的基类。
     """
     """
-    Info bar
+    信息栏
     """
 
     def info_bar_count(self):
         """
-        Detect info bar by the blue lines on the top of it.
+        通过顶部蓝色线条检测信息栏数量。
 
         Returns:
-            int:
+            检测到的信息栏数量。
         """
         image = self.image_crop(INFO_BAR_AREA, copy=False)
         line = cv2.reduce(image, 1, cv2.REDUCE_AVG)
@@ -49,7 +51,7 @@ class InfoHandler(ModuleBase):
         parameters = {
             'height': 235,
             'prominence': 50,
-            # Blue lines are in a interval of 56
+            # 蓝色线条间距约为 56 像素
             'distance': 50,
         }
         peaks, _ = signal.find_peaks(line, **parameters)
@@ -80,14 +82,14 @@ class InfoHandler(ModuleBase):
             if self.handle_info_bar():
                 handled = True
 
-            # End
+            # 结束条件
             if timeout.reached():
                 break
 
         return handled
 
     """
-    Popup info
+    弹窗信息
     """
     _popup_offset = (3, 30)
 
@@ -150,11 +152,13 @@ class InfoHandler(ModuleBase):
 
     def handle_urgent_commission(self, drop=None):
         """
+        处理紧急委托弹窗。
+
         Args:
-            drop (DropImage):
+            drop: 掉落图像记录对象，可为 None。
 
         Returns:
-            bool:
+            是否检测到并处理了紧急委托弹窗。
         """
         appear = self.appear(GET_MISSION, offset=True, interval=2)
         if appear:
@@ -165,15 +169,15 @@ class InfoHandler(ModuleBase):
             self.device.click(GET_MISSION)
             self._hot_fix_check_wait.reset()
 
-        # Check game client existence after 3s to 6s
-        # Hot fixes will kill AL if you clicked the confirm button
+        # 在点击确认按钮后 3~6 秒内检查游戏客户端是否存活
+        # 热更新可能会导致游戏进程被杀死
         if self._hot_fix_check_wait.reached():
             self._hot_fix_check_wait.clear()
         if self._hot_fix_check_wait.started() and 3 <= self._hot_fix_check_wait.current_time() <= 6:
             if not self.device.app_is_running():
                 logger.error('Detected hot fixes from game server, game died')
                 raise GameNotRunningError
-            # Use template match without color match due to maintenance popup
+            # 使用模板匹配（不含颜色匹配），因为维护公告弹窗颜色不同
             if self.appear(LOGIN_CHECK, offset=(30, 30)):
                 logger.warning('Account logged out, '
                                'probably because account kicked by server maintenance or another log in')
@@ -187,7 +191,7 @@ class InfoHandler(ModuleBase):
 
         result = self.handle_popup_confirm('IGNORE_LOW_EMOTION')
         if result:
-            # Avoid clicking AUTO_SEARCH_MAP_OPTION_OFF
+            # 避免误点 AUTO_SEARCH_MAP_OPTION_OFF
             self.interval_reset(AUTO_SEARCH_MAP_OPTION_OFF)
         return result
 
@@ -200,47 +204,43 @@ class InfoHandler(ModuleBase):
             return False
 
         if self.appear(USE_DATA_KEY, offset=(20, 20)):
-            skip_first_screenshot = True
-            while 1:
-                if skip_first_screenshot:
-                    skip_first_screenshot = False
-                else:
-                    self.device.screenshot()
-
+            # enable USE_DATA_KEY_NOTIFIED
+            for _ in self.loop():
                 enabled = self.image_color_count(
                     USE_DATA_KEY_NOTIFIED, color=(140, 207, 66), threshold=180, count=10)
                 if enabled:
                     break
-
                 if self.appear(USE_DATA_KEY, offset=(20, 20), interval=5):
                     self.device.click(USE_DATA_KEY_NOTIFIED)
                     continue
 
-            self.config.USE_DATA_KEY = False  # Reset on success as task can be stopped before can be recovered
+            self.config.USE_DATA_KEY = False  # 成功后重置，因为任务可能在恢复前被停止
             return self.handle_popup_confirm('USE_DATA_KEY')
 
         return False
 
     def handle_vote_popup(self):
         """
-        Dismiss vote pop-ups.
+        关闭投票弹窗。
 
         Returns:
-            bool:
+            是否处理了投票弹窗。
         """
-        # Vote popups are removed in 2023
+        # 投票弹窗已于 2023 年移除
         # return self.appear_then_click(VOTE_CANCEL, offset=(20, 20), interval=2)
         return False
 
     def handle_get_skin(self):
         """
+        处理获取皮肤弹窗。
+
         Returns:
-            bool:
+            是否处理了皮肤弹窗。
         """
         return self.appear_then_click(GET_SKIN, offset=(20, 20), interval=2)
 
     """
-    Guild popup info
+    大舰队弹窗
     """
 
     def handle_guild_popup_confirm(self):
@@ -260,7 +260,7 @@ class InfoHandler(ModuleBase):
         return False
 
     """
-    Mission popup info
+    任务弹窗
     """
 
     def handle_mission_popup_go(self):
@@ -280,10 +280,10 @@ class InfoHandler(ModuleBase):
         return False
 
     """
-    Story
+    剧情
     """
     story_popup_timeout = Timer(10, count=20)
-    map_has_clear_mode = False  # Will be override in fast_forward.py
+    map_has_clear_mode = False  # 会在 fast_forward.py 中被覆盖
     map_is_threat_safe = False
 
     _story_confirm = Timer(0.5, count=1)
@@ -293,12 +293,14 @@ class InfoHandler(ModuleBase):
 
     def _story_option_buttons(self):
         """
+        检测剧情选项按钮（旧版样式）。
+
         Returns:
-            list[Button]: List of story options, from upper to bottom. If no option found, return an empty list.
+            从上到下排列的剧情选项按钮列表，未找到则返回空列表。
         """
-        # Area to detect the options, should include at least 3 options.
+        # 选项检测区域，至少需要包含 3 个选项
         story_option_area = (730, 188, 1140, 480)
-        # Background color of the left part of the option.
+        # 选项左侧部分的背景颜色
         story_option_color = (99, 121, 156)
         image = color_similarity_2d(self.image_crop(story_option_area, copy=False), color=story_option_color) > 225
         x_count = np.where(np.sum(image, axis=0) > 40)[0]
@@ -307,14 +309,12 @@ class InfoHandler(ModuleBase):
         x_min, x_max = np.min(x_count), np.max(x_count)
 
         parameters = {
-            # Option is 300`320px x 50~52px.
+            # 选项尺寸约为 300~320px x 50~52px
             'height': 280,
             'width': 45,
             'distance': 50,
-            # Chooses the relative height at which the peak width is measured as a percentage of its prominence.
-            # 1.0 calculates the width of the peak at its lowest contour line,
-            # while 0.5 evaluates at half the prominence height.
-            # Must be at least 0.
+            # 选择峰值宽度测量的相对高度（占突出度的百分比）
+            # 1.0 在最低等高线处计算，0.5 在突出度一半处计算，必须 >= 0
             'rel_height': 5,
         }
         y_count = np.sum(image, axis=1)
@@ -333,10 +333,12 @@ class InfoHandler(ModuleBase):
 
     def _story_option_buttons_2(self):
         """
+        检测剧情选项按钮（新版大白色选项样式）。
+
         Returns:
-            list[Button]: List of story options, from upper to bottom. If no option found, return an empty list.
+            从上到下排列的剧情选项按钮列表，未找到则返回空列表。
         """
-        # Area to detect the options, should include at least 3 options.
+        # 选项检测区域，至少需要包含 3 个选项
         story_option_area = (330, 135, 980, 555)
         story_detect_area = (330, 135, 355, 555)
         story_option_color = (247, 247, 247)
@@ -348,15 +350,13 @@ class InfoHandler(ModuleBase):
         line[line >= 200] = 255
 
         parameters = {
-            # Option is 300`320px x 50~52px.
+            # 选项尺寸约为 300~320px x 50~52px
             'height': 200,
             'width': 40,
             'distance': 40,
-            # Chooses the relative height at which the peak width is measured as a percentage of its prominence.
-            # 1.0 calculates the width of the peak at its lowest contour line,
-            # while 0.5 evaluates at half the prominence height.
-            # Must be at least 0.
-            # rel_height is about 240 / 48
+            # 选择峰值宽度测量的相对高度（占突出度的百分比）
+            # 1.0 在最低等高线处计算，0.5 在突出度一半处计算，必须 >= 0
+            # rel_height 约为 240 / 48
             'rel_height': 4,
         }
         peaks, properties = signal.find_peaks(line, **parameters)
@@ -387,13 +387,13 @@ class InfoHandler(ModuleBase):
 
     def _identify_siren_device_option(self, options):
         """
-        Identify siren device options by the fixed 5-option sequence.
-        
+        根据固定的 5 选项序列识别塞壬研究装置选项。
+
         Args:
-            options (list[Button]): List of detected story options
-            
+            options: 检测到的剧情选项按钮列表。
+
         Returns:
-            Button: The button to click, or None if not a siren device
+            需要点击的按钮，若非塞壬研究装置则返回 None。
         """
         if len(options) != 5:
             return None
@@ -428,8 +428,10 @@ class InfoHandler(ModuleBase):
 
     def story_skip(self, drop=None):
         """
-        2023.09.14 Story options changed with big white options in the middle,
-            Check STORY_SKIP_3 but click the original STORY_SKIP.
+        跳过剧情对话。
+
+        2023.09.14 剧情选项变更为中间大白色选项样式，
+        通过 STORY_SKIP_3 检测但点击原始 STORY_SKIP。
         """
         if self.story_popup_timeout.started() and not self.story_popup_timeout.reached():
             if self.handle_popup_confirm('STORY_SKIP'):
@@ -475,9 +477,9 @@ class InfoHandler(ModuleBase):
                 self._story_option_record = options_count
                 self._story_option_confirm.reset()
         if self.appear(STORY_SKIP_3, offset=(20, 20), interval=2):
-            # Confirm it's story
-            # When story play speed is Very Fast, Alas clicked story skip but story disappeared
-            # This click will interrupt auto search
+            # 确认是剧情画面
+            # 当剧情播放速度为"非常快"时，AzurPilot 可能点击了跳过但剧情已消失
+            # 此点击会打断自动搜索
             self.interval_reset([STORY_SKIP_3])
             if self._story_confirm.reached():
                 if drop:
@@ -506,10 +508,10 @@ class InfoHandler(ModuleBase):
         self.interval_clear(STORY_LETTERS_ONLY)
 
     def handle_story_skip(self, drop=None):
-        # Rerun events in clear mode but still have stories.
-        # No stories in clear mode
-        # but B3/D3 still have stories til threat safe
-        # No more stories at threat safe
+        # 通关后重打活动仍可能有剧情
+        # 通关模式下通常无剧情
+        # 但 B3/D3 在威胁等级变为安全前仍有剧情
+        # 威胁安全后不再有剧情
         if self.map_is_threat_safe and self.config.Campaign_Event != 'event_20201012_cn':
             return False
 
@@ -537,13 +539,15 @@ class InfoHandler(ModuleBase):
         self.ensure_no_story()
 
     """
-    Game tips
+    游戏提示
     """
 
     def handle_game_tips(self):
         """
+        处理游戏提示弹窗。
+
         Returns:
-            bool: If handled
+            是否处理了游戏提示。
         """
         if self.appear(GAME_TIPS, offset=(20, 20), interval=2) and self.image_color_count(
                 GAME_TIPS.button, color=(40, 40, 40), threshold=240, count=50):
@@ -561,27 +565,27 @@ class InfoHandler(ModuleBase):
         return False
 
     """
-    Manjuu loading
+    小黄鸡加载动画
     """
 
     def manjuu_count(self):
         """
-        detect manjuu count by template matching
+        通过模板匹配检测小黄鸡数量。
+
         Returns:
-            int: Number of manjuu
+            检测到的小黄鸡数量。
         """
         image = self.image_crop(MANJUU_AREA, copy=False)
-        # Default 0.85 will not work for manjuu, because the face will be stretched
-        # and shrinked, so the template will not match.
-        # Use 0.8 to match the deformed face.
+        # 默认阈值 0.85 对小黄鸡不适用，因为其面部会被拉伸和压缩
+        # 导致模板无法匹配，使用 0.8 来匹配变形后的面部
         buttons = TEMPLATE_MANJUU.match_multi(image, similarity=0.8, name='INFO_MANJUU')
         return len(buttons)
 
     def wait_until_manjuu_disappear(self):
         """
-        Wait until manjuu loading disappear.
+        等待小黄鸡加载动画消失。
         """
-        # Abuse of notation. Template do not have readable name, so add string here.
+        # 模板对象没有可读名称，这里手动添加字符串用于卡死检测记录
         self.device.stuck_record_add('TEMPLATE_MANJUU')
         timer = Timer(1.5, count=3).start()
         while 1:
@@ -595,9 +599,10 @@ class InfoHandler(ModuleBase):
     
     def handle_manjuu(self):
         """
-        Handle manjuu loading.
+        处理小黄鸡加载动画。
+
         Returns:
-            bool: If handled
+            是否检测到并处理了小黄鸡加载。
         """
         count = self.manjuu_count()
         if count > 2:

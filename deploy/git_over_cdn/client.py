@@ -16,13 +16,10 @@ TEMPLATE_FILE = './config/template.yaml'
 
 
 class cached_property(Generic[T]):
-    """
-    cached-property from https://github.com/pydanny/cached-property
-    Add typing support
+    """带类型支持的缓存属性描述符。
 
-    A property that is only computed once per instance and then replaces itself
-    with an ordinary attribute. Deleting the attribute resets the property.
-    Source: https://github.com/bottlepy/bottle/commit/fa7733e075da0d790d809aa3d2f53071897e6f76
+    属性只在首次访问时计算一次，之后替换为普通属性。
+    删除属性后会重新计算。
     """
 
     def __init__(self, func: Callable[..., T]):
@@ -50,10 +47,14 @@ class GitOverCdnClient:
     logger = PrintLogger()
 
     def __init__(self, url, folder, source='origin', branch='master', git='git'):
-        """
+        """初始化 Git over CDN 客户端。
+
         Args:
-            url (str | list[str]): http://127.0.0.1:22251/pack/LmeSzinc_AzurLaneAutoScript_master/
-            folder: D:/AzurLaneAutoScript
+            url (str | list[str]): CDN 服务地址，如 'http://127.0.0.1:22251/pack/...'。
+            folder: 本地仓库路径，如 'D:/AzurLaneAutoScript'。
+            source: 远程源名称，默认 'origin'。
+            branch: 分支名称，默认 'master'。
+            git: git 可执行文件路径。
         """
         if isinstance(url, str):
             self.urls = [url.strip('/')]
@@ -152,11 +153,11 @@ class GitOverCdnClient:
                     os.replace(tmp, out)
                 return True
             except zipfile.BadZipFile as e:
-                # File is not a zip file
+                # 文件不是有效的 zip 文件
                 self.logger.error(e)
                 return False
             except KeyError as e:
-                # There is no item named 'xxx.idx' in the archive
+                # 归档中不存在该文件
                 self.logger.error(e)
                 return False
             except Exception as e:
@@ -186,15 +187,15 @@ class GitOverCdnClient:
         return False
 
     def git_command(self, *args, timeout=300):
-        """
-        Execute ADB commands in a subprocess,
-        usually to be used when pulling or pushing large files.
+        """在子进程中执行 git 命令。
+
+        通常用于拉取或推送大文件。
 
         Args:
-            timeout (int):
+            timeout (int): 超时秒数，默认 300。
 
         Returns:
-            str:
+            str: 命令的标准输出。
         """
         os.chdir(self.folder)
         cmd = list(map(str, args))
@@ -211,10 +212,8 @@ class GitOverCdnClient:
         return stdout.decode()
 
     def git_reset(self):
-        """
-        git reset --hard <commit>
-        """
-        # Remove git lock
+        """执行 git reset --hard 到远程分支。"""
+        # 移除 git 锁文件
         for lock_file in [
             './.git/index.lock',
             './.git/HEAD.lock',
@@ -226,11 +225,10 @@ class GitOverCdnClient:
         self.git_command('reset', '--hard', f'{self.source}/{self.branch}')
 
     def get_status(self):
-        """
+        """获取仓库状态。
+
         Returns:
-            str: 'uptodate' if repo is up-to-date
-                'behind' if repos is not up-to-date
-                'failed' if failed
+            str: 'uptodate' 表示已是最新，'behind' 表示落后于远程，'failed' 表示获取失败。
         """
         _ = self.current_commit
         _ = self.latest_commit
@@ -247,9 +245,10 @@ class GitOverCdnClient:
         return 'behind'
 
     def update(self):
-        """
+        """通过 CDN 更新仓库。
+
         Returns:
-            bool: If repo is up-to-date
+            bool: 仓库是否已是最新。
         """
         _ = self.current_commit
         _ = self.latest_commit

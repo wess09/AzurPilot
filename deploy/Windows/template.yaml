@@ -1,10 +1,10 @@
 Deploy:
   Git:
-    # URL of AzurLaneAutoScript repository
+    # URL of AzurPilot repository
     # [CN user] Use 'cn' to get update from git-over-cdn service
     # [Other] Use 'global' to get update from https://github.com/LmeSzinc/StarRailCopilot
     Repository: 'global'
-    # Branch of Alas
+    # Branch of AzurPilot
     # [Developer] Use 'dev', 'app', etc, to try new features
     # [Other] Use 'master', the stable branch
     Branch: 'master'
@@ -19,7 +19,7 @@ Deploy:
     # [In most cases] Use true
     # [Other] Use false to when connected to an untrusted network
     SSLVerify: true
-    # Update Alas at startup
+    # Update AzurPilot at startup
     # [In most cases] Use true
     AutoUpdate: true
 
@@ -82,7 +82,7 @@ Deploy:
     # [Default] 5
     CheckUpdateInterval: 5
     # Scheduled restart time
-    # If there are updates, Alas will automatically restart and update at this time every day
+    # If there are updates, AzurPilot will automatically restart and update at this time every day
     # and run all alas instances that running before restarted
     # [Disable] null
     # [Default] 03:50
@@ -131,10 +131,10 @@ Deploy:
     Theme: default
     # Follow system DPI scaling
     # [In most cases] true
-    # [In few cases] false to make Alas smaller, if you have a low resolution but high DPI scaling.
+    # [In few cases] false to make AzurPilot smaller, if you have a low resolution but high DPI scaling.
     DpiScaling: true
     # --key. Password of web ui
-    # Useful when expose Alas to the public network
+    # Useful when expose AzurPilot to the public network
     Password: null
     # --cdn. Use jsdelivr cdn for pywebio static files (css, js).
     # 'true' for jsdelivr cdn

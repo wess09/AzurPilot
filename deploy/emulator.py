@@ -17,13 +17,14 @@ class VirtualBoxEmulator:
     UNINSTALL_REG_2 = "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall"
 
     def __init__(self, name, root_path, adb_path, vbox_path, vbox_name):
-        """
+        """初始化基于 VirtualBox 的模拟器配置。
+
         Args:
-            name (str): Emulator name in windows uninstall list.
-            root_path (str): Relative path from uninstall.exe to emulator installation folder.
-            adb_path (str, list[str]): Relative path to adb.exe. List of str if there are multiple adb in emulator.
-            vbox_path (str): Relative path to virtual box folder.
-            vbox_name (str): Regular Expression to match the name of .vbox file.
+            name (str): 模拟器在 Windows 卸载列表中的名称。
+            root_path (str): 从 uninstall.exe 到模拟器安装目录的相对路径。
+            adb_path (str, list[str]): adb.exe 的相对路径，多个时传列表。
+            vbox_path (str): VirtualBox 虚拟机文件夹的相对路径。
+            vbox_name (str): 匹配 .vbox 文件名的正则表达式。
         """
         self.name = name
         self.root_path = root_path
@@ -33,12 +34,13 @@ class VirtualBoxEmulator:
 
     @cached_property
     def root(self):
-        """
+        """获取模拟器的根安装目录。
+
         Returns:
-            str: Root installation folder of emulator.
+            str: 模拟器根安装目录路径。
 
         Raises:
-            FileNotFoundError: If emulator not installed.
+            FileNotFoundError: 模拟器未安装。
         """
         if self.name == 'LDPlayer4':
             root = self.get_install_dir_from_reg('SOFTWARE\\leidian\\ldplayer', 'InstallDir')
@@ -62,13 +64,14 @@ class VirtualBoxEmulator:
         return root
 
     def get_install_dir_from_reg(self, path, key):
-        """
+        """从注册表获取模拟器安装目录。
+
         Args:
-            path (str): f'SOFTWARE\\leidian\\ldplayer'
-            key (str): 'InstallDir'
+            path (str): 注册表路径，如 'SOFTWARE\\leidian\\ldplayer'。
+            key (str): 注册表键名，如 'InstallDir'。
 
         Returns:
-            str: Installation dir or None
+            str: 安装目录路径，未找到时返回 None。
         """
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0) as reg:
@@ -106,9 +109,10 @@ class VirtualBoxEmulator:
 
     @cached_property
     def serial(self):
-        """
+        """从虚拟机配置文件中解析 ADB 连接端口。
+
         Returns:
-            list[str]: Such as ['127.0.0.1:62001', '127.0.0.1:62025']
+            list[str]: ADB 连接地址列表，如 ['127.0.0.1:62001', '127.0.0.1:62025']。
         """
         vbox = []
         for path, folders, files in os.walk(os.path.join(self.root, self.vbox_path)):
@@ -129,12 +133,12 @@ class VirtualBoxEmulator:
         return serial
 
     def adb_replace(self, adb):
-        """
-        Backup the adb in emulator folder to xxx.bak, replace it with your adb.
-        Need to call `adb kill-server` before replacing.
+        """将模拟器目录中的 ADB 备份为 xxx.bak 并替换为指定的 ADB。
+
+        替换前需先调用 `adb kill-server`。
 
         Args:
-            adb (str): Absolute path to adb.exe
+            adb (str): adb.exe 的绝对路径。
         """
         for ori, bak in zip(self.adb_binary, self.adb_backup):
             logger.info(f'Replacing {ori}')
@@ -153,7 +157,7 @@ class VirtualBoxEmulator:
                 logger.warning(f'Failed to replace {ori}, {e}')
 
     def adb_recover(self):
-        """ Revert adb replacement """
+        """恢复 ADB 替换，将备份文件还原到原始位置。"""
         for ori in self.adb_binary:
             logger.info(f'Recovering {ori}')
             bak = f'{ori}.bak'
@@ -167,7 +171,7 @@ class VirtualBoxEmulator:
                 logger.info(f'Not exists {bak}, skip')
 
 
-# NoxPlayer 夜神模拟器
+# 夜神模拟器
 nox_player = VirtualBoxEmulator(
     name="Nox",
     root_path=".",
@@ -182,7 +186,7 @@ nox_player_64 = VirtualBoxEmulator(
     vbox_path="./BignoxVMS",
     vbox_name='.*.vbox$'
 )
-# LDPlayer 雷电模拟器
+# 雷电模拟器
 ld_player = VirtualBoxEmulator(
     name="LDPlayer",
     root_path=".",
@@ -204,7 +208,7 @@ ld_player_9 = VirtualBoxEmulator(
     vbox_path="./vms",
     vbox_name='.*.vbox$'
 )
-# MemuPlayer 逍遥模拟器
+# 逍遥模拟器
 memu_player = VirtualBoxEmulator(
     name="MEmu",
     root_path="../",
@@ -212,7 +216,7 @@ memu_player = VirtualBoxEmulator(
     vbox_path="./MemuHyperv VMs",
     vbox_name='.*.memu$'
 )
-# MumuPlayer MuMu模拟器
+# MuMu 模拟器
 mumu_player = VirtualBoxEmulator(
     name="Nemu",
     root_path=".",
@@ -237,10 +241,15 @@ class EmulatorConnect:
         self.adb_binary = adb
 
     def _execute(self, cmd, timeout=10, output=True):
-        """
+        """执行命令行命令。
+
+        Args:
+            cmd: 命令列表。
+            timeout: 超时秒数，默认 10。
+            output: 是否返回标准输出。
+
         Returns:
-            Object: Stdout(str) of cmd if output,
-                    return code(int) of cmd if not output.
+            str 或 int: output=True 时返回标准输出字符串，否则返回返回码。
         """
         if not output:
             cmd.extend(['>nul', '2>nul'])
@@ -261,9 +270,10 @@ class EmulatorConnect:
 
     @cached_property
     def emulators(self):
-        """
+        """获取当前计算机上已安装的模拟器列表。
+
         Returns:
-            list: List of installed emulators on current computer.
+            list: 已安装的 VirtualBoxEmulator 实例列表。
         """
         emulators = []
         for emulator in self.SUPPORTED_EMULATORS:
@@ -278,9 +288,10 @@ class EmulatorConnect:
         return emulators
 
     def devices(self):
-        """
+        """获取当前 ADB 已连接的设备列表。
+
         Returns:
-            list[str]: Connected devices in adb
+            list[str]: 已连接设备的序列号列表。
         """
         result = self._execute([self.adb_binary, 'devices']).decode()
         devices = []
@@ -295,19 +306,12 @@ class EmulatorConnect:
         return devices
 
     def adb_kill(self):
-        # self._execute([self.adb_binary, 'devices'])
-        # self._execute([self.adb_binary, 'kill-server'])
-
-        # Just kill it, because some adb don't obey.
+        # 直接杀进程，因为部分 ADB 不遵守 kill-server 协议
         logger.info('Kill all known ADB')
         for exe in [
-            # Most emulator use this
             'adb.exe',
-            # NoxPlayer 夜神模拟器
             'nox_adb.exe',
-            # MumuPlayer MuMu模拟器
             'adb_server.exe',
-            # Bluestacks 蓝叠模拟器
             'HD-Adb.exe'
         ]:
             ret_code = self._execute(['taskkill', '/f', '/im', exe], output=False)
@@ -320,9 +324,10 @@ class EmulatorConnect:
 
     @cached_property
     def serial(self):
-        """
+        """获取当前计算机上所有可用的模拟器序列号。
+
         Returns:
-            list[str]: All available emulator serial on current computer.
+            list[str]: 所有可用的模拟器 ADB 序列号。
         """
         serial = ['127.0.0.1:7555']
         for emulator in self.emulators:
@@ -336,7 +341,7 @@ class EmulatorConnect:
         return serial
 
     def brute_force_connect(self):
-        """ Brute-force connect all available emulator instances """
+        """暴力连接所有可用的模拟器实例。"""
         self.devices()
 
         async def connect():
@@ -349,14 +354,13 @@ class EmulatorConnect:
         return self.devices()
 
     def adb_replace(self, adb=None):
-        """
-        Different version of ADB will kill each other when starting.
-        Chinese emulators (NoxPlayer, LDPlayer, MemuPlayer, MuMuPlayer) use their own adb,
-        instead of the one in system PATH, so when they start they kill the adb.exe Alas is using.
-        Replacing the ADB in emulator is the simplest way to solve this.
+        """替换模拟器中的 ADB 以避免版本冲突。
+
+        不同版本的 ADB 启动时会互相终止。国产模拟器使用自带的 ADB，
+        启动时会杀死 AzurPilot 正在使用的 adb.exe。替换模拟器中的 ADB 是最简单的解决方案。
 
         Args:
-            adb (str): Absolute path to adb.exe
+            adb (str): adb.exe 的绝对路径。
         """
         self.adb_kill()
         for emulator in self.emulators:
@@ -364,7 +368,7 @@ class EmulatorConnect:
         self.brute_force_connect()
 
     def adb_recover(self):
-        """ Revert adb replacement """
+        """恢复 ADB 替换，将所有模拟器的 ADB 还原为原始版本。"""
         self.adb_kill()
         for emulator in self.emulators:
             emulator.adb_recover()

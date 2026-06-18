@@ -7,13 +7,15 @@ from module.webui.utils import Icon, WebIOTaskHandler, set_localstorage
 
 
 class Base:
+    """WebUI 应用的基础类，管理生命周期和任务调度。"""
+
     def __init__(self) -> None:
         self.alive = True
-        # Whether window is visible
+        # 窗口是否可见（切换页面时置为 False 阻止旧页面的任务继续执行）
         self.visible = True
-        # Device type
+        # 是否为移动端设备
         self.is_mobile = info.user_agent.is_mobile
-        # Task handler
+        # 任务处理器，用于管理后台异步任务
         self.task_handler = WebIOTaskHandler()
         defer_call(self.stop)
 
@@ -23,6 +25,8 @@ class Base:
 
 
 class Frame(Base):
+    """WebUI 页面框架，管理侧边栏、菜单和内容区域的切换与导航。"""
+
     def __init__(self) -> None:
         super().__init__()
         self.page = "Home"
@@ -30,10 +34,13 @@ class Frame(Base):
 
     def init_aside(self, expand_menu: bool = True, name: str = None) -> None:
         """
-        Call this in aside button callback function.
+        侧边栏按钮点击时的初始化回调。
+
+        清空菜单区域，展开菜单，并高亮指定按钮。
+
         Args:
-            expand_menu: expand menu
-            name: button name(label) to be highlight
+            expand_menu: 是否展开菜单。
+            name: 需要高亮的按钮名称（标签）。
         """
         self.visible = True
         self.task_handler.remove_pending_task()
@@ -46,10 +53,13 @@ class Frame(Base):
 
     def init_menu(self, collapse_menu: bool = True, name: str = None) -> None:
         """
-        Call this in menu button callback function.
+        菜单按钮点击时的初始化回调。
+
+        清空内容区域，折叠菜单，并高亮指定按钮。
+
         Args:
-            collapse_menu: collapse menu
-            name: button name(label) to be highlight
+            collapse_menu: 是否折叠菜单。
+            name: 需要高亮的按钮名称（标签）。
         """
         self.visible = True
         self.page = name
@@ -127,8 +137,6 @@ class Frame(Base):
         )
         if js:
             run_js(js)
-        # for key in keys:
-        #     pin_update(key, valid_status=False)
 
     @staticmethod
     def pin_remove_invalid_mark(keys) -> None:
@@ -143,5 +151,3 @@ class Frame(Base):
         )
         if js:
             run_js(js)
-        # for key in keys:
-        # pin_update(key, valid_status=0)

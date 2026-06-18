@@ -25,8 +25,10 @@ TASK_COUNTER_OCR = DigitCounter([], letter=(128, 128, 128), name='TASK_COUNTER_O
 class IslandSeasonTaskHandler(IslandUI):
     def _get_icons(self):
         """
+        获取季节任务奖励图标的位置。
+
         Returns:
-            np.array: [[x1, y1], [x2, y2]], location of the expbook icon upper left corner.
+            np.array: 图标左上角坐标数组 [[x1, y1], [x2, y2]]
         """
         area = (43, 298, 875, 604)
         image = self.image_crop(area, copy=True)
@@ -37,9 +39,10 @@ class IslandSeasonTaskHandler(IslandUI):
 
     def wait_until_icon_appear(self, skip_first_screenshot=False):
         """
-        After entering season task page,
-        tasks are not loaded that fast,
-        wait until any bar icon appears.
+        等待季节任务页面加载完成。
+
+        进入季节任务页面后任务不会立即加载，
+        需要等待奖励图标出现才表示页面加载完毕。
         """
         confirm_timer = Timer(1.5, count=3).start()
         for _ in self.loop(skip_first=skip_first_screenshot):
@@ -58,8 +61,10 @@ class IslandSeasonTaskHandler(IslandUI):
 
     def task_icon_grid(self):
         """
+        根据奖励图标位置计算任务网格。
+
         Returns:
-            ButtonGrid:
+            ButtonGrid: 任务按钮网格
         """
         icons = self._get_icons()
         count = len(icons)
@@ -70,7 +75,7 @@ class IslandSeasonTaskHandler(IslandUI):
             row = 2
         elif count == 1:
             y_list = icons[:, 1]
-            # -18 to adjust the icon position to grid position
+            # -18 用于将图标位置调整到网格位置
             origin_y = y_list[0] - 18 + 178
             delta_y = 229
             row = 1
@@ -118,10 +123,10 @@ class IslandSeasonTaskHandler(IslandUI):
 
     def predict(self, grid: ButtonGrid):
         """
-        Predicts all tasks in the given grid.
+        预测给定网格中的所有季节任务。
 
         Args:
-            grid (ButtonGrid):
+            grid (ButtonGrid): 任务按钮网格
         """
         name_area = (30, 18, 250, 52)
         counter_area = (270, 20, 360, 50)
@@ -145,12 +150,10 @@ class IslandSeasonTaskHandler(IslandUI):
 
     def scan_all(self):
         """
-        Scans all seasonal tasks on the island season page.
+        扫描岛屿季节页面上的所有季节任务。
 
         Returns:
-            dict: {
-                recipe_id: (item_id, current, total)
-            }
+            dict: {task_id: (item_id, current, total)} 未完成任务字典
         """
         self.wait_until_icon_appear()
         logger.hr('Scanning seasonal tasks')
@@ -174,14 +177,14 @@ class IslandSeasonTaskHandler(IslandUI):
 
     def run(self):
         """
+        运行季节任务扫描流程。
+
         Pages:
-            in: Any page
+            in: 任意页面
             out: page_island
 
         Returns:
-            dict: {
-                recipe_id: (item_id, current, total)
-            }
+            dict: {task_id: (item_id, current, total)} 任务进度字典
         """
         self.ui_ensure(page_island_season)
         self.island_season_bottom_navbar_ensure(left=3)

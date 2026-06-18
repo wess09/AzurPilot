@@ -16,11 +16,13 @@ class RaidScuttleCombat(RaidCombat):
 
     def handle_battle_status(self, drop=None):
         """
+        处理弃船突袭的战斗结算画面，优先识别弃船专用结算按钮。
+
         Args:
-            drop (DropImage):
+            drop (DropImage): 掉落物图像处理器。
 
         Returns:
-            bool:
+            bool: 是否成功识别并处理了战斗结算。
         """
         if self.is_combat_executing():
             return False
@@ -47,8 +49,10 @@ class RaidScuttleCombat(RaidCombat):
 
     def handle_exp_info(self):
         """
+        处理弃船突袭的经验结算画面。
+
         Returns:
-            bool:
+            bool: 是否成功识别并处理了经验结算。
         """
         if self.is_combat_executing():
             return False
@@ -80,16 +84,18 @@ class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
 
     def raid_enter_preparation(self, mode, raid, skip_first_screenshot=True):
         """
+        进入弃船突袭的战斗准备画面，从突袭页面导航到编队选择。
+
         Args:
-            mode:
-            raid:
-            skip_first_screenshot:
+            mode (str): 难度模式。
+            raid (str): 突袭活动名称。
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Pages:
             in: page_raid
             out: BATTLE_PREPARATION
         """
-        # UI ensure
+        # 确保进入正确的 UI 页面
         self.device.stuck_record_clear()
         self.device.click_record_clear()
         if not self.is_raid_rpg():
@@ -108,11 +114,20 @@ class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
                 self.device.click(entrance)
                 continue
 
-            # End
+            # 结束条件：点击编队准备按钮
             if self.appear_then_click(RAID_FLEET_PREPARATION, offset=(20, 20), interval=5):
                 break
 
     def get_common_rarity_ship(self, index='all'):
+        """
+        从船坞中获取普通稀度的舰船，用于弃船突袭替换。
+
+        Args:
+            index (str): 舰船类型过滤，'all'、'vanguard' 或 'main'。
+
+        Returns:
+            list: 符合条件的舰船列表。
+        """
         self.dock_favourite_set(False, wait_loading=False)
         self.dock_sort_method_dsc_set(False, wait_loading=False)
         self.dock_filter_set(
@@ -168,10 +183,12 @@ class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
 
     def run(self, name='', mode='', total=0):
         """
+        运行弃船突袭主循环，战斗结束后自动替换普通稀度舰船。
+
         Args:
-            name (str): Raid name, such as 'raid_20200624'
-            mode (str): Raid mode, such as 'hard', 'normal', 'easy'
-            total (int): Total run count
+            name (str): 突袭活动名称，如 'raid_20200624'。
+            mode (str): 突袭难度，如 'hard'、'normal'、'easy'。
+            total (int): 总运行次数。
         """
         name = name if name else self.config.Campaign_Event
         mode = mode if mode else self.config.Raid_Mode
@@ -181,7 +198,7 @@ class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
         while 1:
             super().run(name=name, mode=mode, total=total)
 
-            # End
+            # 正常结束后替换舰船
             if self.triggered_normal_end:
                 self.raid_enter_preparation(mode=mode, raid=name, skip_first_screenshot=False)
                 success = True
@@ -193,7 +210,7 @@ class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
                 self.enter_map_cancel(skip_first_screenshot=False)
                 self.triggered_normal_end = False
 
-                # Scheduler
+                # 检查调度器是否切换了任务
                 if self.config.task_switched():
                     self.campaign.ensure_auto_search_exit()
                     self.config.task_stop()

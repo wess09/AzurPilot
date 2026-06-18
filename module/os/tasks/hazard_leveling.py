@@ -115,7 +115,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 _previous_coins_ap_insufficient = True
                 notify_content = f"作战补给凭证 {yellow_coins} 低于保留值 {cl1_preserve}\n行动力 {self._action_point_total} 不足 (需要 {meow_ap_preserve})\n任务已推迟"
                 self.notify_push(
-                    title="[Alas] 智能调度 - 警告",
+                    title="[AzurPilot] 智能调度 - 警告",
                     content=notify_content,
                 )
             else:
@@ -217,7 +217,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if virtual_asset_preserve > 0:
                 notify_content += f"\n虚拟资产: {virtual_asset:.0f} (保留值 {virtual_asset_preserve})"
             self.notify_push(
-                title="[Alas info] 智能调度 - 切换至凭证补充任务",
+                title="[AzurPilot info] 智能调度 - 切换至凭证补充任务",
                 content=notify_content,
             )
 
@@ -250,7 +250,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if not _previous_ap_insufficient:
                 _previous_ap_insufficient = True
                 self.notify_push(
-                    title="[Alas info] 智能调度 - 行动力低于最低保留",
+                    title="[AzurPilot info] 智能调度 - 行动力低于最低保留",
                     content=f"当前行动力 {self._action_point_total} 低于最低保留 {min_reserve}，已推迟任务",
                 )
             else:
@@ -289,8 +289,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         # 明石遭遇记录
         solved_events = getattr(self, "_solved_map_event", set())
         if "is_akashi" in solved_events:
-            # Akashi encounter counting belongs with the other runtime metrics;
-            # the task only reports that an Akashi event was solved.
+            # 明石遭遇计数归入运行时指标，任务仅报告明石事件已解决
             record_cl1_akashi_encounter(self.config)
 
     def _cl1_handle_telemetry(self):
@@ -383,7 +382,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 zone = self.config.OpsiHazard1Leveling_TargetZone
                 if self.zone.zone_id != zone or not self.is_zone_name_hidden:
                     self.globe_goto(self.name_to_zone(zone), types="SAFE", refresh=True)
-            elif self.zone.hazard_level > 5 or not self.is_zone_name_hidden:
+            elif self.zone.hazard_level != 1 or not self.is_zone_name_hidden:
                 self.globe_goto(self.name_to_zone(22), types="SAFE", refresh=True)
             self.fleet_set(self.config.OpsiFleet_Fleet)
 

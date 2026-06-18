@@ -32,9 +32,9 @@ def remove_tb_frames(exc, n: int):
 class Outcome(abc.ABC, Generic[ValueT]):
     @abc.abstractmethod
     def unwrap(self) -> ValueT:
-        """Return or raise the contained value or exception.
+        """返回或抛出包含的值或异常。
 
-        These two lines of code are equivalent::
+        以下两行代码是等价的::
 
            x = fn(*args)
            x = outcome.capture(fn, *args).unwrap()
@@ -44,7 +44,7 @@ class Outcome(abc.ABC, Generic[ValueT]):
 
 
 class Value(Outcome[ValueT], Generic[ValueT]):
-    """Concrete :class:`Outcome` subclass representing a regular value.
+    """表示常规值的 :class:`Outcome` 具体子类。
 
     """
     __slots__ = ('value',)
@@ -60,7 +60,7 @@ class Value(Outcome[ValueT], Generic[ValueT]):
 
 
 class Error(Outcome[NoReturn]):
-    """Concrete :class:`Outcome` subclass representing a raised exception.
+    """表示已抛出异常的 :class:`Outcome` 具体子类。
 
     """
     __slots__ = ('error',)
@@ -72,30 +72,28 @@ class Error(Outcome[NoReturn]):
         return f'Error({self.error!r})'
 
     def unwrap(self):
-        # Tracebacks show the 'raise' line below out of context, so let's give
-        # this variable a name that makes sense out of context.
+        # 回溯信息会脱离上下文显示下面的 'raise' 行，因此给这个变量
+        # 取一个在脱离上下文时仍有意义的名字。
         captured_error = self.error
         try:
             raise captured_error
         finally:
-            # We want to avoid creating a reference cycle here. Python does
-            # collect cycles just fine, so it wouldn't be the end of the world
-            # if we did create a cycle, but the cyclic garbage collector adds
-            # latency to Python programs, and the more cycles you create, the
-            # more often it runs, so it's nicer to avoid creating them in the
-            # first place. For more details see:
+            # 这里需要避免创建引用循环。Python 能正常回收循环引用，
+            # 所以即使创建了循环也不是世界末日，但循环垃圾回收器会
+            # 增加 Python 程序的延迟，创建的循环越多，回收器运行越频繁，
+            # 所以最好从一开始就避免创建循环。更多详情请参阅:
             #
             #    https://github.com/python-trio/trio/issues/1770
             #
-            # In particular, by deleting this local variables from the 'unwrap'
-            # methods frame, we avoid the 'captured_error' object's
-            # __traceback__ from indirectly referencing 'captured_error'.
+            # 具体来说，通过从 'unwrap' 方法的栈帧中删除这些局部变量，
+            # 可以避免 'captured_error' 对象的 __traceback__ 间接引用
+            # 'captured_error' 本身。
             del captured_error, self
 
 
 def capture(sync_fn, *args, **kwargs):
     """
-    Run ``sync_fn(*args, **kwargs)`` and capture the result.
+    运行 ``sync_fn(*args, **kwargs)`` 并捕获结果。
 
     Args:
         sync_fn (Callable[..., ResultT]):
@@ -124,15 +122,15 @@ class _JobKill(Exception):
 
 class Job(Generic[ResultT]):
     """
-    A simple queue, copied from queue.Queue()
-    Faster but can only put() once and get() once.
+    简单队列，从 queue.Queue() 复制而来。
+    更快但只能 put() 一次和 get() 一次。
     """
 
     # __slots__ = ('worker', 'func_args_kwargs', 'queue', 'mutex', 'finished')
 
     def __init__(self, worker, func_args_kwargs):
-        # Having attribute "worker" means job is ongoing
-        # Not having attribute "worker" means job is finished or killed
+        # 有 "worker" 属性表示任务正在进行中
+        # 没有 "worker" 属性表示任务已完成或被终止
         self.worker = worker
         self.func_args_kwargs = func_args_kwargs
 
@@ -146,24 +144,23 @@ class Job(Generic[ResultT]):
 
     def get(self) -> ResultT:
         """
-        Get job result or job error
+        获取任务结果或任务错误。
         """
         self.notify_get.acquire()
 
-        # Return job result or raise job error
+        # 返回任务结果或抛出任务错误
         item = self.queue.popleft()
         return item.unwrap()
 
     def get_or_kill(self, timeout) -> ResultT:
         """
-        Try to get result within given seconds,
-        if success, return job result or job error
-        if failed, kill job and raise JobTimeout
+        尝试在给定秒数内获取结果。
+        成功则返回任务结果或任务错误，失败则终止任务并抛出 JobTimeout。
 
-        Note that JobTimeout may not raises immediately if POOL_SIZE reached
+        注意当线程池已满时，JobTimeout 可能不会立即抛出。
         """
         if self.notify_get.acquire(timeout=timeout):
-            # Return job result or raise job error
+            # 返回任务结果或抛出任务错误
             item = self.queue.popleft()
             return item.unwrap()
         else:
@@ -175,7 +172,7 @@ class Job(Generic[ResultT]):
             try:
                 worker = self.worker
             except AttributeError:
-                # Trying to kill a finished job, do nothing
+                # 尝试终止已完成的任务，不做任何操作
                 return
             worker.kill()
             del self.worker
@@ -192,12 +189,12 @@ class WorkerThread:
         """
         self.job: "Job | None" = None
         self.thread_pool = thread_pool
-        # This Lock is used in an unconventional way.
+        # 此 Lock 的使用方式非常规。
         #
-        # "Unlocked" means we have a pending job that's been assigned to us;
-        # "locked" means that we don't.
+        # "未锁定" 表示有待处理的任务已分配给我们；
+        # "已锁定" 表示没有待处理的任务。
         #
-        # Initially we have no job, so it starts out in locked state.
+        # 初始时没有任务，因此以锁定状态开始。
         self.worker_lock = Lock()
         self.worker_lock.acquire()
         self.default_name = f"Alasio thread {next(name_counter)}"
@@ -209,27 +206,25 @@ class WorkerThread:
         return f'{self.__class__.__name__}({self.default_name})'
 
     def _handle_job(self) -> None:
-        # Convert to local variable, `self.job` will be another
-        # value if new job is assigned
+        # 转换为局部变量，如果分配了新任务，`self.job` 会是另一个值
         job = self.job
         del self.job
         func, args, kwargs = job.func_args_kwargs
 
         result = capture(func, *args, **kwargs)
 
-        # Tell the cache that we're available to be assigned a new
-        # job. We do this *before* calling 'deliver', so that if
-        # 'deliver' triggers a new job, it can be assigned to us
-        # instead of spawning a new thread.
+        # 通知线程池我们已空闲，可以接受新任务。
+        # 在调用 'deliver' 之前执行，这样如果 'deliver' 触发了新任务，
+        # 可以分配给我们而不是创建新线程。
         self.thread_pool.idle_workers[self] = None
         self.thread_pool.release_full_lock()
 
-        # Deliver
+        # 传递结果
         if isinstance(result, Error) and isinstance(result.error, _JobKill):
-            # Job killed
+            # 任务被终止
             pass
         else:
-            # Job finished, putin result and notify
+            # 任务完成，放入结果并通知
             with job.put_lock:
                 job.queue.append(result)
                 del job.worker
@@ -238,39 +233,33 @@ class WorkerThread:
     def _work(self) -> None:
         while True:
             if self.worker_lock.acquire(timeout=WorkerPool.IDLE_TIMEOUT):
-                # We got a job
+                # 获取到任务
                 self._handle_job()
             else:
-                # Timeout acquiring lock, so we can probably exit. But,
-                # there's a race condition: we might be assigned a job *just*
-                # as we're about to exit. So we have to check.
+                # 获取锁超时，可以退出。但存在竞态条件：
+                # 可能在即将退出时被分配了任务，因此需要检查。
                 try:
                     del self.thread_pool.idle_workers[self]
                 except KeyError:
-                    # Someone else removed us from the idle worker queue, so
-                    # they must be in the process of assigning us a job - loop
-                    # around and wait for it.
+                    # 其他线程已将我们从空闲队列中移除，
+                    # 说明正在给我们分配任务 - 继续循环等待。
                     self.thread_pool.release_full_lock()
                     continue
                 else:
-                    # We successfully removed ourselves from the idle
-                    # worker queue, so no more jobs are incoming; it's safe to
-                    # exit.
+                    # 成功从空闲队列中移除自己，不会再有新任务，可以安全退出。
                     del self.thread_pool.all_workers[self]
                     self.thread_pool.release_full_lock()
                     return
 
     def kill(self):
         """
-        Yes, it's unsafe to kill a thread, but what else can you do
-        if a single job function get blocked.
-        This method should be protected by `job.put_lock` to prevent
-        race condition with `_handle_job()`.
+        终止线程确实不安全，但当单个任务函数阻塞时别无选择。
+        此方法应受 `job.put_lock` 保护，以防止与 `_handle_job()` 的竞态条件。
 
         Returns:
-            bool: If success to kill the thread
+            bool: 是否成功终止线程
         """
-        # Send SystemExit to thread
+        # 向线程发送 SystemExit
         thread_id = ctypes.c_long(self.thread.ident)
         res = ctypes.pythonapi.PyThreadState_SetAsyncExc(
             thread_id, ctypes.py_object(_JobKill))
@@ -283,24 +272,24 @@ class WorkerThread:
                 job = self.job
             except AttributeError:
                 job = None
-            logger.error(f'Failed to kill thread {self.thread.ident} from job {job}')
-            # Failed to send SystemExit, reset it
+            logger.error(f'终止线程 {self.thread.ident} 失败，来自任务 {job}')
+            # 发送 SystemExit 失败，重置它
             ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0)
             return False
 
 
 class WorkerPool:
     """
-    A thread pool imitating trio.to_thread.start_thread_soon()
-    https://github.com/python-trio/trio/issues/6
+    模仿 trio.to_thread.start_thread_soon() 的线程池。
+    参考: https://github.com/python-trio/trio/issues/6
     """
 
-    # Thread exits after 10s idling.
+    # 线程空闲 10 秒后退出。
     IDLE_TIMEOUT = 10
 
     def __init__(self, pool_size: int = 8):
-        # Pool has 8 threads at max.
-        # Alasio is for local low-frequency access so default pool size is small
+        # 线程池最多 8 个线程。
+        # Alasio 用于本地低频访问，默认线程池较小
         self.pool_size = pool_size
 
         self.idle_workers: "dict[WorkerThread, None]" = {}
@@ -313,16 +302,16 @@ class WorkerPool:
 
     def release_full_lock(self):
         """
-        Call this method if worker finished any job, or exited, or get killed.
+        当工作线程完成任务、退出或被终止时调用此方法。
 
-        When pool full,
-        Pool tells all workers: any worker finishes his job notify me.
+        当线程池已满时，
+        线程池通知所有工作线程：任何完成任务的线程请通知我。
         `self.notify_worker.release()`
-        Then the pool blocks himself.
+        然后线程池阻塞自己。
         `self.notify_pool.acquire()`
-        The fastest worker, and also the only worker, receives the message,
+        最快的工作线程（也是唯一一个）接收到消息。
         `if self.notify_worker.acquire(blocking=False):`
-        Worker tells the pool, new pool slot is ready, you are ready to go.
+        工作线程通知线程池，新槽位已就绪，可以继续。
         `self.notify_pool.release()`
         """
         if self.notify_worker.acquire(blocking=False):
@@ -335,22 +324,22 @@ class WorkerPool:
         except KeyError:
             pass
 
-        # Wait if reached max thread
+        # 达到最大线程数时等待
         if len(self.all_workers) >= self.pool_size:
-            # See release_full_lock()
+            # 参见 release_full_lock()
             self.notify_worker.release()
             self.notify_pool.acquire()
-            # A worker just idle
+            # 某个工作线程刚好空闲
             try:
                 worker, _ = self.idle_workers.popitem()
                 return worker
             except KeyError:
                 pass
-            # A worker just exited
+            # 某个工作线程刚好退出
             # if len(self.all_workers) < WorkerPool.MAX_WORKER:
             #     break
 
-        # Create new worker
+        # 创建新工作线程
         worker = WorkerThread(self)
         # logger.info(f'New worker thread: {worker.default_name}')
         self.all_workers[worker] = None
@@ -358,8 +347,7 @@ class WorkerPool:
 
     def start_thread_soon(self, func, *args, **kwargs):
         """
-        Run a function on thread,
-        result can be got from `job` object
+        在线程上运行函数，结果可从 `job` 对象获取。
 
         Args:
             func (Callable[..., ResultT]):
@@ -382,8 +370,7 @@ class WorkerPool:
 
     def run_on_thread(self, func):
         """
-        Decorate a function to run on thread,
-        result can be got from `job` object
+        装饰器，使函数在线程上运行，结果可从 `job` 对象获取。
 
         Args:
             func (Callable[..., ResultT]):
@@ -407,7 +394,7 @@ class WorkerPool:
     @staticmethod
     def _subprocess_execute(cmd, timeout=10):
         """
-        Helper function to run cmd in subprocess
+        在子进程中运行命令的辅助函数。
 
         Args:
             cmd (list[str]):
@@ -430,8 +417,7 @@ class WorkerPool:
 
     def start_cmd_soon(self, cmd, timeout=10):
         """
-        Run cmd on subprocess and communicate it on another thread,
-        result can be got from `job` object
+        在子进程中运行命令并在另一个线程上通信，结果可从 `job` 对象获取。
 
         Args:
             cmd (list[str]):
@@ -451,7 +437,7 @@ class WorkerPool:
 
     def wait_jobs(self) -> "WaitJobsWrapper":
         """
-        Auto wait all jobs finished
+        自动等待所有任务完成。
 
         Examples:
             with WORKER_POOL.wait_jobs() as pool:
@@ -461,20 +447,20 @@ class WorkerPool:
 
     def gather_jobs(self) -> "GatherJobsWrapper":
         """
-        Auto wait all jobs finished and gather results
+        自动等待所有任务完成并收集结果。
 
         Examples:
             pool = WORKER_POOL.gather_jobs()
             with pool:
                 pool.start_thread_soon(...)
-            # Get results
+            # 获取结果
             print(pool.results)
         """
         return GatherJobsWrapper(self)
 
     def thread_map(self, func, iterables):
         """
-        Alternative to ThreadPoolExecutor.map(func, iterables)
+        ThreadPoolExecutor.map(func, iterables) 的替代方案。
 
         Args:
             func (Callable[..., ResultT]):
@@ -489,7 +475,7 @@ class WorkerPool:
 
     def thread_starmap(self, func, iterables):
         """
-        Alternative to multiprocessing.pool.Pool().starmap(func, iterables) but on threads
+        multiprocessing.pool.Pool().starmap(func, iterables) 的线程版本替代方案。
 
         Args:
             func (Callable[..., ResultT]):
@@ -504,7 +490,7 @@ class WorkerPool:
 
     def thread_funcmap(self, func_iterables):
         """
-        Run a list of functions on threads
+        在线程上运行一组函数。
 
         Args:
             func_iterables (Iterable[Callable[..., ResultT]]):
@@ -519,7 +505,7 @@ class WorkerPool:
 
 class WaitJobsWrapper:
     """
-    Wrapper class to wait all jobs
+    等待所有任务完成的包装类。
     """
 
     def __init__(self, pool: "WorkerPool"):
@@ -540,8 +526,7 @@ class WaitJobsWrapper:
 
     def start_thread_soon(self, func, *args, **kwargs):
         """
-        Run a function on thread,
-        result can be got from `job` object
+        在线程上运行函数，结果可从 `job` 对象获取。
 
         Args:
             func (Callable[..., ResultT]):
@@ -558,7 +543,7 @@ class WaitJobsWrapper:
 
 class GatherJobsWrapper(WaitJobsWrapper):
     """
-    Wrapper class to gather all jobs
+    收集所有任务结果的包装类。
     """
 
     def __init__(self, pool: "WorkerPool"):

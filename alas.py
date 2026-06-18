@@ -1,8 +1,3 @@
-# rev: auto_restart
-# 基于原版 alas.py 增加了自动尝试重启调度器的功能
-# 用于解决 Unknown ui page 、短暂网络不良等 无需人工修复的偶发意外情形，避免调度器直接终止
-# Modified: run, loop
-# Last Updated: 2025-09-01 00:03
 import json
 import os
 import re
@@ -18,7 +13,7 @@ from module.base.decorator import del_cached_property
 from module.base.api_client import ApiClient
 from module.config.config import AzurLaneConfig, TaskEnd
 from module.config.deep import deep_get, deep_set
-from module.config.utils import filepath_i18n, read_file
+from module.config.utils import DEFAULT_CONFIG_NAME, filepath_i18n, read_file
 from module.exception import *
 from module.logger import logger
 from module.notify import handle_notify, notify_webui
@@ -53,35 +48,33 @@ def _get_task_display_name(task_command):
     return _i18n_task_names.get(task_command, task_command)
 
 
-RESTART_SENSITIVE_TASKS = ['Commission', 'Research']
 
 
 class AzurLaneAutoScript:
     stop_event: threading.Event = None
 
-    def __init__(self, config_name='alas'):
+    def __init__(self, config_name=DEFAULT_CONFIG_NAME):
         logger.hr('Start', level=0)
         self.config_name = config_name
-        # Skip first restart
+        # 跳过启动后的第一次 Restart 任务
         self.is_first_task = True
-        # Failure count of tasks
-        # Key: str, task name, value: int, failure count
+        # 任务失败计数器，key 为任务名，value 为连续失败次数
         self.failure_record = {}
-        # Restart counters
+        # 连续卡死/ADB 离线计数，用于判断是否需要重启模拟器
         self.consecutive_game_stuck = 0
         self.consecutive_adb_offline = 0
-        # Scheduled emulator restart
+        # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.time()
 
     def _try_restart_emulator(self):
         """
-        尝试重启模拟器（如果启用了AdbOfflineRestart且未达到重试上限）。
+        尝试重启模拟器。
 
-        如果可用，使用现有的self.device对象（包含emulator_instance缓存）。
-        否则，回退到创建新的PlatformWindows（Windows）或PlatformMac（macOS）实例。
+        需要启用 AdbOfflineRestart 且未超过重试上限。
+        优先使用已缓存的 device 对象，否则根据平台回退创建新实例。
 
         Returns:
-            bool: True如果模拟器重启成功，False如果无法重启。
+            bool: 重启成功返回 True，无法重启返回 False。
         """
         import sys
 
@@ -99,11 +92,10 @@ class AzurLaneAutoScript:
 
         logger.hr('正在重启模拟器', level=1)
         try:
-            # 尝试获取现有的设备对象
+            # 优先使用已缓存的设备对象
             device = self.__dict__.get('device', None)
             if device is None:
-                # 回退：根据操作系统创建PlatformWindows或PlatformMac对象
-                # 注意：这可能会触发一些检测，但这是device缺失时的最佳回退方案
+                # device 缓存不存在时，按平台回退创建新实例
                 if sys.platform == 'darwin':
                     from module.device.platform.platform_mac import PlatformMac
                     device = PlatformMac(self.config)
@@ -118,7 +110,7 @@ class AzurLaneAutoScript:
             device.emulator_start()
             logger.info('模拟器重启完成')
 
-            # 清除缓存的device，以便下次访问时创建新的连接
+            # 清除 device 缓存，下次访问时重新建立连接
             if 'device' in self.__dict__:
                 del_cached_property(self, 'device')
             return True
@@ -161,18 +153,58 @@ class AzurLaneAutoScript:
             logger.exception(e)
             exit(1)
 
-    # 原始的run方法已注释，保留作为参考
-    # def run(self, command, skip_first_screenshot=False):
-    #     ...
+    def _check_sensitive_exit(self, command, error):
+        """
+        检查当前任务是否为敏感任务，如果是则直接退出。
+
+        敏感任务出错时不做任何重启或恢复，完全停止 Alas 运行。
+
+        Args:
+            command (str): 任务方法名（下划线形式，如 opsi_cross_month）。
+            error (Exception): 触发的异常对象。
+
+        Returns:
+            bool: True 表示已退出（不会返回），False 表示非敏感任务，继续原有逻辑。
+        """
+        task_name = inflection.camelize(command)
+        sensitive = self.config.cross_get(
+            keys=f'{task_name}.Scheduler.Sensitive', default=False
+        )
+        if not sensitive:
+            return False
+
+        logger.critical(f'敏感任务 `{task_name}` 出错，禁止重启，AzurPilot 将停止运行')
+        logger.critical(f'异常: {error}')
+        handle_notify(
+            self.config.Error_OnePushConfig,
+            title=f"AzurPilot <{self.config_name}> 敏感任务出错",
+            content=f"<{self.config_name}> 敏感任务 `{task_name}` 出错，AzurPilot 已停止运行\n{error}",
+        )
+        notify_webui(
+            self.config_name,
+            title=f"敏感任务 {task_name} 出错喵！AzurPilot 已停止喵！",
+            content=f"因为 {task_name} 是敏感任务，出错后不会重启喵~\n{error}",
+        )
+        exit(1)
 
     def run(self, command, skip_first_screenshot=False):
         """
-        运行任务命令。
+        执行指定任务命令，捕获异常并决定后续行为。
+
+        根据异常类型自动判断：重启游戏、重启模拟器、请求人工介入或直接终止。
+        敏感任务出错时直接停止，不做任何重启。
+
+        任务执行前会进行一次截图（除非 skip_first_screenshot=True）。
+
+        Args:
+            command (str): 任务方法名（驼峰转下划线后的形式）。
+            skip_first_screenshot (bool): 是否跳过执行前的首次截图。
 
         Returns:
-            True: 任务成功完成
-            False: 任务失败且不可恢复（计入失败限制）
-            'recoverable': 任务失败但可恢复（不计入失败限制）
+            bool | str:
+                True — 任务成功完成。
+                False — 不可恢复的失败，计入连续失败限制。
+                'recoverable' — 可恢复的失败，不计入连续失败限制。
         """
         try:
             if not skip_first_screenshot:
@@ -182,11 +214,12 @@ class AzurLaneAutoScript:
         except TaskEnd:
             return True
         except GameNotRunningError as e:
-            # 可恢复错误：游戏未运行，重启即可
+            # 游戏未运行，调度 Restart 任务自动恢复
             logger.warning(e)
+            self._check_sensitive_exit(command, e)
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 警告",
+                title=f"AzurPilot <{self.config_name}> 警告",
                 content=f"<{self.config_name}> 游戏未运行 - 将自动重启游戏",
             )
             notify_webui(
@@ -197,9 +230,10 @@ class AzurLaneAutoScript:
             self.config.task_call('Restart')
             return 'recoverable'
         except (GameStuckError, GameTooManyClickError) as e:
-            # 可恢复错误：游戏卡住或点击过多，重启即可
+            # 游戏卡住或点击过多，尝试重启游戏；连续卡死则重启模拟器
             logger.error(e)
             self.save_error_log()
+            self._check_sensitive_exit(command, e)
 
             if self.config.Error_GameStuckRestart:
                 self.consecutive_game_stuck += 1
@@ -213,10 +247,10 @@ class AzurLaneAutoScript:
                         return 'recoverable'
 
             logger.warning(f'游戏卡住，{self.device.package} 将在10秒后重启')
-            logger.warning('如果您正在手动操作，请停止 Alas')
+            logger.warning('如果您正在手动操作，请停止 AzurPilot')
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 警告",
+                title=f"AzurPilot <{self.config_name}> 警告",
                 content=f"<{self.config_name}> 游戏卡住 - 将自动重启游戏",
             )
             notify_webui(
@@ -228,14 +262,15 @@ class AzurLaneAutoScript:
             self.device.sleep(10)
             return 'recoverable'
         except GameBugError as e:
-            # 可恢复错误：游戏客户端 bug，重启即可
+            # 游戏客户端 bug，重启游戏修复
             logger.warning(e)
             self.save_error_log()
-            logger.warning('碧蓝航线游戏客户端发生错误，Alas 无法处理')
+            self._check_sensitive_exit(command, e)
+            logger.warning('碧蓝航线游戏客户端发生错误，AzurPilot 无法处理')
             logger.warning(f'正在重启 {self.device.package} 以修复问题')
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 警告",
+                title=f"AzurPilot <{self.config_name}> 警告",
                 content=f"<{self.config_name}> 游戏客户端错误 - 将自动重启游戏",
             )
             notify_webui(
@@ -254,7 +289,7 @@ class AzurLaneAutoScript:
                 self.save_error_log()
                 handle_notify(
                     self.config.Error_OnePushConfig,
-                    title=f"Alas <{self.config_name}> 崩溃",
+                    title=f"AzurPilot <{self.config_name}> 崩溃",
                     content=f"<{self.config_name}> GamePageUnknownError",
                 )
                 notify_webui(
@@ -271,7 +306,7 @@ class AzurLaneAutoScript:
             logger.critical('噗噗~ 恭喜大叔触发了诡异Bug！果然废材的人品就是差呢❤')
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 崩溃",
+                title=f"AzurPilot <{self.config_name}> 崩溃",
                 content=f"<{self.config_name}> ScriptError",
             )
             notify_webui(
@@ -279,18 +314,18 @@ class AzurLaneAutoScript:
                 title=f"出大问题了喵！{self.config_name}崩溃了喵！",
                 content=f"因为 ScriptError 喵！",
             )
-            # exit(1)
             raise
-        except EmulatorNotRunningError:
-            # 模拟器离线/死机，尝试自动重启模拟器
+        except EmulatorNotRunningError as e:
+            # 模拟器离线或死机，尝试自动重启
             logger.error('任务执行期间模拟器未运行')
             self.save_error_log()
+            self._check_sensitive_exit(command, e)
             if self._try_restart_emulator():
-                # 重启成功，调度 Restart 任务重新启动游戏
+                # 重启成功，调度 Restart 任务恢复游戏
                 self.config.task_call('Restart')
                 handle_notify(
                     self.config.Error_OnePushConfig,
-                    title=f"Alas <{self.config_name}> 警告",
+                    title=f"AzurPilot <{self.config_name}> 警告",
                     content=f"<{self.config_name}> 模拟器离线 - 已自动重启模拟器",
                 )
                 notify_webui(
@@ -300,11 +335,11 @@ class AzurLaneAutoScript:
                 )
                 return 'recoverable'
             else:
-                # 重启失败或未启用，终止程序
+                # 重启失败或未启用自动重启，终止程序
                 logger.critical('模拟器都死透了你还在那看？赶紧动手去救它啊，没用的大叔！')
                 handle_notify(
                     self.config.Error_OnePushConfig,
-                    title=f"Alas <{self.config_name}> 崩溃",
+                    title=f"AzurPilot <{self.config_name}> 崩溃",
                     content=f"<{self.config_name}> EmulatorNotRunningError",
                 )
                 notify_webui(
@@ -317,7 +352,7 @@ class AzurLaneAutoScript:
             logger.critical('你行你上啊，盯着我看干什么？难道大叔也想让我这种小鬼帮你接管吗？❤')
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 崩溃",
+                title=f"AzurPilot <{self.config_name}> 崩溃",
                 content=f"<{self.config_name}> RequestHumanTakeover",
             )
             notify_webui(
@@ -335,7 +370,7 @@ class AzurLaneAutoScript:
             self.save_error_log()
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config_name}> 崩溃",
+                title=f"AzurPilot <{self.config_name}> 崩溃",
                 content=f"<{self.config_name}> 发生异常",
             )
             notify_webui(
@@ -343,17 +378,15 @@ class AzurLaneAutoScript:
                 title=f"出大问题了喵！{self.config_name}崩溃了喵！",
                 content=f"因为 发生异常 喵！",
             )
-            # exit(1)
             raise
 
     def keep_last_errlog(self, folder_path, n: int = 30):
         """
-        保留folder_path中的最后n个文件夹，删除其他文件夹。
-        如果n为负数或0，则不执行任何操作（保留所有errlog文件夹）。
+        清理旧的错误日志文件夹，只保留最近的 n 个。
 
         Args:
-            folder_path (str): 文件夹路径。
-            n (int): 要保留的文件夹数量。
+            folder_path (str): 错误日志根目录路径。
+            n (int): 保留的文件夹数量，<=0 时不清理。
         """
         if n <= 0:
             return
@@ -367,15 +400,16 @@ class AzurLaneAutoScript:
 
     def save_error_log(self):
         """
-        保存最后60张截图到 ./log/error/<config-name>/<timestamp>
-        保存日志到 ./log/error/<config-name>/<timestamp>/log.txt
+        保存错误现场：最近截图和日志文件到 ./log/error/<config-name>/<timestamp>/。
+
+        同时触发 LLM 错误分析（如果启用）。
         """
         import pathlib
         from module.base.utils import save_image
         from module.handler.sensitive_info import (handle_sensitive_image,
                                                    handle_sensitive_logs)
                                                    
-        # LLM Error Analysis - 放到最前面，防止后面截图保存时二次崩溃导致分析没跑
+        # LLM 错误分析放在最前面，避免后续截图保存时二次崩溃导致分析未执行
         try:
             if hasattr(self, 'config') and getattr(self.config, 'Error_LlmAnalysis', False):
                 from module.llm import analyze_exception
@@ -507,6 +541,70 @@ class AzurLaneAutoScript:
         from module.island.island import Island
         Island(config=self.config, device=self.device).run()
 
+    def island_mine_forest(self):
+        from module.island.island_mine_forest import IslandMineForest
+        IslandMineForest(config=self.config, device=self.device).run()
+
+    def island_farm(self):
+        from module.island.island_farm import IslandFarm
+        IslandFarm(config=self.config, device=self.device).run()
+
+    def island_rancher(self):
+        from module.island.island_rancher import IslandRancher
+        IslandRancher(config=self.config, device=self.device).run()
+
+    def island_fishery(self):
+        from module.island.island_fishery import IslandFishery
+        IslandFishery(config=self.config, device=self.device).run()
+
+    def island_grill(self):
+        from module.island.island_grill import IslandGrill
+        IslandGrill(config=self.config, device=self.device).run()
+
+    def island_teahouse(self):
+        from module.island.island_teahouse import IslandTeahouse
+        IslandTeahouse(config=self.config, device=self.device).run()
+
+    def island_restaurant(self):
+        from module.island.island_restaurant import IslandRestaurant
+        IslandRestaurant(config=self.config, device=self.device).run()
+
+    def island_juu_coffee(self):
+        from module.island.island_juu_coffee import IslandJuuCoffee
+        IslandJuuCoffee(config=self.config, device=self.device).run()
+
+    def island_juu_eatery(self):
+        from module.island.island_juu_eatery import IslandJuuEatery
+        IslandJuuEatery(config=self.config, device=self.device).run()
+
+    def island_daily_gather(self):
+        from module.island.island_daily_gather import IslandDailyGather
+        IslandDailyGather(config=self.config, device=self.device).run()
+
+    def island_manufacture(self):
+        from module.island.island_manufacture import IslandManufacture
+        IslandManufacture(config=self.config, device=self.device).run()
+
+    def island_air_drop(self):
+        from module.island.island_air_drop import IslandAirDrop
+        IslandAirDrop(config=self.config, device=self.device).run()
+
+    def island_cargo_preparation(self):
+        from module.island.island_cargo_preparation import IslandCargoPreparation
+        IslandCargoPreparation(config=self.config, device=self.device).run()
+
+    def island_business(self):
+        from module.island.island_business import IslandBusiness
+        IslandBusiness(config=self.config, device=self.device).run()
+
+    def island_daily_order(self):
+        from module.island.island_daily_order import IslandDailyOrder
+        IslandDailyOrder(config=self.config, device=self.device).run()
+
+    def island_pearl_sell(self):
+        from module.island.island_pearl_sell import IslandPearlSell
+        IslandPearlSell(config=self.config, device=self.device).run()
+
     def daily(self):
         from module.daily.daily import Daily
         Daily(config=self.config, device=self.device).run()
@@ -607,6 +705,10 @@ class AzurLaneAutoScript:
     def opsi_hazard1_leveling(self):
         from module.campaign.os_run import OSCampaignRun
         OSCampaignRun(config=self.config, device=self.device).opsi_hazard1_leveling()
+
+    def opsi_scheduling(self):
+        from module.campaign.os_run import OSCampaignRun
+        OSCampaignRun(config=self.config, device=self.device).opsi_scheduling()
 
     def opsi_cross_month(self):
         from module.campaign.os_run import OSCampaignRun
@@ -737,8 +839,7 @@ class AzurLaneAutoScript:
 
     def emulator_manager(self):
         import subprocess
-        # Use deep_get to handle potential nesting
-        # Prioritize EmulatorInfo settings if enabled
+        # 优先使用 EmulatorInfo 中的 SSH 配置
         if getattr(self.config, 'EmulatorInfo_EnableRemoteSSH', False):
             host = getattr(self.config, 'EmulatorInfo_RemoteSSHHost', '')
             port = getattr(self.config, 'EmulatorInfo_RemoteSSHPort', 22)
@@ -746,7 +847,7 @@ class AzurLaneAutoScript:
             command = getattr(self.config, 'EmulatorInfo_RemoteStartCommand', '')
             key = getattr(self.config, 'EmulatorInfo_RemoteSSHPublicKey', '')
         else:
-            # Use deep_get to handle potential nesting
+            # 回退到 EmulatorManager 配置
             enable = deep_get(self.config.data, 'EmulatorManager.EmulatorManager.EnableRemoteSSH', False)
             if not enable:
                 logger.warning('Remote SSH is not enabled in EmulatorManager settings.')
@@ -766,9 +867,7 @@ class AzurLaneAutoScript:
 
         logger.hr('Remote SSH Command', level=1)
         target = f'{user}@{host}' if user else host
-        # -n: Redirects stdin from /dev/null
-        # -T: Disable pseudo-terminal allocation
-        # BatchMode to avoid hanging on password prompts
+        # -n: 禁用标准输入  -T: 禁用伪终端分配  BatchMode: 避免密码提示导致挂起
         cmd = ['ssh', '-n', '-T', '-p', str(port), '-o', 'StrictHostKeyChecking=no', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10']
         
         key_file = None
@@ -807,7 +906,7 @@ class AzurLaneAutoScript:
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
 
-            # Store stderr to show only if it fails
+            # 缓存 stderr 输出，仅在失败时打印
             stderr_content = []
             import threading
             
@@ -825,7 +924,7 @@ class AzurLaneAutoScript:
             stdout_thread.start()
 
             try:
-                # Main thread waits for the process to exit
+                # 主线程等待进程退出
                 process.wait(timeout=30)
             except subprocess.TimeoutExpired:
                 process.kill()
@@ -852,13 +951,15 @@ class AzurLaneAutoScript:
 
     def wait_until(self, future):
         """
-        等待直到特定时间。
+        阻塞等待直到指定时间到达。
+
+        等待期间每 5 秒检查一次配置文件变更和停止事件。
 
         Args:
-            future (datetime):
+            future (datetime): 目标等待时间。
 
         Returns:
-            bool: True如果等待完成，False如果配置更改。
+            bool: 正常等到返回 True，检测到配置变更返回 False。
         """
         future = future + timedelta(seconds=1)
         self.config.start_watching()
@@ -878,8 +979,13 @@ class AzurLaneAutoScript:
 
     def get_next_task(self):
         """
+        获取下一个待执行的任务。
+
+        如果任务尚未到执行时间，根据 Optimization_WhenTaskQueueEmpty 设置
+        选择等待策略（关闭游戏 / 前往主页 / 停留原地），然后阻塞等待。
+
         Returns:
-            str: 下一个任务的名称。
+            str: 下一个任务的方法名（如 'Restart'、'Commission'）。
         """
         while 1:
             task = self.config.get_next()
@@ -915,7 +1021,6 @@ class AzurLaneAutoScript:
                         del_cached_property(self, 'config')
                         continue
                 elif method == 'stay_there':
-                    logger.info('等待期间停留在原地')
                     release_resources()
                     self.device.release_during_wait()
                     if not self.wait_until(task.next_run):
@@ -950,10 +1055,10 @@ class AzurLaneAutoScript:
             )
             exit(1)
 
-        # 初始化计数器
+        # 全局异常连续失败计数与阈值
         consecutive_global_failures = 0
-        MAX_GLOBAL_FAILURES = 3     # 3次及以上，4次及以上会执行长达5分钟的防网络波动等待
-        RESTART_DELAY = 20          # 重启尝试间隔
+        MAX_GLOBAL_FAILURES = 3
+        RESTART_DELAY = 20
         LONG_WAIT = 300
 
         while 1:
@@ -962,15 +1067,12 @@ class AzurLaneAutoScript:
                 if self.stop_event is not None:
                     if self.stop_event.is_set():
                         logger.info("检测到更新事件")
-                        logger.info(f"Alas [{self.config_name}] 已退出。原因: 更新 | Reason: Update")
+                        logger.info(f"AzurPilot [{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                         break
                 # 检查游戏服务器维护
                 self.checker.wait_until_available()
                 if self.checker.is_recovered():
-                    # 有一个难以复现的意外bug
-                    # 有时，由于阻塞，配置不会被更新
-                    # 即使它已经被更改
-                    # 所以在恢复后更新一次
+                    # 服务器恢复后强制刷新配置，修复阻塞期间配置未更新的问题
                     del_cached_property(self, 'config')
                     logger.info('服务器或网络已恢复。重启游戏客户端')
                     self.config.task_call('Restart')
@@ -1024,7 +1126,7 @@ class AzurLaneAutoScript:
                             task_display = _get_task_display_name(task)
                             handle_notify(
                                 self.config.Error_OnePushConfig,
-                                title=f"[Alas] <{self.config_name}> {task_display} {status}",
+                                title=f"[AzurPilot] <{self.config_name}> {task_display} {status}",
                                 content=f"<{self.config_name}> 任务 {task_display} —— {status}",
                             )
                     except Exception:
@@ -1044,7 +1146,9 @@ class AzurLaneAutoScript:
                     failed = failed + 1  # 不可恢复错误，增加计数
                 deep_set(self.failure_record, keys=task, value=failed)
 
-                strict_restart = self.config.Error_StrictRestart and failed >= 1 and task in RESTART_SENSITIVE_TASKS
+                strict_restart = self.config.Error_StrictRestart and failed >= 1 and self.config.cross_get(
+                    keys=f'{task}.Scheduler.Sensitive', default=False
+                )
                 if failed >= 3 or strict_restart:
                     logger.critical(f"任务 `{task}` 失败 {failed} 次或更多。")
                     logger.critical("可能原因 #1: 您未正确使用。请阅读选项的帮助文本。")
@@ -1054,7 +1158,7 @@ class AzurLaneAutoScript:
                     logger.critical('请求人工接管')
                     handle_notify(
                         self.config.Error_OnePushConfig,
-                        title=f"Alas <{self.config_name}> crashed",
+                        title=f"AzurPilot <{self.config_name}> crashed",
                         content=f"<{self.config_name}> RequestHumanTakeover\nTask `{task}` failed {failed} or more times.",
                     )
                     notify_webui(
@@ -1063,7 +1167,7 @@ class AzurLaneAutoScript:
                         content=f"因为 {task} 任务失败次数过多喵！",
                     )
                     logger.warning("任务连续失败次数过多，正在上报错误日志...")
-                    ApiClient.submit_bug_log(f"Alas <{self.config_name}> crashed\nTask `{task}` failed {failed} or more times.")
+                    ApiClient.submit_bug_log(f"AzurPilot <{self.config_name}> crashed\nTask `{task}` failed {failed} or more times.")
                     exit(1)
 
                 if success == True:
@@ -1073,8 +1177,7 @@ class AzurLaneAutoScript:
                     self.consecutive_adb_offline = 0
                     continue
                 elif success == 'recoverable' or self.config.Error_HandleError:
-                    # 可恢复错误或启用了错误处理，继续循环
-                    # self.config.task_delay(success=False)
+                    # 可恢复错误或启用了错误处理，刷新配置后继续循环
                     del_cached_property(self, 'config')
                     self.checker.check_now()
                     continue
@@ -1087,7 +1190,7 @@ class AzurLaneAutoScript:
                 self.is_first_task = False
                 logger.error("调度器循环中发生意外的全局异常！")
                 import traceback
-                logger.error(traceback.format_exc()) # 打印完整的错误堆栈
+                logger.error(traceback.format_exc())
                 
                 # 即使没有达到重启或失败上限，也第一时间自动请求分析崩溃原因
                 try:
@@ -1104,14 +1207,14 @@ class AzurLaneAutoScript:
                 # 检查是否达到重试上限
                 if consecutive_global_failures >= MAX_GLOBAL_FAILURES:
                     logger.critical(
-                        f"连续崩了 {MAX_GLOBAL_FAILURES} 次！Alas 已经被你气死了！"
+                        f"连续崩了 {MAX_GLOBAL_FAILURES} 次！AzurPilot 已经被你气死了！"
                     )
                     logger.critical("这错误没救了，重启一百次也没用。")
                     self.save_error_log()
                     logger.critical("调度器罢工了！赶紧滚过来人工救场！")
                     logger.warning("遇到无法恢复的致命错误，正在上报错误日志...")
-                    ApiClient.submit_bug_log(f"Alas <{self.config_name}> 调度器终止。\n已达到最大全局失败次数 ({MAX_GLOBAL_FAILURES})。\n{traceback.format_exc()}")
-                    exit(1)   # 达到上限，强制终止程序
+                    ApiClient.submit_bug_log(f"AzurPilot <{self.config_name}> 调度器终止。\n已达到最大全局失败次数 ({MAX_GLOBAL_FAILURES})。\n{traceback.format_exc()}")
+                    exit(1)
 
                 # 尝试重启
                 logger.warning("尝试通过强制执行 RESTART 任务来恢复...")

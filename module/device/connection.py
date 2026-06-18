@@ -29,11 +29,16 @@ from module.map.map_grids import SelectedGrids
 
 
 def retry(func):
+    """带自动重试的装饰器，处理 ADB 连接和设备相关异常。
+
+    对指定函数进行最多 RETRY_TRIES 次重试，根据不同的异常类型
+    采取不同的恢复策略（重连 ADB、重启服务、检测包等）。
+    """
     @wraps(func)
     def retry_wrapper(self, *args, **kwargs):
         """
         Args:
-            self (Adb):
+            self (Adb): ADB 设备实例。
         """
         init = None
         for _ in range(RETRY_TRIES):
@@ -42,19 +47,19 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理的异常，直接中断重试
             except RequestHumanTakeover:
                 break
-            # Can't handle - must propagate to trigger emulator restart
+            # 无法处理，必须向上传播以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # When adb server was killed
+            # ADB 服务被杀死时触发
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -65,13 +70,13 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # Package not installed
+            # 包未安装
             except PackageNotInstalled as e:
                 logger.error(e)
 
                 def init():
                     self.detect_package()
-            # Unknown, probably a trucked image
+            # 未知异常，可能是损坏的图像数据
             except Exception as e:
                 logger.exception(e)
 
@@ -122,17 +127,17 @@ class Connection(ConnectionAttr):
     def __init__(self, config):
         """
         Args:
-            config (AzurLaneConfig, str): Name of the user config under ./config
+            config (AzurLaneConfig, str): ./config 目录下的用户配置名称。
         """
         super().__init__(config)
         if not self.is_over_http:
             self.detect_device()
 
-        # Connect
+        # 连接设备
         self.adb_connect(wait_device=False)
         logger.attr('AdbDevice', self.adb)
 
-        # Package
+        # 检测包名
         self.package = self.config.Emulator_PackageName
         if self.package == 'auto':
             self.detect_package()
@@ -145,36 +150,31 @@ class Connection(ConnectionAttr):
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def adb_command(self, cmd, timeout=10):
-        """
-        Execute ADB commands in a subprocess,
-        usually to be used when pulling or pushing large files.
+        """在子进程中执行 ADB 命令，通常用于拉取或推送大文件。
 
         Args:
-            cmd (list):
-            timeout (int):
+            cmd (list): ADB 命令参数列表。
+            timeout (int): 超时时间（秒）。
 
         Returns:
-            str:
+            str: 命令的标准输出。
         """
         cmd = list(map(str, cmd))
         cmd = [self.adb_binary, '-s', self.serial] + cmd
         return self.subprocess_run(cmd, timeout=timeout)
 
     def subprocess_run(self, cmd, timeout=10):
-        """
+        """运行子进程命令并返回标准输出。
+
         Args:
-            cmd (list):
-            timeout (int):
+            cmd (list): 命令参数列表。
+            timeout (int): 超时时间（秒）。
 
         Returns:
-            str:
+            str: 命令的标准输出。
         """
         logger.info(f'Execute: {cmd}')
-        # Use shell=True to disable console window when using GUI.
-        # Although, there's still a window when you stop running in GUI, which cause by gooey.
-        # To disable it, edit gooey/gui/util/taskkill.py
-
-        # No gooey anymore, just shell=False
+        # 不再使用 gooey，直接 shell=False
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=False)
         try:
             stdout, stderr = process.communicate(timeout=timeout)
@@ -193,9 +193,10 @@ class Connection(ConnectionAttr):
         raise RequestHumanTakeover
 
     def adb_start_server(self):
-        """
-        Use `adb devices` as `adb start-server`, result is actually useless
-        Start ADB using subprocess instead of connecting via socket to kill the other ADBs
+        """启动 ADB 服务。
+
+        使用 `adb devices` 代替 `adb start-server`，通过子进程方式启动 ADB
+        以杀死其他已存在的 ADB 进程，返回值实际上无用。
         """
         stdout = self.subprocess_run([self.adb_binary, 'devices'])
         logger.info(stdout)
@@ -203,20 +204,19 @@ class Connection(ConnectionAttr):
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def adb_shell(self, cmd, stream=False, recvall=True, timeout=10, rstrip=True):
-        """
-        Equivalent to `adb -s <serial> shell <*cmd>`
+        """执行 ADB shell 命令，等价于 `adb -s <serial> shell <*cmd>`。
 
         Args:
-            cmd (list, str):
-            stream (bool): Return stream instead of string output (Default: False)
-            recvall (bool): Receive all data when stream=True (Default: True)
-            timeout (int): (Default: 10)
-            rstrip (bool): Strip the last empty line (Default: True)
+            cmd (list, str): shell 命令或命令参数列表。
+            stream (bool): 为 True 时返回流对象而非字符串。默认 False。
+            recvall (bool): stream=True 时是否接收全部数据。默认 True。
+            timeout (int): 超时时间（秒）。默认 10。
+            rstrip (bool): 是否去除末尾空行。默认 True。
 
         Returns:
-            str if stream=False
-            bytes if stream=True and recvall=True
-            socket if stream=True and recvall=False
+            stream=False 时返回 str。
+            stream=True 且 recvall=True 时返回 bytes。
+            stream=True 且 recvall=False 时返回 socket。
         """
         if not isinstance(cmd, str):
             cmd = list(map(str, cmd))
@@ -225,7 +225,7 @@ class Connection(ConnectionAttr):
             result = self.adb.shell(cmd, stream=stream, timeout=timeout, rstrip=rstrip)
             if recvall:
                 try:
-                    # bytes
+                    # 返回 bytes
                     return recv_all(result)
                 finally:
                     try:
@@ -236,65 +236,64 @@ class Connection(ConnectionAttr):
                     except Exception:
                         pass
             else:
-                # socket
+                # 返回 socket
                 return result
         else:
             result = self.adb.shell(cmd, stream=stream, timeout=timeout, rstrip=rstrip)
             result = remove_shell_warning(result)
-            # str
+            # 返回 str
             return result
 
     @Config.when(DEVICE_OVER_HTTP=True)
     def adb_shell(self, cmd, stream=False, recvall=True, timeout=10, rstrip=True):
-        """
-        Equivalent to http://127.0.0.1:7912/shell?command={command}
+        """通过 HTTP 执行 shell 命令，等价于 http://127.0.0.1:7912/shell?command={command}。
 
         Args:
-            cmd (list, str):
-            stream (bool): Return stream instead of string output (Default: False)
-            recvall (bool): Receive all data when stream=True (Default: True)
-            timeout (int): (Default: 10)
-            rstrip (bool): Strip the last empty line (Default: True)
+            cmd (list, str): shell 命令或命令参数列表。
+            stream (bool): 为 True 时返回流数据而非字符串。默认 False。
+            recvall (bool): stream=True 时是否接收全部数据。默认 True。
+            timeout (int): 超时时间（秒）。默认 10。
+            rstrip (bool): 是否去除末尾空行。默认 True。
 
         Returns:
-            str if stream=False
-            bytes if stream=True
+            stream=False 时返回 str。
+            stream=True 时返回 bytes。
         """
         if not isinstance(cmd, str):
             cmd = list(map(str, cmd))
 
         if stream:
             result = self.u2.shell(cmd, stream=stream, timeout=timeout)
-            # Already received all, so `recvall` is ignored
+            # 已接收全部数据，忽略 `recvall` 参数
             result = remove_shell_warning(result.content)
-            # bytes
+            # 返回 bytes
             return result
         else:
             result = self.u2.shell(cmd, stream=stream, timeout=timeout).output
             if rstrip:
                 result = result.rstrip()
             result = remove_shell_warning(result)
-            # str
+            # 返回 str
             return result
 
     def adb_getprop(self, name):
-        """
-        Get system property in Android, same as `getprop <name>`
+        """获取 Android 系统属性，等价于 `getprop <name>`。
 
         Args:
-            name (str): Property name
+            name (str): 属性名称。
 
         Returns:
-            str:
+            str: 属性值。
         """
         return self.adb_shell(['getprop', name]).strip()
 
     @cached_property
     @retry
     def cpu_abi(self) -> str:
-        """
+        """获取设备的 CPU ABI 类型。
+
         Returns:
-            str: arm64-v8a, armeabi-v7a, x86, x86_64
+            str: CPU ABI，如 arm64-v8a、armeabi-v7a、x86、x86_64。
         """
         abi = self.adb_getprop('ro.product.cpu.abi')
         if not len(abi):
@@ -304,9 +303,7 @@ class Connection(ConnectionAttr):
     @cached_property
     @retry
     def sdk_ver(self) -> int:
-        """
-        Android SDK/API levels, see https://apilevels.com/
-        """
+        """获取 Android SDK/API 版本号，详见 https://apilevels.com/。"""
         sdk = self.adb_getprop('ro.build.version.sdk')
         try:
             return int(sdk)
@@ -336,15 +333,15 @@ class Connection(ConnectionAttr):
     @cached_property
     @retry
     def is_bluestacks_air(self):
-        # BlueStacks Air is the Mac version of BlueStacks
+        # BlueStacks Air 是 BlueStacks 的 Mac 版本
         if not IS_MACINTOSH:
             return False
-        # 127.0.0.1:5555 + 10*n, assume 32 instances at max
+        # 127.0.0.1:5555 + 10*n，最多假设 32 个实例
         if not (5555 <= self.port <= 5875):
             return False
         # [bst.installed_images]: [Tiramisu64]
         # [bst.instance]: [Tiramisu64]
-        # Tiramisu64 is Android 13 and BlueStacks Air is the only BlueStacks version that uses Android 13
+        # Tiramisu64 是 Android 13，BlueStacks Air 是唯一使用 Android 13 的 BlueStacks 版本
         res = self.adb_getprop('bst.installed_images')
         logger.attr('bst.installed_images', res)
         if 'Tiramisu64' in res:
@@ -354,7 +351,7 @@ class Connection(ConnectionAttr):
     @cached_property
     @retry
     def is_mumu_pro(self):
-        # MuMU Pro is the Mac version of MuMu
+        # MuMu Pro 是 MuMu 的 Mac 版本
         if not IS_MACINTOSH:
             return False
         if not self.is_mumu_family:
@@ -372,7 +369,7 @@ class Connection(ConnectionAttr):
     @cached_property
     @retry
     def nemud_player_version(self) -> str:
-        # [nemud.player_product_version]: [3.8.27.2950]
+        # [nemud.player_product_version]: [3.8.27.2950]，MuMu 模拟器版本号
         res = self.adb_getprop('nemud.player_version')
         logger.attr('nemud.player_version', res)
         return res
@@ -380,7 +377,7 @@ class Connection(ConnectionAttr):
     @cached_property
     @retry
     def nemud_player_engine(self) -> str:
-        # NEMUX or MACPRO
+        # MuMu 模拟器引擎类型：NEMUX 或 MACPRO
         res = self.adb_getprop('nemud.player_engine')
         logger.attr('nemud.player_engine', res)
         return res
@@ -391,10 +388,10 @@ class Connection(ConnectionAttr):
 
         res = self.nemud_app_keep_alive
         if res == '':
-            # Empty property, probably MuMu6 or MuMu12 version < 3.5.6
+            # 属性为空，可能是 MuMu6 或 MuMu12 版本 < 3.5.6
             return True
         elif res == 'false':
-            # Disabled
+            # 已禁用
             return True
         elif res == 'true':
             # https://mumu.163.com/help/20230802/35047_1102450.html
@@ -408,18 +405,20 @@ class Connection(ConnectionAttr):
     def is_mumu_over_version_400(self) -> bool:
         if not self.is_mumu_family:
             return False
-        # >= 4.0 has no info in getprop
+        # >= 4.0 版本在 getprop 中没有版本信息
         if self.nemud_player_version == '':
             return True
         return False
 
     @cached_property
     def is_mumu_over_version_356(self) -> bool:
-        """
+        """判断 MuMu12 版本是否 >= 3.5.6。
+
+        该版本具有 nemud.app_keep_alive 属性且始终为竖屏设备。
+        Mac 上的 MuMu PRO 也具有相同特性。
+
         Returns:
-            bool: If MuMu12 version >= 3.5.6,
-                which has nemud.app_keep_alive and always be a vertical device
-                MuMu PRO on mac has the same feature
+            bool: 是否为 MuMu12 >= 3.5.6 版本。
         """
         if not self.is_mumu_family:
             return False
@@ -434,41 +433,41 @@ class Connection(ConnectionAttr):
 
     @cached_property
     def _nc_server_host_port(self):
-        """
+        """获取 netcat 服务器的监听和连接地址信息。
+
         Returns:
-            str, int, str, int:
-                server_listen_host, server_listen_port, client_connect_host, client_connect_port
+            tuple: (server_listen_host, server_listen_port, client_connect_host, client_connect_port)
         """
-        # For BlueStacks hyper-v, use ADB reverse
+        # BlueStacks Hyper-V 使用 ADB reverse
         if self.is_bluestacks_hyperv:
             host = '127.0.0.1'
             logger.info(f'Connecting to BlueStacks hyper-v, using host {host}')
             port = self.adb_reverse(f'tcp:{self.config.REVERSE_SERVER_PORT}')
             return host, port, host, self.config.REVERSE_SERVER_PORT
-        # For emulators, listen on current host
+        # 模拟器监听本机
         if self.is_emulator or self.is_over_http:
-            # Mac emulators
+            # Mac 模拟器
             if self.is_bluestacks_air or self.is_mumu_pro:
                 logger.info(f'Connecting to local emulator, using host 127.0.0.1')
                 port = random_port(self.config.FORWARD_PORT_RANGE)
                 return '127.0.0.1', port, "10.0.2.2", port
-            # Get host IP
+            # 获取主机 IP
             try:
                 host = socket.gethostbyname(socket.gethostname())
             except socket.gaierror as e:
                 logger.error(e)
                 logger.error(f'Unknown host name: {socket.gethostname()}')
                 host = '127.0.0.1'
-            # Fixup linux AVD host
+            # 修复 Linux AVD 主机地址
             if IS_LINUX and host == '127.0.1.1':
                 host = '127.0.0.1'
             logger.info(f'Connecting to local emulator, using host {host}')
             port = random_port(self.config.FORWARD_PORT_RANGE)
-            # For AVD instance
+            # AVD 实例使用 10.0.2.2 作为客户端地址
             if self.is_avd:
                 return host, port, "10.0.2.2", port
             return host, port, host, port
-        # For local network devices, listen on the host under the same network as target device
+        # 局域网设备，监听与目标设备同一网段的主机
         if self.is_network_device:
             hosts = socket.gethostbyname_ex(socket.gethostname())[2]
             logger.info(f'Current hosts: {hosts}')
@@ -478,7 +477,7 @@ class Connection(ConnectionAttr):
                     logger.info(f'Connecting to local network device, using host {host}')
                     port = random_port(self.config.FORWARD_PORT_RANGE)
                     return host, port, host, port
-        # For other devices, create an ADB reverse and listen on 127.0.0.1
+        # 其他设备，创建 ADB reverse 并监听 127.0.0.1
         host = '127.0.0.1'
         logger.info(f'Connecting to unknown device, using host {host}')
         port = self.adb_reverse(f'tcp:{self.config.REVERSE_SERVER_PORT}')
@@ -486,9 +485,9 @@ class Connection(ConnectionAttr):
 
     @cached_property
     def reverse_server(self):
-        """
-        Setup a server on Alas, access it from emulator.
-        This will bypass adb shell and be faster.
+        """在 Alas 端建立服务器，供模拟器端访问。
+
+        绕过 adb shell 直接传输数据，速度更快。
         """
         del_cached_property(self, '_nc_server_host_port')
         host_port = self._nc_server_host_port
@@ -502,16 +501,17 @@ class Connection(ConnectionAttr):
 
     @cached_property
     def nc_command(self):
-        """
+        """获取设备上可用的 netcat 命令。
+
         Returns:
-            list[str]: ['nc'] or ['busybox', 'nc']
+            list[str]: 可用的 nc 命令，如 ['nc'] 或 ['busybox', 'nc']。
         """
         if self.is_emulator:
             sdk = self.sdk_ver
             logger.info(f'sdk_ver: {sdk}')
             if sdk >= 28:
-                # LD Player 9 does not have `nc`, try `busybox nc`
-                # BlueStacks Pie (Android 9) has `nc` but cannot send data, try `busybox nc` first
+                # LD Player 9 没有 `nc`，尝试 `busybox nc`
+                # BlueStacks Pie (Android 9) 有 `nc` 但无法发送数据，优先尝试 `busybox nc`
                 trial = [
                     ['busybox', 'nc'],
                     ['nc'],
@@ -527,8 +527,8 @@ class Connection(ConnectionAttr):
                 ['busybox', 'nc'],
             ]
         for command in trial:
-            # About 3ms
-            # Result should be command help if success
+            # 大约 3ms
+            # 成功时结果应为命令帮助信息
             # nc: bad argument count (see "nc --help")
             result = self.adb_shell(command)
             # `/system/bin/sh: nc: not found`
@@ -540,30 +540,31 @@ class Connection(ConnectionAttr):
             logger.attr('nc command', command)
             return command
 
-        logger.error('No `netcat` command available, please use screenshot methods without `_nc` suffix')
+        logger.error('没有可用的 `netcat` 命令，请使用不带 `_nc` 后缀的截图方法')
         raise RequestHumanTakeover
 
     def adb_shell_nc(self, cmd, timeout=5, chunk_size=262144):
-        """
+        """通过 netcat 传输数据，绕过 adb shell 直接传输，速度更快。
+
         Args:
-            cmd (list):
-            timeout (int):
-            chunk_size (int): Default to 262144
+            cmd (list): shell 命令参数列表。
+            timeout (int): 超时时间（秒）。默认 5。
+            chunk_size (int): 接收数据的块大小。默认 262144。
 
         Returns:
-            bytes:
+            bytes: 接收到的原始数据。
         """
-        # Server start listening
+        # 服务端开始监听
         server = self.reverse_server
         server.settimeout(timeout)
-        # Client send data, waiting for server accept
+        # 客户端发送数据，等待服务端接受连接
         # <command> | nc 127.0.0.1 {port}
         cmd += ["|", *self.nc_command, *self._nc_server_host_port[2:]]
         stream = self.adb_shell(cmd, stream=True, recvall=False)
 
         def _safe_close(s):
             try:
-                # AdbConnection may expose close or hold `conn`
+                # AdbConnection 可能暴露 close 方法或持有 `conn` 属性
                 if hasattr(s, 'close'):
                     s.close()
                     return
@@ -576,7 +577,7 @@ class Connection(ConnectionAttr):
                 pass
 
         try:
-            # Server accept connection
+            # 服务端接受连接
             conn, conn_port = server.accept()
         except socket.timeout:
             try:
@@ -587,10 +588,10 @@ class Connection(ConnectionAttr):
             raise AdbTimeout('reverse server accept timeout')
 
         try:
-            # Server receive data
+            # 服务端接收数据
             data = recv_all(conn, chunk_size=chunk_size, recv_interval=0.001)
         finally:
-            # Server close connection and also close adb stream resource
+            # 服务端关闭连接，同时关闭 adb 流资源
             try:
                 conn.close()
             except Exception:
@@ -604,13 +605,13 @@ class Connection(ConnectionAttr):
         return self.adb_command(cmd, serial)
 
     def adb_forward(self, remote):
-        """
-        Do `adb forward <local> <remote>`.
-        choose a random port in FORWARD_PORT_RANGE or reuse an existing forward,
-        and also remove redundant forwards.
+        """执行 `adb forward <local> <remote>`。
+
+        在 FORWARD_PORT_RANGE 中选择一个随机端口，或复用已有的端口转发，
+        同时移除多余的转发记录。
 
         Args:
-            remote (str):
+            remote (str): 远程地址，如：
                 tcp:<port>
                 localabstract:<unix domain socket name>
                 localreserved:<unix domain socket name>
@@ -619,7 +620,7 @@ class Connection(ConnectionAttr):
                 jdwp:<process pid> (remote only)
 
         Returns:
-            int: Port
+            int: 本地端口号。
         """
         port = 0
         for forward in self.adb.forward_list():
@@ -634,7 +635,7 @@ class Connection(ConnectionAttr):
         if port:
             return port
         else:
-            # Create new forward
+            # 创建新的端口转发
             port = random_port(self.config.FORWARD_PORT_RANGE)
             forward = ForwardItem(self.serial, f'tcp:{port}', remote)
             logger.info(f'Create forward: {forward}')
@@ -642,9 +643,9 @@ class Connection(ConnectionAttr):
             return port
 
     def _adb_reverse_transport(self, remote: str, local: str, norebind: bool = False):
-        """
-        Backport fixes from https://github.com/openatx/adbutils/pull/116
-        Don't use self.adb.reverse(), use this method.
+        """执行 ADB reverse 转发（移植自 https://github.com/openatx/adbutils/pull/116 的修复）。
+
+        不要使用 self.adb.reverse()，请使用此方法。
         """
         args = ["reverse:forward"]
         if norebind:
@@ -665,13 +666,13 @@ class Connection(ConnectionAttr):
                     logger.info(f'Reuse reverse: {reverse}')
                     port = int(reverse.local[4:])
                 else:
-                    logger.info(f'Remove redundant forward: {reverse}')
+                    logger.info(f'Remove redundant reverse: {reverse}')
                     self.adb_reverse_remove(reverse.remote)
 
         if port:
             return port
         else:
-            # Create new reverse
+            # 创建新的 reverse 转发
             port = random_port(self.config.FORWARD_PORT_RANGE)
             reverse = ReverseItem(remote, f'tcp:{port}')
             logger.info(f'Create reverse: {reverse}')
@@ -679,15 +680,15 @@ class Connection(ConnectionAttr):
             return port
 
     def adb_forward_remove(self, local):
-        """
-        Equivalent to `adb -s <serial> forward --remove <local>`
-        No error raised when removing a non-existent forward
+        """移除 ADB 端口转发，等价于 `adb -s <serial> forward --remove <local>`。
 
-        More about the commands send to ADB server, see:
+        移除不存在的转发时不会抛出异常。
+
+        关于发送到 ADB 服务器的命令详情，参见：
         https://cs.android.com/android/platform/superproject/+/master:packages/modules/adb/SERVICES.TXT
 
         Args:
-            local (str): Such as 'tcp:2437'
+            local (str): 本地地址，如 'tcp:2437'。
         """
         try:
             with self.adb_client._connect() as c:
@@ -695,7 +696,7 @@ class Connection(ConnectionAttr):
                 c.send_command(list_cmd)
                 c.check_okay()
         except AdbError as e:
-            # No error raised when removing a non-existed forward
+            # 移除不存在的转发时不会抛出异常
             # adbutils.errors.AdbError: listener 'tcp:8888' not found
             msg = str(e)
             if re.search(r'listener .*? not found', msg):
@@ -704,12 +705,12 @@ class Connection(ConnectionAttr):
                 raise
 
     def adb_reverse_remove(self, local):
-        """
-        Equivalent to `adb -s <serial> reverse --remove <local>`
-        No error raised when removing a non-existent reverse
+        """移除 ADB reverse 转发，等价于 `adb -s <serial> reverse --remove <local>`。
+
+        移除不存在的 reverse 时不会抛出异常。
 
         Args:
-            local (str): Such as 'tcp:2437'
+            local (str): 本地地址，如 'tcp:2437'。
         """
         try:
             with self.adb_client._connect() as c:
@@ -719,7 +720,7 @@ class Connection(ConnectionAttr):
                 c.send_command(list_cmd)
                 c.check_okay()
         except AdbError as e:
-            # No error raised when removing a non-existed forward
+            # 移除不存在的转发时不会抛出异常
             # adbutils.errors.AdbError: listener 'tcp:8888' not found
             msg = str(e)
             if re.search(r'listener .*? not found', msg):
@@ -728,27 +729,29 @@ class Connection(ConnectionAttr):
                 raise
 
     def adb_push(self, local, remote):
-        """
+        """推送文件到设备，等价于 `adb push <local> <remote>`。
+
         Args:
-            local (str):
-            remote (str):
+            local (str): 本地文件路径。
+            remote (str): 设备上的目标路径。
 
         Returns:
-            str:
+            str: 命令输出。
         """
         cmd = ['push', local, remote]
         return self.adb_command(cmd)
 
     def _wait_device_appear(self, serial, first_devices=None):
-        """
+        """等待设备出现在 ADB 设备列表中。
+
         Args:
-            serial:
-            first_devices (list[AdbDeviceWithStatus]):
+            serial (str): 设备序列号。
+            first_devices (list[AdbDeviceWithStatus]): 首次设备列表，避免重复查询。
 
         Returns:
-            bool: If appear
+            bool: 设备是否出现。
         """
-        # Wait a little longer than 5s
+        # 等待略长于 5 秒
         timeout = Timer(5.2).start()
         first_log = True
         while 1:
@@ -757,11 +760,11 @@ class Connection(ConnectionAttr):
                 first_devices = None
             else:
                 devices = self.list_device()
-            # Check if device appear
+            # 检查设备是否出现
             for device in devices:
                 if device.serial == serial and device.status == 'device':
                     return True
-            # Delay and check later
+            # 延迟后再次检查
             if timeout.reached():
                 break
             if first_log:
@@ -773,19 +776,18 @@ class Connection(ConnectionAttr):
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def adb_connect(self, wait_device=True):
-        """
-        Connect to a serial, try 3 times at max.
-        If there's an old ADB server running while Alas is using a newer one, which happens on Chinese emulators,
-        the first connection is used to kill the other one, and the second is the real connect.
+        """连接到指定序列号的设备，最多尝试 3 次。
+
+        如果旧版 ADB 服务器正在运行而 Alas 使用的是较新版本（常见于国产模拟器），
+        第一次连接用于杀死旧服务器，第二次才是真正的连接。
 
         Args:
-            serial (str):
-            wait_device: True to wait emulator-* and android devices appear
+            wait_device (bool): 是否等待 emulator-* 和 android 设备出现。默认 True。
 
         Returns:
-            bool: If success
+            bool: 是否连接成功。
         """
-        # Disconnect offline device before connecting
+        # 连接前先断开离线设备
         devices = self.list_device()
         for device in devices:
             if device.status == 'offline':
@@ -800,7 +802,7 @@ class Connection(ConnectionAttr):
             else:
                 logger.warning(f'Device {device.serial} is is having a unknown status: {device.status}')
 
-        # Skip connecting emulator-5554 and android phones, as they should be auto connected once plugged in
+        # 跳过 emulator-5554 和 Android 手机的连接，因为它们插入后应自动连接
         if 'emulator-' in self.serial:
             if wait_device:
                 if self._wait_device_appear(self.serial, first_devices=devices):
@@ -820,7 +822,7 @@ class Connection(ConnectionAttr):
             logger.info(f'"{self.serial}" seems to be a Android serial, skip adb connect')
             return True
 
-        # Try to connect
+        # 尝试连接
         for _ in range(3):
             msg = self.adb_client.connect(self.serial)
             logger.info(msg)
@@ -835,8 +837,8 @@ class Connection(ConnectionAttr):
             # cannot connect to 127.0.0.1:55555:
             # No connection could be made because the target machine actively refused it. (10061)
             elif '(10061)' in msg:
-                # MuMu12 may switch serial if port is occupied
-                # Brute force connect nearby ports to handle serial switches
+                # MuMu12 端口被占用时可能会切换序列号
+                # 暴力连接附近端口以处理序列号切换
                 if self.is_mumu12_family:
                     before = self.serial
                     serial_list = [self.serial.replace(str(self.port), str(self.port + offset))
@@ -846,21 +848,22 @@ class Connection(ConnectionAttr):
                     if self.serial != before:
                         return True
                 run_once(self.check_mumu_bridge_network)()
-                # No such device
+                # 设备不存在
                 logger.warning('No such device exists, please restart the emulator or set a correct serial')
                 logger.warning('该模拟器 Serial 不存在，请重启模拟器或设置正确的 Serial。')
                 logger.warning('ADB 无法连接至该模拟器，或是模拟器未启动。')
                 raise EmulatorNotRunningError
 
-        # Failed to connect
+        # 连接失败
         logger.warning(f'Failed to connect {self.serial} after 3 trial, assume connected')
         self.detect_device()
         return False
 
     def adb_brute_force_connect(self, serial_list):
-        """
+        """暴力连接多个序列号，用于处理 MuMu12 端口切换。
+
         Args:
-            serial_list (list[str]):
+            serial_list (list[str]): 要尝试连接的序列号列表。
         """
         def connect(s):
             try:
@@ -875,15 +878,16 @@ class Connection(ConnectionAttr):
                 pool.start_thread_soon(connect, serial)
 
     def check_mumu_bridge_network(self):
-        """
+        """检查 MuMu12 是否开启了网络桥接（需要关闭）。
+
         Returns:
-            bool: True if success to check, False if check is skipped
+            bool: 检查成功返回 True，跳过检查返回 False。
         """
         if not self.is_mumu12_family:
             return True
         if not hasattr(self, 'find_emulator_instance'):
             return False
-        # Assume PlatformBase inherited this class
+        # 假设 PlatformBase 继承了此类
         instance = self.find_emulator_instance(
             serial=self.serial,
         )
@@ -908,7 +912,7 @@ class Connection(ConnectionAttr):
 
     @Config.when(DEVICE_OVER_HTTP=True)
     def adb_connect(self, wait_device=True):
-        # No adb connect if over http
+        # 通过 HTTP 连接时不需要 adb connect
         return True
 
     def release_resource(self):
@@ -925,26 +929,25 @@ class Connection(ConnectionAttr):
         self.release_resource()
 
     def adb_restart(self):
-        """
-            Reboot adb client
-        """
+        """重启 ADB 客户端。"""
         logger.info('Restart adb')
-        # Kill current client
+        # 终止当前客户端
         self.adb_client.server_kill()
-        # Init adb client
+        # 重新初始化 ADB 客户端
         del_cached_property(self, 'adb_client')
         self.release_resource()
         _ = self.adb_client
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def adb_reconnect(self):
-        """
-           Reboot adb client if no device found, otherwise try reconnecting device.
+        """重新连接 ADB 设备。
+
+        未找到设备时重启 ADB 客户端，否则尝试重新连接设备。
         """
         if self.config.Emulator_AdbRestart and len(self.list_device()) == 0:
-            # Restart Adb
+            # 重启 ADB
             self.adb_restart()
-            # Connect to device
+            # 连接设备
             self.adb_connect()
             self.detect_device()
         else:
@@ -960,12 +963,10 @@ class Connection(ConnectionAttr):
         )
 
     def install_uiautomator2(self):
-        """
-        Init uiautomator2 and remove minicap.
-        """
+        """初始化 uiautomator2 并移除 minicap。"""
         logger.info('Install uiautomator2')
         init = u2.init.Initer(self.adb, loglevel=logging.DEBUG)
-        # MuMu X has no ro.product.cpu.abi, pick abi from ro.product.cpu.abilist
+        # MuMu X 没有 ro.product.cpu.abi，从 ro.product.cpu.abilist 中选取 abi
         if init.abi not in ['x86_64', 'x86', 'arm64-v8a', 'armeabi-v7a', 'armeabi']:
             init.abi = init.abis[0]
         init.set_atx_agent_addr('127.0.0.1:7912')
@@ -977,16 +978,16 @@ class Connection(ConnectionAttr):
         self.uninstall_minicap()
 
     def uninstall_minicap(self):
-        """ minicap can't work or will send compressed images on some emulators. """
+        """卸载 minicap。minicap 在部分模拟器上无法工作或会发送压缩图像。"""
         logger.info('Removing minicap')
         self.adb_shell(["rm", "/data/local/tmp/minicap"])
         self.adb_shell(["rm", "/data/local/tmp/minicap.so"])
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def restart_atx(self):
-        """
-        Minitouch supports only one connection at a time.
-        Restart ATX to kick the existing one.
+        """重启 ATX 服务。
+
+        Minitouch 同一时间只支持一个连接，重启 ATX 以踢掉现有连接。
         """
         logger.info('Restart ATX')
         atx_agent_path = '/data/local/tmp/atx-agent'
@@ -1002,31 +1003,31 @@ class Connection(ConnectionAttr):
 
     @staticmethod
     def sleep(second):
-        """
+        """休眠指定时间。
+
         Args:
-            second(int, float, tuple):
+            second (int, float, tuple): 休眠时间（秒），可以是固定值或范围元组。
         """
         time.sleep(ensure_time(second))
 
     _orientation_description = {
-        0: 'Normal',
-        1: 'HOME key on the right',
-        2: 'HOME key on the top',
-        3: 'HOME key on the left',
+        0: '正常',
+        1: 'HOME 键在右侧',
+        2: 'HOME 键在顶部',
+        3: 'HOME 键在左侧',
     }
     orientation = 0
 
     @retry
     def get_orientation(self):
-        """
-        Rotation of the phone
+        """获取设备屏幕方向。
 
         Returns:
-            int:
-                0: 'Normal'
-                1: 'HOME key on the right'
-                2: 'HOME key on the top'
-                3: 'HOME key on the left'
+            int: 屏幕方向值：
+                0: 正常
+                1: HOME 键在右侧
+                2: HOME 键在顶部
+                3: HOME 键在左侧
         """
         _DISPLAY_RE = re.compile(
             r'.*DisplayViewport{.*valid=true, .*orientation=(?P<orientation>\d+), .*deviceWidth=(?P<width>\d+), deviceHeight=(?P<height>\d+).*'
@@ -1052,9 +1053,10 @@ class Connection(ConnectionAttr):
 
     @retry
     def list_device(self):
-        """
+        """列出所有 ADB 设备。
+
         Returns:
-            SelectedGrids[AdbDeviceWithStatus]:
+            SelectedGrids[AdbDeviceWithStatus]: 设备列表。
         """
         devices = []
         try:
@@ -1069,7 +1071,7 @@ class Connection(ConnectionAttr):
                     device = AdbDeviceWithStatus(self.adb_client, parts[0], parts[1])
                     devices.append(device)
         except ConnectionResetError as e:
-            # Happens only on CN users.
+            # 仅在国内用户中出现
             # ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
             logger.error(e)
             if '强迫关闭' in str(e):
@@ -1078,9 +1080,9 @@ class Connection(ConnectionAttr):
         return SelectedGrids(devices)
 
     def detect_device(self):
-        """
-        Find available devices
-        If serial=='auto' and only 1 device detected, use it
+        """检测可用设备。
+
+        如果 serial=='auto' 且只检测到 1 个设备，则使用该设备。
         """
         logger.hr('Detect device')
         available = SelectedGrids([])
@@ -1098,21 +1100,21 @@ class Connection(ConnectionAttr):
                         'copy to Alas.Emulator.Serial to use it or set Alas.Emulator.Serial="auto"')
             devices = self.list_device()
 
-            # Show available devices
+            # 显示可用设备
             available = devices.select(status='device')
             for device in available:
                 logger.info(device.serial)
             if not len(available):
                 logger.info('No available devices')
 
-            # Show unavailable devices if having any
+            # 显示不可用设备
             unavailable = devices.delete(available)
             if len(unavailable):
                 logger.info('Here are the devices detected but unavailable')
                 for device in unavailable:
                     logger.info(f'{device.serial} ({device.status})')
 
-            # brute_force_connect
+            # 暴力连接
             if self.config.Emulator_Serial == 'auto' and available.count == 0:
                 logger.warning(f'No available device found')
                 if IS_WINDOWS:
@@ -1123,7 +1125,7 @@ class Connection(ConnectionAttr):
             else:
                 break
 
-        # Auto device detection
+        # 自动设备检测
         if self.config.Emulator_Serial == 'auto':
             if available.count == 0:
                 logger.critical('没有找到可用设备，自动设备检测无法工作，'
@@ -1136,9 +1138,9 @@ class Connection(ConnectionAttr):
             elif available.count == 2 \
                     and available.select(serial='127.0.0.1:7555') \
                     and available.select(may_mumu12_family=True):
-                logger.info(f'Auto device detection found MuMu12 device, using it')
-                # For MuMu12 serials like 127.0.0.1:7555 and 127.0.0.1:16384
-                # ignore 7555 use 16384
+                logger.info(f'自动设备检测到 MuMu12 设备，正在使用它')
+                # 对于 MuMu12 序列号如 127.0.0.1:7555 和 127.0.0.1:16384
+                # 忽略 7555，使用 16384
                 remain = available.select(may_mumu12_family=True).first_or_none()
                 self.config.Emulator_Serial = self.serial = remain.serial
                 del_cached_property(self, 'adb')
@@ -1147,16 +1149,16 @@ class Connection(ConnectionAttr):
                                 '请将下面列出的可用设备之一复制到 Alas.Emulator.Serial 中')
                 raise RequestHumanTakeover
 
-        # Handle LDPlayer
-        # LDPlayer serial jumps between `127.0.0.1:5555+{X}` and `emulator-5554+{X}`
-        # No config write since it's dynamic
+        # 处理雷电模拟器
+        # 雷电模拟器序列号在 `127.0.0.1:5555+{X}` 和 `emulator-5554+{X}` 之间跳转
+        # 动态处理，不写入配置
         port_serial, emu_serial = get_serial_pair(self.serial)
         if port_serial and emu_serial:
-            # Might be LDPlayer, check connected devices
+            # 可能是雷电模拟器，检查已连接设备
             port_device = devices.select(serial=port_serial).first_or_none()
             emu_device = devices.select(serial=emu_serial).first_or_none()
             if port_device and emu_device:
-                # Paired devices found, check status to get the correct one
+                # 找到配对设备，检查状态以获取正确的序列号
                 if port_device.status == 'device' and emu_device.status == 'offline':
                     self.serial = port_serial
                     logger.info(f'LDPlayer device pair found: {port_device}, {emu_device}. '
@@ -1166,7 +1168,7 @@ class Connection(ConnectionAttr):
                     logger.info(f'LDPlayer device pair found: {port_device}, {emu_device}. '
                                 f'Using serial: {self.serial}')
             elif not devices.select(serial=self.serial):
-                # Current serial not found
+                # 当前序列号未找到
                 if port_device and not emu_device:
                     logger.info(f'Current serial {self.serial} not found but paired device {port_serial} found. '
                                 f'Using serial: {port_serial}')
@@ -1176,7 +1178,7 @@ class Connection(ConnectionAttr):
                                 f'Using serial: {emu_serial}')
                     self.serial = emu_serial
 
-        # Redirect MuMu12 from 127.0.0.1:7555 to 127.0.0.1:16xxx
+        # 将 MuMu12 从 127.0.0.1:7555 重定向到 127.0.0.1:16xxx
         if self.serial == '127.0.0.1:7555':
             for _ in range(2):
                 mumu12 = available.select(may_mumu12_family=True)
@@ -1186,18 +1188,18 @@ class Connection(ConnectionAttr):
                     self.config.Emulator_Serial = self.serial = emu_serial
                     break
                 elif mumu12.count >= 2:
-                    logger.warning(f'Multiple MuMu12 serial found, cannot redirect')
+                    logger.warning(f'发现多个 MuMu12 序列号，无法重定向')
                     break
                 else:
-                    # Only 127.0.0.1:7555
+                    # 仅有 127.0.0.1:7555
                     if self.is_mumu_over_version_356:
-                        # is_mumu_over_version_356 and nemud_app_keep_alive was cached
-                        # Acceptable since it's the same device
+                        # is_mumu_over_version_356 和 nemud_app_keep_alive 已缓存
+                        # 因为是同一设备，可以接受
                         logger.warning(f'Device {self.serial} is MuMu12 but corresponding port not found')
                         if IS_WINDOWS:
                             brute_force_connect()
                         devices = self.list_device()
-                        # Show available devices
+                        # 显示可用设备
                         available = devices.select(status='device')
                         for device in available:
                             logger.info(device.serial)
@@ -1208,19 +1210,19 @@ class Connection(ConnectionAttr):
                         # MuMu6
                         break
 
-        # MuMu12 uses 127.0.0.1:16385 if port 16384 is occupied, auto redirect
-        # No config write since it's dynamic
+        # MuMu12 端口 16384 被占用时会使用 127.0.0.1:16385，自动重定向
+        # 动态处理，不写入配置
         if self.is_mumu12_family:
             matched = False
             for device in available.select(may_mumu12_family=True):
                 if device.port == self.port:
-                    # Exact match
+                    # 精确匹配
                     matched = True
                     break
             if not matched:
                 for device in available.select(may_mumu12_family=True):
                     if -2 <= device.port - self.port <= 2:
-                        # Port switched
+                        # 端口已切换
                         logger.info(f'MuMu12 serial switched {self.serial} -> {device.serial}')
                         del_cached_property(self, 'port')
                         del_cached_property(self, 'is_mumu12_family')
@@ -1230,11 +1232,11 @@ class Connection(ConnectionAttr):
 
     @retry
     def list_package(self, show_log=True):
+        """列出设备上所有已安装的包。
+
+        优先使用 dumpsys 以提高速度。
         """
-        Find all packages on device.
-        Use dumpsys first for faster.
-        """
-        # 80ms
+        # 约 80ms
         if show_log:
             logger.info('Get package list')
         output = self.adb_shell(r'dumpsys package | grep "Package \["')
@@ -1242,7 +1244,7 @@ class Connection(ConnectionAttr):
         if len(packages):
             return packages
 
-        # 200ms
+        # 约 200ms
         if show_log:
             logger.info('Get package list')
         output = self.adb_shell(['pm', 'list', 'packages'])
@@ -1250,25 +1252,24 @@ class Connection(ConnectionAttr):
         return packages
 
     def list_known_packages(self, show_log=True):
-        """
+        """列出设备上已知的游戏包（碧蓝航线及其渠道包）。
+
         Args:
-            show_log:
+            show_log (bool): 是否输出日志。默认 True。
 
         Returns:
-            list[str]: List of package names
+            list[str]: 包名列表。
         """
         packages = self.list_package(show_log=show_log)
         packages = [p for p in packages if p in VALID_PACKAGE or p in VALID_CHANNEL_PACKAGE]
         return packages
 
     def detect_package(self, set_config=True):
-        """
-        Show all game client on this device.
-        """
+        """检测设备上的碧蓝航线客户端包。"""
         logger.hr('Detect package')
         packages = self.list_known_packages()
 
-        # Show packages
+        # 显示可用包
         logger.info(f'Here are the available packages in device "{self.serial}", '
                     f'copy to Alas.Emulator.PackageName to use it')
         if len(packages):
@@ -1277,7 +1278,7 @@ class Connection(ConnectionAttr):
         else:
             logger.info(f'在设备 "{self.serial}" 上没有找到可用包')
 
-        # Auto package detection
+        # 自动包检测
         if len(packages) == 0:
             logger.critical(f'没有找到碧蓝航线包，'
                             f'请确认碧蓝航线已安装在设备 "{self.serial}" 上')
@@ -1285,14 +1286,14 @@ class Connection(ConnectionAttr):
         if len(packages) == 1:
             logger.info('自动包检测只找到一个包，正在使用它')
             self.package = packages[0]
-            # Set config
+            # 写入配置
             if set_config:
                 self.config.Emulator_PackageName = self.package
-            # Set server
+            # 设置服务器
             logger.info('Server changed, release resources')
             set_server(self.package)
         else:
             logger.critical(
-                f'Multiple AzurLane packages found, auto package detection cannot decide which to choose, '
-                'please copy one of the available devices listed above to Alas.Emulator.PackageName')
+                f'找到多个碧蓝航线包，自动包检测无法决定选择哪个，'
+                '请将上面列出的可用包之一复制到 Alas.Emulator.PackageName 中')
             raise RequestHumanTakeover

@@ -12,9 +12,10 @@ from module.map_detection.utils import Points
 
 class Template(Resource):
     def __init__(self, file):
-        """
+        """初始化模板资源。
+
         Args:
-            file (dict[str], str): Filepath of template file.
+            file: 模板文件路径，支持字典形式的服务器路径映射或普通字符串路径。
         """
         self.raw_file = file
         self._image = None
@@ -49,7 +50,7 @@ class Template(Resource):
                     if channel == 3:
                         image = image[:, :, :3].copy()
                     elif len(image.shape) == 3:
-                        # Follow the first frame
+                        # 与第一帧保持通道数一致，取单通道
                         image = image[:, :, 0].copy()
 
                     image = self.pre_process(image)
@@ -112,12 +113,13 @@ class Template(Resource):
         self._image_luma = None
 
     def pre_process(self, image):
-        """
+        """对输入图像进行预处理。
+
         Args:
-            image (np.ndarray):
+            image: 输入图像，np.ndarray 格式。
 
         Returns:
-            np.ndarray:
+            预处理后的图像。
         """
         return image
 
@@ -129,15 +131,16 @@ class Template(Resource):
             return self.image.shape[0:2][::-1]
 
     def match(self, image, scaling=1.0, similarity=0.85, direct_match=False):
-        """
+        """在截图图像上进行模板匹配。
+
         Args:
-            image:
-            scaling (int, float): Scale the template to match image
-            similarity (float): 0 to 1.
-            direct_match (bool): If True, bypass lower_template_match_similarity clamping.
+            image: 截图图像。
+            scaling: 缩放比例，用于缩放模板以匹配图像。
+            similarity: 相似度阈值，范围 0 到 1。
+            direct_match: 若为 True，跳过 lower_template_match_similarity 的阈值限制。
 
         Returns:
-            bool: If matches.
+            是否匹配成功。
         """
         if not direct_match:
             similarity = lower_template_match_similarity(similarity)
@@ -164,30 +167,29 @@ class Template(Resource):
             return sim > similarity
 
     def match_binary(self, image, similarity=0.85):
-        """
-        Use template match after binarization.
+        """二值化后进行模板匹配。
 
         Args:
-            image:
-            similarity (float): 0 to 1.
+            image: 截图图像。
+            similarity: 相似度阈值，范围 0 到 1。
 
         Returns:
-            bool: If matches.
+            是否匹配成功。
         """
         similarity = lower_template_match_similarity(similarity)
         if self.is_gif:
-            # graying
+            # 灰度化
             image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            # binarization
+            # 二值化
             _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
             return self._match_gif(image_binary, self.image_binary, similarity)
 
         else:
-            # graying
+            # 灰度化
             image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            # binarization
+            # 二值化
             _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-            # template matching
+            # 模板匹配
             res = cv2.matchTemplate(self.image_binary, image_binary, cv2.TM_CCOEFF_NORMED)
             _, sim, _, _ = cv2.minMaxLoc(res)
             return sim > similarity
@@ -204,14 +206,15 @@ class Template(Resource):
             return sim > similarity
 
     def _point_to_button(self, point, image=None, name=None):
-        """
+        """将匹配点转换为 Button 对象。
+
         Args:
-            point:
-            image (np.ndarray): Screenshot. If provided, load color and image from it.
-            name (str):
+            point: 匹配位置的坐标点 (x, y)。
+            image: 截图图像。若提供，则从中加载颜色和图像信息。
+            name: 按钮名称。
 
         Returns:
-            Button:
+            根据匹配点生成的 Button 对象。
         """
         if name is None:
             name = self.name
@@ -222,14 +225,14 @@ class Template(Resource):
         return button
 
     def match_result(self, image, name=None):
-        """
+        """模板匹配并返回相似度和匹配位置的 Button 对象。
+
         Args:
-            image:
-            name (str):
+            image: 截图图像。
+            name: 按钮名称。
 
         Returns:
-            float: Similarity
-            Button:
+            相似度（float）和对应的 Button 对象。
         """
         res = cv2.matchTemplate(image, self.image, cv2.TM_CCOEFF_NORMED)
         _, sim, _, point = cv2.minMaxLoc(res)
@@ -248,16 +251,17 @@ class Template(Resource):
         return sim, button
 
     def match_multi(self, image, scaling=1.0, similarity=0.85, threshold=3, name=None):
-        """
+        """模板匹配多个位置，返回所有匹配结果的 Button 列表。
+
         Args:
-            image:
-            scaling (int, float): Scale the template to match image
-            similarity (float): 0 to 1.
-            threshold (int): Distance to delete nearby results.
-            name (str):
+            image: 截图图像。
+            scaling: 缩放比例，用于缩放模板以匹配图像。
+            similarity: 相似度阈值，范围 0 到 1。
+            threshold: 聚类距离阈值，用于合并相邻的匹配结果。
+            name: 按钮名称。
 
         Returns:
-            list[Button]:
+            所有匹配位置的 Button 对象列表。
         """
         similarity = lower_template_match_similarity(similarity)
         scaling = 1 / scaling
@@ -277,18 +281,17 @@ class Template(Resource):
             result = cv2.matchTemplate(image, self.image, cv2.TM_CCOEFF_NORMED)
             result = np.array(np.where(result > similarity)).T[:, ::-1]
 
-        # result: np.array([[x0, y0], [x1, y1], ...)
+        # result: np.array([[x0, y0], [x1, y1], ...])  匹配位置坐标数组
         if scaling != 1.0:
             result = np.round(result / scaling).astype(int)
         result = Points(result).group(threshold=threshold)
         return [self._point_to_button(point, image=raw, name=name) for point in result]
 
     def split_server(self):
-        """
-        Split into 4 server specific buttons.
+        """按服务器拆分为 4 个独立的 Button 对象。
 
         Returns:
-            dict[str, Button]:
+            以服务器名称为键、Button 对象为值的字典。
         """
         out = {}
         for s in VALID_SERVER:

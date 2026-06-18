@@ -39,52 +39,52 @@ TRACEBACK_CODE_FORMAT = """\
 LOG_CODE_FORMAT = "{code}"
 
 DARK_TERMINAL_THEME = TerminalTheme(
-    (30, 30, 30),  # Background
-    (204, 204, 204),  # Foreground
+    (30, 30, 30),  # 背景色
+    (204, 204, 204),  # 前景色
     [
-        (0, 0, 0),  # Black
-        (205, 49, 49),  # Red
-        (13, 188, 121),  # Green
-        (229, 229, 16),  # Yellow
-        (36, 114, 200),  # Blue
-        (188, 63, 188),  # Purple / Magenta
-        (17, 168, 205),  # Cyan
-        (229, 229, 229),  # White
+        (0, 0, 0),  # 黑
+        (205, 49, 49),  # 红
+        (13, 188, 121),  # 绿
+        (229, 229, 16),  # 黄
+        (36, 114, 200),  # 蓝
+        (188, 63, 188),  # 紫 / 品红
+        (17, 168, 205),  # 青
+        (229, 229, 229),  # 白
     ],
-    [  # Bright
-        (102, 102, 102),  # Black
-        (241, 76, 76),  # Red
-        (35, 209, 139),  # Green
-        (245, 245, 67),  # Yellow
-        (59, 142, 234),  # Blue
-        (214, 112, 214),  # Purple / Magenta
-        (41, 184, 219),  # Cyan
-        (229, 229, 229),  # White
+    [  # 高亮
+        (102, 102, 102),  # 黑
+        (241, 76, 76),  # 红
+        (35, 209, 139),  # 绿
+        (245, 245, 67),  # 黄
+        (59, 142, 234),  # 蓝
+        (214, 112, 214),  # 紫 / 品红
+        (41, 184, 219),  # 青
+        (229, 229, 229),  # 白
     ],
 )
 
 LIGHT_TERMINAL_THEME = TerminalTheme(
-    (255, 255, 255),  # Background
-    (97, 97, 97),  # Foreground
+    (255, 255, 255),  # 背景色
+    (97, 97, 97),  # 前景色
     [
-        (0, 0, 0),  # Black
-        (205, 49, 49),  # Red
-        (0, 188, 0),  # Green
-        (148, 152, 0),  # Yellow
-        (4, 81, 165),  # Blue
-        (188, 5, 188),  # Purple / Magenta
-        (5, 152, 188),  # Cyan
-        (85, 85, 85),  # White
+        (0, 0, 0),  # 黑
+        (205, 49, 49),  # 红
+        (0, 188, 0),  # 绿
+        (148, 152, 0),  # 黄
+        (4, 81, 165),  # 蓝
+        (188, 5, 188),  # 紫 / 品红
+        (5, 152, 188),  # 青
+        (85, 85, 85),  # 白
     ],
-    [  # Bright
-        (102, 102, 102),  # Black
-        (205, 49, 49),  # Red
-        (20, 206, 20),  # Green
-        (181, 186, 0),  # Yellow
-        (4, 81, 165),  # Blue
-        (188, 5, 188),  # Purple / Magenta
-        (5, 152, 188),  # Cyan
-        (165, 165, 165),  # White
+    [  # 高亮
+        (102, 102, 102),  # 黑
+        (205, 49, 49),  # 红
+        (20, 206, 20),  # 绿
+        (181, 186, 0),  # 黄
+        (4, 81, 165),  # 蓝
+        (188, 5, 188),  # 紫 / 品红
+        (5, 152, 188),  # 青
+        (165, 165, 165),  # 白
     ],
 )
 
@@ -121,22 +121,27 @@ class Task:
 
 class TaskHandler:
     def __init__(self) -> None:
-        # List of background running task
+        # 后台运行的任务列表
         self.tasks: List[Task] = []
-        # List of task name to be removed
+        # 待移除的任务列表
         self.pending_remove_tasks: List[Task] = []
-        # Running task
+        # 当前正在运行的任务
         self._task = None
-        # Task running thread
+        # 任务运行线程
         self._thread: threading.Thread = None
         self._alive = False
         self._lock = threading.Lock()
 
     def add(self, func, delay: float, pending_delete: bool = False) -> None:
         """
-        Add a task running background.
-        Another way of `self.add_task()`.
-        func: Callable or Generator
+        添加后台运行的任务。
+
+        `self.add_task()` 的便捷替代方式。
+
+        Args:
+            func: Callable 或 Generator
+            delay: 任务执行间隔（秒）
+            pending_delete: 是否标记为待删除
         """
         if isinstance(func, Callable):
             g = get_generator(func)
@@ -146,7 +151,7 @@ class TaskHandler:
 
     def add_task(self, task: Task, pending_delete: bool = False) -> None:
         """
-        Add a task running background.
+        添加后台运行的任务。
         """
         if task in self.tasks:
             logger.warning(f"Task {task} already in tasks list.")
@@ -168,11 +173,11 @@ class TaskHandler:
 
     def remove_task(self, task: Task, nowait: bool = False) -> None:
         """
-        Remove a task in `self.tasks`.
+        从 `self.tasks` 中移除任务。
+
         Args:
-            task:
-            nowait: if True, remove it right now,
-                    otherwise remove when call `self.remove_pending_task`
+            task: 要移除的任务
+            nowait: 为 True 时立即移除，否则在调用 `self.remove_pending_task` 时统一移除
         """
         if nowait:
             with self._lock:
@@ -182,7 +187,7 @@ class TaskHandler:
 
     def remove_pending_task(self) -> None:
         """
-        Remove all pending remove tasks.
+        移除所有待移除的任务。
         """
         with self._lock:
             for task in self.pending_remove_tasks:
@@ -201,8 +206,9 @@ class TaskHandler:
 
     def loop(self) -> None:
         """
-        Start task loop.
-        You **should** run this function in an individual thread.
+        启动任务循环。
+
+        此函数**必须**在独立线程中运行。
         """
         self._alive = True
         while self._alive:
@@ -239,7 +245,7 @@ class TaskHandler:
 
     def start(self) -> None:
         """
-        Start task handler.
+        启动任务处理器。
         """
         logger.info("Start task handler")
         if self._thread is not None and self._thread.is_alive():
@@ -256,9 +262,9 @@ class TaskHandler:
             if not self._thread.is_alive():
                 logger.info("Finish task handler")
             else:
-                logger.warning("Task handler does not stop within 2 seconds")
+                logger.warning("任务处理器未在 2 秒内停止")
         else:
-            logger.info("Task handler stop called from within its own thread, skipping join")
+            logger.info("任务处理器在其自身线程内调用了停止，跳过 join")
 
 
 class WebIOTaskHandler(TaskHandler):
@@ -271,9 +277,11 @@ class WebIOTaskHandler(TaskHandler):
 class Switch:
     def __init__(self, status, get_state, name=None):
         """
+        初始化状态切换器。
+
         Args:
-            status
-                (dict):A dict describes each state.
+            status: 状态映射，支持两种形式：
+                (dict): 描述每个状态的字典。
                     {
                         0: {
                             'func': (Callable)
@@ -292,14 +300,12 @@ class Switch:
                         ]
                         -1: []
                     }
-                (Callable):current state will pass into this function
+                (Callable): 当前状态值会传入此函数。
                     lambda state: do_update(state=state)
-            get_state:
-                (Callable):
-                    return current state
-                (Generator):
-                    yield current state, do nothing when state not in status
-            name:
+            get_state: 获取当前状态。
+                (Callable): 返回当前状态。
+                (Generator): yield 当前状态，当状态不在 status 中时不执行操作。
+            name: 任务名称。
         """
         self._lock = threading.Lock()
         self.name = name
@@ -316,8 +322,9 @@ class Switch:
 
     def _get_state(self):
         """
-        Predefined generator when `get_state` is an callable
-        Customize it if you have multiple criteria on state
+        当 `get_state` 为可调用对象时使用的预定义生成器。
+
+        如需多条件判断状态，可覆盖此方法进行自定义。
         """
         _status = self.get_state()
         yield _status
@@ -377,9 +384,10 @@ def filepath_icon(filename):
 
 def add_css(filepath):
     """
-    Safely inject a CSS file into the document head.
-    Uses document.createElement + text node so CSS containing quotes
-    or </style> won't break JS/HTML parsing.
+    将 CSS 文件安全注入到文档头部。
+
+    使用 document.createElement + 文本节点的方式，确保包含引号或 </style> 的 CSS
+    不会破坏 JS/HTML 解析。
     """
     with open(filepath, "r", encoding="utf-8") as f:
         css = f.read()
@@ -408,7 +416,7 @@ def _read(path):
 
 class Icon:
     """
-    Storage html of icon.
+    存储图标的 HTML 内容。
     """
 
     ALAS = _read(filepath_icon("alas"))
@@ -432,22 +440,31 @@ str2type = {
 
 def parse_pin_value(val, valuetype: str = None):
     """
-    input, textarea return str
-    select return its option (str or int)
-    checkbox return [] or [True] (define in put_checkbox_)
+    解析 pin 组件的值。
+
+    input/textarea 返回 str；select 返回其选项值（str 或 int）；
+    checkbox 返回 [] 或 [True]（在 put_checkbox_ 中定义）；
+    multiselect 返回选项值列表（如 [3, 1, 5]）。
     """
-    # Handle dict type - extract 'value' if exists and recursively parse
+    # 处理 dict 类型 - 提取 'value' 字段并递归解析
     if isinstance(val, dict):
         if 'value' in val:
             return parse_pin_value(val['value'], valuetype)
         else:
-            # Return dict as-is if no 'value' key
+            # 无 'value' 键时原样返回 dict
             return val
     elif isinstance(val, list):
+        if valuetype == 'ignore':
+            if len(val) == 0:
+                return False
+            return val
         if len(val) == 0:
-            return False
-        else:
+            return []
+        # 区分 checkbox ([True]) 和 multiselect ([3, 1, 5])
+        # checkbox 的值始终是 [True] 或 []，非空列表且不含 bool 之外的元素即为 multiselect
+        if all(isinstance(x, bool) for x in val):
             return True
+        return val
     elif valuetype:
         return str2type[valuetype](val)
     elif isinstance(val, (int, float)):
@@ -465,7 +482,7 @@ def parse_pin_value(val, valuetype: str = None):
 
 def to_pin_value(val):
     """
-    Convert bool to checkbox
+    将 bool 值转换为 checkbox 格式。
     """
     if val is True:
         return [True]
@@ -571,13 +588,13 @@ def on_task_exception(self):
         pass
 
 
-# Monkey patch
+# 猴子补丁：替换 PyWebIO 默认的异常处理器
 pywebio.session.base.Session.on_task_exception = on_task_exception
 
 
 def raise_exception(x=3):
     """
-    For testing purpose
+    用于测试目的的异常抛出函数。
     """
     if x > 0:
         raise_exception(x - 1)

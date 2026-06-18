@@ -3,21 +3,18 @@ import json
 import ctypes
 from cached_property import cached_property
 
-# In order for MAA submodule to exexute,
-# it is necessary to load runtime before module PIL
+# MAA 子模块需要在 PIL 模块之前加载运行时依赖
 if os.name == 'nt':
-    # This DLL is the dependency for next DLL
-    # Try loading to avoid mix different versions of runtime
+    # vcruntime140_1.dll 是后续 DLL 的前置依赖，提前加载以避免版本冲突
     try:
         ctypes.WinDLL(os.path.join(os.environ['SystemRoot'], 'System32/vcruntime140_1.dll'))
     except Exception as e:
         print(e)
 
-    # This DLL must be loaded due to conflict issues
+    # msvcp140.dll 因冲突问题必须加载
     ctypes.WinDLL(os.path.join(os.environ['SystemRoot'], 'System32/msvcp140.dll'))
 
-    # These DLLS are other DLLS that MAA depends on
-    # Try loading to avoid mix different versions of runtime
+    # 其余 MAA 依赖的 DLL，提前加载以避免版本冲突
     try:
         ctypes.WinDLL(os.path.join(os.environ['SystemRoot'], 'System32/msvcp140_1.dll'))
         ctypes.WinDLL(os.path.join(os.environ['SystemRoot'], 'System32/concrt140.dll'))
@@ -69,7 +66,7 @@ class ArknightsAutoScript(AzurLaneAutoScript):
             if self.config.task.command != 'MaaStartup':
                 self.config.task_stop()
 
-        # Fix MaaPath=*\MAA.exe
+        # 修正 MaaPath 指向可执行文件的情况，提取其所在目录
         if os.path.isfile(self.config.MaaEmulator_MaaPath):
             path = os.path.dirname(self.config.MaaEmulator_MaaPath)
             logger.info(f'MaaEmulator_MaaPath: {self.config.MaaEmulator_MaaPath} is revised to {path}')
@@ -97,7 +94,7 @@ class ArknightsAutoScript(AzurLaneAutoScript):
             logger.critical('找不到MAA，请检查安装路径是否正确')
             raise RequestHumanTakeover
         except OSError as e:
-            # OSError: [WinError 126] 找不到指定的模块。
+            # Windows 系统找不到指定的 DLL 模块
             if '[WinError 126]' in str(e):
                 logger.exception(e)
                 logger.critical(

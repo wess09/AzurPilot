@@ -5,15 +5,17 @@ from module.os_shop.assets import PORT_SUPPLY_CHECK
 from module.os_shop.shop import OSShop
 from module.ui.assets import BACK_ARROW
 
-# Azur Lane ports have PORT_GOTO_MISSION, PORT_GOTO_SUPPLY, PORT_GOTO_DOCK.
-# Red axis ports have PORT_GOTO_SUPPLY.
-# Use PORT_GOTO_SUPPLY as checker.
+# 碧蓝航线港口有 PORT_GOTO_MISSION、PORT_GOTO_SUPPLY、PORT_GOTO_DOCK
+# 红轴港口有 PORT_GOTO_SUPPLY
+# 使用 PORT_GOTO_SUPPLY 作为检查器
 PORT_CHECK = PORT_GOTO_SUPPLY
 
 
 class PortHandler(OSShop):
     def port_enter(self):
         """
+        进入港口。
+
         Pages:
             in: IN_MAP
             out: PORT_CHECK
@@ -26,11 +28,13 @@ class PortHandler(OSShop):
                 continue
             if self.handle_map_event():
                 continue
-        # Buttons at the bottom has an animation to show
-        pass  # Already ensured in ui_click
+        # 底部按钮有显示动画
+        pass  # 已在 ui_click 中确保
 
     def port_quit(self, skip_first_screenshot=True):
         """
+        退出港口。
+
         Pages:
             in: PORT_CHECK
             out: IN_MAP
@@ -38,18 +42,17 @@ class PortHandler(OSShop):
         logger.info('Port quit')
         self.ui_back(appear_button=PORT_CHECK, check_button=self.is_in_map,
                      skip_first_screenshot=skip_first_screenshot)
-        # Buttons at the bottom has an animation to show
+        # 底部按钮有显示动画
         self.wait_os_map_buttons()
 
     def port_mission_accept(self):
         """
-        Accept all missions in port.
+        接受港口中的所有任务。
 
-        Deprecated since 2022.01.13, missions are shown only in overview, no longer to be shown at ports.
+        自 2022.01.13 起已弃用，任务仅在总览中显示，不再在港口中显示。
 
         Returns:
-            bool: True if all missions accepted or no mission found.
-                  False if unable to accept more missions.
+            bool: 所有任务已接受或未找到任务时返回 True，无法接受更多任务时返回 False。
 
         Pages:
             in: PORT_CHECK
@@ -69,7 +72,7 @@ class PortHandler(OSShop):
                 confirm_timer.reset()
                 continue
             else:
-                # End
+                # 结束
                 if confirm_timer.reached():
                     success = True
                     break
@@ -84,18 +87,22 @@ class PortHandler(OSShop):
 
     def port_shop_enter(self):
         """
+        进入港口商店。
+
         Pages:
             in: PORT_CHECK
             out: PORT_SUPPLY_CHECK
         """
         self.ui_click(PORT_GOTO_SUPPLY, appear_button=PORT_CHECK, check_button=PORT_SUPPLY_CHECK,
                       skip_first_screenshot=True)
-        # Port items has an animation to show
+        # 港口物品有显示动画
         self.device.sleep(0.5)
         self.device.screenshot()
 
     def port_shop_quit(self, skip_first_screenshot=True):
         """
+        退出港口商店。
+
         Pages:
             in: PORT_SUPPLY_CHECK
             out: PORT_CHECK
@@ -150,7 +157,7 @@ class PortHandler(OSShop):
 
     def port_dock_repair(self):
         """
-        Repair all ships.
+        修复所有舰船。
 
         Pages:
             in: PORT_CHECK
@@ -161,13 +168,13 @@ class PortHandler(OSShop):
 
         repaired = False
         for _ in self.loop():
-            # End
+            # 结束
             if self.info_bar_count():
                 break
             if repaired and self.appear(PORT_DOCK_CHECK, offset=(20, 20)):
                 break
 
-            # PORT_DOCK_CHECK is button to repair all.
+            # PORT_DOCK_CHECK 是全部修复按钮
             if self.appear_then_click(PORT_DOCK_CHECK, offset=(20, 20), interval=2):
                 continue
             if self.handle_popup_confirm('DOCK_REPAIR'):

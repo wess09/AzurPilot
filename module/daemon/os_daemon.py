@@ -11,22 +11,28 @@ from module.os_handler.port import PORT_ENTER, PortHandler
 
 class AzurLaneDaemon(DaemonBase, OSFleet, PortHandler):
     def _os_combat_expected_end(self):
+        """大世界战斗预期结束判断，优先处理搜索奖励弹窗。"""
         if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=2):
             return False
 
         return super()._os_combat_expected_end()
 
     def run(self):
+        """大世界守护模式主循环。
+
+        持续截图并按优先级处理：战斗状态 > 战斗准备 > 经验结算 > 地图事件 >
+        港口维修 > 选择敌人。无终止条件，需手动停止。
+        """
         self.config.merge(OSConfig())
         self.config.override(HOMO_EDGE_DETECT=False)
         while 1:
             self.device.screenshot()
 
-            # If is running a combat, do nothing.
+            # 战斗执行中，不做额外操作
             if self.is_combat_executing():
                 continue
 
-            # Combat
+            # 战斗处理
             if self.combat_appear():
                 self.combat_preparation()
             try:
@@ -40,14 +46,14 @@ class AzurLaneDaemon(DaemonBase, OSFleet, PortHandler):
             if self.appear_then_click(EXP_INFO_D, interval=2):
                 continue
 
-            # Map events
+            # 地图事件处理
             if self.handle_map_event():
                 self._nearest_object_click_timer.clear()
                 continue
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=2):
                 continue
 
-            # Port repair
+            # 港口维修
             if self.config.OpsiDaemon_RepairShip:
                 if self.appear(PORT_ENTER, offset=(20, 20), interval=30):
                     self.port_enter()
@@ -57,12 +63,12 @@ class AzurLaneDaemon(DaemonBase, OSFleet, PortHandler):
                     logger.info('Port repair finished, '
                                 'please move your fleet out of the port in 30s to avoid repairing again')
 
+            # 自动选择最近敌人
             if self.config.OpsiDaemon_SelectEnemy:
                 if self.click_nearest_object():
                     continue
 
-            # End
-            # No end condition, stop it manually.
+            # 无终止条件，需手动停止
 
         return True
 

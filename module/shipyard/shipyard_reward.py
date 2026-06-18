@@ -32,12 +32,17 @@ class RewardShipyard(ShipyardUI):
 
     def _shipyard_get_cost(self, amount, rarity=None):
         """
+        根据已购蓝图数量和稀有度计算购买单价。
+
         Args:
-            amount (int): Index of the blueprint to buy
-            rarity (str): 'DR', 'PR'
+            amount (int): 已购买的蓝图序号
+            rarity (str): 稀有度，'DR' 或 'PR'
 
         Returns:
-            int: Prize to buy
+            int: 购买价格
+
+        Raises:
+            ScriptError: 稀有度无效时抛出
         """
         if rarity is None:
             rarity = self._shipyard_bp_rarity
@@ -59,22 +64,18 @@ class RewardShipyard(ShipyardUI):
 
     def _shipyard_calculate(self, start, count, pay=False):
         """
-        Calculates the maximum number
-        of BPs based on current parameters
-        and _coin_count amount
+        计算当前金币下可购买的最大蓝图数量。
 
-        Submits payment if 'pay' set to True
+        根据起始位置、剩余数量和金币余额，计算可购买的
+        蓝图总数。若 pay 为 True 则扣除对应金币。
 
         Args:
-            start (int): BUY_PRIZE key to resume at
-            count (int): Total remaining to buy
-            pay (bool): Finalize payment to _coin_count
+            start (int): 起始购买序号
+            count (int): 剩余待购买总数
+            pay (bool): 是否实际扣除金币
 
         Returns:
-            int, int
-                - BUY_PRIZE for next _shipyard_buy_calc
-                  call
-                - Total capable of buying currently
+            tuple: (下次起始序号, 本次可购买数量)
         """
         if start <= 0 or count <= 0:
             return start, count
@@ -100,27 +101,22 @@ class RewardShipyard(ShipyardUI):
         return i + 1, count
 
     def _shipyard_buy_calc(self, start, count):
-        """
-        Shorthand for _shipyard_calculate all information
-        is relevant
-        """
+        """计算可购买数量，不扣除金币。"""
         return self._shipyard_calculate(start, count, pay=False)
 
     def _shipyard_pay_calc(self, start, count):
-        """
-        Shorthand for _shipyard_calculate partial
-        information is relevant but most importantly
-        finalize payment to _coin_count
-        """
+        """计算并扣除已购蓝图的金币消耗。"""
         return self._shipyard_calculate(start, count, pay=True)
 
     def _shipyard_buy(self, count):
         """
-        Buy up to the configured number of BPs
-        Supports buying in both DEV and FATE
+        购买指定数量的蓝图。
+
+        支持在 DEV 和 FATE 阶段购买。循环进入购买界面、
+        调整数量并确认购买，直到数量用尽或无法继续。
 
         Args:
-            count (int): Total to buy
+            count (int): 待购买总数
         """
         logger.hr('shipyard_buy')
         prev = 1
@@ -141,9 +137,8 @@ class RewardShipyard(ShipyardUI):
 
             self._shipyard_buy_confirm('BP_BUY')
 
-            # Pay for actual amount bought based on 'remain'
-            # which also updates 'start' as a result
-            # Save into 'prev' for next _shipyard_pay_calc
+            # 根据实际购买量（remain）扣除金币，同时更新 start
+            # 保存到 prev 供下次 _shipyard_pay_calc 使用
             start, _ = self._shipyard_pay_calc(prev, (count - remain))
             prev = start
 
@@ -151,8 +146,12 @@ class RewardShipyard(ShipyardUI):
 
     def _shipyard_use(self, index):
         """
-        Spend all remaining extraneous BPs
-        Supports using BPs in both DEV and FATE
+        使用指定舰船的所有剩余多余蓝图。
+
+        支持在 DEV 和 FATE 阶段使用蓝图。
+
+        Args:
+            index (int): 目标舰船索引
         """
         logger.hr('shipyard_use')
         count = self._shipyard_get_bp_count(index)
@@ -170,19 +169,17 @@ class RewardShipyard(ShipyardUI):
 
     def shipyard_run(self, series, index, count):
         """
-        Runs shop browse operations
+        执行船坞蓝图购买流程。
+
+        Pages: in: page_main, out: page_shipyard
 
         Args:
-            series (int): 1-4 inclusively, button location
-            index (int): 1-6 inclusively, button location
-                         some series are restricted to 1-5
-            count (int): number to buy after use
+            series (int): 科研系列，1-4（部分系列限制为 1-5）
+            index (int): 舰船索引，1-6
+            count (int): 使用后待购买的数量
 
         Returns:
-            bool: If shop attempted to run
-                  thereby transition to respective
-                  pages. If no transition took place,
-                  then did not run
+            bool: 是否执行了购买流程
         """
         if count <= 0:
             logger.info('Shipyard buy amount is 0, skip')
@@ -191,10 +188,8 @@ class RewardShipyard(ShipyardUI):
             logger.info('Shipyard ship index is 0, skip')
             return False
 
-        # Gold difficult to Ocr in page_shipyard
-        # due to both text and number being
-        # right-aligned together
-        # Retrieve information from page_main instead
+        # 船坞页面中金币 OCR 困难（文字和数字右对齐导致混淆）
+        # 改从主页面获取金币信息
         self.ui_ensure(page_main)
         timeout = Timer(1, count=1).start()
         skip_first_screenshot = True

@@ -13,7 +13,7 @@ body:
         required: true
       - label: I checked Frequently Asked Questions (FAQ) in Wiki page
         required: true
-      - label: I am using the latest version of Alas
+      - label: I am using the latest version of AzurPilot
         required: false
   - type: textarea
     id: describe

@@ -16,9 +16,7 @@ class RegValue:
 
 
 def list_reg(reg) -> t.List[RegValue]:
-    """
-    List all values in a reg key
-    """
+    """列出注册表键下的所有值。"""
     rows = []
     index = 0
     try:
@@ -32,9 +30,7 @@ def list_reg(reg) -> t.List[RegValue]:
 
 
 def list_key(reg) -> t.List[RegValue]:
-    """
-    List all values in a reg key
-    """
+    """列出注册表键下的所有子键。"""
     rows = []
     index = 0
     try:
@@ -53,11 +49,11 @@ def abspath(path):
 
 @dataclass
 class EmulatorInstance:
-    # Serial for adb connection
+    # ADB 连接序列号
     serial: str
-    # Emulator instance name, used for start/stop emulator
+    # 模拟器实例名称，用于启动/停止模拟器
     name: str
-    # Path to emulator .exe
+    # 模拟器 .exe 文件路径
     path: str
 
     def __str__(self):
@@ -65,14 +61,16 @@ class EmulatorInstance:
 
     @cached_property
     def emulator(self) -> str:
-        """
+        """获取模拟器类型。
+
         Returns:
-            str: Emulator type, such as Emulator.NoxPlayer
+            str: 模拟器类型，如 Emulator.NoxPlayer。
         """
         return Emulator.path_to_emulator(self.path)
 
     @cached_property
     def start_command(self) -> t.List[str]:
+        """获取模拟器启动命令。"""
         if self.emulator in [Emulator.NoxPlayer, Emulator.NoxPlayer64]:
             # Nox.exe -clone:Nox64_7
             return [self.path, f'-clone:{self.name}']
@@ -80,6 +78,7 @@ class EmulatorInstance:
 
     @cached_property
     def quit_command(self) -> t.List[str]:
+        """获取模拟器退出命令。"""
         if self.emulator in [Emulator.NoxPlayer, Emulator.NoxPlayer64]:
             # Nox.exe -clone:Nox64_7 -quit
             return [self.path, f'-clone:{self.name}', '-quit']
@@ -99,12 +98,13 @@ class Emulator:
 
     @classmethod
     def path_to_emulator(cls, path: str) -> str:
-        """
+        """根据可执行文件路径判断模拟器类型。
+
         Args:
-            path: Path to .exe file
+            path: .exe 文件路径。
 
         Returns:
-            str: Emulator type, such as Emulator.NoxPlayer
+            str: 模拟器类型，如 Emulator.NoxPlayer，无法识别时返回空字符串。
         """
         folder, exe = os.path.split(path)
         folder, dir1 = os.path.split(folder)
@@ -161,12 +161,13 @@ class Emulator:
 
     @staticmethod
     def vbox_file_to_serial(file: str) -> str:
-        """
+        """从 vbox 虚拟机配置文件中解析 ADB 端口。
+
         Args:
-            file: Path to vbox file
+            file: vbox 文件路径。
 
         Returns:
-            str: serial such as `127.0.0.1:5555`
+            str: ADB 序列号，如 '127.0.0.1:5555'，未找到时返回空字符串。
         """
         regex = re.compile('<*?hostport="(.*?)".*?guestport="5555"/>')
         with open(file, 'r', encoding='utf-8', errors='ignore') as f:
@@ -178,12 +179,13 @@ class Emulator:
         return ''
 
     def iter_instances(self):
-        """
+        """遍历模拟器中的所有实例。
+
         Yields:
-            EmulatorInstance: Emulator instances found in this emulator
+            EmulatorInstance: 找到的模拟器实例。
         """
         if self.emu in [Emulator.NoxPlayer, Emulator.NoxPlayer64]:
-            # ./BignoxVMS/{name}/{name}.vbox
+            # 夜神模拟器：./BignoxVMS/{name}/{name}.vbox
             for folder in iter_folder(self.abspath('./BignoxVMS'), is_dir=True):
                 for file in iter_folder(folder, ext='.vbox'):
                     serial = self.vbox_file_to_serial(file)
@@ -194,7 +196,7 @@ class Emulator:
                             path=self.path,
                         )
         elif self.emu == Emulator.BlueStacks5:
-            # Get UserDefinedDir, where BlueStacks stores data
+            # 获取 BlueStacks 数据存储目录 UserDefinedDir
             folder = None
             try:
                 with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\BlueStacks_nxt") as reg:
@@ -208,10 +210,10 @@ class Emulator:
                 pass
             if not folder:
                 return
-            # Read {UserDefinedDir}/bluestacks.conf
+            # 读取 bluestacks.conf 配置文件
             with open(self.abspath('./bluestacks.conf', folder), encoding='utf-8') as f:
                 content = f.read()
-            # bst.instance.Nougat64.adb_port="5555"
+            # 配置格式：bst.instance.Nougat64.adb_port="5555"
             emulators = re.findall(r'bst.instance.(\w+).status.adb_port="(\d+)"', content)
             for emulator in emulators:
                 yield EmulatorInstance(
@@ -220,7 +222,7 @@ class Emulator:
                     path=self.path,
                 )
         elif self.emu in [Emulator.LDPlayer3, Emulator.LDPlayer4, Emulator.LDPlayer9]:
-            # ./vms/leidian0
+            # 雷电模拟器：./vms/leidian0
             try:
                 folders = list(iter_folder(self.abspath('./vms'), is_dir=True))
             except FileNotFoundError:
@@ -231,8 +233,7 @@ class Emulator:
                 res = regex.match(folder)
                 if not res:
                     continue
-                # LDPlayer has no forward port config in .vbox file
-                # Ports are auto increase, 5555, 5557, 5559, etc
+                # 雷电模拟器没有 .vbox 端口转发配置，端口自动递增：5555, 5557, 5559, ...
                 port = int(res.group(1)) * 2 + 5555
                 yield EmulatorInstance(
                     serial=f'127.0.0.1:{port}',
@@ -240,14 +241,14 @@ class Emulator:
                     path=self.path
                 )
         elif self.emu == Emulator.MumuAppPlayer:
-            # MuMu has no multi instances, on 7555 only
+            # MuMu 模拟器没有多开功能，固定端口 7555
             yield EmulatorInstance(
                 serial='127.0.0.1:7555',
                 name='',
                 path=self.path,
             )
         elif self.emu == Emulator.MemuPlayer:
-            # ./MemuHyperv VMs/{name}/{name}.memu
+            # 逍遥模拟器：./MemuHyperv VMs/{name}/{name}.memu
             for folder in iter_folder(self.abspath('./MemuHyperv VMs'), is_dir=True):
                 for file in iter_folder(folder, ext='.memu'):
                     serial = self.vbox_file_to_serial(file)
@@ -262,13 +263,14 @@ class Emulator:
 class EmulatorManager:
     @staticmethod
     def get_install_dir_from_reg(path, key):
-        """
+        """从注册表获取模拟器安装目录。
+
         Args:
-            path (str): f'SOFTWARE\\leidian\\ldplayer'
-            key (str): 'InstallDir'
+            path (str): 注册表路径，如 'SOFTWARE\\leidian\\ldplayer'。
+            key (str): 注册表键名，如 'InstallDir'。
 
         Returns:
-            str: Installation dir or None
+            str: 安装目录路径，未找到时返回 None。
         """
         try:
             with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as reg:
@@ -287,9 +289,10 @@ class EmulatorManager:
 
     @staticmethod
     def iter_uninstall_registry():
-        """
+        """遍历注册表中已知模拟器的卸载程序路径。
+
         Yields:
-            str: Path to uninstall exe file
+            str: 卸载程序的文件路径。
         """
         known_uninstall_registry_path = [
             r'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
@@ -320,23 +323,20 @@ class EmulatorManager:
                         uninstall = winreg.QueryValueEx(software_reg, 'UninstallString')[0]
                         if not uninstall:
                             continue
-                        # UninstallString is like:
+                        # UninstallString 格式如：
                         # C:\Program Files\BlueStacks_nxt\BlueStacksUninstaller.exe -tmp
                         # "E:\ProgramFiles\Microvirt\MEmu\uninstall\uninstall.exe" -u
-                        # Extract path in ""
+                        # 提取引号中的路径
                         res = re.search('"(.*?)"', uninstall)
                         uninstall = res.group(1) if res else uninstall
                         yield uninstall
 
     @cached_property
     def all_emulators(self) -> t.List[Emulator]:
-        """
-        Get all emulators installed on current computer.
-        """
+        """获取当前计算机上所有已安装的模拟器。"""
         exe = set([])
 
-        # MuiCache
-        # https://3gstudent.github.io/%E6%B8%97%E9%80%8F%E6%8A%80%E5%B7%A7-Windows%E7%B3%BB%E7%BB%9F%E6%96%87%E4%BB%B6%E6%89%A7%E8%A1%8C%E8%AE%B0%E5%BD%95%E7%9A%84%E8%8E%B7%E5%8F%96%E4%B8%8E%E6%B8%85%E9%99%A4
+        # 通过 MuiCache 注册表查找已运行过的模拟器
         path = r'Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache'
         regex = re.compile(r'(^.*\.exe)\.')
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as reg:
@@ -347,7 +347,7 @@ class EmulatorManager:
                     if Emulator.is_emulator(file) and os.path.exists(file):
                         exe.add(file)
 
-        # LDPlayer install path
+        # 雷电模拟器安装路径
         for path in [r'SOFTWARE\leidian\ldplayer',
                      r'SOFTWARE\leidian\ldplayer9']:
             ld = self.get_install_dir_from_reg(path, 'InstallDir')
@@ -356,9 +356,9 @@ class EmulatorManager:
                 if Emulator.is_emulator(ld) and os.path.exists(ld):
                     exe.add(ld)
 
-        # Uninstall registry
+        # 通过卸载注册表查找模拟器
         for uninstall in self.iter_uninstall_registry():
-            # Find emulator executable from uninstaller
+            # 从卸载程序目录中查找模拟器可执行文件
             for file in iter_folder(abspath(os.path.dirname(uninstall)), ext='.exe'):
                 if Emulator.is_emulator(file) and os.path.exists(file):
                     exe.add(file)
@@ -373,9 +373,7 @@ class EmulatorManager:
 
     @cached_property
     def all_emulator_instances(self) -> t.List[EmulatorInstance]:
-        """
-        Get all emulator instances installed on current computer.
-        """
+        """获取当前计算机上所有已安装的模拟器实例。"""
         instances = []
         for emulator in self.all_emulators:
             instances += list(emulator.iter_instances())

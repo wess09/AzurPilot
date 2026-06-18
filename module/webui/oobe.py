@@ -760,7 +760,7 @@ class OOBEWizard:
         self.emulator_serial = "127.0.0.1:5555"
         self.package_name = "com.bilibili.azurlane"
         self.server_name = "cn_android-0"
-        self.config_name = "alas"
+        self.config_name = "ap"
         self.screenshot_method = "auto"
         existing_lang = getattr(State.deploy_config, "Language", None)
         if existing_lang:
@@ -781,6 +781,8 @@ class OOBEWizard:
             add_css(filepath_css("dark-alas"))
         elif self.gui.theme == "socialism":
             add_css(filepath_css("socialism-alas"))
+        elif self.gui.theme == "children":
+            add_css(filepath_css("children-alas"))
         else:
             add_css(filepath_css("light-alas"))
 
@@ -873,7 +875,7 @@ class OOBEWizard:
             )
         put_html(f'<div class="oobe-steps">{steps}</div>')
 
-    # ─── Step 0: Intro ───
+    # ─── 步骤 0：欢迎页 ───
 
     def _step_intro(self):
         put_html(
@@ -931,7 +933,7 @@ class OOBEWizard:
                 size="auto auto",
             ).style("justify-content: flex-end; margin-top: 24px;")
 
-    # ─── Step 1: Import ───
+    # ─── 步骤 1：导入配置 ───
 
     def _step_import(self):
         put_html(
@@ -1021,7 +1023,7 @@ class OOBEWizard:
         """)
 
 
-    # ─── Step 1: Language ───
+    # ─── 步骤 1：语言选择 ───
 
     def _step_welcome(self):
         put_html(
@@ -1049,7 +1051,7 @@ class OOBEWizard:
             self.server_name = self._default_server_name_for_region(self.server)
         self._render()
 
-    # ─── Step 2: Server ───
+    # ─── 步骤 2：服务器选择 ───
 
     def _step_server(self):
         put_html(
@@ -1173,7 +1175,7 @@ class OOBEWizard:
                 return pkg
         return "com.bilibili.azurlane"
 
-    # ─── Step 3: Emulator ───
+    # ─── 步骤 3：模拟器配置 ───
 
     def _step_emulator(self):
         put_html(
@@ -1298,7 +1300,7 @@ class OOBEWizard:
             return devices
         return []
 
-    # ─── Step 4: Review ───
+    # ─── 步骤 4：确认配置 ───
 
     def _step_review(self):
         put_html(
@@ -1326,7 +1328,7 @@ class OOBEWizard:
             on_next=lambda _: self._create_config_and_finish(),
         )
 
-    # ─── Config Creation ───
+    # ─── 创建配置 ───
 
     def _create_config_and_finish(self):
         try:

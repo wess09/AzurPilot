@@ -25,16 +25,28 @@ FILTER = Filter(FILTER_REGEX, FILTER_ATTR)
 class PQShopItemGrid(ItemGrid):
     def predict(self, image, name=True, amount=True, cost=False, price=False, tag=False):
         """
-        Define new attributes to predicted Item obj for shop item filtering
+        识别商品列表并为每个商品添加分组/子类/层级属性，用于过滤。
+
+        通过正则表达式从商品名称中提取 group、sub_genre、tier 三个属性。
+
+        Args:
+            image: 截图图像
+            name (bool): 是否识别名称
+            amount (bool): 是否识别数量
+            cost (bool): 是否识别消耗
+            price (bool): 是否识别价格
+            tag (bool): 是否识别标签
+
+        Returns:
+            list[Item]: 带有额外过滤属性的商品列表
         """
         super().predict(image, name, amount, cost, price, tag)
 
         for item in self.items:
-            # Set defaults
+            # 初始化默认值
             item.group, item.sub_genre, item.tier = None, None, None
 
-            # Can use regular expression to quickly populate
-            # the new attributes
+            # 通过正则表达式快速填充过滤属性
             name = item.name
             result = re.search(FILTER_REGEX, name)
             if result:
@@ -43,10 +55,6 @@ class PQShopItemGrid(ItemGrid):
                      if group is not None else None
                      for group in result.groups()]
             else:
-                # if not name.isnumeric():
-                #     logger.warning(f'Unable to parse shop item {name}; '
-                #                     'check template asset and filter regexp')
-                #     raise ScriptError
                 continue
 
         return self.items
@@ -59,8 +67,10 @@ class PQShop(PQShopClerk, PQStatus):
     @cached_property
     def shop_filter(self):
         """
+        根据配置生成商品过滤字符串。
+
         Returns:
-            str:
+            str: 过滤条件，如 'GiftRoses > GiftCake'
         """
         list_filter = []
         if self.config.PrivateQuarters_BuyRoses:
@@ -73,8 +83,10 @@ class PQShop(PQShopClerk, PQStatus):
     @cached_property
     def shop_grid(self):
         """
+        商店商品网格布局（4 列 1 行）。
+
         Returns:
-            ButtonGrid:
+            ButtonGrid: 商品网格
         """
         shop_grid = ButtonGrid(
             origin=(290, 215), delta=(230, 0), button_shape=(96, 96), grid_shape=(4, 1),
@@ -84,9 +96,10 @@ class PQShop(PQShopClerk, PQStatus):
     @cached_property
     def shop_private_quarters_items(self):
         """
+        私人宿舍商店商品网格，含模板匹配和 OCR 价格识别。
+
         Returns:
-            PQShopItemGrid:
-            cost_area=(-52, 330, -26, 353)
+            PQShopItemGrid: 商品网格实例
         """
         shop_grid = self.shop_grid
         shop_private_quarters_items = PQShopItemGrid(shop_grid, templates={},
@@ -98,25 +111,21 @@ class PQShop(PQShopClerk, PQStatus):
 
     def shop_items(self):
         """
-        Shared alias for all shops
-        If there are server-lang
-        differences, reference
-        shop_guild/medal for @Config
-        example
+        获取商店商品网格实例。
+
+        若存在服务器语言差异，参考 shop_guild/medal 的 @Config 方式。
 
         Returns:
-            ShopItemGrid:
+            PQShopItemGrid: 商品网格实例
         """
         return self.shop_private_quarters_items
 
     def shop_currency(self):
         """
-        Ocr shop guild currency if needed
-        (gold coins and gems)
-        Then return gold coin count
+        OCR 识别商店货币（金币和钻石）并更新内部状态。
 
-        Returns:
-            int: gold coin amount
+        Pages:
+            in: 私人宿舍商店页
         """
         self._currency = self.status_get_gold_coins()
         self.gems = self.status_get_gems()
@@ -124,11 +133,15 @@ class PQShop(PQShopClerk, PQStatus):
 
     def shop_check_item(self, item):
         """
+        检查商品是否可购买（余额是否充足）。
+
+        玫瑰需要 24000+ 金币，蛋糕需要 210+ 钻石。
+
         Args:
-            item: Item to check
+            item: 待检查的商品
 
         Returns:
-            bool: whether item can be bought
+            bool: 是否可购买
         """
         if self.config.PrivateQuarters_BuyRoses:
             if item.sub_genre == 'roses':
@@ -146,14 +159,15 @@ class PQShop(PQShopClerk, PQStatus):
 
     def shop_get_item_to_buy(self, items):
         """
+        从商品列表中筛选出第一个可购买的商品。
+
         Args:
-            items list(Item): acquired from shop_get_items
+            items (list[Item]): 商品列表
 
         Returns:
-            Item: Item to buy, or None.
+            Item: 待购买的商品，无可买项时返回 None
         """
-        # Load selection, apply filter,
-        # and return 1st item in result if any
+        # 加载过滤条件，应用过滤，返回第一个结果
         FILTER.load(self.shop_filter)
         filtered = FILTER.apply(items, self.shop_check_item)
 

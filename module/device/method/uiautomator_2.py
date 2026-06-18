@@ -35,16 +35,16 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 不可处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # adb server 被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # In `device.set_new_command_timeout(604800)`
+            # 在 `device.set_new_command_timeout(604800)` 时
             # json.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)
             except JSONDecodeError as e:
                 logger.error(e)
@@ -69,32 +69,32 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # In `assert c.read string(4) == _OKAY`
-            # ADB on emulator not enabled
+            # 在 `assert c.read string(4) == _OKAY` 时
+            # 模拟器未启用 ADB
             except AssertionError as e:
                 logger.exception(e)
                 possible_reasons(
-                    'If you are using BlueStacks or LD player or WSA, '
-                    'please enable ADB in the settings of your emulator'
+                    '如果你使用的是 BlueStacks、雷电模拟器或 WSA，'
+                    '请在模拟器设置中启用 ADB'
                 )
                 break
-            # Package not installed
+            # 包未安装
             except PackageNotInstalled as e:
                 logger.error(e)
 
                 def init():
                     self.detect_package()
-            # ImageTruncated
+            # 图像截断
             except ImageTruncated as e:
                 from module.device.method.utils import handle_image_truncated
                 handle_image_truncated(self, e)
 
                 def init():
                     pass
-            # Can't handle - must propagate to trigger emulator restart
+            # 不可处理 - 必须向上抛出以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # Unknown
+            # 未知异常
             except Exception as e:
                 logger.exception(e)
 
@@ -134,7 +134,7 @@ class Uiautomator2(Connection):
     @retry
     def screenshot_uiautomator2(self):
         image = self.u2.screenshot(format='raw')
-        # Guard against None/empty response
+        # 防止 None/空响应
         if image is None or len(image) == 0:
             raise ImageTruncated('Empty image content from uiautomator2')
 
@@ -166,7 +166,7 @@ class Uiautomator2(Connection):
 
     @retry
     def _drag_along(self, path):
-        """Swipe following path.
+        """沿路径滑动。
 
         Args:
             path (list): (x, y, sleep)
@@ -179,7 +179,7 @@ class Uiautomator2(Connection):
                 (821, 326+10, 0.1),
                 (821, 326, 0),
             ])
-            Equals to:
+            等价于:
             al.device.touch.down(403, 421)
             time.sleep(0.2)
             al.device.touch.move(821, 326)
@@ -206,22 +206,22 @@ class Uiautomator2(Connection):
 
     def drag_uiautomator2(self, p1, p2, segments=1, shake=(0, 15), point_random=(-10, -10, 10, 10),
                           shake_random=(-5, -5, 5, 5), swipe_duration=0.25, shake_duration=0.1):
-        """Drag and shake, like:
+        """拖拽并抖动，示意如下:
                      /\
         +-----------+  +  +
                         \/
-        A simple swipe or drag don't work well, because it only has two points.
-        Add some way point to make it more like swipe.
+        简单的滑动或拖拽效果不佳，因为只有两个点。
+        添加一些路径点使其更像真实滑动。
 
         Args:
-            p1 (tuple): Start point, (x, y).
-            p2 (tuple): End point, (x, y).
+            p1 (tuple): 起始点，(x, y)。
+            p2 (tuple): 终止点，(x, y)。
             segments (int):
-            shake (tuple): Shake after arrive end point.
-            point_random: Add random to start point and end point.
-            shake_random: Add random to shake array.
-            swipe_duration: Duration between way points.
-            shake_duration: Duration between shake points.
+            shake (tuple): 到达终止点后的抖动。
+            point_random: 为起始点和终止点添加随机偏移。
+            shake_random: 为抖动数组添加随机偏移。
+            swipe_duration: 路径点之间的间隔时间。
+            shake_duration: 抖动点之间的间隔时间。
         """
         p1 = np.array(p1) - random_rectangle_point(point_random)
         p2 = np.array(p2) - random_rectangle_point(point_random)
@@ -238,7 +238,7 @@ class Uiautomator2(Connection):
     def app_current_uiautomator2(self):
         """
         Returns:
-            str: Package name.
+            str: 包名。
         """
         result = self.u2.app_current()
         return result['package']
@@ -251,7 +251,7 @@ class Uiautomator2(Connection):
             allow_failure (bool):
 
         Returns:
-            bool: If success to start
+            bool: 是否成功启动
 
         Raises:
             PackageNotInstalled:
@@ -286,7 +286,7 @@ class Uiautomator2(Connection):
             allow_failure (bool):
 
         Returns:
-            bool: If success to start
+            bool: 是否成功启动
 
         Raises:
             PackageNotInstalled:
@@ -303,7 +303,7 @@ class Uiautomator2(Connection):
                 elif 'not found' in str(e):
                     logger.error(e)
                     raise PackageNotInstalled(package_name)
-                # Unknown error
+                # 未知错误
                 else:
                     raise
             activity_name = info['mainActivity']
@@ -313,7 +313,7 @@ class Uiautomator2(Connection):
         if self.is_local_network_device and self.is_waydroid:
             cmd += ['--windowingMode', '4']
         ret = self.u2.shell(cmd)
-        # Invalid activity
+        # 无效的 activity
         # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=... }
         # Error type 3
         # Error: Activity class {.../...} does not exist.
@@ -323,7 +323,7 @@ class Uiautomator2(Connection):
             else:
                 logger.error(ret)
                 return False
-        # Already running
+        # 已在运行
         # Warning: Activity not started, intent has been delivered to currently running top-most instance.
         if 'Warning: Activity not started' in ret.output:
             logger.info('App activity is already started')
@@ -346,26 +346,26 @@ class Uiautomator2(Connection):
                 logger.error(ret)
                 logger.error('Permission Denial while starting app, probably because activity invalid')
                 return False
-        # Success
+        # 成功
         # Starting: Intent...
         return True
 
-    # No @retry decorator since _app_start_adb_am and _app_start_adb_monkey have @retry already
+    # 不使用 @retry 装饰器，因为 _app_start_adb_am 和 _app_start_adb_monkey 已有 @retry
     # @retry
     def app_start_uiautomator2(self, package_name=None, activity_name=None, allow_failure=False):
         """
         Args:
             package_name (str):
-                If None, to get from config
+                为 None 时从配置中获取
             activity_name (str):
-                If None, to get from DICT_PACKAGE_TO_ACTIVITY
-                If still None, launch from monkey
-                If monkey failed, fetch activity name and launch from am
+                为 None 时从 DICT_PACKAGE_TO_ACTIVITY 获取
+                仍为 None 时通过 monkey 启动
+                monkey 失败时，获取 activity 名称并通过 am 启动
             allow_failure (bool):
-                True for no PackageNotInstalled raising, just return False
+                为 True 时不抛出 PackageNotInstalled，只返回 False
 
         Returns:
-            bool: If success to start
+            bool: 是否成功启动
 
         Raises:
             PackageNotInstalled:
@@ -413,7 +413,7 @@ class Uiautomator2(Connection):
     @retry
     def resolution_uiautomator2(self, cal_rotation=True) -> t.Tuple[int, int]:
         """
-        Faster u2.window_size(), cause that calls `dumpsys display` twice.
+        比 u2.window_size() 更快，因为后者会调用两次 `dumpsys display`。
 
         Returns:
             (width, height)
@@ -428,14 +428,14 @@ class Uiautomator2(Connection):
 
     def resolution_check_uiautomator2(self):
         """
-        Alas does not actively check resolution but the width and height of screenshots.
-        However, some screenshot methods do not provide device resolution, so check it here.
+        Alas 不主动检查分辨率，而是检查截图的宽高。
+        但某些截图方法不提供设备分辨率，因此在此处进行检查。
 
         Returns:
             (width, height)
 
         Raises:
-            RequestHumanTakeover: If resolution is not 1280x720
+            RequestHumanTakeover: 分辨率不是 1280x720 时抛出
         """
         width, height = self.resolution_uiautomator2()
         logger.attr('Screen_size', f'{width}x{height}')
@@ -451,7 +451,7 @@ class Uiautomator2(Connection):
     @retry
     def proc_list_uiautomator2(self) -> t.List[ProcessInfo]:
         """
-        Get info about current processes.
+        获取当前进程信息。
         """
         resp = self.u2.http.get("/proc/list", timeout=10)
         resp.raise_for_status()
@@ -469,10 +469,10 @@ class Uiautomator2(Connection):
     @retry
     def u2_shell_background(self, cmdline, timeout=10) -> ShellBackgroundResponse:
         """
-        Run at background.
+        在后台运行命令。
 
-        Note that this function will always return a success response,
-        as this is a untested and hidden method in ATX.
+        注意此函数总是返回成功响应，
+        因为这是 ATX 中一个未经测试的隐藏方法。
         """
         if isinstance(cmdline, (list, tuple)):
             cmdline = list2cmdline(cmdline)
@@ -502,7 +502,7 @@ class Uiautomator2(Connection):
     def u2_send_keys(self, text: str, clear: bool=False):
         self.u2.send_keys(text=text, clear=clear)
 
-    # Ref: https://uiautomator2.readthedocs.io/en/latest/api.html#uiautomator2.Session.send_action
+    # 参考: https://uiautomator2.readthedocs.io/en/latest/api.html#uiautomator2.Session.send_action
     def u2_send_action(self, code):
         self.u2.send_action(code=code)
 

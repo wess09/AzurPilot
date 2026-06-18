@@ -22,8 +22,10 @@ STAGE_FILTER = Filter(regex=re.compile('(\w+)'), attr=['name'])
 class RaidDaily(RaidRun):
     def run(self, name=''):
         """
+        运行突袭每日任务，依次刷完各难度次数。
+
         Args:
-            name (str): Raid name, such as 'raid_20200624'
+            name (str): 突袭活动名称，如 'raid_20200624'。
         """
         if self.is_raid_rpg():
             logger.info('RPG raid has no dailies')
@@ -46,14 +48,12 @@ class RaidDaily(RaidRun):
                     break
                 super().run(name=name, mode=mode, total=1)
 
-        # If configured for EX, always do last
-        # So does not use stage filtering
+        # 如果配置了 EX 难度，始终最后执行，因此不使用阶段过滤
         stages = [stage.lower().strip()\
             for stage in\
             self.config.RaidDaily_StageFilter.split('>')]
         if 'ex' in stages:
-            # Collect raid tickets from clearing
-            # any difficulty 5+ and 10+ times
+            # 领取通关任意难度 5 次和 10 次的突袭门票奖励
             self.ui_goto_main()
             Reward(self.config, self.device).reward_mission(
                    daily=self.config.Reward_CollectMission,

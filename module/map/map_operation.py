@@ -16,18 +16,18 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
     map_clear_percentage_prev = -1
     map_clear_percentage_timer = Timer(0.3, count=1)
 
-    # Fleet that shows on screen.
+    # 屏幕上显示的舰队编号。
     fleet_show_index = 1
-    # Note that this is different from get_fleet_current_index()
-    # In fleet_current_index, 1 means mob fleet, 2 means boss fleet.
+    # 注意：这与 get_fleet_current_index() 不同。
+    # 在 fleet_current_index 中，1 表示道中队，2 表示 Boss 队。
     fleet_current_index = 1
 
     def get_fleet_show_index(self):
         """
-        Get the fleet that shows on screen.
+        获取屏幕上当前显示的舰队编号。
 
         Returns:
-            int: 1 or 2
+            int: 1 或 2
 
         Pages:
             in: in_map
@@ -45,8 +45,10 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def get_fleet_current_index(self):
         """
+        获取当前逻辑舰队编号（考虑舰队顺序反转）。
+
         Returns:
-            int: 1 or 2
+            int: 1 或 2
         """
         if self.fleets_reversed:
             self.fleet_current_index = 3 - self.fleet_show_index
@@ -57,12 +59,14 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def fleet_set(self, index=None, skip_first_screenshot=True):
         """
+        切换到目标舰队。
+
         Args:
-            index (int): Target fleet_current_index
-            skip_first_screenshot (bool):
+            index (int): 目标 fleet_current_index。
+            skip_first_screenshot (bool): 是否跳过第一次截图。
 
         Returns:
-            bool: If switched.
+            bool: 是否进行了切换。
         """
         logger.info(f'Fleet set to {index}')
         timeout = Timer(5, count=10).start()
@@ -101,12 +105,13 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
         return count > 0
 
     def enter_map(self, button, mode='normal', skip_first_screenshot=True):
-        """Enter a campaign.
+        """
+        进入战役关卡。
 
         Args:
-            button: Campaign to enter.
-            mode (str): 'normal' or 'hard'
-            skip_first_screenshot (bool):
+            button: 要进入的战役按钮。
+            mode (str): 'normal' 或 'hard'。
+            skip_first_screenshot (bool): 是否跳过第一次截图。
         """
         logger.hr('Enter map')
         campaign_timer = Timer(5)
@@ -129,7 +134,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                 else:
                     self.device.screenshot()
 
-                # Check errors
+                # 检查错误
                 if campaign_click > 5:
                     logger.critical(f"无法进入 {button}，对 {button} 的点击次数过多")
                     logger.critical("可能原因 #1: 您尚未达到解锁该关卡的指挥官等级。")
@@ -143,20 +148,20 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                                     "但这是您第二次进入")
                     raise RequestHumanTakeover
 
-                # Already in map
+                # 已在地图中
                 if not checked_in_map and self.is_in_map():
                     logger.info('Already in map, skip enter_map.')
                     return False
                 else:
                     checked_in_map = True
 
-                # Accidental clicks
+                # 意外点击处理
                 if self.appear(DAILY_CHECK, offset=(20, 20), interval=3):
                     logger.info(f'{DAILY_CHECK} -> {BACK_ARROW}')
                     self.device.click(BACK_ARROW)
                     continue
 
-                # Map preparation
+                # 地图准备
                 if map_timer.reached() and self.handle_map_mode_switch(mode) and self.handle_map_preparation():
                     self.map_get_info()
                     self.handle_map_walk_speedup()
@@ -172,7 +177,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                     campaign_timer.reset()
                     continue
 
-                # Fleet preparation
+                # 舰队准备
                 if fleet_timer.reached() and self.appear(FLEET_PREPARATION, offset=(20, 50)):
                     if mode == 'normal' or mode == 'hard':
                         self.handle_2x_book_setting(mode='prep')
@@ -186,46 +191,46 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                     campaign_timer.reset()
                     continue
 
-                # Auto search continue
+                # 自动搜索继续
                 if self.handle_auto_search_continue(drop=drop):
                     campaign_timer.reset()
                     continue
 
-                # Retire
+                # 退役
                 if self.handle_retirement():
                     continue
 
-                # Use Data Key
+                # 使用数据密钥
                 if self.handle_use_data_key():
                     continue
 
-                # Emotion
+                # 情绪处理
                 if self.handle_combat_low_emotion():
                     continue
 
-                # Urgent commission
+                # 紧急委托
                 if self.handle_urgent_commission(drop=drop):
                     continue
 
-                # 2X book popup
+                # 2倍经验书弹窗
                 if self.handle_2x_book_popup():
                     continue
 
                 if self.handle_submarine_cost_popup():
                     continue
 
-                # Story skip
+                # 剧情跳过
                 if self.handle_story_skip():
                     campaign_timer.reset()
                     continue
 
-                # Enter campaign
+                # 进入战役
                 if campaign_timer.reached() and self.appear_then_click(button):
                     campaign_click += 1
                     campaign_timer.reset()
                     continue
 
-                # End
+                # 结束判断
                 if self.map_is_auto_search:
                     if self.is_auto_search_running():
                         logger.info('is_auto_search_running appeared')
@@ -248,7 +253,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束判断
             if self.is_in_stage():
                 break
 
@@ -263,12 +268,13 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def handle_map_mode_switch(self, mode):
         """
+        处理地图难度模式切换。
+
         Args:
-            mode (str): 'normal' or 'hard'
+            mode (str): 'normal' 或 'hard'。
 
         Returns:
-            bool: If map mode satisfied
-                Always True if map doesn't have mode switch in map preparation
+            bool: 地图模式是否满足要求。如果地图没有模式切换，则始终返回 True。
         """
         if not self.config.MAP_HAS_MODE_SWITCH:
             return True
@@ -320,11 +326,11 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def _is_mod_switch_hard_active(self, button):
         image = self.image_crop(button.button)
-        # rgbmax
+        # 取 RGB 三通道最大值
         r, g, b = cv2.split(image)
         cv2.max(r, g, dst=r)
         cv2.max(r, b, dst=r)
-        # active button has white icon, check if count any color > 235
+        # 活跃按钮有白色图标，检查是否有颜色 > 235 的像素
         cv2.inRange(r, 235, 255, dst=r)
         sum_ = cv2.countNonZero(r)
         total = r.shape[0] * r.shape[1]
@@ -332,8 +338,10 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def handle_map_preparation(self):
         """
+        处理地图准备阶段，等待地图信息动画完成。
+
         Returns:
-            bool: If MAP_PREPARATION and tha animation of map information finished
+            bool: MAP_PREPARATION 按钮是否出现且地图信息动画是否已完成。
         """
         if not self.appear(MAP_PREPARATION, offset=(20, 20)):
             self.map_clear_percentage_prev = -1
@@ -345,16 +353,16 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
         if self.config.MAP_IS_ONE_TIME_STAGE:
             logger.attr('MAP_IS_ONE_TIME_STAGE', self.config.MAP_IS_ONE_TIME_STAGE)
             return True
-        # info_bar covers percentage and MAP_GREEN
+        # 信息栏会遮挡进度条和 MAP_GREEN
         if self.info_bar_count():
             return False
 
         percent = self.get_map_clear_percentage()
         logger.attr('Map_clear_percentage', f'{int(percent * 100)}%')
-        # Comment this because percentage starts from 100% and increase from 0% to actual value
-        # 2022.08.21 Still enable this when `percent` was raised from 0.
+        # 注意：进度条从 100% 开始，然后从 0% 增加到实际值。
+        # 2022.08.21 当 `percent` 从 0 上升时仍然启用此逻辑。
         if percent > 0.95 and 0 <= self.map_clear_percentage_prev < 0.95:
-            # map clear percentage 100%, exit directly
+            # 地图通关进度达到 100%，直接退出
             return True
         if abs(percent - self.map_clear_percentage_prev) < 0.02:
             self.map_clear_percentage_prev = percent
@@ -369,7 +377,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def withdraw(self, skip_first_screenshot=True):
         """
-        Withdraw campaign.
+        撤退战役。
         """
         logger.hr('Map withdraw')
         while 1:
@@ -386,19 +394,19 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                 continue
             if self.handle_auto_search_exit():
                 continue
-            # Accidental clicks
+            # 意外点击处理
             if self.appear(DAILY_CHECK, offset=(20, 20), interval=3):
                 logger.info(f'{DAILY_CHECK} -> {BACK_ARROW}')
                 self.device.click(BACK_ARROW)
                 continue
 
-            # End
+            # 结束判断
             if self.handle_in_stage():
                 raise CampaignEnd('Withdraw')
 
     def handle_map_cat_attack(self):
         """
-        Click to skip the animation when cat attacks.
+        处理猫猫攻击动画，点击跳过。
         """
         if not self.map_cat_attack_timer.reached():
             return False
@@ -408,7 +416,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
             self.map_cat_attack_timer.reset()
             return True
         if not self.map_is_clear_mode:
-            # Threat: Med has 106 pixels count, MAP_CAT_ATTACK_MIRROR has 290.
+            # 威胁检测：Medium 模式有 106 像素计数，MAP_CAT_ATTACK_MIRROR 有 290。
             if self.image_color_count(MAP_CAT_ATTACK_MIRROR, color=(255, 231, 123), threshold=221, count=200):
                 logger.info('Skip map being attack')
                 self.device.click(MAP_CAT_ATTACK)
@@ -425,19 +433,19 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
 
     def handle_fleet_reverse(self):
         """
-        The game chooses the fleet with a smaller index to be the first fleet,
-        no matter what we choose in fleet preparation.
+        处理舰队顺序反转。
 
-        After the update of auto-search, the game no longer ignore user settings.
+        游戏会选择编号较小的舰队作为第一舰队，无论我们在舰队准备中如何选择。
+        自动搜索更新后，游戏不再忽略用户设置。
 
         Returns:
-            bool: Fleet changed
+            bool: 舰队是否发生了变更。
         """
         if not self.map_is_hard_mode \
                 and self.config.Fleet_FleetOrder in ['fleet1_boss_fleet2_mob', 'fleet1_standby_fleet2_all']:
-            logger.warning(f"You shouldn't use a reversed fleet order ({self.config.Fleet_FleetOrder}) in normal mode.")
-            logger.warning('Please reverse your Fleet 1 and Fleet 2, '
-                           'use "fleet1_mob_fleet2_boss" or "fleet1_all_fleet2_standby"')
+            logger.warning(f"普通模式不应使用反转的舰队顺序 ({self.config.Fleet_FleetOrder})。")
+            logger.warning('请交换舰队 1 和舰队 2 的配置，'
+                           '使用 "fleet1_mob_fleet2_boss" 或 "fleet1_all_fleet2_standby"')
             # raise RequestHumanTakeover
 
         if not self.fleets_reversed:

@@ -7,8 +7,14 @@ from module.config.utils import *
 
 
 class ConfigGenerator(config_updater.ConfigGenerator):
+    """MAA 配置生成器，负责生成 args.json、menu.json 和 i18n 翻译文件。"""
+
     @timer
     def generate(self):
+        """执行完整的配置生成流程。
+
+        生成 args.json、menu.json、config_generated.py 以及各语言的 i18n 文件。
+        """
         write_file(filepath_args(), self.args)
         write_file(filepath_args('menu'), self.menu)
         self.generate_code()
@@ -17,12 +23,13 @@ class ConfigGenerator(config_updater.ConfigGenerator):
 
     @timer
     def generate_i18n(self, lang):
-        """
-        Load old translations and generate new translation file.
+        """加载旧翻译并生成新的翻译文件。
 
-                     args.json ---+-----> i18n/<lang>.json
-        (old) i18n/<lang>.json ---+
+        合并 args.json 中的定义与旧翻译文件中已有的翻译，
+        保留已有翻译，为新增条目使用默认的 key 路径作为占位符。
 
+        Args:
+            lang: 目标语言代码，如 'zh-CN'、'en-US' 等。
         """
         new = {}
         old = read_file(filepath_i18n(lang))
@@ -69,6 +76,8 @@ class ConfigGenerator(config_updater.ConfigGenerator):
 
 
 class ConfigUpdater(config_updater.ConfigUpdater):
+    """MAA 配置更新器，负责配置文件的读取、更新和迁移。"""
+
     redirection = []
 
     @cached_property
@@ -76,21 +85,41 @@ class ConfigUpdater(config_updater.ConfigUpdater):
         return read_file(filepath_args(mod_name='maa'))
 
     def read_file(self, config_name, is_template=False):
+        """读取配置文件并与默认值合并。
+
+        Args:
+            config_name: 配置文件名称。
+            is_template: 是否为模板模式，模板模式下所有值使用默认值。
+
+        Returns:
+            dict: 合并后的配置字典。
+        """
         old = read_file(filepath_config(config_name, 'maa'))
         return self.config_update(old, is_template=is_template)
 
     @staticmethod
     def write_file(config_name, data, mod_name='maa'):
+        """写入配置文件。
+
+        Args:
+            config_name: 配置文件名称。
+            data: 要写入的配置数据。
+            mod_name: 模块名称，默认为 'maa'。
+        """
         write_file(filepath_config(config_name, mod_name), data)
 
     def config_update(self, old, is_template=False):
-        """
+        """将旧配置与新的参数定义合并。
+
+        遍历 args.json 中的参数定义，从旧配置中读取值，
+        对缺失或无效的值使用默认值填充。
+
         Args:
-            old (dict):
-            is_template (bool):
+            old: 旧配置字典。
+            is_template: 是否为模板模式，模板模式下强制使用默认值。
 
         Returns:
-            dict:
+            dict: 更新后的配置字典。
         """
         new = {}
 
@@ -108,18 +137,7 @@ class ConfigUpdater(config_updater.ConfigUpdater):
 
 
 if __name__ == '__main__':
-    """
-    Process the whole config generation.
-
-                 task.yaml -+----------------> menu.json
-             argument.yaml -+-> args.json ---> config_generated.py
-             override.yaml -+       |
-                  gui.yaml --------\|
-                                   ||
-    (old) i18n/<lang>.json --------\\========> i18n/<lang>.json
-    (old)    template.json ---------\========> template.json
-    """
-    # Ensure running in mod root folder
+    # 确保在模块根目录下运行
     import os
 
     os.chdir(os.path.join(os.path.dirname(__file__), "../../"))

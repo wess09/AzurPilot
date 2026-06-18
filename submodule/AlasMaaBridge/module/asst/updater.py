@@ -28,27 +28,37 @@ class Updater:
 
     @staticmethod
     def custom_print(s):
-        """
-        可以被monkey patch的print，在其他GUI上使用可以被替换为任何需要的输出
+        """可被 monkey patch 的打印函数。
+
+        在其他 GUI 上使用时可以替换为任意需要的输出方式。
         """
         print(s)
 
     @staticmethod
     def _get_cur_version(path, q):
-        """
-        获取当前版本
+        """在子进程中获取当前 MAA 版本号。
+
+        Args:
+            path: MAA 安装路径。
+            q: 用于传递版本号的队列。
         """
         Asst.load(path=path)
         q.put(Asst().get_version())
 
     def __init__(self, path, version):
+        """初始化更新器并获取当前版本信息。
+
+        Args:
+            path: MAA 安装路径。
+            version: 目标更新版本类型（Stable/Beta/Nightly）。
+        """
         self.path = path
         self.version = version
         self.latest_json = None
         self.latest_version = None
         self.assets_object = None
 
-        # 使用子线程获取当前版本后关闭，避免占用dll
+        # 使用子进程获取当前版本后关闭，避免占用 DLL
         q = queues.Queue(1, ctx=multiprocessing)
         p = Process(target=self._get_cur_version, args=(path, q,))
         p.start()
@@ -72,6 +82,14 @@ class Updater:
                         raise
 
     def _is_nightly_version(self, ver: Union[str, None]):
+        """判断版本号是否为 Nightly 构建。
+
+        Args:
+            ver: 版本号字符串，为 None 时使用当前版本。
+
+        Returns:
+            bool: 是否为 Nightly 版本。
+        """
         if ver is None:
             ver = self.cur_version
 
@@ -81,6 +99,16 @@ class Updater:
         return last_id.startswith('g') and len(last_id) >= 7
 
     def _is_std_version(self, ver: Union[str, None]):
+        """判断版本号是否为标准发布版本。
+
+        排除 DEBUG、本地构建和 Nightly 版本。
+
+        Args:
+            ver: 版本号字符串，为 None 时使用当前版本。
+
+        Returns:
+            bool: 是否为标准版本。
+        """
         if ver is None:
             ver = self.cur_version
 
@@ -94,6 +122,16 @@ class Updater:
 
     @staticmethod
     def _split_version(ver: str):
+        """将版本号字符串解析为可比较的整数列表。
+
+        支持标准版本和预发布版本（alpha、beta、rc）的解析。
+
+        Args:
+            ver: 版本号字符串，如 v4.2.0-beta.1。
+
+        Returns:
+            list: 解析后的整数列表。
+        """
         if '-' in ver:
             pre, sub = ver.split('-', 1)
         else:
@@ -119,6 +157,15 @@ class Updater:
 
     @staticmethod
     def _compare_version(a, b):
+        """比较两个版本号的大小。
+
+        Args:
+            a: 第一个版本号字符串。
+            b: 第二个版本号字符串。
+
+        Returns:
+            bool: 如果 a < b 则返回 True，否则返回 False。
+        """
         a = Updater._split_version(a)
         b = Updater._split_version(b)
         for i in range(len(a)):
@@ -134,6 +181,14 @@ class Updater:
         return False
 
     def _check_update(self):
+        """检查是否有可用更新。
+
+        根据目标版本类型（Stable/Beta/Nightly）查询 GitHub API，
+        比较版本号并查找可用的 OTA 更新包。
+
+        Returns:
+            bool: 是否有可用更新。
+        """
         max_retry = 2
         if self.version == Version.Stable:
             stable_response = self._request_github_api(self.StableRequestUrl, max_retry)
@@ -183,6 +238,10 @@ class Updater:
         return True
 
     def _remove_file(self):
+        """清理更新过程中产生的临时文件。
+
+        读取 removelist.txt 中的文件列表并删除，同时清理 md5sum.txt 和 OTA 包。
+        """
         def remove_with_print(s):
             self.custom_print(f'删除文件：{s}')
             os.remove(s)
@@ -210,8 +269,12 @@ class Updater:
                 remove_with_print(file_path)
 
     def update(self):
-        """
-        更新主函数
+        """执行 MAA 的自动更新流程。
+
+        包含检查更新、下载 OTA 包、解压安装和清理临时文件四个步骤。
+
+        Returns:
+            bool: 是否成功更新，无需更新时返回 False。
         """
         max_retry = 3
         if not self._check_update():
@@ -241,7 +304,7 @@ class Updater:
         zfile.extractall(self.path)
         zfile.close()
 
-        # 删除
+        # 清理临时文件
         self._remove_file()
 
         Updater.custom_print('更新完成')

@@ -24,14 +24,30 @@ OCR_DISASSEMBLE_COUNT = Digit(DISASSEMBLE_COUNT_OCR, letter=(235, 235, 235))
 
 
 class StorageFull(Exception):
+    """仓库已满异常，当装备/材料仓库无剩余空间时抛出。"""
     pass
 
 
 class StorageHandler(StorageUI):
+    """仓库操作处理器，提供开箱、拆解装备等仓库管理功能。
+
+    继承 StorageUI 获取仓库页面导航能力。
+    """
     storage_has_boxes = True
 
     @staticmethod
     def _storage_box_template(rarity):
+        """根据稀有度返回对应的装备箱模板。
+
+        Args:
+            rarity: 装备箱稀有度等级，1=T1, 2=T2, 3=T3, 4=T4。
+
+        Returns:
+            对应稀有度的 TEMPLATE_BOX_T* 模板对象。
+
+        Raises:
+            ScriptError: 传入未知的稀有度等级时抛出。
+        """
         if rarity == 1:
             return TEMPLATE_BOX_T1
         if rarity == 2:
@@ -44,35 +60,36 @@ class StorageHandler(StorageUI):
             raise ScriptError(f'Unknown box template rarity: {rarity}')
 
     def _handle_use_box_amount(self, amount):
-        """
+        """设置开箱数量。
+
+        通过 OCR 读取当前数量，然后点击 +/- 按钮调整到目标值。
+        如果箱子数量不足，实际设置值可能小于期望值。
+
         Args:
-            amount (int): Expected amount to set
+            amount: 期望设置的开箱数量。
 
         Returns:
-            int: Actual amount set in the UI.
-                May be less than expected if not enough boxes available.
+            int: 实际设置的开箱数量，当箱子不足时可能小于期望值。
 
         Pages:
             in: SHOP_BUY_CONFIRM_AMOUNT
         """
         logger.info(f'Set box amount')
 
-        # same code from shop clerk
         ocr = Digit(BOX_AMOUNT_OCR, letter=(239, 239, 239), name='OCR_SHOP_AMOUNT')
         index_offset = (40, 50)
 
-        # wait until amount buttons appear
+        # 等待 +/- 按钮出现
         timeout = Timer(1, count=3).start()
         for _ in self.loop():
-            # In case either -/+ shift position, use
-            # shipyard ocr trick to accurately parse
+            # +/- 按钮可能位置偏移，使用 OCR 偏移量匹配
             if self.appear(AMOUNT_MINUS, offset=index_offset) and self.appear(AMOUNT_PLUS, offset=index_offset):
                 break
             if timeout.reached():
                 logger.warning('Wait AMOUNT_MINUS AMOUNT_PLUS timeout')
                 break
 
-        # wait until a normal number
+        # 等待 OCR 读取到合理数值
         current = 0
         timeout = Timer(1, count=3).start()
         for _ in self.loop():
@@ -83,8 +100,7 @@ class StorageHandler(StorageUI):
                 logger.warning('Wait box amount timeout')
                 break
 
-        # set amount
-        # a ui_ensure_index
+        # 通过多点击 +/- 按钮设置目标数量，类似 ui_ensure_index
         logger.info(f'Set box amount: {amount}')
         skip_first = True
         retry = Timer(1, count=2)
@@ -112,16 +128,20 @@ class StorageHandler(StorageUI):
         return current
 
     def _storage_use_one_box(self, button, amount=1):
-        """
+        """使用一个装备箱。
+
+        在材料页面点击指定箱子，确认使用，处理开箱结果和装备满仓弹窗。
+        流程：点击箱子 -> 确认使用 -> 设置数量 -> 确认数量 -> 处理获得物品 -> 确认装备。
+
         Args:
-            button (Button): Box
-            amount (int):
+            button: 要点击的装备箱 Button 对象。
+            amount: 期望开箱数量，默认为 1。
 
         Returns:
-            int: amount of box used, not accurate
+            int: 实际使用的箱子数量，不完全精确。
 
         Raises:
-            StorageFull:
+            StorageFull: 装备仓库已满无法继续开箱时抛出。
 
         Pages:
             in: MATERIAL_CHECK
@@ -142,11 +162,11 @@ class StorageHandler(StorageUI):
         ])
 
         for _ in self.loop():
-            # End
+            # 退出条件：已完成开箱且回到材料页面
             if success and self._storage_in_material() and not self.appear(EQUIP_CONFIRM_2, offset=(20, 20)):
                 break
 
-            # use
+            # 开箱流程
             if self._storage_in_material(interval=5):
                 self.device.click(button)
                 continue
@@ -163,8 +183,8 @@ class StorageHandler(StorageUI):
                 self.device.click(MATERIAL_ENTER)
                 self.interval_reset(MATERIAL_CHECK)
                 continue
-            # use match_template_color on BOX_AMOUNT_CONFIRM
-            # a long animation that opens a box, will be on the top of BOX_AMOUNT_CONFIRM
+            # 使用 match_template_color 匹配 BOX_AMOUNT_CONFIRM
+            # 开箱动画会遮盖确认按钮，需要模板颜色匹配
             if self.match_template_color(BOX_AMOUNT_CONFIRM, offset=(20, 20), interval=5):
                 actual = self._handle_use_box_amount(amount)
                 self.device.click(BOX_AMOUNT_CONFIRM)
@@ -175,18 +195,18 @@ class StorageHandler(StorageUI):
                 self.interval_reset(MATERIAL_CHECK)
                 continue
             if self.appear_then_click(EQUIP_CONFIRM_2, offset=(20, 20), interval=5):
-                # GET_ITEMS_* don't appear that fast
+                # GET_ITEMS_* 弹出较慢，需要重置其 interval
                 self.interval_reset(MATERIAL_CHECK)
                 self.interval_clear([GET_ITEMS_1, GET_ITEMS_2])
-                # EQUIP_CONFIRM_2 -> GET_ITEMS -> _storage_in_material
-                # mark EQUIP_CONFIRM_2 as the last
+                # 流程：EQUIP_CONFIRM_2 -> GET_ITEMS -> _storage_in_material
+                # 标记 EQUIP_CONFIRM_2 为最后一步
                 success = True
                 continue
 
-            # Storage full
+            # 仓库已满处理
             if self.appear(EQUIPMENT_FULL, offset=(20, 20)):
                 logger.info('Storage full')
-                # Close popup
+                # 关闭弹窗后抛出异常
                 self.ui_click(MATERIAL_ENTER, check_button=self._storage_in_material, appear_button=EQUIPMENT_FULL,
                               retry_wait=3, skip_first_screenshot=True)
                 raise StorageFull
@@ -195,14 +215,18 @@ class StorageHandler(StorageUI):
         return used
 
     def _storage_use_box_in_page(self, rarity, amount, skip_first_screenshot=False):
-        """
+        """在当前材料页面使用指定稀有度的装备箱。
+
+        通过模板匹配在页面中查找指定稀有度的箱子并逐个使用，
+        直到达到目标数量或页面中无更多箱子。
+
         Args:
-            rarity (int):
-            amount (int): Expected amount of boxes to use
-            skip_first_screenshot:
+            rarity: 装备箱稀有度等级，1=T1, 2=T2, 3=T3。
+            amount: 期望使用的箱子数量。
+            skip_first_screenshot: 是否跳过首次截图复用上一状态的截图。
 
         Returns:
-            int: Actual amount of box used, not accurate
+            int: 实际使用的箱子数量，不完全精确。
 
         Pages:
             in: MATERIAL_CHECK
@@ -236,16 +260,20 @@ class StorageHandler(StorageUI):
         return used
 
     def _storage_use_box_execute(self, rarity=1, amount=10):
-        """
+        """执行开箱操作，支持翻页查找箱子。
+
+        根据稀有度定位页面起始位置（T1 在底部，其他在顶部），
+        逐页查找并使用箱子，直到达到目标数量或无更多箱子。
+
         Args:
-            rarity (int): 1/2/3 for T1/T2/T3
-            amount (int): use how many boxes at most
+            rarity: 装备箱稀有度等级，1=T1, 2=T2, 3=T3。
+            amount: 最多使用的箱子数量。
 
         Returns:
-            int: amount of box used, not accurate
+            int: 实际使用的箱子数量，不完全精确。
 
         Raises:
-            StorageFull: If storage full
+            StorageFull: 装备仓库已满时抛出。
 
         Pages:
             in: page_storage, material, MATERIAL_CHECK
@@ -256,7 +284,7 @@ class StorageHandler(StorageUI):
 
         if MATERIAL_SCROLL.appear(main=self):
             if rarity == 1:
-                # T1 boxes are always at the bottom
+                # T1 箱子始终在列表底部
                 MATERIAL_SCROLL.set_bottom(main=self)
             else:
                 MATERIAL_SCROLL.set_top(main=self)
@@ -277,9 +305,16 @@ class StorageHandler(StorageUI):
         return used
 
     def _storage_disassemble_equipment_execute_once(self, amount=40):
-        """
+        """执行一次装备拆解操作。
+
+        在拆解页面中选取装备并确认拆解。最多选取 40 件装备。
+        流程：选取装备 -> 确认拆解 -> 处理弹窗 -> 等待结果。
+
+        Args:
+            amount: 最多拆解的装备数量，上限为 40。
+
         Returns:
-            int: amount of equipments disassembled
+            int: 实际拆解的装备数量。
 
         Pages:
             in: DISASSEMBLE_CANCEL
@@ -330,7 +365,7 @@ class StorageHandler(StorageUI):
                 break
         amount = min(cumsum[-1], amount)
 
-        # Wait items being selected
+        # 等待装备被选中
         logger.info(f'Disassemble once, in_storage amount: {amount}')
         timeout = Timer(1, count=2).start()
         prev_disassemble = 0
@@ -361,8 +396,8 @@ class StorageHandler(StorageUI):
                 self.device.screenshot()
 
             if click_count >= 3:
-                # Probably because no item is selected,
-                # _storage_disassemble_equipment_execute() will retry selecting
+                # 可能是因为没有选中装备，
+                # _storage_disassemble_equipment_execute() 会重新选取
                 logger.warning('Failed to confirm disassemble after 3 trial')
                 disassembled = 0
                 break
@@ -374,7 +409,7 @@ class StorageHandler(StorageUI):
                 click_count += 1
                 continue
             if self.appear_then_click(DISASSEMBLE_POPUP_CONFIRM, offset=(-15, -5, 5, 70), interval=5):
-                # since 2025.05.20 disassemble no longer shows GET_ITEMS
+                # 2025.05.20 起拆解不再弹出 GET_ITEMS 页面
                 success = True
                 continue
             if self.handle_popup_confirm('DISASSEMBLE'):
@@ -393,18 +428,20 @@ class StorageHandler(StorageUI):
         return disassembled
 
     def _storage_disassemble_equipment_execute(self, rarity=1, amount=40):
-        """
+        """执行装备拆解，支持翻页循环拆解直到达到目标数量。
+
+        设置装备筛选条件后，逐页拆解装备直到达到目标数量或装备列表为空。
+
         Args:
-            rarity (int): 1 for common, 2 for rare, 3 for elite, 4 for super_rare, 5 for ultra_rare
-            amount (int): Expected amount to disassemble.
-                Actual amount >= expected
+            rarity: 装备稀有度筛选，1=普通, 2=稀有, 3=精锐, 4=超稀有, 5=最高稀有。
+            amount: 期望拆解的装备数量，实际数量 >= 期望值。
+
+        Returns:
+            int: 实际拆解的装备数量。
 
         Pages:
             in: page_storage, equipment, DISASSEMBLE
             out: page_storage, equipment, DISASSEMBLE
-
-        Returns:
-            int: Actual amount of equipments disassembled
         """
         disassembled = 0
         self.equipment_filter_set(rarity=rarity)
@@ -430,17 +467,17 @@ class StorageHandler(StorageUI):
         return disassembled
 
     def storage_disassemble_equipment(self, rarity=1, amount=15):
-        """
-        Disassemble target amount of equipment.
-        If not having enough equipment, use boxes then disassemble.
+        """拆解指定数量的装备。
+
+        优先拆解已有装备，不足时开箱获取更多装备后继续拆解。
+        如果箱子用完或仓库已满无法继续则停止。
 
         Args:
-            rarity (int): 1 for common, 2 for rare, 3 for elite, 4 for super_rare
-            amount (int): Expected amount to disassemble.
-                Actual amount >= expected
+            rarity: 装备稀有度筛选，1=普通, 2=稀有, 3=精锐, 4=超稀有。
+            amount: 期望拆解的装备数量，实际数量 >= 期望值。
 
         Returns:
-            int: Actual amount of equipments disassembled
+            int: 实际拆解的装备数量。
 
         Pages:
             in: Any
@@ -448,9 +485,7 @@ class StorageHandler(StorageUI):
         """
         logger.hr('Disassemble Equipment', level=2)
         self.ui_goto_storage()
-        # No need, equipping toggle does not effect disassemble
-        # self.equipping_set()
-        # Also no need to call _wait_until_storage_stable(), filter confirm will do that
+        # 装备中开关不影响拆解，无需设置；筛选确认会自动等待仓库稳定
         disassembled = 0
         while 1:
             logger.attr('Total_Disassemble', f'{disassembled}/{amount}')
@@ -465,13 +500,13 @@ class StorageHandler(StorageUI):
                     logger.warning('No more boxes to use, disassemble equipment end')
                     self.storage_has_boxes = False
                     break
-                # since 2025.05.20, equipments in boxes get disassembled automatically
+                # 2025.05.20 起箱中装备会自动拆解
                 disassembled += boxes
-                # use bos success, check total again
+                # 开箱成功，重新检查总量
                 continue
             except StorageFull:
                 pass
-            # handle storage full
+            # 仓库已满，进入拆解流程
             self._storage_enter_disassemble()
             equip = self._storage_disassemble_equipment_execute(rarity=rarity, amount=amount)
             disassembled += equip
@@ -486,17 +521,17 @@ class StorageHandler(StorageUI):
         return disassembled
 
     def storage_use_box(self, rarity=1, amount=40):
-        """
-        Disassemble target amount of equipment.
-        If not having enough equipment, use boxes then disassemble.
+        """使用装备箱并处理仓库满仓。
+
+        进入仓库材料页面使用箱子，当仓库满时自动拆解装备腾出空间后继续。
+        如果箱子用完或仓库满且无法拆解则停止。
 
         Args:
-            rarity (int): 1 for common, 2 for rare, 3 for elite, 4 for super_rare
-            amount (int): Expected amount to disassemble.
-                Actual amount >= expected
+            rarity: 装备箱稀有度等级，1=普通, 2=稀有, 3=精锐, 4=超稀有。
+            amount: 最多使用的箱子数量。
 
         Returns:
-            int: Actual amount of equipments disassembled
+            int: 实际使用的箱子数量。
 
         Pages:
             in: Any
@@ -538,30 +573,33 @@ class StorageHandler(StorageUI):
         return used
 
     def handle_storage_full(self, rarity=1, amount=40):
-        """
+        """处理装备仓库满仓弹窗。
+
+        检测 EQUIPMENT_FULL 弹窗并自动拆解装备腾出空间。
+        处理完成后返回到弹窗出现前的页面。
+
         Args:
-            rarity (int): 1 for common, 2 for rare, 3 for elite, 4 for super_rare
-            amount (int): Expected amount to disassemble.
-                Actual amount >= expected
+            rarity: 拆解时使用的装备稀有度筛选，1=普通, 2=稀有, 3=精锐, 4=超稀有。
+            amount: 期望拆解的装备数量，实际数量 >= 期望值。
 
         Returns:
-            bool: If handled
+            bool: 是否检测到并处理了满仓弹窗。
 
         Pages:
-            in: Any, if EQUIPMENT_FULL appears, handle it
-            out: the page before handling storage popup
+            in: 任意页面，当 EQUIPMENT_FULL 出现时自动处理
+            out: 处理满仓弹窗前所在页面
         """
         if not self.appear(EQUIPMENT_FULL, offset=(30, 30), interval=2):
             return False
 
-        # EQUIPMENT_FULL
+        # 检测到 EQUIPMENT_FULL 弹窗，进入拆解流程
         logger.info('handle_storage_full')
         self.ui_click(EQUIPMENT_FULL, check_button=DISASSEMBLE_CANCEL, skip_first_screenshot=True, retry_wait=3)
         disassembled = self._storage_disassemble_equipment_execute(rarity=rarity, amount=amount)
         if disassembled <= 0:
             logger.warning('Storage full but unable to disassemble any equipment')
 
-        # Quit
+        # 退出拆解页面，返回之前的页面
         skip_first_screenshot = True
         while 1:
             if skip_first_screenshot:
@@ -575,7 +613,7 @@ class StorageHandler(StorageUI):
                 self.device.click(BACK_ARROW)
                 continue
 
-            # End
+            # 已离开仓库页面
             if not self.appear(STORAGE_CHECK, offset=(30, 30)):
                 break
 

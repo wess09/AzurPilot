@@ -26,7 +26,7 @@ class OperationSiren(
     OpsiArchive, OpsiStronghold, OpsiMonthBoss, OpsiExplore,
     OpsiCrossMonth,
 ):
-    """Operation Siren main class that combines all task modules."""
+    """大世界（Operation Siren）主类，组合所有任务模块。"""
 
     def _os_target_enter(self):
         self.os_map_goto_globe(unpin=False)

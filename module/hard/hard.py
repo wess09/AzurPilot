@@ -22,17 +22,17 @@ class CampaignHard(CampaignRun):
             Campaign_UseFleetLock=True,
             Campaign_UseAutoSearch=True,
             Fleet_FleetOrder='fleet1_all_fleet2_standby' if self.config.Hard_HardFleet == 1 else 'fleet1_standby_fleet2_all',
-            Emotion_Mode='nothing',  # Dont calculate and dont ignore
+            Emotion_Mode='nothing',  # 不计算也不忽略
         )
-        # Equipment take on
+        # 装备穿戴
         # campaign/campaign_hard/campaign_hard.py Campaign.fleet_preparation()
 
-        # Initial
-        self.load_campaign(name='campaign_hard', folder='campaign_hard')  # Load campaign file
-        module = importlib.import_module('.' + name, 'campaign.campaign_main')  # Load map from normal mode.
+        # 初始化
+        self.load_campaign(name='campaign_hard', folder='campaign_hard')  # 加载战役文件
+        module = importlib.import_module('.' + name, 'campaign.campaign_main')  # 从普通模式加载地图
         self.campaign.MAP = module.MAP
 
-        # UI ensure
+        # UI 确认
         self.device.screenshot()
         self.campaign.device.image = self.device.image
         self.campaign.ensure_campaign_ui(
@@ -40,7 +40,7 @@ class CampaignHard(CampaignRun):
             mode='hard'
         )
 
-        # Run
+        # 执行
         remain = OCR_HARD_REMAIN.ocr(self.device.image)
         logger.attr('Remain', remain)
         for n in range(remain):
@@ -49,6 +49,6 @@ class CampaignHard(CampaignRun):
         self.campaign.ensure_auto_search_exit()
         # self.campaign.equipment_take_off_when_finished()
 
-        # Scheduler
+        # 调度器
         self.config.task_delay(server_update=True)
         self.config.task_call('Reward', force_call=False)

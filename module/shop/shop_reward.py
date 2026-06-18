@@ -9,7 +9,18 @@ from module.logger import logger
 
 
 class RewardShop(ShopUI):
+    """奖励商店调度器。
+
+    Pages: in: page_shop
+    """
+
     def run_frequent(self):
+        """运行高频商店购买任务。
+
+        Pages: in: page_shop (general shop tab)
+
+        只处理通用商店，用于频繁执行的购买。
+        """
         self.ui_goto_shop()
         self.device.click_record_clear()
         self.shop_nav_250814.set(NAV_GENERAL, main=self)
@@ -22,7 +33,13 @@ class RewardShop(ShopUI):
         self.config.task_delay(server_update=True)
 
     def run_once(self):
-        # Munitions shops
+        """运行一次性商店购买任务。
+
+        Pages: in: page_shop (merit/guild/core/medal tabs)
+
+        依次处理功勋商店、舰队商店、核心商店、勋章商店。
+        """
+        # 军需商店
         self.ui_goto_shop()
         self.device.click_record_clear()
         self.shop_nav_250814.set(NAV_GENERAL, main=self)
@@ -40,7 +57,7 @@ class RewardShop(ShopUI):
         else:
             logger.info('Guild shop disabled, skip')
 
-        # core limited, core monthly, medal, prototype
+        # 核心限定、核心月度、勋章、原型
         self.device.click_record_clear()
         self.shop_nav_250814.set(NAV_MONTHLY, main=self)
         self.shop_tab_250814.set(TAB_CORE_MONTHLY, main=self)

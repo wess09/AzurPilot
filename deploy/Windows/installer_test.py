@@ -17,7 +17,7 @@ Language: zh-CN
 Rest of the configs are the same as default
 Process: [ 10% ]
 +---------------------------------------------------+
-|                    UPDATE ALAS                    |
+|                    UPDATE AzurPilot                    |
 +---------------------------------------------------+
 ==================== GIT INIT ====================
 "D:/AlasRelease/AzurLaneAutoScript/.venv/Scripts/git/cmd/git.exe" init
@@ -58,7 +58,7 @@ Date:   Tue Apr 4 01:17:09 2023 +0800
 [ success ]
 Process: [ 50% ]
 +----------------------------------------------------------+
-|                    KILL EXISTING ALAS                    |
+|                    KILL EXISTING AzurPilot                    |
 +----------------------------------------------------------+
 List process
 Found 264 processes

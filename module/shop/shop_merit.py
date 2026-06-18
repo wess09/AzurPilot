@@ -7,22 +7,29 @@ from module.shop.ui import ShopUI
 
 
 class MeritShop_250814(ShopClerk, ShopUI, ShopStatus):
+    """功勋商店处理器 (2025-08-14 新 UI)。
+
+    Pages: in: page_shop (merit shop tab)
+    """
+
     shop_template_folder = './assets/shop/merit'
 
     @cached_property
     def shop_filter(self):
-        """
+        """获取功勋商店过滤器。
+
         Returns:
-            str:
+            str: 过滤器字符串
         """
         return self.config.MeritShop_Filter.strip()
 
-    # New UI in 2025-08-14
+    # 2025-08-14 新 UI
     @cached_property
     def shop_merit_items(self):
-        """
+        """加载功勋商店商品模板和配置。
+
         Returns:
-            ShopItemGrid:
+            ShopItemGrid: 商店商品网格对象
         """
         shop_grid = self.shop_grid
         shop_merit_items = ShopItemGrid_250814(
@@ -38,44 +45,43 @@ class MeritShop_250814(ShopClerk, ShopUI, ShopStatus):
         return shop_merit_items
 
     def shop_items(self):
-        """
-        Shared alias for all shops
-        If there are server-lang
-        differences, reference
-        shop_guild/medal for @Config
-        example
+        """获取商店商品网格的统一接口。
+
+        所有商店共享相同的属性名。如存在服务器语言差异，
+        参考 shop_guild/medal 的 @Config 用法。
 
         Returns:
-            ShopItemGrid:
+            ShopItemGrid: 商店商品网格
         """
         return self.shop_merit_items
 
     def shop_currency(self):
-        """
-        Ocr shop merit currency
-        Then return merit count
+        """OCR 识别功勋商店货币数量。
+
+        通过状态检测获取当前功勋余额并记录日志。
 
         Returns:
-            int: merit amount
+            int: 功勋数量
         """
         self._currency = self.status_get_merit()
         logger.info(f'Merit: {self._currency}')
         return self._currency
 
     def run(self):
+        """运行功勋商店购买流程。
+
+        Pages: in: page_shop (merit shop tab)
+
+        按照过滤器配置购买功勋商店商品，支持刷新。
         """
-        Run Merit Shop
-        """
-        # Base case; exit run if filter empty
+        # 过滤器为空时直接退出
         if not self.shop_filter:
             return
 
-        # When called, expected to be in
-        # correct Merit Shop interface
+        # 调用时应已在功勋商店界面
         logger.hr('Merit Shop', level=1)
 
-        # Execute buy operations
-        # Refresh if enabled and available
+        # 执行购买操作，启用刷新时最多尝试 2 次
         refresh = self.config.MeritShop_Refresh
         for _ in range(2):
             success = self.shop_buy()

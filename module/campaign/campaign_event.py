@@ -14,10 +14,10 @@ from module.war_archives.assets import WAR_ARCHIVES_CAMPAIGN_CHECK
 class CampaignEvent(CampaignStatus):
     def _reset_gems_farming(self, tasks):
         """
-        Reset GemsFarming to 2-4 when event is over
+        活动结束时将 GemsFarming 重置为 2-4。
 
         Args:
-            tasks (list[str]): Task name
+            tasks (list[str]): 任务名称列表。
         """
         for task in tasks:
             if task not in GEMS_FARMINGS:
@@ -30,11 +30,13 @@ class CampaignEvent(CampaignStatus):
 
     def _disable_tasks(self, tasks):
         """
+        禁用指定任务列表中的任务。
+
         Args:
-            tasks (list[str]): Task name
+            tasks (list[str]): 任务名称列表。
         """
         with self.config.multi_set():
-            # Disable normal events
+            # 禁用普通活动任务
             for task in tasks:
                 if task in GEMS_FARMINGS:
                     continue
@@ -46,7 +48,7 @@ class CampaignEvent(CampaignStatus):
                 keys = f'{task}.Emotion.Fleet2Onsen'
                 self.config.cross_set(keys=keys, value=False)
 
-            # Reset GemsFarming
+            # 重置 GemsFarming
             self._reset_gems_farming(tasks)
 
             logger.info(f'Reset event time limit')
@@ -54,13 +56,15 @@ class CampaignEvent(CampaignStatus):
 
     def event_pt_limit_triggered(self):
         """
+        检查活动 PT 是否达到限制。
+
         Returns:
-            bool:
+            bool: 是否触发 PT 限制。
 
         Pages:
             in: page_event or page_sp
         """
-        # Some may use "100,000"
+        # 部分配置可能使用 "100,000" 这种带逗号的格式
         limit = int(
             re.sub(r'[,.\'"，。]', '', str(self.config.EventGeneral_PtLimit))
         )
@@ -84,8 +88,10 @@ class CampaignEvent(CampaignStatus):
 
     def coin_limit_triggered(self):
         """
+        检查金币数量是否达到 StopCondition.CoinLimit 限制。
+
         Returns:
-            bool: If coin amount reaches StopCondition.CoinLimit
+            bool: 是否触发金币限制。
         """
         limit = int(
             re.sub(r'[,.\'"，。]', '', str(self.config.StopCondition_CoinLimit))
@@ -95,7 +101,7 @@ class CampaignEvent(CampaignStatus):
 
         coin = self.get_coin()
         if coin == 0:
-            # Avoid wrong/zero OCR result
+            # 避免 OCR 识别错误/返回零值
             logger.warning('Coin not found')
             return False
 
@@ -105,7 +111,7 @@ class CampaignEvent(CampaignStatus):
             self.config.task_delay(minute=(120, 240))
             handle_notify(
                 self.config.Error_OnePushConfig,
-                title=f"Alas <{self.config.config_name}> campaign delayed",
+                title=f"AzurPilot <{self.config.config_name}> campaign delayed",
                 content=f"<{self.config.config_name}> {self.config.Campaign_Name} reached coin limit"
             )
             return True
@@ -114,8 +120,10 @@ class CampaignEvent(CampaignStatus):
 
     def event_time_limit_triggered(self):
         """
+        检查活动时间是否达到限制。
+
         Returns:
-            bool:
+            bool: 是否触发时间限制。
 
         Pages:
             in: page_event or page_sp
@@ -139,8 +147,11 @@ class CampaignEvent(CampaignStatus):
 
     def triggered_task_balancer(self):
         """
+        检查任务均衡器是否触发。
+
         Returns:
-            bool: If triggered task_call
+            bool: 是否触发任务切换。
+
         Pages:
             in: page_event or page_sp
         """
@@ -149,9 +160,9 @@ class CampaignEvent(CampaignStatus):
         coin = deep_get(self.config.data, 'Dashboard.Coin.Value')
         logger.attr('Coin Count', coin)
 
-        # Check Coin
+        # 检查金币
         if coin == 0:
-            # Avoid wrong/zero OCR result
+            # 避免 OCR 识别错误/返回零值
             logger.warning('Coin not found')
             return False
         else:
@@ -174,11 +185,13 @@ class CampaignEvent(CampaignStatus):
 
     def is_event_entrance_available(self):
         """
+        检查活动入口是否可用。
+
         Returns:
-            bool: True if available
+            bool: 可用返回 True。
 
         Raises:
-            TaskEnd: If unavailable
+            TaskEnd: 不可用时抛出。
         """
         if self.appear(CAMPAIGN_MENU_NO_EVENT, offset=(20, 20)):
             logger.info('Event unavailable, disable task')
@@ -190,7 +203,7 @@ class CampaignEvent(CampaignStatus):
             return True
 
     def ui_goto_event(self):
-        # Already in page_event, skip event_check.
+        # 已在 page_event，跳过活动检查。
         if self.ui_get_current_page() == page_event:
             if self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
                 logger.info('At war archives')
@@ -199,13 +212,13 @@ class CampaignEvent(CampaignStatus):
                 logger.info('Already at page_event')
                 return True
         self.ui_goto(page_campaign_menu)
-        # Check event availability
+        # 检查活动是否可用
         if self.is_event_entrance_available():
             self.ui_goto(page_event)
             return True
 
     def ui_goto_sp(self):
-        # Already in page_event, skip event_check.
+        # 已在 page_sp，跳过活动检查。
         if self.ui_get_current_page() == page_sp:
             if self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
                 logger.info('At war archives')
@@ -214,27 +227,26 @@ class CampaignEvent(CampaignStatus):
                 logger.info('Already at page_sp')
                 return True
         self.ui_goto(page_campaign_menu)
-        # Check event availability
+        # 检查活动是否可用
         if self.is_event_entrance_available():
             self.ui_goto(page_sp)
             return True
 
     def ui_goto_coalition(self):
-        # Already in page_event, skip event_check.
+        # 已在 page_coalition，跳过活动检查。
         if self.ui_get_current_page() == page_coalition:
             logger.info('Already at page_coalition')
             return True
         else:
             self.ui_goto(page_campaign_menu)
-            # Check event availability
+            # 检查活动是否可用
             if self.is_event_entrance_available():
                 self.ui_goto(page_coalition)
                 return True
 
     def disable_raid_on_event(self):
         """
-        Disable raid tasks (or coalition) when entered an event,
-        to be foolproof if user forgot to disable raid tasks when raid is over and another event is ongoing
+        进入活动时禁用突袭（或联动）任务，防止用户忘记在突袭结束后手动禁用。
         """
         command = self.config.Scheduler_Command
         if command not in EVENTS + GEMS_FARMINGS:
@@ -253,8 +265,7 @@ class CampaignEvent(CampaignStatus):
 
     def disable_event_on_raid(self):
         """
-        Disable event tasks when entered an raid or coalition,
-        to be foolproof if user forgot to disable event tasks when event is over and another raid is ongoing
+        进入突袭或联动时禁用活动任务，防止用户忘记在活动结束后手动禁用。
         """
         command = self.config.Scheduler_Command
         if command not in RAIDS + COALITIONS + MARITIME_ESCORTS:
@@ -273,10 +284,10 @@ class CampaignEvent(CampaignStatus):
     @staticmethod
     def stage_is_main(name) -> bool:
         """
-        Predict if given stage name is a event
+        判断给定关卡名称是否为主线关卡。
 
         Args:
-            name (str): Such as `7-2`, `D3`
+            name (str): 关卡名称，如 `7-2`、`D3`。
         """
         regex_main = re.compile(r'\d{1,2}[-_]\d')
         return bool(regex_main.search(name))

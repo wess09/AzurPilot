@@ -16,13 +16,13 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
     def _is_submarine_task(self, task_name):
         """
-        Check if a task uses submarine.
+        检查指定任务是否使用潜艇。
 
         Args:
-            task_name (str): Task name to check.
+            task_name (str): 任务名称。
 
         Returns:
-            bool: True if task uses submarine.
+            bool: 如果任务使用潜艇则返回 True。
         """
         submarine_enabled = self.config.cross_get(
             f"{task_name}.OpsiFleet.Submarine", default=False
@@ -40,10 +40,12 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
     def _check_submarine_cooldown(self):
         """
-        Check if submarine is on cooldown.
+        检查潜艇是否处于冷却状态。
+
+        遍历所有已启用的潜艇相关任务，检查是否存在即将到期的冷却。
 
         Returns:
-            tuple: (is_cooldown, cooldown_end_time)
+            tuple: (是否冷却中, 冷却结束时间)
         """
         now = datetime.now()
         submarine_tasks = [
@@ -73,10 +75,10 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
     def _delay_until_submarine_cooldown_end(self, cooldown_end_time):
         """
-        Delay abyssal task until submarine cooldown ends.
+        延迟深渊任务直到潜艇冷却结束。
 
         Args:
-            cooldown_end_time: datetime when submarine cooldown ends
+            cooldown_end_time: 潜艇冷却结束的时间。
         """
         logger.hr('Submarine cooldown detected', level=1)
         logger.info(f'潜艇冷却结束时间：{cooldown_end_time}')
@@ -94,9 +96,11 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
     def delay_abyssal(self, result=True, submarine_enabled=True):
         """
+        延迟深渊任务执行。
+
         Args:
-            result(bool): If still have abyssal loggers.
-            submarine_enabled(bool): If fleet filter contains CallSubmarine.
+            result (bool): 是否还有深渊日志仪。
+            submarine_enabled (bool): 舰队过滤器是否包含呼叫潜艇。
         """
         if not submarine_enabled:
             logger.info('本轮深渊过滤器不包含 CallSubmarine，不延迟')
@@ -108,17 +112,18 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
     def clear_abyssal(self):
         """
-        Get one abyssal logger in storage,
-        attack abyssal boss,
-        repair fleets in port.
+        清理一个深渊海域。
+
+        从仓库取出深渊日志仪，攻击深渊 Boss，完成后在港口修理舰队。
+        如果检测到潜艇冷却，会延迟任务执行。
 
         Returns:
-            bool: If fleet filter contains CallSubmarine.
+            bool: 舰队过滤器是否包含呼叫潜艇。
 
         Raises:
-            ActionPointLimit:
-            TaskEnd: If no more abyssal loggers.
-            RequestHumanTakeover: If unable to clear boss, fleets exhausted.
+            ActionPointLimit: 行动力不足。
+            TaskEnd: 没有更多深渊日志仪。
+            RequestHumanTakeover: 无法击败 Boss，舰队耗尽。
         """
         logger.hr('OS clear abyssal', level=1)
         self.cl1_ap_preserve()

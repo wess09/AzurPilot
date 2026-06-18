@@ -1,9 +1,9 @@
 # 基于原版 login.py 增加了智能的游戏重启逻辑
 # 用于处理登录流程中的各种弹窗、公告以及在应用崩溃时执行重启恢复操作。
-# Last Updated: 2025-08-25 20:41
+# 最后更新: 2025-08-25 20:41
 import numpy as np
 from scipy.signal import find_peaks
-# Patch pkg_resources before importing adbutils and uiautomator2.
+# 在导入 adbutils 和 uiautomator2 之前修补 pkg_resources
 from module.device.pkg_resources import get_distribution
 from uiautomator2 import UiObject
 from uiautomator2.exceptions import XPathElementNotFoundError
@@ -27,13 +27,13 @@ class LoginHandler(UI):
     def _handle_app_login(self):
         """
         Pages:
-            in: Any page
+            in: 任意页面
             out: page_main
 
         Raises:
-            GameStuckError:
-            GameTooManyClickError:
-            GameNotRunningError:
+            GameStuckError: 游戏卡死。
+            GameTooManyClickError: 点击次数过多。
+            GameNotRunningError: 游戏未运行。
         """
         logger.hr('App login')
 
@@ -44,15 +44,15 @@ class LoginHandler(UI):
         self.device.click_record_clear()
 
         while 1:
-            # Watch device rotation
+            # 监测设备屏幕旋转
             if not login_success and orientation_timer.reached():
-                # Screen may rotate after starting an app
+                # 启动应用后屏幕可能会旋转
                 self.device.get_orientation()
                 orientation_timer.reset()
 
             self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.is_in_main():
                 if confirm_timer.reached():
                     logger.info('Login to main confirm')
@@ -60,7 +60,7 @@ class LoginHandler(UI):
             else:
                 confirm_timer.reset()
 
-            # Login
+            # 登录处理
             if self.match_template_color(LOGIN_CHECK, offset=(30, 30), interval=5):
                 self.device.click(LOGIN_CHECK)
                 if not login_success:
@@ -79,7 +79,7 @@ class LoginHandler(UI):
             if self.appear(EVENT_LIST_CHECK, offset=(30, 30), interval=5):
                 self.device.click(BACK_ARROW)
                 continue
-            # Updates and maintenance
+            # 更新和维护
             if self.appear_then_click(MAINTENANCE_ANNOUNCE, offset=(30, 30), interval=5):
                 continue
             if self.appear_then_click(LOGIN_GAME_UPDATE, offset=(30, 30), interval=5):
@@ -87,20 +87,20 @@ class LoginHandler(UI):
             if server.server == 'cn' and not login_success:
                 if self.handle_cn_user_agreement():
                     continue
-            # Player return
+            # 回归玩家
             if self.appear_then_click(LOGIN_RETURN_SIGN, offset=(30, 30), interval=5):
                 continue
             if self.appear_then_click(LOGIN_RETURN_INFO, offset=(30, 30), interval=5):
                 continue
-            # Popups
+            # 弹窗处理
             if self.handle_popup_confirm('LOGIN'):
                 continue
             if self.handle_urgent_commission():
                 continue
-            # Popups appear at page_main
+            # 主界面弹窗
             if self.ui_page_main_popups(get_ship=login_success):
                 return True
-            # Always goto page_main
+            # 始终尝试返回主界面
             if self.appear_then_click(GOTO_MAIN, offset=(30, 30), interval=5):
                 continue
 
@@ -117,15 +117,15 @@ class LoginHandler(UI):
             color_threshold=245, encourage=25, name='AGREEMENT_CONFIRM')
         if right is None:
             return False
-        # 2026.04.17 No scroll anymore, just bare swipe before clicking confirm
-        # if having blue button at right half of screen, but missing in left, it's a confirm button
-        # if having both, it's a blue button at middle confirming login
+        # 2026.04.17 不再需要滚动，只需在点击确认前简单滑动
+        # 如果屏幕右半部分有蓝色按钮而左半部分没有，则为确认按钮
+        # 如果两侧都有，则是中间的登录确认按钮
         left = self.image_color_button(
             area=(0, 360, 640, 720), color=(78, 189, 234),
             color_threshold=245, encourage=25, name='AGREEMENT_CONFIRM')
         if left is None:
-            # User agreement
-            # just somewhere at the middle
+            # 用户协议
+            # 在屏幕中间某处进行滑动
             box = (350, 230, 920, 430)
             self.device.swipe_vector((0, -150), box, name='AGREEMENT_SCROLL')
             self.device.swipe_vector((0, -150), box, name='AGREEMENT_SCROLL')
@@ -133,20 +133,22 @@ class LoginHandler(UI):
             self._user_agreement_timer.reset()
             return True
         else:
-            # User login
+            # 用户登录确认
             self.device.click(right)
             self._user_agreement_timer.reset()
             return True
 
     def handle_app_login(self):
         """
+        处理应用登录流程。
+
         Returns:
-            bool: If login success
+            是否登录成功。
 
         Raises:
-            GameStuckError:
-            GameTooManyClickError:
-            GameNotRunningError:
+            GameStuckError: 游戏卡死。
+            GameTooManyClickError: 点击次数过多。
+            GameNotRunningError: 游戏未运行。
         """
         logger.info('handle_app_login')
         self.device.screenshot_interval_set(1.0)
@@ -175,10 +177,10 @@ class LoginHandler(UI):
 
     def app_restart(self):
         logger.hr('App restart')
-        # --- 新增代码：智能的多次尝试重启逻辑 ---
-        RESTART_TRIES = 4                    # 最大尝试次数
-        FIRST_TRY_WAIT_SECONDS = 30          # 首次尝试等待时间
-        SUBSEQUENT_TRY_WAIT_SECONDS = 20     # 后续尝试间隔
+        # 智能的多次尝试重启逻辑
+        RESTART_TRIES = 4
+        FIRST_TRY_WAIT_SECONDS = 30
+        SUBSEQUENT_TRY_WAIT_SECONDS = 20
 
         is_restart_success = False
 
@@ -191,7 +193,7 @@ class LoginHandler(UI):
             logger.info(f"Waiting {wait_seconds} seconds for app to launch and stabilize...")
             self.device.sleep(wait_seconds)
 
-            # --- 验证软件是否已运行 ---
+            # 验证应用是否已运行
             if self.device.app_is_running():
                 logger.info(">>> App started successfully and is running.")
                 is_restart_success = True
@@ -201,7 +203,7 @@ class LoginHandler(UI):
                 if i < RESTART_TRIES - 1:
                     logger.info("Retrying...")
         
-        # --- 如果所有尝试均以失败告终，则抛出异常 ---
+        # 所有尝试均失败则抛出异常
         if not is_restart_success:
             logger.critical(f"重试 {RESTART_TRIES} 次了！还是死活起不来，你的运行环境是碳基生物能搞出来的？")
             from module.exception import RequestHumanTakeover
@@ -214,6 +216,8 @@ class LoginHandler(UI):
         Pages:
             in: page_main
             out: page_main
+
+        确保没有未完成的战役，如有则撤退。
         """
 
         def ensure_campaign_retreat():
@@ -235,11 +239,11 @@ class LoginHandler(UI):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if in_campaign():
                 break
 
-            # Click
+            # 点击操作
             if self.ui_main_appear_then_click(page_campaign_menu, interval=3):
                 continue
             if ensure_campaign_retreat():
@@ -249,12 +253,13 @@ class LoginHandler(UI):
 
     def handle_user_agreement(self, xp, hierarchy):
         """
-        For CN only.
-        CN client is bugged. User Agreement and Privacy Policy may popup again even you have agreed with it.
-        This method scrolls to the bottom and click AGREE.
+        处理用户协议弹窗（仅限国服）。
+
+        国服客户端存在 bug，用户协议和隐私政策可能在已同意后再次弹出。
+        此方法滑动到底部并点击同意按钮。
 
         Returns:
-            bool: If handled.
+            是否处理了用户协议弹窗。
         """
 
         if server.server == 'cn':
@@ -299,6 +304,7 @@ class LoginHandler(UI):
             return True
 
     def handle_user_login(self, xp, hierarchy) -> bool:
+        """处理用户登录按钮点击。"""
         login_wait_results = self.get_for_any_ele([
             XPS('//*[@text="登录"]', xp, hierarchy),
             XPS('//*[@content-desc="登录"]', xp, hierarchy)])
@@ -312,11 +318,13 @@ class LoginHandler(UI):
     @staticmethod
     def get_for_any_ele(list_u2_path: list) -> bool | tuple:
         """
+        从候选 XPath 或 UiObject 列表中查找第一个存在的元素。
+
         Args:
-            list_u2_path (list): [UiObject or XPathSelector]  In this case, len(list_u2_path) >= 1
+            list_u2_path: UiObject 或 XPathSelector 的列表，长度 >= 1。
+
         Returns:
-            bool: False if wait failed
-            tuple: (bounds): if wait success
+            False 表示未找到元素，tuple 表示找到的元素边界。
         """
         for path in list_u2_path:
             try:

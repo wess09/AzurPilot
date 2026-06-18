@@ -33,12 +33,15 @@ class CampaignBonusStatistics(GetItemsStatistics):
         ITEM_GROUP.grids = grids
 
     def stats_get_items(self, image, **kwargs):
-        """
+        """从战役结算截图中提取奖励物品。
+
+        通过金币数量验证截图有效性：金币数量过低或缺失则视为无效截图。
+
         Args:
-            image (np.ndarray):
+            image (np.ndarray): 战役结算截图。
 
         Returns:
-            list[Item]:
+            list[Item]: 奖励物品列表。
         """
         result = super().stats_get_items(image, **kwargs)
         valid = False
@@ -56,14 +59,18 @@ class CampaignBonusStatistics(GetItemsStatistics):
             raise ImageError('Campaign bonus image does not have coins, dropped')
 
     def revise_item(self, item):
-        """
+        """修正 OCR 识别错误的物品数量。
+
+        战役奖励芯片掉落 9~30+ 个，但有时 10 被识别为 1。
+        舰船数量异常时也会进行修正。
+
         Args:
-            item (Item):
+            item (Item): 物品实例。
 
         Returns:
-            Item:
+            Item: 修正后的物品实例。
         """
-        # Campaign bonus drop 9 to 30+ chips, but sometimes 10 is detected as 1.
+        # 战役奖励芯片掉落 9~30+ 个，但有时 10 被识别为 1
         if item.name == 'Chip' and 0 < item.amount < 4:
             item.amount *= 10
 

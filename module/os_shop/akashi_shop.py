@@ -13,9 +13,10 @@ class AkashiShop(OSStatus, OSShopUI, Selector, MapEventHandler):
     @cached_property
     @Config.when(SERVER='tw')
     def os_akashi_shop_items(self) -> ItemGrid:
-        """
+        """获取明石商店物品网格（台服）。
+
         Returns:
-            ItemGrid:
+            ItemGrid: 台服明石商店的物品网格配置。
         """
         shop_grid = ButtonGrid(
             origin=(233, 224), delta=(193, 228), button_shape=(98, 98), grid_shape=(4, 2), name='SHOP_GRID')
@@ -30,9 +31,10 @@ class AkashiShop(OSStatus, OSShopUI, Selector, MapEventHandler):
     @cached_property
     @Config.when(SERVER='en')
     def os_akashi_shop_items(self) -> ItemGrid:
-        """
+        """获取明石商店物品网格（国际服）。
+
         Returns:
-            ItemGrid:
+            ItemGrid: 国际服明石商店的物品网格配置。
         """
         shop_grid = ButtonGrid(
             origin=(231, 222), delta=(190, 224), button_shape=(98, 98), grid_shape=(4, 2), name='SHOP_GRID')
@@ -47,9 +49,10 @@ class AkashiShop(OSStatus, OSShopUI, Selector, MapEventHandler):
     @cached_property
     @Config.when(SERVER=None)
     def os_akashi_shop_items(self) -> ItemGrid:
-        """
+        """获取明石商店物品网格（默认/国服）。
+
         Returns:
-            ItemGrid:
+            ItemGrid: 默认明石商店的物品网格配置。
         """
         shop_grid = ButtonGrid(
             origin=(233, 224), delta=(193.2, 228), button_shape=(98, 98), grid_shape=(4, 2), name='SHOP_GRID')
@@ -62,12 +65,12 @@ class AkashiShop(OSStatus, OSShopUI, Selector, MapEventHandler):
         return shop_items
 
     def os_shop_get_items_in_akashi(self) -> List[Item]:
-        """
-        Args:
-            name (bool): If detect item name. True if detect akashi shop, false if detect port shop.
+        """识别明石商店中的所有物品。
+
+        通过模板匹配识别当前屏幕上的商店物品，记录每行物品信息。
 
         Returns:
-            list[Item]:
+            list[Item]: 识别到的物品列表，无物品时返回空列表。
         """
         if self.config.SHOP_EXTRACT_TEMPLATE:
             self.os_akashi_shop_items.extract_template(self.device.image, './assets/shop/os')
@@ -86,13 +89,17 @@ class AkashiShop(OSStatus, OSShopUI, Selector, MapEventHandler):
             return []
 
     def os_shop_get_item_to_buy_in_akashi(self) -> Item:
-        """
+        """获取明石商店中待购买的物品。
+
+        获取金币信息后识别商店物品，处理商店加载延迟的情况，
+        应用过滤器筛选可购买物品。
+
         Returns:
-            list[Item]:
+            Item: 待购买的物品，无可购买物品时返回 None。
         """
         self.os_shop_get_coins()
         items = self.os_shop_get_items_in_akashi()
-        # Shop supplies do not appear immediately, need to confirm if shop is empty.
+        # 商店物品不会立即出现，需要确认商店是否为空
         for _ in range(2):
             if not len(items) or any(not item.is_known_item() for item in items):
                 logger.warning('Empty akashi shop or empty items, confirming')

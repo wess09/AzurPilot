@@ -21,9 +21,9 @@ class View(MapDetector):
     def __init__(self, config, mode='main', grid_class=Grid):
         """
         Args:
-            config (AzurLaneConfig):
-            mode (str): 'main' for normal azur lane maps, 'os' for operation siren
-            grid_class:
+            config (AzurLaneConfig): 配置对象。
+            mode (str): 'main' 为普通碧蓝航线地图，'os' 为大世界。
+            grid_class: 网格类。
         """
         super().__init__(config)
         self.mode = mode
@@ -50,22 +50,23 @@ class View(MapDetector):
             return cv2.copyTo(image, ASSETS.ui_mask_in_map)
 
     def load(self, image):
-        """
+        """加载图像并构建局部视野地图。
+
         Args:
-            image:
+            image: 截图图像。
         """
         image = self._image_clear_ui(np.array(image))
         self.image = image
         super().load(image)
 
-        # Create local view map
+        # 创建局部视野地图
         grids = {}
 
         for loca, points in self.generate():
             if area_in_area(area1=corner2area(points), area2=self.config.DETECTING_AREA):
                 grids[loca] = self.grid_class(location=loca, image=image, corner=points, config=self.config)
 
-        # Handle grids offset
+        # 处理网格偏移
         offset = list(grids.keys())
         if not len(offset):
             raise MapDetectionError('No map grids found')
@@ -81,7 +82,7 @@ class View(MapDetector):
             self.grids = grids
         self.shape = np.max(list(self.grids.keys()), axis=0)
 
-        # Find local view center
+        # 查找局部视野中心
         for loca, grid in self.grids.items():
             offset = grid.screen2grid([self.config.SCREEN_CENTER])[0].astype(int)
             points = grid.grid2screen(np.add([[0.5, 0], [-0.5, 0], [0, 0.5], [0, -0.5]], offset))
@@ -98,18 +99,15 @@ class View(MapDetector):
             break
 
     def predict(self):
-        """
-        Predict grid info.
-        """
+        """预测所有网格信息。"""
         start_time = time.time()
         for grid in self:
             grid.predict()
         logger.attr_align('predict', len(self.grids.keys()), front=float2str(time.time() - start_time) + 's')
 
     def update(self, image):
-        """
-        Update image to all grids.
-        If camera position didn't change, no need to calculate again, updating image is enough.
+        """更新所有网格的图像。
+        如果摄像机位置未变化，无需重新计算，仅更新图像即可。
         """
         image = self._image_clear_ui(image)
         self.image = image
@@ -118,12 +116,13 @@ class View(MapDetector):
             grid.image = image
 
     def select(self, **kwargs):
-        """
+        """根据属性筛选网格。
+
         Args:
-            **kwargs: Attributes of Grid.
+            **kwargs: 网格属性键值对。
 
         Returns:
-            SelectedGrids:
+            SelectedGrids: 满足条件的网格集合。
         """
         result = []
         for grid in self:
@@ -137,15 +136,16 @@ class View(MapDetector):
         return SelectedGrids(result)
 
     def predict_swipe(self, prev, with_current_fleet=True, with_sea_grids=True):
-        """
+        """预测滑动偏移量。
+
         Args:
-            prev (View): View instance after swipe.
-            with_current_fleet (bool): If use the green arrow on current fleet to predict.
-            with_sea_grids (bool): If use all sea grids to predict.
-                Note that this have a certain error rate.
+            prev (View): 滑动前的 View 实例。
+            with_current_fleet (bool): 是否使用当前舰队的绿色箭头进行预测。
+            with_sea_grids (bool): 是否使用所有海洋网格进行预测。
+                注意此方法存在一定的错误率。
 
         Returns:
-            tuple[int]: (x, y). Or None if unable to predict.
+            tuple[int]: 偏移量 (x, y)。无法预测时返回 None。
 
         Log:
             Map swipe predict: (2, 0) (0.023s, current fleet match)
@@ -161,7 +161,7 @@ class View(MapDetector):
                 grid.is_fleet = grid.predict_fleet()
                 grid.is_current_fleet = grid.predict_current_fleet()
 
-            # If able to find current fleet, use it to predict swipe
+            # 如果能找到当前舰队，用它来预测滑动
             current_fleet = self.select(is_fleet=True, is_current_fleet=True)
             previous_fleet = prev.select(is_fleet=True, is_current_fleet=True)
             if len(current_fleet) == 1 and len(previous_fleet) == 1:
@@ -173,7 +173,7 @@ class View(MapDetector):
                 return diff
 
         if with_sea_grids:
-            # Brute force to find swipe
+            # 暴力搜索滑动偏移
             swipes = []
             for current_loca, current_piece in self.grids.items():
                 for previous_loca, previous_piece in prev.grids.items():
@@ -191,7 +191,7 @@ class View(MapDetector):
                             f'({float2str(time.time() - start_time) + "s"}, {diff[0][1]} matches)')
                 return diff[0][0]
 
-        # Unable to predict
+        # 无法预测
         logger.info(f'Map swipe predict: None '
                     f'({float2str(time.time() - start_time) + "s"}, no match)')
         return None

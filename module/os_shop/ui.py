@@ -10,6 +10,7 @@ from module.ui.navbar import Navbar
 from module.ui.scroll import AdaptiveScroll
 from module.ui.ui import UI
 
+# 大世界商店滚动条配置
 OS_SHOP_SCROLL = AdaptiveScroll(
     OS_SHOP_SCROLL_AREA.button,
     parameters={
@@ -23,17 +24,24 @@ OS_SHOP_SCROLL.edge_threshold = 0.1
 
 
 class OSShopUI(UI):
+    """大世界商店 UI 操作类。
+
+    提供商店页面加载检测、侧边栏导航、滚动条控制等功能。
+    """
+
     def os_shop_load_ensure(self, skip_first_screenshot=True):
-        """
-        Switching between sidebar clicks for some
-        takes a bit of processing before fully loading
-        like guild logistics
+        """确保商店页面完全加载。
+
+        切换侧边栏后需要等待页面加载完成，类似舰队后勤的加载逻辑。
 
         Args:
-            skip_first_screenshot (bool):
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            bool: Whether expected assets loaded completely
+            bool: 页面加载完成返回 True。
+
+        Raises:
+            GameStuckError: 等待超时抛出。
         """
         ensure_timeout = Timer(3, count=6).start()
         while True:
@@ -42,24 +50,22 @@ class OSShopUI(UI):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.appear(OS_SHOP_CHECK):
                 return True
             else:
                 logger.warning('OpsiShop is not appear, retrying.')
 
-            # Exception
+            # 异常处理
             if ensure_timeout.reached():
                 raise GameStuckError('Waiting too long for OpsiShop to appear.')
 
     @cached_property
     def _os_shop_side_navbar(self):
-        """
-        limited_sidebar 4 options
-            NY
-            Liverpool
-            Gibraltar
-            St. Petersburg
+        """获取商店侧边栏导航组件。
+
+        侧边栏包含 4 个选项：
+            NY（纽约）、Liverpool（利物浦）、Gibraltar（直布罗陀）、St. Petersburg（圣彼得堡）
         """
         os_shop_side_navbar = ButtonGrid(
             origin=(44, 266), delta=(0, 87),
@@ -71,26 +77,21 @@ class OSShopUI(UI):
                       inactive_color=(12, 58, 86), inactive_threshold=221)
 
     def os_shop_side_navbar_ensure(self, upper=None, bottom=None):
-        """
-        Ensure able to transition to page and
-        page has loaded to completion
+        """确保侧边栏导航到指定页面。
 
         Args:
-            upper (int):
-            limited|regular
-                1     NY
-                2     Liverpool
-                3     Gibraltar
-                4     St. Petersburg
-            bottom (int):
-            limited|regular
-                4     NY
-                3     Liverpool
-                2     Gibraltar
-                1     St. Petersburg
-
-        Returns:
-            bool: if side_navbar set ensured
+            upper: 从上往下的索引。
+                limited|regular
+                    1     NY
+                    2     Liverpool
+                    3     Gibraltar
+                    4     St. Petersburg
+            bottom: 从下往上的索引。
+                limited|regular
+                    4     NY
+                    3     Liverpool
+                    2     Gibraltar
+                    1     St. Petersburg
 
         Pages:
             in: PORT_SUPPLY_CHECK
@@ -101,10 +102,15 @@ class OSShopUI(UI):
         self._os_shop_side_navbar.set(self, upper=upper, bottom=bottom)
 
     def init_slider(self) -> Tuple[float, float]:
-        """Initialize the slider
+        """初始化滚动条位置。
+
+        确保滚动条出现并滚动到顶部。
 
         Returns:
-            Tuple[float, float]: (pre_pos, cur_pos)
+            Tuple[float, float]: (前一位置, 当前位置)，初始为 (-1.0, 0.0)。
+
+        Raises:
+            GameStuckError: 滚动操作失败时抛出。
         """
         if not OS_SHOP_SCROLL.appear(main=self):
             logger.warning('Scroll does not appear, try to rescue slider')
@@ -119,6 +125,13 @@ class OSShopUI(UI):
         return -1.0, 0.0
 
     def rescue_slider(self, distance=200):
+        """救援滚动条。
+
+        当滚动条不可见时，通过拖拽操作使其重新出现。
+
+        Args:
+            distance: 拖拽距离，默认 200 像素。
+        """
         detection_area = (1130, 230, 1170, 710)
         direction_vector = (0, distance)
         p1, p2 = random_rectangle_vector(
@@ -128,17 +141,19 @@ class OSShopUI(UI):
         self.device.screenshot()
 
     def pre_scroll(self, pre_pos, cur_pos) -> float:
-        """Pretreatment Sliding
+        """预处理滚动操作。
+
+        当滚动失败时尝试救援滚动条并重试。
 
         Args:
-            pre_pos: Previous position
-            cur_pos: Current position
-
-        Raise:
-            ScriptError: Slide Page Error
+            pre_pos: 前一位置。
+            cur_pos: 当前位置。
 
         Returns:
-            cur_pos: Current position
+            float: 滚动后的位置。
+
+        Raises:
+            GameStuckError: 滚动重试失败时抛出。
         """
         if pre_pos == cur_pos:
             logger.warning('Scroll drag page failed')

@@ -41,8 +41,8 @@ class EmotionDigit(Digit):
         return image
 
     def after_process(self, result):
-        # Random OCR error on Downes' hair
-        # OCR DOCK_EMOTION_OCR: Result "044" is revised to "44"
+        # 唐斯头发区域的随机 OCR 误识别
+        # DOCK_EMOTION_OCR 识别结果 "044" 修正为 "44"
         if result == '044' or result == 'D44':
             result = '0'
 
@@ -64,20 +64,31 @@ class Ship:
     hash_: str = field(default='', repr=False)
 
     def satisfy_limitation(self, limitation) -> bool:
+        """检查舰船是否满足筛选条件。
+
+        遍历舰船的所有属性，与 limitation 中的限制逐一比对。
+        str/int 类型要求精确匹配，tuple 表示范围，list 表示枚举。
+
+        Args:
+            limitation: 筛选条件字典，key 为属性名，value 为限制值。
+
+        Returns:
+            bool: 是否满足所有限制条件。
+        """
         for key in self.__dict__:
             value = limitation.get(key)
             if self.__dict__[key] is not None and value is not None:
-                # str and int should be exactly equal to
+                # str 和 int 要求精确匹配
                 if isinstance(value, (str, int)):
                     if value == 'any':
                         continue
                     if self.__dict__[key] != value:
                         return False
-                # tuple means should be in range
+                # tuple 表示范围限制
                 elif isinstance(value, tuple):
                     if not (value[0] <= self.__dict__[key] <= value[1]):
                         return False
-                # list means should be in the list
+                # list 表示枚举限制
                 elif isinstance(value, list):
                     if self.__dict__[key] not in value:
                         return False
@@ -138,18 +149,22 @@ class Scanner(metaclass=ABCMeta):
         pass
 
     def clear(self) -> None:
-        """
-        Clear all cached results.
-        """
+        """清除所有缓存的扫描结果。"""
         self._results.clear()
 
     def scan(self, image, cached=False, output=False) -> Union[List, None]:
-        """
-        If scanner is enabled, return the real results.
-        Otherwise, return a series of None.
+        """执行扫描，返回结果列表。
 
-        For multi-scan, caching the results is recommended.
-        If cached is set, results will be cached.
+        启用时返回真实扫描结果，禁用时返回全 None 列表。
+        多次扫描场景建议使用 cached=True 缓存结果。
+
+        Args:
+            image: 截图图像。
+            cached: 是否将结果追加到缓存。
+            output: 是否将结果逐条输出到日志。
+
+        Returns:
+            list 或 None: cached=False 时返回结果列表，cached=True 时返回 None。
         """
         results: List = self._scan(image) if self._enabled else self._disabled_value
 
@@ -163,9 +178,7 @@ class Scanner(metaclass=ABCMeta):
             return results
 
     def move(self, vector) -> None:
-        """
-        Call ButtonGrid.move for property grids.
-        """
+        """移动网格坐标，同步更新内部 ButtonGrid。"""
         self.grids = self.grids.move(vector)
 
     def enable(self) -> None:
@@ -241,19 +254,19 @@ class EmotionStatusScanner(Scanner):
         self.value_list: List[str] = ['red', 'yellow', 'green', 'unknown']
 
     def get_emotion_status(self, image) -> str:
-        """
-        Get the emotion status (at the right-up corner of the ship card).
-        EmotionStatus can be ['yellow', 'green', 'red', 'unknown'].
+        """获取舰船卡片右上角的情绪状态指示灯颜色。
+
+        通过统计图像中特定颜色的像素数量来判断情绪状态：
             'yellow': 1 <= emotion <= 30
             'green': 31 <= emotion <= 40
             'red': emotion = 0
             'unknown': emotion > 40
 
         Args:
-            image (np.ndarray):
+            image: 裁剪后的情绪状态指示灯区域图像。
 
         Returns:
-            str: EmotionStatus
+            str: 情绪状态，取值为 'yellow'、'green'、'red' 或 'unknown'。
         """
         if image_color_count(image, color=EMOTION_YELLOW, count=300):
             return 'yellow'
@@ -282,17 +295,16 @@ class RarityScanner(Scanner):
         self.value_list: List[str] = ['common', 'rare', 'elite', 'super_rare']
 
     def color_to_rarity(self, color: Tuple[int, int, int]) -> str:
-        """
-        Convert color to a ship rarity.
-        Rarity can be ['common', 'rare', 'elite', 'super_rare', 'unknown']
-        For 'ultra', color difference is too great,
-        thus it's marked as 'unknown'
+        """将卡片颜色转换为舰船稀有度。
+
+        稀有度分为 common、rare、elite、super_rare、unknown 五种。
+        彩虹（ultra）稀有度因颜色差异过大，标记为 'unknown'。
 
         Args:
-            color (tuple): (r, g, b)
+            color: RGB 颜色元组 (r, g, b)。
 
         Returns:
-            str: Rarity
+            str: 稀有度字符串。
         """
         if color_similar(color, (171, 174, 186)):
             return 'common'
@@ -303,7 +315,7 @@ class RarityScanner(Scanner):
         elif color_similar(color, (247, 221, 101)):
             return 'super_rare'
         else:
-            # Difference between ultra is too great
+            # 彩虹稀有度颜色差异过大，无法统一识别
             return 'unknown'
 
     def _scan(self, image) -> List:
@@ -329,11 +341,10 @@ class FleetScanner(Scanner):
         }
 
     def pre_process(self, image):
-        """
-        Practice shows that, the following steps will lead to a better performance.
-        It can distinguish the number from the background very well.
-        If anyone needs to update TEMPLATE_FLEET assets, do remember to preprocess
-        the image first.
+        """对舰队编号图像进行预处理，提升模板匹配效果。
+
+        将图像转为灰度后二值化，使数字与背景分离更明显。
+        若需更新 TEMPLATE_FLEET 素材，必须先执行此预处理。
         """
         _, g, _ = cv2.split(image)
         _, image = cv2.threshold(g, 205, 255, cv2.THRESH_BINARY)
@@ -342,11 +353,10 @@ class FleetScanner(Scanner):
         return image
 
     def _match(self, image) -> int:
-        """
-        Using a template matching method to identify fleet.
-        Performance on ultra rarity is not very good, because the flash
-        will interfere with identification.
-        Assuming it is not in any fleet if none matched.
+        """通过模板匹配识别舰船所属舰队编号。
+
+        彩虹稀有度卡片因闪光干扰，识别效果较差。
+        未匹配到任何舰队时返回 0（不在任何编队中）。
         """
         for template, fleet in self.templates.items():
             if template.match(image):
@@ -423,43 +433,31 @@ class HashGenerator(Scanner):
 
 
 class ShipScanner(Scanner):
-    """
-    Ship Scanner is designed to use with an "Initial" page_dock, which means there cannot be
-    any move once a dock filter was set. Otherwise, it may return untrustable results.
+    """舰船扫描器，用于扫描船坞页面中所有舰船的属性信息。
 
-    If you need to scan rather more than the initial page, Please use DockScanner.
+    必须在船坞初始页面使用（设置筛选器后不能有滚动操作），否则结果不可靠。
+    如需跨页扫描，请使用 DockScanner。
 
     Args:
-        rarity (str, list): ['any', 'common', 'rare', 'elite', 'super_rare'].
-        level (tuple): (lower, upper). Will be limited in range [1, 125]
-        emotion (tuple): (lower, upper). Will be limited in range [0, 150]
-        fleet (int): 0 means not in any fleet. Will be limited in range [0, 6]
-        status (str, list): [
-            'free',
-            'battle',
-            'commission',
-            'in_hard_fleet',
-            'in_event_fleet',
-            ]
+        rarity: 稀有度筛选，取值 'any'、'common'、'rare'、'elite'、'super_rare'，支持 str 或 list。
+        level: 等级范围 (下限, 上限)，自动限制在 [1, 125]。
+        emotion: 情绪范围 (下限, 上限)，自动限制在 [0, 150]。
+        fleet: 舰队编号，0 表示不在任何编队，自动限制在 [0, 6]。
+        status: 状态筛选，取值 'free'、'battle'、'commission'、'in_hard_fleet'、'in_event_fleet'。
 
-    By default, all properties of the ship are scanned.
-    "False" and "None" are two special values for the properties of ship.
+    属性支持两个特殊值 False 和 None：
 
-    Using False:
-        The scanner will skip scanning by simply setting them to None.
-        Doing so will discard the property, assuming you don't care about them.
-        Once a property is set to False, it can only be enabled by calling enable().
-        And calling disable() has the same effect as using False.
+    使用 False:
+        跳过该属性的扫描，结果中对应字段为 None。
+        设置为 False 后只能通过 enable() 重新启用，
+        disable() 的效果与设为 False 相同。
 
-    Using None:
-        The scanner will work normally, but ignoring the limitations on them
-        when filter the results. set_limitation(property=...) can reset the limitaiions,
-        including set them to None.
+    使用 None:
+        正常扫描该属性，但筛选时忽略该属性的限制。
+        调用 set_limitation(property=...) 可重置限制（包括设为 None）。
 
     Examples:
-        ShipScanner(rarity=False) will get a list of ships whose rarity is None.
-        This can be used in a situation where rarity is not a concern.
-        Then calling ShipScanner.enable('rairty').
+        ShipScanner(rarity=False) 扫描时忽略稀有度，结果中 rarity 为 None。
     """
     def __init__(
         self,
@@ -480,7 +478,7 @@ class ShipScanner(Scanner):
             'status': 'any',
         }
 
-        # Each property of a ship must be binded to a Scanner.
+        # 每个舰船属性绑定一个独立的子扫描器
         self.sub_scanners: Dict[str, Scanner] = {
             'level': LevelScanner(),
             'emotion': EmotionScanner(),
@@ -528,9 +526,7 @@ class ShipScanner(Scanner):
             return [ship for ship in ships if ship.satisfy_limitation(self.limitation)]
 
     def move(self, vector) -> None:
-        """
-        Apply moving to both sub-scanners and self.
-        """
+        """移动网格坐标，同步更新所有子扫描器和自身的网格位置。"""
         for scanner in self.sub_scanners.values():
             scanner.move(vector)
 
@@ -550,41 +546,32 @@ class ShipScanner(Scanner):
             self.limitation[key] = self.sub_scanners[key].limit_value(value)
 
     def enable(self, *args) -> None:
-        """
-        Enable property sub-scanners.
+        """启用指定属性的子扫描器。
 
-        Supported properties includes:
-            ['level', 'emotion', 'rarity', 'fleet', 'status']
+        支持的属性：'level'、'emotion'、'rarity'、'fleet'、'status'。
         """
         for name, scanner in self.sub_scanners.items():
             if name in args:
                 scanner.enable()
 
     def disable(self, *args) -> None:
-        """
-        Disable property sub-scanners.
+        """禁用指定属性的子扫描器。
 
-        Supported properties includes:
-            ['level', 'emotion', 'rarity', 'fleet', 'status']
+        支持的属性：'level'、'emotion'、'rarity'、'fleet'、'status'。
         """
         for name, scanner in self.sub_scanners.items():
             if name in args:
                 scanner.disable()
 
     def set_limitation(self, **kwargs):
-        """
+        """设置舰船筛选条件。
+
         Args:
-            rarity (str, list): ['any', 'common', 'rare', 'elite', 'super_rare'].
-            level (tuple): (lower, upper). Will be limited in range [1, 125]
-            emotion (tuple): (lower, upper). Will be limited in range [0, 150]
-            fleet (int): 0 means not in any fleet. Will be limited in range [0, 6]
-            status (str, list): [
-                'free',
-                'battle',
-                'commission',
-                'in_hard_fleet',
-                'in_event_fleet',
-                ]
+            rarity: 稀有度，取值 'any'、'common'、'rare'、'elite'、'super_rare'。
+            level: 等级范围 (下限, 上限)，自动限制在 [1, 125]。
+            emotion: 情绪范围 (下限, 上限)，自动限制在 [0, 150]。
+            fleet: 舰队编号，0 表示不在任何编队，自动限制在 [0, 6]。
+            status: 状态，取值 'free'、'battle'、'commission'、'in_hard_fleet'、'in_event_fleet'。
         """
         for attr in self.limitation.keys():
             value = kwargs.get(attr, self.limitation[attr])
@@ -596,11 +583,10 @@ class ShipScanner(Scanner):
 
 
 class DockScanner(ShipScanner):
-    """
-    Dock Scanner support multi-page scan.
+    """船坞扫描器，支持跨页扫描。
 
-    Same as ShipScanner, DockScanner must start at the initial page_dock.
-    The scanning process can swipe the dock automatically and stop when finished.
+    与 ShipScanner 相同，必须从船坞初始页面开始扫描。
+    扫描过程会自动滚动船坞，扫描完成后自动停止。
     """
     SCAN_ZONES: Dict[str, Tuple[int, int, int, int]] = {
         'dock': (93, 55, 1219, 719),
@@ -611,11 +597,11 @@ class DockScanner(ShipScanner):
         self.zone_top: int = self.scan_zone[1]
         self.zone_height: int = self.scan_zone[3] - self.scan_zone[1]
         self.grids_top: int = 76
-        # For reposition and moving
+        # 用于重新定位和滚动计算
         self.mean_color_set = deque(maxlen=2)
         self.moving_distance: int = 0
         self.bound = []
-        # For status
+        # 用于扫描稳定性判断
         self._stable: bool = False
         self._no_change: int = 0
         self.last_results = []
@@ -623,7 +609,7 @@ class DockScanner(ShipScanner):
 
         self.scanner = ShipScanner(emotion=False, fleet=False, status=False)
 
-        # The following is for the debug
+        # 以下为调试信息相关
         self.save_debug_info = False
         self.debug_folder = f'./log/dock_scan_test/{test_name}_{int(time.time()*1000):x}'
         if self.save_debug_info:
@@ -665,12 +651,10 @@ class DockScanner(ShipScanner):
         return self._no_change > 3
 
     def _find_bound(self, image) -> List[int]:
-        """
-        Roughly Adjust.
+        """粗略定位舰船卡片间的空白行位置。
 
-        The standard deviation of blank line will show obvious troughs.
-        The position of the blank line can be obtained by locating the position
-        of the wave troughs. Although it is not accurate, we only need its center.
+        空白行的标准差会出现明显波谷，通过定位波谷位置即可获得
+        空白行的大致位置。精度不高，但只需其中心点即可。
         """
         image = crop(image, self.scan_zone)
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -685,7 +669,7 @@ class DockScanner(ShipScanner):
                 bound.append(np.mean(gap_seq[start : i + 1]).astype(int))
                 start = i + 1
         if len(bound) > 1:
-            # The last line is not credible
+            # 最后一行不可靠，限制其与上一行的最大间距
             bound[-1] = min(bound[-2] + 225, bound[-1])
 
         return bound
@@ -697,12 +681,10 @@ class DockScanner(ShipScanner):
         self.mean_color_set.append(self.mean_color_set[0])
 
     def reposition(self, image, bound) -> None:
-        """
-        Preciously Adjust.
+        """精确调整网格位置。
 
-        *bound* has given the centers of those blank line.
-        Go down from these central points, the first line whose color has a large
-        difference from mean_color is the top of the new CARD_GRIDS.
+        从 bound 给出的空白行中心点向下搜索，第一个颜色与 mean_color
+        差异较大的行即为新 CARD_GRIDS 的顶部位置。
         """
         scan_image = crop(image, self.scan_zone)
         if self.mean_color is not None:
@@ -716,13 +698,12 @@ class DockScanner(ShipScanner):
         self.mean_color = np.mean(scan_image[bound[-1]], axis=0)
 
     def _remove_duplicate(self, results) -> int:
-        """
-        There are two kinds of duplicate in results.
-            Two lines:
-                The new result is exactly the same as the last one.
-            One lines.
-                The first line of new result is ths same as the last line of the old one.
-        In both cases, len(results) < 14 means reaching the bottom.
+        """去除重复扫描结果，返回新增条目数。
+
+        两种重复情况：
+            整页重复：新结果与上一次完全相同。
+            半页重复：新结果前半部分与上次后半部分相同。
+        两种情况下，len(results) < 14 表示已到达底部。
         """
         if self._results:
             if all([old.hash_ == new.hash_ for new, old in zip(results, self._results[-len(results):])]):
@@ -744,7 +725,7 @@ class DockScanner(ShipScanner):
     def _scan(self, image) -> None:
         bound = self._find_bound(image)
         if len(bound) == 1:
-            # No ship appears
+            # 没有舰船出现，页面已稳定
             self._stable = True
             return
         elif len(bound) == 2:
@@ -794,27 +775,26 @@ class DockScanner(ShipScanner):
         self.last_results = results
 
     def multi_scan(self, main) -> None:
-        """
-        Here is a simple example,
+        """执行船坞多页扫描，自动滚动并收集所有舰船信息。
+
+        扫描原理示意：
             □ | □ | □                          --------- (*)
             ---------                          ■ | □ | □
-            □ | □ | □       --- Moving --->    ---------
+            □ | □ | □       --- 滚动 --->      ---------
             --------- (*)                      □ | □ | □
             ■ | □ | □                          ---------
-        □ and ■ is a ship, | and - is the blank between ships.
-        To detect the moving above, we need to know the distance
-        that (*) moves.
+        □ 和 ■ 为舰船，| 和 - 为舰船间的空白间隔。
+        需要计算 (*) 移动的距离来检测滚动。
 
-        There is little color change in the blanks between ships.
-        Therefore, graying the image and filter by np.std can get
-        the position of those blanks.
+        舰船间空白区域的颜色变化很小，将图像灰度化后用 np.std
+        过滤即可获得空白行的位置。
         """
         from module.retire.enhancement import OCR_DOCK_AMOUNT
         self.debug_info['dock_size'], _, _ = OCR_DOCK_AMOUNT.ocr(main.device.image)
 
         if DOCK_SCROLL.appear(main):
-            # can partly pre-load the image of ships,
-            # which reduce the possibility of getting stuck
+            # 预先滚动到底部再回到顶部，可部分预加载舰船图像，
+            # 降低扫描过程中卡住的可能性
             DOCK_SCROLL.set_bottom(main)
             DOCK_SCROLL.set_top(main)
 
@@ -843,24 +823,24 @@ class DockScanner(ShipScanner):
         self.debug_info['ship_count'] = len(self._results)
 
         if self.save_debug_info:
-            # save hash sims
+            # 保存哈希相似度数据
             hashs = [ship.hash_ for ship in self.results]
             sims = []
             for i in range(len(hashs)):
                 for j in range(i+1, len(hashs)):
                     sims.append(DHash.distance(hashs[i],hashs[j]))
             np.save(f'{self.debug_folder}/{len(sims)}.npy', np.array(sims))
-            # save ocr mistake
+            # 保存 OCR 识别错误的图像
             for name, image in self.ocr_mistake_image:
                 cv2.imwrite(f'{self.debug_folder}/{name}.png', image)
-            # save another ocr mistake
+            # 保存去重异常的图像
             self.extend_log.append((0, None))
             for i in range(len(self.extend_log) - 1):
                 cnt, top, level, image = self.extend_log[i]
                 if cnt != 14 and cnt != 7 and self.extend_log[i+1][0] != 0:
                     cv2.imwrite(f'{self.debug_folder}/len={cnt}_top={top}_id={i}.png', image)
                     self.debug_info[f'len={cnt}_top={top}_id={i}'] = level
-            # save debug info
+            # 保存调试信息摘要
             self.debug_info['moving_mean'] = np.mean(self.moving_distance_log)
             with open(f'{self.debug_folder}/debug_info.txt', 'w', encoding='utf-8') as f:
                 for k,v in self.debug_info.items():
@@ -869,17 +849,20 @@ class DockScanner(ShipScanner):
             logger.info(f'debug info has been saved in {self.debug_folder}')
 
     def scan(self, image, cached=False, output=True) -> Union[List, None]:
-        """
-        Please use multi_scan() instead.
-        """
+        """请使用 multi_scan() 代替。"""
         pass
 
     def scan_one_fleet(self, fleet: int = None) -> List[Ship]:
-        """
-        Scan all ships in a certain fleet.
-        It fleet is not specified, use self.fleet.
+        """扫描指定舰队中的所有舰船。
+
+        Args:
+            fleet: 舰队编号，未指定时使用 self.fleet。
+
+        Returns:
+            list[Ship]: 舰船列表。
         """
         pass
 
     def scan_whole_dock(self) -> List[Ship]:
+        """扫描整个船坞。"""
         pass

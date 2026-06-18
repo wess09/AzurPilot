@@ -12,7 +12,7 @@ from module.logger import logger
 
 class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
     def handle_control_check(self, button):
-        # Will be overridden in Device
+        # 将在 Device 中被重写
         pass
 
     @cached_property
@@ -27,11 +27,11 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
         }
 
     def click(self, button, control_check=True):
-        """Method to click a button.
+        """点击按钮。
 
         Args:
-            button (button.Button): AzurLane Button instance.
-            control_check (bool):
+            button (button.Button): 碧蓝航线按钮实例。
+            control_check (bool): 是否进行控制检查。
         """
         if control_check:
             self.handle_control_check(button)
@@ -58,11 +58,11 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
             self.click(button, control_check=False)
 
     def long_click(self, button, duration=(1, 1.2)):
-        """Method to long click a button.
+        """长按按钮。
 
         Args:
-            button (button.Button): AzurLane Button instance.
-            duration(int, float, tuple):
+            button (button.Button): 碧蓝航线按钮实例。
+            duration (int, float, tuple): 长按持续时间。
         """
         self.handle_control_check(button)
         x, y = random_rectangle_point(button.button)
@@ -95,14 +95,14 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
         elif method in ['minitouch', 'MaaTouch', 'scrcpy', 'nemu_ipc']:
             logger.info('Swipe %s -> %s' % (point2str(*p1), point2str(*p2)))
         else:
-            # ADB needs to be slow, or swipe doesn't work
+            # ADB 需要更慢的速度，否则滑动可能无效
             duration *= 2.5
             logger.info('Swipe %s -> %s, %s' % (point2str(*p1), point2str(*p2), duration))
 
         if distance_check:
             if np.linalg.norm(np.subtract(p1, p2)) < 10:
-                # Should swipe a certain distance, otherwise AL will treat it as click.
-                # uiautomator2 should >= 6px, minitouch should >= 5px
+                # 需要滑动一定距离，否则碧蓝航线会将其视为点击
+                # uiautomator2 需要 >= 6px，minitouch 需要 >= 5px
                 logger.info('Swipe distance < 10px, dropped')
                 return
 
@@ -121,21 +121,19 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
 
     def swipe_vector(self, vector, box=(123, 159, 1175, 628), random_range=(0, 0, 0, 0), padding=15,
                      duration=(0.1, 0.2), whitelist_area=None, blacklist_area=None, name='SWIPE', distance_check=True):
-        """Method to swipe.
+        """在指定范围内执行向量滑动。
 
         Args:
-            box (tuple): Swipe in box (upper_left_x, upper_left_y, bottom_right_x, bottom_right_y).
-            vector (tuple): (x, y).
-            random_range (tuple): (x_min, y_min, x_max, y_max).
-            padding (int):
-            duration (int, float, tuple):
-            whitelist_area: (list[tuple[int]]):
-                A list of area that safe to click. Swipe path will end there.
-            blacklist_area: (list[tuple[int]]):
-                If none of the whitelist_area satisfies current vector, blacklist_area will be used.
-                Delete random path that ends in any blacklist_area.
-            name (str): Swipe name
-            distance_check: (bool):
+            box (tuple): 滑动区域，格式为 (左上角 x, 左上角 y, 右下角 x, 右下角 y)。
+            vector (tuple): 滑动向量，格式为 (x, y)。
+            random_range (tuple): 随机偏移范围，格式为 (x_min, y_min, x_max, y_max)。
+            padding (int): 边距。
+            duration (int, float, tuple): 滑动持续时间。
+            whitelist_area (list[tuple[int]]): 安全点击区域列表，滑动路径将终止于此。
+            blacklist_area (list[tuple[int]]): 当白名单区域无法满足当前向量时使用黑名单区域。
+                排除终点在黑名单区域内的随机路径。
+            name (str): 滑动名称。
+            distance_check (bool): 是否进行距离检查。
         """
         p1, p2 = random_rectangle_vector_opted(
             vector,
@@ -172,3 +170,10 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
                            f'falling back to ADB swipe may cause unexpected behaviour')
             self.swipe_adb(p1, p2, duration=ensure_time(swipe_duration * 2))
             self.click(Button(area=(), color=(), button=area_offset(point_random, p2), name=name), False)
+
+    def island_swipe_hold(self, p1, p2, hold_time):
+        p1, p2 = ensure_int(p1, p2)
+        hold_time = ensure_time(hold_time)
+        method = self.config.Emulator_ControlMethod
+        if method == 'minitouch':
+            self.island_swipe_hold_minitouch(p1, p2, hold_time)

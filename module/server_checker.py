@@ -13,9 +13,9 @@ class ServerChecker:
     def __init__(self, server: str) -> None:
         self._base: str = 'http://sc.shiratama.cn'
         self._api: dict = {
-            'get_state': '/server/get_state',           # post
-            'get_all_state': '/server/get_all_state',   # post
-            'list': '/server/list'                      # get
+            'get_state': '/server/get_state',           # POST 请求
+            'get_all_state': '/server/get_all_state',   # POST 请求
+            'list': '/server/list'                      # GET 请求
         }
 
         if server != 'disabled':
@@ -28,7 +28,7 @@ class ServerChecker:
         self._expired: int = 0
         self._timer: Timer = Timer(0)
 
-        # Status flags
+        # 状态标志
         self._recover: bool = False
         self._retry: bool = False
 
@@ -36,10 +36,9 @@ class ServerChecker:
 
     def _load_server(self) -> None:
         """
-        Get server status using API.
-        Set reason if server is unavailable.
+        通过 API 获取服务器状态。
 
-        ScriptError will be raised if somthing is wrong with API.
+        若服务器不可用，记录原因。API 出现异常时抛出 ScriptError。
         """
         if self._server == 'disabled':
             self._state.append(True)
@@ -64,7 +63,7 @@ class ServerChecker:
                     self._state.append(False)
                     logger.info(f'Server "{self._server}" is under maintenance.')
 
-                # Check if API server was died
+                # 检查 API 服务端是否已停止更新
                 if j['last_update'] > self._timestamp:
                     self._timestamp = j['last_update']
                     self._expired = 0
@@ -99,18 +98,16 @@ class ServerChecker:
 
     def check_now(self) -> None:
         """
-        Ignore timer and get server status immediately.
+        忽略计时器，立即获取服务器状态。
 
-        If server is available, server checker will keep silence.
-        Otherwise, timer will gradually increases from 2 to 10 min(s).
-
-        If a ScriptError occurs, server checker will be temporarily forced off.
+        若服务器可用，检查器保持静默。否则计时器间隔逐步从 2 分钟递增至 10 分钟。
+        若发生 ScriptError，检查器将被临时强制禁用。
         """
         try:
             self._load_server()
             if self._state[-1]:
                 self._timer.limit = 0
-                # Recover means state[-1] is True and state[0] is False
+                # Recover 表示最新状态为可用（state[-1]=True），前一状态为不可用（state[0]=False）
                 if not self._state[0]:
                     self._recover = True
             else:
@@ -138,20 +135,22 @@ class ServerChecker:
 
     def is_available(self) -> bool:
         """
-        Return server status using cache.
+        使用缓存返回服务器状态。
 
         Returns:
-            bool: True if server is available.
+            bool: 服务器可用时返回 True。
         """
         if self._timer.limit != 0 and self._timer.reached():
             self.check_now()
 
-        return self._state[-1]  # return the latest state
+        return self._state[-1]  # 返回最新状态
 
     def is_recovered(self) -> bool:
         """
+        服务器是否从不可用状态恢复。
+
         Returns:
-            bool: True if server is recovered from an unavailable state.
+            bool: 服务器刚从不可用恢复为可用时返回 True。
         """
         if len(self._state) < 2:
             self._recover = False
@@ -165,12 +164,12 @@ class ServerChecker:
 
     def fast_retry(self) -> bool:
         """
-        Sometimes CN users may fail to connect to the API even when the network is available.
-        Thus, it need another trusty site to judge the network status.
-        Here choose Baidu.
+        快速重试：通过访问百度判断网络是否连通。
+
+        部分国内用户可能无法连接 API，但网络实际可用，因此借助百度进行网络可达性判断。
 
         Returns:
-            bool: True if network is available
+            bool: 网络可用时返回 True。
         """
         self._retry = True
         try:

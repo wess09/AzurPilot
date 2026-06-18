@@ -1,5 +1,5 @@
 # docker build -t hgjazhgj/alas:latest -f deploy/docker/Dockerfile .
-# docker run -v ${PWD}:/app/AzurLaneAutoScript -p 22267:22267 --name alas -it --rm hgjazhgj/alas
+# docker run -v ${PWD}:/app/AzurLaneAutoScript -p 22267:22267 --name AzurPilot -it --rm hgjazhgj/alas
 
 FROM python:3.14-slim-bookworm
 

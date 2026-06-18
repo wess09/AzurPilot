@@ -11,17 +11,18 @@ class CombatManual(ModuleBase):
         self.manual_executed = False
 
     def handle_combat_stand_still_in_the_middle(self, auto):
-        """
+        """处理战斗中停留在画面中央的模式。
+
         Args:
-            auto (str): Combat auto mode.
+            auto (str): 战斗自动模式。
 
         Returns:
-            bool: If executed
+            bool: 是否执行了操作。
         """
         if auto != 'stand_still_in_the_middle':
             return False
-        # When switching from auto to manual, fleets are usually in the middle, no need to move down
-        # Otherwise fleet will be moved to the bottom
+        # 从自动切换到手动时，舰队通常在中央，无需下移
+        # 否则舰队会被移动到底部
         if self.auto_mode_switched:
             return False
 
@@ -29,12 +30,13 @@ class CombatManual(ModuleBase):
         return True
 
     def handle_combat_stand_still_bottom_left(self, auto):
-        """
+        """处理战斗中隐藏到左下角的模式。
+
         Args:
-            auto (str): Combat auto mode.
+            auto (str): 战斗自动模式。
 
         Returns:
-            bool: If executed
+            bool: 是否执行了操作。
         """
         if auto != 'hide_in_bottom_left':
             return False
@@ -43,12 +45,13 @@ class CombatManual(ModuleBase):
         return True
 
     def handle_combat_stand_still_upper_left(self, auto):
-        """
+        """处理战斗中隐藏到左上角的模式。
+
         Args:
-            auto (str): Combat auto mode.
+            auto (str): 战斗自动模式。
 
         Returns:
-            bool: If executed
+            bool: 是否执行了操作。
         """
         if auto != 'hide_in_upper_left':
             return False
@@ -65,12 +68,13 @@ class CombatManual(ModuleBase):
         return False
 
     def handle_combat_manual(self, auto):
-        """
+        """处理手动战斗模式。
+
         Args:
-            auto (str): Combat auto mode.
+            auto (str): 战斗自动模式。
 
         Returns:
-            bool: If executed
+            bool: 是否执行了操作。
         """
         if self.manual_executed or not self.auto_mode_checked:
             return False

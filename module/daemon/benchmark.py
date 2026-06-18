@@ -14,6 +14,15 @@ from module.logger import logger
 
 
 def float2str(n, decimal=3):
+    """将数值转换为带 's' 后缀的时间字符串。
+
+    Args:
+        n: 待转换的数值，非数值类型直接转字符串。
+        decimal: 小数位数，默认保留 3 位。
+
+    Returns:
+        str: 格式化后的时间字符串，如 '0.319s'。
+    """
     if not isinstance(n, (float, int)):
         return str(n)
     else:
@@ -25,14 +34,21 @@ class Benchmark(DaemonBase, CampaignUI):
     TEST_BEST = int(TEST_TOTAL * 0.8)
 
     def benchmark_test(self, func, *args, **kwargs):
-        """
+        """对指定函数执行多次基准测试，返回平均耗时。
+
+        连续调用 func TEST_TOTAL 次，去掉最慢的 20% 结果后取平均值。
+        若中途出现 RequestHumanTakeover 或其他异常则立即返回 'Failed'。
+
         Args:
-            func: Function to test.
-            *args: Passes to func.
-            **kwargs: Passes to func.
+            func: 待测试的函数。
+            *args: 传递给 func 的位置参数。
+            **kwargs: 传递给 func 的关键字参数。
 
         Returns:
-            float: Time cost on average.
+            float: 去除异常值后的平均耗时（秒），失败时返回 'Failed'。
+
+        Raises:
+            RequestHumanTakeover: 不捕获此异常，直接向上抛出。
         """
         logger.hr(f'Benchmark test', level=2)
         logger.info(f'Testing function: {func.__name__}')
@@ -66,6 +82,14 @@ class Benchmark(DaemonBase, CampaignUI):
 
     @staticmethod
     def evaluate_screenshot(cost):
+        """根据截图耗时评估速度等级，返回带颜色样式的 Rich Text。
+
+        Args:
+            cost: 截图耗时（秒），非数值时表示失败。
+
+        Returns:
+            Text: 带颜色标签的速度描述文本。
+        """
         if not isinstance(cost, (float, int)):
             return Text(cost, style="bold bright_red")
 
@@ -87,6 +111,14 @@ class Benchmark(DaemonBase, CampaignUI):
 
     @staticmethod
     def evaluate_click(cost):
+        """根据点击耗时评估速度等级，返回带颜色样式的 Rich Text。
+
+        Args:
+            cost: 点击耗时（秒），非数值时表示失败。
+
+        Returns:
+            Text: 带颜色标签的速度描述文本。
+        """
         if not isinstance(cost, (float, int)):
             return Text(cost, style="bold bright_red")
 
@@ -100,22 +132,22 @@ class Benchmark(DaemonBase, CampaignUI):
 
     @staticmethod
     def show(test, data, evaluate_func):
-        """
-        +--------------+--------+--------+
-        |  Screenshot  |  time  | Speed  |
-        +--------------+--------+--------+
-        |     ADB      | 0.319s |  Fast  |
-        | uiautomator2 | 0.476s | Medium |
-        |  aScreenCap  | Failed | Failed |
-        +--------------+--------+--------+
-        """
-        # table = PrettyTable()
-        # table.field_names = [test, 'Time', 'Speed']
-        # for row in data:
-        #     table.add_row([row[0], f'{float2str(row[1])}', evaluate_func(row[1])])
+        """以表格形式展示基准测试结果。
 
-        # for row in table.get_string().split('\n'):
-        #     logger.info(row)
+        输出示例:
+            +--------------+--------+--------+
+            |  Screenshot  |  time  | Speed  |
+            +--------------+--------+--------+
+            |     ADB      | 0.319s |  Fast  |
+            | uiautomator2 | 0.476s | Medium |
+            |  aScreenCap  | Failed | Failed |
+            +--------------+--------+--------+
+
+        Args:
+            test: 表格第一列的标题名称。
+            data: 测试结果列表，每项为 [方法名, 耗时]。
+            evaluate_func: 耗时评估函数，返回带颜色的 Rich Text。
+        """
         table = Table(show_lines=True)
         table.add_column(
             test, header_style="bright_cyan", style="cyan", no_wrap=True
@@ -131,6 +163,15 @@ class Benchmark(DaemonBase, CampaignUI):
         logger.print(table, justify='center')
 
     def benchmark(self, screenshot: t.Tuple[str] = (), click: t.Tuple[str] = ()):
+        """执行截图和点击方法的基准测试，返回各自最快的方法。
+
+        Args:
+            screenshot: 待测试的截图方法名称元组。
+            click: 待测试的点击方法名称元组。
+
+        Returns:
+            tuple: (最快截图方法, 最快点击方法)。
+        """
         logger.hr('Benchmark', level=1)
         logger.info(f'Testing screenshot methods: {screenshot}')
         logger.info(f'Testing click methods: {click}')
@@ -140,7 +181,7 @@ class Benchmark(DaemonBase, CampaignUI):
             result = self.benchmark_test(self.device.screenshot_methods[method])
             screenshot_result.append([method, result])
 
-        area = (124, 4, 649, 106)  # Somewhere safe to click.
+        area = (124, 4, 649, 106)  # 屏幕上可安全点击的区域
         click_result = []
         for method in click:
             x, y = random_rectangle_point(area)
@@ -165,7 +206,7 @@ class Benchmark(DaemonBase, CampaignUI):
         if click_result:
             self.show(test='Control', data=click_result, evaluate_func=self.evaluate_click)
             fastest = sorted(click_result, key=lambda item: compare(item))[0]
-            # Prefer MaaTouch if both minitouch and MaaTouch are fastest
+            # 如果 minitouch 和 MaaTouch 都是最快的，优先选择 MaaTouch
             if 'MaaTouch' in click and fastest[0] == 'minitouch':
                 fastest[0] = 'MaaTouch'
             logger.info(f'Recommend control method: {fastest[0]} ({float2str(fastest[1])})')
@@ -174,27 +215,31 @@ class Benchmark(DaemonBase, CampaignUI):
         return fastest_screenshot, fastest_click
 
     def get_test_methods(self) -> t.Tuple[t.Tuple[str], t.Tuple[str]]:
+        """根据设备类型和 SDK 版本，筛选出可用的截图和点击测试方法。
+
+        Returns:
+            tuple: (可用截图方法元组, 可用点击方法元组)。
+        """
         device = self.config.Benchmark_DeviceType
-        # device == 'emulator'
         screenshot = ['ADB', 'ADB_nc', 'uiautomator2', 'aScreenCap', 'aScreenCap_nc', 'DroidCast', 'DroidCast_raw']
         click = ['ADB', 'uiautomator2', 'minitouch', 'MaaTouch']
 
         def remove(*args):
             return [l for l in screenshot if l not in args]
 
-        # No ascreencap on Android > 9
+        # Android > 9 不支持 aScreenCap
         sdk = self.device.sdk_ver
         logger.info(f'sdk_ver: {sdk}')
         if not (21 <= sdk <= 28):
             screenshot = remove('aScreenCap', 'aScreenCap_nc')
-        # No nc loopback
+        # 云手机不支持 nc 本地回环
         if device in ['plone_cloud_with_adb']:
             screenshot = remove('ADB_nc', 'aScreenCap_nc')
-        # VMOS
+        # VMOS 虚拟机仅支持部分方法
         if device == 'android_phone_vmos':
             screenshot = ['ADB', 'aScreenCap', 'DroidCast', 'DroidCast_raw']
             click = ['ADB', 'Hermit', 'MaaTouch']
-        # Droidcast on SDK 23 (Android 6.0) to SDK 32 (Android 12)
+        # DroidCast 仅支持 SDK 23 (Android 6.0) 到 SDK 32 (Android 12)
         if not (23 <= sdk <= 32):
             screenshot = remove('DroidCast', 'DroidCast_raw')
 
@@ -224,9 +269,12 @@ class Benchmark(DaemonBase, CampaignUI):
         self.benchmark(screenshot, click)
 
     def run_simple_screenshot_benchmark(self):
-        """
+        """执行简化版截图基准测试，仅测试 3 次取最优结果。
+
+        用于快速确定当前设备最快的截图方法，测试次数少于完整基准测试。
+
         Returns:
-            str: The fastest screenshot method on current device.
+            str: 当前设备最快的截图方法名称。
         """
         screenshot = ['ADB', 'ADB_nc', 'uiautomator2', 'aScreenCap', 'aScreenCap_nc', 'DroidCast', 'DroidCast_raw']
 

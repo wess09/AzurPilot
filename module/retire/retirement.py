@@ -32,11 +32,12 @@ CARD_RARITY_COLORS = {
     'R': (106, 195, 248),
     'SR': (151, 134, 254),
     'SSR': (248, 223, 107)
-    # Not support marriage cards.
+    # 不支持婚戒卡牌
 }
 
 RETIRE_CONFIRM_SCROLL = Scroll(RETIRE_CONFIRM_SCROLL_AREA, color=(74, 77, 110), name='STRATEGIC_SEARCH_SCROLL')
-RETIRE_CONFIRM_SCROLL.color_threshold = 240  # Background color is (66, 72, 77), so default (256-221)=35 is not enough to dintinguish.
+# 背景颜色为 (66, 72, 77)，默认阈值 (256-221)=35 不足以区分
+RETIRE_CONFIRM_SCROLL.color_threshold = 240
 
 COMMON_CV_FILTER_REGEX = re.compile(
     '(bogue|hermes|langley|ranger)+?',
@@ -67,7 +68,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
     _unable_to_enhance = False
     _have_kept_cv = True
 
-    # From MapOperation
+    # 来自 MapOperation，用于战斗中退役弹窗的计时
     map_cat_attack_timer = Timer(2)
 
     @property
@@ -76,12 +77,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def _retirement_choose(self, amount=10, target_rarity=('N',)):
         """
+        在退役界面中选择指定稀有度的舰船卡牌。
+
+        通过颜色识别每张卡牌的稀有度，然后点击目标稀有度的卡牌进行选中。
+
         Args:
-            amount (int): Amount of cards retire. 0 to 10.
-            target_rarity (tuple(str)): Card rarity. N, R, SR, SSR.
+            amount (int): 要退役的卡牌数量，范围 0 到 10。
+            target_rarity (tuple[str]): 目标稀有度，如 ('N',)、('N', 'R')。
 
         Returns:
-            int: Amount of cards have retired.
+            int: 实际选中的卡牌数量。
         """
         cards = []
         rarity = []
@@ -114,10 +119,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def _retirement_confirm(self, skip_first_screenshot=True):
         """
+        确认退役流程，处理所有弹出的确认对话框。
+
+        按显示层级依次处理舰船确认、装备拆解确认、获得物品和 SR/SSR 确认弹窗。
+        GemsFarming 使用的舰船没有装备可拆解，`executed` 可能永远不为 True，
+        因此使用超时机制兜底，避免无限循环。
+
         Pages:
-            in: IN_RETIREMENT_CHECK, and also
-                SHIP_CONFIRM_2 if using one_click_retire
-                SHIP_CONFIRM if using old_retire
+            in: IN_RETIREMENT_CHECK, 以及
+                SHIP_CONFIRM_2（一键退役模式）
+                SHIP_CONFIRM（旧退役模式）
             out: IN_RETIREMENT_CHECK
         """
         logger.info('Retirement confirm')
@@ -132,72 +143,81 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件——超时兜底
             if timeout.reached():
-                # Ships being used by GemsFarming have no equipment to disassemble
-                # So `executed` is never set to True, causing infinite loop
-                # Handled with dirty timeout, a better fix is required
                 logger.warning('Wait _retirement_confirm timeout, assume finished')
                 break
-            # sometimes you have EQUIP_CONFIRM without black-blurred background
-            # EQUIP_CONFIRM and IN_RETIREMENT_CHECK appears
+            # 有时 EQUIP_CONFIRM 没有黑色模糊背景，与 IN_RETIREMENT_CHECK 同时出现
             if self.appear(IN_RETIREMENT_CHECK, offset=(20, 20)) and not self.appear(EQUIP_CONFIRM, offset=(30, 30)):
                 if executed:
                     break
             else:
                 timeout.reset()
 
-            # Click
-            # Ship confirm, order by display hierarchy
+            # 点击——按显示层级排序
+            # SR/SSR 确认弹窗（一键退役或旧模式退役 SR/SSR 时出现）
             if self._unable_to_enhance \
                     or self.config.OldRetire_SR \
                     or self.config.OldRetire_SSR \
                     or self.config.Retirement_RetireMode == 'one_click_retire':
                 if self.handle_popup_confirm(name='RETIRE_SR_SSR', offset=(20, 50)):
-                    # Avoid clicking the undelying SHIP_CONFIRM again
+                    # 避免重复点击底层的 SHIP_CONFIRM
                     self.interval_reset([SHIP_CONFIRM, SHIP_CONFIRM_2])
-                    # EQUIP_CONFIRM_2 may be detected as popup confirm
+                    # EQUIP_CONFIRM_2 可能被误识别为 popup confirm
                     self.interval_reset([EQUIP_CONFIRM, EQUIP_CONFIRM_2])
                     continue
                 if self.config.SERVER in ['cn', 'jp', 'tw'] and \
                         self.appear_then_click(SR_SSR_CONFIRM, offset=(20, 50), interval=2):
-                    # Avoid clicking the undelying SHIP_CONFIRM again
+                    # 避免重复点击底层的 SHIP_CONFIRM
                     self.interval_reset([SHIP_CONFIRM, SHIP_CONFIRM_2])
-                    # EQUIP_CONFIRM_2 may be detected as popup confirm
+                    # EQUIP_CONFIRM_2 可能被误识别为 popup confirm
                     self.interval_reset([EQUIP_CONFIRM, EQUIP_CONFIRM_2])
                     continue
+            # 舰船确认（一键退役）
             if self.match_template_color(SHIP_CONFIRM_2, offset=(30, 30), interval=2):
                 if self.retire_keep_common_cv and not self._have_kept_cv:
                     self.keep_one_common_cv()
                 self.device.click(SHIP_CONFIRM_2)
-                # GET_ITEMS_1 is going to appear, avoid re-entering ship confirm
+                # GET_ITEMS_1 即将出现，清除以避免重新进入舰船确认
                 self.interval_clear(GET_ITEMS_1)
                 self.interval_reset([SHIP_CONFIRM, SHIP_CONFIRM_2])
                 continue
+            # 舰船确认（旧退役）
             if self.match_template_color(SHIP_CONFIRM, offset=(30, 30), interval=2):
                 self.device.click(SHIP_CONFIRM)
                 continue
-            # Equip confirm
+            # 装备拆解确认
             if self.appear_then_click(EQUIP_CONFIRM, offset=(30, 30), interval=2):
                 continue
             if self.appear_then_click(EQUIP_CONFIRM_2, offset=(30, 30), interval=2):
                 self.interval_clear(GET_ITEMS_1)
                 executed = True
                 continue
-            # Get items
+            # 获得物品画面
             if self.appear(GET_ITEMS_1, offset=(30, 30), interval=2):
                 self.device.click(GET_ITEMS_1_RETIREMENT_SAVE)
                 self.interval_reset(SHIP_CONFIRM)
-                # equipment confirms are the next to appear
+                # 下一个出现的是装备拆解确认
                 self.interval_clear([EQUIP_CONFIRM, EQUIP_CONFIRM_2])
                 continue
 
     def retirement_appear(self):
+        """
+        检测退役确认弹窗是否出现。
+
+        Returns:
+            bool: 退役弹窗三个特征按钮全部出现则返回 True。
+        """
         return self.appear(RETIRE_APPEAR_1, offset=30) \
                and self.appear(RETIRE_APPEAR_2, offset=30) \
                and self.appear(RETIRE_APPEAR_3, offset=30)
 
     def _retirement_quit(self):
+        """
+        退出退役/船坞界面，返回上一级页面。
+
+        通过 ui_back 逐级返回，直到 IN_RETIREMENT_CHECK 和 DOCK_CHECK 均消失。
+        """
         def check_func():
             return not self.appear(IN_RETIREMENT_CHECK, offset=(20, 20)) \
                    and not self.appear(DOCK_CHECK, offset=(20, 20))
@@ -206,6 +226,12 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     @property
     def _retire_rarity(self):
+        """
+        根据用户配置获取需要退役的稀有度集合。
+
+        Returns:
+            set[str]: 稀有度集合，如 {'N', 'R'}。
+        """
         rarity = set()
         if self.config.OldRetire_N:
             rarity.add('N')
@@ -219,11 +245,13 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def _retire_wait_slow_retire(self, skip_first_screenshot=True):
         """
-        SHIP_CONFIRM_2 may slow to appear on slow devices or large dock, wait it
-        If SHIP_CONFIRM_2 can't be waited within 60s, GameStuckError will be raised
+        等待一键退役后的 SHIP_CONFIRM_2 出现。
+
+        在慢速设备或大型船坞中，SHIP_CONFIRM_2 可能出现较慢。
+        如果 60 秒内未出现，GameStuckError 将被触发。
 
         Returns:
-            bool: If SHIP_CONFIRM_2 appears
+            bool: SHIP_CONFIRM_2 出现则返回 True。
         """
         logger.info('Wait slow retire')
         self.device.click_record_clear()
@@ -234,14 +262,24 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件
             if self.appear(SHIP_CONFIRM_2, offset=(30, 30)):
                 return True
 
     def retire_ships_one_click(self):
+        """
+        使用一键退役功能批量退役舰船。
+
+        一键退役不需要检查船坞，直接点击 ONE_CLICK_RETIREMENT 按钮。
+        客户端会一次性退役所有符合条件的舰船，因此只需执行一轮。
+        如果需要保留普通航母，会在退役确认前保留一艘。
+
+        Returns:
+            int: 退役的舰船数量（每轮 10 艘）。
+        """
         logger.hr('Retirement')
         logger.info('Using one click retirement.')
-        # No need to wait, one-click-retire doesn't need to check dock
+        # 一键退役不需要等待加载船坞
         self.dock_favourite_set(wait_loading=False)
         self.dock_sort_method_dsc_set(wait_loading=False)
         end = False
@@ -253,7 +291,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         while 1:
             self.handle_info_bar()
 
-            # ONE_CLICK_RETIREMENT -> SHIP_CONFIRM_2 or info_bar_count
+            # 内层循环：ONE_CLICK_RETIREMENT -> SHIP_CONFIRM_2 或 info_bar
             skip_first_screenshot = True
             click_count = 0
             while 1:
@@ -261,7 +299,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     skip_first_screenshot = False
                 else:
                     self.device.screenshot()
-                # End
+                # 结束条件
                 if self.appear(SHIP_CONFIRM_2, offset=(30, 30)):
                     break
                 if self.info_bar_count():
@@ -269,16 +307,14 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     end = True
                     break
 
-                # Click
+                # 点击——多次重试后等待慢速退役
                 if click_count >= 5:
                     logger.warning('Failed to select ships using ONE_CLICK_RETIREMENT after 5 trial')
                     if self._retire_wait_slow_retire():
-                        # Waited, all good
-                        # Use pass to trigger ONE_CLICK_RETIREMENT on the same screenshot
+                        # 等待成功，继续在同一截图上触发 ONE_CLICK_RETIREMENT
                         pass
                     else:
-                        # probably because game bugged, a re-enter should fix it
-                        # Mark as retire finished, higher level will call retires
+                        # 可能是游戏 bug，标记退役完成，上层会重新调用退役
                         end = True
                         total = 10
                         break
@@ -286,15 +322,13 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                     click_count += 1
                     continue
 
-            # info_bar_count
+            # info_bar 提示无更多舰船可退役
             if end:
                 break
-            # SHIP_CONFIRM_2 -> IN_RETIREMENT_CHECK
+            # SHIP_CONFIRM_2 -> 退役确认流程
             self._retirement_confirm()
             total += 10
-            # if total >= amount:
-            #     break
-            # Always break, since game client retire all once
+            # 客户端一次性退役所有舰船，直接退出
             break
 
         logger.info(f'Total retired round: {total // 10}')
@@ -302,12 +336,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def retire_ships_old(self, amount=None, rarity=None):
         """
+        使用旧退役模式手动选择并退役指定数量和稀有度的舰船。
+
+        在退役界面通过颜色识别卡牌稀有度，逐批选择目标稀有度的卡牌进行退役。
+
         Args:
-            amount (int): Amount of cards retire. 0 to 2000.
-            rarity (tuple(str)): Card rarity. N, R, SR, SSR.
+            amount (int): 要退役的数量，范围 0 到 2000。默认从配置读取。
+            rarity (tuple[str]): 目标稀有度，如 ('N',)、('N', 'R')。默认从配置读取。
 
         Returns:
-            int: Total retired.
+            int: 实际退役的舰船总数。
         """
         if amount is None:
             amount = self._retire_amount
@@ -316,7 +354,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         logger.hr('Retirement')
         logger.info(f'Amount={amount}. Rarity={rarity}')
 
-        # transfer N R SR SSR to filter name
+        # 将稀有度映射为过滤器名称
         correspond_name = {
             'N': 'common',
             'R': 'rare',
@@ -361,9 +399,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def retire_gems_farming_flagships(self, keep_one=True) -> int:
         """
-        Retire abandoned flagships of GemsFarming.
-        Common CV whose level > 1, fleet is none and status is free
-        will be regarded as targets.
+        退役 GemsFarming 遗弃的旗舰（普通航母）。
+
+        筛选条件：稀有度为 common、等级 > 1、不在编队中、状态为空闲。
+        如果 keep_one 为 True，会保留等级最低的一艘。
+
+        Args:
+            keep_one (bool): 是否至少保留一艘普通航母。默认 True。
+
+        Returns:
+            int: 退役的舰船数量。
         """
         logger.info('Retire abandoned flagships of GemsFarming/ThreeOilLowCost')
 
@@ -394,13 +439,13 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             self.handle_info_bar()
             ships = scanner.scan(self.device.image)
             if not ships:
-                # exit if nothing can be retired
+                # 无可退役舰船，退出
                 break
             if keep_one:
                 if len(ships) < 2:
                     break
                 else:
-                    # Try to keep the one with the lowest level
+                    # 保留等级最低的一艘
                     ships.sort(key=lambda s: -s.level)
                     ships = ships[:-1]
 
@@ -411,22 +456,28 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
             self._retirement_confirm()
 
-            # Quick exit if there's only a few CV to retire
+            # 少于 10 艘时快速退出
             if len(ships) < 10:
                 break
 
         self._have_kept_cv = _
-        # No need to wait, retire finished, just about to exit
+        # 退役完成，即将退出，无需等待加载
         self.dock_filter_set(wait_loading=False)
 
         return total
 
     def handle_retirement(self):
         """
+        处理船坞满载时的退役/强化流程。
+
+        根据配置的退役模式（enhance/one_click_retire/old_retire）选择对应策略：
+        - enhance: 先尝试强化，强化失败或剩余船坞不足时切换到退役
+        - one_click_retire / old_retire: 直接退役
+
         Returns:
-            bool: If retired.
+            bool: True 表示已完成退役或强化操作。
         """
-        # 2025.05.29 game tips that infos skin feature when you enter dock
+        # 2025.05.29 进入船坞时游戏会弹出皮肤信息提示
         if self.handle_game_tips():
             return True
         if self._unable_to_enhance:
@@ -493,19 +544,27 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def _retire_handler(self, mode=None):
         """
+        退役调度器，根据模式分发到对应退役策略。
+
+        一键退役模式下，如果初始退役失败，会逐步放宽快速退役设置重试。
+        旧退役模式直接调用 retire_ships_old。
+
         Args:
-            mode (str): `one_click_retire` or `old_retire`
+            mode (str): 退役模式，'one_click_retire' 或 'old_retire'。默认从配置读取。
 
         Returns:
-            int: Amount of retired ships
+            int: 退役的舰船总数。
+
+        Raises:
+            RequestHumanTakeover: 无可退役舰船时抛出，需要用户介入。
 
         Pages:
             in: IN_RETIREMENT_CHECK
-            out: the page before retirement popup
+            out: 退役弹窗出现前的页面
         """
         if mode is None:
             mode = self.config.Retirement_RetireMode
-        
+
         # 当模式为 'enhance' 时，使用 'one_click_retire' 作为默认退役模式
         if mode == 'enhance':
             logger.info('Retirement mode is set to enhance, using one_click_retire as fallback')
@@ -520,7 +579,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 self.dock_filter_set()
                 total = self.retire_ships_one_click()
             if self.server_support_quick_retire_setting_fallback():
-                # Some users may have already set filter_5='all', try with it first
+                # 部分用户可能已设置 filter_5='all'，先尝试保留该设置
                 if not total:
                     logger.warning('No ship retired, trying to reset the first 4 quick retire settings')
                     self.quick_retire_setting_set(filter_5=None)
@@ -559,9 +618,14 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def _retire_select_one(self, button, skip_first_screenshot=True):
         """
+        在退役确认界面中选择一艘舰船（取消其退役）。
+
+        通过检测 RETIRE_COIN 模板是否变化来判断是否成功选中。
+        最多重试 3 次。
+
         Args:
-            button (Button): Ship button to select
-            skip_first_screenshot:
+            button (Button): 要选择的舰船按钮。
+            skip_first_screenshot (bool): 是否跳过首次截图。默认 True。
         """
         count = 0
         RETIRE_COIN.load_color(self.device.image)
@@ -574,7 +638,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束条件——RETIRE_COIN 模板变化说明选中成功
             if not RETIRE_COIN.match(self.device.image, offset=(20, 20), similarity=0.97):
                 return True
             if count > 3:
@@ -588,15 +652,17 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def get_common_ship_filter(self, string, ship_type='cv', output=True):
         """
-        Get the filter of common rarity cv/dd,
-        If the filter is invalid, export default value to config and use it
+        解析普通稀有度航母/驱逐舰的过滤器字符串，返回舰船名称列表。
+
+        如果过滤器无效，自动回退到配置中的默认值并写回配置。
 
         Args:
-            string (str): filter string
-            ship_type (str): 'cv' or 'dd' 
-            output:
+            string (str): 过滤器字符串。
+            ship_type (str): 舰船类型，'cv' 或 'dd'。
+            output (bool): 是否输出日志。默认 True。
+
         Returns:
-            List[str]: unique ship name list
+            list[str]: 去重后的舰船名称列表，如 ['bogue', 'hermes', 'ranger']。
         """
         if ship_type.lower() not in ['cv', 'dd']:
             logger.warning(f'Invalid ship_type: {ship_type}')
@@ -619,15 +685,20 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 self.config.cross_set(keys=key, value=default)
                 continue
 
-            # End
+            # 结束条件——过滤器解析成功
             if output:
                 logger.attr('Filter sort', ' > '.join(common_cv))
             return common_cv
 
     def retirement_get_common_rarity_cv_in_page(self):
         """
+        在当前页面中通过模板匹配查找普通稀有度航母。
+
+        根据配置的预设（custom/any/eagle/指定航母）选择匹配模板，
+        在缩放后的截图上进行模板匹配。
+
         Returns:
-            Button:
+            Button | None: 匹配到的航母按钮，未找到返回 None。
         """
         preset = self.config.GemsFarming_CommonCV
         if preset in ['custom', 'any', 'eagle']:
@@ -662,11 +733,16 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def retirement_get_common_rarity_cv(self, skip_first_screenshot=False):
         """
+        在退役确认界面中滚动查找普通稀有度航母。
+
+        从底部向顶部逐页滚动，通过模板匹配在每页中查找目标航母。
+        如果滚动条消失或到达顶部则停止。
+
         Args:
-            skip_first_screenshot:
+            skip_first_screenshot (bool): 是否跳过首次截图。默认 False。
 
         Returns:
-            Button: Button to click to remove ship from retire list
+            Button | None: 找到的航母按钮（用于从退役列表中移除），未找到返回 None。
         """
         swipe_count = 0
         disappear_confirm = Timer(2, count=6)
@@ -677,12 +753,12 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             else:
                 self.device.screenshot()
 
-            # Try to get CV
+            # 尝试在当前页获取航母
             button = self.retirement_get_common_rarity_cv_in_page()
             if button is not None:
                 return button
 
-            # Wait scroll bar
+            # 等待滚动条出现
             if RETIRE_CONFIRM_SCROLL.appear(main=self):
                 disappear_confirm.clear()
             else:
@@ -702,7 +778,7 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
                 if RETIRE_CONFIRM_SCROLL.at_top(main=self):
                     logger.info('Scroll bar reached top, stop')
                     break
-                # Swipe prev page
+                # 向上翻页
                 if swipe_count >= 7:
                     logger.info('Reached maximum swipes to find common CV')
                     break
@@ -713,8 +789,9 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
 
     def keep_one_common_cv(self):
         """
-        Returns:
+        在退役确认界面中保留一艘普通航母，将其从退役列表中移除。
 
+        通过滚动查找并选中一艘普通航母，避免 GemsFarming 全部退役。
         """
         logger.info('Keep one common CV')
         button = self.retirement_get_common_rarity_cv()

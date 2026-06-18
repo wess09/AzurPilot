@@ -33,13 +33,14 @@ class GemsEmotion(Emotion):
 
     def check_reduce(self, battle):
         """
-        Overwrite emotion.check_reduce()
-        Check emotion before entering a campaign.
-        Args:
-            battle (int): Battles in this campaign
+        重写 emotion.check_reduce()。
+        进入战役前检查情绪值。
 
-        Raise:
-            CampaignEnd: Pause current task to prevent emotion control in the future.
+        Args:
+            battle (int): 本战役中的战斗次数。
+
+        Raises:
+            CampaignEnd: 暂停当前任务以避免未来的情绪控制问题。
         """
         if not self.is_calculate:
             return
@@ -58,13 +59,13 @@ class GemsCampaignOverride(CampaignBase):
 
     def handle_combat_low_emotion(self):
         """
-        Overwrite info_handler.handle_combat_low_emotion()
-        If change vanguard is enabled, withdraw combat and change flagship and vanguard
+        重写 info_handler.handle_combat_low_emotion()。
+        如果启用了更换先锋，撤出战斗并更换旗舰和先锋。
         """
         if self.config.GemsFarming_IgnoreEmotionWarning or self.config.GemsFarming_ChangeVanguard == 'disabled':
             result = self.handle_popup_confirm('IGNORE_LOW_EMOTION')
             if result:
-                # Avoid clicking AUTO_SEARCH_MAP_OPTION_OFF
+                # 避免点击 AUTO_SEARCH_MAP_OPTION_OFF
                 self.interval_reset(AUTO_SEARCH_MAP_OPTION_OFF)
                 if self.config.GemsFarming_IgnoreEmotionWarning and self.config.GemsFarming_ChangeVanguard != 'disabled':
                     self.config.GEMS_EMOTION_TRIGGERED = True
@@ -72,7 +73,7 @@ class GemsCampaignOverride(CampaignBase):
 
         if self.handle_popup_cancel('IGNORE_LOW_EMOTION'):
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.hr('EMOTION WITHDRAW')
+            logger.hr('情绪撤退')
 
             while 1:
                 self.device.screenshot()
@@ -105,13 +106,13 @@ class GemsCampaignOverride(CampaignBase):
             return False
         if super().handle_exp_info():
             return True
-        if self.appear_then_click(EXP_INFO_C):
+        if self.appear_then_click(EXP_INFO_C, threshold=10):
             self.device.sleep((0.25, 0.5))
             return True
         if self.appear_then_click(EXP_INFO_D):
             self.device.sleep((0.25, 0.5))
             return True
-        if self.appear_then_click(OPTS_INFO_D):
+        if self.appear_then_click(OPTS_INFO_D, offset=True, similarity=0.9):
             self.device.sleep((0.25, 0.5))
             return True
         return False
@@ -130,8 +131,7 @@ class GemsEquipmentHandler(EquipmentCodeHandler):
 
     def current_ship(self, skip_first_screenshot=True):
         """
-        Reuse templates in module.retire.assets,
-        which needs different rescaling to match each current flagship.
+        复用 module.retire.assets 中的模板，需要不同的缩放比例来匹配当前旗舰。
 
         Pages:
             in: gear_code
@@ -141,11 +141,11 @@ class GemsEquipmentHandler(EquipmentCodeHandler):
                 skip_first_screenshot = False
             else:
                 self.device.screenshot()
-            # End
+            # 结束条件
             if not self.appear(EMPTY_SHIP_R):
                 break
             else:
-                logger.info('Waiting ship icon loading.')
+                logger.info('等待舰船图标加载。')
 
         if TEMPLATE_BOGUE.match(self.device.image, scaling=1.46):  # image has rotation
             return 'bogue'
@@ -270,10 +270,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def flagship_change(self):
         """
-        Change flagship and flagship's equipment using gear code
+        更换旗舰并使用装备码更换旗舰装备。
 
         Returns:
-            bool: True if flagship changed.
+            bool: 是否成功更换旗舰。
         """
 
         logger.hr('Change flagship', level=1)
@@ -298,10 +298,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def vanguard_change(self):
         """
-        Change vanguard and vanguard's equipment using gear code
+        更换先锋并使用装备码更换先锋装备。
 
         Returns:
-            bool: True if vanguard changed
+            bool: 是否成功更换先锋。
         """
         logger.hr('Change vanguard', level=1)
         logger.attr('ChangeVanguard', self.config.GemsFarming_ChangeVanguard)
@@ -336,16 +336,17 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def get_common_rarity_cv(self, lv=31, emotion=16):
         """
-        Get a common rarity cv by config.GemsFarming_CommonCV
-        If config.GemsFarming_CommonCV == 'any', return a common lv1 ~ lv33 cv
+        根据 config.GemsFarming_CommonCV 获取普通稀有度航母。
+        如果 config.GemsFarming_CommonCV == 'any'，返回等级 1~33 的普通航母。
 
-        _dock_reset() needs to be called later.
+        调用后需要调用 _dock_reset()。
 
         Args:
-            lv (int): max level of common cv
-            emotion (int): min emotion of common cv
+            lv (int): 普通航母的最大等级。
+            emotion (int): 普通航母的最低情绪值。
+
         Returns:
-            Ship:
+            Ship: 匹配的舰船。
         """
         faction = 'eagle' if self.config.GemsFarming_CommonCV == 'eagle' else 'all'
         extra = 'can_limit_break' if self.config.GemsFarming_ALLowHighFlagshipLevel else 'enhanceable'
@@ -354,7 +355,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         self.dock_filter_set(
             index='cv', rarity='common', faction=faction, extra=extra, sort='total')
 
-        logger.hr('FINDING FLAGSHIP')
+        logger.hr('查找旗舰')
 
         if self.config.GemsFarming_ALLowHighFlagshipLevel:
             if self.config.SERVER in ['cn']:
@@ -387,15 +388,15 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                 if candidates:
                     return [candidates[0]]
 
-                logger.info('No specific CV was found, try reversed order.')
+                logger.info('未找到指定航母，尝试倒序排列。')
                 self.dock_sort_method_dsc_set(True)
                 candidates = self.find_all_backline_candidates(scanner, common_ship)
                 if candidates:
                     return [candidates[0]]
 
-                # Revert sort method since we changed it and found nothing
+                # 恢复排序方式，因为已更改但未找到结果
                 self.dock_sort_method_dsc_set(False)
-            logger.info('UseEmotionFirst found no candidates, falling back to original selection method.')
+            logger.info('UseEmotionFirst 未找到候选舰船，回退到原始选择方法。')
 
         scanner = ShipScanner(
             level=(min_level, max_level), emotion=(emotion_lower_bound, 150), fleet=fleet, status='free')
@@ -404,17 +405,17 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         if not self.config.GemsFarming_ALLowHighFlagshipLevel:
             ships = scanner.scan(self.device.image)
             if ships:
-                # Don't need to change current
+                # 不需要更换当前舰船
                 return ships
 
-            # Change to any ship
+            # 更换为任意舰船
             scanner.set_limitation(fleet=0)
 
         if self.config.GemsFarming_CommonCV in ['custom', 'any', 'eagle']:
             candidates = self.find_custom_candidates(scanner, ship_type='cv')
 
             if candidates:
-                # Change to specific ship
+                # 更换为指定舰船
                 return candidates
 
             return scanner.scan(self.device.image, output=False)
@@ -426,10 +427,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                           if template.match(self.image_crop(ship.button, copy=False), similarity=SIM_VALUE)]
 
             if candidates:
-                # Change to specific ship
+                # 更换为指定舰船
                 return candidates
 
-            logger.info('No specific CV was found, try reversed order.')
+            logger.info('未找到指定航母，尝试倒序排列。')
             self.dock_sort_method_dsc_set(True)
 
             candidates = [ship for ship in scanner.scan(self.device.image)
@@ -439,15 +440,15 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def get_common_rarity_dd(self, emotion=16):
         """
-        Get a common rarity dd with level is 100 (70 for servers except CN) 
-        and emotion >= self.emotion_lower_bound
+        获取等级为 100（非 CN 服务器为 70）且情绪值 >= self.emotion_lower_bound 的普通稀有度驱逐舰。
 
-        _dock_reset() needs to be called later.
+        调用后需要调用 _dock_reset()。
 
         Args:
-            emotion (int): min emotion of common dd
+            emotion (int): 普通驱逐舰的最低情绪值。
+
         Returns:
-            Ship:
+            Ship: 匹配的舰船。
         """
         rarity = 'common'
         extra = 'can_limit_break'
@@ -472,12 +473,12 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         self.dock_filter_set(
             index='dd', rarity=rarity, faction=faction, extra=extra)
 
-        logger.hr('FINDING VANGUARD')
+        logger.hr('查找先锋')
 
         min_level, max_level = self.config.GemsFarming_VanguardLevelMin, self.config.GemsFarming_VanguardLevelMax
         
-        # Fallback to legacy logic if new settings are kept at absolute defaults (1, 125)
-        # to prevent breaking existing GemsFarming setups that implicitly relied on 100/70.
+        # 如果新设置保持在绝对默认值 (1, 125)，回退到旧逻辑
+        # 以防止破坏隐式依赖 100/70 的现有 GemsFarming 配置。
         if min_level <= 1 and max_level >= 125:
             if self.config.SERVER in ['cn']:
                 max_level = 100
@@ -517,7 +518,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                 if candidates:
                     return candidates
 
-                logger.info('No specific DD was found, try reversed order.')
+                logger.info('未找到指定驱逐舰，尝试倒序排列。')
                 self.dock_sort_method_dsc_set(False)
                 candidates = self.find_all_vanguard_candidates(scanner, common_ship)
                 if not candidates and self.config.GemsFarming_CommonDD == 'custom':
@@ -530,14 +531,14 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                     return candidates
 
         if self.config.GemsFarming_CommonDD in ['any', 'favourite', 'z20_or_z21', 'DDG']:
-            # Change to any ship
+            # 更换为任意舰船
             return scanner.scan(self.device.image)
 
         elif self.config.GemsFarming_CommonDD == 'custom':
             candidates = self.find_custom_candidates(scanner, ship_type='dd')
 
             if candidates:
-                # Change to specific ship
+                # 更换为指定舰船
                 return candidates
 
             return scanner.scan(self.device.image, output=False)
@@ -546,13 +547,13 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
             candidates = self.find_candidates(self.get_templates(self.config.GemsFarming_CommonDD), scanner)
 
             if candidates:
-                # Change to specific ship
+                # 更换为指定舰船
                 return candidates
 
-            logger.info('No specific DD was found, try reversed order.')
+            logger.info('未找到指定驱逐舰，尝试倒序排列。')
             self.dock_sort_method_dsc_set(False)
 
-            # Change specific ship
+            # 更换为指定舰船
             candidates = self.find_candidates(self.get_templates(self.config.GemsFarming_CommonDD), scanner)
             return candidates
 
@@ -564,8 +565,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def find_all_vanguard_candidates(self, scanner, common_ship):
         """
-        Scan and find all matching candidates for the common_ship list,
-        returning a list of Ship objects sorted by (emotion, -priority_index) descending.
+        扫描并查找 common_ship 列表的所有匹配候选舰船，按 (情绪值, -优先级索引) 降序返回。
         """
         templates_list = [TEMPLATE_COMMON_DD[name.upper()] for name in common_ship]
         all_ships = scanner.scan(self.device.image, output=False)
@@ -575,17 +575,16 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                 if self.match_ship_to_template(ship, template):
                     matched_candidates.append((ship, i))
                     break
-        # Sort by emotion (descending) and priority index (ascending)
+        # 按情绪值（降序）和优先级索引（升序）排序
         matched_candidates.sort(key=lambda x: (x[0].emotion, -x[1]), reverse=True)
         return [x[0] for x in matched_candidates]
 
     def find_all_backline_candidates(self, scanner, common_ship):
         """
-        Scan and find all matching candidates for the common_ship list,
-        returning a list of Ship objects sorted by:
-        1. Emotion (descending)
-        2. Level (ascending)
-        3. Priority index (ascending)
+        扫描并查找 common_ship 列表的所有匹配候选舰船，按以下顺序排序：
+        1. 情绪值（降序）
+        2. 等级（升序）
+        3. 优先级索引（升序）
         """
         templates_list = [TEMPLATE_COMMON_CV[name.upper()] for name in common_ship]
         all_ships = scanner.scan(self.device.image, output=False)
@@ -595,25 +594,24 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                 if self.match_ship_to_template(ship, template):
                     matched_candidates.append((ship, i))
                     break
-        # Sort by emotion (descending), level (ascending), and priority index (ascending)
+        # 按情绪值（降序）、等级（升序）和优先级索引（升序）排序
         matched_candidates.sort(key=lambda x: (x[0].emotion, -x[0].level, -x[1]), reverse=True)
         return [x[0] for x in matched_candidates]
 
     def find_custom_candidates(self, scanner, ship_type='cv'):
         """
-        Get the candidates of common rarity cv/dd,
-        only for 'custom' GemsFarming_CommonCV/DD settings
+        获取普通稀有度航母/驱逐舰的候选舰船，仅用于 'custom' GemsFarming_CommonCV/DD 设置。
 
         Args:
-            scanner (ShipScanner):
-            ship_type (str): 'cv' or 'dd' 
+            scanner (ShipScanner): 舰船扫描器。
+            ship_type (str): 'cv' 或 'dd'。
         """
         if ship_type.lower() not in ['cv', 'dd']:
             logger.warning(f'Invalid ship_type: {ship_type}')
             return []
 
         ship_type = ship_type.upper()
-        logger.info(f'Search for Common {ship_type}.')
+        logger.info(f'搜索普通 {ship_type}。')
         if ship_type.lower() == 'cv' and self.config.GemsFarming_CommonCV != 'custom':
             filter_string = self.config.COMMON_CV_FILTER
         else:
@@ -636,7 +634,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
             common_ship_candidates[name] = candidates
 
-        logger.info(f'No suitable {ship_type} was found, try reversed order.')
+        logger.info(f'未找到合适的 {ship_type}，尝试倒序排列。')
         self.dock_sort_method_dsc_set(not sort_dsc_first)
 
         for name in common_ship:
@@ -655,8 +653,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def find_candidates(self, template, scanner):
         """
-        Find candidates based on template matching using a scanner.
-
+        基于模板匹配查找候选舰船。
         """
         candidates = []
         if isinstance(template, list):
@@ -673,7 +670,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
     @staticmethod
     def get_templates(common_dd):
         """
-        Returns the corresponding template list based on CommonDD
+        根据 CommonDD 设置返回对应的模板列表。
         """
         if common_dd == 'aulick_or_foote':
             return [
@@ -691,7 +688,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def ship_down_hard(self):
         """
-        In hard mode, let the ship leave the fleet first
+        困难模式下，先让舰船离队。
         """
         if self.appear(DOCK_SHIP_DOWN):
             self.ui_click(DOCK_SHIP_DOWN,
@@ -706,14 +703,14 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
             if self.appear(self.page_fleet_check_button, offset=(30, 30), interval=5):
                 self.device.click(button)
                 continue
-            # 2025.05.29 game tips that infos skin feature when you enter dock
+            # 2025.05.29 进入船坞时游戏会弹出皮肤功能提示
             if self.handle_game_tips():
                 return False
         return True
 
     def flagship_change_with_emotion(self, ship):
         """
-        Change flagship and calculate emotion
+        更换旗舰并计算情绪值。
         """
         target_ship = max(ship, key=lambda s: (s.level, s.emotion))
         if self.change_vanguard:
@@ -724,8 +721,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def flagship_change_execute(self):
         """
+        执行旗舰更换。
+
         Returns:
-            bool: If success.
+            bool: 是否成功。
 
         Pages:
             in: page_fleet
@@ -741,10 +740,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         ship = self.get_common_rarity_cv()
         if ship:
             self.flagship_change_with_emotion(ship)
-            logger.info('Change flagship success')
+            logger.info('更换旗舰成功')
             return True
         else:
-            logger.info('Change flagship failed, no CV in common rarity.')
+            logger.info('更换旗舰失败，没有普通稀有度航母。')
 
             if self.config.SERVER in ['cn']:
                 max_level = 100
@@ -762,7 +761,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def vanguard_change_with_emotion(self, ship):
         """
-        Change vanguard and calculate emotion
+        更换先锋并计算情绪值。
         """
         target_ship = max(ship, key=lambda s: s.emotion)
         if self.change_vanguard:
@@ -771,8 +770,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def vanguard_change_execute(self):
         """
+        执行先锋更换。
+
         Returns:
-            bool: If success.
+            bool: 是否成功。
 
         Pages:
             in: page_fleet
@@ -788,10 +789,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         ship = self.get_common_rarity_dd()
         if ship:
             self.vanguard_change_with_emotion(ship)
-            logger.info('Change vanguard ship success')
+            logger.info('更换先锋舰船成功')
             return True
         else:
-            logger.info('Change vanguard ship failed, no DD in common rarity.')
+            logger.info('更换先锋舰船失败，没有普通稀有度驱逐舰。')
             ship = self.get_common_rarity_dd(emotion=0)
             if ship and self.hard_mode:
                 self.vanguard_change_with_emotion(ship)
@@ -806,7 +807,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
     _trigger_emotion = False
 
     def triggered_stop_condition(self, oil_check=True):
-        # Lv32 limit
+        # 等级 32 限制
         if self._trigger_lv32 or (
                 self.change_flagship and self.campaign.config.LV32_TRIGGERED
                 and not self.config.GemsFarming_ALLowHighFlagshipLevel):
@@ -823,7 +824,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def get_emotion(self):
         """
-        Get fleet emotion value from config
+        从配置中获取舰队情绪值。
         """
         if self.config.Fleet_FleetOrder == 'fleet1_standby_fleet2_all':
             return self.campaign.config.Emotion_Fleet2Value
@@ -832,7 +833,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def set_emotion(self, emotion):
         """
-        Set fleet emotion value
+        设置舰队情绪值。
         """
         if self.config.Fleet_FleetOrder == 'fleet1_standby_fleet2_all':
             self.campaign.config.set_record(Emotion_Fleet2Value=emotion)
@@ -841,16 +842,18 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     def run(self, name, folder='campaign_main', mode='normal', total=0):
         """
+        运行钻石 farming 任务。
+
         Args:
-            name (str): Name of .py file.
-            folder (str): Name of the file folder under campaign.
-            mode (str): `normal` or `hard`
-            total (int):
+            name (str): .py 文件名称。
+            folder (str): campaign 下的文件夹名称。
+            mode (str): `normal` 或 `hard`。
+            total (int): 总运行次数限制。
         """
         self.config.STOP_IF_REACH_LV32 = self.change_flagship
-        # Initial check for flagship level.
-        # Force a flagship change at the beginning if flagship change is enabled.
-        # This solves the problem that the script starts with a level 32 flagship but doesn't retire it.
+        # 初始检查旗舰等级。
+        # 如果启用了旗舰更换，在开始时强制更换旗舰。
+        # 解决脚本以 32 级旗舰启动但未退役的问题。
         initial_check = (
             self.change_flagship
             and not self.config.GemsFarming_ALLowHighFlagshipLevel
@@ -885,7 +888,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                     from module.exception import GameStuckError
                     raise GameStuckError
 
-            # End
+            # 结束条件
             if self._trigger_lv32 or self._trigger_emotion:
                 success = True
                 self.hard_mode_override()
@@ -910,7 +913,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
                 self.campaign.config.LV32_TRIGGERED = False
                 self.campaign.config.GEMS_EMOTION_TRIGGERED = False
 
-                # Scheduler
+                # 调度器
                 if self.config.task_switched():
                     self._trigger_emotion = False
                     self.campaign.ensure_auto_search_exit()

@@ -9,13 +9,14 @@ from deploy.utils import *
 class AppManager(DeployConfig):
     @staticmethod
     def app_asar_replace(folder, path='./.venv/WebApp/resources/app.asar'):
-        """
+        """替换 app.asar 文件以更新 WebApp。
+
         Args:
-            folder (str): Path to AzurLaneAutoScript
-            path (str): Path from AzurLaneAutoScript to app.asar
+            folder (str): AzurPilot 根目录路径。
+            path (str): 从根目录到 app.asar 的相对路径。
 
         Returns:
-            bool: If updated.
+            bool: 是否已更新。
         """
         source = os.path.abspath(os.path.join(folder, path))
         logger.info(f'Old file: {source}')

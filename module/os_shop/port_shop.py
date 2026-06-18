@@ -14,8 +14,17 @@ from module.statistics.utils import load_folder
 
 
 class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
+    """港口商店操作类。
+
+    提供港口商店的物品识别、网格定位、物品查找和全量扫描功能。
+    """
+
     @cached_property
     def TEMPLATES(self) -> List[Template]:
+        """加载货币图标模板。
+
+        加载正常货币和售罄货币的模板图像，用于匹配识别。
+        """
         TEMPLATES = []
         coins = load_folder('./assets/shop/os_cost')
         coins_sold_out = load_folder('./assets/shop/os_cost_sold_out')
@@ -26,11 +35,12 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
         return TEMPLATES
 
     def _get_os_shop_cost(self) -> list:
-        """
-        Returns the coordinates of the upper left corner of each coin icon.
+        """获取每个货币图标的左上角坐标。
+
+        通过模板匹配识别屏幕上所有货币图标的位置。
 
         Returns:
-            list:
+            list: 按 Y 坐标分组的货币图标位置列表。
         """
         image = self.image_crop((360, 320, 410, 700))
         result = sum([template.match_multi(image) for template in self.TEMPLATES], [])
@@ -39,6 +49,7 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
 
     @cached_property
     def os_shop_items(self) -> ItemGrid:
+        """获取商店物品网格配置。"""
         os_shop_items = ItemGrid(
             grids=None, templates={}, amount_area=(77, 77, 96, 96),
             counter_area=(70, 167, 134, 186), price_area=(52, 132, 130, 165)
@@ -48,11 +59,12 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
         return os_shop_items
 
     def _get_os_shop_grid(self) -> ButtonGrid:
-        """
-        Returns shop grid.
+        """根据货币图标位置计算商店网格。
+
+        根据识别到的货币图标行数和位置，动态生成物品网格。
 
         Returns:
-            ButtonGris:
+            ButtonGrid: 商店物品网格配置。
         """
         costs = self._get_os_shop_cost()
         row = len(costs)
@@ -69,13 +81,16 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
             origin=(356, y), delta=(160, delta_y), button_shape=(98, 98), grid_shape=(5, row), name='OS_SHOP_GRID')
 
     def os_shop_get_items(self, shop_index=False, scroll_pos=False) -> List[Item]:
-        """
+        """获取当前屏幕上的商店物品。
+
+        识别物品的名称、数量、成本、价格和计数器信息。
+
         Args:
-            shop_index (Integer): Additional shop index.
-            scroll_pos (Float): Additional scroll position.
+            shop_index: 商店索引，用于记录物品所在商店。
+            scroll_pos: 滚动位置，用于记录物品在滚动条中的位置。
 
         Returns:
-            list[Item]:
+            list[Item]: 识别到的物品列表，无物品时返回空列表。
         """
         self.os_shop_items.grids = self._get_os_shop_grid()
         if self.config.SHOP_EXTRACT_TEMPLATE:
@@ -96,13 +111,16 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
         return []
 
     def os_shop_get_items_to_buy(self, name, price) -> Item:
-        """
+        """根据名称和价格查找待购买的物品。
+
+        处理商店加载延迟的情况，重试确认物品信息。
+
         Args:
-            name (str): Item name.
-            price (int): Item price.
+            name: 物品名称。
+            price: 物品价格。
 
         Returns:
-            Item:
+            Item: 匹配的物品，未找到返回 None。
         """
         items = self.os_shop_get_items()
         for _ in range(2):
@@ -120,9 +138,13 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
         return None
 
     def scan_all(self) -> List[Item]:
-        """
+        """扫描所有商店页面的物品。
+
+        遍历 4 个商店页面，滚动扫描每页的所有物品，
+        使用集合去重避免重复扫描。
+
         Returns:
-            list[Item]:
+            list[Item]: 扫描到的所有物品列表。
         """
         items = []
         # 使用 set 记录已扫描物品的键，实现 O(1) 去重
@@ -148,8 +170,8 @@ class PortShop(OSStatus, OSShopUI, Selector, MapEventHandler):
                     else:
                         logger.info(f'Found {len(_items)} items in shop {i + 1} at pos {cur_pos:.2f}')
                         break
-                # always add items, even if last item list contains unknown items
-                # so any known items can be scanned
+                # 始终添加物品，即使最后的物品列表包含未知物品
+                # 这样可以扫描到所有已知物品
                 for item in _items:
                     key = (item.name, item.price, item.shop_index)
                     if key not in scanned_keys:

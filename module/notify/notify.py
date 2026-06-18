@@ -1,6 +1,4 @@
 import onepush.core
-# 此文件提供了脚本的外发通知（Notification）接口。
-# 它整合了 onepush 库，支持根据配置文件中的 token 向多种渠道（如 QQ、微信等）推送任务报告或报警信息。
 import yaml
 from onepush import get_notifier
 from onepush.core import Provider
@@ -14,6 +12,18 @@ onepush.core.log = logger
 
 
 def handle_notify(_config: str, **kwargs) -> bool:
+    """处理推送通知请求。
+
+    解析 YAML 格式的配置，选择通知渠道（如 QQ、微信等），
+    并通过 onepush 库发送通知消息。
+
+    Args:
+        _config: YAML 格式的通知配置字符串，包含 provider 和渠道参数。
+        **kwargs: 附加的通知参数，如 title、content 等。
+
+    Returns:
+        通知发送成功返回 True，失败返回 False。
+    """
     try:
         config = {}
         for item in yaml.safe_load_all(_config):
@@ -30,7 +40,7 @@ def handle_notify(_config: str, **kwargs) -> bool:
         required: list[str] = notifier.params["required"]
         config.update(kwargs)
 
-        # pre check
+        # 参数预检查
         for key in required:
             if key not in config:
                 logger.warning(
@@ -72,7 +82,7 @@ def handle_notify(_config: str, **kwargs) -> bool:
         logger.error("Push notify failed")
         return False
     except Exception as e:
-        # don't show any exceptions because exceptions contain variable traceback
+        # 不打印完整异常栈，避免暴露变量信息
         logger.error(e)
         return False
 
@@ -81,7 +91,20 @@ def handle_notify(_config: str, **kwargs) -> bool:
 
 
 def notify_webui(instance: str, title: str, content: str, **kwargs) -> bool:
-    """推送通知到 WebUI 本地端口，供启动器接收"""
+    """推送通知到 WebUI 本地端口，供启动器接收。
+
+    向本地 WebUI 服务发送 HTTP POST 请求，传递实例名、标题和内容。
+    默认端口为 22267，可通过配置自定义。
+
+    Args:
+        instance: 触发通知的实例名称。
+        title: 通知标题。
+        content: 通知正文内容。
+        **kwargs: 其他附加字段，合并到请求体中。
+
+    Returns:
+        推送成功返回 True，失败返回 False。
+    """
     try:
         from module.webui.setting import State
         port = int(State.deploy_config.WebuiPort) or 22267

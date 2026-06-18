@@ -13,24 +13,21 @@ class IslandUI(UI):
 
     def island_in_management(self, interval=0):
         """
+        检测是否在岛屿管理页面。
+
         Args:
-            interval (int):
+            interval (int): 点击间隔
 
         Returns:
-            bool: if in page ISLAND_MANAGEMENT_CHECK
+            bool: 是否在 ISLAND_MANAGEMENT_CHECK 页面
         """
         return self.appear(ISLAND_MANAGEMENT_CHECK, offset=(20, 20), interval=interval)
 
     #@cached_property
     def _island_season_bottom_navbar(self):
         """
-        6 options:
-            homepage,
-            pt_reward,
-            season_task,
-            season_shop,
-            season_rank,
-            season_history
+        季节活动底部导航栏，包含 6 个选项：
+        主页、PT奖励、赛季任务、赛季商店、赛季排名、赛季历史
         """
         island_season_bottom_navbar = ButtonGrid(
             origin=(14, 677), delta=(213, 0),
@@ -45,41 +42,34 @@ class IslandUI(UI):
 
     def island_season_bottom_navbar_ensure(self, left=None, right=None):
         """
-        Args:
-            left (int):
-                1 for homepage,
-                2 for pt_reward,
-                3 for season_task,
-                4 for season_shop,
-                5 for season_rank,
-                6 for season_history
-            right (int):
-                1 for season_history,
-                2 for season_rank,
-                3 for season_shop,
-                4 for season_task,
-                5 for pt_reward,
-                6 for homepage
+        确保切换到季节活动底部导航栏的指定标签页。
 
+        Args:
+            left (int): 从左数的标签页位置
+                1=主页, 2=PT奖励, 3=赛季任务, 4=赛季商店, 5=赛季排名, 6=赛季历史
+            right (int): 从右数的标签页位置
+                1=赛季历史, 2=赛季排名, 3=赛季商店, 4=赛季任务, 5=PT奖励, 6=主页
         """
         return self.appear(ISLAND_MANAGEMENT_CHECK, offset=(20, 20), interval=interval)
 
     def island_in_transport(self, interval=0):
         """
+        检测是否在岛屿运输页面。
+
         Args:
-            interval (int):
+            interval (int): 点击间隔
 
         Returns:
-            bool: if in page ISLAND_TRANSPORT_CHECK
+            bool: 是否在 ISLAND_TRANSPORT_CHECK 页面
         """
         return self.match_template_color(ISLAND_TRANSPORT_CHECK, offset=(20, 20), interval=interval)
 
     def island_management_enter(self):
         """
-        Enter island management page.
+        进入岛屿管理页面。
 
         Returns:
-            bool: if success
+            bool: 是否成功进入
 
         Pages:
             in: page_island_phone
@@ -100,14 +90,14 @@ class IslandUI(UI):
 
     def island_transport_enter(self):
         """
-        Enter island management page.
+        进入岛屿运输页面。
 
         Returns:
-            bool: if success
+            bool: 是否成功进入
 
         Pages:
             in: page_island_phone
-            out: ISLAND_MANAGEMENT_CHECK
+            out: ISLAND_TRANSPORT_CHECK
         """
         logger.info('Island transport enter')
         self.ui_click(
@@ -121,8 +111,10 @@ class IslandUI(UI):
 
     def island_ui_back(self):
         """
+        从岛屿子页面返回到岛屿手机页面。
+
         Pages:
-            in: any page with SHOP_BACK_ARROW
+            in: 任意带有 SHOP_BACK_ARROW 的页面
             out: page_island_phone
         """
         logger.info('Island UI back')
@@ -136,8 +128,10 @@ class IslandUI(UI):
 
     def ui_ensure_management_page(self):
         """
+        确保当前在岛屿管理页面，如果不在则导航过去。
+
         Pages:
-            in: page_island_phone or product page
+            in: page_island_phone 或产品页面
             out: ISLAND_MANAGEMENT_CHECK
         """
         logger.info('UI ensure management page')
@@ -163,7 +157,7 @@ class IslandUI(UI):
         return False
 
     def ui_additional(self, get_ship=True):
-        # notify in page_dormmenu
+        # 处理宿舍菜单页面的通知弹窗
         if self.appear(MAINTENANCE_ANNOUNCE, offset=(100, 50)):
             for _ in self.loop():
                 enabled = self.image_color_count(
@@ -179,7 +173,7 @@ class IslandUI(UI):
             self.appear_then_click(MAINTENANCE_ANNOUNCE, offset=(100, 50), interval=2)
             return True
         
-        # info in page_island
+        # 处理岛屿页面的信息弹窗
         if self.appear_then_click(ISLAND_INFO_EXIT, offset=(30, 30), interval=3):
             return True
 

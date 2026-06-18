@@ -56,9 +56,10 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         return ''
 
     def screenshot(self):
-        """
+        """截取屏幕截图。
+
         Returns:
-            np.ndarray:
+            np.ndarray: 截取的屏幕图像。
         """
         self._screenshot_interval.wait()
         self._screenshot_interval.reset()
@@ -73,12 +74,12 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
             self.image = method()
 
             width, height = image_size(self.image)
-            set_template_match_non_native_720p(width != 1280 or height != 720)
+            set_template_match_non_native_720p(width != 1280 or height != 720, resolution=(width, height))
             if width != 1280 or height != 720:
                 self.image = self.resize_screenshot_to_720p(self.image)
 
             if self.config.Emulator_ScreenshotDedithering:
-                # This will take 40-60ms
+                # 此操作大约需要 40-60ms
                 cv2.fastNlMeansDenoising(self.image, self.image, h=17, templateWindowSize=1, searchWindowSize=2)
             self.image = self._handle_orientated_image(self.image)
 
@@ -94,12 +95,10 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
 
     @staticmethod
     def resize_screenshot_to_720p(image):
-        """
-        Normalize screenshots into Alas' 1280x720 asset space.
+        """将截图归一化到 Alas 的 1280x720 资源空间。
 
-        Tested against real MuMu screenshots in 1600x900, 1920x1080,
-        2560x1440 and 3840x2160. Cubic downsampling with a small blur blend
-        was closest to native 720p overall.
+        已在 MuMu 模拟器的 1600x900、1920x1080、2560x1440 和 3840x2160 分辨率下测试。
+        使用三次下采样并配合轻度高斯模糊混合，最接近原生 720p 效果。
         """
         image = cv2.resize(image, (1280, 720), interpolation=cv2.INTER_CUBIC)
         blur = cv2.GaussianBlur(image, (0, 0), sigmaX=1.0, sigmaY=1.0)
@@ -110,18 +109,19 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         return hasattr(self, 'image') and self.image is not None
 
     def _handle_orientated_image(self, image):
-        """
+        """处理旋转的截图图像。
+
         Args:
-            image (np.ndarray):
+            image: 待处理的图像。
 
         Returns:
-            np.ndarray:
+            处理后的图像。
         """
         width, height = image_size(self.image)
         if width == 1280 and height == 720:
             return image
 
-        # Rotate screenshots only when they're not 1280x720
+        # 仅在非 1280x720 时旋转截图
         if self.orientation == 0:
             pass
         elif self.orientation == 1:
@@ -142,20 +142,20 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         except ValueError:
             logger.error(f'Error_ScreenshotLength={self.config.Error_ScreenshotLength} is not an integer')
             raise RequestHumanTakeover
-        # Limit in 1~400
+        # 限制在 1~400 范围内
         length = max(1, min(length, 400))
         return deque(maxlen=length)
 
     def save_screenshot(self, genre='items', interval=None, to_base_folder=False):
-        """Save a screenshot. Use millisecond timestamp as file name.
+        """保存截图。使用毫秒时间戳作为文件名。
 
         Args:
-            genre (str, optional): Screenshot type.
-            interval (int, float): Seconds between two save. Saves in the interval will be dropped.
-            to_base_folder (bool): If save to base folder.
+            genre: 截图类型。
+            interval: 两次保存之间的最小间隔（秒）。间隔内的保存将被跳过。
+            to_base_folder: 是否保存到基础文件夹。
 
         Returns:
-            bool: True if save succeed.
+            保存成功返回 True。
         """
         now = time.time()
         if interval is None:
@@ -182,11 +182,12 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         self._last_save_time[genre] = 0
 
     def screenshot_interval_set(self, interval=None):
-        """
+        """设置截图间隔。
+
         Args:
-            interval (int, float, str):
-                Minimum interval between 2 screenshots in seconds.
-                Or None for Optimization_ScreenshotInterval, 'combat' for Optimization_CombatScreenshotInterval
+            interval: 两次截图之间的最小间隔（秒）。
+                None 表示使用 Optimization_ScreenshotInterval，
+                'combat' 表示使用 Optimization_CombatScreenshotInterval。
         """
         if interval is None:
             origin = self.config.Optimization_ScreenshotInterval
@@ -194,7 +195,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
             if interval != origin:
                 logger.warning(f'Optimization.ScreenshotInterval {origin} is revised to {interval}')
                 self.config.Optimization_ScreenshotInterval = interval
-            # Allow nemu_ipc to have a lower default
+            # 允许 nemu_ipc 使用更低的默认值
             if self.config.Emulator_ScreenshotMethod in ['nemu_ipc', 'ldopengl']:
                 interval = limit_in(origin, 0.001, 0.2)
         elif interval == 'combat':
@@ -204,13 +205,12 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
                 logger.warning(f'Optimization.CombatScreenshotInterval {origin} is revised to {interval}')
                 self.config.Optimization_CombatScreenshotInterval = interval
         elif isinstance(interval, (int, float)):
-            # No limitation for manual set in code
+            # 代码中手动设置无限制
             pass
         else:
             logger.warning(f'Unknown screenshot interval: {interval}')
             raise ScriptError(f'Unknown screenshot interval: {interval}')
-        # Screenshot interval in scrcpy is meaningless,
-        # video stream is received continuously no matter you use it or not.
+        # scrcpy 的截图间隔无意义，视频流会持续接收，无论是否使用。
         if self.config.Emulator_ScreenshotMethod == 'scrcpy':
             interval = 0.1
 
@@ -229,16 +229,16 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
         save_image(self.image, file)
 
     def check_screen_size(self):
-        """
-        Screen size must be 1280x720.
-        Take a screenshot before call.
+        """检查屏幕分辨率是否为 1280x720。
+
+        调用前需先截取截图。
         """
         if self._screen_size_checked:
             return True
 
         orientated = False
         for _ in range(2):
-            # Check screen size
+            # 检查屏幕分辨率
             width, height = image_size(self.image)
             logger.attr('Screen_size', f'{width}x{height}')
             if width == 1280 and height == 720:
@@ -269,8 +269,7 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
     def check_screen_black(self):
         if self._screen_black_checked:
             return True
-        # Check screen color
-        # May get a pure black screenshot on some emulators.
+        # 检查屏幕颜色，某些模拟器可能会获取纯黑截图。
         color = get_color(self.image, area=(0, 0, 1280, 720))
         if sum(color) < 1:
             if self.config.Emulator_Serial == 'wsa-0':

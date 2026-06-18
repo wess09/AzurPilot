@@ -68,7 +68,7 @@ class PercentageOcr(Ocr):
 
 
 FLEET_LOW_RESOLVE = Button(
-    area=(144, 148, 170, 175), color=(255, 44, 33), button=(144, 148, 170, 175),
+    area=(294, 76, 339, 121), color=(255, 44, 33), button=(294, 76, 339, 121),
     name='FLEET_LOW_RESOLVE')
 
 
@@ -79,13 +79,13 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         self.map.show()
 
         if self.handle_ash_beacon_attack():
-            # After ash attack, camera refocus to current fleet.
+            # 余烬攻击后，摄像机重新聚焦到当前舰队。
             self.camera = location
             self.update()
 
     def map_data_init(self, map_=None):
         """
-        Create new map object, and use the shape of current zone
+        创建新的地图对象，使用当前海域的形状。
         """
         map_ = OSCampaignMap()
         map_.shape = self.zone.shape
@@ -93,7 +93,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def map_control_init(self):
         """
-        Remove non-exist things like strategy, round.
+        移除不存在的元素（如策略、回合等）。
         """
         # self.handle_strategy(index=1 if not self.fleets_reversed() else 2)
         self.update()
@@ -126,7 +126,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def handle_ambush(self):
         """
-        Treat map events as ambush, to trigger walk retrying
+        将地图事件视为伏击，触发行走重试。
         """
         if self.handle_map_get_items():
             self._os_map_event_handled = True
@@ -142,7 +142,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def handle_mystery(self, button=None):
         """
-        After handle_ambush, if fleet has arrived, treat it as mystery, otherwise just ambush.
+        处理伏击后，如果舰队已到达则视为神秘格子，否则仅视为伏击。
         """
         if self._os_map_event_handled and button.predict_fleet() and button.predict_current_fleet():
             return 'get_item'
@@ -152,7 +152,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
     @staticmethod
     def _get_goto_expected(grid):
         """
-        Argument `expected` used in _goto()
+        获取 _goto() 中使用的 `expected` 参数值。
         """
         if grid.is_enemy:
             return 'combat'
@@ -164,7 +164,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
     def _hp_grid(self):
         hp_grid = super()._hp_grid()
 
-        # Location of six HP bar, according to respective server for os
+        # 六个血条的位置，根据各服务器的 OS 布局
         if self.config.SERVER == 'en':
             hp_grid = ButtonGrid(origin=(35, 205), delta=(0, 100), button_shape=(66, 3), grid_shape=(1, 6))
         elif self.config.SERVER == 'jp':
@@ -184,7 +184,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def hp_get(self):
         """
-        Calculate current HP, also detects the wrench (Ship died, need to repair)
+        计算当前血量，同时检测扳手图标（舰船已阵亡，需要修理）。
         """
         super().hp_get()
         if self.config.OpsiHazard1Leveling_SkipHpCheck:
@@ -227,7 +227,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def storage_hp_get(self):
         """
-        Calculate current HP in page STORAGE_CHECK, also detects the wrench (Ship died, need to repair)
+        在 STORAGE_CHECK 页面计算当前血量，同时检测扳手图标（舰船已阵亡，需要修理）。
         """
         origin = (self._hp_grid, self.COLOR_HP_RED)
         self._hp_grid = self._storage_hp_grid
@@ -244,17 +244,17 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def fleet_low_resolve_appear(self):
         """
-        Whether low resolve debuff appears on current fleet
+        检测当前舰队是否有低士气减益效果。
         """
         return self.image_color_count(
             FLEET_LOW_RESOLVE, color=FLEET_LOW_RESOLVE.color, threshold=221, count=250)
 
     def get_sea_grids(self):
         """
-        Get sea grids on current view
+        获取当前视野中的海洋格子。
 
         Returns:
-            SelectedGrids:
+            SelectedGrids: 海洋格子集合，按与摄像机距离排序。
         """
         sea = []
         for local in self.view:
@@ -275,8 +275,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def wait_until_camera_stable(self, skip_first_screenshot=True):
         """
-        Wait until homo_loca stabled.
-        DETECTION_BACKEND must be 'homography'.
+        等待 homo_loca 稳定。DETECTION_BACKEND 必须为 'homography'。
         """
         logger.hr('Wait until camera stable')
         record = None
@@ -297,24 +296,21 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def wait_until_walk_stable(self, confirm_timer=None, skip_first_screenshot=False, walk_out_of_step=True, drop=None):
         """
-        Wait until homo_loca stabled.
-        DETECTION_BACKEND must be 'homography'.
+        等待 homo_loca 稳定。DETECTION_BACKEND 必须为 'homography'。
 
         Args:
-            confirm_timer (Timer):
-            skip_first_screenshot (bool):
-            walk_out_of_step (bool): If catch walk_out_of_step error.
-                Default to True, use False in abyssal zones.
-            drop (DropImage):
+            confirm_timer (Timer): 确认计时器。
+            skip_first_screenshot (bool): 是否跳过第一次截图。
+            walk_out_of_step (bool): 是否捕获 walk_out_of_step 错误。
+                默认为 True，深渊海域中使用 False。
+            drop (DropImage): 掉落记录对象。
 
-        Returns：
-            str: Things that fleet met on its way,
-                'event', 'search', 'akashi', 'combat',
-                or their combinations like 'event_akashi', 'event_combat',
-                or an empty string '' if nothing met.
+        Returns:
+            str: 舰队途中遇到的事件，如 'event'、'search'、'akashi'、'combat'，
+                或其组合如 'event_akashi'、'event_combat'，无事件时返回空字符串 ''。
 
         Raises:
-            MapWalkError: If unable to goto such grid.
+            MapWalkError: 无法到达目标格子时抛出。
         """
         logger.hr('Wait until walk stable')
         record = None
@@ -323,20 +319,20 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         if confirm_timer is None:
             confirm_timer = Timer(0.8, count=2)
         result = set()
-        # Record story history to clear click record
+        # 记录剧情历史以清除点击记录
         clicked_story = False
         clicked_story_count = 0
 
         confirm_timer.reset()
 
         def abyssal_expected_end():
-            # add handle_map_event() because OSCombat.combat_status() removes get_items
+            # 添加 handle_map_event() 因为 OSCombat.combat_status() 会移除 get_items
             if self.handle_map_event(drop=drop):
                 return False
             return self.is_in_map()
 
         for _ in self.loop(skip_first=skip_first_screenshot):
-            # Map event
+            # 地图事件
             event = self.handle_map_event(drop=drop)
             if event:
                 confirm_timer.reset()
@@ -344,25 +340,24 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 if event == 'story_skip':
                     clicked_story = True
                     clicked_story_count += 1
-                    # Clear click record to avoid GameTooManyClickError caused by
-                    # over 6 options in siren scanning devices
-                    # The progress of confirming to submit items, in siren scanning devices is
+                    # 清除点击记录，避免塞壬扫描装置中超过 6 个选项导致的 GameTooManyClickError
+                    # 塞壬扫描装置中提交物品的流程为
                     # STORY_OPTION_2_OF_3 -> POPUP_CONFIRM_STORY_SKIP
-                    # both of operations return 'story_skip' event
-                    # Continuous 2 story_skip means a submission of siren scanning devices
+                    # 两个操作都返回 'story_skip' 事件
+                    # 连续 2 次 story_skip 表示提交了塞壬扫描装置
                     if clicked_story_count >= 11:
                         logger.info('Continuous options in story')
                         self.device.click_record_clear()
                         clicked_story_count = 0
                 elif event == 'map_get_items':
-                    # story_skip -> map_get_items means abyssal progress reward is received
+                    # story_skip -> map_get_items 表示收到了深渊进度奖励
                     if clicked_story:
                         logger.info('Got items from story')
                         self.device.click_record_clear()
                         clicked_story = False
                     clicked_story_count = 0
                 else:
-                    # Handled other events, clear history
+                    # 处理了其他事件，清除历史记录
                     clicked_story = False
                     clicked_story_count = 0
                 continue
@@ -381,7 +376,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 confirm_timer.reset()
                 continue
 
-            # Accident click
+            # 意外点击
             if self.is_in_globe():
                 self.os_globe_goto_map()
                 confirm_timer.reset()
@@ -402,16 +397,16 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 confirm_timer.reset()
                 continue
 
-            # Combat
+            # 战斗
             if self.combat_appear():
-                # Use ui_back() for testing, because there are too few abyssal loggers every month.
+                # 使用 ui_back() 进行测试，因为每月深渊日志太少。
                 # self.ui_back(check_button=self.is_in_map)
                 self.combat(expected_end=abyssal_expected_end, fleet_index=self.fleet_show_index, save_get_items=drop)
                 confirm_timer.reset()
                 result.add('event')
                 continue
 
-            # Akashi shop
+            # 明石商店
             if self.appear(PORT_SUPPLY_CHECK, offset=(20, 20)):
                 self.interval_clear(PORT_SUPPLY_CHECK)
                 self.handle_akashi_supply_buy(CLICK_SAFE_AREA)
@@ -419,12 +414,12 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 result.add('akashi')
                 continue
 
-            # A game bug that AUTO_SEARCH_REWARD from the last cleared zone popups
+            # 游戏 bug：上一个已清理海域的 AUTO_SEARCH_REWARD 弹窗
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 confirm_timer.reset()
                 continue
 
-            # Enemy searching
+            # 敌人搜索
             if not enemy_searching_appear and self.enemy_searching_appear():
                 enemy_searching_appear = True
                 confirm_timer.reset()
@@ -440,14 +435,14 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 if self.is_in_map():
                     self.enemy_searching_color_initial()
 
-            # Arrive
-            # Check colors, because screen goes black when something is unlocking.
-            # A direct use of IN_MAP, basically `self.is_in_map() and IN_MAP.match_template_color()`
+            # 到达检测
+            # 检查颜色，因为解锁时屏幕会变黑。
+            # 直接使用 IN_MAP，本质上是 `self.is_in_map() and IN_MAP.match_template_color()`
             if self.match_template_color(IN_MAP, offset=(200, 5), threshold=50):
                 self.update_os()
                 current = self.view.backend.homo_loca
                 logger.attr('homo_loca', current)
-                # Max known distance is 4.48px, homo_loca between ( 56,  60) and ( 52,  58)
+                # 已知最大距离为 4.48px，homo_loca 在 (56, 60) 和 (52, 58) 之间
                 if record is None or (current is not None and np.linalg.norm(np.subtract(current, record)) < 5.5):
                     if confirm_timer.reached():
                         break
@@ -464,19 +459,19 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def port_goto(self, allow_port_arrive=True):
         """
-        A simple and poor implement to goto port. Searching port on radar.
+        简单的港口导航实现，通过雷达搜索港口。
 
-        In OpSi, camera always focus to fleet when fleet is moving which mess up `self.goto()`.
-        In most situation, we use auto search to clear a map in OpSi, and classic methods are deprecated.
-        But we still need to move fleet toward port, this method is for this situation.
+        在大世界中，舰队移动时摄像机始终跟随，会干扰 `self.goto()`。
+        多数情况下使用自律寻敌清理地图，经典方法已弃用。
+        但仍需要将舰队移向港口，此方法用于该场景。
 
         Raises:
-            MapWalkError: If unable to goto such grid.
-                Probably clicking at land, center of port, or fleet itself.
+            MapWalkError: 无法到达目标格子时抛出。
+                可能点击了陆地、港口中心或舰队自身。
         """
         confirm_timer = Timer(3, count=6).start()
         while 1:
-            # Calculate destination
+            # 计算目的地
             grid = self.radar.port_predict(self.device.image)
             logger.info(f'Port route at {grid}')
             if grid is None:
@@ -502,16 +497,16 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             else:
                 confirm_timer.reset()
 
-            # Update local view
+            # 更新本地视野
             self.update_os()
             self.predict()
 
-            # Click way point
+            # 点击路径点
             grid = point_limit(grid, area=(-4, -2, 3, 2))
             grid = self.convert_radar_to_local(grid)
             self.device.click(grid)
 
-            # Wait until arrived
+            # 等待到达
             self.wait_until_walk_stable()
 
     def fleet_set(self, index=1, skip_first_screenshot=True):
@@ -550,7 +545,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         FLEET_FILTER.load(self.config.OpsiFleetFilter_Filter)
         fleets = FLEET_FILTER.apply([BossFleet(f) for f in [1, 2, 3, 4]])
 
-        # Set standby location
+        # 设置待命位置
         standby_list = [(-1, -1), (0, -1), (1, -1)]
         index = 0
         for fleet in fleets:
@@ -564,18 +559,18 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         logger.hr('Relative goto')
         logger.info(f'Relative goto, {dict_to_kv(kwargs)}')
 
-        # Update local view
-        # Not screenshots taking, reuse the old one
+        # 更新本地视野
+        # 不截图，复用旧截图
         self.update_os()
         self.predict()
         self.predict_radar()
 
-        # Calculate destination
+        # 计算目的地
         grids = self.radar.select(**kwargs)
         if near_by:
             grids = grids.sort_by_camera_distance((0, 0))
         if grids:
-            # Click way point
+            # 点击路径点
             grid = np.add(location_ensure(grids[index]), relative_position)
 
             grid = point_limit(grid, area=(-4, -2, 3, 2))
@@ -586,8 +581,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         else:
             logger.info('No position to goto, stop')
 
-        # Wait until arrived
-        # Having new screenshots
+        # 等待到达
+        # 使用新截图
         self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4), walk_out_of_step=False)
 
     def go_month_boss_room(self, is_normal=True):
@@ -597,7 +592,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             if self.appear(MAP_EXIT, offset=(20, 20)):
                 break
 
-            # 2 grids below the entrance
+            # 入口下方 2 格
             self.relative_goto(has_fleet_step=True, near_by=True, relative_position=(3, -2), is_port=True)
 
             self.update_os()
@@ -626,21 +621,21 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
     def question_goto(self, has_fleet_step=False):
         logger.hr('Question goto')
         while 1:
-            # A game bug that AUTO_SEARCH_REWARD from the last cleared zone popups
+            # 游戏 bug：上一个已清理海域的 AUTO_SEARCH_REWARD 弹窗
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 self.device.screenshot()
                 continue
 
-            # Update local view
-            # Not screenshots taking, reuse the old one
+            # 更新本地视野
+            # 不截图，复用旧截图
             self.update_os()
             self.predict()
             self.predict_radar()
 
-            # Calculate destination
+            # 计算目的地
             grids = self.radar.select(is_question=True)
             if grids:
-                # Click way point
+                # 点击路径点
                 grid = location_ensure(grids[0])
                 grid = point_limit(grid, area=(-4, -2, 3, 2))
                 if has_fleet_step:
@@ -651,8 +646,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 logger.info('No question mark to goto, stop')
                 break
 
-            # Wait until arrived
-            # Having new screenshots
+            # 等待到达
+            # 使用新截图
             self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4), walk_out_of_step=False)
 
     def month_boss_goto_additional(self, location=(0, 0), has_fleet_step=False, drop=None):
@@ -660,12 +655,12 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         self.predict()
         self.predict_radar()
 
-        # Calculate destination
+        # 计算目的地
         grids = self.radar.select(is_question=True)
         if grids:
-            # Click way point
+            # 点击路径点
             grid = np.add(location_ensure(grids[0]), location)
-            # Use the releative position of the question to find the entrance of the boss area
+            # 使用问号的相对位置来定位 Boss 区域入口
             grid = np.add(grid, (1, -6))
             grid = point_limit(grid, area=(-4, -2, 3, 2))
             if has_fleet_step:
@@ -685,16 +680,16 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             self.month_boss_goto_additional(location=location, has_fleet_step=has_fleet_step, drop=drop)
 
         while 1:
-            # Update local view
-            # Not screenshots taking, reuse the old one
+            # 更新本地视野
+            # 不截图，复用旧截图
             self.update_os()
             self.predict()
             self.predict_radar()
 
-            # Calculate destination
+            # 计算目的地
             grids = self.radar.select(is_enemy=True)
             if grids:
-                # Click way point
+                # 点击路径点
                 grid = np.add(location_ensure(grids[0]), location)
                 grid = point_limit(grid, area=(-4, -2, 3, 2))
                 if has_fleet_step:
@@ -708,8 +703,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 logger.info('No boss to goto, stop')
                 break
 
-            # Wait until arrived
-            # Having new screenshots
+            # 等待到达
+            # 使用新截图
             self.wait_until_walk_stable(confirm_timer=Timer(1.5, count=4), walk_out_of_step=False, drop=drop)
 
     def get_boss_leave_button(self):
@@ -728,33 +723,35 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             center = self.view[self.view.center_loca]
 
         logger.info(f'Fleet in boss: {center}')
-        # The left half grid next to the center grid.
+        # 中心格子左侧半个格子。
         area = corner2inner(center.grid2screen(area2corner((1, 0.25, 1.5, 0.75))))
         button = Button(area=area, color=(), button=area, name='BOSS_LEAVE')
         return button
 
     def boss_leave(self):
         """
+        离开 Boss 区域。
+
         Pages:
-            in: is_in_map(), or combat_appear()
-            out: is_in_map(), fleet not in boss.
+            in: is_in_map() 或 combat_appear()
+            out: is_in_map(), 舰队不在 Boss 区域中。
         """
         logger.hr('BOSS leave')
-        # Update local view
+        # 更新本地视野
         self.update_os()
         self.predict()
 
         click_timer = Timer(3)
         pause_interval = Timer(0.5, count=1)
         for _ in self.loop():
-            # End
+            # 结束条件
             if self.is_in_map():
                 self.predict_radar()
                 if self.radar.select(is_enemy=True):
                     logger.info('Fleet left boss, boss found')
                     break
 
-            # Re-enter boss accidentally
+            # 意外重新进入 Boss
             if pause_interval.reached():
                 if self.appear(BATTLE_PREPARATION):
                     logger.info(f'{BATTLE_PREPARATION} -> {BACK_ARROW}')
@@ -781,7 +778,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 pause_interval.reset()
                 continue
 
-            # Click leave button
+            # 点击离开按钮
             if self.is_in_map() and click_timer.reached():
                 button = self.get_boss_leave_button()
                 if button is not None:
@@ -794,20 +791,19 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def boss_clear(self, has_fleet_step=True, is_month=False, allow_submarine_call=True):
         """
-        All fleets take turns in attacking the boss.
+        所有舰队轮流攻击 Boss。
 
         Args:
-            has_fleet_step (bool):
-            is_month (bool)
-            allow_submarine_call (bool):
+            has_fleet_step (bool): 是否限制舰队移动步数。
+            is_month (bool): 是否为月度 Boss。
+            allow_submarine_call (bool): 是否允许呼叫潜艇。
 
         Returns:
-            bool: If success to clear.
+            bool: 是否成功击败 Boss。
 
         Pages:
-            in: Siren logger (abyssal), boss appeared.
-            out: If success, dangerous or safe zone.
-                If failed, still in abyssal.
+            in: 塞壬日志（深渊），Boss 已出现。
+            out: 成功时为危险或安全海域；失败时仍在深渊中。
         """
         logger.hr(f'BOSS clear', level=1)
 
@@ -825,11 +821,11 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                         logger.info(f'Skip fleet-filter order `{fleet}` in abyssal')
                     continue
 
-                # Switch fleet
+                # 切换舰队
                 if self.fleet_set(fleet.fleet_index):
                     pass
                 else:
-                    # Refocus camera if fleet not
+                    # 如果舰队不存在则重新聚焦摄像机
                     others = [f for f in fleets if isinstance(f, BossFleet) and f != fleet]
                     if len(others):
                         other: BossFleet = others[0]
@@ -839,7 +835,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                         logger.warning(f'No other fleets from {fleets}, skip refocus')
                         pass
 
-                # Check fleet
+                # 检查舰队
                 self.handle_os_map_fleet_lock(enable=False)
                 if self.fleet_low_resolve_appear():
                     logger.warning('Skip using current fleet because of the low resolve debuff')
@@ -847,7 +843,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                                    is_month=is_month)
                     continue
 
-                # Ensure boss is appear
+                # 确保 Boss 出现
                 if is_month:
                     while not self.radar.select(is_enemy=True):
                         self.relative_goto(has_fleet_step=True, is_question=True, relative_position=(1, -6), index=0)
@@ -857,10 +853,10 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                             self.relative_goto(has_fleet_step=True, is_question=True, relative_position=(1, -7),
                                                index=0)
 
-                # Attack
+                # 攻击
                 self.boss_goto(location=(0, 0), has_fleet_step=has_fleet_step, drop=drop, is_month=is_month)
 
-                # End
+                # 结束条件
                 self.predict_radar()
                 if self.radar.select(is_question=True):
                     logger.info('BOSS clear')
@@ -869,7 +865,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     self.map_exit()
                     return True
 
-                # Standby
+                # 待命
                 self.boss_leave()
                 if fleet.standby_loca != (0, 0):
                     self.boss_goto(location=fleet.standby_loca, has_fleet_step=has_fleet_step, drop=drop)
@@ -883,22 +879,20 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def run_abyssal(self):
         """
-        Handle double confirms and attack abyssal (siren logger) boss.
-        Abyssal does not use submarine orders even if the fleet filter contains
-        a `CallSubmarine` entry.
+        处理双重确认并攻击深渊（塞壬日志）Boss。
+        即使舰队筛选器包含 `CallSubmarine` 条目，深渊也不会使用潜艇命令。
 
         Returns:
-            bool: If success to clear.
+            bool: 是否成功击败 Boss。
 
         Pages:
-            in: Siren logger (abyssal).
-            out: If success, in a dangerous or safe zone.
-                If failed, still in abyssal.
+            in: 塞壬日志（深渊）。
+            out: 成功时为危险或安全海域；失败时仍在深渊中。
         """
         self.handle_os_map_fleet_lock(enable=False)
 
         def is_at_front(grid):
-            # Grid location is usually to be (0, -2)
+            # 格子位置通常为 (0, -2)
             x, y = grid.location
             return (abs(x) <= abs(y)) and (y < 0)
 
@@ -918,10 +912,10 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def get_stronghold_percentage(self):
         """
-        Get the clear status in siren stronghold.
+        获取塞壬要塞的清理进度。
 
         Returns:
-            str: Usually in ['100', '80', '60', '40', '20', '0']
+            str: 通常为 ['100', '80', '60', '40', '20', '0'] 之一。
         """
         ocr = PercentageOcr(STRONGHOLD_PERCENTAGE, letter=(255, 255, 255), threshold=128, name='STRONGHOLD_PERCENTAGE')
         result = ocr.ocr(self.device.image)
@@ -937,10 +931,10 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
 
     def get_second_fleet(self):
         """
-        Get a second fleet to unlock fleet mechanism that requires 2 fleets.
+        获取第二支舰队，用于解锁需要 2 支舰队的机关。
 
         Returns:
-            int:
+            int: 第二支舰队的索引。
         """
         current = self.fleet_selector.get()
         if current == 1:

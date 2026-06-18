@@ -21,6 +21,11 @@ from submodule.AlasMaaBridge.module.asst import asst, utils
 
 
 class AssistantHandler:
+    """MAA 任务处理器，封装 MAA 核心库的任务管理功能。
+
+    负责连接设备、启动任务、处理回调和管理任务生命周期。
+    """
+
     config: ArknightsConfig
     Asst: Any
     Message: Any
@@ -29,6 +34,12 @@ class AssistantHandler:
 
     @staticmethod
     def load(path, incremental_path=None):
+        """加载 MAA 核心库。
+
+        Args:
+            path: MAA 安装路径。
+            incremental_path: 增量资源路径列表。
+        """
         AssistantHandler.Asst = asst.Asst
         AssistantHandler.Message = utils.Message
         AssistantHandler.InstanceOptionType = utils.InstanceOptionType
@@ -42,11 +53,12 @@ class AssistantHandler:
         AssistantHandler.ASST_HANDLER = None
 
     def __init__(self, config, asst, task=None):
-        """
+        """初始化 MAA 任务处理器。
+
         Args:
-            config (ArknightsConfig, str): Name of the user config under ./config
-            asst (Asst):
-            task (str): Bind a task only for dev purpose. Usually to be None for auto task scheduling.
+            config: 配置对象或配置名称字符串。
+            asst: MAA 助手实例。
+            task: 绑定的任务名称，仅用于开发调试，自动调度时通常为 None。
         """
         if isinstance(config, str):
             self.config = ArknightsConfig(config, task=task)
@@ -64,9 +76,22 @@ class AssistantHandler:
 
     @staticmethod
     def split_filter(string, sep='>'):
+        """按分隔符拆分字符串并去除空白。
+
+        Args:
+            string: 待拆分的字符串。
+            sep: 分隔符，默认为 '>'。
+
+        Returns:
+            list: 拆分后的字符串列表。
+        """
         return [f.strip(' \t\r\n') for f in string.split(sep)]
 
     def maa_stop(self):
+        """停止当前正在执行的 MAA 任务。
+
+        等待任务结束信号，超时则触发人工接管。
+        """
         self.callback_list.append(self.task_end_callback)
         self.asst.stop()
         while 1:
@@ -83,6 +108,12 @@ class AssistantHandler:
                 return
 
     def maa_start(self, task_name, params):
+        """启动 MAA 任务并等待完成。
+
+        Args:
+            task_name: MAA 任务类型名称，如 'Fight'、'Recruit' 等。
+            params: 任务参数字典。
+        """
         logger.hr('MAA start')
         logger.info(f'Task name: {task_name}, params={params}')
         self.task_id = self.asst.append_task(task_name, params)
@@ -128,6 +159,14 @@ class AssistantHandler:
             self.callback_list.remove(self.task_end_callback)
 
     def penguin_id_callback(self, m, d):
+        """从回调中获取企鹅物流用户 ID。
+
+        当收到 PenguinId 信息时自动保存到配置中。
+
+        Args:
+            m: 消息类型。
+            d: 消息详情字典。
+        """
         if not self.config.MaaRecord_PenguinID \
                 and m == self.Message.SubTaskExtraInfo \
                 and deep_get(d, keys='what') == 'PenguinId':
@@ -135,14 +174,30 @@ class AssistantHandler:
             self.callback_list.remove(self.penguin_id_callback)
 
     def annihilation_callback(self, m, d):
-        # Skip annihilation error task callback temporary
-        # https://github.com/MaaAssistantArknights/MaaAssistantArknights/issues/10623
-        ignoreErrorKeywords = ["FightSeries-Indicator","FightSeries-Icon"]
+        """剿灭作战的错误回调处理。
+
+        临时跳过特定的剿灭错误回调，参见：
+        https://github.com/MaaAssistantArknights/MaaAssistantArknights/issues/10623
+
+        Args:
+            m: 消息类型。
+            d: 消息详情字典。
+        """
+        ignoreErrorKeywords = ["FightSeries-Indicator", "FightSeries-Icon"]
         if m == self.Message.SubTaskError \
                 and deep_get(d, keys='first') != ignoreErrorKeywords:
             self.signal = m 
 
     def fight_stop_count_callback(self, m, d):
+        """战斗任务的次数和掉落计数回调。
+
+        追踪理智液使用次数、源石使用次数和关卡完成次数，
+        当达到设定目标时自动停止任务。
+
+        Args:
+            m: 消息类型。
+            d: 消息详情字典。
+        """
         if m == self.Message.SubTaskCompleted:
             if deep_get(d, keys='details.task') == 'MedicineConfirm' \
                     and self.config.MaaFight_Medicine is not None:
@@ -175,6 +230,14 @@ class AssistantHandler:
                     self.config.MaaFight_Drops = drops_filter
 
     def roguelike_callback(self, m, d):
+        """肉鸽模式的任务切换回调。
+
+        定期检查是否有任务切换请求，如果有则重置探索次数。
+
+        Args:
+            m: 消息类型。
+            d: 消息详情字典。
+        """
         if self.task_switch_timer.reached():
             if self.config.task_switched():
                 self.task_switch_timer = None
@@ -185,8 +248,9 @@ class AssistantHandler:
                 self.task_switch_timer.reset()
 
     def serial_check(self):
-        """
-        serial check
+        """检查并修正模拟器串口地址。
+
+        处理 BlueStacks Hyper-V 模拟器的特殊串口格式。
         """
         if self.is_bluestacks4_hyperv:
             self.serial = ConnectionAttr.find_bluestacks4_hyperv(self.serial)
@@ -202,6 +266,10 @@ class AssistantHandler:
         return "bluestacks5-hyperv" in self.serial
 
     def connect(self):
+        """连接到安卓设备。
+
+        获取 ADB 路径，检查串口地址，建立与设备的连接。
+        """
         adb = os.path.abspath(DeployConfig().AdbExecutable)
         self.serial = self.config.MaaEmulator_Serial
         self.serial_check()
@@ -215,6 +283,10 @@ class AssistantHandler:
         self.callback_list = old_callback_list
 
     def startup(self):
+        """执行游戏启动任务。
+
+        连接设备后启动游戏，如果到达服务器更新时间则先关闭游戏。
+        """
         self.connect()
         if self.config.Scheduler_NextRun.strftime('%H:%M') == self.config.Scheduler_ServerUpdate:
             self.maa_start('CloseDown', {
@@ -228,6 +300,11 @@ class AssistantHandler:
         self.config.task_delay(server_update=True)
 
     def fight(self):
+        """执行战斗任务。
+
+        根据配置设置关卡、理智液、源石、次数等参数，
+        支持周常关卡自动切换和掉落物过滤。
+        """
         args = {
             "report_to_penguin": self.config.MaaRecord_ReportToPenguin,
             "report_to_yituliu": self.config.MaaRecord_ReportToYiTuLiu,
@@ -235,7 +312,7 @@ class AssistantHandler:
             "DrGrandet": self.config.MaaFight_DrGrandet,
             "series": int(self.config.MaaFight_Series)
         }
-        # Set stage
+        # 设置关卡
         if self.config.MaaFight_Stage == 'last':
             args['stage'] = ''
         elif self.config.MaaFight_Stage == 'custom':
@@ -243,7 +320,7 @@ class AssistantHandler:
         else:
             args['stage'] = self.config.MaaFight_Stage
 
-        # Set weekly stage
+        # 设置周常关卡
         if self.config.MaaFightWeekly_Enable:
             today = get_server_last_update('04:00').strftime('%A')
             logger.attr('Weekday', today)
@@ -307,6 +384,10 @@ class AssistantHandler:
             self.config.task_delay(success=True)
 
     def recruit(self):
+        """执行公开招募任务。
+
+        根据配置设置刷新策略、确认星级、加速次数等参数。
+        """
         confirm = []
         if self.config.MaaRecruit_Select3:
             confirm.append(3)
@@ -340,6 +421,10 @@ class AssistantHandler:
         self.config.task_delay(success=True)
 
     def infrast(self):
+        """执行基建换班任务。
+
+        支持自定义排班方案，根据心情阈值计算下次换班时间。
+        """
         args = {
             "facility": self.split_filter(self.config.MaaInfrast_Facility),
             "drones": self.config.MaaInfrast_Drones,
@@ -422,6 +507,10 @@ class AssistantHandler:
             self.config.task_delay(minute=t)
 
     def mall(self):
+        """执行信用商店任务。
+
+        根据配置设置购物策略、黑名单和信用战斗选项。
+        """
         buy_first = self.split_filter(self.config.MaaMall_BuyFirst)
         blacklist = self.split_filter(self.config.MaaMall_BlackList)
         credit_fight = self.config.MaaMall_CreditFight
@@ -443,6 +532,10 @@ class AssistantHandler:
         self.config.task_delay(server_update=True)
 
     def award(self):
+        """执行日常奖励收取任务。
+
+        收取邮件、公开招募、合成玉、特殊访问等奖励。
+        """
         args = {
             "enable": True,
             "award": True,
@@ -455,6 +548,11 @@ class AssistantHandler:
         self.config.task_delay(server_update=True)
 
     def roguelike(self):
+        """执行肉鸽（集成战略）任务。
+
+        根据配置设置主题、模式、分队、角色等参数，
+        支持精二开局和骰子刷新商人等高级选项。
+        """
         args = {
             "theme": self.config.MaaRoguelike_Theme,
             "mode": self.config.MaaRoguelike_Mode,
@@ -498,12 +596,17 @@ class AssistantHandler:
             self.config.Scheduler_Enable = False
 
     def reclamation_algorithm(self):
+        """执行生息演算任务。"""
         self.maa_start('ReclamationAlgorithm', {
             "enable": True
         })
         self.config.task_delay(server_update=True)
 
     def copilot(self):
+        """执行自动作战（Copilot）任务。
+
+        支持从本地文件或神秘代码加载作业，可选择识别作业内容或直接执行。
+        """
         filename = self.config.MaaCopilot_FileName
         if filename.startswith('maa://'):
             logger.info('正在从神秘代码中下载作业')

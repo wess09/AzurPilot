@@ -2,28 +2,9 @@ from module.meowfficer.buy import MeowfficerBuy
 from module.meowfficer.fort import MeowfficerFort
 from module.meowfficer.train import MeowfficerTrain
 from module.ui.page import page_meowfficer
-from module.meowfficer.assets import MEOWFFICER_BUY_ENTER
 
 
 class RewardMeowfficer(MeowfficerBuy, MeowfficerFort, MeowfficerTrain):
-    def wait_meowfficer_buttons(self, skip_first_screenshot=True):
-        """
-        MEOWFFICER_INFO and MEOWFFICER_BUY_ENTER 
-        loads slowly than MEOWFFICER_CHECK
-        """
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
-            if self.appear(MEOWFFICER_BUY_ENTER, offset=(20, 20)):
-                break
-
-            # MEOWFFICER_INFO
-            if self.ui_additional():
-                continue
-
     def run(self):
         """
         Execute buy, enhance, train, and fort operations
@@ -34,7 +15,6 @@ class RewardMeowfficer(MeowfficerBuy, MeowfficerFort, MeowfficerTrain):
             out: page_meowfficer
         """
         if self.config.Meowfficer_BuyAmount <= 0 \
-                and self.config.Meowfficer_OverflowCoins == -1 \
                 and not self.config.Meowfficer_FortChoreMeowfficer \
                 and not self.config.MeowfficerTrain_Enable:
             self.config.Scheduler_Enable = False
@@ -43,8 +23,7 @@ class RewardMeowfficer(MeowfficerBuy, MeowfficerFort, MeowfficerTrain):
         self.ui_ensure(page_meowfficer)
         self.wait_meowfficer_buttons()  # Wait for the ui to load fully
 
-        if self.config.Meowfficer_BuyAmount > 0 \
-                or self.config.Meowfficer_OverflowCoins != -1:
+        if self.config.Meowfficer_BuyAmount > 0:
             self.meow_buy()
         if self.config.Meowfficer_FortChoreMeowfficer:
             self.meow_fort()

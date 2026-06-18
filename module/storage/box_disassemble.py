@@ -18,24 +18,24 @@ class StorageBox(StorageHandler):
     BOX_MAX_USE_AMOUNT = 100
 
     def _handle_use_box_amount(self, amount):
-        """
+        """设置箱子使用数量。
+
         Returns:
-            bool: if clicked
+            bool: 是否成功设置。
 
         Pages:
             in: SHOP_BUY_CONFIRM_AMOUNT
         """
         logger.info(f'Set box amount')
 
-        # same code from shop clerk
+        # 与商店店员逻辑相同的数量输入处理
         ocr = Digit(BOX_AMOUNT_OCR, letter=(239, 239, 239), name='OCR_SHOP_AMOUNT')
         index_offset = (40, 50)
 
-        # wait until amount buttons appear
+        # 等待数量按钮出现
         timeout = Timer(1, count=3).start()
         for _ in self.loop():
-            # In case either -/+ shift position, use
-            # shipyard ocr trick to accurately parse
+            # 防止 +/- 按钮位置偏移，使用船坞 OCR 技巧精确解析
             if self.appear(AMOUNT_MINUS, offset=index_offset) and self.appear(AMOUNT_PLUS, offset=index_offset) and \
                     self.appear(AMOUNT_MAX, offset=index_offset):
                 break
@@ -43,7 +43,7 @@ class StorageBox(StorageHandler):
                 logger.warning('Wait AMOUNT_MINUS AMOUNT_PLUS AMOUNT_MAX timeout')
                 break
 
-        # wait until a normal number
+        # 等待 OCR 识别到正常数字
         current = 0
         timeout = Timer(1, count=3).start()
         for _ in self.loop():
@@ -54,8 +54,7 @@ class StorageBox(StorageHandler):
                 logger.warning('Wait box amount timeout')
                 break
 
-        # set amount
-        # a ui_ensure_index
+        # 设置数量，类似 ui_ensure_index 的逻辑
         logger.info(f'Set box amount: {amount}')
         skip_first = True
         retry = Timer(1, count=2)
@@ -79,12 +78,13 @@ class StorageBox(StorageHandler):
         return True
 
     def _check_box_amount(self, button):
-        """
+        """检查指定箱子的数量。
+
         Args:
-            button (Button): Box
+            button: 箱子对应的按钮。
 
         Returns:
-            int: amount of box
+            int: 箱子数量。
 
         Pages:
             in: MATERIAL_CHECK
@@ -112,13 +112,13 @@ class StorageBox(StorageHandler):
         return amount
 
     def _storage_use_multi_box(self, buttons):
-        """
+        """批量使用多个箱子。
+
         Args:
-            buttons (list[Button]): list of Boxes
+            buttons: 箱子按钮列表。
 
         Returns:
-            int: amount of box used, not accurate.
-                 -1 means the end of box disassemble
+            int: 实际使用的箱子数量（不精确），-1 表示拆解结束。
 
         Pages:
             in: MATERIAL_CHECK
@@ -142,15 +142,15 @@ class StorageBox(StorageHandler):
         return used
 
     def _storage_use_box_in_page(self, rarity, amount, skip_first_screenshot=False):
-        """
+        """在当前页面使用指定稀有度的箱子。
+
         Args:
-            rarity (int):
-            amount (int): Expected amount of boxes to use
-            skip_first_screenshot:
+            rarity: 箱子稀有度。
+            amount: 期望使用的箱子数量。
+            skip_first_screenshot: 是否跳过首次截图。
 
         Returns:
-            int: Actual amount of box used, not accurate
-                 -1 means the end of box disassemble
+            int: 实际使用的箱子数量（不精确），-1 表示拆解结束。
 
         Pages:
             in: MATERIAL_CHECK
@@ -176,7 +176,7 @@ class StorageBox(StorageHandler):
             box_buttons = self._storage_box_template(rarity).match_multi(image, similarity=0.9)
             if box_buttons:
                 box_used = self._storage_use_multi_box(box_buttons)
-                # End
+                # 拆解结束
                 if box_used == -1:
                     used = 0
                     break
@@ -190,12 +190,11 @@ class StorageBox(StorageHandler):
         return used
 
     def box_disassemble(self, rarity=1, preserve=2000):
-        """
-        Disassemble target rarity boxes.
+        """拆解指定稀有度的箱子。
 
         Args:
-            rarity (int): 1 for common, 2 for rare, 3 for elite, 4 for super_rare
-            preserve (int): Expected amount of boxes to preserve
+            rarity: 稀有度，1=普通, 2=稀有, 3=精锐, 4=超稀有。
+            preserve: 期望保留的箱子数量。
 
         Pages:
             in: Any
@@ -207,7 +206,8 @@ class StorageBox(StorageHandler):
         self.ui_goto_main()
 
     def run(self):
-        """
+        """执行箱子拆解任务，按配置遍历各稀有度箱子并拆解。
+
         Pages:
             in: Any page
             out: page_main

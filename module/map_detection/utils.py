@@ -219,37 +219,38 @@ class Lines:
 
 
 def area2corner(area):
-    """
+    """将区域坐标转换为四角点坐标。
+
     Args:
-        area: (x1, y1, x2, y2)
+        area: (x1, y1, x2, y2)。
 
     Returns:
-        np.ndarray: [upper-left, upper-right, bottom-left, bottom-right]
+        np.ndarray: [左上, 右上, 左下, 右下]。
     """
     return np.array([[area[0], area[1]], [area[2], area[1]], [area[0], area[3]], [area[2], area[3]]])
 
 
 def corner2area(corner):
-    """
+    """将四角点坐标转换为区域坐标。
+
     Args:
-        corner: [upper-left, upper-right, bottom-left, bottom-right]
+        corner: [左上, 右上, 左下, 右下]。
 
     Returns:
-        np.ndarray: (x1, y1, x2, y2)
+        np.ndarray: (x1, y1, x2, y2)。
     """
     x, y = np.array(corner).T
     return np.rint([np.min(x), np.min(y), np.max(x), np.max(y)]).astype(int)
 
 
 def corner2inner(corner):
-    """
-    The largest rectangle inscribed in trapezoid.
+    """梯形内接的最大矩形。
 
     Args:
-        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))。
 
     Returns:
-        tuple[int]: (upper_left_x, upper_left_y, bottom_right_x, bottom_right_y).
+        tuple[int]: (左上x, 左上y, 右下x, 右下y)。
     """
     x0, y0, x1, y1, x2, y2, x3, y3 = np.array(corner).flatten()
     area = tuple(np.rint((max(x0, x2), max(y0, y1), min(x1, x3), min(y2, y3))).astype(int))
@@ -257,14 +258,13 @@ def corner2inner(corner):
 
 
 def corner2outer(corner):
-    """
-    The smallest rectangle circumscribed by the trapezoid.
+    """梯形外接的最小矩形。
 
     Args:
-        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
+        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))。
 
     Returns:
-        tuple[int]: (upper_left_x, upper_left_y, bottom_right_x, bottom_right_y).
+        tuple[int]: (左上x, 左上y, 右下x, 右下y)。
     """
     x0, y0, x1, y1, x2, y2, x3, y3 = np.array(corner).flatten()
     area = tuple(np.rint((min(x0, x2), min(y0, y1), max(x1, x3), max(y2, y3))).astype(int))
@@ -272,17 +272,15 @@ def corner2outer(corner):
 
 
 def trapezoid2area(corner, pad=0):
-    """
-    Convert corners of a trapezoid to area.
+    """将梯形角点转换为区域坐标。
 
     Args:
-        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))
-        pad (int):
-            Positive value for inscribed area.
-            Negative value and 0 for circumscribed area.
+        corner: ((x0, y0), (x1, y1), (x2, y2), (x3, y3))。
+        pad (int): 填充值。
+            正值为内接区域，负值和 0 为外接区域。
 
     Returns:
-        tuple[int]: (upper_left_x, upper_left_y, bottom_right_x, bottom_right_y).
+        tuple[int]: (左上x, 左上y, 右下x, 右下y)。
     """
     if pad > 0:
         return area_pad(corner2inner(corner), pad=pad)
@@ -293,13 +291,14 @@ def trapezoid2area(corner, pad=0):
 
 
 def points_to_area_generator(points, shape):
-    """
+    """将点阵转换为网格区域生成器。
+
     Args:
-        points (np.ndarray): N x 2 array.
-        shape (tuple): (x, y).
+        points (np.ndarray): N x 2 数组。
+        shape (tuple): (x, y)。
 
     Yields:
-        tuple, np.ndarray: (x, y), [upper-left, upper-right, bottom-left, bottom-right]
+        tuple, np.ndarray: (x, y), [左上, 右上, 左下, 右下]。
     """
     points = points.reshape(*shape[::-1], 2)
     for y in range(shape[1] - 1):
@@ -309,12 +308,13 @@ def points_to_area_generator(points, shape):
 
 
 def get_map_inner(points):
-    """
-    Args:
-        points (np.ndarray): N x 2 array.
+    """计算点集的中心点。
 
-    Yields:
-        np.ndarray: (x, y).
+    Args:
+        points (np.ndarray): N x 2 数组。
+
+    Returns:
+        np.ndarray: 中心坐标 (x, y)。
     """
     points = np.array(points)
     if len(points.shape) == 1:
@@ -324,13 +324,14 @@ def get_map_inner(points):
 
 
 def separate_edges(edges, inner):
-    """
+    """将边缘分为上下（或左右）两组。
+
     Args:
-        edges: A iterate object which contains float ot integer.
-        inner (float, int): A inner point to separate edges.
+        edges: 包含浮点数或整数的可迭代对象。
+        inner (float, int): 用于分离边缘的内部参考点。
 
     Returns:
-        float, float: Lower edge and upper edge. if not found, return None
+        float, float: 下边缘和上边缘。未找到时返回 None。
     """
     if len(edges) == 0:
         return None, None
@@ -346,14 +347,15 @@ def separate_edges(edges, inner):
 
 
 def perspective_transform(points, data):
-    """
+    """执行透视变换。
+
     Args:
-        points: A 2D array with shape (n, 2)
-        data: Perspective data, a 2D array with shape (3, 3),
-            see https://web.archive.org/web/20150222120106/xenia.media.mit.edu/~cwren/interpolator/
+        points: 二维数组，形状 (n, 2)。
+        data: 透视变换数据，形状 (3, 3) 的二维数组，
+            参见 https://web.archive.org/web/20150222120106/xenia.media.mit.edu/~cwren/interpolator/
 
     Returns:
-        np.ndarray: 2D array with shape (n, 2)
+        np.ndarray: 二维数组，形状 (n, 2)。
     """
     points = np.pad(np.array(points), ((0, 0), (0, 1)), mode='constant', constant_values=1)
     matrix = data.dot(points.T)
@@ -363,18 +365,17 @@ def perspective_transform(points, data):
 
 
 def fit_points(points, mod, encourage=1):
-    """
-    Get a closet point in a group of points with common difference.
-    Will ignore points in the distance.
+    """在一组具有公差点中找到最接近的拟合点。
+    会忽略距离较远的点。
 
     Args:
-        points: Points on image, a 2D array with shape (n, 2)
-        mod: Common difference of points, (x, y).
-        encourage (int, float): Describe how close to fit a group of points, in pixel.
-            Smaller means closer to local minimum, larger means closer to global minimum.
+        points: 图像上的点，二维数组，形状 (n, 2)。
+        mod: 点的公差，(x, y)。
+        encourage (int, float): 拟合一组点的接近程度，单位为像素。
+            越小越接近局部最小值，越大越接近全局最小值。
 
     Returns:
-        np.ndarray: (x, y)
+        np.ndarray: 拟合点 (x, y)。
     """
     encourage = np.square(encourage)
     mod = np.array(mod)
@@ -385,11 +386,11 @@ def fit_points(points, mod, encourage=1):
         distance = np.linalg.norm(points - point, axis=1)
         return np.sum(1 / (1 + np.exp(encourage / distance) / distance))
 
-    # Fast local minimizer
+    # 快速局部最小化器
     # result = optimize.minimize(cal_distance, np.mean(points, axis=0), method='SLSQP')
     # return result['x'] % mod
 
-    # Brute-force global minimizer
+    # 暴力全局最小化器
     area = np.append(-mod - 10, mod + 10)
     result = optimize.brute(cal_distance, ((area[0], area[2]), (area[1], area[3])))
     return result % mod

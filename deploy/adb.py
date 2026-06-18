@@ -6,10 +6,9 @@ from deploy.logger import logger
 from deploy.utils import *
 
 IGNORE_SERIAL = [
-    # Water-cooling display
-    # https://github.com/LmeSzinc/AzurLaneAutoScript/issues/3412
+    # 水冷显示屏，参见 https://github.com/LmeSzinc/AzurLaneAutoScript/issues/3412
     'HRBDFUN',
-    # USB network card
+    # USB 网卡
     '1234567890ABCDEF',
 ]
 
@@ -56,14 +55,13 @@ class AdbManager(DeployConfig):
             except ModuleNotFoundError as e:
                 message = str(e)
                 for module in ['apkutils2', 'progress']:
-                    # ModuleNotFoundError: No module named 'apkutils2'
-                    # ModuleNotFoundError: No module named 'progress.bar'
+                    # 常见的模块缺失错误
                     if module in message:
                         show_fix_tip(module)
                         exit(1)
                 raise
 
-            # Remove global proxies, or uiautomator2 will go through it
+            # 移除全局代理设置，否则 uiautomator2 会走代理
             for k in list(os.environ.keys()):
                 if k.lower().endswith('_proxy'):
                     del os.environ[k]
@@ -73,10 +71,10 @@ class AdbManager(DeployConfig):
                     continue
                 logger.info(f'Init device {device}')
                 initer = init.Initer(device, loglevel=logging.DEBUG)
-                # MuMu X has no ro.product.cpu.abi, pick abi from ro.product.cpu.abilist
+                # MuMu X 没有 ro.product.cpu.abi，从 ro.product.cpu.abilist 中取第一个
                 if initer.abi not in ['x86_64', 'x86', 'arm64-v8a', 'armeabi-v7a', 'armeabi']:
                     initer.abi = initer.abis[0]
-                # /bin/sh: getprop: not found
+                # getprop 命令不存在时跳过
                 if 'getprop' in initer.abi:
                     logger.warning(f'Cannot getprop from device {device}, result: {initer.abi}')
                     continue

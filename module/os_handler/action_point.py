@@ -32,7 +32,7 @@ class ActionPointBuyCounter(DigitCounter):
     def after_process(self, result):
         result = super().after_process(result)
 
-        # Possible result: 0/5, 05
+        # 可能的结果: 0/5, 05
         if result == '05':
             result = '0/5'
 
@@ -40,16 +40,17 @@ class ActionPointBuyCounter(DigitCounter):
 
 
 if server.server != 'jp':
-    # Letters in ACTION_POINT_BUY_REMAIN are not the numeric fonts usually used in azur lane.
+    # ACTION_POINT_BUY_REMAIN 中的字符不是碧蓝航线通常使用的数字字体
     OCR_ACTION_POINT_BUY_REMAIN = ActionPointBuyCounter(
         ACTION_POINT_BUY_REMAIN, letter=(148, 247, 99), lang='cnocr', name='OCR_ACTION_POINT_BUY_REMAIN')
 else:
-    # The color of the digits ACTION_POINT_BUY_REMAIN is white in JP, which is light green in CN and EN.
+    # 日服中 ACTION_POINT_BUY_REMAIN 的数字颜色为白色，国服和国际服为浅绿色
     OCR_ACTION_POINT_BUY_REMAIN = ActionPointBuyCounter(
         ACTION_POINT_BUY_REMAIN, letter=(255, 255, 255), lang='cnocr', name='OCR_ACTION_POINT_BUY_REMAIN')
 
 
 class ActionPointItem(Item):
+    """大世界行动力物品。"""
     def predict_valid(self):
         return True
 
@@ -58,6 +59,7 @@ ACTION_POINT_GRID = ButtonGrid(
     origin=(323, 274), delta=(173, 0), button_shape=(115, 115), grid_shape=(4, 1), name='ACTION_POINT_GRID')
 
 class GridSlice:
+    """网格切片，用于构建物品网格。"""
     def __init__(self, buttons):
         self.buttons = buttons
 
@@ -75,7 +77,7 @@ ACTION_POINTS_COST = {
     6: 40,
 }
 ACTION_POINTS_COST_OBSCURE = {
-    1: 10,  # No obscure zones in CL1 actually
+    1: 10,  # CL1 实际上没有隐秘海域
     2: 10,
     3: 20,
     4: 20,
@@ -85,7 +87,7 @@ ACTION_POINTS_COST_OBSCURE = {
 ACTION_POINTS_COST_ABYSSAL = {
     1: 80,
     2: 80,
-    3: 80,  # No abyssal zones under CL4 actually
+    3: 80,  # CL4 以下实际上没有深渊海域
     4: 80,
     5: 100,
     6: 100,
@@ -106,7 +108,34 @@ ACTION_POINT_BOX = {
 
 
 class ActionPointLimit(Exception):
-    pass
+    """
+    行动力不足异常。
+
+    当行动力不足以进入目标海域时抛出。
+    """
+    def __init__(self, current=None, total=None, cost=None, preserve=None):
+        super().__init__()
+        self.current = current
+        self.total = total
+        self.cost = cost
+        self.preserve = preserve
+
+    @property
+    def delay_minutes(self):
+        """
+        获取需要延迟的分钟数。
+
+        Returns:
+            int | None: 需要延迟的分钟数，如果无需延迟则返回 None。
+        """
+        if self.cost is None or self.current is None:
+            return None
+
+        missing = self.cost - self.current
+        if missing <= 0:
+            return None
+
+        return missing * 10
 
 
 class ActionPointHandler(UI, MapEventHandler):
@@ -117,19 +146,23 @@ class ActionPointHandler(UI, MapEventHandler):
     @staticmethod
     def _is_in_month_end_purchase_block_week():
         """
-        Block weekly AP purchases during the natural week (Mon-Sun) that contains
-        the last day of the current server month. Purchase becomes available again
-        after entering the next month.
+        判断当前是否处于月末购买封锁周。
+
+        在包含下个服务器月第一天的自然周（周一至周日）内，封锁每周行动力购买。
+        进入下个服务器月后，购买将重新可用。
+
+        Returns:
+            bool: 是否处于月末封锁周。
         """
         diff = server_time_offset()
         server_now = datetime.now() - diff
         next_month = (server_now.replace(day=28) + timedelta(days=4)).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
-        month_end = next_month.replace(day=1) - timedelta(days=1)
+        next_month_start = next_month.replace(day=1)
         current_week_start = server_now.date() - timedelta(days=server_now.weekday())
-        month_end_week_start = month_end.date() - timedelta(days=month_end.weekday())
-        return current_week_start == month_end_week_start
+        next_month_week_start = next_month_start.date() - timedelta(days=next_month_start.weekday())
+        return current_week_start == next_month_week_start
 
     def _is_in_action_point(self):
         return self.appear(ACTION_POINT_USE, offset=(20, 20))
@@ -155,8 +188,10 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_update(self):
         """
+        更新行动力信息。
+
         Returns:
-            int: Total action points, including ap boxes.
+            int: 总行动力，包括行动力药剂。
         """
         oil = OIL_ITEM.predict(self.device.image, name=False, amount=True)
         items = ACTION_POINT_ITEMS.predict(self.device.image, name=False, amount=True)
@@ -174,20 +209,25 @@ class ActionPointHandler(UI, MapEventHandler):
         self._action_point_current = current
         self._action_point_box = box
         self._action_point_total = total
-        # handle exceeds
+        # 处理超出上限的情况
         if total > 3000:
             self.config.override(OpsiGeneral_DoRandomMapEvent=False)
 
     def action_point_safe_get(self):
+        """
+        安全获取行动力信息。
+
+        等待行动力弹窗完全加载，并处理可能的地图事件。
+        """
         timeout = Timer(3, count=6).start()
         for _ in self.loop():
-            # End
+            # 结束
             if self.is_current_ap_visible():
                 break
             if timeout.reached():
                 logger.warning('Get action points timeout, wait is_current_ap_visible timeout')
                 break
-            # Forced map event on the top of action point popup
+            # 处理行动力弹窗上方的强制地图事件
             if self.handle_map_event():
                 timeout.reset()
                 continue
@@ -203,27 +243,27 @@ class ActionPointHandler(UI, MapEventHandler):
             if timeout.reached():
                 logger.warning('Get action points timeout')
                 break
-            # Forced map event on the top of action point popup
+            # 处理行动力弹窗上方的强制地图事件
             if self.handle_map_event():
                 timeout.reset()
                 continue
 
             self.action_point_update()
 
-            # Having too many current AP, probably an OCR error
+            # 当前行动力过多，可能是 OCR 错误
             if self._action_point_current > 600:
                 continue
 
             oil, boxes = self._action_point_box[0], self._action_point_box[1:]
-            # Having boxes
+            # 拥有药剂
             if sum(boxes) > 0:
                 if oil > 100:
                     break
                 else:
                     # [11, 0, 1, 0]
                     continue
-            # Or having oil
-            # Might be 0 or 1 when page is not fully loaded
+            # 或者拥有石油
+            # 页面未完全加载时可能为 0 或 1
             # [1, 0, 0, 0]
             if oil > 100:
                 break
@@ -231,12 +271,14 @@ class ActionPointHandler(UI, MapEventHandler):
     @staticmethod
     def action_point_get_cost(zone, pinned):
         """
+        获取进入指定海域所需的行动力消耗。
+
         Args:
-            zone (Zone): Zone to enter.
-            pinned (str): Zone type. Available types: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD.
+            zone (Zone): 要进入的海域。
+            pinned (str): 海域类型。可用类型: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD。
 
         Returns:
-            int: Action points that will cost.
+            int: 消耗的行动力。
         """
         if pinned == 'DANGEROUS':
             cost = ACTION_POINTS_COST[zone.hazard_level] * 2
@@ -259,14 +301,16 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_get_active_button(self):
         """
+        获取当前激活的行动力药剂按钮索引。
+
         Returns:
-            int: 0 to 3. 0 for oil, 1 for 20 ap box, 2 for 50 ap box, 3 for 100 ap box.
+            int: 0 到 3。0 为石油，1 为 20 行动力药剂，2 为 50 行动力药剂，3 为 100 行动力药剂。
         """
         for index, item in enumerate(ACTION_POINT_GRID.buttons):
             area = item.area
             color = get_color(self.device.image, area=(area[0], area[3] + 5, area[2], area[3] + 10))
-            # Active button will turn blue.
-            # Active: 196, inactive: 118 ~ 123.
+            # 激活的按钮会变蓝
+            # 激活: 196, 未激活: 118 ~ 123
             if color[2] > 160:
                 return index
 
@@ -275,11 +319,13 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_set_button(self, index):
         """
+        设置行动力药剂按钮。
+
         Args:
-            index (int): 0 to 3. 0 for oil, 1 for 20 ap box, 2 for 50 ap box, 3 for 100 ap box.
+            index (int): 0 到 3。0 为石油，1 为 20 行动力药剂，2 为 50 行动力药剂，3 为 100 行动力药剂。
 
         Returns:
-            bool: If success.
+            bool: 是否成功。
         """
         for _ in self.loop(timeout=2):
             if self.action_point_get_active_button() == index:
@@ -293,8 +339,10 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_get_buy_remain(self):
         """
+        获取行动力剩余购买次数。
+
         Returns:
-            int: Remaining number of purchases of action points
+            int: 剩余购买次数。
 
         Pages:
             in: ACTION_POINT_USE
@@ -304,7 +352,7 @@ class ActionPointHandler(UI, MapEventHandler):
 
             current, _, total = OCR_ACTION_POINT_BUY_REMAIN.ocr(self.device.image)
 
-            # Possible result: 0/5, 05
+            # 可能的结果: 0/5, 05
             if total == 0:
                 continue
 
@@ -316,20 +364,20 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_buy(self, preserve=1000):
         """
-        Use oil to buy action points.
+        使用石油购买行动力。
 
         Args:
-            preserve (int): Oil to preserve.
+            preserve (int): 保留的石油量。
 
         Returns:
-            bool: If bought
+            bool: 是否购买成功。
 
         Pages:
             in: ACTION_POINT_USE
         """
         self.action_point_set_button(0)
         current = self.action_point_get_buy_remain()
-        buy_max = 5  # In current version of AL, players can buy 5 times of AP in a week.
+        buy_max = 5  # 当前版本中，玩家每周可购买 5 次行动力
         buy_count = buy_max - current
         buy_limit = self.config.OpsiGeneral_BuyActionPointLimit
         if self._is_in_month_end_purchase_block_week():
@@ -350,40 +398,42 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_quit(self):
         """
+        退出行动力弹窗。
+
         Pages:
             in: ACTION_POINT_USE
             out: page_os
         """
         for _ in self.loop():
-            # End
-            # sometimes you have action point popup without black-blurred background
-            # ACTION_POINT_CANCEL and OS_CHECK both appears
+            # 结束
+            # 有时行动力弹窗没有黑色模糊背景
+            # ACTION_POINT_CANCEL 和 OS_CHECK 同时出现
             if not self.appear(ACTION_POINT_CANCEL, offset=(20, 20)):
                 if self.appear(OS_CHECK, offset=(20, 20)):
                     break
-            # Click
+            # 点击
             if self.appear_then_click(ACTION_POINT_CANCEL, offset=(20, 20), interval=3):
                 continue
-            # Forced map event on the top of action point popup
+            # 处理行动力弹窗上方的强制地图事件
             if self.handle_map_event():
                 continue
 
     def handle_action_point(self, zone, pinned, cost=None, keep_current_ap=True, check_rest_ap=False):
         """
+        处理行动力，包括购买和使用药剂。
+
         Args:
-            zone (Zone): Zone to enter.
-            pinned (str): Zone type. Available types: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD.
-            cost (int): Custom action point cost value.
-            keep_current_ap (bool): Check action points first to avoid using remaining AP
-                when it is not enough for tomorrow's daily.
-            check_rest_ap (bool): Skip keep_current_ap if the sum of current action points and rest action points
-                that can be obtained today exceeds 200.
+            zone (Zone): 要进入的海域。
+            pinned (str): 海域类型。可用类型: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD。
+            cost (int): 自定义行动力消耗值。
+            keep_current_ap (bool): 是否先检查行动力，避免在不足时使用剩余行动力。
+            check_rest_ap (bool): 如果当前行动力与今天可获得的剩余行动力之和超过 200，则跳过 keep_current_ap 检查。
 
         Returns:
-            bool: If handled.
+            bool: 是否处理成功。
 
         Raises:
-            ActionPointLimit: If not having enough action points.
+            ActionPointLimit: 行动力不足时抛出。
 
         Pages:
             in: ACTION_POINT_USE
@@ -391,13 +441,13 @@ class ActionPointHandler(UI, MapEventHandler):
         if not self._is_in_action_point():
             return False
 
-        # AP boxes have an animation to show
+        # 行动力药剂有显示动画
         self.action_point_safe_get()
         if cost is None:
             cost = self.action_point_get_cost(zone, pinned)
         buy_checked = False
 
-        # Check the rest action points
+        # 检查剩余行动力
         if check_rest_ap:
             diff = get_server_next_update('00:00') - datetime.now()
             today_rest = int(diff.total_seconds() // 600)
@@ -407,21 +457,25 @@ class ActionPointHandler(UI, MapEventHandler):
                 logger.info(f'Current={self._action_point_current}  Rest={today_rest}')
                 keep_current_ap = False
 
-        # Check action points first
+        # 先检查行动力
         if keep_current_ap:
             if self._action_point_total <= self.config.OS_ACTION_POINT_PRESERVE:
                 logger.info(f'Reach the limit of action points, preserve={self.config.OS_ACTION_POINT_PRESERVE}')
                 self.action_point_quit()
-                raise ActionPointLimit
+                raise ActionPointLimit(
+                    current=self._action_point_current,
+                    total=self._action_point_total,
+                    preserve=self.config.OS_ACTION_POINT_PRESERVE,
+                )
 
         for _ in range(12):
-            # Having enough action points
+            # 拥有足够的行动力
             if self._action_point_current >= cost:
                 logger.info('Having enough action points')
                 self.action_point_quit()
                 return True
 
-            # Buy action points
+            # 购买行动力
             if self.config.OpsiGeneral_BuyActionPointLimit > 0 and not buy_checked:
                 if self.action_point_buy(preserve=self.config.OpsiGeneral_OilLimit):
                     self.action_point_safe_get()
@@ -429,14 +483,18 @@ class ActionPointHandler(UI, MapEventHandler):
                 else:
                     buy_checked = True
 
-            # Recheck if total ap is less than cost
-            # If it is, skip using boxes
+            # 重新检查总行动力是否小于消耗
+            # 如果是，则跳过使用药剂
             if self._action_point_total < cost:
                 logger.info('Not having enough action points')
                 self.action_point_quit()
-                raise ActionPointLimit
+                raise ActionPointLimit(
+                    current=self._action_point_current,
+                    total=self._action_point_total,
+                    cost=cost,
+                )
 
-            # Sort action point boxes
+            # 排序行动力药剂
             box = []
             for index in [3, 2, 1]:
                 if self._action_point_box[index] > 0:
@@ -445,7 +503,7 @@ class ActionPointHandler(UI, MapEventHandler):
                     else:
                         box.insert(0, index)
 
-            # Use action point boxes
+            # 使用行动力药剂
             if len(box):
                 if self._action_point_total > self.config.OS_ACTION_POINT_PRESERVE:
                     self.action_point_set_button(box[0])
@@ -454,17 +512,27 @@ class ActionPointHandler(UI, MapEventHandler):
                 else:
                     logger.info(f'Reach the limit of action points, preserve={self.config.OS_ACTION_POINT_PRESERVE}')
                     self.action_point_quit()
-                    raise ActionPointLimit
+                    raise ActionPointLimit(
+                        current=self._action_point_current,
+                        total=self._action_point_total,
+                        preserve=self.config.OS_ACTION_POINT_PRESERVE,
+                    )
             else:
                 logger.info('No more action point boxes')
                 self.action_point_quit()
-                raise ActionPointLimit
+                raise ActionPointLimit(
+                    current=self._action_point_current,
+                    total=self._action_point_total,
+                    cost=cost,
+                )
 
         logger.warning('Failed to get action points after 12 trial')
         return False
 
     def action_point_enter(self):
         """
+        进入行动力弹窗。
+
         Pages:
             in: OS_CHECK
             out: ACTION_POINT_USE
@@ -477,7 +545,7 @@ class ActionPointHandler(UI, MapEventHandler):
                 self.device.click(ACTION_POINT_REMAIN_OS)
                 continue
             if self.handle_map_event():
-                # story is transparent, OS_CHECK may get detected while handling stories
+                # 剧情是透明的，处理剧情时可能检测到 OS_CHECK
                 self.interval_reset(OS_CHECK)
                 continue
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50)):
@@ -485,26 +553,26 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_set(self, zone=None, pinned=None, cost=None, keep_current_ap=True, check_rest_ap=False):
         """
+        设置行动力，进入行动力弹窗并处理。
+
         Args:
-            zone (Zone): Zone to enter.
-            pinned (str): Zone type. Available types: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD.
-            cost (int): Custom action point cost value.
-            keep_current_ap (bool): Check action points first to avoid using remaining AP
-                when it not enough for tomorrow's daily
-            check_rest_ap (bool): Skip keep_current_ap if the sum of current action points and rest action points
-                that can be obtained today exceeds 200.
+            zone (Zone): 要进入的海域。
+            pinned (str): 海域类型。可用类型: DANGEROUS, SAFE, OBSCURE, ABYSSAL, STRONGHOLD。
+            cost (int): 自定义行动力消耗值。
+            keep_current_ap (bool): 是否先检查行动力，避免在不足时使用剩余行动力。
+            check_rest_ap (bool): 如果当前行动力与今天可获得的剩余行动力之和超过 200，则跳过 keep_current_ap 检查。
 
         Returns:
-            bool: If handled.
+            bool: 是否处理成功。
 
         Raises:
-            ActionPointLimit: If not having enough action points.
+            ActionPointLimit: 行动力不足时抛出。
         """
         self.action_point_enter()
         if not self.handle_action_point(zone, pinned, cost, keep_current_ap, check_rest_ap):
             return False
 
-        # wait until AP popup closed
+        # 等待行动力弹窗关闭
         for _ in self.loop():
             if self.appear(IN_MAP, offset=(200, 5)):
                 break
@@ -513,11 +581,13 @@ class ActionPointHandler(UI, MapEventHandler):
 
     def action_point_check(self, amount):
         """
+        检查是否有足够的行动力。
+
         Args:
-            amount: Check if having this amount of action points.
+            amount (int): 需要检查的行动力数量。
 
         Returns:
-            bool: If having enough AP.
+            bool: 是否有足够的行动力。
         """
         self.action_point_enter()
         self.action_point_safe_get()

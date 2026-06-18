@@ -1,5 +1,5 @@
-# This module is a ton of shit
-# you'd better close right now
+# 此模块提供 WebUI 内的 i18n 翻译编辑功能。
+# 通过交互式表单逐条编辑各语言的翻译条目，支持筛选未翻译项。
 from pywebio.input import (actions, checkbox, input, input_group, input_update,
                            select)
 from pywebio.output import put_buttons, put_markdown
@@ -12,7 +12,9 @@ from module.config.utils import LANGUAGES, filepath_i18n, read_file, write_file
 
 def translate():
     """
-        Translate Alas
+    启动 AzurPilot 翻译编辑器。
+
+    提供交互式界面，用于逐条编辑各语言（zh-CN、zh-TW、en-US、ja-JP）的翻译文本。
     """
     set_env(output_animation=False)
     run_js(r"""$('head').append('<style>footer {display: none}</style>')""")
@@ -35,10 +37,10 @@ def translate():
         "ja-JP": {},
     }
 
-    list_path = []  # Menu.Task.name
-    list_group = []  # Menu
-    list_arg = []  # Task
-    list_key = []  # name
+    list_path = []  # 完整路径，如 Menu.Task.name
+    list_group = []  # 一级键（菜单分组）
+    list_arg = []    # 二级键（任务名）
+    list_key = []    # 三级键（字段名）
     for L, _ in deep_iter(dict_lang['zh-CN'], depth=3):
         list_path.append('.'.join(L))
         list_group.append(L[0])
@@ -97,7 +99,7 @@ def translate():
 
         if V.untranslated_only:
             while True:
-                # print(V.idx)
+                # 调试：打印当前索引
                 key = deep_get(dict_lang[V.lang], list_path[V.idx])
                 if list_path[V.idx] == key or list_path[V.idx].split('.')[2] == key:
                     break

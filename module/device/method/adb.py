@@ -31,19 +31,19 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理
             except RequestHumanTakeover:
                 break
-            # Can't handle - must propagate to trigger emulator restart
+            # 无法处理 - 必须向上抛出以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
-            # When adb server was killed
+            # ADB 服务被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -54,20 +54,20 @@ def retry(func):
                         self.adb_reconnect()
                 else:
                     break
-            # Package not installed
+            # 应用未安装
             except PackageNotInstalled as e:
                 logger.error(e)
 
                 def init():
                     self.detect_package()
-            # ImageTruncated
+            # 图像数据截断
             except ImageTruncated as e:
                 from module.device.method.utils import handle_image_truncated
                 handle_image_truncated(self, e)
 
                 def init():
                     pass
-            # Unknown
+            # 未知异常
             except Exception as e:
                 logger.exception(e)
 
@@ -88,19 +88,21 @@ def retry(func):
 
 def load_screencap(data):
     """
+    解析 screencap 输出的原始数据为图像。
+
     Args:
-        data: Raw data from `screencap`
+        data: screencap 输出的原始二进制数据。
 
     Returns:
-        np.ndarray:
+        解析后的 RGB 图像。
     """
-    # Load data
+    # 加载数据
     if data is None or len(data) < 12:
         raise ImageTruncated('Empty or incomplete screencap data')
 
     header = np.frombuffer(data[0:12], dtype=np.uint32)
-    channel = 4  # screencap sends an RGBA image
-    width, height, _ = header  # Usually to be 1280, 720, 1
+    channel = 4  # screencap 发送 RGBA 格式图像
+    width, height, _ = header  # 通常为 1280, 720, 1
 
     if data is None or len(data) == 0:
         raise ImageTruncated('Empty image data from screencap')
@@ -213,23 +215,23 @@ class Adb(Connection):
     @retry
     def app_current_adb(self):
         """
-        Copied from uiautomator2
+        获取当前前台应用的包名，复制自 uiautomator2。
 
         Returns:
-            str: Package name.
+            当前前台应用的包名。
 
         Raises:
-            OSError
+            OSError: 无法获取前台应用时抛出。
 
-        For developer:
-            Function reset_uiautomator need this function, so can't use jsonrpc here.
+        Note:
+            reset_uiautomator 函数依赖此方法，因此不能在此使用 jsonrpc。
         """
-        # Related issue: https://github.com/openatx/uiautomator2/issues/200
+        # 相关 issue: https://github.com/openatx/uiautomator2/issues/200
         # $ adb shell dumpsys window windows
-        # Example output:
+        # 输出示例:
         #   mCurrentFocus=Window{41b37570 u0 com.incall.apps.launcher/com.incall.apps.launcher.Launcher}
         #   mFocusedApp=AppWindowToken{422df168 token=Token{422def98 ActivityRecord{422dee38 u0 com.example/.UI.play.PlayActivity t14}}}
-        # Regexp
+        # 正则表达式
         #   r'mFocusedApp=.*ActivityRecord{\w+ \w+ (?P<package>.*)/(?P<activity>.*) .*'
         #   r'mCurrentFocus=Window{\w+ \w+ (?P<package>.*)/(?P<activity>.*)\}')
         _focusedRE = re.compile(
@@ -239,7 +241,7 @@ class Adb(Connection):
         if m:
             return m.group('package')
 
-        # try: adb shell dumpsys activity top
+        # 尝试: adb shell dumpsys activity top
         _activityRE = re.compile(
             r'ACTIVITY (?P<package>[^\s]+)/(?P<activity>[^/\s]+) \w+ pid=(?P<pid>\d+)'
         )
@@ -248,22 +250,24 @@ class Adb(Connection):
         ret = None
         for m in ms:
             ret = m.group('package')
-        if ret:  # get last result
+        if ret:  # 取最后一个结果
             return ret
         raise OSError("Couldn't get focused app")
 
     @retry
     def _app_start_adb_monkey(self, package_name=None, allow_failure=False):
         """
+        通过 monkey 命令启动应用。
+
         Args:
-            package_name (str):
-            allow_failure (bool):
+            package_name: 应用包名，默认从配置获取。
+            allow_failure: 为 True 时不抛出 PackageNotInstalled 异常，直接返回 False。
 
         Returns:
-            bool: If success to start
+            是否成功启动。
 
         Raises:
-            PackageNotInstalled:
+            PackageNotInstalled: 应用未安装且 allow_failure 为 False 时抛出。
         """
         if not package_name:
             package_name = self.package
@@ -289,16 +293,18 @@ class Adb(Connection):
     @retry
     def _app_start_adb_am(self, package_name=None, activity_name=None, allow_failure=False):
         """
+        通过 am start 命令启动应用。
+
         Args:
-            package_name (str):
-            activity_name (str):
-            allow_failure (bool):
+            package_name: 应用包名，默认从配置获取。
+            activity_name: Activity 名称，默认从 DICT_PACKAGE_TO_ACTIVITY 获取。
+            allow_failure: 为 True 时不抛出 PackageNotInstalled 异常，直接返回 False。
 
         Returns:
-            bool: If success to start
+            是否成功启动。
 
         Raises:
-            PackageNotInstalled:
+            PackageNotInstalled: 应用未安装且 allow_failure 为 False 时抛出。
         """
         if not package_name:
             package_name = self.package
@@ -327,7 +333,7 @@ class Adb(Connection):
         if self.is_local_network_device and self.is_waydroid:
             cmd += ['--windowingMode', '4']
         ret = self.adb_shell(cmd)
-        # Invalid activity
+        # 无效 Activity
         # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=... }
         # Error type 3
         # Error: Activity class {.../...} does not exist.
@@ -337,22 +343,14 @@ class Adb(Connection):
             else:
                 logger.error(ret)
                 return False
-        # Already running
+        # 已在运行
         # Warning: Activity not started, intent has been delivered to currently running top-most instance.
         if 'Warning: Activity not started' in ret:
             logger.info('App activity is already started')
             return True
+        # 权限拒绝
         # Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] cmp=com.YoStarEN.AzurLane/com.manjuu.azurlane.MainActivity }
-        # java.lang.SecurityException: Permission Denial: starting Intent { act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10000000 cmp=com.YoStarEN.AzurLane/com.manjuu.azurlane.MainActivity } from null (pid=5140, uid=2000) not exported from uid 10064
-        #         at android.os.Parcel.readException(Parcel.java:1692)
-        #         at android.os.Parcel.readException(Parcel.java:1645)
-        #         at android.app.ActivityManagerProxy.startActivityAsUser(ActivityManagerNative.java:3152)
-        #         at com.android.commands.am.Am.runStart(Am.java:643)
-        #         at com.android.commands.am.Am.onRun(Am.java:394)
-        #         at com.android.internal.os.BaseCommand.run(BaseCommand.java:51)
-        #         at com.android.commands.am.Am.main(Am.java:124)
-        #         at com.android.internal.os.RuntimeInit.nativeFinishInit(Native Method)
-        #         at com.android.internal.os.RuntimeInit.main(RuntimeInit.java:290)
+        # java.lang.SecurityException: Permission Denial: ...
         if 'Permission Denial' in ret:
             if allow_failure:
                 return False
@@ -360,29 +358,27 @@ class Adb(Connection):
                 logger.error(ret)
                 logger.error('Permission Denial while starting app, probably because activity invalid')
                 return False
-        # Success
+        # 启动成功
         # Starting: Intent...
         return True
 
-    # No @retry decorator since _app_start_adb_am and _app_start_adb_monkey have @retry already
+    # 不使用 @retry 装饰器，因为 _app_start_adb_am 和 _app_start_adb_monkey 已经有 @retry
     # @retry
     def app_start_adb(self, package_name=None, activity_name=None, allow_failure=False):
         """
+        启动应用，依次尝试 am start 和 monkey 方式。
+
         Args:
-            package_name (str):
-                If None, to get from config
-            activity_name (str):
-                If None, to get from DICT_PACKAGE_TO_ACTIVITY
-                If still None, launch from monkey
-                If monkey failed, fetch activity name and launch from am
-            allow_failure (bool):
-                True for no PackageNotInstalled raising, just return False
+            package_name: 应用包名，为 None 时从配置获取。
+            activity_name: Activity 名称，为 None 时从 DICT_PACKAGE_TO_ACTIVITY 获取，
+                仍为 None 时通过 monkey 启动，monkey 失败后再通过 am 启动。
+            allow_failure: 为 True 时不抛出 PackageNotInstalled 异常，直接返回 False。
 
         Returns:
-            bool: If success to start
+            是否成功启动。
 
         Raises:
-            PackageNotInstalled:
+            PackageNotInstalled: 应用未安装且 allow_failure 为 False 时抛出。
         """
         if not package_name:
             package_name = self.package
@@ -402,7 +398,7 @@ class Adb(Connection):
 
     @retry
     def app_stop_adb(self, package_name=None):
-        """ Stop one application: am force-stop"""
+        """停止应用：am force-stop。"""
         if not package_name:
             package_name = self.package
         self.adb_shell(['am', 'force-stop', package_name])
@@ -410,16 +406,18 @@ class Adb(Connection):
     @retry
     def dump_hierarchy_adb(self, temp: str = '/data/local/tmp/hierarchy.xml') -> etree._Element:
         """
+        通过 uiautomator dump 导出 UI 层级结构。
+
         Args:
-            temp (str): Temp file store on emulator.
+            temp: 模拟器上的临时文件路径。
 
         Returns:
-            etree._Element:
+            解析后的 XML 层级结构。
         """
-        # Remove existing file
+        # 删除已有文件
         # self.adb_shell(['rm', '/data/local/tmp/hierarchy.xml'])
 
-        # Dump hierarchy
+        # 导出层级结构
         for _ in range(2):
             response = self.adb_shell(['uiautomator', 'dump', '--compressed', temp])
             if 'hierchary' in response:
@@ -427,12 +425,12 @@ class Adb(Connection):
                 break
             else:
                 # <None>
-                # Must kill uiautomator2
+                # 必须终止 uiautomator2
                 self.app_stop_adb('com.github.uiautomator')
                 self.app_stop_adb('com.github.uiautomator.test')
                 continue
 
-        # Read from device
+        # 从设备读取
         content = b''
         for chunk in self.adb.sync.iter_content(temp):
             if chunk:
@@ -440,6 +438,6 @@ class Adb(Connection):
             else:
                 break
 
-        # Parse with lxml
+        # 使用 lxml 解析
         hierarchy = etree.fromstring(content)
         return hierarchy

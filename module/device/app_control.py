@@ -52,7 +52,7 @@ class AppControl(Adb, WSA, Uiautomator2):
         if interval is None:
             interval = 0.1
         elif isinstance(interval, (int, float)):
-            # No limitation for manual set in code
+            # 代码中手动设置时不限制
             pass
         else:
             logger.warning(f'Unknown hierarchy interval: {interval}')
@@ -63,9 +63,10 @@ class AppControl(Adb, WSA, Uiautomator2):
             self._hierarchy_interval.limit = interval
 
     def dump_hierarchy(self) -> etree._Element:
-        """
+        """获取当前界面的 UI 层级结构。
+
         Returns:
-            etree._Element: Select elements with `self.hierarchy.xpath('//*[@text="Hermit"]')` for example.
+            etree._Element: UI 层级元素，可使用 `self.hierarchy.xpath('//*[@text="Hermit"]')` 选取元素。
         """
         self._hierarchy_interval.wait()
         self._hierarchy_interval.reset()

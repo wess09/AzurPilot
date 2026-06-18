@@ -1,5 +1,8 @@
-# 此文件是大世界（Operation Siren）商店购买行为的实际执行类。
-# 整合了港口商店与海域内明石商店的交互、购买确认逻辑，并记录行动力购买等大世界关键资源的变动明细。
+"""大世界商店购买执行类。
+
+整合港口商店与海域内明石商店的交互、购买确认逻辑，
+并记录行动力购买等大世界关键资源的变动明细。
+"""
 from module.base.decorator import cached_property
 from module.base.timer import Timer
 from module.combat.assets import GET_ITEMS_1
@@ -15,11 +18,22 @@ from module.shop.clerk import OCR_SHOP_AMOUNT
 
 
 class OSShop(PortShop, AkashiShop):
+    """大世界商店购买执行器。
+
+    继承港口商店和明石商店的功能，提供统一的购买执行接口。
+    """
+
     def os_shop_buy_execute(self, button, skip_first_screenshot=True) -> bool:
-        """
+        """执行单个物品的购买操作。
+
+        处理购买确认、数量选择、弹窗确认等交互流程。
+
         Args:
-            button: Item to buy
-            skip_first_screenshot:
+            button: 待购买的物品按钮。
+            skip_first_screenshot: 是否跳过首次截图。
+
+        Returns:
+            bool: 购买成功返回 True，失败返回 False。
 
         Pages:
             in: PORT_SUPPLY_CHECK
@@ -73,18 +87,24 @@ class OSShop(PortShop, AkashiShop):
                 self.device.click(button)
                 continue
 
-            # End
+            # 结束条件
             if success and self.appear(PORT_SUPPLY_CHECK, offset=(20, 20)):
                 break
 
         return success
 
     def os_shop_buy(self, select_func) -> int:
-        """
-        Args:
-            select_func:
-                Function to select items to buy.
+        """批量购买物品。
 
+        循环调用选择函数获取待购买物品，执行购买直到无物品或达到上限。
+
+        Args:
+            select_func: 物品选择函数，返回待购买物品或 None。
+
+        Returns:
+            int: 成功购买的物品数量。
+
+        Pages:
             in: PORT_SUPPLY_CHECK
         """
         count = 0
@@ -133,11 +153,12 @@ class OSShop(PortShop, AkashiShop):
         return count
 
     def close_shop_buy_confirm_amount(self, skip_first_screenshot=True):
-        """
-        Close shop buy confirm amount.
+        """关闭购买数量确认界面。
+
+        通过点击安全区域关闭数量选择弹窗。
 
         Args:
-            skip_first_screenshot:
+            skip_first_screenshot: 是否跳过首次截图。
 
         Pages:
             in: SHOP_BUY_CONFIRM_AMOUNT
@@ -157,14 +178,20 @@ class OSShop(PortShop, AkashiShop):
                 self.device.click(SHOP_CLICK_SAFE_AREA)
 
     def shop_buy_amount_handler(self, item, skip_first_screenshot=True):
-        """
-        Handler item amount to buy.
+        """处理购买数量选择。
+
+        根据金币数量和物品库存计算最优购买数量，
+        通过加减按钮调整到目标数量。
 
         Args:
-            item
+            item: 待购买的物品。
+            skip_first_screenshot: 是否跳过首次截图。
+
+        Returns:
+            bool: 数量设置成功返回 True，失败返回 False。
 
         Raises:
-            ScriptError: OCR_SHOP_AMOUNT
+            ScriptError: OCR 识别购买上限失败时抛出。
         """
         limit = -1
         retry = Timer(0, count=3)
@@ -200,7 +227,7 @@ class OSShop(PortShop, AkashiShop):
         total_count = min(int(coins // item.price), item.count)
 
         set_to_max = False
-        # Avg count of all items(no PurpleCoins) is 8.9, so use 10.
+        # 所有物品平均数量（不含紫币）约为 8.9，因此使用 10 作为阈值
         if count <= 10:
             if count - 1 > total_count - count:
                 set_to_max = True
@@ -232,10 +259,12 @@ class OSShop(PortShop, AkashiShop):
         return True
 
     def handle_port_supply_buy(self) -> bool:
-        """
+        """处理港口商店购买。
+
+        扫描所有商店页面，过滤可购买物品，按顺序执行购买。
+
         Returns:
-            bool: True if success to buy any or no items found.
-                False if not enough coins to buy any.
+            bool: 成功购买或无可购买物品返回 True，金币不足返回 False。
 
         Pages:
             in: PORT_SUPPLY_CHECK
@@ -248,7 +277,7 @@ class OSShop(PortShop, AkashiShop):
         items = self.items_filter_in_os_shop(items)
         if not len(items):
             logger.warning('Nothing to buy.')
-            return False  
+            return False
         skip_get_coins = True
         items.reverse()
         count = 0
@@ -284,9 +313,12 @@ class OSShop(PortShop, AkashiShop):
         return True
 
     def handle_akashi_supply_buy(self, grid):
-        """
+        """处理明石商店购买。
+
+        点击明石所在的网格进入商店，执行购买后返回地图。
+
         Args:
-            grid: Grid where akashi stands.
+            grid: 明石所在的网格位置。
 
         Pages:
             in: is_in_map
@@ -299,12 +331,23 @@ class OSShop(PortShop, AkashiShop):
 
     @cached_property
     def yellow_coins_preserve(self):
+        """获取黄币保留数量配置。"""
         if self.is_cl1_enabled:
             return self.config.OpsiHazard1Leveling_OperationCoinsPreserve
         else:
             return self.config.OS_NORMAL_YELLOW_COINS_PRESERVE
 
     def get_currency_coins(self, item):
+        """获取可用于购买的货币数量。
+
+        根据大世界重置剩余时间决定是否扣除保留数量。
+
+        Args:
+            item: 待购买的物品。
+
+        Returns:
+            int: 可用货币数量。
+        """
         if item.cost == 'YellowCoins':
             if get_os_reset_remain() == 0:
                 return self._shop_yellow_coins - 100
@@ -318,12 +361,25 @@ class OSShop(PortShop, AkashiShop):
                 return self._shop_purple_coins - self.config.OS_NORMAL_PURPLE_COINS_PRESERVE
 
     def get_coins_no_limit(self, item):
+        """获取不限制的货币数量（不扣除保留量）。
+
+        Args:
+            item: 待购买的物品。
+
+        Returns:
+            int: 货币总量。
+        """
         if item.cost == 'YellowCoins':
             return self._shop_yellow_coins
         elif item.cost == 'PurpleCoins':
             return self._shop_purple_coins
 
     def is_coins_both_not_enough(self):
+        """检查黄币和紫币是否都不足。
+
+        Returns:
+            bool: 两种货币都不足返回 True，否则返回 False。
+        """
         if get_os_reset_remain() == 0:
             return False
         else:

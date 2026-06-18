@@ -12,11 +12,12 @@ from starlette.responses import JSONResponse, HTMLResponse, StreamingResponse
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocketDisconnect
 from module.logger import logger
+from module.config.utils import DEFAULT_CONFIG_NAME
 
 def api_cl1_stats(request):
     try:
         from module.statistics.opsi_month import get_opsi_stats
-        instance_name = request.query_params.get("instance", "alas")
+        instance_name = request.query_params.get("instance", DEFAULT_CONFIG_NAME)
         stats = get_opsi_stats(instance_name=instance_name).get_detailed_summary()
         return JSONResponse({"success": True, "data": stats})
     except Exception as e:
@@ -26,7 +27,7 @@ def api_cl1_stats(request):
 def api_ap_timeline(request):
     try:
         from module.statistics.opsi_month import get_ap_timeline
-        instance_name = request.query_params.get("instance", "alas")
+        instance_name = request.query_params.get("instance", DEFAULT_CONFIG_NAME)
         timeline = get_ap_timeline(instance_name=instance_name)
         return JSONResponse({"success": True, "data": timeline})
     except Exception as e:
@@ -139,7 +140,7 @@ def _video_stream_command(ffmpeg, codec, width, height, fps):
 async def ws_live_screenshot(websocket):
     await websocket.accept()
 
-    instance = websocket.query_params.get("instance", "alas")
+    instance = websocket.query_params.get("instance", DEFAULT_CONFIG_NAME)
     codec = websocket.query_params.get("codec", "h264").lower()
     if codec not in ("h264", "h265"):
         codec = "h264"
@@ -323,7 +324,7 @@ async def api_notify_stream(request):
 
 async def api_import_legacy_upload(request):
     """
-    接收浏览器上传的旧 ALAS 文件夹内容，写入本项目对应位置。
+    接收浏览器上传的旧 AzurPilot 文件夹内容，写入本项目对应位置。
     前端使用 webkitdirectory 选择文件夹后上传。
     """
     from pathlib import Path

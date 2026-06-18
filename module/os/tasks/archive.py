@@ -8,12 +8,10 @@ from module.shop.shop_voucher import VoucherShop
 class OpsiArchive(OSMap):
     def os_archive(self):
         """
-        Complete active archive zone in daily mission
-        Purchase next available logger archive then repeat
-        until exhausted
+        执行大世界作战档案任务。
 
-        Run on weekly basis, AL devs seemingly add new logger
-        archives after random scheduled maintenances
+        完成每日任务中的活跃档案海域，购买下一个可用的日志仪档案，
+        循环执行直到耗尽。建议每周运行一次，开发团队会在维护后添加新档案。
         """
         if self.is_in_opsi_explore():
             logger.info('OpsiExplore is under scheduling, stop OpsiArchive')
@@ -22,8 +20,7 @@ class OpsiArchive(OSMap):
 
         shop = VoucherShop(self.config, self.device)
         while True:
-            # In case logger bought manually,
-            # finish pre-existing archive zone
+            # 防止日志仪被手动购买，先完成已存在的档案海域
             self.os_finish_daily_mission(
                 skip_siren_mission=self.config.cross_get('OpsiDaily.OpsiDaily.SkipSirenResearchMission'),
                 question=False, rescan=False)
@@ -35,7 +32,7 @@ class OpsiArchive(OSMap):
             if not bought:
                 break
 
-        # Reset to nearest 'Wednesday' date
+        # 延迟到最近的周三重置
         next_reset = get_nearest_weekday_date(target=2)
         logger.info('All archive zones finished, delay to next reset')
         logger.attr('OpsiNextReset', next_reset)

@@ -7,8 +7,17 @@ class OpsiObscure(CoinTaskMixin, OSMap):
     
     def clear_obscure(self):
         """
+        清理一个隐秘海域。
+
+        从仓库取出隐秘海域坐标，前往目标区域执行自动搜索。
+        如果没有可执行内容，会尝试切换到其他黄币补充任务。
+
         Raises:
-            ActionPointLimit:
+            ActionPointLimit: 行动力不足。
+
+        Pages:
+            in: page_os, 大世界地图
+            out: page_os, 大世界地图
         """
         logger.hr('OS clear obscure', level=1)
         self.cl1_ap_preserve()
@@ -18,7 +27,7 @@ class OpsiObscure(CoinTaskMixin, OSMap):
         result = self.storage_get_next_item('OBSCURE', use_logger=self.config.OpsiGeneral_UseLogger,
                                             skip_obscure_hazard_2=self.config.OpsiObscure_SkipHazard2Obscure)
         if not result:
-            # No obscure coordinates - handle and try other tasks if needed
+            # 没有隐秘海域坐标，尝试切换到其他任务
             if self._handle_no_content_and_try_other_tasks('隐秘海域', '隐秘海域没有可执行内容'):
                 return
 
@@ -56,10 +65,9 @@ class OpsiObscure(CoinTaskMixin, OSMap):
                 if self._check_yellow_coins_and_return_to_cl1("循环中", "隐秘海域"):
                     return
             
-            # 如果 ForceRun=False，根据是否启用智能调度选择关闭或推迟任务
+            # 非强制模式每次只清一个隐秘海域，保留 os_order_execute 写入的侦查/潜艇冷却。
             if not self.config.OpsiObscure_ForceRun:
-                if self._finish_task_with_smart_scheduling('OpsiObscure', '隐秘海域', consider_reset_remain=True):
-                    break
+                break
             
             self.config.check_task_switch()
             continue

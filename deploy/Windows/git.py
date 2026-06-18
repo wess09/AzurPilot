@@ -94,7 +94,7 @@ class GitManager(DeployConfig):
         Progress.GitFetch()
 
         logger.hr('Pull Repository Branch', 1)
-        # Remove git lock
+        # 移除 git 锁文件
         for lock_file in [
             './.git/index.lock',
             './.git/HEAD.lock',
@@ -105,7 +105,7 @@ class GitManager(DeployConfig):
                 os.remove(lock_file)
         self.execute(f'"{self.git}" reset --hard {source}/{branch}')
         Progress.GitReset()
-        # Since `git fetch` is already called, checkout is faster
+        # git fetch 已执行，checkout 会更快
         if not self.execute(f'"{self.git}" checkout {branch}', allow_failure=True):
             self.execute(f'"{self.git}" pull --ff-only {source} {branch}')
         Progress.GitCheckout()
@@ -130,7 +130,7 @@ class GitManager(DeployConfig):
         return client
 
     def git_install(self):
-        logger.hr('Update Alas', 0)
+        logger.hr('Update AzurPilot', 0)
 
         if self.GitOverCdn:
             if self.goc_client.update():

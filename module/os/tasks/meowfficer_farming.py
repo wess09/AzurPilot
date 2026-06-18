@@ -11,7 +11,19 @@ from module.os.tasks.smart_scheduling_utils import is_smart_scheduling_enabled
 
 class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
     def _meow_ap_and_scheduling_check(self, preserve, ap_checked):
-        """Action point check and scheduling check"""
+        """
+        行动力检查与智能调度检查。
+
+        检查当前行动力是否充足，处理智能调度覆盖配置，
+        并在行动力不足时执行延迟或任务切换。
+
+        Args:
+            preserve (int): 行动力保留值。
+            ap_checked (bool): 是否已完成行动力检查。
+
+        Returns:
+            bool: 如果已完成检查返回 True，否则返回 ap_checked 的值。
+        """
         self.config.OS_ACTION_POINT_PRESERVE = preserve
 
         # ===== 智能调度：行动力保留覆盖 =====
@@ -70,12 +82,12 @@ class OpsiMeowfficerFarming(CoinTaskMixin, OSMap):
 
                     if self.is_cl1_enabled:
                         self.notify_push(
-                            title="[Alas] 短猫相接 - 切换至侵蚀 1",
+                            title="[AzurPilot] 短猫相接 - 切换至侵蚀 1",
                             content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n补充凭证: {yellow_coins}\n推迟短猫 1 小时，切换至侵蚀 1"
                         )
                     else:
                         self.notify_push(
-                            title="[Alas] 短猫相接 - 行动力不足",
+                            title="[AzurPilot] 短猫相接 - 行动力不足",
                             content=f"行动力 {self._action_point_total} 不足 (需要 {ap_preserve})\n凭证: {yellow_coins}\n任务推迟 1 小时"
                         )
 

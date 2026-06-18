@@ -7,7 +7,7 @@ from module.ui.page import page_guild, page_main
 class RewardGuild(GuildLobby, GuildLogistics, GuildOperations):
     def run(self):
         """
-        ALAS handler function for guild reward loop
+        AzurPilot handler function for guild reward loop
 
         Returns:
             bool: If executed

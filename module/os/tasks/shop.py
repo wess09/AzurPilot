@@ -9,8 +9,13 @@ from module.os_shop.assets import OS_SHOP_CHECK
 class OpsiShop(OSMap):
     def os_shop(self):
         """
-        Buy all supplies in all ports.
-        If not having enough yellow coins or purple coins, skip buying supplies in next port.
+        购买所有港口的补给物资。
+
+        如果黄币或紫币不足，跳过下一个港口的补给购买。
+
+        Pages:
+            in: page_os, 大世界地图
+            out: page_os, 大世界地图
         """
         logger.hr('OS port daily', level=1)
         today = datetime.now().day
@@ -44,13 +49,15 @@ class OpsiShop(OSMap):
 
     def _os_shop_delay(self, not_empty) -> datetime:
         """
-        Calculate the delay of OpsiShop.
+        计算大世界商店的延迟时间。
+
+        根据商店是否为空和距月底重置的天数决定下次运行时间。
 
         Args:
-            not_empty (bool): Indicates whether the shop is not empty.
+            not_empty (bool): 商店是否非空。
 
         Returns:
-            datetime: The time of the next shop reset.
+            datetime: 下次商店重置时间。
         """
         next_reset = None
 

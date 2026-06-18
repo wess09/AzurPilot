@@ -35,3 +35,12 @@ EventD:
 ThreeOilLowCost:
   Scheduler:
     Enable: false
+OpsiCrossMonth:
+  Scheduler:
+    Sensitive: true
+OpsiObscure:
+  Scheduler:
+    Sensitive: true
+OpsiAbyssal:
+  Scheduler:
+    Sensitive: true

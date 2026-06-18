@@ -9,12 +9,12 @@ from module.os.map import OSMap
 
 
 class OpsiExplore(OSMap):
-    # List of failed zone id
+    # 探索失败的区域 ID 列表
     _os_explore_failed_zone = []
 
     def _os_explore_task_delay(self):
         """
-        Delay other OpSi tasks during os_explore
+        在大世界探索期间延迟其他大世界任务。
         """
         logger.info('Delay other OpSi tasks during OpsiExplore')
         with self.config.multi_set():
@@ -29,8 +29,14 @@ class OpsiExplore(OSMap):
 
     def _os_explore(self):
         """
-        Explore all dangerous zones at the beginning of month.
-        Failed zone id will be set to _os_explore_failed_zone
+        月初探索所有危险区域。
+
+        按配置顺序逐一前往各区域，已完成安全海域的区域会跳过。
+        失败的区域 ID 会记录到 _os_explore_failed_zone。
+
+        Pages:
+            in: page_os, 大世界地图
+            out: page_os, 大世界地图
         """
 
         def end():
@@ -51,14 +57,14 @@ class OpsiExplore(OSMap):
         logger.hr('OS explore', level=1)
         full_order = [int(f.strip(' \t\r\n')) for f in self.config.OS_EXPLORE_FILTER.split('>')]
         total_zones = len(full_order)
-        # Convert user input
+        # 转换用户输入
         try:
             last_zone = self.name_to_zone(self.config.OpsiExplore_LastZone).zone_id
         except ScriptError:
             logger.warning(f'Invalid OpsiExplore_LastZone={self.config.OpsiExplore_LastZone}, re-explore')
             last_zone = 0
 
-        # Start from last zone
+        # 从上次探索的区域继续
         if last_zone in full_order:
             index = full_order.index(last_zone)
             completed_count = index + 1
@@ -78,10 +84,10 @@ class OpsiExplore(OSMap):
         if not len(order):
             end()
 
-        # Run
+        # 开始探索
         self._os_explore_failed_zone = []
         for zone in order:
-            # Check if zone already unlock safe zone
+            # 检查区域是否已解锁为安全海域
             if not self.globe_goto(zone, stop_if_safe=True):
                 completed_count += 1
                 if total_zones > 0:
@@ -90,11 +96,10 @@ class OpsiExplore(OSMap):
                 self.config.OpsiExplore_LastZone = zone
                 continue
 
-            # Run zone
+            # 运行区域
             logger.hr(f'OS explore {zone}', level=1)
             if not self.config.OpsiExplore_SpecialRadar:
-                # Special radar gives 90 turning samples,
-                # If no special radar, use the turning samples in storage to acquire stronger fleets.
+                # 特殊雷达提供 90 个调谐样本，没有特殊雷达时使用仓库中的调谐样本强化舰队
                 self.tuning_sample_use()
             self.fleet_set(self.config.OpsiFleet_Fleet)
             self.os_order_execute(
@@ -114,7 +119,7 @@ class OpsiExplore(OSMap):
             self.handle_after_auto_search()
             self.config.check_task_switch()
 
-            # Reached end
+            # 到达最后一个区域
             if zone == order[-1]:
                 end()
 

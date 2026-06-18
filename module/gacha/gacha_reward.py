@@ -27,33 +27,32 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
 
     def gacha_prep(self, target, skip_first_screenshot=True):
         """
-        Initiate preparation to submit build orders.
+        准备提交建造订单。
 
         Args:
-            target (int): Number of build orders to submit
-            skip_first_screenshot (bool):
+            target (int): 要提交的建造订单数量。
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Returns:
-            bool: True if prep complete otherwise False.
+            bool: 准备完成返回 True，否则返回 False。
 
         Pages:
-            in: page_build (any)
-            out: submit pop up
+            in: page_build（任意子页面）
+            out: 提交确认弹窗
 
-        Except:
-            May exit if unable to process prep
+        Raises:
+            ScriptError: 无法识别 OCR 资源时抛出。
         """
-        # Nothing to prep if 'target' = 0
+        # target 为 0 时无需准备
         if not target:
             return False
 
-        # Ensure correct page to be able to prep in
+        # 确保在正确的页面上才能进行准备
         if not self.appear(BUILD_SUBMIT_ORDERS) \
                 and not self.appear(BUILD_SUBMIT_WW_ORDERS):
             return False
 
-        # Use 'appear' to update actual position of assets
-        # for ui_ensure_index
+        # 使用 'appear' 更新资源的实际位置，供 ui_ensure_index 使用
         confirm_timer = Timer(1, count=2).start()
         ocr_submit = None
         index_offset = (60, 20)
@@ -72,19 +71,18 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
                 ocr_submit = OCR_BUILD_SUBMIT_WW_COUNT
                 confirm_timer.reset()
                 continue
-            # Continue gacha even if UR exchange point is full
+            # 即使 UR 兑换点已满也继续建造
             if self.handle_popup_confirm('GACHA_PREP'):
                 confirm_timer.reset()
                 continue
 
-            # End
+            # 结束
             if self.appear(BUILD_PLUS, offset=index_offset) \
                     and self.appear(BUILD_MINUS, offset=index_offset):
                 if confirm_timer.reached():
                     break
 
-        # Check for exception, exited prematurely
-        # Apply appropriate submission count
+        # 检查是否异常提前退出，并设置正确的提交数量
         if ocr_submit is None:
             raise ScriptError('Failed to identify ocr asset required, '
                               'cannot continue prep work')
@@ -97,34 +95,34 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
 
     def gacha_calculate(self, target_count, gold_cost, cube_cost):
         """
-        Calculate number able to actually submit.
+        根据当前资源计算实际可提交的建造数量。
 
         Args:
-            target_count (int): Number of build orders like to submit
-            gold_cost (int): Gold coin cost
-            cube_cost (int): Cube cost
+            target_count (int): 期望提交的建造订单数量。
+            gold_cost (int): 金币消耗。
+            cube_cost (int): 魔方消耗。
 
         Returns:
-            int: Actual number able to submit based on current resources
+            int: 根据当前资源可实际提交的数量。
         """
         while 1:
-            # Calculate cost of resources based on 'target_count'
+            # 根据 target_count 计算资源消耗
             gold_total = gold_cost * target_count
             cube_total = cube_cost * target_count
 
-            # Reached 0, cannot execute gacha roll
+            # 数量为 0，无法执行建造
             if not target_count:
                 logger.warning('Insufficient gold and/or cubes to gacha roll')
                 break
 
-            # Insufficient resources, reduce by 1 and re-calculate
+            # 资源不足，减少 1 并重新计算
             if gold_total > self.build_coin_count or cube_total > self.build_cube_count:
                 target_count -= 1
                 continue
 
             break
 
-        # Modify resources, return current 'target_count'
+        # 扣除资源，返回当前 target_count
         logger.info(f'Able to submit up to {target_count} build orders')
         self.build_coin_count -= gold_total
         self.build_cube_count -= cube_total
@@ -134,28 +132,25 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
 
     def gacha_goto_pool(self, target_pool):
         """
-        Transition to appropriate build pool page.
+        导航到指定的建造池页面。
 
         Args:
-            target_pool (str): Name of pool, default to
-            'light' path if outside of acceptable range
+            target_pool (str): 建造池名称，超出范围时默认使用 'light' 池。
 
         Returns:
-            str: Current pool location based on availability
+            str: 当前可用的建造池名称。
 
         Pages:
-            in: page_build (gacha pool selection)
-            out: page_build (gacha pool allowed)
+            in: page_build（建造池选择）
+            out: page_build（建造池操作页面）
 
-        Except:
-            May exit if 'wishing_well' but not
-            complete configuration
+        Raises:
+            ScriptError: 选择 'wishing_well' 但未完成配置时抛出。
         """
-        # Switch view to 'light' pool
+        # 切换到 'light' 池视图
         self.gacha_bottom_navbar_ensure(right=3, is_build=True)
 
-        # Transition to 'target_pool' if needed, update
-        # 'target_pool' appropriately
+        # 根据需要导航到 target_pool，并更新 target_pool 的实际值
         if target_pool == 'wishing_well':
             if self._gacha_side_navbar.get_total(main=self) != 5:
                 logger.warning('\'wishing_well\' is not available, '
@@ -175,21 +170,10 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
                                'to \'light\' pool')
                 target_pool = 'light'
             else:
-                # 检查是否有多个活动池
-                # 当有多个活动池时，活动池按钮可能不在 left=1 的位置
-                # 尝试找到第一个活动池按钮
-                active, minimum, maximum = gacha_bottom_navbar.get_info(main=self)
-                if active is not None:
-                    # 从左侧开始查找活动池按钮
-                    for i in range(minimum, maximum + 1):
-                        # 点击当前按钮并检查是否为活动池
-                        self.gacha_bottom_navbar_ensure(left=i, is_build=True)
-                        # 检查是否成功切换到活动池
-                        if self.appear(BUILD_TICKET_CHECK, offset=(30, 30)):
-                            break
-                else:
-                    # 如果无法获取导航栏信息，默认使用 left=1
-                    self.gacha_bottom_navbar_ensure(left=1, is_build=True)
+                # 活动池可用时位于最左侧标签。
+                # Navbar 的 left 索引从 1 开始；get_info() 返回从 0 开始的绝对索引，
+                # 因此不要将 get_info() 的值作为 `left` 传入。
+                self.gacha_bottom_navbar_ensure(left=1, is_build=True)
         elif target_pool in ['heavy', 'special']:
             if target_pool == 'heavy':
                 self.gacha_bottom_navbar_ensure(right=2, is_build=True)
@@ -200,27 +184,25 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
 
     def gacha_flush_queue(self, skip_first_screenshot=True):
         """
-        Flush build order queue to ensure empty before submission.
+        清空建造订单队列，确保提交前队列为空。
 
         Args:
-            skip_first_screenshot (bool):
+            skip_first_screenshot (bool): 是否跳过首次截图。
 
         Pages:
-            in: page_build (any)
-            out: page_build (gacha pool selection)
+            in: page_build（任意子页面）
+            out: page_build（建造池选择）
 
-        Except:
-            May exit if unable to flush queue entirely,
-            dock likely full
+        Raises:
+            ScriptError: 无法完全清空队列时退出（船坞可能已满）。
         """
-        # Go to Gacha/Orders page
+        # 进入建造/订单页面
         self.gacha_side_navbar_ensure(bottom=3)
 
-        # Transition appropriate screens
-        # and end up in Gacha/Build page
+        # 切换到对应界面，最终回到建造/建造页面
         confirm_timer = Timer(1, count=2).start()
-        confirm_mode = True  # Drill, Lock Ship
-        # Clear button offset, or will click at the PLUS button of gems or HOME button
+        confirm_mode = True  # 演习，锁定舰船
+        # 清除按钮偏移，否则会点击到钻石的 PLUS 按钮或 HOME 按钮
         STORY_SKIP.clear_offset()
         queue_clean = True
         while 1:
@@ -246,33 +228,38 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
             if self.handle_popup_confirm('FINISH_ORDERS'):
                 if confirm_mode:
                     self.device.sleep((0.5, 0.8))
-                    self.device.click(BUILD_FINISH_ORDERS)  # Skip animation, safe area
+                    self.device.click(BUILD_FINISH_ORDERS)  # 跳过动画，安全区域
                     confirm_mode = False
                 confirm_timer.reset()
                 continue
 
             if self.appear(GET_SHIP, interval=1):
-                self.device.click(STORY_SKIP)  # Fast forward for multiple orders
+                self.device.click(STORY_SKIP)  # 多个订单时快进
                 confirm_timer.reset()
                 continue
 
             if self.appear(BUILD_FINISH_RESULTS, offset=(20, 150), interval=3):
-                self.device.click(BUILD_FINISH_ORDERS)  # Safe area
+                self.device.click(BUILD_FINISH_ORDERS)  # 安全区域
                 confirm_timer.reset()
                 continue
 
-            # End, goes back to pool page if clicked with queue empty
+            # 结束，队列为空时点击后会返回建造池页面
             if self.appear(BUILD_SUBMIT_ORDERS) or self.appear(BUILD_SUBMIT_WW_ORDERS):
                 if confirm_timer.reached():
                     break
 
-        # Wishing pool no longer shows coins, go back to normal pools
+        # 许愿池不再显示金币，返回普通建造池
         if self.appear(BUILD_SUBMIT_WW_ORDERS):
             logger.info('In wishing pool, go back to normal pools')
             self.gacha_side_navbar_ensure(upper=1)
 
     def gacha_submit(self, skip_first_screenshot=True):
         """
+        提交建造订单。
+
+        Args:
+            skip_first_screenshot (bool): 是否跳过首次截图。
+
         Pages:
             in: POPUP_CONFIRM
             out: BUILD_FINISH_ORDERS
@@ -285,53 +272,50 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
                 self.device.screenshot()
 
             if self.appear(POPUP_CONFIRM, offset=(20, 80), interval=3):
-                # Alter asset name for click
+                # 修改资源名称用于点击
                 POPUP_CONFIRM.name = POPUP_CONFIRM.name + '_' + 'GACHA_ORDER'
                 self.device.click(POPUP_CONFIRM)
                 POPUP_CONFIRM.name = POPUP_CONFIRM.name[:-len('GACHA_ORDER') - 1]
                 continue
 
-            # End
+            # 结束
             if self.appear(BUILD_FINISH_ORDERS):
                 break
 
     def gacha_run(self):
         """
-        Run gacha operations to submit build orders.
+        执行建造操作，提交建造订单。
 
         Returns:
-            bool: True if run successful otherwise False
+            bool: 执行成功返回 True，否则返回 False。
 
         Pages:
-            in: any
+            in: 任意页面
             out: page_build
         """
-        # Go to Gacha
+        # 进入建造页面
         self.ui_goto_gacha()
 
-        # Flush queue of any pre-existing
-        # builds to ensure starting fresh
-        # Upon exit, expected to be in
-        # main Build page
+        # 清空已有的建造队列，确保从头开始
+        # 退出后预计在主建造页面
         self.gacha_flush_queue()
 
-        # OCR Gold and Cubes
+        # OCR 识别金币和魔方数量
         self.build_coin_count = self.get_coin()
         self.build_cube_count = OCR_BUILD_CUBE_COUNT.ocr(self.device.image)
 
-        # Transition to appropriate target construction pool
-        # Returns appropriate costs for gacha as well
+        # 导航到目标建造池，同时返回对应的建造消耗
         actual_pool = self.gacha_goto_pool(self.config.Gacha_Pool)
 
-        # Determine appropriate cost based on gacha_goto_pool
+        # 根据 gacha_goto_pool 的结果确定消耗
         gold_cost = 600
         cube_cost = 1
         if actual_pool in ['heavy', 'special', 'event', 'wishing_well']:
             gold_cost = 1500
             cube_cost = 2
 
-        # OCR build tickets, decide use cubes/coins or not
-        # buy = [rolls_using_tickets, rolls_using_cubes]
+        # OCR 识别建造券数量，决定是否使用魔方/金币
+        # buy = [使用建造券的次数, 使用魔方的次数]
         buy = [self.config.Gacha_Amount, 0]
         if actual_pool == "event" and self.config.Gacha_UseTicket:
             if self.appear(BUILD_TICKET_CHECK, offset=(30, 30)):
@@ -340,34 +324,33 @@ class RewardGacha(GachaUI, Retirement, CampaignStatus):
                 logger.info('Build ticket not detected, use cubes and coins')
         if self.config.Gacha_Amount > self.build_ticket_count:
             buy[0] = self.build_ticket_count
-            # Calculate rolls allowed based on configurations and resources
+            # 根据配置和资源计算允许的建造次数
             buy[1] = self.gacha_calculate(self.config.Gacha_Amount - self.build_ticket_count, gold_cost, cube_cost)
         else:
             LogRes(self.config).Cube = self.build_cube_count
             self.config.update()
 
-        # Submit 'buy_count' and execute if capable
-        # Cannot use handle_popup_confirm, this window
-        # lacks POPUP_CANCEL
+        # 提交 buy_count 并执行
+        # 不能使用 handle_popup_confirm，因为该窗口没有 POPUP_CANCEL
         result = False
         for buy_count in buy:
             if self.gacha_prep(buy_count):
                 self.gacha_submit()
 
-                # If configured to use drill after build
+                # 如果配置了建造后使用心智魔方
                 if self.config.Gacha_UseDrill:
                     self.gacha_flush_queue()
-                # Return True if any submit successed
+                # 任意一次提交成功则返回 True
                 result = True
 
         return result
 
     def run(self):
         """
-        Handle gacha operations if configured to do so.
+        根据配置执行建造操作。
 
         Pages:
-            in: Any page
+            in: 任意页面
             out: page_build
         """
         self.gacha_run()

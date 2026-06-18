@@ -32,23 +32,23 @@ class Camera(MapOperation):
     def _map_swipe(self, vector, box=(123, 159, 1175, 628)):
         """
         Args:
-            vector (tuple, np.ndarray): float
-            box (tuple): Area that allows to swipe.
+            vector (tuple, np.ndarray): 滑动向量（浮点数）。
+            box (tuple): 允许滑动的区域。
 
         Returns:
-            bool: if camera moved.
+            bool: 相机是否移动了。
         """
         vector = np.array(vector)
         name = 'MAP_SWIPE_' + '_'.join([str(int(round(x))) for x in vector])
         if np.any(np.abs(vector) > self.config.MAP_SWIPE_DROP):
-            # Map grid fit
+            # 地图网格适配
             if self.config.DEVICE_CONTROL_METHOD == 'minitouch':
                 distance = self.view.swipe_base * self.config.MAP_SWIPE_MULTIPLY_MINITOUCH
             elif self.config.DEVICE_CONTROL_METHOD == 'MaaTouch':
                 distance = self.view.swipe_base * self.config.MAP_SWIPE_MULTIPLY_MAATOUCH
             else:
                 distance = self.view.swipe_base * self.config.MAP_SWIPE_MULTIPLY
-            # Optimize swipe path
+            # 优化滑动路径
             if self.config.MAP_SWIPE_OPTIMIZE:
                 whitelist, blacklist = self.get_swipe_area_opt(vector)
             else:
@@ -57,25 +57,24 @@ class Camera(MapOperation):
             vector = distance * vector
             vector = -vector
             self.device.swipe_vector(vector, name=name, box=box, whitelist_area=whitelist, blacklist_area=blacklist)
-            # Donno why initial commit have a sleep here
+            # 不知道为什么初始提交中有一个 sleep
             # self.device.sleep(0.3)
             self.update(wait_swipe=True)
             return True
         else:
-            # Drop swipe
+            # 舍弃滑动
             # self.update(camera=False)
             return False
 
     def map_swipe(self, vector):
-        """
-        Swipe to a grid using relative position.
-        Remember to update before calling this.
+        """使用相对位置滑动到目标格子。
+        调用前请先更新相机位置。
 
         Args:
-            vector(tuple): int
+            vector (tuple): 整数滑动向量。
 
         Returns:
-            bool: if camera moved.
+            bool: 相机是否移动了。
         """
         logger.info('Map swipe: %s' % str(vector))
         self._prev_view = copy.copy(self.view)
@@ -85,14 +84,13 @@ class Camera(MapOperation):
         return self._map_swipe(vector)
 
     def focus_to_grid_center(self, tolerance=None):
-        """
-        Re-focus to the center of a grid.
+        """重新聚焦到格子中心。
 
         Args:
-            tolerance (float): 0 to 0.5. If None, use MAP_GRID_CENTER_TOLERANCE
+            tolerance (float): 容差值，0 到 0.5。为 None 时使用 MAP_GRID_CENTER_TOLERANCE。
 
         Returns:
-            bool: Map swiped.
+            bool: 地图是否滑动了。
         """
         if not tolerance:
             tolerance = self.config.MAP_GRID_CENTER_TOLERANCE
@@ -107,8 +105,7 @@ class Camera(MapOperation):
             self.view = View(self.config, grid_class=self.grid_class)
 
     def _update_view(self):
-        """
-        Update map view
+        """更新地图视图。
         """
         self._view_init()
         try:
@@ -126,7 +123,7 @@ class Camera(MapOperation):
                 return False
             elif self.appear(GET_ITEMS_1, offset=5):
                 logger.warning('Perspective error caused by get_items')
-                # Don't use handle_mystery() here since OpSi overrides it.
+                # 此处不要使用 handle_mystery()，因为大世界会覆盖它。
                 self.device.click(GET_ITEMS_1)
                 return False
             elif self.appear(GET_ITEMS_1_RYZA, offset=(-20, -100, 20, 20)):
@@ -182,7 +179,7 @@ class Camera(MapOperation):
                                   skip_first_screenshot=True)
                     return False
             elif 'opsi' in self.config.task.command.lower() and self.handle_popup_confirm('OPSI'):
-                # Always confirm popups in OpSi, same popups in os_map_goto_globe()
+                # 在大世界中始终确认弹窗，与 os_map_goto_globe() 中的弹窗相同
                 logger.warning('Perspective error caused by popups')
                 return False
             elif self.appear(PORT_SUPPLY_CHECK, offset=(20, 20)):
@@ -198,7 +195,7 @@ class Camera(MapOperation):
                 logger.warning(string)
                 x, y = string.split('=')[1].strip('() ').split(',')
                 self._map_swipe((-int(x.strip()), -int(y.strip())))
-            # Finally check if game is alive
+            # 最后检查游戏是否在运行
             elif not self.device.app_is_running():
                 logger.error('Trying to update camera but game died')
                 raise GameNotRunningError
@@ -245,19 +242,18 @@ class Camera(MapOperation):
         return True
 
     def update(self, camera=True, wait_swipe=False, allow_error=False):
-        """
-        Update map image.
-        Wraps the original `update()` method to handle random MapDetectionError
-        which is usually caused by network issues and mistaken clicks.
+        """更新地图图像。
+        封装原始 update() 方法以处理随机出现的 MapDetectionError，
+        该错误通常由网络问题和误点击引起。
 
         Args:
-            camera: True to update camera position and perspective data.
-            wait_swipe: True to wait camera reaching grid center
-            allow_error: True to exit when encountered detection error
+            camera (bool): 为 True 时更新相机位置和透视数据。
+            wait_swipe (bool): 为 True 时等待相机到达格子中心。
+            allow_error (bool): 为 True 时遇到检测错误则退出。
         """
         error_confirm = Timer(5, count=10).start()
         swipe_wait_timeout = Timer(0.35, count=1).start()
-        # Assume swiped first
+        # 假设已经滑动过
         swiped = True
         if wait_swipe:
             try:
@@ -270,21 +266,21 @@ class Camera(MapOperation):
             prev_center_offset = None
 
         def is_grid_center():
-            # Is focusing on grid center
-            # From focus_to_grid_center
+            # 是否聚焦在格子中心
+            # 参见 focus_to_grid_center
             if np.any(np.abs(self.view.center_offset - 0.5) > self.config.MAP_GRID_CENTER_TOLERANCE):
                 return False
             return True
 
         def is_still_prev():
-            # Still the same as prev view
+            # 是否与之前的视图相同
             if prev_center_offset is None:
                 return False
             return np.linalg.norm(self.view.center_offset - prev_center_offset) < 0.001
 
         while 1:
-            # Camera.update() has no skip_first_screenshot
-            # No screenshot interval while waiting swipe_wait_timeout
+            # Camera.update() 没有 skip_first_screenshot
+            # 等待 swipe_wait_timeout 时不设置截图间隔
             if not swipe_wait_timeout.reached():
                 self.device._screenshot_interval.clear()
             self.device.screenshot()
@@ -301,8 +297,8 @@ class Camera(MapOperation):
                     continue
                 logger.attr('view.center_offset', self.view.center_offset)
                 if wait_swipe and not swipe_wait_timeout.reached() and success:
-                    # If first screenshot is still prev view
-                    # must getting out of grid center once and re-focusing center
+                    # 如果第一张截图仍然是之前的视图
+                    # 必须先离开格子中心再重新聚焦
                     if is_still_prev():
                         swiped = False
                     if is_grid_center():
@@ -317,7 +313,7 @@ class Camera(MapOperation):
                     if success:
                         break
                     else:
-                        # MapDetectionError handled inside _update_view(), update again
+                        # MapDetectionError 已在 _update_view() 中处理，再次更新
                         error_confirm.reset()
                         continue
             except MapDetectionError:
@@ -328,7 +324,7 @@ class Camera(MapOperation):
                 else:
                     continue
 
-        # Calculate view data
+        # 计算视图数据
         self._update_view_data()
 
     def predict(self):
@@ -339,18 +335,17 @@ class Camera(MapOperation):
         logger.attr_align('Camera', location2node(self.camera))
 
     def ensure_edge_insight(self, reverse=False, preset=None, swipe_limit=(3, 2), skip_first_update=True):
-        """
-        Swipe to bottom left until two edges insight.
-        Edges are used to locate camera.
+        """滑动到左下角直到两条边缘可见。
+        边缘用于定位相机。
 
         Args:
-            reverse (bool): Reverse swipes.
-            preset (tuple(int)): Set in map swipe manually.
-            swipe_limit (tuple): (x, y). Limit swipe in (-x, -y, x, y).
-            skip_first_update (bool): Usually to be True. Use False if you are calling ensure_edge_insight manually.
+            reverse (bool): 是否反向滑动。
+            preset (tuple(int)): 手动设置的地图滑动预设。
+            swipe_limit (tuple): (x, y)。滑动限制在 (-x, -y, x, y) 范围内。
+            skip_first_update (bool): 通常为 True。手动调用 ensure_edge_insight 时使用 False。
 
         Returns:
-            list[tuple]: Swipe record.
+            list[tuple]: 滑动记录。
         """
         logger.info(f'Ensure edge in sight.')
         record = []
@@ -368,7 +363,7 @@ class Camera(MapOperation):
             y = 0 if self.view.lower_edge or self.view.upper_edge else y_swipe
 
             if len(record) > 0:
-                # Swipe even if two edges insight, this will avoid some embarrassing camera position.
+                # 即使两条边缘可见也要滑动，以避免一些尴尬的相机位置。
                 self.map_swipe((x, y))
 
             record.append((x, y))
@@ -386,11 +381,11 @@ class Camera(MapOperation):
         return record
 
     def focus_to(self, location, swipe_limit=(4, 3)):
-        """Focus camera on a grid
+        """将相机聚焦到指定格子。
 
         Args:
-            location: grid
-            swipe_limit(tuple): (x, y). Limit swipe in (-x, -y, x, y).
+            location: 目标格子坐标。
+            swipe_limit (tuple): (x, y)。滑动限制在 (-x, -y, x, y) 范围内。
         """
         location = location_ensure(location)
         logger.info('Focus to: %s' % location2node(location))
@@ -405,17 +400,16 @@ class Camera(MapOperation):
 
     def full_scan(self, queue=None, must_scan=None, battle_count=0, mystery_count=0, siren_count=0, carrier_count=0,
                   mode='normal'):
-        """Scan the whole map.
+        """扫描整个地图。
 
         Args:
-            queue (SelectedGrids): Grids to focus on. If none, use map.camera_data
-            must_scan (SelectedGrids): Must scan these grids
-            battle_count:
-            mystery_count:
-            siren_count:
-            carrier_count:
-            mode (str): Scan mode, such as 'init', 'normal', 'carrier', 'movable'
-
+            queue (SelectedGrids): 需要聚焦的格子。为 None 时使用 map.camera_data。
+            must_scan (SelectedGrids): 必须扫描的格子。
+            battle_count (int): 战斗计数。
+            mystery_count (int): 神秘事件计数。
+            siren_count (int): 塞壬计数。
+            carrier_count (int): 航母计数。
+            mode (str): 扫描模式，如 'init'、'normal'、'carrier'、'movable'。
         """
         logger.info(f'Full scan start, mode={mode}')
         self.map.reset_fleet()
@@ -447,11 +441,11 @@ class Camera(MapOperation):
         self.map.show()
 
     def in_sight(self, location, sight=None):
-        """Make sure location in camera sight
+        """确保目标位置在相机视野内。
 
         Args:
-            location:
-            sight (tuple): Such as (-3, -1, 3, 2).
+            location: 目标位置坐标。
+            sight (tuple): 视野范围，如 (-3, -1, 3, 2)。
         """
         location = location_ensure(location)
         logger.info('In sight: %s' % location2node(location))
@@ -474,14 +468,14 @@ class Camera(MapOperation):
         self.focus_to((self.camera[0] + x, self.camera[1] + y))
 
     def convert_global_to_local(self, location):
-        """
-        If self.grids doesn't contain this location, focus camera on the location and re-convert it.
+        """将全局坐标转换为局部坐标。
+        如果 self.grids 不包含该位置，则将相机聚焦到该位置后重新转换。
 
         Args:
-            location: Grid instance in self.map
+            location: self.map 中的格子实例。
 
         Returns:
-            Grid: Grid instance in self.view
+            Grid: self.view 中的格子实例。
         """
         location = location_ensure(location)
 
@@ -501,14 +495,14 @@ class Camera(MapOperation):
             return self.view[local]
 
     def convert_local_to_global(self, location):
-        """
-        If self.map doesn't contain this location, camera might be wrong, correct camera and re-convert it.
+        """将局部坐标转换为全局坐标。
+        如果 self.map 不包含该位置，相机可能有误，修正相机后重新转换。
 
         Args:
-            location: Grid instance in self.view
+            location: self.view 中的格子实例。
 
         Returns:
-            Grid: Grid instance in self.map
+            Grid: self.map 中的格子实例。
         """
         location = location_ensure(location)
 
@@ -550,22 +544,21 @@ class Camera(MapOperation):
         return False
 
     def get_swipe_area_opt(self, map_vector):
-        """
-        Get the whitelist and the blacklist for `random_rectangle_vector_opted()`.
+        """获取 random_rectangle_vector_opted() 的白名单和黑名单。
 
         Args:
-            map_vector:
+            map_vector: 地图滑动向量。
 
         Returns:
-            list, list: whitelist, blacklist
+            list, list: 白名单和黑名单。
         """
         map_vector = np.array(map_vector)
 
         def local_to_area(local_grid, pad=0):
             result = []
             for local in local_grid:
-                # Predict the position of grid after swipe.
-                # Swipe should ends there, to prevent treating swipe as click.
+                # 预测滑动后格子的位置。
+                # 滑动应在此结束，以防止将滑动视为点击。
                 area = area_offset((0, 0, 1, 1), offset=-map_vector)
                 corner = local.grid2screen(area2corner(area))
                 area = trapezoid2area(corner, pad=pad)

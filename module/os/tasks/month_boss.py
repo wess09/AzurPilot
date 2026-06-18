@@ -15,14 +15,17 @@ class OpsiMonthBoss(OSMap):
 
     def clear_month_boss(self):
         """
-        check adaptability
-        check current boss difficulty
-        clear boss
-        repair fleets in port
+        清理月度 Boss。
+
+        检查适应性、判断当前 Boss 难度、击败 Boss 并在港口修理舰队。
 
         Raises:
-            ActionPointLimit
-            TaskEnd: if no more month boss
+            ActionPointLimit: 行动力不足。
+            TaskEnd: 没有更多月度 Boss。
+
+        Pages:
+            in: page_os, 大世界任务界面
+            out: page_os, 大世界地图
         """
         if self.is_in_opsi_explore():
             logger.info('OpsiExplore is under scheduling, stop OpsiMonthBoss')
@@ -60,17 +63,16 @@ class OpsiMonthBoss(OSMap):
                 logger.info("Adaptability is lower than suppression level, get stronger and come back")
                 self.config.task_delay(server_update=True)
                 self.config.task_stop()
-            # No need to exit, reuse
-            # self.os_globe_goto_map()
+            # 无需退出，复用当前状态
 
-        # combat
+        # 战斗
         logger.hr("Month Boss goto", level=2)
         with self.config.temporary(_disable_task_switch=True):
             self.globe_goto(154)
             self.go_month_boss_room(is_normal=is_normal)
             result = self.boss_clear(has_fleet_step=True, is_month=True)
 
-            # end
+            # 战斗结束
             logger.hr("Month Boss repair", level=2)
             self.handle_fleet_repair_by_config(revert=False)
             self.handle_fleet_resolve(revert=False)
@@ -78,9 +80,13 @@ class OpsiMonthBoss(OSMap):
 
     def month_boss_delay(self, is_normal=True, result=True):
         """
+        月度 Boss 任务延迟逻辑。
+
+        根据难度和清理结果决定延迟到下次重置还是稍后重试。
+
         Args:
-            is_normal: True for normal, False for hard
-            result: If success to clear boss
+            is_normal (bool): True 为普通难度，False 为困难难度。
+            result (bool): 是否成功击败 Boss。
         """
         if is_normal:
             if result:

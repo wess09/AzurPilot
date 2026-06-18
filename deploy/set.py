@@ -4,8 +4,7 @@ import typing as t
 from deploy.utils import poor_yaml_read, poor_yaml_write, DEPLOY_TEMPLATE
 
 """
-Set config/deploy.yaml with commands like
-
+通过命令行设置 config/deploy.yaml，用法：
 python -m deploy.set GitExecutable=/usr/bin/git PythonExecutable=/usr/bin/python3.8
 """
 

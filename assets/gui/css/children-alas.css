@@ -1,0 +1,398 @@
+/* Children's Day theme (儿童节马卡龙主题) - based on light-alas.css */
+
+/* --- 核心动画定义 --- */
+@keyframes float-cute {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+    100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-cute {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes float-bubble-1 {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-16px) rotate(4deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes float-bubble-2 {
+    0% { transform: translateY(0px) scale(1) rotate(0deg); }
+    50% { transform: translateY(-10px) scale(1.05) rotate(-5deg); }
+    100% { transform: translateY(0px) scale(1) rotate(0deg); }
+}
+
+@keyframes float-star {
+    0% { transform: translateY(0px) rotate(0deg) scale(0.9); opacity: 0.2; }
+    50% { transform: translateY(-8px) rotate(180deg) scale(1.1); opacity: 0.5; }
+    100% { transform: translateY(0px) rotate(360deg) scale(0.9); opacity: 0.2; }
+}
+
+/* --- 侧边栏 & 菜单按钮 --- */
+.btn-menu {
+    border-radius: 12px !important;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1) !important;
+}
+
+.btn-menu:hover,
+.btn-menu-active {
+    background-color: #ffeef2 !important;
+    color: #e05275 !important;
+    font-weight: bold;
+    transform: translateX(2px);
+}
+
+.btn-aside {
+    border-radius: 14px !important;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.1) !important;
+}
+
+.btn-aside:hover,
+.btn-aside-active {
+    background-color: #e3f5ff !important;
+    color: #1b75b3 !important;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(162, 214, 249, 0.25);
+    animation: float-cute 2s infinite ease-in-out;
+}
+
+/* --- 精美马卡龙按钮 --- */
+.btn-off {
+    background-color: #ffffff !important;
+    border: 2px dashed #ffcbd5 !important;
+    color: #ff9eb5 !important;
+    font-weight: 600;
+    border-radius: 20px !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-off:hover {
+    background-color: #fff9fa !important;
+    border-color: #ff9eb5 !important;
+    color: #e05275 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(255, 182, 193, 0.15);
+}
+
+.btn-on {
+    background: linear-gradient(135deg, #ff9eb5 0%, #a2d6f9 100%) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: bold !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 10px rgba(255, 158, 181, 0.25) !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+}
+
+.btn-on:hover {
+    box-shadow: 0 6px 15px rgba(255, 158, 181, 0.4), 0 0 0 3px rgba(162, 214, 249, 0.3) !important;
+    background: linear-gradient(135deg, #ff8ba7 0%, #8ec5fc 100%) !important;
+    transform: translateY(-2px) scale(1.03);
+}
+
+.btn-navigator {
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    border: 1px solid #ffecf0 !important;
+    transition: all 0.25s ease !important;
+}
+
+.btn-navigator:hover {
+    background-color: #ffeef2 !important;
+    color: #e05275 !important;
+    transform: translateY(-1px);
+}
+
+/* --- 组分割线与卡片标题 --- */
+.hr-group {
+    background-color: #fff0f3 !important;
+    height: 2px !important;
+}
+
+.hr-task-group-line {
+    border-top-color: #ffd0dc !important;
+    border-top-style: dashed !important;
+    border-top-width: 2px !important;
+}
+
+.hr-task-group-text {
+    color: #ff8ba7 !important;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+/* --- 输入框与表单项 --- */
+.form-control,
+.bootstrap-select>select {
+    border: 1px solid #ffd5df !important;
+    border-radius: 12px !important;
+    background-color: #fffcfd !important;
+    padding: 8px 12px !important;
+    transition: all 0.25s ease !important;
+}
+
+.form-control:focus {
+    background-color: #fff9fa !important;
+    border: 1.5px solid #ff9eb5 !important;
+    box-shadow: 0 0 0 3px rgba(255, 182, 193, 0.25) !important;
+}
+
+#pywebio-scope-dashboard input {
+    background-color: #fffcfd !important;
+    border-radius: 8px !important;
+}
+
+/* --- MD3 开关样式（儿童节马卡龙色） --- */
+input[type="checkbox"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    position: relative;
+    width: 52px !important;
+    height: 32px !important;
+    background-color: #ffffff !important;
+    border: 2px solid #ffcbd5 !important;
+    border-radius: 100px !important;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+    vertical-align: middle;
+    outline: none !important;
+}
+
+input[type="checkbox"]::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 6px !important;
+    transform: translateY(-50%) !important;
+    width: 16px !important;
+    height: 16px !important;
+    background-color: #ffcbd5 !important;
+    border-radius: 50% !important;
+    transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+}
+
+input[type="checkbox"]:checked {
+    background-color: #ffd0dc !important;
+    border-color: #ffb6c1 !important;
+}
+
+input[type="checkbox"]:checked::before {
+    left: calc(100% - 24px) !important;
+    width: 20px !important;
+    height: 20px !important;
+    background-color: white !important;
+}
+
+input[type="checkbox"]:active::before {
+    width: 24px !important;
+}
+
+/* --- 下拉选择框 & 其它 --- */
+select {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMgAAADICAYAAACtWK6eAAAAAXNSR0IArs4c6QAAC85JREFUeF7tnUezdVURhh+qmDixnGOVVjmxyj+AOsGBEyeGKrMYMGfBCIYqE2LOWVTMOeeMGRQjZhBMmAOCAXO9sE7V+eC711699z5n791vj3vtu/vp9Zy1bh+43zE4TMAEDiRwjNmYgAkcTMCCeHeYwCEELIi3hwlYEO8BE8gR8AmS4+ZVRQhYkCKNdpk5AhYkx82rihCwIEUa7TJzBCxIjptXFSFgQYo02mXmCFiQHDevKkLAghRptMvMEbAgOW5eVYSABSnSaJeZI2BBcty8qggBC1Kk0S4zR8CC5Lh5VRECFqRIo11mjoAFyXHzqiIELEiRRrvMHAELkuPmVUUIWJAijXaZOQIWJMfNq4oQsCBFGu0ycwQsSI6bVxUhYEGKNNpl5ghYkBw3rypCwIIUabTLzBGwIDluXlWEgAUp0miXmSNgQXLcvKoIAQtSpNEuM0fAguS4eVURAhakSKNdZo6ABclx86oiBCxIkUa7zBwBC5Lj5lVFCFiQIo12mTkCFiTHzauKELAgRRrtMnMELEiOm1cVIWBBijTaZeYIWJAcN68qQsCCFGm0y8wRsCA5bl5VhIAFKdJol5kjYEFy3LyqCAELUqTRLjNHwILkuHlVEQIWpEijXWaOgAXJcfOqIgQsSJFGu8wcAQuS4eVURAhakSKNdZo6ABclx86oiBCxIkUa7zBwBC5Lj5lVFCFiQIo12mTkCFiTHzauKELAgRRrtMnMEfgf9hZk2PNubUAAAAAASUVORK5CYII=") !important;
+    border-radius: 12px !important;
+}
+
+.state>select {
+    border-bottom: 0 !important;
+    background-image: none !important;
+    pointer-events: none !important;
+}
+
+.state-bold>select {
+    font-weight: bold !important;
+    color: #ff8ba7 !important;
+}
+
+.state-light>select {
+    color: #999999 !important;
+}
+
+[id^="pywebio-scope-arg_stored-stored-value-"]>div>input {
+    border-bottom: none !important;
+    background-color: transparent !important;
+}
+
+textarea {
+    border: 1px solid #ffd5df !important;
+    border-radius: 12px !important;
+}
+
+.CodeMirror-wrap {
+    border: 1px solid #ffd5df !important;
+    border-radius: 12px !important;
+}
+
+.aside-icon>path {
+    fill: #ff8ba7 !important;
+}
+
+/* --- 卡片、边框及容器样式 --- */
+.container-log {
+    background-color: #ffffff !important;
+    border: 1px solid #ffe3e8 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.12) !important;
+}
+
+pre.rich-traceback-code {
+    background-color: #ffffff !important;
+    color: #616161 !important;
+}
+
+/* --- 核心背景层：治愈的马卡龙双色小波点 --- */
+#pywebio-scope-content {
+    background-color: #fffefb !important;
+    background-image: 
+        radial-gradient(#ffd8e1 13%, transparent 13%),
+        radial-gradient(#e3f5ff 13%, transparent 13%) !important;
+    background-size: 40px 40px !important;
+    background-position: 0 0, 20px 20px !important;
+    position: relative !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+/* 右下角缓缓漂浮的爱心气球 */
+#pywebio-scope-content::before {
+    content: "" !important;
+    position: absolute !important;
+    bottom: 80px !important;
+    right: 60px !important;
+    width: 90px !important;
+    height: 108px !important;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffcbd5 40%, #ff8ba7 85%, #e05275 100%) !important;
+    border-radius: 50% 50% 50% 50% / 40% 40% 60% 60% !important;
+    opacity: 0.11 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    box-shadow: inset -4px -4px 10px rgba(0,0,0,0.06), 0 12px 24px rgba(255, 139, 167, 0.18) !important;
+    animation: float-bubble-1 8s infinite ease-in-out !important;
+}
+
+/* 左上角轻轻摇晃的薄荷蜜糖泡泡 */
+#pywebio-scope-content::after {
+    content: "" !important;
+    position: absolute !important;
+    top: 90px !important;
+    left: 80px !important;
+    width: 110px !important;
+    height: 110px !important;
+    background: radial-gradient(circle at 30% 30%, #ffffff 0%, #d8f8e8 45%, #a2d6f9 85%, #8ec5fc 100%) !important;
+    border-radius: 50% !important;
+    opacity: 0.12 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    box-shadow: inset -5px -5px 12px rgba(0,0,0,0.04), 0 10px 28px rgba(162, 214, 249, 0.15) !important;
+    animation: float-bubble-2 11s infinite ease-in-out alternate !important;
+}
+
+[id^="pywebio-scope-group_"] {
+    background-color: rgba(255, 255, 255, 0.94) !important; /* 微透明毛玻璃，让背景波点更显层次 */
+    border: 2px solid #ffe3e8 !important; /* 温馨可爱的淡粉粗边框 */
+    border-radius: 18px !important;
+    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.08) !important;
+    margin-bottom: 15px !important;
+    padding: 16px !important;
+    transition: transform 0.25s ease !important;
+    position: relative !important;
+    z-index: 10 !important;
+}
+
+[id^="pywebio-scope-group_"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 182, 193, 0.15) !important;
+}
+
+#pywebio-scope-daemon-overview [id^="pywebio-scope-group_"] {
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+/* 侧边栏及探头小熊 */
+#pywebio-scope-aside {
+    background-color: #fffafb !important;
+    border-right: 2px solid #ffe3e8 !important;
+    position: relative !important;
+    z-index: 20 !important;
+}
+
+#pywebio-scope-aside::after {
+    content: "🧸" !important;
+    position: absolute !important;
+    bottom: 24px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    font-size: 32px !important;
+    opacity: 0.26 !important;
+    pointer-events: none !important;
+    filter: drop-shadow(0 2px 4px rgba(255, 182, 193, 0.2)) !important;
+    animation: float-bubble-2 5s infinite ease-in-out !important;
+}
+
+#pywebio-scope-menu {
+    box-shadow: 0 4px 12px rgba(255, 182, 193, 0.08) !important;
+    background-color: #ffffff !important;
+    border-radius: 14px !important;
+    margin: 8px !important;
+    position: relative !important;
+    z-index: 15 !important;
+}
+
+#pywebio-scope-navigator {
+    border: 1px solid #ffe3e8 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.08) !important;
+}
+
+#pywebio-scope-scheduler-bar,
+#pywebio-scope-stat-bar,
+#pywebio-scope-log-bar,
+#pywebio-scope-log,
+#pywebio-scope-running,
+#pywebio-scope-pending,
+#pywebio-scope-waiting,
+#pywebio-scope-image-container,
+#pywebio-scope-daemon-overview #pywebio-scope-groups {
+    background-color: #ffffff !important;
+    border: 2px solid #ffe3e8 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 10px rgba(255, 182, 193, 0.08) !important;
+    font-family: 'JetBrains Mono NL', monospace !important;
+}
+
+/* 顶部栏及漂浮小气球 */
+#pywebio-scope-header {
+    position: relative !important;
+    z-index: 30 !important;
+    box-shadow: 0 2px 10px rgba(255, 182, 193, 0.12) !important;
+    background: linear-gradient(90deg, #ffeef2 0%, #e3f5ff 100%) !important; /* 精致渐变顶部条 */
+}
+
+#pywebio-scope-header::before {
+    content: "🎈" !important;
+    position: absolute !important;
+    right: 40px !important;
+    top: 10px !important;
+    font-size: 24px !important;
+    opacity: 0.65 !important;
+    pointer-events: none !important;
+    animation: float-bubble-1 4s infinite ease-in-out !important;
+}
+
+*[style*="--arg-help--"],
+[id^="pywebio-scope-group_"]>p+p {
+    color: #9e8e91 !important;
+}
+
+*[style*="--dashboard-help--"] {
+    color: #9e8e91 !important;
+}
+
+*[style*="--dashboard-limit--"] {
+    color: #9e8e91 !important;
+}

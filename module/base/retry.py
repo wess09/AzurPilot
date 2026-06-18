@@ -6,17 +6,19 @@ from functools import partial
 from module.logger import logger as logging_logger
 
 """
-Copied from `retry`, but modified something.
+从 `retry` 库复制并修改。
 """
 
 try:
     from decorator import decorator
 except ImportError:
     def decorator(caller):
-        """ Turns caller into a decorator.
-        Unlike decorator module, function signature is not preserved.
+        """将 caller 转换为装饰器。
 
-        :param caller: caller(f, *args, **kwargs)
+        与 decorator 模块不同，不会保留函数签名。
+
+        Args:
+            caller: 调用函数，签名如 caller(f, *args, **kwargs)。
         """
 
         def decor(f):
@@ -31,20 +33,23 @@ except ImportError:
 
 def __retry_internal(f, exceptions=Exception, tries=-1, delay=0, max_delay=None, backoff=1, jitter=0,
                      logger=logging_logger):
-    """
-    Executes a function and retries it if it failed.
+    """执行函数并在失败时重试。
 
-    :param f: the function to execute.
-    :param exceptions: an exception or a tuple of exceptions to catch. default: Exception.
-    :param tries: the maximum number of attempts. default: -1 (infinite).
-    :param delay: initial delay between attempts. default: 0.
-    :param max_delay: the maximum value of delay. default: None (no limit).
-    :param backoff: multiplier applied to delay between attempts. default: 1 (no backoff).
-    :param jitter: extra seconds added to delay between attempts. default: 0.
-                   fixed if a number, random if a range tuple (min, max)
-    :param logger: logger.warning(fmt, error, delay) will be called on failed attempts.
-                   default: retry.logging_logger. if None, logging is disabled.
-    :returns: the result of the f function.
+    Args:
+        f: 要执行的函数。
+        exceptions: 需要捕获的异常或异常元组。默认为 Exception。
+        tries: 最大尝试次数。默认为 -1（无限次）。
+        delay: 重试之间的初始延迟秒数。默认为 0。
+        max_delay: 延迟的最大值。默认为 None（无限制）。
+        backoff: 重试延迟的乘数因子。默认为 1（无退避）。
+            如果是数字则为固定值，如果是元组 (min, max) 则为随机范围。
+        jitter: 重试延迟的额外秒数。默认为 0。
+            如果是数字则为固定值，如果是元组 (min, max) 则为随机范围。
+        logger: 失败时调用 logger.warning(fmt, error, delay)。
+            默认为 retry.logging_logger。如果为 None 则禁用日志。
+
+    Returns:
+        f 函数的返回值。
     """
     _tries, _delay = tries, delay
     while _tries:
@@ -53,11 +58,11 @@ def __retry_internal(f, exceptions=Exception, tries=-1, delay=0, max_delay=None,
         except exceptions as e:
             _tries -= 1
             if not _tries:
-                # Difference, raise same exception
+                # 与原版不同，抛出原始异常
                 raise e
 
             if logger is not None:
-                # Difference, show exception
+                # 与原版不同，显示异常详情
                 logger.exception(e)
                 logger.warning(f'{type(e).__name__}({e}), retrying in {_delay} seconds...')
 
@@ -74,18 +79,21 @@ def __retry_internal(f, exceptions=Exception, tries=-1, delay=0, max_delay=None,
 
 
 def retry(exceptions=Exception, tries=-1, delay=0, max_delay=None, backoff=1, jitter=0, logger=logging_logger):
-    """Returns a retry decorator.
+    """返回一个重试装饰器。
 
-    :param exceptions: an exception or a tuple of exceptions to catch. default: Exception.
-    :param tries: the maximum number of attempts. default: -1 (infinite).
-    :param delay: initial delay between attempts. default: 0.
-    :param max_delay: the maximum value of delay. default: None (no limit).
-    :param backoff: multiplier applied to delay between attempts. default: 1 (no backoff).
-    :param jitter: extra seconds added to delay between attempts. default: 0.
-                   fixed if a number, random if a range tuple (min, max)
-    :param logger: logger.warning(fmt, error, delay) will be called on failed attempts.
-                   default: retry.logging_logger. if None, logging is disabled.
-    :returns: a retry decorator.
+    Args:
+        exceptions: 需要捕获的异常或异常元组。默认为 Exception。
+        tries: 最大尝试次数。默认为 -1（无限次）。
+        delay: 重试之间的初始延迟秒数。默认为 0。
+        max_delay: 延迟的最大值。默认为 None（无限制）。
+        backoff: 重试延迟的乘数因子。默认为 1（无退避）。
+        jitter: 重试延迟的额外秒数。默认为 0。
+            如果是数字则为固定值，如果是元组 (min, max) 则为随机范围。
+        logger: 失败时调用 logger.warning(fmt, error, delay)。
+            默认为 retry.logging_logger。如果为 None 则禁用日志。
+
+    Returns:
+        重试装饰器。
     """
 
     @decorator
@@ -101,22 +109,24 @@ def retry(exceptions=Exception, tries=-1, delay=0, max_delay=None, backoff=1, ji
 def retry_call(f, fargs=None, fkwargs=None, exceptions=Exception, tries=-1, delay=0, max_delay=None, backoff=1,
                jitter=0,
                logger=logging_logger):
-    """
-    Calls a function and re-executes it if it failed.
+    """调用函数并在失败时重新执行。
 
-    :param f: the function to execute.
-    :param fargs: the positional arguments of the function to execute.
-    :param fkwargs: the named arguments of the function to execute.
-    :param exceptions: an exception or a tuple of exceptions to catch. default: Exception.
-    :param tries: the maximum number of attempts. default: -1 (infinite).
-    :param delay: initial delay between attempts. default: 0.
-    :param max_delay: the maximum value of delay. default: None (no limit).
-    :param backoff: multiplier applied to delay between attempts. default: 1 (no backoff).
-    :param jitter: extra seconds added to delay between attempts. default: 0.
-                   fixed if a number, random if a range tuple (min, max)
-    :param logger: logger.warning(fmt, error, delay) will be called on failed attempts.
-                   default: retry.logging_logger. if None, logging is disabled.
-    :returns: the result of the f function.
+    Args:
+        f: 要执行的函数。
+        fargs: 函数的位置参数。
+        fkwargs: 函数的关键字参数。
+        exceptions: 需要捕获的异常或异常元组。默认为 Exception。
+        tries: 最大尝试次数。默认为 -1（无限次）。
+        delay: 重试之间的初始延迟秒数。默认为 0。
+        max_delay: 延迟的最大值。默认为 None（无限制）。
+        backoff: 重试延迟的乘数因子。默认为 1（无退避）。
+        jitter: 重试延迟的额外秒数。默认为 0。
+            如果是数字则为固定值，如果是元组 (min, max) 则为随机范围。
+        logger: 失败时调用 logger.warning(fmt, error, delay)。
+            默认为 retry.logging_logger。如果为 None 则禁用日志。
+
+    Returns:
+        f 函数的返回值。
     """
     args = fargs if fargs else list()
     kwargs = fkwargs if fkwargs else dict()

@@ -13,6 +13,7 @@ from module.os_handler.assets import *
 
 
 class MissionAtCurrentZone(Exception):
+    """当前海域有任务异常。"""
     pass
 
 
@@ -21,18 +22,17 @@ class MissionHandler(GlobeOperation, ZoneManager):
 
     def _os_find_checkout_offset_skip_monthly_boss(self, checkout_offset):
         """
-        Find a mission checkout row that is not monthly boss.
+        查找非月度 Boss 的任务结算行。
 
         Args:
-            checkout_offset (tuple): Initial checkout button offset.
+            checkout_offset (tuple): 初始结算按钮偏移量。
 
         Returns:
-            tuple | None: Offset for a non-monthly-boss mission row.
-                Returns None if no valid mission row found.
+            tuple | None: 非月度 Boss 任务行的偏移量，如果未找到则返回 None。
         """
         row_offset = checkout_offset
-        # Mission rows are vertically aligned with about 110px interval.
-        # Scan several rows to handle monthly boss not being at the first row.
+        # 任务行垂直排列，间隔约 110 像素
+        # 扫描多行以处理月度 Boss 不在第一行的情况
         for _ in range(8):
             has_checkout = self.match_template_color(MISSION_CHECKOUT, offset=row_offset, similarity=0.78)
             if has_checkout and not self.appear(MISSION_MONTHLY_BOSS, offset=row_offset):
@@ -43,19 +43,21 @@ class MissionHandler(GlobeOperation, ZoneManager):
 
     def get_mission_zone(self):
         """
+        获取任务所在的海域。
+
         Returns:
-            Zone:
+            Zone: 任务海域对象。
         """
         area = (341, 72, 1217, 648)
-        # Points of the yellow `!`
+        # 黄色 `!` 的点
         image = color_similarity_2d(self.image_crop(area, copy=False), color=(255, 207, 66))
         points = np.array(np.where(image > 235)).T[:, ::-1]
         if not len(points):
             logger.warning('Unable to find mission on OS mission map')
 
         point = fit_points(points, mod=(1000, 1000), encourage=5) + (0, 11)
-        # Location of zone.
-        # (2570, 1694) is the shape of os_globe_map.png
+        # 海域位置
+        # (2570, 1694) 是 os_globe_map.png 的形状
         point *= np.array(GLOBE_MAP_SHAPE) / np.subtract(area[2:], area[:2])
 
         zone = self.camera_to_zone(tuple(point))
@@ -66,14 +68,14 @@ class MissionHandler(GlobeOperation, ZoneManager):
 
     def os_mission_enter(self, skip_siren_mission=False, skip_first_screenshot=True):
         """
-        Enter mission list and claim mission reward.
+        进入任务列表并领取任务奖励。
 
         Args:
-            skip_siren_mission (bool): if skip siren research missions
-            skip_first_screenshot (bool):
+            skip_siren_mission (bool): 是否跳过塞壬研究任务。
+            skip_first_screenshot (bool): 是否跳过第一次截图。
 
         Returns:
-            tuple: _button_offset of MISSION_CHECKOUT
+            tuple: MISSION_CHECKOUT 的按钮偏移量。
 
         Pages:
             in: MISSION_ENTER
@@ -83,29 +85,29 @@ class MissionHandler(GlobeOperation, ZoneManager):
         checkout_offset = (-20, -20, 20, 20)
         confirm_timer = Timer(2, count=6).start()
         for _ in self.loop():
-            # End
+            # 结束
             if self.is_in_os_mission() \
                     and not self.appear(MISSION_FINISH, offset=checkout_offset) \
                     and not self.match_template_color(MISSION_CHECKOUT, offset=checkout_offset, similarity=0.78):
-                # No mission found, wait to confirm. Missions might not be loaded so fast.
+                # 未找到任务，等待确认。任务可能加载较慢。
                 if confirm_timer.reached():
                     logger.info('No OS mission found.')
                     break
             elif self.is_in_os_mission() \
                     and self.match_template_color(MISSION_CHECKOUT, offset=checkout_offset, similarity=0.78):
-                # Found one mission.
+                # 找到至少一个任务
                 logger.info('Found at least one OS missions.')
                 break
             else:
                 confirm_timer.reset()
 
-            # Click
+            # 点击
             if self.appear_then_click(MISSION_ENTER, offset=(200, 5), interval=5):
                 confirm_timer.reset()
                 continue
             if skip_siren_mission and self.appear(MISSION_SIREN_RESEARCH, offset=checkout_offset):
                 if self.appear(MISSION_FINISH, offset=checkout_offset):
-                    # approximate 110 pixels between two mission rows
+                    # 两个任务行之间大约 110 像素
                     checkout_offset = area_offset(checkout_offset, (0, 110))
                     confirm_timer.reset()
                     continue
@@ -122,38 +124,42 @@ class MissionHandler(GlobeOperation, ZoneManager):
                 if self.handle_info_bar():
                     confirm_timer.reset()
                     continue
-                
+
             if self.appear_then_click(GLOBE_GOTO_MAP, offset=(20, 20), interval=2):
-                # Accidentally entered globe
+                # 意外进入地球仪
                 confirm_timer.reset()
                 continue
         return checkout_offset
 
     def os_mission_quit(self):
+        """
+        退出任务列表。
+        """
         logger.info('OS mission quit')
         for _ in self.loop():
-            # End
-            # sometimes you have os mission popup without black-blurred background
-            # MISSION_QUIT and is_in_map appears
+            # 结束
+            # 有时任务弹窗没有黑色模糊背景
+            # MISSION_QUIT 和 is_in_map 同时出现
             if not self.appear(MISSION_QUIT, offset=(20, 20)):
                 if self.is_in_map():
                     break
-            # Click
+            # 点击
             if self.appear_then_click(MISSION_QUIT, offset=(20, 20), interval=3):
                 continue
 
     def os_get_next_mission(self, skip_siren_mission=False):
         """
-        Another method to get os mission. The old one is outdated.
-        After clicking MISSION_CHECKOUT, AL switch to target zone directly instead of showing a meaningless map.
-        If already at target zone, show info bar and close mission list.
+        获取下一个大世界任务。
+
+        点击 MISSION_CHECKOUT 后，AL 会直接切换到目标海域，而非显示无意义的地图。
+        如果已在目标海域，则显示信息栏并关闭任务列表。
 
         Args:
-            skip_siren_mission (bool): if skip siren research missions
+            skip_siren_mission (bool): 是否跳过塞壬研究任务。
 
         Returns:
-            str: pinned_at_mission_zone, already_at_mission_zone, pinned_at_archive_zone,
-                or False if no more mission.
+            str: pinned_at_mission_zone、already_at_mission_zone、pinned_at_archive_zone，
+                如果没有更多任务则返回 False。
         """
         checkout_offset = self.os_mission_enter(skip_siren_mission=skip_siren_mission)
         checkout_offset = self._os_find_checkout_offset_skip_monthly_boss(checkout_offset)
@@ -169,7 +175,7 @@ class MissionHandler(GlobeOperation, ZoneManager):
 
         logger.info('Checkout os mission')
         for _ in self.loop():
-            # End
+            # 结束
             if self.is_zone_pinned():
                 if self.get_zone_pinned_name() == 'ARCHIVE':
                     logger.info('Pinned at archive zone')
@@ -186,19 +192,19 @@ class MissionHandler(GlobeOperation, ZoneManager):
             if self.appear_then_click(MISSION_CHECKOUT, offset=checkout_offset, interval=2, similarity=0.78):
                 continue
             if self.handle_popup_confirm('OS_MISSION_CHECKOUT'):
-                # Popup: Submarine will retreat after exiting current zone.
+                # 弹窗：退出当前海域后潜艇将撤退
                 continue
 
     def os_mission_overview_accept(self, skip_siren_mission=False, skip_first_screenshot=True):
         """
-        Accept all missions in mission overview.
+        在任务总览中接受所有任务。
 
         Args:
-            skip_siren_mission (bool): if skip siren research missions
-            skip_first_screenshot (bool):
+            skip_siren_mission (bool): 是否跳过塞壬研究任务。
+            skip_first_screenshot (bool): 是否跳过第一次截图。
+
         Returns:
-            bool: True if all missions accepted or no mission found.
-                  False if unable to accept more missions.
+            bool: 所有任务已接受或未找到任务时返回 True，无法接受更多任务时返回 False。
 
         Pages:
             in: is_in_map
@@ -224,7 +230,7 @@ class MissionHandler(GlobeOperation, ZoneManager):
             else:
                 self.device.screenshot()
 
-            # End
+            # 结束
             if self.handle_manjuu():
                 continue
             if self.info_bar_count():
@@ -257,16 +263,18 @@ class MissionHandler(GlobeOperation, ZoneManager):
 
     def is_in_opsi_explore(self):
         """
+        判断任务 OpsiExplore 是否正在调度中。
+
         Returns:
-            bool: If task OpsiExplore is under scheduling.
+            bool: OpsiExplore 是否正在调度中。
         """
         enable = self.config.is_task_enabled('OpsiExplore')
         next_run = self.config.cross_get(keys='OpsiExplore.Scheduler.NextRun', default=DEFAULT_TIME)
         next_reset = get_os_next_reset()
         logger.attr('OpsiNextReset', next_reset)
         logger.attr('OpsiExplore', (enable, next_run))
-        # -12 hours to handle DST
-        # `next_run` might be calculated before DST but it's DST now
+        # -12 小时以处理夏令时
+        # `next_run` 可能在夏令时之前计算，但现在是夏令时
         # 2023-03-14 11:15:28.423 | INFO | [OpsiNextReset] 2023-04-01 03:00:00
         # 2023-03-14 11:15:28.425 | INFO | [OpsiExplore] (True, datetime.datetime(2023, 4, 1, 2, 0))
         # 2023-03-14 11:15:28.426 | INFO | OpsiExplore is still running, accept missions only...

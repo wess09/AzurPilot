@@ -1,12 +1,10 @@
 """
-Copy from pywebio.platform.remote_access
+远程访问服务的实现。
 
-* Implementation of remote access
-Use https://github.com/wang0618/localshare service by running a ssh subprocess in PyWebIO application.
+基于 pywebio.platform.remote_access 修改，通过在 PyWebIO 应用中启动 SSH 子进程
+使用 https://github.com/wang0618/localshare 服务实现远程访问。
 
-The stdout of ssh process is the connection info.
-
-
+SSH 进程的标准输出包含连接信息。
 """
 
 import json
@@ -30,7 +28,7 @@ address: str = None
 
 
 def am_i_the_only_thread() -> bool:
-    """Whether the current thread is the only non-Daemon threads in the process"""
+    """判断当前线程是否是进程中唯一的非守护线程。"""
     alive_none_daemonic_thread_cnt = sum(
         1
         for t in threading.enumerate()
@@ -48,13 +46,18 @@ def remote_access_service(
     setup_timeout=60,
 ):
     """
-    Wait at most one minute to get the ssh output, if it gets a normal out, the connection is successfully established.
-    Otherwise report error and kill ssh process.
+    启动远程访问服务，等待 SSH 连接建立。
 
-    :param local_port: ssh local listen port
-    :param server: ssh server domain
-    :param server_port: ssh server port
-    :param setup_timeout: If the service can't setup successfully in `setup_timeout` seconds, then exit.
+    等待最多 setup_timeout 秒获取 SSH 输出，若收到正常 JSON 输出则连接成功，
+    否则报告错误并终止 SSH 进程。
+
+    Args:
+        local_host: 本地监听地址，默认 127.0.0.1。
+        local_port: 本地监听端口，默认 22267。
+        server: SSH 服务器域名。
+        server_port: SSH 服务器端口。
+        remote_port: 远程端口，默认 '/'（由服务端分配）。
+        setup_timeout: 连接建立超时秒数，超时后退出。
     """
     global _ssh_process, _ssh_notfound
 
@@ -111,15 +114,14 @@ def remote_access_service(
             address = connection_info["address"]
             logger.debug(f"Remote access url: {address}")
 
-    # wait ssh or main thread exit
+    # 等待 SSH 进程退出或主线程退出
     while not am_i_the_only_thread() and _ssh_process.poll() is None:
-        # while _ssh_process.poll() is None:
         time.sleep(1)
 
-    if _ssh_process.poll() is None:  # main thread exit, kill ssh process
+    if _ssh_process.poll() is None:  # 主线程退出，终止 SSH 进程
         logger.info("App process exit, killing ssh process")
         _ssh_process.kill()
-    else:  # ssh process exit by itself or by timeout killer
+    else:  # SSH 进程自行退出或被超时终止
         stderr = _ssh_process.stderr.read().decode("utf8")
         if stderr:
             logger.error(f"PyWebIO application remote access service error: {stderr}")
@@ -132,7 +134,7 @@ def start_remote_access_service_(**kwargs):
     logger.info("Start remote access service")
     try:
         remote_access_service(**kwargs)
-    except KeyboardInterrupt:  # ignore KeyboardInterrupt
+    except KeyboardInterrupt:  # 忽略键盘中断
         pass
     except Exception as e:
         logger.exception(e)

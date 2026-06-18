@@ -39,7 +39,7 @@
   },
   "Task": {
     "Alas": {
-      "name": "Alas設定",
+      "name": "AzurPilot設定",
       "help": ""
     },
     "General": {
@@ -71,8 +71,8 @@
       "help": "3燃料低コスト編成で戦闘し、旗艦がレベル32に達すると自動的に旗艦を交換して退役させます。"
     },
     "Ambush11": {
-      "name": "Task.Ambush11.name",
-      "help": "Task.Ambush11.help"
+      "name": "1-1伏撃周回 (ベータ)",
+      "help": "1-1でボスを倒さず伏撃を周回してリソースを獲得します。緊急委託の流れに沿った自動艦船交換に対応。"
     },
     "EventGeneral": {
       "name": "イベント共通",
@@ -116,7 +116,7 @@
     },
     "WarArchives": {
       "name": "作戦アーカイブ",
-      "help": "作戦アーカイブのメンテナンス不足により、開拓機能が正常に動作しない場合があります。Alasの動作が異常な場合は、手動で開拓を完了してから自律索敵機能を使用してください。"
+      "help": "作戦アーカイブのメンテナンス不足により、開拓機能が正常に動作しない場合があります。AzurPilotの動作が異常な場合は、手動で開拓を完了してから自律索敵機能を使用してください。"
     },
     "EventA": {
       "name": "デイリーAマップ",
@@ -177,10 +177,6 @@
     "Awaken": {
       "name": "認知覚醒",
       "help": ""
-    },
-    "Island": {
-      "name": "島嶼計画",
-      "help": "島嶼レベル18に達し、統合管理パネルを解放してから使用してください。"
     },
     "Daily": {
       "name": "デイリー任務",
@@ -284,19 +280,75 @@
     },
     "OpsiCrossMonth": {
       "name": "月跨ぎデイリー",
-      "help": "    Alasはセイレーン作戦の月跨ぎリセットの10分前にセイレーン作戦に入り、リセットを待ちますが退出しません。その後、新しい日のセイレーン作戦デイリー、隠秘海域、深淵海域と指揮ニャファームを完了して、追加の報酬を獲得します。セイレーン作戦デイリーを実行する場合は「セイレーン作戦-デイリー」タスク設定に従い、その他も同様です。\n    重要：Alasが月跨ぎを待っている間は、ゲームを操作しないでください。"
+      "help": "    AzurPilotはセイレーン作戦の月跨ぎリセットの10分前にセイレーン作戦に入り、リセットを待ちますが退出しません。その後、新しい日のセイレーン作戦デイリー、隠秘海域、深淵海域と指揮ニャファームを完了して、追加の報酬を獲得します。セイレーン作戦デイリーを実行する場合は「セイレーン作戦-デイリー」タスク設定に従い、その他も同様です。\n    重要：AzurPilotが月跨ぎを待っている間は、ゲームを操作しないでください。"
     },
     "OpsiSimulator": {
-      "name": "Task.OpsiSimulator.name",
-      "help": "Task.OpsiSimulator.help"
+      "name": "セイレーン作戦シミュレーター Alpha",
+      "help": "モンテカルロアルゴリズムを使用して、現在の状態で侵蝕サイクルを一定期間継続した場合の結果を推定します。この機能はAzurPilotの通常動作に影響しません。\nモデルに使用されるパラメータはすべてAzurPilotの設定と統計から取得されます。スマートスケジューリングなどのセイレーン作戦設定を正しく構成してください。\n現在テスト版であり、結果にはあまり参考価値がない場合があります。\n商人が行動力を販売するモデルには十分な証拠がありません。具体的には、商人が6種類の行動力ボックスを販売し、超幾何分布X~H(6,6,24)に従うと仮定しています。\nクラッシュについて：クラッシュとは、シミュレーション全体で行動力がスマートスケジューリングで設定された行動力保持閾値を下回ることを指します。閾値を下回った場合、シミュレーターは侵蝕サイクルを停止し自然回復を待ちます。"
     },
-    "IslandInfo": {
-      "name": "島嶼情報（未完成）",
-      "help": "島嶼ダッシュボード（未完成）"
+    "IslandPlan": {
+      "name": "グローバル設定",
+      "help": "アイランドプランのグローバル設定。季節設定を含みます。"
     },
-    "IslandSeasonTask": {
-      "name": "シーズンミッション（未完成）",
+    "IslandBusiness": {
+      "name": "経営モジュール",
+      "help": "アイランドプランの5つの店舗（有魚レストラン、白熊ドリンク、イカ焼き、ジュウ簡餐、ジュウコーヒー）を自動経営します。\nキャラクター選択、メニュー選択、営業開始などの自動化操作を含みます。"
+    },
+    "IslandFarm": {
+      "name": "農地",
       "help": ""
+    },
+    "IslandRancher": {
+      "name": "牧場",
+      "help": ""
+    },
+    "IslandMineForest": {
+      "name": "鉱山＆林場",
+      "help": ""
+    },
+    "IslandRestaurant": {
+      "name": "有魚レストラン",
+      "help": ""
+    },
+    "IslandTeahouse": {
+      "name": "白熊ドリンク",
+      "help": ""
+    },
+    "IslandGrill": {
+      "name": "イカ焼き",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "IslandJuuEatery": {
+      "name": "ジュウ簡餐",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "IslandJuuCoffee": {
+      "name": "ジュウコーヒー",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "IslandManufacture": {
+      "name": "製造業",
+      "help": ""
+    },
+    "IslandDailyGather": {
+      "name": "デイリー採集",
+      "help": "管理画面の採集タブから、UIシミュレーションクリックでデイリー採集を完了します。実行時間：3:10、18:00。フロー：採集目標選択→スイッチ切替→キャラクター割り当て→出発。"
+    },
+    "IslandAirDrop": {
+      "name": "デイリー補給",
+      "help": "minitouchのみ対応。"
+    },
+    "IslandCargoPreparation": {
+      "name": "貨物準備",
+      "help": "アイランド貨物委託を自動処理：完了した貨物報酬の受取、ミルクなどのブラックリスト貨物の回避、変更ページに入りデフォルトで選択されている最初の委託を確認し、提出可能な貨物を積載します。"
+    },
+    "IslandDailyOrder": {
+      "name": "デイリーオーダー",
+      "help": "アイランドの携帯ページからデイリーオーダー画面に入り、オーダータイプ（緊急/チャレンジ/イージー）を自動検出し、アイテム条件に基づいて納品または却下します。"
+    },
+    "IslandPearlSell": {
+      "name": "週間パール取引",
+      "help": "毎週火曜日01:00にパールを自動処理：まず今週のパールを購入し、次に既存のパールを販売します。minitouchのみ対応。コインが200x220個分の購入に十分であることを確認してください。これが今週のパールを一括購入するための最低要件です。不足するとエラーが発生する可能性があります。"
     },
     "Daemon": {
       "name": "半自動クリック",
@@ -319,8 +371,8 @@
       "help": ""
     },
     "OcrBenchmark": {
-      "name": "Task.OcrBenchmark.name",
-      "help": "Task.OcrBenchmark.help"
+      "name": "OCRパフォーマンステスト",
+      "help": ""
     },
     "AzurLaneUncensored": {
       "name": "検閲解除",
@@ -331,8 +383,8 @@
       "help": ""
     },
     "EmulatorManager": {
-      "name": "Task.EmulatorManager.name",
-      "help": "Task.EmulatorManager.help"
+      "name": "エミュレータマネージャー",
+      "help": "エミュレータを手動で再起動するためのエントリポイントを提供します。"
     }
   },
   "Scheduler": {
@@ -371,6 +423,12 @@
     "ServerUpdate": {
       "name": "サーバーリフレッシュ時間",
       "help": "一部のタスク実行成功後、次回実行をサーバーリフレッシュ時間まで延期します\nタイムゾーンは自動変換されるため、通常は変更不要です"
+    },
+    "Sensitive": {
+      "name": "センシティブ任務",
+      "help": "エラー発生時にゲームの再起動を禁止し、AzurPilot を直ちに停止します。越境デイリー、隠秘海域、深淵海域などの重要なタスクに適用。",
+      "True": "True",
+      "False": "False"
     }
   },
   "Emulator": {
@@ -457,6 +515,7 @@
       "cn_channel-2": "[国服] 十字军行动",
       "cn_channel-3": "[国服] 龙骑兵行动",
       "cn_channel-4": "[国服] 冥王星行动",
+      "cn_channel-5": "[国服] 群岛计划",
       "en-0": "[EN] Avrora",
       "en-1": "[EN] Lexington",
       "en-2": "[EN] Sandy",
@@ -595,7 +654,7 @@
     },
     "StrictRestart": {
       "name": "機密タスクでエラー発生時の再起動を禁止する",
-      "help": "機密タスク実行中にエラーが発生した場合、ゲームを再起動せずにAlasを停止します\n機密タスクには隠秘海域、深淵海域、月跨ぎデイリーなどが含まれます"
+      "help": "機密タスク実行中にエラーが発生した場合、ゲームを再起動せずにAzurPilotを停止します\n機密タスクには隠秘海域、深淵海域、月跨ぎデイリーなどが含まれます"
     },
     "SaveErrorCount": {
       "name": "エラーログ保存上限",
@@ -626,8 +685,8 @@
       "help": "デバイスが連続して検出できなかった回数に応じて、再起動がトリガーされます。"
     },
     "LlmAnalysis": {
-      "name": "LLM 错误分析を有効にする",
-      "help": "未処理の例外が発生した際、LLM を使用してエラーの原因分析と改善提案を自動的に行います。"
+      "name": "LLMエラー分析を有効にする",
+      "help": "未処理の例外が発生した際、LLMを使用してエラー原因を分析し改善提案を提供します。"
     },
     "LlmApiKey": {
       "name": "LLM API キー",
@@ -648,12 +707,19 @@
       "help": ""
     },
     "OcrDevice": {
-      "name": "OCR设备选择",
-      "help": "",
+      "name": "OCR デバイス",
+      "help": "OCR デバイスを選択します。GPU は Windows DirectML、ANE は macOS Apple Neural Engine です。自動：Apple Silicon Mac は ANE、Windows VRAM > 1GB は GPU、それ以外は CPU。",
       "auto": "自動",
       "cpu": "CPU",
       "gpu": "GPU",
       "ane": "ANE (Apple)"
+    },
+    "OcrBackend": {
+      "name": "OCR バックエンド",
+      "help": "OCR 推論エンジンを選択します。onnxruntime は ONNX Runtime、ncnn は ncnn Vulkan バックエンドを使用します。自動では onnxruntime が使用されます。",
+      "auto": "自動 (onnxruntime)",
+      "onnxruntime": "ONNX Runtime",
+      "ncnn": "ncnn (Vulkan)"
     },
     "ScreenshotInterval": {
       "name": "スクリーンショット速度をX秒に1枚に減速",
@@ -982,7 +1048,7 @@
       "event_20231221_cn": "光追う星の海（復刻）",
       "event_20240229_cn": "銀界遊廻（復刻）",
       "event_20240425_cn": "共鳴のパッション",
-      "event_20240521_cn": "赫輝のマルティリウム",
+      "event_20240521_cn": "赫輝のマルティリウム （復刻）",
       "event_20240725_cn": "夢幻の間奏曲",
       "event_20240815_cn": "錬翼空翔",
       "event_20240829_cn": "徒花咲かす彼岸",
@@ -1105,8 +1171,8 @@
       "help": "燃料が少なすぎる場合はタスクを延期し、燃料が十分になったら出撃を続行します"
     },
     "CoinLimit": {
-      "name": "StopCondition.CoinLimit.name",
-      "help": "StopCondition.CoinLimit.help"
+      "name": "物資がXに達したら延期",
+      "help": "物資がこの数値以上になった場合、現在のタスクを延期します。物資が上限を下回ったら出撃を再開します。\n0は物資制限なしを意味します"
     },
     "RunCount": {
       "name": "出撃回数がXを超えると停止する",
@@ -1164,7 +1230,7 @@
       "combat_manual": "手動操作",
       "stand_still_in_the_middle": "中央で待機",
       "hide_in_bottom_left": "左下隅に隠れる",
-      "hide_in_upper_left": "hide_in_upper_left"
+      "hide_in_upper_left": "左上隅に隠れる"
     },
     "Fleet1Step": {
       "name": "第一艦隊ステップ",
@@ -1199,7 +1265,7 @@
       "combat_manual": "手動操作",
       "stand_still_in_the_middle": "中央で待機",
       "hide_in_bottom_left": "左下隅に隠れる",
-      "hide_in_upper_left": "hide_in_upper_left"
+      "hide_in_upper_left": "左上隅に隠れる"
     },
     "Fleet2Step": {
       "name": "第二艦隊ステップ",
@@ -1445,7 +1511,7 @@
   "GemsFarming": {
     "_info": {
       "name": "緊急委託周回",
-      "help": "警告：この機能により、プレイヤーは少量のダイヤを入手できますが、ダイヤを効率的に入手する方法ではありません。\nアズールレーンを始めたばかりのプレイヤーは、キャラクターの育成を無視して、無凸や低燃費に迷信を抱きやすいです。\nこの機能を実行すると充実感があるだけで、実際にはアカウントの向上はゼロです。\nこの機能の主な目的は、編成が整ったプレイヤーが追加のキューブを取得できるようにすることです。ダイヤは副産物として合理的に扱ってください。\n\nこの機能は旗艦レベル32以降に旗艦を交換します。\n緊急委託更新メカニズムについては、https://bbs.nga.cn/read.php?tid=27134956 を参照してください。\n委託燃料消費比：A3＞A1＞2-4＞2-1。イベントマップがある場合はイベントマップを選択することをお勧めします。2-1は疑問符を拾うためより多くの資金が得られます。\n第一艦隊がすべての戦闘を完了します。前衛は出力装備を備えたレベル100の無凸駆逐艦、後列はレベル33以下の白レア無凸空母を配置する必要があります。\n第二艦隊はクロスフリートサポート（クロスフリート弾幕、クロスフリート支援）を提供する必要があります。\n\n艦隊職能を設定できない場合は、クロスフリート出撃や大量の燃料消費を避けるために、以下の方法でタスクを停止する必要があります。\nエラープッシュが設定されている場合、タスク停止メッセージがプッシュされ、タスクが停止されます。\nエラープッシュが設定されていない場合、Alasは直接停止されます。"
+      "help": "警告：この機能により、プレイヤーは少量のダイヤを入手できますが、ダイヤを効率的に入手する方法ではありません。\nアズールレーンを始めたばかりのプレイヤーは、キャラクターの育成を無視して、無凸や低燃費に迷信を抱きやすいです。\nこの機能を実行すると充実感があるだけで、実際にはアカウントの向上はゼロです。\nこの機能の主な目的は、編成が整ったプレイヤーが追加のキューブを取得できるようにすることです。ダイヤは副産物として合理的に扱ってください。\n\nこの機能は旗艦レベル32以降に旗艦を交換します。\n緊急委託更新メカニズムについては、https://bbs.nga.cn/read.php?tid=27134956 を参照してください。\n委託燃料消費比：A3＞A1＞2-4＞2-1。イベントマップがある場合はイベントマップを選択することをお勧めします。2-1は疑問符を拾うためより多くの資金が得られます。\n第一艦隊がすべての戦闘を完了します。前衛は出力装備を備えたレベル100の無凸駆逐艦、後列はレベル33以下の白レア無凸空母を配置する必要があります。\n第二艦隊はクロスフリートサポート（クロスフリート弾幕、クロスフリート支援）を提供する必要があります。\n\n艦隊職能を設定できない場合は、クロスフリート出撃や大量の燃料消費を避けるために、以下の方法でタスクを停止する必要があります。\nエラープッシュが設定されている場合、タスク停止メッセージがプッシュされ、タスクが停止されます。\nエラープッシュが設定されていない場合、AzurPilotは直接停止されます。"
     },
     "ChangeFlagship": {
       "name": "旗艦を交換する",
@@ -1495,12 +1561,12 @@
       "help": "「艦船+装備を交換する」を選択した場合のみ有効です。\n艦船を交換する際、設定内の現在の艦船装備コードがnullの場合、コードがエクスポートされます。艦船を交換する際、設定の現在の艦船装備コードがnullの場合は、前の艦船からエクスポートされた装備コードが使用されます。それ以外の場合は、設定の装備コードが使用されます。\nBlueStacksエミュレータのユーザーは、最初に仮想キーボードを有効にする必要があります。\nDD：前衛駆逐    bogue：ボーグ    hermes：ハーミーズ    langley：ラングレー    ranger：レンジャー"
     },
     "UseEmotionFirst": {
-      "name": "GemsFarming.UseEmotionFirst.name",
-      "help": "GemsFarming.UseEmotionFirst.help"
+      "name": "コンディション優先",
+      "help": "有効にすると、コンディションが最も高い艦船を優先選択します。コンディションが同じ場合はフィルターが適用されます。後衛はレベルが低い艦船が優先されます。"
     },
     "IgnoreEmotionWarning": {
-      "name": "GemsFarming.IgnoreEmotionWarning.name",
-      "help": "GemsFarming.IgnoreEmotionWarning.help"
+      "name": "コンディション警告ポップアップを無視",
+      "help": "有効にすると、コンディション警告ポップアップを強制的に突破します。完了後、前衛交換が有効な場合、艦船が強制的に交換されます。"
     },
     "ALLowHighFlagshipLevel": {
       "name": "満レベル後列のみ交換する",
@@ -1519,12 +1585,12 @@
       "help": "7x24運行時に緊急委託数が多すぎてデイリー委託を完了できないことを防ぐため、委託フィルターでは短時間高収益の委託のみを選択することをお勧めします。"
     },
     "VanguardLevelMin": {
-      "name": "GemsFarming.VanguardLevelMin.name",
-      "help": "GemsFarming.VanguardLevelMin.help"
+      "name": "前衛最低レベル",
+      "help": "条件を満たす白レア前衛艦船をフィルタリングするために使用。デフォルトは1。"
     },
     "VanguardLevelMax": {
-      "name": "GemsFarming.VanguardLevelMax.name",
-      "help": "GemsFarming.VanguardLevelMax.help"
+      "name": "前衛最高レベル",
+      "help": "条件を満たす白レア前衛艦船をフィルタリングするために使用。デフォルトは125。"
     }
   },
   "EventGeneral": {
@@ -1683,29 +1749,29 @@
   },
   "EventShop": {
     "_info": {
-      "name": "EventShop._info.name",
-      "help": "EventShop._info.help"
+      "name": "イベントショップ",
+      "help": ""
     },
     "UnlockSSRShip": {
-      "name": "EventShop.UnlockSSRShip.name",
-      "help": "EventShop.UnlockSSRShip.help"
+      "name": "SSR艦船を解放",
+      "help": ""
     },
     "BuyURShip": {
-      "name": "EventShop.BuyURShip.name",
-      "help": "EventShop.BuyURShip.help",
+      "name": "UR艦船をX隻購入",
+      "help": "",
       "0": "0",
       "1": "1",
       "2": "2"
     },
     "PresetFilter": {
-      "name": "EventShop.PresetFilter.name",
-      "help": "EventShop.PresetFilter.help",
-      "all": "all",
-      "custom": "custom"
+      "name": "イベントショップフィルター",
+      "help": "デフォルトではすべて購入します。",
+      "all": "すべて",
+      "custom": "カスタム"
     },
     "CustomFilter": {
-      "name": "EventShop.CustomFilter.name",
-      "help": "EventShop.CustomFilter.help"
+      "name": "カスタムフィルター",
+      "help": "カスタムフィルターを使用するには「イベントショップフィルター」を「カスタム」に設定し、https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn を参照してください。"
     }
   },
   "Commission": {
@@ -1808,7 +1874,7 @@
   "Research": {
     "_info": {
       "name": "科研",
-      "help": "フィルターが他の設定と連動する場合、Alasはすべてのユーザー設定を同時に満たす項目を検索します。\n例えば、科研フィルターを `H1 > D2.5 > shortest`（キューブを消費する科研を含む）に設定し、同時にキューブの使用を許可しないように設定した場合、最終結果はAlasがキューブを消費する科研を選択しないことになります。急にキューブの使用を切り替えたい場合、フィルターを変更せずにキューブの使用を有効にするだけで済むので便利です。"
+      "help": "フィルターが他の設定と連動する場合、AzurPilotはすべてのユーザー設定を同時に満たす項目を検索します。\n例えば、科研フィルターを `H1 > D2.5 > shortest`（キューブを消費する科研を含む）に設定し、同時にキューブの使用を許可しないように設定した場合、最終結果はAzurPilotがキューブを消費する科研を選択しないことになります。急にキューブの使用を切り替えたい場合、フィルターを変更せずにキューブの使用を有効にするだけで済むので便利です。"
     },
     "UseCube": {
       "name": "キューブを使用する",
@@ -1840,7 +1906,7 @@
     },
     "AllowDelay": {
       "name": "資源不足時に科研を遅延させる",
-      "help": "資源が不足している場合、Alasは条件が満たされるか科研キューが空になりそうになるまで科研を遅延させますが、科研が停止することはありません。\n長期間資源が不足している場合やAlasの実行時間が十分でない場合は、このオプションをオフにして科研キューを常に満杯に保つことができます。"
+      "help": "資源が不足している場合、AzurPilotは条件が満たされるか科研キューが空になりそうになるまで科研を遅延させますが、科研が停止することはありません。\n長期間資源が不足している場合やAzurPilotの実行時間が十分でない場合は、このオプションをオフにして科研キューを常に満杯に保つことができます。"
     },
     "PresetFilter": {
       "name": "科研フィルター",
@@ -1928,10 +1994,6 @@
     "FortChoreMeowfficer": {
       "name": "ニャ窩インタラクション",
       "help": "掃除、給食、ネコじゃらし"
-    },
-    "OverflowCoins": {
-      "name": "金貨が余ったら猫用トイレを買う",
-      "help": "金貨がこの値を超えている間は、金貨がこの値まで下がるか、猫箱が売り切れるまで猫箱を買い続けてください。-1 閉じる"
     }
   },
   "MeowfficerTrain": {
@@ -2056,518 +2118,6 @@
       "help": ""
     }
   },
-  "Island1": {
-    "_info": {
-      "name": "豊壌農田",
-      "help": ""
-    },
-    "Receive": {
-      "name": "豊壌農田を収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": ""
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    },
-    "Option4": {
-      "name": "第4マスの生産品",
-      "help": ""
-    },
-    "Character4": {
-      "name": "第4マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island2": {
-    "_info": {
-      "name": "悠然牧場",
-      "help": ""
-    },
-    "Receive": {
-      "name": "悠然牧場を収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": "",
-      "0": "生産しない",
-      "1": "卵（鶏肉）"
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": "",
-      "0": "生産しない",
-      "2": "鮮肉"
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": "",
-      "0": "生産しない",
-      "3": "ミルク（皮革）"
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    },
-    "Option4": {
-      "name": "第4マスの生産品",
-      "help": "",
-      "0": "生産しない",
-      "4": "ウール"
-    },
-    "Character4": {
-      "name": "第4マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island3": {
-    "_info": {
-      "name": "ぴよぴよ漁場",
-      "help": ""
-    },
-    "Receive": {
-      "name": "ぴよぴよ漁場を収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": ""
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island4": {
-    "_info": {
-      "name": "沈石鉱山",
-      "help": ""
-    },
-    "Receive": {
-      "name": "沈石鉱山を収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": ""
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    },
-    "Option4": {
-      "name": "第4マスの生産品",
-      "help": ""
-    },
-    "Character4": {
-      "name": "第4マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island5": {
-    "_info": {
-      "name": "翠土林場",
-      "help": ""
-    },
-    "Receive": {
-      "name": "翠土林場を収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": ""
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    },
-    "Option4": {
-      "name": "第4マスの生産品",
-      "help": ""
-    },
-    "Character4": {
-      "name": "第4マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island6": {
-    "_info": {
-      "name": "落ちる香りの果樹園",
-      "help": ""
-    },
-    "Receive": {
-      "name": "落ちる香りの果樹園を収穫",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option3": {
-      "name": "第3マスの生産品",
-      "help": ""
-    },
-    "Character3": {
-      "name": "第3マスのキャラクター",
-      "help": ""
-    },
-    "Option4": {
-      "name": "第4マスの生産品",
-      "help": ""
-    },
-    "Character4": {
-      "name": "第4マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island7": {
-    "_info": {
-      "name": "グリーンスプラウツ保育園",
-      "help": ""
-    },
-    "Receive": {
-      "name": "ハーベストグリーンスプラウツ保育園",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island8": {
-    "_info": {
-      "name": "魚料理レストラン",
-      "help": ""
-    },
-    "Receive": {
-      "name": "収穫魚レストラン",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island9": {
-    "_info": {
-      "name": "白熊ドリンク",
-      "help": ""
-    },
-    "Receive": {
-      "name": "ホワイトベアドリンクを収穫",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island10": {
-    "_info": {
-      "name": "九九の簡単な食事",
-      "help": ""
-    },
-    "Receive": {
-      "name": "ハーベストジウジウの簡単な食事",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island11": {
-    "_info": {
-      "name": "ボラの塩焼き",
-      "help": ""
-    },
-    "Receive": {
-      "name": "ボラ収穫BBQ",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island12": {
-    "_info": {
-      "name": "木材加工装置",
-      "help": ""
-    },
-    "Receive": {
-      "name": "伐採木材加工装置",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island13": {
-    "_info": {
-      "name": "産業用生産設備",
-      "help": ""
-    },
-    "Receive": {
-      "name": "収穫産業用生産設備",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island14": {
-    "_info": {
-      "name": "電子処理装置",
-      "help": ""
-    },
-    "Receive": {
-      "name": "収穫電子処理装置",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island15": {
-    "_info": {
-      "name": "手作りの装備",
-      "help": ""
-    },
-    "Receive": {
-      "name": "収穫のクラフト装置",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第1マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
-  "Island16": {
-    "_info": {
-      "name": "チャープコーヒー",
-      "help": ""
-    },
-    "Receive": {
-      "name": "チャープコーヒーを収穫する",
-      "help": ""
-    },
-    "Option1": {
-      "name": "第1マスの生産品",
-      "help": ""
-    },
-    "Character1": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    },
-    "Option2": {
-      "name": "第2マスの生産品",
-      "help": ""
-    },
-    "Character2": {
-      "name": "第2マスのキャラクター",
-      "help": ""
-    }
-  },
   "GeneralShop": {
     "_info": {
       "name": "武器商人（雑貨店）",
@@ -2591,7 +2141,11 @@
     },
     "ConsumeCoins": {
       "name": "オーバーフロー供給品の消費",
-      "help": "物資が550,000を超えたら、物資を消費するアイテムをすべて購入します。"
+      "help": "物資が指定閾値を超えたら、物資を消費するアイテムをすべて購入します。0は無効、範囲1-600000"
+    },
+    "OverflowCoins": {
+      "name": "コイン溢出時に猫箱を購入",
+      "help": "コインが指定閾値を超えた時、自動的に猫箱を購入してコインを消費します。0は無効、範囲1-600000"
     },
     "Filter": {
       "name": "ショップフィルター",
@@ -3320,7 +2874,8 @@
       "name": "メタ戦闘",
       "help": "",
       "current": "今期",
-      "current_dossier": "今期 + アーカイブ"
+      "current_dossier": "今期 + アーカイブ",
+      "current_dossier_only": "アーカイブ"
     },
     "OneHitMode": {
       "name": "一撃離脱",
@@ -3389,8 +2944,8 @@
       "help": "自動的に更新される値。進行状況をリセットするには0を入力します。リセット後は開放済み海域は自動でスキップされます。\n海域ID、中国サーバー/グローバルサーバー/日本サーバー/台湾サーバーの海域名をサポート（例：「51」「NA Ocean SE Sector E」など）"
     },
     "ExploreProgress": {
-      "name": "OpsiExplore.ExploreProgress.name",
-      "help": "OpsiExplore.ExploreProgress.help"
+      "name": "月間開拓進捗",
+      "help": "現在の月間開拓の完了パーセンテージを表示します。"
     }
   },
   "OpsiShop": {
@@ -3452,8 +3007,8 @@
       "help": "この値は自動的に記録されるため、通常は変更する必要はありません。"
     },
     "CollectTargetReward": {
-      "name": "OpsiDaily.CollectTargetReward.name",
-      "help": "OpsiDaily.CollectTargetReward.help"
+      "name": "成果報酬を受け取る",
+      "help": ""
     }
   },
   "OpsiObscure": {
@@ -3494,8 +3049,8 @@
       "help": "オンにすると、追加の行動力が消費されます。通常はオンにする必要はなく、のんびりプレイしてください。"
     },
     "HasStronghold": {
-      "name": "OpsiStronghold.HasStronghold.name",
-      "help": "OpsiStronghold.HasStronghold.help"
+      "name": "要塞の有無",
+      "help": "マップ上にセイレーン要塞があるかどうか。"
     }
   },
   "OpsiMonthBoss": {
@@ -3552,20 +3107,20 @@
   },
   "OpsiTarget": {
     "_info": {
-      "name": "OpsiTarget._info.name",
-      "help": "OpsiTarget._info.help"
+      "name": "海域成果",
+      "help": ""
     },
     "TargetFarming": {
-      "name": "OpsiTarget.TargetFarming.name",
-      "help": "OpsiTarget.TargetFarming.help"
+      "name": "安全海域成果を周回",
+      "help": ""
     },
     "TargetZone": {
-      "name": "OpsiTarget.TargetZone.name",
-      "help": "OpsiTarget.TargetZone.help"
+      "name": "指定海域",
+      "help": "指定した海域のみに出撃します。セイレーン作戦の成果スターを獲得するために使用できます。\n海域ID、CN/EN/JP/TW海域名に対応。例：\"51\", \"NA Ocean SE Sector E\"\nデフォルト値0を入力するか、値を削除すると指定を解除します。"
     },
     "LastRun": {
-      "name": "OpsiTarget.LastRun.name",
-      "help": "OpsiTarget.LastRun.help"
+      "name": "前回受取時間",
+      "help": "この値は自動記録され、通常は変更不要です。"
     }
   },
   "OpsiHazard1Leveling": {
@@ -3656,18 +3211,18 @@
       "help": "タスクが繰り返し実行されるのを防ぐために、最後のチェック時刻が記録されます。チェック間隔は 1 日です。この値は自動的に記録されるため、通常は手動で変更する必要はありません。"
     },
     "CheckInterval": {
-      "name": "OpsiCheckLeveling.CheckInterval.name",
-      "help": "OpsiCheckLeveling.CheckInterval.help"
+      "name": "検出間隔（時間）",
+      "help": "何時間ごとに経験値検出を行うか。デフォルトは24時間。"
     },
     "EnableCustomCheck": {
-      "name": "OpsiCheckLeveling.EnableCustomCheck.name",
-      "help": "OpsiCheckLeveling.EnableCustomCheck.help",
+      "name": "カスタム艦船検出を有効にする",
+      "help": "有効にすると、指定した艦船のみが目標レベルに達したかを検出します。",
       "True": "True",
       "False": "False"
     },
     "CustomCheckPositions": {
-      "name": "OpsiCheckLeveling.CustomCheckPositions.name",
-      "help": "OpsiCheckLeveling.CustomCheckPositions.help"
+      "name": "カスタム検出艦位",
+      "help": "検出する艦位番号(1-6)を入力。複数はカンマ区切り（例：4,5）。上から1-6で数えます。\n空白なら全艦船を検出。"
     },
     "DelayAfterFull": {
       "name": "目標レベルに達するまでミッションは延期されます",
@@ -3680,22 +3235,22 @@
       "help": "OpsiFleetAutoChange._info.help"
     },
     "Enable": {
-      "name": "OpsiFleetAutoChange.Enable.name",
-      "help": "OpsiFleetAutoChange.Enable.help",
+      "name": "自動編成を有効にする",
+      "help": "有効にすると、経験値が最大になった艦船を自動的に交換します。",
       "True": "True",
       "False": "False"
     },
     "CooldownHours": {
-      "name": "OpsiFleetAutoChange.CooldownHours.name",
-      "help": "OpsiFleetAutoChange.CooldownHours.help",
+      "name": "クールダウン時間（時間）",
+      "help": "自動編成後のクールダウン時間。頻繁なトリガーを回避します。",
       "12": "12",
       "24": "24",
       "48": "48",
       "72": "72"
     },
     "LastRun": {
-      "name": "OpsiFleetAutoChange.LastRun.name",
-      "help": "OpsiFleetAutoChange.LastRun.help"
+      "name": "前回実行時間（自動記録）",
+      "help": "前回の自動編成時間を記録して重複実行を防止します。この値は自動記録され、通常は変更不要です。"
     }
   },
   "OpsiScheduling": {
@@ -3761,24 +3316,2024 @@
       "help": "仮想資産 = モビリティ × 1700/30 + 黄色のコイン + (月末までの時間/10分) × 1700/30。仮想資産が X 未満の場合、黄色のコイン補給タスクが実行されます。"
     }
   },
-  "IslandSeasonTask": {
+  "IslandPlan": {
     "_info": {
-      "name": "シーズンタスク",
-      "help": ""
+      "name": "アイランド計画グローバル",
+      "help": "アイランド計画のグローバル設定。季節設定を含みます。"
     },
-    "TaskDict": {
-      "name": "タスクリスト",
-      "help": "残念ながら、リストは自動的にエクスポートされます"
+    "Season": {
+      "name": "現在の季節",
+      "help": "アイランド計画の現在の季節を設定します。異なる季節により対応する季節限定アイテムが有効になります。\n春限定：凉拌双筍、筍と海老の炒め物、春花茶、フレッシュパイナップルジュース、筍、パイナップル、干しなずな、春の花束\n夏限定：アマランスおにぎり、トマト炒め卵、スイカジュース、キュウリジュース、トマト、キュウリ、ジャスミン精油、夏の花束",
+      "spring": "春",
+      "summer": "夏",
+      "autumn": "秋",
+      "winter": "冬"
     }
   },
-  "IslandTechnology": {
+  "IslandFarm": {
     "_info": {
-      "name": "島の技術",
+      "name": "農地",
       "help": ""
     },
-    "TechnologyStatus": {
-      "name": "技術一覧",
-      "help": "残念ながら、リストは自動的にエクスポートされます"
+    "Positions": {
+      "name": "農地ポジション",
+      "help": "",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "MinFarm": {
+      "name": "作物在庫閾値",
+      "help": "660以上を推奨"
+    },
+    "PlantPotatoes": {
+      "name": "小麦を植える",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    }
+  },
+  "IslandOrchard": {
+    "_info": {
+      "name": "果樹園",
+      "help": "倉庫は2列しか認識しません。定期的に整理してください。"
+    },
+    "Positions": {
+      "name": "果樹園ポジション",
+      "help": "",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "MinOrchard": {
+      "name": "果物在庫閾値",
+      "help": ""
+    },
+    "IgnoreAvocado": {
+      "name": "アボカドを無視",
+      "help": ""
+    },
+    "PlantRubber": {
+      "name": "ゴムを植える",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "AmagiChanRubber": {
+      "name": "天城ちゃんがゴムを植える",
+      "help": ""
+    }
+  },
+  "IslandNursery": {
+    "_info": {
+      "name": "苗床",
+      "help": ""
+    },
+    "Positions": {
+      "name": "苗床ポジション",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "MinNursery": {
+      "name": "苗床作物在庫閾値",
+      "help": ""
+    },
+    "IgnorePineapple": {
+      "name": "パイナップルを無視",
+      "help": ""
+    },
+    "PlantLavender": {
+      "name": "ラベンダーを植える",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2"
+    }
+  },
+  "IslandRancher": {
+    "_info": {
+      "name": "牧場",
+      "help": ""
+    },
+    "MinChicken": {
+      "name": "鶏肉在庫閾値",
+      "help": ""
+    },
+    "MinPork": {
+      "name": "豚肉在庫閾値",
+      "help": ""
+    },
+    "Milk": {
+      "name": "牛を飼育",
+      "help": ""
+    },
+    "RancherFilter": {
+      "name": "キャラクターフィルター",
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao"
+    },
+    "Wool": {
+      "name": "羊を飼育",
+      "help": ""
+    }
+  },
+  "IslandFishery": {
+    "_info": {
+      "name": "漁場",
+      "help": "7種類の水産物に対応：スズキ、キハダマグロ、貝殻、エビ、カニ、イカ、ナマコ\nデフォルト：キハダマグロを養殖"
+    },
+    "Positions": {
+      "name": "漁場ポジション",
+      "help": "",
+      "1": "1",
+      "2": "2",
+      "3": "3"
+    },
+    "MinBass": {
+      "name": "スズキ在庫閾値",
+      "help": ""
+    },
+    "MinYellowfinTuna": {
+      "name": "キハダマグロ在庫閾値",
+      "help": ""
+    },
+    "MinShell": {
+      "name": "貝殻在庫閾値",
+      "help": ""
+    },
+    "MinShrimp": {
+      "name": "エビ在庫閾値",
+      "help": ""
+    },
+    "MinCrab": {
+      "name": "カニ在庫閾値",
+      "help": ""
+    },
+    "MinSquid": {
+      "name": "イカ在庫閾値",
+      "help": ""
+    },
+    "MinSeaCucumber": {
+      "name": "ナマコ在庫閾値",
+      "help": ""
+    },
+    "PlantYellowfinTuna": {
+      "name": "キハダマグロを養殖",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3"
+    },
+    "RancherFilter": {
+      "name": "キャラクターフィルター",
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao"
+    }
+  },
+  "IslandMine": {
+    "_info": {
+      "name": "鉱山",
+      "help": ""
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "MineSilver": {
+      "name": "采银矿岗位数",
+      "help": "アイドル鉱山ポストのいくつかを銀の生産に割り当て、残りは空きのままにします。",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "MinCopper": {
+      "name": "銅鉱石最低在庫",
+      "help": "倉庫の銅鉱石がこの値を下回った場合のみ鉱山ポジションが生産します。"
+    },
+    "MinAluminium": {
+      "name": "アルミニウム鉱石最低在庫",
+      "help": "倉庫のアルミニウム鉱石がこの値を下回った場合のみ鉱山ポジションが生産します。"
+    },
+    "MinIron": {
+      "name": "鉄鉱石最低在庫",
+      "help": "倉庫の鉄鉱石がこの値を下回った場合のみ鉱山ポジションが生産します。"
+    },
+    "MinSulphur": {
+      "name": "硫黄最低在庫",
+      "help": "倉庫の硫黄がこの値を下回った場合のみ鉱山ポジションが生産します。"
+    },
+    "MinSilver": {
+      "name": "銀鉱石最低在庫",
+      "help": "倉庫の銀鉱石がこの値を下回った場合のみ鉱山ポジションが生産します。"
+    }
+  },
+  "IslandForest": {
+    "_info": {
+      "name": "林場",
+      "help": ""
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "CutElegant": {
+      "name": "伐典雅之木岗位数",
+      "help": "アイドル林業ポストのいくつかを高級木材の生産に割り当て、残りは空きのままにします。",
+      "0": "0",
+      "1": "1",
+      "2": "2",
+      "3": "3",
+      "4": "4"
+    },
+    "MinElegant": {
+      "name": "エレガント木材最低在庫",
+      "help": "倉庫のエレガント木材がこの値を下回った場合のみ林場ポジションが生産します。"
+    },
+    "MinPractical": {
+      "name": "プラクティカル木材最低在庫",
+      "help": "倉庫のプラクティカル木材がこの値を下回った場合のみ林場ポジションが生産します。"
+    },
+    "MinSelected": {
+      "name": "セレクテッド木材最低在庫",
+      "help": "倉庫のセレクテッド木材がこの値を下回った場合のみ林場ポジションが生産します。"
+    }
+  },
+  "IslandRestaurant": {
+    "_info": {
+      "name": "有魚レストラン",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。\nメニュー1-8の涼拌双筍と筍と海老の炒め物は現在の季節に応じて対応する季節メニューに自動切替されます。"
+    },
+    "PostNumber": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "ChefFilter": {
+      "name": "シェフフィルター",
+      "help": ">で接続"
+    },
+    "DoubleBambooShoots": {
+      "name": "涼拌双筍",
+      "help": "基本メニューの前に最優先で生産されます。"
+    },
+    "Meal1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber1": {
+      "name": "メニュー1数量",
+      "help": ""
+    },
+    "Meal2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber2": {
+      "name": "メニュー2数量",
+      "help": ""
+    },
+    "Meal3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber3": {
+      "name": "メニュー3数量",
+      "help": ""
+    },
+    "Meal4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber4": {
+      "name": "メニュー4数量",
+      "help": ""
+    },
+    "Meal5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber5": {
+      "name": "メニュー5数量",
+      "help": ""
+    },
+    "Meal6": {
+      "name": "メニュー6",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber6": {
+      "name": "メニュー6数量",
+      "help": ""
+    },
+    "Meal7": {
+      "name": "メニュー7",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber7": {
+      "name": "メニュー7数量",
+      "help": ""
+    },
+    "Meal8": {
+      "name": "メニュー8",
+      "help": "",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    },
+    "MealNumber8": {
+      "name": "メニュー8数量",
+      "help": ""
+    }
+  },
+  "IslandRestaurantNextTask": {
+    "_info": {
+      "name": "補助タスク",
+      "help": ""
+    },
+    "AwayCook": {
+      "name": "常設メニュー",
+      "help": "上記すべてが完了したら常設メニューを生産します。",
+      "None": "None",
+      "tofu": "豆腐",
+      "omurice": "オムライス",
+      "cabbage_tofu": "白菜豆腐スープ",
+      "salad": "野菜サラダ",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "double_bamboo_shoots": "涼拌双筍",
+      "asparagus_shrimp": "筍と海老の炒め物",
+      "fish_chip": "フィッシュアンドチップス",
+      "fo_tiao": "仏跳牆",
+      "onion_fish": "玉ねぎ蒸し魚"
+    }
+  },
+  "IslandTeahouse": {
+    "_info": {
+      "name": "白熊ドリンク",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。\nハニー製品は手動で作成してください。\nメニューの春花茶とフレッシュパイナップルジュースは現在の季節に応じて対応する季節メニューに自動切替されます。"
+    },
+    "PostNumber": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "ChefFilter": {
+      "name": "シェフフィルター",
+      "help": ">で接続"
+    },
+    "Seasonal": {
+      "name": "春花茶",
+      "help": "常設メニューの前にチェックして生産されます。"
+    },
+    "Meal1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber1": {
+      "name": "メニュー1数量",
+      "help": ""
+    },
+    "Meal2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber2": {
+      "name": "メニュー2数量",
+      "help": ""
+    },
+    "Meal3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber3": {
+      "name": "メニュー3数量",
+      "help": ""
+    },
+    "Meal4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber4": {
+      "name": "メニュー4数量",
+      "help": ""
+    },
+    "Meal5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber5": {
+      "name": "メニュー5数量",
+      "help": ""
+    },
+    "Meal6": {
+      "name": "メニュー6",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber6": {
+      "name": "メニュー6数量",
+      "help": ""
+    },
+    "Meal7": {
+      "name": "メニュー7",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber7": {
+      "name": "メニュー7数量",
+      "help": ""
+    },
+    "Meal8": {
+      "name": "メニュー8",
+      "help": "",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    },
+    "MealNumber8": {
+      "name": "メニュー8数量",
+      "help": ""
+    }
+  },
+  "IslandTeahouseNextTask": {
+    "_info": {
+      "name": "補助タスク",
+      "help": ""
+    },
+    "AwayCook": {
+      "name": "常設メニュー",
+      "help": "上記すべてが完了したら常設メニューを生産します。",
+      "None": "None",
+      "apple_juice": "アップルジュース",
+      "banana_mango": "バナナマンゴージュース",
+      "honey_lemon": "ハニーレモンウォーター",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "spring_flower_tea": "春花茶"
+    }
+  },
+  "IslandGrill": {
+    "_info": {
+      "name": "イカ焼き",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "PostNumber": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "ChefFilter": {
+      "name": "シェフフィルター",
+      "help": ">で接続"
+    },
+    "Meal1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber1": {
+      "name": "メニュー1数量",
+      "help": ""
+    },
+    "Meal2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber2": {
+      "name": "メニュー2数量",
+      "help": ""
+    },
+    "Meal3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber3": {
+      "name": "メニュー3数量",
+      "help": ""
+    },
+    "Meal4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber4": {
+      "name": "メニュー4数量",
+      "help": ""
+    },
+    "Meal5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber5": {
+      "name": "メニュー5数量",
+      "help": ""
+    },
+    "Meal6": {
+      "name": "メニュー6",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber6": {
+      "name": "メニュー6数量",
+      "help": ""
+    },
+    "Meal7": {
+      "name": "メニュー7",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber7": {
+      "name": "メニュー7数量",
+      "help": ""
+    },
+    "Meal8": {
+      "name": "メニュー8",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "MealNumber8": {
+      "name": "メニュー8数量",
+      "help": ""
+    }
+  },
+  "IslandGrillNextTask": {
+    "_info": {
+      "name": "補助タスク",
+      "help": ""
+    },
+    "AwayCook": {
+      "name": "常設メニュー",
+      "help": "上記すべてが完了したら常設メニューを生産します。",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "chicken_potato": "鶏肉じゃがいも盛り合わせ",
+      "carrot_omelette": "にんじん厚焼き玉子",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    }
+  },
+  "IslandJuuEatery": {
+    "_info": {
+      "name": "ジュウ簡餐",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "PostNumber": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "ChefFilter": {
+      "name": "シェフフィルター",
+      "help": ">で接続"
+    },
+    "Meal1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber1": {
+      "name": "メニュー1数量",
+      "help": ""
+    },
+    "Meal2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber2": {
+      "name": "メニュー2数量",
+      "help": ""
+    },
+    "Meal3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber3": {
+      "name": "メニュー3数量",
+      "help": ""
+    },
+    "Meal4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber4": {
+      "name": "メニュー4数量",
+      "help": ""
+    },
+    "Meal5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber5": {
+      "name": "メニュー5数量",
+      "help": ""
+    },
+    "Meal6": {
+      "name": "メニュー6",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber6": {
+      "name": "メニュー6数量",
+      "help": ""
+    },
+    "Meal7": {
+      "name": "メニュー7",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber7": {
+      "name": "メニュー7数量",
+      "help": ""
+    },
+    "Meal8": {
+      "name": "メニュー8",
+      "help": "",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "MealNumber8": {
+      "name": "メニュー8数量",
+      "help": ""
+    }
+  },
+  "IslandJuuEateryNextTask": {
+    "_info": {
+      "name": "補助タスク",
+      "help": ""
+    },
+    "AwayCook": {
+      "name": "常設メニュー",
+      "help": "上記すべてが完了したら常設メニューを生産します。",
+      "None": "None",
+      "apple_pie": "アップルパイ",
+      "corn_cup": "コーンカップ",
+      "orange_pie": "オレンジパイ",
+      "banana_crepe": "バナナクレープ",
+      "orchard_duo": "果樹園デュオ",
+      "rice_mango": "マンゴーもち米",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    }
+  },
+  "IslandJuuCoffee": {
+    "_info": {
+      "name": "ジュウコーヒー",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "PostNumber": {
+      "name": "ポジション数",
+      "help": "",
+      "1": "1",
+      "2": "2"
+    },
+    "ChefFilter": {
+      "name": "シェフフィルター",
+      "help": ">で接続"
+    },
+    "Friedrich": {
+      "name": "フリードリヒ",
+      "help": "チーズは最初の2列のキャラクターのみ認識し、それ以外はジュウになります。ただし醒神セットはフリードリヒを指定しており、最初の2列にフリードリヒがいない場合は製作されません。"
+    },
+    "Meal1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber1": {
+      "name": "メニュー1数量",
+      "help": ""
+    },
+    "Meal2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber2": {
+      "name": "メニュー2数量",
+      "help": ""
+    },
+    "Meal3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber3": {
+      "name": "メニュー3数量",
+      "help": ""
+    },
+    "Meal4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber4": {
+      "name": "メニュー4数量",
+      "help": ""
+    },
+    "Meal5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber5": {
+      "name": "メニュー5数量",
+      "help": ""
+    },
+    "Meal6": {
+      "name": "メニュー6",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber6": {
+      "name": "メニュー6数量",
+      "help": ""
+    },
+    "Meal7": {
+      "name": "メニュー7",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber7": {
+      "name": "メニュー7数量",
+      "help": ""
+    },
+    "Meal8": {
+      "name": "メニュー8",
+      "help": "",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "MealNumber8": {
+      "name": "メニュー8数量",
+      "help": ""
+    }
+  },
+  "IslandJuuCoffeeNextTask": {
+    "_info": {
+      "name": "補助タスク",
+      "help": ""
+    },
+    "AwayCook": {
+      "name": "常設メニュー",
+      "help": "上記すべてが完了したら常設メニューを生産します。",
+      "None": "None",
+      "iced_coffee": "アイスコーヒー",
+      "omelette": "オムレツ",
+      "cheese": "チーズ",
+      "latte": "ラテ",
+      "citrus_coffee": "シトラスコーヒー",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    }
+  },
+  "WoodProcessing": {
+    "_info": {
+      "name": "木材加工",
+      "help": "書類棚のみ製作"
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2"
+    }
+  },
+  "ElectronicProcessing": {
+    "_info": {
+      "name": "電子加工",
+      "help": "フィルターカートリッジのみ製作"
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2"
+    }
+  },
+  "Industrial": {
+    "_info": {
+      "name": "工業加工",
+      "help": "釘が20個を超えるとカトラリーの製作を開始。未解放の場合は手動操作が必要です。"
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2"
+    }
+  },
+  "Handmade": {
+    "_info": {
+      "name": "手工製作",
+      "help": "革が10個を超えると靴の製作を開始。未解放の場合は手動操作が必要です。"
+    },
+    "Positions": {
+      "name": "ポジション数",
+      "help": "",
+      "0": "0",
+      "1": "1",
+      "2": "2"
+    }
+  },
+  "IslandAirDrop": {
+    "_info": {
+      "name": "デイリー補給",
+      "help": ""
+    },
+    "LastSteal": {
+      "name": "前回実行時間",
+      "help": ""
+    },
+    "VisitOtherIsland": {
+      "name": "他プレイヤーの島を訪問",
+      "help": "オフにすると、自分の島の空中補給のみを回収し、他プレイヤーの島へは移動しません。"
+    }
+  },
+  "IslandDailyOrder": {
+    "_info": {
+      "name": "デイリーオーダー",
+      "help": "アイランドの携帯ページからデイリーオーダー画面に入り、オーダータイプを自動検出し、アイテム条件に基づいて納品または却下します。\n\nデイリーオーダー機能はまだテスト中です。"
+    },
+    "RejectCount": {
+      "name": "現在の却下回数",
+      "help": "現在の累計オーダー却下回数。毎日0:00に自動的に0にリセットされます。"
+    },
+    "RejectFilter": {
+      "name": "却下アイテムフィルター",
+      "help": "却下するアイテムを設定。CheeseとTofuに対応し、>で区切ります。"
+    },
+    "UrgentDetectRefreshTime": {
+      "name": "緊急委託検出更新時間",
+      "help": "緊急委託検出のクールダウン時間。この時間前は緊急委託検出をスキップします。形式：YYYY-MM-DD HH:mm:ss"
+    }
+  },
+  "IslandPearlSell": {
+    "_info": {
+      "name": "週間パール取引",
+      "help": "毎週火曜日01:00にパールを自動処理：まず最高購入価格で今週のパールを購入し、次に最低販売価格で既存のパールを販売します。他の未完了プロセスは翌日01:00にリトライされます。minitouchのみ対応。コインが200x220個分の購入に十分であることを確認してください。これが今週のパールを一括購入するための最低要件です。不足するとエラーが発生する可能性があります。"
+    },
+    "BuyPrice": {
+      "name": "最大購入価格",
+      "help": "パール購入フェーズで許容される最大換算価格。範囲200〜1000。"
+    },
+    "SellPrice": {
+      "name": "最低販売価格",
+      "help": "パール販売フェーズで要求される最低価格。範囲200〜1000。"
+    },
+    "BuyNextRun": {
+      "name": "購入次回実行時間",
+      "help": ""
+    },
+    "DailyPriceRefresh": {
+      "name": "毎日03:00価格更新",
+      "help": "有効にすると、毎日03:00にパールショップに入り価格表示を更新しますが、購入や販売は実行しません。有効にすると全体のタスクスケジューリングロジックが変更されます。"
+    },
+    "NextPearlTradeTime": {
+      "name": "次回パール取引時間",
+      "help": "次回のパール取引予定時間を記録。この時間前は価格更新のみ実行します（有効な場合）。"
+    }
+  },
+  "IslandCargoPreparation": {
+    "_info": {
+      "name": "貨物準備",
+      "help": "アイランド貨物委託の受取、変更、積載プロセスを自動管理します。"
+    },
+    "Blacklist": {
+      "name": "貨物ブラックリスト",
+      "help": "ブラックリスト貨物を検出したら委託を変更します。現在はミルクのみ対応。"
+    }
+  },
+  "IslandBusiness": {
+    "_info": {
+      "name": "経営モジュール",
+      "help": "島の店舗経営を管理します"
+    },
+    "BatchEnabled": {
+      "name": "バッチ経営を有効化",
+      "help": "5つの店舗を2バッチに分割して経営し、スタッフの競合を回避",
+      "True": "有効",
+      "False": "無効"
+    },
+    "Batch1Shops": {
+      "name": "第1バッチ店舗",
+      "help": "最初のバッチで経営する店舗を選択",
+      "1": "有魚餐馆",
+      "2": "白熊飲品",
+      "3": "啾啾簡餐",
+      "4": "烏魚烤肉",
+      "5": "啾珈琲"
+    },
+    "Batch2Shops": {
+      "name": "第2バッチ店舗",
+      "help": "2番目のバッチで経営する店舗を選択",
+      "1": "有魚餐馆",
+      "2": "白熊飲品",
+      "3": "啾啾簡餐",
+      "4": "烏魚烤肉",
+      "5": "啾珈琲"
+    },
+    "SeasonalReplaceEnabled": {
+      "name": "季節限定置き換え",
+      "help": "季節限定メニューの在庫が少ない場合に自動置き換え",
+      "True": "有効",
+      "False": "無効"
+    },
+    "SeasonalThreshold": {
+      "name": "季節置き換え閾値",
+      "help": "在庫がこの数値を下回ると置き換えを実行"
+    }
+  },
+  "IslandBusinessShop1": {
+    "_info": {
+      "name": "有魚レストラン",
+      "help": ""
+    },
+    "Char1": {
+      "name": "キャラクター1",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Char2": {
+      "name": "キャラクター2",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Product1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "fo_tiao": "仏跳牆",
+      "amaranth_rice_ball": "アマランスおにぎり"
+    },
+    "Product2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "fo_tiao": "仏跳牆",
+      "amaranth_rice_ball": "アマランスおにぎり"
+    },
+    "Product3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "fo_tiao": "仏跳牆",
+      "amaranth_rice_ball": "アマランスおにぎり"
+    },
+    "Product4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "fo_tiao": "仏跳牆",
+      "amaranth_rice_ball": "アマランスおにぎり"
+    },
+    "Product5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉みそ豆腐",
+      "tofu_combo": "クラシック豆腐セット",
+      "hearty_meal": "まん玉定食",
+      "fo_tiao": "仏跳牆",
+      "amaranth_rice_ball": "苋菜饭团"
+    },
+    "SeasonalFallback": {
+      "name": "季節代替メニュー",
+      "help": "季節限定メニューの在庫不足時に置き換えるメニュー",
+      "None": "なし",
+      "double_bamboo_shoots": "涼拌双筍",
+      "tofu_meat": "肉末焼豆腐",
+      "tofu_combo": "經典豆腐套餐",
+      "hearty_meal": "綿玉定食",
+      "fo_tiao": "佛跳牆",
+      "amaranth_rice_ball": "莧菜飯糰"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
+    }
+  },
+  "IslandBusinessShop2": {
+    "_info": {
+      "name": "白熊ドリンク",
+      "help": ""
+    },
+    "Char1": {
+      "name": "キャラクター1",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Char2": {
+      "name": "キャラクター2",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Product1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "spring_flower_tea": "春花茶",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "watermelon_juice": "スイカジュース"
+    },
+    "Product2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "spring_flower_tea": "春花茶",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "watermelon_juice": "スイカジュース"
+    },
+    "Product3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "spring_flower_tea": "春花茶",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "watermelon_juice": "スイカジュース"
+    },
+    "Product4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "spring_flower_tea": "春花茶",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "watermelon_juice": "スイカジュース"
+    },
+    "Product5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "spring_flower_tea": "春花茶",
+      "strawberry_lemon": "ストレーモン",
+      "strawberry_honey": "いちごハニースムージー",
+      "floral_fruity": "花香フルーティー",
+      "fruit_paradise": "フルーツパラダイス",
+      "lavender_tea": "ラベンダーティー",
+      "sunny_honey": "サニーハニー",
+      "watermelon_juice": "西瓜汁"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
+    }
+  },
+  "IslandBusinessShop3": {
+    "_info": {
+      "name": "ジュウ簡餐",
+      "help": "メニューは1～8の順に生産されます。"
+    },
+    "Char1": {
+      "name": "キャラクター1",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Char2": {
+      "name": "キャラクター2",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Product1": {
+      "name": "メニュー1",
+      "help": "",
+      "None": "None",
+      "orchard_duo": "果樹園デュオ",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "Product2": {
+      "name": "メニュー2",
+      "help": "",
+      "None": "None",
+      "orchard_duo": "果樹園デュオ",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "Product3": {
+      "name": "メニュー3",
+      "help": "",
+      "None": "None",
+      "orchard_duo": "果樹園デュオ",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "Product4": {
+      "name": "メニュー4",
+      "help": "",
+      "None": "None",
+      "orchard_duo": "果樹園デュオ",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "Product5": {
+      "name": "メニュー5",
+      "help": "",
+      "None": "None",
+      "orchard_duo": "果樹園デュオ",
+      "succulently_sweet": "スイートコンボ",
+      "berry_orange": "ベリーオレンジデザートセット",
+      "strawberry_charlotte": "シャーロット",
+      "seafood_rice": "シーフードライス"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
+    }
+  },
+  "IslandBusinessShop4": {
+    "_info": {
+      "name": "イカ焼き",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "Char1": {
+      "name": "キャラクター1",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Char2": {
+      "name": "キャラクター2",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Product1": {
+      "name": "商品1",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "Product2": {
+      "name": "商品2",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "Product3": {
+      "name": "商品3",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "Product4": {
+      "name": "商品4",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "Product5": {
+      "name": "商品5",
+      "help": "",
+      "None": "None",
+      "roasted_skewer": "炭焼き串",
+      "stir_fried_chicken": "鶏肉炒め",
+      "steak_bowl": "ハンバーグ丼",
+      "carnival": "バーベキュー祭り",
+      "double_energy": "エネルギーダブルセット"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
+    }
+  },
+  "IslandBusinessShop5": {
+    "_info": {
+      "name": "ジューコーヒー",
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
+    },
+    "Char1": {
+      "name": "キャラクター1",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Char2": {
+      "name": "キャラクター2",
+      "help": "",
+      "None": "None",
+      "WorkerJuu": "WorkerJuu",
+      "Cheshire": "Cheshire",
+      "YingSwei": "YingSwei",
+      "Saratoga": "Saratoga",
+      "Akashi": "Akashi",
+      "NewJersey": "NewJersey",
+      "Tashkent": "Tashkent",
+      "LeMalin": "LeMalin",
+      "Shimakaze": "Shimakaze",
+      "Amagi_chan": "Amagi_chan",
+      "Unicorn": "Unicorn",
+      "ChaoHo": "ChaoHo",
+      "ChenHai": "ChenHai",
+      "WilliamDPorter": "WilliamDPorter",
+      "Helena": "Helena",
+      "Friedrich": "Friedrich",
+      "Atago": "Atago",
+      "Yixian": "Yixian",
+      "August": "August",
+      "Eugen": "Eugen",
+      "Hood": "Hood",
+      "Javelin": "Javelin",
+      "Laffey": "Laffey",
+      "Explorer": "Explorer",
+      "Navigator": "Navigator",
+      "OceanCrosser": "OceanCrosser",
+      "FeiYun": "FeiYun",
+      "Takao": "Takao"
+    },
+    "Product1": {
+      "name": "商品1",
+      "help": "",
+      "None": "None",
+      "cheese": "チーズ",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "Product2": {
+      "name": "商品2",
+      "help": "",
+      "None": "None",
+      "cheese": "チーズ",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "Product3": {
+      "name": "商品3",
+      "help": "",
+      "None": "None",
+      "cheese": "チーズ",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "Product4": {
+      "name": "商品4",
+      "help": "",
+      "None": "None",
+      "cheese": "チーズ",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "Product5": {
+      "name": "商品5",
+      "help": "",
+      "None": "None",
+      "cheese": "チーズ",
+      "strawberry_milkshake": "いちごミルクティー",
+      "morning_light": "朝の光セット",
+      "wake_up_call": "目覚ましセット",
+      "fruity_fruitier": "フルーティーフルーティエ"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
     }
   },
   "Daemon": {
@@ -3850,7 +5405,7 @@
   "Benchmark": {
     "_info": {
       "name": "パフォーマンステスト",
-      "help": "どちらのスクリーンショット スキームと制御スキームが速いかをテストします。速度はエミュレータとコンピュータの構成によって異なります。\nテストが完了したら、「Alas」-「シミュレーター設定」で最速のスクリーンショットと制御スキームを選択します。"
+      "help": "どちらのスクリーンショット スキームと制御スキームが速いかをテストします。速度はエミュレータとコンピュータの構成によって異なります。\nテストが完了したら、「AzurPilot」-「シミュレーター設定」で最速のスクリーンショットと制御スキームを選択します。"
     },
     "DeviceType": {
       "name": "デバイスの種類",
@@ -3905,117 +5460,117 @@
   },
   "EmulatorManager": {
     "_info": {
-      "name": "EmulatorManager._info.name",
-      "help": "EmulatorManager._info.help"
+      "name": "エミュレータマネージャー",
+      "help": "エミュレータを手動で再起動するためのエントリポイントを提供します。"
     },
     "EnableRemoteSSH": {
-      "name": "EmulatorManager.EnableRemoteSSH.name",
-      "help": "EmulatorManager.EnableRemoteSSH.help",
+      "name": "リモートSSH管理を有効にする",
+      "help": "エミュレータを再起動する前に、SSH経由でリモートサーバー上で特定のコマンドを実行します。",
       "True": "True",
       "False": "False"
     },
     "RemoteSSHHost": {
-      "name": "EmulatorManager.RemoteSSHHost.name",
-      "help": "EmulatorManager.RemoteSSHHost.help"
+      "name": "リモートサーバーアドレス",
+      "help": "リモートサーバーのIPアドレスまたはドメイン名。例：192.168.1.100"
     },
     "RemoteSSHPort": {
-      "name": "EmulatorManager.RemoteSSHPort.name",
-      "help": "EmulatorManager.RemoteSSHPort.help"
+      "name": "ポート番号",
+      "help": "SSHサービスのポート。デフォルトは22です。"
     },
     "RemoteSSHUser": {
-      "name": "EmulatorManager.RemoteSSHUser.name",
-      "help": "EmulatorManager.RemoteSSHUser.help"
+      "name": "SSHユーザー名",
+      "help": "SSHログイン用のユーザー名。例：root"
     },
     "RemoteSSHPublicKey": {
-      "name": "EmulatorManager.RemoteSSHPublicKey.name",
-      "help": "EmulatorManager.RemoteSSHPublicKey.help"
+      "name": "SSH秘密鍵",
+      "help": "SSHログインに必要な秘密鍵の内容（必要な場合）。"
     },
     "RemoteStartCommand": {
-      "name": "EmulatorManager.RemoteStartCommand.name",
-      "help": "EmulatorManager.RemoteStartCommand.help"
+      "name": "リモート起動コマンド",
+      "help": "エミュレータ再起動時に実行されるSSH起動コマンド（Dockerコンテナの起動など）。"
     },
     "RemoteStopCommand": {
-      "name": "EmulatorManager.RemoteStopCommand.name",
-      "help": "EmulatorManager.RemoteStopCommand.help"
+      "name": "リモート停止コマンド",
+      "help": "エミュレータ再起動時に実行されるSSH停止コマンド（Dockerコンテナの停止など）。"
     }
   },
   "OpsiSimulatorParameters": {
     "_info": {
-      "name": "OpsiSimulatorParameters._info.name",
-      "help": "OpsiSimulatorParameters._info.help"
+      "name": "パラメータ設定",
+      "help": ""
     },
     "Samples": {
-      "name": "OpsiSimulatorParameters.Samples.name",
-      "help": "OpsiSimulatorParameters.Samples.help"
+      "name": "サンプル数",
+      "help": "理論的には大きいほど正確ですが、パフォーマンスを消費します。"
     },
     "Draw": {
-      "name": "OpsiSimulatorParameters.Draw.name",
-      "help": "OpsiSimulatorParameters.Draw.help",
-      "do_not": "do_not",
-      "single_sample": "single_sample",
-      "multi_sample": "multi_sample"
+      "name": "描画設定",
+      "help": "単一サンプル軌跡：1つのサンプルの変化軌跡を描画\n複数サンプル平均傾向：全体の傾向と確率を描画",
+      "do_not": "描画しない",
+      "single_sample": "単一サンプル軌跡",
+      "multi_sample": "複数サンプル平均傾向"
     },
     "TotalTime": {
-      "name": "OpsiSimulatorParameters.TotalTime.name",
-      "help": "OpsiSimulatorParameters.TotalTime.help"
+      "name": "総シミュレーション時間",
+      "help": "シミュレーション期間（単位：秒）\n0の場合、現在から今月の残り時間が使用されます"
     },
     "TimeUseRatio": {
-      "name": "OpsiSimulatorParameters.TimeUseRatio.name",
-      "help": "OpsiSimulatorParameters.TimeUseRatio.help"
+      "name": "時間利用率",
+      "help": "総シミュレーション時間のうち侵蝕サイクルに費やす割合"
     },
     "InitialAp": {
-      "name": "OpsiSimulatorParameters.InitialAp.name",
-      "help": "OpsiSimulatorParameters.InitialAp.help"
+      "name": "初期行動力",
+      "help": "0を入力すると自動取得。変更は推奨しません。"
     },
     "InitialCoin": {
-      "name": "OpsiSimulatorParameters.InitialCoin.name",
-      "help": "OpsiSimulatorParameters.InitialCoin.help"
+      "name": "初期ゴールドコイン",
+      "help": "0を入力すると自動取得。変更は推奨しません。"
     },
     "MeowHazardLevel": {
-      "name": "OpsiSimulatorParameters.MeowHazardLevel.name",
-      "help": "OpsiSimulatorParameters.MeowHazardLevel.help",
+      "name": "指揮ニャ侵蝕レベル",
+      "help": "指揮ニャタスクの実行レベルを選択（レベル3またはレベル5）。",
       "level3": "level3",
       "level5": "level5"
     },
     "CrossWeek": {
-      "name": "OpsiSimulatorParameters.CrossWeek.name",
-      "help": "OpsiSimulatorParameters.CrossWeek.help"
+      "name": "週跨ぎ計算",
+      "help": "毎週の行動力購入と要塞のイベントを計算するかどうか"
     },
     "BuyAp": {
-      "name": "OpsiSimulatorParameters.BuyAp.name",
-      "help": "OpsiSimulatorParameters.BuyAp.help"
+      "name": "毎週行動力を購入",
+      "help": "毎週1000行動力を購入するかどうか。購入しなくても要塞は攻略します。"
     },
     "Cl1Coin": {
-      "name": "OpsiSimulatorParameters.Cl1Coin.name",
-      "help": "OpsiSimulatorParameters.Cl1Coin.help"
+      "name": "侵蝕1コイン期待値",
+      "help": "侵蝕1サイクルあたりの平均コイン。推奨：145"
     },
     "Meow3Coin": {
-      "name": "OpsiSimulatorParameters.Meow3Coin.name",
-      "help": "OpsiSimulatorParameters.Meow3Coin.help"
+      "name": "短3コイン期待値",
+      "help": "侵蝕3指揮ニャタスクあたりの平均コイン。推奨：600"
     },
     "Meow5Coin": {
-      "name": "OpsiSimulatorParameters.Meow5Coin.name",
-      "help": "OpsiSimulatorParameters.Meow5Coin.help"
+      "name": "短5コイン期待値",
+      "help": "侵蝕5指揮ニャタスクあたりの平均コイン。推奨：1700"
     },
     "AkashiProbability": {
-      "name": "OpsiSimulatorParameters.AkashiProbability.name",
-      "help": "OpsiSimulatorParameters.AkashiProbability.help"
+      "name": "明石遭遇確率",
+      "help": "侵蝕サイクル中に明石ショップに遭遇する確率。推奨：0.05"
     },
     "Cl1Time": {
-      "name": "OpsiSimulatorParameters.Cl1Time.name",
-      "help": "OpsiSimulatorParameters.Cl1Time.help"
+      "name": "侵蝕1単一サイクル時間",
+      "help": "単位：秒。0を入力すると履歴統計から自動取得。"
     },
     "Meow3Time": {
-      "name": "OpsiSimulatorParameters.Meow3Time.name",
-      "help": "OpsiSimulatorParameters.Meow3Time.help"
+      "name": "短3単一サイクル時間",
+      "help": "単位：秒。侵蝕3指揮ニャタスクの平均時間。0で履歴統計から取得。"
     },
     "Meow5Time": {
-      "name": "OpsiSimulatorParameters.Meow5Time.name",
-      "help": "OpsiSimulatorParameters.Meow5Time.help"
+      "name": "短5単一サイクル時間",
+      "help": "単位：秒。侵蝕5指揮ニャタスクの平均時間。0で履歴統計から取得。"
     },
     "Deterministic": {
-      "name": "OpsiSimulatorParameters.Deterministic.name",
-      "help": "OpsiSimulatorParameters.Deterministic.help"
+      "name": "ランダム性を無効化",
+      "help": "デバッグ用。通常はオフにしてください。"
     }
   },
   "Storage": {
@@ -4332,7 +5887,7 @@
       "ImportTitle": "旧データをインポート",
       "ImportHint": "以前にAzurPilotまたはALASを使っていた場合、旧設定をインポートして続行できます。",
       "ImportCardTitle": "設定を引き継ぐ",
-      "ImportCardText": "旧JSON設定を読み込み、現在のバージョンへ移行して config/alas.json に保存します。",
+      "ImportCardText": "旧JSON設定を読み込み、現在のバージョンへ移行して config/ap.json に保存します。",
       "ImportDetected": "検出された設定",
       "ImportManual": "パスを手動入力",
       "ImportPath": "旧設定のパス",

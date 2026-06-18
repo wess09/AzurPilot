@@ -8,6 +8,29 @@ from module.ui.ui import UI
 
 
 class MeowfficerBase(UI):
+    def wait_meowfficer_buttons(self, skip_first_screenshot=True):
+        """等待指挥喵界面按钮加载完成。
+
+        MEOWFFICER_INFO 和 MEOWFFICER_BUY_ENTER 加载比 MEOWFFICER_CHECK 慢，
+        需要额外等待以确保界面完全加载。
+
+        Pages:
+            in: page_meowfficer
+            out: page_meowfficer (fully loaded)
+        """
+        while 1:
+            if skip_first_screenshot:
+                skip_first_screenshot = False
+            else:
+                self.device.screenshot()
+
+            if self.appear(MEOWFFICER_BUY_ENTER, offset=(20, 20)):
+                break
+
+            # MEOWFFICER_INFO
+            if self.ui_additional():
+                continue
+
     def meow_additional(self):
         """
         Handle additional clauses

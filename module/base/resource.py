@@ -30,7 +30,7 @@ class PreservedAssets:
             file='./module/handler/info_handler.py',
             regex=re.compile(r'\(([A-Z][A-Z0-9_]+),')
         )
-        # MAIN_CHECK == MAIN_GOTO_CAMPAIGN
+        # MAIN_CHECK 等价于 MAIN_GOTO_CAMPAIGN
         # assets.add('MAIN_GOTO_CAMPAIGN')
         return assets
 
@@ -39,9 +39,9 @@ _preserved_assets = PreservedAssets()
 
 
 class Resource:
-    # Class property, record all button and templates
+    # 类属性，记录所有按钮和模板实例
     instances = {}
-    # Instance property, record cached properties of instance
+    # 实例属性，记录实例的缓存属性名称列表
     cached = []
 
     def resource_add(self, key):
@@ -71,12 +71,13 @@ class Resource:
     @staticmethod
     def parse_property(data, s=None):
         """
-        Parse properties of Button or Template object input.
-        Such as `area`, `color` and `button`.
+        解析 Button 或 Template 对象的属性值。
+
+        用于解析 `area`、`color`、`button` 等属性，支持按服务器区分的字典或直接字符串。
 
         Args:
-            data: Dict or str
-            s (str): Load from given a server or load from global attribute `server.server`
+            data: 属性值，字典或字符串。
+            s: 服务器标识，如 'cn'、'en'、'jp'、'tw'。为 None 时使用全局 `server.server`。
         """
         if s is None:
             s = server.server
@@ -87,45 +88,45 @@ class Resource:
 
 
 def release_resources(next_task=''):
-    # Release all OCR models
-    # Usually to have 2 models loaded and each model takes about 20MB
-    # This will release 20-40MB
+    # 释放所有 OCR 模型
+    # 通常会加载 2 个模型，每个约占 20MB
+    # 释放后可节省 20-40MB 内存
     from module.webui.setting import State
     if State.deploy_config.UseOcrServer:
         if not next_task:
-            # Disconnect OCR server on idle
+            # 空闲时断开 OCR 服务器连接
             from module.ocr.ocr import OCR_MODEL
             try:
                 OCR_MODEL.close()
             except AttributeError:
                 pass
     else:
-        # Release only when using per-instance OCR
+        # 仅在使用实例内 OCR 时释放
         from module.ocr.ocr import OCR_MODEL
         if 'Opsi' in next_task or 'commission' in next_task:
-            # OCR models will be used soon, don't release
+            # OCR 模型即将被使用，不释放
             models = []
         elif next_task:
-            # Release OCR models except 'azur_lane'
+            # 释放除 'azur_lane' 以外的 OCR 模型
             models = ['cnocr', 'jp', 'tw']
         else:
             models = ['azur_lane', 'cnocr', 'jp', 'tw']
         for model in models:
             del_cached_property(OCR_MODEL, model)
 
-    # Release assets cache
-    # module.ui has about 80 assets and takes about 3MB
-    # Alas has about 800 assets, but they are not all loaded.
-    # Template images take more, about 6MB each
+    # 释放资源缓存
+    # module.ui 约有 80 个资源，占约 3MB
+    # Alas 总共约 800 个资源，但不会全部加载
+    # 模板图像占用更多，每个约 6MB
     for key, obj in Resource.instances.items():
-        # Preserve assets for ui switching
+        # 保留 UI 切换所需的资源
         if next_task and str(obj) in _preserved_assets.ui:
             continue
         # if Resource.is_loaded(obj):
         #     logger.info(f'Release {obj}')
         obj.resource_release()
 
-    # Release cached images for map detection
+    # 释放地图检测的缓存图像
     from module.map_detection.utils_assets import ASSETS
     attr_list = [
         'ui_mask',
@@ -140,5 +141,5 @@ def release_resources(next_task=''):
     for attr in attr_list:
         del_cached_property(ASSETS, attr)
 
-    # Useless in most cases, but just call it
+    # 大多数情况下无明显效果，但仍然调用
     # gc.collect()

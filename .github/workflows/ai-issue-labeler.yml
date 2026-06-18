@@ -41,8 +41,8 @@ jobs:
       - name: Analyze issue or pull request
         env:
           LABELER_PLATFORM: github
-          AI_BASE_URL: https://api.nanoda.work/v1
-          AI_MODEL: Nvidia/qwen/qwen3-coder-480b-a35b-instruct
+          AI_BASE_URL: https://api.deepseek.com/v1
+          AI_MODEL: deepseek-v4-flash
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.AI_ISSUE_LABELER_TOKEN || github.token }}
         run: python .github/scripts/ai_issue_labeler.py

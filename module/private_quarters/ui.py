@@ -8,11 +8,13 @@ class PQShopUI(ShopUI):
     @cached_property
     def _shop_bottom_navbar(self):
         """
-        shop_bottom_navbar 4 options
-            all.
-            gift.
-            furniture.
-            misc.
+        商店底部导航栏，包含 4 个选项卡。
+
+        Options:
+            全部 / 礼物 / 家具 / 杂物
+
+        Returns:
+            Navbar: 底部导航栏实例
         """
         shop_navgrid = ButtonGrid(
             origin=(465, 600), delta=(200, 0), button_shape=(20, 20), grid_shape=(4, 1),
@@ -26,19 +28,16 @@ class PQShopUI(ShopUI):
 
     def shop_bottom_navbar_ensure(self, left=None, right=None):
         """
-        Ensure able to transition to page and
-        page has loaded to completion
-        Use 1 arg or the other, never both
+        切换商店底部标签页并等待页面加载完成。
+
+        二选一使用 left 或 right，不要同时传入。
 
         Args:
-            left (int): Depends on ship navs
-                        index starts from 1 then
-                        increments rightward
-            right (int): index stars from 1
-                         then increments leftward
+            left (int): 从左起第 N 个标签（从 1 开始）
+            right (int): 从右起第 N 个标签（从 1 开始）
 
         Returns:
-            bool: if bottom_navbar set ensured
+            bool: 标签切换是否成功
         """
         if self._shop_bottom_navbar.set(self, left=left, right=right):
             return True
@@ -47,12 +46,10 @@ class PQShopUI(ShopUI):
     @cached_property
     def _shop_left_navbar(self):
         """
-        shop_bottom_navbar 4 options
-            home.
-            sirius.
-            noshiro.
-            anchorage.
-            new_jersey.
+        商店左侧导航栏，包含 5 个房间入口。
+
+        Options:
+            主页 / 天狼星 / 能代 / 安克雷奇 / 新泽西
         """
         shop_navgrid = ButtonGrid(
             origin=(152, 158), delta=(0, 105), button_shape=(15, 15), grid_shape=(1, 5),
@@ -66,19 +63,16 @@ class PQShopUI(ShopUI):
 
     def shop_left_navbar_ensure(self, upper=None, bottom=None):
         """
-        Ensure able to transition to page and
-        page has loaded to completion
-        Use 1 arg or the other, never both
+        切换商店左侧房间标签页并等待页面加载完成。
+
+        二选一使用 upper 或 bottom，不要同时传入。
 
         Args:
-            upper (int): Depends on ship navs
-                         index starts from 1
-                         then increments downward
-            bottom (int): index starts from 1
-                          then increments upward
+            upper (int): 从上起第 N 个标签（从 1 开始）
+            bottom (int): 从下起第 N 个标签（从 1 开始）
 
         Returns:
-            bool: if bottom_navbar set ensured
+            bool: 标签切换是否成功
         """
         if self._shop_left_navbar.set(self, upper=upper, bottom=bottom):
             return True

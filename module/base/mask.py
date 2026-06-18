@@ -22,11 +22,13 @@ class Mask(Template):
 
     def set_channel(self, channel):
         """
+        设置遮罩图像的通道数。
+
         Args:
-            channel (int): 0 for monochrome, 3 for RGB.
+            channel: 目标通道数，0 为灰度，3 为 RGB。
 
         Returns:
-            bool: If changed.
+            通道是否发生了变化。
         """
         mask_channel = image_channel(self.image)
         if channel == 0:
@@ -44,13 +46,13 @@ class Mask(Template):
 
     def apply(self, image):
         """
-        Apply mask on image.
+        将遮罩应用到图像上。
 
         Args:
-            image:
+            image: 输入图像。
 
         Returns:
-            np.ndarray:
+            应用遮罩后的图像。
         """
         self.set_channel(image_channel(image))
         return cv2.bitwise_and(image, self.image)

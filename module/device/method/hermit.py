@@ -33,32 +33,32 @@ def retry(func):
                     time.sleep(retry_sleep(_))
                     init()
                 return func(self, *args, **kwargs)
-            # Can't handle
+            # 无法处理
             except RequestHumanTakeover:
                 break
-            # When adb server was killed
+            # ADB 服务被终止时
             except ConnectionResetError as e:
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
-            # When unable to send requests
+            # 无法发送请求时
             except requests.exceptions.ConnectionError as e:
                 logger.error(e)
                 text = str(e)
                 if 'Connection aborted' in text:
-                    # Hermit not installed or not running
+                    # Hermit 未安装或未运行
                     # ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
                     def init():
                         self.adb_reconnect()
                         self.hermit_init()
                 else:
-                    # Lost connection, adb server was killed
+                    # 连接丢失，ADB 服务被终止
                     # HTTPConnectionPool(host='127.0.0.1', port=20269):
                     # Max retries exceeded with url: /click?x=500&y=500
                     def init():
                         self.adb_reconnect()
-            # AdbError
+            # ADB 错误
             except AdbError as e:
                 if handle_adb_error(e):
                     def init():
@@ -76,7 +76,7 @@ def retry(func):
                 def init():
                     self.adb_reconnect()
                     self.hermit_init()
-            # Unknown, probably a trucked image
+            # 未知异常，可能是图像损坏
             except Exception as e:
                 logger.exception(e)
 
@@ -91,16 +91,15 @@ def retry(func):
 
 class Hermit(Adb):
     """
-    Hermit, https://github.com/LookCos/hermit.
-    API docs: https://www.lookcos.cn/docs/hermit#/zh-cn/API
+    Hermit 控制方案，https://github.com/LookCos/hermit。
+    API 文档：https://www.lookcos.cn/docs/hermit#/zh-cn/API
 
-    True, Hermit has other control APIs and screenshot APIs but they ALL WORK LIKE SHIT.
-    Hermit screenshot is slower than ADB and you are likely to get request timeout or trucked images.
-    Thus, it requests root permission every time,
-    so you will get a toast showing forever: Superuser granted to Hermit.
+    Hermit 有其他控制和截图 API，但效果都很差。
+    Hermit 截图比 ADB 慢，且容易出现请求超时或图像损坏。
+    每次操作都需要 root 权限，因此会一直显示 toast：Superuser granted to Hermit。
 
-    Hermit is added to Alas in order to have a better performance in vmos which can't run uiautomator2 and minitouch.
-    Note that Hermit requires Android>=7.0
+    Hermit 被加入 Alas 是为了在无法运行 uiautomator2 和 minitouch 的 vmos 上获得更好的性能。
+    注意 Hermit 需要 Android>=7.0。
     """
     _hermit_port = 9999
     _hermit_package_name = 'com.lookcos.hermit'
@@ -117,18 +116,18 @@ class Hermit(Adb):
 
         logger.info('Try to start hermit')
         if self.app_start_adb(self._hermit_package_name, allow_failure=True):
-            # Success to start hermit
+            # 成功启动 hermit
             logger.info('Success to start hermit')
         else:
-            # Hermit not installed
+            # Hermit 未安装
             logger.warning(f'{self._hermit_package_name} not found, installing hermit')
             self.adb_command(['install', '-t', self.config.HERMIT_FILEPATH_LOCAL])
             self.app_start_adb(self._hermit_package_name)
 
-        # Enable accessibility service
+        # 启用辅助功能服务
         self.hermit_enable_accessibility()
 
-        # Hide Hermit
+        # 隐藏 Hermit
         # 0 -->  "KEYCODE_UNKNOWN"
         # 1 -->  "KEYCODE_MENU"
         # 2 -->  "KEYCODE_SOFT_RIGHT"
@@ -138,7 +137,7 @@ class Hermit(Adb):
         # 6 -->  "KEYCODE_ENDCALL"
         self.adb_shell(['input', 'keyevent', '3'])
 
-        # Switch back to AzurLane
+        # 切换回碧蓝航线
         self.app_start_adb()
 
     def uninstall_hermit(self):
@@ -146,10 +145,10 @@ class Hermit(Adb):
 
     def hermit_enable_accessibility(self):
         """
-        Turn on accessibility service for Hermit.
+        为 Hermit 开启辅助功能服务。
 
         Raises:
-            RequestHumanTakeover: If failed and user should do it manually.
+            RequestHumanTakeover: 失败时抛出，需要用户手动操作。
         """
         logger.hr('Enable accessibility service')
         interval = Timer(0.3)
@@ -177,14 +176,14 @@ class Hermit(Adb):
             if appear_then_click('//*[@class="android.widget.Switch" and @checked="false"]'):
                 continue
             if appear_then_click('//*[@resource-id="android:id/button1"]'):
-                # Just plain click here
-                # Can't use uiautomator once hermit has access to accessibility service,
-                # or uiautomator will get the access.
+                # 此处只做普通点击
+                # 一旦 hermit 获得辅助功能权限，就不能再使用 uiautomator，
+                # 否则 uiautomator 会接管权限。
                 break
             if appear('//*[@class="android.widget.Switch" and @checked="true"]'):
                 raise HermitError('Accessibility service already enable but get error')
 
-            # End
+            # 超时
             if timeout.reached():
                 logger.critical('无法为 Hermit 打开辅助功能服务')
                 logger.critical(
@@ -199,18 +198,20 @@ class Hermit(Adb):
     @cached_property
     def hermit_session(self):
         session = requests.Session()
-        session.trust_env = False  # Ignore proxy
+        session.trust_env = False  # 忽略代理
         self._hermit_port = self.adb_forward('tcp:9999')
         return session
 
     def hermit_send(self, url, **kwargs):
         """
+        发送 HTTP 请求到 Hermit 服务。
+
         Args:
-            url (str):
-            **kwargs:
+            url: 请求路径。
+            **kwargs: 请求参数。
 
         Returns:
-            dict: Usually to be {"code":0,"msg":"ok"}
+            响应字典，通常为 {"code":0,"msg":"ok"}。
         """
         result = self.hermit_session.get(f'{self._hermit_url}{url}', params=kwargs, timeout=3).text
         try:
@@ -225,7 +226,7 @@ class Hermit(Adb):
                 logger.critical('Hermit 无法在当前设备上运行，Hermit 需要 Android>=7.0')
                 raise RequestHumanTakeover
             if 'accessibilityservice' in result:
-                # Attempt to invoke virtual method
+                # 尝试调用虚拟方法
                 # 'boolean android.accessibilityservice.AccessibilityService.dispatchGesture(
                 #     android.accessibilityservice.GestureDescription,
                 #     android.accessibilityservice.AccessibilityService$GestureResultCallback,
@@ -234,8 +235,8 @@ class Hermit(Adb):
                 logger.error('Unable to access accessibility service')
             raise e
 
-        # Hermit only takes 2-4ms
-        # Add a 50ms delay because game can't response quickly.
+        # Hermit 请求仅需 2-4ms
+        # 添加 50ms 延迟因为游戏无法快速响应。
         self.sleep(0.05)
         return result
 

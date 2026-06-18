@@ -11,13 +11,18 @@ from module.ui.switch import Switch
 
 
 class HospitalSwitch(Switch):
+    """医院活动标签页切换器。"""
+
     def get(self, main):
-        """
+        """获取当前标签页状态。
+
+        通过检测标签按钮的高亮颜色判断当前选中的标签。
+
         Args:
-            main (ModuleBase):
+            main: 模块实例，用于图像颜色检测。
 
         Returns:
-            str: state name or 'unknown'.
+            str: 状态名称，未匹配时返回 'unknown'。
         """
         for data in self.state_list:
             if main.image_color_count(data['check_button'], color=(33, 77, 189), threshold=221, count=100):
@@ -32,19 +37,27 @@ HOSPITAL_TAB.add_state('CHARACTER', check_button=TAB_CHARACTER)
 
 
 class Hospital(HospitalClue, HospitalCombat):
+    """医院活动主控制器，组合线索和战斗逻辑。"""
+
     def daily_red_dot_appear(self):
+        """检测每日奖励红点是否出现。"""
         return self.image_color_count(DAILY_RED_DOT, color=(189, 69, 66), threshold=221, count=35)
 
     def daily_reward_receive_appear(self):
+        """检测每日奖励领取按钮是否可点击。"""
         return self.image_color_count(DAILY_REWARD_RECEIVE, color=(41, 73, 198), threshold=221, count=200)
 
     def is_in_daily_reward(self, interval=0):
+        """检测当前是否在每日奖励界面。"""
         return self.match_template_color(HOSIPITAL_CLUE_CHECK, offset=(30, 30), interval=interval)
 
     def daily_reward_receive(self):
-        """"
+        """领取每日奖励。
+
+        检测红点后进入奖励界面，点击领取并退出。
+
         Returns:
-            bool: If received
+            bool: 是否成功领取。
 
         Pages:
             in: page_hospital
@@ -56,7 +69,7 @@ class Hospital(HospitalClue, HospitalCombat):
             return False
 
         logger.hr('Daily reward receive', level=2)
-        # Enter reward
+        # 进入奖励界面
         logger.info('Daily reward enter')
         skip_first_screenshot = True
         self.interval_clear(page_hospital.check_button)
@@ -72,7 +85,7 @@ class Hospital(HospitalClue, HospitalCombat):
                 self.device.click(HOSPITAL_GOTO_DAILY)
                 continue
 
-        # Claim reward
+        # 领取奖励
         logger.info('Daily reward receive')
         skip_first_screenshot = True
         self.interval_clear(HOSIPITAL_CLUE_CHECK)
@@ -98,7 +111,7 @@ class Hospital(HospitalClue, HospitalCombat):
                 clicked = True
                 continue
 
-        # Claim reward
+        # 退出奖励界面
         logger.info('Daily reward exit')
         skip_first_screenshot = True
         self.interval_clear(HOSIPITAL_CLUE_CHECK)
@@ -118,14 +131,14 @@ class Hospital(HospitalClue, HospitalCombat):
         return True
 
     def loop_invest(self):
-        """
-        Do all invest in page
+        """遍历当前页面所有调查并执行战斗。
+
+        战斗结束后旁白会重置，需要重新选择。
         """
         self.config.override(Fleet_FleetOrder='fleet1_all_fleet2_standby')
         while 1:
             logger.hr('Loop hospital invest', level=2)
-            # Scheduler
-            # May raise ScriptEnd
+            # 调度器检查，可能抛出 ScriptEnd
             self.emotion.check_reduce(battle=1)
 
             entered = self.invest_enter()
@@ -133,27 +146,28 @@ class Hospital(HospitalClue, HospitalCombat):
                 break
             self.hospital_combat()
 
-            # Scheduler
-            # May raise TaskEnd
+            # 调度器检查，可能抛出 TaskEnd
             if self.config.task_switched():
                 self.config.task_stop()
 
-            # Aside reset after combat, so we should loop in aside again
+            # 战斗后旁白重置，跳出重新选择
             break
 
         self.claim_invest_reward()
         logger.info('Loop hospital invest end')
 
     def invest_reward_appear(self) -> bool:
+        """检测调查奖励领取按钮是否出现。"""
         return self.image_color_count(INVEST_REWARD_RECEIVE, color=(33, 77, 189), threshold=221, count=100)
 
     def claim_invest_reward(self):
+        """领取调查奖励。"""
         if self.invest_reward_appear():
             logger.info('Invest reward appear')
         else:
             logger.info('No invest reward')
             return False
-        # Get reward
+        # 领取奖励
         skip_first_screenshot = True
         clicked = True
         self.interval_clear(HOSIPITAL_CLUE_CHECK)
@@ -175,9 +189,7 @@ class Hospital(HospitalClue, HospitalCombat):
                     continue
 
     def loop_aside(self):
-        """
-        Do all aside in page
-        """
+        """遍历所有标签页的旁白并执行调查。"""
         while 1:
             logger.hr('Loop hospital aside', level=1)
             HOSPITAL_TAB.set('LOCATION', main=self)
@@ -206,9 +218,7 @@ class Hospital(HospitalClue, HospitalCombat):
         logger.info('Loop hospital aside end')
 
     def aside_swipe_down(self, skip_first_screenshot=True):
-        """
-        Swipe til no ASIDE_NEXT_PAGE
-        """
+        """向下滑动旁白列表直到没有翻页标识。"""
         logger.info('Aside swipe down')
         swiped = False
         interval = Timer(2, count=6)
@@ -230,17 +240,18 @@ class Hospital(HospitalClue, HospitalCombat):
                 continue
 
     def run(self):
-        # Check if event available
+        """医院活动主入口。"""
+        # 检查活动是否可用
         if self.event_time_limit_triggered():
             self.config.task_stop()
         self.ui_ensure(page_campaign_menu)
         if self.is_event_entrance_available():
             self.ui_goto(page_hospital)
 
-        # Receive rewards
+        # 领取每日奖励
         self.daily_reward_receive()
 
-        # Run
+        # 执行活动
         self.clue_enter()
         try:
             self.loop_aside()

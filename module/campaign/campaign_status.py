@@ -25,16 +25,18 @@ class PtOcr(Ocr):
 
     def pre_process(self, image):
         """
+        对 PT 数字图像进行预处理。
+
         Args:
-            image (np.ndarray): Shape (height, width, channel)
+            image (np.ndarray): 形状为 (height, width, channel) 的图像。
 
         Returns:
-            np.ndarray: Shape (width, height)
+            np.ndarray: 形状为 (width, height) 的灰度图像。
         """
-        # Use MAX(r, g, b)
+        # 取 RGB 三通道的最大值
         r, g, b = cv2.split(cv2.subtract((255, 255, 255), image))
         image = cv2.min(cv2.min(r, g), b)
-        # Remove background, 0-192 => 0-255
+        # 去除背景，将 0-192 映射到 0-255
         image = cv2.multiply(image, 255 / 192)
 
         return image.astype(np.uint8)
@@ -46,8 +48,10 @@ OCR_PT = PtOcr(OCR_EVENT_PT)
 class CampaignStatus(UI):
     def get_event_pt(self, update=False):
         """
+        获取活动 PT 数量。
+
         Returns:
-            int: PT amount, or 0 if unable to parse
+            int: PT 数量，解析失败返回 0。
         """
         pt = OCR_PT.ocr(self.device.image)
 
@@ -75,8 +79,10 @@ class CampaignStatus(UI):
 
     def get_coin(self, skip_first_screenshot=True, update=False):
         """
+        获取金币数量。
+
         Returns:
-            int: Coin amount
+            int: 金币数量。
         """
         _coin = {}
         timeout = Timer(1, count=2).start()
@@ -103,12 +109,12 @@ class CampaignStatus(UI):
         return _coin['Value']
 
     def _get_num(self, _button, name, letter=(247, 247, 247)):
-        # Update offset
+        # 更新偏移量
         _ = self.appear(OCR_OIL_CHECK)
 
         color = get_color(self.device.image, OCR_OIL_CHECK.button)
         if color_similar(color, OCR_OIL_CHECK.color):
-            # Original color
+            # 原始颜色
             if isinstance(_button, Ocr):
                 ocr = _button
             else:
@@ -117,7 +123,7 @@ class CampaignStatus(UI):
                 else:
                     ocr = Digit(_button, name=name, letter=(201, 201, 201), threshold=128)
         elif color_similar(color, (59, 59, 64)):
-            # With black overlay
+            # 带黑色遮罩
             ocr = Digit(_button, name=name, letter=(165, 165, 165), threshold=128)
         else:
             logger.warning(f'Unexpected OCR_OIL_CHECK color')
@@ -127,8 +133,10 @@ class CampaignStatus(UI):
 
     def get_oil(self, skip_first_screenshot=True, update=False):
         """
+        获取石油数量。
+
         Returns:
-            int: Oil amount
+            int: 石油数量。
         """
         _oil = {}
         timeout = Timer(1, count=2).start()
@@ -160,8 +168,10 @@ class CampaignStatus(UI):
 
     def is_balancer_task(self):
         """
+        判断当前任务是否为活动任务（排除每日活动任务）。
+
         Returns:
-             bool: If is event task but not daily event task
+            bool: 是否为活动任务。
         """
         tasks = [
             'Event',

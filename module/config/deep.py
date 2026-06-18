@@ -1,11 +1,11 @@
 from collections import deque
 
-# deep_* functions are used for access nested dictionary.
-# They target for high performance so code are complicated to read
-# In general performance practise, time costs are as below:
-# - When key exists
+# deep_* 系列函数用于访问嵌套字典。
+# 以高性能为目标，因此代码可读性较低。
+# 一般性能基准测试中，耗时排序如下：
+# - 当 key 存在时
 #   try: dict[key] except KeyError << dict.get(key) < if key in dict: dict[key]
-# - When not key exists
+# - 当 key 不存在时
 #   if key in dict: dict[key] < dict.get(key) <<< try: dict[key] except KeyError
 
 OP_ADD = 'add'
@@ -14,17 +14,18 @@ OP_DEL = 'del'
 
 
 def deep_get(d, keys, default=None):
-    """
-    Get value from nested dict and list
-    https://stackoverflow.com/questions/25833613/safe-method-to-get-value-of-nested-dictionary
+    """从嵌套字典和列表中安全地获取值。
+
+    参考: https://stackoverflow.com/questions/25833613/safe-method-to-get-value-of-nested-dictionary
 
     Args:
-        d (dict):
-        keys (list[str], str): Such as ['Scheduler', 'NextRun', 'value']
-        default: Default return if key not found.
+        d: 目标字典。
+        keys (list[str] | str): 键路径，如 ['Scheduler', 'NextRun', 'value']。
+            也支持点分字符串，如 'Scheduler.NextRun.value'。
+        default: 键不存在时的默认返回值。
 
     Returns:
-        Value on given keys
+        对应键路径的值，不存在时返回 default。
     """
     # 240 + 30 * depth (ns)
     if type(keys) is str:
@@ -34,31 +35,30 @@ def deep_get(d, keys, default=None):
         for k in keys:
             d = d[k]
         return d
-    # No such key
+    # 键不存在
     except KeyError:
         return default
-    # No such key
+    # 索引越界
     except IndexError:
         return default
-    # Input `keys` is not iterable or input `d` is not dict
-    # list indices must be integers or slices, not str
+    # keys 不可迭代或 d 不是字典（列表索引必须是整数或切片，不能是 str）
     except TypeError:
         return default
 
 
 def deep_get_with_error(d, keys):
-    """
-    Get value from nested dict and list, raise KeyError if key not exists
+    """从嵌套字典和列表中获取值，键不存在时抛出 KeyError。
 
     Args:
-        d (dict):
-        keys (list[str], str): Such as ['Scheduler', 'NextRun', 'value']
+        d: 目标字典。
+        keys (list[str] | str): 键路径，如 ['Scheduler', 'NextRun', 'value']。
+            也支持点分字符串，如 'Scheduler.NextRun.value'。
 
     Returns:
-        Value on given keys
+        对应键路径的值。
 
     Raises:
-        KeyError: If key not exists
+        KeyError: 键不存在时抛出。
     """
     # 240 + 30 * depth (ns)
     if type(keys) is str:
@@ -68,28 +68,26 @@ def deep_get_with_error(d, keys):
         for k in keys:
             d = d[k]
         return d
-    # No such key
+    # 键不存在（KeyError 直接透传）
     # except KeyError:
     #     raise
-    # No such key
+    # 索引越界
     except IndexError:
         raise KeyError
-    # Input `keys` is not iterable or input `d` is not dict
-    # list indices must be integers or slices, not str
+    # keys 不可迭代或 d 不是字典（列表索引必须是整数或切片，不能是 str）
     except TypeError:
         raise KeyError
 
 
 def deep_exist(d, keys):
-    """
-    Check if keys exists in nested dict or list
+    """检查嵌套字典或列表中是否存在指定键路径。
 
     Args:
-        d (dict):
-        keys (str, list): Such as `Scheduler.NextRun.value`
+        d: 目标字典。
+        keys (str | list): 键路径，如 'Scheduler.NextRun.value' 或列表形式。
 
     Returns:
-        bool: If key exists
+        bool: 键是否存在。
     """
     # 240 + 30 * depth (ns)
     if type(keys) is str:
@@ -99,22 +97,21 @@ def deep_exist(d, keys):
         for k in keys:
             d = d[k]
         return True
-    # No such key
+    # 键不存在
     except KeyError:
         return False
-    # No such key
+    # 索引越界
     except IndexError:
         return False
-    # Input `keys` is not iterable or input `d` is not dict
-    # list indices must be integers or slices, not str
+    # keys 不可迭代或 d 不是字典（列表索引必须是整数或切片，不能是 str）
     except TypeError:
         return False
 
 
 def deep_set(d, keys, value):
-    """
-    Set value into nested dict safely, imitating deep_get().
-    Can only set dict
+    """安全地向嵌套字典中设置值，模拟 deep_get() 的键路径遍历逻辑。
+
+    仅支持字典类型，不支持列表。
     """
     # 150 * depth (ns)
     if type(keys) is str:
@@ -133,7 +130,7 @@ def deep_set(d, keys, value):
                 first = False
                 continue
             try:
-                # if key in dict: dict[key] > dict.get > dict.setdefault > try dict[key] except
+                # 性能排序：if key in dict: dict[key] > dict.get > dict.setdefault > try dict[key] except
                 if exist and prev_k in d:
                     prev_d = d
                     d = d[prev_k]
@@ -143,7 +140,7 @@ def deep_set(d, keys, value):
                     d[prev_k] = new
                     d = new
             except TypeError:
-                # `d` is not dict
+                # d 不是字典
                 exist = False
                 d = {}
                 prev_d[prev_k2] = {prev_k: d}
@@ -151,24 +148,24 @@ def deep_set(d, keys, value):
             prev_k2 = prev_k
             prev_k = k
             # prev_k2, prev_k = prev_k, k
-    # Input `keys` is not iterable
+    # keys 不可迭代
     except TypeError:
         return
 
-    # Last key, set value
+    # 最后一个键，设置值
     try:
         d[prev_k] = value
         return
-    # Last value `d` is not dict
+    # 最后一个 d 不是字典
     except TypeError:
         prev_d[prev_k2] = {prev_k: value}
         return
 
 
 def deep_default(d, keys, value):
-    """
-    Set value into nested dict safely, imitating deep_get().
-    Can only set dict
+    """安全地向嵌套字典中设置默认值（仅当键不存在时），模拟 deep_get() 的键路径遍历逻辑。
+
+    仅支持字典类型，不支持列表。
     """
     # 150 * depth (ns)
     if type(keys) is str:
@@ -187,7 +184,7 @@ def deep_default(d, keys, value):
                 first = False
                 continue
             try:
-                # if key in dict: dict[key] > dict.get > dict.setdefault > try dict[key] except
+                # 性能排序：if key in dict: dict[key] > dict.get > dict.setdefault > try dict[key] except
                 if exist and prev_k in d:
                     prev_d = d
                     d = d[prev_k]
@@ -197,7 +194,7 @@ def deep_default(d, keys, value):
                     d[prev_k] = new
                     d = new
             except TypeError:
-                # `d` is not dict
+                # d 不是字典
                 exist = False
                 d = {}
                 prev_d[prev_k2] = {prev_k: d}
@@ -205,79 +202,73 @@ def deep_default(d, keys, value):
             prev_k2 = prev_k
             prev_k = k
             # prev_k2, prev_k = prev_k, k
-    # Input `keys` is not iterable
+    # keys 不可迭代
     except TypeError:
         return
 
-    # Last key, set value
+    # 最后一个键，设置默认值
     try:
         d.setdefault(prev_k, value)
         return
-    # Last value `d` is not dict
+    # 最后一个 d 不是字典
     except AttributeError:
         prev_d[prev_k2] = {prev_k: value}
         return
 
 
 def deep_pop(d, keys, default=None):
-    """
-    Pop value from nested dict and list
-    """
+    """从嵌套字典和列表中弹出值。"""
     if type(keys) is str:
         keys = keys.split('.')
 
     try:
         for k in keys[:-1]:
             d = d[k]
-        # No `pop(k, default)` so it can pop list
+        # 不使用 pop(k, default) 以兼容列表弹出
         return d.pop(keys[-1])
-    # No such key
+    # 键不存在
     except KeyError:
         return default
-    # Input `keys` is not iterable or input `d` is not dict
-    # list indices must be integers or slices, not str
+    # keys 不可迭代或 d 不是字典（列表索引必须是整数或切片，不能是 str）
     except TypeError:
         return default
-    # Input `keys` out of index
+    # keys 索引越界
     except IndexError:
         return default
-    # Last `d` is not dict
+    # 最后一个 d 不是字典（无 pop 方法）
     except AttributeError:
         return default
 
 
 def deep_iter_depth1(data):
-    """
-    Equivalent to data.items() but suppress error if data is not a dict
+    """等价于 data.items()，但在 data 非字典时静默忽略错误。
 
     Args:
-        data:
+        data: 待遍历的数据。
 
     Yields:
-        Any: Key
-        Any: Value
+        Any: 键。
+        Any: 值。
     """
     try:
         for k, v in data.items():
             yield k, v
         return
     except AttributeError:
-        # `data` is not dict
+        # data 不是字典
         return
 
 
 def deep_iter_depth2(data):
-    """
-    Iter key and value in nested dict of depth 2
-    A simplified deep_iter
+    """遍历深度为 2 的嵌套字典的键值对，是 deep_iter 的简化版本。
 
     Args:
-        data:
+        data: 待遍历的嵌套字典。
 
     Yields:
-        Any: Key1
-        Any: Key2
-        Any: Value
+        Any: 第一层键。
+        Any: 第二层键。
+        Any: 值。
     """
     try:
         for k1, v1 in data.items():
@@ -285,36 +276,36 @@ def deep_iter_depth2(data):
                 for k2, v2 in v1.items():
                     yield k1, k2, v2
     except AttributeError:
-        # `data` is not dict
+        # data 不是字典
         return
 
 
 def deep_iter(data, min_depth=None, depth=3):
-    """
-    Iter key and value in nested dict
-    300us on alas.json depth=3 (530+ rows)
-    Can only iter dict
+    """遍历嵌套字典的键值对。
+
+    性能参考：depth=3 时遍历 alas.json（530+ 行）约 300us。
+    仅支持字典类型。
 
     Args:
-        data:
-        min_depth:
-        depth:
+        data: 待遍历的嵌套字典。
+        min_depth: 最小遍历深度，小于此深度的层级仅用于路径构建。
+        depth: 最大遍历深度。
 
     Yields:
-        list[str]: Key path
-        Any: Value
+        list[str]: 键路径。
+        Any: 值。
     """
     if min_depth is None:
         min_depth = depth
     assert 1 <= min_depth <= depth
 
-    # Equivalent to dict.items()
+    # 等价于 dict.items()
     try:
         if depth == 1:
             for k, v in data.items():
                 yield [k], v
             return
-        # Iter first depth
+        # 遍历第一层
         elif min_depth == 1:
             q = deque()
             for k, v in data.items():
@@ -323,7 +314,7 @@ def deep_iter(data, min_depth=None, depth=3):
                     q.append((key, v))
                 else:
                     yield key, v
-        # Iter target depth only
+        # 仅遍历目标深度
         else:
             q = deque()
             for k, v in data.items():
@@ -331,19 +322,19 @@ def deep_iter(data, min_depth=None, depth=3):
                 if type(v) is dict:
                     q.append((key, v))
     except AttributeError:
-        # `data` is not dict
+        # data 不是字典
         return
 
-    # Iter depths
+    # 逐层遍历
     current = 2
     while current <= depth:
         new_q = deque()
-        # max depth
+        # 最大深度
         if current == depth:
             for key, data in q:
                 for k, v in data.items():
                     yield key + [k], v
-        # in target depth
+        # 在目标深度范围内
         elif min_depth <= current < depth:
             for key, data in q:
                 for k, v in data.items():
@@ -352,7 +343,7 @@ def deep_iter(data, min_depth=None, depth=3):
                         new_q.append((subkey, v))
                     else:
                         yield subkey, v
-        # Haven't reached min depth
+        # 尚未达到最小深度
         else:
             for key, data in q:
                 for k, v in data.items():
@@ -364,30 +355,30 @@ def deep_iter(data, min_depth=None, depth=3):
 
 
 def deep_values(data, min_depth=None, depth=3):
-    """
-    Iter value in nested dict
-    300us on alas.json depth=3 (530+ rows)
-    Can only iter dict
+    """遍历嵌套字典中的所有值。
+
+    性能参考：depth=3 时遍历 alas.json（530+ 行）约 300us。
+    仅支持字典类型。
 
     Args:
-        data:
-        min_depth:
-        depth:
+        data: 待遍历的嵌套字典。
+        min_depth: 最小遍历深度。
+        depth: 最大遍历深度。
 
     Yields:
-        Any: Value
+        Any: 值。
     """
     if min_depth is None:
         min_depth = depth
     assert 1 <= min_depth <= depth
 
-    # Equivalent to dict.items()
+    # 等价于 dict.values()
     try:
         if depth == 1:
             for v in data.values():
                 yield v
             return
-        # Iter first depth
+        # 遍历第一层
         elif min_depth == 1:
             q = deque()
             for v in data.values():
@@ -395,26 +386,26 @@ def deep_values(data, min_depth=None, depth=3):
                     q.append(v)
                 else:
                     yield v
-        # Iter target depth only
+        # 仅遍历目标深度
         else:
             q = deque()
             for v in data.values():
                 if type(v) is dict:
                     q.append(v)
     except AttributeError:
-        # `data` is not dict
+        # data 不是字典
         return
 
-    # Iter depths
+    # 逐层遍历
     current = 2
     while current <= depth:
         new_q = deque()
-        # max depth
+        # 最大深度
         if current == depth:
             for data in q:
                 for v in data.values():
                     yield v
-        # in target depth
+        # 在目标深度范围内
         elif min_depth <= current < depth:
             for data in q:
                 for v in data.values():
@@ -422,7 +413,7 @@ def deep_values(data, min_depth=None, depth=3):
                         new_q.append(v)
                     else:
                         yield v
-        # Haven't reached min depth
+        # 尚未达到最小深度
         else:
             for data in q:
                 for v in data.values():
@@ -433,19 +424,18 @@ def deep_values(data, min_depth=None, depth=3):
 
 
 def deep_iter_diff(before, after):
-    """
-    Iter diff between 2 dict.
-    Pretty fast to compare 2 deeply nested dict,
-    time cost increases with the number of differences.
+    """遍历两个字典之间的差异。
+
+    比较两个深度嵌套字典时速度很快，耗时与差异数量成正比。
 
     Args:
-        before:
-        after:
+        before: 变更前的字典。
+        after: 变更后的字典。
 
     Yields:
-        list[str]: Key path
-        Any: Value in before, or None if not exists
-        Any: Value in after, or None if not exists
+        list[str]: 键路径。
+        Any: before 中的值，不存在则为 None。
+        Any: after 中的值，不存在则为 None。
     """
     if before == after:
         return
@@ -463,8 +453,8 @@ def deep_iter_diff(before, after):
                 try:
                     val2 = d2[key]
                 except KeyError:
-                    # Safe to access d1[key], because key came from the union of both
-                    # If it's not in d2 then it's in d1
+                    # 安全访问 d1[key]，因为 key 来自两者的并集
+                    # 如果不在 d2 中则一定在 d1 中
                     yield path + [key], d1[key], None
                     continue
                 try:
@@ -472,7 +462,7 @@ def deep_iter_diff(before, after):
                 except KeyError:
                     yield path + [key], None, val2
                     continue
-                # Compare dict first, which is pretty fast
+                # 先比较字典，速度很快
                 if val1 != val2:
                     if type(val1) is dict and type(val2) is dict:
                         new_queue.append((path + [key], val1, val2))
@@ -484,20 +474,18 @@ def deep_iter_diff(before, after):
 
 
 def deep_iter_patch(before, after):
-    """
-    Iter patch event from before to after, like creating a json-patch
-    Pretty fast to compare 2 deeply nested dict,
-    time cost increases with the number of differences.
+    """遍历从 before 到 after 的补丁事件，类似生成 json-patch。
+
+    比较两个深度嵌套字典时速度很快，耗时与差异数量成正比。
 
     Args:
-        before:
-        after:
+        before: 变更前的字典。
+        after: 变更后的字典。
 
     Yields:
-        str: OP_ADD, OP_SET, OP_DEL
-        list[str]: Key path
-        Any: Value in after,
-            or None of event is OP_DEL
+        str: 操作类型，OP_ADD、OP_SET 或 OP_DEL。
+        list[str]: 键路径。
+        Any: after 中的值，OP_DEL 事件时为 None。
     """
     if before == after:
         return
@@ -522,7 +510,7 @@ def deep_iter_patch(before, after):
                 except KeyError:
                     yield OP_ADD, path + [key], val2
                     continue
-                # Compare dict first, which is pretty fast
+                # 先比较字典，速度很快
                 if val1 != val2:
                     if type(val1) is dict and type(val2) is dict:
                         new_queue.append((path + [key], val1, val2))

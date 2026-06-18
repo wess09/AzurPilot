@@ -11,7 +11,7 @@ def show_fix_tip(module):
     1. Re-run the launcher so uv can refresh the local .venv
     2. If the problem persists, run:
         ./.venv/Scripts/uv.exe sync --frozen --no-dev --no-install-project --reinstall-package {module}
-    3. Re-open Alas.exe
+    3. Re-open AzurPilot.exe
     """)
 
 
@@ -36,21 +36,20 @@ class AdbManager(EmulatorManager):
             except ModuleNotFoundError as e:
                 message = str(e)
                 for module in ['apkutils2', 'progress']:
-                    # ModuleNotFoundError: No module named 'apkutils2'
-                    # ModuleNotFoundError: No module named 'progress.bar'
+                    # 常见的模块缺失错误
                     if module in message:
                         show_fix_tip(module)
                         exit(1)
                 raise
 
-            # Remove global proxies, or uiautomator2 will go through it
+            # 移除全局代理设置，否则 uiautomator2 会走代理
             for k in list(os.environ.keys()):
                 if k.lower().endswith('_proxy'):
                     del os.environ[k]
 
             for device in adbutils.adb.iter_device():
                 initer = init.Initer(device, loglevel=logging.DEBUG)
-                # MuMu X has no ro.product.cpu.abi, pick abi from ro.product.cpu.abilist
+                # MuMu X 没有 ro.product.cpu.abi，从 ro.product.cpu.abilist 中取第一个
                 if initer.abi not in ['x86_64', 'x86', 'arm64-v8a', 'armeabi-v7a', 'armeabi']:
                     initer.abi = initer.abis[0]
                 initer.set_atx_agent_addr('127.0.0.1:7912')
