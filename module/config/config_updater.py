@@ -692,26 +692,23 @@ class ConfigUpdater:
         # 更新到最新活动
         server = to_server(deep_get(new, 'Alas.Emulator.PackageName', 'cn'))
         if not is_template:
-            for task in EVENTS + RAIDS + COALITIONS:
+            for task in EVENTS + RAIDS + COALITIONS + ['GemsFarming']:
                 opts = deep_get(self.args, keys=f'{task}.Campaign.Event.option_{server}', default=[])
-                if opts and not deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') in opts:
-                    deep_set(new,
-                             keys=f'{task}.Campaign.Event',
-                             value=opts[0])
+                if opts:
+                    current = deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main')
+                    # opts 按字母序排序，opts[-1] 为最新活动
+                    # 只要当前值不是最新活动，就自动更新到最新
+                    # 解决 30 天并发窗口期内旧活动仍存于选项列表导致的卡死问题
+                    if current != opts[-1]:
+                        deep_set(new, keys=f'{task}.Campaign.Event', value=opts[-1])
 
-            for task in ['GemsFarming']:
-                opts = deep_get(self.args, keys=f'{task}.Campaign.Event.option_{server}', default=[])
-                if opts and deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') not in opts:
-                    deep_set(new,
-                             keys=f'{task}.Campaign.Event',
-                             value=opts[0])
         # 作战档案不允许选择 campaign_main
         for task in WAR_ARCHIVES:
             opts = deep_get(self.args, keys=f'{task}.Campaign.Event.option_{server}', default=[])
             if opts and deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') == 'campaign_main':
                 deep_set(new,
                          keys=f'{task}.Campaign.Event',
-                         value=opts[0])
+                         value=opts[-1])
 
         # 活动不允许默认关卡 12-4
         def default_stage(t, stage):
