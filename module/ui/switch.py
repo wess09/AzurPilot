@@ -33,6 +33,7 @@ class Switch:
         self.state_list = []
         self.set_unknown_timer = Timer(5, count=10)
         self.set_click_timer = Timer(1, count=2)
+        self.set_timeout = Timer(15, count=30)
         self.wait_timeout = Timer(2, count=4)
 
     def add_state(self, state, check_button, click_button=None, offset=0, similarity=0.85):
@@ -88,9 +89,18 @@ class Switch:
         Returns:
             str: 状态名称或 'unknown'。
         """
+        # 标准检测：根据 offset 决定用模板匹配或颜色检测
         for data in self.state_list:
             if main.appear(data['check_button'], offset=data['offset'], similarity=data['similarity']):
                 return data['state']
+
+        # 降级检测：若标准检测使用了模板匹配（offset 非零）且失败，
+        # 回退到颜色检测。这可以处理模板图片过时但按钮颜色未变的情况。
+        for data in self.state_list:
+            if data['offset']:
+                if main.appear(data['check_button'], offset=0, threshold=10):
+                    logger.info(f'{self.name} 降级到颜色检测，状态: {data["state"]}')
+                    return data['state']
 
         return 'unknown'
 
@@ -155,6 +165,7 @@ class Switch:
         has_unknown = False
         unknown_timer = self.set_unknown_timer.reset()
         click_timer = self.set_click_timer.clear()
+        timeout = self.set_timeout.reset()
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -167,6 +178,11 @@ class Switch:
 
             # 到达目标状态则退出
             if current == state:
+                return changed
+
+            # 整体超时检查，防止资产不匹配时的无限循环
+            if timeout.reached():
+                logger.warning(f'Switch {self.name} set to {state} timeout')
                 return changed
 
             # 处理额外弹窗

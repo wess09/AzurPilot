@@ -166,7 +166,9 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
             mode (str): 'combat' 或 'story'。
         """
         if mode in ['normal', 'hard', 'ex', 'combat']:
-            MODE_SWITCH_20241219.set('combat', main=self)
+            if not MODE_SWITCH_20241219.set('combat', main=self):
+                logger.info(f'{MODE_SWITCH_20241219.name} set 未产生点击，'
+                            f'假设已经是 combat 模式，继续执行')
         elif mode in ['story']:
             MODE_SWITCH_20241219.set('story', main=self)
         else:
