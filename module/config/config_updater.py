@@ -699,7 +699,7 @@ class ConfigUpdater:
                              keys=f'{task}.Campaign.Event',
                              value=opts[0])
 
-            for task in ['GemsFarming']:
+            for task in GEMS_FARMINGS:
                 opts = deep_get(self.args, keys=f'{task}.Campaign.Event.option_{server}', default=[])
                 if opts and deep_get(new, keys=f'{task}.Campaign.Event', default='campaign_main') not in opts:
                     deep_set(new,

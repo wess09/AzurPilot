@@ -188,17 +188,19 @@ class CampaignRun(CampaignEvent, ShopStatus):
             # d3 保持不变，使用标准逻辑
             elif name == 'd3':
                 logger.info('Stage name d3 using standard logic')
-        # GemsFarming 和 ThreeOilLowCost 自动选择活动或主线章节
+        # GemsFarming 和 ThreeOilLowCost 根据各自任务配置选择活动或主线章节
         if self.config.task.command in ['GemsFarming', 'ThreeOilLowCost']:
             if self.stage_is_main(name):
                 logger.info(f'Stage name {name} is from campaign_main')
                 folder = 'campaign_main'
             else:
-                folder = self.config.cross_get('GemsFarming.Campaign.Event')
-                if folder is not None:
+                if folder and folder != 'campaign_main':
                     logger.info(f'Stage name {name} is from event {folder}')
                 else:
-                    logger.warning(f'Cannot get the latest event, fallback to campaign_main')
+                    logger.warning(
+                        f'Cannot get event configured for {self.config.task.command}, '
+                        f'fallback to campaign_main'
+                    )
                     folder = 'campaign_main'
         # 处理特殊 SP 地图名称
         if folder == 'event_20201126_cn' and name == 'vsp':
