@@ -289,8 +289,8 @@ YukikazeTaskManager:
       > OpsiMeowfficerFarming
       > GemsFarming
       > Ambush11
-      > OpsiHazard1Leveling
       > ThreeOilLowCost
+      > OpsiHazard1Leveling
 OneClickRetire:
   KeepLimitBreak:
     value: keep_limit_break

@@ -50,8 +50,8 @@ class ManualConfig:
     > OpsiMeowfficerFarming
     > GemsFarming
     > Ambush11
-    > OpsiHazard1Leveling
     > ThreeOilLowCost
+    > OpsiHazard1Leveling
     """
 
     @staticmethod
