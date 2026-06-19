@@ -2,7 +2,7 @@ from module.base.timer import Timer
 from module.campaign.campaign_status import CampaignStatus
 from module.combat.assets import *
 from module.combat.combat import Combat
-from module.exception import CampaignEnd
+from module.exception import CampaignEnd, ScriptEnd
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_ON, GET_MISSION
 from module.logger import logger
 from module.map.assets import WITHDRAW, SWITCH_OVER, FLEET_WITHDRAW, FLEET_SWITCH_CONFIRM, FLEET_WITHDRAW_BOSS
@@ -379,8 +379,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
 
             # Withdraw
             if self._withdraw:
-                if self.config.Campaign_DefeatWithdraw:
-                    # DefeatWithdraw=True：点击FLEET_SWITCH_CONFIRM仅关闭弹窗，不取消撤退
+                defeat_withdraw = self.config.Campaign_DefeatWithdraw
+                if defeat_withdraw == 'withdraw_continue' or defeat_withdraw == 'withdraw_stop':
+                    # 撤退后继续任务 / 撤退后关闭任务：
+                    # 点击FLEET_SWITCH_CONFIRM仅关闭弹窗，不取消撤退
                     # 游戏在舰队战败后弹出FLEET_SWITCH_CONFIRM，点击后才能看到WITHDRAW按钮
                     if self.appear_then_click(FLEET_SWITCH_CONFIRM, offset=(30, 30)):
                         continue
@@ -390,9 +392,11 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                         continue
                     self._withdraw = False
                     self.withdraw()
+                    if defeat_withdraw == 'withdraw_stop':
+                        raise ScriptEnd('DefeatWithdraw=withdraw_stop')
                     break
-                else:
-                    # DefeatWithdraw=False：尝试切换另一队继续战斗
+                elif defeat_withdraw == 'switch_fleet':
+                    # 切换队伍继续出击：尝试切换另一队继续战斗
                     if self.appear_then_click(FLEET_SWITCH_CONFIRM, offset=(30, 30)):
                         self.fleet_alive_multiple = False
                         self._withdraw = False

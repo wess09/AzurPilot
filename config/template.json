@@ -211,7 +211,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -292,7 +292,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -373,7 +373,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -471,7 +471,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -556,7 +556,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -641,7 +641,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -723,7 +723,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -804,7 +804,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -885,7 +885,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -970,7 +970,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1028,7 +1028,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1138,7 +1138,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "Coalition": {
       "Mode": "hard",
@@ -1232,7 +1232,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1317,7 +1317,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1402,7 +1402,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1487,7 +1487,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1572,7 +1572,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1653,7 +1653,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1737,7 +1737,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "StopCondition": {
       "OilLimit": 1000,
@@ -1788,7 +1788,7 @@
       "Use2xBook": false,
       "AmbushEvade": true,
       "UseRecommendFleet": false,
-      "DefeatWithdraw": true
+      "DefeatWithdraw": "withdraw_continue"
     },
     "Coalition": {
       "Mode": "hard",

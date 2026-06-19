@@ -956,8 +956,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -1372,8 +1377,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -1788,8 +1798,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -2323,8 +2338,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -2825,8 +2845,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -3313,8 +3338,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -3748,8 +3778,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -4182,8 +4217,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -4615,8 +4655,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -5068,8 +5113,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -5354,8 +5404,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -5950,8 +6005,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "Coalition": {
@@ -6665,8 +6725,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -7111,8 +7176,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -7562,8 +7632,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -8013,8 +8088,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -8464,8 +8544,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -8905,8 +8990,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -9354,8 +9444,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "StopCondition": {
@@ -9619,8 +9714,13 @@
         "value": false
       },
       "DefeatWithdraw": {
-        "type": "checkbox",
-        "value": true
+        "type": "select",
+        "value": "withdraw_continue",
+        "option": [
+          "withdraw_continue",
+          "switch_fleet",
+          "withdraw_stop"
+        ]
       }
     },
     "Coalition": {

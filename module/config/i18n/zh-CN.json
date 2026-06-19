@@ -1163,8 +1163,11 @@
       "help": "使用游戏内置的推荐阵容自动完成困难图配队"
     },
     "DefeatWithdraw": {
-      "name": "道中战斗失败撤退",
-      "help": "道中战斗战败时的处理方式。开启时直接退出海域，关闭时尝试由另一队接管后续战斗。"
+      "name": "道中失败处理",
+      "help": "道中战斗战败时的处理方式",
+      "withdraw_continue": "撤退后继续任务",
+      "switch_fleet": "切换队伍继续出击",
+      "withdraw_stop": "撤退后关闭任务"
     }
   },
   "StopCondition": {

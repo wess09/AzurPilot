@@ -188,7 +188,7 @@ class GeneratedConfig:
     Campaign_Use2xBook = False
     Campaign_AmbushEvade = True
     Campaign_UseRecommendFleet = False
-    Campaign_DefeatWithdraw = True
+    Campaign_DefeatWithdraw = 'withdraw_continue'  # withdraw_continue, switch_fleet, withdraw_stop
 
     # 配置组 `StopCondition`
     StopCondition_OilLimit = 1000

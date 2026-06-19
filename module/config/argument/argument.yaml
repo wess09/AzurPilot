@@ -326,7 +326,9 @@ Campaign:
   Use2xBook: false
   AmbushEvade: true
   UseRecommendFleet: false
-  DefeatWithdraw: true
+  DefeatWithdraw:
+    value: withdraw_continue
+    option: [ withdraw_continue, switch_fleet, withdraw_stop ]
 StopCondition:
   OilLimit: 1000
   CoinLimit: 0

@@ -1163,8 +1163,11 @@
       "help": "Use the game's built-in recommended fleet to automatically compose hard mode fleets"
     },
     "DefeatWithdraw": {
-      "name": "Retreat after defeat in Mob",
-      "help": "The handling method for defeat in Mob during the journey. Upon initiation, exit the sea area directly; upon termination, attempt to have another team take over the subsequent battle."
+      "name": "Defeat in Mob Action",
+      "help": "Handling method when defeated in mob battle during the journey",
+      "withdraw_continue": "Withdraw & Continue Task",
+      "switch_fleet": "Switch Fleet & Continue",
+      "withdraw_stop": "Withdraw & Stop Task"
     }
   },
   "StopCondition": {
