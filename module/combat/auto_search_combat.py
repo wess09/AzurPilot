@@ -311,6 +311,51 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                     break
             
 
+    def _wait_withdraw_stable(self, withdraw_stable_timer):
+        """
+        等待WITHDRAW按钮稳定出现，防止界面过渡动画导致误判。
+
+        Args:
+            withdraw_stable_timer (Timer): WITHDRAW按钮稳定计时器
+
+        Returns:
+            bool: True表示WITHDRAW按钮已稳定出现，可以点击；
+                  False表示按钮尚未出现或不稳定，需要继续等待。
+        """
+        withdraw_appear = self.appear(WITHDRAW, offset=(30, 30))
+        if withdraw_appear:
+            if not withdraw_stable_timer.reached():
+                return False
+            return True
+        else:
+            withdraw_stable_timer.reset()
+            return False
+
+    def _handle_fleet_switch_over(self):
+        """
+        处理舰队切换操作：仅撤退当前战败舰队，切换到另一队继续战斗。
+        包含超时保护，避免UI异常时无限循环。
+
+        Returns:
+            bool: True表示切换成功，False表示超时。
+        """
+        timeout = Timer(10, count=20).start()
+        while 1:
+            self.device.screenshot()
+            if self.appear_then_click(FLEET_WITHDRAW, offset=(30, 30)):
+                break
+            if self.appear(FLEET_WITHDRAW_BOSS, offset=(30, 30)):
+                self.withdraw()
+                break
+            if self.appear_then_click(SWITCH_OVER, interval=2):
+                continue
+            if timeout.reached():
+                logger.warning('Fleet switch over timeout, withdraw instead')
+                self.withdraw()
+                break
+        self.fleet_alive_multiple = False
+        return True
+
     def auto_search_combat_status(self):
         """
         Pages:
@@ -341,11 +386,7 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                         continue
                     if self.handle_popup_confirm('WITHDRAW'):
                         continue
-                    if self.appear(WITHDRAW, offset=(30, 30)):
-                        if not withdraw_stable_timer.reached():
-                            continue
-                    if not self.appear(WITHDRAW, offset=(30, 30)):
-                        withdraw_stable_timer.reset()
+                    if not self._wait_withdraw_stable(withdraw_stable_timer):
                         continue
                     self._withdraw = False
                     self.withdraw()
@@ -356,12 +397,7 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                         self.fleet_alive_multiple = False
                         self._withdraw = False
                         continue
-
-                    if self.appear(WITHDRAW, offset=(30, 30)):
-                        if not withdraw_stable_timer.reached():
-                            continue
-                    if not self.appear(WITHDRAW, offset=(30, 30)):
-                        withdraw_stable_timer.reset()
+                    if not self._wait_withdraw_stable(withdraw_stable_timer):
                         continue
 
                     self._withdraw = False
@@ -369,16 +405,7 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                         self.withdraw()
                         break
                     else:
-                        while True:
-                            self.device.screenshot()
-                            if self.appear_then_click(FLEET_WITHDRAW, offset=(30, 30)):
-                                break
-                            if self.appear(FLEET_WITHDRAW_BOSS, offset=(30, 30)):
-                                self.withdraw()
-                                break
-                            if self.appear_then_click(SWITCH_OVER, interval=2):
-                                continue
-                        self.fleet_alive_multiple = False
+                        self._handle_fleet_switch_over()
                         continue
 
             # Combat status
