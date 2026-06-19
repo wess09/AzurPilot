@@ -334,34 +334,52 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
 
             # Withdraw
             if self._withdraw:
-                if self.appear_then_click(FLEET_SWITCH_CONFIRM, offset=(30, 30)):
-                    self.fleet_alive_multiple = False
-                    self._withdraw = False
-                    continue
-                
-                if self.appear(WITHDRAW, offset=(30, 30)):
-                    if not withdraw_stable_timer.reached():
+                if self.config.Campaign_DefeatWithdraw:
+                    # DefeatWithdraw=True：点击FLEET_SWITCH_CONFIRM仅关闭弹窗，不取消撤退
+                    # 游戏在舰队战败后弹出FLEET_SWITCH_CONFIRM，点击后才能看到WITHDRAW按钮
+                    if self.appear_then_click(FLEET_SWITCH_CONFIRM, offset=(30, 30)):
                         continue
-                if not self.appear(WITHDRAW, offset=(30, 30)):
-                    withdraw_stable_timer.reset()
-                    continue
-
-                self._withdraw = False
-                if self.config.Campaign_DefeatWithdraw or not self.fleet_alive_multiple:
+                    if self.handle_popup_confirm('WITHDRAW'):
+                        continue
+                    if self.appear(WITHDRAW, offset=(30, 30)):
+                        if not withdraw_stable_timer.reached():
+                            continue
+                    if not self.appear(WITHDRAW, offset=(30, 30)):
+                        withdraw_stable_timer.reset()
+                        continue
+                    self._withdraw = False
                     self.withdraw()
                     break
                 else:
-                    while True:
-                        self.device.screenshot()
-                        if self.appear_then_click(FLEET_WITHDRAW, offset=(30, 30)):
-                            break
-                        if self.appear(FLEET_WITHDRAW_BOSS, offset=(30, 30)):
-                            self.withdraw()
-                            break
-                        if self.appear_then_click(SWITCH_OVER, interval=2):
+                    # DefeatWithdraw=False：尝试切换另一队继续战斗
+                    if self.appear_then_click(FLEET_SWITCH_CONFIRM, offset=(30, 30)):
+                        self.fleet_alive_multiple = False
+                        self._withdraw = False
+                        continue
+
+                    if self.appear(WITHDRAW, offset=(30, 30)):
+                        if not withdraw_stable_timer.reached():
                             continue
-                    self.fleet_alive_multiple = False
-                    continue
+                    if not self.appear(WITHDRAW, offset=(30, 30)):
+                        withdraw_stable_timer.reset()
+                        continue
+
+                    self._withdraw = False
+                    if not self.fleet_alive_multiple:
+                        self.withdraw()
+                        break
+                    else:
+                        while True:
+                            self.device.screenshot()
+                            if self.appear_then_click(FLEET_WITHDRAW, offset=(30, 30)):
+                                break
+                            if self.appear(FLEET_WITHDRAW_BOSS, offset=(30, 30)):
+                                self.withdraw()
+                                break
+                            if self.appear_then_click(SWITCH_OVER, interval=2):
+                                continue
+                        self.fleet_alive_multiple = False
+                        continue
 
             # Combat status
             if self.handle_get_ship():
