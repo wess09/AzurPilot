@@ -593,7 +593,7 @@ class RewardTacticalClass(Dock):
             return False, False, pending_skill_auto_switch
 
         study_finished = False
-        if pending_skill_auto_switch or self.config.AddNewStudent_Enable:
+        if pending_skill_auto_switch or self.config.Tactical_SkillAutoSwitch or self.config.AddNewStudent_Enable:
             pending_skill_auto_switch = False
             if not self._tactical_skill_choose():
                 study_finished = True
