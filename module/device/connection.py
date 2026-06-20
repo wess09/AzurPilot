@@ -1079,6 +1079,52 @@ class Connection(ConnectionAttr):
                                 '它们会劫持电脑上所有的网络连接，包括Alas与模拟器之间的本地连接。')
         return SelectedGrids(devices)
 
+    def auto_connect_mac_emulators(self):
+        """Connect running macOS emulator instances discovered by their vendor tools.
+
+        ADB does not automatically reconnect MuMu Pro after the emulator process is
+        restarted.  Querying ``mumutool`` is more reliable than guessing a fixed
+        port, and also supports instances whose ADB port has changed.
+
+        Returns:
+            bool: Whether at least one connection attempt was made.
+        """
+        if not IS_MACINTOSH:
+            return False
+
+        try:
+            from module.device.platform.emulator_mac import EmulatorManagerMac, EmulatorMac
+
+            instances = [
+                instance for instance in EmulatorManagerMac().all_emulator_instances
+                if instance.type == EmulatorMac.MuMuPro
+                and getattr(instance, 'state', '') == 'running'
+            ]
+        except Exception as e:
+            logger.warning(f'Failed to discover running macOS emulators: {e}')
+            return False
+
+        configured_name = getattr(self.config, 'EmulatorInfo_name', None)
+        if configured_name:
+            instances.sort(key=lambda instance: instance.name != configured_name)
+
+        self._mac_auto_serials = []
+        attempted = False
+        for instance in instances:
+            # 5037 is the ADB server itself, never an emulator endpoint.
+            if instance.serial == '127.0.0.1:5037':
+                continue
+            self._mac_auto_serials.append(instance.serial)
+            attempted = True
+            try:
+                logger.info(f'Auto connecting macOS emulator: {instance}')
+                msg = self.adb_client.connect(instance.serial)
+                if msg:
+                    logger.info(msg)
+            except Exception as e:
+                logger.warning(f'Failed to auto connect {instance.serial}: {e}')
+        return attempted
+
     def detect_device(self):
         """检测可用设备。
 
@@ -1120,6 +1166,8 @@ class Connection(ConnectionAttr):
                 if IS_WINDOWS:
                     brute_force_connect()
                     continue
+                elif IS_MACINTOSH and self.auto_connect_mac_emulators():
+                    continue
                 else:
                     break
             else:
@@ -1127,13 +1175,24 @@ class Connection(ConnectionAttr):
 
         # 自动设备检测
         if self.config.Emulator_Serial == 'auto':
-            if available.count == 0:
+            preferred_serials = getattr(self, '_mac_auto_serials', [])
+            preferred = SelectedGrids([
+                device for device in available
+                if device.serial in preferred_serials
+            ])
+            if preferred.count == 1:
+                logger.info(f'自动设备检测使用 MuMu 工具发现的设备')
+                self.serial = preferred[0].serial
+                del_cached_property(self, 'adb')
+            elif available.count == 0:
                 logger.critical('没有找到可用设备，自动设备检测无法工作，'
                                 '请在 Alas.Emulator.Serial 中设置一个确切的序列号，而不是使用 "auto"')
                 raise RequestHumanTakeover
             elif available.count == 1:
                 logger.info(f'自动设备检测只找到一个设备，正在使用它')
-                self.config.Emulator_Serial = self.serial = available[0].serial
+                # Keep the configured value as "auto". Only update this connection
+                # object so a later emulator restart can perform discovery again.
+                self.serial = available[0].serial
                 del_cached_property(self, 'adb')
             elif available.count == 2 \
                     and available.select(serial='127.0.0.1:7555') \
@@ -1142,7 +1201,7 @@ class Connection(ConnectionAttr):
                 # 对于 MuMu12 序列号如 127.0.0.1:7555 和 127.0.0.1:16384
                 # 忽略 7555，使用 16384
                 remain = available.select(may_mumu12_family=True).first_or_none()
-                self.config.Emulator_Serial = self.serial = remain.serial
+                self.serial = remain.serial
                 del_cached_property(self, 'adb')
             else:
                 logger.critical('找到多个设备，自动设备检测无法决定选择哪个，'
