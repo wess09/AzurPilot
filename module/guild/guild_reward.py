@@ -21,23 +21,19 @@ class RewardGuild(GuildLobby, GuildLogistics, GuildOperations):
             self.config.task_stop()
 
         self.ui_ensure(page_guild)
-        success = True
 
         # Lobby
         self.guild_lobby()
 
         # Logistics
         if self.config.GuildLogistics_Enable:
-            success &= self.guild_logistics()
+            self.guild_logistics()
 
         # Operation
         if self.config.GuildOperation_Enable:
-            success &= self.guild_operations()
+            self.guild_operations()
 
         self.ui_goto(page_main)
 
         # Scheduler
-        if success:
-            self.config.task_delay(server_update=True)
-        else:
-            self.config.task_delay(success=False, server_update=True)
+        self.config.task_delay(server_update=True)

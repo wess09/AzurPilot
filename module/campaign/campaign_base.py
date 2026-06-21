@@ -120,7 +120,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
         logger.hr(self.ENTRANCE, level=2)
 
         # 进入地图
-        self.map_get_info(star=True)
+        self.map_get_info()
         logger.attr('Map Battle', self._map_battle)
         self.emotion.check_reduce(self._map_battle)
         self.ENTRANCE.area = self.ENTRANCE.button

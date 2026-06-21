@@ -1,10 +1,9 @@
-from module.logger import logger
-from module.campaign.campaign_base import CampaignBase
 from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
+from module.logger import logger
 
-from .campaign_16_base import CampaignBase
-from .campaign_16_base import Config as ConfigBase
+from .campaign_16_base_submarine import CampaignBase
+from .campaign_16_base_submarine import Config as ConfigBase
 
 MAP = CampaignMap('16-1')
 MAP.shape = 'I9'
@@ -53,8 +52,7 @@ A9, B9, C9, D9, E9, F9, G9, H9, I9, \
     = MAP.flatten()
 
 
-class Config:
-    # ===== Start of generated config =====
+class Config(ConfigBase):
     MAP_HAS_MAP_STORY = False
     MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = True
@@ -81,7 +79,7 @@ class Campaign(CampaignBase):
 
         if self.clear_filter_enemy(self.ENEMY_FILTER, preserve=0):
             return True
-        
+
         return self.battle_default()
 
     def battle_6(self):

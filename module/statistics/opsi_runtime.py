@@ -78,7 +78,7 @@ def record_ap_snapshot(config: Any, ap_current: int, source: str, distance: int 
             ap_total=ap_total,
         )
     except Exception:
-        logger.exception("Failed to save AP snapshot")
+        logger.exception("保存行动力快照失败")
 
 
 def record_cl1_auto_search_battle(
@@ -201,6 +201,16 @@ def finish_meow_search_timer(
         main.get_current_ap()
     except Exception:
         logger.debug("Failed to get end action point")
+    else:
+        try:
+            record_ap_snapshot(
+                main.config,
+                ap_current=main._action_point_current,
+                ap_total=main._action_point_total,
+                source="meow",
+            )
+        except Exception:
+            logger.debug("记录短猫行动力快照失败", exc_info=True)
 
     duration = time.time() - search_started_at
     hazard_level = meow_hazard_level_from_runtime(main)

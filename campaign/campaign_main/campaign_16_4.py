@@ -1,8 +1,9 @@
-from module.campaign.campaign_base import CampaignBase
 from module.map.map_base import CampaignMap
 from module.map.map_grids import SelectedGrids, RoadGrids
 from module.logger import logger
-from .campaign_16_1 import Config as ConfigBase
+
+from .campaign_16_base_aircraft import CampaignBase
+from .campaign_16_base_aircraft import Config as ConfigBase
 
 MAP = CampaignMap('16-4')
 MAP.shape = 'K8'
@@ -60,17 +61,9 @@ A8, B8, C8, D8, E8, F8, G8, H8, I8, J8, K8, \
 road_main = RoadGrids([D5, F5, G4, H3])
 
 class Config(ConfigBase):
-    # ===== Start of generated config =====
-    MAP_SIREN_TEMPLATE = ['0']
-    MOVABLE_ENEMY_TURN = (2,)
-    MAP_HAS_SIREN = True
-    MAP_HAS_MOVABLE_ENEMY = True
     MAP_HAS_MAP_STORY = False
     MAP_HAS_FLEET_STEP = False
     MAP_HAS_AMBUSH = True
-    MAP_HAS_MYSTERY = True
-    MAP_WALK_USE_CURRENT_FLEET = True
-    # ===== End of generated config =====
 
     MAP_ENSURE_EDGE_INSIGHT_CORNER = 'bottom-left'
     MAP_SWIPE_MULTIPLY = (1.003, 1.022)

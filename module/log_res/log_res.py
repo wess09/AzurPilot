@@ -50,6 +50,21 @@ class LogRes:
                     self.config.modified[_key_time] = _time
                     _mod = True
                 if _mod:
+                    if key == 'ActionPoint':
+                        try:
+                            from module.statistics.opsi_runtime import record_ap_snapshot
+                            source = 'dashboard'
+                            task = getattr(getattr(self.config, 'task', None), 'command', None)
+                            if task:
+                                source = task
+                            record_ap_snapshot(
+                                self.config,
+                                ap_current=value.get('Value'),
+                                ap_total=value.get('Total'),
+                                source=source,
+                            )
+                        except Exception:
+                            logger.exception('保存行动力快照失败')
                     # 记录全量资源快照
                     value_to_record = value.get('Value') if isinstance(value, dict) else None
                     if value_to_record is not None:

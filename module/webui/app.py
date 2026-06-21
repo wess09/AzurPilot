@@ -5150,4 +5150,3 @@ def app():
     app.mount("/mcp", mcp_app)
 
     return app
-

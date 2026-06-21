@@ -12,7 +12,7 @@ class Campaign(CampaignBase):
         logger.hr('Ambush Farming on 1-1', level=2)
         
         # Enter map
-        self.map_get_info(star=True)
+        self.map_get_info()
         self.ENTRANCE.area = self.ENTRANCE.button
         self.enter_map(self.ENTRANCE, mode=self.config.Campaign_Mode)
 

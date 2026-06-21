@@ -21,6 +21,7 @@ SUBMARINE_VIEW.add_state('on', check_button=SUBMARINE_VIEW_ON)
 SUBMARINE_VIEW.add_state('off', check_button=SUBMARINE_VIEW_OFF)
 
 MOB_MOVE_OFFSET = (120, 200)
+AIR_STRIKE_OFFSET = (120, 200)
 
 
 class StrategyHandler(InfoHandler):
@@ -282,18 +283,10 @@ class StrategyHandler(InfoHandler):
                 continue
 
     def is_in_strategy_air_strike(self):
-        """
-        判断是否处于空袭确认界面。
-
-        Returns:
-            bool: 是否在空袭确认界面。
-        """
         return self.appear(AIR_STRIKE_CONFIRM, offset=(20, 20))
 
     def strategy_has_air_strike(self):
         """
-        检查是否有空袭选项。
-
         Pages:
             in: STRATEGY_OPENED
             out: STRATEGY_OPENED
@@ -305,42 +298,26 @@ class StrategyHandler(InfoHandler):
 
     def strategy_air_strike_enter(self, skip_first_screenshot=True):
         """
-        进入空袭界面。
-
         Pages:
             in: STRATEGY_OPENED, AIR_STRIKE_ENTER
             out: AIR_STRIKE_CONFIRM
         """
         logger.info('Air strike enter')
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop(skip_first=skip_first_screenshot):
             if self.appear(AIR_STRIKE_CONFIRM, offset=(20, 20)):
                 break
-
             if self.appear_then_click(AIR_STRIKE_ENTER, offset=(150, 200), interval=5):
                 continue
 
-    def strategy_air_strike_confirm(self, skip_first_screenshot=True):
+    def strategy_air_strike_cancel(self, skip_first_screenshot=True):
         """
-        确认空袭。
-
         Pages:
             in: AIR_STRIKE_CONFIRM
             out: STRATEGY_OPENED, AIR_STRIKE_ENTER
         """
-        logger.info('Air strike confirm')
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        logger.info('Air strike cancel')
+        for _ in self.loop(skip_first=skip_first_screenshot):
             if self.appear(AIR_STRIKE_ENTER, offset=(150, 200)):
                 break
-
-            if self.appear_then_click(AIR_STRIKE_CONFIRM, offset=(20, 20), interval=5):
+            if self.appear_then_click(AIR_STRIKE_CANCEL, offset=(20, 20), interval=5):
                 continue

@@ -33,6 +33,8 @@ from datetime import datetime, timedelta
 MEOW_ROUND_AP_COST = 30
 # 短猫每轮平均耗时默认值（秒）。当统计模块不可用时用于兜底计算。
 MEOW_ROUND_TIME_DEFAULT_SECONDS = 120
+# 大世界行动力每 10 分钟自然回复 1 点。
+ACTION_POINT_RECOVER_SECONDS = 600
 
 from module.logger import logger
 from module.os.map import OSMap
@@ -76,6 +78,9 @@ class CoinTaskMixin:
     CONFIG_PATH_SMART_AP_PRESERVE = 'OpsiScheduling.OpsiScheduling.ActionPointPreserve'
     # 虚拟资产保留配置路径
     CONFIG_PATH_VIRTUAL_ASSET_PRESERVE = 'OpsiScheduling.OpsiScheduling.VirtualAssetPreserve'
+    # 基于上次快照估算行动力并提前唤起智能调度
+    CONFIG_PATH_AP_EARLY_TRIGGER_ENABLE = 'OpsiScheduling.OpsiScheduling.ActionPointEarlyTriggerEnable'
+    CONFIG_PATH_AP_EARLY_TRIGGER_THRESHOLD = 'OpsiScheduling.OpsiScheduling.ActionPointEarlyTriggerThreshold'
     
     # 各任务的配置路径常量（集中管理，避免硬编码）
     CONFIG_PATH_MEOW_AP_PRESERVE = 'OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve'
@@ -84,6 +89,15 @@ class CoinTaskMixin:
     # 短猫相接任务名称
     TASK_NAME_MEOWFFICER_FARMING = 'OpsiMeowfficerFarming'
     AP_NOTIFY_MIN_INTERVAL_MINUTES = 30
+
+    def _config_enabled(self, keys, default=False):
+        """
+        严格读取布尔配置，兼容 WebUI checkbox 历史值 [] / [True]。
+        """
+        value = self.config.cross_get(keys=keys, default=default)
+        if isinstance(value, list):
+            return any(bool(item) for item in value)
+        return value is True
     
     # ==================== 推送通知相关方法 ====================
     
@@ -311,7 +325,7 @@ class CoinTaskMixin:
         # 如果未启用智能调度，或者未开启黄币控制开关，则禁用黄币返回检查
         # 此时任务会一直运行到行动力不足（即传统模式）
         smart_enabled = is_smart_scheduling_enabled(self.config)
-        use_smart_preserve = self.config.cross_get(
+        use_smart_preserve = self._config_enabled(
             keys=self.CONFIG_PATH_USE_SMART_CL1_PRESERVE
         )
         
@@ -351,7 +365,7 @@ class CoinTaskMixin:
             int: 保留的黄币数量
         """
         # 检查是否启用智能调度黄币保留配置
-        use_smart_preserve = self.config.cross_get(
+        use_smart_preserve = self._config_enabled(
             keys=self.CONFIG_PATH_USE_SMART_CL1_PRESERVE
         )
         
@@ -390,6 +404,19 @@ class CoinTaskMixin:
             keys=self.CONFIG_PATH_SMART_AP_PRESERVE
         )
         return preserve or 0
+
+    def _get_coin_task_action_point_preserve(self):
+        """获取智能调度用于启动黄币补充任务的行动力阈值。"""
+        smart_ap_preserve = self._get_smart_scheduling_action_point_preserve()
+        if smart_ap_preserve > 0:
+            return smart_ap_preserve
+        return self.config.cross_get(
+            keys=self.CONFIG_PATH_MEOW_AP_PRESERVE
+        ) or 1000
+
+    def _delay_scheduling_after_dispatch(self):
+        """派发目标任务后延迟智能调度自身，避免下一轮继续抢占。"""
+        self.config.task_delay(success=True, task='OpsiScheduling')
     
     def _calculate_virtual_asset(self, current_ap, current_yellow_coins):
         """
@@ -480,7 +507,7 @@ class CoinTaskMixin:
         }
         
         for task_name, config_path in task_config_map.items():
-            if self.config.cross_get(keys=config_path):
+            if self._config_enabled(keys=config_path):
                 enabled_tasks.append(task_name)
         
         return enabled_tasks
@@ -780,6 +807,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         if not is_smart_scheduling_enabled(self.config):
             logger.info('智能调度未启用，跳过执行')
             return
+
+        if self._handle_ap_early_trigger():
+            return
         
         # 获取当前黄币数量
         yellow_coins = self.get_yellow_coins()
@@ -806,10 +836,8 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             if virtual_asset < virtual_asset_preserve:
                 logger.info(f'虚拟资产不足 ({virtual_asset:.0f} < {virtual_asset_preserve})，需要执行黄币补充任务')
                 
-                # 获取短猫相接的行动力保留值
-                meow_ap_preserve = self.config.cross_get(
-                    keys=self.CONFIG_PATH_MEOW_AP_PRESERVE
-                ) or 1000
+                # 获取黄币补充任务的行动力保留值
+                meow_ap_preserve = self._get_coin_task_action_point_preserve()
                 
                 if current_ap < meow_ap_preserve:
                     # 行动力也不足，推迟任务
@@ -829,10 +857,8 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         if yellow_coins < cl1_preserve:
             logger.info(f'黄币不足 ({yellow_coins} < {cl1_preserve})，需要执行黄币补充任务')
             
-            # 获取短猫相接的行动力保留值
-            meow_ap_preserve = self.config.cross_get(
-                keys=self.CONFIG_PATH_MEOW_AP_PRESERVE
-            ) or 1000
+            # 获取黄币补充任务的行动力保留值
+            meow_ap_preserve = self._get_coin_task_action_point_preserve()
             
             if current_ap < meow_ap_preserve:
                 # 行动力也不足，推迟任务
@@ -878,6 +904,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
                         self.config.cross_set(keys='OpsiMeowfficerFarming.Scheduler.Enable', value=True)
                         self.config.cross_set(keys=self.CONFIG_PATH_ENABLE_MEOWFFICER, value=True)
                         self.config.task_call('OpsiMeowfficerFarming')
+                        self._delay_scheduling_after_dispatch()
 
                     self.notify_push(
                         title='[AzurPilot] 月末行动力清理 - 强制短猫',
@@ -988,6 +1015,8 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             if cd is not None:
                 logger.info(f'有冷却任务 {cd.command}，延迟智能调度到 {cd.next_run}')
                 self.config.task_delay(target=cd.next_run)
+            else:
+                self._delay_scheduling_after_dispatch()
         
         self.config.task_stop()
     
@@ -1018,6 +1047,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             
             # 调用侵蚀1任务
             self.config.task_call('OpsiHazard1Leveling')
+            self._delay_scheduling_after_dispatch()
         
         self.config.task_stop()
     
@@ -1062,6 +1092,114 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             pass
 
         return 0, 'none'
+
+    def _get_last_ap_snapshot(self):
+        """从统计库读取最近一次大世界行动力快照。"""
+        try:
+            from module.statistics.cl1_database import db as cl1_db
+            instance_name = getattr(self.config, 'config_name', 'default')
+            snapshot = cl1_db.get_last_ap_snapshot(instance_name)
+            if isinstance(snapshot, dict):
+                return snapshot
+        except Exception as e:
+            logger.debug(f'读取最近行动力快照失败: {e}')
+        return None
+
+    def _estimate_current_ap_from_snapshot(self) -> tuple[int | None, str]:
+        """按最近快照和 10 分钟回复 1 行动力估算当前 AP。"""
+        snapshot = self._get_last_ap_snapshot()
+        if not snapshot:
+            return None, 'no_snapshot'
+
+        timestamp = snapshot.get('ts')
+        try:
+            recorded_at = datetime.fromisoformat(timestamp)
+        except (TypeError, ValueError):
+            return None, 'invalid_timestamp'
+
+        try:
+            base_ap = int(snapshot.get('ap'))
+        except (TypeError, ValueError):
+            try:
+                base_ap = int(snapshot.get('ap_total'))
+            except (TypeError, ValueError):
+                return None, 'invalid_ap'
+
+        elapsed_seconds = max(0, (datetime.now() - recorded_at).total_seconds())
+        recovered_ap = int(elapsed_seconds // ACTION_POINT_RECOVER_SECONDS)
+        estimated_ap = min(200, base_ap + recovered_ap)
+        source = snapshot.get('source') or 'unknown'
+        logger.info(
+            f'行动力估算: 快照={base_ap}, 来源={source}, '
+            f'时间={recorded_at.replace(microsecond=0)}, 回复={recovered_ap}, 估算={estimated_ap}'
+        )
+        return estimated_ap, 'snapshot'
+
+    def _get_ap_early_trigger_threshold(self) -> int:
+        """获取行动力提前调度阈值。"""
+        threshold = self.config.cross_get(
+            keys=self.CONFIG_PATH_AP_EARLY_TRIGGER_THRESHOLD,
+            default=0,
+        )
+        try:
+            return max(0, int(threshold))
+        except (TypeError, ValueError):
+            return 0
+
+    def _should_check_ap_early_trigger(self) -> bool:
+        """判断是否启用基于行动力估算的提前调度。"""
+        if not is_smart_scheduling_enabled(self.config):
+            return False
+        return self._config_enabled(
+            keys=self.CONFIG_PATH_AP_EARLY_TRIGGER_ENABLE,
+            default=True,
+        )
+
+    def _handle_ap_early_trigger(self) -> bool:
+        """行动力估算达到阈值时，提前执行一次真实智能调度检查。"""
+        if not self._should_check_ap_early_trigger():
+            return False
+
+        threshold = self._get_ap_early_trigger_threshold()
+        if threshold <= 0:
+            return False
+
+        estimated_ap, source = self._estimate_current_ap_from_snapshot()
+        if estimated_ap is None:
+            logger.info(f'行动力提前调度跳过: 无可用快照 ({source})')
+            return False
+        if estimated_ap < threshold:
+            logger.info(f'行动力估算未达到提前调度阈值 ({estimated_ap} < {threshold})')
+            self.config.task_delay(minute=(threshold - estimated_ap) * 10)
+            self.config.task_stop()
+            return True
+
+        logger.info(f'行动力估算达到提前调度阈值 ({estimated_ap} >= {threshold})，读取真实行动力')
+        self.action_point_enter()
+        self.action_point_safe_get()
+        self.action_point_quit()
+        current_ap = self._action_point_current
+        total_ap = self._action_point_total
+
+        try:
+            from module.statistics.opsi_runtime import record_ap_snapshot
+            record_ap_snapshot(
+                config=self.config,
+                ap_current=current_ap,
+                ap_total=total_ap,
+                source='scheduling',
+            )
+        except Exception:
+            logger.debug('保存智能调度行动力快照失败', exc_info=True)
+
+        if current_ap < threshold:
+            logger.info(f'真实行动力未达到提前调度阈值 ({current_ap} < {threshold})，继续等待')
+            self.config.task_delay(minute=(threshold - current_ap) * 10)
+            self.config.task_stop()
+            return True
+
+        logger.info(f'真实行动力达到提前调度阈值 ({current_ap} >= {threshold})，进入智能调度')
+        return False
 
     def _get_meow_avg_round_time_seconds(self) -> tuple[float, str]:
         """获取短猫平均每轮耗时（秒）。

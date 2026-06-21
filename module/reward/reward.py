@@ -314,4 +314,4 @@ class Reward(UI):
         self.ui_goto(page_main)
         self.reward_mission(daily=self.config.Reward_CollectMission,
                             weekly=self.config.Reward_CollectWeeklyMission)
-        self.config.task_delay(success=True)
+        self.config.task_delay(server_update=True)

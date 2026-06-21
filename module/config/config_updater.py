@@ -717,6 +717,22 @@ class ConfigUpdater:
 
         if not is_template:
             new = self.config_redirect(old, new)
+            old_priority = deep_get(old, 'General.YukikazeTaskManager.TaskPriorityAdjustment')
+            new_priority = deep_get(new, 'General.YukikazeTaskManager.TaskPriorityAdjustment')
+            template_priority = deep_get(
+                self.args, 'General.YukikazeTaskManager.TaskPriorityAdjustment.value'
+            )
+            if (
+                    isinstance(old_priority, str)
+                    and 'OpsiScheduling' not in old_priority
+                    and isinstance(new_priority, str)
+                    and new_priority == old_priority
+                    and old_priority.replace(
+                        '> OpsiCrossMonth\n> Commission > Tactical > Research',
+                        '> OpsiCrossMonth\n> OpsiScheduling\n> Commission > Tactical > Research',
+                    ) == template_priority
+            ):
+                deep_set(new, 'General.YukikazeTaskManager.TaskPriorityAdjustment', template_priority)
         new = self._override(new)
 
         return new

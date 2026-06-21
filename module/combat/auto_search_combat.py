@@ -13,6 +13,7 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
     _auto_search_in_stage_timer = Timer(3, count=6)
     _auto_search_status_confirm = False
     _withdraw = False
+    _defeat_count = 0
     auto_search_oil_limit_triggered = False
     auto_search_coin_limit_triggered = False
 
@@ -379,6 +380,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
             # End
             if self.is_auto_search_running():
                 self._auto_search_status_confirm = False
+                # 战斗正常结束（非战败），重置连续战败计数
+                if self._defeat_count > 0:
+                    logger.info('Battle won, reset defeat count')
+                    self._defeat_count = 0
                 break
             if self.is_in_auto_search_menu() or self._handle_auto_search_menu_missing():
                 raise CampaignEnd
@@ -414,12 +419,21 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                         continue
                     self._withdraw = False
                     if defeat_withdraw == 'withdraw_stop':
-                        # 撤退后关闭任务：withdraw()内部抛出CampaignEnd，
-                        # 需要捕获后转换为ScriptEnd以终止任务
-                        try:
+                        # 撤退后关闭任务：连续3次战败才关闭任务
+                        self._defeat_count += 1
+                        logger.attr('Defeat_count', f'{self._defeat_count}/3')
+                        if self._defeat_count >= 3:
+                            # 连续3次战败，关闭任务
+                            # withdraw()内部抛出CampaignEnd，
+                            # 需要捕获后转换为ScriptEnd以终止任务
+                            try:
+                                self.withdraw()
+                            except CampaignEnd:
+                                raise ScriptEnd('DefeatWithdraw=withdraw_stop')
+                        else:
+                            # 未满3次，撤退后继续任务
                             self.withdraw()
-                        except CampaignEnd:
-                            raise ScriptEnd('DefeatWithdraw=withdraw_stop')
+                            break
                     else:
                         self.withdraw()
                     break

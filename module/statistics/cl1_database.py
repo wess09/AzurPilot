@@ -735,6 +735,25 @@ class Cl1Database:
         data["ap_snapshots"] = snapshots
         self.save_stats(instance, month, data)
 
+    def get_last_ap_snapshot(self, instance: str) -> Optional[Dict[str, Any]]:
+        """获取最近一次行动力快照，优先读取当前月份，必要时回退到历史月份。"""
+        current_month = datetime.now().strftime("%Y-%m")
+        current_data = self.get_stats(instance, current_month)
+        snapshots = current_data.get("ap_snapshots", [])
+        if snapshots:
+            return snapshots[-1]
+
+        rows = self._list_stats_rows(instance=instance)
+        for _, month_key in reversed(rows):
+            if month_key == current_month:
+                continue
+            data = self.get_stats(instance, month_key)
+            snapshots = data.get("ap_snapshots", [])
+            if snapshots:
+                return snapshots[-1]
+
+        return None
+
     def get_last_ap_notification(self, instance: str) -> Optional[Dict[str, Any]]:
         """获取最近一次成功推送时记录的行动力值。"""
         current_month = datetime.now().strftime("%Y-%m")

@@ -124,6 +124,7 @@ class FastForwardHandler(AutoSearchHandler):
         > 13-1 > 13-2 > 13-3 > 13-4
         > 14-1 > 14-2 > 14-3 > 14-4
         > 15-1 > 15-2 > 15-3 > 15-4
+        > 16-1 > 16-2 > 16-3 > 16-4
         """,
         'A1 > A2 > A3',
         'B1 > B2 > B3',
@@ -447,8 +448,7 @@ class FastForwardHandler(AutoSearchHandler):
         # 插入自定义推进逻辑
         if self.config.STAGE_INCREASE_AB:
             stage_increase = [
-                'A1 > A2 > A3 > B1 > B2 > B3',
-                'C1 > C2 > C3 > D1 > D2 > D3',
+                'A1 > A2 > A3 > B1 > B2 > B3',                
             ] + stage_increase
         custom = self.config.STAGE_INCREASE_CUSTOM
         if custom:
@@ -606,6 +606,12 @@ class FastForwardHandler(AutoSearchHandler):
             if self.handle_popup_confirm('2X_BOOK'):
                 return True
 
+        return False
+
+    def handle_submarine_support_popup(self):
+        """
+        Should be rewritten in W16 submarine base class
+        """
         return False
 
     def handle_map_walk_speedup(self, skip_first_screenshot=True):

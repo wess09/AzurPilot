@@ -1164,7 +1164,7 @@
     },
     "DefeatWithdraw": {
       "name": "道中失败处理",
-      "help": "道中战斗战败时的处理方式",
+      "help": "道中战斗战败时的处理方式，撤退后关闭任务需连续3次战败才会关闭",
       "withdraw_continue": "撤退后继续任务",
       "switch_fleet": "切换队伍继续出击",
       "withdraw_stop": "撤退后关闭任务"
@@ -1208,6 +1208,28 @@
     "ReachLevel": {
       "name": "舰船升至 X 级后停止",
       "help": "任意等级低于 X 的舰船升级至 X 级后停止\n0 表示不限制等级"
+    }
+  },
+  "WarArchives": {
+    "_info": {
+      "name": "作战档案",
+      "help": ""
+    },
+    "DailyRunCount": {
+      "name": "每日出击次数",
+      "help": "每天最多运行作战档案多少次。\n0 表示不限制。\n达到次数后会延迟到下一次服务器刷新，不会关闭任务。"
+    },
+    "DailyRunCountRemain": {
+      "name": "今日剩余出击次数",
+      "help": "脚本自动维护的今日剩余额度。"
+    },
+    "DailyRunCountRecord": {
+      "name": "每日出击次数记录时间",
+      "help": "脚本自动维护的额度记录时间，用于服务器刷新后重置。"
+    },
+    "DailyRunCountLimit": {
+      "name": "上次每日出击次数",
+      "help": "脚本自动维护的上次每日次数设置，用于调整额度。"
     }
   },
   "Fleet": {
@@ -3280,6 +3302,16 @@
     "ActionPointPreserve": {
       "name": "短猫相接 保留 X 点行动力",
       "help": "行动力低于 X 后停止，自动打开行动力箱子，X 包含箱子中的行动力，建议保留1000行动力给侵蚀1练级"
+    },
+    "ActionPointEarlyTriggerEnable": {
+      "name": "行动力提前调度",
+      "help": "启用后根据上次大世界行动力快照和每 10 分钟回复 1 点行动力估算当前行动力；达到阈值时提前运行智能调度，避免紧急委托等高优先任务期间行动力溢出。",
+      "True": "True",
+      "False": "False"
+    },
+    "ActionPointEarlyTriggerThreshold": {
+      "name": "提前调度行动力阈值",
+      "help": "估算行动力达到 X 时提前触发智能调度。默认 200，适合在行动力接近自然上限时提前开始大世界 71 或短猫。"
     },
     "OperationCoinsReturnThreshold": {
       "name": "获取 X 个作战补给凭证",
@@ -5944,6 +5976,8 @@
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
       "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
       "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "ActionPointEarlyTriggerEnable": "行动力提前调度",
+      "ActionPointEarlyTriggerThreshold": "提前调度行动力阈值",
       "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
       "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
       "EnableObscure": "Gui.OpsiScheduling.EnableObscure",

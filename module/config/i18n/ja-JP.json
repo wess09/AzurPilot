@@ -1210,6 +1210,28 @@
       "help": "レベルX未満の艦船がレベルXに達すると停止します。\n0はレベル制限なしを意味します"
     }
   },
+  "WarArchives": {
+    "_info": {
+      "name": "作戦アーカイブ",
+      "help": ""
+    },
+    "DailyRunCount": {
+      "name": "デイリー出撃回数",
+      "help": "作戦アーカイブを1日に実行する最大回数です。\n0は無制限です。\n上限に達すると、タスクを無効化せず次回サーバー更新まで延期します。"
+    },
+    "DailyRunCountRemain": {
+      "name": "本日の残り出撃回数",
+      "help": "スクリプトが自動管理する本日の残り回数です。"
+    },
+    "DailyRunCountRecord": {
+      "name": "デイリー出撃回数記録時刻",
+      "help": "サーバー更新後のリセットに使う、スクリプトが自動管理する記録時刻です。"
+    },
+    "DailyRunCountLimit": {
+      "name": "前回のデイリー出撃回数",
+      "help": "回数調整に使う、スクリプトが自動管理する前回の設定値です。"
+    }
+  },
   "Fleet": {
     "_info": {
       "name": "出撃艦隊",
@@ -3280,6 +3302,16 @@
     "ActionPointPreserve": {
       "name": "ショートキャットは X ポイントの可動性を接続して保持します",
       "help": "モビリティがX以下になると停止し、モビリティボックスが自動的に開きます。"
+    },
+    "ActionPointEarlyTriggerEnable": {
+      "name": "行動力の早期スケジュール",
+      "help": "最後のセイレーン作戦行動力スナップショットと 10 分ごとに 1 回復する自然回復量から現在の行動力を推定します。しきい値に達したらスマートスケジュールを早めに実行し、緊急委託など高優先度タスク中の行動力あふれを防ぎます。",
+      "True": "True",
+      "False": "False"
+    },
+    "ActionPointEarlyTriggerThreshold": {
+      "name": "早期スケジュール行動力しきい値",
+      "help": "推定行動力が X に達したらスマートスケジュールを早めに起動します。既定値は 200 で、自然上限に近づく前にセイレーン作戦 7-1 または指揮ニャ周回を開始する用途に向いています。"
     },
     "OperationCoinsReturnThreshold": {
       "name": "X 個の戦闘物資引換券を入手する",
@@ -5944,6 +5976,8 @@
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
       "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
       "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "ActionPointEarlyTriggerEnable": "行動力の早期スケジュール",
+      "ActionPointEarlyTriggerThreshold": "早期スケジュール行動力しきい値",
       "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
       "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
       "EnableObscure": "Gui.OpsiScheduling.EnableObscure",

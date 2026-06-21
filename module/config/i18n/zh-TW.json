@@ -1210,6 +1210,28 @@
       "help": "任意等級低於 X 的艦船升級至 X 級後停止\n0 表示不限制等級"
     }
   },
+  "WarArchives": {
+    "_info": {
+      "name": "作戰檔案",
+      "help": ""
+    },
+    "DailyRunCount": {
+      "name": "每日出擊次數",
+      "help": "每天最多執行作戰檔案多少次。\n0 表示不限制。\n達到次數後會延遲到下一次伺服器刷新，不會關閉任務。"
+    },
+    "DailyRunCountRemain": {
+      "name": "今日剩餘出擊次數",
+      "help": "腳本自動維護的今日剩餘額度。"
+    },
+    "DailyRunCountRecord": {
+      "name": "每日出擊次數記錄時間",
+      "help": "腳本自動維護的額度記錄時間，用於伺服器刷新後重置。"
+    },
+    "DailyRunCountLimit": {
+      "name": "上次每日出擊次數",
+      "help": "腳本自動維護的上次每日次數設定，用於調整額度。"
+    }
+  },
   "Fleet": {
     "_info": {
       "name": "出擊艦隊",
@@ -3280,6 +3302,16 @@
     "ActionPointPreserve": {
       "name": "短貓相接 保留 X 點行動力",
       "help": "行動力低於 X 後停止，自動開啟行動力箱子，X 包含箱子中的行動力，建議保留1000行動力給侵蝕1練級"
+    },
+    "ActionPointEarlyTriggerEnable": {
+      "name": "行動力提前排程",
+      "help": "啟用後根據上次大世界行動力快照和每 10 分鐘回復 1 點行動力估算目前行動力；達到閾值時提前執行智慧排程，避免緊急委託等高優先任務期間行動力溢出。",
+      "True": "True",
+      "False": "False"
+    },
+    "ActionPointEarlyTriggerThreshold": {
+      "name": "提前排程行動力閾值",
+      "help": "估算行動力達到 X 時提前觸發智慧排程。預設 200，適合在行動力接近自然上限時提前開始大世界 71 或短貓。"
     },
     "OperationCoinsReturnThreshold": {
       "name": "獲取 X 個作戰補給憑證",
@@ -5944,6 +5976,8 @@
       "UseSmartSchedulingOperationCoinsPreserve": "Gui.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve",
       "OperationCoinsPreserve": "Gui.OpsiScheduling.OperationCoinsPreserve",
       "ActionPointPreserve": "Gui.OpsiScheduling.ActionPointPreserve",
+      "ActionPointEarlyTriggerEnable": "行動力提前排程",
+      "ActionPointEarlyTriggerThreshold": "提前排程行動力閾值",
       "OperationCoinsReturnThreshold": "Gui.OpsiScheduling.OperationCoinsReturnThreshold",
       "EnableMeowfficerFarming": "Gui.OpsiScheduling.EnableMeowfficerFarming",
       "EnableObscure": "Gui.OpsiScheduling.EnableObscure",

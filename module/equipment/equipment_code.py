@@ -193,9 +193,10 @@ class EquipmentCodeHandler(StorageHandler):
             else:
                 self.device.screenshot()
 
-            if self.appear_then_click(EQUIPMENT_CODE_ENTER, offset=(5, 5), interval=1):
+            if not self.appear_then_click(EQUIPMENT_CODE_ENTER, offset=(5, 5), interval=1):
                 continue
 
+            self.device.screenshot()
             # End
             if not self.equip_preview_empty():
                 logger.info('Confirm gear code loaded.')

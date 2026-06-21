@@ -121,6 +121,10 @@ class EnemySearchingHandler(InfoHandler):
             # 关卡可能已经结束，尽管此处预期出现敌人搜索动画
             if self.handle_in_stage():
                 return True
+            # immediately enter submarine combat in W16
+            if hasattr(self, 'is_combat_loading') and self.is_combat_loading():
+                logger.warning('Entered map with is_combat_loading appeared')
+                break
             if self.handle_auto_search_exit(drop=drop):
                 timeout.limit = 10
                 timeout.reset()
