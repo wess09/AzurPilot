@@ -578,53 +578,6 @@ class Island(SelectCharacter):
             logger.warning(f"{context}材料已确认足够，但确认按钮不可用，可能角色体力不足")
         return False
 
-    def back_to_postmanage_from_dispatch(self):
-        """从角色选择或产品选择流程退回岗位管理页。"""
-        self.interval_clear([SELECT_UI_BACK, POST_CLOSE])
-        for _ in self.loop(timeout=15, skip_first=False):
-            if (
-                    self.ui_page_appear(page_island_postmanage)
-                    and not self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1)
-                    and not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1)
-                    and not self.appear(ISLAND_POST_CHECK, offset=1)
-                    and not self.appear(ISLAND_POST_VACANT_CHECK, offset=1)
-            ):
-                return True
-            if self.appear(ISLAND_GET, offset=30):
-                self.device.click(ISLAND_POST_SAFE_AREA)
-                continue
-            if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
-                self.device.click(SELECT_UI_BACK)
-                continue
-            if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
-                self.device.click(SELECT_UI_BACK)
-                continue
-            if self.appear(ISLAND_POST_CHECK, offset=1) or self.appear(ISLAND_POST_VACANT_CHECK, offset=1):
-                self.device.click(POST_CLOSE)
-                continue
-
-        logger.warning("从派遣流程返回岗位管理页超时")
-        return False
-
-    def confirm_post_add_order(self, context="岗位派遣"):
-        """材料确认足够后，点击最大数量并确认派遣。"""
-        if self.appear(POST_MAX):
-            self.device.click(POST_MAX)
-            self.device.sleep(0.3)
-            self.device.screenshot()
-
-        if self.appear(POST_ADD_ORDER):
-            self.device.click(POST_ADD_ORDER)
-            self.device.sleep(0.5)
-            return True
-
-        current, required = self.ocr_select_product_material_counter()
-        if required and current < required:
-            logger.warning(f"{context}材料不足，确认按钮不可用: {current}/{required}")
-        else:
-            logger.warning(f"{context}材料已确认足够，但确认按钮不可用，可能角色体力不足")
-        return False
-
     def confirm_selected_character(self, context="岗位派遣"):
         """确认角色选择，并等待角色选择页切换到下一步。"""
         self.interval_clear([SELECT_UI_CONFIRM])

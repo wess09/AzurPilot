@@ -97,17 +97,22 @@ class IslandDailyGather(Island):
             worker_list = self._daily_gather_worker_list()
             # 如果成功选择了采集目标，继续后续流程
             # 5. 依次点击三个"+"按钮并选择角色
+            character_selected = True
             for i in range(3):
                 logger.info(f"步骤5-{i+1}: 点击第{i+1}个+按钮并选择角色")
-                self._click_plus_and_select_character(i, worker_list)
+                if not self._click_plus_and_select_character(i, worker_list):
+                    logger.warning(f"第{i + 1}个槽位角色选择失败，终止本次采集派遣")
+                    character_selected = False
+                    break
 
-            # 6. 点击"出发"按钮
-            logger.info("步骤6: 点击出发按钮")
-            self._click_depart()
+            if character_selected:
+                # 6. 点击"出发"按钮
+                logger.info("步骤6: 点击出发按钮")
+                self._click_depart()
 
-            # 7. 处理采集完成页面
-            logger.info("步骤7: 等待采集完成并关闭完成页面")
-            self._handle_collection_complete()
+                # 7. 处理采集完成页面
+                logger.info("步骤7: 等待采集完成并关闭完成页面")
+                self._handle_collection_complete()
         else:
             logger.info("所有采集物已采集完毕，跳过后续步骤")
 
@@ -296,6 +301,9 @@ class IslandDailyGather(Island):
 
         if not selected and not self._select_character_with_stamina_check():
             logger.warning(f"第{index + 1}个槽位未找到可用角色，跳过")
+            self.device.click(SELECT_UI_BACK)
+            self.device.sleep(0.3)
+            return False
 
         # 点击确认按钮完成选择
         self.device.sleep(0.3)
