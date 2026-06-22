@@ -580,12 +580,9 @@ class Island(SelectCharacter):
 
     def confirm_selected_character(self, context="岗位派遣"):
         """确认角色选择，并等待角色选择页切换到下一步。"""
-        self.interval_clear([SELECT_UI_CONFIRM])
-        if not self.appear(SELECT_UI_CONFIRM):
-            logger.warning(f"{context}角色确认按钮未出现")
+        if not self.click_selected_character_confirm(context=context):
             return False
 
-        self.device.click(SELECT_UI_CONFIRM)
         for _ in self.loop(timeout=8, skip_first=False):
             if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
                 return True
@@ -603,25 +600,36 @@ class Island(SelectCharacter):
                 if self.appear_then_click(SELECT_UI_CONFIRM, interval=1):
                     continue
 
-        logger.warning(f"{context}角色确认后未进入下一步")
+        logger.warning(f"{context}确认后未进入下一步")
         return False
 
     def confirm_selected_character_closed(self, context="角色选择", timeout=8):
         """确认角色选择，并等待角色选择页关闭。"""
-        self.interval_clear([SELECT_UI_CONFIRM])
-        if not self.appear(SELECT_UI_CONFIRM):
-            logger.warning(f"{context}角色确认按钮未出现")
+        if not self.click_selected_character_confirm(context=context):
             return False
 
-        self.device.click(SELECT_UI_CONFIRM)
         for _ in self.loop(timeout=timeout, skip_first=False):
             if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                 return True
             if self.appear_then_click(SELECT_UI_CONFIRM, interval=1):
                 continue
 
-        logger.warning(f"{context}角色确认后仍停留在角色选择页")
+        logger.warning(f"{context}确认后仍停留在角色选择页")
         return False
+
+    def click_selected_character_confirm(self, context="角色选择", timeout=5):
+        """等待角色确认按钮出现并点击。"""
+        self.interval_clear([SELECT_UI_CONFIRM])
+        for _ in self.loop(timeout=timeout, skip_first=False):
+            if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
+                return True
+            if self.appear_then_click(SELECT_UI_CONFIRM, interval=1):
+                return True
+
+        if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
+            logger.warning(f"{context}确认按钮未出现")
+            return False
+        return True
 
     def post_open(self,post):
         template = TEMPLATE_POST_LOCK
