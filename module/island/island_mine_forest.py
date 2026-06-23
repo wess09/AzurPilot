@@ -211,6 +211,26 @@ class IslandMineForest(Island,LoginHandler):
                     return name
         return None
 
+    def _record_working_post(self, post_id, category, time_var_name):
+        """记录当前岗位的生产状态、剩余次数和完成时间。"""
+        product_name = self.post_plant_check(category)
+        if product_name:
+            self.posts[post_id]['crop'] = product_name
+        else:
+            self.posts[post_id]['crop'] = None
+        self.posts[post_id]['state'] = 'working'
+
+        ocr_post_number = Digit(OCR_POST_NUMBER, letter=(57, 58, 60), threshold=100,
+                                alphabet='0123456789')
+        number = ocr_post_number.ocr(self.device.image)
+        self.posts[post_id]['runs'] = number if number else 0
+        logger.info(f"  {post_id}: 正在生产 {product_name or '未知'}，剩余 {self.posts[post_id]['runs']} 次")
+
+        time_work = Duration(ISLAND_WORKING_TIME)
+        time_value = time_work.ocr(self.device.image)
+        finish_time = datetime.now() + time_value if time_value is not None else None
+        setattr(self, time_var_name, finish_time)
+
     def collect_and_detect_post(self, post_button, post_id, category, time_var_name):
         """
         打开岗位，收获已完成产物，并检测当前状态。
@@ -224,7 +244,7 @@ class IslandMineForest(Island,LoginHandler):
         was_complete = self.appear(ISLAND_WORK_COMPLETE, offset=1)
 
         if was_complete or self.appear(POST_GET, offset=(50, 0)):
-            # 已完成 → 先收获，再标记为空
+            # 已完成或工作中产物可收 → 先收取，再复检岗位状态
             self.post_get_stay()
             collected = True
             self.device.screenshot()
@@ -234,6 +254,8 @@ class IslandMineForest(Island,LoginHandler):
                 self.posts[post_id]['state'] = 'idle'
                 setattr(self, time_var_name, None)
                 logger.info(f"  {post_id}: 收获完成，空闲")
+            elif self.appear(ISLAND_WORKING):
+                self._record_working_post(post_id, category, time_var_name)
             else:
                 if was_complete:
                     self.posts[post_id]['crop'] = None
@@ -249,23 +271,7 @@ class IslandMineForest(Island,LoginHandler):
 
         elif self.appear(ISLAND_WORKING):
             # 正在工作 → 检测产物
-            product_name = self.post_plant_check(category)
-            if product_name:
-                self.posts[post_id]['crop'] = product_name
-            else:
-                self.posts[post_id]['crop'] = None
-            self.posts[post_id]['state'] = 'working'
-            # 读取生产次数
-            ocr_post_number = Digit(OCR_POST_NUMBER, letter=(57, 58, 60), threshold=100,
-                                    alphabet='0123456789')
-            number = ocr_post_number.ocr(self.device.image)
-            self.posts[post_id]['runs'] = number if number else 0
-            logger.info(f"  {post_id}: 正在生产 {product_name or '未知'}，剩余 {self.posts[post_id]['runs']} 次")
-            # 记录时间
-            time_work = Duration(ISLAND_WORKING_TIME)
-            time_value = time_work.ocr(self.device.image)
-            finish_time = datetime.now() + time_value
-            setattr(self, time_var_name, finish_time)
+            self._record_working_post(post_id, category, time_var_name)
 
         elif self.appear(ISLAND_POST_SELECT, offset=1):
             # 空闲
