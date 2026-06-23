@@ -279,6 +279,22 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
             setattr(self, time_var_name, None)
         self.post_get_and_close()
 
+    def get_orchard_character_filter(self, product):
+        """根据小天城橡胶树开关生成果园派遣角色优先级。"""
+        character_filter = self.worker_filters.get('orchard', "WorkerJuu")
+        characters = self.parse_character_filter(character_filter)
+        if not self.config.IslandOrchard_AmagiChanRubber:
+            return characters
+
+        characters = [
+            character
+            for character in characters
+            if character != "Amagi_chan"
+        ]
+        if product == 'rubber':
+            return ["Amagi_chan", *characters]
+        return characters
+
     def post_plant(self, post_button, product, category, time_var_name):
         self.post_close()
         self.post_open(post_button)
@@ -292,8 +308,8 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
                 continue
             if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                 character_filter = self.worker_filters.get(category, "WorkerJuu")
-                if product == 'rubber' and self.config.IslandOrchard_AmagiChanRubber:
-                    character_filter = "Amagi_chan"
+                if category == 'orchard':
+                    character_filter = self.get_orchard_character_filter(product)
                 if self.select_character(character_list=character_filter):
                     if not self.confirm_selected_character(f"{product}种植派遣"):
                         self.back_to_postmanage_from_dispatch()
