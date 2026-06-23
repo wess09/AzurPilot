@@ -9,6 +9,7 @@ from module.island.island_season import get_global_season_config
 
 class IslandShopBase(Island, WarehouseOCR):
     _MAX_FILL_LOOP = 10  # while 循环填岗最大迭代次数
+    PRODUCT_SELECT_RETRY_LIMIT = 3  # 餐品选择识别失败后，退出重进的最大次数
     POST_PRODUCE_LIMIT = 7  # 餐馆每个岗位单次最多生产数量
 
     def __init__(self, config, device=None, task=None):
@@ -187,6 +188,33 @@ class IslandShopBase(Island, WarehouseOCR):
         return self.select_character(character_list=self.chef_config)
     def produce_special_food(self):
         pass
+
+    def retry_product_selection_from_postmanage(self, post_button, product, failed_product, failed_count):
+        """餐品选择失败后退出岗位，重新进入同一岗位走完整派遣流程。"""
+        if failed_count >= self.PRODUCT_SELECT_RETRY_LIMIT:
+            raise GameStuckError(
+                f"{product}生产选择餐品时连续{failed_count}次未识别到 {failed_product}"
+            )
+
+        logger.warning(
+            f"{product}生产选择餐品时未识别到 {failed_product}，"
+            f"退出岗位后重新进入 ({failed_count}/{self.PRODUCT_SELECT_RETRY_LIMIT})"
+        )
+        if not self.back_to_postmanage_from_dispatch():
+            raise GameStuckError(f"{product}生产选择餐品失败后无法返回岗位管理页")
+
+        self.post_manage_mode(POST_MANAGE_PRODUCTION)
+        self.post_manage_swipe(self.post_manage_swipe_count)
+        if not self.post_open(post_button):
+            raise GameStuckError(f"{product}生产选择餐品失败后无法重新打开岗位")
+        self.device.sleep(0.5)
+
+    def increase_product_selection_failure(self, product_select_failures, failed_product):
+        """记录单个餐品的选择失败次数。"""
+        failed_count = product_select_failures.get(failed_product, 0) + 1
+        product_select_failures[failed_product] = failed_count
+        return failed_count
+
     def post_produce(self, post_id, product, number, time_var_name,product2=None):
         """生产产品（通用）"""
         post_button = self.posts[post_id]['button']
@@ -196,8 +224,8 @@ class IslandShopBase(Island, WarehouseOCR):
         time_work = Duration(ISLAND_WORKING_TIME)
         selection = self.name_to_config[product]['selection']
         selection_check = self.name_to_config[product]['selection_check']
-        while 1:
-            self.device.screenshot()
+        product_select_failures = {}
+        for _ in self.loop(timeout=120, skip_first=False):
             if self.appear_then_click(ISLAND_POST_SELECT, offset=1):
                 self.device.sleep(0.5)
                 continue
@@ -227,7 +255,14 @@ class IslandShopBase(Island, WarehouseOCR):
                             if product2:
                                 selection2 = self.name_to_config[product2]['selection']
                                 selection_check2 = self.name_to_config[product2]['selection_check']
-                                self.select_product(selection2, selection_check2)
+                                if not self.select_product(selection2, selection_check2):
+                                    failed_count = self.increase_product_selection_failure(
+                                        product_select_failures, product2
+                                    )
+                                    self.retry_product_selection_from_postmanage(
+                                        post_button, product, product2, failed_count
+                                    )
+                                    continue
                                 self.device.sleep(0.5)
                                 if self.produce_check():
                                     logger.warning(f"原料不足，无法生产 {product2}")
@@ -257,7 +292,16 @@ class IslandShopBase(Island, WarehouseOCR):
                         self.device.click(POST_ADD_ORDER)
                         self.device.sleep(0.5)
                         break
+                else:
+                    failed_count = self.increase_product_selection_failure(
+                        product_select_failures, product
+                    )
+                    self.retry_product_selection_from_postmanage(
+                        post_button, product, product, failed_count
+                    )
                 continue
+        else:
+            raise GameStuckError(f"{product}生产派遣流程超时")
         self.wait_until_appear(ISLAND_POSTMANAGE_CHECK)
         self.device.sleep(0.5)
         self.post_manage_swipe(self.post_manage_swipe_count)
