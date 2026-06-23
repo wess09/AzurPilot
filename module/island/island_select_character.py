@@ -252,12 +252,84 @@ class SelectCharacter(UI):
 
         return working
 
-    def get_character_by_position(self, screenshot, row, col):
+    @staticmethod
+    def _normalize_grid_positions(positions):
+        if positions is None:
+            return []
+
+        if isinstance(positions, np.ndarray):
+            positions = positions.tolist()
+
+        if (
+                isinstance(positions, (tuple, list))
+                and len(positions) == 2
+                and all(isinstance(value, (int, np.integer)) for value in positions)
+        ):
+            return [(int(positions[0]), int(positions[1]))]
+
+        normalized = []
+        for position in positions:
+            if isinstance(position, np.ndarray):
+                position = position.tolist()
+            if not isinstance(position, (tuple, list)) or len(position) != 2:
+                continue
+            row, col = position
+            try:
+                normalized.append((int(row), int(col)))
+            except (TypeError, ValueError):
+                continue
+        return normalized
+
+    def _iter_grid_position_buttons(self, positions):
+        width, height = self.select_character_grid.grid_shape
+        for row, col in self._normalize_grid_positions(positions):
+            if row < 0 or col < 0 or row >= width or col >= height:
+                logger.warning(f"角色选择格子位置越界: {(row, col)}")
+                continue
+            yield row, col, self.select_character_grid[row, col]
+
+    def get_characters_by_positions(self, screenshot, positions, character_names=None):
+        """获取指定格子位置的角色状态，支持单个位置或多个位置。"""
+        results = []
+        if character_names is None:
+            character_targets = None
+        else:
+            character_targets = {
+                name: self.character_templates[name]
+                for name in character_names
+                if name in self.character_templates
+            }
+            if not character_targets:
+                return results
+
+        for row, col, button in self._iter_grid_position_buttons(positions):
+            character_status = self._recognize_character_status(
+                screenshot, button, character_targets=character_targets
+            )
+            if character_status:
+                results.append({
+                    "grid_position": (row, col),
+                    "button_area": button.area,
+                    **character_status
+                })
+
+        return results
+
+    def get_character_by_position(self, screenshot, position, col=None):
         """获取指定网格位置的字符状态"""
-        for char_info in self.recognize_all_characters(screenshot):
-            if char_info["grid_position"] == (row, col):
-                return char_info
+        if col is not None:
+            position = (position, col)
+        characters = self.get_characters_by_positions(screenshot, position)
+        if characters:
+            return characters[0]
         return None
+
+    def is_any_character_selected_by_positions(self, screenshot, positions):
+        """检查指定格子位置中是否已有角色被选中。"""
+        for _, _, button in self._iter_grid_position_buttons(positions):
+            if self._check_selected_status(screenshot, button):
+                return True
+        return False
 
     def select_character_filter(self):
         if self.appear_then_click(SELECT_CHARACTER_FILTER):
@@ -452,12 +524,12 @@ class SelectCharacter(UI):
         # 尝试点击选择，最多5次
         max_attempts = 5
         attempts = 0
+        target_positions = [(row, col)]
 
         while attempts < max_attempts:
             screenshot = self.device.screenshot()
-            current_char_info = self.get_character_by_position(screenshot, row, col)
 
-            if current_char_info and current_char_info["is_selected"]:
+            if self.is_any_character_selected_by_positions(screenshot, target_positions):
                 return True
             else:
                 self.device.click(button)
