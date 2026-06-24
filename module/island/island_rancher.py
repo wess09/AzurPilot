@@ -532,6 +532,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
     def run(self):
         self.island_error = False
+        self.ui_ensure(page_island)
         time_vars = ['time_ranch1', 'time_ranch2', 'time_ranch3', 'time_ranch4']
         all_configs = [
             ('ISLAND_RANCH_POST1', 'time_ranch1'),

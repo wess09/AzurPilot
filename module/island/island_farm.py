@@ -360,6 +360,7 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
 
     def run(self):
         self.island_error = False
+        self.ui_ensure(page_island)
         self.check_inventory_and_prepare_lists()
 
         logger.info("\n当前库存统计:")

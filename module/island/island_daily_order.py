@@ -3,7 +3,7 @@ import module.island_daily_order.assets as daily_order_assets
 from module.island_daily_order.assets import *
 from module.island.assets import ISLAND_BACK, ISLAND_GET, ISLAND_CLICK_SAFE_AREA
 from module.base.button import Button
-from module.ui.page import page_island_phone
+from module.ui.page import page_island, page_island_phone
 from module.logger import logger
 from module.ocr.ocr import DigitCounter, Duration
 from datetime import datetime, timedelta
@@ -58,6 +58,8 @@ class IslandDailyOrder(Island):
 
     def run(self):
         logger.hr('Island Daily Order Run', level=1)
+
+        self.ui_ensure(page_island)
 
         # 导航到岛屿手机页面
         self.ui_goto(page_island_phone, get_ship=False)

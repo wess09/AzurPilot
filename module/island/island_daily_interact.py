@@ -18,6 +18,7 @@ class IslandDailyInteract(Island):
     def run(self):
         """执行启用的岛屿低频互动任务。"""
         logger.hr('Island Daily Interact Run', level=1)
+        self.ui_ensure(page_island)
 
         all_done = True
         self.pet_cat()

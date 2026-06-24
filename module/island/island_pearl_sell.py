@@ -8,6 +8,7 @@ from module.island.assets import *
 from module.island_pearl_sell.assets import *
 from module.logger import logger
 from module.ocr.ocr import Digit, Ocr
+from module.ui.page import page_island
 
 
 class IslandPearlSell(Island):
@@ -63,6 +64,8 @@ class IslandPearlSell(Island):
             self.config.task_delay(target=target)
             self.config.save()
             return
+
+        self.ui_ensure(page_island)
 
         # 采购售卖时间已到，执行完整周循环
         if trade_due:

@@ -34,7 +34,7 @@ from module.island.ui import IslandUI
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
 from module.ocr.ocr import Duration
-from module.ui.page import page_island_phone
+from module.ui.page import page_island, page_island_phone
 from module.ui_white.assets import POPUP_CANCEL_WHITE
 
 
@@ -238,6 +238,7 @@ class IslandCargoPreparation(IslandUI):
     def run(self):
         logger.hr('Island Cargo Preparation Run', level=1)
 
+        self.ui_ensure(page_island)
         self.ui_goto(page_island_phone, get_ship=False)
         self.island_transport_enter()
 
