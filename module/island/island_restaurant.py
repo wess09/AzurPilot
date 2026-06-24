@@ -14,6 +14,38 @@ FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS = Button(
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 
+RESTAURANT_SEASONAL_DISHES = {
+    'double_bamboo_shoots': {
+        'name': 'double_bamboo_shoots', 'template': TEMPLATE_DOUBLE_BAMBOO_SHOOTS,
+        'selection': SELECT_DOUBLE_BAMBOO_SHOOTS, 'selection_check': SELECT_DOUBLE_BAMBOO_SHOOTS_CHECK,
+        'post_action': POST_DOUBLE_BAMBOO_SHOOTS, 'cn_name': '凉拌双笋'
+    },
+    'asparagus_shrimp': {
+        'name': 'asparagus_shrimp', 'template': TEMPLATE_ASPARAGUS_SHRIMP,
+        'selection': SELECT_ASPARAGUS_SHRIMP, 'selection_check': SELECT_ASPARAGUS_SHRIMP_CHECK,
+        'post_action': POST_ASPARAGUS_SHRIMP, 'cn_name': '芦笋炒虾仁'
+    },
+    'amaranth_rice_ball': {
+        'name': 'amaranth_rice_ball', 'template': TEMPLATE_AMARANTH_RICE_BALL,
+        'selection': SELECT_AMARANTH_RICE_BALL, 'selection_check': SELECT_AMARANTH_RICE_BALL_CHECK,
+        'post_action': POST_AMARANTH_RICE_BALL, 'cn_name': '苋菜饭团'
+    },
+    'tomato_egg': {
+        'name': 'tomato_egg', 'template': TEMPLATE_TOMATO_EGG,
+        'selection': SELECT_TOMATO_EGG, 'selection_check': SELECT_TOMATO_EGG_CHECK,
+        'post_action': POST_TOMATO_EGG, 'cn_name': '番茄炒蛋'
+    },
+}
+
+HIGH_PRIORITY_SEASONAL_DISHES = {
+    name: {
+        **RESTAURANT_SEASONAL_DISHES[name],
+        'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
+        'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
+    }
+    for name in ('double_bamboo_shoots', 'amaranth_rice_ball')
+}
+
 
 class IslandRestaurant(IslandShopBase):
     def __init__(self, *args, **kwargs):
@@ -26,39 +58,15 @@ class IslandRestaurant(IslandShopBase):
 
         # === 初始化全局季节配置 ===
         self._init_season_config()
-        # 兼容旧配置
-        old_double_enabled = getattr(self.config, 'IslandRestaurant_DoubleBambooShoots', False)
 
         # === 高优先级季节菜品映射 ===
-        self.seasonal_dish_slot = None
-        seasonal_items = self.season_config.get_seasonal_items('restaurant') if hasattr(self, 'season_config') else []
-
-        if 'double_bamboo_shoots' in seasonal_items:
-            self.seasonal_dish_slot = {
-                'name': 'double_bamboo_shoots', 'template': TEMPLATE_DOUBLE_BAMBOO_SHOOTS,
-                'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS, 'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
-                'post_action': POST_DOUBLE_BAMBOO_SHOOTS, 'cn_name': '凉拌双笋'
-            }
-        elif 'amaranth_rice_ball' in seasonal_items:
-            self.seasonal_dish_slot = {
-                'name': 'amaranth_rice_ball', 'template': TEMPLATE_AMARANTH_RICE_BALL,
-                'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS, 'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
-                'post_action': POST_AMARANTH_RICE_BALL, 'cn_name': '苋菜饭团'
-            }
-        elif old_double_enabled:
-            self.seasonal_dish_slot = {
-                'name': 'double_bamboo_shoots', 'template': TEMPLATE_DOUBLE_BAMBOO_SHOOTS,
-                'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS, 'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
-                'post_action': POST_DOUBLE_BAMBOO_SHOOTS, 'cn_name': '凉拌双笋'
-            }
+        self.seasonal_dish_slot = self._get_high_priority_seasonal_dish()
 
         if self.seasonal_dish_slot:
             logger.info(f"高优先级季节菜品: {self.seasonal_dish_slot['cn_name']}")
 
         # 设置商品列表（根据季节自动选择对应菜品）
-        self.shop_items = []
-        if self.seasonal_dish_slot:
-            self.shop_items.append(self.seasonal_dish_slot)
+        self.shop_items = self._get_current_seasonal_shop_items()
         # ---- 常规菜品 ----
         self.shop_items.extend([
             {'name': 'tofu', 'template': TEMPLATE_TOFU, 'var_name': 'tofu',
@@ -91,13 +99,6 @@ class IslandRestaurant(IslandShopBase):
             {'name': 'onion_fish', 'template': TEMPLATE_ONION_FISH, 'var_name': 'onion_fish',
              'selection': SELECT_ONION_FISH, 'selection_check': SELECT_ONION_FISH_CHECK,
              'post_action': POST_ONION_FISH},
-            # 季节限定菜品（需在 shop_items 中注册，以支持季节自动切换和配置读取）
-            {'name': 'asparagus_shrimp', 'template': TEMPLATE_ASPARAGUS_SHRIMP, 'var_name': 'asparagus_shrimp',
-             'selection': SELECT_ASPARAGUS_SHRIMP, 'selection_check': SELECT_ASPARAGUS_SHRIMP_CHECK,
-             'post_action': POST_ASPARAGUS_SHRIMP},
-            {'name': 'tomato_egg', 'template': TEMPLATE_TOMATO_EGG, 'var_name': 'tomato_egg',
-             'selection': SELECT_TOMATO_EGG, 'selection_check': SELECT_TOMATO_EGG_CHECK,
-             'post_action': POST_TOMATO_EGG},
         ])
 
         # 设置套餐组成
@@ -139,6 +140,34 @@ class IslandRestaurant(IslandShopBase):
 
         # 初始化店铺
         self.initialize_shop()
+
+    def _is_seasonal_priority_enabled(self):
+        return getattr(self.config, 'IslandRestaurant_DoubleBambooShoots', False)
+
+    def _get_current_seasonal_shop_items(self):
+        if not hasattr(self, 'season_config') or not self.season_config:
+            return []
+
+        seasonal_items = self.season_config.get_seasonal_items('restaurant') or []
+        result = []
+        for item_name in seasonal_items:
+            dish = RESTAURANT_SEASONAL_DISHES.get(item_name)
+            if dish:
+                result.append(dish.copy())
+        return result
+
+    def _get_high_priority_seasonal_dish(self):
+        if not self._is_seasonal_priority_enabled():
+            return None
+        if not hasattr(self, 'season_config') or not self.season_config:
+            return None
+
+        seasonal_items = self.season_config.get_seasonal_items('restaurant') or []
+        for item_name in seasonal_items:
+            dish = HIGH_PRIORITY_SEASONAL_DISHES.get(item_name)
+            if dish:
+                return dish.copy()
+        return None
 
     def _auto_switch_seasonal_meals(self):
         """
@@ -183,10 +212,14 @@ class IslandRestaurant(IslandShopBase):
         高优先级季节菜品使用固定坐标点击，不进行模板匹配和滑动。
         其他餐品走父类逻辑。
         """
-        if self.seasonal_dish_slot and product_selection == self.seasonal_dish_slot['selection']:
-            self.device.click(FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS)
-            self.device.sleep(0.5)
-            return True
+        if self.seasonal_dish_slot:
+            dish_name = self.seasonal_dish_slot['name']
+            fixed_selection = self.seasonal_dish_slot['selection']
+            normal_selection = self.name_to_config.get(dish_name, {}).get('selection')
+            if product_selection in (fixed_selection, normal_selection):
+                self.device.click(FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS)
+                self.device.sleep(0.5)
+                return True
         return super().select_product(product_selection, product_selection_check)
 
     def check_special_materials(self, product, batch_size):

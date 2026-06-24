@@ -3675,8 +3675,8 @@
       "help": "Connect with >, e.g. ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao\nOnly recognizes the first two rows in default order. If the specified character is unavailable, falls back to WorkerJuu."
     },
     "DoubleBambooShoots": {
-      "name": "Cold Bamboo Shoots",
-      "help": "Produced with highest priority before base meals."
+      "name": "Prioritize Seasonal Dish",
+      "help": "When enabled, produce the current restaurant seasonal dish before base meals. Spring uses Cold Bamboo Shoots, summer uses Amaranth Rice Ball; autumn and winter have no extra restaurant seasonal dish."
     },
     "Meal1": {
       "name": "Meal 1",
@@ -3886,8 +3886,8 @@
       "help": "Connect with >, e.g. ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao\nOnly recognizes the first two rows in default order. If the specified character is unavailable, falls back to WorkerJuu."
     },
     "Seasonal": {
-      "name": "Spring Flower Tea",
-      "help": "Checked and produced before permanent meals."
+      "name": "Prioritize Seasonal Drink",
+      "help": "When enabled, produce the current Teahouse seasonal drink before base drinks. Spring uses Spring Flower Tea, summer uses Watermelon Juice; autumn and winter have no extra teahouse seasonal drink."
     },
     "Meal1": {
       "name": "Meal 1",

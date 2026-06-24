@@ -3675,8 +3675,8 @@
       "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "DoubleBambooShoots": {
-      "name": "涼拌双筍",
-      "help": "基本メニューの前に最優先で生産されます。"
+      "name": "季節料理を優先生産",
+      "help": "有効にすると、現在の季節のレストラン季節料理を基本メニューより先に生産します。春は涼拌双筍、夏はアマランサスおにぎりです。秋冬は追加の季節料理を生産しません。"
     },
     "Meal1": {
       "name": "メニュー1",
@@ -3886,8 +3886,8 @@
       "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Seasonal": {
-      "name": "春花茶",
-      "help": "常設メニューの前にチェックして生産されます。"
+      "name": "季節ドリンクを優先生産",
+      "help": "有効にすると、現在の季節の白熊ドリンク季節品を基本ドリンクより先に生産します。春は迎春花茶、夏はスイカジュースです。秋冬は追加の季節ドリンクを生産しません。"
     },
     "Meal1": {
       "name": "メニュー1",
