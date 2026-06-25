@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from module.base.timer import Timer
 from module.island.island import Island
 from module.island.assets import *
 from module.base.utils import crop
@@ -288,7 +289,7 @@ class IslandDailyInteract(Island):
         """
         handled = False
         for _ in self.loop(timeout=20, skip_first=False):
-            if self.appear(STORY_SKIP_3, offset=(20, 20), interval=2):
+            if self._appear_story_skip_luma(interval=2):
                 self.device.click(AIR_DROP_SKIP)
                 handled = True
                 continue
@@ -309,6 +310,23 @@ class IslandDailyInteract(Island):
 
         logger.warning('剧情跳过等待超时')
         return handled
+
+    def _appear_story_skip_luma(self, interval=0):
+        """岛屿对话左上角菜单易受场景光照染色，使用亮度匹配复用 STORY_SKIP_3。"""
+        self.device.stuck_record_add(STORY_SKIP_3)
+        if interval:
+            if STORY_SKIP_3.name in self.interval_timer:
+                if self.interval_timer[STORY_SKIP_3.name].limit != interval:
+                    self.interval_timer[STORY_SKIP_3.name] = Timer(interval)
+            else:
+                self.interval_timer[STORY_SKIP_3.name] = Timer(interval)
+            if not self.interval_timer[STORY_SKIP_3.name].reached():
+                return False
+
+        appear = STORY_SKIP_3.match_luma(self.device.image, offset=(20, 20), similarity=0.85)
+        if appear and interval:
+            self.interval_timer[STORY_SKIP_3.name].reset()
+        return appear
 
     def _juu_express_steps(self):
         from module.island_daily_interact.assets import (
