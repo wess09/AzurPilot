@@ -291,7 +291,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 add_opened = True
                 continue
             in_vacant_post = self.appear(ISLAND_POST_VACANT_CHECK, offset=1)
-            if self.appear(ISLAND_POST_SELECT, offset=1) and self.appear_then_click(ISLAND_POST_SELECT, offset=1):
+            if self.appear_then_click(ISLAND_POST_SELECT, offset=1):
                 add_opened = True
                 logger.info(f"牧场岗位{post_id}进入派遣选择")
                 self.device.sleep(0.5)
@@ -341,11 +341,8 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 add_opened = True
                 continue
             in_vacant_post = self.appear(ISLAND_POST_VACANT_CHECK, offset=1)
-            if (
-                    self.appear(ISLAND_POST_SELECT, offset=1)
-                    and (add_opened or in_vacant_post or not self.appear(ISLAND_WORKING))
-                    and self.appear_then_click(ISLAND_POST_SELECT, offset=1)
-            ):
+            can_select_post = add_opened or in_vacant_post or not self.appear(ISLAND_WORKING)
+            if can_select_post and self.appear_then_click(ISLAND_POST_SELECT, offset=1):
                 if in_vacant_post and not add_opened:
                     logger.info(f"牧场岗位{post_id}为空闲岗位，直接进入派遣")
                 elif not add_opened:

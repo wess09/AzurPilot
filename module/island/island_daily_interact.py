@@ -315,17 +315,16 @@ class IslandDailyInteract(Island):
         """岛屿对话左上角菜单易受场景光照染色，使用亮度匹配复用 STORY_SKIP_3。"""
         self.device.stuck_record_add(STORY_SKIP_3)
         if interval:
-            if STORY_SKIP_3.name in self.interval_timer:
-                if self.interval_timer[STORY_SKIP_3.name].limit != interval:
-                    self.interval_timer[STORY_SKIP_3.name] = Timer(interval)
-            else:
+            timer = self.interval_timer.get(STORY_SKIP_3.name)
+            if timer is None or timer.limit != interval:
                 self.interval_timer[STORY_SKIP_3.name] = Timer(interval)
-            if not self.interval_timer[STORY_SKIP_3.name].reached():
+                timer = self.interval_timer[STORY_SKIP_3.name]
+            if not timer.reached():
                 return False
 
         appear = STORY_SKIP_3.match_luma(self.device.image, offset=(20, 20), similarity=0.85)
         if appear and interval:
-            self.interval_timer[STORY_SKIP_3.name].reset()
+            timer.reset()
         return appear
 
     def _juu_express_steps(self):
