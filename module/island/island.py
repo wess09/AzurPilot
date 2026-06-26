@@ -415,19 +415,31 @@ class Island(SelectCharacter):
 
     def post_close(self):
         for _ in self.loop(timeout=15, skip_first=False):
-            if self.ui_page_appear(page_island_postmanage) and not self.appear(ISLAND_POST_CHECK) and not self.appear(ISLAND_POST_VACANT_CHECK):
+            if self.ui_page_appear(page_island_postmanage) and not self.is_post_detail_visible():
                 return True
             if self.appear(ISLAND_GET, offset=30):
                 self.device.click(ISLAND_POST_SAFE_AREA)
                 continue
-            if self.appear(ISLAND_POST_CHECK) or self.appear(ISLAND_POST_VACANT_CHECK):
+            if self.is_post_detail_visible():
                 self.device.click(POST_CLOSE)
                 continue
         logger.warning("关闭岗位详情超时")
         return False
+
+    def is_post_detail_visible(self):
+        """判断岗位详情弹窗是否仍覆盖在岗位管理页上。"""
+        return (
+                self.appear(ISLAND_POST_CHECK, offset=1)
+                or self.appear(ISLAND_POST_VACANT_CHECK, offset=1)
+                or self.appear(ISLAND_POST_SELECT, offset=1)
+                or self.appear(ISLAND_WORKING, offset=1)
+                or self.appear(POST_ADD)
+                or self.appear(POST_GET, offset=(50, 0))
+        )
+
     def post_get_and_close(self):
         for _ in self.loop(timeout=20, skip_first=False):
-            if self.ui_page_appear(page_island_postmanage) and not self.appear(ISLAND_POST_CHECK) and not self.appear(ISLAND_POST_VACANT_CHECK):
+            if self.ui_page_appear(page_island_postmanage) and not self.is_post_detail_visible():
                 return True
             if self.appear(ERROR1, offset=30):
                 self.device.click(POST_CLOSE)
@@ -444,7 +456,7 @@ class Island(SelectCharacter):
                 self.device.click(ISLAND_POST_SAFE_AREA)
                 self.device.sleep(0.5)
                 continue
-            if (self.appear(ISLAND_POST_CHECK) or self.appear(ISLAND_POST_VACANT_CHECK)) and not self.appear(POST_GET, offset=(50, 0)):
+            if self.is_post_detail_visible() and not self.appear(POST_GET, offset=(50, 0)):
                 self.device.click(POST_CLOSE)
                 continue
         logger.warning("收取并关闭岗位详情超时")
@@ -468,7 +480,7 @@ class Island(SelectCharacter):
                 self.device.click(ISLAND_POST_SAFE_AREA)
                 self.device.sleep(0.5)
                 continue
-            if (self.appear(ISLAND_POST_CHECK) or self.appear(ISLAND_POST_VACANT_CHECK) or self.ui_page_appear(page_island_postmanage)):
+            if (self.is_post_detail_visible() or self.ui_page_appear(page_island_postmanage)):
                 return True
         logger.warning("收取当前岗位产物超时")
         return False
@@ -524,8 +536,7 @@ class Island(SelectCharacter):
                 return True
             if (
                     self.ui_page_appear(page_island_postmanage)
-                    and not self.appear(ISLAND_POST_CHECK, offset=30)
-                    and not self.appear(ISLAND_POST_VACANT_CHECK, offset=30)
+                    and not self.is_post_detail_visible()
             ):
                 return True
         logger.warning("收取并追加岗位派遣超时")
@@ -539,8 +550,7 @@ class Island(SelectCharacter):
                     self.ui_page_appear(page_island_postmanage)
                     and not self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1)
                     and not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1)
-                    and not self.appear(ISLAND_POST_CHECK, offset=1)
-                    and not self.appear(ISLAND_POST_VACANT_CHECK, offset=1)
+                    and not self.is_post_detail_visible()
             ):
                 return True
             if self.appear(ISLAND_GET, offset=30):
@@ -552,7 +562,7 @@ class Island(SelectCharacter):
             if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                 self.device.click(SELECT_UI_BACK)
                 continue
-            if self.appear(ISLAND_POST_CHECK, offset=1) or self.appear(ISLAND_POST_VACANT_CHECK, offset=1):
+            if self.is_post_detail_visible():
                 self.device.click(POST_CLOSE)
                 continue
 
@@ -561,15 +571,55 @@ class Island(SelectCharacter):
 
     def confirm_post_add_order(self, context="岗位派遣"):
         """材料确认足够后，点击最大数量并确认派遣。"""
-        if self.appear(POST_MAX):
-            self.device.click(POST_MAX)
-            self.device.sleep(0.3)
-            self.device.screenshot()
+        clicked = False
+        max_clicked = False
+        button_seen = False
+        left_product_timer = Timer(0.8, count=2).start()
+        retry_confirm_timer = Timer(2, count=4).start()
+        unavailable_timer = Timer(3, count=6).start()
 
-        if self.appear(POST_ADD_ORDER):
-            self.device.click(POST_ADD_ORDER)
-            self.device.sleep(0.5)
-            return True
+        for _ in self.loop(timeout=10, skip_first=False):
+            if self.appear(ERROR1, offset=30):
+                self.device.click(POST_CLOSE)
+                self.island_error = True
+                return False
+
+            in_select_product = self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1)
+            if not in_select_product:
+                if left_product_timer.reached():
+                    return True
+                continue
+            left_product_timer.reset()
+
+            if not clicked and not max_clicked and self.appear(POST_MAX):
+                self.device.click(POST_MAX)
+                max_clicked = True
+                unavailable_timer.reset()
+                self.device.sleep(0.3)
+                continue
+
+            if self.appear(POST_ADD_ORDER):
+                button_seen = True
+                unavailable_timer.reset()
+                if not clicked or retry_confirm_timer.reached():
+                    if clicked:
+                        logger.info(f"{context}确认后仍停留在产品选择页，重试确认")
+                    self.device.click(POST_ADD_ORDER)
+                    clicked = True
+                    retry_confirm_timer.reset()
+                continue
+
+            if not clicked and unavailable_timer.reached():
+                current, required = self.ocr_select_product_material_counter()
+                if required and current < required:
+                    logger.warning(f"{context}材料不足，确认按钮不可用: {current}/{required}")
+                else:
+                    logger.warning(f"{context}材料已确认足够，但确认按钮不可用，可能角色体力不足")
+                return False
+
+        if clicked or button_seen:
+            logger.warning(f"{context}确认后仍停留在产品选择页")
+            return False
 
         current, required = self.ocr_select_product_material_counter()
         if required and current < required:
