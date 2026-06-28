@@ -1842,6 +1842,14 @@
     "DoMajorCommission": {
       "name": "做主要委托（1200油/1000油委托）",
       "help": "1200油委托现在已经过时，收益很低，建议关闭"
+    },
+    "CommissionNotifyReward": {
+      "name": "委托成功获取钻石推送",
+      "help": "开启后，AzurPilot会在委托成功获取红尖尖时推送通知"
+    },
+    "CommissionNotifyRewardStatistics": {
+      "name": "钻石推送详情",
+      "help": "开启后，AzurPilot在推送本次委托获取钻石数量的同时推送当日/本周/本月的钻石获取数量"
     }
   },
   "Tactical": {

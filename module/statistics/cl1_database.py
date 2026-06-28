@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional, Tuple
 from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Hash import SHA256
-
+from collections import defaultdict
 from module.base.device_id import get_device_id, get_old_device_id
 from module.logger import logger
 
@@ -1389,6 +1389,82 @@ class Cl1Database:
             entries = entries[-5000:]
         data["commission_income_entries"] = entries
         self.save_stats(instance, month, data)
+
+    def get_commission_reward_stats(self, instance: str):
+        """
+        获取委托奖励统计
+
+        Returns:
+            {
+                "today": {...},
+                "week": {...},
+                "month": {...},
+            }
+        """
+        now = datetime.now()
+        today = now.date()
+        week_start = today - timedelta(days=today.weekday())
+
+        entries = []
+
+        entries.extend(
+            self.get_commission_income(
+                instance,
+                year=now.year,
+                month=now.month,
+            )
+        )
+
+        # 周跨月
+        if week_start.month != now.month or week_start.year != now.year:
+            prev_month_date = now.replace(day=1) - timedelta(days=1)
+            entries.extend(
+                self.get_commission_income(
+                    instance,
+                    year=prev_month_date.year,
+                    month=prev_month_date.month,
+                )
+            )
+
+        result = {
+            "today": defaultdict(int),
+            "week": defaultdict(int),
+            "month": defaultdict(int),
+        }
+
+        for entry in entries:
+            try:
+                ts = datetime.fromisoformat(entry.get("ts", ""))
+                items = entry.get("items", {})
+
+                if not isinstance(items, dict):
+                    continue
+
+                for item, value in items.items():
+                    value = self._coerce_int(value)
+
+                    if ts.year == now.year and ts.month == now.month:
+                        result["month"][item] += value
+
+                    if ts.date() == today:
+                        result["today"][item] += value
+
+                    if week_start <= ts.date() <= today:
+                        result["week"][item] += value
+
+            except Exception:
+                continue
+
+        # 保留常用字段，兼容旧代码
+        for period in ("today", "week", "month"):
+            result[period].setdefault("Gem", 0)
+            result[period].setdefault("Cube", 0)
+
+        return {
+            "today": dict(result["today"]),
+            "week": dict(result["week"]),
+            "month": dict(result["month"]),
+        }
 
     def get_commission_income(
         self, instance: str, year: int = None, month: int = None

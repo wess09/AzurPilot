@@ -1842,6 +1842,14 @@
     "DoMajorCommission": {
       "name": "Make the main commission (1200 oil/1000 oil commission)",
       "help": "The 1200 oil commission is now obsolete and the yield is very low. It is recommended to close it."
+    },
+    "CommissionNotifyReward": {
+      "name": "Successful Commission GEM Notification",
+      "help": "After enabling, AzurPilot will send a notification when a commission successfully acquires diamonds."
+    },
+    "CommissionNotifyRewardStatistics": {
+      "name": "GEM Notification Details",
+      "help": "After enabling, AzurPilot will notify the number of diamonds obtained from the current commission, as well as the total diamonds obtained for the day/week/month."
     }
   },
   "Tactical": {

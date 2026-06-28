@@ -1842,6 +1842,14 @@
     "DoMajorCommission": {
       "name": "做主要委托 (1200油/1000油)",
       "help": "1200油委现已过时收益低，建议关闭喵。 (´・ω・`)"
+    },
+    "CommissionNotifyReward": {
+      "name": "委托成功获取钻石推送喵",
+      "help": "开启后，AzurPilot会在委托成功获取钻石时推送通知喵"
+    },
+    "CommissionNotifyRewardStatistics": {
+      "name": "钻石推送详情喵",
+      "help": "开启后，AzurPilot在推送本次委托获取钻石数量的同时推送当日/本周/本月的钻石获取数量喵"
     }
   },
   "Tactical": {

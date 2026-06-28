@@ -9988,6 +9988,14 @@
       "DoMajorCommission": {
         "type": "checkbox",
         "value": false
+      },
+      "CommissionNotifyReward": {
+        "type": "checkbox",
+        "value": false
+      },
+      "CommissionNotifyRewardStatistics": {
+        "type": "checkbox",
+        "value": true
       }
     },
     "Storage": {

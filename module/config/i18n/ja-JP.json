@@ -1842,6 +1842,14 @@
     "DoMajorCommission": {
       "name": "主要委託を実行する（1200燃料/1000燃料委託）",
       "help": "1200燃料委託は現在では廃止されており、収益が非常に低いです。オフにすることをお勧めします。"
+    },
+    "CommissionNotifyReward": {
+      "name": "委託成功でダイヤモンド取得通知",
+      "help": "オンにすると、AzurPilotは委託でダイヤモンドを取得した際に通知を送信します"
+    },
+    "CommissionNotifyRewardStatistics": {
+      "name": "ダイヤモンド通知の詳細",
+      "help": "オンにすると、AzurPilotは今回の委託で取得したダイヤモンドの数量と同時に、当日／今週／今月のダイヤモンド取得数量も通知します"
     }
   },
   "Tactical": {

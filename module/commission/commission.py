@@ -613,6 +613,60 @@ class RewardCommission(UI, InfoHandler):
                 cl1_db.add_commission_income(instance, merged_items, commission_count=1)
                 item_str = ', '.join([f'{k}x{v}' for k, v in merged_items.items()])
                 logger.info(f'Commission income recorded: {item_str} (instance={instance})')
+                if self.config.CommissionNotifyReward:
+                    reward_stats = None
+                    if self.config.CommissionNotifyRewardStatistics:
+                        reward_stats = cl1_db.get_commission_reward_stats(instance)
+                    gem_count = merged_items.get("Gem", 0)
+                    """cube_count = merged_items.get("Cube", 0)"""
+                    tracked = []
+                    if gem_count > 0:
+                        text = f'💎钻石 * {gem_count}'
+
+                        if reward_stats is not None:
+                            text += (
+                                f'\n\n今日累计获取💎钻石 * {reward_stats["today"].get("Gem", 0)}'
+                                f'\n本周累计获取💎钻石 * {reward_stats["week"].get("Gem", 0)}'
+                                f'\n本月累计获取💎钻石 * {reward_stats["month"].get("Gem", 0)}'
+                            )
+
+                        tracked.append(text)
+                    """
+                    if cube_count > 0:
+                        text = f'🧊魔方 * {cube_count}'
+                        if reward_stats is not None:
+                            text += (
+                            f'\n\n今日累计获取🧊魔方 * {reward_stats["today"].get("Cube", 0)}'
+                            f'\n本周累计获取🧊魔方 * {reward_stats["week"].get("Cube", 0)}'
+                            f'\n本月累计获取🧊魔方 * {reward_stats["month"].get("Cube", 0)}'
+                        )
+                        tracked.append(text)
+                    """
+                    if tracked:
+                        msg = '\n'.join(tracked) 
+                        if gem_count >= 50:
+                            title = f"AzurPilot <{instance}> 大成功！！！委托获得顶级奖励喵！"
+                            webui_title = "大成功！！！委托获得顶级奖励喵！"
+                        elif gem_count > 0:
+                            title = f"AzurPilot <{instance}> 委托获得顶级奖励喵！"
+                            webui_title = "委托获得顶级奖励喵！"
+                        """
+                        # 以后恢复 Cube 时
+                        elif cube_count > 0:
+                            title = f"AzurPilot <{instance}> 委托获得高级奖励喵！"
+                            webui_title = "委托获得高级奖励喵！"
+                        """
+                        handle_notify(
+                            self.config.Error_OnePushConfig,
+                            title=title,
+                            content=msg,
+                        )
+
+                        notify_webui(
+                            instance,
+                            title=webui_title,
+                            content=msg,
+                        )
             else:
                 logger.info('Commission income: no known items recognized from all screenshots')
 

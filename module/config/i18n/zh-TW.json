@@ -1842,6 +1842,14 @@
     "DoMajorCommission": {
       "name": "做主要委託（1200油/1000油委託）",
       "help": "1200油委託現在已經過時，收益很低，建議關閉"
+    },
+    "CommissionNotifyReward": {
+      "name": "委託成功獲取鑽石推送",
+      "help": "開啟後，AzurPilot會在委託成功獲取鑽石時推送通知"
+    },
+    "CommissionNotifyRewardStatistics": {
+      "name": "鑽石推送詳情",
+      "help": "開啟後，AzurPilot在推送本次委託獲取鑽石數量的同時推送當日/本週/本月的鑽石獲取數量"
     }
   },
   "Tactical": {
