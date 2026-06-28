@@ -3,10 +3,11 @@ from datetime import datetime, timedelta
 from module.base.timer import Timer
 from module.island.island import Island
 from module.island.assets import *
+from module.island_daily_interact.assets import *
 from module.base.utils import crop
 from module.handler.assets import STORY_SKIP_3
 from module.logger import logger
-from module.ui.assets import ISLAND_PHONE_CHECK
+from module.ui.assets import ISLAND_PHONE_CHECK, ISLAND_CHECK
 from module.ui.page import page_island, page_island_map, page_island_phone
 
 
@@ -49,7 +50,7 @@ class IslandDailyInteract(Island):
         if not self.island_map_goto('farm'):
             logger.warning('前往晨露农场失败，跳过摸猫任务')
             return False
-        self.move_for_pet_cat_farm()
+        self.move_for_morningdew_farm()
 
         if self._click_optional_interact(PET_CAT_FARM_INTERACT, '摸猫互动'):
             self._handle_island_reward_optional()
@@ -235,50 +236,84 @@ class IslandDailyInteract(Island):
             complete_button=complete_button,
         )
 
-    def move_for_juu_port(self):
-        """JUU速运：港口移动路线。"""
-        self.island_left(2200)
-        self.device.click(ISLAND_JUMP)
-        self.island_left(1200)
+    def move_for_lakeniya(self):
+        """繁荫农圃拉科尼娅移动路线。"""
+        self.island_up(2000)
+        self.island_right(1800)
         self.island_up(500)
 
-    def move_for_juu_port_business(self):
-        """JUU速运：港口商区移动路线。"""
-        self.island_up(1500)
-        self.island_left(400)
-
-    def move_for_juu_plain(self):
-        """JUU速运：栖风原野移动路线。"""
-        self.island_right(6000)
-        self.island_down(3000)
-        self.island_right(2300)
-
-    def move_for_juu_nursery(self):
-        """JUU速运：繁荫农圃移动路线。"""
+    def move_for_luxi(self):
+        """繁荫农圃露西移动路线。"""
         self.island_left(800)
         self.island_up(5500)
         self.island_left(1000)
         self.island_up(3700)
 
-    def move_for_business_delivery_assembly(self):
-        """商区外送服务：集会岛移动路线。"""
+    def move_for_aobulaien(self):
+        """栖风原野奥布莱恩移动路线。"""
+        self.island_right(4600)
+        self.island_up(5100)
+        self.island_right(1100)
+
+    def move_for_qiaoan(self):
+        """栖风原野乔安移动路线。"""
+        self.island_right(6000)
+        self.island_down(3000)
+        self.island_right(2300)
+
+    def move_for_morningdew_farm(self):
+        """晨露农场摸猫移动路线。"""
+        self.island_left(500)
+        self.island_down(200)
+
+    def move_for_hemo(self):
+        """晨露农场赫莫移动路线。"""
+        self.island_left(600)
+        self.island_up(2000)
+        self.island_left(800)
+
+    def move_for_meili(self):
+        """晨露农场梅莉移动路线。"""
+        self.island_right(1800)
+        self.island_down(600)
+
+    def move_for_aolipike(self):
+        """晨露农场奥利匹克移动路线。"""
+        self.island_left(500)
+        self.island_down(1500)
+        self.island_left(1700)
+        self.island_down(1900)
+
+    def move_for_amoma(self):
+        """港口商区阿莫玛移动路线。"""
+        self.island_up(1500)
+        self.island_left(400)
+
+    def move_for_pateli(self):
+        """港口帕特莉移动路线。"""
+        self.island_left(2200)
+        self.device.click(ISLAND_JUMP)
+        self.island_left(1200)
+        self.island_up(500)
+
+    def move_for_bulaimei(self):
+        """港口布莱梅移动路线（需跳转到啾咖啡餐厅）。"""
+        self.island_up(2600)
+        self.device.click(ROUTE_TWO_OPTION_COMPLETE)
+        for _ in self.loop(timeout=12, skip_first=False):
+            self.device.sleep(2)
+            if self.appear(ISLAND_CHECK):
+                break
+        self.island_left(600)
+
+    def move_for_lisha(self):
+        """集会岛莉莎移动路线。"""
         self.island_up(3000)
         self.island_left(2000)
         self.island_up(5500)
         self.island_right(300)
         self.island_up(2200)
         self.island_left(1100)
-
-    def move_for_business_delivery_nursery(self):
-        """商区外送服务：繁荫农圃移动路线。"""
-        self.island_up(2000)
-        self.island_right(1800)
-        self.island_up(500)
-
-    def move_for_pet_cat_farm(self):
-        """摸猫：晨露农场移动路线。"""
-        self.island_left(500)
-        self.island_down(200)
 
     def handle_island_story_skip_safely(self):
         """
@@ -328,41 +363,34 @@ class IslandDailyInteract(Island):
         return appear
 
     def _juu_express_steps(self):
-        from module.island_daily_interact.assets import (
-            JUU_EXPRESS_NURSERY_INTERACT,
-            JUU_EXPRESS_PLAIN_INTERACT,
-            JUU_EXPRESS_PORT_BUSINESS_INTERACT,
-            JUU_EXPRESS_PORT_INTERACT,
-            ROUTE_JUU_NURSERY_COMPLETE,
-            ROUTE_PLAIN_COMPLETE,
-            ROUTE_PORT_BUSINESS_COMPLETE,
-            ROUTE_PORT_COMPLETE,
-        )
-
+        # 其余 5 个 JUU 速运按钮暂缺，后续补图后再补回。
         return [
-            ('港口', 'port', self.move_for_juu_port, JUU_EXPRESS_PORT_INTERACT, ROUTE_PORT_COMPLETE),
-            ('港口商区', 'port_business', self.move_for_juu_port_business, JUU_EXPRESS_PORT_BUSINESS_INTERACT, ROUTE_PORT_BUSINESS_COMPLETE),
-            ('栖风原野', 'mine_forest', self.move_for_juu_plain, JUU_EXPRESS_PLAIN_INTERACT, ROUTE_PLAIN_COMPLETE),
-            ('繁荫农圃', 'nursery', self.move_for_juu_nursery, JUU_EXPRESS_NURSERY_INTERACT, ROUTE_JUU_NURSERY_COMPLETE),
+            ('港口的帕特莉', 'port', self.move_for_pateli, JUU_EXPRESS_PATELI_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            # 缺图：栖风原野的奥布莱恩
+            # ('栖风原野的奥布莱恩', 'mine_forest', self.move_for_aobulaien, JUU_EXPRESS_AOBULAIEN_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            # 缺图：晨露农场的梅莉
+            # ('晨露农场的梅莉', 'farm', self.move_for_meili, JUU_EXPRESS_MEILI_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            # 缺图：集会岛的莉莎
+            # ('集会岛的莉莎', 'assembly', self.move_for_lisha, JUU_EXPRESS_LISHA_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            # 缺图：繁荫农圃的拉科尼娅
+            # ('繁荫农圃的拉科尼娅', 'nursery', self.move_for_lakeniya, JUU_EXPRESS_LAKENIYA_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('栖风原野的乔安', 'mine_forest', self.move_for_qiaoan, JUU_EXPRESS_QIAOAN_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            # 缺图：晨露农场的奥利匹克
+            # ('晨露农场的奥利匹克', 'farm', self.move_for_aolipike, JUU_EXPRESS_AOLIPIKE_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('港口商区的阿莫玛', 'port_business', self.move_for_amoma, JUU_EXPRESS_AMOMA_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('繁荫农圃的露西', 'nursery', self.move_for_luxi, JUU_EXPRESS_LUXI_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
         ]
 
     def _business_delivery_steps(self):
-        from module.island_daily_interact.assets import (
-            BUSINESS_DELIVERY_ASSEMBLY_INTERACT,
-            BUSINESS_DELIVERY_NURSERY_INTERACT,
-            BUSINESS_DELIVERY_PORT_BUSINESS_INTERACT,
-            BUSINESS_DELIVERY_PORT_INTERACT,
-            ROUTE_ASSEMBLY_COMPLETE,
-            ROUTE_BUSINESS_NURSERY_COMPLETE,
-            ROUTE_PORT_BUSINESS_COMPLETE,
-            ROUTE_PORT_COMPLETE,
-        )
-
         return [
-            ('港口商区', 'port_business', self.move_for_juu_port_business, BUSINESS_DELIVERY_PORT_BUSINESS_INTERACT, ROUTE_PORT_BUSINESS_COMPLETE),
-            ('繁荫农圃', 'nursery', self.move_for_business_delivery_nursery, BUSINESS_DELIVERY_NURSERY_INTERACT, ROUTE_BUSINESS_NURSERY_COMPLETE),
-            ('港口', 'port', self.move_for_juu_port, BUSINESS_DELIVERY_PORT_INTERACT, ROUTE_PORT_COMPLETE),
-            ('集会岛', 'assembly', self.move_for_business_delivery_assembly, BUSINESS_DELIVERY_ASSEMBLY_INTERACT, ROUTE_ASSEMBLY_COMPLETE),
+            ('港口商区的阿莫玛', 'port_business', self.move_for_amoma, BUSINESS_DELIVERY_AMOMA_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('栖风原野的奥布莱恩', 'mine_forest', self.move_for_aobulaien, BUSINESS_DELIVERY_TWO_OPTION_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('集会岛的莉莎', 'assembly', self.move_for_lisha, BUSINESS_DELIVERY_TWO_OPTION_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('繁荫农圃的拉科尼娅', 'nursery', self.move_for_lakeniya, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('繁荫农圃的露西', 'nursery', self.move_for_luxi, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('港口的帕特莉', 'port', self.move_for_pateli, BUSINESS_DELIVERY_TWO_OPTION_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('啾咖啡餐厅的布莱梅', 'port', self.move_for_bulaimei, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('晨露农场的赫莫', 'farm', self.move_for_hemo, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
         ]
 
     def _enter_development_plan(self):
