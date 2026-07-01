@@ -368,6 +368,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                     logger.info(f"{feed_item}仓库库存仍不足 50，跳过牧场岗位{post_id}")
                     self.back_to_postmanage_after_feed_purchase()
                     return True
+                self.device.sleep(0.3)
                 if not self.confirm_post_add_order(f"牧场岗位{post_id}派遣"):
                     self.back_to_postmanage_from_dispatch()
                     return True
