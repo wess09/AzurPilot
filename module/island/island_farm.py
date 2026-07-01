@@ -1,5 +1,6 @@
 from module.island_farm.assets import *
 from module.island.island import *
+from datetime import timedelta
 from module.config.time_source import now as current_time
 from module.handler.login import LoginHandler
 from module.island.warehouse import *

@@ -1,6 +1,8 @@
 from module.island.island import *
 from time import sleep
 from module.ui.scroll import Scroll
+from datetime import timedelta
+from module.config.time_source import now as current_time
 
 
 class IslandAirDrop(Island):
