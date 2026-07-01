@@ -225,9 +225,6 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                     and not self.is_post_detail_visible()
             ):
                 return True
-            if self.appear(ISLAND_SHOP_GET):
-                self.device.click(ISLAND_SHOP_CONFIRM)
-                continue
             if self.appear(ISLAND_MILL_CHECK, offset=1):
                 self.device.click(ISLAND_MILL_BACK)
                 continue
@@ -242,6 +239,9 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 continue
             if self.appear(ISLAND_POST_CHECK, offset=1) or self.appear(ISLAND_POST_VACANT_CHECK, offset=1):
                 self.device.click(POST_CLOSE)
+                continue
+            if self.appear(ISLAND_SHOP_GET):
+                self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
 
         logger.warning("磨坊加工后返回岗位管理页超时")
@@ -367,10 +367,10 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 if feed_item and self.inventory_counts['mill'].get(feed_item, 0) < 50:
                     logger.info(f"{feed_item}仓库库存仍不足 50，跳过牧场岗位{post_id}")
                     self.back_to_postmanage_after_feed_purchase()
-                    return False
+                    return True
                 if not self.confirm_post_add_order(f"牧场岗位{post_id}派遣"):
                     self.back_to_postmanage_from_dispatch()
-                    return False
+                    return True
                 continue
             if (
                     self.appear(ISLAND_POST_CHECK, offset=1)
