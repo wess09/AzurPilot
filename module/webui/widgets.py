@@ -6,6 +6,7 @@ import json
 import pywebio.pin
 import random
 import string
+import time
 from typing import Any, Callable, Dict, Generator, List, Optional, TYPE_CHECKING, Union
 
 from pywebio.exceptions import SessionException
@@ -90,11 +91,16 @@ class ScrollableCode:
 
 
 class RichLog:
+    # run_js 是阻塞的前后端往返，滚动操作需要节流以保持界面响应。
+    LOG_SCROLL_MIN_INTERVAL = 0.5
+
     last_display_time: dict
 
     def __init__(self, scope, font_width="0.559") -> None:
         self.scope = scope
         self.font_width = font_width
+        self._last_scroll_time = 0.0
+        self._sync_dirty = True
         self.console = HTMLConsole(
             force_terminal=False,
             force_interactive=False,
@@ -134,7 +140,7 @@ class RichLog:
         # 调试：打印生成的 HTML
         return html
 
-    def extend(self, text):
+    def extend(self, text, scroll: bool = True):
         if text:
             run_js(
                 """$("#pywebio-scope-{scope}>div").append(text);
@@ -143,8 +149,22 @@ class RichLog:
                 ),
                 text=str(text),
             )
-            if self.keep_bottom:
-                self.scroll()
+            if scroll and self.keep_bottom:
+                self._scroll_throttled()
+
+    def set_content(self, html: str, scroll: bool = True) -> None:
+        if not html:
+            self.reset()
+            return
+        run_js(
+            """$("#pywebio-scope-{scope}>div").html(text);
+        """.format(
+                scope=self.scope
+            ),
+            text=str(html),
+        )
+        if scroll and self.keep_bottom:
+            self._scroll_throttled(force=True)
 
     def set_dashboard_display(self, b: bool) -> None:
         # use for lambda callback function. Copied.
@@ -161,6 +181,12 @@ class RichLog:
                 scope=self.scope
             )
         )
+
+    def _scroll_throttled(self, force: bool = False) -> None:
+        now = time.time()
+        if force or now - self._last_scroll_time >= self.LOG_SCROLL_MIN_INTERVAL:
+            self.scroll()
+            self._last_scroll_time = now
 
     def set_scroll(self, b: bool) -> None:
         # 用于 lambda 回调函数中设置是否保持滚动到底部
@@ -220,25 +246,39 @@ class RichLog:
     #     self._callback_thread = None
     #     self.console.width = int(_width)
 
-    def put_log(self, pm: ProcessManager) -> Generator:
+    def put_log(
+        self,
+        pm: ProcessManager,
+        get_visible: Optional[Callable[[], bool]] = None,
+    ) -> Generator:
         yield
+        last_idx = 0
         try:
             while True:
-                last_idx = len(pm.renderables)
-                html = "".join(map(self.render, pm.renderables[:]))
-                self.reset()
-                self.extend(html)
-                counter = last_idx
-                while counter < pm.renderables_max_length * 2:
-                    yield
-                    idx = len(pm.renderables)
-                    if idx < last_idx:
-                        last_idx -= pm.renderables_reduce_length
+                idx = len(pm.renderables)
+                visible = get_visible() if get_visible else True
+
+                if not visible:
                     if idx != last_idx:
-                        html = "".join(map(self.render, pm.renderables[last_idx:idx]))
-                        self.extend(html)
-                        counter += idx - last_idx
-                        last_idx = idx
+                        self._sync_dirty = True
+                    yield
+                    continue
+
+                if idx < last_idx:
+                    last_idx -= pm.renderables_reduce_length
+                    self._sync_dirty = True
+
+                if self._sync_dirty:
+                    html = "".join(map(self.render, pm.renderables[:]))
+                    self.set_content(html)
+                    last_idx = idx
+                    self._sync_dirty = False
+                elif idx != last_idx:
+                    html = "".join(map(self.render, pm.renderables[last_idx:idx]))
+                    self.extend(html)
+                    last_idx = idx
+
+                yield
         except SessionException:
             pass
 
