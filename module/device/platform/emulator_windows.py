@@ -585,6 +585,49 @@ class EmulatorManager(EmulatorManagerBase):
                 if Emulator.is_emulator(ld) and os.path.exists(ld):
                     exe.add(ld)
 
+        # MuMu 模拟器安装路径
+        # MuMu12 的安装路径可能记录在卸载注册表中，
+        # 从 InstallLocation 或 DisplayIcon 提取安装目录
+        _uninstall_reg_paths = [
+            r'SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall',
+            r'Software\Microsoft\Windows\CurrentVersion\Uninstall'
+        ]
+        for uninstall_reg_name in ['MuMuPlayer-12.0', 'MuMu Player 12.0']:
+            for reg_path in _uninstall_reg_paths:
+                try:
+                    with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, f'{reg_path}\\{uninstall_reg_name}') as reg:
+                        # 尝试从 InstallLocation 获取安装目录
+                        try:
+                            install_loc = winreg.QueryValueEx(reg, 'InstallLocation')[0]
+                            if install_loc:
+                                mumu_dir = abspath(install_loc)
+                                for folder in ['', 'shell', 'shell/EmulatorShell', 'shell/nx_main']:
+                                    search_dir = abspath(os.path.join(mumu_dir, folder))
+                                    for file in iter_folder(search_dir, ext='.exe'):
+                                        if Emulator.is_emulator(file) and os.path.exists(file):
+                                            exe.add(file)
+                        except FileNotFoundError:
+                            pass
+                        # 尝试从 DisplayIcon 获取可执行文件路径
+                        try:
+                            display_icon = winreg.QueryValueEx(reg, 'DisplayIcon')[0]
+                            if display_icon:
+                                icon_path = abspath(display_icon.replace('"', '').split(',')[0])
+                                # 从图标路径向上一级目录搜索
+                                parent_dir = os.path.dirname(icon_path)
+                                for file in iter_folder(parent_dir, ext='.exe'):
+                                    if Emulator.is_emulator(file) and os.path.exists(file):
+                                        exe.add(file)
+                                # 也搜索 shell 子目录
+                                shell_dir = abspath(os.path.join(parent_dir, 'shell'))
+                                for file in iter_folder(shell_dir, ext='.exe'):
+                                    if Emulator.is_emulator(file) and os.path.exists(file):
+                                        exe.add(file)
+                        except FileNotFoundError:
+                            pass
+                except FileNotFoundError:
+                    continue
+
         # 卸载注册表
         for uninstall in EmulatorManager.iter_uninstall_registry():
             # 从卸载程序所在目录查找模拟器可执行文件

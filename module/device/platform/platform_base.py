@@ -305,6 +305,37 @@ class PlatformBase(Connection, EmulatorManagerBase):
         select = instances.select(**search_args)
         if select.count == 0:
             logger.warning(f'No emulator instance with {search_args}, serial invalid')
+
+            # Fallback: 当枚举列表中找不到实例时，尝试从配置中已知的信息直接构造实例
+            # 典型场景：电脑重启后，MuMu12 进程未运行，注册表/MuiCache 条目可能被清理，
+            # 导致 all_emulator_instances 中不包含 MuMu12 实例。
+            # 但配置中已保存了 EmulatorInfo_Emulator/name/path（来自上次成功运行），
+            # 利用这些信息可以直接构造实例并启动模拟器。
+            if emulator and path and name and serial:
+                logger.info(f'Attempting fallback instance construction from config: '
+                            f'emulator={emulator}, name={name}, path={path}, serial={serial}')
+                if os.path.exists(path):
+                    fallback = EmulatorInstanceBase(
+                        serial=serial,
+                        name=name,
+                        path=path,
+                    )
+                    # 验证构造的实例类型是否与配置一致
+                    # 注意：基类 EmulatorInstanceBase 的 type 依赖 EmulatorBase，
+                    # 可能无法识别具体类型（返回空字符串），因此对空类型做兼容
+                    fallback_type = fallback.type
+                    if fallback_type == emulator or not fallback_type:
+                        # 类型匹配或基类无法识别类型时，信任配置中的类型
+                        fallback.__dict__['type'] = emulator
+                        logger.hr('Emulator instance', level=2)
+                        logger.info(f'Found emulator instance (fallback from config): {fallback}')
+                        return fallback
+                    else:
+                        logger.warning(f'Fallback instance type mismatch: '
+                                      f'expected {emulator}, got {fallback_type}')
+                else:
+                    logger.warning(f'Fallback path does not exist: {path}')
+
             return None
         if select.count == 1:
             instance = select[0]
