@@ -306,6 +306,21 @@ class PlatformBase(Connection, EmulatorManagerBase):
         if select.count == 0:
             logger.warning(f'No emulator instance with {search_args}, serial invalid')
 
+            # MuMu12 serial 漂移修复（从原位置的死代码移到此处）
+            # MuMu12 运行时 serial 为 127.0.0.1:16384，停止后 .nemu 配置中可能为 127.0.0.1:7555
+            # 此时通过 serial 推算 instance_id，再按 id 匹配实例
+            instance_id = serial_to_id(serial)
+            if instance_id is not None:
+                select_by_id = instances.select(MuMuPlayer12_id=instance_id)
+                if select_by_id.count >= 1:
+                    instance = select_by_id[0]
+                    logger.hr('Emulator instance', level=2)
+                    logger.info(f'Found emulator instance (MuMu12 id match, '
+                                f'config serial {serial} → instance {instance}): {instance}')
+                    # 更新实例的 serial 为配置中的值，确保后续启停命令使用正确的端口
+                    instance.serial = serial
+                    return instance
+
             # Fallback: 当枚举列表中找不到实例时，尝试从配置中已知的信息直接构造实例
             # 典型场景：电脑重启后，MuMu12 进程未运行，注册表/MuiCache 条目可能被清理，
             # 导致 all_emulator_instances 中不包含 MuMu12 实例。
@@ -342,19 +357,6 @@ class PlatformBase(Connection, EmulatorManagerBase):
             logger.hr('Emulator instance', level=2)
             logger.info(f'Found emulator instance: {instance}')
             return instance
-
-        # MuMu12 的额外修复
-        # MuMu12 的 vbox 配置中可能是 127.0.0.1:7555，但用户设置的 serial 是 127.0.0.1:16xxx
-        # 此时检查 serial 是否与 instance_id 匹配
-        instance_id = serial_to_id(self.serial)
-        if instance_id is not None:
-            select = instances.select(MuMuPlayer12_id=instance_id)
-            # 当 select.count == 1 时不输出日志，因为这只是一次试探性匹配
-            if select.count == 1:
-                instance = select[0]
-                logger.hr('Emulator instance', level=2)
-                logger.info(f'Found emulator instance: {instance}')
-                return instance
 
         # 在多个同序列号实例中，优先按模拟器类型搜索（用户最容易配置的选项，更可靠）
         if emulator:

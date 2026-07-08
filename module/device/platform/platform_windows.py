@@ -29,6 +29,64 @@ def set_focus_window(hwnd):
     ctypes.windll.user32.SetForegroundWindow(hwnd)
 
 
+def get_window_text(hwnd):
+    """获取窗口标题文本。"""
+    length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+    if length == 0:
+        return ''
+    buf = ctypes.create_unicode_buffer(length + 1)
+    ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+    return buf.value
+
+
+def check_mumu_error_dialog():
+    """
+    检测 MuMu 模拟器的错误对话框（如权限冲突）。
+
+    Returns:
+        bool: True 表示检测到错误对话框
+    """
+    # MuMu12 错误对话框的窗口标题包含 "MuMu" 或 "NemuWindow"
+    # 权限冲突对话框标题通常为 "MuMuPlayer" 或类似
+    found = False
+
+    def enum_callback(hwnd, _):
+        nonlocal found
+        text = get_window_text(hwnd)
+        if text and ('MuMu' in text or 'Nemu' in text):
+            # 检查是否为错误对话框（通常有较短标题且是弹出窗口）
+            if ctypes.windll.user32.IsWindowVisible(hwnd):
+                # 枚举子窗口查找包含 "无法启动" 或 "冲突" 的文本
+                child_found = [False]
+
+                def child_callback(child_hwnd, __):
+                    child_text = get_window_text(child_hwnd)
+                    if child_text and ('无法启动' in child_text or '冲突' in child_text
+                                       or 'error' in child_text.lower()
+                                       or 'cannot' in child_text.lower()):
+                        child_found[0] = True
+                    return True
+
+                ctypes.windll.user32.EnumChildWindows(
+                    hwnd,
+                    ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)(child_callback),
+                    0
+                )
+                if child_found[0]:
+                    found = True
+                    logger.warning(f'MuMu error dialog detected: "{text}"')
+        return True
+
+    try:
+        ctypes.windll.user32.EnumWindows(
+            ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)(enum_callback),
+            0
+        )
+    except Exception as e:
+        logger.warning(f'Failed to check MuMu error dialog: {e}')
+    return found
+
+
 def minimize_window(hwnd):
     """最小化指定窗口。"""
     ctypes.windll.user32.ShowWindow(hwnd, 6)
@@ -384,6 +442,12 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 logger.exception(e)
                 continue
 
+            # MuMu 权限冲突等错误对话框检测
+            # 检测到错误对话框时立即终止等待，返回 False 触发重试
+            if check_mumu_error_dialog():
+                logger.warning('MuMu emulator error dialog detected, aborting start watch')
+                return False
+
         if new_window != 0 and new_window != current_window:
             logger.info(f'Minimize new window: {new_window}')
             minimize_window(new_window)
@@ -399,7 +463,8 @@ class PlatformWindows(PlatformBase, EmulatorManager):
     def emulator_start(self):
         """
         启动模拟器，最多重试 3 次。
-        针对 MuMu12 等模拟器添加实例查找失败后的等待重试机制。
+        针对 MuMu12 等模拟器添加实例查找失败后的等待重试机制，
+        以及权限冲突时的强制进程清理。
         """
         logger.hr('Emulator start', level=1)
 
@@ -418,9 +483,26 @@ class PlatformWindows(PlatformBase, EmulatorManager):
 
             # MuMu12: 等待一小段时间确保进程状态稳定
             if is_mumu12:
-                logger.info('MuMuPlayer12: waiting 2 seconds for process state to stabilize')
                 import time
-                time.sleep(2)
+                # 检测是否有残留进程导致权限冲突
+                # 权限冲突通常由 MuMuManager/MuMuPlayer 僵死进程引起
+                has_mumu_process = False
+                for proc in psutil.process_iter(['name', 'cmdline']):
+                    try:
+                        name = proc.info['name'] or ''
+                        if name.lower() in ('mumuplayer.exe', 'mumumanager.exe',
+                                            'nemuplayer.exe', 'nemuheadless.exe'):
+                            has_mumu_process = True
+                            logger.warning(f'MuMu residual process detected: {name} (PID={proc.pid})')
+                            proc.kill()
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+                if has_mumu_process:
+                    logger.info('MuMuPlayer12: killed residual processes, waiting 5 seconds')
+                    time.sleep(5)
+                else:
+                    logger.info('MuMuPlayer12: waiting 2 seconds for process state to stabilize')
+                    time.sleep(2)
 
             # 再启动
             if self._emulator_function_wrapper(self._emulator_start):
