@@ -365,15 +365,12 @@ class IslandDailyInteract(Island):
         return appear
 
     def _juu_express_steps(self):
-        # 其余 5 个 JUU 速运按钮暂缺，后续补图后再补回。
+        # 其余 2 个 JUU 速运按钮暂缺，后续补图后再补回。
         return [
             ('港口的帕特莉', 'port', self.move_for_pateli, JUU_EXPRESS_PATELI_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
-            # 缺图：栖风原野的奥布莱恩
-            # ('栖风原野的奥布莱恩', 'mine_forest', self.move_for_aobulaien, JUU_EXPRESS_AOBULAIEN_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
-            # 缺图：晨露农场的梅莉
-            # ('晨露农场的梅莉', 'farm', self.move_for_meili, JUU_EXPRESS_MEILI_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
-            # 缺图：集会岛的莉莎
-            # ('集会岛的莉莎', 'assembly', self.move_for_lisha, JUU_EXPRESS_LISHA_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('栖风原野的奥布莱恩', 'mine_forest', self.move_for_aobulaien, JUU_EXPRESS_AOBULAIEN_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('晨露农场的梅莉', 'farm', self.move_for_meili, JUU_EXPRESS_MEILI_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
+            ('集会岛的莉莎', 'assembly', self.move_for_lisha, JUU_EXPRESS_LISHA_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
             # 缺图：繁荫农圃的拉科尼娅
             # ('繁荫农圃的拉科尼娅', 'nursery', self.move_for_lakeniya, JUU_EXPRESS_LAKENIYA_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
             ('栖风原野的乔安', 'mine_forest', self.move_for_qiaoan, JUU_EXPRESS_QIAOAN_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
