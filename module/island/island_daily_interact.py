@@ -219,6 +219,8 @@ class IslandDailyInteract(Island):
                     label=f'{name}交付互动')
             if interact_status == 'clicked':
                 self.handle_island_story_skip_safely()
+                self.device.sleep(2)
+                self._handle_island_reward_optional()
                 return True
             if interact_status == 'complete':
                 return True
