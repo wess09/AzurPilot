@@ -879,37 +879,19 @@ def get_event_pt(self):
 ### 岛屿系统 (module/island/)
 
 #### 模块概述
-岛屿系统模块是较复杂的模块之一，负责管理游戏中的岛屿系统，包括赛季任务、科技、运输和项目。
+岛屿系统按功能拆分为多个独立调度任务，负责农场、牧场、矿山林场、餐饮、商业区和每日活动等自动化流程。
 
 #### 文件清单与分析
 
-| 文件 | 行数 | 导出类型 | 主要职责 |
-|------|------|---------|---------|
-| `island.py` | 76 | `Island` | 岛屿主调度器 |
-| `project.py` | ~500 | `IslandProjectRun` | 岛屿项目 |
-| `project_data.py` | ~800 | - | 项目数据 |
-| `transport.py` | ~400 | `IslandTransportRun` | 运输管理 |
-| `season_task.py` | ~300 | `SeasonTask` | 赛季任务 |
-| `technology.py` | ~300 | `Technology` | 科技研究 |
-| `data.py` | ~200 | - | 静态数据 |
-| `ui.py` | ~200 | `IslandUI` | 岛屿 UI |
-| `assets.py` | ~200 | - | 按钮和模板资源 |
-
-#### 岛屿运行 (`island.py:L26-L56`)
-```python
-def island_run(self, transport=True, project=True, names=None):
-    """执行岛屿日常"""
-    future_finish = []
-    if transport:
-        if self.island_transport_enter():
-            future_finish.extend(self.island_transport_run())
-    if project:
-        if self.island_management_enter():
-            future_finish.extend(self.island_project_run(names=names))
-    
-    if len(future_finish):
-        self.config.task_delay(target=future_finish)
-```
+| 文件 | 导出类型 | 主要职责 |
+|------|---------|---------|
+| `island.py` | `Island` | 通用岛屿导航、仓库筛选和产品选择能力 |
+| `island_farm.py` / `island_rancher.py` / `island_mine_forest.py` | 各生产任务类 | 基础资源生产与库存管理 |
+| `island_shop_base.py` | `IslandShopBase` | 餐饮商店生产流程基类 |
+| `island_business.py` / `island_cargo_preparation.py` | 各业务任务类 | 商业区经营与货运准备 |
+| `island_daily_gather.py` / `island_daily_order.py` / `island_daily_interact.py` | 各每日任务类 | 岛屿每日活动 |
+| `ui.py` / `warehouse.py` | `IslandUI` / `WarehouseOCR` | 页面导航和仓库数量识别 |
+| `assets.py` | - | 自动生成的按钮和模板资源 |
 
 ---
 

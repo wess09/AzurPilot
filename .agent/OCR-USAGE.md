@@ -55,8 +55,6 @@
 | `Level` | `module/exercise/opponent.py` | `Digit` | 演习对手等级 |
 | `DatedDuration`、`DatedDurationYuv` | `module/exercise/exercise.py` | `Ocr` | 演习周期剩余时间，支持带日期文本 |
 | `ExchangeLimitOcr` | `module/guild/logistics.py` | `Digit` | 大舰队兑换次数上限 |
-| `ProjectNameOcr` | `module/island/project.py` | `Ocr` | 岛屿项目名称，按服务器清洗文本 |
-| `ItemNameOcr` | `module/island/project.py` | `Ocr` | 岛屿产品名称，修正常见中文误识别 |
 | `MeowfficerLevelOcr` | `module/meowfficer/enhance.py` | `Digit` | 指挥喵强化等级 |
 | `PercentageOcr` | `module/os/fleet.py` | `Ocr` | 大世界据点百分比 |
 | `SeaMilesOCR` | `module/os/sea_miles_ocr.py` | `Digit` | 大世界海域坐标/海里数字 |
@@ -151,17 +149,15 @@
 
 | 位置 | 模型 | 用途 |
 |---|---|---|
-| `module/island/project.py` | 项目名/物品名：CN `cnocr`、EN `ppocr_v6`、JP `jp`、TW `tw`；生产时长新 UI 用 `cnocr`，剩余时长默认 `azur_lane`；文本检测 CN `cn` 其他 `ppocr_v6` | 识别岛屿项目名称、产品名称、生产时长，并用 `.det()` 在整图中检测产品行和角色名/工作状态 |
 | `module/island/island.py` | 默认 `azur_lane` | 识别选择产品材料数量文本 |
-| `module/island/season_task.py` | 任务名使用动态 `lang`；计数器默认 `azur_lane` | 识别岛屿赛季任务名称和任务进度 |
 | `module/island/warehouse.py` | 默认 `azur_lane` | 识别岛屿仓库物品数量 |
 | `module/island/island_air_drop.py` | 默认 `azur_lane` | 识别空投奖励计数器 |
 | `module/island/island_business.py` | 默认 `azur_lane` | 识别商业区剩余时间 |
 | `module/island/island_cargo_preparation.py` | 部分运输时长用 `cnocr`，其他默认 `azur_lane` | 识别运输任务时间和刷新倒计时 |
 | `module/island/island_daily_order.py` | 默认 `azur_lane` | 识别每日订单紧急剩余次数和冷却时间 |
-| `module/island/island_farm.py`、`module/island/island_fishery.py`、`module/island/island_mine_forest.py`、`module/island/island_manufacture.py`、`module/island/island_rancher.py`、`module/island/island_shop_base.py`、`module/island/island_teahouse.py` | 默认 `azur_lane`；矿林仓库物品名用 `cnocr` | 识别工作岗位数量、生产/采集剩余时间、仓库物品名和数量 |
+| `module/island/island_farm.py`、`module/island/island_fishery.py`、`module/island/island_mine_forest.py`、`module/island/island_manufacture.py`、`module/island/island_rancher.py`、`module/island/island_shop_base.py`、`module/island/island_teahouse.py` | 默认 `azur_lane`；矿林仓库物品名用 `ppocr_v6` | 识别工作岗位数量、生产/采集剩余时间、仓库物品名和数量 |
 | `module/island/island_select_character.py` | 默认 `azur_lane` | 识别岛屿角色体力计数器 |
-| `module/island/island_pearl_sell.py` | `cnocr` | 识别珍珠售卖计数器、价格、文本和当前数量 |
+| `module/island/island_pearl_sell.py` | `cnocr` | 识别珍珠售卖计数器、价格和当前数量 |
 
 ### 造船、装备、演习、UI 辅助
 

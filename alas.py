@@ -893,10 +893,6 @@ class AzurLaneAutoScript:
         from module.campaign.ambush_1_1 import Ambush11
         Ambush11(config=self.config, device=self.device).run()
 
-    def island_season_task(self):
-        from module.island.season_task import IslandSeasonTaskHandler
-        IslandSeasonTaskHandler(config=self.config, device=self.device).run()
-
     def daemon(self):
         from module.daemon.daemon import AzurLaneDaemon
         AzurLaneDaemon(config=self.config, device=self.device, task="Daemon").run()
