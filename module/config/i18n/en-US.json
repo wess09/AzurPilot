@@ -2011,6 +2011,14 @@
       "name": "Delay research when resources are insufficient",
       "help": "When resources are insufficient, AzurPilot will delay research until conditions are met or the research queue is about to be cleared, which will not cause research to stop.\nIf resources remain insufficient for a long time or AzurPilot is not running long enough, you can disable this option to keep the research queue full."
     },
+    "AllowGenreT": {
+      "name": "Allow T-series research",
+      "help": "T-series research may leave the research queue idle and reduce efficiency. Enable it only when needed."
+    },
+    "RemainingCommissions": {
+      "name": "Remaining T-series commissions",
+      "help": "Number of commissions still required by the pending T-series research. -1 means no T-series research is pending."
+    },
     "PresetFilter": {
       "name": "Research filter",
       "help": "For research drops and project refreshes, please see https://azur-stats.lyoko.io/. People who do not have a basic understanding of these are not recommended to write custom filters. It is recommended to use pre-optimized research filters.",

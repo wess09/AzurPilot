@@ -134,6 +134,9 @@ class RewardResearch(ResearchSelector, ResearchQueue, StorageHandler):
                 ret = self.research_project_start_with_requirements(project, add_queue=add_queue)
                 if ret:
                     return True
+                elif ret is not None and self.config.Research_RemainingCommissions > 0:
+                    logger.info('Delay research due to genre T research')
+                    return True
                 elif ret is not None and self.research_delay_check():
                     logger.info('Delay research when resources not enough and queue not empty')
                     return True
@@ -227,7 +230,10 @@ class RewardResearch(ResearchSelector, ResearchQueue, StorageHandler):
             if self.appear(RESEARCH_STOP, offset=(20, 20)):
                 # RESEARCH_STOP 是半透明按钮，颜色会随背景变化
                 if add_queue:
-                    self.research_queue_add()
+                    if not self.research_queue_add():
+                        self.research_project_started = None
+                        self._research_project_offset = (index - 2) % 5
+                        return False
                 else:
                     self.research_detail_quit()
                 # self.ensure_no_info_bar(timeout=3)  # 科研已启动
@@ -277,6 +283,12 @@ class RewardResearch(ResearchSelector, ResearchQueue, StorageHandler):
             if result is None:
                 logger.error('Research project is missing after disassemble equipment')
             return result
+        elif project.genre == 'T':
+            logger.info(f'Going to start a T series research: {project}')
+            self.research_project_start(project, add_queue=False)
+            self.config.Research_RemainingCommissions = project.commission_amount
+            self.research_project_started = None
+            return False
         else:
             # 普通项目
             return self.research_project_start(project, add_queue=add_queue)
@@ -565,6 +577,25 @@ class RewardResearch(ResearchSelector, ResearchQueue, StorageHandler):
 
         return True
 
+    def handle_pending_t_research(self):
+        if self.config.Research_RemainingCommissions <= -1:
+            return True
+        if self.config.Research_RemainingCommissions > 0:
+            return False
+
+        slot = self.get_queue_slot()
+        add_queue = slot > 0
+        if not self.research_project_start(2, add_queue=add_queue):
+            logger.warning('Failed to start pending T research')
+            return False
+
+        if add_queue:
+            self.config.Research_RemainingCommissions = -1
+            return True
+
+        logger.info('T research is running outside the full queue')
+        return False
+
     def run(self):
         """
         Pages:
@@ -580,11 +611,13 @@ class RewardResearch(ResearchSelector, ResearchQueue, StorageHandler):
         self.end_time = self.get_research_ended()
         self.queue_quit()
 
-        # 检查第 6 个项目（在队列之外）
-        self.receive_6th_research()
+        # 处理挂起的T类科研
+        if self.handle_pending_t_research():
+            # 检查第 6 个项目（在队列之外）
+            self.receive_6th_research()
+            # 填充队列
+            self.research_fill_queue()
 
-        # 填充队列
-        self.research_fill_queue()
         slot = self.get_queue_slot()
         # 调度
         if slot == 5:

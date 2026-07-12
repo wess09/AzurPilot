@@ -253,7 +253,7 @@ class ResearchSelector(ResearchUI):
         # 2022.05.08 允许 T 系列科研，因为委托现已强制启用
         # 2022.07.17 再次禁止 T 系列，除非满足前置条件否则无法加入队列
         if project.genre.upper() == 'T':
-            return False
+            return self.config.Research_AllowGenreT
         # 2021.08.19 允许 E-2 拆解科技箱，但 JP 服务器保持不变
         # 2022.08.23 允许所有 E-2，现已支持拆解装备
         #   如果仓库中没有可拆解的箱子则忽略 E-2，

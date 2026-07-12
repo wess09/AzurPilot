@@ -623,6 +623,17 @@ class ResearchProject:
         else:
             return 0
 
+    @cached_property
+    def commission_amount(self):
+        if '2 commissions' in self.task:
+            return 2
+        elif '4 commissions' in self.task:
+            return 4
+        elif '6 commissions' in self.task:
+            return 6
+        else:
+            return 0
+
 
 class ResearchProjectJp:
     GENRE = ['b', 'c', 'd', 'e', 'g', 'h', 'q', 't']
@@ -694,3 +705,14 @@ class ResearchProjectJp:
             return 15
         else:
             return 0
+
+    @cached_property
+    def commission_amount(self):
+        if self.genre == 'T':
+            if self.duration == '3':
+                return 2
+            elif self.duration == '4':
+                return 4
+            elif self.duration == '6':
+                return 6
+        return 0

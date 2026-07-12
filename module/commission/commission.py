@@ -661,86 +661,105 @@ class RewardCommission(UI, InfoHandler):
         except Exception as e:
             logger.warning(f'Commission income recording failed: {e}')
 
+    def _handle_research_genre_t_update(self, completed_commission_count):
+        if completed_commission_count <= 0:
+            return
+        required_commissions = self.config.cross_get('Research.Research.RemainingCommissions', -1)
+        if required_commissions <= -1:
+            return
+
+        new_value = max(required_commissions - completed_commission_count, 0)
+        logger.info(f'T类科研要求进行委托{required_commissions}次，当前进行了{completed_commission_count}次，剩余{new_value}次')
+        self.config.cross_set('Research.Research.RemainingCommissions', new_value)
+        if new_value <= 0:
+            logger.info('T类科研要求已完成，叫出科研任务')
+            self.config.task_call('Research')
+
     def _commission_receive(self, skip_first_screenshot=True):
         logger.hr('Reward receive')
 
         reward = False
         click_timer = Timer(1)
         self._commission_reward_images = []
+        completed_commission_count = 0
 
-        with self.stat.new(
-                'commission', method=self.config.DropRecord_CommissionRecord
-        ) as drop:
-            while 1:
-                if skip_first_screenshot:
-                    skip_first_screenshot = False
-                else:
-                    self.device.screenshot()
+        try:
+            with self.stat.new(
+                    'commission', method=self.config.DropRecord_CommissionRecord
+            ) as drop:
+                while 1:
+                    if skip_first_screenshot:
+                        skip_first_screenshot = False
+                    else:
+                        self.device.screenshot()
 
-                if self.ui_page_appear(page_commission, offset=(20, 20)):
-                    break
+                    if self.ui_page_appear(page_commission, offset=(20, 20)):
+                        break
 
-                for button in [EXP_INFO_S_REWARD, GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3]:
-                    if self.appear(button, interval=1):
-                        self.ensure_no_info_bar(timeout=1)
+                    for button in [EXP_INFO_S_REWARD, GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3]:
+                        if self.appear(button, interval=1):
+                            self.ensure_no_info_bar(timeout=1)
 
-                        if drop:
+                            if drop:
+                                drop.add(self.device.image)
+
+                            if button is EXP_INFO_S_REWARD:
+                                completed_commission_count += 1
+                                if self._commission_reward_images:
+                                    self._record_commission_income()
+                                    self._commission_reward_images = []
+                            else:
+                                self._commission_reward_images.append(self.device.image.copy())
+                                logger.info(f'Commission income: collected reward screenshot (trigger={button.name})')
+
+                            REWARD_SAVE_CLICK.name = button.name
+                            self.device.click(REWARD_SAVE_CLICK)
+                            if button is EXP_INFO_S_REWARD:
+                                self.device.sleep(0.3)
+                            click_timer.reset()
+                            reward = True
+                            continue
+                    if click_timer.reached() and self.appear_then_click(REWARD_1, offset=(20, 20), interval=1):
+                        self.interval_reset(GET_SHIP)
+                        click_timer.reset()
+                        reward = True
+                        continue
+                    if click_timer.reached() and self.appear_then_click(REWARD_1_WHITE, offset=(20, 20), interval=1):
+                        self.interval_reset(GET_SHIP)
+                        click_timer.reset()
+                        reward = True
+                        continue
+                    if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION, offset=(20, 20)):
+                        self.interval_reset(GET_SHIP)
+                        click_timer.reset()
+                        continue
+                    if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION_WHITE, offset=(20, 20)):
+                        self.interval_reset(GET_SHIP)
+                        click_timer.reset()
+                        continue
+                    if self.ui_main_appear_then_click(page_reward, interval=3):
+                        self.interval_reset(GET_SHIP)
+                        continue
+
+                    if self.config.SERVER in ['cn']:
+                        if self.appear(OIL_MAXED, offset=(20, 20), interval=3):
+                            raise OilMaxed
+
+                    for button in [GET_SHIP]:
+                        if click_timer.reached() and self.appear(button, interval=1):
+                            self.ensure_no_info_bar(timeout=1)
                             drop.add(self.device.image)
 
-                        if button is EXP_INFO_S_REWARD:
-                            if self._commission_reward_images:
-                                self._record_commission_income()
-                                self._commission_reward_images = []
-                        else:
-                            self._commission_reward_images.append(self.device.image.copy())
-                            logger.info(f'Commission income: collected reward screenshot (trigger={button.name})')
-
-                        REWARD_SAVE_CLICK.name = button.name
-                        self.device.click(REWARD_SAVE_CLICK)
-                        if button is EXP_INFO_S_REWARD:
-                            self.device.sleep(0.3)
+                            REWARD_SAVE_CLICK.name = button.name
+                            self.device.click(REWARD_SAVE_CLICK)
+                            click_timer.reset()
+                            reward = True
+                            continue
+                    if click_timer.reached() and self.ui_additional():
                         click_timer.reset()
-                        reward = True
                         continue
-                if click_timer.reached() and self.appear_then_click(REWARD_1, offset=(20, 20), interval=1):
-                    self.interval_reset(GET_SHIP)
-                    click_timer.reset()
-                    reward = True
-                    continue
-                if click_timer.reached() and self.appear_then_click(REWARD_1_WHITE, offset=(20, 20), interval=1):
-                    self.interval_reset(GET_SHIP)
-                    click_timer.reset()
-                    reward = True
-                    continue
-                if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION, offset=(20, 20)):
-                    self.interval_reset(GET_SHIP)
-                    click_timer.reset()
-                    continue
-                if click_timer.reached() and self.appear_then_click(REWARD_GOTO_COMMISSION_WHITE, offset=(20, 20)):
-                    self.interval_reset(GET_SHIP)
-                    click_timer.reset()
-                    continue
-                if self.ui_main_appear_then_click(page_reward, interval=3):
-                    self.interval_reset(GET_SHIP)
-                    continue
-
-                if self.config.SERVER in ['cn']:
-                    if self.appear(OIL_MAXED, offset=(20, 20), interval=3):
-                        raise OilMaxed
-
-                for button in [GET_SHIP]:
-                    if click_timer.reached() and self.appear(button, interval=1):
-                        self.ensure_no_info_bar(timeout=1)
-                        drop.add(self.device.image)
-
-                        REWARD_SAVE_CLICK.name = button.name
-                        self.device.click(REWARD_SAVE_CLICK)
-                        click_timer.reset()
-                        reward = True
-                        continue
-                if click_timer.reached() and self.ui_additional():
-                    click_timer.reset()
-                    continue
+        finally:
+            self._handle_research_genre_t_update(completed_commission_count)
 
         if reward:
             self._record_commission_income()
