@@ -55,6 +55,7 @@ class IslandDailyOrder(Island):
     FAST_POPUP_CHECK_INTERVAL = 0.5
     REWARD_POPUP_CHECK_INTERVAL = 2
     REWARD_POPUP_CHECK_LIMIT = 5
+    DAILY_RUN_HOUR = 3
     URGENT_TEMPLATE_PREFIX = 'TEMPLATE_DAILY_ORDER_URGENT'
     _urgent_template_cache = None
 
@@ -301,7 +302,7 @@ class IslandDailyOrder(Island):
                 self._reenter()
                 continue
             elif result == 'next_day':
-                self._delay_to_next_day()
+                self._delay_to_next_daily_run()
                 break
             elif result == 'to_step3':
                 pass  # 进入 ③
@@ -314,7 +315,7 @@ class IslandDailyOrder(Island):
                 self._reenter()
                 continue
             elif result == 'next_day':
-                self._delay_to_next_day()
+                self._delay_to_next_daily_run()
                 break
             elif result == 'to_step2':
                 continue  # 回到 ②（由 _step_right_panel 处理）
@@ -326,7 +327,7 @@ class IslandDailyOrder(Island):
             if result == 'wait':
                 break  # 延时等待
             elif result == 'next_day':
-                self._delay_to_next_day()
+                self._delay_to_next_daily_run()
                 break
             elif result == 'normal':
                 break
@@ -413,7 +414,7 @@ class IslandDailyOrder(Island):
         if self._is_right_panel_empty():
             if self._first_right_panel_check:
                 self._first_right_panel_check = False
-                logger.info('[岛屿-每日订单] 首次进入右侧为空，延时到第二天')
+                logger.info('[岛屿-每日订单] 首次进入右侧为空，延时到下一个 03:00')
                 return 'next_day'
             else:
                 logger.info('[岛屿-每日订单] 右侧为空，退出重进')
@@ -531,7 +532,7 @@ class IslandDailyOrder(Island):
         ④ 退出判断。
 
         Returns:
-            str: 'wait' → OCR 等待; 'next_day' → 第二天; 'normal' → 正常退出
+            str: 'wait' → OCR 等待; 'next_day' → 下一个 03:00; 'normal' → 正常退出
         """
         self.device.screenshot()
 
@@ -547,7 +548,7 @@ class IslandDailyOrder(Island):
                 self.config.task_delay(minute=60)
             return 'wait'
         else:
-            logger.info('[岛屿-每日订单] 右侧不是筹备中，延时到第二天')
+            logger.info('[岛屿-每日订单] 右侧不是筹备中，延时到下一个 03:00')
             return 'next_day'
 
     # ==================== 辅助方法 ====================
@@ -648,13 +649,16 @@ class IslandDailyOrder(Island):
                 continue
             self.device.sleep(0.5)
 
-    def _delay_to_next_day(self):
-        """延时到第二天。"""
-        tomorrow = current_time().replace(
-            hour=0, minute=0, second=0, microsecond=0
-        ) + timedelta(days=1)
-        self.config.task_delay(target=tomorrow)
-        logger.info(f'[岛屿-每日订单] 延时到 {tomorrow}')
+    def _delay_to_next_daily_run(self):
+        """延时到下一个每日运行时间（03:00）。"""
+        now = current_time()
+        target = now.replace(
+            hour=self.DAILY_RUN_HOUR, minute=0, second=0, microsecond=0
+        )
+        if target <= now:
+            target += timedelta(days=1)
+        self.config.task_delay(target=target)
+        logger.info(f'[岛屿-每日订单] 下次每日订单运行时间: {target}')
 
     def _handle_popups(self):
         """处理弹窗。"""
