@@ -1,4 +1,5 @@
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,13 +12,30 @@ from module.logger import logger
 CPU_EP = "CPUExecutionProvider"
 DML_EP = "DmlExecutionProvider"
 COREML_EP = "CoreMLExecutionProvider"
-WINDOWS_ML_EP_WHITELIST = {
-    "QNNExecutionProvider",
-    "OpenVINOExecutionProvider",
-    "VitisAIExecutionProvider",
-    "NvTensorRtRtxExecutionProvider",
-    "MIGraphXExecutionProvider",
-}
+AMD_INTEGRATED_GPU_RE = re.compile(r"\b(?:610m|660m|680m|740m|760m|780m|880m|890m)\b", re.I)
+CPU_DEVICE_KEYWORDS = (
+    "core(tm)",
+    "ryzen",
+    "xeon",
+    "pentium",
+    "celeron",
+    "threadripper",
+    "athlon",
+)
+INTEL_DISCRETE_GPU_KEYWORDS = (
+    "arc(tm) a",
+    "arc(tm) b",
+    "arc(tm) pro",
+    "arc a",
+    "arc b",
+    "arc pro",
+)
+AMD_DISCRETE_GPU_KEYWORDS = (
+    "radeon rx",
+    "radeon pro",
+    "pro w",
+    "instinct",
+)
 
 _INSTALL_ATTEMPTED = False
 
@@ -93,6 +111,69 @@ def _device_type_name(device):
     return getattr(device_type, "name", str(device_type)).upper()
 
 
+def _device_search_text(device):
+    return f"{device.vendor} {device.description}".lower()
+
+
+def _is_cpu_like_device(device):
+    if device.ep_name == CPU_EP or device.device_type == "CPU":
+        return True
+
+    text = _device_search_text(device)
+    return any(keyword in text for keyword in CPU_DEVICE_KEYWORDS)
+
+
+def _is_integrated_gpu(device):
+    if device.device_type != "GPU":
+        return False
+
+    text = _device_search_text(device)
+    if "microsoft basic render" in text:
+        return True
+
+    if "intel" in text:
+        return not any(keyword in text for keyword in INTEL_DISCRETE_GPU_KEYWORDS)
+
+    if "amd" in text or "advanced micro devices" in text or "radeon" in text:
+        if any(keyword in text for keyword in AMD_DISCRETE_GPU_KEYWORDS):
+            return False
+        if (
+            "radeon(tm) graphics" in text
+            or "radeon graphics" in text
+            or AMD_INTEGRATED_GPU_RE.search(text)
+        ):
+            return True
+        return 0 < device.video_memory_mb < 1024
+
+    return False
+
+
+def _is_vendor_gpu_ep(device):
+    return device.device_type == "GPU" and device.ep_name not in {DML_EP, CPU_EP}
+
+
+def _is_vendor_gpu_auto_candidate(device):
+    if not _is_vendor_gpu_ep(device):
+        return False
+    return not _is_cpu_like_device(device) and not _is_integrated_gpu(device)
+
+
+def _is_dml_auto_candidate(device):
+    if device.device_type != "GPU" or device.ep_name != DML_EP:
+        return False
+    return not _is_cpu_like_device(device) and not _is_integrated_gpu(device)
+
+
+def _is_auto_selectable_device(device):
+    if _is_cpu_like_device(device):
+        return False
+    if device.device_type == "NPU":
+        return True
+    if _is_vendor_gpu_ep(device):
+        return _is_vendor_gpu_auto_candidate(device)
+    return _is_dml_auto_candidate(device)
+
+
 def windowsml_device_options(ort=None, install_missing_ep=False):
     if ort is None:
         import onnxruntime as ort
@@ -158,9 +239,9 @@ def discover_ort_devices(ort=None):
 def _sort_key(device):
     if device.device_type == "NPU":
         group = 0
-    elif device.device_type == "GPU" and device.ep_name not in {DML_EP, CPU_EP}:
+    elif _is_vendor_gpu_auto_candidate(device):
         group = 1
-    elif device.device_type == "GPU" and device.ep_name == DML_EP:
+    elif _is_dml_auto_candidate(device):
         group = 2
     elif device.ep_name == CPU_EP or device.device_type == "CPU":
         group = 3
@@ -217,16 +298,21 @@ def _ensure_ep_ready(winml, provider):
     if _is_ep_ready(winml, provider):
         return True
 
+    ready_state = _ep_ready_state_name(winml, provider)
     logger.info(
-        f"Install Windows ML EP: "
-        f"{name}, state={_ep_ready_state_name(winml, provider)}"
+        f"Prepare Windows ML EP: "
+        f"{name}, state={ready_state}"
     )
     provider.ensure_ready()
     if _is_ep_ready(winml, provider):
+        logger.info(
+            f"Windows ML EP ready: "
+            f"{name}, state={_ep_ready_state_name(winml, provider)}"
+        )
         return True
 
     logger.warning(
-        f"Windows ML EP is not ready after install: "
+        f"Windows ML EP is not ready after prepare: "
         f"{name}, state={_ep_ready_state_name(winml, provider)}"
     )
     return False
@@ -264,11 +350,10 @@ def ensure_windows_ml_execution_providers(ort, install_missing=False):
                 logger.info("Windows ML Catalog found no compatible vendor EP")
                 return
 
+            logger.info(f"Windows ML Catalog provider count: {len(providers)}")
             registered = 0
             for provider in providers:
                 name = str(getattr(provider, "name", "") or "")
-                if name not in WINDOWS_ML_EP_WHITELIST:
-                    continue
 
                 try:
                     if _ensure_ep_ready(winml, provider) and _register_windows_ml_ep(
@@ -338,6 +423,12 @@ def _create_windows_hardware_session(
     for device in candidates:
         if device.device_type == "CPU" or device.ep_name == CPU_EP:
             continue
+        if (
+            (not windowsml_device or windowsml_device == "auto")
+            and not _is_auto_selectable_device(device)
+        ):
+            logger.info(f"Skip Windows ML OCR provider for auto: {device.label}")
+            continue
 
         options = _build_session_options(ort, engine_cfg)
         try:
@@ -354,16 +445,19 @@ def _create_windows_hardware_session(
 
     available = ort.get_available_providers()
     if DML_EP in available:
-        try:
-            return _create_with_provider_list(
-                ort,
-                model_path,
-                engine_cfg,
-                [DML_EP, CPU_EP],
-                f"{DML_EP} / GPU",
-            )
-        except Exception as exc:
-            logger.warning(f"Windows ML DML provider failed: {exc}")
+        if candidates:
+            logger.info("Skip generic DML fallback: explicit Windows ML devices were tested")
+        else:
+            try:
+                return _create_with_provider_list(
+                    ort,
+                    model_path,
+                    engine_cfg,
+                    [DML_EP, CPU_EP],
+                    f"{DML_EP} / GPU",
+                )
+            except Exception as exc:
+                logger.warning(f"Windows ML DML provider failed: {exc}")
 
     logger.warning("Windows ML hardware acceleration is unavailable, falling back to CPU")
     return _create_cpu_session(ort, model_path, engine_cfg)
