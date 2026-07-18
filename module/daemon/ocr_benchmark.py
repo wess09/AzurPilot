@@ -3,6 +3,7 @@ import platform
 import shutil
 import sys
 import time
+import gc
 import cv2
 from rich.table import Table
 from rich.text import Text
@@ -80,6 +81,7 @@ class OcrBenchmark:
 
         # --- Init model ---
         ocr = AlOcr(name=model_name)
+        benchmark_img = None
         ocr.init()
 
         # --- Extract dataset ---
@@ -176,6 +178,16 @@ class OcrBenchmark:
             }
 
         finally:
+            try:
+                ocr.model = None
+                ocr._model_loaded = False
+                from module.ocr.al_ocr import reset_ocr_model
+                reset_ocr_model()
+            finally:
+                benchmark_img = None
+                test_cases = None
+                gc.collect()
+
             if os.path.exists(extract_dir):
                 try:
                     shutil.rmtree(extract_dir)

@@ -36,6 +36,14 @@ AMD_DISCRETE_GPU_KEYWORDS = (
     "pro w",
     "instinct",
 )
+TENSORRT_RTX_EP_NAMES = {
+    "nvtensorrtxexecutionprovider",
+    "nvtensorrtrtxexecutionprovider",
+}
+TENSORRT_RTX_PROVIDER_OPTIONS = {
+    "enable_cuda_graph": "0",
+    "nv_max_workspace_size": str(64 * 1024 * 1024),
+}
 
 _INSTALL_ATTEMPTED = False
 
@@ -174,6 +182,16 @@ def _is_auto_selectable_device(device):
     return _is_dml_auto_candidate(device)
 
 
+def _provider_options_for_device(device):
+    if device.ep_name.lower() in TENSORRT_RTX_EP_NAMES:
+        cache_path = Path("cache/windowsml/nvtensorrtx").resolve()
+        cache_path.mkdir(parents=True, exist_ok=True)
+        options = dict(TENSORRT_RTX_PROVIDER_OPTIONS)
+        options["nv_runtime_cache_path"] = str(cache_path)
+        return options
+    return {}
+
+
 def windowsml_device_options(ort=None, install_missing_ep=False):
     if ort is None:
         import onnxruntime as ort
@@ -303,7 +321,28 @@ def _ensure_ep_ready(winml, provider):
         f"Prepare Windows ML EP: "
         f"{name}, state={ready_state}"
     )
-    provider.ensure_ready()
+    last_progress = [-10]
+
+    def _log_progress(value):
+        percent = int(value * 100)
+        percent = max(0, min(100, percent))
+        if percent >= last_progress[0] + 10 or percent == 100:
+            last_progress[0] = percent
+            logger.info(f"Windows ML EP prepare progress: {name}, {percent}%")
+
+    def _log_complete():
+        logger.info(f"Windows ML EP prepare completed: {name}")
+
+    if hasattr(provider, "ensure_ready_async"):
+        operation = provider.ensure_ready_async(
+            on_complete=_log_complete,
+            on_progress=_log_progress,
+        )
+        operation.wait()
+        operation.close()
+    else:
+        provider.ensure_ready()
+
     if _is_ep_ready(winml, provider):
         logger.info(
             f"Windows ML EP ready: "
@@ -432,7 +471,13 @@ def _create_windows_hardware_session(
 
         options = _build_session_options(ort, engine_cfg)
         try:
-            options.add_provider_for_devices([device.raw], {})
+            provider_options = _provider_options_for_device(device)
+            if provider_options:
+                logger.info(
+                    f"Windows ML OCR provider options: "
+                    f"{device.ep_name}, {provider_options}"
+                )
+            options.add_provider_for_devices([device.raw], provider_options)
             session = ort.InferenceSession(str(model_path), sess_options=options)
             logger.info(f"Windows ML OCR provider: {device.label}")
             return session
