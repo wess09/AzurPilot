@@ -155,6 +155,7 @@ class IslandPearlSell(Island):
             in_friend_island = True
         else:
             logger.info(f"[岛屿-珍珠采购] 本岛价格命中采购价 {home_price}")
+            self.back_to_pearl_shop_or_map()
 
         if not self._goto_pearl_shop_at("port"):
             if in_friend_island:
