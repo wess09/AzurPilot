@@ -580,7 +580,7 @@ class IslandDailyOrder(Island):
         cls._urgent_template_cache = tuple(sorted(templates, key=cls._urgent_template_sort_key))
         return cls._urgent_template_cache
 
-    def _template_match_urgent(self, template, similarity=0.80):
+    def _template_match_urgent(self, template, similarity=0.75):
         """
         获取紧急模板在左侧面板中的匹配位置及尺寸。
 
@@ -599,7 +599,7 @@ class IslandDailyOrder(Island):
         x1, y1, x2, y2 = button.area
         return (x1, y1, x2 - x1, y2 - y1)
 
-    def _template_click_urgent(self, similarity=0.80):
+    def _template_click_urgent(self, similarity=0.75):
         """点击左侧面板中第一个匹配到的紧急模板，返回匹配位置信息。"""
         for name, template in self._urgent_templates():
             match = self._template_match_urgent(template, similarity=similarity)
