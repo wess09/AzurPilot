@@ -531,12 +531,20 @@ class IslandPearlSell(Island):
         )
 
     def click_rank_visit(self, visit_button):
-        """点击好友排名拜访按钮并等待进入好友岛屿。"""
+        """点击好友排名拜访按钮并等待进入好友岛屿。
+
+        检测逻辑分为两个阶段：
+        1. 等待 ISLAND_ACCESS_MAP（右上角地图入口）出现，表示已开始加载好友岛
+        2. 等待 AIR_DROP_RUN_AWAY（顶部"离开"按钮）也出现，确认场景完全加载完毕
+        只有两者同时出现（is_in_friend_island() 为 True），才视为成功进入好友岛屿。
+        """
         click_timer = Timer(3).start()
         self.device.click(visit_button)
+        self.device.sleep(3)
         for _ in self.loop(timeout=30, skip_first=False):
-            if self.appear(ISLAND_ACCESS_MAP, offset=(20, 20)):
+            if self.is_in_friend_island():
                 self._island_expect_friend = True
+                logger.info("[岛屿-珍珠采购] 成功进入好友岛屿")
                 return True
             if self.appear(CANT_ACCESS, offset=(20, 20)):
                 logger.info("[岛屿-珍珠采购] 好友不可访问")
