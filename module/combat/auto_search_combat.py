@@ -339,10 +339,20 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                 self._withdraw = True
                 confirm_timer.reset()
                 break
+            # A/B/C评价可能是沉船或作战超时导致，通过Shipwreck_Marker错误标识区分：
+            # - 沉船：结算界面出现错误标识×，游戏扣减-10心情
+            # - 超时：结算界面无错误标识×，游戏不额外扣减心情（仅有正常战斗消耗）
+            # S评价是完美战斗不会有沉船，D评价一定有错误标识（由OPTS_INFO_D处理）
             if self.appear(BATTLE_STATUS_A) or self.appear(BATTLE_STATUS_B) \
-                    or self.appear(EXP_INFO_A) or self.appear(EXP_INFO_B):
+                    or self.appear(BATTLE_STATUS_C) \
+                    or self.appear(EXP_INFO_A) or self.appear(EXP_INFO_B) \
+                    or self.appear(EXP_INFO_C):
                 if emotion_reduce:
-                    self.emotion.reduce(fleet_index, shipwreck=True)
+                    if self.appear(Shipwreck_Marker_BUTTON):
+                        logger.info('[自动搜索-战斗] A/B/C评价检测到沉船标识，扣减-10心情')
+                        self.emotion.reduce(fleet_index, shipwreck=True)
+                    else:
+                        logger.info('[自动搜索-战斗] A/B/C评价未检测到沉船标识（作战超时），不额外扣减心情')
                 break
             if self.appear(BATTLE_STATUS_S) or self.appear(EXP_INFO_S) \
                     or self.appear(GET_MISSION) or self.is_auto_search_running():
