@@ -343,14 +343,17 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
             # - 沉船：结算界面出现错误标识×，游戏扣减-10心情
             # - 超时：结算界面无错误标识×，游戏不额外扣减心情（仅有正常战斗消耗）
             # S评价是完美战斗不会有沉船，D评价一定有错误标识（由OPTS_INFO_D处理）
+            # C/D评价会触发OPTS_INFO_D后续确认弹窗，设置_shipwreck_emotion_reduced
+            # 防止status中OPTS_INFO_D重复扣减
             if self.appear(BATTLE_STATUS_A) or self.appear(BATTLE_STATUS_B) \
                     or self.appear(BATTLE_STATUS_C) \
                     or self.appear(EXP_INFO_A) or self.appear(EXP_INFO_B) \
                     or self.appear(EXP_INFO_C):
-                if emotion_reduce:
+                if emotion_reduce and not self._shipwreck_emotion_reduced:
                     if self.appear(Shipwreck_Marker_BUTTON):
                         logger.info('[自动搜索-战斗] A/B/C评价检测到沉船标识，扣减-10心情')
                         self.emotion.reduce(fleet_index, shipwreck=True)
+                        self._shipwreck_emotion_reduced = True
                     else:
                         logger.info('[自动搜索-战斗] A/B/C评价未检测到沉船标识（作战超时），不额外扣减心情')
                 break
