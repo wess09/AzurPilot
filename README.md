@@ -807,13 +807,13 @@ adb shell wm density reset
   <img src="https://contrib.rocks/image?repo=wess09/AzurPilot&max=1000" alt="AzurPilot Contributors">
 </a>
 
-### 主要贡献者名单（依据全部提交 diff 审查核实）
+### 主要贡献者名单（ClaudeCode生成）
 
 **核心维护者**
 
 | 作者 | 身份 | 核心贡献 |
 | --- | --- | --- |
-| @wess09（含别名 茗 / 雪风）| 本仓库作者 | 智能调度雏形、CL1 统计/遥测、重启模拟器管理、OCR/GPU 升级、MCP、LLM、OOBE、WebUI 重构、婚舰识别、SSH、依赖/部署/CI 工程 |
+| @wess09 | 本仓库作者 | 智能调度雏形、CL1 统计/遥测、重启模拟器管理、OCR/GPU 升级、MCP、LLM、OOBE、WebUI 重构、婚舰识别、SSH、依赖/部署/CI 工程 |
 
 **主要功能贡献者**
 
