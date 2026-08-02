@@ -1,0 +1,16 @@
+Microsoft WindowsML
+
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+This software is provided by Microsoft under a proprietary license.
+Redistribution or redistribution of this package in whole or in part
+requires compliance with Microsoft's licensing terms.
+
+The Windows ML (Windows Machine Learning) package is a Windows system
+component. Use of this package is subject to the Microsoft Software
+License Terms that accompanied your copy of Windows or the developer
+license for Windows ML.
+
+For licensing information, please refer to:
+https://docs.microsoft.com/en-us/windows/ai/
+https://learn.microsoft.com/en-us/windows/ai/windows-ml/

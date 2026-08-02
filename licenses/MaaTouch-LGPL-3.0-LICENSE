@@ -1,0 +1,32 @@
+GNU LESSER GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+MaaTouch is distributed under the GNU Lesser General Public License v3.0 (LGPL-3.0).
+
+MaaTouch is derived from the MaaAssistantArknights project
+(https://github.com/MaaAssistantArknights) which is licensed under
+AGPL-3.0, and from minitouch / minicap (OpenSTF) which is licensed
+under Apache-2.0. MaaTouch itself is released under LGPL-3.0.
+
+The full text of the GNU Lesser General Public License v3.0 is available at:
+https://www.gnu.org/licenses/lgpl-3.0.txt
+
+This software is provided "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR
+ANY CLAIM, DAMAGES OR OTHER LIABILITY.
+
+----------------------------------------------------------------------------
+
+GNU LESSER GENERAL PUBLIC LICENSE TERMS AND CONDITIONS
+
+0. Additional Definitions.
+
+As used herein, "this License" refers to version 3 of the GNU Lesser
+General Public License, and the "GNU GPL" refers to version 3 of the GNU
+General Public License.
+
+"The Library" refers to a covered work governed by this License, other than
+an Application or a Combined Work as defined below.
+
+... (Please refer to the full LGPL-3.0 text at
+https://www.gnu.org/licenses/lgpl-3.0.txt for complete terms) ...

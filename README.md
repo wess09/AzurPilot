@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.8%2B-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/Python-3.14-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/github/license/wess09/AzurPilot?style=flat-square&label=License&color=2ea44f" alt="License">
   <img src="https://img.shields.io/github/stars/wess09/AzurPilot?style=flat-square&label=Stars&color=ffcc00" alt="Stars">
   <img src="https://img.shields.io/github/forks/wess09/AzurPilot?style=flat-square&label=Forks&color=58a6ff" alt="Forks">
@@ -36,21 +36,6 @@
   <img src="https://img.shields.io/github/issues-pr-closed/wess09/AzurPilot?style=flat-square&label=PRs%20Closed&color=2ea44f" alt="Closed Pull Requests">
 </p>
 
-## 项目简介
-
-AzurPilot 是基于 AzurLaneAutoScript 修改而来的碧蓝航线自动化辅助项目，保留原项目的核心能力，并在此基础上整合了多个分支、功能改进和实验性特性。
-
-本项目代码基本由 AI 代码生成与辅助编写，存在较大的不确定性，欢迎提交 [Pull Request](https://github.com/wess09/AzurPilot/pulls) 改正。
-
-项目原始来源与相关分支：
-
-- LmeSzinc/AzurLaneAutoScript 原项目及其生态分支 @LmeSzinc
-- yukikaze21/AzurLaneAutoScriptyukikaze21 大世界部分功能 @yukikaze21
-- Zuosizhu/Alas-with-Dashboard 的仪表盘 @Zuosizhu
-- guoh064/AzurLaneAutoScript 大世界部分功能 @guoh064
-- sui-feng-cb/AzurLaneAutoScript 岛屿计划 @sui-feng-cb
-- 其他社区贡献的实用 [Pull Request](https://github.com/LmeSzinc/AzurLaneAutoScript/pulls)
-
 <div align="center">
   <a href="https://alas.nanoda.work/">
     <img src="https://img.shields.io/badge/Web-下载-blue?style=for-the-badge&logo=google-chrome&logoColor=white" />
@@ -61,28 +46,174 @@ AzurPilot 是基于 AzurLaneAutoScript 修改而来的碧蓝航线自动化辅�
   </a>
 </div>
 
+## 目录
+
+- [项目简介](#项目简介)
+- [主要改动](#主要改动)
+- [GUI 预览](#gui-预览)
+- [快速开始](#快速开始)
+- [使用前设置](#使用前设置)
+- [MCP 服务](#mcp-服务)
+- [多平台启动器](#多平台启动器)
+- [OCR 模型](#ocr-模型)
+- [Termux 真机安装运行指南](#termux-真机安装运行指南)
+- [赞助支持](#赞助支持)
+- [贡献者](#贡献者)
+- [相关链接](#相关链接)
+- [开发与贡献](#开发与贡献)
+- [许可证](#许可证)
+
+## 项目简介
+
+AzurPilot 是基于 AzurLaneAutoScript 修改而来的碧蓝航线自动化辅助工具，保留原项目的核心能力，并在此基础上整合了多个分支、功能改进和实验性特性。通过 ADB/uiautomator2 控制安卓模拟器，以截图识别、图像匹配与 OCR 自动执行游戏任务，支持 CN/EN/JP/TW 四服。
+
+> **请注意**：本项目代码基本由 AI 代码生成与辅助编写，存在较大的不确定性，欢迎提交 [Pull Request](https://github.com/wess09/AzurPilot/pulls) 改正。
+
+项目原始来源与主要贡献者（ClaudeCode分析得出可能存在不准确性）：
+
+| 仓库 / 作者 | 贡献内容 |
+| --- | --- |
+| @LmeSzinc/AzurLaneAutoScript | 原项目 ALAS 本体 |
+| @wess09 | 智能调度雏形、CL1 统计/遥测、重启模拟器管理、OCR/GPU 升级（PP-OCRv6/DirectML/ncnn）、MCP 服务器、LLM 分析、OOBE、WebUI 重构、婚舰识别、SSH 管理、WebUI 安全加固、依赖/部署/CI 工程 |
+| @guoh064 | 岛屿计划、大世界经验检测、海域成就 OpsiTarget、装备码、活动商店、突击沉船、岛屿数据/季节/科技扫描、仪表盘核心、GemsFarming 增强 |
+| @longer-sausage | 蒙特卡洛模拟器、共用心情、智能调度侵蚀 1 联动、大世界重构、紧急委托、自动寻吊 |
+| @Beatrice-betty | 大世界自动配队、共斗沉船、月末行动力清理、道中战败细化、委托统计、16 图重构、情绪修复 |
+| @ZhangMusan | 智能调度+ 重构（#87/#95）、短猫数据收集、月末清理模式初版、自动寻吊修复、DroidCast 升级、macOS 支持、塞壬探测 |
+| @a2893005741 | 自动技能切换、维修箱重构、侵蚀统计修复、AP/资源图表、退役修复、退役船坞过滤器 |
+| @123456 | 岛屿每日订单/互动/珍珠采购/货备独立任务、岛屿经营修复 |
+| @LanceRingHong | 三油低耗、岛屿排产/停滞修复 |
+| @quankong1551 | 岛屿持续修复、每日订单、JUU 速运 |
+| @EnderAvaritia | 资源历史图表、调度器推送通知 |
+| @moon-dim | 道中换队、独立推送分离 |
+| @DreamyDust | 自动配装模块、WebUI 性能优化 |
+| @Heipen | 塞壬研究装置基础、SirenBug 修复、AP 推送控制 |
+| @Msrtria | 委托推送、钻石推送 |
+| @kotoricon | 物资/硬币停止条件 |
+| @flyndxd78 | 虚拟资产系统、CL1 维修阈值、SSH 基础（PR #477）|
+| @izum1 | 日志备份/压缩 |
+| 上游贡献者 sui-feng-cb(ArecaSapling) / nEEtdo0d / SarContDeli / haoli2322(Q1213a) 等 | 作战档案/突袭活动/16 章/科研、商店/退役、侵蚀 1 练级基础、战斗学院/图表 |
+
+
 访问 **[AzurPilot 官网](https://alas.nanoda.work/)** 了解更多功能详情，或前往 **[下载页面](https://alas.nanoda.work/download.html)** 获取最新版本。
 
-## GUI
+## 主要改动
+
+本分支在原项目基础上加入或整合了以下内容。每项标注「创建者」与「优化者」（依据 git 提交历史核实）。
+
+
+**大世界**
+
+- 大世界智能调度+（自动切换侵蚀 1 练级与黄币补充任务，黄币目标达成度检测与行动力/黄币保留值联动）
+  - 雏形：**wess09**（2025-12）；调度+ 重构：**ZhangMusan**（2026-02，PR #87/#95）；侵蚀 1 联动与黄币修复：**longer-sausage**（2026-07）
+- 大世界蒙特卡洛模拟器（估算侵蚀循环收益，批量蒙特卡洛采样）
+  - 创建：**longer-sausage**（2026-03）
+- 大世界舰队经验检测（OCR 识别舰船等级与经验，满经验推送）
+  - 创建：**guoh064**（2025-12）；满经验推送：**Beatrice-betty**（2026-05）
+- 侵蚀一舰队自动配队（检测指定舰位满经验后自动进入船坞更换舰船并推送）
+  - 创建：**Beatrice-betty**（2026-05）
+- 大世界海域成就（出击补全安全海域未完成星标，并可收集成就奖励）
+  - 创建：**guoh064**（2025-12）
+- 大世界独立推送（大世界 OnePush 渠道与错误推送分离，另有启动器推送开关）
+  - 创建：**moon-dim**（2026-05）；方法整合：**wess09**
+- 维修箱修船（使用维修箱修复舰船，支持侵蚀 1 单独阈值；与上游原有的血量阈值修船相互独立）
+  - 创建：**wess09**（2026-02）；重构：**a2893005741**；侵蚀 1 阈值：**flyndxd78**（PR #477）
+- 大世界信息推送开关（启动器推送 / 大世界 OnePush 独立开关）
+  - 创建：**moon-dim**（2026-05）
+- 每月开荒进度显示与失败海域续开（开荒流程本身上游已有，进度显示与续开为本项目新增）
+  - 创建：**wess09**（2026-04）
+- 塞壬研究装置（可配置，用于探测地图上的敌人或资源）
+  - 基础：**Heipen**（上游贡献者）；探测策略：**ZhangMusan**（2026-04，后被移除）
+- 月末自动清理大世界行动力（防溢出，可配置触发天数与保留值，自动执行短猫相接、商店采购、隐秘海域与深渊坐标任务）
+  - 模式初版：**ZhangMusan**（2026-03，PR #191/#193）；重写完善：**Beatrice-betty**（2026-07，PR #666）
+
+**战斗与关卡**
+
+- 共斗沉船（可选择牺牲前卫 / 旗舰 / 前后排舰船刷分）
+  - 创建：**Beatrice-betty**（2026-07）
+- 共斗每日支持沉船模式
+  - 创建：**Beatrice-betty**
+- 道中战斗失败策略（撤退继续 / 换队接管 / 连续失败后停止；基础撤退上游已有，策略与换队接管为本项目新增）
+  - 创建：**moon-dim**（2026-05）；策略细化（换队/连续战败停止）：**Beatrice-betty**（2026-06）
+- 独立自动配装模块（船坞内 OCR 识别并按方案批量更换装备）
+  - 创建：**DreamyDust**（2026-06）
+- 特定活动多波战斗撤退（如活动关卡 d3-3 触发三战撤退）
+  - 创建：**wess09**（2025-12）
+- 演习推迟策略（至下次更新前 X 小时；演习策略本身上游已有，推迟为本项目新增）
+  - 创建：**wess09**（2026-01）
+- 物资/石油达到上限停止出击（石油上限上游已有，物资上限为本项目新增）
+  - 创建：**kotoricon**（外部贡献，2026-05）；购买猫箱扩展：**Beatrice-betty** / **茗**
+- 共用心情（多个出击任务共享同一队心情计算）
+  - 创建：**longer-sausage**（2026-03）
+- 三油低耗
+  - 创建：**LanceRingHong**（2026-02）
+- 潜入袭击（1-1 刷伏击）
+  - 创建：**wess09**（2026-03）
+
+**养成与后勤**
+
+- 岛屿计划自动化（岛屿全模块为上游所无，覆盖种植、牧场、烧烤、茶室、餐厅、JUU 咖啡/小吃、日常互动、速运等约 20 个子功能）
+  - 创建：**guoh064**（2025-12）；每日订单/互动/珍珠/货备独立任务：**123456**（2026-06）；重构：**quankong1551**
+- 拆解装备箱（按保留数量拆解白/蓝/紫箱）
+  - 创建：**wess09**（2026-01）
+- 自定义任务优先级（自定义调度顺序）
+  - 创建：**wess09**（2026-07）
+- 各商店独立开关（可单独启用/关闭军火商、舰队商店、核心商店、勋章商店等）
+  - 创建：**wess09**（2026-03）
+- 婚舰 / 舰队信息识别（OCR 识别舰船等级、舰名与舰队信息）
+  - 创建：**wess09**（2026-07）
+
+**设备与运维**
+
+- 定时重启模拟器（支持随机延后以避开服务器刷新时间）
+  - 创建：**wess09**（2026-02）；随机延后：**aliyun9094549868**（2026-06）
+- 远程 SSH 管理（执行远程命令，如重启 docker；另有 SSH 主机指纹清理工具）
+  - 创建：**wess09**（2026-05~07）
+- 游戏卡死或 ADB 离线时自动重启模拟器（模拟器重启调度逻辑为本项目新增）
+  - 创建：**wess09**（2026-02）
+
+**系统与体验**
+
+- 全新 OCR 引擎（改用 RapidOCR 并升级至 PP-OCRv6，可选 v6.5 / v6.6 模型）
+  - 创建：**wess09**（2026-04~07）
+- GPU 加速推理（Windows DirectML / macOS ANE / ncnn Vulkan）
+  - DirectML / PP-OCRv6：**wess09**（2026-07）；ncnn 后端：**wess09**（2026-05）
+- OCR 设备选择（CPU / GPU / ANE，另有 QNN / OpenVINO 等后端选项）
+  - 创建：**wess09**（2026-05~07）
+- GUI 仪表盘（实时显示石油、物资、魔方、心智等资源）
+  - 核心引入：**guoh064**（2025-12）；抽离重构与性能优化：**wess09**（2026-07）；资源图表：**a2893005741** / **EnderAvaritia**
+- OOBE 首次设置向导（选择语言、服务器、模拟器等）
+  - 创建：**wess09**（2026-05）
+- 日志备份管理（可配置保留数量与压缩方式）
+  - 上游逻辑：**izum1**（2024-05）；合入本分支：**wess09**（2026-02）
+- LLM 错误分析（调用大模型分析报错原因，MD5 去重缓存）
+  - 创建：**wess09**（2026-03）
+- MCP 服务（SSE 协议，提供 18 个工具供 AI 助手集成）
+  - 创建：**wess09** / **ZhangMusan**（2026-04，gitcode 环境提交）
+- WebUI 配置搜索与性能优化
+  - 配置搜索：**wess09**（2026-07）；性能优化：**DreamyDust**（2026-07，PR #667）
+
+## GUI 预览
+
 <div align="center">
   <img src="doc/GUI.png" alt="GUI Preview" width="800">
 </div>
 
-## 依赖与启动
+## 快速开始
 
 > 💡 **推荐方式**：直接从 [AzurPilot 官网下载页](https://alas.nanoda.work/download.html) 下载对应平台的启动器，内置 Python 环境，开箱即用。
 
-本项目使用 `uv` 和项目根目录 `.venv` 管理 Python 运行环境。发布版启动器会自带 uv、Python、ADB、Git，并在 `.venv` 中同步依赖；源码开发时可安装 uv 后运行：
+### 源码运行
+
+本项目使用 `uv` 和项目根目录 `.venv` 管理 Python 运行环境（要求 Python >= 3.14）。发布版启动器会自带 uv、Python、ADB、Git，并在 `.venv` 中同步依赖；源码开发时可安装 uv 后运行：
 
 ```bash
 uv sync --frozen --no-dev
 uv run python gui.py
 ```
 
+启动后浏览器访问 `http://127.0.0.1:25548` 进入 WebUI。
 
-## Linux一键部署
-
-欢迎使用一键部署命令
+### Linux 一键部署
 
 ```shell
 curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
@@ -90,29 +221,33 @@ curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
 
 ## 重要说明
 
-本项目包含大量自动化逻辑和图像识别相关功能。使用前请确保已经按照本文档完成游戏内设置，否则可能导致识别失败、流程异常或任务无法正常执行。
+- 本项目包含大量自动化逻辑和图像识别相关功能。使用前请确保已完成[游戏内设置](#使用前设置)，否则可能导致识别失败、流程异常或任务无法正常执行。
+- 本项目包含部分实验性功能，可能存在未知问题。建议在使用前备份相关配置，并在发现异常时及时反馈。
 
-本项目包含部分实验性功能，可能存在未知问题。建议在使用前备份相关配置，并在发现异常时及时反馈。
+### 数据上报与隐私
 
 当您使用本项目时，会向服务器发送一些信息：
 
-当**开启遥测数据上报时**会上传您的**侵蚀1统计数据（战斗次数、明石遇见概率等匿名数据）**和**设备ID**设备ID将用于去重操作 以及您的**IP**信息
+当**开启遥测数据上报时**，会上传您的**侵蚀 1 统计数据（战斗次数、明石遇见概率等匿名数据）**、**设备 ID**（用于去重操作）以及您的 **IP** 信息。
 
-*注：IP信息为网络传输时 TCP/IP 传输层所携带的信息 CDN及服务端会记录访问日志 根据[中华人民共和国个人信息保护政策法规问答（2026年1月）](https://www.cac.gov.cn/2026-01/09/c_1769688003183197.htm)IP地址不属于个人信息，如果您在意您的IP地址有可能被泄露 请立即停止使用本项目和ALAS [ALAS通过访问云服务器获取IP的相关源码-碧蓝航线服务器检测](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/master/module/server_checker.py#L12-L35)和[ALAS通过访问云服务器获取IP的相关源码-碧蓝统计局](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/master/module/statistics/azurstats.py#L95-L105)
+*注：IP 信息为网络传输时 TCP/IP 传输层所携带的信息，CDN 及服务端会记录访问日志。根据[中华人民共和国个人信息保护政策法规问答（2026 年 1 月）](https://www.cac.gov.cn/2026-01/09/c_1769688003183197.htm)，IP 地址不属于个人信息。如果您在意您的 IP 地址有可能被泄露，请立即停止使用本项目和 ALAS。*
 
-谨防[恶意代码](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/9f2defedfb82ad6b300f1d6f3edf1f17f830e965/module/device/connection_attr.py#L44-L61)
+相关源码：
+- [ALAS 通过访问云服务器获取 IP-碧蓝航线服务器检测](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/master/module/server_checker.py#L12-L35)
+- [ALAS 通过访问云服务器获取 IP-碧蓝统计局](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/master/module/statistics/azurstats.py#L95-L105)
+- [谨防恶意代码](https://github.com/LmeSzinc/AzurLaneAutoScript/blob/9f2defedfb82ad6b300f1d6f3edf1f17f830e965/module/device/connection_attr.py#L44-L61)
 
-设备ID生成详看 [设备ID](https://github.com/wess09/AzurPilot/blob/master/module/base/device_id.py#L82-L88)或查看生成流程示意
+**设备 ID 生成流程**：[设备 ID 源码](https://github.com/wess09/AzurPilot/blob/master/module/base/device_id.py#L82-L88)
 
-读取设备信息(敏感信息) > 字符串拼接 > 使用 SHA256 进行哈希化脱敏处理(SHA256在量子计算机普及前 完全不可逆)
+```
+读取设备信息(敏感信息) → 字符串拼接 → SHA256 哈希化脱敏处理（量子计算机普及前完全不可逆）
+```
 
 ## 使用前设置
 
 使用前必须按照以下标准修改游戏内设置。
 
-路径：
-
-主界面，右下角设置，左侧边栏选项。
+路径：主界面 → 右下角设置 → 左侧边栏选项。
 
 | 设置名称 | 推荐值 |
 | --- | --- |
@@ -129,9 +264,7 @@ curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
 
 ### 大型作战设置
 
-路径：
-
-大型作战，右上角雷达，指令模块，潜艇支援。
+路径：大型作战 → 右上角雷达 → 指令模块 → 潜艇支援。
 
 | 设置名称 | 推荐值 |
 | --- | --- |
@@ -139,9 +272,7 @@ curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
 
 ### 一键退役设置
 
-路径：
-
-主界面，右下角建造，左侧边栏退役，左侧齿轮图标，一键退役设置。
+路径：主界面 → 右下角建造 → 左侧边栏退役 → 左侧齿轮图标 → 一键退役设置。
 
 | 设置名称 | 推荐值 |
 | --- | --- |
@@ -161,45 +292,62 @@ curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
 
 这些内容可能影响图像识别结果，导致自动化流程出现异常。
 
-## 主要改动
+## MCP 服务
 
-本分支在原项目基础上加入或整合了以下内容：
+AzurPilot 提供 MCP 服务，可供支持 MCP 的客户端或工具调用，方便使用 Agent 管理 AzurPilot。
 
-1. 岛屿计划自动化
-2. 共斗沉船（牺牲指定位置舰船）
-3. 大世界智能调度（自动切换侵蚀1练级与黄币补充任务）
-4. 大世界蒙特卡洛模拟器（估算侵蚀循环收益）
-5. 拆解装备箱（按保留数量拆白/蓝/紫箱）
-6. 全新 OCR 模型
-7. 共用心情（多个出击任务共享同一队心情）
-8. 自定义任务优先级
-9. 大世界舰队经验检测（满经验推送）
-10. 侵蚀一舰队自动配队（自动更换满经验舰船）
-11. 塞壬研究装置（紫币换黄币，探测资源/敌人）
-12. 大世界海域成就（刷安全海域星星）
-13. 定时重启模拟器
-14. 远程SSH管理（执行命令如重启docker）
-15. 大世界独立推送（与错误推送分离）
-16. 维修箱修船（支持侵蚀1单独阈值）
-17. 大世界信息推送开关（侵蚀1和短猫信息）
-18. 白票商店购买战役信息记录仪/隐秘海域记录仪
-19. 每月开荒进度显示
-20. 演习推迟策略（至下次更新前X小时）
-21. GUI仪表盘（实时显示石油、物资、魔方、大世界币等）
-22. OOBE首次设置向导（选择语言、服务器、模拟器等）
-23. 日志备份管理（保留数量、压缩备份）
-24. LLM错误分析（调用大模型分析报错原因）
-25. 游戏卡死或ADB离线时自动重启模拟器
-26. 物资超过阈值停止出击
-27. 道中战斗失败可撤退或换队接管
-28. 困难图自动配队（使用推荐阵容）
-29. 关卡名称支持“7-2-3”格式（三战后撤退）
-30. 各商店独立开关（可单独关闭军火商、舰队商店等）
-31. GPU加速推理（Windows DirectML / macOS ANE / ncnn Vulkan）
-32. OCR设备选择（CPU / GPU / ANE）
-33. 共斗每日支持沉船模式
+> MCP 服务默认随 WebUI 启动并挂载于 `/mcp` 路径下（WebUI 默认端口 25548），也可通过 `uv run python mcp_server_sse.py` 独立运行（独立端口 22268）。
 
-* 由 DeepSeek 结合项目分析生成 实际请以实物为准
+### 本地连接配置
+
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://127.0.0.1:25548/mcp/sse"
+    }
+  }
+}
+```
+
+### 云服务器或内网连接配置
+
+```json
+{
+  "mcpServers": {
+    "alas": {
+      "url": "http://[IP_ADDRESS]:25548/mcp/sse"
+    }
+  }
+}
+```
+
+请将 `[IP_ADDRESS]` 替换为实际服务器地址或内网地址；若 WebUI 端口被修改，请同步替换 URL 中的端口。
+
+### MCP 工具列表
+
+当前可用 MCP 工具共 18 个。
+
+| 类别 | 工具名称 | 功能 |
+| --- | --- | --- |
+| 实例管理 | `list_instances` | 列出所有实例 |
+| | `get_status` | 获取实例状态 |
+| | `start_instance` | 启动实例 |
+| | `stop_instance` | 停止实例 |
+| 任务管理 | `list_tasks` | 列出所有任务 |
+| | `get_task_help` | 获取任务帮助 |
+| | `trigger_task` | 触发任务 |
+| | `get_scheduler_queue` | 获取调度队列 |
+| | `clear_scheduler_queue` | 清空调度队列 |
+| 监控与信息 | `get_current_running_task` | 获取当前运行任务 |
+| | `get_resources` | 获取资源状态 |
+| | `get_config` | 获取实例配置 |
+| | `get_recent_logs` | 获取最近日志 |
+| | `get_screenshot` | 获取截图 |
+| 配置管理 | `update_config` | 更新配置 |
+| 维护工具 | `restart_emulator` | 重启模拟器 |
+| | `restart_adb` | 重启 ADB |
+| | `update_alas` | 更新 AzurPilot |
 
 ## 多平台启动器
 
@@ -213,98 +361,71 @@ curl -fsSL https://alas.nanoda.work/install/deploy-image.sh | sudo -E bash
   <img src="doc/macGUI.png" alt="macGUI" width="500" />
   <p>Mac 客户端界面</p>
 </div>
-启动器项目地：
 
-[GitHub](https://github.com/wess09/alas-launcher) 源项目 [ALAS Launcher: 一种新型的 AzurLaneAutoScript 启动器](https://github.com/swordfeng/alas-launcher)
+启动器项目地：[GitHub](https://github.com/wess09/alas-launcher) · 源项目 [ALAS Launcher: 一种新型的 AzurLaneAutoScript 启动器](https://github.com/swordfeng/alas-launcher)
 
 更改内容：
+
 1. 增加托盘化功能
-2. Windows原生推送
-3. GUI样式美化
-4. uv化
+2. Windows 原生推送
+3. GUI 样式美化
+4. uv 化
 
-## MCP 服务
+## OCR 模型
 
-AzurPilot 提供 MCP 服务，可供支持 MCP 的客户端或工具调用。
+本项目使用基于 PaddleOCR 的定制 OCR 模型，用于适配碧蓝航线界面字体和 AzurPilot 截图场景。
 
-通过 MCP 您可以方便的使用 Agent 管理 AzurPilot
+感谢超算互联网提供算力支持。
 
-### 本地连接配置
+相关项目：[https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
 
-```json
-{
-  "mcpServers": {
-    "alas": {
-      "url": "http://127.0.0.1:22267/mcp/sse"
-    }
-  }
-}
-```
+<p>
+  <a href="https://arxiv.org/pdf/2507.05595">
+    <img src="https://img.shields.io/badge/PaddleOCR_3.0-Technical%20Report-b31b1b.svg?logo=arXiv" alt="PaddleOCR Technical Report">
+  </a>
+  <img src="https://img.shields.io/badge/hardware-cpu%2C%20gpu%2C%20xpu%2C%20npu-yellow.svg" alt="Hardware">
+</p>
 
-### 云服务器或内网连接配置
+### V1.0
 
-```json
-{
-  "mcpServers": {
-    "alas": {
-      "url": "http://[IP_ADDRESS]/mcp/sse"
-    }
-  }
-}
-```
-
-请将 `[IP_ADDRESS]` 替换为实际服务器地址或内网地址。
-
-## MCP 工具列表
-
-当前可用 MCP 工具共 18 个。
-
-### 实例管理
-
-| 工具名称 | 功能 |
+| 项目 | 内容 |
 | --- | --- |
-| list_instances | 列出所有实例 |
-| get_status | 获取实例状态 |
-| start_instance | 启动实例 |
-| stop_instance | 停止实例 |
+| 支持语言 | zh-cn, en-us |
+| 训练目标 | 针对碧蓝航线字体进行训练 |
+| zh-cn 准确率 | 97% |
+| en-us 准确率 | 98.6% |
+| 已知问题 | zh-cn 存在边缘符号问题，en-us 可能出现负号问题 |
+| 训练硬件 | 异构加速卡 BW 64G，NVIDIA Tesla A800 80G |
+| 训练时间 | 2 小时 |
 
-### 任务管理
+### V2.0
 
-| 工具名称 | 功能 |
+| 项目 | 内容 |
 | --- | --- |
-| list_tasks | 列出所有任务 |
-| get_task_help | 获取任务帮助 |
-| trigger_task | 触发任务 |
-| get_scheduler_queue | 获取调度队列 |
-| clear_scheduler_queue | 清空调度队列 |
+| 支持语言 | zh-cn, en-us |
+| 训练目标 | 针对碧蓝航线字体与 AzurPilot 截图特性进行训练 |
+| 处理方式 | 灰度化 |
+| zh-cn 表现 | 相对 V1.0 准确率降低 |
+| en-us 准确率 | 99.8% |
+| 已知问题 | en-us 基本无明显错误 |
+| 训练硬件 | NVIDIA Tesla A800 80G |
+| 训练时间 | 2 小时 |
 
-### 监控与信息
+### V2.5
 
-| 工具名称 | 功能 |
+| 项目 | 内容 |
 | --- | --- |
-| get_current_running_task | 获取当前运行任务 |
-| get_resources | 获取资源状态 |
-| get_config | 获取实例配置 |
-| get_recent_logs | 获取最近日志 |
-| get_screenshot | 获取截图 |
-
-### 配置管理
-
-| 工具名称 | 功能 |
-| --- | --- |
-| update_config | 更新配置 |
-
-### 维护工具
-
-| 工具名称 | 功能 |
-| --- | --- |
-| restart_emulator | 重启模拟器 |
-| restart_adb | 重启 ADB |
-| update_alas | 更新 AzurPilot |
+| 支持语言 | zh-cn |
+| 训练目标 | 修复 V2.0 中文模型问题 |
+| 准确率 | 98.52% |
+| 推理速度 | 约 10 ms |
+| 训练硬件 | 异构加速卡 BW 64G，NVIDIA Tesla A800 80G |
+| 训练时间 | 5 小时 |
 
 ## Termux 真机安装运行指南
 
-> 适用于无 root 的 Android 真机，通过 Termux + proot-distro 运行 AzurPilot。
+<details>
+<summary><strong>适用于无 root 的 Android 真机，通过 Termux + proot-distro 运行 AzurPilot（点击展开）</strong></summary>
 
 ### 前置说明
 
@@ -604,9 +725,9 @@ s61KBmDlxnQssUwbCQZCeDX65s/pclZrGhz5Wt0MG2Y294sTiyAC6xvgbLqeh5at
    uv run python gui.py
    ```
 
-3. 等待页面初始化完毕，浏览器提前打开 `http://手机IP:22267`
+3. 等待页面初始化完毕，浏览器提前打开 `http://手机IP:25548`
    - 出现 `success`
-   - 出现 `0.0.0.0:22267`
+   - 出现 `0.0.0.0:25548`
    - 页面无报错
    - 浏览器出现初始化页面说明项目安装完成
 
@@ -664,6 +785,8 @@ adb shell wm density reset
 
 **到此所有调试完毕，可以正常设置 AP 并启动。**
 
+</details>
+
 ## 赞助支持
 
 <p align="center">
@@ -671,61 +794,8 @@ adb shell wm density reset
     <img src="doc/afdian.jfif" alt="爱发电" width="200">
   </a>
   <br>
-  <b>支持本项目(用于支付服务器费用或训练新模型等)</b>
+  <b>支持本项目（用于支付服务器费用或训练新模型等）</b>
 </p>
-
-## OCR 模型
-
-本项目使用基于 PaddleOCR 的定制 OCR 模型，用于适配碧蓝航线界面字体和 AzurPilot 截图场景。
-
-感谢超算互联网提供算力支持。
-
-相关项目：
-
-[https://github.com/PaddlePaddle/PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
-
-<p>
-  <a href="https://arxiv.org/pdf/2507.05595">
-    <img src="https://img.shields.io/badge/PaddleOCR_3.0-Technical%20Report-b31b1b.svg?logo=arXiv" alt="PaddleOCR Technical Report">
-  </a>
-  <img src="https://img.shields.io/badge/hardware-cpu%2C%20gpu%2C%20xpu%2C%20npu-yellow.svg" alt="Hardware">
-</p>
-
-### V1.0
-
-| 项目 | 内容 |
-| --- | --- |
-| 支持语言 | zh-cn, en-us |
-| 训练目标 | 针对碧蓝航线字体进行训练 |
-| zh-cn 准确率 | 97% |
-| en-us 准确率 | 98.6% |
-| 已知问题 | zh-cn 存在边缘符号问题，en-us 可能出现负号问题 |
-| 训练硬件 | 异构加速卡 BW 64G，NVIDIA Tesla A800 80G |
-| 训练时间 | 2 小时 |
-
-### V2.0
-
-| 项目 | 内容 |
-| --- | --- |
-| 支持语言 | zh-cn, en-us |
-| 训练目标 | 针对碧蓝航线字体与 AzurPilot 截图特性进行训练 |
-| 处理方式 | 灰度化 |
-| zh-cn 表现 | 相对 V1.0 准确率降低 |
-| en-us 准确率 | 99.8% |
-| 已知问题 | en-us 基本无明显错误 |
-| 训练硬件 | NVIDIA Tesla A800 80G |
-| 训练时间 | 2 小时 |
-
-### V2.5
-
-| 项目 | 内容 |
-| --- | --- |
-| 支持语言 | zh-cn |
-| 训练目标 | 修复 V2.0 中文模型问题 |
-| 准确率 | 98.52% |
-| 推理速度 | 约 10 ms |
-| 训练硬件 | 异构加速卡 BW 64G，NVIDIA Tesla A800 80G |
-| 训练时间 | 5 小时 |
 
 ## 贡献者
 
@@ -736,6 +806,44 @@ adb shell wm density reset
 <a href="https://github.com/wess09/AzurPilot/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=wess09/AzurPilot&max=1000" alt="AzurPilot Contributors">
 </a>
+
+### 主要贡献者名单（依据全部提交 diff 审查核实）
+
+**核心维护者**
+
+| 作者 | 身份 | 核心贡献 |
+| --- | --- | --- |
+| @wess09（含别名 茗 / 雪风）| 本仓库作者 | 智能调度雏形、CL1 统计/遥测、重启模拟器管理、OCR/GPU 升级、MCP、LLM、OOBE、WebUI 重构、婚舰识别、SSH、依赖/部署/CI 工程 |
+
+**主要功能贡献者**
+
+| 作者 | 核心贡献 |
+| --- | --- |
+| @guoh064 | 岛屿计划、大世界经验检测、海域成就、装备码、活动商店、突击沉船、岛屿数据扫描、仪表盘核心 |
+| @longer-sausage | 蒙特卡洛模拟器、共用心情、智能调度侵蚀 1 联动、大世界重构 |
+| @Beatrice-betty | 大世界自动配队、共斗沉船、月末行动力清理、道中战败、委托统计、16 图重构 |
+| @ZhangMusan | 智能调度+ 重构、短猫数据收集、月末清理模式初版、自动寻吊、DroidCast 升级、macOS 支持 |
+| @a2893005741 | 自动技能切换、维修箱重构、侵蚀统计修复、AP/资源图表、退役修复 |
+| @123456 | 岛屿每日订单/互动/珍珠采购/货备独立任务 |
+| @LanceRingHong | 三油低耗、岛屿排产/停滞修复 |
+| @quankong1551 | 岛屿持续修复、每日订单、JUU 速运 |
+| @EnderAvaritia | 资源历史图表、调度器推送通知 |
+| @moon-dim | 道中换队、独立推送分离 |
+| @DreamyDust | 自动配装、WebUI 性能优化 |
+| @Heipen | 塞壬研究装置基础、SirenBug 修复 |
+| @Msrtria | 委托推送、钻石推送 |
+| @kotoricon | 物资/硬币停止条件 |
+| @flyndxd78 | 虚拟资产系统、CL1 维修阈值、SSH 基础 |
+| @izum1 | 日志备份/压缩 |
+
+**上游生态贡献者**
+
+| 作者 | 贡献 |
+| --- | --- |
+| @LmeSzinc | 活动地图/章节、战斗优化、设备修复、W16 战役、上游合并 |
+| sui-feng-cb（ArecaSapling）| 作战档案、突袭活动、16 章、科研 S9、宿舍买食 |
+| haoli2322（Q1213a）| 战斗学院、吊机概率、活动地图、图表 |
+| SarContDeli / nEEtdo0d / 18870 等 | 侵蚀 1 练级基础、商店/退役、GUI 开发 |
 
 感谢所有为启动器项目做出贡献的开发者。
 
@@ -751,49 +859,50 @@ adb shell wm density reset
 - [QQ 交流群](https://join.nanoda.work/#/) — 碧蓝航线自动化社区交流
 - [AzurLaneAutoScript 上游项目](https://github.com/LmeSzinc/AzurLaneAutoScript) — ALAS 原版
 
-## 开发说明
+## 开发与贡献
 
-本项目基本完全是 VibeCoding 产物 不足之处请见谅
+本项目基本完全是 VibeCoding 产物，不足之处请见谅。欢迎通过 Issue 或 Pull Request 反馈问题、提交修复或改进文档。
 
-欢迎通过 Issue 或 Pull Request 反馈问题、提交修复或改进文档。
+### 开发环境
 
-## 使用过的开发工具与模型
+```bash
+uv sync --frozen        # 创建/同步 .venv（含开发依赖）
+
+# 代码检查（CI 使用 ruff 宽松设置——仅检查致命语法错误和未定义名称）
+uv run ruff check . --select E9,F63,F7,F82 --ignore F821,F722
+
+# 测试（约 160 个单元测试）
+uv run python -m unittest discover -s tests
+
+# 配置生成（修改配置 YAML 文件后必须执行）
+uv run -m module.config.config_updater
+```
+
+### 使用过的开发工具与模型
 
 本项目开发过程中使用过多种 AI 模型与开发工具进行辅助。
 
-### AI 模型
+**AI 模型：**
 
-| 模型 | 模型 | 模型 |
+| | | |
 | --- | --- | --- |
 | Gemini 3 Flash | Gemini 3.1 Pro | Claude Opus 4.5 |
 | Claude Sonnet 4.5 | MiMo V2.5 Pro | GPT 5.4 |
 | GPT 5.3 Codex | Qwen 3 Max | DeepSeek v4 |
 | Kimi K2.5 | GLM 4.7 | MiMo V2.5 |
 
-### 开发工具
+**开发工具：**
 
-| 工具 | 工具 | 工具 | 工具 |
-| --- | --- | --- | --- |
+| | | |
+| --- | --- | --- |
 | Claude Code | Codex | Cursor | Antigravity |
 
-## 许可证
+### 屎山代码分析报告
 
-本项目遵循原项目及相关上游项目的许可证要求。启动器项目遵循 GPL-3.0 协议开源。
+<details>
+<summary><strong>由 fuck-u-code 生成的代码质量分析（点击展开）</strong></summary>
 
-使用、修改或分发本项目时，请同时遵守相关上游项目的许可证要求。
-
-# 🌸 屎山代码分析报告 🌸
-
-## 📑 目录
-
-- [糟糕指数](#overall-score)
-- [评分指标详情](#metrics-details)
-- [最屎代码排行榜](#problem-files)
-- [诊断结论](#conclusion)
-
-![Score](https://img.shields.io/badge/Score-89%25-brightgreen)
-
-## 糟糕指数 {#overall-score}
+#### 糟糕指数
 
 | 指标摘要 | 评分 |
 |------|-------|
@@ -802,7 +911,7 @@ adb shell wm density reset
 
 > 清新宜人，初闻像早晨的露珠
 
-### 📊 统计信息
+#### 统计信息
 
 | 指标 | 数值 |
 |--------|-------|
@@ -810,7 +919,7 @@ adb shell wm density reset
 | 已跳过 | 16063 |
 | 耗时 | 5052ms |
 
-## 评分指标详情 {#metrics-details}
+#### 评分指标详情
 
 | 指标摘要 | 评分 | 状态 |
 |:-----|------:|:------:|
@@ -826,9 +935,9 @@ adb shell wm density reset
 | 注释比例 | 55.48% | • |
 | 命名规范 | 4.25% | ✓✓ |
 
-## 最屎代码排行榜 {#problem-files}
+#### 最屎代码排行榜
 
-### 1. module\webui\app.py
+##### 1. module\webui\app.py
 
 **糟糕指数: 49.33**
 
@@ -841,7 +950,7 @@ adb shell wm density reset
 - 🔄 `_render_commission_income()` L2030: 复杂度: 31
 - 🔍 ...还有 130 个问题实在太屎，列不完了
 
-### 2. mcp_server_sse.py
+##### 2. mcp_server_sse.py
 
 **糟糕指数: 48.13**
 
@@ -854,7 +963,7 @@ adb shell wm density reset
 - 🔄 `mcp_asgi_app()` L458: 嵌套深度: 4
 - 🔍 ...还有 9 个问题实在太屎，列不完了
 
-### 3. module\os\map.py
+##### 3. module\os\map.py
 
 **糟糕指数: 43.93**
 
@@ -867,7 +976,7 @@ adb shell wm density reset
 - 🔄 `os_auto_search_daemon_until_combat()` L1007: 复杂度: 24
 - 🔍 ...还有 77 个问题实在太屎，列不完了
 
-### 4. module\os\tasks\hazard_leveling.py
+##### 4. module\os\tasks\hazard_leveling.py
 
 **糟糕指数: 41.10**
 
@@ -880,7 +989,7 @@ adb shell wm density reset
 - 🔄 `_check_custom_positions_full_exp()` L877: 复杂度: 12
 - 🔍 ...还有 45 个问题实在太屎，列不完了
 
-### 5. module\os_simulator\simulator.py
+##### 5. module\os_simulator\simulator.py
 
 **糟糕指数: 40.39**
 
@@ -893,7 +1002,7 @@ adb shell wm density reset
 - 🔄 `_simulate_batch_kernel()` L140: 认知复杂度: 19
 - 🔍 ...还有 25 个问题实在太屎，列不完了
 
-### 6. module\statistics\cl1_database.py
+##### 6. module\statistics\cl1_database.py
 
 **糟糕指数: 39.08**
 
@@ -906,7 +1015,7 @@ adb shell wm density reset
 - 🔄 `_check_key_migration()` L105: 认知复杂度: 16
 - 🔍 ...还有 77 个问题实在太屎，列不完了
 
-### 7. module\device\connection.py
+##### 7. module\device\connection.py
 
 **糟糕指数: 38.47**
 
@@ -919,7 +1028,7 @@ adb shell wm density reset
 - 🔄 `retry_wrapper()` L32: 认知复杂度: 18
 - 🔍 ...还有 47 个问题实在太屎，列不完了
 
-### 8. module\map\fleet.py
+##### 8. module\map\fleet.py
 
 **糟糕指数: 37.16**
 
@@ -932,7 +1041,7 @@ adb shell wm density reset
 - 🔄 `track_movable()` L611: 复杂度: 30
 - 🔍 ...还有 46 个问题实在太屎，列不完了
 
-### 9. module\commission\commission.py
+##### 9. module\commission\commission.py
 
 **糟糕指数: 36.00**
 
@@ -945,7 +1054,7 @@ adb shell wm density reset
 - 🔄 `_commission_receive()` L622: 复杂度: 28
 - 🔍 ...还有 44 个问题实在太屎，列不完了
 
-### 10. module\shop_event\shop_event.py
+##### 10. module\shop_event\shop_event.py
 
 **糟糕指数: 35.21**
 
@@ -958,7 +1067,7 @@ adb shell wm density reset
 - 🔄 `handle_items_related_with_urpt()` L35: 嵌套深度: 8
 - 🔍 ...还有 7 个问题实在太屎，列不完了
 
-## 诊断结论 {#conclusion}
+#### 诊断结论
 
 🌸 **偶有异味** - 基本没事，但是有伤风化
 
@@ -968,4 +1077,12 @@ adb shell wm density reset
 
 *由 [fuck-u-code](https://github.com/Done-0/fuck-u-code) 生成*
 
-### 以上问题待解决（没招了 请求手搓大手子）
+> 以上问题待解决（没招了，请求手搓大手子）
+
+</details>
+
+## 许可证
+
+本项目遵循原项目及相关上游项目的许可证要求。启动器项目遵循 GPL-3.0 协议开源。
+
+使用、修改或分发本项目时，请同时遵守相关上游项目的许可证要求。
