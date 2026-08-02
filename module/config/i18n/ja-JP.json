@@ -6232,6 +6232,7 @@
     "Text": {
       "InvalidFeedBack": "フォーマットエラー。例: {0}",
       "Clear": "クリア",
+      "RunNow": "今すぐ実行",
       "EnterPassword": "パスワードを入力してください",
       "ChooseFile": "ファイルを選択"
     },

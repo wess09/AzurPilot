@@ -6232,6 +6232,7 @@
     "Text": {
       "InvalidFeedBack": "Format error. Example: {0}",
       "Clear": "Clear",
+      "RunNow": "Run Now",
       "EnterPassword": "Enter password",
       "ChooseFile": "Select file"
     },

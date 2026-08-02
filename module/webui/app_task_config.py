@@ -34,6 +34,7 @@ from module.webui.app_dependencies import (
     put_input,
     put_none,
     put_output,
+    put_row,
     put_scope,
     put_text,
     queue,
@@ -462,9 +463,27 @@ class TaskConfigMixin(WebUIMixinBase):
         ) in self._iter_group_arguments(task, group_name, arg_dict, config):
             output_kwargs = resolved_kwargs.copy()
             if group_name == "Scheduler" and arg_name == "NextRun":
-                output_kwargs["after"] = put_text(self._time_status_text()).style(
-                    "font-size: .75rem; opacity: .68; margin: .2rem .25rem 0;"
-                )
+                # 立即运行按钮：清空 NextRun 触发调度器立即执行该任务
+                run_now_path = f"{task}.Scheduler.NextRun"
+
+                def _run_now(_path=run_now_path):
+                    self.modified_config_queue.put({"name": _path, "value": ""})
+                    toast(t("Gui.Text.RunNow"))
+
+                run_now_btn = put_html(
+                    f'<a href="javascript:void(0)" '
+                    f'style="font-size: .75rem; cursor: pointer;">'
+                    f'{t("Gui.Text.RunNow")}</a>'
+                ).onclick(_run_now)
+                output_kwargs["after"] = put_row(
+                    [
+                        run_now_btn,
+                        put_text(self._time_status_text()).style(
+                            "font-size: .75rem; opacity: .68;"
+                        ),
+                    ],
+                    size="auto 1fr",
+                ).style("margin: .2rem .25rem 0; gap: .5rem;")
             output_kwargs["invalid_feedback"] = t(
                 "Gui.Text.InvalidFeedBack", output_kwargs["value"]
             )

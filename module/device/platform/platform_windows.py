@@ -173,10 +173,25 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 logger.warning(f'[设备-Windows] 命令超时 {timeout} 秒')
                 return None
         else:
-            # 异步执行，不等待完成（原有行为）
-            # `close_fds` 仅在 Windows 上有效
-            # `start_new_session` 避免 Alas 被 kill 时模拟器进程树也被一起终止
-            return subprocess.Popen(command, close_fds=True, start_new_session=True)
+            # 异步执行，不等待完成
+            # 通过 `cmd /c start` 启动进程，使其脱离 Alas 进程树。
+            # 之前使用的 `start_new_session=True` 在 Windows 上仅等同于
+            # `CREATE_NEW_PROCESS_GROUP`，不会改变父子进程关系，
+            # `taskkill /T` 仍会终止子进程，导致关闭 Alas 时模拟器被一并关闭。
+            # 使用 `cmd /c start` 后，cmd.exe 会立即退出，
+            # 目标进程的父进程变为已退出的 cmd.exe，从而脱离 Alas 进程树。
+            proc = subprocess.Popen(
+                f'start "" /b {command}',
+                shell=True,
+                close_fds=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            # 等待 cmd.exe 退出，确保目标进程已脱离 Alas 进程树
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                logger.warning(f'[设备-Windows] 启动命令未在 5 秒内退出: {command}')
+            return proc
 
     @classmethod
     def kill_process_by_regex(cls, regex: str) -> int:
@@ -210,7 +225,8 @@ class PlatformWindows(PlatformBase, EmulatorManager):
         exe: str = instance.emulator.path
         if instance == Emulator.MuMuPlayer:
             # NemuPlayer.exe
-            self.execute(exe)
+            # 路径可能包含空格，需要引号包裹以便 `cmd /c start` 正确解析
+            self.execute(f'"{exe}"')
         elif instance == Emulator.MuMuPlayerX:
             # NemuPlayer.exe -m nemu-12.0-x64-default
             self.execute(f'"{exe}" -m {instance.name}')

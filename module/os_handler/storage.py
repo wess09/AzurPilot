@@ -64,6 +64,13 @@ class StorageHandler(GlobeOperation, ZoneManager):
                 time.sleep(wait_seconds)
                 continue
 
+            if self.is_in_globe():
+                logger.info('[大世界-仓库] 误进入全球地图，尝试返回海域')
+                self.os_globe_goto_map()
+                wait_seconds += 1
+                time.sleep(wait_seconds)
+                continue
+
             if self.appear_then_click(STORAGE_ENTER, offset=(200, 5), interval=3):
                 continue
             # A game bug that AUTO_SEARCH_REWARD from the last cleared zone popups

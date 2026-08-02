@@ -6232,6 +6232,7 @@
     "Text": {
       "InvalidFeedBack": "格式错误喵。示例：{0}",
       "Clear": "清除喵",
+      "RunNow": "立即运行喵",
       "EnterPassword": "输入密码喵",
       "ChooseFile": "选择文件喵"
     },

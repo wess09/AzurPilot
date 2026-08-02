@@ -6232,6 +6232,7 @@
     "Text": {
       "InvalidFeedBack": "格式错误。 示例：{0}",
       "Clear": "清除",
+      "RunNow": "立即运行",
       "EnterPassword": "输入密码",
       "ChooseFile": "选择文件"
     },

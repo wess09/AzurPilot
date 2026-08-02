@@ -336,6 +336,7 @@ StartupRun:
 Text:
   InvalidFeedBack:
   Clear:
+  RunNow:
   EnterPassword:
   ChooseFile:
 
