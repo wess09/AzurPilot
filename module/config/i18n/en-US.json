@@ -5291,6 +5291,10 @@
       "chrysanthemum_tea": "Chrysanthemum Tea",
       "carrot_pear_juice": "Carrot Pear Juice"
     },
+    "BoostReplaceFilter": {
+      "name": "Boost Replace Filter",
+      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1"
+    },
     "SeasonalFallback": {
       "name": "Fallback Drink",
       "help": "Fallback drink when seasonal drink stock is low",
@@ -5305,10 +5309,6 @@
       "watermelon_juice": "Watermelon Juice",
       "chrysanthemum_tea": "Chrysanthemum Tea",
       "carrot_pear_juice": "Carrot Pear Juice"
-    },
-    "BoostReplaceFilter": {
-      "name": "Boost Replace Filter",
-      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1"
     }
   },
   "IslandBusinessShop3": {

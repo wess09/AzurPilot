@@ -14634,6 +14634,10 @@
           "carrot_pear_juice"
         ]
       },
+      "BoostReplaceFilter": {
+        "type": "textarea",
+        "value": "30 > 20 > strawberry_honey > fruit_paradise > 10"
+      },
       "SeasonalFallback": {
         "type": "select",
         "value": "sunny_honey",
@@ -14650,10 +14654,6 @@
           "chrysanthemum_tea",
           "carrot_pear_juice"
         ]
-      },
-      "BoostReplaceFilter": {
-        "type": "textarea",
-        "value": "30 > 20 > strawberry_honey > fruit_paradise > 10"
       }
     },
     "IslandBusinessShop3": {
