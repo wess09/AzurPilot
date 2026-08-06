@@ -4,6 +4,8 @@
 以及 future_time 等时间字符串解析工具函数。
 """
 
+from __future__ import annotations
+
 from time import monotonic as time, sleep
 from datetime import timedelta
 from functools import wraps

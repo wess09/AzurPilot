@@ -17,6 +17,9 @@ from module.exception import ScriptError
 from module.logger import logger
 
 
+SERVER_CHECK_TIMEOUT = 15
+
+
 class ServerChecker:
     """游戏服务器状态检查器。
 
@@ -56,6 +59,54 @@ class ServerChecker:
 
         self.check_now()
 
+    def _apply_state(self, state: int) -> None:
+        """
+        写入服务器可用状态。
+
+        API 中 state=1 表示维护中，其它状态视为可用，保持旧逻辑兼容。
+        """
+        if state != 1:
+            self._state.append(True)
+            logger.info(f'[服务器检查] 服务器 "{self._server}" 可用。')
+        else:
+            self._state.append(False)
+            logger.info(f'[服务器检查] 服务器 "{self._server}" 维护中。')
+
+    def _apply_timestamp(self, timestamp: int | None) -> None:
+        """检查 API 服务端时间戳是否停止更新。"""
+        if timestamp is None:
+            return
+        if timestamp > self._timestamp:
+            self._timestamp = timestamp
+            self._expired = 0
+        else:
+            self._expired += 1
+            if self._expired > 3:
+                logger.warning(f'[服务器检查] 时间戳 {self._timestamp} 已3次未更新。')
+
+    def _load_server_from_all_state(self, session: requests.Session) -> bool:
+        """
+        从全量服务器状态接口补查单服状态。
+
+        单服接口可能比全量接口落后，新增服务器（如“长弓计划”）会在
+        /server/get_state 返回 404，但 /server/get_all_state 已含真实状态。
+        此时不能仅凭本地列表直接视为可用，否则维护中也会继续调度并反复重启。
+        """
+        resp = session.post(
+            url=f'{self._base}{self._api["get_all_state"]}',
+            timeout=SERVER_CHECK_TIMEOUT
+        )
+        if resp.status_code != 200:
+            return False
+
+        all_state = resp.json()
+        if self._server not in all_state:
+            return False
+
+        self._apply_state(all_state[self._server])
+        logger.info(f'[服务器检查] 服务器 "{self._server}" 使用全量状态接口补查。')
+        return True
+
     def _load_server(self) -> None:
         """
         通过 API 获取服务器状态。
@@ -74,34 +125,23 @@ class ServerChecker:
                 params={
                     'server_name': self._server
                 },
-                timeout=15
+                timeout=SERVER_CHECK_TIMEOUT
             )
             if resp.status_code == 200:
                 j = resp.json()
-                if j['state'] != 1:
-                    self._state.append(True)
-                    logger.info(f'[服务器检查] 服务器 "{self._server}" 可用。')
-                else:
-                    self._state.append(False)
-                    logger.info(f'[服务器检查] 服务器 "{self._server}" 维护中。')
-
-                # 检查 API 服务端是否已停止更新
-                if j['last_update'] > self._timestamp:
-                    self._timestamp = j['last_update']
-                    self._expired = 0
-                else:
-                    self._expired += 1
-                    if self._expired > 3:
-                        logger.warning(f'[服务器检查] 时间戳 {self._timestamp} 已3次未更新。')
+                self._apply_state(j['state'])
+                self._apply_timestamp(j.get('last_update'))
             elif resp.status_code == 404:
-                # API 数据库可能未收录新增服务器（如"长弓计划"），
-                # 检查本地服务器列表确认该服务器是否真实存在
+                # API 单服接口可能未收录新增服务器（如"长弓计划"），
+                # 先信任远端全量状态接口；只有远端也无法确认时才使用本地列表兜底。
+                if self._load_server_from_all_state(session):
+                    return
                 if self._server_in_local_list():
                     self._state.append(True)
                     logger.info(f'[服务器检查] 服务器 "{self._server}" 可用（本地已验证，API未知）。')
-                else:
-                    self._state.append(False)
-                    raise ScriptError(f'Server "{self._server}" does not exist!')
+                    return
+                self._state.append(False)
+                raise ScriptError(f'Server "{self._server}" does not exist!')
             else:
                 raise ScriptError(f'Get status_code {resp.status_code}. Response is {resp.text}')
         except (requests.exceptions.ConnectionError, requests.exceptions.ConnectTimeout) as e:
