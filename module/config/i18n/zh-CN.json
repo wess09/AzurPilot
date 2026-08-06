@@ -5269,10 +5269,6 @@
       "chrysanthemum_tea": "菊花茶",
       "carrot_pear_juice": "胡萝卜秋梨汁"
     },
-    "BoostReplaceFilter": {
-      "name": "白熊饮品加成替换过滤",
-      "help": "多个加成餐品时按过滤顺序优先替换第一个；替换槽位从餐品5→1倒查替换最后一个非空餐品\n可用餐品key对照：spring_flower_tea:迎春花茶, strawberry_lemon:草莓蜜沁, strawberry_honey:草莓蜂蜜冰沙, floral_fruity:花香果韵, fruit_paradise:缤纷果乐园, lavender_tea:薰衣草茶, sunny_honey:阳光蜜水, watermelon_juice:西瓜汁, chrysanthemum_tea:菊花茶, carrot_pear_juice:胡萝卜秋梨汁\n示例：fruit_paradise > floral_fruity > 30 > lavender_tea > sunny_honey > 20 > spring_flower_tea > 10"
-    },
     "SeasonalFallback": {
       "name": "季节饮品备用饮品",
       "help": "白熊饮品当前季节饮品库存不足时替换成该饮品",
@@ -5287,6 +5283,10 @@
       "watermelon_juice": "西瓜汁",
       "chrysanthemum_tea": "菊花茶",
       "carrot_pear_juice": "胡萝卜秋梨汁"
+    },
+    "BoostReplaceFilter": {
+      "name": "白熊饮品加成替换过滤",
+      "help": "多个加成餐品时按过滤顺序优先替换第一个；替换槽位从餐品5→1倒查替换最后一个非空餐品\n可用餐品key对照：spring_flower_tea:迎春花茶, strawberry_lemon:草莓蜜沁, strawberry_honey:草莓蜂蜜冰沙, floral_fruity:花香果韵, fruit_paradise:缤纷果乐园, lavender_tea:薰衣草茶, sunny_honey:阳光蜜水, watermelon_juice:西瓜汁, chrysanthemum_tea:菊花茶, carrot_pear_juice:胡萝卜秋梨汁\n示例：fruit_paradise > floral_fruity > 30 > lavender_tea > sunny_honey > 20 > spring_flower_tea > 10"
     }
   },
   "IslandBusinessShop3": {

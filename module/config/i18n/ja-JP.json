@@ -5269,10 +5269,6 @@
       "chrysanthemum_tea": "菊花茶",
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
-    "BoostReplaceFilter": {
-      "name": "ブースト置き換えフィルター",
-      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
-    },
     "SeasonalFallback": {
       "name": "季節ドリンク予備",
       "help": "白熊ドリンクの季節ドリンクの在庫が不足している場合に置き換えるドリンク",
@@ -5287,6 +5283,10 @@
       "watermelon_juice": "スイカジュース",
       "chrysanthemum_tea": "菊花茶",
       "carrot_pear_juice": "ニンジン秋梨ジュース"
+    },
+    "BoostReplaceFilter": {
+      "name": "ブースト置き換えフィルター",
+      "help": "複数のブースト商品が検出された場合、フィルター順で最初のものを優先して置き換えます；置き換えスロットは商品5→1から最後の空でないスロットを探します"
     }
   },
   "IslandBusinessShop3": {
