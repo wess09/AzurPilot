@@ -1795,21 +1795,6 @@ IslandBusinessShop2:
   BoostReplaceFilter:
     value: |-
       30 > 20 > strawberry_honey > fruit_paradise > 10
-  SeasonalFallback:
-    type: select
-    value: sunny_honey
-    option:
-      - None
-      - spring_flower_tea
-      - strawberry_lemon
-      - strawberry_honey
-      - floral_fruity
-      - fruit_paradise
-      - lavender_tea
-      - sunny_honey
-      - watermelon_juice
-      - chrysanthemum_tea
-      - carrot_pear_juice
 
 IslandBusinessShop3:
   Char1:
