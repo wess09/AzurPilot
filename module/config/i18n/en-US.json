@@ -3832,7 +3832,7 @@
     },
     "DoubleBambooShoots": {
       "name": "Prioritize Seasonal Dish",
-      "help": "When enabled, produce the current restaurant seasonal dish before base meals. Spring uses Cold Bamboo Shoots, summer uses Amaranth Rice Ball, autumn uses Persimmon Cake; winter has no extra restaurant seasonal dish."
+      "help": "When enabled, produce the current restaurant seasonal dish before base meals. Spring uses Cold Bamboo Shoots, summer uses Amaranth Rice Ball, autumn uses Matsutake Chicken Soup; winter has no extra restaurant seasonal dish."
     },
     "Meal1": {
       "name": "Meal 1",
@@ -4061,7 +4061,7 @@
     },
     "Seasonal": {
       "name": "Prioritize Seasonal Drink",
-      "help": "When enabled, produce the current Teahouse seasonal drink before base drinks. Spring uses Spring Flower Tea, summer uses Watermelon Juice, autumn uses Carrot Pear Juice; winter has no extra teahouse seasonal drink."
+      "help": "When enabled, produce the current Teahouse seasonal drink before base drinks. Spring uses Spring Flower Tea, summer uses Watermelon Juice, autumn uses Chrysanthemum Tea; winter has no extra teahouse seasonal drink."
     },
     "Meal1": {
       "name": "Meal 1",
