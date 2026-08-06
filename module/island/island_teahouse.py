@@ -23,10 +23,10 @@ FIXED_SELECT_SPRING_FLOWER_TEA = Button(
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 
-# 秋季高优先级饮品（菊花茶，槽位2）的固定位置——固定第二格，
-# 与春/夏季高优先级饮品（迎春花茶/西瓜汁）所在格不同
+# 秋季高优先级饮品（菊花茶，槽位2）的固定位置——固定第二格（y300 行），
+# 与槽位1（胡萝卜秋梨汁，y143 行）不在同一格
 FIXED_SELECT_CHRYSANTHEMUM_TEA = Button(
-    area=(), color=(), button=(212, 143, 292, 211),
+    area=(), color=(), button=(212, 300, 292, 360),
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 
