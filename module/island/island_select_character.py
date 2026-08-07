@@ -23,6 +23,9 @@ class SelectCharacter(UI):
             name="SELECT_CHARACTER_GRID"
         )
 
+        # 本轮已判定不可用的角色（避免同一轮内多次派遣时重复检测）
+        self.unavailable_characters = set()
+
         # 定义状态检测区域（相对于每个角色按钮）
         self.character_area_relative = (25, 10, 125, 72)
         self.working_area_relative = (15, 65, 105, 95)
@@ -617,6 +620,12 @@ class SelectCharacter(UI):
         if not characters:
             return None
 
+        # 本轮已判定不可用的角色直接跳过，不再重复检测
+        for char_name in characters:
+            if char_name in self.unavailable_characters:
+                logger.info(f"[岛屿] {char_name} 本轮已判定不可用，跳过检测")
+                return None
+
         # 先回到列表顶部，从头开始搜索
         self._swipe_character_list_to_top()
 
@@ -628,7 +637,12 @@ class SelectCharacter(UI):
             for char_name in characters:
                 char_info = character_dict.get(char_name)
                 if char_info:
-                    return self._check_character_strict(char_info, stamina_threshold)
+                    checked = self._check_character_strict(char_info, stamina_threshold)
+                    if checked is None:
+                        self.unavailable_characters.add(char_name)
+                        # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
+                        self._swipe_character_list_to_top()
+                    return checked
             # 2) 网格未命中（滑动错位）时，全区域模板匹配定位（模仿经营模块）
             found = self._find_character_button_in_area(screenshot, characters, area=search_area)
             if found:
@@ -639,11 +653,19 @@ class SelectCharacter(UI):
                     char_info = self._status_from_cell(
                         screenshot, row, col, cell_button, character_name=char_name
                     )
-                    return self._check_character_strict(char_info, stamina_threshold)
+                    checked = self._check_character_strict(char_info, stamina_threshold)
+                    if checked is None:
+                        self.unavailable_characters.add(char_name)
+                        # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
+                        self._swipe_character_list_to_top()
+                    return checked
             # 3) 当前视野没有目标角色，向下滑动继续搜索
             self._swipe_character_list_down()
 
         logger.info(f"[岛屿] 角色列表滚动 {max_swipes} 次后仍未找到: {characters}")
+        self.unavailable_characters.update(characters)
+        # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
+        self._swipe_character_list_to_top()
         return None
 
     def select_specific_character_with_scroll(self, character_list, stamina_threshold=50, max_swipes=5):

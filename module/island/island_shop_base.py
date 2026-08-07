@@ -47,6 +47,9 @@ class IslandShopBase(Island, WarehouseOCR):
         # 特殊材料（子类可覆盖）
         self.special_materials = {}
 
+        # 本轮因无可用角色而跳过生产的餐品（避免严格模式重复尝试）
+        self.chef_unavailable_products = set()
+
         # 套餐组成（子类可覆盖）
         self.meal_compositions = {}
 
@@ -249,6 +252,7 @@ class IslandShopBase(Island, WarehouseOCR):
                         return 0
                 else:
                     logger.warning(f"[岛屿] {product}生产派遣无可用角色: {character_filter}")
+                    self.chef_unavailable_products.add(product)
                     self.back_to_postmanage_from_dispatch()
                     return 0
                 continue
@@ -394,6 +398,9 @@ class IslandShopBase(Island, WarehouseOCR):
                 if name in force_skip:
                     logger.info(f"[岛屿] 槽位{idx + 1} {name} 本轮已尝试失败，强制跳过")
                     continue
+                if name in self.chef_unavailable_products:
+                    logger.info(f"[岛屿] 槽位{idx + 1} {name} 无可用角色，本轮跳过")
+                    continue
                 deficit = target - current
                 # check_materials=True 时严格检查零库存，用于跳过无法生产的缺口
                 if self.get_max_producible(
@@ -419,6 +426,8 @@ class IslandShopBase(Island, WarehouseOCR):
 
     def run(self):
         self.island_error = False
+        self.chef_unavailable_products.clear()
+        self.unavailable_characters.clear()
         self.goto_postmanage()
         self.post_manage_mode(POST_MANAGE_PRODUCTION)
         self.post_close()

@@ -158,6 +158,8 @@ class IslandJuuCoffee(IslandShopBase):
             # 大帝不可选（未找到/体力不足），回退普通厨师；先回到列表顶部再按配置选择
             self._swipe_character_list_to_top()
             return self.select_character(self.chef_config)
+        # 普通餐品：先回到列表顶部再按配置选择，避免上个岗位遗留的滚动位置导致找不到黄鸡
+        self._swipe_character_list_to_top()
         return self.select_character(self.chef_config)
     def deduct_materials(self, product, number):
         """覆盖：扣除前置材料，包括牛奶和套餐原材料"""
