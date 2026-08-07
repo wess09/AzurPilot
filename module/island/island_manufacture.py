@@ -229,8 +229,13 @@ class IslandManufacture(IslandShopBase):
                     logger.info(f"[岛屿-制造业] 尝试选择产品: {product_name}")
 
                     # 点击产品选择按钮
-                    self.select_product(selection, selection_check)
+                    selected = self.select_product(selection, selection_check)
                     self.device.sleep(0.5)
+
+                    if not selected:
+                        # 基类失败时已把列表滚动回顶部，直接尝试下一个产品
+                        logger.warning(f"[岛屿-制造业] 未能识别到产品选择项: {product_name}，尝试下一个产品")
+                        continue
 
                     # 检查确认按钮状态
                     image = self.device.screenshot()
@@ -251,7 +256,7 @@ class IslandManufacture(IslandShopBase):
                         break  # 跳出产品选择循环
 
                 if not selected_product:
-                    logger.info("[岛屿-制造业] 所有产品材料都不足，点击返回")
+                    logger.info("[岛屿-制造业] 所有产品都无法选择或材料不足，点击返回")
                     self.device.click(SELECT_UI_BACK)
                     self.device.sleep(0.3)
 
