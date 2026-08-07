@@ -341,7 +341,7 @@ class GeneratedConfig:
 
     # 配置组 `Commission`
     Commission_PresetFilter = 'cube'  # cube, cube_24h, chip, chip_24h, oil, custom
-    Commission_DynamicProgramming = False
+    Commission_DynamicProgramming = True
     Commission_TierValueRatio = 2.0
     Commission_DelayHalfLife = 100.0
     Commission_FilterValueFloor = 0.6

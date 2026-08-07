@@ -1926,7 +1926,7 @@
     },
     "Commission": {
       "PresetFilter": "cube",
-      "DynamicProgramming": false,
+      "DynamicProgramming": true,
       "TierValueRatio": 2.0,
       "DelayHalfLife": 100.0,
       "FilterValueFloor": 0.6,
