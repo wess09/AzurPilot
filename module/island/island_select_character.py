@@ -498,6 +498,181 @@ class SelectCharacter(UI):
         self.device.sleep(0.3)
         return True
 
+    # ============ 滚动查找指定角色（模仿经营模块选角逻辑） ============
+    # 角色选择列表滑动区域与惯性消除安全区（与经营模块保持一致）
+    CHARACTER_LIST_SCROLL_BOX = (58, 150, 838, 480)
+    CHARACTER_LIST_INERTIA_STOP = (462, 477, 473, 577)
+    # 角色选择列表全区域模板匹配范围（与经营模块保持一致）
+    CHARACTER_LIST_SEARCH_AREA = (55, 139, 878, 463)
+
+    def _swipe_character_list_down(self):
+        """短距离向下滑动角色列表，滑动后点击安全区域消除惯性（模仿经营模块）。"""
+        self.device.swipe_vector(vector=(0, -200), box=self.CHARACTER_LIST_SCROLL_BOX,
+                                 duration=(0.3, 0.5), name="IslandCharSwipe")
+        self.device.click(Button(area=(), color=(), button=self.CHARACTER_LIST_INERTIA_STOP, file={'cn': ''}))
+        self.device.sleep(1.0)
+
+    def _swipe_character_list_to_top(self):
+        """向上滑动角色列表回到顶部，滑动后点击安全区域消除惯性（模仿经营模块）。"""
+        self.device.swipe_vector(vector=(0, 500), box=self.CHARACTER_LIST_SCROLL_BOX,
+                                 duration=(0.3, 0.5), name="IslandCharSwipeReset")
+        self.device.sleep(0.5)
+        self.device.click(Button(area=(), color=(), button=self.CHARACTER_LIST_INERTIA_STOP, file={'cn': ''}))
+        self.device.sleep(1.0)
+
+    def _find_character_button_in_area(self, screenshot, character_names, area=None):
+        """在角色选择列表全区域内模板匹配指定角色，返回 (角色名, Button) 或 None。
+
+        与经营模块 _find_best_character 一致，用于网格未命中（滑动错位）时定位角色。
+        """
+        if area is None:
+            area = self.CHARACTER_LIST_SEARCH_AREA
+        area_img = crop(screenshot, area)
+        best = (None, None, 0.0)  # (角色名, Button, 相似度)
+        for name in character_names:
+            template = self.character_templates.get(name)
+            if template is None:
+                continue
+            sim, btn = template.match_result(area_img)
+            if sim >= 0.8 and sim > best[2]:
+                # 创建新 Button，坐标从裁剪区域偏移回全屏坐标
+                old_area = btn.area
+                new_area = (old_area[0] + area[0], old_area[1] + area[1],
+                            old_area[2] + area[0], old_area[3] + area[1])
+                offset_btn = Button(area=new_area, color=btn.color, button=new_area, file=btn.file)
+                best = (name, offset_btn, sim)
+        if best[0] is not None:
+            return best[0], best[1]
+        return None
+
+    def _snap_button_to_grid_cell(self, portrait_button):
+        """将头像模板匹配结果吸附到最近的网格单元，返回 (row, col, 单元Button)。"""
+        px = (portrait_button.area[0] + portrait_button.area[2]) // 2
+        py = (portrait_button.area[1] + portrait_button.area[3]) // 2
+        best_cell = None
+        best_dist = None
+        for row, col, cell_button in self.select_character_grid.generate():
+            cx = (cell_button.area[0] + cell_button.area[2]) // 2
+            cy = (cell_button.area[1] + cell_button.area[3]) // 2
+            dist = abs(px - cx) + abs(py - cy)
+            if best_dist is None or dist < best_dist:
+                best_cell = (row, col, cell_button)
+                best_dist = dist
+        return best_cell
+
+    def _status_from_cell(self, screenshot, row, col, cell_button, character_name=None):
+        """读取指定网格单元的角色状态。
+
+        character_name 给定时跳过二次身份识别（用于全区域模板匹配已确认身份的场景）。
+        """
+        if character_name is None:
+            status = self._recognize_character_status(screenshot, cell_button)
+            if not status:
+                return None
+            return {**status, "grid_position": (row, col), "button_area": cell_button.area}
+        return {
+            "character_name": character_name,
+            "is_working": self._check_working_status(screenshot, cell_button),
+            "stamina": self._get_stamina_value(screenshot, cell_button),
+            "is_selected": self._check_selected_status(screenshot, cell_button),
+            "grid_position": (row, col),
+            "button_area": cell_button.area,
+        }
+
+    def _check_character_strict(self, char_info, stamina_threshold):
+        """严格检查角色是否可派遣：未工作、未选中、体力大于阈值。任一不满足返回 None。"""
+        if char_info is None:
+            return None
+        char_name = char_info.get("character_name")
+        if char_info.get("is_working"):
+            logger.info(f"[岛屿] {char_name} 正在工作中，不满足派遣条件")
+            return None
+        if char_info.get("is_selected"):
+            logger.info(f"[岛屿] {char_name} 已选中，不满足派遣条件")
+            return None
+        stamina = char_info.get("stamina", 0)
+        if stamina <= stamina_threshold:
+            logger.info(f"[岛屿] {char_name} 体力 {stamina} 不大于 {stamina_threshold}，不满足派遣条件")
+            return None
+        return char_info
+
+    def find_strict_available_character_with_scroll(self, character_list, stamina_threshold=50,
+                                                    max_swipes=5, search_area=None):
+        """
+        滚动查找指定角色（模仿经营模块的选角逻辑）。
+
+        只接受指定角色且体力大于 stamina_threshold；不切换排序、不回退其他角色。
+        找到后返回角色状态字典，未找到或体力不达标返回 None。
+
+        Args:
+            character_list: 角色名或 ">" 分隔的优先级字符串。
+            stamina_threshold: 体力必须大于该阈值。
+            max_swipes: 最多向下滑动次数。
+            search_area: 全区域模板匹配范围，默认 CHARACTER_LIST_SEARCH_AREA。
+
+        Returns:
+            dict | None: 可点击角色状态，找不到或体力不达标返回 None。
+        """
+        characters = self.parse_character_filter(character_list)
+        if not characters:
+            return None
+
+        # 先回到列表顶部，从头开始搜索
+        self._swipe_character_list_to_top()
+
+        for attempt in range(max_swipes):
+            screenshot = self.device.screenshot()
+            # 1) 优先网格识别：直接获得体力/工作/选中状态
+            target_characters = self.recognize_target_characters(screenshot, characters)
+            character_dict = {char_info["character_name"]: char_info for char_info in target_characters}
+            for char_name in characters:
+                char_info = character_dict.get(char_name)
+                if char_info:
+                    return self._check_character_strict(char_info, stamina_threshold)
+            # 2) 网格未命中（滑动错位）时，全区域模板匹配定位（模仿经营模块）
+            found = self._find_character_button_in_area(screenshot, characters, area=search_area)
+            if found:
+                char_name, portrait_button = found
+                snapped = self._snap_button_to_grid_cell(portrait_button)
+                if snapped:
+                    row, col, cell_button = snapped
+                    char_info = self._status_from_cell(
+                        screenshot, row, col, cell_button, character_name=char_name
+                    )
+                    return self._check_character_strict(char_info, stamina_threshold)
+            # 3) 当前视野没有目标角色，向下滑动继续搜索
+            self._swipe_character_list_down()
+
+        logger.info(f"[岛屿] 角色列表滚动 {max_swipes} 次后仍未找到: {characters}")
+        return None
+
+    def select_specific_character_with_scroll(self, character_list, stamina_threshold=50, max_swipes=5):
+        """
+        只选择指定角色（支持向下滚动查找，模仿经营模块选角逻辑）。
+
+        体力不达标或未找到时返回 False，不切换排序、不回退其他角色、不重复尝试。
+        点击后校验是否选中，最多点击 5 次（纯计数有限循环）。
+
+        Returns:
+            bool: 成功选中指定角色返回 True，否则返回 False。
+        """
+        char_info = self.find_strict_available_character_with_scroll(
+            character_list, stamina_threshold=stamina_threshold, max_swipes=max_swipes
+        )
+        if not char_info:
+            return False
+
+        row, col = char_info["grid_position"]
+        button = self.select_character_grid[row, col]
+        target_positions = [(row, col)]
+        for attempt in range(5):
+            screenshot = self.device.screenshot()
+            if self.is_any_character_selected_by_positions(screenshot, target_positions):
+                return True
+            self.device.click(button)
+            self.device.sleep(0.3)
+        return False
+
     def find_specific_character(self, screenshot, character_name="WorkerJuu"):
         """查找指定角色的位置信息，只检查目标角色的模板，不做全量匹配"""
         target_characters = self.recognize_target_characters(screenshot, [character_name])

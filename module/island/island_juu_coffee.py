@@ -142,54 +142,23 @@ class IslandJuuCoffee(IslandShopBase):
             logger.info(f"[岛屿-啾咖啡]   {product} 牛奶限制: 可用{milk_available}, 每批{milk_needed_per_batch}, 最大{max_by_milk}")
         return batch_size
 
-    def _is_friedrich_available(self):
-        """
-        只读检查大帝(Friedrich)是否可用于生产（空闲且有体力），不进行任何选择操作。
-        仅匹配 Friedrich 的模板，不做全量角色扫描。
-        """
-        screenshot = self.device.screenshot()
-        target_characters = self.recognize_target_characters(screenshot, ["Friedrich"])
-        for char_info in target_characters:
-            if char_info["character_name"] == "Friedrich":
-                available = not char_info["is_working"] and char_info["has_stamina"]
-                logger.info(f"[岛屿-啾咖啡] 大帝(Friedrich)状态: working={char_info['is_working']}, stamina={char_info['has_stamina']}, 可用={available}")
-                return available
-        logger.info("[岛屿-啾咖啡] 大帝(Friedrich)不在角色列表中")
-        return False
-
-    def post_produce(self, post_id, product, number, time_var_name, product2=None):
-        """
-        覆盖父类 post_produce：
-        醒神套餐(wake_up_call)若大帝(Friedrich)不可用则跳过烹饪。
-        """
-        if product == 'wake_up_call' and self.special_character:
-            post_button = self.posts[post_id]['button']
-            self.post_close()
-            self.post_open(post_button)
-            self.device.sleep(0.5)
-            while 1:
-                self.device.screenshot()
-                if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
-                    break
-                if self.appear_then_click(ISLAND_POST_SELECT, offset=1):
-                    self.device.sleep(0.5)
-                    continue
-            if not self._is_friedrich_available():
-                logger.warning(f"[岛屿-啾咖啡] 醒神套餐({product})需要大帝(Friedrich)但不可用，跳过生产")
-                self.device.click(ISLAND_BACK)
-                self.device.sleep(0.5)
-                self.post_close()
-                return 0
-            self.device.click(ISLAND_BACK)
-            self.device.sleep(0.5)
-            self.post_close()
-        return super().post_produce(post_id, product, number, time_var_name, product2)
-
     def select_special_character(self,product):
-        if product in ['cheese','wake_up_call',]:
-            return self.select_character("Friedrich")
-        else:
+        """覆盖父类 select_special_character：
+        芝士(cheese)优先大帝(Friedrich)制作，大帝不可选时回退普通厨师；
+        醒神套餐(wake_up_call)必须由大帝制作。
+
+        大帝需通过向下滚动查找（模仿经营模块选角逻辑），且体力必须大于 50；
+        醒神套餐在大帝未找到或体力不足时不重试、不回退其他角色，直接返回 False 跳过生产。
+        """
+        if product == 'wake_up_call':
+            return self.select_specific_character_with_scroll("Friedrich", stamina_threshold=50)
+        if product == 'cheese':
+            if self.select_specific_character_with_scroll("Friedrich", stamina_threshold=50):
+                return True
+            # 大帝不可选（未找到/体力不足），回退普通厨师；先回到列表顶部再按配置选择
+            self._swipe_character_list_to_top()
             return self.select_character(self.chef_config)
+        return self.select_character(self.chef_config)
     def deduct_materials(self, product, number):
         """覆盖：扣除前置材料，包括牛奶和套餐原材料"""
         # 先调用父类方法扣除套餐原材料
