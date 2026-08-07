@@ -461,27 +461,7 @@ class Island(SelectCharacter):
             self.device.click(SELECT_PRODUCT_INERTIA_STOP, control_check=False)
             self.device.sleep(0.2)
 
-        # 向上搜索失败后列表已停留在底部，先把列表滚动回顶部再返回 False，
-        # 避免后续产品（如制造工坊的皮革回退）从底部继续向上滑动而永远找不到。
-        self._reset_product_list_scroll()
         return False
-
-    def _reset_product_list_scroll(self):
-        """把产品选择列表滚动回顶部。
-
-        产品选择列表的搜索只向上滑动，失败后列表停留在底部；
-        若直接尝试下一个产品，继续向上滑动只会越滑越深。
-        每次滑动前清理同名滑动记录，避免连续滑动触发 GameTooManyClickError。
-        """
-        logger.info("[岛屿] 重置产品选择列表滚动位置到顶部")
-        for _ in range(_SELECT_PRODUCT_MAX_SWIPES * 2):
-            # 滑动本身会计入 click_record，逐次清理避免超过单按钮 12 次阈值
-            self.device.click_record_remove(SELECTION_UP_SWIPE_NAME)
-            self.device.swipe_vector(vector=(0, 200), box=(333, 142, 431, 602), name=SELECTION_UP_SWIPE_NAME)
-            self.device.sleep(0.3)
-            self.device.click(SELECT_PRODUCT_INERTIA_STOP, control_check=False)
-            self.device.sleep(0.2)
-        self.device.click_record_remove(SELECTION_UP_SWIPE_NAME)
 
     def _handle_select_product_failure(self, product):
         """select_product 失败时的统一处理：记录警告、关闭岗位面板、返回 False"""
