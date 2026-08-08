@@ -7,7 +7,7 @@ from module.island_select_character.assets import *
 from module.base.button import *
 from module.base.utils import color_similar, color_similarity_2d, crop, get_color
 import numpy as np
-from module.ocr.ocr import DigitCounter
+from module.ocr.ocr import Digit, DigitCounter
 from module.ui.ui import UI
 from module.logger import logger
 
@@ -218,7 +218,55 @@ class SelectCharacter(UI):
         if total:
             return current
 
+        # 体力条青色填充段的右边缘恰好压在 "当前/上限" 的斜杠上时，
+        # 整段 OCR 会把被破坏的斜杠误识别成数字（如 26/110 读成 267110）。
+        # 此时改为在斜杠左右两侧分别识别当前值与上限值。
+        current = self._get_stamina_current_ocr(screenshot, button)
+        total = self._get_stamina_total_ocr(screenshot, button)
+        if current is not None and total and current <= total:
+            return current
+
         return self._get_stamina_percentage_fallback(screenshot, button)
+
+    def _ocr_stamina_area(self, screenshot, button, relative_area, name):
+        """对体力区域内的子区域执行数字 OCR，无法解析时返回 None。"""
+        area = self._get_absolute_area(button, relative_area)
+        ocr = Digit(
+            area,
+            letter=(255, 255, 255),
+            threshold=128,
+            name=name,
+        )
+        try:
+            return ocr.ocr(screenshot)
+        except (TypeError, ValueError):
+            # 区域内可能残留斜杠等字符，int() 解析失败
+            return None
+
+    def _get_stamina_current_ocr(self, screenshot, button):
+        """在斜杠左侧识别当前体力值。"""
+        area = self.stamina_ocr_area_relative
+        value = self._ocr_stamina_area(
+            screenshot, button,
+            (0, area[1], 28, area[3]),
+            name='OCR_CHARACTER_STAMINA_CURRENT',
+        )
+        if isinstance(value, int) and 0 <= value <= 999:
+            return value
+        return None
+
+    def _get_stamina_total_ocr(self, screenshot, button):
+        """在斜杠右侧识别体力上限，依次尝试不同起点以避开被破坏的斜杠。"""
+        area = self.stamina_ocr_area_relative
+        for left in (28, 30, 32, 34):
+            value = self._ocr_stamina_area(
+                screenshot, button,
+                (left, area[1], area[2], area[3]),
+                name='OCR_CHARACTER_STAMINA_TOTAL',
+            )
+            if isinstance(value, int) and 100 <= value <= 999:
+                return value
+        return None
 
     def _get_stamina_percentage_fallback(self, screenshot, button):
         """OCR 失败时用体力条绿色长度估算体力。"""
