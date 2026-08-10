@@ -194,6 +194,19 @@ class IslandTeahouse(IslandShopBase):
         # 但当前季节不是 spring，则自动替换为当前季节对应槽位的餐品
         self._auto_switch_seasonal_meals()
 
+        # === 补充季节饮品注册 ===
+        # “迎春花茶优先生产”关闭（默认）时，季节饮品不会进入 shop_items，
+        # 若用户又在餐品槽位中手动配置了季节饮品（如胡萝卜秋梨汁/菊花茶），
+        # 排产时 name_to_config 缺键会抛 KeyError 并触发重启。
+        # 这里把用户实际配置、且有真实选品资源的季节饮品补注册到商品列表；
+        # 迎春花茶走“迎春花茶优先生产”的固定坐标流程，不在此补注册。
+        for meal_name, _ in self.post_products:
+            drink = SEASONAL_DRINK_CONFIG.get(meal_name)
+            if not drink or not drink['selection'].area:
+                continue
+            if not any(item['name'] == meal_name for item in self.shop_items):
+                self.shop_items.append(drink.copy())
+
         # 特殊材料：蜂蜜（仅用于库存检查和限制，不再有强制消耗任务）
         self.fresh_honey = 0
         self.initialize_shop()
