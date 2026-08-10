@@ -57,6 +57,22 @@ BUSINESS_BOOSTED_PRODUCT_AREA = Button(
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 
+# ==================== 柑橘咖啡识别模板占位 ====================
+# 等待 button_extract 生成资源后由 module/island_business/assets.py 提供同名定义，
+# 先在此占位避免资源缺失时 IslandBusiness 任务启动直接 NameError。
+TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED.png',
+})
+
 # ==================== 商店索引到名称的映射 ====================
 SHOP_INDEX_MAP = {
     1: '有鱼餐馆',
@@ -153,6 +169,7 @@ class IslandBusiness(Island):
                 {'name': 'seafood_rice', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_SEAFOOD_RICE},
             ],
             '啾咖啡': [
+                {'name': 'citrus_coffee', 'button': TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE},
                 {'name': 'strawberry_milkshake', 'button': TEMPLATE_BUSINESS_PRODUCT_COFFEE_STRAWBERRY_MILKSHAKE},
                 {'name': 'morning_light', 'button': TEMPLATE_BUSINESS_PRODUCT_COFFEE_MORNING_LIGHT},
                 {'name': 'wake_up_call', 'button': TEMPLATE_BUSINESS_PRODUCT_COFFEE_WAKE_UP_CALL},
@@ -200,6 +217,7 @@ class IslandBusiness(Island):
                 {'name': 'seafood_rice', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_SEAFOOD_RICE_CROPPED},
             ],
             '啾咖啡': [
+                {'name': 'citrus_coffee', 'template': TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED},
                 {'name': 'strawberry_milkshake', 'template': TEMPLATE_BUSINESS_PRODUCT_COFFEE_STRAWBERRY_MILKSHAKE_CROPPED},
                 {'name': 'morning_light', 'template': TEMPLATE_BUSINESS_PRODUCT_COFFEE_MORNING_LIGHT_CROPPED},
                 {'name': 'wake_up_call', 'template': TEMPLATE_BUSINESS_PRODUCT_COFFEE_WAKE_UP_CALL_CROPPED},

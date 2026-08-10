@@ -1732,6 +1732,7 @@ _IslandBusinessProduct5: &IslandBusinessProduct5
   option:
     - None
     - cheese
+    - citrus_coffee
     - strawberry_milkshake
     - morning_light
     - wake_up_call

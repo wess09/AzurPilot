@@ -956,11 +956,11 @@ class GeneratedConfig:
     # 配置组 `IslandBusinessShop5`
     IslandBusinessShop5_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao, Anchorage, Belfast, ChangFeng, Mogador, RoyalFortune
     IslandBusinessShop5_Char2 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao, Anchorage, Belfast, ChangFeng, Mogador, RoyalFortune
-    IslandBusinessShop5_Product1 = 'None'  # None, cheese, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
-    IslandBusinessShop5_Product2 = 'None'  # None, cheese, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
-    IslandBusinessShop5_Product3 = 'None'  # None, cheese, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
-    IslandBusinessShop5_Product4 = 'None'  # None, cheese, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
-    IslandBusinessShop5_Product5 = 'None'  # None, cheese, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product1 = 'None'  # None, cheese, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product2 = 'None'  # None, cheese, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product3 = 'None'  # None, cheese, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product4 = 'None'  # None, cheese, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
+    IslandBusinessShop5_Product5 = 'None'  # None, cheese, citrus_coffee, strawberry_milkshake, morning_light, wake_up_call, fruity_fruitier
     IslandBusinessShop5_BoostReplaceFilter = '30 > 20 > cheese > 10'
 
     # 配置组 `FleetInfo`
