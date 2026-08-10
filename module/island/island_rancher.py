@@ -446,7 +446,11 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
     def post_mode_check(self, post_id):
         """检查岗位是否使用特定角色配置"""
-        if post_id == 'ISLAND_RANCH_POST3':
+        if post_id == 'ISLAND_RANCH_POST1':
+            config_str = self.config.IslandRancher_ChickenFilter
+        elif post_id == 'ISLAND_RANCH_POST2':
+            config_str = self.config.IslandRancher_PigFilter
+        elif post_id == 'ISLAND_RANCH_POST3':
             config_str = self.config.IslandRancher_RancherFilter
         elif post_id == 'ISLAND_RANCH_POST4':
             config_str = self.config.IslandRancher_WoolWorkerFilter
@@ -462,7 +466,11 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
         post_button = self.posts_ranch[post_id]
 
-        if post_id == 'ISLAND_RANCH_POST3':
+        if post_id == 'ISLAND_RANCH_POST1':
+            config_str = self.config.IslandRancher_ChickenFilter
+        elif post_id == 'ISLAND_RANCH_POST2':
+            config_str = self.config.IslandRancher_PigFilter
+        elif post_id == 'ISLAND_RANCH_POST3':
             config_str = self.config.IslandRancher_RancherFilter
         elif post_id == 'ISLAND_RANCH_POST4':
             config_str = self.config.IslandRancher_WoolWorkerFilter

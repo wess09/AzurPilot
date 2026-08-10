@@ -15374,9 +15374,17 @@
         "type": "input",
         "value": 300
       },
+      "ChickenFilter": {
+        "type": "textarea",
+        "value": "WorkerJuu"
+      },
       "MinPork": {
         "type": "input",
         "value": 300
+      },
+      "PigFilter": {
+        "type": "textarea",
+        "value": "WorkerJuu"
       },
       "Milk": {
         "type": "checkbox",

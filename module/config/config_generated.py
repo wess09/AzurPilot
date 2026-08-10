@@ -710,7 +710,9 @@ class GeneratedConfig:
 
     # 配置组 `IslandRancher`
     IslandRancher_MinChicken = 300
+    IslandRancher_ChickenFilter = 'WorkerJuu'
     IslandRancher_MinPork = 300
+    IslandRancher_PigFilter = 'WorkerJuu'
     IslandRancher_Milk = True
     IslandRancher_RancherFilter = 'WorkerJuu'
     IslandRancher_Wool = True

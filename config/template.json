@@ -2964,7 +2964,9 @@
     },
     "IslandRancher": {
       "MinChicken": 300,
+      "ChickenFilter": "WorkerJuu",
       "MinPork": 300,
+      "PigFilter": "WorkerJuu",
       "Milk": true,
       "RancherFilter": "WorkerJuu",
       "Wool": true,
