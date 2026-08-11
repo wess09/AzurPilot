@@ -27,11 +27,11 @@ class SelectCharacter(UI):
         self.unavailable_characters = set()
 
         # 定义状态检测区域（相对于每个角色按钮）
-        self.character_area_relative = (25, 10, 125, 72)
-        self.working_area_relative = (15, 65, 105, 95)
-        self.stamina_area_relative = (18, 139, 58, 152)
-        self.stamina_ocr_area_relative = (0, 136, 80, 155)
-        self.selected_area_relative = (86, 1, 119, 12)
+        self.character_area_relative = (25, 38, 125, 92)
+        self.working_area_relative = (15, 92, 105, 121)
+        self.stamina_area_relative = (18, 165, 58, 182)
+        self.stamina_ocr_area_relative = (0, 165, 80, 184)
+        self.selected_area_relative = (86, 26, 119, 42)
 
         # 角色模板映射
         self.character_templates = {
@@ -201,7 +201,7 @@ class SelectCharacter(UI):
 
     def _check_stamina_status(self, screenshot, button):
         """检查体力是否充沛"""
-        stamina_area = self._get_absolute_area(button, (26, 139, 27, 140))
+        stamina_area = self._get_absolute_area(button, (26, 165, 27, 166))
         stamina_color = get_color(screenshot, stamina_area)
         return color_similar(stamina_color, (18.0, 211.0, 186.0), 80)
 
@@ -596,20 +596,19 @@ class SelectCharacter(UI):
             return best[0], best[1]
         return None
 
-    def _snap_button_to_grid_cell(self, portrait_button):
-        """将头像模板匹配结果吸附到最近的网格单元，返回 (row, col, 单元Button)。"""
-        px = (portrait_button.area[0] + portrait_button.area[2]) // 2
-        py = (portrait_button.area[1] + portrait_button.area[3]) // 2
-        best_cell = None
-        best_dist = None
-        for row, col, cell_button in self.select_character_grid.generate():
-            cx = (cell_button.area[0] + cell_button.area[2]) // 2
-            cy = (cell_button.area[1] + cell_button.area[3]) // 2
-            dist = abs(px - cx) + abs(py - cy)
-            if best_dist is None or dist < best_dist:
-                best_cell = (row, col, cell_button)
-                best_dist = dist
-        return best_cell
+    def _cell_button_from_portrait(self, portrait_button, name=None):
+        """以头像模板匹配框为锚点重建角色单元格，返回单元 Button。
+
+        角色列表可处于任意滚动偏移，固定网格行不可靠；
+        头像框左上角相对单元格左上角偏移为 (33, 45)，由当前布局实测得出。
+        """
+        x0 = portrait_button.area[0] - 33
+        y0 = portrait_button.area[1] - 45
+        return Button(
+            area=(x0, y0, x0 + 120, y0 + 160),
+            color=(), button=(x0, y0, x0 + 120, y0 + 160),
+            name=name or 'CHARACTER_CELL',
+        )
 
     def _status_from_cell(self, screenshot, row, col, cell_button, character_name=None):
         """读取指定网格单元的角色状态。
@@ -691,22 +690,32 @@ class SelectCharacter(UI):
                         # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
                         self._swipe_character_list_to_top()
                     return checked
-            # 2) 网格未命中（滑动错位）时，全区域模板匹配定位（模仿经营模块）
+            # 2) 网格未命中（列表滚动偏移）时，全区域模板匹配定位（模仿经营模块）
             found = self._find_character_button_in_area(screenshot, characters, area=search_area)
             if found:
                 char_name, portrait_button = found
-                snapped = self._snap_button_to_grid_cell(portrait_button)
-                if snapped:
-                    row, col, cell_button = snapped
-                    char_info = self._status_from_cell(
-                        screenshot, row, col, cell_button, character_name=char_name
-                    )
-                    checked = self._check_character_strict(char_info, stamina_threshold)
-                    if checked is None:
-                        self.unavailable_characters.add(char_name)
-                        # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
-                        self._swipe_character_list_to_top()
-                    return checked
+                # 以头像匹配框为锚点重建单元格，读取任意滚动偏移下的状态
+                cell_button = self._cell_button_from_portrait(portrait_button, name=char_name)
+                row = round((cell_button.area[1] - self.select_character_grid.origin[1])
+                            / self.select_character_grid.delta[1])
+                col = round((cell_button.area[0] - self.select_character_grid.origin[0])
+                            / self.select_character_grid.delta[0])
+                # 复核身份：避免模板误配到相似角色
+                verify_image = crop(screenshot, self._get_absolute_area(cell_button, self.character_area_relative))
+                if not self.character_templates[char_name].match(verify_image, similarity=0.8):
+                    logger.warning(f"[岛屿] {char_name} 单元格身份复核不通过，继续向下滑动搜索")
+                    continue
+                char_info = self._status_from_cell(
+                    screenshot, row, col, cell_button, character_name=char_name
+                )
+                # 点击目标直接用头像匹配框，避免固定网格在滚动偏移下点错位置
+                char_info["button"] = portrait_button
+                checked = self._check_character_strict(char_info, stamina_threshold)
+                if checked is None:
+                    self.unavailable_characters.add(char_name)
+                    # 失败退出前回到列表顶部，避免影响下一个岗位的选角视野
+                    self._swipe_character_list_to_top()
+                return checked
             # 3) 当前视野没有目标角色，向下滑动继续搜索
             self._swipe_character_list_down()
 
@@ -733,11 +742,11 @@ class SelectCharacter(UI):
             return False
 
         row, col = char_info["grid_position"]
-        button = self.select_character_grid[row, col]
-        target_positions = [(row, col)]
+        # 滚动回退路径携带头像匹配框作为点击目标，网格路径使用固定网格
+        button = char_info.get("button") or self.select_character_grid[row, col]
         for attempt in range(5):
             screenshot = self.device.screenshot()
-            if self.is_any_character_selected_by_positions(screenshot, target_positions):
+            if self._check_selected_status(screenshot, button):
                 return True
             self.device.click(button)
             self.device.sleep(0.3)
