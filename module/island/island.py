@@ -890,10 +890,12 @@ class Island(SelectCharacter):
             shopping_shown = self.appear(ISLAND_SHOPPING_CHECK)
             if shop_visible and not shopping_shown:
                 break
-            if self.appear_then_click(ISLAND_SHOP_CONFIRM):
+            if self.appear_then_click(ISLAND_SHOP_CONFIRM, interval=1):
+                # 点击确认后立即复检：弹窗或确认按钮消失都视为购买完成，退出避免重复点击
                 self.device.sleep(0.5)
-                self.device.click(ISLAND_SHOP_CONFIRM)
-                self.device.sleep(0.5)
+                self.device.screenshot()
+                if not self.appear(ISLAND_SHOP_CONFIRM) or not self.appear(ISLAND_SHOPPING_CHECK):
+                    break
                 continue
             if self.appear(ISLAND_SHOP_GET):
                 self.device.click(ISLAND_SHOP_CONFIRM)
