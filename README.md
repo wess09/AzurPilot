@@ -1,6 +1,8 @@
 
 # AzurPilot — 碧蓝航线自动化辅助工具
 
+> 【TEST/测试】本行为验证 ci-report 自动评论功能的测试标注，验证后将被移除，无任何功能影响。
+
 <p align="center">
   <a href="README.md"><img src="https://img.shields.io/badge/简体中文-中文-blue?style=flat-square" alt="简体中文"></a>
   <a href="README.zh-TW.md"><img src="https://img.shields.io/badge/繁體中文-繁體-green?style=flat-square" alt="繁體中文"></a>
