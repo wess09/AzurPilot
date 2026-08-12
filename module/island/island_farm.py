@@ -255,7 +255,7 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
         }
 
     def check_inventory_and_prepare_lists(self):
-        """检查库存并准备需要补种的列表"""
+        """检查库存并准备需要补种的列表（按库存升序，最少的优先）"""
         for category in ['farm', 'orchard', 'nursery']:
             inventory = self.warehouse_inventory(category)
             config = self.INVENTORY_CONFIG[category]
@@ -278,6 +278,8 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
                         continue
                 if count < threshold:
                     self.to_plant_lists[category].append(item_name)
+            # 库存最少的作物排最前，轮转分配时优先补种
+            self.to_plant_lists[category].sort(key=lambda name: inventory.get(name, 0))
 
     def _is_orchard_crop_in_season(self, crop_name):
         """
@@ -616,18 +618,16 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
 
             need_default = max(0, default_count - already_planted_default)
 
-            num_from_list = min(len(to_plant_list), idle_count)
-
-            for i in range(num_from_list):
-                crop_name = to_plant_list[i]
-                all_plants_to_plant[category].append(crop_name)
-
-            remaining_idle = idle_count - num_from_list
-
-            if remaining_idle > 0 and need_default > 0:
-                actual_default = min(remaining_idle, need_default)
-                for _ in range(actual_default):
-                    all_plants_to_plant[category].append(default_crop)
+            if to_plant_list:
+                # 未达标作物：按库存升序轮转分配所有空闲岗位（如 A B C A B ...）
+                for i in range(idle_count):
+                    all_plants_to_plant[category].append(to_plant_list[i % len(to_plant_list)])
+            else:
+                # 所有未达标作物都已安排后才种植默认作物
+                if idle_count > 0 and need_default > 0:
+                    actual_default = min(idle_count, need_default)
+                    for _ in range(actual_default):
+                        all_plants_to_plant[category].append(default_crop)
 
             if all_plants_to_plant[category]:
                 logger.info(f"[岛屿-农田] \n{category}需要种植的作物: {all_plants_to_plant[category]}")

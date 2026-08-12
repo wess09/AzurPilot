@@ -138,35 +138,40 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
         return removed
 
     def _build_supply_plant_products(self, idle_count):
-        """按岗位容量把鱼苗需求压缩成待养殖产品列表。"""
-        products_to_plant = []
-        supply_post_counts = {}
-        remaining_idle = idle_count
-
+        """按库存升序轮转分配岗位，未达标物品优先补足（如 A B C A B ...）。"""
+        # 收集未达标产品及其所需岗位数，按当前库存升序排序（库存最少的最优先）
+        demand = []
         for item_config in self.FISHERY_ITEMS:
             product = item_config['name']
             fry_needed = self.to_plant_list.count(product)
             if fry_needed <= 0:
                 continue
-
             buy_max = item_config.get('buy_max', 4)
             post_capacity = buy_max + 1
             post_needed = (fry_needed + post_capacity - 1) // post_capacity
-            post_to_use = min(post_needed, remaining_idle)
-
-            if post_to_use <= 0:
-                break
-
-            products_to_plant.extend([product] * post_to_use)
-            supply_post_counts[product] = supply_post_counts.get(product, 0) + post_to_use
-            remaining_idle -= post_to_use
+            stock = self.inventory_counts.get(product, 0)
+            demand.append((product, post_needed, stock))
             logger.info(
                 f"{product}: 需养殖{fry_needed}个鱼苗，每岗容量{post_capacity}，"
-                f"本轮占用{post_to_use}个岗位"
+                f"库存{stock}，需要{post_needed}个岗位"
             )
 
-            if remaining_idle <= 0:
-                break
+        demand.sort(key=lambda x: x[2])
+        products_to_plant = []
+        supply_post_counts = {}
+        assigned = {product: 0 for product, _, _ in demand}
+        remaining_idle = idle_count
+        idx = 0
+
+        # 轮转分配：按库存升序循环，每个未达标产品至少一岗，岗位充足时继续补最少的
+        while remaining_idle > 0 and demand and any(assigned[p] < n for p, n, _ in demand):
+            product, post_needed, _ = demand[idx % len(demand)]
+            if assigned[product] < post_needed:
+                products_to_plant.append(product)
+                supply_post_counts[product] = supply_post_counts.get(product, 0) + 1
+                assigned[product] += 1
+                remaining_idle -= 1
+            idx += 1
 
         return products_to_plant, remaining_idle, supply_post_counts
 
