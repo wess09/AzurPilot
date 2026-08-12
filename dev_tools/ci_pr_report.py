@@ -3,6 +3,8 @@
 在统一 CI 工作流（.github/workflows/ci.yml）的所有检查 job 完成后运行，
 将本次运行的结果以一条评论发布/更新到对应 PR，避免每次 push 都新增评论。
 
+（测试提交：用于验证 workflow_run 触发的 ci-report 自动评论功能。）
+
 数据来源（均为 GitHub API 真实数据，不伪造结果）：
 - 运行信息：由环境变量注入（GITHUB_RUN_ID / GITHUB_REPOSITORY / GITHUB_EVENT_PATH）
 - 各 job 结论与耗时：GET /repos/{repo}/actions/runs/{run_id}/jobs
