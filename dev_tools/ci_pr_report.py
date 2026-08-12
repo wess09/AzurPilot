@@ -69,9 +69,11 @@ def get_pr_number(event_path: str, token: str = "", repo: str = "", run_id: str 
 
     支持两类事件：
     - pull_request：直接读取 event.pull_request.number；
-    - workflow_run（由 CI 完成后触发）：通过 API 查询
-      GET /repos/{repo}/actions/runs/{run_id}/pull_requests 获取关联 PR，
-      事件负载中的 workflow_run.pull_requests 作为回退。
+    - workflow_run（由 CI 完成后触发），依次尝试：
+      1) GET /repos/{repo}/actions/runs/{run_id}/pull_requests；
+      2) 按 head 分支查询 GET /repos/{repo}/pulls?head={owner}:{branch}
+         （fork PR 的 run 拉取不到 pull_requests，但 head 分支查询有效）；
+      3) 事件负载中的 workflow_run.pull_requests 作为最后回退。
     """
     try:
         with open(event_path, encoding="utf-8") as fp:
@@ -79,8 +81,10 @@ def get_pr_number(event_path: str, token: str = "", repo: str = "", run_id: str 
     except (OSError, json.JSONDecodeError):
         return None
 
-    # workflow_run 事件：优先查 API（该字段在事件负载中可能为空）。
+    # workflow_run 事件。
     if "workflow_run" in event:
+        wfr = event.get("workflow_run", {})
+        # 1) run 关联的 PR（fork PR 时可能 404/为空）。
         if token and repo and run_id:
             try:
                 data = api(
@@ -92,7 +96,25 @@ def get_pr_number(event_path: str, token: str = "", repo: str = "", run_id: str 
                     return prs[0].get("number")
             except (urllib.error.URLError, urllib.error.HTTPError):
                 pass
-        wfr_prs = event.get("workflow_run", {}).get("pull_requests") or []
+
+        # 2) 按 head 分支查找开放 PR（对 fork PR 有效）。
+        head_branch = wfr.get("head_branch")
+        if head_branch and token and repo:
+            try:
+                head_repo = wfr.get("head_repository", {}).get("full_name") or repo
+                owner = head_repo.split("/", 1)[0]
+                data = api(
+                    f"https://api.github.com/repos/{repo}/pulls"
+                    f"?state=open&head={owner}:{head_branch}",
+                    token,
+                )
+                if isinstance(data, list) and data:
+                    return data[0].get("number")
+            except (urllib.error.URLError, urllib.error.HTTPError):
+                pass
+
+        # 3) 事件负载回退。
+        wfr_prs = wfr.get("pull_requests") or []
         if wfr_prs:
             return wfr_prs[0].get("number")
         return None
