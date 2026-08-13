@@ -270,6 +270,31 @@ class AzurLaneAutoScript:
         )
         exit(1)
 
+    def _record_game_stuck_recovery(self, command):
+        """
+        记录卡死/闪退重启，供大世界特殊海域恢复自律使用。
+
+        仅隐秘/深渊海域任务（直接运行，或由智能调度/防溢出代跑）时记录；
+        其他任务及 GameTooManyClickError 保持原有恢复行为。
+
+        Args:
+            command (str): 任务方法名（下划线形式）。
+        """
+        task_name = inflection.camelize(command)
+        # 直接读 __dict__ 避免触发 device 的 cached_property 初始化
+        # （例如单元测试或设备尚未初始化时）。
+        device = self.__dict__.get('device', None)
+        if device is None:
+            return
+        proxy_task = getattr(device, 'game_stuck_proxy_task', None)
+        if task_name in ('OpsiObscure', 'OpsiAbyssal'):
+            device.game_stuck_recovery_task = task_name
+        elif proxy_task in ('OpsiObscure', 'OpsiAbyssal'):
+            device.game_stuck_recovery_task = proxy_task
+        # 清理代跑子任务标志，避免残留影响后续判断。
+        if hasattr(device, 'game_stuck_proxy_task'):
+            delattr(device, 'game_stuck_proxy_task')
+
     def run(self, command, skip_first_screenshot=False):
         """
         执行指定任务命令，捕获异常并决定后续行为。
@@ -319,6 +344,8 @@ class AzurLaneAutoScript:
                 title=f" <{self.config_name}> 发出了警告喵！",
                 content=f"<{self.config_name}> 游戏未运行喵 将自动重启游戏喵~",
             )
+            # 记录闪退重启，供大世界特殊海域恢复自律使用。
+            self._record_game_stuck_recovery(command)
             self.config.task_call('Restart')
             return 'recoverable'
         except (GameStuckError, GameTooManyClickError) as e:
@@ -357,18 +384,9 @@ class AzurLaneAutoScript:
                 content=f"<{self.config_name}> 游戏卡住 将自动重启游戏喵~",
             )
             # 记录卡死重启，供大世界特殊海域恢复自律使用。
-            # 仅 GameStuckError 且为隐秘/深渊海域任务时记录；
-            # GameTooManyClickError 及其他任务保持原有恢复行为。
-            # 智能调度/防溢出代跑时，实际卡死子任务记录在 device 上。
+            # 仅 GameStuckError 记录；GameTooManyClickError 保持原有恢复行为。
             if isinstance(e, GameStuckError):
-                task_name = inflection.camelize(command)
-                proxy_task = getattr(self.device, 'game_stuck_proxy_task', None)
-                if task_name in ('OpsiObscure', 'OpsiAbyssal'):
-                    self.device.game_stuck_recovery_task = task_name
-                elif proxy_task in ('OpsiObscure', 'OpsiAbyssal'):
-                    self.device.game_stuck_recovery_task = proxy_task
-                if hasattr(self.device, 'game_stuck_proxy_task'):
-                    delattr(self.device, 'game_stuck_proxy_task')
+                self._record_game_stuck_recovery(command)
             self.config.task_call('Restart')
             self.device.sleep(10)
             return 'recoverable'
