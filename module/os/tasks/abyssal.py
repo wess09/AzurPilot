@@ -157,8 +157,8 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
                 self._delay_until_submarine_cooldown_end(cooldown_end_time)
                 return False
 
-        recovered = getattr(self, '_game_stuck_auto_search_recovered', False)
-        self._game_stuck_auto_search_recovered = False
+        recovered = getattr(self, '_game_stuck_auto_search_recovered', None) == 'OpsiAbyssal'
+        self._game_stuck_auto_search_recovered = None
 
         if not recovered:
             with self.config.temporary(STORY_ALLOW_SKIP=False):

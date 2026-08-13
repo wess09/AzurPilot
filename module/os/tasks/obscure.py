@@ -36,8 +36,8 @@ class OpsiObscure(CoinTaskMixin, OSMap):
         if self.config.OpsiObscure_ForceRun:
             logger.info('隐秘海域处于强制运行模式')
 
-        if getattr(self, '_game_stuck_auto_search_recovered', False):
-            self._game_stuck_auto_search_recovered = False
+        if getattr(self, '_game_stuck_auto_search_recovered', None) == 'OpsiObscure':
+            self._game_stuck_auto_search_recovered = None
             logger.info('[大世界-隐秘海域] 自律恢复成功，继续当前海域清理')
             self.config.override(
                 OpsiGeneral_DoRandomMapEvent=False,

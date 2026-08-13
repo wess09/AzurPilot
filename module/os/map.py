@@ -205,14 +205,15 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         """
         处理 GameStuckError 卡死重启后仍停留在特殊海域的恢复。
 
-        仅当当前任务确为卡死重启所对应的任务时，才尝试点击自律继续当前海域；
+        检测到隐秘/深渊海域的卡死重启标志时，尝试点击自律继续当前海域；
         自律真正启动则保留当前海域，否则回退到 map_exit() 退出。
+        兼容智能调度/防溢出代跑场景（此时当前任务为调度器而非子任务）。
 
         Returns:
             bool: 自律恢复成功返回 True，否则返回 False。
         """
         game_stuck_task = getattr(self.device, 'game_stuck_recovery_task', None)
-        if game_stuck_task is None or game_stuck_task != self.config.task.command:
+        if game_stuck_task not in ('OpsiObscure', 'OpsiAbyssal'):
             return False
 
         # 无论成功失败都只尝试一次，先消费标志防止重复触发。
@@ -221,7 +222,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         logger.info("[大世界-地图] 检测到卡死重启后的特殊海域，尝试恢复自律")
         if self._try_start_special_zone_auto_search():
             logger.info("[大世界-地图] 特殊海域自律恢复成功，继续当前海域")
-            self._game_stuck_auto_search_recovered = True
+            self._game_stuck_auto_search_recovered = game_stuck_task
             return True
 
         logger.warning("[大世界-地图] 特殊海域自律恢复失败，退出当前特殊海域")

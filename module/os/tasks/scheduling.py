@@ -33,6 +33,7 @@ from module.config.time_source import now as current_time
 from module.config.utils import get_os_reset_remain
 
 from module.logger import logger
+from module.exception import GameStuckError
 from module.os.map import OSMap
 from module.os_handler.action_point import ActionPointLimit
 
@@ -779,6 +780,10 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         self.config.bind(task_name)
         try:
             return func(*args, **kwargs)
+        except GameStuckError:
+            # 记录卡死时正在代跑的子任务，供调度器恢复特殊海域自律使用。
+            self.device.game_stuck_proxy_task = task_name
+            raise
         finally:
             self.config.task = previous_task
 

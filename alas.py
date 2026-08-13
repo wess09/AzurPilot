@@ -359,10 +359,16 @@ class AzurLaneAutoScript:
             # 记录卡死重启，供大世界特殊海域恢复自律使用。
             # 仅 GameStuckError 且为隐秘/深渊海域任务时记录；
             # GameTooManyClickError 及其他任务保持原有恢复行为。
+            # 智能调度/防溢出代跑时，实际卡死子任务记录在 device 上。
             if isinstance(e, GameStuckError):
                 task_name = inflection.camelize(command)
+                proxy_task = getattr(self.device, 'game_stuck_proxy_task', None)
                 if task_name in ('OpsiObscure', 'OpsiAbyssal'):
                     self.device.game_stuck_recovery_task = task_name
+                elif proxy_task in ('OpsiObscure', 'OpsiAbyssal'):
+                    self.device.game_stuck_recovery_task = proxy_task
+                if hasattr(self.device, 'game_stuck_proxy_task'):
+                    delattr(self.device, 'game_stuck_proxy_task')
             self.config.task_call('Restart')
             self.device.sleep(10)
             return 'recoverable'
