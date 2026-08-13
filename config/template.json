@@ -95,6 +95,7 @@
       "SaveError": true,
       "StrictRestart": false,
       "SaveErrorCount": 30,
+      "SaveErrorDedup": true,
       "OnePushConfig": "provider: null",
       "ScreenshotLength": 1,
       "GameStuckRestart": false,

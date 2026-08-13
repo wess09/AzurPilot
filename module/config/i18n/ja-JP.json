@@ -717,6 +717,10 @@
       "name": "エラーログは最大X件保存",
       "help": "上限を超えたエラーログは削除されます。0または負の値の場合、制限はありません。"
     },
+    "SaveErrorDedup": {
+      "name": "エラーログの重複を排除",
+      "help": "同じ原因のエラーは連続失敗中のリトライで最初の1回だけ保存し、類似した重複ログの氾濫を防ぎます。タスク成功後にリセットされ、次回の同じエラーは再度保存されます"
+    },
     "OnePushConfig": {
       "name": "プッシュ通知設定",
       "help": "未処理の例外が発生した後、Onepushを使用してエラーメッセージをプッシュします。設定方法についてはドキュメントを参照してください: https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/Onepush-configuration-%5BCN%5D"

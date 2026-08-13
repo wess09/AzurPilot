@@ -115,6 +115,7 @@ class GeneratedConfig:
     Error_SaveError = True
     Error_StrictRestart = False
     Error_SaveErrorCount = 30
+    Error_SaveErrorDedup = True
     Error_OnePushConfig = 'provider: null'
     Error_ScreenshotLength = 1
     Error_GameStuckRestart = False

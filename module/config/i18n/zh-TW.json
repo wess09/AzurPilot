@@ -717,6 +717,10 @@
       "name": "最多保存 X 個錯誤日誌",
       "help": "超出上限的錯誤日誌將被刪除，若為0或負值則沒有限制"
     },
+    "SaveErrorDedup": {
+      "name": "錯誤日誌去重",
+      "help": "同一原因的错误在連續失敗重試中只保存首次，避免近似重複日誌洗版；任務成功後重置，下次相同錯誤會重新保存"
+    },
     "OnePushConfig": {
       "name": "錯誤推送設定",
       "help": "發生無法處理的異常後，使用 Onepush 推送一條錯誤資訊。配置方法見檔案：https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/Onepush-configuration-%5BCN%5D"

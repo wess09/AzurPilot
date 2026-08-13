@@ -176,6 +176,7 @@ Error:
   SaveError: true
   StrictRestart: false
   SaveErrorCount: 30
+  SaveErrorDedup: true
   OnePushConfig:
     type: textarea
     mode: yaml

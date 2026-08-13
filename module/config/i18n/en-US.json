@@ -717,6 +717,10 @@
       "name": "Keep Up to X Error Logs",
       "help": "Error logs exceeding the upper limit will be deleted. If it is 0 or a negative value, there is no limit."
     },
+    "SaveErrorDedup": {
+      "name": "Deduplicate error logs",
+      "help": "Save only the first occurrence of the same error during consecutive failure retries to avoid spam; reset on task success so a later identical error is saved again"
+    },
     "OnePushConfig": {
       "name": "Error Push Settings",
       "help": "Notification will be sent via OnePush when an error occurs. Configure the OnePush provider for use, refer to https://github.com/y1ndan/onepush"

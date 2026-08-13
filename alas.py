@@ -76,6 +76,8 @@ class AzurLaneAutoScript:
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.monotonic()
+        # 错误日志去重状态：记录上一次保存的错误签名，用于跳过连续失败中的近似重复错误日志
+        self._last_error_signature = None
 
     def _try_restart_emulator(self):
         """
@@ -607,6 +609,9 @@ class AzurLaneAutoScript:
             )
 
         if getattr(self.config, 'Error_SaveError', False):
+            # 错误日志去重：同一原因（相同签名）的连续失败只保存首次，避免近似重复日志刷屏
+            if getattr(self.config, 'Error_SaveErrorDedup', True) and self._is_duplicate_error_log():
+                return
             config_folder = pathlib.Path(f"./log/error/{self.config_name}")
             folder = config_folder.joinpath(str(int(time.time() * 1000)))
             folder.mkdir(parents=True, exist_ok=True)
@@ -638,6 +643,40 @@ class AzurLaneAutoScript:
                 logger.error(f"[Alas] 保存错误日志失败: {e}")
                 
             self.keep_last_errlog(config_folder, getattr(self.config, 'Error_SaveErrorCount', 0))
+
+    def _is_duplicate_error_log(self):
+        """判断当前错误是否与最近一次保存的错误重复。
+
+        错误签名由异常类型、异常消息（截断）和触发位置组成，
+        相同签名的错误视为同一原因。在连续失败重试期间，同一原因的错误
+        只保存首次，避免产生大量近似重复的错误日志；任务成功后状态会被重置，
+        使下一次相同错误作为新的记录保存。
+
+        Returns:
+            bool: True 表示与最近保存的错误重复，应跳过保存。
+        """
+        import sys
+        import traceback
+
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        if exc_value is None:
+            return False
+
+        type_name = exc_type.__name__
+        message = str(exc_value).strip()[:200]
+        frames = traceback.extract_tb(exc_tb)
+        if frames:
+            frame = frames[-1]
+            location = f'{frame.filename}:{frame.lineno}:{frame.name}'
+        else:
+            location = 'unknown'
+        signature = f'{type_name}|{message}|{location}'
+
+        if signature == self._last_error_signature:
+            logger.warning(f'[Alas] 相同错误已保存过，跳过错误日志保存: {signature[:100]}')
+            return True
+        self._last_error_signature = signature
+        return False
 
     def restart(self):
         from module.handler.login import LoginHandler
@@ -1483,6 +1522,8 @@ class AzurLaneAutoScript:
                     consecutive_global_failures = 0 # 任务成功时重置全局失败计数器
                     self.consecutive_game_stuck = 0
                     self.consecutive_adb_offline = 0
+                    # 任务成功后重置错误日志去重状态，使下次相同错误作为新的记录保存
+                    self._last_error_signature = None
                     continue
                 elif success == 'recoverable' or self.config.Error_HandleError:
                     # 可恢复错误或启用了错误处理，刷新配置后继续循环
