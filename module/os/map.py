@@ -205,8 +205,8 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         """
         处理 GameStuckError 卡死重启后仍停留在特殊海域的恢复。
 
-        检测到隐秘/深渊海域的卡死重启标志时，尝试点击自律继续当前海域；
-        自律真正启动则保留当前海域并完成剩余流程，否则回退到 map_exit() 退出。
+        隐秘海域尝试点击自律继续清理；深渊海域无自律按钮，直接继续攻击 Boss。
+        恢复成功则保留当前海域并完成剩余流程，否则回退到 map_exit() 退出。
         兼容智能调度/防溢出代跑场景（此时当前任务为调度器而非子任务）。
 
         Returns:
@@ -218,6 +218,12 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
         # 无论成功失败都只尝试一次，先消费标志防止重复触发。
         self.device.game_stuck_recovery_task = None
+
+        if game_stuck_task == 'OpsiAbyssal':
+            # 深渊海域没有自律寻敌，直接继续攻击 Boss。
+            logger.info("[大世界-地图] 检测到卡死重启后的深渊海域，继续攻击 Boss")
+            self._resume_special_zone_after_recovery(game_stuck_task)
+            return True
 
         logger.info("[大世界-地图] 检测到卡死重启后的特殊海域，尝试恢复自律")
         if not self._try_start_special_zone_auto_search():
