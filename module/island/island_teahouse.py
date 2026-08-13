@@ -39,6 +39,11 @@ SEASONAL_DRINK_CONFIG = {
         'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
         'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
     },
+    'pineapple_juice': {
+        'name': 'pineapple_juice', 'cn_name': '鲜榨菠萝汁',
+        'template': TEMPLATE_APPLE_JUICE, 'post_action': POST_APPLE_JUICE,
+        'selection': FIXED_SELECT_SPRING_FLOWER_TEA, 'selection_check': FIXED_SELECT_SPRING_FLOWER_TEA,
+    },
     'carrot_pear_juice': {
         'name': 'carrot_pear_juice', 'cn_name': '胡萝卜秋梨汁',
         'template': TEMPLATE_CARROT_PEAR_JUICE, 'post_action': POST_CARROT_PEAR_JUICE,
