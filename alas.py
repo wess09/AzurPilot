@@ -78,6 +78,8 @@ class AzurLaneAutoScript:
         self.last_emulator_restart_time = time.monotonic()
         # 上次实际重启游戏的时间戳，用于定时重启游戏的间隔判断
         self.last_game_restart_time = time.monotonic()
+        # 定时重启游戏是否已安排（防止同一轮循环反复触发，实际重启成功后清除）
+        self._game_restart_pending = False
 
     def _try_restart_emulator(self):
         """
@@ -648,6 +650,8 @@ class AzurLaneAutoScript:
         LoginHandler(self.config, device=self.device).app_restart()
         # 记录实际重启时间，作为定时重启间隔的起点（每日/手动/异常恢复重启也会重置）
         self.last_game_restart_time = time.monotonic()
+        # 定时重启已实际执行，清除待重启状态，使下次间隔正常计算
+        self._game_restart_pending = False
         self.delay_next_restart()
 
     def restart_random_delay_minutes(self):
@@ -693,6 +697,33 @@ class AzurLaneAutoScript:
         if delay:
             logger.info(f'[Alas] 每日重启随机延后 {delay} 分钟')
         self.config.task_delay(target=next_run)
+
+    def _check_scheduled_game_restart(self):
+        """检查定时重启游戏是否到期，到期则安排重启。
+
+        游戏连续运行超过 Restart.RestartIntervalHours 小时且当前没有待执行的重启时，
+        安排 Restart 任务。这里只记录"已调度"状态防止同一轮循环反复触发，
+        不重置间隔计时；计时完全由 restart() 成功路径重置，确保失败/跳过场景下
+        会持续重试，而不是等满一个完整间隔后才再次触发。
+
+        Returns:
+            bool: 已安排定时重启返回 True，否则返回 False。
+        """
+        if not getattr(self.config, 'Restart_ScheduledRestart', False):
+            return False
+        if self._game_restart_pending:
+            return False
+        elapsed_hours = (time.monotonic() - self.last_game_restart_time) / 3600
+        interval = getattr(self.config, 'Restart_RestartIntervalHours', 12)
+        if elapsed_hours < interval:
+            return False
+        logger.hr('[Alas] 定时重启游戏', level=1)
+        logger.info(f'[Alas] 游戏已运行 {elapsed_hours:.1f} 小时, '
+                    f'定时重启间隔为 {interval} 小时')
+        self._game_restart_pending = True
+        self.config.task_call('Restart')
+        del_cached_property(self, 'config')
+        return True
 
     def start(self):
         from module.handler.login import LoginHandler
@@ -1378,17 +1409,8 @@ class AzurLaneAutoScript:
                             logger.warning('[Alas] 计划的模拟器重启失败，继续正常运行')
 
                 # 检查定时重启游戏（在任务之间，不会中断正在运行的任务）
-                if self.config.Restart_ScheduledRestart:
-                    elapsed_hours = (time.monotonic() - self.last_game_restart_time) / 3600
-                    interval = self.config.Restart_RestartIntervalHours
-                    if elapsed_hours >= interval:
-                        logger.hr('[Alas] 定时重启游戏', level=1)
-                        logger.info(f'[Alas] 游戏已运行 {elapsed_hours:.1f} 小时, '
-                                    f'定时重启间隔为 {interval} 小时')
-                        # 立即记录本次调度，避免本轮循环反复触发
-                        self.last_game_restart_time = time.monotonic()
-                        self.config.task_call('Restart')
-                        del_cached_property(self, 'config')
+                if self._check_scheduled_game_restart():
+                    continue
 
                 # 获取任务
                 task = self.get_next_task()
