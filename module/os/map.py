@@ -206,7 +206,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         处理 GameStuckError 卡死重启后仍停留在特殊海域的恢复。
 
         检测到隐秘/深渊海域的卡死重启标志时，尝试点击自律继续当前海域；
-        自律真正启动则保留当前海域，否则回退到 map_exit() 退出。
+        自律真正启动则保留当前海域并完成剩余流程，否则回退到 map_exit() 退出。
         兼容智能调度/防溢出代跑场景（此时当前任务为调度器而非子任务）。
 
         Returns:
@@ -220,13 +220,40 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         self.device.game_stuck_recovery_task = None
 
         logger.info("[大世界-地图] 检测到卡死重启后的特殊海域，尝试恢复自律")
-        if self._try_start_special_zone_auto_search():
-            logger.info("[大世界-地图] 特殊海域自律恢复成功，继续当前海域")
-            self._game_stuck_auto_search_recovered = game_stuck_task
-            return True
+        if not self._try_start_special_zone_auto_search():
+            logger.warning("[大世界-地图] 特殊海域自律恢复失败，退出当前特殊海域")
+            return False
 
-        logger.warning("[大世界-地图] 特殊海域自律恢复失败，退出当前特殊海域")
-        return False
+        logger.info("[大世界-地图] 特殊海域自律恢复成功，继续当前海域")
+        self._resume_special_zone_after_recovery(game_stuck_task)
+        return True
+
+    def _resume_special_zone_after_recovery(self, task_name):
+        """
+        卡死重启自律恢复成功后，继续当前特殊海域的剩余流程。
+
+        隐秘海域继续自律寻敌并清理退出；深渊海域继续攻击 Boss 并修理舰队。
+        此处在 os_init 阶段当场完成，不依赖调度器再次代跑到对应子任务。
+
+        Args:
+            task_name (str): 卡死时正在执行的子任务名（OpsiObscure 或 OpsiAbyssal）。
+        """
+        self.config.override(
+            OpsiGeneral_DoRandomMapEvent=False,
+            HOMO_EDGE_DETECT=False,
+            STORY_OPTION=0,
+        )
+        if task_name == 'OpsiObscure':
+            with self.config.temporary(_disable_task_switch=True):
+                self.run_auto_search(rescan='current')
+                self.map_exit()
+                self.handle_after_auto_search()
+        elif task_name == 'OpsiAbyssal':
+            with self.config.temporary(_disable_task_switch=True):
+                result = self.run_abyssal()
+                if not result:
+                    raise RequestHumanTakeover
+                self.handle_fleet_repair_by_config(revert=False)
 
     def _try_start_special_zone_auto_search(self):
         """
