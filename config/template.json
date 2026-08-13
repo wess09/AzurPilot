@@ -195,7 +195,9 @@
     },
     "Restart": {
       "RandomDelay": "5, 50",
-      "ClearCache": false
+      "ClearCache": false,
+      "ScheduledRestart": false,
+      "RestartIntervalHours": 12
     },
     "Storage": {
       "Storage": {}

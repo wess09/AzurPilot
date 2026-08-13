@@ -87,6 +87,8 @@ class GeneratedConfig:
     # 配置组 `Restart`
     Restart_RandomDelay = '5, 50'
     Restart_ClearCache = False  # True, False
+    Restart_ScheduledRestart = False  # True, False
+    Restart_RestartIntervalHours = 12
 
     # 配置组 `Emulator`
     Emulator_Serial = 'auto'

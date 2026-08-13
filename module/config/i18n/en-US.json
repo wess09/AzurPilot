@@ -473,6 +473,16 @@
       "help": "When restarting the game client, delete external cache files under /sdcard/Android/data/<package>/cache/ after force-stopping the app.",
       "True": "Enabled",
       "False": "Disabled"
+    },
+    "ScheduledRestart": {
+      "name": "Scheduled game restart",
+      "help": "Automatically schedule a restart after the game has been running for longer than the set interval; any actual restart resets the interval timer",
+      "True": "Enabled",
+      "False": "Disabled"
+    },
+    "RestartIntervalHours": {
+      "name": "Restart interval (hours)",
+      "help": "Restart the game automatically after it has been running for more than this many hours. Range 1-72, default 12"
     }
   },
   "Emulator": {

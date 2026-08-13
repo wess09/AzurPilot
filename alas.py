@@ -76,6 +76,8 @@ class AzurLaneAutoScript:
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.monotonic()
+        # 上次实际重启游戏的时间戳，用于定时重启游戏的间隔判断
+        self.last_game_restart_time = time.monotonic()
 
     def _try_restart_emulator(self):
         """
@@ -644,6 +646,8 @@ class AzurLaneAutoScript:
         if self.delay_due_restart():
             return
         LoginHandler(self.config, device=self.device).app_restart()
+        # 记录实际重启时间，作为定时重启间隔的起点（每日/手动/异常恢复重启也会重置）
+        self.last_game_restart_time = time.monotonic()
         self.delay_next_restart()
 
     def restart_random_delay_minutes(self):
@@ -1372,6 +1376,19 @@ class AzurLaneAutoScript:
                             continue
                         else:
                             logger.warning('[Alas] 计划的模拟器重启失败，继续正常运行')
+
+                # 检查定时重启游戏（在任务之间，不会中断正在运行的任务）
+                if self.config.Restart_ScheduledRestart:
+                    elapsed_hours = (time.monotonic() - self.last_game_restart_time) / 3600
+                    interval = self.config.Restart_RestartIntervalHours
+                    if elapsed_hours >= interval:
+                        logger.hr('[Alas] 定时重启游戏', level=1)
+                        logger.info(f'[Alas] 游戏已运行 {elapsed_hours:.1f} 小时, '
+                                    f'定时重启间隔为 {interval} 小时')
+                        # 立即记录本次调度，避免本轮循环反复触发
+                        self.last_game_restart_time = time.monotonic()
+                        self.config.task_call('Restart')
+                        del_cached_property(self, 'config')
 
                 # 获取任务
                 task = self.get_next_task()

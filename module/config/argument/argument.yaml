@@ -88,6 +88,13 @@ Restart:
     type: checkbox
     value: false
     option: [true, false]
+  ScheduledRestart:
+    type: checkbox
+    value: false
+    option: [true, false]
+  RestartIntervalHours:
+    value: 12
+    validate: [1, 72]
 Emulator:
   Serial:
     value: auto

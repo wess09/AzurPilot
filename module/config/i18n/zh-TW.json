@@ -473,6 +473,16 @@
       "help": "重啟客戶端時，在強行停止應用後刪除 /sdcard/Android/data/<包名>/cache/ 下的外部快取檔案。",
       "True": "開啟",
       "False": "關閉"
+    },
+    "ScheduledRestart": {
+      "name": "定時重啟遊戲",
+      "help": "遊戲持續運行超過設定間隔後，自動安排一次重啟；任何實際重啟都會重置間隔計時",
+      "True": "開啟",
+      "False": "關閉"
+    },
+    "RestartIntervalHours": {
+      "name": "定時重啟間隔（小時）",
+      "help": "遊戲連續運行超過該小時數後自動重啟，取值 1~72，預設 12"
     }
   },
   "Emulator": {

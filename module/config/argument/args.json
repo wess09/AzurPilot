@@ -938,6 +938,22 @@
           true,
           false
         ]
+      },
+      "ScheduledRestart": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "RestartIntervalHours": {
+        "type": "input",
+        "value": 12,
+        "validate": [
+          1,
+          72
+        ]
       }
     },
     "Storage": {

@@ -473,6 +473,16 @@
       "help": "重启客户端时，在强行停止应用后删除 /sdcard/Android/data/<包名>/cache/ 下的外部缓存文件。",
       "True": "开启",
       "False": "关闭"
+    },
+    "ScheduledRestart": {
+      "name": "定时重启游戏",
+      "help": "游戏持续运行超过设定间隔后，自动安排一次重启；任何实际重启都会重置间隔计时",
+      "True": "开启",
+      "False": "关闭"
+    },
+    "RestartIntervalHours": {
+      "name": "定时重启间隔（小时）",
+      "help": "游戏连续运行超过该小时后自动重启，取值 1~72，默认 12"
     }
   },
   "Emulator": {
