@@ -702,12 +702,14 @@ class AzurLaneAutoScript:
         Returns:
             bool: 到期返回 True。
         """
-        if not getattr(self.config, 'Restart_ScheduledRestart', False):
+        # 主循环的 self.config 仅绑定 General/Alas 任务组，Restart 任务组的配置
+        # 需通过 cross_get 按 Restart.Restart.<Argument> 路径读取，否则会回退到默认值
+        if not self.config.cross_get('Restart.Restart.ScheduledRestart', default=False):
             return False
         if self.is_first_task:
             return False
         elapsed_hours = (time.monotonic() - self.last_game_restart_time) / 3600
-        interval = getattr(self.config, 'Restart_RestartIntervalHours', 12)
+        interval = self.config.cross_get('Restart.Restart.RestartIntervalHours', default=12)
         return elapsed_hours >= interval
 
     def _schedule_game_restart(self):
@@ -718,7 +720,7 @@ class AzurLaneAutoScript:
         下一轮循环会重新评估并持续重试，避免重启被永久抑制。
         """
         elapsed_hours = (time.monotonic() - self.last_game_restart_time) / 3600
-        interval = getattr(self.config, 'Restart_RestartIntervalHours', 12)
+        interval = self.config.cross_get('Restart.Restart.RestartIntervalHours', default=12)
         logger.hr('[Alas] 定时重启游戏', level=1)
         logger.info(f'[Alas] 游戏已运行 {elapsed_hours:.1f} 小时, '
                     f'定时重启间隔为 {interval} 小时')
