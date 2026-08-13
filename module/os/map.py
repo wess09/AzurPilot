@@ -167,6 +167,9 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
 
         # 从特殊海域类型退出，仅 SAFE 和 DANGEROUS 可接受。
         if self.is_in_special_zone():
+            if self._recover_special_zone_after_game_stuck():
+                # 卡死重启后自律恢复成功，保留当前特殊海域，跳过普通海域初始化
+                return
             logger.warning(
                 "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
             )
@@ -197,6 +200,57 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             pass
         else:
             self.run_first_auto_search()
+
+    def _recover_special_zone_after_game_stuck(self):
+        """
+        处理 GameStuckError 卡死重启后仍停留在特殊海域的恢复。
+
+        仅当当前任务确为卡死重启所对应的任务时，才尝试点击自律继续当前海域；
+        自律真正启动则保留当前海域，否则回退到 map_exit() 退出。
+
+        Returns:
+            bool: 自律恢复成功返回 True，否则返回 False。
+        """
+        game_stuck_task = getattr(self.device, 'game_stuck_recovery_task', None)
+        if game_stuck_task is None or game_stuck_task != self.config.task.command:
+            return False
+
+        # 无论成功失败都只尝试一次，先消费标志防止重复触发。
+        self.device.game_stuck_recovery_task = None
+
+        logger.info("[大世界-地图] 检测到卡死重启后的特殊海域，尝试恢复自律")
+        if self._try_start_special_zone_auto_search():
+            logger.info("[大世界-地图] 特殊海域自律恢复成功，继续当前海域")
+            self._game_stuck_auto_search_recovered = True
+            return True
+
+        logger.warning("[大世界-地图] 特殊海域自律恢复失败，退出当前特殊海域")
+        return False
+
+    def _try_start_special_zone_auto_search(self):
+        """
+        点击自律并验证自律是否真正启动。
+
+        自律按钮从 OFF 切换为 ON 表示自律已启动；超时仍未启动则视为失败。
+
+        Returns:
+            bool: 自律已启动返回 True，超时返回 False。
+        """
+        timeout = Timer(5, count=1).start()
+        for _ in self.loop():
+            # 成功：自律已启动（按钮切换为 ON）
+            if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120)):
+                return True
+            # 失败：超时
+            if timeout.reached():
+                return False
+            # 点击自律开启（自律未启动时显示 OFF）
+            if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF, offset=(5, 120), interval=3):
+                self.device.click(AUTO_SEARCH_OS_MAP_OPTION_OFF)
+                continue
+            if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED, offset=(5, 120), interval=3):
+                self.device.click(AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED)
+                continue
 
     def run_first_auto_search(self):
         if self.zone.zone_id == 154:

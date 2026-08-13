@@ -356,6 +356,13 @@ class AzurLaneAutoScript:
                 title=f"<{self.config_name}> 发出了警告喵！",
                 content=f"<{self.config_name}> 游戏卡住 将自动重启游戏喵~",
             )
+            # 记录卡死重启，供大世界特殊海域恢复自律使用。
+            # 仅 GameStuckError 且为隐秘/深渊海域任务时记录；
+            # GameTooManyClickError 及其他任务保持原有恢复行为。
+            if isinstance(e, GameStuckError):
+                task_name = inflection.camelize(command)
+                if task_name in ('OpsiObscure', 'OpsiAbyssal'):
+                    self.device.game_stuck_recovery_task = task_name
             self.config.task_call('Restart')
             self.device.sleep(10)
             return 'recoverable'

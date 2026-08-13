@@ -157,18 +157,25 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
                 self._delay_until_submarine_cooldown_end(cooldown_end_time)
                 return False
 
-        with self.config.temporary(STORY_ALLOW_SKIP=False):
-            result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
-        if not result:
-            if self._handle_coin_task_no_content('深渊坐标', '深渊坐标没有可执行内容'):
-                return False
+        recovered = getattr(self, '_game_stuck_auto_search_recovered', False)
+        self._game_stuck_auto_search_recovered = False
+
+        if not recovered:
+            with self.config.temporary(STORY_ALLOW_SKIP=False):
+                result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
+            if not result:
+                if self._handle_coin_task_no_content('深渊坐标', '深渊坐标没有可执行内容'):
+                    return False
+        else:
+            logger.info('[大世界-深渊坐标] 自律恢复成功，继续当前深渊挑战')
 
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=False,
             HOMO_EDGE_DETECT=False,
             STORY_OPTION=0,
         )
-        self.zone_init()
+        if not recovered:
+            self.zone_init()
 
         logger.info('[大世界-深渊坐标] 进入深渊坐标地图，禁止所有任务切换')
         with self.config.temporary(_disable_task_switch=True):

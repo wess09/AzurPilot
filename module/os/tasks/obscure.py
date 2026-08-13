@@ -36,6 +36,20 @@ class OpsiObscure(CoinTaskMixin, OSMap):
         if self.config.OpsiObscure_ForceRun:
             logger.info('隐秘海域处于强制运行模式')
 
+        if getattr(self, '_game_stuck_auto_search_recovered', False):
+            self._game_stuck_auto_search_recovered = False
+            logger.info('[大世界-隐秘海域] 自律恢复成功，继续当前海域清理')
+            self.config.override(
+                OpsiGeneral_DoRandomMapEvent=False,
+                HOMO_EDGE_DETECT=False,
+                STORY_OPTION=0,
+            )
+            with self.config.temporary(_disable_task_switch=True):
+                self.run_auto_search(rescan='current')
+                self.map_exit()
+                self.handle_after_auto_search()
+            return
+
         result = self.storage_get_next_item('OBSCURE', use_logger=self.config.OpsiGeneral_UseLogger,
                                             skip_obscure_hazard_2=self.config.OpsiObscure_SkipHazard2Obscure)
         if not result:
