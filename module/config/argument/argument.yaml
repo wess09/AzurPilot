@@ -1675,6 +1675,7 @@ _IslandBusinessChar: &IslandBusinessChar
     - ChangFeng
     - Mogador
     - RoyalFortune
+    - DaVinci
 
 _IslandBusinessProduct1: &IslandBusinessProduct1
   type: select
