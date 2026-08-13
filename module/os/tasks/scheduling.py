@@ -781,8 +781,10 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         try:
             return func(*args, **kwargs)
         except (GameStuckError, GameNotRunningError):
-            # 记录卡死/闪退时正在代跑的子任务，供调度器恢复特殊海域自律使用。
-            self.device.game_stuck_proxy_task = task_name
+            # 记录卡死/闪退时正在代跑的子任务；嵌套代跑时保留最内层的真实子任务，
+            # 避免外层 OpsiScheduling 包装覆盖内层已记录的 OpsiObscure/OpsiAbyssal。
+            if not hasattr(self.device, 'game_stuck_proxy_task'):
+                self.device.game_stuck_proxy_task = task_name
             raise
         finally:
             self.config.task = previous_task

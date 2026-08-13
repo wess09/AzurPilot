@@ -31,12 +31,13 @@ from contextlib import suppress
 import inflection
 
 from module.base.timer import Timer
-from module.config.config import TaskEnd
+from module.config.config import TaskEnd, name_to_function
 from module.config.utils import get_os_reset_remain
 from module.exception import (
     CampaignEnd,
     GameTooManyClickError,
     GameStuckError,
+    GameNotRunningError,
     MapDetectionError,
     MapWalkError,
     RequestHumanTakeover,
@@ -165,11 +166,17 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         self.handle_after_auto_search()
         self.handle_current_fleet_resolve(revert=False)
 
+        # 读取并消费待恢复标志（无论是否在特殊海域都消费，防止跨普通海域残留）。
+        game_stuck_task = getattr(self.device, 'game_stuck_recovery_task', None)
+        if game_stuck_task is not None:
+            self.device.game_stuck_recovery_task = None
+
         # 从特殊海域类型退出，仅 SAFE 和 DANGEROUS 可接受。
         if self.is_in_special_zone():
-            if self._recover_special_zone_after_game_stuck():
-                # 卡死重启后自律恢复成功，保留当前特殊海域，跳过普通海域初始化
-                return
+            if game_stuck_task in ('OpsiObscure', 'OpsiAbyssal'):
+                # 卡死/闪退重启恢复：成功则结束本轮任务，避免继续执行任务主体重复领取海域。
+                if self._recover_special_zone_after_game_stuck(game_stuck_task):
+                    self.config.task_stop()
             logger.warning(
                 "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
             )
@@ -201,24 +208,19 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         else:
             self.run_first_auto_search()
 
-    def _recover_special_zone_after_game_stuck(self):
+    def _recover_special_zone_after_game_stuck(self, game_stuck_task):
         """
         处理 GameStuckError 卡死重启后仍停留在特殊海域的恢复。
 
         隐秘海域尝试点击自律继续清理；深渊海域无自律按钮，直接继续攻击 Boss。
         恢复成功则保留当前海域并完成剩余流程，否则回退到 map_exit() 退出。
-        兼容智能调度/防溢出代跑场景（此时当前任务为调度器而非子任务）。
+
+        Args:
+            game_stuck_task (str): 卡死时正在执行的子任务名（OpsiObscure 或 OpsiAbyssal）。
 
         Returns:
             bool: 自律恢复成功返回 True，否则返回 False。
         """
-        game_stuck_task = getattr(self.device, 'game_stuck_recovery_task', None)
-        if game_stuck_task not in ('OpsiObscure', 'OpsiAbyssal'):
-            return False
-
-        # 无论成功失败都只尝试一次，先消费标志防止重复触发。
-        self.device.game_stuck_recovery_task = None
-
         if game_stuck_task == 'OpsiAbyssal':
             # 深渊海域没有自律寻敌，直接继续攻击 Boss。
             logger.info("[大世界-地图] 检测到卡死重启后的深渊海域，继续攻击 Boss")
@@ -244,22 +246,53 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         Args:
             task_name (str): 卡死时正在执行的子任务名（OpsiObscure 或 OpsiAbyssal）。
         """
-        self.config.override(
-            OpsiGeneral_DoRandomMapEvent=False,
-            HOMO_EDGE_DETECT=False,
-            STORY_OPTION=0,
-        )
-        if task_name == 'OpsiObscure':
-            with self.config.temporary(_disable_task_switch=True):
-                self.run_auto_search(rescan='current')
-                self.map_exit()
-                self.handle_after_auto_search()
-        elif task_name == 'OpsiAbyssal':
-            with self.config.temporary(_disable_task_switch=True):
-                result = self.run_abyssal()
-                if not result:
-                    raise RequestHumanTakeover
-                self.handle_fleet_repair_by_config(revert=False)
+        # 临时绑定子任务配置（代跑场景下 config 仍绑定在调度器上），
+        # 确保 run_abyssal/run_auto_search 读取正确的舰队过滤器等子任务配置。
+        previous_task = self.config.task
+        previous_bind = getattr(self.config, '_bind_task_override', None)
+        self.config.task = name_to_function(task_name)
+        self.config._bind_task_override = task_name
+        self.config.bind(task_name)
+        # 记录当前恢复子任务，恢复过程中再次卡死/闪退时能被调度器识别。
+        self.device.game_stuck_proxy_task = task_name
+        try:
+            self.config.override(
+                OpsiGeneral_DoRandomMapEvent=False,
+                HOMO_EDGE_DETECT=False,
+                STORY_OPTION=0,
+            )
+            if task_name == 'OpsiObscure':
+                with self.config.temporary(_disable_task_switch=True):
+                    self.run_auto_search(rescan='current')
+                    self.map_exit()
+                    self.handle_after_auto_search()
+            elif task_name == 'OpsiAbyssal':
+                with self.config.temporary(_disable_task_switch=True):
+                    result = self.run_abyssal()
+                    if not result:
+                        raise RequestHumanTakeover
+                    self.handle_fleet_repair_by_config(revert=False)
+        except (GameStuckError, GameNotRunningError):
+            # 恢复过程中再次卡死/闪退，保留恢复子任务标志供调度器识别，重新抛出。
+            raise
+        except Exception:
+            # 其他异常（如打不过 Boss），清理恢复子任务标志后重新抛出，避免残留。
+            if hasattr(self.device, 'game_stuck_proxy_task'):
+                delattr(self.device, 'game_stuck_proxy_task')
+            raise
+        else:
+            # 恢复成功，清理恢复子任务标志。
+            if hasattr(self.device, 'game_stuck_proxy_task'):
+                delattr(self.device, 'game_stuck_proxy_task')
+        finally:
+            self.config.task = previous_task
+            if previous_bind is None:
+                if hasattr(self.config, '_bind_task_override'):
+                    delattr(self.config, '_bind_task_override')
+                self.config.bind(self.config.task)
+            else:
+                self.config._bind_task_override = previous_bind
+                self.config.bind(previous_bind)
 
     def _try_start_special_zone_auto_search(self):
         """

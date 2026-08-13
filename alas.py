@@ -76,6 +76,8 @@ class AzurLaneAutoScript:
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.monotonic()
+        # 待恢复的大世界特殊海域子任务名（跨模拟器/设备重建存活），消费后置 None
+        self.game_stuck_recovery_task = None
 
     def _try_restart_emulator(self):
         """
@@ -277,23 +279,28 @@ class AzurLaneAutoScript:
         仅隐秘/深渊海域任务（直接运行，或由智能调度/防溢出代跑）时记录；
         其他任务及 GameTooManyClickError 保持原有恢复行为。
 
+        标志保存在实例 self 上（跨模拟器/设备重建存活），并在 device 可用时同步，
+        供 os_init() 通过 device 读取。
+
         Args:
             command (str): 任务方法名（下划线形式）。
         """
         task_name = inflection.camelize(command)
-        # 直接读 __dict__ 避免触发 device 的 cached_property 初始化
-        # （例如单元测试或设备尚未初始化时）。
         device = self.__dict__.get('device', None)
-        if device is None:
-            return
-        proxy_task = getattr(device, 'game_stuck_proxy_task', None)
+        proxy_task = getattr(device, 'game_stuck_proxy_task', None) if device is not None else None
         if task_name in ('OpsiObscure', 'OpsiAbyssal'):
-            device.game_stuck_recovery_task = task_name
+            recovery_task = task_name
         elif proxy_task in ('OpsiObscure', 'OpsiAbyssal'):
-            device.game_stuck_recovery_task = proxy_task
+            recovery_task = proxy_task
+        else:
+            recovery_task = None
         # 清理代跑子任务标志，避免残留影响后续判断。
-        if hasattr(device, 'game_stuck_proxy_task'):
+        if device is not None and hasattr(device, 'game_stuck_proxy_task'):
             delattr(device, 'game_stuck_proxy_task')
+        # 权威存储在 self 上，跨模拟器重启存活。
+        self.game_stuck_recovery_task = recovery_task
+        if device is not None:
+            device.game_stuck_recovery_task = recovery_task
 
     def run(self, command, skip_first_screenshot=False):
         """
@@ -366,6 +373,9 @@ class AzurLaneAutoScript:
                 logger.warning(f'[Alas] GameStuckError: {self.consecutive_game_stuck}/{limit}')
                 if self.consecutive_game_stuck >= limit:
                     logger.warning('[Alas] 游戏卡住次数过多，正在重启模拟器...')
+                    # 先记录恢复标志；模拟器重启会重建 device，标志存到 self 跨重启存活。
+                    if isinstance(e, GameStuckError):
+                        self._record_game_stuck_recovery(command)
                     if self._try_restart_emulator():
                         self.consecutive_game_stuck = 0
                         self.config.task_call('Restart')
@@ -1409,6 +1419,10 @@ class AzurLaneAutoScript:
                 # 初始化设备并更改服务器
                 _ = self.device
                 self.device.config = self.config
+                # 同步跨模拟器/设备重建的待恢复标志到当前 device，供 os_init() 读取。
+                if self.game_stuck_recovery_task:
+                    self.device.game_stuck_recovery_task = self.game_stuck_recovery_task
+                    self.game_stuck_recovery_task = None
                 # 跳过第一次重启
                 if self.is_first_task and task == 'Restart':
                     logger.info('[Alas] 调度器启动时跳过任务 `Restart`')
