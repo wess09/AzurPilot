@@ -31,10 +31,11 @@ from contextlib import suppress
 import inflection
 
 from module.base.timer import Timer
-from module.config.config import TaskEnd
+from module.config.config import TaskEnd, name_to_function
 from module.config.utils import get_os_reset_remain
 from module.exception import (
     CampaignEnd,
+    GameNotRunningError,
     GameTooManyClickError,
     GameStuckError,
     MapDetectionError,
@@ -165,12 +166,28 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         self.handle_after_auto_search()
         self.handle_current_fleet_resolve(revert=False)
 
+        # 读取并消费卡死/闪退恢复标志，防止跨普通海域残留导致后续误触发恢复。
+        # 无论是否在特殊海域都先消费，避免标志残留。
+        game_stuck_recovery_task = None
+        device = self.__dict__.get('device', None)
+        if device is not None and hasattr(device, 'game_stuck_recovery_task'):
+            game_stuck_recovery_task = device.game_stuck_recovery_task
+            delattr(device, 'game_stuck_recovery_task')
+
         # 从特殊海域类型退出，仅 SAFE 和 DANGEROUS 可接受。
         if self.is_in_special_zone():
-            logger.warning(
-                "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
-            )
-            self.map_exit()
+            # 卡死/闪退重启后的特殊海域：尝试恢复当前海域而不是直接退出
+            if (
+                game_stuck_recovery_task in ('OpsiObscure', 'OpsiAbyssal')
+                and self._recover_special_zone_after_game_stuck(game_stuck_recovery_task)
+            ):
+                # 恢复成功，结束本轮任务，避免任务主体重新领取海域/深渊日志仪
+                self.config.task_stop()
+            if self.is_in_special_zone():
+                logger.warning(
+                    "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
+                )
+                self.map_exit()
 
         # 清理当前海域
         leveling_zone = self.config.cross_get(
@@ -197,6 +214,134 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             pass
         else:
             self.run_first_auto_search()
+
+    def _recover_special_zone_after_game_stuck(self, game_stuck_task):
+        """
+        尝试恢复卡死/闪退重启后的特殊海域。
+
+        隐秘海域：开启自律寻敌继续清理剩余敌人；
+        深渊海域：无自律按钮，直接攻击 Boss。
+
+        Args:
+            game_stuck_task (str): 卡死/闪退时正在执行的特殊海域任务名。
+
+        Returns:
+            bool: 恢复成功返回 True；失败返回 False（调用方回退 map_exit()）。
+        """
+        if game_stuck_task == 'OpsiAbyssal':
+            return self._resume_special_zone_after_recovery('OpsiAbyssal')
+        if game_stuck_task == 'OpsiObscure':
+            # 隐秘海域：先验证自律真正启动，再继续清理
+            if not self._try_start_special_zone_auto_search():
+                return False
+            return self._resume_special_zone_after_recovery('OpsiObscure')
+        return False
+
+    def _try_start_special_zone_auto_search(self):
+        """
+        尝试开启特殊海域（隐秘海域）的自律寻敌，并通过 OFF→ON 状态切换验证自律真正启动。
+
+        Returns:
+            bool: 自律已启动返回 True；超时或按钮不可用返回 False。
+        """
+        logger.hr('[大世界-地图] 尝试开启特殊海域自律寻敌', level=2)
+        timeout = Timer(5, count=1).start()
+        while 1:
+            # 自律已启动
+            if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120)):
+                logger.info('[大世界-地图] 特殊海域自律寻敌已启动')
+                return True
+            # 自律未启动，点击开启
+            if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF, offset=(5, 120), interval=3):
+                self.device.click(AUTO_SEARCH_OS_MAP_OPTION_OFF)
+                continue
+            # 自律按钮灰显不可用（如已无可清理对象）
+            if self.match_template_color(
+                AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED, offset=(5, 120), interval=3
+            ):
+                logger.warning('[大世界-地图] 特殊海域自律按钮不可用，无法恢复自律')
+                return False
+            if timeout.reached():
+                logger.warning('[大世界-地图] 特殊海域自律开启超时，恢复失败')
+                return False
+            self.device.screenshot()
+
+    def _resume_special_zone_after_recovery(self, task_name):
+        """
+        以指定特殊海域任务身份完成卡死/闪退恢复后的剩余流程。
+
+        代跑场景（智能调度/防溢出）下 config 绑定在调度器上，恢复期间临时切换到
+        子任务配置，结束后恢复原绑定。
+        恢复过程中再次卡死/闪退时保留 device.game_stuck_proxy_task 供下一轮调度器识别，
+        其他异常则清理标志避免残留。
+
+        Args:
+            task_name (str): 特殊海域任务名，OpsiObscure 或 OpsiAbyssal。
+
+        Returns:
+            bool: 恢复成功返回 True。
+
+        Raises:
+            RequestHumanTakeover: 深渊 Boss 无法击败。
+            GameStuckError, GameNotRunningError: 恢复过程中再次卡死/闪退。
+        """
+        device = self.__dict__.get('device', None)
+        if device is not None:
+            # 恢复过程中再次卡死/闪退时，调度器据此识别真实子任务
+            device.game_stuck_proxy_task = task_name
+
+        previous_task = self.config.task
+        previous_bind = getattr(self.config, '_bind_task_override', None)
+        self.config.task = name_to_function(task_name)
+        self.config._bind_task_override = task_name
+        self.config.bind(task_name)
+        try:
+            self.config.override(
+                OpsiGeneral_DoRandomMapEvent=False,
+                HOMO_EDGE_DETECT=False,
+                STORY_OPTION=0,
+            )
+            if task_name == 'OpsiObscure':
+                self.run_auto_search(rescan='current')
+                self.map_exit()
+                self.handle_after_auto_search()
+            else:
+                # 深渊：无自律按钮，直接攻击 Boss。
+                # 打 Boss 时重启后舰队可能站在 Boss 位置，Boss 不在舰队前方，
+                # 先让舰队离开 Boss 位置，再重新寻找并攻击 Boss。
+                self.boss_leave()
+                self.predict_radar()
+                if not self.radar.select(is_enemy=True):
+                    # Boss 已被清除（或海域无敌人），直接退出海域
+                    logger.info('[大世界-地图] 深渊海域未发现Boss，直接退出')
+                    self.map_exit()
+                    return True
+                result = self.run_abyssal()
+                if not result:
+                    raise RequestHumanTakeover
+                self.handle_fleet_repair_by_config(revert=False)
+            # 成功：清理恢复中使用的子任务追踪标志
+            if device is not None and hasattr(device, 'game_stuck_proxy_task'):
+                delattr(device, 'game_stuck_proxy_task')
+            return True
+        except (GameStuckError, GameNotRunningError):
+            # 恢复中再次卡死/闪退：保留 game_stuck_proxy_task 供下一轮调度器识别
+            raise
+        except Exception:
+            # 其他异常：清理标志避免残留
+            if device is not None and hasattr(device, 'game_stuck_proxy_task'):
+                delattr(device, 'game_stuck_proxy_task')
+            raise
+        finally:
+            # 恢复原任务绑定（成功与异常路径统一）
+            self.config.task = previous_task
+            if previous_bind is None:
+                if hasattr(self.config, '_bind_task_override'):
+                    delattr(self.config, '_bind_task_override')
+                self.config.bind(self.config.task)
+            else:
+                self.config._bind_task_override = previous_bind
+                self.config.bind(previous_bind)
 
     def run_first_auto_search(self):
         if self.zone.zone_id == 154:

@@ -32,6 +32,7 @@ from module.config.deep import deep_get
 from module.config.time_source import now as current_time
 from module.config.utils import get_os_reset_remain
 
+from module.exception import GameNotRunningError, GameStuckError
 from module.logger import logger
 from module.os.map import OSMap
 from module.os_handler.action_point import ActionPointLimit
@@ -779,6 +780,12 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         self.config.bind(task_name)
         try:
             return func(*args, **kwargs)
+        except (GameStuckError, GameNotRunningError):
+            # 代跑子任务卡死/闪退时记录真实子任务名，供调度器重启后恢复特殊海域。
+            # 嵌套代跑（防溢出→智能调度→子任务）时保留最内层已记录的子任务，避免外层覆盖。
+            if not hasattr(self.device, 'game_stuck_proxy_task'):
+                self.device.game_stuck_proxy_task = task_name
+            raise
         finally:
             self.config.task = previous_task
 

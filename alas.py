@@ -76,6 +76,37 @@ class AzurLaneAutoScript:
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.monotonic()
+        # 卡死/闪退重启后待恢复的特殊海域任务名。
+        # 权威存储在调度器实例上（模拟器重启会重建 device，device 上的标志会丢失），
+        # 由调度循环在取任务前同步到 device 供 os_init() 消费。
+        self.game_stuck_recovery_task = None
+
+    def _record_game_stuck_recovery(self, command):
+        """
+        记录卡死/闪退发生时的特殊海域子任务，供重启后的 os_init() 恢复使用。
+
+        智能调度/防溢出代跑时，真实子任务名记录在 device.game_stuck_proxy_task 上
+        （由 module/os/tasks/scheduling.py 在代跑子任务卡死/闪退时写入）；
+        直接运行任务时使用当前任务名。仅在子任务为隐秘/深渊海域时记录。
+
+        Args:
+            command (str): 任务方法名（下划线形式，如 opsi_obscure）。
+        """
+        device = self.__dict__.get('device', None)
+        task_name = None
+        if device is not None and hasattr(device, 'game_stuck_proxy_task'):
+            # 代跑场景：消费调度器记录的真实子任务名
+            task_name = device.game_stuck_proxy_task
+            delattr(device, 'game_stuck_proxy_task')
+        elif command:
+            task_name = inflection.camelize(command)
+        if task_name not in ('OpsiObscure', 'OpsiAbyssal'):
+            return
+
+        # 权威存储在调度器实例上，模拟器重启（重建 device）后仍保留
+        self.game_stuck_recovery_task = task_name
+        if device is not None:
+            device.game_stuck_recovery_task = task_name
 
     def _try_restart_emulator(self):
         """
@@ -309,6 +340,8 @@ class AzurLaneAutoScript:
                 with_traceback=False,
             )
             self._check_sensitive_exit(command, e)
+            # 闪退重启后尝试恢复特殊海域（隐秘/深渊）
+            self._record_game_stuck_recovery(command)
             handle_notify(
                 self.config.Error_OnePushConfig,
                 title=f"AzurPilot <{self.config_name}> 警告",
@@ -332,6 +365,10 @@ class AzurLaneAutoScript:
             )
             self.save_error_log()
             self._check_sensitive_exit(command, e)
+            # 卡死重启后尝试恢复特殊海域（隐秘/深渊）。
+            # 必须在 _try_restart_emulator() 前记录：模拟器重启会重建 device，标志需先存入实例。
+            if isinstance(e, GameStuckError):
+                self._record_game_stuck_recovery(command)
 
             if self.config.Error_GameStuckRestart:
                 self.consecutive_game_stuck += 1
@@ -1378,6 +1415,10 @@ class AzurLaneAutoScript:
                 # 初始化设备并更改服务器
                 _ = self.device
                 self.device.config = self.config
+                # 同步卡死恢复标志到设备（模拟器重启会重建 device，标志需重新注入）
+                if self.game_stuck_recovery_task:
+                    self.device.game_stuck_recovery_task = self.game_stuck_recovery_task
+                    self.game_stuck_recovery_task = None
                 # 跳过第一次重启
                 if self.is_first_task and task == 'Restart':
                     logger.info('[Alas] 调度器启动时跳过任务 `Restart`')
