@@ -58,35 +58,35 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
 
         # 产品配置
         self.FISHERY_ITEMS = [
-            {'name': 'bass', 'template': TEMPLATE_BASS, 'var_name': 'bass',
+            {'cn_name': '鲈鱼', 'name': 'bass', 'template': TEMPLATE_BASS, 'var_name': 'bass',
              'selection': SELECT_BASS, 'selection_check': SELECT_BASS_CHECK,
              'post_action': POST_BASS, 'category': 'fishery',
              'shop': SHOP_FRY_BASS, 'tab': 'freshwater', 'yield': 6, 'buy_max': 4},
-            {'name': 'yellowfin_tuna', 'template': TEMPLATE_YELLOWFIN_TUNA, 'var_name': 'yellowfin_tuna',
+            {'cn_name': '黄鳍金枪鱼', 'name': 'yellowfin_tuna', 'template': TEMPLATE_YELLOWFIN_TUNA, 'var_name': 'yellowfin_tuna',
              'selection': SELECT_YELLOWFIN_TUNA, 'selection_check': SELECT_YELLOWFIN_TUNA_CHECK,
              'post_action': POST_YELLOWFIN_TUNA, 'category': 'fishery',
              'shop': SHOP_FRY_YELLOWFIN_TUNA, 'tab': 'seawater', 'yield': 2, 'buy_max': 4},
-            {'name': 'shell', 'template': TEMPLATE_SHELL, 'var_name': 'shell',
+            {'cn_name': '贝壳', 'name': 'shell', 'template': TEMPLATE_SHELL, 'var_name': 'shell',
              'selection': SELECT_SHELL, 'selection_check': SELECT_SHELL_CHECK,
              'post_action': POST_SHELL, 'category': 'fishery',
              'shop': SHOP_FRY_SHELL, 'tab': 'other', 'yield': 10, 'buy_max': 4},
-            {'name': 'shrimp', 'template': TEMPLATE_SHRIMP, 'var_name': 'shrimp',
+            {'cn_name': '小河虾', 'name': 'shrimp', 'template': TEMPLATE_SHRIMP, 'var_name': 'shrimp',
              'selection': SELECT_SHRIMP, 'selection_check': SELECT_SHRIMP_CHECK,
              'post_action': POST_SHRIMP, 'category': 'fishery',
              'shop': SHOP_FRY_SHRIMP, 'tab': 'other', 'yield': 12, 'buy_max': 7},
-            {'name': 'crayfish', 'template': TEMPLATE_CRAYFISH, 'var_name': 'crayfish',
+            {'cn_name': '小龙虾', 'name': 'crayfish', 'template': TEMPLATE_CRAYFISH, 'var_name': 'crayfish',
              'selection': SELECT_CRAYFISH, 'selection_check': SELECT_CRAYFISH_CHECK,
              'post_action': POST_CRAYFISH, 'category': 'fishery',
              'shop': SHOP_FRY_CRAYFISH, 'tab': 'other', 'yield': 8, 'buy_max': 4},
-            {'name': 'crab', 'template': TEMPLATE_CRAB, 'var_name': 'crab',
+            {'cn_name': '螃蟹', 'name': 'crab', 'template': TEMPLATE_CRAB, 'var_name': 'crab',
              'selection': SELECT_CRAB, 'selection_check': SELECT_CRAB_CHECK,
              'post_action': POST_CRAB, 'category': 'fishery',
              'shop': SHOP_FRY_CRAB, 'tab': 'other', 'yield': 4, 'buy_max': 4},
-            {'name': 'squid', 'template': TEMPLATE_SQUID, 'var_name': 'squid',
+            {'cn_name': '鱿鱼', 'name': 'squid', 'template': TEMPLATE_SQUID, 'var_name': 'squid',
              'selection': SELECT_SQUID, 'selection_check': SELECT_SQUID_CHECK,
              'post_action': POST_SQUID, 'category': 'fishery',
              'shop': SHOP_FRY_SQUID, 'tab': 'other', 'yield': 4, 'buy_max': 4},
-            {'name': 'sea_cucumber', 'template': TEMPLATE_SEA_CUCUMBER, 'var_name': 'sea_cucumber',
+            {'cn_name': '海参', 'name': 'sea_cucumber', 'template': TEMPLATE_SEA_CUCUMBER, 'var_name': 'sea_cucumber',
              'selection': SELECT_SEA_CUCUMBER, 'selection_check': SELECT_SEA_CUCUMBER_CHECK,
              'post_action': POST_SEA_CUCUMBER, 'category': 'fishery',
              'shop': SHOP_FRY_SEA_CUCUMBER, 'tab': 'other', 'yield': 2, 'buy_max': 4},
@@ -121,7 +121,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
             if count < threshold:
                 deficit = threshold - count
                 fry_needed = (deficit + yield_amount - 1) // yield_amount  # 向上取整
-                logger.info(f"[岛屿-渔场] {item_name}: 库存{count}<阈值{threshold}, 缺{deficit}, "
+                logger.info(f"[岛屿-渔场] {self._item_cn(item_name)}: 库存{count}<阈值{threshold}, 缺{deficit}, "
                             f"每苗产{yield_amount}, 需购买{fry_needed}个鱼苗")
                 for _ in range(fry_needed):
                     self.to_plant_list.append(item_name)
@@ -152,7 +152,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
             stock = self.inventory_counts.get(product, 0)
             demand.append((product, post_needed, stock))
             logger.info(
-                f"{product}: 需养殖{fry_needed}个鱼苗，每岗容量{post_capacity}，"
+                f"{self._item_cn(product)}: 需养殖{fry_needed}个鱼苗，每岗容量{post_capacity}，"
                 f"库存{stock}，需要{post_needed}个岗位"
             )
 
@@ -184,7 +184,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
             post_number = post_info.get('runs') or 1
             removed = self._remove_plant_demand(product_name, post_number)
             if removed:
-                logger.info(f"[岛屿-渔场] 已在养殖中的{product_name}扣除补种需求: {removed}/{post_number} ({post_id})")
+                logger.info(f"[岛屿-渔场] 已在养殖中的{self._item_cn(product_name)}扣除补种需求: {removed}/{post_number} ({post_id})")
 
     @staticmethod
     def _post_available_for_dispatch(post_info):
@@ -213,7 +213,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
             count = self.ocr_item_quantity(image, item_config['template'])
             results[item_config['name']] = count
             setattr(self, item_config['var_name'], count)
-            logger.info(f"{item_config['name']}: {count}")
+            logger.info(f"{item_config.get('cn_name', item_config['name'])}: {count}")
         return results
 
     def post_plant_check(self):
@@ -302,7 +302,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
                         self.back_to_postmanage_from_dispatch()
                         return False
                 else:
-                    logger.warning(f"[岛屿-渔场] {product}养殖派遣无可用角色: {self.rancher_filter}")
+                    logger.warning(f"[岛屿-渔场] {self._item_cn(product)}养殖派遣无可用角色: {self.rancher_filter}")
                     self.back_to_postmanage_from_dispatch()
                     return False
                 continue
@@ -312,7 +312,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
                             item_button=item_config['shop'],
                             required_quantity=required_quantity,
                             shop_check=ISLAND_FRY_SHOP_CHECK,
-                            item_name=f"{product}鱼苗",
+                            item_name=f"{self._item_cn(product)}鱼苗",
                             tab_check=tab_check,
                             tab_button=tab_button,
                     ):
@@ -347,7 +347,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
                 break
         if product in self.to_plant_list:
             removed = self._remove_plant_demand(product, post_number)
-            logger.info(f"[岛屿-渔场] 已安排养殖{product}扣除补种需求: {removed}/{post_number}")
+            logger.info(f"[岛屿-渔场] 已安排养殖{self._item_cn(product)}扣除补种需求: {removed}/{post_number}")
 
         # 关闭详情弹窗，防止后续操作被弹窗遮挡
         self.post_close()
@@ -435,7 +435,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
         self._remove_working_fishery_demand()
 
         logger.info("[岛屿-渔场] \n当前库存统计:")
-        logger.info(f"[岛屿-渔场] 渔场库存: {self.inventory_counts}")
+        logger.info(f"[岛屿-渔场] 渔场库存: {self._inv_cn(self.inventory_counts)}")
 
         self.goto_postmanage()
         self.post_manage_mode(POST_MANAGE_PRODUCTION)

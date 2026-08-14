@@ -93,14 +93,14 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         mill_button = mill_config['mill']
         target = mill_config['number'] if quantity is None else max(1, int(quantity))
 
-        logger.info(f"[岛屿-牧场] 加工 {mill_item} x{target}")
+        logger.info(f"[岛屿-牧场] 加工 {self._item_cn(mill_item)} x{target}")
         for _ in self.loop(timeout=10, skip_first=False):
             if self.appear(ISLAND_SHOPPING_CHECK):
                 break
             if self.appear_then_click(mill_button, interval=0.3):
                 continue
         else:
-            logger.warning(f"[岛屿-牧场] 打开磨坊加工弹窗超时: {mill_item}")
+            logger.warning(f"[岛屿-牧场] 打开磨坊加工弹窗超时: {self._item_cn(mill_item)}")
             return False
 
         if self.appear(ISLAND_SHOPPING_CHECK):
@@ -118,7 +118,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
         else:
-            logger.warning(f"[岛屿-牧场] 确认磨坊加工超时: {mill_item}")
+            logger.warning(f"[岛屿-牧场] 确认磨坊加工超时: {self._item_cn(mill_item)}")
             return False
 
         if self.appear(ISLAND_SHOP_GET):
@@ -130,7 +130,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for post_id, feed_item in self.ranch_feed_map.items():
             current_quantity = self.inventory_counts['mill'].get(feed_item, 0)
             if current_quantity < target_quantity:
-                logger.info(f"[岛屿-牧场] {feed_item}库存不足: {current_quantity}/{target_quantity}")
+                logger.info(f"[岛屿-牧场] {self._item_cn(feed_item)}库存不足: {current_quantity}/{target_quantity}")
                 feed_needs.append((post_id, feed_item))
         return feed_needs
 
@@ -153,14 +153,14 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         if wheat_flour_count < 150:
             target = 200 - wheat_flour_count
             mill_needs.append(('wheat_flour', target))
-            logger.info(f"[岛屿-牧场] wheat_flour库存不足: {wheat_flour_count}/150，需加工 {target} 个补到 200")
+            logger.info(f"[岛屿-牧场] {self._item_cn('wheat_flour')}库存不足: {wheat_flour_count}/150，需加工 {target} 个补到 200")
 
         for _, feed_item in self.ranch_feed_map.items():
             current_quantity = self.inventory_counts['mill'].get(feed_item, 0)
             if current_quantity < feed_target_quantity:
                 target = self.name_to_config[feed_item]['number']
                 mill_needs.append((feed_item, target))
-                logger.info(f"[岛屿-牧场] {feed_item}库存不足: {current_quantity}/{feed_target_quantity}，固定加工 {target} 组")
+                logger.info(f"[岛屿-牧场] {self._item_cn(feed_item)}库存不足: {current_quantity}/{feed_target_quantity}，固定加工 {target} 组")
 
         return mill_needs
 
@@ -170,7 +170,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             logger.info("[岛屿-牧场] 牧场饲料和面粉库存充足")
             return []
 
-        logger.info(f"[岛屿-牧场] 需要补充的磨坊项目: {mill_needs}")
+        logger.info(f"[岛屿-牧场] 需要补充的磨坊项目: {[(self._item_cn(name), target) for name, target in mill_needs]}")
         self.goto_postmanage()
         self.post_manage_mode(POST_MANAGE_PRODUCTION)
         self.post_close()
@@ -185,7 +185,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             if self.process_mill_item_with_inventory(mill_item, quantity):
                 processed_items.append(mill_item)
                 continue
-            logger.warning(f"[岛屿-牧场] {mill_item}补充失败，跳过")
+            logger.warning(f"[岛屿-牧场] {self._item_cn(mill_item)}补充失败，跳过")
 
         if not self.back_to_postmanage_after_mill_purchase():
             logger.warning("[岛屿-牧场] 磨坊补充后返回岗位管理页失败")
@@ -200,7 +200,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
         if current_material is not None and current_material < material_needed:
             logger.info(
-                f"{required_material}不足，无法加工{mill_item}: {current_material}/{material_needed}"
+                f"{self._item_cn(required_material)}不足，无法加工{self._item_cn(mill_item)}: {current_material}/{material_needed}"
             )
             return False
 
@@ -211,12 +211,12 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 0,
                 self.inventory_counts['farm'][required_material] - material_needed,
             )
-            logger.info(f"[岛屿-牧场] 扣除原材料{required_material} {material_needed}单位")
+            logger.info(f"[岛屿-牧场] 扣除原材料{self._item_cn(required_material)} {material_needed}单位")
 
         self.inventory_counts['mill'][mill_item] = (
             self.inventory_counts['mill'].get(mill_item, 0) + self.mill_output_quantity(mill_item, quantity)
         )
-        logger.info(f"[岛屿-牧场] 加工完成：{mill_item} +{self.mill_output_quantity(mill_item, quantity)}")
+        logger.info(f"[岛屿-牧场] 加工完成：{self._item_cn(mill_item)} +{self.mill_output_quantity(mill_item, quantity)}")
         return True
 
     def back_to_postmanage_after_mill_purchase(self):
@@ -370,7 +370,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
                 feed_item = self.ranch_feed_map.get(post_id)
                 if feed_item and self.inventory_counts['mill'].get(feed_item, 0) < 50:
-                    logger.info(f"[岛屿-牧场] {feed_item}仓库库存仍不足 50，跳过牧场岗位{post_id}")
+                    logger.info(f"[岛屿-牧场] {self._item_cn(feed_item)}仓库库存仍不足 50，跳过牧场岗位{post_id}")
                     self.back_to_postmanage_after_feed_purchase()
                     return True
                 self.device.sleep(0.3)
@@ -517,7 +517,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for item_config in self.INVENTORY_CONFIG['mill']['items']:
             count = self.ocr_item_quantity(image, item_config['template'])
             self.inventory_counts['mill'][item_config['name']] = count
-            logger.info(f"{item_config['name']}: {count}")
+            logger.info(f"{self._item_cn(item_config['name'])}: {count}")
 
         self.warehouse_filter('ranch')
         image = self.device.screenshot()
@@ -525,7 +525,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for item_config in self.INVENTORY_CONFIG['ranch']['items']:
             count = self.ocr_item_quantity(image, item_config['template'])
             self.inventory_counts['ranch'][item_config['name']] = count
-            logger.info(f"{item_config['name']}: {count}")
+            logger.info(f"{self._item_cn(item_config['name'])}: {count}")
 
         self.warehouse_filter('farm')
         image = self.device.screenshot()
@@ -533,7 +533,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for item_config in self.INVENTORY_CONFIG['farm']['items']:
             count = self.ocr_item_quantity(image, item_config['template'])
             self.inventory_counts['farm'][item_config['name']] = count
-            logger.info(f"{item_config['name']}: {count}")
+            logger.info(f"{self._item_cn(item_config['name'])}: {count}")
 
     def check_ranch_needs(self):
         ranch_needs = []
@@ -569,15 +569,15 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             setattr(self, var, None)
         self.warehouse_mill_ranch()
         logger.info("[岛屿-牧场] \n当前库存统计:")
-        logger.info(f"[岛屿-牧场] 农场库存: {self.inventory_counts['farm']}")
-        logger.info(f"[岛屿-牧场] 磨坊库存: {self.inventory_counts['mill']}")
-        logger.info(f"[岛屿-牧场] 牧场库存: {self.inventory_counts['ranch']}")
+        logger.info(f"[岛屿-牧场] 农场库存: {self._inv_cn(self.inventory_counts['farm'])}")
+        logger.info(f"[岛屿-牧场] 磨坊库存: {self._inv_cn(self.inventory_counts['mill'])}")
+        logger.info(f"[岛屿-牧场] 牧场库存: {self._inv_cn(self.inventory_counts['ranch'])}")
 
         logger.info("[岛屿-牧场] \n[3/5] 检查并补充牧场饲料和面粉...")
         processed_mill_items = self.process_mill_supplements(feed_target_quantity=50)
         self.raise_if_island_error()
         if processed_mill_items:
-            logger.info(f"[岛屿-牧场] 本次运行补充了 {len(processed_mill_items)} 个磨坊项目: {processed_mill_items}")
+            logger.info(f"[岛屿-牧场] 本次运行补充了 {len(processed_mill_items)} 个磨坊项目: {[self._item_cn(item) for item in processed_mill_items]}")
         else:
             logger.info("[岛屿-牧场] 本次运行未补充磨坊项目")
 

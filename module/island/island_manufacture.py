@@ -108,7 +108,7 @@ class IslandManufacture(IslandShopBase):
                     # 花生油等基础产品已常驻，无需重复添加
                     continue
                 self.manufacture['handmade']['items'].append(item_config.copy())
-                logger.info(f"[岛屿-制造业] 季节限定：{item_name} 已添加到手工产品列表")
+                logger.info(f"[岛屿-制造业] 季节限定：{self._item_cn(item_name)} 已添加到手工产品列表")
 
         # 根据配置初始化岗位按钮
         self.post_buttons = self._init_post_buttons()
@@ -208,7 +208,7 @@ class IslandManufacture(IslandShopBase):
 
             # 同一批内前面岗位已确认材料不足的物品，直接跳过
             if product_name in self.unavailable_products:
-                logger.info(f"[岛屿-制造业] {product_name} 本批已确认材料不足，直接跳过")
+                logger.info(f"[岛屿-制造业] {self._item_cn(product_name)} 本批已确认材料不足，直接跳过")
                 continue
 
             # 每个产品：进入岗位搜索并选择；找不到则退出岗位重进重试
@@ -236,7 +236,7 @@ class IslandManufacture(IslandShopBase):
                         continue
                     if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
                         entered_product_page = True
-                        logger.info(f"[岛屿-制造业] 尝试选择产品: {product_name}")
+                        logger.info(f"[岛屿-制造业] 尝试选择产品: {self._item_cn(product_name)}")
                         selected = self.select_product(selection, selection_check)
                         self.device.sleep(0.5)
                         break
@@ -247,7 +247,7 @@ class IslandManufacture(IslandShopBase):
                 if not selected:
                     # 搜索失败：退出岗位重新进入（重置列表滚动进度），重试同一产品
                     logger.warning(
-                        f"[岛屿-制造业] 未能识别到产品选择项: {product_name}，"
+                        f"[岛屿-制造业] 未能识别到产品选择项: {self._item_cn(product_name)}，"
                         f"退出岗位重进重试 ({attempt + 1}/{self.PRODUCT_SELECT_RETRY_LIMIT})"
                     )
                     self.device.click(SELECT_UI_BACK)
@@ -267,7 +267,7 @@ class IslandManufacture(IslandShopBase):
                 if color_similar(color, (153, 156, 156), 80):
                     # 记忆本批材料不足的物品，后续岗位不再重复尝试
                     self.unavailable_products.add(product_name)
-                    logger.info(f"[岛屿-制造业] 材料不足，跳过产品: {product_name}")
+                    logger.info(f"[岛屿-制造业] 材料不足，跳过产品: {self._item_cn(product_name)}")
                     # 退出岗位，下一个产品重新进入时列表滚动进度已重置
                     self.device.click(SELECT_UI_BACK)
                     self.device.sleep(0.3)
@@ -281,7 +281,7 @@ class IslandManufacture(IslandShopBase):
                 # 材料充足，派遣生产
                 self.appear_then_click(POST_MAX)
                 self.device.click(POST_ADD_ORDER)
-                logger.info(f"[岛屿-制造业] 选择产品成功: {product_name}")
+                logger.info(f"[岛屿-制造业] 选择产品成功: {self._item_cn(product_name)}")
                 self.wait_until_appear(ISLAND_POSTMANAGE_CHECK)
                 self.device.sleep(0.5)
                 self.post_close()
@@ -307,7 +307,7 @@ class IslandManufacture(IslandShopBase):
                     setattr(self, time_var_name, finish_time)
 
                 self.posts[post_id]['status'] = 'working'
-                logger.info(f"[岛屿-制造业] 已安排生产：{product_name} x{actual_number}")
+                logger.info(f"[岛屿-制造业] 已安排生产：{self._item_cn(product_name)} x{actual_number}")
                 self.post_close()
                 return product_info
 

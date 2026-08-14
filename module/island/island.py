@@ -56,6 +56,66 @@ SELECTION_UP_SWIPE_NAME = "SelectionUpSwipe"
 # select_product 最大滑动尝试次数，覆盖列表底部产品（海参等位于列表末尾）
 _SELECT_PRODUCT_MAX_SWIPES = 8
 
+# 岛屿物品英文 key -> 中文名映射，仅用于日志输出本地化。
+# 名称来源：module/config/i18n/zh-CN.json 的餐品选项、各模块配置中的 cn_name 与既有中文注释。
+ISLAND_ITEM_CN_NAMES = {
+    # 农田作物
+    'wheat': '小麦', 'corn': '玉米', 'rice': '水稻', 'chinese_cabbage': '白菜',
+    'potato': '土豆', 'soybean': '大豆', 'pasture': '牧草', 'coffee_bean': '咖啡豆',
+    'apple': '苹果', 'citrus': '柑橘', 'banana': '香蕉', 'mango': '芒果',
+    'lemon': '柠檬', 'avocado': '牛油果', 'rubber': '橡胶', 'pear': '秋月梨',
+    'persimmon': '柿子', 'carrot': '胡萝卜', 'onion': '洋葱', 'flax': '亚麻',
+    'strawberry': '草莓', 'cotton': '棉花', 'tea': '茶叶', 'lavender': '薰衣草',
+    'pineapple': '菠萝', 'asparagus': '芦笋',
+    # 渔场
+    'bass': '鲈鱼', 'yellowfin_tuna': '黄鳍金枪鱼', 'shell': '贝壳', 'shrimp': '小河虾',
+    'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参',
+    # 矿山/林场
+    'Copper': '铜矿', 'Aluminium': '铝矿', 'Iron': '铁矿', 'Sulphur': '硫磺',
+    'Silver': '银矿', 'Elegant': '典雅之木', 'Practical': '实用之木', 'Selected': '精选之木',
+    # 牧场/磨坊
+    'chicken_feed': '鸡饲料', 'pig_feed': '猪饲料', 'cattle_feed': '牛饲料',
+    'sheep_feed': '羊饲料', 'wheat_flour': '面粉', 'chicken': '鸡肉', 'pork': '猪肉',
+    # 原材料
+    'milk': '牛奶', 'cheese': '芝士', 'tofu': '豆腐', 'fresh_honey': '蜂蜜',
+    # 烧烤店
+    'roasted_skewer': '碳烤肉串', 'chicken_potato': '禽肉土豆拼盘',
+    'carrot_omelette': '胡萝卜厚蛋烧', 'stir_fried_chicken': '爆炒禽肉',
+    'steak_bowl': '汉堡肉饭', 'crayfish_stir_fry': '爆炒小龙虾',
+    'carnival': '烤肉狂欢', 'double_energy': '能量双拼套餐',
+    # 有鱼餐馆（常规菜品 + 季节菜品）
+    'omurice': '蛋包饭', 'cabbage_tofu': '白菜豆腐汤', 'salad': '蔬菜沙拉',
+    'tofu_meat': '肉末烧豆腐', 'tofu_combo': '经典豆腐套餐', 'hearty_meal': '绵玉定食',
+    'fish_chip': '炸鱼薯条', 'fo_tiao': '佛跳墙', 'onion_fish': '洋葱蒸鱼',
+    'double_bamboo_shoots': '凉拌双笋', 'asparagus_shrimp': '芦笋炒虾仁',
+    'amaranth_rice_ball': '苋菜饭团', 'tomato_egg': '番茄炒蛋',
+    'matsutake_chicken_soup': '松茸鸡汤', 'persimmon_cake': '柿子饼',
+    # 白熊饮品（季节饮品 + 常规饮品）
+    'spring_flower_tea': '迎春花茶', 'carrot_pear_juice': '胡萝卜秋梨汁',
+    'chrysanthemum_tea': '菊花茶', 'watermelon_juice': '西瓜汁',
+    'cucumber_juice': '黄瓜汁', 'pineapple_juice': '鲜榨菠萝汁',
+    'apple_juice': '苹果汁', 'banana_mango': '香蕉芒果汁', 'honey_lemon': '蜂蜜柠檬水',
+    'strawberry_lemon': '草莓蜜沁', 'strawberry_honey': '草莓蜂蜜冰沙',
+    'floral_fruity': '花香果韵', 'fruit_paradise': '缤纷果乐园',
+    'lavender_tea': '薰衣草茶', 'sunny_honey': '阳光蜜水',
+    # 啾咖啡
+    'iced_coffee': '冰咖啡', 'omelette': '欧姆蛋', 'latte': '拿铁',
+    'citrus_coffee': '柑橘咖啡', 'strawberry_milkshake': '草莓奶绿',
+    'morning_light': '晨光活力组合', 'wake_up_call': '醒神套餐',
+    'fruity_fruitier': '果香双杯乐',
+    # 啾啾简餐
+    'apple_pie': '苹果派', 'corn_cup': '玉米杯', 'orange_pie': '香橙派',
+    'banana_crepe': '香蕉可丽饼', 'orchard_duo': '果园二重奏',
+    'rice_mango': '芒果糯米饭', 'succulently_sweet': '香甜组合',
+    'berry_orange': '莓果香橙甜点组', 'strawberry_charlotte': '草莓夏洛特',
+    'seafood_rice': '海鲜饭',
+    # 制造业（工坊）
+    'file_cabinet': '文件柜', 'filter_element': '净水滤芯', 'iron_nail': '铁钉',
+    'cutlery': '刀叉餐具', 'leather': '皮革', 'boot': '靴子', 'peanut_oil': '花生油',
+    'shepherd_purse': '荠菜干', 'spring_bouquet': '春季花束', 'summer_bouquet': '夏季花束',
+    'autumn_bouquet': '秋季花束', 'jasmine_oil': '茉莉精油',
+}
+
 class Island(SelectCharacter):
     def __init__(self, *args, **kwargs):
         # 调用两个父类的初始化
@@ -80,6 +140,25 @@ class Island(SelectCharacter):
         self.post_open_retry_swipe = False
         self.post_open_retry_swipe_limit = 1
         self.post_open_full_retry_limit = 1
+
+    def _item_cn(self, name):
+        """返回岛屿物品英文 key 对应的中文名；无映射时原样返回。"""
+        if not isinstance(name, str):
+            return name
+        if name in ISLAND_ITEM_CN_NAMES:
+            return ISLAND_ITEM_CN_NAMES[name]
+        config = getattr(self, 'name_to_config', {}).get(name)
+        if config and config.get('cn_name'):
+            return config['cn_name']
+        return name
+
+    def _inv_cn(self, mapping):
+        """将库存字典的键翻译为中文，仅用于日志输出，不修改原字典。"""
+        return {self._item_cn(key): value for key, value in mapping.items()}
+
+    def _products_cn(self, products):
+        """将 (名称, 数量) 配置列表翻译为中文，仅用于日志输出，不修改原列表。"""
+        return [(self._item_cn(name), number) for name, number in products]
 
     def post_add_one(self, count, interval=0):
         """按 A/B/C 轮转点击生产数量 +1 按钮。"""
@@ -465,7 +544,7 @@ class Island(SelectCharacter):
 
     def _handle_select_product_failure(self, product):
         """select_product 失败时的统一处理：记录警告、关闭岗位面板、返回 False"""
-        logger.warning(f"[岛屿] select_product 失败：未能找到产品 {product} 的选择项")
+        logger.warning(f"[岛屿] select_product 失败：未能找到产品 {self._item_cn(product)} 的选择项")
         self.device.click(POST_CLOSE)
         return False
 
@@ -871,7 +950,7 @@ class Island(SelectCharacter):
                 return False
 
         if item_name:
-            logger.info(f"[岛屿] 购买 {item_name} x{quantity}")
+            logger.info(f"[岛屿] 购买 {self._item_cn(item_name)} x{quantity}")
 
         for _ in self.loop(timeout=10, skip_first=False):
             if self.appear(ISLAND_SHOPPING_CHECK):
@@ -1143,13 +1222,13 @@ class Island(SelectCharacter):
         required_quantity = max(1, int(required_quantity))
         current_quantity, counter_text = self.ocr_select_product_material_detail(expected_quantity=required_quantity)
         display_name = item_name or getattr(item_button, 'name', '材料')
-        logger.info(f"[岛屿] {display_name}页面材料: {counter_text}，当前库存: {current_quantity}，目标库存: {required_quantity}")
+        logger.info(f"[岛屿] {self._item_cn(display_name)}页面材料: {counter_text}，当前库存: {current_quantity}，目标库存: {required_quantity}")
 
         if current_quantity >= required_quantity:
             return False
 
         buy_quantity = required_quantity - current_quantity
-        logger.info(f"[岛屿] {display_name}数量不足，进入商店补买 {buy_quantity} 个")
+        logger.info(f"[岛屿] {self._item_cn(display_name)}数量不足，进入商店补买 {buy_quantity} 个")
         if not self.goto_shop_from_select_product(
             shop_check=shop_check,
             tab_check=tab_check,

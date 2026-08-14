@@ -332,11 +332,11 @@ class IslandBusiness(Island):
         fallback_name = getattr(self.config, fallback_config_key, None)
         fallback_product = self._find_product_by_name(shop_name, fallback_name)
         if not fallback_product:
-            logger.warning(f"[岛屿-经营] 备用商品 '{fallback_name}' 未找到，无法替换")
+            logger.warning(f"[岛屿-经营] 备用商品 '{self._item_cn(fallback_name)}' 未找到，无法替换")
             return False
 
         logger.info(f"[岛屿-经营] 季节商品 '{seasonal_info['display']}' 库存不足 ({count} < {self.seasonal_threshold})，"
-                     f"替换为 '{fallback_name}'")
+                     f"替换为 '{self._item_cn(fallback_name)}'")
 
         # 在 active_products 中替换
         new_products = []
@@ -350,7 +350,7 @@ class IslandBusiness(Island):
 
         if replaced:
             self.active_products[shop_name] = new_products
-            logger.info(f"[岛屿-经营] {shop_name}商品已替换: {seasonal_product_name} → {fallback_name}")
+            logger.info(f"[岛屿-经营] {shop_name}商品已替换: {self._item_cn(seasonal_product_name)} → {self._item_cn(fallback_name)}")
             return True
 
         return False
@@ -596,14 +596,14 @@ class IslandBusiness(Island):
         for product_name in candidates:
             p = products.get(product_name)
             if p is None:
-                logger.warning(f"[岛屿-经营] {shop_name}: 加成替换配置中的餐品 {product_name} 没有对应识别模板")
+                logger.warning(f"[岛屿-经营] {shop_name}: 加成替换配置中的餐品 {self._item_cn(product_name)} 没有对应识别模板")
                 continue
             template = p.get('template')
             if template is None:
                 continue
             sim, _ = template.match_result(area_img)
             if sim >= 0.7:
-                logger.info(f"[岛屿-经营] {shop_name}: 检测到配置内加成餐品 {product_name} ({boost_percent}%, sim={sim:.2f})")
+                logger.info(f"[岛屿-经营] {shop_name}: 检测到配置内加成餐品 {self._item_cn(product_name)} ({boost_percent}%, sim={sim:.2f})")
                 boosted.append((product_name, boost_percent))
 
         return boosted
