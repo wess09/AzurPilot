@@ -1,6 +1,5 @@
 import os
 
-import imageio
 from PIL import Image
 from tqdm import tqdm
 
@@ -147,7 +146,15 @@ class RelativeRecord:
         for count, sim, templates in zip(sim_dict.keys(), sim_dict.values(), template_dict.values()):
             sim = str(int((1 - sim) * 1000000)).rjust(6, '0')
             name = f'{count}_{sim}_{"-".join([str(x) for x in size])}'
-            imageio.mimsave(os.path.join(self.folder, f'{name}.gif'), templates, fps=3)
+            file = os.path.join(self.folder, f'{name}.gif')
+            # 用 PIL 保存多帧 GIF。imageio.mimsave 在此环境生成的文件
+            # 无法被 imageio.mimread 解析（codec configuration error），
+            # 而 template.py / button_extract.py 均使用 imageio.mimread 读取。
+            frames = [Image.fromarray(template) for template in templates]
+            frames[0].save(
+                file, save_all=True, append_images=frames[1:],
+                duration=1000 / 3, loop=0,
+            )
         print(f'{size} done')
 
 

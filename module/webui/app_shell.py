@@ -30,12 +30,67 @@ from module.webui.app_dependencies import (
 from module.webui.app_types import WebUIMixinBase
 
 
+def _reload_theme_css(theme: str) -> None:
+    """切换主题时移除旧主题的 <link> 与 <style>，并重新注入当前主题 CSS。
+
+    初始 HTML 预加载的 <link> 元素（如 dark-alas.css）在切换主题后
+    仍残留在 DOM 中，其 !important 规则会覆盖新主题的 CSS。需要先
+    删除所有主题 CSS 的 <link> 和 <style>，再注入当前主题的 CSS。
+    """
+    from module.webui.app_dependencies import local
+    from module.webui.utils import add_css_files, filepath_css
+
+    run_js("""
+    var links = document.querySelectorAll(
+        'link[href*="dark-alas"],' +
+        'link[href*="light-alas"],' +
+        'link[href*="advanced-material-alas"],' +
+        'link[href*="dark-advanced-material"]'
+    );
+    for (var i = 0; i < links.length; i++) {
+        links[i].parentNode.removeChild(links[i]);
+    }
+    var styles = document.querySelectorAll(
+        'style[id^="alas-css-"]'
+    );
+    for (var i = 0; i < styles.length; i++) {
+        styles[i].parentNode.removeChild(styles[i]);
+    }
+    """)
+
+    injected_styles = getattr(local, "webui_injected_styles", None)
+    if injected_styles is not None:
+        injected_styles.discard(filepath_css("light-alas"))
+        injected_styles.discard(filepath_css("dark-alas"))
+        injected_styles.discard(filepath_css("advanced-material-alas"))
+        injected_styles.discard(filepath_css("dark-advanced-material-overrides-alas"))
+
+    if theme == "dark":
+        add_css_files((filepath_css("dark-alas"),))
+    elif theme == "advanced_material":
+        add_css_files((filepath_css("advanced-material-alas"),))
+    elif theme == "dark_advanced_material":
+        add_css_files((
+            filepath_css("advanced-material-alas"),
+            filepath_css("dark-advanced-material-overrides-alas"),
+        ))
+    else:
+        add_css_files((filepath_css("light-alas"),))
+
+
 class AppShellMixin(WebUIMixinBase):
     """WebUI会话外壳"""
 
     def initial(self) -> None:
-        self.ALAS_MENU = read_file(filepath_args("menu", self.alas_mod))
-        self.ALAS_ARGS = read_file(filepath_args("args", self.alas_mod))
+        from module.webui.app_cache import get_cached_menu_args
+
+        menu, args = get_cached_menu_args(
+            self.alas_mod,
+            read_file,
+            filepath_args,
+        )
+        self.ALAS_MENU = menu
+        self.ALAS_ARGS = args
 
     def __init__(self) -> None:
         super().__init__()
@@ -318,9 +373,10 @@ class AppShellMixin(WebUIMixinBase):
         cls.theme = theme
         State.deploy_config.Theme = theme
         State.theme = theme
-        pywebio_theme = theme if theme in ("default", "dark", "light") else "dark"
-        if theme in ("advanced_material", "dark_advanced_material"):
-            pywebio_theme = "default"
+
+        # PyWebIO 仅提供 dark/default 等主题，没有 light.min.css，
+        # 因此 light 统一回退到 default（default.min.css 即亮色主题）。
+        pywebio_theme = "dark" if theme == "dark" else "default"
 
         webconfig(theme=pywebio_theme)  
 
@@ -332,6 +388,25 @@ class AppShellMixin(WebUIMixinBase):
             e.remove();
         });
         """)
+
+        run_js(f"""
+        (function() {{
+            var link = document.querySelector('link[href*="bs-theme/"]');
+            if (link) {{
+                link.href = link.href.replace(
+                    /bs-theme\\/\\S+\\.min\\.css/,
+                    'bs-theme/{pywebio_theme}.min.css'
+                );
+            }}
+            document.body.className = document.body.className
+                .replace(/webio-theme-\\S+/g, '')
+                + ' webio-theme-{pywebio_theme}';
+        }})();
+        """)
+
+        # 清空会话注入追踪中的主题 CSS 记录，然后重新调用 load_webui_styles
+        # 为当前主题注入正确的 CSS。旧主题残留的 !important 规则会被新 CSS 覆盖。
+        _reload_theme_css(theme)
 
         run_js(f"""
         window.dispatchEvent(

@@ -53,10 +53,10 @@ Arguments:
     NAME:       Siren name, images will save in <FOLDER>/<NAME>
     NODE:       Node in local map view, that you are going to crop.
 """
-CONFIG = 'alas'
-FOLDER = ''
-NAME = 'Deutschland'
-NODE = 'D5'
+CONFIG = 'alas2'
+FOLDER = './screenshots/record'
+NAME = 'haorenlichade_m_qianting'
+NODE = 'E6'
 
 if __name__ == '__main__':
     for folder in [FOLDER, os.path.join(FOLDER, NAME)]:
