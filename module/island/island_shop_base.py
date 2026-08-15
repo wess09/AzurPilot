@@ -368,6 +368,22 @@ class IslandShopBase(Island, WarehouseOCR):
             if produced_qty > 0:
                 produced_pass[name] = produced_pass.get(name, 0) + produced_qty
 
+    def _rebuild_current_totals(self, produced_pass):
+        """重建当前总库存：仓库 + 在制品 + 本轮已下单未收获。
+
+        必须使用"当前"仓库账（套餐下单时 deduct_materials 已实时扣减原料），
+        而不是开跑前的库存快照，否则同一轮内被套餐消耗的原料
+        会在下一轮被误判为仍然可用，导致原料槽位目标漏排。
+        """
+        totals = {}
+        all_product_names = set(name for name, _ in self.post_products)
+        for item in all_product_names | set(self.post_check_meal.keys()) | set(
+                self.warehouse_counts.keys()):
+            totals[item] = self.post_check_meal.get(item, 0) + self.warehouse_counts.get(item, 0)
+        for name, qty in produced_pass.items():
+            totals[name] = totals.get(name, 0) + qty
+        return totals
+
     def _compute_base_demands(self, check_materials=False, force_skip=None):
         """计算基础需求：严格按槽位顺序处理，找到第一个有缺口的槽位
         即停止，后续槽位本轮不处理。
@@ -454,11 +470,7 @@ class IslandShopBase(Island, WarehouseOCR):
             self.post_manage_swipe(self.post_manage_swipe_count)
 
             # 计算当前总库存
-            self.current_totals = {}
-            all_product_names = set(name for name, _ in self.post_products)
-            for item in all_product_names | set(self.post_check_meal.keys()) | set(
-                    self.warehouse_counts.keys()):
-                self.current_totals[item] = self.post_check_meal.get(item, 0) + self.warehouse_counts.get(item, 0)
+            self.current_totals = self._rebuild_current_totals({})
 
             # ============ 调试信息 ============
             logger.info(f"[岛屿] === 调试信息 ===")
@@ -468,8 +480,6 @@ class IslandShopBase(Island, WarehouseOCR):
             logger.info(f"[岛屿] 基础需求配置（共{len(self.post_products)}个槽位）: {self._products_cn(self.post_products)}")
             logger.info("===============")
 
-            # 保存原始库存，retry 时恢复
-            _orig_totals = dict(self.current_totals)
             self._compute_base_demands()
 
             logger.info(f"[岛屿] 待完成备餐: {self._inv_cn(self.to_post_products)}")
@@ -491,9 +501,7 @@ class IslandShopBase(Island, WarehouseOCR):
                 if _loop_count > self._MAX_FILL_LOOP:
                     logger.warning(f"[岛屿] [循环] 已达最大迭代次数 {self._MAX_FILL_LOOP}，强制退出")
                     break
-                self.current_totals = dict(_orig_totals)
-                for name, qty in _produced_pass.items():
-                    self.current_totals[name] = self.current_totals.get(name, 0) + qty
+                self.current_totals = self._rebuild_current_totals(_produced_pass)
 
                 self._compute_base_demands(force_skip=_force_skip_run)
                 if not self.to_post_products:
@@ -510,9 +518,7 @@ class IslandShopBase(Island, WarehouseOCR):
                     # 先切严格模式（绕"原料真没有"的坎儿）
                     logger.info("[岛屿] [循环] 当前缺口排产失败，切换严格模式扫描")
                     self.to_post_products = {}
-                    self.current_totals = dict(_orig_totals)
-                    for name, qty in _produced_pass.items():
-                        self.current_totals[name] = self.current_totals.get(name, 0) + qty
+                    self.current_totals = self._rebuild_current_totals(_produced_pass)
                     self._compute_base_demands(check_materials=True)
                     if not self.to_post_products:
                         break
