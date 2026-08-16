@@ -193,7 +193,9 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
         if self.zone.zone_id != zone.zone_id or not self.is_zone_name_hidden:
             self.globe_goto(zone, types='SAFE', refresh=True)
 
-        self.action_point_set(cost=120, keep_current_ap=True, check_rest_ap=True)
+        # 智能调度+上下文外层已查询行动力，跳过冗余弹窗
+        if not self.is_running_smart_scheduling_task():
+            self.action_point_set(cost=120, keep_current_ap=True, check_rest_ap=True)
         self.fleet_set(self.config.OpsiFleet_Fleet)
         self.os_order_execute(recon_scan=False, submarine_call=self.config.OpsiFleet_Submarine)
 

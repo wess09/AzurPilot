@@ -862,6 +862,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         ):
             return
 
+        # 智能调度+上下文外层已查询行动力，跳过搜敌前的冗余弹窗刷新
+        if getattr(self, "_smart_scheduling_context", False) \
+                or getattr(self.config, "_smart_scheduling_context", False):
+            self._meow_search_start_time = time.time()
+            self._meow_search_start_ap = getattr(self, "_action_point_current", None)
+            return
+
         # 将计时器存储在地图对象上，因为匹配的结束钩子可能在自动搜索、重扫或事件处理后才到达。
         self._meow_search_start_time, self._meow_search_start_ap = (
             start_meow_search_timer(self)

@@ -386,6 +386,12 @@ class ActionPointHandler(UI, MapEventHandler):
         buy_max = 5  # 当前版本中，玩家每周可购买 5 次行动力
         buy_count = buy_max - current
         buy_limit = self.config.OpsiGeneral_BuyActionPointLimit
+        if buy_limit <= 0 and current < buy_max:
+            logger.info(
+                f'[大世界-行动点] BuyActionPointLimit 为 {buy_limit}（临时覆盖残留），'
+                f'OCR 显示剩余 {current} 次，按游戏上限 {buy_max} 恢复'
+            )
+            buy_limit = buy_max
         if self._is_in_month_end_purchase_block_week():
             logger.info('[大世界-行动点] 跳过本周购买行动点，因为是月末封锁周')
             return False

@@ -215,16 +215,34 @@ Optimization:
     option: [true, false]
   OcrModelVersionEnglish:
     value: auto
-    option: [auto, lite, standard, pro, alocr_en_v2_6]
+    option:
+      [
+        auto,
+        alocr_en_900k,
+        azur_lane_v6_6,
+        azur_lane_v6_5,
+        ppocr_v6,
+        alocr_en_v2_6,
+        alocr_en_v2_0,
+        alocr_en_v1_0,
+      ]
   OcrModelVersionChinese:
     value: auto
-    option: [auto, lite, standard, pro, alocr_cn_v3]
+    option:
+      [
+        auto,
+        cn_v6_1,
+        cn_v6,
+        ppocr_v6,
+        alocr_cn_v3,
+        alocr_cn_v2_5,
+      ]
   OcrModelVersionJapanese:
     value: auto
-    option: [auto, lite, standard, pro]
+    option: [auto, azur_lane_jp_v6, ppocr_v6]
   OcrModelVersionTraditionalChinese:
     value: auto
-    option: [auto, lite, standard, pro]
+    option: [auto, ppocr_v6]
   ScreenshotInterval: 0.3
   CombatScreenshotInterval: 1.0
   TaskHoardingDuration: 0
@@ -251,6 +269,9 @@ DropRecord:
     value: do_not
     option: [do_not, save]
   OpsiRecord:
+    value: upload
+    option: [do_not, save, upload, save_and_upload]
+  OpsiShopRecord:
     value: upload
     option: [do_not, save, upload, save_and_upload]
   MeowfficerBuy:
@@ -656,6 +677,9 @@ Commission:
     type: textarea
     value: ""
   DoMajorCommission: false
+  GemNotify:
+    type: checkbox
+    value: false
   CommissionNotifyReward:
     type: checkbox
     value: false
@@ -783,6 +807,17 @@ Reward:
   CollectExp: true
   CollectMission: true
   CollectWeeklyMission: false
+Secretary:
+  CustomFilter: |-
+    ultra > super_rare > elite > rare > common
+  LowFavorabilityPriority: false
+  BackupEnable: true
+  CheckInterval: 0
+  Notify: true
+  OnePushConfig:
+    type: textarea
+    mode: yaml
+    value: "provider: null"
 Awaken:
   LevelCap:
     value: level120
@@ -1152,6 +1187,10 @@ OpsiFleetAutoChange:
     type: checkbox
     value: false
     option: [true, false]
+  AnyShipReached:
+    type: checkbox
+    value: false
+    option: [true, false]
   CooldownHours:
     value: 24
     option: [12, 24, 48, 72]
@@ -1196,6 +1235,14 @@ OpsiScheduling:
   MonthEndShopPurchase:
     value: true
     option: [true, false]
+  # ===== 新增：买行动力双模式 =====
+  BuyActionPointMode:
+    value: "off"
+    option: ["off", hazard1_leveling, meowfficer_farming]
+  BuyActionPointUpperThreshold:
+    value: 200
+  BuyActionPointLowerThreshold:
+    value: 100
 OpsiPreventActionPointOverflow:
   Task:
     value: OpsiScheduling
@@ -1675,7 +1722,6 @@ _IslandBusinessChar: &IslandBusinessChar
     - ChangFeng
     - Mogador
     - RoyalFortune
-    - DaVinci
 
 _IslandBusinessProduct1: &IslandBusinessProduct1
   type: select

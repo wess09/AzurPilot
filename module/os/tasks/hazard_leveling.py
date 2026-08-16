@@ -140,7 +140,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             self.run_hazard1_leveling_once()
             self.config.check_task_switch()
 
-    def run_hazard1_leveling_once(self, ap_preserve=None):
+    def run_hazard1_leveling_once(self, ap_preserve=None, ap_checked=False):
         """执行一轮侵蚀 1 练级，由独立任务或 OpsiScheduling 调用。"""
         # 启用随机事件以获得收益。调度器直接调用单轮时也需要保持该行为。
         self.config.override(
@@ -174,9 +174,11 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             raise
 
         # 侵蚀 1 练级时，行动力优先用于此任务，而非耄耋相接。
-        self.action_point_set(
-            cost=120, keep_current_ap=True, check_rest_ap=True
-        )
+        # ap_checked=True 表示调度器已确认行动力充足（>=120），无需重复弹窗
+        if not ap_checked:
+            self.action_point_set(
+                cost=120, keep_current_ap=True, check_rest_ap=True
+            )
 
         yellow_coins = self.get_yellow_coins()
         if not self.is_running_smart_scheduling_task():

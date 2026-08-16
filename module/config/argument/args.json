@@ -306,7 +306,6 @@
           "en-3",
           "en-4",
           "en-5",
-          "en-6",
           "jp-0",
           "jp-1",
           "jp-2",
@@ -324,12 +323,7 @@
           "jp-14",
           "jp-15",
           "jp-16",
-          "jp-17",
-          "tw-0",
-          "tw-1",
-          "tw-2",
-          "tw-3",
-          "tw-4"
+          "jp-17"
         ]
       },
       "ScreenshotMethod": {
@@ -547,10 +541,13 @@
         "value": "auto",
         "option": [
           "auto",
-          "lite",
-          "standard",
-          "pro",
-          "alocr_en_v2_6"
+          "alocr_en_900k",
+          "azur_lane_v6_6",
+          "azur_lane_v6_5",
+          "ppocr_v6",
+          "alocr_en_v2_6",
+          "alocr_en_v2_0",
+          "alocr_en_v1_0"
         ]
       },
       "OcrModelVersionChinese": {
@@ -558,10 +555,11 @@
         "value": "auto",
         "option": [
           "auto",
-          "lite",
-          "standard",
-          "pro",
-          "alocr_cn_v3"
+          "cn_v6_1",
+          "cn_v6",
+          "ppocr_v6",
+          "alocr_cn_v3",
+          "alocr_cn_v2_5"
         ]
       },
       "OcrModelVersionJapanese": {
@@ -569,9 +567,8 @@
         "value": "auto",
         "option": [
           "auto",
-          "lite",
-          "standard",
-          "pro"
+          "azur_lane_jp_v6",
+          "ppocr_v6"
         ]
       },
       "OcrModelVersionTraditionalChinese": {
@@ -579,9 +576,7 @@
         "value": "auto",
         "option": [
           "auto",
-          "lite",
-          "standard",
-          "pro"
+          "ppocr_v6"
         ]
       },
       "ScreenshotInterval": {
@@ -660,6 +655,16 @@
         ]
       },
       "OpsiRecord": {
+        "type": "select",
+        "value": "upload",
+        "option": [
+          "do_not",
+          "save",
+          "upload",
+          "save_and_upload"
+        ]
+      },
+      "OpsiShopRecord": {
         "type": "select",
         "value": "upload",
         "option": [
@@ -2406,10 +2411,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -2926,10 +2931,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -3878,10 +3883,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -4321,10 +4326,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -4764,10 +4769,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -6112,21 +6117,25 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ],
         "option_cn": [
           "coalition_20260723"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20260723"
+          "coalition_20230323"
         ],
         "option_bold": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ]
       },
@@ -6411,21 +6420,25 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ],
         "option_cn": [
           "coalition_20260723"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20260723"
+          "coalition_20230323"
         ],
         "option_bold": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ]
       },
@@ -7613,10 +7626,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -8073,10 +8086,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -8533,10 +8546,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -8993,10 +9006,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -9443,10 +9456,10 @@
           "event_20260813_cn"
         ],
         "option_en": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_jp": [
-          "event_20260813_cn"
+          "event_20260625_cn"
         ],
         "option_tw": [
           "event_20260625_cn"
@@ -10163,21 +10176,25 @@
         "type": "select",
         "value": "campaign_main",
         "option": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ],
         "option_cn": [
           "coalition_20260723"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20260122"
         ],
         "option_tw": [
-          "coalition_20260723"
+          "coalition_20230323"
         ],
         "option_bold": [
+          "coalition_20230323",
+          "coalition_20260122",
           "coalition_20260723"
         ]
       },
@@ -10489,6 +10506,10 @@
         "value": ""
       },
       "DoMajorCommission": {
+        "type": "checkbox",
+        "value": false
+      },
+      "GemNotify": {
         "type": "checkbox",
         "value": false
       },
@@ -11221,6 +11242,94 @@
       "Favourite": {
         "type": "checkbox",
         "value": false
+      }
+    },
+    "Storage": {
+      "Storage": {
+        "type": "storage",
+        "value": {},
+        "valuetype": "ignore",
+        "display": "disabled"
+      }
+    }
+  },
+  "Secretary": {
+    "Scheduler": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "NextRun": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "Command": {
+        "type": "input",
+        "value": "Secretary",
+        "display": "hide"
+      },
+      "SuccessInterval": {
+        "type": "input",
+        "value": 0,
+        "display": "hide"
+      },
+      "FailureInterval": {
+        "type": "input",
+        "value": 120,
+        "display": "hide"
+      },
+      "ServerUpdate": {
+        "type": "input",
+        "value": "00:00",
+        "display": "hide"
+      },
+      "Sensitive": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
+    "Secretary": {
+      "CustomFilter": {
+        "type": "textarea",
+        "value": "ultra > super_rare > elite > rare > common"
+      },
+      "LowFavorabilityPriority": {
+        "type": "checkbox",
+        "value": false
+      },
+      "BackupEnable": {
+        "type": "checkbox",
+        "value": true
+      },
+      "CheckInterval": {
+        "type": "input",
+        "value": 0
+      },
+      "Notify": {
+        "type": "checkbox",
+        "value": true
+      },
+      "OnePushConfig": {
+        "type": "textarea",
+        "value": "provider: null",
+        "mode": "yaml"
       }
     },
     "Storage": {
@@ -13834,6 +13943,14 @@
           false
         ]
       },
+      "AnyShipReached": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "CooldownHours": {
         "type": "select",
         "value": 24,
@@ -13991,6 +14108,23 @@
           true,
           false
         ]
+      },
+      "BuyActionPointMode": {
+        "type": "select",
+        "value": "off",
+        "option": [
+          "off",
+          "hazard1_leveling",
+          "meowfficer_farming"
+        ]
+      },
+      "BuyActionPointUpperThreshold": {
+        "type": "input",
+        "value": 200
+      },
+      "BuyActionPointLowerThreshold": {
+        "type": "input",
+        "value": 100
       }
     },
     "Storage": {
@@ -14399,8 +14533,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Char2": {
@@ -14440,8 +14573,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Product1": {
@@ -14577,8 +14709,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Char2": {
@@ -14618,8 +14749,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Product1": {
@@ -14767,8 +14897,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Char2": {
@@ -14808,8 +14937,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Product1": {
@@ -14915,8 +15043,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Char2": {
@@ -14956,8 +15083,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Product1": {
@@ -15068,8 +15194,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Char2": {
@@ -15109,8 +15234,7 @@
           "Belfast",
           "ChangFeng",
           "Mogador",
-          "RoyalFortune",
-          "DaVinci"
+          "RoyalFortune"
         ]
       },
       "Product1": {

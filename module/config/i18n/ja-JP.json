@@ -1,15 +1,15 @@
 {
   "Menu": {
     "Alas": {
-      "name": "スマートポートPlus",
+      "name": "スマートポートエリア+",
       "help": ""
     },
     "Farm": {
-      "name": "出撃Plus",
+      "name": "出撃+",
       "help": ""
     },
     "Event": {
-      "name": "イベントPlus",
+      "name": "イベント+",
       "help": ""
     },
     "EventDaily": {
@@ -25,7 +25,7 @@
       "help": ""
     },
     "Opsi": {
-      "name": "セイレーン作戦Plus",
+      "name": "セイレーン作戦+",
       "help": ""
     },
     "Island": {
@@ -37,7 +37,7 @@
       "help": ""
     },
     "Tool": {
-      "name": "ツールPlus",
+      "name": "ツール+",
       "help": ""
     }
   },
@@ -55,23 +55,23 @@
       "help": ""
     },
     "Main": {
-      "name": "メインステージ-1Plus",
+      "name": "メインステージ-1+",
       "help": ""
     },
     "Main2": {
-      "name": "メインステージ-2Plus",
+      "name": "メインステージ-2+",
       "help": ""
     },
     "Main3": {
-      "name": "メインステージ-3Plus",
+      "name": "メインステージ+",
       "help": ""
     },
     "GemsFarming": {
-      "name": "緊急委託Plus",
+      "name": "緊急委託+",
       "help": ""
     },
     "ThreeOilLowCost": {
-      "name": "3燃料低コストPlus",
+      "name": "3燃料低コスト+",
       "help": "3燃料低コスト編成で戦闘し、旗艦がレベル32に達すると自動的に旗艦を交換して退役させます。"
     },
     "Ambush11": {
@@ -83,23 +83,23 @@
       "help": ""
     },
     "Event": {
-      "name": "イベントマップ-1Plus",
+      "name": "イベントマップ-1+",
       "help": ""
     },
     "Event2": {
-      "name": "イベントマップ-2Plus",
+      "name": "イベントマップ-2+",
       "help": ""
     },
     "Event3": {
-      "name": "イベントマップ-3Plus",
+      "name": "イベントマップ-3+",
       "help": ""
     },
     "Raid": {
-      "name": "レイドイベントPlus",
+      "name": "レイドイベント+",
       "help": ""
     },
     "RaidScuttle": {
-      "name": "レイド沈船Plus",
+      "name": "レイド沈船+",
       "help": ""
     },
     "Hospital": {
@@ -111,8 +111,8 @@
       "help": ""
     },
     "CoalitionScuttle": {
-      "name": "連合沈船Plus",
-      "help": "連合イベントで艦船が撃沈された後に好感度を周回します。複数艦隊での出撃を推奨。第1艦隊で沈めます。関連チュートリアルをご確認ください。"
+      "name": "Task.CoalitionScuttle.name",
+      "help": "Task.CoalitionScuttle.help"
     },
     "MaritimeEscort": {
       "name": "海上護衛Plus",
@@ -186,6 +186,10 @@
       "name": "認知覚醒",
       "help": ""
     },
+    "Secretary": {
+      "name": "秘書艦",
+      "help": "秘書艦の好感度を自動で監視し、好感度が 90 に達すると自動で変更します"
+    },
     "Daily": {
       "name": "デイリー任務",
       "help": ""
@@ -215,7 +219,7 @@
       "help": ""
     },
     "Freebies": {
-      "name": "無料特典Plus",
+      "name": "無料報酬",
       "help": ""
     },
     "Minigame": {
@@ -223,7 +227,7 @@
       "help": "ゲームコインがオーバーフローしない場合に自動的にゲームコインを受け取り、ゲームコインがあり報酬が満杯でない場合に自動的にミニゲームをプレイします。"
     },
     "PrivateQuarters": {
-      "name": "ドルミトリープランPlus",
+      "name": "寮計画",
       "help": ""
     },
     "OpsiGeneral": {
@@ -239,11 +243,11 @@
       "help": ""
     },
     "OpsiExplore": {
-      "name": "月間開拓Plus",
+      "name": "月間開拓+",
       "help": ""
     },
     "OpsiShop": {
-      "name": "セイレーン作戦ショップPlus",
+      "name": "セイレーン作戦ショップ+",
       "help": ""
     },
     "OpsiVoucher": {
@@ -251,7 +255,7 @@
       "help": ""
     },
     "OpsiDaily": {
-      "name": "セイレーン作戦デイリーPlus",
+      "name": "セイレーン作戦-デイリー+",
       "help": ""
     },
     "OpsiObscure": {
@@ -275,15 +279,15 @@
       "help": ""
     },
     "OpsiMeowfficerFarming": {
-      "name": "短猫相接",
+      "name": "指揮ニャファーム+",
       "help": ""
     },
     "OpsiHazard1Leveling": {
-      "name": "侵蝕1レベリング",
+      "name": "侵蝕1レベリング+",
       "help": ""
     },
     "OpsiScheduling": {
-      "name": "スマートスケジューリングPlus",
+      "name": "スマートスケジューリング+",
       "help": "セイレーン作戦スマートスケジューリング機能。侵蝕1レベリングとゴールドコイン補充タスク間の切り替えを調整します。\n有効にすると、ゴールドコインと行動力に基づいて異なるタスク間を自動的に切り替え、プッシュ通知を送信します。"
     },
     "OpsiPreventActionPointOverflow": {
@@ -571,7 +575,6 @@
       "en-3": "[EN] Washington",
       "en-4": "[EN] Amagi",
       "en-5": "[EN] Little Enterprise",
-      "en-6": "[EN] Belfast",
       "jp-0": "[JP] ブレスト",
       "jp-1": "[JP] 横須賀",
       "jp-2": "[JP] 佐世保",
@@ -589,15 +592,10 @@
       "jp-14": "[JP] キール",
       "jp-15": "[JP] 若松",
       "jp-16": "[JP] オデッサ",
-      "jp-17": "[JP] スイートバン",
-      "tw-0": "[TW] 珍珠港",
-      "tw-1": "[TW] 珊瑚海",
-      "tw-2": "[TW] 中途島",
-      "tw-3": "[TW] 瓜達康納爾",
-      "tw-4": "[TW] 雷伊泰灣"
+      "jp-17": "[JP] スイートバン"
     },
     "ScreenshotMethod": {
-      "name": "スクリーンショット方式を選択",
+      "name": "エミュレータスクリーンショット方式",
       "help": "自動選択を使用すると、パフォーマンステストを実行し、最速のスクリーンショット方式に自動変更します\n通常の速度: DroidCast_raw >> aScreenCap_nc > ADB_nc >>> aScreenCap > uiautomator2 ~= ADB\nツール - パフォーマンステストを実行して最速の方式を見つけてください",
       "auto": "最速を自動選択",
       "ADB": "ADB",
@@ -611,7 +609,7 @@
       "ldopengl": "ldopengl"
     },
     "ControlMethod": {
-      "name": "コントロール方式を選択",
+      "name": "エミュレータ制御方式",
       "help": "速度: minitouch > Hermit >>> uiautomator2 ~= ADB\nminitouchを推奨。vmos下を除き、Hermitは非推奨。",
       "ADB": "ADB",
       "uiautomator2": "uiautomator2",
@@ -640,7 +638,7 @@
       "help": "以下の値はSerialに基づいて自動入力されます。理解できない場合は変更しないでください。ポートを変更すると、対応するインスタンスが自動的に起動します。"
     },
     "Emulator": {
-      "name": "エミュレータタイプを選択",
+      "name": "エミュレータの種類",
       "help": "",
       "auto": "自動検出",
       "NoxPlayer": "NoxPlayer",
@@ -718,7 +716,7 @@
       "help": "機密タスク実行中にエラーが発生した場合、ゲームを再起動せずにAzurPilotを停止します\n機密タスクには隠秘海域、深淵海域、月跨ぎデイリーなどが含まれます"
     },
     "SaveErrorCount": {
-      "name": "エラーログは最大X件保存",
+      "name": "エラーログ保存上限",
       "help": "上限を超えたエラーログは削除されます。0または負の値の場合、制限はありません。"
     },
     "OnePushConfig": {
@@ -734,7 +732,7 @@
       "help": "ゲームフリーズ（GameStuckError発生）が指定回数に達した後、エミュレータの再起動を試みます。エミュレータのフリーズやメモリオーバーフローなどの問題の解決に役立つ場合があります。"
     },
     "GameStuckThreshold": {
-      "name": "ゲームフリーズからX秒後に再起動",
+      "name": "ゲームがスタックした再起動のしきい値",
       "help": "再起動をトリガーする前にスタックが連続して何回発生するか。"
     },
     "AdbOfflineRestart": {
@@ -742,7 +740,7 @@
       "help": "指定した回数連続してデバイスが検出できない（ADB がオフラインまたは接続に失敗する）場合は、エミュレータを再起動してみてください。"
     },
     "AdbOfflineThreshold": {
-      "name": "デバイス未検出からX秒後に再起動",
+      "name": "デバイスの再起動しきい値が検出されない",
       "help": "デバイスが連続して検出できなかった回数に応じて、再起動がトリガーされます。"
     },
     "LlmAnalysis": {
@@ -794,37 +792,38 @@
     },
     "OcrModelVersionEnglish": {
       "name": "OCR 英語モデルバージョン",
-      "help": "英語 OCR モデルの階層を選択します。lite は最軽量で最速、standard はバランス型、pro は最高精度です。auto は standard を使用します。alocr_en_v2_6 は旧版 AlOCR 英語モデル（ONNX バックエンドのみ）です。この項目は英語 Azur Lane モデルに適用されます。",
+      "help": "英語 OCR モデルのバージョンを選択します。auto は推奨の英語 AlOCR v2.6 モデルを使用します。この項目は英語 Azur Lane モデルに適用されます。ncnn バックエンドでは無視されます。",
       "auto": "自動推奨",
-      "lite": "Lite（軽量）",
-      "standard": "Standard（標準）",
-      "pro": "Pro（高精度）",
-      "alocr_en_v2_6": "AlOCR v2.6（旧版）"
+      "alocr_en_900k": "alocr_en_900k",
+      "azur_lane_v6_6": "英語 v6.6 (Azur Lane)",
+      "azur_lane_v6_5": "英語 v6.5 (Azur Lane)",
+      "ppocr_v6": "汎用 PP-OCRv6",
+      "alocr_en_v2_6": "英語 AlOCR v2.6",
+      "alocr_en_v2_0": "英語 AlOCR v2.0",
+      "alocr_en_v1_0": "英語 AlOCR v1.0"
     },
     "OcrModelVersionChinese": {
       "name": "OCR 中国語モデルバージョン",
-      "help": "簡体中国語 OCR モデルの階層を選択します。lite は最軽量で最速、standard はバランス型、pro は最高精度です。auto は standard を使用します。alocr_cn_v3 は旧版 AlOCR 中国語モデル（ONNX バックエンドのみ）です。この項目は cnocr/中国語モデルに適用されます。",
+      "help": "簡体中国語 OCR モデルのバージョンを選択します。auto は推奨の中国語 v6.1 モデルを使用します。この項目は cnocr/中国語モデルに適用されます。ncnn バックエンドでは無視されます。",
       "auto": "自動推奨",
-      "lite": "Lite（軽量）",
-      "standard": "Standard（標準）",
-      "pro": "Pro（高精度）",
-      "alocr_cn_v3": "AlOCR v3（旧版）"
+      "cn_v6_1": "中国語 v6.1",
+      "cn_v6": "中国語 v6",
+      "ppocr_v6": "汎用 PP-OCRv6",
+      "alocr_cn_v3": "中国語 AlOCR v3",
+      "alocr_cn_v2_5": "中国語 AlOCR v2.5"
     },
     "OcrModelVersionJapanese": {
       "name": "OCR 日本語モデルバージョン",
-      "help": "日本語 OCR モデルの階層を選択します。lite は最軽量で最速ですが日本語には対応していません。standard はバランス型、pro は最高精度です。auto は standard を使用します。この項目は日本語モデルに適用されます。",
+      "help": "日本語 OCR モデルのバージョンを選択します。auto は日本語 Azur Lane v6 モデルを使用します。この項目は日本語モデルに適用されます。ncnn バックエンドでは無視されます。",
       "auto": "自動推奨",
-      "lite": "Lite（軽量）",
-      "standard": "Standard（標準）",
-      "pro": "Pro（高精度）"
+      "azur_lane_jp_v6": "日本語 v6 (Azur Lane JP)",
+      "ppocr_v6": "汎用 PP-OCRv6"
     },
     "OcrModelVersionTraditionalChinese": {
       "name": "OCR 繁体中国語モデルバージョン",
-      "help": "繁体中国語 OCR モデルの階層を選択します。lite は最軽量で最速、standard はバランス型、pro は最高精度です。auto は standard を使用します。",
+      "help": "繁体中国語 OCR モデルのバージョンを選択します。現在は汎用 PP-OCRv6 のみ利用できます。今後のモデル追加のため、独立した設定として残しています。ncnn バックエンドでは無視されます。",
       "auto": "自動推奨",
-      "lite": "Lite（軽量）",
-      "standard": "Standard（標準）",
-      "pro": "Pro（高精度）"
+      "ppocr_v6": "汎用 PP-OCRv6"
     },
     "ScreenshotInterval": {
       "name": "スクリーンショット速度をX秒に1枚に減速",
@@ -901,6 +900,14 @@
       "upload": "アップロード",
       "save_and_upload": "保存してアップロードする"
     },
+    "OpsiShopRecord": {
+      "name": "DropRecord.OpsiShopRecord.name",
+      "help": "DropRecord.OpsiShopRecord.help",
+      "do_not": "do_not",
+      "save": "save",
+      "upload": "upload",
+      "save_and_upload": "save_and_upload"
+    },
     "MeowfficerBuy": {
       "name": "オフニャ購入スクリーンショット",
       "help": "",
@@ -955,7 +962,7 @@
       "help": ""
     },
     "RetireMode": {
-      "name": "退役モードを選択",
+      "name": "退役モード",
       "help": "強化を選択した場合、強化素材が不足するとワンクリック退役に戻ります。",
       "one_click_retire": "ワンクリック退役",
       "enhance": "強化",
@@ -964,7 +971,7 @@
   },
   "PublicEmotion": {
     "_info": {
-      "name": "コンディション共用",
+      "name": "コンディション共有",
       "help": "同じ艦隊を使用して複数のタスクを完了できます\nこの機能を使用する場合は、対応するタスクの艦隊設定がすべての単独チームであり、その艦隊が共有艦隊であることを確認してください。"
     },
     "Enable": {
@@ -1045,7 +1052,7 @@
       "help": "形式: \"cv > bb > ...\"\nデフォルトの強化方法を使用する場合は空白のままにしてください"
     },
     "CheckPerCategory": {
-      "name": "カテゴリごとにX隻確認",
+      "name": "艦種ごとの強化チェック数",
       "help": "各艦種ごとに最大何隻まで強化チェックしますか？\n戦闘中の艦船はスキップされ、カウントされません。\n強化素材がある艦船を優先します"
     }
   },
@@ -1071,7 +1078,7 @@
       "help": ""
     },
     "RetireAmount": {
-      "name": "毎回X隻退役",
+      "name": "退役数量",
       "help": "",
       "retire_all": "全員退役",
       "retire_10": "10隻退役"
@@ -1095,7 +1102,7 @@
       "coalition_20250626": "ネオンシティの探索者",
       "coalition_20251120": "DATE A LANE",
       "coalition_20260122": "特集写真-撮影進行中",
-      "coalition_20260723": "怪談実録",
+      "coalition_20260723": "怪谈纪实：逃离白夜山庄",
       "event_20200227_cn": "凍絶の北海",
       "event_20200312_cn": "南洋に靡く硝煙（復刻）",
       "event_20200326_cn": "闇靄払う銀翼",
@@ -1181,7 +1188,7 @@
       "event_20260417_cn": "バケーションレーン・きらめく砂浜",
       "event_20260520_cn": "聖印前の同盟",
       "event_20260625_cn": "幻夢のカヴァルカード",
-      "event_20260813_cn": "星の導く街",
+      "event_20260813_cn": "沉溺于星光之城",
       "raid_20200624": "特別演習超空強襲波（復刻）",
       "raid_20210708": "交錯する新たな波 (復刻)",
       "raid_20220127": "秘密事件調査",
@@ -1243,7 +1250,7 @@
       "war_archives_20240725_cn": "檔案 夢幻の間奏曲"
     },
     "Mode": {
-      "name": "ステージモードを選択",
+      "name": "ステージモード",
       "help": "メインステージのみに適用されます",
       "normal": "普通",
       "hard": "ハード"
@@ -1326,7 +1333,7 @@
       "help": ""
     },
     "DailyRunCount": {
-      "name": "毎日X回出撃",
+      "name": "デイリー出撃回数",
       "help": "作戦アーカイブを1日に実行する最大回数です。\n0は無制限です。\n上限に達すると、タスクを無効化せず次回サーバー更新まで延期します。"
     },
     "DailyRunCountRemain": {
@@ -1348,7 +1355,7 @@
       "help": ""
     },
     "Fleet1": {
-      "name": "第一艦隊は第X艦隊を使用",
+      "name": "第一艦隊番号",
       "help": "",
       "1": "1 ",
       "2": "2 ",
@@ -1365,7 +1372,7 @@
       "diamond": "輪形陣"
     },
     "Fleet1Mode": {
-      "name": "第一艦隊自律戦闘モード",
+      "name": "第一艦隊自律モード",
       "help": "",
       "combat_auto": "自動戦闘",
       "combat_manual": "手動操作",
@@ -1382,7 +1389,7 @@
       "5": "5 "
     },
     "Fleet2": {
-      "name": "第二艦隊は第X艦隊を使用",
+      "name": "第二艦隊番号",
       "help": "",
       "0": "未使用",
       "1": "1 ",
@@ -1400,7 +1407,7 @@
       "diamond": "輪形陣"
     },
     "Fleet2Mode": {
-      "name": "第二艦隊自律戦闘モード",
+      "name": "第二艦隊自律モード",
       "help": "",
       "combat_auto": "自動戦闘",
       "combat_manual": "手動操作",
@@ -1425,8 +1432,8 @@
       "fleet1_standby_fleet2_all": "第一艦隊待機 第二艦隊全滅"
     },
     "SkipPreparation": {
-      "name": "編成チェックをスキップ",
-      "help": "有効にすると、編成画面の艦隊選択ステップをスキップし、現在のプリセット艦隊で直接出撃します。艦隊スロットが未解放のアカウントに適しています。"
+      "name": "Fleet.SkipPreparation.name",
+      "help": "Fleet.SkipPreparation.help"
     }
   },
   "Submarine": {
@@ -1435,14 +1442,14 @@
       "help": ""
     },
     "Fleet": {
-      "name": "第X潜水艦隊を使用",
+      "name": "潜水艦艦隊数",
       "help": "",
       "0": "未使用",
       "1": "1 ",
       "2": "2 "
     },
     "Mode": {
-      "name": "潜水艦出撃プランを選択",
+      "name": "潜水艦出撃方案",
       "help": "自律索敵がオフの場合にのみ有効です。注意：「狩猟及びBOSS戦」は「狩猟のみ」と「BOSS戦のみ」の組み合わせです。道中で狩猟攻撃を実行し、BOSS戦で潜水艦を召喚しようとします。",
       "do_not_use": "未使用",
       "hunt_only": "狩猟のみ",
@@ -1451,7 +1458,7 @@
       "every_combat": "毎戦出撃"
     },
     "AutoSearchMode": {
-      "name": "潜水艦自律プランを選択",
+      "name": "潜水艦自律方案",
       "help": "自律索敵の場合にのみ有効",
       "sub_standby": "待機",
       "sub_auto_call": "潜水艦を自動的に召喚する"
@@ -1752,7 +1759,7 @@
       "help": ""
     },
     "PtLimit": {
-      "name": "イベントPTがXに達したら停止",
+      "name": "イベントPT制限",
       "help": "累積PTが指定値に達すると、すべてのイベントタスクが無効になります。0は制限なしを意味します。自律索敵使用時は即時発動できません。\n有効にすると、すべてのイベントタスクを開くだけで、合計何回出撃するかを計算する必要がありません。"
     },
     "TimeLimit": {
@@ -1770,7 +1777,7 @@
       "help": "有効にすると、出撃ごとに資金量がチェックされます。"
     },
     "CoinLimit": {
-      "name": "資金をX以上に維持",
+      "name": "資金をXより多く保つ",
       "help": ""
     },
     "TaskCall": {
@@ -1890,7 +1897,7 @@
       "help": "SPステージはイベントデイリーSPで実行する必要があります",
       "easy": "簡単",
       "normal": "普通",
-      "hard": "ハード",
+      "hard": "困難",
       "sp": "SP",
       "ex": "EX"
     },
@@ -1903,15 +1910,15 @@
   },
   "CoalitionScuttle": {
     "_info": {
-      "name": "連合沈船",
-      "help": "連合イベント沈船設定。撃沈される艦船の位置を選択します。"
+      "name": "CoalitionScuttle._info.name",
+      "help": "CoalitionScuttle._info.help"
     },
     "Sacrifice": {
-      "name": "犠牲艦の位置",
-      "help": "撃沈される艦船の位置を選択します：前衛/旗艦/前衛+旗艦",
-      "vanguard": "前衛",
-      "flagship": "旗艦",
-      "vanguard_flagship": "前衛+旗艦"
+      "name": "CoalitionScuttle.Sacrifice.name",
+      "help": "CoalitionScuttle.Sacrifice.help",
+      "vanguard": "vanguard",
+      "flagship": "flagship",
+      "vanguard_flagship": "vanguard_flagship"
     }
   },
   "EventShop": {
@@ -1992,13 +1999,21 @@
       "name": "主要委託を実行する（1200燃料/1000燃料委託）",
       "help": "1200燃料委託は現在では廃止されており、収益が非常に低いです。オフにすることをお勧めします。"
     },
+    "GemNotify": {
+      "name": "ダイヤ委託実行通知",
+      "help": "新しいダイヤ委託を開始した後、現在実行中のダイヤ委託一覧を通知します"
+    },
     "CommissionNotifyReward": {
-      "name": "委託報酬プッシュ通知",
-      "help": "委託報酬獲得時に通知を送信（特にダイヤ報酬）"
+      "name": "委託成功でダイヤモンド取得通知",
+      "help": "注意：「プッシュ通知設定」を有効にして設定してください。設定されていない場合、この機能は動作しません。"
     },
     "CommissionNotifyRewardStatistics": {
-      "name": "通知に統計情報を含める",
-      "help": "通知に今日/週間/月間の累積ダイヤ数を表示"
+      "name": "ダイヤモンド通知の詳細",
+      "help": "オンにすると、AzurPilotは今回の委託で取得したダイヤモンドの数量と同時に、当日／今週／今月のダイヤモンド取得数量も通知します"
+    },
+    "CommissionNotifyRewardCube": {
+      "name": "Commission.CommissionNotifyRewardCube.name",
+      "help": "Commission.CommissionNotifyRewardCube.help"
     }
   },
   "Tactical": {
@@ -2036,19 +2051,19 @@
       "help": ""
     },
     "T4Allow": {
-      "name": "T4スキルブックの経験値オーバーフローをX許可",
+      "name": "T4スキルブックのX経験値溢出を許可する",
       "help": ""
     },
     "T3Allow": {
-      "name": "T3スキルブックの経験値オーバーフローをX許可",
+      "name": "T3スキルブックのX経験値溢出を許可する",
       "help": ""
     },
     "T2Allow": {
-      "name": "T2スキルブックの経験値オーバーフローをX許可",
+      "name": "T2スキルブックのX経験値溢出を許可する",
       "help": ""
     },
     "T1Allow": {
-      "name": "T1スキルブックの経験値オーバーフローをX許可",
+      "name": "T1スキルブックのX経験値溢出を許可する",
       "help": ""
     }
   },
@@ -2066,7 +2081,7 @@
       "help": ""
     },
     "MinLevel": {
-      "name": "レベルX以上のキャラクターのみ追加",
+      "name": "レベルがX以上のキャラクターのみを追加してください。",
       "help": ""
     }
   },
@@ -2104,12 +2119,12 @@
       "help": "資源が不足している場合、AzurPilotは条件が満たされるか科研キューが空になりそうになるまで科研を遅延させますが、科研が停止することはありません。\n長期間資源が不足している場合やAzurPilotの実行時間が十分でない場合は、このオプションをオフにして科研キューを常に満杯に保つことができます。"
     },
     "AllowGenreT": {
-      "name": "T型科研を許可する",
-      "help": "T型科研"
+      "name": "T型研究を許可",
+      "help": "T型研究は研究キューの停止や効率低下を招く可能性があります。必要な場合のみ有効にしてください。"
     },
     "RemainingCommissions": {
-      "name": "T型科研の残り委託回数",
-      "help": "T型科研"
+      "name": "T型研究の残り委託回数",
+      "help": "保留中のT型研究に必要な残り委託回数です。-1は保留中のT型研究がないことを示します。"
     },
     "PresetFilter": {
       "name": "科研フィルター",
@@ -2308,6 +2323,36 @@
       "help": ""
     }
   },
+  "Secretary": {
+    "_info": {
+      "name": "秘書艦設定",
+      "help": "秘書艦の自動変更および通知設定を行います"
+    },
+    "CustomFilter": {
+      "name": "レアリティフィルター",
+      "help": "レアリティはUR(ultra)、SSR(super_rare)、SR(elite)、R(rare)、N(common)を含みます\n下記にカスタム順序を入力してください\nデフォルト優先度：ultra > super_rare > elite > rare > common"
+    },
+    "LowFavorabilityPriority": {
+      "name": "低好感度優先",
+      "help": "好感度が低い順に秘書艦を選択します"
+    },
+    "BackupEnable": {
+      "name": "予備秘書艦",
+      "help": "秘書艦グループの艦船を予備秘書艦として使用し、優先的に交代します。"
+    },
+    "CheckInterval": {
+      "name": "カスタム確認間隔（時間）",
+      "help": "秘書艦を交代した後、設定した時間ごとに確認します。0 に設定すると好感度に応じて自動計算されます。秘書艦を出撃させて好感度を上げる場合、この項目を設定することでより早く交代できます。"
+    },
+    "Notify": {
+      "name": "秘書艦通知",
+      "help": "OnePush を使用して秘書艦に関する通知を送信します。"
+    },
+    "OnePushConfig": {
+      "name": "OnePush 設定",
+      "help": "秘書艦変更通知用の設定です。空欄の場合はグローバル設定を使用します"
+    }
+  },
   "Awaken": {
     "_info": {
       "name": "認知覚醒",
@@ -2326,7 +2371,7 @@
   },
   "GeneralShop": {
     "_info": {
-      "name": "軍火商（一般ショップ）",
+      "name": "武器商人（雑貨店）",
       "help": ""
     },
     "Enable": {
@@ -2360,7 +2405,7 @@
   },
   "GuildShop": {
     "_info": {
-      "name": "艦隊ショップ",
+      "name": "フリートストア",
       "help": ""
     },
     "Enable": {
@@ -2449,7 +2494,7 @@
       "plane": "艦載機"
     },
     "PR1": {
-      "name": "一期科研設計図選択",
+      "name": "一期研究設計図選択",
       "help": "",
       "neptune": "ネプチューン",
       "monarch": "君主",
@@ -2459,7 +2504,7 @@
       "saintlouis": "サン・ルイ"
     },
     "PR2": {
-      "name": "二期科研設計図選択",
+      "name": "二期研究設計図選択",
       "help": "",
       "seattle": "シアトル",
       "georgia": "ジョージア",
@@ -2467,7 +2512,7 @@
       "gascogne": "ガスコーニュ"
     },
     "PR3": {
-      "name": "三期科研設計図選択",
+      "name": "三期研究設計図選択",
       "help": "",
       "cheshire": "チェシャー",
       "mainz": "マインツ",
@@ -2578,16 +2623,16 @@
       "help": "色彩科研設計図を毎日購入します。色彩科研と金科研の設計図は割引カウントが独立しており、毎日それぞれ2枚無料で入手できます。"
     },
     "ResearchSeries": {
-      "name": "科研期数",
+      "name": "科学研究期間",
       "help": "",
-      "2": "フェーズ II 科研",
-      "3": "第Ⅲ期科研",
-      "4": "第4期科研",
-      "5": "第5期科研",
-      "6": "第6期科研"
+      "2": "フェーズ II 科学研究",
+      "3": "第Ⅲ相科学研究",
+      "4": "科学研究の第 4 段階",
+      "5": "科学研究の第 5 段階",
+      "6": "第6期科学研究"
     },
     "ShipIndex": {
-      "name": "科研船X番を選択",
+      "name": "出荷シリアル番号",
       "help": "左から右に1から数えます",
       "0": "購入しない",
       "1": "1",
@@ -2608,21 +2653,21 @@
   },
   "Shipyard": {
     "_info": {
-      "name": "金科研設計図購入設定",
+      "name": "ゴールド科学研究図面購入設定",
       "help": ""
     },
     "ResearchSeries": {
-      "name": "科研期数",
+      "name": "科学研究期間",
       "help": "",
-      "1": "第1期科研",
-      "2": "フェーズ II 科研",
-      "3": "第Ⅲ期科研",
-      "4": "第4期科研",
-      "5": "第5期科研",
-      "6": "第6期科研"
+      "1": "科学研究の第一段階",
+      "2": "フェーズ II 科学研究",
+      "3": "第Ⅲ相科学研究",
+      "4": "科学研究の第 4 段階",
+      "5": "科学研究の第 5 段階",
+      "6": "第6期科学研究"
     },
     "ShipIndex": {
-      "name": "科研船X番を選択",
+      "name": "出荷シリアル番号",
       "help": "左から右に1から数えます",
       "0": "購入しない",
       "1": "1",
@@ -2643,20 +2688,20 @@
   },
   "Gacha": {
     "_info": {
-      "name": "デイリー建造",
-      "help": "建造でデイリー任務を完了します。毎日軽型プールを1回引くことで資金200を節約できます。"
+      "name": "毎日のカード抽選",
+      "help": "カードを引いて毎日のタスクを完了します。毎日ライトプールを引いて、200 個の物資を入手します。"
     },
     "Pool": {
       "name": "カードプール",
       "help": "",
-      "light": "軽型プール",
-      "heavy": "重装型プール",
-      "special": "特装型プール",
-      "event": "期間限定プール",
-      "wishing_well": "祈願プール"
+      "light": "ライトプール",
+      "heavy": "ヘビープール",
+      "special": "特別なプール",
+      "event": "イベントプール",
+      "wishing_well": "願いのプール"
     },
     "Amount": {
-      "name": "毎日X回建造",
+      "name": "引いたカードの枚数",
       "help": "",
       "1": "1",
       "2": "2",
@@ -2670,17 +2715,17 @@
       "10": "10"
     },
     "UseTicket": {
-      "name": "単回建造券を使用する",
+      "name": "単一の建設チケットを使用する",
       "help": "オープン後、建設クーポンをサポートするプールは、最初に建設クーポンを使用して建設されます。建設クーポンがなく、通常のプールが建設された場合でも、ルービック キューブが使用されます。"
     },
     "UseDrill": {
-      "name": "建造ドリルを使用して建造を完了する",
-      "help": "いいえにすると翌日まで進水を待つことで、ドリルを1つ節約できます。"
+      "name": "ドリルを使用して構築を完了します",
+      "help": "水に入るのを明日まで待ちますか？ドリルビットを欲しがることができますか？"
     }
   },
   "BattlePass": {
     "_info": {
-      "name": "シーズンパス",
+      "name": "マンスリーパス",
       "help": ""
     },
     "Collect": {
@@ -2726,11 +2771,11 @@
   },
   "SupplyPack": {
     "_info": {
-      "name": "お得なパッケージ",
+      "name": "割引ギフトパッケージ",
       "help": ""
     },
     "Collect": {
-      "name": "毎週無料パッケージを購入する",
+      "name": "無料の週刊誌を購入する",
       "help": ""
     },
     "DayOfWeek": {
@@ -2757,7 +2802,7 @@
   },
   "PrivateQuarters": {
     "_info": {
-      "name": "ドルミトリープラン設定",
+      "name": "寮プランの設定",
       "help": ""
     },
     "BuyRoses": {
@@ -2769,8 +2814,8 @@
       "help": "ケーキギフトボックスの購入数は毎週月曜日にリセットされます\n実行するたびに、すべて一度に購入しようとします。ダイヤが不足している場合（ダイヤが210個未満）、購入はキャンセルされ、翌日に延期されます。"
     },
     "TargetInteract": {
-      "name": "毎日のコンディションを消費",
-      "help": "選択した艩娘と対話して今日のコンディションを消費します"
+      "name": "日々のエネルギーをクリアに",
+      "help": "選択した艦娘と対話して今日のエネルギーをクリアしよう"
     },
     "TargetShip": {
       "name": "毎日対話する艦娘を選択してください",
@@ -2972,7 +3017,7 @@
       "help": "キャラクターの立ち絵がHPバーを覆うため、HPが本当に閾値を下回っているか確認するのに時間がかかります。1.0～3.0を推奨します。"
     },
     "OpponentRefreshValue": {
-      "name": "本日対戦相手をX回リフレッシュ済み",
+      "name": "本日の演習対戦相手はX回リフレッシュされました",
       "help": "値は自動的に更新され、0時以降にリセットされます\n対戦相手を手動で更新する場合は、この値を変更する必要があります"
     },
     "OpponentRefreshRecord": {
@@ -2982,11 +3027,11 @@
   },
   "Sos": {
     "_info": {
-      "name": "SOS/海底",
+      "name": "海底地図",
       "help": ""
     },
     "Chapter": {
-      "name": "潜水艦出撃チャプター",
+      "name": "潜水艦攻撃の章",
       "help": "",
       "3": "3",
       "4": "4",
@@ -3004,7 +3049,7 @@
       "help": "1 日 3 回のビーコンサポート"
     },
     "Tier": {
-      "name": "レベルX以上のビーコンを検索",
+      "name": "X より大きいレベルのビーコンを検索する",
       "help": "何度か試しても条件を満たすビーコンが見つからない場合は、ランダムに試してください。"
     }
   },
@@ -3018,8 +3063,8 @@
       "help": "倉庫に入るたびにすべての座標レコーダーを使用する"
     },
     "BuyActionPointLimit": {
-      "name": "行動力をX回購入",
-      "help": "行動力を購入する回数。1回目の購入で燃料1000、行動力100を消費します",
+      "name": "作戦記録をX回購入",
+      "help": "作戦記録の購入最大回数",
       "0": "購入しない",
       "1": "1回（燃料1000、行動力100）",
       "2": "2回（燃料2000、行動力200）",
@@ -3028,7 +3073,7 @@
       "5": "5回（燃料10000、行動力1000）"
     },
     "OilLimit": {
-      "name": "行動力購入時に燃料Xを保留",
+      "name": "作戦記録購入時、燃料Xを保留",
       "help": ""
     },
     "RepairThreshold": {
@@ -3045,7 +3090,7 @@
     },
     "RepairPackThresholdHazard1": {
       "name": "いずれかの船のHPがX以下になったら、修理ボックスを使用して船を修理してください（侵蝕1）。",
-      "help": "「修理ボックスを使用して船を修理する」がオンの場合のみ有効です\n「侵蝕1レベリングPlus」中のみ修理を試みます。\n0.0～1.0"
+      "help": "「修理ボックスを使用して船を修理する」がオンの場合のみ有効です\n「侵蝕1レベリング+」中のみ修理を試みます。\n0.0～1.0"
     },
     "DoRandomMapEvent": {
       "name": "マップ上のランダムイベントを完了する",
@@ -3057,7 +3102,7 @@
     },
     "NotifyOpsiMail": {
       "name": "セイレーン作戦関連情報をプッシュ",
-      "help": "侵蝕1と短猫相接の記録機能を使用する場合には、このオプションを有効にしてください"
+      "help": "侵食1とショートキャットの情報を OnePush で通知します。ランチャー通知は「ランチャー通知」で個別に制御します。情報量が多いため騒がしい場合があります。"
     },
     "LauncherPush": {
       "name": "ランチャー通知",
@@ -3069,7 +3114,7 @@
     },
     "OpsiOnePushConfig": {
       "name": "セイレーン作戦プッシュ通知設定",
-      "help": "セイレーン作戦のプッシュ通知設定。セイレーン作戦プッシュが有効な場合、このオプションが有効なときにのみ通知が送信されます"
+      "help": "「塞壬行動信息獨立推送」功能開啟時設置才生效。Onepushを使用して、侵食1と短毛猫に関する情報を1つプッシュします。設定方法はドキュメントを参照してください：https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/Onepush-configuration-%5BCN%5D"
     },
     "AutoSearchTimeLimit": {
       "name": "自動探索時間制限",
@@ -3102,7 +3147,7 @@
     },
     "EnsureFullyCollected": {
       "name": "毎日200ビーコンデータの収集を保証",
-      "help": "短猫相接の侵蝕等級が低い海域を削除し、資金を節約します"
+      "help": "収集が満了するまで、行動力保留設定を一時的に無視します。同時に「ショートカット接続」をオンにする必要があります。"
     },
     "AutoCollectShip": {
       "name": "新META艦船を自動取得",
@@ -3139,7 +3184,7 @@
   },
   "OpsiExplore": {
     "_info": {
-      "name": "セイレーン作戦開拓Plus",
+      "name": "セイレーン作戦開拓",
       "help": "毎月初めにセイレーン作戦の全海域を開拓します。作戦情報記録装置（燃料5000の道具）の購入は不要です。\nこの機能は空域探索のクールダウンを確保するため、27分ごとに海域をクリアします。\nこの機能を使用する前に以下の条件を満たす必要があります：\n- セイレーン作戦のメインストーリーをクリアし、模擬戦闘＋セイレーン試験場を完了"
     },
     "SpecialRadar": {
@@ -3165,7 +3210,7 @@
   },
   "OpsiShop": {
     "_info": {
-      "name": "セイレーン作戦ショップPlus",
+      "name": "セイレーン作戦ショップ",
       "help": "この機能を使用する前に以下の条件を満たす必要があります：\n- セイレーン作戦のメインストーリーをクリアし、模擬戦＋セイレーン試験場を完了\n- セイレーン作戦開拓ミッションを有効にするか、作戦情報記録装置（燃料5000の道具）を使用します\n- セイレーン作戦メインストーリークリア翌月、港ショップが新バージョンになってから利用可能"
     },
     "PresetFilter": {
@@ -3182,13 +3227,13 @@
       "help": "カスタムフィルターを使用するには「港ショップフィルター」を「カスタム」に設定し、https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/filter_string_cn を参照してください。"
     },
     "DisableBeforeDate": {
-      "name": "毎月X日以前にセイレーン作戦ショップPlusで購入しない",
+      "name": "毎月X日以前にセイレーン作戦ショップで購入しない",
       "help": "指定日の翌日から1日1回セイレーン作戦ショップで購入する\n0は制限なし、毎日購入することを意味します"
     }
   },
   "OpsiVoucher": {
     "_info": {
-      "name": "特別交換ショップ（毎月ホワイトチケットショップ）",
+      "name": "特別引換店舗（月額ホワイトチケットストア）",
       "help": "月額ホワイトチケットストアを購入する\nこの機能を使用する前に、次の条件を満たす必要があります。\n- セイレーン作戦のメインストーリーをクリアし、模擬戦闘 + セイレーン試験場を完了"
     },
     "Filter": {
@@ -3198,11 +3243,11 @@
   },
   "OpsiDaily": {
     "_info": {
-      "name": "セイレーン作戦デイリーPlus",
+      "name": "セイレーン作戦デイリー",
       "help": "この機能を使用する前に、次の条件を満たす必要があります。\n- 大きな世界のメインストーリーをクリアし、模擬戦＋セイレーン試験場を完了\n- セイレーン作戦開拓ミッションを有効にするか、作戦情報記録装置（燃料5000の道具）を使用します"
     },
     "DoMission": {
-      "name": "セイレーン作戦デイリーPlusを実行",
+      "name": "セイレーン作戦デイリーを実行",
       "help": "毎日港で受け取り、毎日すべて完了します"
     },
     "UseTuningSample": {
@@ -3210,7 +3255,7 @@
       "help": "6 つのパフォーマンス サンプルすべてと強力なパフォーマンス サンプルを使用する"
     },
     "SkipSirenResearchMission": {
-      "name": "セイレーン研究任務をスキップ",
+      "name": "セイレーンの研究クエストをやっていない",
       "help": "有効にすると、「Siren Research・I」と「Siren Research・II」の 2 つのミッションがスキップされます。\nセイレーン調査ミッションで黄色のコインを使用して紫色のコインと交換します"
     },
     "KeepMissionZone": {
@@ -3348,7 +3393,7 @@
     },
     "OperationCoinsPreserve": {
       "name": "戦闘補給品引換券を X 個保持する",
-      "help": "短猫相接の侵蝕等級が低い海域を削除し、資金を節約します"
+      "help": "戦闘供給バウチャーが X より低い場合は、短い cat 接続を実行します。変更することはお勧めできません。"
     },
     "MinimumActionPointReserve": {
       "name": "X ポイントのアクションを保持する",
@@ -3406,7 +3451,7 @@
   },
   "OpsiCheckLeveling": {
     "_info": {
-      "name": "セイレーン作戦艦隊経験値チェック",
+      "name": "大世界艦隊体験テスト",
       "help": "出撃艦隊の全艦が経験値を積んでいるか確認し、積んでいればプッシュメッセージを送信する\nまず最初に設定で「エラープッシュ設定」を構成する必要があります"
     },
     "TargetLevel": {
@@ -3414,7 +3459,7 @@
       "help": "すべての船が満たされたレベルに上昇するのに十分な経験を蓄積すると、メッセージ プッシュがトリガーされます。"
     },
     "LastRun": {
-      "name": "前回経験値チェック時間（自動記録）",
+      "name": "エクスペリエンスが最後にチェックされた時間 (自動的に記録されます)",
       "help": "タスクが繰り返し実行されるのを防ぐために、最後のチェック時刻が記録されます。チェック間隔は 1 日です。この値は自動的に記録されるため、通常は手動で変更する必要はありません。"
     },
     "CheckInterval": {
@@ -3447,6 +3492,12 @@
       "True": "有効",
       "False": "無効"
     },
+    "AnyShipReached": {
+      "name": "任意の艦船が目標レベル到達時に変更",
+      "help": "有効にすると、確認対象の任意の艦船が目標レベルに到達した時に自動編成を実行します。\n無効の場合、確認対象のすべての艦船が目標レベルに到達する必要があります",
+      "True": "有効",
+      "False": "無効"
+    },
     "CooldownHours": {
       "name": "クールダウン時間（時間）",
       "help": "自動編成後のクールダウン時間。頻繁なトリガーを回避します。",
@@ -3462,7 +3513,7 @@
   },
   "OpsiScheduling": {
     "_info": {
-      "name": "スマートスケジューリングPlus",
+      "name": "インテリジェントスケジューリング",
       "help": "セイレーン作戦のインテリジェントスケジューリング機能は、侵蝕1レベリングとイエローコイン補充タスク間の切り替えを調整します。\n有効にすると、さまざまなタスクが自動的に切り替わり、ゴールド コインとモビリティに基づいてプッシュ通知が送信されます。\n\n悲しいかな、オリジナルのいくつかの絶対確実な制限が解除されました。パラメータを慎重に設定してください。"
     },
     "UseSmartSchedulingOperationCoinsPreserve": {
@@ -3476,7 +3527,7 @@
       "help": "戦闘補給バウチャーが X より低い場合は、黄色のコイン補充タスクを実行します。これを変更することはお勧めできません。"
     },
     "ActionPointPreserve": {
-      "name": "短猫相接 行動力をXポイント保留",
+      "name": "ショートキャットは X ポイントの可動性を接続して保持します",
       "help": "モビリティがX以下になると停止し、モビリティボックスが自動的に開きます。"
     },
     "OperationCoinsReturnThreshold": {
@@ -3484,25 +3535,25 @@
       "help": "黄色のコイン獲得ミッション中に、戦闘補給券を合計 X 枚獲得 (増加) し、レベルを上げるために侵蝕 1 に戻ります。"
     },
     "EnableMeowfficerFarming": {
-      "name": "短猫相接を有効にする",
+      "name": "ショートキャット接続を有効にする",
       "help": "インテリジェント スケジューリングでショート キャット接続タスクが黄色のコインを補充できるようにするかどうか",
       "True": "有効",
       "False": "無効"
     },
     "EnableObscure": {
-      "name": "隠秘海域を有効にする",
+      "name": "未知の海を可能にする",
       "help": "黄色のコインを補充するためにインテリジェントなスケジューリングでHidden Seaミッションを有効にするかどうか",
       "True": "有効",
       "False": "無効"
     },
     "EnableAbyssal": {
-      "name": "深淵座標を有効にする",
+      "name": "深海を有効にする",
       "help": "イエローコインを補充するためのインテリジェントなスケジューリングで深海ミッションを有効にするかどうか",
       "True": "有効",
       "False": "無効"
     },
     "EnableStronghold": {
-      "name": "セイレーン要塞を有効にする",
+      "name": "セイレン要塞を有効にする",
       "help": "黄色のコインを補充するためにインテリジェント スケジューリングで Siren Fortress タスクを有効にするかどうか",
       "True": "有効",
       "False": "無効"
@@ -3530,6 +3581,21 @@
       "help": "OpsiScheduling.MonthEndShopPurchase.help",
       "True": "True",
       "False": "False"
+    },
+    "BuyActionPointMode": {
+      "name": "行動力購入モード",
+      "help": "行動力購入専用モード。既存のコイン/行動力スケジューリングと排他。有効化すると石油で行動力を購入し対応任務を実行。事前に「大世界一般設定 → 行動力X回購入」で週間購入上限を設定してください。",
+      "off": "オフ",
+      "hazard1_leveling": "危険1練級",
+      "meowfficer_farming": "指揮猫牧場"
+    },
+    "BuyActionPointUpperThreshold": {
+      "name": "行動力購入上限閾値",
+      "help": "「指揮猫牧場」モードのみ使用。現在行動力がこの値を超えると購入をスキップし海域任務を直接実行。デフォルト200（大世界行動力自然回復上限）。"
+    },
+    "BuyActionPointLowerThreshold": {
+      "name": "行動力購入下限閾値",
+      "help": "「指揮猫牧場」モードのみ使用。現在行動力がこの値を下回ると海域任務の実行を停止し購入ステップに戻る。デフォルト100。"
     }
   },
   "OpsiPreventActionPointOverflow": {
@@ -3542,7 +3608,7 @@
       "help": "専用処理があるスマートスケジューリングを推奨します",
       "OpsiScheduling": "スマートスケジューリング（推奨）",
       "OpsiHazard1Leveling": "侵蝕1レベリング",
-      "OpsiMeowfficerFarming": "短猫相接"
+      "OpsiMeowfficerFarming": "指揮ニャ周回"
     },
     "ActionPointUpperbound": {
       "name": "現在行動力上限",
@@ -3582,7 +3648,7 @@
     },
     "WorkerFilter": {
       "name": "農場作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinFarm": {
       "name": "作物在庫閾値",
@@ -3613,7 +3679,7 @@
     },
     "WorkerFilter": {
       "name": "果樹園作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinOrchard": {
       "name": "果物在庫閾値",
@@ -3650,7 +3716,7 @@
     },
     "WorkerFilter": {
       "name": "苗床作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinNursery": {
       "name": "苗床作物在庫閾値",
@@ -3679,7 +3745,7 @@
     },
     "ChickenFilter": {
       "name": "鶏作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinPork": {
       "name": "豚肉在庫閾値",
@@ -3687,7 +3753,7 @@
     },
     "PigFilter": {
       "name": "豚作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Milk": {
       "name": "牛を飼育",
@@ -3695,7 +3761,7 @@
     },
     "RancherFilter": {
       "name": "キャラクターフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Wool": {
       "name": "羊を飼育",
@@ -3703,7 +3769,7 @@
     },
     "WoolWorkerFilter": {
       "name": "羊作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     }
   },
   "IslandFishery": {
@@ -3760,7 +3826,7 @@
     },
     "RancherFilter": {
       "name": "キャラクターフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     }
   },
   "IslandMine": {
@@ -3769,7 +3835,7 @@
       "help": ""
     },
     "Positions": {
-      "name": "鉱夫をX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2",
@@ -3787,7 +3853,7 @@
     },
     "WorkerFilter": {
       "name": "鉱山作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinCopper": {
       "name": "銅鉱石最低在庫",
@@ -3816,7 +3882,7 @@
       "help": ""
     },
     "Positions": {
-      "name": "木こりをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2",
@@ -3834,7 +3900,7 @@
     },
     "WorkerFilter": {
       "name": "林場作業員フィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "MinElegant": {
       "name": "エレガント木材最低在庫",
@@ -3856,7 +3922,7 @@
     },
     "WorkerFilter": {
       "name": "採集キャラクターフィルター",
-      "help": ">で接続。最大3人まで指定でき、採集スロット1～3に対応します。\n>で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデイリー採集では WorkerJuu を選択できません。入力されている場合は自動で無視します。\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合、そのスロットは既存の採集ロジックにフォールバックします。"
+      "help": ">で接続。最大3人まで指定でき、採集スロット1～3に対応します。\n>で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデイリー採集では WorkerJuu を選択できません。入力されている場合は自動で無視します。\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合、そのスロットは既存の採集ロジックにフォールバックします。"
     }
   },
   "IslandRestaurant": {
@@ -3865,14 +3931,14 @@
       "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。\nメニュー1-8の涼拌双筍と筍と海老の炒め物は現在の季節に応じて対応する季節メニューに自動切替されます。"
     },
     "PostNumber": {
-      "name": "シェフをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2"
     },
     "ChefFilter": {
       "name": "シェフフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "DoubleBambooShoots": {
       "name": "季節料理を優先生産",
@@ -3898,7 +3964,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber1": {
-      "name": "メニュー1をX人前生産",
+      "name": "メニュー1数量",
       "help": ""
     },
     "Meal2": {
@@ -3921,7 +3987,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber2": {
-      "name": "メニュー2をX人前生産",
+      "name": "メニュー2数量",
       "help": ""
     },
     "Meal3": {
@@ -3944,7 +4010,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber3": {
-      "name": "メニュー3をX人前生産",
+      "name": "メニュー3数量",
       "help": ""
     },
     "Meal4": {
@@ -3967,7 +4033,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber4": {
-      "name": "メニュー4をX人前生産",
+      "name": "メニュー4数量",
       "help": ""
     },
     "Meal5": {
@@ -3990,7 +4056,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber5": {
-      "name": "メニュー5をX人前生産",
+      "name": "メニュー5数量",
       "help": ""
     },
     "Meal6": {
@@ -4013,7 +4079,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber6": {
-      "name": "メニュー6をX人前生産",
+      "name": "メニュー6数量",
       "help": ""
     },
     "Meal7": {
@@ -4036,7 +4102,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber7": {
-      "name": "メニュー7をX人前生産",
+      "name": "メニュー7数量",
       "help": ""
     },
     "Meal8": {
@@ -4059,7 +4125,7 @@
       "persimmon_cake": "柿のケーキ"
     },
     "MealNumber8": {
-      "name": "メニュー8をX人前生産",
+      "name": "メニュー8数量",
       "help": ""
     }
   },
@@ -4091,17 +4157,17 @@
   "IslandTeahouse": {
     "_info": {
       "name": "白熊ドリンク",
-      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。\nハニー製品は自動生産に対応しています。蜂蜜の在庫が十分であることを確認してください。\nメニューの春花茶とフレッシュパイナップルジュースは現在の季節に応じて対応する季節メニューに自動切替されます。"
+      "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。\nハニー製品は手動で作成してください。\nメニューの春花茶とフレッシュパイナップルジュースは現在の季節に応じて対応する季節メニューに自動切替されます。"
     },
     "PostNumber": {
-      "name": "バーテンダーをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2"
     },
     "ChefFilter": {
       "name": "シェフフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Seasonal": {
       "name": "季節ドリンクを優先生産",
@@ -4125,7 +4191,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber1": {
-      "name": "メニュー1をX人前生産",
+      "name": "メニュー1数量",
       "help": ""
     },
     "Meal2": {
@@ -4146,7 +4212,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber2": {
-      "name": "メニュー2をX人前生産",
+      "name": "メニュー2数量",
       "help": ""
     },
     "Meal3": {
@@ -4167,7 +4233,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber3": {
-      "name": "メニュー3をX人前生産",
+      "name": "メニュー3数量",
       "help": ""
     },
     "Meal4": {
@@ -4188,7 +4254,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber4": {
-      "name": "メニュー4をX人前生産",
+      "name": "メニュー4数量",
       "help": ""
     },
     "Meal5": {
@@ -4209,7 +4275,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber5": {
-      "name": "メニュー5をX人前生産",
+      "name": "メニュー5数量",
       "help": ""
     },
     "Meal6": {
@@ -4230,7 +4296,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber6": {
-      "name": "メニュー6をX人前生産",
+      "name": "メニュー6数量",
       "help": ""
     },
     "Meal7": {
@@ -4251,7 +4317,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber7": {
-      "name": "メニュー7をX人前生産",
+      "name": "メニュー7数量",
       "help": ""
     },
     "Meal8": {
@@ -4272,7 +4338,7 @@
       "carrot_pear_juice": "ニンジン秋梨ジュース"
     },
     "MealNumber8": {
-      "name": "メニュー8をX人前生産",
+      "name": "メニュー8数量",
       "help": ""
     }
   },
@@ -4305,14 +4371,14 @@
       "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
     },
     "PostNumber": {
-      "name": "グリルシェフをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2"
     },
     "ChefFilter": {
       "name": "シェフフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Meal1": {
       "name": "メニュー1",
@@ -4328,7 +4394,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber1": {
-      "name": "メニュー1をX人前生産",
+      "name": "メニュー1数量",
       "help": ""
     },
     "Meal2": {
@@ -4345,7 +4411,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber2": {
-      "name": "メニュー2をX人前生産",
+      "name": "メニュー2数量",
       "help": ""
     },
     "Meal3": {
@@ -4362,7 +4428,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber3": {
-      "name": "メニュー3をX人前生産",
+      "name": "メニュー3数量",
       "help": ""
     },
     "Meal4": {
@@ -4379,7 +4445,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber4": {
-      "name": "メニュー4をX人前生産",
+      "name": "メニュー4数量",
       "help": ""
     },
     "Meal5": {
@@ -4396,7 +4462,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber5": {
-      "name": "メニュー5をX人前生産",
+      "name": "メニュー5数量",
       "help": ""
     },
     "Meal6": {
@@ -4413,7 +4479,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber6": {
-      "name": "メニュー6をX人前生産",
+      "name": "メニュー6数量",
       "help": ""
     },
     "Meal7": {
@@ -4430,7 +4496,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber7": {
-      "name": "メニュー7をX人前生産",
+      "name": "メニュー7数量",
       "help": ""
     },
     "Meal8": {
@@ -4447,7 +4513,7 @@
       "double_energy": "エネルギーダブルセット"
     },
     "MealNumber8": {
-      "name": "メニュー8をX人前生産",
+      "name": "メニュー8数量",
       "help": ""
     }
   },
@@ -4476,14 +4542,14 @@
       "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
     },
     "PostNumber": {
-      "name": "クックをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2"
     },
     "ChefFilter": {
       "name": "シェフフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Meal1": {
       "name": "メニュー1",
@@ -4501,7 +4567,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber1": {
-      "name": "メニュー1をX人前生産",
+      "name": "メニュー1数量",
       "help": ""
     },
     "Meal2": {
@@ -4520,7 +4586,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber2": {
-      "name": "メニュー2をX人前生産",
+      "name": "メニュー2数量",
       "help": ""
     },
     "Meal3": {
@@ -4539,7 +4605,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber3": {
-      "name": "メニュー3をX人前生産",
+      "name": "メニュー3数量",
       "help": ""
     },
     "Meal4": {
@@ -4558,7 +4624,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber4": {
-      "name": "メニュー4をX人前生産",
+      "name": "メニュー4数量",
       "help": ""
     },
     "Meal5": {
@@ -4577,7 +4643,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber5": {
-      "name": "メニュー5をX人前生産",
+      "name": "メニュー5数量",
       "help": ""
     },
     "Meal6": {
@@ -4596,7 +4662,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber6": {
-      "name": "メニュー6をX人前生産",
+      "name": "メニュー6数量",
       "help": ""
     },
     "Meal7": {
@@ -4615,7 +4681,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber7": {
-      "name": "メニュー7をX人前生産",
+      "name": "メニュー7数量",
       "help": ""
     },
     "Meal8": {
@@ -4634,7 +4700,7 @@
       "seafood_rice": "シーフードライス"
     },
     "MealNumber8": {
-      "name": "メニュー8をX人前生産",
+      "name": "メニュー8数量",
       "help": ""
     }
   },
@@ -4665,14 +4731,14 @@
       "help": "メニューは1～8の順に生産されます。生産目標はメニューX数量オプションで、前の項目が完全に満たされてから次の項目が実行されます。後続の項目は実行時にそれ以前の項目の達成に影響しません。"
     },
     "PostNumber": {
-      "name": "バリスタをX人配置",
+      "name": "ポジション数",
       "help": "",
       "1": "1",
       "2": "2"
     },
     "ChefFilter": {
       "name": "シェフフィルター",
-      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
+      "help": ">で接続。例：ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune\nデフォルト順の先頭2行のみ認識します。指定キャラクターが使用できない場合は WorkerJuu にフォールバックします。"
     },
     "Friedrich": {
       "name": "フリードリヒ",
@@ -4693,7 +4759,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber1": {
-      "name": "メニュー1をX人前生産",
+      "name": "メニュー1数量",
       "help": ""
     },
     "Meal2": {
@@ -4711,7 +4777,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber2": {
-      "name": "メニュー2をX人前生産",
+      "name": "メニュー2数量",
       "help": ""
     },
     "Meal3": {
@@ -4729,7 +4795,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber3": {
-      "name": "メニュー3をX人前生産",
+      "name": "メニュー3数量",
       "help": ""
     },
     "Meal4": {
@@ -4747,7 +4813,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber4": {
-      "name": "メニュー4をX人前生産",
+      "name": "メニュー4数量",
       "help": ""
     },
     "Meal5": {
@@ -4765,7 +4831,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber5": {
-      "name": "メニュー5をX人前生産",
+      "name": "メニュー5数量",
       "help": ""
     },
     "Meal6": {
@@ -4783,7 +4849,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber6": {
-      "name": "メニュー6をX人前生産",
+      "name": "メニュー6数量",
       "help": ""
     },
     "Meal7": {
@@ -4801,7 +4867,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber7": {
-      "name": "メニュー7をX人前生産",
+      "name": "メニュー7数量",
       "help": ""
     },
     "Meal8": {
@@ -4819,7 +4885,7 @@
       "fruity_fruitier": "フルーティーフルーティエ"
     },
     "MealNumber8": {
-      "name": "メニュー8をX人前生産",
+      "name": "メニュー8数量",
       "help": ""
     }
   },
@@ -5011,7 +5077,7 @@
       "False": "無効"
     },
     "SeasonalThreshold": {
-      "name": "季節限定アイテムがX以下で置換",
+      "name": "季節置き換え閾値",
       "help": "在庫がこの数値を下回ると置き換えを実行"
     }
   },
@@ -5056,8 +5122,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Char2": {
       "name": "キャラクター2",
@@ -5095,8 +5160,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Product1": {
       "name": "メニュー1",
@@ -5222,8 +5286,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Char2": {
       "name": "キャラクター2",
@@ -5261,8 +5324,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Product1": {
       "name": "メニュー1",
@@ -5400,8 +5462,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Char2": {
       "name": "キャラクター2",
@@ -5439,8 +5500,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Product1": {
       "name": "メニュー1",
@@ -5538,8 +5598,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Char2": {
       "name": "キャラクター2",
@@ -5577,8 +5636,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Product1": {
       "name": "商品1",
@@ -5681,8 +5739,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Char2": {
       "name": "キャラクター2",
@@ -5720,8 +5777,7 @@
       "Belfast": "Belfast",
       "ChangFeng": "ChangFeng",
       "Mogador": "Mogador",
-      "RoyalFortune": "RoyalFortune",
-      "DaVinci": "DaVinci"
+      "RoyalFortune": "RoyalFortune"
     },
     "Product1": {
       "name": "商品1",
@@ -5869,7 +5925,7 @@
       "help": "現在の骨組み: ドック、先頭艦、クイック変更、装備中フィルター、仮の装備ロジック、次の艦。"
     },
     "ShipLimit": {
-      "name": "最初のX隻を処理",
+      "name": "処理する艦船数の上限",
       "help": "0 は次の艦船が見つからなくなるまで処理します。デバッグ時は 1 など小さい値を指定してください。"
     },
     "EnableSlot1": {
@@ -5909,7 +5965,7 @@
       "help": "どちらのスクリーンショット スキームと制御スキームが速いかをテストします。速度はエミュレータとコンピュータの構成によって異なります。\nテストが完了したら、「AzurPilot」-「シミュレーター設定」で最速のスクリーンショットと制御スキームを選択します。"
     },
     "DeviceType": {
-      "name": "デバイスタイプを選択",
+      "name": "デバイスの種類",
       "help": "",
       "emulator": "エミュレータ",
       "plone_cloud_with_adb": "クラウド携帯電話は公衆網ADBを搭載",

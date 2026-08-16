@@ -44,7 +44,7 @@ class Daily(Combat):
         emergency_module_development (bool): 是否为紧急模块开发任务。
     """
     daily_current: int
-    daily_checked: list
+    daily_checked: list[int]
     emergency_module_development = False
 
     def is_active(self):
@@ -289,7 +289,7 @@ class Daily(Combat):
     def daily_check(self, n=None):
         if not n:
             n = self.daily_current
-        self.daily_checked.append(n)
+        self.daily_checked.append(int(n))
         logger.info(f'已检查每日 {n}')
         logger.info(f'已检查列表: {self.daily_checked}')
 

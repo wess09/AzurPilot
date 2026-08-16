@@ -74,4 +74,6 @@ def reload():
 
     for key in dic_lang["ja-JP"].keys():
         if dic_lang["ja-JP"][key] == key:
-            dic_lang["ja-JP"][key] = dic_lang["en-US"][key]
+            fallback = dic_lang["en-US"].get(key)
+            if fallback is not None:
+                dic_lang["ja-JP"][key] = fallback
