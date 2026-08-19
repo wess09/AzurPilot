@@ -349,7 +349,10 @@ class FastForwardHandler(AutoSearchHandler):
         Pages:
             in: FLEET_PREPARATION
         """
-        if not self.config.FLEET_2 and not self.config.SUBMARINE:
+        if not self.map_is_clear_mode:
+            return False
+
+        if not self.map_is_auto_search and not self.config.SUBMARINE:
             return False
 
         logger.info('自动搜索设置')
