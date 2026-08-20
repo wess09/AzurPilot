@@ -32,6 +32,13 @@ from module.handler.assets import GET_MISSION
 from module.logger import logger
 
 
+def _use_ocr_server() -> bool:
+    """返回当前部署是否通过 RPC 使用 OCR，避免 worker 加载本地模型。"""
+    from module.webui.setting import State
+
+    return bool(getattr(State.deploy_config, 'UseOcrServer', False))
+
+
 def show_function_call():
     """
     INFO     21:07:31.554 │ Function calls:
@@ -145,7 +152,11 @@ class Device(Screenshot, Control, AppControl, Input):
             if not self.config.is_template_config and self.config.Emulator_ScreenshotMethod == 'auto':
                 self.run_simple_screenshot_benchmark()
             # 自动选择 OCR 设备
-            if not self.config.is_template_config and self.config.Optimization_OcrDevice == 'auto':
+            if (
+                not self.config.is_template_config
+                and self.config.Optimization_OcrDevice == 'auto'
+                and not _use_ocr_server()
+            ):
                 self.run_simple_ocr_benchmark()
 
             # 提前初始化控制方式
@@ -239,6 +250,10 @@ class Device(Screenshot, Control, AppControl, Input):
 
         准确率 100% 则选择 'gpu'，否则回退到 'cpu'。
         """
+        if _use_ocr_server():
+            logger.info('[设备-基准测试] 已启用OCR服务器，跳过本地OCR设备基准测试')
+            return None
+
         logger.info('[设备-基准测试] 运行OCR设备基准测试')
         from module.daemon.ocr_benchmark import OcrBenchmark
         bench = OcrBenchmark(config=self.config, device=self)

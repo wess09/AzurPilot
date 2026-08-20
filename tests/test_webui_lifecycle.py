@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from module.webui.fake_pil_module import remove_fake_pil_module
@@ -65,6 +66,37 @@ class TestWebUILifecycle(unittest.TestCase):
             self.assertFalse(app_lifecycle.clearup())
 
         clear_state.assert_not_called()
+
+    def test_startup_waits_for_local_ocr_server_before_workers_start(self):
+        deploy_config = SimpleNamespace(
+            DiscordRichPresence=False,
+            StartOcrServer=True,
+            UseOcrServer=True,
+            OcrServerPort=30004,
+            OcrClientAddress='127.0.0.1:30004',
+            EnableRemoteAccess=False,
+            Password=None,
+        )
+        manager = Mock()
+        updater = Mock()
+        updater.delay = 0
+
+        with (
+            patch.object(State, 'init'),
+            patch.object(State, 'manager', manager),
+            patch.object(State, 'deploy_config', deploy_config),
+            patch.object(app_lifecycle.lang, 'reload'),
+            patch.object(app_lifecycle, 'updater', updater),
+            patch.object(app_lifecycle.task_handler, 'add'),
+            patch.object(app_lifecycle.task_handler, 'start'),
+            patch.object(app_lifecycle, 'is_demo_mode', return_value=False),
+            patch.object(app_lifecycle, 'start_ocr_server_process') as start_server,
+            patch.object(app_lifecycle, 'wait_for_ocr_server', return_value=True) as wait_server,
+        ):
+            app_lifecycle.startup()
+
+        start_server.assert_called_once_with(30004)
+        wait_server.assert_called_once_with('127.0.0.1:30004', timeout=30)
 
 
 class TestWebUIState(unittest.TestCase):

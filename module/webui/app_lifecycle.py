@@ -13,6 +13,7 @@ from module.webui.app_dependencies import (
     stop_ocr_server_process,
     task_handler,
     updater,
+    wait_for_ocr_server,
 )
 
 from module.webui.app_helpers import (
@@ -46,8 +47,19 @@ def startup() -> None:
     task_handler.start()
     if State.deploy_config.DiscordRichPresence:
         init_discord_rpc()
-    if State.deploy_config.StartOcrServer and not is_demo_mode():
-        start_ocr_server_process(State.deploy_config.OcrServerPort)
+    if not is_demo_mode():
+        if State.deploy_config.StartOcrServer:
+            start_ocr_server_process(State.deploy_config.OcrServerPort)
+        if State.deploy_config.UseOcrServer:
+            timeout = 30 if State.deploy_config.StartOcrServer else 3
+            if not wait_for_ocr_server(
+                State.deploy_config.OcrClientAddress,
+                timeout=timeout,
+            ):
+                logger.warning(
+                    "[OCR-RPC] 远程 OCR 未就绪；实例首次识别可能回退到本地模型，"
+                    "这会增加每实例内存。"
+                )
     if State.deploy_config.EnableRemoteAccess and (
         State.deploy_config.Password is not None or os.environ.get("DEMO") == "1"
     ):
@@ -66,7 +78,6 @@ def clearup() -> bool:
         for name, handler in (
             ("远程访问", RemoteAccess.kill_ssh_process),
             ("Discord RPC", close_discord_rpc),
-            ("OCR 服务", stop_ocr_server_process),
         ):
             success = _clearup_step(name, handler) and success
 
@@ -85,6 +96,8 @@ def clearup() -> bool:
 
         for alas in instances:
             success = _clearup_step(f"AzurPilot 实例 {alas.config_name}", alas.stop) and success
+
+        success = _clearup_step("OCR 服务", stop_ocr_server_process) and success
 
         if success:
             try:

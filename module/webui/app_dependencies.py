@@ -79,7 +79,11 @@ from module.config.utils import (
 from module.config.utils import time_delta
 from module.log_res.log_res import LogRes
 from module.logger import logger
-from module.ocr.rpc import start_ocr_server_process, stop_ocr_server_process
+from module.ocr.rpc import (
+    start_ocr_server_process,
+    stop_ocr_server_process,
+    wait_for_ocr_server,
+)
 from module.submodule.submodule import load_config
 from module.submodule.utils import get_config_mod
 from module.webui.base import Frame
