@@ -6,7 +6,10 @@
 
 # -*- coding: utf-8 -*-
 import asyncio
+import concurrent.futures
+import inspect
 import threading
+from contextvars import copy_context
 from typing import Callable, Any
 
 from module.logger import logger
@@ -44,13 +47,39 @@ class AsyncExecutor:
         支持同步调用传入，从而自动被包装并在事件循环中串行/并发执行。
         因 event loop 在单线程内调度同步 wrapper，默认会串行化所有非 await 的同步操作。
         """
-        if asyncio.iscoroutinefunction(func):
-            return asyncio.run_coroutine_threadsafe(func(*args, **kwargs), self._loop)
+        runtime_context = copy_context()
+        if inspect.iscoroutinefunction(func):
+            # ContextVar 不会随线程自动传播。必须在 event loop 线程中以当前
+            # worker 的 context 创建 Task，否则 OCR/日志会退回宿主默认状态。
+            result = concurrent.futures.Future()
+
+            def schedule_coroutine():
+                try:
+                    task = runtime_context.run(
+                        asyncio.create_task, func(*args, **kwargs)
+                    )
+                except BaseException as exc:
+                    result.set_exception(exc)
+                    return
+
+                def complete(done_task):
+                    if done_task.cancelled():
+                        result.cancel()
+                        return
+                    try:
+                        result.set_result(done_task.result())
+                    except BaseException as exc:
+                        result.set_exception(exc)
+
+                task.add_done_callback(complete)
+
+            self._loop.call_soon_threadsafe(schedule_coroutine)
+            return result
         else:
             # 对于普通的同步函数，直接包装为协程跑在loop里
             # 这样对于 SQLite 的写入来说，就变成了在单线程(event loop 线程)内的串行执行
             async def wrapper():
-                return func(*args, **kwargs)
+                return runtime_context.run(func, *args, **kwargs)
             return asyncio.run_coroutine_threadsafe(wrapper(), self._loop)
 
     def flush(self, timeout: float = 5.0):
@@ -72,4 +101,3 @@ async_executor = AsyncExecutor()
 
 import atexit
 atexit.register(async_executor.flush)
-

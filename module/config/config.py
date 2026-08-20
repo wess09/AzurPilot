@@ -114,11 +114,9 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         bound (dict): 当前任务绑定的属性名到配置路径的映射。
         is_hoarding_task (bool): 是否为囤积任务（影响空闲行为）。
     """
-    stop_event: threading.Event = None
+    # 构造函数建立实例级 bound 前，__setattr__ 仍需要一个安全的查找兜底。
+    # 这里只保存不可变语义上的空映射，不承载任何实例运行态。
     bound = {}
-
-    # 类属性
-    is_hoarding_task = True
 
     def __setattr__(self, key, value):
         if key in self.bound:
@@ -130,9 +128,12 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             super().__setattr__(key, value)
 
     def __init__(self, config_name, task=None):
-        logger.attr("服务器", self.SERVER)
         # 读取 ./config/<config_name>.json
         self.config_name = config_name
+        # 这些字段过去依赖子进程隔离而放在类上；单进程宿主必须每个实例独立。
+        self.stop_event = None
+        self.is_hoarding_task = True
+        logger.attr("服务器", self.SERVER)
         # YAML 文件中的原始 JSON 数据
         self.data = {}
         # 已修改的参数。键：YAML 文件中的参数路径。值：修改后的值。
@@ -315,7 +316,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         waiting = []
         error = []
         now = current_time()
-        if AzurLaneConfig.is_hoarding_task:
+        if self.is_hoarding_task:
             now -= self.hoarding
         for func in self.data.values():
             func = Function(func)
@@ -350,13 +351,13 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         self.get_next_task()
 
         if self.pending_task:
-            AzurLaneConfig.is_hoarding_task = False
+            self.is_hoarding_task = False
             logger.info(f"[配置] 待处理任务: {[f.command for f in self.pending_task]}")
             task = self.pending_task[0]
             logger.attr("任务", task)
             return task
         else:
-            AzurLaneConfig.is_hoarding_task = True
+            self.is_hoarding_task = True
 
         if self.waiting_task:
             logger.info("[配置] 没有待处理任务")

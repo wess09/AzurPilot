@@ -9,14 +9,58 @@
 import typing as t
 import os
 import traceback
+from threading import RLock
 
 from PIL import ImageDraw
 
 from module.base.decorator import cached_property
 from module.base.resource import Resource
+from module.base.runtime_context import clear_runtime_state, get_runtime_context, runtime_state
 from module.base.utils import *
 from module.config.server import VALID_SERVER
 from module.logger import logger
+
+
+_UNSET = object()
+
+
+class _ButtonRuntimeState:
+    """Button 在单个 worker 中的写时覆盖状态。
+
+    静态模板图像始终放在 Button 自身的共享缓存中。只有 ``load_color()`` 或外部
+    直接改写匹配字段时，才会在这里保存截图模板/颜色的局部引用，不深拷贝图像。
+    """
+
+    __slots__ = (
+        'area',
+        'button',
+        'name',
+        'button_offset',
+        'color',
+        'is_gif',
+        'image',
+        'image_binary',
+        'image_luma',
+        'match_init',
+        'match_binary_init',
+        'match_luma_init',
+        'template_override',
+    )
+
+    def __init__(self):
+        self.area = _UNSET
+        self.button = _UNSET
+        self.name = _UNSET
+        self.button_offset = None
+        self.color = _UNSET
+        self.is_gif = _UNSET
+        self.image = _UNSET
+        self.image_binary = _UNSET
+        self.image_luma = _UNSET
+        self.match_init = _UNSET
+        self.match_binary_init = _UNSET
+        self.match_luma_init = _UNSET
+        self.template_override = False
 
 
 class Button(Resource):
@@ -45,50 +89,98 @@ class Button(Resource):
         self.raw_file = file
         self.raw_name = name
 
-        self._button_offset = None
-        self._match_init = False
-        self._match_binary_init = False
-        self._match_luma_init = False
-        self.image = None
-        self.image_binary = None
-        self.image_luma = None
+        # 共享字段只保存静态资源缓存。运行中的可变覆盖进入 RuntimeContext，
+        # 使不同 worker 共享模板数组而不共享动态颜色、截图模板和偏移坐标。
+        self.__dict__['_shared_button_offset'] = None
+        self.__dict__['_shared_area'] = _UNSET
+        self.__dict__['_shared_button'] = _UNSET
+        self.__dict__['_shared_name'] = _UNSET
+        self.__dict__['_shared_color'] = _UNSET
+        self.__dict__['_shared_is_gif'] = _UNSET
+        self.__dict__['_shared_match_init'] = False
+        self.__dict__['_shared_match_binary_init'] = False
+        self.__dict__['_shared_match_luma_init'] = False
+        self.__dict__['_shared_image'] = None
+        self.__dict__['_shared_image_binary'] = None
+        self.__dict__['_shared_image_luma'] = None
+        self.__dict__['_template_lock'] = RLock()
 
         if self.file:
             self.resource_add(key=self.file)
 
-    cached = ['area', 'color', '_button', 'file', 'name', 'is_gif']
+    cached = ['area', '_button', 'file', 'name']
 
-    @cached_property
+    @property
     def area(self):
-        return self.parse_property(self.raw_area)
+        value = self._get_runtime_value('area')
+        if value is _UNSET:
+            value = self.parse_property(self.raw_area)
+            self.__dict__['_shared_area'] = value
+        return value
 
-    @cached_property
+    @area.setter
+    def area(self, value):
+        self._set_runtime_value('area', value, template_override=True)
+
+    @property
     def color(self):
-        return self.parse_property(self.raw_color)
+        value = self._get_runtime_value('color')
+        if value is _UNSET:
+            value = self.parse_property(self.raw_color)
+            self.__dict__['_shared_color'] = value
+        return value
 
-    @cached_property
+    @color.setter
+    def color(self, value):
+        # 颜色阈值与模板图像相互独立，单独改写颜色不应复制共享模板。
+        self._set_runtime_value('color', value)
+
+    @property
     def _button(self):
-        return self.parse_property(self.raw_button)
+        value = self._get_runtime_value('button')
+        if value is _UNSET:
+            value = self.parse_property(self.raw_button)
+            self.__dict__['_shared_button'] = value
+        return value
+
+    @_button.setter
+    def _button(self, value):
+        # 点击区域变化不影响识别模板，不能因此为当前 worker 复制模板图像。
+        self._set_runtime_value('button', value)
 
     @cached_property
     def file(self):
         return self.parse_property(self.raw_file)
 
-    @cached_property
+    @property
     def name(self):
-        if self.raw_name:
-            return self.raw_name
-        elif self.file:
-            return os.path.splitext(os.path.split(self.file)[1])[0]
-        else:
-            return 'BUTTON'
+        value = self._get_runtime_value('name')
+        if value is _UNSET:
+            if self.raw_name:
+                value = self.raw_name
+            elif self.file:
+                value = os.path.splitext(os.path.split(self.file)[1])[0]
+            else:
+                value = 'BUTTON'
+            self.__dict__['_shared_name'] = value
+        return value
 
-    @cached_property
+    @name.setter
+    def name(self, value):
+        # 名称只用于日志/哈希；临时改名不应触发模板重载。
+        self._set_runtime_value('name', value)
+
+    @property
     def is_gif(self):
-        if self.file:
-            return os.path.splitext(self.file)[1] == '.gif'
-        else:
-            return False
+        value = self._get_runtime_value('is_gif')
+        if value is _UNSET:
+            value = bool(self.file and os.path.splitext(self.file)[1] == '.gif')
+            self.__dict__['_shared_is_gif'] = value
+        return value
+
+    @is_gif.setter
+    def is_gif(self, value):
+        self._set_runtime_value('is_gif', value, template_override=True)
 
     def __str__(self):
         return self.name
@@ -110,6 +202,90 @@ class Button(Resource):
             return self._button
         else:
             return self._button_offset
+
+    def _state(self) -> _ButtonRuntimeState | None:
+        return runtime_state(self, 'button', _ButtonRuntimeState)
+
+    def _get_runtime_value(self, field):
+        state = self._state()
+        if state is not None:
+            value = getattr(state, field)
+            if value is not _UNSET:
+                return value
+        return self.__dict__[f'_shared_{field}']
+
+    def _set_runtime_value(self, field, value, template_override=False):
+        state = self._state()
+        if state is None:
+            self.__dict__[f'_shared_{field}'] = value
+            return
+        setattr(state, field, value)
+        if template_override:
+            state.template_override = True
+
+    def _set_shared_value(self, field, value):
+        self.__dict__[f'_shared_{field}'] = value
+
+    @property
+    def _button_offset(self):
+        state = self._state()
+        return state.button_offset if state is not None else self.__dict__['_shared_button_offset']
+
+    @_button_offset.setter
+    def _button_offset(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_shared_button_offset'] = value
+        else:
+            state.button_offset = value
+
+    @property
+    def image(self):
+        return self._get_runtime_value('image')
+
+    @image.setter
+    def image(self, value):
+        self._set_runtime_value('image', value, template_override=True)
+
+    @property
+    def image_binary(self):
+        return self._get_runtime_value('image_binary')
+
+    @image_binary.setter
+    def image_binary(self, value):
+        self._set_runtime_value('image_binary', value, template_override=True)
+
+    @property
+    def image_luma(self):
+        return self._get_runtime_value('image_luma')
+
+    @image_luma.setter
+    def image_luma(self, value):
+        self._set_runtime_value('image_luma', value, template_override=True)
+
+    @property
+    def _match_init(self):
+        return self._get_runtime_value('match_init')
+
+    @_match_init.setter
+    def _match_init(self, value):
+        self._set_runtime_value('match_init', value, template_override=True)
+
+    @property
+    def _match_binary_init(self):
+        return self._get_runtime_value('match_binary_init')
+
+    @_match_binary_init.setter
+    def _match_binary_init(self, value):
+        self._set_runtime_value('match_binary_init', value, template_override=True)
+
+    @property
+    def _match_luma_init(self):
+        return self._get_runtime_value('match_luma_init')
+
+    @_match_luma_init.setter
+    def _match_luma_init(self, value):
+        self._set_runtime_value('match_luma_init', value, template_override=True)
 
     def appear_on(self, image, threshold=10):
         """检测按钮是否出现在截图上。
@@ -136,9 +312,9 @@ class Button(Resource):
         Returns:
             tuple: 颜色值 (r, g, b)。
         """
-        self.__dict__['color'] = get_color(image, self.area)
+        self.color = get_color(image, self.area)
         self.image = crop(image, self.area)
-        self.__dict__['is_gif'] = False
+        self.is_gif = False
         return self.color
 
     def load_offset(self, button):
@@ -155,51 +331,109 @@ class Button(Resource):
 
     def ensure_template(self):
         """加载资源图像。若需调用 self.match，应先调用此方法。"""
-        if not self._match_init:
+        with self.__dict__['_template_lock']:
+            state = self._state()
+            if state is not None and state.template_override:
+                # 不能先读 ``self._match_init``。该属性会在本 worker 尚未加载时
+                # 回退到共享缓存；若另一个 worker 已预热模板，当前 worker 修改了
+                # area 后就会错误复用旧裁剪图像。
+                if state.match_init is True:
+                    return
+                if self.is_gif:
+                    image = []
+                    import imageio
+                    for frame in imageio.mimread(self.file):
+                        frame = frame[:, :, :3].copy() if len(frame.shape) == 3 else frame
+                        image.append(crop(frame, self.area))
+                    self.image = image
+                else:
+                    self.image = load_image(self.file, self.area)
+                self._match_init = True
+                return
+
+            if self.__dict__['_shared_match_init']:
+                return
             if self.is_gif:
-                self.image = []
+                image = []
                 import imageio
-                for image in imageio.mimread(self.file):
-                    image = image[:, :, :3].copy() if len(image.shape) == 3 else image
-                    image = crop(image, self.area)
-                    self.image.append(image)
+                for frame in imageio.mimread(self.file):
+                    frame = frame[:, :, :3].copy() if len(frame.shape) == 3 else frame
+                    image.append(crop(frame, self.area))
             else:
-                self.image = load_image(self.file, self.area)
-            self._match_init = True
+                image = load_image(self.file, self.area)
+            self._set_shared_value('image', image)
+            self._set_shared_value('match_init', True)
 
     def ensure_binary_template(self):
         """加载二值化资源图像。若需调用 self.match_binary，应先调用此方法。"""
-        if not self._match_binary_init:
+        with self.__dict__['_template_lock']:
+            state = self._state()
+            if state is not None and state.template_override:
+                # 同 ``ensure_template``：局部模板不能被共享初始化标记短路。
+                if state.match_binary_init is True:
+                    return
+            elif self.__dict__['_shared_match_binary_init']:
+                return
+            self.ensure_template()
+
             if self.is_gif:
-                self.image_binary = []
+                image_binary = []
                 for image in self.image:
                     image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                    _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-                    self.image_binary.append(image_binary)
+                    _, binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                    image_binary.append(binary)
             else:
                 image_gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-                _, self.image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-            self._match_binary_init = True
+                _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+            if state is not None and state.template_override:
+                self.image_binary = image_binary
+                self._match_binary_init = True
+            else:
+                self._set_shared_value('image_binary', image_binary)
+                self._set_shared_value('match_binary_init', True)
 
     def ensure_luma_template(self):
-        if not self._match_luma_init:
+        with self.__dict__['_template_lock']:
+            state = self._state()
+            if state is not None and state.template_override:
+                # 同 ``ensure_template``：局部模板不能被共享初始化标记短路。
+                if state.match_luma_init is True:
+                    return
+            elif self.__dict__['_shared_match_luma_init']:
+                return
+            self.ensure_template()
+
             if self.is_gif:
-                self.image_luma = []
-                for image in self.image:
-                    luma = rgb2luma(image)
-                    self.image_luma.append(luma)
+                image_luma = [rgb2luma(image) for image in self.image]
             else:
-                self.image_luma = rgb2luma(self.image)
-            self._match_luma_init = True
+                image_luma = rgb2luma(self.image)
+
+            if state is not None and state.template_override:
+                self.image_luma = image_luma
+                self._match_luma_init = True
+            else:
+                self._set_shared_value('image_luma', image_luma)
+                self._set_shared_value('match_luma_init', True)
 
     def resource_release(self):
+        if get_runtime_context() is not None:
+            # 线程模式下当前 worker 只能释放自己的动态覆盖；共享模板由宿主
+            # 生命周期统一回收，不能被另一 worker 的任务切换清空。
+            clear_runtime_state(self, 'button')
+            return
         super().resource_release()
-        self.image = None
-        self.image_binary = None
-        self.image_luma = None
-        self._match_init = False
-        self._match_binary_init = False
-        self._match_luma_init = False
+        self.__dict__['_shared_color'] = _UNSET
+        self.__dict__['_shared_area'] = _UNSET
+        self.__dict__['_shared_button'] = _UNSET
+        self.__dict__['_shared_name'] = _UNSET
+        self.__dict__['_shared_is_gif'] = _UNSET
+        self.__dict__['_shared_image'] = None
+        self.__dict__['_shared_image_binary'] = None
+        self.__dict__['_shared_image_luma'] = None
+        self.__dict__['_shared_match_init'] = False
+        self.__dict__['_shared_match_binary_init'] = False
+        self.__dict__['_shared_match_luma_init'] = False
 
     def match(self, image, offset=30, similarity=0.85):
         """通过模板匹配检测按钮。部分按钮的位置可能不固定。

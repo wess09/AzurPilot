@@ -97,6 +97,13 @@ def clearup() -> bool:
         for alas in instances:
             success = _clearup_step(f"AzurPilot 实例 {alas.config_name}", alas.stop) and success
 
+        # 专用宿主必须先于 OCR 服务退出；否则仍在收尾的线程可能因 OCR 已停止而
+        # 触发本地回退或无法记录最终状态。
+        success = _clearup_step(
+            "单进程实例宿主",
+            ProcessManager.shutdown_single_process_runtime,
+        ) and success
+
         success = _clearup_step("OCR 服务", stop_ocr_server_process) and success
 
         if success:

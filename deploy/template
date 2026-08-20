@@ -109,6 +109,15 @@ Deploy:
     # [Default] 127.0.0.1:22268
     OcrClientAddress: 127.0.0.1:22268
 
+  Runtime:
+    # 在独立宿主中以线程运行多个标准 Alas 实例，复用 Python、NumPy 和 OpenCV 导入。
+    # Run standard Alas instances as threads in a dedicated host to share Python, NumPy and OpenCV imports.
+    # 仅支持满足运行时隔离检查的实例；不满足时将保留独立进程模式。
+    # Only instances that pass runtime isolation checks are supported; others keep process mode.
+    # [默认] false
+    # [Default] false
+    SingleProcessInstances: false
+
   Update:
     # 启用自动更新和内置更新功能
     # Use auto update and builtin updater feature

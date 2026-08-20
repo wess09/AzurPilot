@@ -10,6 +10,8 @@ import pickle
 import threading
 import time
 
+from module.base.runtime_context import get_runtime_option
+from module.exception import OcrServerUnavailable
 from module.logger import logger
 from module.webui.setting import State
 
@@ -28,6 +30,17 @@ class ModelProxy:
     _next_retry_at = 0.0
     _retry_interval = 5.0
     _unavailable = object()
+    _require_remote_server = False
+
+    @classmethod
+    def set_require_remote_server(cls, required: bool) -> None:
+        """设置当前进程是否禁止 OCR 本地回退。
+
+        专用单进程宿主里的后台线程不会自动继承 ``ContextVar``。该进程级
+        保护确保它们也不会因 RPC 短暂不可用而各自加载 ONNX 模型。
+        """
+        with cls._lock:
+            cls._require_remote_server = bool(required)
 
     @classmethod
     def _close_unlocked(cls) -> None:
@@ -121,6 +134,10 @@ class ModelProxy:
         return self._call(address, method, *args)
 
     def _local_model(self):
+        if self._require_remote_server or get_runtime_option('strict_ocr_server', False):
+            raise OcrServerUnavailable(
+                '单进程实例要求远程 OCR 服务可用，已拒绝回退到本地 OCR 模型'
+            )
         from module.ocr.models import OCR_MODEL
 
         return OCR_MODEL.__getattribute__(self.lang)

@@ -43,6 +43,8 @@ from rich.style import Style
 from rich.theme import Theme
 from rich.traceback import Traceback
 
+from module.base.runtime_context import get_runtime_context, runtime_state
+
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
@@ -318,6 +320,60 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
             RichHandler.handleError(self.richd, record)
 
 
+class _RuntimeLogState:
+    """单进程宿主中一个 worker 的日志输出目标。"""
+
+    __slots__ = ('config_name', 'renderable_sink', 'file_handler', 'log_file')
+
+    def __init__(self):
+        self.config_name = ''
+        self.renderable_sink = None
+        self.file_handler = None
+        self.log_file = None
+
+
+_RUNTIME_LOG_OWNER = object()
+_runtime_log_handler_lock = threading.RLock()
+
+
+def _get_runtime_log_state():
+    """返回当前 worker 的日志状态；传统进程模式返回 ``None``。"""
+    if get_runtime_context() is None:
+        return None
+    return runtime_state(_RUNTIME_LOG_OWNER, 'logger', _RuntimeLogState)
+
+
+class RuntimeFileHandler(logging.Handler):
+    """将全局 logger 的记录路由到当前 worker 的独立日志文件。"""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        state = _get_runtime_log_state()
+        if state is None or state.file_handler is None:
+            return
+        state.file_handler.emit(record)
+
+
+class RuntimeRichRenderableHandler(RichRenderableHandler):
+    """将 WebUI 渲染对象路由到当前 worker 的队列。"""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        state = _get_runtime_log_state()
+        if state is None or state.renderable_sink is None:
+            return
+        super().emit(record)
+
+    @staticmethod
+    def _dispatch(renderable: ConsoleRenderable) -> None:
+        state = _get_runtime_log_state()
+        if state is None or state.renderable_sink is None:
+            return
+        try:
+            state.renderable_sink(renderable)
+        except Exception:
+            # WebUI 队列关闭不能反向终止自动化线程。
+            pass
+
+
 class HTMLConsole(Console):
     """强制启用完整功能的控制台（用于 Web 输出）。
 
@@ -418,6 +474,10 @@ def _set_file_logger(name=pyw_name):
 
 
 def set_file_logger(name=pyw_name):
+    if _get_runtime_log_state() is not None:
+        # 单进程宿主会由 set_runtime_log_context() 为每个 worker 配置独立文件。
+        # 这里不能替换全局 handler，否则后启动实例会劫持已有实例的日志。
+        return
     if "_" in name:
         name = name.split("_", 1)[0]
     # Windows 下有 "SyncManager-N:N"、"MainProcess"、"Process-N"、"gui" 四种进程
@@ -464,8 +524,121 @@ def set_file_logger(name=pyw_name):
         pass
 
 
+def _ensure_runtime_log_handlers() -> None:
+    """安装一次按 ContextVar 路由的日志处理器。"""
+    with _runtime_log_handler_lock:
+        if not any(isinstance(hdlr, RuntimeFileHandler) for hdlr in logger.handlers):
+            logger.addHandler(RuntimeFileHandler())
+
+        if any(
+            isinstance(hdlr, RuntimeRichRenderableHandler) for hdlr in logger.handlers
+        ):
+            return
+
+        console = HTMLConsole(
+            force_terminal=False,
+            force_interactive=False,
+            width=80,
+            color_system='truecolor',
+            markup=False,
+            safe_box=False,
+            highlighter=Highlighter(),
+            theme=WEB_THEME,
+        )
+        hdlr = RuntimeRichRenderableHandler(
+            func=RuntimeRichRenderableHandler._dispatch,
+            console=console,
+            show_path=False,
+            show_time=False,
+            show_level=True,
+            rich_tracebacks=True,
+            tracebacks_show_locals=True,
+            tracebacks_extra_lines=2,
+            highlighter=Highlighter(),
+        )
+        hdlr.setFormatter(web_formatter)
+        logger.addHandler(hdlr)
+
+
+def set_runtime_log_context(
+    name: str,
+    renderable_sink: Callable[[ConsoleRenderable], None],
+) -> str:
+    """为当前单进程 worker 设置隔离的文件与 WebUI 日志目标。
+
+    调用方必须已进入 ``runtime_scope(name)``。文件 handler 仅保存在该上下文，
+    不会改变其他 worker 的 logger 配置。
+    """
+    state = _get_runtime_log_state()
+    if state is None:
+        raise RuntimeError('单进程日志上下文必须在 runtime_scope 内设置')
+
+    if state.file_handler is not None:
+        reset_runtime_log_context()
+        state = _get_runtime_log_state()
+        assert state is not None
+
+    log_dir = Path('./log')
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir.joinpath(f'{name}.txt')
+    file_handler = RichTimedRotatingHandler(
+        pname=name,
+        filename=str(log_file),
+        when='midnight',
+        interval=1,
+        encoding='utf-8',
+    )
+    try:
+        if log_file.exists():
+            log_file.unlink()
+    except Exception:
+        pass
+
+    state.config_name = name
+    state.renderable_sink = renderable_sink
+    state.file_handler = file_handler
+    state.log_file = file_handler.log_file
+    _ensure_runtime_log_handlers()
+    return state.log_file
+
+
+def get_runtime_log_file(default=None):
+    """返回当前 worker 的日志文件，非单进程模式回退到传入默认值。"""
+    state = _get_runtime_log_state()
+    if state is None or not state.log_file:
+        return default
+    return state.log_file
+
+
+def reset_runtime_log_context() -> None:
+    """释放当前 worker 的文件 handler，避免重启实例时重复写入和句柄泄漏。"""
+    state = _get_runtime_log_state()
+    if state is None:
+        return
+
+    file_handler = state.file_handler
+    state.renderable_sink = None
+    state.file_handler = None
+    state.log_file = None
+    if file_handler is None:
+        return
+    try:
+        console_file = file_handler.richd.console.file
+        if console_file is not None:
+            console_file.close()
+            file_handler.richd.console.file = None
+    except Exception:
+        pass
+    try:
+        file_handler.close()
+    except Exception:
+        pass
+
 
 def set_func_logger(func):
+    if _get_runtime_log_state() is not None:
+        # 单进程宿主已通过 RuntimeRichRenderableHandler 按上下文分流。
+        return
     console = HTMLConsole(
         force_terminal=False,
         force_interactive=False,
@@ -521,13 +694,23 @@ def _get_renderables(
 
 def print(*objects: ConsoleRenderable, **kwargs):
     for hdlr in logger.handlers:
-        if isinstance(hdlr, RichRenderableHandler):
+        if isinstance(hdlr, RuntimeRichRenderableHandler):
+            state = _get_runtime_log_state()
+            if state is None or state.renderable_sink is None:
+                continue
+            for renderable in _get_renderables(hdlr.console, *objects, **kwargs):
+                RuntimeRichRenderableHandler._dispatch(renderable)
+        elif isinstance(hdlr, RichRenderableHandler):
             for renderable in _get_renderables(hdlr.console, *objects, **kwargs):
                 hdlr._func(renderable)
         elif isinstance(hdlr, RichHandler):
             hdlr.console.print(*objects)
         elif isinstance(hdlr, RichTimedRotatingHandler):
             hdlr.print(*objects, **kwargs)
+        elif isinstance(hdlr, RuntimeFileHandler):
+            state = _get_runtime_log_state()
+            if state is not None and state.file_handler is not None:
+                state.file_handler.print(*objects, **kwargs)
 
 
 def rule(title="", *, characters="─", style="rule.line", end="\n", align="center"):
@@ -619,6 +802,9 @@ logger.attr = attr
 logger.attr_align = attr_align
 logger.set_file_logger = set_file_logger
 logger.set_func_logger = set_func_logger
+logger.set_runtime_log_context = set_runtime_log_context
+logger.reset_runtime_log_context = reset_runtime_log_context
+logger.get_runtime_log_file = get_runtime_log_file
 logger.rule = rule
 logger.print = print
 logger.log_file: str

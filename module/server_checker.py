@@ -12,7 +12,7 @@ import requests
 from module.base.timer import Timer
 from module.config.server import VALID_SERVER_LIST as server_list
 from module.config.server import ServerInfo, get_server_info
-from module.exception import ScriptError
+from module.exception import ScriptError, WorkerStop
 from module.logger import logger
 
 SERVER_API_BASE = 'https://server-checker.nanoda.work'
@@ -136,9 +136,28 @@ class ServerChecker:
         else:
             raise ScriptError(f'服务器检查 API 返回了未知状态：{status}')
 
-    def wait_until_available(self) -> None:
+    def wait_until_available(self, stop_event=None) -> None:
+        """等待服务器恢复，并在 worker 停止时及时中断等待。"""
         while not self.is_available():
-            self._timer.wait()
+            if stop_event is not None and stop_event.is_set():
+                raise WorkerStop
+
+            # 维护等待最长可达 600 秒。线程宿主拆成短片段，避免停止按钮
+            # 被服务器维护等待吞掉数分钟。
+            if stop_event is None:
+                self._timer.wait()
+            else:
+                while True:
+                    if stop_event.is_set():
+                        raise WorkerStop
+                    remaining = self._timer.limit - self._timer.current_time()
+                    if remaining <= 0:
+                        break
+                    if stop_event.wait(min(remaining, 0.5)):
+                        raise WorkerStop
+
+            if stop_event is not None and stop_event.is_set():
+                raise WorkerStop
             self.check_now()
 
     def check_now(self) -> None:

@@ -78,6 +78,12 @@ DEPLOY_GROUPS: tuple[tuple[str, tuple[DeployField, ...]], ...] = (
         ),
     ),
     (
+        "Runtime",
+        (
+            DeployField("SingleProcessInstances", "bool"),
+        ),
+    ),
+    (
         "Update",
         (
             DeployField("EnableReload", "bool"),

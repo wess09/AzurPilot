@@ -179,6 +179,14 @@ def release_resources(next_task=''):
     Args:
         next_task (str): 下一个任务名称。空字符串表示空闲状态。
     """
+    # 单进程宿主中的模板、OCR RPC 客户端和地图检测资源是共享缓存。一个实例的
+    # 任务切换不能清掉另一个实例正在使用的数组；等最后一个 worker 退出时再由
+    # 宿主统一释放即可。
+    from module.base.runtime_context import active_runtime_count
+
+    if active_runtime_count() > 1:
+        return
+
     released_ocr_models = 0
     from module.webui.setting import State
     if State.deploy_config.UseOcrServer:

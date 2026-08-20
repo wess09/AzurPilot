@@ -3,7 +3,9 @@ import types
 import unittest
 from unittest.mock import Mock, patch
 
+from module.base.runtime_context import clear_runtime_context, runtime_scope, set_runtime_option
 from module.device.device import Device
+from module.exception import OcrServerUnavailable
 from module.ocr import rpc
 from module.ocr.rpc import ModelProxy, wait_for_ocr_server
 
@@ -38,15 +40,18 @@ class TestModelProxy(unittest.TestCase):
         self.original_client = ModelProxy.client
         self.original_address = ModelProxy._address
         self.original_retry_at = ModelProxy._next_retry_at
+        self.original_require_remote_server = ModelProxy._require_remote_server
         ModelProxy.client = None
         ModelProxy._address = None
         ModelProxy._next_retry_at = 0.0
+        ModelProxy.set_require_remote_server(False)
 
     def tearDown(self):
         ModelProxy.close()
         ModelProxy.client = self.original_client
         ModelProxy._address = self.original_address
         ModelProxy._next_retry_at = self.original_retry_at
+        ModelProxy.set_require_remote_server(self.original_require_remote_server)
 
     def test_failed_handshake_can_connect_again(self):
         failed = FakeRpcClient(5, hello_error=True)
@@ -96,6 +101,20 @@ class TestModelProxy(unittest.TestCase):
         device = object.__new__(Device)
         with patch('module.device.device._use_ocr_server', return_value=True):
             self.assertIsNone(device.run_simple_ocr_benchmark())
+
+    def test_single_process_context_rejects_local_ocr_fallback(self):
+        proxy = ModelProxy('azur_lane')
+        with runtime_scope('strict-ocr-test'):
+            set_runtime_option('strict_ocr_server', True)
+            with self.assertRaises(OcrServerUnavailable):
+                proxy._local_model()
+        clear_runtime_context('strict-ocr-test')
+
+    def test_host_level_remote_only_guard_covers_threads_without_context(self):
+        proxy = ModelProxy('azur_lane')
+        ModelProxy.set_require_remote_server(True)
+        with self.assertRaises(OcrServerUnavailable):
+            proxy._local_model()
 
 
 class TestOcrServerProcess(unittest.TestCase):

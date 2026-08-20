@@ -15,7 +15,10 @@ import copy
 import importlib
 import os
 import random
+import threading
+from functools import wraps
 
+from module.base.runtime_context import active_runtime_count
 from module.campaign.campaign_base import CampaignBase
 from module.campaign.campaign_event import CampaignEvent
 from module.shop.shop_status import ShopStatus
@@ -26,6 +29,21 @@ from module.handler.fast_forward import map_files, to_map_file_name
 from module.logger import logger
 from module.notify import handle_notify
 from module.ui.page import page_campaign
+
+
+_campaign_runtime_lock = threading.RLock()
+
+
+def _serialize_shared_campaign_map(func):
+    """在多 worker 时串行使用历史模块级 CampaignMap。"""
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if active_runtime_count() <= 1:
+            return func(*args, **kwargs)
+        with _campaign_runtime_lock:
+            return func(*args, **kwargs)
+
+    return wrapper
 
 
 class CampaignRun(CampaignEvent, ShopStatus):
@@ -433,6 +451,7 @@ class CampaignRun(CampaignEvent, ShopStatus):
             self.config.task_call('Commission')
             self.config.task_stop('Commission notice found')
 
+    @_serialize_shared_campaign_map
     def run(self, name, folder='campaign_main', mode='normal', total=0):
         """
         运行战役任务。

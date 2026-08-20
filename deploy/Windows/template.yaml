@@ -69,6 +69,12 @@ Deploy:
     # [Default] 127.0.0.1:22268
     OcrClientAddress: 127.0.0.1:22268
 
+  Runtime:
+    # Run standard Alas instances as threads in a dedicated host to share Python, NumPy and OpenCV imports.
+    # Only instances that pass runtime isolation checks are supported; others keep process mode.
+    # [Default] false
+    SingleProcessInstances: false
+
   Update:
     # Use auto update and builtin updater feature
     # This may cause problem https://github.com/LmeSzinc/AzurLaneAutoScript/issues/876

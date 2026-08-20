@@ -1,12 +1,13 @@
 """服务器状态检查器的 API 协议与故障恢复测试。"""
 
+import threading
 import unittest
 from json import JSONDecodeError
 from unittest.mock import Mock, patch
 
 import requests
 
-from module.exception import ScriptError
+from module.exception import ScriptError, WorkerStop
 from module.server_checker import ServerChecker
 
 API_BASE = "https://server-checker.nanoda.work/api/v1/servers"
@@ -140,6 +141,17 @@ class TestServerStatus(ServerCheckerTestCase):
         self.assertTrue(checker.is_available())
         self.assertTrue(checker.is_recovered())
         self.assertFalse(checker.is_recovered())
+
+    def test_wait_until_available_stops_without_waiting_for_maintenance_timer(self):
+        self.session.get.return_value = make_response(
+            payload=make_server_payload(1, "莱茵演习", "maintenance")
+        )
+        checker = self.build_checker("cn_android-0")
+        stop_event = threading.Event()
+        stop_event.set()
+
+        with self.assertRaises(WorkerStop):
+            checker.wait_until_available(stop_event=stop_event)
 
 
 class TestServerApiFailure(ServerCheckerTestCase):

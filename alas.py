@@ -74,11 +74,10 @@ def _get_task_display_name(task_command):
 
 
 class AzurLaneAutoScript:
-    stop_event: threading.Event = None
-
-    def __init__(self, config_name=DEFAULT_CONFIG_NAME):
+    def __init__(self, config_name=DEFAULT_CONFIG_NAME, stop_event=None):
         logger.hr('Start', level=0)
         self.config_name = config_name
+        self.stop_event = stop_event
         # 跳过启动后的第一次 Restart 任务
         self.is_first_task = True
         # 任务失败计数器，key 为任务名，value 为连续失败次数
@@ -123,7 +122,7 @@ class AzurLaneAutoScript:
                 f'[Alas] 已超过重启阈值 {limit}，'
                 f'等待 {wait_seconds} 秒后继续重试（永不放弃）'
             )
-            time.sleep(wait_seconds)
+            self._wait_interruptible(wait_seconds)
 
         logger.hr('[Alas] 正在重启模拟器', level=1)
         try:
@@ -144,7 +143,7 @@ class AzurLaneAutoScript:
                 timeout=RESTART_EMULATOR_OP_TIMEOUT,
                 operation_name='模拟器停止',
             )
-            time.sleep(5)
+            self._wait_interruptible(5)
             logger.info('[Alas] 正在启动模拟器...')
             self._emulator_op_with_timeout(
                 device.emulator_start,
@@ -159,6 +158,8 @@ class AzurLaneAutoScript:
             # 重置连续离线计数
             self.consecutive_adb_offline = 0
             return True
+        except WorkerStop:
+            raise
         except Exception as e:
             logger.exception_context(
                 title='重启模拟器失败',
@@ -212,6 +213,14 @@ class AzurLaneAutoScript:
             raise exception[0]
         return result[0]
 
+    def _wait_interruptible(self, seconds):
+        """等待指定时间，并让线程宿主及时响应停止请求。"""
+        seconds = max(0.0, float(seconds))
+        if self.stop_event is None:
+            time.sleep(seconds)
+        elif self.stop_event.wait(seconds):
+            raise WorkerStop
+
     def _start_watchdog(self):
         """启动看门狗守护线程。
 
@@ -243,8 +252,16 @@ class AzurLaneAutoScript:
             logger.warning('[Alas][看门狗] 看门狗已在运行，跳过启动')
             return
         self._watchdog_stop.clear()
+        # ContextVar 不会自动传播到新线程；否则单进程模式下看门狗日志会丢失
+        # worker 身份并写入宿主默认日志。
+        from contextvars import copy_context
+
+        context = copy_context()
         self._watchdog_thread = threading.Thread(
-            target=self._watchdog_loop, daemon=True, name='alas-watchdog'
+            target=context.run,
+            args=(self._watchdog_loop,),
+            daemon=True,
+            name='alas-watchdog',
         )
         self._watchdog_thread.start()
         logger.info(
@@ -436,6 +453,7 @@ class AzurLaneAutoScript:
     def config(self):
         try:
             config = AzurLaneConfig(config_name=self.config_name)
+            config.stop_event = self.stop_event
             return config
         except RequestHumanTakeover:
             logger.error_context(
@@ -558,6 +576,10 @@ class AzurLaneAutoScript:
                 self.device.screenshot()
             self.__getattribute__(command)()
             return True
+        except WorkerStop:
+            raise
+        except OcrServerUnavailable:
+            raise
         except TaskEnd:
             return True
         except GameNotRunningError as e:
@@ -621,7 +643,7 @@ class AzurLaneAutoScript:
                 content=f"<{self.config_name}> 游戏卡住 将自动重启游戏喵~",
             )
             self.config.task_call('Restart')
-            self.device.sleep(10)
+            self._wait_interruptible(10)
             return 'recoverable'
         except GameBugError as e:
             # 游戏客户端 bug，重启游戏修复
@@ -647,7 +669,7 @@ class AzurLaneAutoScript:
                 content=f"<{self.config_name}> 游戏客户端错误 将自动重启游戏喵~",
             )
             self.config.task_call('Restart')
-            self.device.sleep(10)
+            self._wait_interruptible(10)
             return 'recoverable'
         except GamePageUnknownError as e:
             logger.info('[Alas] 游戏服务器可能正在维护或网络连接中断，正在检查服务器状态')
@@ -677,7 +699,7 @@ class AzurLaneAutoScript:
                 self.config.task_call('Restart')
                 return 'recoverable'
             else:
-                self.checker.wait_until_available()
+                self.checker.wait_until_available(stop_event=self.stop_event)
                 return False
         except ScriptError as e:
             # 代码 bug，先重试3次再退出
@@ -902,7 +924,8 @@ class AzurLaneAutoScript:
                 logger.error(f"[Alas] 保存错误截图失败: {e}")
 
             try:
-                with open(logger.log_file, 'r', encoding='utf-8') as f:
+                log_file = logger.get_runtime_log_file(logger.log_file)
+                with open(log_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
                     start = 0
                     for index, line in enumerate(lines):
@@ -1499,13 +1522,15 @@ class AzurLaneAutoScript:
         while 1:
             if current_time() > future:
                 return True
-            if self.stop_event is not None:
-                if self.stop_event.is_set():
-                    logger.info('[Alas] 检测到更新事件')
-                    logger.info(f'[{self.config_name}] 已退出。原因: 更新 | Reason: Update')
-                    exit(0)
+            if self.stop_event is not None and self.stop_event.is_set():
+                raise WorkerStop
 
-            time.sleep(5)
+            if self.stop_event is not None:
+                self.stop_event.wait(5)
+            else:
+                time.sleep(5)
+            if self.stop_event is not None and self.stop_event.is_set():
+                raise WorkerStop
 
             if self.config.should_reload():
                 return False
@@ -1597,7 +1622,7 @@ class AzurLaneAutoScript:
                         continue
             break
 
-        AzurLaneConfig.is_hoarding_task = False
+        self.config.is_hoarding_task = False
         return task.command
 
     def loop(self):
@@ -1635,7 +1660,7 @@ class AzurLaneAutoScript:
                         logger.info(f"[Alas] [{self.config_name}] 已退出。原因: 更新 | Reason: Update")
                         break
                 # 检查游戏服务器维护
-                self.checker.wait_until_available()
+                self.checker.wait_until_available(stop_event=self.stop_event)
                 if self.checker.is_recovered():
                     # 服务器恢复后强制刷新配置，修复阻塞期间配置未更新的问题
                     del_cached_property(self, 'config')
@@ -1787,6 +1812,16 @@ class AzurLaneAutoScript:
                 else:
                     break
 
+            except WorkerStop:
+                logger.info(f'[{self.config_name}] 已退出。原因: 协作停止 | Reason: Stop')
+                break
+            except OcrServerUnavailable as exc:
+                logger.error(f'[OCR-RPC] {exc}')
+                logger.error(f'[{self.config_name}] 已退出。原因: OCR 服务不可用')
+                # 只会在单进程宿主的严格远程 OCR 模式触发。向宿主透传，使
+                # WebUI 将其标识为失败而不是普通任务结束。
+                raise
+
             # 捕获全局异常并执行重启
             # 说明：调度器永不主动退出，所有未处理异常均通过指数退避重试恢复，
             # 唯一例外是 ScriptError（开发者代码错误），其在 run() 中已限制连续 3 次后退出。
@@ -1858,7 +1893,7 @@ class AzurLaneAutoScript:
                 )
                 # 退避等待期间暂停看门狗，避免误触发（此为主动 sleep）
                 self._watchdog_active = False
-                time.sleep(wait_seconds)
+                self._wait_interruptible(wait_seconds)
 
 if __name__ == '__main__':
     alas = AzurLaneAutoScript()

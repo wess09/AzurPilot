@@ -6,9 +6,19 @@ from scipy import signal
 
 from module.base.base import ModuleBase
 from module.base.button import Button
+from module.base.runtime_context import runtime_state
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, random_rectangle_point, rgb2gray
 from module.logger import logger
+
+
+class _ScrollRuntimeState:
+    """滚动条在单个 worker 中检测得到的长度。"""
+
+    __slots__ = ('length',)
+
+    def __init__(self, length):
+        self.length = length
 
 
 class Scroll:
@@ -38,9 +48,30 @@ class Scroll:
         else:
             self.total = self.area[2] - self.area[0]
         # 默认值，会在 match_color() 中更新
-        self.length = self.total / 2
+        self.__dict__['_runtime_length'] = self.total / 2
         self.drag_interval = Timer(1, count=2)
         self.drag_timeout = Timer(5, count=10)
+
+    def _state(self) -> _ScrollRuntimeState | None:
+        # 每个 worker 从默认半长开始，不能复用其他设备上一帧检测出的长度。
+        return runtime_state(
+            self,
+            'scroll',
+            lambda: _ScrollRuntimeState(self.__dict__['_runtime_length']),
+        )
+
+    @property
+    def length(self):
+        state = self._state()
+        return state.length if state is not None else self.__dict__['_runtime_length']
+
+    @length.setter
+    def length(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_length'] = value
+        else:
+            state.length = value
 
     def match_color(self, main):
         """

@@ -41,6 +41,9 @@ class ConfigModel:
     OcrServerPort: int = 22268
     OcrClientAddress: str = "127.0.0.1:22268"
 
+    # 运行时配置
+    SingleProcessInstances: bool = False
+
     # 更新配置
     EnableReload: bool = True
     CheckUpdateInterval: int = 5

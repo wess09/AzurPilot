@@ -5,6 +5,7 @@
 """
 
 import os
+from threading import RLock
 
 import imageio
 
@@ -27,6 +28,9 @@ class Template(Resource):
         self._image = None
         self._image_binary = None
         self._image_luma = None
+        # 模板数组可以在同服 worker 间共享，但首次惰性加载必须串行，避免另一
+        # 线程读到 GIF 尚未填充完成的空列表或半初始化数组。
+        self._template_lock = RLock()
 
         self.resource_add(self.file)
 
@@ -46,53 +50,54 @@ class Template(Resource):
 
     @property
     def image(self):
-        if self._image is None:
-            if self.is_gif:
-                self._image = []
-                channel = 0
-                for image in imageio.mimread(self.file):
-                    if not channel:
-                        channel = len(image.shape)
-                    if channel == 3:
-                        image = image[:, :, :3].copy()
-                    elif len(image.shape) == 3:
-                        # 与第一帧保持通道数一致，取单通道
-                        image = image[:, :, 0].copy()
+        with self._template_lock:
+            if self._image is None:
+                if self.is_gif:
+                    image_list = []
+                    channel = 0
+                    for image in imageio.mimread(self.file):
+                        if not channel:
+                            channel = len(image.shape)
+                        if channel == 3:
+                            image = image[:, :, :3].copy()
+                        elif len(image.shape) == 3:
+                            # 与第一帧保持通道数一致，取单通道
+                            image = image[:, :, 0].copy()
 
-                    image = self.pre_process(image)
-                    self._image.append(image)
-            else:
-                self._image = self.pre_process(load_image(self.file))
+                        image_list.append(self.pre_process(image))
+                    self._image = image_list
+                else:
+                    self._image = self.pre_process(load_image(self.file))
 
-        return self._image
+            return self._image
 
     @property
     def image_binary(self):
-        if self._image_binary is None:
-            if self.is_gif:
-                self._image_binary = []
-                for image in self.image:
-                    image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                    _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-                    self._image_binary.append(image_binary)
-            else:
-                image_gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
-                _, self._image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+        with self._template_lock:
+            if self._image_binary is None:
+                if self.is_gif:
+                    image_list = []
+                    for image in self.image:
+                        image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                        _, image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                        image_list.append(image_binary)
+                    self._image_binary = image_list
+                else:
+                    image_gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+                    _, self._image_binary = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-        return self._image_binary
+            return self._image_binary
 
     @property
     def image_luma(self):
-        if self._image_luma is None:
-            if self.is_gif:
-                self._image_luma = []
-                for image in self.image:
-                    luma = rgb2luma(image)
-                    self._image_luma.append(luma)
-            else:
-                self._image_luma = rgb2luma(self.image)
+        with self._template_lock:
+            if self._image_luma is None:
+                if self.is_gif:
+                    self._image_luma = [rgb2luma(image) for image in self.image]
+                else:
+                    self._image_luma = rgb2luma(self.image)
 
-        return self._image_luma
+            return self._image_luma
 
     @staticmethod
     def _match_gif(image, templates, similarity):
@@ -110,13 +115,15 @@ class Template(Resource):
 
     @image.setter
     def image(self, value):
-        self._image = value
+        with self._template_lock:
+            self._image = value
 
     def resource_release(self):
-        super().resource_release()
-        self._image = None
-        self._image_binary = None
-        self._image_luma = None
+        with self._template_lock:
+            super().resource_release()
+            self._image = None
+            self._image_binary = None
+            self._image_luma = None
 
     def pre_process(self, image):
         """对输入图像进行预处理。

@@ -50,12 +50,22 @@ from module.webui.worker_registry import (
 )
 
 
+SINGLE_PROCESS_HOST_REGISTRY_NAME = '__single_process_host__'
+
+
+class SingleProcessUnsafeError(RuntimeError):
+    """单进程宿主无法安全接管时，禁止静默回退到另一套进程。"""
+
+
 class ProcessManager:
     _processes: Dict[str, "ProcessManager"] = {}
     _managers_lock = threading.RLock()
     _lifecycle_locks: Dict[str, threading.RLock] = {}
     _lifecycle_locks_lock = threading.Lock()
+    _single_process_runtime = None
+    _single_process_runtime_lock = threading.RLock()
     MANUAL_STOP_ACTION_TIMEOUT = 30
+    SINGLE_PROCESS_STOP_TIMEOUT = 20
 
     def __init__(self, config_name: str = DEFAULT_CONFIG_NAME) -> None:
         self.config_name = config_name
@@ -64,6 +74,7 @@ class ProcessManager:
         self.renderables_max_length = 400
         self.renderables_reduce_length = 80
         self._process: Process | None = None
+        self._uses_single_process = False
         self.thd_log_queue_handler: threading.Thread | None = None
         self._state_override: int | None = None
         self._state_override_deadline: float | None = None
@@ -78,6 +89,231 @@ class ProcessManager:
                 lock = threading.RLock()
                 cls._lifecycle_locks[config_name] = lock
                 return lock
+
+    @classmethod
+    def _get_single_process_runtime(cls):
+        """惰性创建 WebUI 共享的专用线程宿主控制器。"""
+        with cls._single_process_runtime_lock:
+            if cls._single_process_runtime is None:
+                from module.webui.single_process_runtime import SingleProcessRuntime
+
+                cls._single_process_runtime = SingleProcessRuntime()
+            return cls._single_process_runtime
+
+    def _build_single_process_spec(self):
+        """从配置生成单进程宿主所需的只读兼容性规格。"""
+        from module.config.config_updater import ConfigUpdater
+        from module.config.deep import deep_get
+        from module.config.server import to_server
+        from module.webui.runtime_host import WorkerSpec, WorkerSpecValidationError
+
+        data = ConfigUpdater().read_file(self.config_name)
+        if self.config_name == SINGLE_PROCESS_HOST_REGISTRY_NAME:
+            raise WorkerSpecValidationError(
+                f'配置名 {self.config_name} 被单进程宿主登记保留，不能作为实例名'
+            )
+        package = str(
+            deep_get(data, 'Alas.Emulator.PackageName', default='auto')
+        ).strip()
+        serial = str(deep_get(data, 'Alas.Emulator.Serial', default='auto')).strip()
+        screenshot_method = deep_get(
+            data, 'Alas.Emulator.ScreenshotMethod', default='auto'
+        )
+        control_method = deep_get(
+            data, 'Alas.Emulator.ControlMethod', default='auto'
+        )
+
+        if package.casefold() == 'auto':
+            raise WorkerSpecValidationError(
+                f'{self.config_name} 的 Emulator.PackageName 为 auto；'
+                '单进程模式要求显式游戏包名'
+            )
+        if serial.casefold() == 'auto':
+            raise WorkerSpecValidationError(
+                f'{self.config_name} 的 Emulator.Serial 为 auto；'
+                '单进程模式要求显式且唯一的设备地址'
+            )
+        if str(control_method).strip().casefold() == 'auto':
+            raise WorkerSpecValidationError(
+                f'{self.config_name} 的 Emulator.ControlMethod 为 auto；'
+                '单进程模式要求显式控制方式'
+            )
+        if str(screenshot_method).strip().casefold() == 'auto':
+            raise WorkerSpecValidationError(
+                f'{self.config_name} 的 Emulator.ScreenshotMethod 为 auto；'
+                '单进程模式要求显式截图方式，避免解析到进程级 Nemu IPC'
+            )
+
+        return WorkerSpec(
+            config_name=self.config_name,
+            server=to_server(package),
+            package=package,
+            emulator_server_name=serial,
+            use_ocr_server=bool(State.deploy_config.UseOcrServer),
+            ocr_address=str(State.deploy_config.OcrClientAddress).strip() or None,
+            control_method=str(control_method),
+            screenshot_method=str(screenshot_method),
+        )
+
+    def _try_start_single_process_worker(
+        self,
+        func: str,
+        ev: threading.Event | None,
+    ) -> bool:
+        """尝试通过共享宿主启动实例；失败时让调用方回退独立进程。"""
+        if not getattr(State.deploy_config, 'SingleProcessInstances', False):
+            return False
+        if func != 'alas':
+            # 其他模块暂未完成线程级全局状态隔离。共享宿主有活动实例时，
+            # 不能让它们静默回退到独立进程，否则可能与宿主线程控制同一设备。
+            cls = self.__class__
+            with cls._single_process_runtime_lock:
+                runtime = cls._single_process_runtime
+                if runtime is not None and runtime.host_pid() is not None:
+                    if runtime.running_names():
+                        raise SingleProcessUnsafeError(
+                            '共享宿主已有活动实例，非标准 Alas 任务不能回退为独立进程；'
+                            '请先停止共享实例或关闭单进程模式'
+                        )
+            logger.info(
+                f'[{self.config_name}] 功能 {func} 不在单进程宿主支持范围内，使用独立进程'
+            )
+            return False
+
+        from module.webui.runtime_host import WorkerSpecValidationError
+
+        try:
+            spec = self._build_single_process_spec()
+            # 在创建/登记宿主前先校验首个规格，避免无 OCR、Nemu IPC 等不兼容
+            # 配置留下一个空宿主并阻塞后续安全回退。
+            from module.webui.runtime_host import validate_worker_specs
+
+            validate_worker_specs((spec,))
+            runtime = self._get_single_process_runtime()
+            runtime._validate_transferable(self._renderable_queue, 'renderable_queue')
+            runtime._validate_transferable(ev, 'update_event')
+            cls = self.__class__
+            with cls._single_process_runtime_lock:
+                cls._ensure_single_process_host_registered(runtime)
+        except WorkerSpecValidationError as exc:
+            # 缺少显式包名/设备地址时仍可安全回退到原有独立进程；其余
+            # 规格冲突必须阻止启动，不能绕过设备唯一性检查。
+            if 'auto' in str(exc).casefold() or '未指定' in str(exc):
+                cls = self.__class__
+                with cls._single_process_runtime_lock:
+                    runtime = cls._single_process_runtime
+                    if runtime is not None and runtime.host_pid() is not None:
+                        if runtime.running_names():
+                            raise SingleProcessUnsafeError(
+                                '共享宿主已有活动实例，不能让 auto 设备配置回退为独立进程；'
+                                '请先为该实例填写显式包名和唯一设备地址'
+                            ) from exc
+                        # 仅清理此前校验失败留下的空宿主；不让它继续占用一个
+                        # 可被后续显式规格复用的解释器。
+                        if not runtime.shutdown(timeout=2, force=True):
+                            raise SingleProcessUnsafeError(
+                                '无法清理空闲共享宿主，拒绝 auto 配置回退'
+                            ) from exc
+                        try:
+                            unregistered = unregister_worker(
+                                os.getpid(), SINGLE_PROCESS_HOST_REGISTRY_NAME
+                            )
+                        except Exception as cleanup_exc:
+                            raise SingleProcessUnsafeError(
+                                f'无法清理空闲共享宿主登记: {cleanup_exc}'
+                            ) from exc
+                        if not unregistered:
+                            raise SingleProcessUnsafeError(
+                                '无法确认空闲共享宿主登记归属，拒绝 auto 配置回退'
+                            ) from exc
+                        if State.process_registry is not None:
+                            State.process_registry.pop(
+                                SINGLE_PROCESS_HOST_REGISTRY_NAME, None
+                            )
+                        cls._single_process_runtime = None
+                logger.warning(
+                    f'[{self.config_name}] 单进程模式配置尚未满足要求: {exc}；使用独立进程'
+                )
+                return False
+            raise SingleProcessUnsafeError(str(exc)) from exc
+        except SingleProcessUnsafeError:
+            raise
+        except Exception as exc:
+            raise SingleProcessUnsafeError(
+                f'共享宿主登记或启动准备失败，拒绝回退独立进程: {exc}'
+            ) from exc
+
+        try:
+            started = runtime.start_worker(
+                spec=spec,
+                func=func,
+                renderable_queue=self._renderable_queue,
+                update_event=ev,
+            )
+        except WorkerSpecValidationError as exc:
+            raise SingleProcessUnsafeError(str(exc)) from exc
+        except Exception as exc:
+            # 请求已写入共享宿主后，不能假设宿主没有启动线程；保守地拒绝
+            # 本次启动，避免再拉起第二个进程控制同一设备。
+            raise SingleProcessUnsafeError(
+                f'共享宿主启动请求失败，拒绝回退独立进程: {exc}'
+            ) from exc
+
+        if not started:
+            raise SingleProcessUnsafeError(
+                f'[{self.config_name}] 单进程宿主未能确认启动，拒绝回退独立进程'
+            )
+
+        self._uses_single_process = True
+        self._process = None
+        return True
+
+    @classmethod
+    def _ensure_single_process_host_registered(cls, runtime) -> None:
+        """把共享宿主登记为一个独立 PID，供 WebUI 崩溃监督器回收。"""
+        records = get_workers(os.getpid())
+        record = records.get(SINGLE_PROCESS_HOST_REGISTRY_NAME)
+        host_pid = runtime.host_pid()
+
+        if record is not None:
+            try:
+                record_pid = int(record['pid'])
+                matches = process_matches(record)
+            except (KeyError, TypeError, ValueError, RuntimeError) as exc:
+                raise SingleProcessUnsafeError(
+                    f'共享宿主登记无效，拒绝启动: {exc}'
+                ) from exc
+            if matches is True:
+                if host_pid != record_pid:
+                    raise SingleProcessUnsafeError(
+                        f'已有共享宿主 PID {record_pid}，当前控制器 PID {host_pid} 不一致'
+                    )
+                return
+            if matches is False:
+                raise SingleProcessUnsafeError(
+                    f'共享宿主登记 PID {record_pid} 已被复用，拒绝启动'
+                )
+            # 进程已退出，当前 WebUI 拥有该登记时可以清理陈旧记录。
+            unregister_worker(os.getpid(), SINGLE_PROCESS_HOST_REGISTRY_NAME)
+            if State.process_registry is not None:
+                State.process_registry.pop(SINGLE_PROCESS_HOST_REGISTRY_NAME, None)
+
+        if host_pid is None:
+            if not runtime.ensure_host():
+                raise SingleProcessUnsafeError('共享宿主进程未能就绪')
+            host_pid = runtime.host_pid()
+        if host_pid is None:
+            raise SingleProcessUnsafeError('无法获取共享宿主 PID，拒绝启动')
+
+        try:
+            register_worker(os.getpid(), SINGLE_PROCESS_HOST_REGISTRY_NAME, host_pid)
+        except Exception as exc:
+            runtime.shutdown(timeout=2, force=True)
+            raise SingleProcessUnsafeError(
+                f'无法登记共享宿主 PID {host_pid}: {exc}'
+            ) from exc
+        if State.process_registry is not None:
+            State.process_registry[SINGLE_PROCESS_HOST_REGISTRY_NAME] = host_pid
 
     def set_state_override(self, state: int, duration: float = 10) -> None:
         """
@@ -129,6 +365,26 @@ class ProcessManager:
                         return
                     if self.alive:
                         return
+                    if func is None:
+                        func = get_config_mod(self.config_name)
+                    # 与独立进程路径一致，先验证当前配置没有陈旧或无法确认的
+                    # worker 登记；单进程分支不能绕过这道防重复控制检查。
+                    _pid, _, _verified = self._registered_worker()
+                    if not _verified and _pid is not None:
+                        logger.warning(
+                            f"[{self.config_name}] Worker 登记不一致，拒绝启动以避免重复"
+                        )
+                        return
+                    try:
+                        single_started = self._try_start_single_process_worker(func, ev)
+                    except SingleProcessUnsafeError as exc:
+                        logger.error(
+                            f"[{self.config_name}] 单进程启动被安全检查拒绝: {exc}"
+                        )
+                        return
+                    if single_started:
+                        self.start_log_queue_handler()
+                        return
                     # alive 在登记不可验证时保守返回 False；
                     # 此处再次确认登记状态，防止在登记不一致时启动重复 worker。
                     _pid, _, _verified = self._registered_worker()
@@ -137,8 +393,6 @@ class ProcessManager:
                             f"[{self.config_name}] Worker 登记不一致，拒绝启动以避免重复"
                         )
                         return
-                    if func is None:
-                        func = get_config_mod(self.config_name)
                     args = (
                         self.config_name,
                         func,
@@ -149,6 +403,7 @@ class ProcessManager:
                         target=ProcessManager.run_process,
                         args=args,
                     )
+                    self._uses_single_process = False
                     self._process = process
                     try:
                         process.start()
@@ -201,6 +456,35 @@ class ProcessManager:
 
     def _stop_worker_locked(self) -> tuple[bool, bool]:
         """在实例生命周期锁内终止 worker，并返回是否可执行收尾动作。"""
+        if self._uses_single_process:
+            runtime = self.__class__._single_process_runtime
+            was_alive = runtime is not None and runtime.is_alive(self.config_name)
+            stopped = (
+                runtime.stop_worker(
+                    self.config_name,
+                    timeout=self.SINGLE_PROCESS_STOP_TIMEOUT,
+                    reason='用户或 WebUI 请求停止',
+                )
+                if runtime is not None
+                else True
+            )
+            if stopped:
+                self._uses_single_process = False
+                if was_alive:
+                    self.renderables.append(
+                        Text(f'[{self.config_name}] exited. Reason: Manual stop\n')
+                    )
+            else:
+                logger.error(
+                    f'[{self.config_name}] 单进程 worker 未在 '
+                    f'{self.SINGLE_PROCESS_STOP_TIMEOUT}s 内协作停止'
+                )
+
+            log_queue_handler = self.thd_log_queue_handler
+            if log_queue_handler is not None:
+                log_queue_handler.join(timeout=1)
+            return stopped, was_alive
+
         process = self._process
         local_process_alive = self._is_process_alive(process)
 
@@ -591,6 +875,9 @@ class ProcessManager:
     @property
     def alive(self) -> bool:
         with self._get_lifecycle_lock(self.config_name):
+            if self._uses_single_process:
+                runtime = self.__class__._single_process_runtime
+                return runtime is not None and runtime.is_alive(self.config_name)
             if self._is_process_alive(self._process):
                 return True
             pid, pid_verified = self._registered_pid()
@@ -606,6 +893,16 @@ class ProcessManager:
         override_state = self._get_state_override()
         if override_state is not None:
             return override_state
+        if self._uses_single_process:
+            runtime = self.__class__._single_process_runtime
+            if runtime is not None:
+                status = runtime.status(self.config_name)
+                if status == 'failed':
+                    return 3
+                if status in ('starting', 'running', 'stopping'):
+                    return 1
+                if status == 'stopped' and not self.renderables:
+                    return 2
         if self.alive:
             return 1
         elif len(self.renderables) == 0:
@@ -728,28 +1025,22 @@ class ProcessManager:
             logger.info("[WebUI] 此版本为演示用途")
             return
 
-        from module.config.config import AzurLaneConfig
-
         # 移除伪造的 PIL 模块，子进程需要使用真正的 PIL
         remove_fake_pil_module()
 
         # 设置环境变量，使预加载模块（如 al_ocr.py）可以提前读取配置
         os.environ["ALAS_CONFIG_NAME"] = config_name
 
-        if e is not None:
-            AzurLaneConfig.stop_event = e
         try:
             # 运行 AzurPilot
             if func == "alas":
                 from alas import AzurLaneAutoScript
 
-                if e is not None:
-                    AzurLaneAutoScript.stop_event = e
-                AzurLaneAutoScript(config_name=config_name).loop()
+                AzurLaneAutoScript(config_name=config_name, stop_event=e).loop()
             elif func in get_available_func():
                 from alas import AzurLaneAutoScript
 
-                AzurLaneAutoScript(config_name=config_name).run(
+                AzurLaneAutoScript(config_name=config_name, stop_event=e).run(
                     inflection.underscore(func), skip_first_screenshot=True
                 )
             elif func in get_available_mod():
@@ -783,7 +1074,42 @@ class ProcessManager:
             names = set(cls._processes)
         if State.process_registry is not None:
             names.update(State.process_registry.keys())
+        # 共享线程宿主以特殊登记名占用一个 PID，但不是可点击的 Alas 配置实例；
+        # 不能把它交给普通 stop()，否则会跳过宿主的协作收尾流程。
+        names.discard(SINGLE_PROCESS_HOST_REGISTRY_NAME)
         return [cls.get_manager(name) for name in names if cls.get_manager(name).alive]
+
+    @classmethod
+    def shutdown_single_process_runtime(cls, timeout: float = 25) -> bool:
+        """在 WebUI 收尾时关闭专用线程宿主。
+
+        单个 worker 的 stop 超时不能杀掉共享宿主；但 WebUI 本身退出时，专用宿主
+        没有其他所有者，允许在协作停止失败后终止整个子进程作为最终兜底。
+        """
+        with cls._single_process_runtime_lock:
+            runtime = cls._single_process_runtime
+        if runtime is None:
+            return True
+
+        success = runtime.shutdown(timeout=timeout, force=True)
+        if success:
+            try:
+                if not unregister_worker(os.getpid(), SINGLE_PROCESS_HOST_REGISTRY_NAME):
+                    success = False
+            except Exception as exc:
+                logger.warning(f'无法清除共享宿主登记: {exc}')
+                success = False
+            if success and State.process_registry is not None:
+                State.process_registry.pop(SINGLE_PROCESS_HOST_REGISTRY_NAME, None)
+        if success:
+            with cls._single_process_runtime_lock:
+                if cls._single_process_runtime is runtime:
+                    cls._single_process_runtime = None
+            with cls._managers_lock:
+                managers = tuple(cls._processes.values())
+            for manager in managers:
+                manager._uses_single_process = False
+        return success
 
     @staticmethod
     def restart_processes(

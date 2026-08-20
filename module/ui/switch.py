@@ -2,9 +2,20 @@
 支持带重试机制的多状态切换。"""
 
 from module.base.base import ModuleBase
+from module.base.runtime_context import runtime_state
 from module.base.timer import Timer
 from module.exception import ScriptError
 from module.logger import logger
+
+
+class _SwitchRuntimeState:
+    """Switch 在单个 worker 中可修改的配置覆盖。"""
+
+    __slots__ = ('offset', 'state_list')
+
+    def __init__(self, offset):
+        self.offset = offset
+        self.state_list = None
 
 
 class Switch:
@@ -32,8 +43,8 @@ class Switch:
         """
         self.name = name
         self.is_selector = is_selector
-        self._offset = offset
-        self.state_list = []
+        self.__dict__['_runtime_offset'] = offset
+        self.__dict__['_runtime_state_list'] = []
         self.set_unknown_timer = Timer(5, count=10)
         self.set_click_timer = Timer(1, count=2)
         self.wait_timeout = Timer(2, count=4)
@@ -51,22 +62,61 @@ class Switch:
         """
         if state == 'unknown':
             raise ScriptError(f'Cannot use "unknown" as state name')
-        self.state_list.append({
+        self._mutable_state_list().append({
             'state': state,
             'check_button': check_button,
             'click_button': click_button if click_button is not None else check_button,
-            'offset': offset if offset else self._offset,
+            'offset': offset if offset else self.offset,
             'similarity': similarity,
         })
 
+    def _state(self) -> _SwitchRuntimeState | None:
+        return runtime_state(
+            self,
+            'switch',
+            lambda: _SwitchRuntimeState(self.__dict__['_runtime_offset']),
+        )
+
+    @property
+    def state_list(self):
+        state = self._state()
+        if state is None or state.state_list is None:
+            return self.__dict__['_runtime_state_list']
+        return state.state_list
+
+    @state_list.setter
+    def state_list(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_state_list'] = value
+        else:
+            state.state_list = value
+
+    def _mutable_state_list(self):
+        state = self._state()
+        if state is None:
+            return self.__dict__['_runtime_state_list']
+        if state.state_list is None:
+            # 状态表只包含配置字典和 Button 引用；复制字典即可隔离 offset，
+            # 不复制 Button/模板对象，保持图像缓存共享。
+            state.state_list = [dict(data) for data in self.__dict__['_runtime_state_list']]
+        return state.state_list
+
     @property
     def offset(self):
-        return self._offset
+        state = self._state()
+        return state.offset if state is not None else self.__dict__['_runtime_offset']
 
     @offset.setter
     def offset(self, value):
-        self._offset = value
-        for data in self.state_list:
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_offset'] = value
+            state_list = self.__dict__['_runtime_state_list']
+        else:
+            state.offset = value
+            state_list = self._mutable_state_list()
+        for data in state_list:
             data['offset'] = value
 
     def appear(self, main):

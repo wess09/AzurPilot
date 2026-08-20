@@ -238,6 +238,7 @@ DeploySetting:
   GroupPython:
   GroupAdb:
   GroupOcr:
+  GroupRuntime:
   GroupUpdate:
   GroupMisc:
   GroupRemoteAccess:
@@ -274,6 +275,8 @@ DeploySetting:
   OcrServerPortHelp:
   OcrClientAddress:
   OcrClientAddressHelp:
+  SingleProcessInstances:
+  SingleProcessInstancesHelp:
   EnableReload:
   EnableReloadHelp:
   CheckUpdateInterval:

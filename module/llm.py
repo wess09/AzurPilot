@@ -87,8 +87,9 @@ def analyze_exception(config, e):
         
         log_context = ""
         try:
-            if hasattr(logger, 'log_file') and logger.log_file and os.path.exists(logger.log_file):
-                with open(logger.log_file, 'r', encoding='utf-8') as f:
+            log_file = logger.get_runtime_log_file(getattr(logger, 'log_file', None))
+            if log_file and os.path.exists(log_file):
+                with open(log_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
                     log_context = "".join(lines[-500:])  # 取最后 500 行日志作为上下文
         except Exception:

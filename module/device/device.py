@@ -127,6 +127,16 @@ class Device(Screenshot, Control, AppControl, Input):
                     )
                     raise RequestHumanTakeover
 
+        # 这些检测记录曾是类属性，由独立 worker 进程隐式隔离。单进程运行时
+        # 必须在每台设备上持有各自的计时器和点击历史。
+        self.detect_record = set()
+        self.click_record = collections.deque(maxlen=15)
+        self.stuck_timer = Timer(60, count=60).start()
+        self.stuck_timer_long = Timer(195, count=195).start()
+        self._prev_fingerprint = None
+        self._stuck_image_timer = Timer(30, count=0)
+        self._hierarchy_interval = Timer(0.1)
+
         # 确保 package 属性存在（部分连接模式可能不会设置它）
         # AppControl.app_is_running() 会用到此属性
         if not hasattr(self, 'package'):
@@ -332,6 +342,7 @@ class Device(Screenshot, Control, AppControl, Input):
         Returns:
             截图图像，numpy 数组格式。
         """
+        self._raise_if_stopped()
         self.stuck_record_check()
 
         try:
@@ -347,12 +358,22 @@ class Device(Screenshot, Control, AppControl, Input):
         if self.handle_night_commission():
             super().screenshot()
 
+        self._raise_if_stopped()
         self._check_image_stuck()
         return self.image
 
     def dump_hierarchy(self) -> etree._Element:
+        self._raise_if_stopped()
         self.stuck_record_check()
         return super().dump_hierarchy()
+
+    def _raise_if_stopped(self):
+        """在设备 I/O 边界响应单进程 worker 的协作式停止请求。"""
+        event = getattr(self.config, 'stop_event', None)
+        if event is not None and event.is_set():
+            from module.exception import WorkerStop
+
+            raise WorkerStop
 
     def release_during_wait(self):
         """
@@ -461,6 +482,7 @@ class Device(Screenshot, Control, AppControl, Input):
             raise GameNotRunningError('[设备-卡死] 游戏已退出')
 
     def handle_control_check(self, button):
+        self._raise_if_stopped()
         self.stuck_record_clear()
         self.click_record_add(button)
         self.click_record_check()

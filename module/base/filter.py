@@ -7,7 +7,18 @@
 from functools import reduce
 import re
 
+from module.base.runtime_context import runtime_state
 from module.logger import logger
+
+
+class _FilterRuntimeState:
+    """模块级 Filter 在单个 worker 中的已解析规则。"""
+
+    __slots__ = ('filter_raw', 'filter')
+
+    def __init__(self, filter_raw, parsed_filter):
+        self.filter_raw = filter_raw
+        self.filter = parsed_filter
 
 
 class Filter:
@@ -23,8 +34,44 @@ class Filter:
         self.regex = regex
         self.attr = attr
         self.preset = tuple(list(p.lower() for p in preset))
-        self.filter_raw = []
-        self.filter = []
+        self.__dict__['_runtime_filter_raw'] = []
+        self.__dict__['_runtime_filter'] = []
+
+    def _state(self):
+        return runtime_state(
+            self,
+            'filter',
+            lambda: _FilterRuntimeState(
+                list(self.__dict__['_runtime_filter_raw']),
+                list(self.__dict__['_runtime_filter']),
+            ),
+        )
+
+    @property
+    def filter_raw(self):
+        state = self._state()
+        return state.filter_raw if state is not None else self.__dict__['_runtime_filter_raw']
+
+    @filter_raw.setter
+    def filter_raw(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_filter_raw'] = value
+        else:
+            state.filter_raw = value
+
+    @property
+    def filter(self):
+        state = self._state()
+        return state.filter if state is not None else self.__dict__['_runtime_filter']
+
+    @filter.setter
+    def filter(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_filter'] = value
+        else:
+            state.filter = value
 
     def load(self, string):
         """

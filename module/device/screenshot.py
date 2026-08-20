@@ -47,6 +47,13 @@ class Screenshot(Adb, WSA, DroidCast, AScreenCap, Scrcpy, NemuIpc, LDOpenGL):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # 截图节流、分辨率检测和错误截图限流属于设备实例状态。过去的类属性在
+        # 多进程模式中天然隔离，单进程宿主下必须显式实例化。
+        self._screen_size_checked = False
+        self._screen_black_checked = False
+        self._minicap_uninstalled = False
+        self._screenshot_interval = Timer(0.1)
+        self._last_save_time = {}
     _screen_size_checked = False
     _screen_black_checked = False
     _minicap_uninstalled = False

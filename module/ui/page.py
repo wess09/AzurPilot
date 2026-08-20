@@ -28,6 +28,16 @@ from module.retire.assets import DOCK_CHECK
 from module.ui.assets import *
 from module.ui_white.assets import *
 import module.config.server as server
+from module.base.runtime_context import runtime_state
+
+
+class _PageRuntimeState:
+    """页面图在单个 worker 中的 BFS 父节点。"""
+
+    __slots__ = ('parent',)
+
+    def __init__(self):
+        self.parent = None
 
 
 class Page:
@@ -91,8 +101,25 @@ class Page:
         self.links = {}
         (filename, line_number, function_name, text) = traceback.extract_stack()[-2]
         self.name = text[:text.find('=')].strip()
-        self.parent = None
+        self.__dict__['_runtime_parent'] = None
         Page.all_pages[self.name] = self
+
+    def _parent_state(self) -> _PageRuntimeState | None:
+        # worker 进入时从空路由开始，不能继承其他 worker 曾计算的目标路径。
+        return runtime_state(self, 'page_parent', _PageRuntimeState)
+
+    @property
+    def parent(self):
+        state = self._parent_state()
+        return state.parent if state is not None else self.__dict__['_runtime_parent']
+
+    @parent.setter
+    def parent(self, value):
+        state = self._parent_state()
+        if state is None:
+            self.__dict__['_runtime_parent'] = value
+        else:
+            state.parent = value
 
     def __eq__(self, other):
         return self.name == other.name

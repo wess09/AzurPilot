@@ -175,7 +175,12 @@ def set_server(package_or_server: str):
         package_or_server: 包名或服务器名称。
     """
     global server
-    server = to_server(package_or_server)
+    next_server = to_server(package_or_server)
+    # 多个同服实例连接设备时无需重复清空全局资源缓存。旧逻辑即使服务器没有
+    # 变化也会 release_resources()，会在另一 worker 模板匹配中间撕裂缓存。
+    if next_server == server:
+        return
+    server = next_server
 
     from module.base.resource import release_resources
     release_resources()

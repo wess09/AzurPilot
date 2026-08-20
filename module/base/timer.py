@@ -4,11 +4,13 @@
 以及 future_time 等时间字符串解析工具函数。
 """
 
+from dataclasses import dataclass
 from time import monotonic as time, sleep
 from datetime import timedelta
 from functools import wraps
 
 from module.config.time_source import now as current_time
+from module.base.runtime_context import runtime_state
 
 
 def timer(function):
@@ -84,6 +86,16 @@ def time_range_active(time_range):
     return time_range[0] < current_time() < time_range[1]
 
 
+@dataclass
+class _TimerRuntimeState:
+    """计时器在单个 worker 中的可变状态。"""
+
+    limit: int | float
+    count: int
+    start: float
+    access: int
+
+
 class Timer:
     """双重计时器，同时支持时间计数和访问计数。
 
@@ -98,10 +110,76 @@ class Timer:
             limit (int | float): 时间限制（秒）。
             count (int): 访问次数限制，默认为 0。
         """
-        self.limit = limit
-        self.count = count
-        self._start = 0.
-        self._access = 0
+        # 传统模式使用这些基础字段。进入运行态上下文后，属性会按 worker
+        # 读取/写入独立副本，避免全局 Timer 在多个实例间串状态。
+        self.__dict__['_runtime_limit'] = limit
+        self.__dict__['_runtime_count'] = count
+        self.__dict__['_runtime_start'] = 0.
+        self.__dict__['_runtime_access'] = 0
+
+    def _state(self) -> _TimerRuntimeState | None:
+        return runtime_state(
+            self,
+            'timer',
+            lambda: _TimerRuntimeState(
+                limit=self.__dict__['_runtime_limit'],
+                count=self.__dict__['_runtime_count'],
+                start=self.__dict__['_runtime_start'],
+                access=self.__dict__['_runtime_access'],
+            ),
+        )
+
+    @property
+    def limit(self):
+        state = self._state()
+        return state.limit if state is not None else self.__dict__['_runtime_limit']
+
+    @limit.setter
+    def limit(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_limit'] = value
+        else:
+            state.limit = value
+
+    @property
+    def count(self):
+        state = self._state()
+        return state.count if state is not None else self.__dict__['_runtime_count']
+
+    @count.setter
+    def count(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_count'] = value
+        else:
+            state.count = value
+
+    @property
+    def _start(self):
+        state = self._state()
+        return state.start if state is not None else self.__dict__['_runtime_start']
+
+    @_start.setter
+    def _start(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_start'] = value
+        else:
+            state.start = value
+
+    @property
+    def _access(self):
+        state = self._state()
+        return state.access if state is not None else self.__dict__['_runtime_access']
+
+    @_access.setter
+    def _access(self, value):
+        state = self._state()
+        if state is None:
+            self.__dict__['_runtime_access'] = value
+        else:
+            state.access = value
 
     @classmethod
     def from_seconds(cls, limit, speed=0.5):

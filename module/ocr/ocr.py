@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import module.config.server as server
 from module.base.button import Button
 from module.base.decorator import cached_property
+from module.base.runtime_context import runtime_state
 from module.base.utils import *
 from module.logger import logger
 from module.ocr.rpc import ModelProxyFactory
@@ -38,7 +39,7 @@ class Ocr:
             name: 识别器名称。
         """
         self.name = str(buttons) if isinstance(buttons, Button) else name
-        self._buttons = buttons
+        self.__dict__['_runtime_buttons'] = buttons
         self.letter = letter
         self.threshold = threshold
         self.alphabet = alphabet
@@ -60,6 +61,21 @@ class Ocr:
     @buttons.setter
     def buttons(self, value):
         self._buttons = value
+
+    @property
+    def _buttons(self):
+        state = runtime_state(self, 'ocr_buttons', lambda: {'buttons': self.__dict__['_runtime_buttons']})
+        if state is None:
+            return self.__dict__['_runtime_buttons']
+        return state['buttons']
+
+    @_buttons.setter
+    def _buttons(self, value):
+        state = runtime_state(self, 'ocr_buttons', lambda: {'buttons': self.__dict__['_runtime_buttons']})
+        if state is None:
+            self.__dict__['_runtime_buttons'] = value
+        else:
+            state['buttons'] = value
 
     def pre_process(self, image):
         """图像预处理，提取字母颜色通道。

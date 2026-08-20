@@ -170,6 +170,24 @@ class RequestHumanTakeover(Exception):
     pass
 
 
+class WorkerStop(Exception):
+    """单进程宿主请求当前实例协作式停止。
+
+    该异常只用于线程宿主的控制流，必须从任务处理器向上透传至调度循环；不能
+    被当作普通任务错误触发游戏或模拟器重启。
+    """
+    pass
+
+
+class OcrServerUnavailable(Exception):
+    """单进程模式下远程 OCR 服务不可用。
+
+    单进程 worker 禁止回退本地 OCR，以免每个实例重新加载 ONNX 模型并失去
+    内存收益。因此该异常会终止当前 worker，等待 OCR 服务恢复后由用户重启。
+    """
+    pass
+
+
 class AutoSearchSetError(Exception):
     """自动搜索设置失败。
 
