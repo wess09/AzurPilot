@@ -331,17 +331,57 @@ class MeowfficerEnhance(MeowfficerBase):
                 continue
 
     def _meow_get_level(self):
-        """
-        Returns:
-            int: level from 1 to 30. Returns 0 if cannot detect
+    """
+    Returns:
+        int: level from 1 to 30. Returns 0 if cannot detect
 
-        Pages:
-            in: MEOWFFICER_ENHANCE_ENTER
-        """
+    Pages:
+        in: MEOWFFICER_ENHANCE_ENTER
+    """
+    levels = []
+
+    # Wait for the selected Meowfficer information to refresh.
+    self.device.sleep(0.3)
+
+    for attempt in range(3):
+        # Use a fresh screenshot instead of the image captured while
+        # selecting the Meowfficer.
+        self.device.screenshot()
+
         level = OCR_MEOWFFICER_ENHANCE_LEVEL.ocr(self.device.image)
-        if level > 30:
+
+        if 1 <= level <= 30:
+            levels.append(level)
+        else:
             logger.warning(f'[指挥喵-强化] 无效的指挥喵等级: {level}')
-        return level
+
+        # Normal levels do not need additional confirmation.
+        # LV.30 and invalid OCR results are confirmed with fresh frames.
+        if attempt == 0 and 1 <= level < 30:
+            return level
+
+        if attempt < 2:
+            self.device.sleep(0.2)
+
+    # LV.30 may advance EnhanceIndex or disable MeowfficerTrain,
+    # so require three consistent OCR results.
+    if len(levels) == 3 and all(level == 30 for level in levels):
+        return 30
+
+    non_max_levels = [level for level in levels if level < 30]
+    if non_max_levels:
+        if 30 in levels:
+            logger.warning(
+                f'[指挥喵-强化] LV.30 OCR结果不一致: {levels}, '
+                '忽略本次满级判断'
+            )
+        return max(set(non_max_levels), key=non_max_levels.count)
+
+    logger.warning(
+        f'[指挥喵-强化] 无法确认指挥喵等级: {levels}, '
+        '本次不判定为满级'
+    )
+    return 0
 
     def _meow_enhance(self):
         """
