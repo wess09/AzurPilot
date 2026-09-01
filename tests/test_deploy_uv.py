@@ -162,6 +162,20 @@ class TestUvCommandOutput(unittest.TestCase):
 
         complete.assert_not_called()
 
+    def test_cleanup_after_update_keeps_marker_when_uv_is_unavailable(self):
+        root = Path(".")
+        failure = FileNotFoundError("uv disappeared")
+        with (
+            patch("deploy.uv.is_environment_cleanup_pending", return_value=True),
+            patch("deploy.uv._run_and_collect", side_effect=failure),
+            patch("deploy.uv.complete_environment_cleanup") as complete,
+            patch("builtins.print") as print_message,
+        ):
+            uv._cleanup_environment_after_update(root, Path("uv"), [], None)
+
+        complete.assert_not_called()
+        self.assertIn("uv disappeared", print_message.call_args.args[0])
+
     def test_dependency_service_exits_when_parent_process_is_gone(self):
         requests = Mock()
         requests.get.side_effect = queue.Empty

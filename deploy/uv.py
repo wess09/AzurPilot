@@ -262,8 +262,9 @@ def _cleanup_environment_after_update(
             outputs,
             _remaining_timeout(deadline, command),
         )
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        print(f"Update environment cleanup deferred: {redact_sensitive_text(command_output(exc))}")
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        output = command_output(exc) or str(exc)
+        print(f"Update environment cleanup deferred: {redact_sensitive_text(output)}")
         return
 
     _prune_obsolete_managed_pythons(root)
