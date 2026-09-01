@@ -16,6 +16,8 @@ class ObsoleteFileCleaner:
     """
 
     STATE_FILENAME = "azurpilot-managed-files.json"
+    REVISION_ARGUMENTS = ("rev-parse", "--verify", "HEAD")
+    TRACKED_FILES_ARGUMENTS = ("ls-files", "-z")
 
     def __init__(self, root, git, logger):
         self.root = Path(root).resolve()
@@ -59,14 +61,25 @@ class ObsoleteFileCleaner:
         files = state.get("files", [])
         return {path for item in files if (path := self._safe_relative_path(item))}
 
+    def _git_command(self, arguments: tuple[str, ...]) -> list[str]:
+        """构造不经过 shell 解析的 Git 命令参数。
+
+        ``self.git`` 仅由本地部署器在创建清理器时传入；子命令及其参数为
+        本模块常量。即使 Git 路径包含空格或 shell 元字符，也会作为单个
+        argv 元素传递，不能注入额外命令或参数。
+        """
+        return [self.git, *arguments]
+
     def _revision(self) -> Optional[str]:
         try:
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
             result = subprocess.run(
-                [self.git, "rev-parse", "--verify", "HEAD"],
+                self._git_command(self.REVISION_ARGUMENTS),
                 cwd=self.root,
                 capture_output=True,
                 check=True,
                 text=True,
+                shell=False,
             )
         except (OSError, subprocess.CalledProcessError):
             return None
@@ -75,11 +88,13 @@ class ObsoleteFileCleaner:
 
     def _tracked_files(self) -> Optional[set[str]]:
         try:
+            # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
             result = subprocess.run(
-                [self.git, "ls-files", "-z"],
+                self._git_command(self.TRACKED_FILES_ARGUMENTS),
                 cwd=self.root,
                 capture_output=True,
                 check=True,
+                shell=False,
             )
         except (OSError, subprocess.CalledProcessError) as exc:
             self.logger.warning(f"无法读取 Git 文件清单，跳过废弃文件清理：{exc}")

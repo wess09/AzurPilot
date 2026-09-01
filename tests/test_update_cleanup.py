@@ -71,6 +71,32 @@ class TestObsoleteFileCleaner(unittest.TestCase):
             complete_environment_cleanup(root)
             self.assertFalse(is_environment_cleanup_pending(root))
 
+    def test_git_commands_use_static_argv_without_shell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / ".git").mkdir()
+            cleaner = ObsoleteFileCleaner(root, "/path with space/git", MagicMock())
+
+            revision = MagicMock(stdout="abc123\n")
+            tracked = MagicMock(stdout=b"a.py\0")
+            with patch(
+                "deploy.update_cleanup.subprocess.run",
+                side_effect=[revision, tracked],
+            ) as run:
+                self.assertEqual("abc123", cleaner._revision())
+                self.assertEqual({"a.py"}, cleaner._tracked_files())
+
+            self.assertEqual(
+                ["/path with space/git", "rev-parse", "--verify", "HEAD"],
+                run.call_args_list[0].args[0],
+            )
+            self.assertFalse(run.call_args_list[0].kwargs["shell"])
+            self.assertEqual(
+                ["/path with space/git", "ls-files", "-z"],
+                run.call_args_list[1].args[0],
+            )
+            self.assertFalse(run.call_args_list[1].kwargs["shell"])
+
 
 if __name__ == "__main__":
     unittest.main()
