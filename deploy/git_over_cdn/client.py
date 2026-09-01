@@ -13,6 +13,8 @@ from typing import Callable, Generic, TypeVar
 import requests
 from requests.adapters import HTTPAdapter
 
+from deploy.update_cleanup import ObsoleteFileCleaner
+
 T = TypeVar("T")
 
 TEMPLATE_FILE = './config/template.yaml'
@@ -355,6 +357,9 @@ class GitOverCdnClient:
         Returns:
             bool: 仓库是否已是最新。
         """
+        obsolete_file_cleaner = ObsoleteFileCleaner(self.folder, self.git, self.logger)
+        obsolete_file_cleaner.prepare()
+
         _ = self.current_commit
         _ = self.latest_commit
         if not self.current_commit:
@@ -366,6 +371,7 @@ class GitOverCdnClient:
         if self.current_commit == self.latest_commit:
             self.logger.info('Already up to date')
             self.git_reset()
+            obsolete_file_cleaner.finish()
             return True
 
         if not self.download_pack():
@@ -373,5 +379,6 @@ class GitOverCdnClient:
         if not self.update_refs():
             return False
         self.git_reset()
+        obsolete_file_cleaner.finish()
         self.logger.info('Update success')
         return True

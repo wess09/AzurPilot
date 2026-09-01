@@ -92,6 +92,20 @@ class TestDeployLocation(unittest.TestCase):
 
                 get_country_code.assert_not_called()
 
+    def test_macos_keeps_legacy_git_path_until_command_line_tools_are_detected(self):
+        config = self.make_config(deploy_config)
+        config.GitExecutable = './.venv/bin/git'
+        config.config['GitExecutable'] = config.GitExecutable
+
+        with (
+            patch.object(deploy_config.sys, 'platform', 'darwin'),
+            patch.object(deploy_config, 'get_country_code', return_value='us'),
+        ):
+            config.config_redirect()
+
+        self.assertEqual('./.venv/bin/git', config.GitExecutable)
+        self.assertEqual('./.venv/bin/git', config.config['GitExecutable'])
+
 
 if __name__ == '__main__':
     unittest.main()

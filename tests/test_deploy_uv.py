@@ -1,5 +1,6 @@
 import queue
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -118,6 +119,48 @@ class TestUvCommandOutput(unittest.TestCase):
 
         self.assertEqual(110, ensure_python.call_args.kwargs["deadline"])
         self.assertEqual(5, run_sync.call_args.args[4])
+
+    def test_prune_obsolete_managed_pythons_keeps_active_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            active_home = root / ".venv" / "python" / "cpython-3.14.6-active"
+            old_home = root / ".venv" / "python" / "cpython-3.14.5-old"
+            active_python = active_home / "bin" / "python"
+            active_python.parent.mkdir(parents=True)
+            active_python.write_text("", encoding="utf-8")
+            old_home.mkdir(parents=True)
+            venv_python = root / ".venv" / "bin" / "python"
+            venv_python.parent.mkdir(parents=True)
+            venv_python.symlink_to(active_python)
+
+            self.assertEqual(1, uv._prune_obsolete_managed_pythons(root))
+            self.assertTrue(active_home.exists())
+            self.assertFalse(old_home.exists())
+
+    def test_cleanup_after_update_runs_once_after_successful_sync(self):
+        root = Path(".")
+        with (
+            patch("deploy.uv.is_environment_cleanup_pending", return_value=True),
+            patch("deploy.uv._run_and_collect") as run,
+            patch("deploy.uv._prune_obsolete_managed_pythons", return_value=1),
+            patch("deploy.uv.complete_environment_cleanup") as complete,
+        ):
+            uv._cleanup_environment_after_update(root, Path("uv"), [], None)
+
+        self.assertEqual([Path("uv"), "cache", "prune"], run.call_args.args[0])
+        complete.assert_called_once_with(root)
+
+    def test_cleanup_after_update_keeps_marker_when_cache_prune_fails(self):
+        root = Path(".")
+        failure = subprocess.CalledProcessError(1, ["uv", "cache", "prune"], output="locked")
+        with (
+            patch("deploy.uv.is_environment_cleanup_pending", return_value=True),
+            patch("deploy.uv._run_and_collect", side_effect=failure),
+            patch("deploy.uv.complete_environment_cleanup") as complete,
+        ):
+            uv._cleanup_environment_after_update(root, Path("uv"), [], None)
+
+        complete.assert_not_called()
 
     def test_dependency_service_exits_when_parent_process_is_gone(self):
         requests = Mock()

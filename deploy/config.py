@@ -10,6 +10,8 @@ from deploy.utils import *
 GIT_OVER_CDN_REPOSITORY = 'git://git.pull/AzurPilot'
 GIT_OVER_CDN_FALLBACK_REPOSITORY = 'https://gitcode.com/ddl2/AzurLaneAutoScript'
 GITHUB_REPOSITORY = 'https://github.com/wess09/AzurPilot'
+MACOS_COMMAND_LINE_TOOLS_GIT = '/Library/Developer/CommandLineTools/usr/bin/git'
+MACOS_LEGACY_GIT = './.venv/bin/git'
 
 
 class ExecutionError(Exception):
@@ -20,7 +22,11 @@ class ConfigModel:
     # Git 配置
     Repository: str = GITHUB_REPOSITORY
     Branch: str = "master"
-    GitExecutable: str = "./.venv/Scripts/git/cmd/git.exe" if sys.platform == "win32" else "./.venv/bin/git"
+    GitExecutable: str = (
+        "./.venv/Scripts/git/cmd/git.exe"
+        if sys.platform == "win32"
+        else MACOS_LEGACY_GIT
+    )
     GitProxy: Optional[str] = None
     SSLVerify: bool = False
 

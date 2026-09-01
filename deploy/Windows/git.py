@@ -8,6 +8,7 @@ from deploy.Windows.logger import Progress, logger
 from deploy.Windows.utils import cached_property
 from deploy.git_over_cdn.client import GitOverCdnClient
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
+from deploy.update_cleanup import ObsoleteFileCleaner
 
 
 class GitConfigParser(configparser.ConfigParser):
@@ -118,6 +119,9 @@ class GitManager(DeployConfig):
             self.execute(f'{git} init')
         Progress.GitInit()
 
+        obsolete_file_cleaner = ObsoleteFileCleaner(self.root_filepath, self.git, logger)
+        obsolete_file_cleaner.prepare()
+
         logger.hr('Set Git Proxy', 1)
         if proxy:
             if not self.git_config.check('http', 'proxy', value=proxy):
@@ -164,6 +168,7 @@ class GitManager(DeployConfig):
         if not self.execute(f'{git} checkout {branch}', allow_failure=True):
             self.execute(f'{git} pull --ff-only {source} {branch}')
         Progress.GitCheckout()
+        obsolete_file_cleaner.finish()
 
         logger.hr('Show Version', 1)
         self.execute(f'{git} --no-pager log --no-merges -1')

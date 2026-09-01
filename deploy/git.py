@@ -1,12 +1,22 @@
 import random
+import shutil
+import subprocess
+import sys
 import time
+from pathlib import Path
 
 import requests
 
-from deploy.config import DeployConfig, ExecutionError
+from deploy.config import (
+    MACOS_COMMAND_LINE_TOOLS_GIT,
+    MACOS_LEGACY_GIT,
+    DeployConfig,
+    ExecutionError,
+)
 from deploy.git_over_cdn.client import GitOverCdnClient
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
 from deploy.logger import logger
+from deploy.update_cleanup import ObsoleteFileCleaner
 from deploy.utils import *
 
 
@@ -15,8 +25,81 @@ CLOUD_FORCE_UPDATE_CONTROL_URL = 'https://alas-apiv2.nanoda.work/api/force_updat
 
 
 class GitManager(DeployConfig):
+    def _find_macos_system_git(self):
+        """查找已安装 Command Line Tools 或 Xcode 提供的 Git，不触发安装。"""
+        candidates = [Path(MACOS_COMMAND_LINE_TOOLS_GIT)]
+        try:
+            result = subprocess.run(
+                ['/usr/bin/xcode-select', '-p'],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        except OSError:
+            result = None
+        if result is not None and result.returncode == 0:
+            developer_dir = result.stdout.strip()
+            if developer_dir:
+                candidates.append(Path(developer_dir) / 'usr' / 'bin' / 'git')
+
+        for candidate in candidates:
+            if candidate.is_file():
+                return str(candidate)
+        return None
+
+    def _legacy_macos_git(self):
+        """查找发布包原有的内置 Git。"""
+        candidates = [self.filepath('GitExecutable'), self.root_filepath + '/' + MACOS_LEGACY_GIT]
+        for candidate in candidates:
+            if os.path.isfile(candidate):
+                return candidate
+        return None
+
+    def _remove_bundled_macos_git(self):
+        """检测到系统 Git 后，移除发布包虚拟环境中的冗余 Git。"""
+        bundled_git = Path(self.root_filepath) / MACOS_LEGACY_GIT
+        try:
+            if bundled_git.is_symlink() or bundled_git.is_file():
+                bundled_git.unlink()
+                logger.info(f'Removed bundled macOS Git: {bundled_git}')
+            elif bundled_git.is_dir():
+                shutil.rmtree(bundled_git)
+                logger.info(f'Removed bundled macOS Git directory: {bundled_git}')
+        except OSError as exc:
+            logger.warning(f'无法删除虚拟环境中的冗余 Git：{exc}')
+
+    def _set_macos_git_executable(self, executable):
+        """将本次选择写入部署配置，供下次启动复用。"""
+        if self.config.get('GitExecutable') == executable:
+            return
+        self.config['GitExecutable'] = executable
+        super().__setattr__('GitExecutable', executable)
+        try:
+            self.write()
+        except OSError as exc:
+            logger.warning(f'无法保存 GitExecutable 配置：{exc}')
+
+    def _macos_git(self):
+        system_git = self._find_macos_system_git()
+        if system_git:
+            self._remove_bundled_macos_git()
+            self._set_macos_git_executable(system_git)
+            logger.info(f'Use macOS Command Line Tools Git: {system_git}')
+            return system_git
+
+        legacy_git = self._legacy_macos_git()
+        if legacy_git:
+            logger.info(f'Use bundled macOS Git: {legacy_git}')
+            return legacy_git
+
+        logger.critical('未找到 Command Line Tools 或发布包内置 Git，无法执行更新')
+        raise ExecutionError
+
     @cached_property
     def git(self):
+        if sys.platform == 'darwin':
+            return self._macos_git()
+
         exe = self.filepath('GitExecutable')
         if os.path.exists(exe):
             return exe
@@ -95,6 +178,9 @@ class GitManager(DeployConfig):
             self.remove('./.git/HEAD')
             self.execute(f'{git} init')
 
+        obsolete_file_cleaner = ObsoleteFileCleaner(self.root_filepath, self.git, logger)
+        obsolete_file_cleaner.prepare()
+
         logger.hr('Set Git Proxy', 1)
         if proxy:
             self.execute(f'{git} config --local http.proxy {proxy}')
@@ -127,6 +213,7 @@ class GitManager(DeployConfig):
                 os.remove(lock_file)
         self.execute(f'{git} reset --hard {source}/{branch}')
         self.execute(f'{git} pull --ff-only {source} {branch}')
+        obsolete_file_cleaner.finish()
 
         logger.hr('Show Version', 1)
         self.execute(f'{git} --no-pager log --no-merges -1')

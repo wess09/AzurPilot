@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Optional, Union
 from urllib.parse import urlparse
 
+from deploy.update_cleanup import complete_environment_cleanup, is_environment_cleanup_pending
+
 
 BOOTSTRAPPED_ENV = "AZURPILOT_UV_BOOTSTRAPPED"
 BOOTSTRAP_UV_ENV = "AZURPILOT_BOOTSTRAP_UV"
@@ -192,6 +194,80 @@ def _managed_python_executable(root: Path) -> Optional[Path]:
             if candidate.exists():
                 return candidate
     return None
+
+
+def _active_managed_python_home(root: Path) -> Optional[Path]:
+    """返回当前虚拟环境实际引用的受管 Python 目录。"""
+    try:
+        active_python = venv_python(root).resolve(strict=True)
+    except (OSError, RuntimeError):
+        return None
+
+    install_dir = venv_python_install_dir(root).resolve()
+    for python_home in install_dir.glob("cpython-*-*"):
+        try:
+            if active_python.is_relative_to(python_home.resolve()):
+                return python_home
+        except (OSError, RuntimeError):
+            continue
+    return None
+
+
+def _prune_obsolete_managed_pythons(root: Path) -> int:
+    """删除未被当前虚拟环境引用的旧受管 CPython 发行版。"""
+    install_dir = venv_python_install_dir(root)
+    candidates = [path for path in install_dir.glob("cpython-*-*") if path.is_dir()]
+    if len(candidates) < 2:
+        return 0
+
+    active_home = _active_managed_python_home(root)
+    if active_home is None:
+        print("Skip managed Python cleanup: active virtual environment is not self-contained")
+        return 0
+
+    removed = 0
+    install_root = install_dir.resolve()
+    for python_home in candidates:
+        try:
+            if python_home.samefile(active_home):
+                continue
+            # 防止异常符号链接令递归删除跨出受管安装目录。
+            if python_home.is_symlink() or not python_home.resolve().is_relative_to(install_root):
+                print(f"Skip unsafe managed Python path: {python_home}")
+                continue
+            shutil.rmtree(python_home)
+            removed += 1
+            print(f"Removed obsolete managed Python: {python_home.name}")
+        except OSError as exc:
+            print(f"Failed to remove obsolete managed Python {python_home}: {exc}")
+    return removed
+
+
+def _cleanup_environment_after_update(
+    root: Path,
+    uv: Path,
+    outputs: Optional[list[str]],
+    deadline: float | None,
+):
+    """在更新后的首次成功同步后回收不再使用的 uv 数据。"""
+    if not is_environment_cleanup_pending(root):
+        return
+
+    command = [uv, "cache", "prune"]
+    try:
+        _run_and_collect(
+            command,
+            root,
+            _uv_python_env(root),
+            outputs,
+            _remaining_timeout(deadline, command),
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        print(f"Update environment cleanup deferred: {redact_sensitive_text(command_output(exc))}")
+        return
+
+    _prune_obsolete_managed_pythons(root)
+    complete_environment_cleanup(root)
 
 
 def _venv_python_works(root: Path) -> bool:
@@ -456,6 +532,7 @@ def sync_project_venv(
             outputs,
             _remaining_timeout(deadline, command),
         )
+        _cleanup_environment_after_update(root, uv, outputs, deadline)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
         if outputs is not None:
             output = command_output(exc)
