@@ -16,7 +16,6 @@ Deploy:
     Branch: master
     # Git 可执行文件路径
     # Filepath of git executable.
-    # macOS 检测到 Command Line Tools 后自动改用系统 Git 并删除虚拟环境中的冗余 Git。
     GitExecutable: ./.venv/bin/git
     # 设置 Git 代理
     # Set git proxy
