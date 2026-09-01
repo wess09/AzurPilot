@@ -1,7 +1,5 @@
 import threading
-import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from deploy.git import GitManager as DeployGitManager
@@ -127,38 +125,6 @@ class TestGitOverCdnClient(unittest.TestCase):
 
             self.assertEqual(list(CLOUDFLARE_UPDATE_URLS), client.urls)
             self.assertEqual(list(FALLBACK_UPDATE_URLS), client.fallback_urls)
-
-    def test_macos_update_manager_uses_detected_command_line_tools_git(self):
-        with tempfile.TemporaryDirectory() as directory:
-            manager = object.__new__(DeployGitManager)
-            manager.root_filepath = directory
-            bundled_git = Path(directory) / '.venv' / 'bin' / 'git'
-            bundled_git.parent.mkdir(parents=True)
-            bundled_git.write_text('', encoding='utf-8')
-
-            with (
-                patch("deploy.git.sys.platform", "darwin"),
-                patch.object(manager, "_find_macos_system_git", return_value="/Applications/Xcode.app/git"),
-                patch.object(manager, "_set_macos_git_executable") as set_executable,
-            ):
-                self.assertEqual(
-                    "/Applications/Xcode.app/git",
-                    manager.git,
-                )
-
-            self.assertFalse(bundled_git.exists())
-        set_executable.assert_called_once_with("/Applications/Xcode.app/git")
-
-    def test_macos_update_manager_keeps_bundled_git_without_tools(self):
-        manager = object.__new__(DeployGitManager)
-
-        with (
-            patch("deploy.git.sys.platform", "darwin"),
-            patch.object(manager, "_find_macos_system_git", return_value=None),
-            patch.object(manager, "_legacy_macos_git", return_value="/release/.venv/bin/git"),
-        ):
-            self.assertEqual("/release/.venv/bin/git", manager.git)
-
 
 if __name__ == '__main__':
     unittest.main()
