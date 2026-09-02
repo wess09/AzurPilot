@@ -13,6 +13,9 @@ from module.logger import logger
 
 
 class SelectCharacter(UI):
+    # 岗位派遣角色的默认最低体力门槛（子模块可按生产消耗覆盖）
+    DISPATCH_STAMINA_DEFAULT = 35
+
     def __init__(self, *args, **kwargs):
         UI.__init__(self, *args, **kwargs)
         self.select_character_grid = ButtonGrid(
@@ -28,6 +31,9 @@ class SelectCharacter(UI):
 
         # 本轮已判定不可用的角色（避免同一轮内多次派遣时重复检测）
         self.unavailable_characters = set()
+        # 当前模块岗位派遣的最低体力门槛，只用于过滤指定角色；
+        # WorkerJuu 体力无限，不参与体力校验。
+        self.dispatch_stamina_min = self.DISPATCH_STAMINA_DEFAULT
 
         # 定义状态检测区域（相对于每个角色按钮）
         self.character_area_relative = (25, 38, 125, 96)
@@ -153,7 +159,8 @@ class SelectCharacter(UI):
 
         # 3. 识别当前体力值
         stamina = self._get_stamina_value(screenshot, button)
-        has_stamina = stamina >= 35
+        # WorkerJuu 体力无限，视为始终满足；指定角色按岗位体力门槛校验。
+        has_stamina = character_name == "WorkerJuu" or stamina >= self.dispatch_stamina_min
 
         # 4. 识别是否已选中
         is_selected = self._check_selected_status(screenshot, button)
@@ -496,8 +503,7 @@ class SelectCharacter(UI):
 
         # 如果没有找到可用角色，查找WorkerJuu
         if "WorkerJuu" in character_dict:
-            worker_info = character_dict["WorkerJuu"]
-            return worker_info["grid_position"]
+            return character_dict["WorkerJuu"]["grid_position"]
 
         return None
 

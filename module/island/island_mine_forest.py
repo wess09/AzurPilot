@@ -13,9 +13,14 @@ from datetime import timedelta
 from module.config.time_source import now as current_time
 
 
+# 矿山与林场岗位生产派遣的最低角色体力（低于该值不派遣，避免体力消耗确认失败）
+DISPATCH_STAMINA_MIN = 80
+
+
 class IslandMineForest(Island,LoginHandler):
     def __init__(self, *args, **kwargs):
         Island.__init__(self, *args, **kwargs)
+        self.dispatch_stamina_min = DISPATCH_STAMINA_MIN
         self.worker_filters = {
             'mine': self.config.IslandMine_WorkerFilter,
             'forest': self.config.IslandForest_WorkerFilter,

@@ -38,10 +38,15 @@ from module.handler.login import LoginHandler
 from module.logger import logger
 
 
+# 渔场岗位生产派遣的最低角色体力（低于该值不派遣，避免高体力消耗养殖确认失败）
+DISPATCH_STAMINA_MIN = 98
+
+
 class IslandFishery(Island, WarehouseOCR, LoginHandler):
     def __init__(self, *args, **kwargs):
         Island.__init__(self, *args, **kwargs)
         WarehouseOCR.__init__(self)
+        self.dispatch_stamina_min = DISPATCH_STAMINA_MIN
         self.fishery_positions = self.config.IslandFishery_Positions
         self.fishery_threshold = {
             'bass': self.config.IslandFishery_MinBass,
