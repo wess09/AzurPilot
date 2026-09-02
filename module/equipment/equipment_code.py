@@ -4,6 +4,8 @@
 
 import re
 
+import cv2
+import numpy as np
 import yaml
 
 from module.base.timer import Timer
@@ -18,14 +20,21 @@ from module.storage.storage import StorageHandler
 EMPTY_CODE = "MC8wLzAvMC8wXDA="
 EQUIPMENT_CODE_PATTERN = re.compile(r'[A-Za-z0-9+/=]{%d,}' % len(EMPTY_CODE))
 U2_CONTROL_METHODS = {'uiautomator2', 'minitouch', 'MaaTouch'}
-EQUIPMENT_PREVIEW = list([
+EQUIPMENT_PREVIEW_EMPTY = [
     EQUIPMENT_CODE_EQUIP_0,
     EQUIPMENT_CODE_EQUIP_1,
     EQUIPMENT_CODE_EQUIP_2,
     EQUIPMENT_CODE_EQUIP_3,
     EQUIPMENT_CODE_EQUIP_4,
     EQUIPMENT_CODE_EQUIP_5,
-])
+]
+EQUIPMENT_PREVIEW_OCCUPIED = [
+    EQUIPMENT_PREVIEW_SLOT_0_STAR,
+    EQUIPMENT_PREVIEW_SLOT_1_STAR,
+    EQUIPMENT_PREVIEW_SLOT_2_STAR,
+    EQUIPMENT_PREVIEW_SLOT_3_STAR,
+    EQUIPMENT_PREVIEW_SLOT_4_STAR,
+]
 
 
 class EquipmentCodeHandler(StorageHandler):
@@ -141,20 +150,70 @@ class EquipmentCodeHandler(StorageHandler):
         """
         self.ui_back(check_button=EQUIPMENT_CODE_ENTRANCE)
 
-    def is_code_preview_loaded(self):
-        if self.appear(EQUIPMENT_CODE_EQUIP_5_LOCKED, offset=(5, 5)):
-            max_index = 5
-        else:
-            max_index = 6
-        for index in range(max_index):
-            if not self.appear(EQUIPMENT_PREVIEW[index], offset=(5, 5)):
-                return True
+    def is_code_preview_empty(self):
+        # 只有所有可用槽位都正向命中空槽，才能确认预览已清空。
+        return all(
+            self.appear(button, offset=(5, 5))
+            for button in EQUIPMENT_PREVIEW_EMPTY[:5]
+        ) and (
+            self.appear(EQUIPMENT_CODE_EQUIP_5_LOCKED, offset=(5, 5))
+            or self.appear(EQUIPMENT_CODE_EQUIP_5, offset=(5, 5))
+        )
 
-        return False
+    def _code_preview_slot_occupied(self, button):
+        return button.match_luma(self.device.image, offset=(2, 2), similarity=0.85)
+
+    def _code_special_equip_occupied(self):
+        x1, y1, x2, y2 = EQUIPMENT_CODE_EQUIP_5.area
+        image = self.device.image[y1:y2, x1:x2]
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+        quality_color = np.zeros(hsv.shape[:2], dtype=bool)
+        for lower, upper in (
+            ((15, 100, 180), (25, 170, 250)),   # 金色
+            ((95, 120, 175), (106, 180, 240)),  # 蓝色
+            ((118, 65, 145), (130, 125, 210)),  # 紫色
+        ):
+            quality_color |= cv2.inRange(hsv, lower, upper) > 0
+
+        rows, columns = np.ogrid[:quality_color.shape[0], :quality_color.shape[1]]
+        delta_x = columns - 46
+        delta_y = rows - 40
+        distance_squared = delta_x ** 2 + delta_y ** 2
+        # 挖空中心以避开装备贴图，只采集槽位外围的品质背景色。
+        annulus = (distance_squared >= 24 ** 2) & (distance_squared <= 32 ** 2)
+        angles = (np.arctan2(delta_y, delta_x) + 2 * np.pi) % (2 * np.pi)
+        sectors = np.floor(angles / (np.pi / 4)).astype(np.int8)
+        ratios = [
+            float(np.mean(quality_color[annulus & (sectors == index)]))
+            for index in range(8)
+        ]
+        # 允许贴图随机遮挡部分圆环，只要求颜色最完整的四个扇区稳定命中。
+        return float(np.mean(sorted(ratios)[-4:])) >= 0.65
+
+    def is_code_preview_loaded(self):
+        occupied_states = []
+        for empty, occupied in zip(EQUIPMENT_PREVIEW_EMPTY, EQUIPMENT_PREVIEW_OCCUPIED):
+            empty_appear = self.appear(empty, offset=(5, 5))
+            occupied_appear = self._code_preview_slot_occupied(occupied)
+
+            # 前五槽共同确认当前确实是装备预览；未知或歧义状态均继续等待。
+            if empty_appear == occupied_appear:
+                return False
+            occupied_states.append(occupied_appear)
+
+        if any(occupied_states):
+            return True
+
+        # 只有前五槽均可信且为空时，才需要判断容易受贴图影响的第六槽。
+        if self.appear(EQUIPMENT_CODE_EQUIP_5_LOCKED, offset=(5, 5)):
+            return False
+        if self.appear(EQUIPMENT_CODE_EQUIP_5, offset=(5, 5)):
+            return False
+        return self._code_special_equip_occupied()
 
     def _code_preview_clear(self):
         for _ in self.loop(timeout=2):
-            if not self.is_code_preview_loaded():
+            if self.is_code_preview_empty():
                 return True
 
             if self.appear_then_click(EQUIPMENT_CODE_CLEAR, offset=(5, 5), interval=1):
@@ -244,21 +303,14 @@ class EquipmentCodeHandler(StorageHandler):
             return False
 
     def _code_wait_preview_loaded(self):
-        """确认输入后等待装备预览加载完成。"""
-        confirm_clicked = False
+        """等待装备码预览加载完成。"""
         for _ in self.loop(timeout=10, skip_first=False):
-            # 确认按钮仍可见时，预览可能仍被输入法遮挡，不能提前校验。
-            if self.appear(EQUIPMENT_CODE_ENTER, offset=(5, 5), threshold=30):
-                if self.appear_then_click(EQUIPMENT_CODE_ENTER, offset=(5, 5), interval=3):
-                    confirm_clicked = True
-                continue
-
-            if self.device.ime_shown():
-                continue
-
-            # 预览槽使用空槽模板的负面判定，只能在确认后的无输入法截图中使用。
-            if confirm_clicked and self.is_code_preview_loaded():
+            # End：正向退出判断必须位于点击操作之前。
+            if self.is_code_preview_loaded():
                 return True
+
+            if self.appear_then_click(EQUIPMENT_CODE_ENTER, offset=(5, 5), interval=3):
+                continue
 
         return False
 

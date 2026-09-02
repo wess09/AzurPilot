@@ -78,8 +78,8 @@ class CampaignOcr(ModuleBase):
         result = re.sub(r'[0-9I]+-[0-9I]+', replace_func, result, count=1)
 
         # 将 '72' 转换为 '7-2'
-        if len(result) == 2 and result[0].isdigit():
-            result = '-'.join(result)
+        if len(result) in [2, 3] and result.isdigit():
+            result = result[:-1] + '-' + result[-1]
 
         result = result.lower()
         return result

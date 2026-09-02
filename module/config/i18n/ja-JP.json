@@ -1237,7 +1237,7 @@
       "raid_20240328": "ゼロから頑張る魔王討伐（復刻）",
       "raid_20250116": "新春華裳協奏曲",
       "raid_20260212": "新春玉逸品会",
-      "raid_20260827": "大物の予告状",
+      "raid_20260827": "偉いやつの予告状",
       "war_archives_20180607_cn": "檔案 墨染まりし鋼の桜",
       "war_archives_20180726_cn": "檔案 光と影のアイリス",
       "war_archives_20181020_en": "檔案 努力希望と計画",
@@ -1858,19 +1858,6 @@
     "UseTicket": {
       "name": "演習チケットを使用する",
       "help": ""
-    }
-  },
-  "RaidScuttle": {
-    "_info": {
-      "name": "共闘沈船",
-      "help": ""
-    },
-    "Sacrifice": {
-      "name": "犠牲船の位置",
-      "help": "",
-      "vanguard": "前衛",
-      "flagship": "旗艦",
-      "vanguard_flagship": "前衛+旗艦"
     }
   },
   "RaidDaily": {

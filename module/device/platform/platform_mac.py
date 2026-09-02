@@ -189,6 +189,9 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
             else:
                 raise Exception('MuMu Pro app not found')
 
+        elif instance.type == 'SSH':
+            self.run_remote_ssh_command(getattr(self.config, 'EmulatorInfo_RemoteStartCommand', ''))
+
         else:
             # 通用回退: 尝试通过路径打开
             if os.path.exists(exe):
@@ -225,6 +228,9 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
             # 而是确保指定的进程已停止
             # 仅终止特定的 MuMu 模拟器进程（如果仍在运行）
             # 实例名称可用于定位特定实例的进程
+
+        elif instance.type == 'SSH':
+            self.run_remote_ssh_command(getattr(self.config, 'EmulatorInfo_RemoteStopCommand', ''))
 
         else:
             # 通用回退: 按实例名称终止进程
@@ -330,7 +336,6 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
     def emulator_start(self):
         """启动模拟器，最多重试 3 次。"""
         logger.hr('[设备-模拟器Mac] 模拟器启动', level=1)
-        self.run_remote_ssh_command()
         for _ in range(3):
             # 先停止
             if not self._emulator_function_wrapper(self._emulator_stop):

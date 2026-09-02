@@ -79,13 +79,25 @@ class PlatformBase(Connection, EmulatorManagerBase):
         - 需要支持重试。
         - 禁止使用无聊的 sleep 来等待启动。
         """
-        logger.info(f'[设备-平台] 当前平台 {sys.platform} 不支持启动模拟器，跳过')
+        emulator = getattr(self.config, 'EmulatorInfo_Emulator', '')
+        if emulator == 'SSH':
+            self.run_remote_ssh_command(
+                getattr(self.config, 'EmulatorInfo_RemoteStartCommand', '')
+            )
+        else:
+            logger.info(f'[设备-平台] 当前平台 {sys.platform} 不支持启动模拟器 ({emulator})，跳过')
 
     def emulator_stop(self):
         """
         停止模拟器。
         """
-        logger.info(f'[设备-平台] 当前平台 {sys.platform} 不支持停止模拟器，跳过')
+        emulator = getattr(self.config, 'EmulatorInfo_Emulator', '')
+        if emulator == 'SSH':
+            self.run_remote_ssh_command(
+                getattr(self.config, 'EmulatorInfo_RemoteStopCommand', '')
+            )
+        else:
+            logger.info(f'[设备-平台] 当前平台 {sys.platform} 不支持停止模拟器 ({emulator})，跳过')
 
     def run_remote_ssh_command(self, command=None):
         """

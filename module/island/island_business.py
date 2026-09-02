@@ -31,7 +31,7 @@ BUSINESS_REMAIN_TIME_AREA = Button(
 # ==================== 美食评审安全区域（仅坐标，无需截图） ====================
 BUSINESS_REVIEW_SAFE_AREA = Button(
     area=(), color=(),
-    button=(75, 450, 110, 550),
+    button=(75, 350, 110, 450),
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 

@@ -26,8 +26,7 @@ from module.map.map_operation import MapOperation
 from module.ocr.ocr import Digit, DigitCounter
 from module.raid.assets import *
 from module.raid.combat import RaidCombat
-from module.ui.assets import RAID_CHECK
-from module.ui.page import page_rpg_stage, page_campaign_menu
+from module.ui.page import page_raid, page_rpg_stage, page_campaign_menu
 from module.log_res import LogRes
 
 
@@ -134,7 +133,7 @@ def raid_name_shorten(name):
     elif name == 'raid_20260212':
         return 'CHANGWU'
     elif name == 'raid_20260827':
-        return 'DARENWU'
+        return 'BIGSHOT'
     else:
         raise ScriptError(f'Unknown raid name: {name}')
 
@@ -219,11 +218,11 @@ def raid_ocr(raid, mode):
             return Digit(button, letter=(255, 239, 215), threshold=128)
         else:
             return RaidCounterPostMixin(button, lang='cnocr', letter=(154, 148, 133), threshold=128)
-    elif raid == 'DARENWU':
+    elif raid == 'BIGSHOT':
         if mode == 'ex':
-            return Digit(button, letter=(190, 218, 137), threshold=128)
+            return Digit(button, letter=(198, 220, 136), threshold=128)
         else:
-            return RaidCounterPostMixin(button, lang='cnocr', letter=(58, 60, 65), threshold=64)
+            return RaidCounterPostMixin(button, letter=(58, 60, 65), threshold=128)
 
 
 def pt_ocr(raid):
@@ -256,8 +255,8 @@ def pt_ocr(raid):
         return Digit(button, letter=(255, 231, 231), threshold=128)
     elif raid == 'CHANGWU':
         return Digit(button, letter=(255, 239, 215), threshold=128)
-    elif raid == 'DARENWU':
-        return Digit(button, letter=(238, 250, 222), threshold=128)
+    elif raid == 'BIGSHOT':
+        return Digit(button, letter=(255, 247, 236), threshold=128)
 
 
 class Raid(MapOperation, RaidCombat, CampaignEvent):
@@ -425,7 +424,7 @@ class Raid(MapOperation, RaidCombat, CampaignEvent):
         if self.is_raid_rpg():
             return self.appear(page_rpg_stage.check_button, offset=(30, 30))
         else:
-            return self.appear(RAID_CHECK, offset=(30, 30))
+            return self.ui_page_appear(page_raid, offset=(30, 30))
 
     def raid_execute_once(self, mode, raid):
         """

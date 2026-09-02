@@ -1205,13 +1205,6 @@
     "_info": {
       "name": "共斗沉船喵",
       "help": ""
-    },
-    "Sacrifice": {
-      "name": "牺牲船位置喵",
-      "help": "",
-      "vanguard": "前排喵",
-      "flagship": "旗舰喵",
-      "vanguard_flagship": "前排+旗舰喵"
     }
   },
   "RaidDaily": {

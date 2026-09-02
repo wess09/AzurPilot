@@ -323,9 +323,6 @@ class GeneratedConfig:
     Raid_Mode = 'hard'  # easy, normal, hard, ex
     Raid_UseTicket = False
 
-    # 配置组 `RaidScuttle`
-    RaidScuttle_Sacrifice = 'vanguard'  # vanguard, flagship, vanguard_flagship
-
     # 配置组 `RaidDaily`
     RaidDaily_StageFilter = 'hard > normal > easy'
 

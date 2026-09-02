@@ -243,7 +243,7 @@ class IslandAirDrop(Island):
 
     def run_and_get(self):
         self.island_up(3000)
-        self.island_right(700)
+        self.island_right(800)
         self.island_up(2000)
         self.device.click(ISLAND_JUMP)
         self.island_up(1200)
@@ -254,7 +254,7 @@ class IslandAirDrop(Island):
         self.island_right(2000)
         self.island_up(4000)
         self.island_right(2600)
-        self.island_up(300)
+        self.island_up(500)
         self.device.click(ISLAND_JUMP)
         self.island_up(1300)
         self.island_air_drop()

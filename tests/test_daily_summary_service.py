@@ -355,22 +355,24 @@ class TestDailySummaryService(unittest.TestCase):
         script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
         script.config_name = 'alpha'
         script.failure_record = {'Commission': 2}
-        script.__dict__['config'] = summary_config()
+        script._daily_summary_settings = summary_config()
+        script._daily_summary_settings_mtime = None
         service = Mock()
         script.__dict__['_daily_summary_service'] = service
 
         with patch('alas.current_time', return_value=datetime(2026, 8, 21, 20, 2)):
-            script._check_daily_summary()
+            script._check_daily_summary(script._daily_summary_settings)
             service.check_due.side_effect = RuntimeError('日报故障')
-            script._check_daily_summary()
+            script._check_daily_summary(script._daily_summary_settings)
 
         self.assertEqual(2, service.check_due.call_count)
+        self.assertIsNone(service.check_due.call_args.kwargs['current_server'])
         self.assertNotIn('device', script.__dict__)
+        self.assertNotIn('config', script.__dict__)
         self.assertEqual({'Commission': 2}, script.failure_record)
 
-        script.__dict__['config'] = summary_config(DailySummary_Enable=False)
         script.__dict__['_daily_summary_service'] = None
-        script._check_daily_summary()
+        script._check_daily_summary(summary_config(DailySummary_Enable=False))
         self.assertIsNone(script._daily_summary_service)
 
     def test_independent_daily_summary_loop_checks_without_task_completion(self):
@@ -378,26 +380,65 @@ class TestDailySummaryService(unittest.TestCase):
         script._daily_summary_stop = Mock()
         script._daily_summary_stop.is_set.side_effect = [False, True]
         script._daily_summary_stop.wait.return_value = False
+        script._daily_summary_thread = None
+        script._daily_summary_enabled = True
+        script._get_daily_summary_settings = Mock(return_value=summary_config())
         script._check_daily_summary = Mock()
 
         script._daily_summary_loop()
 
-        script._check_daily_summary.assert_called_once_with()
+        script._check_daily_summary.assert_called_once_with(
+            script._get_daily_summary_settings.return_value
+        )
         self.assertNotIn('device', script.__dict__)
 
     def test_independent_daily_summary_scheduler_starts_a_daemon_thread(self):
         script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
         script.config_name = 'alpha'
-        script._daily_summary_stop = Mock()
+        script._daily_summary_enabled = False
+        script._daily_summary_stop = None
         script._daily_summary_thread = None
+        script._daily_summary_settings_mtime = None
+        script._daily_summary_settings = None
+        script._get_daily_summary_service = Mock()
         with patch('alas.threading.Thread') as thread:
-            script._start_daily_summary_scheduler()
+            started = script._start_daily_summary_scheduler(summary_config())
 
+        self.assertTrue(started)
+        script._get_daily_summary_service.assert_called_once_with()
         thread.assert_called_once()
         self.assertIs(thread.call_args.kwargs['target'].__self__, script)
         self.assertEqual('_daily_summary_loop', thread.call_args.kwargs['target'].__name__)
         self.assertTrue(thread.call_args.kwargs['daemon'])
         thread.return_value.start.assert_called_once_with()
+
+    def test_disabled_daily_summary_creates_no_thread_service_or_config(self):
+        script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
+        script.config_name = 'alpha'
+        script._daily_summary_enabled = False
+        script._daily_summary_service = None
+        script._daily_summary_stop = None
+        script._daily_summary_thread = None
+        script._daily_summary_settings_mtime = None
+        script._daily_summary_settings = None
+        script._get_daily_summary_service = Mock()
+
+        with (
+            patch('alas.threading.Event') as event,
+            patch('alas.threading.Thread') as thread,
+        ):
+            started = script._start_daily_summary_scheduler(
+                summary_config(DailySummary_Enable=False)
+            )
+
+        self.assertFalse(started)
+        script._get_daily_summary_service.assert_not_called()
+        event.assert_not_called()
+        thread.assert_not_called()
+        self.assertIsNone(script._daily_summary_service)
+        self.assertIsNone(script._daily_summary_stop)
+        self.assertIsNone(script._daily_summary_settings)
+        self.assertNotIn('config', script.__dict__)
 
     def test_daily_scheduler_reads_latest_saved_settings_without_reloading_task_config(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -419,9 +460,8 @@ class TestDailySummaryService(unittest.TestCase):
             )
             script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
             script.config_name = 'alpha'
-            script.__dict__['config'] = summary_config(DailySummary_Enable=False)
             script._daily_summary_settings_mtime = None
-            script._daily_summary_settings = None
+            script._daily_summary_settings = summary_config()
             service = Mock()
             script.__dict__['_daily_summary_service'] = service
 
@@ -436,7 +476,7 @@ class TestDailySummaryService(unittest.TestCase):
         self.assertTrue(settings.DailySummary_Enable)
         self.assertEqual('00:10', settings.DailySummary_TriggerTime)
         self.assertEqual('cn_android-0', settings.Emulator_ServerName)
-        self.assertFalse(script.config.DailySummary_Enable)
+        self.assertNotIn('config', script.__dict__)
 
 
 class TestDailySummaryNotify(unittest.TestCase):

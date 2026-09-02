@@ -79,7 +79,7 @@
       "help": "在1-1不打boss刷伏击获得物资等，支持按紧急委托流程自动换船。"
     },
     "EventGeneral": {
-      "name": "活动通用",
+      "name": "活动通用设置",
       "help": ""
     },
     "Event": {
@@ -1858,19 +1858,6 @@
     "UseTicket": {
       "name": "使用演习券",
       "help": ""
-    }
-  },
-  "RaidScuttle": {
-    "_info": {
-      "name": "共斗沉船",
-      "help": ""
-    },
-    "Sacrifice": {
-      "name": "牺牲船位置",
-      "help": "",
-      "vanguard": "前排",
-      "flagship": "旗舰",
-      "vanguard_flagship": "前排+旗舰"
     }
   },
   "RaidDaily": {

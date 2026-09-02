@@ -309,10 +309,11 @@ class IslandDailyInteract(Island):
         """港口布莱梅移动路线（需跳转到啾咖啡餐厅）。"""
         self.island_up(2600)
         self.device.click(ROUTE_TWO_OPTION_COMPLETE)
+        self.device.sleep(2)
         for _ in self.loop(timeout=12, skip_first=False):
-            self.device.sleep(2)
             if self.appear(ISLAND_CHECK):
                 break
+            self.device.sleep(2)
         self.island_left(600)
 
     def move_for_lisha(self):
@@ -392,7 +393,7 @@ class IslandDailyInteract(Island):
             ('繁荫农圃的拉科尼娅', 'nursery', self.move_for_lakeniya, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
             ('繁荫农圃的露西', 'nursery', self.move_for_luxi, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
             ('港口的帕特莉', 'port', self.move_for_pateli, BUSINESS_DELIVERY_TWO_OPTION_INTERACT, ROUTE_TWO_OPTION_COMPLETE),
-            ('啾咖啡餐厅的布莱梅', 'port', self.move_for_bulaimei, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
+            ('啾咖啡餐厅的布莱梅', 'port', self.move_for_bulaimei, BUSINESS_DELIVERY_BULAIMEI_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
             ('晨露农场的赫莫', 'farm', self.move_for_hemo, BUSINESS_DELIVERY_THREE_OPTION_INTERACT, ROUTE_THREE_OPTION_COMPLETE),
         ]
 

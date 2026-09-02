@@ -1,23 +1,17 @@
-"""弃船突袭处理器，处理弃船突袭特有的战斗结算和退役逻辑。
-在突袭中自动退役低级舰船以腾出船位。
+"""弃船突袭处理器，处理弃船突袭特有的战斗结算逻辑。
+
+与联盟沉船（CoalitionScuttle）一致：仅扣除进图时的一次 2 点心情，
+沉船（D 评价）不额外扣减心情。不再自动替换牺牲舰船，
+战斗循环由 RunCount 等停止条件控制。
 """
 
-from module.combat.assets import OPTS_INFO_D, BATTLE_STATUS_D, EXP_INFO_D, BATTLE_STATUS_C, EXP_INFO_C
-from module.exception import ScriptError, CampaignEnd
+from module.combat.assets import OPTS_INFO_D, BATTLE_STATUS_D, EXP_INFO_D
 from module.logger import logger
-from module.raid.assets import RAID_FLEET_PREPARATION, RAID_FLEET_VANGUARD, RAID_FLEET_FLAGSHIP
 from module.raid.combat import RaidCombat
-from module.raid.raid import raid_entrance
 from module.raid.run import RaidRun
-from module.retire.assets import DOCK_CHECK
-from module.retire.dock import Dock
-from module.retire.scanner import ShipScanner
-from module.ui.page import page_raid, page_rpg_stage
 
 
 class RaidScuttleCombat(RaidCombat):
-    triggered_normal_end = False
-
     def handle_battle_status(self, drop=None):
         """
         处理弃船突袭的战斗结算画面，优先识别弃船专用结算按钮。
@@ -46,7 +40,6 @@ class RaidScuttleCombat(RaidCombat):
             return True
         if super().handle_battle_status(drop=drop):
             logger.warning("触发正常结束")
-            self.triggered_normal_end = True
             return True
 
         return False
@@ -69,158 +62,19 @@ class RaidScuttleCombat(RaidCombat):
         return False
 
 
-class RaidScuttleRun(RaidRun, RaidScuttleCombat, Dock):
-    @property
-    def change_vanguard(self):
-        return 'vanguard' in self.config.RaidScuttle_Sacrifice
+class RaidScuttleRun(RaidRun, RaidScuttleCombat):
+    """弃船突袭主循环。
 
-    @property
-    def change_flagship(self):
-        return 'flagship' in self.config.RaidScuttle_Sacrifice
+    与联盟沉船（CoalitionScuttle）一致：
+    - 仅扣除进图时的一次 2 点心情，沉船（D 评价）不额外扣减 10 点心情
+    - 不自动替换牺牲舰船，战斗循环由 RunCount 等停止条件控制
+    """
 
-    def triggered_stop_condition(self, oil_check=False, pt_check=False, coin_check=False):
-        if self.triggered_normal_end:
-            return True
-        if super().triggered_stop_condition(oil_check, pt_check, coin_check):
-            return True
-
-        return False
-
-    def raid_enter_preparation(self, mode, raid, skip_first_screenshot=True):
+    def handle_combat_low_emotion(self):
         """
-        进入弃船突袭的战斗准备画面，从突袭页面导航到编队选择。
+        重写红脸出击警告弹窗处理。
 
-        Args:
-            mode (str): 难度模式。
-            raid (str): 突袭活动名称。
-            skip_first_screenshot (bool): 是否跳过首次截图。
-
-        Pages:
-            in: page_raid
-            out: BATTLE_PREPARATION
+        沉船任务中牺牲舰必然低心情，红脸弹窗出现时点击确认继续出击，
+        不触发计算模式下的心情清零保底。
         """
-        # 确保进入正确的 UI 页面
-        self.device.stuck_record_clear()
-        self.device.click_record_clear()
-        if not self.is_raid_rpg():
-            self.ui_ensure(page_raid)
-        else:
-            self.ui_ensure(page_rpg_stage)
-            self.raid_rpg_swipe()
-        entrance = raid_entrance(raid=raid, mode=mode)
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
-            if self.appear(entrance, offset=(10, 10), interval=5):
-                self.device.click(entrance)
-                continue
-
-            # 结束条件：点击编队准备按钮
-            if self.appear_then_click(RAID_FLEET_PREPARATION, offset=(20, 20), interval=5):
-                break
-
-    def get_common_rarity_ship(self, index='all'):
-        """
-        从船坞中获取普通稀度的舰船，用于弃船突袭替换。
-
-        Args:
-            index (str): 舰船类型过滤，'all'、'vanguard' 或 'main'。
-
-        Returns:
-            list: 符合条件的舰船列表。
-        """
-        self.dock_favourite_set(False, wait_loading=False)
-        self.dock_sort_method_dsc_set(False, wait_loading=False)
-        self.dock_filter_set(
-            index=index, rarity='common', extra='enhanceable', sort='total'
-        )
-
-        logger.hr('搜索舰船')
-
-        scanner = ShipScanner(level=(1, 31), fleet=0, status='free')
-        scanner.disable('rarity')
-
-        return scanner.scan(self.device.image)
-
-    def vanguard_change(self):
-        logger.hr('更换前排', level=2)
-        for _ in self.loop():
-            if self.appear(DOCK_CHECK, offset=(20, 20)):
-                break
-            if self.appear(RAID_FLEET_PREPARATION, offset=(20, 20)):
-                self.device.click(RAID_FLEET_VANGUARD)
-                continue
-
-        ship = self.get_common_rarity_ship(index='vanguard')
-        if ship:
-            self._ship_change_confirm(min(ship, key=lambda s: (s.level, -s.emotion)).button)
-            logger.info('[突袭-扫荡] 更换前排成功')
-            return True
-        else:
-            logger.info('[突袭-扫荡] 更换前排失败，无普通稀有度前排舰船')
-            self._dock_reset()
-            self.ui_back(check_button=RAID_FLEET_PREPARATION)
-            return False
-
-    def flagship_change(self):
-        logger.hr('更换旗舰', level=2)
-        for _ in self.loop():
-            if self.appear(DOCK_CHECK, offset=(20, 20)):
-                break
-            if self.appear(RAID_FLEET_PREPARATION, offset=(20, 20)):
-                self.device.click(RAID_FLEET_FLAGSHIP)
-                continue
-
-        ship = self.get_common_rarity_ship(index='main')
-        if ship:
-            self._ship_change_confirm(min(ship, key=lambda s: (s.level, -s.emotion)).button)
-            logger.info('[突袭-扫荡] 更换旗舰成功')
-            return True
-        else:
-            logger.info('[突袭-扫荡] 更换旗舰失败，无普通稀有度旗舰舰船')
-            self._dock_reset()
-            self.ui_back(check_button=RAID_FLEET_PREPARATION)
-            return False
-
-    def run(self, name='', mode='', total=0):
-        """
-        运行弃船突袭主循环，战斗结束后自动替换普通稀度舰船。
-
-        Args:
-            name (str): 突袭活动名称，如 'raid_20200624'。
-            mode (str): 突袭难度，如 'hard'、'normal'、'easy'。
-            total (int): 总运行次数。
-        """
-        name = name if name else self.config.Campaign_Event
-        mode = mode if mode else self.config.Raid_Mode
-        if not name or not mode:
-            raise ScriptError(f'RaidRun arguments unfilled. name={name}, mode={mode}')
-
-        while 1:
-            super().run(name=name, mode=mode, total=total)
-
-            # 正常结束后替换舰船
-            if self.triggered_normal_end:
-                self.raid_enter_preparation(mode=mode, raid=name, skip_first_screenshot=False)
-                success = True
-                if self.change_vanguard:
-                    success = self.vanguard_change()
-                if self.change_flagship:
-                    success = success and self.flagship_change()
-
-                self.enter_map_cancel(skip_first_screenshot=False)
-                self.triggered_normal_end = False
-
-                # 检查调度器是否切换了任务
-                if self.config.task_switched():
-                    self.campaign.ensure_auto_search_exit()
-                    self.config.task_stop()
-                elif not success:
-                    self.campaign.ensure_auto_search_exit()
-                    self.config.task_delay(minute=30)
-                    self.config.task_stop()
-            else:
-                break
+        return self.handle_popup_confirm('IGNORE_LOW_EMOTION')
