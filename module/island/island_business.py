@@ -1060,15 +1060,45 @@ class IslandBusiness(Island):
     # 分批模式
     # ===================================================================
 
+    # 有季节替换需求的商店检查项：店铺编号固定（Shop1/Shop2），与批次划分无关
+    _SEASONAL_REPLACE_CHECKS = (
+        ('有鱼餐馆', SEASONAL_FOOD_MAP, 'IslandBusinessShop1_SeasonalFallback', 'product', 'restaurant'),
+        ('白熊饮品', SEASONAL_DRINK_MAP, 'IslandBusinessShop2_SeasonalFallback', 'product', 'teahouse'),
+    )
+
+    def _check_seasonal_products_for_batch(self, batch_shops):
+        """
+        检测本批次商店的季节限定商品库存，不足时替换为备用商品。
+
+        仅对当前批次中包含的有鱼餐馆/白熊饮品执行检测，适配商店被分到不同批次的配置。
+        检测过程会往返仓库页，结束后统一重新导航回经营页签。
+
+        Args:
+            batch_shops: 当前批次的商店列表
+        """
+        for shop_name, seasonal_map, fallback_key, product_filter, from_filter in self._SEASONAL_REPLACE_CHECKS:
+            if not any(s['name'] == shop_name for s in batch_shops):
+                continue
+
+            logger.info(f"[岛屿-经营] {shop_name} 在本批次，检测季节商品库存")
+            self._check_seasonal_product_quantity_and_replace(
+                shop_name, seasonal_map, fallback_key, product_filter, from_filter)
+
+            # 仓库检测会离开经营页，重新导航回经营页签
+            self.goto_postmanage()
+            self._switch_to_business_tab()
+            self._handle_food_review()
+
     def _run_batch_mode(self):
         """
         分批经营模式。
 
         流程：
-        1. 执行第一批商店的经营
-        2. 如果第一批商店仍在经营中，延迟第二批
-        3. 第一批经营结束后，执行第二批
-        4. 第二批结束后，设置延时
+        1. 检测本批次内有季节替换需求的商店库存，不足则替换
+        2. 执行第一批商店的经营
+        3. 如果第一批商店仍在经营中，延迟第二批
+        4. 第一批经营结束后，检测第二批库存并执行经营
+        5. 第二批结束后，设置延时
         """
         batch1_shops = self._get_batch1_shops()
         batch2_shops = self._get_batch2_shops()
@@ -1085,25 +1115,7 @@ class IslandBusiness(Island):
             logger.info("[岛屿-经营] 第一批未配置商店，跳过")
         else:
             logger.info(f"[岛屿-经营] === 第一批经营: {[s['name'] for s in batch1_shops]} ===")
-            # 季节限定餐品检测替换（仅在第一批中有鱼餐馆存在时执行）
-            if any(s['name'] == '有鱼餐馆' for s in batch1_shops):
-                self._check_seasonal_product_quantity_and_replace(
-                    '有鱼餐馆', SEASONAL_FOOD_MAP, 'IslandBusinessShop1_SeasonalFallback',
-                    'product', 'restaurant')
-                # 重新导航回经营页面
-                self.goto_postmanage()
-                self._switch_to_business_tab()
-                self._handle_food_review()
-
-            # 季节限定饮品检测替换（仅在第一批中有白熊饮品存在时执行）
-            if any(s['name'] == '白熊饮品' for s in batch1_shops):
-                self._check_seasonal_product_quantity_and_replace(
-                    '白熊饮品', SEASONAL_DRINK_MAP, 'IslandBusinessShop2_SeasonalFallback',
-                    'product', 'teahouse')
-                # 重新导航回经营页面
-                self.goto_postmanage()
-                self._switch_to_business_tab()
-                self._handle_food_review()
+            self._check_seasonal_products_for_batch(batch1_shops)
 
             batch1_started_shop_names = self._run_batch(batch1_shops)
             self._trigger_shop_refill(batch1_started_shop_names)
@@ -1119,6 +1131,7 @@ class IslandBusiness(Island):
             return
 
         logger.info(f"[岛屿-经营] === 第二批经营: {[s['name'] for s in batch2_shops]} ===")
+        self._check_seasonal_products_for_batch(batch2_shops)
         batch2_started_shop_names = self._run_batch(batch2_shops)
         self._trigger_shop_refill(batch2_started_shop_names)
 
