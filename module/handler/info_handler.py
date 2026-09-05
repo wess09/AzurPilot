@@ -506,44 +506,54 @@ class InfoHandler(ModuleBase):
 
     def _identify_siren_device_option(self, options):
         """
-        根据固定的 5 选项序列识别塞壬研究装置选项。
+        根据选项序列识别塞壬装置。
+
+        侵蚀一地图的装置剧情：
+        - 塞壬探测装置：5 个选项（探测敌人/探测资源/离开），按 Siren_Mode 选择；
+        - 塞壬信息收集装置 / 探测装置产物柱子：3 个选项，点中间选项即完成。
 
         Args:
             options: 检测到的剧情选项按钮列表。
 
         Returns:
-            需要点击的按钮，若非塞壬研究装置则返回 None。
+            需要点击的按钮，若识别为非塞壬装置剧情则返回 None。
         """
-        if len(options) != 5:
-            return None
+        if len(options) == 5:
+            task = self.config.task.command
+            if task not in ('OpsiHazard1Leveling', 'OpsiMeowfficerFarming'):
+                task = 'OpsiHazard1Leveling'
 
-        task = self.config.task.command
-        if task not in ('OpsiHazard1Leveling', 'OpsiMeowfficerFarming'):
-            task = 'OpsiHazard1Leveling'
+            siren_research_enabled = self.config.cross_get(
+                keys=f'{task}.OpsiSirenBug.SirenResearch_Enable',
+                default=False
+            )
 
-        siren_research_enabled = self.config.cross_get(
-            keys=f'{task}.OpsiSirenBug.SirenResearch_Enable',
-            default=False
-        )
+            if not siren_research_enabled:
+                logger.info('[Handler] [Story] 塞壬研究装置未启用，选择离开')
+                self.siren_device_mode = None
+                return options[-1]
 
-        if not siren_research_enabled:
-            logger.info('[Handler] [Story] 塞壬研究装置未启用，选择离开')
-            self.siren_device_mode = None
-            return options[-1]
+            siren_mode = self.config.cross_get(
+                keys=f'{task}.OpsiSirenBug.Siren_Mode',
+                default='resource'
+            )
 
-        siren_mode = self.config.cross_get(
-            keys=f'{task}.OpsiSirenBug.Siren_Mode',
-            default='resource'
-        )
+            if siren_mode == 'enemy':
+                logger.info('[Handler] [Story] 选择反复尝试探测隐藏的敌人')
+                self.siren_device_mode = 'enemy'
+                return options[2]
+            else:
+                logger.info('[Handler] [Story] 选择反复尝试探测隐藏的资源')
+                self.siren_device_mode = 'resource'
+                return options[3]
 
-        if siren_mode == 'enemy':
-            logger.info('[Handler] [Story] 选择反复尝试探测隐藏的敌人')
-            self.siren_device_mode = 'enemy'
-            return options[2]
-        else:
-            logger.info('[Handler] [Story] 选择反复尝试探测隐藏的资源')
-            self.siren_device_mode = 'resource'
-            return options[3]
+        elif len(options) == 3:
+            # 塞壬信息收集装置 / 探测装置产物柱子：点中间选项完成
+            logger.info('[Handler] [Story] 塞壬信息收集装置/柱子，点中间选项完成')
+            self.siren_device_mode = 'collected'
+            return options[1]
+
+        return None
 
     def story_skip(self, drop=None):
         """
@@ -574,10 +584,12 @@ class InfoHandler(ModuleBase):
             elif options_count == self._story_option_record:
                 if self._story_option_confirm.reached():
                     select = self._identify_siren_device_option(options)
-                    
+
                     is_siren_device = select is not None
-                    self.is_siren_device_confirmed = is_siren_device
-                    
+                    if is_siren_device:
+                        # 识别到塞壬装置则锁定确认，避免后续非装置剧情段把状态覆盖回 False
+                        self.is_siren_device_confirmed = True
+
                     if not is_siren_device:
                         try:
                             select = options[self.config.STORY_OPTION]
