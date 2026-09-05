@@ -1696,6 +1696,7 @@ _IslandBusinessChar: &IslandBusinessChar
     - Mogador
     - RoyalFortune
     - DaVinci
+    - Taihou
 
 _IslandBusinessProduct1: &IslandBusinessProduct1
   type: select

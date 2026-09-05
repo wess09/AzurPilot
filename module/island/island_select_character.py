@@ -80,6 +80,7 @@ class SelectCharacter(UI):
             "Mogador": TEMPLATE_MOGADOR,
             "RoyalFortune": TEMPLATE_ROYAL_FORTUNE,
             "DaVinci": TEMPLATE_DAVINCI,
+            "Taihou": TEMPLATE_TAIHOU,
         }
 
     def recognize_all_characters(self, screenshot):
