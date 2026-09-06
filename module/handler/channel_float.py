@@ -5,6 +5,8 @@
 而黑色标题栏背景不含绿色，因此通过统计绿标像素即可可靠检出。
 检出后自动将悬浮球拖拽到屏幕中下，并点击「隐藏悬浮球」对话框的「隐藏」按钮。
 """
+import time
+
 import numpy as np
 
 from module.base.base import ModuleBase
@@ -48,11 +50,14 @@ class ChannelFloatHandler(ModuleBase):
             bool: True 表示启用。
         """
         if not bool(deep_get(self.config.data, 'Restart.Restart.MoveChannelFloat', default=False)):
+            logger.info('[渠道悬浮球] 未启用：开关 Restart.MoveChannelFloat 未开启')
             return False
         package = str(deep_get(self.config.data, 'Alas.Emulator.PackageName', default=''))
         server_name = str(deep_get(self.config.data, 'Alas.Emulator.ServerName', default=''))
-        return (package == 'com.bilibili.blhx.m4399'
-                and server_name.startswith('cn_channel'))
+        if package == 'com.bilibili.blhx.m4399' and server_name.startswith('cn_channel'):
+            return True
+        logger.info(f'[渠道悬浮球] 未启用：非 4399 渠道服（server={server_name}, package={package}）')
+        return False
 
     def detected(self) -> bool:
         """悬浮球是否出现在屏幕左上角黑条区域。
@@ -71,18 +76,17 @@ class ChannelFloatHandler(ModuleBase):
         logger.info(f'[渠道悬浮球] 绿色标志像素 {green}')
         return green >= CHANNEL_FLOAT_GREEN_THRESHOLD
 
-    def _dialog_visible(self) -> bool:
-        """「隐藏悬浮球」对话框是否已弹出。
+    def _dialog_brightness(self) -> float:
+        """「隐藏」按钮区域的平均亮度。
 
         对话框出现时「隐藏」按钮区域为浅色底（接近白色），
         游戏画面中该区域为深色画面，通过平均亮度即可区分。
 
         Returns:
-            bool: True 表示对话框已弹出。
+            float: 区域平均亮度（0~255），供日志记录。
         """
         color = get_color(self.device.image, (728, 604, 848, 664))
-        mean = sum(color) / len(color)
-        return mean > 150
+        return float(sum(color) / len(color))
 
     def handle_channel_float(self) -> bool:
         """拖拽悬浮球到屏幕中下，并在「隐藏」对话框弹出后点击「隐藏」。
@@ -90,20 +94,27 @@ class ChannelFloatHandler(ModuleBase):
         Returns:
             bool: 固定返回 True，表示已执行处理。
         """
-        logger.info('[渠道悬浮球] 拖拽至屏幕中下')
+        logger.info(
+            f'[渠道悬浮球] 拖拽 {CHANNEL_FLOAT_SWIPE_START} -> {CHANNEL_FLOAT_SWIPE_END}, '
+            f'{CHANNEL_FLOAT_SWIPE_DURATION}s')
+        start = time.monotonic()
         self.device.swipe(
             CHANNEL_FLOAT_SWIPE_START, CHANNEL_FLOAT_SWIPE_END,
             duration=CHANNEL_FLOAT_SWIPE_DURATION, name='CHANNEL_FLOAT_SWIPE')
+        logger.info(f'[渠道悬浮球] 拖拽完成，耗时 {time.monotonic() - start:.2f}s')
         # 等待「隐藏悬浮球」对话框弹出（截图循环，最多等 4 秒）
         dialog_timer = Timer(4)
+        last_brightness = 0.0
         while 1:
             self.device.screenshot()
-            if self._dialog_visible():
-                logger.info('[渠道悬浮球] 点击「隐藏」')
+            last_brightness = self._dialog_brightness()
+            if last_brightness > 150:
+                logger.info(f'[渠道悬浮球] 点击「隐藏」（按钮区域亮度 {last_brightness:.0f}）')
                 self.device.click(CHANNEL_FLOAT_HIDE_BUTTON)
                 break
             if dialog_timer.reached():
-                logger.info('[渠道悬浮球] 未见「隐藏悬浮球」对话框，跳过点击')
+                logger.info(
+                    f'[渠道悬浮球] 未见「隐藏悬浮球」对话框（最后亮度 {last_brightness:.0f}），跳过点击')
                 break
         return True
 
@@ -124,12 +135,19 @@ class ChannelFloatHandler(ModuleBase):
         if not self.appear(page_main_white.check_button, offset=(30, 30)):
             logger.info('[渠道悬浮球] 当前不在主界面，等待下一回合')
             return False
-        logger.hr('渠道悬浮球检查')
-        for _ in range(CHANNEL_FLOAT_MAX_ATTEMPTS):
+        logger.hr('渠道悬浮球检查', level=2)
+        logger.attr('检测区域', CHANNEL_FLOAT_AREA)
+        logger.attr('绿色阈值', CHANNEL_FLOAT_GREEN_THRESHOLD)
+        for attempt in range(CHANNEL_FLOAT_MAX_ATTEMPTS):
             self.device.screenshot()
             if not self.detected():
-                logger.info('[渠道悬浮球] 未识别到悬浮球，跳过')
+                logger.info(
+                    f'[渠道悬浮球] 第 {attempt + 1}/{CHANNEL_FLOAT_MAX_ATTEMPTS} 次：'
+                    '未识别到悬浮球，跳过')
                 return True
+            logger.info(
+                f'[渠道悬浮球] 第 {attempt + 1}/{CHANNEL_FLOAT_MAX_ATTEMPTS} 次：'
+                '识别到悬浮球，开始处理')
             self.handle_channel_float()
         logger.info('[渠道悬浮球] 多次处理仍未消失，跳过本回合')
         return True
