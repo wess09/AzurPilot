@@ -37,6 +37,36 @@ CHANNEL_FLOAT_HIDE_BUTTON = Button(
 )
 
 
+def detect_channel_float(image) -> bool:
+    """检测悬浮球：统计绿色「○○○」标志像素。
+
+    Args:
+        image: 当前截图（1280x720）。
+
+    Returns:
+        bool: True 表示识别到悬浮球。
+    """
+    r = image[:, :, 0].astype(np.int16)
+    g = image[:, :, 1].astype(np.int16)
+    b = image[:, :, 2].astype(np.int16)
+    green = int(np.sum((g > r + 15) & (g > b + 15) & (g > 100)))
+    logger.info(f'[渠道悬浮球] 绿色标志像素 {green}')
+    return green >= CHANNEL_FLOAT_GREEN_THRESHOLD
+
+
+def dialog_button_brightness(image) -> float:
+    """「隐藏」按钮区域的平均亮度，用于判断「隐藏悬浮球」对话框是否弹出。
+
+    Args:
+        image: 当前截图（1280x720）。
+
+    Returns:
+        float: 区域平均亮度（0~255）。
+    """
+    color = get_color(image, (728, 604, 848, 664))
+    return float(sum(color) / len(color))
+
+
 class ChannelFloatHandler(ModuleBase):
     """检测并处理渠道服启动悬浮球。"""
 
@@ -55,7 +85,7 @@ class ChannelFloatHandler(ModuleBase):
             return False
         package = str(deep_get(self.config.data, 'Alas.Emulator.PackageName', default=''))
         server_name = str(deep_get(self.config.data, 'Alas.Emulator.ServerName', default=''))
-        if package == 'com.bilibili.blhx.m4399' and server_name.startswith('cn_channel'):
+        if package == 'com.bilibili.blhx.m4399' and server_name.startswith('cn_channel-'):
             return True
         logger.info(f'[渠道悬浮球] 未启用：非 4399 渠道服（server={server_name}, package={package}）')
         return False
@@ -70,12 +100,7 @@ class ChannelFloatHandler(ModuleBase):
             bool: True 表示识别到悬浮球。
         """
         image = crop(self.device.image, CHANNEL_FLOAT_AREA, copy=False)
-        r = image[:, :, 0].astype(np.int16)
-        g = image[:, :, 1].astype(np.int16)
-        b = image[:, :, 2].astype(np.int16)
-        green = int(np.sum((g > r + 15) & (g > b + 15) & (g > 100)))
-        logger.info(f'[渠道悬浮球] 绿色标志像素 {green}')
-        return green >= CHANNEL_FLOAT_GREEN_THRESHOLD
+        return detect_channel_float(image)
 
     def _dialog_brightness(self) -> float:
         """「隐藏」按钮区域的平均亮度。
