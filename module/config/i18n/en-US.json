@@ -3388,11 +3388,10 @@
     },
     "ExecuteFixedPatrolScan": {
       "name": "Forced Movement Level",
-      "help": "When Akashi is hidden behind a fleet icon or spawned outside radar range, decide whether to move fleets to find her. 0 = off. 1 = fleet radar scan only (switch fleets and scan each radar with zero movement, stop if not found). 2 = staged recovery: scan every fleet's radar with zero movement, then move fleets one by one and rescan, stop as soon as found. 3 = legacy: reposition all fleets 1~4 then do a double full-map rescan. Default 0 (off); legacy bool true maps to 3, false maps to 0.",
+      "help": "When Akashi is blocked by a fleet icon or spawns outside radar range, decide whether to move fleets to deal with it. 0 = off: do nothing. 1 = Efficiency mode: only switch fleets and check each radar, move no fleet, fastest; give up if not found. 2 = Conservative mode: first scan radars only (no movement), then move fleets one by one and rescan if not found; more thorough but moves fleets and slower. Default 0 (off); legacy bool true maps to 2, false maps to 0.",
       "0": "Off",
-      "1": "Fleet radar scan only (no move)",
-      "2": "Staged recovery",
-      "3": "Legacy: move all fleets"
+      "1": "Efficiency mode",
+      "2": "Conservative mode"
     },
     "SkipHpCheck": {
       "name": "Sacrifice run: skip HP check",
