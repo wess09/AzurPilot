@@ -1258,6 +1258,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             self.view.predict()
             self.view.show()
 
+            # 摄像机漂移（视野中找不到当前舰队，如全图扫描后相机停留在扫描位置）时，
+            # 回退换算会以摄像机中心当作舰队位置，可能点到错误的格子。
+            # 先换队重新对焦提高换算准确性；对焦失败也继续走回退换算：
+            # 点错后舰队移动会带动相机跟队解除漂移，未触发事件还有全图扫描兜底
+            if self.view.select(is_current_fleet=True).count == 0:
+                self._os_camera_recover_to_fleet()
+
             try:
                 grid = self.convert_radar_to_local(grid)
             except KeyError:

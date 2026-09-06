@@ -401,7 +401,25 @@ class Camera(MapOperation):
 
             if len(record) > 0:
                 # 即使两条边缘可见也要滑动，以避免一些尴尬的相机位置。
+                prev_homo = self.view.backend.homo_loca
                 self.map_swipe((x, y))
+                cur_homo = self.view.backend.homo_loca
+                if prev_homo is not None and cur_homo is not None:
+                    delta = np.subtract(cur_homo, prev_homo)
+                    base = self.view.swipe_base
+                    # 滑动后地图在对应轴上位移不足半格（地图小于视野或已到达边缘，
+                    # 游戏不再滚动），停止该轴滑动并撤销死推算的相机位移，
+                    # 避免相机坐标持续发散导致无限滑动
+                    if x != 0 and abs(delta[0]) < base[0] / 2:
+                        logger.info('[地图-摄像机] 地图横向已到达边缘，停止横向滑动')
+                        x_swipe = 0
+                        if not (self.view.left_edge or self.view.right_edge):
+                            self.camera = (self.camera[0] - x, self.camera[1])
+                    if y != 0 and abs(delta[1]) < base[1] / 2:
+                        logger.info('[地图-摄像机] 地图纵向已到达边缘，停止纵向滑动')
+                        y_swipe = 0
+                        if not (self.view.upper_edge or self.view.lower_edge):
+                            self.camera = (self.camera[0], self.camera[1] - y)
 
             record.append((x, y))
 
