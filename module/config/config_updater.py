@@ -689,7 +689,7 @@ class ConfigUpdater:
         (f'{task}.GemsFarming.ALLowLowVanguardLevel', f'{task}.GemsFarming.AllowLowVanguardLevel')
         for task in [*GEMS_FARMINGS, 'Ambush11']
     ]
-    # 旧版布尔（强制移动开关）→ 等级枚举：True→1（仅换队重扫）、False→0（关闭）。
+    # 旧版布尔（强制移动开关）→ 等级枚举：True→2（分级恢复）、False→0（关闭）。
     # 放在此处迁移，使存量的 true 值被清洗成数字，避免 GUI 显示"1"而运行时读成其它档位。
     redirection += [
         ('OpsiHazard1Leveling.ExecuteFixedPatrolScan',

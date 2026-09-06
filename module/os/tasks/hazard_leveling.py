@@ -91,9 +91,10 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             self._solved_fleet_mechanism = False
             self.map_rescan()
 
-            # 强制移动逻辑（按等级 0/1/2/3 分发）
-            # 0=关闭；1=仅换队重扫（零移动遍历舰队雷达）；2=分级恢复；3=旧版全体强制移动。
-            # 分级恢复在 _execute_fixed_patrol_scan 内部完成（L1→L2→L3），返回后不再
+            # 强制移动逻辑（按等级 0/1/2 分发）
+            # 0=关闭；1=效率模式（只换队看雷达、不挪动舰队，最快，找不到就放弃）；
+            # 2=保守模式（先扫雷达不动，扫不到再逐个挪舰队+整图重扫，更稳但会挪、慢一些）。
+            # 保守模式在 _execute_fixed_patrol_scan 内部完成（L1→L2→L3），返回后不再
             # 二次重扫，否则清完明石后会再次重复进明石商店（购买之外的多余进店）。
             if self._forced_move_level() >= 1:
                 if not self._solved_map_event:
