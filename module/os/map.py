@@ -1261,8 +1261,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             try:
                 grid = self.convert_radar_to_local(grid)
             except KeyError:
-                # 雷达问号越界到地图外（如舰队贴近边缘），该问号无法到达，丢弃并重新预测
-                logger.warning(f"[大世界-搜索] 雷达问号 {grid} 越界到地图外，跳过")
+                # 雷达问号越界到地图外（如舰队贴近边缘），该问号无法到达，丢弃并重新预测；
+                # 但若视野中连当前舰队都没有，说明摄像机漂移未跟随舰队（偶发游戏Bug），
+                # 先换队重新对焦再重试，避免把可见问号误判为越界
+                if self.view.select(is_current_fleet=True).count == 0:
+                    self._os_camera_recover_to_fleet()
+                else:
+                    logger.warning(f"[大世界-搜索] 雷达问号 {grid} 越界到地图外，跳过")
                 continue
 
             # ========== 移动前检查：是否为塞壬研究装置且功能未开启 ==========
@@ -2551,6 +2556,35 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         finally:
             # 无论成败都恢复原舰队，避免后续流程作用在错误的舰队上
             self.fleet_set(current)
+
+    def _os_camera_recover_to_fleet(self, fleet=None):
+        """摄像机未跟随当前舰队时（偶发游戏Bug），通过换队强制重新对焦。
+
+        游戏偶发摄像机停在别处不跟随当前舰队（自动搜索结束/事件处理后），
+        此时本地视野中找不到当前舰队，雷达坐标无法转换成可点击格子，
+        可见的事件会被误判为越界而跳过。切换到其他舰队再切回，利用换队
+        时的镜头移动重新对准当前舰队（fleet_set 内部已含相机稳定等待）。
+
+        Args:
+            fleet: 需要对准的舰队编号，默认当前舰队。
+
+        Returns:
+            bool: 是否重新对焦成功（视野中找到当前舰队）。
+        """
+        if fleet is None:
+            fleet = self.fleet_selector.get()
+        logger.warning(f"[大世界-相机] 摄像机未跟随当前舰队，切换舰队重新对焦: {fleet}")
+        other = 1 if fleet != 1 else 2
+        self.fleet_set(other)
+        self.fleet_set(fleet)
+        self.device.screenshot()
+        self.update_os()
+        self.view.predict()
+        if self.view.select(is_current_fleet=True).count == 1:
+            logger.info("[大世界-相机] 摄像机已重新对准当前舰队")
+            return True
+        logger.warning("[大世界-相机] 换队对焦后仍未找到当前舰队，视野检测可能异常")
+        return False
 
     def _select_story_option_by_index(self, target_index, options_count=3):
         """按索引点击剧情选项按钮。
