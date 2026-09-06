@@ -102,6 +102,10 @@ class AzurLaneAutoScript:
         self._watchdog_thread = None
         self._watchdog_task_start = 0.0  # 当前任务开始时间（monotonic）
         self._watchdog_task_name = ''    # 当前任务名
+        # 任务预热实测耗时（秒）；None 表示尚无实测，用配置 WarmupMinutes 兜底。
+        # 「冷启动（模拟器曾关闭）」与「仅启动游戏（模拟器保持运行）」耗时差异大，分别记录。
+        self._warmup_measured_cold_seconds = None       # 模拟器曾关闭（冷启动）
+        self._warmup_measured_game_only_seconds = None  # 模拟器保持运行，仅启动游戏
         # 日报关闭时不创建线程同步原语、服务或数据库；所有对象均在启用后按需创建。
         self._daily_summary_enabled = False
         self._daily_summary_service = None
@@ -647,6 +651,89 @@ class AzurLaneAutoScript:
             return False
         except Exception as e:
             logger.warning(f'[Alas] 长时间等待后启动模拟器失败，继续调度恢复流程: {e}')
+            return False
+
+    def _warmup_lead_seconds(self, cold):
+        """按场景计算任务预热提前量（秒）。
+
+        有实测记录时用「上次实测 + 2 分钟」，否则回退配置 Optimization.WarmupMinutes。
+        预留 2 分钟余量，使游戏就绪后仅空转约 2 分钟：既不会延误任务，也不过度提前空转。
+
+        Args:
+            cold (bool): True 为冷启动场景（模拟器曾关闭），False 为仅启动游戏。
+
+        Returns:
+            int: 提前量（秒）。
+        """
+        measured = (
+            self._warmup_measured_cold_seconds if cold
+            else self._warmup_measured_game_only_seconds
+        )
+        if measured:
+            return measured + 120
+        minutes = int(getattr(self.config, 'Optimization_WarmupMinutes', 15) or 15)
+        return max(minutes, 1) * 60
+
+    @staticmethod
+    def _warmup_duration_text(seconds):
+        """把秒数格式化为人类可读的耗时文本，如 '3 分 15 秒'。"""
+        seconds = max(0, int(seconds))
+        h, m = divmod(seconds, 3600)
+        m, s = divmod(m, 60)
+        if h:
+            return f'{h} 小时 {m} 分 {s} 秒'
+        if m:
+            return f'{m} 分 {s} 秒'
+        return f'{s} 秒'
+
+    def _warmup_prestart(self, *, cold):
+        """同步执行任务预热：启动资源 → 建立设备连接 → 启动并登录到主界面。
+
+        整段收敛异常、绝不外抛：失败（返回 False）由调用方走与现状一致的
+        task_call('Restart') 兜底恢复，避免落入 loop() 全局兜底触发的
+        「全模拟器重启 + 指数退避」，把刚启动/登录一半的模拟器再杀一遍。
+
+        Args:
+            cold (bool): True 为冷启动场景（模拟器此前已关闭，需先启动模拟器）；
+                调用前其 device 缓存应已被删除，此方法负责重建并等待 ADB 就绪。
+
+        Returns:
+            bool: 预热成功（资源已启动并登录到主界面）返回 True，失败返回 False。
+        """
+        from module.device.device import Device
+        from module.handler.login import LoginHandler
+
+        start = current_time()
+        try:
+            if cold:
+                if not self._start_emulator_after_long_wait():
+                    return False
+            # 构建 device：优先复用已缓存的实例（cached_property 已缓存时不再执行
+            # getter）；冷启动场景 device 已被删除，须直接构造 Device 并写回缓存，
+            # 供 loop() 与后续任务复用。切勿在此触发 self.device 属性——其 getter
+            # 在初始化失败时会 exit(1) 杀死调度器，而这里应返回 False 走 Restart 兜底。
+            if 'device' in self.__dict__:
+                device = self.device
+                device.config = self.config  # 防旧缓存持有重载前的 config
+            else:
+                device = Device(config=self.config)
+                self.__dict__['device'] = device
+            # 与 Restart 任务一致的耐性启动与登录流程（含重试、观察、登录宽容时间）
+            LoginHandler(self.config, device=device).app_restart()
+            seconds = (current_time() - start).total_seconds()
+            attr = (
+                '_warmup_measured_cold_seconds' if cold
+                else '_warmup_measured_game_only_seconds'
+            )
+            setattr(self, attr, seconds)
+            logger.hr('[预热] 提前启动完成（模拟器/游戏 + 登录成功）', level=2)
+            logger.info(
+                f'[预热] 本次启动耗时 {self._warmup_duration_text(seconds)}，'
+                f'下次该场景将提前 {self._warmup_duration_text(seconds + 120)} 启动'
+            )
+            return True
+        except Exception as e:
+            logger.warning(f'[预热] 任务预热失败，回退到 Restart 恢复: {e}')
             return False
 
     @cached_property
@@ -1751,6 +1838,18 @@ class AzurLaneAutoScript:
                 self.is_first_task = False
                 method = self.config.Optimization_WhenTaskQueueEmpty
                 wait_duration = task.next_run - current_time()
+                warmup_enable = bool(getattr(self.config, 'Optimization_WarmupEnable', True))
+
+                # 任务预热可用性：仅对非 Restart 任务预热（Restart 任务自身会启动
+                # 模拟器/游戏并登录，无需也不应预热），且剩余等待须超过对应场景
+                # 提前量，确保预热点（next_run - 提前量）落在未来、尚可等待。
+                def can_warmup(cold):
+                    """返回当前是否应当执行某场景（cold / 仅游戏）的任务预热。"""
+                    if not warmup_enable or task.command == 'Restart':
+                        return False
+                    lead = self._warmup_lead_seconds(cold)
+                    return task.next_run - current_time() > timedelta(seconds=lead)
+
                 if (
                     self.config.Optimization_CloseEmulatorDuringLongWait
                     and wait_duration > timedelta(hours=3)
@@ -1759,11 +1858,14 @@ class AzurLaneAutoScript:
                     logger.info(
                         f'下一个任务 `{task.command}` 将在 {wait_duration} 后运行，'
                         '等待期间关闭模拟器'
+                        + ('，并启用任务预热提前启动' if can_warmup(True) else '')
                     )
                     release_resources()
                     self.device.release_during_wait()
+                    stopped = False
                     try:
-                        if self.device.emulator_stop():
+                        stopped = bool(self.device.emulator_stop())
+                        if stopped:
                             logger.info('[Alas] 等待期间已关闭模拟器')
                         else:
                             logger.warning('[Alas] 等待期间关闭模拟器失败，继续等待')
@@ -1771,6 +1873,27 @@ class AzurLaneAutoScript:
                         logger.warning(f'[Alas] 等待期间关闭模拟器失败，继续等待: {e}')
                     if 'device' in self.__dict__:
                         del_cached_property(self, 'device')
+                    if stopped and can_warmup(True):
+                        # 预热路径：等到预热点，提前启动模拟器并登录到主界面，再
+                        # 补足剩余等待后直接执行该任务（跳过 Restart 冷启动）。
+                        # 预热成功后的剩余等待恒小于提前量，配置热重载导致 re-entry
+                        # 时不会二次关闭/二次预热，无需额外防抖状态。关闭模拟器后、
+                        # 到达预热点前绝不触碰 self.device，以免 Device.__init__
+                        # 自动把模拟器提前拉起、破坏省资源等待。
+                        if not self.wait_until(task.next_run - timedelta(
+                                seconds=self._warmup_lead_seconds(True))):
+                            del_cached_property(self, 'config')
+                            continue
+                        if self._warmup_prestart(cold=True):
+                            if not self.wait_until(task.next_run):
+                                del_cached_property(self, 'config')
+                                continue
+                            break
+                        # 预热失败：与现状一致，交由 Restart 有耐心地恢复
+                        self.config.task_call('Restart')
+                        del_cached_property(self, 'config')
+                        continue
+                    # 原逻辑（未启用预热 / Restart 任务 / 关闭模拟器失败）
                     if not self.wait_until(task.next_run):
                         del_cached_property(self, 'config')
                         continue
@@ -1780,17 +1903,67 @@ class AzurLaneAutoScript:
                         del_cached_property(self, 'config')
                         continue
                 elif method == 'close_game':
-                    logger.info('[Alas] 等待期间关闭游戏')
-                    self.device.app_stop()
-                    release_resources()
-                    self.device.release_during_wait()
-                    if not self.wait_until(task.next_run):
-                        del_cached_property(self, 'config')
-                        continue
-                    if task.command != 'Restart':
+                    if can_warmup(cold=False):
+                        # 预热路径：关闭游戏 → 等到预热点提前启动登录 → 直接执行任务
+                        logger.info('[Alas] 等待期间关闭游戏，并在任务开始前预热启动')
+                        self.device.app_stop()
+                        release_resources()
+                        self.device.release_during_wait()
+                        if not self.wait_until(task.next_run - timedelta(
+                                seconds=self._warmup_lead_seconds(False))):
+                            del_cached_property(self, 'config')
+                            continue
+                        if self._warmup_prestart(cold=False):
+                            if not self.wait_until(task.next_run):
+                                del_cached_property(self, 'config')
+                                continue
+                            break
                         self.config.task_call('Restart')
                         del_cached_property(self, 'config')
                         continue
+                    elif warmup_enable and task.command != 'Restart':
+                        # 预热开启但剩余等待不足提前量：关掉再提前启动得不偿失。
+                        # 游戏仍在运行时保留运行，原地等待后直接执行任务；若游戏已被
+                        # 此前的预热流程关闭（如配置热重载打断预热后重入本分支），
+                        # 则保持关闭等待，结束后交由 Restart 重新拉起，避免带着已
+                        # 关闭的游戏直接执行任务。
+                        if self.device.app_is_running_bounded():
+                            remaining = task.next_run - current_time()
+                            logger.info(
+                                f'[Alas] 预热开启但剩余等待 {remaining} 不超过提前量，'
+                                '跳过关闭游戏，原地等待'
+                            )
+                            release_resources()
+                            self.device.release_during_wait()
+                            if not self.wait_until(task.next_run):
+                                del_cached_property(self, 'config')
+                                continue
+                        else:
+                            logger.info(
+                                '[Alas] 预热开启但游戏未运行，保持关闭等待，'
+                                '结束后交由 Restart 恢复'
+                            )
+                            release_resources()
+                            self.device.release_during_wait()
+                            if not self.wait_until(task.next_run):
+                                del_cached_property(self, 'config')
+                                continue
+                            self.config.task_call('Restart')
+                            del_cached_property(self, 'config')
+                            continue
+                    else:
+                        # 原 close_game 逻辑（未启用预热 / Restart 任务）
+                        logger.info('[Alas] 等待期间关闭游戏')
+                        self.device.app_stop()
+                        release_resources()
+                        self.device.release_during_wait()
+                        if not self.wait_until(task.next_run):
+                            del_cached_property(self, 'config')
+                            continue
+                        if task.command != 'Restart':
+                            self.config.task_call('Restart')
+                            del_cached_property(self, 'config')
+                            continue
                 elif method == 'goto_main':
                     logger.info('[Alas] 等待期间前往主页面')
                     self.run('goto_main')

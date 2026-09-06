@@ -128,7 +128,9 @@
       "TaskHoardingDuration": 0,
       "CloseEmulatorDuringLongWait": true,
       "WhenTaskQueueEmpty": "goto_main",
-      "WhenSchedulerStopped": "stay_there"
+      "WhenSchedulerStopped": "stay_there",
+      "WarmupEnable": true,
+      "WarmupMinutes": 15
     },
     "DropRecord": {
       "SaveFolder": "./screenshots",

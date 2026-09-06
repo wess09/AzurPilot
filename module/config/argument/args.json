@@ -665,6 +665,22 @@
           "close_game",
           "close_emulator"
         ]
+      },
+      "WarmupEnable": {
+        "type": "checkbox",
+        "value": true,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "WarmupMinutes": {
+        "type": "input",
+        "value": 15,
+        "validate": [
+          1,
+          1440
+        ]
       }
     },
     "DropRecord": {

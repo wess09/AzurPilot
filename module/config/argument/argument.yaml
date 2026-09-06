@@ -255,6 +255,13 @@ Optimization:
   WhenSchedulerStopped:
     value: stay_there
     option: [stay_there, goto_main, close_game, close_emulator]
+  WarmupEnable:
+    type: checkbox
+    value: true
+    option: [true, false]
+  WarmupMinutes:
+    value: 15
+    validate: [1, 1440]
 DropRecord:
   SaveFolder: ./screenshots
   AzurStatsID: null

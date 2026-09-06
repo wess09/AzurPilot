@@ -894,6 +894,16 @@
       "goto_main": "Go to Main Menu",
       "close_game": "Close Game",
       "close_emulator": "Close Emulator"
+    },
+    "WarmupEnable": {
+      "name": "Start the emulator and game before the next task",
+      "help": "When the emulator/game was closed during a wait (emulator closed on a long wait, or game closed when the task queue is empty), start the emulator and game and log in before the next task begins, so the task runs on time instead of a cold start at task time. While enabled, waits shorter than the lead time no longer close the game.",
+      "True": "True",
+      "False": "False"
+    },
+    "WarmupMinutes": {
+      "name": "Start the emulator and game X minutes before the task",
+      "help": "How many minutes before the task the warm-up launch begins; used until a measured startup time exists. After each successful warm-up the actual startup time is recorded, and later warm-ups launch by 'last measured + 2 minutes', so the game is ready about 2 minutes before the task."
     }
   },
   "DropRecord": {
