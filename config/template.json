@@ -209,7 +209,8 @@
     "Restart": {
       "RandomDelay": "5, 50",
       "ClearCache": false,
-      "LoginWaitTimeout": 30
+      "LoginWaitTimeout": 30,
+      "MoveChannelFloat": false
     },
     "Storage": {
       "Storage": {}

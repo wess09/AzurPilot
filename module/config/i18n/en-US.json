@@ -477,6 +477,12 @@
     "LoginWaitTimeout": {
       "name": "Login wait timeout",
       "help": "Maximum time (seconds) to wait for login/startup to complete after the game restarts.\nIncrease this if the game starts slowly when the emulator runs in the background, to avoid false stuck detection and restart loops.\nDefault 30 seconds; only affects the post-restart login wait phase."
+    },
+    "MoveChannelFloat": {
+      "name": "Remove channel float window on startup",
+      "help": "Note: only the 4399 channel server is supported. Please move the floating ball to between the level badge and the player name at the top-left of the main page by yourself; the current detection range is the left half of the top edge.\nWhen enabled, the login flow automatically performs the drag and hide a few seconds after the app starts.\nThis feature is still being improved; if the ball is not hidden successfully, please disable it for now.",
+      "True": "Enabled",
+      "False": "Disabled"
     }
   },
   "Emulator": {

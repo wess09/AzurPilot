@@ -31,6 +31,9 @@ _ = get_distribution
 
 import module.config.server as server
 from module.base.button import Button
+from module.handler.channel_float import (
+    CHANNEL_FLOAT_AREA, detect_channel_float, dialog_button_brightness,
+)
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, crop
 from module.config.deep import deep_get
@@ -57,6 +60,21 @@ RESTART_OBSERVE_INTERVAL = 15
 # 避免 u2 调用无限挂起导致 LoginWaitTimeout / GameStuckRestart 等保护机制
 # （依赖 screenshot() 中的 stuck_record_check）均无法触发的死锁。
 RESTART_OPERATION_TIMEOUT = 120
+
+# 4399 等渠道服客户端启动后，屏幕左上角（角色名右侧）会出现 SDK 悬浮球，
+# 需要将悬浮球拖拽到屏幕中下方，随后在弹出的「隐藏悬浮球」对话框中
+# 点击「隐藏」按钮才能消除；坐标为 1280x720 分辨率下的屏幕坐标。
+CHANNEL_FLOAT_SWIPE_START = (220, 45)
+CHANNEL_FLOAT_SWIPE_END = (640, 620)
+CHANNEL_FLOAT_SWIPE_DURATION = 0.6
+CHANNEL_FLOAT_MAX_ATTEMPTS = 4
+# 「隐藏悬浮球」对话框中的「隐藏」按钮
+CHANNEL_FLOAT_HIDE_BUTTON = Button(
+    area=(728, 604, 848, 664),
+    color=(),
+    button=(728, 604, 848, 664),
+    name='CHANNEL_FLOAT_HIDE_BUTTON',
+)
 
 
 class LoginHandler(UI):
@@ -89,6 +107,10 @@ class LoginHandler(UI):
         login_success = False
         self.device.stuck_record_clear()
         self.device.click_record_clear()
+        # 渠道服悬浮球拖拽剩余尝试次数、「隐藏」待点击标志与重试计数
+        self._channel_float_attempts = 0
+        self._channel_float_hide_pending = False
+        self._channel_float_hide_tries = 0
 
         while 1:
             # 监测设备屏幕旋转
@@ -98,6 +120,20 @@ class LoginHandler(UI):
                 orientation_timer.reset()
 
             self.device.screenshot()
+
+            # 渠道服启动悬浮球处理：先像素检测再拖拽，无球时不产生任何输入
+            if self._channel_float_enabled() and (
+                    self._channel_float_attempts < CHANNEL_FLOAT_MAX_ATTEMPTS
+                    and self._channel_float_timer.reached()):
+                self._channel_float_attempts += 1
+                self._channel_float_timer.reset()
+                if self.handle_channel_float():
+                    self._channel_float_hide_pending = True
+            # 拖拽后仅在「隐藏悬浮球」对话框可见时点击「隐藏」（重试上限 300 次）
+            if self._channel_float_hide_pending:
+                self._channel_float_hide_tries += 1
+                if self.handle_channel_float_hide() or self._channel_float_hide_tries > 300:
+                    self._channel_float_hide_pending = False
 
             # 结束条件
             if self.is_in_main():
@@ -155,6 +191,9 @@ class LoginHandler(UI):
 
         return True
 
+    # 渠道服悬浮窗拖拽计时器：5 秒间隔，每次登录流程最多尝试 4 次
+    _channel_float_timer = Timer(5, count=3)
+
     _user_agreement_timer = Timer(1, count=2)
 
     def handle_cn_user_agreement(self):
@@ -186,6 +225,57 @@ class LoginHandler(UI):
             self.device.click(right)
             self._user_agreement_timer.reset()
             return True
+
+    def _channel_float_enabled(self) -> bool:
+        """渠道服悬浮窗消除是否启用。
+
+        对应配置项 Restart.MoveChannelFloat；渠道服（如 4399）客户端启动后
+        屏幕左上角会出现 SDK 悬浮窗，需要拖拽到屏幕中下方才能消除。
+
+        Returns:
+            bool: True 表示登录流程启动后会自动拖拽悬浮窗。
+        """
+        if not bool(deep_get(self.config.data, 'Restart.Restart.MoveChannelFloat', default=False)):
+            return False
+        package = str(deep_get(self.config.data, 'Alas.Emulator.PackageName', default=''))
+        server_name = str(deep_get(self.config.data, 'Alas.Emulator.ServerName', default=''))
+        return (package == 'com.bilibili.blhx.m4399'
+                and server_name.startswith('cn_channel-'))
+
+    def handle_channel_float(self) -> bool:
+        """识别到悬浮球时将其拖拽到屏幕中下方。
+
+        仅在绿色标志检测到悬浮球时才执行拖拽；未识别到返回 False，
+        不产生任何输入操作，避免干扰登录界面控件。
+
+        Returns:
+            bool: True 表示已执行拖拽操作；False 表示未识别到悬浮球。
+        """
+        image = crop(self.device.image, CHANNEL_FLOAT_AREA, copy=False)
+        if not detect_channel_float(image):
+            logger.info('[登录] 未识别到渠道服悬浮球，跳过拖拽')
+            return False
+        logger.info('[登录] 拖动渠道服悬浮球至屏幕中下')
+        self.device.swipe(
+            CHANNEL_FLOAT_SWIPE_START, CHANNEL_FLOAT_SWIPE_END,
+            duration=CHANNEL_FLOAT_SWIPE_DURATION, name='CHANNEL_FLOAT_SWIPE')
+        return True
+
+    def handle_channel_float_hide(self) -> bool:
+        """「隐藏悬浮球」对话框可见时点击「隐藏」按钮。
+
+        悬浮球被拖拽到屏幕中下后会弹出「隐藏悬浮球」对话框；
+        仅在检测到对话框（按钮区域浅色底）时才点击，
+        对话框不可见时返回 False，等待下一轮截图再试。
+
+        Returns:
+            bool: True 表示已点击隐藏；False 表示对话框暂不可见。
+        """
+        if dialog_button_brightness(self.device.image) <= 150:
+            return False
+        logger.info('[登录] 点击隐藏悬浮球')
+        self.device.click(CHANNEL_FLOAT_HIDE_BUTTON)
+        return True
 
     def _login_wait_timeout(self):
         """

@@ -96,6 +96,8 @@ class AzurLaneAutoScript:
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
         self.last_emulator_restart_time = time.monotonic()
+        # 渠道服悬浮球会话标志：调度器启动/游戏重启后仅处理一次
+        self._channel_float_done = False
         # 看门狗状态
         self._watchdog_stop = threading.Event()
         self._watchdog_active = False  # 仅在任务执行期间激活
@@ -838,6 +840,17 @@ class AzurLaneAutoScript:
         )
         exit(1)
 
+    def handle_channel_float(self):
+        """处理渠道服（4399）启动悬浮球（每个会话仅一次）。
+
+        调度器启动或游戏重启后的首个主界面回合中检测并处理悬浮球；
+        处理后本会话不再重复检查，直至调度器重启或游戏再次重启。
+        """
+        from module.handler.channel_float import ChannelFloatHandler
+
+        if ChannelFloatHandler(self.config, self.device).run():
+            self._channel_float_done = True
+
     def run(self, command, skip_first_screenshot=False):
         """
         执行指定任务命令，捕获异常并决定后续行为。
@@ -860,6 +873,13 @@ class AzurLaneAutoScript:
         try:
             if not skip_first_screenshot:
                 self.device.screenshot()
+            # 游戏重启后悬浮球会再次显示，重置会话标志
+            if command == 'Restart':
+                logger.info('[Alas] 游戏重启，重置渠道服悬浮球处理状态')
+                self._channel_float_done = False
+            # 渠道服悬浮球：调度器启动/游戏重启后仅处理一次（主界面时）
+            if not self._channel_float_done:
+                self.handle_channel_float()
             self.__getattribute__(command)()
             return True
         except TaskEnd:
