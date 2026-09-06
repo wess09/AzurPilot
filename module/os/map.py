@@ -1610,7 +1610,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                             self._solved_map_event.add("is_akashi")
                             return True
                         else:
-                            logger.info("[大世界] 无法到达明石位置，执行强制移动")
+                            logger.info("[大世界] 无法到达明石位置，先尝试换舰队前往")
+                            if self._goto_akashi_with_other_fleets(drop=drop):
+                                return True
+                            logger.info("[大世界] 所有舰队均无法到达明石，执行强制移动")
                             self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
                             return False
                     else:
@@ -1656,6 +1659,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                     drop=drop, walk_out_of_step=False, confirm_timer=Timer(3, count=4)
                 )
             logger.info(f"[大世界] [移动装置] 移动完成,结果: {result}")
+
+            # 行军被其他舰队挡住时装置对话不会触发，换其他舰队尝试点击装置
+            if not getattr(self, "is_siren_device_confirmed", False):
+                if self._goto_scanning_device_with_other_fleets(drop=drop):
+                    logger.info("[大世界] [装置处理] 已由其他舰队触发装置对话")
 
             if getattr(self, "is_siren_device_confirmed", False):
                 # 检测选择的模式
@@ -2059,7 +2067,7 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         等级 1：仅换队重扫 —— 遍历 1~4 舰队雷达找“?”，每清完一个问号若未命中事件
                  则先做一次全图扫描；命中目标事件（明石/记录塔/信息探测装置）即处理
                  并止；扫完所有舰队仍未命中则止（不做强制移动）；
-        等级 2：分级恢复 —— L1 先零移动遍历 1~4 舰队雷达找“?”，命中即返回；
+        等级 2：分级恢复 —— L1 仅主队（CL 舰队）清问号后全图扫描，命中即返回；
                  L2 未命中则按“主队先行、其余按编号升序”逐队强制移动，每移一队
                  整图重扫一次，命中事件即停，不再移动剩余舰队；
                  L3 只要移动过舰队，就补一次自律寻敌清理残留装置（顺路复查事件）；
@@ -2446,6 +2454,103 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 raise
             except Exception as e:
                 logger.warning(f"[大世界] 自律寻敌过程出现异常: {e}")
+
+    def _goto_akashi_with_other_fleets(self, drop=None):
+        """当前舰队无法到达明石时，逐队切换其他舰队尝试点击明石。
+
+        明石可见但行军失败（提示步数不足）通常是路径被其他闲置舰队挡住。
+        任意舰队都可以购买明石商店，因此依次切换其余舰队：若某队恰好在
+        明石旁边则直接购买，否则由该队点击明石尝试行军。任一队成功即止，
+        避免直接触发逐队定点的大规模强制移动。全部失败时恢复原舰队，
+        交回上层走强制移动兜底。
+
+        Args:
+            drop: 掉落记录对象。
+
+        Returns:
+            bool: 是否已通过某支舰队完成明石购买。
+        """
+        current = self.fleet_selector.get()
+        logger.info(f"[大世界] 当前舰队 {current} 无法到达明石，尝试切换其他舰队")
+        try:
+            for fleet in [f for f in [1, 2, 3, 4] if f != current]:
+                self.fleet_set(fleet)
+                self.device.screenshot()
+                self.update_os()
+                self.view.predict()
+                grids = self.view.select(is_akashi=True)
+                if not grids or not grids[0].is_akashi:
+                    logger.info(f"[大世界] 舰队 {fleet} 视野内没有明石，切换下一队")
+                    continue
+                grid = grids[0]
+                fleet_loc = self.convert_radar_to_local((0, 0))
+                if fleet_loc.distance_to(grid) <= 1:
+                    logger.info(f"[大世界] 明石 ({grid}) 靠近舰队 {fleet} ({fleet_loc})，直接购买")
+                    self.handle_akashi_supply_buy(grid)
+                    self._solved_map_event.add("is_akashi")
+                    return True
+                logger.info(f"[大世界] 舰队 {fleet} 点击明石 ({grid}) 尝试前往")
+                self.device.click(grid)
+                with self.config.temporary(STORY_ALLOW_SKIP=False):
+                    walk_time = 1.5 + 0.6 * grid.distance_to(fleet_loc)
+                    result = self.wait_until_walk_stable(
+                        confirm_timer=Timer(walk_time, count=4),
+                        drop=drop,
+                        walk_out_of_step=False,
+                    )
+                if "akashi" in result:
+                    self._solved_map_event.add("is_akashi")
+                    return True
+                logger.info(f"[大世界] 舰队 {fleet} 也无法到达明石，切换下一队")
+            return False
+        finally:
+            # 无论成败都恢复原舰队，避免后续流程作用在错误的舰队上
+            self.fleet_set(current)
+
+    def _goto_scanning_device_with_other_fleets(self, drop=None):
+        """当前舰队无法到达塞壬装置时，逐队切换其他舰队尝试点击装置。
+
+        装置可见但行军失败（提示步数不足）通常是路径被其他闲置舰队挡住，
+        对话未触发则装置无法处理。任意舰队都可以点击装置打开对话，因此
+        依次切换其余舰队尝试，任一队触发对话（is_siren_device_confirmed）
+        即止。全部失败时恢复原舰队并返回 False，由上层保持原有处理。
+
+        Args:
+            drop: 掉落记录对象。
+
+        Returns:
+            bool: 是否已由某支舰队成功触发装置对话。
+        """
+        current = self.fleet_selector.get()
+        logger.info(f"[大世界] 当前舰队 {current} 无法到达装置，尝试切换其他舰队")
+        try:
+            for fleet in [f for f in [1, 2, 3, 4] if f != current]:
+                self.fleet_set(fleet)
+                self.device.screenshot()
+                self.update_os()
+                self.view.predict()
+                grids = self.view.select(is_scanning_device=True)
+                if not grids or not grids[0].is_scanning_device:
+                    logger.info(f"[大世界] 舰队 {fleet} 视野内没有装置，切换下一队")
+                    continue
+                grid = grids[0]
+                logger.info(f"[大世界] 舰队 {fleet} 点击装置 ({grid}) 尝试前往")
+                self.device.click(grid)
+                # 重置标志位，wait_until_walk_stable -> story_skip 会识别装置选项并置位
+                self.is_siren_device_confirmed = False
+                with self.config.temporary(
+                    STORY_ALLOW_SKIP=False, OS_SIREN_DEVICE_USAGE="use_until_destroyed"
+                ):
+                    self.wait_until_walk_stable(
+                        drop=drop, walk_out_of_step=False, confirm_timer=Timer(3, count=4)
+                    )
+                if getattr(self, "is_siren_device_confirmed", False):
+                    return True
+                logger.info(f"[大世界] 舰队 {fleet} 也无法到达装置，切换下一队")
+            return False
+        finally:
+            # 无论成败都恢复原舰队，避免后续流程作用在错误的舰队上
+            self.fleet_set(current)
 
     def _select_story_option_by_index(self, target_index, options_count=3):
         """按索引点击剧情选项按钮。

@@ -399,7 +399,14 @@ class Radar:
         """
         self.predict(image)
         self.show()
-        for location in [(0, 1), (-1, 0), (1, 0), (0, -1), (0, -2), (0, -3)]:
+        # 扫描顺序保持近距优先：相邻4格 → 正上方2/3格 → 左右2/3格。
+        # 不扩展正下方2/3格：本地视野为10x7且舰队位于(5,4)，下方仅2行余量，
+        # 超出视野的问号无法经 convert_radar_to_local 转换点击，只会空耗重试。
+        for location in [
+            (0, 1), (-1, 0), (1, 0), (0, -1),
+            (0, -2), (0, -3),
+            (-2, 0), (2, 0), (-3, 0), (3, 0),
+        ]:
             grid = self[location]
             if in_port:
                 if grid.is_question and not grid.is_port:
