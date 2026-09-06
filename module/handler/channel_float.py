@@ -14,6 +14,7 @@ from module.base.button import Button
 from module.base.utils import crop, get_color
 from module.base.timer import Timer
 from module.config.deep import deep_get
+from module.handler.assets import LOGIN_CHECK
 from module.logger import logger
 from module.ui.page import page_main_white
 
@@ -130,12 +131,21 @@ class ChannelFloatHandler(ModuleBase):
         """
         if not self._enabled():
             return True
-        # 仅在主界面检查：游戏重启后需点击进入主界面（调度器登录流程负责），
-        # 到达主界面前的回合直接返回 False，等待下一任务回合再试。
-        if not self.appear(page_main_white.check_button, offset=(30, 30)):
-            logger.info('[渠道悬浮球] 当前不在主界面，等待下一回合')
-            return False
         logger.hr('渠道悬浮球检查', level=2)
+        # 等待进入主界面：游戏重启后可能停在服务器选择页，需要点击确认，
+        # 未到主界面时自动点击 LOGIN_CHECK 进入（上限 60 秒，避免阻塞任务）
+        wait_timer = Timer(60)
+        while 1:
+            self.device.screenshot()
+            if self.appear(page_main_white.check_button, offset=(30, 30)):
+                break
+            if self.appear(LOGIN_CHECK, offset=(30, 30), interval=2):
+                logger.info('[渠道悬浮球] 点击进入主界面（LOGIN_CHECK）')
+                self.device.click(LOGIN_CHECK)
+                continue
+            if wait_timer.reached():
+                logger.info('[渠道悬浮球] 等待主界面超时，跳过本会话')
+                return True
         logger.attr('检测区域', CHANNEL_FLOAT_AREA)
         logger.attr('绿色阈值', CHANNEL_FLOAT_GREEN_THRESHOLD)
         for attempt in range(CHANNEL_FLOAT_MAX_ATTEMPTS):
