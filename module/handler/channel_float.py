@@ -104,7 +104,7 @@ class ChannelFloatHandler(ModuleBase):
             duration=CHANNEL_FLOAT_SWIPE_DURATION, name='CHANNEL_FLOAT_SWIPE')
         logger.info(f'[渠道悬浮球] 拖拽完成，耗时 {time.monotonic() - start:.2f}s')
         # 等待「隐藏悬浮球」对话框弹出（截图循环，最多等 4 秒）
-        dialog_timer = Timer(4)
+        dialog_timer = Timer(4).start()
         last_brightness = 0.0
         while 1:
             self.device.screenshot()
@@ -134,7 +134,7 @@ class ChannelFloatHandler(ModuleBase):
         logger.hr('渠道悬浮球检查', level=2)
         # 等待进入主界面：游戏重启后可能停在服务器选择页，需要点击确认，
         # 未到主界面时自动点击 LOGIN_CHECK 进入（上限 60 秒，避免阻塞任务）
-        wait_timer = Timer(60)
+        wait_timer = Timer(60).start()
         while 1:
             self.device.screenshot()
             if self.appear(page_main_white.check_button, offset=(30, 30)):
