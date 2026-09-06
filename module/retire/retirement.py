@@ -442,9 +442,12 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         self.dock_sort_method_dsc_set(wait_loading=False)
         self.dock_filter_set(index='cv', rarity='common', extra='not_level_max', sort='level')
 
-        scanner = ShipScanner(
-            rarity='common', fleet=0, status='free', level=(2, 100))
+        # 稀有度已由上面的 dock_filter_set(rarity='common') 在筛选层限定，扫描阶段
+        # 再校验一次，会让颜色采样异常的 'unknown' 卡被漏掉，导致废弃旗舰退役不到而堆积。
+        # 与 gems_farming / ambush_1_1 中的同类调用保持一致：这里直接关闭稀有度子扫描器。
+        scanner = ShipScanner(fleet=0, status='free', level=(2, 100))
         scanner.disable('emotion')
+        scanner.disable('rarity')
 
         total = 0
         _ = self._have_kept_cv
