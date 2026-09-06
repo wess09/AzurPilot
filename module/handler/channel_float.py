@@ -131,6 +131,10 @@ class ChannelFloatHandler(ModuleBase):
         """
         if not self._enabled():
             return True
+        # 游戏进程未运行时直接跳过，避免阻塞调度器的 GameNotRunning -> Restart 流程
+        if not self.device.app_is_running():
+            logger.info('[渠道悬浮球] 游戏进程未运行，跳过检查')
+            return True
         logger.hr('渠道悬浮球检查', level=2)
         # 等待进入主界面：游戏重启后可能停在服务器选择页，需要点击确认，
         # 未到主界面时自动点击 LOGIN_CHECK 进入（上限 60 秒，避免阻塞任务）
