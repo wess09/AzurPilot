@@ -693,7 +693,10 @@ def put_arg_task_priority(kwargs: T_Output_Kwargs) -> Output:
                     item.style.position = "";
                     item.style.left = "";
                     item.style.top = "";
-                    item.style.width = "";
+                    // width/max-width 是经 setProperty(..., "important") 写入的，
+                    // 直接赋空串可能清不掉，需用 removeProperty 才可靠复位。
+                    item.style.removeProperty("width");
+                    item.style.removeProperty("max-width");
                     item.style.height = "";
                     item.style.zIndex = "";
                     item.style.transform = "";
@@ -776,6 +779,20 @@ def put_arg_task_priority(kwargs: T_Output_Kwargs) -> Output:
                     event.preventDefault();
 
                     var rect = item.getBoundingClientRect();
+
+                    // 探测 position: fixed 的真实包含块原点。当祖先存在
+                    // transform/filter/backdrop-filter/will-change 等属性时
+                    // （高级材质主题会对分组容器施加 backdrop-filter），fixed
+                    // 定位会相对该祖先而非视口解析；若仍按视口坐标 rect 取值，
+                    // 卡片会被整体下推一个“包含块顶部相对视口的偏移量”——表现为
+                    // 长按未移动即错位。插入探针读出原点后换算成相对坐标即可，
+                    // 默认主题无此类祖先时探针原点为 (0,0)，行为与原来一致。
+                    var probe = document.createElement("div");
+                    probe.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;";
+                    item.parentNode.appendChild(probe);
+                    var originRect = probe.getBoundingClientRect();
+                    item.parentNode.removeChild(probe);
+
                     var placeholder = document.createElement("li");
                     placeholder.className = "task-priority-placeholder";
                     placeholder.style.height = rect.height + "px";
@@ -783,9 +800,13 @@ def put_arg_task_priority(kwargs: T_Output_Kwargs) -> Output:
 
                     item.classList.add("task-priority-floating");
                     item.style.position = "fixed";
-                    item.style.left = rect.left + "px";
-                    item.style.top = rect.top + "px";
-                    item.style.width = rect.width + "px";
+                    item.style.left = (rect.left - originRect.left) + "px";
+                    item.style.top = (rect.top - originRect.top) + "px";
+                    // 普通内联宽度会被 .task-priority-item 的
+                    // width:100% !important 覆盖，导致浮起卡片被撑宽；改用
+                    // !important 内联并锁定 max-width，保证与抓取时同宽。
+                    item.style.setProperty("width", rect.width + "px", "important");
+                    item.style.setProperty("max-width", rect.width + "px", "important");
                     item.style.height = rect.height + "px";
                     item.style.zIndex = "2147483646";
                     item.style.pointerEvents = "none";
