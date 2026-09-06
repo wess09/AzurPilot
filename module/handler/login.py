@@ -58,6 +58,21 @@ RESTART_OBSERVE_INTERVAL = 15
 # （依赖 screenshot() 中的 stuck_record_check）均无法触发的死锁。
 RESTART_OPERATION_TIMEOUT = 120
 
+# 4399 等渠道服客户端启动后，屏幕左上角（角色名右侧）会出现 SDK 悬浮球，
+# 需要将悬浮球拖拽到屏幕中下方，随后在弹出的「隐藏悬浮球」对话框中
+# 点击「隐藏」按钮才能消除；坐标为 1280x720 分辨率下的屏幕坐标。
+CHANNEL_FLOAT_SWIPE_START = (220, 45)
+CHANNEL_FLOAT_SWIPE_END = (640, 620)
+CHANNEL_FLOAT_SWIPE_DURATION = 0.6
+CHANNEL_FLOAT_MAX_ATTEMPTS = 4
+# 「隐藏悬浮球」对话框中的「隐藏」按钮
+CHANNEL_FLOAT_HIDE_BUTTON = Button(
+    area=(728, 604, 848, 664),
+    color=(),
+    button=(728, 604, 848, 664),
+    name='CHANNEL_FLOAT_HIDE_BUTTON',
+)
+
 
 class LoginHandler(UI):
     """登录和游戏重启处理器。
@@ -89,6 +104,9 @@ class LoginHandler(UI):
         login_success = False
         self.device.stuck_record_clear()
         self.device.click_record_clear()
+        # 渠道服悬浮球拖拽剩余尝试次数及「隐藏」待点击标志
+        self._channel_float_attempts = 0
+        self._channel_float_hide_pending = False
 
         while 1:
             # 监测设备屏幕旋转
@@ -98,6 +116,20 @@ class LoginHandler(UI):
                 orientation_timer.reset()
 
             self.device.screenshot()
+
+            # 渠道服启动悬浮球处理：4399 等渠道服启动后左上角出现 SDK 悬浮球，
+            # 需拖拽到屏幕中下并点击「隐藏」才能消除；定时尝试数次，不影响登录
+            if self._channel_float_enabled() and (
+                    self._channel_float_attempts < CHANNEL_FLOAT_MAX_ATTEMPTS
+                    and self._channel_float_timer.reached()):
+                self.handle_channel_float()
+                self._channel_float_attempts += 1
+                self._channel_float_timer.reset()
+                self._channel_float_hide_pending = True
+            # 拖拽完成后「隐藏悬浮球」对话框弹出，下一轮点击「隐藏」确认
+            if self._channel_float_hide_pending:
+                if self.handle_channel_float_hide():
+                    self._channel_float_hide_pending = False
 
             # 结束条件
             if self.is_in_main():
@@ -155,6 +187,9 @@ class LoginHandler(UI):
 
         return True
 
+    # 渠道服悬浮窗拖拽计时器：5 秒间隔，每次登录流程最多尝试 4 次
+    _channel_float_timer = Timer(5, count=3)
+
     _user_agreement_timer = Timer(1, count=2)
 
     def handle_cn_user_agreement(self):
@@ -186,6 +221,56 @@ class LoginHandler(UI):
             self.device.click(right)
             self._user_agreement_timer.reset()
             return True
+
+    def _channel_float_enabled(self) -> bool:
+        """渠道服悬浮窗消除是否启用。
+
+        对应配置项 Restart.MoveChannelFloat；渠道服（如 4399）客户端启动后
+        屏幕左上角会出现 SDK 悬浮窗，需要拖拽到屏幕中下方才能消除。
+
+        Returns:
+            bool: True 表示登录流程启动后会自动拖拽悬浮窗。
+        """
+        if not bool(deep_get(self.config.data, 'Restart.Restart.MoveChannelFloat', default=False)):
+            return False
+        package = str(deep_get(self.config.data, 'Alas.Emulator.PackageName', default=''))
+        server_name = str(deep_get(self.config.data, 'Alas.Emulator.ServerName', default=''))
+        return (package == 'com.bilibili.blhx.m4399'
+                and server_name.startswith('cn_channel'))
+
+    def handle_channel_float(self) -> bool:
+        """将渠道服启动悬浮球拖拽到屏幕中下方。
+
+        4399 等渠道服客户端启动后会在屏幕左上角显示 SDK 悬浮球，
+        拖拽到屏幕中下位置后会弹出「隐藏悬浮球」对话框；
+        若悬浮球未显示，拖拽落在游戏画面空白区域，不会产生副作用。
+        使用 ADB input swipe 通道并固定 600ms 时长，
+        与手动验证时的手势保持一致。
+
+        Returns:
+            bool: 固定返回 True，表示已执行拖拽操作。
+        """
+        logger.info('[登录] 拖动渠道服悬浮球至屏幕中下')
+        self.device.swipe(
+            CHANNEL_FLOAT_SWIPE_START, CHANNEL_FLOAT_SWIPE_END,
+            duration=CHANNEL_FLOAT_SWIPE_DURATION, name='CHANNEL_FLOAT_SWIPE')
+        self._channel_float_hide_pending = True
+        return True
+
+    def handle_channel_float_hide(self) -> bool:
+        """点击「隐藏悬浮球」对话框中的「隐藏」按钮。
+
+        悬浮球被拖拽到屏幕中下后会弹出「隐藏悬浮球」对话框，
+        点击「隐藏」后悬浮球才会真正隐藏；若对话框未弹出
+        （例如悬浮球本次未显示），点击落在游戏画面空白处，
+        不会产生副作用。
+
+        Returns:
+            bool: 固定返回 True，表示已执行点击操作。
+        """
+        logger.info('[登录] 点击隐藏悬浮球')
+        self.device.click(CHANNEL_FLOAT_HIDE_BUTTON)
+        return True
 
     def _login_wait_timeout(self):
         """
