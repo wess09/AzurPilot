@@ -156,34 +156,34 @@ def _record_is_alive(record: dict | None) -> bool:
 
 
 def _migrate_legacy_registry() -> Path:
-    """在旧所有者退出后将登记文件原子迁移到缓存目录。"""
+    """在旧所有者退出后将登记文件迁移到缓存目录。
+
+    以旧文件所有者的存活状态为准，不做两份文件的内容比较：
+    - 旧所有者仍在运行：旧文件仍是权威登记，直接返回旧路径（新进程若与它
+      抢同一个 WebUI 所有权，会由 claim_owner() 按存活状态拒绝）。
+    - 旧所有者已退出：旧文件只是陈旧残留。写入两份文件的所有事务都在同一把
+      跨进程锁内串行，内容不一致不代表存在并发会话，因此不抛冲突异常中止
+      启动——清理残留，让缓存文件（或随后的空登记写入）成为唯一权威。
+    """
     if not _legacy_registry_enabled() or not LEGACY_WORKER_REGISTRY_FILE.exists():
         return WORKER_REGISTRY_FILE
 
     legacy_registry = _read_registry(LEGACY_WORKER_REGISTRY_FILE)
-    legacy_owner = _owner_record(legacy_registry)
-    if _record_is_alive(legacy_owner):
-        if WORKER_REGISTRY_FILE.exists():
-            current_registry = _read_registry(WORKER_REGISTRY_FILE)
-            if current_registry != legacy_registry:
-                raise WorkerRegistryLockError("新旧 worker 登记文件内容冲突")
+    if _record_is_alive(_owner_record(legacy_registry)):
         return LEGACY_WORKER_REGISTRY_FILE
 
-    if WORKER_REGISTRY_FILE.exists():
-        current_registry = _read_registry(WORKER_REGISTRY_FILE)
-        if current_registry != legacy_registry:
-            raise WorkerRegistryLockError("新旧 worker 登记文件内容冲突")
-        try:
-            atomic_remove(LEGACY_WORKER_REGISTRY_FILE)
-        except OSError as exc:
-            raise RuntimeError(f"无法清理旧 worker 登记文件: {exc}") from exc
-        return WORKER_REGISTRY_FILE
-
     try:
-        WORKER_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        atomic_replace(LEGACY_WORKER_REGISTRY_FILE, WORKER_REGISTRY_FILE)
+        if WORKER_REGISTRY_FILE.exists():
+            # 缓存文件已存在（例如更早一次新版本会话的残留）：删除旧文件即可，
+            # 缓存中的 owner/worker 由 claim_owner() 再做存活裁决。
+            atomic_remove(LEGACY_WORKER_REGISTRY_FILE)
+        else:
+            # 缓存文件尚不存在：把旧登记原子搬到缓存路径，保留其中可能仍有
+            # 存活的孤儿 worker 记录供父进程回收；随后的认领会按存活清理。
+            WORKER_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
+            atomic_replace(LEGACY_WORKER_REGISTRY_FILE, WORKER_REGISTRY_FILE)
     except OSError as exc:
-        raise RuntimeError(f"无法迁移旧 worker 登记文件: {exc}") from exc
+        raise RuntimeError(f"无法清理旧 worker 登记文件: {exc}") from exc
     return WORKER_REGISTRY_FILE
 
 
@@ -211,7 +211,10 @@ def _read_registry(registry_file: Path) -> dict:
         raise RuntimeError(f"无法读取 worker 登记文件: {exc}") from exc
 
     try:
-        registry = json.loads(raw)
+        parsed = json.loads(raw)
+        if not isinstance(parsed, dict):
+            raise ValueError("登记文件根节点不是对象")
+        registry = parsed
         owner_pid = registry.get("owner_pid")
         owner_created_at = registry.get("owner_created_at")
         workers = registry.get("workers")
@@ -224,7 +227,12 @@ def _read_registry(registry_file: Path) -> dict:
         if not isinstance(workers, dict):
             raise ValueError("workers 不是对象")
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"worker 登记文件格式无效: {exc}") from exc
+        # 登记文件损坏/格式错误时按空登记处理，由后续写事务重建文件，
+        # 避免一个损坏的残留文件在启动早期就中断后端。
+        from module.logger import logger
+
+        logger.warning(f"worker 登记文件 {registry_file} 格式无效，按空登记处理: {exc}")
+        return _empty_registry()
 
     return {
         "owner_created_at": owner_created_at,
@@ -298,6 +306,18 @@ def is_current_owner(owner_pid: int) -> bool:
         return True
 
 
+def filter_live_workers(workers: dict[str, dict]) -> dict[str, dict]:
+    """筛出仍存活的 worker 登记，供所有权认领/回收决策使用。
+
+    无法确认进程状态时按存活保守处理（宁可不覆盖，也不漏回收）。
+    """
+    return {
+        name: record
+        for name, record in workers.items()
+        if _record_is_alive(record)
+    }
+
+
 def claim_owner(owner_pid: int) -> None:
     """原子地声明当前 WebUI 进程为 worker 登记文件的唯一所有者。"""
     try:
@@ -333,9 +353,14 @@ def claim_owner(owner_pid: int) -> None:
                 raise WorkerRegistryOwnershipError(
                     f"WebUI 所有者仍在运行 (PID: {previous_owner['pid']})，拒绝启动第二个 WebUI"
                 )
-            if registry["workers"]:
+            # 旧所有者已确认退出。其登记的 worker 可能是同进程树一并消亡的
+            # 失效记录（崩溃残留），也可能是仍存活的孤儿进程（需父进程回收）
+            # ——只统计存活的 worker：全部失效即可安全重置登记实现启动自愈。
+            live_workers = filter_live_workers(registry["workers"])
+            if live_workers:
                 raise WorkerRegistryOwnershipError(
-                    "旧 WebUI 仍有 worker 登记，必须先由父进程完成回收"
+                    f"旧 WebUI 仍有存活的 worker 登记 {sorted(live_workers)}，"
+                    "必须先由父进程完成回收"
                 )
 
         _write_registry(_empty_registry(owner_pid, owner_created_at), registry_file)

@@ -149,8 +149,15 @@ class State:
 
         try:
             claim_owner(os.getpid())
-        except Exception:
-            # 所有者认领失败时不能留下无主的 Manager 子进程。
+        except Exception as e:
+            # 认领失败说明旧的登记残留无法在当前进程内自愈（例如旧所有者或其
+            # worker 仍存活）。记录具体原因再清场，避免留下无主的 Manager
+            # 子进程，随后向上抛出由启动方处理。
+            from module.logger import logger
+
+            logger.exception(
+                f"[WebUI] 无法认领 worker 登记所有权，后端中止启动: {e}"
+            )
             cls.process_registry = None
             cls.manager = None
             cls._init = False
@@ -165,11 +172,12 @@ class State:
     def clearup(cls):
         if cls._clearup:
             return
-        from module.webui.worker_registry import clear_owner, get_workers
+        from module.webui.worker_registry import clear_owner, filter_live_workers, get_workers
 
         workers = get_workers(os.getpid())
-        if workers:
-            raise RuntimeError(f"仍有未回收的 worker 登记: {list(workers)}")
+        live_workers = filter_live_workers(workers)
+        if live_workers:
+            raise RuntimeError(f"仍有存活的 worker 登记未回收: {sorted(live_workers)}")
         cls._clearup = True
         manager = cls.manager
         try:
