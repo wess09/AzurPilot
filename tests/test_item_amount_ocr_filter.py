@@ -91,6 +91,29 @@ class TestRemoveSmallFragments(unittest.TestCase):
         self.assertEqual((result[10:15, 4:9] == 255).all(), True)
         self.assertEqual((result[4:18, 25:38] == 0).all(), True)
 
+    def test_flat_bar_left_of_digit_removed(self):
+        """悬在数字左侧、无水平重叠的扁平横条（面积大）按图标残影删除。
+
+        复现：数字 1 左侧的图标横条使 1 被 OCR 拼读成 7。
+        """
+        image = self._make_image()
+        image[3:19, 25:28] = 0  # 数字 1 的竖笔画（h=16 大组件）
+        image[0:6, 6:23] = 0  # 左侧扁平横条（h=6 面积大，距数字 2px）
+        result = remove_small_fragments(image, min_height=15, min_area=30,
+                                        max_digit_gap=10)
+        self.assertEqual((result[0:6, 6:23] == 255).all(), True)
+        self.assertEqual((result[3:19, 25:28] == 0).all(), True)
+
+    def test_tiny_speck_touching_digit_kept(self):
+        """紧贴数字的小像素斑点（衬线等抗锯齿部件）必须保留。"""
+        image = self._make_image()
+        image[3:19, 25:28] = 0  # 数字 1 的竖笔画（h=16 大组件）
+        image[10:12, 23:25] = 0  # 紧贴数字左侧的 2x2 斑点
+        result = remove_small_fragments(image, min_height=15, min_area=30,
+                                        max_digit_gap=10)
+        self.assertEqual((result[10:12, 23:25] == 0).all(), True)
+        self.assertEqual((result[3:19, 25:28] == 0).all(), True)
+
     def test_input_is_not_mutated(self):
         """不应修改输入图像。"""
         image = self._make_image()

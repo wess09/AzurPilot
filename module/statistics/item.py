@@ -45,7 +45,10 @@ def remove_small_fragments(image, min_height=6, min_area=10, keep_margin=3,
     数字笔画高度 11px 以上，但部分字形（如 7 的顶横、笔画的衬线）
     会被拆分成高度不足 6px 的小组件。因此只有「远离」所有大组件
     的小组件才按碎片删除；靠近大组件的小组件视为字形部件保留，
-    避免误删导致 77 被读成 27。
+    避免误删导致 77 被读成 27。悬在数字本体左侧、与其无水平重叠
+    且面积较大的扁平横条是图标残影（如数字 1 左侧的横条使 1 被
+    拼读成 7），同样按碎片删除；面积很小的像素斑点是衬线等抗锯齿
+    部件，即使紧贴数字也必须保留。
 
     默认只删除被判定为碎片组件的像素，其余像素（包括字形抗锯齿
     边缘的中灰像素）原样保留；若把非组件像素一并置为背景，会抹掉
@@ -79,7 +82,7 @@ def remove_small_fragments(image, min_height=6, min_area=10, keep_margin=3,
         if h >= min_height and area >= min_area:
             big.append((i, bbox))
         else:
-            small.append((i, bbox))
+            small.append((i, bbox, int(area)))
 
     remove = np.zeros_like(binary)
 
@@ -108,7 +111,7 @@ def remove_small_fragments(image, min_height=6, min_area=10, keep_margin=3,
     keep = np.zeros_like(binary)
     for label, _ in big:
         keep[labels == label] = 1
-    for label, (x1, y1, x2, y2) in small:
+    for label, (x1, y1, x2, y2), area in small:
         near_big = False
         for _, (bx1, by1, bx2, by2) in big:
             # 小组件包围盒外扩 keep_margin 后与大组件相交，视为字形部件
@@ -118,6 +121,11 @@ def remove_small_fragments(image, min_height=6, min_area=10, keep_margin=3,
                 and y1 - keep_margin < by2
                 and y2 + keep_margin > by1
             ):
+                # 悬在数字本体左侧、无水平重叠的扁平横条是图标残影，
+                # 不是字形部件（如 1 左侧的横条使 1 被拼读成 7）；
+                # 面积很小的像素斑点是衬线等抗锯齿部件，必须保留
+                if x2 <= bx1 and area >= 20:
+                    continue
                 near_big = True
                 break
         if near_big:
