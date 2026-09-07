@@ -1,5 +1,7 @@
 """WebUI会话外壳"""
 
+import json
+
 from module.webui.app_dependencies import (
     AzurLaneConfig,
     Icon,
@@ -53,6 +55,63 @@ def normalize_webui_theme(theme: str) -> str:
 def pywebio_theme_for(theme: str) -> str:
     """返回与 AzurPilot 主题匹配的 PyWebIO Bootstrap 主题。"""
     return "dark" if normalize_webui_theme(theme) == "dark" else "default"
+
+
+def branch_is_unstable(branch) -> bool:
+    """分支不在稳定分支（master/main）列表内时视为未经验证。
+
+    None、空串与纯空白都回退为稳定，避免配置缺失时误触发水印。
+    """
+    branch = (branch or "").strip().lower()
+    if not branch:
+        return False
+    return branch not in ("master", "main")
+
+
+# 未验证分支水印的铺排文案，每个元素是水印格内的一行。
+BRANCH_WATERMARK_LINES = ("您正在使用未经验证的版本", "可能存在未知问题")
+
+# 未验证分支水印的样式：低调淡灰、pointer-events 穿透，避免影响观感与操作。
+# z-index 与首屏骨架同级（低于更新提示 2147483647）；暗色主题通过 body 上的
+# webio-theme-dark 选择器适配，切换主题时颜色自动跟随，无需重新注入。
+BRANCH_WATERMARK_CSS = """
+#alas-branch-watermark{
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2147483000;
+    pointer-events: none;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+}
+#alas-branch-watermark .alas-wm-cell{
+    position: absolute;
+    width: 460px;
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(-18deg);
+    transform-origin: center center;
+    color: rgba(110, 110, 110, .26);
+    white-space: nowrap;
+}
+#alas-branch-watermark .alas-wm-cell span{
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 2.0;
+    user-select: none;
+    pointer-events: none;
+}
+body.webio-theme-dark #alas-branch-watermark .alas-wm-cell{
+    color: rgba(200, 200, 200, .20);
+}
+"""
 
 
 def _reload_theme_css(theme: str) -> None:
@@ -439,4 +498,72 @@ class AppShellMixin(WebUIMixinBase):
                 {{detail: "{theme}"}}
             )
         );
+        """)
+
+    def _inject_unverified_branch_watermark(self) -> None:
+        """更新分支不是 master/main 时，注入全屏淡灰水印提醒。
+
+        在登录后的会话外壳挂载阶段调用一次。通过 run_js 向 <body> 直挂一个
+        fixed 全屏层，不属 PyWebIO scope，切换页面不会被清除；方法幂等，
+        浏览器刷新重建会话后会先移除旧节点再重建。
+
+        Pages: 会话外壳（登录后任意主界面）
+        """
+        try:
+            State.deploy_config.read()
+            branch = getattr(State.deploy_config, "Branch", "master") or "master"
+        except Exception:
+            branch = "master"
+        if not branch_is_unstable(branch):
+            return
+
+        run_js(f"""
+        (function () {{
+            var BOX_ID = "alas-branch-watermark";
+            var CSS_ID = "alas-branch-watermark-style";
+
+            var oldBox = document.getElementById(BOX_ID);
+            if (oldBox && oldBox.parentNode) {{
+                oldBox.parentNode.removeChild(oldBox);
+            }}
+            var oldStyle = document.getElementById(CSS_ID);
+            if (oldStyle && oldStyle.parentNode) {{
+                oldStyle.parentNode.removeChild(oldStyle);
+            }}
+
+            var style = document.createElement("style");
+            style.id = CSS_ID;
+            style.textContent = {json.dumps(BRANCH_WATERMARK_CSS)};
+            document.head.appendChild(style);
+
+            var box = document.createElement("div");
+            box.id = BOX_ID;
+            box.setAttribute("aria-hidden", "true");
+
+            var lines = [
+                {json.dumps(BRANCH_WATERMARK_LINES[0])},
+                {json.dumps(BRANCH_WATERMARK_LINES[1])}
+            ];
+            var cellW = 460;
+            var cellH = 260;
+            var vw = window.innerWidth || document.documentElement.clientWidth || 1280;
+            var vh = window.innerHeight || document.documentElement.clientHeight || 720;
+            var cols = Math.ceil(vw / cellW) + 1;
+            var rows = Math.ceil(vh / cellH) + 1;
+            for (var r = 0; r < rows; r++) {{
+                for (var c = 0; c < cols; c++) {{
+                    var cell = document.createElement("div");
+                    cell.className = "alas-wm-cell";
+                    cell.style.left = (c * cellW) + "px";
+                    cell.style.top = (r * cellH) + "px";
+                    for (var i = 0; i < lines.length; i++) {{
+                        var span = document.createElement("span");
+                        span.textContent = lines[i];
+                        cell.appendChild(span);
+                    }}
+                    box.appendChild(cell);
+                }}
+            }}
+            document.body.appendChild(box);
+        }})();
         """)

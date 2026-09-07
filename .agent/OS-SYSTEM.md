@@ -892,7 +892,7 @@ graph LR
 | `OpsiHazard1Leveling.OperationCoinsPreserve` | int | 黄币保留阈值 |
 | `OpsiHazard1Leveling.MinimumActionPointReserve` | int | 最低行动力保留 |
 | `OpsiHazard1Leveling.TargetZone` | int | 目标海域 ID |
-| `OpsiHazard1Leveling.ExecuteFixedPatrolScan` | bool | 强制巡逻扫描 |
+| `OpsiHazard1Leveling.ExecuteFixedPatrolScan` | int(0/1/2/3) | 强制移动等级：0 关闭（默认）/ 1 仅换队重扫（零移动遍历舰队雷达，未命中即止）/ 2 分级恢复 / 3 旧版全体强制移动。旧布尔 true 迁移为 3、false 迁移为 0 |
 | `OpsiMeowfficerFarming.HazardLevel` | int | 短猫侵蚀等级 |
 | `OpsiMeowfficerFarming.TargetZone` | int | 短猫目标海域 |
 | `OpsiMeowfficerFarming.StayInZone` | bool | 指定海域计划作战 |

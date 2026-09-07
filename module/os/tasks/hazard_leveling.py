@@ -110,83 +110,45 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         if not search_completed and search_completed is not None:
             logger.warning("[大世界-侵蚀1练级] 战略搜索返回 False，可能已被提前中断")
 
-        # 重置本轮事件状态
-        self._solved_map_event = set()
-        self._solved_fleet_mechanism = False
+        # debug 录屏：只录“战后找事件 + 处理事件 + 强制移动”这一段
+        # 事件/强制移动处理完进入下一轮前结束；若无事件则不保留文件。
+        from module.base.debug_clip import clip_end, clip_start
 
-        # 事件检索：主舰队问号 → 重扫 → 2/3/4 问号 → 强制移动
-        if self.config.OpsiHazard1Leveling_ExecuteFixedPatrolScan:
-            self._hazard1_retrieve_events()
+        debug_clip = None
+        had_forced_move = False
+        debug_error = None
+        if self.config.OpsiHazard1Leveling_DebugClip:
+            debug_clip = clip_start(self.config)
+        try:
+            # 第一次重扫：检查是否还有事件
+            self._solved_map_event = set()
+            self._solved_fleet_mechanism = False
+            self.map_rescan()
 
-        self.handle_after_auto_search()
+            # 强制移动逻辑（按等级 0/1/2 分发）
+            # 0=关闭；1=效率模式（只换队看雷达、不挪动舰队，最快，找不到就放弃）；
+            # 2=保守模式（先扫雷达不动，扫不到再逐个挪舰队+整图重扫，更稳但会挪、慢一些）。
+            # 保守模式在 _execute_fixed_patrol_scan 内部完成（L1→L2→L3），返回后不再
+            # 二次重扫，否则清完明石后会再次重复进明石商店（购买之外的多余进店）。
+            if self._forced_move_level() >= 1:
+                if not self._solved_map_event:
+                    had_forced_move = True
+                    self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
+
+            self.handle_after_auto_search()
+        except BaseException as e:
+            debug_error = e
+            raise
+        finally:
+            if debug_clip is not None:
+                keep = bool(self._solved_map_event) or had_forced_move or debug_error is not None
+                clip_end(keep=keep)
 
         # 明石遭遇记录
         solved_events = getattr(self, "_solved_map_event", set())
         if "is_akashi" in solved_events:
             # 明石遭遇计数归入运行时指标，任务仅报告明石事件已解决
             record_cl1_akashi_encounter(self.config)
-
-    def _hazard1_retrieve_events(self):
-        """侵蚀1事件检索。
-
-        按顺序尝试：清理主舰队问号 → 地图重扫 → 切换 2/3/4 舰队清理问号
-        → 强制移动。任何一步发现并成功解决事件后立即返回。
-        """
-        primary = self.config.OpsiFleet_Fleet
-        event_solved = False
-
-        # 第1步：主舰队周围有问号则清理主舰队问号
-        self.fleet_set(primary)
-        self.device.screenshot()
-        grid = self.radar.predict_question(
-            self.device.image, in_port=self.zone.is_port
-        )
-        if grid is not None:
-            logger.info("[大世界-侵蚀1练级] 主舰队周围发现问号，清理主舰队问号")
-            if OSMap.clear_question(self):
-                logger.info("[大世界-侵蚀1练级] 主舰队清理问号成功解决事件")
-                event_solved = True
-            else:
-                logger.info("[大世界-侵蚀1练级] 主舰队清理问号未解决事件")
-        else:
-            # 第2步：主舰队周围无问号则重扫地图
-            logger.info("[大世界-侵蚀1练级] 主舰队周围无问号，执行地图重扫")
-            self.map_rescan()
-            if self._solved_map_event:
-                logger.info(
-                    f"[大世界-侵蚀1练级] 重扫已解决地图事件 {self._solved_map_event}"
-                )
-                event_solved = True
-
-        # 第3步：前面未解决事件则依次切换 2/3/4 舰队清理问号
-        if not event_solved:
-            for fleet in [1, 2, 3, 4]:
-                if fleet == primary:
-                    continue
-                self.fleet_set(fleet)
-                self.device.screenshot()
-                grid = self.radar.predict_question(
-                    self.device.image, in_port=self.zone.is_port
-                )
-                if grid is None:
-                    logger.info(f"[大世界-侵蚀1练级] 舰队 {fleet} 附近无问号")
-                    continue
-                logger.info(f"[大世界-侵蚀1练级] 使用舰队 {fleet} 清理问号")
-                if OSMap.clear_question(self):
-                    logger.info(
-                        f"[大世界-侵蚀1练级] 舰队 {fleet} 清理问号成功解决事件"
-                    )
-                    event_solved = True
-                    break
-            # 恢复主舰队，避免后续步骤在非主舰队状态下执行
-            self.fleet_set(primary)
-
-        # 第4步：前面都未解决事件则强制移动并重扫
-        if not event_solved:
-            logger.info("[大世界-侵蚀1练级] 事件检索未解决，执行强制移动")
-            self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True)
-            self._solved_map_event = set()
-            self.map_rescan()
 
     def _cl1_handle_telemetry(self):
         """处理遥测数据提交"""

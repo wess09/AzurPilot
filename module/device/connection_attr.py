@@ -474,7 +474,14 @@ class ConnectionAttr:
                 device = u2.connect(self.serial)
 
         # Stay alive
-        device.set_new_command_timeout(604800)
+        # best-effort：keepalive 只是提示而非必需。atx-agent 刚被重启/瞬时抖动时
+        # 首次 POST 可能失败（RemoteDisconnected），此时若抛出会阻断整个 u2 客户端
+        # 建立并反复重建连接放大竞态窗口，故失败仅告警忽略。
+        # 真实的连接问题会在后续实际操作中经 uiautomator_2 的 @retry 恢复。
+        try:
+            device.set_new_command_timeout(604800)
+        except Exception as e:
+            logger.warning(f'[设备-u2] 设置命令超时失败，忽略（keepalive 非必需）: {e}')
 
         logger.attr('u2.Device', f'Device(atx_agent_url={device._get_atx_agent_url()})')
         return device

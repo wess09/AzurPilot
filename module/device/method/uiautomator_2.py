@@ -8,6 +8,7 @@ from functools import wraps
 from json.decoder import JSONDecodeError
 from subprocess import list2cmdline
 
+import requests
 import uiautomator2 as u2
 from adbutils.errors import AdbError
 from lxml import etree
@@ -44,6 +45,23 @@ def retry(func):
 
                 def init():
                     self.adb_reconnect()
+            # atx-agent 连接失败。
+            # 注意：requests 包装的连接错误并不是内置 ConnectionResetError 的子类，
+            # 若不单独捕获会落入下方通用 except，只打日志盲目重试而无实际恢复。
+            except requests.exceptions.ConnectionError as e:
+                logger.error(e)
+                text = str(e)
+                if 'Connection aborted' in text:
+                    # RemoteDisconnected：atx-agent 未监听或刚重启未就绪
+                    # ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+                    # 重新初始化 uiautomator2，内部会停/起 atx-agent 并自检等待就绪
+                    def init():
+                        self.install_uiautomator2()
+                else:
+                    # 连接丢失，常见于 ADB 服务被终止
+                    # HTTPConnectionPool(host='127.0.0.1', port=xxxxx): Max retries exceeded ...
+                    def init():
+                        self.adb_reconnect()
             # 在 `device.set_new_command_timeout(604800)` 时
             # json.decoder.JSONDecodeError: Expecting value: line 1 column 2 (char 1)
             except JSONDecodeError as e:

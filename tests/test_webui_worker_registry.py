@@ -138,6 +138,48 @@ class TestWorkerRegistry(unittest.TestCase):
             self.assertTrue(legacy_file.exists())
             self.assertFalse(current_file.exists())
 
+    def test_dead_legacy_owner_does_not_conflict_with_existing_cache(self):
+        # issue 780 形态 4：config/ 遗留旧会话文件 + cache/ 新版本会话残留，
+        # 两者内容几乎必然不一致。迁移只应以旧 owner 存活状态为准，
+        # 内容不一致不应抛冲突异常中止后端启动。
+        with tempfile.TemporaryDirectory() as directory:
+            current_file = Path(directory) / "cache" / "webui-workers.json"
+            legacy_file = Path(directory) / "config" / "webui-workers.json"
+            current_file.parent.mkdir(parents=True)
+            legacy_file.parent.mkdir(parents=True)
+            current_file.write_text(
+                json.dumps(
+                    {
+                        "owner_created_at": 30.5,
+                        "owner_pid": 300,
+                        "workers": {"71": {"created_at": 31.5, "pid": 400}},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            legacy_file.write_text(
+                json.dumps(
+                    {
+                        "owner_created_at": 10.5,
+                        "owner_pid": 100,
+                        "workers": {"71": {"created_at": 11.5, "pid": 200}},
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with patch.multiple(
+                worker_registry,
+                WORKER_REGISTRY_FILE=current_file,
+                LEGACY_WORKER_REGISTRY_FILE=legacy_file,
+                DEFAULT_WORKER_REGISTRY_FILE=current_file,
+            ), patch.object(worker_registry, "process_matches", return_value=None):
+                # 不应抛 WorkerRegistryLockError；删除旧文件并以缓存文件为权威。
+                self.assertEqual(300, worker_registry.get_owner())
+
+            self.assertFalse(legacy_file.exists())
+            self.assertTrue(current_file.exists())
+
     def test_registry_records_worker_identity(self):
         with tempfile.TemporaryDirectory() as directory:
             registry_file = Path(directory) / "workers.json"
@@ -192,14 +234,22 @@ class TestWorkerRegistry(unittest.TestCase):
 
                 self.assertEqual(100, worker_registry.get_owner())
 
-    def test_stale_owner_with_workers_cannot_be_overwritten(self):
+    def test_dead_owner_with_live_workers_cannot_be_overwritten(self):
+        # 旧所有者已退出但其 worker 进程仍存活（孤儿进程），必须由父进程回收，
+        # 新的 WebUI 不能直接覆盖登记。
         with tempfile.TemporaryDirectory() as directory:
             registry_file = Path(directory) / "workers.json"
             with patch.object(worker_registry, "WORKER_REGISTRY_FILE", registry_file):
                 with patch.object(worker_registry, "_process_created_at", return_value=10.5):
                     worker_registry.claim_owner(100)
                     worker_registry.register_worker(100, "alas", 200)
-                    with patch.object(worker_registry, "process_matches", return_value=None):
+                    # 第 1 次 process_matches：旧所有者 100 已死(->None)；
+                    # 第 2 次：worker 200 仍存活(->True)。
+                    with patch.object(
+                        worker_registry,
+                        "process_matches",
+                        side_effect=[None, True],
+                    ):
                         with self.assertRaises(
                             worker_registry.WorkerRegistryOwnershipError
                         ):
@@ -207,6 +257,55 @@ class TestWorkerRegistry(unittest.TestCase):
 
                 self.assertEqual(100, worker_registry.get_owner())
                 self.assertEqual({"alas"}, worker_registry.get_workers(100).keys())
+
+    def test_dead_owner_with_dead_workers_is_reclaimed(self):
+        # 崩溃残留：旧所有者与其 worker 都已退出（issue 780 主场景），
+        # 新的 WebUI 应直接接管登记而非卡死启动。
+        with tempfile.TemporaryDirectory() as directory:
+            registry_file = Path(directory) / "workers.json"
+            with patch.object(worker_registry, "WORKER_REGISTRY_FILE", registry_file):
+                with patch.object(worker_registry, "_process_created_at", return_value=10.5):
+                    worker_registry.claim_owner(100)
+                    worker_registry.register_worker(100, "alas", 200)
+                    # owner 与 worker 的 process_matches 均返回 None（已退出）。
+                    with patch.object(
+                        worker_registry,
+                        "process_matches",
+                        side_effect=[None, None],
+                    ):
+                        worker_registry.claim_owner(300)
+
+                    self.assertEqual(300, worker_registry.get_owner())
+                    self.assertEqual([], list(worker_registry.get_workers(300).keys()))
+
+    def test_corrupt_registry_is_treated_as_empty_and_rebuilt(self):
+        # issue 780 形态 3：登记文件内容损坏时不应抛 RuntimeError 中断启动，
+        # 应视为空登记并由认领事务重建。
+        with tempfile.TemporaryDirectory() as directory:
+            registry_file = Path(directory) / "workers.json"
+            registry_file.write_text('{"owner_pid": 100, "workers": [', encoding="utf-8")
+            with patch.object(worker_registry, "WORKER_REGISTRY_FILE", registry_file):
+                with patch.object(worker_registry, "_process_created_at", return_value=10.5):
+                    worker_registry.claim_owner(200)
+
+                self.assertEqual(200, worker_registry.get_owner())
+                self.assertEqual(
+                    {
+                        "owner_created_at": 10.5,
+                        "owner_pid": 200,
+                        "workers": {},
+                    },
+                    json.loads(registry_file.read_text(encoding="utf-8")),
+                )
+
+    def test_filter_live_workers_keeps_only_alive_records(self):
+        live = {"created_at": 1, "pid": 100}
+        dead = {"created_at": 2, "pid": 200}
+        with patch.object(worker_registry, "process_matches", side_effect=[True, None]):
+            self.assertEqual(
+                {"live": live},
+                worker_registry.filter_live_workers({"live": live, "dead": dead}),
+            )
 
     def test_concurrent_owner_claim_has_exactly_one_winner(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -262,3 +262,4 @@ class InstanceMixin(WebUIMixinBase):
         self._show()
         self._shell_mounted = True
         self.set_aside()
+        self._inject_unverified_branch_watermark()

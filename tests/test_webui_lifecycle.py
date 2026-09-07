@@ -101,15 +101,43 @@ class TestWebUIState(unittest.TestCase):
         State.manager = manager
         State.process_registry = {"alas": 12345}
 
-        with patch(
-            "module.webui.worker_registry.get_workers",
-            return_value={"alas": {"pid": 12345, "created_at": 1}},
+        record = {"pid": 12345, "created_at": 1}
+        with (
+            patch(
+                "module.webui.worker_registry.get_workers",
+                return_value={"alas": record},
+            ),
+            patch(
+                "module.webui.worker_registry.filter_live_workers",
+                return_value={"alas": record},
+            ),
         ):
             with self.assertRaises(RuntimeError):
                 State.clearup()
 
         manager.shutdown.assert_not_called()
         self.assertFalse(State._clearup)
+
+    def test_clearup_allows_dead_worker_records_to_self_heal(self):
+        # 崩溃残留的 worker 记录已失效时不应阻塞退出，让 clear_owner 能
+        # 清空登记文件，避免残留文件拖到下次启动。
+        manager = Mock()
+        State.manager = manager
+        State.process_registry = {"alas": 12345}
+
+        record = {"pid": 12345, "created_at": 1}
+        with (
+            patch(
+                "module.webui.worker_registry.get_workers",
+                return_value={"alas": record},
+            ),
+            patch("module.webui.worker_registry.filter_live_workers", return_value={}),
+            patch("module.webui.worker_registry.clear_owner"),
+        ):
+            State.clearup()
+
+        manager.shutdown.assert_called_once_with()
+        self.assertTrue(State._clearup)
 
     def test_init_reenables_cleanup_after_previous_shutdown(self):
         manager = Mock()

@@ -477,6 +477,12 @@
     "LoginWaitTimeout": {
       "name": "登入等待寬容時間",
       "help": "遊戲重新啟動後，等待登入／啟動完成的最大寬容時間（秒）。\n當模擬器於背景執行導致遊戲啟動較慢時，可適度調大，避免被誤判為卡死而反覆重啟。\n預設 30 秒，僅影響重啟後的登入等待階段。"
+    },
+    "MoveChannelFloat": {
+      "name": "啟動時消除渠道服懸浮窗",
+      "help": "注意：目前僅支援 4399 渠道服。請自行將懸浮球移動至主頁面左上角等級與名字中間的位置，目前懸浮球偵測範圍為上邊沿左半範圍。\n開啟該功能後，登入流程會在應用程式啟動後的數秒內自動完成拖曳與隱藏。\n該功能仍在完善中；若開啟後懸浮球未能關閉，請暫時關閉此功能。",
+      "True": "開啟",
+      "False": "關閉"
     }
   },
   "Emulator": {
@@ -894,6 +900,16 @@
       "goto_main": "前往主介面",
       "close_game": "關閉遊戲",
       "close_emulator": "關閉模擬器"
+    },
+    "WarmupEnable": {
+      "name": "在任務開始前預熱啟動模擬器與遊戲",
+      "help": "開啟後，若在等待期間關閉了模擬器/遊戲（長時間等待關閉模擬器，或任務佇列清空後關閉遊戲），會在任務開始前提前啟動模擬器與遊戲並登入到主界面，任務到點即可直接執行，不再因冷啟動而延誤。預熱開啟時，不足『提前量』的短等待不會再關閉遊戲。",
+      "True": "True",
+      "False": "False"
+    },
+    "WarmupMinutes": {
+      "name": "在任務開始前 X 分鐘預熱啟動模擬器與遊戲",
+      "help": "預熱啟動相對任務開始時間的提前量，僅用於尚無實測記錄的首次預熱。每次預熱成功後會自動記錄本次實際耗時，之後按『上次實測耗時 + 2 分鐘』自動提前，使遊戲就緒後只需等待約 2 分鐘。"
     }
   },
   "DropRecord": {
@@ -3393,8 +3409,11 @@
       "help": "搏一搏，單車變摩託，雪風大人已經把幸運分給指揮官了nanoda，上吧nanoda！"
     },
     "ExecuteFixedPatrolScan": {
-      "name": "艦隊強制移動",
-      "help": "雪風大人溫馨提示：開啟後，將強制移動艦隊以免找不到明石，指揮官你也不想因為找不到明石導致墜機nanoda？開啟這個功能輕輕鬆鬆達到50萬海裡每月nanoda，指揮官還在等什麼nanoda!"
+      "name": "強制移動等級",
+      "help": "明石被艦隊擋住或刷新在雷達外面時，要不要讓艦隊動一動去處理它。0=關閉：不處理；1=效率模式：只切換艦隊看雷達，一支都不挪動，最快；找不到就放棄；2=保守模式：先只掃雷達（不動），掃不到再逐個挪動艦隊+掃圖找，更穩但會挪動、慢一點。預設 0 關閉；舊版布林 true 遷移為 2、false 遷移為 0。",
+      "0": "關閉",
+      "1": "效率模式",
+      "2": "保守模式"
     },
     "SkipHpCheck": {
       "name": "獻祭流跳過血量檢測",
@@ -3415,6 +3434,10 @@
       "help": "每次侵蝕1練級循環後記錄海里數到統計",
       "True": "開啟",
       "False": "關閉"
+    },
+    "DebugClip": {
+      "name": "戰後 debug 錄影",
+      "help": "開啟後，在每輪侵蝕1戰後「找事件 / 處理事件 / 強制移動」期間，把 ALAS 自己看到的畫面錄成 mp4，存到 log/clips/ 目錄；一輪沒發生任何事件則不保存。用於人工核對是否漏貓。影片預設全部保留、不自動清理，請留意磁碟空間。"
     }
   },
   "OpsiSirenBug": {
@@ -3620,7 +3643,7 @@
     },
     "WorkerFilter": {
       "name": "農田使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinFarm": {
       "name": "農田作物底線",
@@ -3651,7 +3674,7 @@
     },
     "WorkerFilter": {
       "name": "果園使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinOrchard": {
       "name": "水果底線",
@@ -3688,7 +3711,7 @@
     },
     "WorkerFilter": {
       "name": "苗圃使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinNursery": {
       "name": "苗圃作物底線",
@@ -3717,7 +3740,7 @@
     },
     "ChickenFilter": {
       "name": "養雞使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinPork": {
       "name": "豬肉底線",
@@ -3725,7 +3748,7 @@
     },
     "PigFilter": {
       "name": "養豬使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Milk": {
       "name": "養牛",
@@ -3733,7 +3756,7 @@
     },
     "RancherFilter": {
       "name": "使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Wool": {
       "name": "養羊",
@@ -3741,7 +3764,7 @@
     },
     "WoolWorkerFilter": {
       "name": "養羊使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     }
   },
   "IslandFishery": {
@@ -3798,7 +3821,7 @@
     },
     "RancherFilter": {
       "name": "使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     }
   },
   "IslandMine": {
@@ -3825,7 +3848,7 @@
     },
     "WorkerFilter": {
       "name": "礦山使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinCopper": {
       "name": "銅礦最低庫存",
@@ -3872,7 +3895,7 @@
     },
     "WorkerFilter": {
       "name": "林場使用角色",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "MinElegant": {
       "name": "優雅木材最低庫存",
@@ -3894,7 +3917,7 @@
     },
     "WorkerFilter": {
       "name": "採集角色",
-      "help": "以>連接，最多填寫3個角色，分別對應第1~3個採集槽位。\n以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n每日採集不能選擇 WorkerJuu，填寫後會自動忽略。\n僅識別預設排序前兩排；指定角色不可用時該槽位回退現有採集邏輯。"
+      "help": "以>連接，最多填寫3個角色，分別對應第1~3個採集槽位。\n以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n每日採集不能選擇 WorkerJuu，填寫後會自動忽略。\n僅識別預設排序前兩排；指定角色不可用時該槽位回退現有採集邏輯。"
     }
   },
   "IslandRestaurant": {
@@ -3910,7 +3933,7 @@
     },
     "ChefFilter": {
       "name": "廚師",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "DoubleBambooShoots": {
       "name": "季節餐優先製作",
@@ -4139,7 +4162,7 @@
     },
     "ChefFilter": {
       "name": "廚師",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Seasonal": {
       "name": "季節飲品優先製作",
@@ -4350,7 +4373,7 @@
     },
     "ChefFilter": {
       "name": "廚師",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Meal1": {
       "name": "餐品1",
@@ -4521,7 +4544,7 @@
     },
     "ChefFilter": {
       "name": "廚師",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Meal1": {
       "name": "餐品1",
@@ -4710,7 +4733,7 @@
     },
     "ChefFilter": {
       "name": "廚師",
-      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
+      "help": "以>連接，例如肇和 新澤西 小天城：ChaoHo > NewJersey > Amagi_chan\n小加加：Saratoga > 明石：Akashi > 塔什干：Tashkent > 應瑞：YingSwei\n惡毒：LeMalin > 獨角獸：Unicorn > 島風：Shimakaze > 柴郡：Cheshire\n鎮海：ChenHai > 威廉D波特：WilliamDPorter\n海倫娜：Helena > 大帝：Friedrich > 愛宕：Atago\n逸仙：Yixian > 奧古斯特：August > 歐根親王：Eugen > 胡德：Hood > 標槍：Javelin > 拉菲：Laffey > 探索者：Explorer > 領航員：Navigator > 領洋者：OceanCrosser > 飛雲：FeiYun > 高雄：Takao > 安克雷奇：Anchorage > 貝爾法斯特：Belfast > 長風：ChangFeng > 莫加多爾：Mogador > 皇家財富號：RoyalFortune > 達芬奇：DaVinci > 大鳳：Taihou\n僅識別預設排序前兩排；指定艦娘不可用時回退 WorkerJuu。"
     },
     "Friedrich": {
       "name": "大帝",
@@ -5095,7 +5118,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Char2": {
       "name": "角色2",
@@ -5134,7 +5158,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Product1": {
       "name": "餐品1",
@@ -5261,7 +5286,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Char2": {
       "name": "角色2",
@@ -5300,7 +5326,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Product1": {
       "name": "餐品1",
@@ -5439,7 +5466,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Char2": {
       "name": "角色2",
@@ -5478,7 +5506,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Product1": {
       "name": "餐品1",
@@ -5577,7 +5606,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Char2": {
       "name": "角色2",
@@ -5616,7 +5646,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Product1": {
       "name": "餐品1",
@@ -5720,7 +5751,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Char2": {
       "name": "角色2",
@@ -5759,7 +5791,8 @@
       "ChangFeng": "長風",
       "Mogador": "莫加多爾",
       "RoyalFortune": "皇家財富號",
-      "DaVinci": "達芬奇"
+      "DaVinci": "達芬奇",
+      "Taihou": "大鳳"
     },
     "Product1": {
       "name": "餐品1",

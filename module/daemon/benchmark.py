@@ -39,7 +39,7 @@ class Benchmark(DaemonBase, CampaignUI):
     TEST_TOTAL = 15
     TEST_BEST = int(TEST_TOTAL * 0.8)
 
-    def benchmark_test(self, func, *args, **kwargs):
+    def benchmark_test(self, func, *args, quiet=False, **kwargs):
         """对指定函数执行多次基准测试，返回平均耗时。
 
         连续调用 func TEST_TOTAL 次，去掉最慢的 20% 结果后取平均值。
@@ -48,6 +48,9 @@ class Benchmark(DaemonBase, CampaignUI):
         Args:
             func: 待测试的函数。
             *args: 传递给 func 的位置参数。
+            quiet: 为 True 时（auto 探测路径）探测失败只打一行警告，
+                不打印整段 traceback——某个候选后端在当前设备不可用（如
+                Android 15 上 atx-agent 截屏受限）是预期情况，不应制造恐慌。
             **kwargs: 传递给 func 的关键字参数。
 
         Returns:
@@ -70,7 +73,13 @@ class Benchmark(DaemonBase, CampaignUI):
                 logger.warning(f'[Daemon] 基准测试失败，函数: {func.__name__}')
                 return 'Failed'
             except Exception as e:
-                logger.exception(e)
+                if quiet:
+                    logger.warning(
+                        f'[守护-基准测试] {func.__name__}() 探测失败，跳过该候选后端: '
+                        f'{type(e).__name__}: {e}'
+                    )
+                else:
+                    logger.exception(e)
                 logger.warning(f'[Daemon] 基准测试失败，函数: {func.__name__}')
                 return 'Failed'
 
@@ -168,12 +177,13 @@ class Benchmark(DaemonBase, CampaignUI):
             )
         logger.print(table, justify='center')
 
-    def benchmark(self, screenshot: t.Tuple[str] = (), click: t.Tuple[str] = ()):
+    def benchmark(self, screenshot: t.Tuple[str] = (), click: t.Tuple[str] = (), quiet: bool = False):
         """执行截图和点击方法的基准测试，返回各自最快的方法。
 
         Args:
             screenshot: 待测试的截图方法名称元组。
             click: 待测试的点击方法名称元组。
+            quiet: 传给 ``benchmark_test``，auto 探测路径为 True，失败静默降级。
 
         Returns:
             tuple: (最快截图方法, 最快点击方法)。
@@ -184,14 +194,14 @@ class Benchmark(DaemonBase, CampaignUI):
 
         screenshot_result = []
         for method in screenshot:
-            result = self.benchmark_test(self.device.screenshot_methods[method])
+            result = self.benchmark_test(self.device.screenshot_methods[method], quiet=quiet)
             screenshot_result.append([method, result])
 
         area = (124, 4, 649, 106)  # 屏幕上可安全点击的区域
         click_result = []
         for method in click:
             x, y = random_rectangle_point(area)
-            result = self.benchmark_test(self.device.click_methods[method], x, y)
+            result = self.benchmark_test(self.device.click_methods[method], x, y, quiet=quiet)
             click_result.append([method, result])
 
         def compare(res):
@@ -301,7 +311,10 @@ class Benchmark(DaemonBase, CampaignUI):
 
         self.TEST_TOTAL = 3
         self.TEST_BEST = 1
-        method, _ = self.benchmark(screenshot, tuple())
+        # quiet=True：auto 自动选路是"挑最快的可用后端"，探测失败的后端
+        # （如 Android 15 上 uiautomator2 截屏受限）本就会被排名淘汰，
+        # 无需在每次启动时打印整段 traceback 吓人。
+        method, _ = self.benchmark(screenshot, tuple(), quiet=True)
 
         return method
 
