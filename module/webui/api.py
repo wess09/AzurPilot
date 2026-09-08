@@ -39,6 +39,14 @@ from module.webui.deploy_settings import (
     set_startup_run,
 )
 from module.webui.launcher import is_local_request, launcher_control
+from module.webui.launcher_trust import (
+    TOKEN_TTL_SECONDS,
+    check_secret,
+    enabled as launcher_trust_enabled,
+    issue_token,
+    validate_token,
+    webui_key,
+)
 from module.webui.lang import t
 
 
@@ -1506,6 +1514,104 @@ async def api_launcher_report(request):
     return JSONResponse(result)
 
 
+# 免密令牌只对回环开放，但仍对"试密钥"做简单限频，避免本机其它进程暴力探测。
+_LAUNCHER_SECRET_FAILURES: list[float] = []
+_LAUNCHER_SECRET_WINDOW = 300  # 秒
+_LAUNCHER_SECRET_MAX_FAILURES = 15
+
+
+def _launcher_secret_try_allowed() -> bool:
+    """最近窗口内错误尝试是否超过阈值。"""
+    now = time.time()
+    while _LAUNCHER_SECRET_FAILURES and now - _LAUNCHER_SECRET_FAILURES[0] > _LAUNCHER_SECRET_WINDOW:
+        _LAUNCHER_SECRET_FAILURES.pop(0)
+    return len(_LAUNCHER_SECRET_FAILURES) < _LAUNCHER_SECRET_MAX_FAILURES
+
+
+def _launcher_secret_failure() -> None:
+    _LAUNCHER_SECRET_FAILURES.append(time.time())
+
+
+async def api_launcher_trusted_login(request):
+    """POST /api/launcher/trusted-login — 启动器以信任密钥换取一次性免密令牌"""
+    if not is_local_request(request):
+        return JSONResponse(
+            {"success": False, "error": "免密通道只允许本机连接"},
+            status_code=403,
+        )
+    if not launcher_trust_enabled():
+        # 未由启动器（带信任密钥）拉起，或未配置 WebUI 密码，免密通道整体关闭。
+        return JSONResponse(
+            {"success": False, "error": "启动器免密通道未启用"},
+            status_code=403,
+        )
+    if not _launcher_secret_try_allowed():
+        return JSONResponse(
+            {"success": False, "error": "尝试次数过多，请稍后再试"},
+            status_code=429,
+        )
+
+    secret = request.headers.get("x-webui-launcher-secret")
+    if not check_secret(secret):
+        _launcher_secret_failure()
+        return JSONResponse(
+            {"success": False, "error": "信任密钥无效"},
+            status_code=403,
+        )
+
+    token = issue_token()
+    if token is None:
+        return JSONResponse(
+            {"success": False, "error": "免密令牌签发失败"},
+            status_code=403,
+        )
+    return JSONResponse(
+        {"success": True, "token": token, "ttl": TOKEN_TTL_SECONDS}
+    )
+
+
+async def launcher_login(request):
+    """GET /launcher-login?token= — 校验令牌后预置本机窗口的登录状态。
+
+    返回与 WebUI 同源的种子页，把当前有效密码写入 localStorage["password"] 并跳回
+    首页；下次会话 login() 命中，无需再输密码。非回环/令牌无效一律拒绝。
+    """
+    if not is_local_request(request):
+        return _launcher_login_denied()
+    token = request.query_params.get("token")
+    if not validate_token(token):
+        return _launcher_login_denied()
+
+    key = webui_key()
+    if not key:
+        # 未配置密码时本就不需要登录，直接回首页。
+        return HTMLResponse(
+            '<!doctype html><script>location.replace("/");</script>',
+            status_code=200,
+        )
+
+    # json.dumps 生成合法 JS 字符串字面量，安全内嵌任意密码。
+    password_literal = json.dumps(str(key))
+    html = (
+        "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\">"
+        "<title>AzurPilot 免密登录</title>"
+        "<script>"
+        "localStorage.setItem('password', " + password_literal + ");"
+        "location.replace('/');"
+        "</script>"
+        "<body>正在免密登录，请稍候…</body></html>"
+    )
+    return HTMLResponse(html, status_code=200)
+
+
+def _launcher_login_denied():
+    return HTMLResponse(
+        "<!doctype html><html lang=\"zh-CN\"><meta charset=\"utf-8\">"
+        "<title>拒绝访问</title><body>该链接无效或已过期，请从启动器重新打开。</body></html>",
+        status_code=403,
+    )
+
+
 async def api_deploy_settings(request):
     """GET /api/deploy/settings — 查询 deploy.yaml 可视化配置。"""
     if not is_local_request(request):
@@ -1685,6 +1791,8 @@ api_routes = [
     Route("/api/launcher/startup", api_launcher_startup, methods=["POST"]),
     Route("/api/launcher/stream", api_launcher_stream),
     Route("/api/launcher/report", api_launcher_report, methods=["POST"]),
+    Route("/api/launcher/trusted-login", api_launcher_trusted_login, methods=["POST"]),
+    Route("/launcher-login", launcher_login, methods=["GET"]),
     Route("/api/deploy/settings", api_deploy_settings),
     Route("/api/deploy/settings", api_deploy_settings_save, methods=["POST"]),
     Route("/api/deploy/startup-run", api_deploy_startup_run),

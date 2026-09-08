@@ -7,6 +7,8 @@
 该模块是 WebUI 的顶层入口，被 gui.py 启动时引用。
 """
 
+import os
+
 from hashlib import sha256
 from pathlib import Path
 
@@ -265,6 +267,14 @@ def app():
     lang.LANG = State.deploy_config.Language
     key = args.key if is_webui_password_set(args.key) else State.deploy_config.Password
     key, password_error = ensure_public_webui_password(key)
+    # 由 alas-launcher 以信任密钥拉起时登记免密通道，否则整体关闭。
+    from module.webui.launcher_trust import (
+        TRUST_SECRET_ENV,
+        configure as configure_launcher_trust,
+        enabled as launcher_trust_enabled,
+    )
+
+    configure_launcher_trust(os.environ.get(TRUST_SECRET_ENV), key)
     cdn: str | bool = args.cdn if args.cdn else State.deploy_config.CDN
     runs: List[str] | None = None
     if args.run:
@@ -280,6 +290,7 @@ def app():
     logger.attr("主题", State.deploy_config.Theme)
     logger.attr("语言", lang.LANG)
     logger.attr("密码", is_webui_password_set(key))
+    logger.attr("启动器免密", launcher_trust_enabled())
     logger.attr("CDN", cdn)
     logger.attr("云手机", IS_ON_PHONE_CLOUD)
 
