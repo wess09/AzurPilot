@@ -56,24 +56,24 @@ class GitManager(DeployConfig):
 
     @staticmethod
     def git_user_agent():
-        """生成随机的 git User-Agent，绕开部分镜像仓库对特定 git 版本的封禁。
+        """生成随机的 git User-Agent，绕开镜像仓库对固定/异常 git UA 的封禁。
 
-        版本号各段与构建后缀均由随机数生成器产出，每次更新 UA 都不同，
-        避免命中 gitcode 等仓库针对特定 UA 字符串的封禁（418）。
+        gitcode 等仓库会对命中黑名单的 UA 返回 418。官方 git 主版本只有 2.x，
+        Windows 构建形如 2.x.y.windows.z，不带多余尾段；这里只产出形态真实的
+        版本号（避免一眼假的 git/3.x 或五段式 UA 被按特征封禁），同时把采样
+        空间撑到约 4×10³ 种（minor 24~63、patch 0~9、build 1~9 的笛卡尔积），
+        每次取值都不重复，任何单一 UA 都难以累积成可封禁的固定指纹。
         """
         while True:
-            major = random.randint(2, 3)
-            minor = random.randint(30, 59)
+            minor = random.randint(24, 63)
             patch = random.randint(0, 9)
-            build = random.randint(1, 5)
-            sub = random.randint(1, 9999)
-            if random.random() < 0.3:
-                ua = f'git/{major}.{minor}.{patch}'
-            elif random.random() < 0.6:
-                ua = f'git/{major}.{minor}.{patch}.windows.{build}'
+            # 少部分用官方跨平台版（大量 CI/服务器请求即此形态），多数用 Git for Windows
+            if random.random() < 0.2:
+                ua = f'git/2.{minor}.{patch}'
             else:
-                ua = f'git/{major}.{minor}.{patch}.windows.{build}.{sub}'
-            if not ua.startswith('git/2.51.0.windows.2'):
+                build = random.randint(1, 9)
+                ua = f'git/2.{minor}.{patch}.windows.{build}'
+            if ua != 'git/2.51.0.windows.2':
                 break
         return ua
 
@@ -99,7 +99,8 @@ class GitManager(DeployConfig):
                 return
             logger.warning(f'git fetch failed with UA {ua}, attempt {i + 1}/{max_retry}')
             if i < max_retry - 1:
-                time.sleep(delay)
+                # 重试间隔加随机抖动，避免暴露固定的失败-重试节奏
+                time.sleep(delay * random.uniform(0.5, 1.8))
                 ua = self.git_user_agent()
         raise ExecutionError
 
@@ -162,6 +163,8 @@ class GitManager(DeployConfig):
         Progress.GitReset()
         # git fetch 已执行，checkout 会更快
         if not self.execute(f'{git} checkout {branch}', allow_failure=True):
+            # pull 联网，与 fetch 用不同 UA，降低同源请求的可归集性
+            git = f'"{self.git}" -c http.userAgent={self.git_user_agent()}'
             self.execute(f'{git} pull --ff-only {source} {branch}')
         Progress.GitCheckout()
 

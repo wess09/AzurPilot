@@ -455,6 +455,8 @@ class ShopBase(UI):
                 return item
 
         # 然后加载选择、应用过滤器，并返回结果中的第一个物品
+        if not self.shop_filter:
+            return None
         FILTER.load(self.shop_filter)
         filtered = FILTER.apply(items, self.shop_check_item)
 

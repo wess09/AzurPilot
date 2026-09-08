@@ -902,6 +902,7 @@ MedalShop2:
 MeritShop:
   Enable: true
   Refresh: false
+  BuyUnobtainedShip: false
   Filter: |-
     Cube
 CoreShop:

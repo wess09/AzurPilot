@@ -227,7 +227,11 @@ class ResearchSelector(ResearchUI):
         string = string.lower()
         # 过滤器使用 'hakuryu'，但同时允许 'hakuryu' 和 'hakuryuu'
         string = string.replace('hakuryuu', 'hakuryu')
+        # 归一化舰船名中的 latin 字符，便于过滤器匹配
+        string = string.replace('ägir', 'agir')
+        string = string.replace('valparaíso', 'valparaiso')
         # 允许 'fastest' 和 'shortest' 两种写法
+
         string = string.replace('fastest', 'shortest')
         # 允许 'PR' 和 'PRY' 两种写法
         string = re.sub(r'pr([\d\- >])', r'pry\1', string)

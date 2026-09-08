@@ -118,12 +118,10 @@ class Updater(DeployConfig, GitManager):
                 pass
 
         source = "origin"
-        for _ in range(3):
-            if self.execute(
-                f'"{self.git}" fetch {source} {self.Branch}', allow_failure=True
-            ):
-                break
-        else:
+        # gitcode 等镜像会对固定 git UA 返回 418，改用随机 UA 重试
+        try:
+            self._fetch_with_retry(source, self.Branch, max_retry=3, delay=1)
+        except ExecutionError:
             logger.warning("Git获取失败")
             return False
 

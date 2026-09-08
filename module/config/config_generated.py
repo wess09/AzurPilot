@@ -480,6 +480,7 @@ class GeneratedConfig:
     # 配置组 `MeritShop`
     MeritShop_Enable = True
     MeritShop_Refresh = False
+    MeritShop_BuyUnobtainedShip = False
     MeritShop_Filter = 'Cube'
 
     # 配置组 `CoreShop`

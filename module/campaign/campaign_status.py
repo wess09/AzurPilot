@@ -49,13 +49,14 @@ class PtOcr(Ocr):
         Returns:
             np.ndarray: 形状为 (width, height) 的灰度图像。
         """
-        # 取 RGB 三通道的最大值
-        r, g, b = cv2.split(cv2.subtract((255, 255, 255), image))
-        image = cv2.min(cv2.min(r, g), b)
+        # 取 RGB 三通道的最大值（等价于反色图取最小值后取反，避免分配中间数组）
+        r, g, b = cv2.split(image)
+        cv2.max(r, g, dst=r)
+        cv2.max(r, b, dst=r)
+        cv2.bitwise_not(r, dst=r)
         # 去除背景，将 0-192 映射到 0-255
-        image = cv2.multiply(image, 255 / 192)
-
-        return image.astype(np.uint8)
+        cv2.convertScaleAbs(r, alpha=255 / 192, dst=r)
+        return r
 
 
 OCR_PT = PtOcr(OCR_EVENT_PT)
