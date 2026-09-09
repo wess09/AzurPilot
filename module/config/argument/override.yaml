@@ -73,8 +73,6 @@ ThreeOilLowCost:
     # SuccessInterval: 0
     # FailureInterval: 0
   Campaign:
-    Event:
-      value: campaign_main
     Mode: normal
     UseClearMode: true
     UseFleetLock: true

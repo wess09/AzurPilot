@@ -7,7 +7,7 @@ from .d1 import Config as ConfigBase
 MAP = CampaignMap('D3')
 MAP.shape = 'I9'
 MAP.camera_data = ['D2', 'D6', 'F2', 'F6']
-MAP.camera_data_spawn_point = ['F6', 'D6']
+MAP.camera_data_spawn_point = ['D6']
 MAP.map_data = """
     ++ ++ ++ ++ MB ++ ++ ++ ++
     ++ -- -- MS -- MS -- -- ++
@@ -53,7 +53,7 @@ A9, B9, C9, D9, E9, F9, G9, H9, I9, \
 
 class Config(ConfigBase):
     # ===== Start of generated config =====
-    MAP_SIREN_TEMPLATE = ['ghostzl', 'ghosthm']
+    MAP_SIREN_TEMPLATE = []
     MOVABLE_ENEMY_TURN = (2,)
     MAP_HAS_SIREN = True
     MAP_HAS_MOVABLE_ENEMY = True
@@ -61,12 +61,9 @@ class Config(ConfigBase):
     MAP_HAS_FLEET_STEP = True
     MAP_HAS_AMBUSH = False
     MAP_HAS_MYSTERY = False
-    MAP_CHAPTER_SWITCH_20241219 = True
-    STAGE_ENTRANCE = ['half', '20240725']
-    MAP_HAS_MODE_SWITCH = False
-    STAGE_INCREASE_AB = True
-    MAP_WALK_USE_CURRENT_FLEET = True
     # ===== End of generated config =====
+
+    MAP_FLEET_REVERSE_WAIT_INFO_BAR = False
 
 
 class Campaign(CampaignBase):

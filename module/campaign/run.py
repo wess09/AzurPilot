@@ -212,27 +212,33 @@ class CampaignRun(CampaignEvent, ShopStatus):
             str, str: (name, folder)。
         """
         name = to_map_file_name(name)
-        # 处理 event_20251218_cn d3-3 特殊情况
-        if folder == 'event_20251218_cn':
-            # 将 d3-3 转换为 d3_3 以使用三战撤退逻辑
-            if name == 'd3-3':
-                name = 'd3_3'
-                logger.info('[战役-运行] 关卡名d3-3转换为d3_3 (三战撤退逻辑)')
-            # d3 保持不变，使用标准逻辑
-            elif name == 'd3':
-                logger.info('[战役-运行] 关卡名d3使用标准逻辑')
         # GemsFarming 和 ThreeOilLowCost 自动选择活动或主线章节
         if self.config.task.command in ['GemsFarming', 'ThreeOilLowCost']:
             if self.stage_is_main(name):
                 logger.info(f'Stage name {name} is from campaign_main')
                 folder = 'campaign_main'
             else:
-                folder = self.config.cross_get('GemsFarming.Campaign.Event')
+                event = getattr(self.config, 'Campaign_Event', None)
+                if event and event != 'campaign_main':
+                    folder = event
+                elif folder and folder != 'campaign_main':
+                    pass
+                else:
+                    folder = self.config.cross_get('GemsFarming.Campaign.Event')
                 if folder is not None:
                     logger.info(f'Stage name {name} is from event {folder}')
                 else:
                     logger.warning(f'Cannot get the latest event, fallback to campaign_main')
                     folder = 'campaign_main'
+        # 支持已适配活动的 D3 三战撤退入口
+        if folder in ['event_20251218_cn', 'event_20260908_cn']:
+            # 将 d3-3 / d3_3 转换为 d3_3 以使用三战撤退逻辑
+            if name in ['d3-3', 'd3_3']:
+                name = 'd3_3'
+                logger.info('[战役-运行] 关卡名转换为d3_3 (三战撤退逻辑)')
+            # d3 保持不变，使用标准逻辑
+            elif name == 'd3':
+                logger.info('[战役-运行] 关卡名d3使用标准逻辑')
         # 处理特殊 SP 地图名称
         if folder == 'event_20201126_cn' and name == 'vsp':
             name = 'sp'

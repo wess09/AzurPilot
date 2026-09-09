@@ -265,6 +265,8 @@ class ManualConfig:
     MAP_MYSTERY_MAP_CLICK = True
     MAP_MYSTERY_HAS_CARRIER = False
     MAP_GRID_CENTER_TOLERANCE = 0.2
+    # see map_control_init()
+    MAP_FLEET_REVERSE_WAIT_INFO_BAR = False
 
     MOVABLE_ENEMY_FLEET_STEP = 2
     MOVABLE_ENEMY_TURN = (2,)

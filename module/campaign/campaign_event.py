@@ -313,5 +313,5 @@ class CampaignEvent(CampaignStatus):
         Args:
             name (str): 关卡名称，如 `7-2`、`D3`。
         """
-        regex_main = re.compile(r'\d{1,2}[-_]\d')
-        return bool(regex_main.search(name))
+        regex_main = re.compile(r'^(?:campaign_)?\d{1,2}[-_]\d')
+        return bool(regex_main.match(str(name).strip().lower()))
