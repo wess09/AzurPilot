@@ -1091,6 +1091,9 @@ OpsiGeneral:
   DoRandomMapEvent: true
   AkashiShopFilter: |-
     ActionPoint
+  # 战后 debug 录像保留天数：log/clips/ 下超过该天数的录像会被自动清理，
+  # 0 表示永久保留。侵蚀一与短猫相接的录像共用这一项。
+  DebugClipRetentionDays: 7
   NotifyOpsiMail: true
   LauncherPush: true
   IndependentPush: false
@@ -1181,6 +1184,13 @@ OpsiMeowfficerFarming:
   TargetZone:
     value: 0
   StayInZone: false
+  # 效率模式强制移动（套用侵蚀一）：战后遍历 1~4 队雷达清剩余问号，
+  # 只切换舰队看雷达、不挪动舰队；默认关闭
+  ExecuteFixedPatrolScan: false
+  # 战后 debug 录像：录制「打完找事件 / 处理事件 / 强制移动」这一段的真实画面，
+  # 每一轮都保存（不论有没有遇到事件），方便逐轮回看实际过程。
+  # 保留天数见「大世界通用设置」。
+  DebugClip: false
 OpsiTarget:
   TargetFarming: false
   TargetZone:

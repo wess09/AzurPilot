@@ -3119,6 +3119,10 @@
       "name": "Shop Filter",
       "help": "By default, only Action Points are purchased nanoda. If you want to buy purple coins, set to 'ActionPoint > PurpleCoins'"
     },
+    "DebugClipRetentionDays": {
+      "name": "Clip retention days",
+      "help": "Retention for the post-battle debug recordings of Erosion-1 leveling and Meowfficer farming. Clips under log/clips/ older than this many days are deleted automatically, so recordings cannot fill up your disk. Set to 0 to keep them forever with no auto cleanup."
+    },
     "NotifyOpsiMail": {
       "name": "Push Operation Siren notifications",
       "help": "Send notifications about Corrosion 1 and Meowfficer farming through OnePush. Launcher notifications are controlled separately by \"Launcher notifications\". May be noisy due to high message volume."
@@ -3378,6 +3382,14 @@
     "StayInZone": {
       "name": "Planned Operation in Target Zone",
       "help": "After enabling this, the task runs according to Target Zone. With one zone it stays there; with multiple zones it cycles through them in the configured order. Only takes effect when Target Zone is not 0."
+    },
+    "ExecuteFixedPatrolScan": {
+      "name": "Fixed Patrol Scan",
+      "help": "After enabling this, the task will scan the fixed patrol zone every 10 seconds."
+    },
+    "DebugClip": {
+      "name": "Post-battle debug recording",
+      "help": "When enabled, during each Meowfficer-farming round's post-battle handling (event detection / event resolution / forced movement), record what ALAS itself sees into an mp4 under log/clips/ (filename starts with meow_clip_). Every round is saved, whether or not an event occurred, so you can review each round. Retention is configured under OS General Settings."
     }
   },
   "OpsiTarget": {
@@ -3447,7 +3459,7 @@
     },
     "DebugClip": {
       "name": "Post-battle debug recording",
-      "help": "When enabled, during each erosion-1 round's post-battle handling (rescan / event resolution / forced movement), record what ALAS itself sees into an mp4 under log/clips/. Rounds with no event produce no file. Use this to manually verify whether Akashi is missed. Videos are kept indefinitely (no auto cleanup) — watch disk space."
+      "help": "When enabled, during each erosion-1 round's post-battle handling (rescan / event resolution / forced movement), record what ALAS itself sees into an mp4 under log/clips/. Every round is saved, whether or not an event occurred, so you can review each round. Use this to manually verify whether Akashi is missed. Clips are cleaned up automatically according to the clip retention setting under OS General Settings."
     }
   },
   "OpsiSirenBug": {

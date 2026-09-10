@@ -10,14 +10,19 @@ class ScrcpyOptions:
     frame_rate = 6
 
     @classmethod
-    def codec_options(cls) -> str:
+    def codec_options(cls, frame_rate: t.Optional[int] = None) -> str:
         """
         Custom codec options passing through scrcpy.
         https://developer.android.com/reference/android/media/MediaFormat
 
+        Args:
+            frame_rate: 采集帧率。默认使用类属性 frame_rate；调用方需要别的帧率时
+                显式传入，避免为了一次调用去修改全局类属性。
+
         Returns:
             key_profile=1,key_level=4096,...
         """
+        frame_rate = cls.frame_rate if frame_rate is None else frame_rate
         options = dict(
             # H.264 profile and level
             # https://developer.android.com/reference/android/media/MediaCodecInfo.CodecProfileLevel
@@ -36,7 +41,7 @@ class ScrcpyOptions:
             # COLOR_Format24bitBGR888
             key_color_format=12,
             # The same as output frame rate to lower CPU consumption
-            key_capture_rate=cls.frame_rate,
+            key_capture_rate=frame_rate,
             # 20Mbps, the maximum output bitrate of scrcpy
             key_bit_rate=20000000,
         )
@@ -105,7 +110,17 @@ class ScrcpyOptions:
         return commands
 
     @classmethod
-    def command_v120(cls, jar_path='/data/local/tmp/scrcpy-server.jar') -> t.List[str]:
+    def command_v120(cls, jar_path='/data/local/tmp/scrcpy-server.jar',
+                     frame_rate: t.Optional[int] = None) -> t.List[str]:
+        """
+        Generate the commands to run scrcpy.
+
+        Args:
+            jar_path: 设备上的 scrcpy-server jar 路径。
+            frame_rate: 采集/输出帧率。默认使用类属性 frame_rate；调用方需要
+                别的帧率时显式传入，避免为了一次调用去改全局类属性。
+        """
+        frame_rate = cls.frame_rate if frame_rate is None else frame_rate
         commands = [
             f"CLASSPATH={jar_path}",
             "app_process",
@@ -115,7 +130,7 @@ class ScrcpyOptions:
             "info",  # Log level: info, verbose...
             f"1280",  # Max screen width (long side)
             f"20000000",  # Bitrate of video
-            f"{cls.frame_rate}",  # Max frame per second
+            f"{frame_rate}",  # Max frame per second
             f"{const.LOCK_SCREEN_ORIENTATION_UNLOCKED}",  # Lock screen orientation: LOCK_SCREEN_ORIENTATION
             "true",  # Tunnel forward
             "-",  # Crop screen
@@ -124,7 +139,7 @@ class ScrcpyOptions:
             "0",  # Display id
             "false",  # Show touches
             "false",  # Stay awake
-            cls.codec_options(),  # Codec (video encoding) options
+            cls.codec_options(frame_rate),  # Codec (video encoding) options
             "-",  # Encoder name
             "false",  # Power off screen after server closed
         ]

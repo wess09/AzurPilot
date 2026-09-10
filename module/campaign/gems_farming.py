@@ -307,7 +307,7 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
         在父类 load_campaign() 基础上，将 Campaign 替换为继承了
         GemsCampaignOverride 的子类，注入 GemsEmotion 情绪管理。
-        根据是否更换先锋舰船设置情绪管理模式。
+        根据是否更换先锋舰船设置情绪管理模式，索敌优先级保持任务配置。
 
         Args:
             name (str): 地图文件名。
@@ -325,7 +325,6 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         self.campaign = GemsCampaign(device=self.campaign.device, config=self.campaign.config)
         if self.change_vanguard:
             self.campaign.config.override(Emotion_Mode='ignore_calculate')
-            self.campaign.config.override(EnemyPriority_EnemyScaleBalanceWeight='S1_enemy_first')
         else:
             self.campaign.config.override(Emotion_Mode='ignore')
 

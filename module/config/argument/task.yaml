@@ -60,6 +60,7 @@ Farm:
       - Fleet
       - Submarine
       - Emotion
+      - EnemyPriority
     ThreeOilLowCost:
       - Scheduler
       - GemsFarming
@@ -68,6 +69,7 @@ Farm:
       - Fleet
       - Submarine
       - Emotion
+      - EnemyPriority
     Ambush11:
       - Scheduler
       - GemsFarming

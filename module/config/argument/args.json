@@ -2723,9 +2723,12 @@
         "value": "do_not_use",
         "option": [
           "do_not_use",
-          "hunt_only"
-        ],
-        "display": "display"
+          "hunt_only",
+          "boss_only",
+          "hunt_and_boss",
+          "every_combat",
+          "advanced"
+        ]
       },
       "AutoSearchMode": {
         "type": "select",
@@ -2733,19 +2736,17 @@
         "option": [
           "sub_standby",
           "sub_auto_call"
-        ],
-        "display": "hide"
+        ]
       },
       "DistanceToBoss": {
         "type": "select",
-        "value": "use_open_ocean_support",
+        "value": "2_grid_to_boss",
         "option": [
           "to_boss_position",
           "1_grid_to_boss",
           "2_grid_to_boss",
           "use_open_ocean_support"
-        ],
-        "display": "hide"
+        ]
       },
       "AdvancedConfig": {
         "type": "textarea",
@@ -2844,6 +2845,17 @@
       "Fleet2Onsen": {
         "type": "checkbox",
         "value": false
+      }
+    },
+    "EnemyPriority": {
+      "EnemyScaleBalanceWeight": {
+        "type": "select",
+        "value": "S1_enemy_first",
+        "option": [
+          "default_mode",
+          "S3_enemy_first",
+          "S1_enemy_first"
+        ]
       }
     },
     "Storage": {
@@ -3247,9 +3259,12 @@
         "value": "do_not_use",
         "option": [
           "do_not_use",
-          "hunt_only"
-        ],
-        "display": "display"
+          "hunt_only",
+          "boss_only",
+          "hunt_and_boss",
+          "every_combat",
+          "advanced"
+        ]
       },
       "AutoSearchMode": {
         "type": "select",
@@ -3257,19 +3272,17 @@
         "option": [
           "sub_standby",
           "sub_auto_call"
-        ],
-        "display": "hide"
+        ]
       },
       "DistanceToBoss": {
         "type": "select",
-        "value": "use_open_ocean_support",
+        "value": "2_grid_to_boss",
         "option": [
           "to_boss_position",
           "1_grid_to_boss",
           "2_grid_to_boss",
           "use_open_ocean_support"
-        ],
-        "display": "hide"
+        ]
       },
       "AdvancedConfig": {
         "type": "textarea",
@@ -3367,6 +3380,17 @@
       "Fleet2Onsen": {
         "type": "checkbox",
         "value": false
+      }
+    },
+    "EnemyPriority": {
+      "EnemyScaleBalanceWeight": {
+        "type": "select",
+        "value": "S1_enemy_first",
+        "option": [
+          "default_mode",
+          "S3_enemy_first",
+          "S1_enemy_first"
+        ]
       }
     },
     "Storage": {
@@ -12740,6 +12764,10 @@
         "type": "textarea",
         "value": "ActionPoint"
       },
+      "DebugClipRetentionDays": {
+        "type": "input",
+        "value": 7
+      },
       "NotifyOpsiMail": {
         "type": "checkbox",
         "value": true
@@ -13765,6 +13793,14 @@
         "value": 0
       },
       "StayInZone": {
+        "type": "checkbox",
+        "value": false
+      },
+      "ExecuteFixedPatrolScan": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DebugClip": {
         "type": "checkbox",
         "value": false
       }

@@ -54,14 +54,6 @@ GemsFarming:
     Fleet2Control: prevent_red_face
     Fleet2Recover: not_in_dormitory
     Fleet2Oath: false
-  Submarine:
-    Mode:
-      display: display
-      value: do_not_use
-      option: [do_not_use, hunt_only]
-    AutoSearchMode: sub_standby
-    DistanceToBoss: use_open_ocean_support
-
 
 ThreeOilLowCost:
   Scheduler:
@@ -97,13 +89,6 @@ ThreeOilLowCost:
     Fleet2Control: prevent_red_face
     Fleet2Recover: not_in_dormitory
     Fleet2Oath: false
-  Submarine:
-    Mode:
-      display: display
-      value: do_not_use
-      option: [do_not_use, hunt_only]
-    AutoSearchMode: sub_standby
-    DistanceToBoss: use_open_ocean_support
 
 Ambush11:
   Campaign:

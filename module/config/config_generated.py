@@ -578,6 +578,7 @@ class GeneratedConfig:
     OpsiGeneral_RepairPackThresholdHazard1 = 0.5
     OpsiGeneral_DoRandomMapEvent = True
     OpsiGeneral_AkashiShopFilter = 'ActionPoint'
+    OpsiGeneral_DebugClipRetentionDays = 7
     OpsiGeneral_NotifyOpsiMail = True
     OpsiGeneral_LauncherPush = True
     OpsiGeneral_IndependentPush = False
@@ -644,6 +645,8 @@ class GeneratedConfig:
     OpsiMeowfficerFarming_HazardLevel = 5  # 2, 3, 4, 5, 6, 10
     OpsiMeowfficerFarming_TargetZone = 0
     OpsiMeowfficerFarming_StayInZone = False
+    OpsiMeowfficerFarming_ExecuteFixedPatrolScan = False
+    OpsiMeowfficerFarming_DebugClip = False
 
     # 配置组 `OpsiTarget`
     OpsiTarget_TargetFarming = False
