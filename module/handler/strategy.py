@@ -94,6 +94,7 @@ class StrategyHandler(InfoHandler):
         if sub_hunt is not None:
             if SUBMARINE_HUNT.appear(main=self):
                 SUBMARINE_HUNT.set('on' if sub_hunt else 'off', main=self)
+                self.submarine_hunt_enabled = sub_hunt
             else:
                 logger.warning('[策略-设置] 设置潜艇狩猎但图标未出现')
 

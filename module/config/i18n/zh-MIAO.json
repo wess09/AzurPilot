@@ -1510,7 +1510,8 @@
       "hunt_only": "仅狩猎喵",
       "boss_only": "仅BOSS战喵",
       "hunt_and_boss": "狩猎及BOSS战喵",
-      "every_combat": "每战出击喵"
+      "every_combat": "每战出击喵",
+      "advanced": "advanced"
     },
     "AutoSearchMode": {
       "name": "潜艇自律方案",
@@ -1525,6 +1526,10 @@
       "1_grid_to_boss": "距BOSS 1格喵",
       "2_grid_to_boss": "距BOSS 2格喵",
       "use_open_ocean_support": "使用远洋支援喵"
+    },
+    "AdvancedConfig": {
+      "name": "Submarine.AdvancedConfig.name",
+      "help": "Submarine.AdvancedConfig.help"
     }
   },
   "Emotion": {

@@ -31,10 +31,11 @@ from module.handler.ambush import AmbushHandler
 from module.logger import logger
 from module.map.camera import Camera
 from module.map.map_base import SelectedGrids, location2node, location_ensure
+from module.map.submarine import SubmarineAdvanced
 from module.map.utils import match_movable
 
 
-class Fleet(Camera, AmbushHandler):
+class Fleet(SubmarineAdvanced, Camera, AmbushHandler):
     """舰队管理和地图行走控制器。
 
     追踪多个舰队的位置、战斗状态和弹药，并提供完整的地图行走逻辑。
@@ -303,13 +304,12 @@ class Fleet(Camera, AmbushHandler):
         if self.hp_retreat_triggered():
             self.withdraw()
         is_portal = self.map[location].is_portal
-        # The upper grid is submarine, may mess up predict_fleet()
-        # 上方格子可能是潜艇，可能会干扰 predict_fleet()
-        may_submarine_icon = self.map.grid_covered(self.map[location], location=[(0, -1)])
-        may_submarine_icon = may_submarine_icon and self.fleet_submarine_location == may_submarine_icon[0].location
-
         while 1:
             self.fleet_ensure(self.fleet_current_index)
+            self.submarine_advanced_prepare(location, expected)
+            # 潜艇可能刚刚移动，使用最新位置判断图标是否遮挡目标舰队。
+            may_submarine_icon = self.map.grid_covered(self.map[location], location=[(0, -1)])
+            may_submarine_icon = may_submarine_icon and self.fleet_submarine_location == may_submarine_icon[0].location
             self.in_sight(location, sight=self._walk_sight)
             self.focus_to_grid_center()
             grid = self.convert_global_to_local(location)
@@ -323,7 +323,7 @@ class Fleet(Camera, AmbushHandler):
             arrived = False
             # Wait to confirm fleet arrived. It does't appear immediately if fleet in combat.
             extra = 0
-            if self.config.Submarine_Mode in ['hunt_only', 'hunt_and_boss']:
+            if self.config.Submarine_Mode in ['hunt_only', 'hunt_and_boss'] or self.submarine_hunt_enabled:
                 extra += 4.5
             if self.config.MAP_HAS_LAND_BASED and grid.is_mechanism_trigger:
                 extra += grid.mechanism_wait
@@ -351,6 +351,7 @@ class Fleet(Camera, AmbushHandler):
                     if self.handle_combat_low_emotion():
                         walk_timeout.reset()
                 if self.combat_appear():
+                    self.submarine_advanced_combat_start()
                     self.combat(
                         expected_end=self._expected_end(expected),
                         fleet_index=self.fleet_show_index,
@@ -867,6 +868,9 @@ class Fleet(Camera, AmbushHandler):
             self.find_all_submarines()
 
         if not len(self.fleet_submarine_location):
+            if self.submarine_advanced is not None:
+                logger.warning('[地图-潜艇] 无法确认潜艇位置，跳过高级出击')
+                return False
             logger.warning('[地图-潜艇] 无法找到潜艇，假设在地图中心')
             shape = self.map.shape
             center = (shape[0] // 2, shape[1] // 2)
@@ -897,6 +901,7 @@ class Fleet(Camera, AmbushHandler):
         self.fleet_submarine_location = ()
         self.fleet_current_index = 1
         self.battle_count = 0
+        self.submarine_advanced_reset()
         self.mystery_count = 0
         self.carrier_count = 0
         self.siren_count = 0
@@ -984,6 +989,11 @@ class Fleet(Camera, AmbushHandler):
             return 'no_searching'
 
     def _submarine_mode(self, expected):
+        if self.config.Submarine_Mode == 'advanced':
+            state = self.submarine_advanced
+            if state is not None and state.plan is not None and state.plan.mode == 'call' and not state.consumed:
+                return 'advanced_call'
+            return 'do_not_use'
         if self.is_call_submarine_at_boss:
             if 'boss' in expected:
                 return 'every_combat'
@@ -1214,9 +1224,11 @@ class Fleet(Camera, AmbushHandler):
         self.strategy_submarine_move_enter()
         if self._submarine_goto(location):
             self.strategy_submarine_move_confirm()
+            self.fleet_submarine = location_ensure(location)
             result = True
         else:
             self.strategy_submarine_move_cancel()
+            self.fleet_submarine = location_ensure(location)
             result = False
         # 进入潜艇移动模式后，游戏会重新启用狩猎区域视图
         self.strategy_set_execute(sub_view=False)

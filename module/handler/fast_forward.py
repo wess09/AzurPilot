@@ -390,7 +390,9 @@ class FastForwardHandler(AutoSearchHandler):
         """
         if self.map_fleet_checked:
             return False
-        if not self.is_call_submarine_at_boss:
+        advanced = (self.config.SUBMARINE and self.config.Submarine_Mode == 'advanced'
+                    and not self.map_is_auto_search)
+        if not (self.is_call_submarine_at_boss or advanced):
             return False
         # 2025.09.22 修正：舰队角色设置在通关模式后才解锁
         if not self.map_is_clear_mode:

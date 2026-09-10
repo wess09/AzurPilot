@@ -149,7 +149,22 @@ class Enhancement(Dock):
             'langley': TEMPLATE_ENHANCE_LANGLEY,
             'ranger': TEMPLATE_ENHANCE_RANGER,
         }
-        if cv != 'any':
+        if cv == 'custom':
+            # 自定义模式：使用 GemsFarming 过滤器中列出的常见航母
+            filter_string = self.config.cross_get(
+                'GemsFarming.GemsFarming.CommonCVFilter', default='')
+            names = [n.strip().lower() for n in str(filter_string).split('>')]
+            dict_template = {n: dict_template[n]
+                             for n in names if n in dict_template}
+            if not dict_template:
+                logger.warning(
+                    '[退役-强化] 自定义过滤器中无可用航母模板，跳过反选')
+                return None
+        elif cv != 'any':
+            if cv not in dict_template:
+                # 例如 eagle 等暂无模板的类型，跳过反选而不是抛异常
+                logger.warning(f'[退役-强化] 未支持的常见航母类型: {cv}，跳过反选')
+                return None
             dict_template = {cv: dict_template[cv]}
 
         if first_slot:
@@ -345,10 +360,13 @@ class Enhancement(Dock):
                 raise GameStuckError('状态机循环次数过多')
 
             try:
-                state = locals()[state]()
-            except KeyError as e:
+                state_func = locals()[state]
+            except KeyError:
+                # 只捕获状态名不存在的情况。状态函数内部抛出的 KeyError
+                # 必须原样向上抛出，否则会被误报成"未知的状态函数"
                 logger.warning(f'未知的状态函数: {state}')
                 raise ScriptError(f'未知的状态函数: {state}')
+            state = state_func()
 
         return state, ship_count
 
@@ -415,15 +433,19 @@ class Enhancement(Dock):
                 continue
 
             current_count = self.config.Enhance_CheckPerCategory
-            while 1:
-                choose_result, current_count = self._enhance_choose(
-                    ship_count=current_count)
-                if not choose_result:
-                    break
-                total += 10
-                if total >= self._retire_amount:
-                    break
-            self.ui_back(DOCK_CHECK)
+            try:
+                while 1:
+                    choose_result, current_count = self._enhance_choose(
+                        ship_count=current_count)
+                    if not choose_result:
+                        break
+                    total += 10
+                    if total >= self._retire_amount:
+                        break
+            finally:
+                # 强化流程抛出异常时也要退出强化界面，
+                # 否则后续流程会因为没有回到船坞而卡在角色详情页
+                self.ui_back(DOCK_CHECK)
 
         self._enhance_quit()
         return total

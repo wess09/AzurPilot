@@ -502,8 +502,11 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
             bool: True 表示已完成退役或强化操作。
         """
         # 2025.05.29 进入船坞时游戏会弹出皮肤信息提示
-        if self.handle_game_tips():
-            return True
+        # 但「船坞已满」弹窗不是游戏提示：若被 handle_game_tips() 抢先点掉，
+        # 弹窗消失而退役流程不会执行，船坞仍然满着，于是反复弹出
+        if not self.retirement_appear():
+            if self.handle_game_tips():
+                return True
         if self._unable_to_enhance:
             if self.appear_then_click(RETIRE_APPEAR_1, offset=(20, 20), interval=3):
                 self.interval_clear(IN_RETIREMENT_CHECK)

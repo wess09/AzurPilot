@@ -259,6 +259,15 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                 continue
             if self.handle_vote_popup():
                 continue
+            # 过图期间弹出的「船坞已满」弹窗没有任何其他处理器会认，
+            # 不处理会一直等到 GameStuckError。处理完退役/强化后重新开启
+            # 自动搜索，等待游戏自己再次进入战斗加载
+            if self.handle_retirement():
+                # 退役流程在地图上进行，先恢复普通截图间隔
+                self.device.screenshot_interval_set()
+                self.map_offensive_auto_search()
+                self.device.screenshot_interval_set('combat')
+                continue
 
             # End
             if self.is_in_auto_search_menu() or self._handle_auto_search_menu_missing():

@@ -462,7 +462,7 @@ Submarine:
     option: [0, 1, 2]
   Mode:
     value: do_not_use
-    option: [do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat]
+    option: [do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat, advanced]
   AutoSearchMode:
     value: sub_standby
     option: [sub_standby, sub_auto_call]
@@ -470,6 +470,52 @@ Submarine:
     value: "2_grid_to_boss"
     option:
       [to_boss_position, 1_grid_to_boss, 2_grid_to_boss, use_open_ocean_support]
+  AdvancedConfig:
+    type: textarea
+    mode: yaml
+    value: |
+      # 弹药数
+      ammo: 7
+
+      # 远洋支援数
+      support: 1
+
+      # 松鲷的狩猎范围
+      range:
+        - "ONONOOO"
+        - "ONNNNOO"
+        - "NNNNNNO"
+        - "ONNHNNN"
+        - "NNNNNNO"
+        - "ONOONOO"
+        - "OOOOOOO"
+
+      # 规则
+      rules:
+        battle_0: # 所有战斗
+          type: hunt  # 出击类型为狩猎
+          condition:  # 出击条件
+            ammo: ">2"  # 弹药数大于2
+            enemy:  # 敌人类型为
+              - "2C"  # 中航
+              - "3T"  # 大运
+              - "0E"  # 未知敌人
+            in_range: true  # 在狩猎范围里
+          move: false # 不移动
+        battle_2: # 第二场战斗
+          type: call  # 出击类型为召唤
+          condition:  # 出击条件
+            ammo: ">=2" # 弹药数大于等于2
+            support: "!=0" # 远洋支援数不等于0
+            enemy:  # 敌人类型为
+              - "3*"  # 所有大型舰队
+            in_range: false  # 不要求在狩猎范围里
+          move: false # 不移动
+        battle_-1:  # 最后一场战斗
+          type: call  # 出击类型为召唤
+          # 这里没写条件所以是必定出击
+          support: true # 远洋支援
+          move: true # 移动
 Emotion:
   Mode:
     value: calculate

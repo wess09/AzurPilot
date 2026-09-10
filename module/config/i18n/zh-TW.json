@@ -1510,7 +1510,8 @@
       "hunt_only": "僅狩獵",
       "boss_only": "僅BOSS戰",
       "hunt_and_boss": "狩獵及BOSS戰",
-      "every_combat": "每戰出擊"
+      "every_combat": "每戰出擊",
+      "advanced": "advanced"
     },
     "AutoSearchMode": {
       "name": "選擇潛艇自律方案",
@@ -1525,6 +1526,10 @@
       "1_grid_to_boss": "距離 BOSS 1 格",
       "2_grid_to_boss": "距離 BOSS 2 格",
       "use_open_ocean_support": "使用 遠洋支援"
+    },
+    "AdvancedConfig": {
+      "name": "Submarine.AdvancedConfig.name",
+      "help": "Submarine.AdvancedConfig.help"
     }
   },
   "Emotion": {

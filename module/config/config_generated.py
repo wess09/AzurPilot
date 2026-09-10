@@ -244,9 +244,10 @@ class GeneratedConfig:
 
     # 配置组 `Submarine`
     Submarine_Fleet = 0  # 0, 1, 2
-    Submarine_Mode = 'do_not_use'  # do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat
+    Submarine_Mode = 'do_not_use'  # do_not_use, hunt_only, boss_only, hunt_and_boss, every_combat, advanced
     Submarine_AutoSearchMode = 'sub_standby'  # sub_standby, sub_auto_call
     Submarine_DistanceToBoss = '2_grid_to_boss'  # to_boss_position, 1_grid_to_boss, 2_grid_to_boss, use_open_ocean_support
+    Submarine_AdvancedConfig = '# 弹药数\nammo: 7\n\n# 远洋支援数\nsupport: 1\n\n# 松鲷的狩猎范围\nrange:\n  - "ONONOOO"\n  - "ONNNNOO"\n  - "NNNNNNO"\n  - "ONNHNNN"\n  - "NNNNNNO"\n  - "ONOONOO"\n  - "OOOOOOO"\n\n# 规则\nrules:\n  battle_0: # 所有战斗\n    type: hunt  # 出击类型为狩猎\n    condition:  # 出击条件\n      ammo: ">2"  # 弹药数大于2\n      enemy:  # 敌人类型为\n        - "2C"  # 中航\n        - "3T"  # 大运\n        - "0E"  # 未知敌人\n      in_range: true  # 在狩猎范围里\n    move: false # 不移动\n  battle_2: # 第二场战斗\n    type: call  # 出击类型为召唤\n    condition:  # 出击条件\n      ammo: ">=2" # 弹药数大于等于2\n      support: "!=0" # 远洋支援数不等于0\n      enemy:  # 敌人类型为\n        - "3*"  # 所有大型舰队\n      in_range: false  # 不要求在狩猎范围里\n    move: false # 不移动\n  battle_-1:  # 最后一场战斗\n    type: call  # 出击类型为召唤\n    # 这里没写条件所以是必定出击\n    support: true # 远洋支援\n    move: true # 移动\n'
 
     # 配置组 `Emotion`
     Emotion_Mode = 'calculate'  # calculate, ignore, calculate_ignore

@@ -445,6 +445,12 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
             if self.handle_retirement():
                 continue
 
+            # 退役/强化流程会离开关卡准备界面并退回关卡选择界面，
+            # 此时关卡入口重新可见，需要重新点进去，
+            # 否则循环会一直等不到 FLEET_PREPARATION 而卡死
+            if self.appear_then_click(self.campaign.ENTRANCE, interval=2):
+                continue
+
             if self.appear(FLEET_PREPARATION, offset=(20, 50)):
                 break
 

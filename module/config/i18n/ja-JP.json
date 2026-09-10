@@ -1510,7 +1510,8 @@
       "hunt_only": "狩猟のみ",
       "boss_only": "BOSS戦のみ",
       "hunt_and_boss": "狩猟及びBOSS戦",
-      "every_combat": "毎戦出撃"
+      "every_combat": "毎戦出撃",
+      "advanced": "advanced"
     },
     "AutoSearchMode": {
       "name": "潜水艦自律プランを選択",
@@ -1525,6 +1526,10 @@
       "1_grid_to_boss": "BOSSから1マス",
       "2_grid_to_boss": "BOSSから2マス",
       "use_open_ocean_support": "遠洋支援を使用する"
+    },
+    "AdvancedConfig": {
+      "name": "Submarine.AdvancedConfig.name",
+      "help": "Submarine.AdvancedConfig.help"
     }
   },
   "Emotion": {

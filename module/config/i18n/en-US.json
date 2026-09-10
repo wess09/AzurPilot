@@ -1510,7 +1510,8 @@
       "hunt_only": "Hunt Only",
       "boss_only": "Boss Only",
       "hunt_and_boss": "Hunt and Boss",
-      "every_combat": "Every Combat"
+      "every_combat": "Every Combat",
+      "advanced": "advanced"
     },
     "AutoSearchMode": {
       "name": "Select Submarine Auto Plan",
@@ -1525,6 +1526,10 @@
       "1_grid_to_boss": "1 Tile from Boss",
       "2_grid_to_boss": "2 Tiles from Boss",
       "use_open_ocean_support": "Use Open Ocean Support"
+    },
+    "AdvancedConfig": {
+      "name": "Submarine.AdvancedConfig.name",
+      "help": "Submarine.AdvancedConfig.help"
     }
   },
   "Emotion": {
