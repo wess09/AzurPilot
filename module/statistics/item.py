@@ -354,6 +354,15 @@ class Item:
     def button(self):
         return self._button.button
 
+    @property
+    def area(self):
+        """物品在截图中的区域，格式为 (x1, y1, x2, y2)。
+
+        Returns:
+            tuple: 物品图标的边界框。
+        """
+        return self._button.area
+
     def crop(self, area):
         return crop(self.image_raw, area_offset(area, offset=self._button.area[:2]))
 

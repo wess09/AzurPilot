@@ -19,8 +19,9 @@ from dataclasses import asdict
 
 import inflection
 import numpy as np
+import cv2
 
-from module.base.utils import save_image
+from module.base.utils import area_pad, save_image
 from module.logger import logger
 from module.statistics.utils import pack
 from module.base.device_id import get_device_id
@@ -142,6 +143,8 @@ class AzurStats:
     LOCAL_DB = './config/azurstats_local.db'
     LOCAL_MEOW_CSV = './log/azurstat_meowofficer_farming.csv'
     LOCAL_GENRES = {'opsi_meowfficer_farming'}
+    # 未识别物品的定位截图保存目录（随 screenshots/ 一起被 git 忽略）
+    UNKNOWN_ITEM_FOLDER = './screenshots/unknown_items'
     _local_lock = threading.Lock()
     _record_lock = threading.Lock()
 
@@ -430,7 +433,7 @@ class AzurStats:
         return SceneOperationSiren
 
     @staticmethod
-    def _parse_local_opsi_items(image, imgid, genre, combat_count):
+    def _parse_local_opsi_items(image, imgid, genre, combat_count, filename=None):
         SceneOperationSiren = AzurStats._ensure_local_parser()
         scene = SceneOperationSiren()
         scene.load_file(image)
@@ -448,7 +451,61 @@ class AzurStats:
             row['created_at'] = created_at
             rows.append(row)
 
+        if filename and any(str(row['item']).isdigit() for row in rows):
+            AzurStats._save_unknown_item_images(scene, filename)
+
         return rows
+
+    @staticmethod
+    def _save_unknown_item_images(scene, filename):
+        """保存含未识别物品的掉落截图。
+
+        未识别物品（模板匹配失败、只有数字代号）需要人工辨认后补模板，
+        这里把该结算截图另存一份并在未知物品所在格子画红框，存到
+        ``screenshots/unknown_items/``，便于事后核对物品位置。
+
+        Args:
+            scene (SceneOperationSiren): 已完成 parse_scene() 的场景对象。
+            filename (str): 掉落记录文件名，用于生成保存文件名。
+        """
+        group = scene.auto_search_item_group
+        stem = os.path.splitext(os.path.basename(filename))[0]
+        saved = []
+        for index, image in enumerate(scene.images):
+            if not scene.is_opsi_reward(image):
+                continue
+            try:
+                scene._auto_search_get_items_load(image)
+                # 数量已在解析阶段识别过，这里只需要物品名
+                group.predict(image, name=True, amount=False, tag=False)
+            except Exception as e:
+                logger.warning(f'未识别物品截图生成失败, {e}')
+                continue
+
+            items = [item for item in group.items if not item.is_known_item()]
+            if not items:
+                continue
+
+            marked = image.copy()
+            for item in items:
+                area = area_pad(item.area, pad=4)
+                cv2.rectangle(marked, area[:2], area[2:], (255, 0, 0), 3)
+                cv2.putText(marked, str(item.name), (area[0], area[1] - 6),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+            code = '_'.join(sorted({str(item.name) for item in items}))
+            suffix = f'_{index}' if len(scene.images) > 1 else ''
+            file = os.path.join(
+                AzurStats.UNKNOWN_ITEM_FOLDER, f'{stem}_未知物品{code}{suffix}.png')
+            try:
+                os.makedirs(AzurStats.UNKNOWN_ITEM_FOLDER, exist_ok=True)
+                save_image(marked, file)
+                saved.append(file)
+            except Exception as e:
+                logger.warning(f'未识别物品截图保存失败, {e}')
+
+        if saved:
+            logger.info(f'发现未识别物品，截图已保存: {", ".join(saved)}')
 
     def _record_local(self, image, genre, filename, combat_count):
         if genre not in ['opsi_meowfficer_farming']:
@@ -456,7 +513,8 @@ class AzurStats:
 
         imgid = f"{os.path.splitext(os.path.basename(filename))[0][:8]}{uuid.uuid4().hex[:8]}"
         try:
-            rows = self._parse_local_opsi_items(image, imgid, genre, combat_count)
+            rows = self._parse_local_opsi_items(
+                image, imgid, genre, combat_count, filename=filename)
             if not rows:
                 logger.warning('本地碧蓝统计解析跳过, no opsi item rows extracted')
                 return False
