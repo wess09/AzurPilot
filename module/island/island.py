@@ -1015,14 +1015,16 @@ class Island(SelectCharacter):
                 if not self.appear(ISLAND_SHOP_CONFIRM) or not self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
                     break
                 continue
-            if self.appear(ISLAND_SHOP_GET):
+            # 使用模板检测判断“购买成功”弹窗，商店页大面积浅色背景的平均颜色与弹窗资源接近，
+            # 纯颜色检测会误判并要求反复点击确认按钮。
+            if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
         else:
             logger.warning(f"[岛屿] 确认购买超时: {item_name or item_button}")
             return False
 
-        if self.appear(ISLAND_SHOP_GET):
+        if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
             self.device.click(ISLAND_SHOP_CONFIRM)
         return True
 
@@ -1241,7 +1243,7 @@ class Island(SelectCharacter):
                 return True
             if self.appear(ISLAND_POST_CHECK, offset=1) or self.appear(ISLAND_POST_VACANT_CHECK, offset=1):
                 return True
-            if self.appear(ISLAND_SHOP_GET):
+            if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
             if self.appear_then_click(back_button, offset=(20, 20), interval=1):

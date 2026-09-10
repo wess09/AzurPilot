@@ -114,14 +114,14 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 self.device.sleep(0.5)
                 continue
-            if self.appear(ISLAND_SHOP_GET):
+            if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
         else:
             logger.warning(f"[岛屿-牧场] 确认磨坊加工超时: {self._item_cn(mill_item)}")
             return False
 
-        if self.appear(ISLAND_SHOP_GET):
+        if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
             self.device.click(ISLAND_SHOP_CONFIRM)
         return True
 
@@ -245,7 +245,7 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             if self.appear(ISLAND_POST_CHECK, offset=1) or self.appear(ISLAND_POST_VACANT_CHECK, offset=1):
                 self.device.click(POST_CLOSE)
                 continue
-            if self.appear(ISLAND_SHOP_GET):
+            if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
                 self.device.click(ISLAND_SHOP_CONFIRM)
                 continue
 
