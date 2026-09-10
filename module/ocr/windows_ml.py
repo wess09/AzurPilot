@@ -13,6 +13,8 @@
 - 根据用户配置的设备偏好（'gpu'、'cpu'、'npu'）选择 EP
 - 自动检测 AMD 集成显卡并排除不兼容的 EP
 - 通过 GPU 显存大小区分独显和集显
+- 同型号多设备时优先真实独显（Discrete 标记 + DXGI 高性能索引），
+  避免绑定到会热插拔的虚拟显示器适配器
 - 使用线程锁确保 EP 初始化的线程安全性
 
 核心函数 create_onnx_session() 被 al_ocr.py 调用，
@@ -37,6 +39,8 @@ OPENVINO_GPU_DEVICE = "openvino_gpu"
 OPENVINO_CPU_DEVICE = "openvino_cpu"
 
 _MIN_DISCRETE_VIDEO_MEMORY_MIB = 1024
+# 缺少 DxgiHighPerformanceIndex 元数据时的排序占位值，保证这类设备排在已知索引之后
+_UNKNOWN_HIGH_PERFORMANCE_INDEX = 1 << 16
 _AMD_INTEGRATED_HD_MODELS = {
     "6250",
     "6290",
@@ -189,6 +193,37 @@ def _ensure_and_register_provider(ort, windowsml, provider):
         )
 
 
+def _device_priority(device):
+    """设备排序键：真实独显优先，同级再按 DXGI 高性能索引升序。
+
+    Windows 上的虚拟显示器适配器（远程控制虚拟屏、模拟器虚拟屏、
+    Virtual Display Driver 等）会镜像独显的名称与显存，且通常不填
+    Discrete 元数据，仅靠 _is_discrete_gpu() 无法把它们与真实独显区分。
+    这类适配器会随显示配置变化被热插拔，绑定其上的 DirectML 会话会在
+    run() 时失效报错（底层消息为本地化编码，最终表现为
+    UnicodeDecodeError 崩溃并中断任务）。
+    Discrete=1 是 Windows ML 为真实独显写入的标记，
+    DxgiHighPerformanceIndex 则把性能最高的适配器排在前面，
+    两者结合即可稳定选中真实独显。
+
+    Args:
+        device: ONNX Runtime 的 OrtEpDevice。
+
+    Returns:
+        tuple: (是否非独显, 高性能索引)，用于升序排序。
+    """
+    metadata = device.device.metadata
+    discrete = metadata.get("Discrete")
+    not_discrete = 0 if str(discrete).lower() in ("1", "true") else 1
+
+    index = metadata.get("DxgiHighPerformanceIndex")
+    try:
+        performance = int(index)
+    except (TypeError, ValueError):
+        performance = _UNKNOWN_HIGH_PERFORMANCE_INDEX
+    return not_discrete, performance
+
+
 def _iter_preferred_devices(
     ort,
     device_preference="auto",
@@ -217,14 +252,28 @@ def _iter_preferred_devices(
     }.get(device_preference, ())
     if not allow_vendor_execution_providers:
         candidates = tuple(candidate for candidate in candidates if candidate[0] == DML_EP)
-    return tuple(
-        device
-        for ep_name, device_type, require_discrete in candidates
-        for device in devices
-        if device.ep_name == ep_name
-        and device.device.type == device_type
-        and (not require_discrete or _is_discrete_gpu(device))
-    )
+
+    preferred = []
+    for ep_name, device_type, require_discrete in candidates:
+        matched = [
+            device
+            for device in devices
+            if device.ep_name == ep_name
+            and device.device.type == device_type
+            and (not require_discrete or _is_discrete_gpu(device))
+        ]
+        # 同一候选内可能有多个同型号设备（真实独显 + 虚拟显示器适配器），
+        # 排序后再交给 create_onnx_session 依次尝试，确保先绑到真实独显。
+        preferred.extend(sorted(matched, key=_device_priority))
+
+    for device in preferred:
+        metadata = device.device.metadata
+        logger.info(
+            f"[OCR] 候选设备 {device.ep_name}/{metadata.get('Description', 'unknown')}"
+            f" (adapter={metadata.get('DxgiAdapterNumber', '?')},"
+            f" discrete={metadata.get('Discrete', '?')})"
+        )
+    return tuple(preferred)
 
 
 def _vendor_execution_provider_names(device_preference):
