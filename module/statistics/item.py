@@ -484,6 +484,22 @@ class ItemGrid:
             self.next_cost_template_index += 1
         self.next_cost_template_index = max(self.next_cost_template_index, max_digit + 1)
 
+    def match_candidates(self, image, names, similarity):
+        """模板匹配前的候选过滤钩子，默认不做任何限制。
+
+        子类可据此按额外条件（如物品图标底色）排除不该匹配的模板，
+        并相应调整相似度阈值。
+
+        Args:
+            image (np.ndarray): 物品图像。
+            names (list[str]): 候选模板名，按命中频率与是否数字编号排好序。
+            similarity (float): 当前的相似度阈值。
+
+        Returns:
+            tuple[list[str], float]: 过滤后的候选模板名与相似度阈值。
+        """
+        return names, similarity
+
     def match_template(self, image, similarity=None):
         """匹配物品模板，优先尝试命中频率最高的模板。
 
@@ -504,6 +520,7 @@ class ItemGrid:
         names = np.array(list(self.templates.keys()))[np.argsort(list(self.templates_hit.values()))][::-1]
         # 优先匹配已知模板，再匹配数字编号模板
         names = [name for name in names if not name.isdigit()] + [name for name in names if name.isdigit()]
+        names, similarity = self.match_candidates(image, names, similarity)
         best_name = None
         best_similarity = similarity
         for name in names:
