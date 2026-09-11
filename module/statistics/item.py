@@ -212,11 +212,22 @@ class AmountOcr(Digit):
         else:
             images = [self.pre_process(crop(image, area)) for area in self.buttons]
             alt_images = None
+        # 保留未裁剪图像：数量区域右边界可能正好切掉数字（如「1」贴在
+        # 格子边缘），crop_to_text 会再削掉一部分笔画导致读数为 0，
+        # 需要用它兜底重试。
+        images_untrimmed = images
         if trim:
             images = [crop_to_text(i) for i in images]
 
         result_str = self.cnocr.atomic_ocr_for_single_lines(images, self.alphabet)[0]
         amount = self.after_process(result_str)
+
+        if amount == 0 and trim:
+            result_str = self.cnocr.atomic_ocr_for_single_lines(images_untrimmed, self.alphabet)[0]
+            retry_amount = self.after_process(result_str)
+            if retry_amount > 0:
+                logger.info(f'{item_name} amount 读数为 0，未裁剪重试后修正为 {retry_amount}')
+                amount = retry_amount
 
         if amount <= max_val:
             return amount
