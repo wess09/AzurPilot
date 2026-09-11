@@ -549,6 +549,47 @@ class AzurStats:
 
         return False
 
+    @staticmethod
+    def _drop_save_image(images, genre):
+        """选取落盘用的掉落截图。
+
+        耄耋相接的掉落记录由两张截图组成：结算奖励页（掉落内容）与
+        大世界区域页（仅提供区域名、危险等级）。区域信息在 commit()
+        解析时从内存中的截图取得，落盘只需保留结算页，避免截图文件里
+        混入区域页、打开时看到两张拼在一起的画面。
+
+        Args:
+            images (list[np.ndarray]): 本次掉落记录收集到的截图。
+            genre (str): 掉落记录分类。
+
+        Returns:
+            np.ndarray: 待保存的图像。
+        """
+        if genre not in AzurStats.LOCAL_GENRES or len(images) <= 1:
+            return pack(images)
+
+        # is_opsi_reward() 会把匹配位置缓存在按钮对象上，而该位置随后会
+        # 被解析路径用作物品网格的下边界，因此这里用完立即还原。
+        from module.os_handler.assets import AUTO_SEARCH_REWARD
+
+        prev_offset = AUTO_SEARCH_REWARD._button_offset
+        try:
+            scene = AzurStats._ensure_local_parser()()
+            reward = [image for image in images if scene.is_opsi_reward(image)]
+        except Exception as e:
+            logger.warning(f'结算页筛选失败，保存完整掉落截图, {e}')
+            return pack(images)
+        finally:
+            AUTO_SEARCH_REWARD._button_offset = prev_offset
+
+        if not reward:
+            logger.warning('未识别到结算奖励页，保存完整掉落截图')
+            return pack(images)
+
+        if len(reward) < len(images):
+            logger.info(f'掉落截图落盘仅保留结算页 {len(reward)}/{len(images)} 帧')
+        return pack(reward)
+
     def commit(self, images, genre, save=False, local=False, info='', combat_count=0):
         """
         Args:
@@ -577,7 +618,8 @@ class AzurStats:
 
         if save:
             save_thread = threading.Thread(
-                target=self._save, args=(image, genre, filename))
+                target=self._save,
+                args=(self._drop_save_image(images, genre), genre, filename))
             save_thread.start()
 
         if local:
