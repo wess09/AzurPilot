@@ -162,7 +162,14 @@ class AutoSearchReward(ImageBase):
         return item
 
     def _auto_search_get_items_load(self, image):
-        if not self.classify_server(AUTO_SEARCH_REWARD_TITLE, image, offset=(-80, -20, 80, 500)):
+        # 标题模板只有 35x16，结算页底部的「本次作战出现紧急委托」文字
+        # 同样能匹配成功（相似度甚至高于真标题），而 Button.match() 会把
+        # 匹配位置缓存在按钮对象上，这里又用该位置推算物品网格原点：
+        # 一旦匹配到下方文字，网格会落到奖励区之外，整次结算解析出
+        # 0 项而被丢弃。真标题固定在 y=149，横向随面板宽度浮动，
+        # 因此把搜索范围限制在标题行附近（y 最多 +60），既保留横向
+        # 自适应，又不会匹配到下方文字。
+        if not self.classify_server(AUTO_SEARCH_REWARD_TITLE, image, offset=(-80, -20, 80, 60)):
             raise AutoSearchRewardNoTitle('Drop title not found')
 
         title = CLASSIFY_CACHE[AUTO_SEARCH_REWARD_TITLE][self.server]
@@ -184,4 +191,6 @@ class AutoSearchReward(ImageBase):
 
         reward_bottom = AUTO_SEARCH_REWARD.button[1]
         grids.buttons = [button for button in grids.buttons if button.area[3] < reward_bottom]
+        if not grids.buttons:
+            logger.warning('奖励页物品网格为空，标题匹配位置可能异常，本次结算将解析为 0 项')
         self.auto_search_item_group.grids = grids
