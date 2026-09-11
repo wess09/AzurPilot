@@ -35,6 +35,8 @@ class DashboardMixin(WebUIMixinBase):
     def alas_update_overview_task(self) -> None:
         if not self.visible:
             return
+        if getattr(self, "page", None) != "Overview":
+            return
         self.alas_config.load()
         self.alas_config.get_next_task()
 
@@ -215,6 +217,8 @@ class DashboardMixin(WebUIMixinBase):
 
     def alas_update_dashboard(self, _clear=False):
         if not self.visible:
+            return
+        if getattr(self, "page", None) != "Overview":
             return
         with use_scope("dashboard", clear=_clear):
             if not self._log.display_dashboard:

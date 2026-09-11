@@ -135,7 +135,10 @@ def _reload_theme_css(theme: str) -> None:
         links[i].parentNode.removeChild(links[i]);
     }
     var styles = document.querySelectorAll(
-        'style[id^="alas-css-"]'
+        'style[id="alas-css-dark-alas-css"],' +
+        'style[id="alas-css-light-alas-css"],' +
+        'style[id="alas-css-advanced-material-alas-css"],' +
+        'style[id="alas-css-dark-advanced-material-overrides-alas-css"]'
     );
     for (var i = 0; i < styles.length; i++) {
         styles[i].parentNode.removeChild(styles[i]);

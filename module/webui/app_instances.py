@@ -39,7 +39,8 @@ class InstanceMixin(WebUIMixinBase):
     def ui_alas(self, config_name: str) -> None:
         self._set_manage_mode(False)
         if config_name == self.alas_name:
-            self.expand_menu()
+            if self.is_mobile:
+                self.expand_menu()
             return
         self._active_aside = config_name
         self.init_aside(name=config_name)
@@ -234,7 +235,8 @@ class InstanceMixin(WebUIMixinBase):
     def ui_manage(self) -> None:
         self.mount_shell()
         if self._active_aside == "Manage":
-            self.expand_menu()
+            if self.is_mobile:
+                self.expand_menu()
             return
         self._set_manage_mode(True)
         self._active_aside = "Manage"

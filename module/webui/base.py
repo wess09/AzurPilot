@@ -72,7 +72,7 @@ class Frame(Base):
         """
         self.visible = True
         self.task_handler.remove_pending_task()
-        if expand_menu:
+        if expand_menu and self.is_mobile:
             self.expand_menu()
         if name:
             self.active_button("aside", name)
@@ -94,8 +94,14 @@ class Frame(Base):
             self.page = name
             clear("content")
         self.set_statistics_content_visible(name == "Stat")
-        if collapse_menu:
+        if collapse_menu and self.is_mobile:
             self.collapse_menu()
+        else:
+            run_js(
+                """
+                $(".container-content-collapsed").removeClass("container-content-collapsed");
+            """
+            )
         if name:
             self.active_button("menu", name)
 
@@ -143,24 +149,37 @@ class Frame(Base):
     def set_title(text=""):
         put_text(text)
 
-    @staticmethod
-    def collapse_menu() -> None:
-        run_js(
+    def collapse_menu(self) -> None:
+        if self.is_mobile:
+            run_js(
+                """
+                $("#pywebio-scope-menu").addClass("container-menu-collapsed");
+                $(".container-content-collapsed").removeClass("container-content-collapsed");
             """
-            $("#pywebio-scope-menu").addClass("container-menu-collapsed");
-            $(".container-content-collapsed").removeClass("container-content-collapsed");
-        """
-        )
+            )
+        else:
+            run_js(
+                """
+                $(".container-content-collapsed").removeClass("container-content-collapsed");
+            """
+            )
 
-    @staticmethod
-    def expand_menu() -> None:
-        run_js(
+    def expand_menu(self) -> None:
+        if self.is_mobile:
+            run_js(
+                """
+                $(".container-menu-collapsed").removeClass("container-menu-collapsed");
+                $("#pywebio-scope-content, #pywebio-scope-statistics-content")
+                    .addClass("container-content-collapsed");
             """
-            $(".container-menu-collapsed").removeClass("container-menu-collapsed");
-            $("#pywebio-scope-content, #pywebio-scope-statistics-content")
-                .addClass("container-content-collapsed");
-        """
-        )
+            )
+        else:
+            run_js(
+                """
+                $(".container-menu-collapsed").removeClass("container-menu-collapsed");
+                $(".container-content-collapsed").removeClass("container-content-collapsed");
+            """
+            )
 
     @staticmethod
     def active_button(position, value) -> None:
