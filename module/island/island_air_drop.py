@@ -8,19 +8,19 @@ from time import sleep
 from module.ui.scroll import Scroll
 from datetime import timedelta
 from module.config.time_source import now as current_time
+from module.config.utils import get_server_last_update
 
 
 class IslandAirDrop(Island):
     def run(self):
         self.island_error = False
         now = current_time()
-        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        next_daily_time = today.replace(
-            hour=1, minute=0, second=0, microsecond=0
-        ) + timedelta(days=1)
+        # 每日边界以服务器 0 点为准（换算为本机时间轴）
+        today = get_server_last_update('00:00')
+        next_daily_time = today + timedelta(days=1, hours=1)  # 服务器次日 01:00
         last_steal_time = self.config.IslandAirDrop_LastSteal
         next_steal_time = now + timedelta(hours=5)
-        last_attempt_today = now.replace(hour=23, minute=0, second=0, microsecond=0)
+        last_attempt_today = today + timedelta(hours=23)  # 服务器当日 23:00
         if last_steal_time < today:
             self.goto_postmanage()
             if self.appear_then_click(MY_AIR_DROP_ALREADY):

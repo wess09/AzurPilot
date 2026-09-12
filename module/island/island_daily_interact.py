@@ -3,9 +3,7 @@
 处理岛屿低频互动任务的自动化执行，包括摸猫、JUU 速运、商区外送服务和每周照相。
 结合开发计划任务列表区域检测，按顺序执行所有已启用的互动任务。
 """
-from datetime import timedelta
-
-from module.config.time_source import now as current_time
+from module.config.utils import get_server_next_update
 
 from module.base.timer import Timer
 from module.island.island import Island
@@ -614,8 +612,6 @@ class IslandDailyInteract(Island):
         return False
 
     def _delay_to_next_day(self):
-        target = current_time().replace(hour=3, minute=0, second=0, microsecond=0)
-        if target <= current_time():
-            target += timedelta(days=1)
+        target = get_server_next_update('03:00')
         self.config.task_delay(target=target)
         logger.info(f'[岛屿-每日周任务] 下次岛屿每日互动运行时间: {target}')

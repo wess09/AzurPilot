@@ -17,6 +17,7 @@ from module.island.island_season import SEASONAL_ITEMS
 from datetime import timedelta
 
 from module.config.time_source import now as current_time
+from module.config.utils import get_server_next_update
 from module.ocr.ocr import Duration
 
 
@@ -1048,9 +1049,8 @@ class IslandBusiness(Island):
                 self._ocr_and_delay_business_remain()
                 return
             elif status == 'gray':
-                logger.info("[岛屿-经营] 不可经营，延后至明天0点")
-                tomorrow = current_time().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-                self.config.task_delay(target=tomorrow)
+                logger.info("[岛屿-经营] 不可经营，延后至下次服务器刷新（0点）")
+                self.config.task_delay(server_update='00:00')
                 return
             else:
                 logger.info("[岛屿-经营] 按钮状态未知，跳过")
@@ -1106,9 +1106,8 @@ class IslandBusiness(Island):
         if not batch1_shops and not batch2_shops:
             logger.info("[岛屿-经营] 第一批未配置商店，跳过")
             logger.info("[岛屿-经营] 第二批未配置商店，跳过")
-            logger.info("[岛屿-经营] 未配置任何经营商店，延后至明天0点")
-            tomorrow = current_time().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-            self.config.task_delay(target=tomorrow)
+            logger.info("[岛屿-经营] 未配置任何经营商店，延后至下次服务器刷新（0点）")
+            self.config.task_delay(server_update='00:00')
             return
 
         if not batch1_shops:
@@ -1501,12 +1500,11 @@ class IslandBusiness(Island):
             return started_shop_names
 
         # 所有商店都是灰色不可经营
-        # 只有当前是第二批，或没有第二批时，才设置延后到明天0点
+        # 只有当前是第二批，或没有第二批时，才设置延后到服务器0点
         # 第一批全 gray 时让 _run_batch_mode 继续处理第二批
         if batch_shops == self._get_batch2_shops() or not self._get_batch2_shops():
-            logger.info("[岛屿-经营] 批次内所有商店不可经营，延后至明天0点")
-            tomorrow = current_time().replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-            self.config.task_delay(target=tomorrow)
+            logger.info("[岛屿-经营] 批次内所有商店不可经营，延后至下次服务器刷新（0点）")
+            self.config.task_delay(server_update='00:00')
 
         return started_shop_names
 
@@ -1681,26 +1679,27 @@ class IslandBusiness(Island):
         logger.info("[岛屿-经营] 美食评审处理完成")
 
     def _calculate_darkblue_delay(self):
-        """计算深蓝（经营中）状态的延后检测时间"""
+        """计算深蓝（经营中）状态的延后检测时间（对齐服务器 0 点刷新）"""
         now = current_time()
 
         # 延后2小时
         delayed = now + timedelta(hours=2)
 
-        # 当天23:55
-        today_2355 = now.replace(hour=23, minute=55, second=0, microsecond=0)
+        # 下次服务器刷新（0点）及其前5分钟
+        next_update = get_server_next_update('00:00')
+        before_update = next_update - timedelta(minutes=5)
 
-        if now >= today_2355:
-            # 如果当前时间已超过23:55，重置为第二天0点
-            next_time = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
-            logger.info(f"[岛屿-经营] 当前时间已超过23:55，重置为明天0点")
-        elif delayed > today_2355:
-            # 如果延后时间超过23:55，则设为23:55
-            next_time = today_2355
-            logger.info(f"[岛屿-经营] 延后时间超过23:55，设为今天23:55")
+        if now >= before_update:
+            # 已进入刷新前5分钟，等服务器刷新（0点）后再检测
+            next_time = next_update
+            logger.info("[岛屿-经营] 已进入服务器刷新前5分钟，重置为服务器0点")
+        elif delayed > before_update:
+            # 如果延后时间越过刷新前5分钟，则提前到刷新前检测
+            next_time = before_update
+            logger.info("[岛屿-经营] 延后时间超过服务器刷新前5分钟，设为刷新前检测")
         else:
             next_time = delayed
-            logger.info(f"[岛屿-经营] 设定延后2小时检测")
+            logger.info("[岛屿-经营] 设定延后2小时检测")
 
         return next_time
 

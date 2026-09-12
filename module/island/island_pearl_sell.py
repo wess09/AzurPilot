@@ -7,6 +7,11 @@ import re
 from datetime import timedelta
 
 from module.config.time_source import now as current_time
+from module.config.utils import (
+    get_server_last_update,
+    get_server_next_update,
+    server_time_offset,
+)
 
 from module.base.button import Button
 from module.base.timer import Timer
@@ -804,11 +809,9 @@ class IslandPearlSell(Island):
         if not self.config.IslandPearlSell_DailyPriceRefresh:
             return False
         now = now or current_time().replace(microsecond=0)
-        today_refresh = now.replace(
-            hour=self.DAILY_REFRESH_HOUR,
-            minute=self.DAILY_REFRESH_MINUTE,
-            second=0,
-            microsecond=0,
+        # 最近一次服务器时间 03:00（换算为本机时间轴）
+        today_refresh = get_server_last_update(
+            f'{self.DAILY_REFRESH_HOUR:02d}:{self.DAILY_REFRESH_MINUTE:02d}'
         )
         if now < today_refresh:
             return False
@@ -840,15 +843,18 @@ class IslandPearlSell(Island):
         return min(candidates)
 
     def _this_week_schedule(self, now=None):
+        """计算本周珍珠交易时间（服务器时间周二 01:00，换算为本机时间轴）。"""
         now = now or current_time().replace(microsecond=0)
-        monday = (now - timedelta(days=now.weekday())).replace(
+        diff = server_time_offset()
+        server_now = now - diff
+        monday = (server_now - timedelta(days=server_now.weekday())).replace(
             hour=0, minute=0, second=0, microsecond=0
         )
         return monday + timedelta(
             days=self.WEEKLY_TRADE_WEEKDAY,
             hours=self.WEEKLY_TRADE_HOUR,
             minutes=self.WEEKLY_TRADE_MINUTE,
-        )
+        ) + diff
 
     def _nearest_future_schedule(self, now=None):
         now = now or current_time().replace(microsecond=0)
@@ -858,17 +864,10 @@ class IslandPearlSell(Island):
         return target
 
     def _next_daily_refresh(self, now=None):
-        """计算下一次每日价格刷新时间（今天的 03:00 或明天的 03:00）。"""
-        now = now or current_time().replace(microsecond=0)
-        today_refresh = now.replace(
-            hour=self.DAILY_REFRESH_HOUR,
-            minute=self.DAILY_REFRESH_MINUTE,
-            second=0,
-            microsecond=0,
+        """计算下一次每日价格刷新时间（服务器时间 03:00，换算为本机时间轴）。"""
+        return get_server_next_update(
+            f'{self.DAILY_REFRESH_HOUR:02d}:{self.DAILY_REFRESH_MINUTE:02d}'
         )
-        if now < today_refresh:
-            return today_refresh
-        return today_refresh + timedelta(days=1)
 
     def _next_run(self, now=None):
         """计算珍珠任务下一次运行时间。综合周循环、采购延时和每日刷新。"""
@@ -890,10 +889,13 @@ class IslandPearlSell(Island):
 
     @staticmethod
     def next_day_1am(now=None):
+        """服务器时间次日凌晨 1 点，换算为本机时间轴。"""
         now = now or current_time().replace(microsecond=0)
-        return (now + timedelta(days=1)).replace(
+        diff = server_time_offset()
+        server_tomorrow = now - diff + timedelta(days=1)
+        return server_tomorrow.replace(
             hour=1, minute=0, second=0, microsecond=0
-        )
+        ) + diff
 
     def _delay_to_next_day_1am(self, reason):
         target = self.next_day_1am()

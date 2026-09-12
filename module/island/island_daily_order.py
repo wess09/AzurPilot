@@ -14,6 +14,7 @@ from module.ocr.ocr import DigitCounter, Duration
 from datetime import datetime, timedelta
 
 from module.config.time_source import now as current_time
+from module.config.utils import get_nearest_weekday_date, get_server_next_update
 
 class IslandDailyOrder(Island):
     """
@@ -78,7 +79,8 @@ class IslandDailyOrder(Island):
         if urgent_remaining is None:
             logger.warning('[岛屿-每日订单] 本周剩余紧急委托次数 OCR 失败，继续保留紧急委托检测')
         elif urgent_remaining == 0:
-            next_monday = self._next_weekday(0)
+            # 紧急委托每周一按服务器时间刷新，取下一个服务器周一 0 点
+            next_monday = get_nearest_weekday_date(0)
             self.config.IslandDailyOrder_UrgentDetectRefreshTime = next_monday
             logger.info(f'[岛屿-每日订单] 紧急委托次数已用尽，下次检测: {next_monday}')
 
@@ -655,13 +657,8 @@ class IslandDailyOrder(Island):
             self.device.sleep(0.5)
 
     def _delay_to_next_daily_run(self):
-        """延时到下一个每日运行时间（03:00）。"""
-        now = current_time()
-        target = now.replace(
-            hour=self.DAILY_RUN_HOUR, minute=0, second=0, microsecond=0
-        )
-        if target <= now:
-            target += timedelta(days=1)
+        """延时到下一个每日运行时间（服务器时间 03:00）。"""
+        target = get_server_next_update(f'{self.DAILY_RUN_HOUR:02d}:00')
         self.config.task_delay(target=target)
         logger.info(f'[岛屿-每日订单] 下次每日订单运行时间: {target}')
 
@@ -723,15 +720,6 @@ class IslandDailyOrder(Island):
                 logger.info(f'[岛屿-每日订单] 格子 {slot_index + 1} 检测到豆腐')
                 return True
         return False
-
-    @staticmethod
-    def _next_weekday(target_weekday):
-        today = current_time()
-        days_ahead = target_weekday - today.weekday()
-        if days_ahead <= 0:
-            days_ahead += 7
-        next_day = today + timedelta(days=days_ahead)
-        return next_day.replace(hour=0, minute=0, second=0, microsecond=0)
 
     def image_crop(self, area, copy=True):
         from module.base.utils import crop
