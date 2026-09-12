@@ -74,6 +74,15 @@ class UI(InfoHandler):
                 return True
         return self.appear(page.check_button, offset=offset, interval=interval)
 
+    def ui_is_island_page(self):
+        """
+        当前识别到的页面是否属于岛屿页面（Page 名包含 island）。
+
+        Returns:
+            bool: 是否在岛屿页面。
+        """
+        return bool(getattr(self, 'ui_current', None)) and 'island' in self.ui_current.name
+
     def is_in_main(self, offset=(30, 30), interval=0):
         return (self.ui_page_appear(page_main, offset=offset, interval=interval)
                 or self.ui_page_appear(page_main_white, offset=offset, interval=interval))
@@ -495,7 +504,12 @@ class UI(InfoHandler):
             return True
         if self.appear_then_click(GET_ITEMS_2, offset=True, interval=3):
             return True
-        if get_ship:
+        # 获得舰船弹窗：GET_SHIP 只有一块 6x20 的纯白标识条 (1104,610,1110,630)，
+        # 颜色容差较宽，岛屿手机/管理界面的白色 UI 会被误判成该弹窗，
+        # 而它的点击区域 (1000,631,1055,689) 又压在岛屿手机「返回主页」按钮
+        # (1037,644,1077,680) 上，误点会直接退出岛屿并卡死。
+        # 因此在岛屿页面整体跳过该项检测（检测判定本身保持不变）。
+        if get_ship and not self.ui_is_island_page():
             if self.appear_then_click(GET_SHIP, interval=5):
                 return True
         if self.appear_then_click(LOGIN_RETURN_SIGN, offset=(30, 30), interval=3):
@@ -592,11 +606,10 @@ class UI(InfoHandler):
             return True
 
         # 主界面和奖励页面弹窗
-        # 仅在非岛屿页面时处理，避免岛屿页面的 UI 元素被误检测为 GET_SHIP/GET_ITEMS
-        # 例如岛屿管理界面的邮箱按钮与 GET_SHIP 检测区域 (1104,610,1110,630) 重叠
-        if not (hasattr(self, 'ui_current') and self.ui_current and 'island' in self.ui_current.name):
-            if self.ui_page_main_popups(get_ship=get_ship):
-                return True
+        # 岛屿返回主页时同样会弹出这些弹窗（例如大舰队事件派遣），弹窗会遮挡页面检测按钮，
+        # 因此岛屿页面也照常处理；仅「获得舰船」弹窗在 ui_page_main_popups() 内按岛屿页面跳过。
+        if self.ui_page_main_popups(get_ship=get_ship):
+            return True
 
         # 剧情跳过
         if self.handle_story_skip():
