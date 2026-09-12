@@ -361,20 +361,6 @@
         ],
         "help": "nemu_ipc 需与截图方式配套使用（截图选 nemu_ipc 时启动会自动联动）。注意：nemu_ipc 触控走模拟器内部 RPC，低性能电脑上滑动易丢步、拖拽易变形，调用偶发挂死会丢失点击；滑动或拖拽异常时请改回 minitouch / MaaTouch。"
       },
-      "NemuIpcChannel": {
-        "type": "select",
-        "value": "auto",
-        "option": [
-          "auto",
-          "rgba",
-          "bgra"
-        ]
-      },
-      "NemuIpcChannelDetected": {
-        "type": "stored",
-        "value": null,
-        "display": "hide"
-      },
       "GameSettings": {
         "type": "checkbox",
         "value": false,

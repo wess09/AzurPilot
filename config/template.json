@@ -74,8 +74,6 @@
       "ServerName": "disabled",
       "ScreenshotMethod": "auto",
       "ControlMethod": "MaaTouch",
-      "NemuIpcChannel": "auto",
-      "NemuIpcChannelDetected": null,
       "GameSettings": false,
       "ScreenshotDedithering": false,
       "AdbRestart": false

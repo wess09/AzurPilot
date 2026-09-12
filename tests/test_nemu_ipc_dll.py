@@ -10,9 +10,6 @@ import shutil
 import tempfile
 import unittest
 
-import cv2
-import numpy as np
-
 from module.device.method.nemu_ipc import NemuIpcImpl
 
 
@@ -127,72 +124,6 @@ class TestDllPathOrder(unittest.TestCase):
             self.assertNotIn('nx_device/12.0', normalized)
 
 
-class TestBgraLayout(unittest.TestCase):
-    """像素通道序按 SDK 来源架构区分：新架构（nx_device/nx_main）为 BGRA，
-    经典布局（shell/sdk）为 RGBA。实测 12.0 与 15.0 的 nx_device SDK 均为 BGRA。
-    """
-
-    def _build(self, version):
-        import ctypes as _ctypes
-
-        root = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
-        folder = os.path.join(root, 'nx_device', version, 'shell', 'sdk')
-        os.makedirs(folder)
-        with open(os.path.join(folder, 'external_renderer_ipc.dll'), 'w') as f:
-            f.write('fake')
-        original = _ctypes.CDLL
-
-        class _FakeLib:
-            pass
-
-        _ctypes.CDLL = lambda path, *a, **k: _FakeLib()
-        try:
-            impl = NemuIpcImpl(
-                nemu_folder=root, instance_id=0, version=version)
-        finally:
-            _ctypes.CDLL = original
-        return impl
-
-    def test_nx_device_layout_is_bgra(self):
-        self.assertTrue(self._build('15.0').bgra_layout)
-        self.assertTrue(self._build('12.0').bgra_layout)
-
-    def test_classic_and_nx_main_is_not_handled_here(self):
-        # 经典 shell/sdk 布局无法用 nx_device 目录构造，直接验证路径判定语义
-        impl = self._build('12.0')
-        impl.ipc_dll = r'C:\MuMu\shell\sdk\external_renderer_ipc.dll'
-        self.assertFalse(impl.bgra_layout)
-        impl.ipc_dll = r'C:\MuMu\nx_main\sdk\external_renderer_ipc.dll'
-        self.assertTrue(impl.bgra_layout)
-
-
-class TestDecideChannelOrder(unittest.TestCase):
-    """ADB 真值帧通道序判定：与真值比对 RGBA / BGRA 两种解释的误差。"""
-
-    def _make_raw(self, bgra_frame):
-        """构造原始捕获帧：真实画面为 bgra_frame（RGB、方向已正），
-        nemu_capture_display 返回 BGRA 序、上下颠倒。"""
-        raw = cv2.cvtColor(bgra_frame, cv2.COLOR_RGB2BGRA)
-        return cv2.flip(raw, 0)
-
-    def test_bgra_frame_detected_as_bgra(self):
-        frame = np.zeros((64, 64, 3), dtype=np.uint8)
-        frame[:, :, 0] = 200  # 蓝色画面
-        raw = self._make_raw(frame)
-        self.assertEqual(NemuIpcImpl._decide_channel_order(raw, frame), 'bgra')
-
-    def test_rgba_frame_detected_as_rgba(self):
-        frame = np.zeros((64, 64, 3), dtype=np.uint8)
-        frame[:, :, 2] = 200  # 红色画面
-        raw = cv2.cvtColor(frame, cv2.COLOR_RGB2RGBA)
-        raw = cv2.flip(raw, 0)
-        self.assertEqual(NemuIpcImpl._decide_channel_order(raw, frame), 'rgba')
-
-    def test_black_screen_returns_none(self):
-        frame = np.zeros((64, 64, 3), dtype=np.uint8)
-        raw = self._make_raw(frame)
-        self.assertIsNone(NemuIpcImpl._decide_channel_order(raw, frame))
 
 
 if __name__ == '__main__':

@@ -634,17 +634,6 @@
       "MaaTouch": "MaaTouch喵",
       "nemu_ipc": "nemu_ipc"
     },
-    "NemuIpcChannel": {
-      "name": "NemuIpc 通道序喵",
-      "help": "MuMu 的 nemu_ipc 截图红蓝通道顺序喵。auto=每次脚本启动时用 ADB 截图自动校准并写入配置喵；若 MuMu 更新后颜色再次反转，改回 auto 重新校准，或手动指定 rgba / bgra 喵。",
-      "auto": "auto",
-      "rgba": "rgba",
-      "bgra": "bgra"
-    },
-    "NemuIpcChannelDetected": {
-      "name": "NemuIpc 通道序（校准结果喵）",
-      "help": "自动校准得到的实测通道序喵，仅供查看喵。"
-    },
     "GameSettings": {
       "name": "自动应用推荐游戏设置",
       "help": "在启动游戏前，自动尝试应用推荐的帧率、剧情、大型作战、提示及确认设置。仅在游戏进程已完全停止、具备 root 或 su 权限且写入校验通过时执行。设置数据仅在内存中处理，不创建备份或恢复文件；无法安全执行时将跳过，不影响游戏正常启动。",

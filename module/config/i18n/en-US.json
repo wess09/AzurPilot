@@ -634,17 +634,6 @@
       "MaaTouch": "MaaTouch",
       "nemu_ipc": "nemu_ipc"
     },
-    "NemuIpcChannel": {
-      "name": "NemuIpc channel order",
-      "help": "Red-blue channel order of nemu_ipc screenshots. auto = calibrate with an ADB screenshot on every startup and store the result; if a MuMu update flips the colors again, set back to auto to recalibrate, or specify rgba / bgra manually.",
-      "auto": "auto",
-      "rgba": "rgba",
-      "bgra": "bgra"
-    },
-    "NemuIpcChannelDetected": {
-      "name": "NemuIpc channel order (detected)",
-      "help": "Channel order detected by auto-calibration, for reference only."
-    },
     "GameSettings": {
       "name": "Automatically apply recommended game settings",
       "help": "Before starting the game, automatically attempt to apply the recommended frame-rate, story, Operation Siren, notification, and confirmation settings. It runs only when the game process has fully stopped, root or su access is available, and the write passes verification. Settings data is processed in memory only; no backup or recovery file is created. If it cannot run safely, it is skipped without affecting normal game startup.",

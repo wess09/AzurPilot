@@ -300,9 +300,6 @@ class NemuIpcImpl:
         self.connect_id: int = 0
         self.width = 0
         self.height = 0
-        # 截图通道序（'rgba' / 'bgra'），由 screenshot_nemu_ipc 首帧前解析：
-        # 手动配置 > ADB 真值校准 > 按 SDK 架构推断，见 NemuIpc._resolve_channel_order
-        self.channel_order: str = None
 
     @staticmethod
     def detect_version(nemu_folder: str, instance_id: int):
@@ -324,44 +321,6 @@ class NemuIpcImpl:
             if res:
                 return res.group(1)
         return None
-
-    @property
-    def bgra_layout(self) -> bool:
-        """
-        nemu_capture_display 返回的像素通道序按 SDK 来源架构区分：
-        新架构（nx_device/<版本> 与 nx_main，MuMu 5.0+ 安装布局）返回
-        BGRA，经典布局（shell/sdk，MuMu 12 3.x/4.x）返回 RGBA。
-        实测 12.0 与 15.0 的 nx_device SDK 均为 BGRA，与版本号无关。
-
-        Returns:
-            bool: 是否为 BGRA 通道序。
-        """
-        path = self.ipc_dll.replace('\\', '/')
-        return '/nx_device/' in path or '/nx_main/' in path
-
-    @staticmethod
-    def _decide_channel_order(raw, truth):
-        """
-        用 ADB screencap 真值帧判定原始捕获的通道序。
-
-        Args:
-            raw: nemu_capture_display 的原始帧（4 通道、上下颠倒）。
-            truth: ADB screencap 的 RGB 真值帧，尺寸与 raw 一致。
-
-        Returns:
-            str: 'rgba' / 'bgra'；画面无特征（如全黑加载页，两种解释
-                均与真值几乎一致）时返回 None。
-        """
-        def prep(interpretation):
-            img = cv2.cvtColor(raw, interpretation)
-            cv2.flip(img, 0, dst=img)
-            return img
-
-        d_rgba = float(np.mean(cv2.absdiff(prep(cv2.COLOR_RGBA2RGB), truth)))
-        d_bgra = float(np.mean(cv2.absdiff(prep(cv2.COLOR_BGRA2RGB), truth)))
-        if d_rgba < 3 and d_bgra < 3:
-            return None
-        return 'rgba' if d_rgba <= d_bgra else 'bgra'
 
     def connect(self, on_thread=True):
         if self.connect_id > 0:
@@ -690,69 +649,10 @@ class NemuIpc(Platform):
         del_cached_property(self, 'nemu_ipc')
         logger.info('[设备-NemuIpc] nemu_ipc已释放')
 
-    def nemu_ipc_calibrate_channel(self, impl):
-        """
-        用 ADB screencap 真值帧校准截图通道序。
-
-        MuMu 更新可能改变 nemu_capture_display 的通道序（15.0 起为 BGRA），
-        启动时用与 IPC 无关的 ADB 截图做真值比对即可自动适配。
-
-        Args:
-            impl (NemuIpcImpl): 已连接的 IPC 实例。
-
-        Returns:
-            str: 'rgba' / 'bgra'，校准失败或画面无特征时返回 None。
-        """
-        try:
-            png = self.adb_exec_out(['screencap', '-p'])
-            truth = cv2.imdecode(np.frombuffer(png, np.uint8), cv2.IMREAD_COLOR)
-            if truth is None:
-                logger.warning('[设备-NemuIpc] 通道序校准失败: ADB screencap 无输出')
-                return None
-            raw = impl.screenshot(timeout=2)
-            result = NemuIpcImpl._decide_channel_order(raw, truth)
-            if result is None:
-                logger.warning('[设备-NemuIpc] 通道序校准画面无特征（如全黑），跳过')
-            return result
-        except Exception as e:
-            logger.warning(f'[设备-NemuIpc] 通道序校准失败: {e}')
-            return None
-
-    def _resolve_channel_order(self, impl) -> str:
-        """
-        确定截图通道序：手动配置 > ADB 真值校准（auto）> 按 SDK 架构推断。
-
-        auto 校准成功时把实测值写入配置（Emulator.NemuIpcChannelDetected）
-        持久化，供用户查看；配置文件随 MuMu 更新后再次启动自动重新校准。
-        """
-        order = str(self.config.Emulator_NemuIpcChannel or 'auto')
-        if order in ('rgba', 'bgra'):
-            logger.info(f'[设备-NemuIpc] 通道序使用手动配置: {order}')
-            return order
-
-        detected = self.nemu_ipc_calibrate_channel(impl)
-        if detected:
-            try:
-                self.config.Emulator_NemuIpcChannelDetected = detected
-            except Exception as e:
-                logger.warning(f'[设备-NemuIpc] 校准结果写入配置失败: {e}')
-            logger.attr('NemuIpc 通道序', f'{detected}（自动校准）')
-            return detected
-
-        fallback = 'bgra' if impl.bgra_layout else 'rgba'
-        logger.info(f'[设备-NemuIpc] 通道序回退为按 SDK 架构推断: {fallback}')
-        return fallback
-
     def screenshot_nemu_ipc(self):
-        impl = self.nemu_ipc
-        if impl.channel_order is None:
-            impl.channel_order = self._resolve_channel_order(impl)
+        image = self.nemu_ipc.screenshot()
 
-        image = impl.screenshot()
-        if impl.channel_order == 'bgra':
-            image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
-        else:
-            image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
+        image = cv2.cvtColor(image, cv2.COLOR_RGBA2RGB)
         cv2.flip(image, 0, dst=image)
         return image
 

@@ -634,17 +634,6 @@
       "MaaTouch": "MaaTouch",
       "nemu_ipc": "nemu_ipc"
     },
-    "NemuIpcChannel": {
-      "name": "NemuIpc 通道順",
-      "help": "MuMu 的 nemu_ipc 截圖紅藍通道順序。auto=每次腳本啟動時用 ADB 截圖自動校準並寫入配置；若 MuMu 更新後顏色再次反轉，改回 auto 重新校準，或手動指定 rgba / bgra。",
-      "auto": "auto",
-      "rgba": "rgba",
-      "bgra": "bgra"
-    },
-    "NemuIpcChannelDetected": {
-      "name": "NemuIpc 通道順（校準結果）",
-      "help": "自動校準得到的實測通道序，僅供查看。"
-    },
     "GameSettings": {
       "name": "自動套用建議的遊戲設定",
       "help": "在啟動遊戲前，自動嘗試套用建議的幀率、劇情、大型作戰、提示及確認設定。僅在遊戲程序已完全停止、具備 root 或 su 權限且寫入驗證通過時執行。設定資料僅於記憶體中處理，不會建立備份或還原檔案；無法安全執行時會略過，不影響遊戲正常啟動。",
