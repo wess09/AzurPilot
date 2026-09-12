@@ -223,7 +223,8 @@ def finish_meow_search_timer(
             record_ap_snapshot(
                 main.config,
                 ap_current=main._action_point_current,
-                ap_total=main._action_point_total,
+                # 统计口径使用始终含体力箱的总行动力
+                ap_total=getattr(main, '_action_point_total_with_box', main._action_point_total),
                 source="meow",
             )
         except Exception:

@@ -75,10 +75,15 @@ class LogRes:
                             task = getattr(getattr(self.config, 'task', None), 'command', None)
                             if task:
                                 source = task
+                            # 统计口径使用始终含体力箱的总行动力，避免被 OS_ACTION_POINT_BOX_USE
+                            # 的临时关闭（如防止行动力溢出任务）污染快照
+                            ap_total = getattr(self.config, '_action_point_total_with_box', None)
+                            if ap_total is None:
+                                ap_total = value.get('Total')
                             record_ap_snapshot(
                                 self.config,
                                 ap_current=value.get('Value'),
-                                ap_total=value.get('Total'),
+                                ap_total=ap_total,
                                 source=source,
                             )
                         except Exception:

@@ -148,6 +148,7 @@ class ActionPointHandler(UI, MapEventHandler):
     _action_point_box = [0, 0, 0, 0]
     _action_point_current = 0
     _action_point_total = 0
+    _action_point_total_with_box = 0
 
     @staticmethod
     def _is_in_month_end_purchase_block_week():
@@ -203,13 +204,18 @@ class ActionPointHandler(UI, MapEventHandler):
         items = ACTION_POINT_ITEMS.predict(self.device.image, name=False, amount=True)
         box = [item.amount for item in oil] + [item.amount for item in items]
         current = OCR_ACTION_POINT_REMAIN.ocr(self.device.image)
+        box_sum = np.sum(np.array(box) * tuple(ACTION_POINT_BOX.values()))
         total = current
         if self.config.OS_ACTION_POINT_BOX_USE:
-            total += np.sum(np.array(box) * tuple(ACTION_POINT_BOX.values()))
+            total += box_sum
         oil = box[0]
 
         LogRes(self.config).Oil = oil
         logger.info(f'[大世界-行动点] 行动点: {current}({total}), 石油: {oil}')
+        # 统计口径的总行动力始终包含体力箱，不受 OS_ACTION_POINT_BOX_USE 临时关闭的影响
+        # （防止行动力溢出任务会临时关闭该开关，导致统计快照丢箱、图表出现深坑）
+        self._action_point_total_with_box = int(current + box_sum)
+        self.config._action_point_total_with_box = self._action_point_total_with_box
         LogRes(self.config).ActionPoint = {'Value': current, 'Total': total}
         self.config.update()
         self._action_point_current = current

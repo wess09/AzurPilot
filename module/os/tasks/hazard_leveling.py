@@ -810,7 +810,8 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
                 record_ap_snapshot(
                     config=self.config,
                     ap_current=self._action_point_current,
-                    ap_total=self._action_point_total,
+                    # 统计口径使用始终含体力箱的总行动力，避免防溢出上下文关闭开箱后丢箱
+                    ap_total=getattr(self, '_action_point_total_with_box', self._action_point_total),
                     source='hazard1',
                     distance=sea_miles,
                 )
