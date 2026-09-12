@@ -358,8 +358,8 @@ def server_time_offset() -> timedelta:
     """
     计算本地时间与服务器时间的偏移量。
 
-    本地时间转服务器时间：server_time = local_time + server_time_offset()
-    服务器时间转本地时间：local_time = server_time - server_time_offset()
+    本地时间转服务器时间：server_time = local_time - server_time_offset()
+    服务器时间转本地时间：local_time = server_time + server_time_offset()
     """
     return current_time(timezone.utc).astimezone().utcoffset() - server_timezone()
 
