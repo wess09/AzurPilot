@@ -1376,6 +1376,13 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
                 self._solved_map_event.add("is_scanning_device")
 
                 return True
+            elif "event" in result:
+                # 兜底：移动后触发了剧情事件（日志塔/探索奖励等），说明问号已被踩掉解决。
+                # 移动前的模板匹配可能因图标被遮挡或位于视野边缘而失败，
+                # 这里不再依赖具体类型，统一视为已解决，避免误触发强制移动。
+                logger.info("[大世界-搜索] 移动后触发剧情事件，视为问号已解决")
+                self._solved_map_event.add("is_logging_tower")
+                return True
 
         logger.warning(
             "[大世界-地图] 前往问号5次尝试失败, "
@@ -1474,7 +1481,10 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         finished_combat = 0
         with self.stat.new(
             genre=inflection.underscore(self.config.task.command),
-            method=self.config.DropRecord_OpsiRecord,
+            method=self.stat.opsi_save_method(
+                self.config.task.command,
+                self.config.DropRecord_OpsiRecord,
+            ),
         ) as drop:
             while 1:
                 combat = self.os_auto_search_run(drop, interrupt=interrupt)
@@ -1502,7 +1512,11 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
             self._solved_map_event = set()
             self._solved_fleet_mechanism = False
             if question:
-                self.clear_question(drop=drop)
+                # 显式调用单舰队实现：组合类 OperationSiren 的 MRO 中
+                # OpsiHazard1Leveling 重写了多舰队版 clear_question，
+                # 若用 self.clear_question() 会把「清近距离问号」误解析成
+                # 侵蚀1的「切换主舰队+2/3/4」多舰队检测。
+                OSMap.clear_question(self, drop=drop)
             if rescan:
                 self.map_rescan(rescan_mode=rescan, drop=drop)
 
@@ -1519,13 +1533,18 @@ class OSMap(OSFleet, Map, GlobeCamera, StorageHandler, StrategicSearchHandler):
         Returns:
             bool: 正常完成返回 True，被中断返回 False（非 TaskEnd）。
         """
+        # 新的一轮计划作战开始，重置明石处理标志，允许本轮再次处理明石
+        self._akashi_handled = False
         self.handle_ash_beacon_attack()
 
         logger.hr("运行策略搜索", level=2)
 
         with self.stat.new(
             genre=inflection.underscore(self.config.task.command),
-            method=self.config.DropRecord_OpsiRecord,
+            method=self.stat.opsi_save_method(
+                self.config.task.command,
+                self.config.DropRecord_OpsiRecord,
+            ),
         ) as drop:
             try:
                 combat = self.os_auto_search_run(drop, strategic=True)

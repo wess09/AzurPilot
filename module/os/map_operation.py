@@ -232,6 +232,9 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
             MapDetectionError: 解析海域名称失败时抛出。
             ScriptError: 脚本错误时抛出。
         """
+        # 等待 UI 过渡动画完成后再截图，避免 OCR 读取到不完整的海域名称
+        self.device.sleep(0.3)
+        self.device.screenshot()
         name = self.get_zone_name()
         logger.info(f'[大世界-地图操作] 地图名称已处理: {name}')
         try:

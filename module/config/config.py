@@ -70,6 +70,23 @@ class Function:
             return False
 
 
+def _is_island_task(task: str) -> bool:
+    """判断任务是否属于岛屿计划（岛屿任务名均以 Island 开头）。"""
+    return task.startswith("Island")
+
+
+def _round_up_half_hour(dt: datetime) -> datetime:
+    """将时间向上取整到下一个半点边界（XX:00 或 XX:30）。"""
+    minute = dt.minute
+    second = dt.second
+    microsecond = dt.microsecond
+    if second == 0 and microsecond == 0 and minute % 30 == 0:
+        return dt
+    if minute < 30:
+        return dt.replace(minute=30, second=0, microsecond=0)
+    return (dt + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+
+
 def name_to_function(name):
     """
     根据任务名称创建 Function 对象。
@@ -532,6 +549,13 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             )
             if task is None:
                 task = self.task.command
+            if _is_island_task(task):
+                original_run = run
+                run = _round_up_half_hour(run)
+                if run != original_run:
+                    logger.info(
+                        f"[配置] 岛屿任务 `{task}` 对齐到半点: {original_run} -> {run}"
+                    )
             logger.info(f"[配置] 延迟任务 `{task}` 到 {run} ({kv})")
             self.modified[f'{task}.Scheduler.NextRun'] = run
             self.update()

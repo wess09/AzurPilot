@@ -339,7 +339,7 @@ class ActionPointStatisticsMixin(WebUIMixinBase):
                     yc_max = max(valid_yellow_coins)
                     yc_min = min(valid_yellow_coins)
 
-                    stats_html += f'<div style="display:grid; grid-template-columns:150px 100px 90px 90px 90px; gap:8px; margin-bottom:2px; font-size:12px; color:#aaa;"><span>黄币: <b style="color:#ffd54f">{yc_cur}</b></span><span>变化: <b style="color:{yc_change_color}">{yc_change_sign}{yc_change}</b></span><span>最高: <b style="color:#ef5350">{yc_max}</b></span><span>最低: <b style="color:#26a69a">{yc_min}</b></span><span></span></div>'
+                    stats_html += f'<div style="display:grid; grid-template-columns:150px 140px 120px 120px 90px; gap:14px; margin-bottom:2px; font-size:14px; color:#aaa;"><span>黄币: <b style="color:#ffd54f">{yc_cur}</b></span><span>变化: <b style="color:{yc_change_color}">{yc_change_sign}{yc_change}</b></span><span>最高: <b style="color:#ef5350">{yc_max}</b></span><span>最低: <b style="color:#26a69a">{yc_min}</b></span><span></span></div>'
                     legend_html += '<span class="ap-legend-item" data-series="2" style="display:flex; align-items:center; gap:4px;cursor:pointer;opacity:1;"><span style="width:12px; height:2px; background:#ffd54f; border-radius:1px; border-top:1px dashed #ffd54f;"></span>黄币</span>'
 
                 if valid_purple_coins:
@@ -354,7 +354,7 @@ class ActionPointStatisticsMixin(WebUIMixinBase):
                     pc_max = max(valid_purple_coins)
                     pc_min = min(valid_purple_coins)
 
-                    stats_html += f'<div style="display:grid; grid-template-columns:150px 100px 90px 90px 90px; gap:8px; margin-bottom:2px; font-size:12px; color:#aaa;"><span>紫币: <b style="color:#ce93d8">{pc_cur}</b></span><span>变化: <b style="color:{pc_change_color}">{pc_change_sign}{pc_change}</b></span><span>最高: <b style="color:#ef5350">{pc_max}</b></span><span>最低: <b style="color:#26a69a">{pc_min}</b></span><span></span></div>'
+                    stats_html += f'<div style="display:grid; grid-template-columns:150px 140px 120px 120px 90px; gap:14px; margin-bottom:2px; font-size:14px; color:#aaa;"><span>紫币: <b style="color:#ce93d8">{pc_cur}</b></span><span>变化: <b style="color:{pc_change_color}">{pc_change_sign}{pc_change}</b></span><span>最高: <b style="color:#ef5350">{pc_max}</b></span><span>最低: <b style="color:#26a69a">{pc_min}</b></span><span></span></div>'
                     legend_html += '<span class="ap-legend-item" data-series="1" style="display:flex; align-items:center; gap:4px;cursor:pointer;opacity:1;"><span style="width:12px; height:2px; background:#ce93d8; border-radius:1px; border-top:1px dashed #ce93d8;"></span>紫币</span>'
 
         return {
@@ -408,7 +408,7 @@ class ActionPointStatisticsMixin(WebUIMixinBase):
                     d_max = max(valid_distance)
                     d_min = min(valid_distance)
 
-                    stats_html += f'<div style="display:grid; grid-template-columns:150px 100px 90px 90px 90px; gap:8px; margin-bottom:2px; font-size:12px; color:#aaa;"><span>海里数: <b style="color:#1565c0">{d_cur}</b></span><span>变化: <b style="color:{d_change_color}">{d_change_sign}{d_change}</b></span><span>最高: <b style="color:#ef5350">{d_max}</b></span><span>最低: <b style="color:#26a69a">{d_min}</b></span><span></span></div>'
+                    stats_html += f'<div style="display:grid; grid-template-columns:150px 140px 120px 120px 90px; gap:14px; margin-bottom:2px; font-size:14px; color:#aaa;"><span>海里数: <b style="color:#1565c0">{d_cur}</b></span><span>变化: <b style="color:{d_change_color}">{d_change_sign}{d_change}</b></span><span>最高: <b style="color:#ef5350">{d_max}</b></span><span>最低: <b style="color:#26a69a">{d_min}</b></span><span></span></div>'
                     legend_html += '<span class="ap-legend-item" data-series="4" style="display:flex; align-items:center; gap:4px;cursor:pointer;opacity:1;"><span style="width:12px; height:2px; background:#1565c0; border-radius:1px;"></span>海里数</span>'
 
         return {
@@ -449,7 +449,7 @@ class ActionPointStatisticsMixin(WebUIMixinBase):
                 a_max = max(valid_asset)
                 a_min = min(valid_asset)
 
-                stats_html += f'<div style="display:grid; grid-template-columns:150px 100px 90px 90px 90px; gap:8px; margin-bottom:2px; font-size:12px; color:#aaa;"><span>资产: <b style="color:#22d3ee">{a_cur:.1f}</b></span><span>变化: <b style="color:{a_change_color}">{a_change_sign}{a_change:.1f}</b></span><span>最高: <b style="color:#ef5350">{a_max:.1f}</b></span><span>最低: <b style="color:#26a69a">{a_min:.1f}</b></span><span></span></div>'
+                stats_html += f'<div style="display:grid; grid-template-columns:150px 140px 120px 120px 90px; gap:14px; margin-bottom:2px; font-size:14px; color:#aaa;"><span>资产: <b style="color:#22d3ee">{a_cur:.1f}</b></span><span>变化: <b style="color:{a_change_color}">{a_change_sign}{a_change:.1f}</b></span><span>最高: <b style="color:#ef5350">{a_max:.1f}</b></span><span>最低: <b style="color:#26a69a">{a_min:.1f}</b></span><span></span></div>'
                 legend_html += '<span class="ap-legend-item" data-series="3" style="display:flex; align-items:center; gap:4px;cursor:pointer;opacity:1;"><span style="width:12px; height:2px; background:#22d3ee; border-radius:1px;"></span>资产</span>'
 
         return {

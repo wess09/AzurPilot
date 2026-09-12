@@ -1976,7 +1976,8 @@
       "Blacklist": null,
       "DoMajorCommission": false,
       "CommissionNotifyReward": false,
-      "CommissionNotifyRewardStatistics": true
+      "CommissionNotifyRewardStatistics": true,
+      "DetectShipDrop": false
     },
     "Storage": {
       "Storage": {}

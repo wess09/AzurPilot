@@ -104,7 +104,8 @@ class OpsiDaily(OSMap):
                 continue
             self.fleet_set(self.config.OpsiFleet_Fleet)
             self.os_order_execute(recon_scan=False, submarine_call=False)
-            self.run_auto_search()
+            self.run_auto_search(question=False, rescan=False)
+            self._os_daily_retrieve_events()
             self.handle_after_auto_search()
             if str(zone.zone_id) in zones:
                 zones.remove(str(zone.zone_id))
@@ -112,6 +113,42 @@ class OpsiDaily(OSMap):
 
         if not len(zones):
             self.config.cross_set('OpsiDaily.OpsiDaily.MissionZones', None)
+
+    def _os_daily_retrieve_events(self):
+        """每日任务清理海域的事件检索。
+
+        顺序：清主舰队问号 → 重扫地图 → 切 2/3/4 清问号，
+        任何一步发现并解决事件即结束。
+        """
+        primary = self.config.OpsiFleet_Fleet
+        self._solved_map_event = set()
+        self._solved_fleet_mechanism = False
+        event_solved = False
+
+        # 第1步：清主舰队问号
+        self.fleet_set(primary)
+        self.device.screenshot()
+        if OSMap.clear_question(self):
+            event_solved = True
+
+        # 第2步：主舰队未解决事件则重扫地图
+        if not event_solved:
+            self.map_rescan()
+            if self._solved_map_event:
+                event_solved = True
+
+        # 第3步：重扫未解决事件则依次切 2/3/4 清问号
+        if not event_solved:
+            for fleet in [1, 2, 3, 4]:
+                if fleet == primary:
+                    continue
+                self.fleet_set(fleet)
+                self.device.screenshot()
+                if OSMap.clear_question(self):
+                    event_solved = True
+                    break
+            # 恢复主舰队，避免后续步骤在非主舰队状态下执行
+            self.fleet_set(primary)
 
     def os_finish_daily_mission(self, skip_siren_mission=False, keep_mission_zone=False, question=True, rescan=None):
         """

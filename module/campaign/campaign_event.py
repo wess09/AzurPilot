@@ -93,10 +93,11 @@ class CampaignEvent(CampaignStatus):
         )
         tasks = EVENTS + RAIDS + COALITIONS + GEMS_FARMINGS + HOSPITAL
         command = self.config.Scheduler_Command
-        if limit <= 0 or command not in tasks:
-            self.get_event_pt()
-            return False
+        # 主线打捞任务在普通战役页（page_campaign），该页右上角区域并不显示活动 PT。
+        # 直接跳过 PT 读取与上限判断，避免把页面其他数字误读成 PT（例如读成 1）。
         if command in GEMS_FARMINGS and self.stage_is_main(self.config.Campaign_Name):
+            return False
+        if limit <= 0 or command not in tasks:
             self.get_event_pt()
             return False
 

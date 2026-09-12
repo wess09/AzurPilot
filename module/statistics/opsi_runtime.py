@@ -281,6 +281,24 @@ def record_cl1_akashi_encounter(config: Any) -> int | None:
         return None
 
 
+def record_meow_akashi_encounter(main: Any) -> int | None:
+    """记录耄耋相接明石事件，并返回当月该侵蚀等级的累计次数。"""
+    try:
+        from module.statistics.cl1_database import db as cl1_db
+
+        instance_name = instance_name_from_config(main.config)
+        hazard_level = meow_hazard_level_from_runtime(main)
+        if hazard_level is None:
+            logger.debug("[统计-大世界] 耄耋相接侵蚀等级未知，跳过明石事件记录")
+            return None
+        cl1_db.async_increment_meow_akashi_encounter(instance_name, hazard_level)
+        logger.attr("耄耋相接明石次数", f"侵蚀{hazard_level}")
+        return None
+    except Exception:
+        logger.exception("[统计-大世界] 持久化耄耋相接明石次数失败")
+        return None
+
+
 def record_siren_research_device(main: Any) -> None:
     """记录一次塞壬研究装置（吊机）出现，按侵蚀1或耄耋相接侵蚀等级拆分。"""
     source = battle_source_from_config(main.config)

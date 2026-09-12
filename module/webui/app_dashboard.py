@@ -98,13 +98,12 @@ class DashboardMixin(WebUIMixinBase):
                 put_text(t("Gui.Overview.NoTask")).style("--overview-notask-text--")
 
     def _update_dashboard(self, num=None, groups_to_display=None):
+        if not hasattr(self, "_dashboard_last_display_time"):
+            self._dashboard_last_display_time = {}
+            self._dashboard_first_display = True
         x = 0
         _num = 10000 if num is None else num
-        _arg_group = (
-            self._log.dashboard_arg_group
-            if groups_to_display is None
-            else groups_to_display
-        )
+        _arg_group = groups_to_display if groups_to_display is not None else []
         time_now = current_time().replace(microsecond=0)
         for group_name in _arg_group:
             group = LogRes(self.alas_config).group(group_name)
@@ -145,16 +144,16 @@ class DashboardMixin(WebUIMixinBase):
             else:
                 delta = timedelta_to_text(time_delta(value_time - time_now))
 
-            if group_name not in self._log.last_display_time.keys():
-                self._log.last_display_time[group_name] = ""
+            if group_name not in self._dashboard_last_display_time.keys():
+                self._dashboard_last_display_time[group_name] = ""
             if (
-                self._log.last_display_time[group_name] == delta
-                and not self._log.first_display
+                self._dashboard_last_display_time[group_name] == delta
+                and not self._dashboard_first_display
             ):
                 continue
-            self._log.last_display_time[group_name] = delta
+            self._dashboard_last_display_time[group_name] = delta
 
-            # if self._log.first_display:
+            # if self._dashboard_first_display:
             # Handle width
             # value_width = len(value) * 0.7 + 0.6 if value != 'None' else 4.5
             # value_width = str(value_width/1.12) + 'rem' if self.is_mobile else str(value_width) + 'rem'
@@ -210,16 +209,23 @@ class DashboardMixin(WebUIMixinBase):
             x += 1
             if x >= _num:
                 break
-        if self._log.first_display:
-            self._log.first_display = False
+        if self._dashboard_first_display:
+            self._dashboard_first_display = False
 
-    def alas_update_dashboard(self, _clear=False):
+    def alas_update_stat_resources(self, _clear=False):
+        """刷新统计面板顶部的资源概览（排除行动力/黄币/紫币/舰队币）。"""
         if not self.visible:
             return
-        with use_scope("dashboard", clear=_clear):
-            if not self._log.display_dashboard:
-                self._update_dashboard(
-                    num=4, groups_to_display=["Oil", "Coin", "Gem", "Pt"]
-                )
-            elif self._log.display_dashboard:
-                self._update_dashboard()
+        with use_scope("stat_resources", clear=_clear):
+            self._update_dashboard(
+                groups_to_display=[
+                    "Oil",
+                    "Coin",
+                    "Gem",
+                    "Pt",
+                    "Cube",
+                    "Core",
+                    "Medal",
+                    "Merit",
+                ]
+            )

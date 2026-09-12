@@ -2110,6 +2110,12 @@
     "CommissionNotifyRewardStatistics": {
       "name": "推送含统计信息喵~",
       "help": "通知里会显示今日/本周/本月累计钻石数量喵！"
+    },
+    "DetectShipDrop": {
+      "name": "检测舰船掉落喵",
+      "help": "领取委托奖励后检测「获得舰船」画面并关闭喵。若不做会掉落舰船的委托，可关闭以避免识别错误喵。",
+      "True": "True",
+      "False": "False"
     }
   },
   "Tactical": {
@@ -6634,7 +6640,7 @@
       "MonthlyPurchasedAP": "当月购买体力: {value}",
       "MeowDataCollectionTitle": "短猫相接数据收集喵",
       "MeowRounds": "出击轮次喵",
-      "AvgMeowRoundTime": "平均一轮短猫时长喵",
+      "AvgMeowRoundTime": "平均一轮时长喵",
       "MeowLootTitle": "短猫相接收获喵",
       "NoMeowDataNotice": "暂无本地短猫收获数据，完成一次短猫相接后会自动生成喵",
       "RoundUnit": "轮",

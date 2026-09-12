@@ -524,7 +524,10 @@ class IslandShopBase(Island, WarehouseOCR):
                     logger.info("[岛屿] [循环] 当前缺口排产失败，切换严格模式扫描")
                     self.to_post_products = {}
                     self.current_totals = self._rebuild_current_totals(_produced_pass)
-                    self._compute_base_demands(check_materials=True)
+                    # 严格模式必须传入已有的 force_skip 集合；否则之前已被标记
+                    # 卡住的产品（如 seafood_rice）会被再次扫描、再次 schedule，
+                    # 造成 UI 层无效点击。
+                    self._compute_base_demands(check_materials=True, force_skip=_force_skip_run)
                     if not self.to_post_products:
                         break
                     self.to_post_products = self.process_meal_requirements(self.to_post_products)
@@ -955,6 +958,11 @@ class IslandShopBase(Island, WarehouseOCR):
 
                 if max_producible <= 0:
                     logger.info(f"[岛屿] 生产 {self._item_cn(product)} 的材料暂时不足，保留在计划中等待下一轮")
+                    # 标记为本轮已在排产阶段确认原料不足，后续 _compute_base_demands
+                    # 会通过 chef_unavailable_products 检查直接跳过，避免同一 run()
+                    # 内再次计算并实际 UI 点击（get_max_producible 对基础餐品漏算
+                    # 底层食材时，每轮都会重新加入计划造成重复尝试）
+                    self.chef_unavailable_products.add(product)
                     break  # 跳过当前产品，但保留在 to_post_products 中
 
                 # 分配生产
@@ -967,6 +975,11 @@ class IslandShopBase(Island, WarehouseOCR):
                 # 如果实际生产数量为0，说明原料不足
                 if actual_number == 0:
                     logger.info(f"[岛屿] 生产 {self._item_cn(product)} 时检测到原料不足，保留在计划中等待下一轮")
+                    # 游戏 UI 层实际拒绝了生产（常见于基础餐品 get_max_producible 未建模
+                    # 的底层食材，如海鲜饭的米/海鲜料）。标记为本轮不可用，后续所有
+                    # _compute_base_demands 扫描都会直接跳过，避免同一 run() 内在
+                    # while 循环、严格模式中反复执行无效 UI 点击
+                    self.chef_unavailable_products.add(product)
                     break  # 跳过当前产品，但保留在 to_post_products 中
 
                 # 记录已产出（部分生产不算停滞）

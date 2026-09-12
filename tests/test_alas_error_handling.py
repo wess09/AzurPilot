@@ -32,6 +32,9 @@ class TestGameNotRunningErrorHandling(unittest.TestCase):
         script.config_name = 'test'
         script.__dict__['config'] = Mock()
         script.config.cross_get.return_value = False
+        # 上游渠道服悬浮球检查需要的字段：空配置与最小 device 桩
+        script.config.data = {}
+        script.__dict__['device'] = Mock()
         error = GameNotRunningError('Game not running')
         script.__dict__['commission'] = Mock(side_effect=error)
 

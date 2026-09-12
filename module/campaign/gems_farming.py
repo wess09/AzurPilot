@@ -260,7 +260,6 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
     5. 通过装备码自动装卸旗舰/先锋装备
 
     Attributes:
-        _initial_flagship_check_done (bool): 是否已完成初始旗舰等级检查。
         _trigger_lv32 (bool): 是否触发了等级 32 限制。
         _trigger_emotion (bool): 是否触发了情绪限制。
         hard_mode (bool): 是否处于困难模式（影响舰队进入方式）。
@@ -270,7 +269,6 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         fleet_enter_flagship (Button): 从船坞进入旗舰位的按钮。
         fleet_enter (Button): 从船坞进入先锋位的按钮。
     """
-    _initial_flagship_check_done = False
 
     def hard_mode_override(self):
         """根据当前战役模式切换舰队进入方式。
@@ -1037,6 +1035,10 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
 
     _trigger_lv32 = False
     _trigger_emotion = False
+    # 初始旗舰等级检查是否已完成。
+    # 使用类属性做进程内持久化：任务实例与 config 实例会随调度器切换或配置重载而重建，
+    # 类属性在进程生命周期内保持不变，确保初始检查只在进程内执行一次。
+    _initial_flagship_check_done = False
 
     def triggered_stop_condition(self, oil_check=True):
         """检查钻石 farming 的停止条件。
@@ -1101,9 +1103,9 @@ class GemsFarming(CampaignRun, FleetEquipment, GemsEquipmentHandler, Retirement)
         initial_check = (
             self.change_flagship
             and not self.config.GemsFarming_AllowHighFlagshipLevel
-            and not self._initial_flagship_check_done
+            and not GemsFarming._initial_flagship_check_done
         )
-        self._initial_flagship_check_done = True
+        GemsFarming._initial_flagship_check_done = True
         while 1:
             self._trigger_lv32 = initial_check
             initial_check = False

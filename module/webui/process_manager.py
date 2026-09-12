@@ -281,7 +281,11 @@ class ProcessManager:
         return stopped, should_run_action
 
     def _run_manual_stop_action_locked(self) -> None:
-        """在 worker 退出后运行独立收尾进程，并限制其最长运行时间。"""
+        """在 worker 退出后启动独立收尾进程，并由后台线程回收。
+
+        收尾动作不再阻塞 stop_by_user 返回，避免按钮状态刷新
+        （alive 需要同一把生命周期锁）被长时间卡住。
+        """
         process = Process(
             target=ProcessManager.run_manual_stop_action,
             args=(self.config_name,),
@@ -292,6 +296,16 @@ class ProcessManager:
             logger.exception(f"[{self.config_name}] 启动停止收尾进程失败")
             return
 
+        reaper = threading.Thread(
+            target=self._join_manual_stop_action,
+            args=(process,),
+            name=f"manual-stop-action-reaper-{self.config_name}",
+            daemon=True,
+        )
+        reaper.start()
+
+    def _join_manual_stop_action(self, process: Process) -> None:
+        """后台等待并回收停止收尾进程，超时则终止。"""
         process.join(timeout=self.MANUAL_STOP_ACTION_TIMEOUT)
         try:
             alive = process.is_alive()

@@ -64,6 +64,7 @@
     var chartState = null;
     var cleanupHandlers = [];
     var initialRenderTimer = null;
+    var resizeTimer = null;
 
     window.__resourceChartCleanups = window.__resourceChartCleanups || {};
     if (window.__resourceChartCleanups[chartId]) {
@@ -142,11 +143,21 @@
     }
 
     function initChart() {
+        // 重绘前移除上一次绑定的监听器（鼠标/图例/缩放/窗口resize），
+        // 避免窗口缩放重绘时重复绑定
+        cleanupHandlers.forEach(function (item) {
+            item.target.removeEventListener(item.type, item.handler, item.options);
+        });
+        cleanupHandlers = [];
+
+        dpr = window.devicePixelRatio || 1;
+        // 恢复 CSS 百分比宽度后再读取，保证窗口缩放后能取到新的布局宽度
+        cv.style.width = "100%";
         W = cv.clientWidth;
         H = cv.clientHeight;
         if (!W || !H) { W = cv.parentElement.clientWidth || 900; H = 400; }
         cv.width = W * dpr; cv.height = H * dpr;
-        cv.style.width = W + "px"; cv.style.height = H + "px";
+        cv.style.height = H + "px";
         ovCv.width = W * dpr; ovCv.height = H * dpr;
         ovCv.style.width = W + "px"; ovCv.style.height = H + "px";
 
@@ -397,9 +408,18 @@
         }
 
         // ---- Zoom/Pan ----
-        zoomLevel = 1.0;
-        panOffset = 0;
         setupZoomPan(ctx, oc);
+        // 缩放状态下重绘当前视图（初始状态为全量视图）
+        if (zoomLevel > 1.0 || panOffset > 0) renderZoomed();
+
+        // 窗口尺寸变化时防抖重绘，图表宽度跟随容器自适应
+        addListener(window, "resize", function () {
+            if (resizeTimer !== null) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(function () {
+                resizeTimer = null;
+                if (document.getElementById(chartId)) initChart();
+            }, 150);
+        });
     }
 
     function renderZoomed() {

@@ -2110,6 +2110,12 @@
     "CommissionNotifyRewardStatistics": {
       "name": "通知に統計情報を含める",
       "help": "通知に今日/週間/月間の累積ダイヤ数を表示"
+    },
+    "DetectShipDrop": {
+      "name": "艦船ドロップを検出",
+      "help": "委託報酬受け取り後に「艦船獲得」画面を検出して閉じます。艦船がドロップする委託を実行しない場合はオフにして検出エラーを回避できます。",
+      "True": "True",
+      "False": "False"
     }
   },
   "Tactical": {
@@ -6634,7 +6640,7 @@
       "MonthlyPurchasedAP": "今月購入AP: {value}",
       "MeowDataCollectionTitle": "短猫データ収集",
       "MeowRounds": "短猫ラウンド数",
-      "AvgMeowRoundTime": "平均短猫ラウンド時間",
+      "AvgMeowRoundTime": "平均ラウンド時間",
       "MeowLootTitle": "短猫収穫",
       "NoMeowDataNotice": "短猫収穫データがありません。1回実行後に自動生成されます",
       "RoundUnit": " ラウンド",

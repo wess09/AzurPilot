@@ -297,9 +297,13 @@ def app():
     from deploy.atomic import atomic_failure_cleanup
 
     atomic_failure_cleanup("./config")
+    # 委托收益截图目录：委托结算时落盘，统计页「查看截图」按钮按 URL 访问
+    commission_rewards_dir = PROJECT_ROOT / "log" / "commission_rewards"
+    commission_rewards_dir.mkdir(parents=True, exist_ok=True)
     static_mounts = {
         "/static/assets": str(PROJECT_ROOT / "assets"),
         "/static/doc": str(PROJECT_ROOT / "doc"),
+        "/static/commission_rewards": str(commission_rewards_dir),
     }
 
     def _block_restricted_device() -> bool:

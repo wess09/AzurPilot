@@ -2110,6 +2110,12 @@
     "CommissionNotifyRewardStatistics": {
       "name": "推送包含統計資訊",
       "help": "在通知中顯示今日/本週/本月累計鑽石數量"
+    },
+    "DetectShipDrop": {
+      "name": "偵測艦船掉落",
+      "help": "領取委託獎勵後偵測「獲得艦船」畫面並關閉。若不執行會掉落艦船的委託，可關閉以避免偵測錯誤。",
+      "True": "True",
+      "False": "False"
     }
   },
   "Tactical": {
@@ -6634,7 +6640,7 @@
       "MonthlyPurchasedAP": "當月購買體力: {value}",
       "MeowDataCollectionTitle": "短貓相接資料收集",
       "MeowRounds": "出擊輪次",
-      "AvgMeowRoundTime": "平均一輪短貓時長",
+      "AvgMeowRoundTime": "平均一輪時長",
       "MeowLootTitle": "短貓相接收穫",
       "NoMeowDataNotice": "暫無本地短貓收穫資料，完成一次短貓相接後會自動生成",
       "RoundUnit": "輪",

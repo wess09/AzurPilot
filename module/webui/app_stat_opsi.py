@@ -239,19 +239,6 @@ class OpsiStatisticsMixin(WebUIMixinBase):
             avg_cl1_battle_time = exp_stats.get_average_battle_time()
             avg_cl1_round_time = exp_stats.get_average_round_time()
             exp_per_hour = exp_stats.get_exp_per_hour()
-            today_stats = exp_stats.get_today_stats()
-
-            # 今日统计
-            if today_stats:
-                today_battles = today_stats.get("battle_count", 0)
-                today_exp = today_stats.get("total_exp_gained", 0)
-                today_run_time = int(today_stats.get("total_run_time", 0) // 60)
-                today_exp_str = f"{today_exp:,}"
-                today_run_str = f"{today_run_time}{t('Gui.Stat.MinuteUnit')}"
-            else:
-                today_battles = 0
-                today_exp_str = "-"
-                today_run_str = "-"
 
             avg_cl1_battle_str = f"{avg_cl1_battle_time:.1f}{t('Gui.Stat.SecondUnit')}"
             avg_cl1_round_str = f"{avg_cl1_round_time:.1f}{t('Gui.Stat.SecondUnit')}"
@@ -260,9 +247,6 @@ class OpsiStatisticsMixin(WebUIMixinBase):
             avg_cl1_battle_str = "-"
             avg_cl1_round_str = "-"
             exp_per_hour_str = "-"
-            today_battles = 0
-            today_exp_str = "-"
-            today_run_str = "-"
 
         labels = [
             t("Gui.Stat.Month"),
@@ -271,17 +255,14 @@ class OpsiStatisticsMixin(WebUIMixinBase):
             t("Gui.Stat.SortieCost"),
             t("Gui.Stat.AkashiEncounters"),
             t("Gui.Stat.AkashiRate"),
-            t("Gui.Stat.SirenResearchDevices"),
-            t("Gui.Stat.SirenResearchRate"),
             t("Gui.Stat.AverageAP"),
             t("Gui.Stat.NetAP"),
             t("Gui.Stat.LoopEfficiency"),
+            t("Gui.Stat.SirenResearchDevices"),
+            t("Gui.Stat.SirenResearchRate"),
             t("Gui.Stat.ExpEfficiencyHeader"),
             t("Gui.Stat.AvgBattleTimeHeader"),
             t("Gui.Stat.AvgRoundTime"),
-            t("Gui.Stat.TodayBattlesHeader"),
-            t("Gui.Stat.TodayExpHeader"),
-            t("Gui.Stat.TodayRunHeader"),
         ]
 
         values = [
@@ -291,17 +272,14 @@ class OpsiStatisticsMixin(WebUIMixinBase):
             sortie_cost,
             ak,
             akashi_rate,
-            siren_research,
-            siren_research_rate,
             avg_ap,
             net_ap,
             loop_eff,
+            siren_research,
+            siren_research_rate,
             exp_per_hour_str,
             avg_cl1_battle_str,
             avg_cl1_round_str,
-            today_battles,
-            today_exp_str,
-            today_run_str,
         ]
 
         return labels, values, ap_bought
@@ -345,16 +323,43 @@ class OpsiStatisticsMixin(WebUIMixinBase):
                     f"{siren_rate * 100:.2f}%" if meow_effective_rounds > 0 else "-"
                 )
 
+                # 明石统计（按侵蚀等级，与侵蚀一表格口径一致）
+                akashi_encounters = int(
+                    meow_data.get("akashi_encounters", 0) or 0
+                )
+                akashi_ap = int(meow_data.get("akashi_ap", 0) or 0)
+                akashi_rate_str = (
+                    f"{akashi_encounters / meow_rounds * 100:.2f}%"
+                    if meow_rounds > 0
+                    else "-"
+                )
+                avg_ap_str = (
+                    str(int(akashi_ap / akashi_encounters + 0.5))
+                    if akashi_encounters > 0
+                    else "-"
+                )
+
+                # 净赚体力 = 该侵蚀等级购买体力 - 每轮消耗体力 × 出击轮次
+                # 侵蚀3 每轮消耗 15，侵蚀5 每轮消耗 30
+                cost_per_round = {3: 15, 5: 30}.get(hazard_level, 0)
+                net_ap = int(
+                    round(akashi_ap - meow_effective_rounds * cost_per_round)
+                )
+
                 meow_rows.append(
                     [
                         meow_data.get("month", "-"),
                         hazard_level,
                         int(meow_data.get("battle_count", 0) or 0),
                         meow_rounds,
-                        avg_battle_time_str,
-                        avg_time_str,
                         siren_count,
                         siren_rate_str,
+                        akashi_encounters,
+                        akashi_rate_str,
+                        avg_ap_str,
+                        net_ap,
+                        avg_battle_time_str,
+                        avg_time_str,
                     ]
                 )
         except Exception:
@@ -375,10 +380,14 @@ class OpsiStatisticsMixin(WebUIMixinBase):
                 t("Gui.Stat.HazardLevel"),
                 t("Gui.Stat.BattleCount"),
                 t("Gui.Stat.MeowRounds"),
-                t("Gui.Stat.AvgBattleTimeHeader"),
-                t("Gui.Stat.AvgMeowRoundTime"),
                 t("Gui.Stat.SirenResearchDevices"),
                 t("Gui.Stat.SirenResearchRate"),
+                t("Gui.Stat.AkashiEncounters"),
+                t("Gui.Stat.AkashiRate"),
+                t("Gui.Stat.AverageAP"),
+                t("Gui.Stat.NetAP"),
+                t("Gui.Stat.AvgBattleTimeHeader"),
+                t("Gui.Stat.AvgMeowRoundTime"),
             ]
 
             put_html(

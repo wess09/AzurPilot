@@ -17,9 +17,11 @@ import uuid
 from datetime import datetime
 from dataclasses import asdict
 
+import inflection
 import numpy as np
+import cv2
 
-from module.base.utils import save_image
+from module.base.utils import area_pad, save_image
 from module.logger import logger
 from module.statistics.utils import pack
 from module.base.device_id import get_device_id
@@ -141,6 +143,8 @@ class AzurStats:
     LOCAL_DB = './config/azurstats_local.db'
     LOCAL_MEOW_CSV = './log/azurstat_meowofficer_farming.csv'
     LOCAL_GENRES = {'opsi_meowfficer_farming'}
+    # 未识别物品的定位截图保存目录（随 screenshots/ 一起被 git 忽略）
+    UNKNOWN_ITEM_FOLDER = './screenshots/unknown_items'
     _local_lock = threading.Lock()
     _record_lock = threading.Lock()
 
@@ -307,12 +311,129 @@ class AzurStats:
         logger.info('[Statistics] 本地统计数据更新成功: azurstat_meowofficer_farming.csv')
 
     @staticmethod
+    def get_meow_loot_monthly_totals(device_id=None, year=None, month=None):
+        """按侵蚀等级汇总指定月份（默认本月）的耄耋相接掉落总数。
+
+        从本地掉落明细库 opsi_items 汇总，供统计页
+        「本月/历史耄耋相接收获」表格使用。分类口径：
+        Plate 为金菜（装备强化板）、GearDesignPlan*T5 为彩图纸、
+        OrdnanceTestingReport*T4 为金机密、CoordinateObscure 为隐秘、
+        CoordinateAbyssal 为深渊、CatT3 为金猫箱。
+
+        Args:
+            device_id: 设备标识，默认当前设备。
+            year: 年份，默认当前年。
+            month: 月份（1-12），默认当前月。
+
+        Returns:
+            dict[int, dict[str, int]]: 侵蚀等级(1-6) → 分类计数字典，
+                键为 Plate / GearDesignPlanT5 / OrdnanceTestingReportT4 /
+                CoordinateObscure / CoordinateAbyssal / CatT3。
+        """
+        if year is None or month is None:
+            now = datetime.now()
+            year, month = now.year, now.month
+        month_start = int(datetime(year, month, 1).timestamp())
+        if month == 12:
+            month_end = int(datetime(year + 1, 1, 1).timestamp())
+        else:
+            month_end = int(datetime(year, month + 1, 1).timestamp())
+        if device_id is None:
+            device_id = get_device_id()
+        AzurStats._ensure_local_db()
+
+        # 分类规则：前缀 + 可选等级后缀（彩图纸只取 T5、金机密只取 T4）
+        def classify(name: str):
+            if name.startswith("CatT3"):
+                return "CatT3"
+            if name.startswith("GearDesignPlan") and name.endswith("T5"):
+                return "GearDesignPlanT5"
+            if name.startswith("OrdnanceTestingReport") and name.endswith("T4"):
+                return "OrdnanceTestingReportT4"
+            if name.startswith("CoordinateObscure"):
+                return "CoordinateObscure"
+            if name.startswith("CoordinateAbyssal"):
+                return "CoordinateAbyssal"
+            if name.startswith("Plate"):
+                return "Plate"
+            return None
+
+        keys = (
+            "Plate",
+            "GearDesignPlanT5",
+            "OrdnanceTestingReportT4",
+            "CoordinateObscure",
+            "CoordinateAbyssal",
+            "CatT3",
+        )
+        totals = {h: {k: 0 for k in keys} for h in range(1, 7)}
+        try:
+            with sqlite3.connect(AzurStats.LOCAL_DB) as conn:
+                rows = conn.execute(
+                    "SELECT hazard_level, item, SUM(amount) FROM opsi_items "
+                    "WHERE genre='opsi_meowfficer_farming' AND created_at >= ? AND created_at < ? "
+                    "AND device_id = ? GROUP BY hazard_level, item",
+                    (month_start, month_end, device_id),
+                ).fetchall()
+            for h_raw, item, total in rows:
+                try:
+                    h = int(h_raw)
+                except (TypeError, ValueError):
+                    continue
+                if h not in totals or not total:
+                    continue
+                key = classify(str(item or ""))
+                if key is None:
+                    continue
+                try:
+                    totals[h][key] += int(total)
+                except (TypeError, ValueError):
+                    pass
+        except Exception:
+            logger.warning('[Statistics] 查询耄耋相接掉落总数失败', exc_info=True)
+        return totals
+
+    @staticmethod
+    def get_meow_loot_available_months(device_id=None, limit=24):
+        """返回掉落明细库中存在耄耋相接数据的月份列表（从新到旧）。
+
+        Args:
+            device_id: 设备标识，默认当前设备。
+            limit: 最多返回的月份数。
+
+        Returns:
+            list[tuple[int, int]]: [(year, month), ...] 从新到旧。
+        """
+        if device_id is None:
+            device_id = get_device_id()
+        AzurStats._ensure_local_db()
+        try:
+            with sqlite3.connect(AzurStats.LOCAL_DB) as conn:
+                rows = conn.execute(
+                    "SELECT DISTINCT strftime('%Y-%m', created_at, 'unixepoch') AS ym "
+                    "FROM opsi_items WHERE genre='opsi_meowfficer_farming' AND device_id = ? "
+                    "ORDER BY ym DESC LIMIT ?",
+                    (device_id, limit),
+                ).fetchall()
+        except Exception:
+            logger.warning('[Statistics] 查询耄耋相接掉落月份列表失败', exc_info=True)
+            return []
+        months = []
+        for (ym,) in rows:
+            try:
+                y_str, m_str = ym.split("-")
+                months.append((int(y_str), int(m_str)))
+            except (ValueError, AttributeError):
+                continue
+        return months
+
+    @staticmethod
     def _ensure_local_parser():
         from module.azur_stats.scene.operation_siren import SceneOperationSiren
         return SceneOperationSiren
 
     @staticmethod
-    def _parse_local_opsi_items(image, imgid, genre, combat_count):
+    def _parse_local_opsi_items(image, imgid, genre, combat_count, filename=None):
         SceneOperationSiren = AzurStats._ensure_local_parser()
         scene = SceneOperationSiren()
         scene.load_file(image)
@@ -330,7 +451,61 @@ class AzurStats:
             row['created_at'] = created_at
             rows.append(row)
 
+        if filename and any(str(row['item']).isdigit() for row in rows):
+            AzurStats._save_unknown_item_images(scene, filename)
+
         return rows
+
+    @staticmethod
+    def _save_unknown_item_images(scene, filename):
+        """保存含未识别物品的掉落截图。
+
+        未识别物品（模板匹配失败、只有数字代号）需要人工辨认后补模板，
+        这里把该结算截图另存一份并在未知物品所在格子画红框，存到
+        ``screenshots/unknown_items/``，便于事后核对物品位置。
+
+        Args:
+            scene (SceneOperationSiren): 已完成 parse_scene() 的场景对象。
+            filename (str): 掉落记录文件名，用于生成保存文件名。
+        """
+        group = scene.auto_search_item_group
+        stem = os.path.splitext(os.path.basename(filename))[0]
+        saved = []
+        for index, image in enumerate(scene.images):
+            if not scene.is_opsi_reward(image):
+                continue
+            try:
+                scene._auto_search_get_items_load(image)
+                # 数量已在解析阶段识别过，这里只需要物品名
+                group.predict(image, name=True, amount=False, tag=False)
+            except Exception as e:
+                logger.warning(f'未识别物品截图生成失败, {e}')
+                continue
+
+            items = [item for item in group.items if not item.is_known_item()]
+            if not items:
+                continue
+
+            marked = image.copy()
+            for item in items:
+                area = area_pad(item.area, pad=4)
+                cv2.rectangle(marked, area[:2], area[2:], (255, 0, 0), 3)
+                cv2.putText(marked, str(item.name), (area[0], area[1] - 6),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+            code = '_'.join(sorted({str(item.name) for item in items}))
+            suffix = f'_{index}' if len(scene.images) > 1 else ''
+            file = os.path.join(
+                AzurStats.UNKNOWN_ITEM_FOLDER, f'{stem}_未知物品{code}{suffix}.png')
+            try:
+                os.makedirs(AzurStats.UNKNOWN_ITEM_FOLDER, exist_ok=True)
+                save_image(marked, file)
+                saved.append(file)
+            except Exception as e:
+                logger.warning(f'未识别物品截图保存失败, {e}')
+
+        if saved:
+            logger.info(f'发现未识别物品，截图已保存: {", ".join(saved)}')
 
     def _record_local(self, image, genre, filename, combat_count):
         if genre not in ['opsi_meowfficer_farming']:
@@ -338,7 +513,8 @@ class AzurStats:
 
         imgid = f"{os.path.splitext(os.path.basename(filename))[0][:8]}{uuid.uuid4().hex[:8]}"
         try:
-            rows = self._parse_local_opsi_items(image, imgid, genre, combat_count)
+            rows = self._parse_local_opsi_items(
+                image, imgid, genre, combat_count, filename=filename)
             if not rows:
                 logger.warning('本地碧蓝统计解析跳过, no opsi item rows extracted')
                 return False
@@ -373,6 +549,47 @@ class AzurStats:
 
         return False
 
+    @staticmethod
+    def _drop_save_image(images, genre):
+        """选取落盘用的掉落截图。
+
+        耄耋相接的掉落记录由两张截图组成：结算奖励页（掉落内容）与
+        大世界区域页（仅提供区域名、危险等级）。区域信息在 commit()
+        解析时从内存中的截图取得，落盘只需保留结算页，避免截图文件里
+        混入区域页、打开时看到两张拼在一起的画面。
+
+        Args:
+            images (list[np.ndarray]): 本次掉落记录收集到的截图。
+            genre (str): 掉落记录分类。
+
+        Returns:
+            np.ndarray: 待保存的图像。
+        """
+        if genre not in AzurStats.LOCAL_GENRES or len(images) <= 1:
+            return pack(images)
+
+        # is_opsi_reward() 会把匹配位置缓存在按钮对象上，而该位置随后会
+        # 被解析路径用作物品网格的下边界，因此这里用完立即还原。
+        from module.os_handler.assets import AUTO_SEARCH_REWARD
+
+        prev_offset = AUTO_SEARCH_REWARD._button_offset
+        try:
+            scene = AzurStats._ensure_local_parser()()
+            reward = [image for image in images if scene.is_opsi_reward(image)]
+        except Exception as e:
+            logger.warning(f'结算页筛选失败，保存完整掉落截图, {e}')
+            return pack(images)
+        finally:
+            AUTO_SEARCH_REWARD._button_offset = prev_offset
+
+        if not reward:
+            logger.warning('未识别到结算奖励页，保存完整掉落截图')
+            return pack(images)
+
+        if len(reward) < len(images):
+            logger.info(f'掉落截图落盘仅保留结算页 {len(reward)}/{len(images)} 帧')
+        return pack(reward)
+
     def commit(self, images, genre, save=False, local=False, info='', combat_count=0):
         """
         Args:
@@ -401,7 +618,8 @@ class AzurStats:
 
         if save:
             save_thread = threading.Thread(
-                target=self._save, args=(image, genre, filename))
+                target=self._save,
+                args=(self._drop_save_image(images, genre), genre, filename))
             save_thread.start()
 
         if local:
@@ -436,3 +654,23 @@ class AzurStats:
             else:
                 local = 'upload' in method_value and genre in self.LOCAL_GENRES
         return DropImage(stat=self, genre=genre, save=save, local=local, info=info)
+
+    @staticmethod
+    def opsi_save_method(task_command, method):
+        """大世界掉落记录方式定制：仅耄耋相接任务允许本地保存截图。
+
+        侵蚀1练级、每日、隐秘、深渊等任务频率高、截图量大，
+        本地保存会占用大量磁盘。这些任务即使配置了保存模式，
+        也保留其上传等行为、仅去掉本地保存。
+
+        Args:
+            task_command: 任务名（如 'OpsiMeowfficerFarming'）。
+            method: DropRecord_OpsiRecord 配置值。
+
+        Returns:
+            str: 过滤后的记录方式。
+        """
+        genre = inflection.underscore(task_command)
+        if genre != 'opsi_meowfficer_farming' and method and 'save' in str(method):
+            return str(method).replace('save_and_upload', 'upload').replace('save', 'do_not')
+        return method

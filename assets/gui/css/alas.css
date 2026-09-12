@@ -805,6 +805,25 @@ pre.rich-traceback-code {
 
 }
 
+#pywebio-scope-stat_panels {
+    display: grid;
+    grid-auto-flow: row;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+#pywebio-scope-opsi_stats,
+#pywebio-scope-ap_chart,
+#pywebio-scope-ship_exp_table,
+#pywebio-scope-commission_income {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box;
+}
+
 [id^="pywebio-scope-overview-task_"] {
     display: grid;
     grid-auto-flow: column;

@@ -28,6 +28,40 @@ from module.os_handler.assets import MISSION_ENTER, MISSION_CHECK, MISSION_QUIT
 
 
 class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
+    def clear_question(self, drop=None):
+        """清理附近问号，必要时切换其他舰队检测。
+
+        侵蚀 1 战略搜索后，配置的主舰队可能离明石问号过远（Issue #5656），
+        导致原 clear_question 只能检测主舰队附近固定位置而漏掉明石。
+        依次切换到其他舰队重新扫描，直到某个舰队能在雷达上检测到问号，
+        再由父类 clear_question 基于该舰队处理。
+        """
+        primary = self.config.OpsiFleet_Fleet
+        fleets = [primary] + [fleet for fleet in [1, 2, 3, 4] if fleet != primary]
+
+        for fleet in fleets:
+            self.fleet_set(fleet)
+            self.device.screenshot()
+
+            grid = self.radar.predict_question(
+                self.device.image,
+                in_port=self.zone.is_port,
+            )
+
+            if grid is None:
+                logger.info(f"[大世界-侵蚀1练级] 舰队 {fleet} 附近无问号")
+                continue
+
+            logger.info(f"[大世界-侵蚀1练级] 使用舰队 {fleet} 检测到附近问号")
+            result = super().clear_question(drop=drop)
+            # 恢复主舰队，避免后续步骤在非主舰队状态下执行
+            self.fleet_set(primary)
+            return result
+
+        # 所有舰队都没检测到问号，恢复主舰队
+        self.fleet_set(primary)
+        return False
+
     def _cl1_resource_check(self, yellow_coins):
         """侵蚀 1 独立运行时的资源保护检查。"""
         if self.is_running_smart_scheduling_task():
@@ -70,7 +104,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         self.config.OpsiHazard1_PreviousApInsufficient = _previous_ap_insufficient
 
     def _cl1_run_battle(self):
-        """执行侵蚀 1 战后的战略搜索与扫荡逻辑"""
+        """执行侵蚀 1 战后的战略搜索与事件检索逻辑"""
         search_completed = self.run_strategic_search()
 
         if not search_completed and search_completed is not None:
@@ -187,8 +221,11 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             raise
 
         # 侵蚀 1 练级时，行动力优先用于此任务，而非耄耋相接。
+        # 防溢出：当前行动力 100-119 时直接开工不开启行动力箱；
+        # 低于 100 时开箱后达到或超过 200 满值的箱子不开启。
         self.action_point_set(
-            cost=120, keep_current_ap=True, check_rest_ap=True
+            cost=120, keep_current_ap=True, check_rest_ap=True,
+            avoid_ap_overflow=True,
         )
 
         yellow_coins = self.get_yellow_coins()

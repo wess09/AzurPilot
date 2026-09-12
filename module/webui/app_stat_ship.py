@@ -50,7 +50,6 @@ class ShipExperienceStatisticsMixin(WebUIMixinBase):
                 .get("total_battles", 0)
             )
             target_level = stats.data.get("target_level", 125)
-            avg_battle_time = stats.get_average_battle_time()
             exp_per_hour = stats.get_exp_per_hour()
             today_stats = stats.get_today_stats()
 
@@ -102,34 +101,7 @@ class ShipExperienceStatisticsMixin(WebUIMixinBase):
                     )
                 )
 
-                # 显示效率统计
-                put_row(
-                    [
-                        put_text(
-                            t(
-                                "Gui.Stat.AvgBattleTime",
-                                value=f"{avg_battle_time:.1f}",
-                                unit=t("Gui.Stat.SecondUnit"),
-                            )
-                        ),
-                        put_text(
-                            t(
-                                "Gui.Stat.AvgOpsiRoundTime",
-                                value=f"{stats.get_average_round_time():.1f}",
-                                unit=t("Gui.Stat.SecondUnit"),
-                            )
-                        ),
-                        put_text(
-                            t(
-                                "Gui.Stat.ExpEfficiency",
-                                value=f"{exp_per_hour:.0f}",
-                                unit=t("Gui.Stat.HourUnit"),
-                            )
-                        ),
-                    ]
-                )
-
-                # 显示今日统计
+                # 显示一行统计：今日战斗 / 今日经验 / 经验效率 / 今日运行
                 if today_stats:
                     run_minutes = int(today_stats.get("total_run_time", 0) // 60)
                     put_row(
@@ -145,6 +117,13 @@ class ShipExperienceStatisticsMixin(WebUIMixinBase):
                                 t(
                                     "Gui.Stat.TodayExp",
                                     value=today_stats.get("total_exp_gained", 0),
+                                )
+                            ),
+                            put_text(
+                                t(
+                                    "Gui.Stat.ExpEfficiency",
+                                    value=f"{exp_per_hour:.0f}",
+                                    unit=t("Gui.Stat.HourUnit"),
                                 )
                             ),
                             put_text(

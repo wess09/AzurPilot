@@ -1,10 +1,13 @@
 """WebUI 委托收益统计视图。"""
 
+from html import escape
+
 from module.webui.app_dependencies import (
     logger,
     put_button,
     put_buttons,
     put_html,
+    put_row,
     put_text,
     t,
     use_scope,
@@ -12,6 +15,10 @@ from module.webui.app_dependencies import (
 
 
 from module.webui.app_types import WebUIMixinBase
+
+
+_COMMISSION_RECENT_PAGE_SIZE = 10
+_COMMISSION_RECENT_TOTAL = 50
 
 
 class CommissionIncomeStatisticsMixin(WebUIMixinBase):
@@ -32,6 +39,7 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
                 table_html,
                 recent_html,
                 income_data["period"],
+                len(income_data["recent"]),
             )
         except Exception as e:
             with use_scope("commission_income", clear=True):
@@ -76,7 +84,9 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
         return {
             "period": period,
             "summary": get_commission_income_summary(instance_name, period=period),
-            "recent": get_recent_commission_entries(instance_name, limit=10),
+            "recent": get_recent_commission_entries(
+                instance_name, limit=_COMMISSION_RECENT_TOTAL
+            ),
             "item_name_map": item_name_map,
             "item_icon_map": item_icon_map,
             "datetime": datetime,
@@ -130,7 +140,7 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
                 <div id="commission_income_container" class="commission-income-summary" style="padding: 0; width: 100%; box-sizing: border-box;">
                 """
 
-        html += f'<div style="font-size: 1rem; font-weight: 500; color: inherit; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.2);">{t("Gui.Stat.CommissionIncomeTitle")}</div>'
+        html += f'<div style="font-size: 1rem; font-weight: 600; color: inherit; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(128, 128, 128, 0.2);">{t("Gui.Stat.CommissionIncomeTitle")}</div>'
 
         html += '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 12px; margin-bottom: 20px; width: 100%;">'
         for row in rows:
@@ -210,12 +220,25 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
         item_name_lookup,
         tracked_items,
     ):
+        # 最近委托记录分页：仅渲染当前页的 10 条
+        total_pages = (
+            (len(recent) + _COMMISSION_RECENT_PAGE_SIZE - 1)
+            // _COMMISSION_RECENT_PAGE_SIZE
+            if recent
+            else 0
+        )
+        page = getattr(self, "_commission_recent_page", 0)
+        page = max(0, min(page, total_pages - 1)) if total_pages else 0
+        self._commission_recent_page = page
+        start = page * _COMMISSION_RECENT_PAGE_SIZE
+        recent_page = recent[start : start + _COMMISSION_RECENT_PAGE_SIZE]
+
         html = '<div class="commission-income-recent" style="width: 100% !important; max-width: none !important; display: block !important; box-sizing: border-box;">'
-        if recent:
+        if recent_page:
             html += f'<div style="height: 1px; background: rgba(128, 128, 128, 0.2); margin: 24px 0;"></div>'
             html += f'<div style="font-size: 0.9rem; font-weight: 500; color: inherit; margin-bottom: 10px;">{t("Gui.Stat.CommissionIncomeRecentTitle")}</div>'
             html += '<div style="font-size: 13px; width: 100%;">'
-            for entry in recent:
+            for entry in recent_page:
                 ts = entry.get("ts", "")
                 try:
                     dt = datetime_class.fromisoformat(ts)
@@ -256,10 +279,26 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
                     if item_parts
                     else '<span style="opacity: 0.6;">--</span>'
                 )
+
+                # 查看截图按钮：跟随在记录行内，点击在新标签页单独打开截图
+                shots = entry.get("screenshots") or []
+                shot_links = ""
+                for shot_index, shot in enumerate(shots):
+                    label = "查看截图" if shot_index == 0 else f"查看截图{shot_index + 1}"
+                    shot_links += (
+                        f'<a href="/static/commission_rewards/{escape(shot, quote=True)}" '
+                        f'target="_blank" rel="noopener" '
+                        f'style="flex-shrink: 0; margin-left: 8px; font-size: 0.7rem; padding: 2px 10px; '
+                        f'border: 1px solid rgba(128, 128, 128, 0.35); border-radius: 4px; '
+                        f'background: rgba(128, 128, 128, 0.08); color: inherit; text-decoration: none; '
+                        f'cursor: pointer;">{label}</a>'
+                    )
+
                 html += (
-                    f'<div class="commission-income-recent-row" style="display: flex; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(128, 128, 128, 0.1);">'
-                    f'<span style="opacity: 0.65; min-width: 80px; font-size: 12px;">{time_str}</span>'
-                    f'<span style="flex: 1;">{items_str}</span>'
+                    f'<div class="commission-income-recent-row" style="display: flex; align-items: center; flex-wrap: wrap; padding: 6px 0; border-bottom: 1px solid rgba(128, 128, 128, 0.1);">'
+                    f'<span style="opacity: 0.65; min-width: 80px; font-size: 12px; flex-shrink: 0;">{time_str}</span>'
+                    f'<span>{items_str}</span>'
+                    f"{shot_links}"
                     f"</div>"
                 )
             html += "</div>"
@@ -267,12 +306,15 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
         html += f'<p style="font-size: 0.75rem; opacity: 0.5; margin-top: 10px;">{t("Gui.Stat.CommissionIncomeTotalCommissions", value=summary["total_commissions"])}</p>'
         return html + "</div>"
 
-    def _output_commission_income(self, summary_html, table_html, recent_html, period):
+    def _output_commission_income(
+        self, summary_html, table_html, recent_html, period, recent_count
+    ):
         with use_scope("commission_income", clear=True):
             put_html(summary_html)
 
             def on_period_click(selected_period):
                 self._commission_income_period = selected_period
+                self._commission_recent_page = 0
                 self._render_commission_income()
 
             put_buttons(
@@ -306,6 +348,58 @@ class CommissionIncomeStatisticsMixin(WebUIMixinBase):
                 scope="commission_income",
             )
             put_html(recent_html, scope="commission_income")
+            if recent_count > _COMMISSION_RECENT_PAGE_SIZE:
+                self._output_recent_pagination(recent_count)
+
+    def _output_recent_pagination(self, recent_count):
+        """渲染最近委托记录的分页控件。"""
+        total_pages = (
+            recent_count + _COMMISSION_RECENT_PAGE_SIZE - 1
+        ) // _COMMISSION_RECENT_PAGE_SIZE
+        page = getattr(self, "_commission_recent_page", 0)
+        page = max(0, min(page, total_pages - 1))
+        self._commission_recent_page = page
+
+        def on_pagination(value):
+            new_page = getattr(self, "_commission_recent_page", 0)
+            if value == "prev":
+                new_page -= 1
+            elif value == "next":
+                new_page += 1
+            else:
+                new_page = int(value)
+            new_page = max(0, min(new_page, total_pages - 1))
+            self._commission_recent_page = new_page
+            self._render_commission_income()
+
+        pagination_buttons = [
+            {"label": "上一页", "value": "prev", "color": "secondary"},
+        ]
+        for index in range(1, min(5, total_pages) + 1):
+            pagination_buttons.append(
+                {
+                    "label": str(index),
+                    "value": index - 1,
+                    "color": "primary" if (index - 1) == page else "secondary",
+                }
+            )
+        pagination_buttons.append(
+            {"label": "下一页", "value": "next", "color": "secondary"}
+        )
+
+        put_row(
+            [
+                put_buttons(
+                    pagination_buttons,
+                    onclick=on_pagination,
+                    small=True,
+                ).style("font-size: 0.65rem; gap: 4px;"),
+                put_text(f"第 {page + 1} / {total_pages} 页").style(
+                    "font-size: 0.65rem; opacity: 0.7; margin-left: 8px;"
+                ),
+            ],
+            scope="commission_income",
+        )
 
     @staticmethod
     def _show_commission_income_no_data():

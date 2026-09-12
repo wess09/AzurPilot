@@ -2110,6 +2110,12 @@
     "CommissionNotifyRewardStatistics": {
       "name": "Include Statistics in Push",
       "help": "Display today/week/month cumulative gem count in notification"
+    },
+    "DetectShipDrop": {
+      "name": "Detect ship drop",
+      "help": "Detect and close the ship obtained popup after claiming commission rewards. Disable if you do not run ship-dropping commissions to avoid detection errors.",
+      "True": "True",
+      "False": "False"
     }
   },
   "Tactical": {
@@ -6634,7 +6640,7 @@
       "MonthlyPurchasedAP": "Monthly purchased AP: {value}",
       "MeowDataCollectionTitle": "Meow Session Data",
       "MeowRounds": "Meow Rounds",
-      "AvgMeowRoundTime": "Avg Meow Round Time",
+      "AvgMeowRoundTime": "Avg Round Time",
       "MeowLootTitle": "Meow Session Loot",
       "NoMeowDataNotice": "No local Meowfficer farming loot data yet. It will be generated automatically after a run.",
       "RoundUnit": " rounds",

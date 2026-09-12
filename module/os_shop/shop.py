@@ -44,6 +44,9 @@ class OSShop(PortShop, AkashiShop):
         _shop_purple_coins (int): 当前紫币余额（由 os_shop_get_coins 设置）。
     """
 
+    # 本次战役是否已处理过明石商店（避免强制移动等后续环节重复进入商店）
+    _akashi_handled = False
+
     def os_shop_buy_execute(self, button, skip_first_screenshot=True) -> bool:
         """执行单个物品的购买操作。
 
@@ -144,8 +147,9 @@ class OSShop(PortShop, AkashiShop):
             else:
                 self.os_shop_buy_execute(button)
                 try:
-                    if not getattr(self, 'is_running_cl1_leveling', False):
-                        logger.debug('[大世界商店] 侵蚀1练级未运行，跳过明石行动力购买记录')
+                    if not getattr(self, 'is_running_cl1_leveling', False) \
+                            and not getattr(self, '_meow_searching_active', False):
+                        logger.debug('[大世界商店] 非侵蚀1/耄耋相接，跳过明石行动力购买记录')
                     else:
                         name = str(getattr(button, 'name', '') or '')
                         name_l = name.lower()
@@ -160,14 +164,26 @@ class OSShop(PortShop, AkashiShop):
                             instance_name = getattr(self.config, 'config_name', 'default')
                             try:
                                 from module.statistics.cl1_database import db as cl1_db
-                                cl1_db.add_akashi_ap_entry(
-                                    instance=instance_name,
-                                    amount=int(bought_ap),
-                                    base=int(base),
-                                    count=int(amount),
-                                    source='akashi'
-                                )
-                                logger.info('[大世界商店] 已记录明石行动力购买数据到数据库')
+
+                                if getattr(self, 'is_running_cl1_leveling', False):
+                                    cl1_db.add_akashi_ap_entry(
+                                        instance=instance_name,
+                                        amount=int(bought_ap),
+                                        base=int(base),
+                                        count=int(amount),
+                                        source='akashi'
+                                    )
+                                    logger.info('[大世界商店] 已记录明石行动力购买数据到数据库')
+                                else:
+                                    from module.statistics.opsi_runtime import meow_hazard_level_from_runtime
+
+                                    hazard_level = meow_hazard_level_from_runtime(self)
+                                    cl1_db.add_meow_akashi_ap(
+                                        instance=instance_name,
+                                        hazard_level=hazard_level,
+                                        amount=int(bought_ap),
+                                    )
+                                    logger.info('[大世界商店] 已记录耄耋相接明石行动力购买数据到数据库')
                             except Exception:
                                 logger.exception('[大世界商店] 保存明石行动力购买数据失败')
                 except Exception:
@@ -376,10 +392,19 @@ class OSShop(PortShop, AkashiShop):
             in: is_in_map
             out: is_in_map
         """
+        if self._akashi_handled:
+            logger.info("[大世界-明石] 本次战役已处理过明石，跳过重复进入商店")
+            # 若明石商店已经弹出，关闭它，避免移动等待流程重复检测到商店而卡住
+            if self.appear(PORT_SUPPLY_CHECK, offset=(20, 20)):
+                self.ui_back(appear_button=PORT_SUPPLY_CHECK, check_button=self.is_in_map,
+                             skip_first_screenshot=True)
+            return
+
         self.ui_click(grid, appear_button=self.is_in_map, check_button=PORT_SUPPLY_CHECK,
                       additional=self.handle_story_skip, skip_first_screenshot=True)
         self.os_shop_buy(select_func=self.os_shop_get_item_to_buy_in_akashi)
         self.ui_back(appear_button=PORT_SUPPLY_CHECK, check_button=self.is_in_map, skip_first_screenshot=True)
+        self._akashi_handled = True
 
     def get_currency_coins(self, item):
         """获取可用于购买的货币数量。

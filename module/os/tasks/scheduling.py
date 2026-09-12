@@ -860,7 +860,7 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         self._smart_scheduling_first_auto_search_pending = False
 
         if not run:
-            logger.info("智能调度+接下来执行侵蚀 1，跳过初始化自律寻敌")
+            logger.info("智能调度+跳过初始化自律寻敌")
             return
 
         self.run_first_auto_search()
@@ -1198,7 +1198,9 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
             self._delay_smart_scheduling_to_server_update('未启用黄币补充任务')
             self.config.task_stop()
 
-        self.handle_first_auto_search(run=True)
+        # 黄币补充任务（耄耋相接等）自身会执行战略搜索与事件检索，
+        # 跳过初始化自律寻敌可避免对刚清理过的海域重复全图重扫。
+        self.handle_first_auto_search(run=False)
         task_names = '、'.join([self.TASK_NAMES.get(task, task) for task in all_coin_tasks])
         logger.info(f'[大世界-智能调度+] 启用的黄币补充任务: {task_names}')
 

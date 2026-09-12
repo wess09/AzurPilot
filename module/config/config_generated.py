@@ -377,6 +377,7 @@ class GeneratedConfig:
     Commission_DoMajorCommission = False
     Commission_CommissionNotifyReward = False
     Commission_CommissionNotifyRewardStatistics = True
+    Commission_DetectShipDrop = False  # True, False
 
     # 配置组 `Tactical`
     Tactical_TacticalFilter = 'SameT4 > SameT3 > SameT2 > SameT1\n> BlueT2 > YellowT2 > RedT2\n> BlueT3 > YellowT3 > RedT3\n> BlueT4 > YellowT4 > RedT4\n> BlueT1 > YellowT1 > RedT1\n> first'

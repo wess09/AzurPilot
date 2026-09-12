@@ -878,7 +878,7 @@ class AzurLaneAutoScript:
                 logger.info('[Alas] 游戏重启，重置渠道服悬浮球处理状态')
                 self._channel_float_done = False
             # 渠道服悬浮球：调度器启动/游戏重启后仅处理一次（主界面时）
-            if not self._channel_float_done:
+            if not getattr(self, '_channel_float_done', False):
                 self.handle_channel_float()
             self.__getattribute__(command)()
             return True

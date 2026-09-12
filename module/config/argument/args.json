@@ -10688,6 +10688,14 @@
       "CommissionNotifyRewardStatistics": {
         "type": "checkbox",
         "value": true
+      },
+      "DetectShipDrop": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
       }
     },
     "Storage": {
