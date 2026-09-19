@@ -301,7 +301,7 @@ input, select, textarea {border-radius: 10px; min-height: 40px; background: var(
   .app-shell {padding: 0}
   .sidebar {width: 232px; left: -250px; top: 0; height: var(--viewport-height); border-radius: 0 26px 26px 0}
   .sidebar-brand {height: 56px; min-height: 56px}
-  .topbar, .app-shell.with-rail .topbar {width: auto; margin: 0 0 0 12px; top: 0; padding: 0 10px; height: 56px; min-height: 56px; gap: 6px; border-radius: 26px 0 0 26px}
+  .topbar, .app-shell.with-rail .topbar {width: calc(100% - 12px); margin: 0 0 0 12px; top: 0; padding: 0 10px; height: 56px; min-height: 56px; gap: 6px; border-radius: 26px 0 0 26px}
   .app-shell.with-rail .topbar {justify-content: flex-start}
   .right-rail {position: fixed; top: 56px; right: 0; width: min(360px, calc(100vw - 12px)); height: calc(var(--viewport-height) - 56px); opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-12px) scale(.985); transform-origin: top right; transition: opacity .18s ease, transform .22s cubic-bezier(.22,.61,.36,1), visibility .18s}
   .rail-open .right-rail {opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1)}

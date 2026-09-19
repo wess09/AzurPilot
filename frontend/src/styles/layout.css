@@ -112,6 +112,7 @@ main {padding: 32px 32px 16px; max-width: 1600px; width: 100%; margin: 0 auto; f
 .rail-task-item .task-state {font-size: 9px; white-space: nowrap}
 .rail-empty {padding: 18px 8px; color: var(--muted); font-size: 10px; text-align: center}
 .mobile-toggle, .mobile-close, .mobile-rail-toggle, .mobile-rail-close {display: none !important}
+.mobile-rail-toggle {margin-left: auto; flex-shrink: 0}
 .login-page {min-height: var(--viewport-height); display: grid; grid-template-columns: 1fr 1fr; background: var(--surface)}
 .login-art {background: #142d3a; color: #72c6b4; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 60px; position: relative; overflow: hidden}
 
