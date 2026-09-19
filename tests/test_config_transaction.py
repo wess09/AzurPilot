@@ -101,5 +101,71 @@ class ConfigTransactionTests(unittest.TestCase):
             self.assertEqual('{}', path.read_text())
 
 
+    def test_emotion_edit_refreshes_record_time(self):
+        """改写情绪值同时重置时间戳，否则 update() 会把旧时间戳后的恢复量重复计入。"""
+        from datetime import datetime
+
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from tests.test_api import fixture
+
+        with tempfile.TemporaryDirectory() as directory:
+            service = ConfigService(fixture(directory))
+            service.patch('testpilot', None, [
+                ConfigChange(path='Main.Emotion.Fleet1Value', value=85),
+            ])
+            emotion = service.get('testpilot')['values']['Main']['Emotion']
+            self.assertEqual(85, emotion['Fleet1Value'])
+            elapsed = datetime.now() - datetime.strptime(emotion['Fleet1Record'], '%Y-%m-%d %H:%M:%S')
+            self.assertLess(elapsed.total_seconds(), 30,
+                            f"Fleet1Record 未随 Fleet1Value 刷新：{emotion['Fleet1Record']}")
+
+    def test_emotion_edit_does_not_reapply_recovery(self):
+        """改写情绪值后按新时间戳计算恢复量，不再把改值之前的恢复量重复计入。
+
+        Record 是只读字段，用户只能改 Value，因此这里直接写文件模拟运行器数小时前
+        写入的时间戳。
+        """
+        import json
+
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from module.combat.emotion import FleetEmotion
+        from module.config.config import AzurLaneConfig
+        from tests.test_api import fixture
+
+        def build(path):
+            config = AzurLaneConfig.__new__(AzurLaneConfig)
+            config.config_name = 'testpilot'
+            config.modified = {}
+            config.bound = {}
+            config.overridden = {}
+            config.auto_update = False
+            config.root = path.parent.parent
+            config.data = config.config_update(json.loads(path.read_text(encoding='utf-8')))
+            config.bind('Main')
+            return config
+
+        with tempfile.TemporaryDirectory() as directory:
+            service = ConfigService(fixture(directory))
+            path = service.path('testpilot')
+            data = json.loads(path.read_text(encoding='utf-8'))
+            data['Main']['Emotion']['Fleet1Value'] = 85
+            data['Main']['Emotion']['Fleet1Record'] = '2020-01-01 00:00:00'
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+            stale = FleetEmotion(build(path), '1')
+            stale.current = 85
+            stale.update()
+            self.assertGreater(stale.current - 85, 20, '时间戳陈旧时应当重复计入恢复量，否则测试前提不成立')
+
+            service.patch('testpilot', None, [
+                ConfigChange(path='Main.Emotion.Fleet1Value', value=85),
+            ])
+            refreshed = FleetEmotion(build(path), '1')
+            refreshed.current = 85
+            refreshed.update()
+            self.assertLessEqual(refreshed.current - 85, 1,
+                                 f'改值后仍重复计入恢复量，current={refreshed.current}')
+
 if __name__ == '__main__':
     unittest.main()

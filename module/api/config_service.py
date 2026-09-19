@@ -214,11 +214,25 @@ class ConfigService:
                     raise ApiError('INVALID_PARAMS', '同一次保存不能重复修改同一个参数')
                 seen.add(change.path)
                 data.setdefault(task, {}).setdefault(group, {})[arg] = change.value
+                self._sync_record_time(data[task][group], arg)
                 if group == 'ShopAdvanced':
                     affected_shop_tasks.add(task)
             self.validate_shop_advanced_groups(data, affected_shop_tasks)
             atomic_write(str(self.path(name)), json.dumps(data, ensure_ascii=False, indent=2))
             return self.get(name)
+
+    @staticmethod
+    def _sync_record_time(fields, arg):
+        """把 Value 参数对应的时间戳重置为当前时间。
+
+        情绪等参数由“值 + 记录时间”两个字段推算实时状态，改值不刷新时间戳时，
+        下次计算会把旧时间戳之后的恢复量重复计入。
+        """
+        if not arg.endswith('Value'):
+            return
+        record = arg[:-len('Value')] + 'Record'
+        if record in fields:
+            fields[record] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     def delete(self, name, revision):
         with self.lock, config_transaction(self.path(name)):
