@@ -25,6 +25,7 @@ OpsiScheduling - 智能调度+模块
     - CoinTaskMixin: 黄币补充任务的通用 Mixin 类（供其他任务继承使用）
 """
 import re
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from module.config.config import Function, name_to_function
@@ -40,6 +41,7 @@ from module.config.utils import (
 
 from module.logger import logger
 from module.os.map import OSMap
+from module.os.tasks.task_context import TaskDelayRequest, current_opsi_context, opsi_task_context
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -97,7 +99,6 @@ class CoinTaskMixin:
     SCHEDULING_MODE_MONTH_END_CLEANUP = 'month_end_cleanup'
     RUNTIME_ATTR_LAST_NOTIFIED_COIN_TASK = '_smart_scheduling_last_notified_coin_task'
     RUNTIME_ATTR_LAST_COIN_TASK_NOTIFICATION_ATTEMPT = '_smart_scheduling_last_coin_task_notification_attempt'
-    RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY = '_prevent_action_point_overflow_delay'
     # 各任务的配置路径常量（集中管理，避免硬编码）
     CONFIG_PATH_MEOW_AP_PRESERVE = 'OpsiMeowfficerFarming.OpsiMeowfficerFarming.ActionPointPreserve'
     CONFIG_PATH_CL1_MIN_AP_RESERVE = 'OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve'
@@ -127,55 +128,37 @@ class CoinTaskMixin:
 
     def is_running_smart_scheduling_task(self):
         """判断当前是否由 OpsiScheduling 代执行子任务。"""
-        return bool(
-            getattr(self, '_smart_scheduling_context', False)
-            or getattr(self.config, '_smart_scheduling_context', False)
-        )
+        return current_opsi_context(self.config).smart_scheduling
 
     def is_running_prevent_action_point_overflow_task(self):
         """判断当前是否由防止行动力溢出任务代执行子任务。"""
-        return bool(
-            getattr(self, '_prevent_action_point_overflow_context', False)
-            or getattr(self.config, '_prevent_action_point_overflow_context', False)
+        return current_opsi_context(self.config).overflow is not None
+
+    def delay_opsi_active_task(self, success=None, server_update=None, target=None, minute=None, task=None):
+        """延迟实际运行任务，防溢出代跑时先交给本轮上下文保存。"""
+        request = TaskDelayRequest(
+            success=success, server_update=server_update, target=target, minute=minute, task=task,
         )
-
-    def delay_opsi_active_task(self, *args, **kwargs):
-        """
-        延迟当前实际执行的大世界子任务。
-
-        当 OpsiScheduling 代执行子任务时，将子任务延迟映射到智能调度+；
-        防止行动力溢出代跑时由防止行动力溢出任务统一更新下次运行时间。
-        """
         if self.is_running_smart_scheduling_task():
             self._clear_coin_task_notification_state()
-            if self.is_running_prevent_action_point_overflow_task():
-                kwargs.pop('task', None)
-                setattr(
-                    self,
-                    self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY,
-                    (args, kwargs),
-                )
+            overflow = current_opsi_context(self.config).overflow
+            if overflow is not None:
+                overflow.request = replace(request, task=None)
                 logger.info('[大世界-智能调度+] 已将子任务延迟请求交给防止行动力溢出任务')
                 return
 
-            kwargs.pop('task', None)
-            if kwargs.get('server_update') is True:
-                kwargs['server_update'] = self.config.cross_get(
+            if request.server_update is True:
+                request = replace(request, server_update=self.config.cross_get(
                     keys=f'{self.TASK_NAME_SCHEDULING}.Scheduler.ServerUpdate',
                     default='00:00',
-                )
+                ))
             logger.info('[大世界-智能调度+] 将子任务延迟映射到智能调度+任务')
-            self.config.task_delay(
-                *args,
-                task=self.TASK_NAME_SCHEDULING,
-                **kwargs,
-            )
+            replace(request, task=self.TASK_NAME_SCHEDULING).apply(self.config)
             return
 
-        task = kwargs.pop('task', None)
         if task is None:
             task = self._get_current_coin_task_name()
-        self.config.task_delay(*args, task=task, **kwargs)
+        replace(request, task=task).apply(self.config)
 
     def _is_direct_prevent_overflow_coin_task(self):
         """判断防止行动力溢出任务是否正在直接代跑黄币补充任务。"""
@@ -197,22 +180,18 @@ class CoinTaskMixin:
         """将实际运行智能调度+的任务延迟到服务器刷新。"""
         self._clear_coin_task_notification_state()
         if self.is_running_prevent_action_point_overflow_task():
-            setattr(
-                self,
-                self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY,
-                ((), {'server_update': True}),
-            )
+            current_opsi_context(self.config).overflow.request = TaskDelayRequest(server_update=True)
             logger.info(f'[大世界-智能调度+] {reason}，防止行动力溢出任务延迟到服务器刷新')
             return
 
         logger.info(f'[大世界-智能调度+] {reason}，智能调度+延迟到服务器刷新')
-        self.config.task_delay(
+        TaskDelayRequest(
             server_update=self.config.cross_get(
                 keys=f'{self.TASK_NAME_SCHEDULING}.Scheduler.ServerUpdate',
                 default='00:00',
             ),
             task=self.TASK_NAME_SCHEDULING,
-        )
+        ).apply(self.config)
 
     def _delay_smart_scheduling_with_minutes(self, reason, minutes):
         """
@@ -224,21 +203,17 @@ class CoinTaskMixin:
         """
         self._clear_coin_task_notification_state()
         if self.is_running_prevent_action_point_overflow_task():
-            setattr(
-                self,
-                self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY,
-                ((), {'minutes': minutes}),
-            )
+            current_opsi_context(self.config).overflow.request = TaskDelayRequest(minute=minutes)
             logger.info(
                 f'[大世界-智能调度+] {reason}，防止行动力溢出任务延迟 {minutes} 分钟'
             )
             return
 
         logger.info(f'[大世界-智能调度+] {reason}，智能调度+延迟 {minutes} 分钟')
-        self.config.task_delay(
+        TaskDelayRequest(
             minute=minutes,
             task=self.TASK_NAME_SCHEDULING,
-        )
+        ).apply(self.config)
     
     # ==================== 推送通知相关方法 ====================
     
@@ -926,52 +901,15 @@ class OpsiScheduling(CoinTaskMixin, OSMap):
         """
         以指定大世界子任务身份执行逻辑，保证统计和配置读取仍按子任务归类。
         """
-        previous_task = self.config.task
-        previous_bind = getattr(self.config, '_bind_task_override', None)
-        previous_context = getattr(self, '_smart_scheduling_context', None)
-        previous_config_context = getattr(self.config, '_smart_scheduling_context', None)
-        previous_disable_task_switch = getattr(self.config, '_disable_task_switch', False)
-        previous_task_switch_owner = getattr(self.config, '_task_switch_owner', None)
-        self._smart_scheduling_context = True
-        self.config._smart_scheduling_context = True
-        self.config._disable_task_switch = task_name not in (
+        task = self._make_opsi_task_function(task_name)
+        disable_task_switch = task_name not in (
             self.TASK_NAME_HAZARD1_LEVELING,
             self.TASK_NAME_MEOWFFICER_FARMING,
         )
-        self.config._task_switch_owner = previous_task
-        self.config.task = self._make_opsi_task_function(task_name)
-        self.config._bind_task_override = task_name
-        self.config.bind(task_name)
-        try:
+        with opsi_task_context(
+            self.config, task, bind_task=task_name, disable_task_switch=disable_task_switch,
+        ):
             return func(*args, **kwargs)
-        finally:
-            self.config.task = previous_task
-
-            if previous_context is None:
-                if hasattr(self, '_smart_scheduling_context'):
-                    delattr(self, '_smart_scheduling_context')
-            else:
-                self._smart_scheduling_context = previous_context
-
-            if previous_config_context is None:
-                if hasattr(self.config, '_smart_scheduling_context'):
-                    delattr(self.config, '_smart_scheduling_context')
-            else:
-                self.config._smart_scheduling_context = previous_config_context
-            self.config._disable_task_switch = previous_disable_task_switch
-            if previous_task_switch_owner is None:
-                if hasattr(self.config, '_task_switch_owner'):
-                    delattr(self.config, '_task_switch_owner')
-            else:
-                self.config._task_switch_owner = previous_task_switch_owner
-
-            if previous_bind is None:
-                if hasattr(self.config, '_bind_task_override'):
-                    delattr(self.config, '_bind_task_override')
-                self.config.bind(self.config.task)
-            else:
-                self.config._bind_task_override = previous_bind
-                self.config.bind(previous_bind)
 
     def _get_scheduling_action_point(self):
         """

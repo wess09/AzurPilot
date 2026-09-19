@@ -11,8 +11,7 @@ import json
 import os
 import re
 import sys
-import time
-from functools import wraps
+from functools import partial
 
 import cv2
 import numpy as np
@@ -22,9 +21,10 @@ from module.base.timer import Timer
 from module.base.utils import ensure_time
 from module.config.deep import deep_get
 from module.device.env import IS_WINDOWS
+from module.device.method.retry import retry_backend, recover_unknown, retry_without_recovery
 from module.device.method.minitouch import insert_swipe, random_rectangle_point
 from module.device.method.pool import JobTimeout, WORKER_POOL
-from module.device.method.utils import RETRY_TRIES, retry_sleep
+from module.device.method.utils import retry_sleep
 from module.device.platform import Platform
 from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
@@ -165,75 +165,27 @@ class CaptureNemuIpc(CaptureStd):
             raise NemuIpcError('Emulator instance is probably dead')
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (NemuIpcImpl):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            # 重试时延长超时时间
-            if func.__name__ == 'screenshot':
-                timeout = retry_sleep(_)
-                if timeout > 0:
-                    kwargs['timeout'] = timeout
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 不可处理
-            except RequestHumanTakeover:
-                break
-            # 不可处理
-            except NemuIpcIncompatible as e:
-                logger.error(e)
-                break
-            # 函数调用超时
-            except JobTimeout:
-                logger.warning(f'Func {func.__name__}() 调用超时，重试: {_}')
+def _retry_recover(self, error, trial):
+    if isinstance(error, NemuIpcIncompatible):
+        logger.error(error)
+        return None
+    if isinstance(error, JobTimeout):
+        logger.warning(f'[设备-NemuIpc] 调用超时，重试: {trial}')
+        return retry_without_recovery
+    if isinstance(error, NemuIpcError):
+        logger.error(error)
+        return self.reconnect
+    return recover_unknown(error)
 
-                def init():
-                    pass
-            # NemuIpcError
-            except NemuIpcError as e:
-                logger.error(e)
 
-                def init():
-                    self.reconnect()
-            # 不可处理 - 必须向上抛出以触发模拟器重启
-            except EmulatorNotRunningError:
-                raise
-            # 调用方参数错误：numpy 标量传给未声明 argtypes 的函数（ArgumentError），
-            # 或 None / nan / inf 之类的坐标（TypeError / ValueError / OverflowError）。
-            # 触控函数遇到这类错误重试没有意义，更不能当作模拟器掉线去重启模拟器。
-            except (ctypes.ArgumentError, TypeError, ValueError, OverflowError) as e:
-                if func.__name__ in ['down', 'up']:
-                    logger.critical(
-                        f'[设备-NemuIpc] {func.__name__}() 参数错误，不按模拟器掉线处理: {e}'
-                    )
-                    raise
-                logger.exception(e)
+def _screenshot_retry_timeout(trial, args, kwargs):
+    # 保留截图重试时 0.5 → 0.5 → 1 → 3 → 3 秒的超时阶梯。
+    timeout = retry_sleep(trial)
+    if timeout > 0:
+        kwargs['timeout'] = timeout
 
-                def init():
-                    pass
-            # 未知异常，可能是损坏的图像
-            except Exception as e:
-                logger.exception(e)
 
-                def init():
-                    pass
-
-        if func.__name__ in ['connect_with_retry', 'screenshot', 'down', 'up']:
-            logger.critical(f'[设备-NemuIpc] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-
-        logger.critical(f'[设备-NemuIpc] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-NemuIpc')
 
 
 class NemuIpcImpl:
@@ -354,7 +306,7 @@ class NemuIpcImpl:
         self.connect_id = connect_id
         # logger.info(f'NemuIpc connected: {self.connect_id}')
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def connect_with_retry(self, on_thread=True):
         self.connect(on_thread=on_thread)
 
@@ -459,7 +411,7 @@ class NemuIpcImpl:
         # 返回 pixels_pointer 而非 image，避免通过 job 传递图像对象
         return pixels_pointer
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError, before_attempt=_screenshot_retry_timeout)
     def screenshot(self, timeout=0.5):
         """
         Args:
@@ -479,7 +431,8 @@ class NemuIpcImpl:
         image = np.ctypeslib.as_array(pixels_pointer.contents).reshape((self.height, self.width, 4))
         return image
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError,
+           passthrough=(ctypes.ArgumentError, TypeError, ValueError, OverflowError))
     def down(self, x, y):
         """
         触摸按下，连续的触摸按下会被视为滑动。
@@ -503,7 +456,8 @@ class NemuIpcImpl:
         if ret > 0:
             raise NemuIpcError('nemu_input_event_touch_down failed')
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError,
+           passthrough=(ctypes.ArgumentError, TypeError, ValueError, OverflowError))
     def up(self):
         """
         触摸抬起。

@@ -9,9 +9,12 @@
 确保行动力资源得到充分利用。
 """
 
+from dataclasses import replace
+
 from module.config.config import TaskEnd
 from module.logger import logger
 from module.os.tasks.scheduling import OpsiScheduling
+from module.os.tasks.task_context import prevent_overflow_context
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -127,24 +130,8 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
 
     def _run_with_prevent_action_point_overflow_context(self, task_name, func, *args, **kwargs):
         """以防止行动力溢出任务上下文代跑一轮大世界子任务。"""
-        previous_context = getattr(self, '_prevent_action_point_overflow_context', None)
-        previous_config_context = getattr(self.config, '_prevent_action_point_overflow_context', None)
-        self._prevent_action_point_overflow_context = True
-        self.config._prevent_action_point_overflow_context = True
-        try:
+        with prevent_overflow_context(self.config):
             return self._run_with_opsi_task_context(task_name, func, *args, **kwargs)
-        finally:
-            if previous_context is None:
-                if hasattr(self, '_prevent_action_point_overflow_context'):
-                    delattr(self, '_prevent_action_point_overflow_context')
-            else:
-                self._prevent_action_point_overflow_context = previous_context
-
-            if previous_config_context is None:
-                if hasattr(self.config, '_prevent_action_point_overflow_context'):
-                    delattr(self.config, '_prevent_action_point_overflow_context')
-            else:
-                self.config._prevent_action_point_overflow_context = previous_config_context
 
     def _run_scheduled_coin_task_once(self, task_name, ap_preserve):
         """由防止行动力溢出上下文直接执行一轮补黄币任务。"""
@@ -201,31 +188,25 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
                 self.config.task_stop()
 
             started = True
-            try:
-                self._run_prevent_action_point_overflow_target_once(task_name, lowerbound)
-            except ActionPointLimit as e:
-                current = getattr(e, 'current', None)
-                if current is None:
-                    current = current_ap
-                logger.info(f'[大世界-防止行动力溢出] 当前行动力无法进入目标海域，停止防止行动力溢出任务: current={current}, error={e}')
-                self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=True)
-                self.config.task_stop()
-            except TaskEnd:
-                delay_request = getattr(self, self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY, None)
-                if hasattr(self, self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY):
-                    delattr(self, self.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY)
-                if delay_request is not None:
-                    args, kwargs = delay_request
-                    logger.info('[大世界-防止行动力溢出] 应用代理子任务请求的延迟时间')
-                    self.config.task_delay(
-                        *args,
-                        task=self.TASK_NAME_PREVENT_AP_OVERFLOW,
-                        **kwargs,
-                    )
-                    raise
+            with prevent_overflow_context(self.config) as overflow:
                 try:
-                    current_ap = self._get_current_action_point_for_overflow()
-                except Exception:
-                    logger.debug('[大世界-防止行动力溢出] 防止行动力溢出任务结束后刷新当前行动力失败，使用运行前数值', exc_info=True)
-                self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
-                raise
+                    self._run_prevent_action_point_overflow_target_once(task_name, lowerbound)
+                except ActionPointLimit as e:
+                    current = getattr(e, 'current', None)
+                    if current is None:
+                        current = current_ap
+                    logger.info(f'[大世界-防止行动力溢出] 当前行动力无法进入目标海域，停止防止行动力溢出任务: current={current}, error={e}')
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=True)
+                    self.config.task_stop()
+                except TaskEnd:
+                    delay_request = overflow.request
+                    if delay_request is not None:
+                        logger.info('[大世界-防止行动力溢出] 应用代理子任务请求的延迟时间')
+                        replace(delay_request, task=self.TASK_NAME_PREVENT_AP_OVERFLOW).apply(self.config)
+                        raise
+                    try:
+                        current_ap = self._get_current_action_point_for_overflow()
+                    except Exception:
+                        logger.debug('[大世界-防止行动力溢出] 防止行动力溢出任务结束后刷新当前行动力失败，使用运行前数值', exc_info=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                    raise

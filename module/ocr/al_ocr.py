@@ -22,6 +22,7 @@ import os
 import queue
 import threading
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -30,7 +31,7 @@ from PIL import Image
 
 from module.exception import RequestHumanTakeover
 from module.logger import logger
-from module.config.config import AzurLaneConfig
+from module.config.config import AzurLaneConfig, resolve_ocr_device
 from module.config.utils import DEFAULT_CONFIG_NAME
 from module.ocr.windows_ml import create_onnx_session
 
@@ -177,8 +178,18 @@ class RecOnlyOCR(RapidOCR):
         self.cfg = cfg
 
 
-config_name = os.environ.get("ALAS_CONFIG_NAME") or DEFAULT_CONFIG_NAME
-config = AzurLaneConfig(config_name)
+_default_config = None
+_default_config_name = None
+
+
+def _get_default_config():
+    """仅在 OCR 工作线程首次使用默认实例时读取配置。"""
+    global _default_config, _default_config_name
+    config_name = os.environ.get("ALAS_CONFIG_NAME") or DEFAULT_CONFIG_NAME
+    if _default_config is None or _default_config_name != config_name:
+        _default_config = AzurLaneConfig(config_name)
+        _default_config_name = config_name
+    return _default_config
 
 
 class _OcrJob:
@@ -243,12 +254,11 @@ def _run_ocr_queued(func, *args, **kwargs):
     return job.result
 
 
-def _resolve_onnx_model_version(name):
+def _resolve_onnx_model_version(name, requested):
     specs = ONNX_MODEL_PARAMS.get(name)
     if specs is None:
         raise ValueError(f"Unsupported OCR model: {name}")
 
-    requested = config.ocr_model_version(name)
     if requested == OCR_MODEL_VERSION_AUTO:
         return DEFAULT_ONNX_MODEL_VERSION[name]
     if requested in specs:
@@ -262,7 +272,31 @@ def _resolve_onnx_model_version(name):
     return fallback
 
 
-def _get_onnx_model_params(name):
+@dataclass(frozen=True)
+class OcrSettings:
+    """单个逻辑模型的有效配置，缓存和模型工厂共用同一份不可变快照。"""
+
+    backend: str
+    device: str
+    allow_vendor_execution_providers: bool
+    model_version: str
+
+    @classmethod
+    def from_config(cls, config, name, *, device=None):
+        backend = config.ocr_backend
+        version = _resolve_onnx_model_version(name, config.ocr_model_version(name))
+        # NCNN 仅提供三档 PP-OCRv6，旧版 AlOCR 选择按既有行为回退到 standard。
+        if backend == 'ncnn' and version not in {'lite', 'standard', 'pro'}:
+            version = 'standard'
+        return cls(
+            backend=backend,
+            device=config.ocr_device if device is None else resolve_ocr_device(backend, device),
+            allow_vendor_execution_providers=config.Optimization_OcrWindowsMlVendorEp,
+            model_version=version,
+        )
+
+
+def _get_onnx_model_params(name, settings):
     """
     按配置选择 ONNX 识别模型版本。
 
@@ -272,8 +306,7 @@ def _get_onnx_model_params(name):
     Returns:
         (model_path, rec_keys_path, ocr_version) 三元组。
     """
-    version = _resolve_onnx_model_version(name)
-    return ONNX_MODEL_PARAMS[name][version]
+    return ONNX_MODEL_PARAMS[name][settings.model_version]
 
 
 def _configure_windows_ml_sessions(
@@ -308,22 +341,21 @@ def _configure_windows_ml_sessions(
     return ocr
 
 
-def _create_ocr(name):
-    backend = config.ocr_backend
+def _create_ocr(name, settings):
+    backend = settings.backend
     if backend == 'ncnn':
         if not supports_ncnn_model(name):
             raise ValueError(f"Unsupported ncnn OCR model: {name}")
         logger.info("[OCR] OCR后端为ncnn，使用ncnn专用识别模型")
-        version = _resolve_onnx_model_version(name)
-        return NcnnRecOCR(name, device=config.ocr_device, version=version)
+        return NcnnRecOCR(name, device=settings.device, version=settings.model_version)
     else:
-        ocr_device = config.ocr_device
-        allow_vendor_execution_providers = config.Optimization_OcrWindowsMlVendorEp
+        ocr_device = settings.device
+        allow_vendor_execution_providers = settings.allow_vendor_execution_providers
         # Windows 下由 Windows ML 显式选择设备，不能交给 RapidOCR 默认 DirectML。
         use_dml = False
         use_coreml = ocr_device == 'ane'
 
-        model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name)
+        model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name, settings)
         params = {
             # rapidocr 3.9.0 的 _load_config 在 model_root_dir 为 None 时写入 Path
             # 对象，omegaconf 不支持而抛 UnsupportedValueType，显式传字符串规避
@@ -352,20 +384,14 @@ def _create_ocr(name):
 _model_cache = {}
 
 
-def _model_cache_key(name):
-    return (
-        name,
-        config.ocr_backend,
-        config.ocr_device,
-        config.Optimization_OcrWindowsMlVendorEp,
-        config.ocr_model_version(name),
-    )
+def _model_cache_key(name, settings):
+    return name, settings
 
 
-def _get_model(name):
-    key = _model_cache_key(name)
+def _get_model(name, settings):
+    key = _model_cache_key(name, settings)
     if key not in _model_cache:
-        _model_cache[key] = _create_ocr(name)
+        _model_cache[key] = _create_ocr(name, settings)
     return _model_cache[key]
 
 
@@ -405,14 +431,14 @@ class DetOnlyOCR(RapidOCR):
         self.cfg = cfg
 
 
-def _create_det_ocr_for_onnx(name):
+def _create_det_ocr_for_onnx(name, settings):
     """为 ONNX 后端创建完整的 RapidOCR 实例（检测 + 识别）。"""
-    ocr_device = config.ocr_device
-    allow_vendor_execution_providers = config.Optimization_OcrWindowsMlVendorEp
+    ocr_device = settings.device
+    allow_vendor_execution_providers = settings.allow_vendor_execution_providers
     # Windows 下由 Windows ML 显式选择设备，不能交给 RapidOCR 默认 DirectML。
     use_dml = False
     use_coreml = ocr_device == 'ane'
-    model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name)
+    model_path, rec_keys_path, ocr_version = _get_onnx_model_params(name, settings)
     params = {
         "Global.model_root_dir": os.getcwd(),
         "Global.use_det": True,
@@ -452,23 +478,24 @@ def _create_det_ocr_for_ncnn():
     return DetOnlyOCR(params=params)
 
 
-def _get_det_model(name):
+def _get_det_model(name, settings):
     """
     获取检测模型。
 
     Args:
         name: 语言名称。ONNX 后端按语言缓存，ncnn 后端共享单一实例。
     """
-    backend = config.ocr_backend
+    backend = settings.backend
     if backend == 'ncnn':
-        key = _model_cache_key("det")
+        # NCNN 混合模式的检测端仍为固定的 ONNX CPU 模型，与识别版本无关。
+        key = ('det', settings.backend, settings.device, settings.allow_vendor_execution_providers)
         if key not in _det_model_cache:
             _det_model_cache[key] = _create_det_ocr_for_ncnn()
         return _det_model_cache[key]
     else:
-        key = _model_cache_key(name)
+        key = _model_cache_key(name, settings)
         if key not in _det_model_cache:
-            _det_model_cache[key] = _create_det_ocr_for_onnx(name)
+            _det_model_cache[key] = _create_det_ocr_for_onnx(name, settings)
         return _det_model_cache[key]
 
 
@@ -499,7 +526,16 @@ def release_ocr_models(names=None):
 
 def reset_ocr_model():
     logger.info("重置 OCR 模型")
-    return release_ocr_models()
+
+    def _reset():
+        global _default_config, _default_config_name
+        released = release_ocr_models()
+        # 默认实例下次使用时重读已保存的设置，显式传入的配置不受影响。
+        _default_config = None
+        _default_config_name = None
+        return released
+
+    return _run_ocr_queued(_reset)
 
 
 class AlOcr:
@@ -518,29 +554,37 @@ class AlOcr:
         model: 识别模型实例（懒加载）。
         _det_model: 检测模型实例（懒加载）。
     """
-    def __init__(self, **kwargs):
+    def __init__(self, *, config=None, settings=None, **kwargs):
+        """可传入当前配置或固定设置；省略时在首次使用时读取默认配置。"""
+        if config is not None and settings is not None:
+            raise ValueError('config 和 settings 不能同时指定')
+        self._config = config
+        self._settings = settings
         self.model = None
         self.name = kwargs.get("name", "en")
         self.params = {}
-        self._model_loaded = False
         self._det_model = None
-        self._det_loaded = False
         logger.info(
             f"Created AlOcr instance: name='{self.name}', kwargs={kwargs}, PID={os.getpid()}"
         )
 
     def init(self):
-        self.model = _get_model(self.name)
-        self._model_loaded = True
+        _run_ocr_queued(self._ensure_loaded)
 
-    def _ensure_loaded(self):
-        if not self._model_loaded:
-            self.init()
+    def _get_settings(self):
+        if self._settings is not None:
+            return self._settings
+        config = self._config if self._config is not None else _get_default_config()
+        return OcrSettings.from_config(config, self.name)
 
-    def _ensure_det_loaded(self):
-        if not self._det_loaded:
-            self._det_model = _get_det_model(self.name)
-            self._det_loaded = True
+    def _ensure_loaded(self, settings=None):
+        settings = self._get_settings() if settings is None else settings
+        # 获取、使用和释放都在同一工作线程，重置后不能继续使用实例上的旧引用。
+        self.model = _get_model(self.name, settings)
+
+    def _ensure_det_loaded(self, settings=None):
+        settings = self._get_settings() if settings is None else settings
+        self._det_model = _get_det_model(self.name, settings)
 
     def _save_debug_image(self, img, result):
         folder = "ocr_debug"
@@ -611,11 +655,12 @@ class AlOcr:
         return _run_ocr_queued(self._ocr_direct, img_fp)
 
     def _det_direct(self, img_fp):
-        self._ensure_loaded()
-        self._ensure_det_loaded()
+        settings = self._get_settings()
+        self._ensure_loaded(settings)
+        self._ensure_det_loaded(settings)
 
         try:
-            if config.ocr_backend == 'ncnn':
+            if settings.backend == 'ncnn':
                 det_res = self._det_model(img_fp, use_det=True, use_cls=False, use_rec=False)
                 if not isinstance(det_res, TextDetOutput) or det_res.boxes is None:
                     return []

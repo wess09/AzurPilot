@@ -4,16 +4,16 @@
 import ctypes
 import os
 import subprocess
-import time
 from dataclasses import dataclass
-from functools import wraps
+from functools import partial
 
 import cv2
 import numpy as np
 
 from module.base.decorator import cached_property
 from module.device.env import IS_WINDOWS
-from module.device.method.utils import RETRY_TRIES, get_serial_pair, retry_sleep
+from module.device.method.retry import retry_backend, recover_unknown, retry_without_recovery
+from module.device.method.utils import get_serial_pair
 from module.device.platform import Platform
 from module.exception import RequestHumanTakeover
 from module.logger import logger
@@ -151,44 +151,17 @@ class IScreenShotClass:
         self.class_release(self.ptr)
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (NemuIpcImpl):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 不可处理
-            except RequestHumanTakeover:
-                break
-            # 不可处理
-            except LDOpenGLIncompatible as e:
-                logger.error(e)
-                break
-            # LDOpenGLError
-            except LDOpenGLError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    if isinstance(error, LDOpenGLIncompatible):
+        logger.error(error)
+        return None
+    if isinstance(error, LDOpenGLError):
+        logger.error(error)
+        return retry_without_recovery
+    return recover_unknown(error)
 
-                def init():
-                    pass
-            # 未知异常，可能是损坏的图像
-            except Exception as e:
-                logger.exception(e)
 
-                def init():
-                    pass
-
-        logger.critical(f'[设备-ldopengl] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-ldopengl')
 
 
 class LDOpenGLImpl:

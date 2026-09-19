@@ -2,69 +2,26 @@
 继承 Connection，通过 ADB 连接 WSA 实例进行截图和操作。"""
 
 import re
-import time
-from functools import wraps
+from functools import partial
 
 from adbutils.errors import AdbError
 
 from module.device.connection import Connection
-from module.device.method.utils import (PackageNotInstalled, RETRY_TRIES, handle_adb_error, handle_unknown_host_service,
-                                        retry_sleep)
-from module.exception import RequestHumanTakeover
+from module.device.method.retry import retry_backend, recover_adb, recover_unknown
+from module.device.method.utils import PackageNotInstalled
 from module.logger import logger
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (Adb):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 不可处理
-            except RequestHumanTakeover:
-                break
-            # adb server 被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    if isinstance(error, (ConnectionResetError, AdbError)):
+        return recover_adb(self, error)
+    if isinstance(error, PackageNotInstalled):
+        logger.error(error)
+        return self.detect_package
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-            # AdbError
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # 包未安装
-            except PackageNotInstalled as e:
-                logger.error(e)
 
-                def init():
-                    self.detect_package()
-            # 未知异常，可能是损坏的图像
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        logger.critical(f'[设备-WSA] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-WSA')
 
 
 class WSA(Connection):

@@ -53,6 +53,7 @@ except ImportError:
     adbutils._device.BaseDevice.shell = shell
 
 from module.base.decorator import cached_property
+from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
 
 RETRY_TRIES = 5
@@ -92,18 +93,24 @@ def handle_image_truncated(obj, exc: Exception) -> None:
                 logger.info('尝试重启DroidCast服务')
                 try:
                     obj.droidcast_init()
+                except (RequestHumanTakeover, EmulatorNotRunningError):
+                    raise
                 except Exception:
                     logger.exception('Failed to restart DroidCast')
             # Try ascreencap init if available
             if hasattr(obj, 'ascreencap_init'):
                 try:
                     obj.ascreencap_init()
+                except (RequestHumanTakeover, EmulatorNotRunningError):
+                    raise
                 except Exception:
                     logger.exception('Failed to init ascreencap')
             # Reconnect adb as a final attempt
             if hasattr(obj, 'adb_reconnect'):
                 try:
                     obj.adb_reconnect()
+                except (RequestHumanTakeover, EmulatorNotRunningError):
+                    raise
                 except Exception:
                     logger.exception('Failed to adb_reconnect')
         finally:

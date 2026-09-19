@@ -13,14 +13,13 @@ from collections.abc import Sequence
 import os
 import queue
 import uuid
-import subprocess
 import threading
 import time
 from multiprocessing import Process
 from typing import Dict, List, Union
 
 import inflection
-from rich.console import Console, ConsoleRenderable
+from rich.console import ConsoleRenderable
 from rich.text import Text
 
 from module.logger import logger, set_file_logger, set_func_logger
@@ -35,6 +34,8 @@ from module.submodule.utils import (
     list_mod_instance,
 )
 from module.runtime.setting import State
+from module.runtime.process_control import is_process_alive, stop_process, stop_process_tree
+from module.runtime.worker_events import ExitEvent, TaskEvent, WorkerResult
 from module.runtime.worker_registry import (
     get_workers,
     is_current_owner,
@@ -55,10 +56,14 @@ class ProcessManager:
 
     def __init__(self, config_name: str = DEFAULT_CONFIG_NAME) -> None:
         self.config_name = config_name
-        self._renderable_queue: queue.Queue[ConsoleRenderable] = State.manager.Queue()
+        self._renderable_queue: queue.Queue[ConsoleRenderable | TaskEvent | ExitEvent] = State.manager.Queue()
         self._preview_queue = None
         self.current_task = None
         self.run_id = None
+        self.exit_result: WorkerResult | None = None
+        self._worker_observed = False
+        self._runtime_lock = threading.RLock()
+        self._queue_lock = threading.Lock()
         self.renderables: List[ConsoleRenderable] = []
         self.renderables_max_length = 400
         self.renderables_reduce_length = 80
@@ -131,15 +136,20 @@ class ProcessManager:
                     # alive 在登记不可验证时保守返回 False；
                     # 此处再次确认登记状态，防止在登记不一致时启动重复 worker。
                     _pid, _, _verified = self._registered_worker()
-                    if not _verified and _pid is not None:
+                    if not _verified:
                         logger.warning(
                             f"[{self.config_name}] Worker 登记不一致，拒绝启动以避免重复"
                         )
                         return
                     if func is None:
                         func = get_config_mod(self.config_name)
-                    self.current_task = None
-                    self.run_id = uuid.uuid4().hex
+                    with self._runtime_lock:
+                        self.current_task = None
+                        self.run_id = uuid.uuid4().hex
+                        self.exit_result = None
+                        # 每轮独立队列，旧读线程不会消费新 worker 的事件。
+                        self._renderable_queue = State.manager.Queue()
+                        self._queue_lock = threading.Lock()
                     self._preview_queue = State.manager.Queue(maxsize=2)
                     from module.runtime.preview import hub
                     hub.publish(self.config_name, {"instance": self.config_name, "image": None, "capturedAt": None})
@@ -161,7 +171,10 @@ class ProcessManager:
                         self._register_process(process.pid)
                     except Exception:
                         self._terminate_unregistered_process(process)
-                        self._process = None
+                        # 回滚失败时仍保留可信句柄，alive 会阻止重复启动。
+                        if not self._is_process_alive(process):
+                            self._process = None
+                        self.exit_result = WorkerResult.ERROR
                         raise
                     self.start_log_queue_handler()
             finally:
@@ -172,11 +185,9 @@ class ProcessManager:
     def start_log_queue_handler(self) -> None:
         threading.Thread(target=self._thread_preview_queue_handler,
                          args=(self._preview_queue, self.run_id), daemon=True).start()
-        log_queue_handler = self.thd_log_queue_handler
-        if log_queue_handler is not None and log_queue_handler.is_alive():
-            return
         self.thd_log_queue_handler = threading.Thread(
-            target=self._thread_log_queue_handler
+            target=self._thread_log_queue_handler,
+            args=(self._renderable_queue, self._process, self.run_id, self._queue_lock),
         )
         self.thd_log_queue_handler.start()
 
@@ -238,39 +249,23 @@ class ProcessManager:
             local_process_alive = False
 
         stopped = pid is None and not local_process_alive
-        if pid is not None and not pid_verified:
-            # _registered_worker 可能已通过 join(0) 回收了僵尸句柄；
-            # 若句柄已被清理说明 worker 已确认退出，视为成功停止。
-            if self._is_process_alive(self._process):
-                logger.error(
-                    f"[{self.config_name}] worker PID {pid} 身份无法确认，拒绝终止未知进程"
-                )
-                stopped = False
-            else:
-                logger.info(
-                    f"[{self.config_name}] worker PID {pid} 本地句柄已回收，确认已退出"
-                )
-                stopped = True
+        if not pid_verified:
+            logger.error(f"[{self.config_name}] worker 身份无法确认，保留登记并拒绝终止")
+            stopped = False
         elif pid is not None:
-            if local_process_alive and process is not None:
-                # 优先使用本地 Process 句柄的 terminate/kill，
-                # 比 taskkill 更可靠。
-                stopped = ProcessManager._stop_local_process(process)
-                if not stopped:
-                    # 本地句柄失败时回退到 taskkill 终止进程树
-                    stopped = self._kill_registered_process_tree(pid, record)
-                    if stopped:
-                        process.join(timeout=3)
-                        stopped = not self._is_process_alive(process)
-            else:
-                stopped = self._kill_registered_process_tree(pid, record)
-                if stopped and process is not None:
-                    process.join(timeout=3)
-                    stopped = not self._is_process_alive(process)
+            stopped = stop_process_tree(
+                process if local_process_alive else None,
+                record=record,
+                name=f"worker {self.config_name}",
+                timeout=5 if local_process_alive else 0,
+            )
         if stopped:
             self._process = None
             stopped = self._unregister_process()
             if stopped and pid is not None:
+                with self._runtime_lock:
+                    self.exit_result = WorkerResult.MANUAL_STOP
+                    self.current_task = None
                 self.renderables.append(
                     Text(f"[{self.config_name}] exited. Reason: Manual stop\n")
                 )
@@ -317,14 +312,8 @@ class ProcessManager:
 
     @staticmethod
     def _terminate_manual_stop_action(process: Process) -> None:
-        """终止超时的收尾进程，避免停止按钮无限阻塞。"""
-        try:
-            process.terminate()
-            process.join(timeout=1)
-            if process.is_alive():
-                process.kill()
-                process.join(timeout=1)
-        except (OSError, ValueError, AssertionError):
+        """终止超时收尾进程及其子树，避免遗留设备操作。"""
+        if not stop_process_tree(process, name="停止收尾", timeout=1, kill_timeout=1):
             logger.warning("[WebUI-进程管理] 终止停止收尾进程失败")
 
     @staticmethod
@@ -334,149 +323,15 @@ class ProcessManager:
 
         run_stop_action(config_name)
 
-    @staticmethod
-    def _is_process_alive(process: Process | None) -> bool:
-        """读取本地进程状态，回收僵尸句柄并将失效句柄视为已退出。
-
-        已退出但未 join 的 multiprocessing.Process 句柄在 join() 之前
-        仍报告 is_alive() == True（僵尸状态）。此方法调用 join(timeout=0)
-        回收僵尸句柄，避免活性检查在整个 stop 流程中误判。
-        join(timeout=0) 对仍在运行的进程完全不阻塞。
-        """
-        try:
-            if process is None:
-                return False
-            if not process.is_alive():
-                return False
-            # 尝试 join(0) 回收已退出但未 join 的僵尸进程句柄
-            process.join(timeout=0)
-            return process.is_alive()
-        except (OSError, ValueError, AssertionError):
-            return False
-
-    @staticmethod
-    def _stop_local_process(process: Process) -> bool:
-        """使用本地 Process 句柄逐级终止 worker，优先于 taskkill。
-
-        先 terminate() 等待 5 秒，超时则 kill() 等待 3 秒。
-        taskkill 可能因权限或进程状态问题静默失败；
-        本地句柄的 terminate/kill 更可靠。
-        注意：此方法仅终止根进程，不处理子进程树。
-        调用方应在失败时回退到 _kill_process_tree。
-        """
-        try:
-            process.terminate()
-        except (OSError, ValueError, AssertionError):
-            pass
-        process.join(timeout=5)
-        if process.is_alive():
-            try:
-                process.kill()
-            except (OSError, ValueError, AssertionError):
-                pass
-            process.join(timeout=3)
-        return not process.is_alive()
+    _is_process_alive = staticmethod(is_process_alive)
 
     @classmethod
     def _terminate_unregistered_process(cls, process: Process) -> None:
-        """通过本地进程句柄回滚启动失败的未登记 worker。"""
-        if not cls._is_process_alive(process):
-            try:
-                process.join(timeout=0)
-            except (OSError, ValueError, AssertionError):
-                pass
-            return
-
-        try:
-            # Process 句柄绑定创建时的子进程，可避免按已复用 PID 误杀其他进程。
-            process.terminate()
-            process.join(timeout=3)
-            if cls._is_process_alive(process):
-                process.kill()
-                process.join(timeout=3)
-        except (OSError, ValueError, AssertionError):
-            pass
-
-    def _kill_registered_process_tree(self, pid: int, record: dict | None) -> bool:
-        """在 taskkill 前再次校验登记身份，缩小 PID 复用窗口。"""
-        if record is None:
-            logger.error(f"[{self.config_name}] worker PID {pid} 缺少持久化身份记录")
-            return False
-        try:
-            matches = process_matches(record)
-        except RuntimeError as exc:
-            logger.error(f"[{self.config_name}] 无法再次验证 worker PID {pid}: {exc}")
-            return False
-
-        if matches is True:
-            return self._kill_process_tree(pid)
-        if matches is None:
-            logger.info(f"[{self.config_name}] worker PID {pid} 已在终止前退出")
-            return True
-
-        logger.error(
-            f"[{self.config_name}] worker PID {pid} 已复用，拒绝终止未知进程"
-        )
-        return False
-
-    @staticmethod
-    def _kill_process_tree(pid: int) -> bool:
-        """终止 worker 及其派生进程，避免关闭 WebUI 后任务留在后台。"""
-        if os.name == "nt":
-            try:
-                result = subprocess.run(
-                    ["taskkill", "/PID", str(pid), "/T", "/F"],
-                    check=False,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                    timeout=3,
-                )
-                if result.returncode == 0:
-                    return ProcessManager._wait_pid_exit(pid, timeout=3)
-                if not ProcessManager._pid_exists(pid):
-                    return True
-                logger.warning(f"[WebUI-进程管理] 停止工作进程失败 PID {pid}: taskkill 返回 {result.returncode}")
-                return False
-            except (OSError, subprocess.TimeoutExpired) as exc:
-                logger.warning(f"[WebUI-进程管理] 停止工作进程失败 PID {pid}: {exc}")
-                return False
-        else:
-            try:
-                import psutil
-
-                parent = psutil.Process(pid)
-                for child in reversed(parent.children(recursive=True)):
-                    try:
-                        child.kill()
-                    except psutil.NoSuchProcess:
-                        pass
-            except (ImportError, psutil.Error if "psutil" in locals() else OSError):
-                pass
-        try:
-            os.kill(pid, 9)
-        except ProcessLookupError:
-            return True
-        return ProcessManager._wait_pid_exit(pid, timeout=3)
-
-    @staticmethod
-    def _pid_exists(pid: int) -> bool:
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return False
-        except PermissionError:
-            return True
-        return True
-
-    @staticmethod
-    def _wait_pid_exit(pid: int, timeout: float) -> bool:
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            if not ProcessManager._pid_exists(pid):
-                return True
-            time.sleep(0.1)
-        return not ProcessManager._pid_exists(pid)
+        """通过本地句柄回滚登记失败的进程及其子树。"""
+        if not stop_process_tree(process, name="未登记 worker", timeout=3):
+            logger.warning("[WebUI-进程管理] 回滚未登记 worker 失败")
+            # 树枚举可能被拒绝，但刚创建的 Process 句柄仍可安全终止根进程。
+            stop_process(process, timeout=3)
 
     def _registered_worker(
         self, expected_pid: int | None = None
@@ -488,51 +343,38 @@ class ProcessManager:
             try:
                 cached_pid = registry.get(self.config_name)
                 cached_pid = int(cached_pid) if cached_pid is not None else None
-            except (TypeError, ValueError):
-                logger.error(f"[{self.config_name}] worker PID 登记无效")
-                return expected_pid, None, False
             except Exception as exc:
-                logger.error(f"[{self.config_name}] 无法读取 worker PID 登记: {exc}")
-                return expected_pid, None, False
-
+                logger.warning(f"[{self.config_name}] 无法读取 worker PID 缓存: {exc}")
         try:
             expected_pid = int(expected_pid) if expected_pid is not None else None
         except (TypeError, ValueError):
-            logger.error(f"[{self.config_name}] 本地 worker PID 无效")
             return None, None, False
 
-        if expected_pid is not None and cached_pid not in (None, expected_pid):
-            logger.error(
-                f"[{self.config_name}] 本地 worker PID {expected_pid} 与共享登记 {cached_pid} 不一致"
-            )
-            return expected_pid, None, False
-
         pid = expected_pid if expected_pid is not None else cached_pid
-        if pid is None:
-            return None, None, True
-
         try:
-            if not is_current_owner(os.getpid()):
-                logger.error(
-                    f"[{self.config_name}] 当前 WebUI 不拥有 worker 登记，拒绝操作 PID {pid}"
-                )
-                return pid, None, False
             record = get_workers(os.getpid()).get(self.config_name)
-            try:
-                record_pid = int(record["pid"])
-            except (KeyError, TypeError, ValueError):
-                record_pid = None
-            if not isinstance(record, dict) or record_pid != pid:
-                logger.error(
-                    f"[{self.config_name}] worker PID {pid} 缺少匹配的持久化登记"
-                )
+            if record is None:
+                # 缓存只用于兼容；缺少身份的缓存 PID 不能授权终止或重复启动。
+                return pid, None, pid is None
+            record_pid = int(record["pid"])
+            if expected_pid is not None and expected_pid != record_pid:
+                logger.error(f"[{self.config_name}] 本地 worker 与持久化身份不一致")
+                return expected_pid, None, False
+            pid = record_pid
+            if not is_current_owner(os.getpid()):
+                logger.error(f"[{self.config_name}] 当前 WebUI 不拥有 worker 登记")
                 return pid, None, False
             matches = process_matches(record)
-        except RuntimeError as exc:
+        except (KeyError, TypeError, ValueError, RuntimeError) as exc:
             logger.error(f"[{self.config_name}] 无法验证 worker PID {pid}: {exc}")
             return pid, None, False
 
         if matches is True:
+            if registry is not None and cached_pid != pid:
+                try:
+                    registry[self.config_name] = pid
+                except Exception as exc:
+                    logger.warning(f"[{self.config_name}] 无法修复 worker PID 缓存: {exc}")
             return pid, record, True
 
         if matches is False:
@@ -610,27 +452,65 @@ class ProcessManager:
             except (EOFError, OSError):
                 return
 
-    def _thread_log_queue_handler(self) -> None:
-        while self.alive:
-            try:
-                log = self._renderable_queue.get(timeout=1)
-            except queue.Empty:
-                continue
-            if isinstance(log, dict) and "runtimeTask" in log:
-                if log.get("runId") == self.run_id:
-                    self.current_task = log["runtimeTask"]
-                continue
-            self.renderables.append(log)
+    def _consume_worker_message(self, message, run_id) -> None:
+        """状态只接受当前轮事件；已确认的最终结果不被迟到事件覆盖。"""
+        with self._runtime_lock:
+            if run_id != self.run_id:
+                return
+            if isinstance(message, (TaskEvent, ExitEvent)):
+                if message.run_id != self.run_id:
+                    return
+                if self.exit_result is not None:
+                    return
+                if isinstance(message, TaskEvent):
+                    self.current_task = message.command
+                else:
+                    self.exit_result = message.result
+                    self.current_task = None
+                return
+            self.renderables.append(message)
             if len(self.renderables) > self.renderables_max_length:
                 self.renderables = self.renderables[self.renderables_reduce_length :]
+
+    def _drain_worker_queue(self, output, run_id, queue_lock=None) -> None:
+        """已确认 worker 退出后排空队列，包含其最后一次同步 put。"""
+        if queue_lock is None:
+            queue_lock = self._queue_lock
+        with queue_lock:
+            while True:
+                try:
+                    message = output.get_nowait()
+                except (queue.Empty, EOFError, OSError):
+                    return
+                self._consume_worker_message(message, run_id)
+
+    def _thread_log_queue_handler(self, output, process, run_id, queue_lock=None) -> None:
+        # 锁与队列一起绑定本轮，旧线程的阻塞读取不影响新轮状态。
+        if queue_lock is None:
+            queue_lock = self._queue_lock
+        while True:
+            try:
+                with queue_lock:
+                    message = output.get(timeout=0.2)
+                    self._consume_worker_message(message, run_id)
+            except queue.Empty:
+                # 检查本轮句柄，不取生命周期锁，避免 stop 持锁 join 时互相等待。
+                if not self._is_process_alive(process):
+                    self._drain_worker_queue(output, run_id, queue_lock)
+                    break
+            except (EOFError, OSError):
+                break
         logger.info("日志队列处理循环结束")
 
     @property
     def alive(self) -> bool:
         with self._get_lifecycle_lock(self.config_name):
             if self._is_process_alive(self._process):
+                self._worker_observed = True
                 return True
             pid, pid_verified = self._registered_pid()
+            if pid is not None:
+                self._worker_observed = True
             if not pid_verified:
                 # 登记验证失败且本地句柄已死时，保守默认已退出，
                 # 避免 alert 属性持续阻塞日志线程和状态展示。
@@ -643,47 +523,29 @@ class ProcessManager:
         override_state = self._get_state_override()
         if override_state is not None:
             return override_state
-        if self.alive:
-            return 1
-        elif len(self.renderables) == 0:
-            return 2
-        else:
-            console = Console(no_color=True)
-            tail = self.renderables[-8:]
-            rendered_tail = []
-            for renderable in tail:
-                with console.capture() as capture:
-                    console.print(renderable)
-                rendered_tail.append(capture.get().strip())
-            s = rendered_tail[-1] if rendered_tail else ""
-            tail_text = "\n".join(rendered_tail)
-
-            if ("Reason: Manual stop" in s) or ("原因: 手动停止" in s):
-                return 2
-
-            update_marker_hit = (
-                ("Reason: Update" in s)
-                or ("原因: 更新" in s)
-                or ("检测到更新事件" in s)
-            )
-            update_tail_hit = (
-                ("Reason: Update" in tail_text)
-                or ("原因: 更新" in tail_text)
-                or ("检测到更新事件" in tail_text)
-            )
-            if update_marker_hit:
-                return 4
-
-            if ("Reason: Finish" in s) or ("原因: 完成" in s):
-                # 在更新流程中，部分代码路径可能会在更新退出日志之后追加 "Finish"。
-                if update_tail_hit:
+        # 整轮读取保持生命周期锁，避免把旧句柄退出码用于新轮事件。
+        with self._get_lifecycle_lock(self.config_name):
+            process = self._process
+            if self.alive:
+                return 1
+            if self.run_id is not None:
+                self._drain_worker_queue(self._renderable_queue, self.run_id)
+            with self._runtime_lock:
+                if self.exit_result == WorkerResult.MANUAL_STOP:
+                    return 2
+                try:
+                    exitcode = getattr(process, "exitcode", None)
+                except (OSError, ValueError, AssertionError):
+                    exitcode = None
+                if isinstance(exitcode, int) and exitcode != 0:
+                    return 3
+                if self.exit_result == WorkerResult.UPDATE:
                     return 4
-                return 2
-            elif "此版本为演示用途" in s:
-                return 2
-            elif update_tail_hit:
-                return 4
-            else:
+                if self.exit_result == WorkerResult.FINISHED:
+                    return 2
+                # 从未启动的实例默认停止；缺失最终结果的退出一律视为异常。
+                if self.run_id is None and self.exit_result is None and not self._worker_observed:
+                    return 2
                 return 3
 
     @classmethod
@@ -719,11 +581,29 @@ class ProcessManager:
     def run_process(
         config_name,
         func: str,
-        q: queue.Queue[ConsoleRenderable],
+        q: queue.Queue[ConsoleRenderable | TaskEvent | ExitEvent],
         e: threading.Event | None = None,
         preview_queue=None,
         run_id=None,
     ) -> None:
+        """统一发布最终结果，包括调度器通过 SystemExit 退出的路径。"""
+        from module.runtime.worker_events import initialize
+
+        initialize(q.put, run_id)
+        result = WorkerResult.ERROR
+        try:
+            result = ProcessManager._run_process(config_name, func, q, e, preview_queue, run_id)
+        except SystemExit as exc:
+            if exc.code in (None, 0):
+                result = WorkerResult.UPDATE if e is not None and e.is_set() else WorkerResult.FINISHED
+            raise
+        except Exception as exc:
+            logger.exception(exc)
+        finally:
+            q.put(ExitEvent(run_id, result))
+
+    @staticmethod
+    def _run_process(config_name, func, q, e, preview_queue, run_id) -> WorkerResult:
         import sys
 
         if sys.platform != "win32":
@@ -768,7 +648,7 @@ class ProcessManager:
             logger.info("[WebUI-进程] 日志1")
             time.sleep(1)
             logger.info("[WebUI] 此版本为演示用途")
-            return
+            return WorkerResult.FINISHED
 
         from module.config.config import AzurLaneConfig
 
@@ -780,16 +660,18 @@ class ProcessManager:
             AzurLaneConfig.stop_event = e
         try:
             # 运行 AzurPilot
+            single_task = False
             if func == "alas":
                 from alas import AzurLaneAutoScript
 
                 if e is not None:
                     AzurLaneAutoScript.stop_event = e
-                AzurLaneAutoScript(config_name=config_name).loop()
+                task_result = AzurLaneAutoScript(config_name=config_name).loop()
             elif func in get_available_func():
                 from alas import AzurLaneAutoScript
 
-                AzurLaneAutoScript(config_name=config_name).run(
+                single_task = True
+                task_result = AzurLaneAutoScript(config_name=config_name).run(
                     inflection.underscore(func), skip_first_screenshot=True
                 )
             elif func in get_available_mod():
@@ -797,30 +679,40 @@ class ProcessManager:
 
                 if mod is None:
                     logger.critical(f"[WebUI] 无法加载功能模块：{func}")
-                    return
+                    return WorkerResult.ERROR
 
                 if e is not None:
                     mod.set_stop_event(e)
-                mod.loop(config_name)
+                task_result = mod.loop(config_name)
             elif func in get_available_mod_func():
-                getattr(load_mod(get_func_mod(func)), inflection.underscore(func))(
+                task_result = getattr(load_mod(get_func_mod(func)), inflection.underscore(func))(
                     config_name
                 )
             else:
                 logger.critical(
                     f"[WebUI] 杂鱼大叔，连功能模块都找不到吗？{func} 这种东西根本不存在啦~"
                 )
+                return WorkerResult.ERROR
+            if task_result is False or (single_task and task_result == "recoverable"):
+                return WorkerResult.ERROR
             if e is not None and e.is_set():
                 logger.info(f"[{config_name}] exited. Reason: Update\n")
+                return WorkerResult.UPDATE
             else:
                 logger.info(f"[{config_name}] exited. Reason: Finish\n")
+                return WorkerResult.FINISHED
         except Exception as ex:
             logger.exception(ex)
+            return WorkerResult.ERROR
 
     @classmethod
     def running_instances(cls) -> List["ProcessManager"]:
         with cls._managers_lock:
             names = set(cls._processes)
+        try:
+            names.update(get_workers(os.getpid()))
+        except RuntimeError as exc:
+            logger.warning(f"无法读取 worker 身份登记: {exc}")
         if State.process_registry is not None:
             names.update(State.process_registry.keys())
         return [cls.get_manager(name) for name in names if cls.get_manager(name).alive]

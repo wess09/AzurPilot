@@ -16,14 +16,17 @@ import unittest
 from unittest.mock import Mock, call, create_autospec, patch
 
 from alas import RESTART_EMULATOR_OP_TIMEOUT, AzurLaneAutoScript
-from module.device.platform import platform_windows
-from module.device.platform.platform_windows import (
-    EMULATOR_START_WATCH_TIMEOUTS,
-    MUMU12_DEEP_WAIT_TIMEOUT,
-    MUMU12_STOP_WAIT_TIMEOUT,
-    PlatformWindows,
-)
+from module.device.env import IS_WINDOWS
 from module.exception import EmulatorNotRunningError, EmulatorOpBusy
+
+if IS_WINDOWS:
+    from module.device.platform import platform_windows
+    from module.device.platform.platform_windows import (
+        EMULATOR_START_WATCH_TIMEOUTS,
+        MUMU12_DEEP_WAIT_TIMEOUT,
+        MUMU12_STOP_WAIT_TIMEOUT,
+        PlatformWindows,
+    )
 
 
 # autospec 反射整个 Device 类很慢（约 26 秒），复用同一个实例
@@ -45,6 +48,7 @@ def make_platform():
     return platform
 
 
+@unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台测试')
 class TestEmulatorOpExclusive(unittest.TestCase):
     def tearDown(self):
         # 兜底：任何测试把锁漏掉都会让后续测试全红，这里主动回收
@@ -147,6 +151,7 @@ def mumu_info(*players):
     return json.dumps(data, ensure_ascii=False)
 
 
+@unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台测试')
 class TestMumu12StateQuery(unittest.TestCase):
     """MuMuManager info 查询：按实例精确判断状态，替代靠进程名猜测。"""
 
@@ -253,6 +258,7 @@ class TestMumu12StateQuery(unittest.TestCase):
             self.assertTrue(platform._mumu12_wait_stopped('F:/mumu/shell/MuMuPlayer.exe', 0))
 
 
+@unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台测试')
 class TestDeepRestart(unittest.TestCase):
     """深度重启：结束 MuMu 全部进程，仅由「连续重启都失败」触发。
 
@@ -391,9 +397,11 @@ class TestDeepFlagPortability(unittest.TestCase):
         from module.device.device import Device
         from module.device.platform.platform_base import PlatformBase
         from module.device.platform.platform_mac import PlatformMac
-        from module.device.platform.platform_windows import PlatformWindows
 
-        for cls in (Device, PlatformBase, PlatformMac, PlatformWindows):
+        classes = [Device, PlatformBase, PlatformMac]
+        if IS_WINDOWS:
+            classes.append(PlatformWindows)
+        for cls in classes:
             with self.subTest(layer=cls.__name__):
                 # inspect.signature 会自动跟随 functools.wraps 的 __wrapped__
                 parameters = inspect.signature(cls.emulator_start).parameters
@@ -432,6 +440,7 @@ class TestDeepRestartThreshold(unittest.TestCase):
         self.assertFalse(script._deep_restart_enabled())
 
 
+@unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台预算测试')
 class TestRestartTimeoutBudget(unittest.TestCase):
     def test_outer_timeout_covers_the_whole_platform_budget(self):
         """外层硬超时必须 ≥ 平台层 emulator_start() 的完整预算。

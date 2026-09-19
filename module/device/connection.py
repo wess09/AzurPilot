@@ -44,6 +44,7 @@ def retry(func):
             self (Adb): ADB 设备实例。
         """
         init = None
+        last_error = None
         for _ in range(RETRY_TRIES):
             try:
                 if callable(init):
@@ -52,18 +53,20 @@ def retry(func):
                 return func(self, *args, **kwargs)
             # 无法处理的异常，直接中断重试
             except RequestHumanTakeover:
-                break
+                raise
             # 无法处理，必须向上传播以触发模拟器重启
             except EmulatorNotRunningError:
                 raise
             # ADB 服务被杀死时触发
             except ConnectionResetError as e:
+                last_error = e
                 logger.error(e)
 
                 def init():
                     self.adb_reconnect()
             # ADB 错误
             except AdbError as e:
+                last_error = e
                 if handle_adb_error(e):
                     def init():
                         self.adb_reconnect()
@@ -72,25 +75,28 @@ def retry(func):
                         self.adb_start_server()
                         self.adb_reconnect()
                 else:
-                    break
+                    # 非传输故障（如未授权）需要人工处理，不能伪装成设备离线。
+                    raise RequestHumanTakeover(str(e)) from e
             # 包未安装
             except PackageNotInstalled as e:
+                last_error = e
                 logger.error(e)
 
                 def init():
                     self.detect_package()
             # 未知异常，可能是损坏的图像数据
             except Exception as e:
+                last_error = e
                 logger.exception(e)
 
                 def init():
                     pass
 
-        # 所有 ADB 相关重试失败统一抛 EmulatorNotRunningError，
+        # 可恢复异常耗尽传输重试后抛 EmulatorNotRunningError，
         # 由上层调度器统一触发模拟器/游戏重启流程，
         # 不再因 get_orientation 等非截图函数失败而直接终止调度器。
         logger.critical(f'[Device] 重试 {func.__name__}() 失败')
-        raise EmulatorNotRunningError
+        raise EmulatorNotRunningError(f'{func.__name__}() 重试失败') from last_error
 
     return retry_wrapper
 

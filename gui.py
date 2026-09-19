@@ -2,7 +2,6 @@ import errno
 import os
 import queue
 import socket
-import subprocess
 import sys
 import threading
 import time
@@ -32,6 +31,7 @@ from module.runtime.setting import (
     is_dependency_sync_pending,
 )
 from module.runtime import worker_registry
+from module.runtime.process_control import pid_exists, stop_process, stop_process_tree
 
 
 WEBUI_READY_TIMEOUT = 120
@@ -272,50 +272,8 @@ def func(
 
 
 def _stop_process(process, timeout=5) -> bool:
-    """
-    安全停止子进程，采用逐级升级的终止策略。
-
-    先尝试 terminate()，超时后升级为 kill() 强制终止。
-
-    Args:
-        process: 待停止的 multiprocessing.Process 实例
-        timeout: 等待进程优雅退出的超时时间（秒），默认 5
-
-    Returns:
-        bool: 子进程是否已确认退出。
-    """
-    if not process:
-        return True
-    try:
-        alive = process.is_alive()
-    except (OSError, ValueError, AssertionError):
-        return True
-    if not alive:
-        try:
-            process.join(timeout=0)
-        except (OSError, ValueError, AssertionError):
-            pass
-        return True
-
-    logger.info(f"[GUI] 正在停止服务进程 (PID: {process.pid})...")
-    try:
-        process.terminate()
-    except (OSError, ValueError, AssertionError) as exc:
-        logger.warning(f"[GUI] 无法终止服务进程 (PID: {process.pid}): {exc}")
-    process.join(timeout=timeout)
-
-    if process.is_alive():
-        logger.warning(f"[GUI] 服务进程 (PID: {process.pid}) 超时未退出，强制终止...")
-        try:
-            process.kill()
-        except (OSError, ValueError, AssertionError) as exc:
-            logger.warning(f"[GUI] 无法强制终止服务进程 (PID: {process.pid}): {exc}")
-        process.join(timeout=3)
-
-    stopped = not process.is_alive()
-    if not stopped:
-        logger.error(f"[GUI] 服务进程 (PID: {process.pid}) 仍在运行，取消重启以避免端口冲突")
-    return stopped
+    """通过本地句柄逐级停止服务，退出结果由 multiprocessing 回收。"""
+    return stop_process(process, timeout=timeout)
 
 
 def _wait_for_webui_ready(process, ready_event: Event, timeout=WEBUI_READY_TIMEOUT) -> bool:
@@ -332,182 +290,15 @@ def _wait_for_webui_ready(process, ready_event: Event, timeout=WEBUI_READY_TIMEO
 
 
 def _stop_process_tree(process, name: str) -> bool:
-    """终止指定进程及其子树，并确认根进程已退出。"""
-    if not process:
-        return True
-    try:
-        alive = process.is_alive()
-    except (OSError, ValueError, AssertionError):
-        return True
-    if not alive:
-        try:
-            process.join(timeout=0)
-        except (OSError, ValueError, AssertionError):
-            pass
-        return True
-
-    pid = process.pid
-    logger.warning(f"[GUI] 强制终止{name}进程树 (PID: {pid})...")
-    tree_terminated = True
-    child_processes = []
-    psutil_module = None
-    if os.name == "nt":
-        try:
-            result = subprocess.run(
-                ["taskkill", "/PID", str(pid), "/T", "/F"],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                timeout=5,
-            )
-            tree_terminated = result.returncode == 0
-            if not tree_terminated and process.is_alive():
-                logger.warning(f"[GUI] taskkill 未能终止{name} (PID: {pid})")
-                try:
-                    process.kill()
-                except (OSError, ValueError, AssertionError) as exc:
-                    logger.warning(f"[GUI] 无法强制终止{name} (PID: {pid}): {exc}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            logger.warning(f"[GUI] 终止{name}进程树失败: {exc}")
-            tree_terminated = False
-    else:
-        try:
-            import psutil
-
-            psutil_module = psutil
-            parent = psutil.Process(pid)
-            child_processes = parent.children(recursive=True)
-            for child in reversed(child_processes):
-                try:
-                    child.kill()
-                except psutil.NoSuchProcess:
-                    pass
-        except ImportError:
-            logger.warning(f"[GUI] 缺少 psutil，无法确认{name}子进程是否已结束")
-            tree_terminated = False
-        except psutil.NoSuchProcess:
-            # 根进程可能在 is_alive() 检查后自然退出；此时与前置已退出分支等价。
-            logger.info(f"[GUI] {name}根进程已在枚举子进程前退出 (PID: {pid})")
-        except Exception as exc:
-            logger.warning(f"[GUI] 枚举{name}子进程失败: {exc}")
-            tree_terminated = False
-        try:
-            process.kill()
-        except (OSError, ValueError, AssertionError) as exc:
-            logger.warning(f"[GUI] 无法强制终止{name} (PID: {pid}): {exc}")
-            tree_terminated = False
-
-    process.join(timeout=3)
-    stopped = not process.is_alive()
-    if os.name != "nt" and psutil_module is not None and child_processes:
-        try:
-            _, alive_children = psutil_module.wait_procs(child_processes, timeout=3)
-        except Exception as exc:
-            logger.warning(f"[GUI] 等待{name}子进程退出失败: {exc}")
-            tree_terminated = False
-        else:
-            if alive_children:
-                child_pids = ", ".join(
-                    str(getattr(child, "pid", "未知")) for child in alive_children
-                )
-                logger.error(f"[GUI] {name}子进程仍在运行 (PID: {child_pids})")
-                tree_terminated = False
-    if os.name == "nt" and stopped and not tree_terminated:
-        # taskkill 可能与子进程自然退出交错；根进程已确认退出时不应阻断重启。
-        logger.warning(
-            f"[GUI] taskkill 未返回成功，但{name}根进程已退出 (PID: {pid})"
-        )
-        tree_terminated = True
-    if not stopped or not tree_terminated:
-        logger.error(f"[GUI] {name}进程树仍在运行 (PID: {pid})")
-    return stopped and tree_terminated
-
-
-def _wait_for_registered_worker_exit(
-    pid: int,
-    name: str,
-    record: dict,
-    timeout: float = 3,
-) -> bool:
-    """等待登记 worker 退出，并拒绝 PID 已复用的记录。"""
-    deadline = time.monotonic() + timeout
-    while True:
-        try:
-            matches = worker_registry.process_matches(record)
-        except RuntimeError as exc:
-            logger.error(f"[GUI] 无法确认 worker {name} (PID: {pid}) 已退出: {exc}")
-            return False
-        if matches is None:
-            return True
-        if not matches:
-            logger.error(
-                f"[GUI] worker PID 已复用，拒绝终止未知进程: {name} (PID: {pid})"
-            )
-            return False
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            logger.error(f"[GUI] worker {name} (PID: {pid}) 终止超时")
-            return False
-        time.sleep(min(0.1, remaining))
+    """统一回收服务进程树，保留根进程的 multiprocessing 退出状态。"""
+    return stop_process_tree(process, name=name, timeout=0)
 
 
 def _stop_registered_worker(pid: int, name: str, record: dict) -> bool:
-    """终止登记的 worker，并验证 PID 没有被系统复用。"""
-    try:
-        matches = worker_registry.process_matches(record)
-    except RuntimeError as exc:
-        logger.error(f"[GUI] 无法确认 worker {name} (PID: {pid}) 身份: {exc}")
+    """按持久化身份回收 worker，不按缓存 PID 发信号。"""
+    if record.get("pid") != pid:
         return False
-    if matches is None:
-        return True
-    if not matches:
-        logger.error(
-            f"[GUI] worker PID 已复用，拒绝终止未知进程: {name} (PID: {pid})"
-        )
-        return False
-
-    if os.name == "nt":
-        try:
-            result = subprocess.run(
-                ["taskkill", "/PID", str(pid), "/T", "/F"],
-                check=False,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-                timeout=5,
-            )
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            logger.warning(f"[GUI] 终止 worker {name} (PID: {pid}) 失败: {exc}")
-            return False
-        if result.returncode != 0:
-            logger.warning(
-                f"[GUI] taskkill 终止 worker {name} (PID: {pid}) 返回 {result.returncode}"
-            )
-    else:
-        try:
-            import psutil
-        except ImportError:
-            logger.warning(f"[GUI] 缺少 psutil，无法终止 worker {name} (PID: {pid})")
-            return False
-
-        try:
-            parent = psutil.Process(pid)
-            children = parent.children(recursive=True)
-            for child in reversed(children):
-                child.kill()
-            parent.kill()
-            _, alive = psutil.wait_procs([parent, *children], timeout=3)
-            if alive:
-                logger.error(f"[GUI] worker {name} (PID: {pid}) 仍在运行")
-                return False
-        except psutil.NoSuchProcess:
-            return True
-        except Exception as exc:
-            logger.warning(f"[GUI] 终止 worker {name} (PID: {pid}) 失败: {exc}")
-            return False
-
-    return _wait_for_registered_worker_exit(pid, name, record)
+    return stop_process_tree(record=record, name=f"worker {name}", timeout=0)
 
 
 def _stop_registered_workers(
@@ -557,15 +348,7 @@ def _stop_registered_workers(
 
 
 def _pid_exists(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return True
-    return True
+    return pid_exists(pid)
 
 
 def _recover_orphaned_workers() -> bool:

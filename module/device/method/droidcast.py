@@ -6,9 +6,8 @@ DroidCast 是一个运行在 Android 设备上的截图服务，通过 HTTP 接�
 支持 DroidCast 和 DroidCast_raw 两种模式：前者返回 PNG/JPEG 图像，
 后者直接返回原始像素数据以获得更高性能。需要先在设备上安装并启动 DroidCast APK。
 """
-import time
 import typing as t
-from functools import wraps
+from functools import partial
 
 import cv2
 import numpy as np
@@ -17,10 +16,10 @@ from adbutils.errors import AdbError
 
 from module.base.decorator import cached_property, del_cached_property
 from module.base.timer import Timer
+from module.device.method.retry import retry_backend, recover_adb, recover_truncated_image, recover_unknown
 from module.device.method.uiautomator_2 import ProcessInfo, Uiautomator2
-from module.device.method.utils import (
-    ImageTruncated, PackageNotInstalled, RETRY_TRIES, handle_adb_error, handle_unknown_host_service, retry_sleep)
-from module.exception import EmulatorNotRunningError, RequestHumanTakeover
+from module.device.method.utils import ImageTruncated, PackageNotInstalled
+from module.exception import EmulatorNotRunningError
 from module.logger import logger
 
 
@@ -28,84 +27,22 @@ class DroidCastVersionIncompatible(Exception):
     pass
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (DroidCast):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 无法处理
-            except RequestHumanTakeover:
-                break
-            # ADB 服务被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    if isinstance(error, (ConnectionResetError, AdbError)):
+        return recover_adb(self, error)
+    if isinstance(error, PackageNotInstalled):
+        logger.error(error)
+        return self.detect_package
+    if isinstance(error, (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout,
+                          DroidCastVersionIncompatible)):
+        logger.error(error)
+        return self.droidcast_init
+    if isinstance(error, ImageTruncated):
+        return recover_truncated_image(self, error)
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-            # ADB 错误
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # 应用未安装
-            except PackageNotInstalled as e:
-                logger.error(e)
 
-                def init():
-                    self.detect_package()
-            # DroidCast 未运行
-            # requests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
-            # ReadTimeout: HTTPConnectionPool(host='127.0.0.1', port=20482): Read timed out. (read timeout=3)
-            except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout) as e:
-                logger.error(e)
-
-                def init():
-                    self.droidcast_init()
-            # DroidCast 版本不兼容
-            except DroidCastVersionIncompatible as e:
-                logger.error(e)
-
-                def init():
-                    self.droidcast_init()
-            # 图像数据截断
-            except ImageTruncated as e:
-                from module.device.method.utils import handle_image_truncated
-                handle_image_truncated(self, e)
-
-                def init():
-                    pass
-            # 无法处理 - 必须向上抛出以触发模拟器重启
-            except EmulatorNotRunningError:
-                raise
-            # 未知异常
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        if func.__name__ in ['screenshot_droidcast', 'screenshot_droidcast_raw']:
-            logger.critical(f'[设备-DroidCast] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-        logger.critical(f'[设备-DroidCast] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-DroidCast')
 
 
 class DroidCast(Uiautomator2):
@@ -204,7 +141,7 @@ class DroidCast(Uiautomator2):
             self.droidcast_width, self.droidcast_height = w, h
             logger.info(f'DroidCast分辨率: {(w, h)}')
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_droidcast(self):
         self.config.DROIDCAST_VERSION = 'DroidCast'
         if self.is_mumu_over_version_356:
@@ -238,7 +175,7 @@ class DroidCast(Uiautomator2):
 
         return image
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_droidcast_raw(self):
         self.config.DROIDCAST_VERSION = 'DroidCast_raw'
         shape = (720, 1280)

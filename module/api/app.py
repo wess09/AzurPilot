@@ -14,6 +14,7 @@ from module.api.router import Router
 from module.api.runtime_service import RuntimeService
 from module.api.socket import Gateway
 from module.api.static import FrontendFiles
+from module.logger import logger
 from module.runtime.password_utils import ensure_password_for_host, is_demo_mode
 from module.runtime.setting import State
 
@@ -22,6 +23,7 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
     """创建应用；测试可以关闭真实进程生命周期并使用临时配置目录。"""
     configs = ConfigService(root)
     runtime = RuntimeService(configs)
+    mcp_app = None
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument('-k', '--key')
     parser.add_argument('--run', nargs='+')
@@ -36,21 +38,34 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
 
     @asynccontextmanager
     async def lifespan(application):
-        if manage_runtime:
-            from module.api.lifecycle import startup, clearup
-            from module.runtime.deploy_settings import parse_run_config
-            runs = args.run or parse_run_config(State.deploy_config.Run)
-            # 初始化失败也要回收已建立的 Manager 与后台服务。
-            try:
+        try:
+            if manage_runtime:
+                from module.api.lifecycle import startup
+                from module.runtime.deploy_settings import parse_run_config
+                runs = args.run or parse_run_config(State.deploy_config.Run)
                 await asyncio.to_thread(startup, runs)
                 if State.deploy_config.DiscordRichPresence:
-                    from module.runtime.discord_presence import init_discord_rpc
-                    init_discord_rpc()
-                yield
-            finally:
-                await asyncio.to_thread(clearup)
-        else:
+                    try:
+                        from module.runtime.discord_presence import init_discord_rpc
+                        init_discord_rpc()
+                    except Exception:
+                        logger.exception('Discord RPC 启动失败，继续运行 WebUI')
             yield
+        finally:
+            try:
+                # 先禁止 MCP 新操作并等待在途操作结束，再回收共享运行时。
+                if mcp_app is not None:
+                    await mcp_app.state.tools.close()
+            finally:
+                if manage_runtime:
+                    try:
+                        from module.runtime.discord_presence import async_close_discord_rpc
+                        await async_close_discord_rpc()
+                    except Exception:
+                        logger.exception('Discord RPC 清理失败，继续回收共享运行时')
+                    finally:
+                        from module.api.lifecycle import clearup
+                        await asyncio.to_thread(clearup)
 
     dist = root / 'frontend/dist'
 
@@ -66,8 +81,9 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
     if (dist / 'assets').is_dir():
         routes.append(Mount('/assets', StaticFiles(directory=dist / 'assets')))
     if mount_mcp:
-        from mcp_server_sse import app as mcp_app, configure_auth
+        from mcp_server_sse import create_app as create_mcp_app, configure_auth
         configure_auth(password, public_bind=bool(password))
+        mcp_app = create_mcp_app(configs, runtime, manage_runtime=False)
         routes.append(Mount('/mcp', mcp_app))
     if (dist / 'index.html').is_file():
         routes.append(Mount('/', FrontendFiles(directory=dist)))

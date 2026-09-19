@@ -40,15 +40,14 @@ class PreviewHub:
 
 hub = PreviewHub()
 _images = None
-_task_sink = None
-_run_id = None
 
 
 def initialize(instance, output, task_sink, run_id=None):
     """在运行子进程中安装输出通道，独立脚本无需初始化。"""
-    global _images, _task_sink, _run_id
-    _task_sink = task_sink
-    _run_id = run_id
+    from module.runtime.worker_events import initialize as initialize_events
+
+    global _images
+    initialize_events(task_sink, run_id)
     _images = queue.Queue(maxsize=1)
 
     def encode():
@@ -98,5 +97,6 @@ def publish(image):
 
 def set_task(command):
     """沿用可靠的日志队列传递任务边界，避免从日志文字推测状态。"""
-    if _task_sink is not None:
-        _task_sink({'runtimeTask': command, 'runId': _run_id})
+    from module.runtime.worker_events import set_task as publish_task
+
+    publish_task(command)

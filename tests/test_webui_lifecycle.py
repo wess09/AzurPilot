@@ -29,7 +29,6 @@ class TestWebUILifecycle(unittest.TestCase):
                 return_value=[worker],
             ) as running_instances,
             patch.object(app_lifecycle.RemoteAccess, "kill_ssh_process") as stop_remote,
-            patch.object(app_lifecycle, "close_discord_rpc") as close_discord,
             patch.object(app_lifecycle, "stop_ocr_server_process") as stop_ocr,
             patch.object(app_lifecycle.task_handler, "stop") as stop_tasks,
             patch.object(State, "clearup", side_effect=mark_state_cleared) as clear_state,
@@ -40,7 +39,6 @@ class TestWebUILifecycle(unittest.TestCase):
         running_instances.assert_called_once_with()
         worker.stop.assert_called_once_with()
         stop_remote.assert_called_once_with()
-        close_discord.assert_called_once_with()
         stop_ocr.assert_called_once_with()
         stop_tasks.assert_called_once_with()
         clear_state.assert_called_once_with()
@@ -54,7 +52,6 @@ class TestWebUILifecycle(unittest.TestCase):
                 return_value=[],
             ),
             patch.object(app_lifecycle.RemoteAccess, "kill_ssh_process"),
-            patch.object(app_lifecycle, "close_discord_rpc"),
             patch.object(app_lifecycle, "stop_ocr_server_process"),
             patch.object(State, "clearup") as clear_state,
         ):

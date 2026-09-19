@@ -3,91 +3,32 @@
 
 import socket
 import time
-from functools import wraps
+from functools import partial
 
 import numpy as np
 from adbutils.errors import AdbError, AdbTimeout
 
 import module.device.method.scrcpy.const as const
 from module.base.utils import ensure_time, random_rectangle_point
+from module.device.method.retry import retry_backend, recover_adb, recover_unknown
 from module.device.method.minitouch import insert_swipe
 from module.device.method.scrcpy.core import ScrcpyCore, ScrcpyError
 from module.device.method.uiautomator_2 import Uiautomator2
-from module.device.method.utils import RETRY_TRIES, handle_adb_error, handle_unknown_host_service, retry_sleep
-from module.exception import EmulatorNotRunningError, RequestHumanTakeover
+from module.exception import EmulatorNotRunningError
 from module.logger import logger
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (ScrcpyCore):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # Can't handle
-            except RequestHumanTakeover:
-                break
-            # When adb server was killed
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    # AdbTimeout 是 AdbError 的子类，必须先保留 Scrcpy 自身的重建策略。
+    if isinstance(error, (ScrcpyError, AdbTimeout, socket.timeout)):
+        logger.error(error)
+        return self.scrcpy_init
+    if isinstance(error, (ConnectionResetError, ConnectionAbortedError, AdbError)):
+        return recover_adb(self, error)
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-            # Emulator closed
-            except ConnectionAbortedError as e:
-                logger.error(e)
 
-                def init():
-                    self.adb_reconnect()
-            # ScrcpyError
-            except ScrcpyError as e:
-                logger.error(e)
-
-                def init():
-                    self.scrcpy_init()
-            # AdbTimeout
-            # socket.timeout
-            except (AdbTimeout, socket.timeout) as e:
-                logger.error(e)
-
-                def init():
-                    self.scrcpy_init()
-            # AdbError
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # Can't handle - must propagate to trigger emulator restart
-            except EmulatorNotRunningError:
-                raise
-            # Unknown, probably a trucked image
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        if func.__name__ in ['screenshot_scrcpy']:
-            logger.critical(f'[设备-Scrcpy] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-        logger.critical(f'[设备-Scrcpy] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-Scrcpy')
 
 
 class Scrcpy(ScrcpyCore, Uiautomator2):
@@ -96,7 +37,7 @@ class Scrcpy(ScrcpyCore, Uiautomator2):
             with self._scrcpy_control_socket_lock:
                 self.resolution_check_uiautomator2()
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_scrcpy(self):
         self._scrcpy_resolution_check()
         self.scrcpy_ensure_running()

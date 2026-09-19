@@ -18,6 +18,7 @@ class IslandShopBase(Island, WarehouseOCR):
     _MAX_FILL_LOOP = 10  # while 循环填岗最大迭代次数
     PRODUCT_SELECT_RETRY_LIMIT = 3  # 餐品选择识别失败后，退出重进的最大次数
     POST_PRODUCE_LIMIT = 7  # 餐馆每个岗位单次最多生产数量
+    FILL_SPECIAL_FOOD = True  # 子类可关闭余岗的特殊餐品回退
 
     def __init__(self, config, device=None, task=None):
         # 分别初始化每个父类
@@ -445,10 +446,17 @@ class IslandShopBase(Island, WarehouseOCR):
             else:
                 self.current_totals[name] = current - max_target
 
+    def get_priority_production(self):
+        """返回基础需求之前安排的产品及数量，由店铺声明季节规则。"""
+        return {}
+
     def run(self):
         self.island_error = False
         self.chef_unavailable_products.clear()
         self.unavailable_characters.clear()
+        # 在制品和保留线每轮重新建立，不能累加同一实例上轮的识别结果。
+        self.post_check_meal.clear()
+        self._reserved_targets.clear()
         self.goto_postmanage()
         self.post_manage_mode(POST_MANAGE_PRODUCTION)
         self.post_close()
@@ -498,6 +506,17 @@ class IslandShopBase(Island, WarehouseOCR):
             _produced_pass = {}  # 本次 run() 调用中已生产的累计
             _force_skip_run = set()  # 排产多次无法生产的缺口（非原料原因），本轮强制跳过
             _loop_count = 0
+
+            # 季节优先排产也记入本轮在制品；基础需求必须按扣料后的库存重算。
+            priority_products = self.get_priority_production()
+            if priority_products:
+                self.to_post_products = priority_products
+                logger.info(f"[岛屿] 季节优先生产计划: {self._inv_cn(priority_products)}")
+                self._schedule_and_track(_produced_pass)
+                self.current_totals = self._rebuild_current_totals(_produced_pass)
+                self._compute_base_demands()
+                if self.to_post_products:
+                    self.to_post_products = self.process_meal_requirements(self.to_post_products)
 
             self._schedule_and_track(_produced_pass)
 
@@ -549,7 +568,7 @@ class IslandShopBase(Island, WarehouseOCR):
             idle_posts_after_basic = self.get_idle_posts()
 
             # 获取特殊餐品和常驻餐品配置
-            special_food = self.special_food
+            special_food = self.special_food if self.FILL_SPECIAL_FOOD else None
             away_cook = getattr(self.config, self.config_away_cook, None)
 
             # 检查特殊餐品是否为有效值（不为None且不为"None"）

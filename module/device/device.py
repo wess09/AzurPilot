@@ -108,8 +108,9 @@ class Device(Screenshot, Control, AppControl, Input):
                 if not auto_start_emulator:
                     raise
                 if trial >= 3:
-                    logger.critical('[Device] 错误 3 次尝试后未能启动模拟器')
-                    raise RequestHumanTakeover
+                    logger.error('[Device] 3 次启动尝试后设备仍离线，交由调用方恢复')
+                    # 有限启动尝试耗尽不代表配置错误，保留离线异常供上层决定。
+                    raise
                 # 尝试启动模拟器
                 if self.emulator_instance is not None:
                     try:

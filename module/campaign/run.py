@@ -18,6 +18,7 @@ import random
 
 from module.campaign.campaign_base import CampaignBase
 from module.campaign.campaign_event import CampaignEvent
+from module.campaign.stage_name import normalize_event_stage, normalize_post_loop_stage
 from module.shop.shop_status import ShopStatus
 from module.campaign.campaign_ui import MODE_SWITCH_1
 from module.config.config import AzurLaneConfig
@@ -199,19 +200,35 @@ class CampaignRun(CampaignEvent, ShopStatus):
         return False
 
     def handle_stage_name(self, name, folder, mode='normal'):
-        """
-        处理错误的关卡名称。
-        部分活动中 SP 的名称可能不同，如 'vsp'、muse sp。
-        为方便调用，其地图文件应命名为 'sp.py'。
+        """依次规范化名称、选择目录和循环关卡，再应用对应的运行约束。
 
-        Args:
-            name (str): .py 文件名称。
-            folder (str): campaign 下的文件夹名称。
-
-        Returns:
-            str, str: (name, folder)。
+        循环选出的名称只转小写，不重新经过活动转换；is_stage_loop 也不在
+        未命中时复位，保持同一个运行器的原有状态语义。
         """
         name = to_map_file_name(name)
+        folder = self._select_stage_folder(name, folder)
+        # 文件存在才启用 D3 三战撤退别名，必须使用刚选定的活动目录。
+        if name in ['d3-3', 'd3_3'] and folder \
+                and os.path.exists(f'./campaign/{folder}/d3_3.py'):
+            name = 'd3_3'
+            logger.info('[战役-运行] 关卡名转换为d3_3 (三战撤退逻辑)')
+        name = normalize_event_stage(name, folder)
+        self._apply_event_stage_overrides(name, folder)
+
+        for name in self._iter_stage_loop(name, folder):
+            self.is_stage_loop = True
+            logger.info('[战役-运行] 禁用连续清除')
+            self.config.override(StopCondition_MapAchievement='non_stop')
+            self.config.override(StopCondition_StageIncrease=False)
+
+        # 困难地图选择发生在循环之后，且必须有实际地图文件。
+        if mode == 'hard' and folder == 'campaign_main' and name in map_files('campaign_hard'):
+            folder = 'campaign_hard'
+        self._apply_event_achievement_fallback(folder)
+        return normalize_post_loop_stage(name, folder), folder
+
+    def _select_stage_folder(self, name, folder):
+        """选择低耗任务的主线或活动目录，其他任务沿用调用方的目录。"""
         # GemsFarming 和 ThreeOilLowCost 自动选择活动或主线章节
         if self.config.task.command in ['GemsFarming', 'ThreeOilLowCost']:
             if self.stage_is_main(name):
@@ -230,108 +247,10 @@ class CampaignRun(CampaignEvent, ShopStatus):
                 else:
                     logger.warning(f'Cannot get the latest event, fallback to campaign_main')
                     folder = 'campaign_main'
-        # 支持已适配活动的 D3 三战撤退入口
-        # 活动目录提供 d3_3 别名地图时生效，不再硬编码活动列表（#275）
-        if name in ['d3-3', 'd3_3'] and folder \
-                and os.path.exists(f'./campaign/{folder}/d3_3.py'):
-            name = 'd3_3'
-            logger.info('[战役-运行] 关卡名转换为d3_3 (三战撤退逻辑)')
-        # 处理特殊 SP 地图名称
-        if folder == 'event_20201126_cn' and name == 'vsp':
-            name = 'sp'
-        if folder == 'event_20210723_cn' and name == 'vsp':
-            name = 'sp'
-        if folder == 'event_20220324_cn' and name == 'esp':
-            name = 'sp'
-        if folder == 'event_20220818_cn' and name == 'esp':
-            name = 'sp'
-        if folder == 'event_20221124_cn' and name in ['asp', 'a.sp']:
-            name = 'sp'
-        if folder == 'event_20240425_cn':
-            if name in ['μsp', 'usp', 'iisp']:
-                name = 'sp'
-            name = name.replace('lsp', 'isp').replace('1sp', 'isp')
-            if name == 'isp':
-                name = 'isp1'
-        if folder == 'event_20240724_cn':
-            if name in ['ysp', 'y.sp']:
-                name = 'sp'
-        # 转换为 T 章节
-        convert = {
-            'a1': 't1',
-            'a2': 't2',
-            'a3': 't3',
-            'a4': 't4',
-            'a5': 't5',
-            'a6': 't6',
-            'sp1': 't1',
-            'sp2': 't2',
-            'sp3': 't3',
-            'sp4': 't4',
-            'sp5': 't5',
-            'sp6': 't6',
-        }
-        if folder in [
-            'event_20211125_cn',
-            'event_20231026_cn',
-            'event_20241024_cn',
-            'event_20250424_cn',
-            'event_20250724_cn',
-            'event_20250814_cn',
-            'event_20251023_cn',
-            'event_20260326_cn',
-            'event_20260625_cn',
-            'war_archives_20230525_cn',
-            'war_archives_20231026_cn',
-            'war_archives_20240725_cn',
-        ]:
-            name = convert.get(name, name)
-        # 在 A/B/C/D 和 T/HT 之间转换
-        convert = {
-            'a1': 't1',
-            'a2': 't2',
-            'a3': 't3',
-            'b1': 't4',
-            'b2': 't5',
-            'b3': 't6',
-            'c1': 'ht1',
-            'c2': 'ht2',
-            'c3': 'ht3',
-            'd1': 'ht4',
-            'd2': 'ht5',
-            'd3': 'ht6',
-        }
-        if folder in [
-            'event_20200917_cn',
-            'event_20221124_cn',
-            'event_20230525_cn',
-            'war_archives_20200917_cn',
-            # T 章节
-            'event_20211125_cn',
-            'event_20231026_cn',
-            'event_20231123_cn',
-            'event_20240725_cn',
-            'event_20240829_cn',
-            'event_20241024_cn',
-            'event_20241121_cn',
-            'event_20250424_cn',
-            'event_20250724_cn',
-            'event_20250814_cn',
-            'event_20251023_cn',
-            'event_20260326_cn',
-            'event_20260625_cn',
-            'war_archives_20230525_cn',
-            'war_archives_20231026_cn',
-            'war_archives_20240725_cn',
-        ]:
-            name = convert.get(name, name)
-        else:
-            reverse = {v: k for k, v in convert.items()}
-            name = reverse.get(name, name)
-        # 炼金术士与秘密群岛
-        # 处理拼写错误
-        if folder == 'event_20221124_cn':
-            name = name.replace('ht', 'th')
+        return folder
+
+    def _apply_event_stage_overrides(self, name, folder):
+        """应用循环选择前的特殊章节限制，包括限时地图的舰队配置。"""
         # TH 章节没有 map_percentage 和 3_stars
         if folder == 'event_20221124_cn' and name.startswith('th'):
             if self.config.StopCondition_MapAchievement not in ['non_stop', 'non_stop_clear_all']:
@@ -346,22 +265,20 @@ class CampaignRun(CampaignEvent, ShopStatus):
         # event_20211125_cn 的 TSS 地图为限时地图
         if folder == 'event_20211125_cn' and 'tss' in name:
             self.config.override(
-                StopCondition_OilLimit=0,  # No oil cost
+                StopCondition_OilLimit=0,  # 不消耗石油
                 StopCondition_MapAchievement='100_percent_clear',
                 StopCondition_StageIncrease=True,
-                Emotion_Mode='ignore',  # No emotion cost
-                Fleet_Fleet2=0,  # Has only one fleet
-                Submarine_Fleet=0,  # No submarine
+                Emotion_Mode='ignore',  # 不消耗心情
+                Fleet_Fleet2=0,  # 仅一个舰队
+                Submarine_Fleet=0,  # 不使用潜艇
             )
-        # event_20230817_cn 剧情状态
-        if folder == 'event_20230817_cn':
-            if name.startswith('e0'):
-                name = 'a1'
-        # event_20240829_cn，TP -> SP
-        if folder == 'event_20240829_cn':
-            if name == 'tp':
-                name = 'sp'
-        # 关卡循环
+
+    def _iter_stage_loop(self, name, folder):
+        """按别名字典顺序选择关卡，允许结果继续命中后续别名。
+
+        每选出一个名称就交还调用方应用运行约束，随后继续匹配；不重新
+        规范化名称，也不在第一处匹配后提前结束。
+        """
         for alias, stages in self.config.STAGE_LOOP_ALIAS.items():
             alias_folder, alias = alias
             if folder == alias_folder and name == alias.lower():
@@ -378,14 +295,10 @@ class CampaignRun(CampaignEvent, ShopStatus):
                     logger.info(f'Loop stages in {name.upper()} with remain run_count={count}, '
                                 f'run ordered stage: {stage}')
                 name = stage.lower()
-                self.is_stage_loop = True
-                # 禁用连续通关
-                logger.info('[战役-运行] 禁用连续清除')
-                self.config.override(StopCondition_MapAchievement='non_stop')
-                self.config.override(StopCondition_StageIncrease=False)
-        # 如果模式为 hard 且文件存在，将 campaign_main 转换为 campaign_hard
-        if mode == 'hard' and folder == 'campaign_main' and name in map_files('campaign_hard'):
-            folder = 'campaign_hard'
+                yield name
+
+    def _apply_event_achievement_fallback(self, folder):
+        """在循环选择之后处理缺少安全威胁指示器的活动。"""
         # event_20240912_cn 没有 "威胁：安全" 指示器，回退 MapAchievement
         if folder == 'event_20240912_cn':
             if self.config.StopCondition_MapAchievement == 'threat_safe':
@@ -396,10 +309,6 @@ class CampaignRun(CampaignEvent, ShopStatus):
                 logger.info(
                     'In event_20240912_cn, MapAchievement=threat_safe_without_3_stars fallback to 100_percent_clear')
                 self.config.override(StopCondition_MapAchievement='100_percent_clear')
-        if folder == 'event_20260417_cn':
-            if name in ['vsp', ]:
-                name = 'sp'
-        return name, folder
 
     def can_use_auto_search_continue(self):
         """检查是否可以继续使用自动搜索。

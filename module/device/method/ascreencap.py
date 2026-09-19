@@ -7,15 +7,14 @@ aScreenCap 直接读取 Android 设备的 framebuffer，绕过系统 screencap �
 需要先通过 ADB 将 aScreenCap 推送至设备并赋予执行权限。
 """
 import os
-import time
-from functools import wraps
+from functools import partial
 
 from adbutils.errors import AdbError
 
 from module.base.utils import *
 from module.device.connection import Connection
-from module.device.method.utils import (ImageTruncated, RETRY_TRIES, handle_adb_error, handle_unknown_host_service,
-                                        retry_sleep)
+from module.device.method.retry import retry_backend, recover_adb, recover_truncated_image, recover_unknown
+from module.device.method.utils import ImageTruncated
 from module.exception import EmulatorNotRunningError, RequestHumanTakeover, ScriptError
 from module.logger import logger
 
@@ -24,70 +23,18 @@ class AscreencapError(Exception):
     pass
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (AScreenCap):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 无法处理
-            except RequestHumanTakeover:
-                break
-            # ADB 服务被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    if isinstance(error, (ConnectionResetError, AdbError)):
+        return recover_adb(self, error)
+    if isinstance(error, AscreencapError):
+        logger.error(error)
+        return self.ascreencap_init
+    if isinstance(error, ImageTruncated):
+        return recover_truncated_image(self, error)
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-            # ascreencap 未安装时
-            except AscreencapError as e:
-                logger.error(e)
 
-                def init():
-                    self.ascreencap_init()
-            # ADB 错误
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # 图像数据截断
-            except ImageTruncated as e:
-                from module.device.method.utils import handle_image_truncated
-                handle_image_truncated(self, e)
-
-                def init():
-                    pass
-            # 无法处理 - 必须向上抛出以触发模拟器重启
-            except EmulatorNotRunningError:
-                raise
-            # 未知异常
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        if func.__name__ in ['screenshot_ascreencap', 'screenshot_ascreencap_nc']:
-            logger.critical(f'[设备-aScreenCap] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-        logger.critical(f'[设备-aScreenCap] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-aScreenCap')
 
 
 class AScreenCap(Connection):
@@ -224,13 +171,13 @@ class AScreenCap(Connection):
             logger.warning(f'异常截图: {screenshot}')
         raise ImageTruncated(f'cannot load screenshot')
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_ascreencap(self):
         content = self.adb_shell([self.config.ASCREENCAP_FILEPATH_REMOTE, '--pack', '2', '--stdout'], stream=True)
 
         return self.__process_screenshot(content)
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_ascreencap_nc(self):
         data = self.adb_shell_nc([self.config.ASCREENCAP_FILEPATH_REMOTE, '--pack', '2', '--stdout'])
         if len(data) < 500:

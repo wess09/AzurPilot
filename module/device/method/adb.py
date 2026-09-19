@@ -9,7 +9,7 @@ ADB 截图和输入方法。
 """
 import re
 import time
-from functools import wraps
+from functools import partial
 
 import cv2
 import numpy as np
@@ -19,80 +19,25 @@ from lxml import etree
 from module.base.decorator import Config
 from module.config.server import DICT_PACKAGE_TO_ACTIVITY
 from module.device.connection import Connection
+from module.device.method.retry import retry_backend, recover_adb, recover_truncated_image, recover_unknown
 from module.device.method.remove_warning import remove_screenshot_warning
-from module.device.method.utils import (ImageTruncated, PackageNotInstalled, RETRY_TRIES, handle_adb_error,
-                                        handle_unknown_host_service, retry_sleep)
-from module.exception import EmulatorNotRunningError, RequestHumanTakeover, ScriptError
+from module.device.method.utils import ImageTruncated, PackageNotInstalled
+from module.exception import EmulatorNotRunningError, ScriptError
 from module.logger import logger
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (Adb):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 无法处理
-            except RequestHumanTakeover:
-                break
-            # 无法处理 - 必须向上抛出以触发模拟器重启
-            except EmulatorNotRunningError:
-                raise
-            # ADB 服务被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    if isinstance(error, (ConnectionResetError, AdbError)):
+        return recover_adb(self, error)
+    if isinstance(error, PackageNotInstalled):
+        logger.error(error)
+        return self.detect_package
+    if isinstance(error, ImageTruncated):
+        return recover_truncated_image(self, error)
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-            # ADB 错误
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # 应用未安装
-            except PackageNotInstalled as e:
-                logger.error(e)
 
-                def init():
-                    self.detect_package()
-            # 图像数据截断
-            except ImageTruncated as e:
-                from module.device.method.utils import handle_image_truncated
-                handle_image_truncated(self, e)
-
-                def init():
-                    pass
-            # 未知异常
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        if func.__name__ in [
-            'screenshot_adb', 'screenshot_adb_nc',
-            '_app_start_adb_am', '_app_start_adb_monkey',
-        ]:
-            logger.critical(f'[设备-ADB] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-        logger.critical(f'[设备-ADB] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-ADB')
 
 
 def load_screencap(data):
@@ -181,7 +126,7 @@ class Adb(Connection):
             logger.warning(f'[设备-ADB] 异常截图: {screenshot}')
         raise OSError(f'cannot load screenshot')
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     @Config.when(DEVICE_OVER_HTTP=False)
     def screenshot_adb(self):
         data = self.adb_shell(['screencap', '-p'], stream=True)
@@ -190,7 +135,7 @@ class Adb(Connection):
 
         return self.__process_screenshot(data)
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     @Config.when(DEVICE_OVER_HTTP=True)
     def screenshot_adb(self):
         data = self.adb_shell(['screencap'], stream=True)
@@ -200,7 +145,7 @@ class Adb(Connection):
 
         return load_screencap(data)
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_adb_nc(self):
         data = self.adb_shell_nc(['screencap'])
         data = remove_screenshot_warning(data)
@@ -263,7 +208,7 @@ class Adb(Connection):
             return ret
         raise OSError("Couldn't get focused app")
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def _app_start_adb_monkey(self, package_name=None, allow_failure=False):
         """
         通过 monkey 命令启动应用。
@@ -299,7 +244,7 @@ class Adb(Connection):
             # ## Network stats: elapsed time=4ms (0ms mobile, 0ms wifi, 4ms not connected)
             return True
 
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def _app_start_adb_am(self, package_name=None, activity_name=None, allow_failure=False):
         """
         通过 am start 命令启动应用。

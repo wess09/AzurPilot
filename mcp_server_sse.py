@@ -1,7 +1,4 @@
-import os
 import logging
-import json
-import datetime
 import re
 from typing import List, Dict, Any
 
@@ -15,17 +12,11 @@ from mcp.types import (
     ImageContent,
     Tool,
 )
-import base64
-import time
-import subprocess
-import threading
-from io import BytesIO
 
-from module.config.config import AzurLaneConfig
-from module.config.time_source import now as current_time
-from module.config.utils import DEFAULT_CONFIG_NAME, alas_instance
-from module.runtime.process_manager import ProcessManager
-from module.config.mcp_helper import McpConfigHelper
+from contextvars import ContextVar
+
+from module.mcp.tools import Tools
+from module.mcp.lifecycle import lifespan
 from module.runtime import mcp_auth
 from module.runtime.setting import State
 
@@ -34,8 +25,8 @@ from module.runtime.setting import State
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("azurpilot-mcp")
 
-# 初始化配置助手
-helper = McpConfigHelper()
+# 每个挂载应用独享服务适配器，通过请求上下文传递。
+active_tools = ContextVar("mcp_tools", default=Tools())
 
 # 初始化 MCP 服务器
 mcp_server = Server("AzurPilot-MCP")
@@ -195,299 +186,10 @@ async def list_tools() -> List[Tool]:
         ),
     ]
 
-async def _tool_list_instances(arguments: Dict[str, Any]) -> ToolResponse:
-    instances = alas_instance()
-    return [TextContent(type="text", text=json.dumps(instances, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_get_status(arguments: Dict[str, Any]) -> ToolResponse:
-    instances = alas_instance()
-    results = []
-    for inst in instances:
-        manager = ProcessManager.get_manager(inst)
-        results.append({"instance": inst, "running": manager.alive, "state": manager.state})
-    return [TextContent(type="text", text=json.dumps(results, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_list_tasks(arguments: Dict[str, Any]) -> ToolResponse:
-    tasks = helper.get_tasks()
-    return [TextContent(type="text", text=json.dumps(tasks, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_get_task_help(arguments: Dict[str, Any]) -> ToolResponse:
-    task_name = arguments["task_name"]
-    details = helper.get_task_details(task_name)
-    return [TextContent(type="text", text=json.dumps(details, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_get_resources(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    config = AzurLaneConfig(inst)
-    res = helper.get_dashboard_resources(config.data)
-    return [TextContent(type="text", text=json.dumps(res, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_get_config(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    task = arguments.get("task")
-    config = AzurLaneConfig(inst)
-    data = config.data.get(task, {}) if task else config.data
-    return [TextContent(type="text", text=json.dumps(data, ensure_ascii=False, indent=2, default=str))]
-
-
-async def _tool_update_config(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    task = arguments["task"]
-    group = arguments["group"]
-    arg = arguments["arg"]
-    value = arguments["value"]
-    config = AzurLaneConfig(inst)
-    path = f"{task}.{group}.{arg}"
-    config.cross_set(path, value)
-    config.save()
-    return [TextContent(type="text", text=f"Success: Updated {path} to {value}")]
-
-
-async def _tool_get_recent_logs(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    lines_count = arguments.get("lines", 50)
-
-    # AzurPilot 日志命名规则通常是 YYYY-MM-DD_实例名.txt
-    date_str = datetime.date.today().strftime("%Y-%m-%d")
-    log_file = f"./log/{date_str}_{inst}.txt"
-
-    if not os.path.exists(log_file):
-        # 尝试不带实例名的通用日志
-        log_file_alt = f"./log/{date_str}_alas.txt"
-        if os.path.exists(log_file_alt):
-            log_file = log_file_alt
-
-    if os.path.exists(log_file):
-        try:
-            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                # 对于超大文件，使用 tail 逻辑更安全
-                # 为了简单这里仍使用 readlines，但限制读取范围
-                content = f.readlines()
-                content = content[-lines_count:]
-            return [TextContent(type="text", text="".join(content))]
-        except Exception as e:
-            return [TextContent(type="text", text=f"Error reading log: {str(e)}")]
-    return [TextContent(type="text", text=f"Log file not found: {log_file}")]
-
-
-async def _tool_start_instance(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    manager = ProcessManager.get_manager(inst)
-    if manager.alive:
-        return [TextContent(type="text", text=f"Error: {inst} is already running.")]
-    from module.submodule.utils import get_config_mod
-    func = get_config_mod(inst)
-    manager.start(func=func)
-    return [TextContent(type="text", text=f"Success: Started {inst} ({func})")]
-
-
-async def _tool_stop_instance(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    manager = ProcessManager.get_manager(inst)
-    if not manager.alive:
-        return [TextContent(type="text", text=f"Error: {inst} is not running.")]
-    manager.stop()
-    return [TextContent(type="text", text=f"Success: Stopped {inst}")]
-
-
-async def _tool_get_screenshot(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    if "ALAS_CONFIG_NAME" not in os.environ:
-        os.environ["ALAS_CONFIG_NAME"] = inst
-
-    from module.device.device import Device
-    from PIL import Image
-    try:
-        import PIL.JpegImagePlugin  # noqa: F401  # 确保 JPEG 编码器已注册。
-    except ImportError:
-        pass
-
-    try:
-        config = AzurLaneConfig(inst)
-        device = Device(config)
-        image = device.screenshot()
-        image_pil = Image.fromarray(image)
-
-        buffered = BytesIO()
-        image_pil.save(buffered, format="JPEG")
-        img_data = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        return [ImageContent(type="image", data=img_data, mimeType="image/jpeg")]
-    except Exception as e:
-        import traceback
-        error_msg = f"Error getting screenshot: {str(e)}\n{traceback.format_exc()}"
-        return [TextContent(type="text", text=error_msg)]
-
-
-async def _tool_get_current_running_task(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    manager = ProcessManager.get_manager(inst)
-    if not manager.alive:
-        return [TextContent(type="text", text="Error: Instance is not running.")]
-    task = "Unknown"
-
-    date_str = datetime.date.today().strftime("%Y-%m-%d")
-    log_file = f"./log/{date_str}_{inst}.txt"
-    if not os.path.exists(log_file):
-        log_file = f"./log/{date_str}_alas.txt"
-
-    if os.path.exists(log_file):
-        try:
-            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
-                lines = f.readlines()
-                for line in reversed(lines):
-                    # 适配现代 AzurPilot 日志格式: 调度器: 开始任务 `TaskName`
-                    m = re.search(r"调度器: 开始任务\s*[`'\" ](.*?)[`'\" ]", line)
-                    if not m:
-                        # 适配旧版或特殊格式: <<< Run task TaskName >>>
-                        m = re.search(r"<<<\s*Run task\s*(.*?)\s*>>>", line)
-
-                    if m:
-                        task = m.group(1)
-                        break
-        except:
-            pass
-    return [TextContent(type="text", text=task)]
-
-
-async def _tool_get_scheduler_queue(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    config = AzurLaneConfig(inst)
-    queue_data = []
-    for task_name in config.data:
-        if task_name in ["Alas", "Error", "MUMU", "MumuPlayer12", "EmulatorManagement", "Dashboard"]:
-            continue
-        scheduler = config.data.get(task_name, {}).get("Scheduler", {})
-        if scheduler.get("Enable", False):
-            next_run = scheduler.get("NextRun", "2050-01-01 00:00:00")
-            queue_data.append({"task": task_name, "next_run": str(next_run)})
-    queue_data.sort(key=lambda x: str(x["next_run"]))
-    return [TextContent(type="text", text=json.dumps(queue_data, ensure_ascii=False, indent=2))]
-
-
-async def _tool_trigger_task(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    task = arguments["task"]
-    config = AzurLaneConfig(inst)
-    config.cross_set(f"{task}.Scheduler.Enable", True)
-    now = current_time()
-    config.cross_set(f"{task}.Scheduler.NextRun", str(now))
-    config.save()
-    return [TextContent(type="text", text=f"Success: Task {task} scheduled for immediately.")]
-
-
-async def _tool_clear_scheduler_queue(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    config = AzurLaneConfig(inst)
-    cleared = []
-    for task_name in config.data:
-        scheduler = config.data.get(task_name, {}).get("Scheduler", {})
-        if scheduler.get("Enable", False):
-            config.cross_set(f"{task_name}.Scheduler.Enable", False)
-            cleared.append(task_name)
-    if cleared:
-        config.save()
-    return [TextContent(type="text", text=f"Success: Cleared tasks: {', '.join(cleared)}")]
-
-
-async def _tool_restart_emulator(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments["instance"]
-    if "ALAS_CONFIG_NAME" not in os.environ:
-        os.environ["ALAS_CONFIG_NAME"] = inst
-    manager = ProcessManager.get_manager(inst)
-
-    from module.device.device import Device
-    try:
-        config = AzurLaneConfig(inst)
-        device = Device(config)
-        device.emulator_stop()
-        time.sleep(60)
-        device.emulator_start()
-        return [TextContent(type="text", text=f"Success: Restarted emulator for {inst}")]
-    except Exception as e:
-        import traceback
-        error_msg = f"Error restarting emulator: {str(e)}\n{traceback.format_exc()}"
-        return [TextContent(type="text", text=error_msg)]
-
-
-async def _tool_restart_adb(arguments: Dict[str, Any]) -> ToolResponse:
-    inst = arguments.get("instance", DEFAULT_CONFIG_NAME)
-    try:
-        # 尝试从 deploy.yaml 获取 ADB 路径
-        adb_path = State.deploy_config.AdbExecutable
-        if adb_path:
-            adb_path = adb_path.replace('\\', '/')
-
-        if not adb_path or not os.path.exists(adb_path):
-            # 回退到 connection_attr 的查找逻辑
-            adb_search_list = [
-                './.venv/Scripts/adb.exe',
-                './.venv/bin/adb',
-                './bin/adb/adb.exe',
-            ]
-            for path in adb_search_list:
-                if os.path.exists(path):
-                    adb_path = os.path.abspath(path)
-                    break
-            else:
-                adb_path = "adb"
-
-        subprocess.run([adb_path, "kill-server"], check=False)
-        subprocess.run([adb_path, "start-server"], check=False)
-        return [TextContent(type="text", text=f"Success: Restarted ADB service using {adb_path}.")]
-    except Exception as e:
-        return [TextContent(type="text", text=f"Error: {str(e)}")]
-
-
-async def _tool_update_alas(arguments: Dict[str, Any]) -> ToolResponse:
-    try:
-        from module.runtime.updater import updater
-
-        def do_update():
-            updater.update()
-
-        threading.Thread(target=do_update).start()
-        return [TextContent(type="text", text="Success: Triggered AzurPilot update in background.")]
-    except Exception as e:
-        return [TextContent(type="text", text=f"Error: {str(e)}")]
-
-
-TOOL_HANDLERS = {
-    "list_instances": _tool_list_instances,
-    "get_status": _tool_get_status,
-    "list_tasks": _tool_list_tasks,
-    "get_task_help": _tool_get_task_help,
-    "get_resources": _tool_get_resources,
-    "get_config": _tool_get_config,
-    "update_config": _tool_update_config,
-    "get_recent_logs": _tool_get_recent_logs,
-    "start_instance": _tool_start_instance,
-    "stop_instance": _tool_stop_instance,
-    "get_screenshot": _tool_get_screenshot,
-    "get_current_running_task": _tool_get_current_running_task,
-    "get_scheduler_queue": _tool_get_scheduler_queue,
-    "trigger_task": _tool_trigger_task,
-    "clear_scheduler_queue": _tool_clear_scheduler_queue,
-    "restart_emulator": _tool_restart_emulator,
-    "restart_adb": _tool_restart_adb,
-    "update_alas": _tool_update_alas,
-}
-
-
 @mcp_server.call_tool()
 async def call_tool(name: str, arguments: Dict[str, Any]) -> ToolResponse:
-    try:
-        handler = TOOL_HANDLERS.get(name)
-        if handler is None:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")]
-        return await handler(arguments)
-    except Exception as e:
-        logger.exception(f"Tool {name} error")
-        return [TextContent(type="text", text=f"Error: {str(e)}")]
+    return await active_tools.get().call(name, arguments)
+
 
 # SSE 传输层初始化 - 固定端点（与 /mcp 挂载点匹配）
 transport = SseServerTransport("/mcp/messages")
@@ -680,13 +382,29 @@ async def mcp_asgi_app(scope, receive, send):
     else:
         await _send_not_found(send)
 
-# Starlette 应用包装
-app = Starlette(
-    middleware=[
-        Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-    ]
-)
-app.mount("/", mcp_asgi_app)
+def create_app(configs=None, runtime=None, *, manage_runtime=True):
+    """独立模式管理 State；挂载模式复用宿主注入的服务与生命周期。"""
+    tools = Tools(configs, runtime)
+
+    async def bound_app(scope, receive, send):
+        token = active_tools.set(tools)
+        try:
+            await mcp_asgi_app(scope, receive, send)
+        finally:
+            active_tools.reset(token)
+
+    application = Starlette(
+        lifespan=lifespan if manage_runtime else None,
+        middleware=[Middleware(CORSMiddleware, allow_origins=["*"],
+                               allow_methods=["*"], allow_headers=["*"])],
+    )
+    application.state.tools = tools
+    application.mount("/", bound_app)
+    return application
+
+
+app = create_app()
+
 
 def _resolve_standalone_password():
     """独立模式解析访问密码，与 WebUI 共用同一份来源与生成规则。

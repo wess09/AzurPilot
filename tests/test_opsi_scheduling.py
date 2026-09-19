@@ -118,7 +118,7 @@ class TestOpsiTaskCooldown(unittest.TestCase):
         self.assertIs(runner.config.task, owner)
         self.assertFalse(runner.is_running_prevent_action_point_overflow_task())
         self.assertFalse(runner.is_running_smart_scheduling_task())
-        self.assertFalse(hasattr(runner, runner.RUNTIME_ATTR_PREVENT_OVERFLOW_DELAY))
+        self.assertFalse(hasattr(runner.config, '_opsi_task_context'))
 
 
 class SmartSchedulingConfig:

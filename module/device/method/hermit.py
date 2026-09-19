@@ -2,8 +2,7 @@
 提供基于 JSON 协议的截图捕获和触摸注入功能。"""
 
 import json
-import time
-from functools import wraps
+from functools import partial
 
 import requests
 from adbutils.errors import AdbError
@@ -11,9 +10,9 @@ from adbutils.errors import AdbError
 from module.base.decorator import cached_property
 from module.base.timer import Timer
 from module.base.utils import point2str, random_rectangle_point
+from module.device.method.retry import retry_backend, recover_adb, recover_unknown
 from module.device.method.adb import Adb
-from module.device.method.utils import (RETRY_TRIES, handle_unknown_host_service, retry_sleep,
-                                        HierarchyButton, handle_adb_error)
+from module.device.method.utils import HierarchyButton
 from module.exception import RequestHumanTakeover
 from module.logger import logger
 
@@ -22,74 +21,25 @@ class HermitError(Exception):
     pass
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (Hermit):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 无法处理
-            except RequestHumanTakeover:
-                break
-            # ADB 服务被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
+def _retry_recover(self, error, trial):
+    def reconnect_hermit():
+        self.adb_reconnect()
+        self.hermit_init()
 
-                def init():
-                    self.adb_reconnect()
-            # 无法发送请求时
-            except requests.exceptions.ConnectionError as e:
-                logger.error(e)
-                text = str(e)
-                if 'Connection aborted' in text:
-                    # Hermit 未安装或未运行
-                    # ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
-                    def init():
-                        self.adb_reconnect()
-                        self.hermit_init()
-                else:
-                    # 连接丢失，ADB 服务被终止
-                    # HTTPConnectionPool(host='127.0.0.1', port=20269):
-                    # Max retries exceeded with url: /click?x=500&y=500
-                    def init():
-                        self.adb_reconnect()
-            # ADB 错误
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                else:
-                    break
-            # HermitError: {"code":-1,"msg":"error"}
-            except HermitError as e:
-                logger.error(e)
+    if isinstance(error, (ConnectionResetError, AdbError)):
+        return recover_adb(self, error)
+    if isinstance(error, requests.exceptions.ConnectionError):
+        logger.error(error)
+        if 'Connection aborted' in str(error):
+            return reconnect_hermit
+        return self.adb_reconnect
+    if isinstance(error, HermitError):
+        logger.error(error)
+        return reconnect_hermit
+    return recover_unknown(error)
 
-                def init():
-                    self.adb_reconnect()
-                    self.hermit_init()
-            # 未知异常，可能是图像损坏
-            except Exception as e:
-                logger.exception(e)
 
-                def init():
-                    pass
-
-        logger.critical(f'[设备-Hermit] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-Hermit')
 
 
 class Hermit(Adb):

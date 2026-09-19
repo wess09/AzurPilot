@@ -7,10 +7,7 @@ from module.island_restaurant.assets import *
 from module.island.island_shop_base import IslandShopBase
 from module.island.assets import *
 from module.logger import logger
-from collections import Counter
-from datetime import timedelta
 
-from module.config.time_source import now as current_time
 from module.base.button import Button
 from module.island.island_season import SEASONAL_ITEMS
 
@@ -78,6 +75,9 @@ HIGH_PRIORITY_SEASONAL_DISHES['matsutake_chicken_soup'] = {
 
 
 class IslandRestaurant(IslandShopBase):
+    # 季节菜品只在优先阶段生产，余岗仅安排用户配置的常驻餐品。
+    FILL_SPECIAL_FOOD = False
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -330,195 +330,12 @@ class IslandRestaurant(IslandShopBase):
 
         return result
 
-    def run(self):
-        """
-        覆盖父类的run方法，实现季节菜品的优先级控制：
-          - 凉拌双笋（菜品1）：最高优先级，在基础需求前生产
-          - 芦笋炒虾仁（菜品2）：最低优先级，等所有其他菜品（包括菜品1）都完成且系统空闲时才生产
-        """
-        self.island_error = False
-        self.goto_postmanage()
-        self.post_manage_mode(POST_MANAGE_PRODUCTION)
-        self.post_close()
-        self.post_manage_swipe(self.post_manage_swipe_count)
-
-        # 检查岗位状态
-        post_count = getattr(self.config, self.config_post_number, 2)
-        time_vars = []
-        for i in range(post_count):
-            time_var_name = f'{self.time_prefix}{i + 1}'
-            time_vars.append(time_var_name)
-            setattr(self, time_var_name, None)
-            post_id = f'ISLAND_{self.shop_type.upper()}_POST{i + 1}'
-            self.post_check(post_id, time_var_name)
-
-        # 获取空闲岗位
-        idle_posts = self.get_idle_posts()
-
-        if idle_posts:
-            self.get_warehouse_counts()
-            self.goto_postmanage()
-            self.post_manage_mode(POST_MANAGE_PRODUCTION)
-            self.post_close()
-            self.post_manage_swipe(self.post_manage_swipe_count)
-
-            # 计算当前总库存
-            self.current_totals = {}
-            all_product_names = set(name for name, _ in self.post_products)
-            for item in all_product_names | set(self.post_check_meal.keys()) | set(
-                    self.warehouse_counts.keys()):
-                self.current_totals[item] = self.post_check_meal.get(item, 0) + self.warehouse_counts.get(item, 0)
-
-            # ============ 调试信息 ============
-            logger.info(f"[岛屿-有鱼餐馆] === 调试信息 ===")
-            logger.info(f"[岛屿-有鱼餐馆] 仓库库存: {self._inv_cn(self.warehouse_counts)}")
-            logger.info(f"[岛屿-有鱼餐馆] 生产中库存: {self._inv_cn(self.post_check_meal)}")
-            logger.info(f"[岛屿-有鱼餐馆] 当前总库存: {self._inv_cn(self.current_totals)}")
-            logger.info(f"[岛屿-有鱼餐馆] 基础需求配置（共{len(self.post_products)}个槽位）: {self._products_cn(self.post_products)}")
-            logger.info("===============")
-
-            # 保存原始库存，retry 时恢复（避免 max_targets 清零影响重算）
-            _orig_totals = dict(self.current_totals)
-            self._compute_base_demands()
-
-            logger.info(f"[岛屿-有鱼餐馆] 待完成备餐: {self._inv_cn(self.to_post_products)}")
-            logger.info(f"[岛屿-有鱼餐馆] 当前剩余库存: {self._inv_cn(self.current_totals)}")
-
-            # ============ 处理套餐分解 ============
-            if self.to_post_products:
-                self.to_post_products = self.process_meal_requirements(self.to_post_products)
-                logger.info(f"[岛屿-有鱼餐馆] 基础需求生产计划: {self._inv_cn(self.to_post_products)}")
-
-            # ================================================================
-            #  高优先级季节菜品
-            #  在所有基础需求之前单独生产，确保最高优先级
-            # ================================================================
-            if self.seasonal_dish_slot:
-                dish_name = self.seasonal_dish_slot['name']
-                dish_cn = self.seasonal_dish_slot['cn_name']
-                logger.info(f"[岛屿-有鱼餐馆] 阶段：高优先级季节菜品 — {dish_cn}")
-
-                # 从生产计划中提取，单独安排生产
-                slot1_qty = self.POST_PRODUCE_LIMIT
-                if dish_name in self.to_post_products:
-                    slot1_qty += self.to_post_products.pop(dish_name)
-
-                # 临时只安排位置1的生产
-                temp_products = self.to_post_products.copy()
-                self.to_post_products = {dish_name: slot1_qty}
-                logger.info(f"[岛屿-有鱼餐馆] 单独安排{dish_cn}生产: {self._inv_cn(self.to_post_products)}")
-
-                self.schedule_production()
-
-                # 恢复剩余的基础需求生产计划
-                self.to_post_products = temp_products
-                logger.info(f"[岛屿-有鱼餐馆] 剩余基础需求生产计划: {self._inv_cn(self.to_post_products)}")
-
-            # ============ 安排基础需求生产（循环直到无空岗或无缺口） ============
-            _produced_pass = {}
-            _force_skip_run = set()
-            _loop_count = 0
-
-            self._schedule_and_track(_produced_pass)
-
-            while self.get_idle_posts():
-                _loop_count += 1
-                if _loop_count > self._MAX_FILL_LOOP:
-                    logger.warning(f"[岛屿-有鱼餐馆] [循环] 已达最大迭代次数 {self._MAX_FILL_LOOP}，强制退出")
-                    break
-                self.current_totals = dict(_orig_totals)
-                for name, qty in _produced_pass.items():
-                    self.current_totals[name] = self.current_totals.get(name, 0) + qty
-
-                self._compute_base_demands(force_skip=_force_skip_run)
-                if not self.to_post_products:
-                    logger.info("[岛屿-有鱼餐馆] 所有槽位需求已满足")
-                    break
-
-                self.to_post_products = self.process_meal_requirements(self.to_post_products)
-                logger.info(f"[岛屿-有鱼餐馆] 基础需求生产计划: {self._inv_cn(self.to_post_products)}")
-
-                prev_pass_total = sum(_produced_pass.values())
-                self._schedule_and_track(_produced_pass)
-
-                if sum(_produced_pass.values()) == prev_pass_total and self.to_post_products:
-                    logger.info("[岛屿-有鱼餐馆] [循环] 当前缺口排产失败，切换严格模式扫描")
-                    self.to_post_products = {}
-                    self.current_totals = dict(_orig_totals)
-                    for name, qty in _produced_pass.items():
-                        self.current_totals[name] = self.current_totals.get(name, 0) + qty
-                    self._compute_base_demands(check_materials=True)
-                    if not self.to_post_products:
-                        break
-                    self.to_post_products = self.process_meal_requirements(self.to_post_products)
-                    logger.info(f"[岛屿-有鱼餐馆] 基础需求生产计划（严格模式）: {self._inv_cn(self.to_post_products)}")
-
-                    strict_prev_total = sum(_produced_pass.values())
-                    self._schedule_and_track(_produced_pass)
-
-                    if sum(_produced_pass.values()) == strict_prev_total and self.to_post_products:
-                        stuck_now = set(self.to_post_products.keys())
-                        logger.info(f"[岛屿-有鱼餐馆] [循环] 严格模式也无产出，强制跳过: {sorted(self._item_cn(k) for k in stuck_now)}")
-                        _force_skip_run.update(stuck_now)
-                        self.to_post_products = {}
-                    continue
-
-            # ============ 检查是否还有空闲岗位，安排常驻餐品 ============
-            idle_posts_after_basic = self.get_idle_posts()
-
-            # 获取常驻餐品配置（不再使用特殊餐品special_food，因为季节菜品已独立控制）
-            away_cook = getattr(self.config, self.config_away_cook, None)
-
-            # 检查常驻餐品是否为有效值
-            has_away_cook = (away_cook and away_cook != "None" and
-                             away_cook in self.name_to_config)
-
-            if idle_posts_after_basic and has_away_cook:
-                logger.info(f"[岛屿-有鱼餐馆] 基础需求完成后，还有 {len(idle_posts_after_basic)} 个空闲岗位")
-
-                for post_id in idle_posts_after_basic:
-                    post_num = post_id[-1]
-                    time_var_name = f'{self.time_prefix}{post_num}'
-
-                    logger.info(f"[岛屿-有鱼餐馆] 尝试生产常驻餐品 {self._item_cn(away_cook)}")
-
-                    # 检查材料限制
-                    batch_size = self.POST_PRODUCE_LIMIT
-                    batch_size = self.get_max_producible(away_cook, batch_size)
-
-                    if batch_size > 0:
-                        result = self.post_produce(
-                            post_id,
-                            product=away_cook,
-                            number=batch_size,
-                            time_var_name=time_var_name
-                        )
-
-                        if result == 0:
-                            logger.info(f"[岛屿-有鱼餐馆] 常驻餐品 {self._item_cn(away_cook)} 原料不足，保持岗位空闲")
-                            break
-                        else:
-                            logger.info(f"[岛屿-有鱼餐馆] 已为岗位 {post_id} 安排常驻餐品 {self._item_cn(away_cook)} x{batch_size}")
-                    else:
-                        logger.info(f"[岛屿-有鱼餐馆] 生产 {self._item_cn(away_cook)} 的材料不足，跳过岗位 {post_id}")
-                        break
-
-            elif idle_posts_after_basic:
-                logger.info(f"[岛屿-有鱼餐馆] 有 {len(idle_posts_after_basic)} 个空闲岗位，但未设置常驻餐品，保持空闲")
-
-        # ============ 设置任务延迟 ============
-        finish_times = []
-        for var in time_vars:
-            time_value = getattr(self, var)
-            if time_value is not None:
-                finish_times.append(time_value)
-        hours_later = current_time() + timedelta(hours=6)
-        finish_times.append(hours_later)
-        finish_times.sort()
-        self.config.task_delay(target=finish_times)
-        if self.island_error:
-            from module.exception import GameBugError
-            raise GameBugError("检测到岛屿ERROR1，需要重启")
+    def get_priority_production(self):
+        """季节菜品先排额外一批，并合并当前基础需求中的同名缺口。"""
+        if not self.seasonal_dish_slot:
+            return {}
+        name = self.seasonal_dish_slot['name']
+        return {name: self.POST_PRODUCE_LIMIT + self.to_post_products.get(name, 0)}
 
     def test(self):
         chef_config = getattr(self.config, "IslandRestaurant_Chef", "WorkerJuu")

@@ -4,7 +4,7 @@ import threading
 import unittest
 from contextlib import ExitStack
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from starlette.testclient import TestClient
 
@@ -16,7 +16,7 @@ from tests.test_api import fixture
 
 
 class ApiLifecycleTests(unittest.TestCase):
-    def run_lifecycle(self, fail_start=False):
+    def run_lifecycle(self, fail_start=False, fail_discord=False, fail_discord_start=False):
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
             root = fixture(directory)
             executed = threading.Event()
@@ -28,7 +28,7 @@ class ApiLifecycleTests(unittest.TestCase):
                     yield
 
             settings = SimpleNamespace(Run='', StartOcrServer=False, EnableRemoteAccess=False,
-                                       DiscordRichPresence=False)
+                                       DiscordRichPresence=fail_discord_start)
             tasks = TaskHandler()
             stack.enter_context(patch.object(State, '_deploy_config_', settings, create=True))
             stack.enter_context(patch.multiple(State, _init=False, _clearup=False, manager=None,
@@ -40,6 +40,12 @@ class ApiLifecycleTests(unittest.TestCase):
             # 禁止读取用户的自动运行列表或接触设备进程；Manager 与调度线程真实运行。
             stack.enter_context(patch.object(lifecycle.ProcessManager, 'restart_processes'))
             stack.enter_context(patch.object(lifecycle.ProcessManager, 'running_instances', return_value=[]))
+            if fail_discord:
+                stack.enter_context(patch('module.runtime.discord_presence.async_close_discord_rpc',
+                                          new=AsyncMock(side_effect=RuntimeError('模拟 Discord 清理失败'))))
+            if fail_discord_start:
+                stack.enter_context(patch('module.runtime.discord_presence.init_discord_rpc',
+                                          side_effect=RuntimeError('模拟 Discord 启动失败')))
             if fail_start:
                 stack.enter_context(patch.object(tasks, 'start', side_effect=RuntimeError('模拟启动失败')))
             app = create_app(root=root, password='', mount_mcp=False)
@@ -65,3 +71,9 @@ class ApiLifecycleTests(unittest.TestCase):
 
     def test_partial_startup_failure_releases_manager(self):
         self.run_lifecycle(fail_start=True)
+
+    def test_discord_cleanup_failure_releases_real_manager(self):
+        self.run_lifecycle(fail_discord=True)
+
+    def test_discord_startup_failure_keeps_webui_available(self):
+        self.run_lifecycle(fail_discord_start=True)

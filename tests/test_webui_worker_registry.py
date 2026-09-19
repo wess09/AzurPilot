@@ -464,6 +464,7 @@ else:
                     self.assertTrue(_get_gui()._stop_registered_workers(owner_pid))
             worker.join(timeout=3)
             self.assertFalse(worker.is_alive())
+            self.assertIsNotNone(worker.exitcode)
         finally:
             if worker.is_alive():
                 worker.kill()
@@ -474,8 +475,8 @@ else:
 
         with (
             patch("gui.os.name", "nt"),
-            patch("gui.worker_registry.process_matches", return_value=False),
-            patch("gui.subprocess.run") as taskkill,
+            patch("module.runtime.process_control.process_matches", return_value=False),
+            patch("module.runtime.process_control.subprocess.run") as taskkill,
         ):
             self.assertFalse(_get_gui()._stop_registered_worker(23456, "alas", record))
 

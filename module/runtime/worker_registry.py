@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Iterator
 
 from deploy.atomic import atomic_remove, atomic_replace, atomic_write
+from module.runtime.process_control import pid_exists as _pid_exists, process_matches
 
 
 WORKER_REGISTRY_FILE = Path("./cache/webui-workers.json")
@@ -451,44 +452,3 @@ def clear_owner(owner_pid: int) -> bool:
 
         _write_registry(_empty_registry(), registry_file)
         return True
-
-
-def _pid_exists(pid: int) -> bool:
-    try:
-        os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
-    except PermissionError:
-        return True
-    except OSError:
-        return True
-    return True
-
-
-def process_matches(record: dict) -> bool | None:
-    """确认登记 PID 仍指向同一进程；不存在时返回 ``None``。"""
-    try:
-        pid = int(record["pid"])
-        created_at = float(record["created_at"])
-    except (KeyError, TypeError, ValueError):
-        raise RuntimeError("worker 登记记录无效")
-
-    try:
-        import psutil
-
-        process = psutil.Process(pid)
-        return abs(process.create_time() - created_at) < 0.01
-    except Exception as exc:
-        try:
-            if not os.path.exists(f"/proc/{pid}") and os.name != "nt":
-                return None
-        except OSError:
-            pass
-        try:
-            import psutil
-
-            if isinstance(exc, psutil.NoSuchProcess):
-                return None
-        except ImportError:
-            pass
-        raise RuntimeError(f"无法验证 worker PID {pid}: {exc}") from exc

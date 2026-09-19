@@ -14,7 +14,7 @@ from rich.text import Text
 from module.config.config import AzurLaneConfig
 from module.exception import RequestHumanTakeover
 from module.logger import logger
-from module.ocr.al_ocr import AlOcr
+from module.ocr.al_ocr import AlOcr, OcrSettings
 
 
 class OcrBenchmark:
@@ -74,16 +74,13 @@ class OcrBenchmark:
     def _run_single(self, model_name, dataset_prefix, subfolder, use_gpu=None, ocr_device=None):
         logger.hr(f'基准测试: {model_name.upper()} 模型  |  数据集: {dataset_prefix}', level=2)
 
-        # --- Dynamic OCR device config ---
+        # 基准测试只覆盖本次模型快照，不修改调用方配置或重置其他任务的模型。
         if ocr_device is None and use_gpu is not None:
             ocr_device = 'gpu' if use_gpu else 'cpu'
-        if ocr_device is not None:
-            self.config.override(Optimization_OcrDevice=ocr_device)
-            from module.ocr.al_ocr import reset_ocr_model
-            reset_ocr_model()
+        settings = OcrSettings.from_config(self.config, model_name, device=ocr_device)
 
         # --- Init model ---
-        ocr = AlOcr(name=model_name)
+        ocr = AlOcr(name=model_name, settings=settings)
         ocr.init()
 
         # --- Extract dataset ---

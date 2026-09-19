@@ -842,8 +842,23 @@ class AzurLaneAutoScript:
     def device(self):
         try:
             from module.device.device import Device
-            device = Device(config=self.config)
+            # 调度器统一管理模拟器恢复，避免设备初始化再嵌套一轮启动重试。
+            device = Device(config=self.config, auto_start_emulator=False)
             return device
+        except EmulatorNotRunningError as e:
+            if self.config.Error_HandleError:
+                # loop() 会在 run() 之前初始化设备，同样必须遵守敏感任务保护。
+                self._check_sensitive_exit(self.config.task.command, e)
+                raise
+            logger.error_context(
+                title='设备离线且自动恢复已关闭',
+                reason='初始化设备时无法建立连接，Error.HandleError 已禁用。',
+                impact='调度器停止运行，不会启动或重启模拟器。',
+                action='手动恢复设备连接后重新启动，或启用错误处理。',
+                exc=e,
+                level=50,
+            )
+            exit(1)
         except RequestHumanTakeover:
             logger.error_context(
                 title='设备初始化需要人工介入',
@@ -877,9 +892,16 @@ class AzurLaneAutoScript:
             )
             exit(1)
 
+    def _is_strict_restart(self, command):
+        """统一任务异常和调度结果的敏感任务停机条件。"""
+        task_name = inflection.camelize(command)
+        return self.config.Error_StrictRestart and self.config.cross_get(
+            keys=f'{task_name}.Scheduler.Sensitive', default=False
+        )
+
     def _check_sensitive_exit(self, command, error):
         """
-        检查当前任务是否为敏感任务，如果是则直接退出。
+        严格重启模式下，敏感任务出错时直接退出。
 
         敏感任务出错时不做任何重启或恢复，完全停止 Alas 运行。
 
@@ -891,10 +913,7 @@ class AzurLaneAutoScript:
             bool: True 表示已退出（不会返回），False 表示非敏感任务，继续原有逻辑。
         """
         task_name = inflection.camelize(command)
-        sensitive = self.config.cross_get(
-            keys=f'{task_name}.Scheduler.Sensitive', default=False
-        )
-        if not sensitive:
+        if not self._is_strict_restart(command):
             return False
 
         logger.error_context(
@@ -933,7 +952,7 @@ class AzurLaneAutoScript:
         执行指定任务命令，捕获异常并决定后续行为。
 
         根据异常类型自动判断：重启游戏、重启模拟器、请求人工介入或直接终止。
-        敏感任务出错时直接停止，不做任何重启。
+        严格重启模式下，敏感任务出错时直接停止，不做任何重启。
 
         任务执行前会进行一次截图（除非 skip_first_screenshot=True）。
 
@@ -948,16 +967,17 @@ class AzurLaneAutoScript:
                 'recoverable' — 可恢复的失败，不计入连续失败限制。
         """
         from module.runtime.preview import set_task
+        command = inflection.underscore(command)
         set_task(inflection.camelize(command))
         try:
             if not skip_first_screenshot:
                 self.device.screenshot()
             # 游戏重启后悬浮球会再次显示，重置会话标志
-            if command == 'Restart':
+            if command == 'restart':
                 logger.info('[Alas] 游戏重启，重置渠道服悬浮球处理状态')
                 self._channel_float_done = False
-            # 渠道服悬浮球：调度器启动/游戏重启后仅处理一次（主界面时）
-            if not self._channel_float_done:
+            # Restart 只重置标志，留待重启后的首个主界面回合处理悬浮球。
+            elif not self._channel_float_done:
                 self.handle_channel_float()
             self.__getattribute__(command)()
             return True
@@ -2261,9 +2281,7 @@ class AzurLaneAutoScript:
                     failed = failed + 1  # 不可恢复错误，增加计数
                 deep_set(self.failure_record, keys=task, value=failed)
 
-                strict_restart = self.config.Error_StrictRestart and failed >= 1 and self.config.cross_get(
-                    keys=f'{task}.Scheduler.Sensitive', default=False
-                )
+                strict_restart = failed >= 1 and self._is_strict_restart(task)
                 if strict_restart:
                     # 仅敏感任务失败后立即退出，避免状态或数据损坏
                     logger.error_context(
@@ -2313,10 +2331,15 @@ class AzurLaneAutoScript:
 
                 if success == True:
                     del_cached_property(self, 'config')
-                    consecutive_global_failures = 0 # 任务成功时重置全局失败计数器
-                    self.consecutive_game_stuck = 0
-                    self.consecutive_adb_offline = 0
-                    self.consecutive_unexpected_error = 0
+                    # Restart 成功只说明恢复步骤完成；普通任务成功才说明故障已恢复。
+                    # 所有任务级连续错误在同一边界清零，避免重启掩盖重复故障，
+                    # 也避免零散的 ScriptError 累计到退出阈值。
+                    if task != 'Restart':
+                        consecutive_global_failures = 0
+                        self.consecutive_game_stuck = 0
+                        self.consecutive_adb_offline = 0
+                        self.consecutive_unexpected_error = 0
+                        self.script_error_count = 0
                     continue
                 elif success == 'recoverable' or self.config.Error_HandleError:
                     # 可恢复错误或启用了错误处理，刷新配置后继续循环
@@ -2325,7 +2348,7 @@ class AzurLaneAutoScript:
                     continue
                 else:
                     self._stop_daily_summary_scheduler()
-                    break
+                    return False
 
             # 捕获全局异常并执行重启
             # 说明：调度器永不主动退出，所有未处理异常均通过指数退避重试恢复，

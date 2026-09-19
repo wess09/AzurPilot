@@ -10,7 +10,7 @@ MaaTouch 是 minitouch 的增强替代方案，通过 WebSocket 协议与设备�
 import socket
 import threading
 import time
-from functools import wraps
+from functools import partial
 
 from adbutils.errors import AdbError
 
@@ -18,98 +18,38 @@ from module.base.decorator import cached_property, del_cached_property, has_cach
 from module.base.timer import Timer
 from module.base.utils import *
 from module.device.connection import Connection
+from module.device.method.retry import retry_backend, recover_adb, recover_unknown
 from module.device.method.minitouch import Command, CommandBuilder, insert_swipe
-from module.device.method.utils import RETRY_TRIES, handle_adb_error, retry_sleep
-from module.exception import EmulatorNotRunningError, RequestHumanTakeover
+from module.exception import EmulatorNotRunningError
 from module.logger import logger
 
 
-def handle_unknown_host_service(e):
-    pass
+def _retry_recover(self, error, trial):
+    def reconnect():
+        self.adb_reconnect()
+        del_cached_property(self, '_maatouch_builder')
+
+    if isinstance(error, (ConnectionResetError, ConnectionAbortedError, AdbError)):
+        return recover_adb(self, error, reconnect=reconnect)
+    if isinstance(error, MaaTouchSyncTimeout):
+        logger.error(error)
+        def reset():
+            reconnect()
+            self.reset_maatouch()
+        return reset
+    if isinstance(error, MaaTouchNotInstalledError):
+        logger.error(error)
+        def install():
+            self.maatouch_install()
+            del_cached_property(self, '_maatouch_builder')
+        return install
+    if isinstance(error, BrokenPipeError):
+        logger.error(error)
+        return lambda: del_cached_property(self, '_maatouch_builder')
+    return recover_unknown(error)
 
 
-def retry(func):
-    @wraps(func)
-    def retry_wrapper(self, *args, **kwargs):
-        """
-        Args:
-            self (MaaTouch):
-        """
-        init = None
-        for _ in range(RETRY_TRIES):
-            try:
-                if callable(init):
-                    time.sleep(retry_sleep(_))
-                    init()
-                return func(self, *args, **kwargs)
-            # 无法处理
-            except RequestHumanTakeover:
-                break
-            # ADB 服务被终止时
-            except ConnectionResetError as e:
-                logger.error(e)
-
-                def init():
-                    self.adb_reconnect()
-                    del_cached_property(self, '_maatouch_builder')
-            # MaaTouch 同步超时
-            # 可能是因为 ADB 服务被终止
-            except MaaTouchSyncTimeout as e:
-                logger.error(e)
-
-                def init():
-                    self.adb_reconnect()
-                    del_cached_property(self, '_maatouch_builder')
-                    self.reset_maatouch()
-            # 模拟器关闭
-            except ConnectionAbortedError as e:
-                logger.error(e)
-
-                def init():
-                    self.adb_reconnect()
-                    del_cached_property(self, '_maatouch_builder')
-            # ADB 错误
-            except AdbError as e:
-                if handle_adb_error(e):
-                    def init():
-                        self.adb_reconnect()
-                        del_cached_property(self, '_maatouch_builder')
-                elif handle_unknown_host_service(e):
-                    def init():
-                        self.adb_start_server()
-                        self.adb_reconnect()
-                        del_cached_property(self, '_maatouch_builder')
-                else:
-                    break
-            # MaaTouchNotInstalledError: 从 MaaTouch 收到 "Aborted"
-            except MaaTouchNotInstalledError as e:
-                logger.error(e)
-
-                def init():
-                    self.maatouch_install()
-                    del_cached_property(self, '_maatouch_builder')
-            except BrokenPipeError as e:
-                logger.error(e)
-
-                def init():
-                    del_cached_property(self, '_maatouch_builder')
-            # 无法处理 - 必须向上抛出以触发模拟器重启
-            except EmulatorNotRunningError:
-                raise
-            # 未知异常，可能是图像损坏
-            except Exception as e:
-                logger.exception(e)
-
-                def init():
-                    pass
-
-        if func.__name__ in ['_maatouch_builder']:
-            logger.critical(f'[Device] 重试 {func.__name__}() 失败')
-            raise EmulatorNotRunningError
-        logger.critical(f'[Device] 重试 {func.__name__}() 失败')
-        raise RequestHumanTakeover
-
-    return retry_wrapper
+retry = partial(retry_backend, recover=_retry_recover, label='设备-MaaTouch')
 
 
 class MaatouchBuilder(CommandBuilder):
@@ -157,7 +97,7 @@ class MaaTouch(Connection):
     _maatouch_orientation: int = None
 
     @cached_property
-    @retry
+    @retry(on_exhausted=EmulatorNotRunningError)
     def _maatouch_builder(self):
         self.maatouch_init()
         return MaatouchBuilder(self)
