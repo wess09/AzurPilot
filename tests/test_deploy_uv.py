@@ -1,10 +1,49 @@
 import queue
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 from deploy import uv
+
+
+class TestUvPythonCompatibility(unittest.TestCase):
+    def test_project_python_request_reads_requires_python(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "pyproject.toml").write_text(
+                '[project]\nrequires-python = ">=3.14.6,<3.15"\n',
+                encoding="utf-8",
+            )
+
+            self.assertEqual("3.14.6", uv._project_python_request(root))
+
+    def test_compatible_environment_is_reused(self):
+        with (
+            patch("deploy.uv._venv_python_works", return_value=True),
+            patch("deploy.uv._compatible_managed_python", return_value=Path("managed")),
+            patch("deploy.uv._python_executable_matches_project", return_value=True),
+            patch("deploy.uv._run_and_collect") as run,
+        ):
+            uv._ensure_self_contained_python(Path("."), Path("uv"))
+
+        run.assert_not_called()
+
+    def test_incompatible_environment_installs_project_python_before_rebuild(self):
+        new_python = Path("managed-3.14.6")
+        with (
+            patch("deploy.uv._venv_python_works", return_value=True),
+            patch("deploy.uv._compatible_managed_python", side_effect=[None, new_python]),
+            patch("deploy.uv._project_python_request", return_value="3.14.6"),
+            patch("deploy.uv._remove_stale_venv_launcher"),
+            patch("deploy.uv._run_and_collect") as run,
+        ):
+            uv._ensure_self_contained_python(Path("."), Path("uv"))
+
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertEqual(commands[0][0:4], [Path("uv"), "python", "install", "3.14.6"])
+        self.assertEqual(commands[1][0:3], [Path("uv"), "venv", "--allow-existing"])
 
 
 class TestUvCommandOutput(unittest.TestCase):
