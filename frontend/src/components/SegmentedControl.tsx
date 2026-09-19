@@ -13,7 +13,7 @@ export function SegmentedControl<T extends string>({label, value, options, onCha
   className?: string
 }) {
   const {theme} = useApp()
-  const simple = theme === 'minimal'
+  const simple = theme === 'minimal' || theme === 'extreme'
   const ref = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({x: 0, y: 0, width: 0, height: 0})
   useLayoutEffect(() => {

@@ -1,0 +1,260 @@
+/*
+ * 「紧凑」主题（html[data-theme='extreme']）样式层。
+ *
+ * 分两层：第一层不设媒体查询，管圆角、留白、字号与高度一致性，任何宽度都生效；
+ * 第二层只作用于桌面宽度（≥951px），收窄骨架与控件，窄屏保留 44px 触摸目标。
+ *
+ * 选择器统一用 :root[data-theme='extreme'] 提升特异性，以压过各主题（含 apple.css
+ * 里硬编码的圆角）与 @media 断点中带 !important 的声明。刻意不动正文与表单标签字号、
+ * html 缩放，以及对比度与材质。
+ */
+
+/* ── 第一层：任意宽度生效 ── */
+
+/* 圆角归零。经典主题里不少圆角是硬编码值，不读变量，需显式覆盖。 */
+:root[data-theme='extreme'] {
+  --radius: 0px;
+  --theme-radius-panel: 0px;
+  --theme-radius-card: 0px;
+  --theme-radius-control: 0px;
+  --theme-radius-button: 0px;
+  --theme-radius-popover: 0px;
+}
+:root[data-theme='extreme'] .sidebar,
+:root[data-theme='extreme'] .right-rail,
+:root[data-theme='extreme'] .topbar,
+:root[data-theme='extreme'] .panel,
+:root[data-theme='extreme'] .resource-card,
+:root[data-theme='extreme'] .summary-metrics section,
+:root[data-theme='extreme'] .instance-card {border-radius: 0}
+:root[data-theme='extreme'] .scheduler-widget,
+:root[data-theme='extreme'] .scheduler-stats > div,
+:root[data-theme='extreme'] .rail-queue-group,
+:root[data-theme='extreme'] .task-submenu-flyout,
+:root[data-theme='extreme'] .instance-menu,
+:root[data-theme='extreme'] .modal {border-radius: 0}
+:root[data-theme='extreme'] .rail-task-item,
+:root[data-theme='extreme'] .task-submenu-item,
+:root[data-theme='extreme'] .primary-nav a,
+:root[data-theme='extreme'] .task-group-button,
+:root[data-theme='extreme'] .nav-search,
+:root[data-theme='extreme'] .group-nav,
+:root[data-theme='extreme'] .group-nav a,
+:root[data-theme='extreme'] .icon-button,
+:root[data-theme='extreme'] .status,
+:root[data-theme='extreme'] .task-state,
+:root[data-theme='extreme'] .count-badge,
+:root[data-theme='extreme'] .palette-option,
+:root[data-theme='extreme'] .palette-add,
+:root[data-theme='extreme'] .yaml-editor,
+:root[data-theme='extreme'] .storage-field pre,
+:root[data-theme='extreme'] .remote-address code {border-radius: 0}
+/* liquid-glass 用内联 cornerRadius，只有 !important 压得过 */
+:root[data-theme='extreme'] .glass-material,
+:root[data-theme='extreme'] .glass-material > *,
+:root[data-theme='extreme'] .glass-material-lens,
+:root[data-theme='extreme'] .glass-material-lens > * {border-radius: 0 !important}
+/* 分段控件（日志/截图）：经典主题是 999px 药丸形，简约是 9px，含滑动指示器 */
+:root[data-theme='extreme'] .monitor-segmented,
+:root[data-theme='extreme'] .monitor-segmented .segmented-indicator,
+:root[data-theme='extreme'] .monitor-segmented button {border-radius: 0}
+:root[data-theme='extreme'] .resource-heading > div,
+:root[data-theme='extreme'] .resource-image-wrap,
+:root[data-theme='extreme'] .instance-caption,
+:root[data-theme='extreme'] .instance-toggle,
+:root[data-theme='extreme'] .title-actions {border-radius: 0}
+:root[data-theme='extreme'] .resource-editor-card,
+:root[data-theme='extreme'] .resource-editor-icon,
+:root[data-theme='extreme'] .resource-editor-add,
+:root[data-theme='extreme'] .resource-editor-add-icon,
+:root[data-theme='extreme'] .resource-editor-remove,
+:root[data-theme='extreme'] .resource-picker,
+:root[data-theme='extreme'] .resource-picker-card,
+:root[data-theme='extreme'] .resource-picker-empty,
+:root[data-theme='extreme'] .resource-picker-option {border-radius: 0}
+
+/* 经典主题给 h1 铺了玻璃字效渐变，深色下 text-fill-color 未随之透明会显成灰底 */
+:root[data-theme='extreme'] .page-title h1 {
+  font-size: 24px;
+  letter-spacing: -.5px;
+  line-height: 1.05;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0;
+  color: var(--text);
+  text-shadow: none;
+}
+/* 总览页标题行整行省略，设置按钮改挂日志面板工具栏右侧。
+   按钮必须在面板内部：资源卡片一旦可交互，Electron 的 no-drag 规则会把它排除出窗口
+   拖动区，而卡片正好落在原标题的位置，窗口就会完全拖不动。 */
+:root[data-theme='extreme'] .monitor-tabs > .button {margin-left: auto}
+
+/* 高度一致性：主内容区与视口对齐，消除底部留白 */
+:root[data-theme='extreme'] .app-shell {min-height: var(--viewport-height); align-items: stretch}
+/* 窄屏断点同时写了 height 与 min-height: 56px，只改 height 会被顶住 */
+:root[data-theme='extreme'] .topbar {height: 48px; min-height: 0; padding-left: 4px; padding-right: 4px}
+:root[data-theme='extreme'] .main-shell {min-height: calc(var(--viewport-height) - 48px)}
+/* 标题行用 flex-start：标题字形 28px 而行盒被按钮撑到 32px 以上，居中会多出半行空白 */
+:root[data-theme='extreme'] .page-title {min-height: 0; margin-top: 0; margin-bottom: 8px; align-items: flex-start}
+/* overview-page 原本用 ::after 预留约 5% 底部占位，这里把空间还给日志面板 */
+:root[data-theme='extreme'] .overview-page {height: calc(var(--viewport-height) - 48px - 8px); min-height: 0}
+:root[data-theme='extreme'] .overview-page::after {display: none}
+:root[data-theme='extreme'] .overview-main {flex: 1; margin-bottom: 0}
+:root[data-theme='extreme'] .overview-main > .panel,
+:root[data-theme='extreme'] .log-panel {flex: 1; min-height: 0}
+:root[data-theme='extreme'] .log-content {height: auto; flex: 1; min-height: 150px}
+
+/* 右栏顶部的「实例工作区 / 实例名」与面包屑重复，整块隐去省一行。
+   窄屏抽屉不依赖它的关闭按钮——顶栏的日历图标同样能开关右栏。 */
+:root[data-theme='extreme'] .right-rail-header {display: none}
+
+/* 内容留白：窄屏断点用 !important 写死的面板内边距一并压掉 */
+:root[data-theme='extreme'] main {min-height: 0; padding: 4px}
+:root[data-theme='extreme'] .panel-heading {min-height: 0; padding: 8px 12px !important}
+:root[data-theme='extreme'] .panel-heading h2 {font-size: 13px}
+:root[data-theme='extreme'] .log-panel .panel-heading {padding-top: 6px !important; padding-bottom: 6px !important}
+:root[data-theme='extreme'] .config-toolbar {margin-bottom: 10px}
+:root[data-theme='extreme'] .config-group {margin-bottom: 9px}
+:root[data-theme='extreme'] .group-nav a {padding: 4px 6px}
+:root[data-theme='extreme'] .field-row {padding: 7px 12px; gap: 12px !important}
+:root[data-theme='extreme'] .field-row-multiline {gap: 6px}
+:root[data-theme='extreme'] .field-label p {margin-top: 2px; line-height: 1.5}
+:root[data-theme='extreme'] .resource-grid {gap: 5px; margin-bottom: 6px}
+:root[data-theme='extreme'] .resource-card {padding: 5px 11px 4px}
+:root[data-theme='extreme'] .resource-heading > div {width: 26px; height: 26px}
+:root[data-theme='extreme'] .schedule-summary {padding: 7px 12px}
+:root[data-theme='extreme'] .log-filters {padding: 6px 11px}
+:root[data-theme='extreme'] .log-content {padding: 7px 11px; line-height: 1.45}
+:root[data-theme='extreme'] .log-entry-line {padding: 0}
+:root[data-theme='extreme'] .log-rule {margin: 4px 0}
+:root[data-theme='extreme'] .statistics-category-control {margin-bottom: 9px}
+:root[data-theme='extreme'] .panel-note {padding: 7px 12px}
+:root[data-theme='extreme'] .settings-notice {margin: 10px 0 8px}
+:root[data-theme='extreme'] .data-table {padding: 9px 12px}
+:root[data-theme='extreme'] .data-table th, :root[data-theme='extreme'] .data-table td {padding: 5px 7px}
+:root[data-theme='extreme'] .tool-log-panel {margin-top: 10px}
+:root[data-theme='extreme'] .welcome {padding: 48px 16px}
+:root[data-theme='extreme'] .empty {padding: 20px 14px; min-height: 120px}
+:root[data-theme='extreme'] .chart-metrics {padding: 14px 16px 8px; gap: 34px}
+:root[data-theme='extreme'] .home-intro {padding: 2px 0 12px}
+:root[data-theme='extreme'] .home-intro .page-title {margin-bottom: 8px}
+:root[data-theme='extreme'] .home-summary {gap: 12px; padding: 8px 0 12px; margin-bottom: 12px}
+
+/* 标题层级字号：只缩标题，正文与表单标签保持契约值 */
+:root[data-theme='extreme'] .resource-value {font-size: 19px}
+:root[data-theme='extreme'] .home-summary strong {font-size: 17px}
+:root[data-theme='extreme'] .task-row-name strong {font-size: 13px}
+:root[data-theme='extreme'] .instance-caption strong {font-size: 12px}
+
+/* 标题右侧玻璃装饰层实测 42px 高（按钮仅 32px），会把标题行撑高后多出空白 */
+:root[data-theme='extreme'] .title-actions .glass-material {display: none}
+
+/* 顶栏去掉经典主题的 24px 左边距，并与 main 统一 4px 内边距，使内容左边界对齐。
+   各主题的宽度公式都带 .app-shell.with-rail 限定，无右栏的全局页面（界面设置 /
+   系统设置 / 更新器 / 远程访问）没有宽度声明，背景只铺到内容宽度，这里补上。 */
+:root[data-theme='extreme'] .topbar {margin-left: 0}
+/* 跨栏宽度只在桌面布局下生效：≤950px 时 .app-shell 变 display: block，100% 变成 body
+   宽度，再加右栏宽会远超视口，把页面撑出横向滚动条 */
+@media (min-width: 951px) {
+  :root[data-theme='extreme'] .app-shell.with-rail .topbar {width: calc(100% + var(--right-rail-width))}
+}
+:root[data-theme='extreme'] .app-shell:not(.with-rail) .topbar {width: 100%}
+
+/* 面包屑里的实例切换按钮原本是侧栏那种大块选择器，收成与面包屑文字对齐的单行小按钮 */
+:root[data-theme='extreme'] .breadcrumb {gap: 8px}
+:root[data-theme='extreme'] .breadcrumb .instance-picker {margin: 0}
+:root[data-theme='extreme'] .breadcrumb .instance-switcher {width: auto; min-height: 0; height: 26px; padding: 0 8px; gap: 6px; border-radius: 0}
+:root[data-theme='extreme'] .breadcrumb .instance-caption small {display: none}
+:root[data-theme='extreme'] .breadcrumb .instance-icon {width: 20px; height: 20px; border-radius: 0}
+
+/* 「页面标题 + 配置工具栏」原本各占一行、右侧大片空白。仅当标题紧跟工具栏时
+   把 main 变两列网格让两者并排，其余页面不受影响。 */
+:root[data-theme='extreme'] main:has(> .page-title + .config-toolbar) {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  column-gap: 14px;
+  align-items: center;
+}
+:root[data-theme='extreme'] main:has(> .page-title + .config-toolbar) > .page-title {grid-column: 1; margin-bottom: 0}
+:root[data-theme='extreme'] main:has(> .page-title + .config-toolbar) > .config-toolbar {grid-column: 2; margin-bottom: 8px}
+:root[data-theme='extreme'] main:has(> .page-title + .config-toolbar) > :not(.page-title):not(.config-toolbar) {grid-column: 1 / -1}
+
+/* ── 第二层：仅桌面宽度（≥951px） ── */
+@media (min-width: 951px) {
+  /* 骨架与控件高度：窄屏不改这些，以保留 44px 触摸目标 */
+  :root[data-theme='extreme'] {
+    --sidebar-width: 178px;
+    --right-rail-width: 244px;
+    --topbar-height: 44px;
+    --form-height: 32px;
+  }
+  :root[data-theme='extreme'] .topbar {height: var(--topbar-height)}
+  :root[data-theme='extreme'] .main-shell {min-height: calc(var(--viewport-height) - var(--topbar-height))}
+  :root[data-theme='extreme'] .overview-page {height: calc(var(--viewport-height) - var(--topbar-height) - 8px)}
+  /* 经典主题的 .app-shell 带 14px 列间距，是日志两侧留白的主要来源 */
+  :root[data-theme='extreme'] .app-shell {gap: 0}
+
+  /* 侧栏 */
+  :root[data-theme='extreme'] .sidebar {padding: 0 8px 8px}
+  :root[data-theme='extreme'] .sidebar-brand {height: var(--topbar-height); margin-bottom: 6px; padding: 0 6px}
+  :root[data-theme='extreme'] .brand-mark {margin-bottom: 12px}
+  :root[data-theme='extreme'] .brand-title {font-size: 18px; gap: 7px}
+  :root[data-theme='extreme'] .instance-picker {margin: 2px 0 10px}
+  :root[data-theme='extreme'] .instance-switcher {padding: 6px 7px; gap: 8px}
+  :root[data-theme='extreme'] .instance-icon {width: 26px; height: 28px}
+  :root[data-theme='extreme'] .sidebar-label {margin-bottom: 6px}
+  :root[data-theme='extreme'] .primary-nav {gap: 1px; margin-bottom: 10px}
+  :root[data-theme='extreme'] .primary-nav a {min-height: 30px; padding: 4px 8px}
+  :root[data-theme='extreme'] .nav-search {margin: 0 2px 6px; padding: 0 8px}
+  :root[data-theme='extreme'] .nav-search input {min-height: 26px; padding: 3px 0}
+  :root[data-theme='extreme'] .task-nav {gap: 0; padding: 0 2px 8px}
+  :root[data-theme='extreme'] .task-group-button {min-height: 30px; padding: 4px 7px}
+  :root[data-theme='extreme'] .task-submenu-item {min-height: 26px; padding: 3px 8px}
+  :root[data-theme='extreme'] .sidebar-footer {padding: 8px 6px}
+
+  /* 右栏 */
+  :root[data-theme='extreme'] .right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height))}
+  :root[data-theme='extreme'] .scheduler-widget {margin: 8px 8px 6px; padding: 8px}
+  :root[data-theme='extreme'] .scheduler-widget-heading {margin-bottom: 6px}
+  :root[data-theme='extreme'] .scheduler-stats {gap: 4px; margin-bottom: 6px}
+  :root[data-theme='extreme'] .scheduler-stats > div {padding: 5px 6px}
+  :root[data-theme='extreme'] .scheduler-stats strong {font-size: 13px}
+  :root[data-theme='extreme'] .rail-schedule {margin: 0 6px 6px; padding: 7px 2px 2px}
+  :root[data-theme='extreme'] .rail-section-heading {margin-bottom: 4px}
+  :root[data-theme='extreme'] .rail-task-list {gap: 4px}
+  :root[data-theme='extreme'] .rail-task-item {min-height: 32px; margin: 0; padding: 4px}
+  :root[data-theme='extreme'] .rail-queue-heading {padding: 6px 8px}
+  :root[data-theme='extreme'] .rail-queue-body {padding: 2px}
+  :root[data-theme='extreme'] .rail-queue-empty {padding: 8px}
+
+  /* 内容区 */
+  :root[data-theme='extreme'] .page-title {margin-bottom: 8px; gap: 12px}
+  :root[data-theme='extreme'] .overview-grid {gap: 10px; margin-bottom: 10px}
+  :root[data-theme='extreme'] .config-layout {gap: 12px}
+  :root[data-theme='extreme'] .task-table {padding: 0 11px}
+  :root[data-theme='extreme'] .task-row {padding: 6px 0; gap: 7px}
+  :root[data-theme='extreme'] .monitor-tabs {min-height: 36px; padding: 4px 10px}
+  :root[data-theme='extreme'] .monitor-segmented {padding: 2px}
+  :root[data-theme='extreme'] .monitor-segmented button {min-height: 24px; padding: 2px 9px}
+
+  /* 控件：只收边距与图标，表单标签字号不变 */
+  :root[data-theme='extreme'] .button {padding: 5px 12px}
+  :root[data-theme='extreme'] .icon-button {width: 28px; height: 28px}
+  :root[data-theme='extreme'] .text-button {min-height: 26px; padding: 2px}
+  :root[data-theme='extreme'] .select-trigger {padding: 5px 10px}
+  :root[data-theme='extreme'] .multi-options {gap: 5px}
+  :root[data-theme='extreme'] .multi-options .checkbox-control {min-height: 28px; padding: 4px 8px}
+  :root[data-theme='extreme'] .form-stack {gap: 10px}
+  :root[data-theme='extreme'] .form-stack label {gap: 6px}
+  :root[data-theme='extreme'] .modal {padding: 14px}
+  :root[data-theme='extreme'] .modal .panel-heading {padding: 0 0 9px !important; margin-bottom: 10px}
+  :root[data-theme='extreme'] .error-box {padding: 7px 11px; margin-bottom: 9px}
+  :root[data-theme='extreme'] .yaml-editor .cm-content {padding: 8px 0}
+  :root[data-theme='extreme'] .yaml-editor .cm-scroller {line-height: 1.55}
+  :root[data-theme='extreme'] .editor-heading {padding: 5px 11px}
+  :root[data-theme='extreme'] .storage-field pre {padding: 9px 11px; line-height: 1.6}
+  :root[data-theme='extreme'] .remote-address {padding: 12px 14px}
+  :root[data-theme='extreme'] .fleet-column {padding: 12px 14px}
+  :root[data-theme='extreme'] .shop-strategy-help summary {min-height: 36px; padding: 0 14px}
+  :root[data-theme='extreme'] .shop-strategy-help-body {padding: 2px 14px 14px}
+}

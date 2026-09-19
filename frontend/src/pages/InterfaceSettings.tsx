@@ -22,10 +22,11 @@ export function InterfaceSettings() {
               <option value="light">{ui('settings.themeLight')}</option>
               <option value="dark">{ui('settings.themeDark')}</option>
               <option value="minimal">{ui('settings.themeMinimal')}</option>
+              <option value="extreme">{ui('settings.themeExtreme')}</option>
             </Select>
           </div>
         </div>
-        {theme === 'minimal' && <ThemePreferences/>}
+        {(theme === 'minimal' || theme === 'extreme') && <ThemePreferences/>}
         {(theme === 'light' || theme === 'dark') && <BackgroundPreferences/>}
         <div className="field-row">
           <div className="field-label">

@@ -39,7 +39,8 @@ export function StatisticsChart({series}: {series: StatSeries[]}) {
     function render() {
       const colors = getComputedStyle(document.documentElement)
       const text = colors.getPropertyValue('--text').trim() || '#82929f'
-      const minimal = document.documentElement.dataset.theme === 'minimal'
+      const activeTheme = document.documentElement.dataset.theme
+      const minimal = activeTheme === 'minimal' || activeTheme === 'extreme'
       const primary = minimal ? colors.getPropertyValue('--accent').trim() : '#159b88'
       const secondary = minimal ? colors.getPropertyValue('--secondary').trim() : '#de7861'
       const surface = colors.getPropertyValue('--surface').trim()

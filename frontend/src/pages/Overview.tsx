@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Overview as OverviewData } from '../api/types'
-import { useConnection } from '../app/context'
+import { useApp, useConnection } from '../app/context'
 import { ErrorBox, Loading, PageTitle } from '../components/ui'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
@@ -18,6 +18,7 @@ function loadResourceSelection(instance: string) {
 
 export function Overview() {
   const {instance = ''} = useParams()
+  const {theme} = useApp()
   const [data, setData] = useState<OverviewData>()
   const [error, setError] = useState('')
   const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
@@ -47,11 +48,14 @@ export function Overview() {
   if (error) return <ErrorBox message={error}/>
   if (!data) return <Loading/>
 
+  // 紧凑主题省略与面包屑重复的标题行，设置按钮改挂日志面板工具栏。
+  const condensed = theme === 'extreme'
+  const actions = <InstanceActions instance={instance} status={data.status} resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection} showLabel={condensed}/>
   return <div className="overview-page">
-    <PageTitle className="instance-page-title" title={instance} actions={<InstanceActions instance={instance} status={data.status} resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>}/>
+    {!condensed && <PageTitle className="instance-page-title" title={instance} actions={actions}/>}
     <ResourceCards resources={data.resources} selected={selectedResources}/>
     <div className="overview-main">
-      <MonitorPanel instance={instance}/>
+      <MonitorPanel instance={instance} actions={condensed ? actions : undefined}/>
     </div>
   </div>
 }

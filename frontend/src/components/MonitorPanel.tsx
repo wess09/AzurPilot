@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Download, Image, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { LogEntry, Logs as LogsData, Preview } from '../api/types'
@@ -69,7 +69,8 @@ function RecentLogs({instance}: {instance: string}) {
   </div>
 }
 
-export function MonitorPanel({instance}: {instance: string}) {
+/** actions：紧凑主题把实例设置按钮挂到工具栏右侧。 */
+export function MonitorPanel({instance, actions}: {instance: string; actions?: ReactNode}) {
   const [view, setView] = useState('logs')
   const [frame, setFrame] = useState<Preview>()
   const {setPreviewEnabled, ui} = useApp()
@@ -85,6 +86,7 @@ export function MonitorPanel({instance}: {instance: string}) {
       {value: 'logs', label: <><Terminal size={15}/>{ui('monitor.logs')}</>},
       {value: 'preview', label: <><Image size={15}/>{ui('monitor.preview')}</>},
     ]}/>
+    {actions}
     {view === 'preview' && frame?.image && <a className="text-button" href={frame.image} download={`${instance}-screenshot.jpg`}><Download size={14}/>{ui('monitor.saveScreenshot')}</a>}
   </div>
     <div className="monitor-view" hidden={view !== 'logs'}><LogPanel active={view === 'logs'}/></div>

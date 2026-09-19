@@ -8,6 +8,7 @@
 @import './minimal-palette.css';
 @import './theme-primitives.css';
 @import './forms.css';
+@import './compact.css';
 
 :root {--form-shadow: none}
 /* 关闭共享组件里的装饰效果，不创建额外的滤镜或动画合成层。 */

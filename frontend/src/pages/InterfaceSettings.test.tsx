@@ -76,4 +76,11 @@ describe('界面设置页自定义背景显示逻辑', () => {
     expect(html).not.toContain('自定义背景')
     expect(html).toContain('配色方案')
   })
+
+  it('紧凑主题与简约同属极简外观，渲染配色方案而非自定义背景', () => {
+    const html = render('extreme')
+    expect(html).toContain('紧凑')
+    expect(html).toContain('配色方案')
+    expect(html).not.toContain('自定义背景')
+  })
 })

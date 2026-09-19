@@ -53,7 +53,7 @@ export function DevControls() {
       <span className="small-label">{ui('developer.only')}</span>
     </section>
 
-    {theme !== 'minimal' && <section className="panel config-group">
+    {theme !== 'minimal' && theme !== 'extreme' && <section className="panel config-group">
       <div className="panel-heading"><div><Sparkles size={18}/><h2 aria-label={ui('developer.visualLab')} data-text={ui('developer.visualLab')}>{ui('developer.visualLab')}</h2></div><span className="small-label">{ui('developer.liveTuning')}</span></div>
       <div className="dev-effect-lab">
         <div className="dev-effect-stage">

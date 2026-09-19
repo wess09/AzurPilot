@@ -10,10 +10,12 @@ import { FieldInput } from './FieldInput'
 import { ResourceSettings } from './ResourceCards'
 import { ErrorBox, Modal } from './ui'
 
-export function InstanceActions({instance, status, resources, selectedResources, onResourcesChange}: {instance: string; status: Status; resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void}) {
+/** showLabel：紧凑主题下按钮改挂日志面板工具栏，空间充足故补上文字。 */
+export function InstanceActions({instance, status, resources, selectedResources, onResourcesChange, showLabel = false}: {instance: string; status: Status; resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void; showLabel?: boolean}) {
   const [open, setOpen] = useState(false)
   const {ui} = useApp()
-  return <><button className="button" aria-label={ui('instance.settings')} title={ui('instance.settings')} onClick={() => setOpen(true)}><Settings2 size={16}/></button>{open && <InstanceSettings instance={instance} status={status} resources={resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange} onClose={() => setOpen(false)}/>}</>
+  // 无障碍名称用「实例设置」，可见文字在紧凑下换成「资源卡片设置」。
+  return <><button className="button" aria-label={ui('instance.settings')} title={ui('instance.settings')} onClick={() => setOpen(true)}><Settings2 size={16}/>{showLabel && <span>{ui('resource.settings')}</span>}</button>{open && <InstanceSettings instance={instance} status={status} resources={resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange} onClose={() => setOpen(false)}/>}</>
 }
 
 function InstanceSettings({instance, status, resources, selectedResources, onResourcesChange, onClose}: {instance: string; status: Status; resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void; onClose: () => void}) {

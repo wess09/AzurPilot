@@ -1,5 +1,5 @@
 import { palettes, paletteColors, paletteTokens, readCustomPalettes, type Palette, type ColorMode, type ResolvedMode, type CustomPalette } from './palettes'
-export type Theme = 'light' | 'dark' | 'minimal'
+export type Theme = 'light' | 'dark' | 'minimal' | 'extreme'
 export { palettes } from './palettes'
 export type { Palette, ColorMode, CustomPalette } from './palettes'
 type Preference = {theme: Theme; palette: Palette; colorMode: ColorMode; customPalettes: CustomPalette[]}
@@ -12,7 +12,7 @@ export function readThemePreference(): Preference {
     const colorMode = localStorage.getItem('azurpilot.color-mode')
     const customPalettes = readCustomPalettes(localStorage.getItem('azurpilot.custom-palettes'))
     return {
-      theme: theme === 'dark' || theme === 'minimal' ? theme : 'light',
+      theme: theme === 'dark' || theme === 'minimal' || theme === 'extreme' ? theme : 'light',
       palette: palettes.some(item => item === palette) || customPalettes.some(item => item.id === palette) ? palette as Palette : 'ocean',
       colorMode: colorMode === 'light' || colorMode === 'dark' ? colorMode : 'auto',
       customPalettes,
@@ -32,10 +32,10 @@ export const subscribeTheme = (listener: () => void) => {
   return () => { listeners.delete(listener) }
 }
 
-/** 只有简约自动模式订阅系统变化；切换为固定模式或经典主题即移除监听。 */
+/** 只有简约与紧凑的自动模式订阅系统变化；切换为固定模式或经典主题即移除监听。 */
 function applyColorMode(next: Preference) {
   const root = document.documentElement
-  const minimal = next.theme === 'minimal'
+  const minimal = next.theme === 'minimal' || next.theme === 'extreme'
   const followSystem = minimal && next.colorMode === 'auto'
   if (!followSystem) {
     systemQuery?.removeEventListener('change', systemModeChanged)
@@ -70,7 +70,8 @@ function systemModeChanged() {
 /** 样式作为惰性文本模块加载，切换时替换唯一节点，避免旧主题规则驻留。 */
 export async function applyTheme(next: Preference) {
   const request = ++revision
-  const skin = next.theme === 'minimal' ? 'minimal' : 'classic'
+  // 「紧凑」复用极简皮肤，紧凑规则由 compact.css 叠加；浅色/深色走经典皮肤。
+  const skin = next.theme === 'minimal' || next.theme === 'extreme' ? 'minimal' : 'classic'
   let css: string | undefined
   if (activeSkin !== skin) {
     const module = skin === 'minimal'

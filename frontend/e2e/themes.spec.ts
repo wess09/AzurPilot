@@ -35,7 +35,7 @@ test('简约首屏仅加载当前主题，五套配色即时生效并记忆', as
   })
   const requests: string[] = []
   page.on('request', request => requests.push(request.url()))
-  await page.goto('/#/settings')
+  await page.goto('/#/interface')
   await expect(page.getByRole('group', {name: '配色方案'})).toBeVisible()
   await expect(page.getByRole('combobox', {name: '自定义背景'})).toHaveCount(0)
   expect(requests.some(url => /ClassicGlass|Wallpaper|\/classic-|\/theme\.css|api\.yppp/.test(url))).toBe(false)
@@ -61,7 +61,16 @@ test('简约首屏仅加载当前主题，五套配色即时生效并记忆', as
 
 test('切换主题卸载旧材质，返回简约后不再发起装饰资源请求', async ({page}) => {
   await page.route('https://api.yppp.net/**', route => route.abort())
-  await page.goto('/#/settings')
+  // 无头 Chromium 缺少透明合成，会报告 prefers-reduced-transparency: reduce，
+  // 命中无障碍降级分支把材质压成实色。这里显式声明支持透明的显示环境，
+  // 让断言回到它真正要验证的内容：切回经典主题后毛玻璃材质恢复挂载。
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Emulation.setEmulatedMedia', {features: [
+    {name: 'prefers-reduced-transparency', value: 'no-preference'},
+    {name: 'prefers-contrast', value: 'no-preference'},
+    {name: 'forced-colors', value: 'none'},
+  ]})
+  await page.goto('/#/interface')
   await expect(page.locator('link[data-azurpilot-theme]')).toHaveCount(1)
   await expect(page.locator('.glass-material').first()).toBeVisible()
   await expect(page.getByRole('combobox', {name: '自定义背景'})).toBeVisible()
@@ -154,7 +163,7 @@ test('主题下载未完成时的新选择不会被旧请求覆盖', async ({pag
     await pending
     await route.continue()
   })
-  await page.goto('/#/settings')
+  await page.goto('/#/interface')
   await selectTheme(page, '简约')
   await expect.poll(() => requested).toBe(true)
   await selectTheme(page, '深色')
@@ -172,7 +181,7 @@ test('自动模式实时跟随系统，固定模式和配色预览正确切换',
   await page.emulateMedia({colorScheme: 'dark'})
   const requests: string[] = []
   page.on('request', request => requests.push(request.url()))
-  await page.goto('/#/settings')
+  await page.goto('/#/interface')
   await expect(page.getByRole('combobox', {name: '主题模式'})).toHaveText('自动')
   await expect(page.locator('html')).toHaveAttribute('data-color-mode', 'dark')
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'dark')
@@ -213,7 +222,7 @@ test('自动模式实时跟随系统，固定模式和配色预览正确切换',
 
 test('自定义方案支持创建、校验、浅深通用配色、编辑和删除', async ({page}, testInfo) => {
   await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'minimal'))
-  await page.goto('/#/settings')
+  await page.goto('/#/interface')
   await selectMode(page, '浅色')
   await page.getByRole('button', {name: '添加自定义配色'}).click()
   let dialog = page.getByRole('dialog')
@@ -260,7 +269,7 @@ test('自定义背景支持 URL 与上传文件并在刷新后恢复', async ({p
     body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
   }))
   await page.route('https://api.yppp.net/**', route => route.abort())
-  await page.goto('/#/settings')
+  await page.goto('/#/interface')
 
   const source = page.getByRole('combobox', {name: '自定义背景'})
   await source.click()
@@ -282,4 +291,70 @@ test('自定义背景支持 URL 与上传文件并在刷新后恢复', async ({p
   await page.reload()
   await expect(page.locator('.wallpaper img')).toHaveAttribute('src', /^blob:/)
   await expect(page.getByRole('combobox', {name: '自定义背景'})).toHaveText('上传文件')
+})
+
+test('紧凑主题收窄骨架与留白，且不叠加到其它主题', async ({page}) => {
+  // addInitScript 每次导航都会重跑；无条件写入会在 reload 后覆盖掉用例中途设置的 extreme
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('azurpilot.theme')) localStorage.setItem('azurpilot.theme', 'minimal')
+  })
+  await page.route('https://api.yppp.net/**', route => route.abort())
+  await page.goto('/#/interface')
+
+  const sidebar = page.locator('.sidebar')
+  const content = page.locator('main').first()
+  const label = page.locator('.field-label label').first()
+  // 简约主题是标准密度
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'minimal')
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(232)
+  expect(await content.evaluate(node => getComputedStyle(node).paddingTop)).toBe('48px')
+  const fontSize = await label.evaluate(node => getComputedStyle(node).fontSize)
+
+  // 主题下拉里应能选到「紧凑」
+  await page.getByRole('combobox', {name: '界面主题', exact: true}).click()
+  await expect(page.getByRole('option', {name: '紧凑', exact: true})).toHaveCount(1)
+  await page.keyboard.press('Escape')
+  // 直接写入偏好并重载，避免下拉交互的时序影响后续布局断言
+  await page.evaluate(() => localStorage.setItem('azurpilot.theme', 'extreme'))
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'extreme')
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(178)
+  expect(await content.evaluate(node => getComputedStyle(node).paddingTop)).toBe('4px')
+  // 紧凑只改留白与骨架：字号保持契约值，避免整体缩放。
+  expect(await label.evaluate(node => getComputedStyle(node).fontSize)).toBe(fontSize)
+  expect(parseFloat(fontSize)).toBeGreaterThanOrEqual(14)
+  expect(await page.locator('html').evaluate(node => getComputedStyle(node).zoom || '1')).toBe('1')
+  await expectFlat(page)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+
+  // 刷新后主题仍保持
+  await page.reload()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'extreme')
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(178)
+
+  // 总览页：与面包屑重复的标题行整行省略，实例设置按钮移入日志面板工具栏
+  await page.goto('/#/i/testpilot/overview')
+  await expect(page.locator('.instance-page-title')).toHaveCount(0)
+  const settingsButton = page.locator('.monitor-tabs .button')
+  await expect(settingsButton).toHaveCount(1)
+  await expect(settingsButton).toContainText('资源卡片设置')
+  // 窄屏（≤950px）下 .app-shell 变 block，顶栏不应再叠加右栏宽度撑出横向滚动
+  await page.setViewportSize({width: 900, height: 700})
+  await page.waitForTimeout(300)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.setViewportSize({width: 1440, height: 1100})
+  await page.waitForTimeout(300)
+  await page.goto('/#/interface')
+
+  // 切回简约与深色都应回到标准密度，证明紧凑已成为独立主题而非叠加项
+  await selectTheme(page, '简约')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'minimal')
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(232)
+  expect(await content.evaluate(node => getComputedStyle(node).paddingTop)).toBe('48px')
+
+  await selectTheme(page, '深色')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(Math.round((await sidebar.boundingBox())!.width)).toBe(232)
+  // 经典主题的 main 上边距是 36px（apple.css:91），与简约的 48px 不同
+  expect(await content.evaluate(node => getComputedStyle(node).paddingTop)).toBe('36px')
 })

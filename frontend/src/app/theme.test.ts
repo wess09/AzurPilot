@@ -27,4 +27,10 @@ describe('主题偏好恢复', () => {
     saved['azurpilot.color-mode'] = 'invalid'
     expect(readThemePreference()).toEqual({theme: 'minimal', palette: 'ocean', colorMode: 'auto', customPalettes: []})
   })
+  it('恢复紧凑主题，未知主题回退到浅色', () => {
+    vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'extreme' : null})
+    expect(readThemePreference()).toMatchObject({theme: 'extreme'})
+    vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'huge' : null})
+    expect(readThemePreference()).toMatchObject({theme: 'light'})
+  })
 })
