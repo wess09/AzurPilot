@@ -34,6 +34,7 @@ from module.submodule.utils import (
     get_func_mod,
     list_mod_instance,
 )
+from module.runtime.log_hub import hub as log_hub
 from module.runtime.setting import State
 from module.runtime.worker_registry import (
     get_workers,
@@ -271,7 +272,7 @@ class ProcessManager:
             self._process = None
             stopped = self._unregister_process()
             if stopped and pid is not None:
-                self.renderables.append(
+                self._append_renderable(
                     Text(f"[{self.config_name}] exited. Reason: Manual stop\n")
                 )
         if not stopped:
@@ -620,10 +621,15 @@ class ProcessManager:
                 if log.get("runId") == self.run_id:
                     self.current_task = log["runtimeTask"]
                 continue
-            self.renderables.append(log)
-            if len(self.renderables) > self.renderables_max_length:
-                self.renderables = self.renderables[self.renderables_reduce_length :]
+            self._append_renderable(log)
         logger.info("日志队列处理循环结束")
+
+    def _append_renderable(self, log: ConsoleRenderable) -> None:
+        """写入日志并立刻通知订阅者，避免 WebUI 再等下一轮轮询。"""
+        self.renderables.append(log)
+        if len(self.renderables) > self.renderables_max_length:
+            self.renderables = self.renderables[self.renderables_reduce_length :]
+        log_hub.publish(self.config_name)
 
     @property
     def alive(self) -> bool:

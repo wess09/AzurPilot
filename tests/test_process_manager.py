@@ -502,3 +502,12 @@ class TestProcessManagerRegistry(unittest.TestCase):
             manager._run_manual_stop_action_locked()
 
         terminate.assert_called_once_with(process)
+
+    def test_append_renderable_publishes_to_log_hub(self):
+        from rich.text import Text
+
+        manager = ProcessManager.get_manager("pilot")
+        with patch("module.runtime.process_manager.log_hub") as hub:
+            manager._append_renderable(Text("hello"))
+        hub.publish.assert_called_once_with("pilot")
+        self.assertEqual(1, len(manager.renderables))

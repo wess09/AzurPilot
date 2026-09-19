@@ -166,6 +166,13 @@ function loadLogLevel(instance: string): string {
   return 'ALL'
 }
 
+export function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[], reset = false): LogEntry[] {
+  if (reset) return incoming.slice(-400)
+  const byId = new Map(previous.map(entry => [entry.id, entry]))
+  incoming.forEach(entry => byId.set(entry.id, entry))
+  return [...byId.values()].sort((a, b) => a.id - b.id).slice(-400)
+}
+
 export function LogPanel({active = true}: {active?: boolean}) {
   const {instance = ''} = useParams()
   const [entries, setEntries] = useState<LogEntry[]>([])
@@ -177,6 +184,8 @@ export function LogPanel({active = true}: {active?: boolean}) {
   const connection = useConnection()
   const {notify, ui} = useApp()
   const scroll = useRef<HTMLDivElement>(null)
+  const pending = useRef<LogEntry[]>([])
+  const raf = useRef(0)
 
   useEffect(() => setLevel(loadLogLevel(instance)), [instance])
 
@@ -185,33 +194,51 @@ export function LogPanel({active = true}: {active?: boolean}) {
     try { localStorage.setItem(`azurpilot.log.level.${instance}`, next) } catch { /* 无存储权限时仅本页生效。 */ }
   }
 
+  function cancelPending() {
+    pending.current = []
+    if (raf.current) cancelAnimationFrame(raf.current)
+    raf.current = 0
+  }
+
+  function flushPending() {
+    raf.current = 0
+    const next = pending.current.shift()
+    if (!next) return
+    setEntries(previous => mergeLogEntries(previous, [next]))
+    if (pending.current.length) raf.current = requestAnimationFrame(flushPending)
+  }
+
   useEffect(() => {
     if (connection !== 'ready') return
     let active = true
+    cancelPending()
     setFloor(0)
     setEntries([])
     void api.request('logs.get', {instance}).then(value => {
-      if (active) setEntries(previous => {
-        const entries = new Map(value.entries.map(entry => [entry.id, entry]))
-        previous.forEach(entry => entries.set(entry.id, entry))
-        return [...entries.values()].sort((a, b) => a.id - b.id).slice(-400)
-      })
+      if (active) setEntries(previous => mergeLogEntries(previous, value.entries))
     }).catch(error => notify(error.message, true))
     return () => { active = false }
   }, [connection, instance, notify])
 
-  useEffect(() => api.onEvent(event => {
-    if (event.topic !== 'logs') return
-    const data = event.data as LogsData
-    if (data.instance !== instance) return
-    setFloor(previous => data.cursor < previous ? 0 : previous)
-    setEntries(previous => {
-      if (data.reset) return data.entries
-      const byId = new Map(previous.map(entry => [entry.id, entry]))
-      data.entries.forEach(entry => byId.set(entry.id, entry))
-      return [...byId.values()].sort((a, b) => a.id - b.id).slice(-400)
+  useEffect(() => {
+    const stop = api.onEvent(event => {
+      if (event.topic !== 'logs') return
+      const data = event.data as LogsData
+      if (data.instance !== instance) return
+      setFloor(previous => data.cursor < previous ? 0 : previous)
+      if (data.reset || data.entries.length > 8) {
+        cancelPending()
+        setEntries(previous => mergeLogEntries(previous, data.entries, data.reset))
+        return
+      }
+      pending.current.push(...data.entries)
+      if (!raf.current) raf.current = requestAnimationFrame(flushPending)
     })
-  }), [instance])
+    return () => {
+      stop()
+      cancelPending()
+    }
+  }, [instance])
 
   useEffect(() => {
     if (active && follow && scroll.current) {

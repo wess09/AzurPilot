@@ -153,6 +153,64 @@ class RuntimeTests(unittest.TestCase):
             self.assertEqual('99', session.preview_pending['data']['image'])
         asyncio.run(check())
 
+    def test_slow_logs_merge_without_filling_control_queue(self):
+        async def check():
+            session = Session(Gateway(None, ''), SimpleNamespace(close=AsyncMock()))
+            for index in range(100):
+                await session.event('logs', {
+                    'instance': 'pilot', 'cursor': index + 1, 'reset': False,
+                    'entries': [{'id': index + 1, 'level': 'INFO', 'text': str(index)}],
+                })
+            self.assertEqual(1, session.queue.qsize())
+            self.assertEqual(100, len(session.log_pending['data']['entries']))
+            self.assertEqual(100, session.log_pending['data']['cursor'])
+        asyncio.run(check())
+
+    def test_log_emit_streams_few_entries_and_batches_history(self):
+        async def check():
+            session = Session(Gateway(None, ''), SimpleNamespace(close=AsyncMock()))
+            await session._emit_logs({
+                'instance': 'pilot', 'cursor': 3, 'reset': False,
+                'entries': [{'id': index, 'level': 'INFO', 'text': text} for index, text in enumerate(('a', 'b', 'c'), 1)],
+            })
+            self.assertEqual(3, session.queue.qsize())
+            first = session.queue.get_nowait()
+            self.assertEqual('logs', first['topic'])
+            self.assertEqual('a', first['data']['entries'][0]['text'])
+
+            session = Session(Gateway(None, ''), SimpleNamespace(close=AsyncMock()))
+            entries = [{'id': index, 'level': 'INFO', 'text': str(index)} for index in range(9)]
+            await session._emit_logs({'instance': 'pilot', 'cursor': 9, 'reset': False, 'entries': entries}, stream=False)
+            self.assertEqual(1, session.queue.qsize())
+            self.assertEqual(9, len(session.log_pending['data']['entries']))
+        asyncio.run(check())
+
+    def test_log_subscription_wakes_on_append_and_unsubscribes(self):
+        async def check():
+            from module.api.protocol import SubscribeParams
+            from module.runtime.log_hub import LogHub
+            hub = LogHub()
+            runtime = SimpleNamespace(logs=Mock(return_value={
+                'instance': 'pilot', 'cursor': 1, 'reset': False,
+                'entries': [{'id': 1, 'level': 'INFO', 'text': 'hello'}],
+            }))
+            session = Session(Gateway(SimpleNamespace(runtime=runtime), ''), SimpleNamespace(close=AsyncMock()))
+            session.subscription = SubscribeParams(instance='pilot', topics=['logs'])
+            session.logs_primed = True
+            with patch('module.runtime.log_hub.hub', hub):
+                task = asyncio.create_task(session.log_producer())
+                await asyncio.sleep(0)
+                hub.publish('other')
+                await asyncio.sleep(0)
+                self.assertTrue(session.queue.empty())
+                hub.publish('pilot')
+                message = await asyncio.wait_for(session.queue.get(), timeout=.5)
+                self.assertEqual('hello', message['data']['entries'][0]['text'])
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+                self.assertEqual(set(), hub.listeners)
+        asyncio.run(check())
+
     def test_preview_subscription_wakes_on_frame_and_unsubscribes(self):
         async def check():
             from module.api.protocol import SubscribeParams

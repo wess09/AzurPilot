@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { LogLine, LOG_LINE_RE, RULE_RE, PURE_RULE_RE, CENTER_TITLE_RE } from './LogPanel'
+import { LogLine, LOG_LINE_RE, RULE_RE, PURE_RULE_RE, CENTER_TITLE_RE, mergeLogEntries } from './LogPanel'
 
 describe('LogPanel 日志解析与渲染', () => {
   it('正确识别 level=0 居中标题与纯双分割线', () => {
@@ -80,5 +80,12 @@ describe('LogPanel 日志解析与渲染', () => {
     expect(html).toContain('log-center-title')
     expect(html).toContain('log-search-match')
     expect(html).toContain('START')
+  })
+
+  it('按 id 合并增量日志并在重置时整体替换', () => {
+    const first = mergeLogEntries([], [{id: 1, level: 'INFO', text: 'a'}, {id: 2, level: 'INFO', text: 'b'}])
+    const merged = mergeLogEntries(first, [{id: 2, level: 'INFO', text: 'b2'}, {id: 3, level: 'INFO', text: 'c'}])
+    expect(merged.map(entry => [entry.id, entry.text])).toEqual([[1, 'a'], [2, 'b2'], [3, 'c']])
+    expect(mergeLogEntries(merged, [{id: 9, level: 'ERROR', text: 'x'}], true)).toEqual([{id: 9, level: 'ERROR', text: 'x'}])
   })
 })
