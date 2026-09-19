@@ -1,0 +1,109 @@
+/* 旧版主题配色：MD3 靛紫。
+   取值来自 master 的 assets/gui/css/light-alas.css 与 dark-alas.css；
+   变量键与 minimal-palette.css 一一对应，组件只消费 --theme-* 契约变量。 */
+:root {
+  color-scheme: light;
+  /* 基础色板 */
+  --bg: #f9f9f9; --surface: #ffffff; --surface-muted: #f6f6f9;
+  --text: #2c2c2c; --muted: #777777; --border: #e0e0e0;
+  --accent: #4e4c97; --accent-hover: #3f3d79; --accent-soft: #e8e8f8;
+  --secondary: #7a77bb; --secondary-soft: #eeedfa;
+  --sidebar: var(--surface); --radius: 8px; --shadow: 0 1px 2px rgb(0 0 0 / .1);
+  --red: #c9342c; --green: #248a3d; --green-soft: #e8f4ec;
+  --sidebar-width: 240px; --topbar-height: 56px;
+  --glass-tint: var(--surface); --glass-edge: var(--border); --glass-shadow: none;
+  --syntax-key: var(--accent); --syntax-string: var(--secondary); --syntax-value: #7b5ea7;
+  --syntax-comment: var(--muted); --syntax-punctuation: var(--text);
+  --theme-font-sans: 'MiSans', "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
+  --theme-font-mono: 'JetBrains Mono NL', Consolas, "Cascadia Code", "Microsoft YaHei", monospace;
+
+  /* 契约层 —— 颜色 */
+  --theme-bg: var(--bg); --theme-surface: var(--surface); --theme-surface-muted: var(--surface-muted);
+  --theme-text: var(--text); --theme-muted: var(--muted); --theme-border: var(--border);
+  --theme-accent: var(--accent); --theme-accent-hover: var(--accent-hover); --theme-accent-soft: var(--accent-soft);
+  --theme-on-accent: #ffffff;
+  --theme-on-danger: #ffffff;
+  --theme-danger: var(--red); --theme-danger-soft: #fcebeb;
+  --theme-success: var(--green); --theme-success-soft: var(--green-soft);
+  --theme-warning: #805a14; --theme-warning-soft: #faf0d6; --theme-info: var(--secondary);
+  --theme-sidebar: var(--surface); --theme-glass: var(--surface); --theme-glass-edge: var(--border);
+  --theme-glass-shadow: none; --theme-material-filter: none; --theme-chrome-filter: none;
+  --theme-popover-filter: none; --theme-overlay-filter: none; --theme-overlay: var(--bg);
+
+  /* 契约层 —— 形状与阴影：旧版圆角明显小于新版 */
+  --theme-radius-control: 4px; --theme-radius-button: 100px; --theme-radius-panel: 6px;
+  --theme-radius-card: 6px; --theme-radius-popover: 6px; --theme-radius-pill: 999px;
+  --theme-shadow-panel: 0 1px 2px rgb(0 0 0 / .1); --theme-shadow-popover: 0 2px 8px rgb(0 0 0 / .18);
+  --theme-shadow-modal: 0 2px 12px rgb(0 0 0 / .22); --theme-shadow-floating: 0 1px 2px rgb(0 0 0 / .1);
+  --theme-shadow-hover: 0 2px 6px rgb(0 0 0 / .14);
+
+  /* 契约层 —— 导航：选中/悬停统一用浅靛紫底 + 深靛紫字 */
+  --theme-nav-text: var(--text); --theme-nav-icon: #2c2c2c;
+  --theme-nav-active-bg: #e8e8f8; --theme-nav-active-text: #1a1861;
+  --theme-nav-expanded-bg: var(--accent-soft); --theme-nav-hover-bg: var(--accent-soft);
+  --theme-nav-popover-bg: var(--surface); --theme-nav-popover-edge: var(--border);
+  --theme-nav-popover-shadow: 0 1px 2px rgb(0 0 0 / .1);
+  --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover);
+
+  /* 契约层 —— 表单：旧版聚焦不加光圈，只换底边框颜色 */
+  --theme-input-bg: #f6f6f9; --theme-input-text: var(--text); --theme-input-border: #8e8e8e;
+  --theme-focus: var(--accent); --theme-focus-ring: transparent;
+  --theme-toggle-off: #79747e; --theme-toggle-on: #4e4c97; --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
+  --theme-segment-bg: var(--surface-muted); --theme-segment-border: var(--border);
+  --theme-segment-indicator: var(--accent-soft);
+  --theme-toast-bg: var(--text); --theme-toast-text: var(--surface); --theme-toast-error-bg: var(--red);
+  --theme-error-bg: var(--theme-danger-soft); --theme-error-border: var(--red);
+  --theme-selection: var(--accent-soft); --theme-scrollbar-thumb: #b5b5b5;
+  --theme-status-stopped-bg: var(--surface-muted); --theme-status-stopped-text: var(--muted);
+
+  /* 契约层 —— 日志 */
+  --theme-log-debug: var(--muted); --theme-log-info: var(--accent); --theme-log-warning: var(--theme-warning);
+  --theme-log-error: var(--red); --theme-log-critical: var(--red); --theme-log-time: var(--secondary);
+  --theme-log-true: var(--green); --theme-log-false: var(--red); --theme-log-null: #7b5ea7;
+  --theme-log-path: var(--accent); --theme-log-attr: var(--secondary); --theme-log-search: #f9e7a9;
+  --theme-resource-0-bg: var(--accent-soft); --theme-resource-0-text: var(--accent);
+  --theme-resource-1-bg: var(--secondary-soft); --theme-resource-1-text: var(--secondary);
+  --theme-resource-2-bg: var(--accent-soft); --theme-resource-2-text: var(--accent);
+  --theme-resource-3-bg: var(--secondary-soft); --theme-resource-3-text: var(--secondary);
+  --theme-preview-bg: var(--surface-muted); --theme-preview-text: var(--text); --theme-preview-muted: var(--muted);
+  --theme-login-art-bg: var(--accent-soft); --theme-login-art-text: var(--accent);
+  --theme-instance-icon-bg: var(--accent); --theme-instance-icon-shadow: none;
+
+  /* 契约层 —— 标题：旧版是普通实色标题，不做玻璃字 */
+  --theme-title-fill: none; --theme-title-color: var(--text); --theme-title-stroke: var(--text);
+  --theme-title-highlight-stroke: var(--text); --theme-title-glass: var(--surface); --theme-title-shadow: none;
+}
+
+/* 深色变体是独立主题值，与前缀式反代的主题名一一对应。 */
+:root[data-theme='legacy-dark'] {
+  color-scheme: dark;
+  --bg: #282a2f; --surface: #2f3136; --surface-muted: #36393f;
+  --text: #eeeeee; --muted: #adb5bd; --border: #484b52;
+  --accent: #b4b1e5; --accent-hover: #928fcf; --accent-soft: #3e3b6a;
+  --secondary: #928fcf; --secondary-soft: #363560;
+  --shadow: 0 1px 2px rgb(0 0 0 / .3);
+  --red: #f28b82; --green: #4ade80; --green-soft: #24362b;
+  --syntax-value: #c9a7f0;
+
+  --theme-danger-soft: #4a2c30;
+  --theme-on-danger: #282a2f;
+  --theme-warning: #e7c078; --theme-warning-soft: #403723;
+  --theme-overlay: rgb(0 0 0 / .45);
+
+  /* 深色下选中菜单改用中靛紫底 + 浅靛紫字 */
+  --theme-nav-icon: #dfdcfb;
+  --theme-nav-active-bg: #3e3b6a; --theme-nav-active-text: #dfdcfb;
+  --theme-nav-popover-bg: var(--surface); --theme-nav-popover-edge: #40444b;
+  --theme-nav-popover-shadow: 0 2px 10px rgb(0 0 0 / .45);
+  --theme-primary-bg: #7a77bb; --theme-primary-hover: #928fcf; --theme-on-accent: #1a1861;
+
+  --theme-input-bg: #36393f; --theme-input-border: var(--border);
+  --theme-toggle-off: #938f99; --theme-toggle-on: #7a77bb; --theme-toggle-knob: #ffffff;
+  --theme-segment-indicator: #3e3b6a;
+  --theme-selection: #3e3b6a; --theme-scrollbar-thumb: #5a5e66;
+  --theme-shadow-panel: 0 1px 2px rgb(0 0 0 / .3); --theme-shadow-popover: 0 4px 14px rgb(0 0 0 / .5);
+  --theme-shadow-modal: 0 6px 24px rgb(0 0 0 / .55); --theme-shadow-floating: 0 1px 2px rgb(0 0 0 / .3);
+  --theme-shadow-hover: 0 2px 8px rgb(0 0 0 / .4);
+  --theme-log-null: #c9a7f0; --theme-log-search: #72551a;
+  --theme-instance-icon-bg: #7a77bb;
+}

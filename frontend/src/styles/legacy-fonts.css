@@ -1,0 +1,17 @@
+/* 旧版字体：正文 MiSans、日志 JetBrains Mono NL。
+   字体文件放在 frontend/public/，用相对路径引用，才能在前缀式反代下同样命中。 */
+@font-face {
+  font-family: 'MiSans';
+  src: url('./MiSans-Demibold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono NL';
+  src: url('./JetBrainsMonoNL-Regular.ttf') format('truetype');
+  font-display: swap;
+}
+
+/* components.css 把日志字体写死成 Cascadia Code，这里改回旧版用的等宽字体。 */
+.log-content {font-family: var(--theme-font-mono)}

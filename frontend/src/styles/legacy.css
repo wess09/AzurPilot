@@ -1,0 +1,258 @@
+/* 旧版主题：MD3 靛紫配色，还原旧 WebUI 的平面观感。
+   与简约主题一样复用共享骨架，但不导入玻璃、壁纸与外部 theme.css。
+   结构性规则（布局、尺寸、层级）必须自带 —— 共享层不提供，平时由 apple.css 承担。 */
+@import './tokens.css';
+@import './layout.css';
+@import './components.css';
+@import './insights.css';
+@import './home.css';
+@import './dev.css';
+@import './legacy-palette.css';
+@import './theme-primitives.css';
+@import './forms.css';
+@import './legacy-fonts.css';
+
+/* 旧版输入框是「只有下划线」的样式：聚焦靠底边框变色，不加光圈也不加投影。 */
+:root {--form-shadow: none}
+input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])),
+textarea, .select-trigger, .input-icon {
+  border: 0;
+  border-bottom: 1px solid var(--theme-input-border);
+  background: var(--theme-input-bg);
+}
+input:focus, textarea:focus,
+.select-trigger:focus-visible, .select-trigger[aria-expanded='true'], .input-icon:focus-within {
+  background: var(--accent-soft);
+  border-bottom: 2px solid var(--theme-focus);
+  box-shadow: none;
+}
+
+/* MD3 开关：32px 胶囊轨道 + 圆形滑块；选中换主色，按下时滑块加宽。
+   forms.css 只在简约主题里补 ::before 的 content/position，这里必须自带。 */
+.toggle {position: relative; padding: 0 6px}
+.toggle::before {content: ''; position: absolute; border: 2px solid var(--theme-toggle-off); background: var(--surface)}
+.toggle > span {width: 16px; height: 16px; background: var(--theme-toggle-off); box-shadow: none}
+.toggle, .toggle::before, .toggle > span {transition: all .2s cubic-bezier(.2, 0, 0, 1)}
+.toggle.on::before {background: var(--theme-toggle-on); border-color: var(--theme-toggle-on)}
+.toggle.on > span {width: 20px; height: 20px; background: var(--theme-toggle-knob); transform: translateX(20px)}
+.toggle:active:not(:disabled) > span {width: 24px}
+.toggle.on:active:not(:disabled) > span {transform: translateX(16px)}
+.toggle:disabled::before {background: var(--surface-muted)}
+.toggle:disabled > span {background: var(--theme-toggle-off)}
+
+/* 旧版浅色/深色没有自定义背景图，壁纸层不挂载；首页侧栏改用实色底，避免白字落在浅色背景上。 */
+:root[data-theme='legacy-light'] .home-visual,
+:root[data-theme='legacy-dark'] .home-visual {
+  color: var(--text);
+  background: var(--surface-muted);
+  text-shadow: none;
+}
+
+/* 跳转链接必须在网格流之外，否则会占掉侧栏那一列。 */
+.skip-link {position: fixed; top: -100px; left: 16px; z-index: 200; background: var(--surface); color: var(--accent); padding: 14px; border-radius: 8px}
+.skip-link:focus {top: 12px}
+
+body {background-attachment: scroll}
+.app-shell {gap: 0}
+/* 旧版侧栏贴边、只有一条右边框，顶栏与右栏不带圆角。 */
+.sidebar, .right-rail, .topbar {border-radius: 0; background: var(--surface)}
+.sidebar {padding: 0 14px 14px}
+.sidebar-brand {height: var(--topbar-height); padding: 0 8px; margin-bottom: 14px}
+.brand-title {font-size: 22px}
+.brand-mark {color: var(--secondary)}
+.sidebar-label, .sidebar-label button {color: var(--muted)}
+.primary-nav a, .task-group-button {font-size: 13px; min-height: 42px}
+.task-submenu-item {font-size: 13px; min-height: 38px}
+.task-group-button.expanded {border-color: var(--accent)}
+.topbar {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
+.right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
+.breadcrumb, .breadcrumb .instance-caption strong {font-size: 13px}
+main {padding: 40px 28px 24px}
+main:focus {outline: none}
+.page-title h1 {font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.6px; overflow-wrap: anywhere}
+.home-intro {padding: 8px 0 24px}
+.eyebrow {display: block; margin-bottom: 10px; font-size: 12px; font-weight: 600}
+.home-intro .page-title {margin-bottom: 12px}
+.home-intro p {color: var(--muted); line-height: 1.8}
+.home-summary {display: flex; flex-wrap: wrap; gap: 20px; padding: 18px 0 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border)}
+.home-summary > div {display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px}
+.home-summary strong {color: var(--text); font-size: 20px; font-variant-numeric: tabular-nums}
+.title-actions {position: relative; gap: 8px; padding: 4px}
+.panel-heading h2 {font-size: 15px}
+.panel-heading > div > svg, .eyebrow, .home-summary svg {color: var(--secondary)}
+.panel, .resource-card, .summary-metrics section, .instance-card {border-radius: var(--theme-radius-panel)}
+.button {font-size: 13px; font-weight: 600}
+.button.primary:hover:not(:disabled) {transform: none}
+.button.danger.subtle {border-color: var(--red)}
+.button.danger:not(.subtle), .toast.error {color: var(--theme-on-danger)}
+.icon-button {width: 36px; height: 36px; border-radius: 6px}
+.text-button {font-size: 12px; min-height: 36px}
+input:focus, textarea:focus, .select-trigger:focus-visible, .select-trigger[aria-expanded='true'], .yaml-editor:focus-within, .input-icon:focus-within, .nav-search:focus-within {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.input-icon > input:focus, .nav-search input:focus {outline: none}
+/* 禁用状态使用实色而非整层透明，保留标签和图标的可读性。 */
+button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled,
+.checkbox-control:has(:disabled), .select-option[aria-disabled='true'] {opacity: 1; color: var(--muted)}
+.button:disabled {background: var(--surface-muted); border-color: var(--border)}
+.input-icon, .scheduler-widget, .schedule-summary, .count-badge, .nav-search {background: var(--surface-muted)}
+.status, .task-state {border-radius: 4px}
+.resource-foot > svg, .resource-editor-grip {color: var(--muted)}
+.resource-editor-card, .resource-picker {background: var(--surface); border-color: var(--border)}
+.resource-editor-card.dragging {opacity: 1; border-color: var(--accent); transform: none; background: var(--accent-soft)}
+.resource-editor-remove:hover {background: var(--theme-danger-soft)}
+.resource-editor-add-icon, .resource-editor-add, .resource-editor-add:hover, .resource-editor-add.open {background: var(--accent-soft)}
+.statistics-note {border-left-color: var(--secondary)}
+.chart-expanded {inset: 0; border-radius: 0; z-index: 150}
+/* 旧版版式：只在实例视图生效（App.tsx 的 .legacy-shell）。
+   旧版外壳是「顶栏跨全宽 + 文字菜单在顶栏下方」，与共享层的「侧栏整列 + 顶栏在主内容列内」
+   是两套网格，所以在这里整块重排，主页视图不受影响。 */
+.app-shell.legacy-shell {
+  /* 旧版文字菜单宽 12rem(16px 基准)=192px；本仓库根字号是 14px，所以直接写像素。 */
+  --sidebar-width: 192px;
+  /* 内容区顶部那行「主页 / 实例 / 任务」，算进页内两列的高度预算里。 */
+  --legacy-page-nav-height: 42px;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas: 'topbar topbar' 'sidebar main';
+}
+.app-shell.legacy-shell.with-rail {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width);
+  grid-template-areas: 'topbar topbar topbar' 'sidebar main rail';
+}
+.app-shell.legacy-shell > .topbar {grid-area: topbar; width: auto}
+.app-shell.legacy-shell > .sidebar {grid-area: sidebar}
+.app-shell.legacy-shell > .main-shell {grid-area: main}
+.app-shell.legacy-shell > .right-rail {grid-area: rail}
+/* 招牌随顶栏走：顶栏里的那份紧贴左侧，不参与侧栏那套 72px 间距。 */
+.legacy-topbar-brand {height: auto; margin-bottom: 0; padding: 0}
+/* 旧版顶栏的第三列是居中的页面名。 */
+.legacy-topbar-title {flex: 1; min-width: 0; text-align: center; font-size: 1.2rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+/* 旧版实例页的页名由顶栏居中显示，内容区只留一个给读屏的标题。 */
+.legacy-sr-title {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap}
+/* 顶栏只留招牌与居中的页面名；「主页 / 实例 / 任务」这一行落在内容区顶部。 */
+.legacy-page-nav {flex-shrink: 0; height: var(--legacy-page-nav-height, 42px); display: flex; align-items: center; padding: 0 28px}
+.legacy-page-nav .instance-picker {margin: 0}
+
+/* 侧栏任务菜单：分组展开后具体任务往下列（旧版树状格式）。 */
+.task-group-button:hover .task-group-arrow {transform: none}
+.task-group-button.expanded .task-group-arrow {color: var(--accent); transform: rotate(180deg)}
+.task-submenu-list {margin: 2px 0 6px 12px; padding-left: 8px; border-left: 1px solid var(--border)}
+
+/* 顶栏的「任务配置」下拉：旧版实例页删掉了页内的分组导航，跨任务跳转放在这里。 */
+.task-picker {position: relative; flex-shrink: 0}
+.task-picker-trigger {display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; white-space: nowrap}
+.task-picker-trigger:hover, .task-picker-trigger[aria-expanded='true'] {color: var(--accent)}
+.task-picker-menu {position: absolute; top: calc(100% + 8px); left: 0; z-index: 40; width: min(22rem, 70vw); max-height: min(30rem, 70vh); overflow-y: auto; padding: 8px; border: 1px solid var(--border); border-radius: var(--theme-radius-popover); background: var(--surface); box-shadow: var(--theme-shadow-popover)}
+.task-picker-group + .task-picker-group {margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border)}
+.task-picker-group-name {display: block; padding: 6px 8px 4px; color: var(--muted); font-size: 11px}
+.task-picker-menu button {display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px; border-radius: 4px; text-align: left; font-size: 13px}
+.task-picker-menu button span {flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+.task-picker-menu button:hover, .task-picker-menu button:focus-visible, .task-picker-menu button[aria-checked='true'] {background: var(--accent-soft); color: var(--accent)}
+.task-picker-empty {padding: 14px 8px; color: var(--muted); font-size: 12px; text-align: center}
+
+@media (min-width: 951px) {
+  /* 顶栏占了第一行，侧栏与右栏从它下方开始各自滚动。 */
+  .app-shell.legacy-shell > .topbar {position: relative; justify-content: flex-start; gap: 14px}
+  .legacy-topbar-title {position: absolute; left: 50%; transform: translateX(-50%); max-width: min(30rem, 38%); flex: 0 0 auto}
+  .app-shell.legacy-shell > .sidebar,
+  .app-shell.legacy-shell > .right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height))}
+  .app-shell.legacy-shell .legacy-sidebar-actions {display: none}
+
+  /* 旧版实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
+     所以左列由各页面自己渲染（LegacyRail），不是外壳的一列。 */
+  .instance-page-grid {
+    display: grid;
+    grid-template-columns: minmax(16rem, 20rem) minmax(24rem, 1fr);
+    gap: 14px;
+    align-items: stretch;
+    height: calc(var(--viewport-height) - var(--topbar-height) - var(--legacy-page-nav-height, 0px) - 64px);
+  }
+  /* 两列各自滚动；左列的队列列表不再自己开一层滚动区。 */
+  .instance-page-rail {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto}
+  .instance-page-rail .rail-task-list {flex: 0 0 auto; overflow: visible}
+  /* 右栏那套边距会让调度器与任务计划比同列其他卡片窄，这里清零让三块左右对齐。 */
+  .instance-page-rail .scheduler-widget {margin: 0}
+  .instance-page-rail .rail-schedule {padding: 12px 0 0}
+  .instance-page-main {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto}
+  .instance-page-main .resource-grid {margin-bottom: 0}
+  /* 搜索框与参数卡同宽，「任务设置和搜索对齐」。 */
+  .instance-page-main .config-toolbar .input-icon,
+  .task-config-settings .config-toolbar .input-icon {max-width: none}
+  .task-config-settings .config-toolbar {margin-bottom: 0}
+  .instance-page-main .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
+  .instance-page-main .statistics-toolbar-row .statistics-category-control {margin-bottom: 0; flex: 1; min-width: 0}
+  .instance-page-main .statistics-actions {display: flex; align-items: center; gap: 8px; margin-left: auto}
+
+  /* 旧版的任务详细设置：参数卡在左、分组导航在右（旧版是 13rem≈208px 的右列）。
+     和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走。 */
+  .task-config-legacy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 208px;
+    gap: 22px;
+    align-items: stretch;
+    height: calc(var(--viewport-height) - var(--topbar-height) - var(--legacy-page-nav-height, 0px) - 64px);
+  }
+  .task-config-legacy.no-nav {grid-template-columns: minmax(0, 1fr)}
+  .task-config-settings {min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px}
+  .task-config-legacy .group-nav {max-height: 100%}
+  /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px。 */
+  .task-config-legacy .config-group {scroll-margin-top: 0}
+}
+.legacy-stat-card {display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; flex-shrink: 0}
+.legacy-stat-title {font-size: 15px; font-weight: 600}
+.group-nav {padding: 6px; border-radius: var(--theme-radius-panel)}
+.group-nav a {border-radius: 4px}
+.monitor-tabs {height: auto; min-height: 60px; padding: 10px 16px; flex-wrap: wrap; gap: 8px}
+.monitor-panel .log-toolbar {display: flex; align-items: center; margin-left: auto; gap: 4px}
+.monitor-panel .log-panel {border: 0; border-radius: 0}
+.monitor-panel .log-content {font-size: 12px; line-height: 1.8; background: var(--surface)}
+.log-filters {background: var(--surface-muted)}
+.monitor-segmented {display: inline-flex; align-items: center; gap: 3px; padding: 3px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); max-width: 100%; overflow-x: auto}
+.monitor-segmented button {display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 34px; padding: 6px 12px; border: 0; border-radius: 4px; color: var(--muted); font-size: 13px; white-space: nowrap}
+.monitor-segmented button[aria-selected='true'] {background: var(--accent); color: var(--theme-on-accent)}
+.monitor-segmented button:focus-visible {outline-offset: -2px}
+.statistics-category-control {margin-bottom: 20px}
+.log-rule .rule-bar {opacity: 1; background: var(--border)}
+.log-rule.rule-double .rule-bar {opacity: 1; border-color: var(--border)}
+.preview-screen .radar > div, .radar::before, .radar::after {display: none}
+.live-label {border-color: var(--green)}
+.rail-task-list {display: flex; flex-direction: column; gap: 12px}
+.rail-queue-group {flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--theme-radius-panel); overflow: hidden}
+.rail-queue-group.running, .rail-queue-group.pending, .rail-queue-group.waiting {background: var(--surface); border-color: var(--border)}
+.rail-queue-heading {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; background: var(--surface-muted); border-bottom: 1px solid var(--border)}
+.rail-queue-heading > div {display: flex; align-items: center; gap: 8px; font-size: 12px}
+.rail-queue-heading > span {color: var(--muted); font-size: 11px}
+.rail-queue-heading svg {color: var(--secondary)}
+.rail-queue-body {padding: 4px}
+.rail-queue-empty {padding: 14px 12px; color: var(--muted); font-size: 12px; line-height: 1.6}
+.rail-task-item {padding: 10px 8px; border-radius: 4px}
+.rail-task-item:hover {background: var(--surface-muted)}
+.rail-task-item strong {font-size: 12px}
+.rail-task-item small {font-size: 11px}
+.rail-task-item .task-state {font-size: 10px}
+.modal {border: 1px solid var(--border)}
+.toast {border: 1px solid var(--border)}
+@media (max-width: 950px) {
+  /* 窄屏下侧栏与右栏都是抽屉，旧版版式回到共享层的单列流。 */
+  .app-shell.legacy-shell {display: block}
+  .instance-page-grid {display: flex; flex-direction: column; gap: 12px; height: auto}
+  .instance-page-rail, .instance-page-main {overflow: visible}
+  .task-config-legacy {display: block}
+  .legacy-page-nav {padding: 0 16px}
+  /* 窄屏顶栏放不下两块招牌：顶栏那份收起来，侧栏抽屉里那份照旧。 */
+  .app-shell.legacy-shell .legacy-topbar-brand {display: none}
+  .topbar, .app-shell.with-rail .topbar {width: 100%; padding: 0 14px}
+  .sidebar, .right-rail {top: 0; height: var(--viewport-height); z-index: 100}
+  .sidebar-brand {padding: 0}
+  .sidebar-brand .mobile-close {position: static; margin-left: auto}
+  main {padding: 28px 16px}
+  .monitor-segmented button {min-height: 44px}
+}
+@media (forced-colors: active) {
+  .monitor-segmented button[aria-selected='true'] {border: 2px solid Highlight}
+  .button:disabled {color: GrayText}
+}
+
+.dev-state-box, .dev-demo-card, .dev-shadow-grid {background: var(--surface-muted)}
+.dev-nav-preview {background: var(--surface)}

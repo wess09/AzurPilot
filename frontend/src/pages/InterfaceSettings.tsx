@@ -1,5 +1,6 @@
 import { Select } from '../components/FormControls'
 import { languages, useApp, useConnection } from '../app/context'
+import { usesMaterial } from '../app/theme'
 import { PageTitle } from '../components/ui'
 import { ThemePreferences } from '../components/ThemePreferences'
 import { BackgroundPreferences } from '../components/BackgroundPreferences'
@@ -22,11 +23,13 @@ export function InterfaceSettings() {
               <option value="light">{ui('settings.themeLight')}</option>
               <option value="dark">{ui('settings.themeDark')}</option>
               <option value="minimal">{ui('settings.themeMinimal')}</option>
+              <option value="legacy-light">{ui('settings.themeLegacyLight')}</option>
+              <option value="legacy-dark">{ui('settings.themeLegacyDark')}</option>
             </Select>
           </div>
         </div>
         {theme === 'minimal' && <ThemePreferences/>}
-        {(theme === 'light' || theme === 'dark') && <BackgroundPreferences/>}
+        {usesMaterial(theme) && <BackgroundPreferences/>}
         <div className="field-row">
           <div className="field-label">
             <label htmlFor="ui-language">{ui('settings.language')}</label>

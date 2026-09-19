@@ -3,6 +3,7 @@ import { AlertCircle, LoaderCircle, X } from 'lucide-react'
 import { GlassMaterial } from './GlassMaterial'
 import type { Status } from '../api/types'
 import { useApp } from '../app/context'
+import { usesMaterial } from '../app/theme'
 
 export function StatusBadge({status}: {status: Status}) {
   const {ui} = useApp()
@@ -38,6 +39,6 @@ function createTitleMask(title: string) {
 
 export function PageTitle({title, actions, className = ''}: {title: string; actions?: ReactNode; className?: string}) {
   const {theme} = useApp()
-  const titleStyle = theme === 'minimal' ? undefined : {'--page-title-mask': createTitleMask(title)} as CSSProperties
+  const titleStyle = usesMaterial(theme) ? {'--page-title-mask': createTitleMask(title)} as CSSProperties : undefined
   return <div className={`page-title ${className}`.trim()}><h1 aria-label={title} data-text={title} style={titleStyle}>{title}</h1>{actions && <div className="title-actions"><GlassMaterial/>{actions}</div>}</div>
 }

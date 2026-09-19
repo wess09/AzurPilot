@@ -9,11 +9,12 @@ import { Empty } from './ui'
 import { StatisticsTable } from './StatisticsTable'
 import { aggregatePoints } from './statisticsData'
 import { useApp } from '../app/context'
+import { usesMaterial } from '../app/theme'
 
 echarts.use([LineChart, CandlestickChart, GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, CanvasRenderer])
 
 export function StatisticsChart({series}: {series: StatSeries[]}) {
-  const {ui, language} = useApp()
+  const {ui, language, theme} = useApp()
   const [key, setKey] = useState(series.find(item => item.points.length)?.key ?? series[0]?.key ?? '')
   const [mode, setMode] = useState('line')
   const [bucket, setBucket] = useState(0)
@@ -39,7 +40,7 @@ export function StatisticsChart({series}: {series: StatSeries[]}) {
     function render() {
       const colors = getComputedStyle(document.documentElement)
       const text = colors.getPropertyValue('--text').trim() || '#82929f'
-      const minimal = document.documentElement.dataset.theme === 'minimal'
+      const minimal = !usesMaterial(theme)
       const primary = minimal ? colors.getPropertyValue('--accent').trim() : '#159b88'
       const secondary = minimal ? colors.getPropertyValue('--secondary').trim() : '#de7861'
       const surface = colors.getPropertyValue('--surface').trim()
@@ -62,10 +63,11 @@ export function StatisticsChart({series}: {series: StatSeries[]}) {
     render()
     const observer = new ResizeObserver(() => chart.resize())
     observer.observe(element.current)
-    const theme = new MutationObserver(render)
-    theme.observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme', 'data-palette', 'data-color-mode', 'style']})
-    return () => {observer.disconnect(); theme.disconnect(); chart.dispose()}
-  }, [points, buckets, mode, current.label, language, ui])
+    // 命名避开上下文里的 theme，否则 render() 会读到这个后来才初始化的绑定。
+    const themeObserver = new MutationObserver(render)
+    themeObserver.observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme', 'data-palette', 'data-color-mode', 'style']})
+    return () => {observer.disconnect(); themeObserver.disconnect(); chart.dispose()}
+  }, [points, buckets, mode, current.label, language, ui, theme])
   return <section className={`panel statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
     <div className="panel-heading"><h2>{ui('stats.trendDetails')}</h2><button className="text-button" onClick={() => setExpanded(!expanded)}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</button></div>
     <div className="statistics-controls"><label>{ui('stats.metric')}<Select aria-label={ui('stats.metric')} value={current.key} onChange={event => setKey(event.target.value)}>{series.map(item => <option value={item.key} key={item.key}>{item.label}{item.points.length ? '' : ui('stats.noSeriesRecord')}</option>)}</Select></label>

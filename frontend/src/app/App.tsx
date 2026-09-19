@@ -9,8 +9,10 @@ import { GlassMaterial } from '../components/GlassMaterial'
 import { InstanceSwitcher } from '../components/InstanceSwitcher'
 import { RightRail } from '../components/RightRail'
 import { TaskNav } from '../components/TaskNav'
+import { TaskSwitcher } from '../components/TaskSwitcher'
 import { useUpdater } from './updater'
 import { recordDevLogoClick } from './devMode'
+import { usesLegacyShell, showsRightRail } from './theme'
 import { INSTANCE_NAME_PATTERN } from './instanceName'
 
 export function CreateInstance({onClose}: {onClose: () => void}) {
@@ -61,7 +63,7 @@ export function NavigationMark() {
 
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode} = useApp()
+  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode, theme} = useApp()
   const {instance} = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -92,21 +94,41 @@ export function App() {
     void api.request('events.subscribe', {instance: instance ?? null, topics: instance ? previewEnabled ? ['instances', 'overview', 'logs', 'preview'] : ['instances', 'overview', 'logs'] : ['instances']}).catch(error => notify(error.message, true))
   }, [instance, connection, notify, previewEnabled])
   if (connection === 'auth') return <Login/>
-  return <div className={`app-shell ${instance ? 'with-rail' : ''} ${mobileOpen ? 'mobile-open' : ''} ${railOpen ? 'rail-open' : ''}`}>
-    <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a><aside className="sidebar"><div className="sidebar-brand"><div className="sidebar-brand-left"><Link to="/" className="brand-title" aria-label={`AzurPilot ${ui('nav.home')}`}><img src={`${import.meta.env.BASE_URL}azurpilot.svg`} alt="" className="brand-logo" onClick={handleBrandLogoClick}/><span>AzurPilot</span></Link>{update.data?.available && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
+  // 旧版主题下点进实例后，外壳回到「顶栏跨全宽 + 单列侧栏」；主页视图一律沿用新版外壳。
+  const legacyShell = usesLegacyShell(theme, instance)
+  // 旧版把调度器与任务计划放进实例页左列，右栏整体让位，否则同一块内容会出现两处。
+  const showRail = showsRightRail(theme, instance)
+  const brand = <><Link to="/" className="brand-title" aria-label={`AzurPilot ${ui('nav.home')}`}><img src={`${import.meta.env.BASE_URL}azurpilot.svg`} alt="" className="brand-logo" onClick={handleBrandLogoClick}/><span>AzurPilot</span></Link>{update.data?.available && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
+  // 旧版顶栏的第三列是居中的页面名，面包屑里的页名会被它取代。
+  const pageTitle = instance
+    ? currentTask ? t(`Task.${currentTask}.name`) : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
+    : ''
+  const topbar = <header className="topbar">
+    {legacyShell && <div className="sidebar-brand legacy-topbar-brand"><div className="sidebar-brand-left">{brand}</div></div>}
+    <GlassMaterial/><button className="mobile-toggle icon-button" aria-label={ui('nav.open')} onClick={() => setMobileOpen(true)}><Menu size={20}/></button>{showRail && <button className="mobile-rail-toggle icon-button" aria-label={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} aria-expanded={railOpen} aria-controls="right-rail-menu" title={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} onClick={() => setRailOpen(open => !open)}><CalendarClock size={18}/></button>}
+    {legacyShell
+      ? <span className="legacy-topbar-title">{pageTitle}</span>
+      : <div className="breadcrumb"><Link to="/">{ui('nav.home')}</Link>{instance ? <><span>/</span><InstanceSwitcher onCreate={() => setCreating(true)}/>{currentTask ? <><span>/</span><Link to={`${base}/task/Alas`}>{ui('nav.taskConfig')}</Link><span>/</span><Link className="breadcrumb-current" to={`${base}/task/${currentTask}`}><strong>{t(`Task.${currentTask}.name`)}</strong></Link></> : location.pathname.endsWith('/statistics') && <><span>/</span><strong>{ui('nav.statistics')}</strong></>}</> : activeSection !== ui('nav.home') && <><span>/</span><strong>{activeSection}</strong></>}</div>}
+  </header>
+  // 旧版顶栏只留招牌与居中的页面名，「主页 / 实例 / 任务」这一行落到内容区顶部。
+  const pageNav = <div className="legacy-page-nav"><div className="breadcrumb"><Link to="/">{ui('nav.home')}</Link><span>/</span><InstanceSwitcher onCreate={() => setCreating(true)}/>{currentTask && <><span>/</span><TaskSwitcher/></>}</div></div>
+  return <div className={`app-shell ${showRail ? 'with-rail' : ''} ${legacyShell ? 'legacy-shell' : ''} ${mobileOpen ? 'mobile-open' : ''} ${railOpen ? 'rail-open' : ''}`}>
+    <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a>
+    {legacyShell && topbar}
+    <aside className="sidebar">
+      {/* 旧版把招牌放进顶栏，桌面端这一行隐藏；窄屏侧栏是抽屉，招牌回抽屉里。 */}
+      <div className={`sidebar-brand ${legacyShell ? 'legacy-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
       <nav className="primary-nav" aria-label={ui('nav.primary')}>
         {instance ? <><NavLink to={`${base}/overview`}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink><NavLink to={`${base}/statistics`}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink></> : <><NavLink to="/" end><House size={17}/>{ui('nav.home')}</NavLink><NavLink to="/updater"><Download size={17}/>{ui('nav.updater')}{update.data?.available && <span className="tiny-dot teal"/>}</NavLink><NavLink to="/interface"><Palette size={17}/>{ui('nav.interface')}</NavLink><NavLink to="/remote"><Globe size={17}/>{ui('nav.remote')}</NavLink><NavLink to="/settings"><Settings2 size={17}/>{ui('nav.settings')}</NavLink>{devMode && <NavLink to="/dev"><Code2 size={17}/>{ui('nav.developer')}</NavLink>}</>}
       </nav>
       {instance && <TaskNav/>}
     </aside>
-    <div className="main-shell"><header className="topbar"><GlassMaterial/><button className="mobile-toggle icon-button" aria-label={ui('nav.open')} onClick={() => { setRailOpen(false); setMobileOpen(true) }}><Menu size={20}/></button>
-      <div className="breadcrumb"><Link to="/">{ui('nav.home')}</Link>{instance ? <><span>/</span><InstanceSwitcher onCreate={() => setCreating(true)}/>{currentTask ? <><span>/</span><Link to={`${base}/task/Alas`}>{ui('nav.taskConfig')}</Link><span>/</span><Link className="breadcrumb-current" to={`${base}/task/${currentTask}`}><strong>{t(`Task.${currentTask}.name`)}</strong></Link></> : location.pathname.endsWith('/statistics') && <><span>/</span><strong>{ui('nav.statistics')}</strong></>}</> : activeSection !== ui('nav.home') && <><span>/</span><strong>{activeSection}</strong></>}</div>
-      {instance && <button className="mobile-rail-toggle icon-button" aria-label={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} aria-expanded={railOpen} aria-controls="right-rail-menu" title={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} onClick={() => { setMobileOpen(false); setRailOpen(open => !open) }}><CalendarClock size={18}/></button>}
-    </header>
+    <div className="main-shell">{!legacyShell && topbar}
+      {legacyShell && pageNav}
       {connection !== 'ready' && <div className="connection-banner" role="status"><WifiOff size={16}/>{ui('connection.connecting')}</div>}
       <main id="main-content" tabIndex={-1}>{!schema || ((instance || location.pathname === '/') && !instancesLoaded) ? <Loading/> : !instance || current ? <Outlet context={update} key={instance ?? 'home'}/> : <Loading/>}</main>
     </div>
-    {instance && <RightRail instance={instance} onMobileClose={() => setRailOpen(false)}/>}
+    {instance && showRail && <RightRail instance={instance} onMobileClose={() => setRailOpen(false)}/>}
     {creating && <CreateInstance onClose={() => setCreating(false)}/>}
   </div>
 }

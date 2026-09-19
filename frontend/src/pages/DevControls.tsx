@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { ArrowRight, Bell, ChevronRight, CircleAlert, Code2, Database, Image, Layers3, Search, Server, Settings2, Sparkles, Terminal, Trash2, X } from 'lucide-react'
 import type { Value } from '../api/types'
 import { useApp } from '../app/context'
+import { usesMaterial } from '../app/theme'
 import { FieldInput } from '../components/FieldInput'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { GlassMaterial } from '../components/GlassMaterial'
@@ -53,7 +54,7 @@ export function DevControls() {
       <span className="small-label">{ui('developer.only')}</span>
     </section>
 
-    {theme !== 'minimal' && <section className="panel config-group">
+    {usesMaterial(theme) && <section className="panel config-group">
       <div className="panel-heading"><div><Sparkles size={18}/><h2 aria-label={ui('developer.visualLab')} data-text={ui('developer.visualLab')}>{ui('developer.visualLab')}</h2></div><span className="small-label">{ui('developer.liveTuning')}</span></div>
       <div className="dev-effect-lab">
         <div className="dev-effect-stage">

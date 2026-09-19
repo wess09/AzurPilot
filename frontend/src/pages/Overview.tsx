@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Overview as OverviewData } from '../api/types'
-import { useConnection } from '../app/context'
+import { useApp, useConnection } from '../app/context'
+import { usesLegacyLayout } from '../app/theme'
 import { ErrorBox, Loading, PageTitle } from '../components/ui'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
 import { InstanceActions } from '../components/InstanceActions'
+import { LegacyRail } from '../components/LegacyRail'
 
 function loadResourceSelection(instance: string) {
   try {
@@ -18,6 +20,7 @@ function loadResourceSelection(instance: string) {
 
 export function Overview() {
   const {instance = ''} = useParams()
+  const {theme, ui} = useApp()
   const [data, setData] = useState<OverviewData>()
   const [error, setError] = useState('')
   const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
@@ -47,8 +50,25 @@ export function Overview() {
   if (error) return <ErrorBox message={error}/>
   if (!data) return <Loading/>
 
+  const actions = <InstanceActions instance={instance} status={data.status} resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>
+
+  // 旧版版式：左列调度器与任务计划，右列资源卡与日志；右栏在旧版主题下不渲染。
+  if (usesLegacyLayout(theme)) return <div className="instance-page-grid">
+    <h1 className="legacy-sr-title">{instance}</h1>
+    <LegacyRail instance={instance} data={data} onData={setData}>
+      <section className="panel legacy-stat-card" aria-label={ui('overview.statCard')}>
+        <span className="legacy-stat-title">{ui('overview.statCard')}</span>
+        {actions}
+      </section>
+    </LegacyRail>
+    <div className="instance-page-main">
+      <ResourceCards resources={data.resources} selected={selectedResources}/>
+      <MonitorPanel instance={instance}/>
+    </div>
+  </div>
+
   return <div className="overview-page">
-    <PageTitle className="instance-page-title" title={instance} actions={<InstanceActions instance={instance} status={data.status} resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>}/>
+    <PageTitle className="instance-page-title" title={instance} actions={actions}/>
     <ResourceCards resources={data.resources} selected={selectedResources}/>
     <div className="overview-main">
       <MonitorPanel instance={instance}/>

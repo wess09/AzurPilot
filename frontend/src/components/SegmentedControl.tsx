@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 import { useApp } from '../app/context'
+import { usesMaterial } from '../app/theme'
 
 type Option<T extends string> = {value: T; label: ReactNode}
 
@@ -13,7 +14,7 @@ export function SegmentedControl<T extends string>({label, value, options, onCha
   className?: string
 }) {
   const {theme} = useApp()
-  const simple = theme === 'minimal'
+  const simple = !usesMaterial(theme)
   const ref = useRef<HTMLDivElement>(null)
   const [indicator, setIndicator] = useState({x: 0, y: 0, width: 0, height: 0})
   useLayoutEffect(() => {
