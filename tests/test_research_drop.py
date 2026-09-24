@@ -12,7 +12,7 @@ from pathlib import Path
 import sys
 from types import ModuleType
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 import numpy as np
 
@@ -24,12 +24,25 @@ def module_stub(name, **attrs):
 
 
 def load_research_drop():
-    """仅导入待测实现，日志模块用替身，避免初始化用户配置与日志目录。"""
+    """仅导入待测实现，日志模块用替身，避免初始化用户配置与日志目录。
+
+    手工换掉 `sys.modules` 里的一项再还原，而不是用 ``patch.dict(sys.modules, ...)``：
+    后者退出时会清空并还原整个 sys.modules 快照，把本次导入期间新进来的模块（numpy 的
+    C 扩展等）一起抹掉，同一进程里再 ``import numpy`` 就会报
+    ``cannot load module more than once per process``，把后面的测试模块连带弄挂。
+    """
     path = Path(__file__).resolve().parents[1] / 'module/statistics/research_drop.py'
     spec = importlib.util.spec_from_file_location('_research_drop_test', path)
     module = importlib.util.module_from_spec(spec)
-    with patch.dict(sys.modules, {'module.logger': module_stub('module.logger', logger=Mock())}):
+    previous = sys.modules.get('module.logger')
+    sys.modules['module.logger'] = module_stub('module.logger', logger=Mock())
+    try:
         spec.loader.exec_module(module)
+    finally:
+        if previous is None:
+            sys.modules.pop('module.logger', None)
+        else:
+            sys.modules['module.logger'] = previous
     return module
 
 

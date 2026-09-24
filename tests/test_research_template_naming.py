@@ -14,20 +14,32 @@ import sys
 from pathlib import Path
 from types import ModuleType
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 
 def load_tool():
-    """仅导入待测实现，日志模块用替身，避免初始化用户配置与日志目录。"""
+    """仅导入待测实现，日志模块用替身，避免初始化用户配置与日志目录。
+
+    这里手工换掉 `sys.modules` 里的一项再还原，而不是用 ``patch.dict(sys.modules, ...)``：
+    后者退出时会清空并还原整个 sys.modules 快照，把本次导入期间新进来的模块（numpy 的
+    C 扩展等）一起抹掉，同一进程里再 ``import numpy`` 就会报
+    ``cannot load module more than once per process``，把后面的测试模块连带弄挂。
+    """
     path = Path(__file__).resolve().parents[1] / 'dev_tools/research_template_extract.py'
     spec = importlib.util.spec_from_file_location('_research_extract_test', path)
     module = importlib.util.module_from_spec(spec)
-    with patch.dict(sys.modules, {'module.logger': ModuleType('module.logger')}):
-        sys.modules['module.logger'].logger = Mock()
-        sys.modules['module.logger'].rule = Mock()
-        sys.modules['module.logger'].hr = Mock()
-        sys.modules['module.logger'].attr = Mock()
+    stub = ModuleType('module.logger')
+    for name in ('logger', 'rule', 'hr', 'attr', 'attr_align'):
+        setattr(stub, name, Mock())
+    previous = sys.modules.get('module.logger')
+    sys.modules['module.logger'] = stub
+    try:
         spec.loader.exec_module(module)
+    finally:
+        if previous is None:
+            sys.modules.pop('module.logger', None)
+        else:
+            sys.modules['module.logger'] = previous
     return module
 
 
