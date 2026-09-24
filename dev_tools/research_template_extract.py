@@ -113,6 +113,14 @@ NAME_TABLE_OVERRIDES = {
         'en': 'Prototype Triple 550mm Improved (Ammo Mod) Torpedo Mount T0 Design',
         'rarity': 4,
     },
+    # 库内名与 Lua 名差了实词（Standard 对 Performance），词元归一按规矩不能放这么松
+    # （那样会把 40mm Bofors Type 5 认成 Hazemeyer）。游戏里 T0 火控雷达只此一件、
+    # 库里也只有这一个 T0 火控雷达模板，所以手工补录。
+    'High_Standard_Fire_Control_Radar_T0': {
+        'zh': '高性能火控雷达T0设计图',
+        'en': 'High Performance Fire Control Radar T0 Design',
+        'rarity': 4,
+    },
     # 心智单元与物资也没有 T 品阶后缀；它们是「心智/物资」口径里的两件物品，
     # 名称表里必须有中文名（稀有度取自 Lua：心智单元 4、物资 1）。
     'CognitiveChips': {
