@@ -121,6 +121,7 @@ const zhCN = {
   'auth.enter': '进入控制台',
   'auth.passwordHint': '自动生成的密码保存在服务端 password.txt 中。',
   'instance.created': '实例已创建，请设置模拟器连接',
+  'instance.rightClick': '右键操作',
   'instance.createTitle': '创建配置实例',
   'instance.createHint': '每个实例独立保存任务计划与模拟器连接。',
   'instance.importPick': '选择本机配置文件…',
@@ -483,6 +484,7 @@ export type UiTranslator = (key: UiKey, params?: TranslationParams) => string
 
 const enUS: Record<UiKey, string> = {
   'instance.deletePrompt2': 'Sure about that? {name} disappears — only the backup keeps its config.',
+  'instance.rightClick': 'right-click',
   'instance.deletePrompt3': 'Last chance! One more click and {name} is gone for good.',
   'settings.colorMode': 'Theme mode',
   'settings.colorModeHelp': 'Automatic mode follows your system appearance and adapts the color palette.',
@@ -578,6 +580,7 @@ const enUS: Record<UiKey, string> = {
 
 const jaJP: Record<UiKey, string> = {
   'instance.deletePrompt2': '本当に？{name} は消えます。設定はバックアップに残るだけです。',
+  'instance.rightClick': '右クリック',
   'instance.deletePrompt3': 'これが最後！押すと {name} は完全に消えます。',
   'settings.colorMode': 'テーマモード',
   'settings.colorModeHelp': '自動モードはシステムの外観に合わせて配色を切り替えます。',
@@ -795,6 +798,7 @@ const zhTW: Record<UiKey, string> = {
   'connection.connecting': '正在連線後端，設定輸入會保留並在重新連線後儲存；執行操作暫時無法使用。',
   'auth.slogan': '讓每一次出航，都井然有序。', 'auth.welcome': '歡迎回到指揮室', 'auth.password': '存取密碼', 'auth.verifying': '正在驗證…', 'auth.enter': '進入控制台', 'auth.passwordHint': '自動產生的密碼儲存在伺服器端 password.txt 中。',
   'instance.createTitle': '建立設定實例', 'instance.createHint': '每個實例獨立儲存任務排程與模擬器連線。', 'instance.importPick': '選擇本機設定檔…', 'instance.importConfig': '匯入設定', 'instance.importHint': '從現有設定檔匯入，選取後會自動填好實例名稱。', 'instance.importSelect': '選擇設定檔', 'instance.importEmpty': '沒有可匯入的設定檔', 'instance.importLoading': '正在讀取…', 'instance.name': '實例名稱', 'instance.initialConfig': '初始設定', 'instance.defaultConfig': '使用預設設定', 'instance.creating': '正在建立…', 'instance.create': '建立實例', 'instance.createFirst': '建立第一個實例', 'instance.dashboard': '儀表板', 'instance.settings': '儀表板設定', 'instance.switch': '切換實例', 'instance.startup': '啟動', 'instance.autoRun': '啟動時自動執行', 'instance.autoRunHelp': '啟用後，啟動 Azurpilot 時自動執行目前實例。', 'instance.rememberRun': '啟動時記憶執行', 'instance.rememberRunHelp': '啟用後，退出Azurpilot時若目前實例正在執行，則下次啟動時自動執行；退出前已停止則保持停止。與【啟動時自動執行】同時啟用時，徹底結束後端再開啟必定執行，僅重新整理視窗或執行更新則依記憶的狀態。', 'dashboard.fitCards': '卡片等寬', 'dashboard.fitCardsHelp': '資源卡溢出到第二排以後時，末排不再撐滿整行，沿用第一排的尺寸；卡片總數本就不足一排時仍均分。', 'dashboard.fitText': '字體適應', 'dashboard.fitTextHelp': '卡片內的圖示、標題與記錄時間隨卡片寬度縮放，行動力的總量與目前值以同一尺度顯示。', 'dashboard.dense': '緊湊檢視', 'dashboard.denseHelp': '收緊卡片之間的空隙，給下方日誌留出更多高度。', 'dashboard.merged': '合併為單卡', 'dashboard.mergedHelp': '已啟用顯示的資源渲染在同一個容器內，不再一資源一卡片。', 'dashboard.totalFirst': '總行動力優先', 'dashboard.totalFirstHelp': '行動力優先顯示總量，變成「總行動力 / 目前行動力」。', 'instance.deleteConfirm': '確認刪除', 'instance.deleting': '正在刪除…', 'instance.delete': '刪除實例',
+  'instance.rightClick': '右鍵操作',
   'home.commandCenter': '你的指揮中心', 'home.greetingMorning': '上午好，指揮官！', 'home.greetingAfternoon': '下午好，指揮官！', 'home.greetingEvening': '晚上好，指揮官！', 'home.subtitle': '每一次出航，都井然有序。所有實例與任務，盡在掌握。', 'home.summary': '實例狀態摘要', 'home.allInstances': '全部實例', 'home.instances': '實例', 'home.waitingSchedule': '等待排程', 'home.notRunning': '未執行', 'home.newInstance': '新增實例', 'home.openSource': '開源專案', 'home.legacyUi': '切換舊版介面', 'home.modernUi': '回到新版介面',  'settings.uiPreferences': '介面偏好', 'settings.theme': '介面主題', 'settings.themeLight': '淺色', 'settings.themeDark': '深色', 'settings.language': '介面語言', 'settings.passwordHelp': '留空保留原密碼。新密碼在重新啟動服務後生效。',
   'remote.title': '遠端存取網址',
   'remote.copy': '複製',
@@ -1141,6 +1145,7 @@ const zhMiao: Record<UiKey, string> = {
   'stats.overlayLine': '折线喵',
   'stats.setAsPrimary': '设成 K 线主数据源喵',
   'instance.created': '实例建好了喵，去把模拟器连接配上吧～',
+  'instance.rightClick': '右键喵',
   'instance.createTitle': '建一个配置实例喵',
   'instance.createHint': '每个实例各存各的任务计划和模拟器连接喵，互不打扰。',
   'instance.importPick': '挑个本机配置文件喵…',

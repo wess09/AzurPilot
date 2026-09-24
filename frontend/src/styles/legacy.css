@@ -431,7 +431,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
    - 标签栏带浅灰蓝/暗色顶栏槽道底色（--tab-strip-bg）；
    - 激活标签纯白底色，顶部 9px 圆角，底部完全无下横线开口融入下方内容区；
    - 激活标签左右底脚采用经典 radial-gradient 反向倒角，呈现完美的流线型连接；
-   - 激活标签常驻柔和关闭 × 按钮，未激活标签悬停微亮，带精致居中分割线。 */
+   - 关闭 × 按钮默认不绘制，标签悬停微亮、按钮悬停高亮，带精致居中分割线。 */
 :root[data-theme='legacy-light'] {
   --tab-strip-bg: #e6ebf2;
 }
@@ -595,7 +595,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   color: var(--theme-danger, #dc2626);
 }
 
-/* 标签内的关闭 × 按钮（激活标签上始终柔和可见，像 Edge 截图一样） */
+/* 标签内的关闭 × 按钮：平时不绘制，鼠标悬浮到标签上才现形；格子定宽，显隐不改变标签宽度。 */
 .app-shell.legacy-shell .instance-tab .instance-tab-remove {
   border-radius: 50%;
   width: 18px;
@@ -609,9 +609,6 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   opacity: 0;
   display: block;
   transition: opacity .15s ease;
-}
-.app-shell.legacy-shell .instance-tab.current .instance-tab-remove .lucide {
-  opacity: .5;
 }
 .app-shell.legacy-shell .instance-tab:hover .instance-tab-remove .lucide {
   opacity: .7;

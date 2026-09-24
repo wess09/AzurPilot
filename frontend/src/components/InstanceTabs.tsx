@@ -54,7 +54,7 @@ export function InstanceTabs({onCreate}: {onCreate: () => void}) {
                     <SchedulerToggle name={item.name} status={item.status}/>
                 </span>
                 <span className="instance-tab-name">{item.name}</span>
-                <span className="instance-tab-cell instance-tab-remove" role="button" tabIndex={-1} aria-label={ui('instance.delete')} title={ui('instance.delete')} onClick={event => { event.stopPropagation(); setPendingDelete(item.name) }}><X size={13} aria-hidden="true"/></span>
+                <span className="instance-tab-cell instance-tab-remove" role="button" tabIndex={-1} aria-label={`${ui('instance.delete')} · ${ui('instance.rightClick')}`} title={`${ui('instance.delete')} · ${ui('instance.rightClick')}`} onContextMenu={event => { event.preventDefault(); setPendingDelete(item.name) }}><X size={13} aria-hidden="true"/></span>
             </button>
         })}
         <button type="button" className="instance-tab-create" aria-label={ui('instance.create')} title={ui('instance.create')} onClick={onCreate}><Plus size={15}/></button>
@@ -72,7 +72,7 @@ function SchedulerToggle({name, status}: {name: string; status: Status}) {
     const usable = connection === 'ready' && !busy && status !== 'updating'
 
     async function toggle(event: React.MouseEvent) {
-        event.stopPropagation()
+        event.preventDefault()
         if (!usable) return
         setBusy(true)
         try {
@@ -91,9 +91,9 @@ function SchedulerToggle({name, status}: {name: string; status: Status}) {
         className="instance-tab-power"
         role="button"
         tabIndex={-1}
-        aria-label={running ? ui('scheduler.stop') : ui('scheduler.start')}
-        title={running ? ui('scheduler.stop') : ui('scheduler.start')}
-        onClick={toggle}
+        aria-label={`${running ? ui('scheduler.stop') : ui('scheduler.start')} · ${ui('instance.rightClick')}`}
+        title={`${running ? ui('scheduler.stop') : ui('scheduler.start')} · ${ui('instance.rightClick')}`}
+        onContextMenu={toggle}
     >{running ? <Square size={13} aria-hidden="true"/> : <Play size={13} aria-hidden="true"/>}</span>
 }
 
