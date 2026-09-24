@@ -446,17 +446,10 @@ export function createMockState({empty = false} = {}) {
             ]
           }]
         } else if (params.category === 'research') {
-          // 三个视图共用一套形状：期数视图（默认）走「收获明细 + 掉落记录」，
-          // 金装与心智/物资视图走单表。素材与服务端 module/api/statistics_service.py 对齐。
+          // 两个视图共用一套形状：期数视图（默认）走「收获明细 + 掉落记录」，
+          // 心智/物资视图走单表。素材与服务端 module/api/statistics_service.py 对齐。
           const scope = params.scope ?? 'series'
           const scopeRows = {
-            gold: [
-              ['Prototype_Triple_419mm_Mk_I_Main_Gun_Mount_T0', '试作型三联装419mm主炮MK.IT0设计图', '金', 9, 6],
-              ['Prototype_Twin_127mm_Mle_1948_Naval_Gun_T0', '试作型双联装127mm主炮Mle1948T0设计图', '金', 10, 7],
-              ['Prototype_Quadruple_610mm_Cruiser_Torpedo_Mount_T0', '试作型四联装610mm鱼雷（巡洋用）T0设计图', '金', 9, 9],
-              ['Twin_40mm_Bofors_Hazemeyer_AA_Gun_Mount_T0', '双联装40mm博福斯海兹梅耶T0设计图', '金', 19, 11],
-              ['533mm_Quintuple_Torpedo_Mount_T3', '五联装533mm鱼雷T3设计图', '金', 12, 9]
-            ],
             consumable: [
               ['Coins', '物资', '—', 3116, 78],
               ['CognitiveChips', '心智单元', '—', 480, 12]
@@ -472,11 +465,9 @@ export function createMockState({empty = false} = {}) {
               {label: '本月总计', value: rows.reduce((sum, row) => sum + row[3], 0), unit: ''}
             ]
             result.tables = [{
-              title: scope === 'gold' ? '金装统计（全部期数）' : '心智/物资统计（全部期数）',
+              title: '心智/物资统计（全部期数）',
               columns: ['图标', '物品', '稀有度', '数量', '获得次数'],
-              note: scope === 'gold'
-                ? '金装 = 稀有度 4 的装备图纸，全部期数合并统计。彩装备、图纸、心智与物资看其它视图。图标暂用当前物品模板。'
-                : '心智单元与物资不绑期数、各期混着出，所以这里不分期统计。图标暂用当前物品模板。',
+              note: '心智单元与物资不绑期数、各期混着出，所以这里不分期统计。图标暂用当前物品模板。',
               defaultSort: {index: 3, descending: true},
               rows: rows.map(([key, zh, rarity, amount, count]) => [`research:${key}`, zh, rarity, amount, count])
             }]
@@ -501,7 +492,7 @@ export function createMockState({empty = false} = {}) {
               {
                 title: `第 ${params.series || 9} 期收获明细`,
                 columns: ['图标', '物品', '稀有度', '总收益', '掉落记录数', '平均每次掉落'],
-                note: '每期只统计该期各艘船的图纸与该期的彩装图纸；金装备在「金装统计」、心智与物资在「心智/物资」里看。图标暂用当前物品模板。',
+                note: '每期只统计该期各艘船的图纸与该期的彩装图纸；心智与物资在「心智/物资」里看。图标暂用当前物品模板。',
                 defaultSort: {index: 3, descending: true},
                 rows
               },

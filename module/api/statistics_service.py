@@ -218,20 +218,15 @@ def report(configs, instance, category, month, days, period, research_series=0, 
         result['series'] = [series(daily, 'total_exp_gained', '每日经验'), series(daily, 'battle_count', '每日战斗'), series(daily, 'total_run_time', '每日运行秒数')]
     elif category == 'research':
         from module.statistics.research_stats import (
-            collect, item_info, RARITY_LABELS, SCOPE_SERIES, SCOPE_GOLD)
+            collect, item_info, RARITY_LABELS, SCOPE_SERIES)
         # 走表格的 note 而不是 notes：前端只渲染 tables，notes 仅在导出 CSV 时用到，
         # 放在那里用户界面上什么都看不到（会以为功能坏了）。
         if research_scope != SCOPE_SERIES:
             summary = collect(instance, days=days, series=research_series, scope=research_scope)
             columns = ['图标', '物品', '稀有度', '数量', '获得次数']
-            if research_scope == SCOPE_GOLD:
-                title = '金装统计（全部期数）'
-                note = ('金装 = 稀有度 4 的装备图纸，全部期数合并统计。'
-                        '彩装备、图纸、心智与物资看其它视图。图标暂用当前物品模板。')
-            else:
-                title = '心智/物资统计（全部期数）'
-                note = ('心智单元与物资不绑期数、各期混着出，所以这里不分期统计。'
-                        '图标暂用当前物品模板。')
+            title = '心智/物资统计（全部期数）'
+            note = ('心智单元与物资不绑期数、各期混着出，所以这里不分期统计。'
+                    '图标暂用当前物品模板。')
             if not summary['records']:
                 result['tables'].append(table(title, columns, [], note=(
                     '还没有科研掉落记录。统计在领奖时自动完成：'
@@ -267,7 +262,7 @@ def report(configs, instance, category, month, days, period, research_series=0, 
         summary = collect(instance, series=research_series, scope=SCOPE_SERIES, start=start, end=end)
         title = f'第 {summary["series"]} 期收获明细'
         columns = ['图标', '物品', '稀有度', '总收益', '掉落记录数', '平均每次掉落']
-        note = ('每期只统计该期各艘船的图纸与该期的彩装图纸；金装备在「金装统计」、'
+        note = ('每期只统计该期各艘船的图纸与该期的彩装图纸；'
                 '心智与物资在「心智/物资」里看。图标暂用当前物品模板。'
                 '清单里本期没掉过的也留一行，便于对照。')
         if not summary['records']:

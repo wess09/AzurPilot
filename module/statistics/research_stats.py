@@ -3,13 +3,14 @@
 把 cl1_record.db 里逐次记录的科研掉落，按「科研期数 × 物品」聚合，供 WebUI
 的科研统计页展示。
 
-展示口径（用户 2026-09-24 定）：
-- **期数视图**（第 1~9 期）：只统计**彩装备、彩图纸、金图纸**与心智单元；
-- **金装视图**（不分期）：只看**金装备图纸**，所有期数合并；
+展示口径（用户 2026-09-24 定，金装已下线）：
+- **期数视图**（第 1~9 期）：只统计**彩装备、彩图纸、金图纸**；
 - **心智/物资视图**（不分期）：只看**心智单元与物资**，所有期数合并。
 
-不分期的两个口径是必要的：只有彩装备与舰船图纸绑定期数，金装备、心智单元与物资
+不分期的口径是必要的：只有彩装备与舰船图纸绑定期数，心智单元与物资
 都是各期混着出的（见 alas-research-stats 技能文档第六节第 16 条）。
+**金装备不再统计**（用户 2026-09-24 定）：它各期混着出、不绑期数，
+且图标与彩装备相近，容易被认成彩装，所以连原本的「金装统计」视图一并撤掉。
 其余物品照常入库，只是不出现在这里，将来想扩展口径改 should_show 即可。
 """
 
@@ -25,14 +26,11 @@ NAME_TABLE_PATH = './assets/stats/research_item_names.json'
 
 # 展示的稀有度门槛：4 = 金，5 = 彩。金装备图纸与改造图纸不入期数视图。
 SHOW_RARITY = (4, 5)
-# 金装视图认的稀有度
-RARITY_GOLD = 4
 # 界面上的稀有度标签，与游戏内一致：彩 > 金 > 紫 > 蓝
 RARITY_LABELS = {6: '彩', 5: '彩', 4: '金', 3: '紫', 2: '蓝'}
 
 # 视图口径
 SCOPE_SERIES = 'series'
-SCOPE_GOLD = 'gold'
 SCOPE_CONSUMABLE = 'consumable'
 # 心智/物资视图认的物品（模板名）。这两件不绑期数，各期混着出，所以单开一个不分期的视图。
 CONSUMABLE_ITEMS = ('CognitiveChips', 'Coins')
@@ -83,42 +81,21 @@ def item_info(template_name: str) -> dict:
     return {'zh': template_name, 'en': template_name, 'rarity': None}
 
 
-def is_gold_equipment(template_name: str) -> bool:
-    """判断是不是「金装」：稀有度 4 的**装备图纸**。
-
-    舰船图纸与心智单元不算金装——它们在别的视图里各有位置。
-
-    Args:
-        template_name (str): 模板文件名（不含扩展名）。
-
-    Returns:
-        bool: 是否金装。
-    """
-    if template_name.startswith('Blueprint'):
-        return False
-    info = item_info(template_name)
-    if info.get('rarity') != RARITY_GOLD:
-        return False
-    # 稀有度对上了还要确认是装备图纸：物资、心智单元的名字里没有「设计图」
-    return (info.get('zh') or '').endswith('设计图')
-
-
 def should_show(template_name: str, scope: str = SCOPE_SERIES) -> bool:
     """判断某件掉落是否进入当前视图。
 
     期数视图只展示彩装备、彩图纸与金图纸（心智单元另有「心智/物资」视图，
-    不在这里出现）；金装视图只展示金装备图纸；心智/物资视图只展示心智单元与物资。
+    不在这里出现；金装备各期混着出、已不再统计）；
+    心智/物资视图只展示心智单元与物资。
     稀有度来自静态名称表，查不到时（模板没收录进表）一律不展示，避免用乱码占屏。
 
     Args:
         template_name (str): 模板文件名（不含扩展名）。
-        scope (str): 视图口径，SCOPE_SERIES / SCOPE_GOLD / SCOPE_CONSUMABLE。
+        scope (str): 视图口径，SCOPE_SERIES / SCOPE_CONSUMABLE。
 
     Returns:
         bool: 是否展示。
     """
-    if scope == SCOPE_GOLD:
-        return is_gold_equipment(template_name)
     if scope == SCOPE_CONSUMABLE:
         return template_name in CONSUMABLE_ITEMS
     info = item_info(template_name)
@@ -246,7 +223,7 @@ def collect(
         instance (str): ALAS 实例名。
         days (int): 回溯天数；给了 start/end 时忽略。
         series (int): 只看某一期（1~9）；0 表示最新有记录的一期。不分期的口径忽略此参数。
-        scope (str): 视图口径，SCOPE_SERIES / SCOPE_GOLD / SCOPE_CONSUMABLE。
+        scope (str): 视图口径，SCOPE_SERIES / SCOPE_CONSUMABLE。
         start (datetime): 统计起点（含）；缺省按 days 往前推。
         end (datetime): 统计终点（不含）；缺省取当前时间。
 

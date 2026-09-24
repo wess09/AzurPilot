@@ -50,7 +50,7 @@ module/statistics/
 ├── daily_summary_text.py     # 日报 system prompt
 ├── commission_income_stats.py# 委托收益聚合（day/week/month/interval）
 ├── research_drop.py          # 科研掉落解析（队列页角标读期数 + 收获帧识别）
-├── research_stats.py         # 科研掉落聚合（按期 / 金装 / 心智物资三种口径）
+├── research_stats.py         # 科研掉落聚合（按期 / 心智物资两种口径）
 ├── resource_stats.py         # resource_snapshots 快照与区间摘要
 ├── ship_exp_stats.py         # ShipExpStats：战斗计时与经验效率
 ├── opsi_month.py             # OpsiMonthStats：月度大世界汇总与时间线
@@ -330,7 +330,7 @@ CL1 库的兼容性迁移是自动的：启动时把旧位置 `log/cl1/cl1_data.
 - **遥测提交只发聚合指标**（battle_count/明石次数 + MD5 前缀 instance_id），不要往 `calculate_metrics` 里加可识别个人的字段。
 - `module/statistics/assets.py` 与 `module/azur_stats/assets.py` 是 `dev_tools.button_extract` 的生成物，改按钮资源后重新生成，不要手改。
 - **科研的期数只能看队列页卡片的罗马数字角标**（`research_drop._read_series`，复用 `module/research/series.py` 的模板）。项目代号在每一期都存在、判不了期；掉落物也判不了——只有彩装备与舰船图纸绑期数，金装备各期混着出，项目还会「额外赠送」别期的图纸。
-- **心智单元不属于任何一期**：它有自己的「心智/物资」视图，也不计入每期的总收益；金装备同理，在「金装统计」里单独看。`research_stats.should_show()` 按 `scope` 分这三套口径。
+- **心智单元不属于任何一期**：它有自己的「心智/物资」视图，也不计入每期的总收益。**金装备已不再统计**（2026-09-24 撤掉原「金装统计」视图：它各期混着出、不绑期数，图标又与彩装备相近，容易被认成彩装）。`research_stats.should_show()` 按 `scope` 分这两套口径。
 - 科研模板的新增/重命名走 `dev_tools/research_template_extract.py`（从游戏 Lua 数据推导仓库命名，含底色变体与 `{namecode:XXX}` 占位符处理），不要手裁素材。
 - **模板改名只改了模板，改不动库里已写入的记录**：记录里存的是模板文件名，显示时才按名称表翻译，所以旧记录会张冠李戴（实测把「四联装610mm鱼雷」显示成八期彩装、把九期彩装 Ta 152C 显示成四期天雷）。名字级的历史映射救不了——一个旧名可能同时盖住两件不同装备——只能用原截图重放：`dev_tools/research_drop_repair.py`（只覆盖 `items`，不动期数与项目代号，动库前先备份）。
 

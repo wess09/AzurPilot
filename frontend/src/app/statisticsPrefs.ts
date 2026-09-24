@@ -13,7 +13,7 @@ export interface StatisticsPrefs {
   category: StatisticsCategory
   days: number
   period: CommissionPeriod
-  /** 科研页面的视图：'1'~'9' 是各期，'gold' 是金装统计，'consumable' 是心智/物资 */
+  /** 科研页面的视图：'1'~'9' 是各期，'consumable' 是心智/物资 */
   researchSelect: string
   chartMode: ChartMode
   chartAxisMode: ChartAxisMode
@@ -29,7 +29,7 @@ export const VALID_PERIODS: readonly CommissionPeriod[] = ['day', 'week', 'month
 export const VALID_BUCKETS: readonly number[] = [0, 5, 60, 1440]
 export const VALID_CHART_MODES: readonly ChartMode[] = ['line', 'candlestick']
 export const VALID_AXIS_MODES: readonly ChartAxisMode[] = ['separate', 'unified']
-export const VALID_RESEARCH_SELECTS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'gold', 'consumable']
+export const VALID_RESEARCH_SELECTS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'consumable']
 
 export const DEFAULT_STATISTICS_PREFS: StatisticsPrefs = {
   category: 'resources',

@@ -252,7 +252,7 @@ def name_tokens(text: str, loose: bool = False) -> frozenset:
 
     loose=True 再放松一档：忽略大小写、丢掉 Mount 这类通用词，并归一已知的拼写差异
     （Reppuu/Reppu）。实测库里 144 个老模板名因此对不上 Lua 名，其中 36 个能这样唯一对回，
-    它们的稀有度也就进得了名称表（否则金装图纸在「金装统计」里是隐形的）。
+    它们的稀有度也就进得了名称表（没有稀有度的物品在任何视图里都是隐形的）。
     只放开到这一步：再松就会把 40mm Bofors Type 5 认成 Hazemeyer 这类近邻。
 
     Args:
@@ -995,7 +995,7 @@ class ResearchTemplateScanner:
                 continue
             else:
                 # 词集合归一后兜底：老模板名与 Lua 名只差词序/大小写/多一个 Mount 时靠这里对上，
-                # 稀有度一并取到——没有稀有度的话金装图纸在「金装统计」里是隐形的。
+                # 稀有度一并取到——没有稀有度的物品在任何视图里都是隐形的。
                 tokens = name_tokens(key, loose=True)
                 fallback = by_tokens.get(tokens)
                 if fallback is None:

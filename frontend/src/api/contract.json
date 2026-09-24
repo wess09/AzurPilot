@@ -479,7 +479,6 @@
             "default": "series",
             "enum": [
               "series",
-              "gold",
               "consumable"
             ],
             "title": "Scope",
@@ -733,6 +732,22 @@
         "type": "object"
       }
     },
+    "announcement.get": {
+      "mutates": false,
+      "params": {
+        "additionalProperties": false,
+        "description": "公告查询参数。",
+        "properties": {
+          "force": {
+            "default": false,
+            "title": "Force",
+            "type": "boolean"
+          }
+        },
+        "title": "AnnouncementParams",
+        "type": "object"
+      }
+    },
     "auth.login": {
       "mutates": false,
       "params": {
@@ -746,21 +761,6 @@
           }
         },
         "title": "AuthParams",
-        "type": "object"
-      }
-    },
-    "announcement.get": {
-      "mutates": false,
-      "params": {
-        "additionalProperties": false,
-        "properties": {
-          "force": {
-            "default": false,
-            "title": "Force",
-            "type": "boolean"
-          }
-        },
-        "title": "AnnouncementParams",
         "type": "object"
       }
     },

@@ -1,7 +1,7 @@
-"""科研掉落汇总：期数视图 / 金装视图 / 今日本月计数。
+"""科研掉落汇总：期数视图 / 心智物资视图 / 今日本月计数。
 
 用假记录喂进汇总层，不碰 SQLite 与用户数据；名称表用仓库里的真表，
-这样「金装 = 稀有度 4 的装备图纸」这条口径是拿真数据验证的。
+这样「金装备不再统计」这条口径是拿真数据验证的。
 """
 
 from datetime import datetime, timedelta
@@ -34,7 +34,7 @@ RESEARCH_STATS = load_research_stats()
 # 取自真实名称表的几类代表：彩装备、金装备、金船图纸、当期彩装、心智单元、物资
 RAINBOW_GEAR = 'Prototype_Quadruple_305mm_SKC39_Main_Gun_Mount_T0'   # r=5 彩装（八期）
 RAINBOW_GEAR_NINTH = 'Prototype_Carrier_Based_Ta_152_C_1_R14_T0'     # r=5 彩装（九期）
-GOLD_GEAR = 'Prototype_Quadruple_610mm_Cruiser_Torpedo_Mount_T0'     # r=4 金装
+GOLD_GEAR = 'Prototype_Quadruple_610mm_Cruiser_Torpedo_Mount_T0'     # r=4 金装（已不统计）
 GOLD_BLUEPRINT = 'BlueprintTakahashi'                                # r=4 金船图（九期）
 CHIPS = 'CognitiveChips'                                             # 心智单元
 COINS = 'Coins'                                                      # 物资
@@ -51,7 +51,7 @@ def entry(items, series, when):
 
 
 class ResearchStatsScopeTest(unittest.TestCase):
-    """展示口径：期数视图按期看彩装/图纸/心智；金装、心智物资两个视图不分期。"""
+    """展示口径：期数视图按期看彩装/图纸；金装备不统计；心智物资不分期。"""
 
     def setUp(self):
         self.now = datetime.now()
@@ -102,22 +102,11 @@ class ResearchStatsScopeTest(unittest.TestCase):
             with self.subTest(item=keyword):
                 self.assertEqual(RESEARCH_STATS.item_info(keyword).get('series'), 9)
 
-    def test_gold_view_merges_all_series(self):
-        summary = self.collect(scope='gold')
-        self.assertEqual(summary['scope'], 'gold')
-        self.assertEqual(summary['series'], 0)
-        # 九期的 3 张与七期的 5 张合并成 8
-        self.assertEqual(self.names(scope='gold'), [GOLD_GEAR])
-        self.assertEqual(summary['items'][0]['amount'], 8)
-        self.assertEqual(summary['items'][0]['count'], 2)
-        self.assertEqual(summary['records'], 2)
-
-    def test_gold_view_excludes_non_gear(self):
-        names = self.names(scope='gold')
-        self.assertNotIn(RAINBOW_GEAR, names)    # 彩装不属于金装
-        self.assertNotIn(GOLD_BLUEPRINT, names)  # 舰船图纸不属于金装
-        self.assertNotIn(CHIPS, names)
-        self.assertNotIn(COINS, names)
+    def test_gold_gear_is_no_longer_counted(self):
+        """金装备已下线：任何视图都不再展示它（用户 2026-09-24 撤掉金装视图）。"""
+        for scope in ('series', 'consumable'):
+            with self.subTest(scope=scope):
+                self.assertNotIn(GOLD_GEAR, self.names(scope=scope, series=9))
 
     def test_consumable_view_merges_all_series(self):
         summary = self.collect(scope='consumable')
@@ -142,8 +131,10 @@ class ResearchStatsScopeTest(unittest.TestCase):
         self.assertEqual(summary['available'], [9, 7])
 
     def test_average_per_record(self):
-        summary = self.collect(scope='gold')
-        self.assertEqual(summary['items'][0]['avg'], 4.0)  # 8 张 / 2 次
+        summary = self.collect(scope='consumable')
+        # 心智单元：九期 40 + 七期 30 = 70，跨 2 次掉落
+        chips = next(item for item in summary['items'] if item['name'] == CHIPS)
+        self.assertEqual(chips['avg'], 35.0)
 
     def test_series_default_picks_latest_available(self):
         self.assertEqual(self.collect(series=0)['series'], 9)
@@ -158,17 +149,17 @@ class ResearchStatsTodayMonthTest(unittest.TestCase):
         old = now - timedelta(days=200)
         self.now = now
         entries = [
-            entry({GOLD_GEAR: 2}, 9, now),
-            entry({GOLD_GEAR: 3}, 9, first_this_month),
-            entry({GOLD_GEAR: 5}, 9, old),
-            {'project': 'G-531-MI', 'series': 9, 'items': {GOLD_GEAR: 7}},  # 没有时间戳
+            entry({CHIPS: 2}, 9, now),
+            entry({CHIPS: 3}, 9, first_this_month),
+            entry({CHIPS: 5}, 9, old),
+            {'project': 'G-531-MI', 'series': 9, 'items': {CHIPS: 7}},  # 没有时间戳
         ]
         self.patcher = patch.object(RESEARCH_STATS, '_iter_entries', lambda *a, **k: iter(entries))
         self.patcher.start()
         self.addCleanup(self.patcher.stop)
 
     def test_today_and_month_buckets(self):
-        summary = RESEARCH_STATS.collect('alas', days=365, series=9, scope='gold')
+        summary = RESEARCH_STATS.collect('alas', days=365, series=9, scope='consumable')
         item = summary['items'][0]
         # 今天 2 张 + 本月 1 号 3 张 + 200 天前 5 张；没有时间戳的那条不进窗口
         self.assertEqual(item['amount'], 10)
@@ -180,7 +171,7 @@ class ResearchStatsTodayMonthTest(unittest.TestCase):
 
     def test_missing_timestamp_is_excluded(self):
         """时间戳缺失的记录不进统计窗口，也不算进今天。"""
-        summary = RESEARCH_STATS.collect('alas', days=365, series=9, scope='gold')
+        summary = RESEARCH_STATS.collect('alas', days=365, series=9, scope='consumable')
         self.assertLess(summary['today'], 7)
         self.assertEqual(summary['records'], 3)
 
