@@ -142,7 +142,7 @@ class ResearchDropParser:
         from module.ocr.ocr import Ocr
         from module.research.project_data import LIST_RESEARCH_PROJECT
         from module.statistics.get_items import GetItemsStatistics
-        from module.statistics.item import ItemGrid
+        from module.statistics.item import AmountOcr, ItemGrid
 
         Ocr.SHOW_LOG = False
         # 独立网格：科研有一套自己的物品模板，不能和战斗掉落共用全局网格，
@@ -151,6 +151,13 @@ class ResearchDropParser:
         grid.load_template_folder(ITEM_TEMPLATE_FOLDER)
         grid.amount_max = dict(RESEARCH_AMOUNT_MAX)
         grid.amount_default_max = research_amount_default_max
+        # 数量识别单独配一个开了碎片过滤的实例，不动全局 AMOUNT_OCR（战斗掉落那边的
+        # 行为要原样保留）。科研的数量框紧挨物品图标，图标底部的白色纹理会被拼进数字：
+        # 实测「图纸 1 张」被读成 71、超上限截断后又变成 7（六倍误差，14/14 复现），
+        # 开过滤后读数与图上真值一致。委托收入与自律寻敌场景同样开着它。
+        amount_ocr = AmountOcr([], threshold=96, name='RESEARCH_AMOUNT_OCR')
+        amount_ocr.remove_fragments = True
+        grid.amount_ocr = amount_ocr
 
         self.stats = GetItemsStatistics()
         self.stats.grid = grid
