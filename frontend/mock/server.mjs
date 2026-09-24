@@ -1,12 +1,34 @@
 import { createServer } from 'node:http'
-import { pathToFileURL } from 'node:url'
+import { readFile } from 'node:fs/promises'
+import path from 'node:path'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { WebSocketServer, WebSocket } from 'ws'
 import { createMockState, fail } from './state.mjs'
 
+// 科研物品图标：真实后端把 assets/stats/research_items 挂在这个前缀下（见
+// module/api/statistics_service.py 的 research-items 静态目录）。mock 也照挂，
+// 否则科研统计页的图标列全是裂图，看不出图标布局对不对。
+const RESEARCH_ICON_DIR = fileURLToPath(new URL('../../assets/stats/research_items/', import.meta.url))
+
 export function createMockServer({password = '', empty = false} = {}) {
   const state = createMockState({empty})
   const server = createServer((request, response) => {
+    if (request.url?.startsWith('/research-items/')) {
+      // basename 挡住 ../ 之类的越权路径，只认目录里的单层文件名
+      const name = path.basename(decodeURIComponent(request.url))
+      if (name.endsWith('.png')) {
+        readFile(path.join(RESEARCH_ICON_DIR, name)).then(buffer => {
+          response.setHeader('Content-Type', 'image/png')
+          response.writeHead(200)
+          response.end(buffer)
+        }).catch(() => {
+          response.writeHead(404)
+          response.end()
+        })
+        return
+      }
+    }
     response.setHeader('Content-Type', 'application/json; charset=utf-8')
     response.writeHead(request.url === '/healthz' ? 200 : 404)
     response.end(JSON.stringify(request.url === '/healthz' ? {status: 'ok', protocolVersion: 1, mock: true} : {message: '请通过 Vite 打开前端'}))

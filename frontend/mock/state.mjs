@@ -445,6 +445,79 @@ export function createMockState({empty = false} = {}) {
               [5, timestamp(new Date(Date.now() - 1800000)), 500, 5.82, 0.58, 0.15, 0.22]
             ]
           }]
+        } else if (params.category === 'research') {
+          // 三个视图共用一套形状：期数视图（默认）走「收获明细 + 掉落记录」，
+          // 金装与心智/物资视图走单表。素材与服务端 module/api/statistics_service.py 对齐。
+          const scope = params.scope ?? 'series'
+          const scopeRows = {
+            gold: [
+              ['Prototype_Triple_419mm_Mk_I_Main_Gun_Mount_T0', '试作型三联装419mm主炮MK.IT0设计图', '金', 9, 6],
+              ['Prototype_Twin_127mm_Mle_1948_Naval_Gun_T0', '试作型双联装127mm主炮Mle1948T0设计图', '金', 10, 7],
+              ['Prototype_Quadruple_610mm_Cruiser_Torpedo_Mount_T0', '试作型四联装610mm鱼雷（巡洋用）T0设计图', '金', 9, 9],
+              ['Twin_40mm_Bofors_Hazemeyer_AA_Gun_Mount_T0', '双联装40mm博福斯海兹梅耶T0设计图', '金', 19, 11],
+              ['533mm_Quintuple_Torpedo_Mount_T3', '五联装533mm鱼雷T3设计图', '金', 12, 9]
+            ],
+            consumable: [
+              ['Coins', '物资', '—', 3116, 78],
+              ['CognitiveChips', '心智单元', '—', 480, 12]
+            ]
+          }
+          if (scope !== 'series') {
+            const rows = name === 'demo-alt' ? [] : scopeRows[scope] ?? []
+            result.metrics = [
+              {label: '掉落记录', value: 79, unit: '次'},
+              {label: '物品种类', value: rows.length, unit: '种'},
+              {label: '掉落总数', value: rows.reduce((sum, row) => sum + row[3], 0), unit: ''},
+              {label: '今日总计', value: 0, unit: ''},
+              {label: '本月总计', value: rows.reduce((sum, row) => sum + row[3], 0), unit: ''}
+            ]
+            result.tables = [{
+              title: scope === 'gold' ? '金装统计（全部期数）' : '心智/物资统计（全部期数）',
+              columns: ['图标', '物品', '稀有度', '数量', '获得次数'],
+              note: scope === 'gold'
+                ? '金装 = 稀有度 4 的装备图纸，全部期数合并统计。彩装备、图纸、心智与物资看其它视图。图标暂用当前物品模板。'
+                : '心智单元与物资不绑期数、各期混着出，所以这里不分期统计。图标暂用当前物品模板。',
+              defaultSort: {index: 3, descending: true},
+              rows: rows.map(([key, zh, rarity, amount, count]) => [`research:${key}`, zh, rarity, amount, count])
+            }]
+          } else {
+            const items = [
+              ['BlueprintValparaiso', '蓝图：瓦尔帕莱索', '彩', 12],
+              ['BlueprintMaxImmelmann', '蓝图：马克斯·殷麦曼', '彩', 0],
+              ['BlueprintTakahashi', '蓝图：高梁', '金', 29],
+              ['BlueprintDuncan', '蓝图：邓肯', '金', 14],
+              ['BlueprintOrage', '蓝图：暴风雨', '金', 17],
+              ['Prototype_Carrier_Based_Ta_152_C_1_R14_T0', '试作舰载型Ta 152C-1/R14T0设计图', '彩', 4]
+            ]
+            const rows = name === 'demo-alt' ? [] : items.map(([key, zh, rarity, amount]) => [
+              `research:${key}`, zh, rarity, amount || null,
+              amount ? Math.max(1, Math.round(amount / 1.5)) : null, amount ? 1.5 : null
+            ])
+            result.metrics = [
+              {label: '掉落记录', value: 79, unit: '次'},
+              ...items.map(([key, zh, , amount]) => ({label: zh, value: amount || null, unit: '', icon: `research:${key}`}))
+            ]
+            result.tables = [
+              {
+                title: `第 ${params.series || 9} 期收获明细`,
+                columns: ['图标', '物品', '稀有度', '总收益', '掉落记录数', '平均每次掉落'],
+                note: '每期只统计该期各艘船的图纸与该期的彩装图纸；金装备在「金装统计」、心智与物资在「心智/物资」里看。图标暂用当前物品模板。',
+                defaultSort: {index: 3, descending: true},
+                rows
+              },
+              {
+                title: '掉落记录',
+                columns: ['时间', '项目', '期数', '掉落物'],
+                note: '按时间倒序；只列掉了本期图纸或彩装的记录，那一次只掉心智或物资的不算。',
+                defaultSort: {index: 0, descending: true},
+                rows: name === 'demo-alt' ? [] : [
+                  [timestamp(new Date(Date.now() - 3600000)), 'Q-268-MI', 9, '试作舰载型Ta 152C-1/R14T0设计图 x1、蓝图：邓肯 x1、蓝图：暴风雨 x1'],
+                  [timestamp(new Date(Date.now() - 7200000)), 'G-531-MI', 9, '蓝图：高梁 x2'],
+                  [timestamp(new Date(Date.now() - 14400000)), 'Q-051-MI', 9, '试作型三联装550mm鱼雷改（弹药调整）T0设计图 x1']
+                ]
+              }
+            ]
+          }
         }
         return result
       }

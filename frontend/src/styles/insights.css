@@ -184,5 +184,19 @@
 
 @media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.task-row {grid-template-columns:minmax(0,1fr) 48px 74px 10px !important}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.schedule-panel, .monitor-panel {height:500px}.chart-expanded {inset:5px}.statistics-note {font-size:11px}}
 
+/* 手机端（科研掉落这类指标卡最多的页面尤其明显）：165px 起的网格在窄屏只放得下一列，
+   而卡片是按多列设计的——48px 图标撑出整行高、数字被 space-between 推到卡片底部，
+   一张卡近百像素只有两个数据，翻起来像是坏了。改成「图标 + 名字在左、数值在右」的紧凑行，
+   并允许名字折行，长物品名（试作舰载型Ta 152C-1/R14T0设计图）不再被省略号吃掉。 */
+@media(max-width:480px) {
+  .summary-metrics-panel {padding:12px 14px}
+  .summary-metrics-panel .summary-metrics {grid-template-columns:1fr;gap:2px}
+  .summary-metrics-panel .summary-metric-card {flex-direction:row;align-items:center;gap:12px;min-height:0;padding:9px 10px}
+  .summary-metrics-panel .summary-metric-head {flex-direction:row-reverse;justify-content:flex-end;flex:1 1 auto;min-width:0;margin-bottom:0;gap:10px}
+  .summary-metrics-panel .summary-metric-card strong {flex:0 0 auto;font-size:20px}
+  .summary-metrics-panel .summary-metrics .summary-metric-label {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.3}
+  .summary-metrics-panel .summary-metric-icon-webp img {width:32px;height:32px}
+}
+
 /* 未展示资源的卡片外观复用编辑卡，点击即添加。 */
 .resource-editor-card.resource-picker-card {cursor: pointer; font-size: inherit; color: inherit}

@@ -357,9 +357,9 @@ test('统计分类、K 线、时间过滤、表格导出与移动端布局', asy
   const tabs = page.getByRole('tablist', {name: '统计分类'})
   await tabs.getByRole('tab', {name: '资源趋势', exact: true}).focus()
   await page.keyboard.press('End')
-  await expect(tabs.getByRole('tab', {name: '短猫掉落', exact: true})).toBeFocused()
-  await expect(tabs.getByRole('tab', {name: '短猫掉落', exact: true})).toHaveAttribute('aria-selected', 'true')
-  await expect(page.locator('.period-controls strong')).toHaveText('短猫掉落')
+  await expect(tabs.getByRole('tab', {name: '科研掉落', exact: true})).toBeFocused()
+  await expect(tabs.getByRole('tab', {name: '科研掉落', exact: true})).toHaveAttribute('aria-selected', 'true')
+  await expect(page.locator('.period-controls strong')).toHaveText('科研掉落')
   await expect.poll(() => tabs.evaluate(control => {
     const active = control.querySelector('[aria-selected="true"]')!.getBoundingClientRect()
     const indicator = control.querySelector('.segmented-indicator')!.getBoundingClientRect()
