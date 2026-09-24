@@ -234,7 +234,7 @@ def fold_text(text: str) -> str:
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
 
-def name_tokens(text: str) -> frozenset:
+def name_tokens(text: str, loose: bool = False) -> frozenset:
     """把名称拆成词集合，用于跨命名风格的匹配。
 
     仓库里的模板名和 Lua 英文名常常词序不同、多一个 Mount/Mark 之类的词，
@@ -242,13 +242,24 @@ def name_tokens(text: str) -> frozenset:
     按词集合比对比按字符串比对宽容得多。品阶标记（T0/T3）保留，
     否则 T2/T3 两个版本会撞在一起。
 
+    loose=True 再放松一档：忽略大小写、丢掉 Mount 这类通用词，并归一已知的拼写差异
+    （Reppuu/Reppu）。实测库里 144 个老模板名因此对不上 Lua 名，其中 36 个能这样唯一对回，
+    它们的稀有度也就进得了名称表（否则金装图纸在「金装统计」里是隐形的）。
+    只放开到这一步：再松就会把 40mm Bofors Type 5 认成 Hazemeyer 这类近邻。
+
     Args:
         text (str): 名称文本。
+        loose (bool): 是否忽略通用词与大小写、拼写差异。
 
     Returns:
         frozenset: 词集合；无法解析时为空集。
     """
     text = re.sub(r'\bdesign\b', ' ', (text or '').lower())
+    if loose:
+        # 先把下划线换成空格：模板名是下划线分隔的，而 `_` 在正则里算词字符，
+        # 直接对 'gun_mount_t0' 跑 \bmount\b 是匹配不上的（踩过：36 个候选只对上 8 个）。
+        text = text.replace('_', ' ').replace('reppuu', 'reppu')
+        text = re.sub(r'\bmount\b', ' ', text)
     return frozenset(re.findall(r'[a-z0-9]+', text))
 
 
@@ -942,12 +953,20 @@ class ResearchTemplateScanner:
         if self.lua is None:
             return
         ships = self._load_ship_names()
-        # 词集合索引，兜住词序不同/多一个词的命名差异
+        # 词集合索引，兜住词序不同/多一个词/大小写与拼写差异的命名风格。
+        # 同一组词对应多件物品时按有歧义丢弃——宁可留空显示模板名，也不要认错给错稀有度。
         by_tokens = {}
-        for _, en_name, zh_name in self.lua.candidates:
-            tokens = name_tokens(en_name)
-            if tokens:
-                by_tokens.setdefault(tokens, (en_name, zh_name))
+        ambiguous = set()
+        for template, (rarity, en_name, zh_name) in self.lua.by_template.items():
+            tokens = name_tokens(template, loose=True)
+            if not tokens:
+                continue
+            if tokens in by_tokens:
+                ambiguous.add(tokens)
+                continue
+            by_tokens[tokens] = (rarity, en_name, zh_name)
+        for tokens in ambiguous:
+            by_tokens.pop(tokens, None)
 
         stems = {os.path.splitext(name)[0] for name in os.listdir(self.template_folder)
                  if name.lower().endswith('.png')}
@@ -967,19 +986,23 @@ class ResearchTemplateScanner:
                 table[stem] = dict(NAME_TABLE_OVERRIDES[key])
                 continue
             else:
-                tokens = name_tokens(key)
+                # 词集合归一后兜底：老模板名与 Lua 名只差词序/大小写/多一个 Mount 时靠这里对上，
+                # 稀有度一并取到——没有稀有度的话金装图纸在「金装统计」里是隐形的。
+                tokens = name_tokens(key, loose=True)
                 fallback = by_tokens.get(tokens)
                 if fallback is None:
                     continue
-                en_name, zh_name = fallback
-                rarity = None
+                rarity, en_name, zh_name = fallback
 
             zh_name = self._resolve_namecode(zh_name, en_name, ships)
             if zh_name:
                 entry = {'zh': zh_name, 'en': en_name, 'rarity': rarity}
                 # 期数只对「绑期数」的物品有意义（船图纸与彩装图纸），
                 # 金装备各期混着出，登记了反而会让人误以为它属于某一期。
-                series = self.lua.series_by_id.get(self.lua.by_template_id.get(key, 0))
+                # 用 Lua 那边的模板名查 id：走词元兜底时库内名字与 Lua 名不同（缺 Mount、
+                # 词序或大小写差异），拿库内名字查会把「蓝图：马可波罗」这类船图纸漏掉期数。
+                lua_template = to_template_name(en_name) or key
+                series = self.lua.series_by_id.get(self.lua.by_template_id.get(lua_template, 0))
                 if series:
                     entry['series'] = series
                 table[stem] = entry

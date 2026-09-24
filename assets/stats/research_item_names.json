@@ -1,4 +1,74 @@
 {
+ "533mm_Quadruple_Torpedo_Mount_T3": {
+  "en": "T3 Quadruple 533mm Torpedo Design",
+  "rarity": 3,
+  "zh": "四联装533mm鱼雷T3设计图"
+ },
+ "533mm_Quintuple_Torpedo_Mount_T2": {
+  "en": "T2 Quintuple 533mm Torpedo Design",
+  "rarity": 3,
+  "zh": "五联装533mm鱼雷T2设计图"
+ },
+ "533mm_Quintuple_Torpedo_Mount_T2_2": {
+  "en": "T2 Quintuple 533mm Torpedo Design",
+  "rarity": 3,
+  "zh": "五联装533mm鱼雷T2设计图"
+ },
+ "533mm_Quintuple_Torpedo_Mount_T3": {
+  "en": "T3 Quintuple 533mm Torpedo Design",
+  "rarity": 4,
+  "zh": "五联装533mm鱼雷T3设计图"
+ },
+ "533mm_Quintuple_Torpedo_Mount_T3_2": {
+  "en": "T3 Quintuple 533mm Torpedo Design",
+  "rarity": 4,
+  "zh": "五联装533mm鱼雷T3设计图"
+ },
+ "533mm_Quintuple_Torpedo_Mount_T3_3": {
+  "en": "T3 Quintuple 533mm Torpedo Design",
+  "rarity": 4,
+  "zh": "五联装533mm鱼雷T3设计图"
+ },
+ "533mm_Triple_Magnetic_Torpedo_Mount_T2": {
+  "en": "T2 Triple 533mm Magnetic Torpedo Design",
+  "rarity": 2,
+  "zh": "三联装533mm磁性鱼雷T2设计图"
+ },
+ "533mm_Triple_Magnetic_Torpedo_Mount_T3": {
+  "en": "T3 Triple 533mm Magnetic Torpedo Design",
+  "rarity": 3,
+  "zh": "三联装533mm磁性鱼雷T3设计图"
+ },
+ "533mm_Triple_Torpedo_Mount_T3": {
+  "en": "T3 Triple 533mm Torpedo Design",
+  "rarity": 2,
+  "zh": "三联装533mm鱼雷T3设计图"
+ },
+ "610mm_Quadruple_Torpedo_Mount_T2": {
+  "en": "T2 Quadruple 610mm Torpedo Design",
+  "rarity": 3,
+  "zh": "四联装610mm鱼雷T2设计图"
+ },
+ "610mm_Quadruple_Torpedo_Mount_T2_2": {
+  "en": "T2 Quadruple 610mm Torpedo Design",
+  "rarity": 3,
+  "zh": "四联装610mm鱼雷T2设计图"
+ },
+ "610mm_Quadruple_Torpedo_Mount_T3": {
+  "en": "T3 Quadruple 610mm Torpedo Design",
+  "rarity": 4,
+  "zh": "四联装610mm鱼雷T3设计图"
+ },
+ "610mm_Triple_Torpedo_Mount_T3": {
+  "en": "T3 Triple 610mm Torpedo Design",
+  "rarity": 3,
+  "zh": "三联装610mm鱼雷T3设计图"
+ },
+ "610mm_Twin_Torpedo_Mount_T3": {
+  "en": "T3 Twin 610mm Torpedo Design",
+  "rarity": 2,
+  "zh": "双联装610mm鱼雷T3设计图"
+ },
  "76mm_AA_Gun_T3": {
   "en": "T3 76mm AA Gun Design",
   "rarity": 3,
@@ -8,6 +78,21 @@
   "en": "T3 A5M Claude Design",
   "rarity": 2,
   "zh": "九六式舰战T3设计图"
+ },
+ "A7M_Reppuu_T1": {
+  "en": "T1 A7M Reppü Design",
+  "rarity": 2,
+  "zh": "烈风T1设计图"
+ },
+ "A7M_Reppuu_T2": {
+  "en": "T2 A7M Reppü Design",
+  "rarity": 3,
+  "zh": "烈风T2设计图"
+ },
+ "A7M_Reppuu_T3": {
+  "en": "T3 A7M Reppü Design",
+  "rarity": 4,
+  "zh": "烈风T3设计图"
  },
  "Advanced_Boiler_T3": {
   "en": "T3 Advanced Boiler Design",
@@ -389,6 +474,24 @@
   "series": 3,
   "zh": "蓝图：美因茨"
  },
+ "BlueprintMarcopolo": {
+  "en": "Blueprint - Marco Polo",
+  "rarity": 4,
+  "series": 4,
+  "zh": "蓝图：马可波罗"
+ },
+ "BlueprintMarcopolo_2": {
+  "en": "Blueprint - Marco Polo",
+  "rarity": 4,
+  "series": 4,
+  "zh": "蓝图：马可波罗"
+ },
+ "BlueprintMarcopolo_3": {
+  "en": "Blueprint - Marco Polo",
+  "rarity": 4,
+  "series": 4,
+  "zh": "蓝图：马可波罗"
+ },
  "BlueprintMaxImmelmann": {
   "en": "Blueprint - Max Immelmann",
   "rarity": 5,
@@ -472,6 +575,18 @@
   "rarity": 4,
   "series": 1,
   "zh": "蓝图：罗恩"
+ },
+ "BlueprintSaintlouis": {
+  "en": "Blueprint - Saint Louis",
+  "rarity": 4,
+  "series": 1,
+  "zh": "蓝图：路易九世"
+ },
+ "BlueprintSaintlouis_2": {
+  "en": "Blueprint - Saint Louis",
+  "rarity": 4,
+  "series": 1,
+  "zh": "蓝图：路易九世"
  },
  "BlueprintSeattle": {
   "en": "Blueprint - Seattle",
@@ -635,6 +750,16 @@
   "rarity": 4,
   "zh": "Me-155A舰载战斗机T3设计图"
  },
+ "Octuple_40mm_Pom_Pom_Gun_Mount_T2": {
+  "en": "T2 Octuple 40mm Pom Pom Gun Design",
+  "rarity": 3,
+  "zh": "八联装40mm“砰砰”炮T2设计图"
+ },
+ "Octuple_40mm_Pom_Pom_Gun_Mount_T3": {
+  "en": "T3 Octuple 40mm Pom Pom Gun Design",
+  "rarity": 4,
+  "zh": "八联装40mm“砰砰”炮T3设计图"
+ },
  "Prototype_55mm_Gerat_58_AA_Gun_Mount_T0": {
   "en": "Prototype 55mm Gerät 58 AA Gun Mount T0 Design",
   "rarity": 4,
@@ -750,6 +875,17 @@
   "series": 6,
   "zh": "试作型三联装203mmSKC主炮改T0设计图"
  },
+ "Prototype_Triple_234mm_Main_Gun_9_2_MK_XII_T0": {
+  "en": "Prototype Triple 234mm Main Gun (9.2\" MK XII) T0 Design",
+  "rarity": 5,
+  "series": 3,
+  "zh": "试作型三联装234mm主炮T0设计图"
+ },
+ "Prototype_Triple_310mm_Type_0_Main_Gun_Mount_T0": {
+  "en": "Prototype Triple 310mm Main Gun (Type 0) T0 Design",
+  "rarity": 4,
+  "zh": "试作型三联装310mm主炮T0设计图"
+ },
  "Prototype_Triple_380mm_Mle_1935_Main_Gun_Mount_T0": {
   "en": "Prototype Triple 380mm Mle 1935 Main Gun Mount T0 Design",
   "rarity": 4,
@@ -759,6 +895,11 @@
   "en": "T0 Prototype Triple 381mm AA Gun Design",
   "rarity": 4,
   "zh": "试作型三联装381mm主炮T0设计图"
+ },
+ "Prototype_Triple_406mm_50_Main_Gun_Mount_T0": {
+  "en": "Prototype Triple 406mm/50 Main Gun T0 Design",
+  "rarity": 4,
+  "zh": "试作型三联装406mm/50主炮T0设计图"
  },
  "Prototype_Triple_406mm_Model_1940_Main_Gun_T0": {
   "en": "Prototype Triple 406mm Model 1940 Main Gun T0 Design",
@@ -820,6 +961,26 @@
   "rarity": 4,
   "zh": "试作型VIT-2（模式调整）T0设计图"
  },
+ "Quadruple_356mm_Main_Gun_Mount_T2": {
+  "en": "T2 Quadruple 356mm Main Gun Design",
+  "rarity": 3,
+  "zh": "四联装356mm主炮T2设计图"
+ },
+ "Quadruple_356mm_Main_Gun_Mount_T3": {
+  "en": "T3 Quadruple 356mm Main Gun Design",
+  "rarity": 4,
+  "zh": "四联装356mm主炮T3设计图"
+ },
+ "Quadruple_356mm_Main_Gun_Mount_T3_2": {
+  "en": "T3 Quadruple 356mm Main Gun Design",
+  "rarity": 4,
+  "zh": "四联装356mm主炮T3设计图"
+ },
+ "Quadruple_356mm_Main_Gun_Mount_T3_3": {
+  "en": "T3 Quadruple 356mm Main Gun Design",
+  "rarity": 4,
+  "zh": "四联装356mm主炮T3设计图"
+ },
  "Rammer_T3": {
   "en": "T3 Rammer Design",
   "rarity": 2,
@@ -865,6 +1026,21 @@
   "rarity": 4,
   "zh": "？？？？？"
  },
+ "Sextuple_40mm_Bofors_AA_Gun_Mount_T0": {
+  "en": "Sextuple Bofors 40mm AA Gun T0 Design",
+  "rarity": 4,
+  "zh": "六联装40mm博福斯对空机炮T0设计图"
+ },
+ "Single_150mm_SK_C_28_Main_Gun_Mount_T3": {
+  "en": "T3 Single 150mm Main Gun (SK C/28) Design",
+  "rarity": 3,
+  "zh": "单装SKC28式150mm主炮T3设计图"
+ },
+ "Single_152mm_Secondary_Gun_Mount_T3": {
+  "en": "T3 Single 152mm Secondary Gun Design",
+  "rarity": 2,
+  "zh": "单装152mm副炮T3设计图"
+ },
  "Spitfire_T3": {
   "en": "T3 Spitfire Design",
   "rarity": 3,
@@ -905,6 +1081,31 @@
   "rarity": 3,
   "zh": "TBF复仇者T3设计图"
  },
+ "Triple_102mm_Secondary_Gun_Mount_T3": {
+  "en": "T3 Triple 102mm Secondary Gun Design",
+  "rarity": 3,
+  "zh": "三联装102mm副炮T3设计图"
+ },
+ "Triple_150mm_SK_C_25_Main_Gun_Mount_T3": {
+  "en": "T3 Triple 150mm Main Gun (SK C/25) Design",
+  "rarity": 3,
+  "zh": "三联装SKC25式150mm主炮T3设计图"
+ },
+ "Triple_283mm_SK_C_28_Main_Gun_Mount_T2": {
+  "en": "T2 Triple 283mm Main Gun (SK C/28) Design",
+  "rarity": 2,
+  "zh": "三联283mmSKC28主炮T2设计图"
+ },
+ "Triple_283mm_SK_C_28_Main_Gun_Mount_T3": {
+  "en": "T3 Triple 283mm Main Gun (SK C/28) Design",
+  "rarity": 3,
+  "zh": "三联283mmSKC28主炮T3设计图"
+ },
+ "Triple_356mm_Main_Gun_Mount_T3": {
+  "en": "T3 Triple 356mm Main Gun Design",
+  "rarity": 2,
+  "zh": "三联装356mm主炮T3设计图"
+ },
  "Triple_406mm_Main_Gun_T2": {
   "en": "T2 Triple 406mm Main Gun Design",
   "rarity": 3,
@@ -915,10 +1116,55 @@
   "rarity": 4,
   "zh": "三联装406mm主炮T3设计图"
  },
+ "Twin_102mm_Secondary_Gun_Mount_T3": {
+  "en": "T3 Twin 102mm Secondary Gun Design",
+  "rarity": 2,
+  "zh": "双联装102mm副炮T3设计图"
+ },
+ "Twin_113mm_AA_Gun_Mount_T2": {
+  "en": "T2 Twin 113mm AA Gun Design",
+  "rarity": 3,
+  "zh": "双联装113mm高射炮T2设计图"
+ },
+ "Twin_113mm_AA_Gun_Mount_T3": {
+  "en": "T3 Twin 113mm AA Gun Design",
+  "rarity": 4,
+  "zh": "双联装113mm高射炮T3设计图"
+ },
+ "Twin_120mm_Main_Gun_Mount_T3": {
+  "en": "T3 Twin 120mm Main Gun Design",
+  "rarity": 3,
+  "zh": "双联装120mm主炮T3设计图"
+ },
  "Twin_37mm_AA_70K_T3": {
   "en": "T3 Twin 37mm AA 70K Design",
   "rarity": 3,
   "zh": "双联37mm手拉机枪T3设计图"
+ },
+ "Twin_37mm_Mle_1936_AA_Gun_Mount_T0": {
+  "en": "Twin 37mm AA Gun (Mle 1936) T0 Design",
+  "rarity": 4,
+  "zh": "双联37mm高射炮Mle1936T0设计图"
+ },
+ "Twin_381mm_Main_Gun_Mount_T3": {
+  "en": "T3 Twin 381mm Main Gun Design",
+  "rarity": 3,
+  "zh": "双联装381mm主炮T3设计图"
+ },
+ "Twin_40mm_Bofors_Hazemeyer_AA_Gun_Mount_T0": {
+  "en": "Twin 40mm Bofors \"Hazemeyer\" AA Gun T0 Design",
+  "rarity": 4,
+  "zh": "双联装40mm博福斯海兹梅耶T0设计图"
+ },
+ "Twin_40mm_Bofors_Hazemeyer_AA_Gun_Mount_T0_2": {
+  "en": "Twin 40mm Bofors \"Hazemeyer\" AA Gun T0 Design",
+  "rarity": 4,
+  "zh": "双联装40mm博福斯海兹梅耶T0设计图"
+ },
+ "Twin_40mm_Bofors_Hazemeyer_AA_Gun_Mount_T0_3": {
+  "en": "Twin 40mm Bofors \"Hazemeyer\" AA Gun T0 Design",
+  "rarity": 4,
+  "zh": "双联装40mm博福斯海兹梅耶T0设计图"
  },
  "Twin_40mm_Bofors_STAAG_T0": {
   "en": "T0 Twin 40mm Bofors STAAG Design",
