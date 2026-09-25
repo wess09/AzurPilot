@@ -38,6 +38,9 @@ ISLAND_POST_SWIPE_STEP = 450
 ISLAND_POST_SWIPE_DISTANCE = 550
 ISLAND_POST_SWIPE_TO_TOP_MAX = 5
 ISLAND_POST_SWIPE_SEARCH_MAX = 4
+# 进入岛屿管理页的入口按钮（岛屿右上角“管理”）点击间隔：点击后岛屿场景需要转场，
+# 间隔不足会在云机上对同一入口按钮反复点击。
+ISLAND_ENTRY_RETRY_WAIT = 3
 
 # 岗位产品选择滑动惯性消除安全区域
 SELECT_PRODUCT_INERTIA_STOP = Button(
@@ -320,14 +323,19 @@ class Island(SelectCharacter):
             self.ui_goto(page_island_management, get_ship=False)
         else:
             self.ui_goto(page_island,get_ship=False)
+            # 入口按钮点击后岛屿场景需要转场，这里限制两次点击的间隔，
+            # 避免云机上因为画面还没切走而反复点击同一个入口按钮
+            entry_timer = Timer(ISLAND_ENTRY_RETRY_WAIT).clear()
             for _ in self.loop(timeout=20, skip_first=False):
                 if self.appear(ISLAND_MANAGEMENT_CHECK, offset=1):
                     break
-                if self.appear(ISLAND_CHECK, offset=1):
-                    self.device.click(ISLAND_GOTO_MANAGEMENT)
-                    continue
-                if self.appear(ISLAND_SEASON_CHECK, offset=1):
-                    self.device.click(ISLAND_SEASON_GOTO_ISLAND)
+                in_island = self.appear(ISLAND_CHECK, offset=1)
+                in_season = self.appear(ISLAND_SEASON_CHECK, offset=1)
+                if (in_island or in_season) and entry_timer.reached():
+                    self.device.click(
+                        ISLAND_GOTO_MANAGEMENT if in_island else ISLAND_SEASON_GOTO_ISLAND
+                    )
+                    entry_timer.reset()
                     continue
                 if self.ui_additional(get_ship=False):
                     continue
@@ -884,27 +892,53 @@ class Island(SelectCharacter):
         return False
 
     def confirm_selected_character_closed(self, context="角色选择", timeout=8):
-        """确认角色选择，并等待角色选择页关闭。"""
+        """确认角色选择，并等待角色选择页关闭。
+
+        补点规则与 confirm_selected_character 保持一致：只有本帧仍识别到角色页时
+        才补点，点击前重新截图复核，且两次点击间隔不小于
+        ISLAND_CHARACTER_CONFIRM_RETRY_WAIT（需大于云手机的页面转场时间），
+        避免上一次点击已经生效、页面正在切换时把确认按钮点到下一页同位置的按钮上。
+        """
         if not self.click_selected_character_confirm(context=context):
             return False
 
+        retry_timer = Timer(ISLAND_CHARACTER_CONFIRM_RETRY_WAIT).start()
         for _ in self.loop(timeout=timeout, skip_first=False):
             if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                 return True
-            if self.appear_then_click(SELECT_UI_CONFIRM, interval=1):
+            if not retry_timer.reached():
                 continue
+            retry_timer.reset()
+            # 点击前基于最新截图复核，避免用旧画面点击已经切换过去的页面
+            if not self.is_character_page_visible():
+                if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
+                    return True
+                continue
+            self.device.click(SELECT_UI_CONFIRM_SAFE)
 
         logger.warning(f"[岛屿] {context}确认后仍停留在角色选择页")
         return False
 
     def click_selected_character_confirm(self, context="角色选择", timeout=5):
-        """等待角色确认按钮出现并点击。"""
+        """等待角色确认按钮出现并点击。
+
+        点击前重新截取一帧复核，并只点击确认按钮右侧安全段（与选餐页确认按钮等
+        其它页面按钮不重叠），避免云手机转场较慢时误点到下一页同位置的按钮。
+        """
         self.interval_clear([SELECT_UI_CONFIRM])
         for _ in self.loop(timeout=timeout, skip_first=False):
             if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
                 return True
-            if self.appear_then_click(SELECT_UI_CONFIRM, interval=1):
-                return True
+            # threshold 与原 appear_then_click(threshold=30) 保持一致，
+            # 避免把“按钮可见但颜色有偏差”的机型挡在门外
+            if not self.appear(SELECT_UI_CONFIRM, threshold=30):
+                continue
+            if not self.is_character_page_visible():
+                if not self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
+                    return True
+                continue
+            self.device.click(SELECT_UI_CONFIRM_SAFE)
+            return True
 
         if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
             logger.warning(f"[岛屿] {context}确认按钮未出现")

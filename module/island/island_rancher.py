@@ -109,10 +109,9 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for _ in self.loop(timeout=15, skip_first=False):
             if self.appear(ISLAND_MILL_CHECK, offset=1):
                 break
-            if self.appear_then_click(ISLAND_SHOP_CONFIRM):
-                self.device.sleep(0.5)
-                self.device.click(ISLAND_SHOP_CONFIRM)
-                self.device.sleep(0.5)
+            if self.appear_then_click(ISLAND_SHOP_CONFIRM, interval=2):
+                # 只在检测到确认按钮且距上次点击 ≥2s 时补点，点击后由下一轮重新
+                # 截图复检，避免旧的“睡 0.5s 再盲点一次”落到已经切换过去的页面上
                 continue
             if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
                 self.device.click(ISLAND_SHOP_CONFIRM)
