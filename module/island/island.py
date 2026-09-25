@@ -25,12 +25,34 @@ ISLAND_MAP_DESTINATION_WAIT = 45
 # 目的地确认按钮只允许在点击后前 10s 内补点重试，
 # 防止地图一直停留在确认弹窗时反复点击同一按钮触发 GameTooManyClickError。
 ISLAND_MAP_CONFIRM_RETRY_WAIT = 10
+# 角色确认（选人页确认按钮）补点的最小间隔。必须大于云手机上“选人页→选餐页”的
+# 转场时间，否则上一次点击已经生效、页面正在切换时仍会补点一次确认按钮，
+# 而选餐页的确认按钮与角色页确认按钮坐标重叠，会把默认餐品直接下单。
+ISLAND_CHARACTER_CONFIRM_RETRY_WAIT = 3
+# 角色确认最多补点次数。次数用尽后不再点击，只观察页面是否切换，避免死循环点击。
+ISLAND_CHARACTER_CONFIRM_MAX_CLICKS = 8
 
 # 岗位产品选择滑动惯性消除安全区域
 SELECT_PRODUCT_INERTIA_STOP = Button(
     area=(), color=(),
     button=(468, 400, 476, 500),
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
+)
+
+# 角色页确认按钮的安全点击段（按钮右侧区域）。角色页确认按钮 SELECT_UI_CONFIRM
+# (944, 585, 1236, 632) 与选餐页确认按钮 POST_ADD_ORDER (491, 595, 1090, 647) 坐标重叠，
+# 云手机转场较慢时补点确认会落到已经切换过去的选餐页上，把列表里默认的第一个餐品
+# 直接下单。该安全段在角色页仍完整落在确认按钮内，在选餐页则是空白，误点无副作用。
+SELECT_UI_CONFIRM_SAFE = Button(
+    area=(), color=(),
+    button=(
+        SELECT_UI_CONFIRM.button[0] + (SELECT_UI_CONFIRM.button[2] - SELECT_UI_CONFIRM.button[0]) * 3 // 5,
+        SELECT_UI_CONFIRM.button[1] + 8,
+        SELECT_UI_CONFIRM.button[2] - 8,
+        SELECT_UI_CONFIRM.button[3] - 4,
+    ),
+    file={'cn': '', 'en': '', 'jp': '', 'tw': ''},
+    name='SELECT_UI_CONFIRM_SAFE',
 )
 
 # 岗位派遣页底部材料卡片上的数量文本，例如 150/2 或 150/(2+6)。
@@ -773,19 +795,40 @@ class Island(SelectCharacter):
             logger.warning(f"[岛屿] {context}材料已确认足够，但确认按钮不可用，可能角色体力不足")
         return False
 
+    def is_character_page_visible(self):
+        """重新截取一帧，判断角色选择页是否仍然可见。
+
+        确认按钮补点前调用：云手机的截图与点击都有明显延迟，用上一帧的识别结果
+        点击时，点击可能在页面已经切换之后才送达，从而打到下一页同位置的按钮上
+        （选餐页确认按钮与角色页确认按钮坐标重叠）。因此每次补点前都基于最新
+        截图复核一次。
+
+        Returns:
+            bool: 最新截图上角色选择页标题或确认按钮是否可见。
+        """
+        self.device.screenshot()
+        if self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1):
+            return True
+        return self.appear(SELECT_UI_CONFIRM)
+
     def confirm_selected_character(self, context="岗位派遣"):
         """确认角色选择，并等待角色选择页切换到下一步。
 
-        采用“点击→复检→重试”的状态循环：每次点击后必须确认角色页真正关闭，
-        连续两次点击未生效时仍会继续重试确认按钮（最多 8 次），而不是停止
-        点击导致派遣流程卡死。角色页标题或确认按钮模板在点击后短暂识别不到时，
-        只要之前已确认过角色页仍在，也会按固定间隔继续尝试。
+        采用“点击→复检→重试”的状态循环：只有在本帧确实识别到角色选择页
+        （页面标题或确认按钮）时才补点确认，点击前还会重新截取一帧复核，
+        避免云手机转场较慢时把确认按钮点到下一页同位置的按钮上（选餐页确认
+        按钮坐标重叠，误点会把默认餐品直接下单）。角色页迟迟没有关闭时按
+        ISLAND_CHARACTER_CONFIRM_RETRY_WAIT 秒间隔重试，最多点击
+        ISLAND_CHARACTER_CONFIRM_MAX_CLICKS 次；次数用尽后只观察页面是否切换，
+        仍无进展则记录次数并返回 False，交由调用方回退岗位管理页，避免卡死。
         """
         self.interval_clear([SELECT_UI_CONFIRM])
-        retry_timer = Timer(1.5).start()
+        # 首次确认立即点击，之后每次补点至少间隔 ISLAND_CHARACTER_CONFIRM_RETRY_WAIT 秒
+        retry_timer = Timer(ISLAND_CHARACTER_CONFIRM_RETRY_WAIT).clear()
         confirm_clicks = 0
+        skipped_clicks = 0
         role_seen = False
-        for _ in self.loop(timeout=20, skip_first=False):
+        for _ in self.loop(timeout=25, skip_first=False):
             in_role_page = self.appear(ISLAND_SELECT_CHARACTER_CHECK, offset=1)
             confirm_visible = self.appear(SELECT_UI_CONFIRM)
             role_seen = role_seen or in_role_page or confirm_visible
@@ -808,21 +851,29 @@ class Island(SelectCharacter):
             ):
                 return True
 
-            # 未进入任何已知下一步，且曾经看到角色选择页：继续重试确认。
-            # 两次点击仍未生效后，即使按钮/标题模板短暂识别不到，
-            # 也按固定间隔继续点击同一确认区域，避免确认失败后无人再点击。
-            if not role_seen:
+            # 未进入任何已知下一步：只有本帧仍识别到角色页时才允许补点确认。
+            # 识别不到角色页（页面正在转场或已经切页）时不点击，避免把确认按钮
+            # 点到下一页同位置的按钮上。
+            if not in_role_page and not confirm_visible:
+                continue
+            if confirm_clicks >= ISLAND_CHARACTER_CONFIRM_MAX_CLICKS:
                 continue
             if not retry_timer.reached():
                 continue
-            if in_role_page or confirm_visible or confirm_clicks >= 2:
-                self.device.click(SELECT_UI_CONFIRM)
-                confirm_clicks += 1
-                retry_timer.reset()
-                if confirm_clicks >= 8:
-                    break
+            retry_timer.reset()
+            # 点击前基于最新截图复核，把“用旧画面点击”的时间差压到最小
+            if not self.is_character_page_visible():
+                if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
+                    return True
+                skipped_clicks += 1
+                continue
+            self.device.click(SELECT_UI_CONFIRM_SAFE)
+            confirm_clicks += 1
 
-        logger.warning(f"[岛屿] {context}确认后未进入下一步（已重试点击 {confirm_clicks} 次）")
+        logger.warning(
+            f"[岛屿] {context}确认后未进入下一步"
+            f"（已重试点击 {confirm_clicks} 次，跳过误点 {skipped_clicks} 次）"
+        )
         return False
 
     def confirm_selected_character_closed(self, context="角色选择", timeout=8):
