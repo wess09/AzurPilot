@@ -31,6 +31,13 @@ ISLAND_MAP_CONFIRM_RETRY_WAIT = 10
 ISLAND_CHARACTER_CONFIRM_RETRY_WAIT = 3
 # 角色确认最多补点次数。次数用尽后不再点击，只观察页面是否切换，避免死循环点击。
 ISLAND_CHARACTER_CONFIRM_MAX_CLICKS = 8
+# 岗位列表定位滑动：单步距离、回顶部滑动距离与补滑上限。
+# 模拟器/云手机上一次滑动实际滚动的距离会明显小于期望值（滑动距离不够），
+# 固定 2 次 450 经常停在中途，因此定位改为“滑动→检测锚点→继续补滑”的闭环。
+ISLAND_POST_SWIPE_STEP = 450
+ISLAND_POST_SWIPE_DISTANCE = 550
+ISLAND_POST_SWIPE_TO_TOP_MAX = 5
+ISLAND_POST_SWIPE_SEARCH_MAX = 4
 
 # 岗位产品选择滑动惯性消除安全区域
 SELECT_PRODUCT_INERTIA_STOP = Button(
@@ -932,7 +939,14 @@ class Island(SelectCharacter):
             ):
                 retry_swipe_used += 1
                 logger.info(f"[岛屿] 未识别到岗位按钮 {post}，第{retry_swipe_used + 1}次滑动定位岗位列表")
-                self.post_manage_swipe(getattr(self, 'post_manage_swipe_count', 1))
+                swipe_count = getattr(self, 'post_manage_swipe_count', 1)
+                if swipe_count >= 2:
+                    # 店铺岗位位于列表较深处：先回到顶部按调参步数下滑，再继续补滑
+                    # 直到目标岗位出现（模拟器滑动距离不够时自动补偿）
+                    self.post_manage_swipe_to_top()
+                    self.post_manage_swipe_until_appear(post, min_swipes=swipe_count)
+                else:
+                    self.post_manage_swipe(swipe_count)
                 retry_swipe_timer.reset()
                 continue
             if (
@@ -960,27 +974,79 @@ class Island(SelectCharacter):
     def post_manage_down_swipe(self,distance):
         self.device.swipe_vector(vector=(0, distance), box=(688, 69, 725, 656), name="PostDownSwipe")
         self.device.click(POST_MANAGE_SWIPE_STOP, control_check=False)
+
+    def post_manage_swipe_to_top(self, max_swipes=None):
+        """向下补滑，直到岗位列表回到顶部（农田/牧场岗位所在的第一行可见）。
+
+        岗位列表的定位不能只靠固定次数：模拟器/云手机上一次滑动实际滚动的距离
+        会明显小于期望值，固定 2 次 450 常常停在中途，后续 post_open 就找不到
+        岗位按钮（例如牧场磨坊流程）。这里改为“滑动→检测列表首行→继续补滑”的
+        闭环，向下滑动会被列表顶部截断，因此不会滑过头。
+
+        Args:
+            max_swipes (int): 最大补滑次数，默认 ISLAND_POST_SWIPE_TO_TOP_MAX。
+
+        Returns:
+            bool: 列表是否已回到顶部。
+        """
+        max_swipes = max_swipes or ISLAND_POST_SWIPE_TO_TOP_MAX
+        for i in range(max_swipes + 1):
+            # 每轮重新截图：滑动后必须用最新画面判断是否已到顶部，
+            # 否则会拿滑动前的旧帧判断，导致多滑或漏判
+            self.device.screenshot()
+            if self.appear(ISLAND_FARM_POST1, offset=100):
+                return True
+            if i == max_swipes:
+                break
+            self.post_manage_down_swipe(ISLAND_POST_SWIPE_DISTANCE)
+            self.device.sleep(0.3)
+        logger.warning(f"[岛屿] 岗位列表回顶部失败（已补滑 {max_swipes} 次），岗位定位可能不准")
+        return False
+
     def post_manage_swipe(self,count):
         if count >= 2:
+            # 先回到列表顶部再按固定步数下滑，避免从上一次遗留的滚动位置出发
+            # 导致滑动距离不够或过头
+            self.post_manage_swipe_to_top()
             for _ in range(count):
-                self.post_manage_up_swipe(450)
+                self.post_manage_up_swipe(ISLAND_POST_SWIPE_STEP)
         elif count == 1:
             if self.appear(ISLAND_FARM_POST1, offset=100):
                 for _ in range(count):
-                    self.post_manage_up_swipe(450)
+                    self.post_manage_up_swipe(ISLAND_POST_SWIPE_STEP)
             else:
-                self.post_manage_down_swipe(450)
-                self.device.sleep(0.3)
-                self.post_manage_down_swipe(450)
-                self.device.sleep(0.3)
+                self.post_manage_swipe_to_top()
                 for _ in range(count):
-                    self.post_manage_up_swipe(450)
+                    self.post_manage_up_swipe(ISLAND_POST_SWIPE_STEP)
         elif count == 0:
-            if not self.appear(ISLAND_FARM_POST1, offset=100):
-                self.post_manage_down_swipe(450)
-                self.device.sleep(0.3)
-                self.post_manage_down_swipe(450)
-                self.device.sleep(0.3)
+            self.post_manage_swipe_to_top()
+
+    def post_manage_swipe_until_appear(self, post, min_swipes=1, max_swipes=None, offset=300):
+        """向下补滑，直到目标岗位按钮出现。
+
+        先按原有调参滑动 min_swipes 次，之后每次滑动都检测目标岗位；模拟器/云手机
+        上一次滑动实际滚动的距离不够时，会自动继续补滑，避免岗位按钮停在画面外。
+
+        Args:
+            post (Button): 目标岗位按钮。
+            min_swipes (int): 至少滑动的次数，保留原有调参位置。
+            max_swipes (int): 最大滑动次数，默认 ISLAND_POST_SWIPE_SEARCH_MAX。
+            offset (int): 岗位按钮模板匹配的搜索偏移。
+
+        Returns:
+            bool: 补滑后是否识别到目标岗位按钮。
+        """
+        max_swipes = max(max_swipes or ISLAND_POST_SWIPE_SEARCH_MAX, min_swipes)
+        for i in range(max_swipes + 1):
+            # 同上：滑动后用最新截图判断目标岗位是否出现
+            self.device.screenshot()
+            if i >= min_swipes and self.appear(post, offset=offset):
+                return True
+            if i == max_swipes:
+                break
+            self.post_manage_up_swipe(ISLAND_POST_SWIPE_STEP)
+            self.device.sleep(0.3)
+        return False
 
     def island_up(self,hold_time):
         p1 = (218, 507)

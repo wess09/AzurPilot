@@ -65,6 +65,9 @@ class IslandShopBase(Island, WarehouseOCR):
 
         # 滑动配置（子类可覆盖）
         self.post_manage_swipe_count = 1  # 默认滑动1次450
+        # 店铺岗位位于列表较深处，调参滑动后仍识别不到岗位按钮时，
+        # 由 post_open 闭环补滑重新定位（模拟器/云手机滑动距离不够的兜底）
+        self.post_open_retry_swipe = True
 
     # ==================== 季节配置支持 ====================
 

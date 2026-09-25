@@ -434,8 +434,8 @@ class IslandMineForest(Island,LoginHandler):
         self.goto_postmanage()
         self.post_manage_mode(POST_MANAGE_PRODUCTION)
         self.post_close()
-        self.post_manage_down_swipe(450)
-        self.post_manage_down_swipe(450)
+        # 回顶部（滑动距离不够时自动补滑，直到列表首行岗位出现）
+        self.post_manage_swipe_to_top()
 
         # 矿山（在上方可见）
         collected_posts = []
@@ -537,8 +537,7 @@ class IslandMineForest(Island,LoginHandler):
         # ===== 步骤4：执行种植（无需买种子） =====
         if any(all_to_plant.values()):
             # 先回到顶部（矿山可见）
-            self.post_manage_down_swipe(450)
-            self.post_manage_down_swipe(450)
+            self.post_manage_swipe_to_top()
             self.device.sleep(0.5)
 
             # 处理矿山

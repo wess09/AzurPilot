@@ -568,9 +568,9 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
                         'time_var_name': time_var_name
                     })
 
-        # 滑动到苗圃位置
+        # 滑动到苗圃位置（滑动距离不够时自动补滑，直到苗圃岗位出现）
         self.device.sleep(1)
-        self.post_manage_up_swipe(450)
+        self.post_manage_swipe_until_appear(ISLAND_NURSERY_POST1, min_swipes=1)
         self.device.sleep(0.5)  # 等待滑动动画完成
 
         # 然后遍历苗圃
@@ -665,7 +665,7 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
             # 然后处理苗圃的播种
             category = 'nursery'
             if idle_posts[category]:
-                self.post_manage_up_swipe(450)
+                self.post_manage_swipe_until_appear(ISLAND_NURSERY_POST1, min_swipes=1)
                 self.device.sleep(0.5)
                 idle_posts_list = idle_posts[category]
                 crops_to_plant = all_plants_to_plant[category]
