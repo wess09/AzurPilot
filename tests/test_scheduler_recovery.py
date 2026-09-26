@@ -30,6 +30,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         self.enterContext(patch('module.base.backup.backup'))
         self.enterContext(patch('module.runtime.preview.set_task'))
         self.enterContext(patch.dict('os.environ', {'ALAS_DEBUG_SERVER': '0'}))
+        self.enterContext(patch('module.runtime.scheduler_lock.acquire_scheduler_lock', return_value=None))
 
     def make_script(self, *, strict=False, sensitive=False):
         script = AzurLaneAutoScript('test')
@@ -218,6 +219,40 @@ class TestSchedulerRecovery(unittest.TestCase):
         self.run_tasks(script, [RuntimeError('故障一'), 'Commission', RuntimeError('故障二')])
 
         self.assertEqual(self.sleep.call_args_list, [call(20), call(20)])
+
+    def test_repeated_same_unexpected_error_delays_task_despite_other_successes(self):
+        # 9/22 实机：Main 每轮抛同一个 AttributeError，中间穿插的其他任务成功
+        # 会清零全局计数，导致 7 小时内 Main 崩溃 373 次。按任务计数不受其他任务影响。
+        script = self.make_script()
+        script.config.Error_GameStuckThreshold = 10
+        script.main = Mock(side_effect=AttributeError('is_os'))
+        self.run_tasks(script, [
+            'Main', 'Restart', 'Commission',
+            'Main', 'Restart', 'Commission',
+            'Main',
+        ])
+
+        script.config.task_delay.assert_called_once_with(server_update=True, task='Main')
+        self.assertNotIn('Main', script.unexpected_error_record)
+        script._try_restart_emulator.assert_not_called()
+
+    def test_different_unexpected_errors_do_not_delay_task(self):
+        script = self.make_script()
+        script.config.Error_GameStuckThreshold = 10
+        script.main = Mock(side_effect=[AttributeError('a'), KeyError('b'), TypeError('c')])
+        self.run_tasks(script, ['Main', 'Restart', 'Main', 'Restart', 'Main'])
+
+        script.config.task_delay.assert_not_called()
+        self.assertEqual(script.unexpected_error_record['Main'][1], 1)
+
+    def test_task_success_clears_its_unexpected_error_record(self):
+        script = self.make_script()
+        script.config.Error_GameStuckThreshold = 10
+        script.main = Mock(side_effect=[AttributeError('is_os'), AttributeError('is_os'), None])
+        self.run_tasks(script, ['Main', 'Restart', 'Main', 'Restart', 'Main'])
+
+        script.config.task_delay.assert_not_called()
+        self.assertNotIn('Main', script.unexpected_error_record)
 
     def test_restart_defers_channel_float_handling_until_next_task(self):
         for command in ('restart', 'Restart'):

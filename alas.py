@@ -4,6 +4,7 @@ import re
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime, timedelta
 from functools import partial
 from types import SimpleNamespace
@@ -91,6 +92,8 @@ def _get_task_display_name(task_command):
 
 class AzurLaneAutoScript:
     stop_event: threading.Event = None
+    # 同一任务连续在同一位置抛出未处理异常达到此次数后，延后该任务
+    UNEXPECTED_ERROR_DELAY_THRESHOLD = 3
 
     def __init__(self, config_name=DEFAULT_CONFIG_NAME):
         logger.hr('Start', level=0)
@@ -104,6 +107,11 @@ class AzurLaneAutoScript:
         self.consecutive_adb_offline = 0
         # 未预期异常连续计数，先重启游戏，连续多次才重启模拟器
         self.consecutive_unexpected_error = 0
+        # 按任务记录最近一次未处理异常的签名和连续次数：{任务名: (签名, 次数)}
+        # 与上面的全局计数不同，其他任务成功不会清零，只有该任务成功才清零
+        self.unexpected_error_record = {}
+        # 调度器独占锁句柄，见 loop()
+        self._scheduler_lock = None
         # ScriptError 连续计数，达到阈值后退出（代码 bug 重试无意义）
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
@@ -969,6 +977,58 @@ class AzurLaneAutoScript:
         )
         exit(1)
 
+    @staticmethod
+    def _unexpected_error_signature(error):
+        """用异常类型和最内层抛出位置标识同一个错误，忽略消息里的动态数值。"""
+        frames = traceback.extract_tb(error.__traceback__)
+        if frames:
+            frame = frames[-1]
+            return f'{type(error).__name__}@{os.path.basename(frame.filename)}:{frame.lineno}'
+        return type(error).__name__
+
+    def _delay_repeated_unexpected_error(self, command, error):
+        """
+        同一任务连续在同一位置抛出未处理异常时，延后该任务到下次服务器刷新。
+
+        这类异常多为代码错误（如访问不存在的属性），重启游戏或模拟器都修不好；
+        继续重试只会让该任务每轮崩溃并反复重启游戏。其他任务成功不影响此计数。
+
+        Args:
+            command (str): 任务方法名（下划线形式）。
+            error (Exception): 本次异常。
+
+        Returns:
+            bool: 是否已延后该任务。
+        """
+        task = inflection.camelize(command)
+        signature = self._unexpected_error_signature(error)
+        previous, count = self.unexpected_error_record.get(task, (None, 0))
+        count = count + 1 if previous == signature else 1
+        if count < self.UNEXPECTED_ERROR_DELAY_THRESHOLD:
+            self.unexpected_error_record[task] = (signature, count)
+            return False
+
+        self.unexpected_error_record.pop(task, None)
+        logger.error_context(
+            title=f'任务反复出现相同异常，已暂缓（{task}）',
+            reason=f'任务连续 {count} 次在同一位置抛出 {signature}，重启游戏无法修复。',
+            impact='该任务延后到下次服务器刷新，其他任务照常运行。',
+            action='查看错误现场和堆栈修复根因；修复后重启调度器或在 WebUI 调整该任务的下次运行时间。',
+            level=40,
+        )
+        self.config.task_delay(server_update=True, task=task)
+        handle_notify(
+            self.config.Error_OnePushConfig,
+            title=f"AzurPilot <{self.config_name}> 任务已暂缓",
+            content=f"<{self.config_name}> 任务 `{task}` 连续 {count} 次出现相同异常，已延后到下次服务器刷新\n{signature}",
+        )
+        notify_webui(
+            self.config_name,
+            title=f"任务 {task} 反复出错，先暂停一下喵",
+            content=f"{task} 连续 {count} 次出现相同异常，已延后到下次服务器刷新喵~\n{signature}",
+        )
+        return True
+
     def handle_channel_float(self):
         """处理渠道服（4399）启动悬浮球（每个会话仅一次）。
 
@@ -1237,6 +1297,7 @@ class AzurLaneAutoScript:
             )
             self.save_error_log()
             self._check_sensitive_exit(command, e)
+            self._delay_repeated_unexpected_error(command, e)
 
             self.consecutive_unexpected_error += 1
             limit = int(self.config.Error_GameStuckThreshold)
@@ -2171,6 +2232,33 @@ class AzurLaneAutoScript:
         logger.set_file_logger(self.config_name)
         logger.info(f'[Alas] 启动调度器循环: {self.config_name}')
 
+        from module.runtime.scheduler_lock import (
+            SchedulerLockConflict,
+            acquire_scheduler_lock,
+            release_scheduler_lock,
+        )
+        try:
+            self._scheduler_lock = acquire_scheduler_lock(self.config_name)
+        except SchedulerLockConflict:
+            logger.error_context(
+                title='同一配置已有调度器在运行',
+                reason=f'配置 `{self.config_name}` 的调度器锁被其他进程持有。',
+                impact='两个调度器同时操作同一模拟器会互相抢占连接和点击，本次启动已取消。',
+                action='先停止正在运行的实例（WebUI、命令行或脚本）后再启动。',
+                level=50,
+            )
+            exit(1)
+        except OSError as e:
+            # 锁文件不可用时不阻止启动，只失去重复启动保护
+            logger.warning(f'[Alas] 无法创建调度器锁，跳过重复启动检查：{e}')
+        try:
+            return self._loop()
+        finally:
+            release_scheduler_lock(self._scheduler_lock)
+            self._scheduler_lock = None
+
+    def _loop(self):
+        """调度器主循环，由 loop() 在持有调度器锁时调用。"""
         from module.config.utils import is_oobe_needed
 
         # 调度器本身需要先加载配置；日报关闭时不创建任何附加线程或服务。
@@ -2388,6 +2476,8 @@ class AzurLaneAutoScript:
                         self.consecutive_adb_offline = 0
                         self.consecutive_unexpected_error = 0
                         self.script_error_count = 0
+                    if task in self.unexpected_error_record:
+                        del self.unexpected_error_record[task]
                     continue
                 elif success == 'recoverable' or self.config.Error_HandleError:
                     # 可恢复错误或启用了错误处理，刷新配置后继续循环
