@@ -119,6 +119,9 @@
 .toast.error {background: #a45159}
 .modal {background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 14px; padding: 24px; width: 440px; max-width: calc(100vw / var(--ui-scale) - 30px); box-shadow: 0 20px 80px #132b4830}
 .modal::backdrop {background: #1323301a}
+.mismatch-note {display: flex; gap: 8px; align-items: center; margin: 0 0 16px; padding: 10px 14px; border-radius: 8px; background: var(--theme-warning-soft); color: var(--theme-warning); font-size: 12px; line-height: 1.7}
+.mismatch-note svg {flex-shrink: 0}
+.mismatch-reasons {margin: -6px 0 20px; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.9}
 .modal .panel-heading {padding: 0 0 17px; margin-bottom: 18px}
 .modal > p {line-height: 1.9; margin-bottom: 20px; color: var(--muted)}
 .form-stack {display: flex; flex-direction: column; gap: 19px}

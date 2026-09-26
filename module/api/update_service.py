@@ -45,6 +45,27 @@ class UpdateService:
             raise ApiError('UPDATE_FAILED', '无法读取提交记录')
         return result.stdout.strip() if result.returncode == 0 else ''
 
+    def is_ancestor(self, ancestor, descendant):
+        """ancestor 是否为 descendant 的祖先；对象缺失或命令失败都算否。"""
+        try:
+            result = subprocess.run(
+                [self.updater.git, 'merge-base', '--is-ancestor', ancestor, descendant],
+                cwd=self.root, capture_output=True, text=True,
+                encoding='utf-8', errors='replace', timeout=20,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+        return result.returncode == 0
+
+    def stale_upstream_head(self, local):
+        """local 是否停留在历史重写前的旧版上游历史上。
+
+        这种本地分支的 ahead 只是上游重写历史造成的假象，不是用户自己的提交，
+        因此可以照常更新。
+        """
+        from module.runtime.upstream_history import REWRITE_BASES
+        return any(self.is_ancestor(local, base) for base in REWRITE_BASES)
+
     def heads(self):
         local = self.git('rev-parse', '--verify', 'HEAD', optional=True)
         upstream = self.git('rev-parse', '--verify', f'refs/remotes/origin/{self.updater.Branch}', optional=True)
@@ -57,11 +78,18 @@ class UpdateService:
             return {'state': 'android', 'localHead': commit, 'upstreamHead': commit,
                     'branch': 'dev', 'ahead': 0, 'behind': 0, 'available': False,
                     'busy': False, 'error': '', 'canApply': False, 'canCancel': False,
-                    'managedByAndroid': True}
+                    'shaMismatch': False, 'managedByAndroid': True}
         local, upstream = self.heads()
         ahead = behind = 0
         if local and upstream:
             ahead, behind = map(int, self.git('rev-list', '--left-right', '--count', f'{local}...{upstream}').split())
+            # 上游重写历史后，停在旧版上游历史的分支会被算成 ahead，但那不是用户
+            # 自己的提交，按"只是落后"处理，让前端可以正常确认更新。
+            if ahead and self.stale_upstream_head(local):
+                ahead = 0
+        # 剩余的 ahead 是真分叉：本地与上游互不包含（例如镜像仓库重写过历史导致
+        # SHA 分离，或本地有自己的提交）。更新仍允许，但由前端弹窗向用户确认后果。
+        mismatch = bool(local and upstream and ahead and behind)
         from module.runtime.setting import State
         state = self.updater.state
         busy = self.operation is not None or state not in (0, 1, 'failed', 'finish') or getattr(self.updater, '_force_update_checking', False)
@@ -72,7 +100,8 @@ class UpdateService:
                 'localHead': local or None, 'upstreamHead': upstream or None,
                 'branch': self.updater.Branch, 'ahead': ahead, 'behind': behind,
                 'available': behind > 0 or state == 1, 'busy': busy, 'error': self.error,
-                'canApply': bool(local and upstream and behind and not ahead and not busy
+                'shaMismatch': mismatch,
+                'canApply': bool(local and upstream and behind and not busy
                                  and State.restart_event is not None and State.dependency_sync_event is not None),
                 'canCancel': state in ('start', 'wait'), 'managedByAndroid': False}
 

@@ -762,6 +762,30 @@ test('Logo 旁更新提示、完整提交分页、获取和应用更新', async 
   await page.screenshot({path: 'test-results/updater-dark.png'})
 })
 
+test('SHA 不匹配警告与更新确认弹窗', async ({page}) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  // mock 服务切到分叉场景：本地 HEAD 不在更新源历史上，模拟镜像重写历史后的 SHA 分离。
+  await fetch('http://127.0.0.1:22492/__mock/updater?mode=diverged')
+  await page.goto('/#/updater')
+  await expect(page.locator('.mismatch-note')).toContainText('SHA 不匹配')
+  await page.getByRole('button', {name: '更新', exact: true}).click()
+  await expect(page.locator('.modal h2')).toHaveText('SHA 不匹配')
+  await expect(page.locator('.modal')).toContainText('GitCode')
+  // 取消不更新：弹窗关闭且状态保持有更新可用。
+  await page.locator('.modal').getByRole('button', {name: '取消', exact: true}).click()
+  await expect(page.locator('.modal')).toHaveCount(0)
+  await expect(page.locator('.update-summary')).toContainText('新版本可用')
+  // 确认更新：本地对齐到更新源历史，状态回到已是最新。
+  await page.getByRole('button', {name: '更新', exact: true}).click()
+  await page.locator('.modal').getByRole('button', {name: '仍然更新'}).click()
+  await expect(page.locator('.modal')).toHaveCount(0)
+  await expect(page.locator('.update-summary')).toContainText('已是最新')
+  await expect(page.locator('.mismatch-note')).toHaveCount(0)
+  expect(errors).toEqual([])
+  await fetch('http://127.0.0.1:22492/__mock/updater?mode=default')
+})
+
 test('指挥喵评分报告面板展示、刷新与空状态', async ({page}) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))

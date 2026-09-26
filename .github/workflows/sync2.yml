@@ -28,6 +28,17 @@ jobs:
           echo "::add-mask::${MASK_REPO}"
           echo "::add-mask::${MASK_TARGET}"
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      # gitcode 镜像配额 1 GiB，历史里被替换掉的大文件必须移除，否则很快用满。
+      # 变换对同一份输入是确定的，各次同步产出的 SHA 因此稳定，客户端可以正常 pull。
+      - name: Trim dead history
+        run: |
+          python -m pip install --quiet git-filter-repo
+          python .github/scripts/trim_dead_history.py
+
       - name: sync
         if: env.gitcode_key && env.gitcode_token && env.gitcode_user
         run: |

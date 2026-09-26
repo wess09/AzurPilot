@@ -49,14 +49,43 @@ class UpdateServiceTest(unittest.TestCase):
         self.assertIn('保留完整正文与 --- 分隔符。', first['entries'][0]['message'])
         self.assertEqual(second['entries'][0]['sha'], self.base)
 
-    def test_diverged_history_includes_both_sides_and_disables_apply(self):
+    def test_diverged_history_reports_mismatch_and_allows_confirmed_apply(self):
+        """本地与上游历史互不包含时报告 SHA 不匹配；更新改由前端弹窗确认放行。"""
         self.git('commit', '--allow-empty', '-m', '本地修改')
-        status = self.service.status()
+        with patch.object(State, 'restart_event', threading.Event()), patch.object(State, 'dependency_sync_event', threading.Event()):
+            status = self.service.status()
         self.assertEqual((status['ahead'], status['behind']), (1, 1))
-        self.assertFalse(status['canApply'])
+        self.assertTrue(status['shaMismatch'])
+        self.assertTrue(status['canApply'])
         self.assertEqual(self.service.commits()['total'], 3)
-        with self.assertRaises(ApiError):
-            self.service.start('apply')
+        self.updater.run_update = Mock(return_value=True)
+        with patch.object(State, 'restart_event', threading.Event()), patch.object(State, 'dependency_sync_event', threading.Event()):
+            self.assertTrue(self.service.start('apply')['accepted'])
+            for _ in range(100):
+                if self.service.operation is None:
+                    break
+                threading.Event().wait(0.05)
+        self.updater.run_update.assert_called_once()
+
+    def test_stale_upstream_head_from_rewritten_history_can_apply(self):
+        """上游重写历史后，停在旧版上游历史的本地分支不应被当成"有独有提交"。"""
+        stale = self.remote
+        self.git('checkout', '-q', '--orphan', 'rewritten')
+        self.git('commit', '--allow-empty', '-m', '重写后的提交')
+        rewritten = self.git('rev-parse', 'HEAD')
+        self.git('update-ref', 'refs/remotes/origin/dev', rewritten)
+        self.git('checkout', '-q', 'dev')
+        self.git('reset', '--hard', self.base)
+        with patch.object(State, 'restart_event', threading.Event()), patch.object(State, 'dependency_sync_event', threading.Event()):
+            diverged = self.service.status()
+            with patch('module.runtime.upstream_history.REWRITE_BASES', (stale,)):
+                migrated = self.service.status()
+        self.assertGreater(diverged['ahead'], 0)
+        self.assertTrue(diverged['canApply'])
+        self.assertTrue(diverged['shaMismatch'])
+        self.assertEqual(migrated['ahead'], 0)
+        self.assertTrue(migrated['canApply'])
+        self.assertFalse(migrated['shaMismatch'])
 
     def test_missing_upstream_and_no_supervisor_are_readable(self):
         with patch.object(State, 'restart_event', None):

@@ -167,7 +167,14 @@ export function createMockState({ empty = false } = {}) {
   const commits = Array.from({ length: 123 }, (_, index) => ({ sha: createHash('sha1').update(`mock-commit-${123 - index}`).digest('hex'), author: 'AzurPilot', date: new Date(Date.UTC(2026, 8, 14, 0, -index)).toISOString(), message: index === 0 ? 'feat(webui): 新增主页与实例状态\n\n统一全局设置和更新入口。' : `fix(runtime): 改善任务运行稳定性 ${123 - index}` }))
   let localHead = commits[3].sha
   let upstreamHead = commits[0].sha
-  const updateStatus = () => ({ state: localHead === upstreamHead ? 'idle' : 'available', localHead, upstreamHead, branch: 'dev', ahead: 0, behind: commits.findIndex(item => item.sha === localHead), available: localHead !== upstreamHead, busy: false, canApply: localHead !== upstreamHead, canCancel: false, error: '' })
+  // 端到端场景开关：模拟本地与更新源历史分叉（镜像重写历史导致 SHA 不匹配）。
+  let divergedUpdater = false
+  const divergedLocalHead = createHash('sha1').update('mock-diverged-local').digest('hex')
+  const setUpdateScenario = mode => {
+    divergedUpdater = mode === 'diverged'
+    localHead = divergedUpdater ? divergedLocalHead : commits[3].sha
+  }
+  const updateStatus = () => ({ state: localHead === upstreamHead ? 'idle' : 'available', localHead, upstreamHead, branch: 'dev', ahead: divergedUpdater ? 1 : 0, behind: divergedUpdater ? 3 : commits.findIndex(item => item.sha === localHead), available: localHead !== upstreamHead, busy: false, canApply: localHead !== upstreamHead, canCancel: false, error: '', shaMismatch: divergedUpdater })
   const settings = {
     groups: [
       {
@@ -263,7 +270,7 @@ export function createMockState({ empty = false } = {}) {
       case 'updater.status': return updateStatus()
       case 'updater.commits': return { entries: commits.slice(params.offset, params.offset + params.limit), total: commits.length, hasMore: params.offset + params.limit < commits.length, localHead, upstreamHead }
       case 'updater.fetch': return { accepted: true }
-      case 'updater.apply': localHead = upstreamHead; return { accepted: true }
+      case 'updater.apply': localHead = upstreamHead; divergedUpdater = false; return { accepted: true }
       case 'updater.cancel': return { accepted: true }
       case 'system.ping': return { pong: true }
       case 'schema.get': return { args, menu, translations: locales[params.language] }
@@ -688,5 +695,5 @@ export function createMockState({ empty = false } = {}) {
       log(name, '模拟任务正在运行，等待下一轮调度。')
     }
   }
-  return { dispatch, tick }
+  return { dispatch, tick, setUpdateScenario }
 }

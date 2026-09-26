@@ -34,6 +34,14 @@ export function createMockServer({password = '', empty = false} = {}) {
       }
     }
     response.setHeader('Content-Type', 'application/json; charset=utf-8')
+    // 端到端场景开关：仅服务本地测试，例如 /__mock/updater?mode=diverged 切到 SHA 不匹配状态。
+    if (request.url?.startsWith('/__mock/updater')) {
+      const mode = new URL(request.url, 'http://localhost').searchParams.get('mode') ?? 'default'
+      state.setUpdateScenario(mode)
+      response.writeHead(200)
+      response.end(JSON.stringify({ok: true, mode}))
+      return
+    }
     response.writeHead(request.url === '/healthz' ? 200 : 404)
     response.end(JSON.stringify(request.url === '/healthz' ? {status: 'ok', protocolVersion: 1, mock: true} : {message: '请通过 Vite 打开前端'}))
   })
