@@ -338,91 +338,51 @@ class MeowfficerEnhance(MeowfficerBase):
         Pages:
             in: MEOWFFICER_ENHANCE_ENTER
         """
-        level = OCR_MEOWFFICER_ENHANCE_LEVEL.ocr(self.device.image)
-        if level > 30:
-            logger.warning(f'[指挥喵-强化] 无效的指挥喵等级: {level}')
-        return level
+        levels = []
 
-    def _meow_enhance(self):
-        """
-        Perform meowfficer enhancement operations
-        involving using extraneous meowfficers to
-        donate XP into a meowfficer target
+        # Wait for the selected Meowfficer information to refresh.
+        self.device.sleep(0.3)
 
-        Returns:
-            str:
+        for attempt in range(3):
+            # Use a fresh screenshot instead of the image captured while
+            # selecting the Meowfficer.
+            self.device.screenshot()
 
-        Pages:
-            in: page_meowfficer
-            out: page_meowfficer
-        """
-        logger.hr('指挥喵强化', level=1)
-        logger.attr('强化索引', self.config.MeowfficerTrain_EnhanceIndex)
+            level = OCR_MEOWFFICER_ENHANCE_LEVEL.ocr(self.device.image)
 
-        # Base Cases
-        # - Config at least > 0 but less than or equal to 12
-        # - Coins at least > 1000
-        if not (1 <= self.config.MeowfficerTrain_EnhanceIndex <= 12):
-            logger.warning(f'[指挥喵-强化] 强化索引={self.config.MeowfficerTrain_EnhanceIndex} '
-                           f'is out of bounds. Please limit to 1~12, skip')
-            return 'invalid'
-
-        coins = MEOWFFICER_COINS.ocr(self.device.image)
-        if coins < 1000:
-            logger.info(f'[指挥喵-强化] 物资 ({coins}) < 1000, 物资不足无法完成 '
-                        f'enhancement, skip')
-            return 'coin_limit'
-
-        for _ in range(2):
-            # Select target meowfficer
-            # for enhancement
-            self._meow_select()
-
-            if self._meow_get_level() >= 30:
-                logger.info('[指挥喵-强化] 当前指挥喵已满级')
-                return 'leveled_max'
-
-            # Transition to MEOWFFICER_FEED after
-            # selection; broken up due to significant
-            # delayed behavior of meow_additional
-            if self.meow_enhance_enter():
-                break
+            if 1 <= level <= 30:
+                levels.append(level)
             else:
-                # Retreat from an existing battle
-                self.ui_goto_campaign()
-                self.ui_goto(page_meowfficer)
-                continue
+                logger.warning(f'[指挥喵-强化] 无效的指挥喵等级: {level}')
 
-        # Initiate feed sequence; loop until exhaust all
-        # - Select Feed
-        # - Confirm/Cancel Feed
-        # - Confirm Enhancement
-        # - Check remaining coins after enhancement
-        while 1:
-            logger.hr('强化一次', level=2)
-            if not self.meow_feed_enter():
-                # Exit back into page_meowfficer
-                self.ui_click(MEOWFFICER_GOTO_DORMMENU, check_button=MEOWFFICER_ENHANCE_ENTER,
-                              appear_button=MEOWFFICER_ENHANCE_CONFIRM, offset=None, skip_first_screenshot=True)
-                # Re-enter page_meowfficer
-                self.ui_goto_main()
-                self.ui_goto(page_meowfficer)
-                return 'in_battle'
-            if not self.meow_feed_select():
-                break
-            self.meow_enhance_confirm()
+            # Normal levels do not need additional confirmation.
+            # LV.30 and invalid OCR results are confirmed with fresh frames.
+            if attempt == 0 and 1 <= level < 30:
+                return level
 
-            coins = MEOWFFICER_COINS.ocr(self.device.image)
-            if coins < 1000:
-                logger.info(f'[指挥喵-强化] 剩余物资 ({coins}) < 1000, 物资不足以进行下次 '
-                            f'enhancement, skip')
-                break
+            if attempt < 2:
+                self.device.sleep(0.2)
 
-        # Exit back into page_meowfficer
-        self.ui_click(MEOWFFICER_GOTO_DORMMENU, check_button=MEOWFFICER_ENHANCE_ENTER,
-                      appear_button=MEOWFFICER_ENHANCE_CONFIRM, offset=None, skip_first_screenshot=True)
-        return 'success'
+        # LV.30 may advance EnhanceIndex or disable MeowfficerTrain,
+        # so require three consistent OCR results.
+        if len(levels) == 3 and all(level == 30 for level in levels):
+            return 30
 
+        non_max_levels = [level for level in levels if level < 30]
+        if non_max_levels:
+            if 30 in levels:
+                logger.warning(
+                    f'[指挥喵-强化] LV.30 OCR结果不一致: {levels}, '
+                    '忽略本次满级判断'
+                )
+            return max(set(non_max_levels), key=non_max_levels.count)
+
+        logger.warning(
+            f'[指挥喵-强化] 无法确认指挥喵等级: {levels}, '
+            '本次不判定为满级'
+        )
+        return 0
+        
     def meow_enhance(self):
         """
         A wrapper of _meow_enhance()
