@@ -236,18 +236,85 @@ class VaultTests(unittest.TestCase):
         self.assertEqual(bytes(32), cached.value)
 
 
+class TpmCapabilityTests(unittest.TestCase):
+    def test_probe_cache_and_failures_do_not_access_account_vault(self):
+        from module.runtime.account_tpm import TpmProtector
+        import subprocess
+        for output, expected in ((SimpleNamespace(returncode=0, stdout=b'ready'), True),
+                                 (SimpleNamespace(returncode=1, stdout=b'ready'), False),
+                                 (SimpleNamespace(returncode=0, stdout=b'other'), False)):
+            TpmProtector.available.cache_clear()
+            with patch('module.runtime.account_tpm.os.name', 'nt'), \
+                    patch('module.runtime.account_tpm.subprocess.run', return_value=output) as run:
+                self.assertEqual(expected, TpmProtector.available())
+                self.assertEqual(expected, TpmProtector.available())
+                run.assert_called_once()
+        TpmProtector.available.cache_clear()
+        with patch('module.runtime.account_tpm.os.name', 'nt'), \
+                patch('module.runtime.account_tpm.subprocess.run', side_effect=subprocess.TimeoutExpired('probe', 30)):
+            self.assertFalse(TpmProtector.available())
+        TpmProtector.available.cache_clear()
+        with patch('module.runtime.account_tpm.os.name', 'posix'), \
+                patch('module.runtime.account_tpm.subprocess.run') as run:
+            self.assertFalse(TpmProtector.available())
+            run.assert_not_called()
+        TpmProtector.available.cache_clear()
+
+
 class AccountApiTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.configs = ConfigService(fixture(self.temp.name))
         self.service = AccountService(self.configs)
+        capability = patch('module.runtime.account_tpm.TpmProtector.available', return_value=False)
+        capability.start()
+        self.addCleanup(capability.stop)
+        self.local_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.local_temp.cleanup)
+        from module.runtime.account_local import LocalProtector
+        key_path = patch.object(LocalProtector, 'key_directory', return_value=Path(self.local_temp.name) / 'keys')
+        key_path.start()
+        self.addCleanup(key_path.stop)
         self.idle = patch('module.api.account_service.ensure_idle')
         self.idle.start()
         self.addCleanup(self.idle.stop)
 
     def manage(self, action, **kwargs):
         return self.service.manage(AccountParams(instance='testpilot', action=action, password=PASSWORD, **kwargs))
+
+    def test_local_bind_password_change_cold_start_and_explicit_unbind(self):
+        self.manage('create')
+        device = Mock()
+        device.capture.return_value = (snapshot(), [{'uid': 'synthetic-uid', 'name': '合成账号'}])
+        with patch('module.api.account_service.device_for', return_value=device):
+            self.manage('capture')
+        self.manage('enable', enabled=True)
+        result = self.manage('bind_local')
+        self.assertTrue(result['local_bound'])
+        self.assertFalse(result['tpm_bound'])
+        self.assertIsNotNone(AccountVault(self.configs.root).startup_key('testpilot'))
+        with self.assertRaises(ApiError) as error:
+            self.manage('bind_tpm')
+        self.assertEqual('AUTOUNLOCK_BOUND', error.exception.code)
+        self.manage('password', new_password=NEW_PASSWORD)
+        self.assertIsNotNone(AccountVault(self.configs.root).startup_key('testpilot'))
+        result = self.service.manage(AccountParams(instance='testpilot', action='unbind_local', password=NEW_PASSWORD))
+        self.assertFalse(result['local_bound'])
+        self.assertFalse(list(Path(self.local_temp.name).rglob('*.key')))
+        with self.assertRaises(ApiError) as error:
+            AccountVault(self.configs.root).startup_key('testpilot')
+        self.assertEqual('VAULT_LOCKED', error.exception.code)
+
+    def test_local_initial_failure_preserves_password_vault(self):
+        self.manage('create')
+        with patch('module.api.account_service.LocalProtector.wrap', side_effect=ApiError('LOCAL_KEY_UNAVAILABLE', '合成失败')):
+            with self.assertRaises(ApiError) as error:
+                self.manage('bind_local')
+        self.assertEqual('LOCAL_KEY_UNAVAILABLE', error.exception.code)
+        self.assertTrue(self.service.vault.path('testpilot').exists())
+        self.assertFalse(self.service.vault.status('testpilot')['local_bound'])
+        self.manage('list')
 
     def test_tpm_failure_during_final_status_never_returns_sensitive_list(self):
         self.manage('create')
@@ -302,13 +369,25 @@ class AccountApiTests(unittest.TestCase):
     def test_host_change_during_first_binding_destroys_existing_vault(self):
         from module.runtime.account_tpm import TpmProtector
         self.manage('create')
-        with patch.object(TpmProtector, 'host_identity', side_effect=['old-host', 'new-host']), \
+        with patch.object(TpmProtector, 'available', return_value=True), \
+                patch.object(TpmProtector, 'host_identity', side_effect=['old-host', 'new-host']), \
                 patch.object(TpmProtector, 'execute', return_value=bytes(256)) as execute:
             with self.assertRaises(ApiError) as error:
                 self.manage('bind_tpm')
         self.assertEqual('VAULT_DESTROYED', error.exception.code)
         self.assertEqual(1, execute.call_count)
         self.assertTrue(self.service.status(InstanceParams(instance='testpilot'))['destroyed'])
+
+    def test_unavailable_tpm_rejects_binding_without_destroying_vault(self):
+        self.manage('create')
+        with patch('module.runtime.account_tpm.TpmProtector.wrap') as wrap:
+            with self.assertRaises(ApiError) as error:
+                self.manage('bind_tpm')
+        self.assertEqual('TPM_UNAVAILABLE', error.exception.code)
+        wrap.assert_not_called()
+        self.assertTrue(self.service.vault.path('testpilot').exists())
+        self.assertFalse(self.service.status(InstanceParams(instance='testpilot'))['tpm_available'])
+        self.manage('list')
 
     def test_failed_first_binding_does_not_keep_password_recovery(self):
         self.manage('create')

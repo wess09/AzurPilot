@@ -26,7 +26,7 @@ export interface Parameters {
   "startup.get": { instance: string }
   "startup.set": { instance: string; enabled?: boolean | null; remember?: boolean | null }
   "accounts.status": { instance: string }
-  "accounts.manage": { instance: string; action: "create" | "unlock" | "lock" | "list" | "capture" | "select" | "enable" | "password" | "delete" | "bind_tpm" | "unbind_tpm"; password?: string; new_password?: string; label?: string; profile?: string; enabled?: boolean }
+  "accounts.manage": { instance: string; action: "create" | "unlock" | "lock" | "list" | "capture" | "select" | "enable" | "password" | "delete" | "bind_tpm" | "unbind_tpm" | "bind_local" | "unbind_local"; password?: string; new_password?: string; label?: string; profile?: string; enabled?: boolean }
   "updater.status": Record<string, never>
   "updater.commits": { offset?: number; limit?: number }
   "updater.fetch": Record<string, never>

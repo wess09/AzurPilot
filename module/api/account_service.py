@@ -4,6 +4,7 @@ import uuid
 
 from module.api.protocol import ApiError
 from module.runtime.account_device import AccountDevice, PACKAGE
+from module.runtime.account_local import LocalProtector, is_local
 from module.runtime.account_vault import AccountVault, OPERATIONS, sensitive_operation, vault
 from module.runtime.process_manager import ProcessManager
 
@@ -36,7 +37,13 @@ class AccountService:
     def status(self, params):
         instance = self.configs.path(params.instance).stem
         with OPERATIONS:
-            return self.vault.status(instance)
+            return self.status_result(instance)
+
+    def status_result(self, instance):
+        from module.runtime.account_tpm import TpmProtector
+        result = self.vault.status(instance)
+        result['tpm_available'] = bool(TpmProtector.available())
+        return result
 
     @sensitive_operation
     def manage(self, params, web_password=''):
@@ -45,7 +52,7 @@ class AccountService:
             if action == 'lock':
                 ensure_idle(self.configs, instance)
                 self.vault.forget(instance)
-                return self.vault.status(instance)
+                return self.status_result(instance)
             if action in ('create', 'password'):
                 password = params.password if action == 'create' else params.new_password
                 self.vault.check_password(password)
@@ -54,9 +61,9 @@ class AccountService:
             if action == 'create':
                 ensure_idle(self.configs, instance)
                 self.vault.create(instance, params.password)
-                return self.vault.status(instance)
+                return self.status_result(instance)
             row, key, data = self.vault.authenticate(instance, params.password)
-            if action in ('capture', 'select', 'enable', 'password', 'delete', 'bind_tpm', 'unbind_tpm'):
+            if action in ('capture', 'select', 'enable', 'password', 'delete', 'bind_tpm', 'unbind_tpm', 'bind_local', 'unbind_local'):
                 ensure_idle(self.configs, instance)
             enabled = bool(row[4])
             machine = row[5]
@@ -91,14 +98,32 @@ class AccountService:
                 key = self.vault.derive(params.new_password, salt)
                 row = (salt,)
                 if machine:
-                    from module.runtime.account_tpm import TpmProtector
                     try:
-                        machine = TpmProtector(self.vault.root, instance).wrap(key.value)
+                        protector = self.vault.protector(instance, machine)
+                        machine = protector.wrap(key.value, previous=machine) if is_local(machine) else protector.wrap(key.value)
                     except Exception:
                         key.clear()
+                        if is_local(machine):
+                            raise
                         self.vault.invalidate_tpm(instance)
+            elif action == 'bind_local':
+                if machine:
+                    raise ApiError('AUTOUNLOCK_BOUND', '请先解除已有自动解锁绑定，再选择其他方式')
+                protector = LocalProtector(self.vault.root, instance)
+                machine = protector.wrap(key.value)
+                try:
+                    if not secrets.compare_digest(protector.unwrap(machine), key.value):
+                        raise ApiError('LOCAL_KEY_UNAVAILABLE', '本机自动解锁回环校验失败，保险库保持原状态')
+                    self.vault.save(instance, row[0], key, data, enabled, machine)
+                except Exception:
+                    protector.remove(machine)
+                    raise
             elif action == 'bind_tpm':
+                if is_local(machine):
+                    raise ApiError('AUTOUNLOCK_BOUND', '请先解除本机密钥绑定，再绑定 TPM')
                 from module.runtime.account_tpm import TpmProtector
+                if not TpmProtector.available():
+                    raise ApiError('TPM_UNAVAILABLE', '未检测到可用 TPM，保险库未改变；可选择安全性较低的本机密钥自动解锁')
                 protector = TpmProtector(self.vault.root, instance)
                 failed = False
                 try:
@@ -110,13 +135,28 @@ class AccountService:
                     key.clear()
                     self.vault.invalidate_tpm(instance)
             elif action == 'unbind_tpm':
+                if is_local(machine):
+                    raise ApiError('INVALID_PARAMS', '当前绑定的是本机密钥，请使用解除本机绑定')
                 machine = None
-            if action not in ('list', 'unlock', 'select'):
+            elif action == 'unbind_local':
+                if not is_local(machine):
+                    raise ApiError('INVALID_PARAMS', '当前实例未绑定本机密钥')
+                old_machine = machine
+                machine = None
                 self.vault.save(instance, row[0], key, data, enabled, machine)
-            self.vault.keys[instance] = key
-            result = self.vault.status(instance)
+                try:
+                    LocalProtector(self.vault.root, instance).remove(old_machine)
+                except FileNotFoundError:
+                    pass
+                except Exception:
+                    self.vault.forget(instance)
+                    raise ApiError('LOCAL_KEY_CLEANUP_FAILED', '自动解锁绑定已解除，但项目外密钥未能清理，请检查用户目录权限') from None
+            if action not in ('list', 'unlock', 'select', 'bind_local', 'unbind_local'):
+                self.vault.save(instance, row[0], key, data, enabled, machine)
+            self.vault.cache_key(instance, key)
+            result = self.status_result(instance)
             if result['destroyed']:
-                raise ApiError('VAULT_DESTROYED', 'TPM 验证失败，盐和数据库已销毁，账号信息不再返回')
+                raise ApiError('VAULT_DESTROYED', '本机绑定验证失败，盐和数据库已销毁，账号信息不再返回')
             # 只有显式查看列表返回账号身份；不会返回 token、密码或数据库内容。
             if action == 'list':
                 result.update(profiles=[{k: p[k] for k in ('id', 'label', 'users')} for p in data['profiles']],

@@ -135,7 +135,7 @@ class StartupParams(InstanceParams):
 
 class AccountParams(InstanceParams):
     """独立实例密码只用于当前请求，禁止进入普通配置系统。"""
-    action: Literal['create', 'unlock', 'lock', 'list', 'capture', 'select', 'enable', 'password', 'delete', 'bind_tpm', 'unbind_tpm']
+    action: Literal['create', 'unlock', 'lock', 'list', 'capture', 'select', 'enable', 'password', 'delete', 'bind_tpm', 'unbind_tpm', 'bind_local', 'unbind_local']
     password: StrictStr = Field(default='', max_length=256, repr=False)
     new_password: StrictStr = Field(default='', max_length=256, repr=False)
     label: StrictStr = Field(default='', max_length=64)

@@ -80,10 +80,11 @@ export function AccountPanel({instance}: {instance: string}) {
     {error && <p className="field-row" role="alert">{error}</p>}
     {status?.destroyed && <p className="field-row" role="alert">{text.destroyed}</p>}
     {status && <>
-      {status.initialized && <div className="field-row"><span>{status.unlocked ? text.unlocked : text.locked} · {status.tpm_bound ? text.bound : text.unbound}</span></div>}
+      {status.initialized && <div className="field-row"><span>{status.unlocked ? text.unlocked : text.locked} · {status.local_bound ? text.localBound : status.tpm_bound ? text.bound : text.unbound}</span></div>}
       {!status.initialized ? <div className="field-row"><button className="button primary" disabled={disabled} onClick={() => ask('create', text.create)}>{text.create}</button></div> : <>
         <div className="field-row"><div className="field-label"><span className="field-name">{text.enable}</span><p>{text.enabledHelp}</p></div><div className="field-control"><FieldInput id="account-enabled" label={text.enable} value={status.enabled} disabled={disabled} onChange={value => ask('enable', text.enable, {enabled: !!value})}/></div></div>
-        <div className="field-row"><div className="field-label"><p>{text.tpmHelp}</p></div><div className="field-control"><button className="button" disabled={disabled} onClick={() => ask(status.tpm_bound ? 'unbind_tpm' : 'bind_tpm', status.tpm_bound ? text.unbind : text.tpm)}>{status.tpm_bound ? text.unbind : text.tpm}</button></div></div>
+        {!status.local_bound && (status.tpm_available || status.tpm_bound) && <div className="field-row"><div className="field-label"><p>{text.tpmHelp}</p></div><div className="field-control"><button className="button" disabled={disabled} onClick={() => ask(status.tpm_bound ? 'unbind_tpm' : 'bind_tpm', status.tpm_bound ? text.unbind : text.tpm)}>{status.tpm_bound ? text.unbind : text.tpm}</button></div></div>}
+        {!status.tpm_bound && (!status.tpm_available || status.local_bound) && <div className="field-row"><div className="field-label"><span className="field-name">{text.localWarning}</span><p>{text.localHelp}</p></div><div className="field-control"><button className="button" disabled={disabled} onClick={() => ask(status.local_bound ? 'unbind_local' : 'bind_local', status.local_bound ? text.unbindLocal : text.local)}>{status.local_bound ? text.unbindLocal : text.local}</button></div></div>}
         <div className="field-row" style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
           <button className="button" disabled={disabled} onClick={() => ask('capture', text.capture)}>{text.capture}</button>
           <button className="button" disabled={disabled} onClick={() => ask('list', text.list)}>{text.list}</button>
@@ -112,6 +113,7 @@ export function AccountPanel({instance}: {instance: string}) {
         {(pending.action === 'create' || pending.action === 'password') && <label htmlFor="account-confirm">{text.confirm}<input id="account-confirm" type="password" autoComplete="new-password" maxLength={256} value={confirm} onChange={event => setConfirm(event.target.value)} /></label>}
         {pending.action === 'capture' && <label htmlFor="account-label">{text.label}<input id="account-label" autoComplete="off" maxLength={64} value={label} onChange={event => setLabel(event.target.value)} /></label>}
         {(pending.action === 'bind_tpm' || pending.action === 'unbind_tpm') && <p>{text.tpmHelp}</p>}
+        {(pending.action === 'bind_local' || pending.action === 'unbind_local') && <div><strong>{text.localWarning}</strong><p>{text.localHelp}</p></div>}
         {error && <p role="alert">{error}</p>}
         <div style={{display: 'flex', justifyContent: 'flex-end', gap: 8}}>
           <button type="button" className="button secondary" onClick={cancel}>{ui('common.cancel')}</button>

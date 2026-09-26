@@ -119,11 +119,12 @@ class Router:
             from module.runtime.account_vault import OPERATIONS
             with OPERATIONS:
                 account_vault = self.accounts.vault
-                account_vault.forget(params.instance)
+                account_vault.destroy(params.instance)
                 path = account_vault.path(params.instance)
                 for suffix in ('', '-journal', '-wal', '-shm'):
                     path.with_name(path.name + suffix).unlink(missing_ok=True)
                 account_vault.marker(params.instance).unlink(missing_ok=True)
+                account_vault.revoked.discard(params.instance)
                 if path.parent.is_dir() and not any(path.parent.iterdir()):
                     path.parent.rmdir()
             manager.run_id = None

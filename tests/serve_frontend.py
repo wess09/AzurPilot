@@ -3,16 +3,22 @@ import json
 import shutil
 import tempfile
 from datetime import datetime
+from pathlib import Path
+from unittest.mock import patch
 
 import uvicorn
 
 from module.api.app import create_app
 from module.api.config_service import ROOT
 from tests.test_api import fixture
+from module.runtime.account_local import LocalProtector
 
 
 def main():
-    with tempfile.TemporaryDirectory(prefix='azurpilot-ui-') as directory:
+    with tempfile.TemporaryDirectory(prefix='azurpilot-ui-') as directory, \
+            tempfile.TemporaryDirectory(prefix='azurpilot-ui-keys-') as keys, \
+            patch.object(LocalProtector, 'key_directory', return_value=Path(keys) / 'private'), \
+            patch('module.runtime.account_tpm.TpmProtector.available', return_value=False):
         root = fixture(directory)
         shutil.copytree(ROOT / 'frontend/dist', root / 'frontend/dist')
         path = root / 'config/testpilot.json'

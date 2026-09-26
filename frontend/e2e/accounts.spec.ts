@@ -1,6 +1,15 @@
 import { expect, test } from '@playwright/test'
 
 test('账号操作按次弹出密码验证，取消不执行且不保存密码', async ({page}, testInfo) => {
+  let advertisedTPM = false
+  await page.routeWebSocket('**/api/v1/ws', socket => {
+    const server = socket.connectToServer()
+    server.onMessage(message => {
+      const response = JSON.parse(String(message))
+      if (response.result && 'tpm_available' in response.result) response.result.tpm_available = advertisedTPM
+      socket.send(JSON.stringify(response))
+    })
+  })
   await page.goto('/#/i/testpilot/task/Alas')
   const panel = page.getByTestId('account-panel')
   const dialog = page.getByRole('dialog')
@@ -21,6 +30,15 @@ test('账号操作按次弹出密码验证，取消不执行且不保存密码',
   await expect(panel.getByRole('button', {name: '设置实例密码', exact: true})).toBeEnabled()
   await authenticate('设置实例密码', password, true)
   await expect(panel.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
+  await expect(panel.getByText('本机密钥自动解锁：安全性低于 TPM', {exact: true})).toBeVisible()
+  await authenticate('绑定本机密钥自动解锁', password)
+  await expect(panel.getByText('内存已解锁 · 已绑定本机密钥', {exact: true})).toBeVisible()
+  await expect(panel.getByRole('button', {name: '绑定本机 TPM 自动解锁', exact: true})).toHaveCount(0)
+  advertisedTPM = true
+  await page.reload()
+  await expect(panel.getByRole('button', {name: '解除本机密钥绑定', exact: true})).toBeVisible()
+  await expect(panel.getByRole('button', {name: '绑定本机 TPM 自动解锁', exact: true})).toHaveCount(0)
+  advertisedTPM = false
   await panel.getByRole('switch').click()
   await expect(dialog).toBeVisible()
   await dialog.locator('#account-password').fill(password)
@@ -39,7 +57,7 @@ test('账号操作按次弹出密码验证，取消不执行且不保存密码',
   await expect(panel.getByText('尚无账号快照。请先在游戏中登录，再备份。', {exact: true})).toHaveCount(0)
   expect(await page.evaluate(() => JSON.stringify({local: {...localStorage}, session: {...sessionStorage}}))).not.toContain(password)
   await panel.getByRole('button', {name: '清除内存解锁', exact: true}).click()
-  await expect(panel.getByText('内存未解锁 · 未绑定 TPM', {exact: true})).toBeVisible()
+  await expect(panel.getByText('内存未解锁 · 已绑定本机密钥', {exact: true})).toBeVisible()
   await panel.getByRole('button', {name: '修改实例密码', exact: true}).click()
   await dialog.locator('#account-password').fill(password)
   await dialog.locator('#account-new-password').fill(replacement)
@@ -56,10 +74,14 @@ test('账号操作按次弹出密码验证，取消不执行且不保存密码',
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await dialog.screenshot({path: testInfo.outputPath('account-mobile.png'), animations: 'disabled'})
   await dialog.getByRole('button', {name: '取消', exact: true}).click()
-  await authenticate('绑定本机 TPM 自动解锁', replacement)
-  await expect(panel.getByText('账号保险库的盐和数据库已销毁，启动已阻止。请重新设置实例密码并备份账号。', {exact: true})).toBeVisible()
-  await expect(panel.getByRole('button', {name: '验证密码并查看账号', exact: true})).toHaveCount(0)
-  await authenticate('设置实例密码', replacement, true)
-  await expect(panel.getByRole('switch')).toHaveAttribute('aria-checked', 'false')
-  await expect(panel.getByText('账号保险库的盐和数据库已销毁，启动已阻止。请重新设置实例密码并备份账号。', {exact: true})).toHaveCount(0)
+  await authenticate('解除本机密钥绑定', replacement)
+  await expect(panel.getByText('本机密钥自动解锁：安全性低于 TPM', {exact: true})).toBeVisible()
+  advertisedTPM = true
+  await page.reload()
+  await expect(panel.getByRole('button', {name: '绑定本机 TPM 自动解锁', exact: true})).toBeVisible()
+  await expect(panel.getByRole('button', {name: '绑定本机密钥自动解锁', exact: true})).toHaveCount(0)
+  advertisedTPM = false
+  await page.reload()
+  await expect(panel.getByRole('button', {name: '绑定本机密钥自动解锁', exact: true})).toBeVisible()
+  await expect(panel.getByRole('button', {name: '绑定本机 TPM 自动解锁', exact: true})).toHaveCount(0)
 })

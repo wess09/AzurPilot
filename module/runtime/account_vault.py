@@ -74,6 +74,12 @@ class AccountVault:
             key.clear()
         self.failures.pop(instance, None)
 
+    def cache_key(self, instance, key):
+        previous = self.keys.get(instance)
+        if previous is not None and previous is not key:
+            previous.clear()
+        self.keys[instance] = key
+
     @staticmethod
     def wipe_file(path):
         if path.is_symlink():
@@ -101,6 +107,17 @@ class AccountVault:
         path = self.path(instance)
         marker = self.marker(instance)
         failed = False
+        local_binding = None
+        # 销毁标记可能已存在，不能调用会再次进入 destroy 的 record。
+        try:
+            from module.runtime.account_local import is_local
+            if path.exists() and path.stat().st_size <= MAX_BYTES:
+                with closing(sqlite3.connect(f'{path.as_uri()}?mode=ro', uri=True)) as db:
+                    row = db.execute('SELECT machine FROM vault WHERE id=1').fetchone()
+                if row and is_local(row[0]):
+                    local_binding = row[0]
+        except (sqlite3.Error, OSError):
+            pass
         try:
             if marker.is_symlink():
                 raise OSError('销毁标记路径无效')
@@ -115,6 +132,11 @@ class AccountVault:
             try:
                 self.wipe_file(path.with_name(path.name + suffix))
             except OSError:
+                failed = True
+        if local_binding:
+            try:
+                self.protector(instance, local_binding).remove(local_binding)
+            except Exception:
                 failed = True
         if failed:
             raise ApiError('VAULT_DESTROY_FAILED', '保险库已禁止使用，但部分文件未能销毁；请检查文件占用或磁盘权限') from None
@@ -132,11 +154,20 @@ class AccountVault:
     def checked_record(self, instance):
         row = self.record(instance)
         if row is not None and row[5]:
-            from module.runtime.account_tpm import TpmProtector
+            from module.runtime.account_local import is_local
+            if is_local(row[5]):
+                try:
+                    self.protector(instance, row[5]).binding(row[5])
+                except ApiError as error:
+                    if error.code == 'LOCAL_DEVICE_CHANGED':
+                        self.destroy(instance)
+                        raise ApiError('VAULT_DESTROYED', '本机自动解锁检测到主机或用户改变，盐和数据库已销毁') from None
+                    raise
+                return row
             key = None
             failed = False
             try:
-                key = SecretKey(TpmProtector(self.root, instance).unwrap(row[5]))
+                key = SecretKey(self.protector(instance, row[5]).unwrap(row[5]))
                 self.decrypt(instance, row, key)
             except Exception:
                 failed = True
@@ -146,6 +177,11 @@ class AccountVault:
             if failed:
                 self.invalidate_tpm(instance)
         return row
+
+    def protector(self, instance, blob):
+        from module.runtime.account_local import LocalProtector, is_local
+        from module.runtime.account_tpm import TpmProtector
+        return LocalProtector(self.root, instance) if is_local(blob) else TpmProtector(self.root, instance)
 
     def record(self, instance):
         self.require_active(instance)
@@ -173,8 +209,11 @@ class AccountVault:
             if error.code != 'VAULT_DESTROYED':
                 raise
             return {'initialized': False, 'enabled': False, 'unlocked': False, 'tpm_bound': False, 'destroyed': True}
+        from module.runtime.account_local import is_local
+        local = bool(row and is_local(row[5]))
         return {'initialized': row is not None, 'enabled': bool(row and row[4]),
-                'unlocked': instance in self.keys, 'tpm_bound': bool(row and row[5]), 'destroyed': False}
+                'unlocked': instance in self.keys, 'tpm_bound': bool(row and row[5] and not local),
+                'local_bound': local, 'destroyed': False}
 
     @staticmethod
     def derive(password, salt):
@@ -243,7 +282,7 @@ class AccountVault:
         salt = os.urandom(256)
         key = self.derive(password, salt)
         self.save(instance, salt, key, {'profiles': [], 'selected': None}, machine=None, reset_destroyed=destroyed)
-        self.keys[instance] = key
+        self.cache_key(instance, key)
 
     @staticmethod
     def check_password(password):
@@ -255,11 +294,26 @@ class AccountVault:
         if row is None or not row[4]:
             return None
         key = self.keys.get(instance)
+        from module.runtime.account_local import is_local
+        if is_local(row[5]):
+            # 每次启动都重新检查用户目录密钥，不能用旧缓存绕过缺失或不安全权限。
+            try:
+                local_key = SecretKey(self.protector(instance, row[5]).unwrap(row[5]))
+                try:
+                    self.decrypt(instance, row, local_key)
+                except Exception:
+                    local_key.clear()
+                    raise
+            except Exception:
+                self.forget(instance)
+                raise
+            self.forget(instance)
+            key = local_key
+            self.cache_key(instance, key)
         if key is None and row[5]:
-            from module.runtime.account_tpm import TpmProtector
             failed = False
             try:
-                key = SecretKey(TpmProtector(self.root, instance).unwrap(row[5]))
+                key = SecretKey(self.protector(instance, row[5]).unwrap(row[5]))
                 self.decrypt(instance, row, key)
             except Exception:
                 failed = True
@@ -267,7 +321,7 @@ class AccountVault:
                 if key is not None:
                     key.clear()
                 self.invalidate_tpm(instance)
-            self.keys[instance] = key
+            self.cache_key(instance, key)
         if key is None:
             raise ApiError('VAULT_LOCKED', '账号恢复已启用，请先用实例密码解锁；服务重启后需重新解锁')
         data = self.decrypt(instance, row, key)

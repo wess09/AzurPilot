@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import subprocess
+from functools import lru_cache
 
 from module.api.protocol import ApiError
 
@@ -43,6 +44,47 @@ try {
 
 
 class TpmProtector:
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def available():
+        """独立能力探测，不读取实例保险库，也不触发已绑定数据的销毁策略。"""
+        if os.name != 'nt':
+            return False
+        script = r'''
+$ErrorActionPreference = 'Stop'
+$key = $null
+$rsa = $null
+try {
+    $provider = [System.Security.Cryptography.CngProvider]::new('Microsoft Platform Crypto Provider')
+    $parameters = [System.Security.Cryptography.CngKeyCreationParameters]::new()
+    $parameters.Provider = $provider
+    $parameters.KeyUsage = [System.Security.Cryptography.CngKeyUsages]::Decryption
+    $parameters.ExportPolicy = [System.Security.Cryptography.CngExportPolicies]::None
+    $parameters.Parameters.Add([System.Security.Cryptography.CngProperty]::new(
+        'Length', [BitConverter]::GetBytes([int]2048), [System.Security.Cryptography.CngPropertyOptions]::None))
+    $name = 'AzurPilot.Capability.' + [Guid]::NewGuid().ToString('N')
+    $key = [System.Security.Cryptography.CngKey]::Create([System.Security.Cryptography.CngAlgorithm]::Rsa, $name, $parameters)
+    $rsa = [System.Security.Cryptography.RSACng]::new($key)
+    $input = [byte[]]::new(32)
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($input)
+    $sealed = $rsa.Encrypt($input, [System.Security.Cryptography.RSAEncryptionPadding]::OaepSHA256)
+    $output = $rsa.Decrypt($sealed, [System.Security.Cryptography.RSAEncryptionPadding]::OaepSHA256)
+    if ([Convert]::ToBase64String($input) -ne [Convert]::ToBase64String($output)) { throw 'probe failed' }
+    [Console]::Out.Write('ready')
+} catch { exit 1 }
+finally {
+    if ($key) { $key.Delete() }
+    if ($rsa) { $rsa.Dispose() }
+    if ($key) { $key.Dispose() }
+}
+'''
+        try:
+            result = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script],
+                                    capture_output=True, timeout=30, creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            return result.returncode == 0 and result.stdout == b'ready'
+        except (OSError, subprocess.SubprocessError):
+            return False
+
     def __init__(self, root, instance):
         # TPM 密钥归属于当前 Windows 用户；同实例复制到另一目录不共享绑定。
         identity = str(root.resolve()) + '\0' + instance

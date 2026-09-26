@@ -118,6 +118,8 @@ export interface Results {
 
 export interface AccountStatus {
   destroyed?: boolean
+  local_bound?: boolean
+  tpm_available?: boolean
   initialized: boolean; enabled: boolean; unlocked: boolean; tpm_bound: boolean
   profiles?: Array<{id: string; label: string; users: Array<{uid: string; name: string}>}>
   selected?: string | null
