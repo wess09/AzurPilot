@@ -177,6 +177,43 @@ def remove_small_fragments(image, min_height=6, min_area=10, keep_margin=3,
     return image
 
 
+def erase_distant_residue(image, threshold=120, margin=4):
+    """抹掉距离数字本体较远的中灰残影，画布尺寸保持不变。
+
+    ``crop_to_text`` 以 ``image < threshold`` 求数字本体的外接框，因此比
+    ``threshold`` 浅的图标残影会被裁掉；而未裁剪图像是读数为 0 时的兜底
+    重试所必需的。把未裁剪图像直接送进模型时，这些残影会被拼成额外的
+    首位（实测空白能源补给箱的 0 被读成 70，让大世界总行动力凭空多出
+    7000 点，任务随即卡在道具不足的「使用」按钮上）。这里保留画布尺寸，
+    只把外接框外的像素置为背景：重试仍能保住字形边缘细节，也不再带进
+    远离数字的残影。
+
+    Args:
+        image (np.ndarray): extract_white_letters 输出的灰度图。
+        threshold: 判定文字像素的阈值，与 crop_to_text 保持一致。
+        margin: 外接框四周额外保留的像素数，字形抗锯齿边缘在此范围内。
+
+    Returns:
+        np.ndarray: 抹掉远处残影后的灰度图。
+    """
+    mask = image < threshold
+    cols = np.where(mask.any(axis=0))[0]
+    rows = np.where(mask.any(axis=1))[0]
+    if not len(cols) or not len(rows):
+        return image
+
+    left = max(int(cols[0]) - margin, 0)
+    right = min(int(cols[-1]) + margin + 1, image.shape[1])
+    top = max(int(rows[0]) - margin, 0)
+    bottom = min(int(rows[-1]) + margin + 1, image.shape[0])
+    result = image.copy()
+    result[:, :left] = 255
+    result[:, right:] = 255
+    result[:top, :] = 255
+    result[bottom:, :] = 255
+    return result
+
+
 class AmountOcr(Digit):
     MAX_RETRY = 3
     # 是否过滤图标边缘碎块。委托收入与自律寻敌奖励场景开启，
@@ -192,6 +229,9 @@ class AmountOcr(Digit):
     # 超限兜底时丢首位还是截断末位。图标残影在数字左侧的场景（科研掉落）
     # 应丢首位：实测「真值 3 被读成 73」时截断末位留下 7（错），丢首位得 3（对）。
     drop_leading_on_overflow = False
+    # 读数为 0 时改用未裁剪图像重试；重试前先抹掉数字本体外这么多像素
+    # 之外的残影，见 erase_distant_residue。
+    retry_residue_margin = 4
 
     def pre_process(self, image):
         """预处理图像，提取白色文字。
@@ -266,7 +306,13 @@ class AmountOcr(Digit):
         amount = self.after_process(result_str)
 
         if amount == 0 and trim:
-            result_str = self.cnocr.atomic_ocr_for_single_lines(images_untrimmed, self.alphabet)[0]
+            # 未裁剪图像带着数量框里的图标残影，直接送进模型会被拼成额外的
+            # 首位（实测空白补给箱的 0 被读成 70）；先抹掉远离数字本体的
+            # 残影再重试，兜底能力不变。
+            retry_images = [
+                erase_distant_residue(i, margin=self.retry_residue_margin) for i in images_untrimmed
+            ]
+            result_str = self.cnocr.atomic_ocr_for_single_lines(retry_images, self.alphabet)[0]
             retry_amount = self.after_process(result_str)
             if retry_amount > 0:
                 logger.info(f'{item_name} amount 读数为 0，未裁剪重试后修正为 {retry_amount}')
