@@ -364,7 +364,7 @@
     },
     "IslandAirDrop": {
       "name": "每日補給",
-      "help": "僅支援minitouch"
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。每日收取本島空中補給，並可拜訪其他玩家島嶼拿補給。"
     },
     "IslandCargoPreparation": {
       "name": "貨物籌備",
@@ -376,11 +376,11 @@
     },
     "IslandDailyInteract": {
       "name": "每日/週任務",
-      "help": "僅支援minitouch。處理島嶼摸貓、JUU速運、商區外送服務與每週照相任務。相關按鈕資源生成後可啟用。"
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。處理島嶼摸貓、JUU速運、商區外送服務與每週照相任務。相關按鈕資源生成後可啟用。"
     },
     "IslandPearlSell": {
       "name": "每週珍珠採購與售賣",
-      "help": "僅支援minitouch。每週二 01:00 自動處理珍珠：先採購本週珍珠，再售賣已有珍珠。金幣一定要夠購買200x220個這是最低要求能一次買光本週珍珠，否則可能會報錯."
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。每週二 01:00 自動處理珍珠：先採購本週珍珠，再售賣已有珍珠。金幣一定要夠購買200x220個這是最低要求能一次買光本週珍珠，否則可能會報錯."
     },
     "FleetInfo": {
       "name": "艦隊資訊",
@@ -5356,7 +5356,7 @@
   "IslandAirDrop": {
     "_info": {
       "name": "每日補給",
-      "help": ""
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。每日收取本島空中補給，並可拜訪其他玩家島嶼拿補給。"
     },
     "LastSteal": {
       "name": "上次運行時間",
@@ -5388,7 +5388,7 @@
   "IslandDailyInteract": {
     "_info": {
       "name": "每日/週任務",
-      "help": "僅支援minitouch。控制島嶼每日與每週互動任務，包含晨露農場摸貓、開發計畫中的 JUU 速運、商區外送服務和每週照相任務。"
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。控制島嶼每日與每週互動任務，包含晨露農場摸貓、開發計畫中的 JUU 速運、商區外送服務和每週照相任務。"
     },
     "WeeklyPhoto": {
       "name": "每週照相任務",
@@ -5400,7 +5400,7 @@
   "IslandPearlSell": {
     "_info": {
       "name": "每週珍珠採購與售賣",
-      "help": "僅支援minitouch。每週二 01:00 自動處理珍珠：先按最高採購價採購本週珍珠，再按最低售賣價售賣已有珍珠。其他未完成流程會延遲到次日 01:00 重試。金幣一定要夠購買200x220個這是最低要求能一次買光本週珍珠，否則可能會報錯."
+      "help": "移動僅支援 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式。每週二 01:00 自動處理珍珠：先按最高採購價採購本週珍珠，再按最低售賣價售賣已有珍珠。其他未完成流程會延遲到次日 01:00 重試。金幣一定要夠購買200x220個這是最低要求能一次買光本週珍珠，否則可能會報錯."
     },
     "BuyPrice": {
       "name": "最高採購價格",

@@ -13,7 +13,17 @@ from module.device.method.maatouch import MaaTouch
 from module.device.method.minitouch import Minitouch
 from module.device.method.nemu_ipc import NemuIpc
 from module.device.method.scrcpy import Scrcpy
+from module.exception import RequestHumanTakeover
 from module.logger import logger
+
+
+# azurpilot_android 桥接的 swipe 是整段匀速拖动，位移比 minitouch 的"到位后保持"小，
+# 岛屿行走用这个系数补偿时长（实测 1.125 时各条路线落点最接近）。
+ISLAND_ANDROID_SWIPE_FACTOR = 1.125
+
+# 岛屿行走（拖到偏移点并保持）只在这几种控制方式下有可靠实现，
+# 其他方式的"到位保持"语义无法保证，直接报错要求更换，避免静默走不动。
+ISLAND_WALK_SUPPORTED_METHODS = ('minitouch', 'MaaTouch', 'uiautomator2', 'azurpilot_android')
 
 
 class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
@@ -248,15 +258,42 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
 
         在两点之间滑动并在终点保持一段时间，用于岛屿内的交互操作。
 
+        只支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 四种控制方式：
+        - minitouch、MaaTouch、uiautomator2：拖到偏移点后按标称时长保持（满偏移）。
+        - azurpilot_android：桥接只有整段匀速 swipe（渐入式、位移偏小），
+          换算成秒后再乘 ISLAND_ANDROID_SWIPE_FACTOR 补偿。
+        ADB / Hermit / scrcpy / nemu_ipc 没有可靠的"拖到位并保持"能力，一律不支持，
+        直接抛 RequestHumanTakeover 提示更换控制方式，而不是静默失效导致角色走不动。
+
+        单位约定（重要）：
+        - hold_time 是**毫秒**，与 island_up/down/left/right(hold_time) 的调用口径一致，
+          例如 island_up(2000) 表示在终点保持 2 秒。
+        - 本文件其余 duration / swipe_duration / hold_duration 参数都是**秒**，
+          下面各分支在调用前显式换算，避免再次出现"毫秒当秒"的问题。
+
         Args:
             p1 (tuple): 起始坐标 (x, y)。
             p2 (tuple): 终点坐标 (x, y)。
-            hold_time (int, float, tuple): 在终点保持的时间（秒）。
+            hold_time (int, float, tuple): 在终点保持的时间，单位毫秒。
         """
         p1, p2 = ensure_int(p1, p2)
-        hold_time = ensure_time(hold_time)
+        hold_time_ms = ensure_time(hold_time)
         method = self.config.Emulator_ControlMethod
-        if method == 'azurpilot_android':
-            self.swipe_azurpilot_android(p1, p2, hold_time)
-        elif method == 'minitouch':
-            self.island_swipe_hold_minitouch(p1, p2, hold_time)
+        if method == 'minitouch':
+            # minitouch 的 wait() 单位就是毫秒
+            self.island_swipe_hold_minitouch(p1, p2, hold_time_ms)
+        elif method == 'MaaTouch':
+            # 客户端计时保持 + 保证抬手（sync 不能用来计时）
+            self.island_swipe_hold_maatouch(p1, p2, hold_time_ms)
+        elif method == 'uiautomator2':
+            # u2 每个触点操作都是一次 HTTP 往返，用最少调用的手势
+            self.island_swipe_hold_uiautomator2(p1, p2, hold_time_ms)
+        elif method == 'azurpilot_android':
+            # 桥接 swipe 的 duration 单位是秒；渐入式拖动位移偏小，乘系数补偿
+            self.swipe_azurpilot_android(
+                p1, p2, hold_time_ms / 1000 * ISLAND_ANDROID_SWIPE_FACTOR)
+        else:
+            raise RequestHumanTakeover(
+                f'岛屿移动不支持控制方式 {method}，请改用 '
+                f'{" / ".join(ISLAND_WALK_SUPPORTED_METHODS)}'
+            )

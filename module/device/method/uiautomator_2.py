@@ -199,6 +199,29 @@ class Uiautomator2(Connection):
         path = [(int(x), int(y), d) for x, y, d in path]
         self._drag_along(path)
 
+    @retry
+    def island_swipe_hold_uiautomator2(self, p1, p2, hold_time):
+        """岛屿行走专用：按下 → 移动到偏移点 → 保持 hold_time 毫秒 → 抬起。
+
+        不走 drag_uiautomator2 的多点路径：uiautomator2 每个触点操作都是一次
+        HTTP 往返，路径点越多、每点还带 swipe_duration，整段手势会被拉长很多
+        （表现为"同样的时长走得更远"）。这里只用手势原语 + 本地 sleep。
+
+        Args:
+            p1 (tuple): 摇杆中心。
+            p2 (tuple): 偏移点。
+            hold_time (int, float): 保持时间，单位毫秒。
+        """
+        try:
+            self.u2.touch.down(*p1)
+            self.u2.touch.move(*p2)
+            self.sleep(hold_time / 1000)
+        finally:
+            try:
+                self.u2.touch.up(*p2)
+            except Exception as error:
+                logger.warning(f'[设备-U2] 岛屿行走抬手失败: {error}')
+
     @retry(on_exhausted=EmulatorNotRunningError)
     def app_current_uiautomator2(self):
         """

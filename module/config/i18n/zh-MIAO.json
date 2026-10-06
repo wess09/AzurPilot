@@ -364,7 +364,7 @@
     },
     "IslandAirDrop": {
       "name": "每日补给喵",
-      "help": "仅支持minitouch喵。领取每日补给~ (=^･ω･^=)"
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。领取每日补给~ (=^･ω･^=)"
     },
     "IslandCargoPreparation": {
       "name": "货物筹备喵",
@@ -376,11 +376,11 @@
     },
     "IslandDailyInteract": {
       "name": "每日/周任务喵",
-      "help": "仅支持minitouch喵。处理岛屿摸猫、JUU速运、商区外送服务与每周照相任务喵。相关按钮资源生成后可启用。"
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。处理岛屿摸猫、JUU速运、商区外送服务与每周照相任务喵。相关按钮资源生成后可启用。"
     },
     "IslandPearlSell": {
       "name": "每周珍珠采购与售卖喵",
-      "help": "仅支持minitouch喵。每周二 01:00 自动处理珍珠喵：先买本周珍珠，再卖已有珍珠。金币一定要够购买200x220个这是最低要求能一次买光本周珍珠, 否则可能会报错喵。(´;ω;`)"
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。每周二 01:00 自动处理珍珠喵：先买本周珍珠，再卖已有珍珠。金币一定要够购买200x220个这是最低要求能一次买光本周珍珠, 否则可能会报错喵。(´;ω;`)"
     },
     "FleetInfo": {
       "name": "舰队信息喵",
@@ -5356,7 +5356,7 @@
   "IslandAirDrop": {
     "_info": {
       "name": "每日补给喵",
-      "help": ""
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。每日收取本岛空中补给，还可以去其他玩家岛屿拿补给喵。"
     },
     "LastSteal": {
       "name": "上次运行时间喵",
@@ -5388,7 +5388,7 @@
   "IslandDailyInteract": {
     "_info": {
       "name": "每日/周任务喵",
-      "help": "仅支持minitouch喵。控制岛屿每日与每周互动任务，包含晨露农场摸猫、开发计划中的 JUU 速运、商区外送服务和每周照相任务喵。 (=^･ω･^=)"
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。控制岛屿每日与每周互动任务，包含晨露农场摸猫、开发计划中的 JUU 速运、商区外送服务和每周照相任务喵。 (=^･ω･^=)"
     },
     "WeeklyPhoto": {
       "name": "每周照相任务喵",
@@ -5400,7 +5400,7 @@
   "IslandPearlSell": {
     "_info": {
       "name": "每周珍珠采购与售卖喵",
-      "help": "仅支持minitouch喵。每周二 01:00 自动处理珍珠喵：先按最高采购价买本周珍珠，再按最低售卖价卖已有珍珠。其他没完成的流程会延迟到次日 01:00 重试。金币一定要够购买200x220个这是最低要求能一次买光本周珍珠, 否则可能会报错喵。 (´・ω・`)"
+      "help": "移动仅支持 minitouch / MaaTouch / uiautomator2 / azurpilot_android 控制方式喵。每周二 01:00 自动处理珍珠喵：先按最高采购价买本周珍珠，再按最低售卖价卖已有珍珠。其他没完成的流程会延迟到次日 01:00 重试。金币一定要够购买200x220个这是最低要求能一次买光本周珍珠, 否则可能会报错喵。 (´・ω・`)"
     },
     "BuyPrice": {
       "name": "最高采购价格喵",

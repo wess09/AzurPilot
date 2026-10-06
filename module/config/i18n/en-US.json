@@ -364,7 +364,7 @@
     },
     "IslandAirDrop": {
       "name": "Daily Supply",
-      "help": "Only supports minitouch."
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Collects your own island's daily airdrop and can visit other players' islands for supplies."
     },
     "IslandCargoPreparation": {
       "name": "Cargo Preparation",
@@ -376,11 +376,11 @@
     },
     "IslandDailyInteract": {
       "name": "Daily/Weekly Tasks",
-      "help": "Only supports minitouch. Handles island petting, JUU Express, Business Delivery, and weekly photo tasks. Enable after related button assets are generated."
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Handles island petting, JUU Express, Business Delivery, and weekly photo tasks. Enable after related button assets are generated."
     },
     "IslandPearlSell": {
       "name": "Weekly Pearl Trade",
-      "help": "Only supports minitouch. Process pearls every Tuesday at 01:00."
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Process pearls every Tuesday at 01:00."
     },
     "FleetInfo": {
       "name": "Fleet Information",
@@ -5356,7 +5356,7 @@
   "IslandAirDrop": {
     "_info": {
       "name": "Daily Supply",
-      "help": ""
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Collects your own island's daily airdrop and can visit other players' islands for supplies."
     },
     "LastSteal": {
       "name": "Last run time",
@@ -5388,7 +5388,7 @@
   "IslandDailyInteract": {
     "_info": {
       "name": "Daily/Weekly Tasks",
-      "help": "Only supports minitouch. Controls island daily and weekly interactions, including Morningdew Farm petting, JUU Express, Business Delivery, and weekly photo tasks in Development Plan."
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Controls island daily and weekly interactions, including Morningdew Farm petting, JUU Express, Business Delivery, and weekly photo tasks in Development Plan."
     },
     "WeeklyPhoto": {
       "name": "Weekly photo task",
@@ -5400,7 +5400,7 @@
   "IslandPearlSell": {
     "_info": {
       "name": "Weekly Pearl Trade",
-      "help": "Only supports minitouch. Every Tuesday at 01:00, automatically handle pearls: first purchase this week's pearls at the highest purchase price, then sell existing pearls at the lowest selling price. Other incomplete processes will be delayed to 01:00 the next day for retry. Make sure you have enough coins to purchase 200x220 units, which is the minimum requirement to buy out all pearls for the week, otherwise errors may occur."
+      "help": "Island movement only supports the minitouch / MaaTouch / uiautomator2 / azurpilot_android control methods. Every Tuesday at 01:00, automatically handle pearls: first purchase this week's pearls at the highest purchase price, then sell existing pearls at the lowest selling price. Other incomplete processes will be delayed to 01:00 the next day for retry. Make sure you have enough coins to purchase 200x220 units, which is the minimum requirement to buy out all pearls for the week, otherwise errors may occur."
     },
     "BuyPrice": {
       "name": "Max purchase price",

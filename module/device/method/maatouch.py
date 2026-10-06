@@ -275,7 +275,11 @@ class MaaTouch(Connection):
         self._maatouch_stream.recv(0)
 
         # 等待操作完成
-        # start = time.time()
+        # 命令批次里可能带 w <ms> 的长等待（例如岛屿行走要保持数秒），
+        # 服务端要等这批命令执行完才回显，读超时必须按实际等待时间放宽，否则会误判超时。
+        # 注意：socket.makefile() 会把"当时"的超时固化进文件对象，
+        # 必须先把超时设好再 makefile，否则放宽的超时不会生效。
+        self._maatouch_stream.settimeout(max(2.0, builder.delay / 1000 + 2.0))
         socket_out = self._maatouch_stream.makefile()
         max_trial = 3
         for n in range(3):
@@ -397,6 +401,46 @@ class MaaTouch(Connection):
 
         builder.up().commit()
         builder.send_sync()
+
+    @retry
+    def island_swipe_hold_maatouch(self, p1, p2, hold_time):
+        """岛屿行走专用：拖到偏移点后保持 hold_time 毫秒。
+
+        与 drag_maatouch 的差别：
+        - 保持时间整段一次下发（sync 读超时已按等待时长放宽），避免多次 sync 期间
+          手指仍按在偏移点上导致角色多走；
+        - 抬手不等待回显，抬手命令发出即结束，进一步减少多走的时间；
+        - 无论中途是否出错，都保证发送抬手命令，否则角色会一直朝该方向走。
+
+        Args:
+            p1 (tuple): 摇杆中心。
+            p2 (tuple): 偏移点。
+            hold_time (int, float): 保持时间，单位毫秒。
+        """
+        hold_ms = int(hold_time)
+        p1 = np.array(p1)
+        p2 = np.array(p2)
+        points = insert_swipe(p0=p1, p3=p2, speed=20)
+        builder = self.maatouch_builder
+        try:
+            # 按下 + 滑到偏移点后立即发送；保持时间由**客户端**计时，
+            # 因为 maatouch 的 sync 命令被插在批次最前面，服务端读到就回显，
+            # 用它计时会提前返回（表现为时长被拉长/错位）。
+            builder.down(*p1).commit().wait(10)
+            for point in points[1:]:
+                builder.move(*point).commit().wait(10)
+            builder.send()
+            self.sleep(max(0, hold_ms) / 1000)
+        finally:
+            try:
+                builder.up().commit()
+                builder.send()
+            except Exception as error:
+                logger.warning(f'[设备-MaaTouch] 岛屿行走抬手失败，尝试 reset: {error}')
+                try:
+                    self.reset_maatouch()
+                except Exception as reset_error:
+                    logger.warning(f'[设备-MaaTouch] 岛屿行走 reset 也失败: {reset_error}')
 
     @retry
     def reset_maatouch(self):
