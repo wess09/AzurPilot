@@ -379,10 +379,17 @@ export function TaskConfig() {
       </div>
     </div>
 
+  /* 任务级说明（Task.<task>.help）：以前只在 i18n 里存在、界面没渲染，这里补成独立卡片。 */
+  const taskHelp = t(`Task.${task}.help`)
+  const taskHelpBlock = taskHelp && taskHelp !== 'help' && !taskHelp.startsWith('Task.')
+    ? <section className="panel task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></section>
+    : null
+
   const head = <>
     {error && <ErrorBox message={error} retry={reload} />}
     {storageError && <ErrorBox message={storageError} />}
     {(!hasGroups || !condensed) && configToolbar}
+    {taskHelpBlock}
   </>
 
   const groupsSection = task === 'FleetInfo' ? (

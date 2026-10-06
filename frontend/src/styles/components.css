@@ -381,6 +381,8 @@
 /* 参数卡的内容层：与统计页同一套二级贴片——微弱边距取 --theme-plate-margin，
    圆角 = 面板圆角 − 边距，两层同心。 */
 .config-group {position: relative; isolation: isolate; padding: var(--theme-plate-margin, 8px); margin-bottom: var(--config-card-gap, 19px); scroll-margin-top: calc(var(--topbar-height, 69px) + 16px)}
+.task-help-panel {margin-bottom: var(--config-card-gap, 19px)}
+.task-help-panel .task-help {font-size: 12px; color: var(--muted); line-height: 1.9; white-space: pre-line; overflow-wrap: anywhere; margin: 0; padding: 14px 20px}
 .config-group::before {content: ''; position: absolute; inset: var(--theme-plate-margin, 8px); border-radius: calc(var(--theme-radius-panel, 26px) - var(--theme-plate-margin, 8px)); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 .config-group > * {position: relative}
 .group-indicator {width: 4px; height: 15px; border-radius: 3px; background: #74bda8}
