@@ -17,9 +17,9 @@ class FarmingEventStopTests(unittest.TestCase):
     def make_campaign(self, command='ThreeOilLowCost', stage='C2', limit=100000, pt=100000, gems_stage='D3',
                       fallback=0, gems_fallback=0):
         config = make_config(command)
-        config.data['ThreeOilLowCost']['Campaign'].update(Name=stage, Event='event_20260908_cn')
+        config.data['ThreeOilLowCost']['Campaign'].update(Name=stage, Event='event_20241219_cn')
         config.data['ThreeOilLowCost']['Scheduler']['Enable'] = True
-        config.data['GemsFarming']['Campaign'].update(Name=gems_stage, Event='event_20260908_cn')
+        config.data['GemsFarming']['Campaign'].update(Name=gems_stage, Event='event_20241219_cn')
         config.data['GemsFarming']['Scheduler']['Enable'] = True
         config.data['ThreeOilLowCost']['GemsFarming']['EventFallbackStage'] = fallback
         config.data['GemsFarming']['GemsFarming']['EventFallbackStage'] = gems_fallback
@@ -78,10 +78,10 @@ class FarmingEventStopTests(unittest.TestCase):
         runner.get_coin = Mock(return_value=10000)
         runner.get_oil = Mock(return_value=10000)
         with patch.object(GemsFarming, '_initial_flagship_check_done', True):
-            runner.run('C2', folder='event_20260908_cn')
+            runner.run('C2', folder='event_20241219_cn')
         campaign.run.assert_not_called()
         campaign.ensure_auto_search_exit.assert_called_once_with()
-        runner.load_campaign.assert_called_once_with('c2', folder='event_20260908_cn')
+        runner.load_campaign.assert_called_once_with('c2', folder='event_20241219_cn')
         self.assertIs(campaign.config.modified.get('ThreeOilLowCost.Scheduler.Enable'), False)
 
     def test_main_three_oil_does_not_read_event_pt(self):
