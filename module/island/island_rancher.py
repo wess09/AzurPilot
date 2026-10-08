@@ -215,7 +215,11 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             mill_needs.append(('wheat_flour', target))
             logger.info(f"[岛屿-牧场] {self._item_cn('wheat_flour')}库存不足: {wheat_flour_count}/150，需加工 {target} 个补到 200")
 
-        for _, feed_item in self.ranch_feed_map.items():
+        for post_id, feed_item in self.ranch_feed_map.items():
+            # 岗位已在配置中关闭时不再为其补充饲料，避免浪费牧场原料
+            if not self.is_ranch_post_enabled(post_id):
+                logger.info(f"[岛屿-牧场] {self._item_cn(feed_item)}对应岗位已关闭，跳过饲料补充")
+                continue
             current_quantity = self.inventory_counts['mill'].get(feed_item, 0)
             if current_quantity < feed_target_quantity:
                 target = self.name_to_config[feed_item]['number']
@@ -667,7 +671,10 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             logger.info(f"{self._item_cn(item_config['name'])}: {count}")
 
     def check_ranch_needs(self):
-        """根据鸡肉和猪肉库存阈值确定需要执行的牧场岗位。
+        """根据库存阈值与岗位开关确定需要执行的牧场岗位。
+
+        养鸡（POST1）/养猪（POST2）按库存阈值触发；养牛（POST3）/养羊（POST4）
+        分别由 IslandRancher_Milk / IslandRancher_Wool 开关控制，关闭时不排产。
 
         Returns:
             list[str]: 需要执行的牧场岗位 ID 列表。
@@ -684,12 +691,37 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
             ranch_needs.append('ISLAND_RANCH_POST2')
             logger.info("[岛屿-牧场] 需要执行养猪任务")
 
-        ranch_needs.append('ISLAND_RANCH_POST3')
-        logger.info("[岛屿-牧场] 需要执行养牛任务")
+        if self.is_ranch_post_enabled('ISLAND_RANCH_POST3'):
+            ranch_needs.append('ISLAND_RANCH_POST3')
+            logger.info("[岛屿-牧场] 需要执行养牛任务")
+        else:
+            logger.info("[岛屿-牧场] 养牛已在配置中关闭，跳过")
 
-        ranch_needs.append('ISLAND_RANCH_POST4')
-        logger.info("[岛屿-牧场] 需要执行养羊任务")
+        if self.is_ranch_post_enabled('ISLAND_RANCH_POST4'):
+            ranch_needs.append('ISLAND_RANCH_POST4')
+            logger.info("[岛屿-牧场] 需要执行养羊任务")
+        else:
+            logger.info("[岛屿-牧场] 养羊已在配置中关闭，跳过")
         return ranch_needs
+
+    def is_ranch_post_enabled(self, post_id):
+        """判断牧场岗位是否在配置中启用。
+
+        养鸡/养猪由库存阈值控制，始终参与检查；养牛/养羊分别对应
+        IslandRancher_Milk / IslandRancher_Wool 开关，关闭时不再排产，
+        也不为其补充对应饲料。
+
+        Args:
+            post_id (str): 牧场岗位标识。
+
+        Returns:
+            bool: 岗位是否启用。
+        """
+        if post_id == 'ISLAND_RANCH_POST3':
+            return bool(self.config.IslandRancher_Milk)
+        if post_id == 'ISLAND_RANCH_POST4':
+            return bool(self.config.IslandRancher_Wool)
+        return True
 
     def run(self):
         """运行牧场与磨坊自动化管理主流程。
