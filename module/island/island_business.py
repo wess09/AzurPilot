@@ -1921,15 +1921,17 @@ class IslandBusiness(Island):
 
         经营角色槽可能默认已选中目标角色（例如店铺原有角色恰好是优先级首位），
         此时再次点击同一格会取消选中，导致确认按钮不可用、槽位为空。
-        因此先检查选中状态，只有未选中才点击；点击后复检，若仍未选中
-        （点击恰好取消了默认选中）则补点一次恢复。
+        因此先检查选中状态，只有未选中才点击。
+
+        点击后不再重复点击：该界面上点击是“切换”语义，选中标记漏检时重复点击
+        会把刚选中的角色取消；是否真正选中交给后续确认流程（确认按钮）判定。
 
         Args:
             portrait_button (Button): 头像模板匹配得到的按钮。
             character_name (str, optional): 角色名，用于日志与单元格命名。
 
         Returns:
-            bool: 角色最终是否处于选中状态。
+            bool: 是否可以进入确认流程。
         """
         cell_button = self._cell_button_from_portrait(portrait_button, name=character_name)
         label = character_name or '角色'
@@ -1938,15 +1940,13 @@ class IslandBusiness(Island):
             logger.info(f"[岛屿-经营] {label} 已处于选中状态，跳过点击避免取消选择")
             return True
 
-        # 纯计数有限循环：最多补点一次，避免在识别异常时反复点击
-        for attempt in range(2):
-            self.device.click(portrait_button)
-            self.device.sleep(0.5)
-            if self._check_selected_status(self.device.screenshot(), cell_button):
-                return True
-            logger.warning(f"[岛屿-经营] {label} 点击后未确认选中(第{attempt + 1}次)，重试")
-
-        return False
+        # 只点击一次：重复点击会把刚选中的角色取消
+        self.device.click(portrait_button)
+        self.device.sleep(0.5)
+        if not self._check_selected_status(self.device.screenshot(), cell_button):
+            # 识别标记漏检时仅记录日志，交由确认按钮流程判定是否真的选中
+            logger.warning(f"[岛屿-经营] {label} 点击后未检测到选中标记，交由确认按钮校验")
+        return True
 
     def _find_best_character(self):
         """
