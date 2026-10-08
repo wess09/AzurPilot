@@ -1793,7 +1793,12 @@ class IslandBusiness(Island):
             timeout += 1
 
     def _select_business_characters(self):
-        for slot_idx in range(2):
+        # 只填充用户配置了角色的槽位：低等级单角色店铺只有 1 个角色槽，
+        # 继续探测第二个槽位不仅必然失败，还可能误点该位置的其它按钮
+        slot_total = min(len(self.character_priority), 2)
+        if slot_total < 2:
+            logger.info(f"[岛屿-经营] 本店铺配置 {slot_total} 个经营角色，跳过多余槽位探测")
+        for slot_idx in range(slot_total):
             btn = BUSINESS_PLUS_A if slot_idx == 0 else BUSINESS_PLUS_B
             plus_button = self._appear_at_positions(btn)
             if not plus_button:
@@ -1889,9 +1894,8 @@ class IslandBusiness(Island):
             if result:
                 char_name, button = result
                 logger.info(f"[岛屿-经营] 选择角色: {char_name}")
-                self.device.click(button)
-                self.device.sleep(0.5)
-                return char_name
+                if self._select_character_by_portrait(button, char_name):
+                    return char_name
             # 短距离向下滑动继续搜索
             self._swipe_down_short()
 
@@ -1906,10 +1910,41 @@ class IslandBusiness(Island):
             if result:
                 char_name, button = result
                 logger.info(f"[岛屿-经营] 切换排序后选择角色: {char_name}")
-                self.device.click(button)
-                self.device.sleep(0.5)
-                return char_name
+                if self._select_character_by_portrait(button, char_name):
+                    return char_name
             self._swipe_down_short()
+
+        return False
+
+    def _select_character_by_portrait(self, portrait_button, character_name=None):
+        """点击角色头像完成选择，已处于选中状态时跳过点击。
+
+        经营角色槽可能默认已选中目标角色（例如店铺原有角色恰好是优先级首位），
+        此时再次点击同一格会取消选中，导致确认按钮不可用、槽位为空。
+        因此先检查选中状态，只有未选中才点击；点击后复检，若仍未选中
+        （点击恰好取消了默认选中）则补点一次恢复。
+
+        Args:
+            portrait_button (Button): 头像模板匹配得到的按钮。
+            character_name (str, optional): 角色名，用于日志与单元格命名。
+
+        Returns:
+            bool: 角色最终是否处于选中状态。
+        """
+        cell_button = self._cell_button_from_portrait(portrait_button, name=character_name)
+        label = character_name or '角色'
+
+        if self._check_selected_status(self.device.image, cell_button):
+            logger.info(f"[岛屿-经营] {label} 已处于选中状态，跳过点击避免取消选择")
+            return True
+
+        # 纯计数有限循环：最多补点一次，避免在识别异常时反复点击
+        for attempt in range(2):
+            self.device.click(portrait_button)
+            self.device.sleep(0.5)
+            if self._check_selected_status(self.device.screenshot(), cell_button):
+                return True
+            logger.warning(f"[岛屿-经营] {label} 点击后未确认选中(第{attempt + 1}次)，重试")
 
         return False
 
