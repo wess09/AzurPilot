@@ -300,6 +300,41 @@ class IslandMineForest(Island,LoginHandler):
         return collected
 
     # ==================== 设置生产（模仿农田 post_plant，去掉选种） ====================
+    # 产物图标（铜/铝/铁/银等）形状高度相似：实测相邻矿石的亮度相似度可达
+    # 0.88~0.97（铝模板在铜画面上 0.959、铁模板在铜画面上 0.972），
+    # 所以模板命中后必须再验一次颜色，实测这些错误命中的颜色差为 17~40，
+    # 用阈值 10 可以稳定拦下。
+    PRODUCT_CONFIRM_OFFSET = 20
+    PRODUCT_CONFIRM_SIMILARITY = 0.85
+    PRODUCT_CONFIRM_THRESHOLD = 10
+
+    def is_product_confirmed(self, category, product):
+        """确认右侧产物图标是否为指定产物：模板命中后再验一次颜色。
+
+        Args:
+            category (str): 区域类型，'mine' 或 'forest'。
+            product (str): 目标产物名称。
+
+        Returns:
+            bool: 右侧图标是否为该产物。
+        """
+        check = None
+        for item in self.inventory_config[category]['items']:
+            if item['name'] == product:
+                check = item.get('selection_check')
+                break
+        if check is None:
+            return False
+
+        # 用最新画面复核，避免沿用滑动/点击前的旧截图
+        self.device.screenshot()
+        return self.match_template_color(
+            check,
+            offset=self.PRODUCT_CONFIRM_OFFSET,
+            similarity=self.PRODUCT_CONFIRM_SIMILARITY,
+            threshold=self.PRODUCT_CONFIRM_THRESHOLD,
+        )
+
     def post_plant(self, post_button, product, category, time_var_name, need_count=None):
         """
         设置岗位生产（模仿农田 post_plant，去掉买种子步骤）。
@@ -330,9 +365,8 @@ class IslandMineForest(Island,LoginHandler):
             target_units = max_units  # 默认满产
         logger.info(f"[岛屿-矿山林场]   {self._item_cn(product)}: 缺 {need_count or '满产'} 单位，安排 {runs}/{max_runs} 次生产 ({target_units} 单位)")
 
-        while 1:
-            self.device.screenshot()
-
+        # 状态循环统一交给 self.loop 管理超时，避免识别失败时无限重试卡死
+        for _ in self.loop(timeout=120, skip_first=False):
             if self.appear_then_click(ISLAND_POST_SELECT, offset=1):
                 continue
 
@@ -349,20 +383,35 @@ class IslandMineForest(Island,LoginHandler):
                 continue
 
             if self.appear(ISLAND_SELECT_PRODUCT_CHECK, offset=1):
-                # 点击产物按钮
-                if selection is not None:
+                if selection is None:
+                    logger.warning(f"[岛屿-矿山林场] 产物 {self._item_cn(product)} 缺少选择按钮资源，跳过该岗位")
+                    self.back_to_postmanage_from_dispatch()
+                    return False
+
+                if selection_check is None:
+                    # 没有确认模板时按原行为直接点击固定位置
                     self.device.click(selection)
                     self.device.sleep(0.3)
-                # 验证产物是否选对（检查 selection_check 出现）
-                if selection_check is not None:
-                    self.device.screenshot()
-                    if not self.match_template_color(selection_check, offset=20, similarity=0.85, threshold=10):
-                        logger.warning(f"[岛屿-矿山林场] 产物 {self._item_cn(product)} 选择未被确认，可能需要滑动查找")
-                        self.device.swipe_vector(vector=(0, -200), box=(333, 142, 431, 602), name="SelectionUpSwipe")
-                        self.device.sleep(0.3)
-                        self.device.click(SELECT_PRODUCT_INERTIA_STOP)
-                        self.device.sleep(0.2)
-                        continue
+                    selected = True
+                else:
+                    # 统一走框架的产物选择逻辑：模板匹配定位后点击，找不到则滑动列表继续搜索。
+                    # 记录坐标会随列表滚动/版本变化失效，固定坐标点击容易选错产物。
+                    framework_selected = self.select_product(selection, selection_check)
+                    # 图标相近时框架的形状匹配可能命中相邻产物，这里取最新画面再验一次颜色
+                    selected = self.is_product_confirmed(category, product)
+                    if framework_selected and not selected:
+                        logger.warning(
+                            f"[岛屿-矿山林场] 产物 {self._item_cn(product)} 颜色复核未通过，判定为未选中"
+                        )
+                    elif selected and not framework_selected:
+                        logger.info(
+                            f"[岛屿-矿山林场] 产物 {self._item_cn(product)} 已通过颜色复核，按已选中处理"
+                        )
+                if not selected:
+                    logger.warning(f"[岛屿-矿山林场] 产物 {self._item_cn(product)} 选择失败，跳过该岗位")
+                    self.back_to_postmanage_from_dispatch()
+                    return False
+
                 # 设置生产数量
                 if runs == max_runs:
                     # 满产直接用 POST_MAX
@@ -375,6 +424,10 @@ class IslandMineForest(Island,LoginHandler):
                 self.device.click(POST_ADD_ORDER)
                 self.device.sleep(0.5)
                 break
+        else:
+            logger.warning(f"[岛屿-矿山林场] {self._item_cn(product)} 生产派遣超时，跳过该岗位")
+            self.back_to_postmanage_from_dispatch()
+            return False
 
         # 重新打开 → 记录时间
         self.post_open(post_button)
