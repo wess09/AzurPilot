@@ -40,7 +40,7 @@ class FakeInfoHandler:
         self.loop_ticks = 3
         self.clicked = []
         self.confirmed = []
-        self.config = SimpleNamespace(USE_DATA_KEY=True, task_delay=lambda **kwargs: None)
+        self.config = SimpleNamespace(USE_DATA_KEY=True, is_os=False, task_delay=lambda **kwargs: None)
         self.device = SimpleNamespace(click=self.click)
         self.emotion = SimpleNamespace(is_calculate=False, is_ignore=True)
         self.emotion.emergency_reset = lambda: None

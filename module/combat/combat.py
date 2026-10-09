@@ -708,6 +708,9 @@ class Combat(Level, HPBalancer, Retirement, SubmarineCall, CombatAuto, CombatMan
                 continue
             if self.handle_get_items(drop=drop):
                 continue
+            if self.appear_then_click(OPTS_INFO_D, offset=(30, 30), interval=2):
+                logger.info('[战斗-结算] 战败提升实力界面 (OPTS_INFO_D)，点击关闭')
+                continue
             if self.handle_popup_confirm('COMBAT_STATUS'):
                 if battle_status and not exp_info:
                     logger.info('[战斗-舰船] 锁定新舰船')

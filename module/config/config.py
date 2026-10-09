@@ -251,10 +251,6 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             func_list.insert(0, "Alas")
         if "General" not in func_list:
             func_list.insert(0, "General")
-        if "RunParams" not in func_list:
-            # 「运行参数」页是全局参数（调度器、运行监护、设备与等待节奏），
-            # 对所有任务生效，因此随任意任务一起绑定。
-            func_list.append("RunParams")
         logger.info(f"[配置] 绑定任务 {func_list}")
 
         # 绑定参数
@@ -321,6 +317,12 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
     def is_actual_task(self):
         return self.task.command.lower() not in ['alas', 'template']
 
+    @property
+    def is_os(self) -> bool:
+        """当前绑定的任务是否为大型作战（大世界）任务。"""
+        command = getattr(getattr(self, 'task', None), 'command', None)
+        return isinstance(command, str) and command.startswith('Opsi')
+
     def get_next_task(self):
         """计算任务队列，设置 pending_task 和 waiting_task。"""
         pending = []
@@ -329,9 +331,12 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         now = current_time()
         if AzurLaneConfig.is_hoarding_task:
             now -= self.hoarding
+        opsi_master_enable = self.cross_get('OpsiGeneral.OpsiGeneral.Enable', default=True)
         for func in self.data.values():
             func = Function(func)
             if not func.enable:
+                continue
+            if not opsi_master_enable and func.command.startswith('Opsi'):
                 continue
             if not isinstance(func.next_run, datetime):
                 error.append(func)
@@ -341,7 +346,11 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                 waiting.append(func)
 
         f = Filter(regex=r"(.*)", attr=["command"])
-        f.load(self.SCHEDULER_PRIORITY)
+        from module.config.coin_rush import apply_coin_rush_schedule
+        pending, waiting, priority = apply_coin_rush_schedule(
+            self, pending, waiting, self.SCHEDULER_PRIORITY
+        )
+        f.load(priority)
         if pending:
             pending = f.apply(pending)
         if waiting:
@@ -780,10 +789,6 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         runtime = self.__dict__.get('_scheduler_runtime')
         if runtime is not None and runtime.mode != 'native':
             return runtime.should_yield(self)
-        if runtime is not None:
-            decision = runtime.oil_control.should_yield(self)
-            if decision is not None:
-                return decision
         prev = getattr(self, '_task_switch_owner', self.task)
         self.load()
         new = self.get_next()

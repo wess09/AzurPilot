@@ -282,6 +282,10 @@ class InfoHandler(ModuleBase):
         Raises:
             ScriptEnd: calculate 模式下出现红脸弹窗时，心情清零并延时后抛出。
         """
+        # 大世界中舰队不消耗心情，不处理红脸弹窗，避免误判其他业务弹窗
+        if self.config.is_os:
+            return False
+
         # 作战档案强制启用数据密钥，此时的双按钮弹窗优先按数据密钥弹窗处理
         if self.handle_use_data_key():
             return True
