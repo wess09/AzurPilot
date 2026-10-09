@@ -244,84 +244,59 @@ class IslandDailyInteract(Island):
         )
 
     def move_for_lakeniya(self):
-        """繁荫农圃拉科尼娅移动路线。"""
-        self.island_up(2000)
-        self.island_right(1800)
-        self.island_up(500)
+        """繁荫农圃拉科尼娅移动路线（规则见 `IslandPlan.IslandWalk.DailyLakeniya`）。"""
+        self.island_walk_route('DailyLakeniya')
 
     def move_for_luxi(self):
-        """繁荫农圃露西移动路线。"""
-        self.island_left(800)
-        self.island_up(5500)
-        self.island_left(1000)
-        self.island_up(3700)
+        """繁荫农圃露西移动路线（规则见 `IslandPlan.IslandWalk.DailyLuxi`）。"""
+        self.island_walk_route('DailyLuxi')
 
     def move_for_aobulaien(self):
-        """栖风原野奥布莱恩移动路线。"""
-        self.island_right(4600)
-        self.island_up(5100)
-        self.island_right(1100)
+        """栖风原野奥布莱恩移动路线（规则见 `IslandPlan.IslandWalk.DailyAobulaien`）。"""
+        self.island_walk_route('DailyAobulaien')
 
     def move_for_qiaoan(self):
-        """栖风原野乔安移动路线。"""
-        self.island_right(6000)
-        self.island_down(3000)
-        self.island_right(2300)
+        """栖风原野乔安移动路线（规则见 `IslandPlan.IslandWalk.DailyQiaoan`）。"""
+        self.island_walk_route('DailyQiaoan')
 
     def move_for_morningdew_farm(self):
-        """晨露农场摸猫移动路线。"""
-        self.island_left(500)
-        self.island_down(200)
+        """晨露农场摸猫移动路线（规则见 `IslandPlan.IslandWalk.DailyMorningdewFarm`）。"""
+        self.island_walk_route('DailyMorningdewFarm')
 
     def move_for_hemo(self):
-        """晨露农场赫莫移动路线。"""
-        self.island_left(600)
-        self.island_up(2000)
-        self.island_left(800)
+        """晨露农场赫莫移动路线（规则见 `IslandPlan.IslandWalk.DailyHemo`）。"""
+        self.island_walk_route('DailyHemo')
 
     def move_for_meili(self):
-        """晨露农场梅莉移动路线。"""
-        self.island_right(1800)
-        self.island_down(600)
+        """晨露农场梅莉移动路线（规则见 `IslandPlan.IslandWalk.DailyMeili`）。"""
+        self.island_walk_route('DailyMeili')
 
     def move_for_aolipike(self):
-        """晨露农场奥利匹克移动路线。"""
-        self.island_left(500)
-        self.island_down(1500)
-        self.island_left(1700)
-        self.island_down(1900)
+        """晨露农场奥利匹克移动路线（规则见 `IslandPlan.IslandWalk.DailyAolipike`）。"""
+        self.island_walk_route('DailyAolipike')
 
     def move_for_amoma(self):
-        """港口商区阿莫玛移动路线。"""
-        self.island_up(1500)
-        self.island_left(400)
+        """港口商区阿莫玛移动路线（规则见 `IslandPlan.IslandWalk.DailyAmoma`）。"""
+        self.island_walk_route('DailyAmoma')
 
     def move_for_pateli(self):
-        """港口帕特莉移动路线。"""
-        self.island_left(2200)
-        self.device.click(ISLAND_JUMP)
-        self.island_left(1200)
-        self.island_up(500)
+        """港口帕特莉移动路线（规则见 `IslandPlan.IslandWalk.DailyPateli`）。"""
+        self.island_walk_route('DailyPateli')
 
     def move_for_bulaimei(self):
-        """港口布莱梅移动路线（需跳转到啾咖啡餐厅）。"""
-        self.island_up(2600)
-        self.device.click(ROUTE_TWO_OPTION_COMPLETE)
-        self.device.sleep(2)
-        for _ in self.loop(timeout=12, skip_first=False):
-            if self.appear(ISLAND_CHECK):
-                break
-            self.device.sleep(2)
-        self.island_left(600)
+        """港口布莱梅移动路线（需跳转到啾咖啡餐厅）。
+
+        规则见 `IslandPlan.IslandWalk.DailyBulaimei`，`switch` 一步就是切换到啾咖啡餐厅
+        （点击按钮并等待岛内可操作），方向和顺序都可以在配置里改。
+        """
+        self.island_walk_route('DailyBulaimei')
 
     def move_for_lisha(self):
-        """集会岛莉莎移动路线。"""
-        self.island_up(3000)
-        self.island_left(2000)
-        self.island_up(5500)
-        self.island_right(300)
-        self.island_up(2200)
-        self.island_left(1100)
+        """集会岛莉莎移动路线。
+
+        规则见 `IslandPlan.IslandWalk.DailyLisha`。
+        """
+        self.island_walk_route('DailyLisha')
 
     def handle_island_story_skip_safely(self):
         """

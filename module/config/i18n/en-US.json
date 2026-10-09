@@ -320,7 +320,7 @@
     },
     "IslandPlan": {
       "name": "Global Config",
-      "help": "Global configuration for Island Plan, including season settings."
+      "help": "Global settings of the island: season and every walk route. Running this task walks each route ticked in \"Island walk rules\" once on the island so you can check whether the character reaches the target; afterwards (or when nothing is ticked) the task is postponed to the next day."
     },
     "IslandBusiness": {
       "name": "Business Module",
@@ -1042,6 +1042,148 @@
     "ConflictRetryMinutes": {
       "name": "Task conflict retry interval (min)",
       "help": "When the commission end time cannot be read, postpone the conflicting task by this many minutes.\nDefault 15."
+    }
+  },
+  "IslandWalk": {
+    "_info": {
+      "name": "Island walk rules",
+      "help": "Each route is a rule string: `up 3000` holds up for 3000 ms (plain integers are milliseconds, 3.0 or 1.5s are seconds); `jump` only taps the jump button once, `switch` moves to the Juu coffee restaurant (the middle step of the Bremen route), separated by commas. Every control method walks with these rules; empty rules or unknown directions/durations fall back to the built-in defaults. Tick the \"verify\" checkbox to run that route once in the Global Config task and check whether the character reaches the target; the task is postponed to the next day afterwards (or when nothing is ticked)."
+    },
+    "AirDrop": {
+      "name": "AirDrop run (visit island)",
+      "help": "Friend island air drop route; the two jumps tap the jump button."
+    },
+    "AirDropEnable": {
+      "name": "AirDrop run (visit island): verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "AirDropRetry": {
+      "name": "AirDrop retry swipes",
+      "help": "(duration only) Extra swipes when the drop is not taken; the direction order is fixed to up → right → down and needs 3 durations. A wrong count falls back to defaults."
+    },
+    "AirDropRetryEnable": {
+      "name": "AirDrop retry swipes: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "AirDropSelf": {
+      "name": "Own island air drop step",
+      "help": "Step down after taking the drop on your own island."
+    },
+    "AirDropSelfEnable": {
+      "name": "Own island air drop step: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyLakeniya": {
+      "name": "Lakeniya route",
+      "help": "Nursery: Lakeniya."
+    },
+    "DailyLakeniyaEnable": {
+      "name": "Lakeniya route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyLuxi": {
+      "name": "Luxi route",
+      "help": "Nursery: Luxi."
+    },
+    "DailyLuxiEnable": {
+      "name": "Luxi route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyAobulaien": {
+      "name": "OBrien route",
+      "help": "Windy plain: OBrien."
+    },
+    "DailyAobulaienEnable": {
+      "name": "OBrien route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyQiaoan": {
+      "name": "Joan route",
+      "help": "Windy plain: Joan."
+    },
+    "DailyQiaoanEnable": {
+      "name": "Joan route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyMorningdewFarm": {
+      "name": "Morningdew farm cat route",
+      "help": "Morningdew farm: pet the cat."
+    },
+    "DailyMorningdewFarmEnable": {
+      "name": "Morningdew farm cat route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyHemo": {
+      "name": "Hemo route",
+      "help": "Morningdew farm: Hemo."
+    },
+    "DailyHemoEnable": {
+      "name": "Hemo route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyMeili": {
+      "name": "Meili route",
+      "help": "Morningdew farm: Meili."
+    },
+    "DailyMeiliEnable": {
+      "name": "Meili route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyAolipike": {
+      "name": "Aolipike route",
+      "help": "Morningdew farm: Aolipike."
+    },
+    "DailyAolipikeEnable": {
+      "name": "Aolipike route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyAmoma": {
+      "name": "Amoma route",
+      "help": "Port business area: Amoma."
+    },
+    "DailyAmomaEnable": {
+      "name": "Amoma route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyPateli": {
+      "name": "Pateli route",
+      "help": "Port: Pateli (a jump in the middle)."
+    },
+    "DailyPateliEnable": {
+      "name": "Pateli route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyBulaimei": {
+      "name": "Bremen route",
+      "help": "The middle `switch` step taps the button that moves you to the Juu coffee restaurant and waits until you can act; direction and order are editable."
+    },
+    "DailyBulaimeiEnable": {
+      "name": "Bremen route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "DailyLisha": {
+      "name": "Lisha route",
+      "help": "Assembly island: Lisha."
+    },
+    "DailyLishaEnable": {
+      "name": "Lisha route: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "PearlAssembly": {
+      "name": "Pearl NPC on assembly island",
+      "help": "Pearl NPC on the assembly island."
+    },
+    "PearlAssemblyEnable": {
+      "name": "Pearl NPC on assembly island: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
+    },
+    "PearlPort": {
+      "name": "Pearl NPC at port",
+      "help": "Pearl NPC at the port (a jump in the middle)."
+    },
+    "PearlPortEnable": {
+      "name": "Pearl NPC at port: verify",
+      "help": "When ticked, the Global Config task walks this route once so you can check whether the character reaches the target."
     }
   },
   "DailySummary": {
@@ -4266,7 +4408,7 @@
   "IslandPlan": {
     "_info": {
       "name": "Global config",
-      "help": "Global configuration for Island Plan, including season settings."
+      "help": "Global settings of the island plan: the season decides which seasonal items the tasks use; \"Island walk rules\" lets you customize each walk route (applies to every control method), and ticking a verify checkbox makes the Global Config task run it once to check the landing spot."
     },
     "Season": {
       "name": "Current season",

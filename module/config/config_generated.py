@@ -190,6 +190,42 @@ class GeneratedConfig:
     Handover_MaintainCheckMinutes = 120
     Handover_ConflictRetryMinutes = 15
 
+    # 配置组 `IslandWalk`
+    IslandWalk_AirDrop = 'up 3000, right 800, up 2000, jump, up 1200, right 2000, up 6500, right 1000, up 2300, right 2000, up 4000, right 2600, up 500, jump, up 1300'
+    IslandWalk_AirDropEnable = False
+    IslandWalk_AirDropRetry = 'up 500, right 500, down 500'
+    IslandWalk_AirDropRetryEnable = False
+    IslandWalk_AirDropSelf = 'down 1000'
+    IslandWalk_AirDropSelfEnable = False
+    IslandWalk_DailyLakeniya = 'up 2000, right 1800, up 500'
+    IslandWalk_DailyLakeniyaEnable = False
+    IslandWalk_DailyLuxi = 'left 800, up 5500, left 1000, up 3700'
+    IslandWalk_DailyLuxiEnable = False
+    IslandWalk_DailyAobulaien = 'right 4600, up 5100, right 1100'
+    IslandWalk_DailyAobulaienEnable = False
+    IslandWalk_DailyQiaoan = 'right 6000, down 3000, right 2300'
+    IslandWalk_DailyQiaoanEnable = False
+    IslandWalk_DailyMorningdewFarm = 'left 500, down 200'
+    IslandWalk_DailyMorningdewFarmEnable = False
+    IslandWalk_DailyHemo = 'left 600, up 2000, left 800'
+    IslandWalk_DailyHemoEnable = False
+    IslandWalk_DailyMeili = 'right 1800, down 600'
+    IslandWalk_DailyMeiliEnable = False
+    IslandWalk_DailyAolipike = 'left 500, down 1500, left 1700, down 1900'
+    IslandWalk_DailyAolipikeEnable = False
+    IslandWalk_DailyAmoma = 'up 1500, left 400'
+    IslandWalk_DailyAmomaEnable = False
+    IslandWalk_DailyPateli = 'left 2200, jump, left 1200, up 500'
+    IslandWalk_DailyPateliEnable = False
+    IslandWalk_DailyBulaimei = 'up 2600, switch, left 600'
+    IslandWalk_DailyBulaimeiEnable = False
+    IslandWalk_DailyLisha = 'up 3000, left 2000, up 5500, right 300, up 2200, left 1100'
+    IslandWalk_DailyLishaEnable = False
+    IslandWalk_PearlAssembly = 'up 2500, right 1700, down 1700, right 500'
+    IslandWalk_PearlAssemblyEnable = False
+    IslandWalk_PearlPort = 'left 2500, jump, left 3000, down 1000'
+    IslandWalk_PearlPortEnable = False
+
     # 配置组 `DailySummary`
     DailySummary_Enable = False  # True, False
     DailySummary_TriggerTime = '20:00'

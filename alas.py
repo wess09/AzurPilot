@@ -1691,6 +1691,10 @@ class AzurLaneAutoScript:
         from module.island.island_air_drop import IslandAirDrop
         IslandAirDrop(config=self.config, device=self.device).run()
 
+    def island_plan(self):
+        from module.island.island_plan import IslandPlan
+        IslandPlan(config=self.config, device=self.device).run()
+
     def island_cargo_preparation(self):
         from module.island.island_cargo_preparation import IslandCargoPreparation
         IslandCargoPreparation(config=self.config, device=self.device).run()

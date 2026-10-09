@@ -14,7 +14,7 @@ from module.island.island_select_character import *
 from module.island.warehouse import *
 from module.handler.login import LoginHandler
 from module.ui.ui import *
-from module.exception import GameStuckError
+from module.exception import GameStuckError, ScriptError
 from module.logger import logger
 from module.base.runtime_params import (
     ISLAND_CHARACTER_CONFIRM_RETRY_WAIT,
@@ -24,6 +24,14 @@ from module.base.runtime_params import (
     ISLAND_MAP_DESTINATION_WAIT,
 )
 from module.config.utils import read_run_param
+from module.island.island_walk import (
+    ISLAND_WALK_ACTIONS,
+    ISLAND_WALK_MAX_HOLD,
+    ISLAND_WALK_MIN_HOLD,
+    ISLAND_WALK_ROUTES,
+    format_walk_rule,
+    parse_walk_rule,
+)
 import re
 
 # 等待/重试参数走 WebUI「运行参数」页（RunParams.UiWait），兜底默认值与
@@ -39,6 +47,10 @@ ISLAND_POST_SWIPE_STEP = 450
 ISLAND_POST_SWIPE_DISTANCE = 550
 ISLAND_POST_SWIPE_TO_TOP_MAX = 5
 ISLAND_POST_SWIPE_SEARCH_MAX = 8
+
+# 岛屿走位路线与规则解析集中在 module/island/island_walk.py；可以用岛屿计划的
+# 全局配置 `IslandPlan.IslandWalk.<路线名>` 覆盖整条规则（所有控制方式都生效，
+# 桥接 swipe 的位移随负载漂移，按机器各配一套规则最稳）。
 
 # 岗位产品选择滑动惯性消除安全区域
 SELECT_PRODUCT_INERTIA_STOP = Button(
@@ -1336,6 +1348,147 @@ class Island(SelectCharacter):
         p2 = (152, 507)
         self.device.island_swipe_hold(p1, p2, hold_time)
 
+    def island_move(self, direction, hold_time):
+        """按方向按住岛屿移动摇杆。
+
+        Args:
+            direction (str): 'up' / 'down' / 'left' / 'right'。
+            hold_time (int): 按住移动的时间（毫秒）。
+        """
+        actions = {
+            'up': self.island_up,
+            'down': self.island_down,
+            'left': self.island_left,
+            'right': self.island_right,
+        }
+        actions[direction](hold_time)
+
+    def island_walk_rule(self, route):
+        """读取某条路线的规则（岛屿计划全局配置，跨任务生效）。
+
+        Args:
+            route (str): 路线名，对应 `IslandPlan.IslandWalk.<路线名>`。
+
+        Returns:
+            str: 用户在岛屿计划里填写的规则字符串；未配置时返回空串。
+        """
+        return self.config.cross_get(f'IslandPlan.IslandWalk.{route}', default='') or ''
+
+    def island_walk_enabled(self, route):
+        """该路线是否勾选了走位校验。
+
+        Args:
+            route (str): 路线名。
+
+        Returns:
+            bool: 勾选了 `IslandPlan.IslandWalk.<路线名>Enable` 时返回 True。
+        """
+        return bool(self.config.cross_get(f'IslandPlan.IslandWalk.{route}Enable', default=False))
+
+    def island_walk_steps(self, route):
+        """返回本次实际执行的走位步骤。
+
+        优先使用岛屿计划全局配置里的规则字符串（所有控制方式都生效）；
+        未填写或解析失败时回退到代码默认值。
+
+        Args:
+            route (str): 路线名，见 `module/island/island_walk.py`。
+
+        Returns:
+            tuple: `((方向, 毫秒), ...)`。
+        """
+        steps = ISLAND_WALK_ROUTES[route]
+        raw = str(self.island_walk_rule(route)).strip()
+        if not raw:
+            return steps
+        parsed = parse_walk_rule(raw)
+        if parsed is None:
+            logger.warning(f'[岛屿-走位] 规则 {route}={raw!r} 解析失败，本次使用代码默认值')
+            return steps
+        logger.attr('岛屿走位', f'{route}: {format_walk_rule(parsed)}')
+        return parsed
+
+    def island_walk_durations(self, route):
+        """返回该路线所有走位步骤的时长（毫秒，跳过固定动作）。
+
+        Args:
+            route (str): 路线名。
+
+        Returns:
+            list[int]: 按执行顺序排列的毫秒时长。
+        """
+        return [hold for direction, hold in self.island_walk_steps(route)
+                if direction not in ISLAND_WALK_ACTIONS]
+
+    def island_walk_switch_restaurant(self):
+        """规则里 `switch` 步骤：切换到啾咖啡餐厅并等待岛内可操作。
+
+        Pages:
+            page_island
+        """
+        from module.island_daily_interact.assets import ROUTE_TWO_OPTION_COMPLETE
+
+        self.device.click(ROUTE_TWO_OPTION_COMPLETE)
+        self.device.sleep(2)
+        for _ in self.loop(timeout=12, skip_first=False):
+            if self.appear(ISLAND_CHECK):
+                break
+            self.device.sleep(2)
+
+    def island_walk_action(self, action):
+        """执行规则里的固定动作步骤。
+
+        Args:
+            action (str): `jump`（点跳跃按钮）或 `switch`（切换啾咖啡餐厅）。
+
+        Raises:
+            ScriptError: 未知动作。
+        """
+        if action == 'jump':
+            self.device.click(ISLAND_JUMP)
+        elif action == 'switch':
+            self.island_walk_switch_restaurant()
+        else:
+            raise ScriptError(f'未知的走位动作: {action}')
+
+    def island_walk_route(self, route):
+        """按路线依次走位；`jump` / `switch` 等动作步骤不占时长。
+
+        Args:
+            route (str): 路线名，见 `module/island/island_walk.py`。
+
+        Pages:
+            page_island
+        """
+        for direction, hold_time in self.island_walk_steps(route):
+            if direction in ISLAND_WALK_ACTIONS:
+                self.island_walk_action(direction)
+                continue
+            self.island_move(direction, hold_time)
+
+    def island_walk_composite_durations(self, route, count):
+        """复合路线（中间夹着拾取检测等固定操作）按位置取时长。
+
+        这类路线的方向和中间操作都由代码固定，配置只提供每一步的时长；
+        个数对不上时回退代码默认值并告警，避免取到不存在的下标。
+
+        Args:
+            route (str): 路线名。
+            count (int): 代码需要的走位步数。
+
+        Returns:
+            list[int]: 长度等于 count 的毫秒时长列表。
+        """
+        durations = self.island_walk_durations(route)
+        if len(durations) != count:
+            logger.warning(
+                f'[岛屿-走位] {route} 的方向与中间操作由代码固定，需要 {count} 个时长，'
+                f'配置给了 {len(durations)} 个，本次使用代码默认值'
+            )
+            return [hold for direction, hold in ISLAND_WALK_ROUTES[route]
+                    if direction not in ISLAND_WALK_ACTIONS]
+        return durations
+
     def set_buy_number(self, target):
         """设置购买弹窗中的目标购买数量。
 
@@ -1792,6 +1945,8 @@ class Island(SelectCharacter):
             logger.info(f"[岛屿] 尝试前往磨坊，第{attempt + 1}次尝试")
             if not self.island_map_goto('farm'):
                 continue
+            # 磨坊路线不在可配置的走位规则里：它和地图跳转强绑定，长度也短，
+            # 保持写死更省事（顺序 U,L,D,L,D）。
             self.island_up(800)
             self.island_left(1300)
             self.island_down(1000)

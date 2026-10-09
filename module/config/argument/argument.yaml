@@ -361,6 +361,109 @@ Handover:
   ConflictRetryMinutes:
     value: 15
     validate: [5, 120]
+IslandWalk:
+  AirDrop:
+    type: textarea
+    value: "up 3000, right 800, up 2000, jump, up 1200, right 2000, up 6500, right 1000, up 2300, right 2000, up 4000, right 2600, up 500, jump, up 1300"
+    valuetype: str
+  AirDropEnable:
+    value: false
+  AirDropRetry:
+    type: textarea
+    value: "up 500, right 500, down 500"
+    valuetype: str
+  AirDropRetryEnable:
+    value: false
+  AirDropSelf:
+    type: textarea
+    value: "down 1000"
+    valuetype: str
+  AirDropSelfEnable:
+    value: false
+  DailyLakeniya:
+    type: textarea
+    value: "up 2000, right 1800, up 500"
+    valuetype: str
+  DailyLakeniyaEnable:
+    value: false
+  DailyLuxi:
+    type: textarea
+    value: "left 800, up 5500, left 1000, up 3700"
+    valuetype: str
+  DailyLuxiEnable:
+    value: false
+  DailyAobulaien:
+    type: textarea
+    value: "right 4600, up 5100, right 1100"
+    valuetype: str
+  DailyAobulaienEnable:
+    value: false
+  DailyQiaoan:
+    type: textarea
+    value: "right 6000, down 3000, right 2300"
+    valuetype: str
+  DailyQiaoanEnable:
+    value: false
+  DailyMorningdewFarm:
+    type: textarea
+    value: "left 500, down 200"
+    valuetype: str
+  DailyMorningdewFarmEnable:
+    value: false
+  DailyHemo:
+    type: textarea
+    value: "left 600, up 2000, left 800"
+    valuetype: str
+  DailyHemoEnable:
+    value: false
+  DailyMeili:
+    type: textarea
+    value: "right 1800, down 600"
+    valuetype: str
+  DailyMeiliEnable:
+    value: false
+  DailyAolipike:
+    type: textarea
+    value: "left 500, down 1500, left 1700, down 1900"
+    valuetype: str
+  DailyAolipikeEnable:
+    value: false
+  DailyAmoma:
+    type: textarea
+    value: "up 1500, left 400"
+    valuetype: str
+  DailyAmomaEnable:
+    value: false
+  DailyPateli:
+    type: textarea
+    value: "left 2200, jump, left 1200, up 500"
+    valuetype: str
+  DailyPateliEnable:
+    value: false
+  DailyBulaimei:
+    type: textarea
+    value: "up 2600, switch, left 600"
+    valuetype: str
+  DailyBulaimeiEnable:
+    value: false
+  DailyLisha:
+    type: textarea
+    value: "up 3000, left 2000, up 5500, right 300, up 2200, left 1100"
+    valuetype: str
+  DailyLishaEnable:
+    value: false
+  PearlAssembly:
+    type: textarea
+    value: "up 2500, right 1700, down 1700, right 500"
+    valuetype: str
+  PearlAssemblyEnable:
+    value: false
+  PearlPort:
+    type: textarea
+    value: "left 2500, jump, left 3000, down 1000"
+    valuetype: str
+  PearlPortEnable:
+    value: false
 DailySummary:
   Enable:
     type: checkbox

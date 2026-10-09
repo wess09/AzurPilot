@@ -3115,8 +3115,54 @@
     }
   },
   "IslandPlan": {
+    "Scheduler": {
+      "Enable": false,
+      "PushNotification": false,
+      "NextRun": "2020-01-01 00:00:00",
+      "Command": "IslandPlan",
+      "SuccessInterval": 0,
+      "FailureInterval": 120,
+      "ServerUpdate": "00:00",
+      "Sensitive": false
+    },
     "IslandPlan": {
       "Season": "spring"
+    },
+    "IslandWalk": {
+      "AirDrop": "up 3000, right 800, up 2000, jump, up 1200, right 2000, up 6500, right 1000, up 2300, right 2000, up 4000, right 2600, up 500, jump, up 1300",
+      "AirDropEnable": false,
+      "AirDropRetry": "up 500, right 500, down 500",
+      "AirDropRetryEnable": false,
+      "AirDropSelf": "down 1000",
+      "AirDropSelfEnable": false,
+      "DailyLakeniya": "up 2000, right 1800, up 500",
+      "DailyLakeniyaEnable": false,
+      "DailyLuxi": "left 800, up 5500, left 1000, up 3700",
+      "DailyLuxiEnable": false,
+      "DailyAobulaien": "right 4600, up 5100, right 1100",
+      "DailyAobulaienEnable": false,
+      "DailyQiaoan": "right 6000, down 3000, right 2300",
+      "DailyQiaoanEnable": false,
+      "DailyMorningdewFarm": "left 500, down 200",
+      "DailyMorningdewFarmEnable": false,
+      "DailyHemo": "left 600, up 2000, left 800",
+      "DailyHemoEnable": false,
+      "DailyMeili": "right 1800, down 600",
+      "DailyMeiliEnable": false,
+      "DailyAolipike": "left 500, down 1500, left 1700, down 1900",
+      "DailyAolipikeEnable": false,
+      "DailyAmoma": "up 1500, left 400",
+      "DailyAmomaEnable": false,
+      "DailyPateli": "left 2200, jump, left 1200, up 500",
+      "DailyPateliEnable": false,
+      "DailyBulaimei": "up 2600, switch, left 600",
+      "DailyBulaimeiEnable": false,
+      "DailyLisha": "up 3000, left 2000, up 5500, right 300, up 2200, left 1100",
+      "DailyLishaEnable": false,
+      "PearlAssembly": "up 2500, right 1700, down 1700, right 500",
+      "PearlAssemblyEnable": false,
+      "PearlPort": "left 2500, jump, left 3000, down 1000",
+      "PearlPortEnable": false
     },
     "Storage": {
       "Storage": {}

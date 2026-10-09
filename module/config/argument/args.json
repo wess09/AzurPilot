@@ -16125,6 +16125,57 @@
     }
   },
   "IslandPlan": {
+    "Scheduler": {
+      "Enable": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "PushNotification": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "NextRun": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime"
+      },
+      "Command": {
+        "type": "input",
+        "value": "IslandPlan",
+        "display": "hide"
+      },
+      "SuccessInterval": {
+        "type": "input",
+        "value": 0,
+        "display": "hide"
+      },
+      "FailureInterval": {
+        "type": "input",
+        "value": 120,
+        "display": "hide"
+      },
+      "ServerUpdate": {
+        "type": "input",
+        "value": "00:00",
+        "display": "hide"
+      },
+      "Sensitive": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      }
+    },
     "IslandPlan": {
       "Season": {
         "type": "select",
@@ -16135,6 +16186,161 @@
           "autumn",
           "winter"
         ]
+      }
+    },
+    "IslandWalk": {
+      "AirDrop": {
+        "type": "textarea",
+        "value": "up 3000, right 800, up 2000, jump, up 1200, right 2000, up 6500, right 1000, up 2300, right 2000, up 4000, right 2600, up 500, jump, up 1300",
+        "valuetype": "str"
+      },
+      "AirDropEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "AirDropRetry": {
+        "type": "textarea",
+        "value": "up 500, right 500, down 500",
+        "valuetype": "str"
+      },
+      "AirDropRetryEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "AirDropSelf": {
+        "type": "textarea",
+        "value": "down 1000",
+        "valuetype": "str"
+      },
+      "AirDropSelfEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyLakeniya": {
+        "type": "textarea",
+        "value": "up 2000, right 1800, up 500",
+        "valuetype": "str"
+      },
+      "DailyLakeniyaEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyLuxi": {
+        "type": "textarea",
+        "value": "left 800, up 5500, left 1000, up 3700",
+        "valuetype": "str"
+      },
+      "DailyLuxiEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyAobulaien": {
+        "type": "textarea",
+        "value": "right 4600, up 5100, right 1100",
+        "valuetype": "str"
+      },
+      "DailyAobulaienEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyQiaoan": {
+        "type": "textarea",
+        "value": "right 6000, down 3000, right 2300",
+        "valuetype": "str"
+      },
+      "DailyQiaoanEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyMorningdewFarm": {
+        "type": "textarea",
+        "value": "left 500, down 200",
+        "valuetype": "str"
+      },
+      "DailyMorningdewFarmEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyHemo": {
+        "type": "textarea",
+        "value": "left 600, up 2000, left 800",
+        "valuetype": "str"
+      },
+      "DailyHemoEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyMeili": {
+        "type": "textarea",
+        "value": "right 1800, down 600",
+        "valuetype": "str"
+      },
+      "DailyMeiliEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyAolipike": {
+        "type": "textarea",
+        "value": "left 500, down 1500, left 1700, down 1900",
+        "valuetype": "str"
+      },
+      "DailyAolipikeEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyAmoma": {
+        "type": "textarea",
+        "value": "up 1500, left 400",
+        "valuetype": "str"
+      },
+      "DailyAmomaEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyPateli": {
+        "type": "textarea",
+        "value": "left 2200, jump, left 1200, up 500",
+        "valuetype": "str"
+      },
+      "DailyPateliEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyBulaimei": {
+        "type": "textarea",
+        "value": "up 2600, switch, left 600",
+        "valuetype": "str"
+      },
+      "DailyBulaimeiEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "DailyLisha": {
+        "type": "textarea",
+        "value": "up 3000, left 2000, up 5500, right 300, up 2200, left 1100",
+        "valuetype": "str"
+      },
+      "DailyLishaEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "PearlAssembly": {
+        "type": "textarea",
+        "value": "up 2500, right 1700, down 1700, right 500",
+        "valuetype": "str"
+      },
+      "PearlAssemblyEnable": {
+        "type": "checkbox",
+        "value": false
+      },
+      "PearlPort": {
+        "type": "textarea",
+        "value": "left 2500, jump, left 3000, down 1000",
+        "valuetype": "str"
+      },
+      "PearlPortEnable": {
+        "type": "checkbox",
+        "value": false
       }
     },
     "Storage": {

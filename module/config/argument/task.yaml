@@ -394,7 +394,9 @@ Island:
   page: 'setting'
   tasks:
     IslandPlan:
+      - Scheduler
       - IslandPlan
+      - IslandWalk
     IslandBusiness:
       - Scheduler
       - IslandBusiness

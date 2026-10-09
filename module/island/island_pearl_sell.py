@@ -331,18 +331,18 @@ class IslandPearlSell(Island):
         return True
 
     def move_to_assembly_role_a(self):
-        """移动角色到集会所珍珠售卖 NPC 身旁。"""
-        self.island_up(2500)
-        self.island_right(1700)
-        self.island_down(1700)
-        self.island_right(500)
+        """移动角色到集会所珍珠售卖 NPC 身旁。
+
+        规则见 `IslandPlan.IslandWalk.PearlAssembly`。
+        """
+        self.island_walk_route('PearlAssembly')
 
     def move_to_port_role_b(self):
-        """移动角色到港口珍珠采购 NPC 身旁。"""
-        self.island_left(2500)
-        self.device.click(ISLAND_JUMP)
-        self.island_left(3000)
-        self.island_down(1000)
+        """移动角色到港口珍珠采购 NPC 身旁。
+
+        规则见 `IslandPlan.IslandWalk.PearlPort`。
+        """
+        self.island_walk_route('PearlPort')
 
     def pearl_shop_enter_button(self, destination):
         """获取对应地点的珍珠商店交互对话入口按钮。
