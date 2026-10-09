@@ -80,6 +80,11 @@ class TestWalkRuleParsing(unittest.TestCase):
         self.assertEqual(parse_walk_duration('99999'), 20000)  # 大于上限夹到 20000
         self.assertIsNone(parse_walk_duration('abc'))
         self.assertIsNone(parse_walk_duration(''))
+        # nan / inf 不能进 round/int，必须当作非法值回退默认路线
+        self.assertIsNone(parse_walk_duration('nan'))
+        self.assertIsNone(parse_walk_duration('inf'))
+        self.assertIsNone(parse_walk_duration('-inf'))
+        self.assertIsNone(parse_walk_duration('nan s'))
 
     def test_parse_rule(self):
         steps = parse_walk_rule('up 3000, right 800, jump, left 1.5')
@@ -127,6 +132,10 @@ class TestIslandWalkConfig(unittest.TestCase):
 
     def test_invalid_rule_falls_back(self):
         island, _ = build_island(values=rule('DailyAobulaien', 'chaos'))
+        self.assertEqual(island.island_walk_steps('DailyAobulaien'),
+                         ISLAND_WALK_ROUTES['DailyAobulaien'])
+
+        island, _ = build_island(values=rule('DailyAobulaien', 'up nan, right 100'))
         self.assertEqual(island.island_walk_steps('DailyAobulaien'),
                          ISLAND_WALK_ROUTES['DailyAobulaien'])
 

@@ -3,8 +3,8 @@
 每条路线是一串 `(方向或动作, 时长毫秒)`；方向取值为 `up` / `down` / `left` / `right`，
 固定动作为 `jump`（点一次跳跃按钮）与 `switch`（切换到啾咖啡餐厅），它们不占用时长。
 
-代码里的默认值在这里集中维护；运行时可以在安卓（azurpilot_android）模式下用
-岛屿计划的全局配置 `IslandPlan.IslandWalk.<路线名>` 覆盖整条规则，例如：
+代码里的默认值在这里集中维护；运行时可以用岛屿计划的全局配置
+`IslandPlan.IslandWalk.<路线名>` 覆盖整条规则（对所有控制方式生效），例如：
 
     up 3000, right 800, jump, up 1200
 
@@ -16,6 +16,7 @@
 - `jump` / `switch` 单独成项即可，后面写数值会被忽略；
 - 解析失败、方向非法或个数为 0 时返回 `None`，调用方回退代码默认值。
 """
+import math
 from typing import Dict, Optional, Tuple
 
 WalkStep = Tuple[str, int]
@@ -94,8 +95,13 @@ def parse_walk_duration(value: str) -> Optional[int]:
         number = float(text)
     except ValueError:
         return None
+    # nan / inf 这类非有限值不能进 round/int，直接判非法并回退默认值
+    if not math.isfinite(number):
+        return None
     if unit == 's' or (unit is None and '.' in text):
         number *= 1000
+        if not math.isfinite(number):
+            return None
     hold = int(round(number))
     return max(ISLAND_WALK_MIN_HOLD, min(ISLAND_WALK_MAX_HOLD, hold))
 

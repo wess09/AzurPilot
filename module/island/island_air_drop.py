@@ -270,7 +270,7 @@ class IslandAirDrop(Island):
         """在好友岛屿上跑位寻路并拾取空投补给。
 
         规则（方向与时长）走岛屿计划全局配置 `IslandPlan.IslandWalk.AirDrop`，
-        仅安卓（azurpilot_android）模式生效；拿不到补给时的补滑走 `AirDropRetry`。
+        对所有控制方式生效；拿不到补给时的补滑走 `AirDropRetry`。
         """
         self.island_walk_route('AirDrop')
         self.island_air_drop()
