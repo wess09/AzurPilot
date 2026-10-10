@@ -538,7 +538,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                 self.os_mission_quit()
                 confirm_timer.reset()
                 continue
-            if self.handle_os_game_tips():
+            if not self.is_in_map() and self.handle_os_game_tips():
                 confirm_timer.reset()
                 continue
             if self.is_in_map_order():

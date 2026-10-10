@@ -120,13 +120,14 @@ class MapEventHandler(EnemySearchingHandler):
         return False
 
     def handle_os_game_tips(self):
-        """处理并关闭大世界首次开启自动搜索时的游戏提示。
+        """处理并关闭大世界首次开启自动搜索时的游戏提示，以及大型作战引导系统（O.A.G.S）。
 
         Returns:
             bool: 是否点击关闭了提示。
         """
-        # 关闭首次开启自动搜索时的游戏提示
-        if self.appear_then_click(OS_GAME_TIPS, offset=(20, 20), interval=3):
+        # 关闭大型作战引导系统（O.A.G.S）或首次开启自动搜索时的游戏提示
+        if self.appear_then_click(OS_GAME_TIPS, offset=(20, 20), interval=2):
+            logger.info('[大世界处理-事件] 检测到游戏引导/提示界面 (O.A.G.S)，点击退出')
             return True
 
         return False

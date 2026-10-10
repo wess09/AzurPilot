@@ -26,7 +26,7 @@ from module.combat.assets import BATTLE_PREPARATION
 from module.exception import CampaignEnd, GameNotRunningError, GameTooManyClickError, ScriptEnd
 from module.handler.assets import *
 from module.logger import logger
-from module.os_handler.assets import CLICK_SAFE_AREA as OS_CLICK_SAFE_AREA
+from module.os_handler.assets import CLICK_SAFE_AREA as OS_CLICK_SAFE_AREA, OS_GAME_TIPS
 from module.ui.assets import BACK_ARROW
 from module.ui_white.assets import POPUP_CANCEL_WHITE, POPUP_CONFIRM_WHITE, POPUP_SINGLE_WHITE
 
@@ -581,6 +581,10 @@ class InfoHandler(ModuleBase):
         Returns:
             list[Button]: 从上到下排列的剧情选项按钮列表，未找到则返回空列表。
         """
+        # 避免将大型作战引导系统（O.A.G.S）中的附加模块说明文字误识别为剧情选项
+        if self.appear(OS_GAME_TIPS, offset=(20, 20)):
+            return []
+
         # 选项检测区域，至少需要包含 3 个选项
         story_option_area = (330, 135, 980, 555)
         story_detect_area = (330, 135, 355, 555)
