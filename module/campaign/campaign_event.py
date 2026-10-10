@@ -21,13 +21,14 @@ import os
 import re
 from datetime import datetime
 
+from module.base.timer import Timer
 from module.campaign.campaign_status import CampaignStatus
 from module.config.config_updater import COALITIONS, EVENTS, GEMS_FARMINGS, HOSPITAL, MARITIME_ESCORTS, RAIDS
 from module.config.time_source import now as current_time
 from module.config.utils import DEFAULT_TIME
 from module.logger import logger
 from module.notify import handle_notify
-from module.ui.assets import CAMPAIGN_MENU_NO_EVENT
+from module.ui.assets import BACK_ARROW, CAMPAIGN_MENU_GOTO_EVENT, CAMPAIGN_MENU_NO_EVENT
 from module.ui.page import page_campaign_menu, page_coalition, page_event, page_sp
 from module.war_archives.assets import WAR_ARCHIVES_CAMPAIGN_CHECK
 
@@ -241,6 +242,133 @@ class CampaignEvent(CampaignStatus):
             logger.info('[活动战役] 活动可用')
             return True
 
+    @staticmethod
+    def _campaign_banner_success_pages(destination):
+        """
+        横幅导航的成功页面。
+
+        剧情活动的 EVENT 与 SP 是同一活动 UI 的不同分页，
+        进入其中任一页都视为到达活动，后续由章节切换处理。
+        """
+        if destination in (page_event, page_sp):
+            return (page_event, page_sp)
+        return (destination,)
+
+    @classmethod
+    def _campaign_banner_wrong_pages(cls, destination):
+        """
+        与目标共用出击菜单横幅、但不是目标活动的页面。
+
+        2026.02.12 后突袭入口迁到出击菜单，与剧情/联动/医院/RPG
+        共用 CAMPAIGN_MENU_GOTO_EVENT。横幅当前展示哪一个，点进去就是哪一个。
+        """
+        success = set(cls._campaign_banner_success_pages(destination))
+        pages = []
+        for page, button in page_campaign_menu.links.items():
+            if button == CAMPAIGN_MENU_GOTO_EVENT and page not in success:
+                pages.append(page)
+        return pages
+
+    def _ui_goto_campaign_banner_page(self, destination, skip_first_screenshot=True):
+        """
+        从出击菜单活动横幅进入指定活动页。
+
+        若横幅当前是突袭等非目标活动，点进去会触发
+        CAMPAIGN_MENU_GOTO_EVENT 与 BACK_ARROW 交替点击。
+        此时返回出击菜单并滑动横幅，再尝试进入。
+
+        Args:
+            destination: 目标页面，如 page_event、page_sp、page_coalition。
+            skip_first_screenshot (bool): 是否跳过首次截图。
+
+        Returns:
+            bool: 是否到达目标活动。
+
+        Pages:
+            in: page_campaign_menu
+            out: destination
+        """
+        success_pages = self._campaign_banner_success_pages(destination)
+        wrong_pages = self._campaign_banner_wrong_pages(destination)
+        pending_swipe = False
+        swipe_count = 0
+        timeout = Timer(40, count=80).start()
+
+        while 1:
+            if skip_first_screenshot:
+                skip_first_screenshot = False
+            else:
+                self.device.screenshot()
+
+            # End
+            for page in success_pages:
+                if page.check_button and self.ui_page_appear(page, offset=(30, 30)):
+                    logger.info(f'[活动战役] 到达页面: {page}')
+                    return True
+
+            if timeout.reached():
+                logger.warning('[活动战役] 从出击菜单进入活动超时')
+                return False
+
+            # 点进了突袭/联动等错误活动，返回后准备切横幅
+            wrong_hit = False
+            for page in wrong_pages:
+                if page.check_button is None:
+                    continue
+                if self.appear(page.check_button, offset=(30, 30)):
+                    logger.info(f'[活动战役] 横幅进入了 {page}，返回出击菜单')
+                    pending_swipe = True
+                    wrong_hit = True
+                    back = page.links.get(page_campaign_menu, BACK_ARROW)
+                    if self.appear_then_click(back, offset=(30, 30), interval=2):
+                        timeout.reset()
+                    break
+            if wrong_hit:
+                continue
+
+            # 出击菜单：先滑动横幅，再点击进入
+            if self.appear(page_campaign_menu.check_button, offset=(30, 30)):
+                if pending_swipe:
+                    if swipe_count >= 4:
+                        logger.warning('[活动战役] 滑动出击菜单横幅后仍未到达目标活动')
+                        return False
+                    logger.info('[活动战役] 滑动出击菜单活动横幅')
+                    self.device.swipe_vector(
+                        (-350, 0),
+                        box=CAMPAIGN_MENU_GOTO_EVENT.button,
+                        name='CAMPAIGN_MENU_EVENT_BANNER',
+                    )
+                    swipe_count += 1
+                    pending_swipe = False
+                    timeout.reset()
+                    continue
+                if self.appear_then_click(CAMPAIGN_MENU_GOTO_EVENT, offset=(30, 30), interval=3):
+                    timeout.reset()
+                    continue
+
+            if self.ui_additional():
+                timeout.reset()
+                continue
+
+    def _ui_goto_event_from_menu(self, destination):
+        """
+        先到出击菜单，确认活动入口可用，再经横幅进入目标活动。
+
+        Args:
+            destination: page_event / page_sp / page_coalition。
+
+        Returns:
+            bool: 是否到达目标活动。
+        """
+        self.ui_goto(page_campaign_menu)
+        if not self.is_event_entrance_available():
+            return False
+        if self._ui_goto_campaign_banner_page(destination):
+            return True
+        logger.error('[活动战役] 无法从出击菜单进入目标活动，横幅可能被突袭占用')
+        self.config.task_delay(minute=30)
+        self.config.task_stop()
+
     def ui_goto_event(self):
         """导航至活动主页面。
 
@@ -251,19 +379,16 @@ class CampaignEvent(CampaignStatus):
             in: 任意页面
             out: page_event
         """
-        # 已在 page_event，跳过活动检查。
-        if self.ui_get_current_page() == page_event:
+        # 已在剧情活动 UI（含 SP 分页），跳过活动检查。
+        current = self.ui_get_current_page()
+        if current in (page_event, page_sp):
             if self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
                 logger.info('[活动战役] 在作战档案')
                 self.ui_goto_main()
             else:
                 logger.info('[活动战役] 已在活动页面')
                 return True
-        self.ui_goto(page_campaign_menu)
-        # 检查活动是否可用
-        if self.is_event_entrance_available():
-            self.ui_goto(page_event)
-            return True
+        return self._ui_goto_event_from_menu(page_event)
 
     def ui_goto_sp(self):
         """导航至 SP 活动页面。
@@ -275,19 +400,16 @@ class CampaignEvent(CampaignStatus):
             in: 任意页面
             out: page_sp
         """
-        # 已在 page_sp，跳过活动检查。
-        if self.ui_get_current_page() == page_sp:
+        # 已在剧情活动 UI（含 EVENT 分页），跳过活动检查。
+        current = self.ui_get_current_page()
+        if current in (page_event, page_sp):
             if self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
                 logger.info('[活动战役] 在作战档案')
                 self.ui_goto_main()
             else:
                 logger.info('[活动战役] 已在SP页面')
                 return True
-        self.ui_goto(page_campaign_menu)
-        # 检查活动是否可用
-        if self.is_event_entrance_available():
-            self.ui_goto(page_sp)
-            return True
+        return self._ui_goto_event_from_menu(page_sp)
 
     def ui_goto_coalition(self):
         """导航至联动作战页面。
@@ -303,12 +425,7 @@ class CampaignEvent(CampaignStatus):
         if self.ui_get_current_page() == page_coalition:
             logger.info('[活动战役] 已在联动页面')
             return True
-        else:
-            self.ui_goto(page_campaign_menu)
-            # 检查活动是否可用
-            if self.is_event_entrance_available():
-                self.ui_goto(page_coalition)
-                return True
+        return self._ui_goto_event_from_menu(page_coalition)
 
     def disable_raid_on_event(self):
         """进入活动时禁用突袭（或联动）任务，防止用户忘记在突袭结束后手动禁用。
