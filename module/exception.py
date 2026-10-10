@@ -29,6 +29,7 @@
 
 不可恢复错误（需要人工干预）：
     - RequestHumanTakeover: 请求人工接管（配置错误等严重问题）
+    - MindCalculatorScanError: 船坞扫描识别或定位不确定，结束工具任务但不重启模拟器
     - AutoSearchSetError: 自动搜索设置失败
     - HardNotSatisfied: 困难模式前置条件不满足
 
@@ -175,6 +176,10 @@ class RequestHumanTakeover(Exception):
     需要用户手动检查并修正问题。
     """
     pass
+
+
+class MindCalculatorScanError(RequestHumanTakeover):
+    """船坞识别或精确定位无法确认；结束工具任务并保留旧清单，不重启模拟器。"""
 
 
 class AutoSearchSetError(Exception):

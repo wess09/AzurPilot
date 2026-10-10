@@ -1,13 +1,27 @@
 import configparser
 import os
 import random
+import subprocess
 import time
+from typing import Optional
 
-from deploy.Windows.config import DeployConfig, ExecutionError
+from deploy.Windows.config import CNB_REPOSITORY, GITCODE_REPOSITORY, DeployConfig, ExecutionError
 from deploy.Windows.logger import Progress, logger
 from deploy.Windows.utils import cached_property
 from deploy.git_over_cdn.client import GitOverCdnClient
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
+
+
+def peer_fallback_repository(url: str) -> Optional[str]:
+    """若当前 URL 为 CNB 或 GitCode 国内镜像，获取同级的备用镜像 URL 用于分流容灾。"""
+    if not url:
+        return None
+    cleaned = url.strip().rstrip('/').removesuffix('.git')
+    if cleaned == CNB_REPOSITORY.rstrip('/'):
+        return GITCODE_REPOSITORY
+    if cleaned == GITCODE_REPOSITORY.rstrip('/'):
+        return CNB_REPOSITORY
+    return None
 
 
 class GitConfigParser(configparser.ConfigParser):
@@ -109,10 +123,25 @@ class GitManager(DeployConfig):
                 break
         return ua
 
-    def _fetch_with_retry(self, source, branch, max_retry=5, delay=2):
-        """带 UA 重试的 git fetch。
+    def get_remote_url(self, source: str) -> str:
+        """获取指定远程源的 URL。"""
+        try:
+            res = subprocess.run(
+                [self.git, 'remote', 'get-url', source],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            return res.stdout.strip() if res.returncode == 0 else ''
+        except Exception:
+            return ''
 
-        gitcode 等仓库会返回 418 拦截特定 UA，此时自动更换 UA 重试。
+    def _fetch_with_retry(self, source, branch, max_retry=5, delay=2):
+        """带 UA 重试与同级镜像容灾的 git fetch。
+
+        gitcode 等仓库会返回 418 拦截特定 UA，此时自动更换 UA 重试；
+        若多次重试仍失败且当前 remote 为国内镜像源（如 GitCode/CNB），
+        自动切换至同级备用分流镜像重试，避免单一仓库受风控导致更新中断。
 
         Args:
             source: 远程源名称。
@@ -134,6 +163,27 @@ class GitManager(DeployConfig):
                 # 重试间隔加随机抖动，避免暴露固定的失败-重试节奏
                 time.sleep(delay * random.uniform(0.5, 1.8))
                 ua = self.git_user_agent()
+
+        current_url = self.get_remote_url(source)
+        peer_url = peer_fallback_repository(current_url)
+        if peer_url:
+            logger.warning(
+                f'当前镜像源 {current_url} 获取失败（可能触发限流或风控），自动切换至同级分流镜像 {peer_url} 重试'
+            )
+            git = f'"{self.git}" -c http.userAgent={self.git_user_agent()}'
+            if self.execute(f'{git} remote set-url {source} {peer_url}', allow_failure=True):
+                if hasattr(self, 'Repository'):
+                    self.Repository = peer_url
+                ua = self.git_user_agent()
+                for i in range(max_retry):
+                    git = f'"{self.git}" -c http.userAgent={ua}'
+                    logger.info(f'Use git User-Agent: {ua}')
+                    if self.execute(f'{git} fetch {source} {branch}'):
+                        return
+                    logger.warning(f'备用镜像 git fetch 失败 (UA: {ua}), 尝试 {i + 1}/{max_retry}')
+                    if i < max_retry - 1:
+                        time.sleep(delay * random.uniform(0.5, 1.8))
+                        ua = self.git_user_agent()
         raise ExecutionError
 
     def git_repository_init(

@@ -25,6 +25,7 @@ class FarmingEventStopTests(unittest.TestCase):
         config.data['GemsFarming']['GemsFarming']['EventFallbackStage'] = gems_fallback
         config.override(
             Campaign_Name=stage if command == 'ThreeOilLowCost' else gems_stage,
+            Campaign_Event='event_20241219_cn',
             EventGeneral_PtLimit=limit,
         )
         config.modified.clear()

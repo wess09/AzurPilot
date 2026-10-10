@@ -4,6 +4,7 @@ from module.base.timer import Timer
 from module.config.time_source import now as current_time
 from module.logger import logger
 from module.retire.dock import Dock
+from module.retire.fleet_emotion import learn_fleet_emotion, screenshot_window
 from module.retire.scanner import FleetManagementScanner
 from module.ui.page import page_dock
 
@@ -70,6 +71,7 @@ class FleetManagement(Dock):
         self.ui_ensure(page_dock)
         scanner = FleetManagementScanner()
         result = {}
+        windows = {}
         reset_first = self.dock_filter.reset_first
 
         try:
@@ -89,8 +91,11 @@ class FleetManagement(Dock):
                     reset_index=True,
                 )
                 self._wait_dock_filter_loaded()
+                if category != 'submarine':
+                    windows[category] = screenshot_window(self.device)
                 result[category] = self._normalize_result(scanner.scan(self.device.image))
 
+            learn_fleet_emotion(self.config, result, windows, set(scanner.name_scanner.name_matcher.names))
             self._save_result(result)
         finally:
             self.dock_filter.reset_first = reset_first

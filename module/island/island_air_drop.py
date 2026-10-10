@@ -49,7 +49,7 @@ class IslandAirDrop(Island):
                 if self.appear(ISLAND_SEASON_CHECK, offset=1):
                     self.device.click(ISLAND_SEASON_GOTO_ISLAND)
                 self.device.sleep(1)
-                self.island_down(1000)
+                self.island_walk_route('AirDropSelf')
                 self.island_air_drop()
         # 是否前往其他玩家岛屿拿补给
         if self.config.IslandAirDrop_VisitOtherIsland:
@@ -267,38 +267,30 @@ class IslandAirDrop(Island):
         sleep(0.5)
 
     def run_and_get(self):
-        """在好友岛屿上跑位寻路并拾取空投补给。"""
-        self.island_up(3000)
-        self.island_right(800)
-        self.island_up(2000)
-        self.device.click(ISLAND_JUMP)
-        self.island_up(1200)
-        self.island_right(2000)
-        self.island_up(6500)
-        self.island_right(1000)
-        self.island_up(2300)
-        self.island_right(2000)
-        self.island_up(4000)
-        self.island_right(2600)
-        self.island_up(500)
-        self.device.click(ISLAND_JUMP)
-        self.island_up(1300)
+        """在好友岛屿上跑位寻路并拾取空投补给。
+
+        规则（方向与时长）走岛屿计划全局配置 `IslandPlan.IslandWalk.AirDrop`，
+        对所有控制方式生效；拿不到补给时的补滑走 `AirDropRetry`。
+        """
+        self.island_walk_route('AirDrop')
         self.island_air_drop()
+        # 补滑中途要反复检测补给，方向固定为 上/右/下，配置只给每一步的时长
+        retry_durations = self.island_walk_composite_durations('AirDropRetry', 3)
         for _ in range(1):
             self.device.screenshot()
             if self.appear(ISLAND_AIR_DROP_ALREADY_GETTED, offset=200):
                 break
-            self.island_up(500)
+            self.island_up(retry_durations[0])
             self.island_air_drop()
             self.device.screenshot()
             if self.appear(ISLAND_AIR_DROP_ALREADY_GETTED, offset=200):
                 break
-            self.island_right(500)
+            self.island_right(retry_durations[1])
             self.island_air_drop()
             self.device.screenshot()
             if self.appear(ISLAND_AIR_DROP_ALREADY_GETTED, offset=200):
                 break
-            self.island_down(500)
+            self.island_down(retry_durations[2])
             self.island_air_drop()
         self.exit_friend_island()
 

@@ -549,6 +549,12 @@ class UI(InfoHandler):
         if self.handle_guild_popup_cancel():
             return True
 
+        # 自选轻量复刻会在登录后反复展示，确认页面后复用白色返回箭头退出。
+        if self.appear(CAPSULE_RERUN_CHECK, offset=(5, 5)):
+            if self.appear_then_click(BACK_ARROW_WHITE, offset=(30, 30), interval=3):
+                logger.info('[UI-额外] 退出自选轻量复刻选择页')
+                return True
+
         # 每日重置公告
         if self.appear_then_click(LOGIN_ANNOUNCE, offset=(30, 30), interval=3):
             return True

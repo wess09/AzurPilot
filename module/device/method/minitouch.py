@@ -344,8 +344,8 @@ class CommandBuilder:
         self._check_empty(out)
         return out
 
-    def send(self):
-        return self.device.minitouch_send(builder=self)
+    def send(self, post_delay=True):
+        return self.device.minitouch_send(builder=self, post_delay=post_delay)
 
     def _check_empty(self, text=None):
         """
@@ -535,19 +535,20 @@ class Minitouch(Connection):
         )
 
     @Config.when(DEVICE_OVER_HTTP=False)
-    def minitouch_send(self, builder: CommandBuilder):
+    def minitouch_send(self, builder: CommandBuilder, post_delay=True):
         """
         通过 Socket 向 minitouch 发送触控指令序列。
 
         Args:
             builder: 构建完成的 minitouch 命令构造器。
+            post_delay: 是否追加常规手势结束延时；连续触点由调用方控制移动速率。
         """
         content = builder.to_minitouch()
         # logger.info("send operation: {}".format(content.replace("\n", "\\n")))
         byte_content = content.encode('utf-8')
         self._minitouch_client.sendall(byte_content)
         self._minitouch_client.recv(0)
-        time.sleep(self.minitouch_builder.delay / 1000 + builder.DEFAULT_DELAY)
+        time.sleep(builder.delay / 1000 + (builder.DEFAULT_DELAY if post_delay else 0))
         builder.clear()
 
     @cached_property
@@ -611,7 +612,7 @@ class Minitouch(Connection):
         self._minitouch_ws = self._minitouch_loop_run(connect())
 
     @Config.when(DEVICE_OVER_HTTP=True)
-    def minitouch_send(self, builder: CommandBuilder):
+    def minitouch_send(self, builder: CommandBuilder, post_delay=True):
         """
         通过 WebSocket 向 atx-agent 发送 minitouch 触控指令序列。
 
@@ -626,7 +627,7 @@ class Minitouch(Connection):
                 await self._minitouch_ws.send(row)
 
         self._minitouch_loop_run(send())
-        time.sleep(builder.delay / 1000 + builder.DEFAULT_DELAY)
+        time.sleep(builder.delay / 1000 + (builder.DEFAULT_DELAY if post_delay else 0))
         builder.clear()
 
     @retry

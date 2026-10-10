@@ -267,6 +267,7 @@ class TestDailySummaryDataIntervals(unittest.TestCase):
         resource_stats._LOCAL_DB = str(self.resource_db)
         resource_stats._table_ensured = False
         resource_stats._ensure_table()
+        self.resource_db = resource_stats._database().path
         self.start = datetime(2026, 8, 31, 20)
         self.end = datetime(2026, 9, 1, 20)
 

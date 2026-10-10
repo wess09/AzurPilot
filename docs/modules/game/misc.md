@@ -120,6 +120,8 @@ module/
 
 `EventBase(CampaignRun)` 统一加载活动地图并强制关闭一次性关卡标记，`convert_stages()` 兼容字符串/列表/Filter 三种输入。`CampaignABCD`（EventA~D 四个任务共用）：扫描 `campaign/{活动}/` 下 `.py` 文件生成关卡列表 → `EventDaily_StageFilter` 过滤排序 → 从 `EventDaily_LastStage` 断点续刷（记录过期则重置）→ 每关 `total=1`，逐关推进，全部完成延迟到次日；关卡名错误时提示应改用 Event 任务解锁。`CampaignSP` 检查 `sp.py` 存在后执行 1 次，成功与否都延迟到次日。`MaritimeEscort`（海上护卫）进图即撤退，以低消耗拿约 70% 奖励，OCR 剩余次数为 0 则延迟到次日。
 
+`EventA`～`EventD` 的 `EventDaily.LastStage`（上一个完成的关卡）按文本编辑，可保存 `a3`、`D3` 等关卡名；输入 `0` 重置进度。参数默认值使用字符串 `'0'`，并声明 `mode: text`，避免 WebUI 按数字校验，也兼容旧配置及跨天重置产生的数字 `0`。运行器继续按关卡名恢复进度，跨天自动重置。
+
 ### 活动剧情（module/eventstory）
 
 `EventStory(CampaignUI, Combat, LoginHandler)` 循环推进活动剧情：导航至剧情入口（个别活动在 `page_sp` 或有专属弹窗按钮），按首段/末段/中段/战斗中段按钮推进；遇到剧情内战斗时直接重启游戏跳过（比打完快）。完成后回主界面再进入一次以清掉残留奖励弹窗。个别活动经特判跳过（如剧情入口在小游戏内的活动）。

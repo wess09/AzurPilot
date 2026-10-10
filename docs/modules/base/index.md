@@ -157,7 +157,7 @@ module/base/
 
 ### AsyncExecutor（async_executor.py）
 
-进程级单例，后台 daemon 线程跑一个 `asyncio` 事件循环。`submit()` 对同步函数包一层协程再 `run_coroutine_threadsafe`，因此**所有同步任务在 loop 线程内串行执行**——这把 SQLite 写入天然串行化，是统计库并发安全的实现基础。`flush()` 用哨兵任务近似「排空队列」，并注册在 `atexit` 保证退出前落盘。
+进程级单例，后台 daemon 线程跑一个 `asyncio` 事件循环。`submit()` 对同步函数包一层协程再 `run_coroutine_threadsafe`，因此**所有同步任务在 loop 线程内串行执行**——这使同一执行器的任务串行；数据库另以 `BEGIN IMMEDIATE` 保证跨线程和跨进程的完整读改写事务。`flush()` 用哨兵任务近似「排空队列」，并注册在 `atexit` 保证退出前落盘。
 
 ### 其余文件
 
@@ -169,7 +169,7 @@ module/base/
 | `retry.py` | 改自 `retry` 库：重试耗尽后抛**原始异常**（原版抛 RetryError），并输出异常详情。目前仅 `module/runtime/updater.py` 使用；设备层另有自己的 `retry_backend`（`module/device/method/retry.py`），二者是独立实现，不要混用 |
 | `ssh.py` | 不是 SSH 连接库。`clear_ssh_host_key()` 先用 `ssh -G` 查询目标主机实际使用的 known_hosts 文件，再 `ssh-keygen -R` 只删该主机的指纹记录，供远程模拟器管理与远程访问场景避免主机指纹变更导致的交互卡死 |
 | `device_id.py` | Windows 用 WMIC 查主板/CPU/BIOS/磁盘序列号，Linux 用 machine-id，macOS 用硬件 UUID（已舍弃 MAC 地址），拼接后 SHA-256 取前 32 位。变更时把旧 ID 暂存内存供统计数据库热迁移；`log/device_id.json` 每 5 分钟由 daemon 线程覆写 |
-| `backup.py` | 每日备份：SQLite 原生 `backup()` 接口热备两个统计库 + `deploy.yaml` + 用户配置 JSON（排除 `template*`），写入 `AzurPilot_Data_Backup/<日期>/`，按保留天数清理。`enable=False` 时直接返回，不动备份目录 |
+| `backup.py` | 每日备份：SQLite `backup()` 保存 `azurpilot.db` 的已提交 WAL，再锁定并备份安全数据库、注册信息、密钥材料、`deploy.yaml` 与用户配置 JSON（排除 `template*`）；外部安全密钥不自动导出。全部成功后原子发布目录，写入 `AzurPilot_Data_Backup/<日期>/`，按保留天数清理。`enable=False` 时直接返回，不动备份目录 |
 | `api_client.py` | 远程 API 客户端（bug 日志、CL1 遥测、公告拉取），上报走 `async_executor` 异步化；`get_announcement` 同步。请求失败仅记日志，绝不阻断游戏流程 |
 | `debug_clip.py` | 设备端 `screenrecord` 录制调试录像（30fps 输出、真实时间戳），`clip_recording()` 上下文管理器由侵蚀 1 练级与短猫相接使用。所有失败路径只记日志、优雅降级为不录，绝不影响游戏逻辑 |
 
@@ -308,7 +308,7 @@ stateDiagram-v2
 ## 12. 并发与线程模型
 
 - **调度器单线程假设**：`ModuleBase` 实例（含 `interval_timer`、按钮的 `_button_offset` 等可变状态）只在调度器线程内被访问，因此这些状态不加锁。若在别的线程调用模块方法，需要自行保证互斥。
-- **`AsyncExecutor`**：进程级单例，构造于首次导入时；daemon 线程名 `AsyncExecutorThread` 持有事件循环。同步任务在该线程内串行执行（这是统计库 SQLite 写入的串行化机制）。进程退出时 `atexit` 触发 `flush(timeout=5)` 尽量落盘。
+- **`AsyncExecutor`**：进程级单例，构造于首次导入时；daemon 线程名 `AsyncExecutorThread` 持有事件循环。同步任务在该线程内串行执行（数据库另使用总库事务锁保证并发写入）。进程退出时 `atexit` 触发 `flush(timeout=5)` 尽量落盘。
 - **`ModuleBase.worker`**：类级缓存属性，全进程共享一个 `ThreadPoolExecutor(1)`（单工作线程）。适合投递与主流程无时序依赖的批量计算；因为单线程，投递的任务之间也是有序串行的。注意提交的任务不应再触碰 `self.device`（截图/点击不属于该池的职责）。
 - **`device_id`**：`threading.Timer` 每 5 分钟覆写 `device_id.json`，daemon 属性，进程退出自然结束；首次读取有惰性初始化但无锁，依赖「同进程内先读后写」的时序。
 - **`Resource.instances`**：普通类属性字典，注册发生在各模块导入时、释放在调度器线程，均单线程，无锁。

@@ -37,7 +37,7 @@ S 经验结算由 `Combat.handle_exp_info()` 保留确定按钮兜底点击，�
 - 战斗画面识别：战斗准备页、加载进度条、二十余种暂停按钮皮肤、十余种退出按钮皮肤。
 - 自动/手动模式切换（`CombatAuto`）与手动模式的三个预设走位（`CombatManual`）。
 - 战斗内潜艇呼叫（`SubmarineCall`）与进阶潜艇出击规则引擎（`submarine_advanced.py`）。
-- 情绪的纯时间模型：恢复计算、战前等待、战后扣减、沉船惩罚、红脸保底、客户端情绪 bug 触发重启（`emotion.py`，同时通过 `ModuleBase.emotion` 服务于全部模块）。
+- 情绪的纯时间模型：恢复计算、战前等待、战后扣减、沉船惩罚和红脸保底（`emotion.py`，同时通过 `ModuleBase.emotion` 服务于全部模块）。
 - 血量读取与平衡：HP 条颜色分析、侦察舰换位、紧急维修、低血量撤退判断（`hp_balancer.py`）。
 - 等级 OCR 与等级触发旗标（`level.py`）。
 - 结算推进与掉落记录的截图挂点（`handle_battle_status` / `handle_get_items` / `handle_get_ship`）。
@@ -74,7 +74,7 @@ tests/test_submarine_advanced.py   # 潜艇进阶规则单测
 | --- | --- |
 | `combat.py` | `Combat` 主类：`combat()` 三阶段编排、`combat_appear()`/`is_combat_loading()`/`is_combat_executing()` 画面识别、暂停与退出按钮的多皮肤遍历 |
 | `auto_search_combat.py` | 自律寻敌下的战斗执行、资源监控（石油/物资）、沉船判定与战败撤退/换队 |
-| `emotion.py` | 情绪的连续时间模型，被 `ModuleBase.emotion` 提供给全仓使用 |
+| `emotion.py` / `emotion_state.py` | 情绪的恢复批次模型，被 `ModuleBase.emotion` 提供给全仓使用 |
 | `hp_balancer.py` | 6 个 HP 条的颜色识别、按权重修正、战前拖拽换位 |
 | `level.py` | 「LV.XX」OCR（去前缀、去遮罩、去蓝底）与 `LV_TRIGGERED`/`LV32_TRIGGERED` |
 | `submarine.py` | 战斗内潜艇按钮的检测、点击与弹药扣减时机 |
@@ -119,18 +119,32 @@ tests/test_submarine_advanced.py   # 潜艇进阶规则单测
 
 ### Emotion / FleetEmotion（emotion.py)
 
-纯时间模型，不识别画面。`FleetEmotion` 追踪一个舰队，`Emotion` 编排两个舰队与可选的公海舰队。
+战斗内按时间计算，不追加识别。`FleetEmotion` 追踪一个舰队，`Emotion` 编排两个舰队与可选的公海舰队；已有舰队扫描可提供被动观测。
 
 | 字段/属性 | 说明 |
 | --- | --- |
-| `current` | 当前计算的情绪值（含时间恢复），0–150 |
-| `speed` | 恢复速度：`DIC_RECOVER`（港区 20 / 后宅一楼 40 / 后宅二楼 50）除以 10，即每 6 分钟点数；誓约与温泉各 +10/小时 |
+| `current` | 可能范围的整数中间值，0–150；用于显示，不用于授权出击 |
+| `lower` / `upper` | 心情可能范围；预检与等待使用 `lower` |
+| `speed` | 每 360 秒恢复量：港区 2 / 后宅一楼 4 / 后宅二楼 5，誓约和当前温泉配置各 +1 |
 | `limit` | 控制阈值：保持经验加成 120 / 防绿脸 40 / 防黄脸 30 / 防红脸 2 |
-| `max` | 情绪上限：港区 119、后宅 150 |
-| `_fractional_seconds` | 未满 1 点的恢复余数，`record()` 时回扣到 Record 时间戳，使余数可跨次累积 |
-| `Emotion.total_reduced` | 本轮运行累计扣减量，达到随机阈值（约 55–105）判定客户端情绪 bug，触发重启游戏 |
+| `max` | 恢复上限：港区 119、后宅或温泉 150；港区不主动截掉原有的 120–150 |
+| `state` | `EmotionRecoveryState`，保存完整未知恢复相位与计算时刻 |
 
-换算基准是「每 6 分钟恢复一档」：`speed` 取档位点数的十分之一（即每小时恢复量），`update()` 再除回 360 秒得到每秒恢复量，`get_recovered()` 反向乘回。
+游戏每 360 秒分批恢复。模型用整数微秒追踪周期内所有可能的恢复时刻，按精确边界分段，合并相同片段，不按秒抽样，也不在保存时重新初始化相位。相同起点、恢复速度和扣减事件下，任意两种相位的恢复批次交替发生；每次同一扣减和上限截断都不会放大差值。因此范围宽度最多为一批恢复量，中间值的绝对误差最多为 `ceil(speed / 2)`。港区／后宅一楼／二楼与未婚／已婚的六种标准组合每批最多 6 点，误差上界为 3 点，并不随场次累计。
+
+该上界要求实测初值和记录时刻准确、恢复条件固定且一致、无漏记战斗。混合婚舰、部分后宅、饮料等额外加速不能直接套用此上界；温泉按现有配置的 +1 计算，二楼婚舰叠加温泉一批为 7 点，纯计算上界为 4 点。
+
+首次使用旧配置、新实例或换船／更改恢复条件后，先暂停出击，再在现有 `Fleet*Value` 输入框填入对应舰队的实测最低心情（0–150 整数）。API 原子建立 Value、完整 Record 和隐藏 RecoveryState；条件修改会使基准失效。未校准、损坏存档或时钟倒退会在该舰队参与出击前抛 `RequestHumanTakeover`；待命舰队不会因此阻塞正在出击的舰队。手动校准值和时间必须对应同一实际状态，手动输入延迟跨越恢复批次时应重新核对。
+
+实测值恰好等于旧值时，WebUI 清空后重新输入并按回车也会提交；TUI 可重新输入或按回车确认，然后保存。仅打开配置页或让未编辑的输入框失焦不会校准。
+
+纯计算模式遇到红脸弹窗时，取消出击并尝试退出关卡，再由 `Emotion.emergency_reset()` 把受管理账本的 Value 设为 0，同时原子保存当前 Record 和完整未知恢复相位。0 是保守起点，不是各船的实测心情；独立模式重置当前任务两队，公共模式只重置公共账本。处理器复用正常预检，按下一轮完整地图的消耗计算恢复时间（没有地图场次数时按一场），延后当前任务并抛 `ScriptEnd`。在恢复条件正确且期间没有额外消耗时，任务重载后继续从 0 恢复，到达控制阈值加预留消耗后自动重试，无需因这次清零人工校准或重启模拟器，也不固定等服务器刷新。
+
+`EmotionRecoveryState.observe()` 仅过滤不兼容的相位，保留它们与心情的关联。版本 2 存档允许相位区间之间存在间隙，推进和合并不能填回已排除的间隙；兼容版本 1 的完整区间存档，最多保存 64 片段，观测过度碎片化时整体放弃该次学习并预留后续推进空间。矛盾读数、时间倒退或窗口超过 30 秒均保持原状态。观测可能缩小误差持续时间和平均误差，但窗口跨恢复批次时仍可能相差一整批，不能据此承诺任意时刻零误差。
+
+`FleetManagement.run()` 复用原有前排、后排读数及截图队列的相邻完成时间，不用任务完成时间替代测量时间。只有三前排加三后排全部可见、六个名称均已确认且不重复、心情全部有效时才学习；两分类各自按时间窗口校验，不能直接取异时最低值。目前仅接纳 ADB、ADB_nc、uiautomator2、aScreenCap、aScreenCap_nc 的现截时间，须开启错误截图保存并已有两帧有效记录；流式／缓存后端或缺少时间时直接跳过。只映射普通模式的 Main/Main2–5、Event/Event2/A–D、WarArchives 港区舰队；困难、换船任务等不推断归属。共享任务必须全部明确使用同一实际水面舰队，双队共享不学习。
+
+学习不新增切页、截图、OCR、扫描任务、等待或磁盘读取，三字段随 FleetInfo 原有保存事务一同写回；事务还核对舰队映射和共享设置，扫描期间更改这些配置会整体丢弃学到的三字段。未校准存档不会被自动视为准确基准。没有原有扫描机会、读数不可靠或满心情无法提供相位信息时，精度不会自动改善。观测后的保证另要求所采纳的读数准确。
 
 ### HPBalancer（hp_balancer.py)
 
@@ -200,7 +214,7 @@ flowchart TD
 ### 情绪的生命周期
 
 ```text
-update()  ← 任何操作前调用：按 Record 至今的秒数连续恢复（speed/360 每秒）
+update()  ← 任何操作前调用：读取最新恢复存档，用整数微秒推进所有可能恢复批次
    ↓
 check_reduce(battle)  ← 进战役前：按 Fleet_FleetOrder 拆分双方战斗数，恢复不到阈值则 task_delay + ScriptEnd
    ↓
@@ -208,10 +222,10 @@ wait(fleet_index)  ← combat_preparation 内：阻塞 sleep(60) 直到恢复到
    ↓
 reduce(fleet_index)  ← 进入战斗后：扣 2 点（双倍经验书 4 点）；沉船另扣 10（可被 Emotion_IgnoreShipwreck 无视）
    ↓
-record()  ← 与 update 成对：新 Value + Record 时间戳写回配置，余数回扣
+record()  ← 与 update 成对：同一计算时刻的 Value + 完整 Record + RecoveryState 原子保存
 ```
 
-公海舰队（`PublicEmotion_Enable` 且当前任务在 `PublicEmotion_Tasks` 列表）把上述过程收敛到一份共享情绪上，跨任务复用同一支舰队时情绪记账不重复。计算模式下若仍出现红脸弹窗，`handle_combat_low_emotion()`（处理器层）会走保底：退出关卡、`emotion.emergency_reset()` 全体清零、任务延迟到服务器刷新并抛 `ScriptEnd`。
+公海舰队（`PublicEmotion_Enable` 且当前任务在 `PublicEmotion_Tasks` 列表）把上述过程收敛到一份共享情绪上。每次更新都读取最新共享存档，跨任务不能缓存旧的相位状态。计算模式下若仍出现红脸弹窗，`handle_combat_low_emotion()`（处理器层）会退出关卡，将对应舰队心情基准重建为 0，并按当前地图的心情消耗计算恢复时间、延后任务后自动重试；无需等待服务器刷新或人工重填校准值。
 
 ## 7. 调用关系
 
@@ -238,7 +252,7 @@ record()  ← 与 update 成对：新 Value + Record 时间戳写回配置，余
 | `module/retire` | `Retirement` 退役/强化，战斗中船坞满弹窗的处理者 |
 | `module/handler` | `InfoHandler` 弹窗族、`AutoSearchHandler` 自律寻敌、`StrategyHandler` 潜艇策略（经地图层） |
 | `module/statistics` | `DropImage` 掉落截图上下文，结算时 `drop.handle_add()` |
-| `module/config` | 情绪 Value/Record 持久化（`multi_set`）、任务延迟（`task_delay`）、运行期旗标 |
+| `module/config` | 情绪 Value/Record/RecoveryState 原子持久化（`multi_set`）、任务延迟（`task_delay`）、运行期旗标 |
 | `module/map`（被引用） | 进阶潜艇规则引擎被 `module/map/submarine.py` 消费 |
 
 ## 8. 数据流
@@ -249,7 +263,7 @@ record()  ← 与 update 成对：新 Value + Record 时间戳写回配置，余
   → 状态判定：combat_appear / is_combat_loading / is_combat_executing / 结算画面
   → 操作：点击 (按钮)、拖拽 (潜艇移动、先锋换位)、长按 (手动走位)
   → 资源记账：
-      情绪  config.Emotion_FleetNValue/Record  ←→ update()/record() 时间模型
+      情绪  config.Emotion_FleetNValue/Record/RecoveryState  ←→ update()/record() 批次模型
       血量  截图颜色 → self.hp (内存) → hp_balance 拖拽 / hp_retreat_triggered 撤退
       弹药  SubmarineAdvancedConfig.ammo/support (内存，每图重置)
   → 停止条件旗标：LV_TRIGGERED / GET_SHIP_TRIGGERED / auto_search_oil_limit_triggered 等
@@ -290,6 +304,7 @@ stateDiagram-v2
 | `Emotion.Mode` | 选项 | `calculate` | `calculate`（预检+等待）/ `ignore`（无视红脸直接确认）/ `calculate_ignore` |
 | `Emotion.IgnoreShipwreck` | bool | `false` | 无视沉船额外扣减（10 点） |
 | `Emotion.Fleet{1,2}Value` / `Record` | int / datetime | 119 / 2020-01-01 | 情绪现值与记账时间戳；`Record` 为隐藏项 |
+| `Emotion.Fleet{1,2}RecoveryState` / `PublicEmotion.FleetRecoveryState` | stored | null | 隐藏恢复存档；旧配置默认未校准，填写实测 Value 后建立基准 |
 | `Emotion.Fleet{1,2}Control` | 选项 | `prevent_green_face` | keep_exp_bonus(120) / prevent_green_face(40) / prevent_yellow_face(30) / prevent_red_face(2) |
 | `Emotion.Fleet{1,2}Recover` | 选项 | `not_in_dormitory` | 港区 / 后宅一楼 / 后宅二楼 |
 | `Emotion.Fleet{1,2}Oath` / `Onsen` | bool | false | 誓约 / 温泉各 +10/小时 |
@@ -316,6 +331,7 @@ stateDiagram-v2
 关联关系：
 
 - `Emotion.Mode` 决定 `emotion.is_calculate`/`is_ignore`，进而决定 `handle_combat_low_emotion()`（处理器层）走保底还是点确认；`combat(emotion_reduce=None)` 默认取 `emotion.is_calculate`。
+- 不含 `calculate` 的模式在 `Emotion.reduce()` 直接返回，直接调用该入口的沉船任务同样无需校准或写入心情估计。
 - `keep_exp_bonus`（阈值 120）与 `not_in_dormitory`（上限 119）互斥，同时配置直接 `RequestHumanTakeover`。
 - `Submarine_Mode='advanced'` 时 `Submarine.AdvancedConfig` 才生效，且**不支持自律寻敌**（`map_is_auto_search` 下不初始化规则）；`boss_only`/`hunt_and_boss` 在地图层会转换为战斗内的 `every_combat`（Boss 战）。
 - `Fleet.Fleet1Mode`/`Fleet2Mode` 同时驱动 `CombatAuto`（是否开自动）与 `CombatManual`（手动走位选哪种）。
@@ -339,7 +355,7 @@ stateDiagram-v2
 战斗模块自身单线程：整个「截图→识别→操作」循环运行在调度器 worker 线程内（见 [调度器](entry/alas.md)），实例不跨线程共享。需要留意的三点：
 
 - `Emotion.wait()` 内部是 `sleep(60)` 的阻塞等待，可能阻塞任务线程数小时；任务级的长等待应走 `check_reduce()` 的 `ScriptEnd + task_delay`（把时间让给调度器），只有「已在地图中、马上要打」才用阻塞等待。
-- 情绪 Value/Record 的写回用 `config.multi_set()` 包裹，两字段一次保存，避免中途异常留下不一致的记账。
+- 情绪 Value/Record/RecoveryState 用 `config.multi_set()` 原子保存同一计算时刻，不截秒，不以保存完成时刻覆盖计算时刻。保存期间的真实经过时间由下次更新计入。并发修改值、时间、相位或恢复条件时，旧任务的三字段写回整体丢弃。
 - `module/config/time_source` 提供 NTP 校准时间，情绪恢复与 Record 的比较都用它，防止本机时钟漂移导致长跑累积误差。
 - 类属性计时器是历史坑：`SubmarineCall.submarine_call_reset()` 专门把 Timer 重建为实例属性，并有单测锁定（`test_combat_timers_are_not_shared_between_instances`）；新增状态不要依赖类属性可变性。
 
@@ -347,7 +363,7 @@ stateDiagram-v2
 
 | 数据 | 位置 | 写入时机 | 失效 |
 | --- | --- | --- | --- |
-| 情绪 Value/Record | 用户配置 JSON（`Emotion_Fleet{1,2}*`、`PublicEmotion_Fleet*`） | `record()`（进战斗前、扣减后）与 `check_reduce` | 任何时候重开任务都从持久值恢复 |
+| 情绪 Value/Record/RecoveryState | 用户配置 JSON（`Emotion_Fleet{1,2}*`、`PublicEmotion_Fleet*`） | `record()`（进战斗前、扣减后）与 `check_reduce` | 重开任务从完整相位存档恢复，不重新放大误差 |
 | HP / 有船标记 | 内存 `_hp`/`_hp_has_ship`（按舰队索引） | `hp_get()` | `hp_reset()` 在每次 `map_control_init()` 清空 |
 | 等级 | `_lv`、`_lv_before_battle` | `lv_get()` | `lv_reset()` 在进图时重置 |
 | 进阶潜艇 ammo/support | `SubmarineAdvancedConfig` 实例 | `consume()` | `submarine_advanced_reset()` 每张地图重建；自动搜索地图不创建 |
@@ -359,7 +375,7 @@ stateDiagram-v2
 - **创建**：战役运行器每次加载地图文件时深拷贝配置并新建 `Campaign` 实例（`load_campaign`），Combat 及其全部 mixin 随之创建；`emotion` 是 `ModuleBase` 的 `cached_property`，首次访问才构造。
 - **每场战斗**：`combat()` 开头重置潜艇/自动/手动状态与 `battle_status_click_interval`；`combat_preparation` 清空卡死与点击记录。
 - **每张地图**：`map_init()` → `submarine_advanced_reset()`、`hp_reset()`、`lv_reset()`。
-- **跨任务**：只有情绪记账持久化；`Emotion.total_reduced` 与 `bug_threshold` 随实例存活，实例随任务结束销毁。
+- **跨任务**：情绪的 Value、Record 和 RecoveryState 持久化；任务重建实例后读取最新账本，累计扣减不作为重启条件。
 
 ## 15. 扩展方式
 
@@ -373,7 +389,7 @@ stateDiagram-v2
 
 - **匹配顺序有语义**：`is_combat_executing()` 与 `handle_combat_quit()` 是按皮肤逐个尝试的长列表，顺序承载着消歧规则（如 `PAUSE_Star` 必须先于 `PAUSE_Nurse`；`PAUSE_Neon/Cyber` 外观近似靠颜色区分；JP 服务器的 `PAUSE` 走颜色+暗区双重校验）。调整顺序或新增分支前先读现有注释。
 - **mixin 字段共享**：`auto_mode_checked` 等字段被两个 mixin 共用，MRO 上 `CombatAuto` 在 `CombatManual` 之前；改动任一方的字段语义要检查另一方。
-- **情绪换算三处联动**：`speed`（档位点数 `//10` 得每小时）、`update()`（每小时 `/360` 得每秒）、`get_recovered()`（`*360/speed` 反推）是同一换算的三份表达，且 `record()` 依赖 `_fractional_seconds` 回扣；改任何一处都要同时核对另外两处，否则恢复量与等待时间会系统性偏差。
+- **心情批次与保护方向**：显示中间值，出击用下限。`get_recovered()` 计算所有相位都达到目标的最早时刻，向上取整到秒，避免 `task_delay()` 截秒导致提前唤醒；不得用均匀连续恢复替换批次模型，也不得只保存上下限而丢掉相位关联。
 - **`record()` 必须与 `update()` 成对**：即使值不变也要更新 Record 时间戳，否则下次 `update()` 会从旧时间戳重复计算已消费的恢复量（历史上真实修过此 bug）。
 - **进阶潜艇绝不盲点**：`advanced_call` 必须看到 `SUBMARINE_READY` 才点、见 `SUBMARINE_CALLED` 才扣弹；点击重试不得重复扣减。旧模式（`boss_only` 等）没有宽限期语义，勿混用。
 - **潜艇寻路会污染全图 cost**：地图层为潜艇寻路后必须还原水面舰队寻路（`find_path_initial()`），这个配对不能拆。
@@ -382,7 +398,7 @@ stateDiagram-v2
 
 ## 17. 已知限制
 
-- 情绪是**纯时间模型**，依赖用户正确配置恢复地点、誓约与温泉状态；游戏客户端长时间运行后自身会算错情绪，靠累计扣减量触发重启（`triggered_bug`）兜底。
+- 情绪依赖实测基准、正确恢复条件和完整事件记账；被动学习只利用已有可靠读数。累计扣减不是客户端故障证据，不据此请求重启；重启不能修复已偏差的基准或丢失的恢复状态。
 - 手动模式并非真正操控战斗：只有三个预设走位（居中/左下/左上长按）与武器释放，高难图的精细操作无法表达。
 - `hp_balance` 在舰队锁定关卡不可用；HP/等级识别依赖默认战斗界面的布局，非默认皮肤/缩放可能导致读数异常（代码对 EN/JP 服务器有独立网格）。
 - 进阶潜艇规则不支持自律寻敌地图，且移动依赖地图寻路可达性，不可达时静默放弃本次出击（有单测覆盖）。

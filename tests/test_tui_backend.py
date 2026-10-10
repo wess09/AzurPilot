@@ -2,7 +2,10 @@
 
 import tempfile
 import unittest
+from datetime import datetime
 from unittest.mock import patch
+
+from textual.widgets import Input
 
 from tests.test_api import fixture
 
@@ -163,10 +166,11 @@ class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
         """测试配置弹窗挂载与表单控件初始化，确保内部 Select 不会导致表单清空消失。"""
         backend = TUIBackend(root=self.root)
         modal = ConfigModal(backend=backend, initial_task="Commission")
-        app = AzurPilotTUI()
+        app = AzurPilotTUI(root=self.root)
         async with app.run_test() as pilot:
             await app.push_screen(modal)
             await pilot.pause()
+            app.tick_clock()
             # 验证当前任务未被冒泡事件覆盖
             self.assertEqual(modal.current_task, "Commission")
             # 验证表单中已加载字段且没有消失
@@ -174,6 +178,47 @@ class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
             # 验证内部控件成功渲染挂载
             scroll = modal.query_one("#form-scroll")
             self.assertGreater(len(scroll.children), 0)
+
+    async def test_emotion_same_value_can_be_explicitly_recalibrated(self) -> None:
+        """挂载不校准，重新输入或回车确认同值后保存完整基准。"""
+        from textual.app import App
+
+        backend = TUIBackend(root=self.root)
+        # 此处验证配置弹窗；不启动主界面的时钟，避免退出时查询已卸载的状态栏。
+        app = App()
+        now = datetime(2026, 10, 9, microsecond=123456)
+        async with app.run_test() as pilot:
+            for task, group, arg in (('Main', 'Emotion', 'Fleet1Value'),
+                                     ('General', 'PublicEmotion', 'FleetValue')):
+                path = f'{task}.{group}.{arg}'
+                modal = ConfigModal(backend=backend, initial_task=task)
+                # 用真实元数据挂载心情输入，隔离其他参数的空值／多行文本归一化。
+                groups = [{**item, 'items': [field for field in item['items']
+                                            if field['arg'] in ('Fleet1Value', 'Fleet2Value', 'FleetValue')]}
+                          for item in backend.get_task_config_schema(task) if item['group_name'] == group]
+                with patch.object(backend, 'get_task_config_schema', return_value=groups):
+                    await app.push_screen(modal)
+                    await pilot.pause()
+                self.assertEqual([], modal.collect_changes())
+                ctrl = modal.query_one(f"#{modal._ctrl_id('input', path)}", Input)
+                original = ctrl.value
+                if task == 'Main':
+                    ctrl.value = '1'
+                    await pilot.pause()
+                    ctrl.value = original
+                    await pilot.pause()
+                else:
+                    ctrl.focus()
+                    await pilot.press('enter')
+                self.assertEqual([{'path': path, 'value': int(original)}], modal.collect_changes())
+                with patch('module.api.config_service.current_time', return_value=now):
+                    modal.action_save_and_exit()
+                fields = backend.config_service.read('testpilot')[0][task][group]
+                prefix = arg.removesuffix('Value')
+                self.assertEqual(now.isoformat(sep=' ', timespec='microseconds'), fields[prefix + 'Record'])
+                self.assertEqual(now.isoformat(timespec='microseconds'), fields[prefix + 'RecoveryState']['record'])
+                self.assertEqual([[0, 360_000_000, int(original)]], fields[prefix + 'RecoveryState']['segments'])
+                await pilot.pause()
 
 
 if __name__ == "__main__":

@@ -324,18 +324,24 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 logger.warning(f'[设备-Windows] 命令超时 {timeout} 秒')
                 return None
         else:
-            # 异步执行，不等待完成
-            # 通过 `cmd /c start` 启动进程，使其脱离 Alas 进程树。
-            # 之前使用的 `start_new_session=True` 在 Windows 上仅等同于
-            # `CREATE_NEW_PROCESS_GROUP`，不会改变父子进程关系，
-            # `taskkill /T` 仍会终止子进程，导致关闭 Alas 时模拟器被一并关闭。
-            # 使用 `cmd /c start` 后，cmd.exe 会立即退出，
-            # 目标进程的父进程变为已退出的 cmd.exe，从而脱离 Alas 进程树。
+            # 短命 cmd 断开进程树关系；启动器的 Job 归属需要另外显式脱离。
+            # 仅在启动器声明允许时请求 breakaway，旧 Job 不允许此标志会拒绝启动。
+            creationflags = subprocess.CREATE_NO_WINDOW
+            if os.environ.get('ALAS_LAUNCHER_JOB_BREAKAWAY') == '1':
+                creationflags |= subprocess.CREATE_BREAKAWAY_FROM_JOB
+            # 模拟器不是 ALAS worker，不能继承退出清理标记或 WebUI 信任密钥。
+            environment = {
+                key: value for key, value in os.environ.items()
+                if key.upper() not in {
+                    'ALAS_LAUNCHER_PID', 'ALAS_LAUNCHER_JOB_BREAKAWAY', 'ALAS_WEBUI_TRUST_SECRET',
+                }
+            }
             proc = subprocess.Popen(
                 f'start "" /b {command}',
                 shell=True,
                 close_fds=True,
-                creationflags=subprocess.CREATE_NO_WINDOW,
+                creationflags=creationflags,
+                env=environment,
             )
             # 等待 cmd.exe 退出，确保目标进程已脱离 Alas 进程树
             try:

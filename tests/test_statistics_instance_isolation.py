@@ -130,7 +130,7 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
             'module.statistics.cl1_database': module_stub('module.statistics.cl1_database', db=Mock()),
         }))
         self.enterContext(patch.object(self.stats, '_ensure_local_parser', return_value=FakeScene))
-        self.configs = SimpleNamespace(path=Mock(side_effect=lambda name: Path(self.directory) / f'{name}.json'))
+        self.configs = SimpleNamespace(directory=Path(self.directory) / 'config', path=Mock(side_effect=lambda name: Path(self.directory) / f'{name}.json'))
 
     def record(self, instance, amount):
         stats = self.stats(SimpleNamespace(config_name=instance))
@@ -185,13 +185,14 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
         legacy = np.zeros((6, 7))
         legacy[:, 0] = np.arange(1, 7)
         legacy[2, 1:4] = [1000000000, 77, 9999]
-        self.stats._write_meowofficer_farming(legacy)
-        before = Path(self.stats.LOCAL_MEOW_CSV).read_bytes()
+        path = Path(self.stats.LOCAL_MEOW_CSV)
+        np.savetxt(path, legacy, delimiter=',', header=','.join(self.stats.meowofficer_farming_labels), comments='')
+        before = path.read_bytes()
+        np.testing.assert_array_equal(self.stats.load_meowofficer_farming(), legacy)
         self.assertEqual(self.rows('account_a'), [])
         self.record('account_a', 100)
-        self.assertEqual(Path(self.stats.LOCAL_MEOW_CSV).read_bytes(), before)
+        self.assertEqual(path.read_bytes(), before)
         np.testing.assert_array_equal(self.stats.load_meowofficer_farming(), legacy)
-        Path(self.stats._meowofficer_farming_path('account_a')).write_text('header\nbroken', encoding='utf-8')
         # 损坏的缓存不影响全局文件；读取回退到重算路径。
 
     def test_scoped_queries_filter_months_device_and_legacy_data(self):
@@ -251,39 +252,40 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
 
     def test_cache_replacement_failure_preserves_previous_complete_file(self):
         self.record('account_a', 100)
-        path = Path(self.stats._meowofficer_farming_path('account_a'))
-        before = path.read_bytes()
+        before = self.stats.load_meowofficer_farming(instance='account_a')
         self.stats._insert_local_opsi_items([item_row('account_a', 300, imgid='new-image')])
-        with patch.object(self.module.os, 'replace', side_effect=OSError('磁盘错误')):
+        with self.stats._database().transaction() as conn:
+            conn.execute("CREATE TRIGGER reject_cache BEFORE INSERT ON farming_aggregates BEGIN SELECT RAISE(ABORT, 'disk full'); END")
+        with self.assertRaises(sqlite3.IntegrityError):
             self.stats.get_meowofficer_farming(instance='account_a')
-        self.assertEqual(path.read_bytes(), before)
-        self.assertEqual(list(Path(self.directory).glob('.meow-*.tmp')), [])
+        np.testing.assert_array_equal(self.stats.load_meowofficer_farming(instance='account_a'), before)
+        with self.stats._database().transaction() as conn:
+            conn.execute('DROP TRIGGER reject_cache')
         self.api.refresh_loot(self.configs, 'account_a')
         self.assertEqual(self.rows('account_a')[0][2:4], [2.0, 200.0])
 
     def test_read_during_cache_write_sees_the_previous_complete_version(self):
         self.record('account_a', 100)
         self.stats._insert_local_opsi_items([item_row('account_a', 300, imgid='new-image')])
-        save = self.module.np.savetxt
+        write = self.stats._write_meowofficer_farming
         observed = []
-
         def inspect_write(*args, **kwargs):
-            save(*args, **kwargs)
+            write(*args, **kwargs)
             observed.append(self.stats.load_meowofficer_farming(instance='account_a')[2, 3])
-
-        with patch.object(self.module.np, 'savetxt', side_effect=inspect_write):
+        with patch.object(self.stats, '_write_meowofficer_farming', side_effect=inspect_write):
             self.stats.get_meowofficer_farming(instance='account_a')
         self.assertEqual(observed, [100])
         self.assertEqual(self.rows('account_a')[0][2:4], [2.0, 200.0])
 
     def test_file_occupancy_keeps_previous_cache_until_next_attempt(self):
         self.record('account_a', 100)
-        path = Path(self.stats._meowofficer_farming_path('account_a'))
-        before = path.read_bytes()
+        before = self.stats.load_meowofficer_farming(instance='account_a')
         self.stats._insert_local_opsi_items([item_row('account_a', 300, imgid='new-image')])
-        with patch.object(opsi_secure.os, 'replace', side_effect=PermissionError('文件占用')):
-            self.stats.get_meowofficer_farming(instance='account_a')
-        self.assertEqual(path.read_bytes(), before)
+        with self.stats._database().transaction() as writer:
+            with self.assertRaises(sqlite3.OperationalError):
+                with self.stats._database().transaction(timeout=0) as competing:
+                    competing.execute('DELETE FROM farming_aggregates')
+            np.testing.assert_array_equal(self.stats.load_meowofficer_farming(instance='account_a'), before)
         self.stats.get_meowofficer_farming(instance='account_a')
         self.assertEqual(self.rows('account_a')[0][2:4], [2.0, 200.0])
 
@@ -316,7 +318,7 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
         rows = self.stats._load_local_opsi_items()
         self.assertEqual(len(rows), 1)
         self.assertIsNone(rows[0]['instance'])
-        with closing(sqlite3.connect(self.stats.LOCAL_DB)) as conn:
+        with closing(sqlite3.connect(self.stats._database().path)) as conn:
             self.assertEqual([row[1] for row in conn.execute('PRAGMA table_info(opsi_items)')].count('instance'), 1)
 
     @unittest.skipUnless(sys.platform == "win32", "需要共享本机临时凭据")
@@ -327,11 +329,11 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
         paused, release = threading.Event(), threading.Event()
         write = self.stats._write_meowofficer_farming
 
-        def pause_write(data, instance=None):
+        def pause_write(data, instance=None, **kwargs):
             paused.set()
             if not release.wait(10):
                 raise TimeoutError('未释放汇总写入')
-            return write(data, instance=instance)
+            return write(data, instance=instance, **kwargs)
 
         process = context.Process(target=process_operation,
                                   args=(self.directory, started, finished, 'record'))
@@ -344,7 +346,7 @@ class TestStatisticsInstanceIsolation(unittest.TestCase):
                 self.addCleanup(self.stop_process, process)
                 self.assertTrue(started.wait(30))
                 self.assertFalse(finished.is_set())
-                with closing(sqlite3.connect(self.stats.LOCAL_DB, timeout=0)) as probe:
+                with closing(sqlite3.connect(self.stats._database().path, timeout=0)) as probe:
                     with self.assertRaisesRegex(sqlite3.OperationalError, 'locked'):
                         probe.execute('BEGIN IMMEDIATE')
             finally:

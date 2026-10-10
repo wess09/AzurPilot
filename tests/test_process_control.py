@@ -115,7 +115,8 @@ class TestProcessControl(unittest.TestCase):
             raise psutil.NoSuchProcess(second.pid)
 
         second.kill.side_effect = disappear
-        with patch("psutil.Process", side_effect=lookup):
+        with patch("psutil.Process", side_effect=lookup), \
+                patch.object(control, "_kill_root", side_effect=control._kill_record):
             self.assertTrue(control.stop_process_tree(record=self.record, kill_timeout=0))
         first.kill.assert_called_once_with()
         second.kill.assert_called_once_with()

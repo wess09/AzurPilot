@@ -397,18 +397,48 @@ def same_targets(left, right):
 
 
 def is_purple(icon):
-    """普通紫色底的红绿分量接近；彩色纸张左上角仍偏蓝绿。"""
+    """两个上角共同确认紫色，避免虹彩动画的单角恰好呈紫色。"""
     image = cv2.resize(icon, (96, 96), interpolation=cv2.INTER_AREA)
-    red, green, blue = image[5:13, 5:13].mean(axis=(0, 1))
-    return blue - green >= 35 and abs(red - green) <= 22
+    corners = np.array([image[5:13, x:x + 8] for x in (5, 83)], dtype=np.int16)
+    red, green, blue = np.moveaxis(corners, -1, 0)
+    purple = (blue - green >= 35) & (np.abs(red - green) <= 22)
+    # 图案可能覆盖少量背景；每角要求至少半数像素通过，不能混色取均值伪造紫色。
+    return bool(np.all(purple.mean(axis=(1, 2)) >= .5))
+
+
+def _same_calibration_card(left, right):
+    """只为运动标定核对主体；不以此确认统计身份或替代完整数量。"""
+    if same_card(left, right):
+        return True
+    if (not left.present or not right.present or left.identifier != right.identifier
+            or left.identifier is not None):
+        return False
+    if np.max(np.abs(left.image[7:17, 7:17].mean(axis=(0, 1))
+                     - right.image[7:17, 7:17].mean(axis=(0, 1)))) > 45:
+        return False
+    # 开扫标定没有数量读数。排除共同边框及数字后，严格核对去除低频虹彩的主体；
+    # 后续还须至少五列同位移且所有候选位移唯一，重复图标不能自行决定行号。
+    details = []
+    for card in (left, right):
+        gray = cv2.cvtColor(card.image, cv2.COLOR_RGB2GRAY).astype(np.float32)
+        details.append(cv2.GaussianBlur(gray, (7, 7), 0) - cv2.GaussianBlur(gray, (31, 31), 0))
+    score = cv2.minMaxLoc(cv2.matchTemplate(details[0][9:103, 9:119], details[1][12:100, 12:116],
+                                          cv2.TM_CCOEFF_NORMED))[1]
+    return score >= .985
 
 
 def calibrate_scroll(before, after, thumb_delta):
     """以至少五列完整格的唯一位移标定比例，保留单格图像匹配门槛。"""
-    offsets = [a[0].area[1] - b[0].area[1]
-               for a in before for b in after
-               if len(a) == len(b) == 7 and all(card.present for card in a + b)
-               and sum(same_card(left, right) for left, right in zip(a, b)) >= 5]
+    if len(before) < 2:
+        raise StorageRecognitionError('滚动条标定需要至少两行完整材料')
+    pairs = [(a, b) for a in before for b in after
+             if len(a) == len(b) == 7 and all(card.present for card in a + b)]
+    offsets = [a[0].area[1] - b[0].area[1] for a, b in pairs
+               if sum(same_card(left, right) for left, right in zip(a, b)) >= 5]
+    if not offsets:
+        # 整格已能确认位移时保留数量等细节，不能让相同图标排列制造额外歧义。
+        offsets = [a[0].area[1] - b[0].area[1] for a, b in pairs
+                   if sum(_same_calibration_card(left, right) for left, right in zip(a, b)) >= 5]
     if not offsets or max(offsets) - min(offsets) > 2 or thumb_delta <= 0:
         raise StorageRecognitionError('滚动条距离标定缺少唯一完整重叠行')
     pitch = float(round(np.median([b[0].area[1] - a[0].area[1] for a, b in zip(before, before[1:])])))

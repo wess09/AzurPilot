@@ -10,6 +10,7 @@
 import sqlite3
 import tempfile
 import unittest
+from contextlib import nullcontext
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
@@ -26,7 +27,7 @@ class TestResearchDropRepair(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         install_store(self, directory.name)
         self.path = Path(directory.name) / 'config' / 'cl1_data.db'
-        with patch.object(database.Cl1Database, '_get_legacy_decryption_keys', return_value=[]):
+        with nullcontext():
             self.db = database.Cl1Database(self.path)
 
     def add(self, imgid, items, stamp=datetime(2026, 9, 24, 16, 22), instance='alas',

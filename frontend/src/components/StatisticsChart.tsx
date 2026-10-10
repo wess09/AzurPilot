@@ -292,6 +292,8 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         ]
       }
 
+
+      /* 纵轴固定：下界钉在 0，上界仍由 ECharts 按全量数据算，与「从 0 开始的自适应」同解。 */
       if (zeroBase) yAxes = yAxes.map(axis => ({...axis, min: 0}))
 
       /* 每条曲线落在哪个 Y 轴上：单页与统一轴都用左轴。 */
@@ -374,10 +376,11 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         },
         xAxis: isCandlestick ? {type: 'category', data: categoryTimes, axisLabel: {hideOverlap: true}} : {type: 'time', axisLabel: {hideOverlap: true}},
         yAxis: yAxes,
+        /* 纵轴固定：缩放不过滤数据，纵轴始终按全量数据自动取值，与全图视角用同一套算法。 */
         dataZoom: [
-          {type: 'inside', zoomOnMouseWheel: 'ctrl'},
+          {type: 'inside', zoomOnMouseWheel: 'ctrl', filterMode: zeroBase ? 'none' : 'filter'},
           {
-            type: 'slider', bottom: 16, height: 26,
+            type: 'slider', bottom: 16, height: 26, filterMode: zeroBase ? 'none' : 'filter',
             ...(minimal ? {
               backgroundColor: surface, fillerColor: colors.getPropertyValue('--accent-soft').trim(), borderColor: border,
               dataBackground: {lineStyle: {color: secondary, opacity: 1}, areaStyle: {color: surface, opacity: 1}},

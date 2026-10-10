@@ -200,7 +200,7 @@ class RecognitionTests(unittest.TestCase):
 class SnapshotTests(unittest.TestCase):
     def setUp(self):
         self.temp = self.enterContext(tempfile.TemporaryDirectory())
-        self.path = Path(self.temp) / 'config/storage_statistics.db'
+        self.path = Path(self.temp) / 'config/azurpilot.db'
         self.items = [dict(id='chips', name='心智单元', group='材料', amount=13393),
                       dict(id='absent', name='未发现物品', group='材料', amount=None)]
 
@@ -260,7 +260,7 @@ class SnapshotTests(unittest.TestCase):
         items[7]['amount'] = None
         self.save(items=items)
         before = self.path.read_bytes()
-        configs = SimpleNamespace(path=Mock(return_value=self.path.parent / 'alpha.json'))
+        configs = SimpleNamespace(directory=self.path.parent, path=Mock(return_value=self.path.parent / 'alpha.json'))
         result = report(configs, 'alpha', 'storage', None, 7, 'month')
         chips = next(item for item in result['series'] if item['key'] == 'CognitiveChips')
         absent = next(item for item in result['series'] if item['key'] == 'CognitiveChipsII')
@@ -285,7 +285,7 @@ class SnapshotTests(unittest.TestCase):
                                           (third, '2026-03-02 00:00:00')):
                 connection.execute('UPDATE storage_scans SET finished_at=? WHERE id=?', (timestamp, identifier))
 
-        configs = SimpleNamespace(path=Mock(return_value=self.path.parent / 'alpha.json'))
+        configs = SimpleNamespace(directory=self.path.parent, path=Mock(return_value=self.path.parent / 'alpha.json'))
         result = report(configs, 'alpha', 'storage', '2026-01', 7, 'month')
         chips = next(item for item in result['series'] if item['key'] == base[0]['id'])
 
@@ -304,7 +304,7 @@ class SnapshotTests(unittest.TestCase):
 
     def test_report_only_reads_saved_counts(self):
         from module.api.statistics_service import report
-        configs = SimpleNamespace(path=Mock(return_value=self.path.parent / 'alpha.json'))
+        configs = SimpleNamespace(directory=self.path.parent, path=Mock(return_value=self.path.parent / 'alpha.json'))
         first = report(configs, 'alpha', 'storage', None, 7, 'month')
         self.assertTrue(all(row[3] is None for row in first['tables'][0]['rows']))
         self.assertFalse(self.path.exists())
@@ -436,7 +436,7 @@ class TaskTests(unittest.TestCase):
         self.enterContext(patch.object(self.module, 'Timer', FrameTimer))
         self.enterContext(patch.object(self.module.logger, 'attr'))
         self.temp = self.enterContext(tempfile.TemporaryDirectory())
-        self.path = Path(self.temp) / 'warehouse.db'
+        self.path = Path(self.temp) / 'azurpilot.db'
         self.enterContext(patch.object(self.module, 'save_snapshot',
             side_effect=lambda *args, **kwargs: save_snapshot(*args, **kwargs, database=self.path)))
 
@@ -574,12 +574,12 @@ class ApiIntegrationTests(unittest.TestCase):
             rows = response['result']['tables'][0]['rows']
             self.assertEqual(len(rows), 25)
             self.assertTrue(all(row[3] is None and row[4] == '未扫描' for row in rows))
-            self.assertFalse((root / 'config/storage_statistics.db').exists())
+            self.assertFalse((root / 'config/azurpilot.db').exists())
             catalog = StorageCatalog()
             items = [dict(id=item['id'], name=item['name'], group=item['group'], amount=index + 1)
                      for index, item in enumerate(catalog.items)]
             save_snapshot('testpilot', 'cn', items, started_at='2026-10-03', pages=12,
-                          catalog_version=catalog.version, database=root / 'config/storage_statistics.db')
+                          catalog_version=catalog.version, database=root / 'config/azurpilot.db')
             ws.send_json({'v': 1, 'type': 'request', 'id': 'history', 'method': 'statistics.report',
                           'params': {'instance': 'testpilot', 'category': 'storage', 'days': 30}})
             response = ws.receive_json()

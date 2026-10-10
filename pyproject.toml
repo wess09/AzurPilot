@@ -46,6 +46,7 @@ dependencies = [
     "cryptography>=49.0.0",
     "keyring>=25.6.0",
     "portalocker>=3.2.0",
+    "openpyxl>=3.1.5,<4",
 ]
 
 [dependency-groups]

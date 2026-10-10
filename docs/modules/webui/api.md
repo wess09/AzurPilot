@@ -116,6 +116,10 @@ module/api/
 
 把 `ProcessManager` 的进程世界翻译成前端视图：`STATES = {1: running, 2: stopped, 3: error, 4: updating}` 是进程状态与前端枚举的唯一映射；`logs()` 用对象身份匹配 `renderables` 的裁剪重叠区，保证游标单调递增；`capture()` 只读 `preview.hub` 的最新帧，**绝不主动触发截图**。
 
+`instances()` 保留 `server` 字段作为 `Emulator.ServerName` 开服检测配置，同时提供 `region` 作为游戏地区。
+地区复用 `to_server(Emulator.PackageName)`；包名未配置或为 `auto` 时返回 `null`，等待设备检测。
+需要判断国服功能是否可用的页面应读取 `region`，不能把可关闭的开服检测配置当作游戏地区。
+
 `overview()` 枚举任务时跳过非字典根节点，例如内部身份 `_stockInstance`。该字段仍由 `ConfigService.read()` 保留，不能当作任务参数组；总览请求、订阅推送以及启停后返回的总览共用这一读取路径。
 
 ## 6. 工作流程

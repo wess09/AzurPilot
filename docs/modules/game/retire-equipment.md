@@ -95,6 +95,7 @@ module/storage/
 三类扫描完成后仍一次性保存到 `FleetInfo.FleetInfo.Result` 和 `Record`，单船结构扩展为
 `{'name': str, 'level': int, 'emotion': int | None}`，JSON 中未知心情为 `null`。
 WebUI 舰队信息同时显示名称、等级与心情；旧字符串/缺少心情的对象仍可显示，心情标为未知。
+扫描还可通过 `module/retire/fleet_emotion.py` 被动缩小已校准心情的恢复相位，不增加设备操作、OCR 或保存次数。仅接纳普通水面舰队完整的三前排和三后排，名称均确认且不重复，心情全部有效；前后排使用各自现截时间窗口，缺时间、窗口超过 30 秒、矛盾或归属不明时保留原状态。流式／缓存截图后端不学习；已核实的现截后端、共享舰队限制和存档语义见 [战斗心情](../combat.md)。学到的三字段随本次原有事务保存，事务核对扫描期间舰队及共享配置是否变化，不能用 FleetInfo.Record 作为测量时间。
 定向验证入口：`tests/test_fleet_emotion.py`（匿名心情裁剪、筛选顺序、失败保留和真实配置落盘）
 及 `frontend/e2e/fleet-info.spec.ts`（隔离服务页面显示）。截图夹具不包含账号信息。
 

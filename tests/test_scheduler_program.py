@@ -152,8 +152,10 @@ class TestProgramStore(unittest.TestCase):
         self.assertEqual({},self.store.persistent('other'))
         backup=Path(self.directory)/'backup'
         self.store.archive('testpilot',backup)
-        self.assertTrue((backup/'scheduler/testpilot.sqlite3').exists())
-        self.assertFalse(self.store.path('testpilot').exists())
+        self.assertTrue((backup/'business/testpilot.sqlite3').exists())
+        self.assertFalse(self.store.exists('testpilot'))
+        self.assertEqual({}, self.store.persistent('testpilot'))
+        self.assertTrue(self.store.path('other').exists())
 
     def test_path_traversal_rejected(self):
         with self.assertRaises(Exception):

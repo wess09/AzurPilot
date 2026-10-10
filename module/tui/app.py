@@ -72,7 +72,7 @@ class AzurPilotTUI(App[None]):
 
     def tick_clock(self) -> None:
         """更新状态栏时钟。"""
-        header = self.query_one(HeaderBar)
+        header = self.screen_stack[0].query_one(HeaderBar)
         header.tick_clock()
 
     def refresh_all_data(self) -> None:

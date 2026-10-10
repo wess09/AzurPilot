@@ -132,11 +132,11 @@ class BackupSwitchTestCase(BackupTestCase):
         from contextlib import closing
         make_cl1_db(self.config_dir / 'cl1_data.db')
         backup_module.backup(enable=True)
-        path = self.backup_root / self.date_name(0) / 'cl1_data.db'
+        path = self.backup_root / self.date_name(0) / 'azurpilot.db'
         self.assertEqual(path.read_bytes()[:16], b'SQLite format 3\x00')
         with closing(sqlite3.connect(path)) as conn:
-            row = conn.execute('SELECT data_json FROM cl1_data').fetchone()
-        self.assertIn('akashi_ap_entries', row[0])
+            row = conn.execute('SELECT amount FROM akashi_ap_purchases').fetchone()
+        self.assertEqual(row[0], 20)
 
     def test_old_stats_backup_expiry_is_removed(self):
         folder = make_backup_dir(self.backup_root, 30)

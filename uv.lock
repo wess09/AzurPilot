@@ -237,6 +237,7 @@ dependencies = [
     { name = "onnxruntime-windowsml", marker = "sys_platform == 'win32'" },
     { name = "openai" },
     { name = "opencv-python" },
+    { name = "openpyxl" },
     { name = "packaging" },
     { name = "pillow" },
     { name = "portalocker" },
@@ -292,6 +293,7 @@ requires-dist = [
     { name = "onnxruntime-windowsml", marker = "sys_platform == 'win32'", specifier = "==1.27.1.202607110137" },
     { name = "openai", specifier = "==2.30.0" },
     { name = "opencv-python", specifier = "==5.0.0.93" },
+    { name = "openpyxl", specifier = ">=3.1.5,<4" },
     { name = "packaging", specifier = "==24.2" },
     { name = "pillow", specifier = "==12.3.0" },
     { name = "portalocker", specifier = ">=3.2.0" },
@@ -601,6 +603,15 @@ source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/8c/8b/57666417c0f90f08bcafa776861060426765fdb422eb10212086fb811d26/dnspython-2.8.0.tar.gz", hash = "sha256:181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f" }
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/ba/5a/18ad964b0086c6e62e2e7500f7edc89e3faa45033c71c1893d34eed2b2de/dnspython-2.8.0-py3-none-any.whl", hash = "sha256:01d9bbc4a2d76bf0db7c1f729812ded6d912bd318d3b1cf81d30c0f845dbf3af" },
+]
+
+[[package]]
+name = "et-xmlfile"
+version = "2.0.0"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/d3/38/af70d7ab1ae9d4da450eeec1fa3918940a5fafb9055e934af8d6eb0c2313/et_xmlfile-2.0.0.tar.gz", hash = "sha256:dab3f4764309081ce75662649be815c4c9081e88f0837825f90fd28317d4da54" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/c1/8b/5fe2cc11fee489817272089c4203e679c63b570a5aaeb18d852ae3cbba6a/et_xmlfile-2.0.0-py3-none-any.whl", hash = "sha256:7a91720bc756843502c3b7504c77b8fe44217c85c537d85037f0f536151b2caa" },
 ]
 
 [[package]]
@@ -1521,10 +1532,10 @@ name = "onnxruntime"
 version = "1.27.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
 dependencies = [
-    { name = "flatbuffers", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "numpy", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "packaging", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
-    { name = "protobuf", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or sys_platform == 'linux'" },
+    { name = "flatbuffers" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "protobuf" },
 ]
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/3a/37/48ab79c39b58a7c9f6f5aac1fa0ff2b993eb2643393d6ed9e839ddb6f347/onnxruntime-1.27.0-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:0874edc171f470fc4dd2bbb60bc0989612ed1a8b89b365cda016630a93227f13" },
@@ -1539,10 +1550,10 @@ name = "onnxruntime-windowsml"
 version = "1.27.1.202607110137"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
 dependencies = [
-    { name = "flatbuffers", marker = "sys_platform == 'win32'" },
-    { name = "numpy", marker = "sys_platform == 'win32'" },
-    { name = "packaging", marker = "sys_platform == 'win32'" },
-    { name = "protobuf", marker = "sys_platform == 'win32'" },
+    { name = "flatbuffers" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "protobuf" },
 ]
 wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/e8/c0/ddeafb4d50468a72e9b0b9adaf8cd95137052db85a0274cbd4b6e645a8ce/onnxruntime_windowsml-1.27.1.202607110137-cp314-cp314-win_amd64.whl", hash = "sha256:9fede36a96faa866026ad8b255cfed1a240fe6791df56c3144317363fb78cb98" },
@@ -1585,6 +1596,18 @@ wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/cf/4c/c73f828fdbcd37eaf21d08fa852544a3ca7c2dbb3ea76873d64f2ea413d1/opencv_python-5.0.0.93-cp37-abi3-manylinux_2_28_x86_64.whl", hash = "sha256:c8de2dec111122a02e8beb28e16c31904992dfd6186560b142a92c71403c1039" },
     { url = "https://mirrors.aliyun.com/pypi/packages/e2/4b/edaf83b996ca5a1a3d8ccad485706b9c6d4742b13b9c4586bf1c1e7d9423/opencv_python-5.0.0.93-cp37-abi3-win32.whl", hash = "sha256:4b4b1a34c79bf8d3738e3cfe9a9e67b51a79663f6b692cbdad8c31f570da4157" },
     { url = "https://mirrors.aliyun.com/pypi/packages/21/f0/9fa6e85cb10c8eb36a0222d27e50fe381b86ce49a55446bf39f491727564/opencv_python-5.0.0.93-cp37-abi3-win_amd64.whl", hash = "sha256:f90ba04b8f73bc5c3814037699739f0156f597338a98f05956c684e7c3ca10d2" },
+]
+
+[[package]]
+name = "openpyxl"
+version = "3.1.5"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+dependencies = [
+    { name = "et-xmlfile" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/3d/f9/88d94a75de065ea32619465d2f77b29a0469500e99012523b91cc4141cd1/openpyxl-3.1.5.tar.gz", hash = "sha256:cf0e3cf56142039133628b5acffe8ef0c12bc902d2aadd3e0fe5878dc08d1050" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl", hash = "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2" },
 ]
 
 [[package]]
@@ -2298,8 +2321,8 @@ name = "secretstorage"
 version = "3.5.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
 dependencies = [
-    { name = "cryptography", marker = "sys_platform == 'linux'" },
-    { name = "jeepney", marker = "sys_platform == 'linux'" },
+    { name = "cryptography" },
+    { name = "jeepney" },
 ]
 sdist = { url = "https://mirrors.aliyun.com/pypi/packages/1c/03/e834bcd866f2f8a49a85eaff47340affa3bfa391ee9912a952a1faa68c7b/secretstorage-3.5.0.tar.gz", hash = "sha256:f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be" }
 wheels = [

@@ -37,6 +37,12 @@ export function BackgroundPreferences() {
     setSource(next)
     setError('')
     if (next === 'off') disableBackground()
+    /* 切回 URL 档就铺上已填的地址，不必再点一次应用。 */
+    if (next === 'url') {
+      try { applyRows() } catch (error) { setError((error as Error).message) }
+    }
+    /* 切回图库档就铺上原来那张；它已被删除时随机抽一张。 */
+    if (next === 'upload') applyGalleryEntry(background.entry)
   }
 
   /** 改某一行；改的是最后一行且非空时，自动补一个空行（填一行就长一行）。 */
@@ -57,12 +63,16 @@ export function BackgroundPreferences() {
   }
 
   /** 一行一条 API；全清空时会回填内置随机图 API，所以应用后要把回填结果同步回输入框。 */
+  function applyRows() {
+    setBackgroundUrls(rows.map(row => row.value), kind)
+    setSource('url')
+    setError('')
+  }
+
   function applyUrls(event: FormEvent) {
     event.preventDefault()
     try {
-      setBackgroundUrls(rows.map(row => row.value), kind)
-      setSource('url')
-      setError('')
+      applyRows()
       notify(ui('settings.backgroundApplied'))
     } catch (error) { setError((error as Error).message) }
   }

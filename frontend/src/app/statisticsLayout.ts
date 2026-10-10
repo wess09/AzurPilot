@@ -323,6 +323,11 @@ export function orderCards(layout: StatisticsLayout, page: PageId, keys: string[
 }
 
 /** 卡片是否被隐藏：隐藏名单按页存放，键里带页号。 */
+/** 该页的图表与原始记录是否至少有一张可见：两张都隐藏时后端不必查询序列数据。 */
+export function pageNeedsSeries(layout: StatisticsLayout, page: PageId): boolean {
+  return !isCardHidden(layout, cardKey(page, 'chart')) || !isCardHidden(layout, cardKey(page, 'raw'))
+}
+
 export function isCardHidden(layout: StatisticsLayout, key: string): boolean {
   const page = pageOfKey(key)
   return Boolean(page && layout.hidden[cardSpace(layout, page)]?.includes(key))

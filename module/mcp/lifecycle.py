@@ -41,6 +41,8 @@ async def lifespan(application):
     owns_state = State.manager is None
     try:
         if owns_state:
+            from module.persistence.database import initialize
+            await asyncio.to_thread(initialize)
             await asyncio.to_thread(State.init)
             from module.runtime.updater import updater
             updater.event = State.manager.Event()

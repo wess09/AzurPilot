@@ -268,7 +268,11 @@ stateDiagram-v2
 | `Alas.Emulator.PackageName` | 决定 `to_server()` → 全局 server → 资源目录与 i18n 活动 option 的选取 |
 | `Alas.Optimization.TaskHoardingDuration` | 调度器空闲时的「囤积」时长，影响 `get_next` 的等待策略 |
 | `OpsiScheduling.OperationCoinsPreserve` / `OpsiHazard1Leveling.OperationCoinsPreserve` | 两个配置独立保存；智能调度两种模式均读取自身配置，侵蚀 1 独立运行时读取自身配置。`UseSmartSchedulingOperationCoinsPreserve` 只切换黄币目标调度与体力调度（见第 15 节的联动说明） |
-| `<Task>.Emotion.*Value / *Record` | 成对字段：改 Value 必须同步刷新 Record 时间戳，否则情绪恢复量被重复计入（API 层 `_sync_record_time` 负责） |
+| `<Task>.Emotion.*Value / *Record / *RecoveryState` | 心情手动校准：API 在同一事务中按最终恢复条件保存实测值、完整微秒时间和隐藏相位；PublicEmotion 同样处理。仅修改恢复条件会使基准失效，需重新填写实测值。旧任务不能分别覆盖三字段。 |
+
+心情 RecoveryState 版本 2 保存允许间隙的相位片段，兼容版本 1；手动 Value 校准仍重新建立完全未知相位。舰队扫描只过滤可信观测不符的相位，不为旧配置自动建立准确基准。学习结果附带内存中的舰队映射／共享设置核对条件，随 FleetInfo 原有保存事务写入；磁盘上任一条件改变时，三字段整体丢弃，扫描结果仍正常保存。没有新增 API 或轮询。
+
+内部 `set_record(Emotion_Fleet*Value=...)` 同样原子更新完整时间和恢复状态，兼容 GemsFarming、Ambush11 等换船调用，不追加识别。此入口保留调用方原有读数语义；换船时的局部读数或启发式最低值不自动满足准确初值前提，不属于标准固定舰队的 3 点保证。
 | `Dashboard.*`（Oil/Coin/Gem 等） | 仪表盘资源，由 dashboard.yaml 定义、任务运行时写回 Value/Record |
 | `Storage.Storage` | 生成器给每个任务附加的 `storage` 类型组，WebUI 禁止编辑，运行时当作键值状态区使用 |
 
@@ -303,7 +307,8 @@ stateDiagram-v2
 
 | 数据 | 位置 | 生命周期 |
 | --- | --- | --- |
-| 用户配置 | `config/<name>.json` | 持久；`save()` 事务内原子替换；删除实例时移入 `config/backup/` |
+| 用户配置 | `config/<name>.json` | 持久；`save()` 事务内原子替换；删除前完成配置、调度切片及安全历史归档 |
+| 普通业务数据 | 实际配置目录 `azurpilot.db` | 统计与调度共用；复制只带方案，删除保留统计，见 [普通业务数据存储](infra/persistence.md) |
 | 配置锁文件 | `config/<name>.json.lock` | 1 字节占位文件，随配置文件存在 |
 | 全新实例模板 | `config/template.json` | 生成器产物；`ConfigService.create` 的默认来源 |
 | 选项树/菜单 | `module/config/argument/args.json`、`menu.json` | 生成；调度器取优先级默认值、WebUI 取 schema 时实时读取 |

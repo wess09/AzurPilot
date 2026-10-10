@@ -60,6 +60,9 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
     async def lifespan(application):
         """管理应用的启动与关闭生命周期。"""
         try:
+            if manage_runtime:
+                from module.persistence.database import initialize
+                await asyncio.to_thread(initialize, configs.directory)
             if ((root / 'cache' / 'stock-exchange').exists()
                     or (root / 'config' / 'stock-exchange' / 'bindings.json').is_file()):
                 gateway.router.stock_exchange.start()

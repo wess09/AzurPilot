@@ -90,8 +90,6 @@ def _fleet_sidebar(self): ...   # 其余服务器；必须写在最后
 | 设备连接断开（minitouch/maatouch/nemu_ipc 恢复逻辑） | `del_cached_property(self, '_minitouch_builder')` 等 | 下次访问缓存属性时重建连接 |
 | 任务切换资源释放（`resource_release()`） | 批量删 `cached` 列表 | 下次按当前服务器重新解析/加载图像 |
 
-`Emotion.bug_threshold_reset()` 则演示了等价手写：`del self.__dict__['bug_threshold']` 后重新随机出阈值。
-
 ### retry：退避重试
 
 `@retry(exceptions=Exception, tries=-1, delay=0, max_delay=None, backoff=1, jitter=0, logger=...)`。失败后的等待序列为：先 `sleep(初始 delay)`，此后每轮 `_delay = min(_delay * backoff + jitter, max_delay)`；`backoff` 是固定乘数，`jitter` 可传数值或 `(min, max)` 元组（取随机值），`tries=-1` 表示无限重试。与原版 retry 库的两处差异：重试耗尽时抛**原始异常**（原版抛 `RetryError`），且失败时用 `logger.exception` 输出完整堆栈。`retry_call` 是同一逻辑的函数式调用。当前唯一使用点是 `module/runtime/updater.py` 的 `git_install`（`tries=3, delay=5, logger=None`）。

@@ -1,5 +1,5 @@
 """
-向 azurstats_local.db 插入随机资源快照数据，用于测试资源历史趋势图表的渲染效果。
+向 azurpilot.db 插入随机资源快照数据，用于测试资源历史趋势图表的渲染效果。
 
 生成的数据具有真实感：
 - 每种资源有独立的基准值、趋势方向和波动幅度
@@ -18,17 +18,15 @@ import argparse
 import math
 import os
 import random
-import sqlite3
 import sys
 from datetime import datetime, timedelta
 
 # 切换到项目根目录
 _project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-os.chdir(_project_root)
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
 
-_DB = './config/azurstats_local.db'
+from module.persistence.database import get_database, register_instance
 
 # 每种资源的模拟参数 (base, trend_per_day, amplitude, min_val, max_val)
 RESOURCE_PROFILES = {
@@ -86,6 +84,7 @@ def seed_snapshots(
     interval_minutes: int = 15,
     gap_prob: float = 0.05,
     dry_run: bool = False,
+    store=None,
 ):
     """生成随机快照并写入数据库。
 
@@ -112,7 +111,8 @@ def seed_snapshots(
         base, trend, amp, lo, hi = RESOURCE_PROFILES[key]
         series[key] = _generate_timeline(base, trend, amp, lo, hi, count, gap_prob)
 
-    db_path = os.path.join(os.getcwd(), _DB)
+    database = store or get_database()
+    db_path = database.path
     print(f"数据库: {db_path}")
     print(f"实例:     {instance}")
     print(f"数据条数: {count}")
@@ -140,20 +140,6 @@ def seed_snapshots(
                 print(f"  {k:>12}: 全部为 None")
         return
 
-    # 写入数据库
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS resource_snapshots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            instance TEXT NOT NULL,
-            ts TEXT NOT NULL,
-            oil INTEGER, coin INTEGER, gem INTEGER, pt INTEGER, cube INTEGER,
-            core INTEGER, medal INTEGER, merit INTEGER, guild_coin INTEGER,
-            action_point INTEGER, yellow_coin INTEGER, purple_coin INTEGER
-        )
-    """)
-
     rows = []
     for i in range(count):
         rows.append((
@@ -164,19 +150,15 @@ def seed_snapshots(
             series['yellow_coin'][i], series['purple_coin'][i],
         ))
 
-    conn.executemany("""
-        INSERT INTO resource_snapshots
-            (instance, ts,
-             oil, coin, gem, pt, cube,
-             core, medal, merit, guild_coin,
-             action_point, yellow_coin, purple_coin)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
-    conn.commit()
-
-    cursor = conn.execute("SELECT COUNT(*) FROM resource_snapshots WHERE instance=?", (instance,))
-    total = cursor.fetchone()[0]
-    conn.close()
+    with database.transaction() as conn:
+        register_instance(conn, instance)
+        conn.executemany("""
+            INSERT INTO resource_snapshots
+                (instance, ts, oil, coin, gem, pt, cube, core, medal, merit,
+                 guild_coin, action_point, yellow_coin, purple_coin)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, rows)
+        total = conn.execute('SELECT COUNT(*) FROM resource_snapshots WHERE instance=?', (instance,)).fetchone()[0]
 
     print(f"已写入 {len(rows)} 条记录到实例 '{instance}'（当前共 {total} 条）")
     print()
@@ -190,46 +172,39 @@ def seed_snapshots(
             print(f"  {k:>12}: 全部为 None")
 
 
-def clear_snapshots(instance: str = "alas", dry_run: bool = False):
+def clear_snapshots(instance: str = "alas", dry_run: bool = False, *, store=None):
     """清空指定实例的快照数据。
 
     Args:
         instance (str): 待清空的实例名称，默认为 "alas"。
         dry_run (bool): 是否仅模拟运行而不实际删除。
     """
-    db_path = os.path.join(os.getcwd(), _DB)
-    if not os.path.exists(db_path):
-        print("数据库文件不存在，无需清空")
+    database = store or get_database()
+    if dry_run and not database.path.exists():
+        print('[DRY-RUN] 普通总库尚未初始化，不读取或改写旧源')
         return
-
-    conn = sqlite3.connect(db_path)
-    cursor = conn.execute("SELECT COUNT(*) FROM resource_snapshots WHERE instance=?", (instance,))
-    count = cursor.fetchone()[0]
-
-    if dry_run:
-        print(f"[DRY-RUN] 将清空实例 '{instance}' 的 {count} 条记录")
-        conn.close()
-        return
-
-    conn.execute("DELETE FROM resource_snapshots WHERE instance=?", (instance,))
-    conn.commit()
-    conn.close()
-    print(f"已清空实例 '{instance}' 的 {count} 条记录")
+    with database.transaction(write=not dry_run) as connection:
+        count = connection.execute('SELECT COUNT(*) FROM resource_snapshots WHERE instance=?', (instance,)).fetchone()[0]
+        if not dry_run:
+            connection.execute('DELETE FROM resource_snapshots WHERE instance=?', (instance,))
+    print(f"[DRY-RUN] 将清空实例 '{instance}' 的 {count} 条记录" if dry_run else f"已清空实例 '{instance}' 的 {count} 条记录")
 
 
 def main():
     """解析命令行参数并执行快照数据生成与写入。"""
-    parser = argparse.ArgumentParser(description="向 azurstats_local.db 插入随机资源快照测试数据")
+    parser = argparse.ArgumentParser(description="向 azurpilot.db 插入随机资源快照测试数据")
     parser.add_argument("--instance", default="alas", help="实例名 (默认: alas)")
     parser.add_argument("--count", type=int, default=120, help="快照条数 (默认: 120, ≈ 30小时 @ 15min间隔)")
     parser.add_argument("--interval", type=int, default=15, help="快照间隔分钟数 (默认: 15)")
     parser.add_argument("--gap-prob", type=float, default=0.05, help="每条资源出现 None 的概率 (默认: 0.05)")
     parser.add_argument("--clear", action="store_true", help="先清空再插入")
     parser.add_argument("--dry-run", action="store_true", help="只打印不写入")
+    parser.add_argument("--config-dir", help="实际配置目录；开发验证使用临时目录")
     args = parser.parse_args()
+    database = get_database(args.config_dir)
 
     if args.clear:
-        clear_snapshots(args.instance, dry_run=args.dry_run)
+        clear_snapshots(args.instance, dry_run=args.dry_run, store=database)
 
     seed_snapshots(
         instance=args.instance,
@@ -237,6 +212,7 @@ def main():
         interval_minutes=args.interval,
         gap_prob=args.gap_prob,
         dry_run=args.dry_run,
+        store=database,
     )
 
 

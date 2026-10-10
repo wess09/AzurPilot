@@ -55,13 +55,10 @@ def memory_governs(instance: str) -> bool:
         return False
 
 
-def prepare_statistics() -> None:
-    """初始化统计数据环境（旧加密数据自动解密；有界等待，异常环境不阻塞启动）。"""
-    try:
-        from module.statistics.opsi_secure import initialize
-        initialize()
-    except Exception:
-        logger.exception('[统计-运行] 启动时初始化未完成（稍后自动重试）')
+def prepare_statistics(config_directory=None) -> None:
+    """迁移普通总库；失败中止 worker 启动并保留旧源。"""
+    from module.persistence.database import initialize
+    initialize(config_directory)
 
 
 class ProcessManager:
@@ -205,6 +202,7 @@ class ProcessManager:
                         return
                     if func is None:
                         func = get_config_mod(self.config_name)
+                    prepare_statistics()
                     from module.api.account_service import prepare_worker
                     account_key = prepare_worker(self.config_name)
                     self.started_func = func
@@ -219,6 +217,7 @@ class ProcessManager:
                     self._preview_queue = State.manager.Queue(maxsize=2)
                     self._program_queue = State.manager.Queue(maxsize=2)
                     from module.runtime.preview import hub
+                    from module.persistence.database import current_directory
                     hub.publish(self.config_name, {"instance": self.config_name, "image": None, "capturedAt": None})
                     args = (
                         self.config_name,
@@ -229,6 +228,7 @@ class ProcessManager:
                         self.run_id,
                         account_key,
                         self._program_queue,
+                        str(current_directory()),
                     )
                     process = Process(
                         target=ProcessManager.run_process,
@@ -777,6 +777,7 @@ class ProcessManager:
         run_id: str = None,
         account_key=None,
         program_queue=None,
+        business_directory=None,
     ) -> None:
         """工作子进程的主入口点函数。
 
@@ -790,6 +791,7 @@ class ProcessManager:
             preview_queue: 预览帧队列。
             run_id: 运行轮次 ID。
             account_key: 解密注入的账号密钥。
+            business_directory: 父进程实际使用的普通总库目录。
         """
         from module.runtime.worker_events import initialize
 
@@ -801,6 +803,8 @@ class ProcessManager:
             vault.keys[config_name] = account_key
         result = WorkerResult.ERROR
         try:
+            if business_directory is not None:
+                prepare_statistics(business_directory)
             result = ProcessManager._run_process(config_name, func, q, e, preview_queue, run_id)
         except SystemExit as exc:
             if exc.code in (None, 0):

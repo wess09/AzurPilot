@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 from deploy import config as deploy_config
 from deploy import geo
+from deploy import git as deploy_git
 from deploy.Windows import config as windows_config
+from deploy.Windows import git as windows_git
 
 
 class TestIp9Location(unittest.TestCase):
@@ -51,8 +53,21 @@ class TestDeployLocation(unittest.TestCase):
 
                 self.assertEqual(config.config['Repository'], config_module.GIT_OVER_CDN_REPOSITORY)
                 self.assertTrue(config.GitOverCdn)
-                self.assertEqual(config.Repository, config_module.GIT_OVER_CDN_FALLBACK_REPOSITORY)
+                self.assertIn(config.Repository, config_module.GIT_OVER_CDN_FALLBACK_REPOSITORIES)
                 get_country_code.assert_called_once_with()
+
+    def test_fallback_repositories_include_cnb_and_gitcode(self):
+        for config_module in (deploy_config, windows_config):
+            with self.subTest(config_module=config_module.__name__):
+                self.assertIn(config_module.CNB_REPOSITORY, config_module.GIT_OVER_CDN_FALLBACK_REPOSITORIES)
+                self.assertIn(config_module.GITCODE_REPOSITORY, config_module.GIT_OVER_CDN_FALLBACK_REPOSITORIES)
+
+    def test_cnb_alias_and_repository(self):
+        for config_module in (deploy_config, windows_config):
+            with self.subTest(config_module=config_module.__name__):
+                config = self.make_config(config_module, 'cnb')
+                config.config_redirect()
+                self.assertEqual(config.Repository, config_module.CNB_REPOSITORY)
 
     def test_non_china_keeps_github_and_only_checks_once(self):
         for config_module in (deploy_config, windows_config):
@@ -91,6 +106,28 @@ class TestDeployLocation(unittest.TestCase):
                 config.config_redirect()
 
                 get_country_code.assert_not_called()
+
+    def test_peer_fallback_repository(self):
+        for git_mod in (deploy_git, windows_git):
+            with self.subTest(git_module=git_mod.__name__):
+                self.assertEqual(
+                    git_mod.peer_fallback_repository('https://cnb.cool/AzurPilot/AzurPilot'),
+                    git_mod.GITCODE_REPOSITORY,
+                )
+                self.assertEqual(
+                    git_mod.peer_fallback_repository('https://cnb.cool/AzurPilot/AzurPilot.git'),
+                    git_mod.GITCODE_REPOSITORY,
+                )
+                self.assertEqual(
+                    git_mod.peer_fallback_repository('https://gitcode.com/ddl2/AzurLaneAutoScript'),
+                    git_mod.CNB_REPOSITORY,
+                )
+                self.assertEqual(
+                    git_mod.peer_fallback_repository('https://gitcode.com/ddl2/AzurLaneAutoScript.git'),
+                    git_mod.CNB_REPOSITORY,
+                )
+                self.assertIsNone(git_mod.peer_fallback_repository('https://github.com/wess09/AzurPilot'))
+                self.assertIsNone(git_mod.peer_fallback_repository(''))
 
 
 if __name__ == '__main__':

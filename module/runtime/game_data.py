@@ -477,21 +477,6 @@ class GameDataProtector:
                 with self.transaction() as (data, _):
                     data['instances'][identity]['predecessor'] = None
             return
-        self._safe(source)
-        self._safe(target)
-        with config_transaction(source), config_transaction(target):
-            if source.exists():
-                if target.exists():
-                    raise damaged('实例重命名后资源数据库冲突，请保留原文件并恢复对应备份')
-                temporary = target.with_name(target.name + '.' + uuid.uuid4().hex + '.relocating')
-                self._safe(temporary)
-                try:
-                    with closing(sqlite3.connect(source.as_uri() + '?mode=ro', uri=True)) as incoming, closing(sqlite3.connect(temporary)) as outgoing:
-                        incoming.backup(outgoing)
-                    os.replace(temporary, target)
-                    for suffix in ('', '-wal', '-shm'):
-                        source.with_name(source.name + suffix).unlink(missing_ok=True)
-                finally:
-                    temporary.unlink(missing_ok=True)
-        with self.transaction() as (data, _):
-            data['instances'][identity]['schedulerName'] = instance
+        # 普通总库和历史文件不共享提交域，由加密的阶段记录支持中断续跑。
+        from module.runtime.profile_relocation import relocate_profile
+        relocate_profile(self, identity, old, instance)

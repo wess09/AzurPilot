@@ -42,7 +42,7 @@ jobs:
       - name: 安装锁定依赖
         run: uv sync --frozen
       - name: 验证身份持久化、历史认证、账户恢复与部署迁移
-        run: uv run python -m unittest tests.test_game_data tests.test_stock_exchange tests.test_stock_exchange_history tests.test_stock_exchange_recovery
+        run: uv run python -m unittest tests.test_game_data tests.test_stock_exchange tests.test_stock_exchange_history tests.test_stock_exchange_recovery tests.test_profile_relocation
 
   frontend:
     name: React 与 WebSocket 检查
@@ -77,6 +77,7 @@ jobs:
         run: |
           uv run ruff check module/api module/runtime deploy/frontend.py --select F821,F401
           uv run python -m unittest tests.test_api tests.test_api_lifecycle tests.test_config_transaction tests.test_runtime_task_handler tests.test_frontend_build tests.test_gui_supervisor_exit
+          uv run python -m unittest tests.test_island_walk_rules tests.test_mind_calculator tests.test_mind_scan
           npm run build --prefix frontend
           npm test --prefix frontend
       - name: 浏览器端到端测试
@@ -84,6 +85,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium
           npm run test:e2e
+          npx playwright test --config playwright.mind.config.ts
 
   ruff:
     runs-on: ubuntu-latest

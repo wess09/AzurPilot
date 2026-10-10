@@ -26,6 +26,7 @@
       "group_type": 10000,
       "is_retrofit": false,
       "retrofit_base_id": null,
+      "retrofit_names": ["舰船名.改"],
       "armor_type": 1,
       "attrs": { "durability": 100, "cannon": 10, "torpedo": 10, ... },
       "attrs_growth": { "durability": 1000, "cannon": 100, ... },
@@ -38,7 +39,7 @@
   }
 
 使用方式：
-  uv run python dev_tools/ship_data_extractor.py
+  uv run python dev_tools/ship_data_extractor.py  # 输出 assets/ship/ship_data.json
   uv run python dev_tools/ship_data_extractor.py --lua-repo D:/AzurLaneLuaScripts
 """
 
@@ -460,6 +461,17 @@ def _index_arr(arr: list, idx1: int) -> int | float | None:
     return arr[idx1 - 1] if arr and len(arr) >= idx1 else None
 
 
+def resolve_ship_name(name, codes, server):
+    """解析舰船名和改造皮肤名中的 namecode，缺少资料时明确报错。"""
+    def replace(match):
+        value = codes.get(int(match.group(1)), {}).get('name')
+        if not isinstance(value, str) or not value:
+            raise ValueError(f'{server}: 未解析的名称引用 {match.group(0)}')
+        return value
+
+    return re.sub(r'\{namecode:(\d+)\}', replace, name).strip()
+
+
 def extract_ship_data(lua_repo: str) -> dict:
     """解析各服 Lua 脚本并提取汇总全部舰船数据为标准结构。
 
@@ -506,6 +518,17 @@ def extract_ship_data(lua_repo: str) -> dict:
         gt = tpl.get("group_type")
         if gt is not None:
             group_map.setdefault(gt, []).append(ship_id)
+
+    # 改造名来自皮肤表，普通属性表通常仍保留基础舰名。
+    retrofit_names: dict[int, set[str]] = {}
+    cn_codes = parse_lua_ship_blocks(str(repo / 'CN/sharecfg/name_code.lua'))
+    skin_files = [repo / 'CN/sharecfg/ship_skin_template.lua']
+    skin_files.extend(sorted((repo / 'CN/sharecfg/ship_skin_template_sublist').glob('*.lua')))
+    for path in skin_files:
+        for skin in parse_lua_ship_blocks(str(path)).values():
+            if skin.get('skin_type') == 2 and isinstance(skin.get('name'), str):
+                name = resolve_ship_name(skin['name'], cn_codes, 'cn')
+                retrofit_names.setdefault(skin['ship_group'], set()).add(name)
 
     # ---- 6) 构建 english_name → ship_id 映射（用于 II 型舰检测） ----
     en_name_index: dict[str, list[int]] = {}
@@ -565,6 +588,7 @@ def extract_ship_data(lua_repo: str) -> dict:
                 non_retro = [
                     sid for sid in siblings
                     if sid in cn_stats
+                    and sid // 10 == group_type
                     and "改" not in cn_stats[sid].get("name", "")
                 ]
                 if non_retro:
@@ -608,6 +632,12 @@ def extract_ship_data(lua_repo: str) -> dict:
             "oil_at_end": tpl.get("oil_at_end"),
             "max_level": tpl.get("max_level"),
         }
+        if 'Little-series' in stats.get('tag_list', []):
+            entry['is_child'] = True
+        if group_type in retrofit_names and not is_retrofit:
+            base_ids = [sid for sid in group_map[group_type] if sid // 10 == group_type]
+            if base_ids and ship_id == max(base_ids):
+                entry['retrofit_names'] = sorted(retrofit_names[group_type])
         output[str(ship_id)] = entry
 
     if skipped_types:
@@ -628,25 +658,16 @@ def extract_ship_names(lua_repo: str) -> dict[str, list[str]]:
         root = Path(lua_repo) / SERVER_DIRS[server]
         codes = parse_lua_ship_blocks(str(root / 'sharecfg/name_code.lua'))
 
-        def resolve(name):
-            def replace(match):
-                code = int(match.group(1))
-                value = codes.get(code, {}).get('name')
-                if not isinstance(value, str) or not value:
-                    raise ValueError(f'{server}: 未解析的名称引用 {match.group(0)}')
-                return value
-
-            return re.sub(r'\{namecode:(\d+)\}', replace, name).strip()
-
         stats = parse_lua_ship_blocks(str(root / 'sharecfgdata/ship_data_statistics.lua'))
-        names = {resolve(entry['name']) for entry in stats.values() if isinstance(entry.get('name'), str)}
+        names = {resolve_ship_name(entry['name'], codes, server)
+                 for entry in stats.values() if isinstance(entry.get('name'), str)}
         # 当前版本将皮肤分散到 sublist；同时支持旧版内联表。
         skin_files = [root / 'sharecfg/ship_skin_template.lua']
         skin_files.extend(sorted((root / 'sharecfg/ship_skin_template_sublist').glob('*.lua')))
         for path in skin_files:
             for skin in parse_lua_ship_blocks(str(path)).values():
                 if skin.get('skin_type') == 2 and isinstance(skin.get('name'), str):
-                    names.add(resolve(skin['name']))
+                    names.add(resolve_ship_name(skin['name'], codes, server))
         output[server] = sorted(name for name in names if any(c.isalnum() for c in name))
         if not output[server]:
             raise ValueError(f'{server}: 舰船名称名单为空')
@@ -671,7 +692,7 @@ def main():
     elif args.names_only:
         output_path = Path(__file__).resolve().parents[1] / 'assets/ship/ship_names.json'
     else:
-        output_path = Path(__file__).resolve().parent / "ship_data.json"
+        output_path = Path(__file__).resolve().parents[1] / 'assets/ship/ship_data.json'
 
     if not os.path.isdir(args.lua_repo):
         print(f"错误: Lua 脚本仓库不存在: {args.lua_repo}", file=sys.stderr)

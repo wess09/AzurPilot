@@ -111,6 +111,8 @@ module/ui/
 - `_opsi_reset_fleet_preparation_click` 计数器在连续点击大世界重置舰队按钮超过 5 次时抛 `RequestHumanTakeover`——这是「点击 → 弹窗 → 再点击」死循环的熔断器。
 - 岛屿页面跳过 `GET_SHIP/GET_ITEMS` 检测，因为其 UI 元素与奖励检测区域重叠会产生误识别。
 
+`ui_page_main_popups()` 也处理登录后强制展示的自选轻量复刻选择页：先匹配右下角 `CAPSULE_RERUN_CHECK`，再确认并点击现有 `BACK_ARROW_WHITE`（3 秒防连击）。页面标识不包含活动卡片或日期；仅有白色返回箭头时不会触发此分支，也不会自动选择活动。登录和普通导航复用这条弹窗链，操作后由外层循环重新截图确认目标页。
+
 ### 四类控件
 
 | 控件 | 识别原理 | 关键行为 |

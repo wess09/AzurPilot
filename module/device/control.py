@@ -255,6 +255,11 @@ class Control(Hermit, Minitouch, Scrcpy, MaaTouch, NemuIpc):
                 self.sleep(hold_duration)
             self.click(Button(area=(), color=(), button=area_offset(point_random, p2), name=name), False)
 
+    def live_drag(self, name='LIVE_DRAG'):
+        """创建可穿插截图的按住/移动/释放会话；不支持的后端明确报错。"""
+        from module.device.live_drag import LiveDrag
+        return LiveDrag(self, name)
+
     def island_swipe_hold(self, p1, p2, hold_time):
         """岛屿系统专用的滑动并保持操作。
 

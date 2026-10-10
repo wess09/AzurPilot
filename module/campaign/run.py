@@ -194,31 +194,6 @@ class CampaignRun(CampaignEvent, ShopStatus):
 
         return False
 
-    def _triggered_app_restart(self):
-        """检查是否触发重启条件。
-
-        Returns:
-            bool: 是否触发重启条件。
-        """
-        if not self.campaign.emotion.is_ignore:
-            if self.campaign.emotion.triggered_bug():
-                logger.info('[战役-运行] 触发重启避免情绪bug')
-                return True
-
-        return False
-
-    def handle_app_restart(self):
-        """检查并处理因情绪异常导致的客户端重启。
-
-        Returns:
-            bool: 若触发了重启调用返回 True，否则返回 False。
-        """
-        if self._triggered_app_restart():
-            self.config.task_call('Restart')
-            return True
-
-        return False
-
     def handle_stage_name(self, name, folder, mode='normal'):
         """依次规范化名称、选择目录和循环关卡，再应用对应的运行约束。
 

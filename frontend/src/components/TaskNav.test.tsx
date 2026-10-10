@@ -20,6 +20,7 @@ const mockSchema: Schema = {
       page: 'setting',
       tasks: ['Main', 'Main2', 'ThreeOilLowCost'],
     },
+    FleetManagement: {menu: 'collapse', page: 'setting', tasks: ['FleetInfo']},
   },
   args: {},
   translations: {},
@@ -28,6 +29,8 @@ const mockSchema: Schema = {
 const mockTranslations: Record<string, string> = {
   'Menu.Alas.name': '系统',
   'Menu.Farm.name': '出击',
+  'Menu.FleetManagement.name': '舰队管理',
+  'Task.FleetInfo.name': '舰队信息',
   'Task.Alas.name': '系统设置',
   'Task.General.name': '通用设置',
   'Task.Restart.name': '游戏重启',
@@ -76,6 +79,16 @@ function render(path: string, props: {defaultOpenKey?: string; isDesktop?: boole
 }
 
 describe('TaskNav 导航组件', () => {
+  it.each(['legacy-light', 'light'] as Theme[])('在 %s 主题中将计算器与舰队信息并列放在舰队管理', theme => {
+    const html = render('/i/default/task/MindCalculator', {defaultOpenKey: 'FleetManagement'}, theme)
+    expect(html).toContain('舰队管理')
+    expect(html).toContain('task-group-button expanded active')
+    expect(html).toContain('href="/i/default/task/FleetInfo"')
+    expect(html).toContain('href="/i/default/task/MindCalculator"')
+    expect(html).toContain('心智单元计算器')
+    expect(html).not.toContain('Task.MindCalculator.name')
+  })
+
   it('渲染一级分组按钮，未展开时不下发具体任务', () => {
     const html = render('/i/default/overview')
 

@@ -39,6 +39,17 @@ class Params(BaseModel):
     model_config = ConfigDict(extra='forbid', strict=True)
 
 
+class MindShip(Params):
+    """可编辑的舰船字段，核对状态与排除状态独立保存。"""
+    name: StrictStr = Field(min_length=1, max_length=100)
+    level: StrictInt = Field(ge=0, le=125)
+    rarity: Literal['', 'N', 'R', 'SR', 'SSR', 'UR'] = ''
+    base_rarity: Literal['', 'N', 'R', 'SR', 'SSR', 'UR'] = ''
+    excluded: StrictBool = False
+    review: StrictBool = False
+    source: StrictStr = Field(default='', max_length=200)
+
+
 class Request(Params):
     """API 顶层请求信封模型。"""
     v: Literal[1]
@@ -83,6 +94,23 @@ class BackgroundGalleryRemoveParams(Params):
 class InstanceParams(Params):
     """单实例操作通用入参模型。"""
     instance: StrictStr = Field(min_length=1, max_length=64)
+
+
+class MindCalculateParams(InstanceParams):
+    ships: list[MindShip] = Field(max_length=5000)
+
+
+class MindSaveParams(MindCalculateParams):
+    revision: StrictStr = Field(min_length=64, max_length=64)
+
+
+class MindFileParams(InstanceParams):
+    filename: StrictStr = Field(min_length=1, max_length=200)
+    content: StrictStr = Field(min_length=1, max_length=8_000_000)
+
+
+class MindExportParams(InstanceParams):
+    format: Literal['json', 'csv', 'xlsx'] = 'xlsx'
 
 
 class StockRequestParams(InstanceParams):
@@ -194,6 +222,8 @@ class StatisticsReportParams(InstanceParams):
     scope: Literal['series', 'consumable'] = 'series'
     # 大世界掉落专用：只看某个大世界任务（任务名转下划线，如 opsi_abyssal）；空表示全部
     task: StrictStr | None = Field(default=None, pattern=r'^[a-z][a-z0-9_]{0,40}$')
+    # 图表与原始记录都被隐藏时前端传 false，后端跳过序列的查询与构造
+    include_series: StrictBool = True
 
 
 class ResourceFlowsParams(InstanceParams):

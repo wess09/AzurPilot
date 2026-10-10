@@ -133,6 +133,7 @@ class StorageRecoveryTests(unittest.TestCase):
             save_snapshot('recovery_test', 'cn',
                           [dict(id='old', name='旧物品', group='材料', amount=99)],
                           started_at='2026-10-01', pages=2, catalog_version='old', database=database)
+            database = database.parent / 'azurpilot.db'
             before = database.read_bytes()
             writer = self.enterContext(patch.object(self.module, 'save_snapshot'))
             self.enterContext(patch.object(self.module, 'StorageCatalog', return_value=self.catalog))

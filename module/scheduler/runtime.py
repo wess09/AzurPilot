@@ -13,7 +13,7 @@ from module.scheduler.validation import validate
 
 
 class SchedulerRuntime:
-    def __init__(self, script, directory='config'):
+    def __init__(self, script, directory=None):
         self.script, self.store = script, ProgramStore(directory)
         self.mode, self.generation = 'native', None
         self.engine, self.invocation = None, None

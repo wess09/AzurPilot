@@ -20,6 +20,12 @@ gui.py 是用户进入系统的第一个进程。用户执行 `uv run python gui
 | 服务层 | 名为 `gui` 的子进程 | 父进程 `multiprocessing.Process(target=func)` | uvicorn + `module.api` 的全部 HTTP/WS 服务 |
 | 工作层 | 每个配置实例一个 worker | 服务层内的 `ProcessManager` | 运行 `AzurLaneAutoScript`，控制设备 |
 
+所有运行入口在业务 worker 启动前执行 `module.persistence.database.initialize()`。首次迁移先备份、转换与检查；解不开的旧普通密文按记录跳过并写入备份目录的 `unmigrated.json`，其余记录继续迁移并正常启动。结构冲突、写入或完整性检查失败仍停止启动并保留旧源；总库完成标记存在而数据库丢失时必须恢复备份。模块导入不创建总库，详见 [普通业务数据存储](../infra/persistence.md)。
+
+`uv run gui.py` 与 `uv run python gui.py` 均可启动。迁移检测会识别当前入口的 `uv` 和 Windows 虚拟环境 Python 转发进程，避免把启动链误判为旧运行入口；其他旧入口或已登记的业务 worker 仍需先停止。
+
+`main()` 在初始化存储前显式绑定 GUI 文件日志。初始化失败时将原因与异常堆栈写入 `log/<日期>_gui-launcher.txt`，返回启动失败码 70，且不创建 WebUI 或业务 worker；启动器可从日志获取具体原因。
+
 ## 2. 模块职责
 
 ### 负责
@@ -75,7 +81,7 @@ AzurPilot/
 
 | 入口 | 用途 |
 | --- | --- |
-| `uv run python gui.py`（`__main__`） | 主入口：强制 `spawn` 启动方式后按 `EnableReload` 分流 |
+| `uv run python gui.py`（`__main__` → `main()`） | 主入口：绑定 GUI 日志并初始化存储，成功后强制 `spawn` 启动方式并按 `EnableReload` 分流 |
 | `run_webui_supervisor()` | 热重载模式的父进程监督循环，`EnableReload=true` 时由主入口调用 |
 | `func(ev, dependency_sync_event, ready_event)` | 服务子进程入口，由监督器 `spawn`（进程名 `gui`）；非重载模式直接调用 `func(None, None)` |
 | `func` 内的 uvicorn 工厂字符串 `"module.api.app:create_app"` | ASGI 应用实际创建点，服务重启后以新代码重新 import |
@@ -374,11 +380,12 @@ gui.py 读取的是**部署配置**（`config/deploy.yaml`，经 `deploy/config.
 | `config/reloadalas` | 更新器 | `ProcessManager.restart_processes` | 热重载后待恢复的实例名列表，恢复后删除 |
 | `config/deploy.yaml` | `DeployConfig.__setattr__` | 双方 | 监听与更新设置；子进程内写回（如生成的 Password） |
 | `frontend/dist/.source-fingerprint` | `ensure_frontend` | `ensure_frontend` | 前端源码内容摘要，命中则跳过构建 |
-| `log/gui.txt` | 子进程 logger（午夜轮转） | 排障 | WebUI 侧日志；父监督进程在 Windows 上不写独立文件 |
+| `log/YYYY-MM-DD_gui-launcher.txt` | GUI 主入口 logger（午夜轮转） | 排障 | 启动、总库迁移及父监督器的阶段日志，同时输出控制台 |
+| `log/YYYY-MM-DD_webui.txt` | 服务进程 logger（午夜轮转） | 排障 | WebUI 初始化与运行日志；关闭控制台日志前提示实际文件路径 |
 
 ## 14. 生命周期
 
-- **创建**：用户/启动器运行 gui.py；强制 `spawn` 启动方式（macOS 兼容要求）。
+- **创建**：用户/启动器运行 gui.py；先绑定启动日志并确认普通业务总库就绪，再强制 `spawn` 启动方式（macOS 兼容要求）。
 - **监督器初始化**：读取部署配置 → `_recover_orphaned_workers` 清场（失败即拒绝启动）。
 - **每轮循环**：完成依赖同步 → 构建前端 → spawn 服务子进程 → 等待就绪 → 监控（重启事件 / 存活状态）→ 终止并清理。
 - **子进程内**：`func` 延迟导入 uvicorn → `ensure_frontend` 兜底校验 → uvicorn 运行；应用 lifespan 内再初始化 `State`（Manager、worker 认领）并拉起实例 worker。
@@ -408,7 +415,7 @@ gui.py 读取的是**部署配置**（`config/deploy.yaml`，经 `deploy/config.
 - 父监督进程被外部强杀（如任务管理器结束进程树）时，worker 依赖下一次启动时的孤儿回收兜底，期间残留 worker 仍占用模拟器。
 - 监督器与子进程间的重启协议只覆盖「更新重载」场景；子进程在直连模式下无任何重启通道，更新器会直接拒绝更新。
 - 就绪判定只确认「uvicorn 已监听」，不覆盖应用 lifespan 内部的失败；lifespan 阶段的错误表现为子进程在监听后很快退出，由运行期重试逻辑兜底。
-- Windows 上父监督进程自身不产生独立文件日志（logger 按进程名过滤），排障依赖子进程的 `log/gui.txt` 与控制台输出。
+- WebUI 服务初始化时关闭当前进程的控制台日志，详细信息转入当日 `webui` 日志；父监督器仍通过控制台及当日 `gui-launcher` 日志记录阶段与服务就绪状态。
 
 ## 18. 示例
 
@@ -433,7 +440,8 @@ pythonw.exe gui.py --electron
 
 ## 19. 调试方法
 
-- 日志入口：`log/gui.txt`（WebUI 子进程，午夜轮转；worker 各自写 `log/{配置名}.txt`）。父监督器日志以 `[GUI]` 前缀输出到控制台。
+- 日志入口：`log/YYYY-MM-DD_gui-launcher.txt`（主入口、迁移与父监督器）、`log/YYYY-MM-DD_webui.txt`（WebUI 服务），均按午夜轮转；worker 各自写 `log/YYYY-MM-DD_{配置名}.txt`。启动时输出实际路径，父监督器日志以 `[GUI]` 前缀同时输出控制台。
+- 只有「启动」横幅时，依次查看 `[存储]` / `[存储迁移]` 的总库状态，再查看 `[GUI]` 的依赖准备、前端检查与等待监听阶段；看到「已完成迁移，无需再次解密旧数据」表示本次没有重新转换旧源。服务进程切换到文件日志前会明确提示路径。
 - 启动横幅：`logger.hr("Launcher config")` 会打印 Host/Port/SSL/Electron/Reload 五项，先确认它们符合预期。
 - 结构化错误：`exception_context`/`error_context` 输出的 title/impact/action 三段直接给出影响与建议动作。
 - 遇到「拒绝启动第二个 WebUI」或孤儿回收告警，先看 `cache/webui-workers.json` 中的 owner/worker 登记与对应 PID 是否存活；确认无残留后可手工删除该文件（损坏时系统也会按空登记自愈）。

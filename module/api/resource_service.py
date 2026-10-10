@@ -3,9 +3,11 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from module.api.protocol import ApiError
+from module.persistence.database import configured_database, get_database
 from module.statistics import resource_flow
 
 
+@configured_database
 def resource_flows(configs, params):
     path = configs.path(params.instance)
     try:
@@ -27,7 +29,8 @@ def resource_flows(configs, params):
         if stamp and str(stamp) > '2020-01-01 00:00:00' and type(item.get('Value')) is int:
             resources[key].update(current=item['Value'], observedAt=str(stamp))
     from module.statistics.storage_snapshot import latest_snapshot
-    storage = latest_snapshot(params.instance, database=Path(path).parent / 'storage_statistics.db')
+    database = getattr(configs, 'database', None) or get_database(Path(path).parent)
+    storage = latest_snapshot(params.instance, database=database)
     if storage:
         for item in storage['items']:
             if item['id'] in resources and not resources[item['id']]['observedAt'] and item['amount'] is not None:

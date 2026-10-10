@@ -1,0 +1,100 @@
+[
+  {
+    "name": "约克城II",
+    "source_sha256": "4b110fe4987c7b9ce5f6ba303c95dde25c6cc2e7463fc4a48cba0368df961ae6",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      742,
+      232,
+      894,
+      262
+    ]
+  },
+  {
+    "name": "列克星敦II",
+    "source_sha256": "4b110fe4987c7b9ce5f6ba303c95dde25c6cc2e7463fc4a48cba0368df961ae6",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      906,
+      232,
+      1058,
+      262
+    ]
+  },
+  {
+    "name": "杓鹬.改",
+    "source_sha256": "c6afebf22d840ba177d95bf4abeafcd270fc22548d8a21823edee62e9302e427",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      248,
+      452,
+      400,
+      482
+    ]
+  },
+  {
+    "name": "四糸乃",
+    "source_sha256": "a6589f8a8933af76df5ed6ddf9c1232837121a35f8dbf84b8c7425f0b4df8911",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      1071,
+      677,
+      1223,
+      707
+    ]
+  },
+  {
+    "name": "酒匂",
+    "source_sha256": "b470cc25e1d8b2b2fce23682bdfb579743378ad7a6827c7c6d4dc7c881d07d5d",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      906,
+      250,
+      1058,
+      280
+    ]
+  },
+  {
+    "name": "鲦鱼",
+    "source_sha256": "0465ca2bd87a61846ffa88c28a4b1be64993109e058d6a2cce989ac279be78f0",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      1071,
+      470,
+      1223,
+      500
+    ]
+  },
+  {
+    "name": "白雪",
+    "source_sha256": "d4e48b2495f1c8bc4167c6d31a10909edd18321f83bb49e5ae5236914fa21312",
+    "source_size": [
+      1280,
+      720
+    ],
+    "region": [
+      906,
+      471,
+      1058,
+      501
+    ]
+  }
+]

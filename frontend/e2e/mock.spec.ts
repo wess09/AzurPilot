@@ -1119,3 +1119,26 @@ test('商店配置只显示官源购买设置并保留普通过滤器保存', as
   await expect(filter).toBeInViewport()
   await page.screenshot({path: 'test-results/shop-upstream-mobile.png', fullPage: true})
 })
+
+test('关闭背景后切回填写 URL 直接铺上，不必再点应用背景', async ({page}) => {
+  await page.route('https://api.yppp.net/api.php', route => route.fulfill({
+    contentType: 'image/svg+xml',
+    body: '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><rect width="1280" height="720" fill="#9acbff"/></svg>',
+  }))
+  /* 「关闭背景」档只在普通材质出现。 */
+  await page.addInitScript(() => {
+    localStorage.setItem('azurpilot.theme', 'light')
+    localStorage.setItem('azurpilot.material', 'plain')
+  })
+  await page.goto('/#/interface')
+  const source = page.locator('#ui-background-source')
+  await source.click()
+  await page.getByRole('option', {name: '填写 URL', exact: true}).click()
+  await expect(page.locator('.wallpaper img')).toBeVisible()
+  await source.click()
+  await page.getByRole('option', {name: '关闭背景', exact: true}).click()
+  await expect(page.locator('.wallpaper img')).toHaveCount(0)
+  await source.click()
+  await page.getByRole('option', {name: '填写 URL', exact: true}).click()
+  await expect(page.locator('.wallpaper img')).toBeVisible()
+})

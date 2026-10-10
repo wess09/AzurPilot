@@ -6,7 +6,6 @@
 from module.base.runtime_params import BACKUP_KEEP_DAYS
 import json
 import shutil
-import sqlite3
 
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -19,169 +18,97 @@ CONFIG_DIR = ROOT_DIR / 'config'
 BACKUP_ROOT = ROOT_DIR / 'AzurPilot_Data_Backup'
 
 
-DATABASE_FILES = (
-    'azurstats_local.db',
-    'cl1_data.db',
-    'storage_statistics.db',
-    'daily_summary.db',
-)
+DATABASE_FILES = ('azurpilot.db',)
+
+
+def configuration_directory():
+    """使用运行入口选择的实际目录，同时保留测试显式目录注入。"""
+    from module.persistence.database import DEFAULT_DIRECTORY, get_database
+    return get_database().directory if CONFIG_DIR.absolute() == DEFAULT_DIRECTORY else CONFIG_DIR.absolute()
 
 
 def backup(enable=True, keep_days=BACKUP_KEEP_DAYS):
-    """执行每日备份。
-
-    备份数据库文件与用户配置文件，并清理超期备份。
-
-    Args:
-        enable (bool): 是否启用备份。关闭时直接返回，既不新建备份，
-            也不清理历史备份，避免关掉开关后仍在动备份目录。
-        keep_days (int): 历史备份保留天数，超过该天数的备份会被删除。
-            小于 1 时按 1 天处理。
-    """
+    """按现有开关和保留天数备份，全部完成后发布当日目录。"""
     if not enable:
         logger.info('每日备份已关闭，跳过备份')
         return
-
     date = datetime.now().strftime('%Y-%m-%d')
     backup_dir = BACKUP_ROOT / date
-
     if backup_dir.exists():
         logger.info(f'今日备份已存在，跳过备份：{backup_dir}')
         return
-
-    logger.info('开始执行每日备份')
-
-    backup_dir.mkdir(parents=True, exist_ok=True)
-
-    files = []
-
-    files.extend(backup_database(backup_dir))
-    files.extend(backup_config(backup_dir))
-
-    create_backup_info(
-        backup_dir=backup_dir,
-        files=files,
-    )
-
+    from uuid import uuid4
+    temporary = BACKUP_ROOT / ('.' + date + '-' + uuid4().hex)
+    temporary.mkdir(parents=True)
+    try:
+        files = backup_database(temporary) + backup_config(temporary)
+        create_backup_info(temporary, files)
+        temporary.rename(backup_dir)
+    except BaseException:
+        # 只清理本次在备份根目录中创建的临时目录。
+        if temporary.resolve().parent == BACKUP_ROOT.resolve():
+            shutil.rmtree(temporary)
+        raise
     clean_backup(keep_days=keep_days)
-
     logger.info(f'每日备份完成，共备份 {len(files)} 个文件')
 
 
 def backup_database(backup_dir):
-    """备份数据库文件。
-
-    Args:
-        backup_dir (Path): 备份目标目录。
-
-    Returns:
-        list[dict]: 成功备份的文件信息列表。
-    """
-    logger.info('开始备份数据库')
-
-    files = []
-
-    for name in DATABASE_FILES:
-        source = CONFIG_DIR / name
-
-        if not source.exists():
-            logger.warning(f'未找到数据库文件，跳过备份：{source}')
-            continue
-
-        target = backup_dir / name
-
-        try:
-            sqlite_backup(source=source, target=target)
-
-            files.append({
-                'name': name,
-                'size': target.stat().st_size,
-            })
-
-            logger.info(f'数据库备份成功：{name}')
-        except Exception as e:
-            logger.warning(f'数据库备份失败：{name}，{e}')
-
-    return files
+    """通过 SQLite 备份接口保存已提交 WAL，包括全部普通业务表。"""
+    from module.persistence.database import get_database
+    database = get_database(configuration_directory())
+    target = backup_dir / 'azurpilot.db'
+    database.backup(target)
+    marker = backup_dir / 'azurpilot.migrated'
+    shutil.copy2(database.marker, marker)
+    return [{'name': path.name, 'size': path.stat().st_size} for path in (target, marker)]
 
 
 def backup_config(backup_dir):
-    """备份用户配置文件。
-
-    包括 deploy.yaml 和除 template*.json 外的所有 json 配置文件。
-
-    Args:
-        backup_dir (Path): 备份目标目录。
-
-    Returns:
-        list[dict]: 成功备份的文件信息列表。
-    """
-    logger.info('开始备份用户配置')
-
+    """锁定安全存储后取得一致快照；外部安全密钥不自动导出。"""
+    from contextlib import ExitStack
+    from module.config.transaction import config_transaction
+    from module.runtime.account_vault import OPERATIONS
+    from module.persistence.migration import snapshot_database
     files = []
-    scheduler = CONFIG_DIR / 'scheduler'
-    if scheduler.exists():
-        from module.scheduler.store import ProgramStore
-        store = ProgramStore(CONFIG_DIR)
-        for source in scheduler.glob('*.sqlite3'):
-            relative = source.relative_to(CONFIG_DIR)
+    config_dir = configuration_directory()
+    candidates = set(config_dir.glob('*.json')) | set(config_dir.glob('*/config.db'))
+    candidates.update(config_dir.glob('*/account.destroyed'))
+    if (config_dir / 'deploy.yaml').exists():
+        candidates.add(config_dir / 'deploy.yaml')
+    candidates.update((config_dir / 'scheduler').glob('*.sqlite3'))
+    for folder in ('stock-exchange', 'opsi_secure'):
+        candidates.update(path for path in (config_dir / folder).rglob('*') if path.is_file())
+    candidates = sorted((path for path in candidates if not path.name.startswith('template')
+                         and not path.name.endswith(('.lock', '-wal', '-shm', '-journal'))), key=str)
+    with OPERATIONS, ExitStack() as locks:
+        # 与行动力采集保持安全库、注册目录、注册状态的锁顺序。
+        for path in candidates:
+            if path.suffix in ('.sqlite3', '.db'):
+                locks.enter_context(config_transaction(path))
+        for path in (config_dir / 'stock-exchange', config_dir / 'stock-exchange' / 'registry.json'):
+            locks.enter_context(config_transaction(path))
+        for path in candidates:
+            if path.suffix not in ('.sqlite3', '.db') and not path.is_relative_to(config_dir / 'stock-exchange'):
+                locks.enter_context(config_transaction(path))
+        for path in candidates:
+            if path.is_symlink() or not path.resolve().is_relative_to(config_dir.resolve()):
+                raise ValueError('备份源不能越出配置目录')
+            relative = path.relative_to(config_dir)
             target = backup_dir / relative
-            try:
-                store.backup(source.stem, target)
-                files.append({'name': str(relative), 'size': target.stat().st_size})
-            except Exception as exc:
-                logger.warning(f'调度数据库备份失败：{source}，{exc}')
-
-    deploy = CONFIG_DIR / 'deploy.yaml'
-
-    if deploy.exists():
-        target = backup_dir / deploy.name
-
-        shutil.copy2(deploy, target)
-
-        files.append({
-            'name': deploy.name,
-            'size': target.stat().st_size,
-        })
-
-        logger.info('用户配置备份成功：deploy.yaml')
-
-    for file in CONFIG_DIR.glob('*.json'):
-        if file.stem.startswith('template'):
-            continue
-
-        target = backup_dir / file.name
-
-        try:
-            shutil.copy2(file, target)
-
-            files.append({
-                'name': file.name,
-                'size': target.stat().st_size,
-            })
-
-            logger.info(f'用户配置备份成功：{file.name}')
-        except Exception as e:
-            logger.warning(f'用户配置备份失败：{file.name}，{e}')
-
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if path.suffix in ('.sqlite3', '.db'):
+                snapshot_database(path.absolute(), target)
+            else:
+                shutil.copy2(path, target)
+            files.append({'name': str(relative), 'size': target.stat().st_size})
     return files
 
 
 def sqlite_backup(source, target):
-    """使用 SQLite 原生 backup() 接口备份数据库。
-
-    Args:
-        source (Path): 原数据库路径。
-        target (Path): 备份数据库路径。
-    """
-    source_conn = sqlite3.connect(source)
-    target_conn = sqlite3.connect(target)
-
-    try:
-        source_conn.backup(target_conn)
-    finally:
-        target_conn.close()
-        source_conn.close()
+    """只读备份 SQLite；不会创建或改写源文件。"""
+    from module.persistence.migration import snapshot_database
+    snapshot_database(Path(source).absolute(), Path(target))
 
 
 def create_backup_info(backup_dir, files):
@@ -232,6 +159,8 @@ def clean_backup(keep_days=BACKUP_KEEP_DAYS):
             continue
 
         try:
+            if folder.is_symlink() or folder.resolve().parent != BACKUP_ROOT.resolve():
+                raise ValueError('备份清理目标越界')
             shutil.rmtree(folder)
             logger.info(f'已删除过期备份：{folder.name}')
         except Exception as e:

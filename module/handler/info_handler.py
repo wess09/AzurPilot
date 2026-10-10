@@ -273,7 +273,7 @@ class InfoHandler(ModuleBase):
 
         作战档案出击后的「消耗档案密钥」弹窗同样由 POPUP_CANCEL /
         POPUP_CONFIRM 这两个通用按钮组成，仅凭按钮判定会把出击被数据密钥
-        弹窗拦住误判成红脸弹窗（取消弹窗、清零心情、任务延后到次日），
+        弹窗拦住误判成红脸弹窗（取消弹窗、清零心情、延后任务），
         因此先交给 handle_use_data_key() 处理。
 
         Returns:
@@ -299,10 +299,12 @@ class InfoHandler(ModuleBase):
                     self._emotion_emergency_exit()
                 except CampaignEnd:
                     logger.info('[心情-保底] 撤退完成，已回到关卡页面')
-                # 心情清零，强制下次任务等待恢复
+                # 从0建立有效的保守恢复起点，任务重载后仍可自动恢复。
                 self.emotion.emergency_reset()
-                # 延时当前任务至下次服务器刷新
-                self.config.task_delay(server_update=True)
+                # 按下次完整出击预留心情；没有地图战斗次数的任务至少预留一场。
+                battle = max(1, getattr(self, '_map_battle', 1))
+                recovered, _ = self.emotion._check_reduce(battle)
+                self.config.task_delay(target=recovered)
                 raise ScriptEnd('[心情-保底] 计算模式红脸弹窗，心情清零并延时')
 
         if not self.emotion.is_ignore:

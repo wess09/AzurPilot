@@ -2,6 +2,7 @@
 import sqlite3
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -71,22 +72,20 @@ class ReviewRegressionTests(unittest.TestCase):
                 errors = [d for d in validate(doc)['diagnostics'] if '时间格式无效' in d['message']]
                 self.assertEqual(not valid, bool(errors))
 
-    def test_backup_database_failure_does_not_skip_other_files(self):
+    def test_backup_failure_does_not_publish_a_partial_daily_snapshot(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             config, target = root / 'config', root / 'backup'
             (config / 'scheduler').mkdir(parents=True)
             target.mkdir()
             for name in ('broken', 'healthy'):
-                (config / 'scheduler' / f'{name}.sqlite3').touch()
+                with closing(sqlite3.connect(config / 'scheduler' / f'{name}.sqlite3')) as connection, connection:
+                    connection.execute('CREATE TABLE history(value INTEGER)')
             (config / 'fixture.json').write_text('{}')
-
-            def copy_database(name, path):
-                if name == 'broken':
-                    raise sqlite3.OperationalError('锁定')
-                path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(b'fixture')
-
-            with patch.object(backup, 'CONFIG_DIR', config), patch('module.scheduler.store.ProgramStore.backup', side_effect=copy_database):
-                files = backup.backup_config(target)
-            self.assertEqual({'scheduler/healthy.sqlite3', 'fixture.json'}, {f['name'].replace('\\', '/') for f in files})
+            with patch.object(backup, 'CONFIG_DIR', config), patch.object(backup, 'BACKUP_ROOT', target), \
+                    patch.object(backup, 'backup_database', return_value=[]), \
+                    patch('module.persistence.migration.snapshot_database', side_effect=sqlite3.OperationalError('锁定')):
+                with self.assertRaises(sqlite3.OperationalError):
+                    backup.backup()
+            self.assertEqual(list(target.iterdir()), [])
+            self.assertTrue((config / 'scheduler' / 'healthy.sqlite3').exists())

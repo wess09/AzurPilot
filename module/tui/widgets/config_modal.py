@@ -118,6 +118,7 @@ class ConfigModal(ModalScreen[bool]):
 
         # 暂存当前正在编辑的表单项信息：{path: metadata}
         self.active_fields: Dict[str, Dict[str, Any]] = {}
+        self._edited_emotion_values: set[str] = set()
 
     def compose(self) -> ComposeResult:
         with Vertical(id="config-dialog"):
@@ -153,6 +154,7 @@ class ConfigModal(ModalScreen[bool]):
         scroll = self.query_one("#form-scroll", VerticalScroll)
         scroll.remove_children()
         self.active_fields.clear()
+        self._edited_emotion_values.clear()
 
         groups = self.backend.get_task_config_schema(task, instance=self.instance)
         if not groups:
@@ -220,6 +222,26 @@ class ConfigModal(ModalScreen[bool]):
         safe_path = path.replace(".", "_").replace("-", "_")
         return f"{prefix}_{safe_path}"
 
+    def _emotion_input_path(self, input_widget: Input) -> Optional[str]:
+        for path in self.active_fields:
+            parts = path.split('.')
+            if (len(parts) == 3 and ((parts[1] == 'Emotion' and parts[2] in ('Fleet1Value', 'Fleet2Value'))
+                                    or (parts[1] == 'PublicEmotion' and parts[2] == 'FleetValue'))
+                    and input_widget.id == self._ctrl_id('input', path)):
+                return path
+        return None
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        path = self._emotion_input_path(event.input)
+        # 初次挂载的 Input.Changed 不能把未测量的旧值当作一次校准。
+        if path and event.value.strip() != str(self.active_fields[path]['value']):
+            self._edited_emotion_values.add(path)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        path = self._emotion_input_path(event.input)
+        if path:
+            self._edited_emotion_values.add(path)
+
     def collect_changes(self) -> List[Dict[str, Any]]:
         """从当前表单控件中提取已修改的值。"""
         changes = []
@@ -255,7 +277,7 @@ class ConfigModal(ModalScreen[bool]):
                     else:
                         new_val = raw_text
 
-            if new_val is not None and new_val != original_val:
+            if new_val is not None and (new_val != original_val or path in self._edited_emotion_values):
                 changes.append({"path": path, "value": new_val})
 
         return changes

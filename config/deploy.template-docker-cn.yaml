@@ -2,8 +2,10 @@ Deploy:
   Git:
     # AzurPilot 仓库地址
     # URL of AzurPilot repository
-    # [国内用户] 使用 'git://git.pull/AzurPilot' 获得更快更稳定的下载
-    # [CN user] Use 'git://git.pull/AzurPilot' for faster and more stable download
+    # [国内用户] 使用 'cn' 或 'git://git.pull/AzurPilot' 获得国内镜像加速（内置 CNB 与 GitCode 自动同级分流），
+    #           亦可直接指定 'https://cnb.cool/AzurPilot/AzurPilot' ('cnb') 或 'https://gitcode.com/ddl2/AzurLaneAutoScript' ('gitcode')
+    # [CN user] Use 'cn' or 'git://git.pull/AzurPilot' for domestic mirror acceleration (auto-balanced across CNB & GitCode),
+    #           or explicitly set 'https://cnb.cool/AzurPilot/AzurPilot' ('cnb') / 'https://gitcode.com/ddl2/AzurLaneAutoScript' ('gitcode')
     # [其他用户] 使用 'https://github.com/wess09/AzurPilot'
     # [Other] Use 'https://github.com/wess09/AzurPilot'
     Repository: git://git.pull/AzurPilot

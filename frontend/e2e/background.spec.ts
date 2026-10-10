@@ -30,3 +30,26 @@ test('背景代抓和上传携带授权令牌，未授权 HTTP 请求被拒绝',
   expect(new URL(response.url()).search).toBe('')
   await expect(page.locator('.background-gallery-name', {hasText: 'auth-regression.png'})).toBeVisible()
 })
+
+test('关闭背景后切回上传文件档直接铺上原图', async ({page}) => {
+  /* 「关闭背景」档只在普通材质出现。 */
+  await page.addInitScript(() => {
+    localStorage.setItem('azurpilot.theme', 'light')
+    localStorage.setItem('azurpilot.material', 'plain')
+  })
+  await page.goto('/#/interface')
+  const source = page.locator('#ui-background-source')
+  await source.click()
+  await page.getByRole('option', {name: '上传文件', exact: true}).click()
+  await page.locator('.background-upload-input').setInputFiles({
+    name: 'switch-back.png', mimeType: 'image/png',
+    buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64'),
+  })
+  await expect(page.locator('.wallpaper img')).toBeVisible()
+  await source.click()
+  await page.getByRole('option', {name: '关闭背景', exact: true}).click()
+  await expect(page.locator('.wallpaper img')).toHaveCount(0)
+  await source.click()
+  await page.getByRole('option', {name: '上传文件', exact: true}).click()
+  await expect(page.locator('.wallpaper img')).toBeVisible()
+})

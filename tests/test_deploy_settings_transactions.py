@@ -188,7 +188,7 @@ class DeploySettingsTransactionsTests(unittest.TestCase):
         config.Theme = 'dark'
         self.assertEqual(poor_yaml_read(str(self.file))['Repository'],
                          deploy_config.GIT_OVER_CDN_REPOSITORY)
-        self.assertEqual(config.Repository, deploy_config.GIT_OVER_CDN_FALLBACK_REPOSITORY)
+        self.assertIn(config.Repository, deploy_config.GIT_OVER_CDN_FALLBACK_REPOSITORIES)
         self.assertTrue(config.GitOverCdn)
         self.assertEqual(config.Theme, 'dark')
 

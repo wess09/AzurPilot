@@ -5,9 +5,10 @@
 import { PasswordInput, Select } from '../components/FormControls'
 import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type MouseEvent, type ChangeEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { getLayout, setSidebarCollapsed, subscribeLayout } from './layout'
-import {getThemePreference, supportsBackground, usesMaterial} from './theme'
-import { ArrowRight, CalendarClock, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Code2, Compass, Download, ExternalLink, FileJson, GalleryHorizontal, Globe, House, LayoutDashboard, LoaderCircle, Maximize2, Megaphone, Menu, Minimize2, Palette, PanelTop, Settings2, WifiOff, X, ChevronRight, Workflow } from 'lucide-react'
+import { getLayout, subscribeLayout } from './layout'
+import {usesMaterial} from './theme'
+import {NavHandle} from './NavHandle'
+import { ArrowRight, CalendarClock, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Code2, Compass, Download, ExternalLink, FileJson, GalleryHorizontal, Globe, House, LayoutDashboard, LoaderCircle, Maximize2, Megaphone, Menu, Minimize2, Palette, PanelTop, Settings2, WifiOff, X } from 'lucide-react'
 import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
@@ -16,7 +17,7 @@ import { useAnnouncement } from './announcement'
 import { ErrorBox, Loading, Modal } from '../components/ui'
 import { GlassMaterial } from '../components/GlassMaterial'
 import { MaterialInspector } from '../components/MaterialInspector'
-import { SCHEDULER_EDITOR } from '../components/taskNavItems'
+import { MIND_CALCULATOR, SCHEDULER_EDITOR, taskLabel } from '../components/taskNavItems'
 import { getMaterialInspector, subscribeMaterialInspector } from './materialInspectorState'
 import { InstanceSwitcher } from '../components/InstanceSwitcher'
 import { InstanceTabs } from '../components/InstanceTabs'
@@ -153,8 +154,8 @@ export function App() {
   /* 图形调度是系统编辑页，不伪装成可执行的游戏任务。 */
   const schedulerEditor = currentTask === SCHEDULER_EDITOR
   const stockExchange = location.pathname.endsWith('/stock-exchange')
-  const currentTaskLabel = schedulerEditor ? ui('nav.schedulerProgram') : t(`Task.${currentTask}.name`)
-  const activeSection = location.pathname.includes('/task/') ? ui('nav.taskConfig') : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : location.pathname.endsWith('/announcement') ? ui('nav.announcement') : location.pathname.endsWith('/settings') ? ui('nav.settings') : location.pathname.endsWith('/interface') ? ui('nav.interface') : location.pathname.endsWith('/remote') ? ui('nav.remote') : location.pathname.endsWith('/updater') ? ui('nav.updater') : location.pathname.endsWith('/configs') ? ui('nav.configs') : location.pathname.endsWith('/dev') ? ui('nav.developer') : instance ? instance : ui('nav.home')
+  const currentTaskLabel = currentTask ? taskLabel(currentTask, ui, t) : ''
+  const activeSection = location.pathname.includes('/task/') ? ui('nav.taskConfig') : location.pathname.endsWith('/mind-calculator') ? ui('mind.title') : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : location.pathname.endsWith('/announcement') ? ui('nav.announcement') : location.pathname.endsWith('/settings') ? ui('nav.settings') : location.pathname.endsWith('/interface') ? ui('nav.interface') : location.pathname.endsWith('/remote') ? ui('nav.remote') : location.pathname.endsWith('/updater') ? ui('nav.updater') : location.pathname.endsWith('/configs') ? ui('nav.configs') : location.pathname.endsWith('/dev') ? ui('nav.developer') : instance ? instance : ui('nav.home')
   function handleBrandLogoClick(event: MouseEvent<HTMLImageElement>) {
     if (devMode || !recordDevLogoClick()) return
     event.preventDefault()
@@ -201,7 +202,7 @@ export function App() {
   /* 主页与五个二级菜单也走旧版外壳：它们没有实例内容，顶栏只写居中的页名。 */
   const legacyHomeShell = (location.pathname === '/' || PRIMARY_NAV_PATHS.includes(location.pathname)) && usesLegacyLayout(theme) && instancesLoaded
   // 旧版把调度器与任务计划放进实例页左列，右栏整体让位，否则同一块内容会出现两处。
-  const showRail = showsRightRail(theme, instance) && !schedulerEditor && !stockExchange && !location.pathname.endsWith('/resources')
+  const showRail = showsRightRail(theme, instance) && !schedulerEditor && currentTask !== MIND_CALCULATOR && !stockExchange && !location.pathname.endsWith('/resources') && !location.pathname.endsWith('/task/FleetInfo') && !location.pathname.endsWith('/mind-calculator') && !(location.pathname.endsWith('/statistics') && new URLSearchParams(location.search).get('view') === 'management')
   /* 紧凑主题可把调度与任务计划栏换到内容区左侧。换位走 DOM 顺序而不是 CSS order，
      键盘 Tab 的顺序才会跟看到的顺序一致；列宽与顶栏跨栏方向由 compact.css 按同一偏好调整。 */
   const railFirst = theme === 'extreme' && compactRailSide === 'left'
@@ -217,7 +218,7 @@ export function App() {
   const brand = <><Link to="/" className="brand-title" aria-label={`AzurPilot ${ui('nav.home')}`}><img src={`${import.meta.env.BASE_URL}azurpilot.svg`} alt="" className="brand-logo" onClick={handleBrandLogoClick}/><span>AzurPilot</span></Link>{updateAvailable && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
   // 旧版顶栏的第三列是居中的页面名：实例页写任务名，无实例时写导航项名。
   const pageTitle = instance
-    ? currentTask ? currentTaskLabel : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
+    ? currentTask ? currentTaskLabel : location.pathname.endsWith('/mind-calculator') ? ui('mind.title') : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
     : activeSection
   /* 分页模式把所有实例铺在顶栏一行；原模式仍把实例收在下拉里。两种模式共用这一个开关。 */
   const tabsMode = topbarMode === 'tabs' && instances.length > 0
@@ -303,7 +304,7 @@ export function App() {
       <div className={`sidebar-brand ${legacyShell || legacyHomeShell ? 'legacy-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
       <SidebarTransition viewKey={instance ? `instance:${instance}` : 'global'}>
         <nav className="primary-nav" aria-label={ui('nav.primary')}>
-          {instance ? <><NavLink to={`${base}/overview`} onClick={closeDrawer}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink><NavLink to={`${base}/resources`} onClick={closeDrawer}><Workflow size={17}/>{ui('nav.resources')}</NavLink><NavLink to={`${base}/statistics`} onClick={closeDrawer}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink><NavLink to={`${base}/stock-exchange`} onClick={closeDrawer}><Cat size={17}/>{ui('stock.name')}</NavLink></> : <><NavLink to="/" end onClick={closeDrawer}><House size={17}/>{ui('nav.home')}</NavLink><NavLink to="/announcement" onClick={closeDrawer}><Megaphone size={17}/>{ui('nav.announcement')}{announcement.unread && <span className="tiny-dot red"/>}</NavLink><NavLink to="/updater" onClick={closeDrawer}><Download size={17}/>{ui('nav.updater')}{updateAvailable && <span className="tiny-dot teal"/>}</NavLink><NavLink to="/interface" onClick={closeDrawer}><Palette size={17}/>{ui('nav.interface')}</NavLink><NavLink to="/remote" onClick={closeDrawer}><Globe size={17}/>{ui('nav.remote')}</NavLink><NavLink to="/configs" onClick={closeDrawer}><FileJson size={17}/>{ui('nav.configs')}</NavLink><NavLink to="/settings" onClick={closeDrawer}><Settings2 size={17}/>{ui('nav.settings')}</NavLink><NavLink to="/dev" onClick={closeDrawer}><Code2 size={17}/>{ui('nav.developer')}</NavLink><a className="nav-open-source" href="https://github.com/wess09/AzurPilot" target="_blank" rel="noreferrer" onClick={closeDrawer}><ExternalLink size={17}/>{ui('nav.openSource')}</a></>}
+          {instance ? <><NavLink to={`${base}/overview`} onClick={closeDrawer}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink><NavLink to={`${base}/statistics`} onClick={closeDrawer}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink><NavLink to={`${base}/stock-exchange`} onClick={closeDrawer}><Cat size={17}/>{ui('stock.name')}</NavLink></> : <><NavLink to="/" end onClick={closeDrawer}><House size={17}/>{ui('nav.home')}</NavLink><NavLink to="/announcement" onClick={closeDrawer}><Megaphone size={17}/>{ui('nav.announcement')}{announcement.unread && <span className="tiny-dot red"/>}</NavLink><NavLink to="/updater" onClick={closeDrawer}><Download size={17}/>{ui('nav.updater')}{updateAvailable && <span className="tiny-dot teal"/>}</NavLink><NavLink to="/interface" onClick={closeDrawer}><Palette size={17}/>{ui('nav.interface')}</NavLink><NavLink to="/remote" onClick={closeDrawer}><Globe size={17}/>{ui('nav.remote')}</NavLink><NavLink to="/configs" onClick={closeDrawer}><FileJson size={17}/>{ui('nav.configs')}</NavLink><NavLink to="/settings" onClick={closeDrawer}><Settings2 size={17}/>{ui('nav.settings')}</NavLink><NavLink to="/dev" onClick={closeDrawer}><Code2 size={17}/>{ui('nav.developer')}</NavLink><a className="nav-open-source" href="https://github.com/wess09/AzurPilot" target="_blank" rel="noreferrer" onClick={closeDrawer}><ExternalLink size={17}/>{ui('nav.openSource')}</a></>}
         </nav>
         {instance && <TaskNav onNavigate={closeDrawer}/>}
       </SidebarTransition>
@@ -323,39 +324,4 @@ export function App() {
     {creating && <CreateInstance onClose={() => setCreating(false)}/>}
     <MaterialInspector/>
   </div>
-}
-
-/** 侧栏收起/展开把手：侧栏边缘一条很细的竖带 + 一枚扁的指示标记（收起时贴屏幕左缘）。
- *  自己订阅布局状态，不依赖所在页面的局部量；把手始终在，收起后就是那唯一的一道细带。 */
-function NavHandle() {
-  const {ui} = useApp()
-  const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
-  const collapsed = layout.sidebarCollapsed
-  /* 看图模式的退出条件是「再次与页面交互」，不是离开页面。
-     用捕获阶段监听，交互一发生就先折回展开，再让这次交互照常作用到目标上；
-     把手自身排除：它的点击本身就是展开/收起，不参与自动折回。 */
-  useEffect(() => {
-    if (!collapsed) return
-    const restore = (event: Event) => {
-      const target = event.target as HTMLElement | null
-      if (target?.closest?.('.nav-handle')) return
-      setSidebarCollapsed(false)
-    }
-    document.addEventListener('pointerdown', restore, true)
-    document.addEventListener('keydown', restore, true)
-    return () => {
-      document.removeEventListener('pointerdown', restore, true)
-      document.removeEventListener('keydown', restore, true)
-    }
-  }, [collapsed])
-  /* 只有会铺壁纸的族才需要这个把手：简约/紧凑族根本没有背景，收起也没意义。 */
-  if (!supportsBackground(getThemePreference().theme)) return null
-  return <button
-    type="button"
-    className="nav-handle"
-    aria-label={ui(collapsed ? 'nav.expand' : 'nav.collapse')}
-    title={ui(collapsed ? 'nav.expand' : 'nav.collapse')}
-    aria-expanded={!collapsed}
-    onClick={() => setSidebarCollapsed(!collapsed)}
-  ><ChevronRight size={15} aria-hidden="true" style={{transform: collapsed ? 'none' : 'rotate(180deg)'}}/></button>
 }

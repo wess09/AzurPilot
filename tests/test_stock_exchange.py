@@ -156,6 +156,7 @@ class StockExchangeTests(unittest.TestCase):
     def test_unreadable_current_legacy_month_allows_register_login_and_live_sync(self):
         from module.api.stock_exchange_history import SHANGHAI, history_point
         older = datetime.now(SHANGHAI).replace(day=1, hour=0, minute=0, second=0, microsecond=123000)
+        ProgramStore(self.root / 'config').database.ensure_ready()
         path = self.root / 'config' / 'cl1_data.db'
         with closing(sqlite3.connect(path)) as db, db:
             db.execute('CREATE TABLE cl1_data(instance TEXT,month TEXT,data_json TEXT,encrypted_blob BLOB,PRIMARY KEY(instance,month))')
@@ -380,7 +381,7 @@ class StockExchangeTests(unittest.TestCase):
     def test_external_rename_preserves_player_identity_history_and_session(self):
         self.register()
         original = self.service.status('test')
-        source = ProgramStore(self.root / 'config').path('test')
+        source = ProgramStore(self.root / 'config').history.path('test')
         self.config.rename(self.root / 'config' / 'renamed.json')
         renamed = self.service.status('renamed')
         self.assertEqual(original['instanceId'], renamed['instanceId'])
@@ -388,7 +389,7 @@ class StockExchangeTests(unittest.TestCase):
         self.assertTrue(renamed['authenticated'])
         self.assertNotIn('test', self.service.monitors)
         self.assertFalse(source.exists())
-        self.assertTrue(ProgramStore(self.root / 'config').path('renamed').exists())
+        self.assertTrue(ProgramStore(self.root / 'config').history.path('renamed').exists())
         self.assertEqual(8000, renamed['snapshot']['actionPoints'])
         cold = StockExchangeService(self.configs)
         cold.start = Mock()
@@ -453,7 +454,7 @@ class StockExchangeTests(unittest.TestCase):
         old.write_text(json.dumps({'instanceId': identity, 'privateKey': private}), encoding='utf-8')
         self.service.path.write_text(json.dumps({'test': {'playerId': 1, 'username': '旧版玩家', 'bindingKey': binding_key(identity, key),
                                                           'uploadToken': 'a' * 64, 'url': 'https://stock.nanoda.work'}}), encoding='utf-8')
-        database = ProgramStore(self.root / 'config').path('test')
+        database = ProgramStore(self.root / 'config').history.path('test')
         database.parent.mkdir()
         with closing(sqlite3.connect(database)) as db, db:
             db.execute('CREATE TABLE action_point_history(seq INTEGER PRIMARY KEY AUTOINCREMENT, observed_at TEXT NOT NULL UNIQUE,total INTEGER NOT NULL)')
@@ -495,7 +496,8 @@ class StockExchangeTests(unittest.TestCase):
         configs.create('testpilot')
         replacement, _ = load_identity(root, 'testpilot')
         self.assertNotEqual(identity, replacement)
-        self.assertFalse(store.path('testpilot').exists())
+        self.assertFalse(store.history.path('testpilot').exists())
+        self.assertEqual({}, store.observations('testpilot'))
 
 
 if __name__ == '__main__':

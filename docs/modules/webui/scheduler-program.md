@@ -42,7 +42,7 @@
 
 `module/scheduler/` 包含公共模型、卡片注册、图校验、解释器、模板、资源观察与调度适配。编辑器位于 `frontend/src/pages/SchedulerProgram.tsx`，画布和编辑辅助模块位于 `frontend/src/scheduler/`。
 
-每个实例使用 `config/scheduler/<实例名>.sqlite3`。草稿、已应用方案及 revision 存在方案表中；变量、调度记录、运行任务标记及资源观察使用独立表。写入通过事务锁、SQLite 事务和 revision 冲突检查保护。复制和配置导出携带方案，不携带资源历史或运行变量；每日备份使用 SQLite 备份接口，删除实例时保存数据库备份。图文件导入导出仍使用 JSON，以便分享。
+普通调度定义与状态使用实际配置目录 `azurpilot.db` 的十七张原生表。草稿与已应用文档、图、节点、连线和端口按内部序号保序；参数及变量使用具有明确归属的类型化值树。用户 ID 和连线端点保留草稿语义，不新增唯一约束或节点外键。写入使用 `BEGIN IMMEDIATE` 和 revision 冲突检查。复制及配置导出只带方案；删除先归档配置、单实例调度切片和安全历史，统计保留。恢复重新映射内部引用，只导入对应实例并拒绝覆盖已有状态。认证历史继续使用 `config/scheduler/<实例名>.sqlite3` 的专用安全存储。图文件分享仍使用 JSON，完整约定见 [普通业务数据存储](../infra/persistence.md)。
 
 `scheduler.program.catalog/get/save/validate/simulate/apply/state` 均通过 `/api/v1/ws` 调用，参数与公共模型由 API 导出工具生成。worker 通过带 `run_id` 的专用有界队列发送轨迹，查询状态不初始化设备或新 worker。
 

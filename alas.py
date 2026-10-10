@@ -1127,6 +1127,16 @@ class AzurLaneAutoScript:
             logger.error(str(e))
             self._storage_statistics_failed = True
             return False
+        except MindCalculatorScanError as e:
+            logger.error_context(
+                title='心智单元船坞扫描未完成', reason=str(e), exc=e,
+                impact='本次扫描结束，保留上次完整舰船清单，不重启模拟器。',
+                action='查看错误截图和具体原因，确认船坞布局及控制方式后重新启动扫描。',
+                level=50,
+            )
+            self.save_error_log()
+            self._check_sensitive_exit(command, e)
+            return False
         except TaskEnd:
             return True
         except GameNotRunningError as e:
@@ -1691,6 +1701,10 @@ class AzurLaneAutoScript:
         from module.island.island_air_drop import IslandAirDrop
         IslandAirDrop(config=self.config, device=self.device).run()
 
+    def island_plan(self):
+        from module.island.island_plan import IslandPlan
+        IslandPlan(config=self.config, device=self.device).run()
+
     def island_cargo_preparation(self):
         from module.island.island_cargo_preparation import IslandCargoPreparation
         IslandCargoPreparation(config=self.config, device=self.device).run()
@@ -1966,6 +1980,10 @@ class AzurLaneAutoScript:
     def fleet_scan(self):
         from module.retire.fleet_management import FleetManagement
         FleetManagement(config=self.config, device=self.device, task="FleetScan").run()
+
+    def mind_calculator_scan(self):
+        from module.retire.mind_scan import MindCalculatorScan
+        MindCalculatorScan(config=self.config, device=self.device, task="MindCalculatorScan").run()
 
     def game_manager(self):
         from module.daemon.game_manager import GameManager
@@ -2744,10 +2762,8 @@ if __name__ == '__main__':
         exit(2)
 
     alas = AzurLaneAutoScript(config_name=config_name)
-    # 先完成统计数据准备（旧加密数据自动解密，有界等待，异常环境不阻塞启动），再启动业务任务。
-    try:
-        from module.statistics.opsi_secure import initialize
-        initialize()
-    except Exception:
-        logger.exception('[统计-运行] 启动时初始化未完成（稍后自动重试）')
+    # 迁移成功后才能启动业务，失败保留旧源并退出。
+    from module.persistence.database import initialize
+    initialize()
+
     alas.loop()

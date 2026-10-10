@@ -394,7 +394,9 @@ Island:
   page: 'setting'
   tasks:
     IslandPlan:
+      - Scheduler
       - IslandPlan
+      - IslandWalk
     IslandBusiness:
       - Scheduler
       - IslandBusiness
@@ -491,6 +493,8 @@ Tool:
   page: tool
   tasks:
     FleetScan: []
+    MindCalculatorScan:
+      - MindCalculator
     Daemon:
       - Daemon
     OpsiDaemon:

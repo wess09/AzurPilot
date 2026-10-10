@@ -82,7 +82,7 @@ class StockRecoveryTests(unittest.TestCase):
             self.assertEqual(200, client.get('/healthz').status_code)
 
     def test_tampered_history_blocks_stock_but_not_program_or_resource_writes(self):
-        with closing(sqlite3.connect(self.store.path('testpilot'))) as db, db:
+        with closing(sqlite3.connect(self.store.history.path('testpilot'))) as db, db:
             db.execute('UPDATE action_point_chain SET total=9999')
         document = self.store.get('testpilot')
         self.store.update('testpilot', document['revision'], mode='native')
@@ -98,7 +98,7 @@ class StockRecoveryTests(unittest.TestCase):
             self.assertEqual(8100, self.store.observations('other')['ActionPoint']['Total'])
 
     def test_damaged_history_table_never_blocks_normal_resource_collection(self):
-        with closing(sqlite3.connect(self.store.path('testpilot'))) as db, db:
+        with closing(sqlite3.connect(self.store.history.path('testpilot'))) as db, db:
             db.execute('DROP TABLE action_point_history')
             db.execute('CREATE TABLE action_point_history (seq INTEGER PRIMARY KEY)')
         self.store.observe('testpilot', 'ActionPoint', {'Total': 8100}, (self.now + timedelta(seconds=1)).isoformat(), 'fixture')

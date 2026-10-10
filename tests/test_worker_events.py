@@ -171,6 +171,8 @@ class TestWorkerEvents(unittest.TestCase):
 
         with (patch.object(self.manager, "_drain_worker_queue", side_effect=drain),
               patch("module.runtime.process_manager.Process", return_value=new_process),
+              patch("module.runtime.process_manager.prepare_statistics"),
+              patch("module.api.account_service.prepare_worker", return_value=None),
               patch.object(self.manager, "_register_process"),
               patch.object(self.manager, "start_log_queue_handler"),
               patch.object(State, "_clearup", False),

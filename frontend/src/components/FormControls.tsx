@@ -2,7 +2,7 @@
  * @fileoverview 基础表单控件封装（密码输入框、复选框与数值步进器等）。
  */
 
-import { useEffect, useState, type ComponentProps } from 'react'
+import { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { Check, Eye, EyeOff } from 'lucide-react'
 import { useApp } from '../app/context'
 
@@ -20,15 +20,21 @@ export function PasswordInput(props: ComponentProps<'input'>) {
 }
 
 /** 输入草稿：键入期间只改本地值，失焦或回车才提交；提交后外部值没跟着变，输入框回到外部值。 */
-export function useDraftInput(value: string, commit: (draft: string) => void) {
+export function useDraftInput(value: string, commit: (draft: string) => void, resubmitOnEdit = false) {
   const [draft, setDraft] = useState(value)
   const [editing, setEditing] = useState(false)
+  const edited = useRef(false)
   useEffect(() => { if (!editing) setDraft(value) }, [value, editing])
   return {
     value: draft,
-    onFocus: () => setEditing(true),
-    onChange: (event: {target: {value: string}}) => setDraft(event.target.value),
-    onBlur: () => {setEditing(false); if (draft !== value) commit(draft)},
+    onFocus: () => {edited.current = false; setEditing(true)},
+    onChange: (event: {target: {value: string}}) => {edited.current = true; setDraft(event.target.value)},
+    onBlur: () => {
+      const submit = draft !== value || (resubmitOnEdit && edited.current)
+      edited.current = false
+      setEditing(false)
+      if (submit) commit(draft)
+    },
     onKeyDown: (event: {key: string; currentTarget: {blur: () => void}}) => {if (event.key === 'Enter') event.currentTarget.blur()},
   }
 }

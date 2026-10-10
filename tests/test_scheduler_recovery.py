@@ -14,6 +14,7 @@ from module.exception import (
     GamePageUnknownError,
     GameStuckError,
     GameTooManyClickError,
+    MindCalculatorScanError,
     RequestHumanTakeover,
     ScriptError,
     StorageStatisticsError,
@@ -22,7 +23,7 @@ from module.exception import (
 
 class TestSchedulerRecovery(unittest.TestCase):
     def setUp(self):
-        self.enterContext(patch('alas.logger'))
+        self.logger = self.enterContext(patch('alas.logger'))
         self.notify = self.enterContext(patch('alas.handle_notify'))
         self.webui = self.enterContext(patch('alas.notify_webui'))
         self.report = self.enterContext(patch('alas.ApiClient.submit_bug_log'))
@@ -118,6 +119,17 @@ class TestSchedulerRecovery(unittest.TestCase):
         script.restart.assert_called_once_with()
         script.commission.assert_not_called()
         self.assertEqual(self.sleep.call_args_list, [call(5), call(20)])
+
+    def test_mind_scan_recognition_failure_reports_cause_without_restart(self):
+        script = self.make_script()
+        error = MindCalculatorScanError('相邻船坞截图没有明确的重叠位移')
+        script.mind_calculator_scan = Mock(side_effect=error)
+        self.assertFalse(script.run('MindCalculatorScan'))
+        script.save_error_log.assert_called_once_with()
+        script._try_restart_emulator.assert_not_called()
+        script.config.task_call.assert_not_called()
+        self.assertEqual(self.logger.error_context.call_args.kwargs['reason'], str(error))
+        self.assertIs(self.logger.error_context.call_args.kwargs['exc'], error)
 
     def test_strict_restart_policy_for_task_exceptions(self):
         errors = (

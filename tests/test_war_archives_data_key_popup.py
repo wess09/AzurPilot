@@ -2,11 +2,12 @@
 
 出击后弹出的数据密钥弹窗与红脸弹窗共用 POPUP_CANCEL / POPUP_CONFIRM，
 只按这两个通用按钮判定会把出击被弹窗拦住误判成心情异常：取消弹窗、
-清零心情并把任务延后到次日。这里固定住三条行为：弹窗被正确确认、
+清零心情并延后任务。这里固定住三条行为：弹窗被正确确认、
 弹窗渲染完之前不误判、不是数据密钥弹窗时不越权处理。
 """
 
 import unittest
+from datetime import datetime
 from types import SimpleNamespace
 
 from module.exception import ScriptEnd
@@ -156,17 +157,23 @@ class TestLowEmotionWithDataKey(unittest.TestCase):
         self.assertIn('确定', fake.clicked)
 
     def test_red_face_popup_still_guarded(self):
-        """不是数据密钥弹窗时，红脸弹窗保底逻辑保持原样。"""
+        """红脸时取消出击，从0重算并按正常预检的恢复时间延后。"""
         fake = FakeInfoHandler(text_template=False, checkbox=False)
         fake.emotion = SimpleNamespace(is_calculate=True, is_ignore=False)
         reset = []
         fake.emotion.emergency_reset = lambda: reset.append(None)
+        checked, delayed = [], []
+        recovered = datetime(2026, 10, 9, 12)
+        fake.emotion._check_reduce = lambda battle: (checked.append(battle) or recovered, True)
+        fake.config.task_delay = lambda **kwargs: delayed.append(kwargs)
 
         with self.assertRaises(ScriptEnd):
             fake.handle_combat_low_emotion()
 
         self.assertEqual(fake.clicked, ['取消'])
         self.assertEqual(len(reset), 1)
+        self.assertEqual(checked, [1])
+        self.assertEqual(delayed, [{'target': recovered}])
 
 
 if __name__ == '__main__':

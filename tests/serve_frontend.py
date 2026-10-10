@@ -34,6 +34,9 @@ def main():
         shutil.copytree(ROOT / 'frontend/dist', root / 'frontend/dist')
         path = root / 'config/testpilot.json'
         data = json.loads(path.read_text(encoding='utf-8'))
+        # 保留旧版的数字断点，验证文本字段能编辑历史配置中的 0。
+        for task in ('EventA', 'EventB', 'EventC', 'EventD'):
+            data[task]['EventDaily']['LastStage'] = 0
         for name, value in {'Oil': 14200, 'Coin': 186420, 'Gem': 2468, 'Cube': 384}.items():
             data['Dashboard'][name]['Value'] = value
             data['Dashboard'][name]['Record'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')

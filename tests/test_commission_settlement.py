@@ -5,6 +5,7 @@ import sqlite3
 import tempfile
 import threading
 import unittest
+from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import chdir, closing
 from datetime import datetime
@@ -15,6 +16,7 @@ from unittest.mock import MagicMock, Mock, patch
 import numpy as np
 
 from module.statistics import cl1_database as database
+from module.persistence import database as persistence
 from tests.opsi_test_support import install_store
 
 
@@ -36,7 +38,7 @@ class TestCommissionSettlement(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.directory.cleanup)
         install_store(self, self.directory.name)
-        with patch.object(database.Cl1Database, "_get_legacy_decryption_keys", return_value=[]):
+        with nullcontext():
             self.db = database.Cl1Database(Path(self.directory.name) / "config" / "cl1_data.db")
         fixed = patch.object(database, "datetime", FixedDatetime)
         fixed.start()
@@ -48,12 +50,13 @@ class TestCommissionSettlement(unittest.TestCase):
 
     def rows(self):
         with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
-            return conn.execute("SELECT month, data_json, encrypted_blob FROM cl1_data ORDER BY month").fetchall()
+            return conn.execute("SELECT * FROM cl1_months ORDER BY month").fetchall()
 
     def fail_current_month(self):
+        self.db.store.ensure_ready()
         with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
             conn.execute("""
-                CREATE TRIGGER reject_archive BEFORE INSERT ON cl1_data
+                CREATE TRIGGER reject_archive BEFORE INSERT ON cl1_months
                 WHEN NEW.month = '2026-01'
                 BEGIN SELECT RAISE(ABORT, 'archive rejected'); END
             """)
@@ -129,7 +132,7 @@ class TestCommissionSettlement(unittest.TestCase):
         with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
             conn.execute("CREATE TABLE guard_parent (id INTEGER PRIMARY KEY)")
             conn.execute("CREATE TABLE guard_child (parent_id INTEGER REFERENCES guard_parent(id) DEFERRABLE INITIALLY DEFERRED)")
-            conn.execute("CREATE TRIGGER fail_commit BEFORE INSERT ON cl1_data WHEN NEW.month = '2026-01' BEGIN INSERT INTO guard_child VALUES (1); END")
+            conn.execute("CREATE TRIGGER fail_commit BEFORE INSERT ON cl1_months WHEN NEW.month = '2026-01' BEGIN INSERT INTO guard_child VALUES (1); END")
         connect = sqlite3.connect
 
         def checked_connect(*args, **kwargs):
@@ -137,7 +140,7 @@ class TestCommissionSettlement(unittest.TestCase):
             conn.execute("PRAGMA foreign_keys=ON")
             return conn
 
-        with patch.object(database.sqlite3, "connect", side_effect=checked_connect):
+        with patch.object(persistence.sqlite3, "connect", side_effect=checked_connect):
             with self.assertRaises(sqlite3.IntegrityError):
                 self.db.add_commission_income("test", {"Gem": 60}, gem_duration=8, completed_at=NOW)
         self.assertEqual(self.rows(), before)
@@ -196,9 +199,9 @@ class TestCommissionSettlement(unittest.TestCase):
         self.assertEqual(len(self.db.get_stats("test", "2026-01")["gem_commission_entries"]), 1)
 
     def test_corrupt_data_is_not_overwritten_by_settlement(self):
-        self.seed("2025-12", [commission()])
+        self.seed("2025-12", [commission()], unknown={"keep": True})
         with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
-            conn.execute("UPDATE cl1_data SET data_json='broken'")
+            conn.execute("DELETE FROM typed_value_nodes WHERE parent_no IS NULL")
         before = self.rows()
         with self.assertRaises(ValueError):
             self.db.settle_gem_commission("test", 60)
@@ -218,14 +221,11 @@ class TestCommissionSettlement(unittest.TestCase):
         self.assertEqual(self.rows(), [])
 
     def test_failed_optional_legacy_migration_still_returns_decoded_data(self):
-        with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
-            conn.execute("INSERT INTO cl1_data (instance, month, data_json, encrypted_blob) "
-                         "VALUES (?, ?, NULL, ?)", ("test", "2025-12", b"legacy"))
-        decoded = {"battle_count": 12}
-        # 旧记录可在读取侧还原、但落盘维护失败时，返回已解出的数据而不是空快照。
-        with patch.object(self.db, "_decrypt", return_value=decoded), \
-                patch.object(self.db, "_save_stats_in_connection", side_effect=sqlite3.OperationalError("readonly")):
-            self.assertEqual(self.db.get_stats("test", "2025-12"), decoded)
+        decoded = {'battle_count': 12}
+        self.db.save_stats('test', '2025-12', decoded)
+        # 已迁移快照的读取不会尝试维护或改写数据。
+        with patch.object(self.db, '_save_stats_in_connection', side_effect=sqlite3.OperationalError('readonly')):
+            self.assertEqual(self.db.get_stats('test', '2025-12'), decoded)
 
 
 class TestCommissionIncomePersistence(unittest.TestCase):
@@ -239,7 +239,7 @@ class TestCommissionIncomePersistence(unittest.TestCase):
         self.addCleanup(self.directory.cleanup)
         self.root = Path(self.directory.name)
         install_store(self, self.root)
-        with patch.object(database.Cl1Database, "_get_legacy_decryption_keys", return_value=[]):
+        with nullcontext():
             self.db = database.Cl1Database(self.root / "config" / "cl1_data.db")
         self.enterContext(patch.object(database, "db", self.db))
         self.enterContext(patch.object(database, "datetime", FixedDatetime))
@@ -340,7 +340,7 @@ class TestCommissionIncomePersistence(unittest.TestCase):
         self.reward._recognize_commission_income.return_value[0]["Gem"] = 60
         with closing(sqlite3.connect(self.db.db_path)) as conn, conn:
             conn.execute("""
-                CREATE TRIGGER reject_income BEFORE INSERT ON cl1_data
+                CREATE TRIGGER reject_income BEFORE INSERT ON cl1_months
                 WHEN NEW.month = '2026-01'
                 BEGIN SELECT RAISE(ABORT, 'income rejected'); END
             """)

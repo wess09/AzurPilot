@@ -155,6 +155,26 @@ class ConfigApiTests(unittest.TestCase):
         latest = self.configs.patch('testpilot', original['revision'], [ConfigChange(path='Alas.Emulator.Serial', value='auto')])
         self.assertEqual('auto', latest['values']['Alas']['Emulator']['Serial'])
 
+    def test_event_daily_last_stage_saves_text_from_legacy_zero(self):
+        """旧数字断点可改成关卡名，刷新后保留大小写，输入 0 仍可重置。"""
+        path = self.configs.path('testpilot')
+        data = self.configs.read_json(path)
+        tasks = ('EventA', 'EventB', 'EventC', 'EventD')
+        for task in tasks:
+            data[task]['EventDaily']['LastStage'] = 0
+        path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+
+        for task in tasks:
+            with self.subTest(task=task):
+                original = self.configs.get('testpilot')
+                self.assertEqual(0, original['values'][task]['EventDaily']['LastStage'])
+                for stage in ('a3', 'D3', '0'):
+                    changed = self.configs.patch('testpilot', '', [
+                        ConfigChange(path=f'{task}.EventDaily.LastStage', value=stage)])
+                    self.assertEqual(stage, changed['values'][task]['EventDaily']['LastStage'])
+                    self.assertEqual(stage, self.configs.get('testpilot')['values'][task]['EventDaily']['LastStage'])
+                    self.assertEqual(stage, self.configs.read_json(path)[task]['EventDaily']['LastStage'])
+
     def test_invalid_batch_does_not_partially_save(self):
         original = self.configs.get('testpilot')
         with self.assertRaises(ApiError):
@@ -282,6 +302,21 @@ class SocketApiTests(unittest.TestCase):
             self.assertEqual('UNAUTHORIZED', response['error']['code'])
             self.assertTrue(self.call(ws, 'auth.login', {'password': 'test-secret'})['ok'])
             self.assertEqual('testpilot', self.call(ws, 'instances.list')['result'][0]['name'])
+
+    def test_large_calculator_file_keeps_other_message_limits(self):
+        """舰船文件可超过 1 MiB，其余方法仍受原限制约束。"""
+        import base64
+        rows = [{'name': '扩展文件舰船' * 8, 'level': 100, 'source': 'x' * 200}] * 3000
+        content = base64.b64encode(json.dumps({'ships': rows}, ensure_ascii=False).encode()).decode()
+        self.assertGreater(len(content), 1024 * 1024)
+        with self.client.websocket_connect('/api/v1/ws') as ws:
+            self.login(ws)
+            result = self.call(ws, 'mind.import', {'instance': 'testpilot', 'filename': 'ships.json', 'content': content})
+            self.assertTrue(result['ok'], result)
+            self.assertEqual(len(result['result']['ships']), 3000)
+            result = self.call(ws, 'config.get', {'instance': 'testpilot', 'padding': content})
+            self.assertEqual(result['error']['code'], 'INVALID_REQUEST')
+            self.assertIn('1 MiB', result['error']['message'])
 
     def test_update_methods_require_auth_and_validate_pagination(self):
         with self.client.websocket_connect('/api/v1/ws') as ws:
@@ -504,6 +539,33 @@ class SocketApiTests(unittest.TestCase):
                 await session.enqueue({})
             ws.close.assert_awaited_once()
         asyncio.run(check())
+
+
+class RuntimeMetadataTests(unittest.TestCase):
+    def test_game_region_uses_package_instead_of_server_checker_setting(self):
+        """开服检测关闭或选择国服检测区，都不能决定设备实际运行的游戏地区。"""
+        emulator = {'ServerName': 'disabled', 'PackageName': 'auto'}
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        configs = SimpleNamespace(directory=Path(temporary.name), names=lambda: ['test'],
+                                  read=lambda _: ({'Alas': {'Emulator': emulator}}, ''))
+        runtime = RuntimeService(configs)
+        cases = [
+            ('auto', 'disabled', None), ('', 'disabled', None),
+            ('com.bilibili.azurlane', 'disabled', 'cn'),
+            ('com.bilibili.blhx.huawei', 'cn_channel-0', 'cn'),
+            ('com.YoStarEN.AzurLane', 'disabled', 'en'),
+            ('com.YoStarJP.AzurLane', 'cn_android-0', 'jp'),
+            ('com.hkmanjuu.azurlane.gp', 'disabled', 'tw'),
+            ('com.hkmanjuu.azurlane.gp.mc', 'disabled', 'tw'),
+        ]
+        with patch('module.api.runtime_service.ProcessManager._processes', {}):
+            for package, checker, expected in cases:
+                with self.subTest(package=package, checker=checker):
+                    emulator.update(PackageName=package, ServerName=checker)
+                    instance = runtime.instances()[0]
+                    self.assertEqual(expected, instance['region'])
+                    self.assertEqual(checker, instance['server'])
 
 
 class LogCursorTests(unittest.TestCase):

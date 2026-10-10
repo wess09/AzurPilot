@@ -1,6 +1,6 @@
 """大世界掉落统计汇总。
 
-把 azurstats_local.db 里逐次记录的掉落明细（opsi_items）按时间窗口聚合，供
+把 azurpilot.db 里逐次记录的掉落明细（opsi_items）按时间窗口聚合，供
 WebUI 统计页「大世界掉落」分类展示。数据入口在 module/statistics/azurstats.py：
 除侵蚀1练级外的大世界任务，只要掉落记录开关不是「不记录」（保存与上传都算），
 任务跑完就会把掉落解析入库，本模块只负责读和汇总。

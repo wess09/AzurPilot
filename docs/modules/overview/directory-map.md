@@ -40,6 +40,7 @@
 | 大世界系 | `module/os`、`module/os_handler`、`module/os_ash`、`module/os_combat`、`module/os_shop`、`module/os_simulator` | 大世界核心与辅助包 |
 | 游戏功能 | `module/research`、`commission`、`reward`、`daily`、`exercise`、`gacha`、`hard`、`sos`、`war_archives`、`raid`、`event`、`event_hospital`、`coalition`、`eventstory`、`private_quarters`、`shipyard`、`freebies`、`minigame`、`awaken`、`shop`、`storage`、`retire`、`equipment`、`dock` 等 | 各玩法任务（见[日常维护合集](../game/daily-maintenance.md)、[其他游戏功能](../game/misc.md)） |
 | 岛屿系 | `module/island` | 岛屿季度玩法 |
+| 持久化 | `module/persistence` | 共享 SQLite 总库、原生编解码、只读旧源迁移与恢复 |
 | 统计 | `module/statistics` | 掉落/收益统计与 azurstat 提交 |
 | 通知 | `module/notify`、`module/llm.py`、`module/logger.py` | 推送、LLM 错误分析、日志 |
 | WebUI | `module/api`、`module/runtime` | WebSocket API v1、进程管理与运行服务 |

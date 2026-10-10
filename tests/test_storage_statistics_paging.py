@@ -64,12 +64,14 @@ class ThreeRowPagingTests(unittest.TestCase):
         self.assertEqual(pitch, 178)
         self.assertAlmostEqual(scale, 238 / 15)
         self.assertAlmostEqual(3 * pitch / scale, 33.6555, places=3)
-        with patch('module.storage.statistics_recognition.same_card',
+        with patch('module.storage.statistics_recognition.same_card', return_value=False), \
+             patch('module.storage.statistics_recognition._same_calibration_card',
                    side_effect=lambda a, b: a is before[2][0] or a is before[2][1]
                    or a is before[2][2] or a is before[2][3]):
             with self.assertRaisesRegex(StorageRecognitionError, '缺少唯一完整重叠行'):
                 calibrate_scroll(before, after, 15)
-        with patch('module.storage.statistics_recognition.same_card', return_value=True):
+        with patch('module.storage.statistics_recognition.same_card', return_value=False), \
+             patch('module.storage.statistics_recognition._same_calibration_card', return_value=True):
             with self.assertRaisesRegex(StorageRecognitionError, '缺少唯一完整重叠行'):
                 calibrate_scroll(before, after, 15)
 

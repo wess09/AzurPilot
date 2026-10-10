@@ -2,12 +2,16 @@
  * @fileoverview 根据内容自动撑开高度的文本输入框组件。
  */
 
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
   id: string; value: string; label?: string; invalid?: boolean; disabled?: boolean; onChange: (value: string) => void
 }) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  const [draft, setDraft] = useState(value)
+  const [editing, setEditing] = useState(false)
+  useEffect(() => { if (!editing) setDraft(value) }, [value, editing])
+
   useLayoutEffect(() => {
     const input = ref.current!
     const resize = () => {
@@ -29,6 +33,25 @@ export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
     })
     observer.observe(input)
     return () => {observer.disconnect(); cancelAnimationFrame(frame)}
-  }, [value])
-  return <textarea aria-label={label} aria-invalid={invalid || undefined} aria-describedby={invalid ? `${id}-status` : undefined} ref={ref} id={id} value={value} rows={1} disabled={disabled} spellCheck={false} onChange={event => onChange(event.target.value)}/>
+  }, [draft])
+
+  return (
+    <textarea
+      aria-label={label}
+      aria-invalid={invalid || undefined}
+      aria-describedby={invalid ? `${id}-status` : undefined}
+      ref={ref}
+      id={id}
+      value={draft}
+      rows={1}
+      disabled={disabled}
+      spellCheck={false}
+      onFocus={() => setEditing(true)}
+      onChange={event => setDraft(event.target.value)}
+      onBlur={() => {
+        setEditing(false)
+        if (draft !== value) onChange(draft)
+      }}
+    />
+  )
 }

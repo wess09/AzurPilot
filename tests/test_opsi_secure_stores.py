@@ -1,7 +1,6 @@
 """四个统计存储在明文语义下的集成测试。
 
-覆盖：写入拆分为公共列与载荷列（载荷为明文 JSON）、读取透明合并、
-旧版整体明文行可读并在下次写入时拆分；文件类存储读写一致。
+覆盖原生业务列、旧文件只读转换、部分快照保留及业务接口一致性。
 """
 
 import json
@@ -34,7 +33,7 @@ class Cl1StoreIntegration(StoreCase):
         return Cl1Database(db_path=self.root / 'config' / 'cl1_data.db')
 
     def raw(self, sql, params=()):
-        conn = sqlite3.connect(self.root / 'config' / 'cl1_data.db')
+        conn = sqlite3.connect(self.root / 'config' / 'azurpilot.db')
         try:
             return conn.execute(sql, params).fetchall()
         finally:
@@ -48,39 +47,29 @@ class Cl1StoreIntegration(StoreCase):
         db.increment_battle_count('inst', 3)
         db.add_ap_snapshot('inst', 131, source='cl1')
         db.add_commission_income('inst', {'Gem': 5})
-        raw_json, payload = self.raw('SELECT data_json, secure_json FROM cl1_data')[0]
-        self.assertNotIn('battle_count', raw_json)
-        self.assertNotIn('ap_snapshots', raw_json)
-        self.assertIn('commission_income_entries', raw_json)
-        self.assertFalse(payload.startswith('OPSIV'))
-        secure = json.loads(payload)
-        self.assertEqual(secure['battle_count'], 3)
-        self.assertEqual(len(secure['ap_snapshots']), 1)
+        self.assertEqual(self.raw('SELECT battle_count FROM cl1_months')[0][0], 3)
+        self.assertEqual(self.raw('SELECT ap FROM action_point_snapshots')[0][0], 131)
+        self.assertEqual(self.raw('SELECT item,amount FROM commission_income_items')[0], ('Gem', 5))
         data = db.get_stats('inst', self.month())
         self.assertEqual(data['battle_count'], 3)
         self.assertEqual(len(data['ap_snapshots']), 1)
         self.assertEqual(len(data['commission_income_entries']), 1)
-        # 事务内读改写路径同样合并。
         db.increment_akashi_encounter('inst')
         self.assertEqual(db.get_stats('inst', self.month())['akashi_encounters'], 1)
 
     def test_legacy_whole_row_reads_and_splits_on_next_write(self):
+        path = self.root / 'config' / 'cl1_data.db'
+        data = {'battle_count': 7, 'commission_income_entries': [{'keep': True}]}
+        with sqlite3.connect(path) as conn:
+            conn.execute('CREATE TABLE cl1_data(instance TEXT,month TEXT,data_json TEXT)')
+            conn.execute('INSERT INTO cl1_data VALUES(?,?,?)', ('inst', self.month(), json.dumps(data)))
+        original = path.read_bytes()
         db = self.make_db()
-        data = {'battle_count': 7, 'akashi_encounters': 0, 'akashi_ap': 0, 'akashi_ap_entries': [],
-                'ap_snapshots': [], 'yellow_coin_snapshots': [], 'coins_snapshots': [],
-                'meow_battle_raw_count': 0, 'meow_battle_count': 0.0, 'meow_round_times': [],
-                'meow_hazard_stats': {}, 'siren_research_devices': {'cl1': 0, 'meow': {}},
-                'siren_research_device_entries': [], 'commission_income_entries': [{'keep': True}]}
-        with sqlite3.connect(self.root / 'config' / 'cl1_data.db') as conn:
-            conn.execute("INSERT INTO cl1_data (instance, month, data_json, secure_json, encrypted_blob) "
-                         "VALUES ('inst', ?, ?, NULL, NULL)", (self.month(), json.dumps(data)))
-        loaded = db.get_stats('inst', self.month())
-        self.assertEqual(loaded['battle_count'], 7)
-        self.assertEqual(loaded['commission_income_entries'], [{'keep': True}])
+        self.assertEqual(db.get_stats('inst', self.month()), data)
         db.increment_battle_count('inst', 1)
-        raw_json, payload = self.raw('SELECT data_json, secure_json FROM cl1_data')[0]
-        self.assertNotIn('battle_count', raw_json)
-        self.assertEqual(json.loads(payload)['battle_count'], 8)
+        self.assertEqual(self.raw('SELECT battle_count FROM cl1_months')[0][0], 8)
+        self.assertEqual(db.get_stats('inst', self.month())['commission_income_entries'], [{'keep': True}])
+        self.assertEqual(path.read_bytes(), original)
 
 
 class AzurstatsIntegration(StoreCase):
@@ -103,7 +92,7 @@ class AzurstatsIntegration(StoreCase):
         AzurStats._ensure_local_db()
 
     def raw(self, sql, params=()):
-        conn = sqlite3.connect(self.root / 'config' / 'azurstats_local.db')
+        conn = sqlite3.connect(self.root / 'config' / 'azurpilot.db')
         try:
             return conn.execute(sql, params).fetchall()
         finally:
@@ -111,18 +100,15 @@ class AzurstatsIntegration(StoreCase):
 
     def test_insert_stores_plaintext_payload_and_load_merges(self):
         AzurStats._insert_local_opsi_items([dict(self.ROW), dict(self.ROW, imgid='img-2', amount=7)])
-        rows = self.raw('SELECT item, secure_payload FROM opsi_items ORDER BY id')
-        self.assertIsNone(rows[0][0])
-        payload = json.loads(rows[1][1])
-        self.assertEqual((payload['item'], payload['amount'], payload['hazard_level']),
-                         ('PlateGeneralT4', 7, 6))
+        rows = self.raw('SELECT item,amount,hazard_level FROM opsi_items ORDER BY id')
+        self.assertEqual(rows, [('PlateGeneralT4', 3, 6), ('PlateGeneralT4', 7, 6)])
         loaded = AzurStats.load_opsi_drop_rows(instance='inst', device_id='dev-1')
         self.assertEqual([row['item'] for row in loaded], ['PlateGeneralT4', 'PlateGeneralT4'])
         self.assertEqual([row['amount'] for row in loaded], [3, 7])
 
     def test_monthly_totals_across_old_and_new_rows(self):
         # 旧行：物品字段写在普通列（没有载荷列）。
-        with sqlite3.connect(self.root / 'config' / 'azurstats_local.db') as conn:
+        with sqlite3.connect(self.root / 'config' / 'azurpilot.db') as conn:
             conn.execute("INSERT INTO opsi_items (imgid, device_id, instance, genre, created_at, item, amount, hazard_level) "
                          "VALUES ('img-0', 'dev-1', 'inst', 'opsi_meowfficer_farming', ?, 'PlateT4', 3, 6)",
                          (int(datetime(2026, 9, 1).timestamp()),))
@@ -133,14 +119,9 @@ class AzurstatsIntegration(StoreCase):
     def test_farming_csv_is_plaintext_and_readable(self):
         AzurStats._insert_local_opsi_items([dict(self.ROW)])
         data = AzurStats.get_meowofficer_farming(instance='inst')
-        # 实例化文件名带设备哈希，直接找目录里的实际文件。
-        files = list((self.root / 'log').glob('azurstat_meowofficer_farming*.csv'))
-        self.assertEqual(len(files), 1)
-        content = files[0].read_text(encoding='utf-8')
-        self.assertFalse(content.startswith('OPSIV'))
-        self.assertIn('侵蚀等级', content.splitlines()[0])
-        cached = AzurStats.load_meowofficer_farming(instance='inst')
-        np.testing.assert_allclose(cached, data)
+        self.assertEqual(self.raw('SELECT count(*) FROM farming_aggregates')[0][0], 6)
+        self.assertEqual(list((self.root / 'log').glob('azurstat_meowofficer_farming*.csv')), [])
+        np.testing.assert_allclose(AzurStats.load_meowofficer_farming(instance='inst'), data)
 
 
 class ResourceStatsIntegration(StoreCase):
@@ -156,7 +137,7 @@ class ResourceStatsIntegration(StoreCase):
         self.addCleanup(self.db_patch.stop)
 
     def raw(self, sql):
-        conn = sqlite3.connect(self.root / 'config' / 'azurstats_local.db')
+        conn = sqlite3.connect(self.root / 'config' / 'azurpilot.db')
         try:
             return conn.execute(sql).fetchall()
         finally:
@@ -165,18 +146,14 @@ class ResourceStatsIntegration(StoreCase):
     def test_snapshot_stores_only_opsi_columns_in_plaintext_payload(self):
         resource_stats.record_resource_snapshot('inst', dict(self.SNAPSHOT))
         resource_stats.record_resource_snapshot('inst', dict(self.SNAPSHOT, ActionPoint=160))
-        rows = self.raw('SELECT oil, action_point, opsi_payload FROM resource_snapshots ORDER BY id')
-        self.assertIsNone(rows[0][1])
-        payload = json.loads(rows[0][2])
-        self.assertEqual((payload['action_point'], payload['purple_coin']), (131, 20))
-        self.assertEqual(rows[1][0], 14000)        # 非大世界列保持普通列
+        rows = self.raw('SELECT oil,action_point,purple_coin FROM resource_snapshots ORDER BY id')
+        self.assertEqual(rows, [(14000, 131, 20), (14000, 160, 20)])
         timeline = resource_stats.get_resource_timeline('inst')
         self.assertEqual([row['action_point'] for row in timeline], [131, 160])
-        self.assertEqual([row['oil'] for row in timeline], [14000, 14000])
         with patch.object(resource_stats, '_overlay_opsi_snapshot', side_effect=AssertionError('不得读取载荷')):
             public = resource_stats.get_resource_timeline('inst', include_opsi=False)
         self.assertEqual([row['oil'] for row in public], [14000, 14000])
-        self.assertTrue(all('opsi_payload' not in row and row['action_point'] is None for row in public))
+        self.assertTrue(all(row['action_point'] is None for row in public))
 
     def test_interval_summary_covers_opsi_currencies(self):
         resource_stats.record_resource_snapshot('inst', dict(self.SNAPSHOT))
@@ -188,7 +165,7 @@ class ResourceStatsIntegration(StoreCase):
 
     def test_legacy_columns_without_payload_stay_readable(self):
         resource_stats._ensure_table()
-        with sqlite3.connect(self.root / 'config' / 'azurstats_local.db') as conn:
+        with sqlite3.connect(self.root / 'config' / 'azurpilot.db') as conn:
             conn.execute("INSERT INTO resource_snapshots (instance, ts, oil, action_point, yellow_coin, purple_coin) "
                          "VALUES ('inst', '2026-09-01T10:00:00', 12000, 100, 400, 15)")
         timeline = resource_stats.get_resource_timeline('inst')
@@ -204,12 +181,11 @@ class ShipExpIntegration(StoreCase):
         stats = self.make_stats()
         stats.data = {'battle_times': {'samples': [52.0], 'average': 52.0}, 'target_level': 125}
         stats._save()
-        raw = stats._path.read_text(encoding='utf-8')
-        self.assertFalse(raw.startswith('{"__opsi_secure'))
-        self.assertIn('battle_times', raw)
+        with sqlite3.connect(stats._path) as conn:
+            self.assertEqual(conn.execute('SELECT target_level FROM ship_exp_checks').fetchone()[0], 125)
+            self.assertEqual(conn.execute('SELECT average_seconds FROM ship_exp_duration_groups').fetchone()[0], 52.0)
         fresh = self.make_stats()
-        self.assertEqual(fresh.data['battle_times']['average'], 52.0)
-        self.assertEqual(fresh.data['target_level'], 125)
+        self.assertEqual(fresh.data, stats.data)
 
     def test_legacy_wrapped_file_loads_and_rewrites_plain(self):
         import base64
@@ -234,7 +210,8 @@ class ShipExpIntegration(StoreCase):
         stats = self.make_stats()
         self.assertEqual(stats.data['target_level'], 130)
         stats._save()
-        self.assertIn('target_level', json.loads(path.read_text(encoding='utf-8')))
+        self.assertEqual(json.loads(path.read_text(encoding='utf-8'))['payload'], blob)
+        self.assertEqual(self.make_stats().data['target_level'], 130)
 
 
 if __name__ == '__main__':

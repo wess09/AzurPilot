@@ -2,7 +2,7 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { VALID_CATEGORIES } from './statisticsPrefs'
 import type {StatisticsLayout} from './statisticsLayout'
 import {DEFAULT_TABLE_ROWS, readStatisticsLayout, setTableDisplay, tableDisplay, writeStatisticsLayout} from './statisticsLayout'
-import {cardKey, DEFAULT_STATISTICS_LAYOUT, defaultStatisticsLayout, EDIT_MODE_KEY, hideCard, isCardHidden, isChartCompact, isLinked, isMetricsTable, isPickerHidden, isSeriesFiltered, isStackedRise, LAYOUT_KEY, linkChains, readChains, rechain, setChartCompact, setMetricsTable, setPickerHidden, setStackedRise, showCard, splitChains, toggleSeriesFilter} from './statisticsLayout'
+import {cardKey, DEFAULT_STATISTICS_LAYOUT, defaultStatisticsLayout, EDIT_MODE_KEY, hideCard, isCardHidden, isChartCompact, isLinked, isMetricsTable, isPickerHidden, isSeriesFiltered, isStackedRise, LAYOUT_KEY, linkChains, pageNeedsSeries, readChains, rechain, setChartCompact, setMetricsTable, setPickerHidden, setStackedRise, showCard, splitChains, toggleSeriesFilter} from './statisticsLayout'
 
 function memoryStorage() {
   const map = new Map<string, string>()
@@ -261,6 +261,15 @@ describe('统计页卡片隐藏', () => {
   it('页号无效的键不改动文档', () => {
     expect(hideCard(DEFAULT_STATISTICS_LAYOUT, 'nonsense')).toBe(DEFAULT_STATISTICS_LAYOUT)
     expect(isCardHidden(DEFAULT_STATISTICS_LAYOUT, 'nonsense')).toBe(false)
+  })
+
+  it('图表与原始记录都隐藏时才不再需要序列数据', () => {
+    const page = 'resources'
+    expect(pageNeedsSeries(DEFAULT_STATISTICS_LAYOUT, page)).toBe(true)
+    const chartHidden = hideCard(DEFAULT_STATISTICS_LAYOUT, cardKey(page, 'chart'))
+    expect(pageNeedsSeries(chartHidden, page)).toBe(true)
+    const bothHidden = hideCard(chartHidden, cardKey(page, 'raw'))
+    expect(pageNeedsSeries(bothHidden, page)).toBe(false)
   })
 })
 

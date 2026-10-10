@@ -16,7 +16,7 @@
         --instance alas --dry-run
     # 真订正（数据库路径跟的是代码所在目录，不是当前目录，写别的部署要显式给 --db）
     uv run python -m dev_tools.research_drop_repair --folder "D:/AzurPilot/screenshots/research" \
-        --instance alas --db "D:/AzurPilot/config/cl1_data.db"
+        --instance alas --db "D:/AzurPilot/config/azurpilot.db"
 
 判读输出：
 - `可订正` —— 库里这条与重解析结果不同，逐项打印增删；
@@ -117,7 +117,7 @@ def main():
     parser.add_argument('--server', default='cn', choices=['cn', 'en', 'jp', 'tw'],
                         help='游戏服务器，影响截图资源')
     parser.add_argument('--db', default=None,
-                        help='cl1_data.db 的路径；缺省用本仓库的 config/cl1_data.db。'
+                        help='azurpilot.db 的路径；缺省用本仓库的 config/azurpilot.db。'
                              '要订正另一份部署的数据时显式指定——数据库路径跟的是'
                              '**代码所在目录**，不是当前工作目录')
     parser.add_argument('--dry-run', action='store_true',
@@ -147,7 +147,11 @@ def main():
     from module.statistics.cl1_database import Cl1Database
     from module.statistics.research_drop import get_parser
 
-    db = Cl1Database(Path(args.db)) if args.db else Cl1Database()
+    from module.persistence.database import get_database
+    database = get_database(Path(args.db).absolute().parent) if args.db else get_database()
+    if args.db and Path(args.db).name != 'azurpilot.db':
+        database.add_legacy_source('cl1', args.db)
+    db = Cl1Database(store=database)
     logger.info(f'[科研订正] 数据库 {db.db_path}')
     entries = load_instance_entries(db, args.instance)
     logger.info(f'[科研订正] 实例 {args.instance} 有 {len(entries)} 条记录，'

@@ -10,148 +10,37 @@ from pathlib import Path
 from typing import Any
 
 from module.logger import logger
-from module.statistics import opsi_secure
+from module.persistence.database import register_instance
 
 
 DEFAULT_DAILY_SUMMARY_DB = Path('./config/daily_summary.db')
 DAILY_SUMMARY_RETENTION_DAYS = 35
 
 
-class _ClosingConnection(sqlite3.Connection):
-    """让事务上下文在提交或回滚后关闭连接，避免 Windows 文件锁残留。"""
-
-    def __enter__(self):
-        self._transaction = opsi_secure.immediate_transaction(self)
-        try:
-            return self._transaction.__enter__()
-        except BaseException:
-            # 事务进入失败时同样要关闭连接，不能留下文件锁。
-            self.close()
-            raise
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        try:
-            return self._transaction.__exit__(exc_type, exc_value, traceback)
-        finally:
-            self.close()
-
-
 class DailySummaryStore:
     """以 SQLite 保存日报所需的最小运行时数据。"""
 
-    def __init__(self, db_path: str | Path | None = None) -> None:
-        self.db_path = Path(db_path or DEFAULT_DAILY_SUMMARY_DB)
+    def __init__(self, db_path: str | Path | None = None, *, store=None) -> None:
+        from module.persistence.database import for_legacy_path
+        self._store = store or (for_legacy_path(db_path, 'daily') if db_path is not None else None)
         self._lock = threading.RLock()
         self._pending_degradations: set[tuple[str, str, str]] = set()
-        self._initialized = False
+
+    @property
+    def store(self):
+        from module.persistence.database import get_database
+        return self._store or get_database()
+
+    @property
+    def db_path(self):
+        return self.store.path
 
     def _connect(self) -> sqlite3.Connection:
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        # 日报不能因为数据库锁竞争阻塞游戏调度；本次记录失败会在后续日报中标为未知。
-        connection = sqlite3.connect(self.db_path, timeout=0.05, factory=_ClosingConnection)
-        connection.execute('PRAGMA busy_timeout = 50')
-        connection.execute('PRAGMA journal_mode = WAL')
-        connection._store_path = self.db_path
-        connection.row_factory = sqlite3.Row
-        return connection
+        # 日报保留 50 毫秒锁等待，记录失败时标记采集缺口。
+        return self.store.connect(timeout=0.05)
 
     def _ensure_tables(self) -> None:
-        with self._lock:
-            if self._initialized:
-                return
-            with self._connect() as connection:
-                connection.execute(
-                    '''
-                    CREATE TABLE IF NOT EXISTS daily_summary_task_runs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        instance TEXT NOT NULL,
-                        task TEXT NOT NULL,
-                        started_at TEXT NOT NULL,
-                        finished_at TEXT,
-                        status TEXT,
-                        duration_seconds REAL
-                    )
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE INDEX IF NOT EXISTS idx_daily_summary_task_runs_window
-                    ON daily_summary_task_runs (instance, finished_at)
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE TABLE IF NOT EXISTS daily_summary_cl1_events (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        instance TEXT NOT NULL,
-                        ts TEXT NOT NULL,
-                        duration_seconds REAL NOT NULL,
-                        estimated_exp INTEGER NOT NULL,
-                        secure_payload TEXT
-                    )
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE INDEX IF NOT EXISTS idx_daily_summary_cl1_events_window
-                    ON daily_summary_cl1_events (instance, ts)
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE TABLE IF NOT EXISTS daily_summary_periods (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        instance TEXT NOT NULL,
-                        period_key TEXT NOT NULL,
-                        server TEXT NOT NULL,
-                        window_start TEXT NOT NULL,
-                        window_end TEXT NOT NULL,
-                        status TEXT NOT NULL,
-                        report_text TEXT,
-                        llm_attempts INTEGER NOT NULL DEFAULT 0,
-                        send_attempts INTEGER NOT NULL DEFAULT 0,
-                        error_kind TEXT,
-                        created_at TEXT NOT NULL,
-                        updated_at TEXT NOT NULL,
-                        UNIQUE(instance, period_key)
-                    )
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE INDEX IF NOT EXISTS idx_daily_summary_periods_cleanup
-                    ON daily_summary_periods (window_end)
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE TABLE IF NOT EXISTS daily_summary_collection_state (
-                        instance TEXT PRIMARY KEY,
-                        task_tracking_started_at TEXT,
-                        cl1_tracking_started_at TEXT
-                    )
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE TABLE IF NOT EXISTS daily_summary_collection_gaps (
-                        instance TEXT NOT NULL,
-                        collection TEXT NOT NULL,
-                        occurred_at TEXT NOT NULL,
-                        PRIMARY KEY (instance, collection, occurred_at)
-                    )
-                    '''
-                )
-                connection.execute(
-                    '''
-                    CREATE INDEX IF NOT EXISTS idx_daily_summary_collection_gaps_window
-                    ON daily_summary_collection_gaps (instance, collection, occurred_at)
-                    '''
-                )
-                columns = {row[1] for row in connection.execute('PRAGMA table_info(daily_summary_cl1_events)')}
-                if 'secure_payload' not in columns:
-                    connection.execute('ALTER TABLE daily_summary_cl1_events ADD COLUMN secure_payload TEXT')
-            self._initialized = True
+        self.store.ensure_ready()
 
     @staticmethod
     def _serialize_time(value: datetime) -> str:
@@ -171,6 +60,8 @@ class DailySummaryStore:
     ) -> set[tuple[str, str, str]]:
         pending = set(self._pending_degradations)
         if pending:
+            for instance, _, _ in pending:
+                register_instance(connection, instance)
             connection.executemany(
                 '''
                 INSERT OR IGNORE INTO daily_summary_collection_gaps (
@@ -221,6 +112,7 @@ class DailySummaryStore:
         """仅首次记录采集起点，后续日报据此判断统计是否完整。"""
         if column not in {'task_tracking_started_at', 'cl1_tracking_started_at'}:
             raise ValueError(f'未知日报采集列: {column}')
+        register_instance(connection, instance)
         connection.execute(
             'INSERT OR IGNORE INTO daily_summary_collection_state (instance) VALUES (?)',
             (instance,),
@@ -292,13 +184,14 @@ class DailySummaryStore:
                     '''
                     UPDATE daily_summary_task_runs
                     SET finished_at = ?, status = ?, duration_seconds = ?
-                    WHERE id = ?
+                    WHERE id = ? AND instance = ?
                     ''',
                     (
                         self._serialize_time(finished_at),
                         status,
                         max(0.0, float(duration_seconds)),
                         run_id,
+                        instance,
                     ),
                 )
             self._clear_pending_degradations(persisted)
@@ -426,13 +319,9 @@ class DailySummaryStore:
                 self._mark_collection_started(
                     connection, instance, 'cl1_tracking_started_at', timestamp
                 )
-                cursor = connection.execute(
-                    'INSERT INTO daily_summary_cl1_events(instance,ts,duration_seconds,estimated_exp) VALUES(?,?,0,0)',
-                    (instance, self._serialize_time(timestamp)))
-                row = {'id': cursor.lastrowid, 'instance': instance, 'ts': self._serialize_time(timestamp)}
-                payload = opsi_secure.serialize_obj({'duration_seconds': max(0.0, float(duration_seconds)),
-                                                     'estimated_exp': max(0, int(estimated_exp))})
-                connection.execute('UPDATE daily_summary_cl1_events SET secure_payload=? WHERE id=?', (payload, row['id']))
+                connection.execute(
+                    'INSERT INTO daily_summary_cl1_events(instance,ts,duration_seconds,estimated_exp) VALUES(?,?,?,?)',
+                    (instance, self._serialize_time(timestamp), max(0.0, float(duration_seconds)), max(0, int(estimated_exp))))
                 cutoff = self._serialize_time(
                     timestamp - timedelta(days=DAILY_SUMMARY_RETENTION_DAYS)
                 )
@@ -482,14 +371,7 @@ class DailySummaryStore:
                 records = connection.execute(
                     'SELECT * FROM daily_summary_cl1_events WHERE instance=? AND ts>=? AND ts<? ORDER BY ts',
                     (instance, self._serialize_time(start), self._serialize_time(end))).fetchall()
-                decoded = []
-                for record in records:
-                    item = dict(record)
-                    payload = opsi_secure.decode_record('daily', item['secure_payload'],
-                                                        opsi_secure.row_context('daily', item))
-                    if payload is None:
-                        raise opsi_secure.StoreUnavailable('日报事件记录暂不可读')
-                    decoded.append(dict(item, **payload))
+                decoded = [dict(record) for record in records]
                 row = {'battles': len(decoded), 'estimated_exp': sum(r['estimated_exp'] for r in decoded),
                        'duration_seconds': sum(r['duration_seconds'] for r in decoded),
                        'first_observed_at': decoded[0]['ts'] if decoded else None,
@@ -549,6 +431,7 @@ class DailySummaryStore:
         self._ensure_tables()
         now = self._serialize_time(datetime.now())
         with self._lock, self._connect() as connection:
+            register_instance(connection, instance)
             cursor = connection.execute(
                 '''
                 INSERT OR IGNORE INTO daily_summary_periods (
@@ -588,6 +471,7 @@ class DailySummaryStore:
         self._ensure_tables()
         now = self._serialize_time(datetime.now())
         with self._lock, self._connect() as connection:
+            register_instance(connection, instance)
             connection.execute(
                 '''
                 INSERT OR IGNORE INTO daily_summary_periods (
@@ -675,9 +559,6 @@ class DailySummaryStore:
                 (instance, period_key),
             ).fetchone()
         result = dict(row) if row is not None else None
-        if result and result.get('report_text'):
-            result['report_text'] = opsi_secure.decode_text(
-                result['report_text'], opsi_secure.report_context(instance, period_key))
         return result
 
     def cleanup(self, now: datetime | None = None, keep_days: int = 35) -> None:

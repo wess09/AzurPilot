@@ -1,4 +1,5 @@
 import os
+import random
 import subprocess
 import sys
 from typing import Optional, Union
@@ -10,8 +11,19 @@ from deploy.Windows.utils import DEPLOY_CONFIG, DEPLOY_TEMPLATE, cached_property
 
 
 GIT_OVER_CDN_REPOSITORY = 'git://git.pull/AzurPilot'
-GIT_OVER_CDN_FALLBACK_REPOSITORY = 'https://gitcode.com/ddl2/AzurLaneAutoScript'
+CNB_REPOSITORY = 'https://cnb.cool/AzurPilot/AzurPilot'
+GITCODE_REPOSITORY = 'https://gitcode.com/ddl2/AzurLaneAutoScript'
 GITHUB_REPOSITORY = 'https://github.com/wess09/AzurPilot'
+GIT_OVER_CDN_FALLBACK_REPOSITORIES = [
+    CNB_REPOSITORY,
+    GITCODE_REPOSITORY,
+]
+GIT_OVER_CDN_FALLBACK_REPOSITORY = GITCODE_REPOSITORY
+
+
+def choose_fallback_repository() -> str:
+    """在可用的国内镜像源（CNB 与 GitCode）之间分流，避免单一镜像源流量过大引发风控。"""
+    return random.choice(GIT_OVER_CDN_FALLBACK_REPOSITORIES)
 
 
 class ExecutionError(Exception):
@@ -126,7 +138,11 @@ class DeployConfig(DeployConfigTransaction, ConfigModel):
         if self.Repository in ['global']:
             super().__setattr__('Repository', 'https://github.com/wess09/AzurPilot')
         if self.Repository in ['cn', GIT_OVER_CDN_REPOSITORY]:
-            super().__setattr__('Repository', GIT_OVER_CDN_FALLBACK_REPOSITORY)
+            super().__setattr__('Repository', choose_fallback_repository())
+        if self.Repository in ['cnb']:
+            super().__setattr__('Repository', CNB_REPOSITORY)
+        if self.Repository in ['gitcode']:
+            super().__setattr__('Repository', GITCODE_REPOSITORY)
 
     def _redirect_github_repository(self):
         """为官方 GitHub 源一次性选择适合当前网络的更新镜像。"""

@@ -151,6 +151,7 @@
     "page": "tool",
     "tasks": [
       "FleetScan",
+      "MindCalculatorScan",
       "Daemon",
       "OpsiDaemon",
       "EventStory",

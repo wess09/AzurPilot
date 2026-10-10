@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CalendarClock, Clock3, ListTree, Play, RotateCcw, Search, Settings2, Ship, Terminal } from 'lucide-react'
+import { CalendarClock, Clock3, ListTree, Play, RotateCcw, Search, Settings2, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { Config } from '../api/types'
 import { useApp, useConnection } from '../app/context'
@@ -26,6 +26,7 @@ import { editor, prepareValue } from '../config/editors'
 import { EditStatus } from '../components/EditStatus'
 import { AccountPanel } from '../components/AccountPanel'
 import { isFieldVisible } from './configVisibility'
+import { FleetInfoPage } from './FleetInfoPage'
 
 export function TaskConfig() {
   const {instance = '', task = ''} = useParams()
@@ -75,7 +76,7 @@ export function TaskConfig() {
   }, [startupQueue])
 
   useEffect(() => {
-    if (connection !== 'ready') return
+    if (connection !== 'ready' || task === 'FleetInfo') return
     let active = true
     const confirmed = queue.confirmed()
     void api.request('config.get', {instance}).then(value => {
@@ -165,6 +166,7 @@ export function TaskConfig() {
     }
   }, [config, task])
 
+  if (task === 'FleetInfo') return <FleetInfoPage key={instance}/>
   if (!config) return error ? <ErrorBox message={error} retry={reload} /> : <Loading />
 
   const modal = confirmRun && (
@@ -222,6 +224,8 @@ export function TaskConfig() {
                   options={field.option}
                   disabled={readonly}
                   preserveText
+                  // 实测心情重新输入同一值也要提交，建立新的校准时刻。
+                  resubmitOnEdit={(group === 'Emotion' && /^Fleet[12]Value$/.test(arg)) || (group === 'PublicEmotion' && arg === 'FleetValue')}
                   invalid={edit?.status === 'error'}
                   label={label}
                   translateOption={option => t(`${group}.${arg}.${option}`)}
@@ -360,9 +364,7 @@ export function TaskConfig() {
     {(!hasGroups || !condensed) && configToolbar}
   </>
 
-  const groupsSection = task === 'FleetInfo' ? (
-    <FleetInfo value={config.values.FleetInfo?.FleetInfo?.Result} />
-  ) : !hasGroups ? (
+  const groupsSection = !hasGroups ? (
     <>{taskHelpBlock}{(search || !tool) && <Empty icon={<Settings2 size={30} />} title={ui(search ? 'task.noConfigFound' : 'task.noConfig')}>
       {search ? ui('task.tryOtherKeyword') : ui('task.viewRelated')}
     </Empty>}</>
@@ -406,16 +408,4 @@ export function TaskConfig() {
     {toolPanel}
     {modal}
   </>
-}
-
-export function FleetInfo({value}: {value: unknown}) {
-  const {ui} = useApp()
-  if (!value || (typeof value === 'object' && !Object.keys(value).length)) return <Empty icon={<Ship size={32}/>} title={ui('fleet.emptyTitle')}>{ui('fleet.emptyHint')}</Empty>
-  let fleets: Record<string, Record<string, Array<{name: string; level?: number; emotion?: number | null} | string>>>
-  try {fleets = typeof value === 'string' ? JSON.parse(value) : value} catch {return <ErrorBox message={ui('fleet.invalid')}/>}
-  const columns = {vanguard: ui('fleet.vanguard'), main: ui('fleet.main'), submarine: ui('fleet.submarine')}
-  return <div className="fleet-grid">{[1, 2, 3, 4, 5, 6].map(fleet => <section className="panel" key={fleet}><div className="panel-heading"><h2>{ui('fleet.title', {number: fleet})}</h2><Ship size={18}/></div>{Object.entries(columns).map(([key, label]) => <div className="fleet-column" key={key}><h3>{label}</h3>{fleets[key]?.[fleet]?.length ? fleets[key][fleet].map((ship, index) => <div key={index}>
-    <span>{typeof ship === 'string' ? ship : ship.name}</span>
-    <small>{typeof ship !== 'string' && ship.level ? `Lv.${ship.level} · ` : ''}{ui('fleet.emotion', {value: typeof ship !== 'string' && Number.isInteger(ship.emotion) && ship.emotion! >= 0 && ship.emotion! <= 150 ? ship.emotion! : ui('fleet.unknown')})}</small>
-  </div>) : <p>{ui('fleet.noRecord')}</p>}</div>)}</section>)}</div>
 }

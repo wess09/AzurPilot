@@ -811,7 +811,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "卡辛.改"
+    ]
   },
   "101041": {
     "name": {
@@ -1107,7 +1110,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "唐斯.改"
+    ]
   },
   "101051": {
     "name": {
@@ -2291,7 +2297,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "莫里.改"
+    ]
   },
   "101091": {
     "name": {
@@ -3179,7 +3188,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "查尔斯·奥斯本.改"
+    ]
   },
   "101121": {
     "name": {
@@ -4955,7 +4967,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "拉菲.改"
+    ]
   },
   "101241": {
     "name": {
@@ -5251,7 +5266,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "西姆斯.改"
+    ]
   },
   "101251": {
     "name": {
@@ -5547,7 +5565,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "哈曼.改"
+    ]
   },
   "101261": {
     "name": {
@@ -5843,7 +5864,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "埃尔德里奇.改"
+    ]
   },
   "101271": {
     "name": {
@@ -6139,7 +6163,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "贝利.改"
+    ]
   },
   "101291": {
     "name": {
@@ -7027,7 +7054,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "尼古拉斯.改"
+    ]
   },
   "101331": {
     "name": {
@@ -13541,6 +13571,894 @@
     "oil_at_end": 9,
     "max_level": 100
   },
+  "101561": {
+    "name": {
+      "cn": "柯莱特",
+      "en": "Collett",
+      "jp": "コレット",
+      "tw": "科勒特",
+      "kr": "콜렛"
+    },
+    "english_name": "USS Collett",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 10156,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 387,
+      "cannon": 27,
+      "torpedo": 70,
+      "antiaircraft": 45,
+      "air": 0,
+      "reload": 84,
+      "armor": 0,
+      "hit": 76,
+      "dodge": 59,
+      "speed": 40.8,
+      "luck": 85,
+      "antisub": 55
+    },
+    "attrs_growth": {
+      "durability": 11021,
+      "cannon": 370,
+      "torpedo": 894,
+      "antiaircraft": 978,
+      "air": 0,
+      "reload": 585,
+      "armor": 0,
+      "hit": 1175,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 614
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 4,
+    "max_level": 100
+  },
+  "101562": {
+    "name": {
+      "cn": "柯莱特",
+      "en": "Collett",
+      "jp": "コレット",
+      "tw": "科勒特",
+      "kr": "콜렛"
+    },
+    "english_name": "USS Collett",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 10156,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 481,
+      "cannon": 34,
+      "torpedo": 87,
+      "antiaircraft": 56,
+      "air": 0,
+      "reload": 84,
+      "armor": 0,
+      "hit": 76,
+      "dodge": 59,
+      "speed": 40.8,
+      "luck": 85,
+      "antisub": 69
+    },
+    "attrs_growth": {
+      "durability": 11021,
+      "cannon": 370,
+      "torpedo": 894,
+      "antiaircraft": 978,
+      "air": 0,
+      "reload": 585,
+      "armor": 0,
+      "hit": 1175,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 614
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 6,
+    "max_level": 100
+  },
+  "101563": {
+    "name": {
+      "cn": "柯莱特",
+      "en": "Collett",
+      "jp": "コレット",
+      "tw": "科勒特",
+      "kr": "콜렛"
+    },
+    "english_name": "USS Collett",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 10156,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 670,
+      "cannon": 47,
+      "torpedo": 122,
+      "antiaircraft": 78,
+      "air": 0,
+      "reload": 84,
+      "armor": 0,
+      "hit": 76,
+      "dodge": 59,
+      "speed": 40.8,
+      "luck": 85,
+      "antisub": 96
+    },
+    "attrs_growth": {
+      "durability": 11021,
+      "cannon": 370,
+      "torpedo": 894,
+      "antiaircraft": 978,
+      "air": 0,
+      "reload": 585,
+      "armor": 0,
+      "hit": 1175,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 614
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
+  "101564": {
+    "name": {
+      "cn": "柯莱特",
+      "en": "Collett",
+      "jp": "コレット",
+      "tw": "科勒特",
+      "kr": "콜렛"
+    },
+    "english_name": "USS Collett",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 10156,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 953,
+      "cannon": 67,
+      "torpedo": 174,
+      "antiaircraft": 111,
+      "air": 0,
+      "reload": 84,
+      "armor": 0,
+      "hit": 76,
+      "dodge": 59,
+      "speed": 40.8,
+      "luck": 85,
+      "antisub": 136
+    },
+    "attrs_growth": {
+      "durability": 11021,
+      "cannon": 370,
+      "torpedo": 894,
+      "antiaircraft": 978,
+      "air": 0,
+      "reload": 585,
+      "armor": 0,
+      "hit": 1175,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 614
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "101571": {
+    "name": {
+      "cn": "哈里森",
+      "en": "Harrison",
+      "jp": "ハリソン",
+      "tw": "哈里森",
+      "kr": "해리슨"
+    },
+    "english_name": "USS Harrison",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 10157,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 343,
+      "cannon": 18,
+      "torpedo": 70,
+      "antiaircraft": 43,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 75,
+      "antisub": 56
+    },
+    "attrs_growth": {
+      "durability": 9771,
+      "cannon": 249,
+      "torpedo": 894,
+      "antiaircraft": 941,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 626
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 3,
+    "max_level": 100
+  },
+  "101572": {
+    "name": {
+      "cn": "哈里森",
+      "en": "Harrison",
+      "jp": "ハリソン",
+      "tw": "哈里森",
+      "kr": "해리슨"
+    },
+    "english_name": "USS Harrison",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 10157,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 427,
+      "cannon": 22,
+      "torpedo": 87,
+      "antiaircraft": 54,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 75,
+      "antisub": 70
+    },
+    "attrs_growth": {
+      "durability": 9771,
+      "cannon": 249,
+      "torpedo": 894,
+      "antiaircraft": 941,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 626
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "101573": {
+    "name": {
+      "cn": "哈里森",
+      "en": "Harrison",
+      "jp": "ハリソン",
+      "tw": "哈里森",
+      "kr": "해리슨"
+    },
+    "english_name": "USS Harrison",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 10157,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 594,
+      "cannon": 31,
+      "torpedo": 122,
+      "antiaircraft": 75,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 75,
+      "antisub": 97
+    },
+    "attrs_growth": {
+      "durability": 9771,
+      "cannon": 249,
+      "torpedo": 894,
+      "antiaircraft": 941,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 626
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "101574": {
+    "name": {
+      "cn": "哈里森",
+      "en": "Harrison",
+      "jp": "ハリソン",
+      "tw": "哈里森",
+      "kr": "해리슨"
+    },
+    "english_name": "USS Harrison",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 10157,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 845,
+      "cannon": 45,
+      "torpedo": 174,
+      "antiaircraft": 106,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 75,
+      "antisub": 139
+    },
+    "attrs_growth": {
+      "durability": 9771,
+      "cannon": 249,
+      "torpedo": 894,
+      "antiaircraft": 941,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 626
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "101581": {
+    "name": {
+      "cn": "约翰·罗杰斯",
+      "en": "John Rodgers",
+      "jp": "ジョン・ロジャース",
+      "tw": "約翰·羅傑斯",
+      "kr": "존 로저스"
+    },
+    "english_name": "USS John Rodgers",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 10158,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 361,
+      "cannon": 19,
+      "torpedo": 69,
+      "antiaircraft": 45,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 86,
+      "antisub": 56
+    },
+    "attrs_growth": {
+      "durability": 10295,
+      "cannon": 258,
+      "torpedo": 886,
+      "antiaircraft": 990,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 629
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 3,
+    "max_level": 100
+  },
+  "101582": {
+    "name": {
+      "cn": "约翰·罗杰斯",
+      "en": "John Rodgers",
+      "jp": "ジョン・ロジャース",
+      "tw": "約翰·羅傑斯",
+      "kr": "존 로저스"
+    },
+    "english_name": "USS John Rodgers",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 10158,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 449,
+      "cannon": 24,
+      "torpedo": 86,
+      "antiaircraft": 56,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 86,
+      "antisub": 70
+    },
+    "attrs_growth": {
+      "durability": 10295,
+      "cannon": 258,
+      "torpedo": 886,
+      "antiaircraft": 990,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 629
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "101583": {
+    "name": {
+      "cn": "约翰·罗杰斯",
+      "en": "John Rodgers",
+      "jp": "ジョン・ロジャース",
+      "tw": "約翰·羅傑斯",
+      "kr": "존 로저스"
+    },
+    "english_name": "USS John Rodgers",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 10158,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 625,
+      "cannon": 33,
+      "torpedo": 120,
+      "antiaircraft": 78,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 86,
+      "antisub": 98
+    },
+    "attrs_growth": {
+      "durability": 10295,
+      "cannon": 258,
+      "torpedo": 886,
+      "antiaircraft": 990,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 629
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "101584": {
+    "name": {
+      "cn": "约翰·罗杰斯",
+      "en": "John Rodgers",
+      "jp": "ジョン・ロジャース",
+      "tw": "約翰·羅傑斯",
+      "kr": "존 로저스"
+    },
+    "english_name": "USS John Rodgers",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 10158,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 890,
+      "cannon": 47,
+      "torpedo": 171,
+      "antiaircraft": 112,
+      "air": 0,
+      "reload": 81,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 59,
+      "speed": 42,
+      "luck": 86,
+      "antisub": 139
+    },
+    "attrs_growth": {
+      "durability": 10295,
+      "cannon": 258,
+      "torpedo": 886,
+      "antiaircraft": 990,
+      "air": 0,
+      "reload": 562,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1095,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 629
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
   "101994": {
     "name": {
       "cn": "埃尔德里奇.改",
@@ -15093,7 +16011,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "海伦娜.改"
+    ]
   },
   "102061": {
     "name": {
@@ -15693,7 +16614,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "朱诺.改"
+    ]
   },
   "102081": {
     "name": {
@@ -15993,7 +16917,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "圣地亚哥.改"
+    ]
   },
   "102091": {
     "name": {
@@ -18806,7 +19733,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 4,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102192": {
     "name": {
@@ -18880,7 +19808,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102193": {
     "name": {
@@ -18954,7 +19883,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102194": {
     "name": {
@@ -19028,7 +19958,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102201": {
     "name": {
@@ -19102,7 +20033,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 4,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102202": {
     "name": {
@@ -19176,7 +20108,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102203": {
     "name": {
@@ -19250,7 +20183,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102204": {
     "name": {
@@ -19324,7 +20258,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102211": {
     "name": {
@@ -19399,7 +20334,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 4,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102212": {
     "name": {
@@ -19474,7 +20410,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102213": {
     "name": {
@@ -19549,7 +20486,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102214": {
     "name": {
@@ -19624,7 +20562,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "102221": {
     "name": {
@@ -23335,6 +24274,302 @@
     "oil_at_end": 10,
     "max_level": 100
   },
+  "102361": {
+    "name": {
+      "cn": "维克斯堡",
+      "en": "Vicksburg",
+      "jp": "ヴィックスバーグ",
+      "tw": "維克斯堡",
+      "kr": "빅스버그"
+    },
+    "english_name": "USS Vicksburg",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 10236,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 751,
+      "cannon": 31,
+      "torpedo": 0,
+      "antiaircraft": 88,
+      "air": 0,
+      "reload": 71,
+      "armor": 0,
+      "hit": 56,
+      "dodge": 28,
+      "speed": 32.5,
+      "luck": 72,
+      "antisub": 25
+    },
+    "attrs_growth": {
+      "durability": 18618,
+      "cannon": 431,
+      "torpedo": 0,
+      "antiaircraft": 1771,
+      "air": 0,
+      "reload": 492,
+      "armor": 0,
+      "hit": 828,
+      "dodge": 562,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 305
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "102362": {
+    "name": {
+      "cn": "维克斯堡",
+      "en": "Vicksburg",
+      "jp": "ヴィックスバーグ",
+      "tw": "維克斯堡",
+      "kr": "빅스버그"
+    },
+    "english_name": "USS Vicksburg",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 10236,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 934,
+      "cannon": 39,
+      "torpedo": 0,
+      "antiaircraft": 110,
+      "air": 0,
+      "reload": 71,
+      "armor": 0,
+      "hit": 56,
+      "dodge": 28,
+      "speed": 32.5,
+      "luck": 72,
+      "antisub": 31
+    },
+    "attrs_growth": {
+      "durability": 18618,
+      "cannon": 431,
+      "torpedo": 0,
+      "antiaircraft": 1771,
+      "air": 0,
+      "reload": 492,
+      "armor": 0,
+      "hit": 828,
+      "dodge": 562,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 305
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "102363": {
+    "name": {
+      "cn": "维克斯堡",
+      "en": "Vicksburg",
+      "jp": "ヴィックスバーグ",
+      "tw": "維克斯堡",
+      "kr": "빅스버그"
+    },
+    "english_name": "USS Vicksburg",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 10236,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1300,
+      "cannon": 54,
+      "torpedo": 0,
+      "antiaircraft": 153,
+      "air": 0,
+      "reload": 71,
+      "armor": 0,
+      "hit": 56,
+      "dodge": 28,
+      "speed": 32.5,
+      "luck": 72,
+      "antisub": 43
+    },
+    "attrs_growth": {
+      "durability": 18618,
+      "cannon": 431,
+      "torpedo": 0,
+      "antiaircraft": 1771,
+      "air": 0,
+      "reload": 492,
+      "armor": 0,
+      "hit": 828,
+      "dodge": 562,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 305
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "102364": {
+    "name": {
+      "cn": "维克斯堡",
+      "en": "Vicksburg",
+      "jp": "ヴィックスバーグ",
+      "tw": "維克斯堡",
+      "kr": "빅스버그"
+    },
+    "english_name": "USS Vicksburg",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 10236,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1850,
+      "cannon": 77,
+      "torpedo": 0,
+      "antiaircraft": 217,
+      "air": 0,
+      "reload": 71,
+      "armor": 0,
+      "hit": 56,
+      "dodge": 28,
+      "speed": 32.5,
+      "luck": 72,
+      "antisub": 62
+    },
+    "attrs_growth": {
+      "durability": 18618,
+      "cannon": 431,
+      "torpedo": 0,
+      "antiaircraft": 1771,
+      "air": 0,
+      "reload": 492,
+      "armor": 0,
+      "hit": 828,
+      "dodge": 562,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 305
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
   "103011": {
     "name": {
       "cn": "彭萨科拉",
@@ -25061,7 +26296,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "波特兰.改"
+    ]
   },
   "103071": {
     "name": {
@@ -29165,7 +30403,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 5,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "103292": {
     "name": {
@@ -29237,7 +30476,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "103293": {
     "name": {
@@ -29309,7 +30549,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "103294": {
     "name": {
@@ -29381,7 +30622,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "104011": {
     "name": {
@@ -29965,7 +31207,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "内华达.改"
+    ]
   },
   "105021": {
     "name": {
@@ -30257,7 +31502,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "俄克拉荷马.改"
+    ]
   },
   "105031": {
     "name": {
@@ -31717,7 +32965,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "科罗拉多.改"
+    ]
   },
   "105214": {
     "name": {
@@ -32082,7 +33333,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "马里兰.改"
+    ]
   },
   "105224": {
     "name": {
@@ -32447,7 +33701,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "西弗吉尼亚.改"
+    ]
   },
   "105234": {
     "name": {
@@ -34860,7 +36117,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "长岛.改"
+    ]
   },
   "106021": {
     "name": {
@@ -35156,7 +36416,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "博格.改"
+    ]
   },
   "106551": {
     "name": {
@@ -35748,7 +37011,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "兰利.改"
+    ]
   },
   "107021": {
     "name": {
@@ -36324,7 +37590,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "萨拉托加.改"
+    ]
   },
   "107041": {
     "name": {
@@ -36620,7 +37889,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "突击者.改"
+    ]
   },
   "107051": {
     "name": {
@@ -38060,7 +39332,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "埃塞克斯.改"
+    ]
   },
   "107101": {
     "name": {
@@ -40090,6 +41365,294 @@
     "oil_at_end": 13,
     "max_level": 100
   },
+  "107201": {
+    "name": {
+      "cn": "本宁顿",
+      "en": "Bennington",
+      "jp": "ベニントン",
+      "tw": "班寧頓",
+      "kr": "베닝턴"
+    },
+    "english_name": "USS Bennington",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 10720,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1106,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 63,
+      "air": 83,
+      "reload": 48,
+      "armor": 0,
+      "hit": 30,
+      "dodge": 13,
+      "speed": 33,
+      "luck": 85,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29701,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1329,
+      "air": 1022,
+      "reload": 333,
+      "armor": 0,
+      "hit": 437,
+      "dodge": 175,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "107202": {
+    "name": {
+      "cn": "本宁顿",
+      "en": "Bennington",
+      "jp": "ベニントン",
+      "tw": "班寧頓",
+      "kr": "베닝턴"
+    },
+    "english_name": "USS Bennington",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 10720,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1376,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 78,
+      "air": 104,
+      "reload": 48,
+      "armor": 0,
+      "hit": 30,
+      "dodge": 13,
+      "speed": 33,
+      "luck": 85,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29701,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1329,
+      "air": 1022,
+      "reload": 333,
+      "armor": 0,
+      "hit": 437,
+      "dodge": 175,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "107203": {
+    "name": {
+      "cn": "本宁顿",
+      "en": "Bennington",
+      "jp": "ベニントン",
+      "tw": "班寧頓",
+      "kr": "베닝턴"
+    },
+    "english_name": "USS Bennington",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 10720,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1915,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 109,
+      "air": 145,
+      "reload": 48,
+      "armor": 0,
+      "hit": 30,
+      "dodge": 13,
+      "speed": 33,
+      "luck": 85,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29701,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1329,
+      "air": 1022,
+      "reload": 333,
+      "armor": 0,
+      "hit": 437,
+      "dodge": 175,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "107204": {
+    "name": {
+      "cn": "本宁顿",
+      "en": "Bennington",
+      "jp": "ベニントン",
+      "tw": "班寧頓",
+      "kr": "베닝턴"
+    },
+    "english_name": "USS Bennington",
+    "nationality": 1,
+    "nation_name": "白鹰",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 10720,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 2725,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 155,
+      "air": 207,
+      "reload": 48,
+      "armor": 0,
+      "hit": 30,
+      "dodge": 13,
+      "speed": 33,
+      "luck": 85,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29701,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1329,
+      "air": 1022,
+      "reload": 333,
+      "armor": 0,
+      "hit": 437,
+      "dodge": 175,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 13,
+    "max_level": 100
+  },
   "107221": {
     "name": {
       "cn": "独立",
@@ -40384,7 +41947,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "独立.改"
+    ]
   },
   "107231": {
     "name": {
@@ -42372,7 +43938,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "107992": {
     "name": {
@@ -42444,7 +44011,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "107993": {
     "name": {
@@ -42516,7 +44084,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "107994": {
     "name": {
@@ -42588,7 +44157,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "108011": {
     "name": {
@@ -46056,7 +47626,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "女将.改"
+    ]
   },
   "201021": {
     "name": {
@@ -46352,7 +47925,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "阿卡司塔.改"
+    ]
   },
   "201031": {
     "name": {
@@ -46648,7 +48224,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "热心.改"
+    ]
   },
   "201061": {
     "name": {
@@ -47536,7 +49115,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "彗星.改"
+    ]
   },
   "201091": {
     "name": {
@@ -47832,7 +49414,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "新月.改"
+    ]
   },
   "201101": {
     "name": {
@@ -48128,7 +49713,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "小天鹅.改"
+    ]
   },
   "201111": {
     "name": {
@@ -48424,7 +50012,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "狐提.改"
+    ]
   },
   "201121": {
     "name": {
@@ -48720,7 +50311,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "命运女神.改"
+    ]
   },
   "201131": {
     "name": {
@@ -49312,15 +50906,18 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "萤火虫.改"
+    ]
   },
   "201151": {
     "name": {
       "cn": "格里芬 ",
       "en": "Griffin",
       "jp": "グリフィン",
-      "tw": null,
-      "kr": null
+      "tw": "格里芬",
+      "kr": "그리핀"
     },
     "english_name": "HMS Griffin",
     "nationality": 2,
@@ -49393,8 +50990,8 @@
       "cn": "格里芬 ",
       "en": "Griffin",
       "jp": "グリフィン",
-      "tw": null,
-      "kr": null
+      "tw": "格里芬",
+      "kr": "그리핀"
     },
     "english_name": "HMS Griffin",
     "nationality": 2,
@@ -49467,8 +51064,8 @@
       "cn": "格里芬 ",
       "en": "Griffin",
       "jp": "グリフィン",
-      "tw": null,
-      "kr": null
+      "tw": "格里芬",
+      "kr": "그리핀"
     },
     "english_name": "HMS Griffin",
     "nationality": 2,
@@ -49541,8 +51138,8 @@
       "cn": "格里芬 ",
       "en": "Griffin",
       "jp": "グリフィン",
-      "tw": null,
-      "kr": null
+      "tw": "格里芬",
+      "kr": "그리핀"
     },
     "english_name": "HMS Griffin",
     "nationality": 2,
@@ -50202,6 +51799,302 @@
     "oil_at_end": 9,
     "max_level": 100
   },
+  "201191": {
+    "name": {
+      "cn": "敌对",
+      "en": "Hostile",
+      "jp": "ホスタイル",
+      "tw": "敵對",
+      "kr": "호스타일"
+    },
+    "english_name": "HMS Hostile",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 20119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 236,
+      "cannon": 16,
+      "torpedo": 72,
+      "antiaircraft": 29,
+      "air": 0,
+      "reload": 75,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 28,
+      "antisub": 47
+    },
+    "attrs_growth": {
+      "durability": 6717,
+      "cannon": 219,
+      "torpedo": 912,
+      "antiaircraft": 629,
+      "air": 0,
+      "reload": 523,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 542
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 3,
+    "max_level": 100
+  },
+  "201192": {
+    "name": {
+      "cn": "敌对",
+      "en": "Hostile",
+      "jp": "ホスタイル",
+      "tw": "敵對",
+      "kr": "호스타일"
+    },
+    "english_name": "HMS Hostile",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 20119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 294,
+      "cannon": 20,
+      "torpedo": 90,
+      "antiaircraft": 36,
+      "air": 0,
+      "reload": 75,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 28,
+      "antisub": 59
+    },
+    "attrs_growth": {
+      "durability": 6717,
+      "cannon": 219,
+      "torpedo": 912,
+      "antiaircraft": 629,
+      "air": 0,
+      "reload": 523,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 542
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "201193": {
+    "name": {
+      "cn": "敌对",
+      "en": "Hostile",
+      "jp": "ホスタイル",
+      "tw": "敵對",
+      "kr": "호스타일"
+    },
+    "english_name": "HMS Hostile",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 20119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 409,
+      "cannon": 28,
+      "torpedo": 125,
+      "antiaircraft": 50,
+      "air": 0,
+      "reload": 75,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 28,
+      "antisub": 82
+    },
+    "attrs_growth": {
+      "durability": 6717,
+      "cannon": 219,
+      "torpedo": 912,
+      "antiaircraft": 629,
+      "air": 0,
+      "reload": 523,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 542
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "201194": {
+    "name": {
+      "cn": "敌对",
+      "en": "Hostile",
+      "jp": "ホスタイル",
+      "tw": "敵對",
+      "kr": "호스타일"
+    },
+    "english_name": "HMS Hostile",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 20119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 581,
+      "cannon": 39,
+      "torpedo": 178,
+      "antiaircraft": 71,
+      "air": 0,
+      "reload": 75,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 28,
+      "antisub": 117
+    },
+    "attrs_growth": {
+      "durability": 6717,
+      "cannon": 219,
+      "torpedo": 912,
+      "antiaircraft": 629,
+      "air": 0,
+      "reload": 523,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 542
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
   "201201": {
     "name": {
       "cn": "猎人",
@@ -50792,7 +52685,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "标枪.改"
+    ]
   },
   "201221": {
     "name": {
@@ -54938,6 +56834,302 @@
     "oil_at_end": 12,
     "max_level": 100
   },
+  "201401": {
+    "name": {
+      "cn": "匆忙",
+      "en": "Hasty",
+      "jp": "ヘイスティ",
+      "tw": "匆忙",
+      "kr": "헤이스티"
+    },
+    "english_name": "HMS Hasty",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 20140,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 228,
+      "cannon": 15,
+      "torpedo": 68,
+      "antiaircraft": 33,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 35,
+      "antisub": 50
+    },
+    "attrs_growth": {
+      "durability": 6483,
+      "cannon": 213,
+      "torpedo": 882,
+      "antiaircraft": 718,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 574
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 3,
+    "max_level": 100
+  },
+  "201402": {
+    "name": {
+      "cn": "匆忙",
+      "en": "Hasty",
+      "jp": "ヘイスティ",
+      "tw": "匆忙",
+      "kr": "헤이스티"
+    },
+    "english_name": "HMS Hasty",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 20140,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 284,
+      "cannon": 19,
+      "torpedo": 85,
+      "antiaircraft": 41,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 35,
+      "antisub": 62
+    },
+    "attrs_growth": {
+      "durability": 6483,
+      "cannon": 213,
+      "torpedo": 882,
+      "antiaircraft": 718,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 574
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "201403": {
+    "name": {
+      "cn": "匆忙",
+      "en": "Hasty",
+      "jp": "ヘイスティ",
+      "tw": "匆忙",
+      "kr": "헤이스티"
+    },
+    "english_name": "HMS Hasty",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 20140,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 395,
+      "cannon": 26,
+      "torpedo": 119,
+      "antiaircraft": 57,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 35,
+      "antisub": 87
+    },
+    "attrs_growth": {
+      "durability": 6483,
+      "cannon": 213,
+      "torpedo": 882,
+      "antiaircraft": 718,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 574
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "201404": {
+    "name": {
+      "cn": "匆忙",
+      "en": "Hasty",
+      "jp": "ヘイスティ",
+      "tw": "匆忙",
+      "kr": "헤이스티"
+    },
+    "english_name": "HMS Hasty",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 20140,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 561,
+      "cannon": 38,
+      "torpedo": 170,
+      "antiaircraft": 81,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 73,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 35,
+      "antisub": 125
+    },
+    "attrs_growth": {
+      "durability": 6483,
+      "cannon": 213,
+      "torpedo": 882,
+      "antiaircraft": 718,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 1125,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 574
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
   "201514": {
     "name": {
       "cn": "女将.改",
@@ -55062,6 +57254,80 @@
       "speed": 0,
       "luck": 0,
       "antisub": 601
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "201534": {
+    "name": {
+      "cn": "勇敢.改",
+      "en": "Hardy (Retrofit)",
+      "jp": "勇敢.改",
+      "tw": "勇敢.改",
+      "kr": "勇敢.改"
+    },
+    "english_name": "HMS Hardy",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 20116,
+    "is_retrofit": true,
+    "retrofit_base_id": 201164,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 603,
+      "cannon": 37,
+      "torpedo": 176,
+      "antiaircraft": 72,
+      "air": 0,
+      "reload": 74,
+      "armor": 0,
+      "hit": 72,
+      "dodge": 78,
+      "speed": 43.2,
+      "luck": 40,
+      "antisub": 117
+    },
+    "attrs_growth": {
+      "durability": 6968,
+      "cannon": 207,
+      "torpedo": 904,
+      "antiaircraft": 642,
+      "air": 0,
+      "reload": 513,
+      "armor": 0,
+      "hit": 1112,
+      "dodge": 1428,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 542
     },
     "equip_slots": [
       [
@@ -55380,7 +57646,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "利安得.改"
+    ]
   },
   "202021": {
     "name": {
@@ -55676,7 +57945,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "阿基里斯.改"
+    ]
   },
   "202031": {
     "name": {
@@ -55972,7 +58244,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "阿贾克斯.改"
+    ]
   },
   "202041": {
     "name": {
@@ -59602,7 +61877,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 4,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "202182": {
     "name": {
@@ -59676,7 +61952,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "202183": {
     "name": {
@@ -59750,7 +62027,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "202184": {
     "name": {
@@ -59824,7 +62102,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "202191": {
     "name": {
@@ -60120,7 +62399,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "纽卡斯尔.改"
+    ]
   },
   "202211": {
     "name": {
@@ -60420,7 +62702,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "库拉索.改"
+    ]
   },
   "202221": {
     "name": {
@@ -60720,7 +63005,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "杓鹬.改"
+    ]
   },
   "202201": {
     "name": {
@@ -65199,8 +67487,8 @@
       "cn": "华丽",
       "en": "Superb",
       "jp": "シュパーブ",
-      "tw": null,
-      "kr": null
+      "tw": "壯麗",
+      "kr": "슈퍼브"
     },
     "english_name": "HMS Superb",
     "nationality": 2,
@@ -65273,8 +67561,8 @@
       "cn": "华丽",
       "en": "Superb",
       "jp": "シュパーブ",
-      "tw": null,
-      "kr": null
+      "tw": "壯麗",
+      "kr": "슈퍼브"
     },
     "english_name": "HMS Superb",
     "nationality": 2,
@@ -65347,8 +67635,8 @@
       "cn": "华丽",
       "en": "Superb",
       "jp": "シュパーブ",
-      "tw": null,
-      "kr": null
+      "tw": "壯麗",
+      "kr": "슈퍼브"
     },
     "english_name": "HMS Superb",
     "nationality": 2,
@@ -65421,8 +67709,8 @@
       "cn": "华丽",
       "en": "Superb",
       "jp": "シュパーブ",
-      "tw": null,
-      "kr": null
+      "tw": "壯麗",
+      "kr": "슈퍼브"
     },
     "english_name": "HMS Superb",
     "nationality": 2,
@@ -65466,6 +67754,376 @@
       "speed": 0,
       "luck": 0,
       "antisub": 427
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "202381": {
+    "name": {
+      "cn": "虎",
+      "en": "Tiger",
+      "jp": "タイガー",
+      "tw": "虎",
+      "kr": "타이거"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 20238,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 806,
+      "cannon": 36,
+      "torpedo": 0,
+      "antiaircraft": 80,
+      "air": 0,
+      "reload": 78,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 29,
+      "speed": 31.5,
+      "luck": 65,
+      "antisub": 40
+    },
+    "attrs_growth": {
+      "durability": 22975,
+      "cannon": 498,
+      "torpedo": 0,
+      "antiaircraft": 1633,
+      "air": 0,
+      "reload": 541,
+      "armor": 0,
+      "hit": 886,
+      "dodge": 579,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 466
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "202382": {
+    "name": {
+      "cn": "虎",
+      "en": "Tiger",
+      "jp": "タイガー",
+      "tw": "虎",
+      "kr": "타이거"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 20238,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1003,
+      "cannon": 45,
+      "torpedo": 0,
+      "antiaircraft": 100,
+      "air": 0,
+      "reload": 78,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 29,
+      "speed": 31.5,
+      "luck": 65,
+      "antisub": 50
+    },
+    "attrs_growth": {
+      "durability": 22975,
+      "cannon": 498,
+      "torpedo": 0,
+      "antiaircraft": 1633,
+      "air": 0,
+      "reload": 541,
+      "armor": 0,
+      "hit": 886,
+      "dodge": 579,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 466
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "202383": {
+    "name": {
+      "cn": "虎",
+      "en": "Tiger",
+      "jp": "タイガー",
+      "tw": "虎",
+      "kr": "타이거"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 20238,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1396,
+      "cannon": 63,
+      "torpedo": 0,
+      "antiaircraft": 139,
+      "air": 0,
+      "reload": 78,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 29,
+      "speed": 31.5,
+      "luck": 65,
+      "antisub": 69
+    },
+    "attrs_growth": {
+      "durability": 22975,
+      "cannon": 498,
+      "torpedo": 0,
+      "antiaircraft": 1633,
+      "air": 0,
+      "reload": 541,
+      "armor": 0,
+      "hit": 886,
+      "dodge": 579,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 466
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "202384": {
+    "name": {
+      "cn": "虎",
+      "en": "Tiger",
+      "jp": "タイガー",
+      "tw": "虎",
+      "kr": "타이거"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 20238,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1986,
+      "cannon": 89,
+      "torpedo": 0,
+      "antiaircraft": 197,
+      "air": 0,
+      "reload": 78,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 29,
+      "speed": 31.5,
+      "luck": 65,
+      "antisub": 99
+    },
+    "attrs_growth": {
+      "durability": 22975,
+      "cannon": 498,
+      "torpedo": 0,
+      "antiaircraft": 1633,
+      "air": 0,
+      "reload": 541,
+      "armor": 0,
+      "hit": 886,
+      "dodge": 579,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 466
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "202994": {
+    "name": {
+      "cn": "贝尔法斯特.改",
+      "en": "Belfast (Retrofit)",
+      "jp": "ベルファスト改",
+      "tw": "貝爾法斯特.改",
+      "kr": "벨파스트·改"
+    },
+    "english_name": "HMS Belfast",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 20212,
+    "is_retrofit": true,
+    "retrofit_base_id": 202124,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1689,
+      "cannon": 82,
+      "torpedo": 159,
+      "antiaircraft": 136,
+      "air": 0,
+      "reload": 67,
+      "armor": 0,
+      "hit": 55,
+      "dodge": 28,
+      "speed": 32,
+      "luck": 88,
+      "antisub": 87
+    },
+    "attrs_growth": {
+      "durability": 17283,
+      "cannon": 457,
+      "torpedo": 834,
+      "antiaircraft": 1183,
+      "air": 0,
+      "reload": 467,
+      "armor": 0,
+      "hit": 810,
+      "dodge": 641,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 418
     },
     "equip_slots": [
       [
@@ -65776,7 +68434,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "伦敦.改"
+    ]
   },
   "203114": {
     "name": {
@@ -66137,7 +68798,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "什罗普郡.改"
+    ]
   },
   "203124": {
     "name": {
@@ -66786,7 +69450,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "萨福克.改"
+    ]
   },
   "203051": {
     "name": {
@@ -67650,7 +70317,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "约克.改"
+    ]
   },
   "203081": {
     "name": {
@@ -67938,7 +70608,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "埃克塞特.改"
+    ]
   },
   "203091": {
     "name": {
@@ -68298,7 +70971,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 5,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "203102": {
     "name": {
@@ -68370,7 +71044,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "203103": {
     "name": {
@@ -68442,7 +71117,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "203104": {
     "name": {
@@ -68514,7 +71190,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "203131": {
     "name": {
@@ -68809,8 +71486,8 @@
       "cn": "萨里",
       "en": "Surrey",
       "jp": "サリー",
-      "tw": null,
-      "kr": null
+      "tw": "薩里",
+      "kr": "서리"
     },
     "english_name": "HMS Surrey",
     "nationality": 2,
@@ -68881,8 +71558,8 @@
       "cn": "萨里",
       "en": "Surrey",
       "jp": "サリー",
-      "tw": null,
-      "kr": null
+      "tw": "薩里",
+      "kr": "서리"
     },
     "english_name": "HMS Surrey",
     "nationality": 2,
@@ -68953,8 +71630,8 @@
       "cn": "萨里",
       "en": "Surrey",
       "jp": "サリー",
-      "tw": null,
-      "kr": null
+      "tw": "薩里",
+      "kr": "서리"
     },
     "english_name": "HMS Surrey",
     "nationality": 2,
@@ -69025,8 +71702,8 @@
       "cn": "萨里",
       "en": "Surrey",
       "jp": "サリー",
-      "tw": null,
-      "kr": null
+      "tw": "薩里",
+      "kr": "서리"
     },
     "english_name": "HMS Surrey",
     "nationality": 2,
@@ -70039,7 +72716,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "204042": {
     "name": {
@@ -70112,7 +72790,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "204043": {
     "name": {
@@ -70185,7 +72864,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "204044": {
     "name": {
@@ -70258,7 +72938,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "205011": {
     "name": {
@@ -70850,7 +73531,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 15,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "厌战.改"
+    ]
   },
   "205124": {
     "name": {
@@ -71517,7 +74201,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "纳尔逊.改"
+    ]
   },
   "205154": {
     "name": {
@@ -74551,7 +77238,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "竞技神.改"
+    ]
   },
   "206021": {
     "name": {
@@ -75143,7 +77833,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "独角兽.改"
+    ]
   },
   "206134": {
     "name": {
@@ -77278,7 +79971,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "皇家方舟.改"
+    ]
   },
   "207031": {
     "name": {
@@ -78793,7 +81489,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207092": {
     "name": {
@@ -78865,7 +81562,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207093": {
     "name": {
@@ -78937,7 +81635,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207094": {
     "name": {
@@ -79009,7 +81708,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207111": {
     "name": {
@@ -79657,7 +82357,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207132": {
     "name": {
@@ -79729,7 +82430,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207133": {
     "name": {
@@ -79801,7 +82503,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207134": {
     "name": {
@@ -79874,7 +82577,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "207141": {
     "name": {
@@ -82211,7 +84915,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "绫波.改"
+    ]
   },
   "301091": {
     "name": {
@@ -83691,7 +86398,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "白露.改"
+    ]
   },
   "301141": {
     "name": {
@@ -83987,7 +86697,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "夕立.改"
+    ]
   },
   "301151": {
     "name": {
@@ -84283,7 +86996,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "时雨.改"
+    ]
   },
   "301161": {
     "name": {
@@ -84875,7 +87591,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "阳炎.改"
+    ]
   },
   "301181": {
     "name": {
@@ -85171,6 +87890,305 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
+    "max_level": 100,
+    "retrofit_names": [
+      "不知火.改"
+    ]
+  },
+  "301191": {
+    "name": {
+      "cn": "天津风",
+      "en": "Amatsukaze",
+      "jp": "天津風",
+      "tw": "天津風",
+      "kr": "아마츠카제"
+    },
+    "english_name": "IJN Amatsukaze",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 30119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 359,
+      "cannon": 13,
+      "torpedo": 105,
+      "antiaircraft": 30,
+      "air": 0,
+      "reload": 82,
+      "armor": 0,
+      "hit": 71,
+      "dodge": 71,
+      "speed": 42.6,
+      "luck": 70,
+      "antisub": 52
+    },
+    "attrs_growth": {
+      "durability": 10221,
+      "cannon": 177,
+      "torpedo": 1261,
+      "antiaircraft": 656,
+      "air": 0,
+      "reload": 571,
+      "armor": 0,
+      "hit": 1100,
+      "dodge": 1320,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 586
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 4,
+    "max_level": 100
+  },
+  "301192": {
+    "name": {
+      "cn": "天津风",
+      "en": "Amatsukaze",
+      "jp": "天津風",
+      "tw": "天津風",
+      "kr": "아마츠카제"
+    },
+    "english_name": "IJN Amatsukaze",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 30119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 447,
+      "cannon": 16,
+      "torpedo": 131,
+      "antiaircraft": 37,
+      "air": 0,
+      "reload": 82,
+      "armor": 0,
+      "hit": 71,
+      "dodge": 71,
+      "speed": 42.6,
+      "luck": 70,
+      "antisub": 65
+    },
+    "attrs_growth": {
+      "durability": 10221,
+      "cannon": 177,
+      "torpedo": 1261,
+      "antiaircraft": 656,
+      "air": 0,
+      "reload": 571,
+      "armor": 0,
+      "hit": 1100,
+      "dodge": 1320,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 586
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 6,
+    "max_level": 100
+  },
+  "301193": {
+    "name": {
+      "cn": "天津风",
+      "en": "Amatsukaze",
+      "jp": "天津風",
+      "tw": "天津風",
+      "kr": "아마츠카제"
+    },
+    "english_name": "IJN Amatsukaze",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 30119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 622,
+      "cannon": 22,
+      "torpedo": 183,
+      "antiaircraft": 52,
+      "air": 0,
+      "reload": 82,
+      "armor": 0,
+      "hit": 71,
+      "dodge": 71,
+      "speed": 42.6,
+      "luck": 70,
+      "antisub": 90
+    },
+    "attrs_growth": {
+      "durability": 10221,
+      "cannon": 177,
+      "torpedo": 1261,
+      "antiaircraft": 656,
+      "air": 0,
+      "reload": 571,
+      "armor": 0,
+      "hit": 1100,
+      "dodge": 1320,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 586
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
+  "301194": {
+    "name": {
+      "cn": "天津风",
+      "en": "Amatsukaze",
+      "jp": "天津風",
+      "tw": "天津風",
+      "kr": "아마츠카제"
+    },
+    "english_name": "IJN Amatsukaze",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 30119,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 884,
+      "cannon": 32,
+      "torpedo": 261,
+      "antiaircraft": 74,
+      "air": 0,
+      "reload": 82,
+      "armor": 0,
+      "hit": 71,
+      "dodge": 71,
+      "speed": 42.6,
+      "luck": 70,
+      "antisub": 129
+    },
+    "attrs_growth": {
+      "durability": 10221,
+      "cannon": 177,
+      "torpedo": 1261,
+      "antiaircraft": 656,
+      "air": 0,
+      "reload": 571,
+      "armor": 0,
+      "hit": 1100,
+      "dodge": 1320,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 586
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
     "max_level": 100
   },
   "301201": {
@@ -85763,7 +88781,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "初春.改"
+    ]
   },
   "301231": {
     "name": {
@@ -86355,7 +89376,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "初霜.改"
+    ]
   },
   "301251": {
     "name": {
@@ -86651,7 +89675,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "有明.改"
+    ]
   },
   "301261": {
     "name": {
@@ -86947,7 +89974,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "夕暮.改"
+    ]
   },
   "301271": {
     "name": {
@@ -88131,7 +91161,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "神风.改"
+    ]
   },
   "301311": {
     "name": {
@@ -88427,7 +91460,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "松风.改"
+    ]
   },
   "301321": {
     "name": {
@@ -88723,7 +91759,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "睦月.改"
+    ]
   },
   "301331": {
     "name": {
@@ -89019,7 +92058,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "如月.改"
+    ]
   },
   "301351": {
     "name": {
@@ -93533,7 +96575,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "滨风.改"
+    ]
   },
   "301621": {
     "name": {
@@ -93829,7 +96874,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "谷风.改"
+    ]
   },
   "301631": {
     "name": {
@@ -96197,7 +99245,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "霞.改"
+    ]
   },
   "301821": {
     "name": {
@@ -99897,7 +102948,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "夕张.改"
+    ]
   },
   "302041": {
     "name": {
@@ -100491,7 +103545,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "五十铃.改"
+    ]
   },
   "302061": {
     "name": {
@@ -101379,7 +104436,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "鬼怒.改"
+    ]
   },
   "302091": {
     "name": {
@@ -101675,7 +104735,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "阿武隈.改"
+    ]
   },
   "302101": {
     "name": {
@@ -101971,7 +105034,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "最上.改"
+    ]
   },
   "302111": {
     "name": {
@@ -102563,7 +105629,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "川内.改"
+    ]
   },
   "302131": {
     "name": {
@@ -102859,7 +105928,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "神通.改"
+    ]
   },
   "302141": {
     "name": {
@@ -106107,7 +109179,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "古鹰.改"
+    ]
   },
   "303021": {
     "name": {
@@ -106395,7 +109470,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "加古.改"
+    ]
   },
   "303031": {
     "name": {
@@ -107835,7 +110913,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "那智.改"
+    ]
   },
   "303091": {
     "name": {
@@ -112637,7 +115718,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304062": {
     "name": {
@@ -112711,7 +115793,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304063": {
     "name": {
@@ -112785,7 +115868,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304064": {
     "name": {
@@ -112859,7 +115943,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304071": {
     "name": {
@@ -112933,7 +116018,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304072": {
     "name": {
@@ -113007,7 +116093,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304073": {
     "name": {
@@ -113081,7 +116168,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304074": {
     "name": {
@@ -113155,7 +116243,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "304081": {
     "name": {
@@ -113453,6 +116542,302 @@
     "oil_at_end": 14,
     "max_level": 100
   },
+  "304091": {
+    "name": {
+      "cn": "安土",
+      "en": "Azuchi",
+      "jp": "安土",
+      "tw": "安土",
+      "kr": "아즈치"
+    },
+    "english_name": "IJN Azuchi",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 4,
+    "type_name": "战巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 30409,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1330,
+      "cannon": 88,
+      "torpedo": 69,
+      "antiaircraft": 50,
+      "air": 0,
+      "reload": 65,
+      "armor": 0,
+      "hit": 26,
+      "dodge": 8,
+      "speed": 30,
+      "luck": 50,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 37898,
+      "cannon": 1060,
+      "torpedo": 884,
+      "antiaircraft": 1091,
+      "air": 0,
+      "reload": 450,
+      "armor": 0,
+      "hit": 379,
+      "dodge": 246,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 17,
+    "max_level": 100
+  },
+  "304092": {
+    "name": {
+      "cn": "安土",
+      "en": "Azuchi",
+      "jp": "安土",
+      "tw": "安土",
+      "kr": "아즈치"
+    },
+    "english_name": "IJN Azuchi",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 4,
+    "type_name": "战巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 30409,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1654,
+      "cannon": 110,
+      "torpedo": 86,
+      "antiaircraft": 62,
+      "air": 0,
+      "reload": 65,
+      "armor": 0,
+      "hit": 26,
+      "dodge": 8,
+      "speed": 30,
+      "luck": 50,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 37898,
+      "cannon": 1060,
+      "torpedo": 884,
+      "antiaircraft": 1091,
+      "air": 0,
+      "reload": 450,
+      "armor": 0,
+      "hit": 379,
+      "dodge": 246,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 17,
+    "max_level": 100
+  },
+  "304093": {
+    "name": {
+      "cn": "安土",
+      "en": "Azuchi",
+      "jp": "安土",
+      "tw": "安土",
+      "kr": "아즈치"
+    },
+    "english_name": "IJN Azuchi",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 4,
+    "type_name": "战巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 30409,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 2303,
+      "cannon": 153,
+      "torpedo": 120,
+      "antiaircraft": 87,
+      "air": 0,
+      "reload": 65,
+      "armor": 0,
+      "hit": 26,
+      "dodge": 8,
+      "speed": 30,
+      "luck": 50,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 37898,
+      "cannon": 1060,
+      "torpedo": 884,
+      "antiaircraft": 1091,
+      "air": 0,
+      "reload": 450,
+      "armor": 0,
+      "hit": 379,
+      "dodge": 246,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 17,
+    "max_level": 100
+  },
+  "304094": {
+    "name": {
+      "cn": "安土",
+      "en": "Azuchi",
+      "jp": "安土",
+      "tw": "安土",
+      "kr": "아즈치"
+    },
+    "english_name": "IJN Azuchi",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 4,
+    "type_name": "战巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 30409,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 3277,
+      "cannon": 219,
+      "torpedo": 171,
+      "antiaircraft": 124,
+      "air": 0,
+      "reload": 65,
+      "armor": 0,
+      "hit": 26,
+      "dodge": 8,
+      "speed": 30,
+      "luck": 50,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 37898,
+      "cannon": 1060,
+      "torpedo": 884,
+      "antiaircraft": 1091,
+      "air": 0,
+      "reload": 450,
+      "armor": 0,
+      "hit": 379,
+      "dodge": 246,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 17,
+    "max_level": 100
+  },
   "305011": {
     "name": {
       "cn": "扶桑",
@@ -113747,7 +117132,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "扶桑.改"
+    ]
   },
   "305021": {
     "name": {
@@ -114043,7 +117431,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "山城.改"
+    ]
   },
   "305031": {
     "name": {
@@ -114339,7 +117730,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "伊势.改"
+    ]
   },
   "305041": {
     "name": {
@@ -114635,7 +118029,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "日向.改"
+    ]
   },
   "305051": {
     "name": {
@@ -117665,7 +121062,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "305172": {
     "name": {
@@ -117739,7 +121137,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "305173": {
     "name": {
@@ -117813,7 +121212,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "305174": {
     "name": {
@@ -117887,7 +121287,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "306011": {
     "name": {
@@ -119367,7 +122768,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "祥凤.改"
+    ]
   },
   "306061": {
     "name": {
@@ -121415,7 +124819,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "苍龙.改"
+    ]
   },
   "307041": {
     "name": {
@@ -121703,7 +125110,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "飞龙.改"
+    ]
   },
   "307051": {
     "name": {
@@ -122933,7 +126343,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307092": {
     "name": {
@@ -123005,7 +126416,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307093": {
     "name": {
@@ -123077,7 +126489,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307094": {
     "name": {
@@ -123149,7 +126562,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307101": {
     "name": {
@@ -124085,7 +127499,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307132": {
     "name": {
@@ -124157,7 +127572,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307133": {
     "name": {
@@ -124229,7 +127645,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307134": {
     "name": {
@@ -124301,7 +127718,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307141": {
     "name": {
@@ -124373,7 +127791,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307142": {
     "name": {
@@ -124447,7 +127866,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307143": {
     "name": {
@@ -124521,7 +127941,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307144": {
     "name": {
@@ -124595,7 +128016,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "307151": {
     "name": {
@@ -128363,6 +131785,294 @@
     "oil_at_end": 10,
     "max_level": 100
   },
+  "317031": {
+    "name": {
+      "cn": "伊14",
+      "en": "I-14",
+      "jp": "伊14",
+      "tw": "伊14",
+      "kr": "이14"
+    },
+    "english_name": "IJN I14",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 17,
+    "type_name": "潜母",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 31703,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 428,
+      "cannon": 10,
+      "torpedo": 98,
+      "antiaircraft": 0,
+      "air": 47,
+      "reload": 40,
+      "armor": 0,
+      "hit": 59,
+      "dodge": 7,
+      "speed": 16.7,
+      "luck": 28,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 12205,
+      "cannon": 139,
+      "torpedo": 1176,
+      "antiaircraft": 0,
+      "air": 643,
+      "reload": 277,
+      "armor": 0,
+      "hit": 870,
+      "dodge": 234,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        12
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 0,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "317032": {
+    "name": {
+      "cn": "伊14",
+      "en": "I-14",
+      "jp": "伊14",
+      "tw": "伊14",
+      "kr": "이14"
+    },
+    "english_name": "IJN I14",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 17,
+    "type_name": "潜母",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 31703,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 533,
+      "cannon": 13,
+      "torpedo": 122,
+      "antiaircraft": 0,
+      "air": 59,
+      "reload": 40,
+      "armor": 0,
+      "hit": 59,
+      "dodge": 7,
+      "speed": 16.7,
+      "luck": 28,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 12205,
+      "cannon": 139,
+      "torpedo": 1176,
+      "antiaircraft": 0,
+      "air": 643,
+      "reload": 277,
+      "armor": 0,
+      "hit": 870,
+      "dodge": 234,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        12
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 0,
+    "oil_at_end": 6,
+    "max_level": 100
+  },
+  "317033": {
+    "name": {
+      "cn": "伊14",
+      "en": "I-14",
+      "jp": "伊14",
+      "tw": "伊14",
+      "kr": "이14"
+    },
+    "english_name": "IJN I14",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 17,
+    "type_name": "潜母",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 31703,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 742,
+      "cannon": 18,
+      "torpedo": 171,
+      "antiaircraft": 0,
+      "air": 82,
+      "reload": 40,
+      "armor": 0,
+      "hit": 59,
+      "dodge": 7,
+      "speed": 16.7,
+      "luck": 28,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 12205,
+      "cannon": 139,
+      "torpedo": 1176,
+      "antiaircraft": 0,
+      "air": 643,
+      "reload": 277,
+      "armor": 0,
+      "hit": 870,
+      "dodge": 234,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        12
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 0,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "317034": {
+    "name": {
+      "cn": "伊14",
+      "en": "I-14",
+      "jp": "伊14",
+      "tw": "伊14",
+      "kr": "이14"
+    },
+    "english_name": "IJN I14",
+    "nationality": 3,
+    "nation_name": "重樱",
+    "type": 17,
+    "type_name": "潜母",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 31703,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1055,
+      "cannon": 25,
+      "torpedo": 244,
+      "antiaircraft": 0,
+      "air": 116,
+      "reload": 40,
+      "armor": 0,
+      "hit": 59,
+      "dodge": 7,
+      "speed": 16.7,
+      "luck": 28,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 12205,
+      "cannon": 139,
+      "torpedo": 1176,
+      "antiaircraft": 0,
+      "air": 643,
+      "reload": 277,
+      "armor": 0,
+      "hit": 870,
+      "dodge": 234,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        13
+      ],
+      [
+        13
+      ],
+      [
+        12
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 0,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
   "319011": {
     "name": {
       "cn": "樫野",
@@ -128957,7 +132667,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "Z1.改"
+    ]
   },
   "401021": {
     "name": {
@@ -132513,7 +136226,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "Z23.改"
+    ]
   },
   "401241": {
     "name": {
@@ -136381,7 +140097,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "卡尔斯鲁厄.改"
+    ]
   },
   "402031": {
     "name": {
@@ -136677,7 +140396,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "科隆.改"
+    ]
   },
   "402134": {
     "name": {
@@ -137048,7 +140770,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "莱比锡.改"
+    ]
   },
   "402051": {
     "name": {
@@ -141804,7 +145529,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 5,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403122": {
     "name": {
@@ -141876,7 +145602,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403123": {
     "name": {
@@ -141948,7 +145675,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403124": {
     "name": {
@@ -142020,7 +145748,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403131": {
     "name": {
@@ -142093,7 +145822,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 5,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403132": {
     "name": {
@@ -142166,7 +145896,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403133": {
     "name": {
@@ -142239,7 +145970,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403134": {
     "name": {
@@ -142312,7 +146044,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403141": {
     "name": {
@@ -142965,7 +146698,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 5,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403162": {
     "name": {
@@ -143038,7 +146772,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 7,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403163": {
     "name": {
@@ -143111,7 +146846,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403164": {
     "name": {
@@ -143184,7 +146920,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "403171": {
     "name": {
@@ -147186,7 +150923,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "405062": {
     "name": {
@@ -147260,7 +150998,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "405063": {
     "name": {
@@ -147334,7 +151073,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "405064": {
     "name": {
@@ -147408,7 +151148,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "405071": {
     "name": {
@@ -148954,7 +152695,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 6,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "407022": {
     "name": {
@@ -149027,7 +152769,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "407023": {
     "name": {
@@ -149100,7 +152843,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "407024": {
     "name": {
@@ -149173,7 +152917,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "407031": {
     "name": {
@@ -154371,7 +158116,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "鞍山.改"
+    ]
   },
   "501021": {
     "name": {
@@ -154667,7 +158415,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "抚顺.改"
+    ]
   },
   "501031": {
     "name": {
@@ -154963,7 +158714,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "长春.改"
+    ]
   },
   "501041": {
     "name": {
@@ -155259,7 +159013,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "太原.改"
+    ]
   },
   "501051": {
     "name": {
@@ -157035,7 +160792,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "逸仙.改"
+    ]
   },
   "502114": {
     "name": {
@@ -157405,7 +161165,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "宁海.改"
+    ]
   },
   "502031": {
     "name": {
@@ -157701,7 +161464,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "平海.改"
+    ]
   },
   "502041": {
     "name": {
@@ -157997,7 +161763,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "应瑞·改"
+    ]
   },
   "502984": {
     "name": {
@@ -158367,7 +162136,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 9,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "肇和·改"
+    ]
   },
   "502994": {
     "name": {
@@ -161088,7 +164860,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "镇海.改"
+    ]
   },
   "506114": {
     "name": {
@@ -161463,7 +165238,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "华甲.改"
+    ]
   },
   "506124": {
     "name": {
@@ -176551,7 +180329,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "水星纪念.改"
+    ]
   },
   "702031": {
     "name": {
@@ -183417,7 +187198,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "福尔班.改"
+    ]
   },
   "801031": {
     "name": {
@@ -185785,7 +189569,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "埃米尔·贝尔汀.改"
+    ]
   },
   "802021": {
     "name": {
@@ -190765,7 +194552,10 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 8,
-    "max_level": 100
+    "max_level": 100,
+    "retrofit_names": [
+      "勒马尔.改"
+    ]
   },
   "901021": {
     "name": {
@@ -214870,7 +218660,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900353": {
     "name": {
@@ -214944,7 +218735,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900354": {
     "name": {
@@ -215019,7 +218811,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900355": {
     "name": {
@@ -215091,7 +218884,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900356": {
     "name": {
@@ -215163,7 +218957,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900357": {
     "name": {
@@ -215235,7 +219030,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900358": {
     "name": {
@@ -218774,6 +222570,78 @@
     "oil_at_end": 7,
     "max_level": 100
   },
+  "900406": {
+    "name": {
+      "cn": "埃塞克斯·META",
+      "en": "Essex META",
+      "jp": "エセックス(META)",
+      "tw": "艾塞克斯·META",
+      "kr": "에식스·META"
+    },
+    "english_name": "USS Essex.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 10706,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 2566,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 154,
+      "air": 207,
+      "reload": 49,
+      "armor": 0,
+      "hit": 37,
+      "dodge": 19,
+      "speed": 32.5,
+      "luck": 93,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 27540,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1322,
+      "air": 972,
+      "reload": 338,
+      "armor": 0,
+      "hit": 540,
+      "dodge": 336,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 13,
+    "max_level": 100
+  },
   "900409": {
     "name": {
       "cn": "拉菲-传说级魔法师",
@@ -220604,7 +224472,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900434": {
     "name": {
@@ -220676,7 +224545,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900435": {
     "name": {
@@ -220750,7 +224620,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 14,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900436": {
     "name": {
@@ -220824,7 +224695,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900437": {
     "name": {
@@ -220898,7 +224770,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900438": {
     "name": {
@@ -220971,7 +224844,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900439": {
     "name": {
@@ -221043,7 +224917,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900440": {
     "name": {
@@ -221117,7 +224992,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 10,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900441": {
     "name": {
@@ -221190,7 +225066,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 13,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900442": {
     "name": {
@@ -221263,7 +225140,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900443": {
     "name": {
@@ -221335,7 +225213,8 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
-    "max_level": 100
+    "max_level": 100,
+    "is_child": true
   },
   "900444": {
     "name": {
@@ -227585,6 +231464,228 @@
     "oil_at_end": 15,
     "max_level": 100
   },
+  "900549": {
+    "name": {
+      "cn": "灵敏.META",
+      "en": "Soobrazitelny META",
+      "jp": "ソオブラジーテリヌイ",
+      "tw": "靈敏.META",
+      "kr": "소브라지텔니"
+    },
+    "english_name": "SN Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 110101,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 619,
+      "cannon": 37,
+      "torpedo": 162,
+      "antiaircraft": 87,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 71,
+      "dodge": 71,
+      "speed": 43.2,
+      "luck": 28,
+      "antisub": 114
+    },
+    "attrs_growth": {
+      "durability": 7159,
+      "cannon": 207,
+      "torpedo": 847,
+      "antiaircraft": 768,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 1093,
+      "dodge": 1329,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 532
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "900550": {
+    "name": {
+      "cn": "萨拉托加·META",
+      "en": "Saratoga META",
+      "jp": "サラトガ",
+      "tw": "薩拉托加·META",
+      "kr": "새러토가"
+    },
+    "english_name": "USS Saratoga.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 10706,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 2566,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 154,
+      "air": 207,
+      "reload": 49,
+      "armor": 0,
+      "hit": 37,
+      "dodge": 19,
+      "speed": 32.5,
+      "luck": 93,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 27540,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1322,
+      "air": 972,
+      "reload": 338,
+      "armor": 0,
+      "hit": 540,
+      "dodge": 336,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 13,
+    "max_level": 100
+  },
+  "900559": {
+    "name": {
+      "cn": "虎（后排）",
+      "en": "虎（后排）",
+      "jp": "虎（后排）",
+      "tw": "虎（后排）",
+      "kr": "虎（后排）"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 4,
+    "type_name": "战巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 50102,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 3794,
+      "cannon": 219,
+      "torpedo": 0,
+      "antiaircraft": 119,
+      "air": 0,
+      "reload": 61,
+      "armor": 0,
+      "hit": 19,
+      "dodge": 8,
+      "speed": 30,
+      "luck": 41,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 41664,
+      "cannon": 1064,
+      "torpedo": 0,
+      "antiaircraft": 1044,
+      "air": 0,
+      "reload": 426,
+      "armor": 0,
+      "hit": 307,
+      "dodge": 217,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
   "900801": {
     "name": {
       "cn": "白上吹雪",
@@ -228614,6 +232715,80 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 12,
+    "max_level": 100
+  },
+  "900815": {
+    "name": {
+      "cn": "虎",
+      "en": "Tiger",
+      "jp": "タイガー",
+      "tw": "虎",
+      "kr": "타이거"
+    },
+    "english_name": "HMS Tiger",
+    "nationality": 2,
+    "nation_name": "皇家",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 6,
+    "rarity_name": "UR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 20238,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1986,
+      "cannon": 89,
+      "torpedo": 0,
+      "antiaircraft": 197,
+      "air": 0,
+      "reload": 78,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 29,
+      "speed": 31.5,
+      "luck": 65,
+      "antisub": 99
+    },
+    "attrs_growth": {
+      "durability": 22975,
+      "cannon": 498,
+      "torpedo": 0,
+      "antiaircraft": 1633,
+      "air": 0,
+      "reload": 541,
+      "armor": 0,
+      "hit": 886,
+      "dodge": 579,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 466
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        2
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
     "max_level": 100
   },
   "900907": {
@@ -240460,6 +244635,302 @@
     "oil_at_end": 11,
     "max_level": 100
   },
+  "9701131": {
+    "name": {
+      "cn": "灵敏·META",
+      "en": "Soobrazitelny META",
+      "jp": "ソオブラジーテリヌイ(META)",
+      "tw": null,
+      "kr": "소브라지텔니·META"
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 970113,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 390,
+      "cannon": 31,
+      "torpedo": 43,
+      "antiaircraft": 30,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 55,
+      "dodge": 55,
+      "speed": 48,
+      "luck": 84,
+      "antisub": 47
+    },
+    "attrs_growth": {
+      "durability": 7903,
+      "cannon": 394,
+      "torpedo": 594,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 746,
+      "dodge": 863,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701132": {
+    "name": {
+      "cn": "灵敏·META",
+      "en": "Soobrazitelny META",
+      "jp": "ソオブラジーテリヌイ(META)",
+      "tw": null,
+      "kr": "소브라지텔니·META"
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 970113,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 485,
+      "cannon": 39,
+      "torpedo": 54,
+      "antiaircraft": 37,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 55,
+      "dodge": 55,
+      "speed": 48,
+      "luck": 84,
+      "antisub": 59
+    },
+    "attrs_growth": {
+      "durability": 7903,
+      "cannon": 394,
+      "torpedo": 594,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 746,
+      "dodge": 863,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701133": {
+    "name": {
+      "cn": "灵敏·META",
+      "en": "Soobrazitelny META",
+      "jp": "ソオブラジーテリヌイ(META)",
+      "tw": null,
+      "kr": "소브라지텔니·META"
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 970113,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 675,
+      "cannon": 54,
+      "torpedo": 75,
+      "antiaircraft": 52,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 55,
+      "dodge": 55,
+      "speed": 48,
+      "luck": 84,
+      "antisub": 82
+    },
+    "attrs_growth": {
+      "durability": 7903,
+      "cannon": 394,
+      "torpedo": 594,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 746,
+      "dodge": 863,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701134": {
+    "name": {
+      "cn": "灵敏·META",
+      "en": "Soobrazitelny META",
+      "jp": "ソオブラジーテリヌイ(META)",
+      "tw": null,
+      "kr": "소브라지텔니·META"
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 970113,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 960,
+      "cannon": 78,
+      "torpedo": 107,
+      "antiaircraft": 74,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 55,
+      "dodge": 55,
+      "speed": 48,
+      "luck": 84,
+      "antisub": 117
+    },
+    "attrs_growth": {
+      "durability": 7903,
+      "cannon": 394,
+      "torpedo": 594,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 746,
+      "dodge": 863,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
   "9702011": {
     "name": {
       "cn": "海伦娜·META",
@@ -243725,7 +248196,7 @@
       "cn": "柯尼斯堡·META",
       "en": "Königsberg META",
       "jp": "ケーニヒスベルク(META)",
-      "tw": null,
+      "tw": "柯尼斯堡·META",
       "kr": "쾨니히스베르크·META"
     },
     "english_name": "Königsberg.META",
@@ -243799,7 +248270,7 @@
       "cn": "柯尼斯堡·META",
       "en": "Königsberg META",
       "jp": "ケーニヒスベルク(META)",
-      "tw": null,
+      "tw": "柯尼斯堡·META",
       "kr": "쾨니히스베르크·META"
     },
     "english_name": "Königsberg.META",
@@ -243873,7 +248344,7 @@
       "cn": "柯尼斯堡·META",
       "en": "Königsberg META",
       "jp": "ケーニヒスベルク(META)",
-      "tw": null,
+      "tw": "柯尼斯堡·META",
       "kr": "쾨니히스베르크·META"
     },
     "english_name": "Königsberg.META",
@@ -243947,7 +248418,7 @@
       "cn": "柯尼斯堡·META",
       "en": "Königsberg META",
       "jp": "ケーニヒスベルク(META)",
-      "tw": null,
+      "tw": "柯尼斯堡·META",
       "kr": "쾨니히스베르크·META"
     },
     "english_name": "Königsberg.META",
@@ -243992,6 +248463,302 @@
       "speed": 0,
       "luck": 0,
       "antisub": 475
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "9702131": {
+    "name": {
+      "cn": "纽伦堡·META",
+      "en": "Nürnberg META",
+      "jp": "ニュルンベルク(META)",
+      "tw": null,
+      "kr": "뉘른베르크·META"
+    },
+    "english_name": "Nürnberg.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 970213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 696,
+      "cannon": 33,
+      "torpedo": 61,
+      "antiaircraft": 79,
+      "air": 0,
+      "reload": 72,
+      "armor": 0,
+      "hit": 43,
+      "dodge": 21,
+      "speed": 32,
+      "luck": 80,
+      "antisub": 29
+    },
+    "attrs_growth": {
+      "durability": 11988,
+      "cannon": 450,
+      "torpedo": 805,
+      "antiaircraft": 967,
+      "air": 0,
+      "reload": 502,
+      "armor": 0,
+      "hit": 631,
+      "dodge": 433,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 406
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "9702132": {
+    "name": {
+      "cn": "纽伦堡·META",
+      "en": "Nürnberg META",
+      "jp": "ニュルンベルク(META)",
+      "tw": null,
+      "kr": "뉘른베르크·META"
+    },
+    "english_name": "Nürnberg.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 970213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 866,
+      "cannon": 41,
+      "torpedo": 76,
+      "antiaircraft": 98,
+      "air": 0,
+      "reload": 72,
+      "armor": 0,
+      "hit": 43,
+      "dodge": 21,
+      "speed": 32,
+      "luck": 80,
+      "antisub": 36
+    },
+    "attrs_growth": {
+      "durability": 11988,
+      "cannon": 450,
+      "torpedo": 805,
+      "antiaircraft": 967,
+      "air": 0,
+      "reload": 502,
+      "armor": 0,
+      "hit": 631,
+      "dodge": 433,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 406
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "9702133": {
+    "name": {
+      "cn": "纽伦堡·META",
+      "en": "Nürnberg META",
+      "jp": "ニュルンベルク(META)",
+      "tw": null,
+      "kr": "뉘른베르크·META"
+    },
+    "english_name": "Nürnberg.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 970213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1206,
+      "cannon": 57,
+      "torpedo": 106,
+      "antiaircraft": 137,
+      "air": 0,
+      "reload": 72,
+      "armor": 0,
+      "hit": 43,
+      "dodge": 21,
+      "speed": 32,
+      "luck": 80,
+      "antisub": 50
+    },
+    "attrs_growth": {
+      "durability": 11988,
+      "cannon": 450,
+      "torpedo": 805,
+      "antiaircraft": 967,
+      "air": 0,
+      "reload": 502,
+      "armor": 0,
+      "hit": 631,
+      "dodge": 433,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 406
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "9702134": {
+    "name": {
+      "cn": "纽伦堡·META",
+      "en": "Nürnberg META",
+      "jp": "ニュルンベルク(META)",
+      "tw": null,
+      "kr": "뉘른베르크·META"
+    },
+    "english_name": "Nürnberg.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 970213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1715,
+      "cannon": 81,
+      "torpedo": 152,
+      "antiaircraft": 195,
+      "air": 0,
+      "reload": 72,
+      "armor": 0,
+      "hit": 43,
+      "dodge": 21,
+      "speed": 32,
+      "luck": 80,
+      "antisub": 72
+    },
+    "attrs_growth": {
+      "durability": 11988,
+      "cannon": 450,
+      "torpedo": 805,
+      "antiaircraft": 967,
+      "air": 0,
+      "reload": 502,
+      "armor": 0,
+      "hit": 631,
+      "dodge": 433,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 406
     },
     "equip_slots": [
       [
@@ -250161,7 +254928,7 @@
       "cn": "甘古特·META",
       "en": "Gangut META",
       "jp": "ガングート(META)",
-      "tw": "甘古特META",
+      "tw": "甘古特·META",
       "kr": "강구트·META"
     },
     "english_name": "Gangut.META",
@@ -250235,7 +255002,7 @@
       "cn": "甘古特·META",
       "en": "Gangut META",
       "jp": "ガングート(META)",
-      "tw": "甘古特META",
+      "tw": "甘古特·META",
       "kr": "강구트·META"
     },
     "english_name": "Gangut.META",
@@ -250309,7 +255076,7 @@
       "cn": "甘古特·META",
       "en": "Gangut META",
       "jp": "ガングート(META)",
-      "tw": "甘古特META",
+      "tw": "甘古特·META",
       "kr": "강구트·META"
     },
     "english_name": "Gangut.META",
@@ -250383,7 +255150,7 @@
       "cn": "甘古特·META",
       "en": "Gangut META",
       "jp": "ガングート(META)",
-      "tw": "甘古特META",
+      "tw": "甘古特·META",
       "kr": "강구트·META"
     },
     "english_name": "Gangut.META",
@@ -254215,6 +258982,582 @@
       "armor": 0,
       "hit": 402,
       "dodge": 291,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707091": {
+    "name": {
+      "cn": "胜利·META",
+      "en": "Victorious META",
+      "jp": "ヴィクトリアス(META)",
+      "tw": "勝利·META",
+      "kr": "빅토리어스·META"
+    },
+    "english_name": "Victorious.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 970709,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1086,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 58,
+      "air": 83,
+      "reload": 40,
+      "armor": 0,
+      "hit": 24,
+      "dodge": 10,
+      "speed": 31,
+      "luck": 82,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 19815,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 763,
+      "air": 1014,
+      "reload": 276,
+      "armor": 0,
+      "hit": 343,
+      "dodge": 274,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707092": {
+    "name": {
+      "cn": "胜利·META",
+      "en": "Victorious META",
+      "jp": "ヴィクトリアス(META)",
+      "tw": "勝利·META",
+      "kr": "빅토리어스·META"
+    },
+    "english_name": "Victorious.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 970709,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1351,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 72,
+      "air": 103,
+      "reload": 40,
+      "armor": 0,
+      "hit": 24,
+      "dodge": 10,
+      "speed": 31,
+      "luck": 82,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 19815,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 763,
+      "air": 1014,
+      "reload": 276,
+      "armor": 0,
+      "hit": 343,
+      "dodge": 274,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707093": {
+    "name": {
+      "cn": "胜利·META",
+      "en": "Victorious META",
+      "jp": "ヴィクトリアス(META)",
+      "tw": "勝利·META",
+      "kr": "빅토리어스·META"
+    },
+    "english_name": "Victorious.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 970709,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1881,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 101,
+      "air": 144,
+      "reload": 40,
+      "armor": 0,
+      "hit": 24,
+      "dodge": 10,
+      "speed": 31,
+      "luck": 82,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 19815,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 763,
+      "air": 1014,
+      "reload": 276,
+      "armor": 0,
+      "hit": 343,
+      "dodge": 274,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707094": {
+    "name": {
+      "cn": "胜利·META",
+      "en": "Victorious META",
+      "jp": "ヴィクトリアス(META)",
+      "tw": "勝利·META",
+      "kr": "빅토리어스·META"
+    },
+    "english_name": "Victorious.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 970709,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 2676,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 144,
+      "air": 206,
+      "reload": 40,
+      "armor": 0,
+      "hit": 24,
+      "dodge": 10,
+      "speed": 31,
+      "luck": 82,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 19815,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 763,
+      "air": 1014,
+      "reload": 276,
+      "armor": 0,
+      "hit": 343,
+      "dodge": 274,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707101": {
+    "name": {
+      "cn": "萨拉托加·META",
+      "en": "Saratoga META",
+      "jp": "サラトガ(META)",
+      "tw": null,
+      "kr": "새러토가·META"
+    },
+    "english_name": "Saratoga.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 970710,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1233,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 68,
+      "air": 85,
+      "reload": 48,
+      "armor": 0,
+      "hit": 25,
+      "dodge": 10,
+      "speed": 33,
+      "luck": 66,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 22486,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 863,
+      "air": 1038,
+      "reload": 332,
+      "armor": 0,
+      "hit": 348,
+      "dodge": 270,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707102": {
+    "name": {
+      "cn": "萨拉托加·META",
+      "en": "Saratoga META",
+      "jp": "サラトガ(META)",
+      "tw": null,
+      "kr": "새러토가·META"
+    },
+    "english_name": "Saratoga.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 970710,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1534,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 85,
+      "air": 106,
+      "reload": 48,
+      "armor": 0,
+      "hit": 25,
+      "dodge": 10,
+      "speed": 33,
+      "luck": 66,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 22486,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 863,
+      "air": 1038,
+      "reload": 332,
+      "armor": 0,
+      "hit": 348,
+      "dodge": 270,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707103": {
+    "name": {
+      "cn": "萨拉托加·META",
+      "en": "Saratoga META",
+      "jp": "サラトガ(META)",
+      "tw": null,
+      "kr": "새러토가·META"
+    },
+    "english_name": "Saratoga.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 970710,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 2135,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 118,
+      "air": 148,
+      "reload": 48,
+      "armor": 0,
+      "hit": 25,
+      "dodge": 10,
+      "speed": 33,
+      "luck": 66,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 22486,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 863,
+      "air": 1038,
+      "reload": 332,
+      "armor": 0,
+      "hit": 348,
+      "dodge": 270,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        9
+      ],
+      [
+        8
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
+    "max_level": 100
+  },
+  "9707104": {
+    "name": {
+      "cn": "萨拉托加·META",
+      "en": "Saratoga META",
+      "jp": "サラトガ(META)",
+      "tw": null,
+      "kr": "새러토가·META"
+    },
+    "english_name": "Saratoga.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 7,
+    "type_name": "正航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 970710,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 3037,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 168,
+      "air": 212,
+      "reload": 48,
+      "armor": 0,
+      "hit": 25,
+      "dodge": 10,
+      "speed": 33,
+      "luck": 66,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 22486,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 863,
+      "air": 1038,
+      "reload": 332,
+      "armor": 0,
+      "hit": 348,
+      "dodge": 270,
       "speed": 0,
       "luck": 0,
       "antisub": 0
@@ -281777,8 +287120,8 @@
       "cn": "A2",
       "en": "A2",
       "jp": "A2",
-      "tw": null,
-      "kr": null
+      "tw": "A2",
+      "kr": "A2"
     },
     "english_name": "A2",
     "nationality": 117,
@@ -281849,8 +287192,8 @@
       "cn": "A2",
       "en": "A2",
       "jp": "A2",
-      "tw": null,
-      "kr": null
+      "tw": "A2",
+      "kr": "A2"
     },
     "english_name": "A2",
     "nationality": 117,
@@ -281921,8 +287264,8 @@
       "cn": "A2",
       "en": "A2",
       "jp": "A2",
-      "tw": null,
-      "kr": null
+      "tw": "A2",
+      "kr": "A2"
     },
     "english_name": "A2",
     "nationality": 117,
@@ -281993,8 +287336,8 @@
       "cn": "A2",
       "en": "A2",
       "jp": "A2",
-      "tw": null,
-      "kr": null
+      "tw": "A2",
+      "kr": "A2"
     },
     "english_name": "A2",
     "nationality": 117,
@@ -282065,8 +287408,8 @@
       "cn": "2B",
       "en": "2B",
       "jp": "2B",
-      "tw": null,
-      "kr": null
+      "tw": "2B",
+      "kr": "2B"
     },
     "english_name": "2B",
     "nationality": 117,
@@ -282139,8 +287482,8 @@
       "cn": "2B",
       "en": "2B",
       "jp": "2B",
-      "tw": null,
-      "kr": null
+      "tw": "2B",
+      "kr": "2B"
     },
     "english_name": "2B",
     "nationality": 117,
@@ -282213,8 +287556,8 @@
       "cn": "2B",
       "en": "2B",
       "jp": "2B",
-      "tw": null,
-      "kr": null
+      "tw": "2B",
+      "kr": "2B"
     },
     "english_name": "2B",
     "nationality": 117,
@@ -282287,8 +287630,8 @@
       "cn": "2B",
       "en": "2B",
       "jp": "2B",
-      "tw": null,
-      "kr": null
+      "tw": "2B",
+      "kr": "2B"
     },
     "english_name": "2B",
     "nationality": 117,

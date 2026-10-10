@@ -54,8 +54,8 @@ export function DeployGroups({data, only, except, edits, queue}: {
                 invalid={edits.edits[field.key]?.status === 'error'}
                 disabled={data.demo}
                 onChange={value => {
-                  const {payload, error} = prepareValue(value, field)
-                  queue.change(field.key, value, payload, error)
+                  const {payload, text, error} = prepareValue(value, field)
+                  queue.change(field.key, text ?? value, payload, error)
                 }}
               />
               {!isMultiline && <EditStatus id={`deploy-${field.key}`} edit={edits.edits[field.key]} retry={queue.retry} queue={queue}/>}

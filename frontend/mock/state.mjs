@@ -17,6 +17,12 @@ const locales = Object.fromEntries(['zh-CN', 'zh-TW', 'en-US', 'ja-JP', 'zh-MIAO
 const ajv = new Ajv({ strict: false, useDefaults: true })
 const validators = Object.fromEntries(Object.entries(contract.methods).map(([method, entry]) => [method, ajv.compile(entry.params)]))
 const revision = values => createHash('sha256').update(JSON.stringify(values)).digest('hex')
+// 与后端按游戏包名确定地区的规则一致，开服检测配置不参与判断。
+const region = packageName => !packageName || packageName === 'auto' ? null : ({
+  en: 'en', jp: 'jp', tw: 'tw',
+  'com.YoStarEN.AzurLane': 'en', 'com.YoStarJP.AzurLane': 'jp', 'com.hkmanjuu.azurlane.gp': 'tw',
+  'com.hkmanjuu.azurlane.gp.mc': 'tw',
+})[packageName] ?? 'cn'
 const timestamp = date => date.toISOString().slice(0, 19).replace('T', ' ')
 const translate = key => key.split('.').reduce((value, part) => value?.[part], locales['zh-CN']) ?? key
 export const fail = (code, message, details = null) => { throw Object.assign(new Error(message), { code, details }) }
@@ -44,6 +50,17 @@ function validateField(path, value) {
 
 export function createMockState({ empty = false } = {}) {
   const instances = new Map()
+  const mindShips = new Map()
+  function mindPython(action, params) {
+    const run = spawnSync('uv', ['run', '--no-sync', 'python', '-X', 'utf8', '-m', 'dev_tools.mind_calculator_mock'], {
+      cwd: fileURLToPath(new URL('../../', import.meta.url)), input: JSON.stringify({action, ...params}),
+      encoding: 'utf8', timeout: 30000, windowsHide: true,
+    })
+    if (run.error || run.status) fail('INTERNAL_ERROR', '计算器模拟服务运行失败')
+    const result = JSON.parse(run.stdout)
+    if (result.error) fail('INVALID_PARAMS', result.error)
+    return result
+  }
   const stock = createStockProxy(name=>{const r=get(name).values.Dashboard.ActionPoint;return r?.Total!=null&&r.Record?{instance:name,actionPoints:r.Total,observedAt:Math.floor(new Date(r.Record.replace(' ','T')+'Z').getTime()/1000)}:null})
   const programs = new Map()
   const simulations = new Map()
@@ -373,6 +390,7 @@ export function createMockState({ empty = false } = {}) {
       values.Main.Emotion.Fleet1Record = '2026-09-12 23:45:12.123456'
       values.Main.Scheduler.NextRun = '2099-01-01 12:00:00'
       values.Alas.Emulator.Serial = `127.0.0.1:${5555 + index * 2}`
+      values.Alas.Emulator.ServerName = 'cn_android-20'
       /* 四个演示实例各占一档：小狗 / 中狗 / 大狗 / 狗王，用来一次看全行动力图标的四档。 */
       const apTotal = {'demo-main': 6001, 'demo-alt': 8001, 'demo-error': 10001, 'demo-dog': 12001}[name] ?? 6001
       const dashboardDefaults = {
@@ -432,7 +450,7 @@ export function createMockState({ empty = false } = {}) {
       case 'updater.cancel': return { accepted: true }
       case 'system.ping': return { pong: true }
       case 'schema.get': return { args, menu, translations: locales[params.language] }
-      case 'instances.list': return [...instances].map(([name, item]) => ({ name, status: item.status, currentTask: item.status === 'running' ? 'Commission' : null, serial: item.values.Alas.Emulator.Serial, server: item.values.Alas.Emulator.ServerName }))
+      case 'instances.list': return [...instances].map(([name, item]) => ({ name, status: item.status, currentTask: item.status === 'running' ? item.currentTask ?? 'Commission' : null, serial: item.values.Alas.Emulator.Serial, server: item.values.Alas.Emulator.ServerName, region: region(item.values.Alas.Emulator.PackageName) }))
       case 'instances.create': {
         if (!/^[A-Za-z0-9\u3041-\u3096\u30a1-\u30fa\u30fc\u31f0-\u31ff\uff66-\uff9f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff][A-Za-z0-9_. \u3041-\u3096\u30a1-\u30fa\u30fc\u31f0-\u31ff\uff66-\uff9f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\-]{0,63}$/.test(params.name) || /^(template|deploy|backup|con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(params.name)) fail('INVALID_PARAMS', '实例名称无效')
         if ([...instances.keys()].some(name => name.toLowerCase() === params.name.toLowerCase())) fail('ALREADY_EXISTS', '同名实例已存在')
@@ -490,13 +508,28 @@ export function createMockState({ empty = false } = {}) {
         return snapshot(name)
       }
       case 'overview.get': return overview(name)
+      case 'mind.catalog': return mindPython('catalog', params)
+      case 'mind.calculate': return mindPython('calculate', params)
+      case 'mind.report': {
+        const range = get(name).values.MindCalculatorScan.MindCalculator
+        return {...mindPython('report', {ships: mindShips.get(name) ?? []}), instance: name, updated_at: '', min_level: range.MinLevel, max_level: range.MaxLevel}
+      }
+      case 'mind.save': {
+        const current = mindPython('report', {ships: mindShips.get(name) ?? []})
+        if (current.revision !== params.revision) fail('CONFLICT', '舰船数据已变化，请重新载入后再保存')
+        mindShips.set(name, params.ships)
+        return dispatch('mind.report', {instance: name})
+      }
+      case 'mind.import': return mindPython('import', params)
+      case 'mind.recognize': return mindPython('recognize', params)
+      case 'mind.export': return mindPython('export', {...params, ships: mindShips.get(name) ?? []})
       case 'stock.status': return stock.status(name)
       case 'stock.rebuild': return stock.rebuild(name,params)
       case 'stock.request': return stock.request(name,params)
       case 'scheduler.start': case 'tasks.run':
         if (get(name).status === 'running') fail('INSTANCE_RUNNING', '实例已在运行')
         if (method === 'tasks.run' && !['FleetScan', 'StorageStatistics'].includes(params.task) && !Object.values(menu).some(group => group.page === 'tool' && group.tasks.includes(params.task))) fail('INVALID_PARAMS', '该任务不支持单独运行')
-        get(name).status = 'running'; log(name, '模拟调度器已启动。')
+        get(name).status = 'running'; get(name).currentTask = params.task ?? 'Commission'; log(name, '模拟调度器已启动。')
         return overview(name)
       case 'scheduler.stop':
         get(name).status = 'stopped'; log(name, '模拟调度器已停止。')

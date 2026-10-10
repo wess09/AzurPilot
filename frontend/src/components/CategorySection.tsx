@@ -19,6 +19,7 @@ interface CategoryParams {
   period: 'day' | 'week' | 'month'
   researchSeries: string
   lootTask: string
+  includeSeries: boolean
 }
 
 /** 一段页面的内容区：自己取数、自己订阅统计事件，数据与渲染都交给调用方。 */
@@ -28,7 +29,7 @@ export function CategorySection({params, revision, onState, render}: {
   onState?: (state: {data?: StatisticsReport; error: string}) => void
   render: (data: StatisticsReport | undefined, error: string, page: StatisticsCategory) => ReactNode
 }) {
-  const {instance, category, days, month, period, researchSeries, lootTask} = params
+  const {instance, category, days, month, period, researchSeries, lootTask, includeSeries} = params
   const researchScope = researchSeries === 'consumable' ? researchSeries : 'series'
   const connection = useConnection()
   const [data, setData] = useState<StatisticsReport>()
@@ -39,7 +40,8 @@ export function CategorySection({params, revision, onState, render}: {
     series: researchScope === 'series' ? Number(researchSeries) : 0,
     scope: researchScope,
     task: lootTask || null,
-  }), [instance, category, days, month, period, researchScope, researchSeries, lootTask])
+    include_series: includeSeries,
+  }), [instance, category, days, month, period, researchScope, researchSeries, lootTask, includeSeries])
 
   useEffect(() => {
     if (connection !== 'ready') return

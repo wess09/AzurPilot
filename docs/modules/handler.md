@@ -134,6 +134,8 @@ flowchart TD
 
 `_handle_app_login()` 是单一状态循环：截图 → 检测 `LOGIN_CHECK`（点击并标记登录成功）→ 依次处理安卓无响应、公告、维护、更新、国服协议、回归玩家、通用弹窗、主界面弹窗 → 直到 `is_in_main()` 持续确认（`confirm_timer`）后退出。`handle_app_login()` 在外层把截图间隔放宽到 1 秒，并用 `Restart.LoginWaitTimeout`（跨任务读取，默认 30 秒、上限 3600）覆盖卡死检测阈值，避免慢启动的后台模拟器被误判卡死。
 
+`ui_page_main_popups()` 返回 `True` 只表示本帧已执行操作，登录循环会继续截图，不能直接视为登录完成。自选轻量复刻选择页由该公共入口识别 `CAPSULE_RERUN_CHECK` 后复用 `BACK_ARROW_WHITE` 返回；重启游戏仍可能再次展示，因此需显式退出并持续确认主界面。离线回放见 `tests/test_capsule_rerun_login.py`。
+
 `app_restart()` 是带恢复梯度的重启状态机：
 
 ```mermaid
@@ -231,7 +233,7 @@ device.screenshot()
 | 异常 | 原因 | 处理 |
 | --- | --- | --- |
 | `CampaignEnd` | `handle_in_stage` 确认回到关卡页面（含短暂页面切换的计时器防误判） | 由战役流程捕获，结束当前关卡；`_emotion_emergency_exit` 内部会捕获 |
-| `ScriptEnd` | calculate 模式出现红脸弹窗的保底（清心情、延时任务）；达到地图成就停止条件 | 上层调度器结束当前任务 |
+| `ScriptEnd` | calculate 模式出现红脸弹窗的保底（从 0 建立有效恢复起点，按出击需求延时任务，恢复后自动重试）；达到地图成就停止条件 | 上层调度器结束当前任务 |
 | `GameTooManyClickError` | 剧情选项连续点击超限、登录中模拟器无响应累计 | 设备层记录，`alas.run` 决定重启 |
 | `GameNotRunningError` | 紧急委托点击后 3–6 秒热更新检测发现进程退出；重启流程 | 调度器触发 Restart 任务 |
 | `EmulatorNotRunningError` | 应用重启 3 次失败且观察期未恢复；重启操作硬超时 | 调度器 `_try_restart_emulator` 重启模拟器 |

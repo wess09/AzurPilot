@@ -7,7 +7,7 @@ import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
+from contextlib import closing, nullcontext
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -15,6 +15,7 @@ from unittest.mock import patch
 from Crypto.Cipher import AES
 
 from module.statistics import cl1_database as database
+from module.persistence import database as persistence
 
 
 NOW = datetime(2026, 1, 1, 12)
@@ -53,9 +54,7 @@ class FixedDatetime(datetime):
 
 def process_writer(path, started, finished):
     """子进程只连接测试库，写入与父进程不同的指标。"""
-    db = database.Cl1Database.__new__(database.Cl1Database)
-    db.db_path = Path(path)
-    db._legacy_decryption_keys = []
+    db = database.Cl1Database(Path(path))
     root = Path(path).parent.parent
     if not root.is_relative_to(Path(tempfile.gettempdir())):
         raise RuntimeError('测试目录未隔离')
@@ -67,7 +66,7 @@ def process_writer(path, started, finished):
         conn.set_trace_callback(lambda sql: started.set() if sql == "BEGIN IMMEDIATE" else None)
         return conn
 
-    with patch.object(database.sqlite3, "connect", side_effect=traced_connect), \
+    with patch.object(persistence.sqlite3, "connect", side_effect=traced_connect), \
             patch.object(database, "datetime", FixedDatetime):
         db.add_coins_snapshot("test", 800, 50)
         db.add_commission_income("test", {"Cube": 2})
@@ -78,8 +77,8 @@ class TestStatisticsTransactions(unittest.TestCase):
     def setUp(self):
         directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(directory.cleanup)
-        self.path = Path(directory.name) / "config" / "cl1_data.db"
-        with patch.object(database.Cl1Database, "_get_legacy_decryption_keys", return_value=[]):
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
             self.db = database.Cl1Database(self.path)
             self.other = database.Cl1Database(self.path)
         fixed = patch.object(database, "datetime", FixedDatetime)
@@ -99,7 +98,7 @@ class TestStatisticsTransactions(unittest.TestCase):
 
     def rows(self):
         with closing(sqlite3.connect(self.path)) as conn:
-            return conn.execute("SELECT * FROM cl1_data ORDER BY instance, month").fetchall()
+            return conn.execute("SELECT * FROM cl1_months ORDER BY instance, month").fetchall()
 
     def assert_serialized(self, first, second, pause_target="_get_stats_in_connection", owner=None):
         """第一写者读完后暂停，确认第二写者等待同一写锁。"""
@@ -126,7 +125,7 @@ class TestStatisticsTransactions(unittest.TestCase):
             return conn
 
         with patch.object(owner or self.db, pause_target, side_effect=paused), \
-                patch.object(database.sqlite3, "connect", side_effect=traced_connect), \
+                patch.object(persistence.sqlite3, "connect", side_effect=traced_connect), \
                 ThreadPoolExecutor(max_workers=1) as first_pool, \
                 ThreadPoolExecutor(max_workers=1, thread_name_prefix="stats-other") as second_pool:
             first_future = first_pool.submit(first)
@@ -205,7 +204,7 @@ class TestStatisticsTransactions(unittest.TestCase):
 
     def test_all_mutations_reject_corrupt_rows_without_replacing_them(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:
-            conn.execute("UPDATE cl1_data SET data_json = 'broken'")
+            conn.execute("DELETE FROM typed_value_nodes WHERE parent_no IS NULL")
         before = self.rows()
         for name, args in MUTATIONS:
             with self.subTest(method=name), self.assertRaises(ValueError):
@@ -221,14 +220,14 @@ class TestStatisticsTransactions(unittest.TestCase):
             conn.set_authorizer(lambda action, *args: sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_READ else sqlite3.SQLITE_OK)
             return conn
 
-        with patch.object(database.sqlite3, "connect", side_effect=denied_connect):
+        with patch.object(persistence.sqlite3, "connect", side_effect=denied_connect):
             with self.assertRaises(sqlite3.DatabaseError):
                 self.db.increment_battle_count("test")
         self.assertEqual(self.rows(), before)
 
     def test_all_mutations_roll_back_write_failures(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:
-            conn.execute("""CREATE TRIGGER reject_write BEFORE INSERT ON cl1_data
+            conn.execute("""CREATE TRIGGER reject_write BEFORE INSERT ON cl1_months
                 BEGIN SELECT RAISE(ABORT, 'write rejected'); END""")
         before = self.rows()
         for name, args in MUTATIONS:
@@ -240,7 +239,7 @@ class TestStatisticsTransactions(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as conn, conn:
             conn.execute("CREATE TABLE parent (id INTEGER PRIMARY KEY)")
             conn.execute("CREATE TABLE child (id REFERENCES parent(id) DEFERRABLE INITIALLY DEFERRED)")
-            conn.execute("CREATE TRIGGER reject_commit BEFORE INSERT ON cl1_data BEGIN INSERT INTO child VALUES (1); END")
+            conn.execute("CREATE TRIGGER reject_commit BEFORE INSERT ON cl1_months BEGIN INSERT INTO child VALUES (1); END")
         before = self.rows()
         connect = sqlite3.connect
 
@@ -250,24 +249,33 @@ class TestStatisticsTransactions(unittest.TestCase):
             return conn
 
         for name, args in MUTATIONS:
-            with self.subTest(method=name), patch.object(database.sqlite3, "connect", side_effect=checked_connect):
+            with self.subTest(method=name), patch.object(persistence.sqlite3, "connect", side_effect=checked_connect):
                 with self.assertRaises(sqlite3.IntegrityError):
                     getattr(self.db, name)("test", *args)
             self.assertEqual(self.rows(), before)
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            conn.execute("DROP TRIGGER reject_commit")
         self.other.increment_battle_count("test")
         self.assertEqual(self.db.get_stats("test", MONTH)["battle_count"], 11)
 
     def encrypted_seed(self):
-        """模拟旧版设备密钥历史行：整行内容在 encrypted_blob 里。"""
-        data = self.db.get_stats("test", MONTH)
-        key = b"x" * 32
+        """在另一个临时配置目录中迁移旧 AES 整行，确认原件保留。"""
+        data = self.db.get_stats('test', MONTH)
+        key = b'x' * 32
         cipher = AES.new(key, AES.MODE_GCM)
         payload, tag = cipher.encrypt_and_digest(json.dumps(data).encode())
-        self.db._legacy_decryption_keys = self.other._legacy_decryption_keys = [key]
+        legacy = self.path.parent.parent / 'legacy' / 'cl1_data.db'
+        legacy.parent.mkdir()
+        with closing(sqlite3.connect(legacy)) as conn, conn:
+            conn.execute('CREATE TABLE cl1_data(instance TEXT,month TEXT,data_json TEXT,encrypted_blob BLOB)')
+            conn.execute('INSERT INTO cl1_data VALUES(?,?,NULL,?)', ('test', MONTH, cipher.nonce + tag + payload))
+        original = legacy.read_bytes()
         self.enterContext(patch('module.statistics.cl1_legacy.derive_legacy_key', return_value=key))
-        with closing(sqlite3.connect(self.path)) as conn, conn:
-            conn.execute("UPDATE cl1_data SET data_json = NULL, secure_json=NULL, encrypted_blob = ?",
-                         (cipher.nonce + tag + payload,))
+        self.db = database.Cl1Database(legacy)
+        self.other = database.Cl1Database(legacy)
+        self.path = self.db.db_path
+        self.assertEqual(self.db.get_stats('test', MONTH), data)
+        self.assertEqual(legacy.read_bytes(), original)
         return data
 
     def test_read_migration_keeps_following_commission_commit(self):
@@ -286,7 +294,8 @@ class TestStatisticsTransactions(unittest.TestCase):
 
     def test_json_migration_does_not_overwrite_new_commission_income(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:
-            conn.execute("DELETE FROM cl1_data")
+            conn.execute("PRAGMA foreign_keys=ON")
+            conn.execute("DELETE FROM cl1_months")
         source = self.path.parent.parent / "log" / "cl1" / "test" / "cl1_monthly.json"
         source.parent.mkdir(parents=True)
         source.write_text(json.dumps({MONTH: 42}), encoding='utf-8')
@@ -331,26 +340,20 @@ class Cl1SchemaRepairTests(unittest.TestCase):
                          ("test", "2026-01", json.dumps({"battle_count": 5})))
 
     def repair(self):
-        with patch.object(database.Cl1Database, "_get_legacy_decryption_keys", return_value=[]):
-            return database.Cl1Database(self.path)
+        result = database.Cl1Database(self.path)
+        result.store.ensure_ready()
+        return result
 
     def test_broken_unique_key_is_repaired_and_writable(self):
         self.make_broken_db()
-        self.repair()
-        with closing(sqlite3.connect(self.path)) as conn:
-            self.assertEqual(database.Cl1Database._primary_key(conn.cursor()), ["instance", "month"])
-            rows = conn.execute("SELECT instance, month, data_json FROM cl1_data").fetchall()
-        self.assertEqual(rows, [("test", "2026-01", json.dumps({"battle_count": 5}))])
-        # 官方写入形态（ON CONFLICT 匹配 (instance, month)）恢复可执行，且按键更新而非插重复行。
-        with closing(sqlite3.connect(self.path)) as conn, conn:
-            conn.execute("INSERT INTO cl1_data (instance, month, data_json, secure_json, encrypted_blob)"
-                         " VALUES ('test', '2026-01', ?, NULL, NULL)"
-                         " ON CONFLICT(instance, month) DO UPDATE SET data_json=excluded.data_json",
-                         (json.dumps({"battle_count": 6}),))
-        with closing(sqlite3.connect(self.path)) as conn:
-            rows = conn.execute("SELECT data_json FROM cl1_data").fetchall()
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(json.loads(rows[0][0])["battle_count"], 6)
+        before = self.path.read_bytes()
+        migrated = self.repair()
+        self.assertEqual(migrated.get_stats('test', '2026-01'), {'battle_count': 5})
+        migrated.save_stats('test', '2026-01', {'battle_count': 6})
+        self.assertEqual(migrated.get_stats('test', '2026-01'), {'battle_count': 6})
+        self.assertEqual(self.path.read_bytes(), before)
+        with migrated.store.transaction(write=False) as conn:
+            self.assertEqual(conn.execute('SELECT count(*) FROM cl1_months').fetchone()[0], 1)
 
     def test_intact_unique_key_is_left_alone(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:

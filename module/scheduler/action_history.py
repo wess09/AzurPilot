@@ -39,7 +39,9 @@ class ActionPointChain:
                 for seq, recorded, total in rows:
                     self._event(seq, recorded, total)
                 if not rows and protection.record(identity)['baseline']:
-                    previous = connection.execute("SELECT total,observed_at FROM observations WHERE resource='ActionPoint'").fetchone()
+                    # 仅兼容原安全库内的旧观察行；普通总库不会参与认证链初始化。
+                    legacy = connection.execute("SELECT 1 FROM sqlite_master WHERE name='observations'").fetchone()
+                    previous = connection.execute("SELECT total,observed_at FROM observations WHERE resource='ActionPoint'").fetchone() if legacy else None
                     point = previous if previous and previous[0] is not None else baseline
                     if point and type(point[0]) in (int, float) and 0 <= point[0] <= 1_000_000 and int(point[0]) == point[0]:
                         self.append(point[1], int(point[0]))

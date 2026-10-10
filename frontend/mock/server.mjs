@@ -57,7 +57,7 @@ export function createMockServer({password = '', empty = false} = {}) {
     response.writeHead(request.url === '/healthz' ? 200 : 404)
     response.end(JSON.stringify(request.url === '/healthz' ? {status: 'ok', protocolVersion: 1, mock: true} : {message: '请通过 Vite 打开前端'}))
   })
-  const sockets = new WebSocketServer({noServer: true, maxPayload: 1024 * 1024})
+  const sockets = new WebSocketServer({noServer: true, maxPayload: 8 * 1024 * 1024})
   server.on('upgrade', (request, socket, head) => {
     let validOrigin = false
     try {validOrigin = new URL(request.headers.origin).host === request.headers.host} catch { /* 缺少来源时拒绝连接。 */ }
@@ -80,6 +80,7 @@ export function createMockServer({password = '', empty = false} = {}) {
       try {
         request = JSON.parse(raw.toString())
         if (!request || request.v !== 1 || request.type !== 'request' || typeof request.id !== 'string' || !request.id.length || request.id.length > 100 || typeof request.method !== 'string') fail('INVALID_REQUEST', '请求信封无效')
+        if (raw.length > 1024 * 1024 && !['mind.import', 'mind.recognize', 'mind.save', 'mind.calculate'].includes(request.method)) fail('INVALID_REQUEST', '请求超过 1 MiB 限制')
         if (session.ids.has(request.id)) fail('DUPLICATE_REQUEST', '请求 ID 重复')
         session.ids.add(request.id)
         if (session.ids.size > 128) session.ids.delete(session.ids.values().next().value)
@@ -103,6 +104,7 @@ export function createMockServer({password = '', empty = false} = {}) {
       }
     })
     socket.on('close', () => {session.unsubscribeStock?.();sessions.delete(session)})
+    socket.on('error', () => {session.unsubscribeStock?.();sessions.delete(session)})
   })
   function publish() {
     for (const session of sessions) {

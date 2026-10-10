@@ -7,7 +7,7 @@
 - 记录每次战斗的经验获取量和战斗时间
 - 计算每日经验效率（经验/小时）
 - 预估达到目标等级所需时间
-- 持久化统计数据到 JSON 文件
+- 持久化统计数据到普通业务总库
 
 继承自 LIST_SHIP_EXP 数据，复用经验数据定义。
 """
@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 import time
-import json
+import sqlite3
 from pathlib import Path
 from datetime import datetime, date
 from typing import Any
@@ -27,7 +27,6 @@ from typing import Any
 from module.os.ship_exp_data import LIST_SHIP_EXP
 from module.logger import logger
 from module.config.time_source import now as current_time
-from module.statistics import opsi_secure
 
 
 class ShipExpStats:
@@ -47,66 +46,39 @@ class ShipExpStats:
     MAX_BATTLE_TIME_SAMPLES = 100  # 保留最近100场战斗时间样本
     MAX_DAILY_STATS_DAYS = 30      # 保留最近30天的统计
 
-    def __init__(self, path: Path | None = None, instance_name: str | None = None):
-        """初始化舰船经验统计对象。
-
-        Args:
-            path (Path | None): 数据保存路径。若为 None 则使用默认路径。
-            instance_name (str | None): Alas 实例名称。
-        """
-        if path is None:
-            project_root = Path(__file__).resolve().parents[2]
-            instance_dir = instance_name or "default"
-            self._path = project_root / "log" / "cl1" / instance_dir / "ship_exp_data.json"
+    def __init__(self, path: Path | None = None, instance_name: str | None = None, *, store=None):
+        from module.persistence.database import get_database
+        if path is not None:
+            legacy = Path(path).absolute()
+            directory = legacy.parents[3] / 'config' if legacy.parent.parent.name == 'cl1' else legacy.parent
+            self.store = store or get_database(directory)
+            self.store.add_legacy_source('ships', legacy)
+            self._instance_name = instance_name or legacy.parent.name
         else:
-            self._path = Path(path)
-        self._instance_name = instance_name or "default"
+            self.store = store or get_database()
+            self._instance_name = instance_name or 'default'
+        self._path = self.store.path
         self.data = self._load()
-
-        # 当前战斗的开始时间
         self._battle_start_time: float | None = None
 
+
     def _load(self) -> dict[str, Any]:
-        """加载数据文件；旧版本的包装载荷由读取路径解密。
-
-        旧密文暂不可解密时返回空并禁止覆盖（恢复后继续）。
-
-        Returns:
-            dict[str, Any]: 舰船经验统计数据字典。
-        """
+        from module.persistence.snapshots import read_ship
         self._locked = False
-        if not self._path.exists():
-            return {}
-        try:
-            text = self._path.read_text(encoding='utf-8')
-            data = json.loads(text)
-            if isinstance(data, dict) and (data.get(opsi_secure.WRAPPER_KEY)
-                                           or data.get(opsi_secure.LEGACY_WRAPPER_KEY)):
-                opened = opsi_secure.decode_file_payload('ships', self._path, data)
-                if opened is None:
-                    if opsi_secure.get_store().vault_keys().definitive():
-                        # 旧载荷确认无法在本机读取：另存到旁路备份后从空数据重新开始。
-                        opsi_secure.quarantine_unreadable('ships', str(self._path), text)
-                        return {}
-                    self._locked = True
-                    logger.warning('[统计-经验] 舰船经验数据暂不可用，暂不加载（恢复后继续）')
-                    return {}
-                return opened if isinstance(opened, dict) else {}
-            if isinstance(data, dict):
-                return data
-            return {}
-        except Exception as e:
-            logger.warning(f'[统计-经验] 加载舰船经验数据失败: {type(e).__name__}')
-            return {}
+        with self.store.transaction(write=False) as connection:
+            data = read_ship(connection, self._instance_name)
+        return {} if data is None else data
+
 
     def _save(self) -> None:
-        """保存数据文件到本地（普通 JSON，原子替换）。"""
+        """用总库事务替换当前实例经验快照，失败完整回滚。"""
+        from module.persistence.snapshots import save_ship
         try:
-            if self._locked:
-                return
-            opsi_secure.write_file('ships', self._path, self.data)
-        except Exception as e:
-            logger.warning(f'[统计-经验] 保存舰船经验数据失败: {type(e).__name__}')
+            with self.store.transaction() as connection:
+                save_ship(connection, self._instance_name, self.data)
+        except (OSError, ValueError, TypeError, sqlite3.Error) as error:
+            logger.warning(f'[统计-经验] 保存舰船经验失败: {type(error).__name__}')
+
 
     # ========== 战斗时间记录 ==========
 
@@ -450,7 +422,7 @@ class ShipExpStats:
 
 # ========== 单例模式和便捷函数 ==========
 
-_stats_instances: dict[str, ShipExpStats] = {}
+_stats_instances: dict[tuple[str, str], ShipExpStats] = {}
 
 
 def get_ship_exp_stats(instance_name: str | None = None) -> ShipExpStats:
@@ -463,7 +435,8 @@ def get_ship_exp_stats(instance_name: str | None = None) -> ShipExpStats:
         ShipExpStats: 舰船经验统计实例。
     """
     global _stats_instances
-    key = instance_name or "default"
+    from module.persistence.database import get_database
+    key = (str(get_database().directory), instance_name or "default")
     if key not in _stats_instances:
         _stats_instances[key] = ShipExpStats(instance_name=instance_name)
     else:

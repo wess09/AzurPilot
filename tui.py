@@ -40,6 +40,9 @@ def main() -> None:
     except Exception:
         pass
 
+    from module.persistence.database import initialize
+    initialize()
+
     # 延迟导入以加快帮助输出响应
     from module.tui.app import AzurPilotTUI
 

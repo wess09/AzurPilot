@@ -388,8 +388,27 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             return
         missing = object()
         discarded = set()
+        # 心情的值、时间和相位必须作为整体保护。即使用户校准的值恰好等于
+        # 旧值，只要时间、相位或恢复条件变了，也不能只丢弃其中两个字段。
+        emotion_prefixes = set()
+        for path in self.modified:
+            parts = path.split('.')
+            if len(parts) != 3 or parts[1] not in ('Emotion', 'PublicEmotion'):
+                continue
+            for suffix in ('RecoveryState', 'Record', 'Value'):
+                if parts[2].endswith(suffix):
+                    emotion_prefixes.add('.'.join(parts[:2]) + '.' + parts[2][:-len(suffix)])
+                    break
+        observation_guards = self.__dict__.get('_emotion_observation_guards')
+        for prefix in emotion_prefixes:
+            guards = observation_guards.get(prefix, {}) if observation_guards else None
+            if ((guards and any(deep_get(current, keys=path) != expected for path, expected in guards.items())) or
+                    any(deep_get(current, keys=prefix + suffix, default=missing) !=
+                   deep_get(baseline, keys=prefix + suffix, default=missing)
+                   for suffix in ('Value', 'Record', 'RecoveryState', 'Recover', 'Oath', 'Onsen'))):
+                discarded.update(prefix + suffix for suffix in ('Value', 'Record', 'RecoveryState'))
         for path in list(self.modified):
-            if deep_get(current, keys=path, default=missing) != deep_get(baseline, keys=path, default=missing):
+            if path in discarded or deep_get(current, keys=path, default=missing) != deep_get(baseline, keys=path, default=missing):
                 self.modified.pop(path)
                 discarded.add(path)
         # 保存也可能发生在 bind() 之后；同步被拒绝的属性，避免继续使用旧值。
@@ -413,6 +432,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             logger.info(f"[配置] 已保存 {filepath_config(self.config_name, mod_name)}，共 {len(self.modified)} 项修改")
             # 写入成功后再清理，磁盘错误不会丢失待保存的更改。
             self.modified.clear()
+            self.__dict__.pop('_emotion_observation_guards', None)
 
     def update(self):
         """显式提交：合并最新磁盘值、检查覆盖、恢复任务绑定，再事务保存。"""
@@ -481,8 +501,19 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         with self.multi_set():
             for arg, value in kwargs.items():
                 record = arg.replace("Value", "Record")
+                stamp = current_time()
+                if arg in ('Emotion_Fleet1Value', 'Emotion_Fleet2Value', 'PublicEmotion_FleetValue'):
+                    from module.combat.emotion_state import EmotionRecoveryState
+
+                    prefix = arg.removesuffix('Value')
+                    # 内部换船流程也需原子重建三字段；其启发式读数不在精度保证内。
+                    state = EmotionRecoveryState.calibrate(value, stamp, getattr(self, prefix + 'Recover'),
+                                                           getattr(self, prefix + 'Oath'), getattr(self, prefix + 'Onsen'))
+                    self.__setattr__(prefix + 'RecoveryState', state.export())
+                else:
+                    stamp = stamp.replace(microsecond=0)
                 self.__setattr__(arg, value)
-                self.__setattr__(record, current_time().replace(microsecond=0))
+                self.__setattr__(record, stamp)
 
     def multi_set(self):
         """批量设置多个参数，最外层退出时保存一次，包括 TaskEnd 或普通异常。

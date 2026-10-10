@@ -119,12 +119,14 @@ def import_in_subprocess(module: str, timeout: int) -> tuple[bool, str]:
         tuple[bool, str]: (是否导入成功, 错误信息摘要)。
     """
     code = f"import {module}"
-    env = {**os.environ, "AZURPILOT_NTP_DISABLE": "1"}
+    env = {**os.environ, "AZURPILOT_NTP_DISABLE": "1", "PYTHONIOENCODING": "utf-8"}
     try:
         proc = subprocess.run(
             [str(PYTHON), "-c", code],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
             env=env,
             cwd=REPO_ROOT,

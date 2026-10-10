@@ -15,7 +15,7 @@ from module.scheduler.validation import validate
 class SchedulerService:
     def __init__(self, configs, runtime):
         self.configs, self.runtime = configs, runtime
-        self.store = ProgramStore(configs.directory)
+        self.store = ProgramStore(configs.directory, store=getattr(configs, 'database', None))
 
     def get(self, instance):
         self.configs.path(instance)

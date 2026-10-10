@@ -54,8 +54,8 @@ class DatabaseTests(unittest.TestCase):
         document.update(mode='takeover', active=document['draft'], generation=3)
         legacy.write_text(json.dumps(document), encoding='utf-8')
         self.assertEqual(3, self.store.get('pilot')['generation'])
-        self.assertTrue(legacy.with_suffix('.json.migrated').exists())
-        self.assertFalse(legacy.exists())
+        self.assertTrue(legacy.exists())
+        self.assertTrue(list((Path(self.directory) / 'storage-backups').rglob('pilot.json')))
         self.store.observe('pilot','Oil',8000,'2026-09-28 10:00:00','fixture')
         self.store.save_persistent('pilot', {'variables': {'saved': 2}, 'records': {'quota': 1}, 'inFlight': 'Main'})
         target = Path(self.directory) / 'backup/scheduler/pilot.sqlite3'
@@ -66,13 +66,13 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(8000, restored.observations('pilot')['Oil']['Value'])
 
     def test_daily_backup_includes_sqlite(self):
-        from module.base.backup import backup_config
+        from module.base.backup import backup_config, backup_database
         self.store.observe('pilot','Oil',100,'2026-09-28 10:00:00','fixture')
         backup = Path(self.directory) / 'backup'
         backup.mkdir()
         with patch('module.base.backup.CONFIG_DIR', Path(self.directory)):
-            files = backup_config(backup)
-        self.assertTrue(any('pilot.sqlite3' in f['name'] for f in files))
+            files = backup_database(backup) + backup_config(backup)
+        self.assertTrue(any('azurpilot.db' == f['name'] for f in files))
         self.assertEqual(100, ProgramStore(backup).observations('pilot')['Oil']['Value'])
 
     def test_read_only_does_not_touch_database(self):
@@ -125,7 +125,8 @@ class SchedulerApiTests(unittest.TestCase):
         self.assertEqual('takeover', self.store.get('imported')['mode'])
         self.assertEqual({}, self.store.observations('imported'))
         self.configs.delete('imported', self.configs.read('imported')[1])
-        self.assertFalse(self.store.path('imported').exists())
+        self.assertFalse(self.store.exists('imported'))
+        self.assertTrue(self.store.database.path.exists())
         self.assertTrue(list((self.configs.directory/'backup').rglob('imported.sqlite3')))
 
     def test_simulation_is_same_interpreter_and_no_writes(self):

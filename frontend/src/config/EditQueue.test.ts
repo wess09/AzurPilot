@@ -220,8 +220,18 @@ describe('清空时回落到参数默认值', () => {
   it('默认值缺失时维持原有的报错行为', () => {
     expect(prepareValue('', {type: 'int', value: null}).error).toBeTruthy()
   })
-  it('非时间非数字字段的清空不受影响', () => {
-    expect(prepareValue('', {type: 'input', value: 'text'})).toEqual({payload: ''})
+  it('文本字段被全部清空时自动还原为参数默认值', () => {
+    expect(prepareValue('', {type: 'input', value: 'text'})).toEqual({payload: 'text', text: 'text'})
+    expect(prepareValue('   ', {type: 'input', value: '127.0.0.1:5555'})).toEqual({payload: '127.0.0.1:5555', text: '127.0.0.1:5555'})
+    expect(prepareValue('', {type: 'textarea', value: 'EquipUR > EquipSSR'})).toEqual({payload: 'EquipUR > EquipSSR', text: 'EquipUR > EquipSSR'})
+  })
+  it('声明 preserve_empty 的文本字段保留空值本身', () => {
+    expect(prepareValue('', {type: 'input', value: 'text', preserve_empty: true})).toEqual({payload: ''})
+    expect(prepareValue('', {type: 'textarea', value: '', preserve_empty: true})).toEqual({payload: ''})
+  })
+  it('默认值本身为空或缺失时清空保留空值', () => {
+    expect(prepareValue('', {type: 'input', value: ''})).toEqual({payload: ''})
+    expect(prepareValue('', {type: 'input', value: null})).toEqual({payload: ''})
   })
 })
 

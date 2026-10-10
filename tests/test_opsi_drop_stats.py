@@ -366,13 +366,9 @@ class TestCollect(unittest.TestCase):
 
     def test_unknown_month_boss_zone_uses_known_task_type(self):
         self.insert('opsi_month_boss', {'GearDesignPlanT5': 1}, self.now - timedelta(hours=1), 'boss')
-        with closing(sqlite3.connect(AzurStats.LOCAL_DB)) as connection, opsi_secure.immediate_transaction(connection):
+        with closing(sqlite3.connect(AzurStats._database().path)) as connection, opsi_secure.immediate_transaction(connection):
             connection.row_factory = sqlite3.Row
-            row = dict(connection.execute("SELECT * FROM opsi_items WHERE imgid='boss'").fetchone())
-            payload = opsi_secure.decode_record('loot', row['secure_payload'], opsi_secure.row_context('loot', row))
-            payload.update(zone='', zone_type='UNKNOWN', hazard_level=0)
-            connection.execute("UPDATE opsi_items SET secure_payload=? WHERE imgid='boss'",
-                               (opsi_secure.serialize_obj(payload),))
+            connection.execute("UPDATE opsi_items SET zone='',zone_type='UNKNOWN',hazard_level=0 WHERE imgid='boss'")
         summary = self.collect()
         self.assertEqual(summary['records'][0][2], '月度Boss海域')
         self.assertEqual(summary['total'], 1)
@@ -413,7 +409,7 @@ class TestSchema(unittest.TestCase):
                  'tag': None, 'device_id': DEVICE, 'instance': INSTANCE,
                  'genre': 'opsi_abyssal', 'combat_count': 0, 'created_at': 1}
             ])
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB)) as conn:
+            with closing(sqlite3.connect(AzurStats._database().path)) as conn:
                 count = conn.execute('SELECT COUNT(*) FROM opsi_items').fetchone()[0]
             self.assertEqual(count, 1)
 

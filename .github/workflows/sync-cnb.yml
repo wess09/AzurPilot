@@ -1,0 +1,59 @@
+name: sync2cnb
+on:
+  push:
+    branches:
+      - master
+      - dev
+  workflow_dispatch:
+
+# 镜像同步使用独立凭据；限制默认 GITHUB_TOKEN 权限。
+permissions:
+  contents: read
+
+jobs:
+  repo-sync:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cnb-sync-${{ github.ref }}
+      cancel-in-progress: false
+    env:
+      cnb_token: ${{ secrets.CNB_TOKEN }}
+      cnb_user: ${{ secrets.CNB_USER }}
+      cnb_repo: ${{ secrets.CNB_REPO }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Mask sensitive values
+        env:
+          MASK_OWNER: ${{ github.repository_owner }}
+          MASK_REPO: ${{ github.event.repository.name }}
+          MASK_TARGET: ${{ secrets.CNB_REPO }}
+        run: |
+          echo "::add-mask::${MASK_OWNER}"
+          echo "::add-mask::${MASK_REPO}"
+          echo "::add-mask::${MASK_TARGET}"
+
+      - name: sync
+        if: env.cnb_token && env.cnb_user && env.cnb_repo
+        env:
+          CNB_USER: ${{ secrets.CNB_USER }}
+          CNB_TOKEN: ${{ secrets.CNB_TOKEN }}
+          CNB_REPO: ${{ secrets.CNB_REPO }}
+        run: |
+          git remote remove upstream-cnb 2>/dev/null || true
+          git remote add upstream-cnb "https://${CNB_USER}:${CNB_TOKEN}@cnb.cool/${CNB_REPO}.git"
+          for attempt in 1 2 3 4 5; do
+            if git push --force --progress upstream-cnb "HEAD:${GITHUB_REF}"; then
+              exit 0
+            else
+              status=$?
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              exit "$status"
+            fi
+            echo "CNB 推送失败，准备第 $((attempt + 1))/5 次尝试"
+            sleep "$((attempt * 2))"
+          done

@@ -12,7 +12,7 @@ from module.api.protocol import ApiError
 from module.config.transaction import config_transaction
 from module.runtime.account_vault import SecretKey
 from module.runtime.game_data import INSTANCE_FIELD, GameDataProtector
-from module.scheduler.store import ProgramStore
+from module.scheduler.history_store import AuthenticatedHistoryStore
 
 
 class StockExchangeRecovery:
@@ -41,7 +41,7 @@ class StockExchangeRecovery:
             return plan
         if scope != plan['scope']:
             raise ApiError('STOCK_REBUILD_SCOPE_CHANGED', '重建范围已变化，请重新确认', plan)
-        store = ProgramStore(self.protection.root / 'config')
+        store = AuthenticatedHistoryStore(self.protection.root / 'config')
         with ExitStack() as locks:
             # 与资源写入保持相同锁顺序；重建不改变调度程序、变量和最新资源记录。
             for name in plan['affectedInstances']:

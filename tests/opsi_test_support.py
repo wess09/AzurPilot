@@ -9,6 +9,9 @@ def install_store(case, folder):
     if not root.is_relative_to(Path(tempfile.gettempdir()).resolve()):
         raise RuntimeError('测试目录未隔离')
     (root / 'config').mkdir(exist_ok=True)
+    from module.persistence.database import _directory
+    token = _directory.set(root / 'config')
+    case.addCleanup(_directory.reset, token)
     previous = opsi_secure._STORE
     store = opsi_secure.StatsStore(root)
     opsi_secure.set_store(store)

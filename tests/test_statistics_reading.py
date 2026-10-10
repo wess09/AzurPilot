@@ -22,7 +22,7 @@ class StatisticsReadingTests(unittest.TestCase):
         self.database = Cl1Database(self.root / 'config/cl1_data.db')
         self.ships = self.root / 'log/cl1/inst/ship_exp_data.json'
         self.ships.write_text('{"battle_times": {"samples": [52.0], "average": 52.0}}', encoding='utf-8')
-        self.configs = SimpleNamespace(path=lambda _: self.root / 'config/inst.json')
+        self.configs = SimpleNamespace(directory=self.root / 'config', path=lambda _: self.root / 'config/inst.json')
         self.enterContext(patch('module.statistics.cl1_database.db', self.database))
         self.enterContext(patch('module.statistics.opsi_month.cl1_db', self.database))
         self.enterContext(patch('module.statistics.ship_exp_stats.ShipExpStats',
@@ -53,17 +53,17 @@ class StatisticsReadingTests(unittest.TestCase):
         self.assertEqual(self.database.get_stats('inst', '2026-09')['meow_battle_raw_count'], result['battle_count'])
 
     def test_fingerprint_tracks_wal_changes_without_overview_events(self):
-        original = get_statistics_fingerprint('inst')
+        original = get_statistics_fingerprint('inst', self.root / 'config')
         from module.api import statistics_service
         stat = statistics_service.os.stat
 
-        def changed(path):
-            if path == './config/cl1_data.db-wal':
+        def changed(path, **kwargs):
+            if str(path).endswith('azurpilot.db-wal'):
                 return SimpleNamespace(st_mtime_ns=987654321, st_size=4096)
-            return stat(path)
+            return stat(path, **kwargs)
 
         with patch.object(statistics_service.os, 'stat', side_effect=changed):
-            self.assertNotEqual(get_statistics_fingerprint('inst'), original)
+            self.assertNotEqual(get_statistics_fingerprint('inst', self.root / 'config'), original)
 
 
 if __name__ == '__main__':

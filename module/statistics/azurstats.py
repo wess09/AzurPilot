@@ -11,7 +11,6 @@
 
 import threading
 import hashlib
-import io
 from contextlib import closing
 import os
 import sqlite3
@@ -25,7 +24,6 @@ import cv2
 
 from module.base.utils import area_pad, save_image
 from module.logger import logger
-from module.statistics import opsi_secure
 from module.statistics.drop_cleanup import cleanup_drop_screenshots_if_due
 from module.statistics.utils import pack
 from module.base.device_id import get_device_id
@@ -214,7 +212,7 @@ class AzurStats:
 
     @staticmethod
     def _meowofficer_farming_path(instance=None):
-        """实例缓存使用独立文件；无实例参数保留旧版全局 CSV 的访问方式。"""
+        """提供旧 CSV 路径，供迁移与显式导出工具定位。"""
         if instance is None:
             return AzurStats.LOCAL_MEOW_CSV
         # 不将实例名直接拼成路径，避免大小写、特殊字符和路径分隔符冲突。
@@ -224,111 +222,63 @@ class AzurStats:
 
     @staticmethod
     def load_meowofficer_farming(instance=None):
-        """读取指定实例的汇总，缺失时从明细重算，绝不借用全局 CSV。
-
-        无实例参数仅用于兼容旧版全局汇总，不能用作实例页的数据源。
-        旧版本的加密文件由读取路径解密；暂不可读时保留现有缓存。
-        """
-        path = AzurStats._meowofficer_farming_path(instance)
-        try:
-            text = open(path, encoding='utf-8').read()
-            if text.startswith((opsi_secure.BLOB_PREFIX, opsi_secure.LEGACY_PREFIX)):
-                payload = opsi_secure.decode_record('loot', text, opsi_secure.file_context(
-                    opsi_secure.get_store().root, 'loot', path))
-                if payload is None:
-                    if opsi_secure.get_store().vault_keys().definitive():
-                        # 旧载荷确认无法在本机读取：另存到旁路备份后按明细重算重写。
-                        opsi_secure.quarantine_unreadable('loot', str(path), text)
-                        return AzurStats.get_meowofficer_farming(instance=instance)
-                    raise opsi_secure.StoreUnavailable('统计缓存暂不可用')
-                data = np.array(payload['rows'], dtype=float)
-            else:
-                data = np.loadtxt(io.StringIO(text), delimiter=',', dtype=float, skiprows=1)
-            if data.shape != (6, len(AzurStats.meowofficer_farming_labels)):
-                raise ValueError('统计缓存形状不匹配')
-        except opsi_secure.StoreUnavailable:
-            # 旧密文尚未解密：保留现有缓存，不从暂不可读的明细重算。
-            return np.zeros((6, len(AzurStats.meowofficer_farming_labels)))
-        except (OSError, ValueError, KeyError, TypeError):
+        """读取缓存保持刷新时间；实例缺失时仅重算该实例的明细。"""
+        with AzurStats._database().transaction(write=False) as connection:
+            rows = connection.execute('''SELECT hazard_level, recorded_at, effective_rounds,
+                average_yellow_coin, average_plate, average_abyssal, average_obscure
+                FROM farming_aggregates WHERE scope_key=? ORDER BY hazard_level''',
+                (AzurStats._farming_scope(instance),)).fetchall()
+        if len(rows) != 6:
             return AzurStats.get_meowofficer_farming(instance=instance)
-        return data
+        return np.array([tuple(row) for row in rows], dtype=float)
+
+    @staticmethod
+    def _database():
+        from module.persistence.database import for_legacy_path
+        database = for_legacy_path(AzurStats.LOCAL_DB, 'statistics')
+        # 自定义旧缓存路径仅作为首次迁移来源；运行期间不再读写 CSV。
+        if AzurStats.LOCAL_MEOW_CSV != './log/azurstat_meowofficer_farming.csv':
+            from pathlib import Path
+            path = Path(AzurStats.LOCAL_MEOW_CSV).absolute()
+            for candidate in path.parent.glob(path.stem + '*.csv'):
+                database.add_legacy_source('farming', candidate)
+        return database
 
     @staticmethod
     def _ensure_local_db():
-        os.makedirs(os.path.dirname(AzurStats.LOCAL_DB) or '.', exist_ok=True)
-        with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn, conn:
-            # 跨进程先拿写锁，再检查列，避免两个进程同时执行 ALTER TABLE。
-            conn.execute('BEGIN IMMEDIATE')
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS opsi_items (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    imgid TEXT NOT NULL,
-                    server TEXT,
-                    zone TEXT,
-                    zone_type TEXT,
-                    zone_id INTEGER,
-                    hazard_level INTEGER,
-                    item TEXT,
-                    amount INTEGER,
-                    tag TEXT,
-                    device_id TEXT,
-                    instance TEXT,
-                    genre TEXT,
-                    combat_count INTEGER,
-                    created_at INTEGER,
-                    secure_payload TEXT
-                )
-            ''')
-            columns = {row[1] for row in conn.execute('PRAGMA table_info(opsi_items)')}
-            if 'instance' not in columns:
-                # 旧记录没有可靠的实例身份，NULL 明确表示历史共享，禁止推断归属。
-                conn.execute('ALTER TABLE opsi_items ADD COLUMN instance TEXT')
-            if 'secure_payload' not in columns:
-                # 物品与数量等列存放在这一列（JSON 文本）。
-                conn.execute('ALTER TABLE opsi_items ADD COLUMN secure_payload TEXT')
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_opsi_items_instance_device_genre '
-                         'ON opsi_items(instance, device_id, genre)')
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_opsi_items_device_genre ON opsi_items(device_id, genre)')
-            conn.execute('CREATE INDEX IF NOT EXISTS idx_opsi_items_imgid ON opsi_items(imgid)')
-            conn.commit()
+        AzurStats._database().ensure_ready()
+
+    @staticmethod
+    def _farming_scope(instance):
+        if instance is None:
+            return 'global'
+        key = hashlib.sha256(f'{get_device_id()}\0{instance}'.encode('utf-8')).hexdigest()
+        return 'instance-' + key
 
     @staticmethod
     def _insert_local_opsi_items(rows):
         if not rows:
             return 0
-
-        AzurStats._ensure_local_db()
-        # 兼容旧版离线导入；缺少身份的记录仍属于历史共享。
-        rows = [dict(row, instance=row.get("instance")) for row in rows]
-        with AzurStats._local_lock:
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn:
-                with opsi_secure.immediate_transaction(conn):
-                    for row in rows:
-                        cursor = conn.execute('INSERT INTO opsi_items (imgid, device_id, instance, genre, created_at) '
-                                              'VALUES (:imgid,:device_id,:instance,:genre,:created_at)', row)
-                        row = dict(row, id=cursor.lastrowid)
-                        payload = {key: row.get(key) for key in opsi_secure.LOOT_SECURE_FIELDS}
-                        conn.execute('UPDATE opsi_items SET secure_payload=? WHERE id=?',
-                                     (opsi_secure.serialize_obj(payload), row['id']))
+        from module.persistence.database import register_instance
+        from module.persistence.snapshots import insert
+        fields = ('imgid', 'instance', 'device_id', 'genre', 'server', 'zone', 'zone_type',
+                  'zone_id', 'hazard_level', 'item', 'amount', 'tag', 'combat_count', 'created_at')
+        with AzurStats._local_lock, AzurStats._database().transaction() as connection:
+            for row in rows:
+                register_instance(connection, row.get('instance'))
+                insert(connection, 'opsi_items', {name: row.get(name) for name in fields})
         return len(rows)
 
     @staticmethod
     def _unseal_rows(rows):
-        """把载荷列还原出物品列；旧密文暂不可读时保持这些字段为空。"""
-        for row in rows:
-            value = row.pop('secure_payload', None)
-            if not value:
-                continue
-            payload = opsi_secure.decode_record('loot', value, opsi_secure.row_context('loot', row))
-            if payload:
-                row.update(payload)
+        """物品明细直接来自原生列，保留调用方的列表结构。"""
         return rows
 
     @staticmethod
     def _load_local_opsi_items(device_id=None, genre='opsi_meowfficer_farming', instance=None, connection=None):
         if connection is None:
             AzurStats._ensure_local_db()
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn:
+            with AzurStats._database().transaction(write=False) as conn:
                 return AzurStats._load_local_opsi_items(device_id, genre, instance, connection=conn)
         query = 'SELECT * FROM opsi_items WHERE 1=1'
         params = []
@@ -386,7 +336,7 @@ class AzurStats:
             params.append(int(end))
         query += ' ORDER BY created_at ASC, id ASC'
         try:
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn:
+            with AzurStats._database().transaction(write=False) as conn:
                 conn.row_factory = sqlite3.Row
                 return AzurStats._unseal_rows([dict(row) for row in conn.execute(query, params).fetchall()])
         except sqlite3.Error:
@@ -394,66 +344,51 @@ class AzurStats:
             return []
 
     @staticmethod
-    def _write_meowofficer_farming(data, instance=None):
-        """原子替换汇总文件，读取者只会看到完整的新旧版本。"""
-        path = AzurStats._meowofficer_farming_path(instance)
-        stream = io.StringIO()
-        np.savetxt(stream, data, delimiter=',', header=','.join(AzurStats.meowofficer_farming_labels),
-                   comments='', fmt='%f')
-        try:
-            opsi_secure.write_file('loot', path, stream.getvalue())
-        except OSError:
-            logger.warning('[统计-大世界] 短猫收益汇总写入失败', exc_info=True)
+    def _write_meowofficer_farming(data, instance=None, *, connection=None):
+        """原子替换六个等级的汇总；刷新与明细读取可共享事务。"""
+        from module.persistence.database import register_instance
+        if connection is None:
+            with AzurStats._database().transaction() as connection:
+                return AzurStats._write_meowofficer_farming(data, instance, connection=connection)
+        data = np.asarray(data)
+        if data.shape != (6, len(AzurStats.meowofficer_farming_labels)) or not np.isfinite(data).all():
+            raise ValueError('收益缓存需要六个等级的有限数值')
+        if list(data[:, 0]) != [1, 2, 3, 4, 5, 6]:
+            raise ValueError('收益缓存等级必须按 1 到 6 排列')
+        register_instance(connection, instance)
+        scope = AzurStats._farming_scope(instance)
+        connection.execute('DELETE FROM farming_aggregates WHERE scope_key=?', (scope,))
+        connection.executemany('''INSERT INTO farming_aggregates
+            (scope_key,hazard_level,instance,device_id,source_kind,source_file,recorded_at,
+             effective_rounds,average_yellow_coin,average_plate,average_abyssal,average_obscure)
+            VALUES(?,?,?,?,'computed',NULL,?,?,?,?,?,?)''',
+            [(scope, int(row[0]), instance, get_device_id(), int(row[1]), *map(float, row[2:])) for row in data])
 
     @staticmethod
     def get_meowofficer_farming(instance=None):
-        """重算指定实例的收益；无参数时保留旧版全局导出用途。
-
-        用 SQLite 写事务串行化明细读取和缓存替换，防止跨进程刷新将
-        新快照覆盖成旧快照。旧记录的 NULL 身份不会匹配任何实例。
-        """
-        AzurStats._ensure_local_db()
-        with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn, conn:
-            conn.execute('BEGIN IMMEDIATE')
-            all_data = AzurStats._load_local_opsi_items(
-                device_id=get_device_id(),
-                genre='opsi_meowfficer_farming',
-                instance=instance, connection=conn,
-            )
+        """在同一个写事务中按原截图分组口径重算并提交缓存。"""
+        with AzurStats._database().transaction() as connection:
+            rows = connection.execute('''WITH selected AS (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY instance,device_id,imgid ORDER BY id) AS capture_row
+                FROM opsi_items WHERE device_id=? AND genre='opsi_meowfficer_farming'
+                    AND (? IS NULL OR instance=?) AND hazard_level BETWEEN 1 AND 6
+            ) SELECT hazard_level,
+                SUM(CASE WHEN capture_row=1 THEN COALESCE(combat_count,0) ELSE 0 END) AS combats,
+                SUM(CASE WHEN substr(item,1,13)='OperationCoin' THEN COALESCE(amount,0) ELSE 0 END) AS coins,
+                SUM(CASE WHEN substr(item,1,5)='Plate' THEN COALESCE(amount,0) ELSE 0 END) AS plates,
+                SUM(CASE WHEN substr(item,1,17)='CoordinateAbyssal' THEN COALESCE(amount,0) ELSE 0 END) AS abyssal,
+                SUM(CASE WHEN substr(item,1,17)='CoordinateObscure' THEN COALESCE(amount,0) ELSE 0 END) AS obscure
+                FROM selected GROUP BY hazard_level''', (get_device_id(), instance, instance)).fetchall()
             out_data = np.zeros((6, len(AzurStats.meowofficer_farming_labels)))
-            img_combat_counts = {}
-
-            for row in all_data:
-                imgid = (row.get('instance'), row.get('device_id'), row.get('imgid'))
-                h_level = row.get('hazard_level')
-                if not h_level or h_level < 1 or h_level > 6:
-                    continue
-
-                combat_count = row.get('combat_count', 0)
-                if imgid not in img_combat_counts:
-                    img_combat_counts[imgid] = combat_count
-                    out_data[h_level - 1, 2] += combat_count
-
-                item_name = row.get('item')
-                amount = row.get('amount', 0)
-
-                for i, item_prefix in enumerate(AzurStats.meowofficer_farming_map):
-                    if item_name.startswith(item_prefix):
-                        out_data[h_level - 1, 3 + i] += amount
-                        break
-            current_time = int(datetime.timestamp(datetime.now()))
-
-            for i in range(6):
-                h = i + 1
-                out_data[i, 0] = h
-                out_data[i, 1] = current_time
-                out_data[i, 2] /= AzurStats.unit_combat_count[h]
-
-                if out_data[i, 2] > 0:
-                    for j in range(3, len(AzurStats.meowofficer_farming_labels)):
-                        out_data[i, j] /= out_data[i, 2]
-
-            AzurStats._write_meowofficer_farming(out_data, instance=instance)
+            out_data[:, 0] = np.arange(1, 7)
+            out_data[:, 1] = int(datetime.timestamp(datetime.now()))
+            for row in rows:
+                hazard = row['hazard_level']
+                rounds = row['combats'] / AzurStats.unit_combat_count[hazard]
+                out_data[hazard - 1, 2] = rounds
+                amounts = [row[name] for name in ('coins', 'plates', 'abyssal', 'obscure')]
+                out_data[hazard - 1, 3:] = np.array(amounts) / rounds if rounds > 0 else amounts
+            AzurStats._write_meowofficer_farming(out_data, instance, connection=connection)
             logger.info(f'[Statistics] 本地统计数据更新成功: {instance or "全局共享"}')
             return out_data
 
@@ -526,7 +461,7 @@ class AzurStats:
         scope = ' AND instance = ?' if instance is not None else ''
         params = (month_start, month_end, device_id) + ((instance,) if instance is not None else ())
         try:
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn:
+            with AzurStats._database().transaction(write=False) as conn:
                 conn.row_factory = sqlite3.Row
                 rows = AzurStats._unseal_rows([dict(row) for row in conn.execute(
                     "SELECT * FROM opsi_items "
@@ -571,7 +506,7 @@ class AzurStats:
         scope = ' AND instance = ?' if instance is not None else ''
         params = (device_id,) + ((instance,) if instance is not None else ()) + (limit,)
         try:
-            with closing(sqlite3.connect(AzurStats.LOCAL_DB, timeout=30)) as conn:
+            with AzurStats._database().transaction(write=False) as conn:
                 rows = conn.execute(
                     "SELECT DISTINCT strftime('%Y-%m', created_at, 'unixepoch') AS ym "
                     "FROM opsi_items WHERE genre='opsi_meowfficer_farming' AND device_id = ? "

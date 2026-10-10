@@ -11,13 +11,13 @@ ALAS 只在领奖时实时统计；手上已有的历史截图（自己留的、
     uv run python -m dev_tools.research_drop_import --folder "<截图目录>" --instance 测试
     # 写另一份部署的数据（数据库路径跟代码所在目录，不是当前目录，所以要显式指定）
     uv run python -m dev_tools.research_drop_import --folder "<截图目录>" --instance 测试 \
-        --db "D:/AzurPilot/config/cl1_data.db"
+        --db "D:/AzurPilot/config/azurpilot.db"
 
 说明：
 - 只有「队列页 + 获得道具」的截图会被导入；军部研究室主页那种多半没有掉落，归到「无掉落」。
   （科研主页领奖也可能带收获，那类记录没有队列页，期数会是 0，只在金装、心智/物资视图里出现。）
 - 已经在库里的记录按 imgid 跳过，所以可以放心重跑；
-- 只往本地 cl1_data.db 追加，不联网，也不碰别的实例。
+- 只往本地 azurpilot.db 追加，不联网，也不碰别的实例。
 """
 
 import argparse
@@ -87,7 +87,7 @@ def main():
     parser.add_argument('--server', default='cn', choices=['cn', 'en', 'jp', 'tw'],
                         help='游戏服务器，影响截图资源')
     parser.add_argument('--db', default=None,
-                        help='cl1_data.db 的路径；缺省用本仓库的 config/cl1_data.db。'
+                        help='azurpilot.db 的路径；缺省用本仓库的 config/azurpilot.db。'
                              '要写另一份部署的数据时显式指定——数据库路径跟的是'
                              '**代码所在目录**，不是当前工作目录')
     parser.add_argument('--dry-run', action='store_true',
@@ -119,9 +119,13 @@ def main():
     from module.statistics.cl1_database import Cl1Database
     from module.statistics.research_drop import get_parser
 
-    # 单独建一个实例而不是用模块级的 db：数据库路径默认跟代码所在目录，
+    # 单独建一个实例而不是用模块级的 db：默认连接运行入口选定的普通总库，
     # 想把数据写进另一份部署就必须显式指定，所以这里把路径打出来。
-    db = Cl1Database(Path(args.db)) if args.db else Cl1Database()
+    from module.persistence.database import get_database
+    database = get_database(Path(args.db).absolute().parent) if args.db else get_database()
+    if args.db and Path(args.db).name != 'azurpilot.db':
+        database.add_legacy_source('cl1', args.db)
+    db = Cl1Database(store=database)
     logger.info(f'[科研导入] 数据库 {db.db_path}')
 
     parser_ = get_parser()

@@ -243,8 +243,9 @@ class Session:
             request_id = None
             decoded = None
             try:
-                if len(raw.encode()) > 1024 * 1024:
-                    raise ApiError('INVALID_REQUEST', '请求超过 1 MiB 限制')
+                size = len(raw.encode())
+                if size > 8 * 1024 * 1024:
+                    raise ApiError('INVALID_REQUEST', '请求超过 8 MiB 限制')
                 now = time.monotonic()
                 if now - self.window > 1:
                     self.window, self.requests = now, 0
@@ -253,6 +254,8 @@ class Session:
                 if isinstance(decoded, dict) and isinstance(decoded.get('id'), str):
                     request_id = decoded['id'][:100]
                 request = Request.model_validate(decoded)
+                if size > 1024 * 1024 and request.method not in ('mind.import', 'mind.recognize', 'mind.save', 'mind.calculate'):
+                    raise ApiError('INVALID_REQUEST', '请求超过 1 MiB 限制')
                 if request.method in ('stock.request', 'stock.status'):
                     self.requests -= 1
                 if self.requests > 30 and request.method not in ('stock.request', 'stock.status'):
@@ -353,7 +356,7 @@ class Session:
                 self.topic_seen['statistics'] = time.monotonic()
                 try:
                     from module.api.statistics_service import get_statistics_fingerprint
-                    stats_fp = await asyncio.to_thread(get_statistics_fingerprint, subscription.instance)
+                    stats_fp = await asyncio.to_thread(get_statistics_fingerprint, subscription.instance, self.gateway.router.configs.directory)
                     if subscription is self.subscription:
                         old_fp = self.cache.get('statistics')
                         if old_fp is not None and old_fp != stats_fp:

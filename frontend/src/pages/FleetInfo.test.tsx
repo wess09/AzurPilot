@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
 import { translateUi } from '../i18n'
-import { FleetInfo } from './TaskConfig'
+import { FleetInfo } from './FleetInfoPage'
 
 function render(value: unknown) {
   return renderToStaticMarkup(<AppContext.Provider value={{

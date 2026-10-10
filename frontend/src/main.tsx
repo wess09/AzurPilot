@@ -38,17 +38,19 @@ class ErrorBoundary extends Component<{children: ReactNode}, {failed: boolean}> 
 }
 const SchedulerProgram = lazy(() => import('./pages/SchedulerProgram').then(module => ({default: module.SchedulerProgram})))
 const StockExchange = lazy(() => import('./pages/StockExchange').then(module => ({default: module.StockExchange})))
-const ResourceManagement = lazy(() => import('./pages/ResourceManagement').then(module => ({default: module.ResourceManagement})))
+const MindCalculator = lazy(() => import('./pages/MindCalculator').then(module => ({default: module.MindCalculator})))
 
 const router = createHashRouter([
   {path: '/', element: <App/>, errorElement: <ErrorPage/>, children: [{index: true, element: <Home/>}, {path: 'announcement', element: <Announcement/>}, {path: 'interface', element: <InterfaceSettings/>}, {path: 'remote', element: <RemoteAccess/>}, {path: 'settings', element: <Settings/>}, {path: 'updater', element: <Updater/>}, {path: 'configs', element: <ConfigManager/>}, {path: 'dev', element: <DevControls/>}]},
   {path: '/i/:instance', element: <App/>, errorElement: <ErrorPage/>, children: [
     {index: true, element: <Navigate to="overview" replace/>},
     {path: 'overview', element: <Overview/>}, {path: 'task/:task', element: <TaskConfig/>},
-    {path: 'resources', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><ResourceManagement/></Suspense>},
+    {path: 'mind-calculator', element: <Navigate to="../task/MindCalculator" replace/>},
+    {path: 'resources', element: <Navigate to="../statistics?view=management" replace/>},
     {path: 'stock-exchange', element: <StockExchangeBoundary><Suspense fallback={<StockExchangeFallback/>}><StockExchange/></Suspense></StockExchangeBoundary>},
     {path: 'logs', element: <Navigate to="../overview" replace/>}, {path: 'statistics', element: <Statistics/>}, {path: 'scheduler', element: <Navigate to="../task/SchedulerProgram" replace/>}, {path: 'settings', element: <Navigate to="/settings" replace/>},
     {path: 'task/SchedulerProgram', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><SchedulerProgram/></Suspense>},
+    {path: 'task/MindCalculator', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><MindCalculator/></Suspense>},
   ]},
   {path: '*', element: <Navigate to="/" replace/>},
 ])
