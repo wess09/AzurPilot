@@ -32,6 +32,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         self.enterContext(patch('module.base.backup.backup'))
         self.enterContext(patch('module.runtime.preview.set_task'))
         self.enterContext(patch.dict('os.environ', {'ALAS_DEBUG_SERVER': '0'}))
+        self.enterContext(patch('module.runtime.scheduler_lock.acquire_scheduler_lock', return_value=None))
 
     def make_script(self, *, strict=False, sensitive=False):
         script = AzurLaneAutoScript('test')

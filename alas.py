@@ -109,6 +109,8 @@ class AzurLaneAutoScript:
         self.consecutive_adb_offline = 0
         # 未预期异常连续计数，先重启游戏，连续多次才重启模拟器
         self.consecutive_unexpected_error = 0
+        # 调度器独占锁句柄，见 loop()
+        self._scheduler_lock = None
         # ScriptError 连续计数，达到阈值后退出（代码 bug 重试无意义）
         self.script_error_count = 0
         # 上次计划重启模拟器的时间戳
@@ -2388,6 +2390,33 @@ class AzurLaneAutoScript:
         logger.set_file_logger(self.config_name)
         logger.info(f'[AzurPilot] 启动调度器循环: {self.config_name}')
 
+        from module.runtime.scheduler_lock import (
+            SchedulerLockConflict,
+            acquire_scheduler_lock,
+            release_scheduler_lock,
+        )
+        try:
+            self._scheduler_lock = acquire_scheduler_lock(self.config_name)
+        except SchedulerLockConflict:
+            logger.error_context(
+                title='同一配置已有调度器在运行',
+                reason=f'配置 `{self.config_name}` 的调度器锁被其他进程持有。',
+                impact='两个调度器同时操作同一模拟器会互相抢占连接和点击，本次启动已取消。',
+                action='先停止正在运行的实例（WebUI、命令行或脚本）后再启动。',
+                level=50,
+            )
+            exit(1)
+        except OSError as e:
+            # 锁文件不可用时不阻止启动，只失去重复启动保护
+            logger.warning(f'[Alas] 无法创建调度器锁，跳过重复启动检查：{e}')
+        try:
+            return self._loop()
+        finally:
+            release_scheduler_lock(self._scheduler_lock)
+            self._scheduler_lock = None
+
+    def _loop(self):
+        """调度器主循环，由 loop() 在持有调度器锁时调用。"""
         from module.config.utils import is_oobe_needed
 
         # 调度器本身需要先加载配置；日报关闭时不创建任何附加线程或服务。
