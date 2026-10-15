@@ -16,8 +16,12 @@
 配置项前缀：`MeowfficerTrain_*`
 """
 
+import numpy as np
+
 from module.base.button import ButtonGrid
 from module.base.timer import Timer
+from module.base.utils import color_mask
+from module.exception import GameStuckError
 from module.logger import logger
 from module.meowfficer.assets import *
 from module.meowfficer.base import MeowfficerBase
@@ -25,6 +29,7 @@ from module.meowfficer.buy import MEOWFFICER_COINS
 from module.ocr.ocr import Digit, DigitCounter
 from module.ui.assets import MEOWFFICER_GOTO_DORMMENU
 from module.ui.page import page_meowfficer
+from module.ui.scroll import Scroll
 
 MEOWFFICER_SELECT_GRID = ButtonGrid(
     origin=(751, 237), delta=(130, 147), button_shape=(70, 20), grid_shape=(4, 3),
@@ -36,6 +41,16 @@ MEOWFICER_FEED_LEVEL_GRID = ButtonGrid(
     origin=(738, 211), delta=(130, 148), button_shape=(20, 22), grid_shape=(4, 3),
     name='MEOWFFICER_FEED_LEVEL_GRID')
 MEOWFFICER_FEED = DigitCounter(OCR_MEOWFFICER_FEED, letter=(131, 121, 123), threshold=64)
+MEOWFFICER_ENHANCE_CAPACITY = DigitCounter(OCR_MEOWFFICER_CAPACITY, letter=(131, 121, 123), threshold=64)
+MEOWFFICER_CATTERY_SCROLL = Scroll(
+    area=(1247, 139, 1256, 549), color=(255, 222, 99), name='MEOWFFICER_CATTERY_SCROLL')
+
+# 选中虚线圈位于头像外缘；只检查其四侧，排除头像、等级与名字里的白色内容。
+_ring_y, _ring_x = np.ogrid[-63:64, -63:64]
+_ring_radius = _ring_x * _ring_x + _ring_y * _ring_y
+_ring_mask = (_ring_radius >= 52 * 52) & (_ring_radius <= 61 * 61)
+_ring_sides = tuple(_ring_mask & side for side in (
+    _ring_x < -35, _ring_x > 35, _ring_y < -35, _ring_y > 35))
 
 
 class MeowfficerLevelOcr(Digit):
@@ -75,10 +90,31 @@ class MeowfficerEnhance(MeowfficerBase):
         config.MeowfficerTrain_EnhanceIndex (int): 目标指挥喵在网格中的位置索引（1~12）。
         config.MeowfficerTrain_MaxFeedLevel (int): 喂养材料的最大等级限制（1~30）。
     """
+    def _meow_cattery_at_top(self):
+        """正向确认猫窝滚动条位于顶部；无滚动条时核对猫数量。"""
+        thumb = np.flatnonzero(MEOWFFICER_CATTERY_SCROLL.match_color(self))
+        if len(thumb):
+            # 滑块圆角使首个匹配像素比轨道起点低 3 像素。
+            return thumb[0] <= 4
+        current, _, total = MEOWFFICER_ENHANCE_CAPACITY.ocr(self.device.image)
+        return total > 0 and 0 < current <= 12
+
+    def _meow_target_selected(self, x, y):
+        """确认目标头像外缘四侧均有黄色虚线，并伴随白色选中圈。"""
+        x1, y1, x2, _ = MEOWFFICER_SELECT_GRID[x, y].area
+        cx, cy = int((x1 + x2) / 2), int(y1 - 47)
+        ring = self.device.image[cy - 63:cy + 64, cx - 63:cx + 64]
+        if ring.shape != (127, 127, 3):
+            return False
+        yellow = color_mask(ring, (255, 215, 90), threshold=45) > 0
+        white = color_mask(ring, (255, 255, 255), threshold=15) > 0
+        return (np.count_nonzero(white & _ring_mask) >= 200
+                and all(np.count_nonzero(yellow & side) >= 10 for side in _ring_sides))
+
     def _meow_select(self, skip_first_screenshot=True):
         """在指挥喵选择网格（4x3）中选中目标指挥喵。
 
-        点击后通过目标指挥喵周围出现的黄色虚线圆环确认选中。
+        先正向确认猫窝列表归位，再点击目标并等待外缘黄白虚线圈稳定。
 
         Args:
             skip_first_screenshot (bool): 是否跳过首次截图。默认为 True。
@@ -88,8 +124,11 @@ class MeowfficerEnhance(MeowfficerBase):
         x = index if index < 4 else index % 4
         y = index // 4
 
-        # 必须确认选中：目标指挥喵周围出现黄白色虚线圈
         click_timer = Timer(3, count=6)
+        scroll_timer = Timer(1, count=2)
+        top_timer = Timer(0.6, count=2).start()
+        selected_timer = Timer(0.6, count=2).start()
+        clicked = False
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -97,14 +136,36 @@ class MeowfficerEnhance(MeowfficerBase):
                 self.device.screenshot()
 
             if self.meow_additional():
+                clicked = False
                 click_timer.reset()
+                top_timer.reset()
+                selected_timer.reset()
                 continue
 
-            if self.image_color_count(MEOWFFICER_SELECT_GRID[x, y], color=(255, 255, 255), threshold=9, count=100):
-                break
+            if not self._meow_cattery_at_top():
+                clicked = False
+                top_timer.reset()
+                selected_timer.reset()
+                if scroll_timer.reached():
+                    logger.info('[指挥喵-强化] 猫窝列表未归位，滑回顶部')
+                    self.device.swipe((1100, 180), (1100, 500), duration=(0.6, 0.6),
+                                      name='MEOWFFICER_RESET_LIST')
+                    scroll_timer.reset()
+                continue
+            if not top_timer.reached():
+                continue
+
+            # 即使旧截图看似已有选中圈，也先点击一次，再使用新截图确认。
+            if clicked and self._meow_target_selected(x, y):
+                if selected_timer.reached():
+                    logger.attr('强化目标已选中', index + 1)
+                    break
+                continue
+            selected_timer.reset()
 
             if click_timer.reached():
                 self.device.click(MEOWFFICER_FEED_GRID[x, y])
+                clicked = True
                 click_timer.reset()
 
     def meow_feed_scan(self):
@@ -363,7 +424,10 @@ class MeowfficerEnhance(MeowfficerBase):
             # 选中目标指挥喵
             self._meow_select()
 
-            if self._meow_get_level() >= 30:
+            level = self._meow_get_level()
+            if not 1 <= level <= 30:
+                raise GameStuckError(f'[指挥喵-强化] 目标等级识别无效: {level}')
+            if level == 30:
                 logger.info('[指挥喵-强化] 当前指挥喵已满级')
                 return 'leveled_max'
 
@@ -407,20 +471,6 @@ class MeowfficerEnhance(MeowfficerBase):
 
         封装 `_meow_enhance()`；若当前目标指挥喵达到满级（30级），会自动递增索引强化下一只，直至第 12 只满级后禁用。
         """
-        while 1:
-            result = self._meow_enhance()
-            if result not in ['leveled_max']:
-                break
-
-            # 仅针对满级情况递增索引
-            if self.config.MeowfficerTrain_EnhanceIndex < 12:
-                self.config.MeowfficerTrain_EnhanceIndex += 1
-                logger.info(f'[指挥喵-强化] 强化索引增加至 {self.config.MeowfficerTrain_EnhanceIndex}')
-                continue
-            else:
-                logger.warning('[指挥喵-强化] 第12只指挥喵达到30级，禁用指挥喵训练')
-                self.config.MeowfficerTrain_Enable = False
-                break
         while 1:
             result = self._meow_enhance()
             if result not in ['leveled_max']:
