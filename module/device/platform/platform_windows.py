@@ -573,12 +573,89 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 return True
         return False
 
+    @staticmethod
+    def _mumu12_install_root(exe):
+        """从模拟器主程序路径推导所属 MuMu 安装目录。
+
+        用于把「按进程名清理残留」限制在本安装目录内。多套 MuMu 安装（例如
+        `E:/AzurLane` 与 `E:/Mumu`）各自的 MuMuManager 都只认自己 `vms` 目录下的
+        实例，互相看不见对方；只按进程名清理就会跨安装误杀。实测 exe
+        `E:/AzurLane/nx_main/MuMuNxMain.exe`、`E:/Mumu/shell/MuMuPlayer.exe`
+        的上一层父目录即安装根，因此取「父目录的父目录」。
+
+        Args:
+            exe (str): MuMu 主程序路径，如 `E:/AzurLane/nx_main/MuMuNxMain.exe`。
+
+        Returns:
+            str: 归一化（小写、正斜杠、无尾部斜杠）的安装目录；无法推导时返回 ''。
+        """
+        if not exe:
+            return ''
+        # 逐个去掉文件名与中间层目录（nx_main / shell），得到安装根
+        return os.path.normpath(os.path.dirname(os.path.dirname(exe))).replace('\\', '/').lower().rstrip('/')
+
+    @classmethod
+    def _mumu12_process_in_install(cls, proc, install_root, exe):
+        """判断某个进程是否属于指定的 MuMu 安装目录。
+
+        本项目要同时支持「多开（同安装多实例）」和「多套 MuMu 安装共存」
+        （0=明日方舟/MAA 在 `E:/Mumu`，1=碧蓝航线/ALAS 在 `E:/AzurLane`）。
+        进程名在两套安装之间完全相同（都用 MuMuPlayer.exe / MuMuNxMain.exe），
+        因此必须按可执行文件路径或命令行里的安装目录来区分。
+
+        判定不了的一律返回 False（宁可不清理，也不误杀别人的实例）：留在原地的
+        残留进程最多让下一次启动多试一轮，而误杀会直接关掉另一个正在挂机的实例。
+
+        Args:
+            proc (psutil.Process): 待判定的进程。
+            install_root (str): 归一化后的目标安装目录，空串表示目标未知。
+            exe (str): 目标 MuMu 主程序路径，用于 'exe 路径缺失但命令行命中' 的回退。
+
+        Returns:
+            bool: True 表示该进程受本次清理管辖。
+        """
+        exe_path = ''
+        cmdline = ''
+        try:
+            exe_path = proc.exe() or ''
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+        try:
+            cmdline = ' '.join(proc.cmdline() or [])
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+        if not exe_path and not cmdline:
+            return False
+
+        exe_norm = (exe or '').replace('\\', '/').lower()
+        for text in (exe_path, cmdline):
+            if not text:
+                continue
+            # 归一化：反斜杠统一、小写、去掉引号。命令行的可执行文件路径通常被
+            # 引号包着（'"E:\Mumu\shell\MuMuPlayer.exe" -v 1'），不去引号的话
+            # 路径前缀匹配会以引号开头而失配，导致本该清理的残留被漏掉。
+            text = text.replace('\\', '/').replace('"', '').replace("'", '').lower()
+            if install_root:
+                # 加 '/' 边界，避免 `E:/Mumu/shell` 命中 `E:/Mumu/shellbackup`
+                if text == install_root or text.startswith(install_root + '/'):
+                    return True
+            if exe_norm and exe_norm in text:
+                return True
+        return False
+
     def _clean_mumu12_residue(self, exe, index):
         """清理 MuMu12 的僵死进程，为重新启动做准备。
 
-        多开安全：MuMu 各实例共用启动器与后台服务进程，按进程名清理会误伤
-        正在运行的其它实例。因此先查询实例状态，只有确认没有别的实例在跑
-        时才按名字清理；无法判定时同样不清理——宁可少清理，不可误杀。
+        多开安全（同安装多实例）：MuMu 各实例共用启动器与后台服务进程，按进程名
+        清理会误伤正在运行的其它实例。因此先查询实例状态，只有确认没有别的实例
+        在跑时才继续清理。
+
+        跨安装安全（多套 MuMu 共存）：本方法里的实例查询走的是本安装自己的
+        MuMuManager，它**只认自己 `vms` 目录下的实例**，看不见另一套 MuMu 安装。
+        所以还要按进程的可执行文件路径 / 命令行把清理范围限制在本安装目录内，
+        否则会杀掉另一套安装（例如明日方舟的 MuMuPlayer.exe）——这正是
+        「AzurPilot 把明日方舟模拟器一起关掉」的根因。
 
         Args:
             exe (str): MuMu 主程序路径。
@@ -595,14 +672,21 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             )
             return
 
+        install_root = self._mumu12_install_root(exe)
         has_mumu_process = False
-        for proc in psutil.process_iter(['name', 'cmdline']):
+        for proc in psutil.process_iter(['name']):
             try:
                 name = proc.info['name'] or ''
-                if name.lower() in MUMU12_RESIDUE_PROCESS_NAMES:
-                    has_mumu_process = True
-                    logger.warning(f'[设备-Windows] 检测到MuMu残留进程: {name} (PID={proc.pid})')
-                    proc.kill()
+                if name.lower() not in MUMU12_RESIDUE_PROCESS_NAMES:
+                    continue
+                if not self._mumu12_process_in_install(proc, install_root, exe):
+                    logger.info(
+                        f'[设备-Windows] 跳过非本安装的 MuMu 进程: {name} (PID={proc.pid})'
+                    )
+                    continue
+                has_mumu_process = True
+                logger.warning(f'[设备-Windows] 检测到MuMu残留进程: {name} (PID={proc.pid})')
+                proc.kill()
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         if has_mumu_process:
