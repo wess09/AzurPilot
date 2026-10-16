@@ -15,7 +15,7 @@ def _key(text):
 @lru_cache(maxsize=1)
 def _names(names):
     # 缓存键跟随共享目录，测试或资料重载后不会继续使用旧名单。
-    return tuple((name, _key(raw)) for name, raw in names)
+    return tuple((name, _key(name)) for name in names)
 
 
 def _similarity(read, name, truncated):
@@ -31,7 +31,7 @@ def _similarity(read, name, truncated):
     return score
 
 
-def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, aviation=False, surface=False):
+def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, aviation=False):
     """返回相似度不低的名单身份；低分、冲突或同分无证据时保留核对。
 
     卡框只用于区分相近的完整名单候选，计费稀有度始终取 Lua 资料。
@@ -42,8 +42,8 @@ def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, 
     if not reads or max(map(len, reads)) < 2:
         return None, '船名有效文字不足，待核对'
     ships = catalog()['ships']
-    names = _names(tuple((name, info['raw_name']) for name, info in ships.items()))
-    exact = {_key(info['raw_name']) for text in texts if (info := find_ship(text))}
+    names = _names(tuple(dict.fromkeys(info['name'] for info in ships.values())))
+    exact = {_key(info['name']) for text in texts if (info := find_ship(text))}
     exact.update(key for _, key in names if key in reads)
     if len(exact) > 1:
         return None, '多轮船名身份不一致，请核对'
@@ -61,8 +61,8 @@ def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, 
             if base and find_ship(base['name'] + 'II'):
                 return None, '罗马后缀未确认，待核对'
     ranked = []
-    for name, key in names:
-        info = ships[name]
+    for info in ships.values():
+        name, key = info['name'], _key(info['name'])
         if require_meta and info['group'] != 'META' or require_retrofit and info['group'] != '改造':
             continue
         scores = sorted((_similarity(read, key, ellipsis or text.endswith(('..', '…', '⋯')))
@@ -75,7 +75,15 @@ def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, 
         return None, f'国服 Lua 名单匹配度较低（{score:.0%}），待核对'
     best = ranked[0][0]
     close = [(score, info) for score, info in ranked if best - score <= .05]
-    if aviation and not surface:
+    same_names = {}
+    for _, info in close:
+        same_names.setdefault(_key(info['name']), set()).add(info['group_type'])
+    if any(len(ids) > 1 for ids in same_names.values()):
+        return None, '同名舰缺少唯一群组证据，待核对'
+    matching_rarity = [(score, info) for score, info in close if info['rarity'] == frame_rarity]
+    if matching_rarity:
+        close = matching_rarity
+    if aviation:
         # 航母、航战、潜母图标均含飞机字形，不能据此进一步细分。
         # 改造别名沿用基础舰种；战列改造可能转为航战，不能据基础舰种排除。
         close = [(score, info) for score, info in close
@@ -83,28 +91,12 @@ def match_lua_name(texts, frame_rarity='', *, ellipsis=False, meta_frame=False, 
                  or info['group'] == '改造' and info['type'] == '战列']
         if not close:
             return None, '国服 Lua 名单候选与航空图标不一致，待核对'
-    if surface and not aviation:
-        close = [(score, info) for score, info in close if info['type'] in ('战巡', '战列', '超巡')]
-        if not close:
-            return None, '国服 Lua 名单候选与炮舰图标不一致，待核对'
-    same_names = {}
-    for _, info in close:
-        same_names.setdefault(_key(info['raw_name']), []).append(info)
-    for rows in same_names.values():
-        if len({info['group_type'] for info in rows}) > 1:
-            note = '同名同舰种需要人工确认' if len({info['type'] for info in rows}) == 1 else '同名舰缺少唯一舰种图标证据'
-            return None, note
-    matching_rarity = [(score, info) for score, info in close if info['rarity'] == frame_rarity]
-    if matching_rarity:
-        close = matching_rarity
     # 改造的同名别名属于同一身份，不能把它们算作身份冲突。
-    identities = {(info['group_type'], info['group'], info['raw_name'].casefold().endswith('ii'))
+    identities = {(info['group_type'], info['group'], info['name'].casefold().endswith('ii'))
                   for _, info in close}
     if len(identities) != 1:
         return None, '国服 Lua 名单存在相近身份候选，待核对：' + ' / '.join(info['name'] for _, info in close[:3])
     info = close[0][1]
-    if info['raw_name'].casefold().endswith('ii') and sum(read.endswith('ii') for read in reads) < 2:
+    if info['name'].casefold().endswith('ii') and sum(read.endswith('ii') for read in reads) < 2:
         return None, '罗马后缀未确认，待核对'
-    if info['name'] != info['raw_name'] and len(reads) < 2:
-        return None, '同名舰需多轮船名与舰种图标共同确认'
     return info, f'船名经国服 Lua 名单匹配确认：{info["name"]}'

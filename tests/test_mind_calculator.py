@@ -70,7 +70,7 @@ class CalculatorTests(unittest.TestCase):
 
     def test_public_catalog_integrity(self):
         for name, info in catalog()['ships'].items():
-            self.assertEqual(name, info['name'])
+            self.assertIn(name, (info['name'], f'{info["group_type"]}:{info["name"]}'))
             self.assertIn(info['base_rarity'], MIND_COSTS)
         self.assertGreater(len(catalog()['ships']), 800)
 
@@ -228,7 +228,7 @@ class CalculatorTests(unittest.TestCase):
         self.assertEqual(rows[13]['name'], '热心.改')
         self.assertEqual(rows[13]['level'], 105)
         self.assertEqual([row['name'] for row in rows if row['review']], ['新月'])
-        self.assertIn('同名同舰种', rows[7]['source'])
+        self.assertEqual(rows[7]['candidates'], [20109, 30156])
         self.assertGreater(calculate(rows)['mind'], 0)
         self.assertEqual([row['level'] for row in rows], [125, 100, 125, 105, 125, 63, 99, 99, 117, 122, 99, 98, 105, 105,
                                                        120, 105, 105, 120, 120, 120, 120])
@@ -589,7 +589,9 @@ class ServiceTests(unittest.TestCase):
                     config.modified = {}
                     scanner = MindCalculatorScan.__new__(MindCalculatorScan)
                     scanner.config = config
+                    scanner.device = Mock()
                     scanner.ui_ensure, scanner.dock_reset, scanner.dock_sort_method_dsc_set = Mock(), Mock(), Mock()
+                    scanner._close_search = Mock()
                     scanner.appear = Mock(return_value=False)
                     scanner._prune_scan_evidence = Mock()
                     scrollbar.appear.return_value = scrollbar.at_top.return_value = True
@@ -597,7 +599,7 @@ class ServiceTests(unittest.TestCase):
                         self.service.save('testpilot', self.service.report('testpilot')['revision'],
                                           [ship('用户的新数据')] if changed else [])
                         return [ship('拉菲')]
-                    scanner._scan_pages = Mock(side_effect=collect)
+                    scanner._scan_factions = Mock(side_effect=collect)
                     if changed:
                         with self.assertRaises(RequestHumanTakeover):
                             scanner.run()

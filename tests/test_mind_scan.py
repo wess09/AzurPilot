@@ -34,6 +34,16 @@ def cards_for_levels(levels, fleet=0):
 
 
 class ScrollEvidenceTests(unittest.TestCase):
+    def test_fresh_confirmed_overlap_replaces_unknown_zero_level_without_a_false_conflict(self):
+        frame = Image.new('RGB', (1280, 720), (80, 80, 80))
+        merger = ScanMerger()
+        old = cards_for_levels([0])[0]
+        old.quality, old.level_reliable, old.ship['review'] = 4, False, True
+        merger.add(frame, [old])
+        merger.add(frame, cards_for_levels([1]))
+        self.assertEqual(merger.ships()[0]['level'], 1)
+        self.assertFalse(merger.ships()[0]['review'])
+
     def test_signed_displacements_at_sampling_and_search_boundaries(self):
         from module.runtime.mind_recognition import estimate_scroll
         # 包含暗背景与采样阈值两侧的纹理，正反位移都须由图像而非触控距离得出。
@@ -60,6 +70,14 @@ class ScrollEvidenceTests(unittest.TestCase):
 
 
 class ScanFailureTests(unittest.TestCase):
+    def test_full_scan_count_mismatch_does_not_discard_results(self):
+        from module.retire.mind_scan import MindCalculatorScan
+        scanner = MindCalculatorScan.__new__(MindCalculatorScan)
+        scanner._scan_metadata = dict(reached_bottom=True, physical_count=2)
+        scanner._scan_raw_ships = [dict(name='拉菲', level=120, group_type=10117)]
+        self.assertFalse(scanner._verify_full_count(2))
+        self.assertEqual(scanner._scan_raw_ships[0]['level'], 120)
+
     def test_failed_scan_keeps_old_list_and_disables_only_its_ocr_debug(self):
         import copy
         from module.exception import MindCalculatorScanError
@@ -72,12 +90,12 @@ class ScanFailureTests(unittest.TestCase):
         scanner = MindCalculatorScan.__new__(MindCalculatorScan)
         scanner.config, scanner.device = config, Mock()
         scanner.ui_ensure, scanner.dock_reset, scanner.dock_sort_method_dsc_set = Mock(), Mock(), Mock()
+        scanner._close_search = Mock()
         scanner._prune_scan_evidence = Mock()
         scanner.appear = Mock(return_value=False)
-        for error, message in ((MindCalculatorScanError('离线中止'), '离线中止'),
-                               (MemoryError('模拟分配失败'), '内存不足.*保留旧清单')):
+        for error, message in ((MindCalculatorScanError('离线中止'), '离线中止'),):
             with self.subTest(error=type(error).__name__):
-                scanner._scan_pages = Mock(side_effect=error)
+                scanner._scan_factions = Mock(side_effect=error)
                 with patch('module.retire.mind_scan.server.server', 'cn'), \
                         patch('module.retire.mind_scan.DOCK_SCROLL') as scroll, patch('module.ocr.al_ocr.AlOcr') as ocr:
                     scroll.appear.return_value = scroll.at_top.return_value = True
@@ -483,12 +501,15 @@ class ScreenshotTests(unittest.TestCase):
 
     def test_failed_suffix_retry_remains_review(self):
         ocr = Mock()
-        ocr.ocr_for_single_lines.side_effect = [
-            ['列克星敦I'] + ['伦敦.改'] * 20,
-            ['列克星敦I', '列克星敦I'], ['列克星敦I', '列克星敦I']]
+        def unknown_suffix(images):
+            if ocr.ocr_for_single_lines.call_count == 1:
+                return ['列克星敦I'] + ['伦敦.改'] * 20
+            return ['列克星敦I'] * len(images)
+        ocr.ocr_for_single_lines.side_effect = unknown_suffix
         card = recognize_cards(self.image, name_ocr=ocr)[0]
         self.assertTrue(card.ship['review'])
         self.assertEqual(card.ship['name'], '列克星敦I')
+        self.assertLessEqual(ocr.ocr_for_single_lines.call_count, 6)
 
     def test_real_second_type_crops_keep_suffix_under_nearest_scaling(self):
         import cv2

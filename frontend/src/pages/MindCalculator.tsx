@@ -5,6 +5,7 @@ import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
 import {Select, useDraftInput} from '../components/FormControls'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
+import {translateFleetTech} from '../fleet-tech/i18n'
 import {editableShip, highestShips, type MindCalculation, type MindCatalog, type MindReport, type MindShip, type Rarity} from '../mind/types'
 import '../mind/mind.css'
 
@@ -41,8 +42,18 @@ function download(filename: string, content: string) {
 }
 
 export function MindCalculator() {
-  const {instance = ''} = useParams(), {ui, instances, notify} = useApp(), connection = useConnection()
+  const {instance = ''} = useParams(), {ui, language, instances, notify} = useApp(), connection = useConnection()
   const [catalog, setCatalog] = useState<MindCatalog>(), [saved, setSaved] = useState<MindReport>()
+  const choices = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const ship of catalog?.ships ?? []) counts.set(ship.name, (counts.get(ship.name) ?? 0) + 1)
+    return (catalog?.ships ?? []).map(ship => ({ship, label: counts.get(ship.name)! > 1
+      ? `${ship.name}（${ship.type} · ${translateFleetTech(language, `nation.${ship.nationality}`)} · ${ship.base_rarity}）` : ship.name}))
+  }, [catalog, language])
+  function selectedShip(value: string) {
+    const candidates = choices.filter(choice => choice.label === value)
+    return candidates.length === 1 ? candidates[0].ship : undefined
+  }
   const [ships, setShips] = useState<MindShip[]>([]), [result, setResult] = useState<MindCalculation>()
   const calculatedShips = useRef<MindShip[]>([])
   const [dirty, setDirty] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState('')
@@ -181,9 +192,9 @@ export function MindCalculator() {
     edit(ships.map((ship, i) => i === index ? {...ship, ...patch} : ship), saveAutomatically)
   }
   function correctName(index: number, value: string) {
-    const info = catalog?.ships.find(ship => ship.name === value)
+    const info = selectedShip(value)
     if (!info) {setError(ui('mind.reviewChooseName')); return}
-    change(index, {name: info.name, rarity: info.rarity, base_rarity: info.base_rarity, review: true,
+    change(index, {name: info.name, group_type: info.group_type, candidates: [], rarity: info.rarity, base_rarity: info.base_rarity, review: true,
       source: `人工校正舰名：${ships[index].name} → ${info.name}；${ships[index].source ?? ''}`.slice(0, 200)}, true)
   }
   function correctRarity(index: number, value: Rarity) {
@@ -220,10 +231,12 @@ export function MindCalculator() {
   }
   function add(event: FormEvent) {
     event.preventDefault()
-    const info = catalog?.ships.find(ship => ship.name === name.trim())
+    const info = selectedShip(name.trim())
+    if (!info && catalog?.ships.some(ship => ship.name === name.trim())) {setError(ui('mind.reviewChooseName')); return}
     const baseRarity = rarity || info?.base_rarity
     if (!baseRarity) {setError(ui('mind.chooseRarity')); return}
-    edit(highestShips([...ships, editableShip({name: name.trim(), level: Number(level), rarity: info?.rarity ?? baseRarity, base_rarity: baseRarity})], catalog?.ships))
+    edit(highestShips([...ships, editableShip({name: info?.name ?? name.trim(), group_type: info?.group_type,
+      level: Number(level), rarity: info?.rarity ?? baseRarity, base_rarity: baseRarity})], catalog?.ships))
     setName(''); setFilter('all'); setPage(Math.floor(ships.length / 50))
   }
   const rows = useMemo(() => ships.map((ship, index) => ({ship, index, row: calculatedShips.current[index] === ship ? result?.ships[index] : undefined})).filter(({ship, row}) =>
@@ -278,7 +291,7 @@ export function MindCalculator() {
         <p className="muted">{ui('mind.levelEditHint')}</p>
         <form className="mind-add" onSubmit={add}>
           <label>{ui('mind.name')}<input list="mind-ship-catalog" required maxLength={100} value={name} onChange={event => setName(event.target.value)}/></label>
-          <datalist id="mind-ship-catalog">{catalog?.ships.map(ship => <option key={ship.name} value={ship.name}>{labels(ship.base_rarity)}</option>)}</datalist>
+          <datalist id="mind-ship-catalog">{choices.map(({ship, label}) => <option key={`${ship.group_type}:${ship.name}`} value={label}>{labels(ship.base_rarity)}</option>)}</datalist>
           <label>{ui('mind.level')}<input type="number" required min={1} max={125} step={1} value={level} onChange={event => setLevel(event.target.value)}/></label>
           <label>{ui('mind.baseRarity')}<Select aria-label={ui('mind.baseRarity')} value={rarity} onChange={event => setRarity(event.target.value as Rarity | '')}><option value="">{ui('mind.autoRarity')}</option>{rarities.map(r => <option key={r} value={r}>{labels(r)}</option>)}</Select></label>
           <button className="button secondary" disabled={busy || !ready || ships.length >= 5000}><Plus size={16}/>{ui('mind.add')}</button>
@@ -289,15 +302,15 @@ export function MindCalculator() {
           <Select aria-label={ui('mind.filterRarity')} value={filterRarity} onChange={event => {setFilterRarity(event.target.value); setPage(0)}}><option value="">{ui('mind.allRarities')}</option>{rarities.map(value => <option key={value} value={value}>{labels(value)}</option>)}</Select>
           <Select aria-label={ui('mind.filter')} value={filter} onChange={event => {setFilter(event.target.value); setPage(0)}}>{(['all', 'included', 'review', 'merged', 'excluded'] as const).map(status => <option key={status} value={status}>{ui(`mind.${status}`)}</option>)}</Select><span className="muted">{ui('mind.rowCount', {count: rows.length})}</span></div>
         {visible.length ? <div className="mind-table-wrap"><table className="mind-ship-table"><thead><tr><th>{ui('mind.name')}</th><th>{ui('mind.level')}</th><th>{ui('mind.baseRarity')}</th><th>{ui('mind.status')}</th><th>{ui('mind.mind')}</th><th>{ui('mind.actions')}</th></tr></thead><tbody>{visible.map(({ship, index, row}) => <tr key={`${index}:${ship.name}`}>
-          <td>{row?.status === 'review' ? <ReviewName label={`${ui('mind.name')} ${index + 1}`} value={ship.name} disabled={busy || running} onCommit={value => correctName(index, value)}/>
-            : <input aria-label={`${ui('mind.name')} ${index + 1}`} value={ship.name} readOnly/>}<small className="muted" title={ship.source}>{ship.source}</small></td>
+          <td>{row?.status === 'review' ? <ReviewName label={`${ui('mind.name')} ${index + 1}`} value={choices.find(choice => choice.ship.group_type === ship.group_type && choice.ship.name === ship.name)?.label ?? ship.name} disabled={busy || running} onCommit={value => correctName(index, value)}/>
+            : <input aria-label={`${ui('mind.name')} ${index + 1}`} value={choices.find(choice => choice.ship.group_type === ship.group_type && choice.ship.name === ship.name)?.label ?? ship.name} readOnly/>}<small className="muted" title={ship.source}>{ship.source}</small></td>
           <td><ShipLevel label={`${ui('mind.level')} ${index + 1}`} placeholder={ui('mind.unknownLevel')} value={ship.level} disabled={busy || running} onCommit={value => change(index, {level: value}, true)}/></td>
           <td>{row?.status === 'review' ? <Select aria-label={`${ui('mind.baseRarity')} ${index + 1}`} value={row.base_rarity} disabled={busy || running}
             onChange={event => correctRarity(index, event.target.value as Rarity)}>
             <option value="" disabled>—</option>{rarities.map(value => <option key={value} value={value}>{labels(value)}</option>)}</Select>
             : <span className={`mind-rarity rarity-${row?.base_rarity}`}>{row?.base_rarity ? labels(row.base_rarity) : '—'}</span>}</td>
           <td><Select aria-label={`${ui('mind.status')} ${index + 1}`} className={`mind-status status-${row?.status}`} value={row?.status ?? 'review'} disabled={busy || running || !row || (row.automatic_excluded && row.status !== 'review')} title={row?.automatic_excluded ? ui('mind.autoExcluded') : undefined} onChange={event => change(index, {excluded: event.target.value === 'excluded', review: event.target.value === 'review'}, true)}>
-            <option value="included" disabled={!ship.level || !row?.base_rarity || row.automatic_excluded}>{ui('mind.included')}</option><option value="review">{ui('mind.review')}</option><option value="excluded">{ui('mind.excluded')}</option>{row?.status === 'merged' && <option value="merged" disabled>{ui('mind.merged')}</option>}
+            <option value="included" disabled={!ship.level || !row?.base_rarity || row.automatic_excluded || !row.group_type && !!row.candidates?.length}>{ui('mind.included')}</option><option value="review">{ui('mind.review')}</option><option value="excluded">{ui('mind.excluded')}</option>{row?.status === 'merged' && <option value="merged" disabled>{ui('mind.merged')}</option>}
           </Select></td><td>{number(row?.mind ?? 0)}</td>
           <td><button className="button secondary" aria-label={`${ui('mind.delete')} ${ship.name}`} disabled={busy || running} onClick={() => edit(ships.filter((_, i) => i !== index), true)}><Trash2 size={15}/>{ui('mind.delete')}</button></td>
         </tr>)}</tbody></table></div> : <Empty title={ui('mind.empty')}>{ui('mind.emptyHint')}</Empty>}

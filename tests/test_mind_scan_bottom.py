@@ -116,6 +116,52 @@ class NativeBottomTests(unittest.TestCase):
         self.assertEqual(len(ships), 29)
         self.assertTrue(any(ship['name'] == '科隆' for ship in ships))
 
+    def test_native_partial_tail_has_nineteen_real_cards_and_no_fabricated_empty_slots(self):
+        image = Image.open(FIXTURES / 'mind_partial_tail_87.png')
+        scanner = MindCalculatorScan.__new__(MindCalculatorScan)
+        cards = recognize_cards(image, row_origins=[63, 290, 517])
+        self.assertEqual(len(cards), 19)
+        self.assertTrue(scanner._has_partial_tail(cards))
+        with self.assertRaises(ValueError):
+            scanner._check_scan_page(cards, False)
+        scanner._check_scan_page(cards, True)
+        self.assertFalse(scanner._has_partial_tail(cards[:-8]))
+
+    def test_native_partial_tail_loop_rechecks_overlap_at_bottom_without_adding_empty_slots(self):
+        from module.runtime.mind_identity import MindIdentity
+        from module.ocr.al_ocr import AlOcr, OcrSettings
+        scanner = MindCalculatorScan.__new__(MindCalculatorScan)
+        scanner.config = SimpleNamespace(Emulator_ControlMethod='MaaTouch', config_name='testpilot')
+        scanner._policy = ScanPolicy(1, 125, True)
+        scanner._identity = MindIdentity()
+        scanner.appear = Mock(return_value=True)
+        scanner.handle_popup_confirm = Mock(return_value=False)
+        scanner._save_scan_evidence = Mock(return_value='')
+        frames = [np.array(Image.open(FIXTURES / f'mind_partial_tail_{page}.png')) for page in (87, 88)]
+        position, now, reads = 0, 1., []
+        def screenshot():
+            nonlocal now
+            now += .25
+            scanner.device.image = frames[position].copy()
+        def drag(*args, **kwargs):
+            nonlocal position
+            position = 1
+        def read(image, source, names, levels):
+            reads.append(position)
+            return recognize_cards(image, source, name_ocr=names, level_ocr=levels, identity=scanner._identity)
+        scanner.device = Mock()
+        scanner.device.screenshot.side_effect = screenshot
+        scanner.device.drag.side_effect = drag
+        scanner._read_cards = read
+        settings = OcrSettings('onnx', 'cpu', False, 'standard')
+        with patch('module.base.timer.time', side_effect=lambda: now):
+            scanner._scan_pages(AlOcr(name='ppocr_v6', settings=settings, save_debug_images=False),
+                                AlOcr(name='azur_lane', settings=settings, save_debug_images=False))
+        self.assertEqual(reads, [0, 0, 0, 1])
+        self.assertEqual(scanner._scan_metadata, dict(reached_bottom=True, physical_count=19))
+        self.assertEqual(scanner.device.drag.call_count, 1)
+        self.assertFalse(any('待核对舰船' in ship['name'] or ship['level'] == 0 for ship in scanner._scan_raw_ships))
+
 
 if __name__ == '__main__':
     unittest.main()

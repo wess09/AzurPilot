@@ -25,10 +25,18 @@ def _surface_icon():
     return np.array(Image.open(Path(__file__).parents[2] / 'assets/ship/dock_battleship_icon.png').convert('L'))
 
 
+@lru_cache(maxsize=1)
+def _surface_icon_phases():
+    # 相同字形的原生采样相位分别核实，不能靠降低阈值扩大舰种证据。
+    return (_surface_icon(), np.array(Image.open(
+        Path(__file__).parents[2] / 'assets/ship/dock_battleship_icon_phase.png').convert('L')))
+
+
 def surface_icon(pixels, x, y):
     """大型炮舰字形（战列/战巡/超巡）；容忍原生像素相位，必须正向命中。"""
     white = (pixels[y:y + 30, x:x + 40].min(axis=2) > 205).astype(np.uint8) * 255
-    return cv2.minMaxLoc(cv2.matchTemplate(white, _surface_icon(), cv2.TM_CCOEFF_NORMED))[1] >= .75
+    return any(cv2.minMaxLoc(cv2.matchTemplate(white, template, cv2.TM_CCOEFF_NORMED))[1] >= .75
+               for template in _surface_icon_phases())
 
 
 def aviation_icon(pixels, x, y):
@@ -40,8 +48,8 @@ def aviation_icon(pixels, x, y):
 
 class FleetTechIdentity:
     """按群组建立多值名称索引，图标只消除有正向依据的舰种歧义。"""
-    def __init__(self):
-        self.ships = {row['group_type']: row for row in catalog()['ships']}
+    def __init__(self, ships=None):
+        self.ships = {row['group_type']: row for row in (catalog()['ships'] if ships is None else ships)}
         self.names = defaultdict(list)
         for row in self.ships.values():
             self.names[name_key(row['name'])].append((row['group_type'], False))

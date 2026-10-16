@@ -41,8 +41,10 @@ class ScrollRecoveryTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, '重叠位移'):
                     estimate_scroll(before, after, check_zero=True)
                 motion = ScrollMotion()
-                motion.accept(np.arange(10, 90), 0)
-                thumb = np.arange(20, 100)
+                motion.accept(np.arange(0, 80), 0)
+                motion.accept(np.arange(10, 90), 200)
+                motion.accept(np.arange(20, 100), 200)
+                thumb = np.arange(30, 110)
                 bounds = motion.bounds(thumb, (227, True))
                 merger = ScanMerger()
                 merger.advance(Image.fromarray(before))
@@ -80,7 +82,7 @@ class ScrollRecoveryTests(unittest.TestCase):
         self.assertIsNone(motion.bounds(np.arange(20, 100), (-227, True)))
         self.assertIsNone(motion.bounds(np.arange(20, 100), (227, False)))
         self.assertIsNone(motion.bounds(None, (227, True)))
-        self.assertEqual(motion.bounds(np.arange(0, 80), (-227, True)), (-233, -1))
+        self.assertEqual(motion.bounds(np.arange(0, 80), (-227, True)), (-454, -1))
 
     def test_only_strict_coherent_motion_calibrates_unsupported_strokes(self):
         motion = ScrollMotion()
@@ -108,6 +110,74 @@ class ScrollRecoveryTests(unittest.TestCase):
         self.assertEqual(merger.offset, 0)
 
 
+    def test_unique_overlap_is_not_rejected_by_a_small_gesture_length_estimate(self):
+        from tests.test_mind_calculator import RecognitionTests
+        before, after = RecognitionTests.scroll_frames([0, 62])
+        motion = ScrollMotion(row_pitch=227)
+        bounds = motion.bounds(None, (39, True))
+        self.assertEqual(bounds, (-45, 45))
+        self.assertFalse(motion.strict_bounds)
+        merger = ScanMerger()
+        merger.advance(Image.fromarray(before))
+        self.assertEqual(merger.advance(Image.fromarray(after), bounds=bounds, after_drag=True,
+                                       strict_bounds=motion.strict_bounds), 62)
+        self.assertFalse(merger.motion_hint_used)
+
+    def test_soft_gesture_bounds_cannot_accept_an_ambiguous_displacement_outside_them(self):
+        motion = ScrollMotion(row_pitch=227)
+        bounds = motion.bounds(None, (39, True))
+        merger = ScanMerger()
+        before = Image.fromarray(repeat_frame(0))
+        merger.advance(before)
+        with self.assertRaises(ValueError):
+            merger.advance(Image.fromarray(repeat_frame(62)), bounds=bounds, after_drag=True,
+                           strict_bounds=motion.strict_bounds)
+        self.assertEqual(merger.offset, 0)
+        np.testing.assert_array_equal(merger.previous, np.array(before))
+
+    def test_small_gesture_cannot_override_coherent_independent_thumb_direction(self):
+        from tests.test_mind_calculator import RecognitionTests
+        motion = ScrollMotion(row_pitch=227)
+        motion.accept(np.arange(20, 100), 0)
+        bounds = motion.bounds(np.arange(18, 98), (39, True))
+        self.assertTrue(motion.strict_bounds)
+        self.assertLess(bounds[1], 0)
+        before, after = RecognitionTests.scroll_frames([0, 62])
+        merger = ScanMerger()
+        merger.advance(Image.fromarray(before))
+        with self.assertRaisesRegex(ValueError, '独立滚动证据'):
+            merger.advance(Image.fromarray(after), bounds=bounds, after_drag=True,
+                           strict_bounds=motion.strict_bounds)
+        self.assertEqual(merger.offset, 0)
+
+    def test_calibrated_thumb_accepts_unique_motion_beyond_submitted_gesture(self):
+        from tests.test_mind_calculator import RecognitionTests
+        motion = ScrollMotion(row_pitch=227)
+        motion.accept(np.arange(0, 80), 0)
+        motion.accept(np.arange(2, 82), 219)
+        motion.accept(np.arange(4, 84), 219)
+        bounds = motion.bounds(np.arange(8, 88), (227, True))
+        self.assertTrue(motion.strict_bounds)
+        self.assertLessEqual(bounds[0], 379)
+        self.assertGreaterEqual(bounds[1], 379)
+        before, after = RecognitionTests.scroll_frames([0, 379])
+        merger = ScanMerger()
+        merger.advance(Image.fromarray(before))
+        self.assertEqual(merger.advance(Image.fromarray(after), bounds=bounds, after_drag=True,
+                                       strict_bounds=motion.strict_bounds), 379)
+
+    def test_unmeasured_direction_alone_cannot_choose_between_two_periodic_forward_offsets(self):
+        motion = ScrollMotion(row_pitch=227)
+        motion.accept(np.arange(0, 80), 0)
+        bounds = motion.bounds(np.arange(2, 82), (227, True))
+        merger = ScanMerger()
+        merger.advance(Image.fromarray(repeat_frame(0)))
+        with self.assertRaises(ValueError):
+            merger.advance(Image.fromarray(repeat_frame(206)), bounds=bounds, after_drag=True,
+                           strict_bounds=motion.strict_bounds)
+        self.assertEqual(merger.offset, 0)
+
+
 class LocalLoopTests(unittest.TestCase):
     def loop(self):
         loop = regression.ScanLoopRegressionTests('test_continuously_unstable_frames_have_a_deadline')
@@ -125,7 +195,17 @@ class LocalLoopTests(unittest.TestCase):
             return (np.arange(565) >= start) & (np.arange(565) < start + 90)
 
         scrollbar = SimpleNamespace(appear=lambda _: True, total=565, match_color=thumb)
-        with patch('module.retire.mind_scan.DOCK_SCROLL', scrollbar):
+        # 先用独立唯一纹理测得比例，再验证完全重复区域；不能以手势上限
+        # 伪装成标定。首屏全重复且无比例的安全拒绝另有反例覆盖。
+        from tests.test_mind_calculator import RecognitionTests
+        calibration = RecognitionTests.scroll_frames([0, 216, 432])
+        motion = ScrollMotion()
+        motion.accept(np.arange(2, 92), 0)
+        motion.accept(np.arange(52, 142), estimate_scroll(calibration[0], calibration[1], check_zero=True))
+        motion.accept(np.arange(102, 192), estimate_scroll(calibration[1], calibration[2], check_zero=True))
+        motion.thumb = None
+        with patch('module.retire.mind_scan.DOCK_SCROLL', scrollbar), \
+                patch('module.retire.mind_scan.ScrollMotion', return_value=motion):
             ships = loop.scan()
         self.assertEqual(loop.reads, [0, 681, 1362, 2043])
         self.assertEqual(len(ships), 84)
@@ -158,8 +238,8 @@ class LocalLoopTests(unittest.TestCase):
             cards = recognize(*args, **kwargs)
             if loop.position == 0:
                 for card in cards[:2]:
-                    card.ship.update(name='约克', review=True)
-                    card.identity_ambiguous = True
+                    card.ship.update(name='约克', group_type=None, candidates=[20307, 40311],
+                                     review=True, identity_ambiguous=True)
             return cards
 
         with patch('module.retire.mind_scan.recognize_cards', side_effect=ambiguous):

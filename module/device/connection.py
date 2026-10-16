@@ -32,6 +32,13 @@ from module.logger import logger
 from module.map.map_grids import SelectedGrids
 
 
+def scan_device_isolated(config):
+    """独立工具和调度器提前初始化设备都遵守同一个扫描恢复边界。"""
+    task = getattr(config, 'task', None)
+    return (getattr(config, '_scan_device_isolation', False) is True
+            or getattr(task, 'command', None) in ('MindCalculatorScan', 'FleetTechScan'))
+
+
 def retry(func):
     """带自动重试的装饰器，处理 ADB 连接和设备相关异常。
 
@@ -152,6 +159,8 @@ class Connection(ConnectionAttr):
         if not self.is_over_http:
             self.detect_device()
 
+        self._claim_device()
+
         # 连接设备
         self.adb_connect(wait_device=False)
         logger.attr('ADB设备', self.adb)
@@ -166,6 +175,20 @@ class Connection(ConnectionAttr):
         logger.attr('服务器', self.config.SERVER)
 
         self.check_mumu_app_keep_alive()
+
+    def _claim_device(self):
+        """在连接和首次输入前独占设备；合法别名共用同一把锁。"""
+        import weakref
+        from module.device.lease import DeviceLease, device_key
+        previous = self.__dict__.get('_device_lease')
+        if previous and previous.key == device_key(self.serial):
+            return
+        lease = DeviceLease(self.serial, self.config.config_name)
+        finalizer = self.__dict__.get('_device_lease_finalizer')
+        if finalizer:
+            finalizer()
+        self._device_lease = lease
+        self._device_lease_finalizer = weakref.finalize(self, lease.release)
 
     @Config.when(DEVICE_OVER_HTTP=False)
     def adb_command(self, cmd, timeout=10):
@@ -810,7 +833,11 @@ class Connection(ConnectionAttr):
         """
         # 连接前先断开离线设备
         devices = self.list_device()
+        scan_isolated = scan_device_isolated(self.config)
+        targets = {self.serial, *get_serial_pair(self.serial)}
         for device in devices:
+            if scan_isolated and device.serial not in targets:
+                continue
             if device.status == 'offline':
                 logger.warning(f'[设备-连接] 设备 {device.serial} 离线，连接前先断开')
                 msg = self.adb_client.disconnect(device.serial)
@@ -860,7 +887,7 @@ class Connection(ConnectionAttr):
             elif '(10061)' in msg:
                 # MuMu12 端口被占用时可能会切换序列号
                 # 暴力连接附近端口以处理序列号切换
-                if self.is_mumu12_family:
+                if self.is_mumu12_family and not scan_isolated:
                     before = self.serial
                     serial_list = [self.serial.replace(str(self.port), str(self.port + offset))
                                    for offset in [1, -1, 2, -2]]
@@ -951,6 +978,8 @@ class Connection(ConnectionAttr):
 
     def adb_restart(self):
         """重启 ADB 客户端。"""
+        if scan_device_isolated(self.config):
+            raise EmulatorNotRunningError('扫描任务不重启共享 ADB，请恢复原目标设备后重新扫描')
         logger.info('[设备-连接] 重启ADB')
         # 终止当前客户端
         self.adb_client.server_kill()
@@ -965,7 +994,8 @@ class Connection(ConnectionAttr):
 
         未找到设备时重启 ADB 客户端，否则尝试重新连接设备。
         """
-        if self.config.Emulator_AdbRestart and len(self.list_device()) == 0:
+        if (self.config.Emulator_AdbRestart and not scan_device_isolated(self.config)
+                and len(self.list_device()) == 0):
             # 重启 ADB
             self.adb_restart()
             # 连接设备
@@ -1106,6 +1136,11 @@ class Connection(ConnectionAttr):
         如果 serial=='auto' 且只检测到 1 个设备，则使用该设备。
         """
         logger.hr('检测设备')
+        if scan_device_isolated(self.config):
+            self._detect_scan_device()
+            if '_device_lease' in self.__dict__:
+                self._claim_device()
+            return
         available = SelectedGrids([])
         devices = SelectedGrids([])
 
@@ -1250,6 +1285,27 @@ class Connection(ConnectionAttr):
                         del_cached_property(self, 'is_mumu_family')
                         self.serial = device.serial
                         break
+
+        if '_device_lease' in self.__dict__:
+            self._claim_device()
+
+    def _detect_scan_device(self):
+        """扫描只能绑定首次确认的目标；雷电同设备序列号对仍可合法恢复。"""
+        devices = self.list_device().select(status='device')
+        target = getattr(self, '_scan_target_serial', self.serial)
+        if target == 'auto':
+            groups = {get_serial_pair(device.serial)[0] or device.serial for device in devices}
+            if len(groups) != 1:
+                raise RequestHumanTakeover('扫描需要唯一目标设备，请明确配置序列号')
+            target = next(iter(groups))
+        self._scan_target_serial = target
+        aliases = {target, *get_serial_pair(target)} - {None}
+        selected = next((device.serial for device in devices if device.serial == target), None)
+        selected = selected or next((device.serial for device in devices if device.serial in aliases), target)
+        if self.serial != selected:
+            self.serial = selected
+            del_cached_property(self, 'adb')
+            del_cached_property(self, 'port')
 
     @retry
     def list_package(self, show_log=True):

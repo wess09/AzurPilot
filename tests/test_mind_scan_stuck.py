@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 from PIL import Image
 
-from module.exception import GameStuckError, MindCalculatorScanError
+from module.exception import MindCalculatorScanError
 from module.retire.mind_scan import MindCalculatorScan
 from module.retire.scanner import FleetScanner
 from module.runtime.mind_calculator import calculate
@@ -198,12 +198,14 @@ class NamePhaseRegressionTests(unittest.TestCase):
     def test_unresolved_literal_suffix_cannot_be_silently_dropped(self):
         ocr = Mock()
         ocr.ocr_for_single_lines.side_effect = [
-            ['约克城I'] + ['伦敦.改'] * 20, ['约克城', '约克城I'], ['约克城', '约克城']]
+            ['约克城I'] + ['伦敦.改'] * 20, ['约克城', '约克城I'], ['约克城', '约克城']
+        ] + [['约克城', '约克城']] * 3
         image = Image.open(FIXTURES / 'mind_dock_stuck.png').convert('RGB')
         card = recognize_cards(image, name_ocr=ocr)[0]
         self.assertTrue(card.ship['review'])
         self.assertNotEqual(card.ship['name'], '约克城')
         self.assertIn('罗马后缀未确认', card.ship['source'])
+        self.assertLessEqual(ocr.ocr_for_single_lines.call_count, 6)
 
     def test_real_incomplete_second_type_suffix_never_becomes_the_base_ship(self):
         pixels = np.array(Image.open(FIXTURES / 'mind_yorktown_phase.png').convert('RGB'))
@@ -499,7 +501,7 @@ class ScanLoopRegressionTests(unittest.TestCase):
 
     def test_zero_motion_is_bounded_without_claiming_bottom(self):
         self.stalled = True
-        with self.assertRaises((MindCalculatorScanError, GameStuckError)):
+        with self.assertRaises(MindCalculatorScanError):
             self.scan()
         self.assertLess(self.now, 32)
         self.assertEqual(self.reads, [0])
@@ -508,7 +510,7 @@ class ScanLoopRegressionTests(unittest.TestCase):
         self.show_bottom = False
         self.kind = 'level'
         self.scanner._policy = ScanPolicy(1, 125, True)
-        with self.assertRaises((MindCalculatorScanError, GameStuckError)):
+        with self.assertRaises(MindCalculatorScanError):
             self.scan()
         self.assertEqual(self.position, self.bottom)
         self.assertLess(self.now, 65)

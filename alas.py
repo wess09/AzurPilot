@@ -1108,6 +1108,11 @@ class AzurLaneAutoScript:
         command = inflection.underscore(command)
         self._storage_statistics_failed = False
         set_task(inflection.camelize(command))
+        isolated_scan = command in ('mind_calculator_scan', 'fleet_tech_scan')
+        previous_isolation = getattr(self.config, '_scan_device_isolation', False) is True
+        if isolated_scan:
+            # 设备可能在首张截图前惰性初始化；隔离边界必须先于任何设备访问。
+            self.config._scan_device_isolation = True
         try:
             # Restart 的职责就是把游戏从“未运行/未出首帧”恢复起来。
             # Android 虚拟屏在没有实际内容提交前不会产生可读帧；若这里先截图，
@@ -1382,6 +1387,8 @@ class AzurLaneAutoScript:
             )
             return 'recoverable'
         finally:
+            if isolated_scan:
+                self.config._scan_device_isolation = previous_isolation
             set_task(None)
 
     def cleanup_error_logs(self, folder_path):

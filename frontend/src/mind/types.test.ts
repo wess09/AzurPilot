@@ -1,11 +1,11 @@
 import {describe, expect, it} from 'vitest'
-import {highestShips, type CatalogShip, type MindShip} from './types'
+import {editableShip, highestShips, type CatalogShip, type MindShip} from './types'
 
 const catalog: CatalogShip[] = [
-  {name: '卡辛', base_name: '卡辛', rarity: 'N', base_rarity: 'N', group: '', type: '驱逐'},
-  {name: '卡辛.改', base_name: '卡辛', rarity: 'R', base_rarity: 'N', group: '改造', type: '驱逐'},
-  {name: '约克城', base_name: '约克城', rarity: 'SR', base_rarity: 'SR', group: '', type: '航母'},
-  {name: '约克城II', base_name: '约克城II', rarity: 'UR', base_rarity: 'UR', group: '', type: '航母'},
+  {name: '卡辛', base_name: '卡辛', rarity: 'N', base_rarity: 'N', group: '', type: '驱逐', group_type: 10103},
+  {name: '卡辛.改', base_name: '卡辛', rarity: 'R', base_rarity: 'N', group: '改造', type: '驱逐', group_type: 10103},
+  {name: '约克城', base_name: '约克城', rarity: 'SR', base_rarity: 'SR', group: '', type: '航母', group_type: 10705},
+  {name: '约克城II', base_name: '约克城II', rarity: 'UR', base_rarity: 'UR', group: '', type: '航母', group_type: 10710},
 ]
 const ship = (name: string, level = 100): MindShip => ({name, level})
 
@@ -29,16 +29,16 @@ describe('截图批量导入的舰船身份合并', () => {
       {...ship('读错名称'), review: true}, {...ship('读错名称'), review: true}]
     expect(highestShips(rows, catalog)).toEqual(rows)
   })
-  it('同名群组独立取最高，皇家改造仍合并皇家原舰', () => {
-    const sameNames: CatalogShip[] = [
-      {name: '新月（皇家）', raw_name: '新月', group_type: 20109, base_name: '新月（皇家）', rarity: 'N', base_rarity: 'N', group: '', type: '驱逐'},
-      {name: '新月.改', raw_name: '新月.改', group_type: 20109, base_name: '新月（皇家）', rarity: 'R', base_rarity: 'N', group: '改造', type: '驱逐'},
-      {name: '新月（重樱）', raw_name: '新月', group_type: 30156, base_name: '新月（重樱）', rarity: 'SR', base_rarity: 'SR', group: '', type: '驱逐'},
-    ]
-    expect(highestShips([ship('新月（皇家）'), ship('新月.改', 105), ship('新月（重樱）')], sameNames))
-      .toEqual([ship('新月.改', 105), ship('新月（重樱）')])
-    const raw = [ship('新月'), ship('新月', 120)]
-    expect(highestShips(raw, sameNames)).toEqual(raw.map(row => ({...row, review: true})))
-    expect(raw.every(row => row.review === undefined)).toBe(true)
+  it('重名不同群组分别取最高等级，白名单及草稿往返保留身份', () => {
+    const duplicates: CatalogShip[] = [30507, 30702].map((group_type, i) => ({name: '加贺', base_name: '加贺',
+      rarity: 'SSR', base_rarity: 'SSR', group: '', type: i ? '正航' : '战列', group_type}))
+    const rows = [{name: '加贺', group_type: 30507, level: 120}, {name: '加贺', group_type: 30702, level: 100}]
+    expect(highestShips([...rows, {...rows[0], level: 105}], duplicates)).toEqual(rows)
+    const draft = rows.map(editableShip)
+    expect(JSON.parse(JSON.stringify(draft)).map(editableShip)).toEqual(draft)
+    expect(highestShips([{name: '加贺', level: 100}, {name: '加贺', level: 120}], duplicates)).toHaveLength(2)
+    const review = editableShip({name: '约克', level: 0, review: true, candidates: [20307, 40311]})
+    expect(review.candidates).toEqual([20307, 40311])
+    expect(review.group_type).toBeNull()
   })
 })

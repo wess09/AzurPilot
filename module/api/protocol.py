@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from module.scheduler.models import Mode, ProgramDocument
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr, model_validator
 
 VERSION = 1
 
@@ -48,6 +48,17 @@ class MindShip(Params):
     excluded: StrictBool = False
     review: StrictBool = False
     source: StrictStr = Field(default='', max_length=200)
+    group_type: StrictInt | None = Field(default=None, ge=1)
+    candidates: list[StrictInt] = Field(default_factory=list, max_length=100)
+
+    @model_validator(mode='after')
+    def validate_identity(self):
+        """群组是身份声明，必须与资料中的完整名字及改造语义一致。"""
+        if self.group_type is not None:
+            from module.runtime.mind_calculator import find_ship
+            if find_ship(self.name, self.group_type) is None:
+                raise ValueError('舰船名称与群组身份不一致')
+        return self
 
 
 class Request(Params):

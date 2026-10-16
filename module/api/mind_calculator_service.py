@@ -14,14 +14,15 @@ from pydantic import ValidationError
 from deploy.atomic import atomic_write
 from module.api.protocol import ApiError, MindShip
 from module.config.transaction import config_transaction
-from module.runtime.mind_calculator import RARITY_NAMES, calculate, catalog, revision
+from module.exception import MindCalculatorScanError
+from module.runtime.mind_calculator import RARITY_NAMES, SHIP_FIELDS, calculate, catalog, editable_ship, enrich, revision
 
 TASK, GROUP = 'MindCalculatorScan', 'MindCalculator'
 
 
 def input_ship(ship):
     """规范化用户输入的舰船字段并校验类型。"""
-    return MindShip.model_validate(ship).model_dump()
+    return MindShip.model_validate(editable_ship(enrich(MindShip.model_validate(ship).model_dump()))).model_dump()
 
 
 def decode(content):
@@ -38,6 +39,7 @@ def table_ships(rows):
                'rarity': ('rarity', '稀有度'), 'base_rarity': ('base_rarity', '基础稀有度'),
                'excluded': ('excluded', '排除'), 'review': ('review', '需核对'), 'source': ('source', '来源'),
                'status': ('status', '状态'), 'notes': ('notes', '备注')}
+    aliases.update(group_type=('group_type', '群组'), candidates=('candidates', '候选群组'))
     columns = None
     output = []
     for index, row in enumerate(rows):
@@ -77,9 +79,14 @@ def table_ships(rows):
             if raw not in ('', '0', '1', 'true', 'false', '是', '否'):
                 raise ValueError(f'第 {index + 1} 行 {key} 字段无效')
             return raw in ('1', 'true', '是')
+        raw_group = value('group_type')
+        if str(raw_group).strip() and (isinstance(raw_group, bool) or not str(raw_group).strip().isdigit()):
+            raise ValueError(f'第 {index + 1} 行群组必须是正整数')
+        candidates = json.loads(str(value('candidates', '[]')) or '[]')
         output.append(input_ship(dict(name=name, level=int(raw_level), rarity=rarity,
                                       base_rarity=base_rarity, excluded=boolean('excluded'),
                                       review=boolean('review') or value('status') in ('存疑', '等级未读到', '名字未匹配'),
+                                      group_type=int(raw_group) if str(raw_group).strip() else None, candidates=candidates,
                                       source=str(value('source') or value('notes'))[:200])))
     if columns is None:
         raise ValueError('缺少“船名”和“等级”表头')
@@ -150,7 +157,7 @@ class MindCalculatorService:
             fields = data.setdefault(TASK, {}).setdefault(GROUP, {})
             if revision(fields.get('Result', {}).get('ships', [])) != expected_revision:
                 raise ApiError('CONFLICT', '舰船数据已变化，请重新载入后再保存')
-            fields['Result'] = dict(ships=ships, updated_at=datetime.now().isoformat(timespec='seconds'))
+            fields['Result'] = dict(ships=[input_ship(ship) for ship in ships], updated_at=datetime.now().isoformat(timespec='seconds'))
             atomic_write(str(self.configs.path(instance)), json.dumps(data, ensure_ascii=False, indent=2))
             return self.report(instance)
 
@@ -185,25 +192,26 @@ class MindCalculatorService:
                 ships = recognize(image, Path(filename.replace('\\', '/')).name)
         except (ValueError, OSError, UnidentifiedImageError, Image.DecompressionBombError) as exc:
             raise ApiError('INVALID_PARAMS', f'截图识别失败：{exc}') from None
-        except RuntimeError as exc:
-            raise ApiError('OCR_UNAVAILABLE', f'OCR 引擎无法完成识别，请检查模型和 OCR 配置：{str(exc)[:200]}') from None
+        except (RuntimeError, MindCalculatorScanError, MemoryError) as exc:
+            reason = '内存不足' if isinstance(exc, MemoryError) else str(exc)[:200]
+            raise ApiError('OCR_UNAVAILABLE', f'OCR 引擎无法完成识别，请检查模型和 OCR 配置：{reason}') from None
         return {'ships': ships}
 
     def export(self, instance, format):
         """将指定实例的舰船清单导出为选定格式。"""
         report = self.report(instance)
-        headers = ['船名', '等级', '稀有度', '基础稀有度', '排除', '需核对', '来源']
-        fields = ['name', 'level', 'rarity', 'base_rarity', 'excluded', 'review', 'source']
+        headers = ['船名', '等级', '稀有度', '基础稀有度', '排除', '需核对', '来源', '群组', '候选群组']
+        fields = SHIP_FIELDS
         ships = [{key: ship[key] for key in fields} for ship in report['ships']]
         if format == 'json':
-            raw = json.dumps(dict(version=1, ships=ships), ensure_ascii=False, indent=2).encode()
+            raw = json.dumps(dict(version=2, ships=ships), ensure_ascii=False, indent=2).encode()
         elif format == 'csv':
             output = io.StringIO(newline='')
             writer = csv.writer(output)
             writer.writerow(headers)
             def csv_value(value):
                 """安全编码 CSV 单元格以防公式注入。"""
-                text = str(value)
+                text = json.dumps(value, ensure_ascii=False) if isinstance(value, list) else '' if value is None else str(value)
                 return "'" + text if text[:1] in ('=', '+', '-', '@', '\t', '\r') else text
             writer.writerows([[csv_value(ship[key]) for key in fields] for ship in ships])
             raw = output.getvalue().encode('utf-8-sig')
@@ -218,12 +226,12 @@ class MindCalculatorService:
                 summary.append([RARITY_NAMES[bucket['rarity']], *bucket['stages'], bucket['count'], bucket['mind'], bucket['gold']])
             summary.append(['合计', *[sum(bucket['stages'][i] for bucket in report['summary']) for i in range(6)],
                             report['included'], report['mind'], report['gold']])
-            summary.append(['目标 120 级；不含 120→125；改造按基础稀有度；同名只计最高等级；待核对数据不计费。'])
+            summary.append(['目标 120 级；不含 120→125；改造按基础稀有度；同群组只计最高等级；待核对数据不计费。'])
             for title, subset in [('舰船明细', ships), ('需核对清单', [ship for ship in ships if ship['review'] or not ship['level']])]:
                 sheet = book.create_sheet(title)
                 sheet.append(headers)
                 for ship in subset:
-                    sheet.append([ship[key] for key in fields])
+                    sheet.append([json.dumps(ship[key]) if isinstance(ship[key], list) else ship[key] for key in fields])
             for sheet in book:
                 sheet.freeze_panes = 'B2'
                 sheet.auto_filter.ref = sheet.dimensions

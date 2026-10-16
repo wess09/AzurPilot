@@ -85,13 +85,17 @@ def merge_mind(record, ships):
     observed = output.setdefault('observed', {})
     aliases = catalog()['aliases']
     from module.runtime.mind_calculator import find_ship
+    known = {row['group_type'] for row in catalog()['ships']}
     for ship in ships:
         level = ship.get('level')
         if ship.get('review') or type(level) is not int or not 1 <= level <= 125:
             continue
-        name = ship.get('name', '')
-        info = find_ship(name)
-        gid = info['group_type'] if info else aliases.get(normalize_name(name))
+        gid = ship.get('group_type')
+        if gid is not None:
+            if type(gid) is not int or gid not in known or find_ship(ship.get('name', ''), gid) is None:
+                continue
+        else:
+            gid = aliases.get(normalize_name(ship.get('name', '')))
         if gid is None:
             continue
         key = str(gid)

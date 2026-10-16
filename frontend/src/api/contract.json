@@ -602,6 +602,27 @@
                 "maxLength": 200,
                 "title": "Source",
                 "type": "string"
+              },
+              "group_type": {
+                "anyOf": [
+                  {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Group Type"
+              },
+              "candidates": {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 100,
+                "title": "Candidates",
+                "type": "array"
               }
             },
             "required": [
@@ -698,6 +719,27 @@
                 "maxLength": 200,
                 "title": "Source",
                 "type": "string"
+              },
+              "group_type": {
+                "anyOf": [
+                  {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Group Type"
+              },
+              "candidates": {
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 100,
+                "title": "Candidates",
+                "type": "array"
               }
             },
             "required": [
