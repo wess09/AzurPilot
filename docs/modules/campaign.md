@@ -51,6 +51,8 @@ module/campaign/
 ├── stage_name.py        # 关卡名的纯转换规则（不触碰配置与文件系统）
 ├── fleet_selection.py   # FleetSelectionMixin：低耗任务共用的选船交互
 ├── gems_farming.py      # GemsFarming：紧急委托钻石打捞任务
+├── gems_farming_cycle.py # GemsFarmingCycle：紧急委托/三油低耗共用周期限制
+├── farm_cycle.py        # FarmCycleLimit：周期起点/剩余次数状态机
 ├── ambush_1_1.py        # Ambush11：1-1 伏击刷关任务
 ├── os_run.py            # OSCampaignRun：大世界任务的方法宿主
 └── assets.py            # 战役界面按钮/模板（生成产物，勿手改）
@@ -72,7 +74,7 @@ campaign/                # 地图定义仓库（约 136 项，截至 2026-09）
 | 入口 | 用途 |
 | --- | --- |
 | `alas.py` 的 `main/main2/main3/event/event2/event3/c72_mystery_farming/c122_medium_leveling/c124_large_leveling` | 直接构造 `CampaignRun` 并调用 `run(name, folder, mode)`，配置项区分具体战役 |
-| `GemsFarming.run()` / `Ambush11.run()` | 钻石打捞与 1-1 伏击任务入口（`alas.py` 的 `gems_farming`、`three_oil_low_cost`、`ambush11`） |
+| `GemsFarmingCycle.run()` / `Ambush11.run()` | 紧急委托/三油低耗周期限制、钻石打捞与 1-1 伏击任务入口（`alas.py` 的 `gems_farming`、`three_oil_low_cost`、`ambush11`） |
 | `module/event/base.py` 的 `EventBase(CampaignRun)` | 活动日常（`EventA`~`EventD` → `CampaignABCD`）与每日 SP（`CampaignSP`）的基类 |
 | `module/hard/hard.py` `CampaignHard`、`module/sos/sos.py` `CampaignSos`、`module/war_archives` `CampaignWarArchives`、`module/handover` `OperationHandover` | 继承 `CampaignRun` 的专项任务 |
 | `OSCampaignRun.opsi_*()`（14 个方法） | `alas.py` 中 `opsi_explore`、`opsi_shop` 等大世界任务的转发入口 |
@@ -95,6 +97,7 @@ ModuleBase
 CampaignEvent + ShopStatus
 └── CampaignRun                         # 多轮任务编排
     ├── GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, …, Retirement)
+    │   └── GemsFarmingCycle(GemsFarming) # 紧急委托/三油低耗：每 N 小时最多 M 次
     ├── Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement)
     ├── CampaignHard / CampaignSos / CampaignWarArchives / EventBase / OperationHandover
 
@@ -119,6 +122,8 @@ OSMapOperation
 | `OSCampaignRun` | 大世界任务入口：每个 `opsi_*` = 行动力溢出守卫 + 调用 `OperationSiren` 对应方法 + `ActionPointLimit` 延迟策略 |
 
 紧急委托和三油低耗共用 `GemsCampaignOverride.handle_exp_info()`。手动地图保留 C/D 经验页及沉船提示的点击兜底；自律寻敌的沉船提示交给 `handle_auto_search_shipwreck()`，必须保留公共战败确认、撤退状态与心情记账，不能只点掉提示后重新开启自律。`withdraw_stop` 的三次连续战败计数在同一战役实例中跨出击保留，正常战斗结束后重置；第三次战败退出关卡后抛出的专用 `ScriptEnd` 由 `CampaignRun._run()` 捕获并禁用当前任务。
+
+紧急委托和三油低耗都使用 `GemsFarmingCycle(GemsFarming)`。`triggered_stop_condition()` 在每轮出击前刷新周期状态；`after_campaign_run()` 只在一次战役流程正常返回后扣减一次；本周期额度用完后通过 `task_delay(target=周期结束)` 等待下一轮，**不关闭任务**。两个任务各有一份独立的 `FarmCycle.CycleHours` 和 `CycleRuns`，同时大于 0 才启用；隐藏的 `CycleStart`、`CycleRemain` 和生效配置会持久化到用户配置，进程重启后继续。周期中途修改 N 或 M 会从当前时间重新开始一轮。
 
 ### 地图文件的三方接口
 
@@ -232,7 +237,7 @@ opsi_shop():
 ## 8. 数据流
 
 ```
-用户配置 (Campaign.Name / StopCondition.* / GemsFarming.*)
+用户配置 (Campaign.Name / StopCondition.* / GemsFarming.* / FarmCycle.*)
         │  handle_stage_name 流水线
         ▼
 地图文件名 (folder + name) ──importlib──► module.MAP / module.Config / module.Campaign
@@ -268,6 +273,8 @@ stateDiagram-v2
 
 状态识别与动作的对应关系：`is_in_map()`（地图内）先撤退；`is_in_auto_search_menu()` 且满足续战条件（已打过至少一轮 + 无地图成就要求）可跳过导航直接继续，否则退出菜单重走导航。`handle_stage_name` 的 `is_stage_loop` 有意不做复位——它描述的是本次运行器实例的固有属性，而非瞬时状态。
 
+紧急委托和三油低耗在战役状态之上多一层周期状态：从启用时开始计算 N 小时窗口，每轮最多记录 M 次出击（异常中断不计）；先达到次数时等待窗口结束，先到窗口结束时在下一轮开始新窗口。两个任务的次数和起点分别持久化，因此重启、断线和调度暂停都不会把已用额度清零。
+
 ## 10. 配置
 
 配置路径 `<Task>.<Group>.<Argument>`，代码经 `self.config.Group_Argument` 访问；地图文件的 `Config` 类在 `load_campaign` 时合并进深拷贝的配置副本。
@@ -287,9 +294,11 @@ stateDiagram-v2
 | `EventGeneral.PtLimit` / `TimeLimit` | 混合 | 0 / 默认时间 | 活动 PT 与活动结束时间，超限联动 `_disable_tasks` |
 | `TaskBalancer.Enable` / `CoinLimit` / `TaskCall` | 混合 | false / 10000 / Main | 金币不足时切换到指定任务 |
 | `GemsFarming.*` | 混合 | — | 换旗舰/先锋、普通船筛选、装备码、情绪策略、先锋等级区间 |
+| `FarmCycle.CycleHours` / `CycleRuns` | int | 0 / 0 | 紧急委托与三油低耗各自独立：每 N 小时最多 M 次出击；任一为 0 关闭 |
+| `FarmCycle.CycleStart` / `CycleRemain` / `*Applied` | 隐藏 stored | — | 周期起点、本周期剩余次数和上次生效配置，脚本自动维护 |
 | `Emotion.Mode` / `Fleet1Value` 等 | 混合 | — | 心情计算模式与各舰队心情记录 |
 
-关键关联：`GemsFarming`/`ThreeOilLowCost` 共用同一组 `GemsFarming.*` 参数；`StopCondition_MapAchievement` 与 `can_use_auto_search_continue()` 联动（非 `non_stop` 时禁用续战，因为自动搜索菜单里读不到地图信息）；活动类配置 `MAP_CHAPTER_SWITCH_*`、`STAGE_ENTRANCE` 由地图文件 `Config` 注入而非用户设置。
+关键关联：`GemsFarming`/`ThreeOilLowCost` 共用同一组 `GemsFarming.*` 参数；两个任务各自使用独立的 `FarmCycle.*` 周期状态；`StopCondition_MapAchievement` 与 `can_use_auto_search_continue()` 联动（非 `non_stop` 时禁用续战，因为自动搜索菜单里读不到地图信息）；活动类配置 `MAP_CHAPTER_SWITCH_*`、`STAGE_ENTRANCE` 由地图文件 `Config` 注入而非用户设置。
 
 ## 11. 异常与错误处理
 

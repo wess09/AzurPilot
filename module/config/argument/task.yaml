@@ -59,6 +59,7 @@ Farm:
       - GemsFarming
       - Campaign
       - StopCondition
+      - FarmCycle
       - Fleet
       - Submarine
       - Emotion
@@ -68,6 +69,7 @@ Farm:
       - GemsFarming
       - Campaign
       - StopCondition
+      - FarmCycle
       - Fleet
       - Submarine
       - Emotion

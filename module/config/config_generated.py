@@ -347,6 +347,14 @@ class GeneratedConfig:
     StopCondition_GetNewShip = False
     StopCondition_ReachLevel = 0
 
+    # 配置组 `FarmCycle`
+    FarmCycle_CycleHours = 0
+    FarmCycle_CycleRuns = 0
+    FarmCycle_CycleStart = datetime.datetime(2020, 1, 1, 0, 0)
+    FarmCycle_CycleRemain = 0
+    FarmCycle_CycleHoursApplied = 0
+    FarmCycle_CycleRunsApplied = 0
+
     # 配置组 `WarArchives`
     WarArchives_DailyRunCount = 0
     WarArchives_AutoClear = False

@@ -1952,6 +1952,36 @@
       "help": "Any ship below level X will stop after reaching level X\n0 means no level restriction"
     }
   },
+  "FarmCycle": {
+    "_info": {
+      "name": "Cycle Limit",
+      "help": "Applies to the current task: at most M sorties per N-hour cycle."
+    },
+    "CycleHours": {
+      "name": "Hours per cycle (N)",
+      "help": "Starts a new allowance cycle every N hours for the current task.\nEnabled when both this and sorties per cycle are greater than 0.\n0 disables the limit."
+    },
+    "CycleRuns": {
+      "name": "Sorties per cycle (M)",
+      "help": "Maximum sorties recorded per cycle for the current task.\nA sortie is counted when a campaign run returns normally; interrupted runs are not counted.\nAfter the limit is reached, wait for the current cycle to end and then start the next cycle.\n0 disables the limit."
+    },
+    "CycleStart": {
+      "name": "Cycle start time",
+      "help": "Automatically maintained by the script."
+    },
+    "CycleRemain": {
+      "name": "Sorties remaining in this cycle",
+      "help": "Automatically maintained by the script."
+    },
+    "CycleHoursApplied": {
+      "name": "Last applied cycle hours",
+      "help": "Automatically maintained to detect config changes."
+    },
+    "CycleRunsApplied": {
+      "name": "Last applied sorties per cycle",
+      "help": "Automatically maintained to detect config changes."
+    }
+  },
   "WarArchives": {
     "_info": {
       "name": "War Archives",

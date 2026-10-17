@@ -2921,6 +2921,45 @@
         "display": "hide"
       }
     },
+    "FarmCycle": {
+      "CycleHours": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          720
+        ]
+      },
+      "CycleRuns": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          9999
+        ]
+      },
+      "CycleStart": {
+        "type": "stored",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "hide"
+      },
+      "CycleRemain": {
+        "type": "stored",
+        "value": 0,
+        "display": "hide"
+      },
+      "CycleHoursApplied": {
+        "type": "stored",
+        "value": 0,
+        "display": "hide"
+      },
+      "CycleRunsApplied": {
+        "type": "stored",
+        "value": 0,
+        "display": "hide"
+      }
+    },
     "Fleet": {
       "Fleet1": {
         "type": "select",
@@ -3512,6 +3551,45 @@
       },
       "ReachLevel": {
         "type": "input",
+        "value": 0,
+        "display": "hide"
+      }
+    },
+    "FarmCycle": {
+      "CycleHours": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          720
+        ]
+      },
+      "CycleRuns": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          9999
+        ]
+      },
+      "CycleStart": {
+        "type": "stored",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "hide"
+      },
+      "CycleRemain": {
+        "type": "stored",
+        "value": 0,
+        "display": "hide"
+      },
+      "CycleHoursApplied": {
+        "type": "stored",
+        "value": 0,
+        "display": "hide"
+      },
+      "CycleRunsApplied": {
+        "type": "stored",
         "value": 0,
         "display": "hide"
       }

@@ -556,6 +556,14 @@
       "GetNewShip": false,
       "ReachLevel": 0
     },
+    "FarmCycle": {
+      "CycleHours": 0,
+      "CycleRuns": 0,
+      "CycleStart": "2020-01-01 00:00:00",
+      "CycleRemain": 0,
+      "CycleHoursApplied": 0,
+      "CycleRunsApplied": 0
+    },
     "Fleet": {
       "Fleet1": 1,
       "Fleet1Formation": "double_line",
@@ -652,6 +660,14 @@
       "StageIncrease": false,
       "GetNewShip": false,
       "ReachLevel": 0
+    },
+    "FarmCycle": {
+      "CycleHours": 0,
+      "CycleRuns": 0,
+      "CycleStart": "2020-01-01 00:00:00",
+      "CycleRemain": 0,
+      "CycleHoursApplied": 0,
+      "CycleRunsApplied": 0
     },
     "Fleet": {
       "Fleet1": 1,
