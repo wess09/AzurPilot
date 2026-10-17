@@ -45,6 +45,25 @@ from module.ui.page import page_island, page_island_phone
 from module.ui_white.assets import POPUP_CANCEL_WHITE
 
 
+def cargo_can_start(available_item_count, action_button_active, refresh):
+    """判断待处理货运委托是否可以点击装载/出发。
+
+    一个委托可能只有 1～2 个实际货物格，后续格子为空时不会进入
+    ``available_item_count``。装载状态不能作为启动前提：按钮本身会先补装
+    缺失货物，再切换为出发；这里只要求至少有一个实际货物格、按钮可用，
+    且没有命中黑名单。
+
+    Args:
+        available_item_count (int): 实际存在的有效货物格数量。
+        action_button_active (bool): 右侧装载/出发按钮是否可用。
+        refresh (bool): 是否因黑名单需要更换委托。
+
+    Returns:
+        bool: 是否允许当前流程点击该按钮。
+    """
+    return bool(available_item_count > 0 and action_button_active and not refresh)
+
+
 class CargoPreparationTransport:
     """货物筹备中的单个货运栏位。"""
 
@@ -105,14 +124,17 @@ class CargoPreparationTransport:
                 CargoPreparationTransportItem(self.image, button, self.blacklist)
                 for button in grids.buttons
             ]).select(valid=True)
-            self.start = self.items.select(load=True).count == self.items.count
             self.refresh = (
                 main.appear(TRANSPORT_REFRESH, offset=self.offset)
                 and bool(self.items.select(refresh=True).count)
             )
-
-            if not main.match_template_color(TRANSPORT_START, offset=self.offset):
-                self.start = False
+            self.start = cargo_can_start(
+                available_item_count=self.items.count,
+                action_button_active=main.match_template_color(
+                    TRANSPORT_START, offset=self.offset
+                ),
+                refresh=self.refresh,
+            )
         elif self.status == 'running':
             self.start = False
             button = OCR_TRANSPORT_TIME_REMAIN.move((0, self.offset[1] + 20))
@@ -451,7 +473,7 @@ class IslandCargoPreparation(IslandUI):
         self.interval_clear([GET_ITEMS_ISLAND, TRANSPORT_START, POPUP_CANCEL_WHITE])
         success = True
         confirm_timer = Timer(1, count=2).start()
-        for _ in self.loop():
+        for _ in self.loop(timeout=30):
             if self.appear_then_click(TRANSPORT_START, offset=comm.offset, interval=2):
                 success = False
                 confirm_timer.reset()
@@ -471,6 +493,9 @@ class IslandCargoPreparation(IslandUI):
                     break
             else:
                 confirm_timer.reset()
+        else:
+            logger.warning('[岛屿-货运] 启动或装载货运委托超时')
+            return False
         return success
 
     def _open_replace_page(self, comm):
