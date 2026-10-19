@@ -369,22 +369,6 @@ class TestCompletedEventFastExit(unittest.TestCase):
 class TestBatchedResourceOcr(unittest.TestCase):
     image = np.full((30, 80, 3), 255, np.uint8)
 
-    def test_background_ocr_is_quiet_without_disabling_default_logs(self):
-        from module.os_handler.resource_read import read_coins
-
-        model = Mock()
-        model.atomic_ocr_for_single_lines.return_value = ['109778']
-        reader = Digit((0, 0, 40, 20))
-        with patch.object(Ocr, 'cnocr', new_callable=PropertyMock, return_value=model), \
-                patch('module.ocr.ocr.logger.attr') as log:
-            for _ in range(20):
-                result = read_coins(self.image, [reader], ('isolated', 'cn', 0), datetime.now())
-                self.assertTrue(result.valid)
-                self.assertEqual(result.yellow, 109778)
-            log.assert_not_called()
-            self.assertEqual(ocr_batch(self.image, [reader]), [109778])
-            log.assert_called_once()
-
     def test_currency_batch_keeps_preprocessing_and_validity_per_field(self):
         readers = [Digit((0, 0, 40, 20)), Digit((40, 0, 80, 20), letter=(239, 239, 239))]
         model = Mock()

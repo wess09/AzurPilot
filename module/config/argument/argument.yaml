@@ -1709,6 +1709,10 @@ OpsiHazard1Leveling:
     type: stored
     value: null
     display: hide
+  PendingEventRecovery:
+    type: stored
+    value: null
+    display: hide
   DebugClip: false
 OpsiSirenBug:
   SirenResearch_Enable: true

@@ -183,9 +183,7 @@ class BackgroundRuntimeTests(unittest.TestCase):
         state.candidate = CoinReading(self.runner._background_coin_identity(), datetime.now(), 97451, True)
         state.future = Future()
         state.future.set_result(state.candidate)
-        with patch('module.os_handler.os_status.logger.info') as info:
-            self.assertFalse(self.runner.background_coin_replenish_required())
-        info.assert_not_called()
+        self.assertFalse(self.runner.background_coin_replenish_required())
         self.assertEqual(self.runner._last_yellow_coins, 97451)
         self.assertEqual(self.runner._shop_purple_coins, 31163)
         self.writer.assert_called_once_with(

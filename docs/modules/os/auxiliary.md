@@ -128,6 +128,8 @@ module/os_simulator/
 | `AkashiShop` | 明石商店货架定义按 `@Config.when(SERVER='tw'/'en'/None)` 三分支——三服货架布局不同 |
 | `Selector` | 策略适配层：把「侵蚀等级偏好、紫币保留、数量上限」等配置翻译成对货架条目的过滤与排序；港口/明石共用 |
 
+`OSShop.handle_akashi_supply_buy()` 返回购买及返回地图是否完成，不能将入口失败计为明石成功。普通任务的近距离入口处理舰队菜单和误入的总览、仓库、情报、指令页面，点击三次后停止重试，连续十二秒无进展后交回上层；已在商店时直接执行购买，不受入口超时限制。侵蚀一中相邻明石直接进入商店，较远时使用只发送一次移动指令的事件循环，行军中不补点，剧情透出地图也不再定位。其安全定位、换队、完整强制移动与中断续查由 `module/os/event_recovery.py` 编排，详见[大世界核心](index.md#侵蚀一随机事件安全交互与续查)。
+
 ### os_simulator
 
 `OSSimulator` 用 Numba `@njit` 加速蒙特卡洛，`start()` 起后台线程跑模拟、`stop_event` 在批次边界中断，参数读 `OpsiSimulator.OpsiSimulatorParameters.*`（Cl1Coin/Meow3Coin/Meow5Coin/明石概率等）。`module/runtime/os_simulator.py` 按实例管理只读配置快照、独立日志与图表，`module/api/opsi_simulator_service.py` 校验实例并提供 WebSocket 接口。页面刷新不终止模拟，服务关闭时请求中断并回收线程。

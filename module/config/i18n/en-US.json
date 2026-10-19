@@ -4249,7 +4249,7 @@
     },
     "ExecuteFixedPatrolScan": {
       "name": "Post-battle forced movement (efficiency mode)",
-      "help": "When enabled, after each battle ALAS cycles through fleets 1-4 and checks each radar for remaining question marks (switching fleets only, moving none), and handles Akashi / logging tower / Siren device if found. If that is not enough, it moves fleets one by one and rescans the whole map, with fixed destinations C1/D1/E1/F1 (only fit for the Hazard-1 map): if some fleet saw a question mark it could not reach (blocked / out of movement range) it moves right away; only when no fleet saw anything does it check the current action points, moving only when they are above 7, otherwise saving them for the next round. Default off. Meowfficer Farming does not use this; it only switches fleets and checks radars."
+      "help": "When enabled, after each battle ALAS cycles through fleets 1-4 and checks each radar for remaining question marks (switching fleets only, moving none), and handles Akashi / logging tower / Siren device if found. If that is not enough, it moves fleets one by one and rescans the whole map, with fixed destinations C1/D1/E1/F1 (only fit for the Hazard-1 map): if some fleet saw a question mark it could not reach (blocked / out of movement range) it moves right away; only when no fleet saw anything does it check the current action points, moving only when they are above 7, otherwise saving them for the next round. Default off. Meowfficer Farming does not use this; it only switches fleets and checks radars.\nIf a confirmed map event remains inaccessible after safe clicks and fleet switching, emergency fleet movement runs once regardless of this setting."
     },
     "SkipHpCheck": {
       "name": "Sacrifice run: skip HP check",
@@ -4280,6 +4280,10 @@
     "SeaMilesLastRecord": {
       "name": "Last sea miles check",
       "help": "Internal timestamp of the last successful sea miles check, used to calculate the check interval."
+    },
+    "PendingEventRecovery": {
+      "name": "Pending map event recovery",
+      "help": "Stores unfinished Hazard 1 Akashi shops, logging towers, exploration rewards, containers, radar questions, and remaining device follow-up steps. Resumes them before a new search or zone change after restart."
     },
     "DebugClip": {
       "name": "Post-battle debug recording",

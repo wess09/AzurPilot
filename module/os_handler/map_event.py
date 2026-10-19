@@ -346,7 +346,7 @@ class MapEventHandler(EnemySearchingHandler):
         """开启自律寻敌的带预算重试点击。
 
         装置探测演出、剧情收尾期间游戏可能持续数秒不响应该按钮。
-        重试保留 3 秒点击间隔，并在点击后清空共用点击记录，避免将
+        普通重试间隔为 3 秒，资源探测后的自律使用 0.5 秒；点击后清空共用点击记录，避免将
         演出期间的受控重试当成全局连点；由独立的 45 秒预算兜底，
         超时仍未生效才按点击无效上报。
 
@@ -384,6 +384,7 @@ class MapEventHandler(EnemySearchingHandler):
         """
         command = getattr(getattr(self.config, 'task', None), 'command', None)
         fast_farming = command in ('OpsiHazard1Leveling', 'OpsiMeowfficerFarming')
+        siren_resource = getattr(self, '_os_auto_search_siren_resource', False)
         if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50)):
             self.device.screenshot_interval_set()
             cleared = self.os_auto_search_quit(drop=drop)
@@ -406,16 +407,19 @@ class MapEventHandler(EnemySearchingHandler):
             # 先确认已开启状态，避免战后按钮过渡时再次点击同一开关将自律关闭。
             self._os_auto_search_enable_budget_clear()
             return False
+        stopped = False
         for button in (AUTO_SEARCH_OS_MAP_OPTION_OFF, AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED):
-            if self.match_template_color(button, offset=(5, 120)) and self.info_bar_count() >= 2:
-                self.device.screenshot_interval_set()
-                self.os_auto_search_quit(drop=drop)
-                raise CampaignEnd
+            if self.match_template_color(button, offset=(5, 120)):
+                stopped = True
+                if self.info_bar_count() >= 2:
+                    self.device.screenshot_interval_set()
+                    self.os_auto_search_quit(drop=drop)
+                    raise CampaignEnd
 
         if enable is None:
             pass
         elif enable:
-            if fast_farming:
+            if fast_farming or siren_resource:
                 # 剧情可能透出地图按钮，先处理剧情；回到地图后才重试开启自律。
                 if self.appear(STORY_SKIP_3, offset=(20, 20)):
                     self._os_auto_search_enable_budget_clear()
@@ -423,8 +427,8 @@ class MapEventHandler(EnemySearchingHandler):
                 if not self.is_in_map():
                     self._os_auto_search_enable_budget_clear()
                     return False
-            # 首帧可以立即开启；后续截图重试沿用普通自律的开关防连击间隔。
-            click_interval = 3
+            # 资源探测演出尚未响应时快速重试，其余搜索保留战后按钮过渡的防连击间隔。
+            click_interval = 0.5 if siren_resource else 3
             if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_OFF,
                                          offset=(5, 120), interval=click_interval):
                 self._os_auto_search_enable_click(AUTO_SEARCH_OS_MAP_OPTION_OFF)
@@ -439,8 +443,9 @@ class MapEventHandler(EnemySearchingHandler):
                 self.get_interval_timer(AUTO_SEARCH_OS_MAP_OPTION_OFF,
                                         interval=click_interval, renew=True).reset()
                 return True
-            # 关闭外观消失：自律已开启或界面已切换，重试预算清零
-            self._os_auto_search_enable_budget_clear()
+            # 冷却中仍能看到关闭按钮时保留预算，不能把“暂不重试”当成已开启。
+            if not stopped:
+                self._os_auto_search_enable_budget_clear()
         else:
             if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120), interval=3):
                 self.device.click(AUTO_SEARCH_OS_MAP_OPTION_ON)
