@@ -334,12 +334,28 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
         self.assertTrue(self.handler.handle_os_auto_search_map_option())
         self.handler.device.click.assert_called_once_with(AUTO_SEARCH_OS_MAP_OPTION_OFF)
 
-    def test_unregistered_click_is_retried_within_one_second(self):
+    def test_battle_transition_does_not_toggle_again_after_half_second(self):
         self.assertTrue(self.handler.handle_os_auto_search_map_option())
-        for elapsed in (0.2, 0.4):
+        # 开启操作已受理，但战后按钮动画仍短暂保留关闭外观。
+        self.clock.now += 0.6
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.clock.now += 0.3
+        self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_ON
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.device.click.assert_called_once()
+
+    def test_running_state_wins_when_off_appearance_also_matches(self):
+        self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_ON
+        with patch.object(AUTO_SEARCH_OS_MAP_OPTION_OFF, 'match_template_color', return_value=True):
+            self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.device.click.assert_not_called()
+
+    def test_unregistered_click_retries_after_safe_toggle_cooldown(self):
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        for elapsed in (0.2, 0.6, 2.9):
             self.clock.now = 100 + elapsed
             self.assertFalse(self.handler.handle_os_auto_search_map_option())
-        self.clock.now = 100.6
+        self.clock.now = 103.1
         self.assertTrue(self.handler.handle_os_auto_search_map_option())
         self.assertEqual(self.handler.device.click.call_count, 2)
 
@@ -350,13 +366,79 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
         self.assertFalse(self.handler.handle_os_auto_search_map_option())
         self.assertEqual(self.handler.device.click.call_count, 1)
 
-    def test_resource_pause_does_not_inherit_three_second_wait(self):
+    def test_resource_search_retries_at_half_second_with_shared_off_state_cooldown(self):
+        self.handler._os_auto_search_siren_resource = True
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        for state in (AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED, AUTO_SEARCH_OS_MAP_OPTION_OFF):
+            self.handler.state = state
+            self.clock.now += 0.49
+            self.assertFalse(self.handler.handle_os_auto_search_map_option())
+            self.clock.now += 0.02
+            self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        self.assertEqual(self.handler.device.click.call_count, 3)
+
+    def test_resource_search_stops_clicking_as_soon_as_on_is_visible(self):
+        self.handler._os_auto_search_siren_resource = True
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_ON
+        self.clock.now += 0.51
+        with patch.object(AUTO_SEARCH_OS_MAP_OPTION_OFF, 'match_template_color', return_value=True):
+            self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.device.click.assert_called_once()
+
+    def test_resource_search_in_other_tasks_waits_for_story_and_map(self):
+        self.handler.config.task.command = 'OpsiExplore'
+        self.handler._os_auto_search_siren_resource = True
+        self.handler.story_present = True
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.story_present = False
+        self.handler.in_map = False
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.device.click.assert_not_called()
+        self.handler.in_map = True
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        self.clock.now += 0.51
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+
+    def test_resource_retry_budget_survives_frames_inside_the_click_cooldown(self):
+        self.handler._os_auto_search_siren_resource = True
+        device = self.use_fake_device()
+        with self.assertRaisesRegex(GameTooManyClickError, '自律寻敌'):
+            for frame in range(231):
+                self.clock.now = 100 + frame * 0.2
+                self.handler.handle_os_auto_search_map_option()
+        self.assertGreater(len(device.history), 60)
+        self.assertLess(self.clock.now, 146)
+
+    def test_resource_scope_is_restored_after_auto_search_returns_or_raises(self):
+        self.handler.config.temporary = Mock(return_value=SimpleNamespace(recover=Mock()))
+        self.handler.config.is_task_enabled = Mock(return_value=False)
+        self.handler.ash_popup_canceled = False
+
+        def search(**kwargs):
+            self.assertTrue(self.handler._os_auto_search_siren_resource)
+            return 2
+
+        self.handler.os_auto_search_daemon = Mock(side_effect=search)
+        self.assertEqual(OSMap.os_auto_search_run(self.handler, siren_resource=True), 2)
+        self.assertFalse(self.handler._os_auto_search_siren_resource)
+        self.assertTrue(self.handler.handle_os_auto_search_map_option())
+        self.clock.now += 0.51
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.handler.os_auto_search_daemon.side_effect = RuntimeError('search interrupted')
+        with self.assertRaisesRegex(RuntimeError, 'search interrupted'):
+            OSMap.os_auto_search_run(self.handler, siren_resource=True)
+        self.assertFalse(self.handler._os_auto_search_siren_resource)
+
+    def test_resource_pause_keeps_safe_toggle_cooldown(self):
         self.handler.handle_os_auto_search_map_option()
         self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_ON
         self.clock.now += 0.2
         self.assertFalse(self.handler.handle_os_auto_search_map_option())
         self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_OFF
         self.clock.now += 0.9
+        self.assertFalse(self.handler.handle_os_auto_search_map_option())
+        self.clock.now += 2
         self.assertTrue(self.handler.handle_os_auto_search_map_option())
         self.assertEqual(self.handler.device.click.call_count, 2)
 
@@ -388,7 +470,7 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
                 self.handler.state = second
                 self.clock.now += 0.2
                 self.assertFalse(self.handler.handle_os_auto_search_map_option())
-                self.clock.now += 0.4
+                self.clock.now += 3
                 self.assertTrue(self.handler.handle_os_auto_search_map_option())
                 self.assertEqual(
                     [call.args[0] for call in self.handler.device.click.call_args_list],
@@ -422,27 +504,27 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
         return device
 
     def test_long_enable_storm_does_not_trip_click_guard(self):
-        """装置探测演出后持续重试约 24 秒（40 次），不应触发共用防连点阈值。"""
+        """装置演出期间按安全间隔重试约 43 秒，不应触发共用防连点阈值。"""
         device = self.use_fake_device()
-        for _ in range(40):
+        for _ in range(14):
             self.assertTrue(self.handler.handle_os_auto_search_map_option())
-            self.clock.now += 0.6
-        self.assertEqual(len(device.history), 40)
+            self.clock.now += 3.1
+        self.assertEqual(len(device.history), 14)
         self.assertEqual(device.count_of('AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED'), 0)
         # 每次点击后都清空点击记录，防连点阈值不会被重试累积触发
-        self.assertGreaterEqual(device.clears, 40)
+        self.assertGreaterEqual(device.clears, 14)
 
     def test_alternating_off_states_do_not_trip_curve_guard(self):
         """两种关闭外观交替重试也不触发「两个按钮各 ≥6 次」的防连点规则。"""
         device = self.use_fake_device()
-        for n in range(40):
+        for n in range(14):
             self.handler.state = (
                 AUTO_SEARCH_OS_MAP_OPTION_OFF if n % 2 == 0
                 else AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED
             )
             self.assertTrue(self.handler.handle_os_auto_search_map_option())
-            self.clock.now += 0.6
-        self.assertEqual(len(device.history), 40)
+            self.clock.now += 3.1
+        self.assertEqual(len(device.history), 14)
 
     def test_stuck_enable_storm_reports_after_budget(self):
         """界面持续停在关闭外观超过预算后，按点击无效上报而不是无限重试。"""
@@ -450,22 +532,22 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
         with self.assertRaisesRegex(GameTooManyClickError, '自律寻敌'):
             for _ in range(100):
                 self.handler.handle_os_auto_search_map_option()
-                self.clock.now += 0.6
+                self.clock.now += 3.1
 
     def test_retry_budget_resets_between_battles(self):
         """自律开启后预算清零，下一场战斗的重试重新计时，不跨轮累积。"""
         self.use_fake_device()
-        for _ in range(60):
+        for _ in range(14):
             self.assertTrue(self.handler.handle_os_auto_search_map_option())
-            self.clock.now += 0.6
+            self.clock.now += 3.1
         self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_ON
         self.clock.now += 0.6
         self.assertFalse(self.handler.handle_os_auto_search_map_option())
         self.handler.state = AUTO_SEARCH_OS_MAP_OPTION_OFF
-        self.clock.now += 0.6
-        for _ in range(20):
+        self.clock.now += 3.1
+        for _ in range(5):
             self.assertTrue(self.handler.handle_os_auto_search_map_option())
-            self.clock.now += 0.6
+            self.clock.now += 3.1
 
     def test_retry_budget_resets_when_frame_is_interrupted(self):
         """剧情或非地图画面打断重试时预算清零，恢复点击后重新计时。"""
@@ -474,9 +556,9 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
                 self.handler = AutoSearchStateStub()
                 self.handler.config.task.command = self.command
                 self.use_fake_device()
-                for _ in range(60):
+                for _ in range(14):
                     self.assertTrue(self.handler.handle_os_auto_search_map_option())
-                    self.clock.now += 0.6
+                    self.clock.now += 3.1
                 if interrupt == 'story':
                     self.handler.story_present = True
                 else:
@@ -485,10 +567,10 @@ class TestCl1AutoSearchRetry(unittest.TestCase):
                 self.assertFalse(self.handler.handle_os_auto_search_map_option())
                 self.handler.story_present = False
                 self.handler.in_map = True
-                self.clock.now += 0.6
-                for _ in range(20):
+                self.clock.now += 3.1
+                for _ in range(5):
                     self.assertTrue(self.handler.handle_os_auto_search_map_option())
-                    self.clock.now += 0.6
+                    self.clock.now += 3.1
 
 
 class TestMeowAutoSearchRetry(TestCl1AutoSearchRetry):

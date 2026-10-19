@@ -450,8 +450,8 @@ class Combat(Combat_, MapEventHandler):
         """
         自动搜索模式下的经验结算页面处理。
 
-        依次检查 S/A/B/C/D 经验结算按钮，点击后清除 S 评价计时器并等待随机时间。
-        等待时间根据是否有掉落物决定（有掉落 1.5-2 秒，无掉落 0.25-0.5 秒）。
+        依次检查 S/A/B/C/D 经验结算按钮，点击后清除 S 评价计时器。
+        通过点击冷却防止连击，由调用方继续截图确认下一状态。
 
         Pages:
             in: 经验结算页面（S/A/B/C/D 任一可见）
@@ -460,11 +460,9 @@ class Combat(Combat_, MapEventHandler):
         Returns:
             bool: 是否点击了经验结算按钮。
         """
-        sleep = self._get_exp_info_sleep()
         for exp_info_button in [EXP_INFO_S, EXP_INFO_A, EXP_INFO_B, EXP_INFO_C, EXP_INFO_D]:
-            if self.appear_then_click(exp_info_button):
+            if self.appear_then_click(exp_info_button, interval=self.battle_status_click_interval):
                 self._clear_battle_status_s_timer()
-                self.device.sleep(sleep)
                 return True
         return False
 
@@ -506,12 +504,12 @@ class Combat(Combat_, MapEventHandler):
                 continue
 
             # 结束
-            if self.handle_os_auto_search_map_option(drop=drop):
-                self._clear_battle_status_s_timer()
-                break
             pause = self.is_combat_executing()
             if pause:
                 logger.attr('战斗UI', pause)
+                break
+            if self.handle_os_auto_search_map_option(drop=drop):
+                self._clear_battle_status_s_timer()
                 break
             if self.is_in_map():
                 break
@@ -539,6 +537,9 @@ class Combat(Combat_, MapEventHandler):
 
             if self.handle_submarine_call(submarine_mode):
                 continue
+            if self.is_combat_executing():
+                battle_status_s_timer.clear()
+                continue
             # 失败时不更改自动搜索选项
             enable = success if success is not None else None
             if self.handle_os_auto_search_map_option(drop=drop, enable=enable):
@@ -549,10 +550,8 @@ class Combat(Combat_, MapEventHandler):
             if self.is_in_map():
                 self.device.screenshot_interval_set()
                 break
-            if self.is_combat_executing():
-                battle_status_s_timer.clear()
-                continue
-            if self.config.OpsiGeneral_RepairThreshold > 0 and self.handle_auto_search_exp_info():
+            # 自律被游戏或任务中断后，经验页需要主动确认，与是否启用自动修理无关。
+            if self.handle_auto_search_exp_info():
                 battle_status_s_timer.clear()
                 success = None
                 continue

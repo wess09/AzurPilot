@@ -177,7 +177,7 @@ class TestFixedPatrolScan(unittest.TestCase):
     def test_nested_call_is_skipped(self):
         """已经在强制移动流程里 -> 跳过嵌套调用，避免重复挪舰队。"""
         stub = FixedPatrolStub(current_ap=30)
-        stub._in_akashi_recovery = True
+        stub._in_event_recovery = True
         OSMap._execute_fixed_patrol_scan(stub, ExecuteFixedPatrolScan=True)
         self.assertEqual(stub.move_calls, 0)
         self.assertEqual(stub.fleet_sets, [])
@@ -228,7 +228,8 @@ class ClearQuestionStub:
     def __init__(self, predictions, walk_result=''):
         self.predictions = list(predictions)
         self.walk_result = walk_result
-        self.config = SimpleNamespace(temporary=lambda **kwargs: nullcontext())
+        self.config = SimpleNamespace(task=SimpleNamespace(command='OpsiMeowfficerFarming'),
+                                      temporary=lambda **kwargs: nullcontext())
         self.zone = SimpleNamespace(is_port=False)
         self.clicked = []
         self.device = SimpleNamespace(image=object(), click=self.clicked.append)
@@ -506,7 +507,8 @@ class DeviceStub:
         # 指定“切到第几支舰队时装置对话被触发”；None 表示全都触发不了
         self.confirm_on_fleet = confirm_on_fleet
         self.last_fleet = None
-        self.config = SimpleNamespace(temporary=lambda **kwargs: nullcontext())
+        self.config = SimpleNamespace(task=SimpleNamespace(command='OpsiMeowfficerFarming'),
+                                      temporary=lambda **kwargs: nullcontext())
         self.fleet_selector = SimpleNamespace(get=lambda: self.current)
         self.device = SimpleNamespace(screenshot=lambda: None, click=lambda grid: None)
         self.is_siren_device_confirmed = False

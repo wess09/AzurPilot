@@ -169,26 +169,41 @@ class ShipExpStats:
 
         self._save()
 
-    def record_round_time(self, round_duration: float) -> None:
-        """记录单轮侵蚀1时间到样本列表中。
+    def record_round_time(self, round_duration: float, *, round_count: float = 1) -> None:
+        """记录完整练级耗时，按实际轮数加权保留最近100轮。
 
         Args:
-            round_duration (float): 单轮战斗耗时（秒）。
+            round_duration (float): 包含准备、搜索及战后处理的总耗时（秒）。
+            round_count (float): 已完成战斗数除以2，单场中断可形成半轮。
         """
-        if 'round_times' not in self.data:
-            self.data['round_times'] = {'samples': [], 'average': 120.0}
+        if not math.isfinite(round_duration) or round_duration <= 0 \
+                or not math.isfinite(round_count) or round_count <= 0:
+            return
 
-        samples = self.data['round_times']['samples']
-        samples.append(round(round_duration, 2))
+        group = self.data.get('round_times', {})
+        if group.get('scope') != 'full_cycle':
+            # 旧样本只覆盖搜索内两场战斗，保留原值但不与完整流程混算。
+            previous = group
+            group = {'samples': [], 'round_counts': [], 'scope': 'full_cycle'}
+            if previous:
+                group['legacy'] = previous
+            self.data['round_times'] = group
 
-        # 只保留最近100个样本
-        if len(samples) > 100:
-            self.data['round_times']['samples'] = samples[-100:]
-            samples = self.data['round_times']['samples']
+        samples = group['samples']
+        counts = group['round_counts']
+        samples.append(round_duration / round_count)
+        counts.append(min(round_count, 100))
 
-        # 更新平均值
-        if samples:
-            self.data['round_times']['average'] = round(sum(samples) / len(samples), 2)
+        # 一次计划作战可以包含多轮，裁剪权重而不是把整次搜索当作一轮。
+        excess = sum(counts) - 100
+        while excess > 0:
+            if counts[0] <= excess:
+                excess -= counts.pop(0)
+                samples.pop(0)
+            else:
+                counts[0] -= excess
+                excess = 0
+        group['average'] = round(sum(value * count for value, count in zip(samples, counts)) / sum(counts), 2)
 
         self._save()
 

@@ -431,3 +431,7 @@ self.config.task_delay(minute=30)         # 当前任务 30 分钟后再跑
 - [基础层 module/base](base/index.md) — `Filter`（优先级解析）、原子 IO 的底层依赖
 - [编码规范与设计模式](overview/conventions.md) — 配置路径约定与生成器工作流的总纲
 - [MCP SSE 服务器](entry/mcp-server.md) — `mcp_helper` 的消费方
+
+### 后台网络校时
+
+首次读取时间时启动后台 NTP 查询并立即使用本机时间；成功后原子发布校准时间快照，刷新失败保留上次成功结果。`refresh()` 与 `refresh_time()` 返回已有缓存的同步状态，不代表新请求已完成，`force=True` 也不等待网络。查询在锁外执行，同一时间源只允许一个 daemon 查询线程；成功后 30 分钟刷新，失败退避 10 分钟。`timestamp()`、`now()`、`status()` 不等待 DNS 或 UDP，校时不会写入或重置任务记录。手机本机时间不准或首次成功校准的偏差较大时，定时判断仍可能改变；应保持系统自动时间设置。

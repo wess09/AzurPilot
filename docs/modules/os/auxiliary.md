@@ -102,11 +102,14 @@ module/os_simulator/
 
 | 类 | 要点 |
 | --- | --- |
-| `AshCombat(Combat)` | 战斗中持续采集信标收集进度（`ash_collect_status`，`DailyDigitCounter` 左裁剪适配信标数字） |
+| `AshCombat(Combat)` | META 战斗中的战斗状态、战前检查及完成信号处理 |
+| `OSAsh(UI, MapEventHandler)` | 地图侧读取信标持有量与每日进度；`AshDigitCounter` 核对持有量的计数格式、范围和完整字形数量，`DailyDigitCounter` 裁掉每日进度左侧文字 |
 | `Meta(UI, MapEventHandler)` | META 页面基类；`MetaState` 枚举（INIT/ATTACKING/COMPLETE/UNDEFINED）驱动页面状态机 |
 | `OpsiAshBeacon(Meta)` | 信标攻击任务：`ui_ensure(page_reward)` → 攻击 → `MetaReward` 领奖 → `task_delay(server_update=True)` → **必须 `ui_goto_main`**（MetaReward 停在 META 页，不回主界面会让下一个任务页面识别失败） |
 | `AshBeaconAssist(Meta)` | 协助好友信标：成功领奖延迟到服务器刷新，失败 `task_delay(minute=(10, 20))` 重试 |
-| `handle_ash_beacon_attack()` | 在大世界战斗链路中调用：收集 ≥100 且可调度时 `task_call('OpsiAshBeacon')`；`AttackMode=current_dossier_only`（只打档案）时不触发——该模式下信标数据永不消耗，触发条件会永久成立并反复打断智能调度|
+| `handle_ash_beacon_attack()` | 在大世界战斗链路中调用：持有量通过字形校验、≥100 且可调度时 `task_call('OpsiAshBeacon')`；读数不可信时不覆盖 META 排期。`AttackMode=current_dossier_only`（只打档案）时不触发——该模式下信标数据永不消耗，触发条件会永久成立并反复打断智能调度 |
+
+地图持有量不能只信任 OCR 文本：两位数若被补出百位，会反复召回数据不足的 META 任务，并中断正在执行的自动搜索。`AshDigitCounter` 用同一原生字图的完整连通字形数核对文字长度，拒绝不一致或越界结果，不截掉首位猜数；下一张地图截图可重新识别。持有量无效时仍独立读取每日进度，已达每日上限的状态继续用于侵蚀一行动力保留判断。离线回归与匿名原生字图见 `tests/test_opsi_ash_status.py`、`tests/fixtures/opsi_beacon/`。
 
 `OpsiAshBeacon.AssistRequestLimit` 替代原「一击即走」开关：`0`（默认）打一刀后持续每半小时求援；`-1` 自行连续出击，是否求援仍由 `RequestAssist` 控制；正整数在求援指定轮数、最后等待半小时后，若信标仍未击破则自行连续打完。首次战斗前的求援计入，好友/大舰队/世界的一次操作合计一轮。正整数模式将轮数及下次检查时刻保存到隐藏的 `AssistRequestState`，防止首刀后立即重复计数，并在重启后继续；确认信标为空或本信标奖励领取完毕时清除。META 主入口、每日刷新和档案信标不会自行清零该记录。旧布尔值迁移为 `true → 0`、`false → -1`。离线回归见 `tests/test_meta_beacon.py`。
 
@@ -114,6 +117,7 @@ module/os_simulator/
 
 - `ContinuousCombat`：塞壬扫描装置触发的连续战斗控制流异常，守护与任务循环捕获后继续。
 - `Combat(Combat_, MapEventHandler)` 覆写四个关键点：`_handle_auto_battle_status_s`（S 评价页自动点击，`battle_status_s_autoclick_delay` 可被子类改短）、`_os_combat_expected_end`（预期结束判定，大世界守护优先点 AUTO_SEARCH_REWARD）、`combat_status` 的结束判定、`handle_exp_info`。普通守护任务若用 `expected_end='no_searching'` 在大世界永不成立，会卡死在奖励页——`os_daemon` 的注释记录了这个坑。
+- `auto_search_combat()` 在加载和执行阶段优先确认战斗执行状态，暂停按钮可见时不处理地图自律开关。自动搜索中断后仍确认 S/A/B/C/D 经验页，与 `OpsiGeneral_RepairThreshold` 无关；点击使用结算冷却，并由下一张截图确认返回地图。关闭修理不能关闭结算处理，否则会在经验页等待至卡死重启。离线回归见 `tests/test_opsi_auto_search_combat.py`，覆盖脱敏原始截图、连续敌人清理及下一轮搜索。
 
 ### os_shop
 
@@ -123,6 +127,8 @@ module/os_simulator/
 | `PortShop` | 港口货架 `ItemGrid`（按钮网格 + 滚动），`OS_SHOP_SCROLL = AdaptiveScroll(...)` 适配背景多变的商店界面 |
 | `AkashiShop` | 明石商店货架定义按 `@Config.when(SERVER='tw'/'en'/None)` 三分支——三服货架布局不同 |
 | `Selector` | 策略适配层：把「侵蚀等级偏好、紫币保留、数量上限」等配置翻译成对货架条目的过滤与排序；港口/明石共用 |
+
+`OSShop.handle_akashi_supply_buy()` 返回购买及返回地图是否完成，不能将入口失败计为明石成功。普通任务的近距离入口处理舰队菜单和误入的总览、仓库、情报、指令页面，点击三次后停止重试，连续十二秒无进展后交回上层；已在商店时直接执行购买，不受入口超时限制。侵蚀一包括相邻明石在内统一使用只发送一次移动指令的事件循环，行军中不补点，剧情透出地图也不再定位。其安全定位、换队、完整强制移动与中断续查由 `module/os/event_recovery.py` 编排，详见[大世界核心](index.md#侵蚀一随机事件安全交互与续查)。
 
 ### os_simulator
 

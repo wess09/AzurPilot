@@ -256,3 +256,10 @@ def opsi_explore_cleanup_state_redirect(value):
     if isinstance(value, dict) and value.get('phase') in ('cleanup', 'done') and 'order' in value:
         return dict(value)
     return None
+
+
+def opsi_pending_event_redirect(value):
+    """保留旧明石续查记录，将其纳入按事件类型区分的恢复。"""
+    if isinstance(value, dict):
+        return dict(value, kind='is_akashi', phase='interact')
+    return None

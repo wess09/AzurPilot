@@ -641,6 +641,8 @@ class ConfigGenerator:
 class ConfigUpdater:
     # 格式：source, target, (可选) convert_func
     redirection = [
+        ('OpsiHazard1Leveling.OpsiHazard1Leveling.PendingAkashiRecovery',
+         'OpsiHazard1Leveling.OpsiHazard1Leveling.PendingEventRecovery', opsi_pending_event_redirect),
         ('OpsiGeneral.OpsiGeneral.ActionPointCheckInterval',
          'OpsiHazard1Leveling.OpsiHazard1Leveling.ActionPointCheckInterval'),
         ('OpsiGeneral.OpsiGeneral.SkipStrategicSearchCheck',

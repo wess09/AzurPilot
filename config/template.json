@@ -3062,6 +3062,7 @@
       "RecordNonCL1AP": true,
       "RecordSeaMiles": -1,
       "SeaMilesLastRecord": null,
+      "PendingEventRecovery": null,
       "DebugClip": false
     },
     "OpsiSirenBug": {

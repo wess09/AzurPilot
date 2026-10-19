@@ -10,7 +10,10 @@
 余烬信标系统允许玩家收集信标数据来挑战 META 级别的敌人，
 战斗结束后可获得 META 角色碎片等奖励。
 """
+import re
 from datetime import timedelta
+
+import cv2
 
 from module.base.utils import image_left_strip
 from module.combat.combat import BATTLE_PREPARATION, Combat
@@ -39,6 +42,27 @@ class DailyDigitCounter(DigitCounter):
         image = super().pre_process(image)
         image = image_left_strip(image, threshold=120, length=35)
         return image
+
+
+class AshDigitCounter(DigitCounter):
+    """核对原生信标字形数量，拒绝 OCR 凭空补出的百位数字。"""
+
+    def pre_process(self, image):
+        image = super().pre_process(image)
+        # 地图上的数字与斜杠互不相连；短小的抗锯齿噪点不算完整字符。
+        _, _, stats, _ = cv2.connectedComponentsWithStats((image < 120).astype('uint8'), connectivity=8)
+        self._glyph_count = int((stats[1:, cv2.CC_STAT_HEIGHT] >= image.shape[0] / 2).sum())
+        return image
+
+    def after_process(self, result):
+        result = super().after_process(result)
+        match = re.fullmatch(r'(\d{1,3})/(100|200)', result)
+        if match and int(match[1]) <= int(match[2]) and len(result) == self._glyph_count:
+            return result
+
+        # 不把多识别的一位剪掉或猜成其他读数，交给下次地图截图重读。
+        logger.warning(f'[META作战] 信标读数与原生字形不符，忽略本次结果: {result!r}')
+        return ''
 
 
 class AshBeaconFinished(Exception):
@@ -146,7 +170,7 @@ class OSAsh(UI, MapEventHandler):
     负责信标收集状态检测和信标攻击任务的自动调度。
 
     工作流程：
-    1. 通过 OCR 读取信标收集进度（DigitCounter）
+    1. 通过 OCR 读取信标收集进度，并核对原生字形数量（AshDigitCounter）
     2. 判断收集状态：可收集 / 未收集满 / 已达上限 / 被遮挡
     3. 当收集进度 >= 100 且信标任务可调度时，触发 OpsiAshBeacon 任务（只打档案时除外）
     4. 检查信标任务的下次执行时间，距今超过 30 分钟才允许调用
@@ -161,17 +185,17 @@ class OSAsh(UI, MapEventHandler):
         通过 OCR 读取余烬信标的收集进度。
 
         Returns:
-            int: 信标记录仪当前点数；状态被遮挡时返回 0。
+            int: 信标记录仪当前点数；状态被遮挡或读数未通过字形校验时返回 0。
         """
         if self.image_color_count(ASH_COLLECT_STATUS, color=(235, 235, 235), threshold=30, count=20):
             logger.info('[META作战] 信标状态：可收集')
-            ocr_collect = DigitCounter(
+            ocr_collect = AshDigitCounter(
                 ASH_COLLECT_STATUS, letter=(235, 235, 235), threshold=160, name='OCR_ASH_COLLECT_STATUS')
             ocr_daily = DailyDigitCounter(
                 ASH_DAILY_STATUS, letter=(235, 235, 235), threshold=160, name='OCR_ASH_DAILY_STATUS')
         elif self.image_color_count(ASH_COLLECT_STATUS, color=(140, 142, 140), threshold=30, count=20):
             logger.info('[META作战] 信标状态：未收集满')
-            ocr_collect = DigitCounter(
+            ocr_collect = AshDigitCounter(
                 ASH_COLLECT_STATUS, letter=(140, 142, 140), threshold=160, name='OCR_ASH_COLLECT_STATUS')
             ocr_daily = DailyDigitCounter(
                 ASH_DAILY_STATUS, letter=(140, 142, 140), threshold=160, name='OCR_ASH_DAILY_STATUS')
