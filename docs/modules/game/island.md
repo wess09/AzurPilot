@@ -123,7 +123,7 @@ flowchart TD
     K[排产零产出时:<br>严格模式 check_materials → force_skip] -.-> F
 ```
 
-排产的核心约束：每个岗位单次最多生产 `POST_PRODUCE_LIMIT`（约 7）个；填岗循环最多 `_MAX_FILL_LOOP`（10）轮；套餐（`meal_compositions`）下单时实时 `deduct_materials` 扣减原料账目；「保留线」记录已处理槽位的最高目标，防止套餐把尚未达标产品的保底库存当原料吃掉。排产多次失败时先切严格模式（真零库存才跳过），仍失败则把缺口产品加入 `force_skip` 本轮不再停留。
+排产的核心约束：每个岗位单次最多生产 `POST_PRODUCE_LIMIT`（约 7）个；填岗循环最多 `_MAX_FILL_LOOP`（10）轮；套餐（`meal_compositions`）下单时实时 `deduct_materials` 扣减原料账目；「保留线」记录已处理槽位的最高目标，原料库存低于目标时禁止作为套餐原料，达到目标后允许先消耗并由套餐分解补回。排产多次失败时先切严格模式（真零库存才跳过），仍失败则把缺口产品加入 `force_skip` 本轮不再停留。
 
 ### 子玩法速览
 

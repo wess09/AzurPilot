@@ -912,9 +912,10 @@ class IslandShopBase(Island, WarehouseOCR):
     def _get_usable_stock(self, material, material_stock):
         """获取套餐制作时指定原材料的可用库存。
 
-        保留线内商品（_reserved_targets）只能消耗仓库库存中超出自身
-        目标的部分，避免套餐消耗其尚未达标的保底库存；其余材料直接用
-        仓库库存。在产数量不计入可用量（做套餐查原料时在产不算）。
+        保留线内商品（_reserved_targets）只有在库存低于自身目标时才完全
+        禁止作为套餐原料；达到目标后允许先消耗，再由套餐分解补充回目标。
+        这样既保护尚未达标产品的保底库存，也避免库存恰好等于目标时把
+        可用量错误算成 0。在产数量不计入可用量（做套餐查原料时在产不算）。
 
         Args:
             material (str): 原料名称。
@@ -924,7 +925,8 @@ class IslandShopBase(Island, WarehouseOCR):
             int: 允许被套餐消耗的可用库存数量。
         """
         if material in self._reserved_targets:
-            return max(0, material_stock - self._reserved_targets[material])
+            if material_stock < self._reserved_targets[material]:
+                return 0
         return material_stock
 
     def get_max_producible(self, product, requested_quantity, skip_zero_materials=False):
@@ -952,9 +954,9 @@ class IslandShopBase(Island, WarehouseOCR):
                 quantity_per = composition.get('quantity_per', 1)
                 if quantity_per == 0:
                     continue
-                # 保留线内的产品只能消耗"仓库超额库存"（见 _get_usable_stock），
-                # 否则套餐会在前置项目因材料不足被跳过时，把其本就不够的
-                # 保底库存吃掉。
+                # 保留线内的产品低于目标时不能消耗（见 _get_usable_stock），
+                # 避免套餐吃掉前置项目尚未达标的保底库存；达到目标后允许
+                # 先消耗并由套餐分解补回。
                 usable_stock = self._get_usable_stock(material, material_stock)
                 max_by_material = usable_stock // quantity_per
                 if max_by_material <= 0:
@@ -965,7 +967,7 @@ class IslandShopBase(Island, WarehouseOCR):
                     else:
                         # 排产阶段 或 有但不满足一批：严格处理
                         if material in self._reserved_targets:
-                            logger.info(f"[岛屿]   {self._item_cn(product)} 原材料 {self._item_cn(material)} 无超额库存（仓库未超出目标 {self._reserved_targets[material]}），暂不消耗其保底库存")
+                            logger.info(f"[岛屿]   {self._item_cn(product)} 原材料 {self._item_cn(material)} 暂不可用（库存 {material_stock} 低于目标 {self._reserved_targets[material]}），暂不消耗其保底库存")
                         else:
                             logger.info(f"[岛屿]   {self._item_cn(product)} 缺少原材料: {self._item_cn(material)} (库存: {material_stock})")
                         return 0

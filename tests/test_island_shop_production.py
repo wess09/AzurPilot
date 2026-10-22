@@ -112,6 +112,76 @@ class IslandShopProductionTests(unittest.TestCase):
         self.assertEqual(ui.orders, [('floral_fruity', 7, None), ('apple_juice', 7, None)])
         self.assertEqual(ui.shop.warehouse_counts['apple_juice'], 3)
 
+    def test_teahouse_consumes_material_at_target_and_replenishes_it(self):
+        ui = ShopUI(
+            IslandTeahouse,
+            [('strawberry_lemon', 14), ('sunny_honey', 14)],
+            {
+                'strawberry_lemon': 14,
+                'sunny_honey': 7,
+                'honey_lemon': 0,
+                'fresh_honey': 108,
+            },
+        )
+
+        ui.run()
+        self.assertEqual(ui.orders, [
+            ('strawberry_lemon', 7, None),
+            ('honey_lemon', 7, None),
+        ])
+        self.assertEqual(ui.shop.to_post_products, {'sunny_honey': 7})
+
+        # 模拟两个原料岗位收获完成，下一轮应能制作剩余 7 个阳光蜜水。
+        ui.stock['strawberry_lemon'] += 7
+        ui.stock['honey_lemon'] += 7
+        ui.orders.clear()
+        ui.run()
+        self.assertEqual(ui.orders, [('sunny_honey', 7, None)])
+
+    def test_teahouse_protects_material_below_target(self):
+        ui = ShopUI(
+            IslandTeahouse,
+            [('strawberry_lemon', 14), ('sunny_honey', 14)],
+            {
+                'strawberry_lemon': 10,
+                'sunny_honey': 7,
+                'honey_lemon': 7,
+                'fresh_honey': 108,
+            },
+        )
+
+        ui.run()
+        self.assertEqual(ui.orders, [('strawberry_lemon', 4, None)])
+        self.assertEqual(len(ui.shop.get_idle_posts()), 1)
+
+    def test_all_meal_materials_respect_target_boundary(self):
+        shop_classes = (
+            IslandRestaurant,
+            IslandTeahouse,
+            IslandGrill,
+            IslandJuuEatery,
+            IslandJuuCoffee,
+        )
+        for shop_class in shop_classes:
+            ui = ShopUI(shop_class)
+            shop = ui.shop
+            for meal, composition in shop.meal_compositions.items():
+                materials = composition['required']
+                quantity_per = composition.get('quantity_per', 1)
+                with self.subTest(shop=shop_class.__name__, meal=meal):
+                    target = 7
+                    shop.warehouse_counts = {material: target for material in materials}
+                    shop._reserved_targets = {material: target for material in materials}
+                    self.assertEqual(
+                        shop.get_max_producible(meal, target),
+                        target // quantity_per,
+                    )
+
+                    shop.warehouse_counts = {
+                        material: target - 1 for material in materials
+                    }
+                    self.assertEqual(shop.get_max_producible(meal, target), 0)
+
     def test_restaurant_replenishes_special_material_after_deduction(self):
         ui = ShopUI(IslandRestaurant, [('tofu_meat', 3), ('tofu', 10)], {'tofu': 10})
         ui.run()
