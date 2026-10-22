@@ -1,4 +1,4 @@
-"""角色确认补点 helper 的离线回归测试（每日采集 / 经营走这条路径）。
+"""角色确认补点与角色筛选流程的离线回归测试。
 
 `confirm_selected_character_closed()` 与 `click_selected_character_confirm()`
 原实现是 `appear_then_click(SELECT_UI_CONFIRM, interval=1)`：间隔 1s 小于云手机
@@ -9,9 +9,13 @@
 2. 点击前重新截取一帧复核；
 3. 两次点击间隔不小于 ISLAND_CHARACTER_CONFIRM_RETRY_WAIT；
 4. 只点击确认按钮右侧安全段（与选餐页确认按钮等其它页面按钮不重叠）。
+
+角色筛选测试额外覆盖云手机角色页先出现标题、底部筛选按钮稍后渲染的时序，
+并确认默认位于列表末尾的 WorkerJuu 必须先完成体力筛选，不能绕过筛选直接查找。
 """
 import unittest
 from types import MethodType
+from unittest.mock import Mock
 
 import numpy as np
 
@@ -29,6 +33,12 @@ from module.island.island import (
     SELECT_UI_CONFIRM_SAFE,
     Island,
 )
+from module.island.island_select_character import SelectCharacter
+from module.island_select_character.assets import (
+    SELECT_CHARACTER_FILTER,
+    SELECT_CHARACTER_FILTER_CONFIRM,
+    SELECT_CHARACTER_FILTER_STAMINA,
+)
 
 
 def build_frame(*assets):
@@ -40,6 +50,12 @@ def build_frame(*assets):
 
 
 CHARACTER_PAGE = build_frame(ISLAND_SELECT_CHARACTER_CHECK, SELECT_UI_CONFIRM)
+CHARACTER_PAGE_READY = build_frame(
+    ISLAND_SELECT_CHARACTER_CHECK, SELECT_UI_CONFIRM, SELECT_CHARACTER_FILTER,
+)
+CHARACTER_FILTER_POPUP = build_frame(
+    SELECT_CHARACTER_FILTER_STAMINA, SELECT_CHARACTER_FILTER_CONFIRM,
+)
 PRODUCT_PAGE = build_frame(ISLAND_SELECT_PRODUCT_CHECK, POST_ADD_ORDER)
 
 
@@ -81,12 +97,36 @@ class FakeDevice:
         return None
 
 
+class FilterFlowDevice(FakeDevice):
+    """模拟角色页先出现、筛选按钮后渲染，并点击推进筛选弹窗。"""
+
+    def __init__(self, clock):
+        super().__init__(clock, lambda _: CHARACTER_PAGE)
+        self.screenshot_count = 0
+
+    def screenshot(self):
+        self.clock.advance(self.screenshot_cost)
+        self.screenshot_count += 1
+        clicked = {name for _, name, _ in self.clicks}
+        if "SELECT_CHARACTER_FILTER_CONFIRM" in clicked:
+            self.image = CHARACTER_PAGE_READY
+        elif "SELECT_CHARACTER_FILTER" in clicked:
+            self.image = CHARACTER_FILTER_POPUP
+        elif self.screenshot_count >= 2:
+            self.image = CHARACTER_PAGE_READY
+        else:
+            self.image = CHARACTER_PAGE
+        return self.image
+
+
 class StubIsland:
     """绑定真实 helper 与真实识别逻辑的测试替身。"""
 
     is_character_page_visible = Island.is_character_page_visible
     confirm_selected_character_closed = Island.confirm_selected_character_closed
     click_selected_character_confirm = Island.click_selected_character_confirm
+    select_character_filter = SelectCharacter.select_character_filter
+    _select_first_available_character = SelectCharacter._select_first_available_character
 
     # read_run_param 对 None config 回退默认值,测试默认使用内置节奏
     config = None
@@ -110,8 +150,23 @@ class StubIsland:
             return bool(button.match(self.device.image, offset=offset, similarity=similarity))
         return bool(button.appear_on(self.device.image, threshold=threshold))
 
+    def appear_then_click(self, button, offset=0, interval=0, similarity=0.85, threshold=10):
+        if self.appear(
+                button,
+                offset=offset,
+                interval=interval,
+                similarity=similarity,
+                threshold=threshold,
+        ):
+            self.device.click(button)
+            return True
+        return False
+
     def interval_clear(self, button, interval=3):
         return None
+
+    def find_specific_character(self, screenshot, character_name="WorkerJuu"):
+        return (0, 0)
 
 
 class CharacterConfirmHelperTest(unittest.TestCase):
@@ -131,6 +186,12 @@ class CharacterConfirmHelperTest(unittest.TestCase):
             setattr(stub, name, MethodType(getattr(Island, name), stub))
         result = getattr(stub, method)(**kwargs)
         return result, device
+
+    def bind_filter_helper(self, device):
+        stub = StubIsland(device)
+        for name in ("select_character_filter", "_select_first_available_character"):
+            setattr(stub, name, MethodType(getattr(SelectCharacter, name), stub))
+        return stub
 
     def test_slow_transition_does_not_add_extra_click(self):
         """确认已生效但角色页约 2.4s 才关闭时，不得补点确认按钮。"""
@@ -182,6 +243,43 @@ class CharacterConfirmHelperTest(unittest.TestCase):
             or safe[3] <= product[1] or safe[1] >= product[3]
         )
         self.assertFalse(overlap, f"补点区域 {safe} 与选餐页确认按钮 {product} 重叠")
+
+    def test_filter_waits_until_button_is_rendered(self):
+        """首帧只有角色页标题时不得判定筛选失败，应等按钮出现后继续。"""
+        device = FilterFlowDevice(self.clock)
+        stub = self.bind_filter_helper(device)
+
+        self.assertTrue(stub.select_character_filter())
+        self.assertEqual(
+            [name for _, name, _ in device.clicks],
+            [
+                "SELECT_CHARACTER_FILTER",
+                "SELECT_CHARACTER_FILTER_STAMINA",
+                "SELECT_CHARACTER_FILTER_CONFIRM",
+            ],
+        )
+        self.assertGreaterEqual(device.screenshot_count, 3)
+
+    def test_workerjuu_requires_filter_before_lookup(self):
+        """WorkerJuu 默认在列表末尾，必须先完成体力筛选再查找。"""
+        device = FilterFlowDevice(self.clock)
+        stub = self.bind_filter_helper(device)
+        stub.select_character_filter = Mock(return_value=True)
+        stub.find_specific_character = Mock(return_value=(0, 0))
+
+        self.assertEqual(stub._select_first_available_character(["WorkerJuu"]), (0, 0))
+        stub.select_character_filter.assert_called_once_with()
+        stub.find_specific_character.assert_called()
+
+    def test_workerjuu_lookup_is_skipped_when_filter_fails(self):
+        """筛选界面失败时不能绕过筛选直接查找，避免误报可用位置。"""
+        device = FilterFlowDevice(self.clock)
+        stub = self.bind_filter_helper(device)
+        stub.select_character_filter = Mock(return_value=False)
+        stub.find_specific_character = Mock(return_value=(0, 0))
+
+        self.assertIsNone(stub._select_first_available_character(["WorkerJuu"]))
+        stub.find_specific_character.assert_not_called()
 
 
 if __name__ == "__main__":
