@@ -166,12 +166,14 @@ retry = partial(retry_backend, recover=_retry_recover, label='设备-ldopengl')
 
 
 class LDOpenGLImpl:
-    def __init__(self, ld_folder: str, instance_id: int):
+    def __init__(self, ld_folder: str, instance_id: int, *, config=None):
         """
         Args:
             ld_folder: 雷电模拟器安装路径，例如 E:/ProgramFiles/LDPlayer9
             instance_id: 模拟器实例 ID，从 0 开始
+            config: 所属实例配置，供底层重试检查恢复设置。
         """
+        self.config = config
         ldopengl_dll = os.path.abspath(os.path.join(ld_folder, './ldopengl64.dll'))
         logger.info(
             f'[设备-ldopengl] LDOpenGL init, '
@@ -282,6 +284,7 @@ class LDOpenGL(Platform):
                     return LDOpenGLImpl(
                         ld_folder=folder,
                         instance_id=index,
+                        config=self.config,
                     )
                 except (LDOpenGLIncompatible, LDOpenGLError) as e:
                     logger.error(e)
@@ -297,6 +300,7 @@ class LDOpenGL(Platform):
             return LDOpenGLImpl(
                 ld_folder=self.emulator_instance.emulator.abspath('./'),
                 instance_id=self.emulator_instance.LDPlayer_id,
+                config=self.config,
             )
         except (LDOpenGLIncompatible, LDOpenGLError) as e:
             logger.error(e)

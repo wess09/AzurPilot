@@ -44,7 +44,7 @@ class LiveLoopTests(unittest.TestCase):
         data['General']['OilControl']['Enable'] = False
         data['General']['YukikazeTaskManager']['TaskPriorityAdjustment'] = 'Main > Research > Commission'
         self.path.write_text(json.dumps(data), encoding='utf-8')
-        for module in ('module.config.config', 'module.config.config_updater', 'module.config.utils', 'module.config.watcher'):
+        for module in ('module.config.config', 'module.config.config_updater', 'module.config.utils', 'module.config.watcher', 'module.config.recovery', 'alas'):
             self.enterContext(patch(f'{module}.filepath_config', side_effect=lambda name, *args: str(self.root / f'config/{name}.json')))
         for module in ('module.scheduler.runtime', 'module.config.config', 'alas'):
             self.enterContext(patch(f'{module}.{"now" if module.endswith("runtime") else "current_time"}', side_effect=lambda: self.time))
@@ -241,6 +241,35 @@ class LiveLoopTests(unittest.TestCase):
         self.assertNotIn('Restart', self.script.task_restart_record)
         saved = json.loads(self.path.read_text(encoding='utf-8'))
         self.assertEqual('2026-09-29 00:00:00', saved['Main']['Scheduler']['NextRun'])
+
+    def test_disabling_restart_limit_releases_persisted_queue_before_selection(self):
+        deadline = self.time + timedelta(days=1)
+        data = json.loads(self.path.read_text(encoding='utf-8'))
+        data['Alas']['Error']['TaskRestartLimit'] = 0
+        data['Main']['Scheduler'].update(Enable=True, NextRun=str(deadline))
+        data['Restart']['Scheduler']['NextRun'] = str(self.time + timedelta(hours=3))
+        self.path.write_text(json.dumps(data), encoding='utf-8')
+        self.script.task_restart_delays = {'Main': deadline}
+        self.script.task_restart_record = {'Main': 2}
+        self.assertEqual(self.script.get_next_task(), 'Main')
+        self.assertEqual(self.script.task_restart_delays, {})
+        saved = json.loads(self.path.read_text(encoding='utf-8'))
+        self.assertEqual(str(self.time), saved['Main']['Scheduler']['NextRun'])
+        self.assertTrue(saved['Main']['Scheduler']['Enable'])
+
+    def test_disabling_restart_limit_preserves_new_manual_schedule_and_disabled_task(self):
+        deadline = self.time + timedelta(days=1)
+        manual = deadline + timedelta(hours=3)
+        data = json.loads(self.path.read_text(encoding='utf-8'))
+        data['Alas']['Error']['TaskRestartLimit'] = 0
+        data['Main']['Scheduler'].update(Enable=True, NextRun=str(manual))
+        data['Research']['Scheduler'].update(Enable=False, NextRun=str(deadline))
+        self.path.write_text(json.dumps(data), encoding='utf-8')
+        self.script.task_restart_delays = {'Main': deadline, 'Research': deadline}
+        before = self.path.read_bytes()
+        self.script._sync_task_restart_limit()
+        self.assertEqual(self.path.read_bytes(), before)
+        self.assertEqual(self.script.task_restart_delays, {})
 
     def test_apply_at_checkpoint_restarts_from_new_entry(self):
         self.apply(self.program())

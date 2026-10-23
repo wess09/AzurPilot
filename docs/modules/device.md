@@ -230,6 +230,8 @@ flowchart TD
 
 所有后端的 `@retry` 都是 `retry_backend` 的 partial：最多 `RETRY_TRIES=5` 次，退避 0/0/1/3/3 秒；每轮先执行上一轮选出的恢复动作再重试。`recover(self, error, trial)` 返回下一个恢复函数，返回 `None` 表示无法自动恢复（升级为 `RequestHumanTakeover`）。`RequestHumanTakeover` 与 `EmulatorNotRunningError` 永不重试、原样上抛——前者是人工接管信号，后者是交给调度器的统一「设备离线」信号。重试耗尽的默认异常可由 `on_exhausted` 指定，截图类方法指定为 `EmulatorNotRunningError`，触控类保持 `RequestHumanTakeover`。
 
+恢复前及等待/重连后读取最新授权，关闭异常处理时立即传播 `RecoveryStopped`，使业务层普通异常捕获不能继续恢复。MuMu `NemuIpcImpl`、雷电 `LDOpenGLImpl` 的工厂在初始化前传入实例配置；原生 DLL、截图与输入算法不变。正常主动 `app_start/app_stop` 保留，临时恢复上下文中的动作则重新检查授权。来源与阈值详见 [异常恢复行为](entry/error-recovery.md)。
+
 ### 模拟器启动（Windows）
 
 `emulator_start()` 是「先停后启 + 启动监视」的完整流程：停实例（MuMu12 走 MuMuManager 同步 `shutdown_player` 并轮询确认实例真正关闭）→ 清理僵死残留进程（多开时跳过）→ 按类型发启动命令（MuMu12 用 `MuMuManager api launch_player`，雷电用 `ldconsole launch --index N --mini`）→ `emulator_start_watch()` 每 0.5s 轮询「设备出现在 ADB 列表 → shell 可用 → 游戏包存在」，等待时长按 `failures` 参数从 `EMULATOR_START_WATCH_TIMEOUTS`（60→90→120→180→300s）阶梯取值。整个过程由 `emulator_op_exclusive` 装饰器持有的**类级互斥锁**保护：拿不到锁直接抛 `EmulatorOpBusy`，避免两个恢复流程一个在启动、一个在关闭互相踩踏。MuMu12 的 `deep=True` 深度重启会额外结束全部 MuMu 进程（含虚拟机服务）——这是设备较差时「连续重启都起不来」的最后一招。

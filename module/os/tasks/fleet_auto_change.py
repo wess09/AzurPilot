@@ -214,6 +214,8 @@ class OpsiFleetAutoChange(CoinTaskMixin, DockMixin, OSMap):
         Args:
             error_msg (str): 错误信息。
         """
+        from module.config.recovery import check_error_recovery
+        check_error_recovery(self.config, RuntimeError(error_msg))
         logger.error(f"[大世界-自动配队] 自动配队发生错误: {error_msg}")
 
         self.config.OpsiFleetAutoChange_Enable = False

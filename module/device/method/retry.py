@@ -4,6 +4,7 @@ import time
 from functools import partial, wraps
 
 from module.base.runtime_params import RETRY_TRIES
+from module.config.recovery import check_error_recovery
 from module.device.method.utils import (
     handle_adb_error,
     handle_image_truncated,
@@ -51,15 +52,20 @@ def retry_backend(
                 before_attempt(trial, args, kwargs)
             try:
                 if init is not None:
+                    check_error_recovery(self.config, last_error)
                     time.sleep(retry_sleep(trial))
+                    check_error_recovery(self.config, last_error)
                     init()
+                    check_error_recovery(self.config, last_error)
                 return func(self, *args, **kwargs)
-            except (RequestHumanTakeover, EmulatorNotRunningError):
+            except (RequestHumanTakeover, EmulatorNotRunningError) as error:
+                check_error_recovery(self.config, error)
                 raise
             except passthrough:
                 logger.critical(f'[{label}] {func.__name__}() 参数错误，不执行设备恢复')
                 raise
             except Exception as error:
+                check_error_recovery(self.config, error)
                 last_error = error
                 init = recover(self, error, trial)
                 if init is None:

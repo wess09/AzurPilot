@@ -5,7 +5,7 @@ import importlib
 import unittest
 from json import JSONDecodeError
 from types import SimpleNamespace
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, PropertyMock, call, patch
 
 # Device 导入先安装项目的 pkg_resources 兼容补丁；不构造设备或读取配置。
 from module.device.device import Device  # noqa: F401
@@ -16,6 +16,7 @@ from module.device.method import (
     adb, ascreencap, droidcast, hermit, ldopengl, maatouch, minitouch, nemu_ipc,
     uiautomator_2, utils, wsa,
 )
+from module.config.recovery import RecoveryStopped
 from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 
 scrcpy = importlib.import_module('module.device.method.scrcpy.scrcpy')
@@ -261,6 +262,7 @@ class TestActualBackendMethods(unittest.TestCase):
         ):
             with self.subTest(backend=backend_type.__name__):
                 device = backend_type.__new__(backend_type)
+                device.config = SimpleNamespace(Error_HandleError=True)
                 operation = Mock(side_effect=OSError('触控服务初始化失败'))
                 setattr(device, init_name, operation)
                 with self.assertRaises(EmulatorNotRunningError):
@@ -274,6 +276,79 @@ class TestNativeRetryMethods(unittest.TestCase):
         self.sleep = self.enterContext(patch.object(retry_module.time, 'sleep'))
         self.enterContext(patch.object(retry_module, 'logger'))
         self.enterContext(patch.object(nemu_ipc, 'logger'))
+
+    def make_nemu(self, *, preferred, enabled):
+        owner = nemu_ipc.NemuIpc.__new__(nemu_ipc.NemuIpc)
+        owner.config = SimpleNamespace(
+            EmulatorInfo_path='C:/isolated/MuMu/shell/MuMuPlayer.exe' if preferred else '',
+            Error_HandleError=enabled, Error_StrictRestart=False,
+        )
+        owner.serial = '127.0.0.1:16384'
+        instance = Mock(path='C:/isolated/MuMu', name='MuMuPlayer-12.0-0', MuMuPlayer12_id=0)
+        instance.name = 'MuMuPlayer-12.0-0'
+        instance.emulator.abspath.return_value = 'C:/isolated/MuMu'
+        with (patch.object(nemu_ipc.os.path, 'exists', return_value=True),
+              patch.object(nemu_ipc.os, 'listdir', return_value=[]),
+              patch.object(nemu_ipc.ctypes, 'CDLL'),
+              patch.object(nemu_ipc.NemuIpcImpl, 'connect'),
+              patch.object(nemu_ipc.NemuIpc, 'emulator_instance', new_callable=PropertyMock,
+                           return_value=instance)):
+            impl = owner.nemu_ipc
+        impl.connect_id = 1
+        impl.run_func = Mock(side_effect=nemu_ipc.NemuIpcError(
+            'nemu_capture_display failed during get_resolution()'))
+        impl.reconnect = Mock()
+        return owner, impl
+
+    def test_actual_nemu_factory_preserves_screenshot_fault_instead_of_missing_config(self):
+        for preferred in (True, False):
+            with self.subTest(preferred=preferred):
+                owner, impl = self.make_nemu(preferred=preferred, enabled=True)
+                with self.assertRaises(EmulatorNotRunningError) as caught:
+                    impl.screenshot()
+                self.assertIs(impl.config, owner.config)
+                self.assertIsInstance(caught.exception.__cause__, nemu_ipc.NemuIpcError)
+                self.assertEqual(impl.run_func.call_count, 5)
+                self.assertEqual(impl.reconnect.call_count, 4)
+
+    def test_actual_nemu_factory_stops_before_reconnect_when_disabled(self):
+        for preferred in (True, False):
+            with self.subTest(preferred=preferred):
+                owner, impl = self.make_nemu(preferred=preferred, enabled=False)
+                with self.assertRaises(RecoveryStopped) as caught:
+                    impl.screenshot()
+                self.assertIs(impl.config, owner.config)
+                self.assertIsInstance(caught.exception.error, nemu_ipc.NemuIpcError)
+                impl.run_func.assert_called_once()
+                impl.reconnect.assert_not_called()
+
+    def test_actual_ldopengl_factory_carries_owner_recovery_switch(self):
+        for preferred in (True, False):
+            for enabled in (True, False):
+                with self.subTest(preferred=preferred, enabled=enabled):
+                    owner = ldopengl.LDOpenGL.__new__(ldopengl.LDOpenGL)
+                    owner.config = SimpleNamespace(
+                        EmulatorInfo_path='C:/isolated/LDPlayer/dnplayer.exe' if preferred else '',
+                        Error_HandleError=enabled, Error_StrictRestart=False,
+                    )
+                    owner.serial = '127.0.0.1:5555'
+                    instance = Mock(LDPlayer_id=0)
+                    instance.emulator.abspath.return_value = 'C:/isolated/LDPlayer'
+                    library = Mock()
+                    library.CreateScreenShotInstance.return_value = 1
+                    info = SimpleNamespace(index=0, sysboot=1, playerpid=1, width=1, height=1)
+                    with (patch.object(ldopengl.ctypes, 'WinDLL', return_value=library, create=True),
+                          patch.object(ldopengl.LDConsole, 'list2', return_value=[info]),
+                          patch.object(ldopengl, 'IScreenShotClass') as screenshot_class,
+                          patch.object(ldopengl.LDOpenGL, 'emulator_instance', new_callable=PropertyMock,
+                                       return_value=instance)):
+                        screenshot_class.return_value.cap.return_value = None
+                        impl = owner.ldopengl
+                    expected = RequestHumanTakeover if enabled else RecoveryStopped
+                    with self.assertRaises(expected):
+                        impl.screenshot()
+                    self.assertIs(impl.config, owner.config)
+                    self.assertEqual(impl.screenshot_instance.cap.call_count, 5 if enabled else 1)
 
     def test_nemu_screenshot_keeps_timeout_ladder_and_exhaustion_policy(self):
         device = Mock(connect_id=1)

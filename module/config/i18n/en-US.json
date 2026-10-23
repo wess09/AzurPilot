@@ -756,7 +756,7 @@
     },
     "HandleError": {
       "name": "Enable exception handling",
-      "help": "Handle some exceptions and retreat when an error occurs."
+      "help": "When disabled, a fault requiring recovery stops the current automation worker and preserves the scene, without automatic restart, recovery retries, or rescheduling the failed task. Normal proactive actions, manual management, and independently configured scheduled restarts retain their own settings."
     },
     "SaveError": {
       "name": "When an error occurs, save the log and screenshots",
@@ -805,23 +805,23 @@
     },
     "GameStuckRestart": {
       "name": "Restart the emulator when the game freezes",
-      "help": "After the game freezes (triggers GameStuckError) for the specified number of times, try restarting the emulator. It may help solve problems such as emulator freeze or memory overflow."
+      "help": "With error handling enabled and strict sensitive-task protection satisfied, allow emulator restart after the configured number of consecutive stuck errors. Disabling this still permits the existing game-client recovery, but no emulator restart caused by game stalls."
     },
     "GameStuckThreshold": {
-      "name": "Restart when the game is stuck for X seconds",
+      "name": "Allow emulator restart after X consecutive stuck errors",
       "help": "How many consecutive times it is stuck before triggering a restart."
     },
     "AdbOfflineRestart": {
       "name": "Restart the emulator when the device is not detected",
-      "help": "After the device cannot be detected continuously (ADB is offline or the connection fails) for the specified number of times, try to restart the emulator."
+      "help": "With error handling enabled, allow emulator restart after the configured number of consecutive offline detections. Disabling this prevents offline-triggered emulator operations, without affecting independent scheduled or manual restarts."
     },
     "AdbOfflineThreshold": {
-      "name": "Restart when the device is unreachable for X seconds",
+      "name": "Allow emulator restart after X consecutive offline detections",
       "help": "The number of times the device cannot be detected in a row triggers a restart."
     },
     "WatchdogEnable": {
       "name": "Watchdog master switch",
-      "help": "What's a watchdog? It's a bodyguard running in the background. Turn it on to enable the checks below; turn it off and nothing below matters. Default off."
+      "help": "Controls task-timeout monitoring. Its sub-switch and a positive timeout are also required. Emulator recovery additionally requires error-handling and game-stuck permissions. Forced scheduled restart in emulator management remains independent."
     },
     "WatchdogTaskEnable": {
       "name": "Auto-restart if task runs too long",
@@ -829,7 +829,7 @@
     },
     "WatchdogTaskTimeout": {
       "name": "How long before a task is considered stuck (min)",
-      "help": "How many minutes a task can run before it's considered stuck. If exceeded, the emulator is force-restarted.\n0 = never trigger; 99999 = basically never.\nDefault 120 min (2 hours)."
+      "help": "After this many minutes, use the game-stuck recovery policy. Emulator restart requires the corresponding switches and occurrence threshold. 0 disables this check; default: 120 minutes."
     },
     "RestartOperationTimeoutEnable": {
       "name": "Game restart timeout protection",
@@ -837,7 +837,7 @@
     },
     "RestartOperationTimeout": {
       "name": "How long before game restart is considered stuck (sec)",
-      "help": "During game restart, if stopping or starting the game is stuck for longer than this many seconds, the emulator is considered dead and gets restarted.\nRequires 'Game restart timeout protection' above to be on.\nDefault 120 sec."
+      "help": "With the operation deadline enabled, game start/stop exceeding this duration uses the game-stuck recovery policy. Emulator restart still requires error-handling, sensitive-task, and game-stuck permissions. Default: 120 seconds."
     },
     "LlmAnalysis": {
       "name": "Enable LLM error analysis",
@@ -877,7 +877,7 @@
     },
     "Tries": {
       "name": "Restart attempts",
-      "help": "How many times to retry after the app fails to start. After this many consecutive failures, the observe phase begins; if the app still does not recover, an emulator restart is triggered.\nDefault 3."
+      "help": "Maximum game-launch attempts in one round. Exhaustion retains the observation phase, then returns to the existing scheduler recovery policy. This is not a total limit on emulator recovery or system Restart tasks."
     },
     "FirstTryWaitSeconds": {
       "name": "First failure wait (seconds)",
@@ -889,7 +889,7 @@
     },
     "ObserveSeconds": {
       "name": "Observe phase duration (seconds)",
-      "help": "After consecutive restart failures, how long to wait for the app to recover on its own before triggering an emulator restart.\nDefault 180."
+      "help": "Observation duration after game-launch attempts are exhausted. Afterwards use the game-stuck recovery settings; this alone does not establish that the device is offline."
     },
     "ObserveInterval": {
       "name": "Observe check interval (seconds)",

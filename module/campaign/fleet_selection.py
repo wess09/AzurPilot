@@ -173,6 +173,8 @@ class FleetSelectionMixin:
                 self._fleet_back()
             return success
         except (RequestHumanTakeover, GameStuckError, GameTooManyClickError, EmulatorNotRunningError) as exc:
+            from module.config.recovery import check_error_recovery
+            check_error_recovery(self.config, exc)
             logger.error(f'[战役-选船] {label}更换未完成：{exc or "无法确认舰队状态"}')
             logger.warning('已停用当前任务，请检查连接、舰队和装备后手动启用，避免自动重试未完成的换船。')
             self.config.Scheduler_Enable = False

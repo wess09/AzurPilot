@@ -20,6 +20,7 @@ _ = get_distribution
 from module.base.timer import Timer
 from module.base.utils import limit_in
 from module.config.time_source import now as current_time
+from module.config.recovery import check_error_recovery, check_pending_recovery
 from module.config.utils import get_server_next_update
 from module.device.app_control import AppControl
 from module.device.control import Control
@@ -85,23 +86,29 @@ class Device(Screenshot, Control, AppControl, Input):
         # 初始化模拟器管理平台
         self._platform = None
 
+        start_attempts = 0
         for trial in range(4):
             try:
                 super().__init__(*args, **kwargs)
                 break
-            except EmulatorNotRunningError:
+            except EmulatorNotRunningError as error:
                 if not auto_start_emulator:
                     raise
+                settings = check_error_recovery(self.config, error)
+                if not settings.value('Error_AdbOfflineRestart'):
+                    raise
                 if trial >= 3:
-                    logger.error('[Device] 3 次启动尝试后设备仍离线，交由调用方恢复')
+                    logger.error('[Device] 连接尝试已耗尽，交由调用方恢复')
                     # 有限启动尝试耗尽不代表配置错误，保留离线异常供上层决定。
                     raise
+                if trial + 1 < max(1, settings.value('Error_AdbOfflineThreshold')):
+                    continue
                 # 尝试启动模拟器
                 if self.emulator_instance is not None:
                     try:
-                        # 传 trial 让等待时间随重试次数逐级放宽（60 → 90 → …），
-                        # 与调度器侧的 _try_restart_emulator 同一套阶梯
-                        self.emulator_start(failures=trial)
+                        # 未达到检测阈值的连接检查不算启动失败，保留原启动等待阶梯。
+                        self.emulator_start(failures=start_attempts)
+                        start_attempts += 1
                     except EmulatorOpBusy as e:
                         # 已有其它恢复流程在操作模拟器（通常是正在冷启动它）。
                         # 这不是本设备启动失败，而是"暂时不可用"：直接冒泡成
@@ -331,11 +338,13 @@ class Device(Screenshot, Control, AppControl, Input):
         Returns:
             截图图像，numpy 数组格式。
         """
+        check_pending_recovery(self)
         self.stuck_record_check()
 
         try:
             super().screenshot()
-        except RequestHumanTakeover:
+        except RequestHumanTakeover as error:
+            check_error_recovery(self.config, error)
             if self.serial == 'azurpilot_android':
                 raise
             if not self.ascreencap_available:
@@ -445,9 +454,9 @@ class Device(Screenshot, Control, AppControl, Input):
                 logger.warning(f'[设备-卡死] 截图超过 {self._stuck_image_timer.limit}s 未变化')
                 self.stuck_record_clear()
                 if self.app_is_running():
-                    raise GameStuckError('[设备-卡死] 截图未变化')
+                    self._raise_recovery_error(GameStuckError('[设备-卡死] 截图未变化'))
                 else:
-                    raise GameNotRunningError('[设备-卡死] 游戏已退出')
+                    self._raise_recovery_error(GameNotRunningError('[设备-卡死] 游戏已退出'))
         else:
             self._prev_fingerprint = fp
             self._stuck_image_timer.clear()
@@ -475,9 +484,9 @@ class Device(Screenshot, Control, AppControl, Input):
         self.stuck_record_clear()
 
         if self.app_is_running():
-            raise GameStuckError('[设备-卡死] 等待时间过长')
+            self._raise_recovery_error(GameStuckError('[设备-卡死] 等待时间过长'))
         else:
-            raise GameNotRunningError('[设备-卡死] 游戏已退出')
+            self._raise_recovery_error(GameNotRunningError('[设备-卡死] 游戏已退出'))
 
     def handle_control_check(self, button):
         """控制前置检查，重置卡死记录并检测点击频率是否异常。
@@ -535,13 +544,18 @@ class Device(Screenshot, Control, AppControl, Input):
             logger.warning(f'[设备-点击] 按钮点击次数过多: {count[0][0]}')
             logger.warning(f'[设备-点击] 点击历史: {[str(prev) for prev in self.click_record]}')
             self.click_record_clear()
-            raise GameTooManyClickError(f'[设备-点击] 按钮点击次数过多: {count[0][0]}')
+            self._raise_recovery_error(GameTooManyClickError(f'[设备-点击] 按钮点击次数过多: {count[0][0]}'))
         if len(count) >= 2 and count[0][1] >= 6 and count[1][1] >= 6:
             show_function_call()
             logger.warning(f'[设备-点击] 两个按钮交替点击次数过多: {count[0][0]}, {count[1][0]}')
             logger.warning(f'[设备-点击] 点击历史: {[str(prev) for prev in self.click_record]}')
             self.click_record_clear()
-            raise GameTooManyClickError(f'[设备-点击] 两个按钮交替点击次数过多: {count[0][0]}, {count[1][0]}')
+            self._raise_recovery_error(GameTooManyClickError(f'[设备-点击] 两个按钮交替点击次数过多: {count[0][0]}, {count[1][0]}'))
+
+    def _raise_recovery_error(self, error):
+        """关闭恢复时，检测出的故障不能被业务层捕获后继续尝试。"""
+        check_error_recovery(self.config, error)
+        raise error
 
     def disable_stuck_detection(self):
         """禁用卡死检测，用于半自动模式和调试场景。"""
@@ -556,15 +570,10 @@ class Device(Screenshot, Control, AppControl, Input):
     def app_start(self):
         """启动游戏应用。
 
-        检查配置是否允许自动处理错误，执行账号恢复与画质设置同步后启动游戏并清空卡死记录。
-
-        Raises:
-            RequestHumanTakeover: 当未启用错误处理配置时抛出。
+        执行账号恢复与画质设置同步后启动游戏并清空卡死记录。
+        手动和主动流程允许启停；异常恢复的授权由调用边界统一检查。
         """
-        if not self.config.Error_HandleError:
-            logger.critical('[Device] 错误 没有启动/停止应用，因为 HandleError 已禁用')
-            logger.critical('[Device] 请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
-            raise RequestHumanTakeover
+        check_pending_recovery(self)
         # 与推荐配置共用启动前流程：设备已连接，先恢复账号，再写配置，最后启动游戏。
         from module.api.account_service import restore_worker
         restore_worker(self.config.config_name, device=self)
@@ -581,15 +590,9 @@ class Device(Screenshot, Control, AppControl, Input):
     def app_stop(self):
         """停止游戏应用。
 
-        检查配置是否允许自动处理错误，停止应用并清空卡死和点击记录。
-
-        Raises:
-            RequestHumanTakeover: 当未启用错误处理配置时抛出。
+        停止应用并清空卡死和点击记录；异常恢复由调用边界统一授权。
         """
-        if not self.config.Error_HandleError:
-            logger.critical('[Device] 错误 没有启动/停止应用，因为 HandleError 已禁用')
-            logger.critical('[Device] 请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
-            raise RequestHumanTakeover
+        check_pending_recovery(self)
         super().app_stop()
         if getattr(self.config, 'Emulator_GameSettings', False):
             self._game_settings_wait_for_stop = True

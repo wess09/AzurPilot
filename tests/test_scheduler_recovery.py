@@ -46,6 +46,8 @@ class TestSchedulerRecovery(unittest.TestCase):
             Error_TaskRestartLimit=0,
             Error_GameStuckRestart=True,
             Error_GameStuckThreshold=3,
+            Error_AdbOfflineRestart=True,
+            Error_AdbOfflineThreshold=1,
             Error_HandleError=True,
             Error_LlmAnalysis=False,
         )
@@ -56,6 +58,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         script.checker.is_available.return_value = True
         script.save_error_log = Mock()
         script._start_watchdog = Mock()
+        script._sync_background_services = Mock()
         script._stop_daily_summary_scheduler = Mock()
         script._record_daily_summary_task_finish = Mock()
         script._try_restart_emulator = Mock(return_value=True)
@@ -71,14 +74,15 @@ class TestSchedulerRecovery(unittest.TestCase):
         script.stop_event.is_set.side_effect = [False] * len(tasks) + [True]
         return script.loop()
 
-    def test_unhandled_task_failure_returns_false_when_recovery_is_disabled(self):
+    def test_unhandled_task_failure_exits_when_recovery_is_disabled(self):
         script = self.make_script()
         script.config.Error_HandleError = False
         script.run = Mock(return_value=False)
 
-        self.assertIs(self.run_tasks(script, ['Commission']), False)
-
-        script._stop_daily_summary_scheduler.assert_called_once_with()
+        with self.assertRaises(SystemExit) as stopped:
+            self.run_tasks(script, ['Commission'])
+        self.assertEqual(stopped.exception.code, 1)
+        script.save_error_log.assert_called_once_with()
         script._try_restart_emulator.assert_not_called()
         script.config.task_call.assert_not_called()
 
@@ -97,7 +101,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         del script.__dict__['device']
         del script.__dict__['_try_restart_emulator']
         script.config.task.command = 'Commission'
-        script.config.Error_AdbOfflineThreshold = 3
+        script.config.Error_AdbOfflineThreshold = 1
         connected_device = Mock()
         with (
             patch(
@@ -178,7 +182,10 @@ class TestSchedulerRecovery(unittest.TestCase):
                 script.commission.side_effect = error_type('重复故障')
                 self.run_tasks(script, ['Commission', 'Restart', 'Commission', 'Restart', 'Commission'])
 
-                script._try_restart_emulator.assert_called_once_with()
+                if error_type is RuntimeError:
+                    script._try_restart_emulator.assert_not_called()
+                else:
+                    script._try_restart_emulator.assert_called_once_with(reason='game_stuck')
                 self.assertEqual(script.commission.call_count, 3)
                 self.assertEqual(script.restart.call_count, 2)
                 self.assertEqual(script.failure_record['Commission'], 0)
@@ -333,12 +340,12 @@ class TestSchedulerRecovery(unittest.TestCase):
         self.assertEqual(script.task_restart_record, {})
         self.assertEqual(script.task_restart_delays, {})
 
-    def test_restart_failed_results_still_escalate_to_emulator_recovery(self):
+    def test_restart_failed_results_keep_client_recovery_without_device_evidence(self):
         script = self.make_script()
         script.config.Error_TaskRestartLimit = 1
         script.run = Mock(return_value=False)
         self.run_tasks(script, ['Restart'] * 3)
-        script._try_restart_emulator.assert_called_once_with()
+        script._try_restart_emulator.assert_not_called()
         script.config.task_call.assert_called_once_with('Restart')
         script.config.task_delay.assert_not_called()
 
@@ -368,7 +375,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         with patch('alas.get_server_next_update', return_value=tomorrow):
             self.run_tasks(script, ['Commission', 'Commission'])
         script.config.task_delay.assert_called_once_with(target=tomorrow, task='Commission')
-        self.assertEqual(script._try_restart_emulator.call_count, 2)
+        script._try_restart_emulator.assert_not_called()
         self.assertEqual(script.config.task_call.call_args_list, [call('Restart')] * 2)
 
     def test_global_failure_recovers_before_deferring_business_task(self):
@@ -404,7 +411,7 @@ class TestSchedulerRecovery(unittest.TestCase):
                         script.config.task_delay.assert_not_called()
                     else:
                         self.run_tasks(script, ['OpsiCrossMonth'])
-                        script._try_restart_emulator.assert_called_once_with()
+                        script._try_restart_emulator.assert_not_called()
                         script.config.task_call.assert_called_once_with('Restart')
                         script.config.task_delay.assert_called_once_with(
                             target=tomorrow, task='OpsiCrossMonth')
@@ -439,7 +446,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         tomorrow = datetime.now() + timedelta(days=1)
         with patch('alas.get_server_next_update', return_value=tomorrow):
             self.run_tasks(script, ['Commission'] * 5)
-        script._try_restart_emulator.assert_called_once_with()
+        script._try_restart_emulator.assert_not_called()
         script.config.task_delay.assert_called_once_with(target=tomorrow, task='Commission')
 
     def test_midnight_deferral_is_always_in_the_future(self):

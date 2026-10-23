@@ -4,12 +4,12 @@
 
 ## 1. 模块概述
 
-`alas.py` 是 AzurPilot 的运行时心脏。WebUI 只负责展示与配置编辑，真正的游戏操作由本模块驱动的 worker 进程完成：它不断循环「选出下一个到期任务 → 绑定配置 → 执行 → 按结果安排下次运行」，并在任何失败（游戏卡死、模拟器掉线、代码异常、服务器维护）后自动恢复，而不是退出。
+`alas.py` 是 AzurPilot 的运行时心脏。WebUI 只负责展示与配置编辑，真正的游戏操作由本模块驱动的 worker 进程完成：它不断循环「选出下一个到期任务 → 绑定配置 → 执行 → 按结果安排下次运行」，发生错误时按最新恢复设置选择客户端恢复、模拟器恢复或停止当前 worker。完整对照见 [异常恢复行为](error-recovery.md)。
 
 它存在的核心原因有三个：
 
 - **把「何时做什么」从业务代码中剥离**。各游戏功能模块（科研、委托、大世界……）只实现自己的 `run()`，完全不知道彼此存在；排队、优先级、互斥、恢复全部由调度器统一裁决。
-- **把失败当作常态而非异常**。模拟器可能崩、网络可能断、游戏客户端可能有 bug，调度器的反应永远是「分级恢复 + 继续跑」，只有两类情况才会终止：代码 bug 连续复现（`ScriptError` 连续 3 次）和敏感任务失败（避免状态或数据损坏）。
+- **把失败当作常态而非异常**。保留获准的分级恢复和持续离线恢复；关闭异常处理、严格敏感保护或 `ScriptError` 连续 3 次等情况下停止。
 - **集中管理模拟器生命周期**。设备的 `Device` 构造以 `auto_start_emulator=False` 创建，模拟器的启动/重启/关闭决策全部上收到调度器，避免设备层与恢复层互相嵌套启动重试。
 
 一个 AzurPilot 实例（一份用户配置）对应一个调度器进程。多个实例并行时，每个进程有独立的 `AzurLaneAutoScript` 与状态。
@@ -194,13 +194,13 @@ flowchart TD
 
 每个异常分支的第一动作都是 `_check_sensitive_exit()`：严格重启开启（`Error_StrictRestart`）且该任务配置了 `Scheduler.Sensitive` 时，立即保存现场、推送通知并 `exit(1)`——敏感任务（默认 `OpsiCrossMonth`、`OpsiObscure`、`OpsiAbyssal`）出错不做任何自动重启，避免在错误状态上继续写入。是否敏感不是写死的常量，而是运行时读 `{Task}.Scheduler.Sensitive` 配置动态判断，用户可自行调整。
 
-异常分级（详见第 11 节）的本质是一根「恢复力度」的标尺：重启游戏最轻（秒级），重启模拟器最重（分钟级）。多数异常走轻端；`GameStuckError` 与未预期异常带独立连续计数，连续超过 `Error_GameStuckThreshold` 才升级到模拟器重启。恢复动作完成后统一返回 `'recoverable'`。
+异常分级（详见第 11 节）区分恢复力度与授权来源。多数异常保留原有客户端恢复；卡死按卡死开关和次数升级模拟器，离线按离线开关和次数恢复。未知异常和失败返回值不能证明模拟器故障。普通恢复返回 `'recoverable'`，独立计划中断返回 `'scheduled_restart'`，不作为业务成功或故障计数。
 
 推送策略与恢复力度解耦：可恢复分支统一走 `_notify_recoverable()`（OnePush + WebUI 双通道），开启 `Error_LowPushMode` 时整体跳过、只在日志留痕，避免无人值守时被「游戏未运行」「模拟器离线」这类会自动重试恢复的错误刷屏；需要人工介入或不依赖自动恢复的路径（`_check_sensitive_exit`、`ScriptError` 满 3 次退出、调度循环判定任务连续失败）直接调用 `handle_notify`，不受该模式影响。
 
 ### 全局异常兜底
 
-`loop()` 的最外层 `except` 是最后一道防线：上报错误日志（仅首次）、可选触发 LLM 错误分析、尽力重启模拟器、注入 `Restart`，然后按 `min(300, 20 × 2^(连续失败-1))` 秒指数退避后重试。调度器**永不因连续失败而退出**，退出只保留给代码 bug 与敏感任务。
+`loop()` 最外层兜底先检查最新异常处理授权，再按故障来源选择恢复；获准后保留原上报、可选分析和指数退避。关闭异常处理时只保存现场并退出当前 worker，不上报、恢复或安排故障任务。
 
 ## 7. 调用关系
 
@@ -310,32 +310,32 @@ stateDiagram-v2
 
 ## 11. 异常与错误处理
 
-`run()` 内按异常类型分级；所有分支先过敏感任务检查，再执行恢复动作：
+`run()` 内按异常类型分级；需要恢复的分支先检查最新总开关及敏感保护，以下恢复行为均以获准为前提：
 
 | 异常 | 原因 | 处理 | 返回 |
 | --- | --- | --- | --- |
 | `TaskEnd` | 任务主动结束（如情绪不足延迟） | 视为正常结束 | `True` |
 | `GameNotRunningError` | 游戏进程不存在 | 注入 `Restart` | `'recoverable'` |
-| `GameStuckError` / `GameTooManyClickError` | 画面无推进 / 重复连点 | 连续计数达 `GameStuckThreshold` 则重启模拟器，否则 10 秒后重启游戏 | `'recoverable'` |
+| `GameStuckError` / `GameTooManyClickError` | 画面无推进 / 重复连点 | 卡死重启开启且达到次数才升级模拟器，否则保留原有客户端恢复 | `'recoverable'` |
 | `GameBugError` | 客户端 bug | 重启游戏 | `'recoverable'` |
 | `GamePageUnknownError` | 页面无法识别 | 先查服务器：可用则重启游戏；维护中则阻塞等待，等完返回 | `'recoverable'` / `False` |
 | `ScriptError` | 代码 bug | 连续 3 次内注入 `Restart` 重试；达到 3 次退出 | `'recoverable'` / `exit(1)` |
-| `EmulatorNotRunningError` | 模拟器离线 | `_try_restart_emulator()`（永不放弃，超阈值只加长间隔）+ `Restart` | `'recoverable'` |
-| `RequestHumanTakeover` | 严重到无法安全自动判断 | 也先尝试重启模拟器自动恢复，不再直接终止 | `'recoverable'` |
+| `EmulatorNotRunningError` | 模拟器离线 | 离线开关开启且达到次数才请求模拟器启停；系统 Restart 保留持续恢复 | `'recoverable'` |
+| `RequestHumanTakeover` | 严重到无法安全自动判断 | 保留原任务上限内的客户端兜底，不直接重启模拟器 | `'recoverable'` |
 | `MindCalculatorScanError` | 船坞扫描识别或三排定位无法确认 | 记录具体原因、异常和错误截图，保留旧清单并结束当前工具任务；不重启模拟器 | `False` |
 | `AutoSearchSetError` | 自动搜索设置失败 | 重启游戏 | `'recoverable'` |
-| 其他 `Exception` | 未预期异常 | 连续计数达 `GameStuckThreshold` 升级为重启模拟器，否则仅重启游戏 | `'recoverable'` |
+| 其他 `Exception` | 未预期异常 | 保留客户端恢复和任务上限；不凭未知异常重启模拟器 | `'recoverable'` |
 | `EmulatorOpBusy` | 已有模拟器启停操作在跑 | 放弃本轮恢复，后台操作结束后下一轮调度接手（非错误，是并发保护） | `False`（重启函数内消化） |
 
-调度循环兜底（`loop()` 最外层 `except`）：保存并上报错误日志、重启模拟器、注入 `Restart`、按 20 秒起步、300 秒封顶的指数退避后重试，永不退出。
+调度循环兜底先检查总开关和敏感保护，再按离线、卡死或其他错误分别恢复；获准时保留原有 20 秒起步、300 秒封顶的指数退避。
 
-终止路径只有四条：`ScriptError` 连续 3 次；敏感任务失败（`_check_sensitive_exit` 或失败计数命中）；`stop_event` 更新信号；配置/设备初始化即失败。其余一切故障都应自动恢复。
+关闭异常处理时，需要恢复的错误也会终止当前 worker。`ScriptError` 三次退出、严格敏感保护与停止/更新信号保留；不把游戏启动次数当成整个恢复链的退出预算。
 
-**为什么恢复性失败不计入失败次数**：失败计数驱动的是「强制重启模拟器」这类高代价动作。可恢复错误已经各自触发过针对性恢复（重启游戏或模拟器），不再通过 `failure_record` 重复升级。
+**为什么恢复性失败不计入失败次数**：可恢复错误已经按来源触发针对性恢复，不再通过 `failure_record` 重复升级；单纯失败返回值也不再强制重启模拟器。
 
 **同一任务连续重启上限**：`Error.TaskRestartLimit` 默认 3，0 表示关闭限制。独立的 `task_restart_record` 累计同一任务未成功的恢复轮次，包含 `'recoverable'`、`False` 和选出任务后的全局异常；该任务成功才清零，其他任务成功或 `Restart` 成功不会清掉原任务计数。达到上限后将故障任务的 `Scheduler.NextRun` 写为服务器下一次零点，发送 `Error.OnePushConfig` 错误推送和 WebUI 提醒，低推送量模式也保留此提醒。其他任务继续调度，本轮冷却也适用于自定义调度卡片和强制任务调用。
 
-`Restart` 是系统恢复入口，豁免该上限，不累计恢复次数，也不受旧冷却记录阻拦。重启失败仍走原有客户端重试或模拟器恢复分支，避免游戏未运行时整个队列依次失败。普通任务在选出后的全局异常中达到上限时，也先尝试重启模拟器并安排 `Restart`，再延后故障任务；正常每日重启排期和随机延后设置保持不变。
+`Restart` 是系统恢复入口，豁免该上限，不累计恢复次数，也不受旧冷却记录阻拦。重启失败仍走原有客户端重试或获准的模拟器恢复分支。普通任务在全局异常中达到上限时，先按故障类型检查恢复并安排 `Restart`，再延后故障任务；每日重启排期与随机延后保持不变。关闭上限时，只解除本进程拥有且用户未另改的故障排期，保留用户禁用状态。
 
 敏感任务与 `ScriptError` 的退出规则优先执行。选出任务后的全局异常（包括初始化和收尾阶段）在执行任何恢复或延后前，同样通过 `_check_sensitive_exit()` 检查严格重启模式与该任务的 `Scheduler.Sensitive`，防止绕过敏感任务保护。
 
@@ -350,7 +350,7 @@ stateDiagram-v2
 | 线程 | 创建者 | 生命周期 | 职责 |
 | --- | --- | --- | --- |
 | 主线程 | ProcessManager | 进程全程 | `loop()` 调度与任务执行 |
-| 运行监护 `alas-watchdog`（daemon） | `_start_watchdog()`，任一子功能开启才创建 | 随进程退出 | 每 30 秒检查任务是否超时、是否到达强制定时重启条件 |
+| 运行监护 `alas-watchdog`（daemon） | `_start_watchdog()`，始终保留轻量设置观察 | 随进程退出 | 按设置检查间隔读取最新开关、热启用日报及监护；恢复须满足各自授权 |
 | 日报 `daily-summary-scheduler-<config>`（daemon） | `_start_daily_summary_scheduler()`，仅日报开启时创建 | 随进程退出或功能关闭 | 每秒检查是否到达日报触发窗口 |
 | 模拟器启停 worker（daemon，瞬时） | `_emulator_op_with_timeout()` | 操作结束或被超时放弃 | 真正执行 stop/start，超时放弃后仍持有平台启停锁直到完成 |
 

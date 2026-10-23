@@ -14,6 +14,7 @@
 from module.base.decorator import Config, cached_property
 from module.campaign.campaign_ui import CampaignUI
 from module.combat.auto_search_combat import AutoSearchCombat
+from module.config.recovery import read_recovery_settings
 from module.exception import CampaignEnd, MapEnemyMoved, ScriptEnd, ScriptError
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_OFF, AUTO_SEARCH_MAP_OPTION_ON
 from module.logger import logger
@@ -193,7 +194,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
 
         if not result:
             logger.warning('[战役-基础] 脚本错误，未执行战斗')
-            if self.config.Error_HandleError:
+            if read_recovery_settings(self.config).value('Error_HandleError'):
                 logger.warning('[战役-基础] 脚本错误，未执行战斗，撤退中')
                 self.withdraw()
             else:
@@ -272,7 +273,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
 
         # 异常处理
         logger.warning('[战役-基础] 战斗函数已耗尽')
-        if self.config.Error_HandleError:
+        if read_recovery_settings(self.config).value('Error_HandleError'):
             logger.warning('[战役-基础] 脚本错误，战斗函数已耗尽，撤退中')
             try:
                 self.withdraw()

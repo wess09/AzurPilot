@@ -29,6 +29,8 @@ from module.device.connection_attr import ConnectionAttr
 from module.device.platform.platform_base import PlatformBase
 from module.device.platform.emulator_windows import Emulator, EmulatorInstance, EmulatorManager
 from module.exception import EmulatorOpBusy
+from module.config.recovery import check_error_recovery
+from module.exception import EmulatorNotRunningError
 from module.logger import logger
 
 
@@ -1011,6 +1013,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 # 成功
                 return True
             else:
+                check_error_recovery(self.config, EmulatorNotRunningError('停止模拟器失败'))
                 # 停止失败，启动后重试
                 if self._emulator_function_wrapper(self._emulator_start):
                     continue

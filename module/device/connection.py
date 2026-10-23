@@ -18,6 +18,7 @@ from module.base.decorator import Config, cached_property, del_cached_property, 
 from module.base.timer import Timer
 from module.base.utils import ensure_time
 from module.config.deep import deep_get
+from module.config.recovery import check_error_recovery, read_recovery_settings
 from module.config.server import VALID_CHANNEL_PACKAGE, VALID_PACKAGE, set_server
 from module.device.connection_attr import ConnectionAttr
 from module.device.env import IS_LINUX, IS_MACINTOSH, IS_WINDOWS
@@ -49,17 +50,23 @@ def retry(func):
         for _ in range(RETRY_TRIES):
             try:
                 if callable(init):
+                    check_error_recovery(self.config, last_error)
                     time.sleep(retry_sleep(_))
+                    check_error_recovery(self.config, last_error)
                     init()
+                    check_error_recovery(self.config, last_error)
                 return func(self, *args, **kwargs)
             # 无法处理的异常，直接中断重试
-            except RequestHumanTakeover:
+            except RequestHumanTakeover as error:
+                check_error_recovery(self.config, error)
                 raise
             # 无法处理，必须向上传播以触发模拟器重启
-            except EmulatorNotRunningError:
+            except EmulatorNotRunningError as error:
+                check_error_recovery(self.config, error)
                 raise
             # ADB 服务被杀死时触发
             except ConnectionResetError as e:
+                check_error_recovery(self.config, e)
                 last_error = e
                 logger.error(e)
 
@@ -67,6 +74,7 @@ def retry(func):
                     self.adb_reconnect()
             # ADB 错误
             except AdbError as e:
+                check_error_recovery(self.config, e)
                 last_error = e
                 if handle_adb_error(e):
                     def init():
@@ -80,6 +88,7 @@ def retry(func):
                     raise RequestHumanTakeover(str(e)) from e
             # 包未安装
             except PackageNotInstalled as e:
+                check_error_recovery(self.config, e)
                 last_error = e
                 logger.error(e)
 
@@ -87,6 +96,7 @@ def retry(func):
                     self.detect_package()
             # 未知异常，可能是损坏的图像数据
             except Exception as e:
+                check_error_recovery(self.config, e)
                 last_error = e
                 logger.exception(e)
 
@@ -951,6 +961,8 @@ class Connection(ConnectionAttr):
 
     def adb_restart(self):
         """重启 ADB 客户端。"""
+        if not check_error_recovery(self.config, ConnectionResetError('恢复 ADB 服务')).value('Emulator_AdbRestart'):
+            return False
         logger.info('[设备-连接] 重启ADB')
         # 终止当前客户端
         self.adb_client.server_kill()
@@ -965,7 +977,7 @@ class Connection(ConnectionAttr):
 
         未找到设备时重启 ADB 客户端，否则尝试重新连接设备。
         """
-        if self.config.Emulator_AdbRestart and len(self.list_device()) == 0:
+        if read_recovery_settings(self.config).value('Emulator_AdbRestart') and len(self.list_device()) == 0:
             # 重启 ADB
             self.adb_restart()
             # 连接设备

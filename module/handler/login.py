@@ -18,6 +18,7 @@
 # 最后更新: 2025-08-25 20:41
 import threading
 import time
+from contextlib import ExitStack
 
 import numpy as np
 from scipy.signal import find_peaks
@@ -37,7 +38,6 @@ from module.base.runtime_params import (
     RESTART_OBSERVE_SECONDS,
     RESTART_OPERATION_TIMEOUT,
     RESTART_SUBSEQUENT_TRY_WAIT_SECONDS,
-    RESTART_TRIES,
 )
 from module.handler.channel_float import (
     CHANNEL_FLOAT_SWIPE_END, CHANNEL_FLOAT_HOLD_DURATION, CHANNEL_FLOAT_MAX_ATTEMPTS,
@@ -45,6 +45,7 @@ from module.handler.channel_float import (
 )
 from module.base.timer import Timer
 from module.base.utils import color_similarity_2d, crop
+from module.config.recovery import check_error_recovery, read_recovery_settings, recovery_scope
 from module.config.deep import deep_get
 from module.config.utils import read_run_param
 from module.handler.assets import *
@@ -321,26 +322,19 @@ class LoginHandler(UI):
         Returns:
             bool: True 表示启用硬超时保护。
         """
-        value = deep_get(
-            self.config.data, 'Alas.Error.RestartOperationTimeoutEnable',
-            default=False,
-        )
-        return bool(value)
+        return read_recovery_settings(self.config).value('Error_RestartOperationTimeoutEnable')
 
     def _restart_operation_timeout(self):
         """
         获取 app_stop/app_start 操作的硬超时秒数。
 
-        对应配置项 Alas.Error.RestartOperationTimeout，超时则判定模拟器或
-        atx-agent 卡死，立即抛出 EmulatorNotRunningError 触发模拟器重启。
+        对应配置项 Alas.Error.RestartOperationTimeout，操作超时抛出
+        GameStuckError，由上层按卡死设置选择恢复层级。
 
         Returns:
             int: 超时秒数，配置非法时回退默认 120 秒。
         """
-        value = deep_get(
-            self.config.data, 'Alas.Error.RestartOperationTimeout',
-            default=RESTART_OPERATION_TIMEOUT,
-        )
+        value = read_recovery_settings(self.config).value('Error_RestartOperationTimeout')
         try:
             timeout = int(value)
         except (TypeError, ValueError):
@@ -414,9 +408,8 @@ class LoginHandler(UI):
         中的 stuck_record_check，而 app_restart 流程不调用截图。
 
         本方法在独立守护线程中执行操作，主线程在 timeout 后立即抛出
-        EmulatorNotRunningError，由上层调度器（alas.py 中的
-        EmulatorNotRunningError 处理分支）触发 _try_restart_emulator()
-        杀掉并重启模拟器。模拟器重启会同时杀死 atx-agent 进程，残留线程
+        GameStuckError，由上层按卡死恢复开关和次数决定是否重启模拟器。
+        获准重启模拟器时会同时结束 atx-agent 进程，残留线程
         的 HTTP 连接将被重置，daemon 线程会快速失败退出，不会影响新设备。
 
         Args:
@@ -425,9 +418,14 @@ class LoginHandler(UI):
             operation_name (str): 操作名称，用于日志。
 
         Raises:
-            EmulatorNotRunningError: 操作超时。
+            GameStuckError: 操作超时，但尚不能据此判定设备离线。
             Exception: 操作本身抛出的异常会被原样向上抛出。
         """
+        from module.exception import GameStuckError
+        previous = self.device.__dict__.get('_restart_operation_thread')
+        if previous is not None and previous.is_alive():
+            # 禁止升级模拟器重启时，也不能叠加仍在阻塞的游戏启停请求。
+            raise GameStuckError('[重启] 上一次应用启停仍未结束，交由卡死恢复策略处理')
         result = [None]
         exception = [None]
 
@@ -438,20 +436,21 @@ class LoginHandler(UI):
                 exception[0] = e
 
         thread = threading.Thread(target=worker, daemon=True)
+        self.device.__dict__['_restart_operation_thread'] = thread
         thread.start()
         thread.join(timeout=timeout)
 
         if thread.is_alive():
             logger.critical(
                 f'[重启] {operation_name} 超过 {timeout}s 未完成，'
-                f'判定模拟器或 atx-agent 卡死，触发模拟器重启'
+                f'按卡死恢复设置交由上层处理'
             )
-            from module.exception import EmulatorNotRunningError
-            raise EmulatorNotRunningError(
+            raise GameStuckError(
                 f'[重启] {operation_name} 超过 {timeout}s 未完成，'
                 f'判定模拟器或 atx-agent 卡死'
             )
 
+        self.device.__dict__.pop('_restart_operation_thread', None)
         if exception[0] is not None:
             raise exception[0]
         return result[0]
@@ -460,13 +459,18 @@ class LoginHandler(UI):
         """重启游戏应用并重新登录。
 
         Raises:
-            EmulatorNotRunningError: 重启操作超时或多次重启仍无法恢复时抛出。
+            GameStuckError: 重启操作超时或多次重启仍无法恢复。
         """
+        with ExitStack() as recovery_stack:
+            self._app_restart(recovery_stack)
+
+    def _app_restart(self, recovery_stack):
+        """保留原有启动和观察流程，失败后的重试遵守最新授权。"""
         logger.hr('应用重启')
         is_restart_success = False
 
         # 从「运行参数」页读取重启策略，读取失败时回退兜底默认值
-        restart_tries = int(read_run_param(self.config, 'Reboot_Tries', RESTART_TRIES, 1, 10))
+        restart_tries = max(1, min(10, read_recovery_settings(self.config).value('Reboot_Tries')))
         first_try_wait = read_run_param(
             self.config, 'Reboot_FirstTryWaitSeconds', RESTART_FIRST_TRY_WAIT_SECONDS, 5, 300)
         subsequent_try_wait = read_run_param(
@@ -486,7 +490,10 @@ class LoginHandler(UI):
             logger.info('[重启] app_stop/app_start 硬超时保护未启用，回退原有行为')
 
         clear_cache = getattr(self.config, 'Restart_ClearCache', False)
-        for i in range(restart_tries):
+        for i in range(10):
+            restart_tries = max(1, min(10, read_recovery_settings(self.config).value('Reboot_Tries')))
+            if i >= restart_tries:
+                break
             logger.info(f"[重启] 应用重启尝试 {i + 1}/{restart_tries}...")
             # 启用硬超时时，用 _call_with_restart_deadline 包装 app_stop/app_start，
             # 防止 atx-agent 异常时 u2 HTTP 调用无限挂起导致
@@ -522,6 +529,10 @@ class LoginHandler(UI):
                 break  # 成功启动，跳出循环
             else:
                 logger.warning(f"[重启] 尝试 {i + 1} 失败。应用启动后未运行（可能崩溃）")
+                if i == 0:
+                    from module.exception import GameNotRunningError
+                    recovery_stack.enter_context(recovery_scope(
+                        self.config, self.device, GameNotRunningError('上一次启动游戏失败')))
                 if i < restart_tries - 1:
                     logger.info("[重启] 重试中...")
 
@@ -533,6 +544,8 @@ class LoginHandler(UI):
             )
             deadline = time.monotonic() + observe_seconds
             while 1:
+                from module.exception import GameNotRunningError
+                check_error_recovery(self.config, GameNotRunningError('启动失败后的观察恢复'))
                 if time.monotonic() >= deadline:
                     break
                 if self.device.app_is_running_bounded():
@@ -540,21 +553,20 @@ class LoginHandler(UI):
                     is_restart_success = True
                     break
                 remaining = max(0, int(deadline - time.monotonic()))
-                logger.info(f"[重启] 观察阶段应用仍未恢复，剩余 {remaining} 秒后触发模拟器重启")
+                logger.info(f"[重启] 观察阶段应用仍未恢复，剩余 {remaining} 秒后交由卡死恢复策略处理")
                 self.device.sleep(min(observe_interval, remaining))
 
-        # 观察阶段仍失败则抛出 EmulatorNotRunningError，
-        # 由上层调度器触发模拟器重启流程，而非直接终止。
+        # 游戏未成功启动不等于设备离线，仍由原调度器按卡死设置选择恢复。
         if not is_restart_success:
             logger.critical(
                 "[重启] 应用重启连续失败且观察阶段仍未恢复，"
-                "判定模拟器或游戏环境异常，触发模拟器重启"
+                "交由卡死恢复策略处理"
             )
-            from module.exception import EmulatorNotRunningError
-            raise EmulatorNotRunningError(
+            from module.exception import GameStuckError
+            raise GameStuckError(
                 f"[重启] 应用重启连续失败 {restart_tries} 次，"
                 f"观察 {observe_seconds} 秒后仍未恢复，"
-                "判定模拟器或游戏环境异常，触发模拟器重启"
+                "交由卡死恢复策略处理"
             )
         self.handle_app_login()
         # self.ensure_no_unfinished_campaign()

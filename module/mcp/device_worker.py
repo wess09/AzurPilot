@@ -49,15 +49,24 @@ def perform(operation, instance):
         return restart_adb()
     os.environ['ALAS_CONFIG_NAME'] = instance
     from module.config.config import AzurLaneConfig
-    from module.device.device import Device
-
-    device = Device(AzurLaneConfig(instance))
+    config = AzurLaneConfig(instance)
     if operation == 'restart_emulator':
-        device.emulator_stop()
-        # 保留上游平台退出缓冲；整个步骤受父进程硬超时约束。
+        # 显式手动管理不依赖 ADB 在线，也不受异常自动重启开关限制。
+        from module.device.platform import Platform
+        platform = Platform(config, connect=False)
+        stopped = platform.emulator_stop()
+        if stopped is False:
+            raise RuntimeError('手动停止模拟器失败')
+        # 保留原有平台退出缓冲；整个步骤受父进程硬超时约束。
         time.sleep(60)
-        device.emulator_start()
+        started = platform.emulator_start()
+        if started is False:
+            raise RuntimeError('手动启动模拟器失败')
+        if stopped is None or started is None:
+            return {'text': f'已执行 {instance} 的重启调用；平台未返回完成确认，请检查设备连接'}
         return {'text': f'Success: Restarted emulator for {instance}'}
+    from module.device.device import Device
+    device = Device(config)
     if operation == 'get_screenshot':
         from PIL import Image
         import PIL.JpegImagePlugin  # noqa: F401

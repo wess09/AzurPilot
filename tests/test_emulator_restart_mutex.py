@@ -418,7 +418,7 @@ class TestDeepRestartThreshold(unittest.TestCase):
 
     def make_script(self, threshold, consecutive):
         script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
-        script.consecutive_adb_offline = consecutive
+        script._emulator_restart_failures = consecutive
         script.config = Mock()
         script.config.EmulatorManagement_DeepRestartAfterFailures = threshold
         return script
@@ -437,7 +437,7 @@ class TestDeepRestartThreshold(unittest.TestCase):
 
     def test_invalid_config_falls_back_to_normal_restart(self):
         script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
-        script.consecutive_adb_offline = 99
+        script._emulator_restart_failures = 99
         script.config = Mock()  # 读出来是 Mock，int() 会抛 TypeError
         self.assertFalse(script._deep_restart_enabled())
 
@@ -472,16 +472,20 @@ class TestDeviceAutoStartBusyHandling(unittest.TestCase):
     def test_busy_becomes_emulator_not_running(self):
         from module.device.device import Device
 
+        def offline_connect(device, config):
+            device.config = config
+            raise EmulatorNotRunningError('offline')
+
         with (
             patch('module.device.connection.Connection.__init__',
-                  side_effect=EmulatorNotRunningError('offline')),
+                  autospec=True, side_effect=offline_connect),
             patch.object(Device, 'emulator_start', side_effect=EmulatorOpBusy('busy')),
             patch.object(Device, 'emulator_instance', Mock()),
         ):
             # 关键：抛 EmulatorNotRunningError（调度器会安排 Restart 后继续），
             # 而不是 RequestHumanTakeover（那会把整个调度器停掉）
             with self.assertRaises(EmulatorNotRunningError):
-                Device(Mock())
+                Device(Mock(Error_HandleError=True, Error_AdbOfflineRestart=True, Error_AdbOfflineThreshold=1))
 
 
 class TestRestartEmulatorBusyHandling(unittest.TestCase):
@@ -495,8 +499,10 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
     def make_script(self):
         script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
         script.consecutive_adb_offline = 0
-        script.config = Mock()
-        script.config.Error_AdbOfflineThreshold = 3
+        script._emulator_restart_failures = 0
+        script._watchdog_task_name = ''
+        script.config = Mock(Error_HandleError=True, Error_AdbOfflineRestart=True, Error_AdbOfflineThreshold=1)
+        script.config.Error_AdbOfflineThreshold = 1
         return script
 
     @staticmethod
@@ -514,6 +520,8 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
 
             _DEVICE_AUTOSPEC = create_autospec(Device, instance=True)
         _DEVICE_AUTOSPEC.reset_mock(return_value=True, side_effect=True)
+        _DEVICE_AUTOSPEC.emulator_stop.return_value = True
+        _DEVICE_AUTOSPEC.emulator_start.return_value = True
         return _DEVICE_AUTOSPEC
 
     def test_gives_up_round_when_stop_is_busy(self):
@@ -546,7 +554,7 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
     def test_passes_deep_flag_matching_the_threshold(self):
         """未达阈值时必须以 deep=False 调用——参数名写错会在这里炸出来。"""
         script = self.make_script()
-        script.consecutive_adb_offline = 1
+        script._emulator_restart_failures = 1
         device = self.make_device()
         script.__dict__['device'] = device
 
@@ -555,7 +563,7 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
 
     def test_passes_deep_true_after_threshold(self):
         script = self.make_script()
-        script.consecutive_adb_offline = 5
+        script._emulator_restart_failures = 5
         script.config.EmulatorManagement_DeepRestartAfterFailures = 3
         device = self.make_device()
         script.__dict__['device'] = device
@@ -566,7 +574,7 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
     def test_passes_failure_count_for_the_watch_ladder(self):
         """已连续失败次数要透传给平台，否则等待时间永远停在第一档 60 秒。"""
         script = self.make_script()
-        script.consecutive_adb_offline = 4  # 本次调用开头会 +1，故本次之前失败过 4 次
+        script._emulator_restart_failures = 4  # 本次调用开头会 +1，故本次之前失败过 4 次
         device = self.make_device()
         script.__dict__['device'] = device
 

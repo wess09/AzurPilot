@@ -738,6 +738,8 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
                     exc.args and exc.args[0] == 'Hard not satisfied')
                 if not (hard_unsatisfied and self.change_flagship and self.change_vanguard):
                     raise
+                from module.config.recovery import check_error_recovery
+                check_error_recovery(self.config, exc)
                 self.hard_mode_override()
                 vanguard_success = self.vanguard_change()
                 flagship_success = self.flagship_change()

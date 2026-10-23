@@ -189,7 +189,7 @@ retry = partial(retry_backend, recover=_retry_recover, label='设备-NemuIpc')
 
 
 class NemuIpcImpl:
-    def __init__(self, nemu_folder: str, instance_id: int, display_id: int = 0, version: str = None):
+    def __init__(self, nemu_folder: str, instance_id: int, display_id: int = 0, version: str = None, *, config=None):
         """
         Args:
             nemu_folder: MuMu12 安装路径，例如 E:/ProgramFiles/MuMuPlayer-12.0
@@ -198,7 +198,9 @@ class NemuIpcImpl:
             version: 模拟器实例版本，如 '15.0'，来自实例名（MuMuPlayer-15.0-0）。
                 未提供时从 vms 目录名自动推断，用于选择匹配版本的 IPC SDK。
                 版本不匹配时（如用 12.0 的 DLL 连 15.0 实例）调用会失效。
+            config: 所属实例配置；底层实现不继承连接类，重试仍需检查该实例的恢复设置。
         """
+        self.config = config
         self.nemu_folder: str = nemu_folder
         self.instance_id: int = instance_id
         self.display_id: int = display_id
@@ -513,7 +515,8 @@ class NemuIpc(Platform):
                     return NemuIpcImpl(
                         nemu_folder=folder,
                         instance_id=index,
-                        display_id=0
+                        display_id=0,
+                        config=self.config,
                     ).__enter__()
                 except (NemuIpcIncompatible, NemuIpcError, JobTimeout) as e:
                     logger.error(e)
@@ -536,6 +539,7 @@ class NemuIpc(Platform):
                 instance_id=self.emulator_instance.MuMuPlayer12_id,
                 display_id=0,
                 version=res.group(1) if res else None,
+                config=self.config,
             )
             impl.connect_with_retry()
             return impl

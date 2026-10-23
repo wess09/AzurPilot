@@ -146,11 +146,11 @@ flowchart TD
     B -- app_is_running --> D[handle_app_login]
     B -- 连续失败 --> E[观察期约 180s，每 15s 检查]
     E -- 恢复运行 --> D
-    E -- 仍未恢复 --> F[抛 EmulatorNotRunningError]
-    F --> G[alas.py 触发模拟器重启]
+    E -- 仍未恢复 --> F[抛 GameStuckError]
+    F --> G[alas.py 按卡死开关及次数选择恢复]
 ```
 
-启用 `Error.RestartOperationTimeoutEnable` 时，`app_stop/app_start` 经 `_call_with_restart_deadline` 在 daemon 线程中执行：超时（默认 120 秒）判定模拟器或 atx-agent 卡死，立即抛 `EmulatorNotRunningError`。之所以需要它，是因为 atx-agent 自恢复可能让 u2 调用无限挂起，而此时截图循环不运行、既有的卡死保护全部失效。
+启用 `Error.RestartOperationTimeoutEnable` 时，`app_stop/app_start` 经 `_call_with_restart_deadline` 在 daemon 线程中执行：超时（默认 120 秒）抛 `GameStuckError`，由原调度器按卡死开关和次数恢复，不直接认定设备离线。原因是 atx-agent 内部恢复可能让 u2 调用长时间挂起，此时截图循环不运行。上一次同设备启停仍在执行时不叠加新调用。
 
 ### 6.4 地图内事件
 
@@ -206,7 +206,7 @@ device.screenshot()
 | 状态 | 行为 | 迁移 |
 | --- | --- | --- |
 | 重启尝试（至多 3 次） | `app_stop`（可选清缓存）→ `app_start` → 等 30/20 秒 → `app_is_running_bounded` 检查 | 成功 → 登录；全败 → 观察期 |
-| 观察期（约 180 秒） | 每 15 秒探测一次进程，容忍慢启动/游戏更新 | 恢复 → 登录；超时 → `EmulatorNotRunningError` |
+| 观察期（约 180 秒） | 每 15 秒探测一次进程，容忍慢启动/游戏更新；失败后重试读取最新恢复授权 | 恢复 → 登录；超时 → `GameStuckError`，按卡死设置处理 |
 | 硬超时（可选开关） | `app_stop/app_start` 在 daemon 线程执行，超时判定模拟器或 atx-agent 卡死 | 直接 → `EmulatorNotRunningError` |
 
 `FastForwardHandler` 的 `map_*` 布尔族（通关率、三星、威胁安全、通关模式、自动搜索、二倍书）构成地图快照状态，每次 `map_get_info()` 重建，供 `triggered_map_stop()` 判定停止条件。
@@ -238,7 +238,7 @@ device.screenshot()
 | `ScriptEnd` | calculate 模式出现红脸弹窗的保底（从 0 建立有效恢复起点，按出击需求延时任务，恢复后自动重试）；达到地图成就停止条件 | 上层调度器结束当前任务 |
 | `GameTooManyClickError` | 剧情选项连续点击超限、登录中模拟器无响应累计 | 设备层记录，`alas.run` 决定重启 |
 | `GameNotRunningError` | 紧急委托点击后 3–6 秒热更新检测发现进程退出；重启流程 | 调度器触发 Restart 任务 |
-| `EmulatorNotRunningError` | 应用重启 3 次失败且观察期未恢复；重启操作硬超时 | 调度器 `_try_restart_emulator` 重启模拟器 |
+| `GameStuckError` | 应用启动尝试与观察均失败；启停操作硬超时 | 调度器按卡死开关和次数选择客户端或模拟器恢复 |
 | `AutoSearchSetError` | 自动搜索设置失败且 OnePush 通知也失败（GemsFarming） | 任务终止并关闭该任务调度 |
 | `MapWalkError` | `handle_walk_out_of_step` 识别步数不足后由 `Fleet` 抛出 | 地图流程重试 |
 
@@ -246,7 +246,7 @@ device.screenshot()
 
 ## 12. 并发与线程模型
 
-处理器默认单线程使用：调度器对单个配置串行执行任务，handler 实例不跨线程共享。唯一的多线程点是 `LoginHandler._call_with_restart_deadline`——为每次 `app_stop/app_start` 创建 daemon 线程，主线程到时抛 `EmulatorNotRunningError`；超时后残留线程的 HTTP 连接会随模拟器重启被重置并自然失败退出。`Timer` 与 interval 状态都挂在实例上，不可跨实例共享；`Switch` 定义在模块级、被所有实例共享，因此其状态检测只依赖传入的 `main` 而不保存可变状态。
+处理器默认单线程使用。`LoginHandler._call_with_restart_deadline` 为游戏启停创建 daemon 线程，超时抛 `GameStuckError`；线程未结束时阻止同设备重复启停。获准重启模拟器后，旧 HTTP 连接会被断开；关闭卡死重启时保留现场及原有客户端恢复边界。`Timer` 与 interval 状态不跨实例共享。完整授权语义见 [异常恢复行为](entry/error-recovery.md)。
 
 ## 14. 生命周期
 

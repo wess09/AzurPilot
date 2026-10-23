@@ -44,7 +44,9 @@ class CampaignSP(EventBase):
         except TaskEnd:
             # 捕获任务切换，正常中断
             pass
-        except RequestHumanTakeover:
+        except RequestHumanTakeover as error:
+            from module.config.recovery import check_error_recovery
+            check_error_recovery(self.config, error)
             # 每日 SP 已完成或无法进入，延迟到次日
             logger.info('每日SP已完成或无法进入')
             logger.info('延迟任务到明天')

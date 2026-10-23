@@ -800,17 +800,21 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             f"{self.config.task.command}"
         )
 
-        # 手动重启游戏而非通过 'task_call'
-        # 当前任务不会中断
-        reset_resource_caches(self)
-        self.device.app_stop()
-        self.device.app_start()
-        LoginHandler(self.config, self.device).handle_app_login()
+        from module.config.recovery import check_error_recovery
+        check_error_recovery(self.config, GameStuckError('大世界迷雾状态无法推进'))
 
-        self.ui_ensure(page_os)
-        if repair:
-            self.handle_fleet_repair(revert=False)
+        from module.config.recovery import recovery_scope
+        with recovery_scope(self.config, self.device, GameStuckError('大世界迷雾状态无法推进')):
+            # 手动重启游戏而非通过 'task_call'
+            # 当前任务不会中断
+            reset_resource_caches(self)
+            self.device.app_stop()
+            self.device.app_start()
+            LoginHandler(self.config, self.device).handle_app_login()
 
+            self.ui_ensure(page_os)
+            if repair:
+                self.handle_fleet_repair(revert=False)
         return True
 
     def handle_after_auto_search(self):
@@ -2177,6 +2181,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                         f"舰队 {fleet_index} 前往 {target_grid} 超出移动范围，放弃当前候选点并尝试其他落点"
                     )
                     return False
+                from module.config.recovery import check_error_recovery
+                check_error_recovery(self.config, e)
                 logger.warning(f"[大世界] 舰队移动异常: {e}，尝试强制恢复（{try_idx + 1}/2）")
                 recovered = False
                 try:
@@ -2232,34 +2238,36 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 if try_idx == 1:
                     logger.warning("[大世界] 软恢复失败，尝试重启应用以恢复状态")
                     try:
-                        reset_resource_caches(self)
-                        self.device.app_stop()
-                        time.sleep(1.0)
-                        self.device.app_start()
-                        LoginHandler(self.config, self.device).handle_app_login()
-                        self.ui_ensure(page_os)
-                        time.sleep(0.8)
-                        try:
-                            self.map_init(map_=None)
-                            self.update()
-                        except Exception:
-                            logger.debug(
-                                "重建地图数据失败（app restart）", exc_info=True
-                            )
-                        try:
-                            clickable_grid = self.convert_global_to_local(
-                                target_grid.location
-                            )
-                        except KeyError:
-                            clickable_grid = None
-                        if clickable_grid:
-                            time.sleep(0.3)
-                            self.device.click(clickable_grid)
-                            self.wait_until_walk_stable(
-                                confirm_timer=Timer(1.5, count=4)
-                            )
-                            logger.info("[大世界] 重启应用后恢复成功，舰队已到达")
-                            return True
+                        from module.config.recovery import recovery_scope
+                        with recovery_scope(self.config, self.device, e):
+                            reset_resource_caches(self)
+                            self.device.app_stop()
+                            time.sleep(1.0)
+                            self.device.app_start()
+                            LoginHandler(self.config, self.device).handle_app_login()
+                            self.ui_ensure(page_os)
+                            time.sleep(0.8)
+                            try:
+                                self.map_init(map_=None)
+                                self.update()
+                            except Exception:
+                                logger.debug(
+                                    "重建地图数据失败（app restart）", exc_info=True
+                                )
+                            try:
+                                clickable_grid = self.convert_global_to_local(
+                                    target_grid.location
+                                )
+                            except KeyError:
+                                clickable_grid = None
+                            if clickable_grid:
+                                time.sleep(0.3)
+                                self.device.click(clickable_grid)
+                                self.wait_until_walk_stable(
+                                    confirm_timer=Timer(1.5, count=4)
+                                )
+                                logger.info("[大世界] 重启应用后恢复成功，舰队已到达")
+                                return True
                     except Exception:
                         logger.error(
                             "应用重启恢复失败，当前候选点移动失败", exc_info=True

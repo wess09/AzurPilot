@@ -17,6 +17,8 @@ from module.device.platform.emulator_mac import (
     EmulatorInstanceMac,
     EmulatorManagerMac,
 )
+from module.config.recovery import check_error_recovery
+from module.exception import EmulatorNotRunningError
 from module.logger import logger
 
 
@@ -352,12 +354,14 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 self.boost_emulator_priority(self.emulator_instance)
                 if self.emulator_start_watch():
                     return True
+                check_error_recovery(self.config, EmulatorNotRunningError('模拟器启动监视失败'))
                 logger.warning('[设备-模拟器Mac] 模拟器启动监视失败，重试中')
                 if self._emulator_function_wrapper(self._emulator_stop):
                     continue
                 else:
                     return False
             else:
+                check_error_recovery(self.config, EmulatorNotRunningError('启动模拟器失败'))
                 # 启动失败，停止后重试
                 if self._emulator_function_wrapper(self._emulator_stop):
                     continue
@@ -380,6 +384,7 @@ class PlatformMac(PlatformBase, EmulatorManagerMac):
                 # 成功
                 return True
             else:
+                check_error_recovery(self.config, EmulatorNotRunningError('停止模拟器失败'))
                 # 停止失败，启动后重试
                 if self._emulator_function_wrapper(self._emulator_start):
                     continue

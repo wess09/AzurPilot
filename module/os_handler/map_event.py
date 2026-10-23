@@ -236,17 +236,22 @@ class MapEventHandler(EnemySearchingHandler):
                 logger.warning('[大世界处理-事件] 等待剧情选项超时')
                 self._story_timeout.reset()
 
-                # 重启应用
-                reset_resource_caches(self)
-                self.device.app_stop()
-                self.device.app_start()
+                from module.config.recovery import check_error_recovery
+                from module.exception import GameStuckError
+                check_error_recovery(self.config, GameStuckError('大世界剧情选项超时'))
 
-                from module.handler.login import LoginHandler
-                LoginHandler(self.config, self.device).handle_app_login()
+                from module.config.recovery import recovery_scope
+                with recovery_scope(self.config, self.device, GameStuckError('大世界剧情选项超时')):
+                    # 重启应用
+                    reset_resource_caches(self)
+                    self.device.app_stop()
+                    self.device.app_start()
 
-                from module.ui.page import page_os
-                self.ui_ensure(page_os)
+                    from module.handler.login import LoginHandler
+                    LoginHandler(self.config, self.device).handle_app_login()
 
+                    from module.ui.page import page_os
+                    self.ui_ensure(page_os)
                 return True
 
             if not self._story_timeout.started():

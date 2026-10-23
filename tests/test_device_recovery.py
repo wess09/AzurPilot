@@ -81,7 +81,7 @@ class TestDeviceInitializationRecovery(unittest.TestCase):
     def setUp(self):
         self.enterContext(patch('module.device.device.logger'))
         self.device = Device.__new__(Device)
-        self.device.config = Mock(Emulator_Serial='127.0.0.1:5555')
+        self.device.config = Mock(Emulator_Serial='127.0.0.1:5555', Error_AdbOfflineRestart=True, Error_AdbOfflineThreshold=1)
 
     def test_standalone_initialization_keeps_bounded_start_attempts(self):
         offline = EmulatorNotRunningError('设备仍离线')
@@ -110,6 +110,32 @@ class TestDeviceInitializationRecovery(unittest.TestCase):
         self.assertIs(caught.exception, offline)
         connect.assert_called_once()
         instance.assert_not_called()
+        start.assert_not_called()
+
+    def test_waiting_for_detection_threshold_does_not_advance_start_failure_ladder(self):
+        self.device.config.Error_AdbOfflineThreshold = 3
+        with (
+            patch('module.device.connection.Connection.__init__', side_effect=EmulatorNotRunningError('离线')),
+            patch.object(Device, 'emulator_instance', new_callable=PropertyMock, return_value=Mock()),
+            patch.object(Device, 'emulator_start') as start,
+        ):
+            with self.assertRaises(EmulatorNotRunningError):
+                Device.__init__(self.device, self.device.config)
+        start.assert_called_once_with(failures=0)
+
+    def test_threshold_above_connection_budget_cannot_report_initialization_success(self):
+        self.device.config.Error_AdbOfflineThreshold = 5
+        offline = EmulatorNotRunningError('设备始终离线，尚未达到自动启动阈值')
+        with (
+            patch('module.device.connection.Connection.__init__', side_effect=offline) as connect,
+            patch.object(Device, 'emulator_start') as start,
+            patch.object(Device, '_set_screenshot_interval_readonly'),
+        ):
+            with self.assertRaises(EmulatorNotRunningError) as caught:
+                Device.__init__(self.device, self.device.config, initialize_runtime=False)
+
+        self.assertIs(caught.exception, offline)
+        self.assertEqual(connect.call_count, 4)
         start.assert_not_called()
 
     def test_missing_managed_instance_still_requests_takeover_for_auto_start(self):
