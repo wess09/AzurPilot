@@ -62,6 +62,8 @@ class DroidCast(Uiautomator2):
     _droidcast_port: int = 0
     droidcast_width: int = 0
     droidcast_height: int = 0
+    _droidcast_raw_transposed: bool = False
+    _droidcast_raw_probe_key: t.Optional[tuple] = None
 
     @cached_property
     def droidcast_session(self):
@@ -84,6 +86,66 @@ class DroidCast(Uiautomator2):
     - /preview
         获取 PNG 截图
     """
+
+    def _droidcast_raw_probe_transposed(self, shape):
+        """探测 DroidCast_raw 服务端输出的像素排布是否为转置的竖排数据。
+
+        部分设备（例如反向横屏 orientation=2 的 redroid）上，DroidCast_raw 直接读取
+        帧缓冲，返回的是竖排数据。它与横屏的 (height, width) 形状字节数完全相同，
+        reshape 后画面整体错位，模板匹配全部失效。这里读取 `/preview` 的 PNG 头，
+        取得服务端实际输出尺寸；设备方向变化时重新探测，其余情况使用缓存。
+
+        Args:
+            shape (tuple): 期望的横图形状 (height, width)。
+
+        Returns:
+            bool: 服务端输出竖排数据时返回 True。
+        """
+        key = (self.orientation, shape)
+        if self._droidcast_raw_probe_key == key:
+            return self._droidcast_raw_transposed
+
+        transposed = self._droidcast_raw_transposed
+        try:
+            resp = self.droidcast_session.get(self.droidcast_url('/preview'), timeout=3, stream=True)
+            try:
+                head = resp.raw.read(33)
+            finally:
+                resp.close()
+            # PNG：8 字节签名，4 字节块长度，4 字节块类型，随后 IHDR 的宽与高各占 4 字节大端
+            if len(head) >= 24 and head[:8] == b'\x89PNG\r\n\x1a\n' and head[12:16] == b'IHDR':
+                width = int.from_bytes(head[16:20], 'big')
+                height = int.from_bytes(head[20:24], 'big')
+                if width and height:
+                    logger.attr('截图原始尺寸', f'{width}x{height}')
+                    transposed = (width, height) == (shape[0], shape[1])
+        except Exception as e:
+            logger.warning(f'[设备-DroidCast] 探测原始尺寸失败: {e}')
+
+        self._droidcast_raw_transposed = transposed
+        self._droidcast_raw_probe_key = key
+        if transposed:
+            logger.attr('截图方向', '服务端输出竖排数据，已转回横图')
+        return transposed
+
+    def _droidcast_raw_reshape(self, arr, shape):
+        """将 DroidCast_raw 的一维 RGB565 数据还原为横图。
+
+        Args:
+            arr (np.ndarray): 一维 RGB565 像素数组。
+            shape (tuple): 期望的横图形状 (height, width)。
+
+        Returns:
+            np.ndarray: (height, width) 的像素数组。
+        """
+        if arr.size != shape[0] * shape[1] or not self._droidcast_raw_probe_transposed(shape):
+            return arr.reshape(shape)
+
+        # 服务端按竖排输出，先还原成 (width, height)，再按设备方向旋转回横图
+        image = arr.reshape(shape[1], shape[0])
+        if self.orientation == 1:
+            return cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        return cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
 
     def droidcast_url(self, url='/preview'):
         """获取标准 DroidCast 服务的请求 URL。
@@ -261,7 +323,7 @@ class DroidCast(Uiautomator2):
                 arr = cv2.transpose(arr)
                 cv2.flip(arr, 1, dst=arr)
             else:
-                arr = arr.reshape(shape)
+                arr = self._droidcast_raw_reshape(arr, shape)
         except ValueError as e:
             # 尝试作为 `DroidCast` 格式加载
             image = np.frombuffer(image, np.uint8)
