@@ -93,7 +93,10 @@ class DroidCast(Uiautomator2):
         部分设备（例如反向横屏 orientation=2 的 redroid）上，DroidCast_raw 直接读取
         帧缓冲，返回的是竖排数据。它与横屏的 (height, width) 形状字节数完全相同，
         reshape 后画面整体错位，模板匹配全部失效。这里读取 `/preview` 的 PNG 头，
-        取得服务端实际输出尺寸；设备方向变化时重新探测，其余情况使用缓存。
+        取得服务端实际输出尺寸。`/preview` 需要服务端完整编码一次 PNG，耗时在
+        400 ms 以上，因此结果按 (方向, 形状) 缓存，只在方向或分辨率变化、以及
+        DroidCast 服务重新初始化之后探测一次。探测失败时沿用上一次的结论，
+        避免每帧都付出探测成本。
 
         Args:
             shape (tuple): 期望的横图形状 (height, width)。
@@ -192,6 +195,7 @@ class DroidCast(Uiautomator2):
     def droidcast_init(self):
         """初始化并启动设备上的 DroidCast 服务。"""
         logger.hr('[设备-DroidCast] DroidCast初始化')
+        self._droidcast_raw_probe_key = None
         self.droidcast_stop()
         self._droidcast_update_resolution()
 
