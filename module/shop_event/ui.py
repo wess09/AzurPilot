@@ -126,6 +126,14 @@ class EventShopUI(UI):
             return None
 
         deadline = min(candidates, key=lambda t: abs(t - server_now))
+        if not year and abs(deadline - server_now) > timedelta(days=90):
+            logger.warning(f"[活动商店-UI] 推算的截止日期 {deadline} 距今超过 90 天，"
+                           f"改用当前年份 {server_now.year}")
+            try:
+                deadline = datetime(server_now.year, int(month), int(day), hour, minute, second)
+            except ValueError:
+                logger.warning(f"[活动商店-UI] 活动截止日期无效: {raw}")
+                return None
         return deadline + timedelta(seconds=1)
 
     @cached_property
