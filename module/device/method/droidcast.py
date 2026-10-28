@@ -122,11 +122,13 @@ class DroidCast(Uiautomator2):
                 if width and height:
                     logger.attr('截图原始尺寸', f'{width}x{height}')
                     transposed = (width, height) == (shape[0], shape[1])
+                    # 只在成功解析时写缓存，读取失败时下一帧继续尝试，
+                    # 避免一次临时故障让错误的排布判断一直沿用下去
+                    self._droidcast_raw_probe_key = key
         except Exception as e:
             logger.warning(f'[设备-DroidCast] 探测原始尺寸失败: {e}')
 
         self._droidcast_raw_transposed = transposed
-        self._droidcast_raw_probe_key = key
         if transposed:
             logger.attr('截图方向', '服务端输出竖排数据，已转回横图')
         return transposed
