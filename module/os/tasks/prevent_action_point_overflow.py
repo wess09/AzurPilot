@@ -238,11 +238,11 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
             if not started:
                 if current_ap < upperbound:
                     logger.info(f'[大世界-防止行动力溢出] 当前行动力未达到上限 ({current_ap} < {upperbound})，更新下次运行时间')
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                     self.config.task_stop()
             elif current_ap < lowerbound:
                 logger.info(f'[大世界-防止行动力溢出] 当前行动力已低于下限 ({current_ap} < {lowerbound})，停止防止行动力溢出任务')
-                self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                 self.config.task_stop()
 
             started = True
@@ -254,7 +254,7 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
                     if current is None:
                         current = current_ap
                     logger.info(f'[大世界-防止行动力溢出] 当前行动力无法进入目标海域，停止防止行动力溢出任务: current={current}, error={e}')
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=None)
                     self.config.task_stop()
                 except TaskEnd:
                     delay_request = overflow.request
@@ -266,5 +266,5 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
                         current_ap = self._get_current_action_point_for_overflow()
                     except Exception:
                         logger.debug('[大世界-防止行动力溢出] 防止行动力溢出任务结束后刷新当前行动力失败，使用运行前数值', exc_info=True)
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                     raise

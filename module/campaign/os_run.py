@@ -87,12 +87,17 @@ class OSCampaignRun(OSMapOperation):
         finally:
             if prevent_enabled:
                 self.config.resume_task_runtime(self.PREVENT_AP_OVERFLOW_TASK)
-                # 用户可能在运行期间关闭了防溢出任务，收尾时只按最新设置更新排期。
-                if campaign is not None and self.config.is_task_enabled(self.PREVENT_AP_OVERFLOW_TASK):
+                # 用户可能在运行期间关闭了防溢出任务，收尾时以磁盘上的最新设置判断。
+                if campaign is not None:
                     try:
-                        campaign.update_prevent_action_point_overflow_schedule(enable=None)
+                        self.config.load()
                     except Exception:
-                        logger.debug('更新防止行动力溢出任务排期失败，保留用户当前设置', exc_info=True)
+                        logger.debug('重新加载配置失败，改用内存中的开关判断', exc_info=True)
+                    if self.config.is_task_enabled(self.PREVENT_AP_OVERFLOW_TASK):
+                        try:
+                            campaign.update_prevent_action_point_overflow_schedule(enable=None)
+                        except Exception:
+                            logger.debug('更新防止行动力溢出任务排期失败，保留用户当前设置', exc_info=True)
 
     def opsi_explore(self):
         """执行大世界海域开荒探索任务。"""

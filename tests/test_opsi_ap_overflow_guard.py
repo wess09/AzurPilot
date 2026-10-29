@@ -63,10 +63,34 @@ class TestRuntimeTaskExclusion(unittest.TestCase):
         self.assertFalse(self.config.is_task_excluded_runtime('Commission'))
         self.assertIn('Commission', self.commands())
 
-    def test_excluding_every_task_keeps_queue(self):
+    def test_excluding_every_task_leaves_no_dispatchable_task(self):
         for name in ('Main', 'Commission', 'Research'):
             self.config.exclude_task_runtime(name)
-        self.assertEqual(sorted(self.commands()), ['Commission', 'Main', 'Research'])
+
+        self.config.get_next_task()
+
+        self.assertEqual(self.config.pending_task, [])
+        self.assertEqual(self.config.waiting_task, [])
+
+    def test_excluded_waiting_task_is_not_scheduled(self):
+        config = make_config({
+            'Main': (True, timedelta(minutes=-10)),
+            'Research': (True, timedelta(hours=2)),
+        })
+        config.exclude_task_runtime('Research')
+
+        config.get_next_task()
+
+        self.assertEqual([func.command for func in config.pending_task], ['Main'])
+        self.assertEqual(config.waiting_task, [])
+
+    def test_repeated_exclude_and_resume(self):
+        self.config.exclude_task_runtime('Commission')
+        self.config.exclude_task_runtime('Commission')
+        self.config.resume_task_runtime('Commission')
+        self.assertFalse(self.config.is_task_excluded_runtime('Commission'))
+        self.config.resume_task_runtime('Commission')
+        self.assertFalse(self.config.is_task_excluded_runtime('Commission'))
 
     def test_exclusion_does_not_touch_saved_settings(self):
         self.config.cross_set = Mock()
@@ -74,6 +98,7 @@ class TestRuntimeTaskExclusion(unittest.TestCase):
         self.config.exclude_task_runtime('Commission')
         self.config.resume_task_runtime('Commission')
         self.config.cross_set.assert_not_called()
+        self.assertTrue(self.config.data['Commission']['Scheduler']['Enable'])
         self.assertFalse(self.config.is_task_excluded_runtime('Main'))
 
     def test_exclusion_without_initialized_state(self):
@@ -109,6 +134,7 @@ class TestApOverflowGuard(unittest.TestCase):
         runner = self.make_runner([True, False])
         runner._run_opsi_task_with_ap_overflow_guard(lambda campaign: None)
         runner.campaign.update_prevent_action_point_overflow_schedule.assert_not_called()
+        runner.config.load.assert_called_once_with()
         runner.config.cross_set.assert_not_called()
         runner.config.resume_task_runtime.assert_called_once_with('OpsiPreventActionPointOverflow')
 
@@ -120,6 +146,26 @@ class TestApOverflowGuard(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, '游戏失败'):
             runner._run_opsi_task_with_ap_overflow_guard(runner_func)
+        runner.config.resume_task_runtime.assert_called_once_with('OpsiPreventActionPointOverflow')
+        runner.config.cross_set.assert_not_called()
+
+    def test_guard_skips_schedule_update_when_campaign_load_fails(self):
+        runner = self.make_runner([True])
+        runner.load_campaign = Mock(side_effect=RuntimeError('加载失败'))
+
+        with self.assertRaisesRegex(RuntimeError, '加载失败'):
+            runner._run_opsi_task_with_ap_overflow_guard(lambda campaign: None)
+
+        runner.config.resume_task_runtime.assert_called_once_with('OpsiPreventActionPointOverflow')
+        runner.campaign.update_prevent_action_point_overflow_schedule.assert_not_called()
+        runner.config.cross_set.assert_not_called()
+
+    def test_guard_survives_schedule_update_failure(self):
+        runner = self.make_runner([True, True])
+        runner.campaign.update_prevent_action_point_overflow_schedule.side_effect = RuntimeError('写配置失败')
+
+        self.assertEqual(runner._run_opsi_task_with_ap_overflow_guard(lambda campaign: 7), 7)
+
         runner.config.resume_task_runtime.assert_called_once_with('OpsiPreventActionPointOverflow')
         runner.config.cross_set.assert_not_called()
 

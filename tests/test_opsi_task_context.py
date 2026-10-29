@@ -443,7 +443,7 @@ class TestOpsiTaskContext(unittest.TestCase):
                 self.run_overflow(runner, body)
         self.assertEqual(calls, 2)
         self.assertEqual(runner.config.modified, {})
-        update.assert_called_once_with(current_ap=200, enable=True)
+        update.assert_called_once_with(current_ap=200, enable=None)
         self.assertFalse(hasattr(runner.config, '_opsi_task_context'))
 
     def test_unexpected_failure_drops_delay_and_restores_binding(self):
@@ -470,6 +470,6 @@ class TestOpsiTaskContext(unittest.TestCase):
         with patch.object(runner, 'update_prevent_action_point_overflow_schedule') as update:
             with self.assertRaises(TaskEnd):
                 self.run_overflow(runner, body, nested=True)
-        update.assert_called_once_with(current_ap=15, enable=True)
+        update.assert_called_once_with(current_ap=15, enable=None)
         self.assertEqual(runner.config.modified, {})
         self.assert_restored(runner, owner, bound)

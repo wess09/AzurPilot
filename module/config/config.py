@@ -329,6 +329,9 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         与直接改写 `Scheduler.Enable` 不同，此排除只作用于本进程的调度队列：
         用户随时保存的开关保持不变，进程结束或被强制终止也不会留下临时状态。
 
+        排除状态不可重入：内层 `resume_task_runtime()` 会解除外层仍需要的排除，
+        当前只由大世界任务的运行守卫单层使用。
+
         Args:
             task (str): 任务命令名，如 `OpsiPreventActionPointOverflow`。
         """
@@ -359,7 +362,8 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
     def _apply_runtime_exclusions(self, pending, waiting):
         """从任务队列中移除被临时跳过的任务。
 
-        全部候选项都被排除时保留原队列，避免调度器因队列为空而退出。
+        被排除的任务在本次进程内不参与派发，即使它是队列里唯一可运行的任务；
+        过滤后队列全空时按既有「没有可运行的任务」流程处理，不回退派发被排除任务。
 
         Args:
             pending (list[Function]): 已到期的任务。
@@ -368,13 +372,10 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         Returns:
             tuple[list[Function], list[Function]]: 过滤后的到期与等待队列。
         """
-        excluded = self.__dict__.get('_runtime_task_exclusions')
-        if not excluded:
+        if not self.__dict__.get('_runtime_task_exclusions'):
             return pending, waiting
-        kept_pending = [func for func in pending if func.command not in excluded]
-        kept_waiting = [func for func in waiting if func.command not in excluded]
-        if not kept_pending and not kept_waiting:
-            return pending, waiting
+        kept_pending = [func for func in pending if not self.is_task_excluded_runtime(func.command)]
+        kept_waiting = [func for func in waiting if not self.is_task_excluded_runtime(func.command)]
         return kept_pending, kept_waiting
 
     def get_next_task(self):
