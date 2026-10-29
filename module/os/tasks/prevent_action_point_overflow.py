@@ -112,13 +112,14 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
         logger.info(f'[大世界-防止行动力溢出] 防止行动力溢出检查：当前行动力={current}, 总行动力={total}')
         return current
 
-    def update_prevent_action_point_overflow_schedule(self, current_ap=None, enable=True):
+    def update_prevent_action_point_overflow_schedule(self, current_ap=None, enable=None):
         """按当前真实行动力更新防止行动力溢出任务下次运行时间。
 
         Args:
             current_ap (int | None): 当前真实行动力。为 None 时现场 OCR 获取。
             enable (bool | None): 是否同时启用防止行动力溢出任务。
-                True 启用、False 关闭、None 保留用户当前设置。默认 True。
+                True 启用、False 关闭、None 保留用户当前设置。默认为 None，
+                即「只更新下次运行时间，不改动任务开关」。
         """
         if current_ap is None:
             current_ap = self._get_current_action_point_for_overflow()

@@ -194,6 +194,12 @@ class TestUpdateScheduleEnableOptional(unittest.TestCase):
         runner._set_prevent_action_point_overflow_enabled.assert_not_called()
         runner.config.task_delay.assert_called_once()
 
+    def test_omitted_argument_keeps_current_switch(self):
+        runner = self.make_runner()
+        runner.update_prevent_action_point_overflow_schedule(current_ap=120)
+        runner._set_prevent_action_point_overflow_enabled.assert_not_called()
+        runner.config.task_delay.assert_called_once()
+
     def test_bool_still_updates_switch(self):
         runner = self.make_runner()
         runner.update_prevent_action_point_overflow_schedule(current_ap=120, enable=True)
