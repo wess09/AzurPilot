@@ -37,7 +37,7 @@ def make_campaign(map_module=t1, server='cn'):
 
 class WindFogCorridorTests(unittest.TestCase):
     def test_stage_routes_use_correct_part_on_all_supported_servers(self):
-        for server in ('cn', 'en', 'jp'):
+        for server in ('cn', 'en', 'jp', 'tw'):
             for stage, aside in ((1, 'part1'), (2, 'part1'), (3, 'part1'),
                                  (4, 'part2'), (5, 'part2'), (6, 'part2')):
                 with self.subTest(server=server, stage=stage):
@@ -56,7 +56,7 @@ class WindFogCorridorTests(unittest.TestCase):
                     campaign.device.click.assert_not_called()
 
     def test_daily_sp_uses_sp_partition_without_difficulty_switch(self):
-        for server in ('cn', 'en', 'jp'):
+        for server in ('cn', 'en', 'jp', 'tw'):
             with self.subTest(server=server):
                 campaign = make_campaign(sp, server)
                 campaign.campaign_set_chapter('sp')
@@ -90,10 +90,10 @@ class WindFogCorridorTests(unittest.TestCase):
             for frame in template.image:
                 self.assertGreater(frame.size, 0)
 
-    def test_registered_event_uses_shared_directory_for_cn_en_jp(self):
+    def test_registered_event_uses_shared_directory_for_all_four_servers(self):
         args = json.loads((ROOT / 'module/config/argument/args.json').read_text(encoding='utf-8'))
         for task in ('Event', 'Event2', 'Event3', 'EventA', 'EventB', 'EventC', 'EventD', 'EventSp'):
-            for server in ('cn', 'en', 'jp'):
+            for server in ('cn', 'en', 'jp', 'tw'):
                 with self.subTest(task=task, server=server):
                     self.assertEqual(args[task]['Campaign']['Event'][f'option_{server}'], [EVENT])
 
@@ -102,6 +102,7 @@ class WindFogCorridorTests(unittest.TestCase):
             ('zh-CN', '飓风与雾霭回廊'),
             ('en-US', 'Tempesta and the Corridor of Fog'),
             ('ja-JP', 'テンペスタと霧靄回廊'),
+            ('zh-TW', '飓风与雾霭回廊'),
         ):
             with self.subTest(language=language):
                 path = ROOT / f'module/config/i18n/{language}.json'

@@ -77,7 +77,7 @@ class EventStoryNavigationTests(unittest.TestCase):
         self.assertEqual(runner.config.modified, {})
 
     def test_current_event_switches_from_both_parts_on_all_supported_servers(self):
-        for server in ('cn', 'en', 'jp'):
+        for server in ('cn', 'en', 'jp', 'tw'):
             for part in (CHAPTER_20241219_PART1, CHAPTER_20241219_PART2):
                 with self.subTest(server=server, part=part.name):
                     runner = make_runner('event_20261022_cn', part=part, server=server)
