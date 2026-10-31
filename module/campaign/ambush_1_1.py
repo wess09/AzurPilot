@@ -15,7 +15,7 @@ from module.combat.assets import BATTLE_PREPARATION, EXP_INFO_C, EXP_INFO_D, OPT
 from module.combat.emotion import Emotion
 from module.equipment.assets import EMPTY_SHIP_R, FLEET_DETAIL, FLEET_DETAIL_CHECK, FLEET_NEXT, FLEET_PREV
 from module.equipment.fleet_equipment import FleetEquipment, OCR_FLEET_INDEX
-from module.exception import CampaignEnd, RequestHumanTakeover
+from module.exception import CampaignEnd, RequestHumanTakeover, ScriptEnd
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_OFF
 from module.logger import logger
 from module.map.assets import FLEET_PREPARATION, MAP_PREPARATION, MAP_PREPARATION_HARD
@@ -38,8 +38,8 @@ SIM_VALUE = 0.9
 class AmbushEmotion(Emotion):
     """1-1 伏击专用情绪管理类。
 
-    重写情绪检查逻辑：当检测到低情绪时抛出 CampaignEnd 异常
-    而不是等待恢复，以便触发舰船更换流程。
+    重写情绪检查逻辑：当检测到低情绪时结束本图并交给换船编排；
+    前排固定不换而选择等待时，改为延迟任务直到心情恢复到足以出击。
     """
 
     def check_reduce(self, battle):
@@ -52,15 +52,20 @@ class AmbushEmotion(Emotion):
 
         Raises:
             CampaignEnd: 暂停当前任务以避免未来的情绪控制问题。
+            ScriptEnd: 前排不更换且心情不足时，延迟任务等待恢复。
         """
         if not self.is_calculate:
             return
+        if self.config.GemsFarming_ChangeVanguard == 'disabled_wait':
+            # 前排固定不换时等待就是基类语义：延迟任务并结束本次运行。
+            return super().check_reduce(battle)
 
         recovered, delay = self._check_reduce(battle)
-        if delay:
-            self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.info('[战役-伏击] 检测到低情绪，暂停当前任务')
-            raise CampaignEnd('Emotion control')
+        if not delay:
+            return
+        self.config.GEMS_EMOTION_TRIGGERED = True
+        logger.info('[战役-伏击] 检测到低情绪，暂停当前任务')
+        raise CampaignEnd('Emotion control')
 
     def wait(self, fleet_index):
         """等待情绪恢复。
@@ -85,14 +90,22 @@ class AmbushCampaignOverride(CampaignBase):
         """处理战斗开始前的低情绪警告弹窗。
 
         重写 info_handler.handle_combat_low_emotion()。
-        如果启用了更换先锋，撤出战斗并更换旗舰和先锋。
+        前排固定不换且等待心情时，交给公共保底取消弹窗、撤退并延迟任务；
+        其余情况按配置忽略警告或撤退换船。
 
         Returns:
             bool: 是否处理了警告弹窗。
 
         Raises:
             CampaignEnd: 触发情绪撤退时抛出。
+            ScriptEnd: 等待心情时取消弹窗、清零并延迟后抛出。
         """
+        if self.config.GemsFarming_ChangeVanguard == 'disabled_wait':
+            if self.config.GemsFarming_IgnoreEmotionWarning:
+                logger.warning('[战役-伏击] 已选择「不更换（心情不足时等待）」，'
+                               '「忽略心情警告弹窗」在此模式下不生效')
+            return super().handle_combat_low_emotion()
+
         if self.config.GemsFarming_IgnoreEmotionWarning or self.config.GemsFarming_ChangeVanguard == 'disabled':
             result = self.handle_popup_confirm('IGNORE_LOW_EMOTION')
             if result:
@@ -231,6 +244,15 @@ class Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement):
         return 'equip' in self.config.GemsFarming_ChangeVanguard
 
     @property
+    def wait_emotion(self):
+        """前排固定不换时，是否用延迟任务代替强制红脸出击。
+
+        Returns:
+            bool: 配置为「不更换（心情不足时等待）」时返回 True。
+        """
+        return self.config.GemsFarming_ChangeVanguard == 'disabled_wait'
+
+    @property
     def fleet_to_attack(self):
         """获取出击舰队编号。
 
@@ -348,10 +370,14 @@ class Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement):
 
         self.campaign = AmbushCampaign(device=self.campaign.device, config=self.campaign.config)
         if self.change_vanguard:
-            self.campaign.config.override(Emotion_Mode='ignore_calculate')
+            emotion_mode = 'ignore_calculate'
             self.campaign.config.override(EnemyPriority_EnemyScaleBalanceWeight='S1_enemy_first')
+        elif self.wait_emotion:
+            # 计算心情但不忽略红脸弹窗：预检不足时延迟任务，弹窗交给公共保底。
+            emotion_mode = 'calculate'
         else:
-            self.campaign.config.override(Emotion_Mode='ignore')
+            emotion_mode = 'ignore'
+        self.campaign.config.override(Emotion_Mode=emotion_mode)
 
     def _fleet_detail_enter(self, fleet):
         """进入指定舰队的编辑页面（普通模式）。
@@ -741,8 +767,13 @@ class Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement):
                 else:
                     self.device.stuck_record_clear()
                     self.device.click_record_clear()
-                    # 运行地图循环
-                    self.campaign.run()
+                    # 运行地图循环；心情不足已排好下次运行时间，直接结束本任务。
+                    try:
+                        self.campaign.run()
+                    except ScriptEnd as e:
+                        logger.hr('[战役-伏击] 脚本结束')
+                        logger.info(str(e))
+                        break
 
             except CampaignEnd as e:
                 # 例如舰船升级或情绪触发，正常处理

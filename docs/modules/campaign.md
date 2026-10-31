@@ -250,6 +250,34 @@ OSMapOperation
 
 紧急委托和三油低耗共用 `GemsCampaignOverride.handle_exp_info()`。手动地图保留 C/D 经验页及沉船提示的点击兜底；自律寻敌的沉船提示交给 `handle_auto_search_shipwreck()`，必须保留公共战败确认、撤退状态与心情记账，不能只点掉提示后重新开启自律。`withdraw_stop` 的三次连续战败计数在同一战役实例中跨出击保留，正常战斗结束后重置；第三次战败退出关卡后抛出的专用 `ScriptEnd` 由 `CampaignRun._run()` 捕获并禁用当前任务。
 
+#### 前排固定不换时的心情等待
+
+`GemsFarming.ChangeVanguard` 的 `disabled_wait`（界面「不更换（心情不足时等待）」）把「换前排」与「心情计算」解耦，运行时分三层：
+
+| 层 | 行为 | 代码位置 |
+| --- | --- | --- |
+| 模式 | 换前排 → `ignore_calculate`；不换且等待 → `calculate`；不换且不等待 → `ignore`（旧行为） | `GemsFarming.load_campaign()` / `Ambush11.load_campaign()` |
+| 预检 | `GemsEmotion.check_reduce()` 发现不足时 `task_delay(target=recovered)` 并抛 `ScriptEnd`，不置 `GEMS_EMOTION_TRIGGERED`，因此不会进入换船编排 | `module/campaign/gems_farming.py`、`ambush_1_1.py` |
+| 兜底 | 仍出现红脸弹窗时 `handle_combat_low_emotion()` 转交 `info_handler` 的公共保底：取消弹窗、撤退、`emergency_reset()` 清零重建、按恢复时间延迟 | `module/handler/info_handler.py` |
+
+`Ambush11.run()` 不使用 `CampaignRun._run()`，因此在 `campaign.run()` 外包一层 `except ScriptEnd` 结束本次调用。等待模式下「忽略心情警告弹窗」不生效（会记一条 warning）。
+
+#### 低耗任务的前排心情组
+
+紧急委托与三油低耗的心情配置不再借用主线、活动等任务共用的 `Emotion` 组，而是独立的 `VanguardEmotion`（界面「前排心情设置」）：心情控制、恢复地点、全员已婚、全员温泉、最少预留、无视沉船、实测值与记录时间由这个组自行维护。账本仍按整队最低心情估算（游戏只有一条心情条），前排是这条控制线作用的对象。
+
+| 位置 | 行为 |
+| --- | --- |
+| `argument.yaml` / `task.yaml` | 新增 `VanguardEmotion` 组；`GemsFarming`、`ThreeOilLowCost` 不再引用 `Emotion`（`Ambush11` 仍用公共组） |
+| `module/combat/emotion.py` | `FleetEmotion` 支持自定义账本前缀；`Emotion` 的 `mode` / `min_reserve` / `ignore_shipwreck` / `recovery_wait` 四个键改成类属性，低耗任务在 `GemsEmotion` 里指向 `VanguardEmotion_*` |
+| `module/campaign/gems_farming.py` | `GemsEmotion` 的两个舰队编号共用同一个 `FleetEmotion`（同一时刻只有一队出击）；`get_emotion()` / `set_emotion()` 直接读写专属组 |
+| `module/api/config_service.py`、`module/config/config.py`、`module/tui/widgets/config_modal.py` | 「带恢复相位的心情账本组」统一由 `EMOTION_LEDGER_PREFIXES` 描述，WebUI 校准、并发写保护与 TUI 校准都按它识别新组 |
+| 迁移 | `config_updater.redirection` 把旧的 `Emotion.Fleet1*` 七项与 `MinReserve` / `IgnoreShipwreck` 搬到 `VanguardEmotion.*`；用二队出击（`fleet1_standby_fleet2_all`）的用户旧账本记在 `Fleet2*`，升级后需要重新填一次实测值 |
+
+`Emotion` 组的字段与行为对其它任务不变；一队心情控制补了一句通用说明。`Ambush11` 继续使用公共 `Emotion` 组。
+
+代价与边界：心情恢复速度固定（不在后宅 20/h），每图消耗 = 场数 × 2，因此等待期间任务会按恢复时间推迟，产出低于持续换前排。基准记录过旧（超过 6 小时）时首次预检可能偏乐观，真出现红脸弹窗时由兜底路径清零重算。
+
 ### 地图文件的三方接口
 
 每个 `campaign/**/*.py` 必须提供三个模块级名字，`load_campaign()` 逐一消费：

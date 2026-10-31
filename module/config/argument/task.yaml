@@ -61,7 +61,7 @@ Farm:
       - StopCondition
       - Fleet
       - Submarine
-      - Emotion
+      - VanguardEmotion
       - EnemyPriority
     ThreeOilLowCost:
       - Scheduler
@@ -70,7 +70,7 @@ Farm:
       - StopCondition
       - Fleet
       - Submarine
-      - Emotion
+      - VanguardEmotion
       - EnemyPriority
     Ambush11:
       - Scheduler

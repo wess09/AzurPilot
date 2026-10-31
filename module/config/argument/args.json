@@ -2746,6 +2746,7 @@
         "value": "ship_equip",
         "option": [
           "disabled",
+          "disabled_wait",
           "ship",
           "ship_equip"
         ]
@@ -3092,7 +3093,7 @@
         "mode": "yaml"
       }
     },
-    "Emotion": {
+    "VanguardEmotion": {
       "Mode": {
         "type": "select",
         "value": "calculate_ignore",
@@ -3103,7 +3104,30 @@
         ],
         "display": "hide"
       },
-      "IgnoreShipwreck": {
+      "Control": {
+        "type": "select",
+        "value": "prevent_red_face",
+        "option": [
+          "keep_exp_bonus",
+          "prevent_green_face",
+          "prevent_yellow_face",
+          "prevent_red_face"
+        ]
+      },
+      "Recover": {
+        "type": "select",
+        "value": "not_in_dormitory",
+        "option": [
+          "not_in_dormitory",
+          "dormitory_floor_1",
+          "dormitory_floor_2"
+        ]
+      },
+      "Oath": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Onsen": {
         "type": "checkbox",
         "value": false
       },
@@ -3115,12 +3139,11 @@
           150
         ]
       },
-      "RecoveryWait": {
-        "type": "stored",
-        "value": null,
-        "display": "hide"
+      "IgnoreShipwreck": {
+        "type": "checkbox",
+        "value": false
       },
-      "Fleet1Value": {
+      "Value": {
         "type": "input",
         "value": 119,
         "validate": [
@@ -3128,95 +3151,21 @@
           150
         ]
       },
-      "Fleet1Record": {
+      "Record": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
         "validate": "datetime",
         "display": "disabled"
       },
-      "Fleet1RecoveryState": {
+      "RecoveryState": {
         "type": "stored",
         "value": null,
         "display": "hide"
       },
-      "Fleet1Control": {
-        "type": "select",
-        "value": "prevent_red_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet1Onsen": {
-        "type": "checkbox",
-        "value": false
-      },
-      "Fleet2Value": {
-        "type": "input",
-        "value": 119,
-        "validate": [
-          0,
-          150
-        ]
-      },
-      "Fleet2Record": {
-        "type": "datetime",
-        "value": "2020-01-01 00:00:00",
-        "validate": "datetime",
-        "display": "disabled"
-      },
-      "Fleet2RecoveryState": {
+      "Wait": {
         "type": "stored",
         "value": null,
         "display": "hide"
-      },
-      "Fleet2Control": {
-        "type": "select",
-        "value": "prevent_red_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet2Onsen": {
-        "type": "checkbox",
-        "value": false
       }
     },
     "EnemyPriority": {
@@ -3326,6 +3275,7 @@
         "value": "ship_equip",
         "option": [
           "disabled",
+          "disabled_wait",
           "ship",
           "ship_equip"
         ]
@@ -3672,7 +3622,7 @@
         "mode": "yaml"
       }
     },
-    "Emotion": {
+    "VanguardEmotion": {
       "Mode": {
         "type": "select",
         "value": "calculate_ignore",
@@ -3683,7 +3633,30 @@
         ],
         "display": "hide"
       },
-      "IgnoreShipwreck": {
+      "Control": {
+        "type": "select",
+        "value": "prevent_red_face",
+        "option": [
+          "keep_exp_bonus",
+          "prevent_green_face",
+          "prevent_yellow_face",
+          "prevent_red_face"
+        ]
+      },
+      "Recover": {
+        "type": "select",
+        "value": "not_in_dormitory",
+        "option": [
+          "not_in_dormitory",
+          "dormitory_floor_1",
+          "dormitory_floor_2"
+        ]
+      },
+      "Oath": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Onsen": {
         "type": "checkbox",
         "value": false
       },
@@ -3695,12 +3668,11 @@
           150
         ]
       },
-      "RecoveryWait": {
-        "type": "stored",
-        "value": null,
-        "display": "hide"
+      "IgnoreShipwreck": {
+        "type": "checkbox",
+        "value": false
       },
-      "Fleet1Value": {
+      "Value": {
         "type": "input",
         "value": 119,
         "validate": [
@@ -3708,95 +3680,21 @@
           150
         ]
       },
-      "Fleet1Record": {
+      "Record": {
         "type": "datetime",
         "value": "2020-01-01 00:00:00",
         "validate": "datetime",
         "display": "disabled"
       },
-      "Fleet1RecoveryState": {
+      "RecoveryState": {
         "type": "stored",
         "value": null,
         "display": "hide"
       },
-      "Fleet1Control": {
-        "type": "select",
-        "value": "prevent_red_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet1Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet1Onsen": {
-        "type": "checkbox",
-        "value": false
-      },
-      "Fleet2Value": {
-        "type": "input",
-        "value": 119,
-        "validate": [
-          0,
-          150
-        ]
-      },
-      "Fleet2Record": {
-        "type": "datetime",
-        "value": "2020-01-01 00:00:00",
-        "validate": "datetime",
-        "display": "disabled"
-      },
-      "Fleet2RecoveryState": {
+      "Wait": {
         "type": "stored",
         "value": null,
         "display": "hide"
-      },
-      "Fleet2Control": {
-        "type": "select",
-        "value": "prevent_red_face",
-        "option": [
-          "keep_exp_bonus",
-          "prevent_green_face",
-          "prevent_yellow_face",
-          "prevent_red_face"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Recover": {
-        "type": "select",
-        "value": "not_in_dormitory",
-        "option": [
-          "not_in_dormitory",
-          "dormitory_floor_1",
-          "dormitory_floor_2"
-        ],
-        "display": "hide"
-      },
-      "Fleet2Oath": {
-        "type": "checkbox",
-        "value": false,
-        "display": "hide"
-      },
-      "Fleet2Onsen": {
-        "type": "checkbox",
-        "value": false
       }
     },
     "EnemyPriority": {
@@ -3907,6 +3805,7 @@
         "value": "ship_equip",
         "option": [
           "disabled",
+          "disabled_wait",
           "ship",
           "ship_equip"
         ]
@@ -4245,12 +4144,13 @@
     "Emotion": {
       "Mode": {
         "type": "select",
-        "value": "calculate",
+        "value": "calculate_ignore",
         "option": [
           "calculate",
           "ignore",
           "calculate_ignore"
-        ]
+        ],
+        "display": "hide"
       },
       "IgnoreShipwreck": {
         "type": "checkbox",

@@ -52,9 +52,43 @@ SIM_VALUE = 0.9
 class GemsEmotion(Emotion):
     """钻石 farming 专用情绪管理类。
 
-    重写情绪检查逻辑：当检测到低情绪时抛出 CampaignEnd 异常
-    而不是等待恢复，以便触发舰船更换流程。
+    重写情绪检查逻辑：当检测到低情绪时结束本图并交给换船编排；
+    前排固定不换而选择等待时，改为延迟任务直到心情恢复到足以出击。
+
+    低耗任务只统计出击队伍的前排，账本和开关都放在专属的
+    ``VanguardEmotion`` 配置组，不与其他任务的 Emotion 组共用键。
     """
+
+    fleet_prefix = 'VanguardEmotion_'
+    mode_key = 'VanguardEmotion_Mode'
+    min_reserve_key = 'VanguardEmotion_MinReserve'
+    ignore_shipwreck_key = 'VanguardEmotion_IgnoreShipwreck'
+    recovery_wait_key = 'VanguardEmotion_Wait'
+
+    def __init__(self, config):
+        """初始化前排心情账本；两个出击编号共用同一份前排记录。
+
+        低耗任务同一时刻只有一个出击舰队（一队或二队），父类按
+        ``fleet_prefix`` 建好的 tracker 本来就指向同一组键，这里只把两个
+        编号指向同一个实例，避免 record/show 对同一账本重复处理。
+
+        Args:
+            config (AzurLaneConfig): 配置对象。
+        """
+        super().__init__(config)
+        self.fleet_2 = self.fleet_1
+        self.fleets = [self.fleet_1, self.fleet_1]
+        if self.using_public:
+            logger.warning('[战役-紧急委托] 已启用公海心情管理，本任务改用专属前排心情账本')
+            self.using_public = False
+
+    def show(self):
+        """只显示一份前排心情，避免两个舰队编号共用同一账本时重复输出。"""
+        fleet = self.fleet_1
+        if fleet.state is None:
+            logger.attr('情绪前排', '未校准')
+        else:
+            logger.attr('情绪前排', f'{fleet.current}（范围 {fleet.lower}–{fleet.upper}，控制使用下限）')
 
     def check_reduce(self, battle):
         """进入战役前检查情绪值。
@@ -66,15 +100,20 @@ class GemsEmotion(Emotion):
 
         Raises:
             CampaignEnd: 暂停当前任务以避免未来的情绪控制问题。
+            ScriptEnd: 前排不更换且心情不足时，延迟任务等待恢复。
         """
         if not self.is_calculate:
             return
+        if self.config.GemsFarming_ChangeVanguard == 'disabled_wait':
+            # 前排固定不换时等待就是基类语义：延迟任务并结束本次运行。
+            return super().check_reduce(battle)
 
         recovered, delay = self._check_reduce(battle)
-        if delay:
-            self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.info('[钻石打捞] 检测到低情绪，暂停当前任务')
-            raise CampaignEnd('Emotion control')
+        if not delay:
+            return
+        self.config.GEMS_EMOTION_TRIGGERED = True
+        logger.info('[钻石打捞] 检测到低情绪，暂停当前任务')
+        raise CampaignEnd('Emotion control')
 
     def wait(self, fleet_index):
         """等待情绪恢复（通过换船替代等待）。
@@ -85,12 +124,20 @@ class GemsEmotion(Emotion):
         pass
 
     def check_fleet(self, fleet_index, after_restart=False):
-        """续接预检不足时交回紧急委托换船，不安排普通任务的心情等待。"""
-        if not after_restart:
+        """续接预检不足时交回换船编排；等待前排心情时交给基类延迟。
+
+        Args:
+            fleet_index (int): 接替舰队的画面编号（1 或 2）。
+            after_restart (bool): 是否为异常重启续接预检。
+        """
+        if not after_restart or self.config.GemsFarming_ChangeVanguard == 'disabled_wait':
             return super().check_fleet(fleet_index)
-        if self.is_calculate and self._check_fleet(fleet_index) > current_time():
-            self.config.GEMS_EMOTION_TRIGGERED = True
-            raise ScriptEnd('[战役-紧急委托] 续接舰队心情不足，撤退后换船')
+        if not self.is_calculate:
+            return
+        if self._check_fleet(fleet_index) <= current_time():
+            return
+        self.config.GEMS_EMOTION_TRIGGERED = True
+        raise ScriptEnd('[战役-紧急委托] 续接舰队心情不足，撤退后换船')
 
 
 class GemsCampaignOverride(CampaignBase):
@@ -105,14 +152,23 @@ class GemsCampaignOverride(CampaignBase):
         """处理低情绪警告弹窗。
 
         重写 info_handler.handle_combat_low_emotion()。
-        如果启用了更换先锋，撤出战斗并更换旗舰和先锋。
+        前排固定不换且等待心情时，交给公共保底取消弹窗、撤退并延迟任务；
+        其余情况按配置忽略警告或撤退换船。
 
         Returns:
             bool: 是否处理了弹窗。
 
         Raises:
             CampaignEnd: 触发情绪撤退时抛出。
+            ScriptEnd: 等待心情时取消弹窗、清零并延迟后抛出。
         """
+        if self.config.GemsFarming_ChangeVanguard == 'disabled_wait':
+            if self.config.GemsFarming_IgnoreEmotionWarning:
+                logger.warning('[战役-紧急委托] 已选择「不更换（心情不足时等待）」，'
+                               '「忽略心情警告弹窗」在此模式下不生效')
+            # 计算模式下的公共保底：取消弹窗、撤退、心情清零，再按恢复时间延迟任务。
+            return super().handle_combat_low_emotion()
+
         if self.config.GemsFarming_IgnoreEmotionWarning or self.config.GemsFarming_ChangeVanguard == 'disabled':
             result = self.handle_popup_confirm('IGNORE_LOW_EMOTION')
             if result:
@@ -305,9 +361,14 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
 
         self.campaign = GemsCampaign(device=self.campaign.device, config=self.campaign.config)
         if self.change_vanguard:
-            self.campaign.config.override(Emotion_Mode='ignore_calculate')
+            emotion_mode = 'ignore_calculate'
+        elif self.wait_emotion:
+            # 计算心情但不忽略红脸弹窗：预检不足时延迟任务，弹窗交给公共保底。
+            emotion_mode = 'calculate'
         else:
-            self.campaign.config.override(Emotion_Mode='ignore')
+            emotion_mode = 'ignore'
+        # 低耗任务的心情模式写在专属组里，由「更换前排」决定，不占用公共 Emotion 组。
+        self.campaign.config.override(VanguardEmotion_Mode=emotion_mode)
 
     @property
     def emotion_lower_bound(self):
@@ -356,6 +417,15 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
             bool: 配置中包含 'equip' 时返回 True。
         """
         return 'equip' in self.config.GemsFarming_ChangeVanguard
+
+    @property
+    def wait_emotion(self):
+        """前排固定不换时，是否用延迟任务代替强制红脸出击。
+
+        Returns:
+            bool: 配置为「不更换（心情不足时等待）」时返回 True。
+        """
+        return self.config.GemsFarming_ChangeVanguard == 'disabled_wait'
 
     @property
     def fleet_to_attack(self):
@@ -677,26 +747,20 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
     _initial_flagship_check_done = False
 
     def get_emotion(self):
-        """从配置中获取舰队情绪值。
+        """从配置中获取前排情绪值。
 
         Returns:
             int: 记录的情绪值。
         """
-        if self.config.Fleet_FleetOrder == 'fleet1_standby_fleet2_all':
-            return self.campaign.config.Emotion_Fleet2Value
-        else:
-            return self.campaign.config.Emotion_Fleet1Value
+        return self.campaign.config.VanguardEmotion_Value
 
     def set_emotion(self, emotion):
-        """设置舰队情绪值。
+        """设置前排情绪值。
 
         Args:
             emotion (int): 需记录的情绪值。
         """
-        if self.config.Fleet_FleetOrder == 'fleet1_standby_fleet2_all':
-            self.campaign.config.set_record(Emotion_Fleet2Value=emotion)
-        else:
-            self.campaign.config.set_record(Emotion_Fleet1Value=emotion)
+        self.campaign.config.set_record(VanguardEmotion_Value=emotion)
 
     def run(self, name, folder='campaign_main', mode='normal', total=0):
         """运行钻石 farming 任务主循环。

@@ -236,6 +236,25 @@ class ConfigTransactionTests(unittest.TestCase):
             with self.assertRaises(ApiError):
                 service.patch('testpilot', None, [ConfigChange(path='Main.Emotion.Fleet1RecoveryState', value={})])
 
+    def test_vanguard_emotion_calibration_rebuilds_recovery_state(self):
+        """低耗任务的前排心情组也要按最终设置重建恢复相位。"""
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from tests.test_api import fixture
+
+        with tempfile.TemporaryDirectory() as directory:
+            service = ConfigService(fixture(directory))
+            base = 'ThreeOilLowCost.VanguardEmotion'
+            changes = [ConfigChange(path=f'{base}.Value', value=85),
+                       ConfigChange(path=f'{base}.Oath', value=True),
+                       ConfigChange(path=f'{base}.Recover', value='dormitory_floor_2')]
+            fields = service.patch('testpilot', None, changes)['values']['ThreeOilLowCost']['VanguardEmotion']
+            self.assertEqual(['dormitory_floor_2', True, False], fields['RecoveryState']['signature'])
+            self.assertEqual([[0, 360_000_000, 85]], fields['RecoveryState']['segments'])
+            service.patch('testpilot', None, [ConfigChange(path=f'{base}.Oath', value=False)])
+            self.assertIsNone(
+                service.read('testpilot')[0]['ThreeOilLowCost']['VanguardEmotion']['RecoveryState'])
+
     def test_same_value_calibration_cannot_be_overwritten_by_stale_worker(self):
         from module.api.config_service import ConfigService
         from module.api.protocol import ConfigChange

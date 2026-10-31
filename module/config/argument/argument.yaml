@@ -936,6 +936,39 @@ C124LargeLeveling:
   PickupAmmo:
     value: 3
     option: [3, 4, 5]
+# 低耗换船任务（紧急委托／三油低耗）专用：心情只统计出击队伍的前排，
+# 与主线、活动等任务共用的一队/二队心情配置分开维护。
+VanguardEmotion:
+  Mode:
+    value: calculate_ignore
+    option: [ calculate, ignore, calculate_ignore ]
+    display: hide
+  Control:
+    value: prevent_red_face
+    option: [ keep_exp_bonus, prevent_green_face, prevent_yellow_face, prevent_red_face ]
+  Recover:
+    value: not_in_dormitory
+    option: [not_in_dormitory, dormitory_floor_1, dormitory_floor_2]
+  Oath: false
+  Onsen: false
+  MinReserve:
+    value: 0
+    validate: [0, 150]
+  IgnoreShipwreck: false
+  Value:
+    value: 119
+    validate: [0, 150]
+  Record:
+    value: 2020-01-01 00:00:00
+    display: disabled
+  RecoveryState:
+    type: stored
+    value: null
+    display: hide
+  Wait:
+    type: stored
+    value: null
+    display: hide
 GemsFarming:
   EventFallbackStage:
     type: input
@@ -950,7 +983,7 @@ GemsFarming:
     bogue > ranger > langley > hermes
   ChangeVanguard:
     value: ship_equip
-    option: [ disabled, ship, ship_equip ]
+    option: [ disabled, disabled_wait, ship, ship_equip ]
   CommonDD:
     value: any
     option: [ custom, any, favourite, aulick_or_foote , cassin_or_downes, z20_or_z21, DDG]

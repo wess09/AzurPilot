@@ -393,7 +393,7 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
         emotion_prefixes = set()
         for path in self.modified:
             parts = path.split('.')
-            if len(parts) != 3 or parts[1] not in ('Emotion', 'PublicEmotion'):
+            if len(parts) != 3 or parts[1] not in ('Emotion', 'PublicEmotion', 'VanguardEmotion'):
                 continue
             for suffix in ('RecoveryState', 'Record', 'Value'):
                 if parts[2].endswith(suffix):
@@ -502,7 +502,9 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             for arg, value in kwargs.items():
                 record = arg.replace("Value", "Record")
                 stamp = current_time()
-                if arg in ('Emotion_Fleet1Value', 'Emotion_Fleet2Value', 'PublicEmotion_FleetValue'):
+                # 低耗任务的前排心情账本用专属组，同样要三字段一起重建。
+                if arg in ('Emotion_Fleet1Value', 'Emotion_Fleet2Value', 'PublicEmotion_FleetValue',
+                           'VanguardEmotion_Value'):
                     from module.combat.emotion_state import EmotionRecoveryState
 
                     prefix = arg.removesuffix('Value')

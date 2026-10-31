@@ -763,6 +763,19 @@ class ConfigUpdater:
         (f'{task}.GemsFarming.ALLowLowVanguardLevel', f'{task}.GemsFarming.AllowLowVanguardLevel')
         for task in [*GEMS_FARMINGS, 'Ambush11']
     ]
+    # 低耗任务的心情配置改为专属的 VanguardEmotion 组，旧的一队心情记录整组迁移，
+    # 升级后实测基准、记录时间与恢复相位都不会丢。
+    redirection += [
+        (f'{task}.Emotion.Fleet1{field}', f'{task}.VanguardEmotion.{field}')
+        for task in GEMS_FARMINGS
+        for field in ('Value', 'Record', 'RecoveryState', 'Control', 'Recover', 'Oath', 'Onsen')
+    ]
+    # 最少预留与沉船惩罚是组级开关，单独迁移；否则用户手填的值会被静默清零。
+    redirection += [
+        (f'{task}.Emotion.{field}', f'{task}.VanguardEmotion.{field}')
+        for task in GEMS_FARMINGS
+        for field in ('MinReserve', 'IgnoreShipwreck')
+    ]
     # 旧版等级枚举（0/1/2）→ 布尔开关：0→false，1/2/3→true（等级已合并成同一个效率模式）。
     # 放在此处迁移，使存量的数字值被清洗成布尔，避免复选框里留着数字。
     redirection += [

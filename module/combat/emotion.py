@@ -49,21 +49,25 @@ class FleetEmotion:
         current (int): 当前计算的情绪值。
     """
 
-    def __init__(self, config, fleet):
+    def __init__(self, config, fleet, prefix=None):
         """初始化舰队情绪追踪器。
 
         Args:
             config (AzurLaneConfig): 配置对象。
             fleet (str | int): 舰队索引（1、2 或 'Public'）。
+            prefix (str, optional): 账本键前缀；低耗任务指向专属配置组，留空用公共键。
         """
         self.config = config
         self.fleet = fleet
+        self.prefix = prefix
         self.current = 0
         self.state = None
         self.calibration_error = '尚未校准'
 
     @property
     def _key_prefix(self):
+        if self.prefix:
+            return self.prefix
         if self.fleet == 'Public':
             return 'PublicEmotion_Fleet'
         return f'Emotion_Fleet{self.fleet}'
@@ -285,6 +289,12 @@ class Emotion:
         using_public (bool): 是否使用公海舰队统一情绪管理。
     """
     map_is_2x_book = False
+    # 账本与心情开关默认用公共配置组的键；低耗任务由子类指向自己的配置组。
+    fleet_prefix = 'Emotion_Fleet{fleet}'
+    mode_key = 'Emotion_Mode'
+    min_reserve_key = 'Emotion_MinReserve'
+    ignore_shipwreck_key = 'Emotion_IgnoreShipwreck'
+    recovery_wait_key = 'Emotion_RecoveryWait'
 
     def __init__(self, config):
         """
@@ -292,8 +302,8 @@ class Emotion:
             config (AzurLaneConfig): 配置对象。
         """
         self.config = config
-        self.fleet_1 = FleetEmotion(self.config, fleet=1)
-        self.fleet_2 = FleetEmotion(self.config, fleet=2)
+        self.fleet_1 = FleetEmotion(self.config, fleet=1, prefix=self.fleet_prefix.format(fleet=1))
+        self.fleet_2 = FleetEmotion(self.config, fleet=2, prefix=self.fleet_prefix.format(fleet=2))
         self.fleets = [self.fleet_1, self.fleet_2]
         self.using_public = self._handle_public()
     
@@ -326,7 +336,7 @@ class Emotion:
         Returns:
             bool: 是否为计算模式。
         """
-        return 'calculate' in self.config.Emotion_Mode
+        return 'calculate' in getattr(self.config, self.mode_key)
 
     @property
     def is_ignore(self):
@@ -335,7 +345,7 @@ class Emotion:
         Returns:
             bool: 是否为忽略模式。
         """
-        return 'ignore' in self.config.Emotion_Mode
+        return 'ignore' in getattr(self.config, self.mode_key)
 
     def update(self):
         """更新情绪值。应在执行任何操作之前调用。"""
@@ -413,8 +423,8 @@ class Emotion:
     def _get_recovered(self, fleet, expected_reduce):
         """心情不足后恢复到预留值；等待状态随任务保存，恢复后仍使用原控制线。"""
         recovered = fleet.get_recovered(expected_reduce)
-        reserve = getattr(self.config, 'Emotion_MinReserve', 0) if self.is_calculate else 0
-        waiting = list(getattr(self.config, 'Emotion_RecoveryWait', None) or [])
+        reserve = getattr(self.config, self.min_reserve_key, 0) if self.is_calculate else 0
+        waiting = list(getattr(self.config, self.recovery_wait_key, None) or [])
         key = str(fleet.fleet)
         was_waiting = key in waiting
         if reserve > 0 and (recovered > current_time() or was_waiting):
@@ -430,7 +440,7 @@ class Emotion:
         elif was_waiting:
             waiting.remove(key)
         if was_waiting != (key in waiting):
-            self.config.Emotion_RecoveryWait = waiting or None
+            setattr(self.config, self.recovery_wait_key, waiting or None)
         return recovered
 
     def _check_reduce(self, battle):
@@ -574,7 +584,7 @@ class Emotion:
             return
         # 无视沉船心情惩罚：沉船的额外扣减发生在结算阶段，而进入战斗时
         # 已扣过基础扣减（reduce_per_battle），因此这里直接返回即可。
-        if shipwreck and self.config.Emotion_IgnoreShipwreck:
+        if shipwreck and getattr(self.config, self.ignore_shipwreck_key, False):
             logger.info('[情绪-忽略] 已开启无视沉船心情惩罚，本次不额外扣减沉船心情')
             return
 

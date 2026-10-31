@@ -41,6 +41,13 @@ OPSI_EXPLORE_PROGRESS = {
     'OpsiExplore.OpsiExplore.ExploreProgress',
     'OpsiScheduling.OpsiSmartExplore.Progress',
 }
+# 带「值 + 记录时间 + 恢复相位」三件套的心情账本组，值为组内账本前缀。
+# VanguardEmotion 只有一份不分舰队编号的前排账本，所以前缀是空串。
+EMOTION_LEDGER_PREFIXES = {
+    'Emotion': ('Fleet1', 'Fleet2'),
+    'PublicEmotion': ('Fleet',),
+    'VanguardEmotion': ('',),
+}
 
 
 def validate_name(value):
@@ -565,15 +572,15 @@ class ConfigService:
                     raise ApiError('INVALID_PARAMS', f'{task}.Campaign.Event: 请选择当前服务器的活动')
             refresh_campaign_events(data, self.args)
             # 按最终配置校准；同一批先改心情再改恢复条件，也使用最终条件。
-            now = current_time() if any(group in ('Emotion', 'PublicEmotion') and
+            now = current_time() if any(group in EMOTION_LEDGER_PREFIXES and
                                         any(arg.endswith('Value') for arg in args)
                                         for (_, group), args in edited_groups.items()) else None
             for (task, group), args in edited_groups.items():
                 fields = data[task][group]
                 for arg in args:
-                    self._sync_record_time(fields, arg, now if group in ('Emotion', 'PublicEmotion') else None)
-                if group in ('Emotion', 'PublicEmotion'):
-                    prefixes = ('Fleet1', 'Fleet2') if group == 'Emotion' else ('Fleet',)
+                    self._sync_record_time(fields, arg, now if group in EMOTION_LEDGER_PREFIXES else None)
+                if group in EMOTION_LEDGER_PREFIXES:
+                    prefixes = EMOTION_LEDGER_PREFIXES[group]
                     for prefix in prefixes:
                         if prefix + 'Value' in args:
                             try:

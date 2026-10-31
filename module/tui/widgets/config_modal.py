@@ -226,7 +226,8 @@ class ConfigModal(ModalScreen[bool]):
         for path in self.active_fields:
             parts = path.split('.')
             if (len(parts) == 3 and ((parts[1] == 'Emotion' and parts[2] in ('Fleet1Value', 'Fleet2Value'))
-                                    or (parts[1] == 'PublicEmotion' and parts[2] == 'FleetValue'))
+                                    or (parts[1] == 'PublicEmotion' and parts[2] == 'FleetValue')
+                                    or (parts[1] == 'VanguardEmotion' and parts[2] == 'Value'))
                     and input_widget.id == self._ctrl_id('input', path)):
                 return path
         return None

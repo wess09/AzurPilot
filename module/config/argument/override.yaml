@@ -44,15 +44,6 @@ GemsFarming:
       display: display
       value: fleet1_all_fleet2_standby
       option: [fleet1_all_fleet2_standby, fleet1_standby_fleet2_all]
-  Emotion:
-    Mode: calculate_ignore
-    Fleet1Control: prevent_red_face
-    Fleet1Recover: not_in_dormitory
-    Fleet1Oath: false
-    # 支持二队出击，心情值与记录时间必须保留运行时写入，不能强制覆盖。
-    Fleet2Control: prevent_red_face
-    Fleet2Recover: not_in_dormitory
-    Fleet2Oath: false
 
 ThreeOilLowCost:
   Scheduler:
@@ -80,14 +71,6 @@ ThreeOilLowCost:
       display: display
       value: fleet1_all_fleet2_standby
       option: [fleet1_all_fleet2_standby, fleet1_standby_fleet2_all]
-  Emotion:
-    Mode: calculate_ignore
-    Fleet1Control: prevent_red_face
-    Fleet1Recover: not_in_dormitory
-    Fleet1Oath: false
-    Fleet2Control: prevent_red_face
-    Fleet2Recover: not_in_dormitory
-    Fleet2Oath: false
 
 Ambush11:
   Campaign:
@@ -118,6 +101,9 @@ Ambush11:
       option: [do_not_use, hunt_only]
     AutoSearchMode: sub_standby
     DistanceToBoss: use_open_ocean_support
+  Emotion:
+    # 心情模式由「更换前排」在运行时决定，隐藏选择器避免与换船/等待策略冲突。
+    Mode: calculate_ignore
   GemsFarming:
     EventFallbackStage: '0'
     VanguardLevelMin: 1

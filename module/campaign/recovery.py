@@ -44,7 +44,7 @@ def capture_campaign_recovery(runner, run_kwargs):
 def recovery_settings(config, task=None):
     """只比较影响原关卡执行与账本的设置，不记录或输出私人配置。"""
     task = task or config.task.command
-    groups = ('Campaign', 'Fleet', 'Submarine', 'Emotion', 'HpControl',
+    groups = ('Campaign', 'Fleet', 'Submarine', 'Emotion', 'VanguardEmotion', 'HpControl',
               'EnemyPriority', 'StopCondition', 'TaskBalancer', 'EventDaily', 'GemsFarming')
     return copy.deepcopy([
         config.config_name, task,

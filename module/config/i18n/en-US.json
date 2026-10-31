@@ -2168,7 +2168,7 @@
     },
     "Fleet1Control": {
       "name": "Fleet 1 morale control",
-      "help": "",
+      "help": "Fleet 1 stops sortieing below this value (judged by the conservative lower bound).",
       "keep_exp_bonus": "Keep EXP bonus (>120)",
       "prevent_green_face": "Prevent green face (>40)",
       "prevent_yellow_face": "Prevent yellow face (>30)",
@@ -2176,18 +2176,18 @@
     },
     "Fleet1Recover": {
       "name": "Fleet 1 morale recovery",
-      "help": "",
+      "help": "Where fleet 1 usually recovers morale, which sets points per hour. Keep it consistent with the game: slower than reality only waits longer, faster than reality makes the estimate optimistic.",
       "not_in_dormitory": "Not in dorm (20/h)",
       "dormitory_floor_1": "Dorm 1st floor (40/h)",
       "dormitory_floor_2": "Dorm 2nd floor (50/h)"
     },
     "Fleet1Oath": {
       "name": "All Fleet 1 members are married (+10/h)",
-      "help": ""
+      "help": "Whether every ship in fleet 1 is married (+10/h)."
     },
     "Fleet1Onsen": {
       "name": "All Fleet 1 members have a hot spring (+10/h)",
-      "help": ""
+      "help": "Whether every ship in fleet 1 is in the hot spring (+10/h)."
     },
     "Fleet2Value": {
       "name": "Fleet 2 morale value",
@@ -2338,6 +2338,66 @@
       "5": "5"
     }
   },
+  "VanguardEmotion": {
+    "_info": {
+      "name": "Vanguard morale",
+      "help": "Estimated from the lowest morale of the sortie fleet. The flagship is swapped every 32 levels, so this threshold effectively constrains the vanguard. Public morale management does not apply to this task; it always uses this ledger."
+    },
+    "Mode": {
+      "name": "Morale mode",
+      "help": "Decided at runtime by \"Change vanguard\": calculate and ignore the warning while the vanguard is changed; calculate and delay while waiting with the vanguard fixed; no calculation otherwise.",
+      "calculate": "Calculate morale consumption",
+      "ignore": "Ignore the low-morale warning",
+      "calculate_ignore": "Calculate morale consumption + ignore the warning"
+    },
+    "Control": {
+      "name": "Vanguard morale control",
+      "help": "Stop sortieing when morale drops below this value (judged by the conservative lower bound).",
+      "keep_exp_bonus": "Keep EXP bonus (>120)",
+      "prevent_green_face": "Prevent green face (>40)",
+      "prevent_yellow_face": "Prevent yellow face (>30)",
+      "prevent_red_face": "Prevent red face (>0)"
+    },
+    "Recover": {
+      "name": "Vanguard morale recovery",
+      "help": "Where this fleet usually recovers morale, which sets points per hour. Keep it consistent with the game: slower than reality only waits longer, faster than reality makes the estimate optimistic.",
+      "not_in_dormitory": "Not in dorm (20/h)",
+      "dormitory_floor_1": "Dorm 1st floor (40/h)",
+      "dormitory_floor_2": "Dorm 2nd floor (50/h)"
+    },
+    "Oath": {
+      "name": "All vanguard members are married (+10/h)",
+      "help": "Whether every ship in this fleet is married, +10 morale per hour."
+    },
+    "Onsen": {
+      "name": "All vanguard members have a hot spring (+10/h)",
+      "help": "Whether every ship in this fleet is in the hot spring, +10 morale per hour."
+    },
+    "MinReserve": {
+      "name": "Minimum morale reserve",
+      "help": "0 disables this setting; range 0-150. When morale cannot cover the next sortie while staying above the control threshold, delay the task until morale recovers to this value. After recovery, keep running with the original threshold."
+    },
+    "IgnoreShipwreck": {
+      "name": "Ignore shipwreck morale penalty",
+      "help": "When enabled, the extra 10 morale penalty for sinking ships in battle (non-S rating) is no longer counted."
+    },
+    "Value": {
+      "name": "Vanguard morale value",
+      "help": "Pause sorties, confirm the recovery conditions, then enter the measured lowest morale of this fleet (integer 0-150). The value and record time must describe the same measurement."
+    },
+    "Record": {
+      "name": "Vanguard morale record time",
+      "help": ""
+    },
+    "RecoveryState": {
+      "name": "Vanguard morale recovery state",
+      "help": ""
+    },
+    "Wait": {
+      "name": "Vanguard morale reserve wait state",
+      "help": ""
+    }
+  },
   "GemsFarming": {
     "_info": {
       "name": "Urgent Commission Farming",
@@ -2370,8 +2430,9 @@
     },
     "ChangeVanguard": {
       "name": "Change vanguard",
-      "help": "Replace vanguard with low-oil-cost ships from Eagle Union or Iron Blood\nOnly 0 limit break, no equipment, white-rarity destroyers will be used as replacement\nControls: When to replace the vanguard",
-      "disabled": "Do not change",
+      "help": "Replace the vanguard when its morale runs low.\nDo not change (force red-face sortie): legacy behaviour — morale is not calculated, the low-morale popup is confirmed and the sortie continues, which lowers affection.\nDo not change (wait for morale): keep the vanguard, but calculate morale; when morale cannot cover the next sortie the task is delayed until it recovers, so a red-face sortie never happens.\nReplacements are white-rarity Eagle Union or Iron Blood destroyers with morale >= 10 and level 100 (level 70 outside CN servers), so keep enough destroyers available.",
+      "disabled": "Do not change (force red-face sortie)",
+      "disabled_wait": "Do not change (wait for morale)",
       "ship": "Change ship",
       "ship_equip": "Change ships + equipment"
     },
@@ -2400,7 +2461,7 @@
     },
     "IgnoreEmotionWarning": {
       "name": "Ignore low morale warning",
-      "help": "Force through the mood warning popup when it appears."
+      "help": "Force through the mood warning popup when it appears; with ship changing enabled the ships are changed afterwards. Ignored when the vanguard is set to \"Do not change (wait for morale)\"."
     },
     "AllowHighFlagshipLevel": {
       "name": "Only replace max-level back row",

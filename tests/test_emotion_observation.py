@@ -140,10 +140,13 @@ class FleetObservationTests(unittest.TestCase):
                 self.assertFalse(Path(directory.name).exists())
 
         stamp = BASE + timedelta(microseconds=123456)
-        for task, runner_class, tracker_class in [('GemsFarming', GemsFarming, GemsEmotion),
-                                                  ('ThreeOilLowCost', GemsFarming, GemsEmotion),
-                                                  ('Ambush11', Ambush11, AmbushEmotion)]:
+        # 低耗任务改用专属的 VanguardEmotion 组（账本不分舰队编号），伏击任务仍用公共 Emotion 组。
+        for task, runner_class, tracker_class, prefix in [
+                ('GemsFarming', GemsFarming, GemsEmotion, 'VanguardEmotion_'),
+                ('ThreeOilLowCost', GemsFarming, GemsEmotion, 'VanguardEmotion_'),
+                ('Ambush11', Ambush11, AmbushEmotion, 'Emotion_Fleet{index}')]:
             for index in (1, 2):
+                key_prefix = prefix.format(index=index)
                 worker = AzurLaneConfig.__new__(AzurLaneConfig)
                 worker.data = worker.config_update({})
                 worker.modified, worker.bound, worker.overridden = {}, {}, {}
@@ -172,10 +175,10 @@ class FleetObservationTests(unittest.TestCase):
                         tracker = tracker_class(worker)
                         tracker.check_reduce(1)
                         tracker.reduce(index)
-                self.assertEqual(79, getattr(worker, f'Emotion_Fleet{index}Value'))
-                self.assertEqual(stamp, getattr(worker, f'Emotion_Fleet{index}Record'))
+                self.assertEqual(79, getattr(worker, f'{key_prefix}Value'))
+                self.assertEqual(stamp, getattr(worker, f'{key_prefix}Record'))
                 self.assertEqual(stamp.isoformat(timespec='microseconds'),
-                                 getattr(worker, f'Emotion_Fleet{index}RecoveryState')['record'])
+                                 getattr(worker, f'{key_prefix}RecoveryState')['record'])
 
     def fixture(self):
         state = EmotionRecoveryState.calibrate(100, BASE, 'dormitory_floor_2', True, False)

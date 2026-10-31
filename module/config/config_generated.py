@@ -424,12 +424,25 @@ class GeneratedConfig:
     C124LargeLeveling_NonLargeRetreatTolerance = 1  # 0, 1, 2, 10
     C124LargeLeveling_PickupAmmo = 3  # 3, 4, 5
 
+    # 配置组 `VanguardEmotion`
+    VanguardEmotion_Mode = 'calculate_ignore'  # calculate, ignore, calculate_ignore
+    VanguardEmotion_Control = 'prevent_red_face'  # keep_exp_bonus, prevent_green_face, prevent_yellow_face, prevent_red_face
+    VanguardEmotion_Recover = 'not_in_dormitory'  # not_in_dormitory, dormitory_floor_1, dormitory_floor_2
+    VanguardEmotion_Oath = False
+    VanguardEmotion_Onsen = False
+    VanguardEmotion_MinReserve = 0
+    VanguardEmotion_IgnoreShipwreck = False
+    VanguardEmotion_Value = 119
+    VanguardEmotion_Record = datetime.datetime(2020, 1, 1, 0, 0)
+    VanguardEmotion_RecoveryState = None
+    VanguardEmotion_Wait = None
+
     # 配置组 `GemsFarming`
     GemsFarming_EventFallbackStage = '2-4'
     GemsFarming_ChangeFlagship = 'ship_equip'  # ship, ship_equip
     GemsFarming_CommonCV = 'any'  # custom, any, eagle, langley, bogue, ranger, hermes
     GemsFarming_CommonCVFilter = 'bogue > ranger > langley > hermes'
-    GemsFarming_ChangeVanguard = 'ship_equip'  # disabled, ship, ship_equip
+    GemsFarming_ChangeVanguard = 'ship_equip'  # disabled, disabled_wait, ship, ship_equip
     GemsFarming_CommonDD = 'any'  # custom, any, favourite, aulick_or_foote, cassin_or_downes, z20_or_z21, DDG
     GemsFarming_CommonDDFilter = 'z20 > z21 > aulick > foote > cassin > downes'
     GemsFarming_EquipmentCode = 'DD: null\nbogue: null\nhermes: null\nlangley: null\nranger: null'
