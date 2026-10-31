@@ -2523,6 +2523,8 @@ FleetDorm:
     option: [floor_1, floor_2]
 
 FleetTraining:
+  StopOnComplete: false
+  Notify: false
   FullScanRecord:
     type: stored
     value: 2020-01-01 00:00:00

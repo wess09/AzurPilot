@@ -27,6 +27,13 @@ RULE = {'slots': [4, 5, 6], 'sources': [3, 4, 5, 6]}
 
 
 class RuleTests(unittest.TestCase):
+    def test_common_source_is_optional_and_boolean_without_reordering_reserves(self):
+        rule = {'1': {'slots': [4], 'sources': [5, 3, 4], 'favourite': True}}
+        self.assertEqual(parse_rules(rule)['1'], dict(slots=[4], sources=[3, 4, 5], favourite=True))
+        for value in (1, 'true', None, []):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                parse_rules({'1': {'slots': [4], 'sources': [], 'favourite': value}})
+
     def test_defaults_and_strict_rule_validation(self):
         self.assertEqual(parse_rules('{}'), {})
         self.assertEqual(parse_rules({'1': {'slots': [5, 3], 'sources': [6, 3]}}),
@@ -91,6 +98,44 @@ class RuleTests(unittest.TestCase):
 
 
 class RotationIntegrationTests(unittest.TestCase):
+    def test_stop_option_without_training_goals_does_not_activate_an_empty_rotation_rule(self):
+        self.config.cross_set_many({'FleetInfo.FleetTraining.StopOnComplete': True,
+                                    ROTATION_PATH + '.Rules': json.dumps({'1': {'slots': [4], 'sources': []}})})
+        self.assertFalse(preflight_rotation(self.runner, 5, 'normal'))
+        self.manager.run.assert_not_called()
+        self.manager.rotate_slot.assert_not_called()
+        self.inventory_reader.inventory.assert_not_called()
+
+    def test_partial_reserves_precede_common_for_each_morale_slot(self):
+        self.config.cross_set_many({ROTATION_PATH + '.Rules': json.dumps({'1': {
+            'slots': [4, 5], 'sources': [3, 4, 5], 'favourite': True}}),
+            ROTATION_PATH + '.SelectedOnly': True})
+        self.manager.RESULT_PATH = 'FleetInfo.FleetInfo.Result'
+        for fleet in (3, 4, 5):
+            self.live[fleet][5] = 2
+        self.live[3][4] = 150
+        candidate = dict(name='拉菲', level=80, emotion=150, review=False)
+
+        def replace(fleet, slot, ship):
+            self.live[fleet][slot] = 150
+            snapshots = self.snapshots()
+            result = self.config.cross_get(self.manager.RESULT_PATH)
+            result['vanguard'][str(fleet)][slot - 4]['name'] = ship['name']
+            self.config.cross_set(self.manager.RESULT_PATH, result)
+            return snapshots
+
+        with patch('module.retire.fleet_favourite.FavouriteShips') as common:
+            common.return_value.find.return_value = candidate
+            common.return_value.replace.side_effect = replace
+            preflight_rotation(self.runner, 5, 'normal')
+            self.manager.rotate_slot.assert_called_once_with(3, 4, 1)
+            common.return_value.find.assert_called_once()
+            self.assertEqual((1, 5), common.return_value.find.call_args.args[:2])
+            common.return_value.replace.assert_called_once_with(1, 5, candidate)
+        self.assertEqual(150, self.live[1][4])
+        self.assertEqual(150, self.live[1][5])
+        self.assertTrue(self.state()['1']['favourite'])
+
     def setUp(self):
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)

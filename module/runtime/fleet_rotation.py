@@ -27,7 +27,7 @@ def parse_rules(value):
     for key, entry in value.items():
         if key not in tuple(str(number) for number in range(1, 7)) or not isinstance(entry, dict):
             raise ValueError('智能换船仅支持第一至第六水面舰队')
-        if set(entry) - {'slots', 'sources'}:
+        if set(entry) - {'slots', 'sources', 'favourite'}:
             raise ValueError('智能换船规则含未知字段')
         fields = {}
         for field in ('slots', 'sources'):
@@ -38,6 +38,10 @@ def parse_rules(value):
             fields[field] = sorted(items)
         if int(key) in fields['sources']:
             raise ValueError('候补舰队不能包含目标舰队自身')
+        if 'favourite' in entry:
+            if type(entry['favourite']) is not bool:
+                raise ValueError('常用候补必须为布尔开关')
+            fields['favourite'] = entry['favourite']
         rules[key] = fields
     return rules
 

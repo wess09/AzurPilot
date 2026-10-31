@@ -5,9 +5,9 @@ import {useApp, useConnection} from '../app/context'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
-type Rule = {slots: number[]; sources: number[]}
+type Rule = {slots: number[]; sources: number[]; favourite?: boolean}
 type Rules = Record<string, Rule>
-type Progress = Record<string, {last_source?: number; source?: number; done?: number[]; pending?: unknown; rescan?: boolean}>
+type Progress = Record<string, {last_source?: number; source?: number; favourite?: boolean; done?: number[]; pending?: unknown; rescan?: boolean}>
 const numbers = [1, 2, 3, 4, 5, 6]
 const rotationProgress = (value: unknown): Progress => value && typeof value === 'object' && !Array.isArray(value) ? value as Progress : {}
 
@@ -16,7 +16,7 @@ export function rotationRules(value: unknown): Rules {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Invalid fleet rules')
   return Object.fromEntries(numbers.map(number => {
     const rule = parsed[String(number)] ?? {}
-    return [number, {slots: Array.isArray(rule.slots) ? rule.slots : [], sources: Array.isArray(rule.sources) ? rule.sources : []}]
+    return [number, {slots: Array.isArray(rule.slots) ? rule.slots : [], sources: Array.isArray(rule.sources) ? rule.sources : [], favourite: rule.favourite === true}]
   }))
 }
 
@@ -53,7 +53,7 @@ export function FleetRotation() {
     return () => {active = false; clearInterval(timer)}
   }, [instance, connection, running])
 
-  function change(fleet: number, field: keyof Rule, number: number) {
+  function change(fleet: number, field: 'slots' | 'sources', number: number) {
     setRules(previous => {
       const next = {...previous!}, rule = {...next[fleet]!}
       rule[field] = rule[field].includes(number) ? rule[field].filter(value => value !== number) : [...rule[field], number].sort()
@@ -95,8 +95,13 @@ export function FleetRotation() {
       </label>)}</div>
       <div className="fleet-column"><h3>{ui('rotation.sources')}</h3><div style={{display: 'flex', flexWrap: 'wrap', gap: 10}}>{numbers.filter(number => number !== fleet).map(number => <label className="checkbox-label" key={number}>
         <input type="checkbox" aria-label={ui('rotation.source', {number})} checked={rules[fleet]!.sources.includes(number)} disabled={disabled} onChange={() => change(fleet, 'sources', number)}/>{number}
-      </label>)}</div></div>
-      <div className="fleet-column"><p>{(progress[fleet]?.pending || progress[fleet]?.rescan) && !running ? ui('rotation.uncertain') : progress[fleet]?.source ? ui('rotation.inProgress', {number: progress[fleet]!.source!}) : progress[fleet]?.last_source ? ui('rotation.last', {number: progress[fleet]!.last_source!}) : ui('rotation.none')}</p></div>
+      </label>)}<label className="checkbox-label">
+        <input type="checkbox" checked={rules[fleet]!.favourite} disabled={disabled} onChange={event => {
+          const favourite = event.target.checked
+          setRules(previous => ({...previous!, [fleet]: {...previous![fleet]!, favourite}})); setDirty(true)
+        }}/>{ui('rotation.favourite')}
+      </label></div><p className="muted">{ui('rotation.favouriteHelp')}</p></div>
+      <div className="fleet-column"><p>{(progress[fleet]?.pending || progress[fleet]?.rescan) && !running ? ui('rotation.uncertain') : progress[fleet]?.source ? ui('rotation.inProgress', {number: progress[fleet]!.source!}) : progress[fleet]?.favourite ? ui('rotation.lastFavourite') : progress[fleet]?.last_source ? ui('rotation.last', {number: progress[fleet]!.last_source!}) : ui('rotation.none')}</p></div>
     </section>)}</div>}
     <button className="button" disabled={disabled || running || !rules} onClick={() => void save(true)}>{ui('rotation.reset')}</button>
   </>
