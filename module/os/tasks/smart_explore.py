@@ -1,6 +1,9 @@
 """默认黄币调度中的三轮智能开荒与月度行动力购买。"""
 
-from module.config.utils import get_os_next_reset
+from datetime import timedelta
+
+from module.config.time_source import now as current_time
+from module.config.utils import get_os_next_reset, get_server_next_update
 from module.exception import GameStuckError, RequestHumanTakeover
 from module.logger import logger
 
@@ -16,6 +19,7 @@ SMART_EXPLORE_ROUTES = (
 SMART_EXPLORE_ZONES = tuple(zone for route in SMART_EXPLORE_ROUTES for zone in route if zone >= 11)
 SMART_EXPLORE_CONFIG = 'OpsiScheduling.OpsiSmartExplore.'
 ACTION_POINT_PURCHASE_CONFIG = 'OpsiScheduling.OpsiScheduling.BuyActionPoint'
+SMART_EXPLORE_DELAY_TASKS = ('OpsiDaily', 'OpsiPreventActionPointOverflow', 'OpsiShop')
 
 
 def monthly_explore_complete(config):
@@ -35,6 +39,63 @@ def smart_explore_enabled(config):
             'OpsiScheduling.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve',
             SMART_EXPLORE_CONFIG + 'Enable',
         ))
+
+
+def _smart_explore_pending(config):
+    """先看本月完成标记，已完成时不再读取智能开荒断点。"""
+    if not smart_explore_enabled(config) or monthly_explore_complete(config):
+        return False
+    state = config.cross_get('OpsiScheduling.Storage.Storage.SmartExplore')
+    return not (isinstance(state, dict) and state.get('reset') == get_os_next_reset().isoformat()
+                and state.get('phase') in ('cleanup', 'done'))
+
+
+def _smart_explore_delay_applies(config, task):
+    """商店月初禁购期间仍走自身的次日延期，不等待开荒。"""
+    return task in SMART_EXPLORE_DELAY_TASKS and not (
+        task == 'OpsiShop'
+        and current_time().day <= config.cross_get('OpsiShop.OpsiShop.DisableBeforeDate', default=0)
+    )
+
+
+def delay_task_for_smart_explore(config):
+    """任务初始化前记录仅当天有效的让位，保持原定运行时间和用户优先级。"""
+    task = config.task.command
+    if not _smart_explore_delay_applies(config, task) or not _smart_explore_pending(config):
+        return False
+    until = get_server_next_update('00:00')
+    config.cross_set(f'{task}.Storage.Storage.SmartExploreDelay', until.isoformat())
+    logger.info(f'{task} 等待智能开荒完成，当天临时排在智能调度之后，{until} 恢复原优先级')
+    config.task_stop()
+    return True
+
+
+def apply_smart_explore_task_delay(config, pending, waiting):
+    """仅调整已让位任务的运行队列；次日及开荒完成后自动恢复原队列。"""
+    candidates = [task for task in pending if task.command in SMART_EXPLORE_DELAY_TASKS
+                  and config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay')]
+    if not candidates:
+        return pending, waiting
+    until = get_server_next_update('00:00')
+    delayed = [task for task in candidates if _smart_explore_delay_applies(config, task.command)
+               and config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay') == until.isoformat()]
+    if not delayed or not _smart_explore_pending(config):
+        return pending, waiting
+
+    for index, task in enumerate(pending):
+        if task.command == 'OpsiScheduling':
+            # 已低于智能调度的任务保持原位，其他任务之间的顺序也保持不变。
+            moved = [item for item in pending[:index] if item in delayed]
+            return ([item for item in pending[:index] if item not in moved]
+                    + [task] + moved + pending[index + 1:], waiting)
+
+    scheduling = next((task for task in waiting if task.command == 'OpsiScheduling'), None)
+    if scheduling is not None:
+        # 冷却期间只在队列中等待，不把原计划时间改到次日以后。
+        for task in delayed:
+            task.next_run = min(scheduling.next_run + timedelta(seconds=1), until)
+        return [task for task in pending if task not in delayed], waiting + delayed
+    return pending, waiting
 
 
 class SmartExploreMixin:
