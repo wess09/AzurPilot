@@ -1,4 +1,8 @@
 export const trainingZhCN = {
+  'training.stopOnComplete': '本轮全部达标后停止练级任务',
+  'training.stopHelp': '默认关闭。开启后，本轮勾选培养舰船须全部达到各自已开启的等级/好感目标，才关闭当前任务。先达标的舰船保留原位，不按毕业逻辑换入下一批；仍按检查间隔实读。',
+  'training.notify': '启用培养与换船推送',
+  'training.notifyHelp': '默认关闭。实读检查后推送培养舰船的等级、好感和心情；确认换船完成后推送换出、换入舰船与来源。发送到启动器，并复用全局错误处理中的 OnePush 配置；未知值显示未读取。',
   'training.dormTitle': '换船休息', 'training.dormEnable': '启用换船休息', 'training.dormFloor': '后宅楼层',
   'training.dormFloor1': '一楼（训练）', 'training.dormFloor2': '二楼（休息）',
   'training.dormHelp': '默认关闭。整轮换船和换装完成后，先取消所选楼层原有舰船，再按舰队编号选入当前整队（含固定舰位），确认并退出后宅后继续任务。多队换船时按全队出击、道中队、Boss队优先。楼层未解锁、栏位不足或选择无法确认时跳过休息并继续任务；当前仅支持国服。',
@@ -23,6 +27,10 @@ export const trainingZhCN = {
   'training.ship': '舰船', 'training.status': '培养状态', 'training.completed': '培养完成', 'training.pending': '继续培养／待核对',
 }
 export const trainingZhTW: typeof trainingZhCN = {
+  'training.stopOnComplete': '本輪全部達標後停止練級任務',
+  'training.stopHelp': '預設關閉。本輪勾選培養艦船全部達到各自已啟用的等級／好感目標後，才關閉目前任務。先達標的艦船保留原位，不因畢業換入下一批；仍依檢查間隔實讀。',
+  'training.notify': '啟用培養與換船推送',
+  'training.notifyHelp': '預設關閉。實讀後推送等級、好感及心情；確認換船後推送換出、換入艦船與來源。發送至啟動器，並沿用全域錯誤處理的 OnePush 設定；未知值顯示尚未讀取。',
   'training.dormTitle': '換船休息', 'training.dormEnable': '啟用換船休息', 'training.dormFloor': '後宅樓層',
   'training.dormFloor1': '一樓（訓練）', 'training.dormFloor2': '二樓（休息）',
   'training.dormHelp': '預設關閉。整輪換船及換裝完成後，先取消所選樓層原有艦船，再按艦隊編號選入目前整隊（含固定艦位），確認並退出後宅後繼續任務。多隊換船依全隊出擊、道中隊、Boss隊優先。樓層未解鎖、欄位不足或無法確認選擇時略過休息並繼續任務；目前僅支援國服。',
@@ -47,6 +55,10 @@ export const trainingZhTW: typeof trainingZhCN = {
   'training.ship': '艦船', 'training.status': '培養狀態', 'training.completed': '培養完成', 'training.pending': '繼續培養／待確認',
 }
 export const trainingEnUS: typeof trainingZhCN = {
+  'training.stopOnComplete': 'Stop leveling when all current training ships graduate',
+  'training.stopHelp': 'Off by default. Disable the current task after every selected training ship meets all its enabled level/affinity goals. Graduated ships stay in place; no next batch is recruited. Uses the existing check interval.',
+  'training.notify': 'Enable training and replacement notifications',
+  'training.notifyHelp': 'Off by default. Report recorded level, affinity and morale after checks, and outgoing/incoming ships and sources after confirmed replacements. Uses launcher notifications and the global error OnePush configuration. Unknown values remain unread.',
   'training.dormTitle': 'Rest after rotation', 'training.dormEnable': 'Enable rest after rotation', 'training.dormFloor': 'Dorm floor',
   'training.dormFloor1': 'First floor (training)', 'training.dormFloor2': 'Second floor (rest)',
   'training.dormHelp': 'Off by default. After all swaps and equipment changes, clear the selected dorm floor and select the entire current fleet by its number, including fixed slots. Confirm and leave the dorm before continuing. Priority: all-battle fleet, mob fleet, boss fleet. Skip rest and continue if the floor is locked, slots are insufficient or selection cannot be verified. CN only.',
@@ -71,6 +83,10 @@ export const trainingEnUS: typeof trainingZhCN = {
   'training.ship': 'Ship', 'training.status': 'Training status', 'training.completed': 'Training complete', 'training.pending': 'Training / verify',
 }
 export const trainingJaJP: typeof trainingZhCN = {
+  'training.stopOnComplete': '現在の育成艦がすべて目標達成後に周回を停止',
+  'training.stopHelp': '初期設定は無効。選択した各艦が有効なレベル・好感度目標をすべて達成すると、現在のタスクを無効化します。先に達成した艦は維持し、次の育成艦へ交代しません。確認間隔は従来どおりです。',
+  'training.notify': '育成・交代通知を有効化',
+  'training.notifyHelp': '初期設定は無効。確認後にレベル・好感度・コンディションを、交代確認後に交代前後の艦名と候補元を通知します。ランチャー通知と共通エラー処理のOnePush設定を使用し、不明値は未読のまま表示します。',
   'training.dormTitle': '交代後の休憩', 'training.dormEnable': '交代後の休憩を有効化', 'training.dormFloor': '寮舎の階',
   'training.dormFloor1': '1階（訓練）', 'training.dormFloor2': '2階（休憩）',
   'training.dormHelp': '初期設定は無効。全交代と装備変更後、指定階の選択を解除し、艦隊番号で固定枠を含む現艦隊全員を選択します。確定して寮舎を出てからタスクを続行します。優先順は全戦闘担当、道中、ボス艦隊。階が未解放、枠不足、選択を確認できない場合は休憩をスキップしてタスクを続行します。中国版のみ対応。',

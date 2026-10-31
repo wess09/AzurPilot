@@ -275,6 +275,31 @@ class FleetEquipmentFlowTests(unittest.TestCase):
         FleetRotationEquipment._details(self.handler, 6)
         self.handler.manager.fleet_enter.assert_called_once_with(6)
 
+    def test_current_detail_page_reuses_its_actual_fleet_without_back_or_reentry(self):
+        from module.runtime.fleet_formation import bottom_fleet_index
+
+        self.handler.device.image = np.array(Image.open(Path(__file__).parent / 'fixtures/fleet_formation/detail_surface_native.png'))
+        self.handler.appear = lambda button: button.appear_on(self.handler.device.image)
+        fleet = bottom_fleet_index(self.handler.device.image)
+        self.assertEqual(3, fleet)
+        self.handler._equipment_fleet = 6 if fleet != 6 else 1
+        self.handler.ui_click = Mock()
+        FleetRotationEquipment._details(self.handler, fleet)
+        self.handler.ui_click.assert_not_called()
+        self.handler.manager.finish_rotation.assert_not_called()
+        self.handler.manager.fleet_enter.assert_not_called()
+        self.assertEqual(fleet, self.handler._equipment_fleet)
+        self.assertEqual([], self.events)
+
+    def test_detail_reuse_restores_the_scope_and_returns_to_formation_on_error(self):
+        self.handler._back_to_formation = Mock()
+        with self.assertRaisesRegex(ValueError, 'test'):
+            with self.handler.reuse_details():
+                self.assertTrue(self.handler._reuse_details)
+                raise ValueError('test')
+        self.assertFalse(self.handler._reuse_details)
+        self.handler._back_to_formation.assert_called_once()
+
     def test_resume_leaves_known_code_and_ship_pages_before_a_fresh_scan(self):
         self.handler._code_exit = Mock()
         self.handler.recover_page()

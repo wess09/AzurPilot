@@ -109,6 +109,7 @@ export function FleetTraining() {
   const [morale, setMorale] = useState(false), [selectedOnly, setSelectedOnly] = useState(false)
   const [dorm, setDorm] = useState(false), [dormFloor, setDormFloor] = useState('floor_1')
   const [hours, setHours] = useState('6')
+  const [stopOnComplete, setStopOnComplete] = useState(false), [push, setPush] = useState(false)
   const [settings, setSettings] = useState<Record<Metric, Goal>>({
     level: {enabled: false, target: '120'},
     affinity: {enabled: false, target: '100'},
@@ -133,6 +134,8 @@ export function FleetTraining() {
       setDorm(values.FleetDorm?.Enabled === true)
       setDormFloor(values.FleetDorm?.Floor === 'floor_2' ? 'floor_2' : 'floor_1')
       setHours(String(values.FleetTraining?.CheckIntervalHours ?? 6))
+      setStopOnComplete(values.FleetTraining?.StopOnComplete === true)
+      setPush(values.FleetTraining?.Notify === true)
       setSettings(Object.fromEntries(metrics.map(metric => {
         const value = values[groups[metric]]
         return [metric, {enabled: value?.Enabled === true, target: String(value?.Target ?? (metric === 'level' ? 120 : 100))}]
@@ -170,6 +173,8 @@ export function FleetTraining() {
         {path: 'FleetInfo.FleetDorm.Enabled', value: nextDorm},
         {path: 'FleetInfo.FleetDorm.Floor', value: dormFloor},
         {path: 'FleetInfo.FleetTraining.CheckIntervalHours', value: Number(hours)},
+        {path: 'FleetInfo.FleetTraining.StopOnComplete', value: stopOnComplete},
+        {path: 'FleetInfo.FleetTraining.Notify', value: push},
         ...metrics.flatMap(metric => [
           {path: `FleetInfo.${groups[metric]}.Enabled`, value: nextSettings[metric].enabled},
           {path: `FleetInfo.${groups[metric]}.Target`, value: Number(nextSettings[metric].target)},
@@ -246,6 +251,18 @@ export function FleetTraining() {
           </div>
         </section>
       </div>
+      <section className="panel" style={{padding: 20, margin: '20px 0'}}>
+        <label className="checkbox-label">
+          <input type="checkbox" checked={stopOnComplete} disabled={disabled} onChange={event => {setStopOnComplete(event.target.checked); setDirty(true)}}/>
+          {ui('training.stopOnComplete')}
+        </label>
+        <p className="muted">{ui('training.stopHelp')}</p>
+        <label className="checkbox-label">
+          <input type="checkbox" checked={push} disabled={disabled} onChange={event => {setPush(event.target.checked); setDirty(true)}}/>
+          {ui('training.notify')}
+        </label>
+        <p className="muted">{ui('training.notifyHelp')}</p>
+      </section>
       <p className="muted">{ui('training.resetHelp')}</p>
       <TrainingRecords snapshot={snapshot}/>
     </>}

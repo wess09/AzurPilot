@@ -82,6 +82,14 @@ class FleetTrainingReader(FleetShipDetail):
         if not self.appear(EQUIPMENT_CODE_ENTRANCE) and AffinityReader().read(self.device.image) is not None:
             self.ui_click(BACK_ARROW, appear_button=lambda: AffinityReader().read(self.device.image) is not None,
                           check_button=EQUIPMENT_CODE_ENTRANCE, retry_wait=2)
+        reading = self.config.cross_get('FleetInfo.FleetTraining.State', {}).get('reading', {})
+        if reading.get('favourite'):
+            from module.retire.assets import DOCK_CHECK
+            if self.appear(EQUIPMENT_CODE_ENTRANCE):
+                self.ui_back(DOCK_CHECK)
+            if self.appear(DOCK_CHECK):
+                self.manager.dock_reset()
+            return
         if self.appear(EQUIPMENT_CODE_ENTRANCE):
             self._back_to_details()
         if self.appear(FLEET_DETAIL_CHECK):
@@ -175,5 +183,6 @@ class FleetTrainingReader(FleetShipDetail):
                 values['affinity'] = self._affinity()
             readings[slot] = values
             self._back_to_details()
-        self._back_to_formation()
+        if not self.__dict__.get('_reuse_details', False):
+            self._back_to_formation()
         return readings

@@ -23,7 +23,7 @@ import numpy as np
 from module.base.timer import Timer
 from module.base.utils import area_offset
 from module.combat.assets import GET_ITEMS_1, GET_ITEMS_1_RYZA
-from module.exception import CampaignEnd, GameNotRunningError, GameStuckError, MapDetectionError
+from module.exception import CampaignEnd, GameNotRunningError, MapDetectionError
 from module.handler.assets import AUTO_SEARCH_MENU_CONTINUE, GAME_TIPS, GET_MISSION
 from module.logger import logger
 from module.map.assets import MAP_PREPARATION, MAP_PREPARATION_HARD
@@ -59,9 +59,6 @@ class Camera(MapOperation):
     grid_class = Grid
     _prev_view = None
     _prev_swipe = None
-    _camera_confirm_swipe = False
-    _last_swipe_observed = None
-    _last_swipe_confirmed = False
 
     def _map_swipe(self, vector, box=(123, 159, 1175, 628)):
         """执行底层地图滑动操作。
@@ -113,17 +110,11 @@ class Camera(MapOperation):
             bool: 相机是否移动了位置。
         """
         logger.info('[地图-摄像机] 地图滑动: %s' % str(vector))
-        self._last_swipe_observed = None
-        self._last_swipe_confirmed = False
         self._prev_view = copy.copy(self.view)
         self._prev_swipe = vector
         vector = np.array(vector)
         vector = np.array([0.5, 0.5]) - self.view.center_offset + vector
-        swiped = self._map_swipe(vector)
-        if not swiped:
-            self._prev_view = None
-            self._prev_swipe = None
-        return swiped
+        return self._map_swipe(vector)
 
     def focus_to_grid_center(self, tolerance=None):
         """重新聚焦到格子中心。
@@ -269,27 +260,16 @@ class Camera(MapOperation):
         Returns:
             bool: 是否更新成功。
         """
-        previous_camera = self.camera
-        requested = self._prev_swipe
-        if self._prev_view is not None:
-            swipe = None
-            if self.config.MAP_SWIPE_PREDICT or self._camera_confirm_swipe:
+        if self._prev_view is not None and np.linalg.norm(self._prev_swipe) > 0:
+            if self.config.MAP_SWIPE_PREDICT:
                 swipe = self._prev_view.predict_swipe(
                     self.view,
                     with_current_fleet=self.config.MAP_SWIPE_PREDICT_WITH_CURRENT_FLEET,
                     with_sea_grids=self.config.MAP_SWIPE_PREDICT_WITH_SEA_GRIDS
                 )
-                if swipe is None and self._camera_confirm_swipe and not self.config.MAP_SWIPE_PREDICT_WITH_SEA_GRIDS:
-                    # 舰队离开视野时用现有网格图像匹配确认位移，不能把滑动指令当作进展。
-                    swipe = self._prev_view.predict_swipe(
-                        self.view, with_current_fleet=False, with_sea_grids=True
-                    )
-            self._last_swipe_observed = swipe
-            if swipe is not None:
-                self._last_swipe_confirmed = True
-                self.camera = tuple(np.add(self.camera, swipe))
-            elif not self._camera_confirm_swipe:
-                self.camera = tuple(np.add(self.camera, requested))
+                if swipe is not None:
+                    self._prev_swipe = swipe
+            self.camera = tuple(np.add(self.camera, self._prev_swipe))
             self._prev_view = None
             self._prev_swipe = None
             self.show_camera()
@@ -312,14 +292,6 @@ class Camera(MapOperation):
             logger.attr_align('摄像机修正', f'{location2node(self.camera)} -> {location2node((x, y))}')
         self.camera = (x, y)
         self.show_camera()
-
-        if requested is not None:
-            # 可见边缘提供绝对坐标；只把有图像依据的轴算作已确认。
-            edges = (self.view.left_edge or self.view.right_edge, self.view.upper_edge or self.view.lower_edge)
-            if any(requested) and all(value == 0 or edge for value, edge in zip(requested, edges)):
-                self._last_swipe_confirmed = True
-            if self._last_swipe_confirmed and self.camera != previous_camera:
-                self.device.click_record_clear()
 
         self.predict()
         return True
@@ -430,31 +402,50 @@ class Camera(MapOperation):
 
         Returns:
             list[tuple[int, int]]: 滑动记录列表。
-
-        Raises:
-            GameStuckError: 有限滑动后仍无法通过两条地图边缘定位。
         """
-        logger.info('[地图-摄像机] 确保边缘在视野内')
+        logger.info(f'[地图-摄像机] 确保边缘在视野内')
         record = []
         x_swipe, y_swipe = np.multiply(swipe_limit, random_direction(self.config.MAP_ENSURE_EDGE_INSIGHT_CORNER))
 
-        if not skip_first_update:
-            self.update()
-        if preset is not None:
-            self.map_swipe(preset)
-            record.append(preset)
-        for _ in range(12):
+        while 1:
+            if len(record) == 0:
+                if not skip_first_update:
+                    self.update()
+                if preset is not None:
+                    self.map_swipe(preset)
+                    record.append(preset)
+
             x = 0 if self.view.left_edge or self.view.right_edge else x_swipe
             y = 0 if self.view.lower_edge or self.view.upper_edge else y_swipe
+
+            if len(record) > 0:
+                # 即使两条边缘可见也要滑动，以避免一些尴尬的相机位置。
+                # 只有单应性（Homography）后端有 homo_loca，透视（Perspective）后端没有，
+                # 取不到时跳过下方的到边检测，避免 AttributeError
+                prev_homo = getattr(self.view.backend, 'homo_loca', None)
+                self.map_swipe((x, y))
+                cur_homo = getattr(self.view.backend, 'homo_loca', None)
+                if prev_homo is not None and cur_homo is not None:
+                    delta = np.subtract(cur_homo, prev_homo)
+                    base = self.view.swipe_base
+                    # 滑动后地图在对应轴上位移不足半格（地图小于视野或已到达边缘，
+                    # 游戏不再滚动），停止该轴滑动并撤销死推算的相机位移，
+                    # 避免相机坐标持续发散导致无限滑动
+                    if x != 0 and abs(delta[0]) < base[0] / 2:
+                        logger.info('[地图-摄像机] 地图横向已到达边缘，停止横向滑动')
+                        x_swipe = 0
+                        if not (self.view.left_edge or self.view.right_edge):
+                            self.camera = (self.camera[0] - x, self.camera[1])
+                    if y != 0 and abs(delta[1]) < base[1] / 2:
+                        logger.info('[地图-摄像机] 地图纵向已到达边缘，停止纵向滑动')
+                        y_swipe = 0
+                        if not (self.view.upper_edge or self.view.lower_edge):
+                            self.camera = (self.camera[0], self.camera[1] - y)
+
+            record.append((x, y))
+
             if x == 0 and y == 0:
                 break
-            # homo_loca 是取模后的格内偏移，整格滑动也可能不变，不能用于判断地图已到边缘。
-            self.map_swipe((x, y))
-            record.append((x, y))
-        if not (self.view.left_edge or self.view.right_edge) or not (self.view.lower_edge or self.view.upper_edge):
-            reason = f'边缘重新定位失败: camera={location2node(self.camera)}, swipes={len(record)}'
-            logger.warning(f'[地图-摄像机] {reason}')
-            raise GameStuckError(reason)
 
         if reverse:
             logger.info('[地图-摄像机] 反向滑动')
@@ -471,79 +462,17 @@ class Camera(MapOperation):
         Args:
             location (tuple[int, int] | str): 目标格子坐标或节点名。
             swipe_limit (tuple[int, int], optional): 滑动距离限制 (x, y)。默认为 (4, 3)。
-
-        Raises:
-            GameStuckError: 无位移、坐标震荡或目标不可达，且一次边缘重新定位后仍失败。
         """
         location = location_ensure(location)
         logger.info('[地图-摄像机] 聚焦到: %s' % location2node(location))
 
-        tracking = self._camera_confirm_swipe
-        self._camera_confirm_swipe = True
-        recovery = 0
-        attempts = 0
-        best_distance = np.sum(np.abs(np.subtract(location, self.camera)))
-        no_progress = 0
-        positions = [self.camera]
-        try:
-            for _ in range(40):
-                attempts += 1
-                before = self.camera
-                offset_before = np.linalg.norm(self.view.center_offset - 0.5)
-                vector = np.array(location) - before
-                swipe = tuple(np.min([np.abs(vector), swipe_limit], axis=0) * np.sign(vector))
-                reason = None
-                try:
-                    has_swiped = self.map_swipe(swipe)
-                except MapDetectionError as error:
-                    reason = f'滑动后地图识别失败: {error}'
-                else:
-                    distance = np.sum(np.abs(np.subtract(location, self.camera)))
-                    centered = np.all(np.abs(self.view.center_offset - 0.5) <= self.config.MAP_SWIPE_DROP)
-                    if distance == 0 and centered and (not has_swiped or self._last_swipe_confirmed):
-                        logger.attr('定位完成', f'{location2node(self.camera)}, attempts={attempts}, recovery={recovery}')
-                        return
+        while 1:
+            vector = np.array(location) - self.camera
+            swipe = tuple(np.min([np.abs(vector), swipe_limit], axis=0) * np.sign(vector))
+            has_swiped = self.map_swipe(swipe)
 
-                    offset_progress = distance == 0 and np.linalg.norm(self.view.center_offset - 0.5) < offset_before - 0.01
-                    if self._last_swipe_confirmed and (distance < best_distance or offset_progress):
-                        best_distance = distance
-                        no_progress = 0
-                    else:
-                        no_progress += 1
-                    positions.append(self.camera)
-                    logger.debug(
-                        f'[地图-摄像机] 定位进度: {location2node(before)} -> {location2node(self.camera)}, '
-                        f'target={location2node(location)}, observed={self._last_swipe_observed}, '
-                        f'confirmed={self._last_swipe_confirmed}, distance={distance}, stalled={no_progress}'
-                    )
-                    if len(positions) >= 5 and positions[-1] == positions[-3] == positions[-5] and positions[-1] != positions[-2]:
-                        reason = '相机坐标反复震荡'
-                    elif no_progress >= 3:
-                        reason = '连续三次无已确认的定位进展'
-                if reason is None and attempts >= 20:
-                    reason = '超过最大定位尝试次数'
-                if reason is None:
-                    continue
-                failure = (f'{reason}: camera={location2node(self.camera)}, target={location2node(location)}, '
-                           f'observed={self._last_swipe_observed}, confirmed={self._last_swipe_confirmed}, '
-                           f'attempts={attempts}, recovery={recovery}')
-                logger.warning(f'[地图-摄像机] {failure}')
-                self._prev_view = None
-                self._prev_swipe = None
-                if recovery:
-                    raise GameStuckError(failure)
-                logger.info('[地图-摄像机] 尝试通过地图边缘重新定位')
-                try:
-                    self.ensure_edge_insight(skip_first_update=False)
-                except (MapDetectionError, GameStuckError) as error:
-                    raise GameStuckError(f'{failure}; 重新定位失败: {error}') from error
-                recovery += 1
-                attempts = no_progress = 0
-                best_distance = np.sum(np.abs(np.subtract(location, self.camera)))
-                positions = [self.camera]
-            raise GameStuckError('定位尝试已耗尽')
-        finally:
-            self._camera_confirm_swipe = tracking
+            if not has_swiped:
+                break
 
     def full_scan(self, queue=None, must_scan=None, battle_count=0, mystery_count=0, siren_count=0, carrier_count=0,
                   mode='normal'):

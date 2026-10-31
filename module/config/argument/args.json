@@ -19935,6 +19935,14 @@
       }
     },
     "FleetTraining": {
+      "StopOnComplete": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Notify": {
+        "type": "checkbox",
+        "value": false
+      },
       "FullScanRecord": {
         "type": "stored",
         "value": "2020-01-01 00:00:00",

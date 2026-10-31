@@ -15,6 +15,7 @@ from module.runtime.fleet_rotation import (ROTATION_PATH, active_fleets, begin_r
 from module.runtime.fleet_equipment import EQUIPMENT_PATH
 from module.runtime.fleet_training import (due, goals, mark_checked,
                                            persist_context, restore_context)
+from module.campaign.fleet_training_notify import notify_training
 
 
 def _required(emotion, role, battle):
@@ -99,7 +100,9 @@ def preflight_rotation(runner, battle, mode):
                 recovery_fleets.add(progress['source'])
             states[target] = {'rescan': True}
     selected = {role: actual for role, actual in active.items()
-                if rules.get(str(actual), {}).get('slots') and rules[str(actual)].get('sources')
+                if rules.get(str(actual), {}).get('slots')
+                and (rules[str(actual)].get('sources') or rules[str(actual)].get('favourite')
+                     or (goals(config) and config.cross_get('FleetInfo.FleetTraining.StopOnComplete', False) is True))
                 and _required(campaign.emotion, role, battle)[1] is not None}
     manager = None
     emotion = campaign.emotion
@@ -133,7 +136,7 @@ def preflight_rotation(runner, battle, mode):
     scan_fleets = set(selected.values()) | recovery_fleets
     from module.runtime.fleet_training import state
     pending = state(config)['pending']
-    scan_fleets.update(job[side] for job in pending.values() for side in ('fleet', 'source'))
+    scan_fleets.update(job[side] for job in pending.values() for side in ('fleet', 'source') if job[side] > 0)
     training_due = due(config, context)
     mood_due = morale_due(emotion, selected, battle, context)
     fresh = bool(scan_fleets) and (training_due or mood_due or bool(recovering) or bool(pending))
@@ -143,6 +146,7 @@ def preflight_rotation(runner, battle, mode):
     equipment_used = False
     replaced_fleets = set()
     full_scanned = False
+    changes = []
     try:
         fresh_readings = {}
         if equipment_enabled and config.cross_get(EQUIPMENT_PATH + '.State', {}):
@@ -192,13 +196,16 @@ def preflight_rotation(runner, battle, mode):
                 fresh_readings = {number: recorded_morale(result, number) for number in range(1, 7)}
             full_scanned = training.sources_refreshed
             replaced_fleets.update(training.replaced_fleets)
+            changes.extend(training.changes)
         for role, fleet in selected.items():
             current_fleet = fleet
             if training is not None and fleet in training.replaced_fleets:
                 continue
             # 前一个角色可能刚从本角色的实际舰队换走舰船，不能继续使用旧快照。
             emotion.update()
-            rule = rules[str(fleet)]
+            rule = training.rotation_rule(fleet) if training is not None else rules[str(fleet)]
+            if not rule['slots']:
+                continue
             previous = states.get(str(fleet), {})
             if not isinstance(previous, dict):
                 previous = {}
@@ -252,6 +259,17 @@ def preflight_rotation(runner, battle, mode):
                     order = training.filter_sources(order, rule, fleet)
                 progress = begin_round(rule, previous, order)
                 if progress is None:
+                    if rule.get('favourite'):
+                        from module.campaign.fleet_training import rotate_favourite_fallback
+                        fallback = rotate_favourite_fallback(runner, manager, context, rules, selected, fleet,
+                                                            rule, snapshots, needed, states, training)
+                        changes.extend(fallback)
+                        if fallback:
+                            replaced_fleets.add(fleet)
+                            equipment_used |= equipment_enabled
+                        # 本轮逐舰位候补/常用选择结束，心情仍低则沿用原等待逻辑。
+                        fresh = False
+                        continue
                     logger.warning('候补队没有满足心情及对应舰位的舰船，保留当前编队并沿用原心情检查')
                     manager.finish_rotation()
                     continue
@@ -277,10 +295,15 @@ def preflight_rotation(runner, battle, mode):
                 # 先记下即将执行的互换。进程中断后不能猜测已交换还是尚未交换。
                 progress['pending'] = dict(slot=slot, source_slot=source_slot)
                 config.cross_set(ROTATION_PATH + '.State', states)
+                from module.runtime.fleet_training import ships
+                before = config.cross_get('FleetInfo.FleetInfo.Result', {})
+                outgoing = ships(before, fleet).get(slot, {}).get('name') or '未确认舰名'
+                incoming = ships(before, source).get(slot, {}).get('name') or '未确认舰名'
                 snapshots = manager.rotate_slot(source, slot, fleet)
                 config.cross_set_many(calibration_changes(config.data,
                     {number: snapshots[number] for number in (fleet, source)}, now()))
                 emotion.calibrate_selected({number: snapshots[number] for number in (fleet, source)})
+                changes.append(dict(fleet=fleet, slot=slot, source=source, incoming=incoming, outgoing=outgoing))
                 progress['done'].append(slot)
                 progress['pending'] = None
                 config.cross_set(ROTATION_PATH + '.State', states)
@@ -317,6 +340,8 @@ def preflight_rotation(runner, battle, mode):
             campaign.emotion.map_is_2x_book = emotion.map_is_2x_book
             campaign.ensure_campaign_ui(name=runner.stage, mode=mode, skip_first_screenshot=False)
             campaign.map_get_info()
+            if checked_this_round or changes:
+                notify_training(config, rules, selected, changes)
         mark_morale_checked(config, campaign.emotion, selected, battle, context)
         if checked_this_round and not goals(config):
             mark_checked(config, context)

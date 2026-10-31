@@ -159,6 +159,21 @@ class TrainingRuleTests(unittest.TestCase):
         observe(saved, '舰船B', {'level': 99}, {'level': 120})
         self.assertIsNone(saved['records']['舰船B']['exp'])
 
+    def test_same_batch_candidate_reads_return_to_details_and_leave_formation_once(self):
+        reader = FleetTrainingReader.__new__(FleetTrainingReader)
+        reader.config = SimpleNamespace(SERVER='cn')
+        reader._details, reader._back_to_details, reader._back_to_formation = Mock(), Mock(), Mock()
+        reader._ship, reader.appear = Mock(return_value=True), Mock(return_value=True)
+        with reader.reuse_details():
+            reader.read(3, [4], {})
+            reader.read(3, [5], {})
+            reader._back_to_formation.assert_not_called()
+        self.assertEqual([((4,), {}), ((5,), {})], reader._ship.call_args_list)
+        self.assertEqual(2, reader._back_to_details.call_count)
+        reader._back_to_formation.assert_called_once()
+        reader.read(3, [6], {})
+        self.assertEqual(2, reader._back_to_formation.call_count)
+
     def test_affinity_navigation_waits_for_two_fresh_matching_values(self):
         reader = FleetTrainingReader.__new__(FleetTrainingReader)
         reader.device = SimpleNamespace(image=None, click=Mock())
@@ -173,6 +188,7 @@ class TrainingRuleTests(unittest.TestCase):
 
     def test_recover_known_affinity_and_detail_pages(self):
         reader = FleetTrainingReader.__new__(FleetTrainingReader)
+        reader.config = SimpleNamespace(cross_get=lambda *args: {})
         reader.device = SimpleNamespace(image=None, has_cached_image=True)
         reader.appear = Mock(side_effect=[False, True, True])
         reader.ui_click = Mock()
@@ -366,6 +382,10 @@ class TrainingIntegrationTests(unittest.TestCase):
         class Reader:
             def __init__(self, manager):
                 self.manager = manager
+
+            def reuse_details(self):
+                from contextlib import nullcontext
+                return nullcontext()
 
             def inventory(self, fleets, **kwargs):
                 outer.training_events.append(('inventory', set(fleets)))
@@ -1229,6 +1249,114 @@ class TrainingIntegrationTests(unittest.TestCase):
         with self.assertRaises(FleetManagementError):
             preflight_rotation(self.runner, 5, 'normal')
         self.assertEqual(corrupt, self.config.cross_get(TRAINING_PATH))
+
+    def test_stop_option_waits_for_every_ship_and_every_enabled_goal_without_replacing(self):
+        from module.config.config import TaskEnd
+        self.configure(mood=True, level=True, affinity=True, slots=(4, 5))
+        self.config.cross_set_many({'FleetInfo.FleetTraining.StopOnComplete': True,
+                                    'Main.Scheduler.Enable': True})
+        first, second = self.names[1, 4], self.names[1, 5]
+        self.profile[first] = dict(level=120, affinity=100)
+        self.profile[second] = dict(level=120, affinity=99)
+        self.live[1][4] = 2
+        preflight_rotation(self.runner, 5, 'normal')
+        self.assertTrue(self.config.Scheduler_Enable)
+        self.manager.rotate_slot.assert_not_called()
+        self.profile[second]['affinity'] = 100
+        self.runner._fleet_rotation_context['training_checked_at'] -= timedelta(hours=6, seconds=1)
+        with self.assertRaises(TaskEnd):
+            preflight_rotation(self.runner, 5, 'normal')
+        self.assertFalse(self.config.Scheduler_Enable)
+        self.manager.rotate_slot.assert_not_called()
+        self.assertEqual(first, self.names[1, 4])
+        self.assertEqual(second, self.names[1, 5])
+        self.manager._commit_formation.assert_called()
+
+    def test_stop_needs_no_reserves_and_checks_both_active_fleets(self):
+        from module.config.config import TaskEnd
+        self.configure(level=True)
+        self.config.cross_set_many({'FleetInfo.FleetTraining.StopOnComplete': True,
+            ROTATION_PATH + '.Rules': json.dumps({'1': {'slots': [4], 'sources': []},
+                                                 '2': {'slots': [4], 'sources': []}}),
+            'Main.Fleet.FleetOrder': 'fleet1_mob_fleet2_boss', 'Main.Fleet.Fleet2': 2,
+            'Main.Scheduler.Enable': True})
+        self.profile[self.names[1, 4]]['level'] = 120
+        preflight_rotation(self.runner, 5, 'normal')
+        self.assertTrue(self.config.Scheduler_Enable)
+        self.profile[self.names[2, 4]]['level'] = 120
+        self.runner._fleet_rotation_context['training_checked_at'] -= timedelta(hours=6, seconds=1)
+        with self.assertRaises(TaskEnd):
+            preflight_rotation(self.runner, 5, 'normal')
+        self.assertFalse(self.config.Scheduler_Enable)
+        self.manager.rotate_slot.assert_not_called()
+
+    def test_favourite_is_used_only_after_all_selected_reserves_graduate(self):
+        self.configure()
+        self.config.cross_set(ROTATION_PATH + '.Rules', json.dumps({'1': {
+            'slots': [4], 'sources': [3, 4, 5], 'favourite': True}}))
+        self.profile[self.names[1, 4]]['level'] = 120
+        with patch('module.retire.fleet_favourite.FavouriteShips') as common:
+            preflight_rotation(self.runner, 5, 'normal')
+            common.assert_not_called()
+        self.manager.rotate_slot.assert_called_once_with(3, 4, 1)
+        self.configure()
+        self.config.cross_set(ROTATION_PATH + '.Rules', json.dumps({'1': {
+            'slots': [4], 'sources': [3, 4, 5], 'favourite': True}}))
+        for fleet in (1, 3, 4, 5):
+            self.profile[self.names[fleet, 4]]['level'] = 120
+        name = next(name for name in catalog()['ships'] if name not in self.names.values())
+        candidate = dict(name=name, level=80, emotion=150, review=False)
+        self.profile[name] = dict(level=80, affinity=50)
+
+        def find(*args, observe, **kwargs):
+            observe(name, {'level': 80}, 150)
+            return candidate
+
+        def replace(fleet, slot, ship):
+            self.names[fleet, slot] = ship['name']
+            return self.snapshots()
+
+        with patch('module.retire.fleet_favourite.FavouriteShips') as common:
+            common.return_value.find.side_effect = find
+            common.return_value.replace.side_effect = replace
+            preflight_rotation(self.runner, 5, 'normal')
+            common.return_value.find.assert_called_once()
+            common.return_value.replace.assert_called_once_with(1, 4, candidate)
+        self.manager.rotate_slot.assert_not_called()
+        self.assertEqual(name, self.names[1, 4])
+        self.assertEqual({}, state(self.config)['pending'])
+
+    def test_common_pending_recovery_does_not_repeat_a_confirmed_replacement(self):
+        from module.campaign.fleet_training import TrainingSession
+        self.configure()
+        incoming, outgoing = self.names[1, 4], self.names[3, 4]
+        self.config.cross_set(TRAINING_PATH, {'records': {}, 'pending': {'1:4': dict(
+            fleet=1, slot=4, source=0, incoming=incoming, outgoing=outgoing, targets={'level': 120})}})
+        session = TrainingSession(self.runner, self.manager, {}, {'1': {'slots': [4], 'sources': []}}, {1: 1})
+        session.recover()
+        self.assertEqual({}, state(self.config)['pending'])
+        self.manager.rotate_slot.assert_not_called()
+
+    def test_training_notification_reports_current_ships_and_confirmed_swaps_and_is_optional(self):
+        from module.campaign.fleet_training_notify import notify_training
+        self.configure()
+        name = self.names[1, 4]
+        rules = {'1': {'slots': [4], 'sources': [3]}}
+        with (patch('module.campaign.fleet_training_notify.Thread') as thread,
+              patch('module.campaign.fleet_training_notify.notify_webui') as local,
+              patch('module.campaign.fleet_training_notify.handle_notify') as remote):
+            thread.side_effect = lambda target, daemon: SimpleNamespace(start=target)
+            notify_training(self.config, rules, {1: 1})
+            thread.assert_not_called()
+            self.config.cross_set_many({'FleetInfo.FleetTraining.Notify': True,
+                                        'General.Error.OnePushConfig': 'provider: test'})
+            change = dict(fleet=1, slot=4, source=0, outgoing='已换出舰船', incoming=name)
+            notify_training(self.config, rules, {1: 1}, [change])
+            content = local.call_args.kwargs['content']
+            for text in (name, '等级80', '好感未读取', '心情150', '已换出舰船', '来源：常用'):
+                self.assertIn(text, content)
+            remote.assert_called_once()
+            self.assertEqual(content, remote.call_args.kwargs['content'])
 
     def test_due_check_finishes_current_map_without_withdraw_or_extra_battles(self):
         from module.campaign.campaign_base import CampaignBase

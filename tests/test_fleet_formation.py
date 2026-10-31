@@ -71,6 +71,13 @@ class GeometryTests(unittest.TestCase):
         self.assertEqual(menu_area(1), (152, 586, 353, 628))
         self.assertEqual(menu_area(6), (152, 316, 353, 358))
 
+    def test_reported_fifth_fleet_menu_keeps_native_highlight_and_bottom_number(self):
+        image = frame('menu_surface5_native')
+        self.assertEqual(5, selected_menu_fleet(image))
+        self.assertEqual(5, bottom_fleet_index(image))
+        self.assertTrue(fleet_type_selected(image))
+        self.assertFalse(selector_closed(image))
+
     def test_detail_columns_are_surface_one_to_six_and_submarine_one_to_three(self):
         surface = frame('detail_surface')
         submarine = frame('detail_submarine')
@@ -445,7 +452,7 @@ class VisualTargetTests(unittest.TestCase):
         move.assert_called_once()
         tool.device.swipe.assert_called_once()
 
-    def test_direct_menu_and_arrow_navigation_verify_the_new_highlight(self):
+    def test_direct_menu_and_arrow_navigation_keep_positive_confirmation(self):
         for method in ('menu', 'arrows'):
             with self.subTest(method=method):
                 tool = runner()
@@ -469,6 +476,77 @@ class VisualTargetTests(unittest.TestCase):
                     self.assertIn(FLEET_NEXT, [call.args[0] for call in tool.device.click.call_args_list])
                 else:
                     self.assertIn(menu_area(4), [call.args[0].button for call in tool.device.click.call_args_list])
+                    self.assertEqual(2, tool.device.click.call_count)
+
+
+class SingleMenuSelectionTests(unittest.TestCase):
+    @staticmethod
+    def closed(fleet, kind='surface'):
+        image = frame(f'closed_{kind}')
+        row = fleet - 1 if kind == 'surface' else fleet + 5
+        left = 298 if kind == 'surface' else 664
+        image[647:707, left:left + 50] = frame('fleet_index_regions')[row * 60:(row + 1) * 60, :50]
+        return image
+
+    def navigate(self, images, fleet, kind='surface'):
+        tool = runner()
+        tool._formation_visible = Mock(return_value=True)
+        def frames(**kwargs):
+            for image in images:
+                tool.device.image = image
+                yield image
+        tool.loop = frames
+        with patch('module.retire.fleet_management.Timer') as timer:
+            timer.return_value.reached.return_value = True
+            FleetManagement.fleet_enter(tool, fleet, kind)
+        return tool
+
+    def test_reported_menu_selects_third_fleet_once_without_reopening_it(self):
+        menu = frame('menu_surface5_native')
+        unknown = self.closed(5)
+        unknown[647:707, 298:348] = 0
+        tool = self.navigate([menu, menu, self.closed(5), unknown, self.closed(3)], 3)
+        self.assertEqual(['第3舰队'], [call.args[0].name for call in tool.device.click.call_args_list])
+
+    def test_submarine_menu_also_returns_after_one_target_click(self):
+        menu = frame('menu_submarine')
+        tool = self.navigate([menu, menu, self.closed(1, 'submarine')], 1, 'submarine')
+        self.assertEqual(['第1舰队'], [call.args[0].name for call in tool.device.click.call_args_list])
+
+    def test_single_target_click_waits_for_animation_without_more_input(self):
+        tool = runner()
+        tool._formation_visible = Mock(return_value=True)
+        state = SimpleNamespace(clock=100., selected_at=None)
+        menu, closed = frame('menu_surface5_native'), self.closed(3)
+        def frames(**kwargs):
+            for _ in range(20):
+                state.clock += .1
+                tool.device.image = menu if state.selected_at is None else closed
+                yield None
+        def click(button):
+            self.assertEqual('第3舰队', button.name)
+            state.selected_at = state.clock
+        tool.loop = frames
+        tool.device.click.side_effect = click
+        with patch('module.base.timer.time', side_effect=lambda: state.clock):
+            FleetManagement.fleet_enter(tool, 3)
+        tool.device.click.assert_called_once()
+        self.assertGreaterEqual(state.clock - state.selected_at, .5)
+
+    def test_unknown_result_does_not_reopen_the_menu_or_claim_the_switch_succeeded(self):
+        menu = frame('menu_surface5_native')
+        tool = runner()
+        tool._formation_visible = Mock(return_value=True)
+        def frames(**kwargs):
+            for image in (menu, menu, self.closed(5), self.closed(5)):
+                tool.device.image = image
+                yield image
+        tool.loop = frames
+        with patch('module.retire.fleet_management.Timer') as timer:
+            timer.return_value.reached.return_value = True
+            with self.assertRaises(FleetManagementError):
+                FleetManagement.fleet_enter(tool, 3)
+        self.assertEqual(['第3舰队'], [call.args[0].name for call in tool.device.click.call_args_list])
 
 
 class DirectRotationTests(unittest.TestCase):

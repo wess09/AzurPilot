@@ -1,5 +1,7 @@
 """舰队详情的固定舰位导航，供装备与培养读取共用。"""
 
+from contextlib import contextmanager
+
 from module.equipment.assets import EQUIPMENT_CODE_ENTRANCE, FLEET_DETAIL, FLEET_DETAIL_CHECK
 from module.equipment.equipment import Equipment
 from module.exception import FleetManagementError
@@ -13,6 +15,18 @@ class FleetShipDetail(Equipment):
         super().__init__(config=manager.config, device=manager.device)
         self.manager = manager
 
+    @contextmanager
+    def reuse_details(self):
+        """同批候补读取保留详情页，离开本批次时统一返回编队。"""
+        previous = self.__dict__.get('_reuse_details', False)
+        self._reuse_details = True
+        try:
+            yield
+        finally:
+            self._reuse_details = previous
+            if not previous and self.appear(FLEET_DETAIL_CHECK):
+                self._back_to_formation()
+
     def _details(self, fleet):
         """确认目标队后进入详情。
 
@@ -20,6 +34,12 @@ class FleetShipDetail(Equipment):
             in: Any
             out: 指定水面舰队详情
         """
+        if self.appear(FLEET_DETAIL_CHECK):
+            if (fleet_type_selected(self.device.image, 'surface')
+                    and bottom_fleet_index(self.device.image) == fleet and selector_closed(self.device.image)):
+                self._equipment_fleet = fleet
+                return
+            self._back_to_formation()
         self.manager.finish_rotation()
         if not (self.manager._formation_visible() and fleet_type_selected(self.device.image, 'surface')
                 and bottom_fleet_index(self.device.image) == fleet and selector_closed(self.device.image)):
