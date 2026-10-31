@@ -7,6 +7,7 @@ from module.config.time_source import now
 from module.equipment.fleet_rotation import FleetRotationEquipment
 from module.exception import FleetManagementError, ScriptEnd
 from module.logger import logger
+from module.campaign.fleet_training_notify import notify_training
 from module.retire.fleet_management import FleetManagement
 from module.retire.fleet_training import FleetTrainingReader
 from module.runtime.fleet_equipment import EQUIPMENT_PATH
@@ -29,6 +30,60 @@ class TrainingSession:
         self.replaced_fleets = set()
         self.sources_refreshed = False
         self.checking_targets = False
+        self.changes = []
+
+    def favourite_job(self, fleet, slot, outgoing, *, needed=0, reserved=()):
+        from module.retire.fleet_favourite import FavouriteShips
+        self.saved['reading'] = dict(fleet=fleet, slots=[slot], favourite=True)
+        self.save()
+
+        def record(name, values, emotion):
+            observe(self.saved, name, values, self.targets, emotion=emotion)
+            self.save()
+
+        candidate = FavouriteShips(self.manager).find(fleet, slot, self.targets, self.saved['records'],
+                                                      needed=needed, reserved=reserved, observe=record)
+        self.saved.pop('reading', None)
+        self.save()
+        if candidate is not None:
+            return dict(fleet=fleet, slot=slot, source=0, outgoing=outgoing, incoming=candidate['name'],
+                        targets=dict(self.targets), candidate=candidate)
+        return None
+
+    def rotation_rule(self, fleet):
+        rule = self.rules[str(fleet)]
+        if self.config.cross_get('FleetInfo.FleetTraining.StopOnComplete', False) is True:
+            # 等待本轮其他舰船毕业时，不把已毕业舰位换成下一批。
+            rule = dict(rule, slots=[slot for slot in rule['slots']
+                        if not completed(self.saved['records'].get(
+                            identity(ships(self.result, fleet).get(slot), self.result), {}), self.targets)])
+        return rule
+
+    def stop_when_complete(self):
+        current = {}
+        for fleet in self.selected.values():
+            current[fleet] = self.inspect(fleet, self.rules[str(fleet)]['slots'], defer_completion=True)
+        ready = [(fleet, slot, name) for fleet, names in current.items() for slot, name in names.items()
+                 if completed(self.saved['records'][name], self.targets)]
+        if ready:
+            self.refresh_sources()
+            for fleet, slot, name in ready:
+                if identity(ships(self.result, fleet).get(slot), self.result) != name:
+                    self.delay('全舰队扫描后毕业舰船身份无法唯一确认，不停止任务')
+                self.saved['records'][name].update(completed_for=dict(self.targets),
+                                                   completed_at=now().isoformat(timespec='seconds'))
+            self.save()
+        expected = {(fleet, slot) for fleet in self.selected.values() for slot in self.rules[str(fleet)]['slots']
+                    if slot in ships(self.result, fleet)}
+        mark_checked(self.config, self.context, self.targets)
+        if expected and expected == {(fleet, slot) for fleet, slot, _ in ready}:
+            self.manager.finish_rotation()
+            self.manager._commit_formation()
+            logger.info('本轮全部培养舰船已达到等级/好感目标，停止当前练级任务')
+            self.config.Scheduler_Enable = False
+            notify_training(self.config, self.rules, self.selected, status='培养完成，已停止练级')
+            self.config.task_stop()
+        return True
 
     @property
     def result(self):
@@ -96,6 +151,14 @@ class TrainingSession:
         """中断前已落盘的互换必须按双方身份核实，不盲目重复。"""
         for key, job in list(self.saved['pending'].items()):
             target = identity(ships(self.result, job['fleet']).get(job['slot']), self.result)
+            if job['source'] == 0:
+                if target == job['incoming']:
+                    del self.saved['pending'][key]
+                elif target != job['outgoing']:
+                    raise FleetManagementError('常用换船中断后的目标舰位身份未确认，保留记录')
+                elif job.get('targets', self.targets) != self.targets:
+                    del self.saved['pending'][key]
+                continue
             source = identity(ships(self.result, job['source']).get(job['slot']), self.result)
             if (target, source) == (job['incoming'], job['outgoing']):
                 del self.saved['pending'][key]
@@ -131,6 +194,8 @@ class TrainingSession:
             return False
         self.checking_targets = True
         self.recover()
+        if self.config.cross_get('FleetInfo.FleetTraining.StopOnComplete', False) is True:
+            return self.stop_when_complete()
         for role, fleet in self.selected.items():
             rule = self.rules[str(fleet)]
             current = self.inspect(fleet, rule['slots'], defer_completion=True)
@@ -175,6 +240,9 @@ class TrainingSession:
                             job = dict(fleet=fleet, slot=slot, source=source, outgoing=current[slot], incoming=name,
                                        targets=dict(self.targets))
                             break
+                    if job is None and rule.get('favourite'):
+                        job = self.favourite_job(fleet, slot, current[slot],
+                                                 reserved=[job['incoming'] for _, job in jobs])
                     if job is None:
                         self.delay(f'第{fleet}舰队{slot}位已培养完成，但没有合适候补，延迟当前任务')
                     jobs.append((key, job))
@@ -191,12 +259,17 @@ class TrainingSession:
             for key, job in jobs:
                 if goals(self.config) != self.targets:
                     break
-                snapshots = self.manager.rotate_slot(job['source'], job['slot'], fleet)
+                if job['source'] == 0:
+                    from module.retire.fleet_favourite import FavouriteShips
+                    snapshots = FavouriteShips(self.manager).replace(fleet, job['slot'], job['candidate'])
+                else:
+                    snapshots = self.manager.rotate_slot(job['source'], job['slot'], fleet)
                 self.config.cross_set_many(calibration_changes(self.config.data, snapshots, now()))
                 self.runner.campaign.emotion.calibrate_selected(snapshots)
                 actual = identity(ships(self.result, fleet).get(job['slot']), self.result)
                 if actual != job['incoming']:
                     raise FleetManagementError('培养换船后的身份未确认，保留待确认记录')
+                self.changes.append(job)
                 del self.saved['pending'][key]
                 self.save()
             self.manager.finish_rotation()
@@ -228,6 +301,60 @@ class TrainingSession:
         self.manager.finish_rotation()
         self.manager.fleet_enter(fleet)
         return []
+
+
+def rotate_favourite_fallback(runner, manager, context, rules, selected, fleet, rule, snapshots, needed,
+                               states, training=None):
+    """整队候补不可用时逐舰位核对，仍先用对应候补舰位，最后才使用常用。"""
+    session = training or TrainingSession(runner, manager, context, rules, selected)
+    config = runner.campaign.config
+    jobs = []
+    for slot in rule['slots']:
+        order = rank_sources(dict(rule, slots=[slot]), snapshots, needed,
+                             selected_only=runner.campaign.emotion.selected_only)
+        if training is not None:
+            order = training.filter_sources(order, dict(rule, slots=[slot]), fleet)
+        outgoing = ships(session.result, fleet).get(slot, {}).get('name') or '未确认舰名'
+        if order:
+            source = order[0]
+            incoming = ships(session.result, source).get(slot, {}).get('name') or '未确认舰名'
+            jobs.append(dict(fleet=fleet, slot=slot, source=source, incoming=incoming, outgoing=outgoing))
+        else:
+            job = session.favourite_job(fleet, slot, outgoing, needed=needed,
+                                       reserved=[item['incoming'] for item in jobs])
+            if job:
+                jobs.append(job)
+    if not jobs:
+        return []
+    equipment = None
+    if config.cross_get(EQUIPMENT_PATH + '.Enabled', False) is True:
+        equipment = FleetRotationEquipment(manager)
+        equipment.clear_outgoing(fleet, [job['slot'] for job in jobs])
+        session.equipment_used = True
+    changes = []
+    for job in jobs:
+        if config.cross_get(ROTATION_PATH + '.Enabled', False) is not True:
+            break
+        states[str(fleet)] = dict(source=job['source'], pending=dict(slot=job['slot']), rescan=True)
+        config.cross_set(ROTATION_PATH + '.State', states)
+        if job['source'] == 0:
+            from module.retire.fleet_favourite import FavouriteShips
+            values = FavouriteShips(manager).replace(fleet, job['slot'], job['candidate'])
+            if identity(ships(session.result, fleet).get(job['slot']), session.result) != job['incoming']:
+                raise FleetManagementError('常用换船后目标舰位身份未确认，下次重扫实际编队')
+        else:
+            manager.prepare_rotation(fleet, slots=[job['slot']], scan=False)
+            values = manager.rotate_slot(job['source'], job['slot'], fleet)
+        config.cross_set_many(calibration_changes(config.data, values, now()))
+        runner.campaign.emotion.calibrate_selected(values)
+        changes.append(job)
+        states[str(fleet)] = dict(last_source=job['source'], favourite=job['source'] == 0,
+                                 completed_at=now().isoformat(timespec='seconds'))
+        config.cross_set(ROTATION_PATH + '.State', states)
+    if equipment is not None:
+        equipment.apply_pending()
+    manager.finish_rotation()
+    return changes
 
 
 def recover_reading(runner, mode):
@@ -263,7 +390,9 @@ def training_only(runner, battle, mode):
     selected_only = config.cross_get(ROTATION_PATH + '.SelectedOnly', False) is True
     rules = parse_rules(config.cross_get(ROTATION_PATH + '.Rules', '{}'))
     selected = {role: actual for role, actual in active_fleets(config).items()
-                if rules.get(str(actual), {}).get('slots') and rules[str(actual)].get('sources')
+                if rules.get(str(actual), {}).get('slots')
+                and (rules[str(actual)].get('sources') or rules[str(actual)].get('favourite')
+                     or (goals(config) and config.cross_get('FleetInfo.FleetTraining.StopOnComplete', False) is True))
                 and _required(runner.campaign.emotion, role, battle)[1] is not None}
     if not selected:
         return False
@@ -284,7 +413,8 @@ def training_only(runner, battle, mode):
         session.reader.recover_page()
     if check_due or session.saved['pending']:
         # 确认后、保存前中断时两边旧记录都可能过时，恢复前必须实读双方。
-        recovery_fleets = {job[side] for job in session.saved['pending'].values() for side in ('fleet', 'source')}
+        recovery_fleets = {job[side] for job in session.saved['pending'].values() for side in ('fleet', 'source')
+                           if job[side] > 0}
         inventory = set(selected.values()) | recovery_fleets
         result = session.reader.inventory(inventory,
             slots={fleet: rules[str(fleet)]['slots'] for fleet in selected.values()})
@@ -303,6 +433,8 @@ def training_only(runner, battle, mode):
     manager._commit_formation()
     from module.dorm.fleet_rotation import rest_after_rotation
     rest_after_rotation(manager, session.replaced_fleets, committed=True)
+    if check_due or session.changes:
+        notify_training(config, rules, selected, session.changes)
     config.update()
     runner.config.update()
     runner.campaign.emotion = RotationEmotion(config, context, rules, selected)
@@ -321,7 +453,9 @@ def after_battle_due(runner, mode):
         return False
     rules = parse_rules(config.cross_get(ROTATION_PATH + '.Rules', '{}'))
     selected = {role: actual for role, actual in active_fleets(config).items()
-                if rules.get(str(actual), {}).get('slots') and rules[str(actual)].get('sources')
+                if rules.get(str(actual), {}).get('slots')
+                and (rules[str(actual)].get('sources') or rules[str(actual)].get('favourite')
+                     or (goals(config) and config.cross_get('FleetInfo.FleetTraining.StopOnComplete', False) is True))
                 and _required(runner.campaign.emotion, role, runner.campaign._map_battle)[1] is not None}
     context = runner.__dict__.get('_fleet_rotation_context', {})
     mood = config.cross_get(ROTATION_PATH + '.Enabled', False) is True

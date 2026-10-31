@@ -1201,6 +1201,8 @@ class GeneratedConfig:
     FleetDorm_Floor = 'floor_1'  # floor_1, floor_2
 
     # 配置组 `FleetTraining`
+    FleetTraining_StopOnComplete = False
+    FleetTraining_Notify = False
     FleetTraining_FullScanRecord = datetime.datetime(2020, 1, 1, 0, 0)
     FleetTraining_CheckIntervalHours = 6.0
     FleetTraining_State = {}

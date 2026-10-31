@@ -276,7 +276,7 @@ class FleetManagement(Dock):
             self._prepare_dock()
             self._level_prepared = True
 
-    def _dock_pages(self, scanner, *, max_rows=3):
+    def _dock_pages(self, scanner, *, max_rows=3, normal_dock=False):
         """滚动并核验物理位移，按已编队最大卡位数确定范围，不依赖OCR早停。
 
         Pages:
@@ -287,7 +287,9 @@ class FleetManagement(Dock):
         self._scan_window = None
         if self.appear(DOCK_EMPTY, offset=(20, 20)):
             return
-        scroll = Scroll(PICKER_SCROLL.area, color=PICKER_SCROLL.color, name=PICKER_SCROLL.name)
+        from module.retire.dock import DOCK_SCROLL
+        bar = DOCK_SCROLL if normal_dock else PICKER_SCROLL
+        scroll = Scroll(bar.area, color=bar.color, name=bar.name)
         # 原生滑块顶端有圆角留白；先向轨道外拖动一次，再以顶部像素确认，
         # 不用宽松百分比把靠近顶部的几行当作第一行。
         requested_top = False
@@ -316,7 +318,7 @@ class FleetManagement(Dock):
             if not self.appear(DOCK_CHECK):
                 continue
             pixels = self.device.image
-            signature = pixels[65:627, 85:1225].astype(np.int16)
+            signature = pixels[65:720 if normal_dock else 627, 85:1225].astype(np.int16)
             if stable is None or np.mean(np.abs(signature - stable)) > 2:
                 stable = signature.copy()
                 continue
@@ -324,7 +326,10 @@ class FleetManagement(Dock):
                 thumb = np.flatnonzero(scroll.match_color(self))
                 if not len(thumb):
                     raise ValueError('船坞滚动条未加载')
-                cards = scanner.scan(pixels, has_remove=thumb[0] <= 3)
+                if normal_dock:
+                    cards = scanner.scan(pixels, bottom=720, has_remove=False)
+                else:
+                    cards = scanner.scan(pixels, has_remove=thumb[0] <= 3)
                 if not cards:
                     raise ValueError('未发现已加载的卡片行')
                 merger.add(pixels, cards)

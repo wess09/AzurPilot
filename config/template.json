@@ -3812,6 +3812,8 @@
       "Floor": "floor_1"
     },
     "FleetTraining": {
+      "StopOnComplete": false,
+      "Notify": false,
       "FullScanRecord": "2020-01-01 00:00:00",
       "CheckIntervalHours": 6.0,
       "State": {}

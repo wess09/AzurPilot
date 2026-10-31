@@ -6820,6 +6820,14 @@
       "name": "Training records",
       "help": "Persists verified readings, completed goals and pending swaps across restarts."
     },
+    "StopOnComplete": {
+      "name": "Stop after all current training ships graduate",
+      "help": "Off by default. Disable the current task when every selected ship meets all enabled level/affinity goals. Do not recruit the next batch. Uses the existing check interval."
+    },
+    "Notify": {
+      "name": "Training and replacement notifications",
+      "help": "Off by default. Report recorded level, affinity and morale after checks and outgoing/incoming ships and sources after confirmed replacements. Uses launcher notifications and the global error OnePush configuration."
+    },
     "FullScanRecord": {
       "name": "Last full fleet scan",
       "help": "Updated only after a successful full scan; partial scheduling reads do not reset this time."
