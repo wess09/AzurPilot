@@ -14,26 +14,26 @@ SMART_EXPLORE_ROUTES = (
      151, 153, 157, 152, 72, 124),
 )
 SMART_EXPLORE_ZONES = tuple(zone for route in SMART_EXPLORE_ROUTES for zone in route if zone >= 11)
-SMART_EXPLORE_CONFIG = 'OpsiScheduling.OpsiSmartExplore.'
+SMART_EXPLORE_CONFIG = 'OpsiExplore.OpsiExplore.'
 ACTION_POINT_PURCHASE_CONFIG = 'OpsiScheduling.OpsiScheduling.BuyActionPoint'
 
 
 def monthly_explore_complete(config):
-    """只认可带本月标记的 100%，不依赖每月开荒任务开关。"""
+    """两种模式共用本月完成标记，兼容旧百分比，不依赖任务开关。"""
     month = config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')
-    return (config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress', default='') == '已完成百分之100.00'
-            and isinstance(month, dict) and month.get('reset') == get_os_next_reset().isoformat())
+    legacy_complete = config.cross_get(SMART_EXPLORE_CONFIG + 'Progress', default='') == '已完成百分之100.00'
+    return (isinstance(month, dict) and (month.get('phase') == 'done' or legacy_complete)
+            and month.get('reset') == get_os_next_reset().isoformat())
 
 
 def smart_explore_enabled(config):
-    """仅默认黄币调度支持智能开荒，两种开荒不能同时运行；冲突时保留每月开荒。"""
-    if config.cross_get('OpsiExplore.Scheduler.Enable', default=False) is True:
-        return False
+    """大世界开荒选择智能模式时，由默认黄币调度推进。"""
     return all(
         config.cross_get(key, default=False) is True for key in (
+            'OpsiExplore.Scheduler.Enable',
             'OpsiScheduling.Scheduler.Enable',
             'OpsiScheduling.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve',
-            SMART_EXPLORE_CONFIG + 'Enable',
+            SMART_EXPLORE_CONFIG + 'SmartEnable',
         ))
 
 
@@ -54,7 +54,7 @@ class SmartExploreMixin:
         self._set_smart_scheduling_state_value('SmartExplore', state)
         completed = sum(sum(zone >= 11 for zone in route[:index])
                         for route, index in zip(SMART_EXPLORE_ROUTES, state['next']))
-        phase = {'explore': '开荒', 'cleanup': '事件补扫', 'done': '已完成'}[state['phase']]
+        phase = {'explore': '开荒', 'cleanup': '开荒', 'done': '已完成'}[state['phase']]
         self.config.cross_set(SMART_EXPLORE_CONFIG + 'Progress',
                               f'已开荒 {completed}/{len(SMART_EXPLORE_ZONES)}，阶段：{phase}')
 
@@ -145,31 +145,11 @@ class SmartExploreMixin:
         self.fleet_set(self.config.OpsiFleet_Fleet)
         self.os_order_execute(recon_scan=not self.config.OpsiExplore_SpecialRadar,
                               submarine_call=self.config.OpsiFleet_Submarine)
-        # 智能开荒独立读取自己的开关，不沿用已关闭的每月开荒任务设置。
+        # 两种开荒模式共用运行间隔开关。
         if not self.config.OpsiExplore_SpecialRadar and not self._config_enabled(SMART_EXPLORE_CONFIG + 'ForceRun'):
             self.config.task_delay(minute=27, task='OpsiScheduling')
         self.run_auto_search(question=False, rescan='full')
         self.handle_after_auto_search()
-
-    def _run_smart_explore_cleanup(self):
-        """所有普通海域完成后复用独立补扫断点，完成后回归正常补币。"""
-        from module.os.tasks.explore_cleanup import OpsiExploreCleanup
-
-        self.handle_first_auto_search(run=False)
-
-        def cleanup():
-            OpsiExploreCleanup.reset_monthly_state(self.config)
-            state = self.config.OpsiExploreCleanup_State
-            if not isinstance(state, dict):
-                self.config.OpsiExploreCleanup_State = dict(
-                    reset=get_os_next_reset().isoformat(), phase='cleanup',
-                    order=list(SMART_EXPLORE_ZONES), next=0, attempts=0,
-                )
-            if self.config.OpsiExploreCleanup_State.get('phase') != 'done':
-                self._run_explore_cleanup(max_zones=1)
-            return self.config.OpsiExploreCleanup_State.get('phase') == 'done'
-
-        return self._run_with_opsi_task_context('OpsiExploreCleanup', cleanup)
 
     def _run_smart_explore_once(self, yellow_coins, total_ap, current_ap):
         """仅默认黄币调度执行智能开荒；补币逐图达标即回侵蚀一。"""
@@ -179,13 +159,9 @@ class SmartExploreMixin:
         current = isinstance(previous, dict) and previous.get('reset') == get_os_next_reset().isoformat()
         if current and previous.get('phase') == 'done':
             return False
-        # 本月已完成普通开荒时，不必再启动三轮；智能开荒自己的待补扫断点仍须继续。
+        # 兼容旧版已完成路线、尚未结束的补扫阶段，直接完成收尾。
         pending_cleanup = current and previous.get('phase') == 'cleanup'
         if monthly_explore_complete(self.config) and not pending_cleanup:
-            progress = '本月每月开荒已完成 100%，无需智能开荒'
-            if self.config.cross_get(SMART_EXPLORE_CONFIG + 'Progress') != progress:
-                logger.info(progress)
-                self.config.cross_set(SMART_EXPLORE_CONFIG + 'Progress', progress)
             return False
         state = self._get_smart_explore_state()
         if state['phase'] == 'done':
@@ -211,18 +187,14 @@ class SmartExploreMixin:
                 state = dict(state, phase='cleanup')
                 self._save_smart_explore_state(state)
             if not monthly_explore_complete(self.config):
-                # 保存补扫阶段后中断也可继续补写 100%，不把第一轮当作全图完成。
+                # 收尾中断后仍可补写本月完成标记，不把第一轮当作全图完成。
                 with self.config.multi_set():
-                    self.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
                     self.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState',
                                           dict(reset=state['reset'], phase='done'))
                     self.config.cross_set('OpsiExplore.OpsiExplore.LastZone', 0)
                     # 5000 油记录仪在下月失效，不能沿用本月的免扫描状态。
                     self.config.cross_set('OpsiExplore.OpsiExplore.SpecialRadar', False)
                     self.config.task_delay(target=get_os_next_reset(), task='OpsiExplore')
-            if self._config_enabled(SMART_EXPLORE_CONFIG + 'EventCleanup'):
-                if not self._run_smart_explore_cleanup():
-                    return True
             self._save_smart_explore_state(dict(state, phase='done'))
             return True
         active = self._is_coin_replenish_active()

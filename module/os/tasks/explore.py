@@ -30,7 +30,7 @@ class OpsiExplore(OSMap):
         with self.config.multi_set():
             self.config.OpsiExplore_LastZone = 0
             self.config.OpsiExplore_MeowfficerCleanupState = {'reset': reset, 'phase': 'done'}
-            self.config.OpsiExplore_ExploreProgress = '已完成百分之100.00'
+            self.config.OpsiExplore_Progress = '已完成百分之100.00'
             self.config.OpsiExplore_SpecialRadar = False
             self.config.task_delay(target=get_os_next_reset())
             self.config.task_call('OpsiExploreCleanup', force_call=False)
@@ -86,12 +86,12 @@ class OpsiExplore(OSMap):
             order = full_order[index + 1:]
             if total_zones > 0:
                 percentage = completed_count / total_zones * 100
-                self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
+                self.config.OpsiExplore_Progress = f'已完成百分之{percentage:.2f}'
             logger.info(f'上次区域: {self.name_to_zone(last_zone)}, next zone: {order[:1]}')
         elif last_zone == 0:
             completed_count = 0
             order = full_order
-            self.config.OpsiExplore_ExploreProgress = '已完成百分之0.00'
+            self.config.OpsiExplore_Progress = '已完成百分之0.00'
             logger.info(f'首次运行，下一个区域: {order[:1]}')
         else:
             raise ScriptError(f'Invalid last_zone: {last_zone}')
@@ -107,7 +107,7 @@ class OpsiExplore(OSMap):
                 completed_count += 1
                 if total_zones > 0:
                     percentage = completed_count / total_zones * 100
-                    self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
+                    self.config.OpsiExplore_Progress = f'已完成百分之{percentage:.2f}'
                 self.config.OpsiExplore_LastZone = zone
                 continue
 
@@ -127,7 +127,7 @@ class OpsiExplore(OSMap):
             completed_count += 1
             if total_zones > 0:
                 percentage = completed_count / total_zones * 100
-                self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
+                self.config.OpsiExplore_Progress = f'已完成百分之{percentage:.2f}'
             if finished_combat == 0:
                 if 'is_exploration_container' in self._solved_map_event:
                     logger.info('区域已由探索容器清除')
@@ -155,7 +155,7 @@ class OpsiExplore(OSMap):
         if isinstance(state, dict) and state.get('reset') != reset:
             with self.config.multi_set():
                 self.config.OpsiExplore_LastZone = 0
-                self.config.OpsiExplore_ExploreProgress = '已完成百分之0.00'
+                self.config.OpsiExplore_Progress = '已完成百分之0.00'
                 self.config.OpsiExplore_MeowfficerCleanupState = None
             state = None
         if state is None:

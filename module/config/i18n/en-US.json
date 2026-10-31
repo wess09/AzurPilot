@@ -3983,8 +3983,16 @@
   },
   "OpsiExplore": {
     "_info": {
-      "name": "Monthly exploration",
-      "help": "Explore all sea zones in Operation Siren at the beginning of each month, without needing to buy a Campaign Information Recorder (5000 Oil item).\nThis function will clear a sea zone every 27 minutes to ensure airspace search cooldown.\nThe following conditions must be met before using this feature:\n- Complete Operation Siren main story and finish Simulation Battle + Siren Proving Ground\nSmart and monthly exploration cannot be enabled together. Disable the monthly exploration task before enabling smart exploration. If monthly exploration reached 100% this month, smart exploration is unnecessary and skips all three routes."
+      "name": "Operation Siren exploration",
+      "help": "Explore all ordinary zones each month without buying a Campaign Information Recorder (5000 Oil). Complete the Operation Siren story, Simulation Battle and Siren Proving Ground first. Choose traditional or smart exploration; both share the interval switch and progress. Switching modes clears progress and checkpoints."
+    },
+    "TraditionalEnable": {
+      "name": "Traditional exploration",
+      "help": "Enabled by default. Keep the existing exploration route and behavior. Enabling this mode disables smart exploration. Switching modes clears progress and checkpoints for both modes."
+    },
+    "SmartEnable": {
+      "name": "Smart exploration",
+      "help": "Disables traditional exploration and clears progress and checkpoints when switched. Requires smart scheduling with coin-target mode enabled. Start round one at NY. If total AP exceeds 1360 after round one, continue round two; otherwise buy AP first if purchasing is enabled, or level first if disabled. Replenish coins through rounds two and three, returning to Corrosion 1 at the reserve plus refill threshold. Use normal coin replenishment after all 72 ordinary zones are complete."
     },
     "SpecialRadar": {
       "name": "Campaign Information Recorder has been purchased (5000 Oil item)",
@@ -3992,7 +4000,7 @@
     },
     "ForceRun": {
       "name": "Force run regardless of run interval",
-      "help": "When enabled, it will consume additional AP. Generally not needed, just take it slowly."
+      "help": "Shared by both exploration modes. Skip the 27-minute reconnaissance cooldown interval. May consume extra AP and is generally unnecessary. Does not bypass insufficient AP or monthly completion."
     },
     "LastZone": {
       "name": "Last completed zone",
@@ -4010,9 +4018,9 @@
       "name": "Monthly cleanup state",
       "help": ""
     },
-    "ExploreProgress": {
-      "name": "Monthly exploration progress",
-      "help": "Shows the current completion percentage of monthly exploration."
+    "Progress": {
+      "name": "Exploration progress",
+      "help": "Shared by both modes. Shows this month’s progress for the selected mode. Checkpoints are saved automatically and reset with the Operation Siren month. Switching modes clears progress and checkpoints, keeping monthly AP purchase records."
     }
   },
   "OpsiExploreCleanup": {
@@ -4438,28 +4446,6 @@
       "help": "Whether to buy from the Operation Siren shop during month-end Action Point cleanup. When disabled, the cleanup loop skips the shop purchase step.",
       "True": "Enabled",
       "False": "Disabled"
-    }
-  },
-  "OpsiSmartExplore": {
-    "_info": {
-      "name": "Smart exploration",
-      "help": "Smart and monthly exploration cannot be enabled together. Disable the monthly exploration task before enabling smart exploration. If monthly exploration reached 100% this month, smart exploration is unnecessary and skips all three routes."
-    },
-    "Enable": {
-      "name": "Enable smart exploration",
-      "help": "Smart and monthly exploration cannot be enabled together. Disable the monthly exploration task before enabling smart exploration. If monthly exploration reached 100% this month, smart exploration is unnecessary and skips all three routes.Only the default coin-target scheduling mode is supported. Keep coin-target scheduling enabled. Round one starts at NY. If total AP exceeds 1360 afterward, complete round two immediately. At 1360 or below, buy AP first when purchasing is enabled; otherwise resume CL1. Replenishment explores round two before round three, returning to CL1 at the coin reserve plus return threshold."
-    },
-    "EventCleanup": {
-      "name": "Normal-zone event cleanup",
-      "help": "After all 72 normal zones are explored, check the original normal zones for missed events, then resume normal coin replenishment."
-    },
-    "ForceRun": {
-      "name": "Run without the exploration interval",
-      "help": "Skip the 27-minute reconnaissance interval for smart exploration. This may spend additional AP. Monthly exploration settings, AP limits, monthly completion and mutual exclusion still apply."
-    },
-    "Progress": {
-      "name": "Smart exploration progress",
-      "help": "Normal zones completed across all three rounds this month. Progress is saved automatically and resets with the Operation Siren monthly cycle."
     }
   },
   "OpsiPreventActionPointOverflow": {

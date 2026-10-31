@@ -2806,13 +2806,15 @@
       "Sensitive": false
     },
     "OpsiExplore": {
+      "TraditionalEnable": true,
+      "SmartEnable": false,
       "SpecialRadar": false,
       "ForceRun": false,
       "LastZone": 0,
       "AllowHazard1Leveling": false,
       "MeowfficerCleanup": false,
       "MeowfficerCleanupState": null,
-      "ExploreProgress": null
+      "Progress": null
     },
     "OpsiFleet": {
       "Fleet": 1,
@@ -3137,12 +3139,6 @@
       "MonthEndActionPointPreserve": 0,
       "MonthEndMeowTargetZone": 0,
       "MonthEndShopPurchase": true
-    },
-    "OpsiSmartExplore": {
-      "Enable": false,
-      "EventCleanup": false,
-      "ForceRun": false,
-      "Progress": null
     },
     "Storage": {
       "Storage": {}

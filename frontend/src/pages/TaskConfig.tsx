@@ -190,14 +190,17 @@ export function TaskConfig() {
         const path = `${task}.${group}.${arg}`
         const field = {...definition, option: config.options?.[path] ?? definition.option}
         const edit = edits[path]
-        const value = edit ? edit.value : config.values[task]?.[group]?.[arg] ?? field.value
+        const exploreMode = task === 'OpsiExplore' && group === 'OpsiExplore'
+          && ['TraditionalEnable', 'SmartEnable'].includes(arg)
+        // 模式保存后采用服务端的互斥结果，避免上次点击的已保存值盖住自动关闭。
+        const value = edit && !(exploreMode && edit.status === 'saved')
+          ? edit.value : config.values[task]?.[group]?.[arg] ?? field.value
         const label = t(`${group}.${arg}.name`)
         const help = t(`${group}.${arg}.help`)
         const readonly = ['disabled', 'readonly'].includes(field.display ?? '') || ['storage', 'stored', 'state', 'lock'].includes(field.type)
         // 「立刻运行」只对每个任务的调度时间有意义，其他时间字段（如仪表盘记录时间）不显示。
         const runNow = group === 'Scheduler' && arg === 'NextRun' && !readonly
-        const clearProgress = path === 'OpsiExplore.OpsiExplore.ExploreProgress'
-          || path === 'OpsiScheduling.OpsiSmartExplore.Progress'
+        const clearProgress = path === 'OpsiExplore.OpsiExplore.Progress'
         const isMultiline = ['textarea', 'task_priority', 'yaml', 'storage'].includes(field.type) || field.mode === 'yaml'
 
         return (

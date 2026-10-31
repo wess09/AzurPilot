@@ -41,6 +41,7 @@ from module.config.env import IS_ON_PHONE_CLOUD
 from module.config.fleet_legacy import LEGACY_PATHS
 from module.config.server import VALID_CHANNEL_PACKAGE, VALID_PACKAGE, VALID_SERVER_LIST, to_package, to_server
 from module.config.redirect_utils.shop import migrate_shop_options
+from module.config.redirect_utils.opsi_explore import migrate_opsi_explore
 from module.config.task_priority import get_scheduler_tasks, merge_task_priority
 from module.config.utils import *
 from module.config.redirect_utils.utils import *
@@ -886,6 +887,7 @@ class ConfigUpdater:
                     merge_task_priority(new_priority, template_priority, get_scheduler_tasks(self.args)),
                 )
         if not is_template:
+            new = migrate_opsi_explore(old, new)
             new, shop_warnings = migrate_shop_options(old, new)
             for task, reason in shop_warnings:
                 logger.warning(f'{task}：{reason}，已暂停任务，请检查购买配置后重新启用')

@@ -14722,6 +14722,14 @@
       }
     },
     "OpsiExplore": {
+      "TraditionalEnable": {
+        "type": "checkbox",
+        "value": true
+      },
+      "SmartEnable": {
+        "type": "checkbox",
+        "value": false
+      },
       "SpecialRadar": {
         "type": "checkbox",
         "value": false
@@ -14748,7 +14756,7 @@
         "value": null,
         "display": "hide"
       },
-      "ExploreProgress": {
+      "Progress": {
         "type": "textarea",
         "value": "",
         "display": "disabled"
@@ -16055,25 +16063,6 @@
           true,
           false
         ]
-      }
-    },
-    "OpsiSmartExplore": {
-      "Enable": {
-        "type": "checkbox",
-        "value": false
-      },
-      "EventCleanup": {
-        "type": "checkbox",
-        "value": false
-      },
-      "ForceRun": {
-        "type": "checkbox",
-        "value": false
-      },
-      "Progress": {
-        "type": "textarea",
-        "value": "",
-        "display": "disabled"
       }
     },
     "Storage": {

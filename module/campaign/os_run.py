@@ -93,9 +93,12 @@ class OSCampaignRun(OSMapOperation):
         """执行大世界海域开荒探索任务。"""
         from module.os.tasks.smart_explore import smart_explore_enabled
 
-        if smart_explore_enabled(self.config):
-            logger.info('智能开荒已接管普通海域，唤起智能调度')
-            self.config.task_call('OpsiScheduling', force_call=False)
+        if self.config.cross_get('OpsiExplore.OpsiExplore.SmartEnable', default=False) is True:
+            if smart_explore_enabled(self.config):
+                logger.info('智能开荒已接管普通海域，唤起智能调度')
+                self.config.task_call('OpsiScheduling', force_call=False)
+            else:
+                logger.warning('智能开荒需要启用智能调度和黄币目标模式')
             self.config.task_delay(server_update=True)
             self.config.task_stop()
             return

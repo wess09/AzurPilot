@@ -20,11 +20,12 @@ class OpsiExploreCleanup(OSMap):
     @staticmethod
     def explore_complete(config):
         """读取开荒进度；已有月度标记时防止沿用上月的 100%。"""
-        progress = config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress', default='')
+        progress = config.cross_get('OpsiExplore.OpsiExplore.Progress', default='')
         month = config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')
-        return progress == '已完成百分之100.00' and (
-            not isinstance(month, dict) or month.get('reset') == get_os_next_reset().isoformat()
-        )
+        if isinstance(month, dict):
+            return (month.get('reset') == get_os_next_reset().isoformat()
+                    and (month.get('phase') == 'done' or progress == '已完成百分之100.00'))
+        return progress == '已完成百分之100.00'
 
     def os_explore_cleanup(self):
         """使用本任务自己的断点执行补扫，开荒不完整时只提示并延期。"""
