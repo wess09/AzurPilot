@@ -41,7 +41,7 @@ class TestOpsiDaily(unittest.TestCase):
         self.data = {
             'OpsiExplore': {
                 'Scheduler': {'Enable': False},
-                'OpsiExplore': {'ExploreProgress': '已完成百分之30.00'},
+                'OpsiExplore': {'Progress': '已完成百分之30.00'},
             },
             'OpsiScheduling': {'Storage': {'Storage': {
                 'SmartExplore': {'reset': RESET.isoformat(), 'phase': 'explore', 'next': [30, 0, 1]},
@@ -131,7 +131,7 @@ class TestOpsiDaily(unittest.TestCase):
                 self.assert_recon(False)
 
     def test_current_month_monthly_completion_skips_recon_even_when_disabled(self):
-        deep_set(self.data, 'OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        deep_set(self.data, 'OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         deep_set(self.data, 'OpsiExplore.OpsiExplore.MeowfficerCleanupState', {'reset': RESET.isoformat()})
         self.assert_recon(False)
 
@@ -143,13 +143,13 @@ class TestOpsiDaily(unittest.TestCase):
                 self.assert_recon(False)
 
     def test_previous_month_completion_does_not_skip_recon(self):
-        deep_set(self.data, 'OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        deep_set(self.data, 'OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         deep_set(self.data, 'OpsiExplore.OpsiExplore.MeowfficerCleanupState', {'reset': OLD_RESET})
         deep_set(self.data, 'OpsiScheduling.Storage.Storage.SmartExplore', {'reset': OLD_RESET, 'phase': 'done'})
         self.assert_recon(True)
 
     def test_monthly_completion_without_month_marker_still_checks_recon(self):
-        deep_set(self.data, 'OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        deep_set(self.data, 'OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         self.assert_recon(True)
 
     def test_missing_or_invalid_smart_state_still_checks_recon(self):

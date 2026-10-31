@@ -34,9 +34,9 @@ class Config:
             'Scheduler': {'Enable': True},
             'OpsiScheduling': {'UseSmartSchedulingOperationCoinsPreserve': True,
                                'OperationCoinsPreserve': 40000, 'OperationCoinsReturnThreshold': 20000, 'BuyActionPoint': False},
-            'OpsiSmartExplore': {'Enable': True, 'EventCleanup': False},
             'Storage': {'Storage': {'Unrelated': 'keep'}},
-        }}
+        }, 'OpsiExplore': {'Scheduler': {'Enable': True},
+                          'OpsiExplore': {'TraditionalEnable': False, 'SmartEnable': True}}}
         self.task = SimpleNamespace(command='OpsiScheduling')
         self.modified = {}
         self.OS_ACTION_POINT_PRESERVE = 200
@@ -94,7 +94,7 @@ class SmartExploreTests(unittest.TestCase):
         return self.runner._run_smart_explore_once(coins, ap, 150)
 
     def mark_monthly_complete(self):
-        self.runner.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        self.runner.config.cross_set('OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         self.runner.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState',
                                      {'reset': RESET.isoformat(), 'phase': 'done'})
 
@@ -111,22 +111,23 @@ class SmartExploreTests(unittest.TestCase):
         self.assertTrue(self.decide())
         self.assertEqual(self.runner._run_smart_explore_node.call_args.args[1], 0)
 
-    def test_monthly_explore_and_smart_explore_are_mutually_exclusive(self):
-        self.runner.config.cross_set('OpsiExplore.Scheduler.Enable', True)
+    def test_traditional_mode_disables_smart_routes_and_keeps_monthly_gate(self):
+        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'SmartEnable', False)
+        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'TraditionalEnable', True)
         self.assertFalse(smart_explore_enabled(self.runner.config))
         self.assertFalse(self.decide())
         self.assertTrue(self.runner.is_in_opsi_explore())
 
     def test_purchase_still_works_after_smart_first_round_is_disabled(self):
         self.state()
-        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'Enable', False)
+        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'SmartEnable', False)
         self.runner.config.cross_set('OpsiScheduling.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve', False)
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
         self.assertTrue(self.runner._try_scheduling_action_point_purchase())
 
     def test_missing_month_marker_cannot_authorize_purchase(self):
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
-        self.runner.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        self.runner.config.cross_set('OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         self.assertFalse(self.runner._try_scheduling_action_point_purchase())
 
     def test_purchase_setting_migrates_without_overwriting_explicit_new_value(self):
@@ -136,7 +137,7 @@ class SmartExploreTests(unittest.TestCase):
             old = {'OpsiScheduling': {'OpsiSmartExplore': {'BuyActionPoint': old_value}}}
             new = ConfigUpdater().config_update(old)
             self.assertEqual(deep_get(new, ACTION_POINT_PURCHASE_CONFIG), old_value)
-            self.assertNotIn('BuyActionPoint', new['OpsiScheduling']['OpsiSmartExplore'])
+            self.assertNotIn('OpsiSmartExplore', new['OpsiScheduling'])
         old['OpsiScheduling']['OpsiScheduling'] = {'BuyActionPoint': False}
         self.assertFalse(deep_get(ConfigUpdater().config_update(old), ACTION_POINT_PURCHASE_CONFIG))
 
@@ -147,7 +148,8 @@ class SmartExploreTests(unittest.TestCase):
         self.assertEqual(SMART_EXPLORE_ROUTES[1], (155, 156, 2, 71, 73, 3, 121))
 
     def test_only_coin_target_mode_and_enabled_scheduler_can_explore(self):
-        for keys in (SMART_EXPLORE_CONFIG + 'Enable', 'OpsiScheduling.Scheduler.Enable',
+        for keys in (SMART_EXPLORE_CONFIG + 'SmartEnable', 'OpsiExplore.Scheduler.Enable',
+                     'OpsiScheduling.Scheduler.Enable',
                      'OpsiScheduling.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve'):
             with self.subTest(keys=keys):
                 self.runner.config.cross_set(keys, False)
@@ -179,10 +181,9 @@ class SmartExploreTests(unittest.TestCase):
                 self.assertEqual(calls, (['map', 'zone'] if in_globe else []) + ['check', 'leveling'])
                 self.runner.run_hazard1_leveling_once.assert_called_once_with(ap_preserve=200, fresh_ap=(2000, 150))
 
-    def test_smart_force_run_controls_interval_independently_from_monthly_setting(self):
+    def test_smart_exploration_uses_shared_force_run_for_interval(self):
         config = self.runner.config
         config.OpsiExplore_SpecialRadar = False
-        config.OpsiExplore_ForceRun = True
         config.OpsiFleet_Fleet = 1
         config.OpsiFleet_Submarine = False
         for method in ('tuning_sample_use', 'fleet_set', 'os_order_execute', 'run_auto_search', 'handle_after_auto_search'):
@@ -244,53 +245,39 @@ class SmartExploreTests(unittest.TestCase):
         self.decide(coins=39999)
         self.assertEqual(self.runner._run_smart_explore_node.call_args.args[1], 2)
 
-    def test_complete_runs_optional_cleanup_then_returns_to_normal_scheduler(self):
-        for enable in (False, True):
-            with self.subTest(enable=enable):
-                self.runner.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '')
-                self.runner.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState', None)
-                self.state(second=True, third=True)
-                self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'EventCleanup', enable)
-                self.runner._run_smart_explore_cleanup = Mock()
-                self.assertTrue(self.decide())
-                self.assertEqual(self.runner._run_smart_explore_cleanup.call_count, int(enable))
-                self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress'),
-                                 '已完成百分之100.00')
-                self.assertFalse(self.runner.config.cross_get('OpsiExplore.OpsiExplore.SpecialRadar'))
-                self.runner.config.task_delay.assert_called_with(target=RESET, task='OpsiExplore')
-                self.assertFalse(self.decide())
+    def test_complete_skips_event_cleanup_and_returns_to_normal_scheduler(self):
+        self.state(second=True, third=True)
+        self.runner._run_explore_cleanup = Mock(side_effect=AssertionError('不应补扫'))
+        self.assertTrue(self.decide())
+        self.runner._run_explore_cleanup.assert_not_called()
+        self.assertEqual(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'Progress'), '已开荒 72/72，阶段：已完成')
+        self.assertFalse(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'SpecialRadar'))
+        self.runner.config.task_delay.assert_called_with(target=RESET, task='OpsiExplore')
+        self.assertFalse(self.decide())
 
-    def test_current_month_100_percent_does_not_skip_pending_smart_cleanup(self):
+    def test_legacy_pending_cleanup_finishes_without_scanning(self):
         state = self.state(second=True, third=True)
         self.runner._save_smart_explore_state(dict(state, phase='cleanup'))
         self.mark_monthly_complete()
-        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'EventCleanup', True)
-        self.runner._run_smart_explore_cleanup = Mock(return_value=False)
+        self.runner._run_explore_cleanup = Mock(side_effect=AssertionError('不应补扫'))
         self.assertTrue(self.decide())
-        self.runner._run_smart_explore_cleanup.assert_called_once()
-        self.assertEqual(self.runner._get_smart_explore_state()['phase'], 'cleanup')
+        self.runner._run_explore_cleanup.assert_not_called()
+        self.assertEqual(self.runner._get_smart_explore_state()['phase'], 'done')
 
     def test_cleanup_resume_repairs_interrupted_monthly_completion_write(self):
         state = self.state(second=True, third=True)
         self.runner._save_smart_explore_state(dict(state, phase='cleanup'))
         self.assertTrue(self.decide())
-        self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress'),
-                         '已完成百分之100.00')
+        self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.Progress'),
+                         '已开荒 72/72，阶段：已完成')
         self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')['reset'],
                          RESET.isoformat())
 
     def test_partial_exploration_never_marks_monthly_exploration_100_percent(self):
         self.state(second=True)
         self.decide()
-        self.assertIsNone(self.runner.config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress'))
-
-    def test_cleanup_failure_keeps_phase_for_resume(self):
-        self.state(second=True, third=True)
-        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'EventCleanup', True)
-        self.runner._run_smart_explore_cleanup = Mock(side_effect=GameStuckError)
-        with self.assertRaises(GameStuckError):
-            self.decide()
-        self.assertEqual(self.runner._get_smart_explore_state()['phase'], 'cleanup')
+        self.assertEqual(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'Progress'), '已开荒 34/72，阶段：开荒')
+        self.assertIsNone(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'MeowfficerCleanupState'))
 
     def test_month_reset_clears_routes_but_keeps_other_scheduler_state(self):
         self.state(second=True)
@@ -309,12 +296,12 @@ class SmartExploreTests(unittest.TestCase):
         self.state(first=False)
         self.assertFalse(self.runner._try_scheduling_action_point_purchase())
         self.mark_monthly_complete()
-        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'Enable', False)
+        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'SmartEnable', False)
         self.assertTrue(self.runner._try_scheduling_action_point_purchase())
 
     def test_stale_monthly_100_percent_cannot_purchase(self):
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
-        self.runner.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
+        self.runner.config.cross_set('OpsiExplore.OpsiExplore.Progress', '已完成百分之100.00')
         self.runner.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState',
                                      {'reset': datetime(2026, 10, 1).isoformat()})
         self.assertFalse(self.runner._try_scheduling_action_point_purchase())
@@ -407,94 +394,63 @@ class SmartExploreTests(unittest.TestCase):
         self.runner._delay_smart_scheduling_for_ap_limit.assert_not_called()
 
     def test_normal_monthly_mode_buys_when_ap_reaches_leveling_reserve(self):
-        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'Enable', False)
+        self.runner.config.cross_set(SMART_EXPLORE_CONFIG + 'SmartEnable', False)
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
         self.mark_monthly_complete()
         self.runner._get_scheduling_action_point.return_value = (200, 100)
         self.runner.run_smart_scheduling_once()
         self.runner.perform_port_shop_purchase.assert_called_once_with(action_point_only=True)
 
-    def test_smart_cleanup_processes_one_zone_and_keeps_checkpoint_until_done(self):
-        self.runner.config.OpsiExploreCleanup_State = dict(
-            reset=RESET.isoformat(), phase='cleanup', order=[44, 22], next=0, attempts=0,
-        )
-        self.runner.config.OpsiFleet_Fleet = 1
-        self.runner.config.check_task_switch = Mock()
-        def enter(zone, **kwargs):
-            self.runner.zone = SimpleNamespace(zone_id=zone)
-        self.runner.globe_goto = Mock(side_effect=enter)
-        self.runner.fleet_set = Mock()
-        self.runner.fleet_selector = SimpleNamespace(get=lambda: 1)
-        self.runner.map_rescan = Mock(return_value=True)
-        self.runner.clear_question_any_fleet = Mock()
-        self.runner.os_map_goto_globe = Mock()
-        self.assertFalse(self.runner._run_smart_explore_cleanup())
-        self.assertEqual(self.runner.config.OpsiExploreCleanup_State['next'], 1)
-        self.assertEqual(self.runner.config.OpsiExploreCleanup_State['phase'], 'cleanup')
-        self.assertTrue(self.runner._run_smart_explore_cleanup())
-        self.assertEqual(self.runner.config.OpsiExploreCleanup_State['phase'], 'done')
-        self.assertEqual(self.runner.globe_goto.call_count, 2)
-
-    def test_cleanup_failure_reload_and_completion_restore_normal_scheduling(self):
+    def test_route_failure_reload_and_shared_progress_keep_checkpoint(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / 'smart-cleanup-restart-test.json'
+            path = Path(directory) / 'smart-route-restart-test.json'
             data = json.loads(Path('config/template.json').read_text(encoding='utf-8'))
             data['OpsiScheduling']['Scheduler']['Enable'] = True
-            data['OpsiScheduling']['OpsiSmartExplore'].update(Enable=True, EventCleanup=True)
-            data['OpsiScheduling']['OpsiScheduling'].update(
-                UseSmartSchedulingOperationCoinsPreserve=True, OperationCoinsPreserve=40000,
-            )
+            data['OpsiExplore']['Scheduler']['Enable'] = True
+            data['OpsiExplore']['OpsiExplore'].update(TraditionalEnable=False, SmartEnable=True)
             data['OpsiScheduling']['Storage']['Storage'] = {'Unrelated': 'keep'}
-            data['OpsiExploreCleanup']['OpsiExploreCleanup'].update(
-                State=dict(reset=RESET.isoformat(), phase='cleanup', order=[44, 22, 24], next=1, attempts=2),
-                Progress='已补扫 1/3',
-            )
             path.write_text(json.dumps(data), encoding='utf-8')
             with patch('module.config.config.filepath_config', return_value=str(path)), \
                     patch('module.config.config_updater.filepath_config', return_value=str(path)):
-                self.runner.config = AzurLaneConfig('smart-cleanup-restart-test', task='OpsiScheduling')
-                state = self.state(second=True, third=True)
-                self.runner._save_smart_explore_state(dict(state, phase='cleanup'))
-                self.mark_monthly_complete()
+                self.runner.config = AzurLaneConfig('smart-route-restart-test', task='OpsiScheduling')
+                state = self.state(first=False)
+                state['next'][0] = 1
+                self.runner._save_smart_explore_state(state)
                 del self.runner._run_with_opsi_task_context
-                def enter(zone, **kwargs):
-                    self.assertEqual(self.runner.config.task.command, 'OpsiExploreCleanup')
-                    self.assertEqual(kwargs, {'types': 'DANGEROUS', 'force_enter': True})
-                    self.runner.zone = SimpleNamespace(zone_id=zone)
-                self.runner.globe_goto = Mock(side_effect=enter)
-                self.runner.fleet_set = Mock()
-                self.runner.fleet_selector = SimpleNamespace(get=lambda: self.runner.config.OpsiFleet_Fleet)
-                self.runner.map_rescan = Mock(side_effect=[GameTooManyClickError('自律寻敌启动失败'), True, True])
-                self.runner.clear_question_any_fleet = Mock()
-                self.runner.os_map_goto_globe = Mock()
+                del self.runner._run_smart_explore_node
+                failures = [GameTooManyClickError('自律寻敌启动失败'), None]
+                def clear():
+                    self.assertEqual(self.runner.config.task.command, 'OpsiExplore')
+                    failure = failures.pop(0)
+                    if failure:
+                        raise failure
+                self.runner._clear_smart_explore_zone = Mock(side_effect=clear)
+                self.runner.globe_goto = Mock(return_value=True)
+                self.runner.name_to_zone = lambda zone: zone
+                self.runner.zone_has_safe = Mock(return_value=True)
+                for method in ('os_map_goto_globe', 'globe_update', 'globe_focus_to', 'ensure_no_zone_pinned'):
+                    setattr(self.runner, method, Mock())
                 with self.assertRaises(GameTooManyClickError):
-                    self.runner.run_smart_scheduling_once()
+                    self.decide()
                 self.assertEqual(self.runner.config.task.command, 'OpsiScheduling')
-                self.assertFalse(self.runner._opsi_meowfficer_cleanup)
-                self.runner.os_map_goto_globe.assert_not_called()
-                self.runner.config = AzurLaneConfig('smart-cleanup-restart-test', task='OpsiScheduling')
-                saved = self.runner.config.cross_get('OpsiExploreCleanup.OpsiExploreCleanup.State')
-                self.assertEqual((saved['next'], saved['attempts']), (1, 3))
-                for next_zone in (2, 3):
-                    self.runner.run_smart_scheduling_once()
-                    saved = self.runner.config.cross_get('OpsiExploreCleanup.OpsiExploreCleanup.State')
-                    self.assertEqual((saved['next'], saved['attempts']), (next_zone, 0))
-                    self.assertEqual(self.runner.config.task.command, 'OpsiScheduling')
-                    self.runner._execute_hazard1_leveling.assert_not_called()
-                self.assertEqual([entry.args[0] for entry in self.runner.globe_goto.call_args_list], [22, 22, 24])
-                self.assertEqual(saved['phase'], 'done')
-                storage = self.runner.config.cross_get('OpsiScheduling.Storage.Storage')
-                self.assertEqual(storage['SmartExplore']['phase'], 'done')
-                self.assertEqual(storage['Unrelated'], 'keep')
-                self.runner.run_smart_scheduling_once()
-                self.runner._execute_hazard1_leveling.assert_called_once()
+                self.runner.config = AzurLaneConfig('smart-route-restart-test', task='OpsiScheduling')
+                saved = self.runner._get_smart_explore_state()
+                self.assertEqual((saved['next'][0], saved['attempts']), (1, 1))
+                self.assertTrue(self.decide())
+                saved = self.runner._get_smart_explore_state()
+                self.assertEqual((saved['next'][0], saved['attempts']), (2, 0))
+                self.assertEqual(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'Progress'),
+                                 '已开荒 1/72，阶段：开荒')
+                self.assertEqual(self.runner.config.cross_get('OpsiScheduling.Storage.Storage.Unrelated'), 'keep')
+                self.assertEqual(self.runner.config.task.command, 'OpsiScheduling')
 
     def test_real_config_and_task_context_restore_owner_and_persist_purchase(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'smart-explore-test.json'
             data = json.loads(Path('config/template.json').read_text(encoding='utf-8'))
             data['OpsiScheduling']['Scheduler']['Enable'] = True
-            data['OpsiScheduling']['OpsiSmartExplore']['Enable'] = True
+            data['OpsiExplore']['Scheduler']['Enable'] = True
+            data['OpsiExplore']['OpsiExplore'].update(TraditionalEnable=False, SmartEnable=True)
             data['OpsiScheduling']['OpsiScheduling']['BuyActionPoint'] = True
             path.write_text(json.dumps(data), encoding='utf-8')
             with patch('module.config.config.filepath_config', return_value=str(path)), \
@@ -512,7 +468,7 @@ class SmartExploreTests(unittest.TestCase):
                 self.assertTrue(self.runner._try_scheduling_action_point_purchase())
                 self.assertIs(self.runner.config.task, owner)
                 self.assertFalse(self.runner.is_running_smart_scheduling_task())
-                self.assertEqual(self.runner.config.OpsiSmartExplore_Enable, True)
+                self.assertTrue(self.runner.config.cross_get(SMART_EXPLORE_CONFIG + 'SmartEnable'))
                 restarted = AzurLaneConfig('smart-explore-test', task='OpsiScheduling')
                 self.assertEqual(restarted.cross_get('OpsiScheduling.Storage.Storage')['ActionPointPurchase']['phase'], 'done')
                 self.assertEqual(restarted.cross_get('OpsiScheduling.Storage.Storage')['SmartExplore']['next'][0], 30)
@@ -526,24 +482,47 @@ class SmartExploreTests(unittest.TestCase):
         runner.config.task_call.assert_called_once_with('OpsiScheduling', force_call=False)
         self.assertFalse(self.runner.is_in_opsi_explore())
 
-    def test_generated_group_is_last_visible_group_and_translations_are_complete(self):
+    def test_traditional_entry_keeps_original_exploration(self):
+        runner = OSCampaignRun.__new__(OSCampaignRun)
+        runner.config = self.runner.config
+        runner.config.cross_set(SMART_EXPLORE_CONFIG + 'SmartEnable', False)
+        campaign = Mock()
+        runner._run_opsi_task_with_ap_overflow_guard = Mock(side_effect=lambda callback: callback(campaign))
+        runner.opsi_explore()
+        campaign.os_explore.assert_called_once_with()
+        runner.config.task_call.assert_not_called()
+
+    def test_smart_entry_missing_scheduler_does_not_fall_back_to_traditional(self):
+        runner = OSCampaignRun.__new__(OSCampaignRun)
+        runner.config = self.runner.config
+        runner.config.cross_set('OpsiScheduling.Scheduler.Enable', False)
+        runner.load_campaign = Mock(side_effect=AssertionError('不应初始化传统开荒'))
+        with self.assertRaises(TaskEnd):
+            runner.opsi_explore()
+        runner.load_campaign.assert_not_called()
+        runner.config.task_call.assert_not_called()
+        self.assertFalse(self.runner.is_in_opsi_explore())
+
+    def test_generated_exploration_modes_share_controls_and_translations_are_complete(self):
         root = Path(__file__).resolve().parents[1]
         schema = json.loads((root / 'module/config/argument/args.json').read_text(encoding='utf-8'))
-        groups = list(schema['OpsiScheduling'])
-        self.assertLess(groups.index('OpsiScheduling'), groups.index('OpsiSmartExplore'))
+        self.assertNotIn('OpsiSmartExplore', schema['OpsiScheduling'])
         self.assertEqual(next(iter(schema['OpsiScheduling']['OpsiScheduling'])), 'BuyActionPoint')
         template = json.loads((root / 'config/template.json').read_text(encoding='utf-8'))['OpsiScheduling']
         self.assertIs(template['OpsiScheduling']['BuyActionPoint'], False)
-        self.assertIs(template['OpsiSmartExplore']['Enable'], False)
-        self.assertIs(template['OpsiSmartExplore']['EventCleanup'], False)
-        self.assertIs(template['OpsiSmartExplore']['ForceRun'], False)
+        self.assertNotIn('OpsiSmartExplore', template)
         monthly = json.loads((root / 'config/template.json').read_text(encoding='utf-8'))['OpsiExplore']
+        self.assertIs(monthly['OpsiExplore']['TraditionalEnable'], True)
+        self.assertIs(monthly['OpsiExplore']['SmartEnable'], False)
         self.assertIs(monthly['OpsiExplore']['ForceRun'], False)
+        self.assertIn('Progress', monthly['OpsiExplore'])
+        self.assertNotIn('ExploreProgress', monthly['OpsiExplore'])
+        self.assertNotIn('EventCleanup', monthly['OpsiExplore'])
         for lang in ('zh-CN', 'zh-TW', 'en-US', 'ja-JP'):
             texts = json.loads((root / f'module/config/i18n/{lang}.json').read_text(encoding='utf-8'))
-            for value in texts['OpsiSmartExplore'].values():
+            for value in texts['OpsiExplore'].values():
                 for text in value.values():
-                    self.assertFalse(text.startswith('OpsiSmartExplore.'))
+                    self.assertFalse(text.startswith('OpsiExplore.'))
 
 
 class PortActionPointTests(unittest.TestCase):

@@ -381,7 +381,6 @@ Opsi:
     OpsiScheduling:
       - Scheduler
       - OpsiScheduling
-      - OpsiSmartExplore
     OpsiPreventActionPointOverflow:
       - Scheduler
       - OpsiPreventActionPointOverflow

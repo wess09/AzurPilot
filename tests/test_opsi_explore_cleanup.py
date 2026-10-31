@@ -32,7 +32,7 @@ class CleanupTests(unittest.TestCase):
 
     def runner(self, state=None, progress='已完成百分之100.00', month=None):
         runner = OpsiExploreCleanup.__new__(OpsiExploreCleanup)
-        values = {'OpsiExplore.OpsiExplore.ExploreProgress': progress,
+        values = {'OpsiExplore.OpsiExplore.Progress': progress,
                   'OpsiExplore.OpsiExplore.MeowfficerCleanupState': month}
         runner.config = SimpleNamespace(
             OpsiExploreCleanup_State=state, OpsiExploreCleanup_Progress='',
@@ -65,7 +65,7 @@ class CleanupTests(unittest.TestCase):
                                       for stage in ['enter', 'rescan', 'radar']])
         self.assertEqual(runner.config.OpsiExploreCleanup_State['phase'], 'done')
         self.assertEqual(runner.config.OpsiExploreCleanup_Progress, '已补扫 3/3')
-        self.assertEqual(runner.config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress'), '已完成百分之100.00')
+        self.assertEqual(runner.config.cross_get('OpsiExplore.OpsiExplore.Progress'), '已完成百分之100.00')
         self.assertFalse(runner._opsi_meowfficer_cleanup)
         runner.config.task_delay.assert_called_once_with(target=RESET)
 
@@ -223,7 +223,7 @@ class CleanupTests(unittest.TestCase):
             task_delay=Mock(), task_call=Mock(), task_stop=Mock(side_effect=TaskEnd))
         with self.assertRaises(TaskEnd):
             runner._os_explore_end()
-        self.assertEqual(runner.config.OpsiExplore_ExploreProgress, '已完成百分之100.00')
+        self.assertEqual(runner.config.OpsiExplore_Progress, '已完成百分之100.00')
         runner.config.task_call.assert_any_call('OpsiExploreCleanup', force_call=False)
 
     def test_initialization_skips_unnecessary_battles(self):

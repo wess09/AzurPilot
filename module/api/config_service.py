@@ -18,6 +18,7 @@ from deploy.atomic import atomic_write
 from module.api.protocol import ApiError
 from module.combat.emotion_state import EmotionRecoveryState
 from module.config.config_updater import campaign_event_options, refresh_campaign_events
+from module.config.redirect_utils.opsi_explore import migrate_opsi_explore, reset_opsi_explore_progress
 from module.config.redirect_utils.utils import (
     fleet_training_interval_redirect, meta_assist_limit_redirect, sea_miles_interval_redirect,
 )
@@ -38,8 +39,7 @@ NAME = re.compile(r'[A-Za-z0-9' + CJK + r'][A-Za-z0-9_. ' + CJK + r'\-]{0,63}\Z'
 RESERVED = {TEMPLATE, 'deploy', 'backup', 'con', 'prn', 'aux', 'nul',
             *(f'com{i}' for i in range(1, 10)), *(f'lpt{i}' for i in range(1, 10))}
 OPSI_EXPLORE_PROGRESS = {
-    'OpsiExplore.OpsiExplore.ExploreProgress',
-    'OpsiScheduling.OpsiSmartExplore.Progress',
+    'OpsiExplore.OpsiExplore.Progress',
 }
 
 
@@ -307,6 +307,7 @@ class ConfigService:
                 merged['FleetInfo'][group].pop('CheckInterval', None)
         from module.config.redirect_utils.shop import migrate_shop_options
 
+        merged = migrate_opsi_explore(data, merged)
         merged, shop_warnings = migrate_shop_options(data, merged)
         if shop_warnings:
             from module.logger import logger
@@ -547,6 +548,7 @@ class ConfigService:
             # revision 仅为旧客户端兼容参数。字段赋值合并到锁内最新快照，
             # 无关字段的运行状态更新不应拒绝用户输入；同字段按事务顺序生效。
             data, _ = self.read(name)
+            explore_mode = data.get('OpsiExplore', {}).get('OpsiExplore', {}).get('SmartEnable', False)
             seen = set()
             edited_groups = {}
             for change in changes:
@@ -557,8 +559,13 @@ class ConfigService:
                 value = self._normalize_number(self.args[task][group][arg], change.value)
                 data.setdefault(task, {}).setdefault(group, {})[arg] = value
                 if change.path in OPSI_EXPLORE_PROGRESS:
-                    self._reset_opsi_explore_progress(data, change.path)
+                    reset_opsi_explore_progress(data)
+                if task == 'OpsiExplore' and group == 'OpsiExplore' and arg in ('TraditionalEnable', 'SmartEnable'):
+                    other = 'SmartEnable' if arg == 'TraditionalEnable' else 'TraditionalEnable'
+                    data[task][group][other] = not value
                 edited_groups.setdefault((task, group), set()).add(arg)
+            if data.get('OpsiExplore', {}).get('OpsiExplore', {}).get('SmartEnable', False) != explore_mode:
+                reset_opsi_explore_progress(data)
             # 同一批可能同时修改包名，必须以最终服务器校验显式选择的活动。
             for task, options in campaign_event_options(data, self.args).items():
                 if options and f'{task}.Campaign.Event' in seen and data[task]['Campaign']['Event'] not in options:
@@ -607,18 +614,6 @@ class ConfigService:
             fleet['FleetTraining']['FullScanRecord'] = '2020-01-01 00:00:00'
             atomic_write(str(self.path(name)), json.dumps(data, ensure_ascii=False, indent=2))
             return self.get(name)
-
-    @staticmethod
-    def _reset_opsi_explore_progress(data, path):
-        """清空对应开荒断点，保留本月行动力购买记录及其他任务状态。"""
-        if path == 'OpsiExplore.OpsiExplore.ExploreProgress':
-            fields = data.setdefault('OpsiExplore', {}).setdefault('OpsiExplore', {})
-            fields['LastZone'] = 0
-            fields['MeowfficerCleanupState'] = None
-        else:
-            storage = data.setdefault('OpsiScheduling', {}).setdefault('Storage', {}).get('Storage')
-            if isinstance(storage, dict):
-                storage.pop('SmartExplore', None)
 
     @staticmethod
     def _sync_record_time(fields, arg, now=None):

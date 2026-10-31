@@ -775,13 +775,15 @@ class GeneratedConfig:
     OpsiFleet_Submarine = False
 
     # 配置组 `OpsiExplore`
+    OpsiExplore_TraditionalEnable = True
+    OpsiExplore_SmartEnable = False
     OpsiExplore_SpecialRadar = False
     OpsiExplore_ForceRun = False
     OpsiExplore_LastZone = 0
     OpsiExplore_AllowHazard1Leveling = False
     OpsiExplore_MeowfficerCleanup = False
     OpsiExplore_MeowfficerCleanupState = None
-    OpsiExplore_ExploreProgress = None
+    OpsiExplore_Progress = None
 
     # 配置组 `OpsiExploreCleanup`
     OpsiExploreCleanup_Progress = None
@@ -884,12 +886,6 @@ class GeneratedConfig:
     OpsiScheduling_MonthEndActionPointPreserve = 0
     OpsiScheduling_MonthEndMeowTargetZone = 0
     OpsiScheduling_MonthEndShopPurchase = True  # True, False
-
-    # 配置组 `OpsiSmartExplore`
-    OpsiSmartExplore_Enable = False
-    OpsiSmartExplore_EventCleanup = False
-    OpsiSmartExplore_ForceRun = False
-    OpsiSmartExplore_Progress = None
 
     # 配置组 `OpsiPreventActionPointOverflow`
     OpsiPreventActionPointOverflow_Task = 'OpsiScheduling'  # OpsiScheduling, OpsiHazard1Leveling, OpsiMeowfficerFarming

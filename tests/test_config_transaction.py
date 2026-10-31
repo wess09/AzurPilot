@@ -20,7 +20,7 @@ def increment(path, count):
 
 
 class ConfigTransactionTests(unittest.TestCase):
-    def test_exploration_clear_resets_own_checkpoint_and_preserves_purchase_record(self):
+    def test_exploration_clear_resets_both_checkpoints_and_preserves_purchase_record(self):
         from module.api.config_service import ConfigService
         from module.api.protocol import ConfigChange
         from tests.test_api import fixture
@@ -30,24 +30,111 @@ class ConfigTransactionTests(unittest.TestCase):
                 service = ConfigService(fixture(directory))
                 data = service.get('testpilot')['values']
                 monthly = data['OpsiExplore']['OpsiExplore']
-                monthly.update(ExploreProgress='已完成百分之100.00', LastZone=121,
+                monthly.update(Progress='已开荒 34/72，阶段：开荒', LastZone=121,
+                               TraditionalEnable=mode == 'monthly', SmartEnable=mode == 'smart',
                                MeowfficerCleanupState={'reset': '2026-11-01T00:00:00', 'phase': 'done'})
                 scheduling = data['OpsiScheduling']
-                scheduling['OpsiSmartExplore']['Progress'] = '已开荒 34/72，阶段：开荒'
                 scheduling['Storage']['Storage'] = {'SmartExplore': {'next': [30, 7, 0]},
                                                      'ActionPointPurchase': {'phase': 'done'}, 'Unrelated': 12}
                 service.path('testpilot').write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
                 before = copy.deepcopy(data)
-                path = ('OpsiExplore.OpsiExplore.ExploreProgress' if mode == 'monthly'
-                        else 'OpsiScheduling.OpsiSmartExplore.Progress')
+                path = 'OpsiExplore.OpsiExplore.Progress'
                 result = service.patch('testpilot', None, [ConfigChange(path=path, value='')])['values']
-                if mode == 'monthly':
-                    expected = before['OpsiExplore']['OpsiExplore']
-                    expected.update(ExploreProgress='', LastZone=0, MeowfficerCleanupState=None)
-                else:
-                    before['OpsiScheduling']['OpsiSmartExplore']['Progress'] = ''
-                    before['OpsiScheduling']['Storage']['Storage'].pop('SmartExplore')
+                before['OpsiExplore']['OpsiExplore'].update(Progress='', LastZone=0, MeowfficerCleanupState=None)
+                before['OpsiScheduling']['Storage']['Storage'].pop('SmartExplore')
                 self.assertEqual(result, before)
+
+    def test_exploration_mode_switch_is_exclusive_and_resets_only_exploration(self):
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from tests.test_api import fixture
+
+        for smart in (False, True):
+            for arg, value in (('SmartEnable', not smart), ('TraditionalEnable', smart)):
+                with self.subTest(smart=smart, arg=arg), tempfile.TemporaryDirectory() as directory:
+                    service = ConfigService(fixture(directory))
+                    data = service.get('testpilot')['values']
+                    fields = data['OpsiExplore']['OpsiExplore']
+                    fields.update(TraditionalEnable=not smart, SmartEnable=smart, Progress='已开荒 34/72',
+                                  LastZone=121, MeowfficerCleanupState={'phase': 'done'})
+                    data['OpsiScheduling']['Storage']['Storage'] = {
+                        'SmartExplore': {'next': [30, 7, 0]}, 'ActionPointPurchase': {'phase': 'done'}, 'Other': 12,
+                    }
+                    service.path('testpilot').write_text(json.dumps(data), encoding='utf-8')
+                    expected = copy.deepcopy(data)
+                    expected['OpsiExplore']['OpsiExplore'].update(
+                        TraditionalEnable=smart, SmartEnable=not smart, Progress='', LastZone=0,
+                        MeowfficerCleanupState=None,
+                    )
+                    expected['OpsiScheduling']['Storage']['Storage'].pop('SmartExplore')
+                    result = service.patch('testpilot', None, [
+                        ConfigChange(path=f'OpsiExplore.OpsiExplore.{arg}', value=value),
+                    ])['values']
+                    self.assertEqual(result, expected)
+                    self.assertEqual(service.get('testpilot')['values'], expected)
+
+    def test_resaving_same_mode_or_changing_force_run_keeps_progress(self):
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from tests.test_api import fixture
+
+        with tempfile.TemporaryDirectory() as directory:
+            service = ConfigService(fixture(directory))
+            data = service.get('testpilot')['values']
+            data['OpsiExplore']['OpsiExplore'].update(Progress='已完成百分之25.00', LastZone=44)
+            service.path('testpilot').write_text(json.dumps(data), encoding='utf-8')
+            result = service.patch('testpilot', None, [
+                ConfigChange(path='OpsiExplore.OpsiExplore.TraditionalEnable', value=True),
+                ConfigChange(path='OpsiExplore.OpsiExplore.ForceRun', value=True),
+            ])['values']
+            data['OpsiExplore']['OpsiExplore']['ForceRun'] = True
+            self.assertEqual(result, data)
+
+    def test_exploration_migration_matches_webui_and_does_not_write_on_read(self):
+        from module.api.config_service import ConfigService
+        from module.config.config_updater import ConfigUpdater
+        from tests.test_api import fixture
+
+        for smart, monthly in ((False, False), (False, True), (True, False), (True, True)):
+            with self.subTest(smart=smart, monthly=monthly), tempfile.TemporaryDirectory() as directory:
+                service = ConfigService(fixture(directory))
+                old = service.get('testpilot')['values']
+                old['OpsiExplore']['Scheduler']['Enable'] = monthly
+                fields = old['OpsiExplore']['OpsiExplore']
+                for arg in ('TraditionalEnable', 'SmartEnable', 'Progress'):
+                    fields.pop(arg)
+                fields.update(ExploreProgress='已完成百分之50.00', ForceRun=False)
+                old['OpsiScheduling']['OpsiSmartExplore'] = {
+                    'Enable': smart, 'ForceRun': True, 'Progress': '已开荒 34/72', 'EventCleanup': True,
+                }
+                path = service.path('testpilot')
+                path.write_text(json.dumps(old), encoding='utf-8')
+                original = path.read_bytes()
+                webui = service.get('testpilot')['values']
+                self.assertEqual(path.read_bytes(), original)
+                runtime = ConfigUpdater().config_update(old)
+                expected_smart = smart and not monthly
+                for migrated in (webui, runtime):
+                    fields = migrated['OpsiExplore']['OpsiExplore']
+                    self.assertEqual(fields['SmartEnable'], expected_smart)
+                    self.assertEqual(fields['TraditionalEnable'], not expected_smart)
+                    self.assertEqual(fields['ForceRun'], expected_smart)
+                    self.assertEqual(fields['Progress'], '已开荒 34/72' if expected_smart else '已完成百分之50.00')
+                    self.assertEqual(migrated['OpsiExplore']['Scheduler']['Enable'], monthly or expected_smart)
+                    self.assertNotIn('ExploreProgress', fields)
+                    self.assertNotIn('OpsiSmartExplore', migrated['OpsiScheduling'])
+
+    def test_explicit_new_mode_progress_and_force_run_override_legacy_fields(self):
+        from module.config.config_updater import ConfigUpdater
+
+        old = {'OpsiExplore': {'OpsiExplore': {
+            'TraditionalEnable': True, 'SmartEnable': False, 'Progress': '', 'ForceRun': False,
+            'ExploreProgress': '已完成百分之100.00',
+        }}, 'OpsiScheduling': {'OpsiSmartExplore': {'Enable': True, 'Progress': '已开荒 72/72', 'ForceRun': True}}}
+        new = ConfigUpdater().config_update(old)
+        fields = new['OpsiExplore']['OpsiExplore']
+        self.assertEqual((fields['TraditionalEnable'], fields['SmartEnable'], fields['ForceRun'], fields['Progress']),
+                         (True, False, False, ''))
 
     def test_exploration_progress_only_allows_empty_text_and_clear_is_atomic(self):
         from module.api.config_service import ConfigService
@@ -56,14 +143,15 @@ class ConfigTransactionTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             service = ConfigService(fixture(directory))
-            for path in ('OpsiExplore.OpsiExplore.ExploreProgress', 'OpsiScheduling.OpsiSmartExplore.Progress'):
+            for path in ('OpsiExplore.OpsiExplore.Progress', 'OpsiExplore.OpsiExplore.ExploreProgress',
+                         'OpsiScheduling.OpsiSmartExplore.Progress'):
                 for value in ('fake 100%', None, False, {}, []):
                     with self.subTest(path=path, value=value), self.assertRaises(ApiError):
                         service.patch('testpilot', None, [ConfigChange(path=path, value=value)])
             original = service.path('testpilot').read_bytes()
             with self.assertRaises(ApiError):
                 service.patch('testpilot', None, [
-                    ConfigChange(path='OpsiExplore.OpsiExplore.ExploreProgress', value=''),
+                    ConfigChange(path='OpsiExplore.OpsiExplore.Progress', value=''),
                     ConfigChange(path='OpsiExplore.OpsiExplore.MeowfficerCleanupState', value=None),
                 ])
             self.assertEqual(service.path('testpilot').read_bytes(), original)
