@@ -32,7 +32,7 @@ export interface Parameters {
   "mind.recognize": { instance: string; filename: string; content: string }
   "stock.status": { instance: string }
   "stock.rebuild": { instance: string; confirm?: boolean; scope?: "instance" | "all" }
-  "stock.request": { instance: string; path: string; method?: "GET" | "POST" | "DELETE"; body?: Record<string, unknown> | null; etag?: string }
+  "stock.register": { instance: string; username: string; noticeVersion?: string }
   "scheduler.start": { instance: string }
   "scheduler.stop": { instance: string }
   "scheduler.program.catalog": { instance: string }

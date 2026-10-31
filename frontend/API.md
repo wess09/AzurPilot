@@ -195,41 +195,30 @@ INTERNAL_ERROR 不向浏览器返回堆栈；参数校验详情不回显输入�
 
 上传仅接受 `x-azurpilot-background-token` 请求头；图片/视频标签不能设置请求头，代抓也接受 `token` 查询参数。该令牌仅授权背景接口，不能登录或调用其他 WebUI 方法；不得把访问密码放入图片 URL。令牌只在内存中使用，每次应用创建重新生成，不写入浏览器持久化设置；部署的访问日志也应避免记录含令牌的完整 URL。
 
-## 原生证券交易终端
+## 股票实例接入 v2
 
-`stock.status({instance})` 返回该实例的持久 UUID、绑定用户名、绑定/登录状态及现有行动力快照，不回传私钥、上传凭据或真实交易会话。
+`stock.status({instance})` 返回 `{url,instance,instanceId,registered,deleted,bound,stock,bindingCode,message,lastObservedAt}`。`stock` 是独立股票摘要或 `null`，`lastObservedAt` 为秒。绑定码只在已认证 AzurPilot 会话中展示，供实例所有者在 QQ 群向官方机器人发送绑定命令，不进入公开行情。浏览器不接触实例私钥或交易账户会话。
 
-`stock.request({instance,path,method,body,etag})` 通过已认证的 WebSocket 转发交易所请求，返回 `{status,data,etag,serverTime}`；method 只允许 GET / POST / DELETE。允许市场、历史、赛季、开户、登录、本人账户、完整委托、自选股、撤单、同步和退出，不允许管理接口。浏览器不能提交 report、实例身份、公钥、行情或远端凭据；由后端补齐所选实例身份。
+`stock.register({instance,username,noticeVersion})` 仅注册当前实例股票。确认公开持续同步告知（`noticeVersion=stock-public-v2-20261101`）并提供 2 至 32 字的股票用户名，不创建 QQ 交易账户，不接受密码、行动力或浏览器提供的签名。QQ 交易身份由官方机器人唯一标识确定；群内发送“注册 <用户名>”直接开户并获得随机初始密码，首次网页登录强制改密并要求绑定股票。旧 `stock.request` 交易代理已删除。
 
-`stock.rebuild({instance,confirm?,scope?})` 提供完全重建本地账户的选项。默认 `confirm=false`，返回 `{instance,scope,affectedInstances,rebuilt:false}` 供页面说明实际范围；确认后以相同 `scope`（`instance` 或 `all`）和 `confirm=true` 执行。共享密钥、登记或绑定不可读时范围为 `all`，变化时返回 `STOCK_REBUILD_SCOPE_CHANGED`，必须重新查看范围。重建先保存 `config/backup/stock-rebuild-*/` 原数据快照，再清除本地身份、绑定、会话与交易历史；保留实例配置、调度方案、变量和资源统计。原远端账户及永久绑定保留，新身份须用新用户名重新开户。
+入口仍为 `/#/i/:instance/stock-exchange`，由 `src/pages/StockExchange.tsx` 提供并沿用 WebUI 主题。未绑定时显示 QQ 群 [1126124220](https://qm.qq.com/q/93NWF3S362) 和私密绑定命令；已注册且绑定时尝试在新标签页打开 [stock.azurpilot.com](https://stock.azurpilot.com)，弹窗被浏览器拦截时提供直接按钮。交易、行情图表、教程、密码及登录只在独立交易所提供。Google reCAPTCHA 已移除。
 
-注册与登录每次都需要 Cloudflare 验证码，账户和实例永久一对一绑定。另一个实例不能登录这个账户，当前实例不能开第二个账户；退出只清除交易会话。实例身份用于认证请求完整性，不验证行动力真实性；行情直接使用实例现有资源记录，没有截图上传或服务端 OCR。无最近记录时初始股价为 0，后续随游戏更新自动同步。WebUI 后端重启后需重新登录，持续上传凭据仍保存。
+Python 后端使用 `STOCK_EXCHANGE_URL`（默认 `https://stock.azurpilot.com`，开发仅允许回环 HTTP）调用 `/api/v2/instance/register|status|report|manifest`；服务端声明 reconcile 能力时，追加签名月摘要确认并记录成功校对时间。。请求使用稳定实例 UUID 和 Ed25519 签名；签名规范与字段见相邻交易所仓库 `docs/API-v2.md`。请求正文使用紧凑 JSON。行情点是 `{t:毫秒,p:整数总行动力}`，不重复上传交易所不需要的游戏资源快照。
 
-主界面位于 `src/stock/`，入口在实例侧栏的资源统计下方，路由为 `/#/i/:instance/stock-exchange`。账户、持仓、委托按实例隔离，切换实例重建终端；行情读取和交易复用本项目 API，不使用 iframe 或 postMessage。初始化、代码/状态/行情加载、错误和重建确认页面始终在屏幕中间提供返回总览；终端顶栏的返回入口位于用户名左侧，开户/登录弹窗的返回入口保持水平居中。
+实例 HTTP 请求统一携带 `User-Agent: AzurPilot-StockExchange/2.0`，向公网 WAF 如实标识应用客户端，避免默认 `Python-urllib` 标识被拒绝。该请求头不改变签名、数据或前端接口；更新 Python 后端并重启 AzurPilot 后生效。
 
-公开白名单增加 `/stocks/:id?period=time|day|m5|m10|m20|m30|m60&month=YYYY-MM&day=YYYY-MM-DD`，通过同一 `stock.request` 读取股票详情、OHLC、成交量、逐笔成交和公开挂单；查询参数严格校验。行情柱与成交的时间戳为毫秒，账户及旧报价接口仍使用秒。交易页面订阅 `stock` WebSocket 主题；Go SSE 成功提交事件立即转发，市场、账户、委托、排行和详情随通知更新。详情按证券版本复用 ETag / 304；请求执行期间保留待刷新标记，断线重连后重新读取完整状态。
+`ActionHistory` 延续现有本地持久队列与实例隔离。每 2 秒检查文件是否改变，常规仅发送未被成功确认的增量；同毫秒修正重新入队，断网指数退避，重启继续上传。约每五分钟比较月份 count / SHA-256；摘要不一致时只重发缺失或不一致月份，cursor 不作为完整性证明。中央已保存历史完整导入，不按记录条数或月份截断；旧 CL1 数据只按既有迁移规则导入当月总行动力，原文件保留。
 
-`ProgramStore` 保存实际采集的总行动力到 `action_point_history`，只更新当前可用行动力的记录不会伪造新总量时间。`action_point_chain` 追加保存每次总量变更及修正，用实例独立密钥生成 HMAC-SHA-256 哈希链；交易采集通过 `strict_history=True` 验证整条链、当前值索引及独立持久检查点，修改、删行、截断和单独回滚 SQLite 都会阻止交易同步。同一采集时间的正常修正保留原事件，并更新当前值索引。普通调度与配置读取跳过交易认证，资源写入中的认证失败只停止交易同步，正常事务继续提交；配置创建、复制、导入、导出和删除均不受玩家数据损坏阻断。玩家数据错误及恢复入口只在茗交所页面展示。
+股票登记保存为 `config/stock-exchange/stocks-v2.json`，身份与队列继续使用 `config/stock-exchange/` 既有文件密钥方案。旧账户登记 `bindings.json` 不再用于 v2，也不删除旧数据。新协议不兼容旧交易所 API；先提供 v2 交易所，再配套更新 AzurPilot 后端与前端并重启 AzurPilot。备份仍需包含完整 config 与 SQLite WAL。
 
-新注册账户自动补传当前实例已保存的当月完整总行动力，包括注册前记录，数量不截断为 2000 条。旧实例首次升级只读导入 `config/cl1_data.db`（兼容旧位置 `log/cl1/cl1_data.db`）中上海时区当月的 `ap_snapshots[].ap_total` 和实际时间 `ts`，支持明文 JSON 与旧 AES-GCM 行；不读取上月及更早月份，因此那些月份无法解密不会影响当月补传。已经注册的账户升级后同样自动补传，无需重新开户或登录。缺少总量的 `ap` 不能替代含行动力箱的总行动力。同毫秒冲突优先使用中央认证记录。原实例名保存在保护登记中，重命名仍读取原统计来源；复制、导入新建和同名重建不会继承旧统计。成功迁移的标记与完整补传队列一起认证，只导入一次，旧库之后的修改不会获得新的上传签名。当月旧库无法读取时保留原库、不写完成标记，在状态消息中提示具体原因，每五分钟扫描时重试；中央认证历史与新行动力仍正常入队、同步，注册和登录继续可用。补传日志或中央认证历史自身损坏仍停止同步。
+交易所管理员删除股票后返回 410 `STOCK_DELETED`。后端约每 15 秒检查远端状态，收到删除即持久写入受保护股票登记和 `stocks-retired-v2.json` 墓碑、停止监视与上报；重启或强制同步也不重试。即使本地绑定缺失，原 UUID 的删除仍会被记住。页面返回 `deleted:true`、不再提供该身份注册按钮；原交易账户须绑定其他股票后才可使用。删除期间不改脚本、调度、资源观察或远端历史。网络断开时由交易所拒绝所有旧身份上传，恢复连接后客户端获知删除。
 
-独立后台日志位于 `config/stock-exchange/history/<UUID>.sqlite3`，样本、来源游标、上传回执和月份状态全部通过密钥摘要与独立持久检查点认证。按待传月份完整签名并立即发送，连续补传队列，不设置数量或间隔配额；仅网络失败时退避并持续重试。每 250 毫秒检查已保存记录的修改状态，新的行动力记录立即上传。按月增量补传并轮转月份，断网、重启、迟到修正由后台处理；每五分钟重读源历史并校对 count / SHA-256。签名前先验证本地数据，禁止把修改后的仪表盘 JSON 当作新游戏采集记录，也不在数据库损坏或丢失时降级到 JSON。历史上传和月摘要接口只供 AzurPilot 后端调用，不开放给浏览器，不验证行动力真实性。
+`stock` WebSocket 主题只通知本地实例状态，已移除远端行情 SSE。页面在可见时每 15 秒检查绑定状态；不显示时停止轮询。股票异常只影响该页面与上传，不阻断普通配置、资源采集、调度或游戏任务。
 
-AzurPilot 后端通过 `STOCK_EXCHANGE_URL` 配置交易所 origin，默认 `https://stock.nanoda.work`，本机开发使用 `http://127.0.0.1:8080`。注册和登录的 `body` 使用 `recaptchaToken`，由当前表单的 Google reCAPTCHA v2 组件生成。脚本、iframe 与 Go Siteverify 使用 `www.recaptcha.net`；私密 secret 只配置在 Go 后端环境变量 `RECAPTCHA_SECRET_KEY`。Google 控制台已停用域名验证，服务端不匹配 hostname 或 action，客户端在切换表单、过期和每次提交后清空旧 token。
+`stock.rebuild({instance,confirm?,scope?})` 保留为故障恢复 API：先预览实际范围，确认后备份并重建股票身份。范围变化返回 `STOCK_REBUILD_SCOPE_CHANGED`，不会自动扩大。此操作不重置远端交易账户。页面先展示计划、实际范围与受影响实例，勾选确认后才执行，允许取消；不会自动扩大范围。
 
-身份私钥与 `bindings.json` 使用 AES-256-GCM 和 `SecretKey`，独立游戏密钥保存为 `config/stock-exchange/game.key`，加密实例登记、文件摘要与历史检查点保存为同目录的 `registry.json`，身份、绑定和历史统一放在该目录。新部署不依赖 `LocalProtector`、DPAPI、machine-id、UID 或项目路径，目录新建为 `0700`、文件为 `0600`，Windows 按部署目录访问控制保护。检测到旧 cache 数据时只搬到 config；冲突以默认加载的 config 为准静默覆盖旧副本，随后执行常规处理流程。完整迁移配置目录后保留原身份和绑定；密钥或登记丢失、密文修改及旧文件回放仍停止交易同步，保留原数据，只有页面明确确认重建才生成新身份。实例密码和账号保险库的本机自动解锁策略保持原有语义。
+真实跨进程集成：先使用当前 Go 源码启动回环服务及独立名称含 `_test` 的 Postgres 数据库；设置 `EXCHANGE_INTEGRATION_URL`、`EXCHANGE_INTEGRATION_DATABASE_URL`、`EXCHANGE_INTEGRATION_BOT_TOKEN`，并指定本机 `EXCHANGE_INTEGRATION_PSQL` 或隔离 Pg 容器名 `EXCHANGE_INTEGRATION_PG_CONTAINER`；管理员删股联动用例还需隔离 `EXCHANGE_INTEGRATION_ADMIN_PASSWORD`，运行 `uv run python -m unittest tests.test_stock_exchange_integration`。用例只使用临时 AzurPilot 配置，会注册隔离股票/交易账号并删除该股票的一条历史以验证摘要修复；禁止连接真实用户数据库。未显式配置时跳过，不计为集成通过。
 
-已有项目外本机保护在常规读取时认证并升级，保留原密钥和认证上下文，不重写已认证文件。Linux 使用旧封装中的主机元数据验证，不依赖新容器的 machine-id 或 UID；Windows 旧密钥仍须原用户 DPAPI 解封。旧本机密钥和 `.game` 登记保留供恢复，`config/stock-exchange/protected-v2` 标记禁止在新登记丢失时回退旧检查点。旧密钥或登记已经丢失时可恢复完整备份，或在交易页面确认重建本地账户。
-
-配置内部 `_stockInstance` 保存稳定 UUID，运行器迁移与参数编辑保留此字段，配置导出、复制和导入创建不继承它；新配置写空占位，在后续采集或交易使用时登记。直接重命名配置（原文件消失且唯一新文件保留 UUID）会沿用玩家、会话、补传日志并迁移中央资源数据库；若新旧数据库冲突则仅在交易页面提示并保留两边文件。删除 API 直接完成配置备份与删除并撤销内存监视、会话；交易后台自行登记撤销和清理文件，失败不阻断配置删除。外部文件删除也由后台识别；Windows 文件被其他进程占用时先撤销登记，随后重试清理。同名新建取得新 UUID，不继承旧玩家；已删除 UUID 不能通过还原旧配置单独复活。服务器上的玩家及永久绑定保留，不因本地删除被转移或释放。
-
-备份须同时包含实例配置、中央 SQLite（含已提交 WAL）、旧 CL1 统计库与 `config/stock-exchange/`；应先停止服务和 worker 取得一致快照，不再要求保持原项目路径、主机或用户。迁移完成后交易数据只需持久化 config；首次升级前须让旧 cache 可见，详细挂载见 [部署文档](../docs/modules/infra/deploy.md#茗交所持久化)。`game.key` 与密文一起泄露可解密交易凭据，备份须私密管理。单独恢复旧历史会触发检查点校验。旧格式首次升级保留原 UUID、私钥、绑定和现存历史，并建立认证基线；旧仪表盘最新记录与旧统计月历史仅在各自的首次升级中接收。升级前已覆盖且未在统计库保留的记录、未采集时段及升级前篡改无法追溯。此机制防止文件层面的非预期修改，不能证明游戏数据真实，也不能阻止已控制部署用户、修改程序或同时回滚密钥、登记与全部游戏数据的人。
-
-`events.subscribe` 新增 `stock` 主题，须指定实例。事件 `{instance,revision?,serverTime?,online?}` 仅通知变更或连接状态；真实会话和上传凭据仍只在后端保存。AzurPilot 后端复用一个 Go `/api/events` SSE 连接，WebSocket 独立生产者收到通知即唤醒，不阻塞委托请求。交易 `stock.request` / `stock.status` 不计入通用每秒请求频率配额。
-
-`POST /watchlist` 接受 `{stockId,selected}` 并返回 `{watchlist}`，属于本人接口。自选跨重启、赛季及设备保留；列表默认过滤退市，筛选可组合上市状态、报价、涨跌方向、价格/涨跌幅区间、归属及更新时间，范围可切换全部、自选和持仓。`GET /orders` 返回完整持久委托回执，包括旧版本已从账户快照截断的记录；界面不截断委托、成交或公开挂单。
-
-持仓总浮动盈亏为所有多头 `(现价×股数−成本)` 与空头 `(成本−现价×空头股数)` 的合计，账面成本已包含开仓交易费用；融资利息与借券费不重复扣入浮盈亏。注册、确认与身份弹窗统一通过 portal 放到页面顶层，内容滚动且头尾按钮固定，支持焦点限制与恢复，验证码可随窄屏缩放，提示消息不拦截操作。
 
 ## 本地启动器 WS v2
 

@@ -31,15 +31,23 @@ class StockRecoveryTests(unittest.TestCase):
         self.store = ProgramStore(self.root / 'config')
         self.now = datetime.now()
         self.identities = {}
+        def remote(path, method='POST', body=None, *args):
+            name = next((name for name in self.configs.names() if self.service.protection.resolve(name) == body['instanceId']), None)
+            binding = self.service.bindings.get(name)
+            if not binding:
+                return {'status': 404, 'data': {'error': {'code': 'STOCK_NOT_REGISTERED'}}}
+            return {'status': 200, 'data': {'stock': {'id': binding['stockId'], 'name': binding['username'], 'symbol': 'MM000001', 'bound': True}, 'bindingCode': 'fixture'}}
+        self.service._remote = Mock(side_effect=remote)
         for name in ('testpilot', 'other'):
             self.identities[name] = self.service.status(name)['instanceId']
             identity, key = self.service._identity(name)
-            self.service.bindings[name] = {'playerId': len(self.identities), 'username': name,
-                                          'bindingKey': binding_key(identity, key), 'uploadToken': 'a' * 64,
-                                          'url': 'https://stock.nanoda.work'}
-            self.service.sessions[name] = name + '-fixture-session'
+            self.service.bindings[name] = {'stockId': len(self.identities), 'username': name,
+                                          'bindingKey': binding_key(identity, key),
+                                          'url': 'https://stock.azurpilot.com'}
             self.store.observe(name, 'ActionPoint', {'Total': 8000}, self.now.isoformat(), 'fixture')
         self.service._save()
+        self.service.last_status.clear()
+        self.service.remote_status.clear()
 
     def test_unregistered_identity_never_blocks_normal_config_operations(self):
         path = self.configs.path('testpilot')
@@ -109,7 +117,7 @@ class StockRecoveryTests(unittest.TestCase):
     def test_new_instance_observations_remain_usable_on_first_stock_visit(self):
         self.configs.create('new-instance')
         self.store.observe('new-instance', 'ActionPoint', {'Total': 8200}, self.now.isoformat(), 'fixture')
-        self.assertEqual(8200, self.service.status('new-instance')['snapshot']['actionPoints'])
+        self.assertEqual(8200, self.service._read_snapshot('new-instance')['actionPoints'])
 
     def test_stock_identity_replacement_never_discards_scheduler_runtime(self):
         self.store.save_persistent('testpilot', {'variables': {'fixture': 1}})
@@ -118,7 +126,7 @@ class StockRecoveryTests(unittest.TestCase):
         status = self.service.status('testpilot')
         self.assertNotEqual(self.identities['testpilot'], status['instanceId'])
         self.assertFalse(status['bound'])
-        self.assertIsNone(status['snapshot'])
+        self.assertEqual(0, status['lastObservedAt'])
         self.assertEqual(original, self.store.get('testpilot'))
         self.assertEqual(1, self.store.persistent('testpilot')['variables']['fixture'])
         self.assertEqual(8000, self.store.observations('testpilot')['ActionPoint']['Total'])
@@ -143,11 +151,9 @@ class StockRecoveryTests(unittest.TestCase):
         status = self.service.status('testpilot')
         self.assertNotEqual(self.identities['testpilot'], status['instanceId'])
         self.assertFalse(status['bound'])
-        self.assertFalse(status['authenticated'])
-        self.assertIsNone(status['snapshot'])
+        self.assertEqual(0, status['lastObservedAt'])
         self.assertEqual(self.identities['other'], self.service.status('other')['instanceId'])
         self.assertTrue(self.service.status('other')['bound'])
-        self.assertTrue(self.service.status('other')['authenticated'])
         self.assertEqual(original_program, self.store.get('testpilot'))
         self.assertEqual(original_observations, self.store.observations('testpilot'))
         self.assertEqual(1, self.store.persistent('testpilot')['variables']['fixture'])
@@ -155,7 +161,7 @@ class StockRecoveryTests(unittest.TestCase):
         self.assertEqual(1, len(backups))
         self.assertEqual(b'{broken-identity', (backups[0] / 'stock-exchange' / path.relative_to(self.service.protection.directory)).read_bytes())
         self.store.observe('testpilot', 'ActionPoint', {'Total': 8200}, (self.now + timedelta(seconds=2)).isoformat(), 'fixture')
-        self.assertEqual(8200, self.service.status('testpilot')['snapshot']['actionPoints'])
+        self.assertEqual(8200, self.service._read_snapshot('testpilot')['actionPoints'])
 
     def test_shared_registry_rebuild_requires_correct_scope_and_resets_all_accounts(self):
         self.service.protection.state_path.write_bytes(b'{broken-registry')
@@ -171,7 +177,6 @@ class StockRecoveryTests(unittest.TestCase):
             status = self.service.status(name)
             self.assertNotEqual(previous, status['instanceId'])
             self.assertFalse(status['bound'])
-            self.assertFalse(status['authenticated'])
             self.assertEqual(8000, self.store.observations(name)['ActionPoint']['Total'])
 
 
