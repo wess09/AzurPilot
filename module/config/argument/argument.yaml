@@ -129,6 +129,10 @@ Emulator:
     type: checkbox
     value: false
     option: [true, false]
+  DisableChannelFloat:
+    type: checkbox
+    value: false
+    option: [true, false]
   ScreenshotDedithering: false
   AdbRestart: false
 EmulatorInfo:
