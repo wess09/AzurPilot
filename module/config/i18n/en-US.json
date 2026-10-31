@@ -6822,11 +6822,11 @@
     },
     "StopOnComplete": {
       "name": "Stop after all current training ships graduate",
-      "help": "Off by default. Disable the current task when every selected ship meets all enabled level/affinity goals. Do not recruit the next batch. Uses the existing check interval."
+      "help": "Off by default. Stop the current task once all selected ships meet their enabled level/affinity goals. Keep early graduates in place."
     },
     "Notify": {
       "name": "Training and replacement notifications",
-      "help": "Off by default. Report recorded level, affinity and morale after checks and outgoing/incoming ships and sources after confirmed replacements. Uses launcher notifications and the global error OnePush configuration."
+      "help": "Off by default. Report checks, graduation, replacements and replacement/dorm/equipment failures. Reuses existing readings and sends to the launcher and global OnePush channel."
     },
     "FullScanRecord": {
       "name": "Last full fleet scan",
