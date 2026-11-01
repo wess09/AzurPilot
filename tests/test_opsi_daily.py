@@ -89,8 +89,9 @@ class TestOpsiDaily(unittest.TestCase):
 
         self.runner.os_get_next_mission = Mock(side_effect=get_next)
 
-    def prepare_mission_entry(self, zone=44):
-        image = load_image(ZONE_LOCKED.file)
+    def prepare_mission_entry(self, zone=44, image=None):
+        if image is None:
+            image = load_image(ZONE_LOCKED.file)
         self.runner.device = SimpleNamespace(image=image, click=Mock())
         self.runner.loop = lambda: iter((None,))
         self.runner.is_in_map = Mock(return_value=False)
@@ -228,16 +229,41 @@ class TestOpsiDaily(unittest.TestCase):
         self.assertEqual(self.runner.run_auto_search.call_count, 2)
         self.runner.config.task_delay.assert_not_called()
 
-    def test_locked_template_reaches_task_entry_for_next_day_deferral(self):
+    def test_locked_template_defers_only_the_actual_target_zone(self):
         self.prepare_mission_entry()
-        with self.assertRaises(OSZoneLockedError):
-            self.runner.os_get_next_mission(skip_unavailable=True)
+        self.assertEqual(self.runner.os_get_next_mission(skip_unavailable=True), 'mission_zone_unavailable')
         self.runner.device.click.assert_not_called()
-        self.runner.ensure_no_zone_pinned.assert_not_called()
-        self.runner.os_globe_goto_map.assert_not_called()
-        self.assertIsNone(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions'))
+        self.runner.ensure_no_zone_pinned.assert_called_once_with()
+        self.runner.os_globe_goto_map.assert_called_once_with()
+        self.assertEqual(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions'),
+                         {'until': UPDATE.isoformat(), 'zones': [44]})
         self.assertIsNone(deep_get(self.data, 'OpsiDaily.Scheduler.NextRun'))
         self.runner.config.task_delay.assert_not_called()
+
+    def test_supplied_locked_screen_still_allows_other_daily_missions(self):
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        self.prepare_mission_entry(image=image)
+        self.runner._os_find_checkout_offset_skip_monthly_boss.side_effect = [
+            (-20, -20, 20, 20), (-20, -20, 20, 20), None,
+        ]
+        self.runner.get_globe_pinned_zone.side_effect = [self.runner.name_to_zone(44), self.runner.name_to_zone(42)]
+        self.runner.os_mission_quit = Mock()
+        globe_enter = self.runner.globe_enter
+
+        def enter(zone):
+            if zone.zone_id == 44:
+                return globe_enter(zone=zone)
+            self.runner.zone = zone
+
+        self.runner.globe_enter = Mock(side_effect=enter)
+        self.runner.os_daily()
+        self.assertEqual([call.kwargs['zone'].zone_id for call in self.runner.globe_enter.call_args_list], [44, 42])
+        self.runner.run_auto_search.assert_called_once()
+        self.assertEqual(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions'),
+                         {'until': UPDATE.isoformat(), 'zones': [44]})
+        self.runner.config.task_delay.assert_called_once_with(server_update=True)
+        self.runner.config.task_stop.assert_not_called()
+        self.assertIsNone(deep_get(self.data, 'OpsiDaily.Storage.Storage.ZoneLockedUntil'))
 
     def test_same_day_retry_skips_entering_only_the_deferred_zone(self):
         self.prepare_mission_entry()
@@ -281,11 +307,15 @@ class TestOpsiDaily(unittest.TestCase):
         self.runner.config.task_stop.assert_not_called()
 
     def test_refresh_failure_skips_one_mission_and_continues(self):
-        self.set_next_missions(['already_at_mission_zone', 'pinned_at_mission_zone', False])
-        self.runner.globe_goto.side_effect = OSExploreError
-        self.assertEqual(self.runner.os_finish_daily_mission(), 1)
-        self.runner.run_auto_search.assert_called_once()
-        self.assertEqual(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions')['zones'], [44])
+        for error in (OSExploreError, OSZoneLockedError):
+            with self.subTest(error=error.__name__):
+                self.set_next_missions(['already_at_mission_zone', 'pinned_at_mission_zone', False])
+                self.runner.globe_goto.side_effect = error
+                self.runner.run_auto_search.reset_mock()
+                self.assertEqual(self.runner.os_finish_daily_mission(), 1)
+                self.runner.run_auto_search.assert_called_once()
+                self.assertEqual(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions')['zones'], [44])
+                self.runner.config.task_delay.assert_not_called()
 
     def test_other_tasks_do_not_defer_unavailable_missions(self):
         self.prepare_mission_entry()
@@ -309,7 +339,7 @@ class TestOpsiDaily(unittest.TestCase):
 
         def enter(zone, **kwargs):
             if zone.zone_id == 44:
-                raise OSExploreError
+                raise OSZoneLockedError
 
         self.runner.globe_goto.side_effect = enter
         self.runner._os_daily_retrieve_events = Mock()
@@ -333,7 +363,6 @@ class TestOpsiDaily(unittest.TestCase):
 
     def test_recovery_failure_does_not_mark_daily_done(self):
         self.prepare_mission_entry()
-        self.runner.globe_enter = Mock(side_effect=OSExploreError)
         self.runner.os_globe_goto_map.side_effect = GameStuckError
         with self.assertRaises(GameStuckError):
             self.runner.os_get_next_mission(skip_unavailable=True)

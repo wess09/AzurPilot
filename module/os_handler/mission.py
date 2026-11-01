@@ -17,7 +17,7 @@ from module.logger import logger
 from module.map_detection.utils import fit_points
 from module.os.assets import GLOBE_GOTO_MAP
 from module.os.globe_detection import GLOBE_MAP_SHAPE
-from module.os.globe_operation import GlobeOperation, OSExploreError, OSZoneLockedError
+from module.os.globe_operation import GlobeOperation, OSExploreError
 from module.os.globe_zone import Zone, ZoneManager
 from module.os_handler.assets import *
 
@@ -321,8 +321,6 @@ class MissionHandler(GlobeOperation, ZoneManager):
                             return 'mission_zone_unavailable'
                         try:
                             self.globe_enter(zone=zone)
-                        except OSZoneLockedError:
-                            raise
                         except OSExploreError:
                             self._os_defer_mission_zone(zone)
                             self._os_return_from_unavailable_mission()

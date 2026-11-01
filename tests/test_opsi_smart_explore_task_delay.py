@@ -264,7 +264,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
 
     def test_locked_zone_delays_only_the_current_task_until_next_day(self):
         self.suppressed(34)
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ('OpsiShop', 'OpsiPreventActionPointOverflow'):
             with self.subTest(task=task):
                 before = {name: self.config.cross_get(f'{name}.Scheduler.NextRun') for name in ORDER}
                 campaign_method = getattr(self.campaign, ENTRIES[task].replace('opsi_', 'os_', 1))
@@ -285,12 +285,30 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
 
     def test_locked_zone_delay_expires_the_next_day(self):
         self.suppressed()
-        self.config.cross_set('OpsiDaily.Storage.Storage.ZoneLockedUntil', UPDATE.isoformat())
-        with patch('module.os.tasks.smart_explore.get_server_next_update', return_value=UPDATE + timedelta(days=1)):
-            self.run_task('OpsiDaily')
-        self.campaign.os_daily.assert_called_once_with()
+        for task in ('OpsiShop', 'OpsiPreventActionPointOverflow'):
+            with self.subTest(task=task):
+                self.config.cross_set(f'{task}.Storage.Storage.ZoneLockedUntil', UPDATE.isoformat())
+                with patch('module.os.tasks.smart_explore.get_server_next_update', return_value=UPDATE + timedelta(days=1)):
+                    self.run_task(task)
+                getattr(self.campaign, ENTRIES[task].replace('opsi_', 'os_', 1)).assert_called_once_with()
 
-    def test_supplied_locked_screen_defers_each_task_through_the_real_entry(self):
+    def test_previous_daily_lock_marker_does_not_block_daily_missions(self):
+        self.suppressed()
+        self.config.cross_set('OpsiDaily.Storage.Storage.ZoneLockedUntil', UPDATE.isoformat())
+        before = self.config.cross_get('OpsiDaily.Scheduler.NextRun')
+        self.run_task('OpsiDaily')
+        self.campaign.os_daily.assert_called_once_with()
+        self.assertEqual(self.config.cross_get('OpsiDaily.Scheduler.NextRun'), before)
+
+    def test_daily_entry_does_not_delay_locks_outside_the_mission_handler(self):
+        self.suppressed()
+        self.campaign.os_daily.side_effect = OSZoneLockedError('周边海域未压制')
+        with self.assertRaises(OSZoneLockedError):
+            self.run_task('OpsiDaily')
+        self.assertEqual(self.config.cross_get('OpsiDaily.Scheduler.NextRun'), self.original_times['OpsiDaily'])
+        self.assertIsNone(self.config.cross_get('OpsiDaily.Storage.Storage.ZoneLockedUntil'))
+
+    def test_supplied_locked_screen_defers_shop_and_overflow_through_the_real_entry(self):
         self.suppressed(34)
         image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
         campaign = OperationSiren.__new__(OperationSiren)
@@ -304,11 +322,11 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         campaign.update_prevent_action_point_overflow_schedule = Mock(
             side_effect=lambda enable: self.config.cross_set(
                 'OpsiPreventActionPointOverflow.Scheduler.Enable', enable))
-        for method in ('os_daily', 'os_shop', 'os_prevent_action_point_overflow'):
+        for method in ('os_shop', 'os_prevent_action_point_overflow'):
             setattr(campaign, method, lambda: campaign.globe_enter(campaign.name_to_zone(24)))
         self.runner.load_campaign.return_value = campaign
         del self.runner._run_opsi_task_with_ap_overflow_guard
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ('OpsiShop', 'OpsiPreventActionPointOverflow'):
             with self.subTest(task=task), self.assertRaises(TaskEnd):
                 self.run_task(task)
             self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), UPDATE)
