@@ -97,6 +97,7 @@ class GeneratedConfig:
     Emulator_ScreenshotMethod = 'auto'  # auto, ADB, ADB_nc, uiautomator2, aScreenCap, aScreenCap_nc, DroidCast, DroidCast_raw, nemu_ipc, ldopengl, azurpilot_android
     Emulator_ControlMethod = 'MaaTouch'  # ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc, azurpilot_android
     Emulator_GameSettings = False  # True, False
+    Emulator_DisableChannelFloat = False  # True, False
     Emulator_ScreenshotDedithering = False
     Emulator_AdbRestart = False
 

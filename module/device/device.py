@@ -573,12 +573,16 @@ class Device(Screenshot, Control, AppControl, Input):
         # 与推荐配置共用启动前流程：设备已连接，先恢复账号，再写配置，最后启动游戏。
         from module.api.account_service import restore_worker
         restore_worker(self.config.config_name, device=self)
+        wait_for_stop = getattr(self, '_game_settings_wait_for_stop', False)
+        self._game_settings_wait_for_stop = False
         if getattr(self.config, 'Emulator_GameSettings', False):
             from module.game_setting.player_prefs import apply_recommended_game_settings
 
-            wait_for_stop = getattr(self, '_game_settings_wait_for_stop', False)
             apply_recommended_game_settings(self, wait_for_stop=wait_for_stop)
-            self._game_settings_wait_for_stop = False
+        if getattr(self.config, 'Emulator_DisableChannelFloat', False):
+            from module.game_setting.channel_float import disable_channel_float
+
+            disable_channel_float(self, wait_for_stop=wait_for_stop)
         super().app_start()
         self.stuck_record_clear()
         self.click_record_clear()
@@ -596,7 +600,8 @@ class Device(Screenshot, Control, AppControl, Input):
             logger.critical('[Device] 请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
             raise RequestHumanTakeover
         super().app_stop()
-        if getattr(self.config, 'Emulator_GameSettings', False):
+        if (getattr(self.config, 'Emulator_GameSettings', False)
+                or getattr(self.config, 'Emulator_DisableChannelFloat', False)):
             self._game_settings_wait_for_stop = True
         self.stuck_record_clear()
         self.click_record_clear()

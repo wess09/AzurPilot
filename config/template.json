@@ -75,6 +75,7 @@
       "ScreenshotMethod": "auto",
       "ControlMethod": "MaaTouch",
       "GameSettings": false,
+      "DisableChannelFloat": false,
       "ScreenshotDedithering": false,
       "AdbRestart": false
     },
