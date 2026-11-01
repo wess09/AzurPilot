@@ -429,13 +429,13 @@ ws.send_json({'v':1,'type':'request','id':'2','method':'events.subscribe',
 - [配置系统](../config.md) — 被校验与读写的数据来源（argument YAML、i18n、事务）
 - [外部桥接与开发工具](../infra/submodule-tools.md) — `dev_tools/export_api_schema` 所在的开发工具层
 
-### 茗交所实时订阅
+### 茗交所股票实例接入
 
-`events.subscribe` 接受实例级 `stock` 主题。`Session.stock_producer()` 订阅 `StockExchangeService` 的共享远端 SSE，回调用 `loop.call_soon_threadsafe()` 唤醒独立生产者，发送 `{instance,revision,serverTime,online}`；不占用 RPC 工作槽，也不回传凭据。普通主题仍遵循原采样机制。`stock.request` 与 `stock.status` 不计入通用请求频率限制；股票公开数据和本人账户/完整委托/自选接口仍由代理白名单与实例永久绑定保护。
+`stock.status` / `stock.register` 仅处理独立股票登记及私密绑定状态。旧交易代理 `stock.request` 已移除，交易所自行管理交易账号和会话；Google reCAPTCHA 已移除。默认地址为 `https://stock.azurpilot.com`，v2 请求由 Python 签名。
 
-游戏历史后台每 250 毫秒检查文件修改状态，新记录立即转发；待传月份完整签名并连续补传，无 15 秒节流、1024 点或 3 秒配额。断网时指数退避，日志、身份、哈希链及跨实例隔离语义保留。同步完整性只涵盖已采集、保存且认证通过的记录。
+后台每 2 秒检查新记录，普通上传只发送未确认的 `{t:毫秒,p:整数行动力}` 增量；历史缺失时按月补足，30 分钟校对月份摘要。实例私钥、原始游戏资源和交易会话不提供给浏览器。`stock` WebSocket 主题保留用于本地状态通知，已移除远端行情 SSE；页面可见时每 15 秒检查绑定状态。
 
-玩家数据校验仅阻断交易请求与同步，不阻断配置管理、实例创建/复制/导入/删除或普通调度资源事务。`stock.rebuild` 默认预览 `{instance,scope,affectedInstances,rebuilt:false}`；确认实际范围后用 `confirm=true` 和同一 `scope` 重建。单实例身份和历史错误只重建当前账户，共享密钥、登记或绑定损坏时范围为所有本地账户；范围变化返回 `STOCK_REBUILD_SCOPE_CHANGED`，不得自动扩大。先备份原件，再清理本地交易身份、绑定、会话与历史，保留配置及普通运行数据。重建不释放或转移远端永久绑定，新身份重新开户须使用新用户名。入参与结果见 [前端 API](../../../frontend/API.md#原生证券交易终端)。
+股票身份及历史错误不阻断配置管理、普通采集或调度。`stock.rebuild` 保留范围预览和显式确认 API，先备份再重建股票身份，不改变远端交易账号。完整协议与持久化说明见 [前端 API](../../../frontend/API.md#股票实例接入-v2)。
 
 
 ## 船坞共享扫描与数据分析

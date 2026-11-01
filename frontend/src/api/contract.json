@@ -1100,7 +1100,7 @@
       "mutates": true,
       "params": {
         "additionalProperties": false,
-        "description": "先返回实际重建范围，用户确认后才重建本地交易账户。",
+        "description": "先返回实际重建范围，用户确认后才重建本地股票身份。",
         "properties": {
           "instance": {
             "maxLength": 64,
@@ -1130,11 +1130,11 @@
         "type": "object"
       }
     },
-    "stock.request": {
+    "stock.register": {
       "mutates": true,
       "params": {
         "additionalProperties": false,
-        "description": "实例专属交易请求；实例身份和远端凭据由后端补充。",
+        "description": "只注册实例股票；交易账户由群内官方机器人注册。",
         "properties": {
           "instance": {
             "maxLength": 64,
@@ -1142,47 +1142,23 @@
             "title": "Instance",
             "type": "string"
           },
-          "path": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Path",
+          "username": {
+            "maxLength": 32,
+            "minLength": 2,
+            "title": "Username",
             "type": "string"
           },
-          "method": {
-            "default": "GET",
-            "enum": [
-              "GET",
-              "POST",
-              "DELETE"
-            ],
-            "title": "Method",
-            "type": "string"
-          },
-          "body": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Body"
-          },
-          "etag": {
+          "noticeVersion": {
             "default": "",
-            "maxLength": 128,
-            "title": "Etag",
+            "title": "Noticeversion",
             "type": "string"
           }
         },
         "required": [
           "instance",
-          "path"
+          "username"
         ],
-        "title": "StockRequestParams",
+        "title": "StockRegisterParams",
         "type": "object"
       }
     },

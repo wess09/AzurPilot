@@ -1,26 +1,22 @@
-"""AzurPilot 原生交易终端的实例代理；直接同步现有行动力记录，不验证其真实性。"""
+"""AzurPilot 独立股票实例接入；交易与用户会话均留在交易所。"""
 import json
-import hashlib
 import os
-import re
 import sqlite3
 import threading
 import time
-from datetime import datetime
-from email.utils import parsedate_to_datetime
 from functools import wraps
 from pathlib import Path
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse
 
 from module.base import http
 from module.api.protocol import ApiError
-from module.api.stock_exchange_identity import load_identity, binding_key, make_report
+from module.api.stock_exchange_identity import load_identity, binding_key, make_instance_request
 from module.api.stock_exchange_history import ActionHistory
 from module.runtime.game_data import GameDataProtector, damaged
 
 
 def exchange_url():
-    value = os.environ.get('STOCK_EXCHANGE_URL', 'https://stock.nanoda.work').rstrip('/')
+    value = os.environ.get('STOCK_EXCHANGE_URL', 'https://stock.azurpilot.com').rstrip('/')
     try:
         parsed = urlparse(value)
         parsed.port
@@ -33,30 +29,8 @@ def exchange_url():
     return value
 
 
-def action_snapshot(data, instance):
-    row = data.get('Dashboard', {}).get('ActionPoint', {})
-    total, recorded = row.get('Total'), row.get('Record')
-    # 只检查传输字段格式，不判断数据真实与否。
-    if type(total) is not int or not 0 <= total <= 1_000_000 or not recorded:
-        return None
-    try:
-        observed = int(datetime.fromisoformat(recorded).timestamp())
-    except (TypeError, ValueError, OSError):
-        return None
-    return {'instance': instance, 'actionPoints': total, 'observedAt': observed}
-
-
-def public_stock_path(path):
-    parsed = urlparse(path)
-    if parsed.scheme or parsed.netloc or parsed.fragment or not re.fullmatch(r'/stocks/[1-9][0-9]*', parsed.path):
-        return False
-    query = parse_qs(parsed.query, keep_blank_values=True)
-    patterns = {'period': r'(time|day|m5|m10|m20|m30|m60)', 'month': r'\d{4}-\d{2}', 'day': r'\d{4}-\d{2}-\d{2}'}
-    return all(k in patterns and len(v) == 1 and re.fullmatch(patterns[k], v[0]) for k, v in query.items())
-
-
 def account_operation(method):
-    """重建与后台同步互斥，避免旧会话在重建后继续上传。"""
+    """重建与后台同步互斥，避免旧身份在重建后继续上传。"""
     @wraps(method)
     def run(self, *args, **kwargs):
         with self.operation_lock:
@@ -65,22 +39,20 @@ def account_operation(method):
 
 
 class StockExchangeService:
-    """每实例永久绑定一个账户；浏览器不接触远端会话、上传令牌或实例私钥。"""
+    """每实例注册一只独立股票；私钥仅用于接入，交易账户与实例解耦。"""
     def __init__(self, configs):
         self.configs = configs
         self.protection = GameDataProtector(configs.root)
-        self.path = self.protection.directory / 'bindings.json'
+        self.path = self.protection.directory / 'stocks-v2.json'
         self.lock = threading.RLock()
         self.operation_lock = threading.RLock()
         self.stop = threading.Event()
         self.thread = None
-        self.event_thread = None
-        self.event_response = None
         self.listeners = set()
-        self.bindings, self.sessions, self.identities, self.instance_locks = {}, {}, {}, {}
-        self.stamps, self.records, self.statuses, self.attempts = {}, {}, {}, {}
-        self.uploaded, self.last_upload = {}, {}
-        self.meta_cache = None
+        self.bindings, self.identities, self.instance_locks = {}, {}, {}
+        self.stamps, self.records, self.statuses = {}, {}, {}
+        self.remote_status, self.last_status = {}, {}
+        self.retired = set()
         self.history = ActionHistory(configs.root)
         self.names = {}
         self.storage_error = None
@@ -94,8 +66,8 @@ class StockExchangeService:
 
     @staticmethod
     def _valid_binding(value):
-        return (isinstance(value, dict) and type(value.get('playerId')) is int and value['playerId'] > 0
-                and all(isinstance(value.get(field), str) and value[field] for field in ('bindingKey', 'username', 'uploadToken', 'url')))
+        return (isinstance(value, dict) and type(value.get('stockId')) is int and value['stockId'] > 0
+                and all(isinstance(value.get(field), str) and value[field] for field in ('bindingKey', 'username', 'url')))
 
     def _storage_stamp(self):
         paths = [self.path, self.protection.marker, self.protection.legacy_marker,
@@ -114,7 +86,7 @@ class StockExchangeService:
 
     @account_operation
     def _refresh(self):
-        """文件系统重命名沿用 UUID；删除和同名重建撤销旧会话及监视。"""
+        """文件系统重命名沿用 UUID；删除和同名重建撤销旧身份及监视。"""
         with self.lock:
             self.protection.migrate_cache()
             stamp = self._storage_stamp()
@@ -122,46 +94,25 @@ class StockExchangeService:
                 return
             if not self.path.exists() and not self.protection.initialized():
                 return
-            if self.path.exists() and not self.protection.has_file('bindings.json'):
-                try:
-                    legacy = json.loads(self.path.read_bytes())
-                    if not isinstance(legacy, dict) or any(not self._valid_binding(value) for value in legacy.values()):
-                        raise ValueError()
-                    migrated = {}
-                    for name, value in legacy.items():
-                        from module.api.config_service import validate_name
-                        if validate_name(name) != name:
-                            raise damaged('旧玩家绑定包含无效实例名称')
-                        if not (Path(self.configs.root) / 'config' / (name + '.json')).is_file():
-                            continue
-                        old = self.protection.directory / 'identities' / (hashlib.sha256(name.encode()).hexdigest() + '.json')
-                        if not old.exists():
-                            config = json.loads((Path(self.configs.root) / 'config' / (name + '.json')).read_bytes())
-                            identity = config.get('_stockInstance')
-                            if not isinstance(identity, str) or not self.protection.has_file('identities/' + identity + '.json'):
-                                raise damaged('已绑定账户的旧身份文件丢失，不能自动重新生成')
-                        identity, key = load_identity(self.configs.root, name)
-                        if binding_key(identity, key) != value['bindingKey']:
-                            raise damaged('旧玩家绑定与实例身份不匹配')
-                        migrated[identity] = value
-                    self.protection.write_file('bindings.json', migrated, legacy=True)
-                except (OSError, ValueError, TypeError):
-                    raise damaged('玩家绑定文件损坏，请恢复完整备份，不能按未绑定实例处理') from None
             active = self.protection.reconcile()
             configs = self.protection._configs()
             for identity, name in active.items():
                 if name in configs and configs[name] != identity:
                     self.protection.resolve(name)
             active = self.protection.reconcile()
-            stored = self.protection.read_file('bindings.json') or {}
+            retired = self.protection.read_file('stocks-retired-v2.json') or {}
+            if not isinstance(retired, dict) or any(not isinstance(key, str) or value is not True for key, value in retired.items()):
+                raise damaged('股票删除登记格式无效')
+            self.retired = set(retired)
+            stored = self.protection.read_file('stocks-v2.json') or {}
             if not isinstance(stored, dict) or any(not self._valid_binding(value) for value in stored.values()):
-                raise damaged('玩家绑定文件格式无效')
+                raise damaged('股票绑定文件格式无效')
             current = {name: identity for identity, name in active.items()}
             for old, identity in self.names.items():
                 new = active.get(identity)
                 if new == old:
                     continue
-                for state in (self.sessions, self.identities, self.stamps, self.records, self.statuses, self.attempts, self.uploaded, self.last_upload,
+                for state in (self.identities, self.stamps, self.records, self.statuses, self.remote_status, self.last_status,
                               self.history.scanned, self.history.next_send, self.history.next_check, self.history.failures, self.history.pending,
                               self.history.legacy_warnings):
                     value = state.pop(old, None)
@@ -169,12 +120,12 @@ class StockExchangeService:
                         state[new] = value
             self.names = current
             self.bindings = {active[identity]: value for identity, value in stored.items() if identity in active}
-            self.monitors = set(self.bindings)
+            self.monitors = {name for name, value in self.bindings.items() if not value.get('deleted') and self.names.get(name) not in self.retired}
             self.storage_error = None
             self.history.discard_retired(active)
             retired = set(stored) - set(active)
             if retired:
-                self.protection.write_file('bindings.json', {key: value for key, value in stored.items() if key in active})
+                self.protection.write_file('stocks-v2.json', {key: value for key, value in stored.items() if key in active})
             with self.protection.transaction() as (state, _):
                 retired = [identity for identity, record in state['instances'].items() if not record['active']]
             for identity in retired:
@@ -194,7 +145,7 @@ class StockExchangeService:
             identity, key = load_identity(self.configs.root, instance)
             binding = self.bindings.get(instance)
             if binding and binding['bindingKey'] != binding_key(identity, key):
-                raise damaged('玩家绑定与当前实例身份不匹配')
+                raise damaged('股票绑定与当前实例身份不匹配')
             self.identities[instance] = identity, key
             return identity, key
 
@@ -211,10 +162,6 @@ class StockExchangeService:
 
     def close(self):
         self.stop.set()
-        if self.event_response:
-            self.event_response.close()
-        if self.event_thread:
-            self.event_thread.join(timeout=2)
         if self.thread:
             self.thread.join(timeout=10)
         # 正在网络超时中的守护线程退出后再关闭日志，避免竞态。
@@ -222,13 +169,9 @@ class StockExchangeService:
             self.history.close()
 
     def subscribe(self, listener):
-        """复用一个远端事件流；浏览器订阅只收到公开变更通知。"""
+        """仅推送本地实例状态，不再为交易页面保持远端行情连接。"""
         with self.lock:
             self.listeners.add(listener)
-            if self.event_thread is None or not self.event_thread.is_alive():
-                self.event_thread = threading.Thread(target=self._listen_events, name='stock-market-events', daemon=True)
-                self.event_thread.start()
-
         def unsubscribe():
             with self.lock:
                 self.listeners.discard(listener)
@@ -240,46 +183,18 @@ class StockExchangeService:
         for listener in listeners:
             listener(data)
 
-    def _listen_events(self):
-        failures = 0
-        while not self.stop.is_set():
-            try:
-                with http.get(exchange_url() + '/api/events', headers={'Accept': 'text/event-stream'},
-                              timeout=12, stream=True) as response:
-                    self.event_response = response
-                    response.raise_for_status()
-                    if response.headers.get('Content-Type', '').split(';', 1)[0].strip() != 'text/event-stream':
-                        raise ValueError('交易所不支持实时事件流')
-                    for line in response.iter_lines(chunk_size=1):
-                        if self.stop.is_set():
-                            break
-                        if line.startswith(b'data: '):
-                            data = json.loads(line[6:])
-                            if isinstance(data, dict) and type(data.get('revision')) is int:
-                                failures = 0
-                                self._notify({**data, 'online': True})
-                    if not self.stop.is_set():
-                        raise OSError('交易所事件流已断开')
-            except (http.RequestException, TimeoutError, OSError, ValueError, ApiError):
-                if not self.stop.is_set():
-                    self._notify({'online': False})
-                    failures = min(failures + 1, 5)
-                    self.stop.wait(min(30, 2 ** (failures - 1)))
-            finally:
-                self.event_response = None
-
     def _save(self):
         from module.config.transaction import config_transaction
         with config_transaction(self.path):
-            stored = self.protection.read_file('bindings.json') or {}
+            stored = self.protection.read_file('stocks-v2.json') or {}
             active = self.protection.reconcile()
             stored = {identity: value for identity, value in stored.items() if identity in active}
             for name, value in self.bindings.items():
                 identity, key = self._identity(name)
                 if binding_key(identity, key) != value['bindingKey']:
-                    raise damaged('不能保存不属于当前实例的玩家数据')
+                    raise damaged('不能保存不属于当前实例的股票数据')
                 stored[identity] = value
-            self.protection.write_file('bindings.json', stored)
+            self.protection.write_file('stocks-v2.json', stored)
         self.names = {name: self.protection.resolve(name) for name in self.bindings}
 
     def _read_snapshot(self, instance):
@@ -302,24 +217,13 @@ class StockExchangeService:
             self.stamps[instance] = tuple((p.stat().st_mtime_ns, p.stat().st_size) if p.exists() else None for p in paths)
         return record
 
-    def _report(self, instance, initial=False):
-        record = self._read_snapshot(instance)
-        if initial and (not record or record['observedAt'] < time.time() - 86400):
-            record = {'actionPoints': 0, 'observedAt': int(time.time())}
-        if not record:
-            raise ApiError('QUOTE_MISSING', '当前实例尚无行动力记录，请等待游戏任务更新')
-        instance_id, key = self._identity(instance)
-        return make_report(instance_id, key, record['actionPoints'], record['observedAt'])
+    def _signed(self, instance, action, username='', points=None):
+        identity, key = self._identity(instance)
+        return make_instance_request(identity, key, action, username, points)
 
-    def _remote(self, path, method='GET', body=None, token='', instance_key='', etag=''):
+    def _remote(self, path, method='POST', body=None):
         headers = {'Content-Type': 'application/json'}
-        if token:
-            headers['Authorization'] = 'Bearer ' + token
-        if instance_key:
-            headers['X-MMEX-Instance'] = instance_key
-        if etag:
-            headers['If-None-Match'] = etag
-        payload = None if body is None else json.dumps(body, ensure_ascii=False, allow_nan=False).encode()
+        payload = None if body is None else json.dumps(body, ensure_ascii=False, allow_nan=False, separators=(',', ':')).encode()
         try:
             response = http.request(method, exchange_url() + '/api' + path, data=payload,
                                     headers=headers, timeout=12)
@@ -329,10 +233,9 @@ class StockExchangeService:
             raw = response.content
             try:
                 data = json.loads(raw) if raw else None
-                server_time = int(parsedate_to_datetime(response.headers['Date']).timestamp()) if response.headers.get('Date') else int(time.time())
             except (ValueError, TypeError):
                 raise ApiError('STOCK_INVALID_RESPONSE', '交易所响应格式无效') from None
-            return {'status': response.status_code, 'data': data, 'etag': response.headers.get('ETag', ''), 'serverTime': server_time}
+            return {'status': response.status_code, 'data': data}
 
     @staticmethod
     def _accepted(reply):
@@ -342,46 +245,108 @@ class StockExchangeService:
         return reply['data']
 
     @account_operation
-    def status(self, instance):
+    def status(self, instance, refresh=False):
         self._refresh()
         self.configs.path(instance)
-        identity, key = self._identity(instance)
-        record = self._read_snapshot(instance)
+        identity, _ = self._identity(instance)
+        binding = self.bindings.get(instance)
+        now = time.monotonic()
+        is_deleted = identity in self.retired or bool((binding or {}).get('deleted'))
+        record = self.records.get(instance) if is_deleted else self._read_snapshot(instance)
+        if not is_deleted and (refresh or now >= self.last_status.get(instance, 0)):
+            try:
+                reply = self._remote('/v2/instance/status', 'POST', self._signed(instance, 'status'))
+                if reply['status'] == 404 and (reply.get('data') or {}).get('error', {}).get('code') == 'STOCK_NOT_REGISTERED':
+                    self.remote_status[instance] = None
+                else:
+                    result = self._accepted(reply)
+                    self._remember_stock(instance, result)
+                self.last_status[instance] = now + 15
+            except ApiError as error:
+                if error.code == 'STOCK_DELETED':
+                    self._mark_deleted(instance)
+                self.statuses[instance] = str(error)
+                if not binding and identity not in self.retired:
+                    raise
         self.start()
-        with self.lock:
-            binding = self.bindings.get(instance)
-            message = self.statuses.get(instance, '后台行动力同步已启用' if binding else '注册后与当前实例永久绑定；行动力直接使用实例现有记录')
-            warning = self.history.legacy_warnings.get(instance, '')
-            if warning:
-                message += '；' + warning
-            return {'url': exchange_url(), 'instance': instance, 'instanceId': identity,
-                    'bound': bool(binding), 'boundUsername': binding['username'] if binding else '',
-                    'authenticated': instance in self.sessions,
-                    'message': message,
-                    'lastObservedAt': record['observedAt'] if record else 0, 'snapshot': record,
-                    'bindingKey': binding_key(identity, key)}
+        remote = self.remote_status.get(instance) or {}
+        stock = remote.get('stock')
+        binding = self.bindings.get(instance)
+        is_deleted = identity in self.retired or bool((binding or {}).get('deleted'))
+        return {'url': exchange_url(), 'instance': instance, 'instanceId': identity,
+                'registered': not is_deleted and (bool(stock or binding) if instance not in self.remote_status else bool(stock)),
+                'deleted': is_deleted, 'bound': not is_deleted and bool(stock and stock.get('bound')),
+                'stock': stock, 'bindingCode': '' if is_deleted else remote.get('bindingCode', ''),
+                'message': self.statuses.get(instance, '行动力增量同步已启用' if binding else '输入股票名称即可注册当前实例'),
+                'lastObservedAt': record['observedAt'] if record else 0}
+
+    def _mark_deleted(self, instance):
+        """持久保存远端删除状态，退出监视；重启后不再重试原身份。"""
+        identity, _ = self._identity(instance)
+        retired = self.protection.read_file('stocks-retired-v2.json') or {}
+        retired[identity] = True
+        self.protection.write_file('stocks-retired-v2.json', retired)
+        self.retired.add(identity)
+        binding = self.bindings.get(instance)
+        if binding:
+            self.bindings[instance] = {**binding, 'deleted': True}
+            self._save()
+        self.remote_status[instance] = None
+        self.monitors.discard(instance)
+        self.history.pending.pop(instance, None)
+        self.statuses[instance] = '股票已被管理员删除，已停止行动力上报；交易账户需重新绑定其他股票'
+        self._notify({'instance': instance})
+
+    def _remember_stock(self, instance, result):
+        stock = result.get('stock') or {}
+        if type(stock.get('id')) is not int or stock['id'] <= 0 or not isinstance(stock.get('name'), str):
+            raise ApiError('STOCK_INVALID_RESPONSE', '交易所股票响应无效')
+        identity, key = self._identity(instance)
+        previous = self.bindings.get(instance)
+        if previous and previous['url'] != exchange_url():
+            raise ApiError('STOCK_ORIGIN_CHANGED', '实例股票接入地址已改变，请核实原登记')
+        if previous and previous['stockId'] != stock['id']:
+            raise ApiError('INSTANCE_MISMATCH', '远端股票与当前实例登记不一致')
+        self.bindings[instance] = {'stockId': stock['id'], 'username': stock['name'],
+                                   'bindingKey': binding_key(identity, key), 'url': exchange_url(),
+                                   'capabilities': result.get('capabilities', [])}
+        changed = previous != self.bindings[instance]
+        self.remote_status[instance] = result
+        self.monitors.add(instance)
+        if changed:
+            self._save()
 
     @account_operation
-    def request(self, instance, path, method='GET', body=None, etag=''):
+    def register(self, instance, username, notice_version=''):
         self._refresh()
+        self.configs.path(instance)
+        username = username.strip()
+        if not 2 <= len(username) <= 32 or any(char in username for char in '\r\n\x00'):
+            raise ApiError('INVALID_PARAMS', '股票名称须为 2 至 32 个字符')
+        if (self.bindings.get(instance) or {}).get('deleted') or self.protection.resolve(instance) in self.retired:
+            raise ApiError('STOCK_DELETED', '股票已被管理员删除，当前实例身份不可重新注册；请使用其他实例股票绑定交易账户')
+        if not self.bindings.get(instance) and notice_version != 'stock-public-v2-20261101':
+            raise ApiError('STOCK_NOTICE_REQUIRED', '注册前需确认行动力报价与交易数据公开及持续自动同步的告知')
         with self._instance_lock(instance):
-            reply = self._request(instance, path, method, body, etag)
-        if method != 'GET' or reply['status'] == 401:
-            self._notify({'instance': instance})
-        return reply
+            result = self._accepted(self._remote('/v2/instance/register', 'POST', self._signed(instance, 'register', username)))
+            self._remember_stock(instance, result)
+            self.last_status[instance] = time.monotonic() + 15
+        self.start()
+        self._notify({'instance': instance})
+        return self.status(instance)
 
     @account_operation
     def rebuild(self, instance, confirm=False, scope='instance'):
         from module.api.stock_exchange_recovery import StockExchangeRecovery
-        recovery = StockExchangeRecovery(self.configs, self._valid_binding)
+        recovery = StockExchangeRecovery(self.configs, self._valid_binding, registry='stocks-v2.json')
         if confirm:
             self.history.close()
         result = recovery.rebuild(instance, confirm, scope)
         if result['rebuilt']:
             with self.lock:
                 for name in result['affectedInstances']:
-                    for state in (self.bindings, self.sessions, self.identities, self.names, self.stamps, self.records,
-                                  self.statuses, self.attempts, self.uploaded, self.last_upload, self.history.scanned,
+                    for state in (self.bindings, self.identities, self.names, self.stamps, self.records,
+                                  self.statuses, self.remote_status, self.last_status, self.history.scanned,
                                   self.history.next_send, self.history.next_check, self.history.failures,
                                   self.history.pending, self.history.legacy_warnings):
                         state.pop(name, None)
@@ -391,83 +356,6 @@ class StockExchangeService:
             self._refresh()
             self._notify({'instance': instance})
         return result
-
-    def _request(self, instance, path, method='GET', body=None, etag=''):
-        self.configs.path(instance)
-        public = method == 'GET' and (path in ('/meta', '/market', '/seasons') or re.fullmatch(r'/history/[1-9][0-9]*', path) or public_stock_path(path))
-        auth = method == 'POST' and path in ('/register', '/login')
-        private = (method == 'GET' and path in ('/account', '/orders') or method == 'POST' and path in ('/orders', '/watchlist', '/sync', '/logout')
-                   or method == 'DELETE' and re.fullmatch(r'/orders/[1-9][0-9]*', path))
-        if not (public or auth or private):
-            raise ApiError('INVALID_PARAMS', '交易接口不在实例代理白名单中')
-        if body is not None and not isinstance(body, dict):
-            raise ApiError('INVALID_PARAMS', '交易请求正文须为对象')
-        if body and set(body) & {'report', 'evidence', 'instanceId', 'actionPoints', 'observedAt', 'token', 'uploadToken', 'publicKey', 'points', 'digest', 'signature'}:
-            raise ApiError('INVALID_PARAMS', '浏览器不能提供实例身份、报价或远端凭据')
-        if public:
-            if path == '/meta' and self.meta_cache and self.meta_cache[0] > time.monotonic():
-                return self.meta_cache[1]
-            reply = self._remote(path, etag=etag)
-            if path == '/meta' and reply['status'] == 200:
-                self.meta_cache = (time.monotonic() + 60, reply)
-            return reply
-        if path == '/logout':
-            with self.lock:
-                self.sessions.pop(instance, None)
-            return {'status': 200, 'data': {'ok': True}, 'etag': '', 'serverTime': int(time.time())}
-        # 交易会话仍在内存中时也必须核验身份文件，不能用缓存绕过损坏的私钥。
-        self._identity(instance)
-        if auth:
-            with self.lock:
-                previous = self.bindings.get(instance)
-            if previous and previous['url'] != exchange_url():
-                raise ApiError('STOCK_ORIGIN_CHANGED', '交易所地址已改变，请恢复绑定时的地址')
-            if previous and path == '/register':
-                raise ApiError('INSTANCE_TAKEN', '请登录当前实例永久绑定的账户：' + previous['username'])
-            reply = self._remote(path, 'POST', {**(body or {}), 'report': self._report(instance, initial=True)})
-            if reply['status'] >= 400:
-                return reply
-            result = reply['data']
-            actual = result['player']['binding']
-            identity, key = self._identity(instance)
-            if actual['key'] != binding_key(identity, key) or actual['instanceId'] != identity:
-                raise ApiError('INSTANCE_MISMATCH', '远端账户与当前实例身份不一致')
-            if previous and previous['playerId'] != result['player']['id']:
-                raise ApiError('INSTANCE_MISMATCH', '当前实例已经永久绑定其他账户')
-            upload = result.get('uploadToken') or (previous or {}).get('uploadToken')
-            if not upload:
-                rotated = self._accepted(self._remote('/upload-token', 'POST', {}, result['token'], actual['key']))
-                upload = rotated['uploadToken']
-            with self.lock:
-                self.sessions[instance] = result['token']
-                self.bindings[instance] = {'playerId': result['player']['id'], 'username': result['player']['username'], 'bindingKey': actual['key'], 'uploadToken': upload, 'url': exchange_url()}
-                self.monitors.add(instance)
-                self.uploaded[instance] = (result['player']['quote']['observedAt'], result['player']['quote']['price']//100)
-                self._save()
-            self.start()
-            reply['data'] = {'token': 'instance-session', 'player': result['player']}
-            return reply
-        with self.lock:
-            session, binding = self.sessions.get(instance), self.bindings.get(instance)
-        if not session or not binding:
-            raise ApiError('UNAUTHORIZED', '请登录当前实例绑定的交易账户')
-        if binding['url'] != exchange_url():
-            raise ApiError('STOCK_ORIGIN_CHANGED', '交易所地址已改变，请恢复绑定时的地址')
-        if path == '/sync':
-            self.sync_once(instance, force=True)
-            return {'status': 200, 'data': {'ok': True}, 'etag': '', 'serverTime': int(time.time())}
-        reply = self._remote(path, method, body, session, binding['bindingKey'])
-        if path == '/account' and reply['status'] == 200:
-            player = (reply.get('data') or {}).get('player') or {}
-            username = player.get('username')
-            if player.get('id') == binding['playerId'] and isinstance(username, str) and username and username != binding['username']:
-                with self.lock:
-                    binding['username'] = username
-                    self._save()
-        if reply['status'] == 401:
-            with self.lock:
-                self.sessions.pop(instance, None)
-        return reply
 
     @account_operation
     def sync_once(self, only=None, force=False):
@@ -487,19 +375,21 @@ class StockExchangeService:
             if self.stop.is_set():
                 return
             with self._instance_lock(instance):
-                try:
-                    self._sync_instance(instance, force)
-                finally:
-                    self._sync_history(instance, force)
+                self._sync_history(instance, force)
 
     def _sync_history(self, instance, force):
         try:
             with self.lock:
                 binding = self.bindings.get(instance)
-            if not binding:
+            if not binding or binding.get('deleted') or self.protection.resolve(instance) in self.retired:
                 return
             if binding['url'] != exchange_url():
                 raise ApiError('STOCK_ORIGIN_CHANGED', '交易所地址与绑定地址不一致，已停止转发')
+            if force or time.monotonic() >= self.last_status.get(instance, 0):
+                status = self._accepted(self._remote('/v2/instance/status', 'POST', self._signed(instance, 'status')))
+                self._remember_stock(instance, status)
+                self.last_status[instance] = time.monotonic() + 15
+            self._read_snapshot(instance)
             if force or time.monotonic() >= self.history.scanned.get(instance, 0):
                 data, _ = self.configs.read(instance)
                 database = Path(self.configs.root) / 'config' / 'scheduler' / (instance + '.sqlite3')
@@ -510,52 +400,22 @@ class StockExchangeService:
             self.history.synchronize(instance, identity, key, binding, self._remote, self._accepted, force)
             while self.history.pending.get(instance) and not self.stop.is_set():
                 self.history.synchronize(instance, identity, key, binding, self._remote, self._accepted, force)
+            self.statuses[instance] = '行动力已同步；等待新记录'
+            if self.history.legacy_warnings.get(instance):
+                self.statuses[instance] += '；' + self.history.legacy_warnings[instance]
         except (ApiError, OSError, sqlite3.Error, ValueError, TypeError) as error:
+            if isinstance(error, ApiError) and error.code == 'STOCK_DELETED':
+                with self.lock:
+                    self._mark_deleted(instance)
+                return
             with self.lock:
                 self.statuses[instance] = '行动力历史等待补传：' + str(error)
             if force:
                 raise
 
-    def _sync_instance(self, instance, force):
-        stamp, attempts = None, 0
-        try:
-            with self.lock:
-                binding = self.bindings.get(instance)
-            if not binding:
-                return
-            record = self._read_snapshot(instance)
-            if not record:
-                raise ApiError('QUOTE_MISSING', '当前实例尚无行动力记录，请等待游戏任务更新')
-            stamp = (record['observedAt'], record['actionPoints'])
-            with self.lock:
-                attempts, retry_at = self.attempts.get(instance, {}).get(stamp, (0, 0))
-                done = self.uploaded.get(instance) == stamp
-            if done:
-                return
-            if not force and time.monotonic() < retry_at:
-                return
-            if record['observedAt'] < time.time() - 86400:
-                return  # 旧记录由整月历史接口补传，实时接口只接收新鲜报价。
-            if binding['url'] != exchange_url():
-                raise ApiError('STOCK_ORIGIN_CHANGED', '交易所地址与绑定地址不一致，已停止转发')
-            identity, key = self._identity(instance)
-            report = make_report(identity, key, record['actionPoints'], record['observedAt'])
-            self._accepted(self._remote('/quotes', 'POST', {'report': report}, binding['uploadToken'], binding['bindingKey']))
-            with self.lock:
-                self.uploaded[instance] = stamp
-                self.last_upload[instance] = time.monotonic()
-                self.statuses[instance] = '行动力已同步；后台等待新记录'
-                self.attempts.pop(instance, None)
-        except (ApiError, OSError, ValueError, TypeError) as error:
-            with self.lock:
-                self.statuses[instance] = str(error)
-                self.attempts[instance] = {stamp: (attempts + 1, time.monotonic() + min(60, 2 ** min(attempts, 6)))}
-            if force:
-                raise
-
     def _run(self):
         try:
-            while not self.stop.wait(.25):
+            while not self.stop.wait(2):
                 self.sync_once()
         finally:
             self.history.close()

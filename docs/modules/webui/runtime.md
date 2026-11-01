@@ -373,8 +373,8 @@ stateDiagram-v2
 | `config/reloadalas` | updater（更新前写实例名单） | `ProcessManager.restart_processes` | 更新后待恢复的实例列表；恢复后删除 |
 | `config/deploy.yaml` | `DeployConfig.__setattr__` / `save_deploy_settings` | 全模块经 `State.deploy_config` | 部署设置唯一持久化点；属性赋值即落盘 |
 | `config/remote-access.json` | `remote_cloudflare.RemoteIdentity` | Quick Tunnel provider、WebSocket 网关 | 设备 ID、注册密钥与配对凭据摘要；原子写，损坏时拒绝自动重建身份 |
-| `config/stock-exchange/game.key` / `registry.json` | `game_data.GameDataProtector` | 交易代理、中央行动力历史与补传日志 | 独立随机游戏密钥及加密登记/检查点；不绑定主机、用户或项目路径 |
-| `config/stock-exchange/` | `GameDataProtector` / 交易代理 | 交易代理与历史采集 | 密文身份、绑定、补传 SQLite 与 `protected-v2` 标记；旧 cache 文件先搬到本目录再按常规流程处理 |
+| `config/stock-exchange/game.key` / `registry.json` | `game_data.GameDataProtector` | 股票实例同步、中央行动力历史与补传日志 | 独立随机游戏密钥及加密登记/检查点；不绑定主机、用户或项目路径 |
+| `config/stock-exchange/` | `GameDataProtector` / 股票实例同步 | 股票实例同步与历史采集 | 密文身份、绑定、补传 SQLite 与 `protected-v2` 标记；旧 cache 文件先搬到本目录再按常规流程处理 |
 | `password.txt`（仓库根） | `ensure_password_for_host` | 用户查看 | 公网监听自动生成的密码副本 |
 | `cache/wiki_event_calculator.json` | `event_calculator` | `load_event_calculator` | Wiki 解析结果缓存（`cache_version=2`），网络失败时回退 |
 | 内存 `renderables` / `PreviewHub.frames` | 转发线程 / worker | RuntimeService | 日志环形缓冲（≤400）与每实例最新一帧，进程级不持久化 |
@@ -383,13 +383,13 @@ stateDiagram-v2
 
 macOS 同样使用该游戏密钥方案，无需账号保险库的本机提供者支持或 Keychain。项目根目录规范化后再检查链接，macOS 系统临时目录的路径别名不会影响身份；实际写入使用 POSIX 私有权限与 `fcntl` 文件锁。原生 macOS 回归及多进程初始化测试位于 `tests/test_game_data.py`，Apple Silicon 与 Intel 均有 CI 入口。
 
-首次升级读取项目外 `<旧保护上下文>.game` 及对应本机密钥，认证通过后自动保存到新目录，保留原认证上下文和游戏密文，不重写历史。Linux 格式升级使用旧封装记录的主机元数据进行认证，不读取当前 `machine-id`；Windows 旧密钥仍需原用户的 DPAPI 解封。升级保留旧登记和旧密钥供恢复。`config/stock-exchange/protected-v2` 存在后，新登记缺失不能退回旧检查点；密钥、登记或受保护文件丢失/损坏均保留原文件并停止交易同步。玩家可在茗交所页面恢复备份或明确确认重建本地账户；重建新身份不能登录永久绑定原身份的远端账户。备份与部署要求见 [部署文档](../infra/deploy.md#茗交所持久化)。
+首次升级读取项目外 `<旧保护上下文>.game` 及对应本机密钥，认证通过后自动保存到新目录，保留原认证上下文和游戏密文，不重写历史。Linux 格式升级使用旧封装记录的主机元数据进行认证，不读取当前 `machine-id`；Windows 旧密钥仍需原用户的 DPAPI 解封。升级保留旧登记和旧密钥供恢复。`config/stock-exchange/protected-v2` 存在后，新登记缺失不能退回旧检查点；密钥、登记或受保护文件丢失/损坏均保留原文件并停止交易同步。股票身份故障可恢复完整备份，或使用 stock.rebuild API 预览并确认重建股票身份；不改变远端交易账号。备份与部署要求见 [部署文档](../infra/deploy.md#茗交所持久化)。
 
 配置创建和删除不创建交易保护身份；新配置的 `_stockInstance` 为空占位，后续采集或交易使用时登记。普通 `ProgramStore` 使用共享 `azurpilot.db`，`AuthenticatedHistoryStore` 单独维护原实例安全库及认证链。实际行动力采集分别写入两类存储；认证失败或安全历史表损坏只停止交易同步，普通资源观察与调度事务继续提交。交易历史采集使用安全存储的 `strict_history=True`，继续拒绝损坏、回滚和跨实例历史。
 
 删除实例先备份配置、对应调度切片和安全历史，再移除配置与普通调度状态，统计保留原实例名。可信改名同步转移普通调度状态并重新映射文档和值集合引用；普通观察值不用于重建认证链。存储约定见 [普通业务数据存储](../infra/persistence.md)。
 
-`stock_exchange_recovery.StockExchangeRecovery` 先返回重建范围，再在明确确认后保留 `config/backup/stock-rebuild-*/` 安全快照并重建；身份或单实例历史问题只重建当前实例，共享密钥、登记或绑定不可读时须确认所有本地账户。重建与代理请求、后台同步互斥，清除旧本地会话及补传历史，保留总库的调度程序、变量和最新资源观察。
+`stock_exchange_recovery.StockExchangeRecovery` 先返回重建范围，再在明确确认后保留 `config/backup/stock-rebuild-*/` 安全快照并重建；身份或单实例历史问题只重建当前实例，共享密钥、登记或绑定不可读时须确认所有本地账户。重建与股票注册、后台同步互斥，清除本地股票登记及补传历史，保留总库的调度程序、变量和最新资源观察。
 
 TUI 使用相同服务边界；配置弹窗显示时，时钟刷新查询主屏幕的 `HeaderBar`，避免把弹窗当前屏幕当作主布局。
 

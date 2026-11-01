@@ -73,7 +73,7 @@ frontend/
 
 - **主配置**：连接真实 Python API（Starlette 起在临时配置上），验证协议、认证、表单保存全链路；跑 `e2e/` 下除 `mock.spec.ts` 与 `stock-exchange/` 之外的用例。
 - **mock 配置**：`npm run mock`（22492）+ Vite mock 模式（5174），`state.mjs` 全内存，`AZURPILOT_MOCK_SCENARIO=empty` 可测零实例首启，`AZURPILOT_MOCK_PASSWORD` 测登录；只跑 `mock.spec.ts`。界面交互的快速迭代用这套。
-- **stock 配置**：`npm run test:e2e:stock`，只跑 `stock-exchange/`；交易所 mock 由该配置自行启动，需相邻 `../AzurPilot_StockExchange` 仓库，见 [前端 README](../../../frontend/README.md)。
+- **stock 配置**：`npm run test:e2e:stock`，只跑 `stock-exchange/`；股票页面使用隔离本地夹具，无需相邻交易所仓库，见 [前端 README](../../../frontend/README.md)。
 
 ### Python 测试的隔离手法
 

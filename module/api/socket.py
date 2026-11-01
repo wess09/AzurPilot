@@ -272,9 +272,9 @@ class Session:
                 request = Request.model_validate(decoded)
                 if size > 1024 * 1024 and request.method not in ('mind.import', 'mind.recognize'):
                     raise ApiError('INVALID_REQUEST', '请求超过 1 MiB 限制')
-                if request.method in ('stock.request', 'stock.status'):
+                if request.method in ('stock.register', 'stock.status'):
                     self.requests -= 1
-                if self.requests > 30 and request.method not in ('stock.request', 'stock.status'):
+                if self.requests > 30 and request.method not in ('stock.register', 'stock.status'):
                     raise ApiError('RATE_LIMITED', '请求过于频繁')
                 request_id = request.id
                 if request.method == 'accounts.manage' and not self.gateway.is_local(self.ws) and self.ws.url.scheme != 'wss':
