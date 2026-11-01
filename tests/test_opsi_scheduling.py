@@ -120,7 +120,7 @@ class TestOpsiTaskCooldown(unittest.TestCase):
         # 保留真实的代理上下文和短猫准备逻辑，仅替换设备交互。
         search.assert_called_once_with()
         runner.config.task_delay.assert_not_called()
-        reschedule.assert_called_once_with(current_ap=20, enable=True)
+        reschedule.assert_called_once_with(current_ap=20, enable=None)
         self.assertIs(runner.config.task, owner)
         self.assertFalse(runner.is_running_prevent_action_point_overflow_task())
         self.assertFalse(runner.is_running_smart_scheduling_task())

@@ -192,6 +192,8 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
                     "请运行 'python gui.py' 完成初始设置。"
                 )
         self._disable_task_switch = False
+        # 仅本次进程有效的任务排除集合，见 exclude_task_runtime()。
+        self._runtime_task_exclusions = set()
         self.init_task(task)
 
     def init_task(self, task=None):
@@ -321,6 +323,61 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
     def is_actual_task(self):
         return self.task.command.lower() not in ['alas', 'template']
 
+    def exclude_task_runtime(self, task):
+        """在本次进程内临时跳过一项任务的调度，不修改用户保存的设置。
+
+        与直接改写 `Scheduler.Enable` 不同，此排除只作用于本进程的调度队列：
+        用户随时保存的开关保持不变，进程结束或被强制终止也不会留下临时状态。
+
+        排除状态不可重入：内层 `resume_task_runtime()` 会解除外层仍需要的排除，
+        当前只由大世界任务的运行守卫单层使用。
+
+        Args:
+            task (str): 任务命令名，如 `OpsiPreventActionPointOverflow`。
+        """
+        self.__dict__.setdefault('_runtime_task_exclusions', set()).add(task)
+
+    def resume_task_runtime(self, task):
+        """解除 `exclude_task_runtime()` 设置的临时跳过。
+
+        Args:
+            task (str): 任务命令名。
+        """
+        excluded = self.__dict__.get('_runtime_task_exclusions')
+        if excluded:
+            excluded.discard(task)
+
+    def is_task_excluded_runtime(self, task):
+        """判断任务是否被 `exclude_task_runtime()` 临时跳过。
+
+        Args:
+            task (str): 任务命令名。
+
+        Returns:
+            bool: 被临时跳过返回 True。
+        """
+        excluded = self.__dict__.get('_runtime_task_exclusions')
+        return bool(excluded) and task in excluded
+
+    def _apply_runtime_exclusions(self, pending, waiting):
+        """从任务队列中移除被临时跳过的任务。
+
+        被排除的任务在本次进程内不参与派发，即使它是队列里唯一可运行的任务；
+        过滤后队列全空时按既有「没有可运行的任务」流程处理，不回退派发被排除任务。
+
+        Args:
+            pending (list[Function]): 已到期的任务。
+            waiting (list[Function]): 尚未到期的任务。
+
+        Returns:
+            tuple[list[Function], list[Function]]: 过滤后的到期与等待队列。
+        """
+        if not self.__dict__.get('_runtime_task_exclusions'):
+            return pending, waiting
+        kept_pending = [func for func in pending if not self.is_task_excluded_runtime(func.command)]
+        kept_waiting = [func for func in waiting if not self.is_task_excluded_runtime(func.command)]
+        return kept_pending, kept_waiting
+
     def get_next_task(self):
         """计算任务队列，设置 pending_task 和 waiting_task。"""
         pending = []
@@ -353,6 +410,8 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             waiting = sorted(waiting, key=operator.attrgetter("next_run"))
         if error:
             pending = error + pending
+
+        pending, waiting = self._apply_runtime_exclusions(pending, waiting)
 
         self.pending_task = pending
         self.waiting_task = waiting

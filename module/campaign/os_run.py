@@ -63,7 +63,11 @@ class OSCampaignRun(OSMapOperation):
         self.config.opsi_task_delay(ap_limit=True, ap_limit_minutes=delay_minutes)
 
     def _run_opsi_task_with_ap_overflow_guard(self, runner):
-        """运行普通大世界任务时临时关闭防溢出任务，并在结束时恢复调度。
+        """运行普通大世界任务时临时暂停派发防溢出任务，并在结束时恢复调度。
+
+        暂停只作用于本进程的调度队列，不改写用户的
+        `OpsiPreventActionPointOverflow.Scheduler.Enable`。因此运行期间用户
+        保存的开关不会被收尾流程覆盖，进程被强制终止也不会遗留临时状态。
 
         Args:
             runner (callable): 接收 campaign 实例的执行函数。
@@ -74,22 +78,26 @@ class OSCampaignRun(OSMapOperation):
         campaign = None
         prevent_enabled = self.config.is_task_enabled(self.PREVENT_AP_OVERFLOW_TASK)
         if prevent_enabled:
-            logger.info('[战役] 临时关闭防止行动力溢出任务')
-            self.config.cross_set(keys=f'{self.PREVENT_AP_OVERFLOW_TASK}.Scheduler.Enable', value=False)
+            logger.info('[战役] 本次运行暂停派发防止行动力溢出任务')
+            self.config.exclude_task_runtime(self.PREVENT_AP_OVERFLOW_TASK)
 
         try:
             campaign = self.load_campaign()
             return runner(campaign)
         finally:
             if prevent_enabled:
+                self.config.resume_task_runtime(self.PREVENT_AP_OVERFLOW_TASK)
+                # 用户可能在运行期间关闭了防溢出任务，收尾时以磁盘上的最新设置判断。
                 if campaign is not None:
                     try:
-                        campaign.update_prevent_action_point_overflow_schedule(enable=True)
+                        self.config.load()
                     except Exception:
-                        logger.debug('恢复防止行动力溢出任务调度失败，直接重新启用任务', exc_info=True)
-                        self.config.cross_set(keys=f'{self.PREVENT_AP_OVERFLOW_TASK}.Scheduler.Enable', value=True)
-                else:
-                    self.config.cross_set(keys=f'{self.PREVENT_AP_OVERFLOW_TASK}.Scheduler.Enable', value=True)
+                        logger.debug('重新加载配置失败，改用内存中的开关判断', exc_info=True)
+                    if self.config.is_task_enabled(self.PREVENT_AP_OVERFLOW_TASK):
+                        try:
+                            campaign.update_prevent_action_point_overflow_schedule(enable=None)
+                        except Exception:
+                            logger.debug('更新防止行动力溢出任务排期失败，保留用户当前设置', exc_info=True)
 
     def opsi_explore(self):
         """执行大世界海域开荒探索任务。"""

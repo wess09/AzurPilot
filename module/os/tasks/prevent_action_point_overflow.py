@@ -112,12 +112,14 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
         logger.info(f'[大世界-防止行动力溢出] 防止行动力溢出检查：当前行动力={current}, 总行动力={total}')
         return current
 
-    def update_prevent_action_point_overflow_schedule(self, current_ap=None, enable=True):
+    def update_prevent_action_point_overflow_schedule(self, current_ap=None, enable=None):
         """按当前真实行动力更新防止行动力溢出任务下次运行时间。
 
         Args:
             current_ap (int | None): 当前真实行动力。为 None 时现场 OCR 获取。
-            enable (bool): 是否同时启用防止行动力溢出任务。默认 True。
+            enable (bool | None): 是否同时启用防止行动力溢出任务。
+                True 启用、False 关闭、None 保留用户当前设置。默认为 None，
+                即「只更新下次运行时间，不改动任务开关」。
         """
         if current_ap is None:
             current_ap = self._get_current_action_point_for_overflow()
@@ -138,7 +140,8 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
             f'{delay_minutes:.0f} 分钟后运行'
         )
         with self.config.multi_set():
-            self._set_prevent_action_point_overflow_enabled(enable)
+            if enable is not None:
+                self._set_prevent_action_point_overflow_enabled(enable)
             locked_until = task_zone_locked_until(self.config, self.TASK_NAME_PREVENT_AP_OVERFLOW)
             if locked_until is not None:
                 self.config.task_delay(target=locked_until, task=self.TASK_NAME_PREVENT_AP_OVERFLOW)
@@ -236,11 +239,11 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
             if not started:
                 if current_ap < upperbound:
                     logger.info(f'[大世界-防止行动力溢出] 当前行动力未达到上限 ({current_ap} < {upperbound})，更新下次运行时间')
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                     self.config.task_stop()
             elif current_ap < lowerbound:
                 logger.info(f'[大世界-防止行动力溢出] 当前行动力已低于下限 ({current_ap} < {lowerbound})，停止防止行动力溢出任务')
-                self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                 self.config.task_stop()
 
             started = True
@@ -252,7 +255,7 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
                     if current is None:
                         current = current_ap
                     logger.info(f'[大世界-防止行动力溢出] 当前行动力无法进入目标海域，停止防止行动力溢出任务: current={current}, error={e}')
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current, enable=None)
                     self.config.task_stop()
                 except TaskEnd:
                     delay_request = overflow.request
@@ -264,5 +267,5 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
                         current_ap = self._get_current_action_point_for_overflow()
                     except Exception:
                         logger.debug('[大世界-防止行动力溢出] 防止行动力溢出任务结束后刷新当前行动力失败，使用运行前数值', exc_info=True)
-                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=True)
+                    self.update_prevent_action_point_overflow_schedule(current_ap=current_ap, enable=None)
                     raise
