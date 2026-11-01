@@ -20,9 +20,10 @@
 from module.config.utils import get_os_reset_remain
 from module.logger import logger
 from module.os.config import OSConfig
+from module.os.globe_operation import OSZoneLockedError
 from module.os.map_operation import OSMapOperation
 from module.os.operation_siren import OperationSiren
-from module.os.tasks.smart_explore import delay_task_for_smart_explore
+from module.os.tasks.smart_explore import delay_task_for_locked_zone, delay_task_for_smart_explore
 from module.os_handler.action_point import ActionPointLimit
 
 
@@ -133,6 +134,8 @@ class OSCampaignRun(OSMapOperation):
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_shop())
         except ActionPointLimit as e:
             self.delay_opsi_tasks_after_ap_limit(e)
+        except OSZoneLockedError:
+            delay_task_for_locked_zone(self.config)
 
     def opsi_voucher(self):
         """执行大世界特别兑换凭证购买任务。"""
@@ -149,6 +152,8 @@ class OSCampaignRun(OSMapOperation):
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_daily())
         except ActionPointLimit as e:
             self.delay_opsi_tasks_after_ap_limit(e)
+        except OSZoneLockedError:
+            delay_task_for_locked_zone(self.config)
 
     def opsi_meowfficer_farming(self):
         """执行大世界指挥喵打捞刷取任务。"""
@@ -232,8 +237,11 @@ class OSCampaignRun(OSMapOperation):
         """执行大世界防止行动力溢出任务。"""
         if delay_task_for_smart_explore(self.config):
             return
-        campaign = self.load_campaign()
-        campaign.os_prevent_action_point_overflow()
+        try:
+            campaign = self.load_campaign()
+            campaign.os_prevent_action_point_overflow()
+        except OSZoneLockedError:
+            delay_task_for_locked_zone(self.config)
 
     def opsi_cross_month(self):
         """执行大世界跨月重置前置与收尾任务。"""

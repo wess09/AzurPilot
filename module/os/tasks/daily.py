@@ -16,7 +16,7 @@ from module.config.utils import get_os_next_reset, get_os_reset_remain
 from module.exception import ScriptError
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
-from module.os.globe_operation import OSExploreError
+from module.os.globe_operation import OSExploreError, OSZoneLockedError
 from module.os.map import OSMap
 from module.os.tasks.smart_explore import monthly_explore_complete
 from module.os_handler.action_point import ActionPointLimit
@@ -131,6 +131,8 @@ class OpsiDaily(OSMap):
                 self.globe_goto(zone, types='SAFE', refresh=True)
             except ActionPointLimit:
                 continue
+            except OSZoneLockedError:
+                raise
             except OSExploreError:
                 self._os_defer_mission_zone(zone)
                 self._os_return_from_unavailable_mission()
@@ -235,6 +237,8 @@ class OpsiDaily(OSMap):
                     continue
                 try:
                     self.globe_goto(zone, refresh=True)
+                except OSZoneLockedError:
+                    raise
                 except OSExploreError:
                     if not skip_unavailable:
                         raise

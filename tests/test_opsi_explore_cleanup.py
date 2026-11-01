@@ -243,7 +243,8 @@ class CleanupTests(unittest.TestCase):
         def loop():
             yield None
             raise GameStuckError('循环未退出')
-        runner = SimpleNamespace(loop=loop, is_in_globe=lambda: True, handle_zone_pinned=Mock(return_value=False))
+        runner = SimpleNamespace(loop=loop, is_in_globe=lambda: True, handle_zone_pinned=Mock(return_value=False),
+                                 record_globe_suppressed_zones=Mock())
         with patch('module.os.globe_operation.Timer', return_value=SimpleNamespace(start=lambda: SimpleNamespace(reached=lambda: True))):
             GlobeOperation.os_map_goto_globe(runner)
         runner.handle_zone_pinned.assert_called_once()

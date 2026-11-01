@@ -9,11 +9,16 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from module.base.utils import load_image
 from module.campaign.os_run import OSCampaignRun
 from module.config.config import AzurLaneConfig, Function, TaskEnd
 from module.config.deep import deep_set
+from module.os.assets import ZONE_LOCKED
+from module.os.globe_operation import GlobeOperation, OSExploreError, OSZoneLockedError
+from module.os.operation_siren import OperationSiren
 from module.os.tasks.shop import OpsiShop
-from module.os.tasks.smart_explore import SMART_EXPLORE_DELAY_TASKS
+from module.os.tasks.prevent_action_point_overflow import OpsiPreventActionPointOverflow
+from module.os.tasks.smart_explore import SMART_EXPLORE_DELAY_TASKS, SMART_EXPLORE_ROUTES
 
 
 NOW = datetime(2026, 10, 4, 8)
@@ -56,9 +61,9 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
             ('module.config.config_updater.filepath_config', str(self.path)),
             ('module.config.config.current_time', NOW),
             ('module.config.utils.current_time', NOW),
-            ('module.os.tasks.smart_explore.current_time', NOW),
             ('module.os.tasks.shop.current_time', NOW),
             ('module.os.tasks.smart_explore.get_os_next_reset', RESET),
+            ('module.os.globe_operation.get_os_next_reset', RESET),
             ('module.os.tasks.smart_explore.get_server_next_update', UPDATE),
         ):
             patcher = patch(target, return_value=value)
@@ -98,6 +103,20 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
         self.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState',
                               {'reset': RESET.isoformat(), 'phase': 'done'})
+
+    def suppressed(self, count=30, reset=RESET):
+        self.config.cross_set('OpsiScheduling.Storage.Storage.SuppressedZones',
+                              {'reset': reset.isoformat(), 'count': count})
+
+    def route_progress(self, count):
+        indexes = []
+        for route in SMART_EXPLORE_ROUTES:
+            index = 0
+            while count and index < len(route):
+                count -= route[index] >= 11
+                index += 1
+            indexes.append(index)
+        self.config.cross_set('OpsiScheduling.Storage.Storage.SmartExplore.next', indexes)
 
     def forbid_smart_progress_read(self):
         get = self.config.cross_get
@@ -205,9 +224,170 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
                               {'reset': '2026-10-01T00:00:00', 'phase': 'done'})
         self.postpone()
 
-    def test_first_round_completion_still_waits_for_remaining_exploration(self):
-        self.config.cross_set('OpsiScheduling.Storage.Storage.SmartExplore.next', [30, 0, 0])
+    def test_29_suppressed_zones_still_waits_for_exploration(self):
+        self.route_progress(29)
         self.postpone()
+
+    def test_30_or_more_confirmed_zones_release_all_three_tasks(self):
+        self.postpone()
+        for count in (30, 31, 34, 72):
+            with self.subTest(count=count):
+                self.suppressed(count)
+                self.assertEqual(self.pending(), ORDER)
+                for task in SMART_EXPLORE_DELAY_TASKS:
+                    self.run_task(task)
+        self.assertIsNone(self.config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState'))
+
+    def test_route_checkpoints_count_normal_zones_without_ports(self):
+        for count in (30, 31):
+            with self.subTest(count=count):
+                self.route_progress(count)
+                for task in SMART_EXPLORE_DELAY_TASKS:
+                    self.run_task(task)
+
+    def test_confirmed_count_skips_further_smart_progress_reads_and_survives_reload(self):
+        self.suppressed(34)
+        self.config = AzurLaneConfig('opsi-delay-test', task='OpsiDaily')
+        self.runner.config = self.config
+        self.forbid_smart_progress_read()
+        for task in SMART_EXPLORE_DELAY_TASKS:
+            self.run_task(task)
+
+    def test_stale_or_invalid_suppression_count_cannot_release_tasks(self):
+        for state in ({'reset': '2026-10-01T00:00:00', 'count': 34},
+                      {'reset': RESET.isoformat(), 'count': 29},
+                      {'reset': RESET.isoformat(), 'count': 73},
+                      {'reset': RESET.isoformat(), 'count': '34'}, None):
+            with self.subTest(state=state):
+                self.config.cross_set('OpsiScheduling.Storage.Storage.SuppressedZones', state)
+                self.postpone()
+
+    def test_locked_zone_delays_only_the_current_task_until_next_day(self):
+        self.suppressed(34)
+        for task in SMART_EXPLORE_DELAY_TASKS:
+            with self.subTest(task=task):
+                before = {name: self.config.cross_get(f'{name}.Scheduler.NextRun') for name in ORDER}
+                campaign_method = getattr(self.campaign, ENTRIES[task].replace('opsi_', 'os_', 1))
+                campaign_method.side_effect = OSZoneLockedError('周边海域未压制')
+                with self.assertRaises(TaskEnd):
+                    self.run_task(task)
+                self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), UPDATE)
+                self.assertEqual(self.config.cross_get(f'{task}.Storage.Storage.ZoneLockedUntil'), UPDATE.isoformat())
+                for other in ORDER:
+                    if other != task:
+                        self.assertEqual(self.config.cross_get(f'{other}.Scheduler.NextRun'), before[other])
+                campaign_method.side_effect = None
+                campaign_method.reset_mock()
+                # 即使行动力重排误将任务唤起，当天也不再进入海域。
+                with self.assertRaises(TaskEnd):
+                    self.run_task(task)
+                campaign_method.assert_not_called()
+
+    def test_locked_zone_delay_expires_the_next_day(self):
+        self.suppressed()
+        self.config.cross_set('OpsiDaily.Storage.Storage.ZoneLockedUntil', UPDATE.isoformat())
+        with patch('module.os.tasks.smart_explore.get_server_next_update', return_value=UPDATE + timedelta(days=1)):
+            self.run_task('OpsiDaily')
+        self.campaign.os_daily.assert_called_once_with()
+
+    def test_supplied_locked_screen_defers_each_task_through_the_real_entry(self):
+        self.suppressed(34)
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        campaign = OperationSiren.__new__(OperationSiren)
+        campaign.config = self.config
+        campaign.device = SimpleNamespace(image=image, click=Mock())
+        campaign.loop = lambda: iter((image,))
+        campaign.is_in_map = Mock(return_value=False)
+        campaign.is_zone_pinned = Mock(return_value=True)
+        campaign.get_zone_pinned_name = Mock(return_value='DANGEROUS')
+        campaign.appear = lambda button, offset=0: button.match(image, offset=offset)
+        campaign.update_prevent_action_point_overflow_schedule = Mock(
+            side_effect=lambda enable: self.config.cross_set(
+                'OpsiPreventActionPointOverflow.Scheduler.Enable', enable))
+        for method in ('os_daily', 'os_shop', 'os_prevent_action_point_overflow'):
+            setattr(campaign, method, lambda: campaign.globe_enter(campaign.name_to_zone(24)))
+        self.runner.load_campaign.return_value = campaign
+        del self.runner._run_opsi_task_with_ap_overflow_guard
+        for task in SMART_EXPLORE_DELAY_TASKS:
+            with self.subTest(task=task), self.assertRaises(TaskEnd):
+                self.run_task(task)
+            self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), UPDATE)
+            self.assertTrue(self.config.is_task_enabled('OpsiPreventActionPointOverflow'))
+        campaign.device.click.assert_not_called()
+
+    def test_other_navigation_errors_keep_existing_recovery(self):
+        self.suppressed()
+        for task in SMART_EXPLORE_DELAY_TASKS:
+            method = getattr(self.campaign, ENTRIES[task].replace('opsi_', 'os_', 1))
+            method.side_effect = OSExploreError('未确认进入，未出现锁定提示')
+            with self.assertRaises(OSExploreError):
+                self.run_task(task)
+            self.assertIsNone(self.config.cross_get(f'{task}.Storage.Storage.ZoneLockedUntil'))
+
+    def test_action_point_rescheduling_keeps_the_locked_zone_deadline(self):
+        task = 'OpsiPreventActionPointOverflow'
+        self.config.cross_set(f'{task}.Storage.Storage.ZoneLockedUntil', UPDATE.isoformat())
+        campaign = OpsiPreventActionPointOverflow.__new__(OpsiPreventActionPointOverflow)
+        campaign.config = self.config
+        with patch.object(campaign, '_get_prevent_action_point_overflow_thresholds', return_value=(200, 100)):
+            campaign.update_prevent_action_point_overflow_schedule(current_ap=200)
+        self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), UPDATE)
+
+    def test_supplied_lock_and_suppression_count_are_recognized_offline(self):
+        campaign = OperationSiren.__new__(OperationSiren)
+        campaign.config = self.config
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        self.assertTrue(ZONE_LOCKED.match(image, offset=(20, 20)))
+        campaign.device = SimpleNamespace(image=image)
+        campaign.record_globe_suppressed_zones()
+        self.assertIsNone(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones'))
+        campaign.device.image = image.copy()
+        campaign.record_globe_suppressed_zones()
+        self.assertEqual(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones'),
+                         {'reset': RESET.isoformat(), 'count': 34})
+        self.forbid_smart_progress_read()
+        for task in SMART_EXPLORE_DELAY_TASKS:
+            self.run_task(task)
+
+    def test_count_confirmation_requires_fresh_matching_frames_and_stops_after_30(self):
+        campaign = OperationSiren.__new__(OperationSiren)
+        campaign.config = self.config
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        campaign.device = SimpleNamespace(image=image)
+        with patch('module.os.globe_operation.Digit.ocr', side_effect=[30, 31, 31]) as ocr:
+            campaign.record_globe_suppressed_zones()
+            campaign.record_globe_suppressed_zones()
+            self.assertEqual(ocr.call_count, 1)
+            campaign.device.image = image.copy()
+            campaign.record_globe_suppressed_zones()
+            self.assertIsNone(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones'))
+            campaign.device.image = image.copy()
+            campaign.record_globe_suppressed_zones()
+            campaign.device.image = image.copy()
+            campaign.record_globe_suppressed_zones()
+            self.assertEqual(ocr.call_count, 3)
+        self.assertEqual(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.count'), 31)
+
+    def test_globe_navigation_records_count_during_its_existing_screenshot_loop(self):
+        campaign = OperationSiren.__new__(OperationSiren)
+        campaign.config = self.config
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        campaign.device = SimpleNamespace(image=image)
+
+        def frames():
+            for _ in range(3):
+                campaign.device.image = image.copy()
+                yield campaign.device.image
+
+        campaign.loop = frames
+        campaign.is_in_globe = Mock(return_value=True)
+        campaign.handle_zone_pinned = Mock(return_value=False)
+        with (patch('module.os.globe_operation.Digit.ocr', return_value=30),
+              patch('module.os.globe_operation.Timer') as timer):
+            timer.return_value.start.return_value = timer.return_value
+            timer.return_value.reached.return_value = True
+            GlobeOperation.os_map_goto_globe(campaign)
+        self.assertEqual(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.count'), 30)
 
     def test_disabling_any_smart_explore_prerequisite_restores_normal_tasks(self):
         self.postpone()
@@ -227,9 +407,8 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
                 self.config.cross_set(key, original)
 
     def test_shop_monthly_date_limit_uses_original_next_day_delay(self):
-        self.postpone()
+        self.suppressed()
         self.config.cross_set('OpsiShop.OpsiShop.DisableBeforeDate', NOW.day)
-        self.assertEqual(self.pending(), ['OpsiShop', 'OpsiScheduling', 'OpsiDaily', 'OpsiPreventActionPointOverflow'])
         self.forbid_smart_progress_read()
         self.campaign.config = self.config
         self.campaign.perform_port_shop_purchase = Mock(side_effect=AssertionError('禁购期间不能购买'))
@@ -239,8 +418,8 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.assertEqual(self.config.cross_get('OpsiShop.Scheduler.NextRun'), UPDATE)
         self.campaign.perform_port_shop_purchase.assert_not_called()
 
-    def test_date_limit_expiry_allows_shop_to_wait_for_smart_exploration(self):
-        self.config.cross_set('OpsiShop.OpsiShop.DisableBeforeDate', NOW.day - 1)
+    def test_shop_date_limit_does_not_change_smart_exploration_queue(self):
+        self.config.cross_set('OpsiShop.OpsiShop.DisableBeforeDate', NOW.day)
         self.postpone(['OpsiShop'])
         self.assertEqual(self.pending(), ['OpsiDaily', 'OpsiPreventActionPointOverflow', 'OpsiScheduling', 'OpsiShop'])
 
