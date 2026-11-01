@@ -15,7 +15,7 @@ from module.config.config import AzurLaneConfig, TaskEnd
 from module.config.deep import deep_get, deep_set
 from module.exception import GameStuckError, MapDetectionError
 from module.os.assets import ZONE_LOCKED
-from module.os.globe_operation import OSExploreError
+from module.os.globe_operation import OSExploreError, OSZoneLockedError
 from module.os.map import OSMap
 from module.os.operation_siren import OperationSiren
 from module.os_handler.action_point import ActionPointLimit
@@ -228,14 +228,14 @@ class TestOpsiDaily(unittest.TestCase):
         self.assertEqual(self.runner.run_auto_search.call_count, 2)
         self.runner.config.task_delay.assert_not_called()
 
-    def test_locked_template_defers_only_the_actual_target_zone(self):
+    def test_locked_template_reaches_task_entry_for_next_day_deferral(self):
         self.prepare_mission_entry()
-        self.assertEqual(self.runner.os_get_next_mission(skip_unavailable=True), 'mission_zone_unavailable')
+        with self.assertRaises(OSZoneLockedError):
+            self.runner.os_get_next_mission(skip_unavailable=True)
         self.runner.device.click.assert_not_called()
-        self.runner.ensure_no_zone_pinned.assert_called_once_with()
-        self.runner.os_globe_goto_map.assert_called_once_with()
-        self.assertEqual(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions'),
-                         {'until': UPDATE.isoformat(), 'zones': [44]})
+        self.runner.ensure_no_zone_pinned.assert_not_called()
+        self.runner.os_globe_goto_map.assert_not_called()
+        self.assertIsNone(deep_get(self.data, 'OpsiDaily.OpsiDaily.DeferredMissions'))
         self.assertIsNone(deep_get(self.data, 'OpsiDaily.Scheduler.NextRun'))
         self.runner.config.task_delay.assert_not_called()
 
@@ -333,6 +333,7 @@ class TestOpsiDaily(unittest.TestCase):
 
     def test_recovery_failure_does_not_mark_daily_done(self):
         self.prepare_mission_entry()
+        self.runner.globe_enter = Mock(side_effect=OSExploreError)
         self.runner.os_globe_goto_map.side_effect = GameStuckError
         with self.assertRaises(GameStuckError):
             self.runner.os_get_next_mission(skip_unavailable=True)
