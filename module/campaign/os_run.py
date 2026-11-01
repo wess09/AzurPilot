@@ -152,8 +152,6 @@ class OSCampaignRun(OSMapOperation):
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_daily())
         except ActionPointLimit as e:
             self.delay_opsi_tasks_after_ap_limit(e)
-        except OSZoneLockedError:
-            delay_task_for_locked_zone(self.config)
 
     def opsi_meowfficer_farming(self):
         """执行大世界指挥喵打捞刷取任务。"""

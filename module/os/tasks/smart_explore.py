@@ -66,7 +66,9 @@ def _smart_explore_pending(config):
 
 
 def task_zone_locked_until(config, task):
-    """锁定提示造成的延期只在当天有效，行动力重排也不能提前它。"""
+    """商店和防溢出的锁定延期只在当天有效；每日委托仍逐条跳过。"""
+    if task == 'OpsiDaily':
+        return None
     until = get_server_next_update('00:00')
     if config.cross_get(f'{task}.Storage.Storage.ZoneLockedUntil') == until.isoformat():
         return until
