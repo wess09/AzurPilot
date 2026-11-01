@@ -143,7 +143,7 @@ class SmartExploreTests(unittest.TestCase):
     def test_routes_cover_all_72_normal_zones_once_and_keep_ports(self):
         self.assertEqual(len(SMART_EXPLORE_ZONES), 72)
         self.assertEqual(set(SMART_EXPLORE_ZONES), set(DIC_OS_MAP) - set(range(8)) - {154})
-        self.assertEqual(SMART_EXPLORE_ROUTES[0][:4], (0, 44, 42, 22))
+        self.assertEqual(SMART_EXPLORE_ROUTES[0][:5], (0, 44, 24, 42, 22))
         self.assertEqual(SMART_EXPLORE_ROUTES[1], (155, 156, 2, 71, 73, 3, 121))
 
     def test_only_coin_target_mode_and_enabled_scheduler_can_explore(self):
@@ -515,7 +515,7 @@ class SmartExploreTests(unittest.TestCase):
                 self.assertEqual(self.runner.config.OpsiSmartExplore_Enable, True)
                 restarted = AzurLaneConfig('smart-explore-test', task='OpsiScheduling')
                 self.assertEqual(restarted.cross_get('OpsiScheduling.Storage.Storage')['ActionPointPurchase']['phase'], 'done')
-                self.assertEqual(restarted.cross_get('OpsiScheduling.Storage.Storage')['SmartExplore']['next'][0], 30)
+                self.assertEqual(restarted.cross_get('OpsiScheduling.Storage.Storage')['SmartExplore']['next'][0], 31)
 
     def test_monthly_explore_entry_delegates_before_game_initialization(self):
         runner = OSCampaignRun.__new__(OSCampaignRun)
