@@ -108,7 +108,7 @@ module/island_planner/          # 岛屿生产规划器（工具页任务，移�
 3. 库存与阈值比较生成补种/补产列表（季节限定产品按当季过滤），扣除在产岗位需求；
 4. `goto_postmanage()` 进入岗位管理，`post_manage_mode` 切到生产页签（必要时按 `post_manage_swipe_count` 上下滑动定位岗位列表）；
 5. 逐岗位 `post_open` 打开详情：完成→收取，工作中→记录产品与 `Duration` OCR 的剩余时间，空闲→进入派遣流程；
-6. 派遣走固定顺序：点空岗 → `ISLAND_SELECT_CHARACTER_CHECK` 时按角色筛选器 `select_character`（切换体力排序后查找 `WorkerJuu`；筛选按钮、弹窗和列表刷新由共享选择器超时重试）→ `ISLAND_SELECT_PRODUCT_CHECK` 时 `select_product` 选中产品，`ensure_select_product_material` 发现种子/鱼苗/饲料不足则跳转对应商店页签补买后重来 → `POST_MAX` + `POST_ADD_ORDER` 确认。补货目标（如农田 `seed_number`）只是尽力而为：点击购买后购买弹窗 3 秒内不关闭（岛币不足时游戏提示资源不足、把数量重置为 1 并保持弹窗）即视为购买失败，`buy_shop_item` 点弹窗右上角 ✕（固定坐标 `ISLAND_SHOPPING_CLOSE`，无模板）关闭后返回产品选择页；本轮任务内同一材料不再尝试同样多的数量，库存已够页面「当前/需求」中的单次需求就直接派遣，不够时只补差到单次需求，仍失败则跳过该岗位（`plan_select_product_material` 决定）；
+6. 派遣走固定顺序：点空岗 → `ISLAND_SELECT_CHARACTER_CHECK` 时按角色筛选器 `select_character`（切换体力排序后查找 `WorkerJuu`；筛选按钮、弹窗和列表刷新由共享选择器超时重试）→ `ISLAND_SELECT_PRODUCT_CHECK` 时 `select_product` 选中产品，`ensure_select_product_material` 发现种子/鱼苗/饲料不足则跳转对应商店页签补买后重来 → `POST_MAX` + `POST_ADD_ORDER` 确认。商店只列出账号已解锁的商品，未解锁的商品不占格子，后续格子整体前移（如国际服未解锁洋葱时，苗圃商店草莓格子上是棉花），因此 `buy_shop_item` 以商品图标在整页范围内模板搜索（`ISLAND_SHOP_ITEM_SEARCH_OFFSET`，相似度 `ISLAND_SHOP_ITEM_SIMILARITY`=0.93，种子包外观相同只有图案不同，阈值低了会认错），找不到时超时放弃购买而不会点到别的商品；`tests/test_island_seed_shop_search.py` 用国际服截图校验定位。补货目标（如农田 `seed_number`）只是尽力而为：点击购买后购买弹窗 3 秒内不关闭（岛币不足时游戏提示资源不足、把数量重置为 1 并保持弹窗）即视为购买失败，`buy_shop_item` 点弹窗右上角 ✕（固定坐标 `ISLAND_SHOPPING_CLOSE`，无模板）关闭后返回产品选择页；本轮任务内同一材料不再尝试同样多的数量，库存已够页面「当前/需求」中的单次需求就直接派遣，不够时只补差到单次需求，仍失败则跳过该岗位（`plan_select_product_material` 决定）；
 7. 全部安排完成后，把所有岗位完成时间与 6 小时兜底值取最小，`config.task_delay(target=...)` 预约下次运行。
 
 ### 店铺排产（IslandShopBase）
