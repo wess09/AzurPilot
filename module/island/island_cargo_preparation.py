@@ -9,8 +9,9 @@ from module.config.time_source import now as current_time
 
 import numpy as np
 from cached_property import cached_property
+from scipy import ndimage
 
-from module.base.button import ButtonGrid
+from module.base.button import Button, ButtonGrid
 from module.base.timer import Timer
 from module.base.utils import area_offset, crop, image_color_count, rgb2gray
 from module.island.assets import (
@@ -64,6 +65,78 @@ def cargo_can_start(available_item_count, action_button_active, refresh):
     return bool(available_item_count > 0 and action_button_active and not refresh)
 
 
+def should_replace_unfillable(short, delivered, refresh):
+    """判断无法凑齐货物的待装载委托是否应当更换。
+
+    更换委托会扣除一次运输次数，且已提交的货物不退还。因此只更换尚未提交
+    任何货物、且仍缺货的委托；已提交过部分货物的委托保留等待补齐。
+
+    Args:
+        short (bool): 是否存在库存不足的货物格。
+        delivered (bool): 是否已有货物格提交完成。
+        refresh (bool): 是否已因黑名单需要更换。
+
+    Returns:
+        bool: 是否需要因缺货而更换委托。
+    """
+    return bool(short and not delivered and not refresh)
+
+
+# 更换委托列表中每行左侧的序号（01、02……）所在列，以及右侧货物数量所在横向范围
+JOB_LIST_AREA = (405, 150, 900, 580)
+JOB_LIST_NUMBER_COLUMN = (412, 450)
+JOB_LIST_COUNT_COLUMN = (488, 900)
+JOB_LIST_ROW_VISIBLE = (190, 540)
+
+
+def _text_components(mask, min_width, min_height):
+    """返回二值图中足够大的文字连通块数量。"""
+    labels, _ = ndimage.label(ndimage.binary_dilation(mask, iterations=2))
+    count = 0
+    for region in ndimage.find_objects(labels):
+        height = region[0].stop - region[0].start
+        width = region[1].stop - region[1].start
+        if width >= min_width and height >= min_height:
+            count += 1
+    return count
+
+
+def classify_job_list_rows(image):
+    """识别更换委托列表中当前可见的委托行，并判断每行货物是否都能凑齐。
+
+    列表不默认选中任何委托，且保留上次的滚动位置，因此按每行左侧的序号定位行。
+    每个货物格下方显示「库存/需求」：库存足够时为蓝色，不足时为红色（选中行
+    会被高亮染成偏粉的红色）。一行内全部为蓝色才视为可完成。
+
+    Args:
+        image (np.ndarray): 截图。
+
+    Returns:
+        list[tuple[int, bool]]: 按从上到下排序的 (行中心 y, 是否可完成)。
+    """
+    img = image.astype(int)
+    x1, y1, x2, y2 = JOB_LIST_AREA
+    number_left, number_right = JOB_LIST_NUMBER_COLUMN
+    dark = img[y1:y2, number_left:number_right].max(axis=2) < 110
+    labels, _ = ndimage.label(ndimage.binary_dilation(dark, iterations=2))
+    rows = []
+    for region in ndimage.find_objects(labels):
+        height = region[0].stop - region[0].start
+        width = region[1].stop - region[1].start
+        if width < 8 or height < 12:
+            continue
+        center_y = (region[0].start + region[0].stop) // 2 + y1
+        if not JOB_LIST_ROW_VISIBLE[0] <= center_y <= JOB_LIST_ROW_VISIBLE[1]:
+            continue
+        count_left, count_right = JOB_LIST_COUNT_COLUMN
+        strip = img[center_y + 12:center_y + 40, count_left:count_right]
+        r, g, b = strip[..., 0], strip[..., 1], strip[..., 2]
+        enough = _text_components((b > 200) & (r < 120) & (g > 140), 14, 10)
+        short = _text_components((r - b > 25) & (r - g > 40) & (r > 150), 14, 10)
+        rows.append((center_y, bool(enough and not short)))
+    return sorted(rows)
+
+
 class CargoPreparationTransport:
     """货物筹备中的单个货运栏位。"""
 
@@ -76,6 +149,9 @@ class CargoPreparationTransport:
         self.duration = None
         self.start = True
         self.refresh = False
+        self.short = False
+        self.delivered = False
+        self.replace_unfillable = False
         self.items = SelectedGrids([])
         self.parse_transport(main)
         if not self.valid:
@@ -120,13 +196,21 @@ class CargoPreparationTransport:
                 grid_shape=(3, 1),
                 name='ITEMS'
             )
-            self.items = SelectedGrids([
+            cells = SelectedGrids([
                 CargoPreparationTransportItem(self.image, button, self.blacklist)
                 for button in grids.buttons
-            ]).select(valid=True)
+            ])
+            self.items = cells.select(valid=True)
+            # 国际服逐件提交货物，已提交的格子显示蓝底「COMPLETED」印章，不再计入待装载货物
+            self.delivered = bool(cells.select(completed=True).count)
+            self.short = bool(self.items.filter(lambda item: not item.load and not item.refresh).count)
             self.refresh = (
                 main.appear(TRANSPORT_REFRESH, offset=self.offset)
                 and bool(self.items.select(refresh=True).count)
+            )
+            self.replace_unfillable = (
+                main.appear(TRANSPORT_REFRESH, offset=self.offset)
+                and should_replace_unfillable(self.short, self.delivered, self.refresh)
             )
             self.start = cargo_can_start(
                 available_item_count=self.items.count,
@@ -207,6 +291,10 @@ class CargoPreparationTransport:
             info['Duration'] = self.duration
         info['Start'] = self.start
         info['Refresh'] = self.refresh
+        if self.status == 'pending':
+            info['Short'] = self.short
+            info['Delivered'] = self.delivered
+            info['ReplaceUnfillable'] = self.replace_unfillable
         return ', '.join([f'{k}: {v}' for k, v in info.items()])
 
 
@@ -218,9 +306,23 @@ class CargoPreparationTransportItem:
         self.button = button
         self.blacklist = blacklist
         self.image = crop(image, button.area)
+        self.completed = self.predict_completed()
         self.valid = self.predict_valid()
         self.refresh = False
         self.load = self.predict_load()
+
+    def predict_completed(self):
+        """检测货物格子是否已提交完成（顶部蓝条、蓝底「COMPLETED」印章）。
+
+        Returns:
+            bool: 已提交返回 True，否则返回 False。
+        """
+        return bool(image_color_count(
+            self.image[:10, :, :],
+            color=(90, 201, 255),
+            threshold=34,
+            count=500
+        ))
 
     def predict_valid(self):
         """检测当前货物格子是否为有效格子。
@@ -229,13 +331,7 @@ class CargoPreparationTransportItem:
             bool: 有效返回 True，否则返回 False。
         """
         mean = np.mean(np.max(self.image, axis=2) > 234)
-        blue_bar_check = image_color_count(
-            self.image[:10, :, :],
-            color=(90, 201, 255),
-            threshold=34,
-            count=500
-        )
-        return mean > 0.3 and not blue_bar_check
+        return mean > 0.3 and not self.completed
 
     def predict_load(self):
         """预测货物格子是否满足装载条件或命中黑名单。
@@ -349,10 +445,11 @@ class IslandCargoPreparation(IslandUI):
 
     def transport_refresh(self, comm):
         """
-        替换包含黑名单货物的货运委托。
+        为空白栏位选择委托，或更换命中黑名单/无法凑齐货物的委托。
 
-        更换页面默认选中第一个可替换委托，因此只需要确认列表不为空，
-        再点击确定按钮。
+        更换列表不保证默认选中可完成的委托，因此只选择货物全部足够的委托；
+        列表中没有可完成的委托时刷新一次，仍没有就保留原委托，避免为换成
+        另一个同样无法完成的委托而白白扣除运输次数。
         """
         logger.info('货物准备替换委托')
         self.interval_clear([TRANSPORT_REFRESH, CARGO_PREPARATION_REPLACE_CONFIRM])
@@ -361,14 +458,14 @@ class IslandCargoPreparation(IslandUI):
             return False
 
         for _ in range(self.REPLACE_REFRESH_TRIALS):
-            result = self._confirm_first_replacement()
+            result = self._confirm_fillable_replacement()
             if result == 'success':
                 return True
-            if result == 'empty_refreshed':
+            if result == 'refreshed':
                 continue
             return False
 
-        logger.warning('[岛屿-货物筹备] 更换列表刷新后仍为空，返回货运界面')
+        logger.warning('[岛屿-货物筹备] 刷新后仍没有可完成的委托，保留原委托并返回货运界面')
         self._back_to_transport()
         return False
 
@@ -376,11 +473,12 @@ class IslandCargoPreparation(IslandUI):
         """
         判断货运栏位是否需要进入更换页面。
 
-        空白栏位需要直接确认默认选中的第一个委托；待装载栏位仅在命中黑名单时更换。
+        空白栏位需要选择委托；待装载栏位在命中黑名单，或尚未提交任何货物且
+        存在库存不足的货物时更换。已提交过货物的委托更换后不退还，保留等待补齐。
         """
         if comm.status == 'empty':
             return True
-        return comm.status == 'pending' and comm.refresh
+        return comm.status == 'pending' and (comm.refresh or comm.replace_unfillable)
 
     def transport_slot_empty(self, index, offset):
         """检测白色空白货运栏位。"""
@@ -518,31 +616,57 @@ class IslandCargoPreparation(IslandUI):
         logger.warning('[岛屿-货物筹备] 进入更换委托页面超时')
         return False
 
-    def _confirm_first_replacement(self):
-        """
-        确认更换页面默认选中的第一个委托。
+    def _refresh_replace_list(self, reason):
+        """刷新更换委托列表；刷新不可用时返回货运界面。
 
         Returns:
-            str: success / empty_refreshed / empty_unavailable / failed
+            str: refreshed / no_fillable
         """
+        if self.appear_then_click(REFRESH_BUTTON_BLUE, offset=(20, 20), interval=2):
+            logger.info(f'[岛屿-货物筹备] {reason}，刷新更换委托列表')
+            self._wait_replace_refresh()
+            return 'refreshed'
+        logger.info(f'[岛屿-货物筹备] {reason}且刷新不可用，保留原委托')
+        self._back_to_transport()
+        return 'no_fillable'
+
+    def _confirm_fillable_replacement(self):
+        """
+        在更换页面选中第一个货物全部足够的委托并确认。
+
+        Returns:
+            str: success / refreshed / no_fillable / failed
+        """
+        selected = False
         for _ in self.loop(timeout=8):
             if not self.appear(REPLACE_PAGE_CHECK, offset=(20, 20)):
                 continue
 
             if self.appear(EMPTY_LIST_CHECK, offset=(20, 20)):
-                logger.info('[岛屿-货物筹备] 更换委托列表为空')
-                if self.appear_then_click(REFRESH_BUTTON_BLUE, offset=(20, 20), interval=2):
-                    logger.info('[岛屿-货物筹备] 刷新更换委托列表')
-                    self._wait_replace_refresh()
-                    return 'empty_refreshed'
                 if self.appear(REFRESH_BUTTON_GREY, offset=(20, 20)):
                     logger.info('[岛屿-货物筹备] 更换委托列表为空且刷新不可用')
                     self._back_to_transport()
-                    return 'empty_unavailable'
+                    return 'no_fillable'
+                return self._refresh_replace_list('更换委托列表为空')
+
+            if not selected:
+                rows = classify_job_list_rows(self.device.image)
+                logger.attr('更换委托行（y, 可完成）', rows)
+                target = next((center_y for center_y, fillable in rows if fillable), None)
+                if target is None:
+                    if not rows:
+                        continue
+                    return self._refresh_replace_list('更换列表中没有货物全部足够的委托')
+                row = Button(
+                    area=(470, target - 35, 890, target + 35), color=(),
+                    button=(560, target - 30, 880, target + 30), name='CARGO_PREPARATION_JOB_ROW',
+                )
+                self.device.click(row)
+                selected = True
                 continue
 
             if self.appear_then_click(CARGO_PREPARATION_REPLACE_CONFIRM, offset=(20, 20), interval=2):
-                logger.info('[岛屿-货物筹备] 确认更换默认选中的货运委托')
+                logger.info('[岛屿-货物筹备] 确认更换为货物全部足够的委托')
                 if self._wait_transport_after_replace():
                     return 'success'
                 return 'failed'
@@ -563,6 +687,12 @@ class IslandCargoPreparation(IslandUI):
         confirm_timer = Timer(1, count=2).start()
         for _ in self.loop(timeout=12):
             if self.handle_popup_confirm('CARGO_PREPARATION_REPLACE', offset=(30, 30)):
+                confirm_timer.reset()
+                continue
+            # 更换已有委托时弹出「已提交的货物不退还、扣除运输次数」确认框；国际服的白色确认框
+            # 不匹配通用弹窗资源，但确认按钮文字与更换列表的确认按钮相同，列表关闭后在弹窗位置搜索
+            if not self.appear(REPLACE_PAGE_CHECK, offset=(20, 20)) and self.appear_then_click(
+                    CARGO_PREPARATION_REPLACE_CONFIRM, offset=(120, 130), interval=2):
                 confirm_timer.reset()
                 continue
             if self.island_in_transport():
