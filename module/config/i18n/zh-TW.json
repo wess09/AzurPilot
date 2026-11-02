@@ -4522,6 +4522,18 @@
       "name": "按作物設定補種目標",
       "help": "每行一條「作物: 目標庫存」，如\ncorn: 200\nwheat: 80\n列出的作物庫存低於自己的目標時補種，未列出的作物沿用「農田作物底線」；目標填 0 表示不補種該作物。留空則全部使用「農田作物底線」。缺口比例最大的作物優先補種。\n可用作物：wheat, corn, rice, chinese_cabbage, potato, soybean, pasture, coffee_bean\n島嶼生產規劃器執行後會自動改寫本項。"
     },
+    "DefaultCrop": {
+      "name": "預設作物",
+      "help": "所有作物都達到目標後，空餘崗位種植的作物（崗位數見下一項）。島嶼生產規劃器會按閒時產量（為季節 PT）改寫。",
+      "wheat": "小麥",
+      "corn": "玉米",
+      "rice": "大米",
+      "chinese_cabbage": "白菜",
+      "potato": "馬鈴薯",
+      "soybean": "大豆",
+      "pasture": "牧草",
+      "coffee_bean": "咖啡豆"
+    },
     "PlantPotatoes": {
       "name": "種小麥",
       "help": "",
@@ -4560,6 +4572,19 @@
     "IgnoreAvocado": {
       "name": "忽視酪梨",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "預設作物",
+      "help": "所有作物都達到目標後，空餘崗位種植的作物（崗位數見下一項）。島嶼生產規劃器會按閒時產量（為季節 PT）改寫。",
+      "apple": "蘋果",
+      "citrus": "柑橘",
+      "banana": "香蕉",
+      "mango": "芒果",
+      "lemon": "檸檬",
+      "avocado": "酪梨",
+      "rubber": "橡膠",
+      "pear": "秋月梨",
+      "persimmon": "柿子"
     },
     "PlantRubber": {
       "name": "種橡膠",
@@ -4601,6 +4626,19 @@
     "IgnorePineapple": {
       "name": "忽視鳳梨",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "預設作物",
+      "help": "所有作物都達到目標後，空餘崗位種植的作物（崗位數見下一項）。島嶼生產規劃器會按閒時產量（為季節 PT）改寫。",
+      "carrot": "胡蘿蔔",
+      "onion": "洋蔥",
+      "flax": "亞麻",
+      "strawberry": "草莓",
+      "cotton": "棉花",
+      "tea": "茶葉",
+      "lavender": "薰衣草",
+      "pineapple": "鳳梨",
+      "asparagus": "蘆筍"
     },
     "PlantLavender": {
       "name": "種薰衣草",
@@ -6950,7 +6988,7 @@
     },
     "ApplySettings": {
       "name": "寫入設定",
-      "help": "關閉時只在日誌中預覽方案；開啟後覆蓋各店鋪 Meal/MealNumber、AwayCook、經營商品，農田「按作物設定補種目標」，礦山/林場/漁場最低庫存，牧場雞肉/豬肉底線與牛奶/羊毛開關，以及製造業各產線崗位數。",
+      "help": "關閉時只在日誌中預覽方案；開啟後覆蓋各店鋪 Meal/MealNumber、AwayCook、經營商品，農田「按作物設定補種目標」，礦山/林場/漁場最低庫存，牧場雞肉/豬肉底線與牛奶/羊毛開關，、製造業各產線崗位數，以及空餘崗位的預設作物/產品與崗位數。",
       "True": "開啟",
       "False": "關閉"
     },
@@ -6969,6 +7007,20 @@
     "SeasonTaskTargets": {
       "name": "季節任務目標",
       "help": "每行「物品英文名: 數量」，規劃按本季剩餘天數平均分配產量。開啟「掃描季節任務」時每次執行自動改寫；關閉後可手動編輯。"
+    },
+    "ScanCargoOrders": {
+      "name": "掃描貨運委託",
+      "help": "執行時進入貨運頁面，讀取已提交過部分貨物的委託還缺的貨物，寫入「貨運缺口」。這類委託更換後不退還已提交的貨物，只能補齊。",
+      "True": "開啟",
+      "False": "關閉"
+    },
+    "CargoTargets": {
+      "name": "貨運缺口",
+      "help": "每行「物品英文名: 數量」。開啟「掃描貨運委託」時每次執行自動改寫；關閉後可手動編輯。"
+    },
+    "CargoTargetDays": {
+      "name": "貨運缺口期限（天）",
+      "help": "貨運缺口在多少天內補齊，規劃按此分配產量。預設 1 天。"
     },
     "ExtraTargets": {
       "name": "額外目標",

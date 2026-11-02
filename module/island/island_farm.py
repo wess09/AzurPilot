@@ -82,19 +82,19 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
         self.ignore_avocado = self.config.IslandOrchard_IgnoreAvocado
         self.ignore_pineapple = self.config.IslandNursery_IgnorePineapple
 
-        # 修改默认作物配置：数值类型，表示要种植默认作物的岗位数量
+        # 默认作物配置：所有作物达标后，最多 plant_default 个岗位种植 default_crop（可配置，岛屿生产规划器会按闲时产量改写）
         self.plant_config = {
             'farm': {
                 'plant_default': self.config.IslandFarm_PlantPotatoes,  # 0-4
-                'default_crop': 'wheat'
+                'default_crop': self.config.IslandFarm_DefaultCrop or 'wheat'
             },
             'orchard': {
                 'plant_default': self.config.IslandOrchard_PlantRubber,  # 0-4
-                'default_crop': 'rubber'
+                'default_crop': self.config.IslandOrchard_DefaultCrop or 'rubber'
             },
             'nursery': {
                 'plant_default': self.config.IslandNursery_PlantLavender,  # 0-2
-                'default_crop': 'lavender'
+                'default_crop': self.config.IslandNursery_DefaultCrop or 'lavender'
             }
         }
 

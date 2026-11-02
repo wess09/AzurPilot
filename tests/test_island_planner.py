@@ -285,9 +285,11 @@ class PlannerTaskTest(unittest.TestCase):
         with patch.object(IslandProductionPlanner, '__init__', lambda self: None):
             planner = IslandProductionPlanner()
         overrides.setdefault('IslandProductionPlanner_ScanSeasonTasks', False)
+        overrides.setdefault('IslandProductionPlanner_ScanCargoOrders', False)
         planner.config = FakeConfig(technology, IslandProductionPlanner_RescanTechnology=False, **overrides)
         planner.get_technology_status = lambda: self.fail('saved technology must not trigger a scan')
         planner.scan_season_task_targets = lambda: {3009: 30}
+        planner.scan_cargo_targets = lambda: {2011: 33}
         return planner, planner.run()
 
     def test_preview_does_not_write(self):
@@ -325,6 +327,99 @@ class PlannerTaskTest(unittest.TestCase):
         self.assertEqual(
             planner.config.written['IslandProductionPlanner.IslandProductionPlanner.SeasonTaskTargets'].strip(),
             'Apple Pie (3009): 30')
+
+
+    def test_scan_writes_cargo_targets(self):
+        planner, result = self.run_planner(IslandProductionPlanner_ScanCargoOrders=True)
+        self.assertTrue(result)
+        self.assertEqual(
+            planner.config.written['IslandProductionPlanner.IslandProductionPlanner.CargoTargets'].strip(),
+            'Strawberries (2011): 33')
+
+    def test_apply_writes_default_products(self):
+        planner, result = self.run_planner(IslandProductionPlanner_ApplySettings=True)
+        self.assertTrue(result)
+        written = planner.config.written
+        self.assertIn('IslandMineForest.IslandMine.MineSilver', written)
+        self.assertIn(written.get('IslandFarm.IslandFarm.DefaultCrop', 'wheat'), sm.CROP_ITEM_IDS['farm'])
+
+
+class PriorityTest(unittest.TestCase):
+    """目标 → 季节 PT → 岛币：第二次求解不降低 PT，岛币不少于第一次。"""
+
+    def setUp(self):
+        self.previous_server = server.server
+        server.server = 'en'
+
+    def tearDown(self):
+        server.server = self.previous_server
+
+    def test_coins_after_pt(self):
+        from module.island_planner.priorities import solve_with_priorities
+        tech = {tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY}
+        first, _ = solve(tech, profit=0)
+        calculator = ProductionPlanCalculator(
+            tech, activity_list=get_current_activity_list(NOW),
+            restaurant_settings=sm.restaurant_settings({rid: 'gold' for rid in sm.KITCHENS}, {}),
+            daily_profit_lower_limit=0)
+        sm.restrict_calculator(calculator, MEAL_OPTIONS, PRODUCT_OPTIONS)
+        self.assertTrue(solve_with_priorities(calculator, current_time=NOW))
+        self.assertGreaterEqual(calculator.total_pt, first.total_pt * (1 - 1e-4))
+        self.assertGreaterEqual(calculator.daily_profit, first.daily_profit - 1e-6)
+
+    def test_default_products(self):
+        calculator, _ = solve({tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY})
+        values, _ = sm.default_product_settings(calculator)
+        for path, value in values.items():
+            task, group, key = path.split('.')
+            self.assertIn(value, ARGUMENT[group][key]['option'], path)
+        # 有闲时作物时写入默认作物，岗位数不超过已解锁岗位
+        farm = values['IslandFarm.IslandFarm.PlantPotatoes']
+        unlocked = sum(calculator.slot_available.get(slot, False) for slot in calculator.GROUP_TO_SLOTS['field'])
+        self.assertLessEqual(farm, unlocked)
+
+    def test_idle_posts_counts_workload(self):
+        calculator, _ = solve({tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY})
+        calculator.idle_accumulating_items_per_day = {2705: 4 * 10}
+        calculator.place_efficiency_bonus[401] = 0
+        recipe = next(r for r, g in calculator.recipe_group.items()
+                      if g == 'mine' and 2705 in sm.DIC_ISLAND_RECIPE[r]['commission_product'])
+        per_batch = sm.DIC_ISLAND_RECIPE[recipe]['commission_product'][2705]
+        expected = -(-(40 / per_batch * sm.DIC_ISLAND_RECIPE[recipe]['workload']) // sm.DAILY_WORKLOAD)
+        self.assertEqual(sm.idle_posts(calculator, 'mine', 2705), expected)
+
+
+class CargoReaderTest(unittest.TestCase):
+    """EN 货运页截图：栏位 1 淡水鱼肉 6/16（另 2 格已提交），栏位 2 淡水鱼肉 6/26（未提交），
+    栏位 3 草莓 2/35（另 2 格已提交）。"""
+
+    def setUp(self):
+        self.previous_server = server.server
+        server.server = 'en'
+
+    def tearDown(self):
+        server.server = self.previous_server
+
+    def test_partial_orders(self):
+        from module.base.utils import load_image
+        from module.island_planner.cargo import partial_order_targets, read_cargo_slots
+        slots = read_cargo_slots(load_image(str(ROOT / 'tests/fixtures/island_planner/en_cargo_partial.png')))
+        self.assertEqual([slot['completed'] for slot in slots], [2, 0, 2])
+        self.assertEqual([slot['items'] for slot in slots],
+                         [[(2521, 6, 16)], [(2521, 6, 26)], [(2011, 2, 35)]])
+        # 未提交过货物的栏位 2 可以更换，不计入
+        self.assertEqual(partial_order_targets(slots), {2011: 33, 2521: 10})
+
+    def test_shared_stock_counts_once(self):
+        from module.island_planner.cargo import partial_order_targets
+        slots = [{'completed': 1, 'items': [(2011, 5, 10)]}, {'completed': 2, 'items': [(2011, 5, 20)]}]
+        self.assertEqual(partial_order_targets(slots), {2011: 25})
+
+    def test_with_period(self):
+        from module.island_planner.planner import with_period
+        self.assertEqual(with_period({2011: [33, {'count': 5, 'period': 3}]}, 2),
+                         {2011: [{'count': 33, 'period': 2.0}, {'count': 5, 'period': 3}]})
+        self.assertEqual(with_period({2011: [1]}, 'bad'), {2011: [{'count': 1, 'period': 1.0}]})
 
 
 class TargetParsingTest(unittest.TestCase):
