@@ -5,7 +5,19 @@ from pathlib import Path
 
 import module.config.server as server
 
-server.server = 'en'
+_previous_server = None
+
+
+def setUpModule():
+    # 截图来自 EN 服；只在本模块测试期间切换服务器，结束后恢复，避免影响其他测试
+    global _previous_server
+    _previous_server = server.server
+    server.server = 'en'
+
+
+def tearDownModule():
+    server.server = _previous_server
+
 
 from module.base.utils import load_image  # noqa: E402
 from module.island import island_fish_meat as fm  # noqa: E402
