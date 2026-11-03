@@ -3412,6 +3412,8 @@
       "MinCrab": 50,
       "MinSquid": 50,
       "MinSeaCucumber": 50,
+      "MinKoiCarp": 0,
+      "MinMackerel": 0,
       "MinFreshwaterFishMeat": 0,
       "MinSaltwaterFishMeat": 0,
       "PlantYellowfinTuna": 3,
