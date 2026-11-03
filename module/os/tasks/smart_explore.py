@@ -235,7 +235,7 @@ class SmartExploreMixin:
             self._save_smart_explore_state(dict(state, attempts=state['attempts'] - 1))
             raise
         state['next'][round_index] += 1
-        self._save_smart_explore_state(dict(state, attempts=0))
+        self._save_smart_explore_state(dict(state, attempts=0, return_to_port=True))
 
     def _clear_smart_explore_zone(self):
         """复用月度开荒的样本、扫描、清敌、全图事件扫描及战后恢复。"""
@@ -270,8 +270,19 @@ class SmartExploreMixin:
 
         return self._run_with_opsi_task_context('OpsiExploreCleanup', cleanup)
 
+    def _return_smart_explore_to_port(self):
+        """智能开荒收尾先回 NY 港区海域，再交接后续任务。
+
+        Pages:
+            in: IN_MAP 或 IN_GLOBE，可覆盖本轮决策的行动力面板
+            out: IN_MAP，NY 港区
+        """
+        self._close_scheduling_action_point()
+        logger.info('[大世界-智能开荒] 返回 NY 港区，继续后续任务')
+        self.globe_goto(0)
+
     def _run_smart_explore_once(self, yellow_coins, total_ap, current_ap):
-        """仅默认黄币调度执行智能开荒；补币逐图达标即回侵蚀一。"""
+        """仅默认黄币调度执行智能开荒；补币逐图达标后回港交接。"""
         if not smart_explore_enabled(self.config) or self.is_running_prevent_action_point_overflow_task():
             return False
         previous = self._get_smart_scheduling_state_value('SmartExplore')
@@ -322,7 +333,8 @@ class SmartExploreMixin:
             if self._config_enabled(SMART_EXPLORE_CONFIG + 'EventCleanup'):
                 if not self._run_smart_explore_cleanup():
                     return True
-            self._save_smart_explore_state(dict(state, phase='done'))
+            self._return_smart_explore_to_port()
+            self._save_smart_explore_state(dict(state, phase='done', return_to_port=False))
             return True
         active = self._is_coin_replenish_active()
         if yellow_coins < preserve or active:
@@ -332,7 +344,13 @@ class SmartExploreMixin:
                     if state['next'][round_index] < len(SMART_EXPLORE_ROUTES[round_index]):
                         self._run_smart_explore_node(state, round_index)
                         return True
+        # 旧断点没有回港标记时也先回港；后续练级轮次不重复回港。
+        if state.get('return_to_port', True) or active:
+            self._return_smart_explore_to_port()
+            self._save_smart_explore_state(dict(state, return_to_port=False))
             self._clear_coin_replenish_target()
+            # 交回主循环检查任务切换，避免留在总览直接开始侵蚀一。
+            return True
         if total_ap <= self._get_effective_cl1_ap_preserve():
             if self._try_scheduling_action_point_purchase():
                 return True

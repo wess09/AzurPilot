@@ -1896,6 +1896,8 @@ IslandFishery:
   MinCrab: 50
   MinSquid: 50
   MinSeaCucumber: 50
+  MinFreshwaterFishMeat: 0
+  MinSaltwaterFishMeat: 0
   PlantYellowfinTuna:
     value: 3
     option: [ 0, 1, 2, 3 ]

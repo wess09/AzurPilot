@@ -946,6 +946,8 @@ class GeneratedConfig:
     IslandFishery_MinCrab = 50
     IslandFishery_MinSquid = 50
     IslandFishery_MinSeaCucumber = 50
+    IslandFishery_MinFreshwaterFishMeat = 0
+    IslandFishery_MinSaltwaterFishMeat = 0
     IslandFishery_PlantYellowfinTuna = 3  # 0, 1, 2, 3
     IslandFishery_RancherFilter = 'WorkerJuu'
 

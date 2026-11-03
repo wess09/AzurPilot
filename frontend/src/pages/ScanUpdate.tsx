@@ -49,6 +49,20 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
       await api.request('tasks.run', {instance, task: 'DockScan'}); notify(ui('mind.scanStarted'))
     })
   }
+  async function exportShips() {
+    await action(async () => {
+      const latest = await api.request('dock.report', {instance})
+      if (!alive.current) return
+      publish(latest)
+      const exportedAt = new Date().toISOString()
+      const blob = new Blob([JSON.stringify({version: 1, exported_at: exportedAt, ...latest}, null, 2) + '\n'], {type: 'application/json;charset=utf-8'})
+      const url = URL.createObjectURL(blob), link = document.createElement('a')
+      link.href = url
+      link.download = `${instance}-ships-${exportedAt.replace(/[:.]/g, '-')}.json`
+      document.body.appendChild(link)
+      try {link.click()} finally {link.remove(); setTimeout(() => URL.revokeObjectURL(url), 0)}
+    })
+  }
   async function upload(event: ChangeEvent<HTMLInputElement>, screenshot: boolean) {
     const files = Array.from(event.target.files ?? []); event.target.value = ''
     if (!files.length || pending.length) return
@@ -89,7 +103,8 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
     {error && <ErrorBox message={error}/>}{!report && <Loading/>}
     <section className="mind-panel"><h2>1. {ui('analysis.startRead')}</h2><p>{ui('analysis.readFields')}</p><p>{ui('analysis.scanHint')}</p>
       <div className="mind-toolbar"><label>{ui('mind.minLevel')}<input type="number" min={1} max={125} value={min} disabled={disabled || !!startReason} onChange={e => setMin(e.target.value)}/></label><label>{ui('mind.maxLevel')}<input type="number" min={1} max={125} value={max} disabled={disabled || !!startReason} onChange={e => setMax(e.target.value)}/></label><button className="button primary" disabled={disabled || !!startReason} title={startReason} onClick={() => void run()}>{ui('analysis.scan')}</button>{scanning && <button className="button secondary" disabled={disabled} onClick={() => void action(async () => {await api.request('scheduler.stop', {instance})})}>{ui('mind.stop')}</button>}</div>
-      <div className="mind-toolbar"><label className="button secondary file-button">{ui('mind.import')}<input type="file" accept=".json,.csv,.xlsx" multiple disabled={disabled || !!pending.length} onChange={event => void upload(event, false)}/></label><label className="button secondary file-button">{ui('mind.screenshots')}<input type="file" accept="image/*" multiple disabled={disabled || !!pending.length} onChange={event => void upload(event, true)}/></label></div>
+      <div className="mind-toolbar"><label className="button secondary file-button">{ui('mind.import')}<input type="file" accept=".json,.csv,.xlsx" multiple disabled={disabled || !!pending.length} onChange={event => void upload(event, false)}/></label><label className="button secondary file-button">{ui('mind.screenshots')}<input type="file" accept="image/*" multiple disabled={disabled || !!pending.length} onChange={event => void upload(event, true)}/></label><button className="button secondary" disabled={disabled} title={ui('analysis.exportHint')} onClick={() => void exportShips()}>{ui('analysis.exportJson')}</button></div>
+      <p>{ui('analysis.exportHint')}</p>
       {!!pending.length && <p role="status">{ui('analysis.pendingBlock')}</p>}
       <details><summary>{ui('analysis.importLegacy')}</summary><p>{ui('analysis.legacyHint')}</p><button className="button secondary" disabled={disabled || !!pending.length || report?.legacy_imported} onClick={() => void action(async () => {publish(await api.request('dock.importLegacy', {instance, revision: report!.revision})); setProgress(ui('analysis.received'))})}>{ui(report?.legacy_imported ? 'analysis.legacyImported' : 'analysis.importLegacy')}</button></details>
     </section>

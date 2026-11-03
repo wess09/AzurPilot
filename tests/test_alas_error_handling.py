@@ -35,6 +35,9 @@ class TestGameNotRunningErrorHandling(unittest.TestCase):
         script.__dict__['config'] = Mock()
         script.config.cross_get.return_value = False
         script.config.Error_LowPushMode = False
+        script.config.Error_GameStuckRestart = True
+        script.config.Error_GameStuckThreshold = 3
+        script.consecutive_game_not_running = 0
         error = GameNotRunningError('Game not running')
         script.__dict__['commission'] = Mock(side_effect=error)
 
@@ -65,6 +68,9 @@ class TestLowPushMode(unittest.TestCase):
         script.__dict__['config'] = Mock()
         script.config.cross_get.return_value = False
         script.config.Error_LowPushMode = low_push_mode
+        script.config.Error_GameStuckRestart = True
+        script.config.Error_GameStuckThreshold = 3
+        script.consecutive_game_not_running = 0
         return script
 
     def test_recoverable_error_is_pushed_when_mode_disabled(self):
