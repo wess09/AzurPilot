@@ -275,13 +275,23 @@ class IslandShopBase(Island, WarehouseOCR):
             failed_product (str): 未能识别选中的商品名称。
             failed_count (int): 当前累计失败次数。
 
+        Returns:
+            bool: True 表示已重新进入岗位，可以继续派遣；False 表示达到上限，已返回岗位管理页，
+                本轮放弃该商品。
+
         Raises:
-            GameStuckError: 连续失败达到上限或界面异常时抛出。
+            GameStuckError: 无法返回岗位管理页或无法重新打开岗位时抛出。
         """
         if failed_count >= self.PRODUCT_SELECT_RETRY_LIMIT:
-            raise GameStuckError(
-                f"{self._item_cn(product)}生产选择餐品时连续{failed_count}次未识别到 {self._item_cn(failed_product)}"
+            # 产品列表里始终找不到该商品，通常是岛屿科技尚未解锁（或缺少对应服务器的识别图），
+            # 界面本身并未卡住。重启游戏也找不到，只会每轮重复重启，因此本轮跳过该商品。
+            logger.warning(
+                f"[岛屿] {self._item_cn(product)}生产选择餐品时连续{failed_count}次未识别到 "
+                f"{self._item_cn(failed_product)}，可能尚未解锁，本轮跳过"
             )
+            if not self.back_to_postmanage_from_dispatch():
+                raise GameStuckError(f"{self._item_cn(product)}生产选择餐品失败后无法返回岗位管理页")
+            return False
 
         logger.warning(
             f"{self._item_cn(product)}生产选择餐品时未识别到 {self._item_cn(failed_product)}，"
@@ -295,6 +305,7 @@ class IslandShopBase(Island, WarehouseOCR):
         if not self.post_open(post_button):
             raise GameStuckError(f"{self._item_cn(product)}生产选择餐品失败后无法重新打开岗位")
         self.device.sleep(0.5)
+        return True
 
     def increase_product_selection_failure(self, product_select_failures, failed_product):
         """记录单个餐品的选择失败次数。
@@ -371,9 +382,9 @@ class IslandShopBase(Island, WarehouseOCR):
                                     failed_count = self.increase_product_selection_failure(
                                         product_select_failures, product2
                                     )
-                                    self.retry_product_selection_from_postmanage(
-                                        post_button, product, product2, failed_count
-                                    )
+                                    if not self.retry_product_selection_from_postmanage(
+                                            post_button, product, product2, failed_count):
+                                        return 0
                                     continue
                                 self.device.sleep(0.5)
                                 if self.produce_check():
@@ -408,9 +419,10 @@ class IslandShopBase(Island, WarehouseOCR):
                     failed_count = self.increase_product_selection_failure(
                         product_select_failures, product
                     )
-                    self.retry_product_selection_from_postmanage(
-                        post_button, product, product, failed_count
-                    )
+                    if not self.retry_product_selection_from_postmanage(
+                            post_button, product, product, failed_count):
+                        # 调用方把返回 0 的商品记入 chef_unavailable_products，本轮不再尝试
+                        return 0
                 continue
         else:
             raise GameStuckError(f"{self._item_cn(product)}生产派遣流程超时")
