@@ -85,13 +85,15 @@ class MapEventHandler(EnemySearchingHandler):
             logger.info(f'{GET_ADAPTABILITY} -> {CLICK_SAFE_AREA}')
             self.device.click(CLICK_SAFE_AREA)
             return True
-        if self.appear(GET_MEOWFFICER_ITEMS_1, interval=interval):
+        # 国际服「Search Complete」标题比素材位置低约 6 像素，固定位置判断会漏判而卡死，
+        # 因此在小范围内做模板匹配
+        if self.appear(GET_MEOWFFICER_ITEMS_1, offset=(20, 20), interval=interval):
             if drop:
                 drop.handle_add(main=self, before=2)
             logger.info(f'{GET_MEOWFFICER_ITEMS_1} -> {CLICK_SAFE_AREA}')
             self.device.click(CLICK_SAFE_AREA)
             return True
-        if self.appear(GET_MEOWFFICER_ITEMS_2, interval=interval):
+        if self.appear(GET_MEOWFFICER_ITEMS_2, offset=(20, 20), interval=interval):
             if drop:
                 drop.handle_add(main=self, before=2)
             logger.info(f'{GET_MEOWFFICER_ITEMS_2} -> {CLICK_SAFE_AREA}')
