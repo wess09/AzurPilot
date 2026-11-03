@@ -441,6 +441,27 @@ def manufacture_settings(calculator):
     return values
 
 
+# 各区域任务实际运行的岗位数配置；规划器按它限制可用岗位，超出部分的产能不会实际产出。
+POSITION_LIMITS = {
+    'field': 'IslandFarm.IslandFarm.Positions',
+    'orchard': 'IslandFarm.IslandOrchard.Positions',
+    'nursery': 'IslandFarm.IslandNursery.Positions',
+    'mine': 'IslandMineForest.IslandMine.Positions',
+    'wood': 'IslandMineForest.IslandForest.Positions',
+    'fishery': 'IslandRancher.IslandFishery.Positions',
+}
+
+
+def position_limits(get):
+    """读取各区域的岗位数配置，get(path) 取不到或不是整数时不限制该区域。"""
+    limits = {}
+    for group, path in POSITION_LIMITS.items():
+        value = get(path)
+        if isinstance(value, int) and not isinstance(value, bool):
+            limits[group] = value
+    return limits
+
+
 # 闲时产能（目标都达标后的空余岗位）写入各区域的「默认产品」设置。
 # crops 为可选默认作物（名称 -> 物品ID），fixed 为写死的默认产品；count 为默认产品岗位数配置及其上限。
 DEFAULT_PRODUCTS = {

@@ -149,8 +149,9 @@ def read_cargo_slots(image, matcher=None, ocr=None):
     """读取三个主栏位的货物格。
 
     Returns:
-        list[dict]: 每个栏位 {'completed': 已提交格数, 'items': [(物品ID, 库存, 需求)]}，
-            运行中或空栏位没有数字，items 为空。无法识别的格子记录警告后跳过。
+        list[dict]: 每个栏位 {'completed': 已提交格数, 'items': [(物品ID, 库存, 需求)],
+            'unreadable': 无法识别的格数}，
+            运行中或空栏位没有数字，items 为空。无法识别的格子记录警告后跳过并计数。
     """
     matcher = matcher or CargoItemMatcher()
     ocr = ocr or CargoCounterOcr()
@@ -169,15 +170,17 @@ def read_cargo_slots(image, matcher=None, ocr=None):
                 continue
             cards.append((SUBMISSION_GRID[card, slot].area, counter))
         items = []
+        unreadable = 0
         if cards:
             counters = ocr.ocr([counter for _, counter in cards], direct_ocr=True)
             for (area, _), (stock, need) in zip(cards, counters):
                 item_id = matcher.match(image, area)
                 if item_id is None or need <= 0:
                     logger.warning(f'[岛屿-货运] 栏位 {slot + 1} 有无法识别的货物格')
+                    unreadable += 1
                     continue
                 items.append((item_id, stock, need))
-        slots.append({'completed': completed, 'items': items})
+        slots.append({'completed': completed, 'items': items, 'unreadable': unreadable})
     return slots
 
 
@@ -197,3 +200,11 @@ def partial_order_targets(slots):
             need[item_id] = need.get(item_id, 0) + required
             stock[item_id] = max(stock.get(item_id, 0), current)
     return {item_id: total - stock[item_id] for item_id, total in sorted(need.items()) if total > stock[item_id]}
+
+
+def partial_orders_fully_read(slots):
+    """已部分提交的委托是否每个未完成格都识别成功。
+
+    有格子没识别出来时缺口不完整，不能据此覆盖已保存的货运目标。
+    """
+    return not any(slot['completed'] and slot.get('unreadable', 0) for slot in slots)

@@ -13,7 +13,7 @@ from module.config.utils import filepath_args, read_file
 from module.island_planner import settings_map
 from module.island.assets import ISLAND_BACK
 from module.island_planner.calculator import ProductionPlanCalculator
-from module.island_planner.cargo import partial_order_targets, read_cargo_slots
+from module.island_planner.cargo import partial_order_targets, partial_orders_fully_read, read_cargo_slots
 from module.island_planner.data import DIC_ISLAND_ITEM
 from module.island_planner.scanner import IslandTechnologyScanner
 from module.island_planner.priorities import solve_with_priorities
@@ -172,9 +172,13 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
         season = parse_targets(text, 'SeasonTaskTargets')
         if self.get('ScanCargoOrders'):
             missing = self.scan_cargo_targets()
+        else:
+            missing = None
+        if missing is not None:
             cargo_text = item_mapping_to_yaml(missing, use_item_name=True) if missing else ''
             self.config.cross_set(f'{TASK}.{TASK}.CargoTargets', cargo_text)
         else:
+            # 未扫描或扫描不完整时沿用上次保存的目标
             cargo_text = self.get('CargoTargets')
         cargo = with_period(parse_targets(cargo_text, 'CargoTargets'), self.get('CargoTargetDays'))
         extra = parse_targets(self.get('ExtraTargets'), 'ExtraTargets')
@@ -185,6 +189,10 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
 
     def scan_cargo_targets(self):
         """读取货运页面，返回已部分提交的委托还缺的货物 {物品ID: 数量}。
+
+        Returns:
+            dict[int, int] | None: 缺口；已部分提交的委托有格子识别失败时返回 None，
+                调用方沿用已保存的目标，避免用不完整的结果清空缺口。
 
         Pages:
             in: 任意页面
@@ -199,8 +207,12 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
         for index, slot in enumerate(slots):
             items = ', '.join(f'{DIC_ISLAND_ITEM[i]["name"]["en"]} {stock}/{need}' for i, stock, need in slot['items'])
             logger.info(f'[岛屿-货运] 栏位 {index + 1}: 已提交 {slot["completed"]} 格; {items}')
-        missing = partial_order_targets(slots)
-        logger.info(f'[岛屿-货运] 已部分提交委托的缺口: {missing}')
+        if partial_orders_fully_read(slots):
+            missing = partial_order_targets(slots)
+            logger.info(f'[岛屿-货运] 已部分提交委托的缺口: {missing}')
+        else:
+            missing = None
+            logger.warning('[岛屿-货运] 已部分提交的委托有货物格未识别，沿用上次保存的货运目标')
         for _ in self.loop(timeout=30):
             if self.ui_page_appear(page_island_phone):
                 break
@@ -233,6 +245,7 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
             restaurant_settings=settings_map.restaurant_settings(grades, chars, open_ids),
             daily_profit_lower_limit=self.get('DailyProfitLowerLimit'),
             daily_buffer_safety_margin=self.get('DailyBufferSafetyMargin'),
+            slot_limit=settings_map.position_limits(lambda path: self.config.cross_get(path, None)),
         )
 
     def run(self):

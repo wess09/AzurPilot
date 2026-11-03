@@ -31,13 +31,14 @@ MEAL_OPTIONS = {rid: options(k['task'], 'Meal1') for rid, k in sm.KITCHENS.items
 PRODUCT_OPTIONS = {rid: options(k['business'], 'Product1') for rid, k in sm.KITCHENS.items()}
 
 
-def solve(technology, grades='gold', chars=('WorkerJuu', 'WorkerJuu'), profit=50000, open_ids=None):
+def solve(technology, grades='gold', chars=('WorkerJuu', 'WorkerJuu'), profit=50000, open_ids=None, slot_limit=None):
     calculator = ProductionPlanCalculator(
         technology,
         activity_list=get_current_activity_list(NOW),
         restaurant_settings=sm.restaurant_settings(
             {rid: grades for rid in sm.KITCHENS}, {rid: chars for rid in sm.KITCHENS}, open_ids),
         daily_profit_lower_limit=profit,
+        slot_limit=slot_limit,
     )
     excluded = sm.restrict_calculator(calculator, MEAL_OPTIONS, PRODUCT_OPTIONS)
     calculator.solve_production_plan(current_time=NOW)
@@ -280,7 +281,7 @@ class PlannerTaskTest(unittest.TestCase):
     def tearDown(self):
         server.server = self.previous_server
 
-    def run_planner(self, **overrides):
+    def run_planner(self, cargo_scan=None, config_data=None, **overrides):
         from unittest.mock import patch
         from module.island_planner.planner import IslandProductionPlanner
         technology = {str(tech_id): True for tech_id in DIC_ISLAND_TECHNOLOGY}
@@ -289,9 +290,12 @@ class PlannerTaskTest(unittest.TestCase):
         overrides.setdefault('IslandProductionPlanner_ScanSeasonTasks', False)
         overrides.setdefault('IslandProductionPlanner_ScanCargoOrders', False)
         planner.config = FakeConfig(technology, IslandProductionPlanner_RescanTechnology=False, **overrides)
+        for path, value in (config_data or {}).items():
+            task, group, key = path.split('.')
+            planner.config.data[task][group][key] = value
         planner.get_technology_status = lambda: self.fail('saved technology must not trigger a scan')
         planner.scan_season_task_targets = lambda: {3009: 30}
-        planner.scan_cargo_targets = lambda: {2011: 33}
+        planner.scan_cargo_targets = cargo_scan or (lambda: {2011: 33})
         return planner, planner.run()
 
     def test_preview_does_not_write(self):
@@ -338,8 +342,15 @@ class PlannerTaskTest(unittest.TestCase):
             planner.config.written['IslandProductionPlanner.IslandProductionPlanner.CargoTargets'].strip(),
             'Strawberries (2011): 33')
 
+    def test_incomplete_cargo_scan_keeps_saved_targets(self):
+        planner, result = self.run_planner(cargo_scan=lambda: None, IslandProductionPlanner_ScanCargoOrders=True)
+        self.assertTrue(result)
+        self.assertNotIn('IslandProductionPlanner.IslandProductionPlanner.CargoTargets', planner.config.written)
+
     def test_apply_writes_default_products(self):
-        planner, result = self.run_planner(IslandProductionPlanner_ApplySettings=True)
+        # 矿山配置 4 个岗位，计划用剩的岗位写入默认产品（银矿）
+        planner, result = self.run_planner(IslandProductionPlanner_ApplySettings=True,
+                                           config_data={'IslandMineForest.IslandMine.Positions': 4})
         self.assertTrue(result)
         written = planner.config.written
         self.assertIn('IslandMineForest.IslandMine.MineSilver', written)
@@ -380,6 +391,18 @@ class PriorityTest(unittest.TestCase):
         unlocked = sum(calculator.slot_available.get(slot, False) for slot in calculator.GROUP_TO_SLOTS['field'])
         self.assertLessEqual(farm, unlocked)
 
+    def test_position_config_limits_posts(self):
+        # 农田只配置 1 个岗位时，规划容量与默认作物岗位数都不超过 1
+        calculator, _ = solve({tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY}, slot_limit={'field': 1})
+        unlocked = sum(calculator.slot_available.get(slot, False) for slot in calculator.GROUP_TO_SLOTS['field'])
+        self.assertEqual(unlocked, 1)
+        values, _ = sm.default_product_settings(calculator)
+        self.assertLessEqual(values['IslandFarm.IslandFarm.PlantPotatoes'], 1)
+
+    def test_position_limits_read_config(self):
+        config = {'IslandFarm.IslandFarm.Positions': 3, 'IslandMineForest.IslandMine.Positions': 'bad'}
+        self.assertEqual(sm.position_limits(config.get), {'field': 3})
+
     def test_idle_posts_counts_workload(self):
         calculator, _ = solve({tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY})
         calculator.idle_accumulating_items_per_day = {2705: 4 * 10}
@@ -416,6 +439,12 @@ class CargoReaderTest(unittest.TestCase):
         from module.island_planner.cargo import partial_order_targets
         slots = [{'completed': 1, 'items': [(2011, 5, 10)]}, {'completed': 2, 'items': [(2011, 5, 20)]}]
         self.assertEqual(partial_order_targets(slots), {2011: 25})
+
+    def test_unreadable_partial_order_is_incomplete(self):
+        from module.island_planner.cargo import partial_orders_fully_read
+        self.assertTrue(partial_orders_fully_read([{'completed': 1, 'items': [(2011, 5, 10)], 'unreadable': 0},
+                                                   {'completed': 0, 'items': [], 'unreadable': 2}]))
+        self.assertFalse(partial_orders_fully_read([{'completed': 1, 'items': [], 'unreadable': 1}]))
 
     def test_with_period(self):
         from module.island_planner.planner import with_period
