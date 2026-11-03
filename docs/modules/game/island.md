@@ -278,6 +278,8 @@ stateDiagram-v2
 
 店铺选品连续 `PRODUCT_SELECT_RETRY_LIMIT`（3）次在产品列表中找不到商品时（多为岛屿科技尚未解锁），不再抛 `GameStuckError` 重启游戏，而是返回岗位管理页、`post_produce` 返回 0，调用方把该商品记入 `chef_unavailable_products` 本轮跳过；只有无法返回岗位管理页时才按卡死处理。
 
+`post_open` 识别到的岗位按钮下沿超出列表可见区域（`POST_LIST_VISIBLE_BOTTOM`=640，滑动框下沿约 656）时，点击会落在列表外或画面外（y>720）而打不开岗位，最终 `GameTooManyClickError`（啾咖啡岗位 1 滑动后常停在 y≈680~720）。现在先 `post_manage_up_swipe` 上推列表（最多 `POST_EDGE_NUDGE_LIMIT` 次）再点击。
+
 错误处理的设计取向是「局部失败不拖垮全局」：单个岗位无角色、单个菜品原料不足、单个好友不可访问都只影响自身，循环继续处理其余岗位；只有 UI 导航层面无法回到已知状态才升级为异常。`GameBugError` 与 `GameStuckError` 的分工来自 `module/exception.py`：前者明确表示客户端 bug（重启可恢复），后者表示操作卡死。
 
 ## 13. 缓存与持久化
