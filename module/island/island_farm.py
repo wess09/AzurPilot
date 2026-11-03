@@ -672,6 +672,8 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
             all_plants_to_plant[category].extend(restock)
             # 所有未达标作物都已安排后，剩余空闲岗位才种植默认作物
             spare = idle_count - len(restock)
+            # 默认作物本身也在补种时，那个岗位同样算作默认作物岗位
+            need_default = max(0, need_default - restock.count(default_crop))
             if spare > 0 and need_default > 0:
                 all_plants_to_plant[category].extend([default_crop] * min(spare, need_default))
 

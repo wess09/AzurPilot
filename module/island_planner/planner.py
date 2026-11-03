@@ -202,22 +202,24 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
         self.ui_ensure(page_island)
         self.ui_goto(page_island_phone, get_ship=False)
         self.island_transport_enter()
-        # island_transport_enter 只确认了页面模板，货物格数字可能还没显示；
-        # 已部分提交的委托全部读到数字前持续截图重读，最多 5 秒
-        slots = []
+        # island_transport_enter 只确认了页面模板，已提交标记和货物格数字可能还没显示；
+        # 连续两次截图读到相同且完整的结果才采用，最多 5 秒，否则沿用已保存的目标
+        slots, previous, settled = [], None, False
         for _ in self.loop(skip_first=False, timeout=5):
             slots = read_cargo_slots(self.device.image)
-            if partial_orders_fully_read(slots):
+            if slots == previous and partial_orders_fully_read(slots):
+                settled = True
                 break
+            previous = slots
         for index, slot in enumerate(slots):
             items = ', '.join(f'{DIC_ISLAND_ITEM[i]["name"]["en"]} {stock}/{need}' for i, stock, need in slot['items'])
             logger.info(f'[岛屿-货运] 栏位 {index + 1}: 已提交 {slot["completed"]} 格; {items}')
-        if partial_orders_fully_read(slots):
+        if settled:
             missing = partial_order_targets(slots)
             logger.info(f'[岛屿-货运] 已部分提交委托的缺口: {missing}')
         else:
             missing = None
-            logger.warning('[岛屿-货运] 已部分提交的委托有货物格未识别，沿用上次保存的货运目标')
+            logger.warning('[岛屿-货运] 货运页在 5 秒内未读到稳定完整的结果，沿用上次保存的货运目标')
         for _ in self.loop(timeout=30):
             if self.ui_page_appear(page_island_phone):
                 break

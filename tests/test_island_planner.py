@@ -342,6 +342,26 @@ class PlannerTaskTest(unittest.TestCase):
             planner.config.written['IslandProductionPlanner.IslandProductionPlanner.CargoTargets'].strip(),
             'Strawberries (2011): 33')
 
+    def scan_cargo(self, reads):
+        from unittest.mock import Mock, patch
+        from module.island_planner.planner import IslandProductionPlanner
+        with patch.object(IslandProductionPlanner, '__init__', lambda self: None):
+            planner = IslandProductionPlanner()
+        planner.device = Mock()
+        for name in ('ui_ensure', 'ui_goto', 'island_transport_enter', 'appear_then_click', 'ui_additional'):
+            setattr(planner, name, Mock(return_value=False))
+        planner.ui_page_appear = Mock(return_value=True)
+        planner.loop = lambda **kwargs: iter(range(len(reads)))
+        with patch('module.island_planner.planner.read_cargo_slots', Mock(side_effect=reads)):
+            return planner.scan_cargo_targets()
+
+    def test_cargo_scan_waits_for_stable_read(self):
+        # 第一张截图已提交标记还没显示（completed 全为 0），不能据此清空目标
+        loading = [{'completed': 0, 'items': [(2011, 2, 35)], 'unreadable': 0}]
+        ready = [{'completed': 2, 'items': [(2011, 2, 35)], 'unreadable': 0}]
+        self.assertEqual(self.scan_cargo([loading, ready, ready]), {2011: 33})
+        self.assertIsNone(self.scan_cargo([loading, ready]))
+
     def test_incomplete_cargo_scan_keeps_saved_targets(self):
         planner, result = self.run_planner(cargo_scan=lambda: None, IslandProductionPlanner_ScanCargoOrders=True)
         self.assertTrue(result)
