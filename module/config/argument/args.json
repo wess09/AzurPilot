@@ -17793,6 +17793,14 @@
         "type": "input",
         "value": 50
       },
+      "MinKoiCarp": {
+        "type": "input",
+        "value": 0
+      },
+      "MinMackerel": {
+        "type": "input",
+        "value": 0
+      },
       "MinFreshwaterFishMeat": {
         "type": "input",
         "value": 0

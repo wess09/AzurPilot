@@ -4692,6 +4692,14 @@
       "name": "Sea cucumber stock threshold",
       "help": ""
     },
+    "MinKoiCarp": {
+      "name": "Koi carp stock threshold",
+      "help": ""
+    },
+    "MinMackerel": {
+      "name": "Mackerel stock threshold",
+      "help": ""
+    },
     "MinFreshwaterFishMeat": {
       "name": "Minimum Freshwater Fish Meat",
       "help": "After the fishery run, if you own less Freshwater Fish Meat than this, fish are exchanged in the island shop (\"Process Fish Meat\") up to this amount, using the highest-yield fish first. 0 = no exchange. The Island Production Planner rewrites it from cargo and dish needs."

@@ -113,6 +113,8 @@ THRESHOLD_GROUPS = {
         5101: 'IslandRancher.IslandFishery.MinSquid',
         5107: 'IslandRancher.IslandFishery.MinYellowfinTuna',
         5108: 'IslandRancher.IslandFishery.MinSeaCucumber',
+        5003: 'IslandRancher.IslandFishery.MinKoiCarp',
+        5102: 'IslandRancher.IslandFishery.MinMackerel',
     },
 }
 
