@@ -3412,6 +3412,8 @@
       "MinCrab": 50,
       "MinSquid": 50,
       "MinSeaCucumber": 50,
+      "MinFreshwaterFishMeat": 0,
+      "MinSaltwaterFishMeat": 0,
       "PlantYellowfinTuna": 3,
       "RancherFilter": "WorkerJuu"
     },
