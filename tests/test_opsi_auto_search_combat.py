@@ -20,6 +20,8 @@ from module.combat.assets import (
     EXP_INFO_D,
     EXP_INFO_S,
 )
+from module.exception import CampaignEnd, GameTooManyClickError
+from module.os.map import OSMap
 from module.os_combat.combat import Combat
 from module.os_handler.assets import (
     AUTO_SEARCH_OS_MAP_OPTION_OFF,
@@ -213,6 +215,86 @@ class TestPostBattleSettleWindow(unittest.TestCase):
         self.handler._os_auto_search_battle_settle_start()
         self.assertTrue(self.handler.handle_os_auto_search_map_option())
         self.handler.os_auto_search_quit.assert_called_once()
+
+
+class TestAutoSearchRetryBudgetScope(unittest.TestCase):
+    """重试预算只属于本次搜索，不累积上一海域的领奖和切图时间。"""
+
+    def setUp(self):
+        self.clock = VirtualClock()
+        time_patch = patch('module.base.timer.time', self.clock)
+        time_patch.start()
+        self.addCleanup(time_patch.stop)
+
+    def make_map(self, command='OpsiExplore', state=AUTO_SEARCH_OS_MAP_OPTION_OFF):
+        handler = OSMap.__new__(OSMap)
+        handler.config = SimpleNamespace(
+            task=SimpleNamespace(command=command), OpsiGeneral_AutoSearchTimeLimit=10,
+        )
+        handler.device = Mock(image=None)
+        handler.interval_timer = {}
+        handler.state = state
+        handler.on_auto_search_battle_count_reset = Mock()
+        handler.hp_reset = Mock()
+        handler.handle_background_coin_interrupt = Mock(return_value=False)
+        handler.is_in_map = Mock(return_value=True)
+        handler.info_bar_count = Mock(return_value=0)
+        handler.appear = Mock(side_effect=lambda button, **kwargs: button is handler.state)
+        handler.os_auto_search_quit = Mock(return_value=True)
+        handler.handle_retirement = Mock(return_value=False)
+        handler.combat_appear = Mock(return_value=False)
+        handler.handle_map_event = Mock(return_value=False)
+        handler.loop = Mock(side_effect=lambda: iter([None]))
+        for button in (
+            AUTO_SEARCH_OS_MAP_OPTION_OFF,
+            AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED,
+            AUTO_SEARCH_OS_MAP_OPTION_ON,
+        ):
+            state_patch = patch.object(
+                button, 'match_template_color',
+                side_effect=lambda *a, button=button, **k: handler.state is button,
+            )
+            state_patch.start()
+            self.addCleanup(state_patch.stop)
+        return handler
+
+    def test_new_search_does_not_inherit_expired_retry_budget(self):
+        for command in ('OpsiExplore', 'OpsiObscure', 'OpsiHazard1Leveling', 'OpsiMeowfficerFarming'):
+            for state in (AUTO_SEARCH_OS_MAP_OPTION_OFF, AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED):
+                with self.subTest(command=command, state=state.name):
+                    handler = self.make_map(command, state)
+                    handler.os_auto_search_daemon()
+                    self.clock.now += 60
+                    handler.device.click.reset_mock()
+                    handler.os_auto_search_daemon()
+                    handler.device.click.assert_called_once_with(state)
+
+    def test_next_zone_starts_after_previous_reward(self):
+        handler = self.make_map()
+        handler.os_auto_search_daemon()
+        self.clock.now += 8
+        handler.state = AUTO_SEARCH_REWARD
+        with self.assertRaises(CampaignEnd):
+            handler.handle_os_auto_search_map_option()
+        handler.os_auto_search_quit.assert_called_once_with(drop=None)
+        self.clock.now += 44
+        handler.state = AUTO_SEARCH_OS_MAP_OPTION_OFF
+        handler.device.click.reset_mock()
+        handler.os_auto_search_daemon()
+        handler.device.click.assert_called_once_with(AUTO_SEARCH_OS_MAP_OPTION_OFF)
+
+    def test_continuous_failed_clicks_still_exhaust_current_budget(self):
+        handler = self.make_map()
+
+        def frames():
+            for _ in range(20):
+                yield
+                self.clock.now += 3.1
+
+        handler.loop = frames
+        with self.assertRaisesRegex(GameTooManyClickError, '自律寻敌连续点击 45 秒仍未生效'):
+            handler.os_auto_search_daemon()
+        self.assertGreater(handler.device.click.call_count, 1)
 
 
 if __name__ == '__main__':
