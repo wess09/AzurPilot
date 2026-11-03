@@ -12,15 +12,27 @@ import module.config.server as server
 _previous_server = None
 
 
+def _refresh_buttons():
+    """按钮在创建时按当时的服务器缓存图片与区域，切换服务器后清掉缓存重新解析。"""
+    from module.base.button import Button
+    for button in (air_drop.ISLAND_AIR_DROP_A,):
+        for name in Button.cached:
+            button.__dict__.pop(name, None)
+        button._match_init = False
+        button.image = None
+
+
 def setUpModule():
     # 截图来自 EN 服；只在本模块测试期间切换服务器，结束后恢复，避免影响其他测试
     global _previous_server
     _previous_server = server.server
     server.server = 'en'
+    _refresh_buttons()
 
 
 def tearDownModule():
     server.server = _previous_server
+    _refresh_buttons()
 
 
 from module.base.utils import load_image  # noqa: E402
