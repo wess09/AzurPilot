@@ -495,8 +495,9 @@ class AzurLaneAutoScript:
             # 清除 device 缓存，下次访问时重新建立连接
             if 'device' in self.__dict__:
                 del_cached_property(self, 'device')
-            # 重置连续离线计数
+            # 新的模拟器会话不沿用重启前的离线或游戏退出计数。
             self.consecutive_adb_offline = 0
+            self.consecutive_game_not_running = 0
             return True
         except EmulatorOpBusy as e:
             # 上一轮的重启操作还在后台跑（很可能正在冷启动模拟器）。
