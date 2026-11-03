@@ -17793,6 +17793,14 @@
         "type": "input",
         "value": 50
       },
+      "MinFreshwaterFishMeat": {
+        "type": "input",
+        "value": 0
+      },
+      "MinSaltwaterFishMeat": {
+        "type": "input",
+        "value": 0
+      },
       "PlantYellowfinTuna": {
         "type": "select",
         "value": 3,

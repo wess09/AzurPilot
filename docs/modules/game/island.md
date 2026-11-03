@@ -137,19 +137,20 @@ flowchart TD
 | --- | --- | --- | --- |
 | `island_farm.py` | 农田、果园、苗圃播种 | `IslandFarm` | 三区域独立阈值/默认作物，可按作物单独设目标（`farm_targets.py`，按库存/目标比例排序）；未达标作物每类最多占一岗；果园秋季限定（秋月梨/柿子）按 4x1 计种子；牛油果/菠萝可忽略；小天城（Amagi_chan）橡胶优先开关 |
 | `island_rancher.py` | 磨坊 + 牧场 | `IslandRancher` | 按岗位固定饲料种类补磨坊加工（小麦→鸡饲料等）；`run()` 末尾内联 `IslandFishery(...).run(ranch_finish_times=...)` 合并计时器 |
-| `island_fishery.py` | 渔场养殖 | `IslandFishery` | 鱼苗商店分淡水/海水/其他页签；按每苗产量反推购买数；体力门槛 98 |
+| `island_fishery.py` | 渔场养殖 | `IslandFishery` | 鱼苗商店分淡水/海水/其他页签；按每苗产量反推购买数；体力门槛 98；养殖后鱼肉少于 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat` 时调用 `island_fish_meat.py` 兑换 |
+| `island_fish_meat.py` | 鱼肉加工（移植自 ALAS） | `IslandFishMeatExchange`（混入渔场） | 岛屿主页「商店」→ 侧栏第 7 项「鱼肉加工」→ 淡水/海水子页签；鱼卡 OCR 鱼名与库存，按产量从高到低只换到目标数量；侧栏、确认弹窗、获得物品弹窗按颜色识别（EN 通用弹窗资源不匹配），点过「商店」后才点侧栏 |
 | `island_mine_forest.py` | 矿山/林场 | `IslandMineForest` | 仓库顺序不固定，自实现「OCR 品名 → 读数字」库存扫描（`ITEM_CN_NAMES` 同时收录中文名与国际服英文名首词）；每岗产 4 个、各产物有最大连续次数；体力门槛 80 |
 | `island_grill.py` | 乌鱼烤肉店 | `IslandGrill` | 最薄的店铺：仅声明 8 菜品、2 套餐、2 岗位，全部逻辑走基类 |
 | `island_teahouse.py` | 白熊饮品 | `IslandTeahouse` | 季节高优先级饮品走固定坐标（不滑动不比色）；「迎春花茶优先生产」开关；为手动配置的季节饮品补注册防止 KeyError |
 | `island_restaurant.py` | 有鱼餐馆 | `IslandRestaurant` | 季节菜品自动切换槽位；覆盖 `select_product` 支持固定坐标季节菜 |
 | `island_juu_coffee.py` | 啾咖啡 | `IslandJuuCoffee` | 牛奶为特殊材料，扩展仓库读取与 `deduct_materials`；Friedrich 特殊角色开关 |
 | `island_juu_eatery.py` | 啾啾简餐 | `IslandJuuEatery` | 芝士/牛奶特殊材料约束；海鲜饭等无套餐产品 |
-| `island_manufacture.py` | 制造工坊 | `IslandManufacture` | 四产线（木工/电子/工业/手工）各按配置启用岗位；完全覆盖 `run()` 与排产规则（数量由材料检查决定）；滑动 2 次 |
+| `island_manufacture.py` | 制造工坊 | `IslandManufacture` | 四产线（木工/电子/工业/手工）各按配置启用岗位；完全覆盖 `run()` 与排产规则（数量由材料检查决定）；滑动 2 次；产品连续 3 次找不到（多为科技未解锁）记入本批 `unavailable_products`，工业线铁钉足够时先试刀叉餐具、不可用则继续生产铁钉 |
 | `island_business.py` | 商区经营 | `IslandBusiness` | 5 商店 × 蓝/黄/深蓝/灰按钮状态机；分批经营（默认批 1=简餐/餐馆/咖啡，批 2=饮品/烤肉）；季节商品库存 <7 时替换 fallback；加成（30/20/10%）档位替换；开始经营后 `task_delay` 触发对应餐馆生产任务补货 |
-| `island_daily_gather.py` | 每日采集 | `IslandDailyGather` | 每日 03:10 / 18:00 两次；三槽位派角色，体力阈值 100，忽略 WorkerJuu |
+| `island_daily_gather.py` | 每日采集 | `IslandDailyGather` | 每日 03:10 / 18:00 两次；三槽位派角色，体力阈值 100，忽略 WorkerJuu；未能点击出发（体力或资金不足时为灰色）时不等待采集完成页面 |
 | `island_daily_interact.py` | 摸猫、JUU 速运、商区外送、每周照相 | `IslandDailyInteract` | 以「开发计划」任务图标模板判断任务是否可做；地点交互共用 `delivery_location_flow`；每周照相经任务详情的地图按钮（`WEEKLY_PHOTO_TASK_CHECK` 的 button）前往拍照点，以照相按钮被预览遮住确认拍照生效，再点空白关闭预览；失败 60 分钟重试 |
 | `island_daily_order.py` | 每日订单 | `IslandDailyOrder` | 紧急委托周配额 15（OCR 检测 + 周一刷新）；订单驳回按 `RejectFilter`；冷却 OCR 失败回退 8 小时 |
-| `island_air_drop.py` | 每日空投 + 好友岛偷补给 | `IslandAirDrop` | 以服务器 0 点为每日边界；5 小时偷取冷却（`LastSteal` 落配置）；拜访次数 OCR 复检 |
+| `island_air_drop.py` | 每日空投 + 好友岛偷补给 | `IslandAirDrop` | 以服务器 0 点为每日边界；5 小时偷取冷却（`LastSteal` 落配置）；拜访次数 OCR 复检；`island_air_drop()` 按画面点补给气泡（最多 2 次）、关闭奖励弹窗，气泡变为「分享剩余补给」即停止，国际服误开的邀请好友窗口点 ✕ 关闭、不邀请 |
 | `island_pearl_sell.py` | 珍珠每周采购售卖 | `IslandPearlSell` | 周一 01:00 交易窗口；本岛价不达标时按排行榜拜访好友岛比价（买 1.1 折算）；每日 03:00 可选价格刷新 |
 | `island_cargo_preparation.py` | 货运委托 | `IslandCargoPreparation` | 3 栏位状态机（locked/pending/running/finished/refreshing/empty）；牛奶黑名单触发换货；默认 2 小时重跑 |
 
@@ -158,7 +159,7 @@ flowchart TD
 工具页任务，思路、数据表与线性规划移植自 ALAS（LmeSzinc/AzurLaneAutoScript，GPL-3.0）的 Island Production Planner，仅作为「计算器」把方案写入 AzurPilot 已有配置，生产仍由上表各任务执行。
 
 1. **科技状态**：读取 `IslandProductionPlanner.Storage.Storage.IslandTechnologyStatus`；没有保存或勾选 `RescanTechnology` 时进入 `page_island_technology`（岛屿主页右上 `ISLAND_GOTO_ISLAND_TECHNOLOGY`，`BACK_ARROW_WHITE` 返回）扫描，扫描后自动取消勾选。扫描与语言无关：用 `assets/island/technology/technology_chart_{2..6}.png` 连线轮廓模板匹配当前视野，按 `data.py` 节点坐标读亮度（>160 即解锁）；左侧 2~6 号标签按颜色识别，1 号标签无生产科技不扫描。点击带 2 秒间隔，每个标签最多滑动 15 次。
-2. **季节任务与额外目标**：`ScanSeasonTasks` 开启时进入 `page_island_season`（岛屿主页右上 `ISLAND_GOTO_ISLAND_SEASON`）底部第 3 个「任务」标签，先 `ISLAND_SEASON_TASK_RECEIVE_ALL` 一键领取已完成任务的奖励（否则已完成任务会被当成目标），再按 `TEMPLATE_ISLAND_SEASON_REWARD` 定位任务卡、OCR 任务名（EN 用 cnocr 并按任务表还原空格，编辑距离纠正到当前季节任务），遇到 `TEMPLATE_ISLAND_SEASON_TASK_OBTAINED` 或滚到底停止（最多翻 20 页），把以物品为目标的未完成任务汇总写入 `SeasonTaskTargets`（预览模式也写）。`ExtraTargets` 为手动追加目标（YAML，值为数量或 `{count, period}`）。两者合并为需求：期限默认本季剩余天数，按 ALAS 方式换算成每日速率并作为约束；当前科技无法生产的物品记录警告后忽略。同名物品（两个 Corn）优先取可生产的。ALAS 的「卡住的季节订单」由其订单任务记录，AzurPilot 不处理季节订单，改由 `ExtraTargets` 手动表达。
+2. **季节任务与额外目标**：`ScanSeasonTasks` 开启时进入 `page_island_season`（岛屿主页右上 `ISLAND_GOTO_ISLAND_SEASON`）底部第 3 个「任务」标签，先 `ISLAND_SEASON_TASK_RECEIVE_ALL` 一键领取已完成任务的奖励（否则已完成任务会被当成目标），再按 `TEMPLATE_ISLAND_SEASON_REWARD` 定位任务卡、OCR 任务名（EN 用 cnocr 并按任务表还原空格，编辑距离纠正到当前季节任务），遇到 `TEMPLATE_ISLAND_SEASON_TASK_OBTAINED` 或滚到底停止（最多翻 20 页），把以物品为目标的未完成任务汇总写入 `SeasonTaskTargets`（预览模式也写）。第一页就识别不到任务卡片（页面未就绪等）时不更新目标、沿用上次保存的值；翻页后内容不变即停止；编辑距离超过 max(3, 任务名长度/2) 的 OCR 结果不予识别（避免把读错的「F」纠正成某个任务）。`ExtraTargets` 为手动追加目标（YAML，值为数量或 `{count, period}`）。两者合并为需求：期限默认本季剩余天数，按 ALAS 方式换算成每日速率并作为约束；当前科技无法生产的物品记录警告后忽略。同名物品（两个 Corn）优先取可生产的。ALAS 的「卡住的季节订单」由其订单任务记录，AzurPilot 不处理季节订单，改由 `ExtraTargets` 手动表达。
 3. **求解**：`ProductionPlanCalculator` 以「每日净增物品的季节 PT」为目标，约束包括物品平衡、各生产分组工时（解锁岗位数 × 24 小时 × 效率）、餐厅货架（等级决定货架数 2/2/3/4、容量 5/6 + 服务员加成）、每日岛币净收入 ≥ `DailyProfitLowerLimit`。SciPy 自带 `scipy.optimize.milp`，不需要 ALAS 的兼容层。效率加成来自岛屿角色收集奖励，配置以整数百分比保存（0/4/12，由 `efficiency_rate` 换算）：WebUI 用「.」分隔翻译键，ALAS 的 0.04/0.12 小数选项在 AzurPilot 中无法选择。求解前 `restrict_calculator` 排除 AzurPilot 后厨选项里没有的配方、商区选项里没有的出售菜品，以及农田配置里没有的作物；季节活动按服务器时间从 `data.py` 读取。
 4. **餐厅营业与服务员**：分批经营开启时只有 `Batch1Shops`/`Batch2Shops` 中的店参与出售；`IslandBusinessShopN.Char1/2` 中对本店有加成的角色（肇和、柴郡、海伦娜、欧根亲王、奥古斯特、贝尔法斯特、长风）计入加成，其余角色及 None（工作啾代班）只占位。店铺等级由本任务的 `*Grade` 手动填写。
 5. **写回**（`settings_map.py`，`ApplySettings` 关闭时只在日志预览，标 `*` 的为会改变的项）：
@@ -271,10 +272,14 @@ stateDiagram-v2
 
 | 异常 | 原因 | 处理 |
 | --- | --- | --- |
-| `GameStuckError` | 导航（进入管理/地图/页签）、`post_open` 反复重试、仓库筛选超时、选品连续失败超限 | 直接上抛，交给调度器按卡死流程恢复 |
+| `GameStuckError` | 导航（进入管理/地图/页签）、`post_open` 反复重试、仓库筛选超时 | 直接上抛，交给调度器按卡死流程恢复 |
 | `GameBugError` | 每轮结束检测到 `ERROR1` 弹窗（置 `island_error` 标志）、拜访卡死 | 各任务 `run()` 尾部统一抛出，调度器重启游戏客户端后重试 |
 | `GameTooManyClickError`（预防） | 同一按钮高频点击触发保护 | 代码主动规避：`select_product` 前清理 `click_record`、滑动后点安全区域且 `control_check=False`、地图确认按钮只在前 10 秒内补点 |
 | 阶段级失败（返回 False/0） | 拜访超时、角色无可用、材料不足（含岛币不足导致补货失败）、按钮状态未知 | 记录警告后跳过该岗位/地点，不打断整轮任务；`IslandDailyInteract` 失败时延时 60 分钟重试 |
+
+店铺选品连续 `PRODUCT_SELECT_RETRY_LIMIT`（3）次在产品列表中找不到商品时（多为岛屿科技尚未解锁），不再抛 `GameStuckError` 重启游戏，而是返回岗位管理页、`post_produce` 返回 0，调用方把该商品记入 `chef_unavailable_products` 本轮跳过；只有无法返回岗位管理页时才按卡死处理。
+
+`post_open` 识别到的岗位按钮下沿超出列表可见区域（`POST_LIST_VISIBLE_BOTTOM`=640，滑动框下沿约 656）时，点击会落在列表外或画面外（y>720）而打不开岗位，最终 `GameTooManyClickError`（啾咖啡岗位 1 滑动后常停在 y≈680~720）。现在先 `post_manage_up_swipe` 上推列表（最多 `POST_EDGE_NUDGE_LIMIT` 次）再点击。
 
 错误处理的设计取向是「局部失败不拖垮全局」：单个岗位无角色、单个菜品原料不足、单个好友不可访问都只影响自身，循环继续处理其余岗位；只有 UI 导航层面无法回到已知状态才升级为异常。`GameBugError` 与 `GameStuckError` 的分工来自 `module/exception.py`：前者明确表示客户端 bug（重启可恢复），后者表示操作卡死。
 

@@ -12,6 +12,7 @@
   计划消耗的作物为一天消耗量，不需要的作物为 0；只为攒 PT 的闲时作物只在日志中提示。
 
 - 矿山/林场/渔场 `Min*`：一天计划消耗量，不用的为 0；闲时累积只在日志中提示。
+- 渔场 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat`：鱼肉一天需要量，渔场任务按此把鱼兑换成鱼肉。
 - 牧场 `MinChicken`（禽肉）/`MinPork`（鲜肉）取计划日产量，`Milk`/`Wool` 看计划是否养牛/羊。
 - 制造业 `WoodProcessing/ElectronicProcessing/Industrial/Handmade.Positions`：计划需要的岗位数。
 
@@ -113,6 +114,12 @@ THRESHOLD_GROUPS = {
         5107: 'IslandRancher.IslandFishery.MinYellowfinTuna',
         5108: 'IslandRancher.IslandFishery.MinSeaCucumber',
     },
+}
+
+# 鱼肉由鱼兑换得到（渔场任务养鱼后在商店「鱼肉加工」兑换），按一天需要量写入目标持有数量
+FISH_MEAT_TARGETS = {
+    2521: 'IslandRancher.IslandFishery.MinFreshwaterFishMeat',
+    2522: 'IslandRancher.IslandFishery.MinSaltwaterFishMeat',
 }
 
 # 牧场：每种动物一个岗位，不与其他产品争岗位，目标取计划日产量。
@@ -377,6 +384,9 @@ def threshold_settings(calculator):
         note = _idle_note(next(iter(items.values())).split('.')[1], items, idle)
         if note:
             notes.append(note)
+    for item_id, path in FISH_MEAT_TARGETS.items():
+        amount = buffer.get(item_id, 0)
+        values[path] = ceil(amount - 1e-9) if amount > 0 else 0
     return values, notes
 
 

@@ -47,6 +47,10 @@ ISLAND_POST_SWIPE_STEP = 450
 ISLAND_POST_SWIPE_DISTANCE = 550
 ISLAND_POST_SWIPE_TO_TOP_MAX = 5
 ISLAND_POST_SWIPE_SEARCH_MAX = 8
+# 岗位列表可见区域下沿（post_manage_up_swipe 滑动框 y=69~656），按钮下沿超出时先上推列表再点击
+POST_LIST_VISIBLE_BOTTOM = 640
+POST_EDGE_NUDGE_MARGIN = 120
+POST_EDGE_NUDGE_LIMIT = 3
 
 # 规则里 `switch`（切换到啾咖啡餐厅）的等待上限：点击按钮后等对话关闭、场景切换完成
 ISLAND_SWITCH_TIMEOUT = 12
@@ -1170,6 +1174,7 @@ class Island(SelectCharacter):
         retry_swipe_timer = Timer(3, count=3).start()
         retry_swipe_used = 0
         full_retry_used = 0
+        edge_nudge_used = 0
         # 补滑轮次放宽后单轮可达十几秒，45 秒预算在低端机上撑不满整条重试链，
         # 放宽到 90 秒；正常路径在补滑命中时就退出，不受影响。
         for image in self.loop(timeout=90, skip_first=False):
@@ -1184,6 +1189,15 @@ class Island(SelectCharacter):
             if self.appear(ISLAND_POST_SELECT, offset=1):
                 return True
             if post_appear:
+                # 岗位列表可见区域下沿约 y=656（见 post_manage_up_swipe 的滑动框）。岗位按钮匹配在下沿之下时，
+                # 点击落在列表外或画面外（y>720）不会打开岗位，会一直重复点击到 GameTooManyClickError
+                # （啾咖啡岗位 1 在滑动后常停在 y≈680~720）。先把列表上推一点再点击。
+                bottom = post.button[3]
+                if bottom > POST_LIST_VISIBLE_BOTTOM and edge_nudge_used < POST_EDGE_NUDGE_LIMIT:
+                    edge_nudge_used += 1
+                    logger.info(f"[岛屿] 岗位按钮 {post} 位于列表可见区域下沿之下 (y={bottom})，上推列表后再点击")
+                    self.post_manage_up_swipe(bottom - POST_LIST_VISIBLE_BOTTOM + POST_EDGE_NUDGE_MARGIN)
+                    continue
                 self.device.sleep(0.1)
                 self.device.click(post)
                 self.device.sleep(0.5)
