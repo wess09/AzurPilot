@@ -792,7 +792,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         Args:
             repair (bool): 重启后是否调用 handle_fleet_repair。
         """
-        if not self.appear(MAP_GOTO_GLOBE_FOG):
+        # 港口内按钮向左偏移，迷雾覆盖时按钮颜色也会变亮。
+        if not self.match_template_color(MAP_GOTO_GLOBE_FOG, offset=(200, 5), threshold=40):
             return False
 
         logger.warning(
