@@ -6,7 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
 import yaml
+from unittest.mock import patch
 
 import module.config.server as server
 from module.island.farm_targets import parse_crop_targets
@@ -375,6 +377,48 @@ class EfficiencyTest(unittest.TestCase):
         self.assertAlmostEqual(efficiency_rate(0.04), 0.04)
         self.assertAlmostEqual(efficiency_rate('04'), 0.04)
         self.assertEqual(efficiency_rate('bad'), 0)
+
+
+class SeasonScanGuardTest(unittest.TestCase):
+    """季节任务扫描：读错的任务名不硬配，识别不到任务卡片时保留原目标。"""
+
+    def setUp(self):
+        self.previous_server = server.server
+        server.server = 'en'
+
+    def tearDown(self):
+        server.server = self.previous_server
+
+    def test_rejects_far_names(self):
+        from module.island_planner.data import DIC_ISLAND_TASK
+        from module.island_planner.season_tasks import match_task_name
+        ids = [tid for tid, task in DIC_ISLAND_TASK.items() if task['name']['en'] == 'More Rice!']
+        self.assertTrue(ids)
+        # 11-02 日志：只读到「F」却被纠正为「More Rice!」
+        self.assertIsNone(match_task_name('F', ids))
+        self.assertIn(match_task_name('MoreRice!', ids), ids)
+
+    def test_no_cards_keeps_targets(self):
+        from unittest.mock import Mock
+        from module.island_planner.season_tasks import IslandSeasonTaskScanner
+        scanner = IslandSeasonTaskScanner.__new__(IslandSeasonTaskScanner)
+        scanner.loop = Mock(side_effect=lambda **kwargs: iter(range(2)))
+        scanner._task_rows = Mock(return_value=np.empty((0, 2)))
+        with patch('module.island_planner.season_tasks.ISLAND_SEASON_TASK_SCROLL') as scroll:
+            self.assertIsNone(scanner.scan_unfinished())
+            scroll.next_page.assert_not_called()
+
+    def test_planner_keeps_saved_targets_when_scan_fails(self):
+        from module.island_planner.planner import IslandProductionPlanner
+        with patch.object(IslandProductionPlanner, '__init__', lambda self: None):
+            planner = IslandProductionPlanner()
+        planner.config = FakeConfig({}, IslandProductionPlanner_ScanSeasonTasks=True,
+                                    IslandProductionPlanner_ScanCargoOrders=False,
+                                    IslandProductionPlanner_SeasonTaskTargets='Apple Pie: 30')
+        planner.scan_season_task_targets = lambda: None
+        targets = planner.load_targets()
+        self.assertEqual(targets, {3009: [30]})
+        self.assertNotIn('IslandProductionPlanner.IslandProductionPlanner.SeasonTaskTargets', planner.config.written)
 
 
 class ScannerGeometryTest(unittest.TestCase):
