@@ -135,7 +135,7 @@ flowchart TD
 
 | 子模块 | 玩法 | 入口类 | 特殊机制 |
 | --- | --- | --- | --- |
-| `island_farm.py` | 农田、果园、苗圃播种 | `IslandFarm` | 三区域独立阈值/可配置默认作物，可按作物单独设目标（`farm_targets.py`，按库存/目标比例排序）；未达标作物每类最多占一岗；果园秋季限定（秋月梨/柿子）按 4x1 计种子；牛油果/菠萝可忽略；小天城（Amagi_chan）橡胶优先开关 |
+| `island_farm.py` | 农田、果园、苗圃播种 | `IslandFarm` | 三区域独立阈值/可配置默认作物，可按作物单独设目标（`farm_targets.py`，按库存/目标比例排序）；未达标作物每类最多占一岗，补种安排后剩余的空闲岗位按 `PlantPotatoes` 等配置种默认作物；果园秋季限定（秋月梨/柿子）按 4x1 计种子；牛油果/菠萝可忽略；小天城（Amagi_chan）橡胶优先开关 |
 | `island_rancher.py` | 磨坊 + 牧场 | `IslandRancher` | 按岗位固定饲料种类补磨坊加工（小麦→鸡饲料等）；`run()` 末尾内联 `IslandFishery(...).run(ranch_finish_times=...)` 合并计时器 |
 | `island_fishery.py` | 渔场养殖 | `IslandFishery` | 鱼苗商店分淡水/海水/其他页签；按每苗产量反推购买数；体力门槛 98；养殖后鱼肉少于 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat` 时调用 `island_fish_meat.py` 兑换 |
 | `island_fish_meat.py` | 鱼肉加工（移植自 ALAS） | `IslandFishMeatExchange`（混入渔场） | 岛屿主页「商店」→ 侧栏第 7 项「鱼肉加工」→ 淡水/海水子页签；鱼卡 OCR 鱼名与库存，按产量从高到低只换到目标数量；侧栏、确认弹窗、获得物品弹窗按颜色识别（EN 通用弹窗资源不匹配），点过「商店」后才点侧栏 |
@@ -172,7 +172,7 @@ flowchart TD
    - 矿山/林场/渔场 `IslandMine/IslandForest/IslandFishery.Min*`：一天计划消耗量，不用的为 0；求解前排除 AzurPilot 不生产的煤炭、自然之木和未配置的鱼种。闲时累积同作物只作提示（由 `MineSilver`/`CutElegant`/`PlantYellowfinTuna` 安排）。
    - 牧场 `IslandRancher.MinChicken`（禽肉）/`MinPork`（鲜肉）取计划日产量（按牧场科技等级放大，禽肉为副产物，每 3 批摊一次；用到时至少为 1），`Milk`/`Wool` 按计划是否养牛/羊开关。
    - 制造业 `WoodProcessing/ElectronicProcessing/Industrial/Handmade.Positions`：计划工作量需要的岗位数（不超过已解锁岗位与 2）。AzurPilot 各产线产品写死（文件柜、净水滤芯、铁钉/刀叉餐具、皮革/鞋靴/季节手工品），求解前排除其余制造配方。
-   - 空余岗位（目标都达标后）：闲时累积（为季节 PT）的产品写入默认产品设置。农田三区新增 `DefaultCrop`（默认小麦/橡胶/薰衣草，与原写死的默认作物相同），写入需要岗位最多的闲时作物与 `PlantPotatoes`/`PlantRubber`/`PlantLavender` 岗位数；矿山 `MineSilver`、林场 `CutElegant`、渔场 `PlantYellowfinTuna` 的默认产品写死，只写岗位数（闲时产品不同时置 0 并提示）。岗位数 = 闲时产量换算的工作量 / 单岗位日工作量，向上取整，不超过已解锁岗位与该区域 `Positions` 配置。农田三区、矿山、林场、渔场的规划产能同样按 `Positions` 计算，超出配置的已解锁岗位视为不可用（区域任务只运行配置的岗位）。
+   - 空余岗位（补种安排后剩余的空闲岗位）：闲时累积（为季节 PT）的产品写入默认产品设置。农田三区新增 `DefaultCrop`（默认小麦/橡胶/薰衣草，与原写死的默认作物相同），写入需要岗位最多的闲时作物与 `PlantPotatoes`/`PlantRubber`/`PlantLavender` 岗位数；矿山 `MineSilver`、林场 `CutElegant`、渔场 `PlantYellowfinTuna` 的默认产品写死，只写岗位数（闲时产品不同时置 0 并提示）。岗位数 = 闲时产量换算的工作量 / 单岗位日工作量，向上取整，不超过已解锁岗位与该区域 `Positions` 配置。农田三区、矿山、林场、渔场的规划产能同样按 `Positions` 计算，超出配置的已解锁岗位视为不可用（区域任务只运行配置的岗位）。
 6. 无可行方案时不改配置，日志给出瓶颈（通常是岛币下限过高）。
 
 ## 7. 调用关系

@@ -440,6 +440,20 @@ class CargoReaderTest(unittest.TestCase):
         slots = [{'completed': 1, 'items': [(2011, 5, 10)]}, {'completed': 2, 'items': [(2011, 5, 20)]}]
         self.assertEqual(partial_order_targets(slots), {2011: 25})
 
+    def test_item_without_number_is_unreadable(self):
+        # 数字还没渲染出来的货物格（有图标、无数字）不能被当作空格跳过
+        from module.base.utils import load_image
+        from module.island_planner.cargo import (
+            card_completed, counter_area, partial_orders_fully_read, read_cargo_slots)
+        image = load_image(str(ROOT / 'tests/fixtures/island_planner/en_cargo_partial.png')).copy()
+        card = next(card for card in range(3) if not card_completed(image, card, 0))
+        x1, y1, x2, y2 = counter_area(card, 0)
+        image[y1:y2, x1:x2] = image[y1, x1]
+        slots = read_cargo_slots(image)
+        self.assertEqual(slots[0]['items'], [])
+        self.assertEqual(slots[0]['unreadable'], 1)
+        self.assertFalse(partial_orders_fully_read(slots))
+
     def test_unreadable_partial_order_is_incomplete(self):
         from module.island_planner.cargo import partial_orders_fully_read
         self.assertTrue(partial_orders_fully_read([{'completed': 1, 'items': [(2011, 5, 10)], 'unreadable': 0},

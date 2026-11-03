@@ -202,8 +202,13 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
         self.ui_ensure(page_island)
         self.ui_goto(page_island_phone, get_ship=False)
         self.island_transport_enter()
-        self.device.screenshot()
-        slots = read_cargo_slots(self.device.image)
+        # island_transport_enter 只确认了页面模板，货物格数字可能还没显示；
+        # 已部分提交的委托全部读到数字前持续截图重读，最多 5 秒
+        slots = []
+        for _ in self.loop(skip_first=False, timeout=5):
+            slots = read_cargo_slots(self.device.image)
+            if partial_orders_fully_read(slots):
+                break
         for index, slot in enumerate(slots):
             items = ', '.join(f'{DIC_ISLAND_ITEM[i]["name"]["en"]} {stock}/{need}' for i, stock, need in slot['items'])
             logger.info(f'[岛屿-货运] 栏位 {index + 1}: 已提交 {slot["completed"]} 格; {items}')

@@ -151,7 +151,8 @@ def read_cargo_slots(image, matcher=None, ocr=None):
     Returns:
         list[dict]: 每个栏位 {'completed': 已提交格数, 'items': [(物品ID, 库存, 需求)],
             'unreadable': 无法识别的格数}，
-            运行中或空栏位没有数字，items 为空。无法识别的格子记录警告后跳过并计数。
+            运行中或空栏位没有数字，items 为空。无法识别的格子记录警告后跳过并计数；
+            已部分提交的委托中有图标但还没显示数字的格子也计为无法识别。
     """
     matcher = matcher or CargoItemMatcher()
     ocr = ocr or CargoCounterOcr()
@@ -159,6 +160,7 @@ def read_cargo_slots(image, matcher=None, ocr=None):
     for slot in range(SLOT_COUNT):
         completed = 0
         cards = []
+        blank = []
         for card in range(3):
             if card_completed(image, card, slot):
                 completed += 1
@@ -167,6 +169,7 @@ def read_cargo_slots(image, matcher=None, ocr=None):
             counter = crop(image, area)
             if not (image_color_count(counter, color=TEXT_RED, threshold=60, count=20)
                     or image_color_count(counter, color=TEXT_BLUE, threshold=60, count=20)):
+                blank.append(SUBMISSION_GRID[card, slot].area)
                 continue
             cards.append((SUBMISSION_GRID[card, slot].area, counter))
         items = []
@@ -180,6 +183,12 @@ def read_cargo_slots(image, matcher=None, ocr=None):
                     unreadable += 1
                     continue
                 items.append((item_id, stock, need))
+        if completed:
+            # 已部分提交的委托里有货物图标却没有数字，多半是页面还没渲染完，计为未识别
+            for area in blank:
+                if matcher.match(image, area) is not None:
+                    logger.warning(f'[岛屿-货运] 栏位 {slot + 1} 有货物格尚未显示数字')
+                    unreadable += 1
         slots.append({'completed': completed, 'items': items, 'unreadable': unreadable})
     return slots
 

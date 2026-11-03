@@ -666,17 +666,14 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
 
             need_default = max(0, default_count - already_planted_default)
 
-            if to_plant_list:
-                # 未达标作物：每个未达标作物最多分配一个岗位，避免单个作物
-                # 被重复分配到所有空闲岗位（如香蕉缺 1 个却 4 个岗位全种香蕉）。
-                for i in range(min(idle_count, len(to_plant_list))):
-                    all_plants_to_plant[category].append(to_plant_list[i])
-            else:
-                # 所有未达标作物都已安排后才种植默认作物
-                if idle_count > 0 and need_default > 0:
-                    actual_default = min(idle_count, need_default)
-                    for _ in range(actual_default):
-                        all_plants_to_plant[category].append(default_crop)
+            # 未达标作物：每个未达标作物最多分配一个岗位，避免单个作物
+            # 被重复分配到所有空闲岗位（如香蕉缺 1 个却 4 个岗位全种香蕉）。
+            restock = to_plant_list[:idle_count]
+            all_plants_to_plant[category].extend(restock)
+            # 所有未达标作物都已安排后，剩余空闲岗位才种植默认作物
+            spare = idle_count - len(restock)
+            if spare > 0 and need_default > 0:
+                all_plants_to_plant[category].extend([default_crop] * min(spare, need_default))
 
             if all_plants_to_plant[category]:
                 logger.info(f"[岛屿-农田] \n{category}需要种植的作物: {all_plants_to_plant[category]}")
