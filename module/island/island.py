@@ -55,6 +55,13 @@ POST_EDGE_NUDGE_LIMIT = 3
 # 规则里 `switch`（切换到啾咖啡餐厅）的等待上限：点击按钮后等对话关闭、场景切换完成
 ISLAND_SWITCH_TIMEOUT = 12
 
+# 种子/鱼苗商店只列出账号已解锁的商品，未解锁的商品不占格子，后面的商品会整体前移，
+# 各账号、各服务器的格子顺序都可能不同（如国际服未解锁洋葱时，草莓格子上是棉花）。
+# 因此商品按图标在整页范围内模板搜索定位，而不是在国服坐标上做颜色检测；
+# 种子包外观相同、只有中间图案不同，相似度需提高到 0.93 才不会误认成其他商品。
+ISLAND_SHOP_ITEM_SEARCH_OFFSET = (700, 300)
+ISLAND_SHOP_ITEM_SIMILARITY = 0.93
+
 # 岛屿走位路线与规则解析集中在 module/island/island_walk.py；可以用岛屿计划的
 # 全局配置 `IslandPlan.IslandWalk.<路线名>` 覆盖整条规则（所有控制方式都生效，
 # 桥接 swipe 的位移随负载漂移，按机器各配一套规则最稳）。
@@ -1613,10 +1620,16 @@ class Island(SelectCharacter):
             # 不能退化为颜色检测，避免商店 3D 背景像素恰好匹配导致误判
             if self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
                 break
-            if self.appear_then_click(item_button, interval=1.2):
+            # 按图标搜索整页定位商品；商品未解锁或不在列表时不会误点其他格子，超时后放弃购买
+            if self.appear_then_click(
+                    item_button,
+                    offset=ISLAND_SHOP_ITEM_SEARCH_OFFSET,
+                    similarity=ISLAND_SHOP_ITEM_SIMILARITY,
+                    interval=1.2,
+            ):
                 continue
         else:
-            logger.warning(f"[岛屿] 打开购买弹窗超时: {item_name or item_button}")
+            logger.warning(f"[岛屿] 打开购买弹窗超时（商店中未找到该商品，可能未解锁）: {item_name or item_button}")
             return False
 
         if self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
