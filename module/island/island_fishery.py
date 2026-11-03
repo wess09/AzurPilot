@@ -50,6 +50,15 @@ from module.logger import logger
 DISPATCH_STAMINA_MIN = 98
 
 
+# 可兑换鱼肉的鱼：渔场产品名 -> 物品 ID（兑换时按对应的养殖底线保留）
+FISH_MEAT_FISH_IDS = {
+    'bass': 5007,
+    'yellowfin_tuna': 5107,
+    'koi_carp': 5003,
+    'mackerel': 5102,
+}
+
+
 class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
     """岛屿渔场自动化管理器。
 
@@ -652,11 +661,12 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
 
         logger.info("[岛屿-渔场] \n渔场管理完成！")
 
-        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）
+        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）；
+        # 兑换时保留各鱼的养殖底线，避免把菜品要用的鱼换光
         self.run_fish_meat_exchange({
             FRESHWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinFreshwaterFishMeat', 0),
             SALTWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinSaltwaterFishMeat', 0),
-        })
+        }, keep={fish_id: self.fishery_threshold.get(name, 0) for name, fish_id in FISH_MEAT_FISH_IDS.items()})
 
         # 设置下次运行时间：合并牧场和渔场的计时器，取最早的时间
         future_finish = []

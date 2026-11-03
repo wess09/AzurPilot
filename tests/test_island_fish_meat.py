@@ -67,5 +67,16 @@ class ScreenTest(unittest.TestCase):
         self.assertFalse(fm.exchange_popup_appear(image('exchange_reward')))
 
 
+
+class FishMeatKeepTest(unittest.TestCase):
+    def test_fishery_ids_are_exchangeable(self):
+        from module.island.island_fishery import FISH_MEAT_FISH_IDS
+        self.assertTrue(set(FISH_MEAT_FISH_IDS.values()) <= set(fm.FISH_MEAT_YIELD))
+
+    def test_keep_threshold(self):
+        # 鲤鱼 26 条、底线 20 时只能用 6 条（每条 3 鱼肉）
+        self.assertEqual(fm.plan_fish_exchange({5003: 26}, 30, keep={5003: 20}), {5003: 6})
+
+
 if __name__ == '__main__':
     unittest.main()
