@@ -519,29 +519,35 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
     def test_gives_up_round_when_stop_is_busy(self):
         """上一轮启动仍在进行时，本轮不能去 stop——那正是打断启动的元凶。"""
         script = self.make_script()
+        script.consecutive_game_not_running = 2
         device = self.make_device()
         device.emulator_stop.side_effect = EmulatorOpBusy('busy')
         script.__dict__['device'] = device
 
         self.assertFalse(script._try_restart_emulator())
         device.emulator_start.assert_not_called()
+        self.assertEqual(2, script.consecutive_game_not_running)
 
     def test_gives_up_round_when_start_is_busy(self):
         script = self.make_script()
+        script.consecutive_game_not_running = 2
         device = self.make_device()
         device.emulator_start.side_effect = EmulatorOpBusy('busy')
         script.__dict__['device'] = device
 
         self.assertFalse(script._try_restart_emulator())
         device.emulator_stop.assert_called_once()
+        self.assertEqual(2, script.consecutive_game_not_running)
 
     def test_returns_true_and_resets_counter_when_restart_succeeds(self):
         script = self.make_script()
         script.consecutive_adb_offline = 2
+        script.consecutive_game_not_running = 2
         script.__dict__['device'] = self.make_device()
 
         self.assertTrue(script._try_restart_emulator())
         self.assertEqual(0, script.consecutive_adb_offline)
+        self.assertEqual(0, script.consecutive_game_not_running)
 
     def test_passes_deep_flag_matching_the_threshold(self):
         """未达阈值时必须以 deep=False 调用——参数名写错会在这里炸出来。"""

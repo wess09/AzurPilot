@@ -763,8 +763,8 @@
       "help": "When a sensitive task fails, AzurPilot stops instead of restarting the game;\nSensitive tasks can be enabled on each task's settings page."
     },
     "TaskRestartLimit": {
-      "name": "Consecutive restart limit per task",
-      "help": "After this many consecutive failed recovery attempts, defer the task until the next server midnight and send an alert using error notification settings. Only success of that task resets its count; other tasks and successful game restarts do not. 0 = unlimited."
+      "name": "Consecutive emulator restart limit per task",
+      "help": "After this many completed emulator restarts for a task, defer it until the next server midnight if another emulator restart is needed, and send an error notification. Game restarts do not count. An exited game, an offline device or an incomplete emulator restart keeps recovering without deferring business tasks. Only success of that task resets its count; other tasks and successful game restarts do not. 0 = unlimited."
     },
     "SaveErrorRetentionDays": {
       "name": "Error log expiration (days)",
@@ -800,12 +800,12 @@
       "help": ""
     },
     "GameStuckRestart": {
-      "name": "Restart the emulator when the game freezes",
-      "help": "After the game freezes (triggers GameStuckError) for the specified number of times, try restarting the emulator. It may help solve problems such as emulator freeze or memory overflow."
+      "name": "Restart the emulator when the game freezes or repeatedly exits",
+      "help": "Try restarting the emulator after repeated freezes or game exits reach the count below, including exits after successful game restarts. This may help with emulator freezes or video memory issues."
     },
     "GameStuckThreshold": {
-      "name": "Restart when the game is stuck for X seconds",
-      "help": "How many consecutive times it is stuck before triggering a restart."
+      "name": "Freeze or game exit count before emulator restart",
+      "help": "Restart the emulator after this many consecutive freezes or game exits. Successful game restarts do not reset the count; a successful ordinary task does."
     },
     "AdbOfflineRestart": {
       "name": "Restart the emulator when the device is not detected",
