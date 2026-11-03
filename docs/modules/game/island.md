@@ -152,7 +152,7 @@ flowchart TD
 | `island_daily_order.py` | 每日订单 | `IslandDailyOrder` | 紧急委托周配额 15（OCR 检测 + 周一刷新）；订单驳回按 `RejectFilter`；冷却 OCR 失败回退 8 小时 |
 | `island_air_drop.py` | 每日空投 + 好友岛偷补给 | `IslandAirDrop` | 以服务器 0 点为每日边界；5 小时偷取冷却（`LastSteal` 落配置）；拜访次数 OCR 复检；`island_air_drop()` 按画面点补给气泡（最多 2 次）、关闭奖励弹窗，气泡变为「分享剩余补给」即停止，国际服误开的邀请好友窗口点 ✕ 关闭、不邀请 |
 | `island_pearl_sell.py` | 珍珠每周采购售卖 | `IslandPearlSell` | 周一 01:00 交易窗口；本岛价不达标时按排行榜拜访好友岛比价（买 1.1 折算）；每日 03:00 可选价格刷新 |
-| `island_cargo_preparation.py` | 货运委托 | `IslandCargoPreparation` | 3 栏位状态机（locked/pending/running/finished/refreshing/empty）；牛奶黑名单触发换货；默认 2 小时重跑 |
+| `island_cargo_preparation.py` | 货运委托 | `IslandCargoPreparation` | 3 栏位状态机（locked/pending/running/finished/refreshing/empty）；牛奶黑名单触发换货；尚未提交任何货物且仍缺货的委托也会更换（更换扣除一次运输次数、已提交货物不退还，因此已提交过的委托保留等待）；更换列表按每行左侧序号定位，只选「库存/需求」全部为蓝色的委托，没有则刷新一次，仍没有就保留原委托；默认 2 小时重跑 |
 
 ### 岛屿生产规划器（IslandProductionPlanner）
 
@@ -321,7 +321,7 @@ stateDiagram-v2
 - 所有坐标、路线默认值（`module/island/island_walk.py` 的方向+时长序列）与固定坐标选品均按 1280×720 实测写死，游戏改版需重新校准；`IslandPlan.IslandWalk.<路线>` 可以整条覆盖规则（含方向顺序与时长），对所有控制方式生效。
 - `SEASONAL_ITEMS` 中冬季为空、代码保留的 `'none'` 季节分支在当前配置选项下不可达；赛季迭代（新季节物品上线）完全依赖手动维护代码。
 - 制造业部分季节物品（夏季茉莉精油、秋季花束）在季节表中保留但有意不配置制作；`filter_element` 复用了 `TEMPLATE_FILE_CABINET` 模板（资源未单独提取），为已知的临时妥协。
-- 货物黑名单目前只实现了 Milk 一种识别模板。
+- 货物黑名单目前只实现了 Milk 一种识别模板；缺货委托不依赖黑名单，由更换列表的库存颜色判断。更换列表的行定位与颜色阈值基于国际服截图（`tests/fixtures/island_cargo/`），国服若布局不同需另行校准。
 - 岛屿生产规划器不能指定制造业产线内的产品比例（铁钉与餐具、皮革与鞋靴由 `island_manufacture.py` 按库存规则切换），只控制岗位数；季节订单需在 `ExtraTargets` 手动填写；每日订单不参与规划。`data.py` 需在游戏更新后从 ALAS 重新复制。
 - 各生产玩法每轮固定追加 6 小时兜底延时，依赖 `Duration` OCR 读取剩余时间，极端字体渲染下可能识别失败退化为兜底值。
 
