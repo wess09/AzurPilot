@@ -106,11 +106,14 @@ class IslandDailyGather(Island):
             if character_selected:
                 # 6. 点击"出发"按钮
                 logger.info("[岛屿-每日采集] 步骤6: 点击出发按钮")
-                self._click_depart()
-
-                # 7. 处理采集完成页面
-                logger.info("[岛屿-每日采集] 步骤7: 等待采集完成并关闭完成页面")
-                self._handle_collection_complete()
+                if self._click_depart():
+                    # 7. 处理采集完成页面
+                    logger.info("[岛屿-每日采集] 步骤7: 等待采集完成并关闭完成页面")
+                    self._handle_collection_complete()
+                else:
+                    # 出发按钮未出现（体力或资金不足时为灰色，或缺少对应服务器的识别图），
+                    # 采集没有开始，不会有完成页面，无需再等待 30 秒
+                    logger.warning("[岛屿-每日采集] 未能出发（体力或资金不足，或出发按钮识别失败），跳过等待采集完成")
         else:
             logger.info("[岛屿-每日采集] 所有采集物已采集完毕，跳过后续步骤")
 
