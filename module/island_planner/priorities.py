@@ -24,18 +24,19 @@ def solve_with_priorities(calculator, task_target_items=None, task_target_period
     Returns:
         bool: 是否求解成功。第二次求解失败时保留第一次的方案。
     """
-    calculator.solve_production_plan(
-        task_target_items=task_target_items, task_target_period=task_target_period, current_time=current_time)
-    if not calculator.lp_success:
-        return False
-    first_pt, first_coins = calculator.total_pt, calculator.daily_profit
-
-    # 重新建模（与 solve_production_plan 相同的输入），得到第一次的最优目标值
+    # 只建模一次，两次求解共用，避免「无法生产的目标」等警告重复输出
+    calculator.hard_floor_items = calculator._build_planner_hard_floor_items(None)
     problem = calculator.build_production_problem(
         task_target_items=task_target_items, task_target_period=task_target_period, current_time=current_time)
     first = milp(problem['c'], constraints=problem['constraints'], bounds=problem['bounds'])
     if not first.success:
-        return True
+        # 不可行时走 ALAS 原流程，输出瓶颈诊断
+        calculator.solve_production_plan(
+            task_target_items=task_target_items, task_target_period=task_target_period, current_time=current_time)
+        return calculator.lp_success
+    calculator._apply_production_lp_result(first, problem)
+    first_pt, first_coins = calculator.total_pt, calculator.daily_profit
+
     pt_columns = {index: value for index, value in enumerate(problem['c']) if value}
     limit = first.fun + PT_TOLERANCE * max(abs(first.fun), 1)
     extended = extend_problem(problem, rows=[{'label': ('pt_floor', 0), 'columns': pt_columns, 'ub': limit}])
