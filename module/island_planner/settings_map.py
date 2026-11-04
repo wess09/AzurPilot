@@ -15,6 +15,8 @@
 - 渔场 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat`：鱼肉一天需要量，渔场任务按此把鱼兑换成鱼肉。
 - 牧场 `MinChicken`（禽肉）/`MinPork`（鲜肉）取计划日产量，`Milk`/`Wool` 看计划是否养牛/羊。
 - 制造业 `WoodProcessing/ElectronicProcessing/Industrial/Handmade.Positions`：计划需要的岗位数。
+- 空余岗位（目标都达标后）：农田三区 `DefaultCrop` 与默认作物岗位数、`MineSilver`、`CutElegant`、
+  `PlantYellowfinTuna` 取闲时累积（为季节 PT）的产品与岗位数。
 
 AzurPilot 不会做或卖的菜品、不会种的作物、不会生产的矿石/木材/鱼/制造品，会在求解前从模型中排除，
 避免规划出 AzurPilot 执行不了的方案。
@@ -439,6 +441,100 @@ def manufacture_settings(calculator):
     return values
 
 
+# 各区域任务实际运行的岗位数配置；规划器按它限制可用岗位，超出部分的产能不会实际产出。
+POSITION_LIMITS = {
+    'field': 'IslandFarm.IslandFarm.Positions',
+    'orchard': 'IslandFarm.IslandOrchard.Positions',
+    'nursery': 'IslandFarm.IslandNursery.Positions',
+    'mine': 'IslandMineForest.IslandMine.Positions',
+    'wood': 'IslandMineForest.IslandForest.Positions',
+    'fishery': 'IslandRancher.IslandFishery.Positions',
+}
+
+
+def position_limits(get):
+    """读取各区域的岗位数配置，get(path) 取不到或不是整数时不限制该区域。"""
+    limits = {}
+    for group, path in POSITION_LIMITS.items():
+        value = get(path)
+        if isinstance(value, int) and not isinstance(value, bool):
+            limits[group] = value
+    return limits
+
+
+# 闲时产能（目标都达标后的空余岗位）写入各区域的「默认产品」设置。
+# crops 为可选默认作物（名称 -> 物品ID），fixed 为写死的默认产品；count 为默认产品岗位数配置及其上限。
+DEFAULT_PRODUCTS = {
+    'field': {'crops': CROP_ITEM_IDS['farm'], 'crop_path': 'IslandFarm.IslandFarm.DefaultCrop',
+              'count': ('IslandFarm.IslandFarm.PlantPotatoes', 4), 'place': 101},
+    'orchard': {'crops': CROP_ITEM_IDS['orchard'], 'crop_path': 'IslandFarm.IslandOrchard.DefaultCrop',
+                'count': ('IslandFarm.IslandOrchard.PlantRubber', 4), 'place': 501},
+    'nursery': {'crops': CROP_ITEM_IDS['nursery'], 'crop_path': 'IslandFarm.IslandNursery.DefaultCrop',
+                'count': ('IslandFarm.IslandNursery.PlantLavender', 2), 'place': 502},
+    'mine': {'fixed': 2705, 'count': ('IslandMineForest.IslandMine.MineSilver', 4), 'place': 401},
+    'wood': {'fixed': 2803, 'count': ('IslandMineForest.IslandForest.CutElegant', 4), 'place': 402},
+    'fishery': {'fixed': 5107, 'count': ('IslandRancher.IslandFishery.PlantYellowfinTuna', 3), 'place': None},
+}
+
+
+def idle_posts(calculator, group, item_id):
+    """闲时累积 item_id 每天需要的岗位数（按配方工作量与区域效率加成换算，向上取整）。"""
+    rate = calculator.idle_accumulating_items_per_day.get(item_id, 0)
+    if rate <= 0:
+        return 0
+    place = DEFAULT_PRODUCTS[group]['place']
+    efficiency = 1 + (calculator.place_efficiency_bonus.get(place, 0) if place else 0)
+    for recipe_id, recipe_group in calculator.recipe_group.items():
+        recipe = DIC_ISLAND_RECIPE[recipe_id]
+        if recipe_group != group or not calculator.recipe_available.get(recipe_id, False):
+            continue
+        amount = recipe['commission_product'].get(item_id, 0)
+        if amount > 0:
+            workload = rate / amount * recipe['workload'] / efficiency
+            return ceil(workload / DAILY_WORKLOAD - 1e-6)
+    return 0
+
+
+def default_product_settings(calculator):
+    """目标都达标后，空余岗位生产什么：取闲时累积量（为季节 PT）对应的产品与岗位数。
+
+    农田三区的默认作物可选，取需要岗位最多的闲时作物；矿山（银矿）、林场（典雅之木）、
+    渔场（黄鳍金枪鱼）的默认产品写死，只写岗位数，闲时产品不同时记录提示并置 0。
+
+    Returns:
+        tuple[dict, list[str]]: ({配置路径: 值}, 提示信息)。
+    """
+    values = {}
+    notes = []
+    for group, data in DEFAULT_PRODUCTS.items():
+        count_path, limit = data['count']
+        unlocked = sum(1 for slot in calculator.GROUP_TO_SLOTS.get(group, [])
+                       if calculator.slot_available.get(slot, False))
+        limit = min(limit, unlocked)
+        group_name = count_path.split('.')[1]
+        if 'crops' in data:
+            posts = {crop: idle_posts(calculator, group, item_id) for crop, item_id in data['crops'].items()}
+            crop = max(posts, key=lambda name: (posts[name], name)) if posts else None
+            if crop and posts[crop] > 0:
+                values[data['crop_path']] = crop
+                values[count_path] = min(posts[crop], limit)
+            else:
+                values[count_path] = 0
+            continue
+        posts = idle_posts(calculator, group, data['fixed'])
+        values[count_path] = min(posts, limit)
+        if posts <= 0:
+            others = [DIC_ISLAND_ITEM[item_id]['name']['en']
+                      for item_id in calculator.idle_accumulating_items_per_day
+                      if any(calculator.recipe_group.get(r) == group
+                             and item_id in DIC_ISLAND_RECIPE[r]['commission_product']
+                             for r in calculator.recipe_group)]
+            if others:
+                notes.append(f'{group_name}: spare posts would produce {", ".join(others)}, '
+                             f'but the default product is fixed to {DIC_ISLAND_ITEM[data["fixed"]]["name"]["en"]}')
+    return values, notes
+
+
 def build_settings(calculator, meal_options, product_options):
     """求解成功后，生成要写入的全部配置。
 
@@ -461,6 +557,9 @@ def build_settings(calculator, meal_options, product_options):
     notes.extend(threshold_notes)
     values.update(ranch_settings(calculator))
     values.update(manufacture_settings(calculator))
+    default_values, default_notes = default_product_settings(calculator)
+    values.update(default_values)
+    notes.extend(default_notes)
     return values, notes
 
 

@@ -1830,6 +1830,9 @@ IslandFarm:
   CropTargets:
     type: textarea
     value: ''
+  DefaultCrop:
+    value: wheat
+    option: [ wheat, corn, rice, chinese_cabbage, potato, soybean, pasture, coffee_bean ]
   PlantPotatoes:
     value: 4
     option: [ 0, 1, 2, 3, 4 ]
@@ -1844,6 +1847,9 @@ IslandOrchard:
     type: textarea
     value: ''
   IgnoreAvocado: true
+  DefaultCrop:
+    value: rubber
+    option: [ apple, citrus, banana, mango, lemon, avocado, rubber, pear, persimmon ]
   PlantRubber:
     value: 0
     option: [ 0, 1, 2, 3, 4 ]
@@ -1859,6 +1865,9 @@ IslandNursery:
     type: textarea
     value: ''
   IgnorePineapple: true
+  DefaultCrop:
+    value: lavender
+    option: [ carrot, onion, flax, strawberry, cotton, tea, lavender, pineapple, asparagus ]
   PlantLavender:
     value: 2
     option: [ 0, 1, 2 ]
@@ -2596,6 +2605,14 @@ IslandProductionPlanner:
   SeasonTaskTargets:
     type: textarea
     value: ''
+  ScanCargoOrders:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  CargoTargets:
+    type: textarea
+    value: ''
+  CargoTargetDays: 1
   ExtraTargets:
     type: textarea
     value: ''

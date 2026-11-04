@@ -11,9 +11,12 @@ from module.base.decorator import cached_property
 from module.config.deep import deep_get
 from module.config.utils import filepath_args, read_file
 from module.island_planner import settings_map
+from module.island.assets import ISLAND_BACK
 from module.island_planner.calculator import ProductionPlanCalculator
+from module.island_planner.cargo import partial_order_targets, partial_orders_fully_read, read_cargo_slots
 from module.island_planner.data import DIC_ISLAND_ITEM
 from module.island_planner.scanner import IslandTechnologyScanner
+from module.island_planner.priorities import solve_with_priorities
 from module.island_planner.season_tasks import IslandSeasonTaskScanner
 from module.island_planner.utils import (
     get_current_activity_list,
@@ -24,6 +27,7 @@ from module.island_planner.utils import (
     normalize_item_id,
 )
 from module.logger import logger
+from module.ui.page import page_island, page_island_phone
 
 TASK = 'IslandProductionPlanner'
 TECHNOLOGY_STORAGE = f'{TASK}.Storage.Storage.IslandTechnologyStatus'
@@ -87,6 +91,19 @@ def parse_targets(text, name):
         entries = value if isinstance(value, list) else [value]
         targets.setdefault(item_id, []).extend(entries)
     return targets
+
+
+def with_period(targets, days):
+    """给未写期限的目标加上统一期限（天）。货运缺口需要尽快补齐，不按季节剩余天数平均。"""
+    try:
+        days = float(days)
+    except (TypeError, ValueError):
+        days = 1.
+    days = days if days > 0 else 1.
+    return {
+        item_id: [entry if isinstance(entry, dict) else {'count': entry, 'period': days} for entry in entries]
+        for item_id, entries in targets.items()
+    }
 
 
 def merge_targets(*target_maps):
@@ -153,11 +170,64 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
             # 未扫描或扫描失败（识别不到任务卡片）时沿用上次保存的目标
             text = self.get('SeasonTaskTargets')
         season = parse_targets(text, 'SeasonTaskTargets')
+        if self.get('ScanCargoOrders'):
+            missing = self.scan_cargo_targets()
+        else:
+            missing = None
+        if missing is not None:
+            cargo_text = item_mapping_to_yaml(missing, use_item_name=True) if missing else ''
+            self.config.cross_set(f'{TASK}.{TASK}.CargoTargets', cargo_text)
+        else:
+            # 未扫描或扫描不完整时沿用上次保存的目标
+            cargo_text = self.get('CargoTargets')
+        cargo = with_period(parse_targets(cargo_text, 'CargoTargets'), self.get('CargoTargetDays'))
         extra = parse_targets(self.get('ExtraTargets'), 'ExtraTargets')
-        for name, targets in (('季节任务目标', season), ('额外目标', extra)):
+        for name, targets in (('季节任务目标', season), ('货运缺口', cargo), ('额外目标', extra)):
             if targets:
                 logger.info(f'[岛屿-规划] {name}: {targets}')
-        return merge_targets(season, extra)
+        return merge_targets(season, cargo, extra)
+
+    def scan_cargo_targets(self):
+        """读取货运页面，返回已部分提交的委托还缺的货物 {物品ID: 数量}。
+
+        Returns:
+            dict[int, int] | None: 缺口；已部分提交的委托有格子识别失败时返回 None，
+                调用方沿用已保存的目标，避免用不完整的结果清空缺口。
+
+        Pages:
+            in: 任意页面
+            out: page_island_phone
+        """
+        logger.hr('Scan island cargo orders', level=1)
+        self.ui_ensure(page_island)
+        self.ui_goto(page_island_phone, get_ship=False)
+        self.island_transport_enter()
+        # island_transport_enter 只确认了页面模板，已提交标记和货物格数字可能还没显示；
+        # 连续两次截图读到相同且完整的结果才采用，最多 5 秒，否则沿用已保存的目标
+        slots, previous, settled = [], None, False
+        for _ in self.loop(skip_first=False, timeout=5):
+            slots = read_cargo_slots(self.device.image)
+            if slots == previous and partial_orders_fully_read(slots):
+                settled = True
+                break
+            previous = slots
+        for index, slot in enumerate(slots):
+            items = ', '.join(f'{DIC_ISLAND_ITEM[i]["name"]["en"]} {stock}/{need}' for i, stock, need in slot['items'])
+            logger.info(f'[岛屿-货运] 栏位 {index + 1}: 已提交 {slot["completed"]} 格; {items}')
+        if settled:
+            missing = partial_order_targets(slots)
+            logger.info(f'[岛屿-货运] 已部分提交委托的缺口: {missing}')
+        else:
+            missing = None
+            logger.warning('[岛屿-货运] 货运页在 5 秒内未读到稳定完整的结果，沿用上次保存的货运目标')
+        for _ in self.loop(timeout=30):
+            if self.ui_page_appear(page_island_phone):
+                break
+            if self.appear_then_click(ISLAND_BACK, interval=2):
+                continue
+            if self.ui_additional():
+                continue
+        return missing
 
     def create_calculator(self, technology_status):
         grades = {rid: self.get(key) for rid, key in GRADE_KEYS.items()}
@@ -182,6 +252,7 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
             restaurant_settings=settings_map.restaurant_settings(grades, chars, open_ids),
             daily_profit_lower_limit=self.get('DailyProfitLowerLimit'),
             daily_buffer_safety_margin=self.get('DailyBufferSafetyMargin'),
+            slot_limit=settings_map.position_limits(lambda path: self.config.cross_get(path, None)),
         )
 
     def run(self):
@@ -210,7 +281,8 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
             logger.warning('[岛屿-规划] 没有进行中的季节，未写期限的目标按 1 天计算')
             remaining = 1
         # 目标物品当前无法生产时由 calculator 记录警告后忽略，不影响其他物品
-        calculator.solve_production_plan(task_target_items=targets, task_target_period=remaining)
+        # 目标 → 季节 PT → 岛币：先满足目标与岛币下限并最大化 PT，再保持 PT 最大化岛币
+        solve_with_priorities(calculator, task_target_items=targets, task_target_period=remaining)
         calculator.print_solved_production_plan()
         if not calculator.lp_success:
             logger.warning('[岛屿-规划] 没有可行方案，配置未修改。可降低「每日岛币净收入下限」后重试')

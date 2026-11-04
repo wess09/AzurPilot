@@ -82,19 +82,19 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
         self.ignore_avocado = self.config.IslandOrchard_IgnoreAvocado
         self.ignore_pineapple = self.config.IslandNursery_IgnorePineapple
 
-        # 修改默认作物配置：数值类型，表示要种植默认作物的岗位数量
+        # 默认作物配置：所有作物达标后，最多 plant_default 个岗位种植 default_crop（可配置，岛屿生产规划器会按闲时产量改写）
         self.plant_config = {
             'farm': {
                 'plant_default': self.config.IslandFarm_PlantPotatoes,  # 0-4
-                'default_crop': 'wheat'
+                'default_crop': self.config.IslandFarm_DefaultCrop or 'wheat'
             },
             'orchard': {
                 'plant_default': self.config.IslandOrchard_PlantRubber,  # 0-4
-                'default_crop': 'rubber'
+                'default_crop': self.config.IslandOrchard_DefaultCrop or 'rubber'
             },
             'nursery': {
                 'plant_default': self.config.IslandNursery_PlantLavender,  # 0-2
-                'default_crop': 'lavender'
+                'default_crop': self.config.IslandNursery_DefaultCrop or 'lavender'
             }
         }
 
@@ -666,17 +666,16 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
 
             need_default = max(0, default_count - already_planted_default)
 
-            if to_plant_list:
-                # 未达标作物：每个未达标作物最多分配一个岗位，避免单个作物
-                # 被重复分配到所有空闲岗位（如香蕉缺 1 个却 4 个岗位全种香蕉）。
-                for i in range(min(idle_count, len(to_plant_list))):
-                    all_plants_to_plant[category].append(to_plant_list[i])
-            else:
-                # 所有未达标作物都已安排后才种植默认作物
-                if idle_count > 0 and need_default > 0:
-                    actual_default = min(idle_count, need_default)
-                    for _ in range(actual_default):
-                        all_plants_to_plant[category].append(default_crop)
+            # 未达标作物：每个未达标作物最多分配一个岗位，避免单个作物
+            # 被重复分配到所有空闲岗位（如香蕉缺 1 个却 4 个岗位全种香蕉）。
+            restock = to_plant_list[:idle_count]
+            all_plants_to_plant[category].extend(restock)
+            # 所有未达标作物都已安排后，剩余空闲岗位才种植默认作物
+            spare = idle_count - len(restock)
+            # 默认作物本身也在补种时，那个岗位同样算作默认作物岗位
+            need_default = max(0, need_default - restock.count(default_crop))
+            if spare > 0 and need_default > 0:
+                all_plants_to_plant[category].extend([default_crop] * min(spare, need_default))
 
             if all_plants_to_plant[category]:
                 logger.info(f"[岛屿-农田] \n{category}需要种植的作物: {all_plants_to_plant[category]}")
