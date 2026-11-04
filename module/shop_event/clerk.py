@@ -10,6 +10,7 @@ Pages: in: EVENT_SHOP
 
 import cv2
 
+import module.config.server as server
 from module.base.button import ButtonGrid
 from module.base.decorator import cached_property
 from module.base.timer import Timer
@@ -213,6 +214,12 @@ class EventShopClerk(EventShopUI):
                     continue
             elif self.appear(SHOP_BUY_CONFIRM, offset=(20, 40)):
                 self.device.click(SHOP_BUY_CONFIRM)
+                executed = True
+                timer.reset()
+                continue
+            # 国际服活动商店的确认按钮与普通商店不同。
+            elif server.server == 'en' and self.appear_then_click(
+                    SHOP_EVENT_BUY_CONFIRM, offset=(20, 40), interval=2):
                 executed = True
                 timer.reset()
                 continue
