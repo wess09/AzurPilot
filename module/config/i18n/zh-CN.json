@@ -4522,6 +4522,18 @@
       "name": "按作物设置补种目标",
       "help": "每行一条「作物: 目标库存」，如\ncorn: 200\nwheat: 80\n列出的作物库存低于自己的目标时补种，未列出的作物沿用「农田作物底线」；目标填 0 表示不补种该作物。留空则全部使用「农田作物底线」。缺口比例最大的作物优先补种。\n可用作物：wheat, corn, rice, chinese_cabbage, potato, soybean, pasture, coffee_bean\n岛屿生产规划器运行后会自动改写本项。"
     },
+    "DefaultCrop": {
+      "name": "默认作物",
+      "help": "所有作物都达到目标后，空余岗位种植的作物（岗位数见下一项）。岛屿生产规划器会按闲时产量（为季节 PT）改写。",
+      "wheat": "小麦",
+      "corn": "玉米",
+      "rice": "大米",
+      "chinese_cabbage": "白菜",
+      "potato": "土豆",
+      "soybean": "大豆",
+      "pasture": "牧草",
+      "coffee_bean": "咖啡豆"
+    },
     "PlantPotatoes": {
       "name": "种小麦",
       "help": "",
@@ -4560,6 +4572,19 @@
     "IgnoreAvocado": {
       "name": "忽视牛油果",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "默认作物",
+      "help": "所有作物都达到目标后，空余岗位种植的作物（岗位数见下一项）。岛屿生产规划器会按闲时产量（为季节 PT）改写。",
+      "apple": "苹果",
+      "citrus": "柑橘",
+      "banana": "香蕉",
+      "mango": "芒果",
+      "lemon": "柠檬",
+      "avocado": "牛油果",
+      "rubber": "橡胶",
+      "pear": "秋月梨",
+      "persimmon": "柿子"
     },
     "PlantRubber": {
       "name": "种橡胶",
@@ -4601,6 +4626,19 @@
     "IgnorePineapple": {
       "name": "忽视菠萝",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "默认作物",
+      "help": "所有作物都达到目标后，空余岗位种植的作物（岗位数见下一项）。岛屿生产规划器会按闲时产量（为季节 PT）改写。",
+      "carrot": "胡萝卜",
+      "onion": "洋葱",
+      "flax": "亚麻",
+      "strawberry": "草莓",
+      "cotton": "棉花",
+      "tea": "茶叶",
+      "lavender": "薰衣草",
+      "pineapple": "凤梨",
+      "asparagus": "芦笋"
     },
     "PlantLavender": {
       "name": "种薰衣草",
@@ -6958,7 +6996,7 @@
     },
     "ApplySettings": {
       "name": "写入配置",
-      "help": "关闭时只在日志中预览方案；开启后覆盖各店铺 Meal/MealNumber、AwayCook、经营商品，农田「按作物设置补种目标」，矿山/林场/渔场最低库存，牧场鸡肉/猪肉底线与牛奶/羊毛开关，以及制造业各产线岗位数。",
+      "help": "关闭时只在日志中预览方案；开启后覆盖各店铺 Meal/MealNumber、AwayCook、经营商品，农田「按作物设置补种目标」，矿山/林场/渔场最低库存，牧场鸡肉/猪肉底线与牛奶/羊毛开关，、制造业各产线岗位数，以及空余岗位的默认作物/产品与岗位数。",
       "True": "开启",
       "False": "关闭"
     },
@@ -6977,6 +7015,20 @@
     "SeasonTaskTargets": {
       "name": "季节任务目标",
       "help": "每行「物品英文名: 数量」，规划按本季剩余天数平均分配产量。开启「扫描季节任务」时每次运行自动改写；关闭后可手动编辑。"
+    },
+    "ScanCargoOrders": {
+      "name": "扫描货运委托",
+      "help": "运行时进入货运页面，读取已提交过部分货物的委托还缺的货物，写入「货运缺口」。这类委托更换后不退还已提交的货物，只能补齐。",
+      "True": "开启",
+      "False": "关闭"
+    },
+    "CargoTargets": {
+      "name": "货运缺口",
+      "help": "每行「物品英文名: 数量」。开启「扫描货运委托」时每次运行自动改写；关闭后可手动编辑。"
+    },
+    "CargoTargetDays": {
+      "name": "货运缺口期限（天）",
+      "help": "货运缺口在多少天内补齐，规划按此分配产量。默认 1 天。"
     },
     "ExtraTargets": {
       "name": "额外目标",

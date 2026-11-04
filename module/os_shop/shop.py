@@ -363,6 +363,9 @@ class OSShop(PortShop, AkashiShop):
                 if self.is_coins_both_not_enough():
                     logger.info('货币不足，无法购买任何物品，停止购买')
                     break
+                # 没有购买，货币不变，下一件不必重新截图识别；否则连续跳过几十件时
+                # 画面 30 秒不变会被判定为卡死
+                skip_get_coins = True
                 continue
             logger.info(f'购买物品 {item.name}，商店 {item.shop_index + 1}，位置 {item.scroll_pos:.2f}')
             self.os_shop_side_navbar_ensure(upper=item.shop_index + 1)

@@ -4522,6 +4522,18 @@
       "name": "Per-crop restock targets",
       "help": "One \"crop: target stock\" per line, e.g.\ncorn: 200\nwheat: 80\nA listed crop is replanted when its stock drops below its own target; crops not listed use \"Crop stock threshold\". A target of 0 means never replant that crop. Leave empty to use \"Crop stock threshold\" for every crop. The crop furthest below its target is planted first.\nCrops: wheat, corn, rice, chinese_cabbage, potato, soybean, pasture, coffee_bean\nThe Island Production Planner rewrites this setting when it runs."
     },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "wheat": "Wheat",
+      "corn": "Corn",
+      "rice": "Rice",
+      "chinese_cabbage": "Napa Cabbage",
+      "potato": "Potato",
+      "soybean": "Soy Beans",
+      "pasture": "Grass",
+      "coffee_bean": "Coffee Beans"
+    },
     "PlantPotatoes": {
       "name": "Plant wheat",
       "help": "",
@@ -4560,6 +4572,19 @@
     "IgnoreAvocado": {
       "name": "Ignore avocado",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "apple": "Apple",
+      "citrus": "Citrus Fruit",
+      "banana": "Banana",
+      "mango": "Mango",
+      "lemon": "Lemon",
+      "avocado": "Avocado",
+      "rubber": "Rubber",
+      "pear": "Yoizuki Pear",
+      "persimmon": "Kaki Persimmon"
     },
     "PlantRubber": {
       "name": "Plant rubber",
@@ -4601,6 +4626,19 @@
     "IgnorePineapple": {
       "name": "Ignore pineapple",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "carrot": "Carrot",
+      "onion": "Onion",
+      "flax": "Flax",
+      "strawberry": "Strawberries",
+      "cotton": "Cotton",
+      "tea": "Tea Leaves",
+      "lavender": "Lavender",
+      "pineapple": "Pineapple",
+      "asparagus": "Asparagus"
     },
     "PlantLavender": {
       "name": "Plant lavender",
@@ -6958,7 +6996,7 @@
     },
     "ApplySettings": {
       "name": "Write settings",
-      "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, and the number of posts per factory line.",
+      "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, the number of posts per factory line, and the default crop/product and post count for spare posts.",
       "True": "Enabled",
       "False": "Disabled"
     },
@@ -6977,6 +7015,20 @@
     "SeasonTaskTargets": {
       "name": "Season task targets",
       "help": "One \"item English name: amount\" per line; the plan spreads production over the days left in the season. Rewritten on every run while \"Scan season tasks\" is on; edit it by hand when that is off."
+    },
+    "ScanCargoOrders": {
+      "name": "Scan cargo orders",
+      "help": "Each run opens the cargo page and reads what is still missing from orders where some items were already delivered, then writes it into \"Cargo shortfall\". Those orders cannot be swapped without losing the delivered items, so they have to be completed.",
+      "True": "Enabled",
+      "False": "Disabled"
+    },
+    "CargoTargets": {
+      "name": "Cargo shortfall",
+      "help": "One \"item English name: amount\" per line. Rewritten on every run while \"Scan cargo orders\" is on; edit it by hand when that is off."
+    },
+    "CargoTargetDays": {
+      "name": "Cargo shortfall deadline (days)",
+      "help": "How many days to fill the cargo shortfall in; the plan spreads production over this. Default 1 day."
     },
     "ExtraTargets": {
       "name": "Extra targets",
