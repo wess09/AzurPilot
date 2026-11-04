@@ -657,7 +657,7 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
         """处理经验结算画面（S/A/B/C/D 评价）。
 
         Returns:
-            bool: 是否点击了经验结算画面。
+            bool: 是否识别到经验结算画面，包括等待点击间隔时。
         """
         if self.is_combat_executing():
             return False
@@ -670,7 +670,8 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
                 continue
             if rank in ('S', 'A', 'B'):
                 self.combat_result_record(rank=rank)
-            return self.appear_then_click(button, interval=2)
+            self.appear_then_click(button, interval=2)
+            return True
         return False
 
     def handle_get_ship(self, drop=None):
