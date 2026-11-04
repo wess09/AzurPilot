@@ -1013,6 +1013,14 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
             with opsi_task_context(
                 self.config, task, bind_task=task_name, disable_task_switch=disable_task_switch,
             ):
+                if (
+                    task_name != self.TASK_NAME_SCHEDULING
+                    and getattr(self, '_initial_fleet_repair_pending', False)
+                ):
+                    self._initial_fleet_repair_pending = False
+                    if not self._skip_fleet_repair():
+                        self._close_scheduling_action_point()
+                        self.handle_fleet_repair(revert=False)
                 return func(*args, **kwargs)
         finally:
             # 子任务可能已结算奖励，但设备仍持有旧帧；返回后的预算必须重新确认。
@@ -1113,6 +1121,9 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
             return
 
         self._close_scheduling_action_point()
+        if getattr(self, '_initial_fleet_repair_pending', False):
+            self._initial_fleet_repair_pending = False
+            self.handle_fleet_repair(revert=False)
         self.run_first_auto_search()
 
     def _handle_smart_scheduling_no_task(self, yellow_coins, total_ap, current_ap, coin_target, meow_ap_preserve):
