@@ -6,7 +6,7 @@
 from module.island.island import Island
 import module.island_daily_order.assets as daily_order_assets
 from module.island_daily_order.assets import *
-from module.island.assets import ISLAND_BACK, ISLAND_GET, ISLAND_CLICK_SAFE_AREA
+from module.island.assets import ISLAND_BACK, ISLAND_GET, ISLAND_CLICK_SAFE_AREA, ISLAND_LEVEL_UP
 from module.base.button import Button
 from module.ui.page import page_island, page_island_phone
 from module.logger import logger
@@ -676,6 +676,11 @@ class IslandDailyOrder(Island):
             logger.info('[岛屿-每日订单] 检测到订单等级升级，点击安全区域关闭')
             self.device.click(ISLAND_CLICK_SAFE_AREA)
             return True
+        if self.appear(ISLAND_LEVEL_UP, offset=(20, 20)):
+            # 交付订单使岛屿升级时出现的全屏「LEVEL UP」，点击任意处关闭
+            logger.info('[岛屿-每日订单] 检测到岛屿等级提升，点击安全区域关闭')
+            self.device.click(ISLAND_CLICK_SAFE_AREA)
+            return True
         if self.appear(ISLAND_GET, offset=30):
             self.device.click(ISLAND_CLICK_SAFE_AREA)
             return True
@@ -689,6 +694,11 @@ class IslandDailyOrder(Island):
             self.device.screenshot()
             if self.appear(DAILY_ORDER_LEVEL_UP):
                 logger.info('[岛屿-每日订单] 检测到订单等级升级，点击安全区域关闭')
+                self.device.click(ISLAND_CLICK_SAFE_AREA)
+                handled = True
+                continue
+            if self.appear(ISLAND_LEVEL_UP, offset=(20, 20)):
+                logger.info('[岛屿-每日订单] 检测到岛屿等级提升，点击安全区域关闭')
                 self.device.click(ISLAND_CLICK_SAFE_AREA)
                 handled = True
                 continue
