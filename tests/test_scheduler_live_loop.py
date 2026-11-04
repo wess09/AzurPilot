@@ -13,7 +13,7 @@ from starlette.testclient import TestClient
 from alas import AzurLaneAutoScript
 from module.api.app import create_app
 from module.config.config import TaskEnd
-from module.exception import GameNotRunningError
+from module.exception import GameNotRunningError, GameStuckError
 from module.scheduler.engine import simulate
 from module.scheduler.models import ProgramDocument
 from module.scheduler.runtime import SchedulerRuntime
@@ -96,11 +96,14 @@ class LiveLoopTests(unittest.TestCase):
         config = self.script.config
         self.assertEqual(config.Error_TaskRestartLimit, 3)
         config.Error_TaskRestartLimit = 2
-        self.assertFalse(self.script._record_task_restart('Main', 'recoverable'))
+        self.script._try_restart_emulator = Mock(return_value=True)
+        self.assertTrue(self.script._restart_emulator_for_task('Main'))
+        self.assertTrue(self.script._restart_emulator_for_task('Main'))
         deadline = datetime(2026, 9, 29)
         with (patch('alas.get_server_next_update', return_value=deadline),
               patch('alas.handle_notify'), patch('alas.notify_webui')):
-            self.assertTrue(self.script._record_task_restart('Main', 'recoverable'))
+            self.assertFalse(self.script._restart_emulator_for_task('Main'))
+        self.assertEqual(self.script._try_restart_emulator.call_count, 2)
         del self.script.__dict__['config']
         reloaded = self.script.config
         self.assertEqual(reloaded.Error_TaskRestartLimit, 2)
@@ -221,14 +224,18 @@ class LiveLoopTests(unittest.TestCase):
 
     def test_business_task_limit_does_not_block_requested_restart(self):
         self.script.config.Error_TaskRestartLimit = 1
+        self.script.config.Error_GameStuckRestart = True
+        self.script.config.Error_GameStuckThreshold = 1
         self.apply(self.program())
         deadline = datetime(2026, 9, 29)
         self.script.task_restart_delays['Restart'] = deadline
         self.script.task_restart_record['Restart'] = 3
+        self.script.task_restart_record['Main'] = 1
+        self.script._try_restart_emulator = Mock(return_value=True)
 
         def main():
             self.calls.append('Main')
-            raise GameNotRunningError
+            raise GameStuckError
 
         self.script.main = main
         self.script.restart = lambda: self.calls.append('Restart')
@@ -239,6 +246,7 @@ class LiveLoopTests(unittest.TestCase):
         self.assertEqual(['Main', 'Restart', 'Research'], self.calls)
         self.assertEqual({'Main': deadline}, self.script.task_restart_delays)
         self.assertNotIn('Restart', self.script.task_restart_record)
+        self.script._try_restart_emulator.assert_not_called()
         saved = json.loads(self.path.read_text(encoding='utf-8'))
         self.assertEqual('2026-09-29 00:00:00', saved['Main']['Scheduler']['NextRun'])
 

@@ -59,7 +59,6 @@ frontend/README.md 与 frontend/API.md 已经是本前端的详细文档：前�
 
 统计页各分类均保留历史展示与筛选，并提供导出入口：页面可导出本类数据，表格有各自的导出明细按钮，图表支持保存为图片。
 
-茗喵证券交易所的注册和登录使用 `src/stock/Captcha.tsx` 与 `recaptcha.ts` 中的 Google reCAPTCHA v2，脚本及验证 iframe 统一走 `www.recaptcha.net`，官方静态依赖使用 `www.gstatic.com/recaptcha/`。认证请求字段为 `recaptchaToken`；私密密钥由 Go 交易所环境变量 `RECAPTCHA_SECRET_KEY` 读取。站点停用域名验证，Go 不匹配 hostname 或 action。切换注册/登录时立即清空 token，提交后重置，组件卸载后忽略延迟回调；前端与 Go 服务须同步升级。
 
 ## 2. 模块职责
 
@@ -89,7 +88,7 @@ frontend/
 ├── src/api/                  # client.ts 连接层；generated.ts 与 contract.json 为生成产物
 ├── src/app/                  # 布局、主题系统（theme.ts 按需加载）、连接上下文、任务优先级解析（taskPriority.ts）、各类偏好
 ├── src/pages/                # 页面：Home / Overview / TaskConfig / Statistics / Settings / Updater 等
-├── src/stock/                # 茗喵证券交易终端、开户登录、身份信息与行情图表
+├── src/components/StockExchangeBoundary.tsx # 股票接入页面的加载和错误兜底
 ├── src/components/           # 可复用组件：FormControls、LogPanel、StatisticsChart、TaskPriorityField（任务优先级拖动排序）、实例切换等
 ├── src/config/               # EditQueue 跨页面字段保存队列、草稿恢复、输入校验
 ├── src/styles/               # 设计变量与界面样式（apple / forms / compact / minimal 等 css）
@@ -107,11 +106,7 @@ frontend/
 
 追代码从 `src/main.tsx` 开始：hash 路由表、顶层 ErrorBoundary 与主题加载流程都在这里。
 
-茗交所入口为 `src/pages/StockExchange.tsx`，实例侧栏的「茗喵证券交易所」导航位于「资源统计」下方，由 `src/app/App.tsx` 提供；移动端从导航抽屉进入。交易终端独立顶栏固定在窗口顶部，返回总览位于用户名左侧，与用户入口、亮暗主题按钮同排；窄屏下用户名截断。`src/stock/OverviewLink.tsx` 统一提供返回链接和应用初始化、代码加载、渲染异常的居中兜底页；状态、行情加载和错误页也始终提供屏幕中间的返回入口。开户、登录弹窗的返回入口水平居中。玩家数据错误由入口页承接，包含完全重建本地账户的范围预览和确认；实例配置管理不会展示交易身份错误。`src/stock/theme.tsx` 管理独立主题，默认暗色，通过 `localStorage` 的 `azurpilot.stock-theme` 记住本机选择，不跟随 WebUI 或系统主题；`src/stock/theme.css` 定义亮色语义配色，图表和验证码使用同一主题上下文，全屏图表的 Portal 显式携带主题属性。切换保留页面、表单与图表缩放范围；交互与联调方式见 [前端 README「茗喵证券交易所」](../../../frontend/README.md#茗喵证券交易所)。
-
-行情涨跌幅统一以 `stock.open`（上海时间今日第一条已保存的行动力报价）为基准，市场列表、排序、滚动行情与证券详情保持一致；补传或修正会更新开盘价，跨日重新取值，当日无报价或开盘价为 0 时显示 `—`，切换历史图表不会改用历史开盘价。总行动力低于控制台阈值（默认 500 点）时，每月 5 日起且开赛后本月强制退市：相关挂单撤销、多空持仓按触发报价结算，次月重新判断。股票退市不影响玩家登录、后台上传、排行或交易其他股票；界面显示退市状态并禁止该股票的委托。
-
-茗交所 Mock 还需单独启动相邻交易所仓库的 Go Mock 服务，本仓库 `dev:mock` 只提供模拟 API 与 Vite。代理将上游连接失败归为 `STOCK_UNAVAILABLE` 并提示启动方式，无效 JSON 或响应时间归为 `STOCK_INVALID_RESPONSE`，不再误报为浏览器请求格式错误；修复上游后可在交易页面重试连接。
+茗交所入口为 `src/pages/StockExchange.tsx`，侧栏导航位于「资源统计」下方，沿用 AzurPilot 主题与布局。此页面只负责实例股票告知确认/用户名注册、群内绑定命令、删除状态及本地恢复计划，注册并绑定后新标签页打开 `https://stock.azurpilot.com`。交易、教程、行情与登录均在独立站点，旧 `src/stock/` 目录及交易代理已删除。`src/components/StockExchangeBoundary.tsx` 提供加载与渲染错误兜底。Mock 完全本地，不再依赖交易所或验证码网络。详情见 [前端 README](../../../frontend/README.md#茗喵证券交易所)。
 
 | 入口 | 用途 |
 | --- | --- |

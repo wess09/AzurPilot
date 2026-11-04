@@ -292,6 +292,11 @@ class IslandManufacture(IslandShopBase):
                     self.post_close()
                     for _ in range(self.post_manage_swipe_count):
                         self.post_manage_up_swipe(450)
+                    if attempt + 1 >= self.PRODUCT_SELECT_RETRY_LIMIT:
+                        # 产品列表里始终找不到，多为岛屿科技尚未解锁（如未解锁的刀叉餐具、鞋靴）。
+                        # 记入本批不可用，后续岗位不再重复尝试，改试下一个候选产品
+                        self.unavailable_products.add(product_name)
+                        logger.warning(f"[岛屿-制造业] 多次未找到 {self._item_cn(product_name)}，可能尚未解锁，本批跳过")
                     continue  # 下一轮重进重试同一产品
 
                 # 检查确认按钮状态
@@ -387,10 +392,10 @@ class IslandManufacture(IslandShopBase):
             return
         # 检查库存iron_nail
         iron_nail_stock = self.warehouse_counts.get('iron_nail', 0)
-        # 根据规则选择产品
+        # 根据规则选择产品：铁钉足够时优先餐具；餐具未解锁或材料不足时继续生产铁钉，岗位不空闲
         if iron_nail_stock >= 20:
-            product_list = [item for item in self.manufacture['industrial_production']['items']
-                            if item['name'] == 'cutlery']
+            items = {item['name']: item for item in self.manufacture['industrial_production']['items']}
+            product_list = [items['cutlery'], items['iron_nail']]
         else:
             product_list = [item for item in self.manufacture['industrial_production']['items']
                             if item['name'] == 'iron_nail']

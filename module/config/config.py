@@ -346,6 +346,10 @@ class AzurLaneConfig(ConfigUpdater, ManualConfig, GeneratedConfig, ConfigWatcher
             pending = f.apply(pending)
         if waiting:
             waiting = f.apply(waiting)
+        if pending:
+            from module.os.tasks.smart_explore import apply_smart_explore_task_delay
+            pending, waiting = apply_smart_explore_task_delay(self, pending, waiting)
+        if waiting:
             waiting = sorted(waiting, key=operator.attrgetter("next_run"))
         if error:
             pending = error + pending

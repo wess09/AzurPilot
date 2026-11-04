@@ -763,8 +763,8 @@
       "help": "When a sensitive task fails, AzurPilot stops instead of restarting the game;\nSensitive tasks can be enabled on each task's settings page."
     },
     "TaskRestartLimit": {
-      "name": "Consecutive restart limit per task",
-      "help": "After this many consecutive failed recovery attempts, defer the task until the next server midnight and send an alert using error notification settings. Only success of that task resets its count; other tasks and successful game restarts do not. 0 = unlimited."
+      "name": "Consecutive emulator restart limit per task",
+      "help": "After this many completed emulator restarts for a task, defer it until the next server midnight if another emulator restart is needed, and send an error notification. Game restarts do not count. An exited game, an offline device or an incomplete emulator restart keeps recovering without deferring business tasks. Only success of that task resets its count; other tasks and successful game restarts do not. 0 = unlimited."
     },
     "SaveErrorRetentionDays": {
       "name": "Error log expiration (days)",
@@ -800,12 +800,12 @@
       "help": ""
     },
     "GameStuckRestart": {
-      "name": "Restart the emulator when the game freezes",
-      "help": "After the game freezes (triggers GameStuckError) for the specified number of times, try restarting the emulator. It may help solve problems such as emulator freeze or memory overflow."
+      "name": "Restart the emulator when the game freezes or repeatedly exits",
+      "help": "Try restarting the emulator after repeated freezes or game exits reach the count below, including exits after successful game restarts. This may help with emulator freezes or video memory issues."
     },
     "GameStuckThreshold": {
-      "name": "Restart when the game is stuck for X seconds",
-      "help": "How many consecutive times it is stuck before triggering a restart."
+      "name": "Freeze or game exit count before emulator restart",
+      "help": "Restart the emulator after this many consecutive freezes or game exits. Successful game restarts do not reset the count; a successful ordinary task does."
     },
     "AdbOfflineRestart": {
       "name": "Restart the emulator when the device is not detected",
@@ -4522,6 +4522,18 @@
       "name": "Per-crop restock targets",
       "help": "One \"crop: target stock\" per line, e.g.\ncorn: 200\nwheat: 80\nA listed crop is replanted when its stock drops below its own target; crops not listed use \"Crop stock threshold\". A target of 0 means never replant that crop. Leave empty to use \"Crop stock threshold\" for every crop. The crop furthest below its target is planted first.\nCrops: wheat, corn, rice, chinese_cabbage, potato, soybean, pasture, coffee_bean\nThe Island Production Planner rewrites this setting when it runs."
     },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "wheat": "Wheat",
+      "corn": "Corn",
+      "rice": "Rice",
+      "chinese_cabbage": "Napa Cabbage",
+      "potato": "Potato",
+      "soybean": "Soy Beans",
+      "pasture": "Grass",
+      "coffee_bean": "Coffee Beans"
+    },
     "PlantPotatoes": {
       "name": "Plant wheat",
       "help": "",
@@ -4560,6 +4572,19 @@
     "IgnoreAvocado": {
       "name": "Ignore avocado",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "apple": "Apple",
+      "citrus": "Citrus Fruit",
+      "banana": "Banana",
+      "mango": "Mango",
+      "lemon": "Lemon",
+      "avocado": "Avocado",
+      "rubber": "Rubber",
+      "pear": "Yoizuki Pear",
+      "persimmon": "Kaki Persimmon"
     },
     "PlantRubber": {
       "name": "Plant rubber",
@@ -4601,6 +4626,19 @@
     "IgnorePineapple": {
       "name": "Ignore pineapple",
       "help": ""
+    },
+    "DefaultCrop": {
+      "name": "Default crop",
+      "help": "The crop spare posts plant once every crop has reached its target (number of posts is the next setting). The Island Production Planner rewrites it from the spare-time output it plans for season points.",
+      "carrot": "Carrot",
+      "onion": "Onion",
+      "flax": "Flax",
+      "strawberry": "Strawberries",
+      "cotton": "Cotton",
+      "tea": "Tea Leaves",
+      "lavender": "Lavender",
+      "pineapple": "Pineapple",
+      "asparagus": "Asparagus"
     },
     "PlantLavender": {
       "name": "Plant lavender",
@@ -4691,6 +4729,14 @@
     "MinSeaCucumber": {
       "name": "Sea cucumber stock threshold",
       "help": ""
+    },
+    "MinFreshwaterFishMeat": {
+      "name": "Minimum Freshwater Fish Meat",
+      "help": "After the fishery run, if you own less Freshwater Fish Meat than this, fish are exchanged in the island shop (\"Process Fish Meat\") up to this amount, using the highest-yield fish first. 0 = no exchange. The Island Production Planner rewrites it from cargo and dish needs."
+    },
+    "MinSaltwaterFishMeat": {
+      "name": "Minimum Saltwater Fish Meat",
+      "help": "Same for Saltwater Fish Meat (e.g. one Yellowfin Tuna gives 18). 0 = no exchange."
     },
     "PlantYellowfinTuna": {
       "name": "Raise yellowfin tuna",
@@ -6822,11 +6868,11 @@
     },
     "StopOnComplete": {
       "name": "Stop after all current training ships graduate",
-      "help": "Off by default. Disable the current task when every selected ship meets all enabled level/affinity goals. Do not recruit the next batch. Uses the existing check interval."
+      "help": "Off by default. Stop the current task once all selected ships meet their enabled level/affinity goals. Keep early graduates in place."
     },
     "Notify": {
       "name": "Training and replacement notifications",
-      "help": "Off by default. Report recorded level, affinity and morale after checks and outgoing/incoming ships and sources after confirmed replacements. Uses launcher notifications and the global error OnePush configuration."
+      "help": "Off by default. Report checks, graduation, replacements and replacement/dorm/equipment failures. Reuses existing readings and sends to the launcher and global OnePush channel."
     },
     "FullScanRecord": {
       "name": "Last full fleet scan",
@@ -6950,7 +6996,7 @@
     },
     "ApplySettings": {
       "name": "Write settings",
-      "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, and the number of posts per factory line.",
+      "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, the number of posts per factory line, and the default crop/product and post count for spare posts.",
       "True": "Enabled",
       "False": "Disabled"
     },
@@ -6969,6 +7015,20 @@
     "SeasonTaskTargets": {
       "name": "Season task targets",
       "help": "One \"item English name: amount\" per line; the plan spreads production over the days left in the season. Rewritten on every run while \"Scan season tasks\" is on; edit it by hand when that is off."
+    },
+    "ScanCargoOrders": {
+      "name": "Scan cargo orders",
+      "help": "Each run opens the cargo page and reads what is still missing from orders where some items were already delivered, then writes it into \"Cargo shortfall\". Those orders cannot be swapped without losing the delivered items, so they have to be completed.",
+      "True": "Enabled",
+      "False": "Disabled"
+    },
+    "CargoTargets": {
+      "name": "Cargo shortfall",
+      "help": "One \"item English name: amount\" per line. Rewritten on every run while \"Scan cargo orders\" is on; edit it by hand when that is off."
+    },
+    "CargoTargetDays": {
+      "name": "Cargo shortfall deadline (days)",
+      "help": "How many days to fill the cargo shortfall in; the plan spreads production over this. Default 1 day."
     },
     "ExtraTargets": {
       "name": "Extra targets",

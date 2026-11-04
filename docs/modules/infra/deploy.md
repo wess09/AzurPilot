@@ -61,7 +61,9 @@ deploy/
 
 ### 茗交所持久化
 
-所有交易数据统一持久化在 `config/stock-exchange/`：`game.key` 是随机游戏密钥，`registry.json` 保存加密实例登记、文件摘要和历史检查点，同目录保存密文身份、绑定与补传日志。它们不绑定主机、运行用户或项目绝对路径，不需要额外挂载用户 HOME 或提供 Linux `machine-id`。仓库的 Compose 与 Docker 运行示例挂载完整项目目录；迁移完成后只挂载配置目录也能保留交易账户。例如使用 `/app/AzurPilot` 镜像时：
+股票接入 v2 须在交易所已提供 `/api/v2/instance/*` 后，配套更新 AzurPilot Python 后端与完整前端构建产物并重启 AzurPilot。默认交易所地址已改为 `https://stock.azurpilot.com`；若曾显式设置 `STOCK_EXCHANGE_URL`，更新对应环境变量后重启。交易账户在官方 QQ 群机器人命名注册，登录/强制改密在独立交易所，旧 `stock.request` 不再支持，新前端与旧 AzurPilot 后端不兼容。股票登记使用 `stocks-v2.json`；旧 `bindings.json` 保留但不用于新协议。没有改动脚本调度或普通业务数据库模型。
+
+股票实例本地数据统一持久化在 `config/stock-exchange/`：`game.key` 是随机游戏密钥，`registry.json` 保存加密实例登记、文件摘要和历史检查点，同目录保存密文身份、绑定与补传日志。它们不绑定主机、运行用户或项目绝对路径，不需要额外挂载用户 HOME 或提供 Linux `machine-id`。仓库的 Compose 与 Docker 运行示例挂载完整项目目录；迁移完成后只挂载配置目录也能保留实例股票身份与历史。例如使用 `/app/AzurPilot` 镜像时：
 
 ```yaml
 volumes:
@@ -72,7 +74,7 @@ volumes:
 
 首次升级须让旧 `cache/stock-exchange/` 可见且可写。检测到旧目录后仅移动文件到 config，支持不同磁盘或容器挂载间的移动；同名冲突静默以默认加载的 config 数据为准，旧 cache 副本被覆盖。搬运后统一执行常规读取、格式升级与校验，文件有问题只在茗交所提示，不阻断正常配置操作。
 
-已有本机保护数据在常规读取时认证并升级，保留原 UUID、私钥、绑定和检查点。旧版应先在原项目路径下升级，再移动部署；升级前需保留原用户密钥目录中的游戏 `.game` 登记和配套 `.key`。Windows 旧密钥须由原用户 DPAPI 解封，Linux 需旧密钥目录可见且文件可读取，容器的 machine-id 变化不阻止升级。若旧容器已被删除且这些文件没有备份，程序无法恢复其加密密钥；可恢复原密钥/登记，也可在茗交所页面查看实际范围并确认完全重建本地账户。重建保留 `config/backup/stock-rebuild-*/` 原件备份；共享数据损坏时须确认所有本地交易账户范围，原远端账户仍保留，新身份不能登录原账户，须用新用户名开户。
+已有本机保护数据在常规读取时认证并升级，保留原 UUID、私钥、绑定和检查点。旧版应先在原项目路径下升级，再移动部署；升级前需保留原用户密钥目录中的游戏 `.game` 登记和配套 `.key`。Windows 旧密钥须由原用户 DPAPI 解封，Linux 需旧密钥目录可见且文件可读取，容器的 machine-id 变化不阻止升级。若旧容器已被删除且这些文件没有备份，程序无法恢复其加密密钥；可恢复原密钥/登记，也可使用 `stock.rebuild` API 查看实际范围并显式确认重建股票身份。重建保留 `config/backup/stock-rebuild-*/` 原件备份；共享数据损坏时须确认所有本地股票身份范围，不改变独立交易所的交易账号。
 
 macOS 本机部署（Apple Silicon 与 Intel）使用相同的游戏密钥存储，不要求 Keychain、TPM、DPAPI 或机器标识；POSIX 文件权限与跨进程文件锁用于保护持久化读写。`GameDataProtector` 统一解析项目物理路径，兼容 macOS `/var` 等系统路径别名，不放开受保护目录内自定义符号链接的检查。Windows/Linux 数据须先按上述流程升级，再整体迁移 config 到 Mac，继续沿用身份和账户绑定。macOS 上的 Docker 部署同样持久化配置目录。CI 的 `game-data` 任务分别在原生 Apple Silicon、Intel macOS、Windows 与 Linux 执行 `tests.test_game_data`、`tests.test_stock_exchange`、`tests.test_stock_exchange_history` 和 `tests.test_stock_exchange_recovery`；平台专属用例只在对应系统运行。
 
@@ -161,3 +163,5 @@ Alas.bat → python -m deploy.installer
 - [WebUI 总览](../webui/index.md) —— 更新事务与进程监督全貌
 - [运行时服务](../webui/runtime.md) —— updater 与 installer 共享的依赖同步
 - [外部桥接与开发工具](submodule-tools.md) —— dev_tools 中的生成器（CI 侧的对应物）
+
+股票注册/删股联动版本需要同时更新 Python 与前端：新注册要求 noticeVersion 告知确认，股票被交易所删除后保存删除墓碑并停止上报。旧四类实例签名不变，reconcile 仅在能力已声明时启用。发布前备份完整 config/stock-exchange（包含 stocks-v2.json 与 stocks-retired-v2.json）；不要用回退旧同步代码恢复已删股票上传。仅更新上述股票接入组件，不更新调度或游戏脚本核心。

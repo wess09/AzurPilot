@@ -20,7 +20,7 @@ import { RemoteAccess } from './pages/RemoteAccess'
 import { Settings } from './pages/Settings'
 import { DevControls } from './pages/DevControls'
 import { ConfigManager } from './pages/ConfigManager'
-import {StockExchangeBoundary,StockExchangeFallback} from './stock/OverviewLink'
+import {StockExchangeBoundary,StockExchangeFallback} from './components/StockExchangeBoundary'
 import { translateCurrentUi } from './i18n'
 
 /* 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，

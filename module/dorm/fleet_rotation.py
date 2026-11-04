@@ -13,6 +13,7 @@ from module.dorm.assets import (DORM_FLEET_CANCEL, DORM_FLEET_CHECK, DORM_FLEET_
                                DORM_FLEET_FILTER_CANCEL, DORM_FLEET_REST, DORM_FLEET_TRAIN, OCR_DORM_FLEET_AMOUNT,
                                TEMPLATE_DORM_SELECTED)
 from module.logger import logger
+from module.campaign.fleet_training_notify import notify_event, notify_failure
 from module.ocr.ocr import Ocr
 from module.retire.assets import DOCK_CHECK, DOCK_FILTER_CONFIRM, DOCK_SELECTED
 from module.retire.dock import Dock
@@ -42,6 +43,7 @@ def rest_fleet(config, replaced):
     return next((active[role] for role in roles if active.get(role) in replaced), None)
 
 
+@notify_failure('后宅安排失败', '换船后未能完成后宅安排，保留原有异常处理。')
 def rest_after_rotation(manager, replaced, *, committed=False):
     """换船与换装结束后才提交编队并安排后宅；关闭时不增加游戏操作。"""
     fleet = rest_fleet(manager.config, replaced)
@@ -368,6 +370,7 @@ class FleetRotationDorm(Dock):
                 continue
         self.ui_ensure(page_main)
 
+    @notify_failure('后宅安排失败', '本轮后宅安排或退出未完成，保留原有异常处理。')
     def run(self, fleet):
         """后宅安排不可用时跳过，保留已完成的换船和换装，继续原任务。
 
@@ -380,6 +383,8 @@ class FleetRotationDorm(Dock):
         except DormArrangeError as exc:
             logger.warning(f'换船休息已跳过，继续原任务：{exc}')
             self._leave()
+            notify_event(self.config, '后宅安排失败',
+                         f'第{fleet}舰队：{exc}\n已跳过本次后宅安排，保留已完成的换船和换装，继续原任务。')
             return False
         self._leave()
         return True

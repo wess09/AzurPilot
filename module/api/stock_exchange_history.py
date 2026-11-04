@@ -1,5 +1,4 @@
 """行动力原始记录的持久补传日志；只做格式处理、身份签名和两端校对。"""
-import base64
 import hashlib
 import sqlite3
 import threading
@@ -7,8 +6,6 @@ import time
 from contextlib import closing, contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 
 from module.api.protocol import ApiError
 from module.runtime.game_data import GameDataProtector
@@ -29,16 +26,6 @@ def history_point(total, recorded):
     except (ValueError, TypeError, OverflowError, OSError):
         return None
     return stamp, int(total), month
-
-
-def make_history_report(instance_id, key, month, points, count=0, digest=''):
-    public = base64.b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode()
-    result = {'instanceId': instance_id, 'publicKey': public, 'month': month, 'issuedAt': int(time.time()),
-              'points': [{'time': t, 'actionPoints': ap} for t, ap in points], 'count': count, 'digest': digest}
-    text = f"mmex-history-v1\n{instance_id}\n{public}\n{month}\n{result['issuedAt']}\n{count}\n{digest}\n"
-    text += ''.join(f'{t}:{ap}\n' for t, ap in points)
-    result['signature'] = base64.b64encode(key.sign(text.encode())).decode()
-    return result
 
 
 class ActionHistory:
@@ -227,14 +214,9 @@ class ActionHistory:
             self.legacy_warnings[instance] = warning
             return latest
 
-    @staticmethod
-    def _allowed_months():
-        now = datetime.now(SHANGHAI)
-        ordinal = now.year * 12 + now.month - 1
-        return [f'{(ordinal - n) // 12:04d}-{(ordinal - n) % 12 + 1:02d}' for n in range(13)]
-
     def synchronize(self, instance, identity, key, binding, remote, accepted, force=False):
-        """待传月份完整签名并立即发送；只对网络失败进行退避。"""
+        """常规仅上传未确认的增量；低频月份摘要不一致时补足该月历史。"""
+        from module.api.stock_exchange_identity import make_instance_request
         with self.lock, self._transaction(instance) as connection:
             origin = binding['url'] + '\n' + binding['bindingKey']
             saved = connection.execute("SELECT value FROM metadata WHERE name='origin'").fetchone()
@@ -243,53 +225,39 @@ class ActionHistory:
                 connection.execute("INSERT INTO metadata VALUES('origin',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value", (origin,))
             if not force and time.monotonic() < self.next_send.get(instance, 0):
                 return
-            months = self._allowed_months()
-            placeholders = ','.join('?' for _ in months)
-            # 月份轮转避免连续新记录饿死上月补传，每月内部优先最新记录。
-            pending = [row[0] for row in connection.execute(f'SELECT DISTINCT month FROM samples WHERE uploaded=0 AND month IN ({placeholders}) ORDER BY month DESC', months)]
-            last_batch = connection.execute("SELECT value FROM metadata WHERE name='batch_month'").fetchone()
-            month = next((m for m in pending if not last_batch or m < last_batch[0]), pending[0] if pending else '')
-            rows = connection.execute('SELECT seq,time,total,month FROM samples WHERE uploaded=0 AND month=? ORDER BY seq DESC', (month,)).fetchall() if month else []
+            rows = connection.execute('SELECT seq,time,total FROM samples WHERE uploaded=0 ORDER BY time').fetchall()
             try:
                 if rows:
-                    month = rows[0][3]
-                    batch = sorted((row for row in rows if row[3] == month), key=lambda row: row[1])
-                    report = make_history_report(identity, key, month, [(row[1], row[2]) for row in batch])
-                    accepted(remote('/quote-history', 'POST', {'report': report}, binding['uploadToken'], binding['bindingKey']))
-                    connection.executemany('UPDATE samples SET uploaded=1 WHERE seq=? AND time=? AND total=?', [(row[0], row[1], row[2]) for row in batch])
-                    connection.execute("INSERT INTO metadata VALUES('dirty_month',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value", (month,))
-                    connection.execute("INSERT INTO metadata VALUES('batch_month',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value", (month,))
+                    report = make_instance_request(identity, key, 'report', points=[(row[1], row[2]) for row in rows])
+                    report['backfill'] = any(row[1] < (time.time() - 86400) * 1000 for row in rows)
+                    accepted(remote('/v2/instance/report', 'POST', report))
+                    connection.executemany('UPDATE samples SET uploaded=1 WHERE seq=? AND time=? AND total=?', rows)
+                    self.pending[instance] = False
                     self.next_send[instance] = 0
-                    self.next_check[instance] = 0
+                    self.next_check.setdefault(instance, time.monotonic() + 300)
                     self.failures[instance] = 0
-                    self.pending[instance] = bool(connection.execute(f'SELECT 1 FROM samples WHERE uploaded=0 AND month IN ({placeholders}) LIMIT 1', months).fetchone())
                     return
                 if not force and time.monotonic() < self.next_check.get(instance, 0):
                     return
-                # 每轮一个月份，优先本月；有变化立即校对，其余至少每五分钟轮询。
-                available = [row[0] for row in connection.execute(f'SELECT DISTINCT month FROM samples WHERE month IN ({placeholders}) ORDER BY month DESC', months)]
-                if not available:
-                    self.pending[instance] = False
-                    self.next_check[instance] = time.monotonic() + 300
-                    return
-                checked = connection.execute("SELECT value FROM metadata WHERE name='check_month'").fetchone()
-                dirty = connection.execute("SELECT value FROM metadata WHERE name='dirty_month'").fetchone()
-                month = dirty[0] if dirty and dirty[0] in available else next((m for m in available if not checked or m < checked[0]), available[0])
-                points = connection.execute('SELECT time,total FROM samples WHERE month=? ORDER BY time', (month,)).fetchall()
-                digest = hashlib.sha256(''.join(f'{t}:{ap}\n' for t, ap in points).encode()).hexdigest()
-                manifest = accepted(remote('/quote-history/manifest?month=' + month, 'GET', None, binding['uploadToken'], binding['bindingKey']))
-                if manifest.get('count') != len(points) or manifest.get('digest') != digest:
-                    connection.execute('UPDATE samples SET uploaded=0 WHERE month=?', (month,))
-                    self.next_send[instance] = 0
-                    self.pending[instance] = True
-                else:
-                    report = make_history_report(identity, key, month, [], len(points), digest)
-                    accepted(remote('/quote-history', 'POST', {'report': report}, binding['uploadToken'], binding['bindingKey']))
-                    connection.execute("INSERT INTO metadata VALUES('check_month',?) ON CONFLICT(name) DO UPDATE SET value=excluded.value", (month,))
-                    connection.execute("DELETE FROM metadata WHERE name='dirty_month'")
-                    self.next_check[instance] = time.monotonic() + 300 / len(available)
-                    self.next_send[instance] = 0
-                    self.pending[instance] = False
+                # 不用 cursor 证明完整性；摘要可以发现早期缺点、服务器恢复与同毫秒修正。
+                manifest = accepted(remote('/v2/instance/manifest', 'POST', make_instance_request(identity, key, 'manifest')))
+                remote_months = {row['month']: row for row in manifest.get('months', [])}
+                months = [row[0] for row in connection.execute('SELECT DISTINCT month FROM samples ORDER BY month')]
+                mismatch = False
+                checked_months = []
+                for month in months:
+                    points = connection.execute('SELECT time,total FROM samples WHERE month=? ORDER BY time', (month,)).fetchall()
+                    digest = hashlib.sha256(''.join(f'{t}:{ap}\n' for t, ap in points).encode()).hexdigest()
+                    checked_months.append({'month': month, 'count': len(points), 'digest': digest})
+                    actual = remote_months.get(month, {})
+                    if actual.get('count') != len(points) or actual.get('digest') != digest:
+                        connection.execute('UPDATE samples SET uploaded=0 WHERE month=?', (month,))
+                        mismatch = True
+                if not mismatch and 'reconcile' in binding.get('capabilities', []):
+                    accepted(remote('/v2/instance/reconcile', 'POST', make_instance_request(identity, key, 'reconcile', months=checked_months)))
+                self.pending[instance] = mismatch
+                self.next_check[instance] = time.monotonic() + 300
+                self.next_send[instance] = 0
                 self.failures[instance] = 0
             except (ApiError, OSError, ValueError, TypeError, KeyError):
                 failures = min(self.failures.get(instance, 0) + 1, 6)

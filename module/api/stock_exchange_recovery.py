@@ -16,17 +16,18 @@ from module.scheduler.history_store import AuthenticatedHistoryStore
 
 
 class StockExchangeRecovery:
-    def __init__(self, configs, valid_binding):
+    def __init__(self, configs, valid_binding, registry='stocks-v2.json'):
         self.configs = configs
         self.protection = GameDataProtector(configs.root)
         self.valid_binding = valid_binding
+        self.registry = registry
 
     def plan(self, instance):
         self.configs.path(instance)
         try:
             with self.protection.transaction():
                 pass
-            bindings = self.protection.read_file('bindings.json') or {}
+            bindings = self.protection.read_file(self.registry) or {}
             if not isinstance(bindings, dict) or any(not self.valid_binding(row) for row in bindings.values()):
                 raise ValueError()
             scope, names = 'instance', [instance]
@@ -92,9 +93,9 @@ class StockExchangeRecovery:
             else:
                 with self.protection.transaction() as (data, _):
                     retired = {identity for identity, row in data['instances'].items() if row['name'] == instance}
-                bindings = self.protection.read_file('bindings.json') or {}
-                if self.protection.has_file('bindings.json'):
-                    self.protection.write_file('bindings.json', {key: row for key, row in bindings.items() if key not in retired})
+                bindings = self.protection.read_file(self.registry) or {}
+                if self.protection.has_file(self.registry):
+                    self.protection.write_file(self.registry, {key: row for key, row in bindings.items() if key not in retired})
                 with self.protection.transaction() as (data, _):
                     for identity in retired:
                         data['instances'][identity]['active'] = False

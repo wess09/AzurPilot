@@ -194,7 +194,7 @@ flowchart TD
 
 每个异常分支的第一动作都是 `_check_sensitive_exit()`：严格重启开启（`Error_StrictRestart`）且该任务配置了 `Scheduler.Sensitive` 时，立即保存现场、推送通知并 `exit(1)`——敏感任务（默认 `OpsiCrossMonth`、`OpsiObscure`、`OpsiAbyssal`）出错不做任何自动重启，避免在错误状态上继续写入。是否敏感不是写死的常量，而是运行时读 `{Task}.Scheduler.Sensitive` 配置动态判断，用户可自行调整。
 
-异常分级（详见第 11 节）的本质是一根「恢复力度」的标尺：重启游戏最轻（秒级），重启模拟器最重（分钟级）。多数异常走轻端；`GameStuckError` 与未预期异常带独立连续计数，连续超过 `Error_GameStuckThreshold` 才升级到模拟器重启。恢复动作完成后统一返回 `'recoverable'`。
+异常分级（详见第 11 节）的本质是一根「恢复力度」的标尺：重启游戏最轻（秒级），重启模拟器最重（分钟级）。多数异常走轻端；`GameNotRunningError`、`GameStuckError` 与未预期异常带独立连续计数，连续达到 `Error_GameStuckThreshold` 才升级到模拟器重启。前两类升级受 `Error_GameStuckRestart` 控制。恢复动作完成后统一返回 `'recoverable'`。
 
 推送策略与恢复力度解耦：可恢复分支统一走 `_notify_recoverable()`（OnePush + WebUI 双通道），开启 `Error_LowPushMode` 时整体跳过、只在日志留痕，避免无人值守时被「游戏未运行」「模拟器离线」这类会自动重试恢复的错误刷屏；需要人工介入或不依赖自动恢复的路径（`_check_sensitive_exit`、`ScriptError` 满 3 次退出、调度循环判定任务连续失败）直接调用 `handle_notify`，不受该模式影响。
 
@@ -289,7 +289,7 @@ stateDiagram-v2
 | `Error.HandleError` | bool | true | 关闭后非可恢复失败将终止调度而非继续 |
 | `Error.LowPushMode` | checkbox | false | 低推送量模式；可恢复错误（游戏未运行、模拟器离线、卡死等）只记日志不推送 |
 | `Error.StrictRestart` | bool | false | 严格重启总开关（配合 `Sensitive` 生效） |
-| `Error.GameStuckRestart` / `GameStuckThreshold` | bool/int | false / 3 | 卡死是否允许升级到模拟器重启及阈值 |
+| `Error.GameStuckRestart` / `GameStuckThreshold` | bool/int | false / 3 | 卡死或反复退出是否允许升级到模拟器重启及次数阈值 |
 | `Error.AdbOfflineThreshold` | int | 3 | 模拟器重启超过该次数后拉长等待间隔（不放弃） |
 | `Error.WatchdogEnable` / `WatchdogTaskEnable` / `WatchdogTaskTimeout` | bool/bool/分钟 | false/false/120 | 运行监护总开关、任务超时子开关与阈值；超时为 0 表示禁用 |
 | `Error.LlmAnalysis` | bool | true | 异常时调用 LLM 分析 |
@@ -314,7 +314,7 @@ stateDiagram-v2
 | 异常 | 原因 | 处理 | 返回 |
 | --- | --- | --- | --- |
 | `TaskEnd` | 任务主动结束（如情绪不足延迟） | 视为正常结束 | `True` |
-| `GameNotRunningError` | 游戏进程不存在 | 注入 `Restart` | `'recoverable'` |
+| `GameNotRunningError` | 游戏进程不存在或登录后再次退出 | 注入 `Restart`；启用 `GameStuckRestart` 后，连续退出达 `GameStuckThreshold` 则先重启模拟器 | `'recoverable'` |
 | `GameStuckError` / `GameTooManyClickError` | 画面无推进 / 重复连点 | 连续计数达 `GameStuckThreshold` 则重启模拟器，否则 10 秒后重启游戏 | `'recoverable'` |
 | `GameBugError` | 客户端 bug | 重启游戏 | `'recoverable'` |
 | `GamePageUnknownError` | 页面无法识别 | 先查服务器：可用则重启游戏；维护中则阻塞等待，等完返回 | `'recoverable'` / `False` |
@@ -332,9 +332,11 @@ stateDiagram-v2
 
 **为什么恢复性失败不计入失败次数**：失败计数驱动的是「强制重启模拟器」这类高代价动作。可恢复错误已经各自触发过针对性恢复（重启游戏或模拟器），不再通过 `failure_record` 重复升级。
 
-**同一任务连续重启上限**：`Error.TaskRestartLimit` 默认 3，0 表示关闭限制。独立的 `task_restart_record` 累计同一任务未成功的恢复轮次，包含 `'recoverable'`、`False` 和选出任务后的全局异常；该任务成功才清零，其他任务成功或 `Restart` 成功不会清掉原任务计数。达到上限后将故障任务的 `Scheduler.NextRun` 写为服务器下一次零点，发送 `Error.OnePushConfig` 错误推送和 WebUI 提醒，低推送量模式也保留此提醒。其他任务继续调度，本轮冷却也适用于自定义调度卡片和强制任务调用。
+**同一任务连续重启模拟器上限**：`Error.TaskRestartLimit` 默认 3，0 表示关闭限制。独立的 `task_restart_record` 只累计该任务故障引发且已完成的模拟器重启，重启游戏不计数。每次模拟器重启后仍允许任务重试；已用完次数且任务再次需要模拟器重启时，才将故障任务的 `Scheduler.NextRun` 写为服务器下一次零点，发送 `Error.OnePushConfig` 错误推送和 WebUI 提醒，低推送量模式也保留此提醒。该任务成功才清零，其他任务成功或 `Restart` 成功不会清掉原任务计数。其他任务继续调度，本轮冷却也适用于自定义调度卡片和强制任务调用。
 
-`Restart` 是系统恢复入口，豁免该上限，不累计恢复次数，也不受旧冷却记录阻拦。重启失败仍走原有客户端重试或模拟器恢复分支，避免游戏未运行时整个队列依次失败。普通任务在选出后的全局异常中达到上限时，也先尝试重启模拟器并安排 `Restart`，再延后故障任务；正常每日重启排期和随机延后设置保持不变。
+`Restart` 是系统恢复入口，豁免该上限，不累计恢复次数，也不受旧冷却记录阻拦。游戏未运行与设备离线属于共享运行环境故障，持续恢复模拟器和游戏，不消耗业务任务的次数，也不因业务任务次数已用完而延后任务。模拟器启停未完成（包括并发操作忙碌）不计次数。普通任务选出后的其他全局异常，也只累计已完成的模拟器重启；需要延后任务时仍安排 `Restart`，保持系统恢复入口可用。正常每日重启排期和随机延后设置保持不变。
+
+游戏反复退出使用独立的 `consecutive_game_not_running` 计数。成功的 `Restart` 不清零，避免“登录成功后立即退出”一直无法升级恢复；普通任务成功或任意一次模拟器重启完成后清零，包括定时重启和设备离线恢复。模拟器重启失败或操作忙碌时保留计数，继续原有恢复流程。关闭 `GameStuckRestart` 时仍只安排重启游戏，不启用这条模拟器升级路径。
 
 敏感任务与 `ScriptError` 的退出规则优先执行。选出任务后的全局异常（包括初始化和收尾阶段）在执行任何恢复或延后前，同样通过 `_check_sensitive_exit()` 检查严格重启模式与该任务的 `Scheduler.Sensitive`，防止绕过敏感任务保护。
 

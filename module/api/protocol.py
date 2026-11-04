@@ -197,16 +197,14 @@ class MindFileParams(InstanceParams):
     content: StrictStr = Field(min_length=1, max_length=8_000_000)
 
 
-class StockRequestParams(InstanceParams):
-    """实例专属交易请求；实例身份和远端凭据由后端补充。"""
-    path: StrictStr = Field(min_length=1, max_length=100)
-    method: Literal['GET', 'POST', 'DELETE'] = 'GET'
-    body: dict[str, Any] | None = None
-    etag: StrictStr = Field(default='', max_length=128)
+class StockRegisterParams(InstanceParams):
+    """只注册实例股票；交易账户由群内官方机器人注册。"""
+    username: StrictStr = Field(min_length=2, max_length=32)
+    noticeVersion: StrictStr = ''
 
 
 class StockRebuildParams(InstanceParams):
-    """先返回实际重建范围，用户确认后才重建本地交易账户。"""
+    """先返回实际重建范围，用户确认后才重建本地股票身份。"""
     confirm: StrictBool = False
     scope: Literal['instance', 'all'] = 'instance'
 

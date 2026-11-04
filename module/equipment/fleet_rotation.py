@@ -4,6 +4,7 @@ from module.equipment.assets import (EQUIPMENT_CODE_ENTRANCE, EQUIPMENT_CODE_PAG
                                      FLEET_DETAIL_CHECK)
 from module.exception import FleetManagementError
 from module.logger import logger
+from module.campaign.fleet_training_notify import notify_failure
 from module.retire.fleet_detail import FleetShipDetail
 from module.runtime.fleet_equipment import EQUIPMENT_PATH, SHIP_TYPES, parse_codes, recognize_ship_type
 
@@ -11,6 +12,7 @@ from module.runtime.fleet_equipment import EQUIPMENT_PATH, SHIP_TYPES, parse_cod
 class FleetRotationEquipment(FleetShipDetail):
     """只处理本轮目标舰位，待完成记录独立于换船失败记录保存。"""
 
+    @notify_failure('装备更换失败', '换装准备未完成，尚未完成本轮装备交接。')
     def __init__(self, manager):
         super().__init__(manager)
         try:
@@ -22,6 +24,7 @@ class FleetRotationEquipment(FleetShipDetail):
         if not self.equipment_code_supported():
             raise FleetManagementError('当前控制方式不支持装备码自动输入')
 
+    @notify_failure('装备更换失败', '未能退出上次中断的装备页面，保留原有恢复处理。')
     def recover_page(self):
         """中断停在已知装备页时先返回母港，交给原有完整舰队扫描。
 
@@ -39,6 +42,7 @@ class FleetRotationEquipment(FleetShipDetail):
             self._back_to_formation()
             self.manager._commit_formation()
 
+    @notify_failure('装备更换失败', '换出舰船卸装未完成；保留待完成换装记录。')
     def clear_outgoing(self, fleet, slots):
         """先记下所有待恢复舰位，再依次清空全部换出舰船，最后才交给换船。
 
@@ -59,6 +63,7 @@ class FleetRotationEquipment(FleetShipDetail):
                 self._back_to_details()
         self._back_to_formation()
 
+    @notify_failure('装备更换失败', '换入舰船装备恢复未完成；保留尚未完成的舰位记录。')
     def apply_pending(self):
         """按当前舰位实际舰种补完换装，失败不清记录，成功舰位逐一移除。
 

@@ -1,21 +1,25 @@
 """默认黄币调度中的三轮智能开荒与月度行动力购买。"""
 
-from module.config.utils import get_os_next_reset
+from datetime import timedelta
+
+from module.config.utils import get_os_next_reset, get_server_next_update
 from module.exception import GameStuckError, RequestHumanTakeover
 from module.logger import logger
 
 
 SMART_EXPLORE_ROUTES = (
-    (0, 44, 42, 22, 21, 23, 25, 83, 43, 81, 84, 91, 93, 131, 133, 135, 134,
+    (0, 44, 24, 42, 22, 21, 23, 25, 83, 43, 81, 84, 91, 93, 131, 133, 135, 134,
      141, 143, 144, 122, 125, 114, 113, 65, 61, 52, 54, 64, 53),
     (155, 156, 2, 71, 73, 3, 121),
-    (41, 105, 104, 103, 101, 102, 106, 24, 12, 11, 13, 14, 33, 31, 32, 34,
+    (41, 105, 104, 103, 101, 102, 106, 12, 11, 13, 14, 33, 31, 32, 34,
      51, 158, 159, 63, 66, 62, 111, 112, 132, 123, 142, 94, 95, 92, 82, 85,
      151, 153, 157, 152, 72, 124),
 )
 SMART_EXPLORE_ZONES = tuple(zone for route in SMART_EXPLORE_ROUTES for zone in route if zone >= 11)
 SMART_EXPLORE_CONFIG = 'OpsiScheduling.OpsiSmartExplore.'
 ACTION_POINT_PURCHASE_CONFIG = 'OpsiScheduling.OpsiScheduling.BuyActionPoint'
+SMART_EXPLORE_DELAY_TASKS = ('OpsiDaily', 'OpsiPreventActionPointOverflow', 'OpsiShop')
+SMART_EXPLORE_TASK_MIN_ZONES = 30
 
 
 def monthly_explore_complete(config):
@@ -37,6 +41,97 @@ def smart_explore_enabled(config):
         ))
 
 
+def _smart_explore_pending(config):
+    """本月已压制至少 30 张普通海域后，不再让这三个任务等待开荒。"""
+    if not smart_explore_enabled(config) or monthly_explore_complete(config):
+        return False
+    reset = get_os_next_reset().isoformat()
+    count = config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones')
+    if (isinstance(count, dict) and count.get('reset') == reset
+            and type(count.get('count')) is int and SMART_EXPLORE_TASK_MIN_ZONES <= count['count'] <= 72):
+        return False
+    state = config.cross_get('OpsiScheduling.Storage.Storage.SmartExplore')
+    if not isinstance(state, dict) or state.get('reset') != reset:
+        return True
+    if state.get('phase') in ('cleanup', 'done'):
+        return False
+    indexes = state.get('next')
+    if (not isinstance(indexes, list) or len(indexes) != len(SMART_EXPLORE_ROUTES)
+            or any(type(index) is not int or not 0 <= index <= len(route)
+                   for route, index in zip(SMART_EXPLORE_ROUTES, indexes))):
+        return True
+    completed = sum(sum(zone >= 11 for zone in route[:index])
+                    for route, index in zip(SMART_EXPLORE_ROUTES, indexes))
+    return completed < SMART_EXPLORE_TASK_MIN_ZONES
+
+
+def task_zone_locked_until(config, task):
+    """商店和防溢出的锁定延期只在当天有效；每日委托仍逐条跳过。"""
+    if task == 'OpsiDaily':
+        return None
+    until = get_server_next_update('00:00')
+    if config.cross_get(f'{task}.Storage.Storage.ZoneLockedUntil') == until.isoformat():
+        return until
+    return None
+
+
+def delay_task_for_locked_zone(config):
+    """只延期当前任务，保留开荒和其他任务的运行时间。"""
+    task = config.task.command
+    until = get_server_next_update('00:00')
+    with config.multi_set():
+        config.cross_set(f'{task}.Storage.Storage.ZoneLockedUntil', until.isoformat())
+        config.task_delay(target=until)
+    logger.warning(f'{task} 遇到周边海域未压制，延期到 {until}')
+    config.task_stop()
+
+
+def delay_task_for_smart_explore(config):
+    """任务初始化前记录仅当天有效的让位，保持原定运行时间和用户优先级。"""
+    task = config.task.command
+    if task in SMART_EXPLORE_DELAY_TASKS:
+        until = task_zone_locked_until(config, task)
+        if until is not None:
+            config.task_delay(target=until)
+            config.task_stop()
+            return True
+    if task not in SMART_EXPLORE_DELAY_TASKS or not _smart_explore_pending(config):
+        return False
+    until = get_server_next_update('00:00')
+    config.cross_set(f'{task}.Storage.Storage.SmartExploreDelay', until.isoformat())
+    logger.info(f'{task} 等待压制海域达到 30 个，当天临时排在智能调度之后，{until} 恢复原优先级')
+    config.task_stop()
+    return True
+
+
+def apply_smart_explore_task_delay(config, pending, waiting):
+    """仅调整已让位任务的运行队列；次日及开荒完成后自动恢复原队列。"""
+    candidates = [task for task in pending if task.command in SMART_EXPLORE_DELAY_TASKS
+                  and config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay')]
+    if not candidates:
+        return pending, waiting
+    until = get_server_next_update('00:00')
+    delayed = [task for task in candidates
+               if config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay') == until.isoformat()]
+    if not delayed or not _smart_explore_pending(config):
+        return pending, waiting
+
+    for index, task in enumerate(pending):
+        if task.command == 'OpsiScheduling':
+            # 已低于智能调度的任务保持原位，其他任务之间的顺序也保持不变。
+            moved = [item for item in pending[:index] if item in delayed]
+            return ([item for item in pending[:index] if item not in moved]
+                    + [task] + moved + pending[index + 1:], waiting)
+
+    scheduling = next((task for task in waiting if task.command == 'OpsiScheduling'), None)
+    if scheduling is not None:
+        # 冷却期间只在队列中等待，不把原计划时间改到次日以后。
+        for task in delayed:
+            task.next_run = min(scheduling.next_run + timedelta(seconds=1), until)
+        return [task for task in pending if task not in delayed], waiting + delayed
+    return pending, waiting
+
+
 class SmartExploreMixin:
     def _get_smart_explore_state(self):
         """以大世界重置周期隔离三轮断点，保留其他智能调度状态。"""
@@ -54,6 +149,10 @@ class SmartExploreMixin:
         self._set_smart_scheduling_state_value('SmartExplore', state)
         completed = sum(sum(zone >= 11 for zone in route[:index])
                         for route, index in zip(SMART_EXPLORE_ROUTES, state['next']))
+        if (completed >= SMART_EXPLORE_TASK_MIN_ZONES
+                and self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.reset') != state['reset']):
+            self.config.cross_set('OpsiScheduling.Storage.Storage.SuppressedZones',
+                                  dict(reset=state['reset'], count=completed))
         phase = {'explore': '开荒', 'cleanup': '事件补扫', 'done': '已完成'}[state['phase']]
         self.config.cross_set(SMART_EXPLORE_CONFIG + 'Progress',
                               f'已开荒 {completed}/{len(SMART_EXPLORE_ZONES)}，阶段：{phase}')
@@ -136,7 +235,7 @@ class SmartExploreMixin:
             self._save_smart_explore_state(dict(state, attempts=state['attempts'] - 1))
             raise
         state['next'][round_index] += 1
-        self._save_smart_explore_state(dict(state, attempts=0))
+        self._save_smart_explore_state(dict(state, attempts=0, return_to_port=True))
 
     def _clear_smart_explore_zone(self):
         """复用月度开荒的样本、扫描、清敌、全图事件扫描及战后恢复。"""
@@ -171,8 +270,19 @@ class SmartExploreMixin:
 
         return self._run_with_opsi_task_context('OpsiExploreCleanup', cleanup)
 
+    def _return_smart_explore_to_port(self):
+        """智能开荒收尾先回 NY 港区海域，再交接后续任务。
+
+        Pages:
+            in: IN_MAP 或 IN_GLOBE，可覆盖本轮决策的行动力面板
+            out: IN_MAP，NY 港区
+        """
+        self._close_scheduling_action_point()
+        logger.info('[大世界-智能开荒] 返回 NY 港区，继续后续任务')
+        self.globe_goto(0)
+
     def _run_smart_explore_once(self, yellow_coins, total_ap, current_ap):
-        """仅默认黄币调度执行智能开荒；补币逐图达标即回侵蚀一。"""
+        """仅默认黄币调度执行智能开荒；补币逐图达标后回港交接。"""
         if not smart_explore_enabled(self.config) or self.is_running_prevent_action_point_overflow_task():
             return False
         previous = self._get_smart_scheduling_state_value('SmartExplore')
@@ -223,7 +333,8 @@ class SmartExploreMixin:
             if self._config_enabled(SMART_EXPLORE_CONFIG + 'EventCleanup'):
                 if not self._run_smart_explore_cleanup():
                     return True
-            self._save_smart_explore_state(dict(state, phase='done'))
+            self._return_smart_explore_to_port()
+            self._save_smart_explore_state(dict(state, phase='done', return_to_port=False))
             return True
         active = self._is_coin_replenish_active()
         if yellow_coins < preserve or active:
@@ -233,7 +344,13 @@ class SmartExploreMixin:
                     if state['next'][round_index] < len(SMART_EXPLORE_ROUTES[round_index]):
                         self._run_smart_explore_node(state, round_index)
                         return True
+        # 旧断点没有回港标记时也先回港；后续练级轮次不重复回港。
+        if state.get('return_to_port', True) or active:
+            self._return_smart_explore_to_port()
+            self._save_smart_explore_state(dict(state, return_to_port=False))
             self._clear_coin_replenish_target()
+            # 交回主循环检查任务切换，避免留在总览直接开始侵蚀一。
+            return True
         if total_ap <= self._get_effective_cl1_ap_preserve():
             if self._try_scheduling_action_point_purchase():
                 return True

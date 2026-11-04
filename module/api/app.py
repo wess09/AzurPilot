@@ -63,7 +63,7 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
                 from module.persistence.database import initialize
                 await asyncio.to_thread(initialize, configs.directory)
             if ((root / 'cache' / 'stock-exchange').exists()
-                    or (root / 'config' / 'stock-exchange' / 'bindings.json').is_file()):
+                    or (root / 'config' / 'stock-exchange' / 'stocks-v2.json').is_file()):
                 gateway.router.stock_exchange.start()
             if manage_runtime:
                 from module.api.lifecycle import startup

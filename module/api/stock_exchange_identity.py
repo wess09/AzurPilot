@@ -57,12 +57,20 @@ def binding_key(instance_id, key):
     return hashlib.sha256((public + '\n' + instance_id).encode()).hexdigest()
 
 
-def make_report(instance_id, key, total, observed_at):
-    """签名仅用于实例身份及请求完整性，不验证行动力真实性。"""
+def make_instance_request(instance_id, key, action, username='', points=None, months=None):
+    """v2 请求只验证实例持有私钥；行情点统一使用毫秒与整数行动力。"""
     import time
     public = base64.b64encode(key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)).decode()
-    result = {'instanceId': instance_id, 'publicKey': public, 'actionPoints': total,
-              'observedAt': observed_at, 'issuedAt': int(time.time())}
-    text = f"mmex-instance-v1\n{instance_id}\n{public}\n{total}\n{observed_at}\n{result['issuedAt']}\n"
-    result['signature'] = base64.b64encode(key.sign(text.encode())).decode()
+    values = [{'t': int(t), 'p': int(total)} for t, total in (points or [])]
+    result = {'instanceId': instance_id, 'publicKey': public, 'issuedAt': int(time.time())}
+    if action == 'register':
+        result['username'] = username
+    if action == 'report':
+        result['points'] = values
+    packed = json.dumps(values, ensure_ascii=False, separators=(',', ':'))
+    canonical = f"mmex-v2\n{action}\n{instance_id}\n{public}\n{result['issuedAt']}\n{username}\n{packed}\n"
+    if action == 'reconcile':
+        result['months'] = [{'month': row['month'], 'count': row['count'], 'digest': row['digest']} for row in (months or [])]
+        canonical += json.dumps(result['months'], ensure_ascii=False, separators=(',', ':')) + '\n'
+    result['signature'] = base64.b64encode(key.sign(canonical.encode())).decode()
     return result

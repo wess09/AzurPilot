@@ -2049,6 +2049,10 @@ class RewardCommission(Dock, UI, InfoHandler):
                         if self.appear(button, interval=1):
                             self.ensure_no_info_bar(timeout=1)
 
+                            if button in [GET_ITEMS_1, GET_ITEMS_2, GET_ITEMS_3]:
+                                self.device.sleep(0.5)
+                                self.device.screenshot()
+
                             if drop:
                                 drop.add(self.device.image)
 
@@ -2063,8 +2067,7 @@ class RewardCommission(Dock, UI, InfoHandler):
 
                             REWARD_SAVE_CLICK.name = button.name
                             self.device.click(REWARD_SAVE_CLICK)
-                            if button is EXP_INFO_S_REWARD:
-                                self.device.sleep(0.3)
+                            self.device.sleep(0.3)
                             click_timer.reset()
                             reward = True
                             continue

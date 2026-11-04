@@ -6,6 +6,7 @@
 from module.island_fishery.assets import *
 from module.island_rancher.assets import *
 from module.island.island import *
+from module.island.island_fish_meat import FRESHWATER_FISH_MEAT, SALTWATER_FISH_MEAT, IslandFishMeatExchange
 from module.base.button import Button
 
 def _click_area(device, area):
@@ -49,7 +50,7 @@ from module.logger import logger
 DISPATCH_STAMINA_MIN = 98
 
 
-class IslandFishery(Island, WarehouseOCR, LoginHandler):
+class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
     """岛屿渔场自动化管理器。
 
     继承 Island（岛屿基础操作）、WarehouseOCR（仓库 OCR 识别）和
@@ -638,6 +639,12 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler):
                         logger.info(f"[岛屿-渔场] 养殖渔场岗位{post_info['post_id']}成功: {product_to_plant}")
 
         logger.info("[岛屿-渔场] \n渔场管理完成！")
+
+        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）
+        self.run_fish_meat_exchange({
+            FRESHWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinFreshwaterFishMeat', 0),
+            SALTWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinSaltwaterFishMeat', 0),
+        })
 
         # 设置下次运行时间：合并牧场和渔场的计时器，取最早的时间
         future_finish = []

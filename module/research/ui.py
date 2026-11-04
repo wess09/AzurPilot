@@ -150,6 +150,8 @@ class ResearchUI(UI):
         start = drop.count
         button = self.get_items()
         if button == GET_ITEMS_1 or button == GET_ITEMS_2:
+            self.device.sleep(0.5)
+            self.device.screenshot()
             drop.add(self.device.image)
         elif button == GET_ITEMS_3:
             self.device.sleep(1.5)

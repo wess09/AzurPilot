@@ -19,7 +19,7 @@ class TestActionPointDashboardTotal(unittest.TestCase):
     box = (0, 1, 2)
     box_sum = 250
 
-    def update(self, box_use, oil=500):
+    def update(self, box_use, oil=500, oil_validity=(True,), box_validity=(True, True, True)):
         handler = ActionPointHandler.__new__(ActionPointHandler)
         handler.device = SimpleNamespace(image=None)
         handler.config = SimpleNamespace(
@@ -28,14 +28,25 @@ class TestActionPointDashboardTotal(unittest.TestCase):
             override=MagicMock(),
         )
         log_res = MagicMock()
-        with patch('module.os_handler.action_point.LogRes', return_value=log_res), \
+        # 两个物品网格在运行时共用数量 OCR，后一批会覆盖前一批校验结果。
+        shared_ocr = SimpleNamespace(last_batch_validity=())
+
+        def read_oil(*args, **kwargs):
+            shared_ocr.last_batch_validity = oil_validity
+            return [SimpleNamespace(amount=oil)]
+
+        def read_boxes(*args, **kwargs):
+            shared_ocr.last_batch_validity = box_validity
+            return [SimpleNamespace(amount=amount) for amount in self.box]
+
+        with patch('module.os_handler.action_point.resource_fast_path', return_value=False), \
+                patch('module.os_handler.action_point.LogRes', return_value=log_res), \
                 patch('module.os_handler.action_point.OIL_ITEM') as oil_item, \
                 patch('module.os_handler.action_point.ACTION_POINT_ITEMS') as items, \
                 patch('module.os_handler.action_point.OCR_ACTION_POINT_REMAIN') as ocr:
-            oil_item.predict.return_value = [SimpleNamespace(amount=oil)]
-            items.predict.return_value = [SimpleNamespace(amount=amount) for amount in self.box]
-            oil_item.amount_ocr.last_batch_validity = (True,)
-            items.amount_ocr.last_batch_validity = (True, True, True)
+            oil_item.amount_ocr = items.amount_ocr = shared_ocr
+            oil_item.predict.side_effect = read_oil
+            items.predict.side_effect = read_boxes
             ocr.ocr.return_value = self.current
             ocr.last_valid = True
             handler.action_point_update()
@@ -63,6 +74,19 @@ class TestActionPointDashboardTotal(unittest.TestCase):
 
         log_res.record.assert_any_call('ActionPoint', {'Value': self.current, 'Total': self.current + self.box_sum}, observed=True)
         self.assertEqual(handler._action_point_total, self.current)
+
+    def test_unverified_inventory_keeps_current_without_a_total(self):
+        for oil_validity, box_validity in (
+            ((False,), (True, True, True)),
+            ((True,), (False, True, True)),
+            ((True,), (True, False, True)),
+            ((True,), (True, True, False)),
+            ((), (True, True, True)),
+            ((True,), (True, True)),
+        ):
+            with self.subTest(oil=oil_validity, boxes=box_validity):
+                _, log_res = self.update(True, oil_validity=oil_validity, box_validity=box_validity)
+                log_res.record.assert_any_call('ActionPoint', {'Value': self.current}, observed=True)
 
 
 if __name__ == '__main__':

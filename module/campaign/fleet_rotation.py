@@ -15,7 +15,7 @@ from module.runtime.fleet_rotation import (ROTATION_PATH, active_fleets, begin_r
 from module.runtime.fleet_equipment import EQUIPMENT_PATH
 from module.runtime.fleet_training import (due, goals, mark_checked,
                                            persist_context, restore_context)
-from module.campaign.fleet_training_notify import notify_training
+from module.campaign.fleet_training_notify import notify_event, notify_failure, notify_training
 
 
 def _required(emotion, role, battle):
@@ -60,6 +60,7 @@ def mark_morale_checked(config, emotion, selected, battle, context):
 
 
 @control_interval((0.1, 0.3))
+@notify_failure('换船失败', '智能换船本轮未完成，保留原有异常恢复和待完成记录。')
 def preflight_rotation(runner, battle, mode):
     """在原有心情检查之前轮换，恢复选关页后仍走正常心情及入场流程。
 
@@ -238,6 +239,7 @@ def preflight_rotation(runner, battle, mode):
             minimum = selected_morale(readings, rule['slots'])
             if minimum is None:
                 logger.warning('培养舰位实际心情未读全，不执行换船，由心情检查决定是否等待或停止')
+                notify_event(config, '换船失败', f'第{fleet}舰队培养舰位心情未读全，本轮不执行换船，沿用原心情检查。')
                 manager.finish_rotation()
                 continue
             config.cross_set_many(calibration_changes(config.data, snapshots, now()))
@@ -267,10 +269,15 @@ def preflight_rotation(runner, battle, mode):
                         if fallback:
                             replaced_fleets.add(fleet)
                             equipment_used |= equipment_enabled
+                        else:
+                            notify_event(config, '换船失败',
+                                         f'第{fleet}舰队没有满足条件的候补或常用舰船，保留当前编队并沿用原心情检查。')
                         # 本轮逐舰位候补/常用选择结束，心情仍低则沿用原等待逻辑。
                         fresh = False
                         continue
                     logger.warning('候补队没有满足心情及对应舰位的舰船，保留当前编队并沿用原心情检查')
+                    notify_event(config, '换船失败',
+                                 f'第{fleet}舰队没有满足心情及对应舰位要求的候补，保留当前编队并沿用原心情检查。')
                     manager.finish_rotation()
                     continue
                 logger.attr('候补队心情优先级', order)
@@ -323,6 +330,9 @@ def preflight_rotation(runner, battle, mode):
             config.cross_set(ROTATION_PATH + '.State', states)
             manager.finish_rotation()
             context['portraits'] = manager.__dict__.get('_slot_portraits', {})
+            if training is not None:
+                training.report_replaced(fleet, rule['slots'],
+                                         [job for job in changes if job['fleet'] == fleet])
             fresh = False
             book = emotion.map_is_2x_book
             emotion = RotationEmotion(config, context, rules, selected)
@@ -332,6 +342,9 @@ def preflight_rotation(runner, battle, mode):
             manager.finish_rotation()
             if equipment_used:
                 manager._commit_formation()
+            # 培养模式在各阶段发送；仅心情模式也在进入后宅前报告，后宅失败不能阻挡换船结果。
+            if not goals(config) and (checked_this_round or changes):
+                notify_training(config, rules, selected, changes)
             from module.dorm.fleet_rotation import rest_after_rotation
             rest_after_rotation(manager, replaced_fleets, committed=equipment_used)
             config.update()
@@ -340,8 +353,6 @@ def preflight_rotation(runner, battle, mode):
             campaign.emotion.map_is_2x_book = emotion.map_is_2x_book
             campaign.ensure_campaign_ui(name=runner.stage, mode=mode, skip_first_screenshot=False)
             campaign.map_get_info()
-            if checked_this_round or changes:
-                notify_training(config, rules, selected, changes)
         mark_morale_checked(config, campaign.emotion, selected, battle, context)
         if checked_this_round and not goals(config):
             mark_checked(config, context)

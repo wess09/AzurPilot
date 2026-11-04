@@ -7,7 +7,7 @@ from module.config.time_source import now
 from module.equipment.fleet_rotation import FleetRotationEquipment
 from module.exception import FleetManagementError, ScriptEnd
 from module.logger import logger
-from module.campaign.fleet_training_notify import notify_training
+from module.campaign.fleet_training_notify import notification_enabled, notify_event, notify_failure, notify_training
 from module.retire.fleet_management import FleetManagement
 from module.retire.fleet_training import FleetTrainingReader
 from module.runtime.fleet_equipment import EQUIPMENT_PATH
@@ -31,6 +31,17 @@ class TrainingSession:
         self.sources_refreshed = False
         self.checking_targets = False
         self.changes = []
+        self.notification_phase = '培养检查失败'
+
+    def report(self, fleet, slots, event, changes=()):
+        rules = {str(fleet): dict(self.rules[str(fleet)], slots=list(slots))}
+        notify_training(self.config, rules, {fleet: fleet}, changes, event=event)
+
+    def report_replaced(self, fleet, slots, changes):
+        if not changes or not notification_enabled(self.config):
+            return
+        # 换入舰船已在候补阶段实读；推送只复用记录，不为通知追加游戏操作。
+        self.report(fleet, slots, 'replaced', changes)
 
     def favourite_job(self, fleet, slot, outgoing, *, needed=0, reserved=()):
         from module.retire.fleet_favourite import FavouriteShips
@@ -63,6 +74,7 @@ class TrainingSession:
         current = {}
         for fleet in self.selected.values():
             current[fleet] = self.inspect(fleet, self.rules[str(fleet)]['slots'], defer_completion=True)
+        notify_training(self.config, self.rules, self.selected, event='check')
         ready = [(fleet, slot, name) for fleet, names in current.items() for slot, name in names.items()
                  if completed(self.saved['records'][name], self.targets)]
         if ready:
@@ -81,8 +93,12 @@ class TrainingSession:
             self.manager._commit_formation()
             logger.info('本轮全部培养舰船已达到等级/好感目标，停止当前练级任务')
             self.config.Scheduler_Enable = False
-            notify_training(self.config, self.rules, self.selected, status='培养完成，已停止练级')
+            notify_training(self.config, self.rules, self.selected, event='graduated', status='培养完成，已停止练级')
             self.config.task_stop()
+        for fleet in current:
+            graduated = [slot for number, slot, _ in ready if number == fleet]
+            if graduated:
+                self.report(fleet, graduated, 'graduated')
         return True
 
     @property
@@ -101,6 +117,8 @@ class TrainingSession:
         self.save()
         if self.checking_targets:
             mark_checked(self.config, self.context, self.targets)
+        if notification_enabled(self.config):
+            notify_event(self.config, self.notification_phase, message)
         try:
             target = now() + timedelta(hours=max(1 / 60, interval(self.config)))
         except OverflowError:
@@ -189,6 +207,7 @@ class TrainingSession:
         self.config.cross_set_many(calibration_changes(self.config.data, snapshots, now()))
         self.runner.campaign.emotion.calibrate_selected(snapshots)
 
+    @notify_failure('培养换船失败', '本轮培养检查或换船未完成；继续沿用原异常及待完成记录处理。')
     def process(self, *, fresh=False, force=False):
         if not self.targets or not self.selected or (not force and not due(self.config, self.context) and not self.saved['pending']):
             return False
@@ -198,7 +217,9 @@ class TrainingSession:
             return self.stop_when_complete()
         for role, fleet in self.selected.items():
             rule = self.rules[str(fleet)]
+            self.notification_phase = '培养检查失败'
             current = self.inspect(fleet, rule['slots'], defer_completion=True)
+            self.report(fleet, rule['slots'], 'check')
             ready = [slot for slot, name in current.items()
                      if completed(self.saved['records'][name], self.targets)
                      or excluded(self.saved['records'][name], self.targets)]
@@ -215,6 +236,10 @@ class TrainingSession:
                 if not excluded(record, self.targets):
                     record.update(completed_for=dict(self.targets), completed_at=now().isoformat(timespec='seconds'))
             self.save()
+            graduated = [slot for slot in ready if completed(self.saved['records'][current[slot]], self.targets)]
+            if graduated:
+                self.report(fleet, graduated, 'graduated')
+            self.notification_phase = '换船失败'
             for source in rule['sources']:
                 if source not in self.inventory_fleets:
                     self.reader.inventory([source])
@@ -274,6 +299,7 @@ class TrainingSession:
                 self.save()
             self.manager.finish_rotation()
             self.replaced_fleets.add(fleet)
+            self.report_replaced(fleet, rule['slots'], [job for _, job in jobs if job in self.changes])
             if equipment is not None:
                 equipment.apply_pending()
             if goals(self.config) == self.targets:
@@ -354,6 +380,8 @@ def rotate_favourite_fallback(runner, manager, context, rules, selected, fleet, 
     if equipment is not None:
         equipment.apply_pending()
     manager.finish_rotation()
+    if training is not None:
+        training.report_replaced(fleet, rule['slots'], changes)
     return changes
 
 
@@ -372,6 +400,7 @@ def recover_reading(runner, mode):
         FleetTrainingReader(manager).recover_page()
 
 
+@notify_failure('培养换船失败', '本轮培养检查或换船未完成，保留原有恢复处理。')
 def training_only(runner, battle, mode):
     """仅培养调度也实读选船页舰名与心情；达标才执行同号互换。
 
@@ -433,8 +462,6 @@ def training_only(runner, battle, mode):
     manager._commit_formation()
     from module.dorm.fleet_rotation import rest_after_rotation
     rest_after_rotation(manager, session.replaced_fleets, committed=True)
-    if check_due or session.changes:
-        notify_training(config, rules, selected, session.changes)
     config.update()
     runner.config.update()
     runner.campaign.emotion = RotationEmotion(config, context, rules, selected)

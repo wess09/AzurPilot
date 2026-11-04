@@ -14,6 +14,7 @@ from dataclasses import replace
 from module.config.config import TaskEnd
 from module.logger import logger
 from module.os.tasks.scheduling import OpsiScheduling
+from module.os.tasks.smart_explore import task_zone_locked_until
 from module.os.tasks.task_context import prevent_overflow_context
 from module.os_handler.action_point import ActionPointLimit
 
@@ -138,10 +139,14 @@ class OpsiPreventActionPointOverflow(OpsiScheduling):
         )
         with self.config.multi_set():
             self._set_prevent_action_point_overflow_enabled(enable)
-            self.config.task_delay(
-                minute=delay_minutes,
-                task=self.TASK_NAME_PREVENT_AP_OVERFLOW,
-            )
+            locked_until = task_zone_locked_until(self.config, self.TASK_NAME_PREVENT_AP_OVERFLOW)
+            if locked_until is not None:
+                self.config.task_delay(target=locked_until, task=self.TASK_NAME_PREVENT_AP_OVERFLOW)
+            else:
+                self.config.task_delay(
+                    minute=delay_minutes,
+                    task=self.TASK_NAME_PREVENT_AP_OVERFLOW,
+                )
 
     def os_prevent_action_point_overflow(self):
         """防止行动力溢出任务入口。"""

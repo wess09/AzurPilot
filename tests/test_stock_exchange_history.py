@@ -12,9 +12,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from module.api.protocol import ApiError
-from module.api.stock_exchange_history import ActionHistory, SHANGHAI, history_point, make_history_report
-from module.api.stock_exchange_identity import binding_key, load_identity
-from module.api.stock_exchange_service import StockExchangeService, public_stock_path
+from module.api.stock_exchange_history import ActionHistory, SHANGHAI, history_point
+from module.api.stock_exchange_identity import binding_key, load_identity, make_instance_request
+from module.api.stock_exchange_service import StockExchangeService
 from module.scheduler.store import ProgramStore
 
 
@@ -30,24 +30,26 @@ class HistoryTests(unittest.TestCase):
         self.journal = ActionHistory(self.root)
         self.addCleanup(self.journal.close)
         self.identity, self.key = load_identity(self.root, 'test')
-        self.binding = {'url': 'https://stock.nanoda.work', 'bindingKey': binding_key(self.identity, self.key), 'uploadToken': 'test-upload'}
+        self.binding = {'url': 'https://stock.azurpilot.com', 'bindingKey': binding_key(self.identity, self.key), 'uploadToken': 'test-upload'}
         self.remote_points = {}
         self.calls = []
         self.now = datetime.now(SHANGHAI)
         self.month = self.now.strftime('%Y-%m')
 
-    def remote(self, path, method, body, token, binding):
-        self.assertEqual('test-upload', token)
-        self.assertEqual(self.binding['bindingKey'], binding)
+    def remote(self, path, method='GET', body=None, token='', binding=''):
+        self.assertEqual('', token)
         self.calls.append((path, body))
-        if path == '/quote-history':
-            report = body['report']
-            canonical = f"mmex-history-v1\n{self.identity}\n{report['publicKey']}\n{report['month']}\n{report['issuedAt']}\n{report['count']}\n{report['digest']}\n" + ''.join(f"{p['time']}:{p['actionPoints']}\n" for p in report['points'])
-            self.key.public_key().verify(base64.b64decode(report['signature']), canonical.encode())
-            self.remote_points.update({p['time']: p['actionPoints'] for p in report['points']})
-            if report['digest']:
-                self.assertEqual(self.manifest(report['month'])['digest'], report['digest'])
-        return {'status': 200, 'data': self.manifest(path.rsplit('=', 1)[-1]) if '/manifest?' in path else {'ok': True}}
+        report = body
+        points = report.get('points', [])
+        action = path.rsplit('/', 1)[1]
+        canonical = f"mmex-v2\n{action}\n{self.identity}\n{report['publicKey']}\n{report['issuedAt']}\n\n" + json.dumps(points, separators=(',', ':')) + '\n'
+        self.key.public_key().verify(base64.b64decode(report['signature']), canonical.encode())
+        if path == '/v2/instance/report':
+            self.remote_points.update({point['t']: point['p'] for point in points})
+        if path == '/v2/instance/manifest':
+            months = sorted({datetime.fromtimestamp(t / 1000, SHANGHAI).strftime('%Y-%m') for t in self.remote_points})
+            return {'status': 200, 'data': {'months': [{'month': month, **self.manifest(month)} for month in months]}}
+        return {'status': 200, 'data': {'accepted': len(points), 'cursor': max(self.remote_points, default=0)}}
 
     def manifest(self, month):
         values = sorted((t, ap) for t, ap in self.remote_points.items() if datetime.fromtimestamp(t / 1000, SHANGHAI).strftime('%Y-%m') == month)
@@ -229,15 +231,15 @@ class HistoryTests(unittest.TestCase):
         for _ in range(5):
             self.sync(recovered)
         self.assertEqual(3001, len(self.remote_points))
-        batches = [body['report']['points'] for path, body in self.calls if path == '/quote-history' and body['report']['points']]
+        batches = [body['points'] for path, body in self.calls if path == '/v2/instance/report' and body['points']]
         self.assertTrue(any(len(batch) == 3001 for batch in batches))
-        self.assertTrue(all(all(a['time'] < b['time'] for a, b in zip(batch, batch[1:])) for batch in batches))
+        self.assertTrue(all(all(a['t'] < b['t'] for a, b in zip(batch, batch[1:])) for batch in batches))
         original = next(iter(self.remote_points))
         self.remote_points.pop(original)  # 服务器缺行，摘要发现后重新排队修复。
         for _ in range(6):
             self.sync(recovered)
         self.assertEqual(3001, len(self.remote_points))
-        self.assertTrue(any(body and body['report']['digest'] for _, body in self.calls))
+        self.assertTrue(any(path == '/v2/instance/manifest' for path, _ in self.calls))
         # 同一毫秒修正后游标能再导入，重复读不会产生第二条。
         self.store.observe('test', 'ActionPoint', {'Total': 9999}, start.isoformat(), 'fixture')
         recovered.capture('test', {}, self.store.history.path('test'))
@@ -245,14 +247,11 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(9999, self.remote_points[history_point(9999, start.isoformat())[0]])
         self.assertEqual(3001, len(self.remote_points))
 
-    def test_whitelist_and_transport_formats(self):
-        self.assertTrue(public_stock_path('/stocks/1?period=m20&month=2026-10&day=2026-10-01'))
-        for path in ['/stocks/1?period=m5&period=day', '/stocks/1?token=secret', '/stocks/1#fragment', '/quote-history/manifest?month=2026-10', '//evil.test/stocks/1']:
-            self.assertFalse(public_stock_path(path))
+    def test_transport_formats(self):
         self.assertIsNone(history_point(True, self.now.isoformat()))
         self.assertIsNone(history_point(float('nan'), self.now.isoformat()))
         self.assertEqual(8000, history_point(8000.0, self.now.isoformat())[1])
-        report = make_history_report(self.identity, self.key, self.month, [(1000, 8000)])
+        report = make_instance_request(self.identity, self.key, 'report', points=[(1000, 8000)])
         self.assertNotIn('privateKey', report)
 
     def test_new_current_month_records_do_not_starve_previous_month(self):
@@ -261,11 +260,11 @@ class HistoryTests(unittest.TestCase):
         self.store.observe('test', 'ActionPoint', {'Total': 6000}, previous.isoformat(), 'fixture')
         self.store.observe('test', 'ActionPoint', {'Total': 7000}, self.now.isoformat(), 'fixture')
         self.journal.capture('test', {}, database)
-        self.sync()  # 先传本月最新值。
+        self.sync()  # 首次补足已有的跨月记录。
         updated = self.now + timedelta(seconds=1)
         self.store.observe('test', 'ActionPoint', {'Total': 7100}, updated.isoformat(), 'fixture')
         self.journal.capture('test', {}, database)
-        self.sync()  # 本月仍有新记录，也必须轮到上月。
+        self.sync()  # 后续只发送新记录，不能丢掉上月历史。
         self.assertIn(history_point(6000, previous.isoformat())[0], self.remote_points)
         self.sync()
         self.assertEqual(7100, self.remote_points[history_point(7100, updated.isoformat())[0]])

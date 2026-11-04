@@ -1342,14 +1342,14 @@ class TrainingIntegrationTests(unittest.TestCase):
         self.configure()
         name = self.names[1, 4]
         rules = {'1': {'slots': [4], 'sources': [3]}}
-        with (patch('module.campaign.fleet_training_notify.Thread') as thread,
+        with (patch('module.campaign.fleet_training_notify.async_executor.submit', side_effect=lambda task: task()) as submit,
               patch('module.campaign.fleet_training_notify.notify_webui') as local,
               patch('module.campaign.fleet_training_notify.handle_notify') as remote):
-            thread.side_effect = lambda target, daemon: SimpleNamespace(start=target)
             notify_training(self.config, rules, {1: 1})
-            thread.assert_not_called()
+            submit.assert_not_called()
+            self.assertIn('OnePushConfig', self.service.template['Alas']['Error'])
             self.config.cross_set_many({'FleetInfo.FleetTraining.Notify': True,
-                                        'General.Error.OnePushConfig': 'provider: test'})
+                                        'Alas.Error.OnePushConfig': 'provider: test'})
             change = dict(fleet=1, slot=4, source=0, outgoing='已换出舰船', incoming=name)
             notify_training(self.config, rules, {1: 1}, [change])
             content = local.call_args.kwargs['content']

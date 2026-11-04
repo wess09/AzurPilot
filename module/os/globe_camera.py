@@ -92,6 +92,9 @@ class GlobeCamera(GlobeOperation, ZoneManager):
             if self.handle_map_event():
                 timeout.reset()
                 continue
+            if self.handle_combat_result_on_exit():
+                timeout.reset()
+                continue
             # Popup: AUTO_SEARCH_REWARD appears slowly
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 timeout.reset()

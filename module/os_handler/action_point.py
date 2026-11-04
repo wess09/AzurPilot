@@ -304,7 +304,33 @@ class ActionPointHandler(UI, MapEventHandler):
             raise ValueError('行动力面板库存必须包含石油与三种箱子')
         validities = getattr(OIL_ITEM.amount_ocr, 'last_batch_validity', ())
         self._ap_inventory_valid = len(validities) == 4 and all(validities)
+        self._ap_observation_inventory_valid = self._action_point_inventory_observed(amounts, validities)
         return amounts, OCR_ACTION_POINT_REMAIN.ocr(image)
+
+    def _action_point_inventory_observed(self, quantities, validities):
+        """完整面板的空白箱格可为零；有文字却未识别的格子仍不可用于报价。"""
+        if len(quantities) != 4 or len(validities) != 4:
+            return False
+        if all(validities):
+            return True
+        # 石油格不能按空白补零，加载中的弹窗也不能作为完整库存。
+        if (not validities[0] or quantities[0] <= 100
+                or not isinstance(self.device.image, np.ndarray)
+                or not self.appear(ACTION_POINT_USE, offset=(20, 20))
+                or not self.appear(ACTION_POINT_CANCEL, offset=(20, 20))
+                or len(ACTION_POINT_ITEMS.items) != 3):
+            return False
+        for item, quantity, valid in zip(ACTION_POINT_ITEMS.items, quantities[1:], validities[1:]):
+            if valid:
+                continue
+            if quantity != 0:
+                return False
+            area = ACTION_POINT_ITEMS.amount_area_for(item.name)
+            letters = ACTION_POINT_ITEMS.amount_ocr.pre_process(item.crop(area))
+            # 不把 OCR 的空结果直接当零：数量区存在可见字形时必须重新识别。
+            if not isinstance(letters, np.ndarray) or not letters.size or np.any(letters != 255):
+                return False
+        return True
 
     @staticmethod
     def _is_in_month_end_purchase_block_week():
@@ -375,11 +401,14 @@ class ActionPointHandler(UI, MapEventHandler):
             box, current = self._action_point_panel_values()
         else:
             oil = OIL_ITEM.predict(self.device.image, name=False, amount=True)
+            # 两个网格共用数量 OCR，读取箱子前保留本批石油的校验结果。
+            oil_validities = getattr(OIL_ITEM.amount_ocr, 'last_batch_validity', ())
             items = ACTION_POINT_ITEMS.predict(self.device.image, name=False, amount=True)
             box = [item.amount for item in oil] + [item.amount for item in items]
-            validities = (getattr(OIL_ITEM.amount_ocr, 'last_batch_validity', ())
+            validities = (oil_validities
                           + getattr(ACTION_POINT_ITEMS.amount_ocr, 'last_batch_validity', ()))
             self._ap_inventory_valid = len(validities) == 4 and all(validities)
+            self._ap_observation_inventory_valid = self._action_point_inventory_observed(box, validities)
             current = OCR_ACTION_POINT_REMAIN.ocr(self.device.image)
         ocr_finished = perf_counter()
         box_sum = np.sum(np.array(box) * tuple(ACTION_POINT_BOX.values()))
@@ -400,14 +429,14 @@ class ActionPointHandler(UI, MapEventHandler):
         # 仪表盘的 Total 同样使用恒含体力箱口径：写入受开关影响的 total 时，
         # 防溢出任务运行期间它会退化成 current，WebUI 的行动力卡片会在整段时间里不显示总行动力
         ap_valid = 0 <= current <= 600 and bool(getattr(OCR_ACTION_POINT_REMAIN, 'last_valid', False))
-        if fast and ap_valid and self.__dict__.get('_ap_inventory_valid', False):
+        if fast and ap_valid and self.__dict__.get('_ap_observation_inventory_valid', False):
             values = {'ActionPoint': {'Value': int(current), 'Total': self._action_point_total_with_box}}
             if oil > 100:
                 values['Oil'] = int(oil)
             record_resources_background(self.config, values)
         elif not fast:
             values = {'Value': current}
-            if ap_valid and self.__dict__.get('_ap_inventory_valid', False):
+            if ap_valid and self.__dict__.get('_ap_observation_inventory_valid', False):
                 values['Total'] = self._action_point_total_with_box
             resource_log.record('ActionPoint', values, observed=ap_valid, **record_options)
         recorded = perf_counter()
