@@ -50,6 +50,15 @@ from module.logger import logger
 DISPATCH_STAMINA_MIN = 98
 
 
+# 可兑换鱼肉的鱼：渔场产品名 -> 物品 ID（兑换时按对应的养殖底线保留）
+FISH_MEAT_FISH_IDS = {
+    'bass': 5007,
+    'yellowfin_tuna': 5107,
+    'koi_carp': 5003,
+    'mackerel': 5102,
+}
+
+
 class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
     """岛屿渔场自动化管理器。
 
@@ -83,6 +92,8 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             'crayfish': self.config.IslandFishery_MinCrayfish,
             'squid': self.config.IslandFishery_MinSquid,
             'sea_cucumber': self.config.IslandFishery_MinSeaCucumber,
+            'koi_carp': self.config.IslandFishery_MinKoiCarp,
+            'mackerel': self.config.IslandFishery_MinMackerel,
         }
         self.plant_yellowfin_tuna = self.config.IslandFishery_PlantYellowfinTuna
         self.rancher_filter = self.config.IslandFishery_RancherFilter
@@ -121,6 +132,16 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
              'selection': SELECT_SEA_CUCUMBER, 'selection_check': SELECT_SEA_CUCUMBER_CHECK,
              'post_action': POST_SEA_CUCUMBER, 'category': 'fishery',
              'shop': SHOP_FRY_SEA_CUCUMBER, 'tab': 'other', 'yield': 2, 'buy_max': 4},
+            # 鲤鱼、马鲛鱼：识别图取自国际服截图（国服同名图为同一截图，供 button_extract 识别）；
+            # 尚无岗位“生产中”图，工作中的岗位按未知产品处理
+            {'cn_name': '鲤鱼', 'name': 'koi_carp', 'template': TEMPLATE_KOI_CARP, 'var_name': 'koi_carp',
+             'selection': SELECT_KOI_CARP, 'selection_check': SELECT_KOI_CARP_CHECK,
+             'post_action': None, 'category': 'fishery',
+             'shop': SHOP_FRY_KOI_CARP, 'tab': 'freshwater', 'yield': 4, 'buy_max': 4},
+            {'cn_name': '马鲛鱼', 'name': 'mackerel', 'template': TEMPLATE_MACKEREL, 'var_name': 'mackerel',
+             'selection': SELECT_MACKEREL, 'selection_check': SELECT_MACKEREL_CHECK,
+             'post_action': None, 'category': 'fishery',
+             'shop': SHOP_FRY_MACKEREL, 'tab': 'seawater', 'yield': 4, 'buy_max': 4},
         ]
 
         self.name_to_config = {}
@@ -299,7 +320,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             str | None: 正在生产的产品内部名称，未识别到则返回 None。
         """
         for item in self.FISHERY_ITEMS:
-            if self.appear(item['post_action']):
+            if item['post_action'] is not None and self.appear(item['post_action']):
                 return item['name']
         return None
 
@@ -640,11 +661,12 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
 
         logger.info("[岛屿-渔场] \n渔场管理完成！")
 
-        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）
+        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）；
+        # 兑换时保留各鱼的养殖底线，避免把菜品要用的鱼换光
         self.run_fish_meat_exchange({
             FRESHWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinFreshwaterFishMeat', 0),
             SALTWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinSaltwaterFishMeat', 0),
-        })
+        }, keep={fish_id: self.fishery_threshold.get(name, 0) for name, fish_id in FISH_MEAT_FISH_IDS.items()})
 
         # 设置下次运行时间：合并牧场和渔场的计时器，取最早的时间
         future_finish = []

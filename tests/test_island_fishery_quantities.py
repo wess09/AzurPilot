@@ -18,7 +18,8 @@ class FisheryUI:
             IslandFishery_Positions=positions, IslandFishery_PlantYellowfinTuna=default_posts,
             IslandFishery_RancherFilter='WorkerJuu', task_delay=Mock(),
         )
-        for name in ('Bass', 'YellowfinTuna', 'Shell', 'Shrimp', 'Crab', 'Crayfish', 'Squid', 'SeaCucumber'):
+        for name in ('Bass', 'YellowfinTuna', 'Shell', 'Shrimp', 'Crab', 'Crayfish', 'Squid', 'SeaCucumber',
+                     'KoiCarp', 'Mackerel'):
             setattr(config, 'IslandFishery_Min' + name, 0)
 
         def init_island(fishery, config):

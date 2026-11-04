@@ -31,10 +31,10 @@ EXPECTED_COLUMNS = {
 }
 
 # 鱼苗商店同样只列出已解锁的鱼苗：该账号「其他」页签只有贝类和鱿鱼（国服鱿鱼在第 5 格），
-# 「淡水鱼」页签只有鲤鱼苗，机器人会购买的鲈鱼苗未解锁、不应被找到
+# 「淡水鱼」页签只有鲤鱼苗；鲈鱼苗未解锁、不应被找到
 EXPECTED_FRY_COLUMNS = {
     'en_fry_other.png': {'SHELL': 299, 'SQUID': 463},
-    'en_fry_freshwater.png': {},
+    'en_fry_freshwater.png': {'KOI_CARP': 300},
 }
 
 
