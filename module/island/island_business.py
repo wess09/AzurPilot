@@ -1083,6 +1083,9 @@ class IslandBusiness(Island):
         """传统不分批模式（保持原有行为）"""
         # 标记本轮是否曾处理过蓝色开始经营按钮
         self._has_seen_blue = False
+        # 本轮已确认开始经营的商店。传统模式只处理排在最前的蓝色按钮，
+        # 同一商店确认后仍是蓝色说明经营没有开始，再进去只会无限循环
+        started_shops = set()
 
         while True:
             logger.info("[岛屿-经营] --- 处理商店 ---")
@@ -1098,9 +1101,22 @@ class IslandBusiness(Island):
                 if current_shop:
                     shop_name = current_shop['name']
                     logger.info(f"[岛屿-经营] 当前商店: {shop_name}")
+                    if shop_name in started_shops:
+                        logger.warning(f"[岛屿-经营] {shop_name} 确认后仍未开始经营，"
+                                       f"{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+                        self._leave_shop_without_start()
+                        self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
+                        return
                     self._load_shop_characters(current_shop)
                     self._select_business_characters()
-                    self._select_business_product(shop_name)
+                    selected = self._select_business_product(shop_name)
+                    if selected == 0:
+                        logger.warning(f"[岛屿-经营] {shop_name} 没有可出售的餐品，不开始经营，"
+                                       f"{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+                        self._leave_shop_without_start()
+                        self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
+                        return
+                    started_shops.add(shop_name)
                 else:
                     logger.warning("[岛屿-经营] 无法识别当前商店，返回后跳过")
                     self.device.click(ISLAND_BACK)
@@ -1376,7 +1392,11 @@ class IslandBusiness(Island):
         self.device.sleep(1.0)
 
     def _process_shop_entry(self, shop):
-        """进入商店后处理：加成替换 → 选角色 → 选餐品 → 确认经营"""
+        """进入商店后处理：加成替换 → 选角色 → 选餐品 → 确认经营
+
+        Returns:
+            bool: 是否确认开始经营；没有可出售的餐品时为 False。
+        """
         shop_name = shop['name']
         self._load_shop_characters(shop)
 
@@ -1385,12 +1405,17 @@ class IslandBusiness(Island):
 
         # 选择角色和餐品
         self._select_business_characters()
-        self._select_business_product(shop_name)
+        if self._select_business_product(shop_name) == 0:
+            # 没有可出售的餐品时「开始经营」不可用，点了也不会开始；直接返回，调用方已记为处理过
+            logger.warning(f"[岛屿-经营] {shop_name} 没有可出售的餐品，本次不开始经营")
+            self._leave_shop_without_start()
+            return False
 
         # 确认经营并返回
         self._confirm_business_start()
         self.post_manage_mode(POST_MANAGE_BUSINESS)
         self.device.sleep(0.5)
+        return True
 
     def _check_batch_completion(self, batch_results):
         """
@@ -1491,9 +1516,9 @@ class IslandBusiness(Island):
                     # 进入商店后处理
                     current_shop = self._detect_current_shop()
                     if current_shop and current_shop['name'] == shop_name:
-                        self._process_shop_entry(current_shop)
+                        if self._process_shop_entry(current_shop):
+                            started_shop_names.add(shop_name)
                         processed_shop_names.add(shop_name)
-                        started_shop_names.add(shop_name)
                     else:
                         logger.warning(f"[岛屿-经营] 进入商店后识别到的不是 {shop_name}，返回后跳过")
                         self.device.click(ISLAND_BACK)
@@ -1569,6 +1594,11 @@ class IslandBusiness(Island):
 
         if self._has_seen_blue:
             # 处理过蓝色按钮（部分或全部商店已启动）
+            if not started_shop_names:
+                # 进入了商店但都没有可出售的餐品，等后厨做出餐品后再试
+                logger.warning(f"[岛屿-经营] 批次内商店都没有可出售的餐品，{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+                self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
+                return started_shop_names
             logger.info(f"[岛屿-经营] 批次经营已启动，正常退出")
             if batch_shops == self._get_batch2_shops() or not self._get_batch2_shops():
                 self._set_task_delay()
@@ -2066,13 +2096,21 @@ class IslandBusiness(Island):
         return os.path.join(dir_name, f'TEMPLATE_{base_name}')
 
     def _select_business_product(self, shop_name=None):
+        """在商店经营界面逐个选择配置的餐品。
+
+        Returns:
+            int | None: 选中的餐品数量；没有配置餐品时返回 None（不判断能否经营）。
+                返回 0 表示库存里没有可出售的餐品（如新季节刚开始，界面显示
+                「You have no food items to sell.」），此时「开始经营」按钮不可用。
+        """
         # 优先使用配置的产品列表，否则使用全部
         products = self.active_products.get(shop_name, self.shop_products.get(shop_name, []))
         if not products:
-            return
+            return None
         # 等待界面稳定
         self.device.sleep(1.0)
 
+        selected = 0
         # 逐个选择配置的餐品
         for p in products:
             b = p.get('button')
@@ -2092,6 +2130,21 @@ class IslandBusiness(Island):
                 logger.info(f"[岛屿-经营] 选择餐品: {p['name']} (相似度: {sim:.2f})")
                 self.device.click(offset_btn)
                 self.device.sleep(0.5)
+                selected += 1
+        return selected
+
+    # 商店没有可出售的餐品时，多久后再试（等后厨做出餐品）
+    NO_FOOD_RETRY_MINUTES = 60
+
+    def _leave_shop_without_start(self):
+        """不开始经营，直接从商店经营界面返回经营页签。"""
+        self.device.click(ISLAND_BACK)
+        self.device.sleep(1)
+        self.device.screenshot()
+        if not self.appear(POST_MANAGE_BUSINESS, offset=30) and not self.appear(POST_MANAGE_PRODUCTION, offset=30):
+            self.goto_postmanage()
+        self.post_manage_mode(POST_MANAGE_BUSINESS)
+        self.device.sleep(0.5)
 
     def _confirm_business_start(self):
         start_button = self._appear_at_positions(BUSINESS_START_IN_SHOP)
