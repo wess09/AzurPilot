@@ -16035,6 +16035,10 @@
         "type": "input",
         "value": 0
       },
+      "StrongholdCheckDelayDays": {
+        "type": "input",
+        "value": 0
+      },
       "MonthEndActionPointCleanupEnable": {
         "type": "checkbox",
         "value": false,
