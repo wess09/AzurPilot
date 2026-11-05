@@ -2338,7 +2338,7 @@
     },
     "ChangeVanguard": {
       "name": "Change vanguard",
-      "help": "Replace vanguard with low-oil-cost ships from Eagle Union or Iron Blood\nOnly 0 limit break, no equipment, white-rarity destroyers will be used as replacement\nControls: When to replace the vanguard",
+      "help": "Replace vanguard with low-oil-cost ships from Eagle Union or Iron Blood\nOnly 0 limit break, no equipment, white-rarity destroyers will be used as replacement\nControls: When to replace the vanguard\n\nWith vanguard replacement enabled, morale calculation uses this task's dorm recovery and married bonus settings. Set them for the entire fleet, including replacement ships: use the slowest member's dorm recovery and enable the married bonus only when every member is oathed. These settings do not place ships in the dorm or perform an oath.",
       "disabled": "Do not change",
       "ship": "Change ship",
       "ship_equip": "Change ships + equipment"
