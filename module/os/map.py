@@ -1130,7 +1130,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 result = self.auto_search_combat(drop=drop)
                 if result:
                     finished_combat += 1
-                else:
+                elif self.config.task.command != "OpsiHazard1Leveling":
+                    # 侵蚀一的单船维修标记不应打断后续战斗；等搜索结束并处理完事件再维修。
                     self.hp_get()
                     if (
                         any(self.need_repair)
