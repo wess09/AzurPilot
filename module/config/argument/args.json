@@ -3131,13 +3131,11 @@
           "not_in_dormitory",
           "dormitory_floor_1",
           "dormitory_floor_2"
-        ],
-        "display": "hide"
+        ]
       },
       "Fleet1Oath": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       },
       "Fleet1Onsen": {
         "type": "checkbox",
@@ -3180,13 +3178,11 @@
           "not_in_dormitory",
           "dormitory_floor_1",
           "dormitory_floor_2"
-        ],
-        "display": "hide"
+        ]
       },
       "Fleet2Oath": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       },
       "Fleet2Onsen": {
         "type": "checkbox",
@@ -3711,13 +3707,11 @@
           "not_in_dormitory",
           "dormitory_floor_1",
           "dormitory_floor_2"
-        ],
-        "display": "hide"
+        ]
       },
       "Fleet1Oath": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       },
       "Fleet1Onsen": {
         "type": "checkbox",
@@ -3760,13 +3754,11 @@
           "not_in_dormitory",
           "dormitory_floor_1",
           "dormitory_floor_2"
-        ],
-        "display": "hide"
+        ]
       },
       "Fleet2Oath": {
         "type": "checkbox",
-        "value": false,
-        "display": "hide"
+        "value": false
       },
       "Fleet2Onsen": {
         "type": "checkbox",
