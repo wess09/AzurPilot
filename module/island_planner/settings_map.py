@@ -52,6 +52,7 @@ DISH_ITEM_IDS = {
     'tofu_combo': 3101, 'hearty_meal': 3102, 'fish_chip': 3114, 'onion_fish': 3116, 'fo_tiao': 3120,
     'persimmon_cake': 4009, 'matsutake_chicken_soup': 4010, 'double_bamboo_shoots': 4025,
     'asparagus_shrimp': 4026, 'amaranth_rice_ball': 4039,
+    'shiitake_chicken_soup': 4049, 'green_jujube_porridge': 4050,
     # 白熊饮品
     'apple_juice': 3017, 'banana_mango': 3018, 'honey_lemon': 3019, 'strawberry_lemon': 3020,
     'lavender_tea': 3021, 'strawberry_honey': 3022, 'floral_fruity': 3103, 'fruit_paradise': 3104,
@@ -60,7 +61,7 @@ DISH_ITEM_IDS = {
     # 啾啾简餐
     'apple_pie': 3009, 'corn_cup': 3023, 'orange_pie': 3024, 'rice_mango': 3025, 'banana_crepe': 3026,
     'strawberry_charlotte': 3028, 'succulently_sweet': 3106, 'orchard_duo': 3107, 'berry_orange': 3108,
-    'seafood_rice': 3118,
+    'seafood_rice': 3118, 'water_chestnut_cake': 4051, 'sugar_tangerine_daifuku': 4052,
     # 烧烤店
     'roasted_skewer': 3029, 'chicken_potato': 3030, 'stir_fried_chicken': 3032, 'carrot_omelette': 3033,
     'steak_bowl': 3034, 'carnival': 3109, 'double_energy': 3110, 'crayfish_stir_fry': 3119,
@@ -78,7 +79,8 @@ CROP_ITEM_IDS = {
     },
     'orchard': {
         'apple': 2016, 'citrus': 2017, 'banana': 2018, 'mango': 2019, 'lemon': 2020,
-        'avocado': 2021, 'rubber': 2022, 'pear': 4005, 'persimmon': 4007,
+        'avocado': 2021, 'rubber': 2022, 'sugar_tangerine': 2023, 'green_jujube': 2024,
+        'pear': 4005, 'persimmon': 4007,
     },
     'nursery': {
         'carrot': 2004, 'onion': 2007, 'flax': 2010, 'strawberry': 2011, 'cotton': 2012,
@@ -115,6 +117,8 @@ THRESHOLD_GROUPS = {
         5101: 'IslandRancher.IslandFishery.MinSquid',
         5107: 'IslandRancher.IslandFishery.MinYellowfinTuna',
         5108: 'IslandRancher.IslandFishery.MinSeaCucumber',
+        5003: 'IslandRancher.IslandFishery.MinKoiCarp',
+        5102: 'IslandRancher.IslandFishery.MinMackerel',
     },
 }
 
@@ -142,7 +146,7 @@ MANUFACTURE_LINES = {
     'manufacturing_electronic': ('IslandManufacture.ElectronicProcessing.Positions', {3056}),
     'manufacturing_machinery': ('IslandManufacture.Industrial.Positions', {3044, 3047}),
     'manufacturing_crafts': ('IslandManufacture.Handmade.Positions',
-                             {3036, 3040, 4011, 4012, 4027, 4028, 4041, 4042}),
+                             {3036, 3040, 4011, 4012, 4027, 4028, 4041, 4042, 4047, 4048}),
 }
 # 一个岗位一天的工作量，与 calculator._build_production_problem 一致
 DAILY_WORKLOAD = 24 * 60 * 60 * 10

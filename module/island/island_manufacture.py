@@ -36,6 +36,16 @@ SEASONAL_HANDMADE_ITEMS = {
         'var_name': 'summer_bouquet', 'selection': SELECT_SUMMER_BOUQUET,
         'selection_check': SELECT_SUMMER_BOUQUET_CHECK, 'post_action': POST_SUMMER_BOUQUET,
     },
+    'plum_blossom_sachet': {
+        'name': 'plum_blossom_sachet', 'template': TEMPLATE_PLUM_BLOSSOM_SACHET,
+        'var_name': 'plum_blossom_sachet', 'selection': SELECT_PLUM_BLOSSOM_SACHET,
+        'selection_check': SELECT_PLUM_BLOSSOM_SACHET_CHECK, 'post_action': POST_PLUM_BLOSSOM_SACHET,
+    },
+    'winter_bouquet': {
+        'name': 'winter_bouquet', 'template': TEMPLATE_WINTER_BOUQUET,
+        'var_name': 'winter_bouquet', 'selection': SELECT_WINTER_BOUQUET,
+        'selection_check': SELECT_WINTER_BOUQUET_CHECK, 'post_action': POST_WINTER_BOUQUET,
+    },
 }
 
 

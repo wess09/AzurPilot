@@ -103,6 +103,11 @@ class StorageHandler(GlobeOperation, ZoneManager):
             out: STORAGE_CHECK
         """
         success = False
+        logger_template = {
+            TEMPLATE_STORAGE_LOGGER.name: TEMPLATE_STORAGE_LOGGER,
+            TEMPLATE_STORAGE_LOGGER_UNLOCK.name: TEMPLATE_STORAGE_LOGGER_UNLOCK,
+        }.get(button.name)
+        confirm_timer = Timer(1.5, count=3).start()
         get_mission_counter = 0
         self.interval_clear(STORAGE_CHECK)
         self.interval_clear(STORAGE_USE)
@@ -112,6 +117,9 @@ class StorageHandler(GlobeOperation, ZoneManager):
         self.interval_clear(GET_MISSION)
 
         for _ in self.loop():
+            if logger_template and not self.is_in_storage():
+                confirm_timer.reset()
+
             # 误点击物品弹出信息说明
             if self.appear(GET_MISSION, offset=True, interval=2):
                 logger.info(f'[大世界-仓库] 使用物品信息 -> {GET_MISSION}')
@@ -143,6 +151,17 @@ class StorageHandler(GlobeOperation, ZoneManager):
                 success = True
                 continue
             if self.handle_story_skip():
+                continue
+            # Rescan loggers before confirming that storage is stable.
+            if logger_template:
+                if self.is_in_storage():
+                    items = logger_template.match_multi(rgb2gray(self.device.image), similarity=0.5)
+                    if items:
+                        confirm_timer.reset()
+                        if self.appear(STORAGE_CHECK, offset=(20, 20), interval=5):
+                            self.device.click(items[0])
+                    elif confirm_timer.reached():
+                        break
                 continue
             # 点击使用物品
             if self.appear(STORAGE_CHECK, offset=(20, 20), interval=5):

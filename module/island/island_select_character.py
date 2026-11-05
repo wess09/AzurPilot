@@ -93,6 +93,11 @@ class SelectCharacter(UI):
             "RoyalFortune": TEMPLATE_ROYAL_FORTUNE,
             "DaVinci": TEMPLATE_DAVINCI,
             "Taihou": TEMPLATE_TAIHOU,
+            "Nagato": TEMPLATE_NAGATO,
+            "Agir": TEMPLATE_AGIR,
+            "HwahJah": TEMPLATE_HWAH_JAH,
+            "Argus": TEMPLATE_ARGUS,
+            "Ognevoy": TEMPLATE_OGNEVOY,
         }
 
     def recognize_all_characters(self, screenshot):

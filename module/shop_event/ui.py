@@ -91,17 +91,50 @@ class EventShopUI(UI):
 
     def _get_event_deadline(self):
         """读取服务器时区中的活动商店截止时间。"""
-        period = OCR_EVENT_SHOP_DEADLINE.ocr(self.device.image)
-        # OCR 结果类似“:2026.8.13~2026.9.3 23:59:59”，先移除末尾时间。
-        period, _, _ = period.partition('23:59:59')
-        pattern = r'(\d{4})\.(\d{1,2})\.(\d{1,2})'
-        matches = re.findall(pattern, period)
-        if not matches or len(matches) < 2:
-            logger.warning(f"[活动商店-UI] 活动截止日期读取失败: {period}")
+        raw = OCR_EVENT_SHOP_DEADLINE.ocr(self.device.image)
+        # 国际服可能不显示年份，且结束时间不一定是 23:59:59。
+        hour, minute, second = 23, 59, 59
+        period = raw
+        match = re.search(r'(\d{2}):(\d{2}):(\d{2})\s*$', raw)
+        if match:
+            hour, minute, second = [int(x) for x in match.groups()]
+            period = raw[:match.start()]
+        else:
+            logger.warning(f"[活动商店-UI] 截止时间未识别到时分秒，按 23:59:59 处理: {raw}")
+
+        matches = re.findall(r'(?:(\d{4})\.)?(\d{1,2})\.(\d{1,2})', period)
+        if len(matches) < 2:
+            logger.warning(f"[活动商店-UI] 活动截止日期读取失败: {raw}")
             return None
-        y, m, d = matches[-1]
-        deadline = datetime(int(y), int(m), int(d)) + timedelta(days=1)  # server deadline
-        return deadline
+        year, month, day = matches[-1]
+
+        server_now = current_time() - server_time_offset()
+        if year:
+            years = [int(year)]
+        else:
+            years = [server_now.year - 1, server_now.year, server_now.year + 1]
+            logger.warning(f"[活动商店-UI] 截止日期未显示年份，按 {server_now.year} 年附近推算: {raw}")
+
+        candidates = []
+        for y in years:
+            try:
+                candidates.append(datetime(y, int(month), int(day), hour, minute, second))
+            except ValueError:
+                pass
+        if not candidates:
+            logger.warning(f"[活动商店-UI] 活动截止日期无效: {raw}")
+            return None
+
+        deadline = min(candidates, key=lambda t: abs(t - server_now))
+        if not year and abs(deadline - server_now) > timedelta(days=90):
+            logger.warning(f"[活动商店-UI] 推算的截止日期 {deadline} 距今超过 90 天，"
+                           f"改用当前年份 {server_now.year}")
+            try:
+                deadline = datetime(server_now.year, int(month), int(day), hour, minute, second)
+            except ValueError:
+                logger.warning(f"[活动商店-UI] 活动截止日期无效: {raw}")
+                return None
+        return deadline + timedelta(seconds=1)
 
     @cached_property
     def is_event_ended(self):

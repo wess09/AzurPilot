@@ -181,6 +181,13 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         # 初始化
         self.zone_init()
 
+        # 代理任务尚未绑定侵蚀一的献祭设置，维修留到实际子任务确定后执行。
+        overflow_target_task = self._get_prevent_action_point_overflow_target_task()
+        self._initial_fleet_repair_pending = (
+            self.config.task.command == "OpsiScheduling"
+            or overflow_target_task in ("OpsiScheduling", "OpsiHazard1Leveling")
+        )
+
         # self.map_init()
         self.hp_reset()
         self.handle_after_auto_search()
@@ -197,8 +204,6 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         leveling_zone = self.config.cross_get(
             keys="OpsiHazard1Leveling.OpsiHazard1Leveling.TargetZone", default=0
         ) or 22
-        overflow_target_task = self._get_prevent_action_point_overflow_target_task()
-
         if self.config.task.command == "OpsiExploreCleanup":
             logger.info("独立事件补扫任务，跳过初始化自律寻敌")
         elif (
@@ -380,6 +385,19 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         if revert and prev != self.zone:
             self.globe_goto(prev)
 
+    def _skip_fleet_repair(self):
+        """代理初始化等待子任务配置；侵蚀一献祭模式不自动维修。"""
+        if getattr(self, "_initial_fleet_repair_pending", False):
+            logger.info("[大世界-维修] 等待确定代理子任务后检查舰队维修")
+            return True
+        if (
+            self.config.task.command == "OpsiHazard1Leveling"
+            and self.config.OpsiHazard1Leveling_SkipHpCheck
+        ):
+            logger.info("[大世界-维修] 侵蚀一献祭模式已开启，跳过血量检查和自动维修")
+            return True
+        return False
+
     def handle_fleet_repair(self, revert=True):
         """
         Args:
@@ -388,6 +406,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         Returns:
             bool: 是否进行了修理。
         """
+        if self._skip_fleet_repair():
+            return False
+
         use_repair_pack = bool(
             self.config.OpsiGeneral_UseRepairPack
         ) and self.config.SERVER in ["cn"]
@@ -581,7 +602,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             self.storage_repair_cancel()
             self.storage_quit()
 
-        if repair:
+        # 侵蚀一保留维修箱修理，但扳手标记不额外触发回港。
+        if repair and self.config.task.command != "OpsiHazard1Leveling":
             success = self.fleet_repair(revert=revert)
 
         return success
@@ -609,6 +631,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             in: in_map
             out: in_map
         """
+        if self._skip_fleet_repair():
+            return False
+
         if self.config.OpsiGeneral_UseRepairPack and self.config.SERVER not in ["cn"]:
             logger.warning(
                 f"[大世界-维修] 维修包功能不支持 {self.config.SERVER} 服务器"
@@ -792,7 +817,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         Args:
             repair (bool): 重启后是否调用 handle_fleet_repair。
         """
-        if not self.appear(MAP_GOTO_GLOBE_FOG):
+        # 港口内按钮向左偏移，迷雾覆盖时按钮颜色也会变亮。
+        if not self.match_template_color(MAP_GOTO_GLOBE_FOG, offset=(200, 5), threshold=40):
             return False
 
         logger.warning(
@@ -1071,9 +1097,14 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             ):
                 # 只把本次守护循环已确认开启后的奖励当作正常收尾。
                 self._os_auto_search_started = True
+            reward_appear = self.appear(AUTO_SEARCH_REWARD, offset=(50, 50))
             if self.handle_os_auto_search_map_option(drop=drop, enable=success):
                 unlock_checked = True
-                auto_search_time_limit_timer.reset()
+                # 发送点击不代表游戏已经响应，持续重试仍需受自律时限保护。
+                if reward_appear:
+                    auto_search_time_limit_timer.reset()
+                elif auto_search_time_limit_timer.reached():
+                    raise GameStuckError('自律寻敌卡死')
                 continue
             if self.handle_retirement():
                 # 退役会中断自动搜索，需要重试

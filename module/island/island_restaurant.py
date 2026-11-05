@@ -9,7 +9,6 @@ from module.island.assets import *
 from module.logger import logger
 
 from module.base.button import Button
-from module.island.island_season import SEASONAL_ITEMS
 
 
 # 固定位置按钮 — 在委派界面不滑动时，双笋的固定位置
@@ -56,6 +55,16 @@ RESTAURANT_SEASONAL_DISHES = {
         'selection': SELECT_PERSIMMON_CAKE, 'selection_check': SELECT_PERSIMMON_CAKE_CHECK,
         'post_action': POST_PERSIMMON_CAKE, 'cn_name': '柿子饼'
     },
+    'shiitake_chicken_soup': {
+        'name': 'shiitake_chicken_soup', 'template': TEMPLATE_SHIITAKE_CHICKEN_SOUP,
+        'selection': SELECT_SHIITAKE_CHICKEN_SOUP, 'selection_check': SELECT_SHIITAKE_CHICKEN_SOUP_CHECK,
+        'post_action': POST_SHIITAKE_CHICKEN_SOUP, 'cn_name': '冬菇炖鸡'
+    },
+    'green_jujube_porridge': {
+        'name': 'green_jujube_porridge', 'template': TEMPLATE_GREEN_JUJUBE_PORRIDGE,
+        'selection': SELECT_GREEN_JUJUBE_PORRIDGE, 'selection_check': SELECT_GREEN_JUJUBE_PORRIDGE_CHECK,
+        'post_action': POST_GREEN_JUJUBE_PORRIDGE, 'cn_name': '青枣粥'
+    },
 }
 
 HIGH_PRIORITY_SEASONAL_DISHES = {
@@ -71,6 +80,12 @@ HIGH_PRIORITY_SEASONAL_DISHES['matsutake_chicken_soup'] = {
     **RESTAURANT_SEASONAL_DISHES['matsutake_chicken_soup'],
     'selection': FIXED_SELECT_MATSUTAKE_CHICKEN_SOUP,
     'selection_check': FIXED_SELECT_MATSUTAKE_CHICKEN_SOUP,
+}
+# 冬季高优先级为冬菇炖鸡，固定槽位1
+HIGH_PRIORITY_SEASONAL_DISHES['shiitake_chicken_soup'] = {
+    **RESTAURANT_SEASONAL_DISHES['shiitake_chicken_soup'],
+    'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
+    'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
 }
 
 
@@ -94,6 +109,7 @@ class IslandRestaurant(IslandShopBase):
     FILL_SPECIAL_FOOD = False
 
     def __init__(self, *args, **kwargs):
+        """Initialize restaurant products, seasonal slots, and post metadata."""
         super().__init__(*args, **kwargs)
 
         # 设置店铺类型
@@ -230,39 +246,8 @@ class IslandRestaurant(IslandShopBase):
         return None
 
     def _auto_switch_seasonal_meals(self):
-        """自动切换用户配置中的春季限定餐品到当前季节对应餐品。"""
-        SEASONAL_MEAL_SWITCH = {
-            'double_bamboo_shoots': 0,
-            'asparagus_shrimp': 1,
-        }
-        if not hasattr(self, 'season_config') or not self.season_config:
-            return
-        current_season = self.season_config.season
-        current_restaurant_items = SEASONAL_ITEMS.get(current_season, {}).get('restaurant', [])
-        for spring_item, slot_idx in SEASONAL_MEAL_SWITCH.items():
-            if not any(name == spring_item for name, _ in self.post_products):
-                continue
-            spring_name = '凉拌双笋' if spring_item == 'double_bamboo_shoots' else '芦笋炒虾仁'
-            if slot_idx < len(current_restaurant_items):
-                seasonal_item = current_restaurant_items[slot_idx]
-                if seasonal_item != spring_item:
-                    self.post_products = [
-                        (seasonal_item, target) if name == spring_item else (name, target)
-                        for name, target in self.post_products
-                    ]
-                    logger.info(
-                        f"季节餐品自动切换: {self._item_cn(spring_item)}({spring_name}) -> {self._item_cn(seasonal_item)}"
-                        f"（当前季节: {self.season_config.season_name}）"
-                    )
-            else:
-                self.post_products = [
-                    (name, target) for name, target in self.post_products
-                    if name != spring_item
-                ]
-                logger.info(
-                    f"季节餐品自动移除: {self._item_cn(spring_item)}({spring_name})"
-                    f"（{self.season_config.season_name} 无对应槽位的季节餐品）"
-                )
+        """Replace any off-season configured dish with the current season slot."""
+        self._normalize_seasonal_post_products('restaurant')
 
     def select_product(self, product_selection, product_selection_check):
         """选择制作菜品。

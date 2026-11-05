@@ -86,11 +86,13 @@ class EnemySearchingHandler(InfoHandler):
         """
         if self.is_in_stage():
             if self.in_stage_timer.reached():
-                logger.info('[处理器-搜索] 已回到关卡页面')
                 self.ensure_no_info_bar(timeout=1.2)
-                raise CampaignEnd('[处理器-搜索] 已回到关卡页面')
-            else:
-                return False
+                # 战后转场可能短暂闪过选关页，等待提示栏后再次确认。
+                if self.is_in_stage():
+                    logger.info('[处理器-搜索] 已回到关卡页面')
+                    raise CampaignEnd('[处理器-搜索] 已回到关卡页面')
+                self.in_stage_timer.reset()
+            return False
         else:
             if self.appear(MAP_PREPARATION, offset=(20, 20)) \
                     or self.appear(MAP_PREPARATION_HARD, offset=(20, 20)) \

@@ -99,7 +99,7 @@ def handle_notify(_config: str, **kwargs) -> bool:
             logger.warning("[通知] 未收到推送服务器的响应（连接失败或超时）")
             return False
         if isinstance(resp, Response):
-            if resp.status_code != 200:
+            if not 200 <= resp.status_code < 300:
                 logger.warning("推送通知失败!")
                 logger.warning(f"[通知] HTTP状态码:{resp.status_code}")
                 return False

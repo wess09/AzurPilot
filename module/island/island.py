@@ -148,7 +148,7 @@ ISLAND_ITEM_CN_NAMES = {
     'pineapple': '菠萝', 'asparagus': '芦笋',
     # 渔场
     'bass': '鲈鱼', 'yellowfin_tuna': '黄鳍金枪鱼', 'shell': '贝壳', 'shrimp': '小河虾',
-    'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参',
+    'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参', 'koi_carp': '鲤鱼', 'mackerel': '马鲛鱼',
     # 矿山/林场
     'Copper': '铜矿', 'Aluminium': '铝矿', 'Iron': '铁矿', 'Sulphur': '硫磺',
     'Silver': '银矿', 'Elegant': '典雅之木', 'Practical': '实用之木', 'Selected': '精选之木',
@@ -750,7 +750,9 @@ class Island(SelectCharacter):
             bool: 始终返回 False。
         """
         logger.warning(f"[岛屿] select_product 失败：未能找到产品 {self._item_cn(product)} 的选择项")
-        self.device.click(POST_CLOSE)
+        # 此时停在产品选择页，岗位详情的关闭按钮不在画面上；
+        # 直接点 POST_CLOSE 会无效并导致后续岗位打开卡死，改为逐层退回岗位管理页
+        self.back_to_postmanage_from_dispatch()
         return False
 
     def post_close(self):
