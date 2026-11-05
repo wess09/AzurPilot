@@ -1102,19 +1102,17 @@ class IslandBusiness(Island):
                     shop_name = current_shop['name']
                     logger.info(f"[岛屿-经营] 当前商店: {shop_name}")
                     if shop_name in started_shops:
-                        logger.warning(f"[岛屿-经营] {shop_name} 确认后仍未开始经营，"
-                                       f"{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+                        logger.warning(f"[岛屿-经营] {shop_name} 确认后仍未开始经营，跳过该店继续检查其他商店")
                         self._leave_shop_without_start()
-                        self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
+                        self._run_remaining_shops(skip_shops={shop_name})
                         return
                     self._load_shop_characters(current_shop)
                     self._select_business_characters()
                     selected = self._select_business_product(shop_name)
                     if selected == 0:
-                        logger.warning(f"[岛屿-经营] {shop_name} 没有可出售的餐品，不开始经营，"
-                                       f"{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+                        logger.warning(f"[岛屿-经营] {shop_name} 没有可出售的餐品，不开始经营，跳过该店继续检查其他商店")
                         self._leave_shop_without_start()
-                        self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
+                        self._run_remaining_shops(skip_shops={shop_name})
                         return
                     started_shops.add(shop_name)
                 else:
@@ -1434,7 +1432,7 @@ class IslandBusiness(Island):
             'has_blue': has_blue,
         }
 
-    def _run_batch(self, batch_shops):
+    def _run_batch(self, batch_shops, skip_shops=(), final=None):
         """
         执行指定批次的商店经营（逐商店扫描模式）。
 
@@ -1453,10 +1451,13 @@ class IslandBusiness(Island):
 
         Args:
             batch_shops: 当前批次的商店列表
+            skip_shops: 不再进入的商店名（如传统模式已确认没有餐品的商店）
+            final (bool | None): 是否为最后一批，决定退出时是否设置任务延时；
+                None 时按分批配置判断（第二批或没有第二批）
         """
         self._has_seen_blue = False
         total_darkblue_count = 0  # 本批次内深蓝商店计数
-        processed_shop_names = set()  # 已启动过经营的商店，避免界面刷新延迟导致重复进入
+        processed_shop_names = set(skip_shops)  # 已处理过的商店，避免界面刷新延迟导致重复进入
         claimed_shop_names = set()  # 已领取过奖励的商店，仍需在后续扫描中复检是否变为可经营
         started_shop_names = set()  # 本批次实际开始经营的商店
         seen_shop_names = set()  # 跨滚动位置累积看到过的商店（用于判断是否已遍历全部）
@@ -1581,6 +1582,8 @@ class IslandBusiness(Island):
         # ========== 退出判断 ==========
         # 先回到顶部
         self._scroll_business_to_top()
+        is_final = final if final is not None else (
+            batch_shops == self._get_batch2_shops() or not self._get_batch2_shops())
 
         if total_darkblue_count > 0 and not self._has_seen_blue:
             # 所有商店都在经营中（从未处理过蓝色按钮）
@@ -1600,14 +1603,14 @@ class IslandBusiness(Island):
                 self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
                 return started_shop_names
             logger.info(f"[岛屿-经营] 批次经营已启动，正常退出")
-            if batch_shops == self._get_batch2_shops() or not self._get_batch2_shops():
+            if is_final:
                 self._set_task_delay()
             return started_shop_names
 
         # 所有商店都是灰色不可经营
         # 只有当前是第二批，或没有第二批时，才设置延后到服务器0点
         # 第一批全 gray 时让 _run_batch_mode 继续处理第二批
-        if batch_shops == self._get_batch2_shops() or not self._get_batch2_shops():
+        if is_final:
             logger.info("[岛屿-经营] 批次内所有商店不可经营，延后至下次服务器刷新（0点）")
             self.config.task_delay(server_update='00:00')
 
@@ -2135,6 +2138,22 @@ class IslandBusiness(Island):
 
     # 商店没有可出售的餐品时，多久后再试（等后厨做出餐品）
     NO_FOOD_RETRY_MINUTES = 60
+
+    def _run_remaining_shops(self, skip_shops):
+        """传统模式中排在最前的商店无法开始经营时，逐店检查其余商店。
+
+        传统模式只点排在最前的蓝色按钮，最前的商店没有餐品时后面的商店永远轮不到。
+        这里改用分批模式的逐店扫描（全部商店、视为最后一批），跳过已确认无法开始的商店。
+        没有任何商店开始经营时，NO_FOOD_RETRY_MINUTES 分钟后再试。
+
+        Args:
+            skip_shops (set[str]): 不再进入的商店名。
+        """
+        started = self._run_batch(self.shops, skip_shops=skip_shops, final=True)
+        self._trigger_shop_refill(started)
+        if not started:
+            logger.info(f"[岛屿-经营] 没有商店开始经营，{self.NO_FOOD_RETRY_MINUTES} 分钟后再试")
+            self.config.task_delay(minute=self.NO_FOOD_RETRY_MINUTES)
 
     def _leave_shop_without_start(self):
         """不开始经营，直接从商店经营界面返回经营页签。"""

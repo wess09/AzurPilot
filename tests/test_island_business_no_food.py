@@ -30,18 +30,37 @@ def make_business(statuses, selected):
 
 
 class LegacyNoFoodTest(unittest.TestCase):
-    def test_no_food_leaves_without_start_and_retries_later(self):
+    def test_no_food_skips_shop_and_checks_the_others(self):
         business = make_business(['blue'], selected=[0])
+        business._run_remaining_shops = Mock()
         business._run_legacy_mode()
         business._confirm_business_start.assert_not_called()
         business._leave_shop_without_start.assert_called_once()
-        business.config.task_delay.assert_called_once_with(minute=IslandBusiness.NO_FOOD_RETRY_MINUTES)
+        business._run_remaining_shops.assert_called_once_with(skip_shops={'有鱼餐馆'})
 
     def test_start_that_did_not_take_stops_the_loop(self):
-        # 选到了餐品，但确认后同一商店仍是蓝色（经营没有开始）：第二次进店时停止
+        # 选到了餐品，但确认后同一商店仍是蓝色（经营没有开始）：第二次进店时跳过该店，检查其他商店
         business = make_business(['blue', 'blue', 'blue'], selected=[2, 2, 2])
+        business._run_remaining_shops = Mock()
         business._run_legacy_mode()
         business._confirm_business_start.assert_called_once()
+        business._run_remaining_shops.assert_called_once_with(skip_shops={'有鱼餐馆'})
+
+    def test_remaining_shops_scan_all_shops_and_skip_the_blocked_one(self):
+        business = make_business([], selected=[])
+        business.shops = [{'name': '有鱼餐馆'}, {'name': '白熊饮品'}]
+        business._run_batch = Mock(return_value={'白熊饮品'})
+        business._run_remaining_shops({'有鱼餐馆'})
+        business._run_batch.assert_called_once_with(business.shops, skip_shops={'有鱼餐馆'}, final=True)
+        business._trigger_shop_refill.assert_called_once_with({'白熊饮品'})
+        # 其他商店开始了经营：延时由逐店扫描按经营时间设置，这里不改成 60 分钟
+        business.config.task_delay.assert_not_called()
+
+    def test_remaining_shops_retry_later_when_nothing_started(self):
+        business = make_business([], selected=[])
+        business.shops = [{'name': '有鱼餐馆'}]
+        business._run_batch = Mock(return_value=set())
+        business._run_remaining_shops({'有鱼餐馆'})
         business.config.task_delay.assert_called_once_with(minute=IslandBusiness.NO_FOOD_RETRY_MINUTES)
 
     def test_normal_start_still_exits_when_running(self):
