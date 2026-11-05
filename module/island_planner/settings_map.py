@@ -155,14 +155,32 @@ RANCH_SWITCHES = {
     'ranch_sheep': 'IslandRancher.IslandRancher.Wool',
 }
 
-# 制造业：AzurPilot 每条产线固定生产这些产品（见 island_manufacture.py），
-# 只能配置启用的岗位数。手工含各季节限定品。
+# 制造业：各产线 AzurPilot 能生产的产品（名称见 island_manufacture.py）-> 物品 ID。
+# 规划器写入启用的岗位数与 <产线>.Products（按计划产量排序的生产顺序）。
+# 手工的季节限定品只列出 AzurPilot 有识别图的（荠菜干、夏季花束、梅花香包、冬季花束）。
+MANUFACTURE_PRODUCTS = {
+    'manufacturing_lumber': {
+        'line': 'IslandManufacture.WoodProcessing',
+        'products': {'file_cabinet': 3052, 'paper': 3048, 'notebook': 3049, 'chair_desk': 3050},
+    },
+    'manufacturing_electronic': {
+        'line': 'IslandManufacture.ElectronicProcessing',
+        'products': {'filter_element': 3056, 'ink_cartridge': 3053},
+    },
+    'manufacturing_machinery': {
+        'line': 'IslandManufacture.Industrial',
+        'products': {'iron_nail': 3044, 'cutlery': 3047, 'charcoal_brush': 3042, 'cable': 3043},
+    },
+    'manufacturing_crafts': {
+        'line': 'IslandManufacture.Handmade',
+        'products': {'leather': 3036, 'boot': 3040, 'peanut_oil': 4012, 'cloth': 3035, 'rope': 3037,
+                     'shepherd_purse': 4027, 'summer_bouquet': 4042,
+                     'plum_blossom_sachet': 4055, 'winter_bouquet': 4056},
+    },
+}
 MANUFACTURE_LINES = {
-    'manufacturing_lumber': ('IslandManufacture.WoodProcessing.Positions', {3052}),
-    'manufacturing_electronic': ('IslandManufacture.ElectronicProcessing.Positions', {3056}),
-    'manufacturing_machinery': ('IslandManufacture.Industrial.Positions', {3044, 3047}),
-    'manufacturing_crafts': ('IslandManufacture.Handmade.Positions',
-                             {3036, 3040, 4011, 4012, 4027, 4028, 4041, 4042, 4055, 4056}),
+    group: (f'{data["line"]}.Positions', set(data['products'].values()))
+    for group, data in MANUFACTURE_PRODUCTS.items()
 }
 # 一个岗位一天的工作量，与 calculator._build_production_problem 一致
 DAILY_WORKLOAD = 24 * 60 * 60 * 10
@@ -452,17 +470,32 @@ def ranch_settings(calculator):
 
 
 def manufacture_settings(calculator):
-    """制造业各产线启用的岗位数：计划工作量需要的岗位，不超过已解锁岗位。"""
+    """制造业各产线：启用的岗位数与生产顺序。
+
+    岗位数为计划工作量需要的岗位，不超过已解锁岗位；生产顺序 `<产线>.Products` 为计划生产的
+    产品按计划工作量降序排列，AzurPilot 按此顺序选品（材料不足时试下一个）。没有计划生产时
+    顺序为空，AzurPilot 沿用产线的固定规则。
+    """
     values = {}
-    for group, (path, _) in MANUFACTURE_LINES.items():
+    for group, data in MANUFACTURE_PRODUCTS.items():
+        names = {item_id: name for name, item_id in data['products'].items()}
         workload = 0
+        product_workload = {}
         for recipe_id, batches in calculator.production_plan.items():
-            if calculator.recipe_group.get(recipe_id) == group:
-                workload += DIC_ISLAND_RECIPE[recipe_id]['workload'] * batches
+            if calculator.recipe_group.get(recipe_id) != group or batches <= 1e-6:
+                continue
+            recipe = DIC_ISLAND_RECIPE[recipe_id]
+            workload += recipe['workload'] * batches
+            for item_id in recipe['commission_product']:
+                if item_id in names:
+                    product_workload[item_id] = product_workload.get(item_id, 0) + recipe['workload'] * batches
         unlocked = sum(
             1 for slot in calculator.GROUP_TO_SLOTS.get(group, [])
             if calculator.slot_available.get(slot, False))
-        values[path] = min(ceil(workload / DAILY_WORKLOAD - 1e-6), unlocked, 2) if workload > 0 else 0
+        values[f'{data["line"]}.Positions'] = \
+            min(ceil(workload / DAILY_WORKLOAD - 1e-6), unlocked, 2) if workload > 0 else 0
+        order = sorted(product_workload, key=lambda i: (-product_workload[i], i))
+        values[f'{data["line"]}.Products'] = ' > '.join(names[item_id] for item_id in order)
     return values
 
 
@@ -485,6 +518,30 @@ def position_limits(get):
         if isinstance(value, int) and not isinstance(value, bool):
             limits[group] = value
     return limits
+
+
+# 自动岗位数：店铺后厨的岗位数配置（选项 1–2）
+KITCHEN_POST_NUMBERS = {
+    kitchen['slot_group']: f'{kitchen["task"]}.{kitchen["task"]}.PostNumber' for kitchen in KITCHENS.values()
+}
+
+
+def auto_position_settings(calculator):
+    """按岛屿科技解锁的岗位写入各区域岗位数（AutoPositions）。
+
+    农田、果园、苗圃、矿山、林场、渔场写 Positions，店铺后厨写 PostNumber。区域一个岗位都
+    没有解锁时不写（这些配置的最小值为 1），保留原值。
+
+    Returns:
+        dict: {配置路径: 已解锁岗位数}。
+    """
+    values = {}
+    for group, path in {**POSITION_LIMITS, **KITCHEN_POST_NUMBERS}.items():
+        unlocked = sum(1 for slot in calculator.GROUP_TO_SLOTS.get(group, [])
+                       if calculator.slot_available.get(slot, False))
+        if unlocked:
+            values[path] = unlocked
+    return values
 
 
 # 闲时产能（目标都达标后的空余岗位）写入各区域的「默认产品」设置。
@@ -599,7 +656,8 @@ def default_product_settings(calculator, fill_spare_posts=False, priority='pt'):
     return values, notes
 
 
-def build_settings(calculator, meal_options, product_options, fill_spare_posts=False, priority='pt'):
+def build_settings(calculator, meal_options, product_options, fill_spare_posts=False, priority='pt',
+                   auto_positions=False):
     """求解成功后，生成要写入的全部配置。
 
     Returns:
@@ -621,6 +679,8 @@ def build_settings(calculator, meal_options, product_options, fill_spare_posts=F
     notes.extend(threshold_notes)
     values.update(ranch_settings(calculator))
     values.update(manufacture_settings(calculator))
+    if auto_positions:
+        values.update(auto_position_settings(calculator))
     default_values, default_notes = default_product_settings(calculator, fill_spare_posts, priority)
     values.update(default_values)
     notes.extend(default_notes)

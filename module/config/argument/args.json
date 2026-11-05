@@ -19609,6 +19609,11 @@
           1,
           2
         ]
+      },
+      "Products": {
+        "type": "input",
+        "value": "",
+        "preserve_empty": true
       }
     },
     "ElectronicProcessing": {
@@ -19620,6 +19625,11 @@
           1,
           2
         ]
+      },
+      "Products": {
+        "type": "input",
+        "value": "",
+        "preserve_empty": true
       }
     },
     "Industrial": {
@@ -19631,6 +19641,11 @@
           1,
           2
         ]
+      },
+      "Products": {
+        "type": "input",
+        "value": "",
+        "preserve_empty": true
       }
     },
     "Handmade": {
@@ -19642,6 +19657,11 @@
           1,
           2
         ]
+      },
+      "Products": {
+        "type": "input",
+        "value": "",
+        "preserve_empty": true
       }
     },
     "Storage": {
@@ -20976,6 +20996,14 @@
         ]
       },
       "FillSparePosts": {
+        "type": "checkbox",
+        "value": true,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "AutoPositions": {
         "type": "checkbox",
         "value": true,
         "option": [

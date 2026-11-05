@@ -5953,6 +5953,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5966,6 +5970,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5979,6 +5987,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5992,6 +6004,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7202,6 +7218,12 @@
     "FillSparePosts": {
       "name": "Fill spare posts",
       "help": "On: once all minimums are met, every unlocked farm, orchard, nursery, mine, forest and fishery post produces a default product: the planned spare-time product, or the most valuable unlocked product when none is planned. Off: only the posts the plan needs for spare-time output.",
+      "True": "On",
+      "False": "Off"
+    },
+    "AutoPositions": {
+      "name": "Auto post counts",
+      "help": "On: set each area's post count (farm, orchard, nursery, mine, forest, fishery and the shop kitchens) from the posts your island research has unlocked, and plan with all of them. Off: plan within the post counts you set.",
       "True": "On",
       "False": "Off"
     },

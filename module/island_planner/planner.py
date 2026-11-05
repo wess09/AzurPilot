@@ -296,7 +296,9 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
             restaurant_settings=settings_map.restaurant_settings(grades, chars, open_ids),
             daily_profit_lower_limit=self.get('DailyProfitLowerLimit'),
             daily_buffer_safety_margin=self.get('DailyBufferSafetyMargin'),
-            slot_limit=settings_map.position_limits(lambda path: self.config.cross_get(path, None)),
+            # 自动岗位数时按科技解锁的全部岗位规划，并把岗位数写回各区域；否则按区域岗位数配置限制
+            slot_limit=None if self.get('AutoPositions')
+            else settings_map.position_limits(lambda path: self.config.cross_get(path, None)),
         )
 
     def run(self):
@@ -343,7 +345,8 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
 
         values, notes = settings_map.build_settings(
             calculator, meal_options, product_options,
-            fill_spare_posts=bool(self.get('FillSparePosts')), priority=priority)
+            fill_spare_posts=bool(self.get('FillSparePosts')), priority=priority,
+            auto_positions=bool(self.get('AutoPositions')))
         for note in notes:
             logger.info(f'[岛屿-规划] {note}')
         changed = {path: value for path, value in values.items() if self.config.cross_get(path) != value}

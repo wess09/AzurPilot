@@ -5953,6 +5953,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5966,6 +5970,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5979,6 +5987,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5992,6 +6004,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7202,6 +7218,12 @@
     "FillSparePosts": {
       "name": "填满空余岗位",
       "help": "开启：底线都达标后，农田、果园、苗圃、矿山、林场、渔场所有已解锁岗位都生产默认产品；默认产品取计划的闲时产品，没有时取价值最高的已解锁产品。关闭：只写计划闲时产出需要的岗位数。",
+      "True": "开启",
+      "False": "关闭"
+    },
+    "AutoPositions": {
+      "name": "自动岗位数",
+      "help": "开启：按岛屿科技已解锁的岗位写入各区域岗位数（农田、果园、苗圃、矿山、林场、渔场与各店铺后厨），并按全部岗位规划。关闭：在已配置的岗位数内规划。",
       "True": "开启",
       "False": "关闭"
     },

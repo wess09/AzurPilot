@@ -191,6 +191,39 @@ class ProductionLineTest(unittest.TestCase):
         self.assertEqual(values['IslandManufacture.Industrial.Positions'],
                          min(-(-workload // sm.DAILY_WORKLOAD), 2))
         self.assertEqual(values['IslandManufacture.WoodProcessing.Positions'], 0)
+        # 生产顺序：计划生产的产品按工作量降序，没有计划的产线为空（沿用固定规则）
+        self.assertEqual(values['IslandManufacture.Industrial.Products'], 'iron_nail')
+        self.assertEqual(values['IslandManufacture.WoodProcessing.Products'], '')
+
+    def test_manufacture_product_order_by_workload(self):
+        calculator = self.make()
+        recipes = {sm.recipe_product(r): r for r, g in calculator.recipe_group.items() if g == 'manufacturing_lumber'}
+        calculator.production_plan = {recipes[3048]: 1, recipes[3049]: 3}   # 纸张 1 批，记事本 3 批
+        values = sm.manufacture_settings(calculator)
+        expected = sorted(['paper', 'notebook'], key=lambda name: -DIC_ISLAND_RECIPE[
+            recipes[sm.MANUFACTURE_PRODUCTS['manufacturing_lumber']['products'][name]]]['workload']
+            * (3 if name == 'notebook' else 1))
+        self.assertEqual(values['IslandManufacture.WoodProcessing.Products'], ' > '.join(expected))
+        # 每个产线的产品名都是 AzurPilot 识别的产品
+        for data in sm.MANUFACTURE_PRODUCTS.values():
+            products = values[f'{data["line"]}.Products']
+            for name in filter(None, products.split(' > ')):
+                self.assertIn(name, data['products'])
+
+    def test_auto_position_settings(self):
+        tech = {tech_id: True for tech_id in DIC_ISLAND_TECHNOLOGY}
+        tech[310103] = tech[310104] = False     # 农田第 3、4 个岗位未解锁
+        values = sm.auto_position_settings(ProductionPlanCalculator(tech))
+        self.assertEqual(values['IslandFarm.IslandFarm.Positions'], 2)
+        self.assertEqual(values['IslandRancher.IslandFishery.Positions'], 3)
+        self.assertEqual(values['IslandRestaurant.IslandRestaurant.PostNumber'], 2)
+        # 选项范围内：岗位数配置的最大值不超过选项
+        for path, value in values.items():
+            task, group, key = path.split('.')
+            self.assertIn(value, ARGUMENT[group][key]['option'], path)
+        # 一个岗位都没解锁的区域不写入
+        none = sm.auto_position_settings(ProductionPlanCalculator({}))
+        self.assertNotIn('IslandMineForest.IslandMine.Positions', none)
 
 
 class SolveTest(unittest.TestCase):

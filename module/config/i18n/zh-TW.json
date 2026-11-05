@@ -5953,6 +5953,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5966,6 +5970,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5979,6 +5987,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5992,6 +6004,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7202,6 +7218,12 @@
     "FillSparePosts": {
       "name": "填滿空餘崗位",
       "help": "開啟：底線都達標後，農田、果園、苗圃、礦山、林場、漁場所有已解鎖崗位都生產預設產品；預設產品取計劃的閒時產品，沒有時取價值最高的已解鎖產品。關閉：只寫計劃閒時產出需要的崗位數。",
+      "True": "開啟",
+      "False": "關閉"
+    },
+    "AutoPositions": {
+      "name": "自動崗位數",
+      "help": "開啟：按島嶼科技已解鎖的崗位寫入各區域崗位數（農田、果園、苗圃、礦山、林場、漁場與各店鋪後廚），並按全部崗位規劃。關閉：在已設定的崗位數內規劃。",
       "True": "開啟",
       "False": "關閉"
     },

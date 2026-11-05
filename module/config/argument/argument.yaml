@@ -2220,18 +2220,30 @@ WoodProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 ElectronicProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Industrial:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Handmade:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 IslandAirDrop:
   LastSteal: 2020-01-01 00:00:00
   VisitOtherIsland: true
@@ -2634,6 +2646,10 @@ IslandProductionPlanner:
     value: pt
     option: [ pt, coins ]
   FillSparePosts:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  AutoPositions:
     type: checkbox
     value: true
     option: [ true, false ]

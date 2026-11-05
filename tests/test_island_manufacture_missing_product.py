@@ -1,6 +1,7 @@
 """制造业：始终找不到的产品（科技未解锁）记入本批不可用，改试下一个候选；铁钉线餐具不可用时回退铁钉。"""
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from module.island import island_manufacture as manufacture_module
@@ -61,12 +62,59 @@ class MissingProductTest(unittest.TestCase):
         with patch.object(IslandManufacture, '__init__', lambda self: None):
             factory = IslandManufacture()
         factory.manufacture = {'industrial_production': {'items': [item('iron_nail'), item('cutlery')]}}
+        factory.config = SimpleNamespace(Industrial_Products='')
         factory.warehouse_counts = {'iron_nail': 30}
         factory.get_idle_posts_by_category = Mock(return_value=['POST1'])
         factory.select_product_with_material_check = Mock()
         factory.schedule_industrial_production()
         product_list = factory.select_product_with_material_check.call_args.args[1]
         self.assertEqual([p['name'] for p in product_list], ['cutlery', 'iron_nail'])
+
+
+class ProductOrderTest(unittest.TestCase):
+    """产线按 <产线>.Products 的顺序选品，未配置时沿用固定规则。"""
+
+    def make(self, products, line='WoodProcessing', category='wood_processing', names=()):
+        with patch.object(IslandManufacture, '__init__', lambda self: None):
+            factory = IslandManufacture()
+        factory.manufacture = {category: {'items': [item(name) for name in names]}}
+        factory.config = SimpleNamespace(**{f'{line}_Products': products})
+        factory.warehouse_counts = {}
+        factory.get_idle_posts_by_category = Mock(return_value=['POST1', 'POST2'])
+        factory.select_product_with_material_check = Mock()
+        return factory
+
+    def test_parse_product_order(self):
+        self.assertEqual(manufacture_module.parse_product_order(' Paper > notebook,paper\nchair_desk '),
+                         ['paper', 'notebook', 'chair_desk'])
+        self.assertEqual(manufacture_module.parse_product_order(None), [])
+
+    def test_configured_order_is_used_for_every_idle_post(self):
+        factory = self.make('notebook > paper > unknown', names=('file_cabinet', 'paper', 'notebook'))
+        factory.schedule_wood_processing()
+        calls = factory.select_product_with_material_check.call_args_list
+        self.assertEqual([call.args[0] for call in calls], ['POST1', 'POST2'])
+        self.assertEqual([p['name'] for p in calls[0].args[1]], ['notebook', 'paper'])
+
+    def test_empty_order_keeps_fixed_rule(self):
+        factory = self.make('', names=('file_cabinet', 'paper', 'notebook'))
+        factory.schedule_wood_processing()
+        product_list = factory.select_product_with_material_check.call_args.args[1]
+        self.assertEqual([p['name'] for p in product_list], ['file_cabinet'])
+
+    def test_handmade_order_overrides_seasonal_rule(self):
+        factory = self.make('rope > cloth', line='Handmade', category='handmade',
+                            names=('leather', 'boot', 'cloth', 'rope'))
+        factory.schedule_handmade()
+        product_list = factory.select_product_with_material_check.call_args.args[1]
+        self.assertEqual([p['name'] for p in product_list], ['rope', 'cloth'])
+
+    def test_new_products_have_pictures(self):
+        names = {'paper', 'notebook', 'chair_desk', 'ink_cartridge', 'charcoal_brush', 'cable', 'cloth', 'rope'}
+        assets = vars(manufacture_module)
+        for name in names:
+            for suffix in ('', '_CHECK'):
+                self.assertIn(f'SELECT_{name.upper()}{suffix}', assets)
 
 
 if __name__ == '__main__':

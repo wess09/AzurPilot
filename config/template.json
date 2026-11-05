@@ -3674,16 +3674,20 @@
       "Sensitive": false
     },
     "WoodProcessing": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "ElectronicProcessing": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Industrial": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Handmade": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Storage": {
       "Storage": {}
@@ -4032,6 +4036,7 @@
       "Season": "auto",
       "Priority": "pt",
       "FillSparePosts": true,
+      "AutoPositions": true,
       "UnlockedFish": [
         "shell",
         "catfish",

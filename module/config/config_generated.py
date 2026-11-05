@@ -1104,15 +1104,19 @@ class GeneratedConfig:
 
     # 配置组 `WoodProcessing`
     WoodProcessing_Positions = 2  # 0, 1, 2
+    WoodProcessing_Products = ''
 
     # 配置组 `ElectronicProcessing`
     ElectronicProcessing_Positions = 2  # 0, 1, 2
+    ElectronicProcessing_Products = ''
 
     # 配置组 `Industrial`
     Industrial_Positions = 2  # 0, 1, 2
+    Industrial_Products = ''
 
     # 配置组 `Handmade`
     Handmade_Positions = 2  # 0, 1, 2
+    Handmade_Products = ''
 
     # 配置组 `IslandAirDrop`
     IslandAirDrop_LastSteal = datetime.datetime(2020, 1, 1, 0, 0)
@@ -1257,6 +1261,7 @@ class GeneratedConfig:
     IslandProductionPlanner_Season = 'auto'  # auto, season_1, season_2, season_3, season_4, season_5
     IslandProductionPlanner_Priority = 'pt'  # pt, coins
     IslandProductionPlanner_FillSparePosts = True  # True, False
+    IslandProductionPlanner_AutoPositions = True  # True, False
     IslandProductionPlanner_UnlockedFish = ['shell', 'catfish', 'koi_carp', 'common_carp', 'shrimp', 'crayfish', 'bass', 'crab', 'squid', 'mackerel', 'tuna', 'salmon', 'red_sea_bream', 'yellowfin_tuna', 'sea_cucumber']  # shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
     IslandProductionPlanner_RescanTechnology = True  # True, False
     IslandProductionPlanner_ScanSeasonTasks = True  # True, False
