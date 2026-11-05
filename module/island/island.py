@@ -224,6 +224,7 @@ ISLAND_ITEM_CN_NAMES = {
     'charcoal_brush': '炭笔', 'cable': '电缆', 'cloth': '布料', 'rope': '绳索',
     'shepherd_purse': '荠菜干', 'spring_bouquet': '春季花束', 'summer_bouquet': '夏季花束',
     'autumn_bouquet': '秋季花束', 'jasmine_oil': '茉莉精油',
+    'plum_blossom_sachet': '梅花香包', 'winter_bouquet': '冬季花束',
 }
 
 class Island(SelectCharacter):
