@@ -56,6 +56,16 @@ RESTAURANT_SEASONAL_DISHES = {
         'selection': SELECT_PERSIMMON_CAKE, 'selection_check': SELECT_PERSIMMON_CAKE_CHECK,
         'post_action': POST_PERSIMMON_CAKE, 'cn_name': '柿子饼'
     },
+    'shiitake_chicken_soup': {
+        'name': 'shiitake_chicken_soup', 'template': TEMPLATE_SHIITAKE_CHICKEN_SOUP,
+        'selection': SELECT_SHIITAKE_CHICKEN_SOUP, 'selection_check': SELECT_SHIITAKE_CHICKEN_SOUP_CHECK,
+        'post_action': POST_SHIITAKE_CHICKEN_SOUP, 'cn_name': '冬菇炖鸡'
+    },
+    'green_jujube_porridge': {
+        'name': 'green_jujube_porridge', 'template': TEMPLATE_GREEN_JUJUBE_PORRIDGE,
+        'selection': SELECT_GREEN_JUJUBE_PORRIDGE, 'selection_check': SELECT_GREEN_JUJUBE_PORRIDGE_CHECK,
+        'post_action': POST_GREEN_JUJUBE_PORRIDGE, 'cn_name': '青枣粥'
+    },
 }
 
 HIGH_PRIORITY_SEASONAL_DISHES = {
@@ -71,6 +81,12 @@ HIGH_PRIORITY_SEASONAL_DISHES['matsutake_chicken_soup'] = {
     **RESTAURANT_SEASONAL_DISHES['matsutake_chicken_soup'],
     'selection': FIXED_SELECT_MATSUTAKE_CHICKEN_SOUP,
     'selection_check': FIXED_SELECT_MATSUTAKE_CHICKEN_SOUP,
+}
+# 冬季高优先级为冬菇炖鸡，固定槽位1
+HIGH_PRIORITY_SEASONAL_DISHES['shiitake_chicken_soup'] = {
+    **RESTAURANT_SEASONAL_DISHES['shiitake_chicken_soup'],
+    'selection': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
+    'selection_check': FIXED_SELECT_DOUBLE_BAMBOO_SHOOTS,
 }
 
 

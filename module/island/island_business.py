@@ -74,6 +74,56 @@ TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED = Template(file={
     'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED.png',
 })
 
+# 冬季经营模板资源尚未提供，先按最终资源路径占位；补图并使用同一资源名后即可直接加载。
+TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU.png',
+})
+TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED = Template(file={
+    'cn': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED.png',
+    'en': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED.png',
+    'jp': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED.png',
+    'tw': './assets/cn/island_business/TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED.png',
+})
+
 # ==================== 商店索引到名称的映射 ====================
 SHOP_INDEX_MAP = {
     1: '有鱼餐馆',
@@ -96,6 +146,10 @@ SEASONAL_FOOD_MAP = {
     'autumn': {
         'product_name': 'matsutake_chicken_soup',
         'display': '松茸鸡汤',
+    },
+    'winter': {
+        'product_name': 'shiitake_chicken_soup',
+        'display': '冬菇炖鸡',
     },
 }
 
@@ -141,6 +195,8 @@ class IslandBusiness(Island):
                 {'name': 'amaranth_rice_ball', 'button': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_AMARANTH_RICE_BALL},
                 {'name': 'matsutake_chicken_soup', 'button': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_MATSUTAKE_CHICKEN_SOUP},
                 {'name': 'persimmon_cake', 'button': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_PERSIMMON_CAKE},
+                {'name': 'shiitake_chicken_soup', 'button': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP},
+                {'name': 'green_jujube_porridge', 'button': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE},
             ],
             '白熊饮品': [
                 {'name': 'spring_flower_tea', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_SPRING_FLOWER_TEA},
@@ -168,6 +224,8 @@ class IslandBusiness(Island):
                 {'name': 'berry_orange', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_BERRY_ORANGE},
                 {'name': 'strawberry_charlotte', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_STRAWBERRY_CHARLOTTE},
                 {'name': 'seafood_rice', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_SEAFOOD_RICE},
+                {'name': 'water_chestnut_cake', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE},
+                {'name': 'sugar_tangerine_daifuku', 'button': TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU},
             ],
             '啾咖啡': [
                 {'name': 'citrus_coffee', 'button': TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE},
@@ -189,6 +247,8 @@ class IslandBusiness(Island):
                 {'name': 'amaranth_rice_ball', 'template': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_AMARANTH_RICE_BALL_CROPPED},
                 {'name': 'matsutake_chicken_soup', 'template': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_MATSUTAKE_CHICKEN_SOUP_CROPPED},
                 {'name': 'persimmon_cake', 'template': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_PERSIMMON_CAKE_CROPPED},
+                {'name': 'shiitake_chicken_soup', 'template': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_SHIITAKE_CHICKEN_SOUP_CROPPED},
+                {'name': 'green_jujube_porridge', 'template': TEMPLATE_BUSINESS_PRODUCT_RESTAURANT_GREEN_JUJUBE_PORRIDGE_CROPPED},
             ],
             '白熊饮品': [
                 {'name': 'spring_flower_tea', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_SPRING_FLOWER_TEA_CROPPED},
@@ -216,6 +276,8 @@ class IslandBusiness(Island):
                 {'name': 'berry_orange', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_BERRY_ORANGE_CROPPED},
                 {'name': 'strawberry_charlotte', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_STRAWBERRY_CHARLOTTE_CROPPED},
                 {'name': 'seafood_rice', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_SEAFOOD_RICE_CROPPED},
+                {'name': 'water_chestnut_cake', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_WATER_CHESTNUT_CAKE_CROPPED},
+                {'name': 'sugar_tangerine_daifuku', 'template': TEMPLATE_BUSINESS_PRODUCT_EATERY_SUGAR_TANGERINE_DAIFUKU_CROPPED},
             ],
             '啾咖啡': [
                 {'name': 'citrus_coffee', 'template': TEMPLATE_BUSINESS_PRODUCT_COFFEE_CITRUS_COFFEE_CROPPED},
@@ -382,6 +444,18 @@ class IslandBusiness(Island):
                 'en': './assets/cn/island_restaurant/TEMPLATE_MATSUTAKE_CHICKEN_SOUP.png',
                 'jp': './assets/cn/island_restaurant/TEMPLATE_MATSUTAKE_CHICKEN_SOUP.png',
                 'tw': './assets/cn/island_restaurant/TEMPLATE_MATSUTAKE_CHICKEN_SOUP.png',
+            }),
+            'shiitake_chicken_soup': Template(file={
+                'cn': './assets/cn/island_restaurant/TEMPLATE_SHIITAKE_CHICKEN_SOUP.png',
+                'en': './assets/cn/island_restaurant/TEMPLATE_SHIITAKE_CHICKEN_SOUP.png',
+                'jp': './assets/cn/island_restaurant/TEMPLATE_SHIITAKE_CHICKEN_SOUP.png',
+                'tw': './assets/cn/island_restaurant/TEMPLATE_SHIITAKE_CHICKEN_SOUP.png',
+            }),
+            'green_jujube_porridge': Template(file={
+                'cn': './assets/cn/island_restaurant/TEMPLATE_GREEN_JUJUBE_PORRIDGE.png',
+                'en': './assets/cn/island_restaurant/TEMPLATE_GREEN_JUJUBE_PORRIDGE.png',
+                'jp': './assets/cn/island_restaurant/TEMPLATE_GREEN_JUJUBE_PORRIDGE.png',
+                'tw': './assets/cn/island_restaurant/TEMPLATE_GREEN_JUJUBE_PORRIDGE.png',
             }),
             # 白熊饮品
             'watermelon_juice': Template(file={

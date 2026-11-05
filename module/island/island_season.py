@@ -53,10 +53,16 @@ SEASONAL_ITEMS = {
         'handmade': ['peanut_oil', 'autumn_bouquet'],
     },
     'winter': {
-        'restaurant': [],
+        # 有鱼餐馆：冬季限定菜品（槽位1冬菇炖鸡、槽位2青枣粥）
+        'restaurant': ['shiitake_chicken_soup', 'green_jujube_porridge'],
         'teahouse': [],
+        # 啾啾简餐：冬季限定菜品（槽位1马蹄糕、槽位2砂糖橘大福）
+        'juu_eatery': ['water_chestnut_cake', 'sugar_tangerine_daifuku'],
         'nursery': [],
-        'handmade': [],
+        # 坠香果园：冬季限定作物（槽位1砂糖橘、槽位2青枣）
+        'orchard': ['sugar_tangerine', 'green_jujube'],
+        # 工厂手工：冬季限定产品（梅花香包、冬季花束）
+        'handmade': ['plum_blossom_sachet', 'winter_bouquet'],
     },
 }
 
