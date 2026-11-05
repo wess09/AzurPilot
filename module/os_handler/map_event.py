@@ -369,7 +369,7 @@ class MapEventHandler(EnemySearchingHandler):
         self.device.click_record_clear()
 
     def _os_auto_search_enable_budget_clear(self):
-        """关闭外观消失或界面被剧情挡住时，清零开启自律的重试预算。"""
+        """确认自律开启、领奖、剧情打断或离开地图时，清零开启自律的重试预算。"""
         timer = self.__dict__.get('_os_auto_search_enable_timer')
         if timer is not None:
             timer.clear()
@@ -418,6 +418,7 @@ class MapEventHandler(EnemySearchingHandler):
                 self.os_auto_search_quit(drop=drop)
                 raise CampaignEnd
         if self.appear(AUTO_SEARCH_REWARD, offset=(50, 50)):
+            self._os_auto_search_enable_budget_clear()
             self.device.screenshot_interval_set()
             cleared = self.os_auto_search_quit(drop=drop)
             if fast_farming and enable is True \
@@ -465,8 +466,11 @@ class MapEventHandler(EnemySearchingHandler):
                 self.get_interval_timer(AUTO_SEARCH_OS_MAP_OPTION_OFF,
                                         interval=click_interval, renew=True).reset()
                 return True
-            # 关闭外观消失：自律已开启或界面已切换，重试预算清零
-            self._os_auto_search_enable_budget_clear()
+            # 点击冷却也会使上方匹配返回 False，不能据此认定自律已经开启。
+            if (self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120))
+                    or self.appear(STORY_SKIP_3, offset=(20, 20))
+                    or not self.is_in_map()):
+                self._os_auto_search_enable_budget_clear()
         else:
             if self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120), interval=3):
                 self.device.click(AUTO_SEARCH_OS_MAP_OPTION_ON)

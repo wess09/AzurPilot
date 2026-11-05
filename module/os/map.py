@@ -1097,9 +1097,14 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             ):
                 # 只把本次守护循环已确认开启后的奖励当作正常收尾。
                 self._os_auto_search_started = True
+            reward_appear = self.appear(AUTO_SEARCH_REWARD, offset=(50, 50))
             if self.handle_os_auto_search_map_option(drop=drop, enable=success):
                 unlock_checked = True
-                auto_search_time_limit_timer.reset()
+                # 发送点击不代表游戏已经响应，持续重试仍需受自律时限保护。
+                if reward_appear:
+                    auto_search_time_limit_timer.reset()
+                elif auto_search_time_limit_timer.reached():
+                    raise GameStuckError('自律寻敌卡死')
                 continue
             if self.handle_retirement():
                 # 退役会中断自动搜索，需要重试

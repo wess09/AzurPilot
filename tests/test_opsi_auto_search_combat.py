@@ -20,7 +20,7 @@ from module.combat.assets import (
     EXP_INFO_D,
     EXP_INFO_S,
 )
-from module.exception import CampaignEnd, GameTooManyClickError
+from module.exception import CampaignEnd, GameStuckError, GameTooManyClickError
 from module.os.map import OSMap
 from module.os_combat.combat import Combat
 from module.os_handler.assets import (
@@ -230,6 +230,7 @@ class TestAutoSearchRetryBudgetScope(unittest.TestCase):
         handler = OSMap.__new__(OSMap)
         handler.config = SimpleNamespace(
             task=SimpleNamespace(command=command), OpsiGeneral_AutoSearchTimeLimit=10,
+            stop_event=None,
         )
         handler.device = Mock(image=None)
         handler.interval_timer = {}
@@ -295,6 +296,118 @@ class TestAutoSearchRetryBudgetScope(unittest.TestCase):
         with self.assertRaisesRegex(GameTooManyClickError, '自律寻敌连续点击 45 秒仍未生效'):
             handler.os_auto_search_daemon()
         self.assertGreater(handler.device.click.call_count, 1)
+
+    def test_cooldown_frames_do_not_clear_failed_enable_budget(self):
+        for command in ('OpsiExplore', 'OpsiHazard1Leveling', 'OpsiMeowfficerFarming'):
+            for state in (AUTO_SEARCH_OS_MAP_OPTION_OFF, AUTO_SEARCH_OS_MAP_OPTION_OFF_DISABLED):
+                with self.subTest(command=command, state=state.name):
+                    handler = self.make_map(command, state)
+                    started = self.clock.now
+
+                    def frames():
+                        for _ in range(300):
+                            yield
+                            self.clock.now += 0.2
+
+                    handler.loop = frames
+                    with self.assertRaisesRegex(GameTooManyClickError, '连续点击 45 秒仍未生效'):
+                        handler.os_auto_search_daemon()
+                    self.assertGreater(self.clock.now - started, 45)
+                    self.assertLess(self.clock.now - started, 49)
+                    self.assertGreater(handler.device.click.call_count, 1)
+
+    def test_brief_unrecognized_frames_do_not_restart_enable_budget(self):
+        handler = self.make_map('OpsiHazard1Leveling')
+        started = self.clock.now
+
+        def frames():
+            for frame in range(300):
+                handler.state = None if frame % 5 == 4 else AUTO_SEARCH_OS_MAP_OPTION_OFF
+                yield
+                self.clock.now += 0.2
+
+        handler.loop = frames
+        with self.assertRaisesRegex(GameTooManyClickError, '连续点击 45 秒仍未生效'):
+            handler.os_auto_search_daemon()
+        self.assertLess(self.clock.now - started, 47)
+
+    def test_five_minute_limit_also_checks_frames_that_click_auto_search(self):
+        for frame_interval in (0.2, 3.1):
+            with self.subTest(frame_interval=frame_interval):
+                handler = self.make_map('OpsiHazard1Leveling')
+                handler.config.OpsiGeneral_AutoSearchTimeLimit = 5
+                # 单独验证五分钟保护，不让更短的开启重试预算先结束本轮。
+                handler._os_auto_search_enable_timeout = 600
+                started = self.clock.now
+
+                def frames():
+                    for _ in range(1600):
+                        yield
+                        self.clock.now += frame_interval
+
+                handler.loop = frames
+                with self.assertRaisesRegex(GameStuckError, '自律寻敌卡死'):
+                    handler.os_auto_search_daemon()
+                self.assertGreater(self.clock.now - started, 300)
+                self.assertLess(self.clock.now - started, 304)
+                self.assertGreater(handler.device.click.call_count, 1)
+
+    def test_real_progress_still_resets_search_time_limit(self):
+        for progress in ('combat', 'retirement', 'map_event'):
+            with self.subTest(progress=progress):
+                handler = self.make_map(state=AUTO_SEARCH_OS_MAP_OPTION_ON)
+                handler.config.OpsiGeneral_AutoSearchTimeLimit = 5
+                handler.on_auto_search_battle_count_add = Mock()
+                handler.auto_search_combat = Mock(return_value=True)
+                started = self.clock.now
+                progressed = False
+
+                def has_progress(*args, **kwargs):
+                    nonlocal progressed
+                    if not progressed and self.clock.now - started >= 240:
+                        progressed = True
+                        return True
+                    return False
+
+                target = {
+                    'combat': 'combat_appear',
+                    'retirement': 'handle_retirement',
+                    'map_event': 'handle_map_event',
+                }[progress]
+                setattr(handler, target, Mock(side_effect=has_progress))
+
+                def frames():
+                    for _ in range(120):
+                        yield
+                        self.clock.now += 3.1
+
+                handler.loop = frames
+                self.assertEqual(handler.os_auto_search_daemon(), int(progress == 'combat'))
+                self.assertTrue(progressed)
+                self.assertGreater(self.clock.now - started, 300)
+
+    def test_delayed_reward_still_resets_both_search_and_enable_budgets(self):
+        handler = self.make_map('OpsiHazard1Leveling')
+        handler.config.OpsiGeneral_AutoSearchTimeLimit = 5
+
+        def close_reward(**kwargs):
+            handler.state = AUTO_SEARCH_OS_MAP_OPTION_OFF
+            return False
+
+        handler.os_auto_search_quit = Mock(side_effect=close_reward)
+
+        def frames():
+            yield
+            self.clock.now += 301
+            handler.state = AUTO_SEARCH_REWARD
+            yield
+            self.clock.now += 1
+            yield
+
+        handler.loop = frames
+        self.assertEqual(handler.os_auto_search_daemon(), 0)
+        handler.os_auto_search_quit.assert_called_once_with(drop=None)
+        self.assertEqual(handler.device.click.call_count, 2)
 
 
 if __name__ == '__main__':
