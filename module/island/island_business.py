@@ -174,6 +174,7 @@ class IslandBusiness(Island):
     BUSINESS_REVIEW_OFFSET_X = 150
 
     def __init__(self, config, device=None, task=None):
+        """Initialize business shops, seasonal products, and review state."""
         super().__init__(config, device=device, task=task)
 
         # 商店定义及配置键前缀
