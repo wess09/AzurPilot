@@ -1,11 +1,19 @@
 """离线验证侵蚀一维修策略与代理任务初始化，不连接游戏设备。"""
 
 import unittest
+from contextlib import nullcontext
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
+from module.config.config import TaskEnd
 from module.exception import GameStuckError
 from module.os.operation_siren import OperationSiren
+from module.os_handler.assets import (
+    AUTO_SEARCH_OS_MAP_OPTION_OFF,
+    AUTO_SEARCH_OS_MAP_OPTION_ON,
+    AUTO_SEARCH_REWARD,
+)
+from tests.test_opsi_cl1_speed import VirtualClock
 
 
 CL1 = 'OpsiHazard1Leveling'
@@ -117,6 +125,124 @@ class TestCl1FleetRepair(unittest.TestCase):
                     fleet_index=1, threshold=0.9,
                 )
                 runner.fleet_repair.assert_called_once_with(revert=False)
+
+
+class TestCl1RepairTiming(unittest.TestCase):
+    """复现战后出现扳手、游戏仍有后续战斗时被脚本提前关闭自律。"""
+
+    def setUp(self):
+        self.clock = VirtualClock()
+        self.enterContext(patch('module.base.timer.time', self.clock))
+        self.enterContext(patch('module.base.debug_clip.cleanup_clips_if_due'))
+        self.enterContext(patch('module.base.debug_clip.clip_recording', side_effect=lambda *args: nullcontext()))
+
+    def make_search(self, task=CL1, *, wrench=True, sacrifice=False, result=None):
+        runner = make_runner(task, sacrifice=sacrifice)
+        runner.config.OpsiGeneral_RepairPackThresholdHazard1 = 0.3
+        runner.config.OpsiGeneral_AutoSearchTimeLimit = 5
+        runner.config.OpsiHazard1Leveling_DebugClip = False
+        runner.config.DropRecord_OpsiHazard1Leveling = 'do_not'
+        runner.config.stop_event = None
+        runner.config.task_switched = Mock(return_value=False)
+        runner.config.is_task_enabled = Mock(return_value=False)
+        runner.config.temporary = Mock(return_value=SimpleNamespace(recover=Mock()))
+        runner.hp = [0.98, 0.98, 0.98, 0.31, 0.57, 0 if wrench else 0.28]
+        runner.need_repair = [False] * 5 + [wrench]
+        runner.device = Mock(image=None)
+        runner.interval_timer = {}
+        runner.screen = 'map'
+        runner.search_on = True
+        actions = []
+
+        def frames():
+            for screen in ('battle', 'map', 'battle', 'map', 'reward'):
+                self.clock.now += 1
+                runner.screen = screen if runner.search_on else 'map'
+                yield
+
+        def matches(button, **kwargs):
+            if runner.screen == 'map':
+                return button is (AUTO_SEARCH_OS_MAP_OPTION_ON if runner.search_on else AUTO_SEARCH_OS_MAP_OPTION_OFF)
+            return runner.screen == 'reward' and button is AUTO_SEARCH_REWARD
+
+        def click(button):
+            if button is AUTO_SEARCH_OS_MAP_OPTION_ON:
+                runner.search_on = False
+                actions.append('stop')
+
+        def combat(**kwargs):
+            runner._auto_search_battle_count += 1
+            actions.append('battle')
+            runner.screen = 'map'
+            return result
+
+        def reward(**kwargs):
+            actions.append('reward')
+            runner.screen = 'map'
+            return True
+
+        runner.loop = frames
+        runner.appear = Mock(side_effect=matches)
+        runner.match_template_color = Mock(side_effect=matches)
+        runner.device.click.side_effect = click
+        runner.is_in_map = Mock(side_effect=lambda: runner.screen == 'map')
+        runner.info_bar_count = Mock(return_value=0)
+        runner.combat_appear = Mock(side_effect=lambda: runner.screen == 'battle')
+        runner.on_auto_search_battle_count_add = Mock()
+        runner.auto_search_combat = Mock(side_effect=combat)
+        runner.os_auto_search_quit = Mock(side_effect=reward)
+        runner.handle_background_coin_interrupt = Mock(return_value=False)
+        runner.handle_retirement = Mock(return_value=False)
+        runner.handle_map_event = Mock(return_value=False)
+        runner.handle_ash_beacon_attack = Mock(return_value=False)
+        runner.strategic_search_start = Mock()
+        drop = Mock(count=1)
+        runner.stat = SimpleNamespace(new=lambda **kwargs: nullcontext(drop))
+        runner.handle_fleet_emp_debuff = Mock(return_value=False)
+        runner.map_rescan = Mock(side_effect=lambda: actions.append('events'))
+        runner._forced_move_enabled = Mock(return_value=True)
+        runner._execute_fixed_patrol_scan = Mock(side_effect=lambda **kwargs: actions.append('patrol'))
+        runner.handle_storage_one_fleet_repair.side_effect = lambda **kwargs: actions.append('repair') or True
+        return runner, actions
+
+    def test_cl1_finishes_search_and_events_before_repairing_low_hp_or_wrench(self):
+        for wrench in (False, True):
+            for result in (None, False):
+                with self.subTest(wrench=wrench, result=result):
+                    runner, actions = self.make_search(wrench=wrench, result=result)
+                    runner._cl1_run_battle()
+                    self.assertEqual(actions, ['battle', 'battle', 'reward', 'events', 'patrol', 'repair'])
+                    runner.device.click.assert_not_called()
+                    runner.handle_storage_one_fleet_repair.assert_called_once_with(fleet_index=1, threshold=0.3)
+                    runner.fleet_repair.assert_not_called()
+
+    def test_sacrifice_still_finishes_search_and_events_without_repair(self):
+        runner, actions = self.make_search(sacrifice=True)
+        runner._cl1_run_battle()
+        self.assertEqual(actions, ['battle', 'battle', 'reward', 'events', 'patrol'])
+        runner.handle_storage_one_fleet_repair.assert_not_called()
+        runner.fleet_repair.assert_not_called()
+
+    def test_other_tasks_keep_stopping_auto_search_on_wrench(self):
+        for task in ('OpsiExplore', 'OpsiMeowfficerFarming', 'OpsiStronghold'):
+            with self.subTest(task=task):
+                runner, actions = self.make_search(task)
+                runner.os_auto_search_daemon()
+                self.assertEqual(actions, ['battle', 'stop'])
+                runner.device.click.assert_called_once_with(AUTO_SEARCH_OS_MAP_OPTION_ON)
+                runner.handle_storage_one_fleet_repair.assert_not_called()
+
+    def test_cl1_still_honors_explicit_stop_and_task_switch(self):
+        for stop_requested in (False, True):
+            with self.subTest(stop_requested=stop_requested):
+                runner, _ = self.make_search()
+                runner.config.stop_event = SimpleNamespace(is_set=lambda: stop_requested)
+                runner.config.task_switched.return_value = not stop_requested
+                runner.interrupt_auto_search = Mock(side_effect=TaskEnd)
+                with self.assertRaises(TaskEnd):
+                    runner.os_auto_search_daemon(strategic=True)
+                runner.interrupt_auto_search.assert_called_once_with(drop=None)
+                runner.auto_search_combat.assert_not_called()
 
 
 class TestInitialRepairTaskContext(unittest.TestCase):
