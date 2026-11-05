@@ -942,8 +942,8 @@ class GeneratedConfig:
     IslandFishery_Positions = 3  # 1, 2, 3
     IslandFishery_MinShell = 50
     IslandFishery_MinCatfish = 0
-    IslandFishery_MinCommonCarp = 0
     IslandFishery_MinKoiCarp = 0
+    IslandFishery_MinCommonCarp = 0
     IslandFishery_MinShrimp = 50
     IslandFishery_MinCrayfish = 50
     IslandFishery_MinBass = 50
@@ -958,7 +958,7 @@ class GeneratedConfig:
     IslandFishery_MinFreshwaterFishMeat = 0
     IslandFishery_MinSaltwaterFishMeat = 0
     IslandFishery_PlantYellowfinTuna = 3  # 0, 1, 2, 3
-    IslandFishery_DefaultFish = 'yellowfin_tuna'  # shell, catfish, common_carp, koi_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
+    IslandFishery_DefaultFish = 'yellowfin_tuna'  # shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
     IslandFishery_RancherFilter = 'WorkerJuu'
 
     # 配置组 `IslandMine`
@@ -1257,7 +1257,7 @@ class GeneratedConfig:
     IslandProductionPlanner_Season = 'auto'  # auto, season_1, season_2, season_3, season_4, season_5
     IslandProductionPlanner_Priority = 'pt'  # pt, coins
     IslandProductionPlanner_FillSparePosts = True  # True, False
-    IslandProductionPlanner_UnlockedFish = ['shell', 'catfish', 'common_carp', 'koi_carp', 'shrimp', 'crayfish', 'bass', 'crab', 'squid', 'mackerel', 'tuna', 'salmon', 'red_sea_bream', 'yellowfin_tuna', 'sea_cucumber']  # shell, catfish, common_carp, koi_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
+    IslandProductionPlanner_UnlockedFish = ['shell', 'catfish', 'koi_carp', 'common_carp', 'shrimp', 'crayfish', 'bass', 'crab', 'squid', 'mackerel', 'tuna', 'salmon', 'red_sea_bream', 'yellowfin_tuna', 'sea_cucumber']  # shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
     IslandProductionPlanner_RescanTechnology = True  # True, False
     IslandProductionPlanner_ScanSeasonTasks = True  # True, False
     IslandProductionPlanner_SeasonTaskTargets = None

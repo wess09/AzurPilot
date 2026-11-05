@@ -4718,12 +4718,12 @@
       "name": "鯰魚底線",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "鯽魚底線",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "鯉魚底線",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "鯽魚底線",
       "help": ""
     },
     "MinShrimp": {
@@ -4791,8 +4791,8 @@
       "help": "所有產品達到底線後，空餘漁場崗位養殖的產品（崗位數見上一項）。島嶼生產規劃器會選已解鎖的產品。",
       "shell": "貝類",
       "catfish": "鯰魚",
-      "common_carp": "鯽魚",
       "koi_carp": "鯉魚",
+      "common_carp": "鯽魚",
       "shrimp": "小河蝦",
       "crayfish": "小龍蝦",
       "bass": "鱸魚",
@@ -7210,8 +7210,8 @@
       "help": "漁場可以養殖的產品。遊戲資料無法判斷哪些魚已解鎖，請取消勾選尚未解鎖的魚；規劃器不會為它們排產，也不會用於空餘崗位。",
       "shell": "貝類",
       "catfish": "鯰魚",
-      "common_carp": "鯽魚",
       "koi_carp": "鯉魚",
+      "common_carp": "鯽魚",
       "shrimp": "小河蝦",
       "crayfish": "小龍蝦",
       "bass": "鱸魚",

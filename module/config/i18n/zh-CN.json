@@ -4718,12 +4718,12 @@
       "name": "鲶鱼底线",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "鲫鱼底线",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "鲤鱼底线",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "鲫鱼底线",
       "help": ""
     },
     "MinShrimp": {
@@ -4791,8 +4791,8 @@
       "help": "所有产品达到底线后，空余渔场岗位养殖的产品（岗位数见上一项）。岛屿生产规划器会选已解锁的产品。",
       "shell": "贝类",
       "catfish": "鲶鱼",
-      "common_carp": "鲫鱼",
       "koi_carp": "鲤鱼",
+      "common_carp": "鲫鱼",
       "shrimp": "小河虾",
       "crayfish": "小龙虾",
       "bass": "鲈鱼",
@@ -7210,8 +7210,8 @@
       "help": "渔场可以养殖的产品。游戏数据无法判断哪些鱼已解锁，请取消勾选尚未解锁的鱼；规划器不会为它们排产，也不会用于空余岗位。",
       "shell": "贝类",
       "catfish": "鲶鱼",
-      "common_carp": "鲫鱼",
       "koi_carp": "鲤鱼",
+      "common_carp": "鲫鱼",
       "shrimp": "小河虾",
       "crayfish": "小龙虾",
       "bass": "鲈鱼",

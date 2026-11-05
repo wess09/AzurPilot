@@ -17891,11 +17891,11 @@
         "type": "input",
         "value": 0
       },
-      "MinCommonCarp": {
+      "MinKoiCarp": {
         "type": "input",
         "value": 0
       },
-      "MinKoiCarp": {
+      "MinCommonCarp": {
         "type": "input",
         "value": 0
       },
@@ -17967,8 +17967,8 @@
         "option": [
           "shell",
           "catfish",
-          "common_carp",
           "koi_carp",
+          "common_carp",
           "shrimp",
           "crayfish",
           "bass",
@@ -20988,8 +20988,8 @@
         "value": [
           "shell",
           "catfish",
-          "common_carp",
           "koi_carp",
+          "common_carp",
           "shrimp",
           "crayfish",
           "bass",
@@ -21005,8 +21005,8 @@
         "option": [
           "shell",
           "catfish",
-          "common_carp",
           "koi_carp",
+          "common_carp",
           "shrimp",
           "crayfish",
           "bass",

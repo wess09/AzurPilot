@@ -111,8 +111,8 @@ THRESHOLD_GROUPS = {
     'fishery': {
         5001: 'IslandRancher.IslandFishery.MinShell',
         5002: 'IslandRancher.IslandFishery.MinCatfish',
-        5004: 'IslandRancher.IslandFishery.MinCommonCarp',
         5003: 'IslandRancher.IslandFishery.MinKoiCarp',
+        5004: 'IslandRancher.IslandFishery.MinCommonCarp',
         5005: 'IslandRancher.IslandFishery.MinShrimp',
         5006: 'IslandRancher.IslandFishery.MinCrayfish',
         5007: 'IslandRancher.IslandFishery.MinBass',
@@ -132,7 +132,7 @@ PRODUCT_ITEM_IDS = {
     'mine': {'Copper': 2701, 'Aluminium': 2702, 'Iron': 2703, 'Sulphur': 2704, 'Silver': 2705},
     'wood': {'Practical': 2801, 'Selected': 2802, 'Elegant': 2803},
     'fishery': {
-        'shell': 5001, 'catfish': 5002, 'common_carp': 5004, 'koi_carp': 5003, 'shrimp': 5005,
+        'shell': 5001, 'catfish': 5002, 'koi_carp': 5003, 'common_carp': 5004, 'shrimp': 5005,
         'crayfish': 5006, 'bass': 5007, 'crab': 5008, 'squid': 5101, 'mackerel': 5102, 'tuna': 5103,
         'salmon': 5104, 'red_sea_bream': 5105, 'yellowfin_tuna': 5107, 'sea_cucumber': 5108,
     },

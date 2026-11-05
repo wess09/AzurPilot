@@ -4718,12 +4718,12 @@
       "name": "Catfish stock threshold",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "Common carp stock threshold",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "Koi carp stock threshold",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "Common carp stock threshold",
       "help": ""
     },
     "MinShrimp": {
@@ -4791,8 +4791,8 @@
       "help": "What spare fishery posts raise once every fish has reached its minimum (number of posts is the previous setting). The Island Production Planner picks an unlocked fish.",
       "shell": "Shellfish",
       "catfish": "Catfish",
-      "common_carp": "Common Carp",
       "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
       "shrimp": "Freshwater Shrimp",
       "crayfish": "Crayfish",
       "bass": "Sea Bass",
@@ -7210,8 +7210,8 @@
       "help": "Fish you can raise at the fishery. The game data does not say which fish are unlocked, so untick the ones you have not unlocked yet; the planner will not plan them or use them for spare posts.",
       "shell": "Shellfish",
       "catfish": "Catfish",
-      "common_carp": "Common Carp",
       "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
       "shrimp": "Freshwater Shrimp",
       "crayfish": "Crayfish",
       "bass": "Sea Bass",

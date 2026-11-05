@@ -4718,12 +4718,12 @@
       "name": "ナマズ在庫閾値",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "フナ在庫閾値",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "コイ在庫閾値",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "フナ在庫閾値",
       "help": ""
     },
     "MinShrimp": {
@@ -4791,8 +4791,8 @@
       "help": "すべての養殖品が下限に達した後、空いた養殖場ポストで育てる品目（ポスト数は前の設定）。島生産プランナーは解放済みの品目を選びます。",
       "shell": "貝",
       "catfish": "ナマズ",
-      "common_carp": "フナ",
       "koi_carp": "コイ",
+      "common_carp": "フナ",
       "shrimp": "川エビ",
       "crayfish": "ザリガニ",
       "bass": "スズキ",
@@ -7210,8 +7210,8 @@
       "help": "養殖場で育てられる品目。ゲームデータからは解放状況がわからないため、未解放の魚のチェックを外してください。プランナーはそれらを計画にも空きポストにも使いません。",
       "shell": "貝",
       "catfish": "ナマズ",
-      "common_carp": "フナ",
       "koi_carp": "コイ",
+      "common_carp": "フナ",
       "shrimp": "川エビ",
       "crayfish": "ザリガニ",
       "bass": "スズキ",
