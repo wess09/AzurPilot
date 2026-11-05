@@ -180,6 +180,17 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
                      'selection': SELECT_PERSIMMON, 'selection_check': SELECT_PERSIMMON_CHECK,
                      'post_action': POST_PERSIMMON, 'category': 'orchard', 'seed_number': 4,
                      'batch_4x1': True, 'shop': SHOP_SEED_PERSIMMON},
+                    # 冬季限定（坠香果园）：砂糖橘、青枣为普通 4x4 种植，每单至少消耗 16 颗种子。
+                    {'cn_name': '砂糖橘', 'name': 'sugar_tangerine', 'template': TEMPLATE_SUGAR_TANGERINE,
+                     'var_name': 'sugar_tangerine', 'selection': SELECT_SUGAR_TANGERINE,
+                     'selection_check': SELECT_SUGAR_TANGERINE_CHECK,
+                     'post_action': POST_SUGAR_TANGERINE, 'category': 'orchard', 'seed_number': 16,
+                     'shop': SHOP_SEED_SUGAR_TANGERINE},
+                    {'cn_name': '青枣', 'name': 'green_jujube', 'template': TEMPLATE_GREEN_JUJUBE,
+                     'var_name': 'green_jujube', 'selection': SELECT_GREEN_JUJUBE,
+                     'selection_check': SELECT_GREEN_JUJUBE_CHECK,
+                     'post_action': POST_GREEN_JUJUBE, 'category': 'orchard', 'seed_number': 16,
+                     'shop': SHOP_SEED_GREEN_JUJUBE},
                 ]
             },
             'nursery': {

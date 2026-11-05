@@ -16,9 +16,9 @@ from module.island.island_season import SEASONAL_ITEMS
 from module.ocr.ocr import Duration, Digit
 
 
-# 固定位置按钮 — 迎春花茶使用固定坐标，不检测图标颜色，不向下滑动
+# 固定位置按钮 — 迎春花茶/西瓜汁使用槽位1固定坐标，不检测图标颜色，不向下滑动
 FIXED_SELECT_SPRING_FLOWER_TEA = Button(
-    area=(), color=(), button=(212, 300, 292, 360),
+    area=(), color=(), button=(212, 143, 292, 211),
     file={'cn': '', 'en': '', 'jp': '', 'tw': ''}
 )
 

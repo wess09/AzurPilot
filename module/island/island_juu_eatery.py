@@ -8,6 +8,22 @@ from module.island.island_shop_base import IslandShopBase
 from module.island.assets import *
 from module.ui.page import *
 from module.logger import logger
+SEASONAL_JUU_EATERY_ITEMS = {
+    'water_chestnut_cake': {
+        'name': 'water_chestnut_cake', 'template': TEMPLATE_WATER_CHESTNUT_CAKE,
+        'var_name': 'water_chestnut_cake',
+        'selection': SELECT_WATER_CHESTNUT_CAKE,
+        'selection_check': SELECT_WATER_CHESTNUT_CAKE_CHECK,
+        'post_action': POST_WATER_CHESTNUT_CAKE,
+    },
+    'sugar_tangerine_daifuku': {
+        'name': 'sugar_tangerine_daifuku', 'template': TEMPLATE_SUGAR_TANGERINE_DAIFUKU,
+        'var_name': 'sugar_tangerine_daifuku',
+        'selection': SELECT_SUGAR_TANGERINE_DAIFUKU,
+        'selection_check': SELECT_SUGAR_TANGERINE_DAIFUKU_CHECK,
+        'post_action': POST_SUGAR_TANGERINE_DAIFUKU,
+    },
+}
 
 
 class IslandJuuEatery(IslandShopBase):
@@ -36,6 +52,9 @@ class IslandJuuEatery(IslandShopBase):
         self.time_prefix = "time_eatery"
         self.chef_config = self.config.IslandJuuEatery_ChefFilter
         self.post_open_retry_swipe = True
+
+        # === 初始化全局季节配置 ===
+        self._init_season_config()
 
         # 设置商品列表
         self.shop_items = [
@@ -71,6 +90,13 @@ class IslandJuuEatery(IslandShopBase):
              'selection': SELECT_SEAFOOD_RICE, 'selection_check': SELECT_SEAFOOD_RICE_CHECK,
              'post_action': POST_SEAFOOD_RICE},
         ]
+
+        # 只注入当前季节的简餐菜品，避免冬季菜品在其他季节进入识别与排产列表。
+        for item_name in self.season_config.get_seasonal_items('juu_eatery') or []:
+            item_config = SEASONAL_JUU_EATERY_ITEMS.get(item_name)
+            if item_config and not any(item['name'] == item_name for item in self.shop_items):
+                self.shop_items.append(item_config.copy())
+                logger.info(f"[岛屿-啾啾简餐] 季节限定：{item_name} 已添加")
 
         # 设置套餐组成
         self.meal_compositions = {
