@@ -371,6 +371,14 @@
           false
         ]
       },
+      "DisableChannelFloat": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
+      },
       "ScreenshotDedithering": {
         "type": "checkbox",
         "value": false

@@ -26,11 +26,14 @@
 | [player_prefs.py](../../../module/game_setting/player_prefs.py) | 白名单、XML 转换、设备访问与写入事务 |
 | [setting_extractor.py](../../../module/game_setting/setting_extractor.py) | 解析 Lua 中的 `PlayerPrefs.Get*` 调用 |
 | [setting_generated.py](../../../module/game_setting/setting_generated.py) | 提取器生成的设置目录 |
+| [channel_float.py](../../../module/game_setting/channel_float.py) | 关闭并锁定应用宝渠道服 YSDK 悬浮球开关 |
 | [device.py](../../../module/device/device.py) | 启动游戏前调用运行时入口 |
 
 ## 4. 核心入口
 
 `Device.app_start()` 在 `Emulator_GameSettings` 开启时调用 `apply_recommended_game_settings()`，随后启动游戏。配置路径为 `Alas.Emulator.GameSettings`。重启流程可通过 `wait_for_stop` 允许短暂等待进程退出。
+
+`Emulator_DisableChannelFloat` 开启时，同一位置随后调用 `disable_channel_float()`，两者共用重启时的 `wait_for_stop`。
 
 离线入口 `update_player_prefs_xml(content)` 接收字节串并返回新 XML 与 `PlayerPrefsChanges`，不需要创建 `Device`。
 
@@ -54,6 +57,18 @@
 7. 替换后失败则尝试用内存中的原文件执行同样的恢复流程；退出时清理本次临时文件，并恢复本次临时改变的 adbd root 状态。
 
 这套流程会多次检查进程状态，以缩小游戏重新启动后覆盖文件的窗口；进程检查与文件移动不是系统级联合事务。
+
+### 渠道服悬浮球（YSDK）
+
+`ChannelFloatManager` 继承 `PlayerPrefsManager`，复用跨进程锁、停机检查、root 准备、元数据与临时文件替换，只在包名属于 `YSDK_PACKAGES`（目前为腾讯应用宝渠道服）时运行，其他包名直接跳过且不尝试提权。
+
+- 机制：YSDK 的 `IconModule.init()` 在进程启动时读取一次 `YSDK_ICON_SWITCH`，为 `false` 时不注册登录回调，悬浮球不会创建。读取顺序是云配置 `shared_prefs/YSDK_CONFIG*.xml`，然后才是 APK 内 `ysdkconf.ini`。
+- 每次登录 SDK 会清空云配置并写回服务器值 `true`，所以写入 `false` 后用 `chattr +i` 锁定 `YSDK_CONFIG.xml`。之后 SDK 的写盘会失败（logcat 出现 `Couldn't rename ... to backup file`），服务器值只留在本进程内存，不影响登录。
+- 已锁定且为 `false` 时不写入；文件不存在（首次安装未登录）时跳过，下次启动再处理；写入失败时保持原状，不阻止启动。
+- 关闭配置项不会解锁。恢复悬浮球需要 root 执行 `chattr -i` 并删除该文件，下次登录 SDK 会重建。
+- 验证：logcat 出现 `YSDK ICON: icon is closed_init`，`dumpsys window` 不再有 `Panel:<包名>/...MainActivity` 子窗口。
+
+4399 等其他渠道服使用不同 SDK，仍由 [handler](../handler.md) 的 `channel_float` 以截图拖拽处理。
 
 ## 8. 数据流
 

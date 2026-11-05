@@ -670,6 +670,12 @@
       "True": "開啟",
       "False": "關閉"
     },
+    "DisableChannelFloat": {
+      "name": "關閉應用寶渠道服懸浮球（需 root）",
+      "help": "僅對騰訊應用寶渠道服（com.tencent.tmgp.bilibili.blhx）生效。啟動遊戲前，將 YSDK 設定中的懸浮球開關寫為關閉，並以 chattr +i 鎖定檔案，避免登入後被伺服器改回。只修改裝置上的設定檔，不修改安裝包；需要 root 或 su，遊戲程序完全停止時才執行，無法安全執行時略過且不影響啟動。關閉本項不會自動恢復懸浮球，如需恢復，請以 root 執行 chattr -i /data/data/com.tencent.tmgp.bilibili.blhx/shared_prefs/YSDK_CONFIG.xml 並刪除該檔案。",
+      "True": "開啟",
+      "False": "關閉"
+    },
     "ScreenshotDedithering": {
       "name": "去除圖片色彩抖動",
       "help": "在手機上執行時開啟"

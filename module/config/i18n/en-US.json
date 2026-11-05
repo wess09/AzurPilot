@@ -670,6 +670,12 @@
       "True": "Enabled",
       "False": "Disabled"
     },
+    "DisableChannelFloat": {
+      "name": "Disable the Tencent YYB channel floating ball (root required)",
+      "help": "Only affects the Tencent YYB channel client (com.tencent.tmgp.bilibili.blhx). Before starting the game, sets the floating ball switch in the YSDK config to off and locks the file with chattr +i so the server cannot turn it back on after login. Only a config file on the device is changed; the APK is untouched. Requires root or su and runs only when the game process has fully stopped; if it cannot run safely it is skipped without affecting startup. Turning this option off does not restore the floating ball. To restore it, run chattr -i /data/data/com.tencent.tmgp.bilibili.blhx/shared_prefs/YSDK_CONFIG.xml as root and delete that file.",
+      "True": "Enabled",
+      "False": "Disabled"
+    },
     "ScreenshotDedithering": {
       "name": "Remove image color dithering",
       "help": "Enable when running on a real device"

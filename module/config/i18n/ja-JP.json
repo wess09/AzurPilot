@@ -670,6 +670,12 @@
       "True": "有効",
       "False": "無効"
     },
+    "DisableChannelFloat": {
+      "name": "応用宝チャネル版のフローティングボールを無効化（root 必須）",
+      "help": "テンセント応用宝チャネル版（com.tencent.tmgp.bilibili.blhx）にのみ適用されます。ゲーム起動前に YSDK 設定のフローティングボールのスイッチをオフにし、chattr +i でファイルをロックして、ログイン後にサーバーが元に戻せないようにします。端末上の設定ファイルのみを変更し、APK は変更しません。root または su が必要で、ゲームプロセスが完全に停止している場合にのみ実行します。安全に実行できない場合はスキップし、起動には影響しません。この項目をオフにしてもフローティングボールは自動では戻りません。戻す場合は root で chattr -i /data/data/com.tencent.tmgp.bilibili.blhx/shared_prefs/YSDK_CONFIG.xml を実行し、そのファイルを削除してください。",
+      "True": "有効",
+      "False": "無効"
+    },
     "ScreenshotDedithering": {
       "name": "画像色ディザリング除去",
       "help": "実機で実行する場合に有効にしてください"
