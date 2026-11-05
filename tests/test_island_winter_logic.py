@@ -1,6 +1,7 @@
 """冬季季节物品、固定槽位、种子消耗与排产顺序。"""
 
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -211,6 +212,18 @@ class WinterRestaurantTests(unittest.TestCase):
         )
         self.assertEqual(summer.seasonal_dish_slot['selection'].button, RESTAURANT_SLOT_1)
 
+    def test_summer_switches_winter_meals_to_current_slots(self):
+        shop = make_shop(
+            IslandRestaurant,
+            'summer',
+            [('shiitake_chicken_soup', 3), ('green_jujube_porridge', 4)],
+        )
+        shop._auto_switch_seasonal_meals()
+        self.assertEqual(
+            shop.post_products,
+            [('amaranth_rice_ball', 3), ('tomato_egg', 4)],
+        )
+
     def test_teahouse_switches_back_to_summer_first_slot(self):
         shop = make_shop(
             IslandTeahouse,
@@ -252,6 +265,16 @@ class WinterJuuEateryTests(unittest.TestCase):
         self.assertNotIn('water_chestnut_cake', names)
         self.assertNotIn('sugar_tangerine_daifuku', names)
 
+    def test_offseason_winter_demands_are_removed(self):
+        shop = make_shop(IslandJuuEatery, season='summer')
+        shop.post_products = [
+            ('apple_pie', 2),
+            ('water_chestnut_cake', 3),
+            ('sugar_tangerine_daifuku', 4),
+        ]
+        shop._normalize_seasonal_post_products('juu_eatery')
+        self.assertEqual(shop.post_products, [('apple_pie', 2)])
+
 
 class WinterOrchardTests(unittest.TestCase):
     def test_seed_counts_and_season_filter(self):
@@ -272,6 +295,15 @@ class WinterOrchardTests(unittest.TestCase):
         config = farm.name_to_config['sugar_tangerine']
         self.assertIs(config['selection'], SELECT_SUGAR_TANGERINE)
         self.assertIs(config['selection_check'], SELECT_SUGAR_TANGERINE_CHECK)
+
+    def test_default_crop_falls_back_when_out_of_season(self):
+        summer = make_farm(season='summer')
+        summer.plant_config['orchard']['default_crop'] = 'sugar_tangerine'
+        self.assertEqual(summer._resolve_default_crop('orchard'), 'rubber')
+
+        winter = make_farm(season='winter')
+        winter.plant_config['orchard']['default_crop'] = 'sugar_tangerine'
+        self.assertEqual(winter._resolve_default_crop('orchard'), 'sugar_tangerine')
 
     def test_plant_flow_uses_4x1_and_4x4_seed_requirements(self):
         expected = {'pear': 4, 'sugar_tangerine': 16}
@@ -330,6 +362,17 @@ class WinterBusinessTests(unittest.TestCase):
         self.assertTrue({'water_chestnut_cake', 'sugar_tangerine_daifuku'} <= eatery)
         for product in ('shiitake_chicken_soup', 'green_jujube_porridge'):
             self.assertIsNotNone(business._get_seasonal_warehouse_template(product))
+
+    def test_winter_product_selection_templates_exist(self):
+        business = make_business()
+        for shop_name, product_names in {
+            '有鱼餐馆': ('shiitake_chicken_soup', 'green_jujube_porridge'),
+            '啾啾简餐': ('water_chestnut_cake', 'sugar_tangerine_daifuku'),
+        }.items():
+            products = {item['name']: item['button'] for item in business.shop_products[shop_name]}
+            for product_name in product_names:
+                image_path = Path(products[product_name].file)
+                self.assertTrue(image_path.is_file(), image_path)
 
 
 class WinterPlannerDataTests(unittest.TestCase):

@@ -58,7 +58,14 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
         name_to_config (dict): 作物名称到配置项的映射。
         inventory_counts (dict): 各区域的仓库库存统计。
     """
+    DEFAULT_CROP_FALLBACKS = {
+        'farm': 'wheat',
+        'orchard': 'rubber',
+        'nursery': 'lavender',
+    }
+
     def __init__(self, *args, **kwargs):
+        """Initialize farm, orchard, and nursery inventory and planting state."""
         Island.__init__(self, *args, **kwargs)
         WarehouseOCR.__init__(self)
         
@@ -358,6 +365,45 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
                 return crop_name in seasonal_items
         # 非季节限定作物，始终可用
         return True
+
+    def _resolve_default_crop(self, category):
+        """Return a configured default crop that is plantable in the current season.
+
+        Args:
+            category (str): Planting area, one of ``farm``, ``orchard`` or
+                ``nursery``.
+
+        Returns:
+            str: The configured crop when valid; otherwise the area fallback or
+                the first supported crop for that area.
+        """
+        configured_crop = self.plant_config[category]['default_crop']
+        supported_crops = [item['name'] for item in self.INVENTORY_CONFIG[category]['items']]
+        seasonal_check = {
+            'orchard': self._is_orchard_crop_in_season,
+            'nursery': self._is_nursery_crop_in_season,
+        }.get(category)
+
+        candidates = [
+            configured_crop,
+            self.DEFAULT_CROP_FALLBACKS.get(category),
+            *supported_crops,
+        ]
+        for crop_name in dict.fromkeys(candidates):
+            if not crop_name or crop_name not in supported_crops:
+                continue
+            if seasonal_check is not None and not seasonal_check(crop_name):
+                continue
+            if crop_name != configured_crop:
+                logger.warning(
+                    f"[岛屿-农田] {category}默认作物 {self._item_cn(configured_crop)} "
+                    f"当前不可种植，改用 {self._item_cn(crop_name)}"
+                )
+            return crop_name
+
+        fallback = supported_crops[0]
+        logger.warning(f"[岛屿-农田] {category}没有可用默认作物，回退到 {self._item_cn(fallback)}")
+        return fallback
 
     def warehouse_inventory(self, category):
         """
@@ -679,7 +725,7 @@ class IslandFarm(Island, WarehouseOCR, LoginHandler):
             idle_count = len(idle_posts[category])
             plant_config = self.plant_config[category]
             to_plant_list = self.to_plant_lists[category]
-            default_crop = plant_config['default_crop']
+            default_crop = self._resolve_default_crop(category)
             default_count = plant_config['plant_default']
 
             already_planted_default = 0

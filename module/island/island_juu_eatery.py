@@ -45,6 +45,7 @@ class IslandJuuEatery(IslandShopBase):
         special_materials (dict): 特殊材料库存映射。
     """
     def __init__(self, *args, **kwargs):
+        """Initialize eatery products, seasonal slots, and special materials."""
         super().__init__(*args, **kwargs)
 
         # 设置店铺类型
@@ -130,6 +131,7 @@ class IslandJuuEatery(IslandShopBase):
             config_away_cook="IslandJuuEateryNextTask_AwayCook",
             config_post_number="IslandJuuEatery_PostNumber"
         )
+        self._normalize_seasonal_post_products('juu_eatery')
 
         # 特殊材料：cheese 和 milk
         self.cheese_stock = 0
