@@ -309,7 +309,7 @@ class Updater(DeployConfig, RuntimeGitManager):
             ).start()
 
     def check_update_loop(self) -> Generator:
-        """按普通或强制模式周期性调度更新检查。
+        """按配置周期调度更新检查，强制更新仅影响发现更新后的执行。
 
         Yields:
             生成器状态对象供调度器流转。
@@ -319,9 +319,9 @@ class Updater(DeployConfig, RuntimeGitManager):
         next_check = 0.0
         while True:
             now = time.monotonic()
-            if self.force_update or now >= next_check:
+            if now >= next_check:
                 self.check_update()
-                next_check = now + (1 if self.force_update else self.delay)
+                next_check = now + self.delay
             th._task.delay = 1
             yield
 
