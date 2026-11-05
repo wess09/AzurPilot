@@ -2,15 +2,21 @@
 
 import copy
 import itertools
+import tempfile
 import unittest
-from unittest.mock import Mock
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
 
+from module.campaign.ambush_1_1 import Ambush11, AmbushEmotion
 from module.campaign.gems_farming import GemsFarming
+from module.combat.emotion_state import EmotionRecoveryState
 from module.config.config import AzurLaneConfig, name_to_function
 from module.config.utils import read_file
+from module.exception import CampaignEnd
 
 
 TASKS = ('GemsFarming', 'ThreeOilLowCost')
+EMOTION_TASKS = (*TASKS, 'Ambush11')
 PRIORITIES = ('default_mode', 'S1_enemy_first', 'S3_enemy_first')
 
 
@@ -118,6 +124,81 @@ class TestFarmingCombatConfig(unittest.TestCase):
             campaign.auto_search_setting_ensure = Mock(return_value=True)
             self.assertTrue(campaign.handle_auto_search_setting())
             campaign.auto_search_setting_ensure.assert_any_call('sub_auto_call')
+
+
+class TestFarmingEmotionConfig(unittest.TestCase):
+    def test_recovery_options_are_visible_and_defaults_are_preserved(self):
+        args = read_file('module/config/argument/args.json')
+        for task in EMOTION_TASKS:
+            config = make_config(task)
+            for fleet in (1, 2):
+                for suffix, default in (('Recover', 'not_in_dormitory'), ('Oath', False)):
+                    field = f'Fleet{fleet}{suffix}'
+                    with self.subTest(task=task, field=field):
+                        self.assertNotIn(args[task]['Emotion'][field].get('display'), ('hide', 'disabled'))
+                        self.assertEqual(args[task]['Emotion'][field], args['Main']['Emotion'][field])
+                        self.assertEqual(getattr(config, f'Emotion_{field}'), default)
+
+    def test_recovery_options_survive_api_save_and_runtime_reload(self):
+        """从界面保存到实际任务绑定，验证两队全部后宅与誓约组合。"""
+        from module.api.config_service import ConfigService
+        from module.api.protocol import ConfigChange
+        from tests.test_api import fixture
+
+        recoveries = ('not_in_dormitory', 'dormitory_floor_1', 'dormitory_floor_2')
+        with tempfile.TemporaryDirectory() as directory:
+            service = ConfigService(fixture(directory))
+            for task, index, oath in itertools.product(EMOTION_TASKS, range(3), (False, True)):
+                values = dict(Fleet1Recover=recoveries[index], Fleet1Oath=oath,
+                              Fleet2Recover=recoveries[(index + 1) % 3], Fleet2Oath=not oath)
+                with self.subTest(task=task, values=values):
+                    service.patch('testpilot', None, [
+                        ConfigChange(path=f'{task}.Emotion.{field}', value=value)
+                        for field, value in values.items()
+                    ])
+                    saved = service.read_json(service.path('testpilot'))
+                    config = make_config(task, Emotion=saved[task]['Emotion'])
+                    config.data = config.config_update(config.data)
+                    config.bind(task)
+                    for field, value in values.items():
+                        self.assertEqual(saved[task]['Emotion'][field], value)
+                        self.assertEqual(getattr(config, f'Emotion_{field}'), value)
+
+    def test_loaded_campaign_uses_recovery_settings_and_keeps_ship_change_policy(self):
+        """后宅/誓约进入原心情模型，保持原有不换前排时忽略、换前排时低心情换船。"""
+        start = datetime(2026, 11, 6)
+        orders = ('fleet1_all_fleet2_standby', 'fleet1_standby_fleet2_all')
+        for task, order, change in itertools.product(EMOTION_TASKS, orders, ('disabled', 'ship', 'ship_equip')):
+            with self.subTest(task=task, order=order, change=change):
+                values = {}
+                for fleet, recover, oath in ((1, 'dormitory_floor_1', False), (2, 'dormitory_floor_2', True)):
+                    state = EmotionRecoveryState.calibrate(40, start, recover, oath, False)
+                    values.update({f'Fleet{fleet}Recover': recover, f'Fleet{fleet}Oath': oath,
+                                   f'Fleet{fleet}Value': 40, f'Fleet{fleet}Record': start,
+                                   f'Fleet{fleet}RecoveryState': state.export()})
+                config = make_config(task, Emotion=values, Fleet={'FleetOrder': order},
+                                     GemsFarming={'ChangeVanguard': change})
+                runner_type = Ambush11 if task == 'Ambush11' else GemsFarming
+                runner = runner_type(config=config, device=Mock())
+                runner.load_campaign('campaign_1_1_f' if task == 'Ambush11' else 'campaign_2_1')
+                emotion = runner.campaign.emotion
+                if task == 'Ambush11':
+                    self.assertIsInstance(emotion, AmbushEmotion)
+                self.assertEqual(emotion.is_calculate, change != 'disabled')
+                self.assertTrue(emotion.is_ignore)
+                with patch('module.combat.emotion.current_time', return_value=start + timedelta(minutes=6)):
+                    emotion.update()
+                self.assertEqual((44, 44), (emotion.fleet_1.lower, emotion.fleet_1.upper))
+                self.assertEqual((46, 46), (emotion.fleet_2.lower, emotion.fleet_2.upper))
+                self.assertEqual(runner.fleet_to_attack, 2 if 'fleet2_all' in order else 1)
+                emotion._check_reduce = Mock(return_value=(start, 1))
+                if change == 'disabled':
+                    emotion.check_reduce(1)
+                    emotion._check_reduce.assert_not_called()
+                else:
+                    with self.assertRaises(CampaignEnd):
+                        emotion.check_reduce(1)
+                    self.assertTrue(runner.campaign.config.GEMS_EMOTION_TRIGGERED)
 
 
 if __name__ == '__main__':
