@@ -1888,16 +1888,21 @@ IslandFishery:
   Positions:
     value: 3
     option: [ 1, 2, 3 ]
-  MinBass: 50
-  MinYellowfinTuna: 50
   MinShell: 50
+  MinCatfish: 0
+  MinCommonCarp: 0
+  MinKoiCarp: 0
   MinShrimp: 50
   MinCrayfish: 50
+  MinBass: 50
   MinCrab: 50
   MinSquid: 50
-  MinSeaCucumber: 50
-  MinKoiCarp: 0
   MinMackerel: 0
+  MinTuna: 0
+  MinSalmon: 0
+  MinRedSeaBream: 0
+  MinYellowfinTuna: 50
+  MinSeaCucumber: 50
   MinFreshwaterFishMeat: 0
   MinSaltwaterFishMeat: 0
   PlantYellowfinTuna:

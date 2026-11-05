@@ -11,7 +11,7 @@ import numpy as np
 from PIL import Image
 
 import module.config.server as server
-from module.island.island import ISLAND_SHOP_ITEM_SEARCH_OFFSET, ISLAND_SHOP_ITEM_SIMILARITY
+from module.island.island import ISLAND_SHOP_ITEM_SEARCH_OFFSET, ISLAND_SHOP_ITEM_SIMILARITY, shop_item_color_matches
 
 FIXTURE_DIR = os.path.join(os.path.dirname(__file__), 'fixtures', 'island_seed_shop')
 
@@ -35,6 +35,9 @@ EXPECTED_COLUMNS = {
 EXPECTED_FRY_COLUMNS = {
     'en_fry_other.png': {'SHELL': 299, 'SQUID': 463},
     'en_fry_freshwater.png': {'KOI_CARP': 300},
+    # 解锁更多后的「淡水鱼」「海水鱼」页签（黑鲷鱼苗仍未解锁）
+    'en_fry_freshwater_all.png': {'CATFISH': 300, 'KOI_CARP': 463, 'COMMON_CARP': 626},
+    'en_fry_seawater.png': {'MACKEREL': 300, 'TUNA': 463, 'SALMON': 626, 'RED_SEA_BREAM': 789},
 }
 
 
@@ -58,6 +61,8 @@ class TestIslandSeedShopSearch(unittest.TestCase):
     @staticmethod
     def _match(button, image):
         if not button.match(image, offset=ISLAND_SHOP_ITEM_SEARCH_OFFSET, similarity=ISLAND_SHOP_ITEM_SIMILARITY):
+            return None
+        if not shop_item_color_matches(button, image):
             return None
         return (button.button[0] + button.button[2]) // 2
 

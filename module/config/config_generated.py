@@ -938,16 +938,21 @@ class GeneratedConfig:
 
     # 配置组 `IslandFishery`
     IslandFishery_Positions = 3  # 1, 2, 3
-    IslandFishery_MinBass = 50
-    IslandFishery_MinYellowfinTuna = 50
     IslandFishery_MinShell = 50
+    IslandFishery_MinCatfish = 0
+    IslandFishery_MinCommonCarp = 0
+    IslandFishery_MinKoiCarp = 0
     IslandFishery_MinShrimp = 50
     IslandFishery_MinCrayfish = 50
+    IslandFishery_MinBass = 50
     IslandFishery_MinCrab = 50
     IslandFishery_MinSquid = 50
-    IslandFishery_MinSeaCucumber = 50
-    IslandFishery_MinKoiCarp = 0
     IslandFishery_MinMackerel = 0
+    IslandFishery_MinTuna = 0
+    IslandFishery_MinSalmon = 0
+    IslandFishery_MinRedSeaBream = 0
+    IslandFishery_MinYellowfinTuna = 50
+    IslandFishery_MinSeaCucumber = 50
     IslandFishery_MinFreshwaterFishMeat = 0
     IslandFishery_MinSaltwaterFishMeat = 0
     IslandFishery_PlantYellowfinTuna = 3  # 0, 1, 2, 3

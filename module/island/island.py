@@ -6,7 +6,11 @@
 """
 from module.island.assets import *
 from module.ui.page import *
+import cv2
+import numpy as np
+
 from module.base.timer import Timer
+from module.base.utils import area_offset, crop
 from module.handler.info_handler import InfoHandler
 from module.ocr.ocr import *
 from datetime import datetime
@@ -61,6 +65,30 @@ ISLAND_SWITCH_TIMEOUT = 12
 # 种子包外观相同、只有中间图案不同，相似度需提高到 0.93 才不会误认成其他商品。
 ISLAND_SHOP_ITEM_SEARCH_OFFSET = (700, 300)
 ISLAND_SHOP_ITEM_SIMILARITY = 0.93
+# 模板匹配只比形状：同形不同色的商品（如国服鲈鱼苗与国际服鲫鱼苗）会互相误认。
+# 匹配后再逐像素比较颜色（5x5 模糊后各像素 RGB 最大差的 95 分位数），
+# 实测正确商品不超过 6，鲈鱼苗误认鲫鱼苗约 40
+ISLAND_SHOP_ITEM_COLOR_THRESHOLD = 20
+
+
+def shop_item_color_matches(button, image, threshold=ISLAND_SHOP_ITEM_COLOR_THRESHOLD):
+    """在 `button.match()` 成功后检查匹配位置的颜色是否与模板一致。
+
+    Args:
+        button (Button): 刚匹配成功的商品图标按钮（已按匹配位置偏移）。
+        image (np.ndarray): 匹配时使用的截图。
+        threshold (int): 允许的颜色差。
+
+    Returns:
+        bool: 颜色一致返回 True。
+    """
+    diff = np.subtract(button.button, button._button)[:2]
+    region = crop(image, area_offset(button.area, diff))
+    template = button.image
+    if region.shape != template.shape:
+        return False
+    delta = np.abs(cv2.blur(region, (5, 5)).astype(int) - cv2.blur(template, (5, 5)).astype(int)).max(axis=2)
+    return float(np.percentile(delta, 95)) <= threshold
 
 # 岛屿走位路线与规则解析集中在 module/island/island_walk.py；可以用岛屿计划的
 # 全局配置 `IslandPlan.IslandWalk.<路线名>` 覆盖整条规则（所有控制方式都生效，
@@ -149,6 +177,7 @@ ISLAND_ITEM_CN_NAMES = {
     # 渔场
     'bass': '鲈鱼', 'yellowfin_tuna': '黄鳍金枪鱼', 'shell': '贝壳', 'shrimp': '小河虾',
     'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参', 'koi_carp': '鲤鱼', 'mackerel': '马鲛鱼',
+    'catfish': '鲶鱼', 'common_carp': '鲫鱼', 'tuna': '金枪鱼', 'salmon': '三文鱼', 'red_sea_bream': '红鲷鱼',
     # 矿山/林场
     'Copper': '铜矿', 'Aluminium': '铝矿', 'Iron': '铁矿', 'Sulphur': '硫磺',
     'Silver': '银矿', 'Elegant': '典雅之木', 'Practical': '实用之木', 'Selected': '精选之木',
@@ -1623,12 +1652,13 @@ class Island(SelectCharacter):
             if self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
                 break
             # 按图标搜索整页定位商品；商品未解锁或不在列表时不会误点其他格子，超时后放弃购买
-            if self.appear_then_click(
+            if self.appear(
                     item_button,
                     offset=ISLAND_SHOP_ITEM_SEARCH_OFFSET,
                     similarity=ISLAND_SHOP_ITEM_SIMILARITY,
                     interval=1.2,
-            ):
+            ) and shop_item_color_matches(item_button, self.device.image):
+                self.device.click(item_button)
                 continue
         else:
             logger.warning(f"[岛屿] 打开购买弹窗超时（商店中未找到该商品，可能未解锁）: {item_name or item_button}")

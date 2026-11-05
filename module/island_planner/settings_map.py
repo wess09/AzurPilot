@@ -110,15 +110,20 @@ THRESHOLD_GROUPS = {
     },
     'fishery': {
         5001: 'IslandRancher.IslandFishery.MinShell',
+        5002: 'IslandRancher.IslandFishery.MinCatfish',
+        5004: 'IslandRancher.IslandFishery.MinCommonCarp',
+        5003: 'IslandRancher.IslandFishery.MinKoiCarp',
         5005: 'IslandRancher.IslandFishery.MinShrimp',
         5006: 'IslandRancher.IslandFishery.MinCrayfish',
         5007: 'IslandRancher.IslandFishery.MinBass',
         5008: 'IslandRancher.IslandFishery.MinCrab',
         5101: 'IslandRancher.IslandFishery.MinSquid',
+        5102: 'IslandRancher.IslandFishery.MinMackerel',
+        5103: 'IslandRancher.IslandFishery.MinTuna',
+        5104: 'IslandRancher.IslandFishery.MinSalmon',
+        5105: 'IslandRancher.IslandFishery.MinRedSeaBream',
         5107: 'IslandRancher.IslandFishery.MinYellowfinTuna',
         5108: 'IslandRancher.IslandFishery.MinSeaCucumber',
-        5003: 'IslandRancher.IslandFishery.MinKoiCarp',
-        5102: 'IslandRancher.IslandFishery.MinMackerel',
     },
 }
 

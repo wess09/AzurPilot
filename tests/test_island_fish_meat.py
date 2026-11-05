@@ -1,6 +1,7 @@
 """鱼肉加工：选鱼计划与 EN 服商店「鱼肉加工」页识别（截图只保留检测区域）。"""
 
 import unittest
+import unittest.mock
 from pathlib import Path
 
 import module.config.server as server
@@ -76,6 +77,51 @@ class FishMeatKeepTest(unittest.TestCase):
     def test_keep_threshold(self):
         # 鲤鱼 26 条、底线 20 时只能用 6 条（每条 3 鱼肉）
         self.assertEqual(fm.plan_fish_exchange({5003: 26}, 30, keep={5003: 20}), {5003: 6})
+
+
+class GotoPageTest(unittest.TestCase):
+    """兑换完淡水鱼肉后仍在鱼肉加工页，再进入海水鱼肉时不能先 ui_ensure（商店页是未知页面，会重启游戏）。"""
+
+    def setUp(self):
+        # 按钮在导入时按服务器选图，模块导入早于切换到 EN，这里重新加载 EN 图并替换
+        import importlib
+        import module.island.assets as island_assets
+        import module.island_fish_meat.assets as fish_meat_assets
+        import module.ui.assets as ui_assets
+        reloaded = {}
+        for assets in (island_assets, fish_meat_assets, ui_assets):
+            reloaded.update(vars(importlib.reload(assets)))
+        for name in ('ISLAND_BACK', 'ISLAND_CHECK', 'ISLAND_EXCHANGE_CONFIRM', 'ISLAND_GOTO_ISLAND_SHOP'):
+            patcher = unittest.mock.patch.object(fm, name, reloaded[name])
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    @staticmethod
+    def exchanger(screen):
+        from unittest.mock import Mock
+
+        class Exchanger(fm.IslandFishMeatExchange):
+            def appear(self, button, offset=0, **kwargs):
+                return bool(button.match(self.device.image, offset=offset))
+
+            def loop(self, timeout=None, skip_first=True):
+                yield self.device.image
+
+        exchanger = Exchanger()
+        exchanger.device = Mock(image=screen)
+        exchanger.ui_ensure = Mock()
+        return exchanger
+
+    def test_already_on_fish_meat_page_skips_ui_ensure(self):
+        exchanger = self.exchanger(image('exchange_page'))
+        self.assertTrue(exchanger._goto_fish_meat_page(fm.FRESHWATER_FISH_MEAT))
+        exchanger.ui_ensure.assert_not_called()
+
+    def test_other_page_goes_to_island_first(self):
+        exchanger = self.exchanger(image('exchange_reward'))
+        with unittest.mock.patch.object(fm, 'logger'):
+            exchanger._goto_fish_meat_page(fm.SALTWATER_FISH_MEAT)
+        exchanger.ui_ensure.assert_called_once_with(fm.page_island)
 
 
 if __name__ == '__main__':

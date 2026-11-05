@@ -17879,23 +17879,31 @@
           3
         ]
       },
-      "MinBass": {
-        "type": "input",
-        "value": 50
-      },
-      "MinYellowfinTuna": {
-        "type": "input",
-        "value": 50
-      },
       "MinShell": {
         "type": "input",
         "value": 50
+      },
+      "MinCatfish": {
+        "type": "input",
+        "value": 0
+      },
+      "MinCommonCarp": {
+        "type": "input",
+        "value": 0
+      },
+      "MinKoiCarp": {
+        "type": "input",
+        "value": 0
       },
       "MinShrimp": {
         "type": "input",
         "value": 50
       },
       "MinCrayfish": {
+        "type": "input",
+        "value": 50
+      },
+      "MinBass": {
         "type": "input",
         "value": 50
       },
@@ -17907,17 +17915,29 @@
         "type": "input",
         "value": 50
       },
-      "MinSeaCucumber": {
-        "type": "input",
-        "value": 50
-      },
-      "MinKoiCarp": {
-        "type": "input",
-        "value": 0
-      },
       "MinMackerel": {
         "type": "input",
         "value": 0
+      },
+      "MinTuna": {
+        "type": "input",
+        "value": 0
+      },
+      "MinSalmon": {
+        "type": "input",
+        "value": 0
+      },
+      "MinRedSeaBream": {
+        "type": "input",
+        "value": 0
+      },
+      "MinYellowfinTuna": {
+        "type": "input",
+        "value": 50
+      },
+      "MinSeaCucumber": {
+        "type": "input",
+        "value": 50
       },
       "MinFreshwaterFishMeat": {
         "type": "input",

@@ -4700,16 +4700,20 @@
       "2": "2",
       "3": "3"
     },
-    "MinBass": {
-      "name": "スズキ在庫閾値",
-      "help": ""
-    },
-    "MinYellowfinTuna": {
-      "name": "キハダマグロ在庫閾値",
-      "help": ""
-    },
     "MinShell": {
       "name": "貝殻在庫閾値",
+      "help": ""
+    },
+    "MinCatfish": {
+      "name": "ナマズ在庫閾値",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "フナ在庫閾値",
+      "help": ""
+    },
+    "MinKoiCarp": {
+      "name": "コイ在庫閾値",
       "help": ""
     },
     "MinShrimp": {
@@ -4720,6 +4724,10 @@
       "name": "ザリガニ在庫閾値",
       "help": ""
     },
+    "MinBass": {
+      "name": "スズキ在庫閾値",
+      "help": ""
+    },
     "MinCrab": {
       "name": "カニ在庫閾値",
       "help": ""
@@ -4728,16 +4736,28 @@
       "name": "イカ在庫閾値",
       "help": ""
     },
-    "MinSeaCucumber": {
-      "name": "ナマコ在庫閾値",
-      "help": ""
-    },
-    "MinKoiCarp": {
-      "name": "コイ在庫閾値",
-      "help": ""
-    },
     "MinMackerel": {
       "name": "サワラ在庫閾値",
+      "help": ""
+    },
+    "MinTuna": {
+      "name": "マグロ在庫閾値",
+      "help": ""
+    },
+    "MinSalmon": {
+      "name": "サーモン在庫閾値",
+      "help": ""
+    },
+    "MinRedSeaBream": {
+      "name": "マダイ在庫閾値",
+      "help": ""
+    },
+    "MinYellowfinTuna": {
+      "name": "キハダマグロ在庫閾値",
+      "help": ""
+    },
+    "MinSeaCucumber": {
+      "name": "ナマコ在庫閾値",
       "help": ""
     },
     "MinFreshwaterFishMeat": {
