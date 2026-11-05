@@ -100,6 +100,7 @@ class CoinTaskMixin:
     RESET_CHECK_GRACE = timedelta(hours=2)
     # 隐秘/深渊打完后延迟检查的天数配置
     CONFIG_PATH_OBSCURE_ABYSSAL_CHECK_DELAY = 'OpsiScheduling.OpsiScheduling.ObscureAbyssalCheckDelayDays'
+    CONFIG_PATH_STRONGHOLD_CHECK_DELAY = 'OpsiScheduling.OpsiScheduling.StrongholdCheckDelayDays'
     SCHEDULING_MODE_COIN_TARGET = 'coin_target'
     SCHEDULING_MODE_ACTION_POINT = 'action_point'
     SCHEDULING_MODE_MONTH_END_CLEANUP = 'month_end_cleanup'
@@ -773,21 +774,32 @@ class CoinTaskMixin:
 
     def _get_next_stronghold_check_time(self):
         """
-        获取塞壬要塞下次可能的刷新时间。
+        获取塞壬要塞下次检查时间。
 
-        要塞数量有限：每周（服务器周一 0 点）刷新 1 个，每月 1 日随大世界重置
-        再刷新。清除干净后要等到这两个时间点才会有新的，因此取其中较早的一个。
+        正数表示搜索不到要塞后等待指定天数；0 保持原有逻辑，
+        等待每周刷新或大世界月度重置中较早的时间点，再留出检查缓冲。
 
         Returns:
             datetime.datetime: 下次检查要塞的时间（本地时间）。
         """
+        try:
+            days = int(self.config.cross_get(
+                keys=self.CONFIG_PATH_STRONGHOLD_CHECK_DELAY,
+                default=0,
+            ) or 0)
+        except (TypeError, ValueError):
+            logger.warning('[大世界-智能调度] 塞壬要塞延迟检查天数无效，按 0 处理')
+            days = 0
+        if days > 0:
+            return current_time() + timedelta(days=days)
+
         next_weekly = get_nearest_weekday_date(0)
         next_monthly = get_os_next_reset()
         return min(next_weekly, next_monthly) + self.RESET_CHECK_GRACE
 
     def _postpone_stronghold_check(self, reason):
         """
-        记录塞壬要塞已清除干净，把下次检查推迟到要塞刷新之后。
+        记录塞壬要塞已清除干净，按配置天数或原有刷新规则推迟检查。
 
         要塞打完就没了，继续搜索只是反复遍历全球地图、拖慢补黄币流程，
         因此记录时间点，期间直接跳过要塞检查。

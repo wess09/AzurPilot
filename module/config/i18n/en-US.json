@@ -4421,6 +4421,10 @@
       "name": "Obscure/Abyssal recheck delay (days)",
       "help": "After all Obscure Zones and Abyssal Zones are cleared, Smart Scheduling delays their checks by the given number of days and skips them in the meantime to speed up coin replenishing. 0 checks every round. The Operation Siren monthly reset refreshes them, and checks resume after the reset."
     },
+    "StrongholdCheckDelayDays": {
+      "name": "Siren Stronghold recheck delay (days)",
+      "help": "After no Siren Strongholds are found, Smart Scheduling skips their checks for the specified number of days. 0 keeps the existing weekly refresh or monthly Operation Siren reset schedule with its original grace period. Positive values wait the full number of days, even across refreshes. Only normal coin replenishment checks in Smart Scheduling are affected; standalone Stronghold tasks and month-end cleanup are unchanged."
+    },
     "MonthEndActionPointCleanupEnable": {
       "name": "Enable month-end action point cleanup",
       "help": "Whether to enable the month-end Action Point cleanup. When enabled, once the days remaining until the Operation Siren reset are at or below the \"Month-end Action Point Cleanup Days\" value, the month-end cleanup mode starts to consume Action Points.",

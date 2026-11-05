@@ -1785,6 +1785,8 @@ OpsiScheduling:
     value: OpsiStronghold > OpsiObscure > OpsiAbyssal > OpsiMeowfficerFarming
   ObscureAbyssalCheckDelayDays:
     value: 0
+  StrongholdCheckDelayDays:
+    value: 0
   MonthEndActionPointCleanupEnable:
     value: false
     option: [true, false]
