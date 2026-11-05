@@ -462,9 +462,7 @@ class Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement):
         """
         from module.base.button import Button
 
-        # 编队界面中 3 个后排舰船槽位坐标
-        MAIN_1 = Button(area=(771, 80, 832, 106), color=(), button=(771, 80, 832, 106), name='FLEET_ENTER_MAIN_1')
-        MAIN_3 = Button(area=(771, 320, 832, 346), color=(), button=(771, 320, 832, 346), name='FLEET_ENTER_MAIN_3')
+        # 编队界面中后排舰船槽位坐标
         MAIN_2 = Button(area=(771, 200, 832, 226), color=(), button=(771, 200, 832, 226), name='FLEET_ENTER_MAIN_2')
 
         success = False

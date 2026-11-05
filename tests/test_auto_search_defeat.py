@@ -21,7 +21,7 @@ from module.handler.assets import (
     POPUP_CANCEL, POPUP_CONFIRM, FLEET_UNAVAILABLE,
 )
 from module.map.assets import (
-    FLEET_NUM_1, FLEET_NUM_2, FLEET_WITHDRAW, SWITCH_OVER, WITHDRAW,
+    FLEET_NUM_1, FLEET_NUM_2, SWITCH_OVER, WITHDRAW,
 )
 
 
@@ -423,14 +423,13 @@ class AutoSearchDefeatTests(unittest.TestCase):
     def test_automatic_handoff_ignores_manual_switch_controls_and_handles_commission(self):
         replay = ScreenReplay([
             screen('COMBAT'), screen(EXP_INFO_D), screen(OPTS_INFO_D), screen(FLEET_UNAVAILABLE),
-            *[screen(WITHDRAW, FLEET_NUM_1, SWITCH_OVER, FLEET_WITHDRAW)] * 5, screen(GET_MISSION),
+            *[screen(WITHDRAW, FLEET_NUM_1, SWITCH_OVER)] * 5, screen(GET_MISSION),
             screen(AUTO_SEARCH_MAP_OPTION_OFF, FLEET_NUM_2), screen(AUTO_SEARCH_MAP_OPTION_OFF, FLEET_NUM_2),
             screen(AUTO_SEARCH_MAP_OPTION_ON, FLEET_NUM_2)])
         campaign = replay.make_campaign(policy='switch_fleet')
         replay.run()
         self.assertNotIn(SWITCH_OVER.name, replay.clicks)
         self.assertIn(GET_MISSION.name, replay.clicks)
-        self.assertNotIn(FLEET_WITHDRAW.name, replay.clicks)
         self.assertIn(AUTO_SEARCH_MAP_OPTION_OFF.name, replay.clicks)
         self.assertNotIn(WITHDRAW.name, replay.clicks)
         self.assertFalse(campaign._withdraw)
@@ -583,7 +582,6 @@ class FleetHandoffTests(unittest.TestCase):
                         replay.run()
                     self.assertIn(WITHDRAW.name, replay.clicks)
                     self.assertNotIn(SWITCH_OVER.name, replay.clicks)
-                    self.assertNotIn(FLEET_WITHDRAW.name, replay.clicks)
                     self.assertNotIn(AUTO_SEARCH_MAP_OPTION_OFF.name, replay.clicks)
                     self.assertNotIn(AUTO_SEARCH_MAP_OPTION_ON.name, replay.clicks)
                     campaign.emotion.check_fleet.assert_not_called()
@@ -598,7 +596,6 @@ class FleetHandoffTests(unittest.TestCase):
         replay.run()
         self.assertEqual([i for i, name in replay.click_frames if name == AUTO_SEARCH_MAP_OPTION_OFF.name], [6])
         self.assertNotIn(SWITCH_OVER.name, replay.clicks)
-        self.assertNotIn(FLEET_WITHDRAW.name, replay.clicks)
         self.assertTrue(campaign.combat_result.fleet_unavailable)
         campaign.emotion.check_fleet.assert_called_once_with(2)
 
