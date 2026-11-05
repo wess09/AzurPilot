@@ -3426,6 +3426,7 @@
       "MinFreshwaterFishMeat": 0,
       "MinSaltwaterFishMeat": 0,
       "PlantYellowfinTuna": 3,
+      "DefaultFish": "yellowfin_tuna",
       "RancherFilter": "WorkerJuu"
     },
     "Storage": {
@@ -3446,6 +3447,7 @@
     "IslandMine": {
       "Positions": 1,
       "MineSilver": 1,
+      "DefaultOre": "Silver",
       "WorkerFilter": "WorkerJuu",
       "MinCopper": 50,
       "MinAluminium": 50,
@@ -3456,6 +3458,7 @@
     "IslandForest": {
       "Positions": 1,
       "CutElegant": 1,
+      "DefaultWood": "Elegant",
       "WorkerFilter": "WorkerJuu",
       "MinElegant": 50,
       "MinPractical": 50,
@@ -4025,6 +4028,26 @@
   "IslandProductionPlanner": {
     "IslandProductionPlanner": {
       "ApplySettings": false,
+      "Season": "auto",
+      "Priority": "pt",
+      "FillSparePosts": true,
+      "UnlockedFish": [
+        "shell",
+        "catfish",
+        "common_carp",
+        "koi_carp",
+        "shrimp",
+        "crayfish",
+        "bass",
+        "crab",
+        "squid",
+        "mackerel",
+        "tuna",
+        "salmon",
+        "red_sea_bream",
+        "yellowfin_tuna",
+        "sea_cucumber"
+      ],
       "RescanTechnology": true,
       "ScanSeasonTasks": true,
       "SeasonTaskTargets": null,

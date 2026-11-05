@@ -17965,6 +17965,27 @@
           3
         ]
       },
+      "DefaultFish": {
+        "type": "select",
+        "value": "yellowfin_tuna",
+        "option": [
+          "shell",
+          "catfish",
+          "common_carp",
+          "koi_carp",
+          "shrimp",
+          "crayfish",
+          "bass",
+          "crab",
+          "squid",
+          "mackerel",
+          "tuna",
+          "salmon",
+          "red_sea_bream",
+          "yellowfin_tuna",
+          "sea_cucumber"
+        ]
+      },
       "RancherFilter": {
         "type": "textarea",
         "value": "WorkerJuu"
@@ -18053,6 +18074,17 @@
           4
         ]
       },
+      "DefaultOre": {
+        "type": "select",
+        "value": "Silver",
+        "option": [
+          "Copper",
+          "Aluminium",
+          "Iron",
+          "Sulphur",
+          "Silver"
+        ]
+      },
       "WorkerFilter": {
         "type": "textarea",
         "value": "WorkerJuu"
@@ -18098,6 +18130,15 @@
           2,
           3,
           4
+        ]
+      },
+      "DefaultWood": {
+        "type": "select",
+        "value": "Elegant",
+        "option": [
+          "Practical",
+          "Selected",
+          "Elegant"
         ]
       },
       "WorkerFilter": {
@@ -20916,6 +20957,71 @@
         "option": [
           true,
           false
+        ]
+      },
+      "Season": {
+        "type": "select",
+        "value": "auto",
+        "option": [
+          "auto",
+          "season_1",
+          "season_2",
+          "season_3",
+          "season_4",
+          "season_5"
+        ]
+      },
+      "Priority": {
+        "type": "select",
+        "value": "pt",
+        "option": [
+          "pt",
+          "coins"
+        ]
+      },
+      "FillSparePosts": {
+        "type": "checkbox",
+        "value": true,
+        "option": [
+          true,
+          false
+        ]
+      },
+      "UnlockedFish": {
+        "type": "multiselect",
+        "value": [
+          "shell",
+          "catfish",
+          "common_carp",
+          "koi_carp",
+          "shrimp",
+          "crayfish",
+          "bass",
+          "crab",
+          "squid",
+          "mackerel",
+          "tuna",
+          "salmon",
+          "red_sea_bream",
+          "yellowfin_tuna",
+          "sea_cucumber"
+        ],
+        "option": [
+          "shell",
+          "catfish",
+          "common_carp",
+          "koi_carp",
+          "shrimp",
+          "crayfish",
+          "bass",
+          "crab",
+          "squid",
+          "mackerel",
+          "tuna",
+          "salmon",
+          "red_sea_bream",
+          "yellowfin_tuna",
+          "sea_cucumber"
         ]
       },
       "RescanTechnology": {

@@ -1912,6 +1912,9 @@ IslandFishery:
   PlantYellowfinTuna:
     value: 3
     option: [ 0, 1, 2, 3 ]
+  DefaultFish:
+    value: yellowfin_tuna
+    option: [ shell, catfish, common_carp, koi_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RancherFilter: |-
     WorkerJuu
 IslandMine:
@@ -1921,6 +1924,9 @@ IslandMine:
   MineSilver:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultOre:
+    value: Silver
+    option: [ Copper, Aluminium, Iron, Sulphur, Silver ]
   WorkerFilter: |-
     WorkerJuu
   MinCopper:
@@ -1940,6 +1946,9 @@ IslandForest:
   CutElegant:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultWood:
+    value: Elegant
+    option: [ Practical, Selected, Elegant ]
   WorkerFilter: |-
     WorkerJuu
   MinElegant:
@@ -2616,6 +2625,20 @@ IslandProductionPlanner:
     type: checkbox
     value: false
     option: [ true, false ]
+  Season:
+    value: auto
+    option: [ auto, season_1, season_2, season_3, season_4, season_5 ]
+  Priority:
+    value: pt
+    option: [ pt, coins ]
+  FillSparePosts:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  UnlockedFish:
+    type: multiselect
+    value: [ shell, catfish, common_carp, koi_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
+    option: [ shell, catfish, common_carp, koi_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RescanTechnology:
     type: checkbox
     value: true

@@ -74,7 +74,8 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
         dispatch_stamina_min (int): 角色派遣最低体力阈值。
         fishery_positions (int): 渔场岗位配置数量。
         fishery_threshold (dict): 各鱼获库存最低阈值配置。
-        plant_yellowfin_tuna (int): 默认养殖黄鳍金枪鱼的目标岗位数。
+        plant_yellowfin_tuna (int): 默认产品的目标岗位数（配置名沿用 PlantYellowfinTuna）。
+        default_fish (str): 所有底线达标后，空闲岗位养殖的默认产品。
         rancher_filter (str): 渔场角色筛选配置。
         FISHERY_ITEMS (list): 渔场产品及其对应商店、产量与页签配置。
         name_to_config (dict): 产品内部名称到配置的映射。
@@ -107,6 +108,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             'sea_cucumber': self.config.IslandFishery_MinSeaCucumber,
         }
         self.plant_yellowfin_tuna = self.config.IslandFishery_PlantYellowfinTuna
+        self.default_fish = self.config.IslandFishery_DefaultFish
         self.rancher_filter = self.config.IslandFishery_RancherFilter
 
         # 产品配置
@@ -642,22 +644,24 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             products_to_plant, remaining_idle, supply_post_counts = self._build_supply_plant_products(len(idle_posts))
             default_post_counts = {}
 
-            # 继续用剩余空闲岗位满足默认黄鳍金枪鱼岗位数
+            # 继续用剩余空闲岗位满足默认产品岗位数；配置了未知产品时退回黄鳍金枪鱼
+            default_fish = self.default_fish if self.default_fish in self.name_to_config else 'yellowfin_tuna'
             already_planted_default = 0
             for i in range(self.fishery_positions):
                 post_id = f'ISLAND_FISHERY_POST{i + 1}'
-                if self.posts[post_id]['crop'] == 'yellowfin_tuna':
+                if self.posts[post_id]['crop'] == default_fish:
                     already_planted_default += 1
 
-            logger.info(f"[岛屿-渔场] 已有{already_planted_default}个岗位养殖了黄鳍金枪鱼，配置要求{self.plant_yellowfin_tuna}个")
+            logger.info(f"[岛屿-渔场] 已有{already_planted_default}个岗位养殖了默认产品"
+                        f"{self.name_to_config[default_fish]['cn_name']}，配置要求{self.plant_yellowfin_tuna}个")
 
             need_default = max(0, self.plant_yellowfin_tuna - already_planted_default)
 
             if remaining_idle > 0 and need_default > 0:
                 actual_default = min(remaining_idle, need_default)
                 for _ in range(actual_default):
-                    products_to_plant.append('yellowfin_tuna')
-                    default_post_counts['yellowfin_tuna'] = default_post_counts.get('yellowfin_tuna', 0) + 1
+                    products_to_plant.append(default_fish)
+                    default_post_counts[default_fish] = default_post_counts.get(default_fish, 0) + 1
 
             if products_to_plant:
                 logger.info(f"[岛屿-渔场] \n需要养殖的产品: {products_to_plant}")
