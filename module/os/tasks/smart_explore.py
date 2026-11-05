@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from module.config.utils import get_os_next_reset, get_server_next_update
-from module.exception import GameStuckError, RequestHumanTakeover
+from module.exception import GameStuckError
 from module.logger import logger
 
 
@@ -201,13 +201,11 @@ class SmartExploreMixin:
             out: IN_GLOBE
         """
         from module.os.globe_operation import OSExploreError
-        from module.os_handler.action_point import ActionPointLimit
 
         route = SMART_EXPLORE_ROUTES[round_index]
         zone = route[state['next'][round_index]]
-        if state['attempts'] >= 3:
-            raise RequestHumanTakeover(f'智能开荒海域 {zone} 连续三次未完成，请检查解锁条件和事件')
-        state = dict(state, attempts=state['attempts'] + 1)
+        # 旧版中断次数会跨重启锁住路线；续跑保留断点，异常仍交给原有恢复流程。
+        state = dict(state, attempts=0)
         self._save_smart_explore_state(state)
         self._close_scheduling_action_point()
         self.handle_first_auto_search(run=False)
@@ -230,10 +228,6 @@ class SmartExploreMixin:
                         self.ensure_no_zone_pinned()
         except OSExploreError as exc:
             raise GameStuckError(f'智能开荒海域 {zone} 未解锁，保留路线断点') from exc
-        except ActionPointLimit:
-            # 资源不足不是地图识别失败，不能耗尽三次恢复机会。
-            self._save_smart_explore_state(dict(state, attempts=state['attempts'] - 1))
-            raise
         state['next'][round_index] += 1
         self._save_smart_explore_state(dict(state, attempts=0, return_to_port=True))
 

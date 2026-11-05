@@ -462,6 +462,90 @@ class SmartExploreTests(unittest.TestCase):
         self.assertEqual(self.runner._get_smart_scheduling_state_value('ActionPointPurchase'),
                          dict(reset=RESET.isoformat(), phase='buying'))
 
+    def test_reported_state_resumes_without_clearing_scheduler_storage(self):
+        reset = datetime(2026, 12, 1)
+        reported = {
+            'SchedulingMode': 'coin_target',
+            'MonthEndCleanupCycle': reset.isoformat(),
+            'SmartExplore': dict(reset=reset.isoformat(), next=[30, 7, 6], second_started=True,
+                                 second_decided=True, phase='explore', attempts=3),
+            'ActionPointPurchase': dict(reset=reset.isoformat(), phase='done'),
+            'StrongholdNextCheck': '2026-11-01T02:00:00',
+            'ObscureClearedAt': '2026-10-31T12:30:09.497998',
+            'AbyssalClearedAt': '2026-10-31T12:30:12.611592',
+            'MonthEndCleanupFirstRun': True,
+        }
+        self.runner.config.cross_set('OpsiScheduling.Storage.Storage', reported)
+        self.runner._run_smart_explore_node = OpsiScheduling._run_smart_explore_node.__get__(self.runner)
+        self.runner.get_routine_yellow_coins.return_value = 99450
+        actions = []
+
+        def read_ap(**kwargs):
+            self.runner._scheduling_ap_panel_open = True
+            actions.append('open_ap')
+            return 3386, 116
+
+        def enter_zone(zone, **kwargs):
+            self.assertFalse(self.runner._scheduling_ap_panel_open)
+            actions.append(('zone', zone))
+            return False  # 游戏已确认安全海域时，沿用原来的跳过行为。
+
+        self.runner._get_scheduling_action_point.side_effect = read_ap
+        self.runner.action_point_quit = Mock(side_effect=lambda: actions.append('close_ap'))
+        self.runner.globe_goto.side_effect = enter_zone
+        self.runner._clear_smart_explore_zone = Mock()
+        with (
+            patch('module.os.tasks.smart_explore.get_os_next_reset', return_value=reset),
+            patch('module.os.tasks.scheduling.get_os_next_reset', return_value=reset),
+        ):
+            self.runner.run_smart_scheduling_once()
+
+        self.assertEqual(actions, ['open_ap', 'close_ap', ('zone', 53)])
+        stored = self.runner._get_smart_scheduling_state()
+        self.assertEqual(stored['SmartExplore'], dict(reported['SmartExplore'], next=[31, 7, 6],
+                                                     attempts=0, return_to_port=True))
+        for key, value in reported.items():
+            if key != 'SmartExplore':
+                self.assertEqual(stored[key], value)
+        self.runner._clear_smart_explore_zone.assert_not_called()
+        self.runner.perform_port_shop_purchase.assert_not_called()
+        self.runner._execute_hazard1_leveling.assert_not_called()
+
+    def test_repeated_interruptions_remain_resumable_with_fresh_runners(self):
+        for method in ('handle_first_auto_search', 'globe_goto'):
+            for error_type in (GameStuckError, GameTooManyClickError):
+                with self.subTest(method=method, error=error_type):
+                    state = self.state(first=False)
+                    state['next'][0] = 1
+                    error = error_type('临时中断')
+                    for _ in range(4):
+                        restarted = OperationSiren.__new__(OperationSiren)
+                        restarted.config = self.runner.config
+                        restarted.handle_first_auto_search = Mock()
+                        restarted.globe_goto = Mock(return_value=False)
+                        getattr(restarted, method).side_effect = error
+                        with self.assertRaises(error_type) as raised:
+                            restarted._run_smart_explore_node(state, 0)
+                        self.assertIs(raised.exception, error)
+                        state = restarted._get_smart_explore_state()
+                        self.assertEqual(state['next'], [1, 0, 0])
+                        self.assertEqual(state['attempts'], 0)
+                    getattr(restarted, method).side_effect = None
+                    restarted._run_smart_explore_node(state, 0)
+                    self.assertEqual(restarted._get_smart_explore_state()['next'], [2, 0, 0])
+
+    def test_locked_zone_keeps_checkpoint_and_existing_recovery_error(self):
+        from module.os.globe_operation import OSExploreError
+
+        state = self.state(first=False)
+        state['next'][0] = 1
+        error = OSExploreError('海域未解锁')
+        self.runner.globe_goto.side_effect = error
+        with self.assertRaisesRegex(GameStuckError, '未解锁，保留路线断点') as raised:
+            OpsiScheduling._run_smart_explore_node(self.runner, state, 0)
+        self.assertIs(raised.exception.__cause__, error)
+        self.assertEqual(self.runner._get_smart_explore_state()['next'], [1, 0, 0])
+
     def test_node_confirms_safe_zone_before_advancing_and_retries_same_zone(self):
         state = self.state(first=False)
         state['next'][0] = 1
@@ -475,7 +559,7 @@ class SmartExploreTests(unittest.TestCase):
             OpsiScheduling._run_smart_explore_node(self.runner, state, 0)
         saved = self.runner._get_smart_explore_state()
         self.assertEqual(saved['next'][0], 1)
-        self.assertEqual(saved['attempts'], 1)
+        self.assertEqual(saved['attempts'], 0)
         OpsiScheduling._run_smart_explore_node(self.runner, saved, 0)
         saved = self.runner._get_smart_explore_state()
         self.assertEqual(saved['next'][0], 2)
@@ -483,12 +567,14 @@ class SmartExploreTests(unittest.TestCase):
         self.assertTrue(saved['return_to_port'])
         self.runner.globe_goto.assert_called_with(44, stop_if_safe=True, force_enter=True)
 
-    def test_ap_exhaustion_does_not_consume_zone_retry_budget(self):
+    def test_ap_exhaustion_keeps_zone_checkpoint_for_resume(self):
         state = self.state(first=False)
         state['next'][0] = 1
+        state['attempts'] = 3
         self.runner.globe_goto = Mock(side_effect=ActionPointLimit(total=0))
         with self.assertRaises(ActionPointLimit):
             OpsiScheduling._run_smart_explore_node(self.runner, state, 0)
+        self.assertEqual(self.runner._get_smart_explore_state()['next'], [1, 0, 0])
         self.assertEqual(self.runner._get_smart_explore_state()['attempts'], 0)
 
     def test_port_nodes_enter_and_leave_port_before_saving(self):
