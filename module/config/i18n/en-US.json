@@ -4698,16 +4698,20 @@
       "2": "2",
       "3": "3"
     },
-    "MinBass": {
-      "name": "Bass stock threshold",
-      "help": ""
-    },
-    "MinYellowfinTuna": {
-      "name": "Yellowfin tuna stock threshold",
-      "help": ""
-    },
     "MinShell": {
       "name": "Shell stock threshold",
+      "help": ""
+    },
+    "MinCatfish": {
+      "name": "Catfish stock threshold",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "Common carp stock threshold",
+      "help": ""
+    },
+    "MinKoiCarp": {
+      "name": "Koi carp stock threshold",
       "help": ""
     },
     "MinShrimp": {
@@ -4718,6 +4722,10 @@
       "name": "Crayfish stock threshold",
       "help": ""
     },
+    "MinBass": {
+      "name": "Bass stock threshold",
+      "help": ""
+    },
     "MinCrab": {
       "name": "Crab stock threshold",
       "help": ""
@@ -4726,16 +4734,28 @@
       "name": "Squid stock threshold",
       "help": ""
     },
-    "MinSeaCucumber": {
-      "name": "Sea cucumber stock threshold",
-      "help": ""
-    },
-    "MinKoiCarp": {
-      "name": "Koi carp stock threshold",
-      "help": ""
-    },
     "MinMackerel": {
       "name": "Mackerel stock threshold",
+      "help": ""
+    },
+    "MinTuna": {
+      "name": "Tuna stock threshold",
+      "help": ""
+    },
+    "MinSalmon": {
+      "name": "Salmon stock threshold",
+      "help": ""
+    },
+    "MinRedSeaBream": {
+      "name": "Red sea bream stock threshold",
+      "help": ""
+    },
+    "MinYellowfinTuna": {
+      "name": "Yellowfin tuna stock threshold",
+      "help": ""
+    },
+    "MinSeaCucumber": {
+      "name": "Sea cucumber stock threshold",
       "help": ""
     },
     "MinFreshwaterFishMeat": {
