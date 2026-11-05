@@ -123,5 +123,58 @@ class CargoPreparationJobListTests(unittest.TestCase):
         self.assertTrue(all(150 < y < 580 for y, _ in rows))
 
 
+class CargoPreparationLeaveJobListTests(unittest.TestCase):
+    """刷新后仍没有可完成的委托时要关闭 Job List 弹窗：弹窗下方露出的货运页面会让
+    island_in_transport() 误判已返回，返回手机页时又一直卡在弹窗上（国际服 2026-11-05 23:28）。"""
+
+    def make(self, frames):
+        from unittest.mock import Mock, patch
+        from module.island import island_cargo_preparation as cargo_module
+        from module.island.island_cargo_preparation import IslandCargoPreparation
+
+        with patch.object(IslandCargoPreparation, '__init__', lambda self: None):
+            cargo = IslandCargoPreparation()
+        cargo.device = Mock()
+        state = {'popup': True}
+        cargo.device.click = Mock(side_effect=lambda button: state.update(
+            popup=False) if button is cargo_module.REPLACE_PAGE_CANCEL else None)
+        cargo.appear = Mock(side_effect=lambda button, **kwargs:
+                            button is cargo_module.REPLACE_PAGE_CHECK and state['popup'])
+        cargo.island_in_transport = Mock(return_value=True)   # 弹窗下方露出货运页面
+        cargo.loop = lambda **kwargs: iter(range(frames))
+        cargo.appear_then_click = Mock(return_value=False)
+        cargo.ui_additional = Mock(return_value=False)
+        return cargo, state, cargo_module
+
+    def test_back_to_transport_closes_job_list_first(self):
+        cargo, state, cargo_module = self.make(frames=5)
+        self.assertTrue(cargo._back_to_transport())
+        cargo.device.click.assert_called_once_with(cargo_module.REPLACE_PAGE_CANCEL)
+        self.assertFalse(state['popup'])
+
+    def test_back_to_island_phone_closes_job_list(self):
+        cargo, state, cargo_module = self.make(frames=5)
+        cargo.ui_page_appear = lambda page: not state['popup']
+        cargo._back_to_island_phone()
+        cargo.device.click.assert_called_once_with(cargo_module.REPLACE_PAGE_CANCEL)
+
+    def test_job_list_check_matches_only_the_popup(self):
+        # 只在 Job List 弹窗上匹配，货运页面本身不匹配，避免在货运页误点「取消」位置
+        import cv2
+        asset = np.array(Image.open(os.path.join(
+            os.path.dirname(__file__), '..', 'assets', 'en', 'island_cargo_preparation',
+            'REPLACE_PAGE_CHECK.png')).convert('RGB'))
+        ys, xs = np.where(asset.max(axis=2) > 0)
+        x1, y1, x2, y2 = xs.min(), ys.min(), xs.max() + 1, ys.max() + 1
+        template = asset[y1:y2, x1:x2]
+
+        def score(name):
+            image = load_fixture(name)[y1 - 20:y2 + 20, x1 - 20:x2 + 20]
+            return cv2.matchTemplate(image, template, cv2.TM_CCOEFF_NORMED).max()
+
+        self.assertGreater(score('en_job_list_top.png'), 0.85)
+        self.assertLess(score('en_transport_short.png'), 0.85)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -83,6 +83,12 @@ def should_replace_unfillable(short, delivered, refresh):
 
 
 # 更换委托列表中每行左侧的序号（01、02……）所在列，以及右侧货物数量所在横向范围
+# 更换委托页（Job List 弹窗）的「取消」按钮：与「确认」左右对称，固定位置点击。
+# 弹窗下方仍露出货运页面，island_in_transport() 会误判已回到货运页，必须先关闭弹窗
+REPLACE_PAGE_CANCEL = Button(
+    area=(480, 596, 630, 632), color=(), button=(480, 596, 630, 632),
+    file={'cn': '', 'en': '', 'jp': '', 'tw': ''}, name='REPLACE_PAGE_CANCEL')
+
 JOB_LIST_AREA = (405, 150, 900, 580)
 JOB_LIST_NUMBER_COLUMN = (412, 450)
 JOB_LIST_COUNT_COLUMN = (488, 900)
@@ -705,10 +711,24 @@ class IslandCargoPreparation(IslandUI):
         self._back_to_transport()
         return False
 
+    def _close_replace_page(self):
+        """更换委托页（Job List 弹窗）仍打开时点「取消」关闭，不更换委托。
+
+        Returns:
+            bool: 是否点击了取消。
+        """
+        if self.appear(REPLACE_PAGE_CHECK, offset=(20, 20), interval=2):
+            self.device.click(REPLACE_PAGE_CANCEL)
+            return True
+        return False
+
     def _back_to_transport(self):
         """从更换页面返回货运委托页面。"""
         for _ in self.loop(timeout=8):
-            if self.island_in_transport():
+            # 先关弹窗：弹窗下方露出的货运页面会让 island_in_transport() 误判为已返回
+            if self._close_replace_page():
+                continue
+            if self.island_in_transport() and not self.appear(REPLACE_PAGE_CHECK, offset=(20, 20)):
                 return True
             if self.appear_then_click(ISLAND_BACK, interval=2):
                 continue
@@ -770,6 +790,9 @@ class IslandCargoPreparation(IslandUI):
         for _ in self.loop():
             if self.ui_page_appear(page_island_phone):
                 break
+            # 更换委托弹窗仍开着时返回键无效（国际服实机 2026-11-05 23:28 卡住 3 分钟）
+            if self._close_replace_page():
+                continue
             if self.appear_then_click(ISLAND_BACK, interval=2):
                 continue
             if self.ui_additional():
