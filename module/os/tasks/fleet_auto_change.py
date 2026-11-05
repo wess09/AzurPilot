@@ -132,7 +132,8 @@ class OpsiFleetAutoChange(CoinTaskMixin, DockMixin, OSMap):
             out: is_in_map
         """
         timer = Timer(timeout).start()
-        for _ in self.loop():
+        # 出发确认刚点击后，缓存截图仍可能露出地图按钮，必须刷新后再判断回图。
+        for _ in self.loop(skip_first=False):
             if timer.reached():
                 break
             # 误触地图外出现的「需要暂时离开大型作战么?」弹窗，点击 X 留在大型作战
