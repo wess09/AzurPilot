@@ -4734,12 +4734,12 @@
       "name": "鯰魚底線",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "鯽魚底線",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "鯉魚底線",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "鯽魚底線",
       "help": ""
     },
     "MinShrimp": {
@@ -4795,12 +4795,31 @@
       "help": "同上，針對海水魚肉（如黃鰭金槍魚每條 18 個）。0 為不兌換。"
     },
     "PlantYellowfinTuna": {
-      "name": "養黃鰭鮪魚",
-      "help": "",
+      "name": "預設產品崗位數",
+      "help": "所有底線達標後，幾個空餘漁場崗位養殖預設產品。",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3"
+    },
+    "DefaultFish": {
+      "name": "預設養殖產品",
+      "help": "所有產品達到底線後，空餘漁場崗位養殖的產品（崗位數見上一項）。島嶼生產規劃器會選已解鎖的產品。",
+      "shell": "貝類",
+      "catfish": "鯰魚",
+      "koi_carp": "鯉魚",
+      "common_carp": "鯽魚",
+      "shrimp": "小河蝦",
+      "crayfish": "小龍蝦",
+      "bass": "鱸魚",
+      "crab": "螃蟹",
+      "squid": "魷魚",
+      "mackerel": "馬鮫魚",
+      "tuna": "金槍魚",
+      "salmon": "三文魚",
+      "red_sea_bream": "紅鯛魚",
+      "yellowfin_tuna": "黃鰭金槍魚",
+      "sea_cucumber": "海參"
     },
     "RancherFilter": {
       "name": "使用角色",
@@ -4821,13 +4840,22 @@
       "4": "4"
     },
     "MineSilver": {
-      "name": "採銀礦崗位數",
-      "help": "幾個空閒礦山崗位用於生產銀礦，其餘空著不動",
+      "name": "預設礦石崗位數",
+      "help": "幾個空閒礦山崗位用於生產預設礦石，其餘空著不動",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultOre": {
+      "name": "預設礦石",
+      "help": "所有礦石達到底線後，空餘礦山崗位生產的礦石（崗位數見上一項）。",
+      "Copper": "銅礦",
+      "Aluminium": "鋁礦",
+      "Iron": "鐵礦",
+      "Sulphur": "硫礦",
+      "Silver": "銀礦"
     },
     "WorkerFilter": {
       "name": "礦山使用角色",
@@ -4868,13 +4896,20 @@
       "4": "4"
     },
     "CutElegant": {
-      "name": "伐典雅之木崗位數",
-      "help": "幾個空閒林場崗位用於生產典雅之木，其餘空著不動",
+      "name": "預設木材崗位數",
+      "help": "幾個空閒林場崗位用於生產預設木材，其餘空著不動",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultWood": {
+      "name": "預設木材",
+      "help": "所有木材達到底線後，空餘林場崗位生產的木材（崗位數見上一項）。",
+      "Practical": "實用之木",
+      "Selected": "精選之木",
+      "Elegant": "典雅之木"
     },
     "WorkerFilter": {
       "name": "林場使用角色",
@@ -5934,6 +5969,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5947,6 +5986,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5960,6 +6003,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5973,6 +6020,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生產順序",
+      "help": "按順序生產的產品，用「>」分隔（如「paper > notebook」），材料不足時嘗試下一個。留空使用內建規則。島嶼生產規劃器會寫入。可選產品：leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7163,6 +7214,53 @@
       "help": "關閉時只在日誌中預覽方案；開啟後覆蓋各店鋪 Meal/MealNumber、AwayCook、經營商品，農田「按作物設定補種目標」，礦山/林場/漁場最低庫存，牧場雞肉/豬肉底線與牛奶/羊毛開關，、製造業各產線崗位數，以及空餘崗位的預設作物/產品與崗位數。",
       "True": "開啟",
       "False": "關閉"
+    },
+    "Season": {
+      "name": "季節",
+      "help": "按哪個島嶼季節規劃。自動：本伺服器目前進行中的季節。選具體季節時按該季的採集與配方規劃，不在進行中的季節以整季天數作為目標期限。遊戲資料只為崗位列出最新一季的配方，選更早的季節時只規劃採集與任務，不規劃該季的限定菜品與作物。",
+      "auto": "自動（目前季節）",
+      "season_1": "第 1 季",
+      "season_2": "第 2 季",
+      "season_3": "第 3 季",
+      "season_4": "第 4 季",
+      "season_5": "第 5 季（冬季）"
+    },
+    "Priority": {
+      "name": "優先級",
+      "help": "滿足目標與每日島幣下限之後。季節 PT：先最大化季節 PT，再最大化島幣。島幣：先最大化每日島幣，再最大化季節 PT。",
+      "pt": "季節 PT",
+      "coins": "島幣"
+    },
+    "FillSparePosts": {
+      "name": "填滿空餘崗位",
+      "help": "開啟：底線都達標後，農田、果園、苗圃、礦山、林場、漁場所有已解鎖崗位都生產預設產品；預設產品取計劃的閒時產品，沒有時取價值最高的已解鎖產品。關閉：只寫計劃閒時產出需要的崗位數。",
+      "True": "開啟",
+      "False": "關閉"
+    },
+    "AutoPositions": {
+      "name": "自動崗位數",
+      "help": "開啟：按島嶼科技已解鎖的崗位寫入各區域崗位數（農田、果園、苗圃、礦山、林場、漁場與各店鋪後廚），並按全部崗位規劃。關閉：在已設定的崗位數內規劃。",
+      "True": "開啟",
+      "False": "關閉"
+    },
+    "UnlockedFish": {
+      "name": "已解鎖的魚",
+      "help": "漁場可以養殖的產品。遊戲資料無法判斷哪些魚已解鎖，請取消勾選尚未解鎖的魚；規劃器不會為它們排產，也不會用於空餘崗位。",
+      "shell": "貝類",
+      "catfish": "鯰魚",
+      "koi_carp": "鯉魚",
+      "common_carp": "鯽魚",
+      "shrimp": "小河蝦",
+      "crayfish": "小龍蝦",
+      "bass": "鱸魚",
+      "crab": "螃蟹",
+      "squid": "魷魚",
+      "mackerel": "馬鮫魚",
+      "tuna": "金槍魚",
+      "salmon": "三文魚",
+      "red_sea_bream": "紅鯛魚",
+      "yellowfin_tuna": "黃鰭金槍魚",
+      "sea_cucumber": "海參"
     },
     "RescanTechnology": {
       "name": "重新掃描科技",

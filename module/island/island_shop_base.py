@@ -279,7 +279,8 @@ class IslandShopBase(Island, WarehouseOCR):
             str | None: 正在生产的商品名称，未匹配到返回 None。
         """
         for item in self.shop_items:
-            if self.appear(item['post_action']):
+            # 没有岗位「生产中」图的产品无法从岗位详情识别，按未知产品处理
+            if item['post_action'] is not None and self.appear(item['post_action']):
                 return item['name']
         return None
 
@@ -293,6 +294,9 @@ class IslandShopBase(Island, WarehouseOCR):
         image = self.device.screenshot()
 
         for dish in self.shop_items:
+            # 没有仓库模板的产品（部分制造产品）不统计库存
+            if dish['template'] is None:
+                continue
             self.warehouse_counts[dish['name']] = self.ocr_item_quantity(image, dish['template'])
             if self.warehouse_counts[dish['name']]:
                 logger.info(f"{self._item_cn(dish['name'])}: {self.warehouse_counts[dish['name']]}")

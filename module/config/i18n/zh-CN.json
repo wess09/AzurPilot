@@ -4734,12 +4734,12 @@
       "name": "鲶鱼底线",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "鲫鱼底线",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "鲤鱼底线",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "鲫鱼底线",
       "help": ""
     },
     "MinShrimp": {
@@ -4795,12 +4795,31 @@
       "help": "同上，针对海水鱼肉（如黄鳍金枪鱼每条 18 个）。0 为不兑换。"
     },
     "PlantYellowfinTuna": {
-      "name": "养黄鳍金枪鱼",
-      "help": "",
+      "name": "默认产品岗位数",
+      "help": "所有底线达标后，几个空余渔场岗位养殖默认产品。",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3"
+    },
+    "DefaultFish": {
+      "name": "默认养殖产品",
+      "help": "所有产品达到底线后，空余渔场岗位养殖的产品（岗位数见上一项）。岛屿生产规划器会选已解锁的产品。",
+      "shell": "贝类",
+      "catfish": "鲶鱼",
+      "koi_carp": "鲤鱼",
+      "common_carp": "鲫鱼",
+      "shrimp": "小河虾",
+      "crayfish": "小龙虾",
+      "bass": "鲈鱼",
+      "crab": "螃蟹",
+      "squid": "鱿鱼",
+      "mackerel": "马鲛鱼",
+      "tuna": "金枪鱼",
+      "salmon": "三文鱼",
+      "red_sea_bream": "红鲷鱼",
+      "yellowfin_tuna": "黄鳍金枪鱼",
+      "sea_cucumber": "海参"
     },
     "RancherFilter": {
       "name": "使用角色",
@@ -4821,13 +4840,22 @@
       "4": "4"
     },
     "MineSilver": {
-      "name": "采银矿岗位数",
-      "help": "几个空闲矿山岗位用于生产银矿，其余空着不动",
+      "name": "默认矿石岗位数",
+      "help": "几个空闲矿山岗位用于生产默认矿石，其余空着不动",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultOre": {
+      "name": "默认矿石",
+      "help": "所有矿石达到底线后，空余矿山岗位生产的矿石（岗位数见上一项）。",
+      "Copper": "铜矿",
+      "Aluminium": "铝矿",
+      "Iron": "铁矿",
+      "Sulphur": "硫矿",
+      "Silver": "银矿"
     },
     "WorkerFilter": {
       "name": "矿山使用角色",
@@ -4868,13 +4896,20 @@
       "4": "4"
     },
     "CutElegant": {
-      "name": "伐典雅之木岗位数",
-      "help": "几个空闲林场岗位用于生产典雅之木，其余空着不动",
+      "name": "默认木材岗位数",
+      "help": "几个空闲林场岗位用于生产默认木材，其余空着不动",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultWood": {
+      "name": "默认木材",
+      "help": "所有木材达到底线后，空余林场岗位生产的木材（岗位数见上一项）。",
+      "Practical": "实用之木",
+      "Selected": "精选之木",
+      "Elegant": "典雅之木"
     },
     "WorkerFilter": {
       "name": "林场使用角色",
@@ -5934,6 +5969,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5947,6 +5986,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5960,6 +6003,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5973,6 +6020,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "生产顺序",
+      "help": "按顺序生产的产品，用「>」分隔（如「paper > notebook」），材料不足时尝试下一个。留空使用内置规则。岛屿生产规划器会写入。可选产品：leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7163,6 +7214,53 @@
       "help": "关闭时只在日志中预览方案；开启后覆盖各店铺 Meal/MealNumber、AwayCook、经营商品，农田「按作物设置补种目标」，矿山/林场/渔场最低库存，牧场鸡肉/猪肉底线与牛奶/羊毛开关，、制造业各产线岗位数，以及空余岗位的默认作物/产品与岗位数。",
       "True": "开启",
       "False": "关闭"
+    },
+    "Season": {
+      "name": "季节",
+      "help": "按哪个岛屿季节规划。自动：本服务器当前进行中的季节。选具体季节时按该季的采集与配方规划，不在进行中的季节以整季天数作为目标期限。游戏数据只为岗位列出最新一季的配方，选更早的季节时只规划采集与任务，不规划该季的限定菜品与作物。",
+      "auto": "自动（当前季节）",
+      "season_1": "第 1 季",
+      "season_2": "第 2 季",
+      "season_3": "第 3 季",
+      "season_4": "第 4 季",
+      "season_5": "第 5 季（冬季）"
+    },
+    "Priority": {
+      "name": "优先级",
+      "help": "满足目标与每日岛币下限之后。季节 PT：先最大化季节 PT，再最大化岛币。岛币：先最大化每日岛币，再最大化季节 PT。",
+      "pt": "季节 PT",
+      "coins": "岛币"
+    },
+    "FillSparePosts": {
+      "name": "填满空余岗位",
+      "help": "开启：底线都达标后，农田、果园、苗圃、矿山、林场、渔场所有已解锁岗位都生产默认产品；默认产品取计划的闲时产品，没有时取价值最高的已解锁产品。关闭：只写计划闲时产出需要的岗位数。",
+      "True": "开启",
+      "False": "关闭"
+    },
+    "AutoPositions": {
+      "name": "自动岗位数",
+      "help": "开启：按岛屿科技已解锁的岗位写入各区域岗位数（农田、果园、苗圃、矿山、林场、渔场与各店铺后厨），并按全部岗位规划。关闭：在已配置的岗位数内规划。",
+      "True": "开启",
+      "False": "关闭"
+    },
+    "UnlockedFish": {
+      "name": "已解锁的鱼",
+      "help": "渔场可以养殖的产品。游戏数据无法判断哪些鱼已解锁，请取消勾选尚未解锁的鱼；规划器不会为它们排产，也不会用于空余岗位。",
+      "shell": "贝类",
+      "catfish": "鲶鱼",
+      "koi_carp": "鲤鱼",
+      "common_carp": "鲫鱼",
+      "shrimp": "小河虾",
+      "crayfish": "小龙虾",
+      "bass": "鲈鱼",
+      "crab": "螃蟹",
+      "squid": "鱿鱼",
+      "mackerel": "马鲛鱼",
+      "tuna": "金枪鱼",
+      "salmon": "三文鱼",
+      "red_sea_bream": "红鲷鱼",
+      "yellowfin_tuna": "黄鳍金枪鱼",
+      "sea_cucumber": "海参"
     },
     "RescanTechnology": {
       "name": "重新扫描科技",

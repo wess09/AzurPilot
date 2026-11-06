@@ -3415,8 +3415,8 @@
       "Positions": 3,
       "MinShell": 50,
       "MinCatfish": 0,
-      "MinCommonCarp": 0,
       "MinKoiCarp": 0,
+      "MinCommonCarp": 0,
       "MinShrimp": 50,
       "MinCrayfish": 50,
       "MinBass": 50,
@@ -3431,6 +3431,7 @@
       "MinFreshwaterFishMeat": 0,
       "MinSaltwaterFishMeat": 0,
       "PlantYellowfinTuna": 3,
+      "DefaultFish": "yellowfin_tuna",
       "RancherFilter": "WorkerJuu"
     },
     "Storage": {
@@ -3451,6 +3452,7 @@
     "IslandMine": {
       "Positions": 1,
       "MineSilver": 1,
+      "DefaultOre": "Silver",
       "WorkerFilter": "WorkerJuu",
       "MinCopper": 50,
       "MinAluminium": 50,
@@ -3461,6 +3463,7 @@
     "IslandForest": {
       "Positions": 1,
       "CutElegant": 1,
+      "DefaultWood": "Elegant",
       "WorkerFilter": "WorkerJuu",
       "MinElegant": 50,
       "MinPractical": 50,
@@ -3675,16 +3678,20 @@
       "Sensitive": false
     },
     "WoodProcessing": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "ElectronicProcessing": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Industrial": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Handmade": {
-      "Positions": 2
+      "Positions": 2,
+      "Products": ""
     },
     "Storage": {
       "Storage": {}
@@ -4030,6 +4037,27 @@
   "IslandProductionPlanner": {
     "IslandProductionPlanner": {
       "ApplySettings": false,
+      "Season": "auto",
+      "Priority": "pt",
+      "FillSparePosts": true,
+      "AutoPositions": true,
+      "UnlockedFish": [
+        "shell",
+        "catfish",
+        "koi_carp",
+        "common_carp",
+        "shrimp",
+        "crayfish",
+        "bass",
+        "crab",
+        "squid",
+        "mackerel",
+        "tuna",
+        "salmon",
+        "red_sea_bream",
+        "yellowfin_tuna",
+        "sea_cucumber"
+      ],
       "RescanTechnology": true,
       "ScanSeasonTasks": true,
       "SeasonTaskTargets": null,

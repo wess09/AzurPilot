@@ -1907,8 +1907,8 @@ IslandFishery:
     option: [ 1, 2, 3 ]
   MinShell: 50
   MinCatfish: 0
-  MinCommonCarp: 0
   MinKoiCarp: 0
+  MinCommonCarp: 0
   MinShrimp: 50
   MinCrayfish: 50
   MinBass: 50
@@ -1925,6 +1925,9 @@ IslandFishery:
   PlantYellowfinTuna:
     value: 3
     option: [ 0, 1, 2, 3 ]
+  DefaultFish:
+    value: yellowfin_tuna
+    option: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RancherFilter: |-
     WorkerJuu
 IslandMine:
@@ -1934,6 +1937,9 @@ IslandMine:
   MineSilver:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultOre:
+    value: Silver
+    option: [ Copper, Aluminium, Iron, Sulphur, Silver ]
   WorkerFilter: |-
     WorkerJuu
   MinCopper:
@@ -1953,6 +1959,9 @@ IslandForest:
   CutElegant:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultWood:
+    value: Elegant
+    option: [ Practical, Selected, Elegant ]
   WorkerFilter: |-
     WorkerJuu
   MinElegant:
@@ -2222,18 +2231,30 @@ WoodProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 ElectronicProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Industrial:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Handmade:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 IslandAirDrop:
   LastSteal: 2020-01-01 00:00:00
   VisitOtherIsland: true
@@ -2629,6 +2650,24 @@ IslandProductionPlanner:
     type: checkbox
     value: false
     option: [ true, false ]
+  Season:
+    value: auto
+    option: [ auto, season_1, season_2, season_3, season_4, season_5 ]
+  Priority:
+    value: pt
+    option: [ pt, coins ]
+  FillSparePosts:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  AutoPositions:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  UnlockedFish:
+    type: multiselect
+    value: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
+    option: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RescanTechnology:
     type: checkbox
     value: true

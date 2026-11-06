@@ -220,8 +220,11 @@ ISLAND_ITEM_CN_NAMES = {
     # 制造业（工坊）
     'file_cabinet': '文件柜', 'filter_element': '净水滤芯', 'iron_nail': '铁钉',
     'cutlery': '刀叉餐具', 'leather': '皮革', 'boot': '靴子', 'peanut_oil': '花生油',
+    'paper': '纸张', 'notebook': '记事本', 'chair_desk': '桌椅', 'ink_cartridge': '墨盒',
+    'charcoal_brush': '炭笔', 'cable': '电缆', 'cloth': '布料', 'rope': '绳索',
     'shepherd_purse': '荠菜干', 'spring_bouquet': '春季花束', 'summer_bouquet': '夏季花束',
     'autumn_bouquet': '秋季花束', 'jasmine_oil': '茉莉精油',
+    'plum_blossom_sachet': '梅花香包', 'winter_bouquet': '冬季花束',
 }
 
 class Island(SelectCharacter):

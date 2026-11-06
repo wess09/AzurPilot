@@ -8,6 +8,7 @@ from module.island_manufacture.assets import *
 from module.island.island_shop_base import IslandShopBase
 from module.island.assets import *
 from module.ui.page import *
+import re
 from datetime import timedelta
 
 from module.config.time_source import now as current_time
@@ -49,6 +50,35 @@ SEASONAL_HANDMADE_ITEMS = {
 }
 
 
+def _product(name, selection, selection_check):
+    """可在产品列表中选择、但没有仓库模板和岗位「生产中」图的制造产品。
+
+    识别图取自国际服实机截图（图标不含文字，国服同名图为同一截图）。没有仓库模板时
+    不统计库存，没有岗位图时正在生产的岗位按未知产品处理，均不影响按配置顺序排产。
+    """
+    return {'name': name, 'template': None, 'var_name': name, 'selection': selection,
+            'selection_check': selection_check, 'post_action': None}
+
+
+# 各产线可选产品：产线配置项 -> 制造类别。产品顺序由 <产线>.Products 配置（岛屿生产规划器会写入）。
+PRODUCT_LINES = {
+    'WoodProcessing': 'wood_processing',
+    'ElectronicProcessing': 'electronic_processing',
+    'Industrial': 'industrial_production',
+    'Handmade': 'handmade',
+}
+
+
+def parse_product_order(text):
+    """解析产线产品顺序配置，如 ``paper > notebook``，也接受逗号和换行分隔。
+
+    Returns:
+        list[str]: 去重后的产品名，保持配置顺序。
+    """
+    names = [name.strip().lower() for name in re.split(r'[>,\n]', str(text or ''))]
+    return list(dict.fromkeys(name for name in names if name))
+
+
 class IslandManufacture(IslandShopBase):
     """岛屿制造工坊自动化管理器。
 
@@ -88,6 +118,9 @@ class IslandManufacture(IslandShopBase):
                     {'name': 'file_cabinet', 'template': TEMPLATE_FILE_CABINET,
                      'var_name': 'file_cabinet', 'selection': SELECT_FILE_CABINET,
                      'selection_check': SELECT_FILE_CABINET_CHECK, 'post_action': POST_FILE_CABINET},
+                    _product('paper', SELECT_PAPER, SELECT_PAPER_CHECK),
+                    _product('notebook', SELECT_NOTEBOOK, SELECT_NOTEBOOK_CHECK),
+                    _product('chair_desk', SELECT_CHAIR_DESK, SELECT_CHAIR_DESK_CHECK),
                 ]
             },
             #TEMPLATE_FILTER_ELEMENT 未添加
@@ -96,6 +129,7 @@ class IslandManufacture(IslandShopBase):
                     {'name': 'filter_element', 'template': TEMPLATE_FILE_CABINET,
                      'var_name': 'filter_element', 'selection': SELECT_FILTER_ELEMENT,
                      'selection_check': SELECT_FILTER_ELEMENT_CHECK, 'post_action': POST_FILTER_ELEMENT},
+                    _product('ink_cartridge', SELECT_INK_CARTRIDGE, SELECT_INK_CARTRIDGE_CHECK),
                 ]
             },
             'industrial_production': {
@@ -106,6 +140,8 @@ class IslandManufacture(IslandShopBase):
                     {'name': 'cutlery', 'template': TEMPLATE_CUTLERY,
                      'var_name': 'cutlery', 'selection': SELECT_CUTLERY,
                      'selection_check': SELECT_CUTLERY_CHECK, 'post_action': POST_CUTLERY},
+                    _product('charcoal_brush', SELECT_CHARCOAL_BRUSH, SELECT_CHARCOAL_BRUSH_CHECK),
+                    _product('cable', SELECT_CABLE, SELECT_CABLE_CHECK),
                 ]
             },
             'handmade': {
@@ -119,6 +155,8 @@ class IslandManufacture(IslandShopBase):
                     {'name': 'peanut_oil', 'template': TEMPLATE_PEANUT_OIL,
                      'var_name': 'peanut_oil', 'selection': SELECT_PEANUT_OIL,
                      'selection_check': SELECT_PEANUT_OIL_CHECK, 'post_action': POST_PEANUT_OIL},
+                    _product('cloth', SELECT_CLOTH, SELECT_CLOTH_CHECK),
+                    _product('rope', SELECT_ROPE, SELECT_ROPE_CHECK),
                 ]
             }
         }
@@ -365,6 +403,26 @@ class IslandManufacture(IslandShopBase):
         logger.info("[岛屿-制造业] 所有产品都无法选择或材料不足")
         return None
 
+    def configured_product_list(self, category):
+        """按 <产线>.Products 配置的顺序返回该产线的产品列表。
+
+        Args:
+            category (str): 制造类别，见 PRODUCT_LINES。
+
+        Returns:
+            list[dict] | None: 配置了顺序时按顺序返回已知产品（未知名称记录警告后忽略）；
+                未配置时返回 None，调用方沿用固定规则。
+        """
+        line = next(key for key, value in PRODUCT_LINES.items() if value == category)
+        order = parse_product_order(getattr(self.config, f'{line}_Products', ''))
+        if not order:
+            return None
+        items = {item['name']: item for item in self.manufacture[category]['items']}
+        unknown = [name for name in order if name not in items]
+        if unknown:
+            logger.warning(f"[岛屿-制造业] {line}.Products 中的未知产品已忽略: {unknown}")
+        return [items[name] for name in order if name in items]
+
     def schedule_manufacture(self):
         """安排制造业四大门类的生产排期。"""
         self.schedule_wood_processing()
@@ -375,28 +433,33 @@ class IslandManufacture(IslandShopBase):
 
         self.schedule_handmade()
 
-    def schedule_wood_processing(self):
-        """安排木料加工生产（生产文件柜）。"""
-        idle_posts = self.get_idle_posts_by_category('wood_processing')
-        if not idle_posts:
-            return
-        # 木料加工只生产file_cabinet
-        product_list = self.manufacture['wood_processing']['items']
-        for post_id in idle_posts:
+    def _schedule_line(self, category, product_list):
+        """按产品列表为该类别的空闲岗位排产。"""
+        for post_id in self.get_idle_posts_by_category(category):
             self.select_product_with_material_check(post_id, product_list)
+
+    def schedule_wood_processing(self):
+        """安排木料加工生产：按 WoodProcessing.Products 的顺序，未配置时只生产文件柜。"""
+        product_list = self.configured_product_list('wood_processing')
+        if product_list is None:
+            product_list = [item for item in self.manufacture['wood_processing']['items']
+                            if item['name'] == 'file_cabinet']
+        self._schedule_line('wood_processing', product_list)
 
     def schedule_electronic_processing(self):
-        """安排电子加工生产（生产滤芯）。"""
-        idle_posts = self.get_idle_posts_by_category('electronic_processing')
-        if not idle_posts:
-            return
-        # 木料加工只生产file_cabinet
-        product_list = self.manufacture['electronic_processing']['items']
-        for post_id in idle_posts:
-            self.select_product_with_material_check(post_id, product_list)
+        """安排电子加工生产：按 ElectronicProcessing.Products 的顺序，未配置时只生产净水滤芯。"""
+        product_list = self.configured_product_list('electronic_processing')
+        if product_list is None:
+            product_list = [item for item in self.manufacture['electronic_processing']['items']
+                            if item['name'] == 'filter_element']
+        self._schedule_line('electronic_processing', product_list)
 
     def schedule_industrial_production(self):
-        """安排工业生产（根据铁钉库存切换铁钉或餐具生产）。"""
+        """安排工业生产：按 Industrial.Products 的顺序，未配置时根据铁钉库存切换铁钉或餐具。"""
+        product_list = self.configured_product_list('industrial_production')
+        if product_list is not None:
+            self._schedule_line('industrial_production', product_list)
+            return
         idle_posts = self.get_idle_posts_by_category('industrial_production')
         if not idle_posts:
             return
@@ -414,7 +477,11 @@ class IslandManufacture(IslandShopBase):
             self.select_product_with_material_check(post_id, product_list)
 
     def schedule_handmade(self):
-        """安排手工制品生产（优先季节限定品、皮靴与皮革）。"""
+        """安排手工制品生产：按 Handmade.Products 的顺序，未配置时优先季节限定品、皮靴与皮革。"""
+        product_list = self.configured_product_list('handmade')
+        if product_list is not None:
+            self._schedule_line('handmade', product_list)
+            return
         idle_posts = self.get_idle_posts_by_category('handmade')
         if not idle_posts:
             return

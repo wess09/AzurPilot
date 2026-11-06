@@ -4734,12 +4734,12 @@
       "name": "Catfish stock threshold",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "Common carp stock threshold",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "Koi carp stock threshold",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "Common carp stock threshold",
       "help": ""
     },
     "MinShrimp": {
@@ -4795,12 +4795,31 @@
       "help": "Same for Saltwater Fish Meat (e.g. one Yellowfin Tuna gives 18). 0 = no exchange."
     },
     "PlantYellowfinTuna": {
-      "name": "Raise yellowfin tuna",
-      "help": "",
+      "name": "Default fish posts",
+      "help": "Number of spare fishery posts that raise the default fish once every minimum is met.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3"
+    },
+    "DefaultFish": {
+      "name": "Default fish",
+      "help": "What spare fishery posts raise once every fish has reached its minimum (number of posts is the previous setting). The Island Production Planner picks an unlocked fish.",
+      "shell": "Shellfish",
+      "catfish": "Catfish",
+      "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
+      "shrimp": "Freshwater Shrimp",
+      "crayfish": "Crayfish",
+      "bass": "Sea Bass",
+      "crab": "Crab",
+      "squid": "Squid",
+      "mackerel": "Mackerel",
+      "tuna": "Tuna",
+      "salmon": "Salmon",
+      "red_sea_bream": "Red Sea Bream",
+      "yellowfin_tuna": "Yellowfin Tuna",
+      "sea_cucumber": "Sea Cucumber"
     },
     "RancherFilter": {
       "name": "Character filter",
@@ -4821,13 +4840,22 @@
       "4": "4"
     },
     "MineSilver": {
-      "name": "Silver mining slots",
-      "help": "Number of idle mine posts to produce Silver; remaining stay idle",
+      "name": "Default ore posts",
+      "help": "Number of spare mine posts that produce the default ore; the rest stay idle.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultOre": {
+      "name": "Default ore",
+      "help": "What spare mine posts produce once every ore has reached its minimum (number of posts is the previous setting).",
+      "Copper": "Copper Ore",
+      "Aluminium": "Bauxite Ore",
+      "Iron": "Iron Ore",
+      "Sulphur": "Sulfur",
+      "Silver": "Silver Ore"
     },
     "WorkerFilter": {
       "name": "Mine worker filter",
@@ -4868,13 +4896,20 @@
       "4": "4"
     },
     "CutElegant": {
-      "name": "Elegant wood slots",
-      "help": "Number of idle forest posts to produce Elegant wood; remaining stay idle",
+      "name": "Default wood posts",
+      "help": "Number of spare forest posts that produce the default wood; the rest stay idle.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultWood": {
+      "name": "Default wood",
+      "help": "What spare forest posts produce once every wood has reached its minimum (number of posts is the previous setting).",
+      "Practical": "Workable Wood",
+      "Selected": "Premium Wood",
+      "Elegant": "Elegant Wood"
     },
     "WorkerFilter": {
       "name": "Forest worker filter",
@@ -5934,6 +5969,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5947,6 +5986,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5960,6 +6003,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5973,6 +6020,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -7163,6 +7214,53 @@
       "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, the number of posts per factory line, and the default crop/product and post count for spare posts.",
       "True": "Enabled",
       "False": "Disabled"
+    },
+    "Season": {
+      "name": "Season",
+      "help": "Which island season to plan for. Auto: the season running now on your server. A season number plans with that season's gathering and recipes; a season that is not running uses its full length as the target period. The game data only lists the newest season's building recipes, so an older season plans its gathering and tasks but not its seasonal dishes and crops.",
+      "auto": "Auto (current season)",
+      "season_1": "Season 1",
+      "season_2": "Season 2",
+      "season_3": "Season 3",
+      "season_4": "Season 4",
+      "season_5": "Season 5 (winter)"
+    },
+    "Priority": {
+      "name": "Priority",
+      "help": "Applies after targets and the daily coin minimum are met. Season points: most season PT, then most coins. Coins: most daily coins, then most season PT.",
+      "pt": "Season points",
+      "coins": "Coins"
+    },
+    "FillSparePosts": {
+      "name": "Fill spare posts",
+      "help": "On: once all minimums are met, every unlocked farm, orchard, nursery, mine, forest and fishery post produces a default product: the planned spare-time product, or the most valuable unlocked product when none is planned. Off: only the posts the plan needs for spare-time output.",
+      "True": "On",
+      "False": "Off"
+    },
+    "AutoPositions": {
+      "name": "Auto post counts",
+      "help": "On: set each area's post count (farm, orchard, nursery, mine, forest, fishery and the shop kitchens) from the posts your island research has unlocked, and plan with all of them. Off: plan within the post counts you set.",
+      "True": "On",
+      "False": "Off"
+    },
+    "UnlockedFish": {
+      "name": "Unlocked fish",
+      "help": "Fish you can raise at the fishery. The game data does not say which fish are unlocked, so untick the ones you have not unlocked yet; the planner will not plan them or use them for spare posts.",
+      "shell": "Shellfish",
+      "catfish": "Catfish",
+      "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
+      "shrimp": "Freshwater Shrimp",
+      "crayfish": "Crayfish",
+      "bass": "Sea Bass",
+      "crab": "Crab",
+      "squid": "Squid",
+      "mackerel": "Mackerel",
+      "tuna": "Tuna",
+      "salmon": "Salmon",
+      "red_sea_bream": "Red Sea Bream",
+      "yellowfin_tuna": "Yellowfin Tuna",
+      "sea_cucumber": "Sea Cucumber"
     },
     "RescanTechnology": {
       "name": "Rescan technology",
