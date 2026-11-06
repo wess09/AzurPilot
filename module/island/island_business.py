@@ -1237,6 +1237,8 @@ class IslandBusiness(Island):
     _SHOP_BUTTON_TO_REMAIN_TIME_OFFSET_Y = (-79, -59)
     # 经营商店列表的可视区域
     _BUSINESS_LIST_SEARCH_AREA = (50, 80, 1200, 640)
+    # 店名标签纵向距离小于此值视为同一行（相邻两行约相距 177 像素）
+    _SHOP_SAME_ROW_Y = 60
     # 商店行高（经验值，适用于各行）
     _BUSINESS_ROW_HEIGHT = 160
 
@@ -1365,9 +1367,20 @@ class IslandBusiness(Island):
                     'similarity': found['similarity'],
                 })
 
+        # 同一行只保留相似度最高的商店：店名相近时（国际服 "Manjuu Eatery" 与 "Café Manjuu"），
+        # 另一家商店的模板也可能在这一行过阈值，按它点击会进错店
+        results.sort(key=lambda r: -r['similarity'])
+        kept = []
+        for r in results:
+            if any(abs(r['label_rect'][1] - k['label_rect'][1]) < self._SHOP_SAME_ROW_Y for k in kept):
+                logger.info(f"[岛屿-经营] {r['shop']['name']} 与其他商店识别在同一行"
+                            f"（相似度 {r['similarity']:.2f}），忽略")
+                continue
+            kept.append(r)
+
         # 按标签的 Y 坐标从上到下排序
-        results.sort(key=lambda r: r['label_rect'][1])
-        return results
+        kept.sort(key=lambda r: r['label_rect'][1])
+        return kept
 
     def _scroll_business_down(self):
         """在经营商店列表中向下滑动一页"""
@@ -1521,6 +1534,8 @@ class IslandBusiness(Island):
                             started_shop_names.add(shop_name)
                         processed_shop_names.add(shop_name)
                     else:
+                        # 本批次内不再进入该店：否则回到顶部重新扫描后会点同一位置，无限进错店
+                        processed_shop_names.add(shop_name)
                         logger.warning(f"[岛屿-经营] 进入商店后识别到的不是 {shop_name}，返回后跳过")
                         self.device.click(ISLAND_BACK)
                         self.device.sleep(1)
