@@ -11,11 +11,7 @@ from typing import Any, Dict, List
 
 from mcp.server import Server
 from mcp.server.sse import SseServerTransport
-from mcp.types import (
-    ImageContent,
-    TextContent,
-    Tool,
-)
+from mcp.types import CallToolResult, Tool
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -36,179 +32,18 @@ active_tools = ContextVar("mcp_tools", default=Tools())
 # 初始化 MCP 服务器
 mcp_server = Server("AzurPilot-MCP")
 
-ToolResponse = List[TextContent | ImageContent]
+ToolResponse = CallToolResult
 
 
 @mcp_server.list_tools()
 async def list_tools() -> List[Tool]:
-    """列出 MCP 服务器当前支持的所有工具定义。
-
-    Returns:
-        List[Tool]: 工具对象列表。
-    """
-    return [
-        Tool(
-            name="list_instances",
-            description="列出所有已配置的 AzurPilot 实例名称",
-            inputSchema={"type": "object", "properties": {}}
-        ),
-        Tool(
-            name="get_status",
-            description="获取所有 AzurPilot 实例的运行状态及详细状态 (state)",
-            inputSchema={"type": "object", "properties": {}}
-        ),
-        Tool(
-            name="list_tasks",
-            description="列出所有顶级任务名称（如 Main, Event）",
-            inputSchema={"type": "object", "properties": {}}
-        ),
-        Tool(
-            name="get_task_help",
-            description="获取指定任务的详细参数结构、中文名和帮助文档",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "task_name": {"type": "string", "description": "任务名称"}
-                },
-                "required": ["task_name"]
-            }
-        ),
-        Tool(
-            name="get_resources",
-            description="获取指定实例的资源状态（油、金币、红尖尖等）",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string", "description": "实例名称"}
-                },
-                "required": ["instance"]
-            }
-        ),
-        Tool(
-            name="get_config",
-            description="获取指定实例的当前配置值",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string", "description": "实例名称"},
-                    "task": {"type": "string", "description": "可选，过滤特定任务"}
-                },
-                "required": ["instance"]
-            }
-        ),
-        Tool(
-            name="update_config",
-            description="修改指定实例的配置项。路径格式：task.group.arg",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string", "description": "实例名称"},
-                    "task": {"type": "string"},
-                    "group": {"type": "string"},
-                    "arg": {"type": "string"},
-                    "value": {
-                        "oneOf": [
-                            {"type": "string"},
-                            {"type": "number"},
-                            {"type": "boolean"},
-                            {"type": "object"},
-                            {"type": "array"},
-                            {"type": "null"}
-                        ],
-                        "description": "新的配置值"
-                    }
-                },
-                "required": ["instance", "task", "group", "arg", "value"]
-            }
-        ),
-        Tool(
-            name="get_recent_logs",
-            description="读取指定实例最近的日志内容 (默认为 50 行)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string"},
-                    "lines": {"type": "integer", "default": 50}
-                },
-                "required": ["instance"]
-            }
-        ),
-        Tool(
-            name="start_instance",
-            description="启动 AzurPilot 实例的运行过程",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string"}
-                },
-                "required": ["instance"]
-            }
-        ),
-        Tool(
-            name="stop_instance",
-            description="强制停止运行中的 AzurPilot 实例",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "instance": {"type": "string"}
-                },
-                "required": ["instance"]
-            }
-        ),
-        Tool(
-            name="get_screenshot",
-            description="获取指定实例当前模拟器的画面截图。返回Base64编码。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}}, "required": ["instance"]}
-        ),
-        Tool(
-            name="get_current_running_task",
-            description="精确获取当前实例正在执行的具体子任务（例如：正在打 12-4，正在收发远征，或者正在清退役）。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}}, "required": ["instance"]}
-        ),
-        Tool(
-            name="get_scheduler_queue",
-            description="获取当前正在排队等待执行的任务列表及它们的预计执行时间。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}}, "required": ["instance"]}
-        ),
-        Tool(
-            name="trigger_task",
-            description="强制将某个任务（如 Event, Daily）立刻加入调度队列执行。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}, "task": {"type": "string"}}, "required": ["instance", "task"]}
-        ),
-        Tool(
-            name="clear_scheduler_queue",
-            description="清空当前队列，通常用于卡死或需要紧急终止当前所有计划时。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}}, "required": ["instance"]}
-        ),
-        Tool(
-            name="restart_emulator",
-            description="重启指定实例对应的模拟器进程。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string"}}, "required": ["instance"]}
-        ),
-        Tool(
-            name="restart_adb",
-            description="重启 ADB 服务，解决设备离线 (Device Offline) 的问题。",
-            inputSchema={"type": "object", "properties": {"instance": {"type": "string", "description": "可选"}}}
-        ),
-        Tool(
-            name="update_alas",
-            description="触发 AzurPilot 的 Git Pull 和依赖更新，让大模型能帮你做日常的程序维护。",
-            inputSchema={"type": "object", "properties": {}}
-        ),
-    ]
+    """按当前端点的固定注册表列出工具；默认不包含旧名称。"""
+    return active_tools.get().definitions()
 
 
-@mcp_server.call_tool()
+@mcp_server.call_tool(validate_input=False)
 async def call_tool(name: str, arguments: Dict[str, Any]) -> ToolResponse:
-    """调用指定的 MCP 工具并返回执行结果。
-
-    Args:
-        name (str): 工具名称。
-        arguments (Dict[str, Any]): 工具入参字典。
-
-    Returns:
-        ToolResponse: 工具执行结果（文本或图片列表）。
-    """
+    """经统一适配层校验并调用工具，保留结构化错误与 isError。"""
     return await active_tools.get().call(name, arguments)
 
 
@@ -446,20 +281,22 @@ async def mcp_asgi_app(scope, receive, send):
         await _send_not_found(send)
 
 
-def create_app(configs=None, runtime=None, *, manage_runtime=True):
+def create_app(configs=None, runtime=None, *, manage_runtime=True, legacy=False):
     """创建 Starlette 应用实例。
 
     独立模式管理 State；挂载模式复用宿主注入的服务与生命周期。
+    默认只登记 ``azurpilot_`` 工具；``legacy=True`` 显式创建旧名称兼容端点。
 
     Args:
         configs: 配置映射字典。默认为 None。
         runtime: 运行时管理服务。默认为 None。
         manage_runtime (bool, optional): 是否由本应用接管生命周期。默认为 True。
+        legacy (bool, optional): 是否追加已弃用工具名称。默认为 False。
 
     Returns:
         Starlette: 已配置好的 ASGI Starlette 应用。
     """
-    tools = Tools(configs, runtime)
+    tools = Tools(configs, runtime, allow_legacy=legacy)
 
     async def bound_app(scope, receive, send):
         token = active_tools.set(tools)
@@ -476,6 +313,11 @@ def create_app(configs=None, runtime=None, *, manage_runtime=True):
     application.state.tools = tools
     application.mount("/", bound_app)
     return application
+
+
+def create_legacy_app(configs=None, runtime=None, *, manage_runtime=True):
+    """显式创建旧工具名兼容入口；新部署不应默认挂载它。"""
+    return create_app(configs, runtime, manage_runtime=manage_runtime, legacy=True)
 
 
 app = create_app()

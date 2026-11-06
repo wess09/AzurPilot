@@ -30,10 +30,11 @@ gui.py 是用户进入系统的第一个进程。用户执行 `uv run python gui
 
 ### 负责
 
-- 解析命令行参数（`--host`/`-p`/`--key`/`--ssl-key`/`--ssl-cert`/`--electron`/`--run` 等），与 `config/deploy.yaml` 的 `Webui*`、`EnableReload` 等设置合并出最终监听配置。
+- 解析命令行参数（`--host`/`-p`/`--key`/`--ssl-key`/`--ssl-cert`/`--electron`/`--run`/`-r` 等），与 `config/deploy.yaml` 的 `Webui*`、`EnableReload` 等设置合并出最终监听配置。
 - 创建 IPv4/IPv6 双栈监听 socket，并在 IPv6 不可用时按策略降级。
 - 以 uvicorn 运行 ASGI 应用工厂 `module.api.app:create_app`，并通过 `ready_event` 向父进程报告「端口已实际监听」。
 - 热重载模式下的监督循环：启动重试、运行期崩溃重试、响应重启事件、重建子进程。
+- `-r`/`--reload` 时轮询项目内 `.py` 源码指纹，变更稳定后置位同一个重启事件，自动重建 WebUI 子进程。
 - 启动前孤儿 worker 回收与「第二个 WebUI」拒绝逻辑（基于 `worker_registry` 的持久化身份）。
 - 依赖同步服务的创建、请求调度（`_sync_dependencies`）与回收，以及「更新后强制先同步再启动」的保障。
 - 调用 `deploy.frontend.ensure_frontend` 在创建 WebUI 前校验/构建 React 静态资源。
@@ -69,7 +70,8 @@ AzurPilot/
 | 文件/符号 | 作用 |
 | --- | --- |
 | `func()` | 服务子进程入口：环境配置、参数解析、创建 socket、运行 uvicorn |
-| `run_webui_supervisor()` | 热重载模式的父进程监督循环（本模块的核心） |
+| `run_webui_supervisor(watch_sources=False)` | 热重载模式的父进程监督循环（本模块的核心）；`watch_sources=True` 时启用源码监听 |
+| `SourceWatcher` / `_signal_source_change()` / `reload_requested()` | `.py` 源码指纹轮询、去抖、置位重启事件与 `-r` 参数识别 |
 | `_create_dual_stack_sockets()` | 同端口创建 IPv4+IPv6 两个监听 socket，支持降级 |
 | `_run_uvicorn_server()` / `_watch_server_started()` | 运行 uvicorn 并在 `server.started` 后置位就绪事件 |
 | `_recover_orphaned_workers()` | 启动前回收上次异常退出的 WebUI 及其 worker |
@@ -81,8 +83,8 @@ AzurPilot/
 
 | 入口 | 用途 |
 | --- | --- |
-| `uv run python gui.py`（`__main__` → `main()`） | 主入口：绑定 GUI 日志并初始化存储，成功后强制 `spawn` 启动方式并按 `EnableReload` 分流 |
-| `run_webui_supervisor()` | 热重载模式的父进程监督循环，`EnableReload=true` 时由主入口调用 |
+| `uv run python gui.py`（`__main__` → `main()`） | 主入口：绑定 GUI 日志并初始化存储，成功后强制 `spawn` 启动方式，按 `-r` 与 `EnableReload` 分流 |
+| `run_webui_supervisor(watch_sources)` | 热重载模式的父进程监督循环，`EnableReload=true` 或指定 `-r` 时由主入口调用 |
 | `func(ev, dependency_sync_event, ready_event)` | 服务子进程入口，由监督器 `spawn`（进程名 `gui`）；非重载模式直接调用 `func(None, None)` |
 | `func` 内的 uvicorn 工厂字符串 `"module.api.app:create_app"` | ASGI 应用实际创建点，服务重启后以新代码重新 import |
 
@@ -135,10 +137,21 @@ gui.py 通过 `State` 与子进程/更新器交换信息：
 
 ### 两种启动模式
 
-主入口按 `State.deploy_config.EnableReload` 分流：
+主入口按 `-r`/`--reload` 与 `State.deploy_config.EnableReload` 分流：
 
-- **热重载模式（默认）**：`run_webui_supervisor()`，父进程常驻，子进程可反复重建。
+- **热重载模式（默认）**：`run_webui_supervisor()`，父进程常驻，子进程可反复重建；只有更新器等显式置位重启事件时才会重建。
+- **源码监听模式（`-r`/`--reload`）**：`run_webui_supervisor(watch_sources=True)`，在监督循环内额外轮询 `.py` 变更并自动置位重启事件。该参数同时强制进入监督模式，覆盖 `EnableReload=false`。
 - **直连模式**：`func(None, None)`，当前进程直接当服务跑；此模式下 `State.restart_event` 为 `None`，更新器会拒绝执行需要重载的更新（无法安全恢复）。
+
+启动方式：
+
+```bash
+uv run python gui.py -r          # 开发时用：改 .py 后自动重建 WebUI
+```
+
+`SourceWatcher` 只用标准库：监督循环每秒轮询一次，但扫描本身最短间隔 1.5 秒（配合 `event.wait(1)` 实际约 2 秒一次）；用 `os.scandir` 递归并复用 `DirEntry.stat()` 的目录项缓存读取 `*.py` 的 `(mtime_ns, size)` 指纹，实测约 2159 个文件只需 0.03 秒，不会持续占用 CPU。跳过 `.venv`、`node_modules`、`__pycache__`、`.git`、`build`、`dist`、`config`、`log`、`tests`、`cache`、`dev_tools`、`licenses`、`docs`、`assets`、`bin`、隐藏目录与 `tmp*` 运行期目录。首次扫描只建立基线；检测到变化后要求连续两轮快照一致且超过 0.8 秒去抖才置位 `event`，避免编辑器连续保存引发多次重启，端到端触发延迟约 2–3 秒。扫描异常只记 warning，不会让监督器退出。
+
+> **注意**：源码热重载复用更新用的重启通道，`_stop_webui_process_tree` 会终止当前 WebUI **及其登记的 AzurPilot worker**。它不写 `config/reloadalas` 恢复计划，因此运行中的挂机实例不会自动拉回；`-r` 仅供开发调试，不要在挂机时使用。另外 `gui.py` 自身变更只会重建服务子进程，启动器逻辑需手动重启才会生效（日志会提示）。
 
 ### 监督循环（热重载模式）
 
@@ -157,7 +170,7 @@ flowchart TD
     G -->|否| H["终止 WebUI 进程树,启动失败计数 +1"]
     H -->|未达 3 次,退避重试| C
     H -->|达上限| Z
-    G -->|是| I["监控循环: restart_event.wait 1s"]
+    G -->|是| I["监控循环: SourceWatcher.poll（-r）→ restart_event.wait 1s"]
     I -->|重启事件| J["终止 WebUI 进程树,读取依赖同步事件"]
     J --> C
     I -->|子进程意外退出| K{"未稳定运行即退出,<br/>累计达 3 次?"}
@@ -277,17 +290,18 @@ gui.py 读取的是**部署配置**（`config/deploy.yaml`，经 `deploy/config.
 | `Webui.WebuiHost` | str | `"0.0.0.0"` | 监听地址；`0.0.0.0` 与 `::` 均触发双栈逻辑 |
 | `Webui.WebuiPort` | int | 25548 | 监听端口；CLI `-p/--port` 优先 |
 | `Webui.WebuiSSLKey` / `WebuiSSLCert` | str\|null | null | HTTPS 密钥/证书，两者齐全才启用 |
-| `Update.EnableReload` | bool | true | 热重载监督模式开关，决定主入口走哪条分支 |
+| `Update.EnableReload` | bool | true | 热重载监督模式开关，决定主入口走哪条分支；`-r` 会覆盖它强制进入监督模式 |
 | `Update.CheckUpdateInterval` / `AutoRestartTime` | int/str | 5 / 08:00 | 更新检查节奏（更新器使用） |
 | `Webui.Run` | str\|null | null | 启动时自动运行的实例列表（`create_app` 的 lifespan 消费） |
 | `Python.InstallDependencies` | bool | true | 关闭时依赖同步跳过 `uv sync` |
 | `Python.PypiMirror`、`Git.SSLVerify` | str/bool | null / false | 传递给 uv 的镜像与安全选项 |
 | `Misc.Password` | str\|null | null | WebUI 密码（认证在 `module/api`，可能被回写） |
 
-命令行参数（`func()` 内解析）：
+命令行参数（`main()` 识别 `-r`，其余由 `func()` 内解析；`func` 用 `parse_known_args` 忽略启动器参数，刻意不声明 `--reload` 以免与 `--run` 的 `--r` 缩写冲突）：
 
 | 参数 | 作用 |
 | --- | --- |
+| `-r` / `--reload` | 启动器参数：监听 `.py` 变更自动重建 WebUI，并强制进入监督模式（开发用） |
 | `--host` / `-p --port` | 覆盖 `WebuiHost` / `WebuiPort` |
 | `-k` / `--key` | WebUI 密码；由 `create_app` 二次解析消费 |
 | `--ssl-key` / `--ssl-cert` | HTTPS 证书与密钥路径 |
@@ -295,7 +309,7 @@ gui.py 读取的是**部署配置**（`config/deploy.yaml`，经 `deploy/config.
 | `--electron` | 标记 Electron 客户端环境；移除控制台日志 handler（其 stdout 无处显示） |
 | `--cdn` | 已废弃，仅为兼容保留；React 静态资源始终由本地提供 |
 
-关联关系：端口来源优先级为 CLI > `deploy.yaml` > 代码默认 `25548`。`frontend/README.md` 与开发文档中的 `22267` 只是启动示例端口（Vite 开发代理默认指向它），**不是**程序默认值。`EnableReload=false` 会同时改变两处行为：无监督器、且更新器拒绝执行热重载更新。
+关联关系：端口来源优先级为 CLI > `deploy.yaml` > 代码默认 `25548`。`frontend/README.md` 与开发文档中的 `22267` 只是启动示例端口（Vite 开发代理默认指向它），**不是**程序默认值。`EnableReload=false` 会同时改变两处行为：无监督器、且更新器拒绝执行热重载更新；但只要指定了 `-r`，仍会进入监督模式并启用源码监听。`reload_requested()` 只精确匹配 `-r`/`--reload`，因此 pytest 的 `-ra` 等短选项不会被误判。
 
 ## 11. 异常与错误处理
 
