@@ -12,16 +12,22 @@ from unittest.mock import Mock, patch
 from module.base.utils import load_image
 from module.config.deep import deep_get, deep_set
 from module.config.config import AzurLaneConfig
+from module.combat.combat import Combat as CommonCombat
+from module.combat.assets import BATTLE_PREPARATION
 from module.exception import GameStuckError
 from module.map.map_grids import SelectedGrids
 from module.os.abyssal_resume import ABYSSAL_CONTINUE_KEY, ABYSSAL_RESUME_KEY
 from module.os.assets import ABYSSAL_MAP_CHECK
 from module.os.config import OSConfig
 from module.os.fleet import OSFleet
+from module.os.map import OSMap
+from module.os.tasks.abyssal import OpsiAbyssal
 from module.os.operation_siren import OperationSiren
 from module.os_combat.assets import ABYSSAL_LOW_RESOLVE
 from module.os_combat.combat import Combat
 from module.os_handler.assets import LEAVE_OS_POPUP_CLOSE
+from module.os.assets import ABYSSAL_STAGE_2, MAP_GOTO_GLOBE
+from module.ui.assets import BACK_ARROW
 
 
 FIXTURES = Path(__file__).parent / 'fixtures' / 'opsi_abyssal_resume'
@@ -69,6 +75,8 @@ def make_runner(enabled=True):
     runner.predict_radar = Mock()
     runner.radar = SelectedGrids([])
     runner.view = []
+    runner.is_in_map = Mock(return_value=False)
+    runner.appear = Mock(return_value=False)
     runner.handle_os_map_fleet_lock = Mock()
     runner.fleet_low_resolve_appear = Mock(return_value=False)
     runner.os_order_execute = Mock()
@@ -244,12 +252,13 @@ class TestAbyssalProgress(unittest.TestCase):
                     runner = make_runner()
                     runner.config = AzurLaneConfig('abyssal-restart-test', task='OpsiAbyssal')
                     state = runner._new_abyssal_resume()
-                    state.update(phase='boss', active=1, completed=[4])
+                    state.update(phase='boss', stage='fleet1', resume_used=True, active=1, completed=[4])
                     runner._abyssal_battle_progress = state
                     runner._record_abyssal_combat()
                     runner.config = AzurLaneConfig('abyssal-restart-test', task='OpsiScheduling')
                     saved = runner._load_abyssal_resume()
                     self.assertEqual((saved['active'], saved['completed'], saved['fighting']), (1, [4], True))
+                    self.assertEqual((saved['stage'], saved['resume_used']), ('fleet1', True))
                     self.assertEqual(runner.config.cross_get('OpsiAbyssal.Storage.Storage.Unrelated'), 'keep')
             finally:
                 _directory.reset(token)
@@ -270,6 +279,89 @@ class TestAbyssalProgress(unittest.TestCase):
         self.assertTrue(runner._load_abyssal_resume()['fighting'])
         self.assertIsNone(runner._abyssal_battle_progress)
 
+    def test_each_stage_has_one_non_accumulating_resume(self):
+        for used in (False, True):
+            with self.subTest(previous_stage_used=used):
+                runner = make_runner()
+                state = runner._new_abyssal_resume()
+                state['resume_used'] = used
+                for stage in ('entry2', 'boss', 'fleet4', 'fleet1', 'fleet2', 'fleet3'):
+                    runner._set_abyssal_stage(state, stage)
+                    self.assertFalse(state['resume_used'])
+                    state['resume_used'] = True
+                    runner._set_abyssal_stage(state, stage)
+                    self.assertTrue(state['resume_used'])
+
+    def test_second_restart_in_same_stage_uses_original_exit(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        runner.question_goto = Mock(side_effect=GameStuckError('first resume interrupted'))
+        runner.boss_clear = Mock()
+        with self.assertRaises(GameStuckError):
+            runner.run_abyssal(resume=True)
+        self.assertTrue(runner._load_abyssal_resume()['resume_used'])
+        runner.question_goto.reset_mock(side_effect=True)
+        self.assertTrue(runner.run_abyssal(resume=True))
+        runner.question_goto.assert_not_called()
+        runner.boss_clear.assert_not_called()
+        runner.map_exit.assert_called_once_with()
+        self.assertIsNone(runner._load_abyssal_resume())
+
+    def test_stage2_scene_refreshes_used_stage1_before_resume(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        state['resume_used'] = True
+        runner._save_abyssal_resume(state)
+        runner.appear.side_effect = lambda button, **kwargs: button is ABYSSAL_STAGE_2
+        runner.question_goto = Mock(side_effect=GameStuckError('stage2 resumed'))
+        with self.assertRaises(GameStuckError):
+            runner.run_abyssal(resume=True)
+        saved = runner._load_abyssal_resume()
+        self.assertEqual(saved['stage'], 'entry2')
+        self.assertTrue(saved['resume_used'])
+        runner.map_exit.assert_not_called()
+
+    def test_lost_map_clears_all_markers_without_boss_or_exit_actions(self):
+        for stage in ('entry1', 'entry2', 'boss', 'fleet1'):
+            with self.subTest(stage=stage):
+                runner = make_runner()
+                state = runner._new_abyssal_resume()
+                state.update(stage=stage, resume_used=True, completed=[4], active=1, fighting=True)
+                runner._save_abyssal_resume(state)
+                runner.is_in_map.return_value = True
+                runner.appear.side_effect = lambda button, **kwargs: button is MAP_GOTO_GLOBE
+                runner.question_goto = Mock()
+                runner.boss_clear = Mock()
+                self.assertTrue(runner.run_abyssal(resume=True))
+                self.assertIsNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+                self.assertIsNone(runner._abyssal_progress)
+                self.assertIsNone(runner._abyssal_battle_progress)
+                runner.question_goto.assert_not_called()
+                runner.boss_clear.assert_not_called()
+                runner.map_exit.assert_not_called()
+
+    def test_popup_or_transition_does_not_consume_lost_map_cleanup(self):
+        runner = make_runner()
+        runner._new_abyssal_resume()
+        runner.appear.return_value = True
+        self.assertFalse(runner._abyssal_map_finished())
+        self.assertIsNotNone(runner._load_abyssal_resume())
+
+    def test_lost_map_during_boss_move_does_not_restore_cleared_state(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        state.update(phase='boss', stage='fleet1', completed=[4])
+
+        def disappear(**kwargs):
+            runner.is_in_map.return_value = True
+            runner.appear.side_effect = lambda button, **kwargs: button is MAP_GOTO_GLOBE
+
+        runner.boss_goto = Mock(side_effect=disappear)
+        self.assertTrue(runner.boss_clear(abyssal_state=state, allow_submarine_call=False))
+        self.assertIsNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+        runner.boss_leave.assert_not_called()
+        runner.map_exit.assert_not_called()
+
 
 class TestAbyssalInitialization(unittest.TestCase):
     def test_resume_precedes_maintenance_and_preserves_other_initialization(self):
@@ -285,15 +377,15 @@ class TestAbyssalInitialization(unittest.TestCase):
                 runner.hp_reset = Mock()
                 runner.run_first_auto_search = Mock()
                 runner.clear_abyssal = Mock()
-                runner._run_with_opsi_task_context = Mock(side_effect=lambda *args: runner.actions.append('resume'))
+                runner.resume_abyssal_on_init = Mock(side_effect=lambda: runner.actions.append('resume'))
                 runner.os_init()
                 self.assertEqual(runner.actions, ['resume', 'maintenance'] if enabled and abyssal else ['maintenance'])
                 if enabled and abyssal:
                     runner.map_exit.assert_not_called()
-                    runner._run_with_opsi_task_context.assert_called_once_with('OpsiAbyssal', runner.clear_abyssal)
+                    runner.resume_abyssal_on_init.assert_called_once_with()
                 else:
                     runner.map_exit.assert_called_once_with()
-                    runner._run_with_opsi_task_context.assert_not_called()
+                    runner.resume_abyssal_on_init.assert_not_called()
                 runner.run_first_auto_search.assert_called_once_with()
 
     def test_new_coordinate_still_checks_ap_cooldown_and_inventory(self):
@@ -312,6 +404,38 @@ class TestAbyssalInitialization(unittest.TestCase):
         runner.storage_get_next_item.assert_called_once_with('ABYSSAL', use_logger=True)
         runner.is_in_abyssal.assert_not_called()
 
+    def test_public_context_works_for_standalone_and_combined_entries(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'abyssal-init-test.json'
+            path.write_text(Path('config/template.json').read_text(encoding='utf-8'), encoding='utf-8')
+            from module.persistence.database import _directory
+            token = _directory.set(Path(directory))
+            try:
+                with patch('module.config.config.filepath_config', return_value=str(path)), \
+                        patch('module.config.config_updater.filepath_config', return_value=str(path)):
+                    for cls in (OSMap, OpsiAbyssal, OperationSiren):
+                        with self.subTest(entry=cls.__name__):
+                            runner = cls.__new__(cls)
+                            runner.config = AzurLaneConfig('abyssal-init-test', task='OpsiDaily')
+                            owner = runner.config.task
+                            runner.device = Mock()
+                            runner.zone = SimpleNamespace(zone_id=44)
+                            runner.zone_init = Mock()
+
+                            def resume():
+                                self.assertEqual(runner.config.task.command, 'OpsiAbyssal')
+                                self.assertTrue(runner.config._disable_task_switch)
+
+                            with patch.object(OpsiAbyssal, 'clear_abyssal', side_effect=resume) as clear:
+                                runner.resume_abyssal_on_init()
+                            clear.assert_called_once()
+                            self.assertIs(runner.config.task, owner)
+                            self.assertFalse(runner.config._disable_task_switch)
+                            runner.zone_init.assert_called_once()
+                            runner.device.click.assert_not_called()
+            finally:
+                _directory.reset(token)
+
     def test_in_progress_map_needs_no_new_coordinate_or_ap(self):
         runner = make_runner()
         runner.is_in_abyssal = Mock(return_value=True)
@@ -325,7 +449,7 @@ class TestAbyssalInitialization(unittest.TestCase):
         runner.cl1_ap_preserve.assert_not_called()
         runner._check_submarine_cooldown.assert_not_called()
         runner.storage_get_next_item.assert_not_called()
-        runner.run_abyssal.assert_called_once()
+        runner.run_abyssal.assert_called_once_with(resume=True)
         runner.handle_fleet_repair_by_config.assert_called_once_with(revert=False)
 
     def test_new_coordinate_keeps_submarine_cooldown_with_switch_on_or_off(self):
@@ -348,7 +472,85 @@ class OfflineConfig(OSConfig, AzurLaneConfig):
     pass
 
 
+class TestAbyssalCombatCancel(unittest.TestCase):
+    def test_low_resolve_closes_backs_out_withdraws_and_uses_next_fleet(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        state.update(phase='boss', stage='fleet1', completed=[4])
+        runner._abyssal_battle_progress = state
+        runner.config.campaign_name = 'abyssal-test'
+        runner.config.DropRecord_CombatRecord = 'do_not'
+        runner.combat_result_reset = Mock()
+        runner.combat_execute = Mock()
+        runner.combat_status = Mock()
+        runner._clear_battle_status_s_timer = Mock()
+        runner.radar = radar(enemy=(0, -1))
+        runner.frame = None
+
+        def frames(**kwargs):
+            for frame in ('low_resolve', 'preparation', 'map'):
+                runner.frame = frame
+                yield
+
+        runner.loop = frames
+        runner.is_in_map.side_effect = lambda: runner.frame == 'map'
+        runner.appear.side_effect = lambda button, **kwargs: (
+            (runner.frame == 'low_resolve' and button in (ABYSSAL_LOW_RESOLVE, LEAVE_OS_POPUP_CLOSE))
+            or (runner.frame == 'preparation' and button in (BATTLE_PREPARATION, BACK_ARROW))
+        )
+        attacked = []
+
+        def move(location, **kwargs):
+            if location == (0, 0):
+                attacked.append(runner.current_fleet)
+                if runner.current_fleet == 1:
+                    runner._record_abyssal_combat()
+                    self.assertFalse(runner.combat(
+                        balance_hp=False, emotion_reduce=False, auto_mode='combat_auto',
+                        submarine_mode='do_not_use', save_get_items=False))
+                else:
+                    runner.radar = radar(question=(0, 1))
+
+        runner.boss_goto = Mock(side_effect=move)
+        self.assertTrue(runner.boss_clear(abyssal_state=state, allow_submarine_call=False))
+        self.assertEqual(attacked, [1, 2])
+        self.assertEqual([call.args[0] for call in runner.device.click.call_args_list],
+                         [LEAVE_OS_POPUP_CLOSE, BACK_ARROW])
+        self.assertIn(('leave', 1), runner.actions)
+        runner.combat_execute.assert_not_called()
+        runner.combat_status.assert_not_called()
+
+    def test_common_combat_cancel_is_opt_in(self):
+        for allow in (False, True):
+            with self.subTest(allow=allow):
+                runner = make_runner()
+                runner.config.campaign_name = 'test'
+                runner.config.DropRecord_CombatRecord = 'do_not'
+                runner.combat_result_reset = Mock()
+                runner.combat_preparation = Mock(return_value=False)
+                runner.combat_execute = Mock()
+                runner.combat_status = Mock()
+                result = CommonCombat.combat(
+                    runner, balance_hp=False, emotion_reduce=False, auto_mode='combat_auto',
+                    submarine_mode='do_not_use', save_get_items=False, allow_preparation_cancel=allow)
+                self.assertEqual(runner.combat_execute.call_count, int(not allow))
+                self.assertEqual(runner.combat_status.call_count, int(not allow))
+                if allow:
+                    self.assertFalse(result)
+
+
 class TestAbyssalScreenshots(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import cv2
+        cls.cv_threads = cv2.getNumThreads()
+        cv2.setNumThreads(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        import cv2
+        cv2.setNumThreads(cls.cv_threads)
+
     def test_original_two_stage_question_route_is_identical_with_switch_on_or_off(self):
         routes = []
         for enabled in (False, True):
@@ -388,6 +590,7 @@ class TestAbyssalScreenshots(unittest.TestCase):
                 self.assertEqual(runner.fleet_selector.get(), 1)
                 caught = any(grid.predict_caught_by_siren() for grid in runner.view)
                 self.assertEqual(caught, name in ('engaged', 'damaged'))
+                self.assertEqual(ABYSSAL_STAGE_2.match(runner.device.image, offset=(20, 20)), name == 'stage2')
                 if name in ('stage1', 'stage2'):
                     self.assertTrue(runner.radar.select(is_question=True))
                 elif name in ('boss', 'withdrawn'):

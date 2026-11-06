@@ -10,4 +10,5 @@
 - `low_resolve.png`：无法与强敌战斗的士气提示。
 
 识别资源 `ABYSSAL_MAP_CHECK` 取自第一阶段右侧任务目标，`ABYSSAL_LOW_RESOLVE`
-取自士气提示首行；关闭按钮复用 `LEAVE_OS_POPUP_CLOSE`。测试不连接真实设备。
+取自士气提示首行；`ABYSSAL_STAGE_2` 取自第二阶段黄色封锁格，关闭按钮复用
+`LEAVE_OS_POPUP_CLOSE`。测试不连接真实设备。

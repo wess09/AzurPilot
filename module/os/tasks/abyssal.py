@@ -157,6 +157,8 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         if resuming:
             logger.info('[大世界-深渊续接] 已在深渊中，继续当前坐标')
         else:
+            if self.abyssal_continue_enabled():
+                self._clear_abyssal_resume()
             self.cl1_ap_preserve()
             if submarine_enabled:
                 is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
@@ -164,8 +166,6 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
                     self._delay_until_submarine_cooldown_end(cooldown_end_time)
                     return False
 
-            if self.abyssal_continue_enabled():
-                self._clear_abyssal_resume()
             with self.config.temporary(STORY_ALLOW_SKIP=False):
                 result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
             if not result:
@@ -181,7 +181,7 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
 
         logger.info('[大世界-深渊坐标] 进入深渊坐标地图，禁止所有任务切换')
         with self.config.temporary(_disable_task_switch=True):
-            result = self.run_abyssal()
+            result = self.run_abyssal(resume=True) if resuming else self.run_abyssal()
             if not result:
                 raise RequestHumanTakeover
 

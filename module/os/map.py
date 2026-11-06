@@ -184,7 +184,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         # 续接必须先于维护、士气恢复和特殊海域退出，否则会丢失现场舰队及 Boss 进度。
         if self.abyssal_continue_enabled():
             if self.is_in_abyssal():
-                self._run_with_opsi_task_context('OpsiAbyssal', self.clear_abyssal)
+                self.resume_abyssal_on_init()
             else:
                 self._clear_abyssal_resume()
 

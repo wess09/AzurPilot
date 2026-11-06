@@ -2,7 +2,7 @@
 
 from module.config.utils import get_os_next_reset
 from module.logger import logger
-from module.os.assets import ABYSSAL_MAP_CHECK
+from module.os.assets import ABYSSAL_MAP_CHECK, ABYSSAL_STAGE_2, MAP_GOTO_GLOBE
 
 
 ABYSSAL_RESUME_KEY = 'OpsiAbyssal.Storage.Storage.AbyssalResume'
@@ -20,6 +20,22 @@ class AbyssalResumeMixin:
         """由退出入口和深渊任务目标共同确认当前海域，避免接管其他特殊海域。"""
         return self.is_in_special_zone() and self.appear(ABYSSAL_MAP_CHECK, offset=(20, 20))
 
+    def resume_abyssal_on_init(self):
+        """通过公开任务上下文续接，独立地图对象也不依赖智能调度的私有方法。"""
+        from module.config.config import name_to_function
+        from module.os.tasks.abyssal import OpsiAbyssal
+        from module.os.tasks.task_context import opsi_task_context
+        from module.os_handler.resource_state import reset_resource_caches
+
+        with opsi_task_context(self.config, name_to_function('OpsiAbyssal'),
+                               bind_task='OpsiAbyssal', disable_task_switch=True):
+            task = OpsiAbyssal(config=self.config, device=self.device)
+            task.zone = self.zone
+            task.clear_abyssal()
+        # 维修可能已切到港口，调用方必须重新确认海域，不能沿用深渊的旧位置。
+        self.zone_init()
+        reset_resource_caches(self)
+
     def _load_abyssal_resume(self):
         """旧断点只能用于相同服务器、重置周期和海域。"""
         state = self.config.cross_get(ABYSSAL_RESUME_KEY, default=None)
@@ -34,7 +50,11 @@ class AbyssalResumeMixin:
                 and isinstance(state.get('fighting'), bool)
                 and isinstance(state.get('completed'), list)
                 and all(fleet in (1, 2, 3, 4) for fleet in state['completed'])):
-            return dict(state, completed=list(state['completed']))
+            state = dict(state, completed=list(state['completed']))
+            state.setdefault('stage', 'boss' if state['phase'] == 'boss' else 'entry1')
+            state.setdefault('resume_used', False)
+            if isinstance(state['resume_used'], bool):
+                return state
         logger.info('[大世界-深渊续接] 断点已失效，按当前画面继续')
         self._clear_abyssal_resume()
         return None
@@ -59,9 +79,87 @@ class AbyssalResumeMixin:
             'active': 0,
             'fighting': False,
             'completed': [],
+            'stage': 'entry1',
+            'resume_used': False,
         }
         self._save_abyssal_resume(state)
         return state
+
+    def _set_abyssal_stage(self, state, stage):
+        """阶段前进时机会重置为一次，不把上一阶段的剩余机会累计过来。"""
+        if state['stage'] != stage:
+            state.update(stage=stage, resume_used=False)
+            logger.attr('深渊续接阶段', stage)
+            self._save_abyssal_resume(state)
+
+    def _refresh_abyssal_stage(self, state):
+        """仅凭当前画面的正向特征更新阶段；雷达、视野由调用方先刷新。"""
+        if any(grid.predict_caught_by_siren() for grid in self.view):
+            current = state['active'] or self.fleet_selector.get()
+            state['phase'] = 'boss'
+            self._set_abyssal_stage(state, f'fleet{current}' if current else 'boss')
+        elif state['phase'] == 'search':
+            enemies = self.radar.select(is_enemy=True).filter(
+                lambda grid: abs(grid.location[0]) <= abs(grid.location[1]))
+            if enemies:
+                state['phase'] = 'boss'
+                self._set_abyssal_stage(state, 'boss')
+            elif self.appear(ABYSSAL_STAGE_2, offset=(20, 20)):
+                self._set_abyssal_stage(state, 'entry2')
+
+    def _abyssal_map_finished(self):
+        """普通海域的全球地图入口确认深渊已消失，不以暂时识别不到深渊作判断。"""
+        if self.is_in_map() and self.appear(MAP_GOTO_GLOBE, offset=(20, 20)):
+            logger.info('[大世界-深渊续接] 已回到普通海域，清除全部续接标记并继续后续任务')
+            self._clear_abyssal_resume()
+            return True
+        return False
+
+    def run_abyssal_resume(self, resume=False):
+        """按当前阶段续接一次；阶段变化刷新机会，耗尽时沿原退出流程收尾。
+
+        Pages:
+            in: 深渊地图。
+            out: 当前深渊处理完毕后的地图；实际战斗失败仍按原机制返回 False。
+        """
+        state = self._load_abyssal_resume() or self._new_abyssal_resume()
+        self._abyssal_progress = state
+        try:
+            while True:
+                self.device.screenshot()
+                if self._abyssal_map_finished():
+                    return True
+                if not state['entry_fleet']:
+                    state['entry_fleet'] = self.fleet_selector.get()
+                    self._save_abyssal_resume(state)
+                self.update_os()
+                self.predict()
+                self.predict_radar()
+                self._refresh_abyssal_stage(state)
+                if resume:
+                    if state['resume_used']:
+                        logger.info('[大世界-深渊续接] 当前阶段已续接过一次，按原流程退出')
+                        self.map_exit()
+                        self._clear_abyssal_resume()
+                        return True
+                    state['resume_used'] = True
+                    self._save_abyssal_resume(state)
+                    resume = False
+                if state['phase'] == 'boss':
+                    break
+                if state['entry_fleet'] and self.fleet_selector.get() != state['entry_fleet']:
+                    self.fleet_set(state['entry_fleet'])
+                    continue
+                self.question_goto(has_fleet_step=True)
+
+            self._abyssal_battle_progress = state
+            result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False, abyssal_state=state)
+            if result:
+                self._clear_abyssal_resume()
+            return result
+        finally:
+            self._abyssal_progress = None
+            self._abyssal_battle_progress = None
 
     def _record_abyssal_combat(self):
         """确认进入战斗时才标记已出战，单纯行军中重启不会跳过该舰队。"""
@@ -96,9 +194,13 @@ class AbyssalResumeMixin:
         self._save_abyssal_resume(state)
         logger.info(f'[大世界-深渊续接] 舰队 {current} 的战斗中断，先脱离后继续下一队')
         self.boss_leave()
+        if self._abyssal_map_finished():
+            return
         for fleet in fleets:
             if fleet.fleet_index == current and fleet.standby_loca != (0, 0):
                 self.boss_goto(location=fleet.standby_loca, has_fleet_step=has_fleet_step, drop=drop)
                 break
+        if self._abyssal_map_finished():
+            return
         state.update(active=0, fighting=False)
         self._save_abyssal_resume(state)

@@ -806,7 +806,7 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
                     break
 
     def combat(self, balance_hp=None, emotion_reduce=None, auto_mode=None, submarine_mode=None,
-               save_get_items=None, expected_end=None, fleet_index=1):
+               save_get_items=None, expected_end=None, fleet_index=1, allow_preparation_cancel=False):
         """执行一次完整战斗流程：准备 -> 执行 -> 结算。
 
         参数为 None 时使用用户配置文件中的默认值。
@@ -820,6 +820,7 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
             save_get_items (DropImage | bool, optional): 是否保存掉落截图，可传入 DropImage 对象或 False 禁用。默认为 None。
             expected_end (str | callable, optional): 预期结束状态，可选字符串或回调函数。默认为 None。
             fleet_index (int, optional): 舰队索引（1 或 2）。默认为 1。
+            allow_preparation_cancel (bool): 允许准备阶段明确返回 False 取消本场出战；默认关闭。
         """
         balance_hp = balance_hp if balance_hp is not None else self.config.HpControl_UseHpBalance
         emotion_reduce = emotion_reduce if emotion_reduce is not None else self.emotion.is_calculate
@@ -839,8 +840,10 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
                 drop = None
             elif isinstance(save_get_items, DropImage):
                 drop = save_get_items
-            self.combat_preparation(
+            prepared = self.combat_preparation(
                 balance_hp=balance_hp, emotion_reduce=emotion_reduce, auto=auto_mode, fleet_index=fleet_index)
+            if allow_preparation_cancel and prepared is False:
+                return False
             self.combat_execute(
                 auto=auto_mode, submarine=submarine_mode, drop=drop)
             self.combat_status(

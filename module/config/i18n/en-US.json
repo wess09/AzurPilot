@@ -4127,7 +4127,7 @@
     },
     "ContinueAfterRestart": {
       "name": "Resume Abyssal battles after restart",
-      "help": "Disabled by default. Finish the current Abyssal Zone after a restart. Both entry stages use the original exploration fleet; Boss fleets keep their configured order. Withdraw an interrupted fleet before continuing with the next one. When disabled, initialization and navigation are unchanged."
+      "help": "Disabled by default. Resume the current Abyssal Zone with the original exploration fleet and configured Boss fleet order. Each stage has one restart continuation; the next stage resets it to one without accumulation. Another restart in the same stage exits normally. Low morale closes the prompt, withdraws the fleet and proceeds to the next. Clear all markers when the Abyssal Zone is gone."
     }
   },
   "OpsiStronghold": {

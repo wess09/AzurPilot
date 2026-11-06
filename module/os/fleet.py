@@ -477,6 +477,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
             return self.is_in_map()
 
         for _ in self.loop(skip_first=skip_first_screenshot):
+            if getattr(self, '_abyssal_progress', None) is not None and self._abyssal_map_finished():
+                break
             # 地图事件
             event = self.handle_map_event(drop=drop)
             if event:
@@ -507,6 +509,9 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                     completed_event = True
                     # story_skip -> map_get_items 表示收到了深渊进度奖励
                     if clicked_story:
+                        progress = getattr(self, '_abyssal_progress', None)
+                        if progress is not None and progress['phase'] == 'search':
+                            self._set_abyssal_stage(progress, 'entry2')
                         logger.info('[大世界-剧情] 从剧情获得物品')
                         self.device.click_record_clear()
                         clicked_story = False
@@ -841,6 +846,9 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
         """
         logger.hr('前往问号')
         while 1:
+            progress = getattr(self, '_abyssal_progress', None)
+            if progress is not None and self._abyssal_map_finished():
+                break
             # 游戏 bug：上一个已清理海域的 AUTO_SEARCH_REWARD 弹窗
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 self.device.screenshot()
@@ -851,6 +859,11 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
             self.update_os()
             self.predict()
             self.predict_radar()
+
+            if progress is not None:
+                self._refresh_abyssal_stage(progress)
+                if progress['phase'] == 'boss':
+                    break
 
             # 计算目的地
             grids = self.radar.select(is_question=True)
@@ -917,6 +930,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
             self.month_boss_goto_additional(location=location, has_fleet_step=has_fleet_step, drop=drop)
 
         while 1:
+            if getattr(self, '_abyssal_progress', None) is not None and self._abyssal_map_finished():
+                break
             # 更新本地视野
             # 不截图，复用旧截图
             self.update_os()
@@ -1059,6 +1074,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                 method=opsi_drop_record(self.config)
         ) as drop:
             if abyssal_state is not None:
+                if self._abyssal_map_finished():
+                    return True
                 self.predict_radar()
                 if self.radar.select(is_question=True):
                     logger.info('[大世界-深渊续接] Boss 已清除，继续退出领奖')
@@ -1066,6 +1083,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                     return True
                 self._resume_abyssal_fleet(
                     abyssal_state, [f for f in fleets if isinstance(f, BossFleet)], has_fleet_step, drop)
+                if self._abyssal_map_finished():
+                    return True
             for fleet in fleets:
                 logger.hr(f'回合: {fleet}', level=2)
                 if not isinstance(fleet, BossFleet):
@@ -1099,6 +1118,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                     self.boss_goto(location=fleet.standby_loca, has_fleet_step=has_fleet_step, drop=drop,
                                    is_month=is_month)
                     if abyssal_state is not None:
+                        if self._abyssal_map_finished():
+                            return True
                         abyssal_state['completed'].append(fleet.fleet_index)
                         self._save_abyssal_resume(abyssal_state)
                     continue
@@ -1116,10 +1137,13 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                 # 攻击
                 if abyssal_state is not None:
                     abyssal_state.update(active=fleet.fleet_index, fighting=False)
+                    self._set_abyssal_stage(abyssal_state, f'fleet{fleet.fleet_index}')
                     self._save_abyssal_resume(abyssal_state)
                 self.boss_goto(location=(0, 0), has_fleet_step=has_fleet_step, drop=drop, is_month=is_month)
 
                 # 结束条件
+                if abyssal_state is not None and self._abyssal_map_finished():
+                    return True
                 self.predict_radar()
                 if self.radar.select(is_question=True):
                     logger.info('[大世界-战斗] Boss已清除')
@@ -1137,6 +1161,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                         drop.add(self.device.image)
                     break
                 if abyssal_state is not None:
+                    if self._abyssal_map_finished():
+                        return True
                     abyssal_state['completed'].append(fleet.fleet_index)
                     abyssal_state.update(active=0, fighting=False)
                     self._save_abyssal_resume(abyssal_state)
@@ -1144,13 +1170,16 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
         logger.critical('[大世界] 无法击败boss，舰队已耗尽')
         return False
 
-    def run_abyssal(self):
+    def run_abyssal(self, resume=False):
         """
         处理双重确认并攻击深渊（塞壬日志）Boss。
         即使舰队筛选器包含 `CallSubmarine` 条目，深渊也不会使用潜艇命令。
 
+        Args:
+            resume (bool): 是否为初始化时续接当前深渊，仅开启续接时生效。
+
         Returns:
-            bool: 是否成功击败 Boss。
+            bool: 当前坐标已处理完毕；开启续接时也包括海域已消失或本阶段机会已用尽。
 
         Pages:
             in: 塞壬日志（深渊）。
@@ -1158,12 +1187,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
         """
         self.handle_os_map_fleet_lock(enable=False)
 
-        state = None
         if self.abyssal_continue_enabled():
-            state = self._load_abyssal_resume() or self._new_abyssal_resume()
-            if state['phase'] == 'search' and state['entry_fleet']:
-                if self.fleet_selector.get() != state['entry_fleet']:
-                    self.fleet_set(state['entry_fleet'])
+            return self.run_abyssal_resume(resume=resume)
 
         def is_at_front(grid):
             # 格子位置通常为 (0, -2)
@@ -1172,22 +1197,6 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
 
         while 1:
             self.device.screenshot()
-            if state is not None:
-                if not state['entry_fleet']:
-                    state['entry_fleet'] = self.fleet_selector.get()
-                    self._save_abyssal_resume(state)
-                self.update_os()
-                self.predict()
-                self.predict_radar()
-                if state['phase'] == 'boss' or any(grid.predict_caught_by_siren() for grid in self.view):
-                    state['phase'] = 'boss'
-                    self._save_abyssal_resume(state)
-                    break
-                # 脱离后 Boss 也可能在舰队后方；排除雷达边缘的方向箭头误识别。
-                if self.radar.select(is_enemy=True).filter(lambda grid: abs(grid.location[0]) <= abs(grid.location[1])):
-                    state['phase'] = 'boss'
-                    self._save_abyssal_resume(state)
-                    break
             self.question_goto(has_fleet_step=True)
 
             if self.radar.select(is_enemy=True).filter(is_at_front):
@@ -1197,17 +1206,7 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                 logger.info('[大世界-搜索] 前方无Boss，重试问号前往')
                 continue
 
-        if state is None:
-            return self.boss_clear(has_fleet_step=True, allow_submarine_call=False)
-        state['phase'] = 'boss'
-        self._save_abyssal_resume(state)
-        self._abyssal_battle_progress = state
-        try:
-            result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False, abyssal_state=state)
-        finally:
-            self._abyssal_battle_progress = None
-        if result:
-            self._clear_abyssal_resume()
+        result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False)
         return result
 
     def get_stronghold_percentage(self):
