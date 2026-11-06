@@ -1645,8 +1645,19 @@ OpsiDaily:
 OpsiObscure:
   SkipHazard2Obscure: false
   ForceRun: false
+  # 实验性全图扫描，有概率卡死；自律及当前视野扫描后未遇到事件时，只扫描一次全图。
+  FullScan: false
+  # 全图扫描之后（未开启则在自律及当前视野扫描之后）仍无事件时，切换舰队扫描雷达。
+  # 不做固定坐标巡逻，也不隐式启动全图扫描；默认关闭。
+  RadarScan: false
+  # 本海域跨重启仅续接一次；成功退出后清除，第二次重启回来正常退出。
+  ResumeState:
+    type: stored
+    value: null
+    display: hide
 OpsiAbyssal:
   ForceRun: false
+  ContinueAfterRestart: false
 OpsiStronghold:
   SubmarineEveryCombat: false
   ForceRun: false
@@ -1785,6 +1796,8 @@ OpsiScheduling:
     value: OpsiStronghold > OpsiObscure > OpsiAbyssal > OpsiMeowfficerFarming
   ObscureAbyssalCheckDelayDays:
     value: 0
+  StrongholdCheckDelayDays:
+    value: 0
   MonthEndActionPointCleanupEnable:
     value: false
     option: [true, false]
@@ -1894,8 +1907,8 @@ IslandFishery:
     option: [ 1, 2, 3 ]
   MinShell: 50
   MinCatfish: 0
-  MinCommonCarp: 0
   MinKoiCarp: 0
+  MinCommonCarp: 0
   MinShrimp: 50
   MinCrayfish: 50
   MinBass: 50
@@ -1912,6 +1925,9 @@ IslandFishery:
   PlantYellowfinTuna:
     value: 3
     option: [ 0, 1, 2, 3 ]
+  DefaultFish:
+    value: yellowfin_tuna
+    option: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RancherFilter: |-
     WorkerJuu
 IslandMine:
@@ -1921,6 +1937,9 @@ IslandMine:
   MineSilver:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultOre:
+    value: Silver
+    option: [ Copper, Aluminium, Iron, Sulphur, Silver ]
   WorkerFilter: |-
     WorkerJuu
   MinCopper:
@@ -1940,6 +1959,9 @@ IslandForest:
   CutElegant:
     value: 1
     option: [ 0, 1, 2, 3, 4 ]
+  DefaultWood:
+    value: Elegant
+    option: [ Practical, Selected, Elegant ]
   WorkerFilter: |-
     WorkerJuu
   MinElegant:
@@ -2209,18 +2231,30 @@ WoodProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 ElectronicProcessing:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Industrial:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 Handmade:
   Positions:
     value: 2
     option: [ 0, 1, 2 ]
+  Products:
+    value: ""
+    preserve_empty: true
 IslandAirDrop:
   LastSteal: 2020-01-01 00:00:00
   VisitOtherIsland: true
@@ -2616,6 +2650,24 @@ IslandProductionPlanner:
     type: checkbox
     value: false
     option: [ true, false ]
+  Season:
+    value: auto
+    option: [ auto, season_1, season_2, season_3, season_4, season_5 ]
+  Priority:
+    value: pt
+    option: [ pt, coins ]
+  FillSparePosts:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  AutoPositions:
+    type: checkbox
+    value: true
+    option: [ true, false ]
+  UnlockedFish:
+    type: multiselect
+    value: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
+    option: [ shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber ]
   RescanTechnology:
     type: checkbox
     value: true

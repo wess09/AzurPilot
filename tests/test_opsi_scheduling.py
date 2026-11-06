@@ -368,15 +368,18 @@ class TestSmartSchedulingExploreDelay(unittest.TestCase):
 class StrongholdPostponeConfig(SmartSchedulingConfig):
     """仅提供塞壬要塞推迟检查所需的配置读写接口。"""
 
-    def __init__(self, state=None):
+    def __init__(self, state=None, delay_days=0):
         super().__init__()
         self.data = {'OpsiScheduling': {'Storage': {'Storage': dict(state or {})}}}
         self.modified = {}
         self.OpsiStronghold_SubmarineEveryCombat = False
+        self.stronghold_check_delay_days = delay_days
 
     def cross_get(self, keys, default=None):
         if keys == 'OpsiScheduling.Storage.Storage':
             return dict(deep_get(self.data, keys=keys, default={}) or {})
+        if keys == 'OpsiScheduling.OpsiScheduling.StrongholdCheckDelayDays':
+            return self.stronghold_check_delay_days
         return super().cross_get(keys, default=default)
 
     def save(self):
@@ -394,9 +397,9 @@ class TestStrongholdCheckPostpone(unittest.TestCase):
 
     NEXT_CHECK_KEY = OpsiScheduling.STATE_KEY_STRONGHOLD_NEXT_CHECK
 
-    def make_scheduling(self, state=None, cls=OpsiScheduling):
+    def make_scheduling(self, state=None, cls=OpsiScheduling, delay_days=0):
         scheduling = cls.__new__(cls)
-        scheduling.config = StrongholdPostponeConfig(state=state)
+        scheduling.config = StrongholdPostponeConfig(state=state, delay_days=delay_days)
         return scheduling
 
     @staticmethod
@@ -490,11 +493,67 @@ class TestStrongholdCheckPostpone(unittest.TestCase):
                         earlier + OpsiScheduling.RESET_CHECK_GRACE,
                     )
 
-    def assert_postponed_by_clear_stronghold(self, zones):
-        """运行一次要塞清理，确认写入了下次检查时间。"""
-        stronghold = self.make_scheduling(cls=OpsiStronghold)
-        weekly = current_time() + timedelta(days=2)
-        monthly = current_time() + timedelta(days=20)
+    def test_positive_delay_waits_full_days_across_refreshes(self):
+        now = datetime(2026, 9, 20, 12)
+        for days in (1, 3, 30):
+            with self.subTest(days=days):
+                scheduling = self.make_scheduling(delay_days=days)
+                with (
+                    patch('module.os.tasks.scheduling.current_time', return_value=now),
+                    patch('module.os.tasks.scheduling.get_nearest_weekday_date',
+                          return_value=datetime(2026, 9, 21)),
+                    patch('module.os.tasks.scheduling.get_os_next_reset',
+                          return_value=datetime(2026, 10, 1)),
+                ):
+                    self.assertEqual(
+                        scheduling._get_next_stronghold_check_time(),
+                        now + timedelta(days=days),
+                    )
+
+    def test_invalid_or_negative_delay_keeps_original_refresh_schedule(self):
+        weekly = datetime(2026, 9, 21)
+        for value in (None, '', 'invalid', -3):
+            with self.subTest(value=value):
+                scheduling = self.make_scheduling(delay_days=value)
+                with (
+                    patch('module.os.tasks.scheduling.get_nearest_weekday_date',
+                          return_value=weekly),
+                    patch('module.os.tasks.scheduling.get_os_next_reset',
+                          return_value=datetime(2026, 10, 1)),
+                ):
+                    self.assertEqual(
+                        scheduling._get_next_stronghold_check_time(),
+                        weekly + OpsiScheduling.RESET_CHECK_GRACE,
+                    )
+
+    def test_custom_delay_survives_reload_and_resumes_at_exact_deadline(self):
+        now = datetime(2026, 9, 20, 12)
+        deadline = now + timedelta(days=3)
+        scheduling = self.make_scheduling(state={'OtherState': True}, delay_days=3)
+        with patch('module.os.tasks.scheduling.current_time', return_value=now):
+            scheduling._postpone_stronghold_check('塞壬要塞没有可执行内容')
+
+        reloaded = self.make_scheduling(state=self.state_of(scheduling), delay_days=3)
+        # 周一已经刷新，但还未等满 3 天；重启后仍应沿用最初的截止时间。
+        with patch('module.os.tasks.scheduling.current_time',
+                   return_value=deadline - timedelta(seconds=1)):
+            self.assertEqual(self.dispatch(reloaded), ['OpsiObscure'])
+        self.assertEqual(self.state_of(reloaded)[self.NEXT_CHECK_KEY], deadline.isoformat())
+
+        with patch('module.os.tasks.scheduling.current_time', return_value=deadline):
+            self.assertEqual(self.dispatch(reloaded), ['OpsiStronghold'])
+        self.assertEqual(self.state_of(reloaded), {'OtherState': True})
+
+    def assert_postponed_by_clear_stronghold(self, zones, delay_days=0):
+        """独立要塞任务仍会搜索，并在无内容时写入下次检查时间。"""
+        now = datetime(2026, 9, 20, 12)
+        stronghold = self.make_scheduling(
+            state={self.NEXT_CHECK_KEY: (now + timedelta(days=10)).isoformat()},
+            cls=OpsiStronghold,
+            delay_days=delay_days,
+        )
+        weekly = now + timedelta(days=2)
+        monthly = now + timedelta(days=20)
 
         with (
             patch.object(stronghold, 'cl1_ap_preserve'),
@@ -509,6 +568,7 @@ class TestStrongholdCheckPostpone(unittest.TestCase):
             patch.object(stronghold, 'handle_fleet_repair_by_config'),
             patch.object(stronghold, 'handle_fleet_resolve'),
             patch.object(stronghold, '_handle_coin_task_no_content', return_value=True),
+            patch('module.os.tasks.scheduling.current_time', return_value=now),
             patch(
                 'module.os.tasks.scheduling.get_nearest_weekday_date',
                 return_value=weekly,
@@ -517,14 +577,20 @@ class TestStrongholdCheckPostpone(unittest.TestCase):
         ):
             stronghold.clear_stronghold()
 
-        expected = (min(weekly, monthly) + OpsiScheduling.RESET_CHECK_GRACE).isoformat()
-        self.assertEqual(self.state_of(stronghold)[self.NEXT_CHECK_KEY], expected)
+        expected = (now + timedelta(days=delay_days) if delay_days > 0
+                    else min(weekly, monthly) + OpsiScheduling.RESET_CHECK_GRACE)
+        self.assertEqual(self.state_of(stronghold)[self.NEXT_CHECK_KEY], expected.isoformat())
 
     def test_records_postpone_when_no_stronghold_is_found(self):
         self.assert_postponed_by_clear_stronghold(zones=[None])
 
     def test_records_postpone_after_clearing_the_last_stronghold(self):
         self.assert_postponed_by_clear_stronghold(zones=[Mock(), None])
+
+    def test_records_custom_delay_when_no_strongholds_remain(self):
+        for zones in ([None], [Mock(), None]):
+            with self.subTest(zones=zones):
+                self.assert_postponed_by_clear_stronghold(zones=zones, delay_days=3)
 
 
 class CoinCheckDelayConfig(StrongholdPostponeConfig):
@@ -863,16 +929,18 @@ class TestMonthEndCleanupGrace(unittest.TestCase):
         self.assertTrue(self.cleanup_active_at(scheduling, datetime(2026, 8, 31, 0, 30)))
 
     def test_cleanup_pulls_coin_tasks_despite_the_check_delay(self):
-        # 延迟 3 天仍生效（记录是刚写的），月末清理每一轮依旧要拉起隐秘/深渊
+        # 常规补币检查仍在延迟期，月末清理依旧要拉起要塞及隐秘/深渊。
         moment = datetime(2026, 10, 31, 12, 0)
         cleared = moment - timedelta(hours=1)
         scheduling = self.make_scheduling(
             state={
                 OpsiScheduling.STATE_KEY_OBSCURE_CLEARED_AT: cleared.isoformat(),
                 OpsiScheduling.STATE_KEY_ABYSSAL_CLEARED_AT: cleared.isoformat(),
+                OpsiScheduling.STATE_KEY_STRONGHOLD_NEXT_CHECK: (moment + timedelta(days=30)).isoformat(),
             },
             delay_days=3,
         )
+        scheduling.config.stronghold_check_delay_days = 30
         scheduling.clear_obscure = Mock()
         scheduling.clear_abyssal = Mock()
         scheduling.clear_stronghold = Mock()
@@ -903,8 +971,13 @@ class TestMonthEndCleanupGrace(unittest.TestCase):
                 scheduling._get_coin_task_check_postpone_time('OpsiObscure'),
                 datetime(2026, 11, 1, 2, 0),
             )
+            self.assertEqual(
+                scheduling._get_stronghold_check_postpone_time(),
+                moment + timedelta(days=30),
+            )
             scheduling._run_month_end_cleanup(500, 1000, 5000, 1000)
 
+        scheduling.clear_stronghold.assert_called_once()
         scheduling.clear_obscure.assert_called_once()
         scheduling.clear_abyssal.assert_called_once()
 

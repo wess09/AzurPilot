@@ -40,6 +40,7 @@ from module.map_detection.utils import area2corner, corner2inner
 from module.ocr.ocr import Ocr
 from module.os.assets import FLEET_EMP_DEBUFF, MAP_EXIT, MAP_GOTO_GLOBE, STRONGHOLD_PERCENTAGE, TEMPLATE_EMPTY_HP
 from module.os.camera import OSCamera
+from module.os.abyssal_resume import AbyssalResumeMixin
 from module.os.config import opsi_drop_record
 from module.os.map_base import OSCampaignMap
 from module.os_ash.ash import OSAsh
@@ -143,7 +144,7 @@ FLEET_LOW_RESOLVE = Button(
     name='FLEET_LOW_RESOLVE')
 
 
-class OSFleet(OSCamera, Combat, Fleet, OSAsh):
+class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
     """大世界舰队主控类。
 
     整合摄像机控制 (OSCamera)、战斗系统 (Combat)、地图舰队 (Fleet)
@@ -476,6 +477,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             return self.is_in_map()
 
         for _ in self.loop(skip_first=skip_first_screenshot):
+            if getattr(self, '_abyssal_progress', None) is not None and self._abyssal_map_finished():
+                break
             # 地图事件
             event = self.handle_map_event(drop=drop)
             if event:
@@ -506,6 +509,9 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     completed_event = True
                     # story_skip -> map_get_items 表示收到了深渊进度奖励
                     if clicked_story:
+                        progress = getattr(self, '_abyssal_progress', None)
+                        if progress is not None and progress['phase'] == 'search':
+                            self._set_abyssal_stage(progress, 'entry2')
                         logger.info('[大世界-剧情] 从剧情获得物品')
                         self.device.click_record_clear()
                         clicked_story = False
@@ -567,6 +573,7 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             if self.combat_appear():
                 # 使用 ui_back() 进行测试，因为每月深渊日志太少。
                 # self.ui_back(check_button=self.is_in_map)
+                self._record_abyssal_combat()
                 self.combat(expected_end=abyssal_expected_end, fleet_index=self.fleet_show_index, save_get_items=drop)
                 completed_event = True
                 confirm_timer.reset()
@@ -839,6 +846,16 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         """
         logger.hr('前往问号')
         while 1:
+            progress = getattr(self, '_abyssal_progress', None)
+            normal_state = getattr(self, '_abyssal_normal_state', None)
+            if progress is not None or normal_state is not None:
+                if self.is_in_map():
+                    if progress is not None and self._abyssal_map_finished():
+                        break
+                else:
+                    self.handle_map_event()
+                    self.device.screenshot()
+                    continue
             # 游戏 bug：上一个已清理海域的 AUTO_SEARCH_REWARD 弹窗
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 self.device.screenshot()
@@ -849,6 +866,14 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             self.update_os()
             self.predict()
             self.predict_radar()
+
+            if progress is not None:
+                self._refresh_abyssal_stage(progress)
+                if progress['phase'] == 'boss' and progress['boss_confirmed']:
+                    break
+            elif normal_state is not None and self._abyssal_boss_appear():
+                normal_state.update(phase='boss', boss_confirmed=True)
+                break
 
             # 计算目的地
             grids = self.radar.select(is_question=True)
@@ -915,6 +940,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             self.month_boss_goto_additional(location=location, has_fleet_step=has_fleet_step, drop=drop)
 
         while 1:
+            if getattr(self, '_abyssal_progress', None) is not None and self._abyssal_map_finished():
+                break
             # 更新本地视野
             # 不截图，复用旧截图
             self.update_os()
@@ -1032,7 +1059,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     logger.info('[大世界-舰队] 舰队离开Boss，找到当前舰队')
                     break
 
-    def boss_clear(self, has_fleet_step=True, is_month=False, allow_submarine_call=True):
+    def boss_clear(self, has_fleet_step=True, is_month=False, allow_submarine_call=True, abyssal_state=None,
+                   abyssal_check=None):
         """
         所有舰队轮流攻击 Boss。
 
@@ -1040,6 +1068,8 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
             has_fleet_step (bool): 是否限制舰队移动步数。
             is_month (bool): 是否为月度Boss。
             allow_submarine_call (bool): 是否允许呼叫潜艇。
+            abyssal_state (dict | None): 仅深渊续接使用的断点；其他 Boss 保持原流程。
+            abyssal_check (dict | None): 普通深渊本次运行的关卡确认，不保存或恢复断点。
 
         Returns:
             bool: 是否成功击败 Boss。
@@ -1051,10 +1081,23 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         logger.hr(f'清除Boss', level=1)
 
         fleets = self.parse_fleet_filter()
+        clear_state = abyssal_state if abyssal_state is not None else abyssal_check
         with self.stat.new(
                 genre=inflection.underscore(self.config.task.command),
                 method=opsi_drop_record(self.config)
         ) as drop:
+            if abyssal_state is not None:
+                if self._abyssal_map_finished():
+                    return True
+                self.predict_radar()
+                if self._abyssal_boss_cleared(abyssal_state):
+                    logger.info('[大世界-深渊续接] Boss 已清除，继续退出领奖')
+                    self.map_exit(drop=drop)
+                    return True
+                self._resume_abyssal_fleet(
+                    abyssal_state, [f for f in fleets if isinstance(f, BossFleet)], has_fleet_step, drop)
+                if self._abyssal_map_finished():
+                    return True
             for fleet in fleets:
                 logger.hr(f'回合: {fleet}', level=2)
                 if not isinstance(fleet, BossFleet):
@@ -1062,6 +1105,9 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                         self.os_order_execute(recon_scan=False, submarine_call=True)
                     else:
                         logger.info(f'[大世界-舰队] 在深渊中跳过舰队筛选顺序 `{fleet}`')
+                    continue
+
+                if abyssal_state is not None and fleet.fleet_index in abyssal_state['completed']:
                     continue
 
                 # 切换舰队
@@ -1084,6 +1130,11 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     logger.warning('[大世界-舰队] 因低决心debuff跳过使用当前舰队')
                     self.boss_goto(location=fleet.standby_loca, has_fleet_step=has_fleet_step, drop=drop,
                                    is_month=is_month)
+                    if abyssal_state is not None:
+                        if self._abyssal_map_finished():
+                            return True
+                        abyssal_state['completed'].append(fleet.fleet_index)
+                        self._save_abyssal_resume(abyssal_state)
                     continue
 
                 # 确保 Boss 出现
@@ -1097,11 +1148,18 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                                                index=0)
 
                 # 攻击
+                if abyssal_state is not None:
+                    abyssal_state.update(active=fleet.fleet_index, fighting=False)
+                    self._set_abyssal_stage(abyssal_state, f'fleet{fleet.fleet_index}')
+                    self._save_abyssal_resume(abyssal_state)
                 self.boss_goto(location=(0, 0), has_fleet_step=has_fleet_step, drop=drop, is_month=is_month)
 
                 # 结束条件
+                if abyssal_state is not None and self._abyssal_map_finished():
+                    return True
                 self.predict_radar()
-                if self.radar.select(is_question=True):
+                if (self.radar.select(is_question=True) if clear_state is None
+                        else self._abyssal_boss_cleared(clear_state)):
                     logger.info('[大世界-战斗] Boss已清除')
                     if drop.count:
                         drop.add(self.device.image)
@@ -1116,17 +1174,26 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
                     if drop.count:
                         drop.add(self.device.image)
                     break
+                if abyssal_state is not None:
+                    if self._abyssal_map_finished():
+                        return True
+                    abyssal_state['completed'].append(fleet.fleet_index)
+                    abyssal_state.update(active=0, fighting=False)
+                    self._save_abyssal_resume(abyssal_state)
 
         logger.critical('[大世界] 无法击败boss，舰队已耗尽')
         return False
 
-    def run_abyssal(self):
+    def run_abyssal(self, resume=False):
         """
         处理双重确认并攻击深渊（塞壬日志）Boss。
         即使舰队筛选器包含 `CallSubmarine` 条目，深渊也不会使用潜艇命令。
 
+        Args:
+            resume (bool): 是否为初始化时续接当前深渊，仅开启续接时生效。
+
         Returns:
-            bool: 是否成功击败 Boss。
+            bool: 当前坐标已处理完毕；开启续接时也包括海域已消失或本阶段机会已用尽。
 
         Pages:
             in: 塞壬日志（深渊）。
@@ -1134,24 +1201,9 @@ class OSFleet(OSCamera, Combat, Fleet, OSAsh):
         """
         self.handle_os_map_fleet_lock(enable=False)
 
-        def is_at_front(grid):
-            # 格子位置通常为 (0, -2)
-            x, y = grid.location
-            return (abs(x) <= abs(y)) and (y < 0)
-
-        while 1:
-            self.device.screenshot()
-            self.question_goto(has_fleet_step=True)
-
-            if self.radar.select(is_enemy=True).filter(is_at_front):
-                logger.info('[大世界-搜索] 在前方找到Boss')
-                break
-            else:
-                logger.info('[大世界-搜索] 前方无Boss，重试问号前往')
-                continue
-
-        result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False)
-        return result
+        if self.abyssal_continue_enabled():
+            return self.run_abyssal_resume(resume=resume)
+        return self.run_abyssal_normal()
 
     def get_stronghold_percentage(self):
         """

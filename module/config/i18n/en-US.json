@@ -2344,7 +2344,7 @@
     },
     "ChangeVanguard": {
       "name": "Change vanguard",
-      "help": "Replaces the vanguard when it has a red face; choosing not to replace forces sorties at red face.\nThe vanguard is replaced by finding a white-rarity Eagle Union or Iron Blood destroyer at level 100 with morale no lower than 10, so try to keep enough destroyers. On servers other than CN, level 70 Eagle Union white destroyers are used.",
+      "help": "Replace vanguard with low-oil-cost ships from Eagle Union or Iron Blood\nOnly 0 limit break, no equipment, white-rarity destroyers will be used as replacement\nControls: When to replace the vanguard\n\nWith vanguard replacement enabled, morale calculation uses this task's dorm recovery and married bonus settings. Set them for the entire fleet, including replacement ships: use the slowest member's dorm recovery and enable the married bonus only when every member is oathed. These settings do not place ships in the dorm or perform an oath.",
       "disabled": "Do not change",
       "ship": "Change ship",
       "ship_equip": "Change ships + equipment"
@@ -4114,6 +4114,18 @@
     "ForceRun": {
       "name": "Force run ignoring interval",
       "help": "When enabled, it will consume additional Action Points. Generally not needed, just run it slowly."
+    },
+    "FullScan": {
+      "name": "Full map scan (experimental)",
+      "help": "Off by default. May get stuck. After auto search, nearby radar questions and the current view scan, scan the full map once if no event has been handled. Handle any event found using the existing flow."
+    },
+    "RadarScan": {
+      "name": "Radar scan",
+      "help": "Off by default. If no event has been handled after the full map scan, switch fleets to check radar questions. If full map scanning is off, check after auto search and the existing current view checks. Only switch fleets and handle detected events; do not run fixed-position patrols or extra full map scans. Restore the sortie fleet afterward."
+    },
+    "ResumeState": {
+      "name": "Obscure zone resume record",
+      "help": "Automatically records the single resume attempt for this zone. Exit normally after another restart; clear the record after a successful exit."
     }
   },
   "OpsiAbyssal": {
@@ -4124,6 +4136,10 @@
     "ForceRun": {
       "name": "Force run ignoring interval",
       "help": "When enabled, it will consume additional Action Points. Generally not needed, just run it slowly."
+    },
+    "ContinueAfterRestart": {
+      "name": "Resume Abyssal battles after restart",
+      "help": "Disabled by default. Resume the current Abyssal Zone with the original exploration fleet and configured Boss fleet order. Each stage has one restart continuation; the next stage resets it to one without accumulation. Another restart in the same stage exits normally. Low morale closes the prompt, withdraws the fleet and proceeds to the next. Clear all markers when the Abyssal Zone is gone."
     }
   },
   "OpsiStronghold": {
@@ -4421,6 +4437,10 @@
       "name": "Obscure/Abyssal recheck delay (days)",
       "help": "After all Obscure Zones and Abyssal Zones are cleared, Smart Scheduling delays their checks by the given number of days and skips them in the meantime to speed up coin replenishing. 0 checks every round. The Operation Siren monthly reset refreshes them, and checks resume after the reset."
     },
+    "StrongholdCheckDelayDays": {
+      "name": "Siren Stronghold recheck delay (days)",
+      "help": "After no Siren Strongholds are found, Smart Scheduling skips their checks for the specified number of days. 0 keeps the existing weekly refresh or monthly Operation Siren reset schedule with its original grace period. Positive values wait the full number of days, even across refreshes. Only normal coin replenishment checks in Smart Scheduling are affected; standalone Stronghold tasks and month-end cleanup are unchanged."
+    },
     "MonthEndActionPointCleanupEnable": {
       "name": "Enable month-end action point cleanup",
       "help": "Whether to enable the month-end Action Point cleanup. When enabled, once the days remaining until the Operation Siren reset are at or below the \"Month-end Action Point Cleanup Days\" value, the month-end cleanup mode starts to consume Action Points.",
@@ -4714,12 +4734,12 @@
       "name": "Catfish stock threshold",
       "help": ""
     },
-    "MinCommonCarp": {
-      "name": "Common carp stock threshold",
-      "help": ""
-    },
     "MinKoiCarp": {
       "name": "Koi carp stock threshold",
+      "help": ""
+    },
+    "MinCommonCarp": {
+      "name": "Common carp stock threshold",
       "help": ""
     },
     "MinShrimp": {
@@ -4775,12 +4795,31 @@
       "help": "Same for Saltwater Fish Meat (e.g. one Yellowfin Tuna gives 18). 0 = no exchange."
     },
     "PlantYellowfinTuna": {
-      "name": "Raise yellowfin tuna",
-      "help": "",
+      "name": "Default fish posts",
+      "help": "Number of spare fishery posts that raise the default fish once every minimum is met.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3"
+    },
+    "DefaultFish": {
+      "name": "Default fish",
+      "help": "What spare fishery posts raise once every fish has reached its minimum (number of posts is the previous setting). The Island Production Planner picks an unlocked fish.",
+      "shell": "Shellfish",
+      "catfish": "Catfish",
+      "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
+      "shrimp": "Freshwater Shrimp",
+      "crayfish": "Crayfish",
+      "bass": "Sea Bass",
+      "crab": "Crab",
+      "squid": "Squid",
+      "mackerel": "Mackerel",
+      "tuna": "Tuna",
+      "salmon": "Salmon",
+      "red_sea_bream": "Red Sea Bream",
+      "yellowfin_tuna": "Yellowfin Tuna",
+      "sea_cucumber": "Sea Cucumber"
     },
     "RancherFilter": {
       "name": "Character filter",
@@ -4801,13 +4840,22 @@
       "4": "4"
     },
     "MineSilver": {
-      "name": "Silver mining slots",
-      "help": "Number of idle mine posts to produce Silver; remaining stay idle",
+      "name": "Default ore posts",
+      "help": "Number of spare mine posts that produce the default ore; the rest stay idle.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultOre": {
+      "name": "Default ore",
+      "help": "What spare mine posts produce once every ore has reached its minimum (number of posts is the previous setting).",
+      "Copper": "Copper Ore",
+      "Aluminium": "Bauxite Ore",
+      "Iron": "Iron Ore",
+      "Sulphur": "Sulfur",
+      "Silver": "Silver Ore"
     },
     "WorkerFilter": {
       "name": "Mine worker filter",
@@ -4848,13 +4896,20 @@
       "4": "4"
     },
     "CutElegant": {
-      "name": "Elegant wood slots",
-      "help": "Number of idle forest posts to produce Elegant wood; remaining stay idle",
+      "name": "Default wood posts",
+      "help": "Number of spare forest posts that produce the default wood; the rest stay idle.",
       "0": "0",
       "1": "1",
       "2": "2",
       "3": "3",
       "4": "4"
+    },
+    "DefaultWood": {
+      "name": "Default wood",
+      "help": "What spare forest posts produce once every wood has reached its minimum (number of posts is the previous setting).",
+      "Practical": "Workable Wood",
+      "Selected": "Premium Wood",
+      "Elegant": "Elegant Wood"
     },
     "WorkerFilter": {
       "name": "Forest worker filter",
@@ -5914,6 +5969,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: file_cabinet, paper, notebook, chair_desk"
     }
   },
   "ElectronicProcessing": {
@@ -5927,6 +5986,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: filter_element, ink_cartridge"
     }
   },
   "Industrial": {
@@ -5940,6 +6003,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: iron_nail, cutlery, charcoal_brush, cable"
     }
   },
   "Handmade": {
@@ -5953,6 +6020,10 @@
       "0": "0",
       "1": "1",
       "2": "2"
+    },
+    "Products": {
+      "name": "Production order",
+      "help": "Products to make, in order, separated by \">\" (e.g. \"paper > notebook\"); the next one is tried when materials run short. Empty: the built-in rule. The Island Production Planner writes it. Products: leather, boot, peanut_oil, cloth, rope, shepherd_purse, summer_bouquet, plum_blossom_sachet, winter_bouquet"
     }
   },
   "IslandAirDrop": {
@@ -6452,7 +6523,7 @@
     },
     "BoostReplaceFilter": {
       "name": "Boost replace filter",
-      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1\nAvailable product keys: spring_flower_tea: Winter Jasmine Tea, strawberry_lemon: Strawberry Lemon Drink, strawberry_honey: Strawberry Honey Frappé, floral_fruity: Floral and Fruity, fruit_paradise: Colorful Fruit Paradise, lavender_tea: Lavender Tea, sunny_honey: Sunny Honey, watermelon_juice: Watermelon Juice, chrysanthemum_tea: Chrysanthemum Tea, carrot_pear_juice: Carrot and Pear Juice\nExample: fruit_paradise > floral_fruity > 30 > lavender_tea > sunny_honey > 20 > spring_flower_tea > 10"
+      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1\nAvailable product keys: spring_flower_tea: Spring Flower Tea, strawberry_lemon: Strawberry Lemonade, strawberry_honey: Strawberry Honey Smoothie, floral_fruity: Floral Fruity, fruit_paradise: Fruit Paradise, lavender_tea: Lavender Tea, sunny_honey: Sunny Honey, watermelon_juice: Watermelon Juice, chrysanthemum_tea: Chrysanthemum Tea, carrot_pear_juice: Carrot Pear Juice\nExample: fruit_paradise > floral_fruity > 30 > lavender_tea > sunny_honey > 20 > spring_flower_tea > 10"
     }
   },
   "IslandBusinessShop3": {
@@ -6922,7 +6993,7 @@
     },
     "BoostReplaceFilter": {
       "name": "Boost replace filter",
-      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1\nAvailable product keys: cheese: Cheese, strawberry_milkshake: Strawberry Milkshake, morning_light: Morning Light Energy Combo, wake_up_call: The Wake-Up Call, fruity_fruitier: Fruity & Fruitier\nExample: fruity_fruitier > wake_up_call > 30 > morning_light > strawberry_milkshake > 20 > cheese > 10"
+      "help": "When multiple boosted products are detected, the first one in filter order is prioritized for replacement; the replacement slot is the last non-empty slot searched from Product5→1\nAvailable product keys: cheese: Cheese, strawberry_milkshake: Strawberry Milk Tea, morning_light: Morning Light Combo, wake_up_call: Wake-Up Call Set, fruity_fruitier: Fruity Fruitier\nExample: fruity_fruitier > wake_up_call > 30 > morning_light > strawberry_milkshake > 20 > cheese > 10"
     }
   },
   "Dock": {
@@ -7143,6 +7214,53 @@
       "help": "Off: only preview the plan in the log. On: overwrite each shop's Meal/MealNumber, AwayCook and business products, the farm \"Per-crop restock targets\", mine/forest/fishery minimum stock, ranch chicken/pork minimums and milk/wool switches, the number of posts per factory line, and the default crop/product and post count for spare posts.",
       "True": "Enabled",
       "False": "Disabled"
+    },
+    "Season": {
+      "name": "Season",
+      "help": "Which island season to plan for. Auto: the season running now on your server. A season number plans with that season's gathering and recipes; a season that is not running uses its full length as the target period. The game data only lists the newest season's building recipes, so an older season plans its gathering and tasks but not its seasonal dishes and crops.",
+      "auto": "Auto (current season)",
+      "season_1": "Season 1",
+      "season_2": "Season 2",
+      "season_3": "Season 3",
+      "season_4": "Season 4",
+      "season_5": "Season 5 (winter)"
+    },
+    "Priority": {
+      "name": "Priority",
+      "help": "Applies after targets and the daily coin minimum are met. Season points: most season PT, then most coins. Coins: most daily coins, then most season PT.",
+      "pt": "Season points",
+      "coins": "Coins"
+    },
+    "FillSparePosts": {
+      "name": "Fill spare posts",
+      "help": "On: once all minimums are met, every unlocked farm, orchard, nursery, mine, forest and fishery post produces a default product: the planned spare-time product, or the most valuable unlocked product when none is planned. Off: only the posts the plan needs for spare-time output.",
+      "True": "On",
+      "False": "Off"
+    },
+    "AutoPositions": {
+      "name": "Auto post counts",
+      "help": "On: set each area's post count (farm, orchard, nursery, mine, forest, fishery and the shop kitchens) from the posts your island research has unlocked, and plan with all of them. Off: plan within the post counts you set.",
+      "True": "On",
+      "False": "Off"
+    },
+    "UnlockedFish": {
+      "name": "Unlocked fish",
+      "help": "Fish you can raise at the fishery. The game data does not say which fish are unlocked, so untick the ones you have not unlocked yet; the planner will not plan them or use them for spare posts.",
+      "shell": "Shellfish",
+      "catfish": "Catfish",
+      "koi_carp": "Koi Carp",
+      "common_carp": "Common Carp",
+      "shrimp": "Freshwater Shrimp",
+      "crayfish": "Crayfish",
+      "bass": "Sea Bass",
+      "crab": "Crab",
+      "squid": "Squid",
+      "mackerel": "Mackerel",
+      "tuna": "Tuna",
+      "salmon": "Salmon",
+      "red_sea_bream": "Red Sea Bream",
+      "yellowfin_tuna": "Yellowfin Tuna",
+      "sea_cucumber": "Sea Cucumber"
     },
     "RescanTechnology": {
       "name": "Rescan technology",

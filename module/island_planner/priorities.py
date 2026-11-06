@@ -18,8 +18,13 @@ from module.logger import logger
 PT_TOLERANCE = 1e-6
 
 
-def solve_with_priorities(calculator, task_target_items=None, task_target_period=None, current_time=None):
+def solve_with_priorities(calculator, task_target_items=None, task_target_period=None, current_time=None,
+                          priority='pt'):
     """按「目标 → PT → 岛币」求解，结果写回 calculator（与 solve_production_plan 相同的属性）。
+
+    Args:
+        priority (str): 'pt' 为先 PT 后岛币（ALAS 原目标）；'coins' 为先最大化每日岛币，
+            再保持岛币不低于最优值最大化 PT。目标与岛币下限两种模式都必须满足。
 
     Returns:
         bool: 是否求解成功。第二次求解失败时保留第一次的方案。
@@ -28,7 +33,16 @@ def solve_with_priorities(calculator, task_target_items=None, task_target_period
     calculator.hard_floor_items = calculator._build_planner_hard_floor_items(None)
     problem = calculator.build_production_problem(
         task_target_items=task_target_items, task_target_period=task_target_period, current_time=current_time)
-    first = milp(problem['c'], constraints=problem['constraints'], bounds=problem['bounds'])
+    pt_objective = np.asarray(problem['c'], dtype=float)
+    coin_column = problem['end_offset'] + problem['item_index'][1]
+    coin_objective = np.zeros(len(pt_objective))
+    coin_objective[coin_column] = -1
+    if priority == 'coins':
+        first_objective, second_objective, first_name = coin_objective, pt_objective, '岛币'
+    else:
+        first_objective, second_objective, first_name = pt_objective, coin_objective, 'PT'
+
+    first = milp(first_objective, constraints=problem['constraints'], bounds=problem['bounds'])
     if not first.success:
         # 不可行时走 ALAS 原流程，输出瓶颈诊断
         calculator.solve_production_plan(
@@ -37,16 +51,14 @@ def solve_with_priorities(calculator, task_target_items=None, task_target_period
     calculator._apply_production_lp_result(first, problem)
     first_pt, first_coins = calculator.total_pt, calculator.daily_profit
 
-    pt_columns = {index: value for index, value in enumerate(problem['c']) if value}
+    # 第一目标不低于最优值（留一点余量避免浮点误差），再求第二目标
+    floor_columns = {index: value for index, value in enumerate(first_objective) if value}
     limit = first.fun + PT_TOLERANCE * max(abs(first.fun), 1)
-    extended = extend_problem(problem, rows=[{'label': ('pt_floor', 0), 'columns': pt_columns, 'ub': limit}])
-
-    coin_column = problem['end_offset'] + problem['item_index'][1]
-    coins = np.zeros(len(extended['c']))
-    coins[coin_column] = -1
-    second = milp(coins, constraints=extended['constraints'], bounds=extended['bounds'])
+    extended = extend_problem(problem, rows=[{'label': ('first_floor', 0), 'columns': floor_columns, 'ub': limit}])
+    second_objective = np.concatenate([second_objective, np.zeros(len(extended['c']) - len(second_objective))])
+    second = milp(second_objective, constraints=extended['constraints'], bounds=extended['bounds'])
     if not second.success:
-        logger.warning(f'[岛屿-规划] 保持 PT 时最大化岛币失败，沿用第一次方案: {second.message}')
+        logger.warning(f'[岛屿-规划] 保持{first_name}时求解第二目标失败，沿用第一次方案: {second.message}')
         return True
     calculator._apply_production_lp_result(second, extended)
     logger.info(f'[岛屿-规划] 优先级求解：季节 PT {first_pt:.0f} → {calculator.total_pt:.0f}，'

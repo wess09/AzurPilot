@@ -4,6 +4,8 @@
 
 from calendar import day_name
 
+import cv2
+
 from module.base.timer import Timer
 from module.campaign.campaign_status import CampaignStatus
 from module.combat.assets import GET_ITEMS_1, GET_ITEMS_2
@@ -22,7 +24,7 @@ class SupplyPack(CampaignStatus):
     """
 
     def supply_pack_find(self, supply_pack, skip_first_screenshot=True):
-        """在补给包列表中查找指定补给包，最多向左滑动 8 次。
+        """稳定检查当前屏后再向左查找补给包，最多滑动 8 次。
 
         Returns:
             bool: 是否找到补给包。
@@ -31,7 +33,10 @@ class SupplyPack(CampaignStatus):
             in: page_supply_pack
             out: page_supply_pack
         """
-        for attempt in range(9):
+        confirm_timer = Timer(1, count=3).start()
+        previous = None
+        attempt = 0
+        while True:
             if skip_first_screenshot:
                 skip_first_screenshot = False
             else:
@@ -39,8 +44,27 @@ class SupplyPack(CampaignStatus):
 
             if self.appear(supply_pack, offset=(0, -20, 400, 20)):
                 return True
-            if attempt < 8:
-                self.device.swipe_vector((-400, 0), box=(230, 200, 1060, 600))
+
+            if self.appear(page_supply_pack.check_button, offset=(20, 20)):
+                # 只观察识别范围内的价格栏，避开商品立绘动画；过渡帧不能算作检查完成。
+                x1, y1, x2, y2 = supply_pack.area
+                current = self.image_crop((x1, y1 - 20, x2 + 400, y2 + 20))
+                if previous is None or cv2.norm(current, previous, cv2.NORM_L1) > current.size:
+                    previous = current
+                    confirm_timer.reset()
+                    continue
+
+                if confirm_timer.reached():
+                    if attempt >= 8:
+                        break
+                    logger.info('[免费福利-补给] 当前屏稳定检查未找到补给包，向左查找')
+                    self.device.swipe_vector((-400, 0), box=(230, 200, 1060, 600))
+                    attempt += 1
+                    previous = None
+                    confirm_timer.reset()
+            else:
+                previous = None
+                confirm_timer.reset()
 
         logger.warning(f'[免费福利-补给] 左滑 8 次后仍未找到 {supply_pack}')
         return False

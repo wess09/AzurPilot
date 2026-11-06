@@ -53,8 +53,8 @@ DISPATCH_STAMINA_MIN = 98
 # 可兑换鱼肉的鱼：渔场产品名 -> 物品 ID（兑换时按对应的养殖底线保留）
 FISH_MEAT_FISH_IDS = {
     'catfish': 5002,
-    'common_carp': 5004,
     'koi_carp': 5003,
+    'common_carp': 5004,
     'bass': 5007,
     'mackerel': 5102,
     'tuna': 5103,
@@ -74,7 +74,8 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
         dispatch_stamina_min (int): 角色派遣最低体力阈值。
         fishery_positions (int): 渔场岗位配置数量。
         fishery_threshold (dict): 各鱼获库存最低阈值配置。
-        plant_yellowfin_tuna (int): 默认养殖黄鳍金枪鱼的目标岗位数。
+        plant_yellowfin_tuna (int): 默认产品的目标岗位数（配置名沿用 PlantYellowfinTuna）。
+        default_fish (str): 所有底线达标后，空闲岗位养殖的默认产品。
         rancher_filter (str): 渔场角色筛选配置。
         FISHERY_ITEMS (list): 渔场产品及其对应商店、产量与页签配置。
         name_to_config (dict): 产品内部名称到配置的映射。
@@ -92,8 +93,8 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
         self.fishery_threshold = {
             'shell': self.config.IslandFishery_MinShell,
             'catfish': self.config.IslandFishery_MinCatfish,
-            'common_carp': self.config.IslandFishery_MinCommonCarp,
             'koi_carp': self.config.IslandFishery_MinKoiCarp,
+            'common_carp': self.config.IslandFishery_MinCommonCarp,
             'shrimp': self.config.IslandFishery_MinShrimp,
             'crayfish': self.config.IslandFishery_MinCrayfish,
             'bass': self.config.IslandFishery_MinBass,
@@ -107,6 +108,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             'sea_cucumber': self.config.IslandFishery_MinSeaCucumber,
         }
         self.plant_yellowfin_tuna = self.config.IslandFishery_PlantYellowfinTuna
+        self.default_fish = self.config.IslandFishery_DefaultFish
         self.rancher_filter = self.config.IslandFishery_RancherFilter
 
         # 产品配置
@@ -122,14 +124,14 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
              'selection': SELECT_CATFISH, 'selection_check': SELECT_CATFISH_CHECK,
              'post_action': None, 'category': 'fishery',
              'shop': SHOP_FRY_CATFISH, 'tab': 'freshwater', 'yield': 2, 'buy_max': 4},
-            {'cn_name': '鲫鱼', 'name': 'common_carp', 'template': TEMPLATE_COMMON_CARP, 'var_name': 'common_carp',
-             'selection': SELECT_COMMON_CARP, 'selection_check': SELECT_COMMON_CARP_CHECK,
-             'post_action': None, 'category': 'fishery',
-             'shop': SHOP_FRY_COMMON_CARP, 'tab': 'freshwater', 'yield': 6, 'buy_max': 4},
             {'cn_name': '鲤鱼', 'name': 'koi_carp', 'template': TEMPLATE_KOI_CARP, 'var_name': 'koi_carp',
              'selection': SELECT_KOI_CARP, 'selection_check': SELECT_KOI_CARP_CHECK,
              'post_action': None, 'category': 'fishery',
              'shop': SHOP_FRY_KOI_CARP, 'tab': 'freshwater', 'yield': 4, 'buy_max': 4},
+            {'cn_name': '鲫鱼', 'name': 'common_carp', 'template': TEMPLATE_COMMON_CARP, 'var_name': 'common_carp',
+             'selection': SELECT_COMMON_CARP, 'selection_check': SELECT_COMMON_CARP_CHECK,
+             'post_action': None, 'category': 'fishery',
+             'shop': SHOP_FRY_COMMON_CARP, 'tab': 'freshwater', 'yield': 6, 'buy_max': 4},
             {'cn_name': '小河虾', 'name': 'shrimp', 'template': TEMPLATE_SHRIMP, 'var_name': 'shrimp',
              'selection': SELECT_SHRIMP, 'selection_check': SELECT_SHRIMP_CHECK,
              'post_action': POST_SHRIMP, 'category': 'fishery',
@@ -642,22 +644,24 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             products_to_plant, remaining_idle, supply_post_counts = self._build_supply_plant_products(len(idle_posts))
             default_post_counts = {}
 
-            # 继续用剩余空闲岗位满足默认黄鳍金枪鱼岗位数
+            # 继续用剩余空闲岗位满足默认产品岗位数；配置了未知产品时退回黄鳍金枪鱼
+            default_fish = self.default_fish if self.default_fish in self.name_to_config else 'yellowfin_tuna'
             already_planted_default = 0
             for i in range(self.fishery_positions):
                 post_id = f'ISLAND_FISHERY_POST{i + 1}'
-                if self.posts[post_id]['crop'] == 'yellowfin_tuna':
+                if self.posts[post_id]['crop'] == default_fish:
                     already_planted_default += 1
 
-            logger.info(f"[岛屿-渔场] 已有{already_planted_default}个岗位养殖了黄鳍金枪鱼，配置要求{self.plant_yellowfin_tuna}个")
+            logger.info(f"[岛屿-渔场] 已有{already_planted_default}个岗位养殖了默认产品"
+                        f"{self.name_to_config[default_fish]['cn_name']}，配置要求{self.plant_yellowfin_tuna}个")
 
             need_default = max(0, self.plant_yellowfin_tuna - already_planted_default)
 
             if remaining_idle > 0 and need_default > 0:
                 actual_default = min(remaining_idle, need_default)
                 for _ in range(actual_default):
-                    products_to_plant.append('yellowfin_tuna')
-                    default_post_counts['yellowfin_tuna'] = default_post_counts.get('yellowfin_tuna', 0) + 1
+                    products_to_plant.append(default_fish)
+                    default_post_counts[default_fish] = default_post_counts.get(default_fish, 0) + 1
 
             if products_to_plant:
                 logger.info(f"[岛屿-渔场] \n需要养殖的产品: {products_to_plant}")
