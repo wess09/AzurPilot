@@ -1,4 +1,4 @@
-"""深渊海域的可选断点记录；实际寻路、战斗与脱离仍由 OSFleet 执行。"""
+"""深渊关卡防误判与可选断点记录；实际寻路、战斗与脱离仍由 OSFleet 执行。"""
 
 from module.config.utils import get_os_next_reset
 from module.logger import logger
@@ -10,7 +10,7 @@ ABYSSAL_CONTINUE_KEY = 'OpsiAbyssal.OpsiAbyssal.ContinueAfterRestart'
 
 
 class AbyssalResumeMixin:
-    """仅在深渊续接开关开启时保存进度，不改变其他海域的恢复方式。"""
+    """所有深渊共用关卡确认，只有续接开启时才保存断点。"""
 
     def abyssal_continue_enabled(self):
         """读取独立深渊任务的开关，兼容智能调度等代理入口。"""
@@ -110,17 +110,27 @@ class AbyssalResumeMixin:
                 if state['stage'] not in ('entry1', 'entry2'):
                     self._set_abyssal_stage(state, 'entry1')
             return
-        if (any(grid.predict_caught_by_siren() for grid in self.view)
-                and not any(grid.is_current_fleet for grid in self.view)):
-            current = state['active'] or self.fleet_selector.get()
-            state.update(phase='boss', boss_confirmed=True)
-            self._set_abyssal_stage(state, f'fleet{current}' if current else 'boss')
-        elif not state['boss_confirmed']:
-            enemies = self.radar.select(is_enemy=True).filter(
-                lambda grid: abs(grid.location[0]) <= abs(grid.location[1]) and grid.predict_boss())
-            if enemies:
+        if self._abyssal_boss_appear():
+            if (any(grid.predict_caught_by_siren() for grid in self.view)
+                    and not any(grid.is_current_fleet for grid in self.view)):
+                current = state['active'] or self.fleet_selector.get()
+                state.update(phase='boss', boss_confirmed=True)
+                self._set_abyssal_stage(state, f'fleet{current}' if current else 'boss')
+            elif not state['boss_confirmed']:
                 state.update(phase='boss', boss_confirmed=True)
                 self._set_abyssal_stage(state, 'boss')
+
+    def _abyssal_boss_appear(self):
+        """正常战斗和续接共用的 Boss 关确认，入口问号和第二阶段画面优先。"""
+        if self.is_in_map():
+            if self.appear(ABYSSAL_STAGE_2, offset=(20, 20)) or self.radar.select(is_question=True):
+                return False
+            if (any(grid.predict_caught_by_siren() for grid in self.view)
+                    and not any(grid.is_current_fleet for grid in self.view)):
+                return True
+            return bool(self.radar.select(is_enemy=True).filter(
+                lambda grid: abs(grid.location[0]) <= abs(grid.location[1]) and grid.predict_boss()))
+        return False
 
     def _abyssal_boss_cleared(self, state):
         """只有已正向确认进入 Boss 关，地图上的问号才可能表示清除后的出口。"""
@@ -135,6 +145,29 @@ class AbyssalResumeMixin:
             self._clear_abyssal_resume()
             return True
         return False
+
+    def run_abyssal_normal(self):
+        """关闭续接时仍确认关卡，只保存本次运行的判断，不读写或恢复断点。
+
+        Pages:
+            in: 深渊地图。
+            out: 成功时回到来源海域；舰队耗尽时按原返回值交回任务收尾。
+        """
+        state = {'phase': 'search', 'boss_confirmed': False}
+        self._abyssal_normal_state = state
+        try:
+            while True:
+                self.device.screenshot()
+                if self.is_in_map():
+                    self.question_goto(has_fleet_step=True)
+                    if self._abyssal_boss_appear():
+                        state.update(phase='boss', boss_confirmed=True)
+                        break
+                else:
+                    self.handle_map_event()
+            return self.boss_clear(has_fleet_step=True, allow_submarine_call=False, abyssal_check=state)
+        finally:
+            self._abyssal_normal_state = None
 
     def run_abyssal_resume(self, resume=False):
         """按当前阶段续接一次；阶段变化刷新机会，耗尽时沿原退出流程收尾。
