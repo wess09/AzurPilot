@@ -847,8 +847,14 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
         logger.hr('前往问号')
         while 1:
             progress = getattr(self, '_abyssal_progress', None)
-            if progress is not None and self._abyssal_map_finished():
-                break
+            if progress is not None:
+                if self.is_in_map():
+                    if self._abyssal_map_finished():
+                        break
+                else:
+                    self.handle_map_event()
+                    self.device.screenshot()
+                    continue
             # 游戏 bug：上一个已清理海域的 AUTO_SEARCH_REWARD 弹窗
             if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
                 self.device.screenshot()
@@ -862,7 +868,7 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
 
             if progress is not None:
                 self._refresh_abyssal_stage(progress)
-                if progress['phase'] == 'boss':
+                if progress['phase'] == 'boss' and progress['boss_confirmed']:
                     break
 
             # 计算目的地
@@ -1077,7 +1083,7 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                 if self._abyssal_map_finished():
                     return True
                 self.predict_radar()
-                if self.radar.select(is_question=True):
+                if self._abyssal_boss_cleared(abyssal_state):
                     logger.info('[大世界-深渊续接] Boss 已清除，继续退出领奖')
                     self.map_exit(drop=drop)
                     return True
@@ -1145,7 +1151,8 @@ class OSFleet(AbyssalResumeMixin, OSCamera, Combat, Fleet, OSAsh):
                 if abyssal_state is not None and self._abyssal_map_finished():
                     return True
                 self.predict_radar()
-                if self.radar.select(is_question=True):
+                if (self.radar.select(is_question=True) if abyssal_state is None
+                        else self._abyssal_boss_cleared(abyssal_state)):
                     logger.info('[大世界-战斗] Boss已清除')
                     if drop.count:
                         drop.add(self.device.image)

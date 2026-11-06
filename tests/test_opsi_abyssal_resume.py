@@ -75,7 +75,8 @@ def make_runner(enabled=True):
     runner.predict_radar = Mock()
     runner.radar = SelectedGrids([])
     runner.view = []
-    runner.is_in_map = Mock(return_value=False)
+    runner.is_in_map = Mock(return_value=True)
+    runner.handle_map_event = Mock(return_value='')
     runner.appear = Mock(return_value=False)
     runner.handle_os_map_fleet_lock = Mock()
     runner.fleet_low_resolve_appear = Mock(return_value=False)
@@ -87,10 +88,10 @@ def make_runner(enabled=True):
     return runner
 
 
-def radar(enemy=None, question=None):
+def radar(enemy=None, question=None, boss=True):
     grids = []
     if enemy is not None:
-        grids.append(SimpleNamespace(location=enemy, is_enemy=True, is_question=False))
+        grids.append(SimpleNamespace(location=enemy, is_enemy=True, is_question=False, predict_boss=lambda: boss))
     if question is not None:
         grids.append(SimpleNamespace(location=question, is_enemy=False, is_question=True))
     return SelectedGrids(grids)
@@ -156,14 +157,87 @@ class TestAbyssalProgress(unittest.TestCase):
         runner.run_abyssal()
         runner.question_goto.assert_called_once_with(has_fleet_step=True)
 
+    def test_entrance_question_beats_false_caught_and_enemy_predictions(self):
+        for stage in ('entry1', 'entry2'):
+            with self.subTest(stage=stage):
+                runner = make_runner()
+                state = runner._new_abyssal_resume()
+                state.update(phase='boss', stage='fleet4')
+                runner.radar = radar(enemy=(0, -1), question=(0, -2))
+                runner.view = [SimpleNamespace(predict_caught_by_siren=lambda: True, is_current_fleet=False)]
+                runner.appear.side_effect = lambda button, **kwargs: stage == 'entry2' and button is ABYSSAL_STAGE_2
+                runner._refresh_abyssal_stage(state)
+                self.assertEqual((state['phase'], state['stage']), ('search', stage))
+                self.assertFalse(state['boss_confirmed'])
+                self.assertFalse(runner._abyssal_boss_cleared(state))
+
+    def test_stage2_scene_overrides_a_saved_boss_stage(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        state.update(phase='boss', stage='fleet4', boss_confirmed=True, active=4, fighting=True, completed=[4])
+        runner.radar = radar(question=(0, -2))
+        runner.appear.side_effect = lambda button, **kwargs: button is ABYSSAL_STAGE_2
+        runner._refresh_abyssal_stage(state)
+        self.assertEqual((state['phase'], state['stage'], state['active'], state['completed']),
+                         ('search', 'entry2', 0, []))
+        self.assertFalse(state['boss_confirmed'])
+        self.assertFalse(runner._abyssal_boss_cleared(state))
+
+    def test_legacy_boss_stage_without_a_battle_is_unconfirmed(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        state.update(phase='boss', stage='fleet4')
+        state.pop('boss_confirmed')
+        runner._save_abyssal_resume(state)
+        self.assertFalse(runner._load_abyssal_resume()['boss_confirmed'])
+        state.update(active=1, fighting=True)
+        runner._save_abyssal_resume(state)
+        self.assertTrue(runner._load_abyssal_resume()['boss_confirmed'])
+
+    def test_question_is_an_exit_only_in_a_confirmed_boss_map(self):
+        for confirmed, in_map, stage2, cleared in (
+                (False, True, False, False), (True, False, False, False),
+                (True, True, True, False), (True, True, False, True)):
+            with self.subTest(confirmed=confirmed, in_map=in_map, stage2=stage2):
+                runner = make_runner()
+                state = runner._new_abyssal_resume()
+                state.update(phase='boss', stage='boss', boss_confirmed=confirmed)
+                runner.is_in_map.return_value = in_map
+                runner.appear.side_effect = lambda button, **kwargs: stage2 and button is ABYSSAL_STAGE_2
+                runner.radar = radar(question=(0, -2))
+                self.assertEqual(runner._abyssal_boss_cleared(state), cleared)
+
+    def test_transition_frames_do_not_predict_or_spend_resume(self):
+        runner = make_runner()
+        runner.frame = 0
+        runner.device.screenshot.side_effect = lambda: setattr(runner, 'frame', runner.frame + 1)
+        runner.is_in_map.side_effect = lambda: runner.frame == 2
+        runner.radar = radar(enemy=(0, -2))
+        runner.boss_clear = Mock(return_value=False)
+        self.assertFalse(runner.run_abyssal(resume=True))
+        self.assertEqual(runner.device.screenshot.call_count, 2)
+        runner.handle_map_event.assert_called_once_with()
+        runner.update_os.assert_called_once_with()
+        runner.predict_radar.assert_called_once_with()
+        self.assertTrue(runner._load_abyssal_resume()['resume_used'])
+
+    def test_visible_player_fleet_blocks_false_caught_colour(self):
+        runner = make_runner()
+        state = runner._new_abyssal_resume()
+        runner.radar = radar(enemy=(0, -1), boss=False)
+        runner.view = [SimpleNamespace(predict_caught_by_siren=lambda: True, is_current_fleet=True)]
+        runner._refresh_abyssal_stage(state)
+        self.assertEqual(state['phase'], 'search')
+        self.assertFalse(state['boss_confirmed'])
+
     def test_restart_during_fleet1_leaves_before_fleet2(self):
         for recorded in (False, True):
             with self.subTest(recorded=recorded):
                 runner = make_runner()
                 state = runner._new_abyssal_resume()
-                state.update(phase='boss', active=1 if recorded else 0, fighting=recorded,
+                state.update(phase='boss', boss_confirmed=True, active=1 if recorded else 0, fighting=recorded,
                              completed=[4] if recorded else [])
-                runner.view = [SimpleNamespace(predict_caught_by_siren=lambda: True)]
+                runner.view = [SimpleNamespace(predict_caught_by_siren=lambda: True, is_current_fleet=False)]
                 runner._abyssal_battle_progress = state
 
                 def move(location, **kwargs):
@@ -181,7 +255,7 @@ class TestAbyssalProgress(unittest.TestCase):
     def test_approaching_fleet_is_not_skipped_before_battle(self):
         runner = make_runner()
         state = runner._new_abyssal_resume()
-        state.update(phase='boss', active=1, completed=[4])
+        state.update(phase='boss', boss_confirmed=True, active=1, completed=[4])
         runner.boss_goto = Mock(side_effect=lambda **kwargs: setattr(runner, 'radar', radar(question=(0, 1))))
         self.assertTrue(runner.boss_clear(allow_submarine_call=False, abyssal_state=state))
         runner.boss_leave.assert_not_called()
@@ -190,7 +264,7 @@ class TestAbyssalProgress(unittest.TestCase):
     def test_saved_battle_fleet_is_restored_before_withdrawal(self):
         runner = make_runner()
         state = runner._new_abyssal_resume()
-        state.update(phase='boss', active=1, fighting=True, completed=[4])
+        state.update(phase='boss', boss_confirmed=True, active=1, fighting=True, completed=[4])
         runner.current_fleet = 3
         runner.boss_goto = Mock(side_effect=lambda **kwargs: setattr(runner, 'radar', radar(question=(0, 1))))
         self.assertTrue(runner.boss_clear(allow_submarine_call=False, abyssal_state=state))
@@ -200,6 +274,7 @@ class TestAbyssalProgress(unittest.TestCase):
         runner = make_runner()
         state = runner._new_abyssal_resume()
         state['phase'] = 'boss'
+        state['boss_confirmed'] = True
         attacked = []
 
         def move(location, **kwargs):
@@ -219,7 +294,7 @@ class TestAbyssalProgress(unittest.TestCase):
     def test_victory_before_restart_exits_without_replaying_boss(self):
         runner = make_runner()
         state = runner._new_abyssal_resume()
-        state.update(phase='boss', active=1, fighting=True)
+        state.update(phase='boss', boss_confirmed=True, active=1, fighting=True)
         runner.radar = radar(question=(0, 1))
         runner.boss_goto = Mock()
         self.assertTrue(runner.boss_clear(abyssal_state=state))
@@ -342,6 +417,7 @@ class TestAbyssalProgress(unittest.TestCase):
 
     def test_popup_or_transition_does_not_consume_lost_map_cleanup(self):
         runner = make_runner()
+        runner.is_in_map.return_value = False
         runner._new_abyssal_resume()
         runner.appear.return_value = True
         self.assertFalse(runner._abyssal_map_finished())
@@ -350,7 +426,7 @@ class TestAbyssalProgress(unittest.TestCase):
     def test_lost_map_during_boss_move_does_not_restore_cleared_state(self):
         runner = make_runner()
         state = runner._new_abyssal_resume()
-        state.update(phase='boss', stage='fleet1', completed=[4])
+        state.update(phase='boss', boss_confirmed=True, stage='fleet1', completed=[4])
 
         def disappear(**kwargs):
             runner.is_in_map.return_value = True
@@ -476,7 +552,7 @@ class TestAbyssalCombatCancel(unittest.TestCase):
     def test_low_resolve_closes_backs_out_withdraws_and_uses_next_fleet(self):
         runner = make_runner()
         state = runner._new_abyssal_resume()
-        state.update(phase='boss', stage='fleet1', completed=[4])
+        state.update(phase='boss', boss_confirmed=True, stage='fleet1', completed=[4])
         runner._abyssal_battle_progress = state
         runner.config.campaign_name = 'abyssal-test'
         runner.config.DropRecord_CombatRecord = 'do_not'
@@ -574,6 +650,32 @@ class TestAbyssalScreenshots(unittest.TestCase):
                 routes.append([tuple(call.args[0].location) for call in runner.device.click.call_args_list])
                 self.assertEqual(len(routes[-1]), 2)
         self.assertEqual(routes[0], routes[1])
+
+    def test_stage2_with_legacy_fleet4_checkpoint_still_enters_the_gate(self):
+        runner = OSFleet.__new__(OSFleet)
+        runner.config = OfflineConfig.__new__(OfflineConfig)
+        runner.config.HOMO_EDGE_DETECT = False
+        stub = ConfigStub()
+        runner.config.cross_get, runner.config.cross_set = stub.cross_get, stub.cross_set
+        runner.zone = SimpleNamespace(zone_id=44)
+        runner.interval_timer = {}
+        runner.device = Mock(image=load_image(str(FIXTURES / 'stage2.png')))
+        runner.handle_os_map_fleet_lock = Mock()
+        runner.boss_clear = Mock(return_value=True)
+        runner.map_exit = Mock()
+        runner.wait_until_walk_stable = Mock(side_effect=lambda **kwargs: setattr(
+            runner.device, 'image', load_image(str(FIXTURES / 'boss.png'))))
+        with patch('module.os.abyssal_resume.get_os_next_reset', return_value=RESET):
+            state = runner._new_abyssal_resume()
+            state.update(phase='boss', stage='fleet4', resume_used=True)
+            state.pop('boss_confirmed')
+            runner._save_abyssal_resume(state)
+            self.assertTrue(runner.run_abyssal(resume=True))
+        self.assertEqual([tuple(call.args[0].location) for call in runner.device.click.call_args_list], [(5, 4)])
+        runner.map_exit.assert_not_called()
+        boss_state = runner.boss_clear.call_args.kwargs['abyssal_state']
+        self.assertEqual(boss_state['phase'], 'boss')
+        self.assertTrue(boss_state['boss_confirmed'])
 
     def test_six_map_states_and_caught_detection(self):
         runner = OSFleet.__new__(OSFleet)
