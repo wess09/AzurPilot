@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch
 
 import numpy as np
 
+from module.base.timer import Timer
 from module.base.utils import load_image
 from module.combat.assets import (
     BATTLE_STATUS_A,
@@ -55,6 +56,109 @@ class TestExperiencePageFixture(unittest.TestCase):
         ):
             with self.subTest(button=button.name):
                 self.assertFalse(button.appear_on(EXPERIENCE_PAGE))
+
+
+class TestBattleStatusTiming(unittest.TestCase):
+    """深渊、月度 Boss 直接结算；自动搜索和其他任务保持延迟兜底。"""
+
+    def setUp(self):
+        self.clock = VirtualClock()
+        time_patch = patch('module.base.timer.time', self.clock)
+        time_patch.start()
+        self.addCleanup(time_patch.stop)
+        for button in (BATTLE_STATUS_S, BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D):
+            image_patch = patch.object(
+                button, 'appear_on', side_effect=lambda image, button=button, **kwargs: image is button,
+            )
+            image_patch.start()
+            self.addCleanup(image_patch.stop)
+
+    def make_combat(self, task='OpsiAbyssal', bound_task=None, status=BATTLE_STATUS_S):
+        combat = Combat.__new__(Combat)
+        combat.config = SimpleNamespace(task=SimpleNamespace(command=task), _bind_task_override=bound_task)
+        combat.device = Mock(image=status)
+        combat.interval_timer = {}
+        combat.is_combat_executing = Mock(return_value=False)
+        return combat
+
+    def test_boss_s_page_is_clicked_on_first_observation(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            with self.subTest(task=task):
+                combat = self.make_combat(task)
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_delegated_boss_uses_the_bound_task(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            with self.subTest(task=task):
+                combat = self.make_combat('OpsiScheduling', bound_task=task)
+                combat.handle_battle_status()
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_boss_click_keeps_existing_cooldown(self):
+        for interval in (2, 7):
+            with self.subTest(interval=interval):
+                combat = self.make_combat()
+                combat.battle_status_click_interval = interval
+                self.assertTrue(combat.handle_battle_status())
+                self.clock.now += 0.5
+                self.assertFalse(combat.handle_battle_status())
+                self.assertEqual(combat.device.click.call_count, 1)
+                self.clock.now += interval
+                self.assertTrue(combat.handle_battle_status())
+                self.assertEqual(combat.device.click.call_count, 2)
+
+    def test_boss_drop_is_captured_before_click(self):
+        combat = self.make_combat()
+        actions = []
+        drop = Mock(handle_add=Mock(side_effect=lambda *args: actions.append('capture')))
+        combat.device.click.side_effect = lambda *args: actions.append('click')
+        combat.handle_battle_status(drop=drop)
+        self.assertEqual(actions, ['capture', 'click'])
+        drop.handle_add.assert_called_once_with(combat)
+
+    def test_boss_battle_or_unrecognized_frame_is_not_clicked(self):
+        combat = self.make_combat()
+        combat.is_combat_executing.return_value = True
+        self.assertFalse(combat.handle_battle_status())
+        combat.is_combat_executing.return_value = False
+        combat.device.image = BLANK_IMAGE
+        self.assertFalse(combat.handle_battle_status())
+        combat.device.click.assert_not_called()
+
+    def test_other_tasks_keep_twenty_second_s_delay(self):
+        for task, bound_task in (('OpsiObscure', None), ('OpsiStronghold', None),
+                                 ('OpsiScheduling', 'OpsiObscure')):
+            with self.subTest(task=task, bound_task=bound_task):
+                combat = self.make_combat(task, bound_task)
+                self.assertTrue(combat.handle_battle_status())
+                self.clock.now += 19.9
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_not_called()
+                self.clock.now += 0.2
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_auto_search_keeps_twenty_second_s_delay_for_all_tasks(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss', 'OpsiHazard1Leveling'):
+            with self.subTest(task=task):
+                combat = self.make_combat(task)
+                timer = Timer(combat.battle_status_s_autoclick_delay)
+                self.assertFalse(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                self.clock.now += 19.9
+                self.assertFalse(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                combat.device.click.assert_not_called()
+                self.clock.now += 0.2
+                self.assertTrue(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_other_ranks_remain_immediate(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss', 'OpsiObscure'):
+            for status in (BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D):
+                with self.subTest(task=task, status=status.name):
+                    combat = self.make_combat(task, status=status)
+                    self.assertTrue(combat.handle_battle_status())
+                    combat.device.click.assert_called_once_with(status)
 
 
 class TestAutoSearchExperienceClick(unittest.TestCase):

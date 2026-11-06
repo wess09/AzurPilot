@@ -10,6 +10,7 @@ from module.logger import logger
 from module.os_combat.assets import *
 from module.os_handler.assets import *
 from module.os_handler.map_event import MapEventHandler
+from module.os_handler.resource_state import effective_task
 from module.base.timer import Timer
 from module.exception import GameBugError
 from module.statistics.opsi_runtime import finish_battle_timer, start_battle_timer
@@ -412,7 +413,8 @@ class Combat(Combat_, MapEventHandler):
         处理大世界战斗评价状态页面（S/A/B/C/D）。
 
         战斗执行中时重置 S 评价计时器并跳过处理。
-        优先通过延迟机制处理 S 评价，再依次检查 A/B/C/D 评价。
+        深渊与月度 Boss 的 S 评价直接确认，其他任务保留延迟兜底，
+        再依次检查 A/B/C/D 评价。
 
         Pages:
             in: 战斗评价页面（S/A/B/C/D 任一可见）
@@ -428,11 +430,17 @@ class Combat(Combat_, MapEventHandler):
             self._clear_battle_status_s_timer()
             return False
 
-        appeared, clicked = self._handle_auto_battle_status_s(drop=drop)
-        if clicked:
-            return True
-        if appeared:
-            return True
+        if effective_task(self.config) in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            # 这两类 Boss 由脚本推进结算，不等待自动搜索自行跳过 S 评价页。
+            self._clear_battle_status_s_timer()
+            if self._handle_single_battle_status(BATTLE_STATUS_S, 'S', drop):
+                return True
+        else:
+            appeared, clicked = self._handle_auto_battle_status_s(drop=drop)
+            if clicked:
+                return True
+            if appeared:
+                return True
 
         for status_button, status_letter in [
             (BATTLE_STATUS_A, 'A'),
