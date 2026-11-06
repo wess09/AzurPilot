@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 from module.base.utils import load_image
 from module.config.deep import deep_get, deep_set
-from module.config.config import AzurLaneConfig
+from module.config.config import AzurLaneConfig, TaskEnd
 from module.combat.combat import Combat as CommonCombat
 from module.combat.assets import BATTLE_PREPARATION
 from module.exception import GameStuckError
@@ -542,6 +542,61 @@ class TestAbyssalInitialization(unittest.TestCase):
                 runner.cl1_ap_preserve.assert_called_once()
                 runner._delay_until_submarine_cooldown_end.assert_called_once_with(RESET)
                 runner.storage_get_next_item.assert_not_called()
+
+
+class TestAbyssalExhaustedExit(unittest.TestCase):
+    def make_exhausted_runner(self, enabled=True, resuming=True):
+        runner = make_runner(enabled)
+        runner.is_in_abyssal = Mock(return_value=resuming)
+        runner.cl1_ap_preserve = Mock()
+        runner.storage_get_next_item = Mock(return_value=True)
+        runner.zone_init = Mock()
+        runner.run_abyssal = Mock(return_value=False)
+        runner.handle_fleet_repair_by_config = Mock(side_effect=lambda **kwargs: runner.actions.append('repair'))
+        runner.map_exit.side_effect = lambda: runner.actions.append('exit')
+        runner.config.cross_set(ABYSSAL_RESUME_KEY, {'pending': 'exhausted-fleet'})
+        return runner
+
+    def test_exhausted_fleets_exit_and_clear_resume_before_maintenance(self):
+        for enabled, resuming in ((False, False), (True, False), (True, True)):
+            with self.subTest(enabled=enabled, resuming=resuming):
+                runner = self.make_exhausted_runner(enabled, resuming)
+                self.assertFalse(runner.clear_abyssal())  # 返回值仍表示过滤器是否包含潜艇命令。
+                self.assertEqual(runner.actions, ['exit', 'repair'])
+                self.assertIsNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+                runner.map_exit.assert_called_once_with()
+                runner.handle_fleet_repair_by_config.assert_called_once_with(revert=False)
+
+    def test_exhausted_exit_allows_the_original_scheduler_check(self):
+        runner = self.make_exhausted_runner()
+        runner.config.OpsiAbyssal_ForceRun = False
+
+        def check_switch():
+            runner.actions.append('switch')
+            raise TaskEnd
+
+        runner.config.check_task_switch = Mock(side_effect=check_switch)
+        with self.assertRaises(TaskEnd):
+            runner.os_abyssal()
+        self.assertEqual(runner.actions, ['exit', 'repair', 'switch'])
+        self.assertIsNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+
+    def test_failed_exit_keeps_resume_and_propagates_the_existing_error(self):
+        runner = self.make_exhausted_runner()
+        runner.map_exit.side_effect = GameStuckError('offline exit interrupted')
+        with self.assertRaises(GameStuckError):
+            runner.clear_abyssal()
+        self.assertIsNotNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+        runner.handle_fleet_repair_by_config.assert_not_called()
+
+    def test_other_combat_errors_are_not_treated_as_exhausted_fleets(self):
+        runner = self.make_exhausted_runner()
+        runner.run_abyssal.side_effect = GameStuckError('offline combat interrupted')
+        with self.assertRaises(GameStuckError):
+            runner.clear_abyssal()
+        runner.map_exit.assert_not_called()
+        runner.handle_fleet_repair_by_config.assert_not_called()
+        self.assertIsNotNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
 
 
 class OfflineConfig(OSConfig, AzurLaneConfig):

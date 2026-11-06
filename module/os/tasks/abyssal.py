@@ -12,7 +12,6 @@
 
 from datetime import timedelta
 
-from module.exception import RequestHumanTakeover
 from module.config.time_source import now as current_time
 from module.logger import logger
 from module.os.map import OSMap
@@ -141,7 +140,7 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         """清理一个深渊坐标。
 
         从仓库取出深渊日志仪，攻击深渊 Boss，完成后在港口修理舰队。
-        如果检测到潜艇冷却，会延迟任务执行。
+        如果检测到潜艇冷却，会延迟任务执行。舰队耗尽时退出当前深渊并继续后续流程。
 
         Returns:
             bool: 舰队过滤器是否包含呼叫潜艇。
@@ -149,7 +148,6 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         Raises:
             ActionPointLimit: 行动力不足。
             TaskEnd: 没有更多深渊日志仪。
-            RequestHumanTakeover: 无法击败 Boss，舰队耗尽。
         """
         logger.hr('大世界-深渊坐标', level=1)
         submarine_enabled = self._has_call_submarine('OpsiAbyssal', self.config)
@@ -183,7 +181,9 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
         with self.config.temporary(_disable_task_switch=True):
             result = self.run_abyssal(resume=True) if resuming else self.run_abyssal()
             if not result:
-                raise RequestHumanTakeover
+                logger.warning('[大世界-深渊坐标] 舰队已耗尽，退出当前深渊并继续后续任务')
+                self.map_exit()
+                self._clear_abyssal_resume()
 
             self.handle_fleet_repair_by_config(revert=False)
 
