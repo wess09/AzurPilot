@@ -72,6 +72,7 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
     """
     zone: Zone
     is_zone_name_hidden = False
+    is_obscure_zone = False
 
     def is_meowfficer_searching(self):
         """
@@ -116,6 +117,7 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
         name = ocr.ocr(self.device.image)
         name = "".join(name.split())
         name = name.lower()
+        self.is_obscure_zone = 'obscure' in name or 'hidden' in name
         name = name.strip('\\/-—–－')
         if '-' in name:
             name = name.split('-')[0]
@@ -154,6 +156,7 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
         ocr = Ocr(MAP_NAME, lang='jp', letter=(157, 173, 192), threshold=127, name='OCR_OS_MAP_NAME')
         name = ocr.ocr(self.device.image)
         name = name.replace(' ', '')
+        self.is_obscure_zone = '秘密' in name
         # 将各种破折号标准化为连字符
         import re
         name = re.sub(r'[\\/—–－−]', '-', name)
@@ -199,6 +202,7 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
         ocr = Ocr(MAP_NAME, lang='tw', letter=(198, 215, 239), threshold=127, name='OCR_OS_MAP_NAME')
         name = ocr.ocr(self.device.image)
         name = name.replace(' ', '')
+        self.is_obscure_zone = '隱秘' in name
         # 将各种破折号标准化为连字符
         import re
         name = re.sub(r'[\\/—–－−一]', '-', name)
@@ -229,6 +233,7 @@ class OSMapOperation(MapOrderHandler, MissionHandler, PortHandler, StorageHandle
         ocr = Ocr(MAP_NAME, lang='cnocr', letter=(214, 231, 255), threshold=127, name='OCR_OS_MAP_NAME')
         name = ocr.ocr(self.device.image)
         name = name.replace(' ', '')
+        self.is_obscure_zone = '隐秘' in name
         # 将各种破折号标准化为连字符
         import re
         name = re.sub(r'[\\/—–－−]', '-', name)
