@@ -134,11 +134,11 @@ class Combat(Combat_, MapEventHandler):
         大世界战斗准备阶段。
 
         循环处理战斗准备界面，设置自动战斗模式、处理退役和弹窗确认，
-        直到检测到战斗执行界面出现。
+        直到检测到战斗执行界面；漏识别执行界面时，也可由明确战果页交接到结算。
 
         Pages:
             in: 战斗准备界面（BATTLE_PREPARATION 或 SIREN_PREPARATION）
-            out: 战斗执行中界面
+            out: 战斗执行中界面，或战斗评价/失败结果页
 
         Args:
             balance_hp (bool): 是否平衡血量。
@@ -186,6 +186,14 @@ class Combat(Combat_, MapEventHandler):
             pause = self.is_combat_executing()
             if pause:
                 logger.attr('战斗界面', pause)
+                break
+            # 漏识别执行界面时不能一直等暂停按钮；只观察结果，交给后续阶段点击。
+            # C/D 的灰色在转场也可能出现，需同时确认模板形状，避免仅凭颜色提前结束准备。
+            if self.appear(OPTS_INFO_D, offset=(30, 30)) or any(
+                    self.match_template_color(button, offset=(20, 20))
+                    for button in (BATTLE_STATUS_S, BATTLE_STATUS_A, BATTLE_STATUS_B,
+                                   BATTLE_STATUS_C, BATTLE_STATUS_D)):
+                logger.info('[大世界战斗] 准备阶段已出现战果页，交由原结算流程处理')
                 break
 
     def handle_abyssal_low_resolve(self):
