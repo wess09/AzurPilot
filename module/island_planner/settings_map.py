@@ -23,6 +23,8 @@ AzurPilot 不会做或卖的菜品、不会种的作物、不会生产的矿石/
 """
 from math import ceil
 
+from module.island_planner.utils import get_production_target_stock
+
 from module.island.farm_targets import format_crop_targets
 from module.island_planner.data import DIC_ISLAND_ITEM, DIC_ISLAND_RECIPE
 from module.island_planner.restaurant_config import (
@@ -293,18 +295,46 @@ def restrict_calculator(calculator, meal_options, product_options, unlocked_fish
     return excluded
 
 
-def daily_need(calculator):
-    """每日需要的库存宽度：计划消耗量（日缓冲）+ 季节任务/额外目标的每日速率。
+def target_floor(calculator):
+    """目标剩余量 Y：季节任务、货运缺口与额外目标，不按期限摊薄。
 
-    目标物品在计划中是「累积」而不是被消耗，不出现在日缓冲里；不加上它，
-    AzurPilot 的阈值/后厨目标不会为目标物品开工。
+    `demand_items` 里的 `total_need_count` 是扫描到的未完成需求总量。按期限平摊成
+    `rate_per_day` 只适合「持续消耗」的建模；把它当库存目标会让目标被摊成 0~1 个，
+    而任务端是「仓库+生产中 未达目标才生产」，于是目标永远达不成。
+
+    Returns:
+        dict[int, int]: {物品ID: 未完成需求量}，已完成的物品不会出现。
     """
-    need = dict(calculator.product_daily_buffer_items)
-    for item_id, data in (getattr(calculator, 'demand_items', None) or {}).items():
-        rate = data.get('rate_per_day', 0)
-        if rate > 0:
-            need[item_id] = need.get(item_id, 0) + rate
-    return need
+    return {
+        item_id: data.get('total_need_count', 0)
+        for item_id, data in (getattr(calculator, 'demand_items', None) or {}).items()
+        if data.get('total_need_count', 0) > 0
+    }
+
+
+def stock_targets(calculator, floors=None):
+    """全部物品的库存目标：目标剩余量 + 日缓冲（一次性算好，供各区域写入复用）。
+
+    日缓冲 `product_daily_buffer_items` 已按 `1 + DailyBufferSafetyMargin` 放大并向上取整，
+    这里直接相加，对应 ALAS 的
+    `get_production_target_stock(hard_floor, reserve, daily_buffer)`
+    （`reserve` 未移植，取 0；它对应菜单保留量，见 kitchen_settings 里的 capacity）。
+
+    下游任务一律按「仓库+生产中 < 目标 → 开工」执行，因此生产到目标后自然停止，
+    不会因为目标写大而过度生产。
+
+    Args:
+        floors (dict | None): 预计算的 {物品ID: 目标剩余量}，见 [target_floor]；省略则自行计算。
+
+    Returns:
+        dict[int, int]: {物品ID: 库存目标}。
+    """
+    floors = target_floor(calculator) if floors is None else floors
+    buffer = getattr(calculator, 'product_daily_buffer_items', None) or {}
+    return {
+        item_id: get_production_target_stock(floors.get(item_id, 0), 0, buffer.get(item_id, 0))
+        for item_id in set(floors) | set(buffer)
+    }
 
 
 def _item_name_map(names):
@@ -322,7 +352,7 @@ def _produced_items(calculator, slot_group):
     return produced
 
 
-def kitchen_settings(calculator, restaurant_id, meal_options, product_options):
+def kitchen_settings(calculator, restaurant_id, meal_options, product_options, stock=None):
     """单个店铺的后厨、挂机与商区配置。
 
     Returns:
@@ -334,7 +364,7 @@ def kitchen_settings(calculator, restaurant_id, meal_options, product_options):
     meal_names = _item_name_map(meal_options)
     product_names = _item_name_map(product_options)
     capacity = calculator.restaurant_capacity[restaurant_id]
-    buffer = daily_need(calculator)
+    stock = stock_targets(calculator) if stock is None else stock
     idle = calculator.idle_accumulating_items_per_day
 
     sales = {
@@ -346,12 +376,17 @@ def kitchen_settings(calculator, restaurant_id, meal_options, product_options):
     meals = []
     for item_id in sorted(sales, key=lambda i: (-sales[i], i)):
         if item_id in meal_names:
-            meals.append((meal_names[item_id], capacity + ceil(buffer.get(item_id, sales[item_id]) - 1e-9)))
+            # 常规上架菜品：capacity 是「摆满一层」的保留量（ALAS 的 reserve），
+            # 叠加库存目标；日销量只作兜底下限，避免 LP 数据缺失时写 0。
+            meals.append((meal_names[item_id],
+                          capacity + max(stock.get(item_id, 0), ceil(sales[item_id] - 1e-9))))
     sold = {item_id for item_id in sales}
-    others = [item_id for item_id in produced if item_id not in sold and buffer.get(item_id, 0) > 0]
-    for item_id in sorted(others, key=lambda i: (-buffer[i], i)):
+    others = [item_id for item_id in produced if item_id not in sold and stock.get(item_id, 0) > 0]
+    for item_id in sorted(others, key=lambda i: (-stock[i], i)):
         if item_id in meal_names:
-            meals.append((meal_names[item_id], ceil(buffer[item_id] - 1e-9)))
+            # 非售卖但被计划生产的菜品（多为季节/额外目标）：不加 capacity，
+            # 它没有「摆满一层」的需求，写大只会让每次多产一批。
+            meals.append((meal_names[item_id], stock[item_id]))
     if len(meals) > MEAL_SLOTS:
         dropped = [name for name, _ in meals[MEAL_SLOTS:]]
         notes.append(f'{task}: only {MEAL_SLOTS} meal slots, dropped {dropped}')
@@ -379,29 +414,31 @@ def kitchen_settings(calculator, restaurant_id, meal_options, product_options):
     return values, notes
 
 
-def crop_settings(calculator):
-    """三个种植区域的 CropTargets。
+def crop_settings(calculator, stock=None):
+    """三个种植区域的 CropTargets：日缓冲 + 目标剩余量。
 
-    目标只含一天的计划消耗量（ALAS 的日缓冲），不含闲时累积量：AzurPilot 按
-    「库存/目标」比例排序补种，若把闲时累积量计入目标，只为攒 PT 的作物会挤占
-    真正需要的作物。闲时累积的作物作为提示返回，由用户在区域的默认作物岗位数中安排。
+    AzurPilot 按「库存/目标」比例排序补种，所以目标写大了不会让作物抢岗位，只是
+    让对应作物补到目标为止。闲时累积量不计入目标：只为攒 PT 的作物会挤占真正需要的
+    作物，空闲作物的安排放在提示里，由用户在区域默认作物岗位数中决定。
+
+    Args:
+        stock (dict | None): 预计算的 {物品ID: 库存目标}，见 [stock_targets]；省略则自行计算。
 
     Returns:
         tuple[dict, list[str]]: ({配置路径: 值}, 提示信息)。
     """
-    buffer = daily_need(calculator)
+    stock = stock_targets(calculator) if stock is None else stock
     idle = calculator.idle_accumulating_items_per_day
     values = {}
     notes = []
     for area, data in CROP_AREAS.items():
-        targets = {}
+        crop_targets = {}
         idle_crops = []
         for crop, item_id in CROP_ITEM_IDS[area].items():
-            amount = buffer.get(item_id, 0)
-            targets[crop] = ceil(amount - 1e-9) if amount > 0 else 0
+            crop_targets[crop] = stock.get(item_id, 0)
             if idle.get(item_id, 0) > 0:
                 idle_crops.append((idle[item_id], crop))
-        values[f'{data["task"]}.{data["group"]}.CropTargets'] = format_crop_targets(targets)
+        values[f'{data["task"]}.{data["group"]}.CropTargets'] = format_crop_targets(crop_targets)
         if idle_crops:
             text = ', '.join(f'{crop} {amount:.0f}/day' for amount, crop in sorted(idle_crops, reverse=True))
             notes.append(f'{data["group"]}: spare posts can grow {text} for season PT (default crop settings)')
@@ -416,22 +453,24 @@ def _idle_note(name, items, idle):
     return f'{name}: spare posts can produce {text} for season PT (default product settings)'
 
 
-def threshold_settings(calculator):
-    """矿山、林场、渔场的最低库存：一天计划消耗量，不用的为 0。"""
-    buffer = daily_need(calculator)
+def threshold_settings(calculator, stock=None):
+    """矿山、林场、渔场的最低库存：日缓冲 + 目标剩余量，不用的为 0。
+
+    Args:
+        stock (dict | None): 预计算的 {物品ID: 库存目标}，见 [stock_targets]；省略则自行计算。
+    """
+    stock = stock_targets(calculator) if stock is None else stock
     idle = calculator.idle_accumulating_items_per_day
     values = {}
     notes = []
     for group, items in THRESHOLD_GROUPS.items():
         for item_id, path in items.items():
-            amount = buffer.get(item_id, 0)
-            values[path] = ceil(amount - 1e-9) if amount > 0 else 0
+            values[path] = stock.get(item_id, 0)
         note = _idle_note(next(iter(items.values())).split('.')[1], items, idle)
         if note:
             notes.append(note)
     for item_id, path in FISH_MEAT_TARGETS.items():
-        amount = buffer.get(item_id, 0)
-        values[path] = ceil(amount - 1e-9) if amount > 0 else 0
+        values[path] = stock.get(item_id, 0)
     return values, notes
 
 
@@ -456,14 +495,26 @@ def _ranch_output(calculator, group):
     return output
 
 
-def ranch_settings(calculator):
-    """牧场：鸡舍/猪圈阈值取计划日产量，牛/羊开关看计划是否使用。"""
+def ranch_settings(calculator, floors=None):
+    """牧场：鸡舍/猪圈阈值取 计划日产量 + 目标剩余量；牛/羊开关看计划是否使用。
+
+    阈值是库存下限，任务按「仓库+在制品 未达阈值」开工；加上目标剩余量后，被季节
+    任务、货运缺口或额外目标要求的禽肉/皮料会一直补到目标为止。
+
+    Args:
+        floors (dict | None): 预计算的 {物品ID: 目标剩余量}，见 [target_floor]；省略则自行计算。
+    """
+    floors = target_floor(calculator) if floors is None else floors
     values = {}
     for group, (item_id, path) in RANCH_THRESHOLDS.items():
-        used = any(amount > 1e-6 for amount in _ranch_output(calculator, group).values())
-        produced = _ranch_output(calculator, group).get(item_id, 0)
+        output = _ranch_output(calculator, group)
+        used = any(amount > 1e-6 for amount in output.values())
+        if not used:
+            values[path] = 0
+            continue
+        produced = ceil(output.get(item_id, 0) - 1e-9)
         # 用到该岗位时至少为 1，保证库存为 0 时会开工；未解锁副产物时禽肉不会增加，鸡舍会一直开工
-        values[path] = max(ceil(produced - 1e-9), 1) if used else 0
+        values[path] = max(get_production_target_stock(floors.get(item_id, 0), 0, produced), 1)
     for group, path in RANCH_SWITCHES.items():
         values[path] = any(amount > 1e-6 for amount in _ranch_output(calculator, group).values())
     return values
@@ -665,19 +716,22 @@ def build_settings(calculator, meal_options, product_options, fill_spare_posts=F
     """
     values = {}
     notes = []
+    # 库存目标只算一次：五个后厨 + 三个种植区 + 矿山/林场/渔场共用同一份。
+    floors = target_floor(calculator)
+    stock = stock_targets(calculator, floors)
     for restaurant_id in KITCHENS:
         kitchen_values, kitchen_notes = kitchen_settings(
             calculator, restaurant_id,
-            meal_options.get(restaurant_id, ()), product_options.get(restaurant_id, ()))
+            meal_options.get(restaurant_id, ()), product_options.get(restaurant_id, ()), stock)
         values.update(kitchen_values)
         notes.extend(kitchen_notes)
-    crop_values, crop_notes = crop_settings(calculator)
+    crop_values, crop_notes = crop_settings(calculator, stock)
     values.update(crop_values)
     notes.extend(crop_notes)
-    threshold_values, threshold_notes = threshold_settings(calculator)
+    threshold_values, threshold_notes = threshold_settings(calculator, stock)
     values.update(threshold_values)
     notes.extend(threshold_notes)
-    values.update(ranch_settings(calculator))
+    values.update(ranch_settings(calculator, floors))
     values.update(manufacture_settings(calculator))
     if auto_positions:
         values.update(auto_position_settings(calculator))

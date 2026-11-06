@@ -174,6 +174,19 @@ class ProductionLineTest(unittest.TestCase):
         self.assertEqual(len(notes), 1)
         self.assertIn('Silver Ore 40/day', notes[0])
 
+    def test_targets_become_stock_thresholds(self):
+        # 目标按剩余量进库存下限；按期限摊薄会让「50 个 / 87 天」变成 1 个
+        calculator = self.make()
+        calculator.demand_items = {2701: {'total_need_count': 50, 'period': 87.0,
+                                          'rate_per_day': 50 / 87}}
+        calculator.product_daily_buffer_items[2701] = 2
+        calculator.idle_accumulating_items_per_day = {}
+        values, _ = sm.threshold_settings(calculator)
+        self.assertEqual(values['IslandMineForest.IslandMine.MinCopper'], 52)  # 50 + 日缓冲 2
+        # 没有目标的物品不受影响，仍只写日缓冲
+        self.assertEqual(values['IslandMineForest.IslandMine.MinIron'], 12)
+        self.assertEqual(sm.stock_targets(calculator)[2701], 52)
+
     def test_ranch(self):
         calculator = self.make()
         values = sm.ranch_settings(calculator)
@@ -359,6 +372,18 @@ class PlannerTaskTest(unittest.TestCase):
         self.assertTrue(result)
         meals = [planner.config.written.get(f'IslandJuuEatery.IslandJuuEatery.Meal{i}') for i in range(1, 9)]
         self.assertIn('apple_pie', meals)
+
+    def test_targets_become_stock_targets(self):
+        # 目标数量要进后厨的库存目标；按每日速率摊薄会写成 1，永远做不完
+        planner, result = self.run_planner(IslandProductionPlanner_ApplySettings=True,
+                                           IslandProductionPlanner_ExtraTargets='Apple Pie: 84')
+        self.assertTrue(result)
+        numbers = {
+            planner.config.written.get(f'IslandJuuEatery.IslandJuuEatery.Meal{i}'):
+                planner.config.written.get(f'IslandJuuEatery.IslandJuuEatery.MealNumber{i}')
+            for i in range(1, 9)
+        }
+        self.assertGreaterEqual(numbers.get('apple_pie', 0), 84)
 
     def test_scan_writes_season_targets(self):
         planner, result = self.run_planner(IslandProductionPlanner_ScanSeasonTasks=True)
