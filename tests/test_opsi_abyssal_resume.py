@@ -126,17 +126,84 @@ class TestAbyssalProgress(unittest.TestCase):
             restarted.question_goto.assert_called_once_with(has_fleet_step=True)
             self.assertEqual(restarted._load_abyssal_resume()['entry_fleet'], 3)
 
-    def test_disabled_run_keeps_question_navigation_and_original_boss_call(self):
+    def test_disabled_run_uses_stage_guard_without_accessing_resume_records(self):
         runner = make_runner(False)
         runner._load_abyssal_resume = Mock()
+        runner._new_abyssal_resume = Mock()
+        runner._save_abyssal_resume = Mock()
+        runner._clear_abyssal_resume = Mock()
+        runner.config.cross_set = Mock(wraps=runner.config.cross_set)
         runner.question_goto = Mock(side_effect=lambda **kwargs: setattr(runner, 'radar', radar(enemy=(0, -2))))
         runner.boss_clear = Mock(return_value=True)
         self.assertTrue(runner.run_abyssal())
         runner._load_abyssal_resume.assert_not_called()
+        runner._new_abyssal_resume.assert_not_called()
+        runner._save_abyssal_resume.assert_not_called()
+        runner._clear_abyssal_resume.assert_not_called()
+        runner.config.cross_set.assert_not_called()
         runner.update_os.assert_not_called()
         runner.fleet_set.assert_not_called()
         runner.question_goto.assert_called_once_with(has_fleet_step=True)
-        runner.boss_clear.assert_called_once_with(has_fleet_step=True, allow_submarine_call=False)
+        runner.boss_clear.assert_called_once_with(
+            has_fleet_step=True, allow_submarine_call=False,
+            abyssal_check={'phase': 'boss', 'boss_confirmed': True})
+        self.assertIsNone(runner._abyssal_normal_state)
+
+    def test_normal_run_keeps_using_gates_before_boss_confirmation(self):
+        runner = make_runner(False)
+        runner.radar = radar(enemy=(0, -1), question=(0, -2))
+        runner.view = [SimpleNamespace(predict_caught_by_siren=lambda: True, is_current_fleet=False)]
+
+        def goto(**kwargs):
+            if runner.question_goto.call_count == 2:
+                runner.radar = radar(enemy=(0, -2))
+                runner.view = []
+
+        runner.question_goto = Mock(side_effect=goto)
+        runner.boss_clear = Mock(return_value=True)
+        self.assertTrue(runner.run_abyssal())
+        self.assertEqual(runner.question_goto.call_count, 2)
+        self.assertEqual(runner.device.screenshot.call_count, 2)
+
+    def test_normal_run_waits_for_map_before_searching(self):
+        runner = make_runner(False)
+        runner.frame = 0
+        runner.device.screenshot.side_effect = lambda: setattr(runner, 'frame', runner.frame + 1)
+        runner.is_in_map.side_effect = lambda: runner.frame == 2
+        runner.question_goto = Mock(side_effect=lambda **kwargs: setattr(runner, 'radar', radar(enemy=(0, -2))))
+        runner.boss_clear = Mock(return_value=True)
+        self.assertTrue(runner.run_abyssal())
+        runner.handle_map_event.assert_called_once_with()
+        runner.question_goto.assert_called_once_with(has_fleet_step=True)
+        self.assertEqual(runner.device.screenshot.call_count, 2)
+
+    def test_normal_boss_exit_requires_a_confirmed_map_and_rejects_stage2(self):
+        for confirmed, in_map, stage2, cleared in (
+                (False, True, False, False), (True, False, False, False),
+                (True, True, True, False), (True, True, False, True)):
+            with self.subTest(confirmed=confirmed, in_map=in_map, stage2=stage2):
+                runner = make_runner(False)
+                runner.is_in_map.return_value = in_map
+                runner.appear.side_effect = lambda button, **kwargs: stage2 and button is ABYSSAL_STAGE_2
+                runner.radar = radar(question=(0, -2))
+                runner.boss_goto = Mock()
+                self.assertEqual(runner.boss_clear(
+                    allow_submarine_call=False,
+                    abyssal_check={'phase': 'boss', 'boss_confirmed': confirmed}), cleared)
+                self.assertEqual(runner.map_exit.call_count, int(cleared))
+                self.assertIsNone(runner.config.cross_get(ABYSSAL_RESUME_KEY))
+
+    def test_normal_run_clears_only_its_memory_state_on_error(self):
+        runner = make_runner(False)
+        old = {'keep': 'existing-resume-record'}
+        runner.config.cross_set(ABYSSAL_RESUME_KEY, old)
+        runner.question_goto = Mock(side_effect=GameStuckError('offline normal interruption'))
+        runner.boss_clear = Mock()
+        with self.assertRaises(GameStuckError):
+            runner.run_abyssal()
+        self.assertIsNone(runner._abyssal_normal_state)
+        self.assertEqual(runner.config.cross_get(ABYSSAL_RESUME_KEY), old)
+        runner.boss_clear.assert_not_called()
 
     def test_visible_boss_front_or_behind_does_not_repeat_questions(self):
         for position in ((0, -2), (0, 1)):
@@ -731,6 +798,31 @@ class TestAbyssalScreenshots(unittest.TestCase):
         boss_state = runner.boss_clear.call_args.kwargs['abyssal_state']
         self.assertEqual(boss_state['phase'], 'boss')
         self.assertTrue(boss_state['boss_confirmed'])
+
+    def test_normal_entry_screens_ignore_false_caught_colour_without_saving_progress(self):
+        for start, next_images in (('stage1', ('stage2', 'boss')), ('stage2', ('boss',))):
+            with self.subTest(start=start):
+                runner = OSFleet.__new__(OSFleet)
+                runner.config = OfflineConfig.__new__(OfflineConfig)
+                runner.config.HOMO_EDGE_DETECT = False
+                stub = ConfigStub(False)
+                runner.config.cross_get = stub.cross_get
+                runner.config.cross_set = Mock(wraps=stub.cross_set)
+                runner.zone = SimpleNamespace(zone_id=44)
+                runner.interval_timer = {}
+                runner.device = Mock(image=load_image(str(FIXTURES / (start + '.png'))))
+                runner.handle_os_map_fleet_lock = Mock()
+                runner.boss_clear = Mock(return_value=True)
+                runner.map_exit = Mock()
+                images = iter([load_image(str(FIXTURES / (name + '.png'))) for name in next_images])
+                runner.wait_until_walk_stable = Mock(side_effect=lambda **kwargs: setattr(
+                    runner.device, 'image', next(images)))
+                with patch('module.map_detection.os_grid.OSGrid.predict_caught_by_siren', return_value=True):
+                    self.assertTrue(runner.run_abyssal())
+                self.assertEqual(runner.device.click.call_count, len(next_images))
+                self.assertTrue(runner.boss_clear.call_args.kwargs['abyssal_check']['boss_confirmed'])
+                runner.map_exit.assert_not_called()
+                runner.config.cross_set.assert_not_called()
 
     def test_six_map_states_and_caught_detection(self):
         runner = OSFleet.__new__(OSFleet)
