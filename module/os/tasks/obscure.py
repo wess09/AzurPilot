@@ -30,16 +30,22 @@ class OpsiObscure(CoinTaskMixin, OSMap):
         ))
 
     def resume_obscure(self):
-        """初始化确认仍在隐秘海域时，最多续接一次；再次回来则正常退出。
+        """隐秘海域消失时清除记录；仍在海域时最多续接一次。
 
         Returns:
             bool: 是否已处理当前隐秘海域。
 
         Pages:
-            in: IN_MAP，已正向识别隐秘海域名称及退出按钮
-            out: IN_MAP，来源海域
+            in: IN_MAP，已完成海域初始化
+            out: IN_MAP，无隐秘海域时保留当前海域，否则返回来源海域
         """
         state = self.config.cross_get(OBSCURE_RESUME_KEY)
+        if not self.is_obscure_zone or not self.is_in_special_zone():
+            # 重启后可能已经回到来源海域，不能拿旧记录继续点自律或等待退出按钮。
+            if state is not None:
+                logger.info('[大世界-隐秘海域] 当前隐秘海域已不存在，清除续接记录并继续后续任务')
+                self.config.cross_set(OBSCURE_RESUME_KEY, None)
+            return False
         same_zone = (
             isinstance(state, dict)
             and state.get('server') == self.config.SERVER

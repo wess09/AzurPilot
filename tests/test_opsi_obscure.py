@@ -281,6 +281,87 @@ class ObscureTests(unittest.TestCase):
         runner.os_init()
         runner.os_auto_search_run.assert_not_called()
         runner.map_exit.assert_called_once_with()
+        self.assertIsNone(runner.config.cross_get(OBSCURE_RESUME_KEY))
+
+    def test_missing_zone_clears_saved_record_before_continuing_after_reload(self):
+        for resumed in (False, True):
+            with self.subTest(resumed=resumed):
+                first = self.runner()
+                first._save_obscure_resume(resumed=resumed)
+                runner = self.runner(keep_state=True, full=True, radar=True)
+                runner.is_obscure_zone = False
+                runner.is_in_special_zone.return_value = False
+
+                def continue_initialization():
+                    self.assertIsNone(runner.config.cross_get(OBSCURE_RESUME_KEY))
+
+                runner.run_first_auto_search.side_effect = continue_initialization
+                runner.os_init()
+                runner.run_first_auto_search.assert_called_once()
+                runner.os_auto_search_run.assert_not_called()
+                runner.map_rescan.assert_not_called()
+                runner.map_rescan_once.assert_not_called()
+                runner.clear_question_any_fleet.assert_not_called()
+                runner.map_exit.assert_not_called()
+                runner.fleet_set.assert_not_called()
+                self.assertIsNone(AzurLaneConfig('obscure-test', task='OpsiObscure').cross_get(OBSCURE_RESUME_KEY))
+
+    def test_missing_exit_button_prevents_resume_even_with_old_obscure_name(self):
+        for resumed in (False, True):
+            with self.subTest(resumed=resumed):
+                runner = self.runner()
+                runner._save_obscure_resume(resumed=resumed)
+                runner.is_in_special_zone.return_value = False
+                self.assertFalse(runner.resume_obscure())
+                self.assertIsNone(runner.config.cross_get(OBSCURE_RESUME_KEY))
+                runner.os_auto_search_run.assert_not_called()
+                runner.map_exit.assert_not_called()
+                runner.fleet_set.assert_not_called()
+
+    def test_missing_zone_keeps_scheduling_in_control(self):
+        runner = self.runner(task='OpsiScheduling')
+        runner._save_obscure_resume(resumed=True)
+        owner = runner.config.task
+        bound = dict(runner.config.bound)
+        runner.is_obscure_zone = False
+        runner.is_in_special_zone.return_value = False
+        runner.is_smart_scheduling_enabled = Mock(return_value=True)
+        runner.os_init()
+        self.assertIsNone(runner.config.cross_get(OBSCURE_RESUME_KEY))
+        self.assertIs(runner.config.task, owner)
+        self.assertEqual(runner.config.bound, bound)
+        self.assertTrue(runner._smart_scheduling_first_auto_search_pending)
+        runner.run_first_auto_search.assert_not_called()
+        runner.os_auto_search_run.assert_not_called()
+        runner.map_exit.assert_not_called()
+
+    def test_globe_returns_to_normal_map_without_attempting_missing_obscure_zone(self):
+        runner = self.runner()
+        runner._save_obscure_resume()
+        runner.is_in_map.return_value = False
+        runner.is_in_globe = Mock(return_value=True)
+
+        def return_to_source():
+            runner.is_in_map.return_value = True
+            runner.is_obscure_zone = False
+            runner.is_in_special_zone.return_value = False
+
+        runner.os_globe_goto_map = Mock(side_effect=return_to_source)
+        runner.os_init()
+        self.assertIsNone(runner.config.cross_get(OBSCURE_RESUME_KEY))
+        runner.os_globe_goto_map.assert_called_once()
+        runner.run_first_auto_search.assert_called_once()
+        runner.os_auto_search_run.assert_not_called()
+        runner.map_exit.assert_not_called()
+
+    def test_normal_map_without_saved_record_does_not_write_resume_state(self):
+        runner = self.runner()
+        runner.is_obscure_zone = False
+        runner.is_in_special_zone.return_value = False
+        with patch.object(runner.config, 'cross_set', wraps=runner.config.cross_set) as save:
+            runner.os_init()
+        save.assert_not_called()
+        runner.run_first_auto_search.assert_called_once()
 
     def test_unrelated_task_without_owned_record_keeps_original_exit(self):
         for task in ('OpsiDaily', 'OpsiArchive', 'OpsiScheduling'):

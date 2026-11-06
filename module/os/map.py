@@ -193,18 +193,13 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         self.handle_after_auto_search()
         self.handle_current_fleet_resolve(revert=False)
 
-        # 隐秘海域最多续接一次；其他特殊海域仍按原流程退出。
-        if self.is_in_special_zone():
-            obscure_handled = (
-                self.is_obscure_zone
-                and hasattr(self, 'resume_obscure')
-                and self.resume_obscure()
+        # 即使已回到普通海域，也要让隐秘续接入口清掉旧记录，再继续原初始化流程。
+        obscure_handled = hasattr(self, 'resume_obscure') and self.resume_obscure()
+        if not obscure_handled and self.is_in_special_zone():
+            logger.warning(
+                "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
             )
-            if not obscure_handled:
-                logger.warning(
-                    "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
-                )
-                self.map_exit()
+            self.map_exit()
 
         # 清理当前海域
         leveling_zone = self.config.cross_get(
