@@ -1647,6 +1647,7 @@ OpsiObscure:
   ForceRun: false
 OpsiAbyssal:
   ForceRun: false
+  ContinueAfterRestart: false
 OpsiStronghold:
   SubmarineEveryCombat: false
   ForceRun: false

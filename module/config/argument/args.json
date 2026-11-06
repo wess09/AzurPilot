@@ -15269,6 +15269,10 @@
       "ForceRun": {
         "type": "checkbox",
         "value": false
+      },
+      "ContinueAfterRestart": {
+        "type": "checkbox",
+        "value": false
       }
     },
     "OpsiFleetFilter": {

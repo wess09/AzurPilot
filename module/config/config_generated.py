@@ -811,6 +811,7 @@ class GeneratedConfig:
 
     # 配置组 `OpsiAbyssal`
     OpsiAbyssal_ForceRun = False
+    OpsiAbyssal_ContinueAfterRestart = False
 
     # 配置组 `OpsiStronghold`
     OpsiStronghold_SubmarineEveryCombat = False

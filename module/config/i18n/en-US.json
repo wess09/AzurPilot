@@ -4124,6 +4124,10 @@
     "ForceRun": {
       "name": "Force run ignoring interval",
       "help": "When enabled, it will consume additional Action Points. Generally not needed, just run it slowly."
+    },
+    "ContinueAfterRestart": {
+      "name": "Resume Abyssal battles after restart",
+      "help": "Disabled by default. Finish the current Abyssal Zone after a restart. Both entry stages use the original exploration fleet; Boss fleets keep their configured order. Withdraw an interrupted fleet before continuing with the next one. When disabled, initialization and navigation are unchanged."
     }
   },
   "OpsiStronghold": {

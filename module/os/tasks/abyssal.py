@@ -152,20 +152,25 @@ class OpsiAbyssal(CoinTaskMixin, OSMap):
             RequestHumanTakeover: 无法击败 Boss，舰队耗尽。
         """
         logger.hr('大世界-深渊坐标', level=1)
-        self.cl1_ap_preserve()
-
         submarine_enabled = self._has_call_submarine('OpsiAbyssal', self.config)
-        if submarine_enabled:
-            is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
-            if is_cooldown:
-                self._delay_until_submarine_cooldown_end(cooldown_end_time)
-                return False
+        resuming = self.abyssal_continue_enabled() and self.is_in_abyssal()
+        if resuming:
+            logger.info('[大世界-深渊续接] 已在深渊中，继续当前坐标')
+        else:
+            self.cl1_ap_preserve()
+            if submarine_enabled:
+                is_cooldown, cooldown_end_time = self._check_submarine_cooldown()
+                if is_cooldown:
+                    self._delay_until_submarine_cooldown_end(cooldown_end_time)
+                    return False
 
-        with self.config.temporary(STORY_ALLOW_SKIP=False):
-            result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
-        if not result:
-            if self._handle_coin_task_no_content('深渊坐标', '深渊坐标没有可执行内容'):
-                return False
+            if self.abyssal_continue_enabled():
+                self._clear_abyssal_resume()
+            with self.config.temporary(STORY_ALLOW_SKIP=False):
+                result = self.storage_get_next_item('ABYSSAL', use_logger=self.config.OpsiGeneral_UseLogger)
+            if not result:
+                if self._handle_coin_task_no_content('深渊坐标', '深渊坐标没有可执行内容'):
+                    return False
 
         self.config.override(
             OpsiGeneral_DoRandomMapEvent=False,

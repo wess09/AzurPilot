@@ -181,6 +181,13 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         # 初始化
         self.zone_init()
 
+        # 续接必须先于维护、士气恢复和特殊海域退出，否则会丢失现场舰队及 Boss 进度。
+        if self.abyssal_continue_enabled():
+            if self.is_in_abyssal():
+                self._run_with_opsi_task_context('OpsiAbyssal', self.clear_abyssal)
+            else:
+                self._clear_abyssal_resume()
+
         # 代理任务尚未绑定侵蚀一的献祭设置，维修留到实际子任务确定后执行。
         overflow_target_task = self._get_prevent_action_point_overflow_target_task()
         self._initial_fleet_repair_pending = (
