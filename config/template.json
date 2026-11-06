@@ -2950,7 +2950,8 @@
       "Sensitive": true
     },
     "OpsiAbyssal": {
-      "ForceRun": false
+      "ForceRun": false,
+      "ContinueAfterRestart": false
     },
     "OpsiFleetFilter": {
       "Filter": "Fleet-4 > CallSubmarine > Fleet-2 > Fleet-3 > Fleet-1"

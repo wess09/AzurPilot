@@ -13,6 +13,9 @@ from module.os_handler.map_event import MapEventHandler
 from module.base.timer import Timer
 from module.exception import GameBugError
 from module.statistics.opsi_runtime import finish_battle_timer, start_battle_timer
+from module.os.abyssal_resume import ABYSSAL_CONTINUE_KEY
+from module.os.assets import MAP_GOTO_GLOBE
+from module.ui.assets import BACK_ARROW
 
 
 class ContinuousCombat(Exception):
@@ -146,9 +149,22 @@ class Combat(Combat_, MapEventHandler):
         self.device.stuck_record_clear()
         self.device.click_record_clear()
         skip_first_screenshot = True
+        rejected = False
 
         for _ in self.loop():
 
+            if self.handle_abyssal_low_resolve():
+                rejected = True
+                continue
+            if rejected:
+                if self.is_in_map():
+                    return False
+                if self.appear(BATTLE_PREPARATION) or self.appear(SIREN_PREPARATION, offset=(20, 20)):
+                    self.appear_then_click(BACK_ARROW, offset=(20, 20), interval=2)
+                continue
+            if (getattr(self, '_abyssal_battle_progress', None) is not None
+                    and self.is_in_map() and self.appear(MAP_GOTO_GLOBE, offset=(20, 20))):
+                return False
             if self.appear(BATTLE_PREPARATION):
                 if self.handle_combat_automation_set(auto=auto == 'combat_auto'):
                     continue
@@ -170,6 +186,18 @@ class Combat(Combat_, MapEventHandler):
             if pause:
                 logger.attr('战斗界面', pause)
                 break
+
+    def handle_abyssal_low_resolve(self):
+        """续接开启时关闭无法挑战强敌的士气提示，只处理明确匹配的提示文字。"""
+        if getattr(self, '_abyssal_battle_progress', None) is None:
+            return False
+        if self.config.cross_get(ABYSSAL_CONTINUE_KEY, default=False) is not True:
+            return False
+        if self.appear(ABYSSAL_LOW_RESOLVE, offset=(20, 20)):
+            if self.appear_then_click(LEAVE_OS_POPUP_CLOSE, offset=(20, 20), interval=2):
+                logger.info('[大世界-深渊续接] 士气过低，关闭提示')
+                return True
+        return False
 
     def _get_exp_info_sleep(self):
         """
@@ -339,7 +367,11 @@ class Combat(Combat_, MapEventHandler):
                 logger.warning('[大世界战斗] 连续战斗过多')
 
             try:
-                super().combat(*args, save_get_items=save_get_items, **kwargs)
+                if getattr(self, '_abyssal_battle_progress', None) is not None:
+                    kwargs['allow_preparation_cancel'] = True
+                result = super().combat(*args, save_get_items=save_get_items, **kwargs)
+                if result is False:
+                    return False
                 break
             except ContinuousCombat:
                 logger.info('[大世界战斗] 检测到连续战斗')
