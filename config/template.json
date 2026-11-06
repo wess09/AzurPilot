@@ -2925,7 +2925,10 @@
     },
     "OpsiObscure": {
       "SkipHazard2Obscure": false,
-      "ForceRun": false
+      "ForceRun": false,
+      "FullScan": false,
+      "RadarScan": false,
+      "ResumeState": null
     },
     "OpsiFleet": {
       "Fleet": 1,

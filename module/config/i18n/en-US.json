@@ -4114,6 +4114,18 @@
     "ForceRun": {
       "name": "Force run ignoring interval",
       "help": "When enabled, it will consume additional Action Points. Generally not needed, just run it slowly."
+    },
+    "FullScan": {
+      "name": "Full map scan (experimental)",
+      "help": "Off by default. May get stuck. After auto search, nearby radar questions and the current view scan, scan the full map once if no event has been handled. Handle any event found using the existing flow."
+    },
+    "RadarScan": {
+      "name": "Radar scan",
+      "help": "Off by default. If no event has been handled after the full map scan, switch fleets to check radar questions. If full map scanning is off, check after auto search and the existing current view checks. Only switch fleets and handle detected events; do not run fixed-position patrols or extra full map scans. Restore the sortie fleet afterward."
+    },
+    "ResumeState": {
+      "name": "Obscure zone resume record",
+      "help": "Automatically records the single resume attempt for this zone. Exit normally after another restart; clear the record after a successful exit."
     }
   },
   "OpsiAbyssal": {

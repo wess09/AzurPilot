@@ -130,11 +130,13 @@ class OpsiCrossMonth(MeowfficerTargetZoneMixin, OSMap):
             if self.storage_get_next_item('OBSCURE', use_logger=True, 
                     skip_obscure_hazard_2=self.config.OpsiObscure_SkipHazard2Obscure):
                 self.zone_init()
+                self._save_obscure_resume()
                 self.fleet_set(self.config.OpsiFleet_Fleet)
                 self.os_order_execute(
                     recon_scan=True,
                     submarine_call=False)
-                self.run_auto_search(rescan='current', exit_map=True)
+                self.run_auto_search(rescan='current', exit_map=True, on_map_scanned=self._obscure_after_scan)
+                self.config.cross_set('OpsiObscure.OpsiObscure.ResumeState', None)
                 self.handle_after_auto_search()
             else:
                 break

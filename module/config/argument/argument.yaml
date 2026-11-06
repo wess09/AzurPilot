@@ -1645,6 +1645,16 @@ OpsiDaily:
 OpsiObscure:
   SkipHazard2Obscure: false
   ForceRun: false
+  # 实验性全图扫描，有概率卡死；自律及当前视野扫描后未遇到事件时，只扫描一次全图。
+  FullScan: false
+  # 全图扫描之后（未开启则在自律及当前视野扫描之后）仍无事件时，切换舰队扫描雷达。
+  # 不做固定坐标巡逻，也不隐式启动全图扫描；默认关闭。
+  RadarScan: false
+  # 本海域跨重启仅续接一次；成功退出后清除，第二次重启回来正常退出。
+  ResumeState:
+    type: stored
+    value: null
+    display: hide
 OpsiAbyssal:
   ForceRun: false
 OpsiStronghold:
