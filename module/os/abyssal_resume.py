@@ -53,7 +53,10 @@ class AbyssalResumeMixin:
             state = dict(state, completed=list(state['completed']))
             state.setdefault('stage', 'boss' if state['phase'] == 'boss' else 'entry1')
             state.setdefault('resume_used', False)
-            if isinstance(state['resume_used'], bool):
+            # 旧版本仅凭红色障碍就可能误记 boss，只有实际进入过战斗的旧记录可作确认。
+            state.setdefault('boss_confirmed', state['phase'] == 'boss' and state['fighting']
+                             and state['active'] in (1, 2, 3, 4))
+            if isinstance(state['resume_used'], bool) and isinstance(state['boss_confirmed'], bool):
                 return state
         logger.info('[大世界-深渊续接] 断点已失效，按当前画面继续')
         self._clear_abyssal_resume()
@@ -81,6 +84,7 @@ class AbyssalResumeMixin:
             'completed': [],
             'stage': 'entry1',
             'resume_used': False,
+            'boss_confirmed': False,
         }
         self._save_abyssal_resume(state)
         return state
@@ -94,18 +98,35 @@ class AbyssalResumeMixin:
 
     def _refresh_abyssal_stage(self, state):
         """仅凭当前画面的正向特征更新阶段；雷达、视野由调用方先刷新。"""
-        if any(grid.predict_caught_by_siren() for grid in self.view):
+        questions = self.radar.select(is_question=True)
+        if self.appear(ABYSSAL_STAGE_2, offset=(20, 20)):
+            state.update(phase='search', boss_confirmed=False, active=0, fighting=False, completed=[])
+            self._set_abyssal_stage(state, 'entry2')
+            return
+        if questions:
+            # 前两关的问号是门；未确认过 Boss 时不能把红色障碍误识别成战斗中。
+            if not state['boss_confirmed'] or state['stage'] in ('entry1', 'entry2'):
+                state.update(phase='search', boss_confirmed=False, active=0, fighting=False, completed=[])
+                if state['stage'] not in ('entry1', 'entry2'):
+                    self._set_abyssal_stage(state, 'entry1')
+            return
+        if (any(grid.predict_caught_by_siren() for grid in self.view)
+                and not any(grid.is_current_fleet for grid in self.view)):
             current = state['active'] or self.fleet_selector.get()
-            state['phase'] = 'boss'
+            state.update(phase='boss', boss_confirmed=True)
             self._set_abyssal_stage(state, f'fleet{current}' if current else 'boss')
-        elif state['phase'] == 'search':
+        elif not state['boss_confirmed']:
             enemies = self.radar.select(is_enemy=True).filter(
-                lambda grid: abs(grid.location[0]) <= abs(grid.location[1]))
+                lambda grid: abs(grid.location[0]) <= abs(grid.location[1]) and grid.predict_boss())
             if enemies:
-                state['phase'] = 'boss'
+                state.update(phase='boss', boss_confirmed=True)
                 self._set_abyssal_stage(state, 'boss')
-            elif self.appear(ABYSSAL_STAGE_2, offset=(20, 20)):
-                self._set_abyssal_stage(state, 'entry2')
+
+    def _abyssal_boss_cleared(self, state):
+        """只有已正向确认进入 Boss 关，地图上的问号才可能表示清除后的出口。"""
+        return (state['phase'] == 'boss' and state.get('boss_confirmed', False) and self.is_in_map()
+                and not self.appear(ABYSSAL_STAGE_2, offset=(20, 20))
+                and bool(self.radar.select(is_question=True)))
 
     def _abyssal_map_finished(self):
         """普通海域的全球地图入口确认深渊已消失，不以暂时识别不到深渊作判断。"""
@@ -129,28 +150,31 @@ class AbyssalResumeMixin:
                 self.device.screenshot()
                 if self._abyssal_map_finished():
                     return True
-                if not state['entry_fleet']:
-                    state['entry_fleet'] = self.fleet_selector.get()
-                    self._save_abyssal_resume(state)
-                self.update_os()
-                self.predict()
-                self.predict_radar()
-                self._refresh_abyssal_stage(state)
-                if resume:
-                    if state['resume_used']:
-                        logger.info('[大世界-深渊续接] 当前阶段已续接过一次，按原流程退出')
-                        self.map_exit()
-                        self._clear_abyssal_resume()
-                        return True
-                    state['resume_used'] = True
-                    self._save_abyssal_resume(state)
-                    resume = False
-                if state['phase'] == 'boss':
-                    break
-                if state['entry_fleet'] and self.fleet_selector.get() != state['entry_fleet']:
-                    self.fleet_set(state['entry_fleet'])
-                    continue
-                self.question_goto(has_fleet_step=True)
+                if self.is_in_map():
+                    if not state['entry_fleet']:
+                        state['entry_fleet'] = self.fleet_selector.get()
+                        self._save_abyssal_resume(state)
+                    self.update_os()
+                    self.predict()
+                    self.predict_radar()
+                    self._refresh_abyssal_stage(state)
+                    if resume:
+                        if state['resume_used']:
+                            logger.info('[大世界-深渊续接] 当前阶段已续接过一次，按原流程退出')
+                            self.map_exit()
+                            self._clear_abyssal_resume()
+                            return True
+                        state['resume_used'] = True
+                        self._save_abyssal_resume(state)
+                        resume = False
+                    if state['phase'] == 'boss' and state['boss_confirmed']:
+                        break
+                    if state['entry_fleet'] and self.fleet_selector.get() != state['entry_fleet']:
+                        self.fleet_set(state['entry_fleet'])
+                        continue
+                    self.question_goto(has_fleet_step=True)
+                else:
+                    self.handle_map_event()
 
             self._abyssal_battle_progress = state
             result = self.boss_clear(has_fleet_step=True, allow_submarine_call=False, abyssal_state=state)
@@ -165,7 +189,7 @@ class AbyssalResumeMixin:
         """确认进入战斗时才标记已出战，单纯行军中重启不会跳过该舰队。"""
         state = getattr(self, '_abyssal_battle_progress', None)
         if state is not None and state['active'] and not state['fighting']:
-            state['fighting'] = True
+            state.update(fighting=True, boss_confirmed=True)
             self._save_abyssal_resume(state)
 
     def _resume_abyssal_fleet(self, state, fleets, has_fleet_step, drop):
