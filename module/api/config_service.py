@@ -362,13 +362,14 @@ class ConfigService:
             data['_schedulerProgram'] = store.export(name)
         return data
 
-    def create(self, name, source=None, import_file=None):
+    def create(self, name, source=None, import_file=None, *, emulator=None):
         """创建新的实例配置文件。
 
         Args:
             name (str): 新建实例名称。
             source (str, optional): 复制源实例名称。默认为 None。
             import_file (str, optional): 导入目录中的源文件名。默认为 None。
+            emulator (CreateEmulatorParams, optional): 首次设置的模拟器参数。
 
         Returns:
             dict: 新建实例的配置数据及版本。
@@ -392,6 +393,14 @@ class ConfigService:
                 data = self.read(source)[0]
             else:
                 data = copy.deepcopy(self.template)
+            if emulator is not None:
+                if source or import_file:
+                    raise ApiError('INVALID_PARAMS', '复制或导入实例时不能同时指定模拟器初始设置')
+                settings = {'Serial': emulator.serial, 'PackageName': emulator.package_name,
+                            'ServerName': emulator.server_name}
+                for key, value in settings.items():
+                    self.validate(f'Alas.Emulator.{key}', value)
+                data['Alas']['Emulator'].update(settings)
             bundle = data.pop('_schedulerProgram', None)
             from module.runtime.game_data import INSTANCE_FIELD
             # 空占位表示新实例，首次使用时登记 UUID，禁止把复制的仪表盘当迁移来源。

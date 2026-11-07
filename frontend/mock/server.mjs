@@ -110,7 +110,7 @@ export function createMockServer({password = '', empty = false} = {}) {
     for (const session of sessions) {
       if (!session.authenticated) continue
       for (const topic of session.topics) {
-        if(topic==='stock')continue
+        if (['stock', 'notifications', 'launcher'].includes(topic)) continue
         try {
           if (topic === 'preview' && session.last.has(topic) && Date.now() - (session.previewAt ?? 0) < 3000) continue
           if (topic === 'preview') session.previewAt = Date.now()

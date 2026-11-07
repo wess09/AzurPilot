@@ -115,6 +115,39 @@
     "instances.create": {
       "mutates": true,
       "params": {
+        "$defs": {
+          "CreateEmulatorParams": {
+            "additionalProperties": false,
+            "description": "首次设置随实例一起保存的模拟器参数。",
+            "properties": {
+              "serial": {
+                "maxLength": 256,
+                "minLength": 1,
+                "title": "Serial",
+                "type": "string"
+              },
+              "package_name": {
+                "maxLength": 128,
+                "minLength": 1,
+                "title": "Package Name",
+                "type": "string"
+              },
+              "server_name": {
+                "maxLength": 64,
+                "minLength": 1,
+                "title": "Server Name",
+                "type": "string"
+              }
+            },
+            "required": [
+              "serial",
+              "package_name",
+              "server_name"
+            ],
+            "title": "CreateEmulatorParams",
+            "type": "object"
+          }
+        },
         "additionalProperties": false,
         "description": "新建实例请求参数模型。",
         "properties": {
@@ -147,6 +180,17 @@
             ],
             "default": null,
             "title": "Import File"
+          },
+          "emulator": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CreateEmulatorParams"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         },
         "required": [

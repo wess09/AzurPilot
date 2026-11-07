@@ -209,11 +209,20 @@ class StockRebuildParams(InstanceParams):
     scope: Literal['instance', 'all'] = 'instance'
 
 
+class CreateEmulatorParams(Params):
+    """首次设置随实例一起保存的模拟器参数。"""
+
+    serial: StrictStr = Field(min_length=1, max_length=256)
+    package_name: StrictStr = Field(min_length=1, max_length=128)
+    server_name: StrictStr = Field(min_length=1, max_length=64)
+
+
 class CreateParams(Params):
     """新建实例请求参数模型。"""
     name: StrictStr = Field(min_length=1, max_length=64)
     source: StrictStr | None = None
     import_file: StrictStr | None = None
+    emulator: CreateEmulatorParams | None = None
 
 
 class ImportParams(Params):
