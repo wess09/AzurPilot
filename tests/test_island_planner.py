@@ -470,6 +470,16 @@ class PlannerTaskTest(unittest.TestCase):
         self.assertTrue(result)
         self.assertNotIn('IslandProductionPlanner.IslandProductionPlanner.CargoTargets', planner.config.written)
 
+    def test_cargo_fallback_warns_to_lp_overplan(self):
+        # 扫描失败时沿用保存的需求量：库存目标照写，但要提示 LP 按整单需求规划可能偏大
+        from unittest.mock import patch
+        with patch('module.island_planner.planner.logger') as logger:
+            self.run_planner(cargo_scan=lambda: (None, None),
+                             IslandProductionPlanner_ScanCargoOrders=True,
+                             IslandProductionPlanner_CargoTargets='Strawberries (2011): 35')
+        messages = [str(call.args[0]) for call in logger.warning.call_args_list if call.args]
+        self.assertTrue(any('沿用上次保存的需求量' in text for text in messages), messages)
+
     def test_apply_writes_default_products(self):
         # 矿山配置 4 个岗位，计划用剩的岗位写入默认产品（银矿）
         planner, result = self.run_planner(IslandProductionPlanner_ApplySettings=True,

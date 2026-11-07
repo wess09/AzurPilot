@@ -239,6 +239,11 @@ class IslandProductionPlanner(IslandSeasonTaskScanner, IslandTechnologyScanner):
         else:
             # 未扫描或扫描不完整时沿用上次保存的目标（此处是需求量，喂 LP 会略过度规划）
             cargo_text = self.get('CargoTargets')
+            if cargo_text.strip():
+                logger.warning(
+                    f'[岛屿-规划] 本次未更新货运目标'
+                    f'（{"货运页未读到稳定结果" if self.get("ScanCargoOrders") else "未开启扫描"}），'
+                    '沿用上次保存的需求量：库存目标仍写入，但 LP 按整单需求规划，可能比实际缺口偏大')
         cargo = with_period(parse_targets(cargo_text, 'CargoTargets'), self.get('CargoTargetDays'))
         # 缺口只喂 LP；货运页未稳定时退回需求量，宁可多规划一些也不漏目标
         cargomissing = cargo if missing is None else with_period(missing, self.get('CargoTargetDays'))
