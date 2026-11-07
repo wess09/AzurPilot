@@ -64,87 +64,49 @@ function render(theme: AppContextValue['theme'], material: AppContextValue['mate
 }
 
 // 外观偏好在「界面设置」页；原先这些断言挂在系统设置页上（见 Settings.test.tsx）。
-describe('界面设置页自定义背景显示逻辑', () => {
-  it('浅色主题下渲染自定义背景，不渲染简约配色方案', () => {
-    const html = render('light')
-    expect(html).toContain('自定义背景')
-    expect(html).not.toContain('配色方案')
+describe('界面设置页外观显示逻辑', () => {
+  it('现代主题下固定展示现代主题标识', () => {
+    const html = render('legacy-light')
+    expect(html).toContain('现代')
   })
 
-  it('深色主题下渲染自定义背景，不渲染简约配色方案', () => {
-    const html = render('dark')
-    expect(html).toContain('自定义背景')
-    expect(html).not.toContain('配色方案')
+  it('浅色与深色主题下均渲染材质与明暗分段控件', () => {
+    for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+      const html = render(theme)
+      expect(html).toContain('材质')
+      expect(html).toContain('玻璃')
+      expect(html).toContain('普通')
+      expect(html).toContain('明暗')
+      expect(html).toContain('浅色')
+      expect(html).toContain('深色')
+    }
   })
 
-  it('简约主题下不渲染自定义背景，仅渲染简约配色方案', () => {
-    const html = render('minimal')
-    expect(html).not.toContain('自定义背景')
-    expect(html).toContain('配色方案')
-  })
-
-  it('旧版浅色/深色渲染自定义背景，但没有换配色概念', () => {
+  it('渲染自定义背景，不渲染已废弃的独立配色方案与紧凑布局', () => {
     for (const theme of ['legacy-light', 'legacy-dark'] as const) {
       const html = render(theme)
       expect(html).toContain('自定义背景')
       expect(html).not.toContain('配色方案')
-    }
-  })
-
-  it('一级选择列出四个家族，明暗与材质由后两级承担', () => {
-    const html = render('light')
-    for (const label of ['新版', '旧版', '简约', '紧凑']) expect(html).toContain(label)
-  })
-
-  it('新版与旧版显示材质与明暗两级，简洁与紧凑不显示', () => {
-    for (const theme of ['light', 'dark', 'legacy-light', 'legacy-dark'] as const) {
-      const html = render(theme)
-      expect(html).toContain('材质')
-      expect(html).toContain('>玻璃<')
-      expect(html).toContain('>普通<')
-      expect(html).toContain('明暗')
-    }
-    for (const theme of ['minimal', 'extreme'] as const) {
-      const html = render(theme)
-      expect(html).not.toContain('材质')
-      expect(html).not.toContain('明暗')
-    }
-  })
-
-  it('紧凑主题与简约同属朴素外观，渲染配色方案而非自定义背景', () => {
-    const html = render('extreme')
-    expect(html).toContain('配色方案')
-    expect(html).not.toContain('自定义背景')
-  })
-
-  it('紧凑主题在主题选择下方额外渲染布局选项，其它主题都不渲染', () => {
-    const html = render('extreme')
-    expect(html).toContain('紧凑布局')
-    expect(html).toContain('计划栏在右')
-    expect(html).toContain('计划栏在左')
-    expect(html).toContain('标准（244px）')
-    for (const theme of ['light', 'dark', 'minimal', 'legacy-light', 'legacy-dark'] as const) {
-      expect(render(theme)).not.toContain('紧凑布局')
+      expect(html).not.toContain('紧凑布局')
     }
   })
 })
 
 // 自定义外观：一级界面只有主题色与二级菜单入口；七个区域的滑块在二级菜单里。
 describe('自定义外观块', () => {
-  it('新版与旧版渲染主题色与材质细节入口，简洁与紧凑不渲染', () => {
-    for (const theme of ['light', 'dark', 'legacy-light', 'legacy-dark'] as const) {
-      const html = render(theme)
+  it('玻璃材质下渲染主题色与材质细节入口', () => {
+    for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+      const html = render(theme, 'glass')
       expect(html, theme).toContain('主题色')
       expect(html, theme).toContain('材质细节')
       /* 滑块不再摊在一级界面：区域名与滑块都要等二级菜单打开才出现。 */
       expect(html, theme).not.toContain('一级面')
       expect(html, theme).not.toContain('type="range"')
     }
-    for (const theme of ['minimal', 'extreme'] as const) expect(render(theme), theme).not.toContain('自定义外观')
   })
 
   it('普通材质不给材质细节入口（没有材质层，调了看不见）', () => {
-    const plain = render('light', 'plain')
+    const plain = render('legacy-light', 'plain')
     expect(plain).not.toContain('材质细节')
     expect(plain).toContain('主题色')
   })

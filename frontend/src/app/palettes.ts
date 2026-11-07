@@ -38,6 +38,7 @@ export const fixedColorModes: Partial<Record<ColorMode, FixedMode>> = {
       '--text': '#e8e8e8',
       '--accent': '#f2f2f2',
       '--accent-hover': '#ffffff',
+      '--accent-pressed': '#d9d9d9',
       '--accent-soft': '#232323',
       '--secondary': '#a0a0a0',
       '--secondary-soft': '#1f1f1f',
@@ -56,6 +57,7 @@ export const fixedColorModes: Partial<Record<ColorMode, FixedMode>> = {
       '--text': '#000000',
       '--accent': '#000080',
       '--accent-hover': '#0000a8',
+      '--accent-pressed': '#000070',
       '--accent-soft': '#a8b0d0',
       '--secondary': '#006666',
       '--secondary-soft': '#a8c8c8',
@@ -74,6 +76,7 @@ export const fixedColorModes: Partial<Record<ColorMode, FixedMode>> = {
       '--text': '#000000',
       '--accent': '#0a246a',
       '--accent-hover': '#143a94',
+      '--accent-pressed': '#081c52',
       '--accent-soft': '#b8c4dc',
       '--secondary': '#2f5d8a',
       '--secondary-soft': '#b4c8dc',
@@ -92,6 +95,7 @@ export const fixedColorModes: Partial<Record<ColorMode, FixedMode>> = {
       '--text': '#1a1a1a',
       '--accent': '#a8121e',
       '--accent-hover': '#8c0e18',
+      '--accent-pressed': '#730b14',
       '--accent-soft': '#f2d5d7',
       '--secondary': '#1b4965',
       '--secondary-soft': '#d4e0e8',
@@ -174,15 +178,18 @@ const brandBases = (mode: ResolvedMode) => ({
   mutedSurface: mode === 'dark' ? '#282f39' : '#edf2f7',
 })
 
-/** 只写强调色这一族：强调色、悬停、浅底与前景字色。 */
+/** 只写强调色这一族：强调色、悬停、按压、浅底与前景字色。 */
 function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: string, mode: ResolvedMode): Record<string, string> {
   const dark = mode === 'dark'
   const primary = readableColor(colors.primary, mutedSurface, mode)
   const secondary = readableColor(colors.secondary, mutedSurface, mode)
   return {
-    '--accent': primary, '--accent-hover': mixColor(primary, dark ? '#ffffff' : '#000000', .85),
+    '--accent': primary,
+    '--accent-hover': mixColor(primary, dark ? '#ffffff' : '#000000', .85),
+    '--accent-pressed': dark ? mixColor(primary, '#000000', .82) : mixColor(primary, '#000000', .70),
     '--accent-soft': mixColor(primary, surface, dark ? .12 : .07),
-    '--secondary': secondary, '--secondary-soft': mixColor(secondary, surface, dark ? .12 : .07),
+    '--secondary': secondary,
+    '--secondary-soft': mixColor(secondary, surface, dark ? .12 : .07),
     '--theme-on-accent': contrastRatio(primary, '#ffffff') >= contrastRatio(primary, '#17202b') ? '#ffffff' : '#17202b',
   }
 }
@@ -190,7 +197,7 @@ function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: stri
 /** 各大类的原版强调色：色板列表的第一项就是它，选了等于跟随主题。 */
 export const stockBrands: Record<Family, Record<ResolvedMode, BrandColors>> = {
   new: {light: {primary: '#0071e3', secondary: '#64aaff'}, dark: {primary: '#64aaff', secondary: '#0071e3'}},
-  legacy: {light: {primary: '#4e4c97', secondary: '#7a77bb'}, dark: {primary: '#b4b1e5', secondary: '#928fcf'}},
+  legacy: {light: {primary: '#005fb8', secondary: '#0078d4'}, dark: {primary: '#60cdff', secondary: '#4cc2ff'}},
   minimal: {light: {primary: '#245dbe', secondary: '#147d83'}, dark: {primary: '#245dbe', secondary: '#147d83'}},
   extreme: {light: {primary: '#245dbe', secondary: '#147d83'}, dark: {primary: '#245dbe', secondary: '#147d83'}},
 }

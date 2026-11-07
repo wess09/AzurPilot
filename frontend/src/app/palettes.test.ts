@@ -55,7 +55,7 @@ describe('简约配色生成与校验', () => {
 })
 
 describe('品牌配色只动强调色', () => {
-  const ACCENT_KEYS = ['--accent', '--accent-hover', '--accent-soft', '--secondary', '--secondary-soft', '--theme-on-accent']
+  const ACCENT_KEYS = ['--accent', '--accent-hover', '--accent-pressed', '--accent-soft', '--secondary', '--secondary-soft', '--theme-on-accent']
 
   it('材质与旧版用它换色：不碰表面/文字/边框，材质层与底图才不会被冲掉', () => {
     const tokens = accentTokens({primary: '#7050a3', secondary: '#a14865'}, 'light')
@@ -76,5 +76,18 @@ describe('品牌配色只动强调色', () => {
         expect(stockBrands[family][mode].secondary, family + mode).toMatch(/^#[0-9a-f]{6}$/i)
       }
     }
+  })
+
+  it('Windows 11 经典蓝在深浅色模式下均符合 WCAG 4.5:1 对比度标准', () => {
+    const light = stockBrands.legacy.light
+    const dark = stockBrands.legacy.dark
+    expect(light.primary).toBe('#005fb8')
+    expect(dark.primary).toBe('#60cdff')
+    const lightTokens = accentTokens(light, 'light')
+    const darkTokens = accentTokens(dark, 'dark')
+    expect(contrastRatio(lightTokens['--accent'], '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(lightTokens['--theme-on-accent'], lightTokens['--accent'])).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(darkTokens['--accent'], '#20252d')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(darkTokens['--theme-on-accent'], darkTokens['--accent'])).toBeGreaterThanOrEqual(4.5)
   })
 })

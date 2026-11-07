@@ -6,34 +6,34 @@ afterEach(() => vi.unstubAllGlobals())
 const NON_COMPACT_THEMES: Theme[] = ['light', 'dark', 'minimal', 'legacy-light', 'legacy-dark']
 
 describe('主题偏好恢复', () => {
-  it('保留旧版浅深色偏好，并为缺少的配色提供默认值', () => {
+  it('将原深色主题迁移到现代深色', () => {
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'dark' : null})
-    expect(readThemePreference()).toMatchObject({theme: 'dark', palette: 'ocean'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-dark', palette: 'ocean'})
   })
-  it('恢复简约配色并拒绝未知值', () => {
+  it('简约与未知主题迁移到现代浅色', () => {
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'minimal' : 'forest'})
-    expect(readThemePreference()).toMatchObject({theme: 'minimal', palette: 'forest'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light', palette: 'forest'})
     vi.stubGlobal('localStorage', {getItem: () => 'unknown'})
-    expect(readThemePreference()).toMatchObject({theme: 'light', palette: 'ocean'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light', palette: 'ocean'})
   })
   it('浏览器禁止存储时仍能启动', () => {
     vi.stubGlobal('localStorage', {getItem: () => {throw new Error('存储不可用')}})
-    expect(readThemePreference()).toMatchObject({theme: 'light', palette: 'ocean'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light', palette: 'ocean'})
   })
   it('恢复自动模式与完整自定义方案，失效的方案选择回退到预设', () => {
     const custom = {id: 'custom:one', primary: '#123456', secondary: '#654321'}
     const saved: Record<string, string> = {'azurpilot.theme': 'minimal', 'azurpilot.palette': 'custom:one', 'azurpilot.color-mode': 'dark', 'azurpilot.custom-palettes': JSON.stringify([custom])}
     vi.stubGlobal('localStorage', {getItem: (key: string) => saved[key] ?? null})
-    expect(readThemePreference()).toEqual({theme: 'minimal', palette: 'custom:one', colorMode: 'dark', customPalettes: [custom], compactRailSide: 'right', compactRailWidth: 244, material: 'plain'})
+    expect(readThemePreference()).toEqual({theme: 'legacy-dark', palette: 'custom:one', colorMode: 'dark', customPalettes: [custom], compactRailSide: 'right', compactRailWidth: 244, material: 'plain'})
     saved['azurpilot.custom-palettes'] = '{损坏的数据'
     saved['azurpilot.color-mode'] = 'invalid'
-    expect(readThemePreference()).toEqual({theme: 'minimal', palette: 'ocean', colorMode: 'auto', customPalettes: [], compactRailSide: 'right', compactRailWidth: 244, material: 'plain'})
+    expect(readThemePreference()).toEqual({theme: 'legacy-light', palette: 'ocean', colorMode: 'auto', customPalettes: [], compactRailSide: 'right', compactRailWidth: 244, material: 'plain'})
   })
-  it('恢复紧凑主题，未知主题回退到浅色', () => {
+  it('紧凑与未知主题迁移到现代浅色', () => {
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'extreme' : null})
-    expect(readThemePreference()).toMatchObject({theme: 'extreme'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light'})
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'huge' : null})
-    expect(readThemePreference()).toMatchObject({theme: 'light'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light'})
   })
 })
 
@@ -58,8 +58,8 @@ describe('紧凑布局偏好', () => {
 
 // 白名单与装饰层判定共同决定毛玻璃、壁纸、标题遮罩与图表取色，改动主题集合时这两处必须同步。
 describe('旧版主题注册与装饰层判定', () => {
-  it('五个主题都能从存储里恢复', () => {
-    for (const theme of NON_COMPACT_THEMES) {
+  it('现代主题的浅色和深色都能恢复', () => {
+    for (const theme of ['legacy-light', 'legacy-dark'] as const) {
       vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? theme : null})
       expect(readThemePreference().theme).toBe(theme)
     }
@@ -71,7 +71,7 @@ describe('旧版主题注册与装饰层判定', () => {
   })
 })
 
-// 旧版版式只在实例视图生效：主页要留新版外壳，总览页要收起右栏免得调度器出现两处。
+// 实例使用旧版版式时收起右栏，避免调度器出现两处。
 describe('旧版版式的生效范围', () => {
   it('只有两个旧版主题在实例视图里换外壳', () => {
     for (const theme of NON_COMPACT_THEMES) {
@@ -80,7 +80,7 @@ describe('旧版版式的生效范围', () => {
     expect(usesLegacyLayout('light')).toBe(false)
     expect(usesLegacyLayout('minimal')).toBe(false)
   })
-  it('主页视图不换外壳', () => {
+  it('无实例时不启用实例外壳', () => {
     for (const theme of NON_COMPACT_THEMES) expect(usesLegacyShell(theme, undefined)).toBe(false)
     expect(usesLegacyShell('legacy-light', '')).toBe(false)
   })
@@ -96,7 +96,7 @@ describe('旧版版式的生效范围', () => {
       expect(usesLegacyShell(theme, 'alas')).toBe(false)
     }
   })
-  it('主页没有实例时不渲染右栏', () => {
+  it('无实例时不渲染右栏', () => {
     for (const theme of NON_COMPACT_THEMES) expect(showsRightRail(theme, undefined)).toBe(false)
   })
 })
@@ -119,7 +119,7 @@ describe('材质轴偏好', () => {
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'legacy-dark' : key === 'azurpilot.material' ? 'glass' : null})
     expect(readThemePreference()).toMatchObject({theme: 'legacy-dark', material: 'glass'})
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'light' : key === 'azurpilot.material' ? 'sparkle' : null})
-    expect(readThemePreference()).toMatchObject({theme: 'light', material: 'glass'})
+    expect(readThemePreference()).toMatchObject({theme: 'legacy-light', material: 'plain'})
     vi.stubGlobal('localStorage', {getItem: (key: string) => key === 'azurpilot.theme' ? 'legacy-light' : null})
     expect(readThemePreference()).toMatchObject({theme: 'legacy-light', material: 'plain'})
   })

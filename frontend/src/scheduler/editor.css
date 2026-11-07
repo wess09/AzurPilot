@@ -47,7 +47,7 @@
 :root:is([data-theme='light'], [data-theme='dark']) .program-editor {
   width: calc(100% - 24px);
   margin-left: 24px;
-  border-radius: var(--theme-topbar-radius, 26px) 0 0 var(--theme-topbar-radius, 26px);
+  border-radius: var(--theme-topbar-radius, 8px) 0 0 var(--theme-topbar-radius, 8px);
 }
 
 @media (max-width: 950px) {
@@ -123,7 +123,7 @@
   -webkit-backdrop-filter: var(--theme-sidebar-filter);
   backdrop-filter: var(--theme-sidebar-filter);
   border: 1px solid var(--border, #d7dce3);
-  border-radius: var(--theme-sidebar-radius, 12px);
+  border-radius: var(--theme-sidebar-radius, 8px);
   box-shadow: var(--theme-sidebar-shadow, 0 8px 30px rgba(0, 0, 0, 0.08));
   overflow-y: auto;
   box-sizing: border-box;
