@@ -38,9 +38,12 @@ class LauncherService:
     def __init__(self, secret=None, runtime=None):
         self.trust = LauncherTrust(secret)
         self.runtime = runtime
-        #: 托盘暂停时正在运行的实例；继续时按它恢复，为空则启动全部实例。
-        self.paused = []
+        #: 托盘暂停时记下的实例 {名称: 独立任务}，None 表示主调度器；
+        #: None 表示从未暂停过（继续时启动全部实例），空字典表示暂停过但没有待恢复项。
+        self.paused = None
         self.lock = threading.RLock()
+        #: 串行化暂停 / 继续，避免两个动作交错修改 paused。
+        self._scheduler_lock = threading.Lock()
         self.connection = None
         self.commands = OrderedDict()
         self.notifications = OrderedDict()
@@ -176,36 +179,69 @@ class LauncherService:
         if self.runtime is None:
             raise ApiError('UNSUPPORTED', '调度器控制未启用')
         errors = []
-        if action == 'pause':
-            names = self._running_names()
-            for name in names:
+        with self._scheduler_lock:
+            if action == 'pause':
+                self._pause(errors)
+            elif action == 'resume':
+                self._resume(errors)
+        with self.lock:
+            paused = list(self.paused or {})
+        return {'running': self._running_names(), 'paused': paused, 'errors': errors}
+
+    def _pause(self, errors):
+        """停止运行中的实例，只记录确认已停止的实例，并与已有记录合并。"""
+        attempted, failed = {}, set()
+        # 第二轮只处理第一轮快照之后新出现的实例，避免暂停期间漏网。
+        for _ in range(2):
+            for name, task in self._running_tasks().items():
+                if name in attempted:
+                    continue
+                attempted[name] = task
                 try:
                     self.runtime.stop(name)
                 except Exception as error:
+                    failed.add(name)
                     errors.append(f'{name}: {error}')
-            if names:
-                with self.lock:
-                    self.paused = names
-        elif action == 'resume':
-            running = set(self._running_names())
-            with self.lock:
-                targets = list(self.paused) or self.runtime.configs.names()
-                self.paused = []
-            for name in targets:
-                if name in running:
-                    continue
-                try:
-                    self.runtime.start(name)
-                except Exception as error:
-                    errors.append(f'{name}: {error}')
+        still_running = self._running_tasks()
+        stopped = {name: task for name, task in attempted.items()
+                   if name not in failed and name not in still_running}
         with self.lock:
-            paused = list(self.paused)
-        return {'running': self._running_names(), 'paused': paused, 'errors': errors}
+            self.paused = {**(self.paused or {}), **stopped}
+
+    def _resume(self, errors):
+        """按暂停记录恢复实例；启动失败的实例保留在记录里，下次只重试它们。"""
+        with self.lock:
+            # 从未暂停过（None）才启动全部已配置实例；空记录表示没有待恢复项。
+            if self.paused is None:
+                pending = dict.fromkeys(self.runtime.configs.names())
+            else:
+                pending = dict(self.paused)
+        running = self._running_tasks()
+        failed = {}
+        for name, task in pending.items():
+            if name in running:
+                continue
+            try:
+                self.runtime.start(name, task)
+            except Exception as error:
+                failed[name] = task
+                errors.append(f'{name}: {error}')
+        with self.lock:
+            self.paused = failed
 
     @staticmethod
-    def _running_names():
+    def _running_tasks():
+        """运行中的实例 {名称: 独立任务}；主调度器记为 None。"""
         from module.runtime.process_manager import ProcessManager
-        return sorted({manager.config_name for manager in ProcessManager.running_instances()})
+        running = {}
+        for manager in ProcessManager.running_instances():
+            func = manager.started_func
+            running[manager.config_name] = None if func in (None, 'alas') else func
+        return running
+
+    @classmethod
+    def _running_names(cls):
+        return sorted(cls._running_tasks())
 
     def _enqueue(self, connection, message):
         if self.connection is not connection:

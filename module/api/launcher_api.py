@@ -11,6 +11,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from module.api.launcher_protocol import INCOMING_METHODS, SCHEDULER_METHODS, LauncherRequest, LauncherResponse
 from module.api.protocol import ApiError
+from module.logger import logger
 from module.runtime.launcher import is_local_request
 
 
@@ -120,6 +121,7 @@ class LauncherGateway:
         except ApiError as error:
             message = self.failure(request_id, error.code, error.message)
         except Exception:
+            logger.exception(f'启动器调度器动作 {action} 失败')
             message = self.failure(request_id, 'SCHEDULER_FAILED', '调度器操作失败，请查看日志')
         finally:
             connection.tasks.discard(asyncio.current_task())
