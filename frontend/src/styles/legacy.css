@@ -5,11 +5,12 @@
 @import './layout.css';
 @import './components.css';
 @import './insights.css';
-@import './home.css';
+@import './setup.css';
 @import './dev.css';
 @import './legacy-palette.css';
 @import './theme-material.css';
 @import './theme-primitives.css';
+@import './topbar.css';
 @import './forms.css';
 @import './legacy-fonts.css';
 @import './motion.css';
@@ -540,18 +541,99 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高。 */
     flex: 1 1 0;
     min-height: 0;
-    grid-template-columns: minmax(16rem, 20rem) minmax(24rem, 1fr);
+    grid-template-columns: var(--legacy-rail-width, 280px) minmax(24rem, 1fr);
     gap: 14px;
     align-items: stretch;
   }
-  /* 左列整体滚动；队列列表自身填满剩余高度并在内部滚动，与其它主题一致。 */
-  .instance-page-rail {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto}
-/* 调度栏一级容器与内部贴片同心：顶部对齐 16px 的调度器组件，底部对齐 12px 的队列区。 */
-.instance-page-rail {border-radius: 16px 16px 12px 12px}
+  /* 调度器栏包裹容器与拖拽把手 */
+  .instance-page-rail-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  .instance-page-rail-wrap > .instance-page-rail {
+    flex: 1 1 0;
+    height: 100%;
+  }
+  .legacy-rail-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -12px;
+    width: 14px;
+    cursor: col-resize;
+    z-index: 25;
+    touch-action: none;
+    user-select: none;
+  }
+  .legacy-rail-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 6px;
+    width: 2px;
+    background: transparent;
+    transition: background-color .15s cubic-bezier(.2, 0, 0, 1);
+    pointer-events: none;
+    border-radius: 1px;
+  }
+  .legacy-rail-resize-handle:hover::after,
+  .legacy-rail-resize-handle.is-dragging::after,
+  .legacy-rail-resize-handle:focus-visible::after {
+    background: var(--accent);
+  }
+  .legacy-rail-resize-handle.is-dragging::after {
+    width: 3px;
+    left: 5.5px;
+  }
+  body.is-resizing-rail,
+  body.is-resizing-rail * {
+    cursor: col-resize !important;
+    user-select: none !important;
+  }
+  /* 左列一体化卡片容器：整列融为一张面板，靠分隔线划分调度器、统计卡与队列，消除透底白色间隙。 */
+  .instance-page-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--theme-plate-bg);
+    -webkit-backdrop-filter: var(--theme-plate-filter);
+    backdrop-filter: var(--theme-plate-filter);
+    border: 1px solid var(--border);
+    border-radius: var(--theme-radius-panel, 16px);
+  }
   .instance-page-rail .rail-task-list {flex: 1 1 0%; min-height: 0; overflow-y: auto}
-  /* 右栏那套边距会让调度器与任务计划比同列其他卡片窄，这里清零让三块左右对齐。 */
-  .instance-page-rail .scheduler-widget {margin: 0}
-  .instance-page-rail .rail-schedule {padding: 12px 12px 10px}
+  .instance-page-rail .scheduler-widget {
+    margin: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .instance-page-rail .legacy-stat-card {
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .instance-page-rail .rail-schedule {
+    padding: 12px 12px 10px;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid var(--border);
+    border-radius: 0;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   /* 右栏不滚，滚动交给面板：滚动条只在面板内出现与消失，同列的资源卡片宽度不变。 */
   .instance-page-main {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden}
   .instance-page-main .resource-grid {margin-bottom: 0}
@@ -770,6 +852,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .app-shell.legacy-shell > .main-shell > main:has(.instance-page-grid),
   .app-shell.legacy-shell > .main-shell > main:has(.task-config-legacy) {flex: none; overflow: visible}
   .instance-page-grid {display: flex; flex-direction: column; gap: 12px; height: auto}
+  .instance-page-rail-wrap {width: 100%}
+  .legacy-rail-resize-handle {display: none !important}
   .instance-page-rail, .instance-page-main {overflow: visible}
   .task-config-legacy {display: block}
   .legacy-page-nav {padding: 0 16px}
