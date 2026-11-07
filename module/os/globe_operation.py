@@ -26,7 +26,7 @@ from module.logger import logger
 from module.config.utils import get_os_next_reset
 from module.ocr.ocr import Digit
 from module.os.assets import *
-from module.os.tasks.smart_explore import SMART_EXPLORE_TASK_MIN_ZONES, _smart_explore_pending
+from module.os.tasks.smart_explore import SMART_EXPLORE_DELAY_TASKS, SMART_EXPLORE_TASK_MIN_ZONES, _smart_explore_pending
 from module.os_handler.action_point import ActionPointHandler
 from module.os_handler.assets import AUTO_SEARCH_REWARD
 from module.os_handler.port import PORT_CHECK
@@ -101,7 +101,9 @@ class GlobeOperation(ActionPointHandler):
 
     def record_globe_suppressed_zones(self):
         """在正常全球地图截图中确认压制统计；达标后本月不再识别。"""
-        if not _smart_explore_pending(self.config):
+        min_zones = (SMART_EXPLORE_DELAY_TASKS['OpsiArchive'] if self.config.is_task_enabled('OpsiArchive')
+                     else SMART_EXPLORE_TASK_MIN_ZONES)
+        if not _smart_explore_pending(self.config, min_zones):
             return
         image = self.device.image
         previous = getattr(self, '_suppressed_zones_candidate', None)
