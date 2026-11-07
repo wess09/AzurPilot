@@ -3,17 +3,22 @@
 规划算法来自 AzurLaneAutoScript（见 calculator.py），本文件是 AzurPilot 专属的适配层，
 不依赖设备，便于离线测试：
 
+写回的数字都是**库存下限** = 目标剩余量 + 日缓冲（`target_floor` -> `stock_targets`，
+对应 ALAS 的 `get_production_target_stock(hard_floor, reserve, daily_buffer)`）：
+目标剩余量是待完成需求（季节任务、货运需求量、额外目标）的绝对数量，日缓冲是计划日消耗。
+下游任务都是「仓库+在制品 < 目标才开工」，所以生产到目标后自然停止。
+
 - 店铺后厨 `Island{Restaurant,Teahouse,JuuEatery,Grill,JuuCoffee}.Meal1~8/MealNumber1~8`：
   先列出售菜品（按日销量降序），再列原料/中间品（按日消耗降序）。出售菜品的目标库存为
-  一个货架容量 + 一天销量，与 ALAS「餐厅保留 + 日缓冲」一致；中间品目标为一天消耗量。
+  一个货架容量 + 库存下限（capacity 相当于 ALAS 的 reserve「摆满一层」）；中间品目标为库存下限。
 - 挂机生产 `Island*NextTask.AwayCook`：该后厨闲时累积量最大的产品，没有则为 None。
 - 商区 `IslandBusinessShop1~5.Product1~5`：该餐厅计划出售的菜品，按日销量降序。
 - 农田 `IslandFarm/IslandOrchard/IslandNursery.CropTargets`：区域内所有作物都写明目标，
-  计划消耗的作物为一天消耗量，不需要的作物为 0；只为攒 PT 的闲时作物只在日志中提示。
+  有需求的作物为库存下限，不需要的作物为 0；只为攒 PT 的闲时作物只在日志中提示。
 
-- 矿山/林场/渔场 `Min*`：一天计划消耗量，不用的为 0；闲时累积只在日志中提示。
-- 渔场 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat`：鱼肉一天需要量，渔场任务按此把鱼兑换成鱼肉。
-- 牧场 `MinChicken`（禽肉）/`MinPork`（鲜肉）取计划日产量，`Milk`/`Wool` 看计划是否养牛/羊。
+- 矿山/林场/渔场 `Min*`：库存下限，不用的为 0；闲时累积只在日志中提示。
+- 渔场 `MinFreshwaterFishMeat`/`MinSaltwaterFishMeat`：鱼肉库存下限，渔场任务按此把鱼兑换成鱼肉。
+- 牧场 `MinChicken`（禽肉）/`MinPork`（鲜肉）取「计划日产量 + 目标剩余量」，`Milk`/`Wool` 看计划是否养牛/羊。
 - 制造业 `WoodProcessing/ElectronicProcessing/Industrial/Handmade.Positions`：计划需要的岗位数。
 - 空余岗位（目标都达标后）：各区域默认产品（`DefaultCrop`/`DefaultOre`/`DefaultWood`/`DefaultFish`）与岗位数，
   取闲时累积（为季节 PT）的产品；开启「填满空余岗位」时写满已解锁岗位，没有闲时产品则取价值最高的可生产产品。
@@ -23,8 +28,6 @@ AzurPilot 不会做或卖的菜品、不会种的作物、不会生产的矿石/
 """
 from math import ceil
 
-from module.island_planner.utils import get_production_target_stock
-
 from module.island.farm_targets import format_crop_targets
 from module.island_planner.data import DIC_ISLAND_ITEM, DIC_ISLAND_RECIPE
 from module.island_planner.restaurant_config import (
@@ -32,6 +35,7 @@ from module.island_planner.restaurant_config import (
     WAITRESS_NONE,
     get_restaurant_config,
 )
+from module.island_planner.utils import get_production_target_stock
 
 GRADES = ('bronze', 'silver', 'gold', 'diamond')
 MEAL_SLOTS = 8
@@ -96,7 +100,7 @@ CROP_AREAS = {
 }
 
 # 矿山/林场/渔场：按物品设最低库存的生产区，{物品ID: 配置路径}。
-# 岗位共享，目标只含一天计划消耗，闲时累积只作提示（同作物）。
+# 岗位共享，目标是库存下限（目标剩余量 + 日缓冲），闲时累积只作提示（同作物）。
 THRESHOLD_GROUPS = {
     'mine': {
         2701: 'IslandMineForest.IslandMine.MinCopper',
@@ -295,21 +299,39 @@ def restrict_calculator(calculator, meal_options, product_options, unlocked_fish
     return excluded
 
 
-def target_floor(calculator):
-    """目标剩余量 Y：季节任务、货运缺口与额外目标，不按期限摊薄。
+def target_floor(task_targets=None):
+    """目标剩余量 Y：季节任务、货运需求量与额外目标，不按期限摊薄。
 
-    `demand_items` 里的 `total_need_count` 是扫描到的未完成需求总量。按期限平摊成
-    `rate_per_day` 只适合「持续消耗」的建模；把它当库存目标会让目标被摊成 0~1 个，
-    而任务端是「仓库+生产中 未达目标才生产」，于是目标永远达不成。
+    入参是 planner 汇总的绝对目标（`merge_targets` 的结果），支持三种形式：
+    `{物品ID: [{'count': N, 'period': d} | N]}`、`{物品ID: {'total_need_count': N}}`、
+    `{物品ID: N}`。
+
+    目标是「一次性累积量」，不是速率：按期限平摊成 `rate_per_day` 只适合持续消耗的
+    建模，写进库存下限会把目标摊成 0~1 个，而任务端是「仓库+在制品 未达目标才开工」，
+    于是目标永远达不成。
+
+    Args:
+        task_targets (dict | None): 绝对目标；省略时视为没有目标。
 
     Returns:
-        dict[int, int]: {物品ID: 未完成需求量}，已完成的物品不会出现。
+        dict[int, int]: {物品ID: 目标剩余量}，数量为 0 的物品不会出现。
     """
-    return {
-        item_id: data.get('total_need_count', 0)
-        for item_id, data in (getattr(calculator, 'demand_items', None) or {}).items()
-        if data.get('total_need_count', 0) > 0
-    }
+    floors = {}
+    for item_id, value in (task_targets or {}).items():
+        if isinstance(value, dict):
+            total = value.get('total_need_count', value.get('count', 0))
+        elif isinstance(value, (list, tuple)):
+            total = sum(
+                entry.get('count', entry.get('total_need_count', 0))
+                if isinstance(entry, dict) else entry
+                for entry in value
+            )
+        else:
+            total = value
+        total = int(total or 0)
+        if total > 0:
+            floors[item_id] = floors.get(item_id, 0) + total
+    return floors
 
 
 def stock_targets(calculator, floors=None):
@@ -320,16 +342,17 @@ def stock_targets(calculator, floors=None):
     `get_production_target_stock(hard_floor, reserve, daily_buffer)`
     （`reserve` 未移植，取 0；它对应菜单保留量，见 kitchen_settings 里的 capacity）。
 
-    下游任务一律按「仓库+生产中 < 目标 → 开工」执行，因此生产到目标后自然停止，
-    不会因为目标写大而过度生产。
+    两者用途不同，不会重复扣减：目标是一次性累积量，日缓冲是维持计划生产所需的周转
+    库存（被其它配方消耗、或作为菜品售出）。下游任务一律按「仓库+生产中 < 目标 → 开工」
+    执行，因此生产到目标后自然停止，不会因为目标写大而过度生产。
 
     Args:
-        floors (dict | None): 预计算的 {物品ID: 目标剩余量}，见 [target_floor]；省略则自行计算。
+        floors (dict | None): `{物品ID: 目标剩余量}`，见 [target_floor]；省略时只写日缓冲。
 
     Returns:
         dict[int, int]: {物品ID: 库存目标}。
     """
-    floors = target_floor(calculator) if floors is None else floors
+    floors = floors or {}
     buffer = getattr(calculator, 'product_daily_buffer_items', None) or {}
     return {
         item_id: get_production_target_stock(floors.get(item_id, 0), 0, buffer.get(item_id, 0))
@@ -376,10 +399,10 @@ def kitchen_settings(calculator, restaurant_id, meal_options, product_options, s
     meals = []
     for item_id in sorted(sales, key=lambda i: (-sales[i], i)):
         if item_id in meal_names:
-            # 常规上架菜品：capacity 是「摆满一层」的保留量（ALAS 的 reserve），
-            # 叠加库存目标；日销量只作兜底下限，避免 LP 数据缺失时写 0。
+            # 常规上架菜品：capacity 是「摆满一层」的保留量（ALAS 的 reserve），叠加库存
+            # 目标；计划里没有该菜品时才退回日销量，避免 LP 数据缺失时写 0
             meals.append((meal_names[item_id],
-                          capacity + max(stock.get(item_id, 0), ceil(sales[item_id] - 1e-9))))
+                          capacity + stock.get(item_id, ceil(sales[item_id] - 1e-9))))
     sold = {item_id for item_id in sales}
     others = [item_id for item_id in produced if item_id not in sold and stock.get(item_id, 0) > 0]
     for item_id in sorted(others, key=lambda i: (-stock[i], i)):
@@ -502,9 +525,9 @@ def ranch_settings(calculator, floors=None):
     任务、货运缺口或额外目标要求的禽肉/皮料会一直补到目标为止。
 
     Args:
-        floors (dict | None): 预计算的 {物品ID: 目标剩余量}，见 [target_floor]；省略则自行计算。
+        floors (dict | None): `{物品ID: 目标剩余量}`，见 [target_floor]；省略时只按计划日产量。
     """
-    floors = target_floor(calculator) if floors is None else floors
+    floors = floors or {}
     values = {}
     for group, (item_id, path) in RANCH_THRESHOLDS.items():
         output = _ranch_output(calculator, group)
@@ -707,9 +730,15 @@ def default_product_settings(calculator, fill_spare_posts=False, priority='pt'):
     return values, notes
 
 
-def build_settings(calculator, meal_options, product_options, fill_spare_posts=False, priority='pt',
-                   auto_positions=False):
+def build_settings(calculator, meal_options, product_options, task_targets=None, fill_spare_posts=False,
+                   priority='pt', auto_positions=False):
     """求解成功后，生成要写入的全部配置。
+
+    Args:
+        task_targets (dict | None): planner 汇总的绝对目标（季节任务 + 货运需求量 +
+            额外目标）。库存下限用它而不是 LP 的 `demand_items`：货运在 LP 里是
+            「缺口」（已扣除扫描时的库存），拿它当库存下限会把库存扣两次。
+            省略时只写计划日缓冲。
 
     Returns:
         tuple[dict, list[str]]: ({配置路径: 值}, 提示信息)。
@@ -717,7 +746,7 @@ def build_settings(calculator, meal_options, product_options, fill_spare_posts=F
     values = {}
     notes = []
     # 库存目标只算一次：五个后厨 + 三个种植区 + 矿山/林场/渔场共用同一份。
-    floors = target_floor(calculator)
+    floors = target_floor(task_targets)
     stock = stock_targets(calculator, floors)
     for restaurant_id in KITCHENS:
         kitchen_values, kitchen_notes = kitchen_settings(
