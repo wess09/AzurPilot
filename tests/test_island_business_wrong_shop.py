@@ -62,12 +62,30 @@ class SameRowTest(unittest.TestCase):
 
 
 class WrongShopTest(unittest.TestCase):
+    @staticmethod
+    def scroll_list(business, pages):
+        """模拟可滑动的列表：pages[k] 为第 k 次向下滑动后扫描到的结果，回到顶部时归零"""
+        position = {'attempt': 0}
+
+        def to_top():
+            position['attempt'] = 0
+
+        def down():
+            position['attempt'] += 1
+
+        business._scroll_business_to_top = Mock(side_effect=to_top)
+        business._scroll_business_down = Mock(side_effect=down)
+        business._scan_visible_batch_shops = Mock(
+            side_effect=lambda shops: list(pages.get(position['attempt'], [])))
+
     def test_wrong_shop_is_entered_only_once(self):
         business = make_business()
         eatery = {'name': '啾啾简餐'}
-        business._scan_visible_batch_shops = Mock(return_value=[
-            {'shop': eatery, 'status': 'blue', 'button_rect': (990, 356, 1175, 383)},
-        ])
+        # 啾啾简餐不在列表里，只在顶部误识别到啾咖啡那一行
+        self.scroll_list(business, {0: [
+            {'shop': eatery, 'status': 'blue', 'label_rect': (222, 268, 329, 294),
+             'button_rect': (990, 356, 1175, 383)},
+        ]})
         # 每次点击都进到啾咖啡
         business._detect_current_shop = Mock(return_value={'name': '啾咖啡'})
         business._process_shop_entry = Mock()
@@ -77,6 +95,25 @@ class WrongShopTest(unittest.TestCase):
         self.assertEqual(business._detect_current_shop.call_count, 1)
         business._process_shop_entry.assert_not_called()
         self.assertEqual(started, set())
+
+    def test_real_row_is_still_entered_after_wrong_match(self):
+        business = make_business()
+        eatery = {'name': '啾啾简餐'}
+        # 顶部误识别到啾咖啡那一行，滑动一次后才是啾啾简餐真正所在的行
+        self.scroll_list(business, {
+            0: [{'shop': eatery, 'status': 'blue', 'label_rect': (222, 268, 329, 294),
+                 'button_rect': (990, 356, 1175, 383)}],
+            1: [{'shop': eatery, 'status': 'blue', 'label_rect': (222, 445, 329, 471),
+                 'button_rect': (990, 533, 1175, 560)}],
+        })
+        business._detect_current_shop = Mock(side_effect=[{'name': '啾咖啡'}, {'name': '啾啾简餐'}])
+        business._process_shop_entry = Mock(return_value=True)
+
+        started = business._run_batch([eatery])
+
+        self.assertEqual(business._detect_current_shop.call_count, 2)
+        business._process_shop_entry.assert_called_once_with({'name': '啾啾简餐'})
+        self.assertEqual(started, {'啾啾简餐'})
 
 
 if __name__ == '__main__':
