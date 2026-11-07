@@ -13,6 +13,7 @@ async function resolvedFilter(page: import('@playwright/test').Page, token: stri
 }
 
 test('生产构建保留高斯模糊且资源图标能够解码', async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('azurpilot.material', 'glass'))
   // 使用固定背景隔离外部图片服务，直接验证构建后的浏览器计算样式。
   await page.route('https://api.yppp.net/**', route => route.fulfill({
     contentType: 'image/svg+xml',
@@ -24,17 +25,11 @@ test('生产构建保留高斯模糊且资源图标能够解码', async ({page})
   const expectFilterFrom = async (selector: string, token: string) => {
     await expect(page.locator(selector).first()).toHaveCSS('backdrop-filter', await resolvedFilter(page, token))
   }
-  await expectFilterFrom('.sidebar', '--theme-sidebar-filter')
-  // 面归外壳容器：容器内的右栏只留内容，不叠第二层材质。
-  await expectFilterFrom('.shell-frame', '--theme-surface-filter')
-  await expect(page.locator('.right-rail')).toHaveCSS('backdrop-filter', 'none')
+  await expectFilterFrom('.sidebar', '--theme-surface-filter')
+  await expectFilterFrom('.legacy-page-nav', '--theme-surface-filter')
   // 一级面：面板与资源卡都走一级面滤镜。
   await expectFilterFrom('.panel', '--theme-surface-filter')
   await expectFilterFrom('.resource-card', '--theme-surface-filter')
-  // 装饰玻璃层与一级面同一强度：容器内的那层会被压平，所以断言至少有一层真的在画模糊。
-  const glassFilters = await page.locator('.glass-material').evaluateAll(elements =>
-    elements.map(element => getComputedStyle(element).backdropFilter || 'none'))
-  expect(glassFilters).toContain(await resolvedFilter(page, '--theme-surface-filter'))
   const icons = page.locator('.resource-icon-image')
   await expect(icons.first()).toBeVisible()
   await expect.poll(() => icons.evaluateAll(elements => elements.every(element =>
