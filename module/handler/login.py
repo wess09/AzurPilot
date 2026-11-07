@@ -160,6 +160,9 @@ class LoginHandler(UI):
             if self.appear(EVENT_LIST_CHECK, offset=(30, 30), interval=5):
                 self.device.click(BACK_ARROW)
                 continue
+            # MuMu 模拟器广告会盖住下面的更新/维护弹窗，先关掉
+            if self.handle_emulator_ad():
+                continue
             # 更新和维护
             if self.appear_then_click(MAINTENANCE_ANNOUNCE, offset=(30, 30), interval=5):
                 continue
@@ -194,6 +197,42 @@ class LoginHandler(UI):
     _channel_float_timer = Timer(5, count=3)
 
     _user_agreement_timer = Timer(1, count=2)
+
+    # MuMu 广告右上角「Remove Ads」+ X 的搜索区域，以及 X 相对模板左上角的位置
+    EMULATOR_AD_SEARCH_AREA = (880, 30, 1280, 180)
+    EMULATOR_AD_CLOSE_OFFSET = (108, 1, 132, 25)
+
+    def handle_emulator_ad(self, interval=3):
+        """关闭 MuMu 模拟器在游戏启动时弹出的全屏广告。
+
+        MuMu（国际版）启动应用时可能盖上一层全屏广告，右上角是「Remove Ads」和 X，
+        广告内容会变，这两个按钮不变。广告挡住更新/维护弹窗时，登录循环识别不到
+        LOGIN_GAME_UPDATE，每次都等待超时后重启游戏，广告又出现，直到它恰好没出现为止
+        （国际服 2026-11-07 卡了约 3.5 小时，10-25、11-03 也出现过）。
+
+        Args:
+            interval (int | float): 两次点击的最短间隔（秒）。
+
+        Returns:
+            bool: 是否点击了关闭。
+        """
+        timer = self.get_interval_timer(TEMPLATE_EMULATOR_AD, interval=interval)
+        if not timer.reached():
+            return False
+        image = self.image_crop(self.EMULATOR_AD_SEARCH_AREA, copy=False)
+        # 广告按钮是半透明底，背景不同相似度在 0.85~1.0，其他画面不超过 0.55
+        similarity, button = TEMPLATE_EMULATOR_AD.match_result(image)
+        if similarity < 0.7:
+            return False
+
+        x = button.area[0] + self.EMULATOR_AD_SEARCH_AREA[0]
+        y = button.area[1] + self.EMULATOR_AD_SEARCH_AREA[1]
+        dx1, dy1, dx2, dy2 = self.EMULATOR_AD_CLOSE_OFFSET
+        area = (x + dx1, y + dy1, x + dx2, y + dy2)
+        logger.info(f'[登录] 检测到模拟器广告（相似度 {similarity:.2f}），点击关闭')
+        self.device.click(Button(area=area, color=(), button=area, name='EMULATOR_AD_CLOSE'))
+        timer.reset()
+        return True
 
     def handle_cn_user_agreement(self):
         """处理国服用户协议与登录确认弹窗。
