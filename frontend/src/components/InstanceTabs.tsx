@@ -4,7 +4,7 @@
 
 import { matchPath, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { AlertTriangle, LoaderCircle, Play, Plus, Square, Trash2, X } from 'lucide-react'
-import { useState, type ComponentType } from 'react'
+import { useLayoutEffect, useRef, useState, type ComponentType } from 'react'
 import { api } from '../api/client'
 import { useApp, useConnection } from '../app/context'
 import { editor } from '../config/editors'
@@ -48,23 +48,36 @@ const STATUS_LABEL: Record<Status, UiKey> = {
 /** 实例分页条：所有实例平铺在顶栏一行，一点即切，不用展开下拉。 */
 export function InstanceTabs({onCreate}: {onCreate: () => void}) {
   const {instances, ui} = useApp()
+  const connection = useConnection()
   const {instance} = useParams()
   const navigate = useNavigate()
   const {pathname} = useLocation()
-  /* 标签跳到目标实例的同一页型；不在实例页内（如主页）时统一落到总览。 */
+  /* 标签跳到目标实例的同一页型；从全局页面切入时落到总览。 */
   const suffix = matchPath('/i/:instance/*', pathname)?.params['*'] || 'overview'
   const [pendingDelete, setPendingDelete] = useState<string>()
-  const jump = (name: string) => { if (name !== instance) navigate(`/i/${name}/${suffix}`) }
+  const tabs = useRef<HTMLDivElement>(null)
+  const activeTab = useRef<HTMLButtonElement>(null)
+  const jump = (name: string) => { if (name !== instance) navigate(`/i/${encodeURIComponent(name)}/${suffix}`) }
 
-  return <div className="instance-tabs" role="tablist" aria-label={ui('nav.instanceTabs')}>
+  useLayoutEffect(() => {
+    if (!tabs.current || !activeTab.current) return
+    const track = tabs.current.getBoundingClientRect()
+    const tab = activeTab.current.getBoundingClientRect()
+    if (tab.left < track.left) tabs.current.scrollLeft += tab.left - track.left
+    if (tab.right > track.right) tabs.current.scrollLeft += tab.right - track.right
+  }, [instance, instances.length])
+
+  return <div className="instance-tabs" ref={tabs} role="tablist" aria-label={ui('nav.instanceTabs')}>
     {instances.map(item => {
       const StatusIcon = STATUS_ICON[item.status]
       const current = item.name === instance
       const hint = [item.name, ui(STATUS_LABEL[item.status]), item.currentTask].filter(Boolean).join(' · ')
       return <button
         key={item.name}
+        ref={current ? activeTab : undefined}
         type="button"
         role="tab"
+        aria-label={item.name}
         aria-selected={current}
         className={`instance-tab ${item.status}${current ? ' current' : ''}`}
         title={hint}
@@ -78,7 +91,7 @@ export function InstanceTabs({onCreate}: {onCreate: () => void}) {
         <span className="instance-tab-cell instance-tab-remove" role="button" tabIndex={-1} aria-label={`${ui('instance.delete')} · ${ui('instance.rightClick')}`} title={`${ui('instance.delete')} · ${ui('instance.rightClick')}`} onContextMenu={event => { event.preventDefault(); setPendingDelete(item.name) }}><X size={13} aria-hidden="true"/></span>
       </button>
     })}
-    <button type="button" className="instance-tab-create" aria-label={ui('instance.create')} title={ui('instance.create')} onClick={onCreate}><Plus size={15}/></button>
+    <button type="button" className="instance-tab-create" aria-label={ui('instance.create')} title={ui('instance.create')} disabled={connection !== 'ready'} onClick={onCreate}><Plus size={15}/></button>
     {pendingDelete && <DeleteInstance name={pendingDelete} onClose={() => setPendingDelete(undefined)}/>}
   </div>
 }
@@ -115,7 +128,7 @@ function SchedulerToggle({name, status}: {name: string; status: Status}) {
     aria-label={`${running ? ui('scheduler.stop') : ui('scheduler.start')} · ${ui('instance.rightClick')}`}
     title={`${running ? ui('scheduler.stop') : ui('scheduler.start')} · ${ui('instance.rightClick')}`}
     onContextMenu={toggle}
-  >{running ? <Square size={13} aria-hidden="true"/> : <Play size={13} aria-hidden="true"/>}</span>
+  >{running ? <Square size={13} fill="currentColor" aria-hidden="true"/> : <Play size={13} fill="currentColor" aria-hidden="true"/>}</span>
 }
 
 /** 删除实例的三次确认：连点三次才真删，每次换一档提示文案与抖动幅度，末档转强调红。 */
@@ -140,12 +153,11 @@ function DeleteInstance({name, onClose}: {name: string; onClose: () => void}) {
          删别人则留在当前标签页。 */
       const order = instances.map(item => item.name)
       const at = order.indexOf(name)
-      const currentAt = order.indexOf(current)
-      const landing = at === currentAt ? (order[at - 1] ?? order[at + 1]) : current
-      /* 跳转要在 refresh 之前发出：刷新后 URL 里的实例已不在列表，外壳的兜底守卫会抢先把页面推回主页。 */
-      if (landing) navigate(`/i/${landing}/overview`)
+      if (name === current) {
+        const landing = order[at - 1] ?? order[at + 1]
+        navigate(landing ? `/i/${encodeURIComponent(landing)}/overview` : '/configs', {replace: true})
+      }
       await refresh(); onClose(); notify(ui('instance.backupNotice'))
-      if (landing) navigate(`/i/${landing}/overview`)
     } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
 

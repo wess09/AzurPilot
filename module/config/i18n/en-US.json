@@ -8205,7 +8205,7 @@
       "WelcomeTitle": "Welcome to AzurPilot",
       "WelcomeDescription": "Let's set up your first instance.",
       "WelcomeSelectLanguage": "Select your language",
-      "WelcomeHint": "Choose a UI language. AzurPilot will pick a matching default server, and you can still adjust it later.",
+      "WelcomeHint": "Default server will match your language, and can be changed later.",
       "ServerTitle": "Select Server",
       "ServerHint": "Choose the Azur Lane server you use so the default package name can be filled in.",
       "ServerCN": "CN Server",

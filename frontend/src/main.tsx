@@ -6,13 +6,13 @@ import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { App } from './app/App'
+import { InstanceSetup } from './pages/InstanceSetup'
 import { AppProvider } from './app/context'
 import { ThemeWallpaper } from './components/GlassMaterial'
 import { applyTheme, getThemePreference } from './app/theme'
 import { Overview } from './pages/Overview'
 import { TaskConfig } from './pages/TaskConfig'
 import { Statistics } from './pages/Statistics'
-import { Home } from './pages/Home'
 import { Updater } from './pages/Updater'
 import { Announcement } from './pages/Announcement'
 import { InterfaceSettings } from './pages/InterfaceSettings'
@@ -42,7 +42,7 @@ const FleetAnalysis = lazy(() => import('./pages/FleetAnalysis').then(module => 
 const FleetSwitch = lazy(() => import('./pages/FleetSwitch').then(module => ({default: module.FleetSwitch})))
 
 const router = createHashRouter([
-  {path: '/', element: <App/>, errorElement: <ErrorPage/>, children: [{index: true, element: <Home/>}, {path: 'announcement', element: <Announcement/>}, {path: 'interface', element: <InterfaceSettings/>}, {path: 'remote', element: <RemoteAccess/>}, {path: 'settings', element: <Settings/>}, {path: 'updater', element: <Updater/>}, {path: 'configs', element: <ConfigManager/>}, {path: 'dev', element: <DevControls/>}]},
+  {path: '/', element: <App/>, errorElement: <ErrorPage/>, children: [{path: 'setup', element: <InstanceSetup/>}, {path: 'announcement', element: <Announcement/>}, {path: 'interface', element: <InterfaceSettings/>}, {path: 'remote', element: <RemoteAccess/>}, {path: 'settings', element: <Settings/>}, {path: 'updater', element: <Updater/>}, {path: 'configs', element: <ConfigManager/>}, {path: 'dev', element: <DevControls/>}]},
   {path: '/i/:instance', element: <App/>, errorElement: <ErrorPage/>, children: [
     {index: true, element: <Navigate to="overview" replace/>},
     {path: 'overview', element: <Overview/>}, {path: 'task/:task', element: <TaskConfig/>},
@@ -59,7 +59,7 @@ const router = createHashRouter([
     {path: 'task/FleetAffinityTraining', element: <Navigate to="../FleetSwitch?tab=training" relative="path" replace/>},
     {path: 'task/FleetEquipment', element: <Navigate to="../FleetSwitch?tab=equipment" relative="path" replace/>},
   ]},
-  {path: '*', element: <Navigate to="/" replace/>},
+  {path: '*', element: <Navigate to="/configs" replace/>},
 ])
 // 先读取偏好并加载当前主题，再挂载页面，避免简约首屏短暂请求壁纸或玻璃库。
 void applyTheme(getThemePreference()).then(() => {

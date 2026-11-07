@@ -4,7 +4,7 @@
 
 import { motionReducedActive, motionSpeedValue } from './motionPrefs'
 
-/** 卡片选择器：涵盖各类页面（总览、配置、主页、统计、设置、更新等）的核心卡片与面板。 */
+/** 卡片选择器：涵盖总览、配置、统计、设置、更新等页面的核心卡片与面板。 */
 const CARD_SELECTORS = [
   '.panel',
   '.resource-card',
@@ -48,7 +48,7 @@ export function findTopLevelCards(root: HTMLElement): HTMLElement[] {
 /**
  * 计算卡片相对于视口根容器左上角的对角线投影得分。
  * 公式：Score = Y + X * 0.65
- * - 横向多列网格（如主页实例、总览资源）：先行后列、左侧先于右侧；
+ * - 横向多列网格（如总览资源）：先行后列、左侧先于右侧；
  * - 纵向列表（如配置组）：自上而下；
  * 呈现如同水波从左上角向右下角推开的错峰流动视觉效果。
  */

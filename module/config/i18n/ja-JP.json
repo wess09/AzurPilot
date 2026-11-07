@@ -8205,7 +8205,7 @@
       "WelcomeTitle": "AzurPilotへようこそ",
       "WelcomeDescription": "初期設定を完了しましょう。",
       "WelcomeSelectLanguage": "言語を選択",
-      "WelcomeHint": "UI言語を選択すると、既定のサーバーが自動で設定されます。後から変更できます。",
+      "WelcomeHint": "言語に合わせて既定サーバーが設定されます。後から変更も可能です。",
       "ServerTitle": "サーバーを選択",
       "ServerHint": "使用しているアズールレーンのサーバーを選択し、既定のパッケージ名を設定します。",
       "ServerCN": "中国大陸版 (CN)",
