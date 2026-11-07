@@ -287,3 +287,232 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .material-detail-modal .field-label label {color: var(--theme-text); font-size: 13px}
 .material-detail-modal .knob-value {color: var(--theme-text); font-size: 13px}
 .material-detail-modal .knob-region-title {font-size: 14px}
+
+/* 过滤器语法高亮编辑器（CodeMirror 6） */
+.filter-editor {
+  position: relative;
+  width: 100%;
+}
+.filter-editor .cm-editor {
+  border: 0;
+  border-bottom: 1px solid var(--theme-input-border, var(--form-edge));
+  border-radius: 4px 4px 0 0;
+  background: var(--theme-input-bg);
+  color: var(--theme-input-text, var(--text));
+  font-family: var(--theme-font-mono, "JetBrains Mono", Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.9;
+  min-height: 42px;
+  transition: border-bottom-color .2s cubic-bezier(.2, 0, 0, 1), background-color .2s cubic-bezier(.2, 0, 0, 1);
+  outline: none;
+}
+.filter-editor .cm-editor.cm-focused {
+  background: var(--accent-soft);
+  border-bottom: 2px solid var(--theme-focus);
+}
+.filter-editor .cm-scroller {
+  font-family: inherit;
+  line-height: inherit;
+  overflow-x: hidden;
+}
+.filter-editor .cm-content {
+  padding: 10px 14px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.filter-editor .cm-line {
+  padding: 0;
+}
+.filter-editor .cm-cursor {
+  border-left-color: var(--text);
+}
+.filter-editor.is-disabled .cm-editor {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--surface-muted);
+}
+
+/* 语法高亮 Token —— 核心控制与连接符 */
+.cm-filter-arrow {
+  color: var(--accent);
+  font-weight: 700;
+  padding: 0 4px;
+}
+.cm-filter-delimiter {
+  color: var(--muted);
+  opacity: 0.55;
+}
+.cm-filter-tier-marker {
+  color: #7c3aed;
+  font-weight: 700;
+  background: color-mix(in srgb, #8b5cf6 18%, transparent);
+  border: 1px solid color-mix(in srgb, #8b5cf6 35%, transparent);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.cm-filter-shortest {
+  color: #b45309;
+  font-weight: 700;
+  background: color-mix(in srgb, #f59e0b 20%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.cm-filter-reset {
+  color: #dc2626;
+  font-weight: 700;
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
+  border-radius: 4px;
+  padding: 0 5px;
+}
+.cm-filter-preset {
+  color: #d97706;
+  font-weight: 600;
+}
+
+/* 语法高亮 Token —— 时间与数值 */
+.cm-filter-time {
+  color: #2563eb;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cm-filter-number {
+  color: #2563eb;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 语法高亮 Token —— 委托系统 (Commission) */
+.cm-filter-comm {font-weight: 600}
+.cm-filter-comm-urgent {color: #e11d48; font-weight: 700}
+.cm-filter-comm-extra {color: #7c3aed; font-weight: 700}
+.cm-filter-comm-daily {color: #0284c7}
+.cm-filter-comm-major {color: #d97706; font-weight: 700}
+.cm-filter-comm-night {color: #4f46e5}
+
+.cm-filter-genre {font-weight: 600}
+.cm-filter-genre-gem {color: #e11d48; font-weight: 700}
+.cm-filter-genre-cube {color: #0284c7; font-weight: 700}
+.cm-filter-genre-oil {color: #b45309}
+.cm-filter-genre-drill {color: #475569}
+.cm-filter-genre-box {color: #ea580c}
+.cm-filter-genre-chip {color: #9333ea}
+.cm-filter-genre-part {color: #0d9488}
+.cm-filter-genre-resource {color: #16a34a}
+.cm-filter-genre-event {color: #f43f5e}
+.cm-filter-genre-book {color: #6366f1}
+.cm-filter-genre-retrofit {color: #ec4899}
+.cm-filter-genre-ship {color: #059669}
+
+/* 语法高亮 Token —— 科研系统 (Research) */
+.cm-filter-series {color: #0284c7; font-weight: 600}
+.cm-filter-dr {color: #d97706; font-weight: 700}
+.cm-filter-pry {color: #9333ea; font-weight: 700}
+.cm-filter-genre-code {color: #0d9488; font-weight: 600}
+.cm-filter-ship {color: #059669; font-weight: 600}
+
+/* 语法高亮 Token —— 商店与通用物品 */
+.cm-filter-shop-group {color: #6366f1; font-weight: 600}
+.cm-filter-shop-sub {color: #0d9488; font-weight: 600}
+.cm-filter-tier {color: #ea580c; font-weight: 600}
+.cm-filter-fleet {color: #0891b2; font-weight: 600}
+.cm-filter-stage {color: #3b82f6; font-weight: 600}
+.cm-filter-rarity {color: #8b5cf6; font-weight: 600}
+.cm-filter-item {color: var(--text); font-weight: 500}
+
+/* 深色模式适配 */
+:root[data-theme='legacy-dark'] .cm-filter-tier-marker,
+:root[data-theme='dark'] .cm-filter-tier-marker {
+  color: #c084fc;
+  background: rgba(192, 132, 252, 0.2);
+  border-color: rgba(192, 132, 252, 0.4);
+}
+:root[data-theme='legacy-dark'] .cm-filter-shortest,
+:root[data-theme='dark'] .cm-filter-shortest {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.2);
+  border-color: rgba(251, 191, 36, 0.4);
+}
+:root[data-theme='legacy-dark'] .cm-filter-reset,
+:root[data-theme='dark'] .cm-filter-reset {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.2);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+:root[data-theme='legacy-dark'] .cm-filter-time,
+:root[data-theme='dark'] .cm-filter-time,
+:root[data-theme='legacy-dark'] .cm-filter-number,
+:root[data-theme='dark'] .cm-filter-number {
+  color: #60a5fa;
+}
+:root[data-theme='legacy-dark'] .cm-filter-comm-urgent,
+:root[data-theme='dark'] .cm-filter-comm-urgent {
+  color: #fb7185;
+}
+:root[data-theme='legacy-dark'] .cm-filter-comm-extra,
+:root[data-theme='dark'] .cm-filter-comm-extra {
+  color: #c084fc;
+}
+:root[data-theme='legacy-dark'] .cm-filter-comm-daily,
+:root[data-theme='dark'] .cm-filter-comm-daily {
+  color: #38bdf8;
+}
+:root[data-theme='legacy-dark'] .cm-filter-comm-major,
+:root[data-theme='dark'] .cm-filter-comm-major {
+  color: #fbbf24;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-gem,
+:root[data-theme='dark'] .cm-filter-genre-gem {
+  color: #fb7185;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-cube,
+:root[data-theme='dark'] .cm-filter-genre-cube {
+  color: #38bdf8;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-oil,
+:root[data-theme='dark'] .cm-filter-genre-oil {
+  color: #f59e0b;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-drill,
+:root[data-theme='dark'] .cm-filter-genre-drill {
+  color: #94a3b8;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-box,
+:root[data-theme='dark'] .cm-filter-genre-box {
+  color: #fb923c;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-chip,
+:root[data-theme='dark'] .cm-filter-genre-chip {
+  color: #c084fc;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-part,
+:root[data-theme='dark'] .cm-filter-genre-part {
+  color: #2dd4bf;
+}
+:root[data-theme='legacy-dark'] .cm-filter-series,
+:root[data-theme='dark'] .cm-filter-series {
+  color: #38bdf8;
+}
+:root[data-theme='legacy-dark'] .cm-filter-dr,
+:root[data-theme='dark'] .cm-filter-dr {
+  color: #fbbf24;
+}
+:root[data-theme='legacy-dark'] .cm-filter-pry,
+:root[data-theme='dark'] .cm-filter-pry {
+  color: #c084fc;
+}
+:root[data-theme='legacy-dark'] .cm-filter-genre-code,
+:root[data-theme='dark'] .cm-filter-genre-code {
+  color: #2dd4bf;
+}
+:root[data-theme='legacy-dark'] .cm-filter-ship,
+:root[data-theme='dark'] .cm-filter-ship {
+  color: #34d399;
+}
+:root[data-theme='legacy-dark'] .cm-filter-tier,
+:root[data-theme='dark'] .cm-filter-tier {
+  color: #fb923c;
+}
+
+
