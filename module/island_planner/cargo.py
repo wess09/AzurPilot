@@ -193,7 +193,7 @@ def read_cargo_slots(image, matcher=None, ocr=None):
     return slots
 
 
-def partial_order_targets(slots):
+def partial_order_demands(slots):
     """已部分提交的委托还缺的货物。
 
     同一物品出现在多个委托中时需求相加，库存只算一次（各格显示的是同一份库存）。
@@ -209,6 +209,24 @@ def partial_order_targets(slots):
             need[item_id] = need.get(item_id, 0) + required
             stock[item_id] = max(stock.get(item_id, 0), current)
     return {item_id: total - stock[item_id] for item_id, total in sorted(need.items()) if total > stock[item_id]}
+
+
+def partial_order_targets(slots):
+    """已经部分提交的委托需求的货物。
+
+    同一物品出现在多个委托中时需求相加。这是「需求量」，不含库存扣减：
+    写入配置的库存目标要用它，任务端「仓库+在制品 < 目标」自己会扣掉已有库存。
+
+    Returns:
+        dict[int, int]: {物品ID: 需求总量}。
+    """
+    need = {}
+    for slot in slots:
+        if not slot['completed']:
+            continue
+        for item_id, _, required in slot['items']:
+            need[item_id] = need.get(item_id, 0) + required
+    return dict(sorted(need.items()))
 
 
 def partial_orders_fully_read(slots):
