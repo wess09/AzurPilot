@@ -4,6 +4,7 @@
 
 import {useEffect} from 'react'
 import {api} from '../api/client'
+import {PROJECT_LOGO_URL} from '../components/ProjectLogo'
 
 type TaskNotification = {instance?: string; title?: string; content?: string}
 
@@ -30,7 +31,7 @@ function show(data: TaskNotification) {
   }
   const notification = new Notification(data.title ?? 'AzurPilot', {
     body: data.content ?? '',
-    icon: `${import.meta.env.BASE_URL}azurpilot.svg`,
+    icon: PROJECT_LOGO_URL,
   })
   notification.onclick = () => { window.focus(); notification.close() }
 }
