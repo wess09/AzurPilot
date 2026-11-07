@@ -756,7 +756,7 @@ class FastForwardHandler(AutoSearchHandler):
                 logger.attr('行走加速', '开启')
                 return True
             if timeout.reached():
-                logger.warning(f'等待时间已过，无法设置地图移动加速')
+                logger.warning(f'等待时间已过，无法设置地图行走加速')
                 return False
 
             if interval.reached():

@@ -33,7 +33,7 @@ class PriceOcr(DigitYuv):
         prev = result
         if result.startswith('0'):
             result = '1' + result
-            logger.warning(f'大世界商店+数量 {prev} 已修正为 {result}')
+            logger.warning(f'大世界商店数量 {prev} 已修正为 {result}')
 
         result = super().after_process(result)
         return result

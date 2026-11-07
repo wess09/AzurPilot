@@ -87,7 +87,7 @@ class OpsiExplore(OSMap):
             if total_zones > 0:
                 percentage = completed_count / total_zones * 100
                 self.config.OpsiExplore_ExploreProgress = f'已完成百分之{percentage:.2f}'
-            logger.info(f'上次区域: {self.name_to_zone(last_zone)}, next zone: {order[:1]}')
+            logger.info(f'上次区域: {self.name_to_zone(last_zone)}, 下一个区域: {order[:1]}')
         elif last_zone == 0:
             completed_count = 0
             order = full_order

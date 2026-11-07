@@ -471,7 +471,7 @@ class GlobeOperation(ActionPointHandler):
                 click_count += 1
                 if click_count >= 5:
                     # 当海域存在探索奖励时，游戏不会允许你离开。
-                    logger.warning('[大世界-操作] 无法前往全球地图, 可能有未收集的海域探索奖励阻止退出')
+                    logger.warning('[大世界-操作] 无法前往作战总览, 可能有未收集的海域探索奖励阻止退出')
                     raise RewardUncollectedError
                 continue
             # 离开要塞后迷雾可能残留，港口内按钮还会向左偏移。

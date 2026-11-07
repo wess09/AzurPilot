@@ -213,7 +213,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             keys="OpsiHazard1Leveling.OpsiHazard1Leveling.TargetZone", default=0
         ) or 22
         if self.config.task.command == "OpsiExploreCleanup":
-            logger.info("独立事件补扫任务，跳过初始化自律寻敌")
+            logger.info("普通海域事件补扫任务，跳过初始化自律寻敌")
         elif (
             (
                 self.config.task.command == "OpsiScheduling"
@@ -876,7 +876,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 keys="OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve",
                 default=200,
             )
-            logger.info(f"[大世界-调度] CL1可用时保留 {preserve} 行动点")
+            logger.info(f"[大世界-调度] CL1可用时保留 {preserve} 行动力")
             if not self.action_point_check(preserve):
                 self.config.opsi_task_delay(cl1_preserve=True)
                 self.config.task_stop()
@@ -1324,9 +1324,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         """
         if hasattr(grid, "is_scanning_device") and grid.is_scanning_device:
             if not self._is_siren_research_enabled:
-                logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬研究装置,但功能未开启,跳过")
+                logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬信息收集装置,但功能未开启,跳过")
                 return True
-            logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬研究装置,功能已开启,继续处理")
+            logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬信息收集装置,功能已开启,继续处理")
         return False
 
     def clear_question(self, drop=None):
@@ -1406,16 +1406,16 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 grid.is_scanning_device or self.is_siren_device_confirmed
             ):
                 # ========== 地图检测:检测到扫描装置 ==========
-                logger.hr("[大世界] 检测到扫描装置,开始处理", level=2)
+                logger.hr("[大世界] 检测到塞壬信息收集装置,开始处理", level=2)
                 logger.info(
-                    f"[地图检测] 格子 {grid} 被识别为扫描装置 (grid.is_scanning_device=True)"
+                    f"[地图检测] 格子 {grid} 被识别为塞壬信息收集装置 (grid.is_scanning_device=True)"
                 )
                 logger.info(f"[大世界] [地图检测] 移动结果: {result}")
                 record_siren_research_device(self)
 
                 # ========== 配置检查 ==========
                 if not self._is_siren_research_enabled:
-                    logger.warning("[大世界] [配置检查] 塞壬研究装置功能已禁用,标记但不处理")
+                    logger.warning("[大世界] [配置检查] 塞壬信息收集装置功能已禁用,标记但不处理")
                     self._solved_map_event.add("is_scanning_device")
                     return True
 
@@ -1844,12 +1844,12 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             grid = grids[0]
 
             # ========== 地图选择:发现研究装置 ==========
-            logger.hr("[大世界] 发现研究装置,开始处理", level=2)
-            logger.info(f"[大世界] [地图选择] 在 {grid} 位置发现研究装置")
+            logger.hr("[大世界] 发现塞壬信息收集装置,开始处理", level=2)
+            logger.info(f"[大世界] [地图选择] 在 {grid} 位置发现塞壬信息收集装置")
             record_siren_research_device(self)
 
             if not self._is_siren_research_enabled:
-                logger.warning("[大世界] [配置检查] 塞壬研究装置功能已禁用,跳过处理")
+                logger.warning("[大世界] [配置检查] 塞壬信息收集装置功能已禁用,跳过处理")
                 self._solved_map_event.add("is_scanning_device")
                 return True
 
@@ -2370,7 +2370,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             # C1/D1/E1/F1，那是照侵蚀1 那张图定的；短猫跑的海域地图各不相同，
             # 挪了没意义还可能把舰队挪到不该去的地方。短猫的强制移动只有
             # “换队扫雷达清问号”（_meow_fixed_patrol_scan）。
-            logger.info("[大世界] 短猫相接不走共享强制移动，只换队扫雷达")
+            logger.info("[大世界] 耄耋相接不走共享强制移动，只换队扫雷达")
             return
         if not self._forced_move_enabled():
             if not recovery:
@@ -2732,7 +2732,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             # 短猫相接不走这套共享兜底（换队点明石 + 挪舰队）。它的强制移动只有
             # “换队扫雷达清问号”（_meow_fixed_patrol_scan），这里交回上层，
             # 让那份雷达扫描去处理；扫不到就等下一轮。
-            logger.info("[大世界] 短猫相接不走共享兜底，交给换队扫雷达")
+            logger.info("[大世界] 耄耋相接不走共享兜底，交给换队扫雷达")
             return False
         if node in self._unreachable_event_nodes:
             logger.info(f"[大世界] {node} 的明石本轮已判定无法到达，跳过重复尝试")

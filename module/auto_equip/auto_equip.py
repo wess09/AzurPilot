@@ -189,7 +189,7 @@ class AutoEquip(Dock):
         Raises:
             ScriptError: 超时未能打开一键换装界面。
         """
-        logger.info('打开快速换装')
+        logger.info('打开一键换装')
         for _ in self.loop(timeout=10):
             if self._quick_change_appear():
                 return
@@ -216,7 +216,7 @@ class AutoEquip(Dock):
         if current == target:
             return
         if current == 'unknown':
-            logger.warning('无法确定快速换装筛选状态')
+            logger.warning('无法确定一键换装筛选状态')
             return
 
         self.device.click(AUTO_EQUIP_EQUIPPING_CLICK)

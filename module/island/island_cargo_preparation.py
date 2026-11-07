@@ -401,7 +401,7 @@ class IslandCargoPreparation(IslandUI):
         return blacklist
 
     def run(self):
-        logger.hr('岛屿货物准备运行', level=1)
+        logger.hr('岛屿货物筹备运行', level=1)
 
         self.ui_ensure(page_island)
         self.ui_goto(page_island_phone, get_ship=False)
@@ -443,7 +443,7 @@ class IslandCargoPreparation(IslandUI):
             if self.transport_start(comm):
                 comm.convert_to_running()
 
-        logger.hr('货物准备状态', level=2)
+        logger.hr('货物筹备状态', level=2)
         for comm in commissions:
             logger.attr('货运委托', comm)
 
@@ -457,7 +457,7 @@ class IslandCargoPreparation(IslandUI):
         列表中没有可完成的委托时刷新一次，仍没有就保留原委托，避免为换成
         另一个同样无法完成的委托而白白扣除运输次数。
         """
-        logger.info('货物准备替换委托')
+        logger.info('货物筹备替换委托')
         self.interval_clear([TRANSPORT_REFRESH, CARGO_PREPARATION_REPLACE_CONFIRM])
 
         if not self._open_replace_page(comm):
@@ -492,11 +492,11 @@ class IslandCargoPreparation(IslandUI):
 
     def _transport_detect(self):
         """从当前截图中检测所有货运委托。"""
-        logger.hr('运输委托检测')
+        logger.hr('货运委托检测')
         commissions = []
         for index in range(3):
             comm = CargoPreparationTransport(main=self, index=index, blacklist=self.blacklist)
-            logger.attr('运输委托', comm)
+            logger.attr('货运委托', comm)
             for item in comm.items:
                 logger.attr(item.button, item)
             commissions.append(comm)
@@ -573,7 +573,7 @@ class IslandCargoPreparation(IslandUI):
 
     def transport_start(self, comm):
         """启动指定的货运委托。"""
-        logger.info('[岛屿-货运] 运输委托开始')
+        logger.info('[岛屿-货运] 货运委托开始')
         self.interval_clear([GET_ITEMS_ISLAND, TRANSPORT_START, POPUP_CANCEL_WHITE])
         success = True
         confirm_timer = Timer(1, count=2).start()

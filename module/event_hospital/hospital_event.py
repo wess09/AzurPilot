@@ -43,7 +43,7 @@ class HospitalEvent(Hospital, RaidRun):
         if chapter in ['easy', 'normal', 'hard']:
             ASIDE_SWITCH_HOSPITAL.set(chapter, main=self)
         else:
-            logger.warning(f'未知的战役旁白: {chapter}')
+            logger.warning(f'未知的医院活动难度: {chapter}')
 
     def hospital_expected_end(self):
         """判断医院活动战斗是否结束（突袭模式）。

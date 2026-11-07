@@ -112,7 +112,7 @@ class MailWhite(UI):
 
             # End
             if self.appear(MAIL_BATCH_CLAIM, offset=(20, 20)):
-                logger.info('进入邮件ed')
+                logger.info('已进入邮件')
                 return True
             if self.appear(MAIL_WHITE_EMPTY, offset=(20, 20)):
                 logger.info('邮件为空')

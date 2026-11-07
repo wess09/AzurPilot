@@ -156,7 +156,7 @@ class HPBalancer(ModuleBase):
             p1 (int): 原始位置索引 [0, 2]。
             p2 (int): 目标位置索引 [0, 2]。
         """
-        logger.info('[血量-平衡] 侦察位置交换 (%s, %s)' % (p1, p2))
+        logger.info('[血量-平衡] 先锋位置交换 (%s, %s)' % (p1, p2))
         self.device.drag(p1=SCOUT_POSITION[p1], p2=SCOUT_POSITION[p2], segments=3)
 
     def _expected_scout_order(self, hp):

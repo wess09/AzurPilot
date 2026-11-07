@@ -59,7 +59,7 @@ class AmbushEmotion(Emotion):
         recovered, delay = self._check_reduce(battle)
         if delay:
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.info('[战役-伏击] 检测到低情绪，暂停当前任务')
+            logger.info('[战役-伏击] 检测到心情值过低，暂停当前任务')
             raise CampaignEnd('Emotion control')
 
     def wait(self, fleet_index):
@@ -104,7 +104,7 @@ class AmbushCampaignOverride(CampaignBase):
 
         if self.handle_popup_cancel('IGNORE_LOW_EMOTION'):
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.hr('[战役-伏击] 情绪撤退')
+            logger.hr('[战役-伏击] 心情值过低撤退')
 
             while 1:
                 self.device.screenshot()

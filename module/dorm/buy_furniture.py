@@ -247,7 +247,7 @@ class BuyFurniture(UI):
             else:
                 break
         # 退出回到 page_dorm
-        logger.info("[宿舍-家具] 回退到宿舍页面")
+        logger.info("[宿舍-家具] 回退到后宅页面")
         self.furniture_details_page_quit(skip_first_screenshot=True)
         self.furniture_shop_quit(skip_first_screenshot=True)
         self.config.BuyFurniture_LastRun = current_time().replace(microsecond=0)

@@ -160,7 +160,7 @@ class OSTargetHandler(OSTarget, Combat, UI):
         Returns:
             bool: 是否领取成功。
         """
-        logger.hr('大世界成就奖励领取', level=2)
+        logger.hr('大世界目标奖励领取', level=2)
         TARGET_SWITCH.set('all', main=self)
         received = False
         if self.appear(TARGET_RECEIVE_ALL):
@@ -168,9 +168,9 @@ class OSTargetHandler(OSTarget, Combat, UI):
         elif self.find_unreceived_zone():
             received = self._receive_reward_single()
         if received:
-            logger.info(f'大世界成就奖励已领取')
+            logger.info(f'大世界目标奖励已领取')
         else:
-            logger.info(f'无大世界成就奖励可用')
+            logger.info(f'无大世界目标奖励可用')
         return received
     
     def _is_finished(self, area):
@@ -205,7 +205,7 @@ class OSTargetHandler(OSTarget, Combat, UI):
         """
         zone_id = ZONE_ID.ocr(self.device.image)
         finished = [self._is_finished(button.area) for button in self._star_grid().buttons]
-        logger.info(f'[大世界处理-成就] 海域 {zone_id} 目标进度: {str(finished)}')
+        logger.info(f'[大世界处理-目标] 海域 {zone_id} 目标进度: {str(finished)}')
         return zone_id, finished
 
     def find_unfinished_safe_star_zone(self, skip_first_screenshot=True):
@@ -235,13 +235,13 @@ class OSTargetHandler(OSTarget, Combat, UI):
                 for index in range(1, 5):
                     if not finished[index]:
                         if self.is_file(zone_id, index):
-                            logger.info(f'[大世界处理-成就] 区域 {zone_id} 第 {index+1} 项是文件目标，跳过')
+                            logger.info(f'[大世界处理-目标] 区域 {zone_id} 第 {index+1} 项是档案目标，跳过')
                             continue
                         elif self.is_safe(zone_id, index):
-                            logger.info(f'[大世界处理-成就] 区域 {zone_id} 第 {index+1} 项对指挥喵安全')
+                            logger.info(f'[大世界处理-目标] 区域 {zone_id} 第 {index+1} 项可在安全海域完成，适合指挥喵搜寻')
                             return zone_id
                         else:
-                            logger.info(f"[大世界处理-成就] 区域 {zone_id} 第 {index+1} 项只能在危险区域完成，跳过")
+                            logger.info(f"[大世界处理-目标] 区域 {zone_id} 第 {index+1} 项只能在危险区域完成，跳过")
                             continue
             if self.appear(TARGET_NEXT_ZONE):
                 self.device.click(TARGET_NEXT_ZONE)

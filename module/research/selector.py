@@ -219,7 +219,7 @@ class ResearchSelector(ResearchUI):
             string = DICT_FILTER_PRESET[preset]
 
         logger.attr('科研预设', preset)
-        logger.info('[科研-资源] 使用魔方: {} 使用金币: {} 使用部件: {}'.format(
+        logger.info('[科研-资源] 使用魔方: {} 使用物资: {} 使用部件: {}'.format(
             self.config.Research_UseCube,
             self.config.Research_UseCoin,
             self.config.Research_UsePart))

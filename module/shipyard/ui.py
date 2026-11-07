@@ -61,7 +61,7 @@ class ShipyardUI(UI):
                 or self.appear(SHIPYARD_PROGRESS_FATE, offset=(20, 20)) \
                 or self.appear(SHIPYARD_LEVEL_NOT_ENOUGH_FATE, offset=(20, 20)) \
                 or self.appear(SHIPYARD_LEVEL_NOT_ENOUGH_DEV, offset=(20, 20)):
-            logger.info('当前等级舰船已达到最大强化，无法继续消耗蓝图')
+            logger.info('当前等级舰船已达到最大开发进度，无法继续消耗蓝图')
             return True
         return False
 
@@ -114,7 +114,7 @@ class ShipyardUI(UI):
             int | None: 无法消耗的剩余蓝图数量，None 表示异常。
         """
         if count < 0:
-            logger.warning('[船坞-UI] count 非正数，无法继续')
+            logger.warning('[开发船坞-UI] count 非正数，无法继续')
             return None
 
         current = diff = 0
@@ -134,7 +134,7 @@ class ShipyardUI(UI):
             self.device.multi_click(button, n=diff, interval=(0.3, 0.5))
             self.device.sleep((0.3, 0.5))
 
-        logger.info(f'[船坞-UI] 当前界面无法消耗 {count} 张蓝图')
+        logger.info(f'[开发船坞-UI] 当前界面无法消耗 {count} 张蓝图')
         logger.info(f'最多能够消耗 {current} / {count} 张蓝图')
         return diff
 
@@ -150,7 +150,7 @@ class ShipyardUI(UI):
         """
         # index(config.SHIPYARD_INDEX) 从 1 开始
         if index <= 0 or index > len(SHIPYARD_BP_COUNT_GRID.buttons):
-            logger.warning(f'[船坞-UI] 无法从索引 {index} 解析数量')
+            logger.warning(f'[开发船坞-UI] 无法从索引 {index} 解析数量')
             return -1
 
         result = OCR_SHIPYARD_BP_COUNT_GRID.ocr(self.device.image)
@@ -228,7 +228,7 @@ class ShipyardUI(UI):
             right = None
         if left is not None:
             if left <= 0 or left > len(SHIPYARD_FACE_GRID.buttons):
-                logger.warning(f'[船坞-UI] 导航栏索引 {left} 不可选择')
+                logger.warning(f'[开发船坞-UI] 导航栏索引 {left} 不可选择')
                 return False
 
         ensured = False
@@ -265,7 +265,7 @@ class ShipyardUI(UI):
             bool: 是否设置成功
         """
         if series > 2 and index > 5:
-            logger.warning(f'[船坞-UI] 科研系列 {series} 仅限索引 1-5，无法设置焦点到索引 {index}')
+            logger.warning(f'[开发船坞-UI] 科研系列 {series} 仅限索引 1-5，无法设置焦点到索引 {index}')
             return False
         return self._shipyard_set_series(series, skip_first_screenshot) \
                and self.shipyard_bottom_navbar_ensure(left=index, skip_first_screenshot=skip_first_screenshot)
@@ -336,7 +336,7 @@ class ShipyardUI(UI):
 
             if ocr_timer.reached():
                 # 未能检测到正常退出，回退到 OCR 检查
-                logger.warning('[船坞-UI] 未能检测到正常退出流程，回退到OCR检查')
+                logger.warning('[开发船坞-UI] 未能检测到正常退出流程，回退到OCR检查')
                 _, _, current = self._shipyard_get_total()
                 if not current:
                     logger.info('确认操作已完成，设置退出标志')
@@ -395,7 +395,7 @@ class ShipyardUI(UI):
         """
         if self.appear(SHIPYARD_RESEARCH_INCOMPLETE, offset=(20, 20)) \
                 or self.appear(SHIPYARD_RESEARCH_IN_PROGRESS, offset=(20, 20)):
-            logger.warning('[船坞-UI] 无法进入购买界面，当前舰船尚未完成研发')
+            logger.warning('[开发船坞-UI] 无法进入购买界面，当前舰船尚未完成研发')
             return False
 
         if self.appear(SHIPYARD_RESEARCH_COMPLETE, offset=(20, 20)):

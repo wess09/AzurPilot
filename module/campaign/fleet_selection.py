@@ -167,7 +167,7 @@ class FleetSelectionMixin:
 
             # 未找到替代舰船时也要恢复留在队伍里的舰船装备。
             if change_equip:
-                logger.hr(f'装备{label}装备', level=2)
+                logger.hr(f'装上{label}装备', level=2)
                 self._ship_detail_enter(button)
                 self.apply_equip_code()
                 self._fleet_back()

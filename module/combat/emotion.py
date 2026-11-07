@@ -255,14 +255,14 @@ class FleetEmotion:
             if not self._migrate_config():
                 self.require_calibration()
         if self.control == 'keep_exp_bonus' and self.recover == 'not_in_dormitory' and not self.onsen:
-            logger.critical(f'[战斗] 舰队 {self.fleet} 的情绪控制设置为"保持开心加成"，且恢复地点设置为"港区"，两者不能同时使用，请检查情绪设置')
+            logger.critical(f'[战斗] 舰队 {self.fleet} 的情绪控制设置为"保持经验加成"，且恢复地点设置为"未放置于后宅"，两者不能同时使用，请检查情绪设置')
             raise RequestHumanTakeover
         # 在 14-4 使用双倍经验书时，预期情绪减少为 32，无法保持开心加成（>120）
         # 否则会导致无限任务延迟
         if self.control == 'keep_exp_bonus' and expected_reduce >= 29:
             expected_reduce = 29
-            logger.info(f'[情绪-舰队] 舰队 {self.fleet} 预期扣减限制为29 '
-                        f'当情绪控制="保持快乐奖励"时')
+            logger.info(f'[情绪-舰队] 舰队 {self.fleet} 当情绪控制="保持经验加成"时，'
+                        f'预期扣减限制为 29')
 
         try:
             return self.state.recovered_at(int(self.limit + expected_reduce))
@@ -369,7 +369,7 @@ class Emotion:
         """显示中间值与可能范围，未校准状态不显示为准确心情。"""
         fleets = [self.public_fleet] if self.using_public else self.fleets
         for fleet in fleets:
-            label = '情绪公海舰队' if self.using_public else f'情绪舰队_{fleet.fleet}'
+            label = '情绪共用舰队' if self.using_public else f'情绪舰队_{fleet.fleet}'
             if fleet.state is None:
                 logger.attr(label, '未校准')
             else:
@@ -544,7 +544,7 @@ class Emotion:
         if recovered > current_time():
             logger.hr('情绪等待')
             if self.using_public:
-                logger.info(f'[情绪-等待] 公海舰队将满足出击与预留要求，时间 {recovered}')
+                logger.info(f'[情绪-等待] 共用心情舰队将满足出击与预留要求，时间 {recovered}')
             else:
                 logger.info(f'[情绪-等待] 舰队 {fleet_index} 将满足出击与预留要求，时间 {recovered}')
 

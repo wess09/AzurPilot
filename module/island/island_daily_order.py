@@ -77,12 +77,12 @@ class IslandDailyOrder(Island):
         self.device.screenshot()
         urgent_remaining = self._ocr_urgent_remaining()
         if urgent_remaining is None:
-            logger.warning('[岛屿-每日订单] 本周剩余紧急委托次数 OCR 失败，继续保留紧急委托检测')
+            logger.warning('[岛屿-每日订单] 本周剩余加急订单次数 OCR 失败，继续保留加急订单检测')
         elif urgent_remaining == 0:
             # 紧急委托每周一按服务器时间刷新，取下一个服务器周一 0 点
             next_monday = get_nearest_weekday_date(0)
             self.config.IslandDailyOrder_UrgentDetectRefreshTime = next_monday
-            logger.info(f'[岛屿-每日订单] 紧急委托次数已用尽，下次检测: {next_monday}')
+            logger.info(f'[岛屿-每日订单] 加急订单次数已用尽，下次检测: {next_monday}')
 
         # 主流程
         self._first_right_panel_check = True
@@ -112,14 +112,14 @@ class IslandDailyOrder(Island):
         try:
             current, _, total = ocr.ocr(self.device.image)
         except (ValueError, TypeError):
-            logger.warning('[岛屿-每日订单] 本周剩余紧急委托次数 OCR 异常')
+            logger.warning('[岛屿-每日订单] 本周剩余加急订单次数 OCR 异常')
             return None
 
         if total != self.URGENT_TOTAL_COUNT:
-            logger.warning(f'[岛屿-每日订单] 本周剩余紧急委托次数 OCR 总次数无效: {current}/{total}')
+            logger.warning(f'[岛屿-每日订单] 本周剩余加急订单次数 OCR 总次数无效: {current}/{total}')
             return None
 
-        logger.info(f'[岛屿-每日订单] 本周剩余紧急委托次数: {current}/{total}')
+        logger.info(f'[岛屿-每日订单] 本周剩余加急订单次数: {current}/{total}')
         return current
 
     def _ocr_cooldown_seconds(self, area=None):
@@ -198,10 +198,10 @@ class IslandDailyOrder(Island):
                 try:
                     refresh_time = datetime.fromisoformat(value)
                 except ValueError:
-                    logger.warning(f'[岛屿-每日订单] 紧急刷新时间格式无效: {value}')
+                    logger.warning(f'[岛屿-每日订单] 加急订单刷新时间格式无效: {value}')
                     return None
         else:
-            logger.warning(f'[岛屿-每日订单] 紧急刷新时间类型无效: {type(value).__name__}')
+            logger.warning(f'[岛屿-每日订单] 加急订单刷新时间类型无效: {type(value).__name__}')
             return None
 
         refresh_time = refresh_time.replace(microsecond=0)
@@ -360,11 +360,11 @@ class IslandDailyOrder(Island):
         # 检测紧急图标，模板漏检时使用固定位置按钮兜底。
         urgent_match = self._template_click_urgent()
         if urgent_match:
-            logger.info('[岛屿-每日订单] 检测到紧急委托')
+            logger.info('[岛屿-每日订单] 检测到加急订单')
         elif self.appear_then_click(DAILY_ORDER_URGENT_SPECIAL_CHECK, interval=2):
-            logger.info('[岛屿-每日订单] 通过固定位置检测到紧急委托')
+            logger.info('[岛屿-每日订单] 通过固定位置检测到加急订单')
         else:
-            logger.info('[岛屿-每日订单] 未检测到紧急图标，跳到 ②')
+            logger.info('[岛屿-每日订单] 未检测到加急订单图标，跳到 ②')
             return 'next'
         urgent_deliver_button = self._get_urgent_deliver_button()
 
@@ -373,16 +373,16 @@ class IslandDailyOrder(Island):
         # 紧急委托没有驳回按钮，先用右侧按钮状态确认已切到紧急委托页。
         self.device.screenshot()
         if self._has_reject_button():
-            logger.warning('[岛屿-每日订单] 选中紧急图标后仍检测到驳回按钮，跳到 ②')
+            logger.warning('[岛屿-每日订单] 选中加急订单图标后仍检测到驳回按钮，跳到 ②')
             return 'next'
 
         # 点击交付（紧急委托有专用交付按钮）
         submit_result = self._submit_order(urgent_deliver_button, must_appear=True)
         if submit_result is None:
-            logger.warning('[岛屿-每日订单] 紧急委托交付按钮未检测到，跳到 ②')
+            logger.warning('[岛屿-每日订单] 加急订单交付按钮未检测到，跳到 ②')
             return 'next'
         if not submit_result:
-            logger.info('[岛屿-每日订单] 紧急委托资源不足')
+            logger.info('[岛屿-每日订单] 加急订单资源不足')
             # OCR 冷却时间（从模板匹配位置下方偏移）
             if urgent_match:
                 mx, my, mw, mh = urgent_match
@@ -392,16 +392,16 @@ class IslandDailyOrder(Island):
             refresh = current_time() + timedelta(seconds=cooldown)
             self.config.IslandDailyOrder_UrgentDetectRefreshTime = \
                 refresh.replace(microsecond=0)
-            logger.info(f'[岛屿-每日订单] 紧急冷却: {cooldown}秒，刷新时间: {refresh}')
+            logger.info(f'[岛屿-每日订单] 加急订单冷却: {cooldown}秒，刷新时间: {refresh}')
             return 'continue'
 
         # 交付成功
-        logger.info('[岛屿-每日订单] 紧急交付成功')
+        logger.info('[岛屿-每日订单] 加急订单交付成功')
 
         # 检测右侧是否为空
         self.device.screenshot()
         if self._is_right_panel_empty():
-            logger.info('[岛屿-每日订单] 紧急交付后右侧为空，退出重进')
+            logger.info('[岛屿-每日订单] 加急订单交付后右侧为空，退出重进')
             return 'reenter'
 
         return 'next'
@@ -431,7 +431,7 @@ class IslandDailyOrder(Island):
 
         # 2) 没有驳回按钮 → 当前是紧急委托页面
         if not self._has_reject_button():
-            logger.info('[岛屿-每日订单] 右侧无驳回按钮（紧急委托页面），跳到 ③')
+            logger.info('[岛屿-每日订单] 右侧无驳回按钮（加急订单页面），跳到 ③')
             return 'to_step3'
 
         # 3) 命中过滤物品则直接驳回，否则尝试交付。
@@ -489,17 +489,17 @@ class IslandDailyOrder(Island):
 
         if not all_matches:
             if self.appear_then_click(DAILY_ORDER_CHALLENGE_EASY_SPECIAL_CHECK, interval=2):
-                logger.info('[岛屿-每日订单] 通过固定位置检测到挑战/轻松委托')
+                logger.info('[岛屿-每日订单] 通过固定位置检测到挑战/轻松订单')
                 self.device.sleep(1)
                 self.device.screenshot()
                 if self._is_preparing():
-                    logger.info('[岛屿-每日订单] 挑战/轻松委托筹备中，进入退出判断')
+                    logger.info('[岛屿-每日订单] 挑战/轻松订单筹备中，进入退出判断')
                     return 'to_step4'
                 elif self._has_reject_button():
-                    logger.info('[岛屿-每日订单] 挑战/轻松委托已选中，跳到 ② 尝试交付')
+                    logger.info('[岛屿-每日订单] 挑战/轻松订单已选中，跳到 ② 尝试交付')
                     return 'to_step2'
                 else:
-                    logger.warning('[岛屿-每日订单] 挑战/轻松委托状态未知，进入退出判断')
+                    logger.warning('[岛屿-每日订单] 挑战/轻松订单状态未知，进入退出判断')
                     return 'to_step4'
             logger.info('[岛屿-每日订单] 没有更多挑战/轻松图标')
             return 'to_step4'
@@ -612,7 +612,7 @@ class IslandDailyOrder(Island):
             match = self._template_match_urgent(template, similarity=similarity)
             if not match:
                 continue
-            logger.info(f'[岛屿-每日订单] 紧急委托模板匹配: {name}')
+            logger.info(f'[岛屿-每日订单] 加急订单模板匹配: {name}')
             mx, my, tw, th = match
             self._click_position(mx + tw // 2, my + th // 2)
             return match

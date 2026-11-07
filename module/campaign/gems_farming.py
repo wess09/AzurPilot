@@ -73,7 +73,7 @@ class GemsEmotion(Emotion):
         recovered, delay = self._check_reduce(battle)
         if delay:
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.info('[钻石打捞] 检测到低情绪，暂停当前任务')
+            logger.info('[战役-紧急委托] 检测到低心情，暂停当前任务')
             raise CampaignEnd('Emotion control')
 
     def wait(self, fleet_index):
@@ -124,7 +124,7 @@ class GemsCampaignOverride(CampaignBase):
 
         if self.handle_popup_cancel('IGNORE_LOW_EMOTION'):
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.hr('[战役-紧急委托] 情绪撤退')
+            logger.hr('[战役-紧急委托] 心情撤退')
 
             while 1:
                 self.device.screenshot()
@@ -463,7 +463,7 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
         elif self.config.GemsFarming_CommonDD in ['aulick_or_foote', 'cassin_or_downes']:
             faction = 'eagle'
         else:
-            logger.error(f'[钻石打捞] 无效的通用驱逐舰设置: {self.config.GemsFarming_CommonDD}')
+            logger.error(f'[战役-紧急委托] 无效的通用驱逐舰设置: {self.config.GemsFarming_CommonDD}')
             raise ScriptError('Invalid GemsFarming_CommonDD')
         favourite = self.config.GemsFarming_CommonDD == 'favourite'
         self.dock_favourite_set(favourite, wait_loading=False)

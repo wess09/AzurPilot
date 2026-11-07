@@ -52,14 +52,14 @@ class MaritimeEscort(MapOperation, CampaignEvent):
             in: ESCORT_CHECK
             out: ESCORT_CHECK
         """
-        logger.hr('海上护卫', level=1)
+        logger.hr('商路护航', level=1)
         try:
             self.enter_map(ESCORT_HARD_ENTRANCE, mode='escort')
             self.withdraw()
         except CampaignEnd:
             pass
 
-        logger.info('[活动-护航] 海上护卫完成')
+        logger.info('[活动-护航] 商路护航完成')
 
     def run(self):
         """执行海上护卫主流程。
@@ -79,6 +79,6 @@ class MaritimeEscort(MapOperation, CampaignEvent):
         if current > 0:
             self.run_escort()
         else:
-            logger.info('[活动-护航] 海上护卫今日已完成')
+            logger.info('[活动-护航] 商路护航今日已完成')
 
         self.config.task_delay(server_update=True)

@@ -22,7 +22,7 @@ class AzurLaneUncensored(LoginHandler):
 
     def create_level1_uncensored(self):
         """创建一级去和谐 localization.txt 配置文件。"""
-        logger.info('创建1级未审查')
+        logger.info('创建1级无删减')
         folder = './files'
         try:
             shutil.rmtree(folder)
@@ -45,7 +45,7 @@ class AzurLaneUncensored(LoginHandler):
         repo = self.config.AzurLaneUncensored_Repository
         folder = './.venv/AzurLaneUncensored'
 
-        logger.hr('更新 AzurLane未审查', level=1)
+        logger.hr('更新 AzurLane无删减', level=1)
         logger.info('[守护-无删减] 首次使用需要较长时间')
         manager = GitManager()
         manager.config['GitExecutable'] = os.path.abspath(manager.config['GitExecutable'])
@@ -64,7 +64,7 @@ class AzurLaneUncensored(LoginHandler):
         #     keep_changes=False
         # )
 
-        logger.hr('推送未审查文件', level=1)
+        logger.hr('推送无删减文件', level=1)
         logger.info('[守护-无删减] 推送需要几秒钟')
         command = ['push', 'files', f'/sdcard/Android/data/{self.device.package}']
         logger.info(f'[守护-无删减] 命令: {command}')

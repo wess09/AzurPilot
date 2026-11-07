@@ -335,7 +335,7 @@ class EmotionScanner(Scanner):
                 if emotion > 40:
                     emotion //= 10
             results.append(emotion)
-        logger.attr('船坞情绪OCR', results)
+        logger.attr('船坞心情OCR', results)
         return results
 
     def limit_value(self, value) -> int:
@@ -385,7 +385,7 @@ class EmotionStatusScanner(Scanner):
     def _scan(self, image) -> List:
         results = [self.get_emotion_status(crop(image, button.area, copy=False))
                    for button in self.grids.buttons]
-        logger.attr('船坞情绪状态', results)
+        logger.attr('船坞心情状态', results)
         return results
 
     def limit_value(self, value) -> str:

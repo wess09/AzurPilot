@@ -321,7 +321,7 @@ class InfoHandler(ModuleBase):
         if self.emotion.is_calculate and not self.emotion.is_ignore:
             if self.handle_popup_cancel('IGNORE_LOW_EMOTION'):
                 logger.warning('[心情-保底] 计算模式下出现红脸弹窗，'
-                               '可能是ALAS计算错误或用户手动操作')
+                               '可能是AzurPilot计算错误或用户手动操作')
                 logger.hr('心情异常保底')
                 # 退出关卡（弹窗已取消，阻止战斗）
                 # 捕获 withdraw() 抛出的 CampaignEnd，确保后续心情清零和延时被执行
@@ -734,7 +734,7 @@ class InfoHandler(ModuleBase):
             )
 
             if not siren_research_enabled:
-                logger.info('[Handler] [Story] 塞壬研究装置未启用，选择离开')
+                logger.info('[Handler] [Story] 塞壬信息收集装置未启用，选择离开')
                 self.siren_device_mode = None
                 return options[-1]
 

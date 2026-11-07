@@ -1937,14 +1937,14 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
                     meow_target_zone=self._get_month_end_meow_target_zone(),
                 )
             except ActionPointLimit as e:
-                logger.warning(f'[大世界-月末清理] 短猫相接行动力不足: {e}')
+                logger.warning(f'[大世界-月末清理] 耄耋相接行动力不足: {e}')
 
             # 4. 回到大世界商店购买
             self._run_month_end_shop_purchase()
 
             # 短猫无可执行内容时，其他任务也跑完一轮，结束月末清理
             if not meow_success:
-                logger.info('[大世界-月末清理] 短猫相接无可执行内容，月末清理结束')
+                logger.info('[大世界-月末清理] 耄耋相接无可执行内容，月末清理结束')
                 break
 
         # 月末清理结束，刷新行动力并通知

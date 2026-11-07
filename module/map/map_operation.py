@@ -651,7 +651,7 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
         if not self.map_cat_attack_timer.reached():
             return False
         if self.image_color_count(MAP_CAT_ATTACK, color=(255, 231, 123), threshold=30, count=100):
-            logger.info('[地图-操作] 跳过地图猫攻击')
+            logger.info('[地图-操作] 跳过指挥喵攻击')
             self.device.click(MAP_CAT_ATTACK)
             self.map_cat_attack_timer.reset()
             return True
@@ -687,8 +687,8 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
         """
         if not self.map_is_hard_mode \
                 and self.config.Fleet_FleetOrder in ['fleet1_boss_fleet2_mob', 'fleet1_standby_fleet2_all']:
-            logger.warning(f"[Map] 普通模式不应使用反转的舰队顺序 ({self.config.Fleet_FleetOrder})。")
-            logger.warning('[Map] 请交换舰队 1 和舰队 2 的配置，'
+            logger.warning(f"[地图-操作] 普通模式不应使用反转的舰队顺序 ({self.config.Fleet_FleetOrder})。")
+            logger.warning('[地图-操作] 请交换舰队 1 和舰队 2 的配置，'
                            '使用 "fleet1_mob_fleet2_boss" 或 "fleet1_all_fleet2_standby"')
             # raise RequestHumanTakeover
 

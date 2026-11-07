@@ -309,7 +309,7 @@ class VoucherShop(ShopClerk, ShopStatus):
         self.shop_filter = 'LoggerArchive'
 
         # 调用时应已在凭证商店界面
-        logger.hr('[商店-代币] 代币商店单次购买', level=1)
+        logger.hr('[商店-代币] 白票商店单次购买', level=1)
         self.wait_until_voucher_appear()
 
         # 执行购买操作
@@ -321,9 +321,9 @@ class VoucherShop(ShopClerk, ShopStatus):
 
         item = self.shop_get_item_to_buy(items)
         if item is None:
-            logger.info('[商店-代币] 无记录仪档案可购买')
+            logger.info('[商店-代币] 无可购买的档案坐标记录仪')
             return False
         self.shop_buy_execute(item)
 
-        logger.info('已购买单个记录仪档案')
+        logger.info('已购买单个档案坐标记录仪')
         return True

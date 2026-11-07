@@ -364,7 +364,7 @@ class Map(Fleet):
         grids = self.select_grids(grids, **kwargs)
 
         if grids:
-            logger.hr('清除格子加速')
+            logger.hr('清除格子以加速')
             self.show_select_grids(grids, **kwargs)
             self.clear_chosen_enemy(grids[0])
             return True
@@ -420,7 +420,7 @@ class Map(Fleet):
             logger.info('[地图] 格子: %s' % str(grids))
             self.clear_chosen_enemy(grids[0])
 
-        logger.warning('[地图-Boss] 检测到大世界捕获，撤退中')
+        logger.warning('[地图-Boss] 检测到围捕作战，撤退中')
         self.withdraw()
 
     def clear_potential_boss(self):

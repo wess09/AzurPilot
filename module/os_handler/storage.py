@@ -127,7 +127,7 @@ class StorageHandler(GlobeOperation, ZoneManager):
                 self.interval_reset(STORAGE_CHECK)
                 get_mission_counter += 1
                 if get_mission_counter >= 3:
-                    logger.warning('[大世界-仓库] 可能卡在能量存储设备上，重新检测记录仪物品')
+                    logger.warning('[大世界-仓库] 可能卡在塞壬能源存储器上，重新检测记录仪物品')
                     break
                 continue
             # 物品奖励弹窗
@@ -320,7 +320,7 @@ class StorageHandler(GlobeOperation, ZoneManager):
             # 处理"道具不足"弹窗：维修箱数量不足时游戏弹出此提示，需点击取消退出
             # 截图显示弹窗标题为"信息 INFORMATION"，内容为"道具不足"，底部有取消按钮
             if self.appear_then_click(POPUP_CANCEL, offset=(20, 20), interval=2):
-                logger.warning('[大世界处理-存储] 维修包不足（道具不足），跳过此舰船')
+                logger.warning('[大世界-仓库] 维修包不足（道具不足），跳过此舰船')
                 return RepairResult.PACK_INSUFFICIENT
             # 超时保护：防止未知弹窗导致死循环
             if timeout.reached():
@@ -480,7 +480,7 @@ class StorageHandler(GlobeOperation, ZoneManager):
             in: in_map
             out: is_in_map 或 STORAGE_FLEET_CHOOSE
         """
-        logger.hr('[大世界处理-存储] 获取下一个隐秘海域')
+        logger.hr('[大世界-仓库] 获取下一个隐秘海域')
         self.storage_enter()
         if use_logger:
             self.storage_logger_use_all()

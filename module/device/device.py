@@ -567,7 +567,7 @@ class Device(Screenshot, Control, AppControl, Input):
             RequestHumanTakeover: 当未启用错误处理配置时抛出。
         """
         if not self.config.Error_HandleError:
-            logger.critical('[Device] 错误 没有启动/停止应用，因为 HandleError 已禁用')
+            logger.critical('[Device] 错误 因 HandleError 已禁用，未能启动/停止应用')
             logger.critical('[Device] 请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
             raise RequestHumanTakeover
         # 与推荐配置共用启动前流程：设备已连接，先恢复账号，再写配置，最后启动游戏。
@@ -596,7 +596,7 @@ class Device(Screenshot, Control, AppControl, Input):
             RequestHumanTakeover: 当未启用错误处理配置时抛出。
         """
         if not self.config.Error_HandleError:
-            logger.critical('[Device] 错误 没有启动/停止应用，因为 HandleError 已禁用')
+            logger.critical('[Device] 错误 因 HandleError 已禁用，未能启动/停止应用')
             logger.critical('[Device] 请启用 Alas.Error.HandleError 或手动登录碧蓝航线')
             raise RequestHumanTakeover
         super().app_stop()

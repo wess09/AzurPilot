@@ -173,9 +173,9 @@ class CampaignWarArchives(CampaignRun, CampaignBase):
         if self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
             # 检查数据密钥是否已用尽
             current, remain, total = DATA_KEY_CAMPAIGN.ocr(self.device.image)
-            logger.info(f'[作战档案] 数据密钥: {current} / {total}, 剩余: {current}')
+            logger.info(f'[作战档案] 档案秘钥: {current} / {total}, 剩余: {current}')
             if remain == total:
-                logger.hr('[作战档案] 数据密钥已用尽')
+                logger.hr('[作战档案] 档案秘钥已用尽')
                 # 仅在数据密钥用尽时才能延迟任务
                 self.config.task_delay(server_update=True)
                 return True

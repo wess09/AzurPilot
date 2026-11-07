@@ -75,7 +75,7 @@ class OpsiMonthBoss(OSMap):
             self.os_map_goto_globe(unpin=False)
             adaptability = self.get_adaptability()
             if (np.array(adaptability) < (203, 203, 156)).any():
-                logger.info("[大世界-月度Boss] 适应性低于压制等级，需要变强后再来")
+                logger.info("[大世界-月度Boss] 适应性低于 (203/203/156) 要求，需要变强后再来")
                 self.config.task_delay(server_update=True)
                 self.config.task_stop()
             # 无需退出，复用当前状态

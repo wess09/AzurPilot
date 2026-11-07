@@ -72,8 +72,8 @@ class OperationSiren(
         now = current_time()
         logger.attr('大世界下次重置', next_reset)
         if next_reset - now < timedelta(days=1):
-            logger.error('[大世界-成就] 距离下次重置仅剩一天，领取的成就奖励可能浪费。'
-                         '运行成就收集不太合适，延迟到下次重置。')
+            logger.error('[大世界-目标] 距离下次重置仅剩一天，领取的目标奖励可能浪费。'
+                         '运行目标奖励收集不太合适，延迟到下次重置。')
         else:
             self.os_map_goto_globe(unpin=False)
             if self.appear(TARGET_RED_DOT):
@@ -81,15 +81,15 @@ class OperationSiren(
                 OSTargetHandler(self.config, self.device).receive_reward()
                 self._os_target_exit()
             else:
-                logger.info('[大世界-成就] 没有奖励可领取')
+                logger.info('[大世界-目标] 没有奖励可领取')
         self.config.OpsiTarget_LastRun = now.replace(microsecond=0)
 
     def _os_target(self):
         """执行大世界海域成就检查与任务流程。"""
         if self.config.OpsiTarget_LastRun > get_server_last_update('00:00'):
-            logger.warning('海域成就今日已经运行过，停止任务')
+            logger.warning('海域目标今日已经运行过，停止任务')
         else:
-            logger.hr('大世界-海域成就', level=1)
+            logger.hr('大世界-海域目标', level=1)
             self._os_target_enter()
             OSTargetHandler(self.config, self.device).run()
             self._os_target_exit()
@@ -110,7 +110,7 @@ class OperationSiren(
             if self.server_support_os_target():
                 self.os_target_receive()
             else:
-                logger.info(f'服务器 {self.config.SERVER} 暂不支持海域成就，请联系开发者')
+                logger.info(f'服务器 {self.config.SERVER} 暂不支持海域目标，请联系开发者')
 
 
 if __name__ == '__main__':

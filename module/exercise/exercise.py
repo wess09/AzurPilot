@@ -306,7 +306,7 @@ class Exercise(ExerciseCombat):
             admiral_start, admiral_end = admiral_interval
 
             if admiral_start > int(remain_time.total_seconds() // 3600) >= admiral_end:  # 达到将军试炼设定时间
-                logger.info('[演习-调度] 达到将军试炼设定时间，消耗所有次数')
+                logger.info('[演习-调度] 达到冲击元帅的设定时间，消耗所有次数')
                 self.preserve = 0
                 forced_run = True
             elif int(remain_time.total_seconds() // 3600) < 6:  # 未设置为 "sun18" 时，仍在周日 18 点前消耗

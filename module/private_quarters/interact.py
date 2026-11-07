@@ -200,7 +200,7 @@ class PQInteract(UI):
         # 检查好感度是否已满
         if self.appear(PRIVATE_QUARTERS_ROOM_TARGET_INTIMACY_MAX, offset=(20, 20)):
             logger.warning(
-                f'[宿舍计划-互动] {target_title} 好感度已满，请更换目标或关闭子任务')
+                f'[宿舍计划-互动] {target_title} 契合度已满，请更换目标或关闭子任务')
             return False
 
         return True
