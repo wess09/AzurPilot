@@ -265,7 +265,7 @@ class FleetTechIdentityTests(unittest.TestCase):
         scanner.device = SimpleNamespace(image=None)
         scanner.ui_ensure = scanner._close_search = scanner.dock_reset = scanner.dock_sort_method_dsc_set = lambda *args: None
         scanner.ui_ensure = Mock()
-        scanner.appear = lambda button: button is DOCK_SEARCH_CLOSED
+        scanner.appear = lambda button, **kwargs: button is DOCK_SEARCH_CLOSED
         scroll = SimpleNamespace(set_top=lambda _: None, appear=lambda _: True, at_top=lambda _: True, length=1, total=2)
         with patch('module.retire.dock_scan.DOCK_SCROLL', scroll), \
                 patch('module.retire.enhancement.OCR_DOCK_AMOUNT.ocr', return_value=(100, 0, 100)), \

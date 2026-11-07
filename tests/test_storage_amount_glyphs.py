@@ -2,15 +2,44 @@
 
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 import cv2
 import numpy as np
 
 from module.base.utils import load_image
+from module.storage.amount_glyphs import StorageAmountGlyphs
 from module.storage.statistics_recognition import StorageCatalog, recognize_rows
 
 FIXTURES = Path(__file__).parent / 'fixtures/storage_statistics'
+
+
+class GlyphLoadingTests(unittest.TestCase):
+    def test_chinese_install_path_preserves_dock_and_storage_templates(self):
+        root = Path(__file__).resolve().parents[1]
+        for relative in ('assets/ship/dock_level_digits.png', 'assets/stats/storage_items/amount_glyphs.png'):
+            with self.subTest(template=relative), tempfile.TemporaryDirectory() as temp:
+                source = root / relative
+                target = Path(temp) / '中文安装目录' / source.name
+                target.parent.mkdir()
+                target.write_bytes(source.read_bytes())
+                expected = StorageAmountGlyphs(source)
+                actual = StorageAmountGlyphs(target)
+                np.testing.assert_array_equal(actual.masks, expected.masks)
+                np.testing.assert_array_equal(actual.offsets, expected.offsets)
+                np.testing.assert_array_equal(actual.norms, expected.norms)
+
+    def test_missing_empty_corrupt_and_wrong_size_templates_keep_validation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target = Path(temp) / 'digits.png'
+            wrong_size = cv2.imencode('.png', np.zeros((24, 199), dtype=np.uint8))[1].tobytes()
+            for content in (None, b'', b'not a PNG', wrong_size):
+                with self.subTest(content=content is None or len(content)):
+                    if content is not None:
+                        target.write_bytes(content)
+                    with self.assertRaisesRegex(ValueError, '模板缺失或尺寸无效'):
+                        StorageAmountGlyphs(target)
 
 
 class GrayAmountTests(unittest.TestCase):
