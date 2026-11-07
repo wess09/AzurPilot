@@ -80,6 +80,9 @@ class OSCampaignRun(OSMapOperation):
         try:
             campaign = self.load_campaign()
             return runner(campaign)
+        except OSZoneLockedError:
+            logger.warning(f'[{self.config.task.command}] 遇到海域未解锁: 未完成开荒，请使用每月开荒')
+            delay_task_for_locked_zone(self.config)
         finally:
             if prevent_enabled:
                 if campaign is not None:
@@ -135,6 +138,7 @@ class OSCampaignRun(OSMapOperation):
         except ActionPointLimit as e:
             self.delay_opsi_tasks_after_ap_limit(e)
         except OSZoneLockedError:
+            logger.warning(f'[{self.config.task.command}] 遇到海域未解锁: 未完成开荒，请使用每月开荒')
             delay_task_for_locked_zone(self.config)
 
     def opsi_voucher(self):
@@ -239,6 +243,7 @@ class OSCampaignRun(OSMapOperation):
             campaign = self.load_campaign()
             campaign.os_prevent_action_point_overflow()
         except OSZoneLockedError:
+            logger.warning(f'[{self.config.task.command}] 遇到海域未解锁: 未完成开荒，请使用每月开荒')
             delay_task_for_locked_zone(self.config)
 
     def opsi_cross_month(self):

@@ -82,7 +82,7 @@ def delay_task_for_locked_zone(config):
     with config.multi_set():
         config.cross_set(f'{task}.Storage.Storage.ZoneLockedUntil', until.isoformat())
         config.task_delay(target=until)
-    logger.warning(f'{task} 遇到周边海域未压制，延期到 {until}')
+    logger.warning(f'任务 `{task}` 遇到海域未解锁: 未完成开荒，请使用每月开荒，延期到 {until}')
     config.task_stop()
 
 

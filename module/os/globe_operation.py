@@ -22,6 +22,7 @@ import time
 import module.base.utils as _base_utils
 from module.base.timer import Timer
 from module.base.utils import *
+from module.exception import OSExploreError, OSZoneLockedError
 from module.logger import logger
 from module.config.utils import get_os_next_reset
 from module.ocr.ocr import Digit
@@ -77,14 +78,6 @@ _ZONE_PINNED_SIMILARITY_THRESHOLDS = {
     (3840, 2160): 0.65,
 }
 _ZONE_PINNED_SIMILARITY_DEFAULT = 0.75
-
-
-class OSExploreError(Exception):
-    pass
-
-
-class OSZoneLockedError(OSExploreError):
-    """已识别到周边海域未压制的锁定标志。"""
 
 
 class RewardUncollectedError(Exception):
@@ -539,8 +532,8 @@ class GlobeOperation(ActionPointHandler):
 
             if self.is_zone_pinned():
                 if self.appear(ZONE_LOCKED, offset=(20, 20)):
-                    logger.warning(f'[大世界-操作] 海域 {zone} 已锁定, 相邻海域可能未被探索过')
-                    raise OSZoneLockedError(f'周边海域未压制: {zone}')
+                    logger.warning(f'[大世界-操作] 海域 {zone} 已锁定, 未完成开荒，请使用每月开荒')
+                    raise OSZoneLockedError(f'未完成开荒，请使用每月开荒: {zone}')
                 if click_count > 5:
                     logger.warning(f'[大世界-操作] 无法进入海域 {zone}, 相邻海域可能未被探索过')
                     raise OSExploreError
