@@ -1237,6 +1237,8 @@ class IslandBusiness(Island):
     _SHOP_BUTTON_TO_REMAIN_TIME_OFFSET_Y = (-79, -59)
     # 经营商店列表的可视区域
     _BUSINESS_LIST_SEARCH_AREA = (50, 80, 1200, 640)
+    # 店名标签纵向距离小于此值视为同一行（相邻两行约相距 177 像素）
+    _SHOP_SAME_ROW_Y = 60
     # 商店行高（经验值，适用于各行）
     _BUSINESS_ROW_HEIGHT = 160
 
@@ -1365,9 +1367,20 @@ class IslandBusiness(Island):
                     'similarity': found['similarity'],
                 })
 
+        # 同一行只保留相似度最高的商店：店名相近时（国际服 "Manjuu Eatery" 与 "Café Manjuu"），
+        # 另一家商店的模板也可能在这一行过阈值，按它点击会进错店
+        results.sort(key=lambda r: -r['similarity'])
+        kept = []
+        for r in results:
+            if any(abs(r['label_rect'][1] - k['label_rect'][1]) < self._SHOP_SAME_ROW_Y for k in kept):
+                logger.info(f"[岛屿-经营] {r['shop']['name']} 与其他商店识别在同一行"
+                            f"（相似度 {r['similarity']:.2f}），忽略")
+                continue
+            kept.append(r)
+
         # 按标签的 Y 坐标从上到下排序
-        results.sort(key=lambda r: r['label_rect'][1])
-        return results
+        kept.sort(key=lambda r: r['label_rect'][1])
+        return kept
 
     def _scroll_business_down(self):
         """在经营商店列表中向下滑动一页"""
@@ -1461,6 +1474,9 @@ class IslandBusiness(Island):
         claimed_shop_names = set()  # 已领取过奖励的商店，仍需在后续扫描中复检是否变为可经营
         started_shop_names = set()  # 本批次实际开始经营的商店
         seen_shop_names = set()  # 跨滚动位置累积看到过的商店（用于判断是否已遍历全部）
+        # 点进去不是目标商店的识别位置 (商店名, 滑动次数, 标签 Y)。每次重扫都从顶部开始，
+        # 同一滑动次数下的位置可复现；只排除这一处误识别，目标商店真正所在的行仍会处理
+        rejected_rows = []
         max_scrolls = 8  # 最大滑动次数
 
         # 先回到列表顶部
@@ -1469,7 +1485,14 @@ class IslandBusiness(Island):
         scroll_attempt = 0
         while scroll_attempt < max_scrolls:
             self.device.screenshot()
-            visible_shops = self._scan_visible_batch_shops(batch_shops)
+            visible_shops = [
+                r for r in self._scan_visible_batch_shops(batch_shops)
+                if not any(
+                    name == r['shop']['name'] and attempt == scroll_attempt
+                    and abs(y - r['label_rect'][1]) < self._SHOP_SAME_ROW_Y
+                    for name, attempt, y in rejected_rows
+                )
+            ]
 
             if not visible_shops:
                 logger.info("[岛屿-经营] 当前视野中无本批次商店，尝试向下滑动")
@@ -1521,6 +1544,8 @@ class IslandBusiness(Island):
                             started_shop_names.add(shop_name)
                         processed_shop_names.add(shop_name)
                     else:
+                        # 记下这处误识别：否则回到顶部重新扫描后会点同一位置，无限进错店
+                        rejected_rows.append((shop_name, scroll_attempt, shop_info['label_rect'][1]))
                         logger.warning(f"[岛屿-经营] 进入商店后识别到的不是 {shop_name}，返回后跳过")
                         self.device.click(ISLAND_BACK)
                         self.device.sleep(1)
