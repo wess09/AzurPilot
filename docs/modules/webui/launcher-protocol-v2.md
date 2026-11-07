@@ -34,6 +34,7 @@
 | 启动器 → 后端 | `notifications.ack` | `{ids:[通知ID]}`，最多 100 个；返回 `{accepted:true}` |
 | 启动器 → 后端 | `login.issue` | 空参数；返回 `{ticket,ttl:60}` |
 | 启动器 → 后端 | `system.ping` | 空参数；返回 `{pong:true}` |
+| 启动器 → 后端 | `scheduler.state` / `scheduler.pause` / `scheduler.resume` | 空参数；托盘「暂停 / 继续任务」。pause 停止所有运行中的实例并记住它们，resume 恢复这些实例（无记录时启动全部实例）；均返回 `{running:[实例名],paused:[实例名],errors:[说明]}`。在线程池中执行，不阻塞同一连接的其它消息 |
 
 握手成功响应先发送，再补发缓存通知。启动器在本机会话内保留最近 128 条命令响应与通知 ID；相同命令 ID 返回已完成的结果，不重复执行。修改命令在断线后不自动重放；同一 ID 携带不同参数返回 `DUPLICATE_REQUEST`。
 

@@ -27,14 +27,19 @@ class LauncherConnection:
     loop: object
     queue: asyncio.Queue = field(default_factory=lambda: asyncio.Queue(128))
     ready: bool = False
+    #: 正在执行的调度器动作，保留引用避免任务被回收。
+    tasks: set = field(default_factory=set)
     last_seen: float = field(default_factory=time.monotonic)
 
 
 class LauncherService:
     """跨线程业务调用受锁保护，发送操作回到 WS 所属事件循环。"""
 
-    def __init__(self, secret=None):
+    def __init__(self, secret=None, runtime=None):
         self.trust = LauncherTrust(secret)
+        self.runtime = runtime
+        #: 托盘暂停时正在运行的实例；继续时按它恢复，为空则启动全部实例。
+        self.paused = []
         self.lock = threading.RLock()
         self.connection = None
         self.commands = OrderedDict()
@@ -156,6 +161,51 @@ class LauncherService:
             for event_id in ids:
                 self.notifications.pop(event_id, None)
         return {'accepted': True}
+
+    def scheduler(self, action):
+        """托盘暂停 / 继续调度器；在线程池中执行，单个实例失败不影响其余实例。
+
+        Args:
+            action: ``state`` 只查询；``pause`` 停止所有运行中的实例并记住它们；
+                ``resume`` 重新启动被暂停的实例，没有记录时启动全部实例。
+
+        Returns:
+            dict: ``running`` 为当前运行中的实例名，``paused`` 为待恢复的实例名，
+                ``errors`` 为失败实例的说明。
+        """
+        if self.runtime is None:
+            raise ApiError('UNSUPPORTED', '调度器控制未启用')
+        errors = []
+        if action == 'pause':
+            names = self._running_names()
+            for name in names:
+                try:
+                    self.runtime.stop(name)
+                except Exception as error:
+                    errors.append(f'{name}: {error}')
+            if names:
+                with self.lock:
+                    self.paused = names
+        elif action == 'resume':
+            running = set(self._running_names())
+            with self.lock:
+                targets = list(self.paused) or self.runtime.configs.names()
+                self.paused = []
+            for name in targets:
+                if name in running:
+                    continue
+                try:
+                    self.runtime.start(name)
+                except Exception as error:
+                    errors.append(f'{name}: {error}')
+        with self.lock:
+            paused = list(self.paused)
+        return {'running': self._running_names(), 'paused': paused, 'errors': errors}
+
+    @staticmethod
+    def _running_names():
+        from module.runtime.process_manager import ProcessManager
+        return sorted({manager.config_name for manager in ProcessManager.running_instances()})
 
     def _enqueue(self, connection, message):
         if self.connection is not connection:
