@@ -186,7 +186,7 @@ MCP 沿用 WebUI 的密碼（`--key` / `config/deploy.yaml` 的 `Password`），
 
 ### MCP 工具清單
 
-預設端點提供 23 個 `azurpilot_` 工具；舊工具名稱僅保留在明確建立的相容端點。
+預設端點提供 25 個 `azurpilot_` 工具；舊工具名稱僅保留在明確建立的相容端點。
 
 | 類別 | 工具名稱 | 功能 |
 | --- | --- | --- |
@@ -199,6 +199,8 @@ MCP 沿用 WebUI 的密碼（`--key` / `config/deploy.yaml` 的 `Password`），
 | | `azurpilot_patch_config` | 原子批次修改，校驗 revision，支援 dry_run |
 | | `azurpilot_set_task_schedule` | 設定任務啟用與下次執行時間（已排程 ≠ 已完成） |
 | 日誌與觀測 | `azurpilot_get_logs` | 依游標、層級、關鍵字讀取有限日誌 |
+| 統計資料 | `azurpilot_get_statistics` | 讀取統計頁與概覽頁的指標、時間線與表格；涵蓋概覽資源、資源趨勢、大世界、委託、艦船經驗、掉落、科研、倉庫與資源流向 |
+| | `azurpilot_get_statistics_schema` | 統計欄位目錄：分類、指標鍵、單位、說明與篩選參數 |
 | | `azurpilot_observe_device` | 取得截圖與幀尺寸、方向、擷取時間等中繼資料 |
 | 裝置控制 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | 排程器停止後接管裝置，取得/釋放 `lease_id`（預設 30 分鐘，每次呼叫續期） |
 | | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 座標點擊、滑動、長按；需 `lease_id`，分別回報命令下發與畫面變化 |

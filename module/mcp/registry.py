@@ -120,6 +120,144 @@ def control_properties(extra=None):
     }
 
 
+STATISTICS_CATEGORIES = ('overview', 'resources', 'action', 'opsi', 'commission',
+                         'ships', 'loot', 'research', 'storage', 'flows')
+
+STATISTICS_METRIC = object_schema({
+    "key": {"type": "string", "description": "稳定的机读指标键，例如 battles"},
+    "label": {"type": "string", "description": "界面显示名"},
+    "value": {"type": ["number", "null"], "description": "数值；null 表示无法计算或没有记录"},
+    "unit": {"type": "string"},
+    "meaning": {"type": "string", "description": "该指标的口径说明"},
+    "icon": {"type": ["string", "null"], "description": "界面图标标识，可忽略"},
+}, ["key", "label", "value", "unit", "meaning"])
+
+STATISTICS_SERIES = object_schema({
+    "key": {"type": "string"},
+    "label": {"type": "string"},
+    "unit": {"type": "string"},
+    "meaning": {"type": "string"},
+    "point_count": {"type": "integer", "minimum": 0, "description": "抽样前的原始点数"},
+    "truncated": {"type": "boolean", "description": "是否因 max_points 抽样"},
+    "points": {"type": "array", "items": object_schema({
+        "time": {"type": "string", "description": "本地墙上时间 YYYY-MM-DD HH:MM:SS[.ffffff]"},
+        "value": {"type": "number"},
+        "source": {"type": ["string", "null"], "description": "采集来源；null 表示未标记"},
+    }, ["time", "value"])},
+}, ["key", "label", "unit", "meaning", "point_count", "truncated", "points"])
+
+STATISTICS_TABLE = object_schema({
+    "key": {"type": "string", "description": "稳定的表格键，例如 meow_runs"},
+    "title": {"type": "string"},
+    "meaning": {"type": "string"},
+    "columns": {"type": "array", "items": {"type": "string"}},
+    "column_keys": {"type": "array", "items": {"type": "string"},
+                    "description": "与 columns 一一对应的机读列键"},
+    "rows": {"type": "array", "items": {"type": "array", "items": ANY_JSON},
+             "description": "每行按 column_keys 顺序排列"},
+    "note": {"type": "string"},
+    "truncated": {"type": "boolean"},
+}, ["key", "title", "meaning", "columns", "column_keys", "rows", "note", "truncated"])
+
+STATISTICS_RESOURCE = object_schema({
+    "key": {"type": "string"},
+    "label": {"type": "string"},
+    "value": {"type": ["number", "null"]},
+    "limit": {"type": ["number", "null"]},
+    "total": {"type": ["number", "null"]},
+    "record": {"type": ["string", "null"]},
+    "observed": {"type": "boolean"},
+    "group": {"type": ["string", "null"]},
+    "income": {"type": ["number", "null"]},
+    "expense": {"type": ["number", "null"]},
+    "adjustment": {"type": ["number", "null"]},
+    "records": {"type": ["integer", "null"]},
+    "observed_at": {"type": ["string", "null"]},
+    "meaning": {"type": "string"},
+}, ["key", "label", "value", "limit", "total", "record", "observed",
+    "group", "income", "expense", "adjustment", "records", "observed_at", "meaning"])
+
+STATISTICS_WINDOW = object_schema({
+    "month": {"type": ["string", "null"]},
+    "period": {"type": "string"},
+    "days": {"type": "integer"},
+    "start": {"type": ["string", "null"]},
+    "end": {"type": ["string", "null"]},
+}, ["month", "period", "days", "start", "end"])
+
+STATISTICS_PAGE = object_schema({
+    "offset": {"type": ["integer", "null"]},
+    "limit": {"type": ["integer", "null"]},
+    "total": {"type": ["integer", "null"]},
+    "has_more": {"type": "boolean"},
+}, ["offset", "limit", "total", "has_more"])
+
+STATISTICS_OUTPUT = output_schema({
+    "instance": INSTANCE,
+    "category": {"type": "string", "enum": list(STATISTICS_CATEGORIES)},
+    "category_label": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "window": STATISTICS_WINDOW,
+    "state": {"type": "string", "enum": ["ready", "empty", "loading"]},
+    "metrics": {"type": "array", "items": STATISTICS_METRIC},
+    "series": {"type": "array", "items": STATISTICS_SERIES},
+    "tables": {"type": "array", "items": STATISTICS_TABLE},
+    "resources": {"type": "array", "items": STATISTICS_RESOURCE},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "hint": {"type": ["string", "null"]},
+    "task_options": {"type": "array", "items": object_schema({
+        "key": {"type": "string"}, "label": {"type": "string"},
+        "count": {"type": ["integer", "null"]},
+    }, ["key", "label", "count"])},
+    "page": STATISTICS_PAGE,
+    "truncated": {"type": "boolean"},
+    "data_source": {"type": "string"},
+})
+
+STATISTICS_CATALOG_OUTPUT = output_schema({
+    "catalog_version": {"type": "integer"},
+    "categories": {"type": "array", "items": object_schema({
+        "category": {"type": "string", "enum": list(STATISTICS_CATEGORIES)},
+        "label": {"type": "string"},
+        "description": {"type": "string"},
+        "filters": {"type": "array", "items": object_schema({
+            "name": {"type": "string"}, "type": {"type": "string"},
+            "description": {"type": "string"},
+        }, ["name", "type", "description"])},
+        "metrics": {"type": "array", "items": object_schema({
+            "key": {"type": "string"}, "meaning": {"type": "string"},
+        }, ["key", "meaning"])},
+        "dynamic_metrics": {"type": "array", "items": object_schema({
+            "prefix": {"type": "string"}, "meaning": {"type": "string"},
+        }, ["prefix", "meaning"])},
+        "series": {"type": "array", "items": object_schema({
+            "key": {"type": "string"}, "unit": {"type": "string"},
+            "meaning": {"type": "string"},
+        }, ["key", "unit", "meaning"])},
+        "tables": {"type": "array", "items": object_schema({
+            "key": {"type": "string"}, "title": {"type": "string"},
+            "meaning": {"type": "string"},
+            "columns": {"type": "array", "items": object_schema({
+                "key": {"type": "string"}, "label": {"type": "string"},
+                "meaning": {"type": "string"},
+            }, ["key", "label", "meaning"])},
+        }, ["key", "title", "meaning", "columns"])},
+    }, ["category", "label", "description", "filters", "metrics",
+        "dynamic_metrics", "series", "tables"])},
+    "resource_fields": {"type": "object"},
+    "states": {"type": "array", "items": object_schema({
+        "state": {"type": "string"}, "meaning": {"type": "string"},
+    }, ["state", "meaning"])},
+    "error_codes": {"type": "array", "items": object_schema({
+        "code": {"type": "string"}, "meaning": {"type": "string"},
+        "retryable": {"type": "boolean"},
+    }, ["code", "meaning", "retryable"])},
+    "auth": object_schema({
+        "scheme": {"type": "string"}, "note": {"type": "string"},
+    }, ["scheme", "note"]),
+})
+
+
 @dataclass(frozen=True)
 class ToolSpec:
     name: str
@@ -303,6 +441,56 @@ TOOL_REGISTRY = (
                 "level": {"type": "string"}, "text": {"type": "string"},
             }, ["id", "level", "text"])},
         }),
+        readonly=True, idempotent=True,
+    ),
+    ToolSpec(
+        "azurpilot_get_statistics", "get_statistics",
+        "读取 WebUI 统计页与概览页的统计数据，口径与界面一致。category 对应界面分类："
+        "overview=概览资源卡片，resources=资源趋势，action=大世界趋势，opsi=大世界总结，"
+        "commission=委托收益，ships=舰船经验，loot=大世界掉落，research=科研掉落，"
+        "storage=仓库统计，flows=资源流向（资源管理页）。返回稳定的指标键、标签、数值、单位、"
+        "口径说明，以及时间线和表格；表格的 column_keys 与 columns 一一对应。"
+        "state=empty 表示所选区间没有记录（hint 说明如何扩大范围或触发统计）；"
+        "state=loading 表示仓库扫描正在进行，返回的是上次完整快照。"
+        "需要先确认字段含义时调用 azurpilot_get_statistics_schema。只读，不触发任务或设备操作。",
+        input_schema({
+            "instance": INSTANCE,
+            "category": {"type": "string", "enum": list(STATISTICS_CATEGORIES)},
+            "month": {"type": "string", "pattern": r"^\d{4}-(0[1-9]|1[0-2])$",
+                      "description": "统计月份 YYYY-MM；period=month 时作为汇总窗口"},
+            "days": {"type": "integer", "minimum": 1, "maximum": 365, "default": 7},
+            "period": {"type": "string", "enum": ["day", "week", "month"], "default": "month"},
+            "series": {"type": "integer", "minimum": 0, "maximum": 20, "default": 0,
+                       "description": "科研期数 1-9；0 表示最新有记录的一期"},
+            "scope": {"type": "string", "enum": ["series", "consumable"], "default": "series"},
+            "task": {"type": "string", "maxLength": 100,
+                     "pattern": r"^([A-Za-z][A-Za-z0-9_]{0,100})?$",
+                     "description": "大世界任务标识（loot）或资源流水任务名（flows）；"
+                                    "省略或留空表示全部任务，对应 WebUI 的「全部大世界任务」"},
+            "include_series": {"type": "boolean", "default": True},
+            "max_points": {"type": "integer", "minimum": 0, "maximum": 5000, "default": 500,
+                           "description": "每条时间线最多返回的点数；0=全部"},
+            "start": {"type": "string", "maxLength": 32, "description": "flows 区间起点"},
+            "end": {"type": "string", "maxLength": 32, "description": "flows 区间终点（不含）"},
+            "resource": {"type": "string", "maxLength": 101,
+                         "pattern": r"^[A-Za-z][A-Za-z0-9_]{0,100}$",
+                         "description": "flows 只看某个资源键"},
+            "offset": {"type": "integer", "minimum": 0, "default": 0},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 1000, "default": 100},
+            "through_id": {"type": "integer", "minimum": 0},
+        }, ["instance", "category"]),
+        STATISTICS_OUTPUT,
+        readonly=True, idempotent=True,
+    ),
+    ToolSpec(
+        "azurpilot_get_statistics_schema", "get_statistics_schema",
+        "返回统计分类、指标键、时间线单位、表格列与筛选参数的中文含义，以及 state 与错误码说明。"
+        "不需要实例，也不读取任何统计数据；生成统计报表前先调用它确认字段。"
+        "category 可选，省略时返回全部十个分类。",
+        input_schema({
+            "category": {"type": "string", "enum": list(STATISTICS_CATEGORIES)},
+        }),
+        STATISTICS_CATALOG_OUTPUT,
         readonly=True, idempotent=True,
     ),
     ToolSpec(

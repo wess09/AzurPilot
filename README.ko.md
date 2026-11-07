@@ -186,7 +186,7 @@ URL만 입력할 수 있고 요청 헤더를 설정할 수 없는 클라이언�
 
 ### MCP 도구 목록
 
-기본 엔드포인트는 23개의 `azurpilot_` 도구를 제공하며, 이전 도구 이름은 명시적으로 만든 호환 엔드포인트에서만 사용할 수 있습니다.
+기본 엔드포인트는 25개의 `azurpilot_` 도구를 제공하며, 이전 도구 이름은 명시적으로 만든 호환 엔드포인트에서만 사용할 수 있습니다.
 
 | 카테고리 | 도구 이름 | 기능 |
 | --- | --- | --- |
@@ -199,6 +199,8 @@ URL만 입력할 수 있고 요청 헤더를 설정할 수 없는 클라이언�
 | | `azurpilot_patch_config` | revision 검증을 포함한 원자적 일괄 수정, dry_run 지원 |
 | | `azurpilot_set_task_schedule` | 활성 상태와 다음 실행 시각 설정(예약 ≠ 완료) |
 | 로그 및 관찰 | `azurpilot_get_logs` | 커서·레벨·키워드로 제한된 로그 조회 |
+| 통계 | `azurpilot_get_statistics` | 통계 및 개요 페이지의 지표·시계열·표 조회(개요 자원, 자원 추세, 세이렌 작전, 의뢰, 함선 경험치, 드롭, 연구, 창고, 자원 흐름) |
+| | `azurpilot_get_statistics_schema` | 통계 필드 목록: 분류, 지표 키, 단위, 설명, 필터 |
 | | `azurpilot_observe_device` | 스크린샷과 프레임 크기·방향·캡처 시각 조회 |
 | 기기 제어 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | 스케줄러 중지 후 기기를 인계받고 `lease_id` 획득/해제 (기본 30분, 호출마다 갱신) |
 | | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 좌표 탭, 스와이프, 길게 누르기. `lease_id` 필요, 명령 전송과 화면 변화를 따로 반환 |

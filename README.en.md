@@ -186,7 +186,7 @@ After changing the password, restart the WebUI so that MCP picks it up.
 
 ### MCP Tool List
 
-The default endpoint exposes 23 `azurpilot_` tools; legacy names are available only on an explicitly created compatibility endpoint.
+The default endpoint exposes 25 `azurpilot_` tools; legacy names are available only on an explicitly created compatibility endpoint.
 
 | Category | Tool Name | Description |
 | --- | --- | --- |
@@ -199,6 +199,8 @@ The default endpoint exposes 23 `azurpilot_` tools; legacy names are available o
 | | `azurpilot_patch_config` | Atomic batch edit with revision check and dry_run |
 | | `azurpilot_set_task_schedule` | Set enable flag / next run time (scheduled ≠ completed) |
 | Logs & Observation | `azurpilot_get_logs` | Read bounded logs by cursor, level and keyword |
+| Statistics | `azurpilot_get_statistics` | Read metrics, timelines and tables from the statistics and overview pages: overview resources, resource trends, Operation Siren, commissions, ship EXP, drops, research, storage and resource flows |
+| | `azurpilot_get_statistics_schema` | Statistics field catalog: categories, metric keys, units, meanings and filters |
 | | `azurpilot_observe_device` | Capture a screenshot with frame size, orientation and timestamp |
 | Device Control | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | Take over the device after stopping the scheduler; acquire/release `lease_id` (30 min TTL, renewed per call) |
 | | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | Coordinate tap, swipe, long press; requires `lease_id`; reports dispatch and screen change separately |

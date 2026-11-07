@@ -21,7 +21,8 @@ from module.mcp.registry import resolve, tool_definitions
 from module.runtime.setting import State
 
 
-RETRYABLE_ERRORS = {'TOOL_BUSY', 'TOOL_TIMEOUT', 'DEVICE_TIMEOUT', 'UPDATE_BUSY'}
+RETRYABLE_ERRORS = {'TOOL_BUSY', 'TOOL_TIMEOUT', 'DEVICE_TIMEOUT', 'UPDATE_BUSY',
+                    'STATISTICS_LOADING'}
 UNCERTAIN_ERRORS = {'TOOL_TIMEOUT', 'DEVICE_TIMEOUT'}
 READ_ONLY_FIELDS = {'storage', 'stored', 'state', 'lock'}
 READ_ONLY_DISPLAY = {'hide', 'disabled', 'readonly'}
@@ -382,6 +383,12 @@ class Tools:
             next_step = {'tool': spec.name, 'reason': '按 details 中的允许范围修正参数'}
         elif code == 'INVALID_PARAMS' and error.details:
             next_step = {'tool': spec.name, 'reason': '按 details.field 和 rule 修正参数后重试'}
+        elif code == 'STATISTICS_LOADING':
+            next_step = {'tool': 'azurpilot_get_statistics',
+                         'reason': '统计库正在写入或初始化，稍后重试同一查询'}
+        elif code in ('STATISTICS_UNAVAILABLE', 'PERMISSION_DENIED'):
+            # 这两类失败无法靠换一个工具解决：前者要检查统计库，后者要检查文件权限。
+            next_step = None
         elif code == 'NOT_FOUND' and spec.name == 'azurpilot_get_task_schema':
             next_step = {'tool': 'azurpilot_search_tasks',
                          'reason': '先用关键词确认任务标识，再读取参数定义'}
@@ -784,6 +791,23 @@ class Tools:
                    'next_cursor': next_cursor, 'reset': data['reset'],
                    'has_more': has_more, 'entries': entries}
         return ToolResult(payload, f'返回 {len(entries)} 条日志，next_cursor={next_cursor}')
+
+    def tool_get_statistics(self, arguments):
+        from module.mcp import statistics as statistics_tools
+        statistics_tools.validate_arguments(arguments)
+        category = arguments['category']
+        if category == 'overview':
+            payload, summary = statistics_tools.build_overview(self.runtime, arguments)
+        elif category == 'flows':
+            payload, summary = statistics_tools.build_flows(self.configs, arguments)
+        else:
+            payload, summary = statistics_tools.build_report(self.configs, self.runtime, arguments)
+        return ToolResult(payload, summary)
+
+    def tool_get_statistics_schema(self, arguments):
+        from module.mcp import statistics as statistics_tools
+        payload = statistics_tools.catalog_payload(arguments.get('category'))
+        return ToolResult(payload, statistics_tools.catalog_summary(payload))
 
     def tool_acquire_device_control(self, arguments):
         instance = arguments['instance']

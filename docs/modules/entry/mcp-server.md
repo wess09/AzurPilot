@@ -1,6 +1,6 @@
 # MCP SSE 服务器（mcp_server_sse.py）
 
-> 把实例查询、配置修改、调度控制与设备操作共 23 个 `azurpilot_` 工具通过 MCP 协议（SSE 传输）暴露给外部 AI 助手，支持独立进程与挂载进 WebUI 两种运行方式；旧工具名只保留在显式兼容入口。
+> 把实例查询、配置修改、调度控制、设备操作与统计读取共 25 个 `azurpilot_` 工具通过 MCP 协议（SSE 传输）暴露给外部 AI 助手，支持独立进程与挂载进 WebUI 两种运行方式；旧工具名只保留在显式兼容入口。
 
 ## 1. 模块概述
 
@@ -54,7 +54,7 @@ module/runtime/mcp_auth.py     # 鉴权：凭据提取、常数时间比对、�
 | 文件 | 作用 |
 | --- | --- |
 | `mcp_server_sse.py` | MCP ASGI 应用与传输层；`configure_auth` 注入密码；`__main__` 为独立入口 |
-| `module/mcp/registry.py` | 23 个新工具 + 18 个旧名称的集中注册；默认端点只取新名称 |
+| `module/mcp/registry.py` | 25 个新工具 + 18 个旧名称的集中注册；默认端点只取新名称 |
 | `module/mcp/tools.py` | `Tools` 类：输入校验、旧名称适配、操作台账、错误信封与分发 |
 | `module/mcp/execution.py` | `BoundedCalls` 并发槽；`run_device` spawn 子进程并按超时回收进程树 |
 | `module/mcp/device_worker.py` | 子进程侧执行体：截图、重启模拟器、重启 ADB |
@@ -111,9 +111,9 @@ module/runtime/mcp_auth.py     # 鉴权：凭据提取、常数时间比对、�
 
 ### 工具注册表（module/mcp/registry.py）
 
-`TOOL_REGISTRY` 固定顺序登记 23 个新工具，每个条目包含描述（何时用、前置条件、返回什么、如何确认完成）、`inputSchema`（拒绝未知字段）、`outputSchema` 与 `readOnlyHint / destructiveHint / idempotentHint` 注解。`LEGACY_REGISTRY` 集中维护 18 个旧名称到新工具的映射和入参适配；默认 `tool_definitions()` 只返回新名称，`allow_legacy=True` 才追加兼容目录。
+`TOOL_REGISTRY` 固定顺序登记 25 个新工具，每个条目包含描述（何时用、前置条件、返回什么、如何确认完成）、`inputSchema`（拒绝未知字段）、`outputSchema` 与 `readOnlyHint / destructiveHint / idempotentHint` 注解。`LEGACY_REGISTRY` 集中维护 18 个旧名称到新工具的映射和入参适配；默认 `tool_definitions()` 只返回新名称，`allow_legacy=True` 才追加兼容目录。
 
-### 工具清单（23 个）
+### 工具清单（25 个）
 
 | 分组 | 工具 | 用途 |
 | --- | --- | --- |
@@ -123,6 +123,8 @@ module/runtime/mcp_auth.py     # 鉴权：凭据提取、常数时间比对、�
 | 配置 | `azurpilot_get_config` / `azurpilot_patch_config` | 按 revision 读取；原子批量修改，支持 dry_run，返回前后值 |
 | 调度 | `azurpilot_set_task_schedule` | 设置任务启用与 NextRun；返回 scheduled/running，不谎报任务完成 |
 | 日志 | `azurpilot_get_logs` | 按游标、级别、关键词读取有限日志 |
+| 统计数据 | `azurpilot_get_statistics` | 读取统计页与概览页数据：10 个分类，返回指标键、数值、单位、口径说明、时间线与表格 |
+| | `azurpilot_get_statistics_schema` | 统计字段目录：分类、指标键、时间线单位、表格列与筛选参数含义；不需要实例 |
 | 设备观测 | `azurpilot_observe_device` | 主动截图 + 帧元数据 |
 | 设备控制 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | 调度器停止后接管设备，取得/释放 `lease_id`（默认 30 分钟，调用续期） |
 | | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 坐标点击、滑动、长按；需 `lease_id`，返回命令下发与画面变化两个事实 |
@@ -132,6 +134,27 @@ module/runtime/mcp_auth.py     # 鉴权：凭据提取、常数时间比对、�
 | 实例生命周期 | `azurpilot_start_instance` / `azurpilot_stop_instance` | 启动/确认停止实例进程 |
 | 设备维护 | `azurpilot_restart_emulator` / `azurpilot_restart_adb` | 重启实例模拟器 / 全局 ADB |
 | 应用更新 | `azurpilot_update_application` | 请求后台更新；accepted≠completed，终态走 operation |
+
+### 统计数据（azurpilot_get_statistics）
+
+`category` 与 WebUI 分类一一对应：`overview`（概览资源卡片）、`resources`、`action`、`opsi`、`commission`、`ships`、`loot`、`research`、`storage`、`flows`（资源流向/资源管理页）。数据直接复用 `module/api/statistics_service.py` 与 `module/api/resource_service.py`，不在这里重算口径；报表里的 `columns` 与界面列名一致。
+
+统一返回结构：
+
+| 字段 | 说明 |
+| --- | --- |
+| `metrics[]` | `key`（稳定机读键）、`label`（界面显示名）、`value`、`unit`、`meaning`（口径说明）、`icon` |
+| `series[]` | `key`、`label`、`unit`、`meaning`、`point_count`、`truncated`、`points[]{time,value,source}`；`max_points` 超过时等距抽样，只抽真实点，不聚合、不补零 |
+| `tables[]` | `key`、`title`、`meaning`、`columns`（界面列名）、`column_keys`（等长机读列键）、`rows`（按列键顺序的数组）、`note` |
+| `resources[]` | `overview` / `flows` 专用：概览卡片含 `value/limit/total/record/observed`，资源流向含 `group/income/expense/adjustment/records/observed_at` |
+| `state` | `ready` / `empty` / `loading`；`empty` 与 `loading` 都附带 `hint`，`loading` 表示仓库扫描进行中、返回的是上次完整快照 |
+| 其它 | `window`（月份/周期/区间）、`notes[]`、`task_options[]`、`page{}`、`truncated`、`generated_at`、`data_source` |
+
+`azurpilot_get_statistics_schema` 返回同一套字段的目录，包括当前数据里尚未出现的固定指标键、动态指标规则（`item:` / `resource:`）与错误码说明；生成报表前先调用它可避免猜中文名。
+
+筛选参数按分类白名单校验，跨分类传参会直接报 `INVALID_PARAMS` 并给出 `details.field`，不会静默忽略。`loot` 与 `flows` 的 `task` 省略或留空表示全部任务（对应界面上的「全部大世界任务」）；`research` 的 `series=0` 表示最新有记录的一期。`flows` 的 `offset`/`limit` 只分页流水明细，`page` 给出 `total` 与 `has_more`。
+
+无数据、加载中与权限不足分别处理：所选区间没有记录时返回成功 + `state=empty` + `hint`（不当作错误，避免 AI 反复重试）；统计库被写入锁住返回 `STATISTICS_LOADING`（`retryable=true`）；库不可读返回 `STATISTICS_UNAVAILABLE`；文件权限不足返回 `PERMISSION_DENIED`；缺少或错误凭据在 SSE 端点直接 401，工具不会执行。
 
 兼容映射包括 `list_instances → azurpilot_list_instances`、`get_status/get_resources/get_current_running_task/get_scheduler_queue → azurpilot_get_context`、`get_screenshot → azurpilot_observe_device`、`list_tasks → azurpilot_search_tasks`、`get_task_help → azurpilot_get_task_schema`、`update_config → azurpilot_patch_config`、`trigger_task → azurpilot_set_task_schedule`、`update_alas → azurpilot_update_application`。`clear_scheduler_queue` 因会批量禁用多项任务，不在新默认目录中，仅保留在兼容入口。
 
@@ -156,7 +179,7 @@ flowchart TD
     B -->|"放行"| C["transport.connect_sse 建立 SSE 连接"]
     C --> D["嗅探 endpoint 事件中的 session_id 并登记会话"]
     D --> E["mcp_server.run 协议循环"]
-    E -->|"list_tools"| F["返回 23 个 azurpilot_ 工具定义"]
+    E -->|"list_tools"| F["返回 25 个 azurpilot_ 工具定义"]
     A -->|"POST .../messages?session_id=..."| G["authorize：凭据或已登记会话"]
     G -->|"放行"| H["transport.handle_post_message"]
     H --> I["call_tool → active_tools 绑定的 Tools.call"]
@@ -296,6 +319,9 @@ MCP 没有自己的 `<Task>.<Group>.<Argument>` 配置，行为由部署配置�
 | `CONFLICT` | `patch_config` / `set_task_schedule` 的 revision 已过期 | `retryable=false`；`next_step` 要求重新 `azurpilot_get_config` 取新 revision |
 | `REQUEST_ID_CONFLICT` | 同一 `request_id` 被用于不同参数 | 拒绝执行并提示换用新 `request_id`，避免把两次不同写入误当作重试 |
 | `TOOL_BUSY` | 执行槽已满（普通 >4、设备 >2 并发） | `retryable=true`，稍后重试 |
+| `STATISTICS_LOADING` | 统计库正在写入或初始化，读事务暂时无法开始 | `retryable=true`；`next_step` 指向同一统计查询，稍后重试 |
+| `STATISTICS_UNAVAILABLE` | 统计库缺失、损坏或无法打开 | `retryable=false`；检查统计库与服务日志，不要换工具重试 |
+| `PERMISSION_DENIED` | 统计库或配置目录文件权限不足 | `retryable=false`；修正文件权限后重试；MCP 凭据错误在 HTTP 层返回 401 |
 | `TOOL_TIMEOUT` / `DEVICE_TIMEOUT` | 超过槽超时（普通 90 秒，设备另计） | `retryable=true` 但 `outcome_certain=false`；操作保持 pending，先查 `azurpilot_get_operation`，不要重放 |
 | `DEVICE_FAILED` / `DEVICE_CLEANUP_FAILED` | 设备子进程异常退出或进程树未确认退出 | 后者禁用设备工具（`devices.closed`），句柄留待关闭时再清理；不静默 kill |
 | `DEVICE_IN_USE` | 设备正由实例调度器控制 | `retryable=false`；`next_step` 指向 `azurpilot_get_context`，需要接管时由管理端停止实例 |
@@ -407,7 +433,7 @@ MCP 客户端配置（本服务是远程 HTTP 服务的 SSE 传输，填 `url` �
 }
 ```
 
-能设置请求头时优先用 `Authorization: Bearer <密码>` 或 `X-API-Key: <密码>`，避免密码留在 URL 里。部分客户端默认先尝试 streamable HTTP，需显式声明 `"type": "sse"`；本服务端目前不提供 streamable HTTP 端点。挂载模式（随 WebUI 自动可用，无需单独启动）：SSE 端点为 `http://<webui主机>:<端口>/mcp/sse`，凭据传法相同。配置完成后让客户端拉取一次工具列表，能看到 23 个 `azurpilot_*` 工具即表示连通。
+能设置请求头时优先用 `Authorization: Bearer <密码>` 或 `X-API-Key: <密码>`，避免密码留在 URL 里。部分客户端默认先尝试 streamable HTTP，需显式声明 `"type": "sse"`；本服务端目前不提供 streamable HTTP 端点。挂载模式（随 WebUI 自动可用，无需单独启动）：SSE 端点为 `http://<webui主机>:<端口>/mcp/sse`，凭据传法相同。配置完成后让客户端拉取一次工具列表，能看到 25 个 `azurpilot_*` 工具即表示连通。
 
 一次「了解状态 → 选择操作 → 确认结果 → 处理失败」的完整链路：
 

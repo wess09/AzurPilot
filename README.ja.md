@@ -186,7 +186,7 @@ URL しか指定できずリクエストヘッダーを設定できないクラ�
 
 ### MCP ツール一覧
 
-既定のエンドポイントでは 23 個の `azurpilot_` ツールを公開します。旧ツール名は明示的に作成した互換エンドポイントのみで利用できます。
+既定のエンドポイントでは 25 個の `azurpilot_` ツールを公開します。旧ツール名は明示的に作成した互換エンドポイントのみで利用できます。
 
 | カテゴリ | ツール名 | 機能 |
 | --- | --- | --- |
@@ -199,6 +199,8 @@ URL しか指定できずリクエストヘッダーを設定できないクラ�
 | | `azurpilot_patch_config` | revision を検証する一括原子変更、dry_run 対応 |
 | | `azurpilot_set_task_schedule` | 有効状態と次回実行時刻を設定（予約済み＝完了ではない） |
 | ログと観測 | `azurpilot_get_logs` | カーソル・レベル・キーワードで限定件数のログを取得 |
+| 統計 | `azurpilot_get_statistics` | 統計ページと概要ページの指標・時系列・表を取得（概要資源、資源推移、セイレーン作戦、委託、艦船経験値、ドロップ、研究、倉庫、資源フロー） |
+| | `azurpilot_get_statistics_schema` | 統計フィールド目録：分類、指標キー、単位、説明、絞り込み条件 |
 | | `azurpilot_observe_device` | スクリーンショットとフレームのサイズ・向き・取得時刻を取得 |
 | デバイス制御 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | スケジューラ停止後にデバイスを引き継ぎ、`lease_id` を取得/解放（既定 30 分、呼び出しごとに延長） |
 | | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 座標タップ・スワイプ・長押し。`lease_id` が必要で、コマンド送信と画面変化を別々に返す |

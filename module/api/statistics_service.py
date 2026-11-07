@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 from module.api.protocol import ApiError
 from module.persistence.database import configured_database, get_database
+from module.statistics.metric_catalog import TABLE_INFO, metric_meaning, table_header
 
 _loot_lock = threading.Lock()
 
@@ -48,7 +49,8 @@ RESOURCE_LABELS = {
 }
 
 
-def table(title: str, columns: list[str], rows: list[list], note: str = '', default_sort: dict = None) -> dict:
+def table(title: str, columns: list[str], rows: list[list], note: str = '', default_sort: dict = None,
+          key: str = None) -> dict:
     """构造前端通用的数据表格结构字典。
 
     Args:
@@ -57,11 +59,18 @@ def table(title: str, columns: list[str], rows: list[list], note: str = '', defa
         rows: 数据行列表。
         note: 表格备注或提示说明。
         default_sort: 默认排序规则字典，如 ``{'index': 0, 'descending': True}``。
+        key: 稳定的表格键，供 MCP 等调用方引用；缺省时退回标题。
 
     Returns:
         dict: 格式化后的表格结构字典。
     """
-    result = {'title': title, 'columns': columns, 'rows': rows, 'note': note}
+    result = {'key': key or title, 'title': title, 'columns': columns, 'rows': rows, 'note': note}
+    if key:
+        # 键、列键与说明来自同一份目录，避免 MCP 侧再维护一套中文列名映射。
+        header = table_header(key)
+        if len(header['keys']) == len(columns):
+            result['column_keys'] = header['keys']
+        result['meaning'] = TABLE_INFO.get(key, {}).get('meaning', '')
     if default_sort is not None:
         result['defaultSort'] = default_sort
     return result
@@ -244,8 +253,9 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
     result = {'instance': instance, 'category': category, 'month': f'{year:04d}-{month_number:02d}',
               'metrics': [], 'series': [], 'tables': [], 'notes': []}
 
-    def metric(label, value, unit='', icon=None):
-        entry = {'label': label, 'value': value, 'unit': unit}
+    def metric(key, label, value, unit='', icon=None):
+        entry = {'key': key, 'label': label, 'value': value, 'unit': unit,
+                 'meaning': metric_meaning(category, key, label)}
         if icon:
             # 前端按 icon 找图标，找不到就用 label 查内置表；科研物品写 'research:<模板名>'
             entry['icon'] = icon
@@ -272,7 +282,7 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         result['tables'] = [table('仓库物品', ['图标', '物品', '分类', '数量', '状态'],
             [[icons.get(item['id'], ''), item['name'], item['group'], item['amount'],
               '未扫描' if snapshot is None else '已复核' if item['amount'] is not None else '未发现']
-             for item in items])]
+             for item in items], key='storage_items')]
         result['tables'][0]['note'] = ' '.join(result['notes'])
         if include_series:
             start, end = _trend_window(selected, now, period, days)
@@ -315,23 +325,29 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         purchased = compute_monthly_cl1_akashi_ap(year, month_number, instance_name=instance)
         encounters = summary['akashi_encounters']
         devices = summary['siren_research_devices']
-        for label, value, unit in [
-            ('战斗次数', battles, '场'), ('出击轮数', rounds, '轮'), ('出击消耗', cost, '行动力'),
-            ('明石遭遇', encounters, '次'), ('明石遭遇率', round(encounters / rounds * 100, 2) if rounds else None, '%'),
-            ('塞壬研究装置', devices, '个'), ('装置获取率', round(devices / rounds * 100, 2) if rounds else None, '%'),
-            ('购买行动力', purchased, ''), ('平均每次购买', round(purchased / encounters, 2) if encounters else None, ''),
-            ('净行动力', purchased - cost, ''), ('循环效率', round((purchased - cost) / cost * 100, 2) if cost else None, '%'),
+        for key, label, value, unit in [
+            ('battles', '战斗次数', battles, '场'), ('sorties', '出击轮数', rounds, '轮'),
+            ('action_point_cost', '出击消耗', cost, '行动力'),
+            ('akashi_encounters', '明石遭遇', encounters, '次'),
+            ('akashi_encounter_rate', '明石遭遇率', round(encounters / rounds * 100, 2) if rounds else None, '%'),
+            ('siren_research_devices', '塞壬研究装置', devices, '个'),
+            ('siren_research_rate', '装置获取率', round(devices / rounds * 100, 2) if rounds else None, '%'),
+            ('action_point_purchased', '购买行动力', purchased, ''),
+            ('action_point_per_purchase', '平均每次购买', round(purchased / encounters, 2) if encounters else None, ''),
+            ('net_action_point', '净行动力', purchased - cost, ''),
+            ('loop_efficiency', '循环效率', round((purchased - cost) / cost * 100, 2) if cost else None, '%'),
         ]:
-            metric(label, value, unit)
+            metric(key, label, value, unit)
         # 收获卡片同时给出舰船经验侧的效率与今日进度，与「舰船经验」页同一批数据。
         from module.statistics.ship_exp_stats import ShipExpStats
         exp_stats = ShipExpStats(instance_name=instance)
         today_exp = exp_stats.get_today_stats() or {}
-        metric('平均战斗时长', exp_stats.get_average_battle_time(), '秒')
-        metric('预估经验效率', exp_stats.get_exp_per_hour(), '/小时')
-        metric('今日战斗', today_exp.get('battle_count'), '场')
-        metric('今日经验', today_exp.get('total_exp_gained'))
-        metric('今日运行', round(today_exp['total_run_time'] / 60, 1) if 'total_run_time' in today_exp else None, '分钟')
+        metric('average_battle_time', '平均战斗时长', exp_stats.get_average_battle_time(), '秒')
+        metric('exp_per_hour', '预估经验效率', exp_stats.get_exp_per_hour(), '/小时')
+        metric('today_battles', '今日战斗', today_exp.get('battle_count'), '场')
+        metric('today_exp', '今日经验', today_exp.get('total_exp_gained'))
+        metric('today_runtime_minutes', '今日运行',
+               round(today_exp['total_run_time'] / 60, 1) if 'total_run_time' in today_exp else None, '分钟')
         rows = []
         for hazard in (3, 5):
             data = db.get_meow_stats(instance, year, month_number, hazard_level=hazard)
@@ -339,7 +355,8 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
                          data.get('avg_battle_time'), data.get('avg_round_time'),
                          data.get('siren_research_devices'), round(data.get('siren_research_rate', 0) * 100, 2),
                          {'exact': '实测', 'estimated': '估算', 'none': '暂无记录'}.get(data.get('by_hazard', {}).get(str(hazard), {}).get('source', 'none'))])
-        result['tables'].append(table('短猫运行统计', ['侵蚀等级', '战斗次数', '有效轮数', '平均战斗秒数', '平均每轮秒数', '研究装置', '获取率（%）', '统计来源'], rows))
+        result['tables'].append(table('短猫运行统计', ['侵蚀等级', '战斗次数', '有效轮数', '平均战斗秒数', '平均每轮秒数', '研究装置', '获取率（%）', '统计来源'], rows,
+                                      key='meow_runs'))
         # 收获只作卡片渲染：卡片 / 表格两种呈现由前端布局按页切换，后端不另出表。
     elif category == 'action':
         from module.statistics.opsi_month import get_ap_timeline, get_coins_timeline
@@ -364,12 +381,13 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
                 start -= timedelta(days=start.weekday())
             end = now
         summary = get_commission_income_interval_summary(instance, start, end)
-        metric('完成委托', summary['total_commissions'], '项')
+        metric('commissions', '完成委托', summary['total_commissions'], '项')
         labels = {**RESOURCE_LABELS, 'Chip': '心智单元'}
         for name, item in summary['items'].items():
-            metric(labels[name], item['total'])
+            metric(f'resource:{name}', labels[name], item['total'])
         result['tables'].append(table('委托收益明细', ['资源', '总收益', '掉落记录数', '平均每次掉落'],
-            [[labels[item['name']], item['total'], item['count'], item['avg']] for item in summary['detail_rows']]))
+            [[labels[item['name']], item['total'], item['count'], item['avg']] for item in summary['detail_rows']],
+            key='commission_rewards'))
         entries = []
         cursor = start.replace(day=1)
         while cursor < end:
@@ -381,7 +399,7 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         normalized = [{**item, 'items': {COMMISSION_ITEM_NAME_MAP.get(k, k): v for k, v in item.get('items', {}).items()}} for item in entries]
         result['tables'].append(table('委托结算记录', ['时间', '委托数量', '钻石', '魔方', '心智单元', '石油', '物资'],
             [[item['ts'], item.get('commission_count', 1), *[item['items'].get(k) for k in ('Gem', 'Cube', 'Chip', 'Oil', 'Coin')]] for item in normalized],
-            default_sort={'index': 0, 'descending': True}))
+            default_sort={'index': 0, 'descending': True}, key='commission_records'))
         if include_series:
             result['series'] = [series([{'ts': item['ts'], **item['items']} for item in normalized], k, labels[k]) for k in ('Gem', 'Cube', 'Chip', 'Oil', 'Coin')]
     elif category == 'ships':
@@ -389,20 +407,22 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         from module.statistics.opsi_month import get_opsi_stats
         stats = ShipExpStats(instance_name=instance)
         data = stats.data
-        metric('目标等级', data.get('target_level', 125))
-        metric('预估经验效率', stats.get_exp_per_hour(), '/小时')
-        metric('平均战斗时长', stats.get_average_battle_time(), '秒')
-        metric('平均每轮时长', stats.get_average_round_time(), '秒')
-        metric('短猫平均战斗时长', stats.get_average_meow_battle_time(), '秒')
+        metric('target_level', '目标等级', data.get('target_level', 125))
+        metric('exp_per_hour', '预估经验效率', stats.get_exp_per_hour(), '/小时')
+        metric('average_battle_time', '平均战斗时长', stats.get_average_battle_time(), '秒')
+        metric('average_round_time', '平均每轮时长', stats.get_average_round_time(), '秒')
+        metric('average_meow_battle_time', '短猫平均战斗时长', stats.get_average_meow_battle_time(), '秒')
         today = stats.get_today_stats() or {}
-        metric('今日战斗', today.get('battle_count'), '场')
-        metric('今日经验', today.get('total_exp_gained'))
-        metric('今日运行', round(today['total_run_time'] / 60, 1) if 'total_run_time' in today else None, '分钟')
+        metric('today_battles', '今日战斗', today.get('battle_count'), '场')
+        metric('today_exp', '今日经验', today.get('total_exp_gained'))
+        metric('today_runtime_minutes', '今日运行',
+               round(today['total_run_time'] / 60, 1) if 'total_run_time' in today else None, '分钟')
         battles = get_opsi_stats(instance).summary()['total_battles']
         progress = stats.get_all_progress(battles)
         result['tables'].append(table('舰船升级进度', ['位置', '等级', '当前经验', '累计经验', '目标经验', '检测后战斗数', '还需经验', '还需战斗', '预估用时'],
             [[p.get(k) for k in ('position', 'level', 'current_exp', 'total_exp', 'target_exp', 'battles_done', 'exp_needed', 'battles_needed', 'time_needed')] for p in progress],
-            f"上次检测：{data.get('last_check_time', '尚未检测')}；舰队：{data.get('fleet_index', '—')}。"))
+            f"上次检测：{data.get('last_check_time', '尚未检测')}；舰队：{data.get('fleet_index', '—')}。",
+            key='ship_progress'))
         daily = [{'ts': key, **value} for key, value in sorted(data.get('daily_stats', {}).items())]
         if include_series:
             result['series'] = [series(daily, 'total_exp_gained', '每日经验'), series(daily, 'battle_count', '每日战斗'), series(daily, 'total_run_time', '每日运行秒数')]
@@ -436,10 +456,11 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
                 result['tables'].append(table(title, detail_columns, [], note=(
                     '这段时间里没有掉落记录。「汇总周期」选今天/本周时窗口很短，'
                     '改成「选定月份」能看得更多；统计在领奖时自动完成，把「科研截图」设为'
-                    '「保存」或「上传」即可（两者都会统计，区别只是要不要把截图落盘）。')))
+                    '「保存」或「上传」即可（两者都会统计，区别只是要不要把截图落盘）。'),
+                    key='research_rewards'))
                 return result
             record_rows = _research_record_rows(instance, start, end, research_scope)
-            metric('掉落记录', len(record_rows), '次')
+            metric('drops', '掉落记录', len(record_rows), '次')
             by_name = {item['name']: item for item in summary['items']}
             rows = []
             for name in CONSUMABLE_ITEMS:
@@ -451,31 +472,31 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
                              RARITY_LABELS.get(info.get('rarity'), '—'),
                              amount or None, (entry['count'] if entry else 0) or None,
                              (entry['avg'] if entry else 0) or None])
-                metric(info['zh'], amount or None, icon=f'research:{name}')
+                metric(f'item:{name}', info['zh'], amount or None, icon=f'research:{name}')
             # 三档时间总计固定看今日 / 本月 / 选定月份，不受上面「汇总周期」影响；
             # 三者窗口常常重合（选的就是本月时是同一个），同窗口只查一次库。
             windows = (
-                ('今日总计', now.replace(hour=0, minute=0, second=0, microsecond=0), now + timedelta(seconds=1)),
-                ('本月总计', now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
-                ('选定月份总计', selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
+                ('today_total', '今日总计', now.replace(hour=0, minute=0, second=0, microsecond=0), now + timedelta(seconds=1)),
+                ('month_total', '本月总计', now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
+                ('selected_month_total', '选定月份总计', selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
             )
             totals = {}
-            for label, begin, finish in windows:
+            for key, label, begin, finish in windows:
                 finish = _month_end(begin) if finish is None else finish
                 if (begin, finish) not in totals:
                     totals[(begin, finish)] = collect(
                         instance, series=research_series, scope=research_scope,
                         start=begin, end=finish)['total']
-                metric(label, totals[(begin, finish)] or None)
+                metric(key, label, totals[(begin, finish)] or None)
             result['tables'].append(table(
                 title, detail_columns, rows, note=note,
-                default_sort={'index': 3, 'descending': True},
+                default_sort={'index': 3, 'descending': True}, key='research_rewards',
             ))
             result['tables'].append(table(
                 '掉落记录', record_columns, record_rows[-200:],
                 note='按时间倒序；只列掉了心智单元或物资的记录。'
                      + ('记录超过 200 条，只显示最近 200 条。' if len(record_rows) > 200 else ''),
-                default_sort={'index': 0, 'descending': True},
+                default_sort={'index': 0, 'descending': True}, key='research_records',
             ))
             return result
 
@@ -492,15 +513,17 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
             else:
                 hint = ('还没有科研掉落记录。统计会在下次科研领奖时自动完成；'
                         '「科研掉落上报」仅控制上传与截图保存，选择「不上传」也会保留本地统计。')
-            result['tables'].append(table(title, detail_columns, [], note=hint))
+            result['tables'].append(table(title, detail_columns, [], note=hint,
+                                          key='research_rewards'))
             return result
         # 原始掉落记录：本视图认的物品才算「一次掉落」，只列这些
         record_rows = _research_record_rows(instance, start, end, SCOPE_SERIES)
 
-        metric('掉落记录', len(record_rows), '次')
+        metric('drops', '掉落记录', len(record_rows), '次')
         for item in summary['items']:
             # 0 传 null：前端与委托收益一样显示「—」，区分「没有」和「真是 0」
-            metric(item['zh'], item['amount'] or None, icon=f'research:{item["name"]}')
+            metric(f'item:{item["name"]}', item['zh'], item['amount'] or None,
+                   icon=f'research:{item["name"]}')
         rows = [
             [f'research:{item["name"]}', item['zh'], RARITY_LABELS.get(item.get('rarity'), '—'),
              item['amount'] or None, item['count'] or None, item['avg'] or None]
@@ -508,13 +531,13 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         ]
         result['tables'].append(table(
             title, detail_columns, rows, note=note,
-            default_sort={'index': 3, 'descending': True},
+            default_sort={'index': 3, 'descending': True}, key='research_rewards',
         ))
         result['tables'].append(table(
             '掉落记录', record_columns, record_rows[-200:],
             note='按时间倒序；只列掉了本期图纸或彩装的记录，那一次只掉心智或物资的不算。'
                  + ('记录超过 200 条，只显示最近 200 条。' if len(record_rows) > 200 else ''),
-            default_sort={'index': 0, 'descending': True},
+            default_sort={'index': 0, 'descending': True}, key='research_records',
         ))
     elif category == 'loot':
         from module.statistics.azurstats import AzurStats
@@ -543,19 +566,20 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         if not summary['record_count']:
             result['tables'].append(table(title, detail_columns, [], note=(
                 note + ' 这段时间里没有掉落记录——「汇总周期」选今天/本周时窗口很短，'
-                '改成「选定月份」能看得更多。')))
+                '改成「选定月份」能看得更多。'), key='loot_rewards'))
         else:
-            metric('掉落记录', summary['record_count'], '次')
+            metric('drops', '掉落记录', summary['record_count'], '次')
             for item in summary['items']:
                 # 0 传 null：前端与委托收益一样显示「—」，区分「没有」和「真是 0」
-                metric(item['zh'], item['amount'] or None, icon=f'opsi:{item["name"]}')
-            for label, begin, finish in (
-                ('今日总计', now.replace(hour=0, minute=0, second=0, microsecond=0), now + timedelta(seconds=1)),
-                ('本月总计', now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
-                ('选定月份总计', selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
+                metric(f'item:{item["name"]}', item['zh'], item['amount'] or None,
+                       icon=f'opsi:{item["name"]}')
+            for key, label, begin, finish in (
+                ('today_total', '今日总计', now.replace(hour=0, minute=0, second=0, microsecond=0), now + timedelta(seconds=1)),
+                ('month_total', '本月总计', now.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
+                ('selected_month_total', '选定月份总计', selected.replace(day=1, hour=0, minute=0, second=0, microsecond=0), None),
             ):
                 finish = _month_end(begin) if finish is None else finish
-                metric(label, collect_opsi_drop(instance, begin, finish, task=task)['total'] or None)
+                metric(key, label, collect_opsi_drop(instance, begin, finish, task=task)['total'] or None)
             rows = [
                 [f'opsi:{item["name"]}', item['zh'], RARITY_LABELS.get(item.get('rarity'), '—'),
                  item['amount'] or None, item['count'] or None, item['avg'] or None]
@@ -563,13 +587,13 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
             ]
             result['tables'].append(table(
                 title, detail_columns, rows, note=note,
-                default_sort={'index': 3, 'descending': True},
+                default_sort={'index': 3, 'descending': True}, key='loot_rewards',
             ))
             result['tables'].append(table(
                 '掉落记录', record_columns, summary['records'][:200],
                 note='按时间倒序；只列含上述统计物品的掉落记录，其余掉落不入这张表。'
                      + ('记录超过 200 条，只显示最近 200 条。' if len(summary['records']) > 200 else ''),
-                default_sort={'index': 0, 'descending': True},
+                default_sort={'index': 0, 'descending': True}, key='loot_records',
             ))
 
         # 短猫按侵蚀等级的收益汇总：沿用原「短猫掉落」页的数据源，放在最下面
@@ -579,6 +603,7 @@ def _report(configs, instance: str, category: str, month: str, days: int, period
         for row in cached:
             if row[2] > 0:
                 rows.append([int(row[0]), datetime.fromtimestamp(row[1]).isoformat(sep=' '), float(row[2]), *[round(float(value), 4) for value in row[3:]]])
-        result['tables'].append(table('短猫掉落收益', AzurStats.meowofficer_farming_labels, rows))
+        result['tables'].append(table('短猫掉落收益', AzurStats.meowofficer_farming_labels, rows,
+                                      key='meow_loot'))
         result['notes'].append('仅统计当前实例的掉落；旧记录缺少实例信息，作为历史共享数据保留，不计入当前实例。')
     return result
