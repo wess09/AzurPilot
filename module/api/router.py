@@ -45,7 +45,7 @@ class Router:
         self.configs, self.runtime = configs, runtime
         from module.runtime.launcher import LauncherService
         from module.runtime.launcher_trust import TRUST_SECRET_ENV
-        self.launcher = LauncherService(os.environ.get(TRUST_SECRET_ENV))
+        self.launcher = LauncherService(os.environ.get(TRUST_SECRET_ENV), runtime)
         self._accounts = None
         self._scheduler_programs = None
         self._opsi_simulator = None

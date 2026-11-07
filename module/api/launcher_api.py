@@ -9,8 +9,9 @@ from starlette.responses import Response
 from starlette.routing import Route, WebSocketRoute
 from starlette.websockets import WebSocketDisconnect
 
-from module.api.launcher_protocol import INCOMING_METHODS, LauncherRequest, LauncherResponse
+from module.api.launcher_protocol import INCOMING_METHODS, SCHEDULER_METHODS, LauncherRequest, LauncherResponse
 from module.api.protocol import ApiError
+from module.logger import logger
 from module.runtime.launcher import is_local_request
 
 
@@ -89,6 +90,10 @@ class LauncherGateway:
                         result = self.service.acknowledge(params.ids)
                     elif request.method == 'login.issue':
                         result = self.service.trust.issue()
+                    elif request.method in SCHEDULER_METHODS:
+                        connection.tasks.add(asyncio.create_task(
+                            self.scheduler(connection, request.id, SCHEDULER_METHODS[request.method])))
+                        continue
                     else:
                         result = {'pong': True}
                     message = {'type': 'response', 'id': request.id, 'ok': True, 'result': result}
@@ -107,6 +112,20 @@ class LauncherGateway:
             await asyncio.gather(writer, return_exceptions=True)
             if ws.application_state.name != 'DISCONNECTED' and ws.client_state.name != 'DISCONNECTED':
                 await ws.close(code=1001)
+
+    async def scheduler(self, connection, request_id, action):
+        """在线程池执行调度器动作，完成后把响应放回该连接的发送队列。"""
+        try:
+            result = await asyncio.to_thread(self.service.scheduler, action)
+            message = {'type': 'response', 'id': request_id, 'ok': True, 'result': result}
+        except ApiError as error:
+            message = self.failure(request_id, error.code, error.message)
+        except Exception:
+            logger.exception(f'启动器调度器动作 {action} 失败')
+            message = self.failure(request_id, 'SCHEDULER_FAILED', '调度器操作失败，请查看日志')
+        finally:
+            connection.tasks.discard(asyncio.current_task())
+        self.service._enqueue(connection, message)
 
     async def writer(self, ws, connection):
         try:

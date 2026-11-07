@@ -71,5 +71,9 @@ class LauncherResponse(Params):
         return self
 
 
+#: 托盘「暂停 / 继续任务」：查询、停止所有运行中的实例、恢复被暂停的实例。
+SCHEDULER_METHODS = {'scheduler.state': 'state', 'scheduler.pause': 'pause', 'scheduler.resume': 'resume'}
+
 INCOMING_METHODS = {'session.hello': HelloParams, 'state.report': StateParams,
-                    'notifications.ack': AckParams, 'login.issue': Params, 'system.ping': Params}
+                    'notifications.ack': AckParams, 'login.issue': Params, 'system.ping': Params,
+                    **{method: Params for method in SCHEDULER_METHODS}}
