@@ -1329,7 +1329,9 @@ class IslandBusiness(Island):
         if color_similar(area_color, (230, 192, 71), threshold=80):
             return 'yellow'
         # 深蓝 (60, 67, 84) - 经营中
-        if color_similar(area_color, (60, 67, 84), threshold=80):
+        # 阈值不能放宽到 80：当日次数用完的灰色「休息中 (0/1)」按钮平均色约 (133, 133, 131)，
+        # 与深蓝差值约 73，会被误判为经营中，进而去 OCR 并不存在的倒计时
+        if color_similar(area_color, (60, 67, 84), threshold=40):
             return 'darkblue'
 
         # 以上都不是 → 灰色不可经营
