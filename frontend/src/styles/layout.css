@@ -45,7 +45,7 @@
 }
 .sidebar-label {display: flex; align-items: center; justify-content: space-between; color: #97a4af; font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
 .sidebar-label button {padding: 0; color: #82929e; display: grid; place-items: center}
-.sidebar-label > span {font: 10px "Segoe UI", sans-serif; letter-spacing: 0; background: var(--surface-muted); padding: 1px 5px; border-radius: 3px}
+.sidebar-label > span {font: 10px var(--theme-font-sans); letter-spacing: 0; background: var(--surface-muted); padding: 1px 5px; border-radius: 3px}
 .primary-nav {position: relative; display: grid; gap: 4px; margin-bottom: 28px}
 .primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: #768593; border-radius: 7px; font-size: 12px; font-weight: 500}
 .primary-nav a:hover {background: var(--surface-muted)}
@@ -122,7 +122,6 @@
 .breadcrumb a strong {color: var(--text); font-weight: 500; transition: color .15s}
 .breadcrumb a:hover strong {color: var(--accent)}
 /* 顶栏模式开关：开着时所有实例铺成一行分页，关着时仍收在下拉里。 */
-.topbar-mode-toggle {flex-shrink: 0}
 .breadcrumb.with-tabs {min-width: 0; flex: 1}
 @media (max-width: 950px) {
   .instance-tab-name {max-width: 5rem}
@@ -172,7 +171,7 @@ main {padding: 32px 32px 16px; flex: 1}
 
 .login-art > span {font-size: 15px; letter-spacing: 4px; color: #bdd2d8}
 .login-card {width: 360px; max-width: calc(100% - 40px); margin: auto; display: flex; flex-direction: column; gap: 18px}
-.login-card .brand-mark {background: var(--navy); border-radius: 10px; margin-bottom: 20px; width: 48px; height: 48px}
+.login-card .brand-mark {margin-bottom: 20px; width: 48px; height: 48px}
 .login-card h1 {font-size: 27px}
 .login-card p {margin-bottom: 20px}
 .login-card small {color: var(--muted); line-height: 1.8}
@@ -188,3 +187,47 @@ main {padding: 32px 32px 16px; flex: 1}
 /* 顶栏与右栏的公共容器：默认不参与布局，谁都不受影响；
    新版玻璃主题在自己的样式里把它接管成真正的一级层容器。 */
 .shell-frame {display: contents}
+
+
+/* 侧栏宽度直接拖拽调整把手 */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -5px;
+  width: 10px;
+  cursor: col-resize;
+  z-index: 35;
+  touch-action: none;
+  user-select: none;
+}
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  background: transparent;
+  transition: background-color .15s cubic-bezier(.2, 0, 0, 1);
+  pointer-events: none;
+}
+.sidebar-resize-handle:hover::after,
+.sidebar-resize-handle.is-dragging::after,
+.sidebar-resize-handle:focus-visible::after {
+  background: var(--accent);
+}
+.sidebar-resize-handle.is-dragging::after {
+  width: 3px;
+  left: 3.5px;
+}
+body.is-resizing-sidebar,
+body.is-resizing-sidebar * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+@media (max-width: 950px) {
+  .sidebar-resize-handle {
+    display: none !important;
+  }
+}

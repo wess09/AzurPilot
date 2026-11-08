@@ -240,7 +240,7 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
         elif chapter in ['ex', 'ex_ex']:
             ASIDE_SWITCH_20241219.set('ex', main=self)
         else:
-            logger.warning(f'未知的战役旁白: {chapter}')
+            logger.warning(f'未知的战役侧边栏: {chapter}')
 
     def campaign_ensure_aside_20260326(self, chapter):
         """
@@ -254,7 +254,7 @@ class CampaignUI(MapOperation, CampaignEvent, CampaignOcr):
         elif chapter in ['sp', 'ex_sp']:
             ASIDE_SWITCH_20260326.set('sp', main=self)
         else:
-            logger.warning(f'未知的战役旁白: {chapter}')
+            logger.warning(f'未知的战役侧边栏: {chapter}')
 
     def campaign_get_mode_names(self, name):
         """

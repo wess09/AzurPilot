@@ -75,7 +75,22 @@ class StrategicSearchHandler(MapEventHandler):
             bool: 配置是否成功，若因未知原因弹窗意外关闭则返回 False。
         """
         logger.info('[大世界-策略] 设置策略搜索选项')
+        is_jp = self.config.SERVER == 'jp'
+        if is_jp:
+            # 日服选项文本换行：先确保区域模式与商人选项在同一个可见范围。
+            STRATEGIC_SEARCH_SCROLL.drag_threshold = 0.01
+            STRATEGIC_SEARCH_SCROLL.set(0.17, main=self, random_range=(-0.01, 0.01), distance_check=False)
+            if not self._strategy_search_scroll_appear():
+                return False
+
         for _ in self.loop():
+            if is_jp:
+                if not self.appear(STRATEGIC_SEARCH_MERCHANT_CHECK, offset=(20, 100)):
+                    continue
+                for button in (STRATEGIC_SEARCH_ZONEMODE_REPEAT, STRATEGIC_SEARCH_ZONEMODE_RANDOM,
+                               STRATEGIC_SEARCH_MERCHANT_STOP, STRATEGIC_SEARCH_MERCHANT_CONTINUE):
+                    button.load_offset(STRATEGIC_SEARCH_MERCHANT_CHECK)
+
             if self._strategy_option_selected(STRATEGIC_SEARCH_ZONEMODE_REPEAT) \
                     and self._strategy_option_selected(STRATEGIC_SEARCH_MERCHANT_STOP):
                 logger.attr('区域模式', '重复')

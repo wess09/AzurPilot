@@ -1,5 +1,5 @@
 /**
- * @fileoverview 首页系统公告卡片组件。
+ * @fileoverview 系统公告卡片组件。
  */
 
 import { Link } from 'react-router-dom'

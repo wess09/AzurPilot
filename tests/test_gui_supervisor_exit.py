@@ -48,10 +48,12 @@ class TestGuiStartup(unittest.TestCase):
                 'module.persistence.database.initialize'
             ), patch('gui.set_start_method'), patch(
                 'gui.State', deploy_config=SimpleNamespace(EnableReload=reload)
-            ), patch('gui.run_webui_supervisor', return_value=0) as supervisor, patch('gui.func') as service:
+            ), patch('gui.run_webui_supervisor', return_value=0) as supervisor, patch('gui.func') as service, patch.object(
+                sys, 'argv', ['gui.py', '-q']
+            ):
                 self.assertEqual(main(), 0)
                 if reload:
-                    supervisor.assert_called_once_with()
+                    supervisor.assert_called_once_with(watch_sources=False)
                     service.assert_not_called()
                 else:
                     supervisor.assert_not_called()

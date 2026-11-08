@@ -450,9 +450,9 @@ class ProductionPlanCalculator:
                 self.recipe_available.setdefault(recipe_id, True)
             else:
                 self.recipe_available.setdefault(recipe_id, False)
-        for recipe_id in self.available_slot_recipes:
-            if recipe_id >= 9900000:
-                self.recipe_available[recipe_id] = True
+        # AzurPilot: ALAS 在这里把岗位上列出的季节配方一律设为可用。岗位的 activity_formula
+        # 只列出数据里最新一季的配方，季节未开始（如台服仍在上一季）或手动选了其他季节时
+        # 也会被当成可用。季节配方只看所选季节的活动（type 5004）是否包含，见上方循环。
 
         self.mining_additional = technology_status.get(220401, False)
         self.wood_additional = technology_status.get(210401, False)

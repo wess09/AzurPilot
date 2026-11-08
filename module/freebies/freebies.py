@@ -33,18 +33,18 @@ class Freebies(ModuleBase):
         完成后将任务延迟至次日服务器刷新。
         """
         if self.config.BattlePass_Collect:
-            logger.hr('战斗通行证', level=1)
+            logger.hr('大月卡', level=1)
             BattlePass(self.config, self.device).run()
 
         if self.config.DataKey_Collect:
-            logger.hr('数据钥匙', level=1)
+            logger.hr('档案秘钥', level=1)
             DataKey(self.config, self.device).run()
 
         logger.hr('邮件', level=1)
         MailWhite(self.config, self.device).run()
 
         if self.config.SupplyPack_Collect:
-            logger.hr('补给包', level=1)
+            logger.hr('优惠礼包', level=1)
             SupplyPack_250814(self.config, self.device).run()
 
         self.config.task_delay(server_update=True)

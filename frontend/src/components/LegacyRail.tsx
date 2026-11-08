@@ -3,7 +3,6 @@
  */
 
 import type { ReactNode } from 'react'
-import { Clock3 } from 'lucide-react'
 import type { Overview } from '../api/types'
 import { useApp } from '../app/context'
 import { SchedulerWidget } from './SchedulerWidget'
@@ -20,10 +19,6 @@ export function LegacyRail({instance, data, onData, children}: {instance: string
     <SchedulerWidget instance={instance} data={data} onData={onData}/>
     {children}
     <section className="rail-schedule" aria-label={ui('scheduler.plan')}>
-      <div className="rail-section-heading">
-        <div><Clock3 size={15}/><span>{ui('scheduler.plan')}</span></div>
-        <span>{data?.tasks.length ?? 0}</span>
-      </div>
       <TaskQueue instance={instance} data={data}/>
     </section>
   </div>

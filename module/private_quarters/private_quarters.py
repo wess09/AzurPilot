@@ -232,7 +232,7 @@ class PrivateQuarters(PQInteract, PQShop):
             # 获取每日剩余次数，为 0 则退出
             count = self._pq_get_daily_count(retry=3)
             if count == 0:
-                logger.info('每日亲密度次数耗尽，退出子任务')
+                logger.info('每日互动次数耗尽，退出子任务')
                 return
 
             # 执行互动

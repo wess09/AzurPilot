@@ -60,7 +60,7 @@ class OpsiDaily(OSMap):
 
         for port in ports:
             port = self.name_to_zone(port)
-            logger.hr(f'大世界-大世界每日 港口每日, port={port}', level=2)
+            logger.hr(f'大世界-大世界每日 港口任务, port={port}', level=2)
             self.globe_goto(port)
 
             self.run_auto_search()
@@ -306,10 +306,10 @@ class OpsiDaily(OSMap):
             self.logger_use()
 
         if self.config.OpsiDaily_SkipSirenResearchMission and self.config.SERVER not in ['cn']:
-            logger.warning(f'[大世界-日常] 跳过塞壬研究任务不支持 {self.config.SERVER} 服务器')
+            logger.warning(f'[大世界-日常] 「不做塞壬研究任务」选项不支持 {self.config.SERVER} 服务器')
             self.config.OpsiDaily_SkipSirenResearchMission = False
         if self.config.OpsiDaily_KeepMissionZone and self.config.SERVER not in ['cn']:
-            logger.warning(f'[大世界-日常] 保留任务区域不支持 {self.config.SERVER} 服务器')
+            logger.warning(f'[大世界-日常] 「保留海域不清理」选项不支持 {self.config.SERVER} 服务器')
             self.config.OpsiDaily_KeepMissionZone = False
 
         skip_siren_mission = self.config.OpsiDaily_SkipSirenResearchMission

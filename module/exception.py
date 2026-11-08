@@ -32,6 +32,8 @@
     - MindCalculatorScanError: 船坞扫描识别或定位不确定，结束工具任务但不重启模拟器
     - AutoSearchSetError: 自动搜索设置失败
     - HardNotSatisfied: 困难模式前置条件不满足
+    - OSExploreError: 大世界探索错误
+    - OSZoneLockedError: 大世界海域未解锁错误（未完成开荒，请使用每月开荒）
 
 并发保护（非错误，调用方应放弃本轮并等待下一轮）：
     - EmulatorOpBusy: 已有模拟器启停操作正在进行
@@ -212,4 +214,14 @@ class EmulatorOpBusy(Exception):
 
     调用方收到此异常时应放弃本轮操作，等待下一轮调度，而不是立即重试。
     """
+    pass
+
+
+class OSExploreError(Exception):
+    """大世界探索错误。"""
+    pass
+
+
+class OSZoneLockedError(OSExploreError):
+    """大世界海域未解锁错误（未完成开荒，请使用每月开荒）。"""
     pass

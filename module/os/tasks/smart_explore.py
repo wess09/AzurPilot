@@ -3,7 +3,7 @@
 from datetime import timedelta
 
 from module.config.utils import get_os_next_reset, get_server_next_update
-from module.exception import GameStuckError, RequestHumanTakeover
+from module.exception import GameStuckError
 from module.logger import logger
 
 
@@ -18,8 +18,18 @@ SMART_EXPLORE_ROUTES = (
 SMART_EXPLORE_ZONES = tuple(zone for route in SMART_EXPLORE_ROUTES for zone in route if zone >= 11)
 SMART_EXPLORE_CONFIG = 'OpsiScheduling.OpsiSmartExplore.'
 ACTION_POINT_PURCHASE_CONFIG = 'OpsiScheduling.OpsiScheduling.BuyActionPoint'
-SMART_EXPLORE_DELAY_TASKS = ('OpsiDaily', 'OpsiPreventActionPointOverflow', 'OpsiShop')
 SMART_EXPLORE_TASK_MIN_ZONES = 30
+SMART_EXPLORE_DELAY_TASKS = {
+    'OpsiDaily': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiPreventActionPointOverflow': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiShop': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiAbyssal': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiObscure': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiStronghold': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiMonthBoss': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiMeowfficerFarming': SMART_EXPLORE_TASK_MIN_ZONES,
+    'OpsiArchive': len(SMART_EXPLORE_ZONES),
+}
 
 
 def monthly_explore_complete(config):
@@ -41,14 +51,14 @@ def smart_explore_enabled(config):
         ))
 
 
-def _smart_explore_pending(config):
-    """本月已压制至少 30 张普通海域后，不再让这三个任务等待开荒。"""
+def _smart_explore_pending(config, min_zones=SMART_EXPLORE_TASK_MIN_ZONES):
+    """本月压制普通海域达到任务门槛后，不再等待开荒。"""
     if not smart_explore_enabled(config) or monthly_explore_complete(config):
         return False
     reset = get_os_next_reset().isoformat()
     count = config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones')
     if (isinstance(count, dict) and count.get('reset') == reset
-            and type(count.get('count')) is int and SMART_EXPLORE_TASK_MIN_ZONES <= count['count'] <= 72):
+            and type(count.get('count')) is int and min_zones <= count['count'] <= 72):
         return False
     state = config.cross_get('OpsiScheduling.Storage.Storage.SmartExplore')
     if not isinstance(state, dict) or state.get('reset') != reset:
@@ -62,7 +72,7 @@ def _smart_explore_pending(config):
         return True
     completed = sum(sum(zone >= 11 for zone in route[:index])
                     for route, index in zip(SMART_EXPLORE_ROUTES, indexes))
-    return completed < SMART_EXPLORE_TASK_MIN_ZONES
+    return completed < min_zones
 
 
 def task_zone_locked_until(config, task):
@@ -82,7 +92,7 @@ def delay_task_for_locked_zone(config):
     with config.multi_set():
         config.cross_set(f'{task}.Storage.Storage.ZoneLockedUntil', until.isoformat())
         config.task_delay(target=until)
-    logger.warning(f'{task} 遇到周边海域未压制，延期到 {until}')
+    logger.warning(f'任务 `{task}` 遇到海域未解锁: 未完成开荒，请使用每月开荒，延期到 {until}')
     config.task_stop()
 
 
@@ -95,11 +105,12 @@ def delay_task_for_smart_explore(config):
             config.task_delay(target=until)
             config.task_stop()
             return True
-    if task not in SMART_EXPLORE_DELAY_TASKS or not _smart_explore_pending(config):
+    min_zones = SMART_EXPLORE_DELAY_TASKS.get(task)
+    if min_zones is None or not _smart_explore_pending(config, min_zones):
         return False
     until = get_server_next_update('00:00')
     config.cross_set(f'{task}.Storage.Storage.SmartExploreDelay', until.isoformat())
-    logger.info(f'{task} 等待压制海域达到 30 个，当天临时排在智能调度之后，{until} 恢复原优先级')
+    logger.info(f'{task} 等待压制海域达到 {min_zones} 个，当天临时排在智能调度之后，{until} 恢复原优先级')
     config.task_stop()
     return True
 
@@ -112,8 +123,9 @@ def apply_smart_explore_task_delay(config, pending, waiting):
         return pending, waiting
     until = get_server_next_update('00:00')
     delayed = [task for task in candidates
-               if config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay') == until.isoformat()]
-    if not delayed or not _smart_explore_pending(config):
+               if config.cross_get(f'{task.command}.Storage.Storage.SmartExploreDelay') == until.isoformat()
+               and _smart_explore_pending(config, SMART_EXPLORE_DELAY_TASKS[task.command])]
+    if not delayed:
         return pending, waiting
 
     for index, task in enumerate(pending):
@@ -201,13 +213,11 @@ class SmartExploreMixin:
             out: IN_GLOBE
         """
         from module.os.globe_operation import OSExploreError
-        from module.os_handler.action_point import ActionPointLimit
 
         route = SMART_EXPLORE_ROUTES[round_index]
         zone = route[state['next'][round_index]]
-        if state['attempts'] >= 3:
-            raise RequestHumanTakeover(f'智能开荒海域 {zone} 连续三次未完成，请检查解锁条件和事件')
-        state = dict(state, attempts=state['attempts'] + 1)
+        # 旧版中断次数会跨重启锁住路线；续跑保留断点，异常仍交给原有恢复流程。
+        state = dict(state, attempts=0)
         self._save_smart_explore_state(state)
         self._close_scheduling_action_point()
         self.handle_first_auto_search(run=False)
@@ -230,10 +240,6 @@ class SmartExploreMixin:
                         self.ensure_no_zone_pinned()
         except OSExploreError as exc:
             raise GameStuckError(f'智能开荒海域 {zone} 未解锁，保留路线断点') from exc
-        except ActionPointLimit:
-            # 资源不足不是地图识别失败，不能耗尽三次恢复机会。
-            self._save_smart_explore_state(dict(state, attempts=state['attempts'] - 1))
-            raise
         state['next'][round_index] += 1
         self._save_smart_explore_state(dict(state, attempts=0, return_to_port=True))
 

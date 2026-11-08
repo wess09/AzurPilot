@@ -713,6 +713,7 @@ class AzurLaneAutoScript:
     def _watchdog_recover(self, elapsed, reason='task_timeout', task_name=''):
         """运行监护恢复动作：强制杀死模拟器进程以中断任务。
 
+        异常处理关闭时，任务超时只停止当前 worker，保留模拟器现场。
         任务陷入逻辑死循环（如 story_skip 不断点击但剧情无法跳过），
         日志仍在更新但任务无法自然退出。杀死模拟器进程会同时杀死
         atx-agent，使主线程的下次 I/O 调用因连接断开而失败并抛出异常，
@@ -728,6 +729,15 @@ class AzurLaneAutoScript:
             reason (str): 触发原因，当前仅支持 'task_timeout'。
             task_name (str): 当前任务名。
         """
+        if reason != 'force_scheduled_restart' and not self.config.Error_HandleError:
+            logger.critical(
+                f'[AzurPilot][监护] 任务 `{task_name}` 运行超时，异常处理已关闭，'
+                f'停止当前 AzurPilot 进程，保留模拟器现场'
+            )
+            # 监护在线程中执行，sys.exit() 无法结束阻塞中的任务主线程。
+            os._exit(1)
+            return
+
         if reason == 'task_timeout':
             try:
                 timeout_min = int(self.config.Error_WatchdogTaskTimeout)
@@ -1077,6 +1087,25 @@ class AzurLaneAutoScript:
         if ChannelFloatHandler(self.config, self.device).run():
             self._channel_float_done = True
 
+    def _check_error_recovery(self, command, error):
+        """异常处理关闭时保留错误现场并退出，禁止进入自动恢复分支。"""
+        if self.config.Error_HandleError:
+            return
+
+        logger.exception_context(
+            title='异常处理已关闭，停止运行', exc=error,
+            impact='当前 AzurPilot 进程将退出，不会自动重启游戏或模拟器。',
+            action='查看错误日志和截图，手动处理后重新启动任务；如需自动恢复，请启用异常处理。',
+            level=50,
+        )
+        try:
+            self.save_error_log()
+        except Exception as save_error:
+            logger.warning(f'[AzurPilot] 保存错误日志失败: {save_error}')
+        if command is not None:
+            self._check_sensitive_exit(command, error)
+        exit(1)
+
     def run(self, command, skip_first_screenshot=False):
         """任务调用边界同时隔离资源归因，恢复和清油调用各自拥有独立记录。"""
         from module.statistics.resource_flow import task_session
@@ -1095,6 +1124,7 @@ class AzurLaneAutoScript:
         执行指定任务命令，捕获异常并决定后续行为。
 
         根据异常类型自动判断：重启游戏、重启模拟器、请求人工介入或直接终止。
+        关闭 Error.HandleError 时，需要自动恢复的错误改为保存现场并退出。
         严格重启模式下，敏感任务出错时直接停止，不做任何重启。
 
         普通任务执行前会进行一次截图（除非 skip_first_screenshot=True）。Restart 在启动游戏前不截图，
@@ -1113,6 +1143,7 @@ class AzurLaneAutoScript:
         from module.runtime.preview import set_task
         command = inflection.underscore(command)
         self._storage_statistics_failed = False
+        self._os_zone_locked_failed = False
         set_task(inflection.camelize(command))
         # 会话按任务隔离；换船入口恢复持久扫描计时，不因任务重开而重扫。
         rotation_context = self.__dict__.setdefault('_fleet_rotation_context', {})
@@ -1154,6 +1185,11 @@ class AzurLaneAutoScript:
             logger.error(str(e))
             self._storage_statistics_failed = True
             return False
+        except OSZoneLockedError:
+            logger.warning(f'[AzurPilot] 任务 `{command}` 遇到海域未解锁: 未完成开荒，请使用每月开荒')
+            self._os_zone_locked_failed = True
+            self.config.task_delay(server_update=True)
+            return False
         except (MindCalculatorScanError, FleetManagementError) as e:
             logger.error_context(
                 title=('舰队管理未完成' if isinstance(e, FleetManagementError) else
@@ -1173,6 +1209,7 @@ class AzurLaneAutoScript:
         except TaskEnd:
             return True
         except GameNotRunningError as e:
+            self._check_error_recovery(command, e)
             # 游戏未运行先重启游戏；反复退出说明仅重启游戏未能恢复环境。
             logger.error_context(
                 title='游戏进程未运行',
@@ -1206,6 +1243,7 @@ class AzurLaneAutoScript:
             self.config.task_call('Restart')
             return 'recoverable'
         except (GameStuckError, GameTooManyClickError) as e:
+            self._check_error_recovery(command, e)
             # 游戏卡住或点击过多，尝试重启游戏；连续卡死则重启模拟器
             logger.error_context(
                 title='游戏状态无法推进',
@@ -1240,6 +1278,7 @@ class AzurLaneAutoScript:
             self.device.sleep(10)
             return 'recoverable'
         except GameBugError as e:
+            self._check_error_recovery(command, e)
             # 游戏客户端 bug，重启游戏修复
             logger.error_context(
                 title='游戏客户端发生异常',
@@ -1262,6 +1301,7 @@ class AzurLaneAutoScript:
             self.device.sleep(10)
             return 'recoverable'
         except GamePageUnknownError as e:
+            self._check_error_recovery(command, e)
             logger.info('[AzurPilot] 游戏服务器可能正在维护或网络连接中断，正在检查服务器状态')
             self.checker.check_now()
             if self.checker.is_available():
@@ -1288,6 +1328,7 @@ class AzurLaneAutoScript:
                 self.checker.wait_until_available()
                 return False
         except ScriptError as e:
+            self._check_error_recovery(command, e)
             # 代码 bug，先重试3次再退出
             self.script_error_count += 1
             logger.exception_context(
@@ -1329,6 +1370,7 @@ class AzurLaneAutoScript:
             self.config.task_call('Restart')
             return 'recoverable'
         except EmulatorNotRunningError as e:
+            self._check_error_recovery(command, e)
             # 模拟器离线或死机，尝试自动重启，永不退出
             logger.error_context(
                 title='模拟器连接中断',
@@ -1350,6 +1392,7 @@ class AzurLaneAutoScript:
             )
             return 'recoverable'
         except RequestHumanTakeover as e:
+            self._check_error_recovery(command, e)
             # 几乎所有报错都应通过重启模拟器/游戏解决，不再直接终止
             logger.error_context(
                 title='任务需要人工介入（将尝试自动恢复）',
@@ -1372,6 +1415,7 @@ class AzurLaneAutoScript:
             )
             return 'recoverable'
         except AutoSearchSetError as e:
+            self._check_error_recovery(command, e)
             # 自动搜索设置失败，尝试重启游戏恢复
             logger.error_context(
                 title='自动搜索设置失败',
@@ -1392,6 +1436,7 @@ class AzurLaneAutoScript:
             )
             return 'recoverable'
         except Exception as e:
+            self._check_error_recovery(command, e)
             # 未预期异常，先重启游戏，连续多次失败才重启模拟器
             logger.exception_context(
                 title=f'任务执行发生未处理异常（{command}）', exc=e,
@@ -1490,6 +1535,14 @@ class AzurLaneAutoScript:
                 f'（{method}），备份目录 log/error/{self.config_name}/bak')
         return handled
 
+    def _log_source_watermark(self, cached=False):
+        """来源标记始终启用；导入或线程启动失败均不影响原流程。"""
+        try:
+            from module.base.log_watermark import start_log_watermark
+            start_log_watermark(cached=cached)
+        except Exception:
+            logger.debug('[来源水印] 无法启动，已跳过')
+
     def save_error_log(self):
         """
         保存错误现场：最近截图和日志文件到 ./log/error/<config-name>/<timestamp>/。
@@ -1522,6 +1575,7 @@ class AzurLaneAutoScript:
             config_folder = pathlib.Path(f"./log/error/{self.config_name}")
             folder = config_folder.joinpath(str(int(time.time() * 1000)))
             folder.mkdir(parents=True, exist_ok=True)
+            self._log_source_watermark(cached=True)
             logger.warning(f'[AzurPilot] 保存错误日志: {folder}')
 
             try:
@@ -2510,6 +2564,7 @@ class AzurLaneAutoScript:
 
         # 调度器本身需要先加载配置；日报关闭时不创建任何附加线程或服务。
         config = self.config
+        self._log_source_watermark()
         if config.DailySummary_Enable:
             self._start_daily_summary_scheduler(config)
 
@@ -2680,9 +2735,15 @@ class AzurLaneAutoScript:
                     del_cached_property(self, 'config')
                     continue
 
+                # 海域未解锁已由任务延期到次日服务器更新；未完成开荒无需重启模拟器。
+                if success is False and getattr(self, '_os_zone_locked_failed', False):
+                    logger.info('[AzurPilot] 任务因海域未解锁已延期，继续其他任务')
+                    del_cached_property(self, 'config')
+                    continue
+
                 # 检查失败
                 # 任务失败次数统计：可恢复错误 (success == 'recoverable') 不计入失败次数。
-                # 非敏感任务永不退出，连续失败时强制重启模拟器+游戏恢复；
+                # 开启异常处理时，非敏感任务连续失败后重启模拟器+游戏恢复；
                 # 敏感任务（StrictRestart=True 且 Sensitive=True）失败后立即退出。
                 failed = deep_get(self.failure_record, keys=task, default=0)
                 if success == True:
@@ -2716,6 +2777,10 @@ class AzurLaneAutoScript:
                         content=f"因为 {task} 任务失败次数过多喵！",
                     )
                     exit(1)
+
+                if success is not True and not self.config.Error_HandleError:
+                    self._stop_daily_summary_scheduler()
+                    return False
 
                 # 只在任务需要再次重启模拟器时检查上限，给上一次重启后的任务重试机会。
                 # 游戏未运行、设备离线以及仅重启游戏都不应触发业务任务冷却。
@@ -2769,10 +2834,11 @@ class AzurLaneAutoScript:
                     return False
 
             # 捕获全局异常并执行重启
-            # 说明：调度器永不主动退出，所有未处理异常均通过指数退避重试恢复，
+            # 开启异常处理时，未处理异常通过指数退避重试恢复；关闭时保存现场并退出。
             # 唯一例外是 ScriptError（开发者代码错误），其在 run() 中已限制连续 3 次后退出。
             # 敏感任务失败由 _check_sensitive_exit 处理，仍会主动退出。
             except Exception as e:
+                self._check_error_recovery(task, e)
                 consecutive_global_failures += 1
                 self.is_first_task = False
                 import traceback

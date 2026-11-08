@@ -295,7 +295,7 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
             _fresh_total, _fresh_current = fresh_ap
             logger.info(
                 f'[大世界-耄耋相接] 复用刚读到的行动力'
-                f'(当前={_fresh_current}, 总={_fresh_total})，跳过行动点弹窗'
+                f'(当前={_fresh_current}, 总={_fresh_total})，跳过行动力弹窗'
             )
         else:
             self.action_point_set(cost=120, keep_current_ap=True, check_rest_ap=True, routine=True)

@@ -425,7 +425,7 @@ class AzurStats:
                 amounts = [row[name] for name in ('coins', 'plates', 'abyssal', 'obscure')]
                 out_data[hazard - 1, 3:] = np.array(amounts) / rounds if rounds > 0 else amounts
             AzurStats._write_meowofficer_farming(out_data, instance, connection=connection)
-            logger.info(f'[Statistics] 本地统计数据更新成功: {instance or "全局共享"}')
+            logger.info(f'[本地统计] 本地统计数据更新成功: {instance or "全局共享"}')
             return out_data
 
     @staticmethod
@@ -521,7 +521,7 @@ class AzurStats:
                 except (TypeError, ValueError):
                     pass
         except Exception:
-            logger.warning('[Statistics] 查询耄耋相接掉落总数失败', exc_info=True)
+            logger.warning('[本地统计] 查询耄耋相接掉落总数失败', exc_info=True)
         return totals
 
     @staticmethod
@@ -550,7 +550,7 @@ class AzurStats:
                     params,
                 ).fetchall()
         except Exception:
-            logger.warning('[Statistics] 查询耄耋相接掉落月份列表失败', exc_info=True)
+            logger.warning('[本地统计] 查询耄耋相接掉落月份列表失败', exc_info=True)
             return []
         months = []
         for (ym,) in rows:
@@ -651,17 +651,17 @@ class AzurStats:
             rows = self._parse_local_opsi_items(
                 image, imgid, genre, combat_count, filename=filename, instance=self.config.config_name)
             if not rows:
-                logger.warning('本地碧蓝统计解析跳过, no opsi item rows extracted')
+                logger.warning('AzurStats 本地统计解析跳过, no opsi item rows extracted')
                 return False
             inserted = self._insert_local_opsi_items(rows)
             # 短猫的收益汇总只认自己那一类记录，其他大世界任务入库时不重算，
             # 免得每来一条要塞/每日记录都把整表重跑一遍。
             if genre == 'opsi_meowfficer_farming':
                 self.get_meowofficer_farming(instance=self.config.config_name)
-            logger.info(f'本地碧蓝统计解析成功，记录 {inserted} 条')
+            logger.info(f'AzurStats 本地统计解析成功，记录 {inserted} 条')
             return True
         except Exception as e:
-            logger.warning(f'本地碧蓝统计解析失败, {type(e).__name__}')
+            logger.warning(f'AzurStats 本地统计解析失败, {type(e).__name__}')
             return False
 
     def _save(self, image, genre, filename):
@@ -724,7 +724,7 @@ class AzurStats:
             save_thread.start()
 
         if local:
-            logger.info(f'本地碧蓝统计解析开始，类型={genre}')
+            logger.info(f'AzurStats 本地统计解析开始，类型={genre}')
             with self._record_lock:
                 self._record_local(image, genre, filename, combat_count)
 

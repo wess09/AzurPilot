@@ -132,7 +132,7 @@ class Benchmark(DaemonBase, CampaignUI):
                 func(*args, **kwargs)
             except RequestHumanTakeover:
                 logger.critical('[Daemon] 错误 请求人类接管')
-                logger.warning(f'[Daemon] 基准测试失败，函数: {func.__name__}')
+                logger.warning(f'[守护-基准测试] 基准测试失败，函数: {func.__name__}')
                 return 'Failed'
             except Exception as e:
                 if quiet:
@@ -142,7 +142,7 @@ class Benchmark(DaemonBase, CampaignUI):
                     )
                 else:
                     logger.exception(e)
-                logger.warning(f'[Daemon] 基准测试失败，函数: {func.__name__}')
+                logger.warning(f'[守护-基准测试] 基准测试失败，函数: {func.__name__}')
                 return 'Failed'
 
             cost = time.perf_counter() - start
@@ -322,8 +322,8 @@ class Benchmark(DaemonBase, CampaignUI):
             tuple: (最快截图方法, 最快点击方法)。
         """
         logger.hr('基准测试', level=1)
-        logger.info(f'测试截图方式: {screenshot}')
-        logger.info(f'测试点击方式: {click}')
+        logger.info(f'测试截图方案: {screenshot}')
+        logger.info(f'测试控制方案: {click}')
 
         screenshot_result = []
         for method in screenshot:
@@ -352,7 +352,7 @@ class Benchmark(DaemonBase, CampaignUI):
         if screenshot_result:
             self.show(test='Screenshot', data=screenshot_result, evaluate_func=self.evaluate_screenshot)
             fastest = sorted(screenshot_result, key=lambda item: compare(item))[0]
-            logger.info(f'推荐截图方式: {fastest[0]} ({float2str(fastest[1])})')
+            logger.info(f'推荐截图方案: {fastest[0]} ({float2str(fastest[1])})')
             fastest_screenshot = fastest[0]
         if click_result:
             self.show(test='Control', data=click_result, evaluate_func=self.evaluate_click)
@@ -361,7 +361,7 @@ class Benchmark(DaemonBase, CampaignUI):
             # nemu_ipc 触控有兼容性风险，不作推荐，同为最快时也让位 MaaTouch
             if 'MaaTouch' in click and fastest[0] in ('minitouch', 'nemu_ipc'):
                 fastest[0] = 'MaaTouch'
-            logger.info(f'推荐控制方式: {fastest[0]} ({float2str(fastest[1])})')
+            logger.info(f'推荐控制方案: {fastest[0]} ({float2str(fastest[1])})')
             fastest_click = fastest[0]
 
         return fastest_screenshot, fastest_click

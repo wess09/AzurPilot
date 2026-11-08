@@ -73,8 +73,6 @@ if server.server == 'jp':
     PRICE_OCR_250814 = Digit([], lang='cnocr', letter=(235, 235, 255), threshold=128, name='Price_ocr')
 else:
     PRICE_OCR_250814 = Digit([], letter=(255, 255, 255), threshold=128, name='Price_ocr')
-TEMPLATE_MEDAL_ICON = Template('./assets/shop/cost/Medal.png')
-TEMPLATE_MEDAL_ICON_2 = Template('./assets/shop/cost/Medal_2.png')
 TEMPLATE_MEDAL_ICON_3 = Template('./assets/shop/cost/Medal_3.png')
 
 

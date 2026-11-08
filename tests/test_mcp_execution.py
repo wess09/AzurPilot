@@ -11,14 +11,14 @@ from unittest.mock import Mock, patch
 from module.api.protocol import ApiError
 from module.mcp.device_worker import restart_adb
 from module.mcp.execution import BoundedCalls, DEVICE_TIMEOUTS, DeviceCleanupError, run_device
-from module.runtime.setting import State
 
 
-def fake_device_result(operation, instance, result_path):
-    Path(result_path).write_text(json.dumps({'text': f'{operation}:{instance}'}), encoding='utf-8')
+def fake_device_result(operation, instance, params, result_path):
+    Path(result_path).write_text(
+        json.dumps({'text': f'{operation}:{instance}', 'params': params}), encoding='utf-8')
 
 
-def fake_device_hang(operation, instance, result_path):
+def fake_device_hang(operation, instance, params, result_path):
     time.sleep(60)
 
 
@@ -90,7 +90,14 @@ class BoundedCallsTest(unittest.IsolatedAsyncioTestCase):
 class DeviceExecutionTest(unittest.TestCase):
     def test_real_spawn_returns_result_without_loading_device(self):
         with patch('module.mcp.device_worker.execute', fake_device_result):
-            self.assertEqual({'text': 'get_screenshot:demo'}, run_device('get_screenshot', 'demo'))
+            self.assertEqual({'text': 'get_screenshot:demo', 'params': {}},
+                             run_device('get_screenshot', 'demo'))
+
+    def test_control_parameters_are_forwarded_to_worker(self):
+        params = {'x': 320, 'y': 180, 'lease_id': 'a' * 32}
+        with patch('module.mcp.device_worker.execute', fake_device_result):
+            self.assertEqual({'text': 'click:demo', 'params': params},
+                             run_device('click', 'demo', params))
 
     def test_real_spawn_timeout_reaps_child(self):
         started = time.monotonic()
@@ -128,14 +135,19 @@ class DeviceExecutionTest(unittest.TestCase):
         process.close.assert_not_called()
 
     def test_adb_commands_have_timeout_and_failures_propagate(self):
-        with patch.object(State, '_deploy_config_', Mock(AdbExecutable='adb'), create=True), \
-                patch('module.mcp.device_worker.os.path.exists', return_value=True), \
+        with patch('module.mcp.device_worker.adb_executable', return_value='adb'), \
+                patch('module.mcp.device_worker.adb_serials', return_value=['127.0.0.1:16384']), \
                 patch('module.mcp.device_worker.subprocess.run') as run:
-            restart_adb()
-            self.assertEqual([['adb', 'kill-server'], ['adb', 'start-server']], [call.args[0] for call in run.call_args_list])
+            run.return_value = Mock(returncode=0, stdout='connected\nList of devices attached\n'
+                                                           '127.0.0.1:16384\tdevice\n')
+            restarted = restart_adb()
+            self.assertEqual([['adb', 'kill-server'], ['adb', 'start-server'],
+                              ['adb', 'connect', '127.0.0.1:16384'], ['adb', 'devices']],
+                             [call.args[0] for call in run.call_args_list])
             for call in run.call_args_list:
-                self.assertTrue(call.kwargs['check'])
                 self.assertEqual(20, call.kwargs['timeout'])
+            self.assertEqual(['127.0.0.1:16384'], restarted['reconnected'])
+            self.assertEqual(['127.0.0.1:16384'], restarted['devices'])
             run.reset_mock()
             run.side_effect = TimeoutError('模拟超时')
             with self.assertRaises(TimeoutError):

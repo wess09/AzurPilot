@@ -299,21 +299,21 @@ class AmountOcr(Digit):
             result_str = self.cnocr.atomic_ocr_for_single_lines(images_untrimmed, self.alphabet)[0]
             retry_amount = self.after_process(result_str)
             if retry_amount > 0:
-                logger.info(f'{item_name} amount 读数为 0，未裁剪重试后修正为 {retry_amount}')
+                logger.info(f'{item_name} 数量读数为 0，未裁剪重试后修正为 {retry_amount}')
                 amount = retry_amount
 
         if amount <= max_val:
             return amount
 
         for retry in range(self.MAX_RETRY):
-            logger.warning(f'{item_name} amount {amount} 超过最大值 {max_val}, retry {retry + 1}/{self.MAX_RETRY}')
+            logger.warning(f'{item_name} 数量 {amount} 超过最大值 {max_val}，第 {retry + 1}/{self.MAX_RETRY} 次重试')
             if alt_images is not None:
                 result_str = self.cnocr.atomic_ocr_for_single_lines(alt_images, self.alphabet)[0]
             else:
                 result_str = self.cnocr.atomic_ocr_for_single_lines(images, self.alphabet)[0]
             amount = self.after_process(result_str)
             if amount <= max_val:
-                logger.info(f'{item_name} amount validated after {retry + 1} retries: {amount}')
+                logger.info(f'{item_name} 数量经 {retry + 1} 次重试后校验通过: {amount}')
                 return amount
 
         if self.strict_amount_max and amount > max_val:
@@ -330,12 +330,12 @@ class AmountOcr(Digit):
                 while len(digits) > 1 and int(digits) > max_val:
                     digits = digits[1:]
                 truncated = int(digits)
-                logger.warning(f'{item_name} amount {amount} still 超过最大值 after {self.MAX_RETRY} retries, '
-                              f'dropping leading digit to {truncated}')
+                logger.warning(f'{item_name} 数量 {amount} 经 {self.MAX_RETRY} 次重试仍超过最大值，'
+                              f'丢弃首位数字后为 {truncated}')
             else:
                 truncated = int(str(amount)[:-1])
-                logger.warning(f'{item_name} amount {amount} still 超过最大值 after {self.MAX_RETRY} retries, '
-                              f'truncating to {truncated}')
+                logger.warning(f'{item_name} 数量 {amount} 经 {self.MAX_RETRY} 次重试仍超过最大值，'
+                              f'截断为 {truncated}')
             return truncated
 
         return amount

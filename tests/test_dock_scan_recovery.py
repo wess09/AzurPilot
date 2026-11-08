@@ -1,13 +1,15 @@
 """局部扫描恢复、原生重复卡片和独立滚动证据；不连接设备。"""
 from pathlib import Path
+import tempfile
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import numpy as np
 from PIL import Image
 
 from module.exception import MindCalculatorScanError
+from module.retire.assets import DOCK_EMPTY, DOCK_SEARCH_CLOSED
 from module.retire.dock_scan import DockScan
 from module.runtime.mind_recognition import ScanMerger, ScanPolicy, ScrollMotion, estimate_scroll
 from tests import test_mind_scan_stuck as regression
@@ -20,6 +22,61 @@ def repeat_frame(offset):
     pixels = np.zeros((720, 1280, 3), np.uint8)
     pixels[65:640, 85:1225] = np.tile(row, (14, 1, 1))[offset:offset + 575]
     return pixels
+
+
+class ScanStartupTests(unittest.TestCase):
+    def run_startup(self, pixels, count):
+        scanner = DockScan.__new__(DockScan)
+        scanner.config = SimpleNamespace(config_name='testpilot', Dock_MinLevel=1, Dock_MaxLevel=125)
+        scanner.device = Mock(image=pixels)
+        scanner.ui_ensure = scanner._close_search = scanner.dock_reset = Mock()
+        scanner.dock_sort_method_dsc_set = scanner._prune_scan_evidence = Mock()
+        scanner.appear = lambda button, **kwargs: (
+            DockScan.appear(scanner, button, **kwargs) if button is DOCK_EMPTY else button is DOCK_SEARCH_CLOSED)
+
+        def read_pages(*_):
+            scanner._scan_slots = [dict(name='拉菲', group_type=10117, level=100, review=False)]
+            scanner._scan_metadata = dict(reached_bottom=True, physical_count=1)
+
+        scanner._scan_pages = Mock(side_effect=read_pages)
+        with tempfile.TemporaryDirectory() as temp:
+            config_path = Path(temp) / 'testpilot.json'
+            config_path.write_text('{}', encoding='utf-8')
+            with patch('module.config.utils.filepath_config', return_value=str(config_path)), \
+                    patch('module.retire.dock_scan.server.server', 'cn'), \
+                    patch('module.retire.dock_scan.DOCK_SCROLL') as scroll, \
+                    patch('module.retire.dock_scan.FleetDatabase') as database, \
+                    patch('module.ocr.al_ocr.AlOcr'), \
+                    patch('module.retire.enhancement.OCR_DOCK_AMOUNT.ocr', return_value=(count, 10 - count, 10)):
+                scroll.appear.return_value = scroll.at_top.return_value = True
+                database.return_value.load.return_value = dict(snapshot=None, technology={})
+                scanner.run()
+                saved = database.return_value.save_scan.call_args.args[0]
+        return scanner, saved
+
+    def test_native_ship_art_cannot_finish_scan_as_an_empty_dock(self):
+        # 用户故障帧只保留空提示检测区及 20px 搜索边缘，不包含容量或账号信息。
+        pixels = np.zeros((720, 1280, 3), dtype=np.uint8)
+        pixels[327:398, 75:408] = np.array(Image.open(FIXTURES / 'dock_empty_false_positive.png').convert('RGB'))
+        self.assertTrue(DOCK_EMPTY.appear_on(pixels))
+        self.assertFalse(DOCK_EMPTY.match(pixels, offset=(20, 20)))
+        scanner, saved = self.run_startup(pixels, 1)
+        scanner._scan_pages.assert_called_once()
+        self.assertEqual(len(saved['ships']), 1)
+        self.assertEqual(saved['physical_count'], 1)
+        self.assertTrue(saved['complete'])
+
+    def test_empty_text_still_finishes_without_reading_cards(self):
+        # 用现有原生空提示模板合成正例，核对真正空船坞的原有分支。
+        pixels = np.zeros((720, 1280, 3), dtype=np.uint8)
+        x1, y1, x2, y2 = DOCK_EMPTY.area
+        with Image.open(DOCK_EMPTY.file) as template:
+            pixels[y1:y2, x1:x2] = np.array(template.convert('RGB').crop(DOCK_EMPTY.area))
+        scanner, saved = self.run_startup(pixels, 0)
+        scanner._scan_pages.assert_not_called()
+        self.assertEqual(saved['ships'], [])
+        self.assertTrue(saved['reached_bottom'])
+        self.assertTrue(saved['complete'])
 
 
 class ScrollRecoveryTests(unittest.TestCase):

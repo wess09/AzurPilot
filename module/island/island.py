@@ -6,7 +6,11 @@
 """
 from module.island.assets import *
 from module.ui.page import *
+import cv2
+import numpy as np
+
 from module.base.timer import Timer
+from module.base.utils import area_offset, crop
 from module.handler.info_handler import InfoHandler
 from module.ocr.ocr import *
 from datetime import datetime
@@ -61,6 +65,30 @@ ISLAND_SWITCH_TIMEOUT = 12
 # 种子包外观相同、只有中间图案不同，相似度需提高到 0.93 才不会误认成其他商品。
 ISLAND_SHOP_ITEM_SEARCH_OFFSET = (700, 300)
 ISLAND_SHOP_ITEM_SIMILARITY = 0.93
+# 模板匹配只比形状：同形不同色的商品（如国服鲈鱼苗与国际服鲫鱼苗）会互相误认。
+# 匹配后再逐像素比较颜色（5x5 模糊后各像素 RGB 最大差的 95 分位数），
+# 实测正确商品不超过 6，鲈鱼苗误认鲫鱼苗约 40
+ISLAND_SHOP_ITEM_COLOR_THRESHOLD = 20
+
+
+def shop_item_color_matches(button, image, threshold=ISLAND_SHOP_ITEM_COLOR_THRESHOLD):
+    """在 `button.match()` 成功后检查匹配位置的颜色是否与模板一致。
+
+    Args:
+        button (Button): 刚匹配成功的商品图标按钮（已按匹配位置偏移）。
+        image (np.ndarray): 匹配时使用的截图。
+        threshold (int): 允许的颜色差。
+
+    Returns:
+        bool: 颜色一致返回 True。
+    """
+    diff = np.subtract(button.button, button._button)[:2]
+    region = crop(image, area_offset(button.area, diff))
+    template = button.image
+    if region.shape != template.shape:
+        return False
+    delta = np.abs(cv2.blur(region, (5, 5)).astype(int) - cv2.blur(template, (5, 5)).astype(int)).max(axis=2)
+    return float(np.percentile(delta, 95)) <= threshold
 
 # 岛屿走位路线与规则解析集中在 module/island/island_walk.py；可以用岛屿计划的
 # 全局配置 `IslandPlan.IslandWalk.<路线名>` 覆盖整条规则（所有控制方式都生效，
@@ -149,6 +177,7 @@ ISLAND_ITEM_CN_NAMES = {
     # 渔场
     'bass': '鲈鱼', 'yellowfin_tuna': '黄鳍金枪鱼', 'shell': '贝壳', 'shrimp': '小河虾',
     'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参', 'koi_carp': '鲤鱼', 'mackerel': '马鲛鱼',
+    'catfish': '鲶鱼', 'common_carp': '鲫鱼', 'tuna': '金枪鱼', 'salmon': '三文鱼', 'red_sea_bream': '红鲷鱼',
     # 矿山/林场
     'Copper': '铜矿', 'Aluminium': '铝矿', 'Iron': '铁矿', 'Sulphur': '硫磺',
     'Silver': '银矿', 'Elegant': '典雅之木', 'Practical': '实用之木', 'Selected': '精选之木',
@@ -191,8 +220,11 @@ ISLAND_ITEM_CN_NAMES = {
     # 制造业（工坊）
     'file_cabinet': '文件柜', 'filter_element': '净水滤芯', 'iron_nail': '铁钉',
     'cutlery': '刀叉餐具', 'leather': '皮革', 'boot': '靴子', 'peanut_oil': '花生油',
+    'paper': '纸张', 'notebook': '记事本', 'chair_desk': '桌椅', 'ink_cartridge': '墨盒',
+    'charcoal_brush': '炭笔', 'cable': '电缆', 'cloth': '布料', 'rope': '绳索',
     'shepherd_purse': '荠菜干', 'spring_bouquet': '春季花束', 'summer_bouquet': '夏季花束',
     'autumn_bouquet': '秋季花束', 'jasmine_oil': '茉莉精油',
+    'plum_blossom_sachet': '梅花香包', 'winter_bouquet': '冬季花束',
 }
 
 class Island(SelectCharacter):
@@ -749,7 +781,7 @@ class Island(SelectCharacter):
         Returns:
             bool: 始终返回 False。
         """
-        logger.warning(f"[岛屿] select_product 失败：未能找到产品 {self._item_cn(product)} 的选择项")
+        logger.warning(f"[岛屿] select_product 失败：未能找到产物 {self._item_cn(product)} 的选择项")
         # 此时停在产品选择页，岗位详情的关闭按钮不在画面上；
         # 直接点 POST_CLOSE 会无效并导致后续岗位打开卡死，改为逐层退回岗位管理页
         self.back_to_postmanage_from_dispatch()
@@ -881,7 +913,7 @@ class Island(SelectCharacter):
                         self.back_to_postmanage_from_dispatch()
                         return False
                 else:
-                    logger.warning("[岛屿] 岗位追加派遣无可用角色")
+                    logger.warning("[岛屿] 岗位追加委派无可用角色")
                     self.back_to_postmanage_from_dispatch()
                     return False
                 continue
@@ -908,7 +940,7 @@ class Island(SelectCharacter):
                     and not self.is_post_detail_visible()
             ):
                 return True
-        logger.warning("[岛屿] 收取并追加岗位派遣超时")
+        logger.warning("[岛屿] 收取并追加岗位委派超时")
         return False
 
     def back_to_postmanage_from_dispatch(self):
@@ -939,7 +971,7 @@ class Island(SelectCharacter):
                 self.device.click(POST_CLOSE)
                 continue
 
-        logger.warning("[岛屿] 从派遣流程返回岗位管理页超时")
+        logger.warning("[岛屿] 从委派流程返回岗位管理页超时")
         return False
 
     def confirm_post_add_order(self, context="岗位派遣"):
@@ -983,7 +1015,7 @@ class Island(SelectCharacter):
                 unavailable_timer.reset()
                 if not clicked or retry_confirm_timer.reached():
                     if clicked:
-                        logger.info(f"[岛屿] {context}确认后仍停留在产品选择页，重试确认")
+                        logger.info(f"[岛屿] {context}确认后仍停留在产物选择页，重试确认")
                     self.device.click(POST_ADD_ORDER)
                     clicked = True
                     retry_confirm_timer.reset()
@@ -998,7 +1030,7 @@ class Island(SelectCharacter):
                 return False
 
         if clicked or button_seen:
-            logger.warning(f"[岛屿] {context}确认后仍停留在产品选择页")
+            logger.warning(f"[岛屿] {context}确认后仍停留在产物选择页")
             return False
 
         current, required = self.ocr_select_product_material_counter()
@@ -1623,12 +1655,13 @@ class Island(SelectCharacter):
             if self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
                 break
             # 按图标搜索整页定位商品；商品未解锁或不在列表时不会误点其他格子，超时后放弃购买
-            if self.appear_then_click(
+            if self.appear(
                     item_button,
                     offset=ISLAND_SHOP_ITEM_SEARCH_OFFSET,
                     similarity=ISLAND_SHOP_ITEM_SIMILARITY,
                     interval=1.2,
-            ):
+            ) and shop_item_color_matches(item_button, self.device.image):
+                self.device.click(item_button)
                 continue
         else:
             logger.warning(f"[岛屿] 打开购买弹窗超时（商店中未找到该商品，可能未解锁）: {item_name or item_button}")
@@ -1656,7 +1689,7 @@ class Island(SelectCharacter):
                 continue
             if not purchase_failed and confirm_timer.started() and confirm_timer.reached():
                 logger.warning(
-                    f"[岛屿] 点击购买后弹窗仍未关闭，可能岛币不足，放弃购买: {item_name or item_button}"
+                    f"[岛屿] 点击购买后弹窗仍未关闭，可能开发资金不足，放弃购买: {item_name or item_button}"
                 )
                 purchase_failed = True
             if purchase_failed:
@@ -1726,7 +1759,7 @@ class Island(SelectCharacter):
                 self.device.sleep(0.5)
                 continue
 
-        logger.warning("[岛屿] 从岗位产品选择页进入补货商店超时")
+        logger.warning("[岛屿] 从岗位产物选择页进入补货商店超时")
         return False
 
     @staticmethod
@@ -1955,10 +1988,10 @@ class Island(SelectCharacter):
 
         current = self.parse_select_product_material_current(result)
         if current is not None:
-            logger.warning(f"[岛屿] 岗位派遣页材料数量未识别到分隔符，使用兜底结果: {result}")
+            logger.warning(f"[岛屿] 岗位委派页材料数量未识别到分隔符，使用兜底结果: {result}")
             return current, str(current)
 
-        logger.warning(f"[岛屿] 岗位派遣页材料数量识别失败: {result}")
+        logger.warning(f"[岛屿] 岗位委派页材料数量识别失败: {result}")
         return 0, '0'
 
     def ocr_select_product_material(self, expected_quantity=None):
@@ -1983,7 +2016,7 @@ class Island(SelectCharacter):
         required = self.parse_select_product_material_required(result)
 
         if current is None:
-            logger.warning(f"[岛屿] 岗位派遣页材料数量识别失败: {result}")
+            logger.warning(f"[岛屿] 岗位委派页材料数量识别失败: {result}")
         return current, required
 
     def back_to_select_product_after_shop(self, back_button=ISLAND_BACK):
@@ -2014,7 +2047,7 @@ class Island(SelectCharacter):
             if self.appear_then_click(back_button, offset=(20, 20), interval=1):
                 continue
 
-        logger.warning("[岛屿] 从补货商店返回岗位产品选择页超时")
+        logger.warning("[岛屿] 从补货商店返回岗位产物选择页超时")
         return False
 
     def ensure_select_product_material(self, item_button, required_quantity, shop_check,
@@ -2073,7 +2106,7 @@ class Island(SelectCharacter):
             return MATERIAL_RESTOCKED
 
         failed_quantities[display_name] = min(buy_quantity, failed_quantity or buy_quantity)
-        logger.warning(f"[岛屿] {cn_name}补买 {buy_quantity} 个失败，返回产品选择页按现有库存处理")
+        logger.warning(f"[岛屿] {cn_name}补买 {buy_quantity} 个失败，返回产物选择页按现有库存处理")
         self.back_to_select_product_after_shop()
         return MATERIAL_RESTOCKED
 

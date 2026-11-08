@@ -219,11 +219,11 @@ flowchart TD
     F --> G["置位 dependency_sync_event + restart_event<br/>clearup() 后父监督器接管"]
 ```
 
-「先写盘再更新」是关键顺序：git reset/pull 即使报错也可能已部分改写源码，因此一旦开始更新，恢复只能走「依赖同步后重启」一条路。更新检查本身分两条路：`GitOverCdn` 开启时读 CDN 状态（`uptodate`/`behind`/`failed`，failed 回退 git）；否则 `git fetch` 后对比 `..origin/{Branch}`，本地存在上游没有的提交（开发分叉）时跳过更新。更新总开关已移除；每轮只检查云端强制更新开关，开启时发现更新立即执行，并将检查间隔缩短到 1 秒。强制开关不可访问时按关闭处理，继续正常版本检查。
+「先写盘再更新」是关键顺序：git reset/pull 即使报错也可能已部分改写源码，因此一旦开始更新，恢复只能走「依赖同步后重启」一条路。更新检查本身分两条路：`GitOverCdn` 开启时读 CDN 状态（`uptodate`/`behind`/`failed`，failed 回退 git）；否则 `git fetch` 后对比 `..origin/{Branch}`，本地存在上游没有的提交（开发分叉）时跳过更新。更新总开关已移除；每轮检查云端强制更新开关，开启时发现更新立即执行，检查周期仍遵循 `CheckUpdateInterval`（默认 5 分钟）。强制开关不可访问时按关闭处理，继续正常版本检查。
 
 ### 更新检查的调度
 
-两个任务挂在 `TaskHandler` 上：`check_update_loop` 按 `CheckUpdateInterval` 分钟周期检查（强制模式下 1 秒一查）；`schedule_update` 在每日 `AutoRestartTime` 触发检查并执行更新（用 `get_next_time` 对齐到下一个时刻）。
+两个任务挂在 `TaskHandler` 上：`check_update_loop` 按 `CheckUpdateInterval` 分钟周期检查，普通和强制模式使用相同周期；`schedule_update` 在每日 `AutoRestartTime` 触发检查并执行更新（用 `get_next_time` 对齐到下一个时刻）。
 
 ## 7. 调用关系
 

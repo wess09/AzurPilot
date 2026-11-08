@@ -13,7 +13,6 @@ import {
   ChevronDown,
   CheckCircle2,
   Clock,
-  Compass,
   FileText,
   Fuel,
   Gem,
@@ -36,6 +35,7 @@ import {
 } from 'lucide-react'
 
 import { useApp } from '../app/context'
+import { ProjectLogo } from './ProjectLogo'
 import { familyOf, usesLegacyLayout } from '../app/theme'
 import {
   clearFamilyKnob,
@@ -104,9 +104,7 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
         <aside className="sidebar mock-preview-sidebar">
           <div className="sidebar-brand">
             <div className="sidebar-brand-left">
-              <div className="brand-logo" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent)', color: 'var(--theme-on-accent, #fff)', borderRadius: '8px', width: '28px', height: '28px'}}>
-                <Compass size={18} />
-              </div>
+              <ProjectLogo className="brand-logo"/>
               <span className="brand-title" style={{fontSize: '15px', fontWeight: 650, letterSpacing: '-0.2px'}}>
                 AzurPilot <small style={{fontSize: '11px', opacity: 0.75, fontWeight: 'normal'}}>Preview</small>
               </span>
@@ -176,7 +174,7 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
           {/* 顶栏 (topbar 区域) */}
           <header className="topbar mock-preview-topbar" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
             <div className="breadcrumb" style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-              <span style={{color: 'var(--muted)'}}>{ui('home.allInstances')}</span>
+              <span style={{color: 'var(--muted)'}}>{ui('instance.all')}</span>
               <span style={{color: 'var(--border)'}}>/</span>
               <strong style={{fontWeight: 650, color: 'var(--text)'}}>alas (模拟实例)</strong>
               <span style={{display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '2px 8px', borderRadius: '999px', fontSize: '11px', background: isRunning ? 'var(--green-soft, #e8f5e9)' : 'var(--surface-muted)', color: isRunning ? 'var(--green, #2e7d32)' : 'var(--muted)', fontWeight: 600}}>

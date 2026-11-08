@@ -76,7 +76,12 @@ class BoundedCalls:
             await asyncio.gather(*(asyncio.wrap_future(item) for item in pending), return_exceptions=True)
 
 
-DEVICE_TIMEOUTS = {'get_screenshot': 45, 'restart_emulator': 150, 'restart_adb': 50}
+DEVICE_TIMEOUTS = {
+    'get_screenshot': 45, 'restart_emulator': 150, 'restart_adb': 50,
+    # 控制类动作包含一次动作前校验帧与一次动作后验证帧，留给设备初始化的余量更多。
+    'click': 75, 'swipe': 75, 'long_press': 75,
+    'input_text': 60, 'press_key': 60, 'adb_shell': 45,
+}
 
 
 class DeviceCleanupError(ApiError):
@@ -103,13 +108,14 @@ def cleanup_device(process):
     process.close()
 
 
-def run_device(operation, instance):
+def run_device(operation, instance, params=None):
     """
     在独立子进程中执行设备操作，并在超时时回收整棵进程树。
 
     Args:
-        operation: 操作指令类型，如 'get_screenshot'、'restart_emulator'、'restart_adb'。
+        operation: 操作指令类型，如 'get_screenshot'、'click'、'restart_emulator'。
         instance: 目标 Alas 实例名称。
+        params: 设备控制类操作的参数（坐标、文本、观测帧标识等）。
 
     Returns:
         dict: 工作进程返回的执行结果数据。
@@ -122,7 +128,8 @@ def run_device(operation, instance):
     with tempfile.TemporaryDirectory(prefix='azurpilot-mcp-') as directory:
         result_path = Path(directory) / 'result.json'
         process = multiprocessing.get_context('spawn').Process(
-            target=execute, args=(operation, instance, str(result_path)), name='mcp-device')
+            target=execute, args=(operation, instance, params or {}, str(result_path)),
+            name='mcp-device')
         process.start()
         try:
             process.join(DEVICE_TIMEOUTS[operation])
@@ -132,7 +139,8 @@ def run_device(operation, instance):
                 raise ApiError('DEVICE_FAILED', '设备工作进程未返回结果')
             result = json.loads(result_path.read_text(encoding='utf-8'))
             if 'error' in result:
-                raise ApiError('DEVICE_FAILED', result['error'])
+                raise ApiError(result.get('code') or 'DEVICE_FAILED', result['error'],
+                               result.get('details'))
             return result
         finally:
             if process.is_alive():

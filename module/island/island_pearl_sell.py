@@ -63,7 +63,7 @@ class IslandPearlSell(Island):
         判断交易与每日价格刷新触发条件，执行低价采购、高价售卖或价格刷新，
         并计算更新下一次执行时间。
         """
-        logger.hr("岛屿珍珠出售运行", level=1)
+        logger.hr("岛屿珍珠售卖运行", level=1)
         now = current_time().replace(microsecond=0)
 
         pearl_trade_time = self._get_next_pearl_trade_time(now=now)
@@ -126,7 +126,7 @@ class IslandPearlSell(Island):
         Returns:
             str: 采购阶段状态（PHASE_DONE / PHASE_SKIPPED / PHASE_DELAYED）。
         """
-        logger.hr("珍珠购买阶段", level=2)
+        logger.hr("珍珠采购阶段", level=2)
         self._purchase_quota_exhausted = False
 
         # 检查购买延时——如果还没到购买时间则跳过采购，让售卖正常执行
@@ -243,7 +243,7 @@ class IslandPearlSell(Island):
         Returns:
             str: 售卖阶段状态（PHASE_DONE / PHASE_SKIPPED / PHASE_DELAYED）。
         """
-        logger.hr("珍珠出售阶段", level=2)
+        logger.hr("珍珠售卖阶段", level=2)
         sell_price_limit = int(self.config.IslandPearlSell_SellPrice)
 
         if not self._enter_home_pearl_shop("assembly"):

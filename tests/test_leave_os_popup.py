@@ -154,6 +154,82 @@ class TestWaitUntilBackInOsMap(unittest.TestCase):
         self.assertEqual(fake.clicked, [LEAVE_OS_POPUP_CLOSE.name, 'port_quit'])
 
 
+class FakeFreshFrameMain(FakeAutoChangeMain):
+    """复用真实截图循环，模拟缓存地图后才出现港口或过渡画面。"""
+
+    loop = OpsiFleetAutoChange.loop
+    _ensure_return_to_os_map = OpsiFleetAutoChange._ensure_return_to_os_map
+
+    def __init__(self, frames):
+        super().__init__()
+        self.frames = iter(frames)
+        self.screenshots = []
+        self.device = SimpleNamespace(image='cached_map', screenshot=self._screenshot)
+
+    def _screenshot(self):
+        try:
+            frame = next(self.frames)
+        except StopIteration:
+            raise AssertionError('已用完截图，流程仍未确认返回地图') from None
+        self.device.image = frame
+        self.screenshots.append(frame)
+        self.popup_visible = frame == 'popup'
+        self.port_visible = frame == 'port'
+
+    def is_in_map(self):
+        return self.device.image in ('cached_map', 'map')
+
+    def is_combat_loading(self):
+        return self.device.image == 'loading'
+
+    def appear_then_click(self, button, **kwargs):
+        if button is AUTO_SEARCH_REWARD and self.device.image == 'reward':
+            self.clicked.append(AUTO_SEARCH_REWARD.name)
+            return True
+        return super().appear_then_click(button, **kwargs)
+
+
+class TestReturnToOsMapFreshScreenshot(unittest.TestCase):
+    def test_cached_map_does_not_skip_port_exit(self):
+        fake = FakeFreshFrameMain(['port', 'map'])
+
+        self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
+
+        self.assertEqual(fake.clicked, ['port_quit'])
+        self.assertEqual(fake.screenshots, ['port', 'map'])
+
+    def test_ensure_map_refreshes_cache_before_exp_check(self):
+        fake = FakeFreshFrameMain(['port', 'map'])
+
+        self.assertTrue(fake._ensure_return_to_os_map())
+
+        self.assertEqual(fake.clicked, ['port_quit'])
+        self.assertEqual(fake.device.image, 'map')
+
+    def test_transitions_are_handled_before_port_and_map(self):
+        for frame, clicks in (
+            ('loading', []),
+            ('popup', [LEAVE_OS_POPUP_CLOSE.name]),
+            ('reward', [AUTO_SEARCH_REWARD.name]),
+            ('unknown', []),
+        ):
+            with self.subTest(frame=frame):
+                fake = FakeFreshFrameMain([frame, 'port', 'map'])
+
+                self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
+
+                self.assertEqual(fake.clicked, clicks + ['port_quit'])
+                self.assertEqual(fake.screenshots, [frame, 'port', 'map'])
+
+    def test_fresh_map_returns_without_clicking(self):
+        fake = FakeFreshFrameMain(['map'])
+
+        self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
+
+        self.assertEqual(fake.clicked, [])
+        self.assertEqual(fake.screenshots, ['map'])
+
+
 class FakeDepartureMain:
     """只挂出发确认所需接口的桩，模拟离开弹窗出现在出发确认之前。"""
 

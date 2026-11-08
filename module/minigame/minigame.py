@@ -432,7 +432,7 @@ class Minigame(MinigameUI):
                 break
             # OCR 获取代币数量
             coin_count = self.get_coin_amount()
-            logger.info(f"[小游戏] 硬币数量: {coin_count}")
+            logger.info(f"[小游戏] 游戏币数量: {coin_count}")
             # 收集代币
             if coin_count <= 30 and not coin_collected:
                 coin_collected = True
@@ -440,9 +440,9 @@ class Minigame(MinigameUI):
                     continue
             # 无代币剩余
             if coin_count == 0:
-                logger.info(f"[小游戏] 硬币数量: {coin_count}, 游玩结束")
+                logger.info(f"[小游戏] 游戏币数量: {coin_count}, 游玩结束")
                 break
-            logger.info("[小游戏] 硬币数量 > 0，消费")
+            logger.info("[小游戏] 游戏币数量 > 0，消费")
             # 具体小游戏逻辑
             if minigame_instance is not None and minigame_instance.minigame_run():
                 play_count += 1

@@ -186,28 +186,32 @@ After changing the password, restart the WebUI so that MCP picks it up.
 
 ### MCP Tool List
 
-18 MCP tools are currently available.
+The default endpoint exposes 25 `azurpilot_` tools; legacy names are available only on an explicitly created compatibility endpoint.
 
 | Category | Tool Name | Description |
 | --- | --- | --- |
-| Instance Management | `list_instances` | List all instances |
-| | `get_status` | Get instance status |
-| | `start_instance` | Start an instance |
-| | `stop_instance` | Stop an instance |
-| Task Management | `list_tasks` | List all tasks |
-| | `get_task_help` | Get task help |
-| | `trigger_task` | Trigger a task |
-| | `get_scheduler_queue` | Get the scheduler queue |
-| | `clear_scheduler_queue` | Clear the scheduler queue |
-| Monitoring & Info | `get_current_running_task` | Get the currently running task |
-| | `get_resources` | Get resource status |
-| | `get_config` | Get instance configuration |
-| | `get_recent_logs` | Get recent logs |
-| | `get_screenshot` | Get a screenshot |
-| Configuration Management | `update_config` | Update configuration |
-| Maintenance Tools | `restart_emulator` | Restart the emulator |
-| | `restart_adb` | Restart ADB |
-| | `update_alas` | Update AzurPilot |
+| Instances | `azurpilot_list_instances` | List instances with process status and current task |
+| | `azurpilot_get_context` | Compact snapshot: status, current task, schedule/resources, recent error, device capabilities |
+| | `azurpilot_start_instance` / `azurpilot_stop_instance` | Start / stop the instance worker |
+| Task Discovery | `azurpilot_search_tasks` | Find tasks by id, display name or parameter text; common aliases supported |
+| | `azurpilot_get_task_schema` | Read parameter definitions, defaults, options and writability |
+| Config & Schedule | `azurpilot_get_config` | Read config by task or path, returning a revision |
+| | `azurpilot_patch_config` | Atomic batch edit with revision check and dry_run |
+| | `azurpilot_set_task_schedule` | Set enable flag / next run time (scheduled ≠ completed) |
+| Logs & Observation | `azurpilot_get_logs` | Read bounded logs by cursor, level and keyword |
+| Statistics | `azurpilot_get_statistics` | Read metrics, timelines and tables from the statistics and overview pages: overview resources, resource trends, Operation Siren, commissions, ship EXP, drops, research, storage and resource flows |
+| | `azurpilot_get_statistics_schema` | Statistics field catalog: categories, metric keys, units, meanings and filters |
+| | `azurpilot_observe_device` | Capture a screenshot with frame size, orientation and timestamp |
+| Device Control | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | Take over the device after stopping the scheduler; acquire/release `lease_id` (30 min TTL, renewed per call) |
+| | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | Coordinate tap, swipe, long press; requires `lease_id`; reports dispatch and screen change separately |
+| | `azurpilot_input_text` / `azurpilot_press_key` | Type text (no implicit Enter) or send a key event; requires `lease_id` |
+| | `azurpilot_adb_shell` | Run whitelisted read-only ADB diagnostics (e.g. `wm size`, `dumpsys battery`) |
+| Operation Status | `azurpilot_get_operation` | Query the final state of a write operation by operation_id |
+| Maintenance | `azurpilot_restart_emulator` | Restart the emulator bound to the instance |
+| | `azurpilot_restart_adb` | Restart the global ADB service |
+| | `azurpilot_update_application` | Request an application update (accepted ≠ completed) |
+
+Every tool declares `inputSchema` / `outputSchema`, returns structured results and stable error codes; write operations support `request_id` deduplication, and a timeout should be followed by `azurpilot_get_operation` rather than a blind retry. See the [MCP service documentation](docs/modules/entry/mcp-server.md).
 
 ## Multi-Platform Launcher
 

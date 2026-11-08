@@ -571,16 +571,20 @@ class IslandMineForest(Island,LoginHandler):
 
             # 所有缺口产物岗位需求满足后，剩余空闲 → 按配置分配默认产物
             remaining = idle_count - len(all_to_plant[category])
+            # MineSilver / CutElegant（配置名沿用）：几个空闲岗位生产默认产物，其余空着。
+            # 默认产物由 DefaultOre / DefaultWood 选择，未知值退回银矿 / 典雅之木
             if category == 'mine':
-                # MineSilver: 几个空闲岗位产银矿，其余空着
-                silver_count = min(self.config.IslandMine_MineSilver, remaining)
-                for _ in range(silver_count):
-                    all_to_plant['mine'].append(('Silver', None))
+                default_count = min(self.config.IslandMine_MineSilver, remaining)
+                default_product = self.config.IslandMine_DefaultOre
+                if default_product not in ('Copper', 'Aluminium', 'Iron', 'Sulphur', 'Silver'):
+                    default_product = 'Silver'
             else:
-                # CutElegant: 几个空闲岗位产典雅之木，其余空着
-                elegant_count = min(self.config.IslandForest_CutElegant, remaining)
-                for _ in range(elegant_count):
-                    all_to_plant['forest'].append(('Elegant', None))
+                default_count = min(self.config.IslandForest_CutElegant, remaining)
+                default_product = self.config.IslandForest_DefaultWood
+                if default_product not in ('Practical', 'Selected', 'Elegant'):
+                    default_product = 'Elegant'
+            for _ in range(default_count):
+                all_to_plant[category].append((default_product, None))
 
             if all_to_plant[category]:
                 logger.info(

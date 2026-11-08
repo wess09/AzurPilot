@@ -77,7 +77,7 @@ class GeneralShop_250814(ShopClerk, ShopUI, ShopStatus):
         while 1:
             self._currency = self.status_get_gold_coins()
             self.gems = self.status_get_gems()
-            logger.info(f'[商店-货币] 金币: {self._currency}, 钻石: {self.gems}')
+            logger.info(f'[商店-货币] 物资: {self._currency}, 钻石: {self.gems}')
 
             if self.currency_rechecked >= 3:
                 logger.warning('[商店-货币] 无法修复通用商店货币bug，跳过')
@@ -133,7 +133,7 @@ class GeneralShop_250814(ShopClerk, ShopUI, ShopStatus):
         if self.config.GeneralShop_BuySkinBox:
             if (not item.is_known_item()) and item.amount == 1 and item.cost == 'Coins' and item.price == 7000:
                 # 装备外观箱无法通过模板匹配识别（颜色和外观持续变化）
-                logger.info(f'[商店-商品] 物品 {item} 被认为是装备外观箱')
+                logger.info(f'[商店-商品] 物品 {item} 被认为是外观装备箱')
                 if self._currency >= item.price:
                     return True
 
@@ -178,11 +178,11 @@ class GeneralShop_250814(ShopClerk, ShopUI, ShopStatus):
         # 重新OCR识别金币（购买消耗物资后金币可能已变化）
         self.shop_currency()
         if self._currency <= overflow_coins:
-            logger.info(f'[商店-溢出] 金币 {self._currency} <= 溢出阈值 {overflow_coins}，跳过指挥喵溢出购买')
+            logger.info(f'[商店-溢出] 物资 {self._currency} <= 溢出阈值 {overflow_coins}，跳过指挥喵溢出购买')
             return
 
         logger.hr('指挥喵溢出购买', level=1)
-        logger.info(f'[商店-溢出] 金币 {self._currency} > 溢出阈值 {overflow_coins}，触发指挥喵溢出购买')
+        logger.info(f'[商店-溢出] 物资 {self._currency} > 溢出阈值 {overflow_coins}，触发指挥喵溢出购买')
 
         # 导航到指挥喵界面
         self.ui_goto(page_meowfficer)

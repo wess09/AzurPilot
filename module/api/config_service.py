@@ -18,6 +18,7 @@ from deploy.atomic import atomic_write
 from module.api.protocol import ApiError
 from module.combat.emotion_state import EmotionRecoveryState
 from module.config.config_updater import campaign_event_options, refresh_campaign_events
+from module.config.fleet_legacy import LEGACY_PATHS
 from module.config.redirect_utils.utils import (
     fleet_training_interval_redirect, meta_assist_limit_redirect, sea_miles_interval_redirect,
 )
@@ -361,13 +362,14 @@ class ConfigService:
             data['_schedulerProgram'] = store.export(name)
         return data
 
-    def create(self, name, source=None, import_file=None):
+    def create(self, name, source=None, import_file=None, *, emulator=None):
         """创建新的实例配置文件。
 
         Args:
             name (str): 新建实例名称。
             source (str, optional): 复制源实例名称。默认为 None。
             import_file (str, optional): 导入目录中的源文件名。默认为 None。
+            emulator (CreateEmulatorParams, optional): 首次设置的模拟器参数。
 
         Returns:
             dict: 新建实例的配置数据及版本。
@@ -391,6 +393,14 @@ class ConfigService:
                 data = self.read(source)[0]
             else:
                 data = copy.deepcopy(self.template)
+            if emulator is not None:
+                if source or import_file:
+                    raise ApiError('INVALID_PARAMS', '复制或导入实例时不能同时指定模拟器初始设置')
+                settings = {'Serial': emulator.serial, 'PackageName': emulator.package_name,
+                            'ServerName': emulator.server_name}
+                for key, value in settings.items():
+                    self.validate(f'Alas.Emulator.{key}', value)
+                data['Alas']['Emulator'].update(settings)
             bundle = data.pop('_schedulerProgram', None)
             from module.runtime.game_data import INSTANCE_FIELD
             # 空占位表示新实例，首次使用时登记 UUID，禁止把复制的仪表盘当迁移来源。
@@ -465,8 +475,12 @@ class ConfigService:
         # 存储区禁止编辑内容，但允许通过同一配置事务显式清空。
         if field.get('type') == 'storage' and field.get('display') != 'hide' and type(value) is dict and not value:
             return parts
-        if not field or field.get('display') in ('hide', 'disabled', 'readonly') or field.get('type') in ('storage', 'stored', 'state', 'lock'):
-            raise ApiError('READ_ONLY', f'参数不存在或不允许修改：{path}')
+        if not field:
+            if path in LEGACY_PATHS:
+                raise ApiError('READ_ONLY', f'旧版数据已封存，不允许修改：{path}')
+            raise ApiError('NOT_FOUND', f'参数不存在：{path}')
+        if field.get('display') in ('hide', 'disabled', 'readonly') or field.get('type') in ('storage', 'stored', 'state', 'lock'):
+            raise ApiError('READ_ONLY', f'不允许修改只读参数：{path}')
         default, kind = field.get('value'), field.get('type')
         options = field.get('option')
         if kind == 'multiselect':
@@ -529,24 +543,29 @@ class ConfigService:
                 raise ApiError('INVALID_PARAMS', f'YAML 顶层必须是键值映射：{path}')
         return parts
 
-    def patch(self, name, revision, changes):
-        """批量修改实例配置项，并在文件事务中原子写回。
+    def patch(self, name, revision, changes, *, require_revision=False, dry_run=False):
+        """批量校验并修改实例配置，可选严格版本检查与只校验预览。
+
+        WebUI 保留合并无关字段运行状态的既有行为；MCP 等需要可重试写契约的
+        调用方启用 ``require_revision``，在文件事务锁内拒绝过期版本。
 
         Args:
             name (str): 实例名称。
             revision (str): 客户端已知的版本哈希。
             changes (list): 包含 path 和 value 的修改条目列表。
+            require_revision (bool): 是否要求 revision 与事务内最新快照一致。
+            dry_run (bool): 是否只返回校验后的预览而不写盘。
 
         Returns:
-            dict: 修改后的最新实例配置。
+            dict: 修改后的配置，或 dry_run 下以原 revision 标识的预览配置。
 
         Raises:
-            ApiError: 重复修改同一参数或校验失败时抛出。
+            ApiError: 版本冲突、重复修改同一参数或校验失败时抛出。
         """
         with self.lock, config_transaction(self.path(name)):
-            # revision 仅为旧客户端兼容参数。字段赋值合并到锁内最新快照，
-            # 无关字段的运行状态更新不应拒绝用户输入；同字段按事务顺序生效。
-            data, _ = self.read(name)
+            data, current = self.read(name)
+            if require_revision and revision != current:
+                raise ApiError('CONFLICT', '配置已变化，请重新读取 revision 后再提交')
             seen = set()
             edited_groups = {}
             for change in changes:
@@ -590,6 +609,10 @@ class ConfigService:
                                 ) from None
                         elif any(prefix + suffix in args for suffix in ('Recover', 'Oath', 'Onsen')):
                             fields[prefix + 'RecoveryState'] = None
+            if dry_run:
+                return {'instance': name, 'revision': current, 'values': data,
+                        'options': {f'{task}.Campaign.Event': candidates
+                                    for task, candidates in campaign_event_options(data, self.args).items()}}
             atomic_write(str(self.path(name)), json.dumps(data, ensure_ascii=False, indent=2))
             return self.get(name)
 

@@ -73,7 +73,7 @@ test('自绘菜单支持取消、文字查找、主题与移动端边界', async
   const select = page.getByRole('combobox', {name: '下拉框', exact: true})
   await select.click()
   const menu = page.getByRole('listbox')
-  await expect(menu).toHaveCSS('border-radius', '13px')
+  await expect(menu).toHaveCSS('border-radius', '8px')
   await expect(page.getByRole('option', {name: 'Auto', exact: true})).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('End')
   await page.keyboard.press('Escape')
@@ -104,7 +104,7 @@ test('自绘菜单支持取消、文字查找、主题与移动端边界', async
 
 test('弹窗内选择配置后能够提交，菜单不会被 dialog 遮挡', async ({page}) => {
   await page.goto('/#/')
-  await page.getByRole('button', {name: '新建实例', exact: true}).click()
+  await page.locator('.instance-tabs').getByRole('button', {name: '创建实例', exact: true}).click()
   const dialog = page.getByRole('dialog')
   const select = dialog.getByRole('combobox', {name: '初始配置', exact: true})
   await select.click()

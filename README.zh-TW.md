@@ -186,28 +186,32 @@ MCP 沿用 WebUI 的密碼（`--key` / `config/deploy.yaml` 的 `Password`），
 
 ### MCP 工具清單
 
-目前可用的 MCP 工具共 18 個。
+預設端點提供 25 個 `azurpilot_` 工具；舊工具名稱僅保留在明確建立的相容端點。
 
 | 類別 | 工具名稱 | 功能 |
 | --- | --- | --- |
-| 實例管理 | `list_instances` | 列出所有實例 |
-| | `get_status` | 取得實例狀態 |
-| | `start_instance` | 啟動實例 |
-| | `stop_instance` | 停止實例 |
-| 任務管理 | `list_tasks` | 列出所有任務 |
-| | `get_task_help` | 取得任務說明 |
-| | `trigger_task` | 觸發任務 |
-| | `get_scheduler_queue` | 取得排程佇列 |
-| | `clear_scheduler_queue` | 清空排程佇列 |
-| 監控與資訊 | `get_current_running_task` | 取得目前執行的任務 |
-| | `get_resources` | 取得資源狀態 |
-| | `get_config` | 取得實例設定 |
-| | `get_recent_logs` | 取得最近的日誌 |
-| | `get_screenshot` | 取得截圖 |
-| 設定管理 | `update_config` | 更新設定 |
-| 維護工具 | `restart_emulator` | 重新啟動模擬器 |
-| | `restart_adb` | 重新啟動 ADB |
-| | `update_alas` | 更新 AzurPilot |
+| 實例管理 | `azurpilot_list_instances` | 列出實例、處理程序狀態與目前任務 |
+| | `azurpilot_get_context` | 一次取得狀態、目前任務、排程/資源摘要、近期錯誤與裝置能力 |
+| | `azurpilot_start_instance` / `azurpilot_stop_instance` | 啟動 / 停止實例工作處理程序 |
+| 任務探索 | `azurpilot_search_tasks` | 依任務 ID、顯示名稱、參數文案搜尋；支援常見口語別名 |
+| | `azurpilot_get_task_schema` | 讀取參數定義、預設值、選項與可寫性 |
+| 設定與排程 | `azurpilot_get_config` | 依任務或路徑讀取設定，回傳 revision |
+| | `azurpilot_patch_config` | 原子批次修改，校驗 revision，支援 dry_run |
+| | `azurpilot_set_task_schedule` | 設定任務啟用與下次執行時間（已排程 ≠ 已完成） |
+| 日誌與觀測 | `azurpilot_get_logs` | 依游標、層級、關鍵字讀取有限日誌 |
+| 統計資料 | `azurpilot_get_statistics` | 讀取統計頁與概覽頁的指標、時間線與表格；涵蓋概覽資源、資源趨勢、大世界、委託、艦船經驗、掉落、科研、倉庫與資源流向 |
+| | `azurpilot_get_statistics_schema` | 統計欄位目錄：分類、指標鍵、單位、說明與篩選參數 |
+| | `azurpilot_observe_device` | 取得截圖與幀尺寸、方向、擷取時間等中繼資料 |
+| 裝置控制 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | 排程器停止後接管裝置，取得/釋放 `lease_id`（預設 30 分鐘，每次呼叫續期） |
+| | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 座標點擊、滑動、長按；需 `lease_id`，分別回報命令下發與畫面變化 |
+| | `azurpilot_input_text` / `azurpilot_press_key` | 輸入文字（不自動送出）與送出按鍵；需 `lease_id` |
+| | `azurpilot_adb_shell` | 執行白名單內的唯讀 ADB 診斷命令（如 `wm size`、`dumpsys battery`） |
+| 操作確認 | `azurpilot_get_operation` | 依 operation_id 查詢寫入操作的最終狀態 |
+| 維護工具 | `azurpilot_restart_emulator` | 重新啟動實例綁定的模擬器 |
+| | `azurpilot_restart_adb` | 重新啟動全域 ADB 服務 |
+| | `azurpilot_update_application` | 請求應用程式更新（已接受 ≠ 已完成） |
+
+所有工具皆具備 `inputSchema` / `outputSchema`、結構化結果與穩定錯誤碼；寫入操作可用 `request_id` 去重，逾時後先以 `azurpilot_get_operation` 查詢，不要重複送出。詳見 [MCP 服務文件](docs/modules/entry/mcp-server.md)。
 
 ## 多平台啟動器
 

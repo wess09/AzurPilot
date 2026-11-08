@@ -41,7 +41,8 @@ TAB_DELTA = (395, 230)
 TAB_SIZE = (376, 211)
 NAME_AREA = (29, 18, 270, 48)
 SEASON_TASK_TAB = 3
-MAX_PAGES = 20
+MAX_PAGES = 30
+SCROLL_PAGE = 0.5
 # OCR 丢空格、少几个字母时仍可纠正；超过 max(3, 任务名长度/2) 视为读错
 MATCH_MIN_DISTANCE = 3
 ISLAND_SEASON_TASK_SCROLL = Scroll(
@@ -220,9 +221,12 @@ class IslandSeasonTaskScanner(IslandUI):
             list[int] | None: 未完成任务 ID；第一页就识别不到任务卡片（页面未就绪或不在任务标签）时为 None，
                 调用方应保留原有目标，避免写入错误目标。
         """
+        # 新季节首次打开任务页时卡片列表加载较慢（实测国际服冬季首日），滚动条出现前读不到卡片
+        for _ in self.loop(skip_first=False, timeout=10):
+            if ISLAND_SEASON_TASK_SCROLL.appear(main=self):
+                break
         ISLAND_SEASON_TASK_SCROLL.set_top(main=self, skip_first_screenshot=False)
         unfinished = []
-        last_page = None
         for page in range(MAX_PAGES):
             del_cached_property(self, 'season_task_grid')
             del_cached_property(self, 'task_ids_on_page')
@@ -233,10 +237,6 @@ class IslandSeasonTaskScanner(IslandUI):
                     return None
                 return unfinished
             page_ids = self.task_ids_on_page
-            # 翻页后内容不变（滚动未生效或已到底），不再重复读取
-            if page_ids == last_page:
-                return unfinished
-            last_page = page_ids
             for task_id, button in zip(page_ids, grid.buttons):
                 if TEMPLATE_ISLAND_SEASON_TASK_OBTAINED.match(self.image_crop(button.area, copy=True)):
                     logger.info('[岛屿-季节任务] 遇到已领取任务，停止扫描')
@@ -247,7 +247,9 @@ class IslandSeasonTaskScanner(IslandUI):
                     unfinished.append(task_id)
             if ISLAND_SEASON_TASK_SCROLL.at_bottom(main=self):
                 return unfinished
-            ISLAND_SEASON_TASK_SCROLL.next_page(main=self, skip_first_screenshot=False)
+            # 只识别完整露出奖励图标的行，翻 0.8 页（约 1.5 行）会漏掉露出一半的那一行
+            # （实测国际服漏读 3 个任务）；半页约 0.9 行，相邻页重叠，重复任务已去重
+            ISLAND_SEASON_TASK_SCROLL.next_page(main=self, page=SCROLL_PAGE, skip_first_screenshot=False)
         logger.warning(f'[岛屿-季节任务] 翻页次数达到上限 {MAX_PAGES}')
         return unfinished
 

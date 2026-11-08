@@ -128,10 +128,6 @@ dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--
 
 @keyframes motion-fade-up { from { opacity: 0; transform: translateY(var(--shift-entry)) } to { opacity: 1; transform: none } }
 
-.home-deck-copy > *, .home-main-heading { animation: motion-fade-up var(--dur-3) var(--ease-decelerate) both }
-.home-deck-copy > :nth-child(2) { animation-delay: 30ms }
-.home-deck-copy > :nth-child(3) { animation-delay: 60ms }
-.home-deck-foot { animation: motion-fade-up var(--dur-3) var(--ease-decelerate) both; animation-delay: 90ms }
 
 /* ============================================================================
    6 · 日志新行入场（LogPanel 给增量行挂 .motion-enter；初始加载不播）

@@ -372,7 +372,7 @@ class Dock(Equipment):
             in: page_dock
             out: SHIP_DETAIL_CHECK
         """
-        logger.info('进入船坞首选')
+        logger.info('进入船坞第一艘舰船')
         self.interval_clear(DOCK_CHECK, interval=3)
 
         while 1:

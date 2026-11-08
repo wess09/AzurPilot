@@ -50,6 +50,7 @@ function validateField(path, value) {
 
 export function createMockState({ empty = false } = {}) {
   const instances = new Map()
+  const importedConfigs = new Map()
   const fleetStates = new Map()
   function fleetStatePython(action, params) {
     const output = mindPython(action, {...params, state: fleetStates.get(params.instance),
@@ -489,10 +490,29 @@ export function createMockState({ empty = false } = {}) {
       case 'system.ping': return { pong: true }
       case 'schema.get': return { args, menu, translations: locales[params.language] }
       case 'instances.list': return [...instances].map(([name, item]) => ({ name, status: item.status, currentTask: item.status === 'running' ? item.currentTask ?? 'Commission' : null, serial: item.values.Alas.Emulator.Serial, server: item.values.Alas.Emulator.ServerName, region: region(item.values.Alas.Emulator.PackageName) }))
+      case 'instances.importable': return [...importedConfigs].map(([name, {modified}]) => ({name, modified}))
+      case 'instances.importConfig': {
+        let config
+        try { config = JSON.parse(params.content) } catch { fail('INVALID_PARAMS', '不是合法的 JSON 配置文件') }
+        if (!config?.Alas || typeof config.Alas !== 'object' || Array.isArray(config.Alas)) fail('INVALID_PARAMS', '配置文件缺少 Alas 段')
+        const values = structuredClone(template)
+        for (const [task, groups] of Object.entries(values)) {
+          for (const [group, fields] of Object.entries(groups)) Object.assign(fields, config[task]?.[group])
+        }
+        importedConfigs.set(params.name, {values, modified: Date.now() / 1000})
+        return {name: params.name}
+      }
       case 'instances.create': {
         if (!/^[A-Za-z0-9\u3041-\u3096\u30a1-\u30fa\u30fc\u31f0-\u31ff\uff66-\uff9f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff][A-Za-z0-9_. \u3041-\u3096\u30a1-\u30fa\u30fc\u31f0-\u31ff\uff66-\uff9f\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\-]{0,63}$/.test(params.name) || /^(template|deploy|backup|con|prn|aux|nul|com[1-9]|lpt[1-9])(\.|$)/i.test(params.name)) fail('INVALID_PARAMS', '实例名称无效')
         if ([...instances.keys()].some(name => name.toLowerCase() === params.name.toLowerCase())) fail('ALREADY_EXISTS', '同名实例已存在')
-        add(params.name, params.source ? get(params.source).values : template)
+        const imported = params.import_file ? importedConfigs.get(params.import_file) : undefined
+        if (params.import_file && !imported) fail('NOT_FOUND', '导入文件不存在')
+        if (params.emulator && (params.source || params.import_file)) fail('INVALID_PARAMS', '复制或导入实例时不能同时指定模拟器初始设置')
+        add(params.name, imported?.values ?? (params.source ? get(params.source).values : template))
+        if (params.emulator) {
+          const {serial, package_name, server_name} = params.emulator
+          Object.assign(get(params.name).values.Alas.Emulator, {Serial: serial, PackageName: package_name, ServerName: server_name})
+        }
         if (params.source && programs.has(params.source)) {const {mode,draft,active} = program(params.source); programs.set(params.name,{mode,draft,active,generation:0})}
         return snapshot(params.name)
       }
@@ -1016,7 +1036,7 @@ export function createMockState({ empty = false } = {}) {
           url: 'https://github.com/wess09/AzurPilot'
         }
       case 'events.subscribe':
-        if (params.topics.some(topic => topic !== 'instances' && topic !== 'notifications') && !name) fail('INVALID_PARAMS', '订阅此主题需要指定实例')
+        if (params.topics.some(topic => !['instances', 'notifications', 'launcher'].includes(topic)) && !name) fail('INVALID_PARAMS', '订阅此主题需要指定实例')
         return { topics: params.topics, instance: name ?? null }
       case 'background.gallery.list': return []
       case 'background.gallery.open': return { path: 'cache/background/library' }

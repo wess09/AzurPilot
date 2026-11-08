@@ -170,7 +170,7 @@ class MapOrderHandler(MapOperation, ActionPointHandler, MapEventHandler, ZoneMan
         if not self.map_cat_attack_timer.reached():
             return False
         if np.sum(color_similarity_2d(self.image_crop(MAP_CAT_ATTACK, copy=False), (255, 231, 123)) > 221) > 100:
-            logger.info('跳过地图猫攻击')
+            logger.info('跳过地图指挥喵攻击')
             self.device.click(CLICK_SAFE_AREA)
             self.map_cat_attack_timer.reset()
             return True

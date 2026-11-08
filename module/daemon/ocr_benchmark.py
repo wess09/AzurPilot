@@ -324,5 +324,5 @@ def run_ocr_benchmark(config):
         OcrBenchmark(config, task='OcrBenchmark').run()
         return True
     except RequestHumanTakeover:
-        logger.critical('[Daemon] 错误 请求人类接管')
+        logger.critical('[Daemon] 错误 请求人工接管')
         return False

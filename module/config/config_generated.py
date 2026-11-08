@@ -97,6 +97,7 @@ class GeneratedConfig:
     Emulator_ScreenshotMethod = 'auto'  # auto, ADB, ADB_nc, uiautomator2, aScreenCap, aScreenCap_nc, DroidCast, DroidCast_raw, nemu_ipc, ldopengl, azurpilot_android
     Emulator_ControlMethod = 'MaaTouch'  # ADB, uiautomator2, minitouch, Hermit, MaaTouch, nemu_ipc, azurpilot_android
     Emulator_GameSettings = False  # True, False
+    Emulator_DisableChannelFloat = False  # True, False
     Emulator_ScreenshotDedithering = False
     Emulator_AdbRestart = False
 
@@ -807,9 +808,13 @@ class GeneratedConfig:
     # 配置组 `OpsiObscure`
     OpsiObscure_SkipHazard2Obscure = False
     OpsiObscure_ForceRun = False
+    OpsiObscure_FullScan = False
+    OpsiObscure_RadarScan = False
+    OpsiObscure_ResumeState = None
 
     # 配置组 `OpsiAbyssal`
     OpsiAbyssal_ForceRun = False
+    OpsiAbyssal_ContinueAfterRestart = False
 
     # 配置组 `OpsiStronghold`
     OpsiStronghold_SubmarineEveryCombat = False
@@ -879,6 +884,7 @@ class GeneratedConfig:
     OpsiScheduling_EnableStronghold = False  # True, False
     OpsiScheduling_TaskPriority = 'OpsiStronghold > OpsiObscure > OpsiAbyssal > OpsiMeowfficerFarming'
     OpsiScheduling_ObscureAbyssalCheckDelayDays = 0
+    OpsiScheduling_StrongholdCheckDelayDays = 0
     OpsiScheduling_MonthEndActionPointCleanupEnable = False  # True, False
     OpsiScheduling_MonthEndActionPointCleanupDays = 0
     OpsiScheduling_MonthEndActionPointPreserve = 0
@@ -938,24 +944,31 @@ class GeneratedConfig:
 
     # 配置组 `IslandFishery`
     IslandFishery_Positions = 3  # 1, 2, 3
-    IslandFishery_MinBass = 50
-    IslandFishery_MinYellowfinTuna = 50
     IslandFishery_MinShell = 50
+    IslandFishery_MinCatfish = 0
+    IslandFishery_MinKoiCarp = 0
+    IslandFishery_MinCommonCarp = 0
     IslandFishery_MinShrimp = 50
     IslandFishery_MinCrayfish = 50
+    IslandFishery_MinBass = 50
     IslandFishery_MinCrab = 50
     IslandFishery_MinSquid = 50
-    IslandFishery_MinSeaCucumber = 50
-    IslandFishery_MinKoiCarp = 0
     IslandFishery_MinMackerel = 0
+    IslandFishery_MinTuna = 0
+    IslandFishery_MinSalmon = 0
+    IslandFishery_MinRedSeaBream = 0
+    IslandFishery_MinYellowfinTuna = 50
+    IslandFishery_MinSeaCucumber = 50
     IslandFishery_MinFreshwaterFishMeat = 0
     IslandFishery_MinSaltwaterFishMeat = 0
     IslandFishery_PlantYellowfinTuna = 3  # 0, 1, 2, 3
+    IslandFishery_DefaultFish = 'yellowfin_tuna'  # shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
     IslandFishery_RancherFilter = 'WorkerJuu'
 
     # 配置组 `IslandMine`
     IslandMine_Positions = 1  # 1, 2, 3, 4
     IslandMine_MineSilver = 1  # 0, 1, 2, 3, 4
+    IslandMine_DefaultOre = 'Silver'  # Copper, Aluminium, Iron, Sulphur, Silver
     IslandMine_WorkerFilter = 'WorkerJuu'
     IslandMine_MinCopper = 50
     IslandMine_MinAluminium = 50
@@ -966,6 +979,7 @@ class GeneratedConfig:
     # 配置组 `IslandForest`
     IslandForest_Positions = 1  # 1, 2, 3, 4
     IslandForest_CutElegant = 1  # 0, 1, 2, 3, 4
+    IslandForest_DefaultWood = 'Elegant'  # Practical, Selected, Elegant
     IslandForest_WorkerFilter = 'WorkerJuu'
     IslandForest_MinElegant = 50
     IslandForest_MinPractical = 50
@@ -1094,15 +1108,19 @@ class GeneratedConfig:
 
     # 配置组 `WoodProcessing`
     WoodProcessing_Positions = 2  # 0, 1, 2
+    WoodProcessing_Products = ''
 
     # 配置组 `ElectronicProcessing`
     ElectronicProcessing_Positions = 2  # 0, 1, 2
+    ElectronicProcessing_Products = ''
 
     # 配置组 `Industrial`
     Industrial_Positions = 2  # 0, 1, 2
+    Industrial_Products = ''
 
     # 配置组 `Handmade`
     Handmade_Positions = 2  # 0, 1, 2
+    Handmade_Products = ''
 
     # 配置组 `IslandAirDrop`
     IslandAirDrop_LastSteal = datetime.datetime(2020, 1, 1, 0, 0)
@@ -1244,6 +1262,11 @@ class GeneratedConfig:
 
     # 配置组 `IslandProductionPlanner`
     IslandProductionPlanner_ApplySettings = False  # True, False
+    IslandProductionPlanner_Season = 'auto'  # auto, season_1, season_2, season_3, season_4, season_5
+    IslandProductionPlanner_Priority = 'pt'  # pt, coins
+    IslandProductionPlanner_FillSparePosts = True  # True, False
+    IslandProductionPlanner_AutoPositions = True  # True, False
+    IslandProductionPlanner_UnlockedFish = ['shell', 'catfish', 'koi_carp', 'common_carp', 'shrimp', 'crayfish', 'bass', 'crab', 'squid', 'mackerel', 'tuna', 'salmon', 'red_sea_bream', 'yellowfin_tuna', 'sea_cucumber']  # shell, catfish, koi_carp, common_carp, shrimp, crayfish, bass, crab, squid, mackerel, tuna, salmon, red_sea_bream, yellowfin_tuna, sea_cucumber
     IslandProductionPlanner_RescanTechnology = True  # True, False
     IslandProductionPlanner_ScanSeasonTasks = True  # True, False
     IslandProductionPlanner_SeasonTaskTargets = None

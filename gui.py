@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 from multiprocessing import Event, Process, Queue, set_start_method
+from pathlib import Path
 from typing import Optional
 
 if sys.platform != "win32":
@@ -85,6 +86,138 @@ class FatalStartupError(Exception):
         super().__init__(reason)
         self.reason = reason
         self.exit_code = exit_code
+
+
+def reload_requested(argv: list[str]) -> bool:
+    """判断启动参数是否要求监听 Python 源码并自动重载。
+
+    只接受精确的 ``-r`` / ``--reload``，避免把 pytest 的 ``-ra`` 或
+    其他以 r 开头的短选项误判为重载开关。
+
+    Args:
+        argv (list[str]): 不含程序名的命令行参数列表。
+
+    Returns:
+        bool: 指定了 ``-r`` 或 ``--reload`` 时返回 True。
+    """
+    return any(arg in ("-r", "--reload") for arg in argv)
+
+
+class SourceWatcher:
+    """轮询项目内 Python 源码，检测到稳定的变更后请求重建 WebUI。
+
+    启动器必须保持轻量，因此只用标准库轮询 mtime/size，不引入 watchdog。
+    编辑器保存常伴随多次写入，故要求连续两轮快照一致且超过去抖时间才触发。
+
+    Attributes:
+        root (Path): 监听根目录，默认为 gui.py 所在目录。
+        debounce (float): 变更稳定判定的最短秒数。
+        baseline (dict | None): 上一次确认的源码快照。
+    """
+
+    EXCLUDED_DIRS = frozenset({
+        ".git", ".venv", "venv", "env", "node_modules", "__pycache__",
+        "build", "dist", ".pytest_cache", ".ruff_cache", ".mypy_cache",
+        ".idea", ".vscode", "log", "logs", "config", "tests",
+        "cache", "dev_tools", "licenses", "docs", "assets", "bin",
+    })
+    MAX_FILES = 5000
+
+    def __init__(self, root, debounce: float = 0.8, interval: float = 1.5) -> None:
+        self.root = Path(root).resolve()
+        self.debounce = debounce
+        self.interval = interval
+        self.last_scan = None
+        self.baseline = None
+        self.pending_since = None
+        self.pending_snapshot = None
+
+    @classmethod
+    def _excluded(cls, name: str) -> bool:
+        # tmp* 是运行期临时目录（测试/设备子进程会创建），不属于源码。
+        return (name in cls.EXCLUDED_DIRS or name.startswith(".")
+                or name.startswith("tmp"))
+
+    def _scan(self, directory: str, state: dict) -> None:
+        """递归扫描目录；DirEntry 复用目录枚举时的 stat 缓存，避免逐文件系统调用。"""
+        try:
+            with os.scandir(directory) as entries:
+                items = list(entries)
+        except OSError:
+            return
+        for entry in items:
+            if len(state) >= self.MAX_FILES:
+                return
+            try:
+                is_dir = entry.is_dir(follow_symlinks=False)
+            except OSError:
+                continue
+            if is_dir:
+                if not self._excluded(entry.name):
+                    self._scan(entry.path, state)
+            elif entry.name.endswith(".py"):
+                try:
+                    stat = entry.stat(follow_symlinks=False)
+                except OSError:
+                    continue
+                state[entry.path] = (stat.st_mtime_ns, stat.st_size)
+
+    def snapshot(self) -> dict[str, tuple[int, int]]:
+        """扫描全部受监控的 .py 文件，返回路径到 (mtime_ns, size) 的映射。"""
+        state = {}
+        self._scan(str(self.root), state)
+        return state
+
+    @staticmethod
+    def diff(old: dict, new: dict) -> list[str]:
+        """列出新增、删除或内容指纹变化的文件路径。"""
+        return sorted(key for key in set(old) | set(new) if old.get(key) != new.get(key))
+
+    def poll(self) -> list[str]:
+        """返回已稳定的变更路径；首次调用只建立基线，不触发重载。"""
+        now = time.monotonic()
+        if (self.baseline is not None and self.last_scan is not None
+                and now - self.last_scan < self.interval):
+            return []
+        self.last_scan = now
+        current = self.snapshot()
+        if self.baseline is None:
+            self.baseline = current
+            return []
+        changed = self.diff(self.baseline, current)
+        if not changed:
+            self.pending_since = None
+            self.pending_snapshot = None
+            return []
+        if self.pending_snapshot != current:
+            self.pending_since = time.monotonic()
+            self.pending_snapshot = current
+            return []
+        if time.monotonic() - self.pending_since < self.debounce:
+            return []
+        self.baseline = current
+        self.pending_since = None
+        self.pending_snapshot = None
+        return changed
+
+
+def _signal_source_change(watcher: SourceWatcher, event) -> bool:
+    """把稳定的源码变更转换为已有的重启事件；返回是否触发重载。"""
+    changed = watcher.poll()
+    if not changed:
+        return False
+    preview = ", ".join(
+        os.path.relpath(path, watcher.root) for path in changed[:5]
+    )
+    if len(changed) > 5:
+        preview += f" …共 {len(changed)} 个文件"
+    logger.info("[GUI] 检测到 %d 个 Python 源码变更，准备重建 WebUI：%s",
+                len(changed), preview)
+    if any(Path(path).name == "gui.py" for path in changed):
+        logger.warning("[GUI] gui.py 自身已变更：本次只重建 WebUI 子进程，"
+                       "启动器逻辑需手动重启 gui.py 才会生效")
+    event.set()
+    return True
 
 
 def _is_ipv6_unavailable_error(exc: OSError) -> bool:
@@ -277,6 +410,8 @@ def func(
         type=str,
         help="启动时运行指定配置的AzurPilot",
     )
+    # -r/--reload 是父启动器参数；这里保持 parse_known_args 忽略它，
+    # 不声明同名选项，避免 --r 缩写与 --run 产生歧义。
     args, _ = parser.parse_known_args()
 
     # 配置服务器设置
@@ -816,12 +951,22 @@ def _prepare_dependency_sync_before_webui_start(
     return True, service, request_queue, response_queue
 
 
-def run_webui_supervisor() -> int:
+def run_webui_supervisor(watch_sources: bool = False) -> int:
     """监督热重载 WebUI 子进程及其独立依赖同步服务，返回本进程退出码。
+
+    Args:
+        watch_sources (bool): 监听项目内 .py 变更，稳定后复用重启通道重建 WebUI。
 
     Returns:
         int: 退出状态码（0 表示正常退出，非零表示发生致命故障）。
     """
+    watcher = SourceWatcher(Path(__file__).resolve().parent) if watch_sources else None
+    if watcher is not None:
+        watcher.poll()  # 建立基线，避免把启动时已有的源码当作变更
+        logger.info("[GUI] 已启用 Python 源码监听：%s（仅 .py，去抖 %.1f 秒）",
+                    watcher.root, watcher.debounce)
+        logger.warning("[GUI] 源码变更会终止当前 WebUI 及其 AzurPilot worker 后重建，"
+                       "请勿在挂机任务中使用 -r")
     fatal_error: Optional[FatalStartupError] = None
     should_exit = False
     process = None
@@ -966,8 +1111,14 @@ def run_webui_supervisor() -> int:
             logger.info(f"[GUI] WebUI 服务已就绪 (PID: {process.pid})")
 
             while not should_exit:
+                if watcher is not None:
+                    # 监听是开发辅助能力，扫描异常不能让监督器退出。
+                    try:
+                        _signal_source_change(watcher, event)
+                    except Exception as exc:
+                        logger.warning("[GUI] 源码监听扫描失败，本轮跳过：%s", exc)
                 try:
-                    # 等待重启事件，超时1秒
+                    # 等待重启事件，超时1秒；监听器每轮轮询一次源码快照
                     restart_triggered = event.wait(1)
                 except KeyboardInterrupt:
                     logger.info("[GUI] 收到KeyboardInterrupt，退出中...")
@@ -1108,9 +1259,14 @@ def main() -> int:
     except RuntimeError:
         logger.warning("[GUI] 无法设置spawn启动方式，可能使用fork（macOS上不推荐）")
 
-    if State.deploy_config.EnableReload:
-        logger.info('[GUI] 进入热重载监督模式')
-        return run_webui_supervisor()
+    # -r 既开启源码监听，也强制进入监督模式（覆盖 EnableReload=false）。
+    watch_sources = reload_requested(sys.argv[1:])
+    if watch_sources or State.deploy_config.EnableReload:
+        if watch_sources:
+            logger.info('[GUI] 进入源码监听热重载监督模式（-r/--reload）')
+        else:
+            logger.info('[GUI] 进入热重载监督模式')
+        return run_webui_supervisor(watch_sources=watch_sources)
     else:
         # 非重载模式：直接运行
         logger.info('[GUI] 进入直接运行模式')

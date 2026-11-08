@@ -4,12 +4,12 @@
 
 ## 1. 模块概述
 
-`alas.py` 是 AzurPilot 的运行时心脏。WebUI 只负责展示与配置编辑，真正的游戏操作由本模块驱动的 worker 进程完成：它不断循环「选出下一个到期任务 → 绑定配置 → 执行 → 按结果安排下次运行」，并在任何失败（游戏卡死、模拟器掉线、代码异常、服务器维护）后自动恢复，而不是退出。
+`alas.py` 是 AzurPilot 的运行时心脏。WebUI 只负责展示与配置编辑，真正的游戏操作由本模块驱动的 worker 进程完成：它不断循环「选出下一个到期任务 → 绑定配置 → 执行 → 按结果安排下次运行」。开启异常处理时，游戏卡死、模拟器掉线或代码异常会进入分级恢复；关闭时，这些错误会停止当前 worker，保留游戏和模拟器现场。
 
 它存在的核心原因有三个：
 
 - **把「何时做什么」从业务代码中剥离**。各游戏功能模块（科研、委托、大世界……）只实现自己的 `run()`，完全不知道彼此存在；排队、优先级、互斥、恢复全部由调度器统一裁决。
-- **把失败当作常态而非异常**。模拟器可能崩、网络可能断、游戏客户端可能有 bug，调度器的反应永远是「分级恢复 + 继续跑」，只有两类情况才会终止：代码 bug 连续复现（`ScriptError` 连续 3 次）和敏感任务失败（避免状态或数据损坏）。
+- **把失败当作常态而非异常**。模拟器可能崩、网络可能断、游戏客户端可能有 bug；开启异常处理时，调度器执行「分级恢复 + 继续跑」，代码 bug 连续复现（`ScriptError` 连续 3 次）和敏感任务失败仍会终止运行。关闭异常处理后，需要恢复的错误直接停止当前 worker。
 - **集中管理模拟器生命周期**。设备的 `Device` 构造以 `auto_start_emulator=False` 创建，模拟器的启动/重启/关闭决策全部上收到调度器，避免设备层与恢复层互相嵌套启动重试。
 
 一个 AzurPilot 实例（一份用户配置）对应一个调度器进程。多个实例并行时，每个进程有独立的 `AzurLaneAutoScript` 与状态。
@@ -192,7 +192,7 @@ flowchart TD
 - `'recoverable'`：失败但已就地安排恢复（几乎总是 `task_call('Restart')`），不计入任务失败次数。
 - `False`：不可恢复失败，计入失败计数。
 
-每个异常分支的第一动作都是 `_check_sensitive_exit()`：严格重启开启（`Error_StrictRestart`）且该任务配置了 `Scheduler.Sensitive` 时，立即保存现场、推送通知并 `exit(1)`——敏感任务（默认 `OpsiCrossMonth`、`OpsiObscure`、`OpsiAbyssal`）出错不做任何自动重启，避免在错误状态上继续写入。是否敏感不是写死的常量，而是运行时读 `{Task}.Scheduler.Sensitive` 配置动态判断，用户可自行调整。
+需要恢复的异常先经过 `_check_error_recovery()`：`Error.HandleError` 关闭时，记录错误、按 `Error.SaveError` 保存已有截图和日志，然后 `exit(1)`；保存现场失败也不允许进入自动恢复。开启时继续原有 `_check_sensitive_exit()` 检查：严格重启开启（`Error_StrictRestart`）且该任务配置了 `Scheduler.Sensitive` 时，立即保存现场、推送通知并 `exit(1)`——敏感任务（默认 `OpsiCrossMonth`、`OpsiObscure`、`OpsiAbyssal`）出错不做任何自动重启，避免在错误状态上继续写入。是否敏感不是写死的常量，而是运行时读 `{Task}.Scheduler.Sensitive` 配置动态判断，用户可自行调整。`TaskEnd` 正常结束、仓库统计延后和船坞扫描等专用失败返回保持原有处理。
 
 异常分级（详见第 11 节）的本质是一根「恢复力度」的标尺：重启游戏最轻（秒级），重启模拟器最重（分钟级）。多数异常走轻端；`GameNotRunningError`、`GameStuckError` 与未预期异常带独立连续计数，连续达到 `Error_GameStuckThreshold` 才升级到模拟器重启。前两类升级受 `Error_GameStuckRestart` 控制。恢复动作完成后统一返回 `'recoverable'`。
 
@@ -200,7 +200,7 @@ flowchart TD
 
 ### 全局异常兜底
 
-`loop()` 的最外层 `except` 是最后一道防线：上报错误日志（仅首次）、可选触发 LLM 错误分析、尽力重启模拟器、注入 `Restart`，然后按 `min(300, 20 × 2^(连续失败-1))` 秒指数退避后重试。调度器**永不因连续失败而退出**，退出只保留给代码 bug 与敏感任务。
+`loop()` 的最外层 `except` 是最后一道防线，同样先检查 `Error.HandleError`，关闭时保存现场并停止当前 worker；任务选择、设备初始化和任务收尾阶段的异常都不能绕过总开关。开启时保留原有行为：上报错误日志（仅首次）、可选触发 LLM 错误分析、尽力重启模拟器、注入 `Restart`，然后按 `min(300, 20 × 2^(连续失败-1))` 秒指数退避后重试。失败返回值也会在连续失败升级为模拟器重启之前检查总开关。
 
 ## 7. 调用关系
 
@@ -286,7 +286,7 @@ stateDiagram-v2
 | `<Task>.Scheduler.ServerUpdate` | time | 00:00 | 服务器刷新点，每日重启的排期基准 |
 | `<Task>.Scheduler.Sensitive` | checkbox | false | 敏感任务标记；`OpsiCrossMonth`/`OpsiObscure`/`OpsiAbyssal` 默认 true |
 | `<Task>.Scheduler.PushNotification` | checkbox | false | 该任务每次结束后推送结果 |
-| `Error.HandleError` | bool | true | 关闭后非可恢复失败将终止调度而非继续 |
+| `Error.HandleError` | bool | true | 关闭后，需要恢复的任务异常和全局异常停止当前 worker，不因错误重启游戏或模拟器；失败返回值不进入重启升级 |
 | `Error.LowPushMode` | checkbox | false | 低推送量模式；可恢复错误（游戏未运行、模拟器离线、卡死等）只记日志不推送 |
 | `Error.StrictRestart` | bool | false | 严格重启总开关（配合 `Sensitive` 生效） |
 | `Error.GameStuckRestart` / `GameStuckThreshold` | bool/int | false / 3 | 卡死或反复退出是否允许升级到模拟器重启及次数阈值 |
@@ -309,7 +309,7 @@ stateDiagram-v2
 
 ## 11. 异常与错误处理
 
-`run()` 内按异常类型分级；所有分支先过敏感任务检查，再执行恢复动作：
+`run()` 内需要自动恢复的异常先检查 `Error.HandleError`；关闭时停止当前 worker。下表为开启后的分级处理，恢复前仍执行敏感任务检查：
 
 | 异常 | 原因 | 处理 | 返回 |
 | --- | --- | --- | --- |
@@ -326,9 +326,9 @@ stateDiagram-v2
 | 其他 `Exception` | 未预期异常 | 连续计数达 `GameStuckThreshold` 升级为重启模拟器，否则仅重启游戏 | `'recoverable'` |
 | `EmulatorOpBusy` | 已有模拟器启停操作在跑 | 放弃本轮恢复，后台操作结束后下一轮调度接手（非错误，是并发保护） | `False`（重启函数内消化） |
 
-调度循环兜底（`loop()` 最外层 `except`）：保存并上报错误日志、重启模拟器、注入 `Restart`、按 20 秒起步、300 秒封顶的指数退避后重试，永不退出。
+调度循环兜底（`loop()` 最外层 `except`）：开启异常处理时保存并上报错误日志、重启模拟器、注入 `Restart`、按 20 秒起步、300 秒封顶的指数退避后重试；关闭时保存现场并停止当前 worker。
 
-终止路径只有四条：`ScriptError` 连续 3 次；敏感任务失败（`_check_sensitive_exit` 或失败计数命中）；`stop_event` 更新信号；配置/设备初始化即失败。其余一切故障都应自动恢复。
+终止路径包括：关闭异常处理后遇到需要恢复的错误或失败返回值；`ScriptError` 连续 3 次；敏感任务失败（`_check_sensitive_exit` 或失败计数命中）；`stop_event` 更新信号；配置/设备初始化即失败。开启异常处理时，其余故障继续原有自动恢复。
 
 **为什么恢复性失败不计入失败次数**：失败计数驱动的是「强制重启模拟器」这类高代价动作。可恢复错误已经各自触发过针对性恢复（重启游戏或模拟器），不再通过 `failure_record` 重复升级。
 
@@ -358,7 +358,7 @@ stateDiagram-v2
 关键约定：
 
 - **运行监护激活窗口**。`_watchdog_active` 仅在 `run()` 前后置位/复位，空闲等待与退避 `sleep` 期间自动暂停，避免把正常的长等待误判为卡死。
-- **运行监护为什么杀模拟器而不是杀任务**：任务主线程可能阻塞在 uiohook 级的底层 I/O（uiautomator2 HTTP、ADB shell）中，Python 层无法安全中断线程；杀死模拟器进程会让主线程的下一次 I/O 调用失败并抛异常，从而自然汇入统一的异常恢复流程。这比从外部强杀线程安全得多。
+- **运行监护的超时处理**：开启异常处理时，任务主线程可能阻塞在 uiohook 级的底层 I/O（uiautomator2 HTTP、ADB shell）中，Python 层无法安全中断线程；停止模拟器使设备 I/O 失败后进入原有恢复流程。关闭异常处理时，超时只用 `os._exit(1)` 停止当前 worker，不停止模拟器；后台线程中的 `sys.exit()` 无法结束任务主线程，且不再尝试设备截图，避免再次阻塞。
 - **模拟器启停的并发保护**：`_emulator_op_with_timeout` 用独立线程执行操作并设硬超时（600 秒，覆盖模拟器完整冷启动预算）；超时放弃的线程仍在真实操作模拟器并持有平台层启停互斥锁，后续任何启停请求都会收到 `EmulatorOpBusy` 而被跳过，防止「一个线程正在启动、另一个随即关闭」的踩踏。
 - **跨进程停止信号**：WebUI 生命周期通过 `State.manager.Event()` 创建事件代理并交给 `ProcessManager`，worker 将其挂到 `AzurLaneConfig.stop_event` 与 `AzurLaneAutoScript.stop_event`。主循环和 `wait_until()` 轮询该代理，在检查点响应停止请求；普通 `threading.Event` 不能替代这条跨进程信号链。运行监护自身的 `_watchdog_stop` 才是进程内线程事件。
 - **线程间不共享 config 对象**：日报线程刻意不访问 `self.config`（任务执行期间它绑定着当前任务参数，跨线程重载会破坏一致性），而是直接读配置文件并按 mtime 缓存只读快照。
@@ -404,9 +404,9 @@ def my_feature(self):
 
 ## 16. 修改注意事项
 
-- **`run()` 的每个异常分支都必须先调用 `_check_sensitive_exit()`**。新增异常处理时漏掉它，敏感任务就会在应当停机时被自动重启，这是保护用户数据的关键闸门。
+- **`run()` 的自动恢复分支必须先检查 `_check_error_recovery()` 和 `_check_sensitive_exit()`**。关闭异常处理时禁止重启，敏感任务退出与通知也必须保留；开启时仍不能绕过敏感任务保护。
 - **不要恢复 `RESTART_SENSITIVE_TASKS` 常量**。敏感任务已是动态配置（`{Task}.Scheduler.Sensitive`），静态列表无法表达用户自定义；该常量已从代码删除。
-- **不要让 `loop()` 在任何新分支中主动退出**。「永不主动退出」是 7×24 运行的根基；新故障一律转为 `'recoverable'` 或带退避的重试。
+- **自动恢复必须遵守总开关**。开启异常处理时，新增故障可复用 `'recoverable'` 或带退避的重试；关闭时必须在安排 Restart、模拟器重启或连续失败升级之前停止当前 worker。
 - **删除 `config` 缓存的时机有讲究**：成功后删除是为了让任务期间用户的新修改生效；模拟器重启后删除 `device` 缓存是为了强制重建连接。新增恢复路径时想清楚哪些缓存已经失效。
 - **模拟器启停必须经 `_emulator_op_with_timeout` 包装**，且遇到 `EmulatorOpBusy` 只能放弃本轮。绕过它直接调用平台启停会打破互斥锁保护，复现「模拟器永远起不来」的历史故障。
 - **运行监护的时间窗语义**：`_watchdog_active` 在任务执行前置位、`finally` 复位，并覆盖退避等待。在调度器里新增长时间非任务阻塞（如新的等待循环）时，确认它不在运行监护激活窗口内，或已有对应的豁免。

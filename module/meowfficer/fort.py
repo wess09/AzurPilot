@@ -84,7 +84,7 @@ class MeowfficerFort(MeowfficerBase):
         # 检查猫窝红点提示
         if not self.appear(MEOWFFICER_FORT_RED_DOT):
             return False
-        logger.hr('指挥喵-小屋', level=1)
+        logger.hr('指挥喵-猫窝', level=1)
 
         # 进入猫窝界面
         self.meow_enter(MEOWFFICER_FORT_ENTER, check_button=MEOWFFICER_FORT_CHECK)

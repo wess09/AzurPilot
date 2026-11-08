@@ -1,5 +1,5 @@
 .resource-management {display:flex; flex-direction:column; gap:18px; min-width:0; padding-bottom:24px}
-.resource-panel {background:var(--surface); border:1px solid var(--border); border-radius:var(--theme-radius-panel, 12px); padding:20px; min-width:0}
+.resource-panel {background:var(--surface); border:1px solid var(--border); border-radius:var(--theme-radius-panel, 8px); padding:20px; min-width:0}
 .resource-panel h2 {display:flex; align-items:center; gap:8px; font-size:15px; margin-bottom:8px}
 .resource-panel p {font-size:12px; line-height:1.7}
 .resource-filters,.resource-filters form,.oil-control form,.resource-heading {display:flex; align-items:end; gap:14px; flex-wrap:wrap}

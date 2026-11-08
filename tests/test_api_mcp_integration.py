@@ -1,6 +1,5 @@
 """验证 MCP 挂载与 WebUI 共用服务且正确收尾，不连接真实设备。"""
 import asyncio
-import json
 import tempfile
 import threading
 import unittest
@@ -28,13 +27,15 @@ class ApiMcpIntegrationTests(unittest.IsolatedAsyncioTestCase):
         started, release = threading.Event(), threading.Event()
 
         def slow_list(arguments):
+            from module.mcp.tools import ToolResult
             started.set()
             release.wait(3)
-            return ['testpilot']
+            return ToolResult({'status': 'success', 'instances': [
+                {'name': 'testpilot', 'status': 'stopped', 'current_task': None}]}, '完成')
 
         async def request_tool(scope, receive, send):
-            result = await mcp.call_tool('list_instances', {})
-            await JSONResponse(json.loads(result[0].text))(scope, receive, send)
+            result = await mcp.call_tool('azurpilot_list_instances', {})
+            await JSONResponse(result.structuredContent)(scope, receive, send)
 
         with tempfile.TemporaryDirectory() as directory:
             app = create_app(root=fixture(directory), password='', manage_runtime=False)
@@ -59,8 +60,8 @@ class ApiMcpIntegrationTests(unittest.IsolatedAsyncioTestCase):
 
         async def read_instances(scope, receive, send):
             await asyncio.sleep(0)
-            content = await mcp.call_tool('list_instances', {})
-            await JSONResponse(json.loads(content[0].text))(scope, receive, send)
+            content = await mcp.call_tool('azurpilot_list_instances', {})
+            await JSONResponse(content.structuredContent)(scope, receive, send)
 
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
             roots = [fixture(first), fixture(second)]
@@ -72,7 +73,8 @@ class ApiMcpIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=apps[0]), base_url='http://first') as client_a, \
                             httpx.AsyncClient(transport=httpx.ASGITransport(app=apps[1]), base_url='http://second') as client_b:
                         responses = await asyncio.gather(client_a.get('/mcp/sse'), client_b.get('/mcp/sse'))
-            self.assertEqual([['alpha'], ['beta']], [response.json() for response in responses])
+            self.assertEqual([['alpha'], ['beta']], [
+                [item['name'] for item in response.json()['instances']] for response in responses])
 
     async def test_mount_reuses_webui_service_objects(self):
         import mcp_server_sse as mcp

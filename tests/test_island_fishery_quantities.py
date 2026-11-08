@@ -13,13 +13,15 @@ NOW = datetime(2026, 9, 20, 12)
 
 
 class FisheryUI:
-    def __init__(self, demand=None, fry_stock=None, positions=3, default_posts=0, working=None):
+    def __init__(self, demand=None, fry_stock=None, positions=3, default_posts=0, working=None,
+                 default_fish='yellowfin_tuna'):
         config = SimpleNamespace(
             IslandFishery_Positions=positions, IslandFishery_PlantYellowfinTuna=default_posts,
+            IslandFishery_DefaultFish=default_fish,
             IslandFishery_RancherFilter='WorkerJuu', task_delay=Mock(),
         )
         for name in ('Bass', 'YellowfinTuna', 'Shell', 'Shrimp', 'Crab', 'Crayfish', 'Squid', 'SeaCucumber',
-                     'KoiCarp', 'Mackerel'):
+                     'KoiCarp', 'Mackerel', 'Catfish', 'CommonCarp', 'Tuna', 'Salmon', 'RedSeaBream'):
             setattr(config, 'IslandFishery_Min' + name, 0)
 
         def init_island(fishery, config):
@@ -140,13 +142,24 @@ class IslandFisheryQuantityTests(unittest.TestCase):
     def test_round_robin_product_priority_is_preserved(self):
         ui = FisheryUI({'bass': 6, 'shrimp': 9})
         ui.run()
-        self.assertEqual(ui.orders, [('bass', 5), ('shrimp', 8), ('bass', 1)])
-        self.assertEqual(ui.fishery.to_plant_list, ['shrimp'])
+        self.assertEqual(ui.orders, [('shrimp', 8), ('bass', 5), ('shrimp', 1)])
+        self.assertEqual(ui.fishery.to_plant_list, ['bass'])
 
     def test_default_posts_remain_full_after_small_supply_order(self):
         ui = FisheryUI({'yellowfin_tuna': 1}, default_posts=2)
         ui.run()
         self.assertEqual(ui.orders, [('yellowfin_tuna', 1), ('yellowfin_tuna', 5), ('yellowfin_tuna', 5)])
+
+    def test_default_posts_use_configured_default_fish(self):
+        # 默认产品改为小河虾：空余岗位养小河虾，不再养未解锁的黄鳍金枪鱼
+        ui = FisheryUI(default_posts=2, positions=2, default_fish='shrimp')
+        ui.run()
+        self.assertEqual([product for product, _ in ui.orders], ['shrimp', 'shrimp'])
+
+    def test_unknown_default_fish_falls_back_to_yellowfin_tuna(self):
+        ui = FisheryUI(default_posts=1, positions=1, default_fish='black_porgy')
+        ui.run()
+        self.assertEqual([product for product, _ in ui.orders], ['yellowfin_tuna'])
 
     def test_working_fry_reduce_demand_and_count_toward_default_posts(self):
         ui = FisheryUI({'yellowfin_tuna': 6}, default_posts=1,

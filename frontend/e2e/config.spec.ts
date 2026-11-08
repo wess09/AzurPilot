@@ -133,7 +133,7 @@ test('旧响应延迟期间连续输入并切页，最终值继续保存', async
   await serial.fill('latest-user-input')
   await serial.blur()
   await expect(serial).toHaveValue('latest-user-input')
-  await page.locator('.breadcrumb .instance-caption').click()
+  await page.locator('.primary-nav').getByRole('link', {name: '运行总览', exact: true}).click()
   release!()
   await page.goto('/#/i/testpilot/task/Alas')
   await expect(serial).toHaveValue('latest-user-input')

@@ -149,7 +149,7 @@ class BeaconReward(Combat, UI):
             in: SYNC_ENTER
             out: 同步未满 100% 为 SYNC_ENTER，达到 100% 为 REWARD_ENTER
         """
-        logger.hr('Meta同步领取', level=1)
+        logger.hr('META同步领取', level=1)
         received = False
         while 1:
             if skip_first_screenshot:

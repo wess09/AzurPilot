@@ -186,28 +186,32 @@ URL しか指定できずリクエストヘッダーを設定できないクラ�
 
 ### MCP ツール一覧
 
-現在利用可能な MCP ツールは全部で 18 個です。
+既定のエンドポイントでは 25 個の `azurpilot_` ツールを公開します。旧ツール名は明示的に作成した互換エンドポイントのみで利用できます。
 
 | カテゴリ | ツール名 | 機能 |
 | --- | --- | --- |
-| インスタンス管理 | `list_instances` | すべてのインスタンスを一覧表示 |
-| | `get_status` | インスタンスの状態を取得 |
-| | `start_instance` | インスタンスを起動 |
-| | `stop_instance` | インスタンスを停止 |
-| タスク管理 | `list_tasks` | すべてのタスクを一覧表示 |
-| | `get_task_help` | タスクのヘルプを取得 |
-| | `trigger_task` | タスクをトリガー |
-| | `get_scheduler_queue` | スケジューラキューの取得 |
-| | `clear_scheduler_queue` | スケジューラキューをクリア |
-| 監視と情報 | `get_current_running_task` | 現在実行中のタスクを取得 |
-| | `get_resources` | リソース状態を取得 |
-| | `get_config` | インスタンス設定を取得 |
-| | `get_recent_logs` | 最近のログを取得 |
-| | `get_screenshot` | スクリーンショットを取得 |
-| 設定管理 | `update_config` | 設定を更新 |
-| メンテナンスツール | `restart_emulator` | エミュレータを再起動 |
-| | `restart_adb` | ADB を再起動 |
-| | `update_alas` | AzurPilot を更新 |
+| インスタンス管理 | `azurpilot_list_instances` | インスタンス、プロセス状態、実行中タスクを一覧表示 |
+| | `azurpilot_get_context` | 状態・実行中タスク・スケジュール/リソース概要・直近のエラー・デバイス機能をまとめて取得 |
+| | `azurpilot_start_instance` / `azurpilot_stop_instance` | インスタンスの起動 / 停止 |
+| タスク検索 | `azurpilot_search_tasks` | タスク ID・表示名・引数の文言で検索し、一般的な口語別名にも対応 |
+| | `azurpilot_get_task_schema` | 引数定義、既定値、選択肢、書き込み可否を取得 |
+| 設定とスケジュール | `azurpilot_get_config` | タスクまたはパス単位で設定を取得し、revision を返す |
+| | `azurpilot_patch_config` | revision を検証する一括原子変更、dry_run 対応 |
+| | `azurpilot_set_task_schedule` | 有効状態と次回実行時刻を設定（予約済み＝完了ではない） |
+| ログと観測 | `azurpilot_get_logs` | カーソル・レベル・キーワードで限定件数のログを取得 |
+| 統計 | `azurpilot_get_statistics` | 統計ページと概要ページの指標・時系列・表を取得（概要資源、資源推移、セイレーン作戦、委託、艦船経験値、ドロップ、研究、倉庫、資源フロー） |
+| | `azurpilot_get_statistics_schema` | 統計フィールド目録：分類、指標キー、単位、説明、絞り込み条件 |
+| | `azurpilot_observe_device` | スクリーンショットとフレームのサイズ・向き・取得時刻を取得 |
+| デバイス制御 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | スケジューラ停止後にデバイスを引き継ぎ、`lease_id` を取得/解放（既定 30 分、呼び出しごとに延長） |
+| | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 座標タップ・スワイプ・長押し。`lease_id` が必要で、コマンド送信と画面変化を別々に返す |
+| | `azurpilot_input_text` / `azurpilot_press_key` | テキスト入力（自動確定なし）とキー送信。`lease_id` が必要 |
+| | `azurpilot_adb_shell` | ホワイトリスト内の読み取り専用 ADB 診断コマンド（`wm size`、`dumpsys battery` など） |
+| 操作確認 | `azurpilot_get_operation` | operation_id で書き込み操作の最終状態を照会 |
+| メンテナンスツール | `azurpilot_restart_emulator` | インスタンスに紐づくエミュレータを再起動 |
+| | `azurpilot_restart_adb` | グローバル ADB サービスを再起動 |
+| | `azurpilot_update_application` | アプリ更新を要求（受け付け済み＝完了ではない） |
+
+すべてのツールに `inputSchema` / `outputSchema`、構造化結果、安定したエラーコードがあります。書き込み操作は `request_id` で重複排除でき、タイムアウト時は再送ではなく `azurpilot_get_operation` で確認してください。詳細は [MCP サービス文書](docs/modules/entry/mcp-server.md)。
 
 ## マルチプラットフォームランチャー
 

@@ -1,0 +1,263 @@
+/* 首次设置：桌面双栏，窄屏按步骤纵向排列。 */
+main.instance-setup {
+  min-height: var(--viewport-height);
+  display: grid;
+  place-items: center;
+  padding: clamp(16px, 4vw, 28px);
+  background: var(--bg);
+}
+
+.instance-setup-card {
+  width: min(100%, 860px);
+  min-height: min(620px, calc(var(--viewport-height) - 56px));
+  display: flex;
+  flex-direction: column;
+  padding: clamp(20px, 6vw, 48px);
+  border-radius: var(--theme-radius-panel);
+  background: var(--surface);
+}
+
+.instance-setup-card.setup-language-step {width: min(100%, 520px); min-height: 0}
+.setup-language-step .setup-steps {display: none}
+.setup-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.setup-brand img {flex-shrink: 0}
+.setup-brand-title {font-size: clamp(20px, 4vw, 28px); line-height: 1.3; font-weight: 700}
+.setup-brand .muted, .setup-step-content h1 + p {margin: 4px 0 0}
+
+.setup-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin: 24px 0;
+  padding: 0;
+  list-style: none;
+}
+.setup-steps li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px;
+  color: var(--muted);
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--theme-radius-control);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.setup-steps li[aria-current='step'] {color: var(--accent); background: var(--accent-soft); border-color: var(--accent); font-weight: 650}
+.setup-steps li[data-done] .setup-step-number {color: var(--accent)}
+.setup-step-number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface);
+  font-weight: 650;
+}
+
+.setup-illustration {display: none}
+.setup-form {display: flex; flex: 1; flex-direction: column; gap: 24px; min-width: 0}
+.setup-step-content {flex: 1; min-width: 0}
+.setup-step-content h1 {margin: 0; font-size: clamp(18px, 3vw, 22px); letter-spacing: normal}
+.setup-step-content > label {font-size: 14px}
+.setup-step-content input {min-width: 0}
+.setup-import, .setup-review {
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--theme-radius-control);
+}
+.setup-import {display: flex; align-items: flex-start; gap: 12px; padding: 16px}
+.setup-import > svg {color: var(--accent); flex-shrink: 0}
+.setup-import > div {min-width: 0}
+.setup-import p {margin: 4px 0 12px}
+.setup-import p.setup-file-name {margin: 8px 0 0; overflow-wrap: anywhere}
+.setup-languages {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px}
+.setup-languages .button {justify-content: center}
+.setup-languages .button[aria-pressed='true'] {color: var(--accent); background: var(--accent-soft); border-color: var(--accent)}
+
+.setup-review {margin: 0; overflow: hidden}
+.setup-review > div {display: grid; grid-template-columns: minmax(0, 34%) minmax(0, 1fr); align-items: stretch}
+.setup-review > div + div {border-top: 1px solid var(--border)}
+.setup-review dt, .setup-review dd {display: flex; align-items: center; padding: 10px 14px; overflow-wrap: anywhere}
+.setup-review dt {font-weight: 600; color: var(--muted)}
+.setup-review dd {margin: 0; background: var(--surface)}
+.setup-review input {width: 100%}
+
+.setup-footer, .setup-actions {display: flex; align-items: center; gap: 10px; flex-wrap: wrap}
+.setup-footer {justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--border)}
+.setup-actions {justify-content: flex-end; margin-left: auto}
+
+@media (min-width: 951px) {
+  main.instance-setup {
+    --setup-accent: #0067c0;
+    --setup-accent-hover: #005a9e;
+    --setup-on-accent: #fff;
+    padding: 28px;
+    font-family: var(--theme-font-sans);
+    background:
+      radial-gradient(ellipse at 17% 12%, color-mix(in srgb, var(--setup-accent) 22%, transparent), transparent 61%),
+      radial-gradient(ellipse at 88% 93%, color-mix(in srgb, var(--setup-accent) 18%, transparent), transparent 58%),
+      var(--bg);
+  }
+  :root[data-theme='legacy-dark'] main.instance-setup {
+    --setup-accent: #60cdff;
+    --setup-accent-hover: #8bd9ff;
+    --setup-on-accent: #102431;
+  }
+
+  .instance-setup-card.setup-wizard {
+    width: min(100%, 1048px);
+    min-height: min(664px, calc(var(--viewport-height) - 56px));
+    display: grid;
+    grid-template-columns: minmax(0, 46fr) minmax(0, 54fr);
+    padding: 0;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--text) 8%, transparent),
+                0 24px 64px color-mix(in srgb, var(--text) 10%, transparent);
+  }
+  .instance-setup:has(> .setup-wizard[data-entering]) {overflow: clip}
+  .setup-wizard[data-entering] {animation: setup-window-enter var(--dur-5) var(--ease-emphasized) both}
+  .setup-wizard[data-entering] > :is(.setup-illustration, .setup-form) {
+    animation: setup-content-enter calc(var(--dur-5) * .35) var(--ease-standard) calc(var(--dur-5) * .65) both;
+  }
+  .setup-wizard[data-entering] > .setup-form {pointer-events: none}
+  @keyframes setup-window-enter {
+    from {transform: scale(var(--setup-entry-scale-x, 1), var(--setup-entry-scale-y, 1))}
+    to {transform: none}
+  }
+  @keyframes setup-content-enter {from {opacity: 0} to {opacity: 1}}
+
+  .setup-wizard .setup-brand, .setup-wizard .setup-steps {display: none}
+  .setup-illustration {
+    --setup-art-pale: color-mix(in srgb, var(--setup-accent) 10%, var(--surface));
+    --setup-art-blue: color-mix(in srgb, var(--setup-accent) 28%, var(--surface));
+    --setup-art-edge: color-mix(in srgb, var(--setup-accent) 44%, var(--surface));
+    display: grid;
+    place-items: center;
+    background: radial-gradient(ellipse at center, color-mix(in srgb, var(--setup-accent) 16%, transparent), transparent 68%);
+  }
+  .setup-illustration-art {width: min(92%, 432px); aspect-ratio: 1}
+  .setup-art-part {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: setup-art-enter var(--dur-4) var(--ease-emphasized) var(--setup-art-delay, 0ms) both;
+  }
+  @keyframes setup-art-enter {
+    from {opacity: 0; transform: translate(var(--setup-art-x, 0px), var(--setup-art-y, 12px)) scale(.96)}
+    to {opacity: 1; transform: none}
+  }
+  .setup-art-import-file {--setup-art-y: -34px; --setup-art-delay: calc(var(--dur-1) * .5)}
+  .setup-art-monitor {--setup-art-x: -20px; --setup-art-y: 0px}
+  .setup-art-phone {--setup-art-x: 18px; --setup-art-y: 0px; --setup-art-delay: calc(var(--dur-1) * .5)}
+  .setup-art-device-link {--setup-art-y: 0px; --setup-art-delay: var(--dur-2); animation-duration: var(--dur-2)}
+  .setup-art-checks > .setup-art-part {--setup-art-y: 4px; animation-duration: var(--dur-2)}
+  .setup-art-checks > :nth-child(1) {--setup-art-delay: var(--dur-1)}
+  .setup-art-checks > :nth-child(2) {--setup-art-delay: var(--dur-2)}
+  .setup-art-checks > :nth-child(3) {--setup-art-delay: var(--dur-3)}
+  .setup-illustration-mark {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    place-items: center;
+    width: min(52%, 216px);
+    aspect-ratio: 1;
+    color: var(--setup-accent);
+  }
+  .setup-illustration-mark::before, .setup-illustration-mark::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    border: 1px solid color-mix(in srgb, var(--setup-accent) 18%, var(--surface));
+    border-radius: 24%;
+  }
+  .setup-illustration-mark::before {
+    transform: translate(12%, -8%) rotate(13deg);
+    background: color-mix(in srgb, var(--setup-accent) 18%, var(--surface));
+  }
+  .setup-illustration-mark::after {
+    transform: rotate(-8deg);
+    background: linear-gradient(145deg, var(--surface), color-mix(in srgb, var(--setup-accent) 13%, var(--surface)));
+    box-shadow: 0 16px 32px color-mix(in srgb, var(--setup-accent) 22%, transparent);
+  }
+
+  .setup-wizard .setup-form {
+    padding: clamp(32px, 4.5vw, 48px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .setup-wizard .setup-step-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
+  }
+  .setup-step-content h1 {font-size: clamp(25px, 3vw, 32px); font-weight: 600}
+  .setup-step-content h1 + p {margin-top: 8px; font-size: 14px}
+  .setup-wizard .setup-languages {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  .setup-wizard .setup-languages .button {
+    position: relative;
+    justify-content: flex-start;
+    min-height: 42px;
+    padding-inline: 16px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    box-shadow: none;
+    font-size: 14px;
+  }
+  .setup-wizard .setup-languages .button:hover {background: var(--surface-muted)}
+  .setup-wizard .setup-languages .button[aria-pressed='true'] {background: color-mix(in srgb, var(--setup-accent) 10%, var(--surface))}
+  .setup-languages .button[aria-pressed='true']::before {
+    content: '';
+    position: absolute;
+    inset: 25% auto 25% 0;
+    width: 3px;
+    border-radius: 2px;
+    background: var(--setup-accent);
+  }
+  .setup-wizard .setup-footer {
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
+    padding-top: 0;
+    border-top: 0;
+  }
+  .setup-wizard .setup-footer .button {min-height: 36px; border-radius: 4px}
+  .setup-wizard .setup-actions .button.primary {
+    min-width: 128px;
+    color: var(--setup-on-accent);
+    background: var(--setup-accent);
+    box-shadow: none;
+  }
+  .setup-wizard .setup-actions .button.primary:hover:not(:disabled) {background: var(--setup-accent-hover)}
+}
+
+@media (max-width: 620px) {
+  .setup-steps {grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 18px 0 22px}
+  .setup-brand {justify-content: flex-start; padding-bottom: 16px}
+  .setup-brand img {width: 36px; height: 36px}
+  .setup-review dt, .setup-review dd {padding: 8px}
+}

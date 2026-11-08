@@ -218,7 +218,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             if not continue_ready:
                 self.get_current_zone()
         except MapDetectionError as e:
-            logger.error("[大世界-侵蚀1练级] OS地图区域识别失败，请确保游戏已进入OS海域地图界面")
+            logger.error("[大世界-侵蚀1练级] 大世界地图区域识别失败，请确保游戏已进入大世界海域地图界面")
             logger.error(f"[大世界-侵蚀1练级] OCR识别错误: {e}")
             raise
 

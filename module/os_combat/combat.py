@@ -10,9 +10,13 @@ from module.logger import logger
 from module.os_combat.assets import *
 from module.os_handler.assets import *
 from module.os_handler.map_event import MapEventHandler
+from module.os_handler.resource_state import effective_task
 from module.base.timer import Timer
 from module.exception import GameBugError
 from module.statistics.opsi_runtime import finish_battle_timer, start_battle_timer
+from module.os.abyssal_resume import ABYSSAL_CONTINUE_KEY
+from module.os.assets import MAP_GOTO_GLOBE
+from module.ui.assets import BACK_ARROW
 
 
 class ContinuousCombat(Exception):
@@ -130,11 +134,11 @@ class Combat(Combat_, MapEventHandler):
         大世界战斗准备阶段。
 
         循环处理战斗准备界面，设置自动战斗模式、处理退役和弹窗确认，
-        直到检测到战斗执行界面出现。
+        直到检测到战斗执行界面；漏识别执行界面时，也可由明确战果页交接到结算。
 
         Pages:
             in: 战斗准备界面（BATTLE_PREPARATION 或 SIREN_PREPARATION）
-            out: 战斗执行中界面
+            out: 战斗执行中界面，或战斗评价/失败结果页
 
         Args:
             balance_hp (bool): 是否平衡血量。
@@ -146,9 +150,22 @@ class Combat(Combat_, MapEventHandler):
         self.device.stuck_record_clear()
         self.device.click_record_clear()
         skip_first_screenshot = True
+        rejected = False
 
         for _ in self.loop():
 
+            if self.handle_abyssal_low_resolve():
+                rejected = True
+                continue
+            if rejected:
+                if self.is_in_map():
+                    return False
+                if self.appear(BATTLE_PREPARATION) or self.appear(SIREN_PREPARATION, offset=(20, 20)):
+                    self.appear_then_click(BACK_ARROW, offset=(20, 20), interval=2)
+                continue
+            if (getattr(self, '_abyssal_battle_progress', None) is not None
+                    and self.is_in_map() and self.appear(MAP_GOTO_GLOBE, offset=(20, 20))):
+                return False
             if self.appear(BATTLE_PREPARATION):
                 if self.handle_combat_automation_set(auto=auto == 'combat_auto'):
                     continue
@@ -170,6 +187,26 @@ class Combat(Combat_, MapEventHandler):
             if pause:
                 logger.attr('战斗界面', pause)
                 break
+            # 漏识别执行界面时不能一直等暂停按钮；只观察结果，交给后续阶段点击。
+            # C/D 的灰色在转场也可能出现，需同时确认模板形状，避免仅凭颜色提前结束准备。
+            if self.appear(OPTS_INFO_D, offset=(30, 30)) or any(
+                    self.match_template_color(button, offset=(20, 20))
+                    for button in (BATTLE_STATUS_S, BATTLE_STATUS_A, BATTLE_STATUS_B,
+                                   BATTLE_STATUS_C, BATTLE_STATUS_D)):
+                logger.info('[大世界战斗] 准备阶段已出现战果页，交由原结算流程处理')
+                break
+
+    def handle_abyssal_low_resolve(self):
+        """续接开启时关闭无法挑战强敌的士气提示，只处理明确匹配的提示文字。"""
+        if getattr(self, '_abyssal_battle_progress', None) is None:
+            return False
+        if self.config.cross_get(ABYSSAL_CONTINUE_KEY, default=False) is not True:
+            return False
+        if self.appear(ABYSSAL_LOW_RESOLVE, offset=(20, 20)):
+            if self.appear_then_click(LEAVE_OS_POPUP_CLOSE, offset=(20, 20), interval=2):
+                logger.info('[大世界-深渊续接] 士气过低，关闭提示')
+                return True
+        return False
 
     def _get_exp_info_sleep(self):
         """
@@ -339,7 +376,11 @@ class Combat(Combat_, MapEventHandler):
                 logger.warning('[大世界战斗] 连续战斗过多')
 
             try:
-                super().combat(*args, save_get_items=save_get_items, **kwargs)
+                if getattr(self, '_abyssal_battle_progress', None) is not None:
+                    kwargs['allow_preparation_cancel'] = True
+                result = super().combat(*args, save_get_items=save_get_items, **kwargs)
+                if result is False:
+                    return False
                 break
             except ContinuousCombat:
                 logger.info('[大世界战斗] 检测到连续战斗')
@@ -380,7 +421,8 @@ class Combat(Combat_, MapEventHandler):
         处理大世界战斗评价状态页面（S/A/B/C/D）。
 
         战斗执行中时重置 S 评价计时器并跳过处理。
-        优先通过延迟机制处理 S 评价，再依次检查 A/B/C/D 评价。
+        深渊与月度 Boss 的 S 评价直接确认，其他任务保留延迟兜底，
+        再依次检查 A/B/C/D 评价。
 
         Pages:
             in: 战斗评价页面（S/A/B/C/D 任一可见）
@@ -396,11 +438,17 @@ class Combat(Combat_, MapEventHandler):
             self._clear_battle_status_s_timer()
             return False
 
-        appeared, clicked = self._handle_auto_battle_status_s(drop=drop)
-        if clicked:
-            return True
-        if appeared:
-            return True
+        if effective_task(self.config) in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            # 这两类 Boss 由脚本推进结算，不等待自动搜索自行跳过 S 评价页。
+            self._clear_battle_status_s_timer()
+            if self._handle_single_battle_status(BATTLE_STATUS_S, 'S', drop):
+                return True
+        else:
+            appeared, clicked = self._handle_auto_battle_status_s(drop=drop)
+            if clicked:
+                return True
+            if appeared:
+                return True
 
         for status_button, status_letter in [
             (BATTLE_STATUS_A, 'A'),

@@ -329,11 +329,11 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .instance-tab .instance-tab-icon {flex-shrink: 0; width: var(--tab-cell-icon); height: var(--tab-cell-icon)}
 .instance-tab-cell:not(.instance-tab-remove):hover .instance-tab-icon {visibility: hidden}
 .instance-tab-cell:not(.instance-tab-remove):hover .instance-tab-power {display: grid}
-.instance-tab-power {position: absolute; inset: 0; display: none; place-items: center; border-radius: 50%; cursor: pointer; color: var(--accent)}
+.instance-tab-power {position: absolute; inset: 0; display: none; place-items: center; cursor: pointer; color: var(--accent); transition: transform .12s ease}
 .instance-tab-power > .lucide {width: var(--tab-cell-icon); height: var(--tab-cell-icon)}
-.instance-tab-power:hover {color: var(--surface); background: var(--accent)}
+.instance-tab-power:hover {color: var(--accent); transform: scale(1.15)}
 .instance-tab.running .instance-tab-power {color: var(--red)}
-.instance-tab.running .instance-tab-power:hover {color: var(--surface); background: var(--red)}
+.instance-tab.running .instance-tab-power:hover {color: var(--red); transform: scale(1.15)}
 .instance-tab-remove .lucide {display: none}
 .instance-tab-remove:hover .lucide {display: block}
 .instance-tab-remove:hover {border-radius: 50%; cursor: pointer; color: var(--red); background: var(--surface)}

@@ -158,7 +158,7 @@ class EquipmentChange(Equipment):
             in: 装备选择列表（EQUIPMENT STATUS）
             out: 舰船装备栏（SHIP_INFO_EQUIPMENT_CHECK）
         """
-        logger.info('[装备-更换] 装备装备')
+        logger.info('[装备-更换] 装上装备')
         button = Button(area=(), color=(), button=(point[0], point[1], point[0] + offset[0], point[1] + offset[1]),
                         name='EQUIPMENT')
         self.ui_click(appear_button=EQUIPPING_OFF, click_button=button, check_button=EQUIP_CONFIRM)

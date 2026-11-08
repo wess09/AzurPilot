@@ -1,11 +1,12 @@
 """MCP 接口的鉴权：凭据提取、常数时间比对、会话登记与日志脱敏。
 
-MCP 把 18 个工具（含停止实例、改配置、git pull 等破坏性操作）直接暴露在
-HTTP 上，而 WebUI 的密码校验发生在 PyWebIO 会话内部，管不到挂载的 ASGI
-子应用，所以这里单独做一层。密钥复用 WebUI 密码（``--key`` /
+MCP 把 15 个 ``azurpilot_`` 工具（含停止实例、改配置、git pull 等破坏性操作）
+直接暴露在 HTTP 上，而 WebUI 的密码校验发生在 PyWebIO 会话内部，管不到挂载的
+ASGI 子应用，所以这里单独做一层。密钥复用 WebUI 密码（``--key`` /
 ``deploy.yaml`` 的 ``Password``），不引入第二把密钥；支持
 ``Authorization: Bearer`` / ``X-API-Key`` 请求头与 ``?key=`` 查询参数两种
-传参方式，以兼容只能填 URL 的 MCP 客户端。
+传参方式，以兼容只能填 URL 的 MCP 客户端。工具名称由
+``module/mcp/registry.py`` 决定，鉴权只按端点放行，不按工具分级。
 
 本模块只依赖标准库：既能独立单元测试，也避免把 WebUI/OCR 的依赖链带进
 独立运行的 MCP 进程。所有判定集中在 :func:`authorize`，ASGI 层只做转发。

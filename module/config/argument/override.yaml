@@ -47,12 +47,8 @@ GemsFarming:
   Emotion:
     Mode: calculate_ignore
     Fleet1Control: prevent_red_face
-    Fleet1Recover: not_in_dormitory
-    Fleet1Oath: false
     # 支持二队出击，心情值与记录时间必须保留运行时写入，不能强制覆盖。
     Fleet2Control: prevent_red_face
-    Fleet2Recover: not_in_dormitory
-    Fleet2Oath: false
 
 ThreeOilLowCost:
   Scheduler:
@@ -83,11 +79,7 @@ ThreeOilLowCost:
   Emotion:
     Mode: calculate_ignore
     Fleet1Control: prevent_red_face
-    Fleet1Recover: not_in_dormitory
-    Fleet1Oath: false
     Fleet2Control: prevent_red_face
-    Fleet2Recover: not_in_dormitory
-    Fleet2Oath: false
 
 Ambush11:
   Campaign:

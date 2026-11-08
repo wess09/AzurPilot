@@ -205,7 +205,12 @@ class IslandFishMeatExchange:
             in: 任意页面
             out: 商店「鱼肉加工」页，meat_id 对应的子页签
         """
-        self.ui_ensure(page_island)
+        # 兑换完淡水鱼肉后仍停在鱼肉加工页，接着兑换海水鱼肉。商店页不是已知页面，
+        # 此时 ui_ensure 会判定为未知页面并重启游戏，所以已在鱼肉加工页时直接切换子页签
+        self.device.screenshot()
+        if not (self.appear(ISLAND_EXCHANGE_CONFIRM, offset=(20, 20))
+                and fish_meat_tab_active(self.device.image)):
+            self.ui_ensure(page_island)
         click_timer = Timer(2)
         # 只在点过「商店」之后才点侧栏：岗位管理等页面也有深色侧栏与返回按钮，同一位置是别的按钮
         shop_clicked = self.appear(ISLAND_EXCHANGE_CONFIRM, offset=(20, 20))

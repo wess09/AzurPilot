@@ -1,6 +1,6 @@
 /* 白底与四模块静区保持完整；只改变深色模块的外露圆角和卡片质感。 */
 .remote-pairing .pairing-qr {
-  border-radius: 24px;
+  border-radius: var(--theme-radius-card, 8px);
   border-color: color-mix(in srgb, var(--accent) 16%, transparent);
   box-shadow: 0 12px 32px rgb(0 0 0 / .06), 0 2px 6px rgb(0 0 0 / .03);
 }

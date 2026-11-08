@@ -7,7 +7,7 @@ export interface Parameters {
   "schema.get": { language?: "zh-CN" | "en-US" | "ja-JP" | "zh-TW" }
   "search.content": { query: string }
   "instances.list": Record<string, never>
-  "instances.create": { name: string; source?: string | null; import_file?: string | null }
+  "instances.create": { name: string; source?: string | null; import_file?: string | null; emulator?: { serial: string; package_name: string; server_name: string } | null }
   "instances.importable": Record<string, never>
   "instances.importConfig": { name: string; content: string }
   "instances.delete": { instance: string; revision: string }

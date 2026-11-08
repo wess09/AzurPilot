@@ -64,7 +64,8 @@ class Router:
             'schema.get': Method(p.SchemaParams, lambda x: configs.schema(x.language)),
             'search.content': Method(p.SearchContentParams, lambda x: search.search_content(x.query)),
             'instances.list': Method(p.Params, lambda _: runtime.instances()),
-            'instances.create': Method(p.CreateParams, lambda x: configs.create(x.name, x.source, x.import_file), True),
+            'instances.create': Method(p.CreateParams, lambda x: configs.create(
+                x.name, x.source, x.import_file, emulator=x.emulator), True),
             'instances.importable': Method(p.Params, lambda _: configs.importable()),
             'instances.importConfig': Method(p.ImportParams, lambda x: configs.save_import(x.name, x.content), True),
             'instances.delete': Method(p.RevisionParams, self.delete, True),

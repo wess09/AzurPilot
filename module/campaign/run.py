@@ -168,7 +168,7 @@ class CampaignRun(CampaignEvent, ShopStatus):
             return True
         # 获得新舰船
         if self.config.StopCondition_GetNewShip and self.campaign.config.GET_SHIP_TRIGGERED:
-            logger.hr('触发停止条件：获得新舰船')
+            logger.hr('触发停止条件: 获得新舰船')
             self.config.Scheduler_Enable = False
             handle_notify(
                 self.config.Error_OnePushConfig,

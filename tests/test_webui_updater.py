@@ -441,21 +441,53 @@ class TestUpdaterForceUpdate(unittest.TestCase):
         self.assertFalse(updater._force_update_checking)
         updater.run_update.assert_called_once_with()
 
-    def test_force_update_uses_one_second_check_schedule(self):
+    def test_update_checks_follow_configured_interval_in_both_modes(self):
+        for force_update in (False, True):
+            for interval in (2, 5):
+                with self.subTest(force_update=force_update, interval=interval):
+                    updater = self._updater()
+                    updater.force_update = force_update
+                    object.__setattr__(updater, "CheckUpdateInterval", interval)
+                    updater.read = Mock()
+                    updater._check_update = Mock(return_value=False)
+                    updater.run_update = Mock()
+                    updater.check_update = Mock(side_effect=updater._check_update_thread)
+                    handler = types.SimpleNamespace(_task=types.SimpleNamespace(delay=None))
+                    loop = updater.check_update_loop()
+                    self.addCleanup(loop.close)
+                    next(loop)
+
+                    seconds = interval * 60
+                    times = (0, 1, seconds - 1, seconds, seconds + 1, 2 * seconds)
+                    with patch("module.runtime.updater.time.monotonic", side_effect=times):
+                        loop.send(handler)
+                        self.assertEqual(1, updater._check_update.call_count)
+                        for expected in (1, 1, 2, 2, 3):
+                            next(loop)
+                            self.assertEqual(expected, updater._check_update.call_count)
+
+                    self.assertEqual(0, updater.state)
+                    updater.run_update.assert_not_called()
+
+    def test_enabling_force_update_does_not_bypass_scheduled_check(self):
         updater = self._updater()
         object.__setattr__(updater, "CheckUpdateInterval", 5)
         updater.read = Mock()
         updater.check_update = Mock()
         handler = types.SimpleNamespace(_task=types.SimpleNamespace(delay=None))
         loop = updater.check_update_loop()
+        self.addCleanup(loop.close)
         next(loop)
 
         with patch(
-            "module.runtime.updater.time.monotonic", side_effect=[0.0, 0.5, 1.5]
+            "module.runtime.updater.time.monotonic", side_effect=[0, 1, 299, 300, 301]
         ):
             loop.send(handler)
-            next(loop)
             updater.force_update = True
+            next(loop)
+            next(loop)
+            self.assertEqual(1, updater.check_update.call_count)
+            next(loop)
             next(loop)
 
         self.assertEqual(2, updater.check_update.call_count)

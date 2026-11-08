@@ -181,6 +181,13 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         # 初始化
         self.zone_init()
 
+        # 续接必须先于维护、士气恢复和特殊海域退出，否则会丢失现场舰队及 Boss 进度。
+        if self.abyssal_continue_enabled():
+            if self.is_in_abyssal():
+                self.resume_abyssal_on_init()
+            else:
+                self._clear_abyssal_resume()
+
         # 代理任务尚未绑定侵蚀一的献祭设置，维修留到实际子任务确定后执行。
         overflow_target_task = self._get_prevent_action_point_overflow_target_task()
         self._initial_fleet_repair_pending = (
@@ -193,8 +200,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         self.handle_after_auto_search()
         self.handle_current_fleet_resolve(revert=False)
 
-        # 从特殊海域类型退出，仅 SAFE 和 DANGEROUS 可接受。
-        if self.is_in_special_zone():
+        # 即使已回到普通海域，也要让隐秘续接入口清掉旧记录，再继续原初始化流程。
+        obscure_handled = hasattr(self, 'resume_obscure') and self.resume_obscure()
+        if not obscure_handled and self.is_in_special_zone():
             logger.warning(
                 "[大世界-地图] 大世界在特殊海域类型, 仅 SAFE 和 DANGEROUS 可接受"
             )
@@ -205,7 +213,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             keys="OpsiHazard1Leveling.OpsiHazard1Leveling.TargetZone", default=0
         ) or 22
         if self.config.task.command == "OpsiExploreCleanup":
-            logger.info("独立事件补扫任务，跳过初始化自律寻敌")
+            logger.info("普通海域事件补扫任务，跳过初始化自律寻敌")
         elif (
             (
                 self.config.task.command == "OpsiScheduling"
@@ -868,7 +876,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 keys="OpsiHazard1Leveling.OpsiHazard1Leveling.MinimumActionPointReserve",
                 default=200,
             )
-            logger.info(f"[大世界-调度] CL1可用时保留 {preserve} 行动点")
+            logger.info(f"[大世界-调度] CL1可用时保留 {preserve} 行动力")
             if not self.action_point_check(preserve):
                 self.config.opsi_task_delay(cl1_preserve=True)
                 self.config.task_stop()
@@ -1130,7 +1138,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 result = self.auto_search_combat(drop=drop)
                 if result:
                     finished_combat += 1
-                else:
+                elif self.config.task.command != "OpsiHazard1Leveling":
+                    # 侵蚀一的单船维修标记不应打断后续战斗；等搜索结束并处理完事件再维修。
                     self.hp_get()
                     if (
                         any(self.need_repair)
@@ -1315,9 +1324,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         """
         if hasattr(grid, "is_scanning_device") and grid.is_scanning_device:
             if not self._is_siren_research_enabled:
-                logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬研究装置,但功能未开启,跳过")
+                logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬信息收集装置,但功能未开启,跳过")
                 return True
-            logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬研究装置,功能已开启,继续处理")
+            logger.info(f"[大世界] [预检查] 格子 {grid} 是塞壬信息收集装置,功能已开启,继续处理")
         return False
 
     def clear_question(self, drop=None):
@@ -1397,16 +1406,16 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 grid.is_scanning_device or self.is_siren_device_confirmed
             ):
                 # ========== 地图检测:检测到扫描装置 ==========
-                logger.hr("[大世界] 检测到扫描装置,开始处理", level=2)
+                logger.hr("[大世界] 检测到塞壬信息收集装置,开始处理", level=2)
                 logger.info(
-                    f"[地图检测] 格子 {grid} 被识别为扫描装置 (grid.is_scanning_device=True)"
+                    f"[地图检测] 格子 {grid} 被识别为塞壬信息收集装置 (grid.is_scanning_device=True)"
                 )
                 logger.info(f"[大世界] [地图检测] 移动结果: {result}")
                 record_siren_research_device(self)
 
                 # ========== 配置检查 ==========
                 if not self._is_siren_research_enabled:
-                    logger.warning("[大世界] [配置检查] 塞壬研究装置功能已禁用,标记但不处理")
+                    logger.warning("[大世界] [配置检查] 塞壬信息收集装置功能已禁用,标记但不处理")
                     self._solved_map_event.add("is_scanning_device")
                     return True
 
@@ -1501,7 +1510,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         )
         return False
 
-    def clear_question_any_fleet(self, drop=None):
+    def clear_question_any_fleet(self, drop=None, rescan=True):
         """
         遍历舰队雷达，尝试用任意舰队清除近距离问号（PR #5865 思路的 fork 版）。
 
@@ -1518,6 +1527,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
 
         Args:
             drop: 掉落记录对象。
+            rescan (bool): 清问号后是否补全图扫描；隐秘海域仅雷达补查时关闭。
 
         Returns:
             bool: 是否解决了目标事件（明石/记录塔/信息探测装置）。
@@ -1551,6 +1561,8 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             if self._solved_map_event & ALREADY_SOLVED_MAP_EVENTS and not cleanup:
                 logger.info("[大世界-搜索] 已解决目标事件，停止遍历舰队")
                 return True
+            if not rescan:
+                continue
             # 清问号后未命中目标事件：做一次全图扫描，把整张地图上被遮挡、
             # 清问号后才显现的事件捞出来；全图扫完仍没有，才继续切换下一支舰队。
             try:
@@ -1585,7 +1597,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
 
     def run_auto_search(
         self, question=True, rescan=None, after_auto_search=True, interrupt=None, exit_map=False,
-        on_search_finished=None,
+        on_search_finished=None, on_map_scanned=None,
     ):
         """
         通过运行自律寻敌清理当前海域。需要先完成大世界剧情模式才能解锁自律寻敌。
@@ -1596,11 +1608,12 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 这会清理塞壬扫描装置、塞壬日志塔、
                 访问自动搜索遗漏的明石商店，以及解锁需要 2 支舰队的机关。
                 也接受字符串：`current` 仅扫描当前摄像机视野，`full` 先扫描当前再重扫整个地图。
-                在 OpsiObscure、OpsiAbyssal、OpsiStronghold 等特殊任务中应禁用此选项。
+                特殊海域通常仅扫描当前视野；隐秘海域额外扫描由专属开关控制。
             after_auto_search (bool): 自动搜索后是否调用 handle_after_auto_search()。
             interrupt (callable): 中断回调函数。
             exit_map (bool): 清理后在同一掉落记录内退出特殊海域，包含退出时的奖励。
             on_search_finished (callable | None): 战斗结束后、清问号和扫描前调用，用于启动战后录像。
+            on_map_scanned (callable | None): 常规扫描后、退出海域前调用，接收同一掉落记录。
 
         Returns:
             int: 完成的战斗次数。
@@ -1653,6 +1666,9 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 self.clear_question(drop=drop)
             if rescan:
                 self.map_rescan(rescan_mode=rescan, drop=drop)
+
+            if on_map_scanned is not None:
+                on_map_scanned(drop=drop)
 
             if exit_map:
                 self.map_exit(drop=drop)
@@ -1828,12 +1844,12 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             grid = grids[0]
 
             # ========== 地图选择:发现研究装置 ==========
-            logger.hr("[大世界] 发现研究装置,开始处理", level=2)
-            logger.info(f"[大世界] [地图选择] 在 {grid} 位置发现研究装置")
+            logger.hr("[大世界] 发现塞壬信息收集装置,开始处理", level=2)
+            logger.info(f"[大世界] [地图选择] 在 {grid} 位置发现塞壬信息收集装置")
             record_siren_research_device(self)
 
             if not self._is_siren_research_enabled:
-                logger.warning("[大世界] [配置检查] 塞壬研究装置功能已禁用,跳过处理")
+                logger.warning("[大世界] [配置检查] 塞壬信息收集装置功能已禁用,跳过处理")
                 self._solved_map_event.add("is_scanning_device")
                 return True
 
@@ -2354,7 +2370,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             # C1/D1/E1/F1，那是照侵蚀1 那张图定的；短猫跑的海域地图各不相同，
             # 挪了没意义还可能把舰队挪到不该去的地方。短猫的强制移动只有
             # “换队扫雷达清问号”（_meow_fixed_patrol_scan）。
-            logger.info("[大世界] 短猫相接不走共享强制移动，只换队扫雷达")
+            logger.info("[大世界] 耄耋相接不走共享强制移动，只换队扫雷达")
             return
         if not self._forced_move_enabled():
             if not recovery:
@@ -2716,7 +2732,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
             # 短猫相接不走这套共享兜底（换队点明石 + 挪舰队）。它的强制移动只有
             # “换队扫雷达清问号”（_meow_fixed_patrol_scan），这里交回上层，
             # 让那份雷达扫描去处理；扫不到就等下一轮。
-            logger.info("[大世界] 短猫相接不走共享兜底，交给换队扫雷达")
+            logger.info("[大世界] 耄耋相接不走共享兜底，交给换队扫雷达")
             return False
         if node in self._unreachable_event_nodes:
             logger.info(f"[大世界] {node} 的明石本轮已判定无法到达，跳过重复尝试")

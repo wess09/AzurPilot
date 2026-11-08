@@ -1,12 +1,14 @@
 """离线验证大世界自动搜索战斗的经验结算与自律开关过渡保护，不连接真实游戏。"""
 
 import unittest
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import numpy as np
 
+from module.base.timer import Timer
 from module.base.utils import load_image
 from module.combat.assets import (
     BATTLE_STATUS_A,
@@ -19,8 +21,10 @@ from module.combat.assets import (
     EXP_INFO_C,
     EXP_INFO_D,
     EXP_INFO_S,
+    OPTS_INFO_D,
 )
 from module.exception import CampaignEnd, GameStuckError, GameTooManyClickError
+from module.os.fleet import BossFleet, OSFleet
 from module.os.map import OSMap
 from module.os_combat.combat import Combat
 from module.os_handler.assets import (
@@ -34,6 +38,7 @@ from tests.test_opsi_cl1_speed import AutoSearchStateStub, VirtualClock
 FIXTURE_DIR = Path(__file__).resolve().parent / 'fixtures' / 'opsi_auto_search'
 EXPERIENCE_PAGE = load_image(str(FIXTURE_DIR / 'exp_info_s.png'))
 BLANK_IMAGE = np.zeros((720, 1280, 3), dtype=np.uint8)
+C_TIMEOUT_PAGE = load_image(str(FIXTURE_DIR / 'battle_status_c_timeout.png'))
 
 
 class TestExperiencePageFixture(unittest.TestCase):
@@ -55,6 +60,256 @@ class TestExperiencePageFixture(unittest.TestCase):
         ):
             with self.subTest(button=button.name):
                 self.assertFalse(button.appear_on(EXPERIENCE_PAGE))
+
+
+class TestBattleStatusTiming(unittest.TestCase):
+    """深渊、月度 Boss 直接结算；自动搜索和其他任务保持延迟兜底。"""
+
+    def setUp(self):
+        self.clock = VirtualClock()
+        time_patch = patch('module.base.timer.time', self.clock)
+        time_patch.start()
+        self.addCleanup(time_patch.stop)
+        for button in (BATTLE_STATUS_S, BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D):
+            image_patch = patch.object(
+                button, 'appear_on', side_effect=lambda image, button=button, **kwargs: image is button,
+            )
+            image_patch.start()
+            self.addCleanup(image_patch.stop)
+
+    def make_combat(self, task='OpsiAbyssal', bound_task=None, status=BATTLE_STATUS_S):
+        combat = Combat.__new__(Combat)
+        combat.config = SimpleNamespace(task=SimpleNamespace(command=task), _bind_task_override=bound_task)
+        combat.device = Mock(image=status)
+        combat.interval_timer = {}
+        combat.is_combat_executing = Mock(return_value=False)
+        return combat
+
+    def test_boss_s_page_is_clicked_on_first_observation(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            with self.subTest(task=task):
+                combat = self.make_combat(task)
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_delegated_boss_uses_the_bound_task(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss'):
+            with self.subTest(task=task):
+                combat = self.make_combat('OpsiScheduling', bound_task=task)
+                combat.handle_battle_status()
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_boss_click_keeps_existing_cooldown(self):
+        for interval in (2, 7):
+            with self.subTest(interval=interval):
+                combat = self.make_combat()
+                combat.battle_status_click_interval = interval
+                self.assertTrue(combat.handle_battle_status())
+                self.clock.now += 0.5
+                self.assertFalse(combat.handle_battle_status())
+                self.assertEqual(combat.device.click.call_count, 1)
+                self.clock.now += interval
+                self.assertTrue(combat.handle_battle_status())
+                self.assertEqual(combat.device.click.call_count, 2)
+
+    def test_boss_drop_is_captured_before_click(self):
+        combat = self.make_combat()
+        actions = []
+        drop = Mock(handle_add=Mock(side_effect=lambda *args: actions.append('capture')))
+        combat.device.click.side_effect = lambda *args: actions.append('click')
+        combat.handle_battle_status(drop=drop)
+        self.assertEqual(actions, ['capture', 'click'])
+        drop.handle_add.assert_called_once_with(combat)
+
+    def test_boss_battle_or_unrecognized_frame_is_not_clicked(self):
+        combat = self.make_combat()
+        combat.is_combat_executing.return_value = True
+        self.assertFalse(combat.handle_battle_status())
+        combat.is_combat_executing.return_value = False
+        combat.device.image = BLANK_IMAGE
+        self.assertFalse(combat.handle_battle_status())
+        combat.device.click.assert_not_called()
+
+    def test_other_tasks_keep_twenty_second_s_delay(self):
+        for task, bound_task in (('OpsiObscure', None), ('OpsiStronghold', None),
+                                 ('OpsiScheduling', 'OpsiObscure')):
+            with self.subTest(task=task, bound_task=bound_task):
+                combat = self.make_combat(task, bound_task)
+                self.assertTrue(combat.handle_battle_status())
+                self.clock.now += 19.9
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_not_called()
+                self.clock.now += 0.2
+                self.assertTrue(combat.handle_battle_status())
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_auto_search_keeps_twenty_second_s_delay_for_all_tasks(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss', 'OpsiHazard1Leveling'):
+            with self.subTest(task=task):
+                combat = self.make_combat(task)
+                timer = Timer(combat.battle_status_s_autoclick_delay)
+                self.assertFalse(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                self.clock.now += 19.9
+                self.assertFalse(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                combat.device.click.assert_not_called()
+                self.clock.now += 0.2
+                self.assertTrue(combat.handle_auto_search_battle_status(battle_status_s_timer=timer))
+                combat.device.click.assert_called_once_with(BATTLE_STATUS_S)
+
+    def test_other_ranks_remain_immediate(self):
+        for task in ('OpsiAbyssal', 'OpsiMonthBoss', 'OpsiObscure'):
+            for status in (BATTLE_STATUS_A, BATTLE_STATUS_B, BATTLE_STATUS_C, BATTLE_STATUS_D):
+                with self.subTest(task=task, status=status.name):
+                    combat = self.make_combat(task, status=status)
+                    self.assertTrue(combat.handle_battle_status())
+                    combat.device.click.assert_called_once_with(status)
+
+
+class TestPreparationResultHandoff(unittest.TestCase):
+    """漏识别战斗执行界面时，准备阶段仍能把明确战果页交给原结算流程。"""
+
+    def make_combat(self, image=C_TIMEOUT_PAGE):
+        combat = Combat.__new__(Combat)
+        combat.config = SimpleNamespace(
+            SERVER='cn', task=SimpleNamespace(command='OpsiAbyssal'),
+            campaign_name='opsi-preparation-test', DropRecord_CombatRecord='do_not',
+        )
+        combat.device = Mock(image=image)
+        combat.interval_timer = {}
+        combat.stat = Mock()
+        combat.stat.new.return_value = nullcontext(None)
+        for name in (
+            'handle_retirement', 'handle_popup_confirm', 'handle_combat_automation_confirm',
+            'handle_story_skip', 'handle_combat_auto', 'handle_combat_manual',
+            'handle_submarine_call', 'handle_urgent_commission', 'handle_guild_popup_cancel',
+            'handle_vote_popup', 'handle_mission_popup_ack', 'handle_get_ship',
+            'handle_auto_search_exit', 'handle_combat_mis_click', 'handle_in_stage',
+        ):
+            setattr(combat, name, Mock(return_value=False))
+        for name in ('submarine_call_reset', 'combat_auto_reset', 'combat_manual_reset'):
+            setattr(combat, name, Mock())
+        pending_frames = []
+        combat.device.click.side_effect = lambda button: pending_frames.append(BLANK_IMAGE)
+
+        def screenshot():
+            if pending_frames:
+                combat.device.image = pending_frames.pop(0)
+
+        combat.device.screenshot.side_effect = screenshot
+
+        def frames():
+            yield
+            for _ in range(2):
+                combat.device.screenshot()
+                yield
+            raise AssertionError('已显示战果页或返回地图，状态循环仍未交接')
+
+        combat.loop = frames
+        return combat
+
+    def test_actual_c_page_is_recognized_without_a_running_battle(self):
+        combat = self.make_combat()
+        self.assertTrue(BATTLE_STATUS_C.appear_on(C_TIMEOUT_PAGE))
+        self.assertFalse(combat.is_combat_executing())
+        self.assertFalse(combat.appear(OPTS_INFO_D, offset=(30, 30)))
+
+    def test_preparation_hands_off_c_page_without_clicking_it(self):
+        combat = self.make_combat()
+        combat.combat_preparation()
+        combat.device.click.assert_not_called()
+        combat.device.screenshot.assert_not_called()
+
+    def test_actual_c_page_completes_full_combat_after_missing_running_state(self):
+        combat = self.make_combat()
+        combat.combat(
+            balance_hp=False, emotion_reduce=False, auto_mode='combat_auto',
+            submarine_mode='do_not_use', save_get_items=False,
+            expected_end=lambda: combat.device.image is BLANK_IMAGE,
+        )
+        combat.device.click.assert_called_once_with(BATTLE_STATUS_C)
+        self.assertIs(combat.device.image, BLANK_IMAGE)
+        self.assertIsNone(combat.combat_result.rank)
+
+    def test_existing_defeat_page_also_hands_off_and_keeps_failure(self):
+        image = load_image(str(FIXTURE_DIR.parent / 'combat_defeat' / 'defeat.png'))
+        combat = self.make_combat(image)
+        combat.combat(
+            balance_hp=False, emotion_reduce=False, auto_mode='combat_auto',
+            submarine_mode='do_not_use', save_get_items=False,
+            expected_end=lambda: combat.device.image is BLANK_IMAGE,
+        )
+        combat.device.click.assert_called_once_with(OPTS_INFO_D)
+        self.assertTrue(combat.combat_result.defeated)
+
+    def test_c_result_keeps_boss_fleet_rotation_until_map_confirms_clear(self):
+        combat = self.make_combat()
+        combat.config.DropRecord_OpsiAbyssal = 'do_not'
+        drop = SimpleNamespace(count=0)
+        combat.stat.new.side_effect = lambda **kwargs: nullcontext(drop)
+        fleets = [BossFleet(1), BossFleet(2)]
+        fleets[0].standby_loca = (-1, -1)
+        combat.parse_fleet_filter = Mock(return_value=fleets)
+        combat.handle_os_map_fleet_lock = Mock()
+        combat.fleet_low_resolve_appear = Mock(return_value=False)
+        combat.predict_radar = Mock()
+        combat.radar = Mock(select=Mock(return_value=[]))
+        combat.boss_leave = Mock()
+        combat.map_exit = Mock()
+        current_fleet = [0]
+        attacked = []
+
+        def switch(index):
+            current_fleet[0] = index
+            return True
+
+        def attack(location, **kwargs):
+            if location != (0, 0):
+                return
+            attacked.append(current_fleet[0])
+            if current_fleet[0] == 1:
+                combat.combat(
+                    balance_hp=False, emotion_reduce=False, auto_mode='combat_auto',
+                    submarine_mode='do_not_use', save_get_items=False,
+                    expected_end=lambda: combat.device.image is BLANK_IMAGE,
+                )
+            else:
+                combat.radar.select.return_value = [object()]
+
+        combat.fleet_set = Mock(side_effect=switch)
+        combat.boss_goto = Mock(side_effect=attack)
+        self.assertTrue(OSFleet.boss_clear(combat, allow_submarine_call=False))
+        self.assertEqual(attacked, [1, 2])
+        combat.device.click.assert_called_once_with(BATTLE_STATUS_C)
+        combat.boss_leave.assert_called_once_with()
+        combat.map_exit.assert_called_once_with(drop=drop)
+
+    def test_normal_running_state_still_ends_preparation(self):
+        combat = self.make_combat(BLANK_IMAGE)
+        combat.is_combat_executing = Mock(return_value=True)
+        combat.combat_preparation()
+        combat.device.click.assert_not_called()
+        combat.device.screenshot.assert_not_called()
+
+    def test_map_and_popup_frames_do_not_end_preparation(self):
+        fixture_paths = [
+            *(FIXTURE_DIR.parent / 'opsi_abyssal_resume').glob('*.png'),
+            FIXTURE_DIR.parent / 'combat_defeat' / 'map_fleet2.png',
+            FIXTURE_DIR.parent / 'combat_defeat' / 'unavailable.png',
+        ]
+        for path in fixture_paths:
+            with self.subTest(frame=path.name):
+                combat = self.make_combat(load_image(str(path)))
+                combat.is_combat_executing = Mock(side_effect=[False, True])
+                combat.combat_preparation()
+                self.assertEqual(combat.is_combat_executing.call_count, 2)
+
+    def test_c_colored_transition_is_not_a_result_page(self):
+        image = np.full((720, 1280, 3), BATTLE_STATUS_C.color, dtype=np.uint8)
+        self.assertTrue(BATTLE_STATUS_C.appear_on(image))
+        combat = self.make_combat(image)
+        combat.is_combat_executing = Mock(side_effect=[False, True])
+        combat.combat_preparation()
+        self.assertEqual(combat.is_combat_executing.call_count, 2)
 
 
 class TestAutoSearchExperienceClick(unittest.TestCase):

@@ -2515,7 +2515,7 @@ class RewardCommission(Dock, UI, InfoHandler):
         # 选择 BACK_ARROW，但从该页面无法导航到 page_reward
         self.device.screenshot()
         if self.appear(TACTICAL_CLASS_START, offset=(30, 30)):
-            logger.info('[委托-战术] 检测到战术课堂开始按钮，点击取消退出')
+            logger.info('[委托-战术] 检测到战术学院课程开始按钮，点击取消退出')
             self.device.click(TACTICAL_CLASS_CANCEL)
             self.device.sleep((0.5, 1.0))
         self.ui_ensure(page_reward)

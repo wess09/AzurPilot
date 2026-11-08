@@ -96,7 +96,7 @@ def retry(func):
         # 可恢复异常耗尽传输重试后抛 EmulatorNotRunningError，
         # 由上层调度器统一触发模拟器/游戏重启流程，
         # 不再因 get_orientation 等非截图函数失败而直接终止调度器。
-        logger.critical(f'[Device] 重试 {func.__name__}() 失败')
+        logger.critical(f'[设备-连接] 重试 {func.__name__}() 失败')
         raise EmulatorNotRunningError(f'{func.__name__}() 重试失败') from last_error
 
     return retry_wrapper
@@ -417,7 +417,7 @@ class Connection(ConnectionAttr):
             return True
         elif res == 'true':
             # https://mumu.163.com/help/20230802/35047_1102450.html
-            logger.critical('[Device] 请在MuMu模拟器设置内关闭 "后台挂机时保活运行"')
+            logger.critical('[设备-连接] 请在MuMu模拟器设置内关闭 "后台挂机时保活运行"')
             raise RequestHumanTakeover
         else:
             logger.warning(f'[设备-连接] 无效的MuMu保持活跃值: {res}')
@@ -561,7 +561,7 @@ class Connection(ConnectionAttr):
             logger.attr('nc命令', command)
             return command
 
-        logger.error('[Device] 没有可用的 `netcat` 命令，请使用不带 `_nc` 后缀的截图方法')
+        logger.error('[设备-连接] 没有可用的 `netcat` 命令，请使用不带 `_nc` 后缀的截图方法')
         raise RequestHumanTakeover
 
     def adb_shell_nc(self, cmd, timeout=5, chunk_size=262144):
@@ -871,8 +871,8 @@ class Connection(ConnectionAttr):
                 run_once(self.check_mumu_bridge_network)()
                 # 设备不存在
                 logger.warning('[设备-连接] 设备不存在，请重启模拟器或设置正确的序列号')
-                logger.warning('[Device] 该模拟器 Serial 不存在，请重启模拟器或设置正确的 Serial。')
-                logger.warning('[Device] ADB 无法连接至该模拟器，或是模拟器未启动。')
+                logger.warning('[设备-连接] 该模拟器 Serial 不存在，请重启模拟器或设置正确的 Serial。')
+                logger.warning('[设备-连接] ADB 无法连接至该模拟器，或是模拟器未启动。')
                 raise EmulatorNotRunningError
 
         # 连接失败
@@ -927,7 +927,7 @@ class Connection(ConnectionAttr):
         logger.attr('网络桥接已开启', value)
         if str(value).lower() == 'true':
             logger.critical('[设备-连接] 请在MuMuPlayer设置中关闭"网络桥接"')
-            logger.critical('[Device] 请在MuMU模拟器设置中关闭 网络桥接')
+            logger.critical('[设备-连接] 请在MuMu模拟器设置中关闭 网络桥接')
             raise RequestHumanTakeover
         return True
 
@@ -1092,7 +1092,7 @@ class Connection(ConnectionAttr):
             # ConnectionResetError: [WinError 10054] 远程主机强迫关闭了一个现有的连接。
             logger.error(e)
             if '强迫关闭' in str(e):
-                logger.critical('[Device] 无法连接至ADB服务，请关闭UU加速器、原神私服、以及一些劣质代理软件。'
+                logger.critical('[设备-连接] 无法连接至ADB服务，请关闭UU加速器、原神私服、以及一些劣质代理软件。'
                                 '它们会劫持电脑上所有的网络连接，包括AzurPilot与模拟器之间的本地连接。')
         return SelectedGrids(devices)
 
@@ -1205,7 +1205,7 @@ class Connection(ConnectionAttr):
                     self.config.Emulator_Serial = self.serial = emu_serial
                     break
                 elif mumu12.count >= 2:
-                    logger.warning(f'[Device] 发现多个 MuMu12 序列号，无法重定向')
+                    logger.warning(f'[设备-连接] 发现多个 MuMu12 序列号，无法重定向')
                     break
                 else:
                     # 仅有 127.0.0.1:7555

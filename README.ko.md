@@ -186,28 +186,32 @@ URL만 입력할 수 있고 요청 헤더를 설정할 수 없는 클라이언�
 
 ### MCP 도구 목록
 
-현재 사용 가능한 MCP 도구는 총 18개입니다.
+기본 엔드포인트는 25개의 `azurpilot_` 도구를 제공하며, 이전 도구 이름은 명시적으로 만든 호환 엔드포인트에서만 사용할 수 있습니다.
 
 | 카테고리 | 도구 이름 | 기능 |
 | --- | --- | --- |
-| 인스턴스 관리 | `list_instances` | 모든 인스턴스 나열 |
-| | `get_status` | 인스턴스 상태 가져오기 |
-| | `start_instance` | 인스턴스 시작 |
-| | `stop_instance` | 인스턴스 중지 |
-| 작업 관리 | `list_tasks` | 모든 작업 나열 |
-| | `get_task_help` | 작업 도움말 가져오기 |
-| | `trigger_task` | 작업 트리거 |
-| | `get_scheduler_queue` | 스케줄러 큐 가져오기 |
-| | `clear_scheduler_queue` | 스케줄러 큐 비우기 |
-| 모니터링 및 정보 | `get_current_running_task` | 현재 실행 중인 작업 가져오기 |
-| | `get_resources` | 리소스 상태 가져오기 |
-| | `get_config` | 인스턴스 설정 가져오기 |
-| | `get_recent_logs` | 최근 로그 가져오기 |
-| | `get_screenshot` | 스크린샷 가져오기 |
-| 설정 관리 | `update_config` | 설정 업데이트 |
-| 유지보수 도구 | `restart_emulator` | 에뮬레이터 재시작 |
-| | `restart_adb` | ADB 재시작 |
-| | `update_alas` | AzurPilot 업데이트 |
+| 인스턴스 관리 | `azurpilot_list_instances` | 인스턴스와 프로세스 상태, 현재 작업 나열 |
+| | `azurpilot_get_context` | 상태, 현재 작업, 일정/리소스 요약, 최근 오류, 기기 기능을 한 번에 조회 |
+| | `azurpilot_start_instance` / `azurpilot_stop_instance` | 인스턴스 시작 / 중지 |
+| 작업 탐색 | `azurpilot_search_tasks` | 작업 ID, 표시 이름, 인자 문구로 검색하며 일반적인 구어 별칭 지원 |
+| | `azurpilot_get_task_schema` | 매개변수 정의, 기본값, 선택지, 쓰기 가능 여부 조회 |
+| 설정 및 일정 | `azurpilot_get_config` | 작업 또는 경로 단위로 설정을 읽고 revision 반환 |
+| | `azurpilot_patch_config` | revision 검증을 포함한 원자적 일괄 수정, dry_run 지원 |
+| | `azurpilot_set_task_schedule` | 활성 상태와 다음 실행 시각 설정(예약 ≠ 완료) |
+| 로그 및 관찰 | `azurpilot_get_logs` | 커서·레벨·키워드로 제한된 로그 조회 |
+| 통계 | `azurpilot_get_statistics` | 통계 및 개요 페이지의 지표·시계열·표 조회(개요 자원, 자원 추세, 세이렌 작전, 의뢰, 함선 경험치, 드롭, 연구, 창고, 자원 흐름) |
+| | `azurpilot_get_statistics_schema` | 통계 필드 목록: 분류, 지표 키, 단위, 설명, 필터 |
+| | `azurpilot_observe_device` | 스크린샷과 프레임 크기·방향·캡처 시각 조회 |
+| 기기 제어 | `azurpilot_acquire_device_control` / `azurpilot_release_device_control` | 스케줄러 중지 후 기기를 인계받고 `lease_id` 획득/해제 (기본 30분, 호출마다 갱신) |
+| | `azurpilot_click` / `azurpilot_swipe` / `azurpilot_long_press` | 좌표 탭, 스와이프, 길게 누르기. `lease_id` 필요, 명령 전송과 화면 변화를 따로 반환 |
+| | `azurpilot_input_text` / `azurpilot_press_key` | 텍스트 입력(자동 확인 없음)과 키 전송. `lease_id` 필요 |
+| | `azurpilot_adb_shell` | 화이트리스트의 읽기 전용 ADB 진단 명령 실행 (`wm size`, `dumpsys battery` 등) |
+| 작업 확인 | `azurpilot_get_operation` | operation_id로 쓰기 작업의 최종 상태 조회 |
+| 유지보수 도구 | `azurpilot_restart_emulator` | 인스턴스에 연결된 에뮬레이터 재시작 |
+| | `azurpilot_restart_adb` | 전역 ADB 서비스 재시작 |
+| | `azurpilot_update_application` | 애플리케이션 업데이트 요청(접수 ≠ 완료) |
+
+모든 도구는 `inputSchema` / `outputSchema`, 구조화된 결과, 안정적인 오류 코드를 제공합니다. 쓰기 작업은 `request_id`로 중복을 방지하며, 시간 초과 시 재전송 대신 `azurpilot_get_operation`으로 확인하세요. 자세한 내용은 [MCP 서비스 문서](docs/modules/entry/mcp-server.md).
 
 ## 멀티 플랫폼 런처
 

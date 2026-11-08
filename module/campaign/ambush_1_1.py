@@ -59,7 +59,7 @@ class AmbushEmotion(Emotion):
         recovered, delay = self._check_reduce(battle)
         if delay:
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.info('[战役-伏击] 检测到低情绪，暂停当前任务')
+            logger.info('[战役-伏击] 检测到心情值过低，暂停当前任务')
             raise CampaignEnd('Emotion control')
 
     def wait(self, fleet_index):
@@ -104,7 +104,7 @@ class AmbushCampaignOverride(CampaignBase):
 
         if self.handle_popup_cancel('IGNORE_LOW_EMOTION'):
             self.config.GEMS_EMOTION_TRIGGERED = True
-            logger.hr('[战役-伏击] 情绪撤退')
+            logger.hr('[战役-伏击] 心情值过低撤退')
 
             while 1:
                 self.device.screenshot()
@@ -462,9 +462,7 @@ class Ambush11(FleetSelectionMixin, CampaignRun, FleetEquipment, Retirement):
         """
         from module.base.button import Button
 
-        # 编队界面中 3 个后排舰船槽位坐标
-        MAIN_1 = Button(area=(771, 80, 832, 106), color=(), button=(771, 80, 832, 106), name='FLEET_ENTER_MAIN_1')
-        MAIN_3 = Button(area=(771, 320, 832, 346), color=(), button=(771, 320, 832, 346), name='FLEET_ENTER_MAIN_3')
+        # 编队界面中后排舰船槽位坐标
         MAIN_2 = Button(area=(771, 200, 832, 226), color=(), button=(771, 200, 832, 226), name='FLEET_ENTER_MAIN_2')
 
         success = False
