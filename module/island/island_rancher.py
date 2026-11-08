@@ -260,7 +260,8 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
         processed_items = []
         for mill_item, quantity in mill_needs:
-            if self.process_mill_item_with_inventory(mill_item, quantity):
+            fallback = self.feed_groups_to_target(mill_item, quantity, feed_target_quantity)
+            if self.process_mill_item_with_inventory(mill_item, quantity, fallback_quantity=fallback):
                 processed_items.append(mill_item)
                 continue
             logger.warning(f"[岛屿-牧场] {self._item_cn(mill_item)}补充失败，跳过")
@@ -270,12 +271,38 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
 
         return processed_items
 
-    def process_mill_item_with_inventory(self, mill_item, quantity):
+    def feed_groups_to_target(self, mill_item, quantity, feed_target_quantity):
+        """原料不够加工整批饲料时，补到派遣门槛所需的最少组数。
+
+        牧场岗位要求饲料库存达到门槛（默认 50）才派遣。原料不够固定组数时
+        原逻辑整批放弃，饲料停在门槛以下，岗位一直空闲；改为只补到门槛。
+        面粉不适用：面粉与鸡饲料共用小麦，部分加工面粉会吃掉鸡饲料所需的小麦。
+
+        Args:
+            mill_item (str): 加工品内部名称。
+            quantity (int): 原计划加工组数。
+            feed_target_quantity (int): 饲料派遣门槛。
+
+        Returns:
+            int | None: 补到门槛所需组数；不适用或无需减少时返回 None。
+        """
+        if mill_item not in self.ranch_feed_map.values():
+            return None
+        current = self.inventory_counts['mill'].get(mill_item, 0)
+        per_group = self.mill_output_quantity(mill_item, 1)
+        groups = -(-(feed_target_quantity - current) // per_group)
+        if 0 < groups < quantity:
+            return groups
+        return None
+
+    def process_mill_item_with_inventory(self, mill_item, quantity, fallback_quantity=None):
         """结合当前原料库存检查并执行磨坊加工。
 
         Args:
             mill_item (str): 加工品内部名称。
             quantity (int): 加工数量。
+            fallback_quantity (int, optional): 原料不够 quantity 时改为加工的数量，
+                原料也不够时仍然放弃。
 
         Returns:
             bool: 是否成功完成加工并更新库存。
@@ -286,10 +313,20 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         current_material = self.inventory_counts['farm'].get(required_material)
 
         if current_material is not None and current_material < material_needed:
-            logger.info(
-                f"{self._item_cn(required_material)}不足，无法加工{self._item_cn(mill_item)}: {current_material}/{material_needed}"
+            fallback_needed = (
+                self.mill_material_needed(mill_item, fallback_quantity) if fallback_quantity else None
             )
-            return False
+            if fallback_needed is None or current_material < fallback_needed:
+                logger.info(
+                    f"{self._item_cn(required_material)}不足，无法加工{self._item_cn(mill_item)}: {current_material}/{material_needed}"
+                )
+                return False
+            logger.info(
+                f"{self._item_cn(required_material)}不够加工 {quantity} 组{self._item_cn(mill_item)}"
+                f"（{current_material}/{material_needed}），改为加工 {fallback_quantity} 组补到派遣门槛"
+            )
+            quantity = fallback_quantity
+            material_needed = fallback_needed
 
         if not self.process_mill_item(mill_item, quantity=quantity):
             return False
