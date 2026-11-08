@@ -105,7 +105,8 @@ class DockScan(Dock):
         if capacity <= 0 or not 0 <= expected_count <= capacity or remaining + expected_count != capacity:
             expected_count = None
             logger.warning('船坞数量未确认，本轮不能据缺失清空已有记录')
-        if self.appear(DOCK_EMPTY):
+        # 舰船立绘可能与空提示的平均颜色相近，必须核对提示文字。
+        if self.appear(DOCK_EMPTY, offset=(20, 20)):
             self._scan_metadata['reached_bottom'] = True
         else:
             DOCK_SCROLL.set_top(self)

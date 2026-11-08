@@ -18,15 +18,20 @@ from module.os.globe_operation import GlobeOperation, OSExploreError, OSZoneLock
 from module.os.operation_siren import OperationSiren
 from module.os.tasks.shop import OpsiShop
 from module.os.tasks.prevent_action_point_overflow import OpsiPreventActionPointOverflow
-from module.os.tasks.smart_explore import SMART_EXPLORE_DELAY_TASKS, SMART_EXPLORE_ROUTES
+from module.os.tasks.smart_explore import SMART_EXPLORE_ROUTES
 
 
 NOW = datetime(2026, 10, 4, 8)
 UPDATE = datetime(2026, 10, 5)
 RESET = datetime(2026, 11, 1)
 ENTRIES = {'OpsiDaily': 'opsi_daily', 'OpsiShop': 'opsi_shop',
-           'OpsiPreventActionPointOverflow': 'opsi_prevent_action_point_overflow'}
+           'OpsiPreventActionPointOverflow': 'opsi_prevent_action_point_overflow',
+           'OpsiAbyssal': 'opsi_abyssal', 'OpsiObscure': 'opsi_obscure',
+           'OpsiStronghold': 'opsi_stronghold', 'OpsiMonthBoss': 'opsi_month_boss',
+           'OpsiMeowfficerFarming': 'opsi_meowfficer_farming', 'OpsiArchive': 'opsi_archive'}
 ORDER = ['OpsiDaily', 'OpsiShop', 'OpsiPreventActionPointOverflow', 'OpsiScheduling']
+ADDITIONAL_TASKS = ['OpsiAbyssal', 'OpsiObscure', 'OpsiStronghold', 'OpsiMonthBoss',
+                    'OpsiMeowfficerFarming', 'OpsiArchive']
 
 
 class TestSmartExploreTaskDelay(unittest.TestCase):
@@ -76,7 +81,9 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.original_priority = self.config.SCHEDULER_PRIORITY
         self.original_times = {task: self.config.cross_get(f'{task}.Scheduler.NextRun') for task in ORDER}
         self.campaign = SimpleNamespace(**{method: Mock() for method in
-                                          ('os_daily', 'os_shop', 'os_prevent_action_point_overflow')})
+                                          ('os_daily', 'os_shop', 'os_prevent_action_point_overflow',
+                                           'os_abyssal', 'os_obscure', 'os_stronghold', 'clear_month_boss',
+                                           'os_meowfficer_farming', 'os_archive')})
         self.runner = OSCampaignRun.__new__(OSCampaignRun)
         self.runner.config = self.config
         self.runner.load_campaign = Mock(return_value=self.campaign)
@@ -94,6 +101,17 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         for task in tasks:
             with self.assertRaises(TaskEnd):
                 self.run_task(task)
+
+    def enable_additional_tasks(self):
+        with self.config.multi_set():
+            for task in ADDITIONAL_TASKS:
+                self.config.cross_set_many({f'{task}.Scheduler.Enable': True,
+                                            f'{task}.Scheduler.NextRun': NOW - timedelta(hours=1),
+                                            f'{task}.Storage.Storage.Unrelated': 'keep'})
+            self.config.cross_set('General.YukikazeTaskManager.TaskPriorityAdjustment',
+                                  'Restart > ' + ' > '.join(ADDITIONAL_TASKS + ORDER))
+        self.config = AzurLaneConfig('opsi-delay-test', task='OpsiDaily')
+        self.runner.config = self.config
 
     def pending(self):
         self.config.get_next_task()
@@ -134,7 +152,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.postpone()
         self.runner.load_campaign.assert_not_called()
         self.runner._run_opsi_task_with_ap_overflow_guard.assert_not_called()
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             self.assertEqual(self.config.cross_get(f'{task}.Storage.Storage'),
                              {'Unrelated': 'keep', 'SmartExploreDelay': UPDATE.isoformat()})
             self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), self.original_times[task])
@@ -174,7 +192,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.config.cross_set('OpsiScheduling.Scheduler.NextRun', later)
         self.assertEqual(self.pending(), [])
         waiting = {task.command: task.next_run for task in self.config.waiting_task}
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             self.assertEqual(waiting[task], later + timedelta(seconds=1))
             self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), self.original_times[task])
 
@@ -183,7 +201,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.config.cross_set('OpsiScheduling.Scheduler.NextRun', UPDATE + timedelta(minutes=30))
         self.assertEqual(self.pending(), [])
         for task in self.config.waiting_task:
-            if task.command in SMART_EXPLORE_DELAY_TASKS:
+            if task.command in ORDER[:-1]:
                 self.assertEqual(task.next_run, UPDATE)
         with (patch('module.config.config.current_time', return_value=UPDATE + timedelta(minutes=1)),
               patch('module.os.tasks.smart_explore.get_server_next_update', return_value=UPDATE + timedelta(days=1))):
@@ -196,7 +214,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.complete()
         self.forbid_smart_progress_read()
         self.assertEqual(self.pending(), ORDER[:-1])
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             self.run_task(task)
         self.campaign.os_daily.assert_called_once_with()
         self.campaign.os_shop.assert_called_once_with()
@@ -213,7 +231,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         for phase in ('cleanup', 'done'):
             self.config.cross_set('OpsiScheduling.Storage.Storage.SmartExplore',
                                   {'reset': RESET.isoformat(), 'phase': phase})
-            for task in SMART_EXPLORE_DELAY_TASKS:
+            for task in ORDER[:-1]:
                 self.run_task(task)
         self.config.cross_set('OpsiScheduling.Storage.Storage.SmartExplore.reset', '2026-10-01T00:00:00')
         self.postpone()
@@ -234,7 +252,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
             with self.subTest(count=count):
                 self.suppressed(count)
                 self.assertEqual(self.pending(), ORDER)
-                for task in SMART_EXPLORE_DELAY_TASKS:
+                for task in ORDER[:-1]:
                     self.run_task(task)
         self.assertIsNone(self.config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState'))
 
@@ -242,7 +260,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         for count in (30, 31):
             with self.subTest(count=count):
                 self.route_progress(count)
-                for task in SMART_EXPLORE_DELAY_TASKS:
+                for task in ORDER[:-1]:
                     self.run_task(task)
 
     def test_confirmed_count_skips_further_smart_progress_reads_and_survives_reload(self):
@@ -250,7 +268,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.config = AzurLaneConfig('opsi-delay-test', task='OpsiDaily')
         self.runner.config = self.config
         self.forbid_smart_progress_read()
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             self.run_task(task)
 
     def test_stale_or_invalid_suppression_count_cannot_release_tasks(self):
@@ -335,7 +353,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
 
     def test_other_navigation_errors_keep_existing_recovery(self):
         self.suppressed()
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             method = getattr(self.campaign, ENTRIES[task].replace('opsi_', 'os_', 1))
             method.side_effect = OSExploreError('未确认进入，未出现锁定提示')
             with self.assertRaises(OSExploreError):
@@ -364,7 +382,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.assertEqual(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones'),
                          {'reset': RESET.isoformat(), 'count': 34})
         self.forbid_smart_progress_read()
-        for task in SMART_EXPLORE_DELAY_TASKS:
+        for task in ORDER[:-1]:
             self.run_task(task)
 
     def test_count_confirmation_requires_fresh_matching_frames_and_stops_after_30(self):
@@ -420,7 +438,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
                 self.config.cross_set(key, value)
                 expected = [task for task in ORDER if task != 'OpsiScheduling' or self.config.is_task_enabled(task)]
                 self.assertEqual(self.pending(), expected)
-                for task in SMART_EXPLORE_DELAY_TASKS:
+                for task in ORDER[:-1]:
                     self.run_task(task)
                 self.config.cross_set(key, original)
 
@@ -453,9 +471,133 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
     def test_invalid_and_expired_delay_records_do_not_change_queue(self):
         for record in (None, [], {}, 'invalid', (UPDATE - timedelta(days=1)).isoformat()):
             with self.subTest(record=record):
-                for task in SMART_EXPLORE_DELAY_TASKS:
+                for task in ORDER[:-1]:
                     deep_set(self.config.data, f'{task}.Storage.Storage.SmartExploreDelay', record)
                 self.assertEqual(self.pending(), ORDER)
+
+    def test_new_entries_yield_before_initialization_and_only_save_temporary_markers(self):
+        self.enable_additional_tasks()
+        before = copy.deepcopy(self.config.data)
+        priority = self.config.SCHEDULER_PRIORITY
+        self.postpone(ADDITIONAL_TASKS)
+        self.runner.load_campaign.assert_not_called()
+        self.runner._run_opsi_task_with_ap_overflow_guard.assert_not_called()
+        for task in ADDITIONAL_TASKS:
+            deep_set(before, f'{task}.Storage.Storage.SmartExploreDelay', UPDATE.isoformat())
+        self.assertEqual(self.config.data, before)
+        self.assertEqual(self.config.SCHEDULER_PRIORITY, priority)
+
+    def test_new_entries_release_at_30_zones_except_archive_at_72(self):
+        self.enable_additional_tasks()
+        for count in (29, 30, 71, 72):
+            self.suppressed(count)
+            for task in ADDITIONAL_TASKS:
+                with self.subTest(task=task, count=count):
+                    method = 'clear_month_boss' if task == 'OpsiMonthBoss' else ENTRIES[task].replace('opsi_', 'os_', 1)
+                    callback = getattr(self.campaign, method)
+                    callback.reset_mock()
+                    if count < (72 if task == 'OpsiArchive' else 30):
+                        with self.assertRaises(TaskEnd):
+                            self.run_task(task)
+                        callback.assert_not_called()
+                    else:
+                        self.run_task(task)
+                        callback.assert_called_once_with()
+        self.assertIsNone(self.config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState'))
+
+    def test_mixed_thresholds_restore_each_task_to_its_original_position(self):
+        self.enable_additional_tasks()
+        self.postpone(ADDITIONAL_TASKS)
+        self.assertEqual(self.pending(), ORDER + ADDITIONAL_TASKS)
+        self.suppressed(30)
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS[:-1] + ORDER + ['OpsiArchive'])
+        self.suppressed(72)
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS + ORDER)
+
+    def test_route_progress_releases_new_tasks_without_counting_ports(self):
+        self.enable_additional_tasks()
+        self.postpone(ADDITIONAL_TASKS)
+        self.route_progress(29)
+        self.assertEqual(self.pending(), ORDER + ADDITIONAL_TASKS)
+        self.route_progress(30)
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS[:-1] + ORDER + ['OpsiArchive'])
+        self.suppressed(30)
+        self.route_progress(71)
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS[:-1] + ORDER + ['OpsiArchive'])
+        self.route_progress(72)
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS + ORDER)
+
+    def test_new_tasks_wait_for_scheduler_and_use_original_queue_the_next_day(self):
+        self.enable_additional_tasks()
+        times = {task: self.config.cross_get(f'{task}.Scheduler.NextRun') for task in ADDITIONAL_TASKS}
+        self.postpone(ADDITIONAL_TASKS)
+        later = NOW + timedelta(minutes=27)
+        self.config.cross_set('OpsiScheduling.Scheduler.NextRun', later)
+        self.assertEqual(self.pending(), ORDER[:-1])
+        waiting = {task.command: task.next_run for task in self.config.waiting_task}
+        for task in ADDITIONAL_TASKS:
+            self.assertEqual(waiting[task], later + timedelta(seconds=1))
+            self.assertEqual(self.config.cross_get(f'{task}.Scheduler.NextRun'), times[task])
+        with patch('module.os.tasks.smart_explore.get_server_next_update', return_value=UPDATE + timedelta(days=1)):
+            self.assertEqual(self.pending(), ADDITIONAL_TASKS + ORDER[:-1])
+
+    def test_new_task_markers_survive_reload_and_monthly_completion_releases_all(self):
+        self.enable_additional_tasks()
+        self.postpone(ADDITIONAL_TASKS)
+        self.config = AzurLaneConfig('opsi-delay-test', task='OpsiScheduling')
+        self.runner.config = self.config
+        self.assertEqual(self.pending(), ORDER + ADDITIONAL_TASKS)
+        self.complete()
+        self.forbid_smart_progress_read()
+        self.assertEqual(self.pending(), ADDITIONAL_TASKS + ORDER)
+        for task in ADDITIONAL_TASKS:
+            self.run_task(task)
+
+    def test_disabling_smart_explore_restores_new_entries_and_queue(self):
+        self.enable_additional_tasks()
+        self.postpone(ADDITIONAL_TASKS)
+        for key, value in (
+            ('OpsiExplore.Scheduler.Enable', True),
+            ('OpsiScheduling.OpsiSmartExplore.Enable', False),
+            ('OpsiScheduling.Scheduler.Enable', False),
+            ('OpsiScheduling.OpsiScheduling.UseSmartSchedulingOperationCoinsPreserve', False),
+        ):
+            with self.subTest(key=key):
+                original = self.config.cross_get(key)
+                self.config.cross_set(key, value)
+                expected = ADDITIONAL_TASKS + [task for task in ORDER if self.config.is_task_enabled(task)]
+                self.assertEqual(self.pending(), expected)
+                for task in ADDITIONAL_TASKS:
+                    self.run_task(task)
+                self.config.cross_set(key, original)
+
+    def test_archive_rejects_stale_or_invalid_full_suppression_counts(self):
+        for state in ({'reset': '2026-10-01T00:00:00', 'count': 72},
+                      {'reset': RESET.isoformat(), 'count': 71},
+                      {'reset': RESET.isoformat(), 'count': 73},
+                      {'reset': RESET.isoformat(), 'count': '72'}, None):
+            with self.subTest(state=state):
+                self.config.cross_set('OpsiScheduling.Storage.Storage.SuppressedZones', state)
+                self.postpone(['OpsiArchive'])
+
+    def test_enabled_archive_keeps_confirming_suppression_until_72(self):
+        self.enable_additional_tasks()
+        campaign = OperationSiren.__new__(OperationSiren)
+        campaign.config = self.config
+        image = load_image(str(Path(__file__).parent / 'fixtures/opsi_zone_locked_34.png'))
+        campaign.device = SimpleNamespace(image=image)
+        with patch('module.os.globe_operation.Digit.ocr', side_effect=[30, 30, 71, 71, 72, 72]) as ocr:
+            for count in (30, 71, 72):
+                for _ in range(2):
+                    campaign.device.image = image.copy()
+                    campaign.record_globe_suppressed_zones()
+                self.assertEqual(self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.count'), count)
+            campaign.device.image = image.copy()
+            campaign.record_globe_suppressed_zones()
+            self.assertEqual(ocr.call_count, 6)
+        self.forbid_smart_progress_read()
+        self.run_task('OpsiArchive')
+        self.campaign.os_archive.assert_called_once_with()
 
 
 if __name__ == '__main__':

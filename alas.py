@@ -1535,6 +1535,14 @@ class AzurLaneAutoScript:
                 f'（{method}），备份目录 log/error/{self.config_name}/bak')
         return handled
 
+    def _log_source_watermark(self, cached=False):
+        """来源标记始终启用；导入或线程启动失败均不影响原流程。"""
+        try:
+            from module.base.log_watermark import start_log_watermark
+            start_log_watermark(cached=cached)
+        except Exception:
+            logger.debug('[来源水印] 无法启动，已跳过')
+
     def save_error_log(self):
         """
         保存错误现场：最近截图和日志文件到 ./log/error/<config-name>/<timestamp>/。
@@ -1567,6 +1575,7 @@ class AzurLaneAutoScript:
             config_folder = pathlib.Path(f"./log/error/{self.config_name}")
             folder = config_folder.joinpath(str(int(time.time() * 1000)))
             folder.mkdir(parents=True, exist_ok=True)
+            self._log_source_watermark(cached=True)
             logger.warning(f'[AzurPilot] 保存错误日志: {folder}')
 
             try:
@@ -2555,6 +2564,7 @@ class AzurLaneAutoScript:
 
         # 调度器本身需要先加载配置；日报关闭时不创建任何附加线程或服务。
         config = self.config
+        self._log_source_watermark()
         if config.DailySummary_Enable:
             self._start_daily_summary_scheduler(config)
 

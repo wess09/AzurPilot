@@ -27,7 +27,12 @@ class StorageAmountGlyphs:
     MIN_MARGIN = .006
 
     def __init__(self, path):
-        atlas = cv2.imread(str(Path(path)), cv2.IMREAD_GRAYSCALE)
+        # Python 读取文件名后再解码，避免 OpenCV 在 Windows 中文安装路径下读不到模板。
+        try:
+            content = Path(path).read_bytes()
+        except OSError:
+            content = b''
+        atlas = cv2.imdecode(np.frombuffer(content, dtype=np.uint8), cv2.IMREAD_GRAYSCALE) if content else None
         if atlas is None or atlas.shape[1] != 10 * GLYPH_WIDTH or atlas.shape[0] % GLYPH_HEIGHT:
             raise ValueError('仓库灰度数量模板缺失或尺寸无效')
         masks = []

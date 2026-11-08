@@ -124,6 +124,12 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         for _ in self.loop(timeout=10, skip_first=False):
             if self.appear(ISLAND_SHOPPING_CHECK, offset=(1, 1)):
                 break
+            # 上一项加工确认后，"获得物品"弹窗会比磨坊界面晚一点弹出，
+            # 上一项已按磨坊界面判定完成退出，弹窗留到这里盖住加工按钮，需先关掉
+            if self.appear(ISLAND_SHOP_GET, offset=(1, 1)):
+                if self.appear(ISLAND_SHOP_GET, offset=(1, 1), interval=1):
+                    self.device.click(ISLAND_SHOP_CONFIRM)
+                continue
             if self.appear_then_click(mill_button, interval=0.3):
                 continue
         else:

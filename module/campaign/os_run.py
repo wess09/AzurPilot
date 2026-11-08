@@ -159,6 +159,8 @@ class OSCampaignRun(OSMapOperation):
 
     def opsi_meowfficer_farming(self):
         """执行大世界指挥喵打捞刷取任务。"""
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_meowfficer_farming())
         except ActionPointLimit:
@@ -180,6 +182,8 @@ class OSCampaignRun(OSMapOperation):
 
     def opsi_obscure(self):
         """执行大世界隐秘海域任务。"""
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_obscure())
         except ActionPointLimit as e:
@@ -192,6 +196,8 @@ class OSCampaignRun(OSMapOperation):
             self.config.task_delay(server_update=True)
             self.config.task_stop()
             return
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.clear_month_boss())
         except ActionPointLimit as e:
@@ -199,6 +205,8 @@ class OSCampaignRun(OSMapOperation):
 
     def opsi_abyssal(self):
         """执行大世界深渊海域任务。"""
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_abyssal())
         except ActionPointLimit as e:
@@ -206,6 +214,8 @@ class OSCampaignRun(OSMapOperation):
 
     def opsi_archive(self):
         """执行大世界档案海域任务。"""
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_archive())
         except ActionPointLimit as e:
@@ -213,6 +223,8 @@ class OSCampaignRun(OSMapOperation):
 
     def opsi_stronghold(self):
         """执行大世界要塞海域任务。"""
+        if delay_task_for_smart_explore(self.config):
+            return
         try:
             self._run_opsi_task_with_ap_overflow_guard(lambda campaign: campaign.os_stronghold())
         except ActionPointLimit as e:
