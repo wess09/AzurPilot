@@ -779,6 +779,16 @@ class GemsFarming(FleetSelectionMixin, CampaignRun, FleetEquipment, GemsEquipmen
                 self.campaign.config.LV32_TRIGGERED = False
                 self.campaign.config.GEMS_EMOTION_TRIGGERED = False
 
+                # 换船成功后仍需满足下一轮出击的心情控制线和已触发的预留要求。
+                if self._trigger_emotion and success and self.campaign.emotion.is_calculate:
+                    recovered, delay = self.campaign.emotion._check_reduce(self.campaign._map_battle)
+                    if delay:
+                        self._trigger_emotion = False
+                        logger.info('[战役-紧急委托] 换船后心情仍不足，等待恢复')
+                        self.config.task_delay(target=recovered)
+                        self.campaign.ensure_auto_search_exit()
+                        self.config.task_stop()
+
                 # 调度器
                 if self.config.task_switched():
                     self._trigger_emotion = False

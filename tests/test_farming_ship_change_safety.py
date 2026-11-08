@@ -1,14 +1,17 @@
 """无候选舰船时遵循推迟开关，换船与装备交接异常仍须停止任务。"""
 
 import unittest
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from module.campaign.gems_farming import GemsFarming
+from module.campaign.gems_farming import GemsEmotion, GemsFarming
 from module.campaign.run import CampaignRun
 from module.config.config import TaskEnd
+from module.config.deep import deep_set
 from module.exception import (
     CampaignEnd, EmulatorNotRunningError, GameStuckError, GameTooManyClickError, HardNotSatisfied, RequestHumanTakeover,
 )
+from tests.test_farming_combat_config import make_config
 from tests.test_fleet_selection import TASKS, runner
 
 
@@ -158,6 +161,54 @@ class ShipChangeSafetyTests(unittest.TestCase):
         campaign_run.assert_called_once()
         instance.config.task_delay.assert_called_once_with(minute=60)
         instance.campaign.ensure_auto_search_exit.assert_called_once_with()
+
+    def test_successful_ship_change_rechecks_pending_emotion_reserve(self):
+        stamp = datetime(2026, 11, 8, 20, 21)
+        for flagship_emotion, should_delay in ((47, True), (60, False)):
+            with self.subTest(flagship_emotion=flagship_emotion):
+                instance = self.farming_runner(delay=False)
+                config = make_config('GemsFarming', Emotion={'MinReserve': 40})
+                instance.campaign.config = config
+                instance.campaign._map_battle = 4
+                instance.campaign.emotion = GemsEmotion(config)
+
+                def update_config():
+                    for path, value in config.modified.items():
+                        deep_set(config.data, path, value)
+                    config.modified.clear()
+                    config.bind(config.task)
+
+                def change_flagship():
+                    self.assertEqual(['1'], config.Emotion_RecoveryWait)
+                    config.Emotion_MinReserve = 60
+                    instance.set_emotion(flagship_emotion)
+                    return True
+
+                def run_campaign(**kwargs):
+                    self.assertLessEqual(campaign_run.call_count, 1 if should_delay else 2)
+                    instance.campaign.emotion.check_reduce(instance.campaign._map_battle)
+
+                config.update = update_config
+                config.auto_update = True
+                instance.flagship_change.side_effect = change_flagship
+                with patch('module.config.config.current_time', return_value=stamp), \
+                        patch('module.combat.emotion.current_time', return_value=stamp), \
+                        patch.object(GemsFarming, '_initial_flagship_check_done', True), \
+                        patch.object(CampaignRun, 'run', side_effect=run_campaign) as campaign_run:
+                    instance.set_emotion(5)
+                    if should_delay:
+                        with self.assertRaises(TaskEnd):
+                            instance.run('2-4')
+                        campaign_run.assert_called_once()
+                        instance.config.task_delay.assert_called_once_with(target=stamp + timedelta(minutes=42))
+                        instance.campaign.ensure_auto_search_exit.assert_called_once_with()
+                        self.assertEqual(['1'], config.Emotion_RecoveryWait)
+                    else:
+                        instance.run('2-4')
+                        self.assertEqual(2, campaign_run.call_count)
+                        instance.config.task_delay.assert_not_called()
+                        self.assertIsNone(config.Emotion_RecoveryWait)
+                instance.flagship_change.assert_called_once_with()
 
     def test_hard_fleet_recovery_preserves_stop_and_does_not_ignore_failed_selection(self):
         for error in (HardNotSatisfied(), RequestHumanTakeover('Hard not satisfied')):
