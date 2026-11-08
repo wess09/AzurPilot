@@ -376,6 +376,27 @@ class ServiceTests(unittest.TestCase):
             import_ships('bad.json', encoded(json.dumps([{'name': '错误', 'level': 126}]).encode()))
         with self.assertRaises(ApiError):
             import_ships('bad.csv', encoded('船名,等级\n测试,100.1'.encode()))
+        with self.assertRaises(ApiError):
+            import_ships('bad.json', encoded(json.dumps([{'name': '拉菲', 'level': 100, 'lavel': 1}]).encode()))
+
+    def test_exported_json_round_trips_into_staged_import(self):
+        """软件导出的舰船 JSON 原样导回：事实字段保留，未变更数据不产生待确认差异。"""
+        dock = DockService(self.configs)
+        self.save_ledger('testpilot', dock.report('testpilot')['revision'], [ship('拉菲', level=110)])
+        report = dock.report('testpilot')
+        dock.patch('testpilot', report['revision'],
+                   [dict(id=report['ships'][0]['id'], form='retrofit', full_star=True, extra_exp=520)])
+        report = dock.report('testpilot')
+        content = encoded(json.dumps(dict(version=1, exported_at='2026-11-08T00:00:00Z', **report)).encode())
+        rows = import_ships('alas-ships.json', content)
+        self.assertEqual([row['name'] for row in rows], ['拉菲'])
+        self.assertTrue(all('id' not in row for row in rows))
+        row = rows[0]
+        self.assertEqual((row['group_type'], row['full_star'], row['form'], row['extra_exp']),
+                         (10117, True, 'retrofit', 520))
+        staged = self.service.import_file('testpilot', 'alas-ships.json', content)
+        result = dock.stage_import('testpilot', report['revision'], staged['ships'])
+        self.assertEqual(result['pending_changes'], [])
 
     def test_completed_scan_stages_and_rejects_concurrent_canonical_edits(self):
         from module.config.config import AzurLaneConfig

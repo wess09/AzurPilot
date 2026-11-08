@@ -656,7 +656,7 @@
         "$defs": {
           "MindShip": {
             "additionalProperties": false,
-            "description": "导入的舰船字段与核对状态。",
+            "description": "导入的舰船字段与核对状态；导出文件可原样导回，底账内部序号除外。",
             "properties": {
               "name": {
                 "maxLength": 100,
@@ -719,6 +719,47 @@
                 "maxLength": 200,
                 "title": "Source",
                 "type": "string"
+              },
+              "group_type": {
+                "anyOf": [
+                  {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Group Type"
+              },
+              "full_star": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Full Star"
+              },
+              "form": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "base",
+                      "retrofit"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Form"
               }
             },
             "required": [

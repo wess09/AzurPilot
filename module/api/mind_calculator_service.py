@@ -17,7 +17,9 @@ from module.runtime.mind_calculator import RARITY_NAMES, catalog
 
 
 def input_ship(ship):
-    """规范化用户输入的舰船字段并校验类型。"""
+    """规范化用户输入的舰船字段并校验类型；底账内部序号不作为导入身份。"""
+    if isinstance(ship, dict):
+        ship = {key: value for key, value in ship.items() if key != 'id'}
     return MindShip.model_validate(ship).model_dump()
 
 
