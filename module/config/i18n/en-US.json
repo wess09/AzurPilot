@@ -764,6 +764,10 @@
       "name": "When an error occurs, save the log and screenshots",
       "help": ""
     },
+    "LogWatermark": {
+      "name": "Log source watermark",
+      "help": "Enabled by default. Show the code source, branch, current commit and local changes at scheduler startup and after saving error logs, and append them to the saved log. Local changes cover tracked Git files, excluding untracked installers and user settings. Unavailable fields are marked unknown. Background collection failures do not affect tasks."
+    },
     "StrictRestart": {
       "name": "Prohibit restarting when errors occur in sensitive tasks",
       "help": "When a sensitive task fails, AzurPilot stops instead of restarting the game;\nSensitive tasks can be enabled on each task's settings page."

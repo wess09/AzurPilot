@@ -116,6 +116,7 @@ class GeneratedConfig:
     # 配置组 `Error`
     Error_HandleError = True
     Error_SaveError = True
+    Error_LogWatermark = True
     Error_StrictRestart = False
     Error_TaskRestartLimit = 3
     Error_SaveErrorRetentionDays = 30

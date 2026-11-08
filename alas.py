@@ -1529,6 +1529,16 @@ class AzurLaneAutoScript:
                 f'（{method}），备份目录 log/error/{self.config_name}/bak')
         return handled
 
+    def _log_source_watermark(self, log_file=None):
+        """水印是可选诊断信息；配置、导入或线程启动失败均不影响原流程。"""
+        try:
+            if getattr(self.config, 'Error_LogWatermark', True) is not True:
+                return
+            from module.base.log_watermark import start_log_watermark
+            start_log_watermark(log_file)
+        except Exception:
+            logger.debug('[来源水印] 无法启动，已跳过')
+
     def save_error_log(self):
         """
         保存错误现场：最近截图和日志文件到 ./log/error/<config-name>/<timestamp>/。
@@ -1573,6 +1583,7 @@ class AzurLaneAutoScript:
             except Exception as e:
                 logger.error(f"[AzurPilot] 保存错误截图失败: {e}")
 
+            error_log_file = None
             try:
                 with open(logger.log_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
@@ -1585,10 +1596,12 @@ class AzurLaneAutoScript:
                     lines = handle_sensitive_logs(lines)
                 with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
                     f.writelines(lines)
+                error_log_file = folder / 'log.txt'
             except Exception as e:
                 logger.error(f"[AzurPilot] 保存错误日志失败: {e}")
                 
             self.cleanup_error_logs(config_folder)
+            self._log_source_watermark(error_log_file)
 
     def restart(self):
         """执行游戏客户端重启任务。"""
@@ -2549,6 +2562,7 @@ class AzurLaneAutoScript:
 
         # 调度器本身需要先加载配置；日报关闭时不创建任何附加线程或服务。
         config = self.config
+        self._log_source_watermark()
         if config.DailySummary_Enable:
             self._start_daily_summary_scheduler(config)
 
