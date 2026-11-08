@@ -614,17 +614,12 @@ class ConfigGenerator:
 
     @staticmethod
     def generate_deploy_template():
-        """根据基础模板生成各环境（国内镜像、AidLux、Linux）的部署配置模板。"""
+        """根据基础模板生成各环境（国内镜像、Linux）的部署配置模板。"""
         template = poor_yaml_read(DEPLOY_TEMPLATE)
         cn = {
             'Repository': 'git://git.pull/AzurPilot',
             'PypiMirror': 'https://mirrors.aliyun.com/pypi/simple',
             'Language': 'zh-CN',
-        }
-        aidlux = {
-            'GitExecutable': './.venv/bin/git',
-            'PythonExecutable': './.venv/bin/python',
-            'AdbExecutable': './.venv/bin/adb',
         }
 
         linux = {
@@ -644,8 +639,6 @@ class ConfigGenerator:
 
         update('template')
         update('template-cn', cn)
-        update('template-AidLux', aidlux)
-        update('template-AidLux-cn', aidlux, cn)
         update('template-linux', linux)
         update('template-linux-cn', linux, cn)
 
