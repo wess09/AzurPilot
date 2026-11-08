@@ -8,6 +8,7 @@ import { api } from '../api/client'
 import type { Overview as OverviewData } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { getLayout, subscribeLayout } from '../app/layout'
+import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 import { ErrorBox, Loading } from '../components/ui'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
@@ -35,6 +36,7 @@ export function Overview() {
   const connection = useConnection()
   const panel = useSyncExternalStore(subscribeOverviewPanel, readOverviewPanel, readOverviewPanel)
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
+  const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
 
   useEffect(() => setSelectedResources(loadResourceSelection(instance)), [instance])
 
@@ -62,9 +64,10 @@ export function Overview() {
 
   const actions = <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>
 
-  // 旧版版式：左列调度器与任务计划，右列资源卡与日志；右栏在旧版主题下不渲染。
+  // 旧版版式：调度器在左列或右列，另一侧是资源卡与日志；右栏在旧版主题下不渲染。
   return <div
-    className="instance-page-grid"
+    className={`instance-page-grid ${schedulerPosition === 'right' ? 'rail-right' : 'rail-left'}`}
+    data-scheduler-position={schedulerPosition}
     style={layout.legacyRailWidth ? ({'--legacy-rail-width': `${layout.legacyRailWidth}px`} as React.CSSProperties) : undefined}
   >
     <h1 className="legacy-sr-title">{instance}</h1>
@@ -80,7 +83,7 @@ export function Overview() {
           {actions}
         </section>
       </LegacyRail>
-      <LegacyRailResizeHandle />
+      <LegacyRailResizeHandle side={schedulerPosition} />
     </div>
     <div className="instance-page-main">
       <ResourceCards resources={data.resources} selected={selectedResources}/>

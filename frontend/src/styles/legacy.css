@@ -512,7 +512,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 
   /* 旧版实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
      所以左列由各页面自己渲染（LegacyRail），不是外壳的一列。 */
-  .instance-page-grid {
+  .instance-page-grid,
+  .instance-page-grid.rail-left {
     display: grid;
     /* 用 flex 撑满 main 的剩余高度，不再按「视口 − 顶栏 − 页内行 − 常量」推算：
        那个常量会随着顶栏与页内行的实际高度漂移，容器底边就跟着上下跳。
@@ -521,16 +522,25 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     flex: 1 1 0;
     min-height: 0;
     grid-template-columns: var(--legacy-rail-width, 280px) minmax(24rem, 1fr);
+    grid-template-areas: "rail main";
     gap: 14px;
     align-items: stretch;
   }
+  .instance-page-grid.rail-right {
+    grid-template-columns: minmax(24rem, 1fr) var(--legacy-rail-width, 280px);
+    grid-template-areas: "main rail";
+  }
   /* 调度器栏包裹容器与拖拽把手 */
   .instance-page-rail-wrap {
+    grid-area: rail;
     position: relative;
     display: flex;
     flex-direction: column;
     min-height: 0;
     min-width: 0;
+  }
+  .instance-page-main {
+    grid-area: main;
   }
   .instance-page-rail-wrap > .instance-page-rail {
     flex: 1 1 0;
@@ -546,6 +556,16 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     z-index: 25;
     touch-action: none;
     user-select: none;
+  }
+  .instance-page-grid.rail-left .legacy-rail-resize-handle,
+  .legacy-rail-resize-handle[data-side="left"] {
+    left: auto;
+    right: -12px;
+  }
+  .instance-page-grid.rail-right .legacy-rail-resize-handle,
+  .legacy-rail-resize-handle[data-side="right"] {
+    left: -12px;
+    right: auto;
   }
   .legacy-rail-resize-handle::after {
     content: '';

@@ -108,3 +108,14 @@ describe('自定义外观块', () => {
     expect(plain).toContain('主题色')
   })
 })
+
+describe('调度器位置偏好选项', () => {
+  it('渲染调度器位置分段控件及左侧/右侧选项', () => {
+    for (const theme of ['legacy-light', 'legacy-dark', 'minimal'] as const) {
+      const html = render(theme)
+      expect(html, theme).toContain('调度器位置')
+      expect(html, theme).toContain('左侧')
+      expect(html, theme).toContain('右侧')
+    }
+  })
+})

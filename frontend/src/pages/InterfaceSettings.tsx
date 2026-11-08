@@ -2,6 +2,7 @@
  * @fileoverview 界面外观偏好设置页面（主题、配色、背景与多语言）。
  */
 
+import { useSyncExternalStore } from 'react'
 import { Select } from '../components/FormControls'
 import { languages, useApp, useConnection } from '../app/context'
 import { PageTitle } from '../components/ui'
@@ -9,10 +10,12 @@ import { SegmentedControl } from '../components/SegmentedControl'
 import { ThemeCustomPreference } from '../components/ThemeCustomPreference'
 import { ThemePreferences } from '../components/ThemePreferences'
 import { BackgroundPreferences } from '../components/BackgroundPreferences'
+import { readSchedulerPosition, setSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 
-/** 界面设置：主题、材质、明暗、配色、背景与语言，只影响当前浏览器，不写进实例配置。 */
+/** 界面设置：主题、调度器位置、材质、明暗、配色、背景与语言，只影响当前浏览器，不写进实例配置。 */
 export function InterfaceSettings() {
   const {theme, setTheme, material, setMaterial, resolvedMode, language, setLanguage, ui} = useApp()
+  const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
   const connection = useConnection()
   const minimal = theme === 'minimal'
 
@@ -31,6 +34,18 @@ export function InterfaceSettings() {
               <option value="legacy">{ui('settings.familyLegacy')}</option>
               <option value="minimal">{ui('settings.themeMinimal')}</option>
             </Select>
+          </div>
+        </div>
+        <div className="field-row">
+          <div className="field-label">
+            <label>{ui('settings.schedulerPosition')}</label>
+            <p>{ui('settings.schedulerPositionHelp')}</p>
+          </div>
+          <div className="field-control">
+            <SegmentedControl className="settings-segmented" label={ui('settings.schedulerPosition')} value={schedulerPosition} onChange={setSchedulerPosition} options={[
+              {value: 'left', label: ui('settings.schedulerPositionLeft')},
+              {value: 'right', label: ui('settings.schedulerPositionRight')},
+            ]}/>
           </div>
         </div>
         {minimal ? <ThemePreferences/> : <>
