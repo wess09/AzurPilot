@@ -46,7 +46,7 @@
       "parent": "项目概览 / Project Overview",
       "page_notes": [
         {
-          "content": "以 pyproject.toml、uv.lock、frontend/package.json、frontend/README.md、gui.py、alas.py、mcp_server_sse.py、Dockerfile 为准。给出 Windows/通用命令时优先采用仓库实际使用的 uv 与 npm 工作流。说明普通用户推荐从官网下载页（https://azurpilot.com/download.html）直接获取开箱即用的多平台启动器，开发者则通过 uv sync 与 npm 进行源码运行；说明默认 WebUI 端口来源及源码构建/静态产物关系，但不要写死无法从代码确认的环境假设。"
+          "content": "以 pyproject.toml、uv.lock、frontend/package.json、frontend/README.md、gui.py、alas.py、mcp_server_sse.py 为准。给出 Windows/通用命令时优先采用仓库实际使用的 uv 与 npm 工作流。说明普通用户推荐从官网下载页（https://azurpilot.com/download.html）直接获取开箱即用的多平台启动器，开发者则通过 uv sync 与 npm 进行源码运行；说明默认 WebUI 端口来源及源码构建/静态产物关系，但不要写死无法从代码确认的环境假设。"
         }
       ]
     },
@@ -246,7 +246,7 @@
       "parent": null,
       "page_notes": [
         {
-          "content": "围绕“开发 → 生成/构建 → 测试 → 部署 → 运行观测 → 更新/故障处理”组织内容，并链接本章节各子页。引用 .github/workflows、Dockerfile、deploy/、dev_tools/、tests/、module/logger.py 等当前实现。"
+          "content": "围绕“开发 → 生成/构建 → 测试 → 部署 → 运行观测 → 更新/故障处理”组织内容，并链接本章节各子页。引用 .github/workflows、deploy/、dev_tools/、tests/、module/logger.py 等当前实现。"
         }
       ]
     },
@@ -281,12 +281,12 @@
       ]
     },
     {
-      "title": "部署、Docker、启动器与更新 / Deployment, Docker, Launcher & Updater",
-      "purpose": "说明本地/服务器部署、Docker 镜像与 compose、gui 启动监督、部署配置、静态前端构建、远程监听、依赖同步、Git 更新检查与应用更新流程。",
+      "title": "部署、启动器与更新 / Deployment, Launcher & Updater",
+      "purpose": "说明本地/服务器部署、gui 启动监督、部署配置、静态前端构建、远程监听、依赖同步、Git 更新检查与应用更新流程。",
       "parent": "工程与运维 / Engineering & Operations",
       "page_notes": [
         {
-          "content": "重点覆盖 Dockerfile、docker-compose.yml、deploy/、config/deploy.yaml、gui.py、module/runtime/launcher.py、deploy_settings.py、updater.py、module/api/update_service.py 以及更新相关测试。用状态/时序图说明 fetch 与 apply 的区别、实例停止与服务重启前置条件、分叉时的限制。"
+          "content": "重点覆盖 deploy/、config/deploy.yaml、gui.py、module/runtime/launcher.py、deploy_settings.py、updater.py、module/api/update_service.py 以及更新相关测试。用状态/时序图说明 fetch 与 apply 的区别、实例停止与服务重启前置条件、分叉时的限制。"
         }
       ]
     },
