@@ -2,21 +2,21 @@
  * @fileoverview 实例运行总览页面（资源卡、调度器计划与实时日志）。
  */
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { useParams } from 'react-router-dom'
 import { api } from '../api/client'
 import type { Overview as OverviewData } from '../api/types'
 import { useApp, useConnection } from '../app/context'
-import { usesLegacyLayout } from '../app/theme'
 import { getLayout, subscribeLayout } from '../app/layout'
-import { ErrorBox, Loading, PageTitle } from '../components/ui'
+import { ErrorBox, Loading } from '../components/ui'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
 import { InstanceActions } from '../components/InstanceActions'
 import { LegacyRail } from '../components/LegacyRail'
 import { LegacyRailResizeHandle } from '../components/LegacyRailResizeHandle'
-import { Statistics } from './Statistics'
 import { readOverviewPanel, setOverviewPanel, subscribeOverviewPanel } from '../app/overviewPanelPrefs'
+
+const Statistics = lazy(() => import('./Statistics').then(module => ({default: module.Statistics})))
 
 function loadResourceSelection(instance: string) {
   try {
@@ -28,7 +28,7 @@ function loadResourceSelection(instance: string) {
 
 export function Overview() {
   const {instance = ''} = useParams()
-  const {theme, ui} = useApp()
+  const {ui} = useApp()
   const [data, setData] = useState<OverviewData>()
   const [error, setError] = useState('')
   const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
@@ -60,12 +60,10 @@ export function Overview() {
   if (error) return <ErrorBox message={error}/>
   if (!data) return <Loading/>
 
-  // 紧凑主题省略与面包屑重复的标题行，设置按钮改挂日志面板工具栏。
-  const condensed = theme === 'extreme'
-  const actions = <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection} showLabel={condensed}/>
+  const actions = <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>
 
   // 旧版版式：左列调度器与任务计划，右列资源卡与日志；右栏在旧版主题下不渲染。
-  if (usesLegacyLayout(theme)) return <div
+  return <div
     className="instance-page-grid"
     style={layout.legacyRailWidth ? ({'--legacy-rail-width': `${layout.legacyRailWidth}px`} as React.CSSProperties) : undefined}
   >
@@ -89,17 +87,9 @@ export function Overview() {
       {/* 换面板时重挂一次，让内容列的淡入重放；方向类决定从哪一侧滑入。 */}
       <div className={`instance-page-panel ${panel === 'stats' ? 'panel-drop' : 'panel-rise'}`} key={panel}>
         {panel === 'stats'
-          ? <div className="instance-panel-stats"><Statistics/></div>
+          ? <div className="instance-panel-stats"><Suspense fallback={<Loading/>}><Statistics/></Suspense></div>
           : <MonitorPanel instance={instance}/>}
       </div>
-    </div>
-  </div>
-
-  return <div className="overview-page">
-    {!condensed && <PageTitle className="instance-page-title" title={instance} actions={actions}/>}
-    <ResourceCards resources={data.resources} selected={selectedResources}/>
-    <div className="overview-main">
-      <MonitorPanel instance={instance} actions={condensed ? actions : undefined}/>
     </div>
   </div>
 }

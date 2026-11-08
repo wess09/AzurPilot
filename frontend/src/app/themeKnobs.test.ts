@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import legacyPalette from '../styles/legacy-palette.css?raw'
-import { REGIONS, familyRegions, knobFor, regionKnobs, regionProps } from './themeKnobs'
+import { REGIONS, knobFor, regionKnobs, regionProps } from './themeKnobs'
 
 const contractKeys = new Set([...legacyPalette.matchAll(/(--theme-[a-z0-9-]+)\s*:/g)].map(m => m[1]))
 
@@ -43,13 +43,6 @@ describe('区域旋钮目录', () => {
       expect(knob.fallback, knob.id).toBeLessThanOrEqual(knob.max)
       expect(knob.format(knob.max), knob.id).toContain(knob.unit)
     }
-  })
-
-  it('简洁与紧凑不暴露区域旋钮', () => {
-    expect(familyRegions.minimal).toEqual([])
-    expect(familyRegions.extreme).toEqual([])
-    expect(familyRegions.new).toEqual([...REGIONS])
-    expect(familyRegions.legacy).toEqual([...REGIONS])
   })
 
   it('knobFor 只认目录里的 id', () => {

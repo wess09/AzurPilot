@@ -20,21 +20,31 @@ test('生产构建保留高斯模糊且资源图标能够解码', async ({page})
     body: '<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720"><path fill="#3588cc" d="M0 0h1280v720H0z"/></svg>',
   }))
   await page.goto('/#/i/testpilot/overview')
-  await expect(page.locator('.instance-page-title h1')).toHaveText('testpilot')
+  await expect(page.getByRole('heading', {name: 'testpilot', exact: true})).toHaveText('testpilot')
   // 断言元素与它该读的令牌一致，而不是把数值写死：调令牌不该让这条用例变红，改错接线才该变红。
   const expectFilterFrom = async (selector: string, token: string) => {
-    await expect(page.locator(selector).first()).toHaveCSS('backdrop-filter', await resolvedFilter(page, token))
+    const filter = await resolvedFilter(page, token)
+    expect(filter).toMatch(/blur\(/)
+    await expect(page.locator(selector).first()).toHaveCSS('backdrop-filter', filter)
   }
   await expectFilterFrom('.sidebar', '--theme-surface-filter')
   await expectFilterFrom('.legacy-page-nav', '--theme-surface-filter')
   // 一级面：面板与资源卡都走一级面滤镜。
-  await expectFilterFrom('.panel', '--theme-surface-filter')
+  await expectFilterFrom('.monitor-panel', '--theme-surface-filter')
   await expectFilterFrom('.resource-card', '--theme-surface-filter')
   const icons = page.locator('.resource-icon-image')
   await expect(icons.first()).toBeVisible()
   await expect.poll(() => icons.evaluateAll(elements => elements.every(element =>
     element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0,
   ))).toBe(true)
+  const loadedFonts = await page.evaluate(async () => {
+    const faces = await Promise.all([
+      document.fonts.load('600 16px MiSans', '碧蓝航线'),
+      document.fonts.load('16px "JetBrains Mono"', 'AzurPilot'),
+    ])
+    return faces.map(items => items.some(face => face.status === 'loaded'))
+  })
+  expect(loadedFonts).toEqual([true, true])
   // 无障碍模式仍应关闭模糊，防止调整前缀顺序破坏降级样式。
   await page.emulateMedia({forcedColors: 'active'})
   await expect(page.locator('.sidebar')).toHaveCSS('backdrop-filter', 'none')

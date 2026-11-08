@@ -1,5 +1,4 @@
 import type { UiKey } from '../i18n'
-import type { Family } from './theme'
 
 /** 可调区域：四个层级（一级面、二级贴片、三级嵌面、控件）加两个按位置命名的区域（弹窗、菜单）。
     控件独立成组，因为它挂在哪一层随放置位置漂移；弹窗与菜单同理，它们不是某一层，而是分层覆盖不到的两类面。 */
@@ -68,11 +67,4 @@ export const regionKnobs: readonly RegionKnob[] = REGIONS.flatMap(region =>
   }))
 
 /** 哪些家族暴露这套区域旋钮；简洁与紧凑保持现状。 */
-export const familyRegions: Record<Family, readonly RegionId[]> = {
-  new: REGIONS,
-  legacy: REGIONS,
-  minimal: [],
-  extreme: [],
-}
-
 export const knobFor = (id: string) => regionKnobs.find(knob => knob.id === id)

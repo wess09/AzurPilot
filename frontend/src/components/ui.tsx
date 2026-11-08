@@ -2,13 +2,11 @@
  * @fileoverview 通用 UI 基础原子组件（按钮、弹窗、加载状态、错误框等）。
  */
 
-import { useEffect, useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react'
+import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
 import { AlertCircle, LoaderCircle, X } from 'lucide-react'
-import { GlassMaterial } from './GlassMaterial'
 import type { Status } from '../api/types'
 import { useApp } from '../app/context'
 import { useDevOverride } from '../app/devOverride'
-import { usesMaterial } from '../app/theme'
 
 export function StatusBadge({status, simulate = false}: {status: Status; simulate?: boolean}) {
   const {ui} = useApp()
@@ -49,20 +47,11 @@ export function Modal({title, children, onClose, className = ''}: {title: string
   </dialog>
 }
 
-/** 用文字轮廓裁切背景滤镜，避免模糊扩散到标题外的矩形区域。 */
-function createTitleMask(title: string) {
-  const escaped = title.replace(/[&<>]/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[character]!))
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none"><text x="0" y="82" textLength="1000" lengthAdjust="spacingAndGlyphs" fill="white" stroke="white" stroke-width="4" paint-order="stroke" font-family="-apple-system,BlinkMacSystemFont,SF Pro Text,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif" font-size="84" font-weight="700">${escaped}</text></svg>`
-  return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
-}
-
 /** 页面动作组：控件外面包一层一级底，挂载位置由调用方决定。 */
 export function ActionGroup({children}: {children: ReactNode}) {
-  return <div className="title-actions"><GlassMaterial/>{children}</div>
+  return <div className="title-actions">{children}</div>
 }
 
 export function PageTitle({title, actions, className = ''}: {title: string; actions?: ReactNode; className?: string}) {
-  const {theme} = useApp()
-  const titleStyle = usesMaterial(theme) ? {'--page-title-mask': createTitleMask(title)} as CSSProperties : undefined
-  return <div className={`page-title ${className}`.trim()}><h1 aria-label={title} data-text={title} style={titleStyle}>{title}</h1>{actions && <ActionGroup>{actions}</ActionGroup>}</div>
+  return <div className={`page-title ${className}`.trim()}><h1 aria-label={title}>{title}</h1>{actions && <ActionGroup>{actions}</ActionGroup>}</div>
 }

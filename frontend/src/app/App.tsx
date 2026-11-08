@@ -3,40 +3,34 @@
  */
 
 import { PasswordInput, Select } from '../components/FormControls'
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type MouseEvent, type ChangeEvent } from 'react'
+import { Suspense, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type MouseEvent, type ChangeEvent } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getLayout, subscribeLayout } from './layout'
-import {usesMaterial} from './theme'
 import {NavHandle} from './NavHandle'
 import {TabBarResizeHandle} from './TabBarResizeHandle'
 import {SidebarResizeHandle} from './SidebarResizeHandle'
-import { ArrowRight, CalendarClock, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Code2, Download, ExternalLink, FileJson, Globe, LayoutDashboard, LoaderCircle, Megaphone, Menu, Palette, Settings2, WifiOff, X } from 'lucide-react'
+import { ArrowRight, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Code2, Download, ExternalLink, FileJson, Globe, LayoutDashboard, LoaderCircle, Megaphone, Menu, Palette, Settings2, WifiOff, X } from 'lucide-react'
 import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
 import { useApp, useConnection } from './context'
 import { useAnnouncement } from './announcement'
 import { ErrorBox, Loading, Modal } from '../components/ui'
-import { GlassMaterial } from '../components/GlassMaterial'
 import { MaterialInspector } from '../components/MaterialInspector'
 import { ProjectLogo } from '../components/ProjectLogo'
-import { FLEET_ANALYSIS, FLEET_SWITCH, FLEET_TRAINING, FLEET_LEVEL_TRAINING, FLEET_AFFINITY_TRAINING, FLEET_EQUIPMENT, FLEET_ROTATION, SCHEDULER_EDITOR, taskLabel } from '../components/taskNavItems'
+import { taskLabel } from '../components/taskNavItems'
 import { getMaterialInspector, subscribeMaterialInspector } from './materialInspectorState'
 import { InstanceTabs } from '../components/InstanceTabs'
-import { RightRail } from '../components/RightRail'
-import { CompactScrollbars } from '../components/CompactScrollbars'
-import { TaskNav } from '../components/TaskNav'
+import { TaskNavTree } from '../components/TaskNavTree'
 import { SidebarTransition } from '../components/SidebarTransition'
 
-import { useIsDesktop } from '../components/TaskNav'
+import { useIsDesktop } from './useIsDesktop'
 import { TaskSwitcher } from '../components/TaskSwitcher'
 import { useUpdater } from './updater'
 import { usePageMotion } from './pageMotion'
-import { useGlassPointerLight } from './pointerLight'
 import { recordDevLogoClick } from './devMode'
 import { useDevOverride } from './devOverride'
 import { useSystemNotifications } from './systemNotifications'
-import { usesLegacyLayout, usesLegacyShell, showsRightRail } from './theme'
 import { readLastPath, writeLastPath } from './topbarPrefs'
 import { INSTANCE_NAME_PATTERN } from './instanceName'
 
@@ -128,7 +122,7 @@ function Login() {
 
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode, theme, compactRailSide} = useApp()
+  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode} = useApp()
   /* 开发者工具的模拟状态：只影响实例状态徽章与更新角标。 */
   const devOverride = useDevOverride()
   const {instance} = useParams()
@@ -136,22 +130,18 @@ export function App() {
   const location = useLocation()
   const [creating, setCreating] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [railOpen, setRailOpen] = useState(false)
   /* 只区分「全新打开」与「刷新 / 后退前进」：前者才回上次选中的实例。
      刷新时地址栏已经是用户要停留的页面，写进去就不再改。 */
   const freshOpen = useRef((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'navigate')
   const update = useUpdater()
   const announcement = useAnnouncement()
   usePageMotion()
-  useGlassPointerLight()
   useSystemNotifications()
   const current = instances.find(item => item.name === instance)
   const subscribedInstance = current?.name ?? null
   const base = instance ? `/i/${encodeURIComponent(instance)}` : ''
   const taskMatch = location.pathname.match(/\/task\/([^/]+)/)
   const currentTask = taskMatch ? taskMatch[1] : null
-  /* 图形调度是系统编辑页，不伪装成可执行的游戏任务。 */
-  const schedulerEditor = currentTask === SCHEDULER_EDITOR
   const stockExchange = location.pathname.endsWith('/stock-exchange')
   const currentTaskLabel = currentTask ? taskLabel(currentTask, ui, t) : ''
   const activeSection = location.pathname === '/announcement' ? ui('nav.announcement') : location.pathname === '/settings' ? ui('nav.settings') : location.pathname === '/interface' ? ui('nav.interface') : location.pathname === '/remote' ? ui('nav.remote') : location.pathname === '/updater' ? ui('nav.updater') : location.pathname === '/configs' ? ui('nav.configs') : location.pathname === '/dev' ? ui('nav.developer') : ''
@@ -190,7 +180,7 @@ export function App() {
   }, [connection, empty, entryPath, instancesLoaded, instances, location.pathname, navigate])
   /* 点导航里当前页的链接不产生 pathname 变化，抽屉得自己关。 */
   const closeDrawer = () => setMobileOpen(false)
-  useEffect(() => { setMobileOpen(false); setRailOpen(false) }, [location.pathname])
+  useEffect(() => { setMobileOpen(false) }, [location.pathname])
   useEffect(() => {
     if (connection !== 'ready') return
     const topics: Array<'notifications' | 'instances' | 'launcher' | 'stock' | 'overview' | 'logs' | 'preview'> = ['notifications', 'instances']
@@ -204,17 +194,8 @@ export function App() {
     }
     void api.request('events.subscribe', {instance: subscribedInstance, topics}).catch(error => notify(error.message, true))
   }, [subscribedInstance, connection, notify, previewEnabled, stockExchange])
-  const legacyGlobalShell = PRIMARY_NAV_PATHS.includes(location.pathname) && usesLegacyLayout(theme)
-  const legacyShell = usesLegacyShell(theme, instance) || legacyGlobalShell
-  // 旧版把调度器与任务计划放进实例页左列，右栏整体让位，否则同一块内容会出现两处。
-  const showRail = showsRightRail(theme, instance) && !schedulerEditor && currentTask !== FLEET_ANALYSIS && currentTask !== FLEET_SWITCH && currentTask !== FLEET_TRAINING && currentTask !== FLEET_LEVEL_TRAINING && currentTask !== FLEET_AFFINITY_TRAINING && currentTask !== FLEET_EQUIPMENT && currentTask !== FLEET_ROTATION && !stockExchange && !location.pathname.endsWith('/resources') && !location.pathname.endsWith('/task/FleetInfo') && !(location.pathname.endsWith('/statistics') && new URLSearchParams(location.search).get('view') === 'management')
-  /* 紧凑主题可把调度与任务计划栏换到内容区左侧。换位走 DOM 顺序而不是 CSS order，
-     键盘 Tab 的顺序才会跟看到的顺序一致；列宽与顶栏跨栏方向由 compact.css 按同一偏好调整。 */
-  const railFirst = theme === 'extreme' && compactRailSide === 'left'
-  /* 新版玻璃主题里，顶栏与右栏同装一个容器（.shell-frame）：一级层由容器画一次，
-     两块之间不再各自算一次毛玻璃。其余家族不导入那份样式，容器不参与布局，右栏仍留在外壳层。 */
-  const railInFrame = Boolean(instance) && showRail && usesMaterial(theme) && !railFirst
-  const rail = <RightRail instance={instance!} onMobileClose={() => setRailOpen(false)}/>
+  const legacyGlobalShell = PRIMARY_NAV_PATHS.includes(location.pathname)
+  const legacyShell = Boolean(instance) || legacyGlobalShell
   // 开发者工具可以预览「有可用更新」的角标，这里统一算一次。
   const updateAvailable = Boolean(update.data?.available) || devOverride.updatePreview
   const brand = <><Link to="/settings" className="brand-title" aria-label={`AzurPilot ${ui('nav.settings')}`} onClick={closeDrawer}><ProjectLogo className="brand-logo" onClick={handleBrandLogoClick}/><span>AzurPilot</span></Link>{updateAvailable && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
@@ -261,7 +242,7 @@ export function App() {
   </>
   const topbar = <header className="topbar">
     {legacyShell && <div className="sidebar-brand legacy-topbar-brand"><div className="sidebar-brand-left">{brand}</div></div>}
-    <GlassMaterial/><button className="mobile-toggle icon-button" aria-label={ui('nav.open')} onClick={() => setMobileOpen(true)}><Menu size={20}/></button>{showRail && <button className="mobile-rail-toggle icon-button" aria-label={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} aria-expanded={railOpen} aria-controls="right-rail-menu" title={railOpen ? ui('nav.closeRail') : ui('nav.openRail')} onClick={() => setRailOpen(open => !open)}><CalendarClock size={18}/></button>}
+    <button className="mobile-toggle icon-button" aria-label={ui('nav.open')} onClick={() => setMobileOpen(true)}><Menu size={20}/></button>
     {legacyShell
       ? <span className="legacy-topbar-title">{pageTitle}</span>
       : <div className="breadcrumb with-tabs">{tabNav}{currentTask
@@ -281,10 +262,10 @@ export function App() {
   /* 登录页要在所有 Hook 调用之后返回：否则同一次会话里的 Hook 数量会随连接状态变化，
      隧道远程访问首帧就走 auth，React 会直接抛 #300 崩掉整页。 */
   if (connection === 'auth') return <Login/>
-  if (setup || empty) return <main className="instance-setup">{setup && empty && schema ? <Outlet/> : <Loading/>}</main>
+  if (setup || empty) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
   const hasDockedInspector = inspector.open && inspector.docked && !inspector.minimized
   return <div
-    className={`app-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${showRail ? 'with-rail' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''} ${railOpen ? 'rail-open' : ''}`}
+    className={`app-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
     style={layout.sidebarWidth != null ? ({'--sidebar-width': `${layout.sidebarWidth}px`} as React.CSSProperties) : undefined}
   >
     <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a>
@@ -298,18 +279,15 @@ export function App() {
         <nav className="primary-nav" aria-label={ui('nav.primary')}>
           {instance ? <><NavLink to={`${base}/overview`} onClick={closeDrawer}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink><NavLink to={`${base}/statistics`} onClick={closeDrawer}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink><NavLink to={`${base}/stock-exchange`} onClick={closeDrawer}><Cat size={17}/>{ui('stock.name')}</NavLink></> : <><NavLink to="/announcement" onClick={closeDrawer}><Megaphone size={17}/>{ui('nav.announcement')}{announcement.unread && <span className="tiny-dot red"/>}</NavLink><NavLink to="/updater" onClick={closeDrawer}><Download size={17}/>{ui('nav.updater')}{updateAvailable && <span className="tiny-dot teal"/>}</NavLink><NavLink to="/interface" onClick={closeDrawer}><Palette size={17}/>{ui('nav.interface')}</NavLink><NavLink to="/remote" onClick={closeDrawer}><Globe size={17}/>{ui('nav.remote')}</NavLink><NavLink to="/configs" onClick={closeDrawer}><FileJson size={17}/>{ui('nav.configs')}</NavLink><NavLink to="/settings" onClick={closeDrawer}><Settings2 size={17}/>{ui('nav.settings')}</NavLink><NavLink to="/dev" onClick={closeDrawer}><Code2 size={17}/>{ui('nav.developer')}</NavLink><a className="nav-open-source" href="https://github.com/wess09/AzurPilot" target="_blank" rel="noreferrer" onClick={closeDrawer}><ExternalLink size={17}/>{ui('nav.openSource')}</a></>}
         </nav>
-        {instance && <TaskNav onNavigate={closeDrawer}/>}
+        {instance && <TaskNavTree onNavigate={closeDrawer}/>}
       </SidebarTransition>
     </aside>
-    {railFirst && instance && showRail && rail}
     <div className="main-shell">
-      <div className="shell-frame">{!legacyShell && topbar}{railInFrame && rail}</div>
+      {!legacyShell && topbar}
       {legacyShell && pageNav}
       {connection !== 'ready' && <div className="connection-banner" role="status"><WifiOff size={16}/>{ui('connection.connecting')}</div>}
-      <main id="main-content" tabIndex={-1}>{!schema || location.pathname === '/' || (instance && (!instancesLoaded || !current)) ? <Loading/> : <Outlet context={update} key={instance ?? 'global'}/>}</main>
+      <main id="main-content" tabIndex={-1}>{!schema || location.pathname === '/' || (instance && (!instancesLoaded || !current)) ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>}</main>
     </div>
-    {!railFirst && instance && showRail && !railInFrame && rail}
-    <CompactScrollbars/>
     {creating && <CreateInstance onClose={() => setCreating(false)}/>}
     <MaterialInspector/>
   </div>

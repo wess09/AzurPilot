@@ -6,22 +6,12 @@ import { Component, lazy, Suspense, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { App } from './app/App'
-import { InstanceSetup } from './pages/InstanceSetup'
 import { AppProvider } from './app/context'
-import { ThemeWallpaper } from './components/GlassMaterial'
+import { ThemeWallpaper } from './components/ThemeWallpaper'
 import { applyTheme, getThemePreference } from './app/theme'
-import { Overview } from './pages/Overview'
-import { TaskConfig } from './pages/TaskConfig'
-import { Statistics } from './pages/Statistics'
-import { Updater } from './pages/Updater'
-import { Announcement } from './pages/Announcement'
-import { InterfaceSettings } from './pages/InterfaceSettings'
-import { RemoteAccess } from './pages/RemoteAccess'
-import { Settings } from './pages/Settings'
-import { DevControls } from './pages/DevControls'
-import { ConfigManager } from './pages/ConfigManager'
 import {StockExchangeBoundary,StockExchangeFallback} from './components/StockExchangeBoundary'
 import { translateCurrentUi } from './i18n'
+import './styles/legacy.css'
 
 /* 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
    没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。 */
@@ -36,6 +26,17 @@ class ErrorBoundary extends Component<{children: ReactNode}, {failed: boolean}> 
     return this.props.children
   }
 }
+const InstanceSetup = lazy(() => import('./pages/InstanceSetup').then(module => ({default: module.InstanceSetup})))
+const Overview = lazy(() => import('./pages/Overview').then(module => ({default: module.Overview})))
+const TaskConfig = lazy(() => import('./pages/TaskConfig').then(module => ({default: module.TaskConfig})))
+const Statistics = lazy(() => import('./pages/Statistics').then(module => ({default: module.Statistics})))
+const Updater = lazy(() => import('./pages/Updater').then(module => ({default: module.Updater})))
+const Announcement = lazy(() => import('./pages/Announcement').then(module => ({default: module.Announcement})))
+const InterfaceSettings = lazy(() => import('./pages/InterfaceSettings').then(module => ({default: module.InterfaceSettings})))
+const RemoteAccess = lazy(() => import('./pages/RemoteAccess').then(module => ({default: module.RemoteAccess})))
+const Settings = lazy(() => import('./pages/Settings').then(module => ({default: module.Settings})))
+const DevControls = lazy(() => import('./pages/DevControls').then(module => ({default: module.DevControls})))
+const ConfigManager = lazy(() => import('./pages/ConfigManager').then(module => ({default: module.ConfigManager})))
 const SchedulerProgram = lazy(() => import('./pages/SchedulerProgram').then(module => ({default: module.SchedulerProgram})))
 const StockExchange = lazy(() => import('./pages/StockExchange').then(module => ({default: module.StockExchange})))
 const FleetAnalysis = lazy(() => import('./pages/FleetAnalysis').then(module => ({default: module.FleetAnalysis})))
@@ -49,9 +50,9 @@ const router = createHashRouter([
     {path: 'resources', element: <Navigate to="../statistics?view=management" replace/>},
     {path: 'stock-exchange', element: <StockExchangeBoundary><Suspense fallback={<StockExchangeFallback/>}><StockExchange/></Suspense></StockExchangeBoundary>},
     {path: 'logs', element: <Navigate to="../overview" replace/>}, {path: 'statistics', element: <Statistics/>}, {path: 'scheduler', element: <Navigate to="../task/SchedulerProgram" replace/>}, {path: 'settings', element: <Navigate to="/settings" replace/>},
-    {path: 'task/SchedulerProgram', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><SchedulerProgram/></Suspense>},
-    {path: 'task/FleetAnalysis', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><FleetAnalysis/></Suspense>},
-    {path: 'task/FleetSwitch', element: <Suspense fallback={<div>{translateCurrentUi('common.loading')}</div>}><FleetSwitch/></Suspense>},
+    {path: 'task/SchedulerProgram', element: <SchedulerProgram/>},
+    {path: 'task/FleetAnalysis', element: <FleetAnalysis/>},
+    {path: 'task/FleetSwitch', element: <FleetSwitch/>},
     {path: 'task/FleetInfo', element: <Navigate to="../FleetSwitch?tab=info" relative="path" replace/>},
     {path: 'task/FleetRotation', element: <Navigate to="../FleetSwitch?tab=rotation" relative="path" replace/>},
     {path: 'task/FleetTraining', element: <Navigate to="../FleetSwitch?tab=training" relative="path" replace/>},
@@ -61,10 +62,6 @@ const router = createHashRouter([
   ]},
   {path: '*', element: <Navigate to="/configs" replace/>},
 ])
-// 先读取偏好并加载当前主题，再挂载页面，避免简约首屏短暂请求壁纸或玻璃库。
-void applyTheme(getThemePreference()).then(() => {
-  createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><ThemeWallpaper/><RouterProvider router={router}/></AppProvider></ErrorBoundary>)
-}).catch(() => {
-  const root = document.getElementById('root')!
-  root.textContent = '主题加载失败，请刷新页面重试。'
-})
+// 在挂载前应用已保存的明暗和材质，主题 CSS 由入口样式表加载。
+applyTheme(getThemePreference())
+createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><ThemeWallpaper/><RouterProvider router={router}/></AppProvider></ErrorBoundary>)

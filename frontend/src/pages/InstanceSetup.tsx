@@ -13,7 +13,7 @@ import { INSTANCE_NAME_PATTERN } from '../app/instanceName'
 import { motionReducedActive, subscribeMotionPrefs } from '../app/motionPrefs'
 import { Select } from '../components/FormControls'
 import { ProjectLogo } from '../components/ProjectLogo'
-import { useIsDesktop } from '../components/TaskNav'
+import { useIsDesktop } from '../app/useIsDesktop'
 import { ErrorBox } from '../components/ui'
 import { languages, type Language } from '../i18n'
 
@@ -68,7 +68,7 @@ function WindowsSetupArtwork({name, play, fallback}: {name: string; play: boolea
     function showFallback() {
       if (active) setFailed(true)
     }
-    void import('lottie-web').then(({default: lottie}) => {
+    void import('lottie-web/build/player/lottie_light.js').then(({default: lottie}) => {
       if (!active || !container.current) return
       item = lottie.loadAnimation({
         container: container.current, renderer: 'svg', autoplay: false, loop: false,

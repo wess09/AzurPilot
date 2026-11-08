@@ -1,17 +1,7 @@
-/* 旧版字体：正文 MiSans、日志 JetBrains Mono NL。
-   字体文件放在 frontend/public/，用相对路径引用，才能在前缀式反代下同样命中。 */
+/* 正文使用 MiSans，等宽字体由 tokens.css 提供。 */
 @font-face {
   font-family: 'MiSans';
-  src: url('./MiSans-Demibold.ttf') format('truetype');
+  src: url('/MiSans-Demibold.woff2') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
-
-@font-face {
-  font-family: 'JetBrains Mono NL';
-  src: url('./JetBrainsMonoNL-Regular.ttf') format('truetype');
-  font-display: swap;
-}
-
-/* 日志区用等宽字体变量，与共享层的取值同源。 */
-.log-content {font-family: var(--theme-font-mono)}

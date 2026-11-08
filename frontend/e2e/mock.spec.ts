@@ -997,11 +997,6 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
       await page.getByRole('button', {name: '打开导航', exact: true}).click()
       await expect(page.locator('.sidebar')).toBeInViewport({ratio: .95})
       await page.getByRole('button', {name: '关闭导航', exact: true}).click()
-      if (!legacy) {
-        await page.getByRole('button', {name: '打开调度与任务', exact: true}).click()
-        await expect(page.locator('.right-rail')).toBeInViewport({ratio: .95})
-        await page.locator('.right-rail').getByRole('button', {name: '关闭调度与任务', exact: true}).click()
-      }
       for (const category of ['资源趋势', '大世界趋势', '短猫掉落']) {
         const picker = page.getByRole('combobox', {name: '统计分类', exact: true})
         if (await picker.isVisible()) {
@@ -1022,33 +1017,17 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
   })
 }
 
-test('任务二级菜单通过顶层浮层覆盖资源卡片', async ({page}) => {
-  await page.setViewportSize({width: 1134, height: 669})
-  await page.addInitScript(() => localStorage.setItem('azurpilot.resources.demo-main', JSON.stringify(['Oil', 'ActionPoint'])))
+test('任务组在侧栏内展开并可跳转到配置页', async ({page}) => {
   await page.goto('/#/i/demo-main/overview')
-  await page.locator('.task-group-button').filter({hasText: '系统'}).click()
-  const flyout = page.locator('.task-submenu-flyout')
-  await expect(flyout).toBeVisible()
-  await expect(flyout).toHaveCSS('position', 'fixed')
-  await expect(flyout).toHaveCSS('z-index', '100')
-  await expect(flyout).toHaveCSS('background-color', 'rgb(255, 255, 255)')
-  await expect(flyout).toHaveCSS('backdrop-filter', 'none')
-  expect(await flyout.evaluate(element => element.parentElement === document.body)).toBe(true)
-
-  const overlap = await flyout.evaluate(element => {
-    const flyoutRect = element.getBoundingClientRect()
-    const card = [...document.querySelectorAll<HTMLElement>('.resource-card')].find(candidate => {
-      const rect = candidate.getBoundingClientRect()
-      return Math.max(flyoutRect.left, rect.left) < Math.min(flyoutRect.right, rect.right) && Math.max(flyoutRect.top, rect.top) < Math.min(flyoutRect.bottom, rect.bottom)
-    })
-    if (!card) return {found: false, onTop: false}
-    const cardRect = card.getBoundingClientRect()
-    const x = (Math.max(flyoutRect.left, cardRect.left) + Math.min(flyoutRect.right, cardRect.right)) / 2
-    const y = (Math.max(flyoutRect.top, cardRect.top) + Math.min(flyoutRect.bottom, cardRect.bottom)) / 2
-    return {found: true, onTop: !!document.elementFromPoint(x, y) && element.contains(document.elementFromPoint(x, y))}
-  })
-  expect(overlap).toEqual({found: true, onTop: true})
-  await page.screenshot({path: 'test-results/task-submenu-resource-overlay.png', fullPage: true, animations: 'disabled'})
+  const sidebar = page.locator('.sidebar')
+  const group = sidebar.getByRole('button', {name: '系统', exact: true})
+  const task = sidebar.locator('#task-group-Alas a[href$="/task/Alas"]')
+  await expect(group).toHaveAttribute('aria-expanded', 'false')
+  await group.click()
+  await expect(group).toHaveAttribute('aria-expanded', 'true')
+  await expect(task).toBeVisible()
+  await task.click()
+  await expect(page).toHaveURL(/\/task\/Alas$/)
 })
 
 test('舰队扫描和半自动工具在当前页面显示运行日志', async ({page}) => {
@@ -1094,7 +1073,7 @@ test('统计与监控复用分段控件的样式及键盘切换', async ({page})
   await monitor.screenshot({path: 'test-results/segmented-monitor-light.png'})
   const appearance = await monitor.evaluate(control => {
     const style = getComputedStyle(control)
-    return [style.backgroundColor, style.borderColor, style.borderRadius, control.querySelector('button')!.getBoundingClientRect().height]
+    return [style.borderColor, style.borderRadius, control.querySelector('button')!.getBoundingClientRect().height]
   })
   await monitor.getByRole('tab', {name: '日志', exact: true}).focus()
   await page.keyboard.press('ArrowRight')
@@ -1107,9 +1086,9 @@ test('统计与监控复用分段控件的样式及键盘切换', async ({page})
   const statistics = page.getByRole('tablist', {name: '统计分类'})
   await expect(statistics).toBeVisible()
   expect(await statistics.evaluate(control => {
-    // 分类栏的控件面绘制在伪元素上，元素本体为透明背景。
+    // 分类栏单独绘制背景，边框、圆角和按钮尺寸沿用分段控件。
     const style = getComputedStyle(control, '::after')
-    return [style.backgroundColor, style.borderColor, style.borderRadius, control.querySelector('button')!.getBoundingClientRect().height]
+    return [style.borderColor, style.borderRadius, control.querySelector('button')!.getBoundingClientRect().height]
   })).toEqual(appearance)
 })
 
@@ -1432,10 +1411,11 @@ test('没有实例时进入首次设置，完成后打开新实例总览', async
   await expect(page).toHaveURL(/#\/setup$/)
   const next = page.getByRole('button', {name: '下一步', exact: true})
   await expect(page.getByRole('heading', {name: '选择语言'})).toBeVisible()
+  await expect(page.locator('.setup-illustration-art > svg')).toBeVisible()
   await page.getByRole('button', {name: '简体中文'}).click()
   await next.click()
   await expect(page.getByRole('heading', {name: '导入旧数据'})).toBeVisible()
-  await page.getByRole('button', {name: '不导入，继续设置'}).click()
+  await next.click()
   await expect(page.getByRole('heading', {name: '选择服务器'})).toBeVisible()
   await next.click()
   await page.getByLabel('模拟器ID').fill('127.0.0.1:7555')

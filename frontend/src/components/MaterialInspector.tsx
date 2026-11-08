@@ -28,31 +28,31 @@ import {
   toggleMaterialInspectorDocked,
   toggleMaterialInspectorMinimized,
 } from '../app/materialInspectorState'
-import { familyOf, showsWallpaper } from '../app/theme'
+import { THEME_FAMILY } from '../app/theme'
 import {
   clearFamilyKnob,
   clearFamilyRegion,
   resetFamilyCustom,
   writeFamilyCustom,
 } from '../app/themeCustom'
-import { familyRegions } from '../app/themeKnobs'
+import { REGIONS } from '../app/themeKnobs'
 import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 
 export function MaterialInspector() {
   const inspector = useSyncExternalStore(subscribeMaterialInspector, getMaterialInspector, getMaterialInspector)
   const background = useSyncExternalStore(subscribeBackground, getBackground, getBackground)
-  const { ui, theme } = useApp()
+  const { ui } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
 
-  const family = familyOf(theme)
+  const family = THEME_FAMILY
   const {custom, refresh} = useFamilyCustom(family)
   const {region: activeRegion, showModal, showMenu, select: handleRegionSelect, setShowModal, setShowMenu} = useSampleLayers()
 
   if (!inspector.open) return null
 
-  const wallpaperActive = showsWallpaper(theme, background.source)
+  const wallpaperActive = background.source !== 'off'
 
   const isDocked = inspector.docked
   const isMinimized = inspector.minimized
@@ -83,7 +83,7 @@ export function MaterialInspector() {
                 <Sliders size={16} />
                 <span className="inspector-title">{ui('settings.materialDetail')}</span>
                 <span>
-                  {family === 'new' ? 'Apple HIG' : 'Google M3'}
+                  Google M3
                 </span>
               </div>
               <div>
@@ -198,7 +198,7 @@ export function MaterialInspector() {
               </div>
 
               <MaterialDetailPanel
-                regions={familyRegions[family]}
+                regions={REGIONS}
                 custom={custom}
                 ui={ui}
                 initialRegion={activeRegion}

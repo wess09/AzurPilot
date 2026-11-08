@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { AppContext, type AppContextValue } from '../app/context'
-import { TaskNav } from './TaskNav'
-import { isDesktopDevice } from './TaskNavFlyout'
+import { TaskNavTree } from './TaskNavTree'
+import { isDesktopDevice } from '../app/useIsDesktop'
 import type { Theme } from '../app/theme'
 import type { Schema } from '../api/types'
 import { translateUi } from '../i18n'
@@ -56,22 +56,19 @@ function contextWith(theme: Theme): AppContextValue {
     setTheme: () => {},
     material: 'glass',
     setMaterial: () => {},
-    colorMode: 'auto', resolvedMode: 'light', setColorMode: () => {},
+    resolvedMode: 'light',
     customPalettes: [], saveCustomPalette: () => {}, deleteCustomPalette: () => {},
-    compactRailSide: 'right', setCompactRailSide: () => {}, compactRailWidth: 244, setCompactRailWidth: () => {},
-    palette: 'ocean',
-    setPalette: () => {},
     language: 'zh-CN',
     setLanguage: () => {},
   }
 }
 
-function render(path: string, props: {defaultOpenKey?: string; isDesktop?: boolean} = {}, theme: Theme = 'legacy-light') {
+function render(path: string, props: {defaultOpenKey?: string} = {}, theme: Theme = 'legacy-light') {
   return renderToStaticMarkup(
     <AppContext.Provider value={contextWith(theme)}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/i/:instance/*" element={<TaskNav {...props} />} />
+          <Route path="/i/:instance/*" element={<TaskNavTree {...props} />} />
         </Routes>
       </MemoryRouter>
     </AppContext.Provider>
@@ -79,7 +76,7 @@ function render(path: string, props: {defaultOpenKey?: string; isDesktop?: boole
 }
 
 describe('TaskNav 导航组件', () => {
-  it.each(['legacy-light', 'light'] as Theme[])('在 %s 主题中将智能换船与舰船数据放在舰队管理', theme => {
+  it.each(['legacy-light', 'legacy-dark'] as Theme[])('在 %s 主题中将智能换船与舰船数据放在舰队管理', theme => {
     const html = render('/i/default/task/FleetAnalysis', {defaultOpenKey: 'FleetManagement'}, theme)
     expect(html).toContain('舰队管理')
     expect(html).toContain('task-group-button expanded active')
@@ -145,18 +142,8 @@ describe('TaskNav 导航组件', () => {
     expect(html).toContain('href="/i/default/task/Main"')
   })
 
-  it('其余主题继续用向右浮出的二级菜单', () => {
-    const html = render('/i/default/overview', {defaultOpenKey: 'Alas'}, 'light')
-
-    expect(html).toContain('aria-haspopup="menu"')
-    expect(html).toContain('task-submenu-flyout')
-    expect(html).toContain('href="/i/default/task/Alas"')
-    // 浮出层不挂在侧栏的分组里，分组按钮也就不带 aria-controls
-    expect(html).not.toContain('aria-controls="task-group-')
-  })
-
-  it('移动端/窄屏下，非经典主题也采用树状折叠菜单（参考经典主题）', () => {
-    const html = render('/i/default/overview', {defaultOpenKey: 'Alas', isDesktop: false}, 'light')
+  it('默认展开指定分组', () => {
+    const html = render('/i/default/overview', {defaultOpenKey: 'Alas'})
 
     expect(html).toContain('task-group-button')
     expect(html).toContain('task-submenu-list')

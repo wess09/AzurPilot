@@ -9,8 +9,7 @@ test('总览、配置实时更新与刷新持久化', async ({page}) => {
   await page.screenshot({path: 'test-results/overview-desktop.png', fullPage: true, animations: 'disabled'})
   await page.getByRole('button', {name: '展开任务搜索'}).click()
   await page.getByRole('textbox', {name: '搜索任务', exact: true}).fill('Alas')
-  await page.locator('.task-group-button').click()
-  await page.locator('.task-submenu-flyout a[href$="/task/Alas"]').click()
+  await page.locator('#task-group-Alas a[href$="/task/Alas"]').click()
   const serial = page.locator('[id="Alas.Emulator.Serial"]')
   await expect(serial).toBeVisible()
   // 配置页此刻不该有未保存修改：只在内容区里查这两个按钮。
@@ -42,7 +41,7 @@ test('新建实例使用真实 API，移动端无横向溢出', async ({page}) =
   await page.getByLabel('实例名称').fill(name)
   await page.getByRole('dialog').getByRole('button', {name: '创建实例', exact: true}).click()
   await expect(page).toHaveURL(new RegExp(`/i/${name}/overview$`))
-  await expect(page.locator('.overview-page')).toBeVisible()
+  await expect(page.locator('.instance-page-grid')).toBeVisible()
   await page.setViewportSize({width: 390, height: 844})
   await page.getByRole('button', {name: '打开导航'}).click()
   await page.locator('.primary-nav a[href$="/overview"]').click()

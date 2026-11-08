@@ -1,6 +1,4 @@
-/* 旧版主题：MD3 靛紫配色，还原旧 WebUI 的平面观感。
-   与简约主题一样复用共享骨架，但不导入玻璃、壁纸与外部 theme.css。
-   结构性规则（布局、尺寸、层级）必须自带 —— 共享层不提供，平时由 apple.css 承担。 */
+/* 经典主题的共享样式与布局覆盖。 */
 @import './tokens.css';
 @import './layout.css';
 @import './components.css';
@@ -113,13 +111,6 @@ input[aria-invalid='true'], textarea[aria-invalid='true'], .select-trigger[aria-
   background: var(--surface);
 }
 
-/* 旧版浅色/深色不挂载壁纸层；首页指挥台的文字色改回正文色。 */
-:root[data-theme='legacy-light'] .home-deck,
-:root[data-theme='legacy-dark'] .home-deck {
-  color: var(--text);
-  text-shadow: none;
-}
-
 /* 跳转链接必须在网格流之外，否则会占掉侧栏那一列。 */
 .skip-link {position: fixed; top: -100px; left: 16px; z-index: 200; background: var(--theme-control-bg); color: var(--accent); padding: 14px; border-radius: 8px}
 .skip-link:focus {top: 12px}
@@ -140,19 +131,13 @@ input[aria-invalid='true'], textarea[aria-invalid='true'], .select-trigger[aria-
 .task-group-button.active:not(.expanded) .task-group-icon {color: var(--accent)}
 .topbar {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
 .right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
-.breadcrumb, .breadcrumb .instance-caption strong {font-size: 13px}
+.breadcrumb {font-size: 13px}
 /* 上内边距归零：内容区顶部那条「主页 / 实例」行已与下方留出距离，再加 24px 会在
    「主页文字底到容器顶边框」之间多出一段空隙。 */
 main {padding: 0 28px 24px}
 main:focus {outline: none}
 .page-title h1 {font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.6px; overflow-wrap: anywhere}
-.home-intro {padding: 8px 0 24px}
 .eyebrow {display: block; margin-bottom: 10px; font-size: 12px; font-weight: 600}
-.home-intro .page-title {margin-bottom: 12px}
-.home-intro p {color: var(--muted); line-height: 1.8}
-.home-summary {display: flex; flex-wrap: wrap; gap: 20px; padding: 18px 0 24px; margin-bottom: 24px; border-bottom: 1px solid var(--border)}
-.home-summary > div {display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 13px}
-.home-summary strong {color: var(--text); font-size: 20px; font-variant-numeric: tabular-nums}
 .title-actions {position: relative; gap: 8px; padding: 4px}
 .panel-heading h2 {font-size: 15px}
 .panel, .resource-card, .instance-card {border-radius: var(--theme-radius-panel)}
@@ -258,7 +243,7 @@ main:focus {outline: none}
 button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled,
 .checkbox-control:has(:disabled), .select-option[aria-disabled='true'] {opacity: 1; color: var(--muted)}
 .button:disabled {background: var(--surface-muted); border-color: var(--border); box-shadow: none}
-.input-icon, .schedule-summary, .count-badge, .nav-search {background: var(--surface-muted)}
+.input-icon, .count-badge, .nav-search {background: var(--surface-muted)}
 .status, .task-state {border-radius: 8px; font-weight: 500}
 
 .scheduler-widget {
@@ -426,11 +411,6 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .app-shell.legacy-shell > .main-shell > main > .instance-page-grid,
 .app-shell.legacy-shell > .main-shell > main > .task-config-legacy {flex-shrink: 1; min-height: 0}
 .app-shell.legacy-shell > .right-rail {grid-area: rail}
-/* 顶层页面（主页 / 更新器 / 设置 / 配置管理…）没有页内滚动区：外壳既把这一行裁掉，
-   又没给 main 留滚动容器，长页面就被整段裁掉、页面还滚不动。
-   main 在实例页是 flex 列（页内两列要 flex 撑满），到这里会把普通面板压扁而不是溢出，
-   所以这里同时退回块级布局并补上滚动容器；顶栏与侧栏照旧常驻，与实例页一致。 */
-.app-shell.legacy-home-shell > .main-shell > main {display: block; min-height: 0; overflow-y: auto}
 /* 招牌随顶栏走：顶栏里的那份紧贴左侧，不参与侧栏那套 72px 间距。 */
 .legacy-topbar-brand {height: auto; margin-bottom: 0; padding: 0}
 /* 旧版顶栏的第三列是居中的页面名。 */
@@ -458,7 +438,6 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* 竖线取固定色，不跟主题的文字色走。 */
 :root[data-theme='legacy-light'] {--instance-tab-divider-color: rgba(0, 0, 0, .22)}
 :root[data-theme='legacy-dark'] {--instance-tab-divider-color: rgba(255, 255, 255, .26)}
-.legacy-page-nav .instance-picker {margin: 0}
 
 /* 「主页」链接：与标签同高、同一条基准线；纵向内边距归零，选中框因此不会探出栏外。 */
 .legacy-page-nav .breadcrumb .topbar-actions > a {
@@ -653,7 +632,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     overflow-y: auto;
   }
   .statistics-legacy .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
-  /* 分段控件按内容自然宽度排，不拉伸：upstream 的紧凑版式靠 offsetWidth 量它的自然宽度。 */
+  /* 分段控件按内容自然宽度排列。 */
   .statistics-legacy .statistics-toolbar-row .statistics-category-control {margin-bottom: 0; flex: 0 0 auto; width: max-content}
 /* 旧版统计页的内容容器没有内边距，切换入口的衬底外扩 6px 会被容器边缘裁掉；
    工具栏行让出 6px，使衬底外缘正好落在内容边界上。 */
@@ -889,3 +868,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* 总览页的统计面板只留分类切换那一行与操作按钮：周期控件是为独占整页的独立统计页排的，
    落在窄面板里会换行留白；它在面板下方还有一份，隐藏这里不影响选择时间范围与各类筛选。 */
 .instance-panel-stats .statistics-controls.period-controls {display: none}
+
+/* 无障碍覆盖放在经典布局样式之后，避免普通规则重新打开滤镜。 */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .sidebar, .right-rail, .instance-menu, .group-nav, .panel, .resource-card {background: var(--theme-surface); -webkit-backdrop-filter: none; backdrop-filter: none}
+}

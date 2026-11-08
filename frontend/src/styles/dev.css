@@ -18,7 +18,7 @@
 
 .dev-surface-grid {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding:22px 24px;border-bottom:1px solid var(--border)}
 .dev-surface-sample {position:relative;isolation:isolate;min-height:120px;padding:18px;border:1px solid var(--border);border-radius:20px;display:flex;flex-direction:column;justify-content:flex-end;gap:5px;overflow:hidden}
-.dev-surface-sample > :not(.glass-material) {position:relative;z-index:1}
+.dev-surface-sample > * {position:relative;z-index:1}
 .dev-surface-sample span {font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted)}
 .dev-surface-sample strong {font-size:14px}
 .dev-surface-sample small {color:var(--muted);font-family:monospace}
@@ -68,7 +68,6 @@
 .dev-scroll-sample code {display:inline-block;width:30px;color:var(--accent)}
 
 @media (max-width: 1200px) {
-  .dev-blur-presets {grid-template-columns:repeat(3,minmax(0,1fr))}
   .dev-surface-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
   .dev-shadow-grid {grid-template-columns:repeat(3,minmax(0,1fr))}
   .dev-radius-grid {grid-template-columns:repeat(5,minmax(0,1fr))}
@@ -82,9 +81,6 @@
   .dev-intro,.dev-control-block {align-items:stretch;flex-direction:column}
   .dev-button-row,.dev-inline-controls {justify-content:flex-start}
   .dev-feedback-grid {grid-template-columns:1fr}
-  .dev-effect-lab {grid-template-columns:1fr;padding:18px}
-  .dev-effect-stage {min-height:280px}
-  .dev-effect-glass {inset:28px}
   .dev-surface-grid,.dev-shadow-grid,.dev-token-grid,.dev-type-grid,.dev-layout-grid {grid-template-columns:1fr}
   .dev-radius-grid {grid-template-columns:repeat(3,minmax(0,1fr))}
   .dev-metric-preview {grid-column:auto}
@@ -92,11 +88,6 @@
 }
 
 @media (max-width: 560px) {
-  .dev-blur-presets {grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}
-  .dev-effect-stage {min-height:240px}
-  .dev-effect-glass {inset:18px;padding:18px}
-  .dev-effect-glass strong {font-size:18px}
-  .dev-effect-wallpaper > span {font-size:30px;left:18px;bottom:16px}
   .dev-surface-grid,.dev-shadow-grid,.dev-radius-grid {padding:16px}
   .dev-radius-grid {grid-template-columns:repeat(3,minmax(0,1fr))}
 }

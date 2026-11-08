@@ -8,12 +8,11 @@ import { CalendarClock, Clock3, ListTree, Play, RotateCcw, Search, Settings2, Te
 import { api } from '../api/client'
 import type { Config } from '../api/types'
 import { useApp, useConnection } from '../app/context'
-import { usesLegacyLayout } from '../app/theme'
 import { htmlToPlainText } from '../app/htmlText'
 import { readRailView, setRailView, subscribeRailView } from '../app/railPrefs'
 import { smoothScrollToElement } from '../app/scroll'
 import { clearSearchTarget, peekSearchTarget, subscribeSearchTarget } from '../app/searchTarget'
-import { Empty, ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
+import { Empty, ErrorBox, Loading, Modal } from '../components/ui'
 import { LogPanel } from '../components/LogPanel'
 import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
 import { OpsiSimulatorPanel } from '../components/OpsiSimulatorPanel'
@@ -30,7 +29,7 @@ import { FleetInfoPage } from './FleetInfoPage'
 
 export function TaskConfig() {
   const {instance = '', task = ''} = useParams()
-  const {schema, t, ui, notify, theme} = useApp()
+  const {schema, t, ui, notify} = useApp()
   const connection = useConnection()
   const railView = useSyncExternalStore(subscribeRailView, readRailView, readRailView)
   // 只在真的切到调度器时才请求总览数据，否则这一页白拉一份队列。
@@ -47,7 +46,6 @@ export function TaskConfig() {
   const startupEdits = useSyncExternalStore(startupQueue.subscribe, startupQueue.getSnapshot, startupQueue.getSnapshot)
   const [startupEnabled, setStartupEnabled] = useState<boolean>()
   const [startupRemember, setStartupRemember] = useState<boolean>()
-  const legacy = usesLegacyLayout(theme)
   const reload = useCallback(async () => {
     try {
       const confirmed = queue.confirmed()
@@ -265,7 +263,6 @@ export function TaskConfig() {
 
   const hasGroups = task !== 'FleetInfo' && Boolean(groups) && visibleGroups.length > 0
   // 只有紧凑主题把搜索框并进左列（跳转栏下方），其余主题保持标题下方的原样。
-  const condensed = theme === 'extreme'
   // 启动开关挂在系统设置（Alas）任务页顶部；搜索时只显示匹配项。
   const startupPanel = task === 'Alas' && !search && <section className="panel config-group">
     <div className="panel-heading">
@@ -362,7 +359,7 @@ export function TaskConfig() {
   const head = <>
     {error && <ErrorBox message={error} retry={reload} />}
     {storageError && <ErrorBox message={storageError} />}
-    {(!hasGroups || !condensed) && configToolbar}
+    {configToolbar}
   </>
 
   const groupsSection = !hasGroups ? (
@@ -384,7 +381,7 @@ export function TaskConfig() {
   </section>
 
   // 旧版的任务详细设置：参数卡在左、右列在「分组目录 / 调度器」之间切，页名由顶栏居中显示。
-  if (legacy) return <>
+  return <>
     <div className="task-config-legacy">
       <h1 className="legacy-sr-title">{t(`Task.${task}.name`)}</h1>
       <div className="task-config-settings">
@@ -394,19 +391,6 @@ export function TaskConfig() {
       {/* 目录是逐页内容，跟着任务换；调度器是常驻的，换任务不重挂。 */}
       <div className="task-config-rail-slot" key={railView === 'directory' ? task : 'scheduler'}>{rail}</div>
     </div>
-    {modal}
-  </>
-
-  return <>
-    {/* 紧凑主题下任务名与面包屑末段重复，省掉标题行让内容上移，只留无障碍标题 */}
-    {theme === 'extreme'
-      ? <h1 className="sr-title">{t(`Task.${task}.name`)}</h1>
-      : <PageTitle title={t(`Task.${task}.name`)}/>}
-    {head}
-    {hasGroups ? <div className="config-layout">{groupNav}{groupCardsBlock}</div> : groupsSection}
-    {/* 报告面板放在日志上方：先看完参数与运行入口，再看结果 */}
-    {scorePanel}
-    {toolPanel}
     {modal}
   </>
 }

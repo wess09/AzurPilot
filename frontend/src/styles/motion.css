@@ -56,7 +56,7 @@
 }
 
 /* ============================================================================
-   2 · 抽屉与右栏：视觉不变、性能修复（left/right → transform，避免逐帧重排）
+   2 · 移动侧栏用 transform 移入视口，避免逐帧重排
    ============================================================================ */
 @media (max-width: 950px) {
   .sidebar {
@@ -76,7 +76,6 @@
     transition: transform var(--dur-4) var(--ease-decelerate), opacity var(--dur-4) var(--ease-standard), visibility var(--dur-4) allow-discrete;
     will-change: transform;
   }
-  .rail-open .right-rail { transform: none; opacity: 1; visibility: visible }
 }
 
 /* ============================================================================
@@ -134,28 +133,5 @@ dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--
    ============================================================================ */
 @keyframes motion-log-in { from { opacity: 0; transform: translateY(2px) } to { opacity: 1; transform: none } }
 .log-line.motion-enter, .log-rule.motion-enter { animation: motion-log-in var(--dur-2) var(--ease-decelerate) both }
-
-/* ============================================================================
-   7 · 顶栏“光随鼠标”掠光（仅材质主题；由 useGlassPointerLight 写入 --mx/--my）
-   ============================================================================ */
-:root[data-theme='light'] .topbar::after,
-:root[data-theme='dark'] .topbar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  z-index: 0;
-  background: radial-gradient(
-    260px circle at var(--mx, 30%) var(--my, 30%),
-    rgb(255 255 255 / .14),
-    rgb(255 255 255 / .05) 45%,
-    transparent 70%
-  );
-  opacity: 0;
-  transition: opacity var(--dur-4) var(--ease-standard);
-}
-:root[data-theme='light'] .topbar:hover::after,
-:root[data-theme='dark'] .topbar:hover::after { opacity: 1 }
 
 /* 任务列表 / 队列继续沿用各自已有的 keyframes，此处不重复定义。 */

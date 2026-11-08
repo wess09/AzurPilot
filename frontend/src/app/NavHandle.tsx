@@ -7,7 +7,6 @@ import { ChevronRight } from 'lucide-react'
 import { useApp } from './context'
 import { getBackground, subscribeBackground, type BackgroundSnapshot } from './background'
 import { getLayout, setSidebarCollapsed, subscribeLayout } from './layout'
-import { getThemePreference, showsWallpaper } from './theme'
 
 /** 侧栏收起/展开把手：侧栏边缘一条很细的竖带 + 一枚扁的指示标记，收起时贴屏幕左缘。 */
 export function NavHandle({background: given}: {background?: BackgroundSnapshot} = {}) {
@@ -31,7 +30,7 @@ export function NavHandle({background: given}: {background?: BackgroundSnapshot}
     }
   }, [collapsed])
   /* 只在铺着壁纸时给把手：简约与紧凑族没有壁纸，关闭背景后也没有可看的东西。 */
-  if (!showsWallpaper(getThemePreference().theme, background.source)) return null
+  if (background.source === 'off') return null
   return <button
     type="button"
     className="nav-handle"

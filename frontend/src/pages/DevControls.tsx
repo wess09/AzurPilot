@@ -5,16 +5,14 @@
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
 import { MarqueeText } from '../components/MarqueeText'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, Bell, ChevronRight, CircleAlert, CirclePlay, Code2, Database, Gauge, Image, Layers3, RefreshCw, Search, Server, Settings2, Sparkles, Terminal, Trash2, Wrench, X } from 'lucide-react'
+import { ArrowRight, Bell, ChevronRight, CircleAlert, CirclePlay, Code2, Database, Gauge, Image, Layers3, RefreshCw, Search, Server, Settings2, Terminal, Trash2, Wrench, X } from 'lucide-react'
 import type { Value } from '../api/types'
 import { useApp } from '../app/context'
-import { usesMaterial } from '../app/theme'
 import { previewUpdate, simulateStatus, useDevOverride } from '../app/devOverride'
 import { readMotionPrefs, resetMotionPrefs, setMotionReduced, setMotionSpeed, setMotionStrength, subscribeMotionPrefs } from '../app/motionPrefs'
 import { replayLastPageTransition } from '../app/pageMotion'
 import { FieldInput } from '../components/FieldInput'
 import { SegmentedControl } from '../components/SegmentedControl'
-import { GlassMaterial } from '../components/GlassMaterial'
 import { Empty, ErrorBox, Loading, Modal, PageTitle, StatusBadge } from '../components/ui'
 
 /* 模拟状态用的文案键；与实际状态值一一对应。 */
@@ -33,7 +31,7 @@ function DevField({id, label, help, multiline = false, children}: {id: string; l
 }
 
 export function DevControls() {
-  const {setDevMode, notify, ui, theme} = useApp()
+  const {setDevMode, notify, ui} = useApp()
   const navigate = useNavigate()
   const [text, setText] = useState('AzurPilot')
   const [number, setNumber] = useState(25548)
@@ -47,16 +45,10 @@ export function DevControls() {
   const [yaml, setYaml] = useState<Value>('Scheduler:\n  Enable: true\n  SuccessInterval: 30')
   const [segment, setSegment] = useState<'logs' | 'preview'>('logs')
   const [modalOpen, setModalOpen] = useState(false)
-  const [blur, setBlur] = useState(24)
-  const [saturation, setSaturation] = useState(130)
-  const [glassOpacity, setGlassOpacity] = useState(72)
-  const [radius, setRadius] = useState(26)
-  const [shadow, setShadow] = useState(24)
   const [demoTab, setDemoTab] = useState('resources')
   const [throwing, setThrowing] = useState(false)
   const override = useDevOverride()
   const motionPrefs = useSyncExternalStore(subscribeMotionPrefs, readMotionPrefs, readMotionPrefs)
-  const motionAvailable = theme !== 'minimal' && theme !== 'extreme'
   const statusLabel = override.status ? ui(STATUS_LABELS[override.status]) : ''
 
   function disableDevMode() {
@@ -100,58 +92,30 @@ export function DevControls() {
     </section>
     {throwing && <CrashTest/>}
 
-    {usesMaterial(theme) && <section className="panel config-group">
-      <div className="panel-heading"><div><Sparkles size={18}/><h2 aria-label={ui('developer.visualLab')} data-text={ui('developer.visualLab')}>{ui('developer.visualLab')}</h2></div><span className="small-label">{ui('developer.liveTuning')}</span></div>
-      <div className="dev-effect-lab">
-        <div className="dev-effect-stage">
-          <div className="dev-effect-wallpaper" aria-hidden="true"><i/><i/><i/><span>AzurPilot</span></div>
-          <div className="dev-effect-glass" style={{
-            backdropFilter: `blur(${blur}px) saturate(${saturation}%)`,
-            WebkitBackdropFilter: `blur(${blur}px) saturate(${saturation}%)`,
-            background: `color-mix(in srgb, var(--surface) ${glassOpacity}%, transparent)`,
-            borderRadius: `${radius}px`,
-            boxShadow: `0 ${Math.round(shadow / 3)}px ${shadow * 2}px #00000020, inset 0 1px 0 #ffffff66`,
-          }}>
-            <span className="small-label">{ui('developer.backdropGlass')}</span><strong>{ui('developer.glassProperties')}</strong><p>{ui('developer.glassHint')}</p>
-          </div>
-        </div>
-        <div className="dev-effect-controls">
-          <label>{ui('developer.blur')} <strong>{blur}px</strong><input type="range" min="0" max="48" value={blur} onChange={event => setBlur(Number(event.target.value))}/></label>
-          <label>{ui('developer.saturate')} <strong>{saturation}%</strong><input type="range" min="70" max="180" value={saturation} onChange={event => setSaturation(Number(event.target.value))}/></label>
-          <label>{ui('developer.surface')} <strong>{glassOpacity}%</strong><input type="range" min="0" max="100" value={glassOpacity} onChange={event => setGlassOpacity(Number(event.target.value))}/></label>
-          <label>{ui('developer.radius')} <strong>{radius}px</strong><input type="range" min="0" max="48" value={radius} onChange={event => setRadius(Number(event.target.value))}/></label>
-          <label>{ui('developer.shadow')} <strong>{shadow}px</strong><input type="range" min="0" max="48" value={shadow} onChange={event => setShadow(Number(event.target.value))}/></label>
-        </div>
-      </div>
-      <div className="dev-blur-presets">
-        {[0, 6, 12, 18, 24, 32].map(value => <div key={value} className="dev-blur-preset-wrap"><div className="dev-blur-preset-bg"><div style={{backdropFilter: `blur(${value}px)`, WebkitBackdropFilter: `blur(${value}px)`}}>{ui('developer.blur')} {value}px</div></div><span>{value === 0 ? ui('developer.blurNone') : value <= 12 ? ui('developer.blurLight') : value <= 24 ? ui('developer.blurMedium') : ui('developer.blurHeavy')}</span></div>)}
-      </div>
-    </section>}
-
     <section className="panel config-group">
       <div className="panel-heading"><div><Gauge size={18}/><h2 aria-label={ui('developer.motionLab')} data-text={ui('developer.motionLab')}>{ui('developer.motionLab')}</h2></div><span className="small-label">{ui('developer.liveTuning')}</span></div>
       <div className="dev-control-block">
         <div className="dev-control-label"><strong>{ui('developer.motionSpeed')}</strong><span>{ui('developer.motionSpeedHint')}</span></div>
         <div className="dev-button-row">
-          {([[1, '1×'], [2, '0.5×'], [4, '0.25×']] as const).map(([value, label]) => <button key={value} type="button" className="button secondary" disabled={!motionAvailable} aria-pressed={motionPrefs.speed === value} onClick={() => setMotionSpeed(value)}>{label}</button>)}
+          {([[1, '1×'], [2, '0.5×'], [4, '0.25×']] as const).map(([value, label]) => <button key={value} type="button" className="button secondary" aria-pressed={motionPrefs.speed === value} onClick={() => setMotionSpeed(value)}>{label}</button>)}
         </div>
       </div>
       <div className="dev-control-block">
         <div className="dev-control-label"><strong>{ui('developer.motionStrength')}</strong></div>
         <div className="dev-button-row">
-          <button type="button" className="button secondary" disabled={!motionAvailable} aria-pressed={motionPrefs.strength === 'standard'} onClick={() => setMotionStrength('standard')}>{ui('developer.motionStandard')}</button>
-          <button type="button" className="button secondary" disabled={!motionAvailable} aria-pressed={motionPrefs.strength === 'strong'} onClick={() => setMotionStrength('strong')}>{ui('developer.motionStrong')}</button>
+          <button type="button" className="button secondary" aria-pressed={motionPrefs.strength === 'standard'} onClick={() => setMotionStrength('standard')}>{ui('developer.motionStandard')}</button>
+          <button type="button" className="button secondary" aria-pressed={motionPrefs.strength === 'strong'} onClick={() => setMotionStrength('strong')}>{ui('developer.motionStrong')}</button>
         </div>
       </div>
       <div className="dev-control-block">
         <div className="dev-control-label"><strong>{ui('developer.motionReduced')}</strong></div>
         <div className="dev-button-row">
           <button type="button" className="button secondary" aria-pressed={motionPrefs.reduced} onClick={() => setMotionReduced(!motionPrefs.reduced)}>{ui('developer.motionReducedToggle')}</button>
-          <button type="button" className="button secondary" disabled={!motionAvailable} onClick={() => replayLastPageTransition()}>{ui('developer.motionReplay')}</button>
+          <button type="button" className="button secondary" onClick={() => replayLastPageTransition()}>{ui('developer.motionReplay')}</button>
           <button type="button" className="button secondary" onClick={() => resetMotionPrefs()}>{ui('developer.motionReset')}</button>
         </div>
       </div>
-      <p className="dev-hint">{ui(motionAvailable ? 'developer.motionHint' : 'developer.motionUnavailable')}</p>
+      <p className="dev-hint">{ui('developer.motionHint')}</p>
     </section>
 
     <section className="panel config-group">
@@ -160,7 +124,7 @@ export function DevControls() {
         <div className="dev-surface-sample dev-surface-plain"><span>{ui('developer.tokenSurface')}</span><strong>{ui('developer.surfacePlain')}</strong><small>var(--surface)</small></div>
         <div className="dev-surface-sample dev-surface-muted"><span>{ui('developer.tokenMuted')}</span><strong>{ui('developer.surfaceMuted')}</strong><small>var(--surface-muted)</small></div>
         <div className="dev-surface-sample dev-surface-accent"><span>{ui('developer.tokenAccent')}</span><strong>{ui('developer.surfaceAccent')}</strong><small>var(--accent-soft)</small></div>
-        <div className="dev-surface-sample dev-surface-glass"><GlassMaterial/><span>{ui('developer.backdropGlass')}</span><strong>{ui('developer.surfaceGlass')}</strong><small>GlassMaterial</small></div>
+        <div className="dev-surface-sample dev-surface-glass"><span>{ui('developer.backdropGlass')}</span><strong>{ui('developer.surfaceGlass')}</strong></div>
       </div>
       <div className="dev-shadow-grid">
         {[[ui('developer.shadowNone'), 'none'], [ui('developer.shadowLight'), '0 4px 14px #00000010'], [ui('developer.shadowPanel'), 'var(--glass-shadow)'], [ui('developer.shadowFloating'), '0 18px 56px #0003'], [ui('developer.shadowModal'), '0 24px 100px #0003']].map(([label, value]) => <div key={label} className="dev-shadow-sample" style={{boxShadow: value}}><strong>{label}</strong><code>{value}</code></div>)}

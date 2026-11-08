@@ -36,17 +36,17 @@ import {
 
 import { useApp } from '../app/context'
 import { ProjectLogo } from './ProjectLogo'
-import { familyOf, usesLegacyLayout } from '../app/theme'
+import { THEME_FAMILY } from '../app/theme'
 import {
   clearFamilyKnob,
   clearFamilyRegion,
   resetFamilyCustom,
   writeFamilyCustom,
 } from '../app/themeCustom'
-import { familyRegions, type RegionId } from '../app/themeKnobs'
+import { REGIONS, type RegionId } from '../app/themeKnobs'
 import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
-import { ThemeWallpaper } from './GlassMaterial'
+import { ThemeWallpaper } from './ThemeWallpaper'
 
 export type MockInstancePreviewProps = {
   onClose: () => void
@@ -83,9 +83,8 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
       if (previous?.isConnected) previous.focus()
     }
   }, [])
-  const {ui, theme} = useApp()
-  const family = familyOf(theme)
-  const isLegacy = usesLegacyLayout(theme)
+  const {ui} = useApp()
+  const family = THEME_FAMILY
   const {custom, refresh} = useFamilyCustom(family)
   const {region: activeRegion, showModal, showMenu, select: handleRegionSelect, setShowModal, setShowMenu} = useSampleLayers(initialRegion ?? 'surface')
 
@@ -96,10 +95,10 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
   const [isDocked, setIsDocked] = useState(true)
   const isDockedActive = isDocked && !isInspectorMinimized
   const overlay = (
-    <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={ui('settings.materialLivePreview')} tabIndex={-1} className={`mock-instance-preview-overlay ${isLegacy ? 'legacy-shell-preview' : 'apple-shell-preview'} ${isDockedActive ? 'has-docked-inspector' : ''}`}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={ui('settings.materialLivePreview')} tabIndex={-1} className={`mock-instance-preview-overlay legacy-shell-preview ${isDockedActive ? 'has-docked-inspector' : ''}`}>
       <ThemeWallpaper />
       {/* 全真模拟 AppShell 容器；里面的实例名、资源、任务与日志是写死的样本数据，用来撑起外壳，不随语言切换。 */}
-      <div className={`app-shell with-rail ${isLegacy ? 'legacy-shell' : ''} mock-preview-shell`}>
+      <div className={`app-shell with-rail legacy-shell mock-preview-shell`}>
         {/* 侧栏 (sidebar 区域) */}
         <aside className="sidebar mock-preview-sidebar">
           <div className="sidebar-brand">
@@ -467,7 +466,7 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
               <div className="inspector-title">
                 <Sliders size={16} style={{color: 'var(--accent)'}} />
                 <strong>{ui('settings.inspectorTitle')}</strong>
-                <span className="theme-tag">{isLegacy ? 'Google M3' : 'Apple HIG'}</span>
+                <span className="theme-tag">Google M3</span>
               </div>
 
               <div className="inspector-controls">
@@ -504,7 +503,7 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
             {/* 检视器主体：MaterialDetailPanel */}
             <div className="inspector-body">
               <MaterialDetailPanel
-                regions={familyRegions[family]}
+                regions={REGIONS}
                 custom={custom}
                 ui={ui}
                 initialRegion={activeRegion}

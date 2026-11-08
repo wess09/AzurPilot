@@ -8,8 +8,8 @@ import type { Instance, Schema } from '../api/types'
 import { resumeEditors } from '../config/editors'
 import { detectLanguage, isLanguage, languages, localeForLanguage, translateUi, type Language, type UiTranslator } from '../i18n'
 import { readDevMode, writeDevMode } from './devMode'
-import { applyTheme, getThemePreference, subscribeTheme, type Theme, type Palette, type ColorMode, type CustomPalette, type CompactRailSide, type CompactRailWidth, type Material } from './theme'
-import type { ResolvedMode } from './palettes'
+import { applyTheme, getThemePreference, subscribeTheme, type Theme, type Material } from './theme'
+import type { CustomPalette, ResolvedMode } from './palettes'
 
 export { languages }
 
@@ -18,13 +18,10 @@ export interface AppContextValue {
   notify: (message: string, error?: boolean) => void
   previewEnabled: boolean; setPreviewEnabled: (enabled: boolean) => void
   devMode: boolean; setDevMode: (enabled: boolean) => void
-  theme: Theme; setTheme: (theme: Theme, colorMode?: ColorMode) => void
+  theme: Theme; setTheme: (theme: Theme) => void
   material: Material; setMaterial: (material: Material) => void
-  palette: Palette; setPalette: (palette: Palette) => void
-  colorMode: ColorMode; resolvedMode: ResolvedMode; setColorMode: (mode: ColorMode) => void
+  resolvedMode: ResolvedMode
   customPalettes: CustomPalette[]; saveCustomPalette: (palette: CustomPalette) => void; deleteCustomPalette: (id: CustomPalette['id']) => void
-  compactRailSide: CompactRailSide; setCompactRailSide: (side: CompactRailSide) => void
-  compactRailWidth: CompactRailWidth; setCompactRailWidth: (width: CompactRailWidth) => void
   language: Language; setLanguage: (language: Language) => void
 }
 export const AppContext = createContext<AppContextValue | null>(null)
@@ -46,26 +43,20 @@ export function AppProvider({children}: {children: ReactNode}) {
   const [schema, setSchema] = useState<Schema>()
   const [previewEnabled, setPreviewEnabled] = useState(false)
   const [devMode, setDevMode] = useState(readDevMode)
-  const {theme, palette, colorMode, resolvedMode, customPalettes, compactRailSide, compactRailWidth, material} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
+  const {theme, resolvedMode, customPalettes, material} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
   const [language, setLanguage] = useState<Language>(initialLanguage)
   const [toast, setToast] = useState<{message: string; error: boolean}>()
-  /* 这八个 setter 只在调用时读 getThemePreference()，不依赖渲染期的值。 */
-  const setTheme = useCallback((theme: Theme, colorMode?: ColorMode) => { void applyTheme({...getThemePreference(), theme, ...(colorMode && {colorMode})}).catch(() => setToast({message: '主题加载失败，请重试。', error: true})) }, [])
-  const setPalette = useCallback((palette: Palette) => { void applyTheme({...getThemePreference(), palette}).catch(() => setToast({message: '配色加载失败，请重试。', error: true})) }, [])
-  const setColorMode = useCallback((colorMode: ColorMode) => { void applyTheme({...getThemePreference(), colorMode}).catch(() => setToast({message: '模式切换失败，请重试。', error: true})) }, [])
-  const setMaterial = useCallback((material: Material) => { void applyTheme({...getThemePreference(), material}).catch(() => setToast({message: '主题加载失败，请重试。', error: true})) }, [])
-  const setCompactRailSide = useCallback((compactRailSide: CompactRailSide) => { void applyTheme({...getThemePreference(), compactRailSide}).catch(() => setToast({message: '布局切换失败，请重试。', error: true})) }, [])
-  const setCompactRailWidth = useCallback((compactRailWidth: CompactRailWidth) => { void applyTheme({...getThemePreference(), compactRailWidth}).catch(() => setToast({message: '布局切换失败，请重试。', error: true})) }, [])
+  const setTheme = useCallback((theme: Theme) => applyTheme({...getThemePreference(), theme}), [])
+  const setMaterial = useCallback((material: Material) => applyTheme({...getThemePreference(), material}), [])
   const saveCustomPalette = useCallback((item: CustomPalette) => {
     const current = getThemePreference()
     const customPalettes = current.customPalettes.some(palette => palette.id === item.id)
       ? current.customPalettes.map(palette => palette.id === item.id ? item : palette) : [...current.customPalettes, item]
-    void applyTheme({...current, customPalettes, palette: item.id}).catch(() => setToast({message: '配色保存失败，请重试。', error: true}))
+    applyTheme({...current, customPalettes})
   }, [])
   const deleteCustomPalette = useCallback((id: CustomPalette['id']) => {
     const current = getThemePreference()
-    void applyTheme({...current, customPalettes: current.customPalettes.filter(item => item.id !== id), palette: current.palette === id ? 'ocean' : current.palette})
-      .catch(() => setToast({message: '配色删除失败，请重试。', error: true}))
+    applyTheme({...current, customPalettes: current.customPalettes.filter(item => item.id !== id)})
   }, [])
   useEffect(() => { writeDevMode(devMode) }, [devMode])
   useEffect(() => {
@@ -112,8 +103,8 @@ export function AppProvider({children}: {children: ReactNode}) {
   }, [schema])
   const ui = useCallback<UiTranslator>((key, params) => translateUi(language, key, params), [language])
   /* value 固定身份：provider 因 toast、连接状态等无关状态重渲染时，消费点不跟着重渲染。 */
-  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, palette, setPalette, colorMode, resolvedMode, setColorMode, customPalettes, saveCustomPalette, deleteCustomPalette, compactRailSide, setCompactRailSide, compactRailWidth, setCompactRailWidth, language, setLanguage}),
-    [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, palette, setPalette, colorMode, resolvedMode, setColorMode, customPalettes, saveCustomPalette, deleteCustomPalette, compactRailSide, setCompactRailSide, compactRailWidth, setCompactRailWidth, language, setLanguage])
+  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
+    [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
   return <AppContext.Provider value={value}>
     {children}
     {toast && <div role={toast.error ? 'alert' : 'status'} className={`toast ${toast.error ? 'error' : ''}`} onClick={() => setToast(undefined)}>{toast.message}</div>}

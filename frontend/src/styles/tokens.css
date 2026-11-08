@@ -1,12 +1,12 @@
 @font-face {
   font-family: 'JetBrains Mono';
-  src: local('JetBrains Mono'), local('JetBrains Mono NL'), url('./JetBrainsMonoNL-Regular.ttf') format('truetype');
+  src: local('JetBrains Mono'), local('JetBrains Mono NL'), url('/JetBrainsMonoNL-Regular.woff2') format('woff2');
   font-display: swap;
 }
 
 @font-face {
   font-family: 'JetBrains Mono NL';
-  src: local('JetBrains Mono NL'), local('JetBrains Mono'), url('./JetBrainsMonoNL-Regular.ttf') format('truetype');
+  src: local('JetBrains Mono NL'), local('JetBrains Mono'), url('/JetBrainsMonoNL-Regular.woff2') format('woff2');
   font-display: swap;
 }
 

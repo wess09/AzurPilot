@@ -20,12 +20,11 @@ const DASHBOARD_OPTIONS: {key: keyof DashboardPrefs; label: UiKey; help: UiKey}[
   {key: 'totalFirst', label: 'dashboard.totalFirst', help: 'dashboard.totalFirstHelp'},
   {key: 'dogIcon', label: 'dashboard.dogIcon', help: 'dashboard.dogIconHelp'},
 ]
-/** showLabel：紧凑主题下按钮改挂日志面板工具栏，空间充足故补上文字。 */
-export function InstanceActions({resources, selectedResources, onResourcesChange, showLabel = false}: {resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void; showLabel?: boolean}) {
+export function InstanceActions({resources, selectedResources, onResourcesChange}: {resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void}) {
   const [open, setOpen] = useState(false)
   const {ui} = useApp()
   // 无障碍名称用「仪表盘设置」，可见文字在紧凑下换成「资源卡片设置」。
-  return <><button className="button" aria-label={ui('instance.settings')} title={ui('instance.settings')} onClick={() => setOpen(true)}><Settings2 size={16}/>{showLabel && <span>{ui('resource.settings')}</span>}</button>{open && <InstanceSettings resources={resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange} onClose={() => setOpen(false)}/>}</>
+  return <><button className="button" aria-label={ui('instance.settings')} title={ui('instance.settings')} onClick={() => setOpen(true)}><Settings2 size={16}/></button>{open && <InstanceSettings resources={resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange} onClose={() => setOpen(false)}/>}</>
 }
 
 function InstanceSettings({resources, selectedResources, onResourcesChange, onClose}: {resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void; onClose: () => void}) {

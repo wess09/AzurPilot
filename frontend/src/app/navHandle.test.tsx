@@ -2,15 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from './context'
 import type { BackgroundSnapshot } from './background'
-
-/* 把手在铺着壁纸时才出现；主题固定成支持背景的一档。 */
-vi.mock('./theme', async importOriginal => ({
-  ...(await importOriginal<typeof import('./theme')>()),
-  getThemePreference: () => ({theme: 'light'}),
-  showsWallpaper: (theme: string, source: string) => source !== 'off' && ['light', 'dark', 'legacy-light', 'legacy-dark'].includes(theme),
-}))
-
-const { NavHandle } = await import('./NavHandle')
+import { NavHandle } from './NavHandle'
 
 const ui = ((key: string) => key) as never
 const context = {ui, language: 'zh-CN'} as unknown as AppContextValue

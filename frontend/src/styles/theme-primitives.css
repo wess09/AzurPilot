@@ -47,11 +47,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 }
 .instance-card {border-radius: var(--theme-radius-card)}
 
-/* 顶栏：一级面由顶栏本身承担，玻璃包装只作效果层，不给面。 */
+/* 顶栏使用一级面。 */
 .topbar {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-.topbar > .glass-material {background: none; -webkit-backdrop-filter: none; backdrop-filter: none}
-.glass-material {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-.glass-material-lens > .glass {box-shadow: inset 0 1px 0 var(--theme-glass-edge)}
 
 .primary-nav a {color: var(--theme-nav-text)}
 .primary-nav a svg, .task-group-icon {color: var(--theme-nav-icon)}
@@ -68,16 +65,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .task-submenu-dot {background: var(--theme-muted)}
 .task-submenu-item:hover .task-submenu-dot, .task-submenu-item.active .task-submenu-dot {background: var(--theme-accent)}
 
-.task-submenu-flyout, .instance-menu {
+.instance-menu {
   background: var(--theme-menu-bg);
   border-color: var(--theme-nav-popover-edge);
   border-radius: var(--theme-radius-popover);
   box-shadow: var(--theme-nav-popover-shadow);
   -webkit-backdrop-filter: var(--theme-popover-filter, none);
   backdrop-filter: var(--theme-popover-filter, none);
-}
-.task-submenu-flyout {
-  isolation: isolate;
 }
 .task-submenu-item {border: 1px solid transparent}
 .task-submenu-item.active {border-color: transparent}
@@ -89,7 +83,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .connection-banner {background: var(--theme-warning-soft); color: var(--theme-warning)}
 
 .button {border-radius: var(--theme-radius-button)}
-.button.primary, [data-theme='dark'] .button.primary {background: var(--theme-primary-bg); color: var(--theme-on-accent)}
+.button.primary {background: var(--theme-primary-bg); color: var(--theme-on-accent)}
 .button.primary:hover:not(:disabled) {background: var(--theme-primary-hover)}
 .button.secondary {background: var(--theme-control-bg); color: var(--theme-text); border-color: var(--theme-border)}
 .button.secondary:hover {border-color: var(--theme-accent); color: var(--theme-accent)}
@@ -103,9 +97,8 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .toggle.on {background: var(--theme-toggle-on)}
 
 .monitor-segmented {background: var(--theme-control-bg); border-color: var(--theme-segment-border)}
-.monitor-segmented .segmented-indicator {background: var(--theme-segment-indicator)}
 .monitor-segmented button {color: var(--theme-muted)}
-.monitor-segmented button:hover, .monitor-segmented button[aria-selected='true'], [data-theme='dark'] .monitor-segmented button[aria-selected='true'] {color: var(--theme-text)}
+.monitor-segmented button:hover, .monitor-segmented button[aria-selected='true'] {color: var(--theme-text)}
 
 .page-title h1 {
   color: var(--theme-title-color);
@@ -122,7 +115,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .status.updating {color: var(--theme-warning); background: var(--theme-warning-soft)}
 .scheduler-status.running {color: var(--theme-text)}
 
-.resource-heading, .resource-foot, .resource-value small, .count-badge, .task-order, .task-state, .task-row time, .task-row > svg, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
+.resource-heading, .resource-foot, .resource-value small, .count-badge, .task-state, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
 .resource-heading > div {background: var(--theme-resource-0-bg); color: var(--theme-resource-0-text)}
 .resource-1 .resource-heading > div {background: var(--theme-resource-1-bg); color: var(--theme-resource-1-text)}
 .resource-2 .resource-heading > div {background: var(--theme-resource-2-bg); color: var(--theme-resource-2-text)}
@@ -168,7 +161,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .yaml-editor:focus-within {border-color: var(--theme-accent)}
 
 /* 二级面与队列层级都用主题色，不写死取值。 */
-.scheduler-widget, .schedule-summary {background: var(--theme-plate-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
+.scheduler-widget {background: var(--theme-plate-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 .nav-search, .input-icon, .count-badge {background: var(--theme-control-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
 .group-nav {
   background: var(--theme-glass);
@@ -196,10 +189,6 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .rail-queue-group.pending {background: var(--theme-inset-bg); border-color: color-mix(in srgb, var(--theme-border) 64%, transparent)}
 .rail-queue-group.waiting {background: var(--theme-inset-bg); border-color: color-mix(in srgb, var(--theme-border) 42%, transparent)}
 .rail-task-item:hover {background: color-mix(in srgb, var(--theme-surface) 86%, transparent)}
-
-@media (prefers-contrast: more), (forced-colors: active) {
-  .glass-material, .sidebar, .right-rail, .instance-menu, .task-submenu-flyout, .group-nav, .panel, .resource-card {background: var(--theme-surface); -webkit-backdrop-filter: none; backdrop-filter: none}
-}
 
 /* ===== 标签栏（全主题同一套）=====
    结构、几何与交互在这里定义，各主题只在自己的文件里改圆角、颜色这类皮相。

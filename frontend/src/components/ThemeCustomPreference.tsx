@@ -1,9 +1,9 @@
 import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react'
 import { useApp } from '../app/context'
-import { applyCustomLayer, familyOf } from '../app/theme'
+import { applyCustomLayer, THEME_FAMILY } from '../app/theme'
 import { MaterialDetailModal } from './MaterialDetailModal'
 import { clearFamilyPalette, readFamilyCustom, writeFamilyCustom, type FamilyCustom } from '../app/themeCustom'
-import { familyRegions, regionKnobs, regionLabels, type RegionId, type RegionKnob } from '../app/themeKnobs'
+import { REGIONS, regionKnobs, regionLabels, type RegionId, type RegionKnob } from '../app/themeKnobs'
 import { AppWindow, Frame, LayoutGrid, Layers, Menu as MenuIcon, RotateCcw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { openMaterialInspector } from '../app/materialInspectorState'
 
@@ -117,14 +117,14 @@ export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, o
 /** 有材质轴的家族专属的自定义外观：一级界面只放主题色与二级菜单入口，全部材质滑块都在二级菜单里。
     区域只是控件挂载位置的归类（不想调的人不用管），每一区都能独立调、也能单独还原。 */
 export function ThemeCustomPreference() {
-  const {ui, theme, material, instances} = useApp()
-  const family = familyOf(theme)
+  const {ui, material, instances} = useApp()
+  const family = THEME_FAMILY
   const [custom, setCustom] = useState<FamilyCustom>(() => readFamilyCustom(family))
   const [detail, setDetail] = useState(false)
   const [preview, setPreview] = useState(false)
   /* 切换大类后要换成那一套已存的值。 */
   useEffect(() => setCustom(readFamilyCustom(family)), [family])
-  const regions = familyRegions[family]
+  const regions = REGIONS
   if (!regions.length) return null
   const refresh = () => { applyCustomLayer(); setCustom(readFamilyCustom(family)) }
   const brand = custom.palette

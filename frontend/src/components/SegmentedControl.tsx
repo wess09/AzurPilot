@@ -2,14 +2,11 @@
  * @fileoverview 分段选择器控件组件。
  */
 
-import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
-
-import { useApp } from '../app/context'
-import { usesMaterial } from '../app/theme'
+import { useRef, type ReactNode } from 'react'
 
 type Option<T extends string> = {value: T; label: ReactNode}
 
-/** 共用监控页的分段样式，按实际按钮尺寸定位滑块。 */
+/** 共用监控页的分段样式，支持方向键切换条目。 */
 export function SegmentedControl<T extends string>({label, value, options, onChange, onItemContextMenu, onItemMove, itemClassName, className = '', trailing}: {
   label: string
   value: T
@@ -25,26 +22,8 @@ export function SegmentedControl<T extends string>({label, value, options, onCha
   /** 固定排在条目之后的附加控件，不参与逐项回调与键盘导航。 */
   trailing?: ReactNode
 }) {
-  const {theme} = useApp()
-  const simple = !usesMaterial(theme)
   const ref = useRef<HTMLDivElement>(null)
-  const [indicator, setIndicator] = useState({x: 0, y: 0, width: 0, height: 0})
-  useLayoutEffect(() => {
-    const control = ref.current
-    if (!control || simple) return
-    const update = () => {
-      const active = control.querySelector<HTMLButtonElement>('[aria-selected="true"]')
-      if (active) setIndicator({x: active.offsetLeft, y: active.offsetTop, width: active.offsetWidth, height: active.offsetHeight})
-    }
-    update()
-    const observer = new ResizeObserver(update)
-    observer.observe(control)
-    control.querySelectorAll('button').forEach(button => observer.observe(button))
-    return () => observer.disconnect()
-  }, [value, options, simple])
   return <div ref={ref} className={`monitor-segmented ${className}`.trim()} role="tablist" aria-label={label}>
-    {/* 测量后才挂载滑块，避免从零尺寸向选中项播放入场过渡。 */}
-    {!simple && indicator.width > 0 && <span className="segmented-indicator" aria-hidden="true" style={{transform: `translate3d(${indicator.x}px, ${indicator.y}px, 0)`, width: indicator.width, height: indicator.height}}/>}
     {options.map((option, index) => <button type="button" key={option.value} role="tab" className={itemClassName?.(option.value)} onContextMenu={onItemContextMenu ? event => {event.preventDefault(); onItemContextMenu(option.value)} : undefined} aria-selected={value === option.value} tabIndex={value === option.value ? 0 : -1} onClick={() => onChange(option.value)} onKeyDown={event => {
       if (event.altKey && onItemMove && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {
         event.preventDefault()

@@ -21,8 +21,7 @@ test('共享表单保留键盘交互、密码切换与原生值类型', async ({
   await toggle.focus()
   await page.keyboard.press('Space')
   await expect(toggle).toHaveAttribute('aria-checked', 'false')
-  // 实测盒高会带亚像素小数，取整以免测量噪声把尺寸判成不达标。
-  expect(Math.round((await toggle.boundingBox())!.height)).toBeGreaterThanOrEqual(44)
+  await expect(toggle).toHaveCSS('height', '32px')
   await expect(page.getByRole('switch', {name: '禁用开关'})).toBeDisabled()
   const checkbox = page.getByRole('checkbox', {name: 'Alas', exact: true})
   await checkbox.focus()
@@ -42,19 +41,19 @@ test('共享表单保留键盘交互、密码切换与原生值类型', async ({
   await page.locator('#dev-datetime').fill('2026-09-16T12:34:56')
   await expect(page.locator('#dev-datetime')).toHaveValue('2026-09-16T12:34:56')
   await expect(page.locator('#dev-invalid')).toHaveAccessibleDescription('请输入有效值，当前输入已保留。')
-  await expect(page.locator('#dev-invalid')).toHaveCSS('border-top-color', await page.locator('#dev-invalid-status').evaluate(element => getComputedStyle(element).color))
+  await expect(page.locator('#dev-invalid')).toHaveCSS('border-bottom-color', await page.locator('#dev-invalid-status').evaluate(element => getComputedStyle(element).color))
   await expect(page.locator('#dev-search')).toHaveCSS('border-top-width', '0px')
   await page.locator('#dev-search').focus()
-  await expect(page.locator('.input-icon').filter({has: page.locator('#dev-search')})).not.toHaveCSS('box-shadow', 'none')
+  await expect(page.locator('.input-icon').filter({has: page.locator('#dev-search')})).toHaveCSS('border-bottom-width', '2px')
 })
 
 test('表单在浅深主题、移动端和强制颜色模式下保持可用', async ({page}, testInfo) => {
   const section = page.locator('.config-group').filter({has: page.getByRole('heading', {name: '表单控件', exact: true})})
   await section.scrollIntoViewIfNeeded()
-  for (const theme of ['light', 'dark']) {
+  for (const theme of ['legacy-light', 'legacy-dark']) {
     await page.evaluate(theme => {document.documentElement.dataset.theme = theme}, theme)
     await page.locator('#dev-text').focus()
-    await expect(page.locator('#dev-text')).not.toHaveCSS('box-shadow', 'none')
+    await expect(page.locator('#dev-text')).toHaveCSS('border-bottom-width', '2px')
     await section.screenshot({path: testInfo.outputPath(`forms-${theme}.png`)})
   }
   await page.setViewportSize({width: 390, height: 844})
@@ -73,7 +72,7 @@ test('自绘菜单支持取消、文字查找、主题与移动端边界', async
   const select = page.getByRole('combobox', {name: '下拉框', exact: true})
   await select.click()
   const menu = page.getByRole('listbox')
-  await expect(menu).toHaveCSS('border-radius', '8px')
+  await expect(menu).toHaveCSS('border-radius', '13px')
   await expect(page.getByRole('option', {name: 'Auto', exact: true})).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('End')
   await page.keyboard.press('Escape')
@@ -82,7 +81,7 @@ test('自绘菜单支持取消、文字查找、主题与移动端边界', async
   await page.keyboard.press('n')
   await page.keyboard.press('Enter')
   await expect(select).toHaveText('Nemulator')
-  for (const theme of ['light', 'dark']) {
+  for (const theme of ['legacy-light', 'legacy-dark']) {
     await page.evaluate(theme => {document.documentElement.dataset.theme = theme}, theme)
     await select.click()
     await menu.screenshot({path: testInfo.outputPath(`select-${theme}.png`)})

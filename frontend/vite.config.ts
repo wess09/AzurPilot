@@ -25,11 +25,18 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
-      sourcemap: false,
-      // 主题通过 ?inline 作为文本注入，保留规则与声明的原始顺序及语法，
-      // 避免生产构建额外执行 Lightning CSS 压缩、合并和语法转换。
-      // 仅关闭 CSS 压缩，JavaScript 继续使用默认生产优化。
-      cssMinify: false,
+      minify: 'oxc',
+      cssMinify: 'lightningcss',
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [{
+              name: 'react-runtime',
+              test: /[/\\]node_modules[/\\](?:react|react-dom|react-router|react-router-dom|scheduler)[/\\]/,
+            }],
+          },
+        },
+      },
     },
   }
 })

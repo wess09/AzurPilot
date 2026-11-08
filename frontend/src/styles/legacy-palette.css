@@ -115,7 +115,6 @@
   --theme-focus: var(--accent); --theme-focus-ring: transparent;
   --theme-toggle-off: #79747e; --theme-toggle-on: #4e4c97; --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
    --theme-segment-border: var(--border);
-  --theme-segment-indicator: var(--accent-soft);
   --theme-toast-bg: var(--text); --theme-toast-text: var(--surface); --theme-toast-error-bg: var(--red);
   --theme-error-bg: var(--theme-danger-soft); --theme-error-border: var(--red);
   --theme-selection: color-mix(in srgb, var(--accent) 25%, transparent); --theme-scrollbar-thumb: #b5b5b5;
@@ -164,7 +163,6 @@
 
   --theme-input-bg: var(--theme-control-bg); --theme-input-border: var(--border);
   --theme-toggle-off: #938f99; --theme-toggle-on: #7a77bb; --theme-toggle-knob: #ffffff;
-  --theme-segment-indicator: #3e3b6a;
   --theme-scrollbar-thumb: #5a5e66;
   --theme-shadow-panel: 0 1px 2px rgb(0 0 0 / .2);
   --theme-shadow-popover: 0 4px 12px rgb(0 0 0 / .25);

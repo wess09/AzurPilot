@@ -16,7 +16,6 @@ import {resolveIcon} from './StatisticsTable'
 import {buildSeriesView, isActionPointSeries, riseFallSegments} from './statisticsData'
 import {withTranslatedKeys} from './statisticsText'
 import { useApp } from '../app/context'
-import { usesMaterial } from '../app/theme'
 import {
   readStatisticsPrefs,
   updateStatisticsPrefs,
@@ -236,7 +235,6 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     function render() {
       const colors = getComputedStyle(document.documentElement)
       const text = colors.getPropertyValue('--text').trim() || '#82929f'
-      const minimal = !usesMaterial(theme)
       const primary = colors.getPropertyValue('--theme-chart-primary').trim() || colors.getPropertyValue('--accent').trim()
       const secondary = colors.getPropertyValue('--theme-chart-secondary').trim() || colors.getPropertyValue('--secondary').trim()
       const rise = colors.getPropertyValue('--theme-chart-rise').trim() || '#dc2626'
@@ -249,7 +247,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       const signature = `${theme}|${text}|${primary}|${secondary}|${rise}|${fall}|${surface}|${border}|${accentSoft}|${gridOpacity}`
       if (signature === renderedSignature) return
       renderedSignature = signature
-      const colorFor = (item: typeof seriesData[number]) => isSingle ? (minimal ? primary : item.color) : item.color
+      const colorFor = (item: typeof seriesData[number]) => isSingle ? primary : item.color
       /* 观感补全用的整图时间跨度。 */
       let axisStart = Number.POSITIVE_INFINITY
       let axisEnd = Number.NEGATIVE_INFINITY
@@ -366,7 +364,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         tooltip: {
           trigger: 'axis', confine: true, renderMode: 'richText', axisPointer: {type: 'cross'},
           valueFormatter: (val: any) => typeof val === 'number' ? val.toLocaleString(undefined, {maximumFractionDigits: 2}) : String(val),
-          ...(minimal ? {backgroundColor: surface, borderColor: border, textStyle: {color: text}, extraCssText: '', shadowBlur: 0} : {}),
+          backgroundColor: surface, borderColor: border, textStyle: {color: text}, extraCssText: '', shadowBlur: 0,
         },
         toolbox: {
           right: 20,
@@ -383,12 +381,10 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
           {type: 'inside', zoomOnMouseWheel: 'ctrl', filterMode: zeroBase ? 'none' : 'filter'},
           {
             type: 'slider', bottom: 16, height: 26, filterMode: zeroBase ? 'none' : 'filter',
-            ...(minimal ? {
-              backgroundColor: surface, fillerColor: colors.getPropertyValue('--accent-soft').trim(), borderColor: border,
-              dataBackground: {lineStyle: {color: secondary, opacity: 1}, areaStyle: {color: surface, opacity: 1}},
-              selectedDataBackground: {lineStyle: {color: primary, opacity: 1}, areaStyle: {color: colors.getPropertyValue('--accent-soft').trim(), opacity: 1}},
-              handleStyle: {color: primary, borderColor: primary}, moveHandleStyle: {color: secondary},
-            } : {}),
+            backgroundColor: surface, fillerColor: colors.getPropertyValue('--accent-soft').trim(), borderColor: border,
+            dataBackground: {lineStyle: {color: secondary, opacity: 1}, areaStyle: {color: surface, opacity: 1}},
+            selectedDataBackground: {lineStyle: {color: primary, opacity: 1}, areaStyle: {color: colors.getPropertyValue('--accent-soft').trim(), opacity: 1}},
+            handleStyle: {color: primary, borderColor: primary}, moveHandleStyle: {color: secondary},
           },
         ],
         series: echartsSeries,
@@ -406,8 +402,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     const observer = new ResizeObserver(() => chart.resize())
     observer.observe(element.current)
     const themeObserver = new MutationObserver(render)
-    themeObserver.observe(document.documentElement, {attributes: true, /* 不监听 style：指针光效每次移动都写 --mx/--my，会把重绘拖进鼠标热路径并造成闪烁。 */
-      attributeFilter: ['data-theme', 'data-palette', 'data-color-mode', 'style']})
+    themeObserver.observe(document.documentElement, {attributeFilter: ['data-theme', 'style']})
     return () => {
       container.removeEventListener('wheel', onWheel, {capture: true})
       observer.disconnect()

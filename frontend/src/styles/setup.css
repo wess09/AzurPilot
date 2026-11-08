@@ -147,23 +147,6 @@ main.instance-setup {
     background: radial-gradient(ellipse at center, color-mix(in srgb, var(--setup-accent) 16%, transparent), transparent 68%);
   }
   .setup-illustration-art {width: min(92%, 432px); aspect-ratio: 1}
-  .setup-art-part {
-    transform-box: fill-box;
-    transform-origin: center;
-    animation: setup-art-enter var(--dur-4) var(--ease-emphasized) var(--setup-art-delay, 0ms) both;
-  }
-  @keyframes setup-art-enter {
-    from {opacity: 0; transform: translate(var(--setup-art-x, 0px), var(--setup-art-y, 12px)) scale(.96)}
-    to {opacity: 1; transform: none}
-  }
-  .setup-art-import-file {--setup-art-y: -34px; --setup-art-delay: calc(var(--dur-1) * .5)}
-  .setup-art-monitor {--setup-art-x: -20px; --setup-art-y: 0px}
-  .setup-art-phone {--setup-art-x: 18px; --setup-art-y: 0px; --setup-art-delay: calc(var(--dur-1) * .5)}
-  .setup-art-device-link {--setup-art-y: 0px; --setup-art-delay: var(--dur-2); animation-duration: var(--dur-2)}
-  .setup-art-checks > .setup-art-part {--setup-art-y: 4px; animation-duration: var(--dur-2)}
-  .setup-art-checks > :nth-child(1) {--setup-art-delay: var(--dur-1)}
-  .setup-art-checks > :nth-child(2) {--setup-art-delay: var(--dur-2)}
-  .setup-art-checks > :nth-child(3) {--setup-art-delay: var(--dur-3)}
   .setup-illustration-mark {
     position: relative;
     isolation: isolate;

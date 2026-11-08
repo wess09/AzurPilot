@@ -7,42 +7,11 @@
 .sidebar-brand {height: 72px; flex-shrink: 0; padding: 24px 9px 0; display: flex; align-items: center; justify-content: space-between}
 .brand-title {display: inline-flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 750; letter-spacing: -.8px}
 .brand-logo {width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0}
-.instance-picker {position: relative; margin: 2px 0 26px; flex-shrink: 0}
-.instance-switcher {display: flex; width: 100%; gap: 10px; align-items: center; text-align: left; padding: 12px 9px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 9px}
-.instance-switcher:hover, .instance-switcher[aria-expanded='true'] {border-color: var(--accent)}
 .instance-icon {width: 31px; height: 34px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); border-radius: 7px; flex-shrink: 0}
-.instance-caption {flex: 1; min-width: 0}
-.instance-caption small {font-size: 10px; color: var(--muted); display: block; margin-bottom: 3px}
-.instance-caption strong {display: block; font-size: 13px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
-.instance-switcher > svg {color: var(--muted)}
 .instance-menu {position: absolute; top: calc(100% + 6px); left: 0; min-width: 220px; z-index: 40; padding: 6px; border: 1px solid var(--border); border-radius: 12px}
-.instance-options {max-height: min(280px, 40dvh); overflow-y: auto}
 .instance-menu button {display: flex; align-items: center; gap: 9px; padding: 10px 10px; width: 100%; text-align: left; border-radius: 7px; font-size: 13px; font-weight: 500; transition: all .15s ease}
 .instance-menu button span {flex: 1; overflow-wrap: anywhere; min-width: 0}
 .instance-menu button:hover, .instance-menu button:focus-visible, .instance-menu button[aria-checked='true'] {background: var(--accent-soft); color: var(--accent)}
-.instance-menu .instance-create {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent);
-  margin-top: 6px;
-  padding: 9px 12px;
-  border-radius: 8px;
-}
-.instance-menu .instance-create:hover:not(:disabled) {
-  background: var(--accent);
-  color: #fff;
-  border-style: solid;
-}
-.instance-menu .instance-create:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
 .sidebar-label {display: flex; align-items: center; justify-content: space-between; color: #97a4af; font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
 .sidebar-label button {padding: 0; color: #82929e; display: grid; place-items: center}
 .sidebar-label > span {font: 10px var(--theme-font-sans); letter-spacing: 0; background: var(--surface-muted); padding: 1px 5px; border-radius: 3px}
@@ -59,24 +28,10 @@
 .task-group-button:hover {background: var(--surface-muted); color: var(--text)}
 .task-group-button.active {color: var(--accent); font-weight: 600}
 .task-group-button.expanded {background: var(--accent-soft); color: var(--accent); border-color: #138b7830}
-[data-theme='dark'] .task-group-button.expanded {border-color: #6bd4ba30}
 .task-group-icon {flex-shrink: 0; color: inherit}
 .task-group-title {flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .task-group-arrow {flex-shrink: 0; color: var(--muted); transition: transform .15s ease, color .15s ease}
 .task-group-button:hover .task-group-arrow, .task-group-button.expanded .task-group-arrow {color: var(--accent); transform: translateX(2px)}
-.task-submenu-flyout {position: fixed; width: 210px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; box-shadow: 0 10px 30px #132b4822, 0 2px 8px #132b4810; padding: 6px; z-index: 100; height: auto; max-height: calc(var(--viewport-height) - 32px); overflow-y: auto; display: flex; flex-direction: column; gap: 2px; animation: submenu-flyout-in .15s cubic-bezier(0.16, 1, 0.3, 1)}
-[data-theme='dark'] .task-submenu-flyout {box-shadow: 0 12px 35px #050b1260, 0 2px 10px #050b1240}
-@media (min-width: 951px) {
-  .task-submenu-flyout::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: -22px;
-    width: 22px;
-  }
-}
-@keyframes submenu-flyout-in {from {opacity: 0; transform: translateX(-6px)} to {opacity: 1; transform: translateX(0)}}
 .task-submenu-list {display: flex; flex-direction: column; gap: 2px}
 /* 树状折叠菜单（用于经典主题及移动端窄屏抽屉手风琴导航） */
 .task-group {display: flex; flex-direction: column}
@@ -165,7 +120,7 @@ main {padding: 32px 32px 16px; flex: 1}
 .rail-task-item small {margin-top: 2px; color: var(--muted); font-size: 9px}
 .rail-task-item .task-state {font-size: 9px; white-space: nowrap}
 .rail-empty {padding: 18px 8px; color: var(--muted); font-size: 10px; text-align: center}
-.mobile-toggle, .mobile-close, .mobile-rail-toggle, .mobile-rail-close {display: none !important}
+.mobile-toggle, .mobile-close {display: none !important}
 .login-page {min-height: var(--viewport-height); display: grid; grid-template-columns: 1fr 1fr; background: var(--surface)}
 .login-art {background: #142d3a; color: #72c6b4; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 60px; position: relative; overflow: hidden}
 
@@ -180,13 +135,11 @@ main {padding: 32px 32px 16px; flex: 1}
 .welcome p {color: var(--muted)}
 @media (min-width: 2000px) {main {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
 @media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main {padding: 25px 24px 15px}.topbar {padding: 0 24px}.sidebar {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
-@media (max-width: 1275px) {.overview-grid {grid-template-columns: 1fr !important}.preview-screen {max-height: 360px}.page-title {align-items: flex-start}.title-actions {justify-content: flex-end}.config-layout {grid-template-columns: 1fr !important}.config-layout .group-nav {display: none !important}.resource-grid {gap: 7px !important}.resource-card {--resource-card-inset: 8px; padding: var(--resource-card-inset) !important}.resource-foot {font-size: 8px !important}}
-@media (max-width: 950px) {.app-shell {display: block}.sidebar {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar {left: 0}.right-rail {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.rail-open .right-rail {right: 0}.mobile-toggle, .mobile-close, .mobile-rail-toggle, .mobile-rail-close {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}.topbar-right .version, .topbar-divider {display: none}main {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.task-row {grid-template-columns: 22px 1fr 50px 80px 10px !important}.log-filters {flex-wrap: wrap}.chart-metrics strong {font-size: 22px !important}.panel-heading > div {gap: 8px !important}.task-submenu-flyout {width: min(200px, calc(100vw - 235px)); box-shadow: 0 10px 30px #0c1c2e40}}
-@media (max-width: 480px) {.task-submenu-flyout {left: 8px; right: 8px; width: auto; top: auto !important; bottom: 12px; max-height: 60vh; box-shadow: 0 10px 40px #00000050}}
+@media (max-width: 1275px) {.preview-screen {max-height: 360px}.page-title {align-items: flex-start}.title-actions {justify-content: flex-end}.resource-grid {gap: 7px !important}.resource-card {--resource-card-inset: 8px; padding: var(--resource-card-inset) !important}.resource-foot {font-size: 8px !important}}
+@media (max-width: 950px) {.app-shell {display: block}.sidebar {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar {left: 0}.right-rail {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle, .mobile-close {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}.topbar-right .version, .topbar-divider {display: none}main {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
 
 /* 顶栏与右栏的公共容器：默认不参与布局，谁都不受影响；
    新版玻璃主题在自己的样式里把它接管成真正的一级层容器。 */
-.shell-frame {display: contents}
 
 
 /* 侧栏宽度直接拖拽调整把手 */

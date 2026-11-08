@@ -2,7 +2,6 @@ import { useState, type CSSProperties } from 'react'
 import { Plus } from 'lucide-react'
 import { useApp } from '../app/context'
 import { isHexColor, paletteColors, palettes, stockBrands, type CustomPalette, type Palette } from '../app/palettes'
-import { familyOf } from '../app/theme'
 import { Modal } from './ui'
 
 function CustomPaletteEditor({initial, onClose}: {initial: CustomPalette; onClose: () => void}) {
@@ -40,7 +39,7 @@ function CustomPaletteEditor({initial, onClose}: {initial: CustomPalette; onClos
 
 /** 配色选择器：预设 + 自定义方案 + 新增/编辑/删除。简约与紧凑写全局方案，新版与旧版写各自大类的品牌配色。 */
 export function PaletteSwatches({value, onChange, legend, stock = false}: {value?: Palette; onChange: (palette?: Palette) => void; legend: string; stock?: boolean}) {
-  const {ui, resolvedMode, customPalettes, deleteCustomPalette, theme} = useApp()
+  const {ui, resolvedMode, customPalettes, deleteCustomPalette} = useApp()
   const [editing, setEditing] = useState<CustomPalette>()
   const selected = customPalettes.find(item => item.id === value)
   const paletteIds = [...palettes, ...customPalettes.map(item => item.id)]
@@ -51,7 +50,7 @@ export function PaletteSwatches({value, onChange, legend, stock = false}: {value
     setEditing({id, primary: current.primary, secondary: current.secondary})
   }
   /* 第一项永远是「原版色」：显示该大类自带的强调色，选了就等于跟随主题（否则用户找不到原色）。 */
-  const stockColors = stockBrands[familyOf(theme)][resolvedMode]
+  const stockColors = stockBrands[resolvedMode]
   return <>
     <fieldset className="palette-options">
       <legend>{legend}</legend>

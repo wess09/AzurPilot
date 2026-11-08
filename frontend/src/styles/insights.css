@@ -12,10 +12,7 @@
 .resource-editor-remove {width:28px;height:28px;display:grid;place-items:center;flex:0 0 auto;padding:0;border:0;border-radius:9px;background:transparent;color:var(--muted);cursor:pointer;transition:background .15s,color .15s}.resource-editor-remove:hover {background:color-mix(in srgb,var(--red) 11%,transparent);color:var(--red)}
 .resource-editor-add {justify-content:center;cursor:pointer;border-style:dashed;color:var(--accent);background:color-mix(in srgb,var(--accent-soft) 42%,var(--surface));font:inherit;font-size:13px;font-weight:600}.resource-editor-add:hover,.resource-editor-add.open {border-color:color-mix(in srgb,var(--accent) 62%,var(--border));background:color-mix(in srgb,var(--accent-soft) 72%,var(--surface))}.resource-editor-add-icon {width:30px;height:30px;display:grid;place-items:center;border-radius:10px;background:color-mix(in srgb,var(--accent) 12%,transparent)}
 .resource-picker {margin-top:10px;padding:10px;border:1px solid color-mix(in srgb,var(--border) 76%,transparent);border-radius:16px;background:color-mix(in srgb,var(--surface-muted) 78%,var(--surface));box-shadow:inset 0 1px 0 #ffffff55}.resource-picker-grid {position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.resource-picker-card {min-width:0;min-height:50px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--text);font:inherit;font-size:12px;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}.resource-picker-card>span:nth-child(2) {min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.resource-picker-card:hover {background:var(--surface);border-color:var(--border)}.resource-picker-card>svg {color:var(--accent);flex:0 0 auto}.resource-picker-empty {padding:14px;color:var(--muted);font-size:12px;text-align:center}
-.overview-grid {grid-template-columns:minmax(260px,.45fr) minmax(0,1.55fr);align-items:stretch}
-.schedule-panel {min-width:0;overflow:hidden;height:780px;display:flex;flex-direction:column}
 .monitor-panel {min-width:0;overflow:hidden;display:flex;flex-direction:column}
-.overview-main {display:flex;flex-direction:column;flex:1;min-height:0}
 @media(min-width:951px) {
   /* 外壳给确定高度，内层 height:100% 才解析得到；只设 min-height 时整条链按内容长。 */
   .app-shell:has(.overview-page) {height: var(--viewport-height)}
@@ -27,12 +24,7 @@
      basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；旧版总览也会被这条全局规则误伤。 */
   .overview-page .monitor-panel,
   .instance-page-panel > .monitor-panel {flex:1 1 0;height:auto;min-height:0}
-  .overview-main {margin-bottom:-10px}
-}
-.schedule-panel .panel-heading,.schedule-panel .schedule-summary {flex-shrink:0}
-.schedule-summary {flex-wrap:wrap;gap:8px 12px;padding:12px 16px}.schedule-summary > span {display:none}
-.schedule-panel .task-table {flex:1;min-height:0;max-height:none;overflow-y:auto;padding:0 14px}
-.task-row {grid-template-columns:minmax(0,1fr) 48px 74px 10px;gap:6px}.task-order {display:none}.task-row-name {min-width:0;overflow:hidden}.task-row-name strong {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.task-state.running {color:#159b88;background:#159b881a;font-weight:700}.task-state.waiting {color:var(--muted)}
+}.task-state.running {color:#159b88;background:#159b881a;font-weight:700}.task-state.waiting {color:var(--muted)}
 .monitor-tabs {display:flex;flex-direction:row;align-items:center;border-bottom:1px solid var(--border);padding:0 18px;gap:6px;flex-shrink:0;height:49px;box-sizing:border-box}
 .monitor-tabs button {display:inline-flex;align-items:center;gap:8px;padding:0 16px;height:100%;background:none;border:0;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;box-sizing:border-box}
 .monitor-tabs button[aria-selected=true] {color:var(--text);border-bottom-color:#159b88}
@@ -198,7 +190,6 @@
 .statistics-chain-add, .statistics-chain-slot .select-control .select-trigger {display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0;border:1px dashed var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);color:var(--theme-muted);font-size:13px;cursor:pointer}
 .statistics-chain-slot .select-control {width:var(--chain-cell-width);min-width:0;height:var(--chain-cell-height)}
 /* 统计页动作组里的按钮取控件面（底 + 磨砂）：只挂这两个动作组，不写通用的 .title-actions 规则去波及其它页面。 */
-.statistics-page-title .title-actions > .button,
 .statistics-toolbar-row .title-actions > .button {background: var(--theme-control-bg);
   -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
 /* 页面切换入口这一排只有控件族自己的面，上方各层都没有面，于是直接压在底图上。
@@ -236,44 +227,6 @@
 .statistics-edit-body {display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:0 22px 18px}
 .statistics-edit-body p {margin:0;font-size:12px;color:var(--theme-muted)}
 .statistics-edit-toggle[aria-pressed='true'] {border-color:var(--theme-accent);color:var(--theme-accent);background:var(--theme-accent-soft)}
-/* 以下工具栏规则只服务紧凑主题：分类、时间范围与操作合并为一行并置顶，滚动时仍可切换与刷新。
-   非旧版版式由 body 滚动，需让开吸顶的顶栏；旧版版式的 .instance-page-main 自身滚动，贴顶即可。 */
-:root[data-theme='extreme'] .statistics-toolbar-row {position:sticky;top:var(--topbar-height);z-index:30;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 0;margin-bottom:12px;background:var(--bg)}
-/* 分段控件放不下时换成单按钮下拉（指针移入即展开，见 Select 的 openOnFocus）。
-   is-compact 由 Statistics 测量可用宽度得出，不用固定断点：右侧控件宽度随分类变化。 */
-:root[data-theme='extreme'] .statistics-toolbar-row .statistics-category-picker {margin-bottom:0}
-:root[data-theme='extreme'] .statistics-toolbar-row.is-compact .statistics-category-control {display:none}
-:root[data-theme='extreme'] .statistics-toolbar-row.is-compact .statistics-category-picker {display:flex}
-:root[data-theme='extreme'] .instance-page-main > .statistics-toolbar-row {top:0}
-:root[data-theme='extreme'] .statistics-toolbar-row .statistics-category-control {margin-bottom:0;flex:0 0 auto;width:max-content}
-:root[data-theme='extreme'] .statistics-toolbar-right {display:flex;align-items:center;gap:12px;margin-left:auto;flex-wrap:wrap}
-:root[data-theme='extreme'] .statistics-toolbar-row .title-actions {gap:8px}
-:root[data-theme='extreme'] .statistics-inline-control {display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);white-space:nowrap}
-:root[data-theme='extreme'] .statistics-inline-control select,:root[data-theme='extreme'] .statistics-inline-control input {max-width:200px;min-height:var(--form-height)}
-/* 控件名收进提示：工具栏只留当前值，鼠标移入或键盘聚焦时把名称浮在控件下方。
-   文字仍渲染在 DOM 里（.statistics-inline-label），只是紧凑主题不占位，其它主题照旧。 */
-:root[data-theme='extreme'] .statistics-inline-label {display:none}
-:root[data-theme='extreme'] .statistics-inline-control {position:relative}
-:root[data-theme='extreme'] .statistics-inline-control[data-tip]:not([data-tip='']):hover::after,
-:root[data-theme='extreme'] .statistics-inline-control[data-tip]:not([data-tip='']):focus-within::after {
-  content:attr(data-tip);position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);
-  padding:3px 8px;background:var(--text);color:var(--surface);font-size:11px;line-height:1.6;
-  white-space:nowrap;pointer-events:none;z-index:40;
-}
-/* 图表设置行在图表下方收尾：紧凑主题把内边距压到与面板一致的尺度。 */
-:root[data-theme='extreme'] .statistics-controls {padding:10px 12px;gap:12px;border-top:1px solid var(--border)}
-:root[data-theme='extreme'] .statistics-controls label {gap:4px}
-:root[data-theme='extreme'] .statistics-controls select,:root[data-theme='extreme'] .statistics-controls input {min-height:var(--form-height)}
-/* 数值区（单指标一行 / 多指标卡片）：紧凑主题收紧内边距、列宽与字号，并保持直角。 */
-:root[data-theme='extreme'] .stat-metrics {padding:8px 12px;gap:12px}
-:root[data-theme='extreme'] .stat-metrics span {margin-bottom:4px}
-:root[data-theme='extreme'] .stat-metrics strong {font-size:18px}
-:root[data-theme='extreme'] .stat-multi-metrics {grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:8px;padding:8px 12px}
-:root[data-theme='extreme'] .stat-metric-card {padding:8px 10px;gap:6px;border-radius:0}
-:root[data-theme='extreme'] .stat-metric-header {font-size:12px;gap:6px}
-:root[data-theme='extreme'] .stat-metric-body {gap:4px 8px;font-size:11px}
-:root[data-theme='extreme'] .stat-metric-body span {font-size:10px;margin-bottom:2px}
-:root[data-theme='extreme'] .stat-metric-body strong {font-size:14px}
 .sr-title {position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .date-input-wrap {position:relative;display:inline-flex;align-items:center;width:100%;max-width:200px}.date-input-wrap input {width:100%}.date-empty {color:transparent}.date-empty::-webkit-datetime-edit {color:transparent}.date-empty::-webkit-calendar-picker-indicator {opacity:1}.date-input-placeholder {position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px;user-select:none;font-variant-numeric:tabular-nums;letter-spacing:0.5px}
 /* 统计区与配置页一致采用自然贯穿流式布局，内容随页面自然向下延伸并在全局滚动。 */
@@ -378,7 +331,7 @@
 .dashboard-option-label span {color:var(--muted);font-size:11px;line-height:1.6}
 .dashboard-option .toggle {flex:0 0 auto;margin-top:2px}
 
-@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.task-row {grid-template-columns:minmax(0,1fr) 48px 74px 10px !important}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.schedule-panel, .monitor-panel {height:500px}.panel.chart-expanded {inset:5px}.statistics-note {font-size:11px}}
+@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.panel.chart-expanded {inset:5px}.statistics-note {font-size:11px}}
 
 @media(max-width:950px) {
   /* 分类文字完整收在下拉菜单里，不再露出被切断的半个标签。 */

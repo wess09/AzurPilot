@@ -1,4 +1,4 @@
-/* 全站表单共用现有主题契约，外部 theme.css 仍可覆盖颜色与圆角。 */
+/* 全站表单共用主题变量。 */
 :root {
   --form-height: 40px;
   /* 表格标题行内控件（搜索框）的高度，与同排 .text-button 一致。 */
@@ -186,9 +186,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 
 /* 设置页的分段选择跟随主题的控件圆角；胶囊造型留给材质主题的监视器控件。 */
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented,
-:root[data-theme='minimal'] .monitor-segmented.settings-segmented,
-:root[data-theme='extreme'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
+:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
 
 /* 自定义外观的滑块行：滑块占满分到的宽度，当前值固定在右侧，数字用等宽字形避免抖动。 */
 .knob-control {display: flex; align-items: center; gap: 12px}
@@ -196,13 +194,9 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 
 /* 设置页的分段选择与上方选择框等宽、按钮等分。 */
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented,
-:root[data-theme='minimal'] .monitor-segmented.settings-segmented,
-:root[data-theme='extreme'] .monitor-segmented.settings-segmented {width: 100%}
+:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {width: 100%}
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented button,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented button,
-:root[data-theme='minimal'] .monitor-segmented.settings-segmented button,
-:root[data-theme='extreme'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
+:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
 
 /* 这一排是 标签 + 滑块 + 数值 + 还原，宽度不够时滑块被压得很短。 */
 .material-detail-modal {width: min(960px, calc(100vw / var(--ui-scale) - 30px))}
@@ -422,96 +416,74 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .cm-filter-item {color: var(--text); font-weight: 500}
 
 /* 深色模式适配 */
-:root[data-theme='legacy-dark'] .cm-filter-tier-marker,
-:root[data-theme='dark'] .cm-filter-tier-marker {
+:root[data-theme='legacy-dark'] .cm-filter-tier-marker {
   color: #c084fc;
   background: rgba(192, 132, 252, 0.2);
   border-color: rgba(192, 132, 252, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-shortest,
-:root[data-theme='dark'] .cm-filter-shortest {
+:root[data-theme='legacy-dark'] .cm-filter-shortest {
   color: #fbbf24;
   background: rgba(251, 191, 36, 0.2);
   border-color: rgba(251, 191, 36, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-reset,
-:root[data-theme='dark'] .cm-filter-reset {
+:root[data-theme='legacy-dark'] .cm-filter-reset {
   color: #f87171;
   background: rgba(248, 113, 113, 0.2);
   border-color: rgba(248, 113, 113, 0.4);
 }
 :root[data-theme='legacy-dark'] .cm-filter-time,
-:root[data-theme='dark'] .cm-filter-time,
-:root[data-theme='legacy-dark'] .cm-filter-number,
-:root[data-theme='dark'] .cm-filter-number {
+:root[data-theme='legacy-dark'] .cm-filter-number {
   color: #60a5fa;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-urgent,
-:root[data-theme='dark'] .cm-filter-comm-urgent {
+:root[data-theme='legacy-dark'] .cm-filter-comm-urgent {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-extra,
-:root[data-theme='dark'] .cm-filter-comm-extra {
+:root[data-theme='legacy-dark'] .cm-filter-comm-extra {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-daily,
-:root[data-theme='dark'] .cm-filter-comm-daily {
+:root[data-theme='legacy-dark'] .cm-filter-comm-daily {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-major,
-:root[data-theme='dark'] .cm-filter-comm-major {
+:root[data-theme='legacy-dark'] .cm-filter-comm-major {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-gem,
-:root[data-theme='dark'] .cm-filter-genre-gem {
+:root[data-theme='legacy-dark'] .cm-filter-genre-gem {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-cube,
-:root[data-theme='dark'] .cm-filter-genre-cube {
+:root[data-theme='legacy-dark'] .cm-filter-genre-cube {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-oil,
-:root[data-theme='dark'] .cm-filter-genre-oil {
+:root[data-theme='legacy-dark'] .cm-filter-genre-oil {
   color: #f59e0b;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-drill,
-:root[data-theme='dark'] .cm-filter-genre-drill {
+:root[data-theme='legacy-dark'] .cm-filter-genre-drill {
   color: #94a3b8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-box,
-:root[data-theme='dark'] .cm-filter-genre-box {
+:root[data-theme='legacy-dark'] .cm-filter-genre-box {
   color: #fb923c;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-chip,
-:root[data-theme='dark'] .cm-filter-genre-chip {
+:root[data-theme='legacy-dark'] .cm-filter-genre-chip {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-part,
-:root[data-theme='dark'] .cm-filter-genre-part {
+:root[data-theme='legacy-dark'] .cm-filter-genre-part {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-series,
-:root[data-theme='dark'] .cm-filter-series {
+:root[data-theme='legacy-dark'] .cm-filter-series {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-dr,
-:root[data-theme='dark'] .cm-filter-dr {
+:root[data-theme='legacy-dark'] .cm-filter-dr {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-pry,
-:root[data-theme='dark'] .cm-filter-pry {
+:root[data-theme='legacy-dark'] .cm-filter-pry {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-code,
-:root[data-theme='dark'] .cm-filter-genre-code {
+:root[data-theme='legacy-dark'] .cm-filter-genre-code {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-ship,
-:root[data-theme='dark'] .cm-filter-ship {
+:root[data-theme='legacy-dark'] .cm-filter-ship {
   color: #34d399;
 }
-:root[data-theme='legacy-dark'] .cm-filter-tier,
-:root[data-theme='dark'] .cm-filter-tier {
+:root[data-theme='legacy-dark'] .cm-filter-tier {
   color: #fb923c;
 }
 
