@@ -386,6 +386,8 @@ class IslandCargoPreparation(IslandUI):
     EARLY_MORNING_DELAY_HOUR = 3
     REPLACE_REFRESH_TRIALS = 2
     REPLACE_ROUNDS = 3
+    # 刷新确认弹窗的确认按钮相对列表底部确认按钮约右移 46、上移 105 像素
+    REFRESH_POPUP_CONFIRM_OFFSET = (20, -130, 80, -80)
 
     @cached_property
     def blacklist(self):
@@ -682,9 +684,22 @@ class IslandCargoPreparation(IslandUI):
         return 'failed'
 
     def _wait_replace_refresh(self):
-        """等待更换列表刷新完成。"""
+        """等待更换列表刷新完成。
+
+        点击刷新后会弹出「是否刷新所有显示的委托？」确认框，需点确认才会真正刷新；
+        不处理时弹窗文字会被当成一行委托，列表从未刷新。弹窗确认按钮与列表底部
+        确认按钮文字相同，只在弹窗按钮所在的偏移位置搜索，避免点到列表本身的确认。
+        """
+        self.interval_clear(CARGO_PREPARATION_REPLACE_CONFIRM)
         wait_timer = Timer(5, count=10).start()
-        for _ in self.loop(timeout=6, skip_first=False):
+        for _ in self.loop(timeout=12, skip_first=False):
+            if self.appear_then_click(CARGO_PREPARATION_REPLACE_CONFIRM,
+                                      offset=self.REFRESH_POPUP_CONFIRM_OFFSET, interval=2):
+                wait_timer.reset()
+                continue
+            if self.handle_popup_confirm('CARGO_PREPARATION_REFRESH', offset=(30, 30)):
+                wait_timer.reset()
+                continue
             if wait_timer.reached():
                 break
 
