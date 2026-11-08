@@ -94,7 +94,6 @@
     "Error": {
       "HandleError": true,
       "SaveError": true,
-      "LogWatermark": true,
       "StrictRestart": false,
       "TaskRestartLimit": 3,
       "SaveErrorRetentionDays": 30,

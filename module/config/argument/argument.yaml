@@ -187,7 +187,6 @@ EmulatorInfo:
 Error:
   HandleError: true
   SaveError: true
-  LogWatermark: true
   StrictRestart: false
   TaskRestartLimit:
     value: 3

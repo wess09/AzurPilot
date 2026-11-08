@@ -25,6 +25,7 @@ from module.exception import (
 class TestSchedulerRecovery(unittest.TestCase):
     def setUp(self):
         self.logger = self.enterContext(patch('alas.logger'))
+        self.enterContext(patch.object(AzurLaneAutoScript, '_log_source_watermark'))
         self.notify = self.enterContext(patch('alas.handle_notify'))
         self.webui = self.enterContext(patch('alas.notify_webui'))
         self.sleep = self.enterContext(patch('alas.time.sleep'))
