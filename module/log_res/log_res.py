@@ -45,6 +45,9 @@ class LogRes:
         self.__dict__['config'] = config
 
     def __setattr__(self, key, value):
+        self._set_value(key, value)
+
+    def _set_value(self, key, value):
         """设置资源属性值，并自动同步更新 Dashboard 及历史快照。
 
         Args:
@@ -52,8 +55,7 @@ class LogRes:
             value (int | dict): 资源数值，或包含 Value/Total/Limit 的字典。
         """
         if key in self.groups:
-            if self.__dict__.get('_observation_enabled', True):
-                self._observe(key, value)
+            observation = self._observe(key, value) if self.__dict__.get('_observation_enabled', True) else None
             _key_group = f'Dashboard.{key}'
             _mod = False
             original = deep_get(self.config.data, keys=_key_group)
@@ -74,8 +76,8 @@ class LogRes:
                             )
                         except Exception:
                             logger.exception('[日志资源] 保存金币快照失败')
-                    # 记录全量资源快照
-                    self._record_all_resource_snapshot({key: value})
+                    if observation is not False:
+                        self._record_all_resource_snapshot({key: value})
             elif isinstance(value, dict):
                 _mod = False
                 for value_name, _value in value.items():
@@ -108,24 +110,26 @@ class LogRes:
                             )
                         except Exception:
                             logger.exception('保存行动力快照失败')
-                    # 记录全量资源快照
-                    value_to_record = value.get('Value') if isinstance(value, dict) else None
-                    if value_to_record is not None:
-                        self._record_all_resource_snapshot({key: value_to_record})
-                    else:
-                        self._record_all_resource_snapshot()
+                    if observation is not False:
+                        value_to_record = value.get('Value')
+                        if value_to_record is not None:
+                            self._record_all_resource_snapshot({key: value_to_record})
+                        else:
+                            self._record_all_resource_snapshot()
+            return observation is True
         else:
             logger.info('[日志资源] 仪表盘中无此资源')
             super().__setattr__(name=key, value=value)
+            return False
 
     def record(self, name, value, *, observed=True, source=None, defer_history=False, observed_at=None):
-        """缓存回退与失败读数可以保留旧记录，但不能更新成功观察时间。"""
+        """更新仪表盘，并返回是否成功写入调度观测。"""
         self.__dict__['_observation_enabled'] = observed
         self.__dict__['_observation_source'] = source
         self.__dict__['_defer_history'] = defer_history
         self.__dict__['_recorded_at'] = observed_at or datetime.now()
         try:
-            setattr(self, name, value)
+            return self._set_value(name, value)
         finally:
             self.__dict__.pop('_observation_enabled', None)
             self.__dict__.pop('_observation_source', None)
@@ -133,6 +137,7 @@ class LogRes:
             self.__dict__.pop('_recorded_at', None)
 
     def _observe(self, name, value):
+        """返回观测写入结果，未尝试写入时返回 None。"""
         from pathlib import Path
         from module.config.utils import filepath_config
         instance = getattr(self.config, 'config_name', None)
@@ -146,9 +151,13 @@ class LogRes:
         task = getattr(getattr(self.config, 'task', None), 'command', None)
         source = self.__dict__.get('_observation_source') or task or 'task_observation'
         stamp = self.__dict__.get('_recorded_at') or now()
-        ProgramStore(Path(filepath_config(instance)).parent).observe(instance, name, value, stamp.isoformat(sep=' '), source)
+        store = ProgramStore(Path(filepath_config(instance)).parent)
+        if not store.observe(instance, name, value, stamp.isoformat(sep=' '), source):
+            # 账本和资源快照共用总库，争用时跳过本次同步写入。
+            return False
         from module.statistics.resource_flow import observe
         observe(self.config, name, current, source, observed_at=stamp)
+        return True
 
     def _record_all_resource_snapshot(self, overrides=None):
         """记录本次读到的资源，其余资源沿用数据库里最近一行快照。

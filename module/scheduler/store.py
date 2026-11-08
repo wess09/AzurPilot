@@ -7,9 +7,11 @@ import sqlite3
 from contextlib import contextmanager, closing
 from datetime import datetime
 from pathlib import Path
+from time import sleep
 from uuid import uuid4
 
 from module.config.transaction import config_transaction
+from module.logger import logger
 from module.persistence.database import DEFAULT_DIRECTORY, VERSION, create_schema, get_database, register_instance
 from module.persistence import scheduler as native
 from module.scheduler.history_store import AuthenticatedHistoryStore, HISTORY_ERRORS
@@ -119,6 +121,7 @@ class ProgramStore:
         AuthenticatedHistoryStore._write_observation(connection, name, value, timestamp, source)
 
     def observe(self, instance, name, value, timestamp, source):
+        """写入普通资源观测，持续写锁争用时返回 False。"""
         self.path(instance)
         self.database.ensure_ready()
         total = value.get('Total') if isinstance(value, dict) else None
@@ -126,10 +129,23 @@ class ProgramStore:
             try:
                 self.history.observe(instance, name, value, timestamp, source)
             except HISTORY_ERRORS as error:
-                from module.logger import logger
                 logger.warning(f'[认证历史] 记录失败，交易同步将停止：{type(error).__name__}')
-        with self.connection(instance, write=True) as connection:
-            native.write_observation(connection, instance, name, value, timestamp, source)
+
+        # 只重试可安全重放的普通观测，避免重跑独立的认证历史事务。
+        for backoff in (0.05, 0.1, None):
+            try:
+                with self.database.transaction(timeout=0.05) as connection:
+                    native.write_observation(connection, instance, name, value, timestamp, source)
+                return True
+            except sqlite3.OperationalError as error:
+                code = getattr(error, 'sqlite_errorcode', 0) & 0xFF
+                if code not in (sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED):
+                    raise
+                if backoff is None:
+                    logger.warning('[调度观测] 写锁重试耗尽，跳过本次观测：实例=%s 资源=%s 来源=%s 错误=%s',
+                                   instance, name, source, error.sqlite_errorname)
+                    return False
+                sleep(backoff)
 
     def copy(self, source, target):
         if self.exists(source):

@@ -62,8 +62,7 @@ def refresh_resources(config, device, names):
                 limit = ui._get_num(limit_button, f'SCHEDULER_{name}_LIMIT', color, require_valid=True)
                 return {'Value': value, 'Limit': limit} if value is not None and limit is not None else None
             row = stable_read(ui, lambda: ui.ui_page_appear(page_campaign), read_currency)
-            if row is not None:
-                log.record(name, row, source='scheduler_refresh')
+            if row is not None and log.record(name, row, source='scheduler_refresh'):
                 acquired.add(name)
     if wanted & {'ActionPoint', 'YellowCoin', 'PurpleCoin'}:
         from module.os.operation_siren import OperationSiren
@@ -83,8 +82,7 @@ def refresh_resources(config, device, names):
                 total = current + sum(n * cost for n, cost in zip(quantities, ACTION_POINT_BOX.values()))
                 return {'Value': int(current), 'Total': int(total)}
             row = stable_read(ui, lambda: ui.appear(ACTION_POINT_USE, offset=(20, 20)), read_ap)
-            if row is not None:
-                log.record('ActionPoint', row, source='scheduler_refresh')
+            if row is not None and log.record('ActionPoint', row, source='scheduler_refresh'):
                 acquired.add('ActionPoint')
             ui.action_point_quit()
         from module.os_handler.os_status import OCR_SHOP_YELLOW_COINS, OCR_SHOP_PURPLE_COINS
@@ -95,8 +93,7 @@ def refresh_resources(config, device, names):
                 value = ocr.ocr(device.image)
                 return value if getattr(ocr, 'last_valid', False) else None
             value = stable_read(ui, lambda: ui.ui_page_appear(page_os), read_coins)
-            if value is not None:
-                log.record(name, int(value), source='scheduler_refresh')
+            if value is not None and log.record(name, int(value), source='scheduler_refresh'):
                 acquired.add(name)
     config.save()
     return acquired == wanted
