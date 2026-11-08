@@ -463,10 +463,6 @@
         "type": "checkbox",
         "value": true
       },
-      "LogWatermark": {
-        "type": "checkbox",
-        "value": true
-      },
       "StrictRestart": {
         "type": "checkbox",
         "value": false

@@ -93,35 +93,24 @@ def collect_source_watermark(root=None):
     return f'[来源水印] 源: {source} | 分支: {branch} | 提交: {commit} | 本地修改: {modified}'
 
 
-def _append_watermark(log_file, watermark):
-    """仅追加已有现场，不覆盖原日志，也不重新创建已清理的现场。"""
-    with open(log_file, 'r+', encoding='utf-8') as file:
-        file.seek(0, os.SEEK_END)
-        file.write(f'\n{watermark}\n')
-
-
-def _write_source_watermark(log_file=None):
-    """可选水印失败时保留原始日志，不让后台异常干扰运行。"""
+def _write_source_watermark(emit=True):
+    """刷新缓存；错误保存期间的刷新不输出，避免水印落到保存提示之后。"""
     global _last_watermark
     try:
         watermark = collect_source_watermark()
         _last_watermark = watermark
-        logger.info(watermark)
-        if log_file is not None:
-            _append_watermark(log_file, watermark)
+        if emit:
+            logger.info(watermark)
     except Exception:
-        logger.debug('[来源水印] 读取或追加失败，已跳过')
+        logger.debug('[来源水印] 读取失败，已跳过')
 
 
-def start_log_watermark(log_file=None):
-    """先追加缓存，再后台刷新；调用方不等待 Git。"""
-    if log_file is not None:
-        try:
-            # 退出时 daemon 可能被终止，先留下明确标注的快照，再后台刷新。
-            _append_watermark(log_file, f'{_last_watermark}（最近快照，等待后台刷新）')
-        except Exception:
-            logger.debug('[来源水印] 无法追加最近快照，已跳过')
+def start_log_watermark(cached=False):
+    """错误保存前立即输出缓存，随后静默刷新；启动时仍后台采集并输出。"""
+    if cached:
+        # 使用已完成的快照保证输出顺序，不等待 Git，不再改写保存出的现场。
+        logger.info(f'{_last_watermark}（最近采集快照）')
     threading.Thread(
-        target=_write_source_watermark, args=(log_file,),
+        target=_write_source_watermark, kwargs={'emit': not cached},
         name='log-source-watermark', daemon=True,
     ).start()

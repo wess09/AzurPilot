@@ -1529,13 +1529,11 @@ class AzurLaneAutoScript:
                 f'（{method}），备份目录 log/error/{self.config_name}/bak')
         return handled
 
-    def _log_source_watermark(self, log_file=None):
-        """水印是可选诊断信息；配置、导入或线程启动失败均不影响原流程。"""
+    def _log_source_watermark(self, cached=False):
+        """来源标记始终启用；导入或线程启动失败均不影响原流程。"""
         try:
-            if getattr(self.config, 'Error_LogWatermark', True) is not True:
-                return
             from module.base.log_watermark import start_log_watermark
-            start_log_watermark(log_file)
+            start_log_watermark(cached=cached)
         except Exception:
             logger.debug('[来源水印] 无法启动，已跳过')
 
@@ -1571,6 +1569,7 @@ class AzurLaneAutoScript:
             config_folder = pathlib.Path(f"./log/error/{self.config_name}")
             folder = config_folder.joinpath(str(int(time.time() * 1000)))
             folder.mkdir(parents=True, exist_ok=True)
+            self._log_source_watermark(cached=True)
             logger.warning(f'[AzurPilot] 保存错误日志: {folder}')
 
             try:
@@ -1583,7 +1582,6 @@ class AzurLaneAutoScript:
             except Exception as e:
                 logger.error(f"[AzurPilot] 保存错误截图失败: {e}")
 
-            error_log_file = None
             try:
                 with open(logger.log_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
@@ -1596,12 +1594,10 @@ class AzurLaneAutoScript:
                     lines = handle_sensitive_logs(lines)
                 with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
                     f.writelines(lines)
-                error_log_file = folder / 'log.txt'
             except Exception as e:
                 logger.error(f"[AzurPilot] 保存错误日志失败: {e}")
                 
             self.cleanup_error_logs(config_folder)
-            self._log_source_watermark(error_log_file)
 
     def restart(self):
         """执行游戏客户端重启任务。"""
