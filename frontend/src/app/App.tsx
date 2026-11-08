@@ -122,7 +122,7 @@ function Login() {
 
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode} = useApp()
+  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, devMode, setDevMode, theme} = useApp()
   /* 开发者工具的模拟状态：只影响实例状态徽章与更新角标。 */
   const devOverride = useDevOverride()
   const {instance} = useParams()
@@ -263,7 +263,7 @@ export function App() {
      隧道远程访问首帧就走 auth，React 会直接抛 #300 崩掉整页。 */
   if (connection === 'auth') return <Login/>
   if (setup || empty) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
-  const hasDockedInspector = inspector.open && inspector.docked && !inspector.minimized
+  const hasDockedInspector = theme !== 'minimal' && inspector.open && inspector.docked && !inspector.minimized
   return <div
     className={`app-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
     style={layout.sidebarWidth != null ? ({'--sidebar-width': `${layout.sidebarWidth}px`} as React.CSSProperties) : undefined}
@@ -289,6 +289,6 @@ export function App() {
       <main id="main-content" tabIndex={-1}>{!schema || location.pathname === '/' || (instance && (!instancesLoaded || !current)) ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>}</main>
     </div>
     {creating && <CreateInstance onClose={() => setCreating(false)}/>}
-    <MaterialInspector/>
+    {theme !== 'minimal' && <MaterialInspector/>}
   </div>
 }

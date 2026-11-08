@@ -57,9 +57,14 @@ function render(theme: AppContextValue['theme'], material: AppContextValue['mate
 
 // 外观偏好在「界面设置」页；原先这些断言挂在系统设置页上（见 Settings.test.tsx）。
 describe('界面设置页外观显示逻辑', () => {
-  it('现代主题下固定展示现代主题标识', () => {
-    const html = render('legacy-light')
-    expect(html).toContain('现代')
+  it('现代主题下显示当前主题，简约主题下显示配色和主题模式', () => {
+    expect(render('legacy-light')).toContain('现代')
+    const minimal = render('minimal')
+    expect(minimal).toContain('简约')
+    expect(minimal).toContain('主题模式')
+    expect(minimal).toContain('配色方案')
+    expect(minimal).not.toContain('自定义背景')
+    expect(minimal).not.toContain('材质细节')
   })
 
   it('浅色与深色主题下均渲染材质与明暗分段控件', () => {

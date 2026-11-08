@@ -128,7 +128,14 @@ const directMediaUrl = (url: string) => /\.(?:jpe?g|png|webp|gif|bmp|avif|mp4|we
 /** 记着上一张真正铺出来的图：解析失败时保留它，避免回退到随机端点换出新图。 */
 let lastGoodAssetUrl = ''
 
-const initial = readBackgroundPreference(getThemePreference().material)
+function readActiveBackground(): BackgroundPreference {
+  const {theme, material} = getThemePreference()
+  return theme === 'minimal'
+    ? {source: 'off', kind: 'image', urls: [], active: 0, name: ''}
+    : readBackgroundPreference(material)
+}
+
+const initial = readActiveBackground()
 let snapshot: BackgroundSnapshot = {
   ...initial,
   assetUrl: initial.source === 'upload' && initial.entry ? galleryUrl(initial.entry) : directMediaUrl(activeBackgroundUrl(initial)),
@@ -229,13 +236,13 @@ export function normalizeBackgroundUrl(value: string): string {
   return parsed.href
 }
 
-/* 切换材质时换成那一档自己的记录：普通默认关闭、玻璃默认随机图，各档独立保存。 */
+/* 切换主题或材质时读取当前背景，简约主题保留原有记录供切回时使用。 */
 subscribeTheme(() => {
-  const next = readBackgroundPreference(getThemePreference().material)
+  const next = readActiveBackground()
   if (next.source === snapshot.source && activeBackgroundUrl(next) === activeBackgroundUrl(snapshot) && next.name === snapshot.name) return
   replaceObjectUrl()
   const initialAsset = next.source === 'upload' ? (next.entry ? galleryUrl(next.entry) : '') : next.source === 'url' ? (directMediaUrl(activeBackgroundUrl(next)) || lastGoodAssetUrl) : ''
-  publish({...next, assetUrl: initialAsset, loading: next.source === 'upload'})
+  publish({...next, assetUrl: initialAsset, directUrl: '', resolving: false, resolveError: '', loading: next.source === 'upload'})
   if (next.source === 'upload') void loadUploadedBackground()
   if (next.source === 'url') void resolveActiveBackground()
 })
@@ -276,11 +283,12 @@ export async function resolveActiveBackground() {
   try {
     const {token} = await api.request('background.access', {})
     const result = await api.request('background.resolve', {url})
-    if (activeBackgroundUrl(snapshot) !== url) return
+    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
     /* 解析成功：壁纸改用直链 —— 同一个地址同时用于预览与"存入图库"，不会出现两次随机。 */
     lastGoodAssetUrl = proxyUrl(result.final_url, token)
     publish({assetUrl: lastGoodAssetUrl, directUrl: result.final_url, resolving: false, resolveError: ''})
   } catch (error) {
+    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
     /* 解析失败就退回原地址直接当图片用（很多 API 本身就是图片），并把原因留给界面显示。 */
     const fallback = lastGoodAssetUrl || url
     publish({assetUrl: fallback, resolving: false, resolveError: (error as Error).message})

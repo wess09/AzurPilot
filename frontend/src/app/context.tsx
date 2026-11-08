@@ -9,7 +9,7 @@ import { resumeEditors } from '../config/editors'
 import { detectLanguage, isLanguage, languages, localeForLanguage, translateUi, type Language, type UiTranslator } from '../i18n'
 import { readDevMode, writeDevMode } from './devMode'
 import { applyTheme, getThemePreference, subscribeTheme, type Theme, type Material } from './theme'
-import type { CustomPalette, ResolvedMode } from './palettes'
+import { palettes, type CustomPalette, type ResolvedMode } from './palettes'
 
 export { languages }
 
@@ -52,11 +52,15 @@ export function AppProvider({children}: {children: ReactNode}) {
     const current = getThemePreference()
     const customPalettes = current.customPalettes.some(palette => palette.id === item.id)
       ? current.customPalettes.map(palette => palette.id === item.id ? item : palette) : [...current.customPalettes, item]
-    applyTheme({...current, customPalettes})
+    applyTheme({...current, customPalettes, palette: current.theme === 'minimal' ? item.id : current.palette})
   }, [])
   const deleteCustomPalette = useCallback((id: CustomPalette['id']) => {
     const current = getThemePreference()
-    applyTheme({...current, customPalettes: current.customPalettes.filter(item => item.id !== id)})
+    applyTheme({
+      ...current,
+      customPalettes: current.customPalettes.filter(item => item.id !== id),
+      palette: current.palette === id ? palettes[0] : current.palette,
+    })
   }, [])
   useEffect(() => { writeDevMode(devMode) }, [devMode])
   useEffect(() => {

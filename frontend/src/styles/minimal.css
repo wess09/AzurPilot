@@ -1,0 +1,77 @@
+/* 简约主题沿用共享布局，面板使用实色和圆角，外壳保持直角。 */
+:root[data-theme='minimal'] {
+  --theme-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --red: #b83336; --green: #247442; --green-soft: #e6f3e9;
+  --radius: 14px; --shadow: none;
+  --theme-radius-panel: 14px; --theme-radius-card: 14px;
+  --theme-radius-button: 8px; --theme-radius-popover: 10px; --theme-radius-modal: 12px;
+  --theme-plate-margin: 0px;
+  --theme-shadow-panel: none; --theme-shadow-popover: none; --theme-shadow-modal: none;
+  --theme-shadow-floating: none; --theme-shadow-hover: none; --theme-nav-popover-shadow: none;
+  --theme-danger-soft: #fcebec; --theme-toggle-off: #8290a0; --theme-scrollbar-thumb: #9caab8;
+  --theme-nav-icon: var(--secondary); --theme-nav-hover-bg: var(--surface-muted);
+  --theme-nav-active-bg: var(--accent-soft); --theme-nav-active-text: var(--accent);
+  --theme-input-border: var(--border); --theme-focus-ring: var(--accent-soft); --theme-toggle-on: var(--accent);
+  --theme-chart-primary: var(--accent); --theme-chart-secondary: var(--secondary);
+  --theme-log-debug: var(--muted); --theme-log-info: var(--accent); --theme-log-warning: var(--theme-warning);
+  --theme-log-error: var(--red); --theme-log-critical: var(--red); --theme-log-time: var(--secondary);
+  --theme-log-true: var(--green); --theme-log-false: var(--red); --theme-log-null: var(--syntax-value);
+  --theme-log-path: var(--accent); --theme-log-attr: var(--secondary); --theme-log-search: #f9e7a9;
+  --syntax-value: #854fa0;
+  --instance-tab-divider-color: var(--border);
+}
+
+:root[data-theme='minimal'][data-color-mode='dark'] {
+  color-scheme: dark;
+  --red: #ff969a; --green: #8bd3a1; --green-soft: #253d30;
+  --theme-danger-soft: #482d34; --theme-on-danger: #17202b;
+  --theme-warning: #e7c078; --theme-warning-soft: #403723;
+  --theme-toggle-off: #667487; --theme-scrollbar-thumb: #64758a;
+  --syntax-value: #d9b3f5; --theme-log-search: #72551a;
+}
+
+:root[data-theme='minimal'] *,
+:root[data-theme='minimal'] *::before,
+:root[data-theme='minimal'] *::after,
+:root[data-theme='minimal'] *::backdrop {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-theme='minimal'] {
+  & :is(.sidebar, .topbar, .legacy-page-nav) {border-radius: 0; background: var(--surface)}
+  & .instance-tabs {--instance-tab-foot: 0px}
+  & .button {font-size: 13px; font-weight: 600}
+  & .icon-button {border-radius: var(--theme-radius-control)}
+  & :is(input:where(:not([type='checkbox'], [type='radio'], [type='range'])), textarea, .select-trigger, .input-icon) {
+    border: 1px solid var(--border);
+    border-radius: var(--theme-radius-control);
+  }
+  & :is(input, textarea, .select-trigger)[aria-invalid='true'] {border-color: var(--red)}
+  & :is(input, textarea, .select-trigger):focus-visible,
+  & :is(.select-trigger[aria-expanded='true'], .input-icon:focus-within) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  & .input-icon > input:focus {outline: none}
+  & .monitor-segmented {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 9px;
+    background: var(--surface-muted);
+    overflow-x: auto;
+  }
+  & .monitor-segmented button {border-right: 0; border-radius: 6px}
+  & main.instance-setup {
+    --setup-accent: var(--accent);
+    --setup-accent-hover: var(--accent-hover);
+    --setup-on-accent: var(--theme-on-accent);
+    background: var(--bg);
+  }
+  & .setup-illustration-mark::after,
+  & .instance-setup-card.setup-wizard {background: var(--surface)}
+  & .setup-illustration {background: var(--surface-muted)}
+}

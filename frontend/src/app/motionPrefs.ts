@@ -56,9 +56,9 @@ export const subscribeMotionPrefs = (listener: () => void) => {
 
 export const readMotionPrefs = () => state
 
-/** 动效是否应被视为“减少”：系统开关或调试模拟开关任一命中。 */
+/** 简约主题、系统开关和调试模拟均可关闭装饰动效。 */
 export const motionReducedActive = () =>
-  !browser || state.reduced ||
+  !browser || state.reduced || document.documentElement.dataset.theme === 'minimal' ||
   (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
 
 /** 当前速度倍率：用于 JS 侧计时（如转场类清除定时器）。 */

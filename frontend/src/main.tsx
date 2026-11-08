@@ -12,6 +12,7 @@ import { applyTheme, getThemePreference } from './app/theme'
 import {StockExchangeBoundary,StockExchangeFallback} from './components/StockExchangeBoundary'
 import { translateCurrentUi } from './i18n'
 import './styles/legacy.css'
+import './styles/minimal.css'
 
 /* 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
    没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。 */
@@ -62,6 +63,6 @@ const router = createHashRouter([
   ]},
   {path: '*', element: <Navigate to="/configs" replace/>},
 ])
-// 在挂载前应用已保存的明暗和材质，主题 CSS 由入口样式表加载。
+// 在挂载前应用已保存的主题，避免首屏闪过默认外观。
 applyTheme(getThemePreference())
 createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><ThemeWallpaper/><RouterProvider router={router}/></AppProvider></ErrorBoundary>)

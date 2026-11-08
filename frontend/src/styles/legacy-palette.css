@@ -1,6 +1,6 @@
 /* 旧版主题配色：MD3 靛紫。
    取值来自 master 的 assets/gui/css/light-alas.css 与 dark-alas.css；
-   变量键与 minimal-palette.css 一一对应，组件只消费 --theme-* 契约变量。 */
+   简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值。 */
 :root {
   color-scheme: light;
   /* 基础色板 */

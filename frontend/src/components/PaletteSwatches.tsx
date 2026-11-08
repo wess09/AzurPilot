@@ -37,7 +37,7 @@ function CustomPaletteEditor({initial, onClose}: {initial: CustomPalette; onClos
   </Modal>
 }
 
-/** 配色选择器：预设 + 自定义方案 + 新增/编辑/删除。简约与紧凑写全局方案，新版与旧版写各自大类的品牌配色。 */
+/** 配色选择器：简约主题选择整套配色，现代主题选择品牌配色。 */
 export function PaletteSwatches({value, onChange, legend, stock = false}: {value?: Palette; onChange: (palette?: Palette) => void; legend: string; stock?: boolean}) {
   const {ui, resolvedMode, customPalettes, deleteCustomPalette} = useApp()
   const [editing, setEditing] = useState<CustomPalette>()
