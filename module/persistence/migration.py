@@ -113,13 +113,7 @@ def _startup_process_ids():
                 and parent_executable != executable
                 and parent_command[1:] == command[1:]
             )
-            docker_init_launcher = (
-                sys.platform == 'linux'
-                and parent.pid == 1
-                and parent_path.name in ('docker-init', 'tini')
-                and parent_command[1:] == ['--', *command]
-            )
-            if not (uv_launcher or python_redirector or docker_init_launcher):
+            if not (uv_launcher or python_redirector):
                 break
             result.add(parent.pid)
             command, executable = parent_command, parent_executable

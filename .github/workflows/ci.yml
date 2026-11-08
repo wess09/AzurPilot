@@ -4,8 +4,8 @@ name: CI
 # 原 lint.yml（ruff / button-config-check）与 import-test.yml（import-smoke）
 # 合并于此，三者均为 push / pull_request 触发，直接作为 PR 的 check 显示。
 #
-# 其余 workflow（docker-publish / git-over-cdn-* / sync2 / ai-issue-labeler）
-# 触发条件与职责不同（tags 发布、master 镜像、issues 自动化），保持独立，
+# 其余 workflow（git-over-cdn-* / sync2 / ai-issue-labeler）
+# 触发条件与职责不同（tags 发布、issues 自动化），保持独立，
 # 不并入本工作流。
 
 on: [push, pull_request]
@@ -135,7 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # OpenCV 在无头 CI 环境需要系统运行库（与 deploy/docker/Dockerfile 保持一致）。
+      # OpenCV 在无头 CI 环境需要系统运行库。
       - name: Install system deps
         run: sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 libgomp1
 
