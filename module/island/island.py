@@ -1326,6 +1326,15 @@ class Island(SelectCharacter):
             self.device.screenshot()
             if self.appear(ISLAND_FARM_POST1, offset=100):
                 return True
+            # 岗位管理页会停留在上次使用的页签。经营任务结束后再进入时停在经营页签，
+            # 列表里没有农田行，怎么滑都到不了“顶部”；先切回生产页签再判断
+            if i == 0 and (self.appear(POST_MANAGE_BUSINESS)
+                           or self.appear(ISLAND_GATHER_COLLECT_CHECK, offset=30)):
+                logger.info("[岛屿] 岗位管理页不在生产页签，先切回生产页签")
+                self.post_manage_mode(POST_MANAGE_PRODUCTION)
+                self.device.screenshot()
+                if self.appear(ISLAND_FARM_POST1, offset=100):
+                    return True
             if i == max_swipes:
                 break
             self.post_manage_down_swipe(ISLAND_POST_SWIPE_DISTANCE)
