@@ -3835,7 +3835,7 @@
   "OpsiAshAssist": {
     "_info": {
       "name": "META assist",
-      "help": "Beacon assist three times a day"
+      "help": "Beacon assist three times a day\nOperation Siren main storyline must be cleared before using this feature."
     },
     "Enable": {
       "name": "Enable META assists",
@@ -3849,7 +3849,7 @@
   "OpsiGeneral": {
     "_info": {
       "name": "Operation Siren general settings",
-      "help": "All Operation Siren features use these settings"
+      "help": "All Operation Siren features use these settings\nOperation Siren main storyline must be cleared before using this feature."
     },
     "UseLogger": {
       "name": "Use coordinate logger",
@@ -3921,7 +3921,7 @@
   "OpsiAshBeacon": {
     "_info": {
       "name": "META Showdown",
-      "help": ""
+      "help": "Operation Siren main storyline must be cleared before using this feature."
     },
     "AttackMode": {
       "name": "META Showdown",
@@ -3962,7 +3962,7 @@
   "OpsiFleetFilter": {
     "_info": {
       "name": "Fleet settings",
-      "help": ""
+      "help": "Operation Siren main storyline must be cleared before using this feature."
     },
     "Filter": {
       "name": "Sortie fleet filter",
@@ -3972,7 +3972,7 @@
   "OpsiFleet": {
     "_info": {
       "name": "Fleet settings",
-      "help": ""
+      "help": "Operation Siren main storyline must be cleared before using this feature."
     },
     "Fleet": {
       "name": "Sortie fleet",
@@ -4024,7 +4024,7 @@
   "OpsiExploreCleanup": {
     "_info": {
       "name": "Explorable-zone event cleanup",
-      "help": "Requires 100% monthly exploration. Revisit original DANGEROUS zones in exploration order, scan the full map and every fleet radar, and handle missed events and their enemies. Never enter SAFE zones. Uses separate monthly checkpoints saved after leaving each zone, without repeating completed months. If exploration is incomplete, ask to rerun monthly exploration."
+      "help": "Requires 100% monthly exploration. Revisit original DANGEROUS zones in exploration order, scan the full map and every fleet radar, and handle missed events and their enemies. Never enter SAFE zones. Uses separate monthly checkpoints saved after leaving each zone, without repeating completed months. If exploration is incomplete, ask to rerun monthly exploration.\nOperation Siren main storyline must be cleared before using this feature."
     },
     "Progress": {
       "name": "Cleanup progress",
@@ -4219,7 +4219,7 @@
   "OpsiTarget": {
     "_info": {
       "name": "Zone achievements",
-      "help": ""
+      "help": "Operation Siren main storyline must be cleared before using this feature."
     },
     "TargetFarming": {
       "name": "Farm safe zone achievements",
@@ -4237,7 +4237,7 @@
   "OpsiHazard1Leveling": {
     "_info": {
       "name": "Corrosion 1 leveling",
-      "help": "Consume Operation Supply Coins to gain large amounts of EXP and small amounts of Action Points\nIt is recommended to bring 1-2 preloaded carriers to obtain the highest hourly income.\n\nSome safety restrictions of the original AzurPilot have been lifted, please set parameters carefully"
+      "help": "Consume Operation Supply Coins to gain large amounts of EXP and small amounts of Action Points\nIt is recommended to bring 1-2 preloaded carriers to obtain the highest hourly income.\n\nSome safety restrictions of the original AzurPilot have been lifted, please set parameters carefully\nOperation Siren main storyline must be cleared before using this feature."
     },
     "TargetZone": {
       "name": "Target zone",
@@ -4300,7 +4300,7 @@
   "OpsiSirenBug": {
     "_info": {
       "name": "Siren research device",
-      "help": "Basic options for handling Siren Research Devices"
+      "help": "Basic options for handling Siren Research Devices\nOperation Siren main storyline must be cleared before using this feature."
     },
     "SirenResearch_Enable": {
       "name": "Enable Siren research device",
@@ -4325,7 +4325,7 @@
   "OpsiCheckLeveling": {
     "_info": {
       "name": "Operation Siren fleet EXP check",
-      "help": "Check whether all ships in the sortie fleet have gained full experience, and if so, send a push notification.\nYou need to configure \"Error Push Settings\" in AzurPilot settings first.\nIf the EXP check fails, it will be retried. It is recommended to fill all six ship slots or increase the check interval; after 3 consecutive failures a push is sent and the task is delayed."
+      "help": "Check whether all ships in the sortie fleet have gained full experience, and if so, send a push notification.\nYou need to configure \"Error Push Settings\" in AzurPilot settings first.\nIf the EXP check fails, it will be retried. It is recommended to fill all six ship slots or increase the check interval; after 3 consecutive failures a push is sent and the task is delayed.\nOperation Siren main storyline must be cleared before using this feature."
     },
     "TargetLevel": {
       "name": "Push when all ships can level up to this level (0 means no limit)",
@@ -4357,7 +4357,7 @@
   "OpsiFleetAutoChange": {
     "_info": {
       "name": "Fleet auto-compose",
-      "help": "Automatically replace ships that have reached the target level."
+      "help": "Automatically replace ships that have reached the target level.\nOperation Siren main storyline must be cleared before using this feature."
     },
     "Enable": {
       "name": "Enable auto-compose",
@@ -4381,7 +4381,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "Smart scheduling",
-      "help": "Smart scheduling related settings"
+      "help": "Smart scheduling related settings\nOperation Siren main storyline must be cleared before using this feature."
     },
     "BuyActionPoint": {
       "name": "Buy port AP when AP is insufficient",
@@ -4469,7 +4469,7 @@
   "OpsiSmartExplore": {
     "_info": {
       "name": "Smart exploration",
-      "help": "Smart and monthly exploration cannot be enabled together. Disable the monthly exploration task before enabling smart exploration. If monthly exploration reached 100% this month, smart exploration is unnecessary and skips all three routes."
+      "help": "Smart and monthly exploration cannot be enabled together. Disable the monthly exploration task before enabling smart exploration. If monthly exploration reached 100% this month, smart exploration is unnecessary and skips all three routes.\nOperation Siren main storyline must be cleared before using this feature."
     },
     "Enable": {
       "name": "Enable smart exploration",
@@ -4491,7 +4491,7 @@
   "OpsiPreventActionPointOverflow": {
     "_info": {
       "name": "Prevent AP overflow",
-      "help": "Runs Operation Siren tasks when current AP reaches the upper limit.\nWhen Smart Scheduling is selected, it runs Meowfficer Farming if both AP and Operation Supply Coins are insufficient and no other task can run."
+      "help": "Runs Operation Siren tasks when current AP reaches the upper limit.\nWhen Smart Scheduling is selected, it runs Meowfficer Farming if both AP and Operation Supply Coins are insufficient and no other task can run.\nOperation Siren main storyline must be cleared before using this feature."
     },
     "Task": {
       "name": "Task to run",
@@ -7551,7 +7551,7 @@
   "OpsiSimulatorParameters": {
     "_info": {
       "name": "Parameter settings",
-      "help": ""
+      "help": "Operation Siren main storyline must be cleared before using this feature."
     },
     "Samples": {
       "name": "Sample count",
