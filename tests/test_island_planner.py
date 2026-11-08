@@ -771,6 +771,62 @@ class SeasonScanGuardTest(unittest.TestCase):
             self.assertIsNone(scanner.scan_unfinished())
             scroll.next_page.assert_not_called()
 
+    def test_white_band_does_not_blind_click_missing_receive_all(self):
+        from unittest.mock import Mock
+        from module.combat.assets import GET_ITEMS_1
+        from module.island.assets import ISLAND_SEASON_TASK_RECEIVE_ALL
+        from module.island_planner.season_tasks import IslandSeasonTaskScanner
+        from module.ui.page import page_island_season
+
+        scanner = IslandSeasonTaskScanner.__new__(IslandSeasonTaskScanner)
+        scanner.handle_get_items = Mock(return_value=False)
+        scanner.has_white_band = Mock(return_value=True)
+        scanner.device = Mock()
+        scanner.appear = Mock(return_value=False)
+
+        self.assertFalse(scanner.handle_season_get_items())
+        scanner.device.click.assert_not_called()
+        scanner.appear.assert_any_call(GET_ITEMS_1, offset=(20, 100), interval=3)
+        scanner.appear.assert_any_call(ISLAND_SEASON_TASK_RECEIVE_ALL, offset=(20, 20))
+        self.assertNotIn(
+            (page_island_season.check_button,),
+            [call.args for call in scanner.appear.call_args_list],
+        )
+
+    def test_white_band_does_not_click_receive_all_on_regular_task_page(self):
+        from unittest.mock import Mock
+        from module.combat.assets import GET_ITEMS_1
+        from module.island.assets import ISLAND_SEASON_TASK_RECEIVE_ALL
+        from module.island_planner.season_tasks import IslandSeasonTaskScanner
+        from module.ui.page import page_island_season
+
+        scanner = IslandSeasonTaskScanner.__new__(IslandSeasonTaskScanner)
+        scanner.handle_get_items = Mock(return_value=False)
+        scanner.has_white_band = Mock(return_value=True)
+        scanner.device = Mock()
+        scanner.appear = Mock(side_effect=lambda button, **kwargs: (
+            button in (ISLAND_SEASON_TASK_RECEIVE_ALL, page_island_season.check_button)
+        ))
+
+        self.assertFalse(scanner.handle_season_get_items())
+        scanner.device.click.assert_not_called()
+
+    def test_white_band_clicks_receive_all_only_after_detection(self):
+        from unittest.mock import Mock
+        from module.island.assets import ISLAND_SEASON_TASK_RECEIVE_ALL
+        from module.island_planner.season_tasks import IslandSeasonTaskScanner
+        from module.ui.page import page_island_season
+
+        scanner = IslandSeasonTaskScanner.__new__(IslandSeasonTaskScanner)
+        scanner.handle_get_items = Mock(return_value=False)
+        scanner.has_white_band = Mock(return_value=True)
+        scanner.device = Mock()
+        scanner.appear = Mock(side_effect=lambda button, **kwargs: button is ISLAND_SEASON_TASK_RECEIVE_ALL)
+
+        self.assertTrue(scanner.handle_season_get_items())
+        scanner.device.click.assert_called_once_with(ISLAND_SEASON_TASK_RECEIVE_ALL)
+        scanner.appear.assert_any_call(ISLAND_SEASON_TASK_RECEIVE_ALL, offset=(20, 20))
+
     def test_planner_keeps_saved_targets_when_scan_fails(self):
         from module.island_planner.planner import IslandProductionPlanner
         with patch.object(IslandProductionPlanner, '__init__', lambda self: None):
