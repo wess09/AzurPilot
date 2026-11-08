@@ -156,7 +156,11 @@ class IslandSeasonTaskScanner(IslandUI):
         if self.appear(GET_ITEMS_1, offset=(20, 100), interval=3):
             self.device.click(ISLAND_SEASON_TASK_RECEIVE_ALL)
             return True
-        if self.has_white_band() and not self.appear(page_island_season.check_button):
+        if (
+            self.has_white_band()
+            and self.appear(ISLAND_SEASON_TASK_RECEIVE_ALL, offset=(20, 20))
+            and not self.appear(page_island_season.check_button)
+        ):
             self.device.click(ISLAND_SEASON_TASK_RECEIVE_ALL)
             return True
         return False
