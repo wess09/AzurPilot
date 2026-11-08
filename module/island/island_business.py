@@ -201,6 +201,7 @@ class IslandBusiness(Island):
             ],
             '白熊饮品': [
                 {'name': 'spring_flower_tea', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_SPRING_FLOWER_TEA},
+                {'name': 'banana_mango', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_BANANA_MANGO},
                 {'name': 'strawberry_lemon', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_STRAWBERRY_LEMON},
                 {'name': 'strawberry_honey', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_STRAWBERRY_HONEY},
                 {'name': 'floral_fruity', 'button': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_FLORAL_FRUITY},
@@ -253,6 +254,7 @@ class IslandBusiness(Island):
             ],
             '白熊饮品': [
                 {'name': 'spring_flower_tea', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_SPRING_FLOWER_TEA_CROPPED},
+                {'name': 'banana_mango', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_BANANA_MANGO_CROPPED},
                 {'name': 'strawberry_lemon', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_STRAWBERRY_LEMON_CROPPED},
                 {'name': 'strawberry_honey', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_STRAWBERRY_HONEY_CROPPED},
                 {'name': 'floral_fruity', 'template': TEMPLATE_BUSINESS_PRODUCT_TEAHOUSE_FLORAL_FRUITY_CROPPED},
