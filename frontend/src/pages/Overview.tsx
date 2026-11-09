@@ -4,6 +4,7 @@
 
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from 'react'
 import { useParams } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react'
 import { api } from '../api/client'
 import type { Overview as OverviewData } from '../api/types'
 import { useApp, useConnection } from '../app/context'
@@ -79,7 +80,7 @@ export function Overview() {
             aria-label={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             title={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             onClick={() => {setOverviewPanel(panel === 'stats' ? 'logs' : 'stats')}}
-          >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}</button>
+          >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}<ChevronRight size={13}/></button>
           {actions}
         </section>
       </LegacyRail>

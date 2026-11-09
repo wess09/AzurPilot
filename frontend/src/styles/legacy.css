@@ -299,16 +299,28 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 .scheduler-stats > div {
   padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--theme-inset-bg);
-  border: 1px solid var(--border);
+  border-radius: var(--theme-radius-control, 10px);
+  background: var(--surface-muted, #f5f6f9);
+  border: none;
   box-sizing: border-box;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
   -webkit-backdrop-filter: var(--theme-inset-filter);
   backdrop-filter: var(--theme-inset-filter);
-  transition: border-color .15s ease, background-color .15s ease;
+  transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
 }
 .scheduler-stats > div:hover {
-  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface-muted, #f5f6f9));
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+:root[data-theme='legacy-dark'] .scheduler-stats > div {
+  background: rgba(0, 0, 0, 0.22);
+  border: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+:root[data-theme='legacy-dark'] .scheduler-stats > div:hover {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 .scheduler-stats span {
   display: block;
@@ -593,45 +605,50 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     cursor: col-resize !important;
     user-select: none !important;
   }
-  /* 左列一体化卡片容器：整列融为一张面板，靠分隔线划分调度器、统计卡与队列，消除透底白色间隙。 */
+  /* 面板骨架只留滚动与伸缩。底色、描边、滤镜集中在下文「调度器面板（2026-11 改版）」，
+     这里不再声明 —— 那批带 [data-theme][data-material] 的旧值会以更高特异度抢在玻璃规则前面，
+     深色玻璃就永远只是一块实的 #23252a，叠多少层模糊都透不出来。 */
   .instance-page-rail {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
     min-height: 0;
     overflow-y: auto;
-    background: var(--theme-plate-bg);
-    -webkit-backdrop-filter: var(--theme-plate-filter);
-    backdrop-filter: var(--theme-plate-filter);
-    border: 1px solid var(--border);
-    border-radius: var(--theme-radius-panel, 16px);
   }
-  .instance-page-rail .rail-task-list {flex: 1 1 0%; min-height: 0; overflow-y: auto}
   .instance-page-rail .scheduler-widget {
-    margin: 0;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    padding: 16px 16px 14px;
+    flex-shrink: 0;
   }
   .instance-page-rail .legacy-stat-card {
-    background: transparent;
-    border: 0;
-    border-top: 1px solid var(--border);
-    border-radius: 0;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    padding: 10px 14px;
+    flex-shrink: 0;
   }
   .instance-page-rail .rail-schedule {
-    padding: 12px 12px 10px;
-    background: transparent;
-    border: 0;
-    border-top: 1px solid var(--border);
-    border-radius: 0;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
+    padding: 14px 14px 12px;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .instance-page-rail .rail-task-list {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* 调度器主操作按钮柔和拟物阴影 */
+  .instance-page-rail .scheduler-toggle {
+    border-radius: var(--theme-radius-button, 20px);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  .instance-page-rail .scheduler-toggle:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .instance-page-rail .scheduler-toggle.danger {
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--red) 30%, transparent);
+  }
+  .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--red) 40%, transparent);
   }
   /* 右栏不滚，滚动交给面板：滚动条只在面板内出现与消失，同列的资源卡片宽度不变。 */
   .instance-page-main {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden}
@@ -743,9 +760,31 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .legacy-stat-card {display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; flex-shrink: 0; background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 /* 切换主区显示日志还是统计：两个状态都要有隐藏式的悬停选取框。
    选中态不用手型指针：它已不可再点，避免鼠标压在按钮上时看起来像还残留着高亮。 */
-.legacy-stat-title {padding: 3px 8px; margin-left: -8px; border: 1px solid transparent; border-radius: var(--theme-radius-control, 8px); background: none; color: var(--text); font: inherit; font-size: 15px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background-color .15s, border-color .15s, color .15s}
-.legacy-stat-title:hover {border-color: var(--accent); background: var(--accent-soft); color: var(--accent)}
-.legacy-stat-title[aria-pressed='true'] {cursor: default}
+.legacy-stat-title {
+  padding: 4px 10px;
+  margin-left: -6px;
+  border: none;
+  border-radius: var(--theme-radius-control, 8px);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, box-shadow .15s ease;
+}
+.legacy-stat-title:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+.legacy-stat-title[aria-pressed='true'] {
+  cursor: default;
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
 .legacy-stat-title:focus-visible {outline: 2px solid var(--accent); outline-offset: 1px}
 /* 统计内容的滚动容器：内容层只自然撑高，滚动条在本层出现。 */
 .instance-panel-stats {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
@@ -812,19 +851,178 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .log-rule.rule-double .rule-bar {opacity: 1; border-color: var(--border)}
 .preview-screen .radar > div, .radar::before, .radar::after {display: none}
 .live-label {border-color: var(--green)}
-.rail-task-list {display: flex; flex-direction: column; gap: 12px}
-.rail-queue-group {flex-shrink: 0; border: 1px solid var(--border); border-radius: var(--theme-radius-panel); overflow: hidden}
-.rail-queue-group.running, .rail-queue-group.pending, .rail-queue-group.waiting {background: var(--theme-inset-bg); border-color: var(--border); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-.rail-queue-heading {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border)}
-.rail-queue-heading > div {display: flex; align-items: center; gap: 8px; font-size: 12px}
-.rail-queue-heading > span {color: var(--muted); font-size: 11px}
+.rail-task-list {display: flex; flex-direction: column; gap: 10px}
+.rail-queue-group {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+.rail-queue-group.running,
+.rail-queue-group.waiting {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.rail-queue-group.pending {
+  border-radius: var(--theme-radius-control, 12px);
+  background: #f4f5f9;
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.035), inset 0 0 1px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.02);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.rail-queue-group.waiting {
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-theme='legacy-dark'] .rail-queue-group,
+:root[data-theme='legacy-dark'] .rail-queue-group.running,
+:root[data-theme='legacy-dark'] .rail-queue-group.waiting {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+:root[data-theme='legacy-dark'] .rail-queue-group.pending {
+  background: #27292e;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.4);
+}
+.rail-queue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px 6px;
+  border-bottom: none;
+}
+.rail-queue-heading > div {display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600}
+.rail-queue-heading > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+}
+:root[data-theme='legacy-dark'] .rail-queue-heading > span {
+  background: rgba(255, 255, 255, 0.06);
+}
 .rail-queue-heading svg {color: var(--secondary)}
 .rail-queue-body {padding: 4px}
 .rail-queue-empty {padding: 14px 12px; color: var(--muted); font-size: 12px; line-height: 1.6}
-.rail-task-item {padding: 10px 8px; border-radius: 4px}
-.rail-task-item:hover {background: var(--surface-muted)}
-.rail-task-item strong {font-size: 12px}
-.rail-task-item small {font-size: 11px}
+.rail-task-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 13px;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 12px;
+  margin: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.035);
+  border-radius: 9px;
+  background: #ffffff;
+  box-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.04), 0 3px 10px -1px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.rail-task-item:hover {
+  background: #ffffff;
+  transform: translateY(-1.5px);
+  border-color: rgba(0, 0, 0, 0.07);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05), 0 6px 16px -2px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 1);
+  color: var(--text);
+}
+.rail-task-item:hover svg:last-child {
+  transform: translateX(2px);
+  color: var(--accent);
+}
+:root[data-theme='legacy-dark'] .rail-task-item {
+  background: #36393f;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3), 0 6px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+:root[data-theme='legacy-dark'] .rail-task-item:hover {
+  background: #3d4148;
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  color: var(--text);
+}
+.rail-task-item strong {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.rail-task-item small {
+  font-size: 11px;
+  color: var(--muted);
+  opacity: 0.88;
+  margin-top: 1px;
+}
+.rail-task-item svg:last-child {
+  color: var(--secondary);
+  opacity: 0.6;
+  transition: transform .15s ease, color .15s ease;
+}
+.rail-task-item .task-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 550;
+  line-height: 1;
+  box-sizing: border-box;
+  border: none;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.rail-task-item .task-state.running {
+  background: #e6f6ee;
+  color: #1b7a37;
+  border: 1px solid rgba(27, 122, 55, 0.08);
+  box-shadow: inset 0 1px 2px rgba(27, 122, 55, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.rail-task-item .task-state.pending {
+  background: #ecebf8;
+  color: #43408a;
+  border: 1px solid rgba(67, 64, 138, 0.08);
+  box-shadow: inset 0 1px 2px rgba(67, 64, 138, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.rail-task-item .task-state.waiting {
+  padding: 0 7px;
+  min-width: 25px;
+  justify-content: center;
+  background: #eef0f6;
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+:root[data-theme='legacy-dark'] .rail-task-item .task-state.running {
+  background: #1c3524;
+  color: #5ce690;
+  border: 1px solid rgba(92, 230, 144, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+:root[data-theme='legacy-dark'] .rail-task-item .task-state.pending {
+  background: #312f55;
+  color: #c5c2f0;
+  border: 1px solid rgba(197, 194, 240, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+:root[data-theme='legacy-dark'] .rail-task-item .task-state.waiting {
+  background: #27292f;
+  color: #a5b4fc;
+  border: 1px solid rgba(165, 180, 252, 0.1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
+}
 .modal {
   border: 0;
   border-radius: var(--theme-radius-modal, 28px);
@@ -892,4 +1090,668 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* 无障碍覆盖放在经典布局样式之后，避免普通规则重新打开滤镜。 */
 @media (prefers-contrast: more), (forced-colors: active) {
   .sidebar, .right-rail, .instance-menu, .group-nav, .panel, .resource-card {background: var(--theme-surface); -webkit-backdrop-filter: none; backdrop-filter: none}
+}
+
+/* ===== 调度器面板（2026-11 改版）=====
+   左列是一块面板而不是三张卡片：调度器、统计入口、任务计划同处一个白面，
+   内边距 20、节间 18，和设计稿的单面板结构一致。
+   运行中与待运行合并为一个「任务计划」列表，状态由卡片右侧文字承担，
+   运行中用三点呼吸 + 文字扫光表示调度器正在跑它；整屏不使用状态色。 */
+
+/* 面板材质变量：普通材质是一块实色白面，玻璃材质在下面改成渐变玻璃 + 磨砂。 */
+:root {
+  --rail-panel-bg: var(--surface, #ffffff);
+  --rail-panel-edge: color-mix(in srgb, var(--text) 7%, transparent);
+  --rail-panel-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 14px 34px -22px rgba(0, 0, 0, 0.32);
+  --rail-panel-filter: none;
+}
+
+/* 托盘本体即面板：去掉内凹托盘的底色与滤镜，换成设计稿的白面。
+   底色/描边/投影/滤镜都走 --rail-panel-* 变量：普通材质与玻璃材质的差别只写在变量里，
+   不去拼 `[data-material='glass'] .instance-page-rail` 这类选择器 —— 那种写法一旦和
+   带 [data-theme][data-material] 的暗色规则撞上，特异度差一级就会整块面板退回实色。 */
+.instance-page-rail,
+:root[data-material] .instance-page-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid var(--rail-panel-edge);
+  border-radius: 20px;
+  background: var(--rail-panel-bg);
+  box-shadow: var(--rail-panel-shadow);
+  -webkit-backdrop-filter: var(--rail-panel-filter);
+  backdrop-filter: var(--rail-panel-filter);
+}
+/* 三块内容退成面板里的普通区块：不再各自带面、描边、投影。 */
+.instance-page-rail .scheduler-widget,
+.instance-page-rail .legacy-stat-card,
+.instance-page-rail .rail-schedule {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  transition: none;
+}
+.instance-page-rail .scheduler-widget {flex-shrink: 0}
+.instance-page-rail .legacy-stat-card {flex-shrink: 0}
+/* 面板撑满左列上下两端：高度与内部滚动沿用布局层的 951px 规则，
+   这里只把三块内容的面去掉，别再改它们的伸缩方式。 */
+
+/* 标题：18px 图标 + 15px 文案，与设计稿同层。 */
+.scheduler-widget-heading {margin-bottom: 16px}
+.scheduler-widget-heading > div {gap: 8px; font-size: 15px; font-weight: 600; color: var(--text)}
+.scheduler-widget-heading > div > svg {color: var(--text)}
+
+/* 三态计数：一块浅底，竖分隔线只到内容高度，不再是一格一张小卡。 */
+.scheduler-stats {
+  gap: 0;
+  margin-bottom: 16px;
+  padding: 13px 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.scheduler-stats > div {
+  padding: 0 15px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  /* 分格必须连模糊一起关掉：低透明度元素挂 backdrop-filter 时，
+     模糊在四边采样不到内容，会在每格边缘留下一圈亮边，三格拼起来像套了个错位的圆角框。 */
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.scheduler-stats > div:hover {background: none; box-shadow: none; transform: none}
+:root[data-theme='legacy-dark'] .scheduler-stats > div,
+:root[data-theme='legacy-dark'] .scheduler-stats > div:hover {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  transform: none;
+}
+.scheduler-stats > div + div {border-left: 1px solid color-mix(in srgb, var(--text) 8%, transparent)}
+.scheduler-stats strong {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  color: var(--text);
+}
+.scheduler-stats span {margin: 3px 0 0; font-size: 12px; color: color-mix(in srgb, var(--text) 55%, transparent)}
+.scheduler-stats > div.running span {color: var(--text)}
+.scheduler-stats > div.pending strong,
+.scheduler-stats > div.pending span {color: color-mix(in srgb, var(--text) 55%, transparent)}
+.scheduler-stats > div.waiting strong,
+.scheduler-stats > div.waiting span {color: color-mix(in srgb, var(--text) 30%, transparent)}
+
+/* 启停按钮：10 圆角、无描边无投影，破坏性操作只留一层淡红底。
+   主题里 `:root[data-theme] .button` 的圆角特异度更高，这里一并盖掉。 */
+.scheduler-toggle,
+:root[data-theme] .scheduler-toggle,
+.instance-page-rail .scheduler-toggle {
+  height: 40px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: none;
+}
+.instance-page-rail .scheduler-toggle:hover:not(:disabled),
+.instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+.scheduler-toggle.danger,
+.instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 5.5%, transparent);
+  color: var(--red);
+  border: 0;
+  box-shadow: none;
+}
+.instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {background: color-mix(in srgb, var(--red) 10%, transparent)}
+
+/* 启动态：中性主按钮。整块面板只有「停止」一处带颜色。 */
+.scheduler-toggle.primary,
+:root[data-theme] .scheduler-toggle.primary {
+  background: var(--text);
+  color: var(--surface, #ffffff);
+  box-shadow: none;
+}
+.scheduler-toggle.primary:hover:not(:disabled),
+:root[data-theme] .scheduler-toggle.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 88%, var(--surface, #ffffff));
+  box-shadow: none;
+}
+.scheduler-toggle.primary:disabled,
+:root[data-theme] .scheduler-toggle.primary:disabled {
+  background: color-mix(in srgb, var(--text) 10%, var(--surface, #ffffff));
+  color: color-mix(in srgb, var(--text) 38%, transparent);
+  box-shadow: none;
+}
+
+/* 「统计」入口：整行一条描边，标题在左、仪表盘设置在右，两者都在同一行内。 */
+.instance-page-rail .legacy-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 0;
+  background: var(--surface, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 10px;
+  box-shadow: none;
+}
+.legacy-stat-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  flex: 1 1 auto;
+  height: 42px;
+  margin: 0;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px 0 0 10px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.legacy-stat-title > svg {color: color-mix(in srgb, var(--text) 30%, transparent); transition: transform .15s ease}
+.legacy-stat-title:hover > svg {transform: none; color: color-mix(in srgb, var(--text) 55%, transparent)}
+/* 悬停与「已切到统计」都用中性灰：面板里不该再出现第二种强调色。 */
+.legacy-stat-title:hover,
+.legacy-stat-title[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  box-shadow: none;
+}
+/* 齿轮是行内图标按钮，不要再套一层白色方块。 */
+.instance-page-rail .legacy-stat-card > .button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+.instance-page-rail .legacy-stat-card > .button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+}
+
+/* 任务计划：标题与卡片同处面板，卡片之间 8px。
+   底部留 8px：列表是滚动容器，最后一张卡贴在裁切边上会被切掉 1px 描边。 */
+.rail-task-list {gap: 10px; padding: 0 0 8px}
+/* 列表是纵向滚动容器，横向也会裁切：向两侧各外扩 6px 再补回等量内边距，
+   卡片位置不变，左右两侧的投影才不会被切掉。 */
+.instance-page-rail .rail-task-list {margin: 0 -6px; padding: 0 6px 8px}
+/* 任务设置页的右栏自己带「任务计划」标题与计数，队列里的标题不重复。 */
+.task-rail-scheduler .rail-task-heading {display: none}
+/* 卡片带投影，列表容器不能再裁切；条目离场仍靠自身高度补间收起。 */
+.rail-queue-group.tasks {overflow: visible}
+.rail-task-heading {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px}
+.rail-task-heading strong {font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--text) 55%, transparent)}
+.rail-task-heading > span {font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 26%, transparent)}
+
+.rail-queue-body {display: flex; flex-direction: column; gap: 8px; padding: 0}
+
+.rail-task-item {
+  padding: 12px 14px;
+  margin: 0;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-radius: 12px;
+  background: var(--surface, #ffffff);
+  box-shadow: none;
+}
+/* 布局层有一条 `.rail-task-item:last-child {border-bottom: none}`（特异度 0,2,0），
+   卡片是完整描边后它会让列表最后一张永远缺一条底边；这里用同样的特异度补回来。 */
+.rail-task-item:last-child {border: 1px solid color-mix(in srgb, var(--text) 8%, transparent)}
+/* 悬停只做一档灰度：不位移、不加投影、不把箭头染成品牌色。 */
+.rail-task-item:hover {
+  background: color-mix(in srgb, var(--text) 2.5%, var(--surface, #ffffff));
+  transform: none;
+  border-color: color-mix(in srgb, var(--text) 11%, transparent);
+  box-shadow: none;
+}
+/* 运行中的卡片自带一层投影，悬停时保持不变。 */
+.rail-task-item.running:hover {
+  border-color: color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 9px rgba(0, 0, 0, 0.07);
+}
+.rail-task-item.waiting:hover {background: color-mix(in srgb, var(--text) 5.5%, var(--surface, #ffffff))}
+/* 运行中：抬一层，与同组其他卡片拉开重量差。
+   用不带负扩散的双层阴影，四边都能看到一点，不会只剩上下两条。 */
+.rail-task-item.running {
+  border-color: color-mix(in srgb, var(--text) 12%, transparent);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 9px rgba(0, 0, 0, 0.07);
+}
+/* 等待中：不上描边，浅一档底色 + 退一档字色。 */
+.rail-task-item.waiting {
+  background: color-mix(in srgb, var(--text) 3%, var(--surface, #ffffff));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.rail-task-main {min-width: 0}
+.rail-task-item strong {font-size: 13px; font-weight: 600; line-height: 1.4; color: var(--text)}
+.rail-task-item.running strong {font-size: 14px}
+.rail-task-item.waiting strong {font-size: 12px; font-weight: 400; color: color-mix(in srgb, var(--text) 62%, transparent)}
+.rail-task-item small {margin-top: 3px; font-size: 11px; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 45%, transparent); opacity: 1}
+.rail-task-item.waiting small {color: color-mix(in srgb, var(--text) 32%, transparent)}
+.rail-task-item > svg:last-child {color: color-mix(in srgb, var(--text) 22%, transparent); opacity: 1}
+.rail-task-item:hover > svg:last-child {
+  color: color-mix(in srgb, var(--text) 42%, transparent);
+  transform: none;
+  opacity: 1;
+}
+
+.rail-task-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+.rail-task-state.waiting {color: color-mix(in srgb, var(--text) 30%, transparent)}
+.rail-task-state.running {color: var(--text); font-weight: 500}
+/* 扫光：文字本体保持实色，只有一条窄高光从左向右扫过。
+   之前的渐变跨了大半条文字，任意一帧都有一截被冲淡，运行中反而比「待运行」还浅。 */
+.rail-task-state.running .state-label {
+  background-image: linear-gradient(90deg,
+    currentColor 0%,
+    currentColor 43%,
+    color-mix(in srgb, currentColor 38%, transparent) 50%,
+    currentColor 57%,
+    currentColor 100%);
+  /* 图比文字宽 2.5 倍、且不重复：0% 与 100% 两个端点都把光带放在文字之外，
+     一轮结束时它已经整条扫出右侧，不会在末尾半路消失再从左跳回来。 */
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: scheduler-shimmer 1.9s linear infinite;
+}
+/* 三点外圈的一层柔光，随呼吸一起放大缩小。 */
+.thinking-dots {position: relative; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0}
+.thinking-dots::before {
+  content: '';
+  position: absolute;
+  inset: -4px -6px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, currentColor 15%, transparent), transparent 100%);
+  animation: scheduler-halo 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+.thinking-dots i {
+  position: relative;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: scheduler-breathe 1.2s ease-in-out infinite;
+}
+.thinking-dots i:nth-child(2) {animation-delay: .15s}
+.thinking-dots i:nth-child(3) {animation-delay: .3s}
+
+@keyframes scheduler-shimmer {
+  from {background-position: 100% 0}
+  to {background-position: 0 0}
+}
+@keyframes scheduler-breathe {
+  0%, 100% {opacity: .18; transform: scale(.8)}
+  50% {opacity: 1; transform: scale(1)}
+}
+@keyframes scheduler-halo {
+  0%, 100% {opacity: .2; transform: scale(.82)}
+  50% {opacity: 1; transform: scale(1.08)}
+}
+
+/* 暗色：淡红底要提亮，字才能压在底上。 */
+:root[data-theme='legacy-dark'] .scheduler-toggle.danger,
+:root[data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: color-mix(in srgb, var(--red) 55%, #ffffff);
+}
+:root[data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 22%, transparent);
+}
+:root[data-theme='legacy-dark'] .rail-task-item.running {
+  background: color-mix(in srgb, #ffffff 7%, var(--surface, #2f3136));
+  border-color: color-mix(in srgb, #ffffff 14%, transparent);
+}
+:root[data-theme='legacy-dark'] .rail-task-item.waiting {
+  background: color-mix(in srgb, var(--text) 5%, var(--surface, #2f3136));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-dots i,
+  .thinking-dots::before,
+  .rail-task-state.running .state-label {animation: none}
+  .thinking-dots::before {display: none}
+  .rail-task-state.running .state-label {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
+
+/* ===== 玻璃材质：多重高斯模糊的层进 =====
+   普通材质里，三层状态靠描边、字号与表面色区分；玻璃材质里改由「玻璃层数」承担：
+   每往下压一层，就再叠一次高斯模糊、再加厚一层玻璃，于是越靠前越清亮、
+   越靠后越乳浊。累积模糊 12 → 2 / 14 / 30（面板之上再加）：
+   面板是一张薄玻璃，计数块被压成内凹的井，运行中的卡片贴在玻璃最前面、
+   边缘有镜面高光与投影，待运行退到中景，等待中沉到最后面，只剩一片去色的霜。
+
+   两条经验写在实现里：
+   1. 内层增量不能太小 —— 外层模糊已经把细节吃干净时，加 1~2px 是看不出来的；
+   2. 模糊与饱和度都是**逐层相乘**的，内层的值要按外层的倍数折算，
+      否则「×0.34」乘在面板已经 ×1.65 的底子上，几乎看不出差别。
+
+   材质色板：亮色是「白玻璃压在亮底上」，暗色是「白雾压在暗底上」。
+   两者的差别只在下面这组变量，规则本身共用 —— 暗色不能沿用亮色的描边浓度，
+   否则每张卡都会变成一圈灰色轮廓线，看起来像线框而不是玻璃。 */
+
+:root[data-material='glass'] {
+  /* 模糊：面板 12，卡片按远近依次 +2 / +14 / +30。 */
+  --rail-glass-panel-blur: 12px;
+  --rail-glass-run-blur: 2px;
+  --rail-glass-queue-blur: 14px;
+  --rail-glass-idle-blur: 30px;
+
+  /* 面板 */
+  --rail-glass-panel-sheen: 0;
+  --rail-glass-panel-a: color-mix(in srgb, var(--surface) 62%, transparent);
+  --rail-glass-panel-b: color-mix(in srgb, var(--surface) 36%, transparent);
+  --rail-glass-panel-c: color-mix(in srgb, var(--surface) 50%, transparent);
+  --rail-glass-panel-edge: color-mix(in srgb, #ffffff 52%, transparent);
+  --rail-glass-panel-highlight: color-mix(in srgb, #ffffff 62%, transparent);
+  --rail-glass-panel-shadow: 0 1px 2px rgba(0, 0, 0, .05), 0 30px 64px -34px rgba(0, 0, 0, .55);
+  --rail-glass-panel-saturate: 165%;
+  /* 面板是这套材质的第 0 层，材质差异全部落在这里，不另写选择器。 */
+  --rail-panel-bg:
+    linear-gradient(168deg,
+      rgb(255 255 255 / var(--rail-glass-panel-sheen)) 0%,
+      rgb(255 255 255 / 0) 38%),
+    linear-gradient(158deg, var(--rail-glass-panel-a) 0%, var(--rail-glass-panel-b) 48%, var(--rail-glass-panel-c) 100%);
+  --rail-panel-edge: var(--rail-glass-panel-edge);
+  --rail-panel-shadow:
+    inset 0 1px 0 var(--rail-glass-panel-highlight),
+    inset 0 -1px 0 color-mix(in srgb, var(--text) 7%, transparent),
+    var(--rail-glass-panel-shadow);
+  --rail-panel-filter: blur(var(--rail-glass-panel-blur)) saturate(var(--rail-glass-panel-saturate));
+
+  /* 计数井：同一张玻璃上刻出来的凹槽 */
+  --rail-glass-well-bg: color-mix(in srgb, var(--text) 7.5%, transparent);
+  --rail-glass-well-top: color-mix(in srgb, #000000 13%, transparent);
+  --rail-glass-well-bottom: color-mix(in srgb, #ffffff 26%, transparent);
+
+  /* 「统计」行 */
+  --rail-glass-stat-bg: color-mix(in srgb, var(--surface) 32%, transparent);
+  --rail-glass-stat-edge: color-mix(in srgb, #ffffff 30%, transparent);
+  --rail-glass-stat-highlight: color-mix(in srgb, #ffffff 34%, transparent);
+
+  /* 卡片：三档厚度共用一个骨架 */
+  --rail-sheen-run: .50;
+  --rail-sheen-queue: .28;
+  --rail-sheen-idle: .12;
+  --rail-glass-card-bg: color-mix(in srgb, var(--text) 2%, color-mix(in srgb, var(--surface) 38%, transparent));
+  --rail-glass-card-edge: color-mix(in srgb, #ffffff 34%, transparent);
+  --rail-glass-card-highlight: color-mix(in srgb, #ffffff 46%, transparent);
+  --rail-glass-card-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+  --rail-glass-run-bg: color-mix(in srgb, var(--surface) 76%, transparent);
+  --rail-glass-run-edge: color-mix(in srgb, #ffffff 58%, transparent);
+  --rail-glass-run-highlight: color-mix(in srgb, #ffffff 82%, transparent);
+  --rail-glass-run-shadow: 0 2px 5px -2px rgba(0, 0, 0, .16), 0 12px 26px -14px rgba(0, 0, 0, .42);
+  --rail-glass-idle-bg: color-mix(in srgb, var(--text) 8%, color-mix(in srgb, var(--surface) 26%, transparent));
+  --rail-glass-idle-bg-hover: color-mix(in srgb, var(--text) 8%, color-mix(in srgb, var(--surface) 32%, transparent));
+  --rail-glass-idle-shadow: inset 0 1px 6px color-mix(in srgb, #000000 6%, transparent);
+}
+
+:root[data-material='glass'][data-theme='legacy-dark'] {
+  /* 暗色没有「白玻璃」可压：抬一层白雾的浓度，同时把描边压到只够勾出形状。
+     背景多半是深色壁纸，透明只会换来一片黑，玻璃感要靠「薄雾 + 上沿高光 + 逐层提亮」，
+     所以这里反而要给每一层加白，并且把背景彩度压回来（暖色壁纸 ×1.65 会变成褐色玻璃）。 */
+  /* 暗色不能沿用亮色的彩度：深色壁纸多带暖调，×1.65 会把面板染成褐色玻璃。 */
+  --rail-glass-panel-saturate: 108%;
+  --rail-glass-panel-sheen: .06;
+  --rail-glass-panel-a: color-mix(in srgb, #ffffff 5%, color-mix(in srgb, var(--surface) 74%, transparent));
+  --rail-glass-panel-b: color-mix(in srgb, #ffffff 3%, color-mix(in srgb, var(--surface) 56%, transparent));
+  --rail-glass-panel-c: color-mix(in srgb, #ffffff 4%, color-mix(in srgb, var(--surface) 62%, transparent));
+  --rail-glass-panel-edge: color-mix(in srgb, #ffffff 13%, transparent);
+  --rail-glass-panel-highlight: color-mix(in srgb, #ffffff 22%, transparent);
+  --rail-glass-panel-shadow: 0 1px 0 rgba(255, 255, 255, .02), 0 24px 60px -30px rgba(0, 0, 0, .9);
+
+  --rail-glass-well-bg: color-mix(in srgb, #000000 28%, transparent);
+  --rail-glass-well-top: color-mix(in srgb, #000000 42%, transparent);
+  --rail-glass-well-bottom: color-mix(in srgb, #ffffff 6%, transparent);
+
+  --rail-glass-stat-bg: color-mix(in srgb, #ffffff 5%, transparent);
+  --rail-glass-stat-edge: transparent;
+  --rail-glass-stat-highlight: color-mix(in srgb, #ffffff 9%, transparent);
+
+  --rail-sheen-run: .13;
+  --rail-sheen-queue: .07;
+  --rail-sheen-idle: .025;
+  --rail-glass-card-bg: color-mix(in srgb, #ffffff 6%, color-mix(in srgb, var(--surface) 50%, transparent));
+  --rail-glass-card-edge: color-mix(in srgb, #ffffff 15%, transparent);
+  --rail-glass-card-highlight: color-mix(in srgb, #ffffff 22%, transparent);
+  --rail-glass-card-shadow: 0 1px 2px rgba(0, 0, 0, .26), inset 0 -1px 0 rgba(0, 0, 0, .18);
+  --rail-glass-run-bg: color-mix(in srgb, #ffffff 14%, color-mix(in srgb, var(--surface) 70%, transparent));
+  --rail-glass-run-edge: color-mix(in srgb, #ffffff 30%, transparent);
+  --rail-glass-run-highlight: color-mix(in srgb, #ffffff 42%, transparent);
+  --rail-glass-run-shadow: 0 2px 6px rgba(0, 0, 0, .32), 0 12px 26px -14px rgba(0, 0, 0, .7);
+  --rail-glass-idle-bg: color-mix(in srgb, #000000 26%, color-mix(in srgb, var(--surface) 30%, transparent));
+  --rail-glass-idle-bg-hover: color-mix(in srgb, #000000 20%, color-mix(in srgb, var(--surface) 36%, transparent));
+  --rail-glass-idle-shadow: inset 0 1px 8px rgba(0, 0, 0, .34);
+}
+
+/* 第一层：面板。半透明玻璃，上亮下暗的斜向渐变给出厚度，顶沿一道镜面高光。
+   取值在上面 :root[data-material='glass'] 的 --rail-panel-* 里，这里不再重复声明。 */
+
+/* 第二层：计数块下沉成井。凹槽是同一张玻璃上刻出来的，不另叠玻璃：
+   低透明度的元素再挂 backdrop-filter，模糊会在四条边上采样出「亮框」，
+   看起来像套了一层错位的圆角矩形。这里只用内阴影与反光做出凹陷。 */
+:root[data-material='glass'] .scheduler-stats {
+  background: var(--rail-glass-well-bg);
+  box-shadow:
+    inset 0 1px 4px var(--rail-glass-well-top),
+    inset 0 -1px 0 var(--rail-glass-well-bottom);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* 分格必须连模糊一起关掉：它们带着布局层的 --theme-inset-filter，
+   8px 的模糊在每格边缘采样不到内容，三格拼起来就是用户看到的那圈亮框。 */
+:root[data-material='glass'] .scheduler-stats > div {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 「统计」行与卡片同属中景，单独一档更薄的玻璃。 */
+:root[data-material='glass'] .instance-page-rail .legacy-stat-card {
+  background: var(--rail-glass-stat-bg);
+  border: 1px solid var(--rail-glass-stat-edge);
+  box-shadow: inset 0 1px 0 var(--rail-glass-stat-highlight);
+  -webkit-backdrop-filter: blur(7px) saturate(150%);
+  backdrop-filter: blur(7px) saturate(150%);
+}
+
+/* 第三层：任务卡片。三档厚度共用一套骨架，只改模糊增量、厚度与高光强度。 */
+:root[data-material='glass'] .rail-task-item {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / var(--rail-sheen-queue)) 0%,
+      rgb(255 255 255 / 0) 46%,
+      rgb(255 255 255 / calc(var(--rail-sheen-queue) * .55)) 100%),
+    var(--rail-glass-card-bg);
+  border-color: var(--rail-glass-card-edge);
+  box-shadow:
+    inset 0 1px 0 var(--rail-glass-card-highlight),
+    var(--rail-glass-card-shadow);
+  -webkit-backdrop-filter: blur(var(--rail-glass-queue-blur)) saturate(88%);
+  backdrop-filter: blur(var(--rail-glass-queue-blur)) saturate(88%);
+}
+/* 运行中：玻璃最前面的一张。更厚（更不透明）、更清（模糊增量最小），
+   边缘高光最亮，并把影子投到下面的队列卡片上。 */
+:root[data-material='glass'] .rail-task-item.running {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / var(--rail-sheen-run)) 0%,
+      rgb(255 255 255 / calc(var(--rail-sheen-run) * .3)) 38%,
+      rgb(255 255 255 / calc(var(--rail-sheen-run) * .62)) 100%),
+    var(--rail-glass-run-bg);
+  border-color: var(--rail-glass-run-edge);
+  box-shadow:
+    inset 0 1px 0 var(--rail-glass-run-highlight),
+    inset 0 -1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    var(--rail-glass-run-shadow);
+  -webkit-backdrop-filter: blur(var(--rail-glass-run-blur)) saturate(110%);
+  backdrop-filter: blur(var(--rail-glass-run-blur)) saturate(110%);
+}
+/* 等待中：最里面的一层。没有厚度、没有描边，去色的霜，靠内阴影压进玻璃里。 */
+:root[data-material='glass'] .rail-task-item.waiting {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / var(--rail-sheen-idle)) 0%,
+      rgb(255 255 255 / 0) 60%),
+    var(--rail-glass-idle-bg);
+  border-color: transparent;
+  box-shadow: var(--rail-glass-idle-shadow);
+  -webkit-backdrop-filter: blur(var(--rail-glass-idle-blur)) saturate(34%);
+  backdrop-filter: blur(var(--rail-glass-idle-blur)) saturate(34%);
+}
+
+/* 玻璃会把字吃掉一档：等待中与分组标题的字色在玻璃上各提一级，层级仍在，但读得出来。 */
+:root[data-material='glass'] .rail-task-heading strong {color: color-mix(in srgb, var(--text) 70%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting strong {color: color-mix(in srgb, var(--text) 68%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting small {color: color-mix(in srgb, var(--text) 42%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting .rail-task-state {color: color-mix(in srgb, var(--text) 44%, transparent)}
+
+/* 悬停只让玻璃「吃到一点光」：边缘提亮、内部高光加深，不加位移与投影。 */
+:root[data-material='glass'] .rail-task-item:hover {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / calc(var(--rail-sheen-queue) + .12)) 0%,
+      rgb(255 255 255 / 0) 52%,
+      rgb(255 255 255 / calc(var(--rail-sheen-queue) * .7)) 100%),
+    var(--rail-glass-card-bg);
+  border-color: var(--rail-glass-card-edge);
+  box-shadow:
+    inset 0 1px 0 var(--rail-glass-card-highlight),
+    var(--rail-glass-card-shadow);
+  transform: none;
+}
+:root[data-material='glass'] .rail-task-item.waiting:hover {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / calc(var(--rail-sheen-idle) + .07)) 0%,
+      rgb(255 255 255 / 0) 64%),
+    var(--rail-glass-idle-bg-hover);
+  border-color: transparent;
+  box-shadow: var(--rail-glass-idle-shadow);
+}
+:root[data-material='glass'] .rail-task-item.running:hover {
+  background:
+    linear-gradient(156deg,
+      rgb(255 255 255 / calc(var(--rail-sheen-run) + .08)) 0%,
+      rgb(255 255 255 / calc(var(--rail-sheen-run) * .34)) 38%,
+      rgb(255 255 255 / calc(var(--rail-sheen-run) * .66)) 100%),
+    var(--rail-glass-run-bg);
+  border-color: var(--rail-glass-run-edge);
+  box-shadow:
+    inset 0 1px 0 var(--rail-glass-run-highlight),
+    inset 0 -1px 0 color-mix(in srgb, var(--text) 6%, transparent),
+    var(--rail-glass-run-shadow);
+}
+
+/* 破坏性操作也用玻璃：一层染红的薄玻璃，而不是一块实色。 */
+:root[data-material='glass'] .instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 16%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent);
+  -webkit-backdrop-filter: blur(6px) saturate(150%);
+  backdrop-filter: blur(6px) saturate(150%);
+}
+:root[data-material='glass'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  border-color: color-mix(in srgb, var(--red) 24%, transparent);
+}
+/* 暗色里红色底不能再加一圈红边，否则像告警输入框：只留底色与一点内高光。 */
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 13%, transparent);
+  border-color: transparent;
+  color: var(--red);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 7%, transparent);
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 19%, transparent);
+  color: color-mix(in srgb, var(--red) 82%, #ffffff);
+}
+
+/* 暗色主按钮：纯白实心压在深玻璃上会像一块奶油板，改成略透的「被照亮的玻璃」。 */
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary {
+  background: color-mix(in srgb, var(--text) 84%, transparent);
+  color: #15161a;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 75%, transparent),
+    0 1px 2px rgba(0, 0, 0, .28);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  backdrop-filter: blur(10px) saturate(140%);
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 92%, transparent);
+}
+
+/* 暗色下计数的最里一档要多一点亮度：30% 的白字压在深底上会糊成灰。 */
+:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting strong,
+:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting span {
+  color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .rail-task-item.waiting .rail-task-state {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+}
+
+/* 不支持背景滤镜的浏览器：退回不透明面，避免出现「透明但什么都没模糊」的糊状。 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-material='glass'] .instance-page-rail,
+  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .rail-task-item,
+  :root[data-material='glass'] .rail-task-item.running {background: var(--surface)}
+  :root[data-material='glass'] .rail-task-item.waiting {background: color-mix(in srgb, var(--text) 3%, var(--surface))}
+}
+
+/* 高对比度模式下取消半透明，文字优先。 */
+@media (prefers-contrast: more), (forced-colors: active) {
+  /* 三档卡片各自的类（.running / .waiting）特异度更高，必须一并列进来，
+     否则高对比度下它们仍会保留半透明与模糊。 */
+  :root[data-material='glass'] .instance-page-rail,
+  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .scheduler-stats,
+  :root[data-material='glass'] .rail-task-item,
+  :root[data-material='glass'] .rail-task-item.running,
+  :root[data-material='glass'] .rail-task-item.waiting,
+  :root[data-material='glass'] .rail-task-item:hover,
+  :root[data-material='glass'] .rail-task-item.running:hover,
+  :root[data-material='glass'] .rail-task-item.waiting:hover {
+    background: var(--theme-surface);
+    border-color: var(--theme-border);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

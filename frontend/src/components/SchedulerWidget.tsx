@@ -4,7 +4,7 @@
 
 import type { ReactNode } from 'react'
 import { useState } from 'react'
-import { CalendarClock, CirclePlay, Play, Square, TriangleAlert } from 'lucide-react'
+import { CalendarClock, Play, Square } from 'lucide-react'
 import { api } from '../api/client'
 import type { Overview } from '../api/types'
 import { useApp, useConnection } from '../app/context'
@@ -42,23 +42,19 @@ export function SchedulerWidget({instance, data, onData, action}: {instance: str
 
   return <section className="scheduler-widget" aria-label={ui('scheduler.title')}>
     <div className="scheduler-widget-heading">
-      <div>{action ?? <CalendarClock size={17}/>}<span>{ui('scheduler.title')}</span></div>
-      <span className={`scheduler-status ${data?.status === 'running' ? 'running' : ''}`}>
-        {data?.status === 'running' ? <CirclePlay size={13}/> : data?.status === 'error' ? <TriangleAlert size={13}/> : <Square size={12}/>}
-        {data?.status === 'running' ? ui('status.running') : data?.status === 'error' ? ui('scheduler.abnormal') : ui('scheduler.stopped')}
-      </span>
+      <div>{action ?? <CalendarClock size={18} strokeWidth={1.8}/>}<span>{ui('scheduler.title')}</span></div>
     </div>
     <div className="scheduler-stats">
-      <div><span>{ui('scheduler.running')}</span><strong>{running}</strong></div>
-      <div><span>{ui('scheduler.pending')}</span><strong>{pending}</strong></div>
-      <div><span>{ui('scheduler.waiting')}</span><strong>{waiting}</strong></div>
+      <div className="running"><strong>{running}</strong><span>{ui('scheduler.running')}</span></div>
+      <div className="pending"><strong>{pending}</strong><span>{ui('scheduler.pending')}</span></div>
+      <div className="waiting"><strong>{waiting}</strong><span>{ui('scheduler.waiting')}</span></div>
     </div>
     <button
       className={`button scheduler-toggle ${data?.status === 'running' ? 'danger' : 'primary'}`}
       onClick={toggleScheduler}
       disabled={!data || busy || connection !== 'ready'}
     >
-      {data?.status === 'running' ? <Square size={14}/> : <Play size={14}/>} {busy ? ui('scheduler.processing') : data?.status === 'running' ? ui('scheduler.stop') : ui('scheduler.start')}
+      {data?.status === 'running' ? <Square size={11} fill="currentColor" strokeWidth={0}/> : <Play size={14}/>} {busy ? ui('scheduler.processing') : data?.status === 'running' ? ui('scheduler.stop') : ui('scheduler.start')}
     </button>
   </section>
 }
