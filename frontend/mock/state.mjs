@@ -27,6 +27,51 @@ const timestamp = date => date.toISOString().slice(0, 19).replace('T', ' ')
 const translate = key => key.split('.').reduce((value, part) => value?.[part], locales['zh-CN']) ?? key
 export const fail = (code, message, details = null) => { throw Object.assign(new Error(message), { code, details }) }
 
+// 侧栏内容检索：与 module/api/search_service.py 保持同源的索引。
+// 只索引 zh-CN 与 en-US 两套文案（中文界面下用英文词也能搜到）；顶层键是任务或共享分组，
+// 第二层 dict 是配置项，配置项里除 name/help 外的字符串值是该控件的下拉标签，一并入索引。
+const SEARCH_LANGUAGES = ['zh-CN', 'en-US']
+const SEARCH_META_KEYS = new Set(['name', 'help'])
+const searchIndex = SEARCH_LANGUAGES.flatMap(language => {
+  const data = locales[language] ?? {}
+  const entries = []
+  for (const [key, meta] of Object.entries(data.Task ?? {})) {
+    if (!meta || typeof meta !== 'object' || Array.isArray(meta)) continue
+    entries.push({kind: 'task', task: key, key, label: meta.name ?? '', help: meta.help ?? '', values: '', haystack: `${key} ${meta.name ?? ''} ${meta.help ?? ''}`})
+  }
+  for (const [task, node] of Object.entries(data)) {
+    if (task === 'Task' || !node || typeof node !== 'object' || Array.isArray(node)) continue
+    const groupLabel = node._info?.name ?? ''
+    if (groupLabel) entries.push({kind: 'group', task, key: '', label: groupLabel, help: '', values: '', haystack: `${task} ${groupLabel}`})
+    for (const [option, meta] of Object.entries(node)) {
+      if (option === '_info' || !meta || typeof meta !== 'object' || Array.isArray(meta)) continue
+      const values = Object.entries(meta)
+        .filter(([name, value]) => !SEARCH_META_KEYS.has(name) && typeof value === 'string')
+        .map(([, value]) => value).join(' ')
+      entries.push({kind: 'option', task, key: option, label: meta.name ?? '', help: meta.help ?? '', values, haystack: `${task} ${option} ${meta.name ?? ''} ${meta.help ?? ''} ${values}`})
+    }
+  }
+  return entries
+})
+
+function searchContent(query) {
+  const needle = String(query).trim().toLowerCase()
+  if (!needle) return {tasks: [], groups: [], options: []}
+  const seen = new Set()
+  const tasks = [], groups = [], options = []
+  for (const entry of searchIndex) {
+    if (!entry.haystack.toLowerCase().includes(needle)) continue
+    const identity = `${entry.kind}|${entry.task}|${entry.key}`
+    if (seen.has(identity)) continue
+    seen.add(identity)
+    const item = {task: entry.task, key: entry.key, label: entry.label, help: entry.help, values: entry.values}
+    if (entry.kind === 'task') tasks.push(item)
+    else if (entry.kind === 'group') groups.push(item)
+    else options.push(item)
+  }
+  return {tasks, groups, options}
+}
+
 function validateField(path, value) {
   const parts = path.split('.')
   const field = parts.length === 3 && parts.reduce((node, key) => Object.hasOwn(node ?? {}, key) ? node[key] : undefined, args)
@@ -489,6 +534,7 @@ export function createMockState({ empty = false } = {}) {
       case 'updater.cancel': return { accepted: true }
       case 'system.ping': return { pong: true }
       case 'schema.get': return { args, menu, translations: locales[params.language] }
+      case 'search.content': return searchContent(params.query)
       case 'instances.list': return [...instances].map(([name, item]) => ({ name, status: item.status, currentTask: item.status === 'running' ? item.currentTask ?? 'Commission' : null, serial: item.values.Alas.Emulator.Serial, server: item.values.Alas.Emulator.ServerName, region: region(item.values.Alas.Emulator.PackageName) }))
       case 'instances.importable': return [...importedConfigs].map(([name, {modified}]) => ({name, modified}))
       case 'instances.importConfig': {

@@ -52,10 +52,13 @@ export function SearchHits({search, onNavigate}: {search: string; onNavigate?: (
     onNavigate?.()
   }
 
+  /* 没有命中就不渲染：任务名过滤已由侧栏树自己完成，空态提示只会增加噪音。 */
+  if (!hits.length) return null
+
   return (
     <div className="nav-search-hits">
       <div className="sidebar-label">{ui('nav.searchConfigGroup')}</div>
-      {hits.length ? hits.map(hit => (
+      {hits.map(hit => (
         <button
           key={`${hit.card ? 'group' : 'option'}.${hit.task}.${hit.key}`}
           type="button"
@@ -66,7 +69,7 @@ export function SearchHits({search, onNavigate}: {search: string; onNavigate?: (
           <span className="nav-search-hit-path">{hit.card ? hit.task : `${hit.task}.${hit.key}`}</span>
           {hit.help && <span className="nav-search-hit-help">{hit.help}</span>}
         </button>
-      )) : <div className="nav-search-empty">{ui('nav.searchConfigEmpty')}</div>}
+      ))}
     </div>
   )
 }

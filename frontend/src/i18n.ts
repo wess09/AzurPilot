@@ -10,6 +10,7 @@ import {mindZhCN, mindZhTW, mindEnUS, mindJaJP} from './mind/i18n'
 
 import { developerEnUS, developerJaJP, developerZhCN, developerZhTW } from './i18n.dev'
 import {resourceZhCN, resourceZhTW, resourceEnUS, resourceJaJP} from './i18n.resources'
+import {colorZhCN, colorZhTW, colorEnUS, colorJaJP} from './i18n.colors'
 
 export type Language = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP'
 type TranslationParams = Record<string, string | number>
@@ -22,6 +23,7 @@ export const languages: Record<Language, string> = {
 }
 
 const zhCN = {
+  ...colorZhCN,
   ...resourceZhCN,
   ...analysisZhCN,
   ...mindZhCN,
@@ -141,12 +143,9 @@ const zhCN = {
   'nav.newVersion': '新版本可用',
   'nav.newBadge': '新',
   'developer.enabled': '开发者模式已开启',
-  'nav.taskSearchExpand': '展开任务搜索',
-  'nav.taskSearchCollapse': '收起任务搜索',
   'nav.searchTask': '搜索任务',
   'nav.searchTaskPlaceholder': '搜索任务…',
   'nav.searchConfigGroup': '配置项命中',
-  'nav.searchConfigEmpty': '没有匹配的配置项',
   'nav.taskJump': '跳转到任务',
   'nav.taskJumpEmpty': '没有可跳转的任务',
   'connection.connecting': '正在连接后端，配置输入会保留并在重连后保存；运行操作暂不可用。',
@@ -578,6 +577,7 @@ export type UiKey = keyof typeof zhCN
 export type UiTranslator = (key: UiKey, params?: TranslationParams) => string
 
 const enUS: Record<UiKey, string> = {
+  ...colorEnUS,
   ...resourceEnUS,
   ...analysisEnUS,
   ...mindEnUS,
@@ -663,8 +663,8 @@ const enUS: Record<UiKey, string> = {
   'announcement.unread': 'Unread announcement',
   'announcement.openExternal': 'Open Link',
   'announcement.viewAll': 'View Details',
-  'nav.searchConfigGroup': 'Settings matches', 'nav.searchConfigEmpty': 'No matching settings',
-  'nav.taskConfig': 'Task settings', 'nav.primary': 'Primary navigation', 'nav.open': 'Open navigation', 'nav.close': 'Close navigation', 'nav.openRail': 'Open scheduler and tasks', 'nav.closeRail': 'Close scheduler and tasks', 'nav.railScheduler': 'Switch to scheduler', 'nav.railDirectory': 'Switch to directory', 'task.groupNav': 'Index', 'nav.newVersion': 'New version available', 'nav.taskSearchExpand': 'Expand task search', 'nav.taskSearchCollapse': 'Collapse task search', 'nav.searchTask': 'Search tasks', 'nav.searchTaskPlaceholder': 'Search tasks…', 'nav.taskJump': 'Jump to task', 'nav.taskJumpEmpty': 'No task to jump to',
+  'nav.searchConfigGroup': 'Settings matches',
+  'nav.taskConfig': 'Task settings', 'nav.primary': 'Primary navigation', 'nav.open': 'Open navigation', 'nav.close': 'Close navigation', 'nav.openRail': 'Open scheduler and tasks', 'nav.closeRail': 'Close scheduler and tasks', 'nav.railScheduler': 'Switch to scheduler', 'nav.railDirectory': 'Switch to directory', 'task.groupNav': 'Index', 'nav.newVersion': 'New version available', 'nav.searchTask': 'Search tasks', 'nav.searchTaskPlaceholder': 'Search tasks…', 'nav.taskJump': 'Jump to task', 'nav.taskJumpEmpty': 'No task to jump to',
   'nav.collapse': 'Hide',
   'nav.expand': 'Expand',
   'developer.enabled': 'Developer mode enabled',
@@ -720,6 +720,7 @@ const enUS: Record<UiKey, string> = {
 }
 
 const jaJP: Record<UiKey, string> = {
+  ...colorJaJP,
   ...resourceJaJP,
   ...analysisJaJP,
   ...mindJaJP,
@@ -805,8 +806,8 @@ const jaJP: Record<UiKey, string> = {
   'announcement.unread': '未読の発表',
   'announcement.openExternal': 'リンクを開く',
   'announcement.viewAll': '詳細を見る',
-  'nav.searchConfigGroup': '設定項目の一致', 'nav.searchConfigEmpty': '一致する設定項目はありません',
-  'nav.taskConfig': 'タスク設定', 'nav.primary': 'メインナビゲーション', 'nav.open': 'ナビゲーションを開く', 'nav.close': 'ナビゲーションを閉じる', 'nav.openRail': 'スケジューラーとタスクを開く', 'nav.closeRail': 'スケジューラーとタスクを閉じる', 'nav.railScheduler': 'スケジューラーに切り替え', 'nav.railDirectory': '目次に切り替え', 'task.groupNav': '目次', 'nav.newVersion': '新しいバージョンがあります', 'nav.taskSearchExpand': 'タスク検索を開く', 'nav.taskSearchCollapse': 'タスク検索を閉じる', 'nav.searchTask': 'タスクを検索', 'nav.searchTaskPlaceholder': 'タスクを検索…', 'nav.taskJump': 'タスクへ移動', 'nav.taskJumpEmpty': '移動できるタスクがありません',
+  'nav.searchConfigGroup': '設定項目の一致',
+  'nav.taskConfig': 'タスク設定', 'nav.primary': 'メインナビゲーション', 'nav.open': 'ナビゲーションを開く', 'nav.close': 'ナビゲーションを閉じる', 'nav.openRail': 'スケジューラーとタスクを開く', 'nav.closeRail': 'スケジューラーとタスクを閉じる', 'nav.railScheduler': 'スケジューラーに切り替え', 'nav.railDirectory': '目次に切り替え', 'task.groupNav': '目次', 'nav.newVersion': '新しいバージョンがあります', 'nav.searchTask': 'タスクを検索', 'nav.searchTaskPlaceholder': 'タスクを検索…', 'nav.taskJump': 'タスクへ移動', 'nav.taskJumpEmpty': '移動できるタスクがありません',
   'nav.collapse': '非表示',
   'nav.expand': '展開',
   'developer.enabled': '開発者モードを有効にしました',
@@ -923,6 +924,7 @@ const jaJP: Record<UiKey, string> = {
 }
 
 const zhTW: Record<UiKey, string> = {
+  ...colorZhTW,
   ...resourceZhTW,
   ...analysisZhTW,
   ...mindZhTW,
@@ -1005,8 +1007,8 @@ const zhTW: Record<UiKey, string> = {
   'announcement.unread': '未讀公告',
   'announcement.openExternal': '開啟連結',
   'announcement.viewAll': '查看詳情',
-  'nav.searchConfigGroup': '設定項命中', 'nav.searchConfigEmpty': '沒有符合的設定項',
-  'nav.taskConfig': '任務設定', 'nav.primary': '主導覽', 'nav.open': '開啟導覽', 'nav.close': '關閉導覽', 'nav.openRail': '開啟排程與任務', 'nav.closeRail': '關閉排程與任務', 'nav.railScheduler': '切換到排程器', 'nav.railDirectory': '切換到目錄', 'task.groupNav': '目錄', 'nav.newVersion': '有新版本可用', 'nav.taskSearchExpand': '展開任務搜尋', 'nav.taskSearchCollapse': '收起任務搜尋', 'nav.searchTask': '搜尋任務', 'nav.searchTaskPlaceholder': '搜尋任務…', 'nav.taskJump': '跳轉到任務', 'nav.taskJumpEmpty': '沒有可跳轉的任務',
+  'nav.searchConfigGroup': '設定項命中',
+  'nav.taskConfig': '任務設定', 'nav.primary': '主導覽', 'nav.open': '開啟導覽', 'nav.close': '關閉導覽', 'nav.openRail': '開啟排程與任務', 'nav.closeRail': '關閉排程與任務', 'nav.railScheduler': '切換到排程器', 'nav.railDirectory': '切換到目錄', 'task.groupNav': '目錄', 'nav.newVersion': '有新版本可用', 'nav.searchTask': '搜尋任務', 'nav.searchTaskPlaceholder': '搜尋任務…', 'nav.taskJump': '跳轉到任務', 'nav.taskJumpEmpty': '沒有可跳轉的任務',
   'nav.collapse': '隱藏',
   'nav.expand': '展開',
   'developer.enabled': '開發者模式已開啟',

@@ -102,10 +102,11 @@
   --theme-shadow-floating: 0 2px 6px rgb(0 0 0 / .08);
   --theme-shadow-hover: 0 2px 8px rgb(0 0 0 / .08);
 
-  /* 契约层 —— 导航：选中/悬停统一用浅靛紫底 + 深靛紫字 */
-  --theme-nav-text: var(--text); --theme-nav-icon: #2c2c2c;
-  --theme-nav-active-bg: #e8e8f8; --theme-nav-active-text: #1a1861;
-  --theme-nav-expanded-bg: var(--accent-soft); --theme-nav-hover-bg: var(--accent-soft);
+  /* 契约层 —— 导航：选中与悬停在文字色上叠一层，保持中性；想换色去调色板逐项改 */
+  --theme-nav-text: var(--text); --theme-nav-icon: var(--text);
+  --theme-nav-active-bg: color-mix(in srgb, var(--text) 9%, var(--surface)); --theme-nav-active-text: var(--text);
+  --theme-nav-expanded-bg: color-mix(in srgb, var(--text) 6%, var(--surface));
+  --theme-nav-hover-bg: color-mix(in srgb, var(--text) 5%, var(--surface));
   --theme-nav-popover-edge: var(--border);
   --theme-nav-popover-shadow: 0 1px 2px rgb(0 0 0 / .1);
   --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover);
@@ -113,7 +114,7 @@
   /* 契约层 —— 表单：旧版聚焦不加光圈，只换底边框颜色 */
   --theme-input-bg: var(--theme-control-bg); --theme-input-text: var(--text); --theme-input-border: #8e8e8e;
   --theme-focus: var(--accent); --theme-focus-ring: transparent;
-  --theme-toggle-off: #79747e; --theme-toggle-on: #4e4c97; --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
+  --theme-toggle-off: #79747e; --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
    --theme-segment-border: var(--border);
   --theme-toast-bg: var(--text); --theme-toast-text: var(--surface); --theme-toast-error-bg: var(--red);
   --theme-error-bg: var(--theme-danger-soft); --theme-error-border: var(--red);
@@ -154,22 +155,22 @@
   --theme-warning: #e7c078; --theme-warning-soft: #403723;
   --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent);
 
-  /* 深色下选中菜单改用中靛紫底 + 浅靛紫字 */
-  --theme-nav-icon: #dfdcfb;
-  --theme-nav-active-bg: #3e3b6a; --theme-nav-active-text: #dfdcfb;
+  /* 深色下选中仍是同一条中性思路：文字色压进面里，越深越亮 */
+  --theme-nav-icon: var(--text);
+  --theme-nav-active-bg: color-mix(in srgb, var(--text) 13%, var(--surface)); --theme-nav-active-text: var(--text);
   --theme-nav-popover-edge: #40444b;
   --theme-nav-popover-shadow: 0 2px 10px rgb(0 0 0 / .45);
   --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover); --theme-on-accent: #1a1861;
 
   --theme-input-bg: var(--theme-control-bg); --theme-input-border: var(--border);
-  --theme-toggle-off: #938f99; --theme-toggle-on: #7a77bb; --theme-toggle-knob: #ffffff;
+  --theme-toggle-off: #938f99; --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff;
   --theme-scrollbar-thumb: #5a5e66;
   --theme-shadow-panel: 0 1px 2px rgb(0 0 0 / .2);
   --theme-shadow-popover: 0 4px 12px rgb(0 0 0 / .25);
   --theme-shadow-modal: 0 8px 24px rgb(0 0 0 / .35);
   --theme-shadow-floating: 0 2px 6px rgb(0 0 0 / .2);
   --theme-shadow-hover: 0 2px 8px rgb(0 0 0 / .25);
-  --theme-instance-icon-bg: #7a77bb;
+  --theme-instance-icon-bg: var(--accent);
 }
 
 /* 本族的控件语言是硬朗直角（控件圆角 8px），按钮不跟 apple.css 的 20px 药丸；

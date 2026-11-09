@@ -1030,6 +1030,46 @@
 .palette-swatch i {display: block; width: 12px; height: 22px; border: 1px solid var(--border); border-radius: 3px; background: var(--accent)}
 .palette-swatch i + i {background: var(--secondary)}
 
+/* 全量调色板：一行一个颜色槽位，色块本身就是原生取色器的触发器。
+   令牌名与十六进制并列，改哪一处、对应哪个变量都看得见；改过的行加粗并常驻还原按钮。 */
+.color-palette-modal {width: min(780px, 94vw); height: min(88vh, 900px); display: flex; flex-direction: column}
+.color-palette-toolbar {display: flex; align-items: center; gap: 10px; padding: 2px 0 10px}
+.color-palette-mode {flex-shrink: 0}
+.color-palette-search {display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; height: 34px; padding: 0 10px; border-radius: var(--theme-radius-control, 8px); background: var(--surface-muted); color: var(--muted)}
+.color-palette-search input, .color-palette-search input:focus {flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; color: var(--text); font-size: 13px}
+.color-palette-sample {display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 10px; border: 1px dashed color-mix(in srgb, var(--border) 78%, transparent); border-radius: 10px; background: var(--surface-muted)}
+.color-palette-sample .button {min-height: 0; padding: 4px 10px; font-size: 12px}
+.color-palette-sample code {font-size: 11px; font-weight: 600}
+.color-palette-body {flex: 1; min-height: 0; overflow: auto; padding-right: 4px}
+.color-slot-group {margin-bottom: 6px}
+.color-slot-group h3 {display: flex; align-items: center; gap: 6px; margin: 10px 0 2px; padding: 0 6px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase}
+.color-slot-group h3 span:empty {display: none}
+.color-slot-group h3 span {display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10px; letter-spacing: 0}
+.color-slot {display: grid; grid-template-columns: 26px 96px minmax(0, 1fr) 80px 22px; align-items: center; gap: 10px; padding: 3px 6px; border-radius: 7px}
+.color-slot:hover {background: var(--surface-muted)}
+.color-slot-chip {position: relative; display: block; width: 24px; height: 24px; border-radius: 6px; background: var(--slot-color); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 20%, transparent); cursor: pointer}
+.color-slot-chip input[type='color'] {position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 6px; background: transparent; opacity: 0; cursor: pointer}
+.color-slot-chip:has(input:focus-visible) {outline: 2px solid var(--accent); outline-offset: 2px}
+.color-slot-name {min-width: 0; overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap}
+.color-slot.dirty .color-slot-name {font-weight: 600}
+.color-slot-token {min-width: 0; overflow: hidden; color: var(--muted); font-family: var(--theme-font-mono); font-size: 10px; text-overflow: ellipsis; white-space: nowrap}
+.color-slot-hex, .color-slot-hex:focus {width: 100%; min-height: 0; padding: 3px 6px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--text); font-family: var(--theme-font-mono); font-size: 11px; text-align: center; box-shadow: none; text-transform: lowercase}
+.color-slot:hover .color-slot-hex {border-color: var(--border); background: var(--surface)}
+.color-slot-hex:focus {border-color: var(--accent) !important; background: var(--surface) !important}
+.color-slot-reset {display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: var(--muted); opacity: 0; cursor: pointer}
+.color-slot:hover .color-slot-reset:not(:disabled), .color-slot-reset:focus-visible {opacity: 1}
+.color-slot.dirty .color-slot-reset {opacity: 1; color: var(--accent)}
+.color-slot-reset:hover:not(:disabled) {background: var(--accent-soft)}
+.color-slot-reset:disabled {opacity: 0 !important; cursor: default}
+.color-palette-actions {display: flex; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 6px}
+.color-palette-actions p {flex: 1; min-width: 0; margin: 0; color: var(--muted); font-size: 12px}
+@media (max-width: 680px) {
+  .color-slot {grid-template-columns: 26px minmax(0, 1fr) 74px 22px}
+  .color-slot-token {display: none}
+  .color-palette-toolbar {flex-wrap: wrap}
+}
+
+
 /* 收起侧栏（看图模式）：收起时把承载它的那一列宽度收到 0，宽度由 --sidebar-width 决定；
    只在桌面生效，窄屏侧栏是抽屉形态，不吃这套。 */
 .nav-collapse {display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; padding: 7px 10px; border: 0; border-radius: var(--theme-radius-control); background: transparent; color: var(--theme-muted); font-size: 13px; cursor: pointer; transition: color .15s ease, background .15s ease}

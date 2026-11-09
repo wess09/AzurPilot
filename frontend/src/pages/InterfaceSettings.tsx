@@ -9,6 +9,7 @@ import { PageTitle } from '../components/ui'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { ThemeCustomPreference } from '../components/ThemeCustomPreference'
 import { ThemePreferences } from '../components/ThemePreferences'
+import { ColorPalettePreference } from '../components/ColorPalettePreference'
 import { BackgroundPreferences } from '../components/BackgroundPreferences'
 import { readSchedulerPosition, setSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 
@@ -74,6 +75,8 @@ export function InterfaceSettings() {
           <ThemeCustomPreference/>
           <BackgroundPreferences/>
         </>}
+        {/* 调色板对两套主题都开放：它改的是颜色契约本身，不分家族。 */}
+        <ColorPalettePreference/>
         <div className="field-row">
           <div className="field-label">
             <label htmlFor="ui-language">{ui('settings.language')}</label>

@@ -1,4 +1,5 @@
 /** 现代与简约主题的浏览器偏好。 */
+import { applyColorOverrides } from './colorPalette'
 import { colorModes, fixedColorModes, paletteColors, palettes, paletteTokens, readCustomPalettes, type ColorMode, type CustomPalette, type Palette, type ResolvedMode } from './palettes'
 import { applyFamilyCustom } from './themeCustom'
 
@@ -45,18 +46,20 @@ function resolveMode({theme, colorMode}: Preference): ResolvedMode {
 const initial = readThemePreference()
 let preference = {...initial, resolvedMode: resolveMode(initial)}
 
-/** 清掉上一次写入的变量，再应用当前主题的自定义外观。 */
+/** 清掉上一次写入的变量，再应用当前主题的自定义外观。
+    调色板永远最后写：它是最直接的「这一处就要这个色」，要压过品牌配色与整套配色。 */
 export function applyCustomLayer() {
   const root = document.documentElement
   for (const token of themeTokens) root.style.removeProperty(token)
   const {theme, colorMode, palette, customPalettes, resolvedMode} = preference
   if (theme !== 'minimal') {
     themeTokens = applyFamilyCustom(root, THEME_FAMILY, resolvedMode)
-    return
+  } else {
+    const tokens = fixedColorModes[colorMode]?.tokens ?? paletteTokens(paletteColors(palette, customPalettes, resolvedMode), resolvedMode)
+    for (const [key, value] of Object.entries(tokens)) root.style.setProperty(key, value)
+    themeTokens = Object.keys(tokens)
   }
-  const tokens = fixedColorModes[colorMode]?.tokens ?? paletteTokens(paletteColors(palette, customPalettes, resolvedMode), resolvedMode)
-  for (const [key, value] of Object.entries(tokens)) root.style.setProperty(key, value)
-  themeTokens = Object.keys(tokens)
+  themeTokens = [...themeTokens, ...applyColorOverrides(root, resolvedMode)]
 }
 
 export const getThemePreference = () => preference
