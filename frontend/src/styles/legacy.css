@@ -122,13 +122,100 @@ input[aria-invalid='true'], textarea[aria-invalid='true'], .select-trigger[aria-
 .sidebar-brand {height: var(--topbar-height); padding: 0 8px; margin-bottom: 14px}
 .brand-title {font-size: 22px}
 .brand-mark {color: var(--secondary)}
-.sidebar-label, .sidebar-label button {color: var(--muted)}
-.primary-nav a, .task-group-button {font-size: 14px; font-weight: 500; min-height: 44px; border-radius: 22px; transition: background-color .2s cubic-bezier(.2, 0, 0, 1), color .2s cubic-bezier(.2, 0, 0, 1)}
-.task-submenu-item {font-size: 13px; min-height: 36px; border-radius: 18px}
-.task-group-button.expanded {border-color: var(--accent)}
-/* 收起后仍是当前所在的大类：保持展开时的底色、边框与强调。 */
-.task-group-button.active:not(.expanded) {color: var(--accent); background: var(--accent-soft); border-color: var(--accent); font-weight: 600}
-.task-group-button.active:not(.expanded) .task-group-icon {color: var(--accent)}
+
+.sidebar-label, .sidebar-label button {color: color-mix(in srgb, var(--text) 55%, transparent)}
+.sidebar-label {
+  padding: 0 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .03em;
+}
+.sidebar-label button {width: 24px; height: 24px; border-radius: 6px}
+.sidebar-label button:hover {background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text)}
+
+/* 一级导航 */
+.primary-nav {gap: 3px; margin-bottom: 22px}
+.primary-nav a {
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.primary-nav a svg {width: 17px; height: 17px; flex-shrink: 0}
+.primary-nav a:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.primary-nav a.active {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+/* 角标跟着褪色：一块品牌紫的小方块会把刚压下去的彩色又请回来。 */
+.nav-pill {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+/* 分组行 */
+.task-nav {gap: 3px}
+.task-group-button {
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.task-group-icon {width: 17px; height: 17px}
+.task-group-button:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.task-group-button.active {color: var(--accent); font-weight: 600}
+/* 展开只改箭头方向与字色，不再给整行铺一层浅紫、再描一圈边。 */
+.task-group-button.expanded {background: none; border: 0; color: var(--text)}
+.task-group-button.expanded .task-group-icon {color: inherit}
+/* 当前页所在的分组只提一档字重与字色，不铺底色、不染色：
+   分组和子项同时带色块会变成两行并排的选中态，真正的位置反而看不出来。
+   也不再用品牌色 —— 侧栏里唯一有颜色的地方应该是当前页本身，而不是一串紫。 */
+.task-group-button.active,
+.task-group-button.active.expanded {background: none; color: var(--text); font-weight: 500}
+.task-group-button.active .task-group-icon,
+.task-group-button.active.expanded .task-group-icon {color: inherit}
+.task-group-arrow {width: 14px; height: 14px; color: color-mix(in srgb, var(--text) 30%, transparent)}
+.task-group-button:hover .task-group-arrow {color: color-mix(in srgb, var(--text) 55%, transparent); transform: none}
+.task-group .task-group-button.expanded .task-group-arrow {color: color-mix(in srgb, var(--text) 40%, transparent)}
+
+/* 子项：去掉圆点，靠缩进与左侧导轨表示层级 */
+.task-group .task-submenu-inner {
+  margin: 4px 0 14px 15px;
+  padding-left: 10px;
+  gap: 2px;
+  border-left-color: color-mix(in srgb, var(--text) 12%, transparent);
+}
+.task-submenu-item {
+  gap: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--text) 64%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.task-submenu-item:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.task-submenu-item.active {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+.task-submenu-dot {display: none}
 .topbar {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
 .right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
 .breadcrumb {font-size: 13px}
@@ -361,8 +448,10 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
    旧版外壳是「顶栏跨全宽 + 文字菜单在顶栏下方」，与共享层的「侧栏整列 + 顶栏在主内容列内」
    是两套网格，所以在这里整块重排，主页视图不受影响。 */
 .app-shell.legacy-shell {
-  /* 旧版文字菜单宽 12rem(16px 基准)=192px；本仓库根字号是 14px，所以直接写像素。 */
-  --sidebar-width: 192px;
+  /* 旧版文字菜单宽 12rem(16px 基准)=192px，但那是 12px 字的年代：
+     现在的行是 13px 字 + 16px 图标 + 右侧箭头，192px 会把长任务名挤成省略号，
+     整列也显得局促。按 240px 排，正好容下「活动-每日任务」这类最长的一项。 */
+  --sidebar-width: 240px;
   /* 内容区顶部那行「主页 / 实例 / 任务」，算进页内两列的高度预算里；
      分页模式下这行会被放缩，所以取值与它的实际高度同源，不能写死。 */
   --legacy-page-nav-height: var(--instance-page-nav-height, 42px);
