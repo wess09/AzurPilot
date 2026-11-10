@@ -2,21 +2,35 @@
  * @fileoverview 基础表单控件封装（密码输入框、复选框与数值步进器等）。
  */
 
-import { useEffect, useRef, useState, type ComponentProps } from 'react'
-import { Check, Eye, EyeOff } from 'lucide-react'
+import { useEffect, useRef, useState, type ChangeEvent, type ComponentProps } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { useApp } from '../app/context'
+import { Checkbox as ShadcnCheckbox } from './ui/checkbox'
+import { Input } from './ui/input'
 
 export { Select } from './Select'
 
-/** 使用真实复选框承载焦点和表单语义，图标只负责呈现。 */
-export function Checkbox({children, ...props}: ComponentProps<'input'>) {
-  return <label className="checkbox-control"><span className="checkbox-mark"><input {...props} type="checkbox"/><Check size={13} strokeWidth={3} aria-hidden="true"/></span><span>{children}</span></label>
+/** 勾选框交给组件库：勾、焦点环、禁用态与键盘语义由它统一提供。 */
+export function Checkbox({children, checked, disabled, id, onChange}: ComponentProps<'input'>) {
+  return <label className="flex min-h-8 cursor-pointer items-center gap-2.5 text-sm has-[button:disabled]:cursor-not-allowed has-[button:disabled]:opacity-50" htmlFor={id}>
+    <ShadcnCheckbox
+      id={id}
+      checked={!!checked}
+      disabled={disabled}
+      onCheckedChange={next => onChange?.({target: {checked: next}} as unknown as ChangeEvent<HTMLInputElement>)}
+    />
+    <span>{children}</span>
+  </label>
 }
 
+/** 密码框：输入框来自组件库，右侧明码切换保持原位置。 */
 export function PasswordInput(props: ComponentProps<'input'>) {
   const [visible, setVisible] = useState(false)
   const {ui} = useApp()
-  return <span className="password-control"><input {...props} type={visible ? 'text' : 'password'}/><button type="button" className="password-reveal" disabled={props.disabled} aria-label={visible ? ui('common.hidePassword') : ui('common.showPassword')} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={18} aria-hidden="true"/> : <Eye size={18} aria-hidden="true"/>}</button></span>
+  return <span className="password-control">
+    <Input {...props} className="pr-10" type={visible ? 'text' : 'password'}/>
+    <button type="button" className="password-reveal" disabled={props.disabled} aria-label={visible ? ui('common.hidePassword') : ui('common.showPassword')} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={16} aria-hidden="true"/> : <Eye size={16} aria-hidden="true"/>}</button>
+  </span>
 }
 
 /** 输入草稿：键入期间只改本地值，失焦或回车才提交；提交后外部值没跟着变，输入框回到外部值。 */

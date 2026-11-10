@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react'
 import {useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
+import {Switch} from '../components/Switch'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
@@ -78,9 +79,8 @@ export function FleetEquipment() {
   }
   return <>
     <PageTitle title={ui('fleetEquipment.title')} actions={<>
-      <span>{ui('fleetEquipment.enable')}</span><button type="button" role="switch" aria-label={ui('fleetEquipment.enable')}
-        aria-checked={enabled} className={`toggle ${enabled ? 'on' : ''}`} disabled={disabled || !codes}
-        onClick={() => void save(!enabled)}><span/></button>
+      <span>{ui('fleetEquipment.enable')}</span><Switch checked={enabled} label={ui('fleetEquipment.enable')}
+        disabled={disabled || !codes} onChange={next => void save(next)}/>
       <button className="button primary" disabled={disabled || !dirty} onClick={() => void save()}>{ui('fleetEquipment.save')}</button>
     </>}/>
     <section className="panel" style={{padding: '16px 20px', marginBottom: 20}}>

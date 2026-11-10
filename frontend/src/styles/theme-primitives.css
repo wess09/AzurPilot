@@ -156,8 +156,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .login-art > span {color: var(--theme-login-art-text)}
 .login-card {background: var(--theme-surface)}
 
-.yaml-editor, .yaml-editor .cm-editor, .yaml-editor .cm-gutters, .field-row-multiline textarea, .storage-field pre {background: var(--theme-input-bg)}
-.yaml-editor {border-color: var(--theme-border)}
+.field-row-multiline textarea, .storage-field pre {background: var(--theme-input-bg)}
 .yaml-editor:focus-within {border-color: var(--theme-accent)}
 
 /* 二级面与队列层级都用主题色，不写死取值。 */

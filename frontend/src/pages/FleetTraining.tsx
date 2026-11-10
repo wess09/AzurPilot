@@ -2,6 +2,7 @@ import {useEffect, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
+import {Switch} from '../components/Switch'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 import {rotationRules} from './FleetRotation'
@@ -219,7 +220,7 @@ export function FleetTraining() {
       <div className="fleet-grid" style={{marginBottom: 20}}>
         <section className="panel" aria-label={ui('training.moraleTitle')}>
           <div className="panel-heading"><h2>{ui('training.moraleTitle')}</h2>
-            <button type="button" className={`toggle ${morale ? 'on' : ''}`} role="switch" aria-label={ui('training.moraleEnable')} aria-checked={morale} disabled={disabled || !valid} onClick={() => void save(!morale)}><span/></button>
+            <Switch checked={morale} label={ui('training.moraleEnable')} disabled={disabled || !valid} onChange={next => void save(next)}/>
           </div>
           <div style={{padding: 20}}><p className="muted">{ui('training.moraleHelp')}</p></div>
         </section>

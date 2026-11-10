@@ -1,6 +1,6 @@
 /* 全站表单共用主题变量。 */
 :root {
-  --form-height: 40px;
+  --form-height: 36px;
   /* 表格标题行内控件（搜索框）的高度，与同排 .text-button 一致。 */
   --table-heading-control: 36px;
   --form-edge: color-mix(in srgb, var(--theme-input-border) 75%, var(--theme-muted));
@@ -9,7 +9,7 @@
   --form-height-button: min(36px, var(--form-height));
 }
 
-input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])), select, textarea {
+input:where(:not([type='checkbox']):not([type='radio']):not([type='range']):not([data-slot='input'])), select, textarea {
   min-height: var(--form-height);
   padding: 8px 12px;
   font-size: 13px;
@@ -21,25 +21,25 @@ input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])), se
   box-shadow: var(--form-shadow);
   transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
 }
-input::placeholder, textarea::placeholder {color: var(--theme-muted); opacity: .85}
-input:focus, select:focus, textarea:focus {
+input:not([data-slot='input'])::placeholder, textarea::placeholder {color: var(--theme-muted); opacity: .85}
+input:not([data-slot='input']):focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--theme-focus);
   box-shadow: 0 0 0 3px var(--theme-focus-ring);
 }
 /* 键盘聚焦给出可见描边：上面去掉了原生 outline，只剩淡环，强制高对比等模式下会看不出来。 */
-input:focus-visible, select:focus-visible, textarea:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 1px}
-input:disabled, select:disabled, textarea:disabled {
+input:not([data-slot='input']):focus-visible, select:focus-visible, textarea:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 1px}
+input:not([data-slot='input']):disabled, select:disabled, textarea:disabled {
   opacity: .55;
   cursor: not-allowed;
   -webkit-text-fill-color: currentColor;
 }
-input[readonly] {color: var(--theme-muted); box-shadow: none}
-input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] {
+input:not([data-slot='input'])[readonly] {color: var(--theme-muted); box-shadow: none}
+input:not([data-slot='input'])[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] {
   border-color: var(--theme-danger);
   background: color-mix(in srgb, var(--theme-danger) 4%, var(--theme-input-bg));
 }
-input[aria-invalid='true']:focus, select[aria-invalid='true']:focus, textarea[aria-invalid='true']:focus {
+input:not([data-slot='input'])[aria-invalid='true']:focus, select[aria-invalid='true']:focus, textarea[aria-invalid='true']:focus {
   box-shadow: 0 0 0 3px var(--theme-danger-soft);
 }
 
@@ -62,10 +62,7 @@ input[aria-invalid='true']:focus, select[aria-invalid='true']:focus, textarea[ar
 .input-icon:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 .input-icon > input, .input-icon > input:focus {background: transparent; border: 0; box-shadow: none; outline: none; padding-left: 0}
 .field-control textarea {min-height: var(--form-height); font-family: var(--theme-font-sans); line-height: 1.9}
-.yaml-editor {border: 1px solid var(--form-edge); border-radius: var(--theme-radius-control); box-shadow: var(--form-shadow); overflow: hidden}
-.yaml-editor:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 .yaml-editor .cm-editor.cm-focused {outline: none}
-.yaml-editor[aria-invalid='true'] {border-color: var(--theme-danger)}
 
 /* 多选采用可点击的整行标签，选中状态同时通过勾选符号与颜色表达。 */
 .multi-options {gap: 6px; text-align: left}
@@ -174,6 +171,16 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .select-option > svg {color: var(--theme-accent); flex-shrink: 0}
 .select-option.is-active {background: var(--theme-accent-soft)}
 .select-option[aria-disabled='true'] {opacity: .45; cursor: not-allowed}
+/* Radix Select：菜单宽度跟随触发器，高度受可视空间约束；高亮与选中态沿用主题令牌。
+   勾选图标只在选中项出现，用固定左侧槽位保证所有选项文字对齐。 */
+.select-menu {
+  min-width: var(--radix-select-trigger-width);
+  max-height: min(320px, var(--radix-select-content-available-height, 320px));
+}
+.select-option {position: relative; padding-left: 32px}
+.select-option > svg {position: absolute; left: 9px; top: 50%; transform: translateY(-50%)}
+.select-option[data-highlighted] {background: var(--theme-accent-soft); outline: none}
+.select-group-label {padding: 6px 9px 3px; font-size: 11px; color: var(--theme-muted)}
 @media (max-width: 768px), (pointer: coarse) {
   .select-trigger, .select-menu {font-size: 16px}
   .select-option {min-height: 44px}

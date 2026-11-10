@@ -59,5 +59,11 @@ export function YamlEditor({id, value, onChange, disabled = false, label, invali
       EditorView.contentAttributes.of({'aria-disabled': String(disabled), 'aria-invalid': String(!!invalid), ...(invalid ? {'aria-describedby': `${id}-status`} : {})}),
     ])})
   }, [disabled, invalid, id, label])
-  return <div aria-invalid={invalid || undefined} className={`yaml-editor ${disabled ? 'is-disabled' : ''}`}><div className="editor-heading">{ui('field.yaml')}</div><div ref={host}/></div>
+  return <div
+    aria-invalid={invalid || undefined}
+    className={`yaml-editor flex flex-col overflow-hidden rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 ${disabled ? 'opacity-60' : ''}`}
+  >
+    <div className="border-b border-input px-3 py-1.5 text-xs text-muted-foreground">{ui('field.yaml')}</div>
+    <div ref={host}/>
+  </div>
 }

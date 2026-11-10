@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig(({mode}) => {
   const backend = mode === 'mock' ? `http://127.0.0.1:${process.env.AZURPILOT_MOCK_PORT ?? 22392}` : process.env.AZURPILOT_BACKEND ?? 'http://127.0.0.1:22267'
@@ -9,7 +10,7 @@ export default defineConfig(({mode}) => {
     // 配套要求：deploy.yaml 的 RemoteAccessMode 必须为 ssh——P2P 模式下 <script src>
     // 不经过隧道页面的 fetch 接管，静态资源无论如何都拿不到。
     base: './',
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     server: {
       port: 5173,
       strictPort: true,

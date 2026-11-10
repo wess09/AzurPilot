@@ -45,20 +45,20 @@
   --theme-surface-filter: blur(var(--theme-surface-blur)) saturate(var(--theme-surface-saturation));
   --theme-surface-edge: var(--theme-glass-edge);
   --theme-surface-shadow: var(--theme-glass-shadow);
-  --theme-plate-alpha: var(--theme-surface-alpha); --theme-plate-blur: 12px; --theme-plate-saturation: 120%;
+  --theme-plate-alpha: var(--theme-surface-alpha); --theme-plate-blur: 18px; --theme-plate-saturation: 120%;
   --theme-plate-margin: 8px;
   --theme-plate-radius: var(--theme-radius-card);
   --theme-plate-bg: color-mix(in srgb, var(--surface) var(--theme-plate-alpha), transparent);
   --theme-plate-filter: blur(var(--theme-plate-blur)) saturate(var(--theme-plate-saturation));
   --theme-plate-edge: var(--theme-glass-edge); --theme-plate-shadow: var(--theme-glass-shadow);
   /* 三级嵌面：贴在二级贴片内部的面（右栏的队列分组等）。 */
-  --theme-inset-alpha: var(--theme-plate-alpha); --theme-inset-blur: 8px; --theme-inset-saturation: 115%;
+  --theme-inset-alpha: var(--theme-plate-alpha); --theme-inset-blur: 18px; --theme-inset-saturation: 115%;
   --theme-inset-radius: var(--theme-radius-control);
   --theme-inset-bg: color-mix(in srgb, var(--surface) var(--theme-inset-alpha), transparent);
   --theme-inset-filter: blur(var(--theme-inset-blur)) saturate(var(--theme-inset-saturation));
   --theme-inset-edge: var(--theme-glass-edge); --theme-inset-shadow: var(--theme-glass-shadow);
 
-  --theme-control-alpha: 92%; --theme-control-blur: 8px; --theme-control-saturation: 110%;
+  --theme-control-alpha: 92%; --theme-control-blur: 18px; --theme-control-saturation: 110%;
   --theme-control-radius: var(--theme-radius-control);
   --theme-control-bg: color-mix(in srgb, var(--surface) var(--theme-control-alpha), transparent);
   --theme-control-marker-bg: color-mix(in srgb, var(--surface) min(100%, calc(var(--theme-control-alpha) + 8%)), transparent);

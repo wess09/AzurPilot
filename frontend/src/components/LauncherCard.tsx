@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp, useConnection } from '../app/context'
+import { Switch } from './Switch'
 import { api, ApiError } from '../api/client'
 import type { LauncherStatus } from '../api/types'
 
@@ -93,9 +94,8 @@ export function LauncherCard() {
           <p role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
         </div>
         <div className="field-control">
-          <button id="launcher-autostart" type="button" role="switch" aria-checked={enabled}
-            aria-label={t('Gui.Launcher.AutoStart')} className={`toggle ${enabled ? 'on' : ''}`}
-            disabled={phase !== 'ready'} onClick={() => { void toggle() }}><span/></button>
+          <Switch id="launcher-autostart" checked={enabled} disabled={phase !== 'ready'}
+            label={t('Gui.Launcher.AutoStart')} onChange={() => { void toggle() }}/>
         </div>
       </div>
     </section>

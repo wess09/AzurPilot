@@ -2,11 +2,17 @@
  * @fileoverview 任务队列与拖拽排序列表组件。
  */
 
-import { useLayoutEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import type { Overview } from '../api/types'
+import { api } from '../api/client'
 import { useApp } from '../app/context'
+import { ContextMenu, type ContextMenuItem } from './ContextMenu'
+
+/** NextRun 的出厂默认值：所有任务共用，落在过去，
+ *  调度器下一轮扫描就把它当待运行任务——「清空下一次运行时间」的等价写法。 */
+const IMMEDIATE_NEXT_RUN = '2020-01-01 00:00:00'
 /** 条目位置。用布局坐标：它不含脚本正在写的 transform，
  *  动画没停时也能读到真实位置。 */
 export type Box = {left: number; top: number}
@@ -48,8 +54,10 @@ export function movedBy(before: Box | undefined, after: Box) {
  * 条目同处一个容器，状态变化时能被测到位置变化并连续平移过去。
  * 容器的高度用补间兑现，离开的条目在原地收缩塌陷，插入的条目自中心放大。
  */
-export function TaskQueue({instance, data, onNavigate}: {instance: string; data?: Overview; onNavigate?: () => void}) {
-  const {t, ui} = useApp()
+export function TaskQueue({instance, data, onData, onNavigate}: {instance: string; data?: Overview; onData?: (data: Overview) => void; onNavigate?: () => void}) {
+  const {t, ui, notify} = useApp()
+  const navigate = useNavigate()
+  const [menu, setMenu] = useState<{task: Overview['tasks'][number]; x: number; y: number}>()
   const positions = useRef(new Map<string, Placement>())
   const known = useRef(new Set<string>())
   const list = useRef<HTMLDivElement>(null)
@@ -164,6 +172,26 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
   const tasks = (['running', 'pending', 'waiting'] as const)
     .flatMap(state => (data?.tasks ?? []).filter(task => task.state === state))
 
+  /** 右键菜单：打开配置页与立刻运行（运行中的条目不用再催）。
+   *  「立刻运行」不是直接执行，而是把下一次运行时间清空回落到默认值，
+   *  调度器下一轮扫描就排它——与配置页里清空该字段同一条路径。 */
+  const menuItems = (task: Overview['tasks'][number]): ContextMenuItem[] => [
+    {label: ui('queue.openConfig'), run: () => {navigate(`/i/${instance}/task/${task.name}`); onNavigate?.()}},
+    {label: ui('task.runNow'), disabled: task.state === 'running', run: () => void runNow(task.name)},
+  ]
+
+  /** 把 NextRun 写回默认值并立刻刷新列表；后端校验只认合法日期，
+   *  所以这里提交的是「清空后自动回落」的那个默认值。 */
+  async function runNow(task: string) {
+    try {
+      await api.request('config.patch', {instance, changes: [{path: `${task}.Scheduler.NextRun`, value: IMMEDIATE_NEXT_RUN}]})
+      notify(ui('queue.runNowDone'))
+      onData?.(await api.request('overview.get', {instance}))
+    } catch (error) {
+      notify((error as Error).message, true)
+    }
+  }
+
   return <div className="rail-task-list" ref={list}>
     {tasks.length > 0 ? (
       <>
@@ -176,7 +204,8 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
             {tasks.map(task => {
               const nextRun = task.nextRun?.replace('T', ' ').trim()
               return <Link key={task.name} data-task={task.name} className={`rail-task-item ${task.state}`}
-                           to={`/i/${instance}/task/${task.name}`} onClick={onNavigate}>
+                           to={`/i/${instance}/task/${task.name}`} onClick={onNavigate}
+                           onContextMenu={event => {event.preventDefault(); setMenu({task, x: event.clientX, y: event.clientY})}}>
                 <div className="rail-task-main">
                   <strong>{t(`Task.${task.name}.name`)}</strong>
                   {nextRun && <small>{nextRun}</small>}
@@ -192,5 +221,6 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
         </section>
       </>
     ) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
+    {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.task)} onClose={() => setMenu(undefined)}/>}
   </div>
 }

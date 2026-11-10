@@ -1,8 +1,10 @@
 /**
  * @fileoverview 根据内容自动撑开高度的文本输入框组件。
+ * 外观由 shadcn/ui 的 Textarea 提供，这里只负责高度跟随内容。
  */
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Textarea } from './ui/textarea'
 
 export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
   id: string; value: string; label?: string; invalid?: boolean; disabled?: boolean; onChange: (value: string) => void
@@ -36,10 +38,11 @@ export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
   }, [draft])
 
   return (
-    <textarea
+    <Textarea
       aria-label={label}
       aria-invalid={invalid || undefined}
       aria-describedby={invalid ? `${id}-status` : undefined}
+      className="min-h-0 resize-none"
       ref={ref}
       id={id}
       value={draft}

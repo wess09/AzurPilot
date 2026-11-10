@@ -271,7 +271,8 @@ export function App() {
     <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a>
     {legacyShell && topbar}
     <NavHandle/>
-    <aside className="sidebar">
+    {/* 导航面板没有可编辑内容，右键默认菜单只会碍事：整块禁掉。 */}
+    <aside className="sidebar" onContextMenu={event => event.preventDefault()}>
       <SidebarResizeHandle label="拖动调整侧边栏宽度（双击恢复默认）"/>
       {/* 旧版把招牌放进顶栏，桌面端这一行隐藏；窄屏侧栏是抽屉，招牌回抽屉里。 */}
       <div className={`sidebar-brand ${legacyShell ? 'legacy-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>

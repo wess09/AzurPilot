@@ -3,6 +3,7 @@ import {useParams} from 'react-router-dom'
 import {Ship} from 'lucide-react'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
+import {Switch} from '../components/Switch'
 import {editor} from '../config/editors'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
@@ -58,7 +59,7 @@ export function FleetInfoPage() {
   return <>
     <PageTitle title={t('Task.FleetInfo.name')} actions={<>
       <label className="checkbox-label"><input type="checkbox" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onChange={event => setUpdateEmotion(event.target.checked)}/>{ui('fleet.updateEmotion')}</label>
-      <span>{t('Task.FleetScan.name')}</span><button type="button" className={`toggle ${scanning ? 'on' : ''}`} role="switch" aria-checked={scanning} aria-label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onClick={toggleScan}><span/></button>
+      <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onChange={() => void toggleScan()}/>
     </>}/>
     <p className="muted">{ui('rotation.duplicates')}</p>
     {reason && <p className="muted" role="status">{reason}</p>}
