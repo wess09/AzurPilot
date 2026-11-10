@@ -1441,6 +1441,10 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .rail-task-heading {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px}
 .rail-task-heading strong {font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--text) 55%, transparent)}
 .rail-task-heading > span {font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; color: color-mix(in srgb, var(--text) 26%, transparent)}
+/* 批量立刻运行按钮跟在计数后面，标题占满剩余宽度把两者推到右端。 */
+.rail-task-heading:has(.rail-run-now) strong {flex: 1}
+.rail-task-heading .rail-run-now {width: 24px; height: 24px; min-height: 0; padding: 0}
+.run-now-groups {display: flex; flex-wrap: wrap; gap: 8px}
 
 .rail-queue-body {display: flex; flex-direction: column; gap: 6px; padding: 0}
 

@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import type { Overview } from '../api/types'
 import { useApp } from '../app/context'
+import { RunNowMenu } from './RunNowMenu'
 /** 条目位置。用布局坐标：它不含脚本正在写的 transform，
  *  动画没停时也能读到真实位置。 */
 export type Box = {left: number; top: number}
@@ -170,6 +171,7 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
         <div className="rail-task-heading">
           <strong>{ui('scheduler.plan')}</strong>
           <span>{tasks.length}</span>
+          <RunNowMenu instance={instance} tasks={tasks}/>
         </div>
         <section className="rail-queue-group tasks" aria-label={ui('scheduler.plan')}>
           <div className="rail-queue-body">
