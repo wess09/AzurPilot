@@ -34,10 +34,10 @@ describe('ship data navigation', () => {
 
   it('switches tabs on click and unmounts the previous page', () => {
     page('data')
-    fireEvent.click(screen.getByRole('tab', {name: translateUi('zh-CN', 'analysis.scanPage')}))
+    fireEvent.mouseDown(screen.getByRole('tab', {name: translateUi('zh-CN', 'analysis.scanPage')}), {button: 0})
     expect(screen.getByRole('tabpanel').textContent).toBe('scan content')
     expect(screen.queryByText('data content')).toBeNull()
-    expect(screen.getByRole('tab', {selected: true}).id).toBe('tab-scan')
+    expect(screen.getByRole('tab', {selected: true}).textContent).toBe(translateUi('zh-CN', 'analysis.scanPage'))
     expect(api.request).toHaveBeenCalledTimes(1)
   })
 

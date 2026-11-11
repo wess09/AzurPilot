@@ -1,12 +1,15 @@
+import {Button} from '../components/ui/button'
 import {useCallback, useEffect, useMemo, useRef, useState, type FormEvent} from 'react'
 import {useParams} from 'react-router-dom'
 import {Download, Fuel, RefreshCw, Search} from 'lucide-react'
 import {api} from '../api/client'
 import type {ResourceFlowEntry, ResourceFlowReport} from '../api/types'
 import {useApp, useConnection} from '../app/context'
-import {Checkbox, Select} from '../components/FormControls'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
+import {Checkbox} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
-import {Input} from '../components/ui/input'
+import {Input} from '../components/official-ui/input'
 import {downloadCsv} from '../components/statisticsData'
 import {localizeFlowReport, statTextTranslator} from '../components/statisticsText'
 import {resourceIcons} from '../components/StatisticsTable'
@@ -33,9 +36,9 @@ function OilControl({instance, value}: {instance: string; value: ResourceFlowRep
     } catch (error) {setError((error as Error).message); setState('')}
   }
   return <section className="resource-panel oil-control"><div><h2><Fuel size={17}/>{ui('flow.oil')}</h2><p className="muted">{ui('flow.oilHint')}</p></div><form onSubmit={save}>
-    <Checkbox checked={enable} disabled={state === 'saving'} onChange={event => {setEnable(event.target.checked); setDirty(true); setState('')}}>{ui('flow.oilEnable')}</Checkbox>
+    <span className="flex items-center gap-3"><Checkbox id="resource-oil-enable" checked={enable} disabled={state === 'saving'} onCheckedChange={next => {setEnable(next === true); setDirty(true); setState('')}}/><Label htmlFor="resource-oil-enable">{ui('flow.oilEnable')}</Label></span>
     <label>{ui('flow.oilTarget')}<Input required disabled={state === 'saving'} type="number" min="1000" max="24999" step="1" value={target} onChange={event => {setTarget(event.target.value); setDirty(true); setState('')}}/></label>
-    <button className="button secondary" disabled={state === 'saving'}>{ui('flow.save')}</button><span role="status">{state === 'saving' ? ui('flow.saving') : state === 'saved' ? ui('flow.saved') : ''}</span>
+    <Button variant="outline" disabled={state === 'saving'}>{ui('flow.save')}</Button><span role="status">{state === 'saving' ? ui('flow.saving') : state === 'saved' ? ui('flow.saved') : ''}</span>
   </form>{error && <ErrorBox message={error}/>}</section>
 }
 
@@ -88,13 +91,13 @@ export function ResourceManagement() {
   }
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString()
   return <div className="resource-management">
-    <PageTitle title={ui('nav.resources')} actions={<><button className="button secondary" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15}/>{ui('stats.refresh')}</button><button className="button secondary" disabled={!shown || !shown.total || exporting || busy || !!error} onClick={exportEntries}><Download size={15}/>{ui('flow.export')}</button></>}/>
+    <PageTitle title={ui('nav.resources')} actions={<><Button variant="outline" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15}/>{ui('stats.refresh')}</Button><Button variant="outline" disabled={!shown || !shown.total || exporting || busy || !!error} onClick={exportEntries}><Download size={15}/>{ui('flow.export')}</Button></>}/>
     <section className="resource-panel resource-filters">
       <p className="muted resource-intro">{ui('flow.hint')}</p>
-      <label>{ui('flow.range')}<Select value={days} onChange={event => {setDays(event.target.value); if (event.target.value !== 'custom') setInterval({}); setOffset(0)}}><option value="1">{ui('flow.day')}</option><option value="7">{ui('flow.week')}</option><option value="30">{ui('flow.month')}</option><option value="custom">{ui('flow.custom')}</option></Select></label>
-      {days === 'custom' && <form onSubmit={event => {event.preventDefault(); setInterval({start: draftStart, end: draftEnd}); setOffset(0)}}><label>{ui('flow.start')}<Input required type="datetime-local" value={draftStart} onChange={event => setDraftStart(event.target.value)}/></label><label>{ui('flow.end')}<Input required type="datetime-local" value={draftEnd} onChange={event => setDraftEnd(event.target.value)}/></label><button className="button secondary">{ui('flow.apply')}</button></form>}
-      <label>{ui('flow.resource')}<Select value={resource} onChange={event => {setResource(event.target.value); setOffset(0)}}><option value="">{ui('flow.allResources')}</option>{shown?.resources.map(item => <option key={item.key} value={item.key}>{resourceLabel(item.key)}</option>)}</Select></label>
-      <label>{ui('flow.task')}<Select value={task} onChange={event => {setTask(event.target.value); setOffset(0)}}><option value="">{ui('flow.allTasks')}</option>{shown?.tasks.map(key => <option key={key} value={key}>{taskLabel(key)}</option>)}</Select></label>
+      <label>{ui('flow.range')}<Select value={days} onValueChange={value => {setDays(value); if (value !== 'custom') setInterval({}); setOffset(0)}}><SelectTrigger aria-label={ui('flow.range')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">{ui('flow.day')}</SelectItem><SelectItem value="7">{ui('flow.week')}</SelectItem><SelectItem value="30">{ui('flow.month')}</SelectItem><SelectItem value="custom">{ui('flow.custom')}</SelectItem></SelectContent></Select></label>
+      {days === 'custom' && <form onSubmit={event => {event.preventDefault(); setInterval({start: draftStart, end: draftEnd}); setOffset(0)}}><label>{ui('flow.start')}<Input required type="datetime-local" value={draftStart} onChange={event => setDraftStart(event.target.value)}/></label><label>{ui('flow.end')}<Input required type="datetime-local" value={draftEnd} onChange={event => setDraftEnd(event.target.value)}/></label><Button variant="outline">{ui('flow.apply')}</Button></form>}
+      <label>{ui('flow.resource')}<Select value={resource || '__all__'} onValueChange={value => {setResource(value === '__all__' ? '' : value); setOffset(0)}}><SelectTrigger aria-label={ui('flow.resource')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('flow.allResources')}</SelectItem>{shown?.resources.map(item => <SelectItem key={item.key} value={item.key}>{resourceLabel(item.key)}</SelectItem>)}</SelectContent></Select></label>
+      <label>{ui('flow.task')}<Select value={task || '__all__'} onValueChange={value => {setTask(value === '__all__' ? '' : value); setOffset(0)}}><SelectTrigger aria-label={ui('flow.task')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('flow.allTasks')}</SelectItem>{shown?.tasks.map(key => <SelectItem key={key} value={key}>{taskLabel(key)}</SelectItem>)}</SelectContent></Select></label>
     </section>
     {error && <ErrorBox message={error} retry={() => setRefresh(value => value + 1)}/>}
     {!shown && !error && <Loading/>}
@@ -113,7 +116,7 @@ export function ResourceManagement() {
           {shown.entries.map(entry => <tr key={entry.id}><td>{entry.ts.slice(0, 19)}</td><td>{resourceLabel(entry.resource)}</td><td><button onClick={() => {setTask(entry.task); setOffset(0)}}>{taskLabel(entry.task)}</button></td><td>{entry.operation}</td><td className={entry.amount > 0 ? 'resource-income' : ''}>{entry.amount > 0 ? '+' : ''}{number(entry.amount)}</td><td><span className={`resource-evidence ${entry.evidence}`}>{evidence(entry.evidence)}</span></td></tr>)}
         </tbody></table></div>
         {!shown.total && <p className="muted">{ui('flow.empty')}</p>}
-        <div className="resource-pagination"><button className="button secondary" disabled={!offset || busy} onClick={() => setOffset(value => Math.max(0, value - 100))}>{ui('flow.prev')}</button><span>{Math.floor(offset / 100) + 1} / {Math.max(1, Math.ceil(shown.total / 100))}</span><button className="button secondary" disabled={offset + 100 >= shown.total || busy} onClick={() => setOffset(value => value + 100)}>{ui('flow.next')}</button></div>
+        <div className="resource-pagination"><Button variant="outline" disabled={!offset || busy} onClick={() => setOffset(value => Math.max(0, value - 100))}>{ui('flow.prev')}</Button><span>{Math.floor(offset / 100) + 1} / {Math.max(1, Math.ceil(shown.total / 100))}</span><Button variant="outline" disabled={offset + 100 >= shown.total || busy} onClick={() => setOffset(value => value + 100)}>{ui('flow.next')}</Button></div>
       </section>
     </>}
   </div>

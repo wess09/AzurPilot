@@ -4,7 +4,7 @@
 
 import type {ReactNode, KeyboardEvent as ReactKeyboardEvent} from 'react'
 import { createPortal } from 'react-dom'
-import { Select } from './FormControls'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './official-ui/select'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
 import { LineChart, CandlestickChart } from 'echarts/charts'
@@ -12,7 +12,8 @@ import { GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, L
 import { CanvasRenderer } from 'echarts/renderers'
 import type {StatSeries} from '../api/types'
 import { Empty } from './ui'
-import { Input } from './ui/input'
+import { Input } from './official-ui/input'
+import { Button } from './ui/button'
 import {resolveIcon} from './StatisticsTable'
 import {buildSeriesView, isActionPointSeries, riseFallSegments} from './statisticsData'
 import {withTranslatedKeys} from './statisticsText'
@@ -428,27 +429,26 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     <label>
       {ui('stats.chart')}
       <Select
-        aria-label={ui('stats.chartType')}
         value={mode}
-        onChange={event => {
-          const nextMode: ChartMode = event.target.value === 'candlestick' ? 'candlestick' : 'line'
+        onValueChange={value => {
+          const nextMode: ChartMode = value === 'candlestick' ? 'candlestick' : 'line'
           setMode(nextMode)
           if (nextMode === 'candlestick' && bucket === 0) {
             setBucket(60)
           }
         }}
       >
-        <option value="line">{ui('stats.line')}</option>
-        <option value="candlestick">{isSingle ? ui('stats.candlestick') : ui('stats.candlestickOverlay')}</option>
+        <SelectTrigger aria-label={ui('stats.chartType')}><SelectValue/></SelectTrigger>
+        <SelectContent><SelectItem value="line">{ui('stats.line')}</SelectItem><SelectItem value="candlestick">{isSingle ? ui('stats.candlestick') : ui('stats.candlestickOverlay')}</SelectItem></SelectContent>
       </Select>
     </label>
 
     {!isSingle && (
       <label>
         {ui('stats.axisMode')}
-        <Select aria-label={ui('stats.axisMode')} value={axisMode} onChange={event => setAxisMode(event.target.value as 'separate' | 'unified')}>
-          <option value="separate">{ui('stats.axisSeparate')}</option>
-          <option value="unified">{ui('stats.axisUnified')}</option>
+        <Select value={axisMode} onValueChange={value => setAxisMode(value as 'separate' | 'unified')}>
+          <SelectTrigger aria-label={ui('stats.axisMode')}><SelectValue/></SelectTrigger>
+          <SelectContent><SelectItem value="separate">{ui('stats.axisSeparate')}</SelectItem><SelectItem value="unified">{ui('stats.axisUnified')}</SelectItem></SelectContent>
         </Select>
       </label>
     )}
@@ -456,8 +456,9 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
 
     <label>
       {ui('stats.bucket')}
-      <Select aria-label={ui('stats.bucket')} value={effectiveBucket} onChange={event => setBucket(Number(event.target.value))}>
-        {bucketOptions(isCandlestick, ui).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+      <Select value={String(effectiveBucket)} onValueChange={value => setBucket(Number(value))}>
+        <SelectTrigger aria-label={ui('stats.bucket')}><SelectValue/></SelectTrigger>
+        <SelectContent>{bucketOptions(isCandlestick, ui).map(option => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}</SelectContent>
       </Select>
     </label>
 
@@ -477,7 +478,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       </div>
     </label>
 
-    <button className="text-button" onClick={() => {setFrom(''); setTo('')}}>{ui('stats.allTime')}</button>
+    <Button variant="ghost" onClick={() => {setFrom(''); setTo('')}}>{ui('stats.allTime')}</Button>
   </div>
 
   const rangeError = from && to && from > to ? <p className="preview-error" role="alert">{ui('stats.invalidRange')}</p> : null
@@ -506,9 +507,10 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
             const isOverlayLine = active && isCandlestick && !isSingle && selectedIdx > 0
 
             return (
-              <button
+              <Button
                 key={item.key} type="button"
                 className={`stat-chip ${active ? 'active' : ''} ${empty ? 'empty' : ''}`}
+                size="sm" variant={active ? 'default' : 'outline'} aria-pressed={active}
                 onClick={() => toggleKey(item.key)} onDoubleClick={() => selectOnly(item.key)}
                 title={empty ? ui('stats.noSeriesRecord') : ui(active ? 'stats.chipActive' : 'stats.chipInactive', {label: item.label})}
                 disabled={empty}
@@ -526,11 +528,11 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
                   </span>
                 )}
                 {empty && <small>{ui('stats.noSeriesRecord')}</small>}
-              </button>
+              </Button>
             )
           })}
           {selectedKeys.length > 1 && (
-            <button type="button" className="text-button" onClick={() => selectOnly(selectedKeys[0])}>{ui('stats.resetSelection')}</button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => selectOnly(selectedKeys[0])}>{ui('stats.resetSelection')}</Button>
           )}
           {compactControl}
           {stackedControl}

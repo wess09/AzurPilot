@@ -1,4 +1,5 @@
 import type {Dispatch, SetStateAction} from 'react'
+import {Button} from '../components/ui/button'
 
 export const fleetShipTypes = [1, 2, 3, 18, 4, 5, 7, 6, 13, 12, 10, 8, 17, 19, 22]
 export const fleetAttributes = [1, 2, 3, 4, 5, 6, 9, 8, 12]
@@ -12,5 +13,8 @@ export function FleetFilterRow({filter, label, options, filters, setFilters, all
   filter: string; label: string; options: [string, string][]; filters: FleetFilters
   setFilters: Dispatch<SetStateAction<FleetFilters>>; all: string
 }) {
-  return <div className="ft-filter-row"><strong>{label}</strong><div className="ft-chips">{[['', all], ...options].map(([value, text]) => <button type="button" key={value} aria-pressed={value ? filters[filter]?.includes(value) ?? false : !filters[filter]?.length} onClick={() => setFilters(current => ({...current, [filter]: value ? current[filter]?.includes(value) ? current[filter]!.filter(item => item !== value) : [...current[filter] ?? [], value] : []}))}>{text}</button>)}</div></div>
+  return <div className="ft-filter-row"><strong>{label}</strong><div className="ft-chips">{[['', all], ...options].map(([value, text]) => {
+    const selected = value ? filters[filter]?.includes(value) ?? false : !filters[filter]?.length
+    return <Button type="button" size="sm" variant={selected ? 'default' : 'outline'} key={value} aria-pressed={selected} onClick={() => setFilters(current => ({...current, [filter]: value ? current[filter]?.includes(value) ? current[filter]!.filter(item => item !== value) : [...current[filter] ?? [], value] : []}))}>{text}</Button>
+  })}</div></div>
 }

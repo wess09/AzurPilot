@@ -1,10 +1,13 @@
+import {Button} from '../components/ui/button'
 import {useEffect, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
-import {Switch} from '../components/Switch'
-import {Checkbox, Select} from '../components/FormControls'
-import {Input} from '../components/ui/input'
+import {Switch} from '../components/official-ui/switch'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
+import {Checkbox} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
+import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 import {rotationRules} from './FleetRotation'
@@ -200,8 +203,8 @@ export function FleetTraining() {
   return <>
     <PageTitle title={ui('training.title')} actions={
       <>
-        <button className="button" disabled={disabled || running || !loaded} onClick={() => void resetStatus()}>{ui('training.reset')}</button>
-        <button className="button primary" disabled={disabled || !loaded || !dirty || !valid} onClick={() => void save()}>{ui('training.save')}</button>
+        <Button variant="outline" disabled={disabled || running || !loaded} onClick={() => void resetStatus()}>{ui('training.reset')}</Button>
+        <Button disabled={disabled || !loaded || !dirty || !valid} onClick={() => void save()}>{ui('training.save')}</Button>
       </>
     }/>
     <p className="muted">{ui('training.help')}</p>
@@ -209,7 +212,7 @@ export function FleetTraining() {
     {error && <ErrorBox message={error}/>}
     {!loaded ? !error && <Loading/> : <>
       <section className="panel" style={{padding: 20, margin: '20px 0'}}>
-        <Checkbox checked={selectedOnly} disabled={disabled} onChange={event => {setSelectedOnly(event.target.checked); setDirty(true)}}>{ui('rotation.selectedOnly')}</Checkbox>
+        <span className="flex items-center gap-3"><Checkbox id="training-selected-only" checked={selectedOnly} disabled={disabled} onCheckedChange={next => {setSelectedOnly(next === true); setDirty(true)}}/><Label htmlFor="training-selected-only">{ui('rotation.selectedOnly')}</Label></span>
         <p className="muted">{ui('rotation.emotionHelp')}</p>
         <label style={{display: 'grid', gap: 8, marginTop: 16}}>{ui('training.interval')}
           <Input type="number" min={0} step="any" value={hours} disabled={disabled} onChange={event => {setHours(event.target.value); setDirty(true)}}/>
@@ -219,7 +222,7 @@ export function FleetTraining() {
       <div className="fleet-grid" style={{marginBottom: 20}}>
         <section className="panel" aria-label={ui('training.moraleTitle')}>
           <div className="panel-heading"><h2>{ui('training.moraleTitle')}</h2>
-            <Switch checked={morale} label={ui('training.moraleEnable')} disabled={disabled || !valid} onChange={next => void save(next)}/>
+            <Switch checked={morale} aria-label={ui('training.moraleEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(next)}/>
           </div>
           <div style={{padding: 20}}><p className="muted">{ui('training.moraleHelp')}</p></div>
         </section>
@@ -227,7 +230,7 @@ export function FleetTraining() {
           const goal = settings[metric], isLevel = metric === 'level'
           return <section className="panel" key={metric} aria-label={ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')}>
             <div className="panel-heading"><h2>{ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')}</h2>
-              <Switch checked={goal.enabled} label={ui(isLevel ? 'training.levelEnable' : 'training.affinityEnable')} disabled={disabled || !valid} onChange={next => void save(morale, {...settings, [metric]: {...goal, enabled: next}})}/>
+              <Switch checked={goal.enabled} aria-label={ui(isLevel ? 'training.levelEnable' : 'training.affinityEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, {...settings, [metric]: {...goal, enabled: next}})}/>
             </div>
             <div style={{padding: 20, display: 'grid', gap: 16}}>
               <label style={{display: 'grid', gap: 8}}>{ui(isLevel ? 'training.targetLevel' : 'training.targetAffinity')}
@@ -238,13 +241,13 @@ export function FleetTraining() {
         })}
         <section className="panel" aria-label={ui('training.dormTitle')}>
           <div className="panel-heading"><h2>{ui('training.dormTitle')}</h2>
-            <Switch checked={dorm} label={ui('training.dormEnable')} disabled={disabled || !valid} onChange={next => void save(morale, settings, next)}/>
+            <Switch checked={dorm} aria-label={ui('training.dormEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, settings, next)}/>
           </div>
           <div style={{padding: 20, display: 'grid', gap: 16}}>
             <label style={{display: 'grid', gap: 8}}>{ui('training.dormFloor')}
-              <Select value={dormFloor} disabled={disabled} onChange={event => {setDormFloor(event.target.value); setDirty(true)}}>
-                <option value="floor_1">{ui('training.dormFloor1')}</option>
-                <option value="floor_2">{ui('training.dormFloor2')}</option>
+              <Select value={dormFloor} disabled={disabled} onValueChange={value => {setDormFloor(value); setDirty(true)}}>
+                <SelectTrigger aria-label={ui('training.dormFloor')}><SelectValue/></SelectTrigger>
+                <SelectContent><SelectItem value="floor_1">{ui('training.dormFloor1')}</SelectItem><SelectItem value="floor_2">{ui('training.dormFloor2')}</SelectItem></SelectContent>
               </Select>
             </label>
             <p className="muted" style={{margin: 0}}>{ui('training.dormHelp')}</p>
@@ -252,9 +255,9 @@ export function FleetTraining() {
         </section>
       </div>
       <section className="panel" style={{padding: 20, margin: '20px 0'}}>
-        <Checkbox checked={stopOnComplete} disabled={disabled} onChange={event => {setStopOnComplete(event.target.checked); setDirty(true)}}>{ui('training.stopOnComplete')}</Checkbox>
+        <span className="flex items-center gap-3"><Checkbox id="training-stop-on-complete" checked={stopOnComplete} disabled={disabled} onCheckedChange={next => {setStopOnComplete(next === true); setDirty(true)}}/><Label htmlFor="training-stop-on-complete">{ui('training.stopOnComplete')}</Label></span>
         <p className="muted">{ui('training.stopHelp')}</p>
-        <Checkbox checked={push} disabled={disabled} onChange={event => {setPush(event.target.checked); setDirty(true)}}>{ui('training.notify')}</Checkbox>
+        <span className="flex items-center gap-3"><Checkbox id="training-notify" checked={push} disabled={disabled} onCheckedChange={next => {setPush(next === true); setDirty(true)}}/><Label htmlFor="training-notify">{ui('training.notify')}</Label></span>
         <p className="muted">{ui('training.notifyHelp')}</p>
       </section>
       <p className="muted">{ui('training.resetHelp')}</p>

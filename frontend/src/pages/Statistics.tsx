@@ -1,8 +1,10 @@
+import {Button} from '../components/ui/button'
 /**
  * @fileoverview 数据统计与图表分析页面。
  */
 
-import {NumberDraftInput, Select} from '../components/FormControls'
+import {useDraftInput} from '../components/FormControls'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getSelectedKeysForCategory, getStatisticsPrefs, getStatisticsPrefsVersion, subscribeStatisticsPrefs } from '../app/statisticsPrefs'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -47,8 +49,8 @@ import type { StatTable, StatisticsReport } from '../api/types'
 import type { Parameters } from '../api/generated'
 import { useApp, useConnection } from '../app/context'
 import { ActionGroup, ErrorBox, Loading } from '../components/ui'
-import { Input } from '../components/ui/input'
-import { SegmentedControl } from '../components/SegmentedControl'
+import { Input } from '../components/official-ui/input'
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { resolveIcon, resourceIcons, StatisticsTable, TEMPLATE_PREFIXES } from '../components/StatisticsTable'
 import { CategorySection } from '../components/CategorySection'
 import { PageChainSlots } from '../components/PageChainSlots'
@@ -120,6 +122,14 @@ const ResourceManagement = lazy(() => import('./ResourceManagement').then(module
 const categories: Record<Category, UiKey> = {resources: 'stats.category.resources', action: 'stats.category.action', opsi: 'stats.category.opsi', commission: 'stats.category.commission', ships: 'stats.category.ships', loot: 'stats.category.loot', research: 'stats.category.research', storage: 'stats.category.storage'}
 type Category = NonNullable<Parameters['statistics.report']['category']>
 type StatisticsView = Category | 'management'
+
+function NumberDraftInput({value, label, min = 0, onCommit}: {value: number; label: string; min?: number; onCommit: (value: number) => void}) {
+  const draft = useDraftInput(String(value), text => {
+    const parsed = Number(text)
+    if (Number.isFinite(parsed) && parsed >= min) onCommit(Math.floor(parsed))
+  })
+  return <Input type="number" min={min} aria-label={label} title={label} {...draft}/>
+}
 
 /* 页面显示开关按固定顺序排列，与排序后的页面顺序无关。 */
 const fixedPageOrder = defaultStatisticsLayout().pages.flat()
@@ -264,18 +274,16 @@ export function Statistics() {
       ...(data.notes.length ? [[ui('stats.notes')], ...data.notes.map(note => [note])] : []),
     ])
   }
-  const actions = <>{category === 'storage' && <button className="button secondary" disabled={connection !== 'ready' || startingStorage} onClick={runStorageStatistics}><Play size={15}/>{ui('stats.runStorage')}</button>}<button className="button secondary" disabled={connection !== 'ready' || refreshing} onClick={refresh}><RefreshCw size={15}/>{refreshing ? ui('stats.refreshing') : ui('stats.refresh')}</button><button className="button secondary" disabled={!data} onClick={download}><Download size={15}/>{ui('stats.exportCategory')}</button><button className="button secondary statistics-edit-toggle" aria-pressed={editMode} onClick={toggleEditMode}><Paintbrush size={15}/>{ui('stats.editMode')}</button></>
+  const actions = <>{category === 'storage' && <Button variant="outline" disabled={connection !== 'ready' || startingStorage} onClick={runStorageStatistics}><Play size={15}/>{ui('stats.runStorage')}</Button>}<Button variant="outline" disabled={connection !== 'ready' || refreshing} onClick={refresh}><RefreshCw size={15}/>{refreshing ? ui('stats.refreshing') : ui('stats.refresh')}</Button><Button variant="outline" disabled={!data} onClick={download}><Download size={15}/>{ui('stats.exportCategory')}</Button><Button variant={editMode ? 'default' : 'outline'} aria-pressed={editMode} onClick={toggleEditMode}><Paintbrush size={15}/>{ui('stats.editMode')}</Button></>
   const rangeControls = <>
-    {(category === 'resources' || category === 'storage') && period === 'day' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.range')}</span><Select aria-label={ui('stats.days')} value={days} onChange={event => setDays(Number(event.target.value))}>{[1, 7, 30, 90, 365].map(value => <option value={value} key={value}>{ui('stats.recentDays', {days: value})}</option>)}</Select></label>}
+    {(category === 'resources' || category === 'storage') && period === 'day' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.range')}</span><Select value={String(days)} onValueChange={value => setDays(Number(value))}><SelectTrigger aria-label={ui('stats.days')}><SelectValue/></SelectTrigger><SelectContent>{[1, 7, 30, 90, 365].map(value => <SelectItem value={String(value)} key={value}>{ui('stats.recentDays', {days: value})}</SelectItem>)}</SelectContent></Select></label>}
     {/* 月份输入框自带日期格式，使用可访问名称区分控件。 */}
     {(['action', 'opsi', 'commission', 'loot', 'resources', 'storage'].includes(category!) || category === 'research') && <label className="statistics-inline-control"><Input aria-label={ui('stats.month')} type="month" min="2020-01" max="9998-12" value={month} disabled={(['commission', 'research', 'loot', 'resources', 'storage'].includes(category!)) && period !== 'month'} onChange={event => {if (event.target.value) setMonth(event.target.value)}}/></label>}
-    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.researchSeries')}</span><Select aria-label={ui('stats.researchSeries')} value={researchSeries} onChange={event => setResearchSeries(String(event.target.value))}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => <option value={String(value)} key={value}>{ui('stats.seriesN', {n: value})}</option>)}<option value="consumable">{ui('stats.consumableScope')}</option></Select></label>}
-    {(category === 'resources' || category === 'storage') && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.recentDays', {days})}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
-    {category === 'commission' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.commissionPeriod')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
-    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
+    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.researchSeries')}</span><Select value={researchSeries} onValueChange={setResearchSeries}><SelectTrigger aria-label={ui('stats.researchSeries')}><SelectValue/></SelectTrigger><SelectContent>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => <SelectItem value={String(value)} key={value}>{ui('stats.seriesN', {n: value})}</SelectItem>)}<SelectItem value="consumable">{ui('stats.consumableScope')}</SelectItem></SelectContent></Select></label>}
+    {(category === 'resources' || category === 'storage' || category === 'commission' || category === 'research') && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui(category === 'commission' ? 'stats.commissionPeriod' : 'stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{category === 'resources' || category === 'storage' ? ui('stats.recentDays', {days}) : ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
     {/* 大世界掉落：任务筛选的选项来自后端（含当前窗口内没记录的任务），值就是任务标识 */}
-    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.lootTask')}</span><Select aria-label={ui('stats.lootTask')} value={lootTask} onChange={event => setLootTask(String(event.target.value))}><option value="">{ui('stats.lootTaskAll')}</option>{(data?.taskOptions ?? []).map(item => <option value={item.key} key={item.key}>{item.count ? `${item.label}（${item.count}）` : item.label}</option>)}</Select></label>}
-    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
+    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.lootTask')}</span><Select value={lootTask || '__all__'} onValueChange={value => setLootTask(value === '__all__' ? '' : value)}><SelectTrigger aria-label={ui('stats.lootTask')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('stats.lootTaskAll')}</SelectItem>{(data?.taskOptions ?? []).map(item => <SelectItem value={item.key} key={item.key}>{item.count ? `${item.label}（${item.count}）` : item.label}</SelectItem>)}</SelectContent></Select></label>}
+    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui('stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
   </>
   const hints = <>
     {category === 'ships' && <span>{ui('stats.shipHint')}</span>}
@@ -549,11 +557,21 @@ export function Statistics() {
     )
   }
 
-  const categoryControl = <SegmentedControl<StatisticsView> className="statistics-category-control" label={ui('stats.categoryLabel')} value={management ? 'management' : category} onChange={selectPage} onItemContextMenu={editMode && !management ? id => {if (id !== 'management') togglePage(id, false)} : undefined} onItemMove={editMode && !management ? (id, delta) => {if (id !== 'management') movePageBy(id, delta)} : undefined} itemClassName={id => id === 'management' ? '' : `${isPageEnabled(layout, id) ? '' : 'is-disabled'}${!editMode && chainOf(id).length > 1 ? ' is-chained' : ''}`.trim()} trailing={!management && singleViewToggle} options={navigationEntries.map(([value, label]) => ({value, label: ui(label)}))}/>
+  const categoryControl = <Tabs className="statistics-category-control" value={management ? 'management' : category} onValueChange={value => selectPage(value as StatisticsView)}>
+    <TabsList aria-label={ui('stats.categoryLabel')}>
+      {navigationEntries.map(([id, label]) => <TabsTrigger key={id} value={id}
+        className={id === 'management' ? undefined : `${isPageEnabled(layout, id) ? '' : 'is-disabled'}${!editMode && chainOf(id).length > 1 ? ' is-chained' : ''}`.trim()}
+        onContextMenu={editMode && !management ? event => {event.preventDefault(); if (id !== 'management') togglePage(id, false)} : undefined}
+        onKeyDown={editMode && !management ? event => {if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {event.preventDefault(); event.stopPropagation(); if (id !== 'management') movePageBy(id, event.key === 'ArrowRight' ? 1 : -1)}} : undefined}
+      >{ui(label)}</TabsTrigger>)}
+      {!management && singleViewToggle}
+    </TabsList>
+  </Tabs>
   /* 窄屏用明确的下拉入口展示全部分类，编辑模式的合并开关仍可单独操作。 */
   const categoryPicker = <div className="statistics-category-picker">
-    <Select className="statistics-category-select" aria-label={ui('stats.categoryLabel')} value={management ? 'management' : category} onChange={event => selectPage(event.target.value as StatisticsView)}>
-      {navigationEntries.map(([value, label]) => <option value={value} key={value}>{ui(label)}</option>)}
+    <Select value={management ? 'management' : category} onValueChange={value => selectPage(value as StatisticsView)}>
+      <SelectTrigger className="statistics-category-select" aria-label={ui('stats.categoryLabel')}><SelectValue/></SelectTrigger>
+      <SelectContent>{navigationEntries.map(([value, label]) => <SelectItem value={value} key={value}>{ui(label)}</SelectItem>)}</SelectContent>
     </Select>
     {!management && singleViewToggle}
   </div>

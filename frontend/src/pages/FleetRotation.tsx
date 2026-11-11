@@ -1,9 +1,11 @@
+import {Button} from '../components/ui/button'
 import {useEffect, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
 import {editor} from '../config/editors'
-import {Checkbox} from '../components/FormControls'
+import {Checkbox} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
 type Rule = {slots: number[]; sources: number[]; favourite?: boolean}
@@ -82,7 +84,7 @@ export function FleetRotation() {
 
   return <>
     <PageTitle title={ui('rotation.title')} actions={<>
-      <button className="button primary" disabled={disabled || !dirty} onClick={() => void save()}>{ui('rotation.save')}</button>
+      <Button disabled={disabled || !dirty} onClick={() => void save()}>{ui('rotation.save')}</Button>
     </>}/>
     <p className="muted">{ui('rotation.help')}</p>
     <p className="muted">{ui('rotation.duplicates')}</p>
@@ -90,15 +92,15 @@ export function FleetRotation() {
     {error && <ErrorBox message={error}/>}
     {!rules ? !error && <Loading/> : <div className="fleet-grid">{numbers.map(fleet => <section className="panel" key={fleet} aria-label={ui('fleet.title', {number: fleet})}>
       <div className="panel-heading"><h2>{ui('fleet.title', {number: fleet})}</h2></div>
-      <div className="fleet-column"><h3>{ui('rotation.slots')}</h3>{numbers.map(slot => <Checkbox key={slot} checked={rules[fleet]!.slots.includes(slot)} disabled={disabled} onChange={() => change(fleet, 'slots', slot)}>
+      <div className="fleet-column"><h3>{ui('rotation.slots')}</h3>{numbers.map(slot => <span key={slot} className="flex items-center gap-3"><Checkbox id={`fleet-${fleet}-slot-${slot}`} checked={rules[fleet]!.slots.includes(slot)} disabled={disabled} onCheckedChange={() => change(fleet, 'slots', slot)}/><Label htmlFor={`fleet-${fleet}-slot-${slot}`}>
         {ui('fleet.slot', {number: slot})} · {ui(rules[fleet]!.slots.includes(slot) ? 'rotation.swap' : 'rotation.keep')}
-      </Checkbox>)}</div>
-      <div className="fleet-column"><h3>{ui('rotation.sources')}</h3><div className="flex flex-wrap gap-2.5">{numbers.filter(number => number !== fleet).map(number => <Checkbox key={number} aria-label={ui('rotation.source', {number})} checked={rules[fleet]!.sources.includes(number)} disabled={disabled} onChange={() => change(fleet, 'sources', number)}>{number}</Checkbox>)}<Checkbox checked={rules[fleet]!.favourite} disabled={disabled} onChange={event => {
-          const favourite = event.target.checked
+      </Label></span>)}</div>
+      <div className="fleet-column"><h3>{ui('rotation.sources')}</h3><div className="flex flex-wrap gap-2.5">{numbers.filter(number => number !== fleet).map(number => <span key={number} className="flex items-center gap-3"><Checkbox id={`fleet-${fleet}-source-${number}`} aria-label={ui('rotation.source', {number})} checked={rules[fleet]!.sources.includes(number)} disabled={disabled} onCheckedChange={() => change(fleet, 'sources', number)}/><Label htmlFor={`fleet-${fleet}-source-${number}`}>{number}</Label></span>)}<span className="flex items-center gap-3"><Checkbox id={`fleet-${fleet}-favourite`} checked={rules[fleet]!.favourite} disabled={disabled} onCheckedChange={next => {
+          const favourite = next === true
           setRules(previous => ({...previous!, [fleet]: {...previous![fleet]!, favourite}})); setDirty(true)
-        }}>{ui('rotation.favourite')}</Checkbox></div><p className="muted">{ui('rotation.favouriteHelp')}</p></div>
+        }}/><Label htmlFor={`fleet-${fleet}-favourite`}>{ui('rotation.favourite')}</Label></span></div><p className="muted">{ui('rotation.favouriteHelp')}</p></div>
       <div className="fleet-column"><p>{(progress[fleet]?.pending || progress[fleet]?.rescan) && !running ? ui('rotation.uncertain') : progress[fleet]?.source ? ui('rotation.inProgress', {number: progress[fleet]!.source!}) : progress[fleet]?.favourite ? ui('rotation.lastFavourite') : progress[fleet]?.last_source ? ui('rotation.last', {number: progress[fleet]!.last_source!}) : ui('rotation.none')}</p></div>
     </section>)}</div>}
-    <button className="button" disabled={disabled || running || !rules} onClick={() => void save(true)}>{ui('rotation.reset')}</button>
+    <Button variant="outline" disabled={disabled || running || !rules} onClick={() => void save(true)}>{ui('rotation.reset')}</Button>
   </>
 }

@@ -3,8 +3,9 @@ import {useParams} from 'react-router-dom'
 import {Ship} from 'lucide-react'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
-import {Switch} from '../components/Switch'
-import {Checkbox} from '../components/FormControls'
+import {Switch} from '../components/official-ui/switch'
+import {Checkbox} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
 import {editor} from '../config/editors'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
@@ -59,8 +60,8 @@ export function FleetInfoPage() {
 
   return <>
     <PageTitle title={t('Task.FleetInfo.name')} actions={<>
-      <Checkbox checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onChange={event => setUpdateEmotion(event.target.checked)}>{ui('fleet.updateEmotion')}</Checkbox>
-      <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onChange={() => void toggleScan()}/>
+      <span className="flex items-center gap-3"><Checkbox id="fleet-update-emotion" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onCheckedChange={next => setUpdateEmotion(next === true)}/><Label htmlFor="fleet-update-emotion">{ui('fleet.updateEmotion')}</Label></span>
+      <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} aria-label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onCheckedChange={() => void toggleScan()}/>
     </>}/>
     <p className="muted">{ui('rotation.duplicates')}</p>
     {reason && <p className="muted" role="status">{reason}</p>}

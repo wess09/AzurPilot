@@ -1,3 +1,5 @@
+import {Button} from '../components/ui/button'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '../components/ui/tabs'
 import {useEffect, useRef, useState} from 'react'
 import {useParams, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
@@ -39,13 +41,15 @@ export function FleetAnalysis() {
   }, [instance, connection])
   const onBusy = (value: boolean) => {epoch.current++; writing.current = value; setBusy(value)}
   const onReport = (value: DockReport) => {epoch.current++; setReport(value)}
-  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab !== 'technology' && <button className="button secondary" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</button>}/>{error && <ErrorBox message={error}/>}
-    <div className="ft-chips" role="tablist" aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <button key={value} role="tab" disabled={busy} aria-selected={tab === value} aria-controls={`analysis-${value}`} id={`tab-${value}`} onClick={() => setParams({tab: value}, {replace: true})}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</button>)}</div>
-    <section role="tabpanel" id={`analysis-${tab}`} aria-labelledby={`tab-${tab}`}>
+  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab !== 'technology' && <Button variant="outline" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</Button>}/>{error && <ErrorBox message={error}/>}
+    <Tabs value={tab} onValueChange={value => setParams({tab: value}, {replace: true})}>
+    <TabsList aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <TabsTrigger key={value} value={value} disabled={busy}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</TabsTrigger>)}</TabsList>
+    <TabsContent value={tab}>
       {tab === 'data' && <FleetLedger key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
       {tab === 'technology' && <FleetTechnology key={instance}/>}
       {tab === 'mind' && <MindCalculator key={instance} report={report} onRefresh={() => refresh.current?.()}/>}
       {tab === 'scan' && <ScanUpdate key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
-    </section>
+    </TabsContent>
+    </Tabs>
   </div>
 }

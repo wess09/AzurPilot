@@ -11,7 +11,7 @@ import { DEFAULT_TABLE_ROWS } from '../app/statisticsLayout'
 import { useApp } from '../app/context'
 import { localeForLanguage } from '../i18n'
 import { withTranslatedKeys } from './statisticsText'
-import { Input } from './ui/input'
+import { Input } from './official-ui/input'
 
 const iconBase = import.meta.env.BASE_URL
 /* 键为中文名；withTranslatedKeys 补上译名，翻译后的列名、物品名仍能找到图标。 */

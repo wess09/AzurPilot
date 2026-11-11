@@ -1,3 +1,4 @@
+import {Button} from '../components/ui/button'
 import {FleetFilterRow, fleetRarities, ledgerShipTypes as shipTypes, ledgerTypeIds as typeIds} from '../fleet-tech/filters'
 import {useEffect, useId, useMemo, useRef, useState} from 'react'
 import {Link, useSearchParams} from 'react-router-dom'
@@ -5,9 +6,10 @@ import {api} from '../api/client'
 import type {DockCard, DockReport} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox, Loading} from '../components/ui'
-import {Checkbox, Select} from '../components/FormControls'
-import {Checkbox as CheckboxControl} from '../components/ui/checkbox'
-import {Input} from '../components/ui/input'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
+import {Checkbox as CheckboxControl} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
+import {Input} from '../components/official-ui/input'
 import type {CatalogShip, MindCatalog} from '../mind/types'
 import type {UiKey} from '../i18n'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
@@ -243,7 +245,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
   return <div className="fleet-ledger fleet-technology">
     {error && <ErrorBox message={error}/>}
     <div className="ft-toolbar ledger-summary" role="status"><strong>{ui('analysis.confirmedCount')}: {report?.ships.length ?? 0}</strong><span>{ui('analysis.species')}: {counts.size}</span><span>{ui('analysis.needsReview')}: {report?.ships.filter(row => row.review || !row.group_type).length ?? 0}</span><span>{ui('analysis.time')}: {report?.updated_at || '—'}</span></div>
-    {groupFilter && <p>{ui('analysis.filter')}: {report?.ships.find(row => row.group_type === Number(groupFilter))?.name || groupFilter} <button className="button secondary" onClick={() => {const next = new URLSearchParams(params); next.delete('group'); setParams(next, {replace: true})}}>{ui('analysis.all')}</button></p>}
+    {groupFilter && <p>{ui('analysis.filter')}: {report?.ships.find(row => row.group_type === Number(groupFilter))?.name || groupFilter} <Button variant="outline" onClick={() => {const next = new URLSearchParams(params); next.delete('group'); setParams(next, {replace: true})}}>{ui('analysis.all')}</Button></p>}
     <section className="ft-filters" aria-label={ui('analysis.filter')}>
       {filterGroup('type', tr('category'), shipTypes.filter(value => catalog?.ships.some(ship => ship.type === value)).map(value => [value, typeName(value)]))}
       {filterGroup('rarity', tr('rarity'), rarities.map(value => [value, tr(`rarity.${value}`)]))}
@@ -253,17 +255,17 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
       <div className="ft-filter-row"><strong>{ui('analysis.level')}</strong><div className="ft-chips ledger-level-range"><label>{ui('analysis.min')}<Input type="number" min={0} max={125} value={minimum} onChange={e => setMinimum(e.target.value)}/></label><span>—</span><label>{ui('analysis.max')}<Input type="number" min={0} max={125} value={maximum} onChange={e => setMaximum(e.target.value)}/></label></div></div>
     </section>
     <div className="ft-toolbar ft-savebar">
-      <button className="button primary" disabled={disabled || !dirty || stale} onClick={() => void save()}>{ui('analysis.save')}</button>
-      {dirty && <><span role="status">{ui('analysis.unsavedChanges')}: {changedCount}</span><button className="button secondary" disabled={busy || locked} onClick={discard}>{ui('analysis.discard')}</button></>}
+      <Button disabled={disabled || !dirty || stale} onClick={() => void save()}>{ui('analysis.save')}</Button>
+      {dirty && <><span role="status">{ui('analysis.unsavedChanges')}: {changedCount}</span><Button variant="outline" disabled={busy || locked} onClick={discard}>{ui('analysis.discard')}</Button></>}
       {saved && <span role="status">{ui('analysis.saved')}</span>}
-      <button className="button secondary" disabled={disabled} onClick={add}>{ui('analysis.add')}</button>
+      <Button variant="outline" disabled={disabled} onClick={add}>{ui('analysis.add')}</Button>
       <Link aria-disabled={disabled} onClick={event => {if (disabled) event.preventDefault()}} className="button secondary" to="?tab=scan">{ui('analysis.scanPage')}</Link>
       {!!report?.pending_changes.length && <Link aria-disabled={disabled} onClick={event => {if (disabled) event.preventDefault()}} to="?tab=scan">{ui('analysis.pendingLink')} ({report.pending_changes.length})</Link>}
     </div>
     {stale && <p role="alert">{ui('analysis.stale')}</p>}
     <div className="ft-search"><Input type="search" aria-label={ui('analysis.search')} placeholder={ui('analysis.search')} value={query} onChange={e => setQuery(e.target.value)}/><span>{ui('mind.rowCount', {count: displayRows.length})}</span>
-      <div className="ft-chips ledger-batch"><button type="button" disabled={disabled} aria-pressed={batch} onClick={() => {setBatch(!batch); setSelected([])}}>{ui('analysis.batch')}</button>
-      {batch && <button type="button" disabled={disabled || !selected.length} onClick={() => {for (const id of selected) {const row = draft?.ships[id] ?? report?.ships.find(row => row.id === id); if (row && !draft?.deleted.includes(id)) change(row, {review: true})}}}>{ui('analysis.batchReview')} ({selected.length})</button>}</div>
+      <div className="ft-chips ledger-batch"><Button type="button" size="sm" variant={batch ? 'default' : 'outline'} disabled={disabled} aria-pressed={batch} onClick={() => {setBatch(!batch); setSelected([])}}>{ui('analysis.batch')}</Button>
+      {batch && <Button type="button" size="sm" variant="outline" disabled={disabled || !selected.length} onClick={() => {for (const id of selected) {const row = draft?.ships[id] ?? report?.ships.find(row => row.id === id); if (row && !draft?.deleted.includes(id)) change(row, {review: true})}}}>{ui('analysis.batchReview')} ({selected.length})</Button>}</div>
     </div>
     <p className="ledger-hint">{ui('analysis.inlineHint')} {ui('analysis.fullStarRule')}</p>
     <datalist id={list}>{catalog?.ships.map(info => <option key={`${info.group_type}:${info.name}`} value={info.name}/>)}</datalist>
@@ -275,13 +277,13 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
         {batch && <td><CheckboxControl disabled={disabled || deleted} aria-label={label('analysis.batch')} checked={selected.includes(row.id)} onCheckedChange={next => setSelected(next ? [...selected, row.id] : selected.filter(id => id !== row.id))}/></td>}
         <td>{info?.code == null ? '—' : String(info.code).padStart(3, '0')}</td>
         <td className={`ft-name ft-rarity-${row.rarity}`}><Input list={list} aria-label={label('analysis.name')} maxLength={100} value={row.name} disabled={disabled || deleted || !catalog} onChange={e => rename(row, e.target.value)}/>{row.id > 0 && (counts.get(String(row.group_type ?? row.name)) ?? 0) > 1 && <small> · #{row.id}</small>}{row.id < 0 && <small> · {ui('analysis.new')}</small>}
-          {candidates.length > 0 && <Select aria-label={label('analysis.confirmIdentity')} value="" disabled={disabled || deleted} onChange={e => {const info = candidates.find(ship => `${ship.group_type}:${ship.name}` === e.target.value); if (info) identify(row, info)}}><option value="">{ui('analysis.confirmIdentity')}</option>{candidates.map(ship => <option key={`${ship.group_type}:${ship.name}`} value={`${ship.group_type}:${ship.name}`}>{ship.raw_name ?? ship.name} · {nationName(nationValue(ship))} · {typeName(ship.type)} · {ship.code ?? ship.group_type}</option>)}</Select>}
+          {candidates.length > 0 && <Select value="__choose__" disabled={disabled || deleted} onValueChange={value => {const info = candidates.find(ship => `${ship.group_type}:${ship.name}` === value); if (info) identify(row, info)}}><SelectTrigger aria-label={label('analysis.confirmIdentity')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__choose__">{ui('analysis.confirmIdentity')}</SelectItem>{candidates.map(ship => <SelectItem key={`${ship.group_type}:${ship.name}`} value={`${ship.group_type}:${ship.name}`}>{ship.raw_name ?? ship.name} · {nationName(nationValue(ship))} · {typeName(ship.type)} · {ship.code ?? ship.group_type}</SelectItem>)}</SelectContent></Select>}
         </td>
         <td><Input type="number" min={0} max={125} step={1} aria-label={label('analysis.level')} value={row.level} disabled={disabled || deleted} onChange={e => change(row, {level: e.target.value === '' ? '' : Number(e.target.value)})}/></td>
-        <td><Select aria-label={label('analysis.breakthrough')} value={row.full_star == null ? '' : String(row.full_star)} disabled={disabled || deleted} onChange={e => change(row, {full_star: e.target.value === '' ? null : e.target.value === 'true'})}><option value="">{ui('analysis.unknownValue')}</option><option value="false">{ui('analysis.fullStarNo')}</option><option value="true">{ui('analysis.fullStarYes')}</option></Select></td>
+        <td><Select value={row.full_star == null ? '__unknown__' : String(row.full_star)} disabled={disabled || deleted} onValueChange={value => change(row, {full_star: value === '__unknown__' ? null : value === 'true'})}><SelectTrigger aria-label={label('analysis.breakthrough')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__unknown__">{ui('analysis.unknownValue')}</SelectItem><SelectItem value="false">{ui('analysis.fullStarNo')}</SelectItem><SelectItem value="true">{ui('analysis.fullStarYes')}</SelectItem></SelectContent></Select></td>
         <td>{info?.type ? typeName(info.type) : '—'}</td><td>{nationName(nationValue(info)) || '—'}</td><td className={`ft-rarity-${row.rarity}`}>{row.rarity ? tr(`rarity.${row.rarity}`) : '—'}</td>
-        <td><Checkbox aria-label={label('analysis.reviewFlag')} checked={row.review || !row.group_type} disabled={disabled || deleted} onChange={e => setReview(row, e.target.checked)}>{ui(row.review || !row.group_type ? 'analysis.needsReview' : row.level === 0 || row.level === '' ? 'analysis.missing' : 'analysis.normal')}</Checkbox></td>
-        <td><button className="button secondary" disabled={disabled} onClick={() => remove(row)}>{ui(deleted ? 'analysis.restore' : 'analysis.delete')}</button>{deleted && <small> {ui('analysis.deleted')}</small>}</td>
+        <td><span className="flex items-center gap-3"><CheckboxControl id={`fleet-review-${row.id}`} aria-label={label('analysis.reviewFlag')} checked={row.review || !row.group_type} disabled={disabled || deleted} onCheckedChange={next => setReview(row, next === true)}/><Label htmlFor={`fleet-review-${row.id}`}>{ui(row.review || !row.group_type ? 'analysis.needsReview' : row.level === 0 || row.level === '' ? 'analysis.missing' : 'analysis.normal')}</Label></span></td>
+        <td><Button variant="outline" disabled={disabled} onClick={() => remove(row)}>{ui(deleted ? 'analysis.restore' : 'analysis.delete')}</Button>{deleted && <small> {ui('analysis.deleted')}</small>}</td>
       </tr>
     })}</tbody></table></div>
     {!displayRows.length && <p>{ui(report?.ships.length ? 'mind.empty' : 'analysis.emptyLedger')}</p>}

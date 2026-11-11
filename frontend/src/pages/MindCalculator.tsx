@@ -8,9 +8,10 @@ import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox, Loading} from '../components/ui'
-import {Checkbox} from '../components/FormControls'
-import {Checkbox as CheckboxControl} from '../components/ui/checkbox'
-import {Input} from '../components/ui/input'
+import {Checkbox as CheckboxControl} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
+import {Button} from '../components/ui/button'
+import {Input} from '../components/official-ui/input'
 import {automaticCandidates, readPlan, technologyEfficiency, type CultivationPlan, type CultivationReport} from '../mind/cultivation'
 import '../fleet-tech/style.css'
 import '../mind/cultivation.css'
@@ -189,12 +190,12 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
       {group('attr', attrs.map(value => [String(value), tr(`attr.${value}`)]))}
       {extra && <>{group('getBonusType', types.map(value => [String(value), tr(`type.${value}`)]), `${tr('unlock')} · ${tr('shipClass')}`)}{group('getAttr', attrs.map(value => [String(value), tr(`attr.${value}`)]), `${tr('unlock')} · ${tr('attr')}`)}{group('levelBonusType', types.map(value => [String(value), tr(`type.${value}`)]), `${tr('completionBonus')} · ${tr('shipClass')}`)}{group('levelAttr', attrs.map(value => [String(value), tr(`attr.${value}`)]), `${tr('completionBonus')} · ${tr('attr')}`)}</>}
       {group('status', ['notTrained120', 'missingStar', 'awakening_pending'].map(key => [key, tr(key)]))}
-      <div className="ft-filter-row"><strong>{ui('mind.filterFunctions')}</strong><div className="ft-chips"><button type="button" aria-expanded={extra} onClick={toggleExtra}>{tr('extra')}</button></div></div>
+      <div className="ft-filter-row"><strong>{ui('mind.filterFunctions')}</strong><div className="ft-chips"><Button type="button" size="sm" variant={extra ? 'default' : 'outline'} aria-expanded={extra} onClick={toggleExtra}>{tr('extra')}</Button></div></div>
     </section>
     <p className="ft-edit-hint">{ui('mind.costHint')}</p>
     <p className="ft-edit-hint">{ui('mind.efficiencyHint')}</p>
     <div className="ft-search"><Input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
-      <Checkbox checked={includedOnly} onChange={event => setIncludedOnly(event.target.checked)}>{ui('mind.includedOnly')}</Checkbox>
+      <span className="flex items-center gap-3"><CheckboxControl id="mind-included-only" checked={includedOnly} onCheckedChange={next => setIncludedOnly(next === true)}/><Label htmlFor="mind-included-only">{ui('mind.includedOnly')}</Label></span>
     </div>
     <div className="ft-table-wrap cultivation-table"><table><thead><tr><th scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></th>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <th key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><button type="button" className="ft-sort" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></button></th>)}<th scope="col">{tr('awakening_pending')}</th></tr></thead><tbody>
       {rows.map(card => {

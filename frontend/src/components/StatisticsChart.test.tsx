@@ -86,8 +86,8 @@ describe('StatisticsChart 多数据源图表组件', () => {
     expect(html).toContain('行动力')
     expect(html).toContain('作战补给凭证')
     expect(html).toContain('特别兑换凭证')
-    expect(html).toContain('折线')
-    expect(html).toContain('K 线')
+    // Radix 在打开菜单后才挂载选项，静态渲染只检查入口；具体选项由浏览器测试覆盖。
+    expect(html).toContain('aria-label="图表类型"')
   })
 
   it('折线图模式下，采样粒度应包含“每次记录”且选项不重复', () => {

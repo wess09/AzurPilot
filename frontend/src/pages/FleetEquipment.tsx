@@ -1,9 +1,10 @@
+import {Button} from '../components/ui/button'
 import {useEffect, useState} from 'react'
 import {useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
-import {Switch} from '../components/Switch'
-import {Input} from '../components/ui/input'
+import {Switch} from '../components/official-ui/switch'
+import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
@@ -79,9 +80,9 @@ export function FleetEquipment() {
   }
   return <>
     <PageTitle title={ui('fleetEquipment.title')} actions={<>
-      <span>{ui('fleetEquipment.enable')}</span><Switch checked={enabled} label={ui('fleetEquipment.enable')}
-        disabled={disabled || !codes} onChange={next => void save(next)}/>
-      <button className="button primary" disabled={disabled || !dirty} onClick={() => void save()}>{ui('fleetEquipment.save')}</button>
+      <span>{ui('fleetEquipment.enable')}</span><Switch checked={enabled} aria-label={ui('fleetEquipment.enable')}
+        disabled={disabled || !codes} onCheckedChange={next => void save(next)}/>
+      <Button disabled={disabled || !dirty} onClick={() => void save()}>{ui('fleetEquipment.save')}</Button>
     </>}/>
     <section className="panel" style={{padding: '16px 20px', marginBottom: 20}}>
       <p>{ui('fleetEquipment.help')}</p><p>{ui('fleetEquipment.skip')}</p><p>{ui('fleetEquipment.support')}</p>

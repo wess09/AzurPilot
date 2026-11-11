@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest'
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {MemoryRouter} from 'react-router-dom'
 import {api} from '../api/client'
@@ -16,6 +16,12 @@ const catalog: MindCatalog = {updated_at: '', ships: [{name: '重复舰船', gro
 function ledger(value: DockReport | undefined, entry = '?tab=data') {
   return render(<MemoryRouter initialEntries={[entry]}><FleetLedger instance="test" report={value} onReport={vi.fn()} onBusy={vi.fn()}/></MemoryRouter>)
 }
+beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {configurable: true, value: vi.fn()})
+})
+afterAll(() => {
+  delete (Element.prototype as {scrollIntoView?: Element['scrollIntoView']}).scrollIntoView
+})
 beforeEach(() => {
   sessionStorage.clear()
   localStorage.clear()
@@ -84,7 +90,7 @@ describe('current ships and scan separation', () => {
     }]})
     expect(onBusy.mock.calls).toEqual([[true], [false]])
     expect(screen.getByText(translateUi('zh-CN', 'analysis.saved'))).toBeTruthy()
-    expect(sessionStorage.getItem('azurpilot.fleet-ledger.v1.test')).toBeNull()
+    await waitFor(() => expect(sessionStorage.getItem('azurpilot.fleet-ledger.v1.test')).toBeNull())
   })
 
   it('shows the highest copy per identity without merging unknown or different identities', async () => {

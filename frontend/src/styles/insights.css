@@ -198,9 +198,9 @@
    那样控件本体就变成「控件面 + 一级底」两层叠加，控件透明度滑块的力度会被冲淡。 */
 .monitor-segmented.statistics-category-control {position: relative; overflow: visible;
   background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent}
-.statistics-category-control::before {content:'';position:absolute;inset:-6px;border-radius:inherit;
+.monitor-segmented.statistics-category-control::before {content:'';position:absolute;inset:-6px;border-radius:inherit;
   background:var(--theme-surface-bg);-webkit-backdrop-filter:var(--theme-surface-filter);backdrop-filter:var(--theme-surface-filter)}
-.statistics-category-control::after {content:'';position:absolute;inset:-1px;border-radius:inherit;
+.monitor-segmented.statistics-category-control::after {content:'';position:absolute;inset:-1px;border-radius:inherit;
   background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);
   border:1px solid var(--theme-segment-border)}
 /* 按钮与选中指示器要在控件面之上；指示器本就是绝对定位，只提层级、不改定位。 */
@@ -260,10 +260,10 @@
 .statistics-metrics-container {display:flex;flex-direction:column;gap:8px;padding:14px 22px 0}
 .statistics-metrics-label {font-size:11px;color:var(--muted);font-weight:500}
 .statistics-metrics-chips {display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.stat-chip {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);color:var(--text);font-size:12px;cursor:pointer;user-select:none;transition:all .15s ease}
-.stat-chip:hover:not(:disabled) {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent)}
-.stat-chip.active {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent);font-weight:600;box-shadow:0 0 0 1px var(--accent-soft)}
-.stat-chip.empty {opacity:.45;cursor:not-allowed}
+.stat-chip:not([data-slot=button]) {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);color:var(--text);font-size:12px;cursor:pointer;user-select:none;transition:all .15s ease}
+.stat-chip:not([data-slot=button]):hover:not(:disabled) {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent)}
+.stat-chip:not([data-slot=button]).active {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent);font-weight:600;box-shadow:0 0 0 1px var(--accent-soft)}
+.stat-chip:not([data-slot=button]).empty {opacity:.45;cursor:not-allowed}
 .stat-chip small {font-size:10px;color:var(--muted);margin-left:2px}
 .stat-chip-dot {width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .15s ease}
 .stat-chip-icon {width:20px;height:20px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;opacity:.75;transition:all .15s ease;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .2))}
