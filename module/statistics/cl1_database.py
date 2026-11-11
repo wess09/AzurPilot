@@ -20,23 +20,26 @@ from module.logger import logger
 COINS_EXACT_DAYS = 3
 COINS_HISTORY_VERSION = 2
 COINS_CLEANUP_VERSION = 1
+# 黄币快照逐条保留的时间窗口；更早的按小时抽稀，控制月度文档体积。
+YELLOW_COIN_EXACT_HOURS = 6
 
 
-def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """按保留策略整理凭证快照：最近若干天逐条，更早的每小时只留最后一条。
+def thin_snapshots(snapshots: List[Dict[str, Any]], exact: timedelta) -> List[Dict[str, Any]]:
+    """按保留策略整理快照：最近 ``exact`` 内逐条保留，更早的每小时只留最后一条。
 
-    凭证写入很频繁（约 3 分钟一条），逐条无限增长会让月度 JSON 越来越大；
-    早期实现直接丢弃最旧的记录，历史因此只剩几天。改为抽稀后体积有界、历史保留。
+    高频写入的月度文档会随明细无限增长，而每次写入都要整月重写；抽稀后体积有界、
+    历史仍然保留。整月重写代价与行数成正比，抽稀直接决定写锁持有时长。
 
     Args:
-        snapshots: 凭证快照列表，元素含 ts 等字段。
+        snapshots: 快照列表，元素含 ``ts`` 等字段。
+        exact: 逐条保留的时间窗口。
 
     Returns:
         list[dict]: 按时间升序整理后的快照列表。
     """
     if not snapshots:
         return snapshots
-    cutoff = datetime.now() - timedelta(days=COINS_EXACT_DAYS)
+    cutoff = datetime.now() - exact
     kept: List[Dict[str, Any]] = []
     last_hour = None
     for snapshot in sorted(snapshots, key=lambda item: str(item.get('ts', ''))):
@@ -57,6 +60,16 @@ def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]
             kept.append(snapshot)
             last_hour = hour
     return kept
+
+
+def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """凭证快照按天抽稀：最近若干天逐条，更早的每小时只留最后一条。"""
+    return thin_snapshots(snapshots, timedelta(days=COINS_EXACT_DAYS))
+
+
+def thin_yellow_coin_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """黄币快照按小时抽稀：黄币随每次战斗刷新，逐条保留会让整月重写长达数秒。"""
+    return thin_snapshots(snapshots, timedelta(hours=YELLOW_COIN_EXACT_HOURS))
 
 
 class Cl1Database:
@@ -788,7 +801,7 @@ class Cl1Database:
                     if self._coerce_int(snapshots[-1].get("yellow_coin", -1)) == yellow_coin:
                         return
             snapshots.append(snapshot)
-            data["yellow_coin_snapshots"] = snapshots
+            data["yellow_coin_snapshots"] = thin_yellow_coin_snapshots(snapshots)
             self._save_stats_in_connection(conn, instance, month, data)
 
     def add_coins_snapshot(
