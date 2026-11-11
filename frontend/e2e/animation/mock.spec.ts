@@ -124,13 +124,18 @@ test('暗色开关在不同窗口宽度和设备缩放下保持对齐', async ({
       const measure = () => control.evaluate(element => {
         const track = element.getBoundingClientRect()
         const thumb = element.querySelector('[data-slot="switch-thumb"]')!.getBoundingClientRect()
-        return {right: track.right - thumb.right, center: (thumb.top + thumb.bottom - track.top - track.bottom) / 2}
+        return {left: thumb.left - track.left, right: track.right - thumb.right, center: (thumb.top + thumb.bottom - track.top - track.bottom) / 2}
       })
       const initial = await measure()
       expect(initial.right, `${width}px / ${dpr}x right inset`).toBeGreaterThanOrEqual(0)
+      expect(initial.right, `${width}px / ${dpr}x checked thumb reaches the right edge`).toBeLessThanOrEqual(2.5)
       expect(Math.abs(initial.center), `${width}px / ${dpr}x vertical alignment`).toBeLessThan(0.5)
       await control.click()
       await expect(control).toHaveAttribute('aria-checked', 'false')
+      await control.evaluate(async element => {await Promise.allSettled(element.getAnimations({subtree: true}).map(animation => animation.finished))})
+      const unchecked = await measure()
+      expect(unchecked.left, `${width}px / ${dpr}x unchecked thumb stays inside the track`).toBeGreaterThanOrEqual(0)
+      expect(unchecked.left, `${width}px / ${dpr}x unchecked thumb reaches the left edge`).toBeLessThanOrEqual(2.5)
       await control.click()
       await expect(control).toHaveAttribute('aria-checked', 'true')
       await expect.poll(async () => {
