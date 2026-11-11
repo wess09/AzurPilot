@@ -10,7 +10,6 @@
   color: var(--theme-text);
 }
 .fleet-analysis .button,
-.fleet-analysis input,
 .fleet-analysis select { font-size: var(--fleet-font-body); }
 .fleet-analysis .ft-savebar > .button.primary:disabled {
   opacity: 1;

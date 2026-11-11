@@ -17,9 +17,9 @@
 .ft-summary p:first-of-type b { font-size: var(--fleet-font-metric, 24px); font-variant-numeric: tabular-nums; }
 .ft-summary small { color: var(--theme-muted); font-size: var(--fleet-font-note, 12px); line-height: 1.6; }
 .ft-draft-label { margin-left: 10px; padding: 3px 6px; background: var(--theme-warning-soft); color: var(--theme-warning); border-radius: var(--theme-radius-control); font-size: var(--fleet-font-note, 12px); }
-.fleet-technology button:not([data-slot=button]) { font-family: inherit; }
-.fleet-technology button:not([data-slot=button]):focus-visible, .fleet-technology a:focus-visible { outline: 2px solid var(--theme-focus); outline-offset: 2px; }
-.fleet-technology button:not([data-slot=button]):disabled { opacity: .5; cursor: default; }
+.fleet-technology button:not([data-slot]) { font-family: inherit; }
+.fleet-technology button:not([data-slot]):focus-visible, .fleet-technology a:focus-visible { outline: 2px solid var(--theme-focus); outline-offset: 2px; }
+.fleet-technology button:not([data-slot]):disabled { opacity: .5; cursor: default; }
 .ft-filters { border: 1px solid var(--ft-line); border-radius: var(--theme-radius-control); background: var(--theme-plate-bg); }
 .ft-filter-row { display: flex; border-bottom: 1px solid var(--ft-line); min-height: 44px; }
 .ft-filter-row:first-child > strong { border-start-start-radius: var(--theme-radius-control); }

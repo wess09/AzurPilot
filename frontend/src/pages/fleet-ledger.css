@@ -8,9 +8,6 @@
 .fleet-ledger td .ledger-name { width: 13rem; max-width: 100%; color: inherit; }
 .fleet-ledger td .ledger-identity { display: block; max-width: 20rem; margin-top: 4px; }
 .fleet-ledger td .ledger-level { width: 5rem; text-align: center; }
-.fleet-ledger td input:not([type=checkbox]), .fleet-ledger td select { background: transparent; border-color: transparent; }
-.fleet-ledger td input:not([type=checkbox]):hover, .fleet-ledger td select:hover { border-color: var(--theme-input-border); }
-.fleet-ledger td input:focus, .fleet-ledger td select:focus { background: var(--theme-input-bg); border-color: var(--theme-focus); outline-color: var(--theme-focus); }
 .fleet-ledger input[type=checkbox] { min-height: auto; accent-color: var(--theme-accent); }
 .ledger-review { display: inline-flex; align-items: center; gap: 6px; }
 .fleet-ledger .ledger-modified td:first-child { box-shadow: inset 3px 0 var(--theme-warning); }
@@ -19,5 +16,3 @@
 .ledger-difference { padding: 1rem 0; border-top: 1px solid var(--theme-border); overflow-wrap: anywhere; }
 .fleet-ledger .file-button { cursor: pointer; }
 .fleet-ledger .file-button input { max-width: 16rem; }
-
-.fleet-ledger td input:not([type=checkbox]), .fleet-ledger td select { min-height: var(--table-heading-control, 36px); padding: 6px 8px; box-shadow: none; }

@@ -668,6 +668,29 @@ test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({pag
   expect(await table.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
 })
 
+for (const theme of ['legacy-light', 'legacy-dark']) {
+  test(`舰船表格 ${theme} 输入框保留组件默认样式`, async ({page}) => {
+    await page.addInitScript(theme => {
+      localStorage.setItem('azurpilot.language', 'zh-CN')
+      localStorage.setItem('azurpilot.theme', theme)
+    }, theme)
+    await page.emulateMedia({reducedMotion: 'reduce'})
+    await page.goto('/#/i/demo-main/task/FleetAnalysis?tab=data')
+    await page.getByRole('button', {name: '添加舰船', exact: true}).click()
+    const reference = page.locator('.ledger-level-range input[type="number"]').first()
+    const field = page.locator('.ledger-table-wrap tbody tr').first().locator('input[type="number"]')
+    await expect(field).toHaveAttribute('data-slot', 'input')
+    const styles = (element: Element) => {
+      const css = getComputedStyle(element)
+      return {border: css.borderColor, background: css.backgroundColor, shadow: css.boxShadow, padding: css.padding, fontSize: css.fontSize}
+    }
+    expect(await field.evaluate(styles)).toEqual(await reference.evaluate(styles))
+    await page.setViewportSize({width: 390, height: 844})
+    expect(await field.evaluate(styles)).toEqual(await reference.evaluate(styles))
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  })
+}
+
 test('舰船导入按钮打开对应的多文件选择器', async ({page}) => {
   await page.addInitScript(() => localStorage.setItem('azurpilot.language', 'zh-CN'))
   await page.goto('/#/i/demo-main/task/FleetAnalysis?tab=scan')
