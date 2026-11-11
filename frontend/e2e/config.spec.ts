@@ -1,3 +1,4 @@
+import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 
 const serialSelector = '[id="Alas.Emulator.Serial"]'
@@ -112,7 +113,7 @@ test('两个页面的旧快照均能保存，字段更新互不覆盖', async ({
 test('旧响应延迟期间连续输入并切页，最终值继续保存', async ({page}) => {
   let release: (() => void) | undefined
   let firstId: string | undefined
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -145,7 +146,7 @@ test('旧响应延迟期间连续输入并切页，最终值继续保存', async
 test('请求尚未送达就断线并刷新，恢复后自动保存原输入', async ({page}) => {
   let drop = true
   let dropped = false
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       if (JSON.parse(String(message)).method === 'config.patch' && drop) {

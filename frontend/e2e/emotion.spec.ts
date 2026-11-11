@@ -1,10 +1,11 @@
+import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 import type {Config} from '../src/api/types'
 
 test('实测心情重新输入同值会校准，浏览页面和普通字段不会重新提交', async ({page}) => {
   const patches: string[] = []
   const saved = new Map<string, Config>()
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     const pending = new Map<string, string>()
     socket.onMessage(message => {

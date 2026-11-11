@@ -1,3 +1,4 @@
+import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 import {readFile} from 'node:fs/promises'
 import {rpc} from './fleet-helpers'
@@ -27,7 +28,7 @@ test('scan page exports the latest ship JSON without accepting pending changes',
   const initial = {...latest, revision: 'old', ships: [{...latest.ships[0]!, level: 100}]}
   const methods: string[] = []
   let reads = 0
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -108,7 +109,7 @@ test('safe batch excludes removals and unresolved duplicates', async ({page}, in
     {id: 'remove', kind: 'ship', operation: 'remove', ship_id: 11, name: '杜威', before: card(11, 100), after: null, candidates: [], group_type: 10102, fields: []},
     {id: 'resolve', kind: 'ship', operation: 'resolve', ship_id: null, name: '杜威', before: null, after: card(0, 120), candidates: [card(10, 100), card(11, 100)], group_type: 10102, fields: ['level']},
   ]}
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))

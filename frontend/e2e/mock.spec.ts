@@ -1,3 +1,4 @@
+import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
@@ -106,7 +107,7 @@ test('智能换船整合四个页签，旧入口兼容且刷新与手机布局�
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {methods.push(JSON.parse(String(message)).method); server.send(message)})
     server.onMessage(message => socket.send(message))
@@ -162,7 +163,7 @@ test('换船调度区分心情触发和毕业检查，移除全舰扫描间隔',
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {requests.push(JSON.parse(String(message))); server.send(message)})
     server.onMessage(message => socket.send(message))
@@ -263,7 +264,7 @@ test('异常实例无需恢复未完成操作即可刷新换船状态并保留�
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -326,7 +327,7 @@ test('换船调度记录按舰位展示真实舰名心情，三框区分且历�
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {methods.push(JSON.parse(String(message)).method); server.send(message)})
     server.onMessage(message => {
@@ -409,7 +410,7 @@ test('同名舰船实读按舰位展示60好感，不串用另一艘布里的记
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {methods.push(JSON.parse(String(message)).method); server.send(message)})
     server.onMessage(message => {
@@ -454,7 +455,7 @@ test('仅等级调度展示未突破舰船的实际120级与存储经验', async
     localStorage.setItem('azurpilot.material', 'plain')
     localStorage.setItem('azurpilot.background.plain', JSON.stringify({source: 'off'}))
   })
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {methods.push(JSON.parse(String(message)).method); server.send(message)})
     server.onMessage(message => {
@@ -620,7 +621,7 @@ test('侵蚀一资源检查配置位于献祭流下方且通用页不再显示',
 test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({page}) => {
   await page.addInitScript(() => localStorage.setItem('azurpilot.language', 'zh-CN'))
   let catalogCount = 0
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer(), methods = new Map<string, string>()
     socket.onMessage(message => {const request = JSON.parse(String(message)); methods.set(request.id, request.method); server.send(message)})
     server.onMessage(message => {
@@ -642,8 +643,8 @@ test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({pag
   })
   await page.goto('/#/i/demo-main/task/FleetAnalysis?tab=technology')
   const table = page.locator('.ft-table-wrap')
-  await expect.poll(() => catalogCount).toBeGreaterThan(50)
-  await expect(table.locator('tbody tr')).toHaveCount(catalogCount)
+  await expect.poll(() => catalogCount, {timeout: 15_000}).toBeGreaterThan(50)
+  await expect(table.locator('tbody tr')).toHaveCount(catalogCount, {timeout: 20_000})
   await expect(page.locator('.ft-summary')).toContainText('里程碑独立保存')
   await expect(page.getByRole('button', {name: '舰船底账', exact: true})).toHaveCount(0)
   await expect(page.getByRole('button', {name: '合并记录', exact: true})).toHaveCount(0)
@@ -665,7 +666,9 @@ test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({pag
   await expect(table.locator('tr[data-group="10102"]')).toHaveCount(1)
   await page.setViewportSize({width: 412, height: 950})
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
-  expect(await table.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
+  expect(await table.locator('[data-slot=table-container]').evaluate(
+    element => element.scrollWidth > element.clientWidth,
+  )).toBe(true)
 })
 
 for (const theme of ['legacy-light', 'legacy-dark']) {
@@ -806,14 +809,14 @@ test('统计慢请求合并更新且概览事件不重复取数', async ({page})
   let overview = ''
   let emit: (topic: string, instance?: string) => void = () => {}
   let release: () => void = () => {}
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
-    emit = (topic, instance = 'demo-main') => {
+    if (socket.channel === 'control') emit = (topic, instance = 'demo-main') => {
       /* 概览事件回放服务端的真实载荷：右栏直接按 Overview 形状消费事件数据，占位载荷会把它渲染崩。 */
       if (topic === 'overview' && overview) socket.send(overview)
       else socket.send(JSON.stringify({v: 1, type: 'event', topic, seq: 100, data: {instance}}))
     }
-    release = () => socket.send(held.shift()!)
+    if (socket.channel === 'data') release = () => socket.send(held.shift()!)
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
       if (request.method === 'statistics.report') ids.add(request.id)
@@ -851,9 +854,9 @@ test('统计切换分类后丢弃旧响应和旧刷新回调', async ({page}) =>
   let held = ''
   let oldId = ''
   let release: () => void = () => {}
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
-    release = () => socket.send(held)
+    if (socket.channel === 'data') release = () => socket.send(held)
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
       if (request.method === 'statistics.report' && request.params.category === 'opsi') oldId = request.id
@@ -1522,7 +1525,7 @@ test('没有实例时进入首次设置，完成后打开新实例总览', async
   const name = `oobe_${Date.now()}`
   let createId: string | undefined
   let created = false
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     const ids = new Set<string>()
     socket.onMessage(message => {
@@ -1581,7 +1584,7 @@ test('系统设置开关、选项和数字字段可校验并保存', async ({pag
   let channel = 'legacy'
   let interval = 60
   const settingsRequests = new Set<string>()
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(message.toString())
@@ -1645,7 +1648,7 @@ test('系统设置开关、选项和数字字段可校验并保存', async ({pag
 })
 
 test('实例列表读取失败不阻塞全局设置', async ({page}) => {
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))

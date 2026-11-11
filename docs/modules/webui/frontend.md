@@ -65,7 +65,7 @@ frontend/README.md 与 frontend/API.md 已经是本前端的详细文档：前�
 ### 负责
 
 - 渲染单页应用（hash 路由）：主页、实例总览、任务配置、统计、系统设置、更新器等页面
-- WebSocket 连接管理：认证、心跳、请求关联、超时与重连（`src/api/client.ts`）
+- WebSocket 请求与订阅分流由 `src/api/client.ts` 负责。两条连接的认证、心跳、超时、重连与分片重组由 `src/api/socket.ts` 处理。
 - 配置表单展示与保存：字段保存队列、草稿恢复、重试与数值校验（`src/config/EditQueue.ts`）
 - 任务优先级字段的拖动排序与解析：`src/app/taskPriority.ts`（纯函数：解析/合并/移动）+ `src/components/TaskPriorityField.tsx`（拖拽交互），写入 `Scheduler_Scheduler_Tasks`，提交值用 `
 > ` 分隔（注释行与全角箭头已兼容归一）
@@ -85,7 +85,7 @@ frontend/README.md 与 frontend/API.md 已经是本前端的详细文档：前�
 ```text
 frontend/
 ├── src/main.tsx              # 应用入口：hash 路由表、错误兜底、先加载主题再挂载
-├── src/api/                  # client.ts 连接层；generated.ts 与 contract.json 为生成产物
+├── src/api/                  # client.ts 分流，socket.ts 连接；generated.ts 与 contract.json 为生成产物
 ├── src/app/                  # 布局、主题系统（theme.ts 按需加载）、连接上下文、任务优先级解析（taskPriority.ts）、各类偏好
 ├── src/pages/                # 页面：Home / Overview / TaskConfig / Statistics / Settings / Updater 等
 ├── src/components/StockExchangeBoundary.tsx # 股票接入页面的加载和错误兜底

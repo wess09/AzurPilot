@@ -1,3 +1,4 @@
+import {routeRpc} from '../rpc-route'
 import { expect, test } from '@playwright/test'
 
 for (const theme of ['legacy-light', 'legacy-dark'] as const) {
@@ -5,7 +6,7 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
     let enabled = false
     const requests = new Set<string>()
     await page.addInitScript(value => localStorage.setItem('azurpilot.theme', value), theme)
-    await page.routeWebSocket('**/api/v1/ws', socket => {
+    await routeRpc(page, socket => {
       const server = socket.connectToServer()
       socket.onMessage(message => {
         const request = JSON.parse(message.toString())

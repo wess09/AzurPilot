@@ -3,7 +3,9 @@ import asyncio
 import json
 import shutil
 import tempfile
+import threading
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock, patch
@@ -16,6 +18,7 @@ from module.api.config_service import ConfigService, ROOT
 from module.api.protocol import ApiError, ConfigChange
 from module.api.runtime_service import RuntimeService
 from module.api.socket import Gateway, Session
+from module.api.ws_transport import FRAME_BYTES, frames
 from tests.platform_capabilities import supports_symlinks
 
 
@@ -459,6 +462,75 @@ class SocketApiTests(unittest.TestCase):
             self.assertEqual('UNAUTHORIZED', response['error']['code'])
             self.assertTrue(self.call(ws, 'auth.login', {'password': 'test-secret'})['ok'])
             self.assertEqual('testpilot', self.call(ws, 'instances.list')['result'][0]['name'])
+
+    def test_data_channel_fragments_large_reports_without_blocking_operations(self):
+        entered, release = threading.Event(), threading.Event()
+        self.addCleanup(release.set)
+        report = {'tables': [{'title': '资源变化', 'rows': [['获得物资', index] for index in range(30000)]}]}
+
+        def statistics(_):
+            entered.set()
+            if not release.wait(10):
+                raise TimeoutError('操作通道未及时返回')
+            return report
+
+        methods = self.app.state.gateway.router.methods
+        with patch.dict(methods, {'statistics.report': replace(methods['statistics.report'], handler=statistics)}):
+            with (self.client.websocket_connect('/api/v1/ws?channel=control') as control,
+                  self.client.websocket_connect('/api/v1/ws?channel=data') as data):
+                self.login(control)
+                self.assertEqual('data', data.receive_json()['data']['channel'])
+                self.assertEqual('UNAUTHORIZED', self.call(data, 'statistics.report', {'instance': 'testpilot'})['error']['code'])
+                self.assertTrue(self.call(data, 'auth.login', {'password': 'test-secret'})['ok'])
+                self.assertEqual('WRONG_CHANNEL', self.call(data, 'scheduler.stop', {'instance': 'testpilot'})['error']['code'])
+                self.assertEqual('WRONG_CHANNEL', self.call(control, 'statistics.report', {'instance': 'testpilot'})['error']['code'])
+                self.assertEqual('WRONG_CHANNEL', self.call(control, 'events.subscribe', {
+                    'instance': 'testpilot', 'topics': ['logs'],
+                })['error']['code'])
+                data.send_json({'v': 1, 'type': 'request', 'id': 'large', 'method': 'statistics.report',
+                                'params': {'instance': 'testpilot'}})
+                try:
+                    self.assertTrue(entered.wait(3))
+                    self.assertTrue(self.call(control, 'instances.list')['ok'])
+                    self.assertFalse(release.is_set())
+                finally:
+                    release.set()
+                parts = []
+                while True:
+                    part = data.receive_bytes()
+                    self.assertLessEqual(len(part), FRAME_BYTES)
+                    parts.append(part[1:])
+                    if part[0] == 1:
+                        break
+                    self.assertEqual(0, part[0])
+                self.assertGreater(len(parts), 1)
+                self.assertEqual(report, json.loads(b''.join(parts))['result'])
+
+    def test_data_channel_reassembles_upload_and_preserves_request_limit(self):
+        import base64
+
+        rows = [{'name': '驱逐舰', 'level': 100}] * 3000
+        content = base64.b64encode(json.dumps({'ships': rows}, ensure_ascii=False).encode()).decode()
+        self.assertGreater(len(content), FRAME_BYTES)
+        with self.client.websocket_connect('/api/v1/ws?channel=data') as data:
+            self.login(data)
+            upload = Session.encode({'v': 1, 'type': 'request', 'id': 'upload', 'method': 'mind.import',
+                                     'params': {'instance': 'testpilot', 'filename': 'ships.json', 'content': content}})
+            for part in frames(upload):
+                data.send_bytes(part)
+            parts = []
+            while True:
+                part = data.receive_bytes()
+                self.assertLessEqual(len(part), FRAME_BYTES)
+                parts.append(part[1:])
+                if part[0] == 1:
+                    break
+            self.assertEqual(3000, len(json.loads(b''.join(parts))['result']['ships']))
+            oversized = Session.encode({'v': 1, 'type': 'request', 'id': 'limit', 'method': 'config.get',
+                                        'params': {'instance': 'testpilot', 'padding': 'x' * 1024 * 1024}})
+            for part in frames(oversized):
+                data.send_bytes(part)
+            self.assertEqual('INVALID_REQUEST', data.receive_json()['error']['code'])
 
     def test_large_calculator_file_keeps_other_message_limits(self):
         """舰船文件可超过 1 MiB，其余方法仍受原限制约束。"""
