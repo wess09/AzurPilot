@@ -71,6 +71,7 @@ export const subscribeTheme = (listener: () => void) => {
 function syncTheme(next: Preference) {
   const root = document.documentElement
   preference = {...next, resolvedMode: resolveMode(next)}
+  root.classList.toggle('dark', preference.resolvedMode === 'dark')
   if (next.theme === 'minimal') root.dataset.colorMode = preference.resolvedMode
   else delete root.dataset.colorMode
   applyCustomLayer()

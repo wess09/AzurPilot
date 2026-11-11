@@ -27,7 +27,6 @@
   --syntax-key: #126c9a; --syntax-string: #237342; --syntax-value: #96509e;
   --syntax-comment: #72818a; --syntax-punctuation: #657581;
   --theme-font-mono: "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace;
-  font-size: 14px;
 }
 
 * {box-sizing: border-box}

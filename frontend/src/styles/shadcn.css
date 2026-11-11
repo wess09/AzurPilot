@@ -13,6 +13,10 @@
    会反过来盖掉 shadcn 的 `bg-*`（无层 > 有层）。 */
 @import 'tailwindcss/preflight.css';
 @import 'tailwindcss/utilities.css';
+/* shadcn/ui 官方安装项：组件的 animate-in / fade-in / zoom-in 等动效工具类。 */
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
 
 /* 显式声明扫描范围：入口样式在 styles/ 下，组件在上一层。 */
 @source '../';
@@ -20,6 +24,8 @@
 @theme inline {
   --color-background: var(--sc-background);
   --color-foreground: var(--sc-foreground);
+  --color-card: var(--sc-card);
+  --color-card-foreground: var(--sc-card-foreground);
   --color-popover: var(--sc-popover);
   --color-popover-foreground: var(--sc-popover-foreground);
   --color-primary: var(--sc-primary);
@@ -34,37 +40,54 @@
   --color-border: var(--sc-border);
   --color-input: var(--sc-input);
   --color-ring: var(--sc-ring);
-  --radius-sm: calc(var(--theme-radius-control) - 4px);
-  --radius-md: calc(var(--theme-radius-control) - 2px);
-  --radius-lg: var(--theme-radius-control);
-  --radius-xl: calc(var(--theme-radius-control) + 4px);
+  --radius-sm: calc(var(--sc-radius) - 4px);
+  --radius-md: calc(var(--sc-radius) - 2px);
+  --radius-lg: var(--sc-radius);
+  --radius-xl: calc(var(--sc-radius) + 4px);
 }
 
-/* shadcn/ui 的标准语义色变量。
-   取值按 shadcn 默认主题（中性灰）走：primary 是前景色而不是品牌色，
-   accent 是中性悬停面，ring 是中性焦点环 —— 控件不自带任何品牌色。 */
+/* shadcn/ui 官方默认主题（中性灰）原值，不随应用主题变化。
+   变量加 `--sc-` 前缀只为避开应用侧同名的 `--background` / `--border` / `--radius`
+   等旧变量，取值与官方 `:root` 完全一致。 */
 :root {
-  --sc-background: var(--theme-surface);
-  --sc-foreground: var(--theme-text);
-  --sc-popover: var(--theme-surface);
-  --sc-popover-foreground: var(--theme-text);
-  --sc-primary: var(--theme-text);
-  --sc-primary-foreground: var(--theme-surface);
-  --sc-secondary: var(--theme-surface-muted);
-  --sc-secondary-foreground: var(--theme-text);
-  --sc-muted: var(--theme-surface-muted);
-  --sc-muted-foreground: var(--theme-muted);
-  --sc-accent: rgb(0 0 0 / .06);
-  --sc-accent-foreground: var(--theme-text);
-  --sc-destructive: var(--theme-danger);
-  --sc-border: var(--theme-border);
-  --sc-input: rgb(0 0 0 / .22);
-  --sc-ring: rgb(0 0 0 / .25);
+  --sc-radius: 0.625rem;
+  --sc-background: oklch(1 0 0);
+  --sc-foreground: oklch(0.145 0 0);
+  --sc-card: oklch(1 0 0);
+  --sc-card-foreground: oklch(0.145 0 0);
+  --sc-popover: oklch(1 0 0);
+  --sc-popover-foreground: oklch(0.145 0 0);
+  --sc-primary: oklch(0.205 0 0);
+  --sc-primary-foreground: oklch(0.985 0 0);
+  --sc-secondary: oklch(0.97 0 0);
+  --sc-secondary-foreground: oklch(0.205 0 0);
+  --sc-muted: oklch(0.97 0 0);
+  --sc-muted-foreground: oklch(0.556 0 0);
+  --sc-accent: oklch(0.97 0 0);
+  --sc-accent-foreground: oklch(0.205 0 0);
+  --sc-destructive: oklch(0.577 0.245 27.325);
+  --sc-border: oklch(0.922 0 0);
+  --sc-input: oklch(0.922 0 0);
+  --sc-ring: oklch(0.708 0 0);
 }
-:root[data-theme='legacy-dark'] {
-  --sc-primary: #f4f4f5;
-  --sc-primary-foreground: #18181b;
-  --sc-accent: rgb(255 255 255 / .1);
-  --sc-input: rgb(255 255 255 / .22);
-  --sc-ring: rgb(255 255 255 / .3);
+
+.dark {
+  --sc-background: oklch(0.145 0 0);
+  --sc-foreground: oklch(0.985 0 0);
+  --sc-card: oklch(0.205 0 0);
+  --sc-card-foreground: oklch(0.985 0 0);
+  --sc-popover: oklch(0.205 0 0);
+  --sc-popover-foreground: oklch(0.985 0 0);
+  --sc-primary: oklch(0.922 0 0);
+  --sc-primary-foreground: oklch(0.205 0 0);
+  --sc-secondary: oklch(0.269 0 0);
+  --sc-secondary-foreground: oklch(0.985 0 0);
+  --sc-muted: oklch(0.269 0 0);
+  --sc-muted-foreground: oklch(0.708 0 0);
+  --sc-accent: oklch(0.269 0 0);
+  --sc-accent-foreground: oklch(0.985 0 0);
+  --sc-destructive: oklch(0.704 0.191 22.216);
+  --sc-border: oklch(1 0 0 / 10%);
+  --sc-input: oklch(1 0 0 / 15%);
+  --sc-ring: oklch(0.556 0 0);
 }
