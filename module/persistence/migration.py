@@ -716,6 +716,9 @@ def migrate(database):
                 phase('保存 %s 条未迁移记录的清单', len(decoder.unmigrated))
                 (backup / 'unmigrated.json').write_text(json.dumps(decoder.unmigrated, ensure_ascii=False, indent=2), encoding='utf-8')
             phase('切换正式总库：%s', database.path)
+            # 长连接会持有文件句柄，Windows 上必须先释放才能替换库文件。
+            from module.persistence.database import close_all
+            close_all(database.directory)
             os.replace(temporary, database.path)
             phase('保存迁移完成标记')
             database._write_marker(digest)
