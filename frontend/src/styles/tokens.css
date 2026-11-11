@@ -31,18 +31,18 @@
 
 * {box-sizing: border-box}
 body {margin: 0; color: var(--text); background: var(--bg)}
-button, input, select, textarea {font: inherit}
+button:not([data-slot]), input:not([data-slot]), select:not([data-slot]), textarea:not([data-slot]) {font: inherit}
 code, kbd, samp {font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace)}
 button, a, input, select, textarea {-webkit-tap-highlight-color: transparent}
 button, a {touch-action: manipulation}
-button {cursor: pointer; color: inherit}
-button:disabled {cursor: not-allowed; opacity: .5}
-a {color: inherit; text-decoration: none}
-button {border: 0; background: none}
-button:focus-visible, a:focus-visible, summary:focus-visible {outline: 2px solid var(--accent); outline-offset: 4px}
-input, select, textarea {border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; color: var(--text); background: var(--surface); min-width: 0; transition: border-color .15s}
-input:focus, select:focus, textarea:focus {outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
-input::placeholder {color: var(--muted)}
+button:not([data-slot]) {cursor: pointer; color: inherit}
+button:not([data-slot]):disabled {cursor: not-allowed; opacity: .5}
+a:not([data-slot]) {color: inherit; text-decoration: none}
+button:not([data-slot]) {border: 0; background: none}
+button:not([data-slot]):focus-visible, a:not([data-slot]):focus-visible, summary:focus-visible {outline: 2px solid var(--accent); outline-offset: 4px}
+input:not([data-slot]), select:not([data-slot]), textarea:not([data-slot]) {border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; color: var(--text); background: var(--surface); min-width: 0; transition: border-color .15s}
+input:not([data-slot]):focus, select:not([data-slot]):focus, textarea:not([data-slot]):focus {outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+input:not([data-slot])::placeholder {color: var(--muted)}
 input[type='checkbox'] {accent-color: var(--accent); width: 14px; height: 14px}
 h1, h2, h3, p {margin: 0}
 h1 {font-size: 30px; letter-spacing: -.8px; font-weight: 700; line-height: 1.3}

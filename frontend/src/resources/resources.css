@@ -16,17 +16,13 @@
 .resource-heading h2 {margin:0}
 .resource-search {display:flex; align-items:center; gap:8px; color:var(--muted)}
 .resource-search input {width:220px}
-.resource-table-wrap {overflow:auto; max-height:450px; margin-top:14px}
-.resource-management table {width:100%; border-collapse:collapse; font-size:12px; white-space:nowrap; font-variant-numeric:tabular-nums}
-.resource-management th,.resource-management td {padding:10px 12px; text-align:right; border-bottom:1px solid var(--border)}
-.resource-management th:first-child,.resource-management td:first-child {text-align:left}
-.resource-management thead {position:sticky; top:0; z-index:1; background:var(--surface)}
-.resource-management thead th {color:var(--muted); font-weight:500}
-.resource-management tr.selected {background:color-mix(in srgb,var(--accent) 9%,transparent)}
-.resource-pick {display:flex; align-items:center; gap:8px; font-weight:500; text-align:left}
+.resource-table-wrap {margin-top:14px}
+.resource-table-wrap > [data-slot=table-container] {overflow:auto; max-height:450px}
+.resource-table-wrap [data-slot=table-header] {background:var(--theme-surface-muted)}
+.resource-table-wrap [data-slot=table-head] {color:var(--theme-muted)}
 .resource-pick img {height:22px; width:22px; object-fit:contain}
 .resource-income {color:var(--accent)}
 .resource-evidence {font-size:11px; padding:4px 7px; border-radius:6px; background:color-mix(in srgb,var(--muted) 12%,transparent)}
 .resource-evidence.adjustment {color:var(--muted)}
 .resource-pagination {display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:16px; font-size:12px; font-variant-numeric:tabular-nums}
-@media(max-width:900px) {.oil-control {grid-template-columns:1fr}.resource-panel {padding:14px}.resource-search input {width:180px}.resource-management table {font-size:11px}}
+@media(max-width:900px) {.oil-control {grid-template-columns:1fr}.resource-panel {padding:14px}.resource-search input {width:180px}}

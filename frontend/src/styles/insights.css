@@ -293,13 +293,7 @@
    同时面板自身可滚动，滚动后标题行会滚出视口。右侧让开按钮宽度并让它吸顶。
    这里必须带 !important：紧凑主题用 padding 简写加 !important 压过面板内边距。 */
 .panel.chart-expanded .panel-heading {position:sticky;top:0;z-index:2;padding-right:160px !important;background:var(--surface)}
-.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {overflow-x:auto;overflow-y:visible;max-height:none}.statistics-table table {border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}.statistics-table td,.statistics-table th {padding:13px 20px;text-align:center;border-bottom:1px solid var(--theme-table-line);font-variant-numeric:tabular-nums}
-/* 表头下面那条比行线重一档，把表头与表体分开。 */
-.statistics-table th {border-bottom-color: var(--theme-table-line-strong)}
-/* 单行表格把一批指标排成一横排：列名允许折行、数值紧凑，并补上列与列之间的分隔。 */
-.statistics-table.is-single-row table {font-size:11px;white-space:normal}
-.statistics-table.is-single-row td,.statistics-table.is-single-row th {padding:6px 8px;line-height:1.35;word-break:break-word}
-.statistics-table.is-single-row th:not(:first-child),.statistics-table.is-single-row td:not(:first-child) {border-left:1px solid var(--border)}.statistics-table th {position:sticky;top:0;z-index:1}.statistics-table th button {border:0;background:none;color:var(--text);cursor:pointer;font:inherit;padding:0}.statistics-table tbody tr:hover {background:color-mix(in srgb, var(--theme-inset-bg) 60%, transparent)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
+.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {overflow-x:auto;overflow-y:visible;max-height:none}.statistics-table [data-slot=table-header] {background:var(--theme-surface-muted)}.statistics-table [data-slot=table-head] {color:var(--theme-muted)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
 /* 卡片适应：列数由脚本按容器宽度写入，末排因此不会各自撑满整行。 */
 .resource-grid.resource-fit {display:grid}
 /* 合并卡横跨整行，卡片的列布局由它内层承载。 */

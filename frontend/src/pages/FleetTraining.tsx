@@ -1,4 +1,5 @@
 import {Button} from '../components/ui/button'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {useEffect, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
@@ -80,17 +81,17 @@ export function TrainingRecords({snapshot}: {snapshot: RecordSnapshot}) {
       return <section className="panel" key={kind} aria-label={ui(`training.${kind}Ships`)} style={{padding: 20, minWidth: 0}}>
         <h2>{ui(`training.${kind}Ships`)} · {rows.length}</h2>
         {kind !== 'training' && <p className="muted">{ui('training.historyLimit', {count: total})}</p>}
-        {!rows.length ? <p className="muted">{ui('training.empty')}</p> : <div className="training-record-table" style={{overflowX: 'auto'}}>
-          <table className="data-table" style={{width: '100%', minWidth: 900, whiteSpace: 'nowrap', fontSize: 14, padding: 0, borderCollapse: 'collapse'}}>
-          <thead><tr><th>{ui('training.fleet')}</th><th>{ui('training.slot')}</th><th>{ui('training.ship')}</th><th>{ui('training.emotion')}</th><th>{ui('training.level')}</th><th>{ui('training.exp')}</th><th>{ui('training.affinity')}</th><th>{ui('training.checkedAt')}</th></tr></thead>
-          <tbody>{rows.map(row => <tr key={row.key}>
-            <td>{row.fleet ? ui('fleet.title', {number: row.fleet}) : ui('training.unread')}</td>
-            <td>{row.slot ? ui('fleet.slot', {number: row.slot}) : ui('training.unread')}</td>
-            <td>{row.name || ui('fleet.unknown')}</td><td>{row.emotion ?? ui('training.unread')}</td>
-            <td title={row.display_level == null ? undefined : ui('training.displayLevel', {level: row.display_level})}>{row.level ?? ui('training.unread')}</td><td>{row.exp ?? ui('training.unread')}</td><td>{row.affinity ?? ui('training.unread')}</td>
-            <td>{row.checked_at ? row.checked_at.replace('T', ' ') : ui('training.unread')}</td>
-          </tr>)}</tbody>
-          </table>
+        {!rows.length ? <p className="muted">{ui('training.empty')}</p> : <div className="training-record-table overflow-x-auto">
+          <Table className="min-w-[900px] whitespace-nowrap tabular-nums">
+          <TableHeader><TableRow><TableHead>{ui('training.fleet')}</TableHead><TableHead>{ui('training.slot')}</TableHead><TableHead>{ui('training.ship')}</TableHead><TableHead>{ui('training.emotion')}</TableHead><TableHead>{ui('training.level')}</TableHead><TableHead>{ui('training.exp')}</TableHead><TableHead>{ui('training.affinity')}</TableHead><TableHead>{ui('training.checkedAt')}</TableHead></TableRow></TableHeader>
+          <TableBody>{rows.map(row => <TableRow key={row.key}>
+            <TableCell>{row.fleet ? ui('fleet.title', {number: row.fleet}) : ui('training.unread')}</TableCell>
+            <TableCell>{row.slot ? ui('fleet.slot', {number: row.slot}) : ui('training.unread')}</TableCell>
+            <TableCell>{row.name || ui('fleet.unknown')}</TableCell><TableCell>{row.emotion ?? ui('training.unread')}</TableCell>
+            <TableCell title={row.display_level == null ? undefined : ui('training.displayLevel', {level: row.display_level})}>{row.level ?? ui('training.unread')}</TableCell><TableCell>{row.exp ?? ui('training.unread')}</TableCell><TableCell>{row.affinity ?? ui('training.unread')}</TableCell>
+            <TableCell>{row.checked_at ? row.checked_at.replace('T', ' ') : ui('training.unread')}</TableCell>
+          </TableRow>)}</TableBody>
+          </Table>
         </div>}
       </section>
     })}
