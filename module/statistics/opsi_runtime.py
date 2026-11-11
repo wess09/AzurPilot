@@ -140,6 +140,7 @@ def cl1_round_timer(config: Any) -> Iterator[None]:
 
     中断时只用已经返回地图的战斗折算，未完成任何战斗则不生成样本。
     嵌套事件搜索共用外层计时，退出后立即清除，避免计入其他任务和停机时间。
+    结算时输出耗时，轮次样本交给后台保存。
     """
     if getattr(config, "_cl1_round_metrics", None) is not None:
         yield
@@ -155,12 +156,23 @@ def cl1_round_timer(config: Any) -> Iterator[None]:
         del config._cl1_round_metrics
         if metrics["battle_count"]:
             try:
-                from module.statistics.ship_exp_stats import get_ship_exp_stats
+                from module.base.async_executor import async_executor
+                from module.persistence.database import get_database
+                from module.statistics.ship_exp_stats import ShipExpStats
 
                 rounds = metrics["battle_count"] / 2
-                get_ship_exp_stats(instance_name=instance_name_from_config(config)).record_round_time(
-                    duration, round_count=rounds,
-                )
+                instance_name = instance_name_from_config(config)
+                store = get_database()
+
+                def save_round_time():
+                    try:
+                        ShipExpStats(instance_name=instance_name, store=store).record_round_time(
+                            duration, round_count=rounds,
+                        )
+                    except Exception:
+                        logger.exception("[统计-大世界] 记录侵蚀1完整轮次耗时失败")
+
+                async_executor.submit(save_round_time)
                 logger.attr("CL1单轮耗时", f"{duration / rounds:.2f}s/round")
             except Exception:
                 logger.exception("[统计-大世界] 记录侵蚀1完整轮次耗时失败")
