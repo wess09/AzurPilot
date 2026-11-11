@@ -361,7 +361,7 @@ export function Statistics() {
   const applyChains = (page: Category, view: PageView, next: StatisticsLayout, moved?: string) => applyLayout({...next, cards: {...next.cards, [cardSpace(layout, page)]: rechain(view.chains, orderCards(next, page, spaceKeysOf(page)).filter(item => !isCardHidden(next, item)), moved)}})
   const pageIds = orderPages(layout)
   const singleView = layout.singleView
-  const singleViewToggle = editMode ? <button type="button" className="statistics-single-view" aria-pressed={singleView} aria-label={ui('stats.mergePages')} title={ui('stats.mergePages')} onClick={() => applyLayout({...layout, singleView: !singleView})}>{ui('stats.mergePages')}</button> : undefined
+  const singleViewToggle = editMode ? <Button type="button" variant={singleView ? 'default' : 'outline'} size="sm" aria-pressed={singleView} aria-label={ui('stats.mergePages')} title={ui('stats.mergePages')} onClick={() => applyLayout({...layout, singleView: !singleView})}>{ui('stats.mergePages')}</Button> : undefined
   const pageEntries = pageIds.map(id => [id, categories[id]] as [Category, UiKey])
   /* 非编辑模式一条链只留首个在前的页面；编辑模式七个页面都在，便于拆开组合。 */
   const chainOf = (page: Category) => layout.pages.find(chain => chain.includes(page)) ?? [page]
@@ -493,15 +493,15 @@ export function Statistics() {
       const claimed = view.spaceOrder.slice(0, view.spaceOrder.indexOf(key)).some(item => !isCardHidden(layout, item))
       if (claimed) return null
       return <div className="stat-card-hidden" key={key}>
-        <button type="button" className="text-button" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, key)}><Eye size={15}/></button>
+        <Button type="button" variant="ghost" size="icon-xs" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, key)}><Eye/></Button>
       </div>
     }
     const table = view.tableKeys.includes(key) ? report!.tables.find(item => cardKey(page, `table:${item.title}`) === key) : undefined
     const drop = dropTarget?.key === key ? (dropTarget.after ? ' is-drop-after' : ' is-drop-before') : ''
     const bar = editMode ? <div className="stat-card-edit-bar">
-      <button type="button" className="text-button" disabled={index === 0} aria-label={ui('stats.orderUp')} title={ui('stats.orderUp')} onClick={() => moveCard(page, view, key, index - 1)}><ArrowUp size={15}/></button>
+      <Button type="button" variant="ghost" size="icon-xs" disabled={index === 0} aria-label={ui('stats.orderUp')} title={ui('stats.orderUp')} onClick={() => moveCard(page, view, key, index - 1)}><ArrowUp/></Button>
       <button type="button" className="stat-card-drag-handle" aria-label={ui('stats.orderHandle')} title={ui('stats.orderHandle')} onPointerDown={event => { event.preventDefault(); setDraggingKey(key) }}><GripVertical size={15}/></button>
-      <button type="button" className="text-button" disabled={index === spaceKeysOf(page).length - 1} aria-label={ui('stats.orderDown')} title={ui('stats.orderDown')} onClick={() => moveCard(page, view, key, index + 1)}><ArrowDown size={15}/></button>
+      <Button type="button" variant="ghost" size="icon-xs" disabled={index === spaceKeysOf(page).length - 1} aria-label={ui('stats.orderDown')} title={ui('stats.orderDown')} onClick={() => moveCard(page, view, key, index + 1)}><ArrowDown/></Button>
     </div> : null
     /* 下一张按显示中的顺序取：隐藏卡是断开状态、不参与连接，它自己不出连接符。 */
     const next = isCardHidden(layout, key) ? undefined : view.visibleKeys[view.visibleKeys.indexOf(key) + 1] ?? boundary
@@ -511,10 +511,10 @@ export function Statistics() {
     /* 占位条只在编辑模式出现：非编辑模式下隐藏卡不留痕迹。 */
     const seam = next || slots.length > 0
       ? <div className={`stat-card-seam${next && isLinked(view.chains, key, next) ? ' is-linked' : ''}`}>{editMode ? slots.map(item => <div className="stat-card-hidden" key={item}>
-        <button type="button" className="text-button" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, item)}><Eye size={15}/></button>
+        <Button type="button" variant="ghost" size="icon-xs" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, item)}><Eye/></Button>
       </div>) : null}{editMode && next ? junctionButton(page, view, key, next) : null}</div>
       : null
-    const hide = editMode ? <button type="button" className="text-button stat-card-hide" aria-label={ui('stats.hideCard')} title={ui('stats.hideCard')} onClick={() => hideKey(page, view, key)}><EyeOff size={15}/></button> : null
+    const hide = editMode ? <Button type="button" variant="ghost" size="icon-xs" className="stat-card-hide" aria-label={ui('stats.hideCard')} title={ui('stats.hideCard')} onClick={() => hideKey(page, view, key)}><EyeOff/></Button> : null
     const className = `${view.cardClass(key)}${key === view.chartKey && isCardFolded(layout, view.plotKey) ? ' is-plot-folded' : ''}${draggingKey === key ? ' is-dragging' : ''}${drop}`
     return <Fragment key={key}><div data-card-key={key} className={className}>{bar}{key === view.metricsKey
       ? <><section className="panel summary-metrics-panel">{isMetricsTable(layout, page) ? <StatisticsTable data={metricsTable!} foldControl={view.foldControl(view.metricsKey)} editControls={editMode ? <><Button type="button" variant="ghost" size="sm" aria-pressed={isMetricsTable(layout, page)} aria-label={ui('stats.cardMode')} title={ui('stats.cardMode')} onClick={() => applyLayout(setMetricsTable(layout, page, false))}>{ui('stats.cardMode')}</Button>{tableSettings(view.metricsKey, metricsTable!)}</> : undefined}/> : <><div className="panel-heading"><div><h3>{metricsTitle}</h3>{editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={isMetricsTable(layout, page)} aria-label={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} title={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} onClick={() => applyLayout(setMetricsTable(layout, page, !isMetricsTable(layout, page)))}>{isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')}</Button> : undefined}</div><div className="stat-card-actions">{view.foldControl(view.metricsKey)}</div></div><div className="stat-metrics summary-metrics">{report!.metrics.map(item => {
