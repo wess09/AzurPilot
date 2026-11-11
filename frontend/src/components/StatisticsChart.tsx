@@ -492,7 +492,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       {/* 紧凑主题把标题提到页面工具栏；放大视图盖住工具栏，此时必须把标题行放回来。 */}
       {(heading || expanded) && <div className="panel-heading">
         <h2>{expanded && title ? title : headingLabel}</h2>
-        <div className="stat-card-actions">{foldControl}<button className="text-button" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</button></div>
+        <div className="stat-card-actions">{foldControl}<Button variant="ghost" size="sm" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</Button></div>
       </div>}
 
       {showPicker ? <div className={`statistics-metrics-container${pickerMuted ? ' is-picker-muted' : ''}`}>
