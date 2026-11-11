@@ -71,6 +71,7 @@ docs/*
 .agents/
 .trae/
 .workbuddy/
+.codebuddy/
 .zcode/
 .cursor/
 .graphflow-cache/
