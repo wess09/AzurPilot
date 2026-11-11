@@ -114,7 +114,7 @@ test('智能换船整合四个页签，旧入口兼容且刷新与手机布局�
   const tabs = page.getByRole('tablist', {name: '智能换船'})
   await expect(tabs.getByRole('tab')).toHaveText(['舰队信息', '换船配置', '换船调度', '换船装备'])
   await expect(page.getByRole('tabpanel')).toHaveAccessibleName('舰队信息')
-  await expect(page.getByRole('tabpanel').locator('.loading')).toHaveCount(0)
+  await expect(page.getByRole('tabpanel').locator('[data-slot=loading]')).toHaveCount(0)
   await page.getByRole('button', {name: '舰队管理', exact: true}).hover()
   const menu = page.getByRole('menu', {name: '舰队管理', exact: true})
   await expect(menu.getByRole('menuitem')).toHaveText(['智能换船', '舰船数据'])
@@ -125,7 +125,7 @@ test('智能换船整合四个页签，旧入口兼容且刷新与手机布局�
     await expect(page.getByRole('tabpanel')).toHaveAccessibleName(name)
     await expect(page.getByRole('heading', {name, exact: true})).toBeVisible()
     await expect(tabs.getByRole('tab', {name, exact: true})).toHaveAttribute('aria-selected', 'true')
-    await expect(page.getByRole('tabpanel').locator('.loading')).toHaveCount(0)
+    await expect(page.getByRole('tabpanel').locator('[data-slot=loading]')).toHaveCount(0)
     await expect(page.getByRole('tabpanel').getByRole('alert')).toHaveCount(0)
   }
   await page.reload()
@@ -139,7 +139,7 @@ test('智能换船整合四个页签，旧入口兼容且刷新与手机布局�
   for (const name of ['舰队信息', '换船配置', '换船调度', '换船装备']) {
     await tabs.getByRole('tab', {name, exact: true}).click()
     await expect(page.getByRole('heading', {name, exact: true})).toBeVisible()
-    await expect(page.getByRole('tabpanel').locator('.loading')).toHaveCount(0)
+    await expect(page.getByRole('tabpanel').locator('[data-slot=loading]')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   }
   await page.screenshot({path: 'test-results/fleet-switch-mobile.png', animations: 'disabled'})
@@ -1427,6 +1427,90 @@ test('没有实例时进入首次设置，完成后打开新实例总览', async
   await expect(page).toHaveURL(new RegExp(`/i/${name}/overview$`))
 })
 
+test('系统设置卡片保存部署字段', async ({page}) => {
+  await page.goto('/#/settings')
+  const branch = page.getByRole('textbox', {name: '分支', exact: true})
+  await expect(branch).toHaveValue('dev')
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).fontSize)).toBe('16px')
+  expect(await branch.evaluate(input => getComputedStyle(input).height)).toBe('36px')
+  await branch.fill('settings-test')
+  await branch.blur()
+  await expect(page.locator('#deploy-Branch-status')).toContainText('已保存')
+  await page.reload()
+  await expect(branch).toHaveValue('settings-test')
+  await page.setViewportSize({width: 390, height: 844})
+  await expect(branch).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('系统设置开关、选项和数字字段可校验并保存', async ({page}) => {
+  let enabled = false
+  let channel = 'legacy'
+  let interval = 60
+  const settingsRequests = new Set<string>()
+  await page.routeWebSocket('**/api/v1/ws', socket => {
+    const server = socket.connectToServer()
+    socket.onMessage(message => {
+      const request = JSON.parse(message.toString())
+      if (request.method === 'settings.get') settingsRequests.add(request.id)
+      if (request.method === 'settings.patch' && ('SSLVerify' in request.params.values || 'UpdateChannel' in request.params.values || 'CheckUpdateInterval' in request.params.values)) {
+        if ('SSLVerify' in request.params.values) enabled = request.params.values.SSLVerify
+        if ('UpdateChannel' in request.params.values) channel = request.params.values.UpdateChannel
+        if ('CheckUpdateInterval' in request.params.values) interval = request.params.values.CheckUpdateInterval
+        socket.send(JSON.stringify({v: 1, type: 'response', id: request.id, ok: true, result: {updated: Object.keys(request.params.values)}}))
+        return
+      }
+      server.send(message)
+    })
+    server.onMessage(message => {
+      const response = JSON.parse(message.toString())
+      if (response.type === 'response' && settingsRequests.delete(response.id) && response.ok) {
+        const group = response.result.groups.find((item: {key: string}) => item.key === 'Git')
+        group.fields.push({key: 'SSLVerify', type: 'bool', label: '验证证书', help: '检查证书', value: enabled, options: []})
+        group.fields.push({key: 'UpdateChannel', type: 'select', label: '更新渠道', help: '选择渠道', value: channel, options: ['stable', 'preview']})
+        response.result.groups.push({key: 'Update', label: 'Update', fields: [{key: 'CheckUpdateInterval', type: 'int', label: '检查间隔', help: '更新检查间隔', value: interval, options: []}]})
+        socket.send(JSON.stringify(response))
+        return
+      }
+      socket.send(message)
+    })
+  })
+
+  await page.goto('/#/settings')
+  const control = page.getByRole('switch', {name: '验证证书', exact: true})
+  await expect(control).toHaveAttribute('aria-checked', 'false')
+  await control.focus()
+  await page.keyboard.press('Space')
+  await expect(control).toHaveAttribute('aria-checked', 'true')
+  await expect(page.locator('#deploy-SSLVerify-status')).toContainText('已保存')
+  expect(enabled).toBe(true)
+  const select = page.getByRole('combobox', {name: '更新渠道', exact: true})
+  await expect(select).toHaveText('legacy')
+  await select.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('option', {name: 'legacy', exact: true})).toBeFocused()
+  await page.keyboard.press('End')
+  await expect(page.getByRole('option', {name: 'preview', exact: true})).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(select).toHaveText('preview')
+  await expect(page.locator('#deploy-UpdateChannel-status')).toContainText('已保存')
+  expect(channel).toBe('preview')
+  const number = page.getByRole('textbox', {name: '检查间隔', exact: true})
+  await number.fill('--')
+  await number.blur()
+  await expect(number).toHaveAttribute('aria-invalid', 'true')
+  await expect(page.locator('#deploy-CheckUpdateInterval-status')).toHaveAttribute('role', 'alert')
+  expect(interval).toBe(60)
+  await number.fill('30')
+  await number.blur()
+  await expect(page.locator('#deploy-CheckUpdateInterval-status')).toContainText('已保存')
+  expect(interval).toBe(30)
+  await page.reload()
+  await expect(control).toHaveAttribute('aria-checked', 'true')
+  await expect(select).toHaveText('preview')
+  await expect(number).toHaveValue('30')
+})
+
 test('实例列表读取失败不阻塞全局设置', async ({page}) => {
   await page.routeWebSocket('**/api/v1/ws', socket => {
     const server = socket.connectToServer()
@@ -1513,16 +1597,16 @@ test('SHA 不匹配警告与更新确认弹窗', async ({page}) => {
   await page.goto('/#/updater')
   await expect(page.locator('.mismatch-note')).toContainText('SHA 不匹配')
   await page.getByRole('button', {name: '更新', exact: true}).click()
-  await expect(page.locator('.modal h2')).toHaveText('SHA 不匹配')
-  await expect(page.locator('.modal')).toContainText('GitCode')
+  await expect(page.locator('[data-slot=dialog-content] [data-slot=dialog-title]')).toHaveText('SHA 不匹配')
+  await expect(page.locator('[data-slot=dialog-content]')).toContainText('GitCode')
   // 取消不更新：弹窗关闭且状态保持有更新可用。
-  await page.locator('.modal').getByRole('button', {name: '取消', exact: true}).click()
-  await expect(page.locator('.modal')).toHaveCount(0)
+  await page.locator('[data-slot=dialog-content]').getByRole('button', {name: '取消', exact: true}).click()
+  await expect(page.locator('[data-slot=dialog-content]')).toHaveCount(0)
   await expect(page.locator('.update-summary')).toContainText('新版本可用')
   // 确认更新：本地对齐到更新源历史，状态回到已是最新。
   await page.getByRole('button', {name: '更新', exact: true}).click()
-  await page.locator('.modal').getByRole('button', {name: '仍然更新'}).click()
-  await expect(page.locator('.modal')).toHaveCount(0)
+  await page.locator('[data-slot=dialog-content]').getByRole('button', {name: '仍然更新'}).click()
+  await expect(page.locator('[data-slot=dialog-content]')).toHaveCount(0)
   await expect(page.locator('.update-summary')).toContainText('已是最新')
   await expect(page.locator('.mismatch-note')).toHaveCount(0)
   expect(errors).toEqual([])
@@ -1684,6 +1768,59 @@ test('商店配置只显示官源购买设置并保留普通过滤器保存', as
   await filter.scrollIntoViewIfNeeded()
   await expect(filter).toBeInViewport()
   await page.screenshot({path: 'test-results/shop-upstream-mobile.png', fullPage: true})
+})
+
+for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+  test(`过滤器保留语法高亮并在${theme}保存`, async ({page}) => {
+    await page.addInitScript(value => {
+      localStorage.setItem('azurpilot.language', 'zh-CN')
+      localStorage.setItem('azurpilot.theme', value)
+    }, theme)
+    await page.goto('/#/i/demo-main/task/EventShop')
+    const filter = page.locator('[id="EventShop.EventShop.CustomFilter"]')
+    await expect(filter).toHaveAttribute('contenteditable', 'true')
+    const value = theme === 'legacy-light' ? 'Daily > Gem > shortest' : 'Daily > Cube > shortest'
+    await filter.fill(value)
+    const editor = filter.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " cm-editor ")]')
+    await expect(editor.locator('.cm-filter-shortest')).toHaveText('shortest')
+    await expect(editor.locator('.cm-filter-arrow')).toHaveCount(2)
+    await expect(editor.locator('.cm-activeLine')).toHaveCount(0)
+    await expect(editor.locator('.cm-filter-shortest')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    await expect(editor).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+    await expect(editor).toHaveCSS('border-top-width', '1px')
+    await editor.screenshot({path: `test-results/filter-${theme}.png`})
+    await filter.blur()
+    await expect(page.locator('[id="EventShop.EventShop.CustomFilter-status"]')).toContainText('已保存')
+    await page.reload()
+    await expect(filter).toHaveText(value)
+  })
+}
+
+test('暗色任务配置的开关按状态切换颜色', async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'legacy-dark'))
+  await page.goto('/#/i/demo-main/task/Main')
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/)
+  const control = page.locator('.config-group [data-slot="switch"]').first()
+  await expect(control).toBeVisible()
+  const thumb = control.locator('[data-slot="switch-thumb"]')
+  const before = await thumb.evaluate(element => getComputedStyle(element).backgroundColor)
+  const state = await control.getAttribute('aria-checked')
+  await control.click()
+  await expect(control).toHaveAttribute('aria-checked', state === 'true' ? 'false' : 'true')
+  await expect.poll(() => thumb.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(before)
+  await page.emulateMedia({reducedMotion: 'reduce'})
+  const switches = page.locator('.config-group [data-slot="switch"]')
+  for (const item of await switches.all()) {
+    const bounds = await item.evaluate(element => {
+      const track = element.getBoundingClientRect()
+      const thumb = element.querySelector('[data-slot="switch-thumb"]')!.getBoundingClientRect()
+      return {left: thumb.left - track.left, right: track.right - thumb.right, center: (thumb.top + thumb.bottom - track.top - track.bottom) / 2}
+    })
+    expect(bounds.left).toBeGreaterThanOrEqual(-0.5)
+    expect(bounds.right).toBeGreaterThanOrEqual(-0.5)
+    expect(Math.abs(bounds.center)).toBeLessThan(1)
+  }
+  await page.screenshot({path: 'test-results/task-dark-switches.png', fullPage: true})
 })
 
 test('关闭背景后切回填写 URL 直接铺上，不必再点应用背景', async ({page}) => {
