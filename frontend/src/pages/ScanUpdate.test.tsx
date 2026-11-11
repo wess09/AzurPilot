@@ -24,6 +24,38 @@ beforeEach(() => {
 })
 afterEach(() => {cleanup(); vi.restoreAllMocks()})
 
+describe('ship imports', () => {
+  it.each([
+    {label: '导入舰船清单', accept: '.json,.csv,.xlsx', filename: 'ships.json', method: 'mind.import'},
+    {label: '导入船坞截图', accept: 'image/*', filename: 'dock.png', method: 'mind.recognize'},
+  ])('opens and stages $label', async ({label, accept, filename, method}) => {
+    const view = page(report)
+    const input = view.container.querySelector<HTMLInputElement>(`input[type="file"][accept="${accept}"]`)!
+    const click = vi.spyOn(input, 'click').mockImplementation(() => {})
+    vi.mocked(api.request).mockResolvedValueOnce({ships: []} as never).mockResolvedValueOnce(report)
+    const button = screen.getByRole<HTMLButtonElement>('button', {name: label})
+    expect(button.dataset.slot).toBe('button')
+    fireEvent.click(button)
+    expect(click).toHaveBeenCalledOnce()
+    fireEvent.change(input, {target: {files: [new File(['test'], filename)]}})
+    await waitFor(() => expect(onReport).toHaveBeenCalledExactlyOnceWith(report))
+    expect(api.request).toHaveBeenNthCalledWith(1, method, {instance: 'test', filename, content: 'dGVzdA=='})
+    expect(api.request).toHaveBeenNthCalledWith(2, 'dock.stageImport', {instance: 'test', revision: 'r1', ships: []})
+    expect(onBusy.mock.calls).toEqual([[true], [false]])
+  })
+
+  it('disables both import buttons while data is unavailable, locked, or pending review', () => {
+    const view = page(undefined)
+    const buttons = () => ['导入舰船清单', '导入船坞截图'].map(name => screen.getByRole<HTMLButtonElement>('button', {name}))
+    expect(buttons().every(button => button.disabled)).toBe(true)
+    view.rerender(<ScanUpdate instance="test" report={report} locked onReport={onReport} onBusy={onBusy}/>)
+    expect(buttons().every(button => button.disabled)).toBe(true)
+    const pending = {...report, pending_changes: [{id: 'pending', operation: 'add', kind: 'ship', ship_id: null, group_type: null, name: '', before: null, after: null, fields: [], candidates: []}] as DockReport['pending_changes']}
+    view.rerender(<ScanUpdate instance="test" report={pending} locked={false} onReport={onReport} onBusy={onBusy}/>)
+    expect(buttons().every(button => button.disabled)).toBe(true)
+  })
+})
+
 describe('ship JSON export', () => {
   it('disables export before data loads, while locked, and while disconnected', () => {
     const view = page(undefined)

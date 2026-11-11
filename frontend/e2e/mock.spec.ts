@@ -668,6 +668,19 @@ test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({pag
   expect(await table.evaluate(element => element.scrollWidth > element.clientWidth)).toBe(true)
 })
 
+test('舰船导入按钮打开对应的多文件选择器', async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('azurpilot.language', 'zh-CN'))
+  await page.goto('/#/i/demo-main/task/FleetAnalysis?tab=scan')
+  for (const [name, accept] of [['导入舰船清单', '.json,.csv,.xlsx'], ['导入船坞截图', 'image/*']]) {
+    const button = page.getByRole('button', {name, exact: true})
+    await expect(button).toBeEnabled()
+    await expect(button).toHaveAttribute('data-slot', 'button')
+    const [chooser] = await Promise.all([page.waitForEvent('filechooser'), button.click()])
+    expect(chooser.isMultiple()).toBe(true)
+    expect(await chooser.element().getAttribute('accept')).toBe(accept)
+  }
+})
+
 test('暗色资源统计与舰队科技使用可操作的官方控件', async ({page}) => {
   await page.addInitScript(() => {
     localStorage.setItem('azurpilot.language', 'zh-CN')
