@@ -6,6 +6,7 @@
 
 # -*- coding: utf-8 -*-
 import json
+import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from datetime import datetime, timedelta
@@ -881,6 +882,33 @@ class Cl1Database:
         elif future.exception() is not None:
             logger.error(f'[统计-快照] 后台写入失败: {type(future.exception()).__name__}')
 
+    # 同类型失败在窗口内只记一条，避免争用期刷屏。
+    _background_failure_at = {}
+    _background_failure_interval = 60.0
+
+    @classmethod
+    def _background_finished(cls, future):
+        """后台写入失败只报类型名，丢弃无主的 asyncio 异常栈。"""
+        if future.cancelled():
+            return
+        error = future.exception()
+        if error is None:
+            return
+        name = type(error).__name__
+        stamp = time.monotonic()
+        if stamp - cls._background_failure_at.get(name, 0.0) < cls._background_failure_interval:
+            return
+        cls._background_failure_at[name] = stamp
+        logger.warning(f'[统计-后台] 写入失败（可在下个周期重试）：{name}')
+
+    def _submit_write(self, function, *args, **kwargs):
+        """提交后台写入并挂降噪失败回调，避免 asyncio 打出无主 traceback。"""
+        from module.base.async_executor import async_executor
+
+        future = async_executor.submit(function, *args, **kwargs)
+        future.add_done_callback(self._background_finished)
+        return future
+
     def migrate_from_json(self, json_path: Path, instance: str):
         """显式导入旧月份文件，只补缺月，不修改源文件。"""
         import re
@@ -1273,29 +1301,21 @@ class Cl1Database:
 
     def async_save_stats(self, instance: str, month: str, data: Dict[str, Any]):
         """异步保存指定月份的 CL1 统计数据。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.save_stats, instance, month, data)
+        return self._submit_write(self.save_stats, instance, month, data)
 
     def async_increment_battle_count(self, instance: str, delta: int = 1):
         """异步增加战斗场次计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.increment_battle_count, instance, delta)
+        return self._submit_write(self.increment_battle_count, instance, delta)
 
     def async_increment_akashi_encounter(self, instance: str, month: Optional[str] = None):
         """异步增加明石遭遇次数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.increment_akashi_encounter, instance, month)
+        return self._submit_write(self.increment_akashi_encounter, instance, month)
 
     def async_add_akashi_ap_entry(
         self, instance: str, amount: int, base: int, count: int, source: str
     ):
         """异步记录明石购买行动力条目。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_akashi_ap_entry, instance, amount, base, count, source
         )
 
@@ -1313,9 +1333,7 @@ class Cl1Database:
 
     def async_set_last_ap_notification(self, instance: str, ap_current: int):
         """异步记录最近一次行动力通知值。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.set_last_ap_notification, instance, ap_current
         )
 
@@ -1336,9 +1354,7 @@ class Cl1Database:
         self, instance: str, hazard_level: int = None, delta: float = None
     ):
         """异步增加短猫相接战斗场次计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.increment_meow_battle_count, instance, hazard_level, delta
         )
 
@@ -1346,9 +1362,7 @@ class Cl1Database:
         self, instance: str, duration: float, hazard_level: int = None
     ):
         """异步记录短猫相接单轮耗时。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_round_time, instance, duration, hazard_level
         )
 
@@ -1356,9 +1370,7 @@ class Cl1Database:
         self, instance: str, duration: float, hazard_level: int = None
     ):
         """异步记录短猫相接战斗耗时。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_battle_time, instance, duration, hazard_level
         )
 
@@ -1372,9 +1384,7 @@ class Cl1Database:
         self, instance: str, source: str = "cl1", hazard_level: int = None
     ):
         """异步记录塞壬研究装置出现。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_siren_research_device, instance, source, hazard_level
         )
 
@@ -1382,17 +1392,13 @@ class Cl1Database:
         self, instance: str, hazard_level: int, month: Optional[str] = None,
     ):
         """异步增加短猫相接明石遭遇计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.increment_meow_akashi_encounter, instance, hazard_level, month
         )
 
     def async_add_meow_akashi_ap(self, instance: str, hazard_level: int, amount: int):
         """异步记录短猫相接明石行动力购买。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_akashi_ap, instance, hazard_level, amount
         )
 
@@ -1785,9 +1791,7 @@ class Cl1Database:
         self, instance: str, project: str, series: int, items: Dict[str, int], imgid: str = ''
     ):
         """异步写入科研掉落，避免解析结果落库时阻塞主循环。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_research_drop, instance, project, series, items, imgid=imgid
         )
 
@@ -2049,9 +2053,7 @@ class Cl1Database:
         screenshots: Optional[List[str]] = None,
     ):
         """异步记录委托收益。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_commission_income, instance, items, commission_count, screenshots
         )
 
