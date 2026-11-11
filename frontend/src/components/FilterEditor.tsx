@@ -15,7 +15,6 @@ import { Annotation, Compartment, EditorState } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
-  highlightActiveLine,
   keymap,
   MatchDecorator,
   ViewPlugin,
@@ -314,7 +313,6 @@ export function FilterEditor({
         doc: initial.current,
         extensions: [
           history(),
-          highlightActiveLine(),
           EditorView.lineWrapping,
           filterHighlightPlugin,
           keymap.of([...defaultKeymap, ...historyKeymap]),

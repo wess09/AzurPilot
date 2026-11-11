@@ -42,7 +42,6 @@ export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
       aria-label={label}
       aria-invalid={invalid || undefined}
       aria-describedby={invalid ? `${id}-status` : undefined}
-      className="min-h-0 resize-none"
       ref={ref}
       id={id}
       value={draft}

@@ -4,7 +4,7 @@
 
 import { Checkbox, PasswordInput, Select, useDraftInput } from './FormControls'
 import { Input } from './ui/input'
-import { Switch } from './Switch'
+import { Switch } from './task-ui/switch'
 import type { Value } from '../api/types'
 import { lazy, Suspense } from 'react'
 import { AutoTextarea } from './AutoTextarea'
@@ -42,7 +42,7 @@ export function FieldInput({
 
   // 只读时间沿用旧界面的原始文本，保留秒、小数秒和历史格式。
   if (type === 'datetime' && disabled) {
-    return <input id={id} aria-label={label} readOnly value={String(value ?? '').replace('T', ' ')} />
+    return <Input id={id} aria-label={label} readOnly value={String(value ?? '').replace('T', ' ')}/>
   }
 
   if (mode === 'yaml' || type === 'yaml') {
@@ -80,10 +80,8 @@ export function FieldInput({
         id={id}
         checked={!!value}
         disabled={disabled}
-        label={label}
-        invalid={invalid}
-        describedBy={accessibility['aria-describedby']}
-        onChange={next => onChange(next)}
+        {...accessibility}
+        onCheckedChange={next => onChange(next)}
       />
     )
   }

@@ -120,8 +120,7 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .background-error {margin: 0; color: var(--theme-danger); font-size: 12px; line-height: 1.5}
 .statistics-controls select, .statistics-controls input {min-height: var(--form-height)}
 .statistics-table th button {display: inline-flex; align-items: center; gap: 6px; min-height: 32px}
-.nav-search:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
-.nav-search input, .nav-search input:focus {border: 0; background: transparent; box-shadow: none; outline: none; padding-left: 0}
+
 
 /* 原生滑块保留方向键、Home/End 和触控拖动。 */
 input[type='range'] {appearance: none; width: 100%; min-height: 32px; margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; accent-color: var(--theme-primary-bg); cursor: pointer}
@@ -295,21 +294,21 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   width: 100%;
 }
 .filter-editor .cm-editor {
-  border: 0;
-  border-bottom: 1px solid var(--theme-input-border, var(--form-edge));
-  border-radius: 4px 4px 0 0;
-  background: var(--theme-input-bg);
-  color: var(--theme-input-text, var(--text));
-  font-family: var(--theme-font-mono, "JetBrains Mono", Consolas, monospace);
-  font-size: 13px;
-  line-height: 1.9;
-  min-height: 42px;
-  transition: border-bottom-color .2s cubic-bezier(.2, 0, 0, 1), background-color .2s cubic-bezier(.2, 0, 0, 1);
+  border: 1px solid var(--sc-input);
+  border-radius: calc(var(--sc-radius) - 2px);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 4rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: color .15s, box-shadow .15s;
   outline: none;
 }
 .filter-editor .cm-editor.cm-focused {
-  background: var(--accent-soft);
-  border-bottom: 2px solid var(--theme-focus);
+  border-color: var(--sc-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--sc-ring) 50%, transparent);
 }
 .filter-editor .cm-scroller {
   font-family: inherit;
@@ -317,7 +316,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   overflow-x: hidden;
 }
 .filter-editor .cm-content {
-  padding: 10px 14px;
+  padding: .5rem .75rem;
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -328,16 +327,16 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   border-left-color: var(--text);
 }
 .filter-editor.is-disabled .cm-editor {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  background: var(--surface-muted);
+}
+@media (min-width: 768px) {
+  .filter-editor .cm-editor {font-size: .875rem; line-height: 1.25rem}
 }
 
 /* 语法高亮 Token —— 核心控制与连接符 */
 .cm-filter-arrow {
   color: var(--accent);
-  font-weight: 700;
-  padding: 0 4px;
 }
 .cm-filter-delimiter {
   color: var(--muted);
@@ -345,56 +344,34 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 }
 .cm-filter-tier-marker {
   color: #7c3aed;
-  font-weight: 700;
-  background: color-mix(in srgb, #8b5cf6 18%, transparent);
-  border: 1px solid color-mix(in srgb, #8b5cf6 35%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-shortest {
   color: #b45309;
-  font-weight: 700;
-  background: color-mix(in srgb, #f59e0b 20%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-reset {
   color: #dc2626;
-  font-weight: 700;
-  background: color-mix(in srgb, #ef4444 18%, transparent);
-  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-preset {
   color: #d97706;
-  font-weight: 600;
 }
 
 /* 语法高亮 Token —— 时间与数值 */
 .cm-filter-time {
   color: #2563eb;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 .cm-filter-number {
   color: #2563eb;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 /* 语法高亮 Token —— 委托系统 (Commission) */
-.cm-filter-comm {font-weight: 600}
-.cm-filter-comm-urgent {color: #e11d48; font-weight: 700}
-.cm-filter-comm-extra {color: #7c3aed; font-weight: 700}
+.cm-filter-comm-urgent {color: #e11d48;}
+.cm-filter-comm-extra {color: #7c3aed;}
 .cm-filter-comm-daily {color: #0284c7}
-.cm-filter-comm-major {color: #d97706; font-weight: 700}
+.cm-filter-comm-major {color: #d97706;}
 .cm-filter-comm-night {color: #4f46e5}
 
-.cm-filter-genre {font-weight: 600}
-.cm-filter-genre-gem {color: #e11d48; font-weight: 700}
-.cm-filter-genre-cube {color: #0284c7; font-weight: 700}
+.cm-filter-genre-gem {color: #e11d48;}
+.cm-filter-genre-cube {color: #0284c7;}
 .cm-filter-genre-oil {color: #b45309}
 .cm-filter-genre-drill {color: #475569}
 .cm-filter-genre-box {color: #ea580c}
@@ -407,90 +384,84 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .cm-filter-genre-ship {color: #059669}
 
 /* 语法高亮 Token —— 科研系统 (Research) */
-.cm-filter-series {color: #0284c7; font-weight: 600}
-.cm-filter-dr {color: #d97706; font-weight: 700}
-.cm-filter-pry {color: #9333ea; font-weight: 700}
-.cm-filter-genre-code {color: #0d9488; font-weight: 600}
-.cm-filter-ship {color: #059669; font-weight: 600}
+.cm-filter-series {color: #0284c7;}
+.cm-filter-dr {color: #d97706;}
+.cm-filter-pry {color: #9333ea;}
+.cm-filter-genre-code {color: #0d9488;}
+.cm-filter-ship {color: #059669;}
 
 /* 语法高亮 Token —— 商店与通用物品 */
-.cm-filter-shop-group {color: #6366f1; font-weight: 600}
-.cm-filter-shop-sub {color: #0d9488; font-weight: 600}
-.cm-filter-tier {color: #ea580c; font-weight: 600}
-.cm-filter-fleet {color: #0891b2; font-weight: 600}
-.cm-filter-stage {color: #3b82f6; font-weight: 600}
-.cm-filter-rarity {color: #8b5cf6; font-weight: 600}
-.cm-filter-item {color: var(--text); font-weight: 500}
+.cm-filter-shop-group {color: #6366f1;}
+.cm-filter-shop-sub {color: #0d9488;}
+.cm-filter-tier {color: #ea580c;}
+.cm-filter-fleet {color: #0891b2;}
+.cm-filter-stage {color: #3b82f6;}
+.cm-filter-rarity {color: #8b5cf6;}
+.cm-filter-item {color: var(--text);}
 
 /* 深色模式适配 */
-:root[data-theme='legacy-dark'] .cm-filter-tier-marker {
+:root.dark .cm-filter-tier-marker {
   color: #c084fc;
-  background: rgba(192, 132, 252, 0.2);
-  border-color: rgba(192, 132, 252, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-shortest {
+:root.dark .cm-filter-shortest {
   color: #fbbf24;
-  background: rgba(251, 191, 36, 0.2);
-  border-color: rgba(251, 191, 36, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-reset {
+:root.dark .cm-filter-reset {
   color: #f87171;
-  background: rgba(248, 113, 113, 0.2);
-  border-color: rgba(248, 113, 113, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-time,
-:root[data-theme='legacy-dark'] .cm-filter-number {
+:root.dark .cm-filter-time,
+:root.dark .cm-filter-number {
   color: #60a5fa;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-urgent {
+:root.dark .cm-filter-comm-urgent {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-extra {
+:root.dark .cm-filter-comm-extra {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-daily {
+:root.dark .cm-filter-comm-daily {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-major {
+:root.dark .cm-filter-comm-major {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-gem {
+:root.dark .cm-filter-genre-gem {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-cube {
+:root.dark .cm-filter-genre-cube {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-oil {
+:root.dark .cm-filter-genre-oil {
   color: #f59e0b;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-drill {
+:root.dark .cm-filter-genre-drill {
   color: #94a3b8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-box {
+:root.dark .cm-filter-genre-box {
   color: #fb923c;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-chip {
+:root.dark .cm-filter-genre-chip {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-part {
+:root.dark .cm-filter-genre-part {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-series {
+:root.dark .cm-filter-series {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-dr {
+:root.dark .cm-filter-dr {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-pry {
+:root.dark .cm-filter-pry {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-code {
+:root.dark .cm-filter-genre-code {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-ship {
+:root.dark .cm-filter-ship {
   color: #34d399;
 }
-:root[data-theme='legacy-dark'] .cm-filter-tier {
+:root.dark .cm-filter-tier {
   color: #fb923c;
 }
 

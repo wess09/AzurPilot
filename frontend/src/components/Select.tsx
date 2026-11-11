@@ -30,6 +30,13 @@ function isElement(node: ReactNode): node is ReactElement<{children?: ReactNode;
   return typeof node === 'object' && node !== null && 'props' in node
 }
 
+/** 原生 `<option>` 省略 value 时，提交值是它的文本内容；这里保持同样的取值。 */
+function optionValue(props: {value?: unknown; children?: ReactNode}) {
+  if (props.value !== undefined && props.value !== null) return String(props.value)
+  const children = props.children
+  return typeof children === 'string' || typeof children === 'number' ? String(children) : ''
+}
+
 /** 把 `<option>` / `<optgroup>` 子节点拆成可渲染的两级结构。
  *
  * `{cond && <option/>}` 会留下 false，`{options.map(...)}` 会留下**嵌套数组**；
@@ -44,7 +51,7 @@ function parse(children: ReactNode) {
     for (const node of Array.isArray(nodes) ? nodes : [nodes]) {
       if (Array.isArray(node)) { out.push(...collect(node)); continue }
       if (!isElement(node) || node.type === 'optgroup') continue
-      out.push({value: String(node.props.value ?? ''), label: node.props.children, disabled: Boolean(node.props.disabled)})
+      out.push({value: optionValue(node.props), label: node.props.children, disabled: Boolean(node.props.disabled)})
     }
     return out
   }
@@ -57,7 +64,7 @@ function parse(children: ReactNode) {
         entries.push({label: node.props.label, items: collect(node.props.children)})
         continue
       }
-      entries.push({value: String(node.props.value ?? ''), label: node.props.children, disabled: Boolean(node.props.disabled)})
+      entries.push({value: optionValue(node.props), label: node.props.children, disabled: Boolean(node.props.disabled)})
     }
   }
 
@@ -71,14 +78,11 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
   const controlId = id ?? generatedId
   const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
-  // 菜单渲染在触发器的顶层容器里：普通页面挂 body，
-  // 对话框里必须挂进 dialog 本身（它处在 top layer，挂 body 会被压在遮罩后面）。
   const [container, setContainer] = useState<HTMLElement>()
   const toggleOpen = (next: boolean) => {
-    if (next) setContainer((trigger.current?.closest('dialog') as HTMLElement | null) ?? document.body)
+    if (next) setContainer((trigger.current?.closest('[data-slot=dialog-content]') as HTMLElement | null) ?? document.body)
     setOpen(next)
   }
-  // 指针从触发器移到菜单要跨一段间隙，立刻收起会让鼠标还没落上去就关掉。
   const hoverClose = useRef<number | undefined>(undefined)
   const cancelHoverClose = () => {if (hoverClose.current !== undefined) {window.clearTimeout(hoverClose.current); hoverClose.current = undefined}}
   const scheduleHoverClose = () => {
@@ -86,11 +90,12 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
     cancelHoverClose()
     hoverClose.current = window.setTimeout(() => toggleOpen(false), 180)
   }
-
   const {entries, items} = parse(children)
   const current = props.value === undefined || props.value === null ? '' : String(props.value)
   const label = current === '' ? undefined : items.find(item => item.value === current)?.label
   const placeholder = String(items[0]?.label ?? ui('common.select'))
+  /* 空值时 Radix 拿到的是哨兵值，不会走自己的 placeholder 分支，这里直接把显示文本交出去。 */
+  const display = typeof label === 'string' || typeof label === 'number' ? String(label) : plainValue(current) || placeholder
 
   function change(next: string) {
     const value = next === EMPTY ? '' : next
@@ -99,50 +104,41 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
     props.onChange?.({target: {value}} as unknown as React.ChangeEvent<HTMLSelectElement>)
   }
 
-  return <span className={`select-control ${className ?? ''}`} style={style}>
-    <ShadcnSelect
-      value={current === '' ? EMPTY : current}
-      onValueChange={change}
+  return <ShadcnSelect
+    value={current === '' ? EMPTY : current}
+    onValueChange={change}
+    disabled={disabled}
+    required={props.required}
+    name={props.name}
+    open={open}
+    onOpenChange={toggleOpen}
+  >
+    <SelectTrigger
+      id={controlId}
+      ref={trigger}
+      className={className}
+      style={style}
       disabled={disabled}
-      required={props.required}
-      name={props.name}
-      open={open}
-      onOpenChange={toggleOpen}
+      autoFocus={autoFocus}
+      aria-label={props['aria-label']}
+      aria-labelledby={props['aria-labelledby']}
+      aria-describedby={props['aria-describedby']}
+      aria-invalid={props['aria-invalid']}
+      onFocus={event => {if (openOnFocus && event.currentTarget.matches(':focus-visible')) toggleOpen(true)}}
+      onPointerEnter={() => {if (openOnFocus) {cancelHoverClose(); toggleOpen(true)}}}
+      onPointerLeave={scheduleHoverClose}
     >
-      <SelectTrigger
-        id={controlId}
-        ref={trigger}
-        disabled={disabled}
-        autoFocus={autoFocus}
-        aria-label={props['aria-label']}
-        aria-labelledby={props['aria-labelledby']}
-        aria-describedby={props['aria-describedby']}
-        aria-invalid={props['aria-invalid']}
-        onFocus={event => {if (openOnFocus && event.currentTarget.matches(':focus-visible')) toggleOpen(true)}}
-        onPointerEnter={() => {if (openOnFocus) {cancelHoverClose(); toggleOpen(true)}}}
-        onPointerLeave={scheduleHoverClose}
-      >
-        <SelectValue placeholder={current === '' ? placeholder : undefined}>
-          {typeof label === 'string' || typeof label === 'number' ? String(label) : plainValue(current)}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent
-        position="popper"
-        sideOffset={6}
-        collisionPadding={8}
-        container={container}
-        onPointerEnter={cancelHoverClose}
-        onPointerLeave={scheduleHoverClose}
-      >
-        {entries.map((entry, index) => 'items' in entry
-          ? <SelectGroup key={`group-${index}`}>
-              <SelectLabel>{entry.label}</SelectLabel>
-              {entry.items.map(item => <Option key={item.value} item={item}/>)}
-            </SelectGroup>
-          : <Option key={entry.value} item={entry}/>)}
-      </SelectContent>
-    </ShadcnSelect>
-  </span>
+      <SelectValue placeholder={placeholder}>{display}</SelectValue>
+    </SelectTrigger>
+    <SelectContent position="popper" sideOffset={6} collisionPadding={8} container={container} onPointerEnter={cancelHoverClose} onPointerLeave={scheduleHoverClose}>
+      {entries.map((entry, index) => 'items' in entry
+        ? <SelectGroup key={`group-${index}`}>
+            <SelectLabel>{entry.label}</SelectLabel>
+            {entry.items.map((item, itemIndex) => <Option key={`${item.value}-${itemIndex}`} item={item}/>)}
+          </SelectGroup>
+        : <Option key={`${entry.value}-${index}`} item={entry}/>)}
+    </SelectContent>
+  </ShadcnSelect>
 }
 
 function Option({item}: {item: Item}) {
