@@ -282,8 +282,12 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         # ===== 处理遥测数据提交 =====
         self._cl1_handle_telemetry()
 
-    def os_check_leveling(self):
-        """检查大世界阵容练级进度。"""
+    def os_check_leveling(self, *, open_ship_info=None):
+        """检查大世界阵容练级进度。
+
+        Args:
+            open_ship_info (callable | None): 自动配队复查时使用的舰船详情入口。
+        """
         check_interval = self.config.OpsiCheckLeveling_CheckInterval
         if not isinstance(check_interval, int) or check_interval < 1:
             check_interval = 24
@@ -329,11 +333,13 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         if not self._check_auto_change_prerequisite(enable_custom_check, custom_positions):
             logger.info("[大世界-侵蚀1练级] 自动配队前置条件不满足，禁用自动配队")
             self.config.OpsiFleetAutoChange_Enable = False
-        
+
+        if open_ship_info is None:
+            open_ship_info = self.equip_enter
         if enable_custom_check and custom_positions:
-            ship_data_result = self._collect_custom_positions_data(target_level, custom_positions)
+            ship_data_result = self._collect_custom_positions_data(target_level, custom_positions, open_ship_info)
         else:
-            ship_data_result = self._collect_ship_data_with_retry(target_level)
+            ship_data_result = self._collect_ship_data_with_retry(target_level, open_ship_info)
         
         if ship_data_result['ships'] is None:
             error_msg = ship_data_result['error'] or "未知错误"
@@ -533,12 +539,13 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         
         return "\n".join(lines)
 
-    def _collect_custom_positions_data(self, target_level, custom_positions):
+    def _collect_custom_positions_data(self, target_level, custom_positions, open_ship_info):
         """收集指定自定义舰位的舰船经验数据。
 
         Args:
             target_level (int): 目标等级。
             custom_positions (list[int]): 自定义舰位列表，如 [1, 3, 6]。
+            open_ship_info (callable): 打开指定舰位的舰船详情。
 
         Returns:
             dict: 收集结果字典：
@@ -577,7 +584,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
 
             logger.info(f"[大世界-侵蚀1练级] 检测舰位 {position}")
 
-            self.equip_enter(button, check_button=EQUIPMENT_OPEN, long_click=True)
+            open_ship_info(button, check_button=EQUIPMENT_OPEN, long_click=True)
 
             self.device.screenshot()
             level, exp = ship_info_get_level_exp(main=self)
@@ -611,11 +618,12 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         logger.info(f"[大世界-侵蚀1练级] 指定舰位数据收集完成，共 {len(ship_data_list)} 艘")
         return {'ships': ship_data_list, 'error': None}
 
-    def _collect_ship_data_with_retry(self, target_level):
+    def _collect_ship_data_with_retry(self, target_level, open_ship_info):
         """收集整队舰船的等级与经验数据，支持重试。
 
         Args:
             target_level (int): 目标等级。
+            open_ship_info (callable): 打开旗舰详情。
 
         Returns:
             dict: 收集结果字典：
@@ -628,7 +636,7 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             logger.info(f"[大世界-侵蚀1练级] 开始收集舰船数据 (尝试 {attempt + 1}/{max_retry})")
 
             self.fleet_set(self.config.OpsiFleet_Fleet)
-            self.equip_enter(FLEET_FLAGSHIP)
+            open_ship_info(FLEET_FLAGSHIP)
 
             ship_data_list = []
             position = 1

@@ -133,7 +133,8 @@ class Equipment(EquipmentCodeHandler):
         """
         return self._ship_view_swipe(distance=SWIPE_DISTANCE, check_button=check_button)
 
-    def ship_info_enter(self, click_button, check_button=EQUIPMENT_OPEN, long_click=True, skip_first_screenshot=True):
+    def ship_info_enter(self, click_button, check_button=EQUIPMENT_OPEN, long_click=True, skip_first_screenshot=True,
+                        *, additional=None, can_click=None):
         """从编队或船坞等界面点击或长按舰船图标进入舰船详情页面。
 
         Args:
@@ -141,6 +142,8 @@ class Equipment(EquipmentCodeHandler):
             check_button (Button): 目标页面确认按钮，默认 EQUIPMENT_OPEN。
             long_click (bool): 是否使用长按进入，默认 True。
             skip_first_screenshot (bool): 是否跳过首次截图，默认 True。
+            additional (callable | None): 处理额外界面，返回 True 时重新截图。
+            can_click (callable | None): 在点击前确认当前画面上的舰位可用。
 
         Pages:
             in: 包含 click_button 的编队或船坞界面
@@ -158,13 +161,16 @@ class Equipment(EquipmentCodeHandler):
             if self.appear(check_button, offset=(5, 5)):
                 break
 
+            if additional is not None and additional():
+                continue
+
             # 长按偶发识别为普通点击时误入船坞，从船坞返回
             if long_click:
                 if self.appear(DOCK_CHECK, offset=(20, 20), interval=3):
                     logger.info(f'[装备-穿戴] 舰船信息进入 {DOCK_CHECK} -> {BACK_ARROW}')
                     self.device.click(BACK_ARROW)
                     continue
-            if enter_timer.reached():
+            if enter_timer.reached() and (can_click is None or can_click()):
                 if long_click:
                     self.device.long_click(click_button, duration=(1.5, 1.7))
                 else:

@@ -11,6 +11,7 @@
 """
 
 from datetime import timedelta
+from functools import partial
 
 from module.base.timer import Timer
 from module.config.time_source import now as current_time
@@ -46,6 +47,7 @@ from module.os_handler.assets import (
     FLEET_SLOT_6_TEMPLATE,
     FLEET_SLOT_CONFIRM_BUTTON,
     FLEET_SLOT_CONFIRM_TEMPLATE,
+    ORDER_ENTER,
     OS_FLEET_SLOT_NAV_1_BUTTON,
     OS_FLEET_SLOT_NAV_2_BUTTON,
     OS_FLEET_SLOT_NAV_3_BUTTON,
@@ -110,10 +112,38 @@ class OpsiFleetAutoChange(CoinTaskMixin, DockMixin, OSMap):
             from module.os.tasks.hazard_leveling import OpsiHazard1Leveling
 
             leveling = OpsiHazard1Leveling(config=self.config, device=self.device)
-            leveling.os_check_leveling()
+            # 港口也可能在确认回图之后才出现，每次尝试长按前仍需检查当前画面。
+            open_ship_info = partial(
+                leveling.ship_info_enter,
+                skip_first_screenshot=False,
+                additional=self._handle_fleet_map_transition,
+                can_click=self._is_fleet_map_ready,
+            )
+            leveling.os_check_leveling(open_ship_info=open_ship_info)
             logger.info("[大世界-自动配队] 经验检测完成")
         except Exception as e:
             logger.warning(f"[大世界-自动配队] 经验检测失败: {e}")
+
+    def _is_fleet_map_ready(self):
+        """地图及右侧指令按钮均已出现，舰位可以操作。"""
+        return self.is_in_map() and self.appear(ORDER_ENTER, offset=(20, 20))
+
+    def _handle_fleet_map_transition(self, *, loading_timer=None):
+        """处理回图途中的弹窗与港口，返回 True 时继续刷新截图。"""
+        # 先处理离开大型作战的弹窗，避免点击其后的返回按钮。
+        if self.handle_leave_os_popup():
+            return True
+        if self.is_combat_loading():
+            if loading_timer is not None:
+                loading_timer.reset()
+            return True
+        if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
+            return True
+        if self.appear(PORT_GOTO_SUPPLY, offset=(20, 20)):
+            if self.appear_then_click(BACK_ARROW, offset=(30, 30), interval=3):
+                logger.info("[大世界-自动配队] 检测到港口界面，退出港口")
+            return True
+        return False
 
     def _wait_until_back_in_os_map(self, timeout=60):
         """等待离开港口并回到大世界海域地图。
@@ -129,33 +159,23 @@ class OpsiFleetAutoChange(CoinTaskMixin, DockMixin, OSMap):
 
         Pages:
             in: 舰队部署界面出发后、港口界面或加载界面
-            out: is_in_map
+            out: 大世界海域地图，右侧指令按钮已就绪
         """
         timer = Timer(timeout).start()
-        # 出发确认刚点击后，缓存截图仍可能露出地图按钮，必须刷新后再判断回图。
+        confirm_timer = Timer(1, count=2)
+        # 先刷新截图。出发后可能短暂显示海域地图，再打开港口页面。
         for _ in self.loop(skip_first=False):
             if timer.reached():
                 break
-            # 误触地图外出现的「需要暂时离开大型作战么?」弹窗，点击 X 留在大型作战
-            if self.handle_leave_os_popup():
+            if self._handle_fleet_map_transition(loading_timer=timer):
+                confirm_timer.clear()
                 continue
-            # 出发后经过加载界面，等待加载完成后再识别
-            if self.is_combat_loading():
-                timer.reset()
-                continue
-            # 游戏偶尔出现上一次通关弹窗 AUTO_SEARCH_REWARD 延迟弹出的 Bug
-            if self.appear_then_click(AUTO_SEARCH_REWARD, offset=(50, 50), interval=3):
-                continue
-            # 仍在港口界面，退出港口
-            if self.appear(PORT_GOTO_SUPPLY, offset=(20, 20)):
-                logger.info("[大世界-自动配队] 检测到港口界面，退出港口")
-                self.port_quit(skip_first_screenshot=True)
-                self.wait_os_map_buttons()
-                continue
-            # 已回到大世界海域地图
-            if self.is_in_map():
-                logger.info("[大世界-自动配队] 已返回大世界地图")
-                return True
+            if self._is_fleet_map_ready():
+                if confirm_timer.start().reached():
+                    logger.info("[大世界-自动配队] 已返回大世界地图")
+                    return True
+            else:
+                confirm_timer.clear()
 
         return False
 
