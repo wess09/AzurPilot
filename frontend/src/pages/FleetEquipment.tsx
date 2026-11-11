@@ -3,6 +3,7 @@ import {useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/Switch'
+import {Input} from '../components/ui/input'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
@@ -27,16 +28,15 @@ export function equipmentCodes(value: unknown): Codes {
 export function EquipmentCodeFields({codes, disabled, change}: {codes: Codes; disabled: boolean; change: (kind: ShipType, index: number, value: string) => void}) {
   const {ui} = useApp()
   return <div className="fleet-grid">{equipmentTypes.map(kind => <section className="panel" key={kind}>
-    <div className="panel-heading" style={{display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+    <div className="panel-heading flex flex-wrap items-center gap-2.5">
       <h2>{ui(`fleetEquipment.${kind}`)}</h2><span className="muted">{ui('fleetEquipment.code')}</span>
     </div>
-    <div className="fleet-column" style={{display: 'grid', gap: 10}}>{codeSlots.map(index => <label key={index}
-      htmlFor={`equipment-${kind}-${index + 1}`} style={{display: 'flex', alignItems: 'center', gap: 8}}>
-      <span aria-hidden="true">{index + 1}</span><input type="text" id={`equipment-${kind}-${index + 1}`}
+    <div className="fleet-column grid gap-2.5">{codeSlots.map(index => <label key={index}
+      htmlFor={`equipment-${kind}-${index + 1}`} className="flex items-center gap-2">
+      <span aria-hidden="true">{index + 1}</span><Input type="text" id={`equipment-${kind}-${index + 1}`}
         aria-label={`${ui(`fleetEquipment.${kind}`)} ${ui('fleetEquipment.code')} ${index + 1}`}
         dir="ltr" spellCheck={false} value={codes[kind][index]} disabled={disabled}
-        placeholder={ui('fleetEquipment.placeholder')} onChange={event => change(kind, index, event.target.value)}
-        style={{width: '100%', minWidth: 0, flex: 1}}/>
+        placeholder={ui('fleetEquipment.placeholder')} onChange={event => change(kind, index, event.target.value)}/>
     </label>)}</div>
   </section>)}</div>
 }

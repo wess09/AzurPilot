@@ -12,10 +12,22 @@ import { GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, L
 import { CanvasRenderer } from 'echarts/renderers'
 import type {StatSeries} from '../api/types'
 import { Empty } from './ui'
+import { Input } from './ui/input'
 import {resolveIcon} from './StatisticsTable'
 import {buildSeriesView, isActionPointSeries, riseFallSegments} from './statisticsData'
 import {withTranslatedKeys} from './statisticsText'
 import { useApp } from '../app/context'
+import type { UiKey } from '../i18n'
+
+/** 采样粒度候选：K 线没有「每次记录」这一档，其余档位固定，避免重复项。 */
+export function bucketOptions(isCandlestick: boolean, ui: (key: UiKey) => string) {
+  return [
+    ...(isCandlestick ? [] : [{value: 0, label: ui('stats.eachRecord')}]),
+    {value: 5, label: ui('stats.fiveMinutes')},
+    {value: 60, label: ui('stats.hourly')},
+    {value: 1440, label: ui('stats.daily')},
+  ]
+}
 import {
   readStatisticsPrefs,
   updateStatisticsPrefs,
@@ -445,17 +457,14 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     <label>
       {ui('stats.bucket')}
       <Select aria-label={ui('stats.bucket')} value={effectiveBucket} onChange={event => setBucket(Number(event.target.value))}>
-        {!isCandlestick && <option value={0}>{ui('stats.eachRecord')}</option>}
-        <option value={5}>{ui('stats.fiveMinutes')}</option>
-        <option value={60}>{ui('stats.hourly')}</option>
-        <option value={1440}>{ui('stats.daily')}</option>
+        {bucketOptions(isCandlestick, ui).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
       </Select>
     </label>
 
     <label>
       {ui('stats.startTime')}
       <div className="date-input-wrap">
-        <input type="datetime-local" aria-label={ui('stats.startTime')} value={from} className={from ? '' : 'date-empty'} onChange={event => setFrom(event.target.value)}/>
+        <Input type="datetime-local" aria-label={ui('stats.startTime')} value={from} onChange={event => setFrom(event.target.value)}/>
         {!from && <span className="date-input-placeholder" aria-hidden="true">---- / -- / --</span>}
       </div>
     </label>
@@ -463,7 +472,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     <label>
       {ui('stats.endTime')}
       <div className="date-input-wrap">
-        <input type="datetime-local" aria-label={ui('stats.endTime')} value={to} className={to ? '' : 'date-empty'} onChange={event => setTo(event.target.value)}/>
+        <Input type="datetime-local" aria-label={ui('stats.endTime')} value={to} onChange={event => setTo(event.target.value)}/>
         {!to && <span className="date-input-placeholder" aria-hidden="true">---- / -- / --</span>}
       </div>
     </label>

@@ -5,6 +5,9 @@ import {api} from '../api/client'
 import type {DockCard, DockReport} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox, Loading} from '../components/ui'
+import {Checkbox, Select} from '../components/FormControls'
+import {Checkbox as CheckboxControl} from '../components/ui/checkbox'
+import {Input} from '../components/ui/input'
 import type {CatalogShip, MindCatalog} from '../mind/types'
 import type {UiKey} from '../i18n'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
@@ -247,7 +250,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
       {filterGroup('nation', tr('nation'), nations.map(value => [value, nationName(value)]))}
       {filterGroup('status', tr('status'), [['unfinished', tr('unfinished')], ['missingStar', tr('missingStar')], ['fullStar', ui('analysis.fullStarYes')], ['lv120', 'Lv.120+']])}
       {filterGroup('records', ui('analysis.filter'), [['review', ui('analysis.needsReview')], ['duplicates', ui('analysis.duplicates')], ['missingLevel', ui('analysis.missing')], ['unknownStar', `${ui('analysis.breakthrough')} · ${ui('analysis.unknownValue')}`], ['unique', ui('analysis.uniqueShips')]])}
-      <div className="ft-filter-row"><strong>{ui('analysis.level')}</strong><div className="ft-chips ledger-level-range"><label>{ui('analysis.min')}<input type="number" min={0} max={125} value={minimum} onChange={e => setMinimum(e.target.value)}/></label><span>—</span><label>{ui('analysis.max')}<input type="number" min={0} max={125} value={maximum} onChange={e => setMaximum(e.target.value)}/></label></div></div>
+      <div className="ft-filter-row"><strong>{ui('analysis.level')}</strong><div className="ft-chips ledger-level-range"><label>{ui('analysis.min')}<Input type="number" min={0} max={125} value={minimum} onChange={e => setMinimum(e.target.value)}/></label><span>—</span><label>{ui('analysis.max')}<Input type="number" min={0} max={125} value={maximum} onChange={e => setMaximum(e.target.value)}/></label></div></div>
     </section>
     <div className="ft-toolbar ft-savebar">
       <button className="button primary" disabled={disabled || !dirty || stale} onClick={() => void save()}>{ui('analysis.save')}</button>
@@ -258,7 +261,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
       {!!report?.pending_changes.length && <Link aria-disabled={disabled} onClick={event => {if (disabled) event.preventDefault()}} to="?tab=scan">{ui('analysis.pendingLink')} ({report.pending_changes.length})</Link>}
     </div>
     {stale && <p role="alert">{ui('analysis.stale')}</p>}
-    <div className="ft-search"><input type="search" aria-label={ui('analysis.search')} placeholder={ui('analysis.search')} value={query} onChange={e => setQuery(e.target.value)}/><span>{ui('mind.rowCount', {count: displayRows.length})}</span>
+    <div className="ft-search"><Input type="search" aria-label={ui('analysis.search')} placeholder={ui('analysis.search')} value={query} onChange={e => setQuery(e.target.value)}/><span>{ui('mind.rowCount', {count: displayRows.length})}</span>
       <div className="ft-chips ledger-batch"><button type="button" disabled={disabled} aria-pressed={batch} onClick={() => {setBatch(!batch); setSelected([])}}>{ui('analysis.batch')}</button>
       {batch && <button type="button" disabled={disabled || !selected.length} onClick={() => {for (const id of selected) {const row = draft?.ships[id] ?? report?.ships.find(row => row.id === id); if (row && !draft?.deleted.includes(id)) change(row, {review: true})}}}>{ui('analysis.batchReview')} ({selected.length})</button>}</div>
     </div>
@@ -269,15 +272,15 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
       const candidates = row.group_type == null ? identityCandidates(row) : []
       const label = (key: UiKey) => `${ui(key)} · ${row.name || ui('analysis.new')} #${row.id}`
       return <tr key={row.id} id={`ledger-ship-${row.id}`} className={[deleted ? 'ledger-deleted' : '', draft?.ships[row.id] ? 'ledger-modified' : '', shipFilter === String(row.id) ? 'ledger-highlight' : ''].filter(Boolean).join(' ')}>
-        {batch && <td><input type="checkbox" disabled={disabled || deleted} aria-label={label('analysis.batch')} checked={selected.includes(row.id)} onChange={e => setSelected(e.target.checked ? [...selected, row.id] : selected.filter(id => id !== row.id))}/></td>}
+        {batch && <td><CheckboxControl disabled={disabled || deleted} aria-label={label('analysis.batch')} checked={selected.includes(row.id)} onCheckedChange={next => setSelected(next ? [...selected, row.id] : selected.filter(id => id !== row.id))}/></td>}
         <td>{info?.code == null ? '—' : String(info.code).padStart(3, '0')}</td>
-        <td className={`ft-name ft-rarity-${row.rarity}`}><input className="ledger-name" list={list} aria-label={label('analysis.name')} maxLength={100} value={row.name} disabled={disabled || deleted || !catalog} onChange={e => rename(row, e.target.value)}/>{row.id > 0 && (counts.get(String(row.group_type ?? row.name)) ?? 0) > 1 && <small> · #{row.id}</small>}{row.id < 0 && <small> · {ui('analysis.new')}</small>}
-          {candidates.length > 0 && <select className="ledger-identity" aria-label={label('analysis.confirmIdentity')} value="" disabled={disabled || deleted} onChange={e => {const info = candidates.find(ship => `${ship.group_type}:${ship.name}` === e.target.value); if (info) identify(row, info)}}><option value="">{ui('analysis.confirmIdentity')}</option>{candidates.map(ship => <option key={`${ship.group_type}:${ship.name}`} value={`${ship.group_type}:${ship.name}`}>{ship.raw_name ?? ship.name} · {nationName(nationValue(ship))} · {typeName(ship.type)} · {ship.code ?? ship.group_type}</option>)}</select>}
+        <td className={`ft-name ft-rarity-${row.rarity}`}><Input list={list} aria-label={label('analysis.name')} maxLength={100} value={row.name} disabled={disabled || deleted || !catalog} onChange={e => rename(row, e.target.value)}/>{row.id > 0 && (counts.get(String(row.group_type ?? row.name)) ?? 0) > 1 && <small> · #{row.id}</small>}{row.id < 0 && <small> · {ui('analysis.new')}</small>}
+          {candidates.length > 0 && <Select aria-label={label('analysis.confirmIdentity')} value="" disabled={disabled || deleted} onChange={e => {const info = candidates.find(ship => `${ship.group_type}:${ship.name}` === e.target.value); if (info) identify(row, info)}}><option value="">{ui('analysis.confirmIdentity')}</option>{candidates.map(ship => <option key={`${ship.group_type}:${ship.name}`} value={`${ship.group_type}:${ship.name}`}>{ship.raw_name ?? ship.name} · {nationName(nationValue(ship))} · {typeName(ship.type)} · {ship.code ?? ship.group_type}</option>)}</Select>}
         </td>
-        <td><input className="ledger-level" type="number" min={0} max={125} step={1} aria-label={label('analysis.level')} value={row.level} disabled={disabled || deleted} onChange={e => change(row, {level: e.target.value === '' ? '' : Number(e.target.value)})}/></td>
-        <td><select aria-label={label('analysis.breakthrough')} value={row.full_star == null ? '' : String(row.full_star)} disabled={disabled || deleted} onChange={e => change(row, {full_star: e.target.value === '' ? null : e.target.value === 'true'})}><option value="">{ui('analysis.unknownValue')}</option><option value="false">{ui('analysis.fullStarNo')}</option><option value="true">{ui('analysis.fullStarYes')}</option></select></td>
+        <td><Input type="number" min={0} max={125} step={1} aria-label={label('analysis.level')} value={row.level} disabled={disabled || deleted} onChange={e => change(row, {level: e.target.value === '' ? '' : Number(e.target.value)})}/></td>
+        <td><Select aria-label={label('analysis.breakthrough')} value={row.full_star == null ? '' : String(row.full_star)} disabled={disabled || deleted} onChange={e => change(row, {full_star: e.target.value === '' ? null : e.target.value === 'true'})}><option value="">{ui('analysis.unknownValue')}</option><option value="false">{ui('analysis.fullStarNo')}</option><option value="true">{ui('analysis.fullStarYes')}</option></Select></td>
         <td>{info?.type ? typeName(info.type) : '—'}</td><td>{nationName(nationValue(info)) || '—'}</td><td className={`ft-rarity-${row.rarity}`}>{row.rarity ? tr(`rarity.${row.rarity}`) : '—'}</td>
-        <td><label className="ledger-review"><input type="checkbox" aria-label={label('analysis.reviewFlag')} checked={row.review || !row.group_type} disabled={disabled || deleted} onChange={e => setReview(row, e.target.checked)}/>{ui(row.review || !row.group_type ? 'analysis.needsReview' : row.level === 0 || row.level === '' ? 'analysis.missing' : 'analysis.normal')}</label></td>
+        <td><Checkbox aria-label={label('analysis.reviewFlag')} checked={row.review || !row.group_type} disabled={disabled || deleted} onChange={e => setReview(row, e.target.checked)}>{ui(row.review || !row.group_type ? 'analysis.needsReview' : row.level === 0 || row.level === '' ? 'analysis.missing' : 'analysis.normal')}</Checkbox></td>
         <td><button className="button secondary" disabled={disabled} onClick={() => remove(row)}>{ui(deleted ? 'analysis.restore' : 'analysis.delete')}</button>{deleted && <small> {ui('analysis.deleted')}</small>}</td>
       </tr>
     })}</tbody></table></div>

@@ -6,6 +6,7 @@ import type {ResourceFlowEntry, ResourceFlowReport} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Checkbox, Select} from '../components/FormControls'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
+import {Input} from '../components/ui/input'
 import {downloadCsv} from '../components/statisticsData'
 import {localizeFlowReport, statTextTranslator} from '../components/statisticsText'
 import {resourceIcons} from '../components/StatisticsTable'
@@ -33,7 +34,7 @@ function OilControl({instance, value}: {instance: string; value: ResourceFlowRep
   }
   return <section className="resource-panel oil-control"><div><h2><Fuel size={17}/>{ui('flow.oil')}</h2><p className="muted">{ui('flow.oilHint')}</p></div><form onSubmit={save}>
     <Checkbox checked={enable} disabled={state === 'saving'} onChange={event => {setEnable(event.target.checked); setDirty(true); setState('')}}>{ui('flow.oilEnable')}</Checkbox>
-    <label>{ui('flow.oilTarget')}<input required disabled={state === 'saving'} type="number" min="1000" max="24999" step="1" value={target} onChange={event => {setTarget(event.target.value); setDirty(true); setState('')}}/></label>
+    <label>{ui('flow.oilTarget')}<Input required disabled={state === 'saving'} type="number" min="1000" max="24999" step="1" value={target} onChange={event => {setTarget(event.target.value); setDirty(true); setState('')}}/></label>
     <button className="button secondary" disabled={state === 'saving'}>{ui('flow.save')}</button><span role="status">{state === 'saving' ? ui('flow.saving') : state === 'saved' ? ui('flow.saved') : ''}</span>
   </form>{error && <ErrorBox message={error}/>}</section>
 }
@@ -91,7 +92,7 @@ export function ResourceManagement() {
     <section className="resource-panel resource-filters">
       <p className="muted resource-intro">{ui('flow.hint')}</p>
       <label>{ui('flow.range')}<Select value={days} onChange={event => {setDays(event.target.value); if (event.target.value !== 'custom') setInterval({}); setOffset(0)}}><option value="1">{ui('flow.day')}</option><option value="7">{ui('flow.week')}</option><option value="30">{ui('flow.month')}</option><option value="custom">{ui('flow.custom')}</option></Select></label>
-      {days === 'custom' && <form onSubmit={event => {event.preventDefault(); setInterval({start: draftStart, end: draftEnd}); setOffset(0)}}><label>{ui('flow.start')}<input required type="datetime-local" value={draftStart} onChange={event => setDraftStart(event.target.value)}/></label><label>{ui('flow.end')}<input required type="datetime-local" value={draftEnd} onChange={event => setDraftEnd(event.target.value)}/></label><button className="button secondary">{ui('flow.apply')}</button></form>}
+      {days === 'custom' && <form onSubmit={event => {event.preventDefault(); setInterval({start: draftStart, end: draftEnd}); setOffset(0)}}><label>{ui('flow.start')}<Input required type="datetime-local" value={draftStart} onChange={event => setDraftStart(event.target.value)}/></label><label>{ui('flow.end')}<Input required type="datetime-local" value={draftEnd} onChange={event => setDraftEnd(event.target.value)}/></label><button className="button secondary">{ui('flow.apply')}</button></form>}
       <label>{ui('flow.resource')}<Select value={resource} onChange={event => {setResource(event.target.value); setOffset(0)}}><option value="">{ui('flow.allResources')}</option>{shown?.resources.map(item => <option key={item.key} value={item.key}>{resourceLabel(item.key)}</option>)}</Select></label>
       <label>{ui('flow.task')}<Select value={task} onChange={event => {setTask(event.target.value); setOffset(0)}}><option value="">{ui('flow.allTasks')}</option>{shown?.tasks.map(key => <option key={key} value={key}>{taskLabel(key)}</option>)}</Select></label>
     </section>
@@ -102,7 +103,7 @@ export function ResourceManagement() {
       <section className="resource-panel"><h2>{ui('flow.sankey')}</h2><p className="muted">{ui('flow.units')}</p>
         {shown.flows.length ? <Sankey report={shown} resourceLabel={resourceLabel} taskLabel={taskLabel} onPick={pick}/> : <Empty title={ui('flow.empty')}>{ui('flow.emptyHint')}</Empty>}
       </section>
-      <section className="resource-panel"><div className="resource-heading"><h2>{ui('flow.inventory')}</h2><label className="resource-search"><Search size={16}/><input aria-label={ui('flow.search')} placeholder={ui('flow.search')} value={search} onChange={event => setSearch(event.target.value)}/></label></div>
+      <section className="resource-panel"><div className="resource-heading"><h2>{ui('flow.inventory')}</h2><label className="resource-search"><Search size={16}/><Input className="w-56" aria-label={ui('flow.search')} placeholder={ui('flow.search')} value={search} onChange={event => setSearch(event.target.value)}/></label></div>
         <div className="resource-table-wrap"><table><thead><tr><th>{ui('flow.resource')}</th><th>{ui('flow.current')}</th><th>{ui('flow.income')}</th><th>{ui('flow.expense')}</th><th>{ui('flow.net')}</th><th>{ui('flow.adjustment')}</th></tr></thead><tbody>
           {shown.resources.filter(item => `${resourceLabel(item.key)} ${item.key} ${item.group}`.toLowerCase().includes(search.toLowerCase())).map(item => <tr key={item.key} className={resource === item.key ? 'selected' : ''}><th><button className="resource-pick" onClick={() => {setResource(item.key); setTask(''); setOffset(0)}}>{resourceIcons[item.label] && <img src={resourceIcons[item.label]} alt=""/>}{resourceLabel(item.key)}</button></th><td title={item.observedAt ?? ''}>{number(item.current)}</td><td className="resource-income">{number(item.income)}</td><td>{number(item.expense)}</td><td>{number(item.income - item.expense)}</td><td>{number(item.adjustment)}</td></tr>)}
         </tbody></table></div>

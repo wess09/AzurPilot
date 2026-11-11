@@ -8,6 +8,9 @@ import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox, Loading} from '../components/ui'
+import {Checkbox} from '../components/FormControls'
+import {Checkbox as CheckboxControl} from '../components/ui/checkbox'
+import {Input} from '../components/ui/input'
 import {automaticCandidates, readPlan, technologyEfficiency, type CultivationPlan, type CultivationReport} from '../mind/cultivation'
 import '../fleet-tech/style.css'
 import '../mind/cultivation.css'
@@ -190,14 +193,14 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
     </section>
     <p className="ft-edit-hint">{ui('mind.costHint')}</p>
     <p className="ft-edit-hint">{ui('mind.efficiencyHint')}</p>
-    <div className="ft-search"><input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
-      <label className="cultivation-included"><input type="checkbox" checked={includedOnly} onChange={event => setIncludedOnly(event.target.checked)}/>{ui('mind.includedOnly')}</label>
+    <div className="ft-search"><Input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
+      <Checkbox checked={includedOnly} onChange={event => setIncludedOnly(event.target.checked)}>{ui('mind.includedOnly')}</Checkbox>
     </div>
-    <div className="ft-table-wrap cultivation-table"><table><thead><tr><th scope="col"><label><input type="checkbox" aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onChange={event => selectFiltered(event.target.checked)}/> {ui('mind.participating')}</label></th>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <th key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><button type="button" className="ft-sort" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></button></th>)}<th scope="col">{tr('awakening_pending')}</th></tr></thead><tbody>
+    <div className="ft-table-wrap cultivation-table"><table><thead><tr><th scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></th>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <th key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><button type="button" className="ft-sort" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></button></th>)}<th scope="col">{tr('awakening_pending')}</th></tr></thead><tbody>
       {rows.map(card => {
         const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = technologyRows.get(card.group_type!)?.awakening_pending === true
         return <tr key={card.id} className={participating ? '' : 'cultivation-excluded'}>
-          <td><input type="checkbox" aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onChange={event => exclude(card.group_type!, !event.target.checked)}/></td>
+          <td><CheckboxControl aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onCheckedChange={next => exclude(card.group_type!, !next)}/></td>
           <td className="ft-name"><Link to={`?tab=data&ship=${card.id}`}>{card.name}</Link>{participating && row?.status === 'unknown' && <small className="cultivation-warning">{ui('mind.unknownCost')} · <Link to={`?tab=data&ship=${card.id}`}>{ui('mind.check')}</Link></small>}</td>
           <td>{card.level || ui('mind.unknown')}</td><td>{amount(row?.mind)}</td><td>{amount(row?.gold)}</td>
           <td title={efficiency?.value == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points!, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>

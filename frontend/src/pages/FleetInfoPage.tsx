@@ -4,6 +4,7 @@ import {Ship} from 'lucide-react'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/Switch'
+import {Checkbox} from '../components/FormControls'
 import {editor} from '../config/editors'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
@@ -58,7 +59,7 @@ export function FleetInfoPage() {
 
   return <>
     <PageTitle title={t('Task.FleetInfo.name')} actions={<>
-      <label className="checkbox-label"><input type="checkbox" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onChange={event => setUpdateEmotion(event.target.checked)}/>{ui('fleet.updateEmotion')}</label>
+      <Checkbox checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onChange={event => setUpdateEmotion(event.target.checked)}>{ui('fleet.updateEmotion')}</Checkbox>
       <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onChange={() => void toggleScan()}/>
     </>}/>
     <p className="muted">{ui('rotation.duplicates')}</p>

@@ -16,6 +16,7 @@ import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedu
 import { smoothScrollToElement } from '../app/scroll'
 import { clearSearchTarget, peekSearchTarget, subscribeSearchTarget } from '../app/searchTarget'
 import { Empty, ErrorBox, Loading, Modal } from '../components/ui'
+import { Input } from '../components/ui/input'
 import { LogPanel } from '../components/LogPanel'
 import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
 import { OpsiSimulatorPanel } from '../components/OpsiSimulatorPanel'
@@ -337,7 +338,7 @@ export function TaskConfig() {
   const configToolbar = showConfigToolbar && <div className="config-toolbar">
       <div className="input-icon">
         <Search size={17} />
-        <input placeholder={ui('task.searchConfigPlaceholder')} aria-label={ui('task.searchConfig')} value={search} onChange={event => setSearch(event.target.value)} />
+        <Input placeholder={ui('task.searchConfigPlaceholder')} aria-label={ui('task.searchConfig')} value={search} onChange={event => setSearch(event.target.value)}/>
       </div>
     </div>
 
