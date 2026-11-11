@@ -1,7 +1,7 @@
 """大世界月末清理的行动力保留、恢复异常和周期状态回归测试。"""
 
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, Mock, call, patch
 
 from module.config.config import AzurLaneConfig, Function, TaskEnd
@@ -499,47 +499,47 @@ class TestMonthEndCleanupCycle(unittest.TestCase):
         return scheduling
 
     def sync_cycle(self, scheduling, reset):
-        with patch('module.os.tasks.scheduling.get_os_next_reset', return_value=reset):
+        with patch('module.os.tasks.scheduling.get_os_reset_cycle', return_value=reset):
             scheduling._reset_month_end_cleanup_first_run_if_new_month()
 
     def test_legacy_completed_flag_is_preserved_when_adding_cycle(self):
         scheduling = self.make_scheduling({
             OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_FIRST_RUN: False,
         })
-        reset = datetime(2026, 11, 1)
+        reset = '2026-11-01T00:00:00+08:00'
 
         self.sync_cycle(scheduling, reset)
 
         self.assertFalse(scheduling._is_month_end_cleanup_first_run())
         self.assertEqual(
             scheduling._get_smart_scheduling_state_value(OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE),
-            reset.isoformat(),
+            reset,
         )
 
     def test_first_run_defaults_to_true_when_state_is_empty(self):
         scheduling = self.make_scheduling()
 
-        self.sync_cycle(scheduling, datetime(2026, 11, 1))
+        self.sync_cycle(scheduling, '2026-11-01T00:00:00+08:00')
 
         self.assertTrue(scheduling._is_month_end_cleanup_first_run())
 
     def test_next_month_resets_flag_without_an_intermediate_run(self):
         scheduling = self.make_scheduling({
             OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_FIRST_RUN: False,
-            OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE: datetime(2026, 11, 1).isoformat(),
+            OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE: '2026-11-01T00:00:00+08:00',
         })
 
         # 两次运行都处于月末窗口，不能依靠清理模式曾退出判断是否跨月。
         with patch.object(scheduling, '_is_month_end_cleanup_active', return_value=True):
-            self.sync_cycle(scheduling, datetime(2026, 12, 1))
+            self.sync_cycle(scheduling, '2026-12-01T00:00:00+08:00')
 
         self.assertTrue(scheduling._is_month_end_cleanup_first_run())
 
     def test_same_month_switch_changes_keep_completed_flag(self):
-        reset = datetime(2026, 11, 1)
+        reset = '2026-11-01T00:00:00+08:00'
         scheduling = self.make_scheduling({
             OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_FIRST_RUN: False,
-            OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE: reset.isoformat(),
+            OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE: reset,
         })
 
         for enabled in (False, True):
@@ -548,6 +548,40 @@ class TestMonthEndCleanupCycle(unittest.TestCase):
             self.assertFalse(scheduling._is_month_end_cleanup_first_run())
 
         self.assertEqual(scheduling.config.save_count, 0)
+
+    def test_legacy_local_reset_survives_timezone_change_until_server_rollover(self):
+        cycle_key = OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_CYCLE
+        scheduling = self.make_scheduling({
+            OpsiScheduling.STATE_KEY_MONTH_END_CLEANUP_FIRST_RUN: False,
+            cycle_key: '2026-11-30T08:00:00',
+        })
+        now = datetime(2026, 11, 30, 15, 59, 59, tzinfo=timezone.utc)
+        local_timezone = timezone(timedelta(hours=9))
+
+        def current_time(tz=None):
+            if tz is not None:
+                return now.astimezone(tz)
+            return now.astimezone(local_timezone).replace(tzinfo=None)
+
+        with (
+            patch('module.config.utils.current_time', side_effect=current_time),
+            patch('module.config.utils.server_timezone', return_value=timedelta(hours=8)),
+        ):
+            scheduling._reset_month_end_cleanup_first_run_if_new_month()
+            self.assertFalse(scheduling._is_month_end_cleanup_first_run())
+            self.assertEqual(scheduling._get_smart_scheduling_state_value(cycle_key),
+                             '2026-12-01T00:00:00+08:00')
+
+            local_timezone = timezone(timedelta(hours=-8))
+            scheduling._reset_month_end_cleanup_first_run_if_new_month()
+            self.assertFalse(scheduling._is_month_end_cleanup_first_run())
+            self.assertEqual(scheduling.config.save_count, 1)
+
+            now += timedelta(seconds=1)
+            scheduling._reset_month_end_cleanup_first_run_if_new_month()
+            self.assertTrue(scheduling._is_month_end_cleanup_first_run())
+            self.assertEqual(scheduling._get_smart_scheduling_state_value(cycle_key),
+                             '2027-01-01T00:00:00+08:00')
 
 
 class TestMonthEndCleanupIdleScheduling(unittest.TestCase):

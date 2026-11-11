@@ -35,8 +35,10 @@ from module.config.utils import (
     get_nearest_weekday_date,
     get_os_next_reset,
     get_os_next_reset_after,
+    get_os_reset_cycle,
     get_os_reset_remain,
     get_os_reset_remain_days,
+    is_os_reset_cycle,
 )
 
 from module.exception import GameStuckError, GameTooManyClickError, RequestHumanTakeover, ScriptError
@@ -1313,7 +1315,7 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
 
         # 购买被中断时先续购，避免库存尚未买完就恢复练级。
         purchase = self._get_smart_scheduling_state_value('ActionPointPurchase')
-        if (isinstance(purchase, dict) and purchase.get('reset') == get_os_next_reset().isoformat()
+        if (isinstance(purchase, dict) and is_os_reset_cycle(purchase.get('reset'), get_os_reset_cycle())
                 and purchase.get('phase') == 'buying' and self._try_scheduling_action_point_purchase()):
             return
 
@@ -1810,14 +1812,14 @@ class OpsiScheduling(SmartExploreMixin, CoinTaskMixin, OSMap):
         """
         检测到大世界重置周期已进入新月时，重置月末清理首次运行标记。
         """
-        cycle = get_os_next_reset().isoformat()
+        cycle = get_os_reset_cycle()
         state = self._get_smart_scheduling_state()
         previous_cycle = state.get(self.STATE_KEY_MONTH_END_CLEANUP_CYCLE)
         if previous_cycle == cycle:
             return
 
-        # 历史配置只有布尔标记，首次补记周期时保留已执行状态，避免同月重复清理要塞。
-        if previous_cycle is not None:
+        # 兼容只有布尔标记的旧配置，并保留以旧格式记录的本月执行状态。
+        if previous_cycle is not None and not is_os_reset_cycle(previous_cycle, cycle):
             logger.info('[大世界-月末清理] 大世界已进入新月周期，重置首次运行标记')
             state[self.STATE_KEY_MONTH_END_CLEANUP_FIRST_RUN] = True
         state[self.STATE_KEY_MONTH_END_CLEANUP_CYCLE] = cycle

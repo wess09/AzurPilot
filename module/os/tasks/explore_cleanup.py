@@ -1,5 +1,5 @@
 """每月开荒完成后的独立普通海域事件补扫任务。"""
-from module.config.utils import get_os_next_reset
+from module.config.utils import get_os_next_reset, get_os_reset_cycle, is_os_reset_cycle
 from module.exception import GameStuckError
 from module.logger import logger
 from module.os.map import OSMap
@@ -10,7 +10,7 @@ class OpsiExploreCleanup(OSMap):
     def reset_monthly_state(config):
         """月初先清除本任务的旧断点，即使开荒尚未完成也展示新月进度。"""
         state = config.OpsiExploreCleanup_State
-        if isinstance(state, dict) and state.get('reset') != get_os_next_reset().isoformat():
+        if isinstance(state, dict) and not is_os_reset_cycle(state.get('reset'), get_os_reset_cycle()):
             with config.multi_set():
                 config.OpsiExploreCleanup_State = None
                 config.OpsiExploreCleanup_Progress = ''
@@ -23,7 +23,7 @@ class OpsiExploreCleanup(OSMap):
         progress = config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress', default='')
         month = config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')
         return progress == '已完成百分之100.00' and (
-            not isinstance(month, dict) or month.get('reset') == get_os_next_reset().isoformat()
+            not isinstance(month, dict) or is_os_reset_cycle(month.get('reset'), get_os_reset_cycle())
         )
 
     def os_explore_cleanup(self):
@@ -34,9 +34,9 @@ class OpsiExploreCleanup(OSMap):
             self.config.task_delay(server_update=True)
             self.config.task_stop()
             return
-        reset = get_os_next_reset().isoformat()
+        reset = get_os_reset_cycle()
         state = self.config.OpsiExploreCleanup_State
-        if not isinstance(state, dict) or state.get('reset') != reset:
+        if not isinstance(state, dict) or not is_os_reset_cycle(state.get('reset'), reset):
             order = [int(zone.strip()) for zone in self.config.OS_EXPLORE_FILTER.split('>')]
             state = dict(reset=reset, phase='cleanup', order=order, next=0, attempts=0)
             with self.config.multi_set():
@@ -60,12 +60,12 @@ class OpsiExploreCleanup(OSMap):
             out: IN_GLOBE
         """
         state = self.config.OpsiExploreCleanup_State
-        reset = get_os_next_reset().isoformat()
+        reset = get_os_reset_cycle()
         self._opsi_meowfficer_cleanup = True
         try:
             end = len(state['order']) if max_zones is None else min(state['next'] + max_zones, len(state['order']))
             for index in range(state['next'], end):
-                if get_os_next_reset().isoformat() != reset:
+                if get_os_reset_cycle() != reset:
                     raise GameStuckError('补扫期间跨月，停止旧月份补扫')
                 # 旧尝试次数不能阻止重启后实际进图；连续失败由调度器统一限流。
                 state = dict(state, attempts=state['attempts'] + 1)
@@ -87,7 +87,7 @@ class OpsiExploreCleanup(OSMap):
                 self.clear_question_any_fleet()
                 self.fleet_set(self.config.OpsiFleet_Fleet)
                 self.os_map_goto_globe()
-                if get_os_next_reset().isoformat() != reset:
+                if get_os_reset_cycle() != reset:
                     raise GameStuckError('补扫期间跨月，停止保存旧月份进度')
                 state = dict(state, next=index + 1, attempts=0)
                 with self.config.multi_set():

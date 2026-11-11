@@ -22,7 +22,7 @@ from module.os_handler.action_point import ActionPointLimit
 from module.os_handler.assets import MISSION_CHECKOUT, MISSION_FINISH, MISSION_MONTHLY_BOSS, ORDER_SCAN
 
 
-RESET = datetime(2026, 11, 1)
+RESET_CYCLE = '2026-11-01T00:00:00+08:00'
 OLD_RESET = datetime(2026, 10, 1).isoformat()
 NOW = datetime(2026, 10, 3, 9)
 UPDATE = datetime(2026, 10, 4)
@@ -31,7 +31,7 @@ UPDATE = datetime(2026, 10, 4)
 class TestOpsiDaily(unittest.TestCase):
     def setUp(self):
         for module in ('module.os.tasks.daily', 'module.os.tasks.smart_explore'):
-            clock = patch(f'{module}.get_os_next_reset', return_value=RESET)
+            clock = patch(f'{module}.get_os_reset_cycle', return_value=RESET_CYCLE)
             clock.start()
             self.addCleanup(clock.stop)
         for name, value in (('current_time', NOW), ('get_server_next_update', UPDATE)):
@@ -44,7 +44,7 @@ class TestOpsiDaily(unittest.TestCase):
                 'OpsiExplore': {'ExploreProgress': '已完成百分之30.00'},
             },
             'OpsiScheduling': {'Storage': {'Storage': {
-                'SmartExplore': {'reset': RESET.isoformat(), 'phase': 'explore', 'next': [30, 0, 1]},
+                'SmartExplore': {'reset': RESET_CYCLE, 'phase': 'explore', 'next': [30, 0, 1]},
                 'Unrelated': 'keep',
             }}},
         }
@@ -133,14 +133,14 @@ class TestOpsiDaily(unittest.TestCase):
 
     def test_current_month_monthly_completion_skips_recon_even_when_disabled(self):
         deep_set(self.data, 'OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
-        deep_set(self.data, 'OpsiExplore.OpsiExplore.MeowfficerCleanupState', {'reset': RESET.isoformat()})
+        deep_set(self.data, 'OpsiExplore.OpsiExplore.MeowfficerCleanupState', {'reset': '2026-10-31T08:00:00'})
         self.assert_recon(False)
 
     def test_current_month_smart_completion_skips_recon(self):
         for phase in ('cleanup', 'done'):
             with self.subTest(phase=phase):
                 deep_set(self.data, 'OpsiScheduling.Storage.Storage.SmartExplore',
-                         {'reset': RESET.isoformat(), 'phase': phase, 'next': [30, 7, 38]})
+                         {'reset': '2026-10-31T08:00:00', 'phase': phase, 'next': [30, 7, 38]})
                 self.assert_recon(False)
 
     def test_previous_month_completion_does_not_skip_recon(self):
