@@ -380,7 +380,6 @@ def save_ship(connection, instance, data):
         if type(group.get('samples')) is list:
             for ordinal, sample in enumerate(group['samples']):
                 valid, stored = scalar(sample, 'R')
-                valid = valid and type(sample) in (int, float)
                 value_id = None if valid else write_value(connection, value=sample, **owner)
                 insert(connection, 'ship_exp_duration_samples', dict(instance=instance, kind=kind, ordinal=ordinal,
                     duration_seconds=stored if valid else None, field_mask=1 if valid else 0,
