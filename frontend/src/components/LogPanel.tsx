@@ -10,6 +10,7 @@ import { api } from '../api/client'
 import type { Logs as LogsData, LogEntry } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { Empty } from '../components/ui'
+import { Input } from './ui/input'
 import { LogCardView, findVisibleRange, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
 
 export const LOG_LINE_RE = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/
@@ -480,9 +481,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
         </button>
       </div>
       {filtersOpen && <div className="log-filters" id="log-filters">
-        <div className="input-icon">
-          <Search size={15} />
-          <input aria-label={ui('log.search')} placeholder={ui('log.searchPlaceholder')} value={search} onChange={event => setSearch(event.target.value)} />
+        <div className="relative flex-1">
+          <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"/>
+          <Input className="pl-9" aria-label={ui('log.search')} placeholder={ui('log.searchPlaceholder')} value={search} onChange={event => setSearch(event.target.value)}/>
         </div>
         <Select aria-label={ui('log.level')} value={level} onChange={event => updateLevel(event.target.value)}>
           {LOG_LEVELS.map(item => (

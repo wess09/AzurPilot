@@ -7,6 +7,7 @@ import { BookmarkPlus, ExternalLink, FolderOpen, ListPlus, Shuffle, Upload, X } 
 import { DEFAULT_BACKGROUND_URLS, applyGalleryEntry, disableBackground, galleryUrl, getBackground, getGallery, initBackgroundGallery, openGalleryFolder, refreshGallery, removeGalleryEntry, saveDirectUrlToGallery, setBackgroundUrls, subscribeBackground, uploadBackgroundFile, type BackgroundKind, type BackgroundSource } from '../app/background'
 import { useApp } from '../app/context'
 import { Select } from './FormControls'
+import { Input } from './ui/input'
 
 /** 地址行的稳定 id：用数组下标当 key，删一行后 React 会复用错误的输入节点。 */
 type Row = {id: string, value: string}
@@ -120,7 +121,7 @@ export function BackgroundPreferences() {
       {source === 'url' && <form className="background-url-form" onSubmit={applyUrls}>
         <div className="background-url-rows">
           {rows.map((row, index) => <div className="background-url-row" key={row.id}>
-            <input
+            <Input
               type="url"
               aria-label={ui('settings.backgroundUrl')}
               maxLength={2048}
@@ -145,7 +146,7 @@ export function BackgroundPreferences() {
       {/* 直链行：显示解析到的真实地址，可打开、可存进图库 —— 存的与看到的是同一张图。 */}
       {source === 'url' && <div className="background-direct">
         <label htmlFor="ui-background-direct">{ui('settings.backgroundDirect')}</label>
-        <input
+        <Input
           id="ui-background-direct"
           readOnly
           value={background.directUrl || (background.resolving ? ui('settings.backgroundResolving') : ui('settings.backgroundUnresolved'))}

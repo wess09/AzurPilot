@@ -98,7 +98,7 @@ describe('TaskNav 导航组件', () => {
 
     expect(html).toContain('task-nav-container')
     // 搜索框常驻，不再有展开/收起开关
-    expect(html).toContain('nav-search')
+    expect(html).toContain('task-search')
     expect(html).toContain('搜索任务…')
 
     expect(html).toContain('task-group-button')

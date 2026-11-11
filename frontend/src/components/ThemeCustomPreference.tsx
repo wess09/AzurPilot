@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type CSSProperties } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { applyCustomLayer, THEME_FAMILY } from '../app/theme'
 import { MaterialDetailModal } from './MaterialDetailModal'
@@ -10,6 +10,7 @@ import { openMaterialInspector } from '../app/materialInspectorState'
 const MockInstancePreview = lazy(() => import('./MockInstancePreview').then(module => ({default: module.MockInstancePreview})))
 
 import { PaletteSwatches } from './PaletteSwatches'
+import { Slider } from './ui/slider'
 import type { UiKey } from '../i18n'
 
 type Ui = (key: UiKey, params?: Record<string, string | number>) => string
@@ -88,18 +89,15 @@ export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, o
         return <div className="field-row knob-row" key={knob.id}>
           <div className="field-label"><label htmlFor={`ui-knob-${knob.id}`}>{ui(knob.labelKey)}</label></div>
           <div className="field-control knob-control">
-            <input
+            <Slider
               id={`ui-knob-${knob.id}`}
-              type="range"
               aria-label={label}
               min={knob.min}
               max={knob.max}
               step={knob.step}
-              value={value}
-              /* 已填充比例：滑块轨道的进度渐变按它绘制。 */
-              style={{['--knob-fill']: `${Math.round(((value - knob.min) / (knob.max - knob.min)) * 100)}%`} as CSSProperties}
+              value={[value]}
               /* 值没变就不落盘：写盘会把这一项标成「已调过」。 */
-              onChange={event => { const next = Number(event.target.value); if (next !== value) onKnob(knob.id, next) }}
+              onValueChange={([next]) => { if (next !== value) onKnob(knob.id, next) }}
             />
             <span className="knob-value">{value}{knob.unit}</span>
             <button type="button" className="knob-reset" title={ui('settings.resetItem')} aria-label={`${ui('settings.resetItem')} · ${label}`} disabled={stored === undefined} onClick={() => onResetKnob(knob.id)}><RotateCcw size={14} aria-hidden="true"/></button>

@@ -3,7 +3,9 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp, useConnection } from '../app/context'
-import { Switch } from './Switch'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Field, FieldContent, FieldDescription, FieldLabel } from '../pages/settings-ui/field'
+import { Switch } from '../pages/settings-ui/switch'
 import { api, ApiError } from '../api/client'
 import type { LauncherStatus } from '../api/types'
 
@@ -83,21 +85,22 @@ export function LauncherCard() {
   const status = launcherStatusText(phase, {enabled, pending, detail}, t)
 
   return (
-    <section className="panel config-group">
-      <div className="panel-heading">
-        <h2 data-text={t('Gui.Launcher.StartupTitle')}>{t('Gui.Launcher.StartupTitle')}</h2>
-      </div>
-      <div className="field-row">
-        <div className="field-label">
-          <label htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</label>
-          <p>{t('Gui.Launcher.AutoStartHelp')}</p>
-          <p role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
-        </div>
-        <div className="field-control">
+    <Card>
+      <CardHeader>
+        <CardTitle role="heading" aria-level={2}>{t('Gui.Launcher.StartupTitle')}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Field orientation="horizontal" data-disabled={phase !== 'ready' || undefined}>
+          <FieldContent>
+            <FieldLabel htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</FieldLabel>
+            <FieldDescription id="launcher-autostart-description">{t('Gui.Launcher.AutoStartHelp')}</FieldDescription>
+            <p role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
+          </FieldContent>
           <Switch id="launcher-autostart" checked={enabled} disabled={phase !== 'ready'}
-            label={t('Gui.Launcher.AutoStart')} onChange={() => { void toggle() }}/>
-        </div>
-      </div>
-    </section>
+            aria-label={t('Gui.Launcher.AutoStart')} aria-describedby="launcher-autostart-description"
+            onCheckedChange={() => { void toggle() }}/>
+        </Field>
+      </CardContent>
+    </Card>
   )
 }

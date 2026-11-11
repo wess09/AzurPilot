@@ -16,14 +16,14 @@ import {
 import type { ResolvedMode } from '../app/palettes'
 import { SegmentedControl } from './SegmentedControl'
 import { Modal } from './ui'
+import { Input } from './ui/input'
 
 /** 十六进制输入：只有凑满合法六位才落盘，离开输入框时回到真实值，避免半截色值留在界面上。 */
 function HexInput({value, label, onCommit}: {value: string; label: string; onCommit: (value: string) => void}) {
   const [draft, setDraft] = useState(value)
   const [editing, setEditing] = useState(false)
   const shown = editing ? draft : value
-  return <input
-    className="color-slot-hex"
+  return <Input
     value={shown}
     maxLength={7}
     spellCheck={false}
@@ -87,7 +87,7 @@ function ColorPaletteModal({mode, onMode, onClose}: {mode: ResolvedMode; onMode:
       ]}/>
       <label className="color-palette-search">
         <Search size={14} aria-hidden="true"/>
-        <input value={query} placeholder={ui('settings.colorPaletteSearch')} aria-label={ui('settings.colorPaletteSearch')} spellCheck={false} onChange={event => setQuery(event.target.value)}/>
+        <Input className="w-full" value={query} placeholder={ui('settings.colorPaletteSearch')} aria-label={ui('settings.colorPaletteSearch')} spellCheck={false} onChange={event => setQuery(event.target.value)}/>
       </label>
     </div>
     <div className="color-palette-sample" aria-hidden="true">
