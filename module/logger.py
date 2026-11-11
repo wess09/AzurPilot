@@ -303,6 +303,9 @@ class RichTimedRotatingHandler(TimedRotatingFileHandler):
         self.rolloverAt = newRolloverAt
 
         self.log_file = str(newPath.resolve())
+        # 文件轮转后，归档等读取方需要跟随已绑定处理器的写入路径。
+        if self in logger.handlers:
+            logger.log_file = self.log_file
 
     def expire(self, files: List[Path]) -> None:
         """删除或备份过期的日志文件。
