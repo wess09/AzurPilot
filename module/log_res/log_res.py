@@ -152,11 +152,11 @@ class LogRes:
         source = self.__dict__.get('_observation_source') or task or 'task_observation'
         stamp = self.__dict__.get('_recorded_at') or now()
         store = ProgramStore(Path(filepath_config(instance)).parent)
-        if not store.observe(instance, name, value, stamp.isoformat(sep=' '), source):
-            # 账本和资源快照共用总库，争用时跳过本次同步写入。
+        if not store.observe_async(instance, name, value, stamp.isoformat(sep=' '), source):
+            # 账本和资源快照共用总库，排队失败时跳过本次写入。
             return False
-        from module.statistics.resource_flow import observe
-        observe(self.config, name, current, source, observed_at=stamp)
+        from module.statistics.resource_flow import observe_async
+        observe_async(self.config, name, current, source, observed_at=stamp)
         return True
 
     def _record_all_resource_snapshot(self, overrides=None):
@@ -169,7 +169,7 @@ class LogRes:
             overrides (dict, optional): 本次读到的资源键值对。
         """
         try:
-            from module.statistics.resource_stats import async_record_resource_snapshot, record_resource_snapshot
+            from module.statistics.resource_stats import async_record_resource_snapshot, queue_resource_snapshot
             instance_name = getattr(self.config, 'config_name', 'default')
             resources = {}
             for group_name, value in (overrides or {}).items():
@@ -185,7 +185,8 @@ class LogRes:
                 async_record_resource_snapshot(instance_name, resources, observed_at=self.__dict__.get('_recorded_at'),
                                                carry_forward=True)
             else:
-                record_resource_snapshot(instance_name, resources, carry_forward=True)
+                queue_resource_snapshot(instance_name, resources,
+                                        observed_at=self.__dict__.get('_recorded_at'), carry_forward=True)
         except Exception:
             logger.exception('[日志资源] 记录资源快照失败')
 

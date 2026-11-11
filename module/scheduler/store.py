@@ -147,6 +147,25 @@ class ProgramStore:
                     return False
                 sleep(backoff)
 
+    def observe_async(self, instance, name, value, timestamp, source):
+        """排队写入普通观测，认证历史仍同步提交，调用方不必等待落库。"""
+        self.path(instance)
+        self.database.ensure_ready()
+        total = value.get('Total') if isinstance(value, dict) else None
+        if name == 'ActionPoint' and type(total) in (int, float) and 0 <= total <= 1_000_000 and int(total) == total:
+            try:
+                self.history.observe(instance, name, value, timestamp, source)
+            except HISTORY_ERRORS as error:
+                logger.warning(f'[认证历史] 记录失败，交易同步将停止：{type(error).__name__}')
+
+        from module.persistence.write_queue import write_queue
+        payload = copy.deepcopy(value)
+        write_queue.enqueue(
+            'latest', ('observation', self.database.directory, instance, name),
+            lambda connection: native.write_observation(connection, instance, name, payload, timestamp, source),
+            directory=self.database.directory)
+        return True
+
     def copy(self, source, target):
         if self.exists(source):
             self.import_program(target, self.export(source))

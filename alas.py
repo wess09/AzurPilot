@@ -1115,9 +1115,17 @@ class AzurLaneAutoScript:
                 'restart', inflection.underscore(recovery.runner.config.task.command)):
             logger.info('[战役续接] 已切换到其他任务，丢弃原关卡续接凭据')
             self._campaign_recovery = None
-        with task_session(self.config_name, inflection.camelize(inflection.underscore(command))), \
-                campaign_recovery_scope(self):
-            return self._run(command, skip_first_screenshot)
+        try:
+            with task_session(self.config_name, inflection.camelize(inflection.underscore(command))), \
+                    campaign_recovery_scope(self):
+                return self._run(command, skip_first_screenshot)
+        finally:
+            # 任务边界落库，避免切任务或异常退出时丢掉最后一批观测。
+            try:
+                from module.persistence.write_queue import write_queue
+                write_queue.flush(timeout=5)
+            except Exception as error:
+                logger.warning('[存储队列] 任务边界刷新失败：%s', type(error).__name__)
 
     def _run(self, command, skip_first_screenshot=False):
         """
