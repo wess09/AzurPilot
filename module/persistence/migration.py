@@ -140,6 +140,7 @@ def assert_no_workers(root):
         if process.pid in startup_ids:
             continue
         command = process.info.get('cmdline') or []
+        # tui.py 已并入 gui.py --tui，仍保留用于识别升级前遗留的旧进程。
         if not any(Path(part).name.lower() in ('alas.py', 'gui.py', 'tui.py', 'mcp_server_sse.py') for part in command):
             continue
         try:

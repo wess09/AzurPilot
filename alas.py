@@ -2922,10 +2922,12 @@ class AzurLaneAutoScript:
 
 if __name__ == '__main__':
     if '--tui' in sys.argv:
-        from tui import main as tui_main
-        sys.argv.remove('--tui')
-        tui_main()
-        sys.exit(0)
+        # 终端界面已合并到启动器，保留提示避免旧命令出现 ImportError。
+        print(
+            '终端界面已合并到启动器，请运行：uv run python gui.py --tui [实例名]',
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     try:
         config_name = parse_config_name(sys.argv[1:])

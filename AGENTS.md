@@ -10,6 +10,7 @@
 | 用途 | 命令 |
 | --- | --- |
 | 启动 | `uv run python gui.py` |
+| 启动终端界面 | `uv run python gui.py --tui` |
 | 生成配置和前端选项 | `uv run -m module.config.config_updater` |
 
 ## 配置与生成文件

@@ -1,10 +1,10 @@
-# WebUI 启动器（gui.py）
+# 启动器（gui.py）：WebUI 与 TUI
 
-> WebUI 体系的最外层入口：以「父监督器 + 服务子进程」的结构拉起 uvicorn/Starlette，管理端口监听、热重载、孤儿进程回收与依赖同步；进程与端口归它管，业务逻辑一概不管。
+> 系统最外层入口：默认以「父监督器 + 服务子进程」的结构拉起 uvicorn/Starlette，管理端口监听、热重载、孤儿进程回收与依赖同步；`--tui` 时则在同一入口内启动终端界面。进程与端口归它管，业务逻辑一概不管。
 
 ## 1. 模块概述
 
-gui.py 是用户进入系统的第一个进程。用户执行 `uv run python gui.py`（Windows 启动器 `deploy/launcher/Alas.bat` 会以 `--electron` 调用它）之后，由它完成前端构建检查、依赖同步、端口监听，直到浏览器可以打开 `http://{host}:{port}`。
+gui.py 是用户进入系统的第一个进程。用户执行 `uv run python gui.py`（Windows 启动器 `deploy/launcher/Alas.bat` 会以 `--electron` 调用它）之后，由它完成前端构建检查、依赖同步、端口监听，直到浏览器可以打开 `http://{host}:{port}`。指定 `--tui [实例名]` 时不启动 WebUI，而是在当前终端运行 Textual 界面，详见 [终端界面](tui.md)。
 
 它解决的核心问题是：一个按 7×24 小时运行设计的自动化框架，其控制台自身也要能**安全地自我更新**。更新会改写源码和 `.venv`，而一个正在运行的进程无法给自己换环境，也不可靠地重启自己。因此 gui.py 把职责拆成两层：真正提供 HTTP/WS 服务的代码运行在一个可以随时终止重建的**子进程**里；父进程（`run_webui_supervisor`）只持有子进程句柄、跨进程事件和一个独立的依赖同步服务，负责在「更新完成」「子进程崩溃」「上次异常退出留下残留」这几种情况下把环境收拾干净，再拉起新的服务子进程。
 
@@ -83,7 +83,9 @@ AzurPilot/
 
 | 入口 | 用途 |
 | --- | --- |
-| `uv run python gui.py`（`__main__` → `main()`） | 主入口：绑定 GUI 日志并初始化存储，成功后强制 `spawn` 启动方式，按 `-r` 与 `EnableReload` 分流 |
+| `uv run python gui.py`（`__main__` → `main()`） | 主入口：绑定 GUI 日志并初始化存储；有 `--tui` 时进入终端界面，否则强制 `spawn` 启动方式，按 `-r` 与 `EnableReload` 分流 |
+| `run_tui(instance)` | `--tui [实例名]` 分支：移除控制台日志后运行 `AzurPilotTUI`，复用主入口已完成的存储初始化 |
+| `tui_request(argv)` | 解析 `--tui` 可选参数；使用 `parse_known_args`，不影响 WebUI 子进程参数 |
 | `run_webui_supervisor(watch_sources)` | 热重载模式的父进程监督循环，`EnableReload=true` 或指定 `-r` 时由主入口调用 |
 | `func(ev, dependency_sync_event, ready_event)` | 服务子进程入口，由监督器 `spawn`（进程名 `gui`）；非重载模式直接调用 `func(None, None)` |
 | `func` 内的 uvicorn 工厂字符串 `"module.api.app:create_app"` | ASGI 应用实际创建点，服务重启后以新代码重新 import |
@@ -137,8 +139,9 @@ gui.py 通过 `State` 与子进程/更新器交换信息：
 
 ### 两种启动模式
 
-主入口按 `-r`/`--reload` 与 `State.deploy_config.EnableReload` 分流：
+主入口先看 `--tui`：指定时进入终端界面并直接返回；否则按 `-r`/`--reload` 与 `State.deploy_config.EnableReload` 分流：
 
+- **终端界面模式（`--tui [INSTANCE]`）**：`run_tui()` 复用主入口已完成的存储初始化，移除控制台日志后运行 Textual 界面；`INSTANCE` 省略时选中排序后的第一个实例。
 - **热重载模式（默认）**：`run_webui_supervisor()`，父进程常驻，子进程可反复重建；只有更新器等显式置位重启事件时才会重建。
 - **源码监听模式（`-r`/`--reload`）**：`run_webui_supervisor(watch_sources=True)`，在监督循环内额外轮询 `.py` 变更并自动置位重启事件。该参数同时强制进入监督模式，覆盖 `EnableReload=false`。
 - **直连模式**：`func(None, None)`，当前进程直接当服务跑；此模式下 `State.restart_event` 为 `None`，更新器会拒绝执行需要重载的更新（无法安全恢复）。
@@ -147,6 +150,8 @@ gui.py 通过 `State` 与子进程/更新器交换信息：
 
 ```bash
 uv run python gui.py -r          # 开发时用：改 .py 后自动重建 WebUI
+uv run python gui.py --tui       # 终端界面，自动选中第一个实例
+uv run python gui.py --tui alas  # 终端界面并选中 alas
 ```
 
 `SourceWatcher` 只用标准库：监督循环每秒轮询一次，但扫描本身最短间隔 1.5 秒（配合 `event.wait(1)` 实际约 2 秒一次）；用 `os.scandir` 递归并复用 `DirEntry.stat()` 的目录项缓存读取 `*.py` 的 `(mtime_ns, size)` 指纹，实测约 2159 个文件只需 0.03 秒，不会持续占用 CPU。跳过 `.venv`、`node_modules`、`__pycache__`、`.git`、`build`、`dist`、`config`、`log`、`tests`、`cache`、`dev_tools`、`licenses`、`docs`、`assets`、`bin`、隐藏目录与 `tmp*` 运行期目录。首次扫描只建立基线；检测到变化后要求连续两轮快照一致且超过 0.8 秒去抖才置位 `event`，避免编辑器连续保存引发多次重启，端到端触发延迟约 2–3 秒。扫描异常只记 warning，不会让监督器退出。
@@ -297,10 +302,11 @@ gui.py 读取的是**部署配置**（`config/deploy.yaml`，经 `deploy/config.
 | `Python.PypiMirror`、`Git.SSLVerify` | str/bool | null / false | 传递给 uv 的镜像与安全选项 |
 | `Misc.Password` | str\|null | null | WebUI 密码（认证在 `module/api`，可能被回写） |
 
-命令行参数（`main()` 识别 `-r`，其余由 `func()` 内解析；`func` 用 `parse_known_args` 忽略启动器参数，刻意不声明 `--reload` 以免与 `--run` 的 `--r` 缩写冲突）：
+命令行参数（`main()` 识别 `--tui` 与 `-r`，其余由 `func()` 内解析；`func` 用 `parse_known_args` 忽略启动器参数，刻意不声明 `--reload` 以免与 `--run` 的 `--r` 缩写冲突）：
 
 | 参数 | 作用 |
 | --- | --- |
+| `--tui [INSTANCE]` | 启动器参数：进入终端界面；可选指定实例名，优先于 `-r` 与 `EnableReload` |
 | `-r` / `--reload` | 启动器参数：监听 `.py` 变更自动重建 WebUI，并强制进入监督模式（开发用） |
 | `--host` / `-p --port` | 覆盖 `WebuiHost` / `WebuiPort` |
 | `-k` / `--key` | WebUI 密码；由 `create_app` 二次解析消费 |
