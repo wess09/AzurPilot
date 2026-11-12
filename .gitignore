@@ -47,6 +47,7 @@ dev_tools/debug_tools
 /campaign/test/
 /toolkit
 PaddleOCR
+.orphans-live.txt
 
 # Tests
 test/*
@@ -63,6 +64,7 @@ docs/*
 /f
 /workers
 /debug_img
+/.tmp/
 
 # AI and coding tools
 .codex/
@@ -79,7 +81,7 @@ docs/*
 RTK.md
 
 # Frontend
-frontend/node_modules/
+node_modules/
 frontend/test-results/
 frontend/playwright-report/
 frontend/*.tsbuildinfo
