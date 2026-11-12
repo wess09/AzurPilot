@@ -1,4 +1,4 @@
-/* 经典主题的共享样式与布局覆盖。 */
+/* 经典主题的共享样式与布局覆盖 */
 @import './tokens.css';
 @import './layout.css';
 @import './components.css';
@@ -13,9 +13,9 @@
 @import './legacy-fonts.css';
 @import './motion.css';
 
-/* 旧版侧栏贴边、只有一条右边框，顶栏与右栏不带圆角。 */
+/* 旧版侧栏贴边、只有一条右边框，顶栏与右栏不带圆角 */
 .sidebar, .right-rail, .topbar {border-radius: 0}
-/* 背景随内容滚，不固定在视口上（主题骨架默认 fixed）。 */
+/* 背景随内容滚，不固定在视口上（主题骨架默认 fixed） */
 body {background-attachment: scroll}
 
 /* 静默输入框：平色面 + 发丝边，聚焦只加深描边——无底线、无变色底、无发光环 */
@@ -44,7 +44,7 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
 }
 
 /* 紧凑开关：38×22 轨道 + 18px 滑块，无描边。
-   关=中性灰轨 + 白滑块，开=强调色轨；按压时滑块轻微拉长。 */
+   关=中性灰轨 + 白滑块，开=强调色轨；按压时滑块轻微拉长 */
 .toggle {
   position: relative;
   width: 38px;
@@ -96,19 +96,18 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
   cursor: not-allowed;
 }
 
-/* 跳转链接必须在网格流之外，否则会占掉侧栏那一列。 */
+/* 跳转链接必须在网格流之外，否则会占掉侧栏那一列 */
 .skip-link {position: fixed; top: -100px; left: 16px; z-index: 200; background: var(--theme-control-bg); color: var(--accent); padding: 14px; border-radius: 8px}
 .skip-link:focus {top: 12px}
 
-/* 侧栏与顶栏各走自己的区域材质；普通材质分支会把它们压回不透明（见 theme-material.css）。 */
+/* 侧栏与顶栏各走自己的区域材质；普通材质分支会把它们压回不透明（见 theme-material.css） */
 .sidebar, .right-rail {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
 .topbar {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
 .sidebar {padding: 0 14px 14px}
-/* 侧栏与调度器栏都是导航面板：文字禁止划选，免得拖动时把菜单文本刷蓝；输入框除外。 */
-.sidebar, .instance-page-rail, .task-config-rail {user-select: none}
+/* 侧栏与调度器栏都是导航面板：文字禁止划选，免得拖动时把菜单文本刷蓝；输入框除外 */
+.sidebar, .instance-page-rail {user-select: none}
 .sidebar input, .sidebar textarea,
-.instance-page-rail input, .instance-page-rail textarea,
-.task-config-rail input, .task-config-rail textarea {user-select: text}
+.instance-page-rail input, .instance-page-rail textarea {user-select: text}
 .sidebar-brand {height: var(--topbar-height); padding: 0 8px; margin-bottom: 14px}
 .brand-title {font-size: 22px}
 .brand-mark {color: var(--secondary)}
@@ -143,7 +142,7 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
   color: var(--text);
   font-weight: 600;
 }
-/* 角标跟着褪色：一块品牌紫的小方块会把刚压下去的彩色又请回来。 */
+/* 角标跟着褪色：一块品牌紫的小方块会把刚压下去的彩色又请回来 */
 .nav-pill {
   padding: 1px 5px;
   border-radius: 4px;
@@ -153,28 +152,6 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
   color: color-mix(in srgb, var(--text) 62%, transparent);
 }
 
-/* 侧栏搜索：安静的嵌入字段，焦点只加深描边，不发光 */
-.nav-search {
-  gap: 8px;
-  min-height: 34px;
-  margin: 2px 0 12px;
-  padding: 0 10px;
-  border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  color: color-mix(in srgb, var(--text) 45%, transparent);
-  transition: border-color .12s ease, background-color .12s ease;
-}
-.nav-search svg {width: 14px; height: 14px; flex-shrink: 0; color: color-mix(in srgb, var(--text) 40%, transparent)}
-.nav-search input {font-size: 13px; color: var(--text)}
-.nav-search input::placeholder {color: color-mix(in srgb, var(--text) 42%, transparent)}
-.nav-search:focus-within {
-  border-color: color-mix(in srgb, var(--text) 24%, transparent);
-  background: color-mix(in srgb, var(--text) 5%, transparent);
-  box-shadow: none;
-}
 .nav-search-hits {margin-bottom: 12px}
 
 /* 分组行 */
@@ -193,12 +170,12 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
 .task-group-icon {width: 17px; height: 17px}
 .task-group-button:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
 .task-group-button.active {color: var(--accent); font-weight: 600}
-/* 展开只改箭头方向与字色，不再给整行铺一层浅紫、再描一圈边。 */
+/* 展开只改箭头方向与字色，不再给整行铺一层浅紫、再描一圈边 */
 .task-group-button.expanded {background: none; border: 0; color: var(--text)}
 .task-group-button.expanded .task-group-icon {color: inherit}
 /* 当前页所在的分组只提一档字重与字色，不铺底色、不染色：
    分组和子项同时带色块会变成两行并排的选中态，真正的位置反而看不出来。
-   也不再用品牌色 —— 侧栏里唯一有颜色的地方应该是当前页本身，而不是一串紫。 */
+   也不再用品牌色 —— 侧栏里唯一有颜色的地方应该是当前页本身，而不是一串紫 */
 .task-group-button.active,
 .task-group-button.active.expanded {background: none; color: var(--text); font-weight: 500}
 .task-group-button.active .task-group-icon,
@@ -234,11 +211,10 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
 .right-rail {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
 .breadcrumb {font-size: 13px}
 /* 上内边距归零：内容区顶部那条「主页 / 实例」行已与下方留出距离，再加 24px 会在
-   「主页文字底到容器顶边框」之间多出一段空隙。 */
+   「主页文字底到容器顶边框」之间多出一段空隙 */
 main {padding: 0 28px 24px}
 main:focus {outline: none}
 .page-title h1 {font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.6px; overflow-wrap: anywhere}
-.eyebrow {display: block; margin-bottom: 10px; font-size: 12px; font-weight: 600}
 .title-actions {position: relative; gap: 8px; padding: 4px}
 .panel-heading h2 {font-size: 15px}
 .panel, .resource-card, .instance-card {border-radius: var(--theme-radius-panel)}
@@ -272,7 +248,7 @@ main:focus {outline: none}
   box-shadow: var(--theme-shadow-hover);
 }
 .button.secondary {
-  /* 按钮是控件族，面取控件区域的 token。 */
+  /* 按钮是控件族，面取控件区域的 token */
   background: var(--theme-control-bg);
   -webkit-backdrop-filter: var(--theme-control-filter);
   backdrop-filter: var(--theme-control-filter);
@@ -320,7 +296,7 @@ main:focus {outline: none}
   background: var(--accent-soft);
   color: var(--accent);
 }
-/* 侧栏内的图标按钮（含搜索开关）保持中性，不闪强调色。 */
+/* 侧栏内的图标按钮（含搜索开关）保持中性，不闪强调色 */
 .sidebar-label button.icon-button:hover:not(:disabled),
 .sidebar-label button.icon-button:focus-visible {
   background: color-mix(in srgb, var(--text) 6%, transparent);
@@ -342,11 +318,10 @@ main:focus {outline: none}
 .text-button:hover:not(:disabled) {
   background: var(--accent-soft);
 }
-.input-icon > input:focus, .nav-search input:focus {outline: none}
-button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled,
-.checkbox-control:has(:disabled), .select-option[aria-disabled='true'] {opacity: 1; color: var(--muted)}
+.input-icon > input:focus {outline: none}
+button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled {opacity: 1; color: var(--muted)}
 .button:disabled {background: var(--surface-muted); border-color: var(--border); box-shadow: none}
-.input-icon, .count-badge, .nav-search {background: var(--surface-muted)}
+.input-icon, .count-badge {background: var(--surface-muted)}
 .status, .task-state {border-radius: 8px; font-weight: 500}
 
 .scheduler-widget {
@@ -375,7 +350,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .scheduler-widget-heading > div > svg {
   color: var(--accent);
 }
-/* 状态提示与新版本同层：无面，只留文字与间距。 */
+/* 状态提示与新版本同层：无面，只留文字与间距 */
 .scheduler-status {
   display: inline-flex;
   align-items: center;
@@ -458,28 +433,27 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .resource-editor-card.dragging {opacity: 1; border-color: var(--accent); transform: none; background: var(--accent-soft)}
 .resource-editor-remove:hover {background: var(--theme-danger-soft)}
 .resource-editor-add-icon, .resource-editor-add, .resource-editor-add:hover, .resource-editor-add.open {background: var(--accent-soft)}
-.statistics-note {border-left-color: var(--secondary)}
 .panel.chart-expanded {inset: 0; border-radius: 0; z-index: 150}
 /* 旧版版式：只在实例视图生效（App.tsx 的 .legacy-shell）。
    旧版外壳是「顶栏跨全宽 + 文字菜单在顶栏下方」，与共享层的「侧栏整列 + 顶栏在主内容列内」
-   是两套网格，所以在这里整块重排，主页视图不受影响。 */
+   是两套网格，所以在这里整块重排，主页视图不受影响 */
 .app-shell.legacy-shell {
   /* 旧版文字菜单宽 12rem(16px 基准)=192px，但那是 12px 字的年代：
      现在的行是 13px 字 + 16px 图标 + 右侧箭头，192px 会把长任务名挤成省略号，
-     整列也显得局促。按 240px 排，正好容下「活动-每日任务」这类最长的一项。 */
+     整列也显得局促。按 240px 排，正好容下「活动-每日任务」这类最长的一项 */
   --sidebar-width: 240px;
   /* 内容区顶部那行「主页 / 实例 / 任务」，算进页内两列的高度预算里；
-     分页模式下这行会被放缩，所以取值与它的实际高度同源，不能写死。 */
+     分页模式下这行会被放缩，所以取值与它的实际高度同源，不能写死 */
   --legacy-page-nav-height: var(--instance-page-nav-height, 42px);
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
-  /* 行高的隐含最小值是 auto，内容算高了会把整壳顶出视口、页面就能滚；钳成 0 让内容自己滚。 */
+  /* 行高的隐含最小值是 auto，内容算高了会把整壳顶出视口、页面就能滚；钳成 0 让内容自己滚 */
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: 'topbar topbar' 'sidebar main';
   /* 光是 minmax(0, 1fr) 还不够：外壳不裁剪时网格会按内容测量，行照样被撑高、整壳溢出视口。
-     裁掉溢出后这一行才真正只占「视口 − 顶栏」，多出来的部分由各列自己滚。 */
+     裁掉溢出后这一行才真正只占「视口 − 顶栏」，多出来的部分由各列自己滚 */
   overflow: hidden;
   /* 基类的 .app-shell 只给了 min-height，网格就会跟着内容长到视口之外。
-     钉成正好一屏，内容多出来的部分交给内部滚动。 */
+     钉成正好一屏，内容多出来的部分交给内部滚动 */
   height: var(--viewport-height);
 }
 .app-shell.legacy-shell.with-rail {
@@ -490,12 +464,12 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .app-shell.legacy-shell > .sidebar {grid-area: sidebar; padding-top: 12px}
 .app-shell.legacy-shell > .main-shell {grid-area: main; min-height: 0; overflow: hidden; display: flex; flex-direction: column}
 /* 内容列的高度：非实例页（如 /dev、设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
-   增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴。 */
+   增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴 */
 .app-shell.legacy-shell > .main-shell > main {min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 28px 24px}
 .app-shell.legacy-shell > .main-shell > main:has(.instance-page-grid),
 .app-shell.legacy-shell > .main-shell > main:has(.task-config-legacy) {overflow-y: hidden}
 .app-shell.legacy-shell > .main-shell > main > * {flex-shrink: 0}
-/* 旧版两主题的按压反馈：鼠标按下时轻微收缩，主按钮同时收回悬停的上移。 */
+/* 旧版两主题的按压反馈：鼠标按下时轻微收缩，主按钮同时收回悬停的上移 */
 :root[data-theme='legacy-light'] .button,
 :root[data-theme='legacy-dark'] .button {transition: background-color .15s, box-shadow .15s, border-color .15s, color .15s, transform .12s cubic-bezier(.2, 0, 0, 1)}
 :root[data-theme='legacy-light'] .button:active:not(:disabled),
@@ -512,13 +486,13 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 :root[data-theme='legacy-dark'] .toggle:active {transform: scale(.96)}
 :root[data-theme='legacy-light'] .monitor-segmented button:active,
 :root[data-theme='legacy-dark'] .monitor-segmented button:active {background: var(--accent-soft)}
-/* 旧版外壳下换页：页面内容淡入，动画挂在页面根元素与内容列上。 */
+/* 旧版外壳下换页：页面内容淡入，动画挂在页面根元素与内容列上 */
 .app-shell.legacy-shell .instance-page-grid,
 .app-shell.legacy-shell .statistics-legacy,
 .app-shell.legacy-shell .task-config-settings-inner,
 .app-shell.legacy-shell .task-config-rail-slot .task-rail-directory {animation: legacy-page-in .22s cubic-bezier(.22, .61, .36, 1)}
 @keyframes legacy-page-in {from {opacity: 0} to {opacity: 1}}
-/* 总览页在两个视图间切换：面板用自己的动画，按切换方向淡入。 */
+/* 总览页在两个视图间切换：面板用自己的动画，按切换方向淡入 */
 .app-shell.legacy-shell .instance-page-panel {animation: none}
 .app-shell.legacy-shell .instance-page-panel.panel-drop {animation: panel-drop .24s cubic-bezier(.22, .61, .36, 1)}
 .app-shell.legacy-shell .instance-page-panel.panel-rise {animation: panel-rise .24s cubic-bezier(.22, .61, .36, 1)}
@@ -528,15 +502,15 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .app-shell.legacy-shell > .main-shell > main > .instance-page-grid,
 .app-shell.legacy-shell > .main-shell > main > .task-config-legacy {flex-shrink: 1; min-height: 0}
 .app-shell.legacy-shell > .right-rail {grid-area: rail}
-/* 招牌随顶栏走：顶栏里的那份紧贴左侧，不参与侧栏那套 72px 间距。 */
+/* 招牌随顶栏走：顶栏里的那份紧贴左侧，不参与侧栏那套 72px 间距 */
 .legacy-topbar-brand {height: auto; margin-bottom: 0; padding: 0}
-/* 旧版顶栏的第三列是居中的页面名。 */
+/* 旧版顶栏的第三列是居中的页面名 */
 .legacy-topbar-title {flex: 1; min-width: 0; text-align: center; font-size: 1.2rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
-/* 旧版实例页的页名由顶栏居中显示，内容区只留一个给读屏的标题。 */
+/* 旧版实例页的页名由顶栏居中显示，内容区只留一个给读屏的标题 */
 .legacy-sr-title {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 1 !important; z-index: 4}
 /* 旧版标签栏：槽是一级面加磨砂；内容盒 = 标签高 + 上缝 + 下边框——
    上面那条缝是标签上边框与栏上边框之间的间距，下面 1px 是栏自己的下边框。标签贴底，底边因此落在栏的下边框上。
-   标签的形状、竖线、加号与状态色由 theme-primitives 统一给出，这里只给皮相。 */
+   标签的形状、竖线、加号与状态色由 theme-primitives 统一给出，这里只给皮相 */
 :root[data-theme='legacy-light'] .legacy-page-nav,
 :root[data-theme='legacy-dark'] .legacy-page-nav,
 .app-shell.legacy-shell .legacy-page-nav {
@@ -550,13 +524,13 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   border-bottom: 1px solid var(--border) !important;
   box-sizing: border-box !important;
 }
-/* 轨道贴底：标签的下边缘压在栏的下边框上。 */
+/* 轨道贴底：标签的下边缘压在栏的下边框上 */
 .app-shell.legacy-shell .legacy-page-nav .instance-tabs {align-self: flex-end}
-/* 竖线取固定色，不跟主题的文字色走。 */
+/* 竖线取固定色，不跟主题的文字色走 */
 :root[data-theme='legacy-light'] {--instance-tab-divider-color: rgba(0, 0, 0, .22)}
 :root[data-theme='legacy-dark'] {--instance-tab-divider-color: rgba(255, 255, 255, .26)}
 
-/* 「主页」链接：与标签同高、同一条基准线；纵向内边距归零，选中框因此不会探出栏外。 */
+/* 「主页」链接：与标签同高、同一条基准线；纵向内边距归零，选中框因此不会探出栏外 */
 .legacy-page-nav .breadcrumb .topbar-actions > a {
   padding-top: 0;
   padding-bottom: 0;
@@ -572,7 +546,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   gap: 8px !important;
 }
 
-/* 选中或悬浮时的容器必须留在标签栏内：去掉上下内边距，高度与文字行齐平并纵向居中。 */
+/* 选中或悬浮时的容器必须留在标签栏内：去掉上下内边距，高度与文字行齐平并纵向居中 */
 .legacy-page-nav .breadcrumb > a {
   align-self: center;
   height: 26px;
@@ -595,10 +569,10 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 
 
-/* 侧栏任务菜单：分组展开后具体任务往下列（旧版树状格式）。 */
+/* 侧栏任务菜单：分组展开后具体任务往下列（旧版树状格式） */
 .task-group-button:hover .task-group-arrow {transform: none}
 .task-group-button.expanded .task-group-arrow {color: var(--accent); transform: rotate(180deg)}
-/* 内层承载外边距，外层高度从 0 过渡到自身高度，展开折叠才有动画。 */
+/* 内层承载外边距，外层高度从 0 过渡到自身高度，展开折叠才有动画 */
 :root {interpolate-size: allow-keywords}
 .task-submenu-list {height: 0; overflow: hidden; transition: height .24s cubic-bezier(.22, .61, .36, 1)}
 .task-submenu-list.expanded {height: auto}
@@ -606,7 +580,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .task-submenu-list:not(.expanded) .task-submenu-inner {visibility: hidden}
 @media (prefers-reduced-motion: reduce) {.task-submenu-list {transition: none} .rail-task-item {animation: none !important}}
 
-/* 顶栏的「任务配置」下拉：旧版实例页删掉了页内的分组导航，跨任务跳转放在这里。 */
+/* 顶栏的「任务配置」下拉：旧版实例页删掉了页内的分组导航，跨任务跳转放在这里 */
 .task-picker {position: relative; flex-shrink: 0}
 .task-picker-trigger {display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; white-space: nowrap}
 .task-picker-trigger:hover, .task-picker-trigger[aria-expanded='true'] {color: var(--accent)}
@@ -619,7 +593,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .task-picker-empty {padding: 14px 8px; color: var(--muted); font-size: 12px; text-align: center}
 
 @media (min-width: 951px) {
-  /* 顶栏占了第一行，侧栏与右栏从它下方开始各自滚动。 */
+  /* 顶栏占了第一行，侧栏与右栏从它下方开始各自滚动 */
   .app-shell.legacy-shell > .topbar {position: relative; justify-content: flex-start; gap: 14px}
   .legacy-topbar-title {position: absolute; left: 50%; transform: translateX(-50%); max-width: min(30rem, 38%); flex: 0 0 auto}
   .app-shell.legacy-shell > .sidebar,
@@ -628,14 +602,14 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .app-shell.legacy-shell .legacy-sidebar-actions {display: none}
 
   /* 旧版实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
-     所以左列由各页面自己渲染（LegacyRail），不是外壳的一列。 */
+     所以左列由各页面自己渲染（LegacyRail），不是外壳的一列 */
   .instance-page-grid,
   .instance-page-grid.rail-left {
     display: grid;
     /* 用 flex 撑满 main 的剩余高度，不再按「视口 − 顶栏 − 页内行 − 常量」推算：
        那个常量会随着顶栏与页内行的实际高度漂移，容器底边就跟着上下跳。
-       上面 main 与 .legacy-shell 已逐级撑满，所以不靠百分比高度也不会把整壳顶高。 */
-    /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高。 */
+       上面 main 与 .legacy-shell 已逐级撑满，所以不靠百分比高度也不会把整壳顶高 */
+    /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高 */
     flex: 1 1 0;
     min-height: 0;
     grid-template-columns: var(--legacy-rail-width, 280px) minmax(24rem, 1fr);
@@ -712,7 +686,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   }
   /* 面板骨架只留滚动与伸缩。底色、描边、滤镜集中在下文「调度器面板（2026-11 改版）」，
      这里不再声明 —— 那批带 [data-theme][data-material] 的旧值会以更高特异度抢在玻璃规则前面，
-     深色玻璃就永远只是一块实的 #23252a，叠多少层模糊都透不出来。 */
+     深色玻璃就永远只是一块实的 #23252a，叠多少层模糊都透不出来 */
   .instance-page-rail {
     min-height: 0;
     overflow-y: auto;
@@ -755,65 +729,52 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     transform: translateY(-1px);
     box-shadow: 0 5px 14px color-mix(in srgb, var(--red) 40%, transparent);
   }
-  /* 右栏不滚，滚动交给面板：滚动条只在面板内出现与消失，同列的资源卡片宽度不变。 */
+  /* 右栏不滚，滚动交给面板：滚动条只在面板内出现与消失，同列的资源卡片宽度不变 */
   .instance-page-main {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden}
   .instance-page-main .resource-grid {margin-bottom: 0}
   .instance-page-panel {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
-  /* 搜索框与参数卡同宽，「任务设置和搜索对齐」；下方间距交给 --config-card-gap，与卡片之间保持一致。 */
+  /* 搜索框与参数卡同宽，「任务设置和搜索对齐」；下方间距交给 --config-card-gap，与卡片之间保持一致 */
   .task-config-settings .config-toolbar .input-icon {max-width: none}
-  /* 资源统计在旧版下没有左列，整页一条内容带；和 .instance-page-grid 一样撑满 main 的剩余高度。 */
+  /* 资源统计在旧版下没有左列，整页一条内容带；和 .instance-page-grid 一样撑满 main 的剩余高度 */
   .statistics-legacy {
     display: flex;
     flex-direction: column;
     gap: 12px;
     /* flex-basis 取 auto：内容比视口高时停在自己的内容高上，交给外层滚动；
        本类有两处用法，外层滚动容器不同：独立统计页是 main；
-       总览页的日志/统计面板是 .instance-panel-stats（那边 main 是 overflow:hidden）。 */
+       总览页的日志/统计面板是 .instance-panel-stats（那边 main 是 overflow:hidden） */
     flex: 1 0 auto;
     min-height: 0;
     overflow-y: auto;
   }
   .statistics-legacy .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
-  /* 分段控件按内容自然宽度排列。 */
+  /* 分段控件按内容自然宽度排列 */
   .statistics-legacy .statistics-toolbar-row .statistics-category-control {margin-bottom: 0; flex: 0 0 auto; width: max-content}
 /* 旧版统计页的内容容器没有内边距，切换入口的衬底外扩 6px 会被容器边缘裁掉；
-   工具栏行让出 6px，使衬底外缘正好落在内容边界上。 */
+   工具栏行让出 6px，使衬底外缘正好落在内容边界上 */
 .statistics-legacy .statistics-toolbar-row {padding: 6px 0 0 6px}
   .statistics-legacy .statistics-toolbar-row .title-actions {margin-left: auto}
 
   /* 旧版的任务详细设置：参数卡在左、分组导航在右（旧版是 13rem≈208px 的右列）。
-     和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走。 */
+     和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走 */
   .task-config-legacy {
     display: grid;
     flex: 1 1 auto;
     height: calc(var(--viewport-height) - var(--topbar-height) - 2 * var(--row-pad, 4px) - var(--legacy-page-nav-height, 42px) - 64px);
-    /* 右列宽度取自新版右栏的契约变量，与断点同步收放。 */
+    /* 右列宽度取自新版右栏的契约变量，与断点同步收放 */
     grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width));
     gap: 22px;
     align-items: stretch;
   }
-  /* 高度逐层传到右列：网格行高必须能压住这两层，内层的滚动才拿得到约束。 */
+  /* 高度逐层传到右列：网格行高必须能压住这两层，内层的滚动才拿得到约束 */
   .task-config-rail-slot {display: flex; flex-direction: column; min-height: 0; overflow: hidden}
-  /* 一级面与二级贴片之间的间隙。 */
-  .task-config-rail {--rail-plate-gap: 4px; display: flex; flex-direction: column; gap: 10px; min-height: 0; max-height: 100%; overflow: hidden}
-  /* 切换按钮即各视图标题左侧的图标，两态共用同一坐标与尺寸。 */
-  .task-rail-toggle {display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin-right: 1px; border: 0; background: none; color: var(--muted); cursor: pointer; flex-shrink: 0}
-  .task-rail-toggle:hover {color: var(--accent)}
-  /* 两个视图的标题行共用同一套字号、图标与间距。 */
-  .task-rail-scheduler .scheduler-widget-heading, .task-rail-directory .rail-section-heading {margin-bottom: 13px; color: var(--text)}
-/* 调度块的外边距归零，内边距与目录卡片一致。 */
-  .task-rail-scheduler .scheduler-widget-heading > div, .task-rail-directory .rail-section-heading > div {gap: 7px; font-size: 12px; font-weight: 650; color: var(--text)}
-  /* 整列面板即一张卡片，内部层次靠分隔线而非嵌套卡片。 */
-  .task-rail-scheduler {border: 1px solid var(--border); border-radius: var(--radius); padding: var(--rail-plate-gap); background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-  .task-rail-scheduler .scheduler-widget {margin: 0; flex-shrink: 0; border-radius: calc(var(--radius) - var(--rail-plate-gap))}
-/* 右栏里的调度器组件与新版本同层：二级贴片。 */
+  /* 两个视图的标题行共用同一套字号、图标与间距 */
+  .task-rail-directory .rail-section-heading {margin-bottom: 13px; color: var(--text)}
+/* 调度块的外边距归零，内边距与目录卡片一致 */
+  .task-rail-directory .rail-section-heading > div {gap: 7px; font-size: 12px; font-weight: 650; color: var(--text)}
+/* 右栏里的调度器组件与新版本同层：二级贴片 */
 .scheduler-widget {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-  .task-rail-scheduler .rail-schedule {border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px}
-  /* 高度逐层传递：滚动只放在最外层，内层任务列表随内容撑开。 */
-  .task-rail-scheduler {flex: 1 1 auto; display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto}
-  .task-rail-scheduler .rail-schedule {flex: 0 0 auto; min-height: 0; margin: 0; border-top: 0; padding: 0}
-  .task-rail-scheduler .rail-task-list {flex: 0 0 auto; min-height: 0}
-  /* 目录视图与调度视图同构：外层装饰容器画一级面，内层贴片画二级层，视图切换按钮因此落在同一坐标上。 */
+  /* 目录视图与调度视图同构：外层装饰容器画一级面，内层贴片画二级层，视图切换按钮因此落在同一坐标上 */
   .task-rail-directory {
     flex: 1 1 auto;
     display: flex;
@@ -826,20 +787,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     -webkit-backdrop-filter: var(--theme-surface-filter);
     backdrop-filter: var(--theme-surface-filter);
   }
-  .task-rail-directory .rail-plate {
-    flex: 1 1 auto;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    padding: 16px 18px;
-    border: 1px solid var(--border);
-    border-radius: calc(var(--radius) - var(--rail-plate-gap));
-    background: var(--theme-plate-bg);
-    -webkit-backdrop-filter: var(--theme-plate-filter);
-    backdrop-filter: var(--theme-plate-filter);
-  }
   .task-rail-directory .rail-section-heading {justify-content: space-between}
-  /* 贴片自己就是那张面，目录列表不再叠一层。 */
+  /* 贴片自己就是那张面，目录列表不再叠一层 */
   .task-rail-directory .group-nav {
     flex: 1 1 auto;
     padding: 0;
@@ -849,22 +798,21 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  /* 切视图时按方向滑入并淡入。 */
-  .task-rail-scheduler, .task-rail-directory {animation: rail-view-in .26s cubic-bezier(.22, .61, .36, 1)}
-  .task-rail-scheduler {animation-name: rail-view-in-right}
+  /* 切视图时按方向滑入并淡入 */
+  .task-rail-directory {animation: rail-view-in .26s cubic-bezier(.22, .61, .36, 1)}
   .task-rail-directory {animation-name: rail-view-in-left}
-  @media (prefers-reduced-motion: reduce) {.task-rail-scheduler, .task-rail-directory {animation: none}}
+  @media (prefers-reduced-motion: reduce) {.task-rail-directory {animation: none}}
   /* 参数列给宽度上限：宽屏下与输入框等宽的控件会被拉到读不过来的一整行。
-     只限定这一列，不动外壳，所以中列填满视口的行为不受影响。 */
+     只限定这一列，不动外壳，所以中列填满视口的行为不受影响 */
   .task-config-settings {width: 100%; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; max-width: 1108px; margin-inline: auto}
   .task-config-legacy .group-nav {max-height: 100%}
-  /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px。 */
+  /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px */
   .task-config-legacy .config-group {scroll-margin-top: 0}
 }
-/* 旧版总览页左栏里的统计小卡：二级贴片，与调度器组件同层。 */
+/* 旧版总览页左栏里的统计小卡：二级贴片，与调度器组件同层 */
 .legacy-stat-card {display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; flex-shrink: 0; background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 /* 切换主区显示日志还是统计：两个状态都要有隐藏式的悬停选取框。
-   选中态不用手型指针：它已不可再点，避免鼠标压在按钮上时看起来像还残留着高亮。 */
+   选中态不用手型指针：它已不可再点，避免鼠标压在按钮上时看起来像还残留着高亮 */
 .legacy-stat-title {
   padding: 4px 10px;
   margin-left: -6px;
@@ -891,7 +839,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 .legacy-stat-title:focus-visible {outline: 2px solid var(--accent); outline-offset: 1px}
-/* 统计内容的滚动容器：内容层只自然撑高，滚动条在本层出现。 */
+/* 统计内容的滚动容器：内容层只自然撑高，滚动条在本层出现 */
 .instance-panel-stats {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
 .group-nav {padding: 6px; border-radius: var(--theme-radius-panel)}
 .group-nav a {border-radius: 4px}
@@ -902,7 +850,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* MD3 卡片式日志体系适配 (LogCardView Legacy) */
 .log-content.log-cards-mode,
 .monitor-panel .log-content.log-cards-mode {
-  /* 卡片视图下日志栏自身也是二级贴片：接上它才随一/二级滑块变化。 */
+  /* 卡片视图下日志栏自身也是二级贴片：接上它才随一/二级滑块变化 */
   background: var(--theme-plate-bg);
 }
 .log-card {
@@ -943,18 +891,16 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .monitor-segmented button {display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 36px; padding: 6px 16px; border: 0; border-right: 1px solid var(--border); border-radius: 0; color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: background-color .15s, color .15s}
 .monitor-segmented button:last-child {border-right: 0}
 /* 页面切换入口要让一级衬底探出轨道，轨道因此不裁剪子元素；
-   旧版按钮是直角，首末两个的选中填充会探出轨道圆角，按同心圆角收掉内缩的那 1px。 */
+   旧版按钮是直角，首末两个的选中填充会探出轨道圆角，按同心圆角收掉内缩的那 1px */
 :root[data-theme^='legacy'] .statistics-category-control > button:first-of-type {border-top-left-radius: calc(20px - 1px); border-bottom-left-radius: calc(20px - 1px)}
 :root[data-theme^='legacy'] .statistics-category-control > button:last-of-type {border-top-right-radius: calc(20px - 1px); border-bottom-right-radius: calc(20px - 1px)}
 .monitor-segmented button[aria-selected='true'] {background: var(--accent-soft); color: var(--accent)}
 .monitor-segmented button:focus-visible {outline-offset: -2px}
-/* 统计页类别目录栏补一层二级贴片：淡色文字直接压在底图上几乎不可见。 */
+/* 统计页类别目录栏补一层二级贴片：淡色文字直接压在底图上几乎不可见 */
 .statistics-category-control {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-.checkbox-mark input[type='checkbox'] {border-radius: 2px}
 .statistics-category-control {margin-bottom: 20px}
 .log-rule .rule-bar {opacity: 1; background: var(--border)}
 .log-rule.rule-double .rule-bar {opacity: 1; border-color: var(--border)}
-.preview-screen .radar > div, .radar::before, .radar::after {display: none}
 .live-label {border-color: var(--green)}
 .rail-task-list {display: flex; flex-direction: column; gap: 10px}
 .rail-queue-group {
@@ -1000,29 +946,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   border: 1px solid rgba(255, 255, 255, 0.03);
   box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.4);
 }
-.rail-queue-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px 6px;
-  border-bottom: none;
-}
-.rail-queue-heading > div {display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600}
-.rail-queue-heading > span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.04);
-}
-:root[data-theme='legacy-dark'] .rail-queue-heading > span {
-  background: rgba(255, 255, 255, 0.06);
-}
-.rail-queue-heading svg {color: var(--secondary)}
 .rail-queue-body {padding: 4px}
-.rail-queue-empty {padding: 14px 12px; color: var(--muted); font-size: 12px; line-height: 1.6}
 .rail-task-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto 13px;
@@ -1132,7 +1056,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   border: 0;
   border-radius: var(--theme-radius-modal, 28px);
   padding: 24px;
-  /* 弹窗取弹窗区的面。 */
+  /* 弹窗取弹窗区的面 */
   background: var(--theme-modal-bg);
   -webkit-backdrop-filter: var(--theme-modal-filter);
   backdrop-filter: var(--theme-modal-filter);
@@ -1144,12 +1068,12 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: var(--theme-shadow-popover);
 }
 @media (max-width: 950px) {
-  /* 窄屏下侧栏与右栏都是抽屉，旧版版式回到共享层的单列流。 */
+  /* 窄屏下侧栏与右栏都是抽屉，旧版版式回到共享层的单列流 */
   .app-shell.legacy-shell {display: block}
   /* 窄屏没有页内滚动区（下面的定高规则都在 ≥951px 里），
-     外壳再钉死视口加 overflow:hidden 就会把后面的内容整段裁掉、页面还滚不动。 */
+     外壳再钉死视口加 overflow:hidden 就会把后面的内容整段裁掉、页面还滚不动 */
   .app-shell.legacy-shell, .app-shell.legacy-shell > .main-shell {height: auto; overflow: visible}
-  /* 桌面 main 的零基准伸缩和裁剪也必须复位，否则子页仍被压成零高。 */
+  /* 桌面 main 的零基准伸缩和裁剪也必须复位，否则子页仍被压成零高 */
   .app-shell.legacy-shell > .main-shell > main,
   .app-shell.legacy-shell > .main-shell > main:has(.instance-page-grid),
   .app-shell.legacy-shell > .main-shell > main:has(.task-config-legacy) {flex: none; overflow: visible}
@@ -1159,7 +1083,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .instance-page-rail, .instance-page-main {overflow: visible}
   .task-config-legacy {display: block}
   .legacy-page-nav {padding: 0 16px}
-  /* 窄屏顶栏放不下两块招牌：顶栏那份收起来，侧栏抽屉里那份照旧。 */
+  /* 窄屏顶栏放不下两块招牌：顶栏那份收起来，侧栏抽屉里那份照旧 */
   .app-shell.legacy-shell .legacy-topbar-brand {display: none}
   .topbar, .app-shell.with-rail .topbar {width: 100%; padding: 0 14px}
   .sidebar, .right-rail {top: 0; height: var(--viewport-height); z-index: 100}
@@ -1173,37 +1097,36 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .button:disabled {color: GrayText}
 }
 
-.dev-state-box, .dev-demo-card, .dev-shadow-grid {background: var(--surface-muted)}
+.dev-state-box, .dev-shadow-grid {background: var(--surface-muted)}
 .dev-nav-preview {background: var(--surface)}
 
-/* 按下「立刻运行」时底色与字色互换，与按钮的缩放动画叠加。 */
+/* 按下「立刻运行」时底色与字色互换，与按钮的缩放动画叠加 */
 .field-control > .field-actions .icon-only:hover:active:not(:disabled) {background: var(--theme-accent); color: var(--theme-on-accent)}
 
-@keyframes rail-view-in-right {from {opacity: 0; transform: translateX(7px)} to {opacity: 1; transform: none}}
 @keyframes rail-view-in-left {from {opacity: 0; transform: translateX(-7px)} to {opacity: 1; transform: none}}
 
-/* 任务设置列表与右侧栏不显示滚动条。 */
+/* 任务设置列表与右侧栏不显示滚动条 */
 .app-shell.legacy-shell .task-nav,
 .app-shell.legacy-shell .group-nav {scrollbar-width: none}
 .app-shell.legacy-shell .task-nav::-webkit-scrollbar,
 .app-shell.legacy-shell .group-nav::-webkit-scrollbar {width: 0}
 
 /* 总览页的统计面板只留分类切换那一行与操作按钮：周期控件是为独占整页的独立统计页排的，
-   落在窄面板里会换行留白；它在面板下方还有一份，隐藏这里不影响选择时间范围与各类筛选。 */
+   落在窄面板里会换行留白；它在面板下方还有一份，隐藏这里不影响选择时间范围与各类筛选 */
 .instance-panel-stats .statistics-controls.period-controls {display: none}
 
-/* 无障碍覆盖放在经典布局样式之后，避免普通规则重新打开滤镜。 */
+/* 无障碍覆盖放在经典布局样式之后，避免普通规则重新打开滤镜 */
 @media (prefers-contrast: more), (forced-colors: active) {
   .sidebar, .right-rail, .instance-menu, .group-nav, .panel, .resource-card {background: var(--theme-surface); -webkit-backdrop-filter: none; backdrop-filter: none}
 }
 
-/* ===== 调度器面板（2026-11 改版）=====
+/* 调度器面板（2026-11 改版）
    左列是一块面板而不是三张卡片：调度器、统计入口、任务计划同处一个白面，
    内边距 20、节间 18，和设计稿的单面板结构一致。
    运行中与待运行合并为一个「任务计划」列表，状态由卡片右侧文字承担，
-   运行中用三点呼吸 + 文字扫光表示调度器正在跑它；整屏不使用状态色。 */
+   运行中用三点呼吸 + 文字扫光表示调度器正在跑它；整屏不使用状态色 */
 
-/* 面板材质变量：普通材质是一块实色白面，玻璃材质在下面改成渐变玻璃 + 磨砂。 */
+/* 面板材质变量：普通材质是一块实色白面，玻璃材质在下面改成渐变玻璃 + 磨砂 */
 :root {
   --rail-panel-bg: var(--surface, #ffffff);
   --rail-panel-edge: color-mix(in srgb, var(--text) 7%, transparent);
@@ -1214,7 +1137,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* 托盘本体即面板：去掉内凹托盘的底色与滤镜，换成设计稿的白面。
    底色/描边/投影/滤镜都走 --rail-panel-* 变量：普通材质与玻璃材质的差别只写在变量里，
    不去拼 `[data-material='glass'] .instance-page-rail` 这类选择器 —— 那种写法一旦和
-   带 [data-theme][data-material] 的暗色规则撞上，特异度差一级就会整块面板退回实色。 */
+   带 [data-theme][data-material] 的暗色规则撞上，特异度差一级就会整块面板退回实色 */
 .instance-page-rail,
 :root[data-material] .instance-page-rail {
   display: flex;
@@ -1228,7 +1151,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   -webkit-backdrop-filter: var(--rail-panel-filter);
   backdrop-filter: var(--rail-panel-filter);
 }
-/* 三块内容退成面板里的普通区块：不再各自带面、描边、投影。 */
+/* 三块内容退成面板里的普通区块：不再各自带面、描边、投影 */
 .instance-page-rail .scheduler-widget,
 .instance-page-rail .legacy-stat-card,
 .instance-page-rail .rail-schedule {
@@ -1245,13 +1168,13 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .instance-page-rail .scheduler-widget {flex-shrink: 0}
 .instance-page-rail .legacy-stat-card {flex-shrink: 0}
 /* 面板撑满左列上下两端：高度与内部滚动沿用布局层的 951px 规则，
-   这里只把三块内容的面去掉，别再改它们的伸缩方式。 */
+   这里只把三块内容的面去掉，别再改它们的伸缩方式 */
 
 /* 右栏作为整块随页面入场（class 由 cardMotion 的错峰动画挂上）。
    这里必须只做 transform，两个坑都在实测里确认过：
    1) 不能做 opacity —— 祖先一旦半透明就会成为 backdrop root，玻璃面板当场失去背板，
       模糊整块消失、动画结束再「啪」地长回来，这就是肉眼看到的闪跳；
-   2) 不能做 scale —— 背板要按新比例重新采样，模糊半径在动画期间会跟着跳。 */
+   2) 不能做 scale —— 背板要按新比例重新采样，模糊半径在动画期间会跟着跳 */
 @keyframes motion-rail-in {
   from {transform: translateY(var(--card-stagger-shift, 12px))}
   to {transform: none}
@@ -1260,7 +1183,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   animation-name: motion-rail-in;
 }
 /* 面板外壳只能整体位移，内容可以补一次淡入，才对得上页面卡片「位移 + 淡入」的节奏。
-   这些区块本身已经没有 backdrop-filter，做 opacity 不会再出问题。 */
+   这些区块本身已经没有 backdrop-filter，做 opacity 不会再出问题 */
 @keyframes motion-rail-content-in {
   from {opacity: 0}
   to {opacity: 1}
@@ -1269,12 +1192,12 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   animation: motion-rail-content-in var(--dur-3) var(--ease-decelerate) both;
 }
 
-/* 标题：18px 图标 + 15px 文案，与设计稿同层。 */
+/* 标题：18px 图标 + 15px 文案，与设计稿同层 */
 .scheduler-widget-heading {margin-bottom: 14px}
 .scheduler-widget-heading > div {gap: 8px; font-size: 15px; font-weight: 600; color: var(--text)}
 .scheduler-widget-heading > div > svg {color: var(--text)}
 
-/* 三态计数：一块浅底，竖分隔线只到内容高度，不再是一格一张小卡。 */
+/* 三态计数：一块浅底，竖分隔线只到内容高度，不再是一格一张小卡 */
 .scheduler-stats {
   gap: 0;
   margin-bottom: 14px;
@@ -1290,7 +1213,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: none;
   transform: none;
   /* 分格必须连模糊一起关掉：低透明度元素挂 backdrop-filter 时，
-     模糊在四边采样不到内容，会在每格边缘留下一圈亮边，三格拼起来像套了个错位的圆角框。 */
+     模糊在四边采样不到内容，会在每格边缘留下一圈亮边，三格拼起来像套了个错位的圆角框 */
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -1318,7 +1241,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .scheduler-stats > div.waiting span {color: color-mix(in srgb, var(--text) 36%, transparent)}
 
 /* 启停按钮：10 圆角、无描边无投影，破坏性操作只留一层淡红底。
-   主题里 `:root[data-theme] .button` 的圆角特异度更高，这里一并盖掉。 */
+   主题里 `:root[data-theme] .button` 的圆角特异度更高，这里一并盖掉 */
 .scheduler-toggle,
 :root[data-theme] .scheduler-toggle,
 .instance-page-rail .scheduler-toggle {
@@ -1344,7 +1267,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {background: color-mix(in srgb, var(--red) 10%, transparent)}
 
-/* 启动态：中性主按钮。整块面板只有「停止」一处带颜色。 */
+/* 启动态：中性主按钮。整块面板只有「停止」一处带颜色 */
 .scheduler-toggle.primary,
 :root[data-theme] .scheduler-toggle.primary {
   background: var(--text);
@@ -1364,7 +1287,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 
 /* 「统计」入口：一行字，标题在左、仪表盘设置在右，两者都在同一行内。
-   不再给它一圈描边 —— 面板里每一块都带框，正是旧式控件最典型的写法。 */
+   不再给它一圈描边 —— 面板里每一块都带框，正是旧式控件最典型的写法 */
 .instance-page-rail .legacy-stat-card {
   display: flex;
   align-items: center;
@@ -1393,14 +1316,14 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 .legacy-stat-title > svg {color: color-mix(in srgb, var(--text) 30%, transparent); transition: transform .15s ease}
 .legacy-stat-title:hover > svg {transform: none; color: color-mix(in srgb, var(--text) 55%, transparent)}
-/* 悬停与「已切到统计」都用中性灰：面板里不该再出现第二种强调色。 */
+/* 悬停与「已切到统计」都用中性灰：面板里不该再出现第二种强调色 */
 .legacy-stat-title:hover,
 .legacy-stat-title[aria-pressed='true'] {
   background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   box-shadow: none;
 }
-/* 齿轮是行内图标按钮，不要再套一层白色方块。 */
+/* 齿轮是行内图标按钮，不要再套一层白色方块 */
 .instance-page-rail .legacy-stat-card > .button {
   width: 28px;
   height: 28px;
@@ -1418,14 +1341,12 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 
 /* 任务计划：标题与卡片同处面板，卡片之间 8px。
-   底部留 8px：列表是滚动容器，最后一张卡贴在裁切边上会被切掉 1px 描边。 */
+   底部留 8px：列表是滚动容器，最后一张卡贴在裁切边上会被切掉 1px 描边 */
 .rail-task-list {gap: 8px; padding: 0 0 8px}
 /* 列表是纵向滚动容器，横向也会裁切：向两侧各外扩 6px 再补回等量内边距，
-   卡片位置不变，左右两侧的投影才不会被切掉。 */
+   卡片位置不变，左右两侧的投影才不会被切掉 */
 .instance-page-rail .rail-task-list {margin: 0 -6px; padding: 0 6px 8px}
-/* 任务设置页的右栏自己带「任务计划」标题与计数，队列里的标题不重复。 */
-.task-rail-scheduler .rail-task-heading {display: none}
-/* 卡片带投影，列表容器不能再裁切；条目离场仍靠自身高度补间收起。 */
+/* 卡片带投影，列表容器不能再裁切；条目离场仍靠自身高度补间收起 */
 .rail-queue-group.tasks {overflow: visible}
 .rail-task-heading {display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px}
 .rail-task-heading strong {font-size: 12px; font-weight: 500; color: color-mix(in srgb, var(--text) 55%, transparent)}
@@ -1443,28 +1364,28 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: none;
 }
 /* 布局层有一条 `.rail-task-item:last-child {border-bottom: none}`（特异度 0,2,0），
-   卡片是完整描边后它会让列表最后一张永远缺一条底边；这里用同样的特异度补回来。 */
+   卡片是完整描边后它会让列表最后一张永远缺一条底边；这里用同样的特异度补回来 */
 .rail-task-item:last-child {border: 1px solid color-mix(in srgb, var(--text) 8%, transparent)}
-/* 悬停只做一档灰度：不位移、不加投影、不把箭头染成品牌色。 */
+/* 悬停只做一档灰度：不位移、不加投影、不把箭头染成品牌色 */
 .rail-task-item:hover {
   background: color-mix(in srgb, var(--text) 2.5%, var(--surface, #ffffff));
   transform: none;
   border-color: color-mix(in srgb, var(--text) 11%, transparent);
   box-shadow: none;
 }
-/* 运行中的卡片自带一层投影，悬停时保持不变。 */
+/* 运行中的卡片自带一层投影，悬停时保持不变 */
 .rail-task-item.running:hover {
   border-color: color-mix(in srgb, var(--text) 14%, transparent);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 9px rgba(0, 0, 0, 0.07);
 }
 .rail-task-item.waiting:hover {background: color-mix(in srgb, var(--text) 5.5%, var(--surface, #ffffff))}
 /* 运行中：抬一层，与同组其他卡片拉开重量差。
-   用不带负扩散的双层阴影，四边都能看到一点，不会只剩上下两条。 */
+   用不带负扩散的双层阴影，四边都能看到一点，不会只剩上下两条 */
 .rail-task-item.running {
   border-color: color-mix(in srgb, var(--text) 12%, transparent);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 3px 9px rgba(0, 0, 0, 0.07);
 }
-/* 等待中：不上描边，浅一档底色 + 退一档字色。 */
+/* 等待中：不上描边，浅一档底色 + 退一档字色 */
 .rail-task-item.waiting {
   background: color-mix(in srgb, var(--text) 3%, var(--surface, #ffffff));
   border-color: transparent;
@@ -1497,7 +1418,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .rail-task-state.waiting {color: color-mix(in srgb, var(--text) 30%, transparent)}
 .rail-task-state.running {color: var(--text); font-weight: 500}
 /* 扫光：文字本体保持实色，只有一条窄高光从左向右扫过。
-   之前的渐变跨了大半条文字，任意一帧都有一截被冲淡，运行中反而比「待运行」还浅。 */
+   之前的渐变跨了大半条文字，任意一帧都有一截被冲淡，运行中反而比「待运行」还浅 */
 .rail-task-state.running .state-label {
   background-image: linear-gradient(90deg,
     currentColor 0%,
@@ -1506,7 +1427,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     currentColor 57%,
     currentColor 100%);
   /* 图比文字宽 2.5 倍、且不重复：0% 与 100% 两个端点都把光带放在文字之外，
-     一轮结束时它已经整条扫出右侧，不会在末尾半路消失再从左跳回来。 */
+     一轮结束时它已经整条扫出右侧，不会在末尾半路消失再从左跳回来 */
   background-size: 250% 100%;
   background-repeat: no-repeat;
   -webkit-background-clip: text;
@@ -1514,7 +1435,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   -webkit-text-fill-color: transparent;
   animation: scheduler-shimmer 1.9s linear infinite;
 }
-/* 三点外圈的一层柔光，随呼吸一起放大缩小。 */
+/* 三点外圈的一层柔光，随呼吸一起放大缩小 */
 .thinking-dots {position: relative; display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0}
 .thinking-dots::before {
   content: '';
@@ -1549,7 +1470,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   50% {opacity: 1; transform: scale(1.08)}
 }
 
-/* 暗色：淡红底要提亮，字才能压在底上。 */
+/* 暗色：淡红底要提亮，字才能压在底上 */
 :root[data-theme='legacy-dark'] .scheduler-toggle.danger,
 :root[data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
   background: color-mix(in srgb, var(--red) 16%, transparent);
@@ -1579,7 +1500,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   }
 }
 
-/* ===== 玻璃材质：一次采样，平色面 + 发丝边 =====
+/* 玻璃材质：一次采样，平色面 + 发丝边
    两种明暗共用一套现代语言，只差底色浓度：一层背景模糊、一层压住壁纸的平色、
    一根发丝边。不画斜向渐变、不做四边镜面高光、不往每张卡里塞内高光 ——
    那套语言属于 2007 年的 Aero：一块面板上一圈亮边，每个控件再各叠一层高光，
@@ -1595,30 +1516,30 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
    肉眼看到的就是「模糊闪一下」。
 
    每张卡的「面」与「影」打包成 --rail-*-paint / --rail-*-shadow-paint，
-   明暗两套只换这两组值，规则本身不用分叉。 */
+   明暗两套只换这两组值，规则本身不用分叉 */
 
 :root[data-material='glass'] {
-  /* 整块面板的模糊与其余玻璃层取同一个值：模糊只有一档，不按层递减。 */
+  /* 整块面板的模糊与其余玻璃层取同一个值：模糊只有一档，不按层递减 */
   --rail-glass-panel-blur: var(--theme-surface-blur);
   --rail-glass-panel-saturate: 82%;
 
   /* 面板：一块平色玻璃，一根发丝边。斜向渐变 + 顶沿镜面高光留给 2007 年。
-     70% 会把壁纸的彩色糊映到面板上，整块发灰发奶；88% 才只剩一层雾。 */
+     70% 会把壁纸的彩色糊映到面板上，整块发灰发奶；88% 才只剩一层雾 */
   --rail-panel-bg: color-mix(in srgb, var(--surface) 90%, transparent);
   --rail-panel-edge: color-mix(in srgb, var(--text) 8%, transparent);
   --rail-panel-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 20px 44px -30px rgba(0, 0, 0, .3);
   --rail-panel-filter: blur(var(--rail-glass-panel-blur)) saturate(var(--rail-glass-panel-saturate));
 
-  /* 计数块：一块略沉的平色底，不做凹陷（凹槽要靠内外阴影，那是拟物）。 */
+  /* 计数块：一块略沉的平色底，不做凹陷（凹槽要靠内外阴影，那是拟物） */
   --rail-glass-well-bg: color-mix(in srgb, var(--text) 4%, transparent);
   --rail-well-shadow: none;
 
-  /* 「统计」行退成一行字，没有框。 */
+  /* 「统计」行退成一行字，没有框 */
   --rail-stat-bg: transparent;
   --rail-stat-edge: transparent;
   --rail-stat-shadow: none;
 
-  /* 卡片：三档只差「面多亮、边多亮、有没有影子」，没有光斑、没有内高光。 */
+  /* 卡片：三档只差「面多亮、边多亮、有没有影子」，没有光斑、没有内高光 */
   --rail-card-edge: color-mix(in srgb, var(--text) 7%, transparent);
   --rail-run-edge: color-mix(in srgb, var(--text) 10%, transparent);
   --rail-idle-edge: transparent;
@@ -1636,22 +1557,22 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 :root[data-material='glass'][data-theme='legacy-dark'] {
   /* 暗色的取舍：背后壁纸一亮，透出来的就是一层灰，面板越透越像一块灰板。
      这里给到接近实色，玻璃感只留在一根发丝边和模糊上；
-     卡片不再发亮片，等待中几乎与面板同色、连边都没有，只靠字色退后。 */
+     卡片不再发亮片，等待中几乎与面板同色、连边都没有，只靠字色退后 */
   --rail-glass-panel-saturate: 82%;
   --rail-panel-bg: color-mix(in srgb, var(--surface) 93%, transparent);
   --rail-panel-edge: color-mix(in srgb, #ffffff 7%, transparent);
   --rail-panel-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 16px 38px -26px rgba(0, 0, 0, .7);
 
-  /* 计数块是一块平色底，不是刻出来的凹槽。 */
+  /* 计数块是一块平色底，不是刻出来的凹槽 */
   --rail-glass-well-bg: color-mix(in srgb, #000000 18%, transparent);
   --rail-well-shadow: none;
 
-  /* 「统计」行退成一行字，没有框。 */
+  /* 「统计」行退成一行字，没有框 */
   --rail-stat-bg: transparent;
   --rail-stat-edge: transparent;
   --rail-stat-shadow: none;
 
-  /* 卡片：三档只差「面多亮、边多亮」，没有光斑、没有内高光。 */
+  /* 卡片：三档只差「面多亮、边多亮」，没有光斑、没有内高光 */
   --rail-card-edge: color-mix(in srgb, #ffffff 6%, transparent);
   --rail-run-edge: color-mix(in srgb, #ffffff 15%, transparent);
   --rail-card-paint: color-mix(in srgb, #ffffff 3.5%, transparent);
@@ -1666,11 +1587,11 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 
 /* 第一层：面板。取值在上面 :root[data-material='glass'] 的 --rail-panel-* 里，
-   亮色是渐变玻璃，暗色是平色玻璃，规则本身不重复声明。 */
+   亮色是渐变玻璃，暗色是平色玻璃，规则本身不重复声明 */
 
 /* 第二层：计数块。亮色是刻出来的凹槽，暗色是一块平色底。
    另外这里必须关掉分格自带的模糊：低透明度元素挂 backdrop-filter 时，
-   模糊在四边采样不到内容，会在每格边缘留下一圈亮框。 */
+   模糊在四边采样不到内容，会在每格边缘留下一圈亮框 */
 :root[data-material='glass'] .scheduler-stats {
   background: var(--rail-glass-well-bg);
   box-shadow: var(--rail-well-shadow);
@@ -1682,7 +1603,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   backdrop-filter: none;
 }
 
-/* 「统计」行：与卡片同属中景，只给厚度与高光，不再单独挂模糊（理由见本节开头）。 */
+/* 「统计」行：与卡片同属中景，只给厚度与高光，不再单独挂模糊（理由见本节开头） */
 :root[data-material='glass'] .instance-page-rail .legacy-stat-card {
   background: var(--rail-stat-bg);
   border-color: var(--rail-stat-edge);
@@ -1691,7 +1612,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   backdrop-filter: none;
 }
 
-/* 第三层：任务卡片。三档共用一个骨架，面与影来自 --rail-*-paint。 */
+/* 第三层：任务卡片。三档共用一个骨架，面与影来自 --rail-*-paint */
 :root[data-material='glass'] .rail-task-item {
   background: var(--rail-card-paint);
   border-color: var(--rail-card-edge);
@@ -1699,7 +1620,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-/* 运行中：最靠前的一张，面最亮、边最清楚，影子投到下面的队列上。 */
+/* 运行中：最靠前的一张，面最亮、边最清楚，影子投到下面的队列上 */
 :root[data-material='glass'] .rail-task-item.running {
   background: var(--rail-run-paint);
   border-color: var(--rail-run-edge);
@@ -1707,7 +1628,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-/* 等待中：最里面的一层，没有厚度、没有描边。 */
+/* 等待中：最里面的一层，没有厚度、没有描边 */
 :root[data-material='glass'] .rail-task-item.waiting {
   background: var(--rail-idle-paint);
   border-color: var(--rail-idle-edge);
@@ -1716,13 +1637,13 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   backdrop-filter: none;
 }
 
-/* 玻璃会把字吃掉一档：等待中与分组标题的字色在玻璃上各提一级，层级仍在，但读得出来。 */
+/* 玻璃会把字吃掉一档：等待中与分组标题的字色在玻璃上各提一级，层级仍在，但读得出来 */
 :root[data-material='glass'] .rail-task-heading strong {color: color-mix(in srgb, var(--text) 70%, transparent)}
 :root[data-material='glass'] .rail-task-item.waiting strong {color: color-mix(in srgb, var(--text) 68%, transparent)}
 :root[data-material='glass'] .rail-task-item.waiting small {color: color-mix(in srgb, var(--text) 42%, transparent)}
 :root[data-material='glass'] .rail-task-item.waiting .rail-task-state {color: color-mix(in srgb, var(--text) 44%, transparent)}
 
-/* 悬停只提一档面：不位移、不加投影、不动描边。 */
+/* 悬停只提一档面：不位移、不加投影、不动描边 */
 :root[data-material='glass'] .rail-task-item:hover {
   background: var(--rail-card-hover-paint);
   border-color: var(--rail-card-edge);
@@ -1740,7 +1661,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: var(--rail-run-shadow-paint);
 }
 
-/* 破坏性操作：亮色是一层染红的薄玻璃，暗色是一块没有边、没有内高光的淡红底。 */
+/* 破坏性操作：亮色是一层染红的薄玻璃，暗色是一块没有边、没有内高光的淡红底 */
 :root[data-material='glass'] .instance-page-rail .scheduler-toggle.danger {
   background: color-mix(in srgb, var(--red) 9%, transparent);
   border: 1px solid color-mix(in srgb, var(--red) 16%, transparent);
@@ -1752,7 +1673,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   background: color-mix(in srgb, var(--red) 14%, transparent);
   border-color: color-mix(in srgb, var(--red) 24%, transparent);
 }
-/* 暗色里红字自己承担颜色，底子只负责「这一块可以点」。 */
+/* 暗色里红字自己承担颜色，底子只负责「这一块可以点」 */
 :root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
   background: color-mix(in srgb, var(--red) 14%, transparent);
   border-color: transparent;
@@ -1764,7 +1685,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   color: color-mix(in srgb, var(--red) 82%, #ffffff);
 }
 
-/* 暗色主按钮：一块干净的浅色实心，不要内高光（会把按钮变成胶囊形状的塑料）。 */
+/* 暗色主按钮：一块干净的浅色实心，不要内高光（会把按钮变成胶囊形状的塑料） */
 :root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary {
   background: color-mix(in srgb, var(--text) 88%, transparent);
   color: #15161a;
@@ -1776,7 +1697,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   background: color-mix(in srgb, var(--text) 96%, transparent);
 }
 
-/* 暗色下计数的最里一档要多一点亮度：30% 的白字压在深底上会糊成灰。 */
+/* 暗色下计数的最里一档要多一点亮度：30% 的白字压在深底上会糊成灰 */
 :root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting strong,
 :root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting span {
   color: color-mix(in srgb, var(--text) 40%, transparent);
@@ -1785,7 +1706,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   color: color-mix(in srgb, var(--text) 50%, transparent);
 }
 
-/* 不支持背景滤镜的浏览器：退回不透明面，避免出现「透明但什么都没模糊」的糊状。 */
+/* 不支持背景滤镜的浏览器：退回不透明面，避免出现「透明但什么都没模糊」的糊状 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root[data-material='glass'] .instance-page-rail,
   :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
@@ -1794,10 +1715,10 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   :root[data-material='glass'] .rail-task-item.waiting {background: color-mix(in srgb, var(--text) 3%, var(--surface))}
 }
 
-/* 高对比度模式下取消半透明，文字优先。 */
+/* 高对比度模式下取消半透明，文字优先 */
 @media (prefers-contrast: more), (forced-colors: active) {
   /* 三档卡片各自的类（.running / .waiting）特异度更高，必须一并列进来，
-     否则高对比度下它们仍会保留半透明的玻璃底。 */
+     否则高对比度下它们仍会保留半透明的玻璃底 */
   :root[data-material='glass'] .instance-page-rail,
   :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
   :root[data-material='glass'] .scheduler-stats,
@@ -1815,33 +1736,33 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   }
 }
 
-/* ===== 任务设置页：目录列 + 调度器列（2026-11） =====
+/* 任务设置页：目录列 + 调度器列（2026-11）
    目录与调度器各自独立成列，不堆在同一栏里。
    目录常驻设置区右侧；调度器独占另一列，停靠边与显隐来自界面设置
-   （schedulerPositionPrefs / railPrefs）。两列都按内容收高，不拉满整页。 */
+   （schedulerPositionPrefs / railPrefs）。两列都按内容收高，不拉满整页 */
 @media (min-width: 951px) {
   .app-shell.legacy-shell .task-config-legacy {
     grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width)) var(--legacy-rail-width, 280px);
   }
   .app-shell.legacy-shell .task-config-legacy .task-config-settings {grid-column: 1; grid-row: 1}
   .app-shell.legacy-shell .task-config-legacy .task-config-directory {grid-column: 2; grid-row: 1; min-width: 0; align-self: start}
-  /* 调度器列与总览页同高层：占满整列高度，任务列表在列内滚动。 */
+  /* 调度器列与总览页同高层：占满整列高度，任务列表在列内滚动 */
   .app-shell.legacy-shell .task-config-legacy .task-config-rail-slot {grid-column: 3; grid-row: 1; align-self: stretch}
-  /* 拖拽把手挂在 wrap 上，wrap 必须撑满列高，rail 才能 100% 铺满。 */
+  /* 拖拽把手挂在 wrap 上，wrap 必须撑满列高，rail 才能 100% 铺满 */
   .app-shell.legacy-shell .task-config-legacy .task-config-rail-slot > .instance-page-rail-wrap {flex: 1 1 0; min-height: 0}
   /* 目录列直接挂 instance-page-rail：--rail-panel-* 那一套材质（底色、玻璃滤镜、
      投影、圆角、内边距）由同一个类提供，普通/玻璃/暗色主题自动同步，不另写一套。
-     只把描边压成透明，并把标题行的旧 margin 交给面板自带的 gap。 */
+     只把描边压成透明，并把标题行的旧 margin 交给面板自带的 gap */
   .app-shell.legacy-shell .task-config-legacy .task-config-directory {border-color: transparent}
   .app-shell.legacy-shell .task-config-legacy .task-config-directory .rail-section-heading {margin-bottom: 0}
-  /* 调度器停靠左侧：整列移到设置区左边，目录仍在最右。 */
+  /* 调度器停靠左侧：整列移到设置区左边，目录仍在最右 */
   .app-shell.legacy-shell .task-config-legacy.rail-left {
     grid-template-columns: var(--legacy-rail-width, 280px) minmax(0, 1fr) min(268px, var(--right-rail-width));
   }
   .app-shell.legacy-shell .task-config-legacy.rail-left .task-config-rail-slot {grid-column: 1; grid-row: 1}
   .app-shell.legacy-shell .task-config-legacy.rail-left .task-config-settings {grid-column: 2; grid-row: 1}
   .app-shell.legacy-shell .task-config-legacy.rail-left .task-config-directory {grid-column: 3; grid-row: 1}
-  /* 关掉调度器列：目录跟上，不留空轨。 */
+  /* 关掉调度器列：目录跟上，不留空轨 */
   .app-shell.legacy-shell .task-config-legacy.rail-hidden {
     grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width));
   }
@@ -1850,11 +1771,11 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .app-shell.legacy-shell .task-config-legacy.rail-hidden .task-config-rail-slot {display: none}
 }
 
-/* ===== 任务设置页：设置卡与调度器面板同一套材质（2026-11） =====
+/* 任务设置页：设置卡与调度器面板同一套材质（2026-11）
    原来每张卡是「一级面 + 内缩 8px 的二级贴片」两层叠出来的，
    在玻璃材质下就成了一张白卡里再套一张白卡，跟调度器那种单张面板完全不是一回事。
    这里把它压成一层：底色/描边/投影/滤镜全部取 --rail-panel-*，
-   普通材质是实色白面，玻璃材质是同一档磨砂。 */
+   普通材质是实色白面，玻璃材质是同一档磨砂 */
 .app-shell.legacy-shell .task-config-legacy .config-group {
   padding: 0;
   border: 1px solid var(--rail-panel-edge);
@@ -1865,14 +1786,14 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: var(--rail-panel-shadow);
 }
 .app-shell.legacy-shell .task-config-legacy .config-group::before {display: none}
-/* 分组标题：与面板里的节标题同节奏，比正文大一点、比页面标题小得多。 */
+/* 分组标题：与面板里的节标题同节奏，比正文大一点、比页面标题小得多 */
 .app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading {padding: 16px 18px 10px}
 .app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading h2 {font-size: 15px; font-weight: 600; letter-spacing: .1px}
-/* 行距收紧一档，分隔线仍只在行与行之间。 */
+/* 行距收紧一档，分隔线仍只在行与行之间 */
 .app-shell.legacy-shell .task-config-legacy .config-group .field-row {padding: 11px 18px}
-/* 带说明的行：控件跟标签首行对齐，别再垂直居中飘在几行文字中间。 */
+/* 带说明的行：控件跟标签首行对齐，别再垂直居中飘在几行文字中间 */
 .app-shell.legacy-shell .task-config-legacy .config-group .field-row:has(.field-label p) {align-items: flex-start}
-/* 任务说明卡同理：一张面，不叠内贴片。 */
+/* 任务说明卡同理：一张面，不叠内贴片 */
 .app-shell.legacy-shell .task-config-legacy .task-help-panel {
   border: 1px solid var(--rail-panel-edge);
   border-radius: 16px;
@@ -1882,7 +1803,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   box-shadow: var(--rail-panel-shadow);
 }
 .app-shell.legacy-shell .task-config-legacy .task-help-panel::before {display: none}
-/* 任务说明卡同理：一张面，不叠内贴片。 */
+/* 任务说明卡同理：一张面，不叠内贴片 */
 .app-shell.legacy-shell .task-config-legacy .task-help-panel {
   border: 1px solid var(--rail-panel-edge);
   border-radius: 16px;

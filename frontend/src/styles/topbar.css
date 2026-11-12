@@ -1,4 +1,4 @@
-/* 标签、分隔线和上下留白按四个档位等比缩放，默认使用第三档。 */
+/* 标签、分隔线和上下留白按四个档位等比缩放，默认使用第三档 */
 :root[data-tab-size='md'] {--row-scale: 1}
 :root[data-tab-size='lg'] {--row-scale: 1.24}
 :root[data-tab-size='xl'] {--row-scale: 1.55}
@@ -10,7 +10,6 @@
 .brand-title {color: var(--text); text-decoration: none}
 .sidebar-brand-left {display: flex; align-items: center; gap: 8px; min-width: 0}
 .sidebar-update-notice span {position: relative; z-index: 1}
-.nav-instance-name {min-width: 0; overflow: hidden; text-overflow: ellipsis}
 .topbar {position: sticky; top: 0; z-index: 30; gap: 16px; border-bottom: none !important}
 .breadcrumb {min-width: 0; min-height: var(--instance-tab-height); align-items: center}
 .breadcrumb-current {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
@@ -18,29 +17,29 @@
 .breadcrumb > .breadcrumb-current {flex-shrink: 1}
 
 .topbar-bulk-toggle {flex-shrink: 0}
-/* 放缩只落在承载标签的那条栏上：新版主题是顶栏自己，旧版主题是页内那一行。
-   旧版顶部还有一条只有品牌与页名的装饰栏，它不参与放缩，否则顶部会白占两条栏的高度。 */
-/* 顶栏、内容区和右栏共用高度，拖动换档时一起移动。 */
+/* 放缩只落在承载标签的那条栏上：新版主题是顶栏自己，旧版主题是页内那一行
+   旧版顶部还有一条只有品牌与页名的装饰栏，它不参与放缩，否则顶部会白占两条栏的高度 */
+/* 顶栏、内容区和右栏共用高度，拖动换档时一起移动 */
 :root {--topbar-actual-height: calc(var(--instance-tab-height) + 2 * var(--row-pad, 4px))}
 :root[data-tab-size] .app-shell:not(.legacy-shell) .topbar:has(> .tabbar-resize-handle) {height: var(--topbar-actual-height); min-height: var(--topbar-actual-height); padding-block: var(--row-pad, 4px)}
-/* 右栏紧贴顶栏下方；旧版外壳的右栏另有一套规则，不在此列。 */
+/* 右栏紧贴顶栏下方；旧版外壳的右栏另有一套规则，不在此列 */
 :root[data-tab-size] .app-shell:not(.legacy-shell) .right-rail {top: var(--topbar-actual-height); height: calc(var(--viewport-height) - var(--topbar-actual-height))}
 :root[data-tab-size] .app-shell .topbar-bulk-toggle {width: calc(var(--instance-tab-icon) * 2); height: calc(var(--instance-tab-icon) * 2); padding: 0; justify-content: center}
 .topbar-bulk-toggle .lucide {width: var(--instance-tab-icon); height: var(--instance-tab-icon); flex-shrink: 0}
-/* 一键启停执行期间按钮禁用，图标转圈表示正在逐个处理。 */
+/* 一键启停执行期间按钮禁用，图标转圈表示正在逐个处理 */
 .topbar-bulk-toggle:disabled {cursor: default}
 .topbar-bulk-toggle:disabled .lucide {animation: spin 1.2s linear infinite}
 
-/* 设置入口与标签栏控件共用一行。 */
+/* 设置入口与标签栏控件共用一行 */
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions {position: relative; display: flex; align-items: center; align-self: stretch; min-width: 0; gap: calc(var(--instance-tab-icon) * .5)}
-/* 悬停区在设置入口左侧，宽度与批量操作按钮相同。 */
+/* 悬停区在设置入口左侧，宽度与批量操作按钮相同 */
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions-hover {position: absolute; top: 0; bottom: 0; right: 100%; width: calc(var(--instance-tab-icon) * 2)}
-/* 悬停或键盘聚焦时展开控件。 */
+/* 悬停或键盘聚焦时展开控件 */
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions-buttons {display: flex; align-items: center; gap: calc(var(--instance-tab-icon) * .5); width: 0; overflow: hidden; transition: width .18s ease}
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions-buttons > * {visibility: hidden; pointer-events: none}
 /* 展开：指针落在左边那片悬停区上、或已进入展开的开关盒内 —— 两者合起来才算悬停区，
-   否则指针一挪到开关上就掉出去，展开的开关根本点不到；键盘焦点同理。鼠标点击留下的
-   焦点不算 —— 它会一直留着，盒子就再也折不回去。 */
+   否则指针一挪到开关上就掉出去，展开的开关根本点不到；键盘焦点同理；鼠标点击留下的
+   焦点不算 —— 它会一直留着，盒子就再也折不回去 */
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions:has(> .topbar-actions-hover:hover) .topbar-actions-buttons,
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions:has(> .topbar-actions-buttons:hover) .topbar-actions-buttons,
 :root[data-tab-size] .app-shell .breadcrumb .topbar-actions:has(:focus-visible) .topbar-actions-buttons {width: calc(var(--instance-tab-icon) * 2)}
@@ -50,7 +49,7 @@
 .breadcrumb .topbar-actions > a {font-size: var(--instance-tab-font); display: inline-flex; align-items: center; height: var(--instance-tab-height); padding: 0 calc(var(--instance-tab-pad) * .6)}
 .breadcrumb .topbar-actions > a:hover {color: var(--accent); background: var(--accent-soft); border-radius: var(--theme-radius-control)}
 
-/* 给标签轨道留出可横向滚动的宽度。 */
+/* 给标签轨道留出可横向滚动的宽度 */
 .breadcrumb.with-tabs {flex: 1; min-width: 0}
 .breadcrumb.with-tabs > a {flex-shrink: 0}
 .breadcrumb.with-tabs > .breadcrumb-current {flex-shrink: 1; min-width: 0; max-width: 30%}
@@ -72,7 +71,7 @@
 .update-notice {display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; color: var(--accent); background: var(--accent-soft); border-radius: var(--theme-radius-pill, 999px); white-space: nowrap}
 .task-nav-heading {margin-bottom: 8px; flex-shrink: 0}
 .sidebar-label .icon-button {width: 28px; height: 28px; padding: 6px}
-/* 选中的控件（日志筛选、卡片视图切换）：底与文字都取自主题强调色，随主题自动跟随。 */
+/* 选中的控件（日志筛选、卡片视图切换）：底与文字都取自主题强调色，随主题自动跟随 */
 .icon-button.filter-active {background: color-mix(in srgb, var(--theme-accent) 14%, transparent) !important; color: var(--theme-accent) !important}
 
 .head-grid {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin-bottom: 24px}
@@ -99,7 +98,7 @@
 .commit-pagination {display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 18px 24px; border-top: 1px solid var(--border)}
 .commit-pagination > span {margin-right: auto; color: var(--muted); font-size: 12px}
 @media (max-width: 950px) {
-  /* 窄屏保留导航与调度按钮的触控空间。 */
+  /* 窄屏保留导航与调度按钮的触控空间 */
   :root {--topbar-actual-height: calc(56px + var(--instance-tab-height) - 26px * 1.24)}
   .breadcrumb.with-tabs > .breadcrumb-current {display: none}
   .topbar {gap: 8px}
@@ -115,6 +114,6 @@
   .commit-pagination {padding: 16px; gap: 8px}
 }
 
-/* 「栏底边线 → 实例名」之间只留一小段空隙，三个新版主题一致。
-   只给实例名加上外边距：顶栏高度、标签页位置、栏底边线都不动。 */
+/* 「栏底边线 → 实例名」之间只留一小段空隙，三个新版主题一致
+   只给实例名加上外边距：顶栏高度、标签页位置、栏底边线都不动 */
 :root[data-tab-size] .app-shell:not(.legacy-shell) .main-shell main .page-title {margin-top: 16px}

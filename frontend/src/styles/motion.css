@@ -1,15 +1,13 @@
-/* ============================================================================
-   motion.css —— AzurPilot 全站动效系统
+/* motion.css —— AzurPilot 全站动效系统
    由各皮肤（classic / minimal / legacy）在自身条目之后引入，确保覆盖同级规则。
    纪律：
    - 只动 transform / opacity / 颜色；不新增 blur 层；
    - 不改 DOM 结构（:has(> …) 选择器依赖直接子级）；
-   - 全部动画在 prefers-reduced-motion: reduce 下由 tokens.css 的全局开关关闭。
-   ============================================================================ */
+   - 全部动画在 prefers-reduced-motion: reduce 下由 tokens.css 的全局开关关闭 */
 
 :root {
   /* 时长（5 档，映射现存 .12s/.15s/.18s/.2s/.22s/.24s/.26s）
-     统一乘全局倍率 --motion-speed（开发者工具「动效控制台」可切换；默认 0.5× 对应 2）。 */
+     统一乘全局倍率 --motion-speed（开发者工具「动效控制台」可切换；默认 0.5× 对应 2） */
   --dur-1: calc(120ms * var(--motion-speed, 2));   /* 瞬时反馈：按压、hover 变色 */
   --dur-2: calc(160ms * var(--motion-speed, 2));   /* 微交互：图标按钮、toggle、导航项 */
   --dur-3: calc(200ms * var(--motion-speed, 2));   /* 标准 UI 变化：菜单、分段滑块、弹窗 */
@@ -22,14 +20,12 @@
   --ease-emphasized: cubic-bezier(.16, 1, .3, 1);    /* 页面级转场（近似 easeOutExpo） */
 
   /* 位移与缩放 */
-  --shift-entry: 8px;     /* 列表/卡片入场位移 */
   --press-scale: .97;
   --scale-modal: .97;
 }
 
 /* 力度档位（开发者工具「动效控制台」可切换；默认标准＝PR 取值） */
 :root[data-motion-strength='strong'] {
-  --shift-entry: 12px;
   --dur-4: calc(300ms * var(--motion-speed, 2));
   --dur-5: calc(380ms * var(--motion-speed, 2));
   --scale-modal: .95;
@@ -55,9 +51,7 @@
   }
 }
 
-/* ============================================================================
-   2 · 移动侧栏用 transform 移入视口，避免逐帧重排
-   ============================================================================ */
+/* 移动侧栏：用 transform 移入视口，避免逐帧重排 */
 @media (max-width: 950px) {
   .sidebar {
     left: 0;
@@ -78,25 +72,19 @@
   }
 }
 
-/* ============================================================================
-   3 · 弹窗 / 浮层入场（原生 <dialog>，[open] 切换即自动重播）
-   ============================================================================ */
+/* 弹窗与浮层入场（原生 <dialog>，[open] 切换即自动重播） */
 @keyframes motion-modal-in { from { opacity: 0; transform: translateY(6px) scale(var(--scale-modal)) } to { opacity: 1; transform: none } }
 @keyframes motion-backdrop-in { from { opacity: 0 } to { opacity: 1 } }
 
 dialog.modal[open] { animation: motion-modal-in var(--dur-3) var(--ease-emphasized) both }
 dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--ease-standard) both }
 
-/* ============================================================================
-   4 · 按压反馈（配合 components.css 中 .button/.icon-button 过渡补充 transform）
-   ============================================================================ */
+/* 按压反馈（配合 components.css 中 .button/.icon-button 过渡补充 transform） */
 .button:active:not(:disabled),
 .icon-button:active:not(:disabled),
 .text-button:active { transform: scale(var(--press-scale)) }
 
-/* ============================================================================
-   5 · 卡片从左上角逐个上浮出现（柔和弹簧阻尼与景深微缩放）
-   ============================================================================ */
+/* 卡片从左上角逐个上浮出现（柔和弹簧阻尼与景深微缩放） */
 :root {
   --card-stagger-shift: 12px;
   --card-stagger-scale: .985;
@@ -125,13 +113,8 @@ dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--
   animation-delay: var(--card-stagger-delay, 0ms);
 }
 
-@keyframes motion-fade-up { from { opacity: 0; transform: translateY(var(--shift-entry)) } to { opacity: 1; transform: none } }
-
-
-/* ============================================================================
-   6 · 日志新行入场（LogPanel 给增量行挂 .motion-enter；初始加载不播）
-   ============================================================================ */
+/* 日志新行入场（LogPanel 给增量行挂 .motion-enter；初始加载不播） */
 @keyframes motion-log-in { from { opacity: 0; transform: translateY(2px) } to { opacity: 1; transform: none } }
 .log-line.motion-enter, .log-rule.motion-enter { animation: motion-log-in var(--dur-2) var(--ease-decelerate) both }
 
-/* 任务列表 / 队列继续沿用各自已有的 keyframes，此处不重复定义。 */
+/* 任务列表 / 队列继续沿用各自已有的 keyframes，此处不重复定义 */

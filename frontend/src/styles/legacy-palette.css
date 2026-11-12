@@ -1,6 +1,6 @@
 /* 旧版主题配色：MD3 靛紫。
    取值来自 master 的 assets/gui/css/light-alas.css 与 dark-alas.css；
-   简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值。 */
+   简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值 */
 :root {
   color-scheme: light;
   /* 基础色板 */
@@ -11,7 +11,7 @@
   --sidebar: var(--surface); --radius: 8px; --shadow: 0 1px 2px rgb(0 0 0 / .1);
   --red: #c9342c; --green: #248a3d; --green-soft: #e8f4ec;
   --sidebar-width: 240px; --topbar-height: 56px;
-  /* 旧版家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明。 */
+  /* 旧版家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明 */
   --glass-tint: var(--theme-surface-bg);
   --glass-edge: color-mix(in srgb, var(--border) 82%, transparent);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / .12);
@@ -23,20 +23,20 @@
   /* 契约层 —— 颜色 */
   --theme-bg: var(--bg); --theme-surface: var(--surface); --theme-surface-muted: var(--surface-muted);
   --theme-text: var(--text); --theme-muted: var(--muted); --theme-border: var(--border);
-  --theme-accent: var(--accent); --theme-accent-hover: var(--accent-hover); --theme-accent-soft: var(--accent-soft);
+  --theme-accent: var(--accent); --theme-accent-soft: var(--accent-soft);
   --theme-on-accent: #ffffff;
   --theme-on-danger: #ffffff;
   --theme-danger: var(--red); --theme-danger-soft: #fcebeb;
   --theme-success: var(--green); --theme-success-soft: var(--green-soft);
-  --theme-warning: #805a14; --theme-warning-soft: #faf0d6; --theme-info: var(--secondary);
+  --theme-warning: #805a14; --theme-warning-soft: #faf0d6;
   --theme-glass: var(--theme-surface-bg); --theme-glass-edge: var(--glass-edge);
   --theme-glass-shadow: var(--glass-shadow); --theme-material-filter: var(--theme-surface-filter);
 
-  --theme-popover-filter: var(--theme-menu-filter); --theme-overlay-filter: none; --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent); --theme-chrome-filter: var(--theme-sidebar-filter);
-  /* 玻璃参数由旧版玻璃变体使用；普通材质由 theme-material.css 覆写为无滤镜。 */
-  --theme-glass-blur: var(--theme-surface-blur); --theme-glass-saturation: var(--theme-surface-saturation);
+  --theme-popover-filter: var(--theme-menu-filter); --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent);
+  /* 玻璃参数由旧版玻璃变体使用；普通材质由 theme-material.css 覆写为无滤镜 */
+  --theme-glass-blur: var(--theme-surface-blur);
   /* 区域化材质：参数键由旋钮写入、合成键由皮肤消费；默认值关系是一级面为基准，
-     二级菜单里每个区域都能独立调（动过的区写自己的参数键，没动过的区跟着一级面）。 */
+     二级菜单里每个区域都能独立调（动过的区写自己的参数键，没动过的区跟着一级面） */
   --theme-surface-alpha: 78%;
   --theme-surface-blur: 18px;
   --theme-surface-saturation: 120%;
@@ -51,7 +51,7 @@
   --theme-plate-bg: color-mix(in srgb, var(--surface) var(--theme-plate-alpha), transparent);
   --theme-plate-filter: blur(var(--theme-plate-blur)) saturate(var(--theme-plate-saturation));
   --theme-plate-edge: var(--theme-glass-edge); --theme-plate-shadow: var(--theme-glass-shadow);
-  /* 三级嵌面：贴在二级贴片内部的面（右栏的队列分组等）。 */
+  /* 三级嵌面：贴在二级贴片内部的面（右栏的队列分组等） */
   --theme-inset-alpha: var(--theme-plate-alpha); --theme-inset-blur: 18px; --theme-inset-saturation: 115%;
   --theme-inset-radius: var(--theme-radius-control);
   --theme-inset-bg: color-mix(in srgb, var(--surface) var(--theme-inset-alpha), transparent);
@@ -61,13 +61,12 @@
   --theme-control-alpha: 92%; --theme-control-blur: 18px; --theme-control-saturation: 110%;
   --theme-control-radius: var(--theme-radius-control);
   --theme-control-bg: color-mix(in srgb, var(--surface) var(--theme-control-alpha), transparent);
-  --theme-control-marker-bg: color-mix(in srgb, var(--surface) min(100%, calc(var(--theme-control-alpha) + 8%)), transparent);
-  /* 图表画布内的颜色。数值与曲线都是画在 canvas 上的，只能用组件 token 交给脚本读。 */
+  /* 图表画布内的颜色。数值与曲线都是画在 canvas 上的，只能用组件 token 交给脚本读 */
   --theme-chart-primary: #159b88; --theme-chart-secondary: #de7861;
   --theme-chart-rise: #dc2626; --theme-chart-fall: #16a34a;
   --theme-control-filter: blur(var(--theme-control-blur)) saturate(var(--theme-control-saturation));
   --theme-control-edge: var(--theme-glass-edge); --theme-control-shadow: var(--theme-glass-shadow);
-  /* 区域面：本族的侧栏与顶栏贴边、无磨砂；弹窗与菜单沿用各自的阴影语言。 */
+  /* 区域面：本族的侧栏与顶栏贴边、无磨砂；弹窗与菜单沿用各自的阴影语言 */
   --theme-sidebar-alpha: var(--theme-surface-alpha); --theme-sidebar-blur: 0px; --theme-sidebar-saturation: 100%;
   --theme-sidebar-radius: var(--theme-surface-radius);
   --theme-sidebar-bg: color-mix(in srgb, var(--surface) var(--theme-sidebar-alpha), transparent);
@@ -90,8 +89,6 @@
   --theme-menu-edge: var(--theme-glass-edge); --theme-menu-shadow: var(--theme-shadow-popover);
 
   --theme-tab-current-bg: var(--theme-tab-surface-bg);
-
-  --theme-overlay-blur: 0px;
 
   /* 契约层 —— 形状与阴影：遵循 Material Design 3 (MD3) 规范 */
   --theme-radius-control: 8px; --theme-radius-button: 20px; --theme-radius-panel: 16px;
@@ -139,7 +136,7 @@
   --theme-title-highlight-stroke: var(--text); --theme-title-glass: var(--surface); --theme-title-shadow: none;
 }
 
-/* 深色变体是独立主题值，与前缀式反代的主题名一一对应。 */
+/* 深色变体是独立主题值，与前缀式反代的主题名一一对应 */
 :root[data-theme='legacy-dark'] {
   color-scheme: dark;
   --bg: #282a2f; --surface: #2f3136; --surface-muted: #36393f;
@@ -174,6 +171,6 @@
 }
 
 /* 本族的控件语言是硬朗直角（控件圆角 8px），按钮不跟 apple.css 的 20px 药丸；
-   带 data-theme 前缀是为了压过 apple.css 的同名 .button 规则（同为单类，靠文件顺序会输给它）。 */
+   带 data-theme 前缀是为了压过 apple.css 的同名 .button 规则（同为单类，靠文件顺序会输给它） */
 :root[data-theme='legacy-light'] .button, :root[data-theme='legacy-light'] .icon-button,
 :root[data-theme='legacy-dark'] .button, :root[data-theme='legacy-dark'] .icon-button {border-radius: var(--theme-radius-control)}

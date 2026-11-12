@@ -1,3 +1,4 @@
+/* 页面布局：英雄区、双列卡片与绑定流程 */
 .stock-instance-page{display:grid;gap:20px;max-width:1200px;margin:0 auto}
 .stock-instance-hero{display:flex;align-items:center;gap:24px;padding:32px}
 .stock-instance-mark{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:76px;height:76px;border-radius:22px;background:var(--accent-soft);color:var(--accent)}
@@ -9,5 +10,6 @@
 .stock-binding-code{display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg)}.stock-binding-code code{flex:1;overflow-wrap:anywhere;font-size:13px}.stock-binding-code button{flex-shrink:0}
 .stock-instance-guide ol{padding-left:23px}.stock-instance-guide li{padding-left:7px;margin-bottom:20px}.stock-instance-guide li p{margin:6px 0;color:var(--muted)}.stock-instance-success{display:flex;align-items:flex-start;gap:12px;color:var(--accent)}.stock-instance-success svg{flex-shrink:0;margin-top:19px}
 .stock-instance-fallback{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:50vh;text-align:center}
+/* 窄屏：网格收成单列，英雄区收紧；更窄时隐藏圆形标记避免挤压标题 */
 @media(max-width:780px){.stock-instance-grid{grid-template-columns:1fr}.stock-instance-hero{padding:24px;gap:16px}.stock-instance-mark{width:54px;height:54px;border-radius:16px}.stock-instance-hero h2{font-size:21px}.stock-instance-card{padding:22px}}
 @media(max-width:450px){.stock-instance-hero{align-items:flex-start}.stock-instance-mark{display:none}.stock-instance-page .page-title{flex-wrap:wrap;gap:12px}.stock-instance-facts>div{grid-template-columns:80px minmax(0,1fr)}}

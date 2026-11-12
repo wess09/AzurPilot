@@ -1,9 +1,0 @@
-.fleet-switch { display: flex; flex-direction: column; gap: 18px; min-width: 0; padding-bottom: 24px; }
-.fleet-switch-tabs { display: flex; align-self: flex-start; flex-wrap: wrap; align-items: center; gap: 4px; padding: 4px; border: 1px solid var(--theme-border); border-radius: var(--theme-radius-control); background: var(--theme-inset-bg); }
-.fleet-switch-tabs button { border: 1px solid transparent; border-radius: var(--theme-radius-control); padding: 7px 11px; background: transparent; color: var(--theme-text); font-size: 13px; font-weight: 500; line-height: 1.5; cursor: pointer; }
-.fleet-switch-tabs button:hover { border-color: var(--theme-accent); background: var(--theme-accent-soft); }
-.fleet-switch-tabs button[aria-selected=true] { background: var(--theme-primary-bg); color: var(--theme-on-accent); }
-.fleet-switch > [role=tabpanel] { min-width: 0; }
-.fleet-switch > [role=tabpanel] > .page-title h1 { font-size: 18px; font-weight: 600; letter-spacing: normal; color: var(--theme-text); background: none; -webkit-text-fill-color: currentColor; -webkit-text-stroke: 0; text-shadow: none; filter: none; }
-.fleet-switch > [role=tabpanel] > .page-title h1::before,
-.fleet-switch > [role=tabpanel] > .page-title h1::after { content: none; }

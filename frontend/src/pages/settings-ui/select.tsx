@@ -1,28 +1,29 @@
 "use client"
 
+/**
+ * @fileoverview 设置页下拉选择组件：对 radix-ui Select 的薄封装，样式对齐设置页表单。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
+/** 下拉选择器根组件：管理选中值与开合状态，选项经 SelectItem 提供。 */
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
-function SelectGroup({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />
-}
-
+/** 展示当前选中值（无选中时显示占位符）。 */
 function SelectValue({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />
 }
 
+/** 触发器按钮：`size` 取 "sm" 时高度收到 8，默认 9。 */
 function SelectTrigger({
   className,
   size = "default",
@@ -49,6 +50,7 @@ function SelectTrigger({
   )
 }
 
+/** 下拉面板：默认 item-aligned 与触发器对齐（同原生 select），传 "popper" 时按浮层定位并带侧边偏移。 */
 function SelectContent({
   className,
   children,
@@ -86,19 +88,7 @@ function SelectContent({
   )
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Label>) {
-  return (
-    <SelectPrimitive.Label
-      data-slot="select-label"
-      className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
+/** 单个选项：选中时在右侧显示对勾。 */
 function SelectItem({
   className,
   children,
@@ -123,19 +113,6 @@ function SelectItem({
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
-  )
-}
-
-function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
   )
 }
 
@@ -178,12 +155,7 @@ function SelectScrollDownButton({
 export {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 }

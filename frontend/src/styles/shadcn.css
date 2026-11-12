@@ -1,24 +1,24 @@
 /* shadcn/ui 接入层：标准安装写法 —— `@import "tailwindcss"` 带出 theme / preflight / utilities，
- * 之后只做一件事：把 shadcn 的语义色变量接到应用主题上。
- * 组件的皮 100% 由 shadcn/ui 自己的类名决定，这里不写任何控件样式。
+ * 之后只做一件事：把 shadcn 的语义色变量接到应用主题上
+ * 组件的皮 100% 由 shadcn/ui 自己的类名决定，这里不写任何控件样式
  *
  * 变量加 `--sc-` 前缀：应用侧已有 `--accent` / `--border` / `--muted` / `--radius`
- * 等同名变量，直接用 shadcn 默认命名会互相覆盖。
+ * 等同名变量，直接用 shadcn 默认命名会互相覆盖
  */
 
 @layer theme;
 @import 'tailwindcss/theme.css' layer(theme);
 /* preflight 与 utilities 不放进图层：应用自身样式全是无层样式，
    一旦把工具类放进 utility 层，preflight 的 `button{background:transparent}`
-   会反过来盖掉 shadcn 的 `bg-*`（无层 > 有层）。 */
+   会反过来盖掉 shadcn 的 `bg-*`（无层 > 有层） */
 @import 'tailwindcss/preflight.css';
 @import 'tailwindcss/utilities.css';
-/* shadcn/ui 官方安装项：组件的 animate-in / fade-in / zoom-in 等动效工具类。 */
+/* shadcn/ui 官方安装项：组件的 animate-in / fade-in / zoom-in 等动效工具类 */
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
-/* 显式声明扫描范围：入口样式在 styles/ 下，组件在上一层。 */
+/* 显式声明扫描范围：入口样式在 styles/ 下，组件在上一层 */
 @source '../';
 
 @theme inline {
@@ -46,9 +46,9 @@
   --radius-xl: calc(var(--sc-radius) + 4px);
 }
 
-/* shadcn/ui 官方默认主题（中性灰）原值，不随应用主题变化。
+/* shadcn/ui 官方默认主题（中性灰）原值，不随应用主题变化
    变量加 `--sc-` 前缀只为避开应用侧同名的 `--background` / `--border` / `--radius`
-   等旧变量，取值与官方 `:root` 完全一致。 */
+   等旧变量，取值与官方 `:root` 完全一致 */
 :root {
   --sc-radius: 0.625rem;
   --sc-background: oklch(1 0 0);

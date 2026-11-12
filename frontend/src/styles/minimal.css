@@ -30,6 +30,7 @@
   --syntax-value: #d9b3f5; --theme-log-search: #72551a;
 }
 
+/* 全局压平：阴影、文本阴影、动画与过渡一律关闭 */
 :root[data-theme='minimal'] *,
 :root[data-theme='minimal'] *::before,
 :root[data-theme='minimal'] *::after,
@@ -41,6 +42,7 @@
   scroll-behavior: auto !important;
 }
 
+/* 组件级覆盖：外壳取直角，输入框统一描边与焦点环 */
 :root[data-theme='minimal'] {
   & :is(.sidebar, .topbar, .legacy-page-nav) {border-radius: 0; background: var(--surface)}
   & .instance-tabs {--instance-tab-foot: 0px}

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 按钮组件：variant 与 size 两套变体由 CVA 组合，样式经 data-* 属性与类名下发。
+ */
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
@@ -37,6 +41,9 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * 标准按钮。asChild 为真时不渲染 `<button>`，而是把变体样式合并进唯一子元素（Radix Slot）。
+ */
 function Button({
   className,
   variant = "default",
@@ -60,4 +67,4 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+export { Button }

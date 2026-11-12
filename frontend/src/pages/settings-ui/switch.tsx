@@ -1,9 +1,16 @@
 "use client"
 
+/**
+ * @fileoverview 开关控件：Radix Switch 的样式封装，sm/default 两档尺寸；与 components/official-ui/switch.tsx 同源。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { Switch as SwitchPrimitive } from "radix-ui"
 
+/**
+ * 基于 Radix Switch 的开关，`size` 提供 sm/default 两档。
+ */
 function Switch({
   className,
   size = "default",

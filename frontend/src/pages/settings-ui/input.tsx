@@ -1,6 +1,7 @@
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
+/** 设置页基础输入框：shadcn 样式封装，属性原样透传给原生 input。 */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input
