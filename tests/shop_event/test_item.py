@@ -5,8 +5,10 @@ import numpy as np
 import pytest
 from PIL import Image
 
+from module.base.filter import Filter
 from module.ocr.ocr import Ocr
 from module.shop_event.item import CounterOcr, EventShopItem, EventShopItemGrid
+from module.shop_event.selector import FILTER_ATTR, FILTER_REGEX
 
 AMBIGUOUS_SLASHLESS_COUNTERS = {'15', '015', '350', '0350', '1350', '2350', '3350', '4350'}
 
@@ -136,6 +138,23 @@ def test_price_135_total_15_is_equip_ssr():
 
     assert item.name == 'EquipSSR'
     assert item.cost == 'pt'
+
+
+@pytest.mark.parametrize('name', ['1234', 'DefaultItem'])
+def test_unknown_item_uses_equip_ssr_priority_and_keeps_its_template_name(name):
+    unknown = object.__new__(EventShopItem)
+    cube = object.__new__(EventShopItem)
+    unknown.name = name
+    cube.name = 'Cube'
+    unknown.predict_genre()
+    cube.predict_genre()
+
+    selector = Filter(FILTER_REGEX, FILTER_ATTR)
+    selector.load('EquipSSR > Cube')
+    assert selector.apply([cube, unknown]) == [unknown, cube]
+    selector.load('Cube')
+    assert selector.apply([cube, unknown]) == [cube]
+    assert unknown.name == name
 
 
 FIXTURES = Path(__file__).parent / 'fixtures'

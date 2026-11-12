@@ -29,9 +29,8 @@ class TestStrategicSearchJapaneseLayout(unittest.TestCase):
         handler = self.make_handler('jp')
         self.assertTrue(handler.strategic_search_set_option())
         self.assertEqual(scroll.set.call_count, 2)
-        self.assertEqual(scroll.set.call_args_list[0].args, (0.17,))
-        self.assertEqual(scroll.set.call_args_list[0].kwargs['random_range'], (-0.01, 0.01))
-        self.assertIs(scroll.set.call_args_list[0].kwargs['distance_check'], False)
+        self.assertEqual(scroll.set.call_args_list[0].args, (0.12,))
+        scroll.set.assert_any_call(0.12, main=handler, distance_check=False)
         merchant_check.load_offset.assert_not_called()
         handler.appear.assert_any_call(merchant_check, offset=(20, 100))
         for button in (zone_repeat, zone_random, merchant_stop, merchant_continue):
