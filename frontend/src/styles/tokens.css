@@ -14,16 +14,18 @@
 /* 主题变量与基础排版 */
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #1d1d1f; background: #f5f5f7; font-synthesis: none; text-rendering: optimizeLegibility;
+  color: var(--text); background: var(--bg); font-synthesis: none; text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --bg: #f5f5f7; --surface: #fff; --surface-muted: #f5f5f7; --text: #1d1d1f; --muted: #6e6e73;
-  --border: #e5e5ea; --accent: #0071e3; --accent-hover: #0062c4; --accent-soft: #e8f2ff;
-  --red: #c9342c; --radius: 20px; --shadow: 0 4px 24px #1d1d1f05;
+  /* 首帧兜底值：与 legacy-palette.css 的浅色取值保持一致，主题样式加载后会被覆盖 */
+  --bg: #ffffff; --surface: #fff; --surface-muted: #f5f5f5; --text: #262626; --muted: #737373;
+  --border: #e5e5e5; --accent: #262626; --accent-hover: #383838; --accent-soft: #f5f5f5;
+  --secondary: #525252; --secondary-soft: #f5f5f5;
+  --red: #e5484d; --radius: 20px; --shadow: 0 4px 24px #1d1d1f05;
   --sidebar: #fff; --sidebar-width: 240px; --right-rail-width: 320px;
   --topbar-height: 69px;
   --ui-scale: 1; --viewport-height: 100dvh;
-  --syntax-key: #126c9a; --syntax-string: #237342; --syntax-value: #96509e;
-  --syntax-comment: #72818a; --syntax-punctuation: #657581;
+  --syntax-key: var(--accent); --syntax-string: var(--secondary); --syntax-value: #a2591f;
+  --syntax-comment: var(--muted); --syntax-punctuation: var(--text);
   --theme-font-mono: "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace;
 }
 

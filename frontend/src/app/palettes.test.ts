@@ -48,11 +48,11 @@ describe('品牌配色只动强调色', () => {
     expect(tokens['--accent']).toBe('#7050a3')
   })
 
-  it('Windows 11 经典蓝在深浅色模式下均符合 WCAG 4.5:1 对比度标准', () => {
+  it('经典主题的标准中性强调色在深浅色模式下均符合 WCAG 4.5:1 对比度标准', () => {
     const light = stockBrands.light
     const dark = stockBrands.dark
-    expect(light.primary).toBe('#005fb8')
-    expect(dark.primary).toBe('#60cdff')
+    expect(light.primary).toBe('#262626')
+    expect(dark.primary).toBe('#e5e5e5')
     const lightTokens = accentTokens(light, 'light')
     const darkTokens = accentTokens(dark, 'dark')
     expect(contrastRatio(lightTokens['--accent'], '#ffffff')).toBeGreaterThanOrEqual(4.5)

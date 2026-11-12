@@ -4,7 +4,6 @@
 @import './components.css';
 @import './insights.css';
 @import './setup.css';
-@import './dev.css';
 @import './legacy-palette.css';
 @import './theme-material.css';
 @import './theme-primitives.css';
@@ -322,7 +321,7 @@ main:focus {outline: none}
 button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled {opacity: 1; color: var(--muted)}
 .button:disabled {background: var(--surface-muted); border-color: var(--border); box-shadow: none}
 .input-icon, .count-badge {background: var(--surface-muted)}
-.status, .task-state {border-radius: 8px; font-weight: 500}
+.status {border-radius: 8px; font-weight: 500}
 
 .scheduler-widget {
   background: var(--theme-surface-bg);
@@ -349,25 +348,6 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 }
 .scheduler-widget-heading > div > svg {
   color: var(--accent);
-}
-/* 状态提示与新版本同层：无面，只留文字与间距 */
-.scheduler-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  line-height: 1.3;
-}
-.scheduler-status svg {
-  flex-shrink: 0;
-}
-.scheduler-status.running {
-  background: var(--theme-success-soft);
-  color: var(--theme-success);
-  border-color: color-mix(in srgb, var(--theme-success) 24%, transparent);
-  font-weight: 600;
 }
 .scheduler-stats {
   display: grid;
@@ -463,7 +443,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .app-shell.legacy-shell > .topbar {grid-area: topbar; width: auto}
 .app-shell.legacy-shell > .sidebar {grid-area: sidebar; padding-top: 12px}
 .app-shell.legacy-shell > .main-shell {grid-area: main; min-height: 0; overflow: hidden; display: flex; flex-direction: column}
-/* 内容列的高度：非实例页（如 /dev、设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
+/* 内容列的高度：非实例页（如设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
    增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴 */
 .app-shell.legacy-shell > .main-shell > main {min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 28px 24px}
 .app-shell.legacy-shell > .main-shell > main:has(> .instance-page-grid, > .task-config-legacy) {overflow-y: hidden}
@@ -509,6 +489,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .legacy-topbar-title {flex: 1; min-width: 0; text-align: center; font-size: 1.2rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 /* 旧版实例页的页名由顶栏居中显示，内容区只留一个给读屏的标题 */
 .legacy-sr-title {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 1 !important; z-index: 4}
+/* 还在用 PageTitle 的页面同理：顶栏已有页名，内容区不再重复一个大标题，只留动作区 */
+.app-shell.legacy-shell .page-title-heading {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap}
 /* 旧版标签栏：槽是一级面加磨砂；内容盒 = 标签高 + 上缝 + 下边框——
    上面那条缝是标签上边框与栏上边框之间的间距，下面 1px 是栏自己的下边框。标签贴底，底边因此落在栏的下边框上。
    标签的形状、竖线、加号与状态色由 theme-primitives 统一给出，这里只给皮相 */
@@ -749,12 +731,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
     overflow-y: auto;
   }
   .statistics-legacy .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
-  /* 分段控件按内容自然宽度排列 */
-  .statistics-legacy .statistics-toolbar-row .statistics-category-control {margin-bottom: 0; flex: 0 0 auto; width: max-content}
-/* 旧版统计页的内容容器没有内边距，切换入口的衬底外扩 6px 会被容器边缘裁掉；
-   工具栏行让出 6px，使衬底外缘正好落在内容边界上 */
-.statistics-legacy .statistics-toolbar-row {padding: 6px 0 0 6px}
-  .statistics-legacy .statistics-toolbar-row .title-actions {margin-left: auto}
+  /* 分类切换按内容自然宽度排列；宽度上限与溢出滚动见 insights.css 的工具栏段 */
+  .statistics-legacy .statistics-toolbar-row .statistics-category-control {flex: 0 0 auto; width: max-content; max-width: 100%}
 
   /* 旧版的任务详细设置：参数卡在左、分组导航在右（旧版是 13rem≈208px 的右列）。
      和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走 */
@@ -885,15 +863,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .monitor-segmented {display: inline-flex; align-items: center; gap: 0; padding: 0; border: 1px solid var(--border); border-radius: 20px; background: transparent; max-width: 100%; overflow: hidden}
 .monitor-segmented button {display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 36px; padding: 6px 16px; border: 0; border-right: 1px solid var(--border); border-radius: 0; color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: background-color .15s, color .15s}
 .monitor-segmented button:last-child {border-right: 0}
-/* 页面切换入口要让一级衬底探出轨道，轨道因此不裁剪子元素；
-   旧版按钮是直角，首末两个的选中填充会探出轨道圆角，按同心圆角收掉内缩的那 1px */
-:root[data-theme^='legacy'] .statistics-category-control > button:first-of-type {border-top-left-radius: calc(20px - 1px); border-bottom-left-radius: calc(20px - 1px)}
-:root[data-theme^='legacy'] .statistics-category-control > button:last-of-type {border-top-right-radius: calc(20px - 1px); border-bottom-right-radius: calc(20px - 1px)}
 .monitor-segmented button[aria-selected='true'] {background: var(--accent-soft); color: var(--accent)}
 .monitor-segmented button:focus-visible {outline-offset: -2px}
-/* 统计页类别目录栏补一层二级贴片：淡色文字直接压在底图上几乎不可见 */
-.statistics-category-control {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-.statistics-category-control {margin-bottom: 20px}
 .log-rule .rule-bar {opacity: 1; background: var(--border)}
 .log-rule.rule-double .rule-bar {opacity: 1; border-color: var(--border)}
 .live-label {border-color: var(--green)}
@@ -993,59 +964,6 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   color: var(--secondary);
   opacity: 0.6;
   transition: transform .15s ease, color .15s ease;
-}
-.rail-task-item .task-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 550;
-  line-height: 1;
-  box-sizing: border-box;
-  border: none;
-  transition: transform .15s ease, box-shadow .15s ease;
-}
-.rail-task-item .task-state.running {
-  background: #e6f6ee;
-  color: #1b7a37;
-  border: 1px solid rgba(27, 122, 55, 0.08);
-  box-shadow: inset 0 1px 2px rgba(27, 122, 55, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-.rail-task-item .task-state.pending {
-  background: #ecebf8;
-  color: #43408a;
-  border: 1px solid rgba(67, 64, 138, 0.08);
-  box-shadow: inset 0 1px 2px rgba(67, 64, 138, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-.rail-task-item .task-state.waiting {
-  padding: 0 7px;
-  min-width: 25px;
-  justify-content: center;
-  background: #eef0f6;
-  color: #6366f1;
-  border: 1px solid rgba(99, 102, 241, 0.08);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05), 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-:root[data-theme='legacy-dark'] .rail-task-item .task-state.running {
-  background: #1c3524;
-  color: #5ce690;
-  border: 1px solid rgba(92, 230, 144, 0.1);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-:root[data-theme='legacy-dark'] .rail-task-item .task-state.pending {
-  background: #312f55;
-  color: #c5c2f0;
-  border: 1px solid rgba(197, 194, 240, 0.1);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-:root[data-theme='legacy-dark'] .rail-task-item .task-state.waiting {
-  background: #27292f;
-  color: #a5b4fc;
-  border: 1px solid rgba(165, 180, 252, 0.1);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .modal {
   border: 0;
@@ -1765,12 +1683,36 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .app-shell.legacy-shell .task-config-legacy.rail-hidden .task-config-rail-slot {display: none}
 }
 
+/* 全局设置页（界面设置、系统设置、远程访问）沿用同一张设置卡的宽度与节奏：
+   内容列居中、卡片之间留 12px，卡片自身不再带外边距 */
+.app-shell.legacy-shell .settings-page {width: 100%; max-width: 1108px; margin-inline: auto; display: flex; flex-direction: column; gap: 12px}
+.app-shell.legacy-shell .settings-page > .config-group {margin-bottom: 0}
+/* 远程访问地址：地址占满整行剩余宽度，复制按钮跟在右侧 */
+.remote-address {display: flex; align-items: center; gap: 8px}
+.remote-address > code {flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--theme-radius-control); background: var(--theme-inset-bg); font-size: 12px; overflow-wrap: anywhere; user-select: all}
+/* 组件库下拉在设置字段里的宽度：固定控件列宽，窄屏回退撑满 */
+.settings-page [data-slot='select-trigger'] {width: 240px; max-width: 100%}
+/* 色板选择器别被字段宽度拉开：跟着旧控件列的节奏走 */
+.settings-page .palette-options {max-width: 480px}
+.settings-page .custom-palette-actions {max-width: 480px}
+/* 卡片里的行内状态文字：弱化显示，出错时换危险色 */
+.field-status {color: var(--muted); font-size: 12px; margin: 0}
+.field-status[data-error] {color: var(--red); font-weight: 500}
+/* 远程访问卡片正文与加载行：弱化色说明文字 */
+.remote-body {display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: 13px}
+.remote-loading {display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px}
+/* 更新器的 HEAD 哈希：与设置行里的输入框同高同边 */
+/* HEAD 哈希：纯等宽文本（不再做成输入框的样子），右侧配一枚复制小按钮 */
+.head-sha-row {display: flex; align-items: center; gap: 8px; padding: 0 18px 14px}
+.head-sha {font-family: var(--theme-font-mono, "JetBrains Mono", "Cascadia Code", Consolas, monospace); font-size: 12px; letter-spacing: .02em; color: var(--muted); overflow-wrap: anywhere; user-select: all; flex: 1; min-width: 0}
+
 /* 任务设置页：设置卡与调度器面板同一套材质（2026-11）
    原来每张卡是「一级面 + 内缩 8px 的二级贴片」两层叠出来的，
    在玻璃材质下就成了一张白卡里再套一张白卡，跟调度器那种单张面板完全不是一回事。
    这里把它压成一层：底色/描边/投影/滤镜全部取 --rail-panel-*，
    普通材质是实色白面，玻璃材质是同一档磨砂 */
-.app-shell.legacy-shell .task-config-legacy .config-group {
+.app-shell.legacy-shell .task-config-legacy .config-group,
+.app-shell.legacy-shell .settings-page .config-group {
   padding: 0;
   border: 1px solid var(--rail-panel-edge);
   border-radius: 16px;
@@ -1779,24 +1721,27 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   backdrop-filter: var(--rail-panel-filter);
   box-shadow: var(--rail-panel-shadow);
 }
-.app-shell.legacy-shell .task-config-legacy .config-group::before {display: none}
+.app-shell.legacy-shell .task-config-legacy .config-group::before,
+.app-shell.legacy-shell .settings-page .config-group::before {display: none}
+/* 远程配对卡：内部自带分区（标头/会话/设备列表），卡片自己承担内边距、标头不再吃行级 padding；
+   不抬优先级的话，上面这条 padding: 0 会把它压成内容贴边、底部裁切 */
+.app-shell.legacy-shell .settings-page .config-group.remote-pairing {padding: 24px 28px}
+.app-shell.legacy-shell .settings-page .config-group.remote-pairing > .panel-heading {padding: 0}
 /* 分组标题：与面板里的节标题同节奏，比正文大一点、比页面标题小得多 */
-.app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading {padding: 16px 18px 10px}
-.app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading h2 {font-size: 15px; font-weight: 600; letter-spacing: .1px}
+.app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading,
+.app-shell.legacy-shell .settings-page .config-group > .panel-heading {padding: 16px 18px 10px}
+.app-shell.legacy-shell .task-config-legacy .config-group > .panel-heading h2,
+.app-shell.legacy-shell .settings-page .config-group > .panel-heading h2 {font-size: 15px; font-weight: 600; letter-spacing: .1px}
+/* 配置管理页实例卡（.config-card）：legacy 把 .config-group 的 padding 压成了 0（旧行自带头部/行内边距），
+   这张卡改为整体分区（头部/元信息/任务/动作条），容器要按双类抬优先级补回呼吸内边距；
+   网格间距由 .config-grid 的 gap 负责，基底的 margin-bottom 归零防双倍间距 */
+.app-shell.legacy-shell .settings-page .config-group.config-card {display: flex; flex-direction: column; padding: 16px 18px 14px; gap: 10px; margin-bottom: 0}
 /* 行距收紧一档，分隔线仍只在行与行之间 */
-.app-shell.legacy-shell .task-config-legacy .config-group .field-row {padding: 11px 18px}
+.app-shell.legacy-shell .task-config-legacy .config-group .field-row,
+.app-shell.legacy-shell .settings-page .config-group .field-row {padding: 11px 18px}
 /* 带说明的行：控件跟标签首行对齐，别再垂直居中飘在几行文字中间 */
-.app-shell.legacy-shell .task-config-legacy .config-group .field-row:has(.field-label p) {align-items: flex-start}
-/* 任务说明卡同理：一张面，不叠内贴片 */
-.app-shell.legacy-shell .task-config-legacy .task-help-panel {
-  border: 1px solid var(--rail-panel-edge);
-  border-radius: 16px;
-  background: var(--rail-panel-bg);
-  -webkit-backdrop-filter: var(--rail-panel-filter);
-  backdrop-filter: var(--rail-panel-filter);
-  box-shadow: var(--rail-panel-shadow);
-}
-.app-shell.legacy-shell .task-config-legacy .task-help-panel::before {display: none}
+.app-shell.legacy-shell .task-config-legacy .config-group .field-row:has(.field-label p),
+.app-shell.legacy-shell .settings-page .config-group .field-row:has(.field-label p) {align-items: flex-start}
 /* 任务说明卡同理：一张面，不叠内贴片 */
 .app-shell.legacy-shell .task-config-legacy .task-help-panel {
   border: 1px solid var(--rail-panel-edge);

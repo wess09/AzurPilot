@@ -10,7 +10,8 @@ input, select, textarea {
   border-color: var(--theme-input-border);
   border-radius: var(--theme-radius-control);
 }
-input:focus, select:focus, textarea:focus {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
+/* 焦点色只属于应用自己的原生控件；组件库控件（带 data-slot）走它自己的官方默认焦点色 */
+input:not([data-slot]):focus, select:not([data-slot]):focus, textarea:not([data-slot]):focus {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var(--theme-focus)}
 
 .sidebar, .right-rail {
@@ -109,13 +110,12 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .page-title h1::before {background: var(--theme-title-glass)}
 .page-title h1::after {-webkit-text-stroke-color: var(--theme-title-highlight-stroke)}
 
-.status.running, .task-state.running {color: var(--theme-success); background: var(--theme-success-soft)}
+.status.running {color: var(--theme-success); background: var(--theme-success-soft)}
 .status.stopped {color: var(--theme-status-stopped-text); background: var(--theme-status-stopped-bg)}
 .status.error {color: var(--theme-danger); background: var(--theme-danger-soft)}
 .status.updating {color: var(--theme-warning); background: var(--theme-warning-soft)}
-.scheduler-status.running {color: var(--theme-text)}
 
-.resource-heading, .resource-foot, .resource-value small, .count-badge, .task-state, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
+.resource-heading, .resource-foot, .resource-value small, .count-badge, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
 .resource-heading > div {background: var(--theme-resource-0-bg); color: var(--theme-resource-0-text)}
 .resource-1 .resource-heading > div {background: var(--theme-resource-1-bg); color: var(--theme-resource-1-text)}
 .resource-2 .resource-heading > div {background: var(--theme-resource-2-bg); color: var(--theme-resource-2-text)}

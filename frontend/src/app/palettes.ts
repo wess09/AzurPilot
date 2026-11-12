@@ -189,10 +189,10 @@ function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: stri
   }
 }
 
-/** 色板第一项跟随经典主题的原版强调色。 */
+/** 色板第一项跟随经典主题的原版强调色（组件库标准中性色）。 */
 export const stockBrands: Record<ResolvedMode, BrandColors> = {
-  light: {primary: '#005fb8', secondary: '#0078d4'},
-  dark: {primary: '#60cdff', secondary: '#4cc2ff'},
+  light: {primary: '#262626', secondary: '#525252'},
+  dark: {primary: '#e5e5e5', secondary: '#a3a3a3'},
 }
 
 /** 只改强调色一族，不碰中性色（表面/文字/边框归主题自己管）——材质与旧版要的就是这一份。 */
