@@ -1,7 +1,12 @@
+/**
+ * @fileoverview 舰队视图偏好 Hook：筛选、排序等界面选择按实例持久化到 localStorage。
+ */
+
 import {useEffect, useState, type Dispatch, type SetStateAction} from 'react'
 
 type Preference = string | boolean | Record<string, string[]> | {column: string; direction: 'ascending' | 'descending'}
 
+/** 按 fallback 的形态校验存储值：标量、排序对象、字符串数组表各走一条校验，形态不合一律回落。 */
 function read<T extends Preference>(key: string, fallback: T): T {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(key) ?? 'null')
@@ -15,6 +20,12 @@ function read<T extends Preference>(key: string, fallback: T): T {
   } catch {return fallback}
 }
 
+/**
+ * 按实例持久化舰队视图偏好，返回 [当前值, 更新函数]。
+ * 存储键为 `azurpilot.fleet-view.v1.<instance>.<name>`；换实例时立即恢复该实例的偏好（见行内注释）。
+ *
+ * @param fallback 首次使用或存储值校验失败时的默认值，其类型决定允许的偏好形态。
+ */
 export function useFleetPreference<T extends Preference>(instance: string, name: string, fallback: T): [T, Dispatch<SetStateAction<T>>] {
   const key = `azurpilot.fleet-view.v1.${instance}.${name}`
   const [stored, setStored] = useState(() => ({key, value: read(key, fallback)}))

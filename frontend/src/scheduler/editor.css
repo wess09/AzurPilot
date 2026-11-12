@@ -1,4 +1,4 @@
-/* 调度程序编辑页占满整个内容区：清空外层内边距，外壳不滚动，内容区自身撑满 100% 视口高度 */
+/* 调度器编辑页占满整个内容区：清空外层内边距，外壳不滚动，内容区自身撑满 100% 视口高度 */
 .app-shell:has(.program-editor) {
   height: var(--viewport-height);
   overflow: hidden;
@@ -928,22 +928,6 @@
     position: relative;
   }
   /* 三态展示：画布、卡片库、属性面板 */
-  .program-workspace.mobile-canvas .program-library,
-  .program-workspace.mobile-canvas .program-properties {
-    display: none !important;
-  }
-  .program-workspace.mobile-library .program-properties {
-    display: none !important;
-  }
-  .program-workspace.mobile-library .program-library {
-    display: flex !important;
-  }
-  .program-workspace.mobile-properties .program-library {
-    display: none !important;
-  }
-  .program-workspace.mobile-properties .program-properties {
-    display: flex !important;
-  }
   .program-default-guide {
     display: none;
   }

@@ -6,10 +6,10 @@
 .cultivation-totals strong { color: var(--theme-text); font-size: var(--fleet-font-metric, 24px); font-variant-numeric: tabular-nums; }
 .cultivation-calculator .cultivation-review { margin: 8px 0 0; font-size: var(--fleet-font-body, 13px); }
 .cultivation-calculator input[type=checkbox] { min-height: auto; accent-color: var(--theme-accent); }
-.cultivation-included { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fleet-font-body, 13px); }
+/* 列多，给足最小宽度，超宽时在容器内横向滚 */
 .cultivation-table table { min-width: 900px; }
+/* 表格基类对整表用 nowrap，舰船名这里放开换行 */
 .cultivation-table .ft-name { white-space: normal; }
 .cultivation-warning { display: block; margin-top: 4px; font-size: var(--fleet-font-note, 12px); line-height: 1.6; }
 .cultivation-warning { color: var(--theme-warning); }
 .cultivation-excluded td { opacity: .6; }
-@media (max-width: 800px) { .cultivation-included { margin-left: 0; } }

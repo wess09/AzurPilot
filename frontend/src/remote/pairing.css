@@ -125,6 +125,7 @@
   justify-content: center;
 }
 
+/* 二维码白底并留足 32px 静区（Quiet Zone），否则扫描器在深色主题下识别不稳 */
 .pairing-qr {
   box-sizing: border-box;
   width: 272px;
@@ -249,6 +250,7 @@
   color: var(--muted);
 }
 
+/* 窄屏：主配对台上下折行并整体居中 */
 @media (max-width: 768px) {
   .pairing-stage {
     flex-direction: column;
@@ -349,7 +351,7 @@
 
 /*
  * 已授权设备列表：
- * 与主会话区分隔 36px，宽度约束在 600px，居中对称对齐。
+ * 与主会话区分隔 36px，宽度约束在 600px，居中对称对齐
  */
 .pairing-clients-section {
   margin: 36px auto 0;
@@ -503,12 +505,12 @@
   background: rgba(239, 68, 68, 0.08);
 }
 
-/* 在主题贴片边距之外保留 24px 底部留白，避免通用卡片样式覆盖。 */
+/* 在主题贴片边距之外保留 24px 底部留白，避免通用卡片样式覆盖 */
 .config-group.remote-pairing {
   padding-bottom: calc(var(--theme-plate-margin, 8px) + 24px);
 }
 
-/* 完整应用名在窄屏换行，保持配对操作和设备按钮可见。 */
+/* 完整应用名在窄屏换行，保持配对操作和设备按钮可见 */
 .remote-pairing .pairing-header {
   flex-wrap: wrap;
 }

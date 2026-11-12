@@ -1,18 +1,18 @@
 /**
- * 标准二维码组件：严格满足 ISO/IEC 18004 与 GB/T 18284 规范。
- * 内置四周各 4 模块（4X）的物理空白安全区（Quiet Zone），
- * 并由外层 .pairing-qr 容器保障 32px 纯白物理留白，彻底阻断背景或边缘对扫码对焦的干扰。
+ * @fileoverview 配对二维码组件：满足 ISO/IEC 18004 与 GB/T 18284，内置四周各 4 模块的空白安全区（Quiet Zone），
+ * 并由外层 .pairing-qr 容器保障 32px 纯白物理留白，阻断背景或边缘对扫码对焦的干扰。
  */
 import { useMemo } from 'react'
 import qrcode from 'qrcode-generator'
 import './pairing-qr.css'
 
+/** 把配对密钥拼成 azurpilot://pair 深链；secret 不是 32 位十六进制时抛错。 */
 export function pairingQrPayload(secret: string): string {
   if (!/^[a-f0-9]{32}$/.test(secret)) throw new Error('Invalid pairing secret')
   return `azurpilot://pair?secret=${secret}`
 }
 
-/** 生成符合 4 模块安全间距要求的矢量 QR 数据。 */
+/** 生成符合 4 模块安全间距要求的矢量 QR 数据；返回方角与圆角两套路径、三个定位框坐标与 viewBox 尺寸。 */
 export function generateQrSvgData(
   value: string,
   level: 'L' | 'M' | 'Q' | 'H' = 'M',
@@ -65,6 +65,7 @@ export function generateQrSvgData(
   }
 }
 
+/** 配对二维码展示组件：secret 非法或生成失败时渲染错误占位，label 同时作无障碍名称。 */
 export function PairingQr({
   secret,
   label,

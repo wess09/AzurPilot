@@ -1,12 +1,17 @@
-/** 扫码操作示意：辅助理解手机取景过程，只在可见且等待配对时播放。 */
+/**
+ * @fileoverview 扫码操作示意图：演示手机取景扫码过程，动画只在图示可见且页面在前台时播放（配对等待卡片内挂载）。
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import { QrCode } from 'lucide-react'
 import './pairing-scan-guide.css'
 
+/** 渲染扫码示意图；label 作为 figure 的无障碍名称。 */
 export function PairingScanGuide({ label }: { label: string }) {
   const ref = useRef<HTMLElement>(null)
   const [playing, setPlaying] = useState(false)
 
+  // 动画只在可见时播：IntersectionObserver 管出视口，visibilitychange 管切后台，两处任一失效即暂停。
   useEffect(() => {
     const element = ref.current
     if (!element) return

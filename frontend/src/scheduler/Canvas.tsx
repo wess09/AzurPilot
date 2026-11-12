@@ -1,4 +1,6 @@
-/** 拖拽的瞬时状态由画布管理，松开后才提交文档，避免测量、选择和持久图互相覆盖。 */
+/**
+ * @fileoverview 自定义调度的卡片画布：ReactFlow 包装，拖拽位置松手后才提交文档。
+ */
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {applyEdgeChanges, applyNodeChanges, Background, Controls, MiniMap, ReactFlow, SelectionMode, useNodesInitialized, useReactFlow, type Edge, type EdgeChange, type Node, type NodeChange, type ReactFlowProps} from '@xyflow/react'
 import {categoryColor} from './appearance'
@@ -7,6 +9,10 @@ import type {CardDefinition, Catalog, PortType, ProgramDocument, ProgramNode} fr
 export type CanvasNode = Node<{card: ProgramNode; spec: CardDefinition; current: boolean; invalid: boolean; catalog: Catalog; document: ProgramDocument; connectedInputs: string[]; inputTypes: Record<string,PortType>; outputTypes: Record<string,PortType>; onParamsChange: (node: string, patch: Record<string, unknown>) => void}, 'card'>
 type Props = ReactFlowProps<CanvasNode> & {onPositionsCommit: (nodes: CanvasNode[]) => void; focusEntry?: string}
 
+/**
+ * 调度程序画布。拖拽的瞬时状态由画布管理，松开后才经 onPositionsCommit 提交文档，
+ * 避免测量、选择和持久图互相覆盖；focusEntry 在画布就绪后把视口对准入口卡片。
+ */
 export function ProgramCanvas({nodes: documentNodes = [], edges: documentEdges = [], onPositionsCommit, focusEntry, ...props}: Props) {
   const [nodes, setNodes] = useState(documentNodes)
   const [edges, setEdges] = useState(documentEdges)

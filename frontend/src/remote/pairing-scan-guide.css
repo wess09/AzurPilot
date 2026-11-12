@@ -52,6 +52,7 @@
 }
 .pairing-scan-check {transform-origin: 163px 96px}
 
+/* 窄屏：三栏改两栏，扫码图退出网格整行居中；更窄收成单列 */
 @media (max-width: 1100px) {
   .pairing-stage:has(> .pairing-scan-guide) {grid-template-columns: 272px minmax(0, 1fr)}
   .pairing-scan-guide {grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 24px}
@@ -64,6 +65,7 @@
   .pairing-scan-scene {width: 128px}
 }
 
+/* 减少动效：停用动画，扫线停在行程中部作静态示意 */
 @media (prefers-reduced-motion: reduce) {
   .pairing-scan-phone, .pairing-scan-line, .pairing-scan-target, .pairing-scan-check {animation: none}
   .pairing-scan-phone {transform: none}

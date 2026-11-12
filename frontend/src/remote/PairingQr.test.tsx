@@ -28,11 +28,11 @@ describe('PairingQr 二维码组件与协议生成', () => {
   it('矢量数据计算严格满足 4 模块空白安全区（Quiet Zone）', () => {
     const payload = pairingQrPayload(VALID_SECRET)
     const data = generateQrSvgData(payload, 'M', 4)
-    // 33 模块 + 4*2 边距 = 41 尺寸
+    // 33 模块 + 4*2 边距 = 41 尺寸。
     expect(data.moduleCount).toBe(33)
     expect(data.margin).toBe(4)
     expect(data.viewBoxSize).toBe(41)
-    // 起始绘制点应在 margin 处 (x=4)
+    // 起始绘制点应在 margin 处（x=4）。
     expect(data.pathD).toContain('M 4 4 h 1 v 1 h -1 Z')
   })
 

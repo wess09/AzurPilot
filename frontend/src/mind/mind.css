@@ -2,5 +2,6 @@
 .mind-panel{border:1px solid var(--border);border-radius:var(--theme-radius-panel, 8px);background:var(--surface);color:var(--text);padding:20px;min-width:0}
 .mind-panel h2{font-size:16px;margin:0 0 16px}
 .mind-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.mind-toolbar p{width:100%;margin:4px 0 0;font-size:12px;line-height:1.6}
+/* 文件输入视觉隐藏但保留可聚焦，焦点环画在 .file-button 上 */
 .mind-toolbar .file-button{position:relative;cursor:pointer}.mind-toolbar .file-button input{position:absolute;width:1px;height:1px;opacity:0;left:0;top:0}.mind-toolbar .file-button:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 @media(max-width:800px){.mind-panel{padding:16px}}
