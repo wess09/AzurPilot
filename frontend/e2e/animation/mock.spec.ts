@@ -55,6 +55,13 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
       localStorage.setItem('azurpilot.theme', 'legacy-dark')
       localStorage.setItem('azurpilot.material', 'glass')
       localStorage.setItem('azurpilot.background', JSON.stringify({source: 'url', kind: 'image', urls: ['http://127.0.0.1:5174/azurpilot.webp'], active: 0, name: ''}))
+      document.addEventListener('animationstart', event => {
+        const card = event.target
+        if (card instanceof HTMLElement && card.matches('.config-group')) {
+          card.dataset.testCardAnimation = event.animationName
+          card.dataset.testCardDelay = card.style.getPropertyValue('--card-stagger-delay')
+        }
+      })
     })
     const page = await context.newPage()
     await page.goto('/#/i/demo-main/task/Main')
@@ -63,6 +70,7 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
     await expect(page.locator('.wallpaper-media')).toBeVisible()
     const card = page.locator('#group-Campaign')
     await expect(card).not.toHaveCSS('backdrop-filter', 'none')
+    await expect(card).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
     await expect(card).not.toHaveClass(/\bmotion-card-stagger\b/, {timeout: 5000})
     await control.scrollIntoViewIfNeeded()
     await page.mouse.move(0, 0)
@@ -100,6 +108,15 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
       return changed
     }, [before.toString('base64'), after.toString('base64')])
     expect(changedPixels).toBeLessThanOrEqual(5)
+
+    await page.evaluate(() => {location.hash = '/i/demo-main/task/Guild'})
+    const logistics = page.locator('#group-GuildLogistics')
+    const operation = page.locator('#group-GuildOperation')
+    await expect(logistics).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
+    await expect(operation).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
+    const logisticsDelay = Number.parseFloat((await logistics.getAttribute('data-test-card-delay'))!)
+    const operationDelay = Number.parseFloat((await operation.getAttribute('data-test-card-delay'))!)
+    expect(logisticsDelay).toBeLessThan(operationDelay)
   } finally {
     await context.close()
   }

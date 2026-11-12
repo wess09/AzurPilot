@@ -107,26 +107,17 @@ export function applyCardStaggerMotion(cards: HTMLElement[], sessionId: number) 
   const speed = motionSpeedValue()
   const total = cards.length
 
+  // 已经播放中的卡片需要先取消旧动画；首播无需同步量布局。
+  const playing = cards.filter(card => card.classList.contains('motion-card-stagger'))
+  for (const card of playing) card.classList.remove('motion-card-stagger')
+  if (playing.length) void playing[0].offsetWidth
+
   cards.forEach((card, index) => {
     // 双重断言绕开 HTMLElement 的类型限制：键名带 __azurpilot 前缀，不会撞上真实属性。
     ;(card as unknown as Record<string, number>)[MOTION_SESSION_KEY] = sessionId
-    // 毛玻璃任务卡片缩放入场时，Chromium 可能将开关轨道和滑块绘制到不同的像素行。
-    // 跳过这类卡片的入场动画，保留开关原有样式和其他卡片的动画。
-    if (card.matches('.config-group') && card.querySelector('[data-slot="switch"]')) {
-      const filter = window.getComputedStyle(card).backdropFilter
-      if (filter && filter !== 'none') {
-        card.classList.remove('motion-card-stagger')
-        card.style.removeProperty('--card-stagger-delay')
-        return
-      }
-    }
 
     const delay = calculateNonLinearDelay(index, total, speed)
-
-    // 移除可能存在的旧动画类，触发回流后重新注入
-    card.classList.remove('motion-card-stagger')
     card.style.setProperty('--card-stagger-delay', `${delay}ms`)
-    void card.offsetWidth
     card.classList.add('motion-card-stagger')
 
     const handleEnd = (event: AnimationEvent) => {

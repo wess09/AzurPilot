@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 // 桩掉用户动效偏好：非减弱模式动画才会执行，速度固定为 1 让用例只考察清理时序本身。
 vi.mock('./motionPrefs', () => ({
@@ -8,8 +8,6 @@ vi.mock('./motionPrefs', () => ({
 }))
 
 import { applyCardStaggerMotion } from './cardMotion'
-
-afterEach(() => vi.restoreAllMocks())
 
 describe('卡片入场动画清理', () => {
   it('子元素动画先结束时，仍在卡片动画结束后清理变换', () => {
@@ -24,23 +22,5 @@ describe('卡片入场动画清理', () => {
     card.dispatchEvent(new Event('animationend', {bubbles: true}))
     expect(card.classList.contains('motion-card-stagger')).toBe(false)
     expect(card.style.getPropertyValue('--card-stagger-delay')).toBe('')
-  })
-
-  it('只跳过含开关且使用背景模糊的任务卡片', () => {
-    const glassWithSwitch = document.createElement('section')
-    glassWithSwitch.className = 'config-group'
-    glassWithSwitch.innerHTML = '<button data-slot="switch"></button>'
-    const plainWithSwitch = glassWithSwitch.cloneNode(true) as HTMLElement
-    const glassWithoutSwitch = document.createElement('section')
-    glassWithoutSwitch.className = 'config-group'
-    vi.spyOn(window, 'getComputedStyle').mockImplementation(element => ({
-      backdropFilter: element === plainWithSwitch ? 'none' : 'blur(18px)',
-    }) as CSSStyleDeclaration)
-
-    applyCardStaggerMotion([glassWithSwitch, plainWithSwitch, glassWithoutSwitch], 2)
-
-    expect(glassWithSwitch.classList.contains('motion-card-stagger')).toBe(false)
-    expect(plainWithSwitch.classList.contains('motion-card-stagger')).toBe(true)
-    expect(glassWithoutSwitch.classList.contains('motion-card-stagger')).toBe(true)
   })
 })

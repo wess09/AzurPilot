@@ -1167,12 +1167,14 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
    1) 不能做 opacity —— 祖先一旦半透明就会成为 backdrop root，玻璃面板当场失去背板，
       模糊整块消失、动画结束再「啪」地长回来，这就是肉眼看到的闪跳；
    2) 不能做 scale —— 背板要按新比例重新采样，模糊半径在动画期间会跟着跳 */
-@keyframes motion-rail-in {
+@keyframes motion-panel-in {
   from {transform: translateY(var(--card-stagger-shift, 12px))}
   to {transform: none}
 }
-.instance-page-rail-wrap.motion-card-stagger {
-  animation-name: motion-rail-in;
+/* 玻璃任务卡片也只位移，避免缩放使 Chromium 的开关轨道与滑块错位。 */
+.instance-page-rail-wrap.motion-card-stagger,
+:root[data-material='glass'] .config-group.motion-card-stagger {
+  animation-name: motion-panel-in;
 }
 /* 面板外壳只能整体位移，内容可以补一次淡入，才对得上页面卡片「位移 + 淡入」的节奏。
    这些区块本身已经没有 backdrop-filter，做 opacity 不会再出问题 */
