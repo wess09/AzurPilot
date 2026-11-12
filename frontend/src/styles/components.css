@@ -57,8 +57,6 @@
 .resource-foot {display: flex; align-items: center; gap: 5px; color: #a0adb7; font-size: 8px; margin-top: 5px; border-top: 1px solid var(--border); padding-top: 5px}
 .resource-foot > svg {margin-left: auto; color: #b9c5cc}
 .count-badge {font-size: 9px; padding: 1px 5px; color: #8d9daa; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 4px}
-.task-state {font-size: 8px; color: #93a3b0; display: block; background: var(--surface-muted); text-align: center; border-radius: 3px; padding: 3px}
-.task-state.pending {color: var(--accent); background: var(--accent-soft)}
 .preview-screen {background: var(--theme-preview-bg); margin: 16px 16px 0; aspect-ratio: 16/9; min-height: 196px; position: relative; border-radius: 7px; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #adc3cc; flex: 1}
 .preview-screen > img {width: 100%; height: 100%; object-fit: contain; position: absolute; inset: 0}
 .preview-screen > strong {margin-top: 10px; font-size: 12px; font-weight: 450; z-index: 1}
@@ -353,18 +351,21 @@
 /* 控件行内带动作按钮时：整行改成 flex，输入框在前、按钮在后 */
 .field-control:has(> .field-actions) {display: flex; align-items: center; gap: 7px}
 .field-control > .field-actions {margin-top: 0; flex-shrink: 0}
+/* 控件本身就是一排按钮时不再吃 240px 定宽：按钮多时向右排开、放不下才换行 */
+.field-control.field-actions {width: auto; max-width: 62%; display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap}
 /* 保存状态占原按钮那个位子（输入框左侧），脱流所以不挤输入框、也不推按钮；
    那个位子比文案窄，超出就省略，全文看 title；flex-wrap 要显式关掉，否则图标与文字会折成两行 */
 .field-control:has(> .edit-status) {position: relative}
-.field-control > .edit-status {position: absolute; right: 100%; top: 50%; transform: translateY(-50%); order: 0; margin: 0 7px 0 0; max-width: 160px; padding: 0; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; text-overflow: ellipsis}
-.field-control > .edit-status > .edit-status-text {overflow: hidden; text-overflow: ellipsis}
+/* 错误胶囊：实底 + 描边，滚动限制在胶囊内部，不与底下的标签文字叠印；
+   --edit-status-window = 200(max-width) − 左右 padding 18 − border 2 − 图标 14 − gap 5 = 161px，
+   跑马灯位移按它计算（forms.css 关键帧引用） */
+.field-control > .edit-status {position: absolute; right: 100%; top: 50%; transform: translateY(-50%); order: 0; margin: 0 7px 0 0; max-width: 200px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; padding: 3px 9px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: 8px; z-index: 2; --edit-status-window: 161px}
 /* 纯图标按钮：宽度收成与自身高度相等，不靠固定尺寸 */
 .field-control > .field-actions .icon-only {aspect-ratio: 1; padding: 0; gap: 0}
 /* 按下「立刻运行」时按钮回弹一下；颜色取自各主题的 accent，形状对各主题都成立 */
 @keyframes run-button-press {40% {transform: scale(.88)} 100% {transform: none}}
 .field-control > .field-actions .icon-only:active:not(:disabled) {animation: run-button-press .2s ease-out}
 .panel-note {font-size: 10px; color: var(--muted); padding: 13px 20px}
-.fleet-data {padding: 25px}.fleet-data pre {white-space: pre-wrap; line-height: 2; overflow-wrap: anywhere}
 .multi-options {display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end}
 .multi-options label {display: flex; gap: 5px; align-items: center; font-size: 11px}
 .fleet-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px}
@@ -398,16 +399,38 @@
 .config-toolbar .input-icon {min-height: 34px}
 .config-toolbar .input-icon > input {font-size: 13px}
 .config-group .small-label, .group-nav {font-size: 12px}
+
+/* ── 配置管理页（/configs）：页头计数摘要锚定新建/导入按钮；实例卡片走响应式网格 ──
+   卡片沿用 .config-group 面板壳（圆角/贴片由主题变量决定），内部重新分区：
+   头部（名字与徽章同行）、元信息、当前任务、删除确认提示、满宽等分动作条——按钮永不孤儿换行。
+   卡片级属性用 .config-group.config-card 双类抬高优先级，避免被后加载的 legacy 层 .config-group 盖掉 */
+.config-head {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px}
+.config-head-summary {font-size: 13px; color: var(--muted)}
+.config-head > :last-child {margin-left: auto}
+.config-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--config-card-gap, 12px)}
+.config-group.config-card {display: flex; flex-direction: column; padding: 16px 18px 14px; gap: 10px; margin-bottom: 0}
+.config-card-head {display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0}
+.config-card-head h2 {font-size: 16px; font-weight: 600; color: var(--text); margin: 0; overflow-wrap: anywhere}
+.config-card-meta {display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted)}
+.config-card-server {display: inline-flex; align-items: center; gap: 6px}
+.config-card-serial {font-variant-numeric: tabular-nums; overflow-wrap: anywhere}
+.config-card-task {display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); background: var(--accent-soft); border-radius: 6px; padding: 5px 9px; align-self: flex-start}
+.config-card-hint {font-size: 12px; color: var(--red); margin: 0; line-height: 1.6}
+.config-card-foot {display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto}
+.config-card-foot > .button {flex: 1 1 92px; min-width: 0; padding: 0 8px}
+.config-empty {display: flex; flex-direction: column; align-items: center; gap: 6px}
+.config-empty-actions {justify-content: center}
+@media (max-width: 950px) {.config-grid {grid-template-columns: 1fr}}
 .config-groups {min-width: 0}
 .field-row-multiline {flex-direction: column; align-items: stretch; gap: 13px}
 .field-row-multiline .field-control {width: 100%; min-width: 0; text-align: left}
 /* 控件占满整行时，提示浮在标题行右上角：进流会触发换行撑高整行，把输入框顶下去 */
 .field-row-multiline .field-label {position: relative}
-.field-row-multiline .field-label > .edit-status {position: absolute; top: 0; right: 0; margin: 0; max-width: 100px; transform: none; text-align: right}
+.field-row-multiline .field-label > .edit-status {position: absolute; top: 0; right: 0; margin: 0; max-width: 200px; transform: none; overflow: hidden; padding: 3px 9px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: 8px; --edit-status-window: 161px}
 @media (max-width: 950px) {
   /* 窄屏下所有控件都撑满整行，同样要给提示腾一行 */
   .field-control:has(> .edit-status) {position: static; display: flex; flex-direction: column; align-items: flex-start; gap: 6px}
-  .field-control > .edit-status {position: static; order: -1; margin: 0; max-width: 100%; transform: none}
+  .field-control > .edit-status {position: static; order: -1; margin: 0; max-width: 200px; transform: none}
 }
 .field-row-multiline textarea {padding: 10px 14px; background: var(--surface-muted); font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace)}
 .yaml-editor {overflow: hidden; text-align: left}
@@ -422,12 +445,12 @@
 .storage-field {display: grid; gap: 12px}
 .storage-field pre {margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); font: 13px/1.9 var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 480px; overflow-y: auto}
 .storage-field .button {justify-self: start}
-.edit-status { margin-top: 6px; font-size: 12px; color: var(--muted); }
-.edit-error { color: var(--red); }
+.edit-status {margin-top: 6px; font-size: 12px}
 .remote-address {display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 21px}
 .remote-address code {flex: 1 1 260px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); font: 13px/1.7 var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); overflow-wrap: anywhere; user-select: all}
 .remote-hint {margin: 0; padding: 0 21px 16px; font-size: 12px}
-.remote-badge {padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 550; white-space: nowrap}
+.remote-badge {display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap}
+.remote-badge .tiny-dot {width: 6px; height: 6px}
 .remote-badge-ready {background: #269a8120; color: #269a81}
 .remote-badge-starting {background: #b8860b20; color: #a97b0a}
 .remote-badge-failed {background: #bd555520; color: var(--red)}
@@ -521,6 +544,16 @@
 .meow-advice-targets li::before {content: '→'; position: absolute; left: 0; color: var(--accent); opacity: .8}
 .meow-shot {font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); overflow-wrap: anywhere}
 @media (max-width: 700px) {.meow-cats {padding: 12px}.meow-axis-label {flex-basis: 100%}.meow-card-score {width: 100%; justify-content: flex-start}}
+
+/* 公告详情页内容列：限宽居中，超宽屏下正文行宽可控、两侧留出壁纸 */
+.announcement-page {
+  width: 100%;
+  max-width: 1024px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
 /* 公告系统组件样式 */
 .announcement-card {
@@ -646,6 +679,26 @@
   overflow-wrap: anywhere;
 }
 
+/* 章节呼吸感：标题上方大间距拉开章节，标题与正文之间留明确层级；块级元素给确定的节奏 */
+.markdown-view h1, .markdown-view h2, .markdown-view h3,
+.markdown-view h4, .markdown-view h5, .markdown-view h6 {
+  margin: 26px 0 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+}
+.markdown-view h1 {font-size: 20px}
+.markdown-view h2 {font-size: 18px}
+.markdown-view h3 {font-size: 16px}
+.markdown-view h4 {font-size: 14.5px}
+.markdown-view h5, .markdown-view h6 {font-size: 13.5px}
+.markdown-view > :first-child {margin-top: 0}
+.markdown-view p {margin: 8px 0}
+.markdown-view ul, .markdown-view ol {margin: 8px 0; padding-left: 22px}
+.markdown-view li {margin: 3px 0}
+.markdown-view hr {margin: 18px 0; border: none; border-top: 1px solid var(--border)}
+.markdown-view details[open] > summary + * {margin-top: 4px}
+
 /* 代码块容器、语言头部与复制按钮 */
 .markdown-view .md-code-wrap {
   margin: 14px 0;
@@ -723,6 +776,16 @@
 .markdown-view .md-link:hover {
   opacity: .85;
 }
+/* 外链在文字后面跟一个小小的外跳图标（mask 用 currentColor，随主题变色） */
+.markdown-view .md-link::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5'/></svg>") no-repeat center / contain;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5'/></svg>") no-repeat center / contain;
+}
 
 /* KaTeX 数学公式渲染容器 */
 .markdown-view .md-math-block {
@@ -746,25 +809,37 @@
   color: var(--accent);
 }
 
-/* GitHub 风格呼出提示块（Admonition） */
+/* GitHub 风格呼出提示块（Admonition）：左侧 4px 粗色条 + 浅色底、无外边框 */
 .markdown-view .md-alert {
-  margin: 14px 0;
-  padding: 12px 16px;
+  margin: 16px 0;
+  padding: 10px 14px 10px 16px;
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: none;
+  border-left: 4px solid var(--border);
 }
 .markdown-view .md-alert-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 .markdown-view .md-alert-badge {
-  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .05em;
-  padding: 2px 7px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.markdown-view .md-alert-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 .markdown-view .md-alert-body p {
   margin: 0;
@@ -773,7 +848,7 @@
 }
 .markdown-view .md-alert-note {
   background: color-mix(in srgb, #3b82f6 10%, var(--surface));
-  border-color: color-mix(in srgb, #3b82f6 22%, transparent);
+  border-left-color: #3b82f6;
 }
 .markdown-view .md-alert-note .md-alert-badge {
   background: color-mix(in srgb, #3b82f6 20%, var(--surface));
@@ -782,7 +857,7 @@
 
 .markdown-view .md-alert-tip {
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
-  border-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-left-color: var(--accent);
 }
 .markdown-view .md-alert-tip .md-alert-badge {
   background: color-mix(in srgb, var(--accent) 20%, var(--surface));
@@ -791,7 +866,7 @@
 
 .markdown-view .md-alert-important {
   background: color-mix(in srgb, #a855f7 10%, var(--surface));
-  border-color: color-mix(in srgb, #a855f7 22%, transparent);
+  border-left-color: #a855f7;
 }
 .markdown-view .md-alert-important .md-alert-badge {
   background: color-mix(in srgb, #a855f7 20%, var(--surface));
@@ -800,7 +875,7 @@
 
 .markdown-view .md-alert-warning {
   background: color-mix(in srgb, #f59e0b 10%, var(--surface));
-  border-color: color-mix(in srgb, #f59e0b 22%, transparent);
+  border-left-color: #f59e0b;
 }
 .markdown-view .md-alert-warning .md-alert-badge {
   background: color-mix(in srgb, #f59e0b 20%, var(--surface));
@@ -809,44 +884,67 @@
 
 .markdown-view .md-alert-caution {
   background: color-mix(in srgb, #ef4444 10%, var(--surface));
-  border-color: color-mix(in srgb, #ef4444 22%, transparent);
+  border-left-color: #ef4444;
 }
 .markdown-view .md-alert-caution .md-alert-badge {
   background: color-mix(in srgb, #ef4444 20%, var(--surface));
   color: #b91c1c;
 }
 
-/* HTML 折叠 details/summary */
+/* HTML 折叠 details/summary：整行可点、右侧箭头给出交互暗示，展开后虚线分隔内容 */
 .markdown-view details {
-  margin: 12px 0;
-  padding: 10px 14px;
+  margin: 14px 0;
+  padding: 0 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--surface-muted);
 }
 .markdown-view summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -14px;
+  padding: 11px 14px;
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   user-select: none;
   color: var(--text);
   outline: none;
+  list-style: none;
+  border-radius: 10px;
 }
+.markdown-view summary::-webkit-details-marker {display: none}
+.markdown-view summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform var(--dur-2, .2s) var(--ease-standard, ease);
+}
+.markdown-view summary:hover {background: color-mix(in srgb, var(--text) 4%, transparent)}
 .markdown-view details[open] summary {
-  margin-bottom: 10px;
-  padding-bottom: 8px;
   border-bottom: 1px dashed var(--border);
+  border-radius: 10px 10px 0 0;
+  margin-bottom: 10px;
 }
+.markdown-view details[open] summary::after {transform: rotate(45deg)}
+.markdown-view details[open] {padding-bottom: 12px}
 
 /* 常用 HTML 排版标签（kbd、mark、sub、sup） */
 .markdown-view kbd {
   font-family: var(--theme-font-mono, monospace);
-  font-size: 11px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  box-shadow: 0 1px 1px #00000020;
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  background: color-mix(in srgb, var(--text) 5%, var(--surface));
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--text) 12%, transparent);
   color: var(--text);
 }
 .markdown-view mark {

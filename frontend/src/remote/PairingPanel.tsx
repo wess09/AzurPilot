@@ -222,23 +222,8 @@ export function PairingPanel({ ready }: { ready: boolean }) {
 
       {error && <p className="pairing-error-text" role="alert">{error}</p>}
 
-      {!pairing && ready && (
-        <div className="pairing-empty-lead">
-          <div className="pairing-empty-lead-icon">
-            <Smartphone size={32} />
-          </div>
-          <h3>{copy.title}</h3>
-          <p className="muted">{copy.hint}</p>
-          <button
-            type="button"
-            className="button primary"
-            disabled={busy}
-            onClick={() => void start()}
-          >
-            {busy ? copy.busy : copy.start}
-          </button>
-        </div>
-      )}
+      {/* 空态引导收敛为标题下的一行副标题：入口统一到右上角「开始配对」，不再放第二个主按钮 */}
+      {ready && !pairing && <p className="pairing-subtitle">{copy.hint}</p>}
 
       {pairing && (
         <div className="pairing-session" role="status" aria-live="polite">
@@ -364,10 +349,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     <strong className="pairing-device-name">
                       {copy.deviceClient} #{index + 1}
                     </strong>
-                    <span className="pairing-device-badge">
-                      <span className="tiny-dot" />
-                      {copy.deviceAuthorized}
-                    </span>
                   </div>
                   <div className="pairing-device-meta">
                     <Clock size={12} />
@@ -378,15 +359,16 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     </span>
                   </div>
                 </div>
+                {/* 破坏性动作缩成图标按钮：hover 转红，避免像普通次要操作一样被顺手点中 */}
                 <div className="pairing-device-action">
                   <button
                     type="button"
-                    className="button secondary pairing-revoke-btn"
+                    className="icon-button pairing-revoke-btn"
                     onClick={() => void revoke(item.id)}
                     title={copy.revoke}
+                    aria-label={`${copy.revoke} · ${copy.deviceClient} #${index + 1}`}
                   >
-                    <Trash2 size={14} />
-                    <span>{copy.revoke}</span>
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>

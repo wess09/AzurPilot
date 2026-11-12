@@ -3,9 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp, useConnection } from '../app/context'
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
-import { Field, FieldContent, FieldDescription, FieldLabel } from '../pages/settings-ui/field'
-import { Switch } from '../pages/settings-ui/switch'
+import { Switch } from './Switch'
 import { api, ApiError } from '../api/client'
 import type { LauncherStatus } from '../api/types'
 
@@ -91,22 +89,25 @@ export function LauncherCard() {
   const status = launcherStatusText(phase, {enabled, pending, detail}, t)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle role="heading" aria-level={2}>{t('Gui.Launcher.StartupTitle')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Field orientation="horizontal" data-disabled={phase !== 'ready' || undefined}>
-          <FieldContent>
-            <FieldLabel htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</FieldLabel>
-            <FieldDescription id="launcher-autostart-description">{t('Gui.Launcher.AutoStartHelp')}</FieldDescription>
-            <p role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
-          </FieldContent>
+    <section className="panel config-group">
+      <div className="panel-heading">
+        <div>
+          <span className="group-indicator"/>
+          <h2 role="heading" aria-level={2}>{t('Gui.Launcher.StartupTitle')}</h2>
+        </div>
+      </div>
+      <div className="field-row">
+        <div className="field-label">
+          <label htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</label>
+          <p id="launcher-autostart-description">{t('Gui.Launcher.AutoStartHelp')}</p>
+        </div>
+        <div className="field-control">
           <Switch id="launcher-autostart" checked={enabled} disabled={phase !== 'ready'}
-            aria-label={t('Gui.Launcher.AutoStart')} aria-describedby="launcher-autostart-description"
-            onCheckedChange={() => { void toggle() }}/>
-        </Field>
-      </CardContent>
-    </Card>
+            label={t('Gui.Launcher.AutoStart')} describedBy="launcher-autostart-description"
+            onChange={() => { void toggle() }}/>
+        </div>
+      </div>
+      <p className="panel-note" role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
+    </section>
   )
 }

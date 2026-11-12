@@ -587,9 +587,10 @@ export function Statistics() {
     <div className="statistics-toolbar-row">
       {categoryControl}
       {categoryPicker}
-      {!management && <ActionGroup>{actions}</ActionGroup>}
+      {/* 动作按钮贴行尾，与左侧分类切换分居两端 */}
+      {!management && <ActionGroup className="ml-auto">{actions}</ActionGroup>}
     </div>
-    {!management && <div className="statistics-controls period-controls"><strong>{ui(categories[category!])}</strong>{rangeControls}{hints}</div>}
+    {!management && <div className="statistics-controls period-controls">{rangeControls}{hints}</div>}
     {editMode && !management && <StatisticsEditConsole customized={customized} pages={fixedPageOrder.map(id => ({id, label: ui(categories[id]), enabled: isPageEnabled(layout, id)}))} onTogglePage={id => togglePage(id, !isPageEnabled(layout, id))} onReset={resetLayout}>
       {/* 顺序控件：一次挪一格，组合链整体挪动。 */}
       <div className="statistics-page-order">

@@ -13,7 +13,7 @@ import {useApp, useConnection} from '../app/context'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
-import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
+import {Empty, ErrorBox, Loading} from '../components/ui'
 import {Input} from '../components/official-ui/input'
 import {downloadCsv} from '../components/statisticsData'
 import {localizeFlowReport, statTextTranslator} from '../components/statisticsText'
@@ -106,7 +106,8 @@ export function ResourceManagement() {
   }
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString()
   return <div className="resource-management">
-    <PageTitle title={ui('nav.resources')} actions={<><Button variant="outline" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15}/>{ui('stats.refresh')}</Button><Button variant="outline" disabled={!shown || !shown.total || exporting || busy || !!error} onClick={exportEntries}><Download size={15}/>{ui('flow.export')}</Button></>}/>
+    {/* 页名由上方分类标签给出，这里只留动作，不再重复标题 */}
+    <div className="flex flex-wrap items-center justify-end gap-2.5"><Button variant="outline" disabled={busy} onClick={() => setRefresh(value => value + 1)}><RefreshCw size={15}/>{ui('stats.refresh')}</Button><Button variant="outline" disabled={!shown || !shown.total || exporting || busy || !!error} onClick={exportEntries}><Download size={15}/>{ui('flow.export')}</Button></div>
     <section className="resource-panel resource-filters">
       <p className="muted resource-intro">{ui('flow.hint')}</p>
       <label>{ui('flow.range')}<Select value={days} onValueChange={value => {setDays(value); if (value !== 'custom') setInterval({}); setOffset(0)}}><SelectTrigger aria-label={ui('flow.range')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">{ui('flow.day')}</SelectItem><SelectItem value="7">{ui('flow.week')}</SelectItem><SelectItem value="30">{ui('flow.month')}</SelectItem><SelectItem value="custom">{ui('flow.custom')}</SelectItem></SelectContent></Select></label>

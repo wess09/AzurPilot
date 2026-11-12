@@ -1,6 +1,6 @@
 .app-shell {display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: var(--viewport-height)}
 .app-shell.with-rail {grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width)}
-.brand-mark {color: #77dec7; display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 39px}
+.brand-mark {color: var(--accent); display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 39px}
 .sidebar {position: sticky; top: 0; height: var(--viewport-height); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 15px; z-index: 20}
 .sidebar-transition-wrap {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%; position: relative}
 .sidebar-transition-pane {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%}
@@ -11,20 +11,20 @@
 .instance-menu button {display: flex; align-items: center; gap: 9px; padding: 10px 10px; width: 100%; text-align: left; border-radius: 7px; font-size: 13px; font-weight: 500; transition: all .15s ease}
 .instance-menu button span {flex: 1; overflow-wrap: anywhere; min-width: 0}
 .instance-menu button:hover, .instance-menu button:focus-visible, .instance-menu button[aria-checked='true'] {background: var(--accent-soft); color: var(--accent)}
-.sidebar-label {display: flex; align-items: center; justify-content: space-between; color: #97a4af; font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
-.sidebar-label button {padding: 0; color: #82929e; display: grid; place-items: center}
+.sidebar-label {display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
+.sidebar-label button {padding: 0; color: var(--muted); display: grid; place-items: center}
 .sidebar-label > span {font: 10px var(--theme-font-sans); letter-spacing: 0; background: var(--surface-muted); padding: 1px 5px; border-radius: 3px}
 .primary-nav {position: relative; display: grid; gap: 4px; margin-bottom: 28px}
-.primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: #768593; border-radius: 7px; font-size: 12px; font-weight: 500}
+.primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: var(--muted); border-radius: 7px; font-size: 12px; font-weight: 500}
 .primary-nav a:hover {background: var(--surface-muted)}
 .primary-nav a.active {color: var(--accent); background: var(--accent-soft); font-weight: 600}
 .nav-pill {margin-left: auto; font-size: 8px; background: var(--surface); border-radius: 4px; padding: 2px 5px; color: var(--accent)}
 .task-nav-container {position: relative; display: flex; flex-direction: column; min-height: 0; flex: 1}
 .task-nav {overflow-y: auto; padding: 0 2px 15px; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 2px}
-.task-group-button {display: flex; align-items: center; gap: 10px; padding: 10px 9px; width: 100%; text-align: left; border-radius: 7px; color: #71818e; font-size: 12px; font-weight: 500; background: none; border: 1px solid transparent; transition: all .15s ease; user-select: none}
+.task-group-button {display: flex; align-items: center; gap: 10px; padding: 10px 9px; width: 100%; text-align: left; border-radius: 7px; color: var(--muted); font-size: 12px; font-weight: 500; background: none; border: 1px solid transparent; transition: all .15s ease; user-select: none}
 .task-group-button:hover {background: var(--surface-muted); color: var(--text)}
 .task-group-button.active {color: var(--accent); font-weight: 600}
-.task-group-button.expanded {background: var(--accent-soft); color: var(--accent); border-color: #138b7830}
+.task-group-button.expanded {background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 20%, transparent)}
 .task-group-icon {flex-shrink: 0; color: inherit}
 .task-group-title {flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .task-group-arrow {flex-shrink: 0; color: var(--muted); transition: transform .15s ease, color .15s ease}
@@ -42,12 +42,12 @@
 @media (prefers-reduced-motion: reduce) {
   .task-group .task-submenu-list {transition: none}
 }
-.task-submenu-item {display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 11px; color: #728290; line-height: 1.4; transition: all .12s ease}
+.task-submenu-item {display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; transition: all .12s ease}
 .task-submenu-item:hover {background: var(--surface-muted); color: var(--accent)}
 .task-submenu-item.active {background: var(--accent-soft); color: var(--accent); font-weight: 600}
-.task-submenu-dot {width: 5px; height: 5px; border-radius: 50%; background: #9aa7b2; flex-shrink: 0; transition: all .12s ease}
+.task-submenu-dot {width: 5px; height: 5px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all .12s ease}
 .task-submenu-item:hover .task-submenu-dot {background: var(--accent); transform: scale(1.2)}
-.task-submenu-item.active .task-submenu-dot {background: var(--accent); box-shadow: 0 0 0 2px #138b7825}
+.task-submenu-item.active .task-submenu-dot {background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent)}
 .task-submenu-item-text {flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 /* 长标题灯带：放得下就沿用省略号截断，放不下才滚动，两份文案首尾相接 */
 .marquee-track {display: contents}
@@ -64,7 +64,7 @@
 }
 .topbar {height: var(--topbar-height, 69px); border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 31px; background: none; flex-shrink: 0}
 .breadcrumb {font-size: 11px; color: var(--muted); display: flex; gap: 13px; align-items: center}
-.breadcrumb span {color: #c5cdd4}
+.breadcrumb span {color: var(--muted)}
 .breadcrumb strong {font-weight: 500; color: var(--text)}
 .breadcrumb a {color: var(--muted); text-decoration: none; transition: color .15s}
 .breadcrumb a:hover {color: var(--accent)}
@@ -75,13 +75,12 @@
 @media (max-width: 950px) {
   .instance-tab-name {max-width: 5rem}
 }
-.topbar-right {display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 10px}
 .connection-label {display: flex; align-items: center; gap: 6px; color: var(--accent)}
 main {padding: 32px 32px 16px; flex: 1}
 .page-title {display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 26px}
 .page-title h1 {font-size: 34px; font-weight: 700; letter-spacing: -.9px; line-height: 1.25}
 .title-actions {display: flex; align-items: center; gap: 10px; flex-wrap: wrap}
-.connection-banner {padding: 10px 32px; display: flex; gap: 9px; align-items: center; background: #fbf2db; color: #8f6d25; font-size: 11px}
+.connection-banner {padding: 10px 32px; display: flex; gap: 9px; align-items: center; background: var(--theme-warning-soft); color: var(--theme-warning); font-size: 11px}
 .right-rail {position: sticky; top: 0; height: var(--viewport-height); min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); z-index: 18; overflow: hidden}
 .right-rail-header {height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 0}
 .right-rail-header > div {min-width: 0}
@@ -108,7 +107,6 @@ main {padding: 32px 32px 16px; flex: 1}
 .rail-task-item strong, .rail-task-item small {display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .rail-task-item strong {font-size: 10px; font-weight: 600}
 .rail-task-item small {margin-top: 2px; color: var(--muted); font-size: 9px}
-.rail-task-item .task-state {font-size: 9px; white-space: nowrap}
 .rail-empty {padding: 18px 8px; color: var(--muted); font-size: 10px; text-align: center}
 .mobile-toggle, .mobile-close {display: none !important}
 .login-page {min-height: var(--viewport-height); display: grid; grid-template-columns: 1fr 1fr; background: var(--surface)}
@@ -126,7 +124,7 @@ main {padding: 32px 32px 16px; flex: 1}
 @media (min-width: 2000px) {main {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
 @media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main {padding: 25px 24px 15px}.topbar {padding: 0 24px}.sidebar {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
 @media (max-width: 1275px) {.preview-screen {max-height: 360px}.page-title {align-items: flex-start}.title-actions {justify-content: flex-end}.resource-grid {gap: 7px !important}.resource-card {--resource-card-inset: 8px; padding: var(--resource-card-inset) !important}.resource-foot {font-size: 8px !important}}
-@media (max-width: 950px) {.app-shell {display: block}.sidebar {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar {left: 0}.right-rail {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle, .mobile-close {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}.topbar-right .version {display: none}main {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
+@media (max-width: 950px) {.app-shell {display: block}.sidebar {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar {left: 0}.right-rail {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle, .mobile-close {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}main {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
 
 /* 侧栏宽度直接拖拽调整把手 */
 .sidebar-resize-handle {

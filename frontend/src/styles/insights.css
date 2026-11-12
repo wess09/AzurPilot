@@ -24,7 +24,7 @@
      basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；旧版总览也会被这条全局规则误伤 */
   .overview-page .monitor-panel,
   .instance-page-panel > .monitor-panel {flex:1 1 0;height:auto;min-height:0}
-}.task-state.running {color:#159b88;background:#159b881a;font-weight:700}.task-state.waiting {color:var(--muted)}
+}
 .monitor-tabs {display:flex;flex-direction:row;align-items:center;border-bottom:1px solid var(--border);padding:0 18px;gap:6px;flex-shrink:0;height:49px;box-sizing:border-box}
 .monitor-tabs button {display:inline-flex;align-items:center;gap:8px;padding:0 16px;height:100%;background:none;border:0;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;box-sizing:border-box}
 .monitor-tabs button[aria-selected=true] {color:var(--text);border-bottom-color:#159b88}
@@ -74,7 +74,7 @@
 /* 周期控件条是紧贴下方卡片的一行小标题，不是卡片：它只是沿用了 .statistics-controls 的排版，
    所以它自己不拿面 */
 .statistics-controls.period-controls {background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0}
-.statistics-controls {display:flex;flex-wrap:wrap;align-items:end;gap:14px;padding:18px 22px;background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);border-radius:var(--theme-plate-radius)}.statistics-controls label {display:flex;flex-direction:column;gap:7px;font-size:11px;color:var(--muted)}.statistics-controls select,.statistics-controls input {max-width:200px;min-height:34px}.period-controls {padding:0 0 18px;align-items:center}.period-controls strong {margin-right:auto}.period-controls > span {font-size:12px;color:var(--muted);flex-basis:100%}
+.statistics-controls {display:flex;flex-wrap:wrap;align-items:end;gap:14px;padding:18px 22px;background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);border-radius:var(--theme-plate-radius)}.statistics-controls label {display:flex;flex-direction:column;gap:7px;font-size:11px;color:var(--muted)}.statistics-controls select,.statistics-controls input {max-width:200px;min-height:34px}.period-controls {padding:0 0 18px;align-items:center}.period-controls > span {font-size:12px;color:var(--muted);flex-basis:100%}
 /* 图表底部工具栏：没有面，与嵌面之间不画分隔线，靠内边距分开 */
 .statistics-chart .statistics-controls {display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; padding:14px 22px; background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; border-radius:0; border-top:none}
 .statistics-chart .statistics-controls label {display:flex; flex-direction:column; gap:6px; font-size:11px; color:var(--muted); font-weight:500}
@@ -187,25 +187,16 @@
 .statistics-chain-card {display:inline-flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0 10px 0 14px;border:1px solid var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);font-size:13px;font-weight:500;color:var(--text)}
 .statistics-chain-slot {display:inline-flex;align-items:center}
 .statistics-chain-label {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-/* 统计页动作组里的按钮取控件面（底 + 磨砂）：只挂这两个动作组，不写通用的 .title-actions 规则去波及其它页面 */
-.statistics-toolbar-row .title-actions > .button {background: var(--theme-control-bg);
-  -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
-/* 页面切换入口这一排只有控件族自己的面，上方各层都没有面，于是直接压在底图上
-   在它下面补一圈一级底，控件坐在底片中央：底每边比控件大 6px，圆角跟随控件
-   控件面必须搬到 ::after —— ::before 排在元素自身背景之后，会把控件面盖住，
-   那样控件本体就变成「控件面 + 一级底」两层叠加，控件透明度滑块的力度会被冲淡 */
-.monitor-segmented.statistics-category-control {position: relative; overflow: visible;
-  background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent}
-.monitor-segmented.statistics-category-control::before {content:'';position:absolute;inset:-6px;border-radius:inherit;
-  background:var(--theme-surface-bg);-webkit-backdrop-filter:var(--theme-surface-filter);backdrop-filter:var(--theme-surface-filter)}
-.monitor-segmented.statistics-category-control::after {content:'';position:absolute;inset:-1px;border-radius:inherit;
-  background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);
-  border:1px solid var(--theme-segment-border)}
-/* 按钮与选中指示器要在控件面之上；指示器本就是绝对定位，只提层级、不改定位 */
-.statistics-category-control > button {position: relative; z-index: 1}
-.statistics-category-control > * {z-index: 1}
+/* 分类切换是 shadcn Tabs：根 .statistics-category-control > [data-slot=tabs-list] > [data-slot=tabs-trigger]。
+   外观全部交给组件自身，这里只管两件结构上的事：轨道不超出内容区；分类多到放不下时在轨道内横向滚动。
+   旧的分段控件皮相（一级底/控件面/13px/16px/竖分隔线）已随控件迁移整块删除，不要再往这里挂。 */
+.statistics-toolbar-row .statistics-category-control {min-width: 0; max-width: 100%}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content: flex-start; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list']::-webkit-scrollbar {display: none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex: 0 0 auto; white-space: nowrap}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity: .55}
 .statistics-category-control button.is-chained::after {content:'';width:5px;height:5px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.45}
-.statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0; margin-bottom:20px}
+.statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0}
 .statistics-category-picker > .statistics-category-select {flex:1; min-width:0}
 .statistics-chain-link {align-self:center;width:10px;height:1px;background:var(--theme-border)}
 .statistics-edit-actions {display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 22px;margin-bottom:8px}
