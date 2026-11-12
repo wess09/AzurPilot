@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 配置页保存行为用例：草稿式提交在越界、延迟、断线、非法输入等边界下的持久化与立刻运行。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 

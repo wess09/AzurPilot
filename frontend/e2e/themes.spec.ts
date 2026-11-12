@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 主题用例：简约主题跟随系统明暗并恢复配色、现代主题日志内滚、自定义背景的持久化。
+ */
+
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({page}) => {

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 账号操作用例：按次弹出密码验证并覆盖 TPM 分支，取消时不执行操作也不保存密码。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 

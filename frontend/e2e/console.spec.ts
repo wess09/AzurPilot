@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 控制台主流程用例：总览与配置的实时更新、刷新持久化、新建实例、断线恢复与预览订阅。
+ */
+
 import { expect, test, type WebSocketRoute } from '@playwright/test'
 
 test('总览、配置实时更新与刷新持久化', async ({page}) => {

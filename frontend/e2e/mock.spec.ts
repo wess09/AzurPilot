@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 基于 mock 后端的全站回归集：换船调度、统计仓库、系统设置、更新与背景等界面行为的端到端验收。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 import { readFileSync } from 'node:fs'

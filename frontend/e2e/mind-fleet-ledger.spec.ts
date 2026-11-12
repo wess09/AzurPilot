@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰船数据页用例：扫描导出、逐副本编辑、安全批量与未决副本人工确认，经外部 socket 造数。
+ */
+
 import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 import {readFile} from 'node:fs/promises'
@@ -69,7 +73,7 @@ test('four flat pages preserve per-copy edits and never start a scan on navigati
     {name: '杜威', group_type: 10102, level: 100, rarity: 'R', base_rarity: 'R', extra_exp: 0},
   ]})
   const [first, second] = saved.ships
-  // Fixtures are seeded through an external socket; reload the app's instance list.
+  // 测试数据经由外部 socket 写入，重载页面让应用重新拉取实例列表。
   await page.goto('about:blank')
   await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=data&ship=${second.id}`)
   await expect(page.getByRole('tab')).toHaveCount(4)

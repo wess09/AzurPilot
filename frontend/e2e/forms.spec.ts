@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 表单控件用例：在开发页验证键盘交互、值类型、主题与移动端适配、自绘菜单与弹窗层叠。
+ */
+
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({page}) => {

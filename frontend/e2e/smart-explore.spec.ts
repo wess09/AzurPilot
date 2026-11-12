@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 智能开荒用例：分组位于智能调度末尾并显示前置条件，独立开关与只读进度的清空保存。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰队信息页用例：兼容旧版记录格式并正确展示心情与未知值，扫描启动前先保存心情选项。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 

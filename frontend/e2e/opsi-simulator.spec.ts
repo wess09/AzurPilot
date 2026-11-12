@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 大世界模拟器用例（串行执行）：绘图模式运行与结果持久、长模拟中断重跑与窄屏布局可用性。
+ */
+
 import {routeRpc} from './rpc-route'
 import { expect, test, type Page } from '@playwright/test'
 

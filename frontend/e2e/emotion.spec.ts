@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 实测心情用例：重新输入相同值也提交校准，而浏览页面与普通字段操作不触发重复提交。
+ */
+
 import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 import type {Config} from '../src/api/types'

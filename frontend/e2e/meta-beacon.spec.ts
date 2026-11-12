@@ -1,3 +1,7 @@
+/**
+ * @fileoverview META 作战设置用例：档案支援与换装的合并行为，求援次数替代旧开关后的保存与隐藏逻辑。
+ */
+
 import { expect, test } from '@playwright/test'
 
 test('META作战合并支援，共用换装并保存档案期间暂停支援的设置', async ({page}, testInfo) => {

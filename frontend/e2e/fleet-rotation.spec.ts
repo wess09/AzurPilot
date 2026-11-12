@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船配置页用例：六队舰位与候补舰队的保存独立于调度开关，页面导航不触发扫描调度。
+ */
+
 import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 

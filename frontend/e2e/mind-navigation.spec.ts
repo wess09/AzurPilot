@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 养成页导航用例：资源管理与舰队管理的入口与跳转记忆，舰队扫描开关与其他任务的互斥禁用。
+ */
+
 import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 
