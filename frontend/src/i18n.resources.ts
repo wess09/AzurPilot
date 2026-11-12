@@ -1,4 +1,6 @@
-/** 资源管理的四种语言；数据里的物品名称沿用现有物品目录。 */
+/**
+ * @fileoverview 资源管理的四种语言；数据里的物品名称沿用现有物品目录。
+ */
 export const resourceZhCN = {
   'flow.food': '后宅粮食', 'flow.urPt': '活动 UR 点数', 'flow.furnitureCoin': '家具币', 'flow.gachaTicket': '建造券',
   'nav.resources': '资源管理', 'flow.hint': '追溯每个任务的获取与消耗，查看资源去了哪里。',

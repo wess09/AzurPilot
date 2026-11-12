@@ -5,7 +5,7 @@
 import type {Instance} from '../api/types'
 
 /** 一键启停的动作，与标签页上那枚单实例启停钮同一套语义。 */
-export type BulkAction = 'start' | 'stop'
+type BulkAction = 'start' | 'stop'
 
 /** 全部实例都在运行才暂停，否则一律启用。 */
 export function bulkAction(instances: Instance[]): BulkAction {

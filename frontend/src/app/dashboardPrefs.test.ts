@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-/* 本地存储是浏览器接口，这里用内存替身；模块读取它是在导入时，所以每个用例都重新导入。 */
+// 本地存储是浏览器接口，这里用内存替身；模块读取它是在导入时，所以每个用例都重新导入。
 function memoryStorage() {
   const map = new Map<string, string>()
   return {
@@ -16,6 +16,7 @@ async function loadPrefs() {
   return import('./dashboardPrefs')
 }
 
+// 与 dashboardPrefs.ts 的 PREFS_DEFAULTS 逐项一致；dogIcon 出厂即开，其余默认关。
 const DEFAULTS = {fitCards: false, fitText: false, dense: false, merged: false, totalFirst: false, dogIcon: true}
 
 afterEach(() => vi.unstubAllGlobals())

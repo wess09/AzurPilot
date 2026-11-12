@@ -1,4 +1,6 @@
-/** 调色板文案：槽位名与分组名。颜色令牌本身在 app/colorPalette.ts。 */
+/**
+ * @fileoverview 调色板文案：槽位名与分组名。颜色令牌本身在 app/colorPalette.ts。
+ */
 export const colorZhCN = {
   'settings.colorPalette': '调色板',
   'settings.colorPaletteHelp': '逐项调整界面里的每一个颜色，改动立即生效，明暗两套分别保存。',
@@ -70,7 +72,7 @@ export const colorZhCN = {
   'settings.colorSlotChartFall': '下跌',
 } as const
 
-export type ColorKeys = keyof typeof colorZhCN
+type ColorKeys = keyof typeof colorZhCN
 
 export const colorEnUS: Record<ColorKeys, string> = {
   'settings.colorPalette': 'Color palette',

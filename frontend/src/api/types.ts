@@ -8,9 +8,12 @@ import type {Catalog as FleetTechCatalog, Report as FleetTechReport} from '../fl
 
 export type Scalar = string | number | boolean | null
 export type Value = Scalar | Value[] | {[key: string]: Value}
+/** 三层嵌套的配置值表：实例 → 参数组 → 参数名。 */
 type Values = Record<string, Record<string, Record<string, Value>>>
 export type Status = 'running' | 'stopped' | 'error' | 'updating'
+/** 一个实例的摘要：模拟器串口、运行状态与当前任务。 */
 export interface Instance { name: string; status: Status; serial: string; server: string; region?: 'cn' | 'en' | 'jp' | 'tw' | null; currentTask?: string | null }
+/** 更新器状态：本地与更新源 HEAD 对比，以及当前可执行的操作。 */
 export interface UpdateStatus {
   state: string; localHead: string | null; upstreamHead: string | null; branch: string
   ahead: number; behind: number; available: boolean; busy: boolean; canApply: boolean; canCancel: boolean; error: string
@@ -19,7 +22,9 @@ export interface UpdateStatus {
   managedByAndroid?: boolean
 }
 interface Commit { sha: string; author: string; date: string; message: string }
+/** 提交历史的一页，hasMore 表示还有更早提交可继续拉取。 */
 export interface CommitHistory { entries: Commit[]; total: number; hasMore: boolean; localHead: string | null; upstreamHead: string | null }
+/** schema 中单个配置参数的定义：类型、当前值与候选项。 */
 export interface Field { type: string; value: Value; valuetype?: string; mode?: string; display?: string; option?: Value[]; validate?: string | number[]; preserve_empty?: boolean }
 /** 侧栏内容检索的一条命中：要么是任务名，要么是某个配置项。 */
 export interface SearchContentHit {
@@ -30,22 +35,26 @@ export interface SearchContentHit {
   values: string
 }
 
-export interface SearchContentResult {
+/** 侧栏内容检索的结果，按任务名、参数组、配置项三类命中返回。 */
+interface SearchContentResult {
   tasks: SearchContentHit[]
   groups: SearchContentHit[]
   options: SearchContentHit[]
 }
 
+/** schema.get 的返回：菜单树、按任务组织的参数定义与翻译表。 */
 export interface Schema {
   menu: Record<string, { menu: string; page: string; tasks: string[] }>
   args: Record<string, Record<string, Record<string, Field>>>
   translations: Record<string, unknown>
 }
+/** 一份实例配置：values 按 参数组 → 参数名 存值。 */
 export interface Config { instance: string; revision: string; values: Values; options?: Record<string, Value[]> }
-export interface OpsiSimulatorResult {
+interface OpsiSimulatorResult {
   cl1Count: number; meowCount: number; crashedProbability: number
   cl1Time: number; meowTime: number; ap: number; coin: number
 }
+/** 大世界模拟任务的运行状态与统计结果。 */
 export interface OpsiSimulatorStatus {
   instance: string; state: 'idle' | 'running' | 'stopping' | 'completed' | 'interrupted' | 'failed'
   running: boolean; completedSamples: number; totalSamples: number; error: string
@@ -53,27 +62,34 @@ export interface OpsiSimulatorStatus {
   result: OpsiSimulatorResult | null; figure: string | null; logs: Logs
 }
 interface ScheduledTask { name: string; nextRun: string; pending: boolean; state: 'running' | 'pending' | 'waiting' }
+/** 仪表盘的一项资源：名称、当前值与可选上限。 */
 export interface Resource { name: string; label: string; value: number | null; limit?: number; total?: number | null; record?: string }
+/** 运行总览数据：实例状态、任务队列、资源与模拟器信息。 */
 export interface Overview {
   instance: string; revision: string; status: Status; tasks: ScheduledTask[]
   resources: Resource[]; emulator: Record<string, Value>
 }
 export interface LogEntry { id: number; level: string; text: string }
+/** 一页日志：cursor 用于下次增量拉取。 */
 export interface Logs { instance: string; cursor: number; reset: boolean; entries: LogEntry[] }
 export interface Preview { instance: string; image: string | null; capturedAt: string | null }
-export interface Statistics { instance: string; resource: string; points: {time: string; value: number}[]; truncated: boolean }
+interface Statistics { instance: string; resource: string; points: {time: string; value: number}[]; truncated: boolean }
 export interface StatPoint {time: string; value: number; source?: string}
 export interface StatSeries {key: string; label: string; icon?: string; points: StatPoint[]}
-export interface StatPointCompact {t: number; v: number; s?: string}
-export interface StatSeriesCompact {key: string; label: string; icon?: string; points: StatPointCompact[]}
+/** 紧凑点位：t/v/s 为 time/value/source 的缩写键。 */
+interface StatPointCompact {t: number; v: number; s?: string}
+/** 紧凑序列：points 改用紧凑点位，减小线上传输体积。 */
+interface StatSeriesCompact {key: string; label: string; icon?: string; points: StatPointCompact[]}
 /** 数值按顺序对应报表的共用时间轴。 */
-export interface StatSeriesColumn {key: string; label: string; icon?: string; values: number[]; sources?: string[]}
-export type StatSeriesWire = StatSeriesCompact | StatSeriesColumn
+interface StatSeriesColumn {key: string; label: string; icon?: string; values: number[]; sources?: string[]}
+/** series 的线上形态：紧凑序列或共用时间轴的列式，二者二选一。 */
+type StatSeriesWire = StatSeriesCompact | StatSeriesColumn
 export interface StatTable {title: string; columns: string[]; rows: Scalar[][]; note?: string; defaultSort?: TableSort}
 export interface TableSort {index: number; descending: boolean}
+/** 统计报表：指标卡片、曲线、表格与备注。 */
 export interface StatisticsReport {
   instance: string; category: string; month: string
-  /** 图标名称（可选）：为卡片单独指定图标（科研物品填 'research:<模板名>'，大世界掉落填 'opsi:<模板名>'），缺省按 label 查内置表。 */
+  /** 图标名称（可选）：为卡片单独指定图标（科研物品填 `research:<模板名>`，大世界掉落填 `opsi:<模板名>`），缺省按 label 查内置表。 */
   metrics: {label: string; value: number | null; unit: string; icon?: string}[]
   series: StatSeries[]; tables: StatTable[]; notes: string[]
   /** 大世界掉落专用：任务筛选选项（含当前时间窗口内没有记录的任务），count 表示窗口内掉落记录数。 */
@@ -84,6 +100,7 @@ export interface StatisticsReport {
 /** 统计接口附带的名称对照：{中文名: {语言: 名称}}。 */
 export type StatGlossary = Record<string, Partial<Record<string, string>>>
 
+/** 统计报表的线上传输形态：series 用紧凑或列式编码，axis 为共用时间轴。 */
 export interface StatisticsReportWire extends Omit<StatisticsReport, 'series'> {
   /** 共用时间轴（微秒整数）。 */
   axis?: number[]
@@ -116,7 +133,9 @@ export interface MeowfficerCat {
 export interface MeowfficerScoreReport { instance: string; generatedAt: string; count: number; cats: MeowfficerCat[] }
 interface DeployField { key: string; type: string; label: string; help: string; value: Value; options: Value[] }
 interface RemoteAccessStatus { enabled: boolean; state: string; address: string; error: string }
+/** settings.get 的返回：分组设置字段、顶部提示与远程访问状态。 */
 export interface Settings { groups: {key: string; label: string; fields: DeployField[]}[]; notice: string; demo: boolean; remote?: RemoteAccessStatus }
+/** 远程配对凭据：客户端凭 code 认领连接，expires_at 为过期时间。 */
 export interface RemotePairing { id: string; client_id: string; code: string; particle_secret: string; expires_at: number }
 export interface RemoteClient { id: string; created_at: number }
 export interface ApiEvent { v: 1; type: 'event'; topic: string; seq: number; data: unknown }
@@ -137,21 +156,25 @@ export interface BackgroundGalleryEntry {
   source?: string
 }
 
-export interface LauncherCommand {
+/** 发给启动器的命令：deadline 前未回执即过期。 */
+interface LauncherCommand {
   id: string; status: 'pending' | 'succeeded' | 'failed' | 'expired'; deadline: number
   result?: {supported: boolean; enabled: boolean | null}; error?: {code: string; message: string}
 }
+/** 启动器连接状态：版本、能力与最近命令。 */
 export interface LauncherStatus {
   connected: boolean; platform: string; version: string; capabilities: string[]
   autostart: {supported: boolean; enabled: boolean | null}; commands: LauncherCommand[]
 }
 
+/** 船坞扫描确认的一条舰船记录。 */
 export interface DockCard {
   full_star?: boolean | null; form?: 'base' | 'retrofit' | null
   id: number; group_type: number | null; name: string; level: number
   rarity: string; base_rarity: string; extra_exp: number | null; review: boolean; source: string
 }
 
+/** 一条待确认的数据变更：kind 区分舰船/科技/国家，operation 为增、改、删或确认，candidates 供同名舰船认领身份。 */
 export interface LedgerDifference {
   id: string; kind: 'ship' | 'technology' | 'nation'; operation: 'add' | 'update' | 'remove' | 'resolve'
   ship_id: number | null; group_type: number | null; name: string
@@ -159,6 +182,7 @@ export interface LedgerDifference {
   candidates: {id: number; name: string; level: number}[]
 }
 
+/** 船坞数据报告：已确认的舰船记录与待确认变更，revision 为乐观锁（变旧后禁止保存）。 */
 export interface DockReport {
   pending_read?: {source: string; updated_at: string; observed_count: number; review_count: number; complete: boolean}
   pending_revision: string | null; pending_changes: LedgerDifference[]
@@ -168,6 +192,7 @@ export interface DockReport {
   ships: DockCard[]; complete: boolean; review_count: number; source: string
 }
 
+/** WebSocket 各 topic 对应的响应数据形状。 */
 export interface Results {
   'dock.report': DockReport
   'dock.configure': DockReport
@@ -251,10 +276,12 @@ export interface Results {
   'startup.set': {enabled: boolean; remember: boolean}
 }
 
+/** 一条资源流水：evidence 标记数值来源的确认程度，run_id 关联产生它的运行。 */
 export interface ResourceFlowEntry {
   id: number; ts: string; resource: string; amount: number; task: string; operation: string
   evidence: 'confirmed' | 'recognition' | 'observed' | 'adjustment'; run_id: string | null
 }
+/** 资源流水报表：各资源收支汇总、按任务与操作的聚合、明细与油量控制设置。 */
 export interface ResourceFlowReport {
   instance: string; start: string; end: string; offset: number; limit: number; total: number; throughId: number
   resources: {key: string; label: string; group: string; current: number | null; observedAt: string | null; income: number; expense: number; adjustment: number; count: number}[]
@@ -266,9 +293,12 @@ export interface ResourceFlowReport {
   glossary?: StatGlossary
 }
 
+/** 茗喵证券交易所的注册与绑定状态，stock 为最近一次观察到的行情。 */
 export interface StockExchangeStatus {url:string;instance:string;instanceId:string;registered:boolean;deleted?:boolean;bound:boolean;stock:{id:number;symbol:string;name:string;price:number;observedAt:number;bound:boolean}|null;bindingCode:string;message:string;lastObservedAt:number}
+/** 交易所数据重建结果：scope 为本次范围，affectedInstances 列出受影响实例。 */
 export interface StockExchangeRebuild {instance:string;scope:'instance'|'all';affectedInstances:string[];rebuilt:boolean}
 
+/** 本机账户状态：初始化、启用、解锁与 TPM 绑定。 */
 export interface AccountStatus {
   destroyed?: boolean
   local_bound?: boolean

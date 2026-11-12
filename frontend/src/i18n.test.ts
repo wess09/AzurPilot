@@ -18,7 +18,7 @@ describe('WebUI i18n', () => {
     for (const language of ['zh-CN', 'zh-TW', 'en-US', 'ja-JP'] as const) {
       const texts = prompts.map(key => translateUi(language, key, {name: 'alas-main'}))
       expect(new Set(texts).size).toBe(prompts.length)
-      /* 键不存在时 translateUi 会把键名原样返回，那样三条也「互不相同」，所以这里必须排除。 */
+      // 键不存在时 translateUi 会把键名原样返回，那样三条也「互不相同」，所以这里必须排除。
       expect(texts.some(text => text.includes('instance.deletePrompt'))).toBe(false)
     }
   })

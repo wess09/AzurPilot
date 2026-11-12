@@ -10,6 +10,12 @@ import { translateCurrentUi } from '../i18n'
 const prefix = 'azurpilot.edits.'
 const queues = new Map<string, EditQueue>()
 
+/**
+ * 取某个作用域的字段编辑队列（同作用域复用同一实例）。
+ *
+ * 作用域是 `deploy`、`config:<实例>` 或 `startup:<实例>`，决定提交走哪个后端接口。
+ * 草稿落在 sessionStorage，刷新后由 resumeEditors 恢复；浏览器禁用存储时退化为纯内存队列。
+ */
 export function editor(scope: string) {
   let queue = queues.get(scope)
   if (queue) return queue

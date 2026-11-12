@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 舰船数据分析模块的四语言文案字典（zh-CN/en-US/zh-TW/ja-JP），由 src/i18n.ts 注册消费。
+ */
+
+/** zh-CN 源字典：键集以它为准，其余语言包按同一键集补齐。 */
 export const analysisZhCN = {
   'analysis.exportJson': '导出舰船 JSON',
   'analysis.exportHint': '导出当前已保存的舰船数据，待确认差异单独保留，不会自动采纳。',

@@ -6,11 +6,16 @@ const SIDEBAR_KEY = 'azurpilot.layout.sidebar'
 const SIDEBAR_WIDTH_KEY = 'azurpilot.layout.sidebar-width'
 const LEGACY_RAIL_WIDTH_KEY = 'azurpilot.layout.legacy-rail-width'
 
+/** 侧栏自定义宽度下限（像素）。 */
 export const SIDEBAR_WIDTH_MIN = 150
+/** 侧栏自定义宽度上限（像素），实际写入时还会收到「视口一半」的约束。 */
 export const SIDEBAR_WIDTH_MAX = 520
 
+/** 旧版总览页调度器栏宽度下限（像素）。 */
 export const LEGACY_RAIL_WIDTH_MIN = 220
+/** 调度器栏宽度上限（像素），实际写入时还会收到「视口 60%」的约束。 */
 export const LEGACY_RAIL_WIDTH_MAX = 560
+/** 调度器栏默认宽度（像素），未自定义或存储值无效时用它起稿。 */
 export const LEGACY_RAIL_WIDTH_DEFAULT = 280
 
 const readCollapsed = (key: string) => {
@@ -41,7 +46,7 @@ const readRailWidth = (): number | null => {
   } catch { return null }
 }
 
-export interface LayoutState {
+interface LayoutState {
   /** 侧栏是否收起：全页面有效。 */
   sidebarCollapsed: boolean
   /** 侧栏自定义宽度（像素，null 表示遵循主题默认宽度）：全页面有效。 */
@@ -57,8 +62,10 @@ let state: LayoutState = {
 }
 const listeners = new Set<() => void>()
 
+/** 读当前布局状态快照，供 useSyncExternalStore 的 getSnapshot 使用。 */
 export const getLayout = () => state
 
+/** 订阅布局变化，返回退订函数。 */
 export function subscribeLayout(listener: () => void) {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
@@ -82,8 +89,10 @@ function publish(patch: Partial<LayoutState>) {
   listeners.forEach(listener => listener())
 }
 
+/** 切换侧栏收起（看图模式）并持久化。 */
 export const setSidebarCollapsed = (value: boolean) => publish({sidebarCollapsed: value})
 
+/** 写入侧栏宽度（像素）并持久化：按上下限与「视口一半」收拢，null 恢复主题默认。 */
 export const setSidebarWidth = (width: number | null) => {
   if (width == null) {
     publish({sidebarWidth: null})
@@ -98,6 +107,7 @@ export const setSidebarWidth = (width: number | null) => {
 
 export const resetSidebarWidth = () => publish({sidebarWidth: null})
 
+/** 写入旧版调度器栏宽度（像素）并持久化：按上下限与「视口 60%」收拢，null 恢复默认。 */
 export const setLegacyRailWidth = (width: number | null) => {
   if (width == null) {
     publish({legacyRailWidth: null})

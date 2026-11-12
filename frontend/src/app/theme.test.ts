@@ -1,13 +1,20 @@
+/**
+ * @fileoverview 主题偏好恢复：旧版皮肤键的迁移回落矩阵，以及非法取值、损坏数据、存储不可用时的默认兜底。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readThemePreference } from './theme'
 
 afterEach(() => vi.unstubAllGlobals())
 
+// readThemePreference 直接读全局 localStorage；桩掉它，用例才能注入任意旧存储内容。
 function storage(saved: Record<string, string>) {
   vi.stubGlobal('localStorage', {getItem: (key: string) => saved[key] ?? null})
 }
 
 describe('主题偏好恢复', () => {
+  // 旧版的皮肤取值已不在现存的 Theme 类型里，这个矩阵按 migrateTheme 的规则钉死它们的去向，
+  // 防止升级后的老用户主题显示错乱。程序员配色（terminal）是旧固定模式里唯一的深色档。
   it.each([
     ['dark', 'auto', 'legacy-dark'],
     ['legacy-dark', 'auto', 'legacy-dark'],

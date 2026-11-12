@@ -2,6 +2,7 @@
  * @fileoverview 开发者模式专属多语言文案字典。
  */
 
+/** zh-CN 源字典：键集以它为准（as const），其余语言包按同一键集补齐。 */
 export const developerZhCN = {
   'developer.disabled': '开发者模式已关闭',
   'developer.pageTitle': '开发者 · 控件预览',

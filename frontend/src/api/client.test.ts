@@ -2,6 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiClient } from './client'
 import { webSocketTransport } from './generated'
 
+/**
+ * 顶替全局 WebSocket 的桩：客户端在 connect() 里自建连接，测试经静态 `latest`
+ * 取到最新实例；`sent` 记录客户端发出的每条请求，`emit`/`emitBytes` 从服务端方向注入消息。
+ */
 class FakeSocket {
   static OPEN = 1
   static latest: FakeSocket
@@ -131,6 +135,8 @@ describe('WebSocket 客户端', () => {
     const bytes = new TextEncoder().encode(JSON.stringify({
       v: 1, type: 'response', id: data.sent.at(-1)!.id, ok: true, result,
     }))
+    // 结果刻意超过单帧上限，按传输协议切成多片：每片首字节 1 表示末片、0 表示续片，
+    // 去掉旗标后的载荷不得超过 frameBytes - 1。
     const chunks: Uint8Array<ArrayBuffer>[] = []
     const chunkSize = webSocketTransport.frameBytes - 1
     for (let offset = 0; offset < bytes.length; offset += chunkSize) {

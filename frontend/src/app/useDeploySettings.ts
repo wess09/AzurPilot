@@ -24,6 +24,7 @@ export function useDeploySettings(pollRemote = false) {
   useEffect(() => {
     if (connection !== 'ready') return
     let active = true
+    // 先记下读取前已确认的编辑；数据到手后 reconcile 只清这批，读取期间的新输入仍由队列保护。
     const confirmed = queue.confirmed()
     let timer: ReturnType<typeof setTimeout>
     const load = () => void api.request('settings.get', {})

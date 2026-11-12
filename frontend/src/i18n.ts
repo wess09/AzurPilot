@@ -1,13 +1,13 @@
+/**
+ * @fileoverview 前端国际化 (i18n) 语言包、文案翻译器与语言检测。
+ */
+
 import {analysisZhCN, analysisZhTW, analysisEnUS, analysisJaJP} from './fleet-analysis-i18n'
 import {rotationZhCN, rotationZhTW, rotationEnUS, rotationJaJP} from './fleet-rotation-i18n'
 import {trainingZhCN, trainingZhTW, trainingEnUS, trainingJaJP} from './fleet-training-i18n'
 import {equipmentZhCN, equipmentZhTW, equipmentEnUS, equipmentJaJP} from './fleet-equipment-i18n'
 import {fleetTechZhCN, fleetTechZhTW, fleetTechEnUS, fleetTechJaJP} from './fleet-tech/i18n'
 import {mindZhCN, mindZhTW, mindEnUS, mindJaJP} from './mind/i18n'
-/**
- * @fileoverview 前端国际化 (i18n) 语言包、文案翻译器与语言检测。
- */
-
 import { developerEnUS, developerJaJP, developerZhCN, developerZhTW } from './i18n.dev'
 import {resourceZhCN, resourceZhTW, resourceEnUS, resourceJaJP} from './i18n.resources'
 import {colorZhCN, colorZhTW, colorEnUS, colorJaJP} from './i18n.colors'
@@ -15,6 +15,7 @@ import {colorZhCN, colorZhTW, colorEnUS, colorJaJP} from './i18n.colors'
 export type Language = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP'
 type TranslationParams = Record<string, string | number>
 
+/** 四种界面语言的显示名，各自用原文书写（如「简体中文」），供语言选择器渲染。 */
 export const languages: Record<Language, string> = {
   'zh-CN': '简体中文',
   'zh-TW': '繁體中文',
@@ -79,7 +80,6 @@ const zhCN = {
   'settings.paletteHelp': '主色用于主要操作与选中状态，副色用于辅助信息。',
   'settings.background': '自定义背景',
   'settings.backgroundHelp': '使用在线图片或视频地址，或上传文件并保存在当前浏览器。',
-  'settings.backgroundDefault': '默认随机图片',
   'settings.backgroundOff': '关闭背景',
   'settings.backgroundUrl': '填写 URL',
   'settings.backgroundUpload': '上传文件',
@@ -87,7 +87,6 @@ const zhCN = {
   'settings.backgroundImage': '图片',
   'settings.backgroundVideo': '视频',
   'settings.backgroundApply': '应用背景',
-  'settings.backgroundChoose': '选择图片或视频',
   'settings.backgroundSaving': '正在保存…',
   'settings.backgroundLimit': '支持浏览器可播放的图片和视频，文件最大 200 MB。',
   'settings.backgroundApplied': '背景已应用',
@@ -118,7 +117,6 @@ const zhCN = {
   'nav.developer': '开发者工具',
   'nav.announcement': '公告',
   'announcement.title': '系统公告',
-  'announcement.subtitle': '查看来自开发团队与服务器的最新通知与动态。',
   'announcement.latest': '最新公告',
   'announcement.noAnnouncement': '暂无系统公告',
   'announcement.noAnnouncementDesc': '当前服务器暂无发布的公告内容。',
@@ -135,10 +133,6 @@ const zhCN = {
   'nav.expand': '展开',
   'nav.open': '打开导航',
   'nav.close': '关闭导航',
-  'nav.openRail': '打开调度与任务',
-  'nav.closeRail': '关闭调度与任务',
-  'nav.railScheduler': '切换到调度器',
-  'nav.railDirectory': '切换到目录',
   'task.groupNav': '目录',
   'nav.newVersion': '新版本可用',
   'nav.newBadge': '新',
@@ -165,7 +159,6 @@ const zhCN = {
   'instance.importConfig': '导入配置',
   'instance.importHint': '从已有配置文件导入，选中后自动填好实例名。',
   'instance.importSelect': '选择配置文件',
-  'instance.importEmpty': '没有可导入的配置文件',
   'instance.importLoading': '正在读取…',
   'instance.name': '实例名称',
   'instance.namePlaceholder': '例如：alas-main',
@@ -175,7 +168,6 @@ const zhCN = {
   'instance.create': '创建实例',
   'instance.dashboard': '仪表盘',
   'instance.settings': '仪表盘设置',
-  'instance.configInstances': '配置实例',
   'nav.instanceTabs': '实例分页',
   'nav.startAll': '一键启用全部实例', 'nav.stopAll': '一键暂停全部实例',
   'nav.tabSize': '调整标签页大小',
@@ -205,7 +197,6 @@ const zhCN = {
   'instance.delete': '删除实例',
   'instance.all': '全部实例',
   
-  'settings.uiPreferences': '界面偏好',
   'settings.schedulerPosition': '调度器位置',
   'settings.schedulerPositionHelp': '在运行总览与任务设置页中，将调度器栏放置于左侧或右侧。',
   'settings.schedulerPositionLeft': '左侧',
@@ -222,22 +213,16 @@ const zhCN = {
   'settings.mode': '明暗',
   'settings.glassBlur': '模糊',
   'settings.glassSaturation': '饱和度',
-  'settings.glassOpacity': '面板不透明度',
   'settings.customRadius': '圆角',
   'settings.customShadow': '阴影',
-  'settings.customTitle': '自定义外观',
   'settings.customReset': '恢复默认',
   'settings.brandColor': '主题色',
   'settings.brandColorHelp': '现代主题的品牌配色，未选择时使用主题默认色。',
-  'settings.brandFollow': '跟随主题',
   'settings.brandStock': '原版色',
-  'settings.backgroundUrlHelp': '一行一个随机图 API，每次生效随机挑一条；全部清空会自动用回内置 API。',
-  'settings.backgroundActive': '本次生效：第 {index} / {total} 行',
   'settings.backgroundUseBuiltIn': '用内置 API',
   'settings.backgroundDirect': '直链',
   'settings.backgroundOpen': '打开',
   'settings.backgroundSaveToGallery': '存入图库',
-  'settings.backgroundResolve': '重新解析',
   'settings.backgroundResolving': '解析中…',
   'settings.backgroundUnresolved': '未解析',
   'settings.backgroundResolveFailed': '无法解析',
@@ -256,7 +241,7 @@ const zhCN = {
   'settings.resetItem': '还原此项',
   'settings.materialDetail': '材质细节',
   'settings.materialDetailHelp': '分区调整玻璃的不透明度、模糊、饱和度与圆角',
-  'settings.materialDetailOpen': '打开材质细节', 'settings.materialLivePreview': '预览假实例页', 'settings.materialLivePreviewHelp': '打开全真模拟实例页，配合悬浮面板分区微调材质', 'settings.materialLiveOnInstance': '在真实例上悬浮调节', 'settings.materialLiveOnInstanceHelp': '直接跳转至真实运行实例并开启材质检视器，在真实壁纸与运行数据上实时预览微调', 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': '切换为悬浮', 'settings.inspectorDock': '停靠到右侧', 'settings.wallpaperOffHint': '当前未启用壁纸背景', 'settings.wallpaperOffHelp': '纯单色底色下无法观察到毛玻璃滤镜（模糊与饱和度）的折射效果。', 'settings.closePreview': '退出实例预览', 'settings.inspectorTitle': '材质调节面板', 'settings.sampleModal': '测试弹窗', 'settings.sampleMenu': '测试菜单', 'settings.sampleModalTitle': '测试弹窗 (Modal 材质)', 'settings.sampleModalBody': '当前为全真弹窗层，用于直观查看并调节 Modal 区域的透明度、模糊、圆角与投影效果。',
+  'settings.materialDetailOpen': '打开材质细节', 'settings.materialLivePreview': '预览假实例页', 'settings.materialLiveOnInstance': '在真实例上悬浮调节', 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': '切换为悬浮', 'settings.inspectorDock': '停靠到右侧', 'settings.wallpaperOffHint': '当前未启用壁纸背景', 'settings.wallpaperOffHelp': '纯单色底色下无法观察到毛玻璃滤镜（模糊与饱和度）的折射效果。', 'settings.closePreview': '退出实例预览', 'settings.inspectorTitle': '材质调节面板', 'settings.sampleModal': '测试弹窗', 'settings.sampleMenu': '测试菜单', 'settings.sampleModalTitle': '测试弹窗 (Modal 材质)', 'settings.sampleModalBody': '当前为全真弹窗层，用于直观查看并调节 Modal 区域的透明度、模糊、圆角与投影效果。',
   'settings.language': '界面语言',
   'settings.passwordHelp': '留空保留原密码。新密码在重启服务后生效。',
   'remote.title': '远程访问地址',
@@ -274,7 +259,6 @@ const zhCN = {
   'task.searchConfig': '搜索配置项',
   'task.searchConfigPlaceholder': '搜索此任务的配置项…',
   'task.noConfig': '此任务没有独立配置',
-  'task.toolCanRun': '可使用上方按钮运行工具。',
   'task.viewRelated': '请在相关任务中查看配置。',
   'task.readonly': '只读',
   'task.noConfigFound': '没有找到配置项',
@@ -366,33 +350,25 @@ const zhCN = {
   'resource.Merit': '功勋',
   'resource.GuildCoin': '舰队币',
   'resource.Chip': '心智单元',
-  'resource.totalActionPoint': '总行动力',
   
   'resource.waitingSync': '等待游戏内资源同步', 'resource.recordedTooOld': '时间太久了啦…',
   'resource.cards': '资源卡片',
-'resource.settings': '资源卡片设置',
   'resource.cardsHint': '点击添加卡片，拖拽卡片调整显示顺序',
   'resource.restoreDefault': '恢复默认',
   'resource.remove': '移除{label}',
   'resource.addCard': '添加卡片',
   'resource.allAdded': '所有可用资源都已经添加了',
   'scheduler.rail': '调度与任务',
-  'scheduler.workspace': '实例工作区',
   'scheduler.title': '调度器',
   'scheduler.running': '运行中',
   'scheduler.pending': '待运行',
   'scheduler.waiting': '等待中',
-  'scheduler.abnormal': '异常',
-  'scheduler.stopped': '已停止',
   'scheduler.processing': '正在处理…',
   'scheduler.stop': '停止运行',
   'scheduler.start': '启动调度器',
   'scheduler.started': '调度器已启动',
   'scheduler.stoppedNotice': '调度器已停止',
   'scheduler.plan': '任务计划',
-  'scheduler.noRunning': '当前没有正在运行的任务',
-  'scheduler.noPending': '当前没有待运行任务',
-  'scheduler.noWaiting': '当前没有等待中的任务',
   'scheduler.noEnabled': '暂无已启用任务',
   'overview.statCard': '统计',
   'overview.showStats': '切换到统计',
@@ -459,7 +435,7 @@ const zhCN = {
   'stats.lootTask': '任务',
   'stats.lootTaskAll': '全部大世界任务',
   'stats.lootHint': '部件、金彩图纸、研发材料、实验计划及突破部件 · 保存或上传都会统计',
-  'stats.metric': '指标', 'stats.metricsTitle': '收获', 'stats.singleView': '只看当前页', 'stats.mergePages': '合并单页', 'stats.compactHeader': '紧凑', 'stats.cardMode': '卡片', 'stats.stackedRise': '叠涨', 'stats.plainColor': '原色', 'stats.tableRows': '每页行数', 'stats.tableRowsAll': '全部', 'stats.tableIcons': '显示图标', 'stats.tablePlain': '简洁显示', 'stats.tableNoIcons': '无图标', 'stats.tableNormal': '普通表格', 'stats.metricsTable': '表格', 'stats.hidePicker': '隐藏选取器', 'stats.showPicker': '显示选取器',
+  'stats.metric': '指标', 'stats.metricsTitle': '收获', 'stats.mergePages': '合并单页', 'stats.compactHeader': '紧凑', 'stats.cardMode': '卡片', 'stats.stackedRise': '叠涨', 'stats.plainColor': '原色', 'stats.tableRows': '每页行数', 'stats.tableIcons': '显示图标', 'stats.tablePlain': '简洁显示', 'stats.tableNoIcons': '无图标', 'stats.tableNormal': '普通表格', 'stats.metricsTable': '表格', 'stats.hidePicker': '隐藏选取器', 'stats.showPicker': '显示选取器',
   'stats.value': '数值',
   'stats.unit': '单位',
   'stats.time': '时间',
@@ -512,7 +488,6 @@ const zhCN = {
   'stats.axisSeparate': '多轴自适应',
   'stats.axisUnified': '统一量程',
   'stats.resetSelection': '重置选择',
-  'stats.singleOnly': '（仅限单指标）',
   'stats.multiMetrics': '已选数据源概览',
   'stats.candlestickOverlay': 'K 线 + 折线叠加',
   'stats.primaryCandle': 'K线',
@@ -573,11 +548,11 @@ const zhCN = {
   'error.pageHint': '任务仍在后台运行，请刷新页面恢复控制台。',
   'error.reload': '刷新页面',
   ...developerZhCN,
-  'settings.regionSidebar': '侧栏',
-  'settings.regionTopbar': '顶栏',
 } as const
 
+/** 全部 UI 文案键的联合：以简体中文包为准，其余三种语言的包必须覆盖同一键集。 */
 export type UiKey = keyof typeof zhCN
+/** 组件里取文案用的翻译函数签名（context.ui）。 */
 export type UiTranslator = (key: UiKey, params?: TranslationParams) => string
 
 const enUS: Record<UiKey, string> = {
@@ -640,14 +615,13 @@ const enUS: Record<UiKey, string> = {
   'settings.paletteHelp': 'Primary colors highlight actions and selections; secondary colors highlight supporting information.',
   'settings.background': 'Custom background',
   'settings.backgroundHelp': 'Use an online image or video URL, or upload a file stored in this browser.',
-  'settings.backgroundDefault': 'Default random image','settings.backgroundOff': 'Off',
+  'settings.backgroundOff': 'Off',
   'settings.backgroundUrl': 'Enter URL',
   'settings.backgroundUpload': 'Upload file',
   'settings.backgroundType': 'Background type',
   'settings.backgroundImage': 'Image',
   'settings.backgroundVideo': 'Video',
   'settings.backgroundApply': 'Apply background',
-  'settings.backgroundChoose': 'Choose an image or video',
   'settings.backgroundSaving': 'Saving…',
   'settings.backgroundLimit': 'Supports browser-compatible images and videos up to 200 MB.',
   'settings.backgroundApplied': 'Background applied',
@@ -656,7 +630,6 @@ const enUS: Record<UiKey, string> = {
   'nav.skipContent': 'Skip to content', 'nav.overview': 'Overview', 'nav.statistics': 'Statistics', 'nav.schedulerProgram': 'Custom scheduler', 'nav.updater': 'Updater', 'nav.interface': 'Interface', 'nav.remote': 'Remote access', 'nav.settings': 'Settings', 'nav.openSource': 'Open source', 'nav.developer': 'Developer tools',
   'nav.announcement': 'Announcements',
   'announcement.title': 'System Announcements',
-  'announcement.subtitle': 'View official notices and news from the development team.',
   'announcement.latest': 'Latest Announcement',
   'announcement.noAnnouncement': 'No announcements available',
   'announcement.noAnnouncementDesc': 'No announcements published from the server.',
@@ -668,19 +641,18 @@ const enUS: Record<UiKey, string> = {
   'announcement.openExternal': 'Open Link',
   'announcement.viewAll': 'View Details',
   'nav.searchConfigGroup': 'Settings matches',
-  'nav.taskConfig': 'Task settings', 'nav.primary': 'Primary navigation', 'nav.open': 'Open navigation', 'nav.close': 'Close navigation', 'nav.openRail': 'Open scheduler and tasks', 'nav.closeRail': 'Close scheduler and tasks', 'nav.railScheduler': 'Switch to scheduler', 'nav.railDirectory': 'Switch to directory', 'task.groupNav': 'Index', 'nav.newVersion': 'New version available', 'nav.searchTask': 'Search tasks', 'nav.searchTaskPlaceholder': 'Search tasks…', 'queue.openConfig': 'Open settings', 'queue.runNowDone': 'Next run cleared; the task will start on the next scheduler pass', 'nav.taskJump': 'Jump to task', 'nav.taskJumpEmpty': 'No task to jump to',
+  'nav.taskConfig': 'Task settings', 'nav.primary': 'Primary navigation', 'nav.open': 'Open navigation', 'nav.close': 'Close navigation', 'task.groupNav': 'Index', 'nav.newVersion': 'New version available', 'nav.searchTask': 'Search tasks', 'nav.searchTaskPlaceholder': 'Search tasks…', 'queue.openConfig': 'Open settings', 'queue.runNowDone': 'Next run cleared; the task will start on the next scheduler pass', 'nav.taskJump': 'Jump to task', 'nav.taskJumpEmpty': 'No task to jump to',
   'nav.collapse': 'Hide',
   'nav.expand': 'Expand',
   'developer.enabled': 'Developer mode enabled',
   'connection.connecting': 'Connecting to the backend. Configuration edits are kept and will be saved after reconnection; run actions are temporarily unavailable.',
   'auth.slogan': 'Keep every sortie organized.', 'auth.welcome': 'Welcome back, Commander', 'auth.password': 'Access password', 'auth.verifying': 'Verifying…', 'auth.enter': 'Enter console', 'auth.passwordHint': 'The generated password is stored in server-side password.txt.',
-  'instance.created': 'Instance created. Configure the emulator connection next.', 'instance.createTitle': 'Create configuration instance', 'instance.createHint': 'Each instance keeps its own task schedule and emulator connection.', 'instance.importPick': 'Choose a config file…', 'instance.importConfig': 'Import config', 'instance.importHint': 'Import from an existing config file; the instance name is filled in for you.', 'instance.importSelect': 'Choose a config file', 'instance.importEmpty': 'No config file to import', 'instance.importLoading': 'Reading…', 'instance.name': 'Instance name', 'instance.namePlaceholder': 'Example: alas-main', 'instance.initialConfig': 'Initial configuration', 'instance.defaultConfig': 'Use default configuration', 'instance.creating': 'Creating…', 'instance.create': 'Create instance', 'instance.dashboard': 'Dashboard', 'instance.settings': 'Dashboard settings', 'instance.configInstances': 'Configuration instances', 'nav.instanceTabs': 'Instance tabs', 'nav.tabSize': 'Resize tabs', 'instance.startup': 'Startup', 'instance.autoRun': 'Run automatically on startup', 'instance.autoRunHelp': 'When enabled, the current instance starts automatically when AzurPilot launches.', 'instance.rememberRun': 'Remember running state', 'instance.rememberRunHelp': 'A smarter startup option. When enabled, the next launch of Azurpilot — and any backend restart caused by an in-GUI update — remembers and keeps the current instance\'s running state. When combined with Auto-run on start, a backend restart that is not caused by an in-GUI update follows that option, meaning the current instance runs automatically after Azurpilot restarts.', 'dashboard.fitCards': 'Fit cards', 'dashboard.fitCardsHelp': 'Cards overflowing past the first row keep the first row size instead of stretching to fill the last row; a total below one row still shares the width evenly.', 'dashboard.fitText': 'Fit text', 'dashboard.fitTextHelp': 'Icon, title and record time scale with the card width, and the total and current action points render at the same scale.', 'dashboard.dense': 'Compact view', 'dashboard.denseHelp': 'Tightens the gaps between cards to leave more height for the log below.', 'dashboard.merged': 'Single container', 'dashboard.mergedHelp': 'Renders every shown resource inside one container instead of one card per resource.', 'dashboard.totalFirst': 'Total action points first', 'dashboard.totalFirstHelp': 'Shows the action point total first, as total / current.', 'dashboard.dogIcon': 'Dog icon', 'dashboard.dogIconHelp': 'Above 6,000 / 8,000 / 10,000 / 12,000 total action points, the action point icon becomes a puppy, a young dog, a big dog, then the dog king.', 'instance.backupNotice': 'Instance moved to backup', 'instance.deletePrompt': 'Delete {name}? Its configuration will remain in backup.', 'instance.deleteConfirm': 'Confirm delete', 'instance.deleting': 'Deleting…', 'instance.delete': 'Delete instance',
+  'instance.created': 'Instance created. Configure the emulator connection next.', 'instance.createTitle': 'Create configuration instance', 'instance.createHint': 'Each instance keeps its own task schedule and emulator connection.', 'instance.importPick': 'Choose a config file…', 'instance.importConfig': 'Import config', 'instance.importHint': 'Import from an existing config file; the instance name is filled in for you.', 'instance.importSelect': 'Choose a config file', 'instance.importLoading': 'Reading…', 'instance.name': 'Instance name', 'instance.namePlaceholder': 'Example: alas-main', 'instance.initialConfig': 'Initial configuration', 'instance.defaultConfig': 'Use default configuration', 'instance.creating': 'Creating…', 'instance.create': 'Create instance', 'instance.dashboard': 'Dashboard', 'instance.settings': 'Dashboard settings', 'nav.instanceTabs': 'Instance tabs', 'nav.tabSize': 'Resize tabs', 'instance.startup': 'Startup', 'instance.autoRun': 'Run automatically on startup', 'instance.autoRunHelp': 'When enabled, the current instance starts automatically when AzurPilot launches.', 'instance.rememberRun': 'Remember running state', 'instance.rememberRunHelp': 'A smarter startup option. When enabled, the next launch of Azurpilot — and any backend restart caused by an in-GUI update — remembers and keeps the current instance\'s running state. When combined with Auto-run on start, a backend restart that is not caused by an in-GUI update follows that option, meaning the current instance runs automatically after Azurpilot restarts.', 'dashboard.fitCards': 'Fit cards', 'dashboard.fitCardsHelp': 'Cards overflowing past the first row keep the first row size instead of stretching to fill the last row; a total below one row still shares the width evenly.', 'dashboard.fitText': 'Fit text', 'dashboard.fitTextHelp': 'Icon, title and record time scale with the card width, and the total and current action points render at the same scale.', 'dashboard.dense': 'Compact view', 'dashboard.denseHelp': 'Tightens the gaps between cards to leave more height for the log below.', 'dashboard.merged': 'Single container', 'dashboard.mergedHelp': 'Renders every shown resource inside one container instead of one card per resource.', 'dashboard.totalFirst': 'Total action points first', 'dashboard.totalFirstHelp': 'Shows the action point total first, as total / current.', 'dashboard.dogIcon': 'Dog icon', 'dashboard.dogIconHelp': 'Above 6,000 / 8,000 / 10,000 / 12,000 total action points, the action point icon becomes a puppy, a young dog, a big dog, then the dog king.', 'instance.backupNotice': 'Instance moved to backup', 'instance.deletePrompt': 'Delete {name}? Its configuration will remain in backup.', 'instance.deleteConfirm': 'Confirm delete', 'instance.deleting': 'Deleting…', 'instance.delete': 'Delete instance',
   'nav.startAll': 'Start all instances', 'nav.stopAll': 'Pause all instances',
-  'instance.all': 'All instances', 'settings.uiPreferences': 'Interface preferences', 'settings.schedulerPosition': 'Scheduler position', 'settings.schedulerPositionHelp': 'Place the scheduler panel on the left or right side in the overview and task settings pages.', 'settings.schedulerPositionLeft': 'Left', 'settings.schedulerPositionRight': 'Right', 'settings.showSchedulerRail': 'Show scheduler panel', 'settings.showSchedulerRailHelp': 'Turn off to hide the scheduler column on the task settings and overview pages. The directory column on the task settings page stays.', 'settings.theme': 'Interface theme', 'settings.themeLight': 'Light', 'settings.themeDark': 'Dark', 'settings.familyLegacy': "Modern", 'settings.material': "Material", 'settings.materialGlass': "Glass", 'settings.materialPlain': "Plain", 'settings.mode': "Appearance", 'settings.glassBlur': "Blur", 'settings.glassSaturation': "Saturation", 'settings.glassOpacity': "Panel opacity", 'settings.customRadius': "Corner radius", 'settings.customShadow': "Shadow", 'settings.customTitle': "Custom appearance", 'settings.customReset': "Restore defaults", 'settings.brandColor': "Brand color", 'settings.brandColorHelp': "Brand palette for the Modern theme. Uses the theme default when unset.", 'settings.brandFollow': "Follow theme", 'settings.brandStock': "Original", 'settings.backgroundUrlHelp': "One random-image API per line; one is picked at random each time, and clearing the list restores the built-in API.", 'settings.backgroundActive': "Active: line {index} of {total}", 'settings.backgroundUseBuiltIn': "Use built-in API", 'settings.backgroundRemove': "Remove this line", 'settings.materialDetailScope': "Applies to", 'settings.customResetAll': "Reset all", 'settings.regionSurface': "Main surface", 'settings.regionPlate': "Inner plate", 'settings.regionInset': "Inset", 'settings.regionControl': "Controls", 'settings.regionModal': "Dialogs", 'settings.regionMenu': "Menus", 'settings.propAlpha': "Opacity", 'settings.resetItem': "Reset", 'settings.materialDetail': "Material details", 'settings.materialDetailHelp': "Tune opacity, blur, saturation and radius per region", 'settings.materialDetailOpen': "Open material details", 'settings.materialLivePreview': "Mock Instance Preview", 'settings.materialLivePreviewHelp': "Open a simulated instance view and fine-tune material region by region with a floating inspector", 'settings.materialLiveOnInstance': "Tune on Live Instance", 'settings.materialLiveOnInstanceHelp': "Navigate to a live instance with floating inspector to fine-tune materials with real wallpaper and logs", 'settings.inspectorMinimize': 'Minimize', 'settings.inspectorFloat': 'Float the panel', 'settings.inspectorDock': 'Dock to the right', 'settings.wallpaperOffHint': 'Wallpaper is off', 'settings.wallpaperOffHelp': 'A flat single-colour background leaves the glass filter nothing to refract: blur and saturation show no effect.', 'settings.closePreview': "Exit Preview", 'settings.inspectorTitle': "Material Inspector", 'settings.sampleModal': "Test Modal", 'settings.sampleMenu': "Test Menu", 'settings.sampleModalTitle': "Test Modal (Modal Material)", 'settings.sampleModalBody': "This is a sample dialog for observing and fine-tuning the modal region material properties.", 'settings.language': 'Interface language', 'settings.passwordHelp': 'Leave blank to keep the current password. A new password takes effect after the service restarts.',
+  'instance.all': 'All instances', 'settings.schedulerPosition': 'Scheduler position', 'settings.schedulerPositionHelp': 'Place the scheduler panel on the left or right side in the overview and task settings pages.', 'settings.schedulerPositionLeft': 'Left', 'settings.schedulerPositionRight': 'Right', 'settings.showSchedulerRail': 'Show scheduler panel', 'settings.showSchedulerRailHelp': 'Turn off to hide the scheduler column on the task settings and overview pages. The directory column on the task settings page stays.', 'settings.theme': 'Interface theme', 'settings.themeLight': 'Light', 'settings.themeDark': 'Dark', 'settings.familyLegacy': "Modern", 'settings.material': "Material", 'settings.materialGlass': "Glass", 'settings.materialPlain': "Plain", 'settings.mode': "Appearance", 'settings.glassBlur': "Blur", 'settings.glassSaturation': "Saturation", 'settings.customRadius': "Corner radius", 'settings.customShadow': "Shadow", 'settings.customReset': "Restore defaults", 'settings.brandColor': "Brand color", 'settings.brandColorHelp': "Brand palette for the Modern theme. Uses the theme default when unset.", 'settings.brandStock': "Original", 'settings.backgroundUseBuiltIn': "Use built-in API", 'settings.backgroundRemove': "Remove this line", 'settings.materialDetailScope': "Applies to", 'settings.customResetAll': "Reset all", 'settings.regionSurface': "Main surface", 'settings.regionPlate': "Inner plate", 'settings.regionInset': "Inset", 'settings.regionControl': "Controls", 'settings.regionModal': "Dialogs", 'settings.regionMenu': "Menus", 'settings.propAlpha': "Opacity", 'settings.resetItem': "Reset", 'settings.materialDetail': "Material details", 'settings.materialDetailHelp': "Tune opacity, blur, saturation and radius per region", 'settings.materialDetailOpen': "Open material details", 'settings.materialLivePreview': "Mock Instance Preview", 'settings.materialLiveOnInstance': "Tune on Live Instance", 'settings.inspectorMinimize': 'Minimize', 'settings.inspectorFloat': 'Float the panel', 'settings.inspectorDock': 'Dock to the right', 'settings.wallpaperOffHint': 'Wallpaper is off', 'settings.wallpaperOffHelp': 'A flat single-colour background leaves the glass filter nothing to refract: blur and saturation show no effect.', 'settings.closePreview': "Exit Preview", 'settings.inspectorTitle': "Material Inspector", 'settings.sampleModal': "Test Modal", 'settings.sampleMenu': "Test Menu", 'settings.sampleModalTitle': "Test Modal (Modal Material)", 'settings.sampleModalBody': "This is a sample dialog for observing and fine-tuning the modal region material properties.", 'settings.language': 'Interface language', 'settings.passwordHelp': 'Leave blank to keep the current password. A new password takes effect after the service restarts.',
   "settings.backgroundDirect": "Direct link",
   "settings.backgroundOpen": "Open",
   "settings.backgroundSaveToGallery": "Save to library",
-  "settings.backgroundResolve": "Resolve again",
   "settings.backgroundResolving": "Resolving…",
   "settings.backgroundUnresolved": "Not resolved",
   "settings.backgroundResolveFailed": "Cannot resolve",
@@ -699,7 +671,7 @@ const enUS: Record<UiKey, string> = {
   'remote.stateFailed': 'Failed',
   'remote.disabledHint': 'Turn on “Enable remote access” below and restart the service; the address you can open from outside appears here.',
   'remote.passwordHint': 'Opening this address from outside asks for the WebUI password below.',
-  'task.started': 'Task started', 'task.runTool': 'Run tool', 'task.runNow': 'Run now', 'task.searchConfig': 'Search settings', 'task.searchConfigPlaceholder': 'Search settings for this task…', 'task.noConfig': 'This task has no standalone settings', 'task.toolCanRun': 'Use the button above to run the tool.', 'task.viewRelated': 'View settings in the related task.', 'task.readonly': 'Read only', 'task.noConfigFound': 'No settings found', 'task.tryOtherKeyword': 'Try another keyword.', 'task.runTitle': 'Run {task}', 'task.runWarning': 'This action will connect to the emulator and run the tool. Make sure no task is currently running on this instance.', 'task.confirmRun': 'Run now',
+  'task.started': 'Task started', 'task.runTool': 'Run tool', 'task.runNow': 'Run now', 'task.searchConfig': 'Search settings', 'task.searchConfigPlaceholder': 'Search settings for this task…', 'task.noConfig': 'This task has no standalone settings', 'task.viewRelated': 'View settings in the related task.', 'task.readonly': 'Read only', 'task.noConfigFound': 'No settings found', 'task.tryOtherKeyword': 'Try another keyword.', 'task.runTitle': 'Run {task}', 'task.runWarning': 'This action will connect to the emulator and run the tool. Make sure no task is currently running on this instance.', 'task.confirmRun': 'Run now',
   'fleet.emptyTitle': 'No fleet scan records yet', 'fleet.emptyHint': 'Choose Fleet Scan on the left, complete a scan, then view the result here.', 'fleet.invalid': 'Fleet record format is invalid. Please scan again.', 'fleet.title': 'Fleet {number}', 'fleet.vanguard': 'Vanguard', 'fleet.main': 'Main fleet', 'fleet.submarine': 'Submarine fleet', 'fleet.noRecord': 'No records',
   'fleet.emotion': 'Morale {value}', 'fleet.unknown': 'Unknown',
   'fleet.slot': 'Slot {number}', 'fleet.updateEmotion': 'Update morale during scan',
@@ -708,10 +680,10 @@ const enUS: Record<UiKey, string> = {
   'log.tools': 'Log tools', 'log.filtersExpand': 'Expand log filters', 'log.filtersCollapse': 'Collapse log filters', 'log.searchAndFilter': 'Search and filter', 'log.pauseFollow': 'Pause auto-scroll', 'log.order': 'Toggle log order', 'log.orderAsc': 'Oldest first — click for newest first', 'log.orderDesc': 'Newest first — click for oldest first', 'log.resumeFollow': 'Resume auto-scroll', 'log.clearView': 'Clear current log view', 'log.export': 'Export logs', 'log.exportShort': 'Export', 'log.search': 'Search logs', 'log.searchPlaceholder': 'Search log content…', 'log.level': 'Log level', 'log.allLevels': 'All levels', 'log.recent': 'Latest {count}', 'log.content': 'Log content', 'log.noMatch': 'No matching logs', 'log.ready': 'Log channel ready', 'log.adjustFilter': 'Adjust the filters and try again.', 'log.waiting': 'Logs will appear here after a task starts.',
   'log.viewModeCards': 'Switch to card view', 'log.viewModeClassic': 'Switch to classic terminal', 'log.viewModeCardsTitle': 'Current: Card view (click to switch to classic terminal)', 'log.viewModeClassicTitle': 'Current: Classic terminal (click to switch to card view)',
   'resource.Distance': 'Nautical Miles', 'resource.ActionAsset': 'Action Point Assets',
-  'resource.Oil': 'Oil', 'resource.Coin': 'Coins', 'resource.Gem': 'Gems', 'resource.Cube': 'Cubes', 'resource.Pt': 'Event PT', 'resource.ActionPoint': 'Action points', 'resource.YellowCoin': 'Supply vouchers', 'resource.PurpleCoin': 'Special exchange vouchers', 'resource.Core': 'Core data', 'resource.Medal': 'Medals of Honor', 'resource.Merit': 'Merit', 'resource.GuildCoin': 'Guild coins', 'resource.Chip': 'Cognitive chips', 'resource.totalActionPoint': 'total action points',  'resource.waitingSync': 'Waiting for in-game resource sync', 'resource.recordedTooOld': 'It has been a while…', 'resource.cards': 'Resource cards', 'resource.settings': 'Resource card settings', 'resource.cardsHint': 'Click to add cards; drag cards to reorder them', 'resource.restoreDefault': 'Restore defaults', 'resource.remove': 'Remove {label}', 'resource.addCard': 'Add card', 'resource.allAdded': 'All available resources have been added',
-  'scheduler.rail': 'Scheduler and tasks', 'scheduler.workspace': 'Instance workspace', 'scheduler.title': 'Scheduler', 'scheduler.running': 'Running', 'scheduler.pending': 'Pending', 'scheduler.waiting': 'Waiting', 'scheduler.abnormal': 'Error', 'scheduler.stopped': 'Stopped', 'scheduler.processing': 'Processing…', 'scheduler.stop': 'Stop', 'scheduler.start': 'Start scheduler', 'scheduler.started': 'Scheduler started', 'scheduler.stoppedNotice': 'Scheduler stopped', 'scheduler.plan': 'Task plan', 'scheduler.noRunning': 'No task is currently running', 'scheduler.noPending': 'No pending tasks', 'scheduler.noWaiting': 'No waiting tasks', 'scheduler.noEnabled': 'No enabled tasks', 'overview.statCard': 'Stats', 'overview.showStats': 'Show stats', 'overview.showLogs': 'Show logs', 'nav.configs': 'Config manager', 'config.create': 'New config', 'config.import': 'Import config', 'config.overview': 'Overview', 'config.export': 'Export', 'config.exported': 'Exported {name}', 'config.empty': 'No configs yet', 'config.emptyHint': 'Use the button at the top right to create one.', 'developer.quickTools': 'Quick tools', 'developer.simulateIcons': 'Simulate status badges', 'developer.simulateIconsHint': 'Force the status badges on instance lists for 10 seconds.', 'developer.simulateRunning': 'Simulate running', 'developer.simulateError': 'Simulate error', 'developer.simulateUpdating': 'Simulate updating', 'developer.simulateClear': 'Clear simulation', 'developer.simulating': 'Simulating: {status}', 'developer.simulateIdleHint': 'No simulation active.', 'developer.updateNotice': 'Update notice', 'developer.updateNoticeHint': 'Preview the "new version" badge in the sidebar.', 'developer.updateNoticeToggle': 'Toggle update badge', 'developer.throwTest': 'Throw an error', 'developer.throwTestHint': 'Throws a frontend error on purpose to check the error page; reload afterwards.',
+  'resource.Oil': 'Oil', 'resource.Coin': 'Coins', 'resource.Gem': 'Gems', 'resource.Cube': 'Cubes', 'resource.Pt': 'Event PT', 'resource.ActionPoint': 'Action points', 'resource.YellowCoin': 'Supply vouchers', 'resource.PurpleCoin': 'Special exchange vouchers', 'resource.Core': 'Core data', 'resource.Medal': 'Medals of Honor', 'resource.Merit': 'Merit', 'resource.GuildCoin': 'Guild coins', 'resource.Chip': 'Cognitive chips', 'resource.waitingSync': 'Waiting for in-game resource sync', 'resource.recordedTooOld': 'It has been a while…', 'resource.cards': 'Resource cards', 'resource.cardsHint': 'Click to add cards; drag cards to reorder them', 'resource.restoreDefault': 'Restore defaults', 'resource.remove': 'Remove {label}', 'resource.addCard': 'Add card', 'resource.allAdded': 'All available resources have been added',
+  'scheduler.rail': 'Scheduler and tasks', 'scheduler.title': 'Scheduler', 'scheduler.running': 'Running', 'scheduler.pending': 'Pending', 'scheduler.waiting': 'Waiting', 'scheduler.processing': 'Processing…', 'scheduler.stop': 'Stop', 'scheduler.start': 'Start scheduler', 'scheduler.started': 'Scheduler started', 'scheduler.stoppedNotice': 'Scheduler stopped', 'scheduler.plan': 'Task plan', 'scheduler.noEnabled': 'No enabled tasks', 'overview.statCard': 'Stats', 'overview.showStats': 'Show stats', 'overview.showLogs': 'Show logs', 'nav.configs': 'Config manager', 'config.create': 'New config', 'config.import': 'Import config', 'config.overview': 'Overview', 'config.export': 'Export', 'config.exported': 'Exported {name}', 'config.empty': 'No configs yet', 'config.emptyHint': 'Use the button at the top right to create one.', 'developer.quickTools': 'Quick tools', 'developer.simulateIcons': 'Simulate status badges', 'developer.simulateIconsHint': 'Force the status badges on instance lists for 10 seconds.', 'developer.simulateRunning': 'Simulate running', 'developer.simulateError': 'Simulate error', 'developer.simulateUpdating': 'Simulate updating', 'developer.simulateClear': 'Clear simulation', 'developer.simulating': 'Simulating: {status}', 'developer.simulateIdleHint': 'No simulation active.', 'developer.updateNotice': 'Update notice', 'developer.updateNoticeHint': 'Preview the "new version" badge in the sidebar.', 'developer.updateNoticeToggle': 'Toggle update badge', 'developer.throwTest': 'Throw an error', 'developer.throwTestHint': 'Throws a frontend error on purpose to check the error page; reload afterwards.',
   'stats.axisAuto': 'Auto axis',
-  'stats.category.resources': 'Resource trends', 'stats.foldChart': 'Collapse chart', 'stats.unfoldChart': 'Expand chart', 'stats.category.action': 'Operation Siren trends', 'stats.category.opsi': 'Operation Siren summary', 'stats.category.commission': 'Commission rewards', 'stats.category.ships': 'Ship EXP', 'stats.category.loot': 'Operation Siren drops', 'stats.category.research': 'Research drops', 'stats.researchSeries': 'Research series', 'stats.consumableScope': 'Chips & coins', 'stats.seriesN': 'Series {n}', 'stats.refreshing': 'Refreshing…', 'stats.refresh': 'Refresh statistics', 'stats.exportCategory': 'Export category data', 'stats.categoryLabel': 'Statistics category', 'stats.range': 'Time range', 'stats.days': 'Statistics days', 'stats.recentDays': 'Last {days} days', 'stats.month': 'Statistics month', 'stats.period': 'Summary period', 'stats.commissionPeriod': 'Commission summary period', 'stats.today': 'Today', 'stats.thisWeek': 'This week', 'stats.selectedMonth': 'Selected month', 'stats.shipHint': 'Latest detection and daily history', 'stats.lootTask': 'Task', 'stats.lootTaskAll': 'All Operation Siren tasks', 'stats.lootHint': 'Parts, SR/UR plans, materials, testing reports and upgrade parts · counted on save and upload', 'stats.metric': 'Metric', 'stats.value': 'Value', 'stats.unit': 'Unit', 'stats.time': 'Time', 'stats.source': 'Source', 'stats.notes': 'Notes', 'stats.foldCard': 'Collapse card', 'stats.unfoldCard': 'Expand card', 'stats.exportDetails': 'Export details', 'stats.editMode': 'Style editing', 'stats.editEntered': 'Style editing on', 'stats.editExited': 'Style editing off', 'stats.editConsole': 'Style editing console', 'stats.editConsoleHint': 'Layout settings are kept in this browser only and can be reset at any time.', 'stats.editLayoutDefault': 'Default layout', 'stats.editLayoutCustom': 'Customized', 'stats.editReset': 'Restore defaults', 'stats.editResetDone': 'Defaults restored', 'stats.searchTable': 'Search {title}', 'stats.searchPlaceholder': 'Search records…', 'stats.records': '{count} records', 'stats.noRecords': 'No matching records.', 'stats.trendDetails': 'Trends and details', 'stats.zeroBase': 'Fixed axis', 'stats.chartHeading.resources': 'Resource · trends and details', 'stats.chartHeading.action': 'Operation Siren · trends and details', 'stats.collapseChart': 'Collapse chart', 'stats.expandChart': 'Expand chart', 'stats.chart': 'Chart', 'stats.chartType': 'Chart type', 'stats.line': 'Line', 'stats.candlestick': 'Candlestick (OHLC)', 'stats.bucket': 'Sampling interval', 'stats.eachRecord': 'Every record', 'stats.fiveMinutes': '5 minutes', 'stats.hourly': 'Hourly', 'stats.daily': 'Daily', 'stats.startTime': 'Start time', 'stats.endTime': 'End time', 'stats.allTime': 'All time', 'stats.invalidRange': 'Start time cannot be later than end time.', 'stats.latest': 'Latest', 'stats.change': 'Change', 'stats.maximum': 'Maximum', 'stats.minimum': 'Minimum', 'stats.rawCount': 'Raw records', 'stats.chartAria': '{label} interactive trend chart', 'stats.chartHint': 'Drag the bottom slider or box-select to zoom; use Ctrl + wheel to zoom and hover for exact values. Aggregated lines use the last value in each bucket; candlesticks show open, high, low and close. Summary values use raw records.', 'stats.rawTitle': '{label} raw records', 'stats.noValidTitle': 'No valid records in this period', 'stats.noValidHint': 'Choose another metric or adjust the time range, then refresh after tasks have run.', 'stats.noSeriesRecord': ' (no records)', 'stats.toolboxZoom': 'Box zoom', 'stats.toolboxBack': 'Undo zoom', 'stats.toolboxRestore': 'Reset view', 'stats.toolboxSave': 'Save chart', 'stats.axisMode': 'Axis mode', 'stats.axisSeparate': 'Adaptive axes', 'stats.axisUnified': 'Unified scale', 'stats.resetSelection': 'Reset selection', 'stats.singleOnly': ' (single metric only)', 'stats.multiMetrics': 'Selected sources summary', 'stats.candlestickOverlay': 'Candlestick + line overlay', 'stats.primaryCandle': 'Candle', 'stats.overlayLine': 'Line', 'stats.setAsPrimary': 'Set as primary candlestick source', 'stats.metricsTitle': 'Rewards', 'stats.singleView': 'Current page only', 'stats.mergePages': 'Merge pages', 'stats.compactHeader': 'Compact', 'stats.cardMode': 'Cards', 'stats.stackedRise': 'Rise & fall', 'stats.plainColor': 'Plain color', 'stats.tableRows': 'Rows per page', 'stats.tableRowsAll': 'All', 'stats.tableIcons': 'Show icons', 'stats.tablePlain': 'Compact lines', 'stats.tableNoIcons': 'No icons', 'stats.tableNormal': 'Full table', 'stats.metricsTable': 'Table', 'stats.hidePicker': 'Hide picker', 'stats.showPicker': 'Show picker', 'stats.chainTitle': 'Page chains', 'stats.chainAdd': 'Add to chain', 'stats.chainRemove': 'Remove from chain', 'stats.chainPick': 'Pick a page',
+  'stats.category.resources': 'Resource trends', 'stats.foldChart': 'Collapse chart', 'stats.unfoldChart': 'Expand chart', 'stats.category.action': 'Operation Siren trends', 'stats.category.opsi': 'Operation Siren summary', 'stats.category.commission': 'Commission rewards', 'stats.category.ships': 'Ship EXP', 'stats.category.loot': 'Operation Siren drops', 'stats.category.research': 'Research drops', 'stats.researchSeries': 'Research series', 'stats.consumableScope': 'Chips & coins', 'stats.seriesN': 'Series {n}', 'stats.refreshing': 'Refreshing…', 'stats.refresh': 'Refresh statistics', 'stats.exportCategory': 'Export category data', 'stats.categoryLabel': 'Statistics category', 'stats.range': 'Time range', 'stats.days': 'Statistics days', 'stats.recentDays': 'Last {days} days', 'stats.month': 'Statistics month', 'stats.period': 'Summary period', 'stats.commissionPeriod': 'Commission summary period', 'stats.today': 'Today', 'stats.thisWeek': 'This week', 'stats.selectedMonth': 'Selected month', 'stats.shipHint': 'Latest detection and daily history', 'stats.lootTask': 'Task', 'stats.lootTaskAll': 'All Operation Siren tasks', 'stats.lootHint': 'Parts, SR/UR plans, materials, testing reports and upgrade parts · counted on save and upload', 'stats.metric': 'Metric', 'stats.value': 'Value', 'stats.unit': 'Unit', 'stats.time': 'Time', 'stats.source': 'Source', 'stats.notes': 'Notes', 'stats.foldCard': 'Collapse card', 'stats.unfoldCard': 'Expand card', 'stats.exportDetails': 'Export details', 'stats.editMode': 'Style editing', 'stats.editEntered': 'Style editing on', 'stats.editExited': 'Style editing off', 'stats.editConsole': 'Style editing console', 'stats.editConsoleHint': 'Layout settings are kept in this browser only and can be reset at any time.', 'stats.editLayoutDefault': 'Default layout', 'stats.editLayoutCustom': 'Customized', 'stats.editReset': 'Restore defaults', 'stats.editResetDone': 'Defaults restored', 'stats.searchTable': 'Search {title}', 'stats.searchPlaceholder': 'Search records…', 'stats.records': '{count} records', 'stats.noRecords': 'No matching records.', 'stats.trendDetails': 'Trends and details', 'stats.zeroBase': 'Fixed axis', 'stats.chartHeading.resources': 'Resource · trends and details', 'stats.chartHeading.action': 'Operation Siren · trends and details', 'stats.collapseChart': 'Collapse chart', 'stats.expandChart': 'Expand chart', 'stats.chart': 'Chart', 'stats.chartType': 'Chart type', 'stats.line': 'Line', 'stats.candlestick': 'Candlestick (OHLC)', 'stats.bucket': 'Sampling interval', 'stats.eachRecord': 'Every record', 'stats.fiveMinutes': '5 minutes', 'stats.hourly': 'Hourly', 'stats.daily': 'Daily', 'stats.startTime': 'Start time', 'stats.endTime': 'End time', 'stats.allTime': 'All time', 'stats.invalidRange': 'Start time cannot be later than end time.', 'stats.latest': 'Latest', 'stats.change': 'Change', 'stats.maximum': 'Maximum', 'stats.minimum': 'Minimum', 'stats.rawCount': 'Raw records', 'stats.chartAria': '{label} interactive trend chart', 'stats.chartHint': 'Drag the bottom slider or box-select to zoom; use Ctrl + wheel to zoom and hover for exact values. Aggregated lines use the last value in each bucket; candlesticks show open, high, low and close. Summary values use raw records.', 'stats.rawTitle': '{label} raw records', 'stats.noValidTitle': 'No valid records in this period', 'stats.noValidHint': 'Choose another metric or adjust the time range, then refresh after tasks have run.', 'stats.noSeriesRecord': ' (no records)', 'stats.toolboxZoom': 'Box zoom', 'stats.toolboxBack': 'Undo zoom', 'stats.toolboxRestore': 'Reset view', 'stats.toolboxSave': 'Save chart', 'stats.axisMode': 'Axis mode', 'stats.axisSeparate': 'Adaptive axes', 'stats.axisUnified': 'Unified scale', 'stats.resetSelection': 'Reset selection', 'stats.multiMetrics': 'Selected sources summary', 'stats.candlestickOverlay': 'Candlestick + line overlay', 'stats.primaryCandle': 'Candle', 'stats.overlayLine': 'Line', 'stats.setAsPrimary': 'Set as primary candlestick source', 'stats.metricsTitle': 'Rewards', 'stats.mergePages': 'Merge pages', 'stats.compactHeader': 'Compact', 'stats.cardMode': 'Cards', 'stats.stackedRise': 'Rise & fall', 'stats.plainColor': 'Plain color', 'stats.tableRows': 'Rows per page', 'stats.tableIcons': 'Show icons', 'stats.tablePlain': 'Compact lines', 'stats.tableNoIcons': 'No icons', 'stats.tableNormal': 'Full table', 'stats.metricsTable': 'Table', 'stats.hidePicker': 'Hide picker', 'stats.showPicker': 'Show picker', 'stats.chainTitle': 'Page chains', 'stats.chainAdd': 'Add to chain', 'stats.chainRemove': 'Remove from chain', 'stats.chainPick': 'Pick a page',
   'stats.hideCard': 'Hide card', 'stats.showCard': 'Show card',
   'stats.linkCards': 'Link with the next card', 'stats.unlinkCards': 'Split the two cards apart',
   'stats.orderHandle': 'Drag to reorder', 'stats.orderUp': 'Move up', 'stats.orderDown': 'Move down', 'stats.orderHint': "Drag the handle at a card's top-left corner to reorder, or use the move up and move down buttons.",
@@ -720,7 +692,6 @@ const enUS: Record<UiKey, string> = {
   'nav.newBadge': 'New',
   'field.yaml': 'YAML',
   ...developerEnUS,
-  'settings.regionSidebar': "Sidebar", 'settings.regionTopbar': "Top bar",
 }
 
 const jaJP: Record<UiKey, string> = {
@@ -783,14 +754,13 @@ const jaJP: Record<UiKey, string> = {
   'settings.paletteHelp': '主色は操作と選択状態、副色は補助情報に使用します。',
   'settings.background': 'カスタム背景',
   'settings.backgroundHelp': 'オンライン画像・動画の URL、またはこのブラウザーに保存するファイルを使用できます。',
-  'settings.backgroundDefault': 'デフォルトのランダム画像','settings.backgroundOff': 'オフ',
+  'settings.backgroundOff': 'オフ',
   'settings.backgroundUrl': 'URL を入力',
   'settings.backgroundUpload': 'ファイルをアップロード',
   'settings.backgroundType': '背景の種類',
   'settings.backgroundImage': '画像',
   'settings.backgroundVideo': '動画',
   'settings.backgroundApply': '背景を適用',
-  'settings.backgroundChoose': '画像または動画を選択',
   'settings.backgroundSaving': '保存中…',
   'settings.backgroundLimit': 'ブラウザーで再生できる画像・動画（最大 200 MB）に対応します。',
   'settings.backgroundApplied': '背景を適用しました',
@@ -799,7 +769,6 @@ const jaJP: Record<UiKey, string> = {
   'nav.skipContent': '本文へ移動', 'nav.overview': '実行概要', 'nav.statistics': 'リソース統計', 'nav.schedulerProgram': 'カスタムスケジューラ', 'nav.updater': 'アップデーター', 'nav.interface': '画面設定', 'nav.remote': 'リモートアクセス', 'nav.settings': 'システム設定', 'nav.openSource': 'オープンソース', 'nav.developer': '開発者ツール',
   'nav.announcement': '発表',
   'announcement.title': 'システム発表',
-  'announcement.subtitle': '開発チームとサーバーからの最新のお知らせをご確認ください。',
   'announcement.latest': '最新発表',
   'announcement.noAnnouncement': '現在発表はありません',
   'announcement.noAnnouncementDesc': '現在サーバーから配信されている発表はありません。',
@@ -811,19 +780,18 @@ const jaJP: Record<UiKey, string> = {
   'announcement.openExternal': 'リンクを開く',
   'announcement.viewAll': '詳細を見る',
   'nav.searchConfigGroup': '設定項目の一致',
-  'nav.taskConfig': 'タスク設定', 'nav.primary': 'メインナビゲーション', 'nav.open': 'ナビゲーションを開く', 'nav.close': 'ナビゲーションを閉じる', 'nav.openRail': 'スケジューラーとタスクを開く', 'nav.closeRail': 'スケジューラーとタスクを閉じる', 'nav.railScheduler': 'スケジューラーに切り替え', 'nav.railDirectory': '目次に切り替え', 'task.groupNav': '目次', 'nav.newVersion': '新しいバージョンがあります', 'nav.searchTask': 'タスクを検索', 'nav.searchTaskPlaceholder': 'タスクを検索…', 'queue.openConfig': '設定を開く', 'queue.runNowDone': '次回実行時刻をクリアしました。次のスケジューラー周回で実行します', 'nav.taskJump': 'タスクへ移動', 'nav.taskJumpEmpty': '移動できるタスクがありません',
+  'nav.taskConfig': 'タスク設定', 'nav.primary': 'メインナビゲーション', 'nav.open': 'ナビゲーションを開く', 'nav.close': 'ナビゲーションを閉じる', 'task.groupNav': '目次', 'nav.newVersion': '新しいバージョンがあります', 'nav.searchTask': 'タスクを検索', 'nav.searchTaskPlaceholder': 'タスクを検索…', 'queue.openConfig': '設定を開く', 'queue.runNowDone': '次回実行時刻をクリアしました。次のスケジューラー周回で実行します', 'nav.taskJump': 'タスクへ移動', 'nav.taskJumpEmpty': '移動できるタスクがありません',
   'nav.collapse': '非表示',
   'nav.expand': '展開',
   'developer.enabled': '開発者モードを有効にしました',
   'connection.connecting': 'バックエンドに接続中です。設定入力は保持され、再接続後に保存されます。実行操作は一時的に利用できません。',
   'auth.slogan': 'すべての出撃を、整然と。', 'auth.welcome': 'おかえりなさい、指揮官', 'auth.password': 'アクセスパスワード', 'auth.verifying': '確認中…', 'auth.enter': 'コンソールへ', 'auth.passwordHint': '自動生成されたパスワードはサーバー側の password.txt に保存されています。',
-  'instance.created': 'インスタンスを作成しました。エミュレーター接続を設定してください。', 'instance.createTitle': '設定インスタンスを作成', 'instance.createHint': '各インスタンスはタスク予定とエミュレーター接続を個別に保存します。', 'instance.importPick': '設定ファイルを選択…', 'instance.importConfig': '設定を読み込む', 'instance.importHint': '既存の設定ファイルから読み込みます。選ぶとインスタンス名が自動で入ります。', 'instance.importSelect': '設定ファイルを選択', 'instance.importEmpty': '読み込める設定ファイルがありません', 'instance.importLoading': '読み込み中…', 'instance.name': 'インスタンス名', 'instance.namePlaceholder': '例: alas-main', 'instance.initialConfig': '初期設定', 'instance.defaultConfig': 'デフォルト設定を使用', 'instance.creating': '作成中…', 'instance.create': 'インスタンスを作成', 'instance.dashboard': 'ダッシュボード', 'instance.settings': 'ダッシュボード設定', 'instance.configInstances': '設定インスタンス', 'nav.instanceTabs': 'インスタンスタブ', 'nav.tabSize': 'タブの大きさを変更', 'instance.startup': '起動', 'instance.autoRun': '起動時に自動実行', 'instance.autoRunHelp': '有効にすると、AzurPilot の起動時に現在のインスタンスを自動実行します。', 'instance.rememberRun': '起動時の実行状態を記憶', 'instance.rememberRunHelp': 'より賢い起動時の設定です。有効にすると、次回の Azurpilot 起動時と、GUI 内の更新によるバックエンド再起動時に、現在のインスタンスの実行状態を記憶して維持します。【起動時に自動実行】と併用する場合、GUI 内の更新によらないバックエンド再起動はそちらの動作に従い、Azurpilot の再起動後に現在のインスタンスを自動実行します。', 'dashboard.fitCards': 'カードを揃える', 'dashboard.fitCardsHelp': '2 行目以降のカードは最終行でも横幅を広げず、1 行目と同じ大きさを保ちます。1 行に満たない場合は均等に分けます。', 'dashboard.fitText': '文字を合わせる', 'dashboard.fitTextHelp': 'アイコン・見出し・記録時刻をカード幅に合わせて調整し、行動力の総量と現在値を同じ尺度で表示します。', 'dashboard.dense': 'コンパクト表示', 'dashboard.denseHelp': 'カード間の余白を詰めて、下のログに高さを回します。', 'dashboard.merged': '共通カード', 'dashboard.mergedHelp': '表示中の資源を 1 つのカードにまとめて描画します。', 'dashboard.totalFirst': '総行動力を優先', 'dashboard.totalFirstHelp': '行動力は総量を先に表示し、「総行動力 / 現在の行動力」の順になります。', 'dashboard.dogIcon': '犬アイコン', 'dashboard.dogIconHelp': '総行動力が 6,000 / 8,000 / 10,000 / 12,000 を超えると、行動力アイコンが子犬・若犬・大犬・犬王と順に変わります。', 'instance.backupNotice': 'インスタンスをバックアップへ移動しました', 'instance.deletePrompt': '{name} を削除しますか？設定はバックアップに残ります。', 'instance.deleteConfirm': '削除を確認', 'instance.deleting': '削除しています…', 'instance.delete': 'インスタンスを削除',
+  'instance.created': 'インスタンスを作成しました。エミュレーター接続を設定してください。', 'instance.createTitle': '設定インスタンスを作成', 'instance.createHint': '各インスタンスはタスク予定とエミュレーター接続を個別に保存します。', 'instance.importPick': '設定ファイルを選択…', 'instance.importConfig': '設定を読み込む', 'instance.importHint': '既存の設定ファイルから読み込みます。選ぶとインスタンス名が自動で入ります。', 'instance.importSelect': '設定ファイルを選択', 'instance.importLoading': '読み込み中…', 'instance.name': 'インスタンス名', 'instance.namePlaceholder': '例: alas-main', 'instance.initialConfig': '初期設定', 'instance.defaultConfig': 'デフォルト設定を使用', 'instance.creating': '作成中…', 'instance.create': 'インスタンスを作成', 'instance.dashboard': 'ダッシュボード', 'instance.settings': 'ダッシュボード設定', 'nav.instanceTabs': 'インスタンスタブ', 'nav.tabSize': 'タブの大きさを変更', 'instance.startup': '起動', 'instance.autoRun': '起動時に自動実行', 'instance.autoRunHelp': '有効にすると、AzurPilot の起動時に現在のインスタンスを自動実行します。', 'instance.rememberRun': '起動時の実行状態を記憶', 'instance.rememberRunHelp': 'より賢い起動時の設定です。有効にすると、次回の Azurpilot 起動時と、GUI 内の更新によるバックエンド再起動時に、現在のインスタンスの実行状態を記憶して維持します。【起動時に自動実行】と併用する場合、GUI 内の更新によらないバックエンド再起動はそちらの動作に従い、Azurpilot の再起動後に現在のインスタンスを自動実行します。', 'dashboard.fitCards': 'カードを揃える', 'dashboard.fitCardsHelp': '2 行目以降のカードは最終行でも横幅を広げず、1 行目と同じ大きさを保ちます。1 行に満たない場合は均等に分けます。', 'dashboard.fitText': '文字を合わせる', 'dashboard.fitTextHelp': 'アイコン・見出し・記録時刻をカード幅に合わせて調整し、行動力の総量と現在値を同じ尺度で表示します。', 'dashboard.dense': 'コンパクト表示', 'dashboard.denseHelp': 'カード間の余白を詰めて、下のログに高さを回します。', 'dashboard.merged': '共通カード', 'dashboard.mergedHelp': '表示中の資源を 1 つのカードにまとめて描画します。', 'dashboard.totalFirst': '総行動力を優先', 'dashboard.totalFirstHelp': '行動力は総量を先に表示し、「総行動力 / 現在の行動力」の順になります。', 'dashboard.dogIcon': '犬アイコン', 'dashboard.dogIconHelp': '総行動力が 6,000 / 8,000 / 10,000 / 12,000 を超えると、行動力アイコンが子犬・若犬・大犬・犬王と順に変わります。', 'instance.backupNotice': 'インスタンスをバックアップへ移動しました', 'instance.deletePrompt': '{name} を削除しますか？設定はバックアップに残ります。', 'instance.deleteConfirm': '削除を確認', 'instance.deleting': '削除しています…', 'instance.delete': 'インスタンスを削除',
   'nav.startAll': 'すべてのインスタンスを起動', 'nav.stopAll': 'すべてのインスタンスを一時停止',
-  'instance.all': '全インスタンス', 'settings.uiPreferences': '画面設定', 'settings.schedulerPosition': 'スケジューラーの位置', 'settings.schedulerPositionHelp': '運行総覧画面とタスク設定画面で、スケジューラーパネルを左側または右側に配置します。', 'settings.schedulerPositionLeft': '左側', 'settings.schedulerPositionRight': '右側', 'settings.showSchedulerRail': 'スケジューラーパネルを表示', 'settings.showSchedulerRailHelp': 'オフにするとタスク設定画面と運行総覧のスケジューラー列を非表示にします。タスク設定画面のディレクトリ列は残ります。', 'settings.theme': 'テーマ', 'settings.themeLight': 'ライト', 'settings.themeDark': 'ダーク', 'settings.familyLegacy': "モダン", 'settings.material': "マテリアル", 'settings.materialGlass': "ガラス", 'settings.materialPlain': "標準", 'settings.mode': "明暗", 'settings.glassBlur': "ぼかし", 'settings.glassSaturation': "彩度", 'settings.glassOpacity': "パネルの不透明度", 'settings.customRadius': "角丸", 'settings.customShadow': "影", 'settings.customTitle': "外観のカスタマイズ", 'settings.customReset': "既定に戻す", 'settings.brandColor': "テーマカラー", 'settings.brandColorHelp': "モダンテーマのブランド配色です。未選択ならテーマ本来の配色に従います。", 'settings.brandFollow': "テーマに従う", 'settings.brandStock': "オリジナル", 'settings.backgroundUrlHelp': "1 行に 1 つのランダム画像 API。毎回ランダムに 1 つ使います。全部消すと内蔵 API に戻ります。", 'settings.backgroundActive': "今回有効：{index} / {total} 行目", 'settings.backgroundUseBuiltIn': "内蔵 API を使う", 'settings.backgroundRemove': "この行を削除", 'settings.materialDetailScope': "対象", 'settings.customResetAll': "すべてリセット", 'settings.regionSurface': "メイン面", 'settings.regionPlate': "インナープレート", 'settings.regionInset': "インセット", 'settings.regionControl': "コントロール", 'settings.regionModal': "ダイアログ", 'settings.regionMenu': "メニュー", 'settings.propAlpha': "不透明度", 'settings.resetItem': "リセット", 'settings.materialDetail': "マテリアル詳細", 'settings.materialDetailHelp': "領域ごとに不透明度・ぼかし・彩度・角丸を調整", 'settings.materialDetailOpen': "マテリアル詳細を開く", 'settings.materialLivePreview': "モックインスタンスプレビュー", 'settings.materialLivePreviewHelp': "模擬インスタンス画面を開き、フローティングパネルで領域ごとに質感を調整します", 'settings.materialLiveOnInstance': "実インスタンス上で調整", 'settings.materialLiveOnInstanceHelp': "実際のインスタンス画面へ移動し、本物の壁紙と稼働データ上でマテリアルをリアルタイム調整します", 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': 'フローティング表示に切替', 'settings.inspectorDock': '右側にドッキング', 'settings.wallpaperOffHint': '壁紙が無効です', 'settings.wallpaperOffHelp': '単色背景ではぼかしと彩度の効果を確認できません。', 'settings.closePreview': "プレビューを終了", 'settings.inspectorTitle': "マテリアル調整パネル", 'settings.sampleModal': "テストダイアログ", 'settings.sampleMenu': "テストメニュー", 'settings.sampleModalTitle': "テストダイアログ (Modal 質感)", 'settings.sampleModalBody': "このダイアログはダイアログ領域の質感とエフェクトを確認するためのものです。", 'settings.language': '表示言語', 'settings.passwordHelp': '空欄のままにすると現在のパスワードを保持します。新しいパスワードはサービス再起動後に有効になります。',
+  'instance.all': '全インスタンス', 'settings.schedulerPosition': 'スケジューラーの位置', 'settings.schedulerPositionHelp': '運行総覧画面とタスク設定画面で、スケジューラーパネルを左側または右側に配置します。', 'settings.schedulerPositionLeft': '左側', 'settings.schedulerPositionRight': '右側', 'settings.showSchedulerRail': 'スケジューラーパネルを表示', 'settings.showSchedulerRailHelp': 'オフにするとタスク設定画面と運行総覧のスケジューラー列を非表示にします。タスク設定画面のディレクトリ列は残ります。', 'settings.theme': 'テーマ', 'settings.themeLight': 'ライト', 'settings.themeDark': 'ダーク', 'settings.familyLegacy': "モダン", 'settings.material': "マテリアル", 'settings.materialGlass': "ガラス", 'settings.materialPlain': "標準", 'settings.mode': "明暗", 'settings.glassBlur': "ぼかし", 'settings.glassSaturation': "彩度", 'settings.customRadius': "角丸", 'settings.customShadow': "影", 'settings.customReset': "既定に戻す", 'settings.brandColor': "テーマカラー", 'settings.brandColorHelp': "モダンテーマのブランド配色です。未選択ならテーマ本来の配色に従います。", 'settings.brandStock': "オリジナル", 'settings.backgroundUseBuiltIn': "内蔵 API を使う", 'settings.backgroundRemove': "この行を削除", 'settings.materialDetailScope': "対象", 'settings.customResetAll': "すべてリセット", 'settings.regionSurface': "メイン面", 'settings.regionPlate': "インナープレート", 'settings.regionInset': "インセット", 'settings.regionControl': "コントロール", 'settings.regionModal': "ダイアログ", 'settings.regionMenu': "メニュー", 'settings.propAlpha': "不透明度", 'settings.resetItem': "リセット", 'settings.materialDetail': "マテリアル詳細", 'settings.materialDetailHelp': "領域ごとに不透明度・ぼかし・彩度・角丸を調整", 'settings.materialDetailOpen': "マテリアル詳細を開く", 'settings.materialLivePreview': "モックインスタンスプレビュー", 'settings.materialLiveOnInstance': "実インスタンス上で調整", 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': 'フローティング表示に切替', 'settings.inspectorDock': '右側にドッキング', 'settings.wallpaperOffHint': '壁紙が無効です', 'settings.wallpaperOffHelp': '単色背景ではぼかしと彩度の効果を確認できません。', 'settings.closePreview': "プレビューを終了", 'settings.inspectorTitle': "マテリアル調整パネル", 'settings.sampleModal': "テストダイアログ", 'settings.sampleMenu': "テストメニュー", 'settings.sampleModalTitle': "テストダイアログ (Modal 質感)", 'settings.sampleModalBody': "このダイアログはダイアログ領域の質感とエフェクトを確認するためのものです。", 'settings.language': '表示言語', 'settings.passwordHelp': '空欄のままにすると現在のパスワードを保持します。新しいパスワードはサービス再起動後に有効になります。',
   "settings.backgroundDirect": "直リンク",
   "settings.backgroundOpen": "開く",
   "settings.backgroundSaveToGallery": "ライブラリに保存",
-  "settings.backgroundResolve": "再解析",
   "settings.backgroundResolving": "解析中…",
   "settings.backgroundUnresolved": "未解析",
   "settings.backgroundResolveFailed": "解析できません",
@@ -842,16 +810,16 @@ const jaJP: Record<UiKey, string> = {
   'remote.stateFailed': '接続失敗',
   'remote.disabledHint': '下の「リモートアクセスを有効にする」をオンにしてサービスを再起動すると、外部から開けるアドレスがここに表示されます。',
   'remote.passwordHint': '外部からこのアドレスを開く際は、下の WebUI パスワードが必要です。',
-  'task.started': 'タスクを開始しました', 'task.runTool': 'ツールを実行', 'task.runNow': '今すぐ実行', 'task.searchConfig': '設定を検索', 'task.searchConfigPlaceholder': 'このタスクの設定を検索…', 'task.noConfig': 'このタスクには個別設定がありません', 'task.toolCanRun': '上のボタンからツールを実行できます。', 'task.viewRelated': '関連タスクの設定を確認してください。', 'task.readonly': '読み取り専用', 'task.noConfigFound': '設定が見つかりません', 'task.tryOtherKeyword': '別のキーワードを試してください。', 'task.runTitle': '{task} を実行', 'task.runWarning': 'エミュレーターへ接続してこのツールを実行します。このインスタンスで別のタスクが実行中でないことを確認してください。', 'task.confirmRun': '実行を確認',
+  'task.started': 'タスクを開始しました', 'task.runTool': 'ツールを実行', 'task.runNow': '今すぐ実行', 'task.searchConfig': '設定を検索', 'task.searchConfigPlaceholder': 'このタスクの設定を検索…', 'task.noConfig': 'このタスクには個別設定がありません', 'task.viewRelated': '関連タスクの設定を確認してください。', 'task.readonly': '読み取り専用', 'task.noConfigFound': '設定が見つかりません', 'task.tryOtherKeyword': '別のキーワードを試してください。', 'task.runTitle': '{task} を実行', 'task.runWarning': 'エミュレーターへ接続してこのツールを実行します。このインスタンスで別のタスクが実行中でないことを確認してください。', 'task.confirmRun': '実行を確認',
   'fleet.emptyTitle': '艦隊スキャン記録がありません', 'fleet.emptyHint': '左側で艦隊スキャンを選択し、スキャン完了後にここで確認できます。', 'fleet.invalid': '艦隊記録の形式が正しくありません。再スキャンしてください。', 'fleet.title': '第 {number} 艦隊', 'fleet.vanguard': '前衛艦隊', 'fleet.main': '主力艦隊', 'fleet.submarine': '潜水艦隊', 'fleet.noRecord': '記録なし',
   'fleet.emotion': 'コンディション {value}', 'fleet.unknown': '不明',
   'fleet.slot': '配置 {number}', 'fleet.updateEmotion': 'スキャン時にコンディションを更新',
   'meow.title': 'オフニャスコア報告', 'meow.refresh': '更新', 'meow.refreshing': '更新中…', 'meow.emptyTitle': 'スコア報告はまだありません', 'meow.emptyHint': '「ツール → オフニャスコア」を一度実行し、ここで更新すると結果が表示されます。', 'meow.summary': '計 {count} 匹 · 生成 {time}', 'meow.openReport': '完全なレポートを開く', 'meow.clear': 'レポートを消去', 'meow.clearTitle': 'スコアレポートを消去', 'meow.clearWarning': 'log/meowfficer_score の json / md / html を削除し、パネルは「未実行」の状態に戻ります。採点自体には影響せず、タスクを再実行すれば再生成されます。', 'meow.clearConfirm': '消去する', 'meow.clearing': '消去中…', 'meow.score': '参考スコア', 'meow.maxed': '完遂', 'meow.fixed': '指定済み', 'meow.axisX': 'X（虹天賦）', 'meow.axisY': 'Y（有用な通常天賦）', 'meow.noHits': '該当なし', 'meow.otherRubrics': 'その他の口径（{count}）', 'meow.source': '根拠：{source}', 'meow.screenshot': '元スクリーンショット：{name}', 'meow.pointsSpent': '{count} ポイント消費', 'meow.inferred': '推定項目です。確認してください', 'meow.disclaimer': '評価口径は公開攻略（28の法則実行編 / 詳細攻略）に基づくもので、ゲーム公式の数値ではありません。',
   'monitor.title': '実行モニター', 'monitor.view': 'モニター表示', 'monitor.logs': 'ログ', 'monitor.preview': 'スクリーンショット', 'monitor.saveScreenshot': 'スクリーンショットを保存', 'monitor.screenshotAlt': '最新のタスクスクリーンショット', 'monitor.waitingScreenshot': 'タスクのスクリーンショット待ち', 'monitor.screenshotHint': 'タスクのスクリーンショット後に自動更新し、待機中は最後の画面を保持します。', 'monitor.recentLogs': '最近のログ',
-  'resource.cards': 'リソースカード', 'resource.settings': 'リソースカード設定', 'resource.cardsHint': 'クリックでカードを追加し、ドラッグで表示順を変更', 'resource.restoreDefault': '既定に戻す', 'resource.remove': '{label} を削除', 'resource.addCard': 'カードを追加', 'resource.allAdded': '利用可能なリソースはすべて追加済みです',  'resource.waitingSync': 'ゲーム内リソースの同期待ち', 'resource.recordedTooOld': 'ずいぶん前ですね…',
-  'scheduler.rail': 'スケジューラーとタスク', 'scheduler.workspace': 'インスタンス作業領域', 'scheduler.title': 'スケジューラー', 'scheduler.running': '実行中', 'scheduler.pending': '実行待ち', 'scheduler.waiting': '待機中', 'scheduler.abnormal': '異常', 'scheduler.stopped': '停止中', 'scheduler.processing': '処理中…', 'scheduler.stop': '停止', 'scheduler.start': 'スケジューラーを開始', 'scheduler.started': 'スケジューラーを開始しました', 'scheduler.stoppedNotice': 'スケジューラーを停止しました', 'scheduler.plan': 'タスク予定', 'scheduler.noRunning': '実行中のタスクはありません', 'scheduler.noPending': '実行待ちタスクはありません', 'scheduler.noWaiting': '待機中のタスクはありません', 'scheduler.noEnabled': '有効なタスクはありません', 'overview.statCard': '統計', 'overview.showStats': '統計を表示', 'overview.showLogs': 'ログを表示', 'nav.configs': '設定管理', 'config.create': '新規設定', 'config.import': '設定をインポート', 'config.overview': '概要', 'config.export': 'エクスポート', 'config.exported': '{name} をエクスポートしました', 'config.empty': '設定がありません', 'config.emptyHint': '右上のボタンから作成してください。', 'developer.quickTools': 'クイックツール', 'developer.simulateIcons': 'ステータスバッジをシミュレート', 'developer.simulateIconsHint': 'インスタンス一覧のステータスバッジを 10 秒間だけ指定値にします。', 'developer.simulateRunning': '実行中を模擬', 'developer.simulateError': '異常を模擬', 'developer.simulateUpdating': '更新中を模擬', 'developer.simulateClear': '模擬を解除', 'developer.simulating': '模擬中: {status}', 'developer.simulateIdleHint': '模擬中の状態はありません。', 'developer.updateNotice': '更新通知', 'developer.updateNoticeHint': 'サイドバーの「新バージョン」バッジをプレビューします。', 'developer.updateNoticeToggle': '更新バッジを切り替え', 'developer.throwTest': '例外を投げる', 'developer.throwTestHint': 'エラーページ確認用にフロント側で例外を投げます。テスト後は再読み込みしてください。',
+  'resource.cards': 'リソースカード', 'resource.cardsHint': 'クリックでカードを追加し、ドラッグで表示順を変更', 'resource.restoreDefault': '既定に戻す', 'resource.remove': '{label} を削除', 'resource.addCard': 'カードを追加', 'resource.allAdded': '利用可能なリソースはすべて追加済みです',  'resource.waitingSync': 'ゲーム内リソースの同期待ち', 'resource.recordedTooOld': 'ずいぶん前ですね…',
+  'scheduler.rail': 'スケジューラーとタスク', 'scheduler.title': 'スケジューラー', 'scheduler.running': '実行中', 'scheduler.pending': '実行待ち', 'scheduler.waiting': '待機中', 'scheduler.processing': '処理中…', 'scheduler.stop': '停止', 'scheduler.start': 'スケジューラーを開始', 'scheduler.started': 'スケジューラーを開始しました', 'scheduler.stoppedNotice': 'スケジューラーを停止しました', 'scheduler.plan': 'タスク予定', 'scheduler.noEnabled': '有効なタスクはありません', 'overview.statCard': '統計', 'overview.showStats': '統計を表示', 'overview.showLogs': 'ログを表示', 'nav.configs': '設定管理', 'config.create': '新規設定', 'config.import': '設定をインポート', 'config.overview': '概要', 'config.export': 'エクスポート', 'config.exported': '{name} をエクスポートしました', 'config.empty': '設定がありません', 'config.emptyHint': '右上のボタンから作成してください。', 'developer.quickTools': 'クイックツール', 'developer.simulateIcons': 'ステータスバッジをシミュレート', 'developer.simulateIconsHint': 'インスタンス一覧のステータスバッジを 10 秒間だけ指定値にします。', 'developer.simulateRunning': '実行中を模擬', 'developer.simulateError': '異常を模擬', 'developer.simulateUpdating': '更新中を模擬', 'developer.simulateClear': '模擬を解除', 'developer.simulating': '模擬中: {status}', 'developer.simulateIdleHint': '模擬中の状態はありません。', 'developer.updateNotice': '更新通知', 'developer.updateNoticeHint': 'サイドバーの「新バージョン」バッジをプレビューします。', 'developer.updateNoticeToggle': '更新バッジを切り替え', 'developer.throwTest': '例外を投げる', 'developer.throwTestHint': 'エラーページ確認用にフロント側で例外を投げます。テスト後は再読み込みしてください。',
   'stats.axisAuto': '縦軸を自動調整',
-  'stats.category.resources': 'リソース推移', 'stats.foldChart': 'グラフを折りたたむ', 'stats.unfoldChart': 'グラフを展開', 'stats.category.action': 'セイレーン作戦推移', 'stats.category.opsi': 'セイレーン作戦まとめ', 'stats.category.commission': '委託報酬', 'stats.category.ships': '艦船経験値', 'stats.category.loot': 'セイレーン作戦ドロップ', 'stats.category.research': '研究ドロップ', 'stats.researchSeries': '研究期', 'stats.consumableScope': '心智/物資', 'stats.seriesN': '第 {n} 期', 'stats.refreshing': '更新中…', 'stats.refresh': '統計を更新', 'stats.exportCategory': 'この分類を出力', 'stats.categoryLabel': '統計分類', 'stats.range': '期間', 'stats.days': '統計日数', 'stats.recentDays': '直近 {days} 日', 'stats.month': '統計月', 'stats.period': '集計期間', 'stats.commissionPeriod': '委託集計期間', 'stats.today': '今日', 'stats.thisWeek': '今週', 'stats.selectedMonth': '選択した月', 'stats.lootTask': '任務', 'stats.lootTaskAll': 'すべてのセイレーン作戦任務', 'stats.metric': '指標', 'stats.value': '値', 'stats.unit': '単位', 'stats.time': '時刻', 'stats.source': 'ソース', 'stats.notes': '統計説明', 'stats.foldCard': 'カードを折りたたむ', 'stats.unfoldCard': 'カードを展開', 'stats.exportDetails': '詳細を出力', 'stats.editMode': 'スタイル編集', 'stats.editEntered': 'スタイル編集を開始しました', 'stats.editExited': 'スタイル編集を終了しました', 'stats.editConsole': 'スタイル編集コンソール', 'stats.editConsoleHint': 'レイアウト設定はこのブラウザにのみ保存され、いつでも元に戻せます。', 'stats.editLayoutDefault': '既定レイアウト', 'stats.editLayoutCustom': 'カスタム済み', 'stats.editReset': '既定に戻す', 'stats.editResetDone': '既定に戻しました', 'stats.searchTable': '{title} を検索', 'stats.searchPlaceholder': '記録を検索…', 'stats.records': '{count} 件', 'stats.noRecords': '条件に一致する記録はありません。', 'stats.trendDetails': '推移と詳細', 'stats.zeroBase': '縦軸を固定', 'stats.chartHeading.resources': '資源・推移と詳細', 'stats.chartHeading.action': 'セイレーン作戦・推移と詳細', 'stats.collapseChart': 'グラフを閉じる', 'stats.expandChart': '拡大表示', 'stats.chart': 'グラフ', 'stats.chartType': 'グラフ種類', 'stats.line': '折れ線', 'stats.candlestick': 'ローソク足（OHLC）', 'stats.bucket': 'サンプリング間隔', 'stats.eachRecord': '毎回', 'stats.fiveMinutes': '5 分', 'stats.hourly': '1 時間ごと', 'stats.daily': '毎日', 'stats.startTime': '開始時刻', 'stats.endTime': '終了時刻', 'stats.allTime': '全期間', 'stats.invalidRange': '開始時刻は終了時刻より後にできません。', 'stats.latest': '最新値', 'stats.change': '期間変化', 'stats.maximum': '最大値', 'stats.minimum': '最小値', 'stats.rawCount': '元記録', 'stats.noValidTitle': 'この期間に有効な記録はありません', 'stats.noValidHint': '別の指標を選ぶか期間を調整し、タスク実行後に更新してください。', 'stats.metricsTitle': '収穫', 'stats.singleView': '現在のページのみ', 'stats.mergePages': '単一ページに統合', 'stats.compactHeader': 'コンパクト', 'stats.cardMode': 'カード', 'stats.stackedRise': '騰落', 'stats.plainColor': '元の色', 'stats.tableRows': '1ページの行数', 'stats.tableRowsAll': 'すべて', 'stats.tableIcons': 'アイコンを表示', 'stats.tablePlain': '簡潔表示', 'stats.tableNoIcons': 'アイコンなし', 'stats.tableNormal': '通常表示', 'stats.metricsTable': '表形式', 'stats.hidePicker': '選択欄を隠す', 'stats.showPicker': '選択欄を表示', 'stats.chainTitle': 'ページの組み合わせ', 'stats.chainAdd': '組み合わせに追加', 'stats.chainRemove': '組み合わせから外す', 'stats.chainPick': 'ページを選択',
+  'stats.category.resources': 'リソース推移', 'stats.foldChart': 'グラフを折りたたむ', 'stats.unfoldChart': 'グラフを展開', 'stats.category.action': 'セイレーン作戦推移', 'stats.category.opsi': 'セイレーン作戦まとめ', 'stats.category.commission': '委託報酬', 'stats.category.ships': '艦船経験値', 'stats.category.loot': 'セイレーン作戦ドロップ', 'stats.category.research': '研究ドロップ', 'stats.researchSeries': '研究期', 'stats.consumableScope': '心智/物資', 'stats.seriesN': '第 {n} 期', 'stats.refreshing': '更新中…', 'stats.refresh': '統計を更新', 'stats.exportCategory': 'この分類を出力', 'stats.categoryLabel': '統計分類', 'stats.range': '期間', 'stats.days': '統計日数', 'stats.recentDays': '直近 {days} 日', 'stats.month': '統計月', 'stats.period': '集計期間', 'stats.commissionPeriod': '委託集計期間', 'stats.today': '今日', 'stats.thisWeek': '今週', 'stats.selectedMonth': '選択した月', 'stats.lootTask': '任務', 'stats.lootTaskAll': 'すべてのセイレーン作戦任務', 'stats.metric': '指標', 'stats.value': '値', 'stats.unit': '単位', 'stats.time': '時刻', 'stats.source': 'ソース', 'stats.notes': '統計説明', 'stats.foldCard': 'カードを折りたたむ', 'stats.unfoldCard': 'カードを展開', 'stats.exportDetails': '詳細を出力', 'stats.editMode': 'スタイル編集', 'stats.editEntered': 'スタイル編集を開始しました', 'stats.editExited': 'スタイル編集を終了しました', 'stats.editConsole': 'スタイル編集コンソール', 'stats.editConsoleHint': 'レイアウト設定はこのブラウザにのみ保存され、いつでも元に戻せます。', 'stats.editLayoutDefault': '既定レイアウト', 'stats.editLayoutCustom': 'カスタム済み', 'stats.editReset': '既定に戻す', 'stats.editResetDone': '既定に戻しました', 'stats.searchTable': '{title} を検索', 'stats.searchPlaceholder': '記録を検索…', 'stats.records': '{count} 件', 'stats.noRecords': '条件に一致する記録はありません。', 'stats.trendDetails': '推移と詳細', 'stats.zeroBase': '縦軸を固定', 'stats.chartHeading.resources': '資源・推移と詳細', 'stats.chartHeading.action': 'セイレーン作戦・推移と詳細', 'stats.collapseChart': 'グラフを閉じる', 'stats.expandChart': '拡大表示', 'stats.chart': 'グラフ', 'stats.chartType': 'グラフ種類', 'stats.line': '折れ線', 'stats.candlestick': 'ローソク足（OHLC）', 'stats.bucket': 'サンプリング間隔', 'stats.eachRecord': '毎回', 'stats.fiveMinutes': '5 分', 'stats.hourly': '1 時間ごと', 'stats.daily': '毎日', 'stats.startTime': '開始時刻', 'stats.endTime': '終了時刻', 'stats.allTime': '全期間', 'stats.invalidRange': '開始時刻は終了時刻より後にできません。', 'stats.latest': '最新値', 'stats.change': '期間変化', 'stats.maximum': '最大値', 'stats.minimum': '最小値', 'stats.rawCount': '元記録', 'stats.noValidTitle': 'この期間に有効な記録はありません', 'stats.noValidHint': '別の指標を選ぶか期間を調整し、タスク実行後に更新してください。', 'stats.metricsTitle': '収穫', 'stats.mergePages': '単一ページに統合', 'stats.compactHeader': 'コンパクト', 'stats.cardMode': 'カード', 'stats.stackedRise': '騰落', 'stats.plainColor': '元の色', 'stats.tableRows': '1ページの行数', 'stats.tableIcons': 'アイコンを表示', 'stats.tablePlain': '簡潔表示', 'stats.tableNoIcons': 'アイコンなし', 'stats.tableNormal': '通常表示', 'stats.metricsTable': '表形式', 'stats.hidePicker': '選択欄を隠す', 'stats.showPicker': '選択欄を表示', 'stats.chainTitle': 'ページの組み合わせ', 'stats.chainAdd': '組み合わせに追加', 'stats.chainRemove': '組み合わせから外す', 'stats.chainPick': 'ページを選択',
   'stats.hideCard': 'カードを隠す', 'stats.showCard': 'カードを表示',
   'stats.linkCards': '次のカードと連結', 'stats.unlinkCards': '連結を解除',
   'stats.orderHandle': 'ドラッグで並べ替え', 'stats.orderUp': '上へ移動', 'stats.orderDown': '下へ移動', 'stats.orderHint': 'カード左上の把手をドラッグするか、上へ／下へボタンで並べ替えできます。',
@@ -900,7 +868,6 @@ const jaJP: Record<UiKey, string> = {
   'resource.Merit': '戦果',
   'resource.GuildCoin': '艦隊コイン',
   'resource.Chip': 'メンタルユニット',
-  'resource.totalActionPoint': '総行動力',
   'stats.shipHint': '最新の検出結果と日別履歴',
   'stats.lootHint': 'パーツ・SSR/UR設計図・開発素材・実験報告書・強化部品 · 保存でもアップロードでも記録',
   'stats.chartAria': '{label} のインタラクティブ推移グラフ',
@@ -915,7 +882,6 @@ const jaJP: Record<UiKey, string> = {
   'stats.axisSeparate': '適応型マルチ軸',
   'stats.axisUnified': '統一スケール',
   'stats.resetSelection': '選択リセット',
-  'stats.singleOnly': '（単一指標のみ）',
   'stats.multiMetrics': '選択中データソース概要',
   'stats.candlestickOverlay': 'ローソク足 + 折れ線',
   'stats.primaryCandle': 'ローソク',
@@ -924,7 +890,6 @@ const jaJP: Record<UiKey, string> = {
   'edit.draftReadError': 'ブラウザーの下書きを読み込めませんでした。保存が完了するまでページを開いたままにしてください。',
   'edit.draftPersistError': 'ブラウザーに下書きを保持できませんでした。保存が完了するまでページを開いたままにしてください。',
   ...developerJaJP,
-  'settings.regionSidebar': "サイドバー", 'settings.regionTopbar': "トップバー",
 }
 
 const zhTW: Record<UiKey, string> = {
@@ -984,14 +949,13 @@ const zhTW: Record<UiKey, string> = {
   'settings.paletteHelp': '主色用於主要操作與選取狀態，副色用於輔助資訊。',
   'settings.background': '自訂背景',
   'settings.backgroundHelp': '使用線上圖片或影片網址，或上傳檔案並儲存在目前瀏覽器。',
-  'settings.backgroundDefault': '預設隨機圖片','settings.backgroundOff': '關閉背景',
+  'settings.backgroundOff': '關閉背景',
   'settings.backgroundUrl': '填寫 URL',
   'settings.backgroundUpload': '上傳檔案',
   'settings.backgroundType': '背景類型',
   'settings.backgroundImage': '圖片',
   'settings.backgroundVideo': '影片',
   'settings.backgroundApply': '套用背景',
-  'settings.backgroundChoose': '選擇圖片或影片',
   'settings.backgroundSaving': '正在儲存…',
   'settings.backgroundLimit': '支援瀏覽器可播放的圖片和影片，檔案上限 200 MB。',
   'settings.backgroundApplied': '背景已套用',
@@ -1000,7 +964,6 @@ const zhTW: Record<UiKey, string> = {
   'nav.skipContent': '跳至內容', 'nav.overview': '執行總覽', 'nav.statistics': '資源統計', 'nav.schedulerProgram': '自訂調度', 'nav.updater': '更新器', 'nav.interface': '介面設定', 'nav.remote': '遠端存取', 'nav.settings': '系統設定', 'nav.openSource': '開源專案', 'nav.developer': '開發者工具',
   'nav.announcement': '公告',
   'announcement.title': '系統公告',
-  'announcement.subtitle': '查看來自開發團隊與伺服器的最新通知與動態。',
   'announcement.latest': '最新公告',
   'announcement.noAnnouncement': '暫無系統公告',
   'announcement.noAnnouncementDesc': '目前伺服器暫無發布的公告內容。',
@@ -1012,19 +975,18 @@ const zhTW: Record<UiKey, string> = {
   'announcement.openExternal': '開啟連結',
   'announcement.viewAll': '查看詳情',
   'nav.searchConfigGroup': '設定項命中',
-  'nav.taskConfig': '任務設定', 'nav.primary': '主導覽', 'nav.open': '開啟導覽', 'nav.close': '關閉導覽', 'nav.openRail': '開啟排程與任務', 'nav.closeRail': '關閉排程與任務', 'nav.railScheduler': '切換到排程器', 'nav.railDirectory': '切換到目錄', 'task.groupNav': '目錄', 'nav.newVersion': '有新版本可用', 'nav.searchTask': '搜尋任務', 'nav.searchTaskPlaceholder': '搜尋任務…', 'queue.openConfig': '開啟設定頁', 'queue.runNowDone': '已清空下一次執行時間，將在下一輪立即執行', 'nav.taskJump': '跳轉到任務', 'nav.taskJumpEmpty': '沒有可跳轉的任務',
+  'nav.taskConfig': '任務設定', 'nav.primary': '主導覽', 'nav.open': '開啟導覽', 'nav.close': '關閉導覽', 'task.groupNav': '目錄', 'nav.newVersion': '有新版本可用', 'nav.searchTask': '搜尋任務', 'nav.searchTaskPlaceholder': '搜尋任務…', 'queue.openConfig': '開啟設定頁', 'queue.runNowDone': '已清空下一次執行時間，將在下一輪立即執行', 'nav.taskJump': '跳轉到任務', 'nav.taskJumpEmpty': '沒有可跳轉的任務',
   'nav.collapse': '隱藏',
   'nav.expand': '展開',
   'developer.enabled': '開發者模式已開啟',
   'connection.connecting': '正在連線後端，設定輸入會保留並在重新連線後儲存；執行操作暫時無法使用。',
   'auth.slogan': '讓每一次出航，都井然有序。', 'auth.welcome': '歡迎回到指揮室', 'auth.password': '存取密碼', 'auth.verifying': '正在驗證…', 'auth.enter': '進入控制台', 'auth.passwordHint': '自動產生的密碼儲存在伺服器端 password.txt 中。',
-  'instance.createTitle': '建立設定實例', 'instance.createHint': '每個實例獨立儲存任務排程與模擬器連線。', 'instance.importPick': '選擇本機設定檔…', 'instance.importConfig': '匯入設定', 'instance.importHint': '從現有設定檔匯入，選取後會自動填好實例名稱。', 'instance.importSelect': '選擇設定檔', 'instance.importEmpty': '沒有可匯入的設定檔', 'instance.importLoading': '正在讀取…', 'instance.name': '實例名稱', 'instance.initialConfig': '初始設定', 'instance.defaultConfig': '使用預設設定', 'instance.creating': '正在建立…', 'instance.create': '建立實例', 'instance.dashboard': '儀表板', 'instance.settings': '儀表板設定', 'instance.startup': '啟動', 'instance.autoRun': '啟動時自動執行', 'instance.autoRunHelp': '啟用後，啟動 Azurpilot 時自動執行目前實例。', 'instance.rememberRun': '啟動時記憶執行', 'instance.rememberRunHelp': '更聰明的啟動時設定。啟用後，下次啟動 Azurpilot 以及因 GUI 內更新而重啟後端時，會記憶並保持目前實例的執行狀態；與【啟動時自動執行】同時啟用時，非因 GUI 內拉取更新而重啟後端者依其行為，即重啟 Azurpilot 後自動執行目前實例。', 'dashboard.fitCards': '卡片等寬', 'dashboard.fitCardsHelp': '資源卡溢出到第二排以後時，末排不再撐滿整行，沿用第一排的尺寸；卡片總數本就不足一排時仍均分。', 'dashboard.fitText': '字體適應', 'dashboard.fitTextHelp': '卡片內的圖示、標題與記錄時間隨卡片寬度縮放，行動力的總量與目前值以同一尺度顯示。', 'dashboard.dense': '緊湊檢視', 'dashboard.denseHelp': '收緊卡片之間的空隙，給下方日誌留出更多高度。', 'dashboard.merged': '合併為單卡', 'dashboard.mergedHelp': '已啟用顯示的資源渲染在同一個容器內，不再一資源一卡片。', 'dashboard.totalFirst': '總行動力優先', 'dashboard.totalFirstHelp': '行動力優先顯示總量，變成「總行動力 / 目前行動力」。', 'dashboard.dogIcon': '大狗圖示', 'dashboard.dogIconHelp': '總行動力超過 6,000 / 8,000 / 10,000 / 12,000 時，行動力圖示依序換成小狗、中狗、大狗、狗王。', 'instance.deleteConfirm': '確認刪除', 'instance.deleting': '正在刪除…', 'instance.delete': '刪除實例',
+  'instance.createTitle': '建立設定實例', 'instance.createHint': '每個實例獨立儲存任務排程與模擬器連線。', 'instance.importPick': '選擇本機設定檔…', 'instance.importConfig': '匯入設定', 'instance.importHint': '從現有設定檔匯入，選取後會自動填好實例名稱。', 'instance.importSelect': '選擇設定檔', 'instance.importLoading': '正在讀取…', 'instance.name': '實例名稱', 'instance.initialConfig': '初始設定', 'instance.defaultConfig': '使用預設設定', 'instance.creating': '正在建立…', 'instance.create': '建立實例', 'instance.dashboard': '儀表板', 'instance.settings': '儀表板設定', 'instance.startup': '啟動', 'instance.autoRun': '啟動時自動執行', 'instance.autoRunHelp': '啟用後，啟動 Azurpilot 時自動執行目前實例。', 'instance.rememberRun': '啟動時記憶執行', 'instance.rememberRunHelp': '更聰明的啟動時設定。啟用後，下次啟動 Azurpilot 以及因 GUI 內更新而重啟後端時，會記憶並保持目前實例的執行狀態；與【啟動時自動執行】同時啟用時，非因 GUI 內拉取更新而重啟後端者依其行為，即重啟 Azurpilot 後自動執行目前實例。', 'dashboard.fitCards': '卡片等寬', 'dashboard.fitCardsHelp': '資源卡溢出到第二排以後時，末排不再撐滿整行，沿用第一排的尺寸；卡片總數本就不足一排時仍均分。', 'dashboard.fitText': '字體適應', 'dashboard.fitTextHelp': '卡片內的圖示、標題與記錄時間隨卡片寬度縮放，行動力的總量與目前值以同一尺度顯示。', 'dashboard.dense': '緊湊檢視', 'dashboard.denseHelp': '收緊卡片之間的空隙，給下方日誌留出更多高度。', 'dashboard.merged': '合併為單卡', 'dashboard.mergedHelp': '已啟用顯示的資源渲染在同一個容器內，不再一資源一卡片。', 'dashboard.totalFirst': '總行動力優先', 'dashboard.totalFirstHelp': '行動力優先顯示總量，變成「總行動力 / 目前行動力」。', 'dashboard.dogIcon': '大狗圖示', 'dashboard.dogIconHelp': '總行動力超過 6,000 / 8,000 / 10,000 / 12,000 時，行動力圖示依序換成小狗、中狗、大狗、狗王。', 'instance.deleteConfirm': '確認刪除', 'instance.deleting': '正在刪除…', 'instance.delete': '刪除實例',
   'instance.rightClick': '右鍵操作',
-  'instance.all': '全部實例', 'settings.uiPreferences': '介面偏好', 'settings.schedulerPosition': '排程器位置', 'settings.schedulerPositionHelp': '在運行概覽與任務設定頁中，將排程器欄放置於左側或右側。', 'settings.schedulerPositionLeft': '左側', 'settings.schedulerPositionRight': '右側', 'settings.showSchedulerRail': '顯示排程器欄', 'settings.showSchedulerRailHelp': '關閉後任務設定頁與運行概覽都不顯示排程器欄；任務設定頁的目錄欄不受影響，可隨時重新開啟。', 'settings.theme': '介面主題', 'settings.themeLight': '淺色', 'settings.themeDark': '深色', 'settings.familyLegacy': "現代", 'settings.material': "材質", 'settings.materialGlass': "玻璃", 'settings.materialPlain': "普通", 'settings.mode': "明暗", 'settings.glassBlur': "模糊", 'settings.glassSaturation': "飽和度", 'settings.glassOpacity': "面板不透明度", 'settings.customRadius': "圓角", 'settings.customShadow': "陰影", 'settings.customTitle': "自訂外觀", 'settings.customReset': "恢復預設", 'settings.brandColor': "主題色", 'settings.brandColorHelp': "現代主題的品牌配色，未選擇時使用主題原本的配色。", 'settings.brandFollow': "跟隨主題", 'settings.brandStock': "原版色", 'settings.backgroundUrlHelp': "一行一個隨機圖 API，每次生效隨機挑一條；全部清空會自動用回內建 API。", 'settings.backgroundActive': "本次生效：第 {index} / {total} 行", 'settings.backgroundUseBuiltIn': "用內建 API", 'settings.backgroundRemove': "刪除這一行", 'settings.materialDetailScope': "作用類別", 'settings.customResetAll': "全部還原", 'settings.regionSurface': "主面板", 'settings.regionPlate': "內襯底板", 'settings.regionInset': "三級嵌面", 'settings.regionControl': "控制項", 'settings.regionModal': "彈窗", 'settings.regionMenu': "選單", 'settings.propAlpha': "不透明度", 'settings.resetItem': "還原此項", 'settings.materialDetail': "材質細節", 'settings.materialDetailHelp': "分區調整玻璃的不透明度、模糊、飽和度與圓角", 'settings.materialDetailOpen': "開啟材質細節", 'settings.materialLivePreview': "預覽模擬實例頁", 'settings.materialLivePreviewHelp': "開啟全真模擬實例頁並配合懸浮面板分區微調材質", 'settings.materialLiveOnInstance': "在真實實例上懸浮調節", 'settings.materialLiveOnInstanceHelp': "直接前往真實運作實例並開啟材質檢視器，在真實桌布與運作數據上即時預覽微調", 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': '切換為懸浮', 'settings.inspectorDock': '停靠到右側', 'settings.wallpaperOffHint': '目前未啟用桌布背景', 'settings.wallpaperOffHelp': '純色底色下無法觀察毛玻璃濾鏡（模糊與飽和度）的折射效果。', 'settings.closePreview': "結束實例預覽", 'settings.inspectorTitle': "材質調節面板", 'settings.sampleModal': "測試彈窗", 'settings.sampleMenu': "測試選單", 'settings.sampleModalTitle': "測試彈窗 (Modal 材質)", 'settings.sampleModalBody': "此彈窗用於直觀檢驗彈窗 (Modal) 區域的透明度、模糊濾鏡、圓角與陰影效果。", 'settings.language': '介面語言', 'settings.passwordHelp': '留空保留原密碼。新密碼在重新啟動服務後生效。',
+  'instance.all': '全部實例', 'settings.schedulerPosition': '排程器位置', 'settings.schedulerPositionHelp': '在運行概覽與任務設定頁中，將排程器欄放置於左側或右側。', 'settings.schedulerPositionLeft': '左側', 'settings.schedulerPositionRight': '右側', 'settings.showSchedulerRail': '顯示排程器欄', 'settings.showSchedulerRailHelp': '關閉後任務設定頁與運行概覽都不顯示排程器欄；任務設定頁的目錄欄不受影響，可隨時重新開啟。', 'settings.theme': '介面主題', 'settings.themeLight': '淺色', 'settings.themeDark': '深色', 'settings.familyLegacy': "現代", 'settings.material': "材質", 'settings.materialGlass': "玻璃", 'settings.materialPlain': "普通", 'settings.mode': "明暗", 'settings.glassBlur': "模糊", 'settings.glassSaturation': "飽和度", 'settings.customRadius': "圓角", 'settings.customShadow': "陰影", 'settings.customReset': "恢復預設", 'settings.brandColor': "主題色", 'settings.brandColorHelp': "現代主題的品牌配色，未選擇時使用主題原本的配色。", 'settings.brandStock': "原版色", 'settings.backgroundUseBuiltIn': "用內建 API", 'settings.backgroundRemove': "刪除這一行", 'settings.materialDetailScope': "作用類別", 'settings.customResetAll': "全部還原", 'settings.regionSurface': "主面板", 'settings.regionPlate': "內襯底板", 'settings.regionInset': "三級嵌面", 'settings.regionControl': "控制項", 'settings.regionModal': "彈窗", 'settings.regionMenu': "選單", 'settings.propAlpha': "不透明度", 'settings.resetItem': "還原此項", 'settings.materialDetail': "材質細節", 'settings.materialDetailHelp': "分區調整玻璃的不透明度、模糊、飽和度與圓角", 'settings.materialDetailOpen': "開啟材質細節", 'settings.materialLivePreview': "預覽模擬實例頁", 'settings.materialLiveOnInstance': "在真實實例上懸浮調節", 'settings.inspectorMinimize': '最小化', 'settings.inspectorFloat': '切換為懸浮', 'settings.inspectorDock': '停靠到右側', 'settings.wallpaperOffHint': '目前未啟用桌布背景', 'settings.wallpaperOffHelp': '純色底色下無法觀察毛玻璃濾鏡（模糊與飽和度）的折射效果。', 'settings.closePreview': "結束實例預覽", 'settings.inspectorTitle': "材質調節面板", 'settings.sampleModal': "測試彈窗", 'settings.sampleMenu': "測試選單", 'settings.sampleModalTitle': "測試彈窗 (Modal 材質)", 'settings.sampleModalBody': "此彈窗用於直觀檢驗彈窗 (Modal) 區域的透明度、模糊濾鏡、圓角與陰影效果。", 'settings.language': '介面語言', 'settings.passwordHelp': '留空保留原密碼。新密碼在重新啟動服務後生效。',
   "settings.backgroundDirect": "直連",
   "settings.backgroundOpen": "開啟",
   "settings.backgroundSaveToGallery": "存進圖庫",
-  "settings.backgroundResolve": "重新解析",
   "settings.backgroundResolving": "解析中…",
   "settings.backgroundUnresolved": "尚未解析",
   "settings.backgroundResolveFailed": "無法解析",
@@ -1043,12 +1005,12 @@ const zhTW: Record<UiKey, string> = {
   'remote.stateFailed': '連線失敗',
   'remote.disabledHint': '開啟下方的「啟用遠端存取」並重新啟動服務後，這裡會顯示可從外網開啟的網址。',
   'remote.passwordHint': '從外網開啟這個網址時需要輸入下方的 WebUI 密碼。',
-  'task.started': '任務已啟動', 'task.runTool': '執行工具', 'task.runNow': '立刻執行', 'task.searchConfig': '搜尋設定項', 'task.searchConfigPlaceholder': '搜尋此任務的設定項…', 'task.noConfig': '此任務沒有獨立設定', 'task.toolCanRun': '可使用上方按鈕執行工具。', 'task.viewRelated': '請在相關任務中查看設定。', 'task.readonly': '唯讀', 'task.noConfigFound': '找不到設定項', 'task.tryOtherKeyword': '試試其他關鍵字。', 'task.confirmRun': '確認執行',
+  'task.started': '任務已啟動', 'task.runTool': '執行工具', 'task.runNow': '立刻執行', 'task.searchConfig': '搜尋設定項', 'task.searchConfigPlaceholder': '搜尋此任務的設定項…', 'task.noConfig': '此任務沒有獨立設定', 'task.viewRelated': '請在相關任務中查看設定。', 'task.readonly': '唯讀', 'task.noConfigFound': '找不到設定項', 'task.tryOtherKeyword': '試試其他關鍵字。', 'task.confirmRun': '確認執行',
   'monitor.title': '執行監控', 'monitor.view': '監控檢視', 'monitor.logs': '日誌', 'monitor.preview': '截圖', 'monitor.saveScreenshot': '儲存截圖', 'monitor.waitingScreenshot': '等待任務截圖', 'monitor.screenshotHint': '任務截圖後自動更新；閒置時保留最後畫面。', 'monitor.recentLogs': '最近日誌',
-  'resource.cards': '資源卡片', 'resource.settings': '資源卡片設定', 'resource.cardsHint': '點擊新增卡片，拖曳卡片調整顯示順序', 'resource.restoreDefault': '恢復預設', 'resource.addCard': '新增卡片', 'resource.allAdded': '所有可用資源都已經新增了', 'resource.waitingSync': '等待遊戲內資源同步', 'resource.recordedTooOld': '時間太久了啦…',
-  'scheduler.rail': '排程與任務', 'scheduler.workspace': '實例工作區', 'scheduler.title': '排程器', 'scheduler.running': '執行中', 'scheduler.pending': '待執行', 'scheduler.waiting': '等待中', 'scheduler.abnormal': '異常', 'scheduler.stopped': '已停止', 'scheduler.processing': '正在處理…', 'scheduler.stop': '停止執行', 'scheduler.start': '啟動排程器', 'scheduler.started': '排程器已啟動', 'scheduler.stoppedNotice': '排程器已停止', 'scheduler.plan': '任務計畫', 'scheduler.noRunning': '目前沒有正在執行的任務', 'scheduler.noPending': '目前沒有待執行任務', 'scheduler.noWaiting': '目前沒有等待中的任務', 'scheduler.noEnabled': '暫無已啟用任務', 'overview.statCard': '統計', 'overview.showStats': '切換到統計', 'overview.showLogs': '切換到日誌', 'nav.configs': '設定管理', 'config.create': '新增設定', 'config.import': '匯入設定', 'config.overview': '概覽', 'config.export': '匯出', 'config.exported': '已匯出 {name}', 'config.empty': '還沒有設定', 'config.emptyHint': '點右上角新增一個設定實例。', 'developer.quickTools': '快捷工具', 'developer.simulateIcons': '模擬狀態圖示', 'developer.simulateIconsHint': '暫時把實例列表上的狀態徽章改成指定值，10 秒後自動恢復。', 'developer.simulateRunning': '模擬執行中', 'developer.simulateError': '模擬異常', 'developer.simulateUpdating': '模擬更新中', 'developer.simulateClear': '清除模擬', 'developer.simulating': '正在模擬：{status}', 'developer.simulateIdleHint': '目前沒有模擬狀態。', 'developer.updateNotice': '更新提示', 'developer.updateNoticeHint': '預覽「有新版本」角標在側欄的樣子。', 'developer.updateNoticeToggle': '切換更新角標', 'developer.throwTest': '拋出異常', 'developer.throwTestHint': '故意拋一個前端異常，用來檢查錯誤頁；測試後需要重新整理頁面。',
+  'resource.cards': '資源卡片', 'resource.cardsHint': '點擊新增卡片，拖曳卡片調整顯示順序', 'resource.restoreDefault': '恢復預設', 'resource.addCard': '新增卡片', 'resource.allAdded': '所有可用資源都已經新增了', 'resource.waitingSync': '等待遊戲內資源同步', 'resource.recordedTooOld': '時間太久了啦…',
+  'scheduler.rail': '排程與任務', 'scheduler.title': '排程器', 'scheduler.running': '執行中', 'scheduler.pending': '待執行', 'scheduler.waiting': '等待中', 'scheduler.processing': '正在處理…', 'scheduler.stop': '停止執行', 'scheduler.start': '啟動排程器', 'scheduler.started': '排程器已啟動', 'scheduler.stoppedNotice': '排程器已停止', 'scheduler.plan': '任務計畫', 'scheduler.noEnabled': '暫無已啟用任務', 'overview.statCard': '統計', 'overview.showStats': '切換到統計', 'overview.showLogs': '切換到日誌', 'nav.configs': '設定管理', 'config.create': '新增設定', 'config.import': '匯入設定', 'config.overview': '概覽', 'config.export': '匯出', 'config.exported': '已匯出 {name}', 'config.empty': '還沒有設定', 'config.emptyHint': '點右上角新增一個設定實例。', 'developer.quickTools': '快捷工具', 'developer.simulateIcons': '模擬狀態圖示', 'developer.simulateIconsHint': '暫時把實例列表上的狀態徽章改成指定值，10 秒後自動恢復。', 'developer.simulateRunning': '模擬執行中', 'developer.simulateError': '模擬異常', 'developer.simulateUpdating': '模擬更新中', 'developer.simulateClear': '清除模擬', 'developer.simulating': '正在模擬：{status}', 'developer.simulateIdleHint': '目前沒有模擬狀態。', 'developer.updateNotice': '更新提示', 'developer.updateNoticeHint': '預覽「有新版本」角標在側欄的樣子。', 'developer.updateNoticeToggle': '切換更新角標', 'developer.throwTest': '拋出異常', 'developer.throwTestHint': '故意拋一個前端異常，用來檢查錯誤頁；測試後需要重新整理頁面。',
   'stats.axisAuto': '縱軸自適應',
-  'stats.category.resources': '資源趨勢', 'stats.foldChart': '收合圖表', 'stats.unfoldChart': '展開圖表', 'stats.category.action': '大世界趨勢', 'stats.category.opsi': '大世界總結', 'stats.category.commission': '委託收益', 'stats.category.ships': '艦船經驗', 'stats.category.loot': '大世界掉落', 'stats.category.research': '科研掉落', 'stats.researchSeries': '科研期數', 'stats.consumableScope': '心智/物資', 'stats.seriesN': '第 {n} 期', 'stats.refreshing': '正在重新整理…', 'stats.refresh': '重新整理統計', 'stats.exportCategory': '匯出本類資料', 'stats.categoryLabel': '統計分類', 'stats.range': '時間範圍', 'stats.days': '統計天數', 'stats.recentDays': '最近 {days} 天', 'stats.month': '統計月份', 'stats.period': '彙總週期', 'stats.today': '今日', 'stats.thisWeek': '本週', 'stats.selectedMonth': '選定月份', 'stats.lootTask': '任務', 'stats.lootTaskAll': '全部大世界任務', 'stats.metric': '指標', 'stats.value': '數值', 'stats.unit': '單位', 'stats.time': '時間', 'stats.source': '來源', 'stats.notes': '統計說明', 'stats.foldCard': '收合卡片', 'stats.unfoldCard': '展開卡片', 'stats.exportDetails': '匯出明細', 'stats.editMode': '樣式編輯', 'stats.editEntered': '已進入樣式編輯', 'stats.editExited': '已退出樣式編輯', 'stats.editConsole': '樣式編輯主控台', 'stats.editConsoleHint': '版面設定只保存在本瀏覽器，隨時可以還原。', 'stats.editLayoutDefault': '原版版面', 'stats.editLayoutCustom': '已自訂', 'stats.editReset': '恢復預設設定', 'stats.editResetDone': '已恢復預設設定', 'stats.searchPlaceholder': '搜尋記錄…', 'stats.records': '{count} 筆記錄', 'stats.noRecords': '暫無符合條件的記錄。', 'stats.trendDetails': '趨勢與細節', 'stats.zeroBase': '縱軸固定', 'stats.chartHeading.resources': '資源·趨勢與細節', 'stats.chartHeading.action': '大世界·趨勢與細節', 'stats.collapseChart': '收起圖表', 'stats.expandChart': '放大查看', 'stats.chart': '圖表', 'stats.chartType': '圖表類型', 'stats.line': '折線', 'stats.candlestick': 'K 線（開高低收）', 'stats.bucket': '取樣粒度', 'stats.eachRecord': '每次記錄', 'stats.fiveMinutes': '5 分鐘', 'stats.hourly': '每小時', 'stats.daily': '每天', 'stats.startTime': '起始時間', 'stats.endTime': '結束時間', 'stats.allTime': '全部時間', 'stats.invalidRange': '起始時間不能晚於結束時間。', 'stats.latest': '最新值', 'stats.change': '區間變化', 'stats.maximum': '最高值', 'stats.minimum': '最低值', 'stats.rawCount': '原始記錄', 'stats.noValidTitle': '這段時間沒有有效記錄', 'stats.metricsTitle': '收穫', 'stats.singleView': '只看目前頁', 'stats.mergePages': '合併為單頁', 'stats.compactHeader': '緊湊', 'stats.cardMode': '卡片', 'stats.stackedRise': '疊漲', 'stats.plainColor': '原色', 'stats.tableRows': '每頁行數', 'stats.tableRowsAll': '全部', 'stats.tableIcons': '顯示圖示', 'stats.tablePlain': '簡潔顯示', 'stats.tableNoIcons': '無圖示', 'stats.tableNormal': '一般表格', 'stats.metricsTable': '表格', 'stats.hidePicker': '隱藏選取器', 'stats.showPicker': '顯示選取器', 'stats.chainTitle': '頁面組合', 'stats.chainAdd': '加入頁面組合', 'stats.chainRemove': '移出組合', 'stats.chainPick': '選擇頁面',
+  'stats.category.resources': '資源趨勢', 'stats.foldChart': '收合圖表', 'stats.unfoldChart': '展開圖表', 'stats.category.action': '大世界趨勢', 'stats.category.opsi': '大世界總結', 'stats.category.commission': '委託收益', 'stats.category.ships': '艦船經驗', 'stats.category.loot': '大世界掉落', 'stats.category.research': '科研掉落', 'stats.researchSeries': '科研期數', 'stats.consumableScope': '心智/物資', 'stats.seriesN': '第 {n} 期', 'stats.refreshing': '正在重新整理…', 'stats.refresh': '重新整理統計', 'stats.exportCategory': '匯出本類資料', 'stats.categoryLabel': '統計分類', 'stats.range': '時間範圍', 'stats.days': '統計天數', 'stats.recentDays': '最近 {days} 天', 'stats.month': '統計月份', 'stats.period': '彙總週期', 'stats.today': '今日', 'stats.thisWeek': '本週', 'stats.selectedMonth': '選定月份', 'stats.lootTask': '任務', 'stats.lootTaskAll': '全部大世界任務', 'stats.metric': '指標', 'stats.value': '數值', 'stats.unit': '單位', 'stats.time': '時間', 'stats.source': '來源', 'stats.notes': '統計說明', 'stats.foldCard': '收合卡片', 'stats.unfoldCard': '展開卡片', 'stats.exportDetails': '匯出明細', 'stats.editMode': '樣式編輯', 'stats.editEntered': '已進入樣式編輯', 'stats.editExited': '已退出樣式編輯', 'stats.editConsole': '樣式編輯主控台', 'stats.editConsoleHint': '版面設定只保存在本瀏覽器，隨時可以還原。', 'stats.editLayoutDefault': '原版版面', 'stats.editLayoutCustom': '已自訂', 'stats.editReset': '恢復預設設定', 'stats.editResetDone': '已恢復預設設定', 'stats.searchPlaceholder': '搜尋記錄…', 'stats.records': '{count} 筆記錄', 'stats.noRecords': '暫無符合條件的記錄。', 'stats.trendDetails': '趨勢與細節', 'stats.zeroBase': '縱軸固定', 'stats.chartHeading.resources': '資源·趨勢與細節', 'stats.chartHeading.action': '大世界·趨勢與細節', 'stats.collapseChart': '收起圖表', 'stats.expandChart': '放大查看', 'stats.chart': '圖表', 'stats.chartType': '圖表類型', 'stats.line': '折線', 'stats.candlestick': 'K 線（開高低收）', 'stats.bucket': '取樣粒度', 'stats.eachRecord': '每次記錄', 'stats.fiveMinutes': '5 分鐘', 'stats.hourly': '每小時', 'stats.daily': '每天', 'stats.startTime': '起始時間', 'stats.endTime': '結束時間', 'stats.allTime': '全部時間', 'stats.invalidRange': '起始時間不能晚於結束時間。', 'stats.latest': '最新值', 'stats.change': '區間變化', 'stats.maximum': '最高值', 'stats.minimum': '最低值', 'stats.rawCount': '原始記錄', 'stats.noValidTitle': '這段時間沒有有效記錄', 'stats.metricsTitle': '收穫', 'stats.mergePages': '合併為單頁', 'stats.compactHeader': '緊湊', 'stats.cardMode': '卡片', 'stats.stackedRise': '疊漲', 'stats.plainColor': '原色', 'stats.tableRows': '每頁行數', 'stats.tableIcons': '顯示圖示', 'stats.tablePlain': '簡潔顯示', 'stats.tableNoIcons': '無圖示', 'stats.tableNormal': '一般表格', 'stats.metricsTable': '表格', 'stats.hidePicker': '隱藏選取器', 'stats.showPicker': '顯示選取器', 'stats.chainTitle': '頁面組合', 'stats.chainAdd': '加入頁面組合', 'stats.chainRemove': '移出組合', 'stats.chainPick': '選擇頁面',
   'stats.hideCard': '隱藏卡片', 'stats.showCard': '顯示卡片',
   'stats.linkCards': '與下一張組合', 'stats.unlinkCards': '拆開組合',
   'stats.orderHandle': '拖動排序', 'stats.orderUp': '上移', 'stats.orderDown': '下移', 'stats.orderHint': '拖動卡片左上角的把手可調整順序，也可用上移／下移按鈕。',
@@ -1058,7 +1020,6 @@ const zhTW: Record<UiKey, string> = {
   'field.yaml': 'YAML',
   'instance.created': '實例已建立，請設定模擬器連線',
   'instance.namePlaceholder': '例如：alas-main',
-  'instance.configInstances': '設定實例',
   'nav.instanceTabs': '實例分頁',
   'nav.startAll': '一鍵啟用全部實例', 'nav.stopAll': '一鍵暫停全部實例',
   'nav.tabSize': '調整分頁大小',
@@ -1144,7 +1105,6 @@ const zhTW: Record<UiKey, string> = {
   'resource.Merit': '功勳',
   'resource.GuildCoin': '艦隊幣',
   'resource.Chip': '心智單元',
-  'resource.totalActionPoint': '總行動力',
   
   'resource.remove': '移除{label}',
   'stats.commissionPeriod': '委託彙總週期',
@@ -1164,7 +1124,6 @@ const zhTW: Record<UiKey, string> = {
   'stats.axisSeparate': '多軸自適應',
   'stats.axisUnified': '統一定量',
   'stats.resetSelection': '重設選擇',
-  'stats.singleOnly': '（僅限單指標）',
   'stats.multiMetrics': '已選資料來源概覽',
   'stats.candlestickOverlay': 'K 線 + 折線疊加',
   'stats.primaryCandle': 'K線',
@@ -1173,7 +1132,6 @@ const zhTW: Record<UiKey, string> = {
   'edit.draftReadError': '無法讀取瀏覽器草稿，請保持頁面開啟直到儲存完成。',
   'edit.draftPersistError': '瀏覽器無法保留草稿，請保持頁面開啟直到儲存完成。',
   ...developerZhTW,
-  'settings.regionSidebar': "側欄", 'settings.regionTopbar': "頂欄",
 }
 
 const dictionaries: Record<Language, Record<UiKey, string>> = {
@@ -1183,14 +1141,17 @@ const dictionaries: Record<Language, Record<UiKey, string>> = {
   'ja-JP': jaJP,
 }
 
+/** 判断任意字符串是否为受支持的界面语言，用于校验存储或 URL 里读出的旧值。 */
 export function isLanguage(value: string | null | undefined): value is Language {
   return !!value && Object.prototype.hasOwnProperty.call(languages, value)
 }
 
+/** 映射成 BCP-47 地区标签，供 `<html lang>` 与 Intl、图表库使用；四个语言名本身合法，故原样返回。 */
 export function localeForLanguage(language: Language): string {
   return language
 }
 
+/** 按候选列表依次匹配语言；zh 系变体归并到繁/简两支，全部不中回落简体中文。 */
 export function detectLanguage(values: readonly string[] = typeof navigator === 'undefined' ? [] : navigator.languages): Language {
   for (const raw of values) {
     const value = raw.toLowerCase()
@@ -1207,6 +1168,7 @@ function interpolate(template: string, params?: TranslationParams) {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => params[key] === undefined ? match : String(params[key]))
 }
 
+/** 按指定语言取文案，该键缺失时回落简体中文；`{name}` 占位符用 params 插值。 */
 export function translateUi(language: Language, key: UiKey, params?: TranslationParams): string {
   return interpolate(dictionaries[language][key] ?? zhCN[key], params)
 }
@@ -1219,6 +1181,7 @@ function preferredLanguage(): Language {
   return detectLanguage()
 }
 
+/** 用「当前语言」（存储里保存的，否则浏览器语言）翻译文案；React 之外的模块代码用这个入口。 */
 export function translateCurrentUi(key: UiKey, params?: TranslationParams): string {
   return translateUi(preferredLanguage(), key, params)
 }

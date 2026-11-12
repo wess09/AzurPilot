@@ -8,10 +8,12 @@
 import type { UiKey } from '../i18n'
 import type { ResolvedMode } from './palettes'
 
-export type ColorGroup = 'surface' | 'text' | 'accent' | 'status' | 'nav' | 'form' | 'log' | 'syntax' | 'chart'
+type ColorGroup = 'surface' | 'text' | 'accent' | 'status' | 'nav' | 'form' | 'log' | 'syntax' | 'chart'
 
+/** 全部分组标识，设置页调色板按此数组顺序分节展示。 */
 export const colorGroups: ColorGroup[] = ['surface', 'text', 'accent', 'status', 'nav', 'form', 'log', 'syntax', 'chart']
 
+/** 各分组在设置页的标题 i18n 键。 */
 export const colorGroupLabels: Record<ColorGroup, UiKey> = {
   surface: 'settings.colorGroupSurface',
   text: 'settings.colorGroupText',
@@ -24,6 +26,7 @@ export const colorGroupLabels: Record<ColorGroup, UiKey> = {
   chart: 'settings.colorGroupChart',
 }
 
+/** 一个可编辑颜色槽位：token 是主题已在消费的 CSS 变量名，label 是设置页的展示文案键。 */
 export type ColorSlot = {token: `--${string}`; group: ColorGroup; label: UiKey}
 
 /** 挂牌顺序即界面顺序：先面、再字、再强调，其余按使用频率排开。 */
@@ -88,6 +91,8 @@ export const colorSlots: ColorSlot[] = [
 ]
 
 const slotTokens = new Set<string>(colorSlots.map(slot => slot.token))
+
+/** 是否为登记过的槽位令牌：未登记的令牌不进覆盖表，也不会写进根节点。 */
 export const isColorToken = (token: string) => slotTokens.has(token)
 
 /** 只接受实色：`#rgb` 输入时补齐成六位，其余（rgb()/color-mix/named）一律判为无效。 */
@@ -107,7 +112,7 @@ export function toHexColor(raw: string): string | undefined {
 const STORAGE_KEY = 'azurpilot.color-palette'
 
 /** 每个明暗各存一份覆盖；缺省即「跟随主题」。 */
-export type ColorOverrides = Partial<Record<ResolvedMode, Record<string, string>>>
+type ColorOverrides = Partial<Record<ResolvedMode, Record<string, string>>>
 
 /** 只接收登记过的令牌与合法实色，避免本地数据把任意 CSS 写进根节点。 */
 export function readColorOverrides(): ColorOverrides {
@@ -135,11 +140,12 @@ function save(overrides: ColorOverrides) {
   } catch { /* 存储不可用时仍允许本次会话内改色。 */ }
 }
 
+/** 读单个槽位在指定明暗下的覆盖值，未覆盖返回 undefined。 */
 export function readColorOverride(mode: ResolvedMode, token: string): string | undefined {
   return readColorOverrides()[mode]?.[token]
 }
 
-/** 写入或清除单个槽位；value 传 undefined 表示还原。返回写入后的覆盖表。 */
+/** 写入或清除单个槽位；value 传 null 表示还原。返回写入后的覆盖表。 */
 export function writeColorOverride(mode: ResolvedMode, token: string, value: string | null): ColorOverrides {
   const overrides = readColorOverrides()
   if (!isColorToken(token)) return overrides
@@ -153,6 +159,7 @@ export function writeColorOverride(mode: ResolvedMode, token: string, value: str
   return next
 }
 
+/** 清空覆盖并返回清空后的覆盖表：不传 mode 清掉全部明暗，传了只清该明暗。 */
 export function clearColorOverrides(mode?: ResolvedMode): ColorOverrides {
   const overrides = readColorOverrides()
   const next: ColorOverrides = {...overrides}
@@ -162,6 +169,7 @@ export function clearColorOverrides(mode?: ResolvedMode): ColorOverrides {
   return next
 }
 
+/** 指定明暗下已覆盖的槽位数：直读存储，需要新鲜值时由调用方用版本号或弹窗开合强制重算。 */
 export function countColorOverrides(mode: ResolvedMode): number {
   return Object.keys(readColorOverrides()[mode] ?? {}).length
 }
@@ -178,8 +186,10 @@ export function applyColorOverrides(root: HTMLElement, mode: ResolvedMode): stri
   return written
 }
 
-/** 未覆盖时读主题自己的取值：色块与十六进制输入都以它起稿。
-    令牌可能是 `color-mix()` 这类表达式，交给浏览器解析一次再取 RGB。 */
+/**
+ * 未覆盖时读主题自己的取值：色块与十六进制输入都以它起稿。
+ * 令牌可能是 `color-mix()` 这类表达式，交给浏览器解析一次再取 RGB。
+ */
 export function currentColorValue(token: string): string | undefined {
   if (typeof document === 'undefined') return undefined
   const declared = getComputedStyle(document.documentElement).getPropertyValue(token)

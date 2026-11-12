@@ -1,16 +1,13 @@
 /**
- * @fileoverview 动效调试台偏好（速度倍率、力度档位、减弱动效模拟）管理。
+ * @fileoverview 动效调试台（开发者工具）偏好：速度倍率 / 力度档位 / 减少动效模拟。
+ *
+ * 与 topbarPrefs 同模式：模块加载即生效（首帧正确）、localStorage 持久、subscribe/read 供
+ * useSyncExternalStore 使用；仅为开发与验收工具，不写入项目配置文件，影响范围是当前浏览器。
  */
 
-/** 动效调试台（开发者工具）偏好：速度倍率 / 力度档位 / 减少动效模拟。
- *
- *  与 topbarPrefs 同模式：模块加载即生效（首帧正确）、localStorage 持久、
- *  subscribe/read 供 useSyncExternalStore 使用。
- *  注意：仅为开发与验收工具，不写入项目配置文件；影响范围=当前浏览器。 */
-
-export type MotionSpeed = 1 | 2 | 4
-export type MotionStrength = 'standard' | 'strong'
-export type MotionPrefs = {speed: MotionSpeed; strength: MotionStrength; reduced: boolean}
+type MotionSpeed = 1 | 2 | 4
+type MotionStrength = 'standard' | 'strong'
+type MotionPrefs = {speed: MotionSpeed; strength: MotionStrength; reduced: boolean}
 
 const SPEED_KEY = 'azurpilot.motion.speed'
 const STRENGTH_KEY = 'azurpilot.motion.strength'
@@ -26,13 +23,13 @@ function readStored(): MotionPrefs {
       strength: strength === 'standard' ? 'standard' : 'strong',
       reduced: localStorage.getItem(REDUCED_KEY) === '1',
     }
-  } catch { return {speed: 2, strength: 'strong', reduced: false} }
+  } catch { /* 存储被禁时回落默认值，调试台不依赖持久化。 */ return {speed: 2, strength: 'strong', reduced: false} }
 }
 
 const browser = typeof window !== 'undefined' && typeof document !== 'undefined'
 
-/** 全局倍率走 CSS 变量：motion.css 里所有时长都是 calc(基础值 * --motion-speed)。
-    默认 0.5× 对应倍率 2；力度档位与“减少动效模拟”走 data 属性，由 motion.css 对应选择器消费。 */
+// 全局倍率走 CSS 变量：motion.css 里所有时长都是 calc(基础值 * --motion-speed)，默认 0.5× 对应倍率 2。
+// 力度档位与「减少动效模拟」走 data 属性，由 motion.css 对应选择器消费。
 function apply(next: MotionPrefs) {
   if (!browser) return
   const root = document.documentElement
@@ -49,6 +46,7 @@ apply(state)
 
 const listeners = new Set<() => void>()
 
+/** 订阅偏好变化；返回取消订阅的函数。 */
 export const subscribeMotionPrefs = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
@@ -78,4 +76,5 @@ function commit(next: MotionPrefs) {
 export const setMotionSpeed = (speed: MotionSpeed) => commit({...state, speed})
 export const setMotionStrength = (strength: MotionStrength) => commit({...state, strength})
 export const setMotionReduced = (reduced: boolean) => commit({...state, reduced})
+/** 恢复默认偏好：倍率 2（0.5×）、力度强、关闭减弱模拟。 */
 export const resetMotionPrefs = () => commit({speed: 2, strength: 'strong', reduced: false})

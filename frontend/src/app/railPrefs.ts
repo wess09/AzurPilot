@@ -8,10 +8,13 @@
 import { prefStore } from './prefStore'
 
 /** `shown` —— 默认，右列显示「目录 + 调度器」。`hidden` —— 整栏收起。 */
-export type RailVisibility = 'shown' | 'hidden'
+type RailVisibility = 'shown' | 'hidden'
 
 const store = prefStore<RailVisibility>('azurpilot.legacy-rail-visible', raw => raw === 'hidden' ? 'hidden' : 'shown')
 
+/** 读取右列显隐：存储不可用或存的值不是 'hidden' 时一律回落 'shown'。 */
 export const readRailVisible = store.read
+/** 订阅右列显隐变化，返回退订函数。 */
 export const subscribeRailVisible = store.subscribe
+/** 写入并持久化右列显隐，随后通知所有订阅者；存储不可用时仅本次会话生效。 */
 export const setRailVisible = store.write

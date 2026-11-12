@@ -15,8 +15,8 @@ import './styles/legacy.css'
 import './styles/minimal.css'
 import './styles/shadcn.css'
 
-/* 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
-   没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。 */
+// 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
+// 没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。
 function ErrorPage() {
   return <div className="welcome"><h1>{translateCurrentUi('error.pageTitle')}</h1><p>{translateCurrentUi('error.pageHint')}</p><button className="button primary" onClick={() => location.reload()}>{translateCurrentUi('error.reload')}</button></div>
 }

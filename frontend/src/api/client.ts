@@ -1,4 +1,6 @@
-/** 统一分发 WebUI RPC。操作连接的状态驱动登录界面，数据连接独立恢复。 */
+/**
+ * @fileoverview 统一分发 WebUI RPC：操作连接的状态驱动登录界面，数据连接独立恢复。
+ */
 import {dataMethods, webSocketTransport, type Parameters} from './generated'
 import {ApiError, RpcSocket} from './socket'
 import type {ApiEvent, Results} from './types'
@@ -9,6 +11,10 @@ const dataRequests = new Set<string>(dataMethods)
 const dataTopics = new Set<string>(webSocketTransport.dataTopics)
 type Subscription = Parameters['events.subscribe']
 
+/**
+ * WebUI 的统一 RPC 客户端：按方法把请求分发到操作、数据两条连接，并把事件广播给订阅者。
+ * 操作连接的状态（getSnapshot）驱动登录界面；数据连接断开后独立恢复，读取类请求重连成功后自动重试一次。
+ */
 export class ApiClient {
   private password = ''
   private launcherTicket?: string
@@ -46,11 +52,13 @@ export class ApiClient {
 
   getSnapshot = this.control.getSnapshot
   subscribe = this.control.subscribe
+  /** 订阅事件广播；返回取消订阅函数。 */
   onEvent = (listener: (event: ApiEvent) => void) => {
     this.events.add(listener)
     return () => { this.events.delete(listener) }
   }
 
+  /** 恢复本地保存的密码、从地址栏摘走启动器票据后接通连接；存储不可用时仍走会话内登录。 */
   connect = () => {
     if (!this.password) {
       try { this.password = window.localStorage.getItem('azurpilot.access-password') ?? '' }
@@ -83,6 +91,7 @@ export class ApiClient {
     }
   }
 
+  /** 用密码认证并把操作连接置为就绪；认证成功后密码写入 localStorage 供下次自动恢复。 */
   async login(password: string) {
     await this.authenticate(password)
     this.control.ready()
@@ -140,4 +149,5 @@ export class ApiClient {
   }
 }
 
+/** 全局唯一实例：整个前端直接 import 使用，不自行 new。 */
 export const api = new ApiClient()

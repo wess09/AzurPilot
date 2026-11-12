@@ -7,8 +7,9 @@ import { VALID_CATEGORIES, type StatisticsCategory } from './statisticsPrefs'
 export type PageId = StatisticsCategory
 
 /** 卡片顺序、组合链与隐藏名单共用的落盘键：平时是链首页面，单页视图下是全部启用页面共用的一个键。 */
-export type SpaceKey = string
+type SpaceKey = string
 
+/** 统计页布局文档，落盘于 localStorage；version 只认 1，对不上就整份回落默认布局。 */
 export interface StatisticsLayout {
   version: 1
   pages: PageId[][]
@@ -37,7 +38,7 @@ export interface StatisticsLayout {
 export const DEFAULT_TABLE_ROWS = 25
 
 /** 单张表格的显示设置：每页行数（0 = 全部）、数值补图标、只留内容行。 */
-export type TableDisplay = {rows?: number; icons?: boolean; plain?: boolean}
+type TableDisplay = {rows?: number; icons?: boolean; plain?: boolean}
 
 export const LAYOUT_KEY = 'azurpilot.statistics.layout'
 export const EDIT_MODE_KEY = 'azurpilot.statistics.edit-mode'
@@ -306,7 +307,7 @@ export function unfoldCard(layout: StatisticsLayout, key: string): StatisticsLay
 }
 
 /** 单页视图把全部启用页面当成一条整链，链与顺序表都落在同一个键上；退出单页视图后这个键读不到，等于自动回滚。 */
-export const SINGLE_VIEW_SPACE = 'single'
+const SINGLE_VIEW_SPACE = 'single'
 
 /** 卡片空间的键：组合链内的页面共用一套卡片顺序与连接，取链首页面。 */
 export function cardSpace(layout: StatisticsLayout, page: PageId): string {
@@ -322,12 +323,12 @@ export function orderCards(layout: StatisticsLayout, page: PageId, keys: string[
   return [...keys].sort((a, b) => (rank.get(a) ?? order.length) - (rank.get(b) ?? order.length))
 }
 
-/** 卡片是否被隐藏：隐藏名单按页存放，键里带页号。 */
 /** 该页的图表与原始记录是否至少有一张可见：两张都隐藏时后端不必查询序列数据。 */
 export function pageNeedsSeries(layout: StatisticsLayout, page: PageId): boolean {
   return !isCardHidden(layout, cardKey(page, 'chart')) || !isCardHidden(layout, cardKey(page, 'raw'))
 }
 
+/** 卡片是否被隐藏：隐藏名单按页存放，键里带页号。 */
 export function isCardHidden(layout: StatisticsLayout, key: string): boolean {
   const page = pageOfKey(key)
   return Boolean(page && layout.hidden[cardSpace(layout, page)]?.includes(key))

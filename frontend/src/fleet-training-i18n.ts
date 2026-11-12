@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船调度（fleet-training）模块的界面文案语言包：zh-CN 为源，
+ * zh-TW / en-US / ja-JP 的键集与类型必须与 zh-CN 一致。
+ */
 export const trainingZhCN = {
   'training.stopOnComplete': '本轮全部达标后停止练级任务',
   'training.stopHelp': '默认关闭。勾选舰船全部达到已启用的等级/好感目标后停止当前任务；先达标的舰船留在原位。',

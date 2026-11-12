@@ -11,7 +11,7 @@ import type { Status } from '../api/types'
  * 只影响显式声明 `simulate` 的状态徽章（实例卡）与更新角标，不碰真实数据，
  * 也不影响开发者工具页自己的控件预览。
  */
-export interface DevOverride {status: Status | null; updatePreview: boolean}
+interface DevOverride {status: Status | null; updatePreview: boolean}
 
 const OFF: DevOverride = {status: null, updatePreview: false}
 const SERVER_SNAPSHOT = () => OFF
@@ -24,11 +24,12 @@ function publish(next: DevOverride) {
   listeners.forEach(listener => listener())
 }
 
-export const getDevOverride = () => snapshot
-export const subscribeDevOverride = (listener: () => void) => {
+const getDevOverride = () => snapshot
+const subscribeDevOverride = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
 }
+/** 订阅当前模拟状态：未模拟时 `status` 为 null、`updatePreview` 为 false。 */
 export const useDevOverride = () => useSyncExternalStore(subscribeDevOverride, getDevOverride, SERVER_SNAPSHOT)
 
 function stopTimer() {
@@ -42,7 +43,7 @@ export function simulateStatus(status: Status | null, seconds = 10) {
   if (status) timer = setTimeout(() => {timer = null; publish({...snapshot, status: null})}, seconds * 1000)
 }
 
-/** 预览更新提示角标。 */
+/** 开关侧栏的「有新版本」更新角标预览，不必真等一次更新就能查看样式（开发者工具页的切换按钮在用）。 */
 export function previewUpdate(active: boolean) {
   publish({...snapshot, updatePreview: active})
 }

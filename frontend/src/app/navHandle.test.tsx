@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 侧栏把手（NavHandle）随背景开关显隐的渲染回归测试。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from './context'
@@ -12,6 +16,7 @@ const snapshot = (source: 'off' | 'url' | 'upload'): BackgroundSnapshot => ({
   assetUrl: '', directUrl: '', resolving: false, resolveError: '', loading: false, revision: 0,
 })
 
+// 只断言把手节点是否出现，用静态字符串渲染即可，不必为此挂 jsdom。
 const render = (source: 'off' | 'url' | 'upload') => renderToStaticMarkup(
   <AppContext.Provider value={context}>
     <NavHandle background={snapshot(source)}/>

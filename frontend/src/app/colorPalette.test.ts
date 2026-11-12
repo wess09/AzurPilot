@@ -1,9 +1,14 @@
+/**
+ * @fileoverview 调色板覆盖的持久化行为：令牌白名单、色值归一化与损坏存储的回落。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   clearColorOverrides, colorSlots, countColorOverrides, isColorToken,
   readColorOverride, readColorOverrides, toHexColor, writeColorOverride,
 } from './colorPalette'
 
+// 本文件跑在 node 环境，没有 localStorage：用内存桩代替，配合 vi.stubGlobal 验证读写路径。
 function memoryStorage(initial: Record<string, string> = {}) {
   const data = {...initial}
   return {
@@ -56,7 +61,7 @@ describe('调色板覆盖表', () => {
     writeColorOverride('light', '--bg', null)
     expect(countColorOverrides('light')).toBe(0)
     expect(countColorOverrides('dark')).toBe(1)
-    /* 两套都空时不留键，和从未改过完全等价。 */
+    // 两套都空时不留键，和从未改过完全等价。
     clearColorOverrides('dark')
     expect(storage.data['azurpilot.color-palette']).toBeUndefined()
   })

@@ -13,6 +13,7 @@ import { palettes, type CustomPalette, type ResolvedMode } from './palettes'
 
 export { languages }
 
+/** AppProvider 对外提供的上下文值；组件一律通过 useApp() 读取。 */
 export interface AppContextValue {
   instancesLoaded: boolean; instances: Instance[]; schema?: Schema; refresh: () => Promise<void>; t: (key: string) => string; ui: UiTranslator
   notify: (message: string, error?: boolean) => void
@@ -24,8 +25,11 @@ export interface AppContextValue {
   customPalettes: CustomPalette[]; saveCustomPalette: (palette: CustomPalette) => void; deleteCustomPalette: (id: CustomPalette['id']) => void
   language: Language; setLanguage: (language: Language) => void
 }
+/** 全局 React 上下文本体；业务代码不要直接 useContext，用 useApp() 拿已断言的非空值。 */
 export const AppContext = createContext<AppContextValue | null>(null)
+/** 订阅后端操作连接的状态（connecting/ready/auth/offline），登录界面与全局可编辑性由它驱动。 */
 export const useConnection = () => useSyncExternalStore(api.subscribe, api.getSnapshot, api.getSnapshot)
+/** 读取全局上下文；必须在 AppProvider 之内使用，Provider 外拿到 null 时这里的断言即失效。 */
 export const useApp = () => useContext(AppContext)!
 
 function initialLanguage(): Language {
@@ -36,6 +40,10 @@ function initialLanguage(): Language {
   return detectLanguage()
 }
 
+/**
+ * 全局 Provider：持有实例列表、配置架构、语言与主题偏好，连接就绪后拉取数据并订阅后端事件。
+ * 应用必须包在它之内；toast 提示也由它渲染。
+ */
 export function AppProvider({children}: {children: ReactNode}) {
   const connection = useConnection()
   const [instances, setInstances] = useState<Instance[]>([])
@@ -92,7 +100,7 @@ export function AppProvider({children}: {children: ReactNode}) {
   useEffect(() => api.onEvent(event => {
     if (event.topic !== 'instances') return
     const next = event.data as Instance[]
-    /* 后端每 2s 推一次快照；内容没变就留住旧引用，避免整棵消费树跟着重渲染。 */
+    // 后端每 2s 推一次快照；内容没变就留住旧引用，避免整棵消费树跟着重渲染。
     setInstances(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next)
   }), [])
   useEffect(() => {
@@ -103,10 +111,11 @@ export function AppProvider({children}: {children: ReactNode}) {
   const t = useCallback((key: string) => {
     let value: unknown = schema?.translations
     for (const part of key.split('.')) value = value && typeof value === 'object' ? (value as Record<string, unknown>)[part] : undefined
+    // 翻译缺失时回落到键的最后一段：Task.Alas.name 这类键去掉 name/_info 后缀，剩下的就是可显示的标识。
     return typeof value === 'string' && value !== key ? value : key.split('.').filter(item => item !== 'name' && item !== '_info').at(-1) ?? key
   }, [schema])
   const ui = useCallback<UiTranslator>((key, params) => translateUi(language, key, params), [language])
-  /* value 固定身份：provider 因 toast、连接状态等无关状态重渲染时，消费点不跟着重渲染。 */
+  // value 固定身份：provider 因 toast、连接状态等无关状态重渲染时，消费点不跟着重渲染。
   const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
     [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
   return <AppContext.Provider value={value}>

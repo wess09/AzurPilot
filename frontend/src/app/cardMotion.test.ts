@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+// 桩掉用户动效偏好：非减弱模式动画才会执行，速度固定为 1 让用例只考察清理时序本身。
 vi.mock('./motionPrefs', () => ({
   motionReducedActive: () => false,
   motionSpeedValue: () => 1,

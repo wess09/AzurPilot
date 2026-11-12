@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Vite 配置：dev 代理指向本机后端（mock 模式指向 mock 服务），构建产物用相对 base 以适配远程反代。
+ */
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'

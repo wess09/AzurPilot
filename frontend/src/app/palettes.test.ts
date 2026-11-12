@@ -40,7 +40,7 @@ describe('品牌配色生成与校验', () => {
 })
 
 describe('品牌配色只动强调色', () => {
-  const ACCENT_KEYS = ['--accent', '--accent-hover', '--accent-pressed', '--accent-soft', '--secondary', '--secondary-soft', '--theme-on-accent']
+  const ACCENT_KEYS = ['--accent', '--accent-hover', '--accent-soft', '--secondary', '--secondary-soft', '--theme-on-accent']
 
   it('材质与旧版用它换色：不碰表面/文字/边框，材质层与底图才不会被冲掉', () => {
     const tokens = accentTokens({primary: '#7050a3', secondary: '#a14865'}, 'light')

@@ -15,9 +15,9 @@ const CARD_SELECTORS = [
   '.head-card',
   '.empty',
   '.error-box',
-  /* 左列调度器是一整块玻璃面板，必须作为一个动效单元整体入场：
-     分开动的话，面板里那块 .panel（「统计」行）会自己缩放淡入，玻璃背板按新比例重采样，
-     模糊就会在动画期间跳一下；而面板本体原地不动，又跟不上页面。 */
+  // 左列调度器是一整块玻璃面板，必须作为一个动效单元整体入场：
+  // 分开动的话，面板里那块 .panel（「统计」行）会自己缩放淡入，玻璃背板按新比例重采样，
+  // 模糊就会在动画期间跳一下；而面板本体原地不动，又跟不上页面。
   '.instance-page-rail-wrap',
 ].join(', ')
 
@@ -32,14 +32,13 @@ let sessionTimeoutId: number | null = null
  * 在根容器内查找所有顶层卡片元素。
  * 若存在嵌套卡片（例如大面板内包含子面板），只保留视觉顶层的独立卡片作为动效单元。
  */
-export function findTopLevelCards(root: HTMLElement): HTMLElement[] {
+function findTopLevelCards(root: HTMLElement): HTMLElement[] {
   const allCards = Array.from(root.querySelectorAll<HTMLElement>(CARD_SELECTORS))
   return allCards.filter(card => {
-    // 忽略不可见或尚未参与布局的元素
+    // 隐藏元素的 rect 全为 0：没有可播的入场动画，参与对角排序还会全部堆到 (0, 0)。
     if (card.offsetWidth === 0 && card.offsetHeight === 0 && card.getClientRects().length === 0) {
       return false
     }
-    // 过滤掉祖先节点已是卡片的深层嵌套元素
     let parent = card.parentElement
     while (parent && parent !== root) {
       if (allCards.includes(parent)) return false
@@ -109,6 +108,7 @@ export function applyCardStaggerMotion(cards: HTMLElement[], sessionId: number) 
   const total = cards.length
 
   cards.forEach((card, index) => {
+    // 双重断言绕开 HTMLElement 的类型限制：键名带 __azurpilot 前缀，不会撞上真实属性。
     ;(card as unknown as Record<string, number>)[MOTION_SESSION_KEY] = sessionId
     // 毛玻璃任务卡片缩放入场时，Chromium 可能将开关轨道和滑块绘制到不同的像素行。
     // 跳过这类卡片的入场动画，保留开关原有样式和其他卡片的动画。
@@ -175,12 +175,12 @@ export function triggerCardStaggerMotion(root: HTMLElement | null) {
     sessionTimeoutId = null
   }
 
-  // 首帧立即扫描已有卡片
+  // 等首帧布局完成再量卡片位置，坐标才有效。
   requestAnimationFrame(() => {
     scanAndAnimateCards(root, sessionId)
   })
 
-  // 监听异步渲染出来的新卡片
+  // 异步数据挂载的新卡片也要进场；高频 DOM 变更只保留最后一帧复扫，避免每条变更都全量扫描。
   let frameId: number | null = null
   activeObserver = new MutationObserver(() => {
     if (frameId !== null) cancelAnimationFrame(frameId)

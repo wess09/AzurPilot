@@ -14,6 +14,12 @@ import {
 
 const KEYBOARD_STEP = 8
 
+/**
+ * 提供侧栏宽度的无障碍调整入口：拖动改宽，双击或 Enter/Backspace 恢复默认，
+ * 左右方向键按步长微调，Home/End 到达上下限；宽度变化写入 layout store 持久化。
+ *
+ * @param label 把手的 aria-label 与 title 提示文案。
+ */
 export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双击恢复默认）'}: {label?: string}) {
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
   const [isDragging, setIsDragging] = useState(false)
@@ -23,13 +29,14 @@ export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双�
     startWidth: number
   } | null>(null)
 
+  // 卸载时兜底摘掉拖拽态类：拖拽中途组件被卸载的话，body 上的 col-resize 光标与禁用选中会残留。
   useEffect(() => {
     return () => {
       document.body.classList.remove('is-resizing-sidebar')
     }
   }, [])
 
-  // 看图模式收起侧栏时不显示把手
+  // 看图模式收起侧栏时不显示把手。
   if (layout.sidebarCollapsed) return null
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
@@ -58,6 +65,7 @@ export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双�
     setSidebarWidth(targetWidth)
   }
 
+  // 指针捕获因切窗口等意外丢失时也按松手收尾，否则拖拽状态会卡在 is-dragging。
   function handlePointerEnd(event: React.PointerEvent<HTMLDivElement>) {
     if (dragRef.current?.pointerId === event.pointerId) {
       dragRef.current = null

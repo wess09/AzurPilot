@@ -14,7 +14,7 @@ export function NavHandle({background: given}: {background?: BackgroundSnapshot}
   const {ui} = useApp()
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
   const collapsed = layout.sidebarCollapsed
-  /* 看图模式的退出条件是「再次与页面交互」：捕获阶段先折回展开，再让这次交互照常作用到目标上。 */
+  // 看图模式的退出条件是「再次与页面交互」：捕获阶段先折回展开，再让这次交互照常作用到目标上。
   useEffect(() => {
     if (!collapsed) return
     const restore = (event: Event) => {
@@ -29,7 +29,7 @@ export function NavHandle({background: given}: {background?: BackgroundSnapshot}
       document.removeEventListener('keydown', restore, true)
     }
   }, [collapsed])
-  /* 只在铺着壁纸时给把手：简约与紧凑族没有壁纸，关闭背景后也没有可看的东西。 */
+  // 只在铺着壁纸时给把手：简约与紧凑族没有壁纸，关闭背景后也没有可看的东西。
   if (background.source === 'off') return null
   return <button
     type="button"

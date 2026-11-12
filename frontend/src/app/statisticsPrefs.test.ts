@@ -13,6 +13,8 @@ function memoryStorage() {
   }
 }
 
+// 偏好在被测模块初始化时就读 localStorage（模块级快照）：每个用例先桩掉全局存储再动态
+// import，才能拿到互不串扰的干净初始态。
 async function loadPrefs() {
   vi.resetModules()
   vi.stubGlobal('localStorage', memoryStorage())
@@ -72,18 +74,17 @@ describe('统计页与图表选项持久化', () => {
   it('按分类独立记录指标选择，且能按可用系列安全校验与过滤', async () => {
     const prefs = await loadPrefs()
 
-    // 记录 resources 与 opsi 分类的指标
     prefs.setSelectedKeysForCategory('resources', ['oil', 'cube', 'ghost_key'])
     prefs.setSelectedKeysForCategory('opsi', ['ap', 'yellow_coins'])
 
     const availableResources = [{ key: 'oil' }, { key: 'cube' }, { key: 'coin' }]
     const availableOpsi = [{ key: 'ap' }, { key: 'yellow_coins' }, { key: 'purple_coins' }]
 
-    // 自动过滤掉当前系列不存在的 ghost_key
+    // 存下的 ghost_key 已不在可用系列里：读取时必须被滤掉，界面才不会渲染出未知系列。
     expect(prefs.getSelectedKeysForCategory('resources', availableResources)).toEqual(['oil', 'cube'])
     expect(prefs.getSelectedKeysForCategory('opsi', availableOpsi)).toEqual(['ap', 'yellow_coins'])
 
-    // 如果可用列表中没有匹配项，返回空数组以便回退默认
+    // 可用列表没有匹配项时返回空数组，调用方据此回退默认指标。
     expect(prefs.getSelectedKeysForCategory('resources', [{ key: 'coin' }])).toEqual([])
     expect(prefs.getSelectedKeysForCategory('commission', [{ key: 'exp' }])).toEqual([])
   })

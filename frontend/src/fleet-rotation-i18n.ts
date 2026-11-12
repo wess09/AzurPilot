@@ -1,8 +1,11 @@
+/**
+ * @fileoverview 智能换船（rotation）的语言包：四份文案在 src/i18n.ts 汇总，键名以 rotation. 开头。
+ */
 export const rotationZhCN = {
   'rotation.favourite': '常用', 'rotation.lastFavourite': '上轮来源：常用',
   'rotation.favouriteHelp': '默认关闭。对应舰位的候补舰队均无可选舰船后，才从常用中选择；自动排除已编队、占用、同名待核对和已毕业舰船。常用选船当前仅支持国服。',
   'rotation.pageTitle': '智能换船',
-  'rotation.title': '换船配置', 'rotation.enable': '启用心情调度', 'rotation.save': '保存规则',
+  'rotation.title': '换船配置', 'rotation.save': '保存规则',
   'rotation.selectedOnly': '仅计算更换舰船心情',
   'rotation.emotionHelp': '三种调度共用，默认关闭。开启后只按勾选舰位心情决定等待，可确认固定舰船带来的红脸；关闭后按全队最低心情等待。沿用任务的保持经验加成、防绿脸等要求。只有开启心情调度，低心情才会触发临时换船。',
   'rotation.help': '为心情、等级、好感调度统一设置更换舰位与候补舰队。仅联动普通主线和活动图，固定舰位保持不变；具体行为由“换船调度”中的开关决定。',
@@ -16,7 +19,7 @@ export const rotationZhTW: typeof rotationZhCN = {
   'rotation.favourite': '常用', 'rotation.lastFavourite': '上輪來源：常用',
   'rotation.favouriteHelp': '預設關閉。對應艦位的候補艦隊均無可選艦船後，才從常用選擇；自動排除已編隊、占用、同名待核對及已畢業艦船。常用選船目前僅支援國服。',
   'rotation.pageTitle': '智慧換船',
-  'rotation.title': '換船設定', 'rotation.enable': '啟用心情調度', 'rotation.save': '儲存規則',
+  'rotation.title': '換船設定', 'rotation.save': '儲存規則',
   'rotation.selectedOnly': '僅計算更換艦船心情',
   'rotation.emotionHelp': '三種調度共用，預設關閉。開啟後僅以勾選艦位心情決定等待，可確認固定艦船造成的紅臉；關閉後以全隊最低心情等待。沿用任務的經驗加成、防綠臉等要求。僅啟用心情調度時，低心情才會觸發暫時換船。',
   'rotation.help': '為心情、等級、好感調度統一設定交替艦位及候補艦隊。僅連動普通主線與活動關卡，固定艦位保持不變；實際行為由「換船調度」開關決定。',
@@ -30,7 +33,7 @@ export const rotationEnUS: typeof rotationZhCN = {
   'rotation.favourite': 'Favourites', 'rotation.lastFavourite': 'Last source: Favourites',
   'rotation.favouriteHelp': 'Off by default. Use favourites only after reserve fleets have no eligible ship for the slot. Excludes assigned, busy, ambiguous duplicate and graduated ships. Favourites recruitment currently supports CN only.',
   'rotation.pageTitle': 'Smart ship rotation',
-  'rotation.title': 'Rotation configuration', 'rotation.enable': 'Enable morale scheduling', 'rotation.save': 'Save rules',
+  'rotation.title': 'Rotation configuration', 'rotation.save': 'Save rules',
   'rotation.selectedOnly': 'Calculate morale for rotating ships only',
   'rotation.emotionHelp': 'Shared by all three modes; off by default. When enabled, only selected slots control morale waiting and warnings from fixed ships may be confirmed. Otherwise use the whole fleet minimum. Task morale requirements remain in effect. Low morale causes temporary swaps only when morale scheduling is enabled.',
   'rotation.help': 'Set shared rotation slots and reserve fleets for morale, level and affinity scheduling. Normal main and event stages only. Fixed slots stay in place; switches on Rotation scheduling control each behavior.',
@@ -44,7 +47,7 @@ export const rotationJaJP: typeof rotationZhCN = {
   'rotation.favourite': '常用', 'rotation.lastFavourite': '前回の候補：常用',
   'rotation.favouriteHelp': '初期設定は無効。対応配置の候補艦隊に適切な艦がなくなってから常用を使用します。編成済み、使用中、同名で未確認、育成完了の艦は除外します。常用からの選択は現在中国版のみ対応です。',
   'rotation.pageTitle': '自動艦船交代',
-  'rotation.title': '交代設定', 'rotation.enable': 'コンディション調整を有効化', 'rotation.save': 'ルールを保存',
+  'rotation.title': '交代設定', 'rotation.save': 'ルールを保存',
   'rotation.selectedOnly': '交代対象艦のみコンディション計算',
   'rotation.emotionHelp': '3種類の調整で共用、初期設定は無効。有効時は選択配置のみで待機を判定し、固定艦の警告は承認可能です。無効時は全艦隊の最低値で待機します。タスクの基準は維持し、低下による一時交代はコンディション調整の有効時のみ行います。',
   'rotation.help': 'コンディション・レベル・好感度調整で共用する交代配置と候補艦隊を設定します。通常メイン・イベント海域のみ。固定配置を維持し、動作は「交代調整」の各スイッチで選択します。',

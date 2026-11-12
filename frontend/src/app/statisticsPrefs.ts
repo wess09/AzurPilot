@@ -2,18 +2,18 @@
  * @fileoverview 统计页外观偏好、时间跨度、图表类型与指标筛选持久化。
  */
 
+export type StatisticsCategory = 'resources' | 'action' | 'opsi' | 'commission' | 'ships' | 'loot' | 'research' | 'storage'
+export type ChartMode = 'line' | 'candlestick'
+export type ChartAxisMode = 'separate' | 'unified'
+type CommissionPeriod = 'day' | 'week' | 'month'
+
 /**
  * 统计页外观与交互偏好：统计分类、时间跨度、图表类型、采样粒度和选中的指标。
  *
  * 与其它界面偏好一致：关掉再打开接着上次的样子，直到用户自己调整。
  * 只存本浏览器，不区分实例。
  */
-export type StatisticsCategory = 'resources' | 'action' | 'opsi' | 'commission' | 'ships' | 'loot' | 'research' | 'storage'
-export type ChartMode = 'line' | 'candlestick'
-export type ChartAxisMode = 'separate' | 'unified'
-export type CommissionPeriod = 'day' | 'week' | 'month'
-
-export interface StatisticsPrefs {
+interface StatisticsPrefs {
   category: StatisticsCategory
   days: number
   period: CommissionPeriod
@@ -32,18 +32,21 @@ export interface StatisticsPrefs {
   selectedKeys: Record<string, string[]>
 }
 
+/** 统计偏好所在 localStorage 的键；测试用它读写原始存储值。 */
 export const PREFS_KEY = 'azurpilot.statistics'
 
+/** 合法分类全集；statisticsLayout 以它的顺序决定统计页的分页顺序。 */
 export const VALID_CATEGORIES: readonly StatisticsCategory[] = ['resources', 'action', 'opsi', 'commission', 'ships', 'loot', 'research', 'storage']
-export const VALID_DAYS: readonly number[] = [1, 7, 30, 90, 365]
-export const VALID_PERIODS: readonly CommissionPeriod[] = ['day', 'week', 'month']
-export const VALID_BUCKETS: readonly number[] = [0, 5, 60, 1440]
-export const VALID_CHART_MODES: readonly ChartMode[] = ['line', 'candlestick']
-export const VALID_AXIS_MODES: readonly ChartAxisMode[] = ['separate', 'unified']
-export const VALID_RESEARCH_SELECTS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'consumable']
+const VALID_DAYS: readonly number[] = [1, 7, 30, 90, 365]
+const VALID_PERIODS: readonly CommissionPeriod[] = ['day', 'week', 'month']
+const VALID_BUCKETS: readonly number[] = [0, 5, 60, 1440]
+const VALID_CHART_MODES: readonly ChartMode[] = ['line', 'candlestick']
+const VALID_AXIS_MODES: readonly ChartAxisMode[] = ['separate', 'unified']
+const VALID_RESEARCH_SELECTS: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'consumable']
 /* 任务标识由后端给（opsi_xxx），这里只校验形状；下架的任务在页面里自然没有记录 */
 const LOOT_TASK_PATTERN = /^[a-z][a-z0-9_]{0,40}$/
 
+/** 默认偏好：无存储、存储损坏或字段非法时的回落值。 */
 export const DEFAULT_STATISTICS_PREFS: StatisticsPrefs = {
   category: 'resources',
   days: 7,
@@ -106,19 +109,23 @@ let snapshot: StatisticsPrefs = readStatisticsPrefs()
 let version = 0
 const listeners = new Set<() => void>()
 
+/** 订阅偏好写入，返回退订函数。 */
 export function subscribeStatisticsPrefs(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
 }
 
+/** 每次写入自增的版本号，供 useSyncExternalStore 感知快照变化。 */
 export function getStatisticsPrefsVersion(): number {
   return version
 }
 
+/** 读取当前偏好快照；模块级单例，写入即整体替换引用。 */
 export function getStatisticsPrefs(): StatisticsPrefs {
   return snapshot
 }
 
+/** 合并写入偏好并持久化：其余字段保持不变，selectedKeys 按类目合并而不是整体替换。 */
 export function updateStatisticsPrefs(partial: Partial<StatisticsPrefs>) {
   snapshot = {
     ...snapshot,
@@ -137,6 +144,7 @@ export function updateStatisticsPrefs(partial: Partial<StatisticsPrefs>) {
   for (const listener of listeners) listener()
 }
 
+/** 覆写单个类目的选中指标并去重。 */
 export function setSelectedKeysForCategory(category: string, keys: string[]) {
   const nextKeys = {
     ...snapshot.selectedKeys,
@@ -145,6 +153,7 @@ export function setSelectedKeysForCategory(category: string, keys: string[]) {
   updateStatisticsPrefs({ selectedKeys: nextKeys })
 }
 
+/** 返回该类目下仍可用的已选指标；存过的键全部失效时返回空数组。 */
 export function getSelectedKeysForCategory(category: string, availableSeries: { key: string }[]): string[] {
   const saved = snapshot.selectedKeys[category]
   if (Array.isArray(saved) && saved.length > 0) {
@@ -154,7 +163,7 @@ export function getSelectedKeysForCategory(category: string, availableSeries: { 
   return []
 }
 
-/** 仅用于单元测试重置 snapshot 状态 */
+/** 仅用于单元测试重置 snapshot 状态。 */
 export function resetStatisticsPrefsForTest() {
   snapshot = readStatisticsPrefs()
 }
