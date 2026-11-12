@@ -33,7 +33,8 @@
 
 /* 无壁纸或使用软件渲染时，常驻大面板保留玻璃底色，跳过实时背景模糊。 */
 :root[data-material='glass'][data-reduce-backdrop] .app-shell
-  :is(.sidebar, .topbar, .legacy-page-nav, .monitor-panel, .log-panel, .resource-card, .resource-card-body, .instance-page-rail):not(.mock-preview-shell *) {
+  :is(.sidebar, .topbar, .legacy-page-nav, .monitor-panel, .log-panel, .resource-card, .resource-card-body, .instance-page-rail):not(.mock-preview-shell *),
+:root[data-material='glass'][data-reduce-backdrop] .app-shell .task-config-legacy :is(.config-group, .task-help-panel) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }

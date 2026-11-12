@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { mockWebGLRenderer } from '../webgl'
 
 test.beforeEach(async ({page}) => {
   await page.addInitScript(() => {
@@ -62,8 +63,17 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
           card.dataset.testCardDelay = card.style.getPropertyValue('--card-stagger-delay')
         }
       })
+      new MutationObserver(() => {
+        const card = document.getElementById('group-GuildLogistics')
+        if (!card || card.dataset.testAnimatedOnMount !== undefined) return
+        // 在本轮的挂载监听器都执行后、绘制前检查动画状态。
+        queueMicrotask(() => {
+          card.dataset.testAnimatedOnMount = String(card.classList.contains('motion-card-stagger'))
+        })
+      }).observe(document, {childList: true, subtree: true})
     })
     const page = await context.newPage()
+    await mockWebGLRenderer(page, 'Hardware renderer')
     await page.goto('/#/i/demo-main/task/Main')
     const control = page.locator('[id="Main.Campaign.UseClearMode"]')
     await expect(control).toHaveAttribute('aria-checked', 'true')
@@ -112,6 +122,7 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
     await page.evaluate(() => {location.hash = '/i/demo-main/task/Guild'})
     const logistics = page.locator('#group-GuildLogistics')
     const operation = page.locator('#group-GuildOperation')
+    await expect(logistics).toHaveAttribute('data-test-animated-on-mount', 'true')
     await expect(logistics).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
     await expect(operation).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
     const logisticsDelay = Number.parseFloat((await logistics.getAttribute('data-test-card-delay'))!)

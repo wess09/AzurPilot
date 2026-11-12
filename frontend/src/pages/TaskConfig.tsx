@@ -376,7 +376,7 @@ export function TaskConfig() {
     >
       <h1 className="legacy-sr-title">{t(`Task.${task}.name`)}</h1>
       <div className="task-config-settings">
-        {/* 换任务时重挂一次，让内容列的淡入重放。 */}
+        {/* 换任务时重挂内容列，触发该任务的卡片入场。 */}
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>
       </div>
       {directory}

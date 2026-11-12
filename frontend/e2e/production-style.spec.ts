@@ -3,23 +3,10 @@
  */
 
 import { expect, test, type Page } from '@playwright/test'
-
-function mockWebGLRenderer(page: Page, renderer: string) {
-  return page.addInitScript(name => {
-    const getContext = HTMLCanvasElement.prototype.getContext
-    Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
-      value(this: HTMLCanvasElement, type: string, options?: WebGLContextAttributes) {
-        if (type === 'webgl' && options?.failIfMajorPerformanceCaveat) {
-          return {RENDERER: 0x1f01, getExtension: () => null, getParameter: () => name}
-        }
-        return Reflect.apply(getContext, this, [type, options])
-      },
-    })
-  }, renderer)
-}
+import { mockWebGLRenderer } from './webgl'
 
 /** 元素实际读到的令牌值：把令牌挂到探针元素上，让浏览器把 var() 解析并归一化成与计算样式同样的写法。 */
-async function resolvedFilter(page: import('@playwright/test').Page, token: string) {
+async function resolvedFilter(page: Page, token: string) {
   return page.evaluate(tokenName => {
     const probe = document.createElement('div')
     probe.style.backdropFilter = `var(${tokenName})`
@@ -79,6 +66,10 @@ test('软件渲染下继续显示壁纸并关闭常驻面板模糊', async ({pag
   await expect(page.locator('html')).toHaveAttribute('data-reduce-backdrop', '')
   await expect(page.locator('.monitor-panel')).toHaveCSS('backdrop-filter', 'none')
   await expect(page.locator('.resource-card').first()).toHaveCSS('backdrop-filter', 'none')
+  await page.evaluate(() => {location.hash = '/i/testpilot/task/Guild'})
+  await expect(page.locator('#group-GuildLogistics')).toHaveCSS('backdrop-filter', 'none')
+  await expect(page.locator('#group-GuildOperation')).toHaveCSS('backdrop-filter', 'none')
+  await expect(page.locator('.wallpaper img')).toBeVisible()
 })
 
 test('关闭壁纸后玻璃面板跳过模糊，侧栏在松手后保存宽度', async ({page}) => {

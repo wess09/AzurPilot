@@ -145,6 +145,10 @@ function scanAndAnimateCards(root: HTMLElement, sessionId: number) {
   applyCardStaggerMotion(sorted, sessionId)
 }
 
+function includesTaskSettings(node: Node) {
+  return node instanceof Element && (node.matches('.task-config-settings-inner') || node.querySelector('.task-config-settings-inner') !== null)
+}
+
 /**
  * 路由切换时调用：开启新一轮卡片动效会话。
  * 支持异步数据加载（如 Overview / Statistics 异步拉取数据后挂载卡片）：
@@ -166,21 +170,26 @@ export function triggerCardStaggerMotion(root: HTMLElement | null) {
     sessionTimeoutId = null
   }
 
-  // 等首帧布局完成再量卡片位置，坐标才有效。
-  requestAnimationFrame(() => {
-    scanAndAnimateCards(root, sessionId)
-  })
-
-  // 异步数据挂载的新卡片也要进场；高频 DOM 变更只保留最后一帧复扫，避免每条变更都全量扫描。
   let frameId: number | null = null
-  activeObserver = new MutationObserver(() => {
+  const scan = () => {
     if (frameId !== null) cancelAnimationFrame(frameId)
-    frameId = requestAnimationFrame(() => {
-      scanAndAnimateCards(root, sessionId)
-    })
+    frameId = null
+    if (sessionId === currentSessionId) scanAndAnimateCards(root, sessionId)
+  }
+  const scheduleScan = () => {
+    if (frameId === null) frameId = requestAnimationFrame(scan)
+  }
+
+  // 任务设置挂载时在首次绘制前定位卡片，避免卡片先在终点显示一帧再跳到起点。
+  // 其他异步更新继续合并到每帧一次，避免日志等高频变更反复扫描。
+  activeObserver = new MutationObserver(records => {
+    if (records.some(record => Array.from(record.addedNodes).some(includesTaskSettings))) scan()
+    else scheduleScan()
   })
 
   activeObserver.observe(root, { childList: true, subtree: true })
+  if (includesTaskSettings(root)) scan()
+  else scheduleScan()
 
   // 1.5 秒后断开监听，避免普通交互（表单打字、展开折叠）引发多余开销
   sessionTimeoutId = window.setTimeout(() => {

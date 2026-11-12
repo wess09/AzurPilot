@@ -490,6 +490,8 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .app-shell.legacy-shell .statistics-legacy,
 .app-shell.legacy-shell .task-config-settings-inner,
 .app-shell.legacy-shell .task-config-rail-slot .task-rail-directory {animation: legacy-page-in .22s cubic-bezier(.22, .61, .36, 1)}
+/* 玻璃设置卡独立入场，整列淡入会让卡片在结束时重新采样壁纸。 */
+:root[data-material='glass'] .app-shell.legacy-shell .task-config-settings-inner {animation: none}
 @keyframes legacy-page-in {from {opacity: 0} to {opacity: 1}}
 /* 总览页在两个视图间切换：面板用自己的动画，按切换方向淡入 */
 .app-shell.legacy-shell .instance-page-panel {animation: none}
@@ -1171,10 +1173,15 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   from {transform: translateY(var(--card-stagger-shift, 12px))}
   to {transform: none}
 }
-/* 玻璃任务卡片也只位移，避免缩放使 Chromium 的开关轨道与滑块错位。 */
-.instance-page-rail-wrap.motion-card-stagger,
+.instance-page-rail-wrap.motion-card-stagger {
+  animation-name: motion-panel-in;
+}
+/* 玻璃任务卡片以短位移依次入场，避免缩放导致 Chromium 开关轨道与滑块错位。 */
 :root[data-material='glass'] .config-group.motion-card-stagger {
   animation-name: motion-panel-in;
+  animation-duration: calc(130ms * var(--motion-speed, 2));
+  animation-delay: calc(var(--card-stagger-delay, 0ms) / 3);
+  animation-timing-function: var(--ease-decelerate);
 }
 /* 面板外壳只能整体位移，内容可以补一次淡入，才对得上页面卡片「位移 + 淡入」的节奏。
    这些区块本身已经没有 backdrop-filter，做 opacity 不会再出问题 */
