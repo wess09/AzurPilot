@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { routeDepth, routeDirection, triggerCardStaggerMotion, replayCardStaggerMotion } from './pageMotion'
+import { routeDepth, routeDirection, triggerCardStaggerMotion } from './pageMotion'
 import { calculateCardDiagonalScore, calculateNonLinearDelay, sortCardsFromTopLeft } from './cardMotion'
 
 describe('routeDepth', () => {
@@ -21,7 +21,7 @@ describe('routeDirection', () => {
   it('顶层导航按侧栏顺序判断横向方向', () => {
     expect(routeDirection('/interface', '/settings')).toBe('forward')
     expect(routeDirection('/settings', '/interface')).toBe('back')
-    expect(routeDirection('/updater', '/dev')).toBe('forward')
+    expect(routeDirection('/updater', '/configs')).toBe('forward')
   })
 
   it('实例内一级页按 总览→统计 的方向', () => {
@@ -112,8 +112,7 @@ describe('cardMotion（卡片从左上角逐个错峰上浮算法）', () => {
     expect(step3).toBeGreaterThanOrEqual(step4)
   })
 
-  it('环境安全：无 DOM 环境下调用 trigger 与 replay 不抛错', () => {
+  it('环境安全：无 DOM 环境下调用 trigger 不抛错', () => {
     expect(() => triggerCardStaggerMotion(null)).not.toThrow()
-    expect(() => replayCardStaggerMotion()).not.toThrow()
   })
 })

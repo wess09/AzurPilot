@@ -200,19 +200,3 @@ export function triggerCardStaggerMotion(root: HTMLElement | null) {
     sessionTimeoutId = null
   }, 1500)
 }
-
-/**
- * 供开发者工具「重播页面转场」调用：重新播放当前页面卡片从左上角逐个上浮的效果。
- */
-export function replayCardStaggerMotion() {
-  if (typeof document === 'undefined') return
-  const root = document.getElementById('main-content')
-  if (!root || motionReducedActive()) return
-
-  currentSessionId += 1
-  const sessionId = currentSessionId
-
-  const cards = findTopLevelCards(root)
-  const sorted = sortCardsFromTopLeft(cards, root)
-  applyCardStaggerMotion(sorted, sessionId)
-}

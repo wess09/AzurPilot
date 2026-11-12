@@ -54,8 +54,7 @@ function contextWith(theme: Theme): AppContextValue {
     notify: () => {},
     previewEnabled: false,
     setPreviewEnabled: () => {},
-    devMode: false,
-    setDevMode: () => {},
+
     theme,
     setTheme: () => {},
     material: 'glass',

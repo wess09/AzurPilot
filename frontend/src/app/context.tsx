@@ -7,7 +7,6 @@ import { api } from '../api/client'
 import type { Instance, Schema } from '../api/types'
 import { resumeEditors } from '../config/editors'
 import { detectLanguage, isLanguage, languages, localeForLanguage, translateUi, type Language, type UiTranslator } from '../i18n'
-import { readDevMode, writeDevMode } from './devMode'
 import { applyTheme, getThemePreference, subscribeTheme, type Theme, type Material } from './theme'
 import { palettes, type CustomPalette, type ResolvedMode } from './palettes'
 
@@ -18,7 +17,6 @@ export interface AppContextValue {
   instancesLoaded: boolean; instances: Instance[]; schema?: Schema; refresh: () => Promise<void>; t: (key: string) => string; ui: UiTranslator
   notify: (message: string, error?: boolean) => void
   previewEnabled: boolean; setPreviewEnabled: (enabled: boolean) => void
-  devMode: boolean; setDevMode: (enabled: boolean) => void
   theme: Theme; setTheme: (theme: Theme) => void
   material: Material; setMaterial: (material: Material) => void
   resolvedMode: ResolvedMode
@@ -50,7 +48,6 @@ export function AppProvider({children}: {children: ReactNode}) {
   const [instancesLoaded, setInstancesLoaded] = useState(false)
   const [schema, setSchema] = useState<Schema>()
   const [previewEnabled, setPreviewEnabled] = useState(false)
-  const [devMode, setDevMode] = useState(readDevMode)
   const {theme, resolvedMode, customPalettes, material} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
   const [language, setLanguage] = useState<Language>(initialLanguage)
   const [toast, setToast] = useState<{message: string; error: boolean}>()
@@ -70,7 +67,6 @@ export function AppProvider({children}: {children: ReactNode}) {
       palette: current.palette === id ? palettes[0] : current.palette,
     })
   }, [])
-  useEffect(() => { writeDevMode(devMode) }, [devMode])
   useEffect(() => {
     document.documentElement.lang = localeForLanguage(language)
     try { localStorage.setItem('azurpilot.language', language) } catch { /* 存储不可用时仅当前会话生效。 */ }
@@ -116,8 +112,8 @@ export function AppProvider({children}: {children: ReactNode}) {
   }, [schema])
   const ui = useCallback<UiTranslator>((key, params) => translateUi(language, key, params), [language])
   // value 固定身份：provider 因 toast、连接状态等无关状态重渲染时，消费点不跟着重渲染。
-  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
-    [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, devMode, setDevMode, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
+  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
+    [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
   return <AppContext.Provider value={value}>
     {children}
     {toast && <div role={toast.error ? 'alert' : 'status'} className={`toast ${toast.error ? 'error' : ''}`} onClick={() => setToast(undefined)}>{toast.message}</div>}

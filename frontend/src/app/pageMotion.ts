@@ -5,14 +5,14 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { motionReducedActive, motionSpeedValue } from './motionPrefs'
-import { triggerCardStaggerMotion, replayCardStaggerMotion } from './cardMotion'
+import { triggerCardStaggerMotion } from './cardMotion'
 
-export { triggerCardStaggerMotion, replayCardStaggerMotion } from './cardMotion'
+export { triggerCardStaggerMotion } from './cardMotion'
 
 type NavDirection = 'forward' | 'back' | 'fade'
 
 // 侧栏顶层导航的展示顺序：同深度页面之间用它判断横向方向（向右 = forward）。
-const PRIMARY_NAV_ORDER = ['/updater', '/interface', '/remote', '/configs', '/settings', '/dev']
+const PRIMARY_NAV_ORDER = ['/updater', '/interface', '/remote', '/configs', '/settings']
 // 实例内一级页的展示顺序：与顶层导航一样用于同深度互跳的横向方向判断；
 // 这些页挂在实例路径前缀之下，orderIndex 对本表改用 endsWith 匹配。
 const INSTANCE_PAGE_ORDER = ['/overview', '/resources', '/statistics']
@@ -53,8 +53,6 @@ const DIRECTION_CLASS: Record<NavDirection, string> = {
 
 const ALL_CLASSES = ['motion-nav-forward', 'motion-nav-back', 'motion-nav-fade']
 
-/** 最近一次播放的转场类；供开发者工具「重播页面转场」使用。 */
-let lastTransitionClass: string | null = null
 let cleanupTimer: number | null = null
 
 function stopTransition(target: HTMLElement) {
@@ -71,17 +69,6 @@ function playTransition(target: HTMLElement, className: string) {
     target.classList.remove(className)
     cleanupTimer = null
   }, 480 * motionSpeedValue())
-}
-
-/** 重播最近一次页面转场（开发者工具用；重播外层底板转场并重新从左上角逐个错峰上浮所有卡片）。 */
-export function replayLastPageTransition() {
-  const target = document.getElementById('main-content')
-  if (!target) return
-  if (motionReducedActive()) return
-  if (lastTransitionClass) {
-    playTransition(target, lastTransitionClass)
-  }
-  replayCardStaggerMotion()
 }
 
 /**
@@ -105,7 +92,6 @@ export function usePageMotion() {
 
     if (before === null || before === pathname) return
     const className = DIRECTION_CLASS[routeDirection(before, pathname)]
-    lastTransitionClass = className
     playTransition(target, className)
     return () => stopTransition(target)
   }, [location.pathname])
