@@ -71,38 +71,8 @@ export function moveResourceKey(keys: string[], fromKey: string, toKey: string):
 }
 
 function ResourceValue({value, suffix}: {value: string; suffix?: string}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLSpanElement>(null)
-
-  useLayoutEffect(() => {
-    const container = containerRef.current
-    const content = contentRef.current
-    if (!container || !content) return
-    const fit = () => {
-      const available = container.clientWidth
-      if (!available) return
-      // 先恢复主题字号测量，宽度增加或数字变短后也能恢复正常大小。
-      content.style.fontSize = '1em'
-      const natural = content.getBoundingClientRect().width
-      if (natural > available) content.style.fontSize = `${Math.max(0, available - 1) / natural}em`
-    }
-    fit()
-    let frame = 0
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(fit)
-    })
-    observer.observe(container)
-    // 字体加载和主题切换也可能改变文字宽度。
-    observer.observe(content)
-    return () => {
-      observer.disconnect()
-      cancelAnimationFrame(frame)
-    }
-  }, [value, suffix])
-
-  return <div className="resource-value" ref={containerRef}>
-    <span className="resource-value-content" ref={contentRef}><span>{value}</span>{suffix && <small>/ {suffix}</small>}</span>
+  return <div className="resource-value">
+    <span className="resource-value-content"><span>{value}</span>{suffix && <small>/ {suffix}</small>}</span>
   </div>
 }
 
@@ -130,6 +100,47 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
   const prefs = useSyncExternalStore(subscribeDashboardPrefs, readDashboardPrefs, readDashboardPrefs)
   const gridRef = useRef<HTMLDivElement>(null)
   const mergedRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    const grid = gridRef.current
+    if (!grid) return
+    const contents = [...grid.querySelectorAll<HTMLElement>('.resource-value-content')]
+    const fit = () => {
+      // 整组先读宽度、恢复主题字号，再量自然宽度并写入结果，避免逐卡触发同步布局。
+      const widths = contents.map(content => content.parentElement?.clientWidth ?? 0)
+      for (const content of contents) content.style.removeProperty('font-size')
+      const natural = contents.map(content => content.getBoundingClientRect().width)
+      const shrunk = contents.flatMap((content, index) => {
+        const width = widths[index]
+        if (width <= 0 || natural[index] <= width) return []
+        const scale = Math.max(0, width - 4) / natural[index]
+        content.style.fontSize = `${scale}em`
+        return [{content, width, scale}]
+      })
+      // 字形栅格化会使缩放后的字宽与比例估算有偏差，只对仍溢出的数值修正一次。
+      const rendered = shrunk.map(({content}) => content.getBoundingClientRect().width)
+      shrunk.forEach(({content, width, scale}, index) => {
+        if (rendered[index] > width) content.style.fontSize = `${scale * Math.max(0, width - 4) / rendered[index]}em`
+      })
+    }
+    fit()
+    let frame: number | undefined
+    const observer = new ResizeObserver(() => {
+      if (frame !== undefined) return
+      frame = requestAnimationFrame(() => {
+        frame = undefined
+        fit()
+      })
+    })
+    for (const content of contents) {
+      observer.observe(content)
+      if (content.parentElement) observer.observe(content.parentElement)
+    }
+    return () => {
+      observer.disconnect()
+      if (frame !== undefined) cancelAnimationFrame(frame)
+    }
+  }, [selected, prefs.merged])
 
   // 卡片适应：按容器宽度算一行放得下几张，列数即「卡片数与一排容量」的较小者 ——
   // 溢出到第二排以后时末排沿用第一排尺寸，总数不足一排时列数就等于卡片数因而仍均分。

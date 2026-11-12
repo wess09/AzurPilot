@@ -3,9 +3,11 @@
  */
 
 import {
+  Fragment,
   useState,
   useMemo,
   useEffect,
+  useLayoutEffect,
   useRef,
   useCallback,
   memo,
@@ -145,10 +147,10 @@ export function renderTokens(text: string, search = ''): ReactNode {
 
 function renderSearchHighlights(text: string, searchLower: string, keyPrefix: string): ReactNode {
   if (!text) return null
-  if (!searchLower) return <span key={keyPrefix}>{text}</span>
+  if (!searchLower) return <Fragment key={keyPrefix}>{text}</Fragment>
   const lower = text.toLowerCase()
   const idx = lower.indexOf(searchLower)
-  if (idx === -1) return <span key={keyPrefix}>{text}</span>
+  if (idx === -1) return <Fragment key={keyPrefix}>{text}</Fragment>
 
   const nodes: ReactNode[] = []
   let current = text
@@ -320,13 +322,14 @@ interface CardRange {
 /** 从 startIndex 起把日志条目聚合成卡片：每个分支识别后端日志的一种排版模式，都不命中就落回单行卡片。 */
 function aggregateSlice(
   entries: LogEntry[],
-  startIndex = 0
+  startIndex = 0,
+  endIndex = entries.length,
 ): { cards: CardItem[]; ranges: CardRange[] } {
   const cards: CardItem[] = []
   const ranges: CardRange[] = []
   let index = startIndex
 
-  while (index < entries.length) {
+  while (index < endIndex) {
     const cardStart = index
     const entry = entries[index]
     const raw = entry.text.replace(/[\r\n]+$/, '')
@@ -750,7 +753,7 @@ export function getAggregationCacheInfo(): {
   }
 }
 
-/** 把日志条目聚合成卡片，带增量缓存：输入是上次数组的前缀延长时，只重聚合末尾几条。 */
+/** 持续追加日志时复用未变的卡片，缓冲区淘汰旧条目后仍可复用重叠部分。 */
 export function aggregateEntriesToCards(entries: LogEntry[]): CardItem[] {
   if (!entries || entries.length === 0) {
     lastEntries = []
@@ -764,54 +767,43 @@ export function aggregateEntriesToCards(entries: LogEntry[]): CardItem[] {
     return lastCards
   }
 
-  // 2. 检查前缀匹配与增量复用。
-  const prevLen = lastEntries.length
-  let canReuse = false
-
-  if (prevLen > 0 && entries.length >= prevLen) {
-    let isPrefixMatch = true
-    for (let i = 0; i < prevLen; i++) {
-      const e = entries[i]
-      const cached = lastEntries[i]
-      if (e !== cached && (e.id !== cached.id || e.text !== cached.text)) {
-        isPrefixMatch = false
-        break
-      }
+  const dropped = lastEntries.findIndex(entry => entry.id === entries[0].id)
+  const overlap = lastEntries.length - dropped
+  if (dropped >= 0 && entries.length >= overlap) {
+    let matched = 0
+    while (matched < overlap) {
+      const entry = entries[matched]
+      const cached = lastEntries[dropped + matched]
+      if (entry !== cached && (entry.id !== cached.id || entry.text !== cached.text || entry.level !== cached.level)) break
+      matched++
     }
+    if (matched === overlap) {
+      if (dropped === 0 && entries.length === overlap) return lastCards
 
-    if (isPrefixMatch) {
-      if (entries.length === prevLen) {
-        // 前缀与长度完全一致，直接复用已有卡片。
-        return lastCards
+      // 末尾四张重新解析，允许追加条目补全横幅、海图和属性块。
+      const tailIndex = lastRanges.length - 4
+      const reuseIndex = lastRanges.findIndex(range => range.start >= dropped)
+      if (reuseIndex >= 0 && reuseIndex < tailIndex) {
+        const headEnd = lastRanges[reuseIndex].start - dropped
+        const head = aggregateSlice(entries, 0, headEnd)
+        // 裁剪若切开多行卡片，重新解析的首张卡片可能跨过旧边界。
+        if ((head.ranges.at(-1)?.end ?? 0) === headEnd) {
+          const tail = aggregateSlice(entries, lastRanges[tailIndex].start - dropped)
+          const ranges = lastRanges.slice(reuseIndex, tailIndex)
+          const shifted = dropped ? ranges.map(({card, start, end}) => ({card, start: start - dropped, end: end - dropped})) : ranges
+          lastRanges = head.ranges.concat(shifted, tail.ranges)
+          lastCards = head.cards.concat(lastCards.slice(reuseIndex, tailIndex), tail.cards)
+          lastEntries = entries
+          return lastCards
+        }
       }
-      canReuse = true
     }
   }
 
-  // 末尾安全保留裕量：丢弃最后 4 张卡片重新聚合，防止多行块（地图、横幅、属性清单）跨追加边界未闭合。
-  const REUSE_TAIL_MARGIN = 4
-  const safeCardIndex = canReuse && lastRanges.length > REUSE_TAIL_MARGIN
-    ? lastRanges.length - REUSE_TAIL_MARGIN
-    : 0
-
-  if (canReuse && safeCardIndex > 0) {
-    const reusedRanges = lastRanges.slice(0, safeCardIndex)
-    const reusedCards = lastCards.slice(0, safeCardIndex)
-    const startEntryIndex = reusedRanges[reusedRanges.length - 1].end
-
-    const tailResult = aggregateSlice(entries, startEntryIndex)
-
-    lastCards = reusedCards.concat(tailResult.cards)
-    lastRanges = reusedRanges.concat(tailResult.ranges)
-    lastEntries = entries.slice()
-    return lastCards
-  }
-
-  // 3. 全量重新聚合。
-  const fullResult = aggregateSlice(entries, 0)
-  lastCards = fullResult.cards
-  lastRanges = fullResult.ranges
-  lastEntries = entries.slice()
+  const full = aggregateSlice(entries)
+  lastCards = full.cards
+  lastRanges = full.ranges
+  lastEntries = entries
   return lastCards
 }
 
@@ -1896,6 +1888,12 @@ export const VIRTUAL_THRESHOLD = 40
 export const OVERSCAN_BUFFER_PX = 800
 const CARD_GAP_PX = 8
 
+/** 滚动不足半段预渲染余量时复用当前窗口，减少视口边缘的挂载与卸载。 */
+export function logWindowTop(scrollTop: number) {
+  const step = OVERSCAN_BUFFER_PX / 2
+  return Math.floor(scrollTop / step) * step
+}
+
 /** requestAnimationFrame 的环境兜底：无 window（测试/SSR）时退化为 16ms 的 setTimeout。 */
 export const safeRaf = (cb: FrameRequestCallback): number => {
   if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
@@ -2051,7 +2049,7 @@ interface LogCardViewProps {
  * @param search 搜索词，命中片段以 <mark> 高亮。
  * @param scrollRef 外层滚动容器引用；不传时回退到组件的最近父元素。
  */
-export function LogCardView({
+export const LogCardView = memo(function LogCardView({
   entries,
   search,
   scrollRef,
@@ -2062,7 +2060,7 @@ export function LogCardView({
 
   // 动态测量的高度缓存（按 card.id 记录实际渲染高度）。
   const heightCacheRef = useRef<Map<number, number>>(new Map())
-  const [, setMeasureVersion] = useState(0)
+  const [measureVersion, setMeasureVersion] = useState(0)
   const measureRafRef = useRef<number | null>(null)
 
   // 高度变化合并到一帧再重渲染：ResizeObserver 高频触发，逐次 setState 会拖垮滚动。
@@ -2087,21 +2085,20 @@ export function LogCardView({
     const scrollEl = getScrollElement()
     if (!scrollEl) return
 
-    setScrollState({
-      scrollTop: scrollEl.scrollTop,
-      clientHeight: scrollEl.clientHeight || 800,
-    })
+    const syncWindow = () => {
+      const scrollTop = logWindowTop(scrollEl.scrollTop)
+      const clientHeight = scrollEl.clientHeight || 800
+      setScrollState(previous => previous.scrollTop === scrollTop && previous.clientHeight === clientHeight
+        ? previous : {scrollTop, clientHeight})
+    }
+    syncWindow()
 
     let scrollRafId: number | null = null
     const onScroll = () => {
       if (scrollRafId !== null) return
       scrollRafId = safeRaf(() => {
         scrollRafId = null
-        if (!scrollEl) return
-        setScrollState({
-          scrollTop: scrollEl.scrollTop,
-          clientHeight: scrollEl.clientHeight || 800,
-        })
+        syncWindow()
       })
     }
 
@@ -2109,14 +2106,7 @@ export function LogCardView({
 
     let resizeObserver: ResizeObserver | null = null
     if (typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver((observerEntries) => {
-        for (const entry of observerEntries) {
-          const h = entry.contentRect.height
-          if (h > 0) {
-            setScrollState(prev => (prev.clientHeight === h ? prev : { ...prev, clientHeight: h }))
-          }
-        }
-      })
+      resizeObserver = new ResizeObserver(syncWindow)
       resizeObserver.observe(scrollEl)
     }
 
@@ -2129,10 +2119,11 @@ export function LogCardView({
 
   // ResizeObserver 观察可见卡片的实际高度变动（折叠/展开/动态排版都会改变占位）。
   const cardObserverRef = useRef<ResizeObserver | null>(null)
-  useEffect(() => {
+  const cardNodes = useRef(new Set<HTMLDivElement>())
+  useLayoutEffect(() => {
     if (!isVirtual || typeof ResizeObserver === 'undefined') return
 
-    cardObserverRef.current = new ResizeObserver((observerEntries) => {
+    const observer = new ResizeObserver((observerEntries) => {
       let changed = false
       for (const entry of observerEntries) {
         const el = entry.target as HTMLElement
@@ -2153,9 +2144,11 @@ export function LogCardView({
         requestMeasureUpdate()
       }
     })
+    cardObserverRef.current = observer
+    for (const node of cardNodes.current) observer.observe(node)
 
     return () => {
-      cardObserverRef.current?.disconnect()
+      observer.disconnect()
       cardObserverRef.current = null
       if (measureRafRef.current !== null) {
         safeCancelRaf(measureRafRef.current)
@@ -2165,9 +2158,41 @@ export function LogCardView({
   }, [isVirtual, requestMeasureUpdate])
 
   const registerCardRef = useCallback((node: HTMLDivElement | null) => {
-    if (!node || !cardObserverRef.current) return
-    cardObserverRef.current.observe(node)
+    if (!node) return
+    const nodes = cardNodes.current
+    nodes.add(node)
+    cardObserverRef.current?.observe(node)
+    return () => {
+      nodes.delete(node)
+      cardObserverRef.current?.unobserve(node)
+    }
   }, [])
+
+  // 测量结果最多保留当前一屏历史窗口的数量级，连续运行也不会累积旧日志行高。
+  useEffect(() => {
+    const measured = heightCacheRef.current
+    if (measured.size <= 2 * cards.length) return
+    const retained = new Set(cards.map(card => card.id))
+    for (const id of measured.keys()) {
+      if (!retained.has(id)) measured.delete(id)
+    }
+  }, [cards])
+
+  // 滚动只移动窗口，偏移表仅在卡片或实测高度变化后重算。
+  const {heights, offsets, totalHeight} = useMemo(() => {
+    const heights: number[] = []
+    const offsets: number[] = []
+    let height = 0
+    if (isVirtual) {
+      for (const card of cards) {
+        const rowHeight = (heightCacheRef.current.get(card.id) ?? getCardEstimatedHeight(card)) + CARD_GAP_PX
+        heights.push(rowHeight)
+        offsets.push(height)
+        height += rowHeight
+      }
+    }
+    return {heights, offsets, totalHeight: Math.max(0, height - CARD_GAP_PX)}
+  }, [cards, isVirtual, measureVersion])
 
   // 卡片不多时直接全量渲染，省去窗口计算与测量开销。
   if (!isVirtual) {
@@ -2178,22 +2203,7 @@ export function LogCardView({
     )
   }
 
-  // 虚拟化窗口计算。
   const totalCount = cards.length
-  const heights = new Array<number>(totalCount)
-  const offsets = new Array<number>(totalCount)
-  let currentOffset = 0
-
-  for (let i = 0; i < totalCount; i++) {
-    const card = cards[i]
-    // 高度含卡片自身与 flex gap 占位。
-    const baseHeight = heightCacheRef.current.get(card.id) ?? getCardEstimatedHeight(card)
-    const effectiveHeight = baseHeight + CARD_GAP_PX
-    heights[i] = effectiveHeight
-    offsets[i] = currentOffset
-    currentOffset += effectiveHeight
-  }
-  const totalHeight = Math.max(0, currentOffset - CARD_GAP_PX)
 
   const visibleTop = Math.max(0, scrollState.scrollTop - OVERSCAN_BUFFER_PX)
   const visibleBottom = scrollState.scrollTop + scrollState.clientHeight + OVERSCAN_BUFFER_PX
@@ -2222,4 +2232,4 @@ export function LogCardView({
       ))}
     </div>
   )
-}
+})

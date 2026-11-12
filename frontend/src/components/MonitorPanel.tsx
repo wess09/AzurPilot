@@ -2,7 +2,7 @@
  * @fileoverview 模拟器画面监控与截图捕获面板组件。
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { Download, Image, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { LogEntry, Logs as LogsData, Preview } from '../api/types'
@@ -106,7 +106,7 @@ function RecentLogs({instance}: {instance: string}) {
  *
  * @param instance 目标实例名，预览事件与日志订阅都按它过滤。
  */
-export function MonitorPanel({instance}: {instance: string}) {
+export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: string}) {
   const [view, setView] = useState('logs')
   const [frame, setFrame] = useState<Preview>()
   const {setPreviewEnabled, ui} = useApp()
@@ -126,8 +126,8 @@ export function MonitorPanel({instance}: {instance: string}) {
   </div>
     <div className="monitor-view" hidden={view !== 'logs'}><LogPanel active={view === 'logs'}/></div>
     <div className="monitor-view" hidden={view !== 'preview'}>
-      <RecentLogs instance={instance}/>
+      {view === 'preview' && <RecentLogs instance={instance}/>}
       <div className="preview-stage"><div className="preview-screen">{frame?.image ? <img src={frame.image} alt={ui('monitor.screenshotAlt')}/> : <Empty icon={<Image size={42}/>} title={ui('monitor.waitingScreenshot')}>{ui('monitor.screenshotHint')}</Empty>}</div></div>
     </div>
   </section>
-}
+})

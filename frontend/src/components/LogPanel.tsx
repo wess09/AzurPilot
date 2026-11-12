@@ -11,7 +11,7 @@ import type { Logs as LogsData, LogEntry } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { Empty } from '../components/ui'
 import { Input } from './ui/input'
-import { LogCardView, findVisibleRange, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
+import { LogCardView, findVisibleRange, logWindowTop, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
 
 /** 匹配标准日志行，捕获组依次为：等级、可选日期、时间、正文（以 │ 分隔）。 */
 export const LOG_LINE_RE = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/
@@ -23,6 +23,8 @@ export const PURE_RULE_RE = /^[═─]{3,}$/
 export const CENTER_TITLE_RE = /^\s{3,}(.*?)\s{3,}$/
 /** 客户端独立的日志条数防御上限，背景见 mergeLogEntries 说明。 */
 export const LOG_ENTRY_LIMIT = 1000
+// 连续推送时每 50ms 最多提交一次日志列表，给滚动和拖拽留出渲染时间。
+const LOG_RENDER_INTERVAL_MS = 50
 const VIRTUAL_LINE_THRESHOLD = 120
 /* 未实测到高度的日志行先按这个值占位，实测后替换。 */
 export const LINE_HEIGHT_ESTIMATE = 18
@@ -45,11 +47,13 @@ export function queueLogEvent(
   buffer: LogBufferState,
   data: { entries: LogEntry[]; reset?: boolean; cursor: number }
 ): void {
+  const incoming = data.entries.slice(-LOG_ENTRY_LIMIT)
   if (data.reset) {
     buffer.reset = true
-    buffer.entries = [...data.entries]
+    buffer.entries = incoming
   } else {
-    buffer.entries.push(...data.entries)
+    buffer.entries.push(...incoming)
+    if (buffer.entries.length > LOG_ENTRY_LIMIT) buffer.entries.splice(0, buffer.entries.length - LOG_ENTRY_LIMIT)
   }
   buffer.cursor = data.cursor
 }
@@ -86,6 +90,13 @@ export function buildLineLayout(entries: LogEntry[], measured: Map<number, numbe
  */
 export function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[], reset = false): LogEntry[] {
   const recent = incoming.length > LOG_ENTRY_LIMIT ? incoming.slice(-LOG_ENTRY_LIMIT) : incoming
+  // previous 来自上一次合并，已按 id 升序且去重。正常增量只需拼接尾部。
+  const retained = reset ? [] : previous
+  const lastId = retained.at(-1)?.id ?? -Infinity
+  if (recent.every((entry, index) => entry.id > (index ? recent[index - 1].id : lastId))) {
+    if (!recent.length) return retained
+    return retained.slice(Math.max(0, retained.length + recent.length - LOG_ENTRY_LIMIT)).concat(recent)
+  }
   const entries = new Map<number, LogEntry>()
   if (!reset) for (const entry of previous.slice(-LOG_ENTRY_LIMIT)) entries.set(entry.id, entry)
   for (const entry of recent) entries.set(entry.id, entry)
@@ -169,6 +180,15 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
 
 const LOG_LEVELS = ['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
+function filterLogEntries(entries: LogEntry[], floor: number, level: string, search: string) {
+  if ((entries[0]?.id ?? Infinity) > floor && level === 'ALL' && !search) return entries
+  return entries.filter(entry =>
+    entry.id > floor &&
+    (level === 'ALL' || entry.level === level) &&
+    (!search || entry.text.toLowerCase().includes(search))
+  )
+}
+
 function loadLogLevel(instance: string): string {
   try {
     const saved = localStorage.getItem(`azurpilot.log.level.${instance}`)
@@ -214,20 +234,19 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   /* 已渲染到的最大日志 id：大于它的增量行做入场动画（初始加载不播）。 */
   const freshFrom = useRef<number | null>(null)
 
-  /** 流式日志微批处理缓冲队列，防止高频 WebSocket 推送造成密集 React 重绘 */
-  const logBuffer = useRef<LogBufferState & { rafId: number | null }>({
+  const logBuffer = useRef<LogBufferState & { timer: ReturnType<typeof setTimeout> | null }>({
     entries: [],
     reset: false,
     cursor: null,
-    rafId: null,
+    timer: null,
   })
 
   const flushBuffer = useRef(() => {})
   flushBuffer.current = () => {
     const buf = logBuffer.current
-    if (buf.rafId !== null) {
-      safeCancelRaf(buf.rafId)
-      buf.rafId = null
+    if (buf.timer !== null) {
+      clearTimeout(buf.timer)
+      buf.timer = null
     }
     const { entries: bufEntries, reset: bufReset, cursor: bufCursor } = buf
     if (bufEntries.length === 0 && !bufReset && bufCursor === null) return
@@ -274,9 +293,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     if (connection !== 'ready' || external) return
     let active = true
     const buf = logBuffer.current
-    if (buf.rafId !== null) {
-      safeCancelRaf(buf.rafId)
-      buf.rafId = null
+    if (buf.timer !== null) {
+      clearTimeout(buf.timer)
+      buf.timer = null
     }
     buf.entries = []
     buf.reset = false
@@ -289,9 +308,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     }).catch(error => notify(error.message, true))
     return () => {
       active = false
-      if (buf.rafId !== null) {
-        safeCancelRaf(buf.rafId)
-        buf.rafId = null
+      if (buf.timer !== null) {
+        clearTimeout(buf.timer)
+        buf.timer = null
       }
       buf.entries = []
       buf.reset = false
@@ -315,20 +334,15 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
       const buf = logBuffer.current
       queueLogEvent(buf, data)
 
-      if (buf.rafId === null) {
-        buf.rafId = safeRaf(() => {
-          buf.rafId = null
-          flushBuffer.current()
-        })
-      }
+      if (buf.timer === null) buf.timer = setTimeout(() => flushBuffer.current(), LOG_RENDER_INTERVAL_MS)
     })
 
     return () => {
       unsubscribe()
       const buf = logBuffer.current
-      if (buf.rafId !== null) {
-        safeCancelRaf(buf.rafId)
-        buf.rafId = null
+      if (buf.timer !== null) {
+        clearTimeout(buf.timer)
+        buf.timer = null
       }
       buf.entries = []
       buf.reset = false
@@ -360,13 +374,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   }, [entries, follow, active, descending])
 
   const searchLower = search.trim().toLowerCase()
-  const visible = entries.filter(entry =>
-    entry.id > floor &&
-    (level === 'ALL' || entry.level === level) &&
-    (!searchLower || entry.text.toLowerCase().includes(searchLower))
-  )
+  const visible = useMemo(() => filterLogEntries(entries, floor, level, searchLower), [entries, floor, level, searchLower])
   // 倒序只反转渲染顺序；相邻行的居中标题判断是对称的（前后都要求是分割线），不受影响。
-  const ordered = descending ? [...visible].reverse().slice(0, LOG_ENTRY_LIMIT) : visible.slice(-LOG_ENTRY_LIMIT)
+  const ordered = useMemo(() => descending ? [...visible].reverse() : visible, [descending, visible])
 
   /* 经典视图行数超过阈值时只渲染视口附近的行，其余用占位高度撑住滚动条。 */
   const virtualLines = viewMode === 'classic' && ordered.length >= VIRTUAL_LINE_THRESHOLD
@@ -380,7 +390,11 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     if (!virtualLines) return
     const container = scroll.current
     if (!container) return
-    const sync = () => setLineScroll({top: container.scrollTop, client: container.clientHeight})
+    const sync = () => {
+      const top = logWindowTop(container.scrollTop)
+      const client = container.clientHeight
+      setLineScroll(previous => previous.top === top && previous.client === client ? previous : {top, client})
+    }
     sync()
     let rafId: number | null = null
     const onScroll = () => {
@@ -440,19 +454,33 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     lineObserver.current = null
   }, [])
 
+  useEffect(() => {
+    const heights = lineHeights.current
+    if (heights.size <= 2 * LOG_ENTRY_LIMIT) return
+    const retained = new Set(entries.map(entry => entry.id))
+    for (const id of heights.keys()) {
+      if (!retained.has(id)) heights.delete(id)
+    }
+    setLineVersion(version => version + 1)
+  }, [entries])
+
   const lineLayout = useMemo(
-    () => buildLineLayout(ordered, lineHeights.current, LINE_HEIGHT_ESTIMATE),
-    [ordered, lineVersion]
+    () => virtualLines ? buildLineLayout(ordered, lineHeights.current, LINE_HEIGHT_ESTIMATE) : null,
+    [ordered, lineVersion, virtualLines]
   )
 
   // clientHeight 首次量到前为 0，按 800 兜底一屏高度。
-  const [lineStart, lineEnd] = virtualLines
+  const [lineStart, lineEnd] = lineLayout
     ? findVisibleRange(lineLayout.offsets, lineLayout.heights, lineScroll.top - OVERSCAN_BUFFER_PX, lineScroll.top + (lineScroll.client || 800) + OVERSCAN_BUFFER_PX, ordered.length)
     : [0, Math.max(0, ordered.length - 1)]
 
   function download() {
+    const {entries: pending, reset, cursor} = logBuffer.current
+    const exported = cursor === null ? visible : filterLogEntries(
+      mergeLogEntries(entries, pending, reset), cursor < floor ? 0 : floor, level, searchLower,
+    )
     flushBuffer.current()
-    const url = URL.createObjectURL(new Blob([visible.map(entry => entry.text).join('\n')], {type: 'text/plain;charset=utf-8'}))
+    const url = URL.createObjectURL(new Blob([exported.map(entry => entry.text).join('\n')], {type: 'text/plain;charset=utf-8'}))
     const link = document.createElement('a')
     link.href = url
     link.download = `${instance}-logs.txt`
@@ -515,7 +543,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
             <LogCardView entries={ordered} search={search} scrollRef={scroll} />
           ) : (
             <>
-              {virtualLines && lineStart > 0 && <div style={{height: lineLayout.offsets[lineStart]}} aria-hidden="true" />}
+              {lineLayout && lineStart > 0 && <div style={{height: lineLayout.offsets[lineStart]}} aria-hidden="true" />}
               {ordered.slice(lineStart, lineEnd + 1).map((entry, offset) => {
                 const index = lineStart + offset
                 const prev = ordered[index - 1]
@@ -537,7 +565,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
                   />
                 )
               })}
-              {virtualLines && lineEnd < ordered.length - 1 && (
+              {lineLayout && lineEnd < ordered.length - 1 && (
                 <div style={{height: lineLayout.total - lineLayout.offsets[lineEnd] - lineLayout.heights[lineEnd]}} aria-hidden="true" />
               )}
             </>

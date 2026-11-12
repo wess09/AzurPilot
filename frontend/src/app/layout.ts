@@ -72,6 +72,7 @@ export function subscribeLayout(listener: () => void) {
 }
 
 function publish(patch: Partial<LayoutState>) {
+  if (Object.entries(patch).every(([key, value]) => state[key as keyof LayoutState] === value)) return
   state = {...state, ...patch}
   try {
     localStorage.setItem(SIDEBAR_KEY, state.sidebarCollapsed ? '1' : '0')
@@ -92,18 +93,16 @@ function publish(patch: Partial<LayoutState>) {
 /** 切换侧栏收起（看图模式）并持久化。 */
 export const setSidebarCollapsed = (value: boolean) => publish({sidebarCollapsed: value})
 
-/** 写入侧栏宽度（像素）并持久化：按上下限与「视口一半」收拢，null 恢复主题默认。 */
-export const setSidebarWidth = (width: number | null) => {
-  if (width == null) {
-    publish({sidebarWidth: null})
-    return
-  }
+/** 将桌面侧栏宽度限制在固定边界与半个视口内。 */
+export function clampSidebarWidth(width: number) {
   const maxAllowed = typeof window !== 'undefined'
     ? Math.min(SIDEBAR_WIDTH_MAX, Math.round(window.innerWidth * 0.5))
     : SIDEBAR_WIDTH_MAX
-  const clamped = Math.max(SIDEBAR_WIDTH_MIN, Math.min(Math.round(width), maxAllowed))
-  publish({sidebarWidth: clamped})
+  return Math.max(SIDEBAR_WIDTH_MIN, Math.min(Math.round(width), maxAllowed))
 }
+
+/** 写入侧栏宽度（像素）并持久化，null 恢复主题默认。 */
+export const setSidebarWidth = (width: number | null) => publish({sidebarWidth: width == null ? null : clampSidebarWidth(width)})
 
 export const resetSidebarWidth = () => publish({sidebarWidth: null})
 

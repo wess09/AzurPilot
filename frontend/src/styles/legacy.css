@@ -466,8 +466,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 /* 内容列的高度：非实例页（如 /dev、设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
    增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴 */
 .app-shell.legacy-shell > .main-shell > main {min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 28px 24px}
-.app-shell.legacy-shell > .main-shell > main:has(.instance-page-grid),
-.app-shell.legacy-shell > .main-shell > main:has(.task-config-legacy) {overflow-y: hidden}
+.app-shell.legacy-shell > .main-shell > main:has(> .instance-page-grid, > .task-config-legacy) {overflow-y: hidden}
 .app-shell.legacy-shell > .main-shell > main > * {flex-shrink: 0}
 /* 旧版两主题的按压反馈：鼠标按下时轻微收缩，主按钮同时收回悬停的上移 */
 :root[data-theme='legacy-light'] .button,
@@ -846,13 +845,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
 .monitor-tabs {height: auto; min-height: 60px; padding: 10px 16px; flex-wrap: wrap; gap: 8px}
 .monitor-panel .log-toolbar {display: flex; align-items: center; margin-left: auto; gap: 4px}
 .monitor-panel .log-panel {border: 0; border-radius: 0}
-.monitor-panel .log-content {font-size: 12px; line-height: 1.8; background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-/* MD3 卡片式日志体系适配 (LogCardView Legacy) */
-.log-content.log-cards-mode,
-.monitor-panel .log-content.log-cards-mode {
-  /* 卡片视图下日志栏自身也是二级贴片：接上它才随一/二级滑块变化 */
-  background: var(--theme-plate-bg);
-}
+.monitor-panel .log-content {font-size: 12px; line-height: 1.8}
 .log-card {
   border-radius: var(--theme-radius-card, 12px);
   box-shadow: var(--theme-shadow-panel);
@@ -1075,8 +1068,7 @@ button:disabled, input:disabled, textarea:disabled, select:disabled, .select-tri
   .app-shell.legacy-shell, .app-shell.legacy-shell > .main-shell {height: auto; overflow: visible}
   /* 桌面 main 的零基准伸缩和裁剪也必须复位，否则子页仍被压成零高 */
   .app-shell.legacy-shell > .main-shell > main,
-  .app-shell.legacy-shell > .main-shell > main:has(.instance-page-grid),
-  .app-shell.legacy-shell > .main-shell > main:has(.task-config-legacy) {flex: none; overflow: visible}
+  .app-shell.legacy-shell > .main-shell > main:has(> .instance-page-grid, > .task-config-legacy) {flex: none; overflow: visible}
   .instance-page-grid {display: flex; flex-direction: column; gap: 12px; height: auto}
   .instance-page-rail-wrap {width: 100%}
   .legacy-rail-resize-handle {display: none !important}

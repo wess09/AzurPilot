@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
+  clampSidebarWidth,
   getLayout,
   setSidebarWidth,
   resetSidebarWidth,
@@ -23,18 +24,26 @@ const KEYBOARD_STEP = 8
 export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双击恢复默认）'}: {label?: string}) {
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
   const [isDragging, setIsDragging] = useState(false)
+  const [previewWidth, setPreviewWidth] = useState<number>()
   const dragRef = useRef<{
     pointerId: number
     startX: number
     startWidth: number
+    sidebar: HTMLElement | null
+    width?: number
+    frame?: number
   } | null>(null)
 
-  // 卸载时兜底摘掉拖拽态类：拖拽中途组件被卸载的话，body 上的 col-resize 光标与禁用选中会残留。
-  useEffect(() => {
-    return () => {
-      document.body.classList.remove('is-resizing-sidebar')
-    }
-  }, [])
+  function clearDrag() {
+    const drag = dragRef.current
+    if (!drag) return
+    dragRef.current = null
+    if (drag.frame !== undefined) cancelAnimationFrame(drag.frame)
+    drag.sidebar?.style.removeProperty('--sidebar-width-preview')
+    document.body.classList.remove('is-resizing-sidebar')
+  }
+
+  useEffect(() => clearDrag, [])
 
   // 看图模式收起侧栏时不显示把手。
   if (layout.sidebarCollapsed) return null
@@ -50,6 +59,7 @@ export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双�
       pointerId: event.pointerId,
       startX: event.clientX,
       startWidth: currentWidth,
+      sidebar,
     }
     setIsDragging(true)
     document.body.classList.add('is-resizing-sidebar')
@@ -60,18 +70,25 @@ export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双�
     const drag = dragRef.current
     if (!drag || drag.pointerId !== event.pointerId) return
 
-    const deltaX = event.clientX - drag.startX
-    const targetWidth = drag.startWidth + deltaX
-    setSidebarWidth(targetWidth)
+    const width = clampSidebarWidth(drag.startWidth + event.clientX - drag.startX)
+    if (drag.width === width) return
+    drag.width = width
+    if (drag.frame !== undefined) return
+    drag.frame = requestAnimationFrame(() => {
+      drag.frame = undefined
+      drag.sidebar?.style.setProperty('--sidebar-width-preview', `${drag.width}px`)
+      setPreviewWidth(drag.width)
+    })
   }
 
   // 指针捕获因切窗口等意外丢失时也按松手收尾，否则拖拽状态会卡在 is-dragging。
   function handlePointerEnd(event: React.PointerEvent<HTMLDivElement>) {
-    if (dragRef.current?.pointerId === event.pointerId) {
-      dragRef.current = null
-      setIsDragging(false)
-      document.body.classList.remove('is-resizing-sidebar')
-    }
+    const drag = dragRef.current
+    if (drag?.pointerId !== event.pointerId) return
+    if (drag.width !== undefined) setSidebarWidth(drag.width)
+    clearDrag()
+    setPreviewWidth(undefined)
+    setIsDragging(false)
   }
 
   function handleDoubleClick() {
@@ -111,7 +128,7 @@ export function SidebarResizeHandle({label = '拖动调整侧边栏宽度（双�
       aria-orientation="vertical"
       aria-valuemax={SIDEBAR_WIDTH_MAX}
       aria-valuemin={SIDEBAR_WIDTH_MIN}
-      aria-valuenow={layout.sidebarWidth ?? undefined}
+      aria-valuenow={previewWidth ?? layout.sidebarWidth ?? undefined}
       className={`sidebar-resize-handle ${isDragging ? 'is-dragging' : ''}`}
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}

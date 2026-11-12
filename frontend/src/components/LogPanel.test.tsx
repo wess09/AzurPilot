@@ -188,6 +188,21 @@ describe('LogPanel 日志解析与渲染', () => {
       expect(buffer.entries.map(e => e.id)).toEqual([10, 11])
       expect(buffer.cursor).toBe(21)
     })
+
+    it('渲染暂停时限制待提交日志数量', () => {
+      const buffer: LogBufferState = {entries: [], reset: false, cursor: null}
+      const entries = Array.from({length: LOG_ENTRY_LIMIT + 5}, (_, index) => ({
+        id: index + 1, level: 'INFO', text: `日志 ${index + 1}`,
+      }))
+      queueLogEvent(buffer, {entries, reset: true, cursor: entries.length})
+      queueLogEvent(buffer, {
+        entries: [{id: entries.length + 1, level: 'INFO', text: '最新日志'}],
+        cursor: entries.length + 1,
+      })
+      expect(buffer.entries).toHaveLength(LOG_ENTRY_LIMIT)
+      expect(buffer.entries[0].id).toBe(7)
+      expect(buffer.entries.at(-1)?.id).toBe(entries.length + 1)
+    })
   })
 
   it('行高布局用实测均高占位未渲染行，偏移逐行累加', () => {

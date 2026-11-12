@@ -542,6 +542,25 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
         expect(incrementalCards).toEqual(fullCards)
       })
 
+      it('缓冲窗口从多行属性卡中间裁剪时，重建首尾并复用中间卡片', () => {
+        const entry = (id: number, text: string) => ({id, level: 'INFO', text: `INFO 12:00:00 │ ${text}`})
+        const history = [
+          entry(1, '作战次数: 1'),
+          entry(2, '当前舰队: 主力舰队'),
+          ...Array.from({length: 12}, (_, index) => entry(index + 3, `日志 ${index}`)),
+          entry(15, '[地图-显示] A B'),
+        ]
+        clearAggregationCache()
+        const initial = aggregateEntriesToCards(history)
+        const window = [...history.slice(1), entry(16, '1 ++ --')]
+        const updated = aggregateEntriesToCards(window)
+        expect(updated[1]).toBe(initial[1])
+        expect(updated[0].type).toBe('single')
+        expect(updated.at(-1)?.type).toBe('map_grid')
+        clearAggregationCache()
+        expect(updated).toEqual(aggregateEntriesToCards(window))
+      })
+
       it('日志被重置或截断时自动回退至全量计算', () => {
         clearAggregationCache()
         const entriesLong = Array.from({ length: 10 }, (_, i) => ({

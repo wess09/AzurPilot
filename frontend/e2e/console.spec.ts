@@ -11,7 +11,6 @@ test('总览、配置实时更新与刷新持久化', async ({page}) => {
   await expect(page.getByRole('heading', {name: 'testpilot', exact: true})).toBeVisible()
   await expect(page.getByText('14,200')).toBeVisible()
   await page.screenshot({path: 'test-results/overview-desktop.png', fullPage: true, animations: 'disabled'})
-  await page.getByRole('button', {name: '展开任务搜索'}).click()
   await page.getByRole('textbox', {name: '搜索任务', exact: true}).fill('Alas')
   await page.locator('#task-group-Alas a[href$="/task/Alas"]').click()
   const serial = page.locator('[id="Alas.Emulator.Serial"]')

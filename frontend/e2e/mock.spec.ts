@@ -1020,11 +1020,14 @@ test('总览三态、资源搭配记忆、日志与被动截图切换', async ({
   await page.goto('/#/i/demo-main/overview')
   await expect(page.getByLabel('搜索日志')).toHaveCount(0)
   await expect(page.locator('.primary-nav').getByRole('link', {name: '运行日志'})).toHaveCount(0)
+  const cards = page.locator('.resource-card')
+  await expect(cards.first()).toBeVisible()
+  const cardCount = await cards.count()
   await page.getByRole('button', {name: '仪表盘设置', exact: true}).click()
   const settings = page.getByRole('dialog')
   await settings.getByRole('button', {name: '添加卡片', exact: true}).click()
   await settings.getByRole('button', {name: '行动力', exact: true}).click()
-  const editorCards = settings.locator('.resource-editor-card:not(.resource-editor-add)')
+  const editorCards = settings.locator('.resource-card-editor > [data-resource-key]')
   const source = await editorCards.last().boundingBox()
   const target = await editorCards.first().boundingBox()
   expect(source).not.toBeNull()
@@ -1034,20 +1037,20 @@ test('总览三态、资源搭配记忆、日志与被动截图切换', async ({
   await page.mouse.move(target!.x + target!.width / 2, target!.y + target!.height / 2, {steps: 5})
   await page.mouse.up()
   await expect(editorCards.first()).toContainText('行动力')
-  await settings.getByRole('button', {name: '关闭', exact: true}).click()
-  await expect(page.locator('.resource-card')).toHaveCount(5)
-  await expect(page.locator('.resource-card').first()).toContainText('行动力')
-  const actionPoint = page.locator('.resource-card').filter({hasText: '行动力'})
+  await page.keyboard.press('Escape')
+  await expect(cards).toHaveCount(cardCount + 1)
+  await expect(cards.first()).toContainText('行动力')
+  const actionPoint = cards.filter({has: page.getByText('行动力', {exact: true})})
   await expect(actionPoint.locator('.resource-heading')).toHaveText('行动力')
-  await expect(actionPoint.locator('.resource-value')).toHaveText('101/ 5,301')
-  await expect(actionPoint.locator('.resource-value small')).toHaveText('/ 5,301')
-  await expect(actionPoint.locator('.resource-icon-image')).toHaveAttribute('src', /guild_coin\.webp/)
+  await expect(actionPoint.locator('.resource-value')).toHaveText('101/ 6,001')
+  await expect(actionPoint.locator('.resource-value small')).toHaveText('/ 6,001')
+  await expect(actionPoint.locator('.resource-icon-image')).toHaveAttribute('src', /dog_small\.webp/)
   await page.reload()
-  await expect(page.locator('.resource-card')).toHaveCount(5)
+  await expect(cards).toHaveCount(cardCount + 1)
   await page.getByRole('button', {name: '启动调度器', exact: true}).click()
-  await expect(page.locator('.task-state.running')).toHaveCount(1)
-  await expect(page.locator('.task-state.pending').first()).toBeVisible()
-  await expect(page.locator('.task-state.waiting').first()).toBeVisible()
+  await expect(page.getByRole('link', {name: /运行中$/})).toHaveCount(1)
+  await expect(page.getByRole('link', {name: /待运行$/}).first()).toBeVisible()
+  await expect(page.getByRole('link', {name: /等待中$/}).first()).toBeVisible()
   await page.getByRole('tab', {name: '截图', exact: true}).click()
   await expect(page.getByAltText('任务最近一次截图')).toBeVisible({timeout: 10000})
   expect(methods).not.toContain('preview.capture')
@@ -1083,16 +1086,18 @@ test('资源数值按可用宽度缩放并保持当前值与上限在同一行',
   const coin = page.locator('.resource-card').filter({hasText: '物资'}).locator('.resource-value-content')
   await expect(coin).toHaveText('186,420/ 600,000')
   const assertFits = async () => {
-    await expect.poll(() => values.evaluateAll(elements => elements.every(element => {
+    await expect.poll(() => values.evaluateAll(elements => elements.flatMap(element => {
       const content = element.querySelector('.resource-value-content')!
       const primary = content.querySelector('span')!
       const suffix = content.querySelector('small')
       const box = content.getBoundingClientRect()
-      return box.width <= element.clientWidth + .5
+      const fits = box.width <= element.clientWidth + .5
         && (!suffix || (suffix.getClientRects().length === 1
           && suffix.getBoundingClientRect().top < primary.getBoundingClientRect().bottom
           && parseFloat(getComputedStyle(suffix).fontSize) < parseFloat(getComputedStyle(primary).fontSize)))
-    }))).toBe(true)
+      return fits ? [] : [{text: content.textContent, width: box.width, available: element.clientWidth,
+        primarySize: getComputedStyle(primary).fontSize, suffixSize: suffix && getComputedStyle(suffix).fontSize}]
+    }))).toEqual([])
   }
   await assertFits()
   await expect.poll(() => coin.evaluate(element => parseFloat(getComputedStyle(element).fontSize) < parseFloat(getComputedStyle(element.parentElement!).fontSize))).toBe(true)
@@ -1495,7 +1500,7 @@ test('移动端放大布局无横向溢出，单栏导航可以收起', async ({
   await page.screenshot({path: 'test-results/mock-mobile.png', fullPage: true, animations: 'disabled'})
 })
 
-test('直接进入实例总览、标签状态与任务搜索收起', async ({page}) => {
+test('直接进入实例总览、标签状态与任务搜索', async ({page}) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('/')
@@ -1503,13 +1508,16 @@ test('直接进入实例总览、标签状态与任务搜索收起', async ({pag
   const tab = page.getByRole('tab', {name: 'demo-main', exact: true})
   await expect(tab).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('heading', {name: 'demo-main', exact: true})).toBeVisible()
-  await expect(page.getByLabel('搜索任务', {exact: true})).toHaveCount(0)
-  await page.getByRole('button', {name: '展开任务搜索'}).click()
-  await page.getByLabel('搜索任务', {exact: true}).fill('Alas')
+  const search = page.getByRole('textbox', {name: '搜索任务', exact: true})
+  const alasLink = page.locator('#task-group-Alas a[href$="/task/Alas"]')
+  await expect(search).toBeVisible()
+  await expect(alasLink).toHaveCount(0)
+  await search.fill('Alas')
   await expect(page.locator('.task-group-button')).toHaveCount(1)
-  await page.getByRole('button', {name: '收起任务搜索'}).click()
-  await expect(page.getByLabel('搜索任务', {exact: true})).toHaveCount(0)
-  expect(await page.locator('.task-group-button').count()).toBeGreaterThan(1)
+  await expect(alasLink).toBeVisible()
+  await search.clear()
+  await expect(alasLink).toHaveCount(0)
+  await expect.poll(() => page.locator('.task-group-button').count()).toBeGreaterThan(1)
   await page.getByRole('button', {name: '启动调度器'}).click()
   await expect(tab).toHaveClass(/running/)
   await page.getByRole('button', {name: '停止运行'}).click()

@@ -100,7 +100,7 @@ export function TaskNavTree({ defaultOpenKey, onNavigate }: { defaultOpenKey?: s
                 </button>
                 <div className={'task-submenu-list' + (isExpanded ? ' expanded' : '')} id={`task-group-${key}`}>
                   <div className="task-submenu-inner">
-                    {tasks.map(task => (
+                    {isExpanded && tasks.map(task => (
                       <NavLink
                         key={task}
                         to={`${base}/task/${task}`}

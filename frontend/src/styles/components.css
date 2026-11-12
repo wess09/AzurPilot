@@ -69,6 +69,8 @@
 .log-panel {display: flex; flex-direction: column}
 .log-panel .panel-heading {padding-top: 14px; padding-bottom: 14px; flex-shrink: 0}
 .log-content {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter); padding: 13px 17px; height: 62vh; min-height: 220px; overflow: auto; font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Courier New", monospace); font-size: 11px; line-height: 1.6; color: var(--text)}
+/* 滚动内容只绘制底色，磨砂由外层面板处理，避免滚动时再合成一层模糊。 */
+.log-panel > .log-content {contain: layout paint; -webkit-backdrop-filter: none; backdrop-filter: none}
 .compact .log-content {height: 178px; min-height: 0}
 .log-entry-line {display: flex; gap: 8px; padding: 2px 0; white-space: pre-wrap; word-break: break-all}
 .log-entry-line.log-raw {display: block}
@@ -958,10 +960,14 @@
    只在桌面生效，窄屏侧栏是抽屉形态，不吃这套 */
 /* 看图把手只用于桌面侧栏，窄屏由顶栏按钮打开导航抽屉 */
 .nav-handle {display: none}
+@property --sidebar-width-preview {
+  syntax: '*';
+  inherits: false;
+}
 @media (min-width: 951px) {
   /* 收起/展开为瞬时切换，避免低帧率下宽度动画挤压主内容；
      grid 轨道用 auto，宽度由 .sidebar 自己的 width 承担 */
-  .sidebar {width: var(--sidebar-width); min-width: 0}
+  .sidebar {width: var(--sidebar-width-preview, var(--sidebar-width)); min-width: 0}
   /* 收起时把侧栏那一列收到 0，展开时回到主题的侧栏宽度 */
   :root body .app-shell {grid-template-columns: auto minmax(0, 1fr)}
   :root body .app-shell.with-rail {grid-template-columns: auto minmax(0, 1fr) auto}
