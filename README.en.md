@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="doc/logo.webp" alt="AzurPilot Logo" width="400">
+  <img src="docs/images/logo.webp" alt="AzurPilot Logo" width="400">
 </p>
 
 <p align="center">
@@ -62,7 +62,7 @@ Visit the **[AzurPilot Official Website](https://azurpilot.com/)** for more feat
 ## GUI Preview
 
 <div align="center">
-  <img src="doc/GUI.png" alt="GUI Preview" width="800">
+  <img src="docs/images/GUI.png" alt="GUI Preview" width="800">
 </div>
 
 ## Quick Start
@@ -218,17 +218,17 @@ Every tool declares `inputSchema` / `outputSchema`, returns structured results a
 > 📥 Download the Windows / macOS / Linux launchers from the [AzurPilot Official Website](https://azurpilot.com/download.html)
 
 <div align="center">
-  <img src="doc/loading.png" alt="loading" width="500" />
+  <img src="docs/images/loading.png" alt="loading" width="500" />
   <p>Loading screen</p>
   <table align="center">
     <tr>
-      <td align="center"><img src="doc/GUI.png" alt="New" width="260"><br>New</td>
-      <td align="center"><img src="doc/GUI-legacy.webp" alt="Legacy" width="260"><br>Legacy</td>
-      <td align="center"><img src="doc/GUI-minimal.png" alt="Minimal" width="260"><br>Minimal</td>
+      <td align="center"><img src="docs/images/GUI.png" alt="New" width="260"><br>New</td>
+      <td align="center"><img src="docs/images/GUI-legacy.webp" alt="Legacy" width="260"><br>Legacy</td>
+      <td align="center"><img src="docs/images/GUI-minimal.png" alt="Minimal" width="260"><br>Minimal</td>
     </tr>
   </table>
   <p>Windows client UI</p>
-  <img src="doc/macGUI.png" alt="macGUI" width="500" />
+  <img src="docs/images/macGUI.png" alt="macGUI" width="500" />
   <p>macOS client UI</p>
 </div>
 
@@ -330,7 +330,7 @@ When using, modifying, or distributing this project, please comply with the lice
 
 <p align="center">
   <a href="https://afdian.com/a/miaonaa">
-    <img src="doc/afdian.jfif" alt="爱发电" width="200">
+    <img src="docs/images/afdian.jfif" alt="爱发电" width="200">
   </a>
   <br>
   <b>Support this project (for server costs or training new models, etc.?)</b>
