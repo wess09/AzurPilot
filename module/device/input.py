@@ -1,24 +1,20 @@
-"""设备文本输入模块。
+"""Android 设备文本输入。"""
 
-封装 Android 设备端的文本输入功能，包括输入法窗口状态检测
-以及通过 uiautomator2 向安卓组件发送文本指令和确认操作。
-"""
-# 此文件专门用于处理设备端的文本输入功能。
-# 封装了检查输入法窗口状态以及向安卓组件发送文本指令的逻辑。
-from module.device.method.uiautomator_2 import Uiautomator2
+from module.device.method.fastinput_ime import FastInputIME
 from module.logger import logger
 
 
-class Input(Uiautomator2):
+class Input(FastInputIME):
     """设备文本输入处理器。
 
-    通过 uiautomator2 实现文本输入功能，包括输入法状态检测
-    和带确认操作的文本输入。继承自 Uiautomator2 以获取底层输入接口。
+    保留已聚焦输入框的 UIAutomator2 接口，并提供 FastInputIME 输入备用路径。
 
     Methods:
+        input_text_fastinput_ime: 聚焦指定输入框，替换文本并提交。
         ime_shown: 检测输入法窗口是否显示。
         text_input_and_confirm: 输入文本并发送确认动作。
     """
+
     def ime_shown(self) -> bool:
         """检测当前输入法（IME）窗口是否正在显示。
 

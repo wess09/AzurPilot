@@ -2,11 +2,12 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import yaml
 
 from module.campaign.gems_farming import GemsEquipmentHandler
+from module.equipment.assets import EQUIPMENT_CODE_EXPORT
 from module.equipment.equipment_code import EMPTY_CODE, EquipmentCodeHandler
 from module.exception import RequestHumanTakeover
 
@@ -27,6 +28,16 @@ def handler_with_store(store, ship='bogue'):
     handler.current_ship = Mock(return_value=ship)
     handler._code_export = Mock(return_value=CV_CODE)
     handler._code_apply = Mock(return_value=True)
+    return handler
+
+
+def export_handler(*attempts):
+    handler = object.__new__(EquipmentCodeHandler)
+    handler.device = Mock()
+    handler.loop = Mock(side_effect=[range(len(info_bars)) for info_bars in attempts])
+    handler.info_bar_count = Mock(side_effect=[value for info_bars in attempts for value in info_bars])
+    handler.appear_then_click = Mock(return_value=True)
+    handler._clipboard_adb = Mock(return_value=None)
     return handler
 
 
@@ -123,18 +134,83 @@ class EquipmentTransferTests(unittest.TestCase):
         handler._code_apply.assert_called_with(code=EMPTY_CODE)
 
     def test_export_timeout_does_not_reuse_clipboard(self):
-        handler = object.__new__(EquipmentCodeHandler)
-        handler.handle_info_bar = Mock()
-        handler.set_fastinput_ime = Mock()
-        handler.loop = Mock(return_value=iter(range(2)))
-        handler.info_bar_count = Mock(return_value=0)
-        handler.appear_then_click = Mock(return_value=True)
-        handler._clipboard_get = Mock(return_value=DD_CODE)
-        self.assertIsNone(handler._code_export())
-        handler._clipboard_get.assert_not_called()
-        handler.loop.return_value = iter(range(2))
-        handler.info_bar_count.side_effect = [0, 1]
+        for bars, clicked in (((0, 0), True), ((0, 1), False), ((1, 1), True)):
+            with self.subTest(bars=bars, clicked=clicked):
+                handler = export_handler(bars)
+                handler.appear_then_click.return_value = clicked
+                self.assertIsNone(handler._code_export())
+                handler._clipboard_adb.assert_not_called()
+                handler.device.ensure_clipboard_uiautomator2.assert_not_called()
+                if bars == (1, 1):
+                    handler.appear_then_click.assert_not_called()
+
+    def test_adb_export_succeeds_even_when_uiautomator2_is_unavailable(self):
+        handler = export_handler((1, 0, 1))
+        handler._clipboard_adb.return_value = DD_CODE
+        handler.device.ensure_clipboard_uiautomator2.side_effect = RequestHumanTakeover
+        order = Mock()
+        order.attach_mock(handler.appear_then_click, 'copy')
+        order.attach_mock(handler.info_bar_count, 'notice')
+        order.attach_mock(handler._clipboard_adb, 'read_adb')
+
         self.assertEqual(handler._code_export(), DD_CODE)
+        self.assertEqual(order.mock_calls, [
+            call.notice(), call.notice(), call.copy(EQUIPMENT_CODE_EXPORT, offset=(5, 5), interval=3),
+            call.notice(), call.read_adb(),
+        ])
+        handler.device.ensure_clipboard_uiautomator2.assert_not_called()
+        handler.device.get_clipboard_uiautomator2.assert_not_called()
+
+    def test_export_fallback_prepares_and_confirms_fresh_copy_before_reading(self):
+        handler = export_handler((0, 1), (1, 0, 1))
+        handler.device.get_clipboard_uiautomator2.return_value = CV_CODE
+        order = Mock()
+        order.attach_mock(handler.appear_then_click, 'copy')
+        order.attach_mock(handler._clipboard_adb, 'read_adb')
+        order.attach_mock(handler.device.ensure_clipboard_uiautomator2, 'prepare')
+        order.attach_mock(handler.device.get_clipboard_uiautomator2, 'read_uiautomator')
+        order.attach_mock(handler.device.stuck_record_clear, 'reset')
+
+        self.assertEqual(handler._code_export(), CV_CODE)
+        copy = call.copy(EQUIPMENT_CODE_EXPORT, offset=(5, 5), interval=3)
+        self.assertEqual(order.mock_calls, [
+            copy, call.read_adb(), call.prepare(), copy, call.read_uiautomator(), call.reset(),
+        ])
+        self.assertEqual(handler.loop.call_args_list, [call(timeout=10, skip_first=False)] * 2)
+
+    def test_fallback_export_does_not_read_if_only_old_notice_is_visible(self):
+        handler = export_handler((0, 1), (1, 1))
+        self.assertIsNone(handler._code_export())
+        handler._clipboard_adb.assert_called_once()
+        handler.device.ensure_clipboard_uiautomator2.assert_called_once()
+        handler.appear_then_click.assert_called_once()
+        handler.device.get_clipboard_uiautomator2.assert_not_called()
+
+    def test_invalid_fallback_clipboard_protects_equipment(self):
+        for clipboard in ('', 'bad-code'):
+            with self.subTest(clipboard=clipboard):
+                handler = export_handler((0, 1), (0, 1))
+                handler.config = SimpleNamespace(
+                    Emulator_ControlMethod='MaaTouch', EquipmentCode_ExportToConfig=True, EquipmentCode_Config='',
+                )
+                handler.last_code = DD_CODE
+                handler.device.get_clipboard_uiautomator2.return_value = clipboard
+                handler._code_enter = Mock()
+                handler.set_code = Mock()
+                handler._code_apply = Mock()
+
+                self.assertFalse(handler.code_clear(name='bogue'))
+                self.assertIsNone(handler.last_code)
+                handler.set_code.assert_not_called()
+                handler._code_apply.assert_not_called()
+
+    def test_export_preserves_device_takeover(self):
+        for operation in ('ensure_clipboard_uiautomator2', 'get_clipboard_uiautomator2'):
+            with self.subTest(operation=operation):
+                handler = export_handler((0, 1), (0, 1))
+                getattr(handler.device, operation).side_effect = RequestHumanTakeover
+                with self.assertRaises(RequestHumanTakeover):
+                    handler._code_export()
 
     def test_generic_clear_without_export_keeps_original_behavior(self):
         handler = object.__new__(EquipmentCodeHandler)
