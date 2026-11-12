@@ -3,8 +3,8 @@
    颜色槽位的契约名与 app/colorPalette.ts 的 colorSlots 一一对应，改名会破坏调色板 */
 :root {
   color-scheme: light;
-  /* 基础色板：与组件库官方默认中性色一致（白面、近黑前景、灰描边、黑色强调） */
-  --bg: #ffffff; --surface: #ffffff; --surface-muted: #f5f5f5;
+  /* 基础色板：面板保持白面；页面背景垫一层极浅暖白（#faf9f5，仅背景，不动面板配色） */
+  --bg: #faf9f5; --surface: #ffffff; --surface-muted: #f5f5f5;
   --text: #262626; --muted: #737373; --border: #e5e5e5;
   --accent: #262626; --accent-hover: #383838; --accent-soft: #f5f5f5;
   --secondary: #525252; --secondary-soft: #f5f5f5;
