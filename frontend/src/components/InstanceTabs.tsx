@@ -14,7 +14,7 @@ import { ErrorBox, Modal } from './ui'
 
 type StatusIconType = ComponentType<{className?: string; size?: number; 'aria-hidden'?: boolean | 'true' | 'false'}>
 
-/** 待命状态的小圆点图标 */
+/** 待命状态的小圆点图标。 */
 function StatusDot({className, size = 14, ...props}: {className?: string; size?: number; 'aria-hidden'?: boolean | 'true' | 'false'}) {
   return <svg
     className={`lucide lucide-dot ${className ?? ''}`}
@@ -52,7 +52,7 @@ export function InstanceTabs({onCreate}: {onCreate: () => void}) {
   const {instance} = useParams()
   const navigate = useNavigate()
   const {pathname} = useLocation()
-  /* 标签跳到目标实例的同一页型；从全局页面切入时落到总览。 */
+  // 标签跳到目标实例的同一页型；从全局页面切入时落到总览。
   const suffix = matchPath('/i/:instance/*', pathname)?.params['*'] || 'overview'
   const [pendingDelete, setPendingDelete] = useState<string>()
   const tabs = useRef<HTMLDivElement>(null)
@@ -102,7 +102,7 @@ function SchedulerToggle({name, status}: {name: string; status: Status}) {
   const {notify, ui} = useApp()
   const [busy, setBusy] = useState(false)
   const running = status === 'running'
-  /* 更新中的实例不接受就地启停。 */
+  // 更新中的实例不接受就地启停。
   const usable = connection === 'ready' && !busy && status !== 'updating'
 
   async function toggle(event: React.MouseEvent) {
@@ -110,7 +110,7 @@ function SchedulerToggle({name, status}: {name: string; status: Status}) {
     if (!usable) return
     setBusy(true)
     try {
-      /* 与调度器卡片同一道落盘屏障。 */
+      // 与调度器卡片同一道落盘屏障。
       if (!running) await editor(`config:${name}`).settled()
       await api.request(running ? 'scheduler.stop' : 'scheduler.start', {instance: name})
       notify(running ? ui('scheduler.stoppedNotice') : ui('scheduler.started'))
@@ -140,7 +140,7 @@ function DeleteInstance({name, onClose}: {name: string; onClose: () => void}) {
   const connection = useConnection()
   const {instances, refresh, notify, ui} = useApp()
   const navigate = useNavigate()
-  /* 当前打开的是哪个实例 —— 决定删完落在哪一页。 */
+  // 当前打开的是哪个实例 —— 决定删完落在哪一页。
   const {instance: routeInstance} = useParams()
   const current = routeInstance ?? ''
 
@@ -149,8 +149,8 @@ function DeleteInstance({name, onClose}: {name: string; onClose: () => void}) {
     try {
       const config = await api.request('config.get', {instance: name})
       await api.request('instances.delete', {instance: name, revision: config.revision})
-      /* 删完就地换到邻近实例的运行总览：删自己则接前一个（没有前一个就接后一个），
-         删别人则留在当前标签页。 */
+      // 删完就地换到邻近实例的运行总览：删自己则接前一个（没有前一个就接后一个），
+      // 删别人则留在当前标签页。
       const order = instances.map(item => item.name)
       const at = order.indexOf(name)
       if (name === current) {
@@ -161,7 +161,7 @@ function DeleteInstance({name, onClose}: {name: string; onClose: () => void}) {
     } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
 
-  /* 三次点击对应三档：警戒 → 危险 → 执行；前两下只推进档位。 */
+  // 三次点击对应三档：警戒 → 危险 → 执行；前两下只推进档位。
   const phase = ['armed', 'danger', 'execute'][step]
   return <Modal title={ui('instance.delete')} onClose={onClose}><div className="form-stack">
     <p>{ui(PROMPT_KEYS[step] ?? PROMPT_KEYS[0], {name})}</p>

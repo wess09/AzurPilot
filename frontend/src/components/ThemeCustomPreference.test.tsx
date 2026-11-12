@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 材质细节面板的渲染回归测试：分区滑块、还原按钮可用性。
+ */
+
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
@@ -5,7 +9,7 @@ import { MaterialDetailPanel } from './ThemeCustomPreference'
 import { REGIONS, regionKnobs, regionProps } from '../app/themeKnobs'
 
 const ui = ((key: string) => key) as never
-/* 类别选择器用的是主题感知的分段控件，它要读上下文（材质族/朴素族渲染不同）。 */
+// 类别选择器用的是主题感知的分段控件，它要读上下文（材质族/朴素族渲染不同）。
 const context = {ui, language: 'zh-CN', theme: 'default'} as unknown as AppContextValue
 const theme = context.theme
 

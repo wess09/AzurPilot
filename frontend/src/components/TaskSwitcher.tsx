@@ -44,6 +44,7 @@ export function TaskSwitcher() {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
     event.preventDefault()
     if (!open) {setOpen(true); return}
+    // 键盘事件挂在容器自身：能收到事件时容器必已挂载，current 不会为空。
     const items = Array.from(container.current!.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]:not(:disabled)'))
     const current = items.indexOf(document.activeElement as HTMLButtonElement)
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length

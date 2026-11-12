@@ -24,7 +24,7 @@ describe('MarkdownView 组件（基于 marked + katex + dompurify）', () => {
     const md = '行内公式：$E = mc^2$，以及块级公式：\n\n$$\\frac{a}{b}$$'
     const html = renderToStaticMarkup(<MarkdownView content={md} />)
 
-    // KaTeX 会生成 katex 类或 katex-html 容器
+    // KaTeX 会生成 katex 类或 katex-html 容器，断言只盯关键词，不锁具体标记。
     expect(html).toContain('katex')
     expect(html).toContain('md-math-inline')
     expect(html).toContain('md-math-block')

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 主题配色的色板选择器：预置与自定义配色的挑选、新增与编辑。
+ */
+
 import { useState, type CSSProperties } from 'react'
 import { Plus } from 'lucide-react'
 import { useApp } from '../app/context'
@@ -37,7 +41,11 @@ function CustomPaletteEditor({initial, onClose}: {initial: CustomPalette; onClos
   </Modal>
 }
 
-/** 配色选择器：简约主题选择整套配色，现代主题选择品牌配色。 */
+/**
+ * 配色选择器：简约主题选择整套配色，现代主题选择品牌配色。
+ *
+ * @param stock 是否显示首位的「原版色」选项，选它等于跟随当前大类的自带配色。
+ */
 export function PaletteSwatches({value, onChange, legend, stock = false}: {value?: Palette; onChange: (palette?: Palette) => void; legend: string; stock?: boolean}) {
   const {ui, resolvedMode, customPalettes, deleteCustomPalette} = useApp()
   const [editing, setEditing] = useState<CustomPalette>()
@@ -45,11 +53,11 @@ export function PaletteSwatches({value, onChange, legend, stock = false}: {value
   const paletteIds = [...palettes, ...customPalettes.map(item => item.id)]
   function createPalette() {
     const id = `custom:${crypto.getRandomValues(new Uint32Array(2)).join('-')}` as const
-    /* 新增方案从当前选中的配色起稿；没选（跟随主题）时取预置里的第一套。 */
+    // 新增方案从当前选中的配色起稿；没选（跟随主题）时取预置里的第一套。
     const current = paletteColors(value ?? palettes[0], customPalettes, resolvedMode)
     setEditing({id, primary: current.primary, secondary: current.secondary})
   }
-  /* 第一项永远是「原版色」：显示该大类自带的强调色，选了就等于跟随主题（否则用户找不到原色）。 */
+  // 第一项永远是「原版色」：显示该大类自带的强调色，选了就等于跟随主题（否则用户找不到原色）。
   const stockColors = stockBrands[resolvedMode]
   return <>
     <fieldset className="palette-options">

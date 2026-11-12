@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 外观偏好区块：配色模式选择与调色板挑选，直接读写主题存储。
+ */
+
 import { useSyncExternalStore } from 'react'
 import { useApp } from '../app/context'
 import { colorModes, fixedColorModes, type ColorMode } from '../app/palettes'
@@ -15,6 +19,7 @@ const modeLabels = {
   'retro-red': 'settings.modeRetroRed',
 } as const
 
+/** 外观偏好设置块：配色模式下拉与调色板色卡，改动经 applyTheme 立即生效，不走表单暂存。 */
 export function ThemePreferences() {
   const {ui} = useApp()
   const {colorMode, palette} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
@@ -27,6 +32,7 @@ export function ThemePreferences() {
         </Select>
       </div>
     </div>
+    {/* 固定主题模式自带整套色值与明暗，优先于所选调色板，藏起选择器 */}
     {!fixedColorModes[colorMode] && <div className="field-row palette-field">
       <div className="field-label"><label>{ui('settings.palette')}</label><p>{ui('settings.paletteHelp')}</p></div>
       <div className="field-control palette-control">

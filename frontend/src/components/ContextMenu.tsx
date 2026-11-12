@@ -9,6 +9,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
+/** 右键菜单的一个动作项；danger 为真时渲染警示样式，用于删除等不可逆操作。 */
 export interface ContextMenuItem {
   label: string
   run: () => void
@@ -16,6 +17,12 @@ export interface ContextMenuItem {
   danger?: boolean
 }
 
+/**
+ * 在视口坐标 (x, y) 处弹出动作项列表；打开期间的一切关闭时机都汇入 onClose。
+ *
+ * @param x 菜单锚点的视口横坐标。
+ * @param y 菜单锚点的视口纵坐标。
+ */
 export function ContextMenu({x, y, items, onClose}: {x: number; y: number; items: ContextMenuItem[]; onClose: () => void}) {
   const ref = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState({x, y})
@@ -40,7 +47,7 @@ export function ContextMenu({x, y, items, onClose}: {x: number; y: number; items
     }
   }, [onClose])
 
-  // 渲染后量尺寸，贴边时向内翻转。
+  // 菜单在靠近右/下边缘打开时会溢出视口：渲染后量实际尺寸，把位置夹回视口内（留 8px 余量）。
   useLayoutEffect(() => {
     const menu = ref.current
     if (!menu) return

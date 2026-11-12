@@ -13,20 +13,19 @@ import { FieldInput } from './FieldInput'
 /**
  * 渲染本页负责的部署设置分组。
  *
- * `only` 与 `except` 二选一：前者只渲染列出的分组，后者渲染除此之外的全部分组。
+ * `only` 只渲染列出的分组，不传则渲染全部分组。
  * 字段控件与提交队列和实例配置一致：输入即提交，由 `EditQueue` 负责重试与草稿。
  */
-export function DeployGroups({data, only, except, edits, queue}: {
+export function DeployGroups({data, only, edits, queue}: {
   data: SettingsData
   only?: string[]
-  except?: string[]
   edits: EditSnapshot
   queue: EditQueue
 }) {
   const {t, ui} = useApp()
   const groups = data.groups.filter(group => only
     ? only.includes(group.key)
-    : except ? !except.includes(group.key) : true)
+    : true)
   return <>
     {groups.map(group => (
       <section className="panel config-group" key={group.key}>

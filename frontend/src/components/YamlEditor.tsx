@@ -20,6 +20,13 @@ const colors = HighlightStyle.define([
 ])
 const externalChange = Annotation.define<boolean>()
 
+/**
+ * CodeMirror 6 的 YAML 受控编辑器。
+ *
+ * 编辑器实例只在 id/label 变化时重建；value 变化经外部回填写进文档，回填事务带
+ * 外部变更注解，不会触发 onChange——只有用户的输入才进入表单草稿。disabled 与
+ * invalid 用 Compartment 动态重配，避免重建编辑器丢掉历史与光标。
+ */
 export function YamlEditor({id, value, onChange, disabled = false, label, invalid}: {
   id: string; value: string; onChange: (value: string) => void; disabled?: boolean; label: string; invalid?: boolean
 }) {

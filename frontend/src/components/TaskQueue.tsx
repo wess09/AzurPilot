@@ -15,10 +15,10 @@ import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 const IMMEDIATE_NEXT_RUN = '2020-01-01 00:00:00'
 /** 条目位置。用布局坐标：它不含脚本正在写的 transform，
  *  动画没停时也能读到真实位置。 */
-export type Box = {left: number; top: number}
+type Box = {left: number; top: number}
 
 /** 条目位置与尺寸。条目被移除后，靠它才能在原地画出一份等大的副本。 */
-export type Placement = Box & {width: number; height: number}
+type Placement = Box & {width: number; height: number}
 
 /** 条目在文档里的布局坐标：沿 offsetParent 链累加到 body，
  *  谁当 offsetParent 都得到同一套数值；动画未结束时读到的仍是真实落点。 */
@@ -49,12 +49,11 @@ export function movedBy(before: Box | undefined, after: Box) {
  * 条目显示任务名、下次执行时间与状态文字。时间只写值不带「执行时间：」前缀，
  * 运行中的任务同样把时间列出来（只标状态的话就看不出它排在什么时候）。
  * 运行中的状态文字带三点呼吸与扫光，用来表示调度器正在跑它。
- * `onNavigate` 供移动端抽屉在点击任务后收起使用，桌面端不传。
  *
  * 条目同处一个容器，状态变化时能被测到位置变化并连续平移过去。
  * 容器的高度用补间兑现，离开的条目在原地收缩塌陷，插入的条目自中心放大。
  */
-export function TaskQueue({instance, data, onData, onNavigate}: {instance: string; data?: Overview; onData?: (data: Overview) => void; onNavigate?: () => void}) {
+export function TaskQueue({instance, data, onData}: {instance: string; data?: Overview; onData?: (data: Overview) => void}) {
   const {t, ui, notify} = useApp()
   const navigate = useNavigate()
   const [menu, setMenu] = useState<{task: Overview['tasks'][number]; x: number; y: number}>()
@@ -176,7 +175,7 @@ export function TaskQueue({instance, data, onData, onNavigate}: {instance: strin
    *  「立刻运行」不是直接执行，而是把下一次运行时间清空回落到默认值，
    *  调度器下一轮扫描就排它——与配置页里清空该字段同一条路径。 */
   const menuItems = (task: Overview['tasks'][number]): ContextMenuItem[] => [
-    {label: ui('queue.openConfig'), run: () => {navigate(`/i/${instance}/task/${task.name}`); onNavigate?.()}},
+    {label: ui('queue.openConfig'), run: () => navigate(`/i/${instance}/task/${task.name}`)},
     {label: ui('task.runNow'), disabled: task.state === 'running', run: () => void runNow(task.name)},
   ]
 
@@ -204,7 +203,7 @@ export function TaskQueue({instance, data, onData, onNavigate}: {instance: strin
             {tasks.map(task => {
               const nextRun = task.nextRun?.replace('T', ' ').trim()
               return <Link key={task.name} data-task={task.name} className={`rail-task-item ${task.state}`}
-                           to={`/i/${instance}/task/${task.name}`} onClick={onNavigate}
+                           to={`/i/${instance}/task/${task.name}`}
                            onContextMenu={event => {event.preventDefault(); setMenu({task, x: event.clientX, y: event.clientY})}}>
                 <div className="rail-task-main">
                   <strong>{t(`Task.${task.name}.name`)}</strong>

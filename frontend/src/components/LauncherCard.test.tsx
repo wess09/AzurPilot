@@ -7,8 +7,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
 import { LauncherCard, launcherStatusText, type Phase } from './LauncherCard'
 
+// vi.hoisted 先于 vi.mock 的工厂求值：把 api.onEvent 登记的监听器留出来，用例里手动派发启动器事件。
 const {events} = vi.hoisted(() => ({events: {listener: undefined as undefined | ((event: {topic: string; data: unknown}) => void)}}))
 
+// 界面文案桩成键名回显（断言对准 GUI 键，同下方 t 的用途），连接固定为 ready 让组件走已连接分支；api.request 由各用例自行编排返回值。
 vi.mock('../app/context', () => ({
   useApp: () => ({t: (key: string) => key}),
   useConnection: () => 'ready',
@@ -73,6 +75,7 @@ it('通过设置页开关提交启动器自启动状态', async () => {
 })
 
 it('设置请求期间禁用开关，请求失败后恢复原状态', async () => {
+  // 第二次请求挂起不返回：让开关停在「设置中」的禁用态，随后手动 reject 验证失败回滚。
   let rejectChange!: (error: Error) => void
   const pending = new Promise<never>((_, reject) => {rejectChange = reject})
   vi.mocked(api.request)

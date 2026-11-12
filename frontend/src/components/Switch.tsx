@@ -7,6 +7,10 @@
 
 import { Switch as ShadcnSwitch } from './ui/switch'
 
+/**
+ * 表单开关的薄封装：不渲染任何可见文字，label/invalid/describedBy 全部走 aria 属性，
+ * 视觉态（轨道色、焦点环、禁用）交给 shadcn/ui 的 Switch。
+ */
 export function Switch({id, checked, disabled, label, title, invalid, describedBy, onChange}: {
   id?: string
   checked: boolean

@@ -1,10 +1,15 @@
 "use client"
 
+/**
+ * @fileoverview 复选框：Radix Checkbox 根元素的外观封装，供各业务页面直接使用。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { CheckIcon } from "lucide-react"
 import { Checkbox as CheckboxPrimitive } from "radix-ui"
 
+/** 复选框：套用统一尺寸与选中/禁用/校验态样式，固定 data-slot=checkbox 供样式选择器定位。 */
 function Checkbox({
   className,
   ...props

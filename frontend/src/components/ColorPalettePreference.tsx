@@ -38,6 +38,7 @@ function HexInput({value, label, onCommit}: {value: string; label: string; onCom
   />
 }
 
+/** 渲染单个颜色槽位行；override 是用户覆盖值，fallback 是主题自带取值，展示与取色都从实际生效值起稿。 */
 function SlotRow({slot, override, fallback, onPick, onReset}: {
   slot: ColorSlot
   override?: string
@@ -64,11 +65,11 @@ function SlotRow({slot, override, fallback, onPick, onReset}: {
 function ColorPaletteModal({mode, onMode, onClose}: {mode: ResolvedMode; onMode: (mode: ResolvedMode) => void; onClose: () => void}) {
   const {ui} = useApp()
   const [query, setQuery] = useState('')
-  /* 覆盖表是本地状态：写盘后立刻重算，不必等主题广播。 */
+  // 覆盖表是本地状态：写盘后立刻重算，不必等主题广播。
   const [overrides, setOverrides] = useState(() => readColorOverrides()[mode] ?? {})
-  /* 切换明暗后另一套覆盖表要整体换掉，否则会把浅色的改动写在深色上。 */
+  // 切换明暗后另一套覆盖表要整体换掉，否则会把浅色的改动写在深色上。
   useEffect(() => setOverrides(readColorOverrides()[mode] ?? {}), [mode])
-  /* 明暗切换后重取主题自带取值；改色不改变主题值，所以只在模式变化时重算。 */
+  // 明暗切换后重取主题自带取值；改色不改变主题值，所以只在模式变化时重算。
   const fallback = useMemo(() => Object.fromEntries(colorSlots.map(slot => [slot.token, currentColorValue(slot.token) ?? '#000000'])), [mode])
   const needle = query.trim().toLowerCase()
   const matches = colorSlots.filter(slot => !needle || ui(slot.label).toLowerCase().includes(needle) || slot.token.includes(needle))
@@ -90,6 +91,7 @@ function ColorPaletteModal({mode, onMode, onClose}: {mode: ResolvedMode; onMode:
         <Input className="w-full" value={query} placeholder={ui('settings.colorPaletteSearch')} aria-label={ui('settings.colorPaletteSearch')} spellCheck={false} onChange={event => setQuery(event.target.value)}/>
       </label>
     </div>
+    {/* 样例带：把状态色、主按钮、正文排在一起当改色预览，纯装饰不参与交互。 */}
     <div className="color-palette-sample" aria-hidden="true">
       <span className="status running">RUNNING</span>
       <span className="status updating">QUEUED</span>
@@ -134,6 +136,7 @@ export function ColorPalettePreference() {
   const {resolvedMode} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
   const [open, setOpen] = useState(false)
   const [revision, setRevision] = useState(0)
+  // countColorOverrides 直读 localStorage，不随外部变更响应；revision/open 只用来在开关弹窗时强制重算。
   const dirty = useMemo(() => countColorOverrides(resolvedMode), [resolvedMode, revision, open])
 
   const switchMode = (next: ResolvedMode) => {

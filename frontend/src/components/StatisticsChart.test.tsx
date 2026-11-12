@@ -121,7 +121,7 @@ describe('StatisticsChart 多数据源图表组件', () => {
       </AppContext.Provider>,
     )
 
-    // 此时选中的是心智魔方，展示的芯片中心智魔方应处于 active 状态，而石油为非 active
+    // 此时选中的是心智魔方，展示的芯片中心智魔方应处于 active 状态，而石油为非 active。
     expect(html).toContain('心智魔方 (已启用，双击仅看此项)')
     expect(html).toContain('石油 (未启用，双击仅看此项)')
   })

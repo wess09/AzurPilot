@@ -1,3 +1,6 @@
+/**
+ * @fileoverview followStep 的跟随契约：方向与剩余距离一致、单帧限幅、逐帧收敛且始终不过冲。
+ */
 import { describe, expect, it } from 'vitest'
 import { MAX_FOLLOW_STEP, followStep } from './LogPanel'
 

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 材质细节弹窗：调节各区域的磨砂、饱和度、不透明度等旋钮，设置页与运行总览共用。
+ */
+
 import { useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { applyCustomLayer, THEME_FAMILY } from '../app/theme'
@@ -6,8 +10,10 @@ import { REGIONS } from '../app/themeKnobs'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 import { Modal } from './ui'
 
-/** 材质细节二级菜单：设置页与运行总览共用同一个弹窗，谁需要就在谁那里挂一个入口。
-    onChange 用于让调用方同步自己那份状态（设置页要更新入口上的已调项数）。 */
+/**
+ * 材质细节二级菜单：设置页与运行总览共用同一个弹窗，谁需要就在谁那里挂一个入口。
+ * onChange 用于让调用方同步自己那份状态（设置页要更新入口上的已调项数）。
+ */
 export function MaterialDetailModal({onClose, onChange}: {onClose: () => void; onChange?: () => void}) {
   const {ui} = useApp()
   const family = THEME_FAMILY

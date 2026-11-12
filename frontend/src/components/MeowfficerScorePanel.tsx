@@ -20,6 +20,7 @@ const tierStyles: [string, string][] = [
   ['雷暴', 'is-thunder'],
 ]
 
+/** 按档位关键词取样式类名；关键词表见上方 tierStyles，未命中时走 is-other 中性样式。 */
 export function tierClass(tier: string): string {
   return tierStyles.find(([keyword]) => tier.includes(keyword))?.[1] ?? 'is-other'
 }
@@ -206,7 +207,7 @@ export function MeowfficerScorePanel({instance}: {instance: string}) {
             ? previous
             : value))
       }).catch(() => {
-        // 轮询失败不打扰用户：手动「刷新」仍会给出明确报错
+        // 轮询失败不打扰用户：手动「刷新」仍会给出明确报错。
       })
     }, AUTO_REFRESH_INTERVAL)
     return () => clearInterval(timer)

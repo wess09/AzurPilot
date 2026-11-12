@@ -12,6 +12,13 @@ import { Modal } from './ui'
 import { Input } from './ui/input'
 import { accountText } from './accountText'
 
+/**
+ * 账号保险库面板：展示保险库状态并管理初始化、解锁/锁定、TPM 与本地绑定、档案切换与删除。
+ * 敏感操作先经 Modal 二次确认；epoch 计数器丢弃实例/连接切换后迟到的旧回包；
+ * 保险库被销毁（VAULT_DESTROYED）时自动重拉状态刷新界面。
+ *
+ * @param instance 目标实例 ID；实例或连接变化时重新拉取状态。
+ */
 export function AccountPanel({instance}: {instance: string}) {
   const {language, notify, ui} = useApp()
   const text = accountText[language]

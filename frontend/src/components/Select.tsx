@@ -10,6 +10,7 @@ import { useId, useRef, useState, type ComponentProps, type ReactElement, type R
 import { Select as ShadcnSelect, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select'
 import { useApp } from '../app/context'
 
+/** Radix 不允许空字符串作为选项值，空值在内部用该哨兵承载，对外仍是空串。 */
 const EMPTY = '\u0000empty'
 
 /** 调用点用 `JSON.stringify` 传值，兜底显示时不要把引号带到界面上。 */
@@ -72,6 +73,12 @@ function parse(children: ReactNode) {
   return {entries, items: entries.flatMap(entry => ('items' in entry ? entry.items : [entry]))}
 }
 
+/**
+ * 以原生 `<select>` 的事件形状桥接 shadcn/Radix Select：`value` + `onChange` + `<option>` 子节点照旧传，
+ * 选项值经 `JSON.stringify` 承载以支持非字符串值。
+ *
+ * @param openOnFocus 聚焦或悬停即展开菜单、离开后延时收起；默认关闭。
+ */
 export function Select({children, id, className, style, disabled, autoFocus, openOnFocus = false, ...props}: ComponentProps<'select'> & {openOnFocus?: boolean}) {
   const {ui} = useApp()
   const generatedId = useId()
@@ -79,12 +86,14 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
   const trigger = useRef<HTMLButtonElement>(null)
   const [open, setOpen] = useState(false)
   const [container, setContainer] = useState<HTMLElement>()
+  // 菜单默认 portal 到 body；在弹窗内时改挂弹窗容器，避免被弹窗层级盖住。
   const toggleOpen = (next: boolean) => {
     if (next) setContainer((trigger.current?.closest('[data-slot=dialog-content]') as HTMLElement | null) ?? document.body)
     setOpen(next)
   }
   const hoverClose = useRef<number | undefined>(undefined)
   const cancelHoverClose = () => {if (hoverClose.current !== undefined) {window.clearTimeout(hoverClose.current); hoverClose.current = undefined}}
+  // 指针离开后延迟 180ms 再收起，给指针从触发器移入菜单的时间；进入菜单即取消。
   const scheduleHoverClose = () => {
     if (!openOnFocus) return
     cancelHoverClose()
@@ -94,7 +103,7 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
   const current = props.value === undefined || props.value === null ? '' : String(props.value)
   const label = current === '' ? undefined : items.find(item => item.value === current)?.label
   const placeholder = String(items[0]?.label ?? ui('common.select'))
-  /* 空值时 Radix 拿到的是哨兵值，不会走自己的 placeholder 分支，这里直接把显示文本交出去。 */
+  // 空值时 Radix 拿到的是哨兵值，不会走自己的 placeholder 分支，这里直接把显示文本交出去。
   const display = typeof label === 'string' || typeof label === 'number' ? String(label) : plainValue(current) || placeholder
 
   function change(next: string) {

@@ -36,6 +36,7 @@ export function PageChainSlots({rows, labels, options, onPlace, onRemove}: {
       {row.length > 0 ? <span className="statistics-chain-link" aria-hidden="true"/> : null}
       {addSlot(rowIndex)}
     </div>)}
+    {/* 行号取 -1 表示新开一条链：父级 placeInSlot 对负数行号追加新行 */}
     {lastFull ? <div className="statistics-chain-row">{addSlot(-1)}</div> : null}
   </div>
 }

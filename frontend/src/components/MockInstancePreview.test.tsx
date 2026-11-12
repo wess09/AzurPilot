@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
 import { MockInstancePreview } from './MockInstancePreview'
 
+// ui 用直通实现：渲染出的文案就是 i18n key 本身，断言按 key 匹配即可，不必引真实语言包。
 const ui = ((key: string) => key) as never
 const context = {
   ui,
@@ -22,24 +23,19 @@ describe('MockInstancePreview (全真模拟实例页预览)', () => {
       </AppContext.Provider>,
     )
 
-    // 包含预览层与容器
     expect(html).toContain('mock-instance-preview-overlay')
     expect(html).toContain('mock-preview-shell')
     expect(html).toContain('mock-preview-inspector')
 
-    // 包含顶部栏与导航
     expect(html).toContain('breadcrumb')
     expect(html).toContain('connection-label')
 
-    // 包含测试弹窗与测试菜单触发按钮
     expect(html).toContain('settings.sampleModal')
     expect(html).toContain('settings.sampleMenu')
 
-    // 包含检视器标题与关闭按钮
     expect(html).toContain('settings.inspectorTitle')
     expect(html).toContain('settings.closePreview')
 
-    // 包含六个材质区域的调节选单
     expect(html).toContain('settings.regionSurface')
     expect(html).toContain('settings.regionPlate')
     expect(html).toContain('settings.regionInset')

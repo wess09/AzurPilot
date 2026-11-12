@@ -1,3 +1,7 @@
+/**
+ * @fileoverview SidebarTransition 的渲染回归：常规包裹渲染与减弱动效模式下的降级。
+ */
+
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { SidebarTransition } from './SidebarTransition'
@@ -5,6 +9,7 @@ import { setMotionReduced } from '../app/motionPrefs'
 
 describe('SidebarTransition', () => {
   beforeEach(() => {
+    // motionPrefs 是模块级单例，后面的用例会打开减弱动效；这里复位防止用例间泄漏。
     setMotionReduced(false)
   })
 

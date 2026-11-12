@@ -12,7 +12,7 @@ import type {ResourceFlowReport, StatGlossary, StatTable, StatisticsReport} from
 type Target = 'en-US' | 'ja-JP' | 'zh-TW'
 type Row = readonly [zh: string, en: string, ja: string, tw: string]
 
-/* 名词与短语：整段相等时替换。 */
+// 名词与短语：整段相等时替换。
 const TERMS: readonly Row[] = [
   // 资源与货币，措辞与资源卡片一致
   ['石油', 'Oil', '燃料', '石油'],
@@ -160,7 +160,7 @@ const TERMS: readonly Row[] = [
   ['未发现', 'Not found', '未発見', '未發現'],
 ]
 
-/* 备注句子：整段相等或作为片段出现在拼接的备注里时替换。 */
+// 备注句子：整段相等或作为片段出现在拼接的备注里时替换。
 const SENTENCES: readonly Row[] = [
   ['尚未运行仓库统计任务。运行并完成完整扫描后才会更新物品数量。',
     'The inventory statistics task has not run yet. Item counts update after a complete scan.',
@@ -228,7 +228,7 @@ const SENTENCES: readonly Row[] = [
     '依時間倒序；只列含上述統計物品的掉落記錄，其餘掉落不入這張表。'],
 ]
 
-/* 带变量的整句。 */
+// 带变量的整句。
 type Pattern = readonly [RegExp, (match: RegExpMatchArray, language: Target, term: (text: string) => string) => string]
 const PATTERNS: readonly Pattern[] = [
   [/^最近完整扫描：(.+)；服务器：(.+)；复核 (\d+) 页。$/, ([, time, server, pages], language) => ({
@@ -282,7 +282,7 @@ function termMap(language: Target) {
   }
   return map
 }
-/* 长句优先，避免短句先替换掉长句的一部分。 */
+// 长句优先，避免短句先替换掉长句的一部分。
 const sentencesByLength = [...SENTENCES].sort((a, b) => b[0].length - a[0].length)
 
 function isTarget(language: Language): language is Target {
@@ -332,7 +332,7 @@ function localizeTable(table: StatTable, tr: (text: string) => string): StatTabl
   }
 }
 
-/* 英文单位与数字之间留空格（「0 battles」），符号单位除外。 */
+// 英文单位与数字之间留空格（「0 battles」），符号单位除外。
 function unitText(language: Target, unit: string) {
   return language === 'en-US' && unit && !/^[\s/%]/.test(unit) ? ` ${unit}` : unit
 }

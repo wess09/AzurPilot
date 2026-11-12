@@ -18,14 +18,22 @@ import {
   type SchedulerPosition,
 } from '../app/schedulerPositionPrefs'
 
+/** 键盘微调步长（像素/次按键）。 */
 const KEYBOARD_STEP = 8
 
+/** 把手的无障碍名称与悬停提示。 */
+const HANDLE_LABEL = '拖动调整调度器栏宽度（双击恢复默认）'
+
+/**
+ * 旧版总览页调度器栏的宽度把手（role=separator）：指针拖拽、双击重置默认，
+ * 键盘方向键微调、Home/End 直达边界、Enter/Backspace 重置。
+ *
+ * @param side 把手贴在哪一侧：right 时方向取反（向左拖才加宽）。缺省跟随全局调度器栏位置偏好。
+ */
 export function LegacyRailResizeHandle({
   side: propSide,
-  label = '拖动调整调度器栏宽度（双击恢复默认）',
 }: {
   side?: SchedulerPosition
-  label?: string
 } = {}) {
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
   const storedSide = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
@@ -37,6 +45,7 @@ export function LegacyRailResizeHandle({
     startWidth: number
   } | null>(null)
 
+  // 卸载时兜底移除拖拽态类名：拖拽中途组件被卸载的话，pointerup 与 lostpointercapture 都不会再触发。
   useEffect(() => {
     return () => {
       document.body.classList.remove('is-resizing-rail')
@@ -61,7 +70,7 @@ export function LegacyRailResizeHandle({
     try {
       event.currentTarget.setPointerCapture(event.pointerId)
     } catch {
-      // 忽略测试环境或不支持指针捕获时的异常
+      // 忽略测试环境或不支持指针捕获时的异常。
     }
   }
 
@@ -84,7 +93,7 @@ export function LegacyRailResizeHandle({
           event.currentTarget.releasePointerCapture(event.pointerId)
         }
       } catch {
-        // 捕获可能已自动释放
+        // 捕获可能已自动释放。
       }
     }
   }
@@ -122,7 +131,7 @@ export function LegacyRailResizeHandle({
 
   return (
     <div
-      aria-label={label}
+      aria-label={HANDLE_LABEL}
       aria-orientation="vertical"
       aria-valuemax={LEGACY_RAIL_WIDTH_MAX}
       aria-valuemin={LEGACY_RAIL_WIDTH_MIN}
@@ -138,7 +147,7 @@ export function LegacyRailResizeHandle({
       onPointerUp={handlePointerEnd}
       role="separator"
       tabIndex={0}
-      title={label}
+      title={HANDLE_LABEL}
     />
   )
 }

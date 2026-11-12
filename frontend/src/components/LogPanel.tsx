@@ -1,5 +1,5 @@
 /**
- * @fileoverview 实例实时控制台日志面板组件。
+ * @fileoverview 实例实时日志面板组件，及流式日志微批缓冲、行高布局等纯数据辅助。
  */
 
 import { Select } from './FormControls'
@@ -13,10 +13,15 @@ import { Empty } from '../components/ui'
 import { Input } from './ui/input'
 import { LogCardView, findVisibleRange, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
 
+/** 匹配标准日志行，捕获组依次为：等级、可选日期、时间、正文（以 │ 分隔）。 */
 export const LOG_LINE_RE = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/
+/** 匹配带标题的分割线，捕获组 1 为标题文本。 */
 export const RULE_RE = /^[═─]{3,}\s*(.*?)\s*[═─]{3,}$/
+/** 匹配纯分割线：整行只有 ═ 或 ─。 */
 export const PURE_RULE_RE = /^[═─]{3,}$/
+/** 匹配居中标题：两侧各留 3+ 空格的单行文本，捕获组 1 为标题。 */
 export const CENTER_TITLE_RE = /^\s{3,}(.*?)\s{3,}$/
+/** 客户端独立的日志条数防御上限，背景见 mergeLogEntries 说明。 */
 export const LOG_ENTRY_LIMIT = 1000
 const VIRTUAL_LINE_THRESHOLD = 120
 /* 未实测到高度的日志行先按这个值占位，实测后替换。 */
@@ -25,6 +30,7 @@ export const LINE_HEIGHT_ESTIMATE = 18
 /** 日志跟随的每帧步长上限（像素）；距离更近时按距离收比例。 */
 export const MAX_FOLLOW_STEP = 24
 
+/** 日志微批缓冲状态：entries 为待合并的行，reset 置位表示下批先清空重放，cursor 为服务端游标。 */
 export interface LogBufferState {
   entries: LogEntry[]
   reset: boolean
@@ -86,12 +92,18 @@ export function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[], rese
   return [...entries.values()].sort((a, b) => a.id - b.id).slice(-LOG_ENTRY_LIMIT)
 }
 
+/**
+ * 单行日志的判定与渲染：依次识别纯分割线、带标题分割线、标准等级行、居中标题，
+ * 其余（多行文本、Traceback 等非标准行）按原文渲染；搜索高亮由 renderTokens 统一处理。
+ *
+ * @param isCenter 调用方按上下文（前后行均为双线分割）给出的居中标记。
+ * @param fresh 行 id 大于已渲染最大 id 时为 true，仅用于入场动画。
+ */
 export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {entry: LogEntry; search: string; isCenter?: boolean; fresh?: boolean}) {
   const rawText = entry.text.replace(/[\r\n]+$/, '')
   const trimmed = rawText.trim()
   const freshClass = fresh ? ' motion-enter' : ''
 
-  // 1. 判断是否为纯分割线 (Pure Rule)
   const isPureRule = PURE_RULE_RE.test(trimmed)
   if (isPureRule) {
     const char = trimmed.includes('═') ? '═' : '─'
@@ -103,7 +115,7 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
     )
   }
 
-  // 2. 判断是否为带线标题 (Rule with title, 如 level 1/2)
+  // RULE_RE 对纯分割线也会命中（标题捕获为空），要求标题非空才算带线标题。
   const ruleMatch = RULE_RE.exec(trimmed)
   if (ruleMatch && ruleMatch[1].trim()) {
     const title = ruleMatch[1].trim()
@@ -117,7 +129,6 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
     )
   }
 
-  // 3. 判断是否为标准日志行
   const logMatch = LOG_LINE_RE.exec(rawText)
   if (logMatch) {
     const [, levelStr, dateStr, timeStr, messageStr] = logMatch
@@ -132,7 +143,6 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
     )
   }
 
-  // 4. 判断是否为居中标题 (level 0 或其他居中文本)
   const isSingleLine = !rawText.includes('\n')
   const centerMatch = isSingleLine ? CENTER_TITLE_RE.exec(rawText) : null
   const shouldCenter = Boolean(
@@ -150,7 +160,6 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
     )
   }
 
-  // 5. 其他非标准行或多行 Traceback
   return (
     <div className={`log-line log-entry-line log-raw level-${entry.level.toLowerCase()}${freshClass}`} data-line-id={entry.id}>
       <span className="log-msg">{renderTokens(rawText, search)}</span>
@@ -181,6 +190,13 @@ function loadLogViewMode(): 'cards' | 'classic' {
   return 'cards'
 }
 
+/**
+ * 实例实时日志面板：优先消费外部传入的 logs 流，否则自行拉取初始日志并订阅推送事件；
+ * 提供搜索、等级过滤、正倒序、跟随滚动与卡片/经典两种视图。
+ *
+ * @param active 面板是否在前台；false 时暂停跟随滚动。
+ * @param logs 外部注入的日志流；提供后组件不再自行订阅推送，仅接受该实例的日志。
+ */
 export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsData | null}) {
   const {instance = ''} = useParams()
   const [entries, setEntries] = useState<LogEntry[]>([])
@@ -241,7 +257,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   function toggleViewMode() {
     setViewMode(prev => {
       const next = prev === 'cards' ? 'classic' : 'cards'
-      try { localStorage.setItem('azurpilot.log.viewMode', next) } catch { /* 同上 */ }
+      try { localStorage.setItem('azurpilot.log.viewMode', next) } catch { /* 存储不可用时仅本次会话生效。 */ }
       return next
     })
   }
@@ -249,7 +265,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   function toggleOrder() {
     setDescending(previous => {
       const next = !previous
-      try { localStorage.setItem(`azurpilot.log.order.${instance}`, next ? 'desc' : 'asc') } catch { /* 同上。 */ }
+      try { localStorage.setItem(`azurpilot.log.order.${instance}`, next ? 'desc' : 'asc') } catch { /* 存储不可用时仅本次会话生效。 */ }
       return next
     })
   }
@@ -327,9 +343,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   useLayoutEffect(() => {
     if (!active || !follow || !scroll.current) return
     const container = scroll.current
-    /* 量与写都放进 rAF：layout effect 阶段刚改完 DOM，此刻读 scrollHeight 会强制同步布局；
-       每帧只在帧首读一次 scrollTop、帧尾写一次。
-       只改日志容器自身的滚动位置，不会像尾部元素的 scrollIntoView 那样连带滚动整个页面。 */
+    // 量与写都放进 rAF：layout effect 阶段刚改完 DOM，此刻读 scrollHeight 会强制同步布局；
+    // 每帧只在帧首读一次 scrollTop、帧尾写一次。
+    // 只改日志容器自身的滚动位置，不会像尾部元素的 scrollIntoView 那样连带滚动整个页面。
     let frame = requestAnimationFrame(function step() {
       const top = container.scrollTop
       const target = descending ? 0 : container.scrollHeight - container.clientHeight
@@ -429,6 +445,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     [ordered, lineVersion]
   )
 
+  // clientHeight 首次量到前为 0，按 800 兜底一屏高度。
   const [lineStart, lineEnd] = virtualLines
     ? findVisibleRange(lineLayout.offsets, lineLayout.heights, lineScroll.top - OVERSCAN_BUFFER_PX, lineScroll.top + (lineScroll.client || 800) + OVERSCAN_BUFFER_PX, ordered.length)
     : [0, Math.max(0, ordered.length - 1)]

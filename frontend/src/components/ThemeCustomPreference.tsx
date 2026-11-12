@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 主题外观自定义设置：一级放品牌配色与材质面板入口，二级面板按区域收纳材质滑块。
+ */
+
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { useApp } from '../app/context'
 import { applyCustomLayer, THEME_FAMILY } from '../app/theme'
@@ -40,8 +44,10 @@ type PanelProps = {
   onRegionChange?: (region: RegionId) => void
 }
 
-/** 二级菜单的内容：先选作用的区域，下面只列这一区域的滑块，避免把全部滑块挤在一屏。
-    区域用一排可换行的芯片表示，选中项实心，该区域有自定义值时另带一个小圆点。 */
+/**
+ * 二级菜单的内容：先选作用的区域，下面只列这一区域的滑块，避免把全部滑块挤在一屏。
+ * 区域用一排可换行的芯片表示，选中项实心，该区域有自定义值时另带一个小圆点。
+ */
 export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, onResetRegion, onResetAll, initialRegion, onRegionChange}: PanelProps & {initialRegion?: RegionId}) {
   const [region, setRegion] = useState<RegionId>(initialRegion ?? regions[0])
   const dirtyIn = (target: RegionId) => Object.keys(custom.params).some(id => id.startsWith(`${target}.`))
@@ -112,8 +118,10 @@ export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, o
   </>
 }
 
-/** 有材质轴的家族专属的自定义外观：一级界面只放主题色与二级菜单入口，全部材质滑块都在二级菜单里。
-    区域只是控件挂载位置的归类（不想调的人不用管），每一区都能独立调、也能单独还原。 */
+/**
+ * 有材质轴的家族专属的自定义外观：一级界面只放主题色与二级菜单入口，全部材质滑块都在二级菜单里。
+ * 区域只是控件挂载位置的归类（不想调的人不用管），每一区都能独立调、也能单独还原。
+ */
 export function ThemeCustomPreference() {
   const {ui, material, instances} = useApp()
   const family = THEME_FAMILY

@@ -24,6 +24,12 @@ export function launcherStatusText(phase: Phase, state: {enabled: boolean; pendi
   return `${t('Gui.Launcher.Connected')} · ${flag}`
 }
 
+/**
+ * 启动器卡片：连接就绪后读取 launcher.status 并监听 launcher 事件，驱动自启开关的状态机。
+ *
+ * 自启切换是乐观更新：先翻开关进入 setting，等后端命令回执（pending/failed/expired）落定；
+ * 经远程隧道拿不到启动器（LOCAL_ONLY）时停在 remote 态。
+ */
 export function LauncherCard() {
   const {t} = useApp()
   const connection = useConnection()

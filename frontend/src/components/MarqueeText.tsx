@@ -5,8 +5,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { syncMarquee } from '../app/marquee'
 
-/** 单行任务标题：超出容器宽度时从右至左滚动（灯带），放得下则维持原来的省略号截断。
-    className 挂最外层，沿用调用方已有的 flex、省略号等规则。 */
+/**
+ * 单行任务标题：超出容器宽度时从右至左滚动（灯带），放得下则维持原来的省略号截断。
+ * className 挂最外层，沿用调用方已有的 flex、省略号等规则。
+ */
 export function MarqueeText({ text, className }: { text: string; className?: string }) {
   const container = useRef<HTMLSpanElement>(null)
   const copy = useRef<HTMLSpanElement>(null)

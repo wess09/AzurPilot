@@ -1,5 +1,5 @@
 /**
- * @fileoverview 基础表单控件封装（密码输入框、复选框与数值步进器等）。
+ * @fileoverview 基础表单控件封装（密码输入框、复选框等）。
  */
 
 import { useEffect, useId, useRef, useState, type ChangeEvent, type ComponentProps } from 'react'
@@ -12,22 +12,17 @@ import { Label } from './ui/label'
 export { Select } from './Select'
 
 /** 勾选框交给组件库：勾、焦点环、禁用态与键盘语义由它统一提供。 */
-export function Checkbox({children, checked, disabled, id, onChange, title, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledby, 'aria-describedby': ariaDescribedby, 'aria-invalid': ariaInvalid}: ComponentProps<'input'>) {
+export function Checkbox({children, checked, disabled, onChange}: ComponentProps<'input'>) {
   const generated = useId()
-  const controlId = id ?? generated
   return <span className="flex items-center gap-3">
     <ShadcnCheckbox
-      id={controlId}
+      id={generated}
       checked={!!checked}
       disabled={disabled}
-      title={title}
-      aria-label={ariaLabel}
-      aria-labelledby={ariaLabelledby}
-      aria-describedby={ariaDescribedby}
-      aria-invalid={ariaInvalid}
+      // 组件库只回布尔值：包成 input 的 ChangeEvent 形状，让调用方沿用 onChange 契约。
       onCheckedChange={next => onChange?.({target: {checked: next}} as unknown as ChangeEvent<HTMLInputElement>)}
     />
-    <Label htmlFor={controlId}>{children}</Label>
+    <Label htmlFor={generated}>{children}</Label>
   </span>
 }
 
@@ -48,7 +43,10 @@ export function PasswordInput(props: ComponentProps<'input'>) {
   </div>
 }
 
-/** 输入草稿：键入期间只改本地值，失焦或回车才提交；提交后外部值没跟着变，输入框回到外部值。 */
+/**
+ * 输入草稿：键入期间只改本地值，失焦或回车才提交；提交后外部值没跟着变，输入框回到外部值。
+ * @param resubmitOnEdit 编辑过就提交，即使草稿与外部值相同。
+ */
 export function useDraftInput(value: string, commit: (draft: string) => void, resubmitOnEdit = false) {
   const [draft, setDraft] = useState(value)
   const [editing, setEditing] = useState(false)
@@ -66,13 +64,4 @@ export function useDraftInput(value: string, commit: (draft: string) => void, re
     },
     onKeyDown: (event: {key: string; currentTarget: {blur: () => void}}) => {if (event.key === 'Enter') event.currentTarget.blur()},
   }
-}
-
-/** 数字输入：在草稿基础上把提交值收敛成不小于 min 的整数。 */
-export function NumberDraftInput({value, label, min = 0, onCommit}: {value: number, label: string, min?: number, onCommit: (value: number) => void}) {
-  const draft = useDraftInput(String(value), text => {
-    const parsed = Number(text)
-    if (Number.isFinite(parsed) && parsed >= min) onCommit(Math.floor(parsed))
-  })
-  return <Input type="number" min={min} aria-label={label} title={label} {...draft}/>
 }

@@ -11,6 +11,7 @@ import { useApp, useConnection } from '../app/context'
  * 订阅实例总览数据：连上后拉取一次，之后由 overview 事件增量刷新。
  *
  * 右栏与实例设置页的调度器栏用它取数；`enabled` 为假时完全不请求。
+ * data 为 undefined 表示还没取到首份数据，调用方按加载态渲染。
  */
 export function useInstanceOverview(instance: string, enabled = true) {
   const connection = useConnection()

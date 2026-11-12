@@ -1,28 +1,29 @@
 "use client"
 
+/**
+ * @fileoverview 基于 radix-ui Select 的组件封装（shadcn 风格）：统一 data-slot 与主题样式，供表单引用。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
+/** Select 根组件：管理开合状态与选中值，属性透传 radix Root。 */
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />
 }
 
-function SelectGroup({
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Group>) {
-  return <SelectPrimitive.Group data-slot="select-group" {...props} />
-}
-
+/** 当前选中值的展示占位，透传 radix Value。 */
 function SelectValue({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />
 }
 
+/** 触发器按钮：size 取 `sm`（h-8）或 `default`（h-9），右侧自动带下拉箭头。 */
 function SelectTrigger({
   className,
   size = "default",
@@ -49,6 +50,8 @@ function SelectTrigger({
   )
 }
 
+/** 下拉内容：经 Portal 渲染并内置上下滚动按钮。默认 position 为 `item-aligned`（内容贴着选中项展开），
+ *  要按浮动层挂在触发器旁时传 `popper`（此时视口宽度对齐触发器宽度）。 */
 function SelectContent({
   className,
   children,
@@ -86,19 +89,7 @@ function SelectContent({
   )
 }
 
-function SelectLabel({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Label>) {
-  return (
-    <SelectPrimitive.Label
-      data-slot="select-label"
-      className={cn("px-2 py-1.5 text-xs text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
+/** 单个选项：右侧渲染选中勾标，内容经 ItemText 透传。 */
 function SelectItem({
   className,
   children,
@@ -123,19 +114,6 @@ function SelectItem({
       </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
-  )
-}
-
-function SelectSeparator({
-  className,
-  ...props
-}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return (
-    <SelectPrimitive.Separator
-      data-slot="select-separator"
-      className={cn("pointer-events-none -mx-1 my-1 h-px bg-border", className)}
-      {...props}
-    />
   )
 }
 
@@ -178,12 +156,7 @@ function SelectScrollDownButton({
 export {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
-  SelectScrollDownButton,
-  SelectScrollUpButton,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 }

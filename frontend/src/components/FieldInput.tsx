@@ -19,6 +19,15 @@ interface Props {
   preserveText?: boolean; invalid?: boolean; resubmitOnEdit?: boolean
 }
 
+/**
+ * 配置参数的通用输入控件：按 `type` / `mode` 与值的形状分派到文本、数值、时间、
+ * 下拉、多选、开关、YAML 或筛选器编辑器；aria 属性统一由内部 accessibility 注入。
+ *
+ * @param type 参数类型标记（datetime/yaml/multiselect/checkbox/bool/textarea/number/password/filter/task_priority 等）。
+ * @param mode 渲染模式：text 强制按文本框处理，yaml/filter 强制用对应编辑器。
+ * @param preserveText 时间字段保持原始字符串展示，不做 datetime-local 的格式互转。
+ * @param resubmitOnEdit 失焦时编辑过就提交，即使值没变（目前只有 TaskConfig 的心情上限类字段使用）。
+ */
 export function FieldInput({
   id,
   value,
@@ -107,6 +116,7 @@ export function FieldInput({
     )
   }
 
+  // 未显式标注类型的筛选字段靠启发式兜底：id 以 filter/priority/order 结尾，或值里带 > 类比较符。
   const isFilter =
     mode === 'filter' ||
     type === 'filter' ||
@@ -128,9 +138,10 @@ export function FieldInput({
 
   // mode=text 用于语义上允许数字或文本的字段；即使旧配置当前存的是数字也必须显示文本框。
   const isNumber = mode !== 'text' && (typeof value === 'number' || ['int', 'number', 'float'].includes(type ?? ''))
+  // 可编辑时间转成 datetime-local 要的 T 分隔并截到毫秒；preserveText 字段保持原样。
   const display = type === 'datetime' && !preserveText ? String(value ?? '').replace(' ', 'T').slice(0, 23) : value === null ? '' : String(value)
 
-  /* 键入期间只改草稿，失焦或回车才提交。 */
+  // 键入期间只改草稿，失焦或回车才提交。
   const draft = useDraftInput(
     display,
     next => {
@@ -138,6 +149,7 @@ export function FieldInput({
         preserveText
           ? next
           : type === 'datetime'
+            // datetime-local 只给到分钟（16 字符）时补上 :00，提交值始终带秒。
             ? next.length === 16
               ? `${next.replace('T', ' ')}:00`
               : next.replace('T', ' ')

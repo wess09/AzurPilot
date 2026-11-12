@@ -5,6 +5,7 @@
 import type { StatSeries,  Scalar, StatPoint, StatisticsReport, StatisticsReportWire } from '../api/types'
 import type { ChartMode } from '../app/statisticsPrefs'
 
+/** 把点位按 minutes 分钟聚成开高低收桶：时间截断到桶起点；1440 表示按天（零点对齐），0 表示不聚合、逐点透传。 */
 export function aggregatePoints(points: StatPoint[], minutes: number) {
   const buckets = new Map<string, {time: string; open: number; close: number; low: number; high: number}>()
   for (const [index, point] of points.entries()) {
@@ -20,6 +21,7 @@ export function aggregatePoints(points: StatPoint[], minutes: number) {
   return [...buckets.values()]
 }
 
+/** 把二维表下载为 CSV 文件（自动补 .csv 后缀）：加 BOM 兼容 Excel 读 UTF-8，行尾用 CRLF。 */
 export function downloadCsv(name: string, rows: Scalar[][]) {
   const escape = (value: Scalar) => {
     let text = value == null ? '' : String(value)
@@ -31,6 +33,7 @@ export function downloadCsv(name: string, rows: Scalar[][]) {
   const link = document.createElement('a'); link.href = url; link.download = `${name}.csv`; link.click(); URL.revokeObjectURL(url)
 }
 
+/** 把多条系列按时刻对齐成表格行：一行一时刻、各系列一列，缺值补 '—'，末列为来源；时间倒序，from/to 为空表示不限。 */
 export function mergeMultiSeriesRows(
   seriesList: {key: string; label: string; points: StatPoint[]}[],
   from = '',
@@ -63,7 +66,7 @@ export function mergeMultiSeriesRows(
 }
 
 /** 图表与原始记录表共用的视图：同一份选中、聚合与时间范围，两边各自算出同一结果。 */
-export interface StatisticsView {
+interface StatisticsView {
   selectedSeries: StatSeries[]
   seriesData: {
     series: StatSeries
@@ -88,6 +91,7 @@ function resolveSelectedKeys(series: StatSeries[], saved: string[]): string[] {
   return active ? [active] : []
 }
 
+/** 算出图表与原始记录表共用的视图：按保存顺序取选中的系列，桶与统计值随模式与聚合粒度变化（蜡烛图下粒度 0 视作 60 分钟）；单系列表格直接用原点位，多系列按时刻合并。 */
 export function buildSeriesView(series: StatSeries[], options: {selectedKeys: string[]; mode: ChartMode; bucket: number; from: string; to: string}): StatisticsView {
   const {selectedKeys, mode, bucket, from, to} = options
   const keys = resolveSelectedKeys(series, selectedKeys)
@@ -112,8 +116,10 @@ export function buildSeriesView(series: StatSeries[], options: {selectedKeys: st
   return {selectedSeries, seriesData, isSingle, effectiveBucket, mergedRows}
 }
 
-/** 涨跌分段：相邻两点之间按方向归入上涨（持平并入上涨）与下跌两组，组间用 '-' 断开，
-    这样每组是一条独立折线，可以各自上色。 */
+/**
+ * 涨跌分段：相邻两点之间按方向归入上涨（持平并入上涨）与下跌两组，组间用 '-' 断开，
+ * 这样每组是一条独立折线，可以各自上色。
+ */
 export function riseFallSegments(times: number[], closes: (number | null)[]): {rise: (number[] | '-')[]; fall: (number[] | '-')[]} {
   const rise: (number[] | '-')[] = []
   const fall: (number[] | '-')[] = []

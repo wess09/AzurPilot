@@ -1,9 +1,14 @@
 "use client"
 
+/**
+ * @fileoverview 基于 Radix Switch 的通用开关组件：设置项与表单共用的基础控件。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { Switch as SwitchPrimitive } from "radix-ui"
 
+/** Radix 开关的封装：仅增加 sm / default 两档尺寸，其余属性与行为原样透传给 Radix Root。 */
 function Switch({
   className,
   size = "default",

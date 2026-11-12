@@ -1,9 +1,16 @@
 "use client"
 
+/**
+ * @fileoverview 任务配置页的开关控件：radix-ui Switch 加了 sm 尺寸档的变体。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { Switch as SwitchPrimitive } from "radix-ui"
 
+/**
+ * 开关控件：size 支持 default 与 sm 两档，其余 props 原样透传 radix-ui。
+ */
 function Switch({
   className,
   size = "default",

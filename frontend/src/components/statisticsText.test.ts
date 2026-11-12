@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest'
 import type { ResourceFlowReport, StatisticsReport } from '../api/types'
 import { localizeFlowReport, localizeReport, translateStatText, withTranslatedKeys } from './statisticsText'
 
+// 一-鿿 即 CJK 统一汉字区：断言翻译结果里不再有汉字残留。
 const han = /[一-鿿]/
 
-/* 统计页在英文界面下实际出现过的后端中文（资源趋势、大世界、委托、舰船经验、掉落、仓库各页）。 */
+// 统计页在英文界面下实际出现过的后端中文（资源趋势、大世界、委托、舰船经验、掉落、仓库各页）。
 const seen = [
   '石油', '物资', '钻石', '活动 PT', '心智魔方', '核心数据', '荣誉勋章', '功勋', '舰队币', '行动力', '行动力资产', '海里数',
   '作战补给凭证', '特别兑换凭证', '战斗次数', '出击轮数', '出击消耗', '明石遭遇', '明石遭遇率', '塞壬研究装置', '装置获取率',
