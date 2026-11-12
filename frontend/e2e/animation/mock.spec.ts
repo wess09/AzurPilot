@@ -55,12 +55,21 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
     await context.addInitScript(() => {
       localStorage.setItem('azurpilot.theme', 'legacy-dark')
       localStorage.setItem('azurpilot.material', 'glass')
+      localStorage.setItem('azurpilot.motion.speed', '2')
       localStorage.setItem('azurpilot.background', JSON.stringify({source: 'url', kind: 'image', urls: ['http://127.0.0.1:5174/azurpilot.webp'], active: 0, name: ''}))
       document.addEventListener('animationstart', event => {
         const card = event.target
         if (card instanceof HTMLElement && card.matches('.config-group')) {
           card.dataset.testCardAnimation = event.animationName
           card.dataset.testCardDelay = card.style.getPropertyValue('--card-stagger-delay')
+          const style = getComputedStyle(card)
+          card.dataset.testCardDuration = style.animationDuration
+          card.dataset.testCardEasing = style.animationTimingFunction
+          card.dataset.testActualDelay = style.animationDelay
+          const animation = card.getAnimations().find(item => item instanceof CSSAnimation && item.animationName === event.animationName)
+          const first = (animation?.effect as KeyframeEffect | undefined)?.getKeyframes()[0]
+          card.dataset.testStartTransform = String(first?.transform ?? '')
+          card.dataset.testStartOpacity = String(first?.opacity ?? '')
         }
       })
       new MutationObserver(() => {
@@ -80,7 +89,7 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
     await expect(page.locator('.wallpaper-media')).toBeVisible()
     const card = page.locator('#group-Campaign')
     await expect(card).not.toHaveCSS('backdrop-filter', 'none')
-    await expect(card).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
+    await expect(card).toHaveAttribute('data-test-card-animation', 'motion-card-stagger-in')
     await expect(card).not.toHaveClass(/\bmotion-card-stagger\b/, {timeout: 5000})
     await control.scrollIntoViewIfNeeded()
     await page.mouse.move(0, 0)
@@ -123,11 +132,17 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
     const logistics = page.locator('#group-GuildLogistics')
     const operation = page.locator('#group-GuildOperation')
     await expect(logistics).toHaveAttribute('data-test-animated-on-mount', 'true')
-    await expect(logistics).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
-    await expect(operation).toHaveAttribute('data-test-card-animation', 'motion-panel-in')
+    await expect(logistics).toHaveAttribute('data-test-card-animation', 'motion-card-stagger-in')
+    await expect(operation).toHaveAttribute('data-test-card-animation', 'motion-card-stagger-in')
+    await expect(operation).toHaveAttribute('data-test-card-duration', '0.6s')
+    await expect(operation).toHaveAttribute('data-test-card-easing', 'cubic-bezier(0.18, 0.92, 0.26, 1.02)')
+    await expect(operation).toHaveAttribute('data-test-start-transform', 'translateY(18px) scale(0.975)')
+    await expect(operation).toHaveAttribute('data-test-start-opacity', '0')
     const logisticsDelay = Number.parseFloat((await logistics.getAttribute('data-test-card-delay'))!)
     const operationDelay = Number.parseFloat((await operation.getAttribute('data-test-card-delay'))!)
     expect(logisticsDelay).toBeLessThan(operationDelay)
+    const actualDelay = Number.parseFloat((await operation.getAttribute('data-test-actual-delay'))!) * 1000
+    expect(actualDelay).toBeCloseTo(operationDelay)
   } finally {
     await context.close()
   }
