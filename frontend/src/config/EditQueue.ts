@@ -63,39 +63,12 @@ export class EditQueue {
     return () => { this.listeners.delete(listener) }
   }
 
-  /** 已保存条目的 path → sequence 表：外部在发起读取前先快照一份，数据到手后传回 reconcile()，只清这批。 */
-  confirmed() {
-    return Object.fromEntries(Object.entries(this.state.edits)
-      .filter(([, edit]) => edit.status === 'saved').map(([path, edit]) => [path, edit.sequence]))
-  }
-
-  /** 提交刚成功、静默期未满：此刻不呈现保存结果。 */
+  /** 提交刚成功、还在静默期内：算作未到期。 */
   private idle(edit: Edit) {
     return edit.status === 'saved' && Date.now() - (edit.readyAt ?? 0) < SAVED_QUIET_MS
   }
 
-  /** 静默期内的「已保存」不呈现给用户。 */
-  savedVisible(edit: Edit) {
-    return !this.idle(edit)
-  }
-
-
-  /** 只清理由读取前已确认的覆盖值，读取期间的新输入和回执仍由队列保护。
-   *  未过静默期、仍在最短停留内的条目留到下一次。 */
-  reconcile(confirmed: Record<string, number>) {
-    const edits = {...this.state.edits}
-    for (const [path, sequence] of Object.entries(confirmed)) {
-      const edit = edits[path]
-      if (edit?.status !== 'saved' || edit.sequence !== sequence) continue
-      if (this.idle(edit)) continue
-      delete edits[path]
-    }
-    this.state = {...this.state, edits}
-    this.publish()
-    this.schedule()
-  }
-
-  /** 按当前条目算出最近一个到期时刻：静默期满或显示够久，到点后重新结算。 */
+  /** 按当前条目算出最近一个到期时刻：静默期满并停留够时长后，自动清掉已保存条目。 */
   private schedule() {
     if (this.settleTimer) return
     const now = Date.now()

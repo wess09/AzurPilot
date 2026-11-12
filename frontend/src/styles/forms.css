@@ -73,12 +73,12 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .button.subtle:not(.danger) {background: var(--theme-accent-soft); color: var(--theme-accent); border-color: transparent; box-shadow: none}
 .button svg, .icon-button svg, .text-button svg {stroke-width: 1.8}
 .button:disabled, .icon-button:disabled, .text-button:disabled {opacity: .45; filter: none; box-shadow: none}
-.edit-status {display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; line-height: 1.5; overflow-wrap: anywhere}
-/* 状态文本变化时淡入，避免「等待连接 / 已保存」来回切换时抽一下 */
-.edit-status-text {animation: edit-status-in .2s ease-out}
-@keyframes edit-status-in {from {opacity: 0} to {opacity: 1}}
-@media (prefers-reduced-motion: reduce) {.edit-status-text {animation: none}}
+/* 字段错误提示：只保留错误态，文字取红色。chip 是实底胶囊（规则见 components.css），
+   文案超宽时沿用侧栏任务名的灯带跑马灯（MarqueeText：双副本无缝循环、自动测宽、尊重动效偏好），
+   放得下或动效关闭时维持省略号截断 */
+.edit-status {display: flex; align-items: center; justify-content: flex-start; flex-wrap: nowrap; gap: 5px; line-height: 1.5; color: var(--red)}
 .edit-status > svg {flex-shrink: 0}
+.edit-status-text {flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .field-row-multiline .edit-status {justify-content: flex-start}
 .field-row {gap: 24px}
 .field-label p {line-height: 1.65}
@@ -86,7 +86,7 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .background-url-form {display: flex; flex-direction: column; gap: 8px; min-width: 0}
 .background-url-form > input {width: 100%}
 .background-url-actions {display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center}
-.background-url-actions > .button {white-space: nowrap}
+.background-url-actions > [data-slot='button'] {white-space: nowrap}
 /* 主按钮整宽：与上面的地址列表、下面的直链框同宽，整块读起来是一列而不是散件 */
 .background-apply {width: 100%}
 .background-upload {position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 76px; padding: 14px; border: 1px dashed var(--form-edge); border-radius: calc(var(--theme-radius-control) + 2px); background: color-mix(in srgb, var(--theme-input-bg) 88%, var(--theme-accent-soft)); cursor: pointer; overflow-wrap: anywhere; transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease}
@@ -196,28 +196,18 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 
 /* URL 模式的行列表：一行一条 API，行间虚线分隔，填满最后一行会自动长出下一行 */
 /* 地址可以很多：给列表高度上限并滚动，避免十几行白色大块把整页撑满 */
-.background-url-rows {display: flex; flex-direction: column; max-height: 264px; overflow-y: auto; border: 1px solid var(--form-edge); border-radius: var(--theme-radius-control); transition: border-color .16s ease, box-shadow .16s ease}
-.background-url-rows:focus-within {border-color: var(--theme-focus)}
-.background-url-row {display: flex; align-items: center; gap: 6px; padding: 1px 4px 1px 8px}
-.background-url-row + .background-url-row {border-top: 1px dashed color-mix(in srgb, var(--border) 75%, transparent)}
-/* 覆盖全局 input 的 min-height: 40px：一行一个地址时那太占高度，整栏会拉得很长 */
-.background-url-row input {flex: 1 1 auto; min-width: 0; min-height: 26px; padding: 3px 8px; line-height: 1.4; border: 0; background: transparent; font-family: var(--theme-font-mono, monospace); font-size: 12px}
-.background-url-row input:focus-visible {outline: none}
-.background-url-row:focus-within {background: color-mix(in srgb, var(--accent) 6%, transparent)}
-.background-url-remove {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; flex: 0 0 26px; padding: 0; border: 0; border-radius: var(--theme-radius-control); background: transparent; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
-.background-url-remove:hover:not(:disabled) {color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent)}
-/* 与 .button.subtle 同一套语言：淡色底 + 强调色前景 */
-.background-url-remove:active:not(:disabled) {background: color-mix(in srgb, var(--red) 18%, transparent)}
-.background-url-remove:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
-.background-url-remove:disabled {opacity: .5; cursor: default}
+/* 地址行：每行就是标准输入框 + 删除按钮，不再套公共外框、不再剥输入框自己的边框；
+   留 3px 内边距，聚焦光圈不会被滚动容器裁掉 */
+.background-url-rows {display: flex; flex-direction: column; gap: 8px; max-height: 264px; overflow-y: auto; padding: 3px}
+.background-url-row {display: flex; align-items: center; gap: 6px}
+.background-url-row > input {flex: 1 1 auto; min-width: 0}
 .background-url-hint {margin-top: 6px; font-size: 12px; color: var(--theme-muted); line-height: 1.7}
 /* 直链行：显示解析出的真实图片地址，可打开、可存入图库 */
 .background-direct {display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--border) 75%, transparent)}
 .background-direct label {font-size: 12px; color: var(--theme-muted)}
-.background-direct input {width: 100%; min-height: var(--form-height); line-height: 1.4; font-family: var(--theme-font-mono, monospace); font-size: 12px}
+.background-direct input {width: 100%}
 /* 等宽两列：块宽只有 260px 上下，三个按钮放不下会折行，所以只留「打开 / 存入图库」两个 */
 .background-direct-actions {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px}
-.background-direct-actions .button {padding: 0 8px; text-decoration: none}
 .background-direct-actions a[aria-disabled='true'] {opacity: .45; pointer-events: none}
 /* 本地图库：一次可传多张，列表里随机播一张 */
 .background-gallery {display: flex; flex-direction: column; gap: 10px}
@@ -237,11 +227,6 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .material-detail-body input[type='range']::-moz-range-track {height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--theme-text) 24%, transparent)}
 .material-detail-body input[type='range']::-moz-range-progress {height: 6px; border-radius: 999px; background: var(--theme-accent)}
 .material-detail-body input[type='range']::-webkit-slider-thumb {box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-text) 35%, transparent)}
-/* 作用域那一行整宽：标签独占一行，分页按钮并排一行（按钮等分宽度，不换行也不溢出） */
-.material-detail-modal .field-row:has(.material-detail-scope) {display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; row-gap: 6px}
-.material-detail-modal .field-row:has(.material-detail-scope) > .field-control {display: block; width: 100%; max-width: none}
-.material-detail-modal .material-detail-scope {flex-wrap: nowrap; width: 100%}
-.material-detail-modal .material-detail-scope button {flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px}
 .material-detail-modal .field-label label {color: var(--theme-text); font-size: 13px}
 .material-detail-modal .knob-value {color: var(--theme-text); font-size: 13px}
 

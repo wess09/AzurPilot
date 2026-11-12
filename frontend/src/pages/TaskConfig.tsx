@@ -56,9 +56,7 @@ export function TaskConfig() {
   const [startupRemember, setStartupRemember] = useState<boolean>()
   const reload = useCallback(async () => {
     try {
-      const confirmed = queue.confirmed()
       setConfig(await api.request('config.get', {instance}))
-      queue.reconcile(confirmed)
       setError('')
     } catch (error) {
       setError((error as Error).message)
@@ -84,9 +82,8 @@ export function TaskConfig() {
   useEffect(() => {
     if (connection !== 'ready' || task === 'FleetInfo') return
     let active = true
-    const confirmed = queue.confirmed()
     void api.request('config.get', {instance}).then(value => {
-      if (active) { setConfig(value); queue.reconcile(confirmed); setError('') }
+      if (active) { setConfig(value); setError('') }
     }).catch(error => { if (active) setError(error.message) })
     return () => { active = false }
   }, [connection, instance, task, queue])
@@ -94,9 +91,8 @@ export function TaskConfig() {
   useEffect(() => {
     if (connection !== 'ready' || task !== 'Alas') return
     let active = true
-    const confirmed = startupQueue.confirmed()
     void api.request('startup.get', {instance}).then(value => {
-      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember); startupQueue.reconcile(confirmed) }
+      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember) }
     }).catch(error => { if (active) setError(error.message) })
     return () => { active = false }
   }, [connection, instance, task, startupQueue])
@@ -217,7 +213,7 @@ export function TaskConfig() {
               {/* 优先级调整直接跳到图形调度编辑器：它才是真正编排顺序的地方。 */}
               {task === 'General' && group === 'YukikazeTaskManager' && arg === 'TaskPriorityAdjustment' && <Link className="button secondary" to={`/i/${instance}/task/SchedulerProgram`}>{ui('nav.schedulerProgram')}</Link>}
               {/* 多行控件的提示跟标题同一行，浮在它右端。 */}
-              {isMultiline && <EditStatus id={path} edit={edit} retry={queue.retry} queue={queue} />}
+              {isMultiline && <EditStatus id={path} edit={edit} />}
             </div>
             <div className="field-control">
               {field.type === 'storage' ? (
@@ -259,7 +255,7 @@ export function TaskConfig() {
                     onClick={() => queue.change(path, '')}><RotateCcw size={15}/></button>
                 </div>
               )}
-              {!isMultiline && <EditStatus id={path} edit={edit} retry={queue.retry} queue={queue} />}
+              {!isMultiline && <EditStatus id={path} edit={edit} />}
             </div>
           </div>
         )
@@ -286,7 +282,7 @@ export function TaskConfig() {
       </div>
       <div className="field-control">
         <FieldInput id="instance-startup" label={ui('instance.autoRun')} value={startupEdits.edits.enabled?.value ?? startupEnabled ?? false} disabled={startupEnabled === undefined} onChange={value => startupQueue.change('enabled', value)}/>
-        <EditStatus id="instance-startup" edit={startupEdits.edits.enabled} retry={startupQueue.retry} queue={startupQueue}/>
+        <EditStatus id="instance-startup" edit={startupEdits.edits.enabled}/>
       </div>
     </div>
     <div className="field-row">
@@ -296,7 +292,7 @@ export function TaskConfig() {
       </div>
       <div className="field-control">
         <FieldInput id="instance-remember" label={ui('instance.rememberRun')} value={startupEdits.edits.remember?.value ?? startupRemember ?? false} disabled={startupRemember === undefined} onChange={value => startupQueue.change('remember', value)}/>
-        <EditStatus id="instance-remember" edit={startupEdits.edits.remember} retry={startupQueue.retry} queue={startupQueue}/>
+        <EditStatus id="instance-remember" edit={startupEdits.edits.remember}/>
       </div>
     </div>
   </section>
