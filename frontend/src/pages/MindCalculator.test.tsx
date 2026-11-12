@@ -141,6 +141,7 @@ it('recalculates costs after the dock revision changes while preserving exclusio
 })
 
 it('excludes unknown costs from totals and keeps unknown counts scoped to selected ships', async () => {
+  // 直接改模块级夹具做 unknown 场景，finally 里还原，避免泄漏到其他用例。
   costs.ships[0] = {...costs.ships[0], status: 'unknown', mind: null, gold: null}
   try {
     await show()

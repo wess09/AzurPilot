@@ -1,7 +1,7 @@
-import {Button} from '../components/ui/button'
 /**
  * @fileoverview 数据统计与图表分析页面。
  */
+import {Button} from '../components/ui/button'
 
 import {useDraftInput} from '../components/FormControls'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
@@ -123,12 +123,12 @@ const categories: Record<Category, UiKey> = {resources: 'stats.category.resource
 type Category = NonNullable<Parameters['statistics.report']['category']>
 type StatisticsView = Category | 'management'
 
-function NumberDraftInput({value, label, min = 0, onCommit}: {value: number; label: string; min?: number; onCommit: (value: number) => void}) {
+function NumberDraftInput({value, label, onCommit}: {value: number; label: string; onCommit: (value: number) => void}) {
   const draft = useDraftInput(String(value), text => {
     const parsed = Number(text)
-    if (Number.isFinite(parsed) && parsed >= min) onCommit(Math.floor(parsed))
+    if (Number.isFinite(parsed) && parsed >= 0) onCommit(Math.floor(parsed))
   })
-  return <Input type="number" min={min} aria-label={label} title={label} {...draft}/>
+  return <Input type="number" min={0} aria-label={label} title={label} {...draft}/>
 }
 
 /* 页面显示开关按固定顺序排列，与排序后的页面顺序无关。 */
@@ -143,18 +143,26 @@ function metricIcon(item: {label: string; icon?: string}) {
   if (Icon) return <span className="summary-metric-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.8}/></span>
   return null
 }
-/** 这张表有没有图标可出：资源名认列名；科研与大世界掉落的图标写在单元格值里（research: / opsi: 前缀），
-   列名看不出来，两者都要查。 */
+/**
+ * 这张表有没有图标可出：资源名认列名；科研与大世界掉落的图标写在单元格值里（research: / opsi: 前缀），
+ * 列名看不出来，两者都要查。
+ */
 function hasTableIcons(table: StatTable): boolean {
   if (table.columns.some(column => column in resourceIcons || TEMPLATE_PREFIXES.some(prefix => column.startsWith(prefix)))) return true
   return table.rows.some(row => row.some(value => typeof value === 'string' && TEMPLATE_PREFIXES.some(prefix => value.startsWith(prefix))))
 }
 
-/** 收获的表格模式：把指标摊成一张单行表，复用明细表那套表格。
-    标题由调用方带前缀传入（如「大世界总结·收获」）。 */
+/**
+ * 收获的表格模式：把指标摊成一张单行表，复用明细表那套表格。
+ * 标题由调用方带前缀传入（如「大世界总结·收获」）。
+ */
 function metricsTableData(title: string, metrics: StatisticsReport['metrics']): StatTable {
   return {title, columns: metrics.map(item => item.label), rows: [metrics.map(item => item.value)]}
 }
+/**
+ * 统计分析页：按分类渲染指标卡、图表与明细表；编辑模式下支持卡片拖动、组合、隐藏等布局自定义，
+ * 并提供分类数据 CSV 导出；库存分类可触发后端盘点任务。
+ */
 export function Statistics() {
   const {ui, notify} = useApp()
   const {instance = ''} = useParams()
@@ -168,7 +176,7 @@ export function Statistics() {
   // 科研视图：'1'~'9' = 各期（默认 9 期），'consumable' = 心智/物资。
   // 后者不分期：心智与物资各期混着出，只有彩装备与舰船图纸绑定期数。
   const [researchSeries, setResearchSeriesState] = useState(initialPrefs.researchSelect)
-  // 大世界掉落视图：'' = 全部大世界任务，其余是任务标识（选项由后端 taskOptions 给出）
+  // 大世界掉落视图：'' = 全部大世界任务，其余是任务标识（选项由后端 taskOptions 给出）。
   const [lootTask, setLootTaskState] = useState(initialPrefs.lootTask)
   const [zeroBase, setZeroBaseState] = useState(initialPrefs.chartZeroBase)
 
@@ -281,7 +289,7 @@ export function Statistics() {
     {(['action', 'opsi', 'commission', 'loot', 'resources', 'storage'].includes(category!) || category === 'research') && <label className="statistics-inline-control"><Input aria-label={ui('stats.month')} type="month" min="2020-01" max="9998-12" value={month} disabled={(['commission', 'research', 'loot', 'resources', 'storage'].includes(category!)) && period !== 'month'} onChange={event => {if (event.target.value) setMonth(event.target.value)}}/></label>}
     {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.researchSeries')}</span><Select value={researchSeries} onValueChange={setResearchSeries}><SelectTrigger aria-label={ui('stats.researchSeries')}><SelectValue/></SelectTrigger><SelectContent>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => <SelectItem value={String(value)} key={value}>{ui('stats.seriesN', {n: value})}</SelectItem>)}<SelectItem value="consumable">{ui('stats.consumableScope')}</SelectItem></SelectContent></Select></label>}
     {(category === 'resources' || category === 'storage' || category === 'commission' || category === 'research') && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui(category === 'commission' ? 'stats.commissionPeriod' : 'stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{category === 'resources' || category === 'storage' ? ui('stats.recentDays', {days}) : ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
-    {/* 大世界掉落：任务筛选的选项来自后端（含当前窗口内没记录的任务），值就是任务标识 */}
+    {/* 大世界掉落：任务筛选的选项来自后端（含当前窗口内没记录的任务），值就是任务标识。 */}
     {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.lootTask')}</span><Select value={lootTask || '__all__'} onValueChange={value => setLootTask(value === '__all__' ? '' : value)}><SelectTrigger aria-label={ui('stats.lootTask')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('stats.lootTaskAll')}</SelectItem>{(data?.taskOptions ?? []).map(item => <SelectItem value={item.key} key={item.key}>{item.count ? `${item.label}（${item.count}）` : item.label}</SelectItem>)}</SelectContent></Select></label>}
     {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui('stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
   </>
@@ -326,8 +334,8 @@ export function Statistics() {
     return {cardClass, foldControl, metricsKey, chartKey, plotKey, rawKey, tableKeys, cardKeys, chains, spaceOrder, visibleKeys: spaceOrder.filter(key => cardKeys.includes(key) && !isCardHidden(layout, key))}
   }
 
-  /* 卡片空间视图：一个空间（组合页或单页视图）渲染成一段，链与顺序在空间全量上算，
-     跨页的链因此落进同一个容器。 */
+  // 卡片空间视图：一个空间（组合页或单页视图）渲染成一段，链与顺序在空间全量上算，
+  // 跨页的链因此落进同一个容器。
   const spaceView = (space: Category[]) => {
     const keys = space.flatMap(page => pageCards(page, chainData[page]).cardKeys)
     const chains = readChains(layout, space[0], space.flatMap(page => pageCards(page, chainData[page]).defaultChains))

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船页外壳：info/rotation/training/equipment 四个页签共用一个路由，选中项写在 URL ?tab 里。
+ */
+
 import {useParams, useSearchParams} from 'react-router-dom'
 import {useApp} from '../app/context'
 import {PageTitle} from '../components/ui'
@@ -25,6 +29,7 @@ export function FleetSwitch() {
       <TabsList aria-label={ui('rotation.pageTitle')}>
         {tabs.map(({id, label}) => <TabsTrigger key={id} value={id} id={`fleet-switch-tab-${id}`}>{label}</TabsTrigger>)}
       </TabsList>
+      {/* key 带上实例名：切换实例时强制重挂载页签内容，避免上一个实例的状态残留 */}
       <TabsContent key={`${instance}:${tab}`} value={tab} id={`fleet-switch-${tab}`} aria-labelledby={`fleet-switch-tab-${tab}`}>
         {active.content}
       </TabsContent>

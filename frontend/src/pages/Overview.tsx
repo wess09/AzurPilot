@@ -28,6 +28,7 @@ function loadResourceSelection(instance: string) {
   return defaultResourceKeys
 }
 
+/** 旧版总览页：调度器占左/右栏，主区在资源统计与实时日志之间切换。 */
 export function Overview() {
   const {instance = ''} = useParams()
   const {ui} = useApp()
@@ -56,6 +57,7 @@ export function Overview() {
     return () => { active = false }
   }, [instance, connection])
 
+  // 初始拉取一次后，靠后端 overview 主题事件推送增量，前端不轮询。
   useEffect(() => api.onEvent(event => {
     if (event.topic === 'overview' && (event.data as OverviewData).instance === instance) setData(event.data as OverviewData)
   }), [instance])

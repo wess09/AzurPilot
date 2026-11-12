@@ -16,6 +16,7 @@ const catalog: MindCatalog = {updated_at: '', ships: [{name: '重复舰船', gro
 function ledger(value: DockReport | undefined, entry = '?tab=data') {
   return render(<MemoryRouter initialEntries={[entry]}><FleetLedger instance="test" report={value} onReport={vi.fn()} onBusy={vi.fn()}/></MemoryRouter>)
 }
+// jsdom 没实现 scrollIntoView；页面聚焦深链行时会调用它，这里只桩不验证。
 beforeAll(() => {
   Object.defineProperty(Element.prototype, 'scrollIntoView', {configurable: true, value: vi.fn()})
 })
@@ -25,6 +26,7 @@ afterAll(() => {
 beforeEach(() => {
   sessionStorage.clear()
   localStorage.clear()
+  // 默认让 api.request 挂起：未显式 mock 的用例页面应停在加载态，防止跑进后续分支。
   vi.mocked(api.request).mockReset().mockReturnValue(new Promise(() => {}))
 })
 afterEach(cleanup)

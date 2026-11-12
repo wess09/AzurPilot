@@ -8,6 +8,7 @@ import {FleetAnalysis} from './FleetAnalysis'
 
 vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
 vi.mock('../app/context', () => ({useConnection: () => 'ready', useApp: () => ({ui: (key: Parameters<typeof translateUi>[1]) => translateUi('zh-CN', key), instances: [], notify: vi.fn()})}))
+// 四个子页全部换成带标记的桩：断言只看「哪个标记挂在文档里」，子页自身的渲染不在本文件职责内。
 vi.mock('./MindCalculator', () => ({MindCalculator: () => <p>mind content</p>}))
 vi.mock('./FleetTechnology', () => ({FleetTechnology: () => <p>technology content</p>}))
 vi.mock('./FleetLedger', () => ({FleetLedger: () => <p>data content</p>}))
@@ -16,6 +17,7 @@ const tabs = ['data', 'technology', 'mind', 'scan'] as const
 function page(tab: string) {
   return render(<MemoryRouter initialEntries={[`/i/test/task/FleetAnalysis${tab ? `?tab=${tab}` : ''}`]}><Routes><Route path="/i/:instance/task/FleetAnalysis" element={<FleetAnalysis/>}/></Routes></MemoryRouter>)
 }
+// api.request 默认挂起：未显式 mock 的用例页面应停在加载态，防止跑进后续分支。
 beforeEach(() => {localStorage.clear(); vi.mocked(api.request).mockReset().mockReturnValue(new Promise(() => {}))})
 afterEach(() => {cleanup(); vi.useRealTimers()})
 

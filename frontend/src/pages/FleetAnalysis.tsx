@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰船数据页容器：装载船坞报告并分发给台账、舰队科技、养成计算与扫描更新四个标签页。
+ */
+
 import {Button} from '../components/ui/button'
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '../components/ui/tabs'
 import {useEffect, useRef, useState} from 'react'
@@ -14,6 +18,13 @@ import {ScanUpdate} from './ScanUpdate'
 import '../mind/mind.css'
 import './fleet-analysis.css'
 
+/**
+ * 舰船数据页：装载 dock.report 并分发给数据台账、舰队科技、养成计算与扫描更新四个标签页。
+ *
+ * 子页经 onBusy/onReport 上报写状态与新报告，两者都会递增 epoch：装载请求返回时
+ * epoch 对不上就丢弃响应，避免旧装载覆盖子页刚提交的数据；写入期间标签页切换与
+ * 刷新按钮一并禁用。
+ */
 export function FleetAnalysis() {
   const {instance = ''} = useParams(), [params, setParams] = useSearchParams()
   const {ui} = useApp(), connection = useConnection()

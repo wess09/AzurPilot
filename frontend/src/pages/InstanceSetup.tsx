@@ -57,6 +57,7 @@ function serverRegion(packageName: string) {
   return 'cn'
 }
 
+/** 向导插图：优先加载 Lottie 动画，加载失败或资源缺失时退回静态图标。 */
 function WindowsSetupArtwork({name, play, fallback}: {name: string; play: boolean; fallback: ReactNode}) {
   const container = useRef<HTMLDivElement>(null)
   const [animation, setAnimation] = useState<AnimationItem>()
@@ -103,12 +104,17 @@ function WindowsSetupArtwork({name, play, fallback}: {name: string; play: boolea
   return failed ? fallback : <div className="setup-illustration-art" ref={container}/>
 }
 
+/**
+ * 首次设置向导（OOBE）：五步走完语言、导入、服务器、模拟器与确认，最后创建实例并跳到总览页。
+ * 桌面宽度下播放入场缩放动画；用户开始交互或动画播完即结束。
+ */
 export function InstanceSetup() {
   const {language, setLanguage, schema, refresh, t, ui, notify} = useApp()
   const connection = useConnection()
   const navigate = useNavigate()
   const desktop = useIsDesktop()
   const panel = useRef<HTMLElement>(null)
+  // 入场动画未结束时为 true；动画播完或用户聚焦卡片都会关掉它。
   const [entering, setEntering] = useState(true)
   const [step, setStep] = useState(1)
   const [name, setName] = useState('ap')
@@ -127,6 +133,7 @@ export function InstanceSetup() {
       setEntering(false)
       return
     }
+    // 把屏幕与卡片的尺寸比写进 CSS 变量，setup-window-enter 动画据此把卡片从全屏缩到位。
     card.style.setProperty('--setup-entry-scale-x', String(screen.clientWidth / card.offsetWidth))
     card.style.setProperty('--setup-entry-scale-y', String(screen.clientHeight / card.offsetHeight))
     function finish(event: AnimationEvent) {

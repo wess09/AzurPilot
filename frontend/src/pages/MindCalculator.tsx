@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 养成计算页：汇总船坞报告、科技报告与图鉴，估算舰船 100→120 级的心智与黄币开销，并可生成自动培养方案。
+ */
+
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
 import {useEffect, useMemo, useRef, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
@@ -23,6 +27,14 @@ const columns = {name: 'ship', level: 'level', mind: 'units', gold: 'gold', effi
 type Column = keyof typeof columns
 type Sort = {column: Column; direction: 'ascending' | 'descending'}
 interface Facts {dock: DockReport; technology: Report; catalog: Catalog}
+/**
+ * 养成计算页：汇总船坞报告、科技报告与图鉴，估算每艘舰船 100→120 级的心智与黄币开销。
+ *
+ * 三类数据齐备才出结果；服务端返回 CONFLICT 时经 onRefresh 重取船坞快照再重算。
+ *
+ * @param report 共享的船坞确认报告，决定参与计算的舰船名单。
+ * @param onRefresh 数据冲突时的回调，由外层重新拉取船坞报告。
+ */
 export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; onRefresh?: () => void}) {
   const {instance = ''} = useParams(), connection = useConnection(), {language, ui} = useApp()
   const [facts, setFacts] = useState<Facts>(), [plan, setPlan] = useState<CultivationPlan>()
@@ -64,11 +76,11 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }, [instance, connection, dock, reload])
   useEffect(() => {
     if (!dock || dock.instance !== instance || !catalog || !technology) return
-    // The technology projection can arrive before or after the shared dock snapshot.
+    // 科技数据与共享船坞快照的到达顺序不定，版本对不上时本轮先不算，等下一次对齐。
     if (technology.data_version && technology.data_version !== dock.revision) return
     const previous = memory.current?.instance === instance ? memory.current.plan : undefined
     let stored: string | null = null
-    if (!previous) try {stored = localStorage.getItem(key)} catch { /* Optional browser preferences. */ }
+    if (!previous) try {stored = localStorage.getItem(key)} catch { /* localStorage 被禁时读不到历史计划，按默认重新计算即可。 */ }
     const next = readPlan(previous ? JSON.stringify(previous) : stored, dock.ships)
     if (!previous || JSON.stringify(previous) !== JSON.stringify(next)) {
       memory.current = {instance, plan: next}; setPlan(next)
@@ -83,14 +95,14 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   useEffect(() => {
     if (!facts || facts.dock.instance !== instance || !plan) return
     memory.current = {instance, plan}
-    try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* Calculation works without browser storage. */ }
+    try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* localStorage 被禁时计划只留在内存，本次会话仍然可用。 */ }
   }, [facts, plan, instance, key])
   useEffect(() => {
     if (!facts || facts.dock.instance !== instance || connection !== 'ready') return
     let active = true
-    // Keep the completed view mounted during subsequent recalculations.
+    // 重算期间保留已完成的结果视图，只标记计算中状态。
     setCalculating(true)
-    // Selection only changes totals; keep cost details for every candidate.
+    // 勾选只影响合计，单个舰船的花销对每个候补都要算，因此请求带全部候选 id。
     void api.request('mind.plan', {instance, revision: facts.dock.revision, ship_ids: candidateIds,
       target_level: 120}).then(value => {
       if (active) {setResult(value); setCalculating(false); setError('')}

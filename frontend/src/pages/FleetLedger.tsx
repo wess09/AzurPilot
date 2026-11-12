@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 船坞台账页：浏览并就地修订已确认的舰船报告，以 revision 乐观锁防覆盖，草稿按 instance 暂存 sessionStorage。
+ */
+
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {FleetFilterRow, fleetRarities, ledgerShipTypes as shipTypes, ledgerTypeIds as typeIds} from '../fleet-tech/filters'
@@ -30,6 +34,15 @@ type DraftCard = Omit<DockCard, 'level'> & {level: number | ''}
 type Draft = {revision: string; ships: Record<number, DraftCard>; deleted: number[]}
 type Changes = Parameters<typeof api.request<'dock.patch'>>[1]['changes']
 
+/**
+ * 船坞台账页：以 revision 为乐观锁就地编辑已确认的舰船报告。
+ *
+ * 草稿按 instance 存 sessionStorage；report.revision 变旧（stale）后禁止保存，
+ * 防止把扫描期间的新变更覆盖掉。
+ *
+ * @param report 最近一次确认的船坞报告，为空时只渲染加载/错误占位。
+ * @param onBusy 保存进行中回调 true/false，外层据此锁全局操作。
+ */
 export function FleetLedger({instance, report, onReport, onBusy, locked = false}: {
   instance: string; report?: DockReport; locked?: boolean; onReport: (report: DockReport) => void
   onBusy: (busy: boolean) => void
@@ -43,12 +56,13 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
     try {
       const value = JSON.parse(sessionStorage.getItem(storageKey) ?? 'null')
       return value && typeof value.revision === 'string' && value.ships && Array.isArray(value.deleted) ? value : null
-    } catch {return null}
+    } catch { /* 草稿损坏时当作没有草稿。 */ return null }
   })
   const dirty = !!draft && (!!Object.keys(draft.ships).length || !!draft.deleted.length)
   const stale = dirty && !!report && draft.revision !== report.revision
+  // 未保存草稿存进 sessionStorage，刷新后可恢复；这是尽力而为的附加功能。
   useEffect(() => {
-    try {if (dirty) sessionStorage.setItem(storageKey, JSON.stringify(draft)); else sessionStorage.removeItem(storageKey)} catch { /* Optional browser draft. */ }
+    try {if (dirty) sessionStorage.setItem(storageKey, JSON.stringify(draft)); else sessionStorage.removeItem(storageKey)} catch { /* sessionStorage 被禁时写入会抛错：丢草稿可接受，页面不能崩。 */ }
   }, [draft, dirty, storageKey])
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {if (dirty) {event.preventDefault(); event.returnValue = ''}}
@@ -87,7 +101,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
     .sort((a, b) => nationOrder(a) - nationOrder(b) || a.localeCompare(b))
   const counts = new Map<string, number>()
   for (const row of report?.ships ?? []) {const key = String(row.group_type ?? row.name); counts.set(key, (counts.get(key) ?? 0) + 1)}
-  // Keep committed rows in place while typing, including when an edit no longer matches a filter.
+  // 打字时已确认的行保持原位：即使这次编辑让它不再命中当前筛选，也不把它从列表里抽走，免得整表跳动。
   const rows = useMemo(() => {
     const counts = new Map<string, number>()
     const shipInfo = new Map<number, CatalogShip | undefined>()
@@ -203,6 +217,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
   }
   function add() {
     if (disabled || !report) return
+    // 新增行用递减的负数 id：不会与真实舰船 id 相撞，保存时负数 id 不传服务端、由服务端分配。
     const id = Math.min(-1, ...Object.keys(draft?.ships ?? {}).map(Number)) - 1
     change({id, name: '', group_type: null, level: 1, rarity: 'N', base_rarity: 'N', extra_exp: null,
       full_star: null, form: null, review: true, source: 'manual'}, {})
@@ -261,6 +276,7 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
       {saved && <span role="status">{ui('analysis.saved')}</span>}
       <Button variant="outline" disabled={disabled} onClick={add}>{ui('analysis.add')}</Button>
       <Button variant="outline" disabled={disabled} onClick={() => setParams({tab: 'scan'})}>{ui('analysis.scanPage')}</Button>
+      {/* aria-disabled 挡不住 <Link> 的默认跳转，必须在 onClick 里手动 preventDefault */}
       {!!report?.pending_changes.length && <Link aria-disabled={disabled} onClick={event => {if (disabled) event.preventDefault()}} to="?tab=scan">{ui('analysis.pendingLink')} ({report.pending_changes.length})</Link>}
     </div>
     {stale && <p role="alert">{ui('analysis.stale')}</p>}

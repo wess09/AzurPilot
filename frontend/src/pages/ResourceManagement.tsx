@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 资源管理页：物资收支流水、库存概览、大世界流向图与油量控制。
+ */
+
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {useCallback, useEffect, useMemo, useRef, useState, type FormEvent} from 'react'
@@ -20,6 +24,10 @@ import '../resources/resources.css'
 
 const resourceKeys: Record<string, UiKey> = {Oil: 'resource.Oil', Coin: 'resource.Coin', Gem: 'resource.Gem', Cube: 'resource.Cube', Pt: 'resource.Pt', Core: 'resource.Core', Medal: 'resource.Medal', Merit: 'resource.Merit', GuildCoin: 'resource.GuildCoin', ActionPoint: 'resource.ActionPoint', YellowCoin: 'resource.YellowCoin', PurpleCoin: 'resource.PurpleCoin', Chip: 'resource.Chip', Food: 'flow.food', URPt: 'flow.urPt', FurnitureCoin: 'flow.furnitureCoin', GachaTicket: 'flow.gachaTicket'}
 
+/**
+ * 油量控制面板：开关与目标值作为本地草稿编辑，保存时写入配置 General.OilControl.Enable/Target。
+ * 外部 value 变化只在未编辑（非 dirty）时回填输入框，不覆盖用户正在改的草稿。
+ */
 function OilControl({instance, value}: {instance: string; value: ResourceFlowReport['oilControl']}) {
   const {ui} = useApp(), [enable, setEnable] = useState(value.enable), [target, setTarget] = useState(String(value.target))
   const [state, setState] = useState(''), [error, setError] = useState('')
@@ -43,6 +51,10 @@ function OilControl({instance, value}: {instance: string; value: ResourceFlowRep
   </form>{error && <ErrorBox message={error}/>}</section>
 }
 
+/**
+ * 资源管理页：按时间范围与资源/任务筛选收支流水，支持分页浏览、库存概览与 CSV 导出。
+ * 请求带代号防串台：筛选切换后旧响应作废，加载中的重复触发合并为一次补跑。
+ */
 export function ResourceManagement() {
   const {instance = ''} = useParams(), {ui, t, language} = useApp(), connection = useConnection()
   const [days, setDays] = useState('7'), [draftStart, setDraftStart] = useState(''), [draftEnd, setDraftEnd] = useState('')
@@ -51,6 +63,8 @@ export function ResourceManagement() {
   const [report, setReport] = useState<ResourceFlowReport>(), [error, setError] = useState(''), [refresh, setRefresh] = useState(0), [busy, setBusy] = useState(false), [exporting, setExporting] = useState(false)
   const generation = useRef(0)
   useEffect(() => {setOffset(0); setError('')}, [instance])
+  // 请求带代号（owner 对比 generation）：筛选变化触发新请求后，落在半途的旧响应直接丢弃；
+  // 加载中再触发只在 pending 记一笔，当前这轮跑完补发一次，避免并发请求互相覆盖结果。
   useEffect(() => {
     if (connection !== 'ready') return
     const owner = ++generation.current
@@ -68,7 +82,7 @@ export function ResourceManagement() {
     const unsubscribe = api.onEvent(event => {if (event.topic === 'statistics' && (event.data as {instance?: string})?.instance === instance) void load()})
     return () => {active = false; unsubscribe()}
   }, [connection, instance, days, interval, resource, task, offset, refresh])
-  /* 物品名、分组与用途来自后端中文，显示前译成界面语言。 */
+  // 物品名、分组与用途来自后端中文，显示前译成界面语言。
   const shown = useMemo(() => report?.instance === instance ? localizeFlowReport(report, language) : undefined, [report, instance, language])
   const resourceLabel = useCallback((key: string) => {
     return resourceKeys[key] ? ui(resourceKeys[key]) : shown?.resources.find(item => item.key === key)?.label ?? key
@@ -103,6 +117,7 @@ export function ResourceManagement() {
     {error && <ErrorBox message={error} retry={() => setRefresh(value => value + 1)}/>}
     {!shown && !error && <Loading/>}
     {shown && <>
+      {/* key 换实例即重挂：油量控件的开关/目标值是本地草稿状态，不能把上一个实例的草稿带过去 */}
       <OilControl key={instance} instance={instance} value={shown.oilControl}/>
       <section className="resource-panel"><h2>{ui('flow.sankey')}</h2><p className="muted">{ui('flow.units')}</p>
         {shown.flows.length ? <Sankey report={shown} resourceLabel={resourceLabel} taskLabel={taskLabel} onPick={pick}/> : <Empty title={ui('flow.empty')}>{ui('flow.emptyHint')}</Empty>}

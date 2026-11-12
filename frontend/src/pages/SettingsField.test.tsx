@@ -71,6 +71,7 @@ describe('系统设置字段', () => {
 
   it('选项保留原有值类型和未列出的当前值', async () => {
     const onChange = vi.fn()
+    // jsdom 未实现 scrollIntoView；radix Select 选中项时会调用它，桩掉避免用例中断。
     Object.defineProperty(Element.prototype, 'scrollIntoView', {configurable: true, value: vi.fn()})
     try {
       render(<SettingsField {...common} type="select" value={3} options={[1, 2]} onChange={onChange}/>)

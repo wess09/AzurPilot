@@ -12,8 +12,13 @@ import { useApp, useConnection } from '../app/context'
 import { Empty, ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
 import { localeForLanguage, type UiKey } from '../i18n'
 
+/** 后端更新状态字符串 → 界面文案键；'run update' 与 apply 共用一条文案。 */
 const states: Record<string, UiKey> = {idle: 'updater.state.idle', android: 'updater.state.android', available: 'updater.state.available', fetch: 'updater.state.fetch', checking: 'updater.state.checking', apply: 'updater.state.apply', start: 'updater.state.start', wait: 'updater.state.wait', 'run update': 'updater.state.apply', reload: 'updater.state.reload', failed: 'updater.state.failed', finish: 'updater.state.finish', cancel: 'updater.state.cancel'}
 
+/**
+ * 更新器页：本地与上游 HEAD 概览、提交历史分页列表与抓取/应用/取消操作。
+ * 状态数据取自 outlet 上下文（UpdaterState），本组件只负责展示与触发。
+ */
 export function Updater() {
   const {data, error: statusError, refresh} = useOutletContext<UpdaterState>()
   const {ui, language} = useApp()
@@ -41,7 +46,7 @@ export function Updater() {
     try {await api.request(method, {}); refresh()}
     catch (error) {setError((error as Error).message)} finally {setBusy(false)}
   }
-  /* SHA 不匹配时更新会重置掉本地独有的提交，先弹窗确认再执行。 */
+  // SHA 不匹配时更新会重置掉本地独有的提交，先弹窗确认再执行。
   function requestUpdate() {
     if (data?.shaMismatch) setConfirmMismatch(true)
     else void act('updater.apply')

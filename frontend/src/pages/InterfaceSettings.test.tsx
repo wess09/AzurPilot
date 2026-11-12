@@ -4,6 +4,8 @@ import { AppContext, type AppContextValue } from '../app/context'
 import { InterfaceSettings } from './InterfaceSettings'
 import { translateUi } from '../i18n'
 
+// renderToStaticMarkup 是服务端渲染路径，不会真正订阅外部 store；
+// 把 useSyncExternalStore 替换成直接读快照，优先 getServerSnapshot。
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
@@ -14,6 +16,7 @@ vi.mock('react', async (importOriginal) => {
   }
 })
 
+// 桩掉 api 客户端：静态渲染不联网，订阅换空、快照给离线值、请求兜底返回空数据。
 vi.mock('../api/client', () => ({
   api: {
     subscribe: () => () => {},
@@ -55,7 +58,7 @@ function render(theme: AppContextValue['theme'], material: AppContextValue['mate
   )
 }
 
-// 外观偏好在「界面设置」页；原先这些断言挂在系统设置页上（见 Settings.test.tsx）。
+// 外观偏好的正向断言在本文件；Settings.test.tsx 断言系统设置页不再出现它们。
 describe('界面设置页外观显示逻辑', () => {
   it('现代主题下显示当前主题，简约主题下显示配色和主题模式', () => {
     expect(render('legacy-light')).toContain('现代')
@@ -96,7 +99,7 @@ describe('自定义外观块', () => {
       const html = render(theme, 'glass')
       expect(html, theme).toContain('主题色')
       expect(html, theme).toContain('材质细节')
-      /* 滑块不再摊在一级界面：区域名与滑块都要等二级菜单打开才出现。 */
+      // 滑块不再摊在一级界面：区域名与滑块都要等二级菜单打开才出现。
       expect(html, theme).not.toContain('一级面')
       expect(html, theme).not.toContain('type="range"')
     }

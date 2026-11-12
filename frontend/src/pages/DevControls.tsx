@@ -15,10 +15,10 @@ import { FieldInput } from '../components/FieldInput'
 import { SegmentedControl } from '../components/SegmentedControl'
 import { Empty, ErrorBox, Loading, Modal, PageTitle, StatusBadge } from '../components/ui'
 
-/* 模拟状态用的文案键；与实际状态值一一对应。 */
+// 模拟状态用的文案键；与实际状态值一一对应。
 const STATUS_LABELS = {running: 'status.running', stopped: 'status.stopped', error: 'status.error', updating: 'status.updating'} as const
 
-/* 故意抛异常，用来验证顶层 ErrorBoundary 的错误页。 */
+// 故意抛异常，用来验证顶层 ErrorBoundary 的错误页。
 function CrashTest(): never {
   throw new Error('DevControls crash test')
 }
@@ -30,6 +30,7 @@ function DevField({id, label, help, multiline = false, children}: {id: string; l
   </div>
 }
 
+/** 开发者调试页：动效实验室、状态/更新提示模拟、崩溃测试，以及设计令牌与全部控件的现场预览。 */
 export function DevControls() {
   const {setDevMode, notify, ui} = useApp()
   const navigate = useNavigate()

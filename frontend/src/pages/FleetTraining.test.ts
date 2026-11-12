@@ -7,6 +7,8 @@ import {AppContext, type AppContextValue} from '../app/context'
 import {TrainingRecords, trainingRecordGroups} from './FleetTraining'
 import {rotationRules} from './FleetRotation'
 
+// 夹具覆盖三组渲染：1 队 6 艘在役舰（舰位故意乱序给出，验证按舰位 1→6 排列）+ 8 条完成记录 + 8 条历史记录；
+// 名字带序号，便于断言「各取最新六条」的挑选。
 const names = ['企业', '胡德', '厌战', '拉菲', '克利夫兰', '海伦娜']
 function recordsFixture(): Parameters<typeof trainingRecordGroups>[0] {
   return {

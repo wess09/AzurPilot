@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船装备页：按舰种维护三槽装备码，写入 FleetInfo.FleetEquipment 供智能换船读取。
+ */
+
 import {Button} from '../components/ui/button'
 import {useEffect, useState} from 'react'
 import {useParams} from 'react-router-dom'
@@ -8,12 +12,17 @@ import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
+/** 支持配置装备码的舰种全集，顺序即设置页的分节顺序。 */
 export const equipmentTypes = ['DD', 'CL', 'CA', 'CB', 'BC', 'BB', 'CVL', 'CV', 'BBV', 'SS', 'SSV', 'AR', 'BM', 'AE', 'IX'] as const
 type ShipType = typeof equipmentTypes[number]
 type CodeSet = [string, string, string]
 type Codes = Record<ShipType, CodeSet>
 const codeSlots = [0, 1, 2] as const
 
+/**
+ * 解析并校验装备码配置：接受 JSON 字符串或已解析对象，键必须是 equipmentTypes 中的舰种，
+ * 值为至多 3 个字符串码；缺槽补空串，形状不符时抛「Invalid equipment codes」。
+ */
 export function equipmentCodes(value: unknown): Codes {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value ?? {}
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
@@ -26,6 +35,7 @@ export function equipmentCodes(value: unknown): Codes {
   })) as Codes
 }
 
+/** 按舰种渲染三格装备码输入框，槽位序号从 1 起。 */
 export function EquipmentCodeFields({codes, disabled, change}: {codes: Codes; disabled: boolean; change: (kind: ShipType, index: number, value: string) => void}) {
   const {ui} = useApp()
   return <div className="fleet-grid">{equipmentTypes.map(kind => <section className="panel" key={kind}>
@@ -66,6 +76,7 @@ export function FleetEquipment() {
     if (!codes) return
     setBusy(true); setError('')
     try {
+      // 先等本实例未提交的编辑落定，再读最新 revision 提交，避免拿着旧修订号撞乐观锁。
       await editor(`config:${instance}`).settled()
       const current = await api.request('config.get', {instance})
       const result = await api.request('config.patch', {instance, revision: current.revision, changes: [
@@ -90,6 +101,7 @@ export function FleetEquipment() {
     {pending > 0 && <p role="status">{ui('fleetEquipment.pending', {number: pending})}</p>}
     {error && <ErrorBox message={error}/>}
     {codes ? <EquipmentCodeFields codes={codes} disabled={disabled} change={(kind, index, value) => {
+      // 该回调只在 codes 就绪的分支里挂载，previous 的非空断言不会落空。
       setCodes(previous => {
         const entries = [...previous![kind]] as CodeSet
         entries[index] = value

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 设置页通用字段控件：按配置类型分流到开关、下拉或文本输入，统一注入无障碍属性。
+ */
+
 import { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import type { Value } from '../api/types'
@@ -8,6 +12,12 @@ import { Input } from './settings-ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './settings-ui/select'
 import { Switch } from './settings-ui/switch'
 
+/**
+ * 设置页通用字段控件：按 type 与现值分流到开关、下拉或文本输入，无障碍属性统一注入。
+ *
+ * @param type 配置项类型：bool/checkbox 走开关，password 走带显隐按钮的输入框，数值型用 decimal 键盘。
+ * @param options 可选项，非空时渲染下拉；选项值以 JSON 序列化充当 Select 的值，以支持非字符串选项。
+ */
 export function SettingsField({id, label, type, value, options, disabled, invalid, descriptionId, onChange}: {
   id: string
   label: string
@@ -36,6 +46,7 @@ export function SettingsField({id, label, type, value, options, disabled, invali
 
   if (options?.length) {
     const selected = JSON.stringify(value)
+    // 现值不在选项里时补为第一个候选，保证它仍然可见可选。
     const choices = options.some(option => option === value) ? options : [value, ...options]
     return <Select value={selected} disabled={disabled} onValueChange={next => onChange(JSON.parse(next) as Value)}>
       <SelectTrigger {...accessibility}>

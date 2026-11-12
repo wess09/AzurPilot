@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 船坞扫描与待确认差异确认页：配置扫描或导入舰船快照，查看读取进度，逐条确认入库。
+ */
+
 import {Button} from '../components/ui/button'
 import {useEffect, useRef, useState} from 'react'
 import type {ChangeEvent} from 'react'
@@ -23,8 +27,20 @@ function isDisplayField(key: string): key is keyof typeof fieldLabels {
   return Object.hasOwn(fieldLabels, key)
 }
 
+/**
+ * 筛出可整批接受的安全变更（只含 add/update），对应「确认无歧义的新增和更新」按钮；
+ * resolve 要逐条指定目标卡片、remove 要二次确认，都不进这一批。
+ */
 export function safeScanChanges(changes: LedgerDifference[]) {return changes.filter(item => item.operation === 'add' || item.operation === 'update')}
+/**
+ * 船坞扫描更新页：三段式流程——开始读取（扫描/导入）、读取进度、逐条确认待确认差异。
+ * 写操作都携带当前 report.revision 提交；组件卸载后的异步回调一律丢弃。
+ *
+ * @param report 最近一次确认的船坞报告，缺省时页面停在加载态。
+ * @param locked 外层锁定开关，锁定时全部操作禁用。
+ */
 export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instance: string; report?: DockReport; locked: boolean; onReport: (report: DockReport) => void; onBusy: (busy: boolean) => void}) {
+  // alive 挡住卸载后的迟到回调：扫描、导入的耗时可能超过用户停留在页面的时间。
   const alive = useRef(true)
   const importInput = useRef<HTMLInputElement>(null), screenshotInput = useRef<HTMLInputElement>(null)
   useEffect(() => {alive.current = true; return () => {alive.current = false}}, [])
@@ -32,6 +48,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
   const {ui, instances, notify} = useApp(), connection = useConnection()
   const [min, setMin] = useFleetPreference<string>(instance, 'scan.min', '1'), [max, setMax] = useFleetPreference<string>(instance, 'scan.max', '125'), [error, setError] = useState(''), [progress, setProgress] = useState('')
   const [targets, setTargets] = useState<Record<string, string>>({}), [removal, setRemoval] = useState('')
+  // 新一轮待确认差异到达后，旧的目标卡片选择与移除确认全部作废。
   useEffect(() => {setTargets({}); setRemoval('')}, [report?.pending_revision])
   const current = instances.find(item => item.name === instance), scanning = current?.status === 'running' && ['DockScan', 'dock_scan'].includes(current.currentTask ?? '')
   const pending = report?.pending_changes ?? [], safe = safeScanChanges(pending)
@@ -55,6 +72,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
   }
   async function exportShips() {
     await action(async () => {
+      // 导出前重新拉一次报告：不沿用页面上的旧快照，文件里始终是最新确认结果。
       const latest = await api.request('dock.report', {instance})
       if (!alive.current) return
       publish(latest)
@@ -64,6 +82,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
       link.href = url
       link.download = `${instance}-ships-${exportedAt.replace(/[:.]/g, '-')}.json`
       document.body.appendChild(link)
+      // 回收 blob URL 延后到下一个事件循环：下载请求还没发完就被回收可能截断下载。
       try {link.click()} finally {link.remove(); setTimeout(() => URL.revokeObjectURL(url), 0)}
     })
   }
@@ -76,6 +95,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
         if (!alive.current) return
         if (file.size > 5_500_000) throw new Error(ui('mind.tooMany'))
         setProgress(file.name)
+        // reader.result 是 dataURL：按第一个逗号切掉前缀，只把 base64 内容发给接口。
         const content = await new Promise<string>((resolve, reject) => {const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(',')[1] ?? ''); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file)})
         const value = await api.request(screenshot ? 'mind.recognize' : 'mind.import', {instance, filename: file.name, content})
         ships.push(...value.ships)
@@ -86,6 +106,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
   }
   async function review(accept: boolean, items: LedgerDifference[]) {
     await action(async () => {
+      // 目标卡片选「新增独立卡片」时 ship_id 传 null：null 即不归属任何已有舰船。
       publish(await api.request('dock.review', {instance, revision: report!.revision, pending_revision: report!.pending_revision!, decisions: items.map(item => ({id: item.id, accept, ...(accept && item.operation === 'resolve' ? {ship_id: targets[item.id] === 'new' ? null : Number(targets[item.id])} : {})}))}))
     })
   }

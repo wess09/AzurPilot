@@ -1,4 +1,6 @@
-/** 实例股票注册与绑定引导。交易账户、登录和交易仅在独立交易所提供。 */
+/**
+ * @fileoverview 实例股票注册与绑定引导。交易账户、登录和交易仅在独立交易所提供。
+ */
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react'
 import {useParams,Link} from 'react-router-dom'
 import {ArrowLeft,CheckCircle2,Copy,ExternalLink,ShieldCheck,TrendingUp} from 'lucide-react'
@@ -12,10 +14,12 @@ import './stock-exchange.css'
 
 const EXCHANGE='https://stock.azurpilot.com'
 
+/** 注册实例股票、经 QQ 群机器人把股票绑定到交易账户，绑定成功后自动打开独立交易所。 */
 export function StockExchange(){
   const {instance=''}=useParams(),connection=useConnection()
   const [status,setStatus]=useState<StockExchangeStatus>(),[error,setError]=useState('')
   const [username,setUsername]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false),[rebuild,setRebuild]=useState<StockExchangeRebuild>(),[confirmRebuild,setConfirmRebuild]=useState(false),[consent,setConsent]=useState(false)
+  // current 镜像当前实例，异步回调据此丢弃切换实例后的过期响应。
   const current=useRef(instance),opened=useRef('');current.current=instance
   const refresh=useCallback(async()=>{
     if(connection!=='ready')return
@@ -25,10 +29,12 @@ export function StockExchange(){
   useEffect(()=>{
     setStatus(undefined);setUsername('');setError('');setCopied(false);setConsent(false);setBusy(false);setRebuild(undefined);setConfirmRebuild(false)
     void refresh()
+    // 隐藏的标签页不轮询，避免后台无谓请求。
     const timer=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},15000)
     const unsubscribe=api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)void refresh()})
     return ()=>{window.clearInterval(timer);unsubscribe()}
   },[instance,refresh])
+  // 绑定成功即自动打开交易所；opened 守卫同实例只开一次，轮询与事件触发的重渲染不会重复弹窗。
   useEffect(()=>{
     if(status?.registered&&status.bound&&opened.current!==instance){
       opened.current=instance
@@ -37,6 +43,7 @@ export function StockExchange(){
   },[status,instance])
   async function register(event:FormEvent){
     event.preventDefault();setBusy(true);setError('')
+    // noticeVersion 须与后端约定的公告版本逐字一致，否则注册被拒（STOCK_NOTICE_REQUIRED）；公告改版时两端同步更新。
     try{const next=await api.request('stock.register',{instance,username:username.trim(),noticeVersion:'stock-public-v2-20261101'});if(current.current===instance)setStatus(next)}
     catch(error){if(current.current===instance)setError((error as Error).message)}
     finally{if(current.current===instance)setBusy(false)}

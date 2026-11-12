@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船调度页：调度目标表单与培养舰船、完成舰船、旧记录舰船三组记录展示。
+ */
+
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {useEffect, useState} from 'react'
@@ -71,6 +75,7 @@ export function trainingRecordGroups({records, readings = {}, formation, rules}:
     completedCount: completed.length, historyCount: history.length}
 }
 
+/** 把记录快照归类成培养舰船、完成舰船、旧记录舰船三张表；完成与旧记录各只显示最近六条。 */
 export function TrainingRecords({snapshot}: {snapshot: RecordSnapshot}) {
   const {ui} = useApp()
   const result = trainingRecordGroups(snapshot)
@@ -111,6 +116,10 @@ const groups = {level: 'FleetLevelTraining', affinity: 'FleetAffinityTraining'} 
 type Metric = keyof typeof groups
 const metrics: Metric[] = ['level', 'affinity']
 
+/**
+ * 换船调度页：调度开关与目标的本地表单经「保存调度设置」一次 config.patch 写入；
+ * 任务运行中每 3 秒轮询记录快照，记录表随扫描自动更新。
+ */
 export function FleetTraining() {
   const {instance = ''} = useParams(), {ui, notify, instances} = useApp(), connection = useConnection()
   const [morale, setMorale] = useState(false), [selectedOnly, setSelectedOnly] = useState(false)

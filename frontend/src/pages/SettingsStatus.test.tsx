@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
+/**
+ * @fileoverview 系统设置页保存状态的回归测试：草稿保留、错误提示与静默期。
+ */
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Edit } from '../config/EditQueue'
 import { Settings } from './Settings'
 
+// vi.mock 的工厂会被提升到文件最前，用例要驱动的共享状态必须用 vi.hoisted 同层提升才能被工厂引用。
 const {state} = vi.hoisted(() => ({
   state: {
     data: {groups: [{key: 'Git', fields: [
@@ -17,6 +21,7 @@ const {state} = vi.hoisted(() => ({
   },
 }))
 
+// ui 桩成「键名 + 错误参数」直出：断言直接对键名，不必维护一份翻译表。
 vi.mock('../app/context', () => ({
   useApp: () => ({t: (key: string) => key, ui: (key: string, params?: {error?: string}) => `${key}${params?.error ?? ''}`}),
 }))

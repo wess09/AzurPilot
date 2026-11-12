@@ -1,4 +1,6 @@
-/** 卡片式调度编辑器：图、属性、隔离模拟和运行轨迹。 */
+/**
+ * @fileoverview 卡片式调度编辑器：图、属性、隔离模拟和运行轨迹。
+ */
 import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties} from 'react'
 import {useParams} from 'react-router-dom'
 import {ReactFlowProvider, Handle, MarkerType, Position, useConnection as useFlowConnection, useReactFlow, type NodeProps, type Connection as FlowConnection} from '@xyflow/react'
@@ -20,6 +22,7 @@ const typeLabels: Record<string, string> = {any:'任意值', number:'数值', bo
 const exits: Record<string, string> = {next:'下一步', yes:'是', no:'否', unavailable:'数据不可用', completed:'完成', yielded:'主动让出', recoverable:'可恢复错误', failed:'失败', empty:'没有任务', success:'成功', body:'循环体', done:'结束'}
 const labels: Record<string, string> = {name:'名称', value:'值', operator:'运算符', a:'输入 A', b:'输入 B', condition:'条件', yes:'满足时的值', no:'不满足时的值', seconds:'时长（秒）', time:'目标时间', start:'开始时刻', end:'结束时刻', weekdays:'星期（1～7）', field:'字段', maxAge:'有效期（秒）', autoRefresh:'过期时自动刷新', task:'任务', rule:'筛选规则', descending:'降序', count:'循环次数（-1 为持续）', loop:'所属循环', graph:'组合卡片', guard:'继续条件', key:'记录标识', kind:'记录类型', reset:'刷新时刻', limit:'每日上限', valueType:'数据类型'}
 Object.assign(labels, {order:'当前优先级顺序', dueBefore:'到期截止时间', deadline:'最近计划时间', idleMode:'空闲策略', before:'到期截止时间', strict:'截止之前才视为到期'})
+/** 画布节点卡片：按规格渲染标题、端口与内联参数。 */
 const Card = memo(function Card({data, selected}: NodeProps<CanvasNode>) {
   const {card, spec} = data
   const CardIcon = getCardIcon(card.type, spec.category)
@@ -27,6 +30,7 @@ const Card = memo(function Card({data, selected}: NodeProps<CanvasNode>) {
   const connection = useFlowConnection<CanvasNode>()
   const connectingPort = connection.fromHandle?.id?.replace(/^data:/,'')
   const connectingType = connectingPort && connection.fromNode?.data.outputTypes[connectingPort]
+  // 连线进行中：any 输入端口实时显示来源类型配色，提示当前连接是否兼容。
   const handleStyle = (declared: PortType, actual: PortType, input: boolean) => {
     const type = declared === 'any' && input && connectingType ? connectingType : actual
     return {background:type === 'any' ? wildcardBackground : portColors[type]}
@@ -50,6 +54,7 @@ const Card = memo(function Card({data, selected}: NodeProps<CanvasNode>) {
 })
 const nodeTypes = {card: Card}
 
+/** JSON 编辑域：草稿随外部值重置，失焦时解析；解析失败显示错误并保留输入。 */
 function JsonField({label, value, onChange}: {label: string; value: unknown; onChange: (value: unknown) => void}) {
   const serialized = JSON.stringify(value ?? null, null, 2)
   const [draft, setDraft] = useState(serialized)
@@ -97,6 +102,7 @@ function JsonField({label, value, onChange}: {label: string; value: unknown; onC
   />{error && <small role="alert">{error}</small>}</label>
 }
 
+/** 编辑器主体：画布、卡片库、属性面板与调试抽屉共用一份文档状态与撤销历史。 */
 function Editor() {
   const {instance = ''} = useParams()
   const {notify, ui} = useApp()
@@ -130,6 +136,7 @@ function Editor() {
   const [connector, setConnector] = useState({source:'', sourcePort:'', target:'', targetPort:''})
   const history = useRef<{past: ProgramDocument[]; future: ProgramDocument[]}>({past:[], future:[]})
   const clipboard = useRef<Pick<Graph,'nodes' | 'edges'> | undefined>(undefined)
+  // 请求版本号：实例切换或再次操作时只有最新一次请求的结果才准写进状态，过期响应直接丢弃。
   const requestVersion = useRef(0)
   const wrapper = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -142,6 +149,7 @@ function Editor() {
     return () => observer.disconnect()
   }, [!!doc])
   const dirty = !!doc && !!saved && JSON.stringify(doc) !== JSON.stringify(saved.draft)
+  // 渲染期同步 ref：回调里读最新文档与流程图 id，不依赖闭包的新旧。
   const docRef = useRef(doc)
   docRef.current = doc
   const graphIdRef = useRef(graphId)
@@ -256,6 +264,7 @@ function Editor() {
     if (!graph || !connectValid(link)) {notify('连接端口不兼容', true); return}
     const [kind, sourcePort] = link.sourceHandle!.split(':')
     const targetPort = link.targetHandle!.split(':')[1]!
+    // 端口独占：数据边一个输入口只接一条；控制边一个输出口只发一条，落新边前先摘掉同口旧边。
     const edges = graph.edges.filter(e => kind === 'data' ? !(e.target === link.target && e.targetPort === targetPort && e.kind === kind) : !(e.source === link.source && e.sourcePort === sourcePort && e.kind === kind))
     updateGraph({...graph, edges:[...edges, {id:id(), source:link.source, sourcePort:sourcePort!, target:link.target, targetPort, kind:kind as 'data' | 'control'}]})
   }
@@ -482,6 +491,7 @@ function Editor() {
               </summary>
               <div className="program-sim-params-content">
                 <label>模拟时间<input type="datetime-local" value={simTime} onChange={e => {setSimTime(e.target.value); setSimSteps(0)}}/></label>
+                {/* 数字输入框聚焦时滚轮会直接改数值，onWheel 先把输入框失焦，滚动面板才安全 */}
                 {catalog.resources.map(r => <label key={r.name}>{r.name.startsWith('Emotion') ? `舰队 ${r.name.slice(-1)} 心情` : ui(`resource.${r.name}` as UiKey)}<input type="number" placeholder="数据不可用" value={resources[r.name] ?? ''} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setResources({...resources,[r.name]:e.target.value}); setSimSteps(0)}}/></label>)}
                 <label>含体力箱的总行动力<input type="number" value={apTotal} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setApTotal(e.target.value); setSimSteps(0)}}/></label>
                 <label>任务结果序列<input value={outcomes} onChange={e => {setOutcomes(e.target.value); setSimSteps(0)}} placeholder="completed,yielded,failed"/></label>
@@ -502,4 +512,5 @@ function Editor() {
   </div>
 }
 
+/** 调度程序页入口：react-flow 的 hook 必须在 Provider 内使用，Editor 由这里统一包一层。 */
 export function SchedulerProgram() {return <ReactFlowProvider><Editor/></ReactFlowProvider>}

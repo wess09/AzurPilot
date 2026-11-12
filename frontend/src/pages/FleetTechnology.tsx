@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 舰队科技页：技术点里程碑与阵营等级的就地登记、草稿暂存与加成汇总。
+ */
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
@@ -27,12 +30,17 @@ type Column = typeof columns[number]
 type Sort = {column: Column; direction: 'ascending' | 'descending'}
 type Draft = {revision: string; changes: Record<number, Change>; nations: Record<string, number | null>}
 
+/** 拼接解锁/满级加成文案：去重后的舰型 + 属性 + 数值，无技术时给破折号。 */
 function effectFor(row: Row, stage: 'get' | 'level', tr: (key: string) => string) {
   const t = row.technology
   if (!t) return '—'
   return `${[...new Set(t[`add_${stage}_shiptype`].map(shipType))].map(type => tr(`type.${type}`)).join('/')} ${tr(`attr.${t[`add_${stage}_attr`]}`)}+${t[`add_${stage}_value`]}`
 }
 
+/**
+ * 舰队科技明细表：里程碑与觉醒标记逐格切换，编辑结果经 onChange 报给父级草稿。
+ * modified 里的行加草稿高亮，targetGroup 指定的行加定位高亮（深链滚动目标）。
+ */
 export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = false, disabled = false, sort = {column: 'code', direction: 'ascending'}, onSort, onChange, modified = [], targetGroup}: {
   rows: Row[]; language: string; tr: (key: string) => string; editing?: boolean; disabled?: boolean; sort?: Sort
   mindCosts?: Record<string, number>
@@ -59,6 +67,10 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
   })}</TableBody></Table></div>
 }
 
+/**
+ * 舰队科技页：明细表 + 筛选 + 加成汇总；编辑以草稿暂存 sessionStorage，保存时按 revision 提交。
+ * 草稿的 revision 与当前报告不一致（stale）时禁止保存，防止覆盖扫描期间的新确认结果。
+ */
 export function FleetTechnology() {
   const [search] = useSearchParams(), targetGroup = search.get('group')
   const {instance = ''} = useParams(), {language, ui, notify} = useApp(), connection = useConnection()
@@ -68,6 +80,7 @@ export function FleetTechnology() {
   const [query, setQuery] = useFleetPreference<string>(instance, 'technology.query', ''), [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'technology.filters', {})
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'technology.sort', {column: 'code', direction: 'ascending'})
   const [editing, setEditing] = useFleetPreference<boolean>(instance, 'technology.editing', false), [bonuses, setBonuses] = useFleetPreference<boolean>(instance, 'technology.bonuses', false), [extra, setExtra] = useFleetPreference<boolean>(instance, 'technology.extra', false)
+  // scope 是会话序号：切换实例或连接时自增，旧请求返回后凭 token 失配被丢弃；writing 防止保存重入。
   const scope = useRef(0), writing = useRef(false)
   const storageKey = `azurpilot.fleet-tech.v1.${instance}`
   const [draft, setDraft] = useState<Draft | null>(() => {
@@ -76,6 +89,7 @@ export function FleetTechnology() {
       if (!value || typeof value.revision !== 'string' || !value.changes || !value.nations) return null
       for (const change of Object.values(value.changes) as Record<string, unknown>[]) {
         for (const key of recordFields) if (key in change) change[key] = change[key] === true
+        // 读回草稿时再套一次「未获得则满星与 Lv.120 一并撤销」的级联，与 changeMilestone 的规则保持一致。
         if (change.owned === false) {change.full_star = false; change.lv120 = false}
       }
       return value
@@ -84,7 +98,7 @@ export function FleetTechnology() {
   const dirty = !!draft && (!!Object.keys(draft.changes).length || !!Object.keys(draft.nations).length)
   const stale = dirty && !!report && draft.revision !== report.revision
   useEffect(() => {
-    try {if (dirty) sessionStorage.setItem(storageKey, JSON.stringify(draft)); else sessionStorage.removeItem(storageKey)} catch { /* Optional browser draft. */ }
+    try {if (dirty) sessionStorage.setItem(storageKey, JSON.stringify(draft)); else sessionStorage.removeItem(storageKey)} catch { /* sessionStorage 不可用时草稿只丢持久化，页面功能不受影响。 */ }
   }, [draft, dirty, storageKey])
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {if (dirty) {event.preventDefault(); event.returnValue = ''}}
@@ -133,7 +147,7 @@ export function FleetTechnology() {
         case 'efficiency': return technologyEfficiency(row, catalog?.mind_costs_100_to_120 ?? {}).value
       }
     }
-    // Keep edited rows visible until save, even if a status filter no longer matches the draft.
+    // 筛选按原始行算：草稿改过的行保存前保持可见，即使它的草稿状态已不再命中筛选，免得编辑中整表跳动。
     return rows.filter(row => matches(row, filters, query)).sort((a, b) => {
       const left = valueFor(a), right = valueFor(b)
       if (left === null && right !== null) return 1
@@ -163,7 +177,7 @@ export function FleetTechnology() {
       const changes = {...current?.changes}, original = rows.find(value => value.group_type === row.group_type)!
       const state = {group_type: row.group_type, owned: original.owned, full_star: original.full_star, lv120: original.lv120, awakening_pending: original.awakening_pending, ...current?.changes[row.group_type]}
       const next = key === 'awakening_pending' ? {...state, awakening_pending: value} : changeMilestone(state, key, value, row.full_star_rule)
-      // Keep all milestone states together, but a flag-only draft must stay independent.
+      // 里程碑三项要整体记录，觉醒标记是独立开关：只动标记时不得牵连里程碑状态。
       const pending: Change = {group_type: row.group_type}
       if (milestones.some(field => next[field] !== original[field])) {
         for (const field of milestones) pending[field] = next[field]
@@ -189,7 +203,7 @@ export function FleetTechnology() {
     try {
       const changes = Object.values(draft.changes).map(change => {
         const original = rows.find(row => row.group_type === change.group_type)!
-        // A manual flag must not resubmit or normalize unrelated milestone states.
+        // 觉醒标记单独改动时不得顺带重交或归一化里程碑状态：各项只在真变了时才进提交体。
         const final = {...original, ...change}
         return {group_type: change.group_type,
           ...(milestones.some(key => final[key] !== original[key]) ? {owned: final.owned, full_star: final.full_star, lv120: final.lv120} : {}),

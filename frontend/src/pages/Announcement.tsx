@@ -9,11 +9,11 @@ import { useApp } from '../app/context'
 import { AnnouncementCard } from '../components/AnnouncementCard'
 import { Empty, ErrorBox, Loading, PageTitle } from '../components/ui'
 
+/** 公告详情页：展示当前系统公告并提供刷新；进入页面即把未读标记为已读。 */
 export function Announcement() {
   const { ui } = useApp()
   const { data, loading, error, unread, refresh, markAsRead } = useAnnouncement()
 
-  // 进入公告页面时自动将未读状态消除
   useEffect(() => {
     if (unread && data?.announcementId) {
       markAsRead()
