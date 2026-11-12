@@ -6,13 +6,12 @@
    - 全部动画在 prefers-reduced-motion: reduce 下由 tokens.css 的全局开关关闭 */
 
 :root {
-  /* 时长（5 档，映射现存 .12s/.15s/.18s/.2s/.22s/.24s/.26s）
-     统一乘全局倍率 --motion-speed（开发者工具「动效控制台」可切换；默认 0.5× 对应 2） */
-  --dur-1: calc(120ms * var(--motion-speed, 2));   /* 瞬时反馈：按压、hover 变色 */
-  --dur-2: calc(160ms * var(--motion-speed, 2));   /* 微交互：图标按钮、toggle、导航项 */
-  --dur-3: calc(200ms * var(--motion-speed, 2));   /* 标准 UI 变化：菜单、分段滑块、弹窗 */
-  --dur-4: calc(260ms * var(--motion-speed, 2));   /* 结构性变化：抽屉、右栏、折叠展开、列表入场 */
-  --dur-5: calc(320ms * var(--motion-speed, 2));   /* 页面级转场：路由切换、大面板 */
+  /* 时长 5 档：全局固定 2× 时长（0.5× 速度），基础值已折算进去 */
+  --dur-1: 240ms;   /* 瞬时反馈：按压、hover 变色（基础 120ms） */
+  --dur-2: 320ms;   /* 微交互：图标按钮、toggle、导航项（基础 160ms） */
+  --dur-3: 400ms;   /* 标准 UI 变化：菜单、分段滑块、弹窗（基础 200ms） */
+  --dur-4: 600ms;   /* 结构性变化：抽屉、右栏、折叠展开、列表入场（基础 300ms） */
+  --dur-5: 760ms;   /* 页面级转场：路由切换、大面板（基础 380ms） */
 
   /* 缓动 */
   --ease-standard: cubic-bezier(.2, 0, 0, 1);        /* 维护者主缓动 */
@@ -21,22 +20,7 @@
 
   /* 位移与缩放 */
   --press-scale: .97;
-  --scale-modal: .97;
-}
-
-/* 力度档位（开发者工具「动效控制台」可切换；默认标准＝PR 取值） */
-:root[data-motion-strength='strong'] {
-  --dur-4: calc(300ms * var(--motion-speed, 2));
-  --dur-5: calc(380ms * var(--motion-speed, 2));
   --scale-modal: .95;
-}
-
-/* 减少动效的模拟开关（开发者工具；与系统开关同等效力） */
-:root[data-motion-reduced] *,
-:root[data-motion-reduced] *::before,
-:root[data-motion-reduced] *::after {
-  animation: none !important;
-  transition: none !important;
 }
 
 /* 桌面端侧边栏招牌首次入场：与 SidebarTransition 从左至右保持视觉统一 */
@@ -86,21 +70,16 @@ dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--
 
 /* 卡片从左上角逐个上浮出现（柔和弹簧阻尼与景深微缩放） */
 :root {
-  --card-stagger-shift: 12px;
-  --card-stagger-scale: .985;
-  --card-stagger-dur: var(--dur-4); /* 约 260ms，从容柔和 */
-  --ease-card-spring: cubic-bezier(.18, .92, .26, 1.02); /* 微过冲柔和弹簧阻尼 */
-}
-:root[data-motion-strength='strong'] {
   --card-stagger-shift: 18px;
   --card-stagger-scale: .975;
-  --card-stagger-dur: calc(300ms * var(--motion-speed, 2));
+  --card-stagger-dur: var(--dur-4); /* 从容柔和 */
+  --ease-card-spring: cubic-bezier(.18, .92, .26, 1.02); /* 微过冲柔和弹簧阻尼 */
 }
 
 @keyframes motion-card-stagger-in {
   from {
     opacity: 0;
-    transform: translateY(var(--card-stagger-shift, 12px)) scale(var(--card-stagger-scale, .985));
+    transform: translateY(var(--card-stagger-shift, 18px)) scale(var(--card-stagger-scale, .975));
   }
   to {
     opacity: 1;
@@ -109,7 +88,7 @@ dialog.modal[open]::backdrop { animation: motion-backdrop-in var(--dur-3) var(--
 }
 
 .motion-card-stagger {
-  animation: motion-card-stagger-in var(--card-stagger-dur, 520ms) var(--ease-card-spring) both;
+  animation: motion-card-stagger-in var(--card-stagger-dur, 600ms) var(--ease-card-spring) both;
   animation-delay: var(--card-stagger-delay, 0ms);
 }
 

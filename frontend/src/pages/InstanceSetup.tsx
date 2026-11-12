@@ -10,7 +10,7 @@ import { api } from '../api/client'
 import type { Parameters } from '../api/generated'
 import { useApp, useConnection } from '../app/context'
 import { INSTANCE_NAME_PATTERN } from '../app/instanceName'
-import { motionReducedActive, subscribeMotionPrefs } from '../app/motionPrefs'
+import { motionReducedActive } from '../app/motionPrefs'
 import { Select } from '../components/FormControls'
 import { ProjectLogo } from '../components/ProjectLogo'
 import { useIsDesktop } from '../app/useIsDesktop'
@@ -94,11 +94,7 @@ function WindowsSetupArtwork({name, play, fallback}: {name: string; play: boolea
     else animation.playSegments([0, 120], true)
     const media = window.matchMedia('(prefers-reduced-motion: reduce)')
     media.addEventListener('change', stopIfReduced)
-    const unsubscribe = subscribeMotionPrefs(stopIfReduced)
-    return () => {
-      media.removeEventListener('change', stopIfReduced)
-      unsubscribe()
-    }
+    return () => { media.removeEventListener('change', stopIfReduced) }
   }, [animation, play])
 
   return failed ? fallback : <div className="setup-illustration-art" ref={container}/>
