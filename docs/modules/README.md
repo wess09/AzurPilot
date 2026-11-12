@@ -11,7 +11,8 @@
 | [overview/directory-map.md](overview/directory-map.md) | 目录速查表与「任务方法 → 模块」映射规则 |
 | [overview/conventions.md](overview/conventions.md) | 编码规范与横切设计模式 |
 | [entry/alas.md](entry/alas.md) | 调度器：任务循环、错误恢复、任务派发 |
-| [entry/gui.md](entry/gui.md) | WebUI 启动器 |
+| [entry/gui.md](entry/gui.md) | 启动器：WebUI 与 `--tui` 终端界面 |
+| [entry/tui.md](entry/tui.md) | 终端界面（`gui.py --tui`）：布局、快捷键、异步刷新与配置编辑 |
 | [entry/mcp-server.md](entry/mcp-server.md) | 独立 MCP SSE 服务器 |
 | [config.md](config.md) | 配置系统：定义、生成、事务与热重载 |
 
