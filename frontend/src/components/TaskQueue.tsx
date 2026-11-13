@@ -8,6 +8,7 @@ import { ChevronRight } from 'lucide-react'
 import type { Overview } from '../api/types'
 import { api } from '../api/client'
 import { useApp } from '../app/context'
+import { RunNowMenu } from './RunNowMenu'
 import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 
 /** NextRun 的出厂默认值：所有任务共用，落在过去，
@@ -197,6 +198,7 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
         <div className="rail-task-heading">
           <strong>{ui('scheduler.plan')}</strong>
           <span>{tasks.length}</span>
+          <RunNowMenu instance={instance} tasks={tasks}/>
         </div>
         <section className="rail-queue-group tasks" aria-label={ui('scheduler.plan')}>
           <div className="rail-queue-body">
