@@ -72,6 +72,10 @@ export interface Parameters {
   "updater.cancel": Record<string, never>
   "announcement.get": { force?: boolean }
   "background.access": Record<string, never>
+  "plugins.access": Record<string, never>
+  "plugins.list": Record<string, never>
+  "plugins.storage.get": { id: string; instance?: string | null; key: string; action: "get" | "set" | "delete"; value?: unknown }
+  "plugins.storage.write": { id: string; instance?: string | null; key: string; action: "get" | "set" | "delete"; value?: unknown }
   "background.resolve": { url: string }
   "background.gallery.list": Record<string, never>
   "background.gallery.add": { url: string; name?: string }
@@ -79,7 +83,7 @@ export interface Parameters {
   "background.gallery.open": Record<string, never>
   "auth.login": { password?: string }
   "auth.launcher": { ticket: string }
-  "events.subscribe": { instance?: string | null; topics: Array<"instances" | "overview" | "logs" | "preview" | "stock" | "notifications" | "launcher"> }
+  "events.subscribe": { instance?: string | null; topics: Array<"instances" | "overview" | "logs" | "preview" | "stock" | "notifications" | "launcher" | "plugins"> }
 }
 export const webSocketTransport = {"frameBytes": 65536, "requestBytes": 8388608, "responseBytes": 67108864, "dataTopics": ["logs", "preview"]} as const
 export const dataMethods = ["schema.get", "config.get", "config.export", "dock.report", "mind.catalog", "fleetTech.catalog", "fleetTech.report", "mind.plan", "mind.import", "mind.recognize", "scheduler.program.catalog", "scheduler.program.get", "scheduler.program.validate", "scheduler.program.simulate", "logs.get", "opsi.simulator.status", "opsi.simulator.figure", "preview.capture", "statistics.report", "statistics.resourceFlows", "meowfficer.scoreReport", "statistics.resources"] as const

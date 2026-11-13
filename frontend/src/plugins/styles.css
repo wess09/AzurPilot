@@ -1,0 +1,17 @@
+.apu-frame {position:relative; min-width:0; min-height:5rem}
+.apu-frame iframe {display:block; width:100%; height:var(--apu-frame-height, 12rem); border:0}
+.apu-frame iframe.apu-frame-pending {visibility:hidden}
+.apu-frame-loading {position:absolute; inset:0; display:grid; place-items:center; margin:0; color:var(--muted)}
+.apu-page {--apu-frame-height:clamp(22rem, 65dvh, 52rem); width:100%; min-width:0}
+.apu-panels {display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%, 18rem),1fr)); gap:12px; flex:none; margin-bottom:12px}
+.apu-panel, .apu-scheduler {min-width:0}
+.apu-scheduler {--apu-frame-height:11rem}
+.apu-scheduler-icon {width:1em; height:1em; object-fit:contain; flex:none}
+.apu-layout {display:grid; gap:16px; padding-bottom:16px; min-width:0; width:100%; overflow:auto}
+.apu-layout-grid {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; gap:12px}
+.apu-layout-grid > div {min-width:0}
+.apu-layout-wide {grid-column:1/-1}
+.apu-layout-logs .monitor-panel {height:clamp(22rem, 60dvh, 48rem); min-height:0}
+.apu-overview-view {--apu-frame-height:clamp(22rem, 65dvh, 52rem); overflow:auto; width:100%; min-width:0}
+.apu-navigation {--apu-frame-height:10rem}
+@media (max-width: 767px) {.apu-layout-grid {grid-template-columns:minmax(0,1fr)}}

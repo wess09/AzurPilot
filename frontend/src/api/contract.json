@@ -3272,6 +3272,130 @@
         "type": "object"
       }
     },
+    "plugins.access": {
+      "mutates": false,
+      "params": {
+        "additionalProperties": false,
+        "description": "API 入参基础模型，禁止额外字段并启用严格类型校验。",
+        "properties": {},
+        "title": "Params",
+        "type": "object"
+      }
+    },
+    "plugins.list": {
+      "mutates": false,
+      "params": {
+        "additionalProperties": false,
+        "description": "API 入参基础模型，禁止额外字段并启用严格类型校验。",
+        "properties": {},
+        "title": "Params",
+        "type": "object"
+      }
+    },
+    "plugins.storage.get": {
+      "mutates": false,
+      "params": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Instance"
+          },
+          "key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "get",
+              "set",
+              "delete"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "value": {
+            "default": null,
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "action"
+        ],
+        "title": "PluginStorageParams",
+        "type": "object"
+      }
+    },
+    "plugins.storage.write": {
+      "mutates": true,
+      "params": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9._-]{0,79}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "instance": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Instance"
+          },
+          "key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Key",
+            "type": "string"
+          },
+          "action": {
+            "enum": [
+              "get",
+              "set",
+              "delete"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "value": {
+            "default": null,
+            "title": "Value"
+          }
+        },
+        "required": [
+          "id",
+          "key",
+          "action"
+        ],
+        "title": "PluginStorageParams",
+        "type": "object"
+      }
+    },
     "background.resolve": {
       "mutates": false,
       "params": {
@@ -3419,11 +3543,12 @@
                 "preview",
                 "stock",
                 "notifications",
-                "launcher"
+                "launcher",
+                "plugins"
               ],
               "type": "string"
             },
-            "maxItems": 7,
+            "maxItems": 8,
             "title": "Topics",
             "type": "array"
           }

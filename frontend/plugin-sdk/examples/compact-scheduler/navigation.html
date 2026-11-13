@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>舰桥导航</title>
+<style>
+  :root {color-scheme:light dark; font:14px system-ui, sans-serif}
+  body {margin:0}
+  nav {display:flex; flex-wrap:wrap; gap:6px; padding:6px}
+  button {min-height:32px; font:inherit}
+</style>
+<nav aria-label="舰桥导航"></nav>
+<script type="module">
+  import {request, subscribe} from './apu.js'
+  subscribe('appearance', ({mode}) => {document.documentElement.style.colorScheme = mode})
+  subscribe('navigation.items', items => {
+    document.querySelector('nav').replaceChildren(...items.map(({title, to}) => {
+      const button = document.createElement('button')
+      button.textContent = title
+      button.addEventListener('click', () => void request('navigation.open', {to}))
+      return button
+    }))
+  })
+</script>
+</html>

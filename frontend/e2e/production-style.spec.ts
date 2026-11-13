@@ -5,6 +5,10 @@
 import { expect, test, type Page } from '@playwright/test'
 import { mockWebGLRenderer } from './webgl'
 
+test.beforeEach(async ({page}) => {
+  await page.route('https://www.clarity.ms/**', route => route.abort())
+})
+
 /** 元素实际读到的令牌值：把令牌挂到探针元素上，让浏览器把 var() 解析并归一化成与计算样式同样的写法。 */
 async function resolvedFilter(page: Page, token: string) {
   return page.evaluate(tokenName => {

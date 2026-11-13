@@ -19,7 +19,7 @@ from module.runtime.password_utils import REMOTE_ACCESS_HEADER, is_local_client
 from module.runtime.launcher import is_local_request
 
 # 重主题仍按各自节奏采样；日志由 worker 队列逐条到达事件直接唤醒。
-TOPIC_INTERVAL = {'overview': 1, 'instances': 2, 'launcher': 1}
+TOPIC_INTERVAL = {'overview': 1, 'instances': 2, 'launcher': 1, 'plugins': 2}
 TICK = min(TOPIC_INTERVAL.values())
 
 
@@ -352,7 +352,7 @@ class Session:
                         raise ApiError('WRONG_CHANNEL', '请在对应的 WebSocket 通道订阅')
                     if 'launcher' in subscription.topics and not is_local_request(self.ws):
                         raise ApiError('LOCAL_ONLY', '启动器状态只允许本机读取')
-                    if any(topic not in ('instances', 'notifications', 'launcher') for topic in subscription.topics):
+                    if any(topic not in ('instances', 'notifications', 'launcher', 'plugins') for topic in subscription.topics):
                         self.gateway.router.configs.path(subscription.instance)
                     self.subscription = subscription
                     self.cache.clear()
@@ -415,6 +415,8 @@ class Session:
                         action = runtime.instances
                     elif topic == 'launcher':
                         action = self.gateway.router.launcher.status
+                    elif topic == 'plugins':
+                        action = self.gateway.router.plugins.list
                     elif topic == 'overview':
                         action = lambda: runtime.overview(subscription.instance)
                     async with self.workers:

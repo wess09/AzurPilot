@@ -10,7 +10,7 @@ import { getLayout, subscribeLayout } from './layout'
 import {NavHandle} from './NavHandle'
 import {TabBarResizeHandle} from './TabBarResizeHandle'
 import {SidebarResizeHandle} from './SidebarResizeHandle'
-import { ArrowRight, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Download, ExternalLink, FileJson, Globe, LayoutDashboard, LoaderCircle, Megaphone, Menu, Palette, Settings2, WifiOff, X } from 'lucide-react'
+import { ArrowRight, Cat, ChartNoAxesCombined, CirclePause, CirclePlay, Download, ExternalLink, FileJson, Globe, LayoutDashboard, LoaderCircle, Megaphone, Menu, Palette, Puzzle, Settings2, WifiOff, X } from 'lucide-react'
 import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
@@ -33,10 +33,36 @@ import { usePageMotion } from './pageMotion'
 import { useSystemNotifications } from './systemNotifications'
 import { readLastPath, writeLastPath } from './topbarPrefs'
 import { INSTANCE_NAME_PATTERN } from './instanceName'
+import { useThemeComponent } from '../themes/context'
+import { PluginLinks } from '../plugins/views'
+import { PluginStyles, usePlugins } from '../plugins/context'
+import type { NavigationProps, ShellProps } from '../themes/definition'
 
 /* 旧版外壳下也要显示居中页名的顶层路由。 */
-const PRIMARY_NAV_PATHS = ['/announcement', '/updater', '/interface', '/remote', '/configs', '/settings']
+const PRIMARY_NAV_PATHS = ['/announcement', '/updater', '/interface', '/remote', '/configs', '/settings', '/plugins']
 const SETUP_PATH = '/setup'
+
+function ModernNavigation({instance, onNavigate, announcementUnread, updateAvailable}: NavigationProps) {
+  const {ui} = useApp()
+  const base = instance ? '/i/' + encodeURIComponent(instance) : ''
+  return <nav className="primary-nav" data-apu-component="navigation" aria-label={ui('nav.primary')}>
+    {instance ? <>
+      <NavLink to={base + '/overview'} onClick={onNavigate}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink>
+      <NavLink to={base + '/statistics'} onClick={onNavigate}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink>
+      <NavLink to={base + '/stock-exchange'} onClick={onNavigate}><Cat size={17}/>{ui('stock.name')}</NavLink>
+    </> : <>
+      <NavLink to="/announcement" onClick={onNavigate}><Megaphone size={17}/>{ui('nav.announcement')}{announcementUnread && <span className="tiny-dot red"/>}</NavLink>
+      <NavLink to="/updater" onClick={onNavigate}><Download size={17}/>{ui('nav.updater')}{updateAvailable && <span className="tiny-dot teal"/>}</NavLink>
+      <NavLink to="/interface" onClick={onNavigate}><Palette size={17}/>{ui('nav.interface')}</NavLink>
+      <NavLink to="/plugins" onClick={onNavigate}><Puzzle size={17}/>{ui('nav.plugins')}</NavLink>
+      <NavLink to="/remote" onClick={onNavigate}><Globe size={17}/>{ui('nav.remote')}</NavLink>
+      <NavLink to="/configs" onClick={onNavigate}><FileJson size={17}/>{ui('nav.configs')}</NavLink>
+      <NavLink to="/settings" onClick={onNavigate}><Settings2 size={17}/>{ui('nav.settings')}</NavLink>
+      <a className="nav-open-source" href="https://github.com/wess09/AzurPilot" target="_blank" rel="noreferrer" onClick={onNavigate}><ExternalLink size={17}/>{ui('nav.openSource')}</a>
+    </>}
+    <PluginLinks instance={instance} onNavigate={onNavigate}/>
+  </nav>
+}
 
 /**
  * 创建实例的弹窗：支持选初始配置或从本机导入 JSON 配置文件。
@@ -132,12 +158,11 @@ function Login() {
  */
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled, theme} = useApp()
+  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled} = useApp()
   const {instance} = useParams()
   const navigate = useNavigate()
   const location = useLocation()
   const [creating, setCreating] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
   // 只区分「全新打开」与「刷新 / 后退前进」：前者才回上次选中的实例。
   // 刷新时地址栏已经是用户要停留的页面，写进去就不再改。
   const freshOpen = useRef((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'navigate')
@@ -147,23 +172,29 @@ export function App() {
   useSystemNotifications()
   const current = instances.find(item => item.name === instance)
   const subscribedInstance = current?.name ?? null
-  const base = instance ? `/i/${encodeURIComponent(instance)}` : ''
   const taskMatch = location.pathname.match(/\/task\/([^/]+)/)
   const currentTask = taskMatch ? taskMatch[1] : null
   const stockExchange = location.pathname.endsWith('/stock-exchange')
   const currentTaskLabel = currentTask ? taskLabel(currentTask, ui, t) : ''
-  const activeSection = location.pathname === '/announcement' ? ui('nav.announcement') : location.pathname === '/settings' ? ui('nav.settings') : location.pathname === '/interface' ? ui('nav.interface') : location.pathname === '/remote' ? ui('nav.remote') : location.pathname === '/updater' ? ui('nav.updater') : location.pathname === '/configs' ? ui('nav.configs') : ''
+  const pluginManager = location.pathname === '/plugins'
+  const globalPlugin = location.pathname.startsWith('/plugins/')
+  const activeSection = pluginManager ? ui('nav.plugins') : location.pathname === '/announcement' ? ui('nav.announcement') : location.pathname === '/settings' ? ui('nav.settings') : location.pathname === '/interface' ? ui('nav.interface') : location.pathname === '/remote' ? ui('nav.remote') : location.pathname === '/updater' ? ui('nav.updater') : location.pathname === '/configs' ? ui('nav.configs') : ''
+  const Shell = useThemeComponent('Shell', ModernShell)
+  const {plugins} = usePlugins()
+  const {pluginId, pageId} = useParams()
+  const pluginTitle = plugins.find(plugin => plugin.enabled && plugin.manifest.id === pluginId)
+    ?.manifest.pages?.find(page => page.id === pageId)?.title
   const entryPath = instances.length > 0 ? `/i/${encodeURIComponent(instances[0].name)}/overview` : '/configs'
   const setup = location.pathname === SETUP_PATH
   const empty = instancesLoaded && instances.length === 0
   useEffect(() => {
     if (connection !== 'ready') return
-    if (empty) {
+    if (empty && !pluginManager && !globalPlugin) {
       if (!setup) navigate(SETUP_PATH, {replace: true})
     } else if ((setup && instancesLoaded) || (instancesLoaded && instance && !current)) {
       navigate(entryPath, {replace: true})
     }
-  }, [connection, current, empty, entryPath, instance, instancesLoaded, navigate, setup])
+  }, [connection, current, empty, entryPath, globalPlugin, instance, instancesLoaded, navigate, pluginManager, setup])
   /* 根路径只负责分流，不能覆盖上次停留的页面。 */
   useEffect(() => {
     if (!empty && (current || PRIMARY_NAV_PATHS.includes(location.pathname))) writeLastPath(location.pathname)
@@ -179,12 +210,9 @@ export function App() {
     const canRestore = PRIMARY_NAV_PATHS.includes(last) || instances.some(item => item.name === remembered)
     navigate(canRestore ? last : entryPath, {replace: true})
   }, [connection, empty, entryPath, instancesLoaded, instances, location.pathname, navigate])
-  /* 点导航里当前页的链接不产生 pathname 变化，抽屉得自己关。 */
-  const closeDrawer = () => setMobileOpen(false)
-  useEffect(() => { setMobileOpen(false) }, [location.pathname])
   useEffect(() => {
     if (connection !== 'ready') return
-    const topics: Array<'notifications' | 'instances' | 'launcher' | 'stock' | 'overview' | 'logs' | 'preview'> = ['notifications', 'instances']
+    const topics: Array<'notifications' | 'instances' | 'launcher' | 'stock' | 'overview' | 'logs' | 'preview' | 'plugins'> = ['notifications', 'instances', 'plugins']
     if (['127.0.0.1', 'localhost', '[::1]'].includes(window.location.hostname)) topics.push('launcher')
     if (subscribedInstance) {
       if (stockExchange) topics.push('stock')
@@ -195,15 +223,41 @@ export function App() {
     }
     void api.request('events.subscribe', {instance: subscribedInstance, topics}).catch(error => notify(error.message, true))
   }, [subscribedInstance, connection, notify, previewEnabled, stockExchange])
-  const legacyGlobalShell = PRIMARY_NAV_PATHS.includes(location.pathname)
-  const legacyShell = Boolean(instance) || legacyGlobalShell
   // 「有可用更新」的角标，这里统一算一次。
   const updateAvailable = Boolean(update.data?.available)
-  const brand = <><Link to="/settings" className="brand-title" aria-label={`AzurPilot ${ui('nav.settings')}`} onClick={closeDrawer}><ProjectLogo className="brand-logo"/><span>AzurPilot</span></Link>{updateAvailable && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
   // 旧版顶栏的第三列是居中的页面名：实例页写任务名，无实例时写导航项名。
-  const pageTitle = instance
+  const pageTitle = pluginTitle ?? (instance
     ? currentTask ? currentTaskLabel : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
-    : activeSection
+    : activeSection)
+  if (connection === 'auth') return <Login/>
+  if (setup || (empty && !pluginManager && !globalPlugin)) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
+  const content = !schema || location.pathname === '/' || (instance && (!instancesLoaded || !current))
+    ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>
+  const props = {instance, pageTitle, onCreate: () => setCreating(true), updateAvailable, announcementUnread: announcement.unread}
+  const ActiveShell = pluginManager ? ModernShell : Shell
+  return <>
+    {!pluginManager && <PluginStyles/>}
+    <Suspense fallback={<ModernShell {...props}><Loading/></ModernShell>}>
+      <ActiveShell {...props}>{content}</ActiveShell>
+    </Suspense>
+    {creating && <CreateInstance onClose={() => setCreating(false)}/>}
+  </>
+}
+
+function ModernShell({children, instance, pageTitle, onCreate, updateAvailable, announcementUnread}: ShellProps) {
+  const {instances, theme, notify, ui} = useApp()
+  const connection = useConnection()
+  const {pathname} = useLocation()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const closeDrawer = () => setMobileOpen(false)
+  useEffect(() => {setMobileOpen(false)}, [pathname])
+  const base = instance ? '/i/' + encodeURIComponent(instance) : ''
+  const currentTask = pathname.match(/\/task\/([^/]+)/)?.[1]
+  const pluginManager = pathname === '/plugins'
+  const legacyGlobalShell = PRIMARY_NAV_PATHS.includes(pathname)
+  const legacyShell = Boolean(instance) || legacyGlobalShell
+  const Navigation = useThemeComponent('Navigation', ModernNavigation)
+  const brand = <><Link to="/settings" className="brand-title" aria-label={`AzurPilot ${ui('nav.settings')}`} onClick={closeDrawer}><ProjectLogo className="brand-logo"/><span>AzurPilot</span></Link>{updateAvailable && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
   const allowBulkToggle = useIsDesktop() && instances.length > 0
   const [bulkBusy, setBulkBusy] = useState(false)
   const bulk = bulkAction(instances)
@@ -239,7 +293,7 @@ export function App() {
       {bulkToggle && <><span className="topbar-actions-hover"/><span className="topbar-actions-buttons">{bulkToggle}</span></>}
       <Link to="/settings" aria-label={ui('nav.settings')} title={ui('nav.settings')}><Settings2 size={16}/></Link>
     </span>
-    <InstanceTabs onCreate={() => setCreating(true)}/>
+    <InstanceTabs onCreate={onCreate}/>
   </>
   const topbar = <header className="topbar">
     {legacyShell && <div className="sidebar-brand legacy-topbar-brand"><div className="sidebar-brand-left">{brand}</div></div>}
@@ -247,8 +301,8 @@ export function App() {
     {legacyShell
       ? <span className="legacy-topbar-title">{pageTitle}</span>
       : <div className="breadcrumb with-tabs">{tabNav}{currentTask
-        ? <Link className="breadcrumb-current" to={`${base}/task/${currentTask}`}><strong>{currentTaskLabel}</strong></Link>
-        : activeSection && <strong className="breadcrumb-current">{activeSection}</strong>}</div>}
+        ? <Link className="breadcrumb-current" to={`${base}/task/${currentTask}`}><strong>{pageTitle}</strong></Link>
+        : pageTitle && <strong className="breadcrumb-current">{pageTitle}</strong>}</div>}
     {!legacyShell && <TabBarResizeHandle label={ui('nav.tabSize')}/>}
   </header>
   // 旧版在居中页名下方显示实例标签与任务切换器。
@@ -260,13 +314,12 @@ export function App() {
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
   /* 检视器停靠时整块画布要为它让出宽度，所以外壳自己订阅，靠类名驱动。 */
   const inspector = useSyncExternalStore(subscribeMaterialInspector, getMaterialInspector, getMaterialInspector)
-  // 登录页要在所有 Hook 调用之后返回：否则同一次会话里的 Hook 数量会随连接状态变化，
-  // 隧道远程访问首帧就走 auth，React 会直接抛 #300 崩掉整页。
-  if (connection === 'auth') return <Login/>
-  if (setup || empty) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
   const hasDockedInspector = theme !== 'minimal' && inspector.open && inspector.docked && !inspector.minimized
+  const PrimaryNavigation = pluginManager ? ModernNavigation : Navigation
+  const navigationProps = {instance, onNavigate: closeDrawer, updateAvailable, announcementUnread}
   return <div
-    className={`app-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
+    className={`app-shell modern-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
+    data-apu-component={pluginManager ? undefined : 'shell'}
   >
     <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a>
     {legacyShell && topbar}
@@ -277,9 +330,9 @@ export function App() {
       {/* 旧版把招牌放进顶栏，桌面端这一行隐藏；窄屏侧栏是抽屉，招牌回抽屉里。 */}
       <div className={`sidebar-brand ${legacyShell ? 'legacy-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
       <SidebarTransition viewKey={instance ? `instance:${instance}` : 'global'}>
-        <nav className="primary-nav" aria-label={ui('nav.primary')}>
-          {instance ? <><NavLink to={`${base}/overview`} onClick={closeDrawer}><LayoutDashboard size={17}/>{ui('nav.overview')}</NavLink><NavLink to={`${base}/statistics`} onClick={closeDrawer}><ChartNoAxesCombined size={17}/>{ui('nav.statistics')}</NavLink><NavLink to={`${base}/stock-exchange`} onClick={closeDrawer}><Cat size={17}/>{ui('stock.name')}</NavLink></> : <><NavLink to="/announcement" onClick={closeDrawer}><Megaphone size={17}/>{ui('nav.announcement')}{announcement.unread && <span className="tiny-dot red"/>}</NavLink><NavLink to="/updater" onClick={closeDrawer}><Download size={17}/>{ui('nav.updater')}{updateAvailable && <span className="tiny-dot teal"/>}</NavLink><NavLink to="/interface" onClick={closeDrawer}><Palette size={17}/>{ui('nav.interface')}</NavLink><NavLink to="/remote" onClick={closeDrawer}><Globe size={17}/>{ui('nav.remote')}</NavLink><NavLink to="/configs" onClick={closeDrawer}><FileJson size={17}/>{ui('nav.configs')}</NavLink><NavLink to="/settings" onClick={closeDrawer}><Settings2 size={17}/>{ui('nav.settings')}</NavLink><a className="nav-open-source" href="https://github.com/wess09/AzurPilot" target="_blank" rel="noreferrer" onClick={closeDrawer}><ExternalLink size={17}/>{ui('nav.openSource')}</a></>}
-        </nav>
+        <Suspense fallback={<ModernNavigation {...navigationProps}/>}>
+          <PrimaryNavigation {...navigationProps} fallback={<ModernNavigation {...navigationProps}/>}/>
+        </Suspense>
         {instance && <TaskNavTree onNavigate={closeDrawer}/>}
       </SidebarTransition>
     </aside>
@@ -287,9 +340,8 @@ export function App() {
       {!legacyShell && topbar}
       {legacyShell && pageNav}
       {connection !== 'ready' && <div className="connection-banner" role="status"><WifiOff size={16}/>{ui('connection.connecting')}</div>}
-      <main id="main-content" tabIndex={-1}>{!schema || location.pathname === '/' || (instance && (!instancesLoaded || !current)) ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>}</main>
+      <main id="main-content" tabIndex={-1}>{children}</main>
     </div>
-    {creating && <CreateInstance onClose={() => setCreating(false)}/>}
     {theme !== 'minimal' && <MaterialInspector/>}
   </div>
 }

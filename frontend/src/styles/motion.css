@@ -37,16 +37,16 @@
 
 /* 移动侧栏：用 transform 移入视口，避免逐帧重排 */
 @media (max-width: 950px) {
-  .sidebar {
+  .sidebar:where(.modern-shell *) {
     left: 0;
     transform: translateX(-230px);
     visibility: hidden;
     transition: transform var(--dur-4) var(--ease-decelerate), visibility var(--dur-4) allow-discrete;
     will-change: transform;
   }
-  .mobile-open .sidebar { left: 0; transform: none; visibility: visible }
+  .mobile-open .sidebar:where(.modern-shell *) { left: 0; transform: none; visibility: visible }
 
-  .right-rail {
+  .right-rail:where(.modern-shell *) {
     right: 0;
     opacity: 0;
     transform: translateX(100%);

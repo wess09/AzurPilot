@@ -1,0 +1,8 @@
+{
+  "id": "compact-scheduler",
+  "name": "舰桥调度器",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "permissions": ["scheduler.control"],
+  "theme": {"scheduler": "scheduler.html", "navigationView": "navigation.html"}
+}

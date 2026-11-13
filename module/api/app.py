@@ -17,6 +17,7 @@ from starlette.staticfiles import StaticFiles
 from module.api import launcher_api, notify_api
 from module.api.background_service import LIBRARY_DIR, gallery_add_bytes, proxy_fetch
 from module.api.config_service import ConfigService, ROOT
+from module.api.plugin_service import MAX_PACKAGE_SIZE
 from module.api.router import Router
 from module.api.runtime_service import RuntimeService
 from module.api.socket import Gateway
@@ -54,6 +55,7 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
         if password and password != key:
             State.deploy_config.Password = password
     gateway = Gateway(Router(configs, runtime), password)
+    plugins = gateway.router.plugins
 
     @asynccontextmanager
     async def lifespan(application):
@@ -159,6 +161,69 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
                 return JSONResponse({'error': str(error)}, status_code=400)
             return JSONResponse({'entry': entry})
 
+    def plugin_authorized(request):
+        supplied = request.headers.get('x-azurpilot-plugin-token', '')
+        return secrets.compare_digest(supplied.encode('utf-8'), gateway.router.plugin_token.encode('ascii'))
+
+    async def plugin_collection(request):
+        if not plugin_authorized(request):
+            return JSONResponse({'error': '请先登录'}, status_code=401)
+        if request.method == 'GET':
+            return JSONResponse({'plugins': await asyncio.to_thread(plugins.list)})
+        if is_demo_mode():
+            return JSONResponse({'error': '演示模式下禁止修改插件。'}, status_code=403)
+        data = bytearray()
+        async for chunk in request.stream():
+            if len(data) + len(chunk) > MAX_PACKAGE_SIZE:
+                return JSONResponse({'error': '插件包超过大小限制。'}, status_code=413)
+            data.extend(chunk)
+        try:
+            manifest = await asyncio.to_thread(plugins.install, data)
+        except ValueError as error:
+            return JSONResponse({'error': str(error)}, status_code=400)
+        return JSONResponse({'manifest': manifest})
+
+    async def plugin_item(request):
+        if not plugin_authorized(request):
+            return JSONResponse({'error': '请先登录'}, status_code=401)
+        if is_demo_mode():
+            return JSONResponse({'error': '演示模式下禁止修改插件。'}, status_code=403)
+        identifier = request.path_params['identifier']
+        if request.method == 'DELETE':
+            changed = await asyncio.to_thread(plugins.remove, identifier)
+        else:
+            try:
+                body = await request.json()
+            except ValueError:
+                return JSONResponse({'error': '请求格式无效。'}, status_code=400)
+            if not isinstance(body, dict) or type(body.get('enabled')) is not bool:
+                return JSONResponse({'error': '缺少启用状态。'}, status_code=400)
+            changed = await asyncio.to_thread(plugins.set_enabled, identifier, body['enabled'])
+        if not changed:
+            return JSONResponse({'error': '插件不存在。'}, status_code=404)
+        return JSONResponse({'ok': True})
+
+    async def plugin_asset(request):
+        identifier = request.path_params['identifier']
+        revision = request.path_params['revision']
+        asset = await asyncio.to_thread(plugins.asset, identifier, revision, request.path_params['path'],
+                                        request.query_params.get('component'))
+        if asset is None:
+            return Response(status_code=404)
+        content, media_type = asset
+        headers = {'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'no-referrer',
+                   'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-cache'}
+        if media_type == 'text/html':
+            # Policy applies when an entry is opened directly as well as inside the WebUI frame.
+            package_url = str(request.url_for('plugin_asset', identifier=identifier, revision=revision, path=''))
+            headers['Content-Security-Policy'] = (
+                f"sandbox allow-scripts; default-src 'none'; script-src {package_url} 'unsafe-inline'; "
+                f"style-src {package_url} 'unsafe-inline'; img-src {package_url} data:; font-src {package_url}; "
+                f"connect-src {package_url}; base-uri 'none'; form-action 'none'; frame-ancestors 'self'")
+        elif media_type == 'image/svg+xml':
+            headers['Content-Security-Policy'] = "sandbox; default-src 'none'; style-src 'unsafe-inline'"
+        return Response(content, media_type=media_type, headers=headers)
+
     async def background_media(request):
         """同源代理一张网图：解析出的直链由这里回给浏览器，避免防盗链或跨域让显示的图与直链分叉。"""
         if not background_authorized(request, allow_query=True):
@@ -185,6 +250,9 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
     # 上传走下面那个 POST；目录不存在时先建出来，免得挂载失败。
     LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
     routes.append(Route('/api/v1/background/gallery', background_upload, methods=['POST']))
+    routes.append(Route('/api/v1/plugins', plugin_collection, methods=['GET', 'POST']))
+    routes.append(Route('/api/v1/plugins/{identifier}', plugin_item, methods=['PATCH', 'DELETE']))
+    routes.append(Route('/api/v1/plugins/{identifier}/{revision}/{path:path}', plugin_asset, methods=['GET']))
     routes.append(Mount('/background-library', StaticFiles(directory=LIBRARY_DIR)))
     if (dist / 'assets').is_dir():
         routes.append(Mount('/assets', StaticFiles(directory=dist / 'assets')))

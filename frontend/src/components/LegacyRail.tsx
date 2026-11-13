@@ -2,11 +2,13 @@
  * @fileoverview 旧版实例视图左侧调度器与任务列表面板组件。
  */
 
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import type { Overview } from '../api/types'
 import { useApp } from '../app/context'
-import { SchedulerWidget } from './SchedulerWidget'
+import { useThemeComponent } from '../themes/context'
+import { Loading } from './ui'
 import { TaskQueue } from './TaskQueue'
+import { SchedulerWidget } from './SchedulerWidget'
 
 /**
  * 调度器 + 任务计划这一列的唯一装配点。
@@ -17,8 +19,9 @@ import { TaskQueue } from './TaskQueue'
  */
 export function LegacyRail({instance, data, onData, children}: {instance: string; data?: Overview; onData: (data: Overview) => void; children?: ReactNode}) {
   const {ui} = useApp()
+  const SchedulerPanel = useThemeComponent('SchedulerPanel', SchedulerWidget)
   return <div className="instance-page-rail" onContextMenu={event => event.preventDefault()}>
-    <SchedulerWidget instance={instance} data={data} onData={onData}/>
+    <Suspense fallback={<Loading/>}><SchedulerPanel instance={instance} data={data} onData={onData}/></Suspense>
     {children}
     <section className="rail-schedule" aria-label={ui('scheduler.plan')}>
       <TaskQueue instance={instance} data={data} onData={onData}/>

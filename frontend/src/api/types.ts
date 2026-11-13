@@ -222,6 +222,10 @@ export interface Results {
   'opsi.simulator.figure': {instance: string; image: string | null}
   'config.export': Values & {_schedulerProgram?: Pick<ProgramSaved, 'mode' | 'draft' | 'active'>}
   'background.access': {token: string}
+  'plugins.access': {token: string}
+  'plugins.list': import('../plugins/types').InstalledPlugin[]
+  'plugins.storage.get': {value: unknown}
+  'plugins.storage.write': {value: unknown}
   'scheduler.program.catalog': Catalog
   'scheduler.program.get': ProgramSaved
   'scheduler.program.save': ProgramSaved

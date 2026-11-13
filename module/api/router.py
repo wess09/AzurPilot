@@ -10,6 +10,7 @@ from module.api import background_service as background
 from module.api import protocol as p
 from module.api import search_service as search
 from module.api import remote_service as remote
+from module.api.plugin_service import PluginService
 from module.runtime.process_manager import ProcessManager
 
 
@@ -56,6 +57,8 @@ class Router:
         self._stock_exchange_lock = threading.Lock()
         self.access_password = ''
         self.background_token = secrets.token_urlsafe(32)
+        self.plugin_token = secrets.token_urlsafe(32)
+        self.plugins = PluginService(configs.directory) if configs is not None else None
         self.methods = {
             'launcher.status': Method(p.Params, lambda _: self.launcher.status(), local_only=True),
             'launcher.autostart.set': Method(p.LauncherAutostartParams,
@@ -133,6 +136,10 @@ class Router:
             'updater.cancel': Method(p.Params, lambda _: self.updates.cancel(), True),
             'announcement.get': Method(p.AnnouncementParams, lambda x: self.announcements.get(force=x.force)),
             'background.access': Method(p.Params, lambda _: {'token': self.background_token}),
+            'plugins.access': Method(p.Params, lambda _: {'token': self.plugin_token}),
+            'plugins.list': Method(p.Params, lambda _: self.plugins.list()),
+            'plugins.storage.get': Method(p.PluginStorageParams, self.read_plugin_storage),
+            'plugins.storage.write': Method(p.PluginStorageParams, self.write_plugin_storage, True),
             'background.resolve': Method(p.BackgroundUrlParams, lambda x: background.resolve(x.url)),
             'background.gallery.list': Method(p.Params, lambda _: background.gallery_list()),
             'background.gallery.add': Method(p.BackgroundGalleryAddParams,
@@ -141,6 +148,21 @@ class Router:
                                                     lambda x: {'removed': background.gallery_remove(x.id)}, True),
             'background.gallery.open': Method(p.Params, lambda _: background.gallery_open(), True),
         }
+
+    def read_plugin_storage(self, params):
+        if params.action != 'get':
+            raise p.ApiError('INVALID_PARAMS', '读取接口仅支持 get')
+        return self.plugin_storage(params)
+
+    def write_plugin_storage(self, params):
+        if params.action == 'get':
+            raise p.ApiError('INVALID_PARAMS', '写入接口仅支持 set 或 delete')
+        return self.plugin_storage(params)
+
+    def plugin_storage(self, params):
+        if params.instance is not None:
+            self.configs.path(params.instance)
+        return self.plugins.storage(params.id, params.instance or '', params.key, params.action, params.value)
 
     @property
     def dock(self):
