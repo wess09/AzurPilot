@@ -9,7 +9,7 @@ for (const task of ['ThreeOilLowCost', 'GemsFarming']) {
 
     for (const enabled of [true, false]) {
       await toggle.click()
-      await expect(page.locator(`[id="${task}.GemsFarming.DelayTaskIFNoFlagship-status"]`)).toHaveText('已保存')
+      await expect.poll(() => page.evaluate(() => sessionStorage.getItem('azurpilot.edits.config:testpilot'))).toBeNull()
       await page.reload()
       await expect(toggle).toHaveAttribute('aria-checked', String(enabled))
     }

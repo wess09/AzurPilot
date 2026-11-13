@@ -1,0 +1,14 @@
+:scope {
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin: 0;
+  padding: 12px;
+  color: var(--text);
+}
+[data-apu-part="header"] > div { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+[data-apu-part="counts"] { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-block: 12px; }
+[data-apu-part="counts"] > div { display: grid; gap: 4px; padding: 8px; background: var(--surface-muted); }
+[data-apu-part="counts"] span { color: var(--muted); font-size: .8rem; }
+[data-apu-part="toggle"] { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 4px 12px; border: 1px solid var(--border); border-radius: 4px; }
+[data-apu-part="toggle"]:disabled { opacity: .55; }

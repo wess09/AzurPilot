@@ -1,3 +1,7 @@
+/**
+ * @fileoverview TaskNavTree 侧栏导航树的渲染契约：分组归属、常驻子菜单与旧版主题行为；
+ * 末尾附 isDesktopDevice 的设备判定测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -50,8 +54,7 @@ function contextWith(theme: Theme): AppContextValue {
     notify: () => {},
     previewEnabled: false,
     setPreviewEnabled: () => {},
-    devMode: false,
-    setDevMode: () => {},
+
     theme,
     setTheme: () => {},
     material: 'glass',
@@ -97,8 +100,8 @@ describe('TaskNav 导航组件', () => {
     const html = render('/i/default/overview')
 
     expect(html).toContain('task-nav-container')
-    // 搜索框常驻，不再有展开/收起开关
-    expect(html).toContain('nav-search')
+    // 搜索框常驻，不再有展开/收起开关。
+    expect(html).toContain('task-search')
     expect(html).toContain('搜索任务…')
 
     expect(html).toContain('task-group-button')
@@ -107,10 +110,10 @@ describe('TaskNav 导航组件', () => {
     expect(html).toContain('系统')
     expect(html).toContain('出击')
 
-    // 子菜单常驻以便高度过渡；收起态不带 expanded，侧栏一上来不会是长列表
+    // 子菜单常驻以便高度过渡；收起态不带 expanded，侧栏一上来不会是长列表。
     expect(html).toContain('task-submenu-list')
     expect(html).not.toContain('task-submenu-list expanded')
-    // 一级菜单不展示任务数量，避免与展开箭头争夺视觉焦点
+    // 一级菜单不展示任务数量，避免与展开箭头争夺视觉焦点。
     expect(html).not.toContain('task-group-badge')
   })
 
@@ -129,7 +132,7 @@ describe('TaskNav 导航组件', () => {
     expect(html).toContain('href="/i/default/task/General"')
     expect(html).toContain('href="/i/default/task/Restart"')
 
-    // 旧版是树状内联列表，不再有浮出的二级面板
+    // 旧版是树状内联列表，不再有浮出的二级面板。
     expect(html).not.toContain('task-submenu-flyout')
     expect(html).not.toContain('aria-haspopup="menu"')
   })
@@ -137,7 +140,7 @@ describe('TaskNav 导航组件', () => {
   it('旧版主题处于某任务页时，所属分组自动展开并高亮', () => {
     const html = render('/i/default/task/Main')
 
-    // Main 任务属于 Farm 分组（出击）
+    // Main 任务属于 Farm 分组（出击）。
     expect(html).toContain('task-group-button expanded active')
     expect(html).toContain('出击')
     expect(html).toContain('href="/i/default/task/Main"')
@@ -157,7 +160,7 @@ describe('TaskNav 导航组件', () => {
 
 describe('isDesktopDevice', () => {
   it('正确区分电脑端与移动端环境', () => {
-    // node/SSR 环境下无 window，应安全回退为 false
+    // node/SSR 环境下无 window，应安全回退为 false。
     expect(isDesktopDevice()).toBe(false)
 
     const originalWindow = globalThis.window
@@ -171,14 +174,14 @@ describe('isDesktopDevice', () => {
       }
       globalThis.window = mockWindow as unknown as Window & typeof globalThis
 
-      // 电脑端：宽度 > 950 且支持 hover
+      // 电脑端：宽度 > 950 且支持 hover。
       expect(isDesktopDevice()).toBe(true)
 
-      // 移动端：宽度 <= 950
+      // 移动端：宽度 <= 950。
       mockWindow.innerWidth = 768
       expect(isDesktopDevice()).toBe(false)
 
-      // 移动端触屏：宽度 > 950 但为 touch-only (hover: none)
+      // 移动端触屏：宽度 > 950 但为 touch-only (hover: none)。
       mockWindow.innerWidth = 1024
       mockWindow.matchMedia = (query: string) => ({
         matches: query.includes('(hover: none)') ? true : false,

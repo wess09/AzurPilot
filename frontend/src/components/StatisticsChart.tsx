@@ -4,7 +4,7 @@
 
 import type {ReactNode, KeyboardEvent as ReactKeyboardEvent} from 'react'
 import { createPortal } from 'react-dom'
-import { Select } from './FormControls'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './official-ui/select'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import * as echarts from 'echarts/core'
 import { LineChart, CandlestickChart } from 'echarts/charts'
@@ -12,10 +12,23 @@ import { GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, L
 import { CanvasRenderer } from 'echarts/renderers'
 import type {StatSeries} from '../api/types'
 import { Empty } from './ui'
+import { Input } from './official-ui/input'
+import { Button } from './ui/button'
 import {resolveIcon} from './StatisticsTable'
 import {buildSeriesView, isActionPointSeries, riseFallSegments} from './statisticsData'
 import {withTranslatedKeys} from './statisticsText'
 import { useApp } from '../app/context'
+import type { UiKey } from '../i18n'
+
+/** 采样粒度候选：K 线没有「每次记录」这一档，其余档位固定，避免重复项。 */
+export function bucketOptions(isCandlestick: boolean, ui: (key: UiKey) => string) {
+  return [
+    ...(isCandlestick ? [] : [{value: 0, label: ui('stats.eachRecord')}]),
+    {value: 5, label: ui('stats.fiveMinutes')},
+    {value: 60, label: ui('stats.hourly')},
+    {value: 1440, label: ui('stats.daily')},
+  ]
+}
 import {
   readStatisticsPrefs,
   updateStatisticsPrefs,
@@ -34,12 +47,13 @@ const RESOURCE_PALETTE: Record<string, string> = {
 }
 const DEFAULT_PALETTE = ['#159b88', '#f59e0b', '#0ea5e9', '#ec4899', '#8b5cf6', '#10b981', '#f97316', '#6366f1', '#14b8a6']
 
+/** 系列取色：资源键有专属色，首条系列可用调用方给的回落色，其余按默认色板轮转。 */
 function getSeriesColor(key: string, index: number, fallback?: string): string {
   return RESOURCE_PALETTE[key] ?? (index === 0 && fallback ? fallback : DEFAULT_PALETTE[index % DEFAULT_PALETTE.length])
 }
 
 const iconBase = import.meta.env.BASE_URL
-/* 键为中文名；withTranslatedKeys 补上译名，翻译后的序列名仍能找到图标。 */
+// 键为中文名；withTranslatedKeys 补上译名，翻译后的序列名仍能找到图标。
 const chartResourceIcons: Record<string, string> = withTranslatedKeys({
   '石油': `${iconBase}oil.webp`,
   '物资': `${iconBase}gold.webp`,
@@ -60,6 +74,7 @@ const chartResourceIcons: Record<string, string> = withTranslatedKeys({
   '完成委托': `${iconBase}honor_medal.webp`,
 })
 
+/** 图表系列图标：优先用系列自带的 icon，否则按中文名精确匹配资源图标，再退到互相包含的模糊匹配。 */
 function getChartIcon(series: StatSeries): string | undefined {
   if (series.icon) return resolveIcon(series.icon)?.src
   const {label} = series
@@ -70,11 +85,9 @@ function getChartIcon(series: StatSeries): string | undefined {
   return undefined
 }
 
-/** 图表主体。紧凑主题把标题行与「放大查看」上提到页面工具栏（`heading=false`），
-    并把报表附带的表格并进同一面板，避免同一页出现两个顶层区域。 */
-export function StatisticsChart({series, heading = true, expanded = false, onToggleExpanded, title, initialMode, category = 'resources', foldControl, plotFoldControl, compact = false, compactControl, showPicker = true, pickerControl, pickerMuted = false, stackedRise = false, stackedControl, zeroBase = false, zeroBaseControl, filtered = [], onToggleFilter}: {
+/** 图表主体。 */
+export function StatisticsChart({series, expanded = false, onToggleExpanded, title, category = 'resources', foldControl, plotFoldControl, compact = false, compactControl, showPicker = true, pickerControl, pickerMuted = false, stackedRise = false, stackedControl, zeroBase = false, zeroBaseControl, filtered = [], onToggleFilter}: {
   series: StatSeries[]
-  heading?: boolean
   foldControl?: ReactNode
   plotFoldControl?: ReactNode
   /** 表头是否用紧凑排列：一行一个资源。 */
@@ -101,9 +114,8 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
   onToggleFilter?: (key: string) => void
   expanded?: boolean
   onToggleExpanded: () => void
-  /* 放大视图用分区名字当标题：此时整页工具栏（含分区切换）已被面板盖住。 */
+  // 放大视图用分区名字当标题：此时整页工具栏（含分区切换）已被面板盖住。
   title?: string
-  initialMode?: ChartMode
   category?: string
 }) {
   const {ui, language, theme} = useApp()
@@ -122,7 +134,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     })
   }, [category])
 
-  const [mode, setModeState] = useState<ChartMode>(() => initialMode ?? readStatisticsPrefs().chartMode)
+  const [mode, setModeState] = useState<ChartMode>(() => readStatisticsPrefs().chartMode)
   const setMode = useCallback((next: ChartMode) => {
     setModeState(next)
     updateStatisticsPrefs({chartMode: next})
@@ -136,7 +148,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
 
   const [bucket, setBucketState] = useState(() => {
     const saved = readStatisticsPrefs().bucket
-    const activeMode = initialMode ?? readStatisticsPrefs().chartMode
+    const activeMode = readStatisticsPrefs().chartMode
     return activeMode === 'candlestick' && saved === 0 ? 60 : saved
   })
   const setBucket = useCallback((next: number) => {
@@ -156,7 +168,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
 
   const element = useRef<HTMLDivElement>(null)
 
-  /* 全屏放大模式下根据固定视口计算高度；常规贯穿模式下沿用样式表定义的舒适高度。 */
+  // 全屏放大模式下根据固定视口计算高度；常规贯穿模式下沿用样式表定义的舒适高度。
   useLayoutEffect(() => {
     const canvas = element.current
     const panel = canvas?.closest<HTMLElement>('.statistics-chart')
@@ -168,14 +180,14 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     const resize = () => {
       const panelBox = panel.getBoundingClientRect()
       const canvasBox = canvas.getBoundingClientRect()
-      /* 画布上方的高度按坐标量：画布是面板的孙节点，不是直接子节点。 */
+      // 画布上方的高度按坐标量：画布是面板的孙节点，不是直接子节点。
       const above = canvasBox.top - panelBox.top + panel.scrollTop
       const next = Math.max(240, Math.round(panel.clientHeight - above))
       if (Math.abs(next - canvasBox.height) < 1) return
       canvas.style.height = `${next}px`
     }
     resize()
-    /* 面板高度、上方内容高度（换语言会让芯片换行）变化时都要重算。 */
+    // 面板高度、上方内容高度（换语言会让芯片换行）变化时都要重算。
     const observer = new ResizeObserver(resize)
     observer.observe(panel)
     for (const child of panel.children) if (child !== canvas) observer.observe(child)
@@ -196,7 +208,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
 
   const view = useMemo(() => buildSeriesView(series, {selectedKeys, mode, bucket, from, to}), [series, selectedKeys, mode, bucket, from, to])
   const {isSingle, effectiveBucket} = view
-  /* 时间范围写回偏好：原始记录卡与图表读同一份筛选。 */
+  // 时间范围写回偏好：原始记录卡与图表读同一份筛选。
   useEffect(() => {
     updateStatisticsPrefs({rangeFrom: from, rangeTo: to})
   }, [from, to])
@@ -211,7 +223,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     return [...set].sort()
   }, [isCandlestick, seriesData])
 
-  /* 被点掉曲线的资源仍留在表头（淡色），只是不再画进图里。 */
+  // 被点掉曲线的资源仍留在表头（淡色），只是不再画进图里。
   const shownData = useMemo(() => seriesData.filter(item => !filtered.includes(item.series.key)), [seriesData, filtered])
 
   const hasPoints = shownData.some(item => item.points.length > 0)
@@ -229,8 +241,8 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     const container = element.current
     const chart = echarts.getInstanceByDom(container) ?? echarts.init(container, undefined, {locale: language.startsWith('zh') ? 'ZH' : 'EN'})
 
-    /* 重绘只取决于下面这几个 CSS 变量。这个观察者还会被与图表无关的 <html> style
-       写入触发（例如指针光效的 --mx/--my），所以先比签名再决定要不要重建。 */
+    // 重绘只取决于下面这几个 CSS 变量。这个观察者还会被与图表无关的 <html> style
+    // 写入触发（例如指针光效的 --mx/--my），所以先比签名再决定要不要重建。
     let renderedSignature = ''
     function render() {
       const colors = getComputedStyle(document.documentElement)
@@ -239,7 +251,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       const secondary = colors.getPropertyValue('--theme-chart-secondary').trim() || colors.getPropertyValue('--secondary').trim()
       const rise = colors.getPropertyValue('--theme-chart-rise').trim() || '#dc2626'
       const fall = colors.getPropertyValue('--theme-chart-fall').trim() || '#16a34a'
-      /* 网格线只铺在图表内部那张二级面上，透明度跟随它的不透明度。 */
+      // 网格线只铺在图表内部那张二级面上，透明度跟随它的不透明度。
       const gridOpacity = Math.min(1, Math.max(0, (parseFloat(colors.getPropertyValue('--theme-plate-alpha')) || 100) / 100))
       const surface = colors.getPropertyValue('--surface').trim()
       const border = colors.getPropertyValue('--border').trim()
@@ -248,7 +260,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       if (signature === renderedSignature) return
       renderedSignature = signature
       const colorFor = (item: typeof seriesData[number]) => isSingle ? primary : item.color
-      /* 观感补全用的整图时间跨度。 */
+      // 观感补全用的整图时间跨度。
       let axisStart = Number.POSITIVE_INFINITY
       let axisEnd = Number.NEGATIVE_INFINITY
       for (const item of shownData) {
@@ -260,7 +272,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         }
       }
       const padRange = Number.isFinite(axisStart) && axisEnd > axisStart
-      /* 只补绘制用的点，不改数据、指标与记录。 */
+      // 只补绘制用的点，不改数据、指标与记录。
       const padPairs = (pairs: Array<[number, number]>): Array<[number, number]> => {
         if (category === 'storage' || !padRange || pairs.length === 0) return pairs
         const padded: Array<[number, number]> = [...pairs]
@@ -269,7 +281,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         if (last[0] < axisEnd) padded.push([axisEnd, last[1]])
         return padded
       }
-      /* 涨跌分段模式下只补下跌段。 */
+      // 涨跌分段模式下只补下跌段。
       const padFall = (segments: Array<number[] | '-'>): Array<number[] | '-'> => {
         if (!padRange || segments.length === 0) return segments
         const pairs = segments.filter((entry): entry is number[] => entry !== '-')
@@ -293,14 +305,14 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
       }
 
 
-      /* 纵轴固定：下界钉在 0，上界仍由 ECharts 按全量数据算，与「从 0 开始的自适应」同解。 */
+      // 纵轴固定：下界钉在 0，上界仍由 ECharts 按全量数据算，与「从 0 开始的自适应」同解。
       if (zeroBase) yAxes = yAxes.map(axis => ({...axis, min: 0}))
 
-      /* 每条曲线落在哪个 Y 轴上：单页与统一轴都用左轴。 */
-      /* 大小轴归属：左轴小值、右轴大值。 */
+      // 每条曲线落在哪个 Y 轴上：单页与统一轴都用左轴。
+      // 大小轴归属：左轴小值、右轴大值。
       const BIG_AXIS_KEYS = new Set(['asset', 'yellow_coins', 'distance'])
       const SMALL_AXIS_KEYS = new Set(['ap', 'purple_coins'])
-      const BIG_AXIS_RATIO = 0.05
+      const BIG_AXIS_RATIO = 0.05 // 峰值达到全场峰值的 5% 才占右轴
       const peakOf = (item: {points: Array<{high?: number; close?: number; value?: number}>}) =>
         item.points.reduce((max, point) => {
           const value = point.high ?? point.close ?? point.value
@@ -313,7 +325,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         return sessionPeak > 0 && peakOf(item) >= sessionPeak * BIG_AXIS_RATIO ? 1 : 0
       }
 
-      /* 叠涨时该曲线按涨跌配色：折线分成两段，蜡烛线用涨跌色。 */
+      // 叠涨时该曲线按涨跌配色：折线分成两段，蜡烛线用涨跌色。
       const echartsSeries = shownData.map(item => {
         const color = colorFor(item)
         const riseFall = stackedRise && isActionPointSeries(item.series, ui('resource.ActionPoint'))
@@ -337,7 +349,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         }
         if (riseFall) {
           const segments = riseFallSegments(item.buckets.map(b => new Date(b.time.replace(' ', 'T')).getTime()), item.buckets.map(b => b.close))
-          /* 拐点同属上涨与下跌两个系列，高亮会在同一坐标叠两个符号。 */
+          // 拐点同属上涨与下跌两个系列，高亮会在同一坐标叠两个符号。
           return [
             {name: item.series.label, type: 'line' as const, yAxisIndex: axisIndexFor(item), showSymbol: false, connectNulls: false,
               emphasis: {disabled: true}, lineStyle: {width: 2, color: rise}, data: segments.rise},
@@ -348,7 +360,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         return [{
           name: item.series.label, type: 'line' as const, yAxisIndex: axisIndexFor(item),
           showSymbol: item.points.length < 80, symbolSize: 5, connectNulls: false,
-          /* 关闭悬停强调：相交处互相覆盖会看起来在闪。 */
+          // 关闭悬停强调：相交处互相覆盖会看起来在闪。
           emphasis: {disabled: true},
           lineStyle: {width: 2, color}, itemStyle: {color},
           data: padPairs(item.buckets.map(b => [new Date(b.time.replace(' ', 'T')).getTime(), b.close] as [number, number])),
@@ -376,7 +388,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
         },
         xAxis: isCandlestick ? {type: 'category', data: categoryTimes, axisLabel: {hideOverlap: true}} : {type: 'time', axisLabel: {hideOverlap: true}},
         yAxis: yAxes,
-        /* 纵轴固定：缩放不过滤数据，纵轴始终按全量数据自动取值，与全图视角用同一套算法。 */
+        // 纵轴固定：缩放不过滤数据，纵轴始终按全量数据自动取值，与全图视角用同一套算法。
         dataZoom: [
           {type: 'inside', zoomOnMouseWheel: 'ctrl', filterMode: zeroBase ? 'none' : 'filter'},
           {
@@ -411,32 +423,31 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
   }, [shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase])
 
 
-  /* 图表设置（类型、坐标轴、采样粒度、时间范围）排在图表下方：先看数据，再决定怎么画。 */
+  // 图表设置（类型、坐标轴、采样粒度、时间范围）排在图表下方：先看数据，再决定怎么画。
   const controls = <div className="statistics-controls">
     <label>
       {ui('stats.chart')}
       <Select
-        aria-label={ui('stats.chartType')}
         value={mode}
-        onChange={event => {
-          const nextMode: ChartMode = event.target.value === 'candlestick' ? 'candlestick' : 'line'
+        onValueChange={value => {
+          const nextMode: ChartMode = value === 'candlestick' ? 'candlestick' : 'line'
           setMode(nextMode)
           if (nextMode === 'candlestick' && bucket === 0) {
             setBucket(60)
           }
         }}
       >
-        <option value="line">{ui('stats.line')}</option>
-        <option value="candlestick">{isSingle ? ui('stats.candlestick') : ui('stats.candlestickOverlay')}</option>
+        <SelectTrigger aria-label={ui('stats.chartType')}><SelectValue/></SelectTrigger>
+        <SelectContent><SelectItem value="line">{ui('stats.line')}</SelectItem><SelectItem value="candlestick">{isSingle ? ui('stats.candlestick') : ui('stats.candlestickOverlay')}</SelectItem></SelectContent>
       </Select>
     </label>
 
     {!isSingle && (
       <label>
         {ui('stats.axisMode')}
-        <Select aria-label={ui('stats.axisMode')} value={axisMode} onChange={event => setAxisMode(event.target.value as 'separate' | 'unified')}>
-          <option value="separate">{ui('stats.axisSeparate')}</option>
-          <option value="unified">{ui('stats.axisUnified')}</option>
+        <Select value={axisMode} onValueChange={value => setAxisMode(value as 'separate' | 'unified')}>
+          <SelectTrigger aria-label={ui('stats.axisMode')}><SelectValue/></SelectTrigger>
+          <SelectContent><SelectItem value="separate">{ui('stats.axisSeparate')}</SelectItem><SelectItem value="unified">{ui('stats.axisUnified')}</SelectItem></SelectContent>
         </Select>
       </label>
     )}
@@ -444,18 +455,16 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
 
     <label>
       {ui('stats.bucket')}
-      <Select aria-label={ui('stats.bucket')} value={effectiveBucket} onChange={event => setBucket(Number(event.target.value))}>
-        {!isCandlestick && <option value={0}>{ui('stats.eachRecord')}</option>}
-        <option value={5}>{ui('stats.fiveMinutes')}</option>
-        <option value={60}>{ui('stats.hourly')}</option>
-        <option value={1440}>{ui('stats.daily')}</option>
+      <Select value={String(effectiveBucket)} onValueChange={value => setBucket(Number(value))}>
+        <SelectTrigger aria-label={ui('stats.bucket')}><SelectValue/></SelectTrigger>
+        <SelectContent>{bucketOptions(isCandlestick, ui).map(option => <SelectItem key={option.value} value={String(option.value)}>{option.label}</SelectItem>)}</SelectContent>
       </Select>
     </label>
 
     <label>
       {ui('stats.startTime')}
       <div className="date-input-wrap">
-        <input type="datetime-local" aria-label={ui('stats.startTime')} value={from} className={from ? '' : 'date-empty'} onChange={event => setFrom(event.target.value)}/>
+        <Input type="datetime-local" aria-label={ui('stats.startTime')} value={from} onChange={event => setFrom(event.target.value)}/>
         {!from && <span className="date-input-placeholder" aria-hidden="true">---- / -- / --</span>}
       </div>
     </label>
@@ -463,27 +472,26 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     <label>
       {ui('stats.endTime')}
       <div className="date-input-wrap">
-        <input type="datetime-local" aria-label={ui('stats.endTime')} value={to} className={to ? '' : 'date-empty'} onChange={event => setTo(event.target.value)}/>
+        <Input type="datetime-local" aria-label={ui('stats.endTime')} value={to} onChange={event => setTo(event.target.value)}/>
         {!to && <span className="date-input-placeholder" aria-hidden="true">---- / -- / --</span>}
       </div>
     </label>
 
-    <button className="text-button" onClick={() => {setFrom(''); setTo('')}}>{ui('stats.allTime')}</button>
+    <Button variant="ghost" onClick={() => {setFrom(''); setTo('')}}>{ui('stats.allTime')}</Button>
   </div>
 
   const rangeError = from && to && from > to ? <p className="preview-error" role="alert">{ui('stats.invalidRange')}</p> : null
 
 
-  /* 组合页里两张图卡标题相同、分不出是哪一张，带短名前缀后可以区分。 */
+  // 组合页里两张图卡标题相同、分不出是哪一张，带短名前缀后可以区分。
   const headingLabel = category === 'resources' ? ui('stats.chartHeading.resources') : category === 'action' ? ui('stats.chartHeading.action') : ui('stats.trendDetails')
 
   const chart = (
     <section className={`panel statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
-      {/* 紧凑主题把标题提到页面工具栏；放大视图盖住工具栏，此时必须把标题行放回来。 */}
-      {(heading || expanded) && <div className="panel-heading">
+      <div className="panel-heading">
         <h2>{expanded && title ? title : headingLabel}</h2>
-        <div className="stat-card-actions">{foldControl}<button className="text-button" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</button></div>
-      </div>}
+        <div className="stat-card-actions">{foldControl}<Button variant="ghost" size="sm" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</Button></div>
+      </div>
 
       {showPicker ? <div className={`statistics-metrics-container${pickerMuted ? ' is-picker-muted' : ''}`}>
         <span className="statistics-metrics-label">{ui('stats.metric')}</span>
@@ -497,9 +505,10 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
             const isOverlayLine = active && isCandlestick && !isSingle && selectedIdx > 0
 
             return (
-              <button
+              <Button
                 key={item.key} type="button"
                 className={`stat-chip ${active ? 'active' : ''} ${empty ? 'empty' : ''}`}
+                size="sm" variant={active ? 'default' : 'outline'} aria-pressed={active}
                 onClick={() => toggleKey(item.key)} onDoubleClick={() => selectOnly(item.key)}
                 title={empty ? ui('stats.noSeriesRecord') : ui(active ? 'stats.chipActive' : 'stats.chipInactive', {label: item.label})}
                 disabled={empty}
@@ -517,11 +526,11 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
                   </span>
                 )}
                 {empty && <small>{ui('stats.noSeriesRecord')}</small>}
-              </button>
+              </Button>
             )
           })}
           {selectedKeys.length > 1 && (
-            <button type="button" className="text-button" onClick={() => selectOnly(selectedKeys[0])}>{ui('stats.resetSelection')}</button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => selectOnly(selectedKeys[0])}>{ui('stats.resetSelection')}</Button>
           )}
           {compactControl}
           {stackedControl}
@@ -546,7 +555,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
                 const formattedChange = item.change > 0 ? `+${item.change.toLocaleString(undefined, {maximumFractionDigits: 2})}` : item.change.toLocaleString(undefined, {maximumFractionDigits: 2})
                 const isCandle = isCandlestick && idx === 0
                 const muted = filtered.includes(item.series.key)
-                /* 多于一个资源时才可点：否则会把唯一曲线也藏掉。 */
+                // 多于一个资源时才可点：否则会把唯一曲线也藏掉。
                 const canFilter = selectedKeys.length > 1 && (muted || shownData.length > 1)
                 const toggleFilter = () => onToggleFilter?.(item.series.key)
                 const filterProps = canFilter ? {role: 'button' as const, tabIndex: 0, 'aria-pressed': !muted,
@@ -606,7 +615,7 @@ export function StatisticsChart({series, heading = true, expanded = false, onTog
     </section>
   )
 
-  /* 放大态挂到 body：卡片链给每张卡设了 z-index，面板留在卡内会被顶栏盖住。 */
+  // 放大态挂到 body：卡片链给每张卡设了 z-index，面板留在卡内会被顶栏盖住。
   return expanded ? createPortal(chart, document.body) : chart
 }
 

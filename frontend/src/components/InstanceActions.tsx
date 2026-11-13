@@ -20,6 +20,7 @@ const DASHBOARD_OPTIONS: {key: keyof DashboardPrefs; label: UiKey; help: UiKey}[
   {key: 'totalFirst', label: 'dashboard.totalFirst', help: 'dashboard.totalFirstHelp'},
   {key: 'dogIcon', label: 'dashboard.dogIcon', help: 'dashboard.dogIconHelp'},
 ]
+/** 实例卡片上的设置齿轮：打开「仪表盘」弹窗，调整仪表盘选项与资源卡片显隐。 */
 export function InstanceActions({resources, selectedResources, onResourcesChange}: {resources: Resource[]; selectedResources: string[]; onResourcesChange: (keys: string[]) => void}) {
   const [open, setOpen] = useState(false)
   const {ui} = useApp()

@@ -1,15 +1,16 @@
-/* 全站表单共用主题变量。 */
+/* 全站表单共用主题变量 */
 :root {
-  --form-height: 40px;
-  /* 表格标题行内控件（搜索框）的高度，与同排 .text-button 一致。 */
+  --form-height: 36px;
+  /* 表格标题行内控件（搜索框）的高度，与同排 .text-button 一致 */
   --table-heading-control: 36px;
   --form-edge: color-mix(in srgb, var(--theme-input-border) 75%, var(--theme-muted));
   --form-shadow: var(--theme-control-shadow);
-  /* 按钮高度：跟随本族表单高度，但不高于 36px（紧凑族把表单压到 32px 时按钮一起缩）。 */
+  /* 按钮高度：跟随本族表单高度，但不高于 36px（紧凑族把表单压到 32px 时按钮一起缩） */
   --form-height-button: min(36px, var(--form-height));
 }
 
-input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])), select, textarea {
+/* 输入控件基础样式 */
+input:where(:not([type='checkbox']):not([type='radio']):not([type='range']):not([data-slot='input'])), select, textarea {
   min-height: var(--form-height);
   padding: 8px 12px;
   font-size: 13px;
@@ -21,65 +22,42 @@ input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])), se
   box-shadow: var(--form-shadow);
   transition: border-color .16s ease, box-shadow .16s ease, background-color .16s ease;
 }
-input::placeholder, textarea::placeholder {color: var(--theme-muted); opacity: .85}
-input:focus, select:focus, textarea:focus {
+input:not([data-slot='input'])::placeholder, textarea::placeholder {color: var(--theme-muted); opacity: .85}
+input:not([data-slot='input']):focus, select:focus, textarea:focus {
   outline: none;
   border-color: var(--theme-focus);
   box-shadow: 0 0 0 3px var(--theme-focus-ring);
 }
-/* 键盘聚焦给出可见描边：上面去掉了原生 outline，只剩淡环，强制高对比等模式下会看不出来。 */
-input:focus-visible, select:focus-visible, textarea:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 1px}
-input:disabled, select:disabled, textarea:disabled {
+/* 键盘聚焦给出可见描边：上面去掉了原生 outline，只剩淡环，强制高对比等模式下会看不出来 */
+input:not([data-slot='input']):focus-visible, select:focus-visible, textarea:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 1px}
+input:not([data-slot='input']):disabled, select:disabled, textarea:disabled {
   opacity: .55;
   cursor: not-allowed;
   -webkit-text-fill-color: currentColor;
 }
-input[readonly] {color: var(--theme-muted); box-shadow: none}
-input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] {
+input:not([data-slot='input'])[readonly] {color: var(--theme-muted); box-shadow: none}
+input:not([data-slot='input'])[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] {
   border-color: var(--theme-danger);
   background: color-mix(in srgb, var(--theme-danger) 4%, var(--theme-input-bg));
 }
-input[aria-invalid='true']:focus, select[aria-invalid='true']:focus, textarea[aria-invalid='true']:focus {
+input:not([data-slot='input'])[aria-invalid='true']:focus, select[aria-invalid='true']:focus, textarea[aria-invalid='true']:focus {
   box-shadow: 0 0 0 3px var(--theme-danger-soft);
 }
 
-/* 下拉框的触发器和展开列表共用主题，浏览器 select 只桥接变更事件。 */
-.select-control, .password-control {position: relative; display: inline-flex; min-width: 0; max-width: 100%; vertical-align: middle}
-.select-control > select {display: none}
-
-.field-control > .select-control, .field-control > .password-control {width: 100%; font-size: 13px}
-.password-control > input {width: 100%; padding-right: 44px !important}
-.password-reveal {position: absolute; right: 0; top: 0; bottom: 0; width: 42px; display: grid; place-items: center; color: var(--theme-muted); border-radius: var(--theme-radius-control)}
-.password-reveal:hover:not(:disabled) {color: var(--theme-accent)}
-.password-reveal:focus-visible {outline-offset: -4px}
-.form-stack label > .select-control, .form-stack label > .password-control, .login-card .password-control {width: 100%}
-
-/* 文件选择包在 label 里做成按钮：input 藏起来但仍可被 label 激活，label 也不再按字段那样竖排。
-   不能用 display:none —— 那会让 label 跳过激活，点击冒泡到 <dialog> 被当成点背景，弹窗会直接关掉。 */
+/* 文件选择包在 label 里做成按钮：input 藏起来但仍可被 label 激活，label 也不再按字段那样竖排
+   不能用 display:none —— 那会让 label 跳过激活，点击冒泡到 <dialog> 被当成点背景，弹窗会直接关掉 */
 .form-stack label.file-button {position: relative; display: inline-flex; flex-direction: row; align-items: center; align-self: flex-start; gap: 0; cursor: pointer}
 .form-stack label.file-button > input {position: absolute; width: 1px; height: 1px; opacity: 0}
 .input-icon {border-radius: var(--theme-radius-control); border-color: var(--form-edge); color: var(--theme-muted); box-shadow: var(--form-shadow); transition: border-color .16s, box-shadow .16s}
 .input-icon:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 .input-icon > input, .input-icon > input:focus {background: transparent; border: 0; box-shadow: none; outline: none; padding-left: 0}
 .field-control textarea {min-height: var(--form-height); font-family: var(--theme-font-sans); line-height: 1.9}
-.yaml-editor {border: 1px solid var(--form-edge); border-radius: var(--theme-radius-control); box-shadow: var(--form-shadow); overflow: hidden}
-.yaml-editor:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 .yaml-editor .cm-editor.cm-focused {outline: none}
-.yaml-editor[aria-invalid='true'] {border-color: var(--theme-danger)}
 
-/* 多选采用可点击的整行标签，选中状态同时通过勾选符号与颜色表达。 */
 .multi-options {gap: 6px; text-align: left}
-.multi-options .checkbox-control {gap: 9px; min-height: 36px; padding: 6px 10px; border: 1px solid transparent; border-radius: 9px; font-size: 13px; cursor: pointer; color: var(--theme-text)}
-.checkbox-control:has(:checked) {background: var(--theme-accent-soft)}
-.checkbox-control:has(:disabled) {opacity: .5; cursor: not-allowed}
-.checkbox-mark {position: relative; display: inline-flex; width: 18px; height: 18px; flex-shrink: 0}
-.checkbox-mark input[type='checkbox'] {appearance: none; width: 18px; height: 18px; min-height: 0; padding: 0; margin: 0; border: 1px solid var(--form-edge); border-radius: 5px; background: var(--theme-input-bg); cursor: inherit; opacity: 1}
-.checkbox-mark input:checked {background: var(--theme-primary-bg); border-color: var(--theme-primary-bg)}
-.checkbox-mark > svg {position: absolute; left: 2.5px; top: 2.5px; color: var(--theme-on-accent); pointer-events: none; visibility: hidden}
-.checkbox-mark:has(:checked) > svg {visibility: visible}
 input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height: 18px; min-height: 0; padding: 0}
 
-/* 开关的实际焦点及触控区域为 52×44，轨道由 ::before 画并在其中垂直居中。 */
+/* 开关的实际焦点及触控区域为 52×44，轨道由 ::before 画并在其中垂直居中 */
 .toggle {position: relative; width: 52px; height: 44px; padding: 0 3px; background: transparent; isolation: isolate}
 .toggle::before {content: ''; position: absolute; inset: 6px 0; border-radius: 999px; background: var(--theme-toggle-off); z-index: -1; transition: background-color .2s}
 .toggle.on {background: transparent}
@@ -89,17 +67,18 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .toggle:active:not(:disabled) > span {width: 29px}
 .toggle.on:active:not(:disabled) > span {transform: translateX(17px)}
 
+/* 按钮与编辑状态 */
 .button {min-height: var(--form-height-button); padding: 0 17px; line-height: 1.4; background: var(--theme-control-bg); border-color: var(--theme-border); box-shadow: var(--theme-control-shadow)}
 .button.primary, .button.danger {border-color: transparent}
 .button.subtle:not(.danger) {background: var(--theme-accent-soft); color: var(--theme-accent); border-color: transparent; box-shadow: none}
 .button svg, .icon-button svg, .text-button svg {stroke-width: 1.8}
 .button:disabled, .icon-button:disabled, .text-button:disabled {opacity: .45; filter: none; box-shadow: none}
-.edit-status {display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 5px; line-height: 1.5; overflow-wrap: anywhere}
-/* 状态文本变化时淡入，避免「等待连接 / 已保存」来回切换时抽一下。 */
-.edit-status-text {animation: edit-status-in .2s ease-out}
-@keyframes edit-status-in {from {opacity: 0} to {opacity: 1}}
-@media (prefers-reduced-motion: reduce) {.edit-status-text {animation: none}}
+/* 字段错误提示：只保留错误态，文字取红色。chip 是实底胶囊（规则见 components.css），
+   文案超宽时沿用侧栏任务名的灯带跑马灯（MarqueeText：双副本无缝循环、自动测宽、尊重动效偏好），
+   放得下或动效关闭时维持省略号截断 */
+.edit-status {display: flex; align-items: center; justify-content: flex-start; flex-wrap: nowrap; gap: 5px; line-height: 1.5; color: var(--red)}
 .edit-status > svg {flex-shrink: 0}
+.edit-status-text {flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .field-row-multiline .edit-status {justify-content: flex-start}
 .field-row {gap: 24px}
 .field-label p {line-height: 1.65}
@@ -107,9 +86,8 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .background-url-form {display: flex; flex-direction: column; gap: 8px; min-width: 0}
 .background-url-form > input {width: 100%}
 .background-url-actions {display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center}
-.background-url-actions > .select-control {width: 100%; min-width: 0}
-.background-url-actions > .button {white-space: nowrap}
-/* 主按钮整宽：与上面的地址列表、下面的直链框同宽，整块读起来是一列而不是散件。 */
+.background-url-actions > [data-slot='button'] {white-space: nowrap}
+/* 主按钮整宽：与上面的地址列表、下面的直链框同宽，整块读起来是一列而不是散件 */
 .background-apply {width: 100%}
 .background-upload {position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 76px; padding: 14px; border: 1px dashed var(--form-edge); border-radius: calc(var(--theme-radius-control) + 2px); background: color-mix(in srgb, var(--theme-input-bg) 88%, var(--theme-accent-soft)); cursor: pointer; overflow-wrap: anywhere; transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease}
 .background-upload:hover {border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-input-bg) 76%, var(--theme-accent-soft))}
@@ -123,10 +101,9 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .background-error {margin: 0; color: var(--theme-danger); font-size: 12px; line-height: 1.5}
 .statistics-controls select, .statistics-controls input {min-height: var(--form-height)}
 .statistics-table th button {display: inline-flex; align-items: center; gap: 6px; min-height: 32px}
-.nav-search:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
-.nav-search input, .nav-search input:focus {border: 0; background: transparent; box-shadow: none; outline: none; padding-left: 0}
 
-/* 原生滑块保留方向键、Home/End 和触控拖动。 */
+
+/* 原生滑块保留方向键、Home/End 和触控拖动 */
 input[type='range'] {appearance: none; width: 100%; min-height: 32px; margin: 0; padding: 0; border: 0; box-shadow: none; background: transparent; accent-color: var(--theme-primary-bg); cursor: pointer}
 input[type='range']::-webkit-slider-runnable-track {height: 5px; border-radius: 999px; background: var(--theme-input-border)}
 input[type='range']::-moz-range-track {height: 5px; border-radius: 999px; background: var(--theme-input-border)}
@@ -135,24 +112,19 @@ input[type='range']::-webkit-slider-thumb {appearance: none; height: 22px; width
 input[type='range']::-moz-range-thumb {height: 22px; width: 22px; border-radius: 50%; background: var(--theme-toggle-knob); border: 1px solid var(--theme-input-border); box-shadow: 0 2px 5px #0002}
 input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
 
+/* 悬停、触屏与强制色适配 */
 @media (hover: hover) {
-  .checkbox-control:hover:not(:has(:disabled)) {background: var(--theme-accent-soft)}
   .button:not(.primary):not(.danger):hover:not(:disabled) {background: var(--theme-accent-soft); color: var(--theme-accent); border-color: var(--theme-border)}
 }
 @media (max-width: 768px), (pointer: coarse) {
   :root {--form-height: 44px}
-  .field-control > .select-control, .field-control > .password-control, .select-trigger, .password-control input {font-size: 16px}
-  .multi-options .checkbox-control {min-height: 44px}
-  .password-reveal {width: 44px}
+  .select-trigger {font-size: 16px}
   .monitor-segmented button {min-height: 44px}
   .background-url-actions {grid-template-columns: minmax(0, 1fr) auto}
 }
 @media (forced-colors: active) {
   input, select, textarea, .button {border-color: ButtonText}
-  .select-trigger, .select-menu {border-color: ButtonText}
-  .select-option.is-active {background: Highlight; color: HighlightText}
-  .checkbox-mark input[type='checkbox'] {appearance: auto}
-  .checkbox-mark > svg {display: none}
+  .select-trigger {border-color: ButtonText}
   .toggle::before {background: Canvas; border: 1px solid ButtonText}
   .toggle.on::before {background: Highlight}
   .toggle > span {background: ButtonText}
@@ -161,52 +133,44 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   .background-upload-icon {border: 1px solid ButtonText}
 }
 
+/* 下拉触发器 */
 .select-trigger {display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; width: 100%; min-height: var(--form-height); padding: 9px 12px; border: 1px solid var(--form-edge); border-radius: var(--theme-radius-control); background: var(--theme-input-bg); color: var(--theme-input-text); line-height: 1.5; text-align: left; box-shadow: var(--form-shadow); transition: border-color .16s, box-shadow .16s}
 .select-trigger > span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .select-trigger > svg {color: var(--theme-muted)}
 .select-trigger:focus-visible, .select-trigger[aria-expanded='true'] {outline: none; border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 .select-trigger[aria-invalid='true'] {border-color: var(--theme-danger); background: var(--theme-danger-soft)}
 .select-trigger:disabled {cursor: not-allowed; opacity: .55}
-.select-menu {position: fixed; inset: auto; margin: 0; padding: 5px; box-sizing: border-box; border: 1px solid var(--theme-border); border-radius: 13px; background: var(--theme-surface); color: var(--theme-text); box-shadow: 0 12px 36px #0003, 0 2px 8px #0001; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; font: 13px/1.5 var(--theme-font-sans); text-align: left; z-index: 1000; zoom: 1}
-.select-menu::backdrop {background: transparent; pointer-events: none}
-.select-option {display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 7px 9px; border-radius: 8px; cursor: pointer; overflow-wrap: anywhere}
-.select-option > span {min-width: 0}
-.select-option > svg {color: var(--theme-accent); flex-shrink: 0}
-.select-option.is-active {background: var(--theme-accent-soft)}
-.select-option[aria-disabled='true'] {opacity: .45; cursor: not-allowed}
+
 @media (max-width: 768px), (pointer: coarse) {
-  .select-trigger, .select-menu {font-size: 16px}
-  .select-option {min-height: 44px}
+  .select-trigger {font-size: 16px}
 }
 @media (forced-colors: active) {
-  .select-trigger, .select-menu {border-color: ButtonText}
-  .select-option.is-active {background: Highlight; color: HighlightText}
-  .select-option > svg {color: currentColor}
+  .select-trigger {border-color: ButtonText}
 }
 
-/* 设置页的分段选择跟随主题的控件圆角；胶囊造型留给材质主题的监视器控件。 */
+/* 设置页的分段选择跟随主题的控件圆角；胶囊造型留给材质主题的监视器控件 */
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
 :root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
 
-/* 自定义外观的滑块行：滑块占满分到的宽度，当前值固定在右侧，数字用等宽字形避免抖动。 */
+/* 自定义外观的滑块行：滑块占满分到的宽度，当前值固定在右侧，数字用等宽字形避免抖动 */
 .knob-control {display: flex; align-items: center; gap: 12px}
 .knob-value {min-width: 56px; text-align: right; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums}
 
-/* 设置页的分段选择与上方选择框等宽、按钮等分。 */
+/* 设置页的分段选择与上方选择框等宽、按钮等分 */
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
 :root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {width: 100%}
 :root[data-theme='legacy-light'] .monitor-segmented.settings-segmented button,
 :root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
 
-/* 这一排是 标签 + 滑块 + 数值 + 还原，宽度不够时滑块被压得很短。 */
+/* 这一排是 标签 + 滑块 + 数值 + 还原，宽度不够时滑块被压得很短 */
 .material-detail-modal {width: min(960px, calc(100vw / var(--ui-scale) - 30px))}
 .material-detail-body {max-height: 58vh; overflow-y: auto; margin: 0 -4px; padding: 0 4px}
 .material-detail-body .field-row + .field-row {margin-top: 2px}
-/* 弹窗里的行要整行宽度：标签列窄且固定，控件列吃掉剩余。 */
+/* 弹窗里的行要整行宽度：标签列窄且固定，控件列吃掉剩余 */
 .material-detail-modal .field-row {display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 16px; padding: 9px 4px; border-bottom: 0}
 .material-detail-modal .field-label, .material-detail-modal .field-control {min-width: 0}
 .material-detail-modal .field-control {width: auto; text-align: left}
-/* 作用域芯片：一排可换行的独立按钮；分段控件在窄面板里一行装不下时只能横向滚动，看不出还有选项。 */
+/* 作用域芯片：一排可换行的独立按钮；分段控件在窄面板里一行装不下时只能横向滚动，看不出还有选项 */
 .material-scope-row {grid-template-columns: minmax(0, 1fr); row-gap: 8px}
 .material-scope-row > .field-control {display: block; width: 100%; max-width: none}
 .material-scope-chips {display: flex; flex-wrap: wrap; gap: 6px; width: 100%}
@@ -220,9 +184,9 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .scope-chip-dot {width: 5px; height: 5px; margin-left: 2px; border-radius: 50%; background: var(--theme-warning); flex-shrink: 0}
 .material-detail-modal .knob-control {display: flex; align-items: center; gap: 10px}
 .material-detail-modal .knob-row + .knob-row {border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent)}
-/* 滑块本身加高：整条都是可抓取区域，不必非要点中那个圆点。 */
+/* 滑块本身加高：整条都是可抓取区域，不必非要点中那个圆点 */
 .material-detail-body input[type='range'] {flex: 1 1 auto; min-height: 40px}
-/* 单项还原只用图标，按钮小一圈。 */
+/* 单项还原只用图标，按钮小一圈 */
 .knob-reset {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: var(--theme-radius-control); background: transparent; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
 .knob-reset:hover:not(:disabled) {color: var(--theme-accent); background: var(--theme-accent-soft)}
 .knob-reset:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
@@ -230,32 +194,22 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .knob-reset {white-space: nowrap}
 
 
-/* URL 模式的行列表：一行一条 API，行间虚线分隔，填满最后一行会自动长出下一行。 */
-/* 地址可以很多：给列表高度上限并滚动，避免十几行白色大块把整页撑满。 */
-.background-url-rows {display: flex; flex-direction: column; max-height: 264px; overflow-y: auto; border: 1px solid var(--form-edge); border-radius: var(--theme-radius-control); transition: border-color .16s ease, box-shadow .16s ease}
-.background-url-rows:focus-within {border-color: var(--theme-focus)}
-.background-url-row {display: flex; align-items: center; gap: 6px; padding: 1px 4px 1px 8px}
-.background-url-row + .background-url-row {border-top: 1px dashed color-mix(in srgb, var(--border) 75%, transparent)}
-/* 覆盖全局 input 的 min-height: 40px：一行一个地址时那太占高度，整栏会拉得很长。 */
-.background-url-row input {flex: 1 1 auto; min-width: 0; min-height: 26px; padding: 3px 8px; line-height: 1.4; border: 0; background: transparent; font-family: var(--theme-font-mono, monospace); font-size: 12px}
-.background-url-row input:focus-visible {outline: none}
-.background-url-row:focus-within {background: color-mix(in srgb, var(--accent) 6%, transparent)}
-.background-url-remove {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; flex: 0 0 26px; padding: 0; border: 0; border-radius: var(--theme-radius-control); background: transparent; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
-.background-url-remove:hover:not(:disabled) {color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent)}
-/* 与 .button.subtle 同一套语言：淡色底 + 强调色前景。 */
-.background-url-remove:active:not(:disabled) {background: color-mix(in srgb, var(--red) 18%, transparent)}
-.background-url-remove:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
-.background-url-remove:disabled {opacity: .5; cursor: default}
+/* URL 模式的行列表：一行一条 API，行间虚线分隔，填满最后一行会自动长出下一行 */
+/* 地址可以很多：给列表高度上限并滚动，避免十几行白色大块把整页撑满 */
+/* 地址行：每行就是标准输入框 + 删除按钮，不再套公共外框、不再剥输入框自己的边框；
+   留 3px 内边距，聚焦光圈不会被滚动容器裁掉 */
+.background-url-rows {display: flex; flex-direction: column; gap: 8px; max-height: 264px; overflow-y: auto; padding: 3px}
+.background-url-row {display: flex; align-items: center; gap: 6px}
+.background-url-row > input {flex: 1 1 auto; min-width: 0}
 .background-url-hint {margin-top: 6px; font-size: 12px; color: var(--theme-muted); line-height: 1.7}
-/* 直链行：显示解析出的真实图片地址，可打开、可存入图库。 */
+/* 直链行：显示解析出的真实图片地址，可打开、可存入图库 */
 .background-direct {display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--border) 75%, transparent)}
 .background-direct label {font-size: 12px; color: var(--theme-muted)}
-.background-direct input {width: 100%; min-height: var(--form-height); line-height: 1.4; font-family: var(--theme-font-mono, monospace); font-size: 12px}
-/* 等宽两列：块宽只有 260px 上下，三个按钮放不下会折行，所以只留「打开 / 存入图库」两个。 */
+.background-direct input {width: 100%}
+/* 等宽两列：块宽只有 260px 上下，三个按钮放不下会折行，所以只留「打开 / 存入图库」两个 */
 .background-direct-actions {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px}
-.background-direct-actions .button {padding: 0 8px; text-decoration: none}
 .background-direct-actions a[aria-disabled='true'] {opacity: .45; pointer-events: none}
-/* 本地图库：一次可传多张，列表里随机播一张。 */
+/* 本地图库：一次可传多张，列表里随机播一张 */
 .background-gallery {display: flex; flex-direction: column; gap: 10px}
 .background-gallery-head {display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--theme-muted)}
 .background-gallery-list {display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; margin: 0; padding: 0; list-style: none}
@@ -267,20 +221,14 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .background-gallery-name {flex: 1 1 auto; min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .background-gallery-head .button {font-size: 12px}
 
-/* 材质二级菜单：轨道给可见底、已填充走强调色；标签与数值提对比度与字号。 */
+/* 材质二级菜单：轨道给可见底、已填充走强调色；标签与数值提对比度与字号 */
 .material-detail-body input[type='range'] {background: linear-gradient(to right, var(--theme-accent) 0 var(--knob-fill, 0%), color-mix(in srgb, var(--theme-text) 24%, transparent) var(--knob-fill, 0%) 100%); background-size: 100% 6px; background-position: 0 center; background-repeat: no-repeat; border-radius: 999px}
 .material-detail-body input[type='range']::-webkit-slider-runnable-track {height: 6px; border-radius: 999px; background: transparent}
 .material-detail-body input[type='range']::-moz-range-track {height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--theme-text) 24%, transparent)}
 .material-detail-body input[type='range']::-moz-range-progress {height: 6px; border-radius: 999px; background: var(--theme-accent)}
 .material-detail-body input[type='range']::-webkit-slider-thumb {box-shadow: 0 0 0 1px color-mix(in srgb, var(--theme-text) 35%, transparent)}
-/* 作用域那一行整宽：标签独占一行，分页按钮并排一行（按钮等分宽度，不换行也不溢出）。 */
-.material-detail-modal .field-row:has(.material-detail-scope) {display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; row-gap: 6px}
-.material-detail-modal .field-row:has(.material-detail-scope) > .field-control {display: block; width: 100%; max-width: none}
-.material-detail-modal .material-detail-scope {flex-wrap: nowrap; width: 100%}
-.material-detail-modal .material-detail-scope button {flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px}
 .material-detail-modal .field-label label {color: var(--theme-text); font-size: 13px}
 .material-detail-modal .knob-value {color: var(--theme-text); font-size: 13px}
-.material-detail-modal .knob-region-title {font-size: 14px}
 
 /* 过滤器语法高亮编辑器（CodeMirror 6） */
 .filter-editor {
@@ -288,21 +236,21 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   width: 100%;
 }
 .filter-editor .cm-editor {
-  border: 0;
-  border-bottom: 1px solid var(--theme-input-border, var(--form-edge));
-  border-radius: 4px 4px 0 0;
-  background: var(--theme-input-bg);
-  color: var(--theme-input-text, var(--text));
-  font-family: var(--theme-font-mono, "JetBrains Mono", Consolas, monospace);
-  font-size: 13px;
-  line-height: 1.9;
-  min-height: 42px;
-  transition: border-bottom-color .2s cubic-bezier(.2, 0, 0, 1), background-color .2s cubic-bezier(.2, 0, 0, 1);
+  border: 1px solid var(--sc-input);
+  border-radius: calc(var(--sc-radius) - 2px);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 4rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: color .15s, box-shadow .15s;
   outline: none;
 }
 .filter-editor .cm-editor.cm-focused {
-  background: var(--accent-soft);
-  border-bottom: 2px solid var(--theme-focus);
+  border-color: var(--sc-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--sc-ring) 50%, transparent);
 }
 .filter-editor .cm-scroller {
   font-family: inherit;
@@ -310,7 +258,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   overflow-x: hidden;
 }
 .filter-editor .cm-content {
-  padding: 10px 14px;
+  padding: .5rem .75rem;
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -321,16 +269,16 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   border-left-color: var(--text);
 }
 .filter-editor.is-disabled .cm-editor {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
-  background: var(--surface-muted);
+}
+@media (min-width: 768px) {
+  .filter-editor .cm-editor {font-size: .875rem; line-height: 1.25rem}
 }
 
 /* 语法高亮 Token —— 核心控制与连接符 */
 .cm-filter-arrow {
   color: var(--accent);
-  font-weight: 700;
-  padding: 0 4px;
 }
 .cm-filter-delimiter {
   color: var(--muted);
@@ -338,56 +286,34 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 }
 .cm-filter-tier-marker {
   color: #7c3aed;
-  font-weight: 700;
-  background: color-mix(in srgb, #8b5cf6 18%, transparent);
-  border: 1px solid color-mix(in srgb, #8b5cf6 35%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-shortest {
   color: #b45309;
-  font-weight: 700;
-  background: color-mix(in srgb, #f59e0b 20%, transparent);
-  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-reset {
   color: #dc2626;
-  font-weight: 700;
-  background: color-mix(in srgb, #ef4444 18%, transparent);
-  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
-  border-radius: 4px;
-  padding: 0 5px;
 }
 .cm-filter-preset {
   color: #d97706;
-  font-weight: 600;
 }
 
 /* 语法高亮 Token —— 时间与数值 */
 .cm-filter-time {
   color: #2563eb;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 .cm-filter-number {
   color: #2563eb;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 /* 语法高亮 Token —— 委托系统 (Commission) */
-.cm-filter-comm {font-weight: 600}
-.cm-filter-comm-urgent {color: #e11d48; font-weight: 700}
-.cm-filter-comm-extra {color: #7c3aed; font-weight: 700}
+.cm-filter-comm-urgent {color: #e11d48;}
+.cm-filter-comm-extra {color: #7c3aed;}
 .cm-filter-comm-daily {color: #0284c7}
-.cm-filter-comm-major {color: #d97706; font-weight: 700}
+.cm-filter-comm-major {color: #d97706;}
 .cm-filter-comm-night {color: #4f46e5}
 
-.cm-filter-genre {font-weight: 600}
-.cm-filter-genre-gem {color: #e11d48; font-weight: 700}
-.cm-filter-genre-cube {color: #0284c7; font-weight: 700}
+.cm-filter-genre-gem {color: #e11d48;}
+.cm-filter-genre-cube {color: #0284c7;}
 .cm-filter-genre-oil {color: #b45309}
 .cm-filter-genre-drill {color: #475569}
 .cm-filter-genre-box {color: #ea580c}
@@ -400,90 +326,84 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .cm-filter-genre-ship {color: #059669}
 
 /* 语法高亮 Token —— 科研系统 (Research) */
-.cm-filter-series {color: #0284c7; font-weight: 600}
-.cm-filter-dr {color: #d97706; font-weight: 700}
-.cm-filter-pry {color: #9333ea; font-weight: 700}
-.cm-filter-genre-code {color: #0d9488; font-weight: 600}
-.cm-filter-ship {color: #059669; font-weight: 600}
+.cm-filter-series {color: #0284c7;}
+.cm-filter-dr {color: #d97706;}
+.cm-filter-pry {color: #9333ea;}
+.cm-filter-genre-code {color: #0d9488;}
+.cm-filter-ship {color: #059669;}
 
 /* 语法高亮 Token —— 商店与通用物品 */
-.cm-filter-shop-group {color: #6366f1; font-weight: 600}
-.cm-filter-shop-sub {color: #0d9488; font-weight: 600}
-.cm-filter-tier {color: #ea580c; font-weight: 600}
-.cm-filter-fleet {color: #0891b2; font-weight: 600}
-.cm-filter-stage {color: #3b82f6; font-weight: 600}
-.cm-filter-rarity {color: #8b5cf6; font-weight: 600}
-.cm-filter-item {color: var(--text); font-weight: 500}
+.cm-filter-shop-group {color: #6366f1;}
+.cm-filter-shop-sub {color: #0d9488;}
+.cm-filter-tier {color: #ea580c;}
+.cm-filter-fleet {color: #0891b2;}
+.cm-filter-stage {color: #3b82f6;}
+.cm-filter-rarity {color: #8b5cf6;}
+.cm-filter-item {color: var(--text);}
 
 /* 深色模式适配 */
-:root[data-theme='legacy-dark'] .cm-filter-tier-marker {
+:root.dark .cm-filter-tier-marker {
   color: #c084fc;
-  background: rgba(192, 132, 252, 0.2);
-  border-color: rgba(192, 132, 252, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-shortest {
+:root.dark .cm-filter-shortest {
   color: #fbbf24;
-  background: rgba(251, 191, 36, 0.2);
-  border-color: rgba(251, 191, 36, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-reset {
+:root.dark .cm-filter-reset {
   color: #f87171;
-  background: rgba(248, 113, 113, 0.2);
-  border-color: rgba(248, 113, 113, 0.4);
 }
-:root[data-theme='legacy-dark'] .cm-filter-time,
-:root[data-theme='legacy-dark'] .cm-filter-number {
+:root.dark .cm-filter-time,
+:root.dark .cm-filter-number {
   color: #60a5fa;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-urgent {
+:root.dark .cm-filter-comm-urgent {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-extra {
+:root.dark .cm-filter-comm-extra {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-daily {
+:root.dark .cm-filter-comm-daily {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-comm-major {
+:root.dark .cm-filter-comm-major {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-gem {
+:root.dark .cm-filter-genre-gem {
   color: #fb7185;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-cube {
+:root.dark .cm-filter-genre-cube {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-oil {
+:root.dark .cm-filter-genre-oil {
   color: #f59e0b;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-drill {
+:root.dark .cm-filter-genre-drill {
   color: #94a3b8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-box {
+:root.dark .cm-filter-genre-box {
   color: #fb923c;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-chip {
+:root.dark .cm-filter-genre-chip {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-part {
+:root.dark .cm-filter-genre-part {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-series {
+:root.dark .cm-filter-series {
   color: #38bdf8;
 }
-:root[data-theme='legacy-dark'] .cm-filter-dr {
+:root.dark .cm-filter-dr {
   color: #fbbf24;
 }
-:root[data-theme='legacy-dark'] .cm-filter-pry {
+:root.dark .cm-filter-pry {
   color: #c084fc;
 }
-:root[data-theme='legacy-dark'] .cm-filter-genre-code {
+:root.dark .cm-filter-genre-code {
   color: #2dd4bf;
 }
-:root[data-theme='legacy-dark'] .cm-filter-ship {
+:root.dark .cm-filter-ship {
   color: #34d399;
 }
-:root[data-theme='legacy-dark'] .cm-filter-tier {
+:root.dark .cm-filter-tier {
   color: #fb923c;
 }
 

@@ -9,7 +9,7 @@ import { useApp } from '../app/context'
 import { readDashboardPrefs, subscribeDashboardPrefs } from '../app/dashboardPrefs'
 import type { UiKey } from '../i18n'
 
-export const resourceLabels: Record<string, UiKey> = {Oil: 'resource.Oil', Coin: 'resource.Coin', Gem: 'resource.Gem', Cube: 'resource.Cube', Pt: 'resource.Pt', ActionPoint: 'resource.ActionPoint', YellowCoin: 'resource.YellowCoin', PurpleCoin: 'resource.PurpleCoin', Core: 'resource.Core', Medal: 'resource.Medal', Merit: 'resource.Merit', GuildCoin: 'resource.GuildCoin', Chip: 'resource.Chip', Distance: 'resource.Distance', ActionAsset: 'resource.ActionAsset'}
+const resourceLabels: Record<string, UiKey> = {Oil: 'resource.Oil', Coin: 'resource.Coin', Gem: 'resource.Gem', Cube: 'resource.Cube', Pt: 'resource.Pt', ActionPoint: 'resource.ActionPoint', YellowCoin: 'resource.YellowCoin', PurpleCoin: 'resource.PurpleCoin', Core: 'resource.Core', Medal: 'resource.Medal', Merit: 'resource.Merit', GuildCoin: 'resource.GuildCoin', Chip: 'resource.Chip', Distance: 'resource.Distance', ActionAsset: 'resource.ActionAsset'}
 const iconBase = import.meta.env.BASE_URL
 const iconImages: Record<string, string> = {
   Oil: `${iconBase}oil.webp`,
@@ -29,7 +29,7 @@ const iconImages: Record<string, string> = {
   ActionAsset: `${iconBase}action_asset.webp`,
 }
 
-/* 行动力越高换越大的狗图，四档从高到低取第一张命中的；未达第一档不换图。 */
+// 行动力越高换越大的狗图，四档从高到低取第一张命中的；未达第一档不换图。
 const dogIconTiers = [
   {threshold: 12000, icon: `${iconBase}dog_king.webp`},
   {threshold: 10000, icon: `${iconBase}dog_large.webp`},
@@ -37,6 +37,10 @@ const dogIconTiers = [
   {threshold: 6000, icon: `${iconBase}dog_small.webp`},
 ]
 
+/**
+ * 行动力卡片的狗头图：总行动力过档才给图标，档位从高到低取第一张命中的。
+ * record 为 2020-01-01 占位时间戳表示尚未真正同步过，此时不换图。
+ */
 export function actionPointDogIcon(resource?: Resource): string | undefined {
   if (!resource || resource.name !== 'ActionPoint') return undefined
   if (resource.record?.startsWith('2020-01-01')) return undefined
@@ -51,8 +55,10 @@ function ResourceIcon({resourceKey, size = 32, src}: {resourceKey: string; size?
   const imageSrc = src ?? iconImages[resourceKey]
   return imageSrc ? <img className="resource-icon-image" src={imageSrc} alt="" width={size} height={size} draggable={false}/> : <Box size={Math.round(size * .62)}/>
 }
+/** 仪表盘卡片的默认选择；「恢复默认」按钮写回的就是这份清单。 */
 export const defaultResourceKeys = ['Oil', 'Coin', 'Gem', 'Cube', 'Distance', 'ActionAsset']
 
+/** 返回把 fromKey 移到 toKey 原所在位置后的新顺序数组；两个键相同或任一不存在时原样返回。 */
 export function moveResourceKey(keys: string[], fromKey: string, toKey: string): string[] {
   if (fromKey === toKey) return keys
   const from = keys.indexOf(fromKey)
@@ -65,42 +71,12 @@ export function moveResourceKey(keys: string[], fromKey: string, toKey: string):
 }
 
 function ResourceValue({value, suffix}: {value: string; suffix?: string}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const contentRef = useRef<HTMLSpanElement>(null)
-
-  useLayoutEffect(() => {
-    const container = containerRef.current
-    const content = contentRef.current
-    if (!container || !content) return
-    const fit = () => {
-      const available = container.clientWidth
-      if (!available) return
-      // 先恢复主题字号测量，宽度增加或数字变短后也能恢复正常大小。
-      content.style.fontSize = '1em'
-      const natural = content.getBoundingClientRect().width
-      if (natural > available) content.style.fontSize = `${Math.max(0, available - 1) / natural}em`
-    }
-    fit()
-    let frame = 0
-    const observer = new ResizeObserver(() => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(fit)
-    })
-    observer.observe(container)
-    // 字体加载和主题切换也可能改变文字宽度。
-    observer.observe(content)
-    return () => {
-      observer.disconnect()
-      cancelAnimationFrame(frame)
-    }
-  }, [value, suffix])
-
-  return <div className="resource-value" ref={containerRef}>
-    <span className="resource-value-content" ref={contentRef}><span>{value}</span>{suffix && <small>/ {suffix}</small>}</span>
+  return <div className="resource-value">
+    <span className="resource-value-content"><span>{value}</span>{suffix && <small>/ {suffix}</small>}</span>
   </div>
 }
 
-/* 记录时间：当日给时分秒，跨日给月日与小时；超过一年标记为过久。 */
+// 记录时间：当日给时分秒，跨日给月日与小时；超过一年标记为过久。
 const RECORD_STALE_MS = 365 * 24 * 60 * 60 * 1000
 
 function recordText(value: string | undefined): {text: string; stale: boolean} {
@@ -114,17 +90,63 @@ function recordText(value: string | undefined): {text: string; stale: boolean} {
   return {text, stale: false}
 }
 
+/**
+ * 仪表盘资源卡片网格：按用户选定顺序渲染资源卡，支持合并大卡、卡片/文字自适应等偏好。
+ * @param resources 最近一次同步的资源快照；选定键里没有的按「等待同步」渲染。
+ * @param selected 展示的资源键，顺序即卡片排列顺序。
+ */
 export function ResourceCards({resources, selected}: {resources: Resource[]; selected: string[]}) {
   const {ui} = useApp()
   const prefs = useSyncExternalStore(subscribeDashboardPrefs, readDashboardPrefs, readDashboardPrefs)
   const gridRef = useRef<HTMLDivElement>(null)
   const mergedRef = useRef<HTMLDivElement>(null)
 
-  /* 卡片适应：按容器宽度算一行放得下几张，列数即「卡片数与一排容量」的较小者 ——
-     溢出到第二排以后时末排沿用第一排尺寸，总数不足一排时列数就等于卡片数因而仍均分。 */
   useLayoutEffect(() => {
     const grid = gridRef.current
-    /* 通用卡片把卡片包成一张大卡，列数要算在真正装卡片的那一层上。 */
+    if (!grid) return
+    const contents = [...grid.querySelectorAll<HTMLElement>('.resource-value-content')]
+    const fit = () => {
+      // 整组先读宽度、恢复主题字号，再量自然宽度并写入结果，避免逐卡触发同步布局。
+      const widths = contents.map(content => content.parentElement?.clientWidth ?? 0)
+      for (const content of contents) content.style.removeProperty('font-size')
+      const natural = contents.map(content => content.getBoundingClientRect().width)
+      const shrunk = contents.flatMap((content, index) => {
+        const width = widths[index]
+        if (width <= 0 || natural[index] <= width) return []
+        const scale = Math.max(0, width - 4) / natural[index]
+        content.style.fontSize = `${scale}em`
+        return [{content, width, scale}]
+      })
+      // 字形栅格化会使缩放后的字宽与比例估算有偏差，只对仍溢出的数值修正一次。
+      const rendered = shrunk.map(({content}) => content.getBoundingClientRect().width)
+      shrunk.forEach(({content, width, scale}, index) => {
+        if (rendered[index] > width) content.style.fontSize = `${scale * Math.max(0, width - 4) / rendered[index]}em`
+      })
+    }
+    fit()
+    let frame: number | undefined
+    const observer = new ResizeObserver(() => {
+      if (frame !== undefined) return
+      frame = requestAnimationFrame(() => {
+        frame = undefined
+        fit()
+      })
+    })
+    for (const content of contents) {
+      observer.observe(content)
+      if (content.parentElement) observer.observe(content.parentElement)
+    }
+    return () => {
+      observer.disconnect()
+      if (frame !== undefined) cancelAnimationFrame(frame)
+    }
+  }, [selected, prefs.merged])
+
+  // 卡片适应：按容器宽度算一行放得下几张，列数即「卡片数与一排容量」的较小者 ——
+  // 溢出到第二排以后时末排沿用第一排尺寸，总数不足一排时列数就等于卡片数因而仍均分。
+  useLayoutEffect(() => {
+    const grid = gridRef.current
+    // 通用卡片把卡片包成一张大卡，列数要算在真正装卡片的那一层上。
     const target = prefs.merged ? mergedRef.current : grid
     if (!grid || !target || !(prefs.fitCards || prefs.merged)) return
     const fit = () => {
@@ -143,6 +165,7 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
 
   const entries = selected.map((key, index) => {
     const resource = resources.find(item => item.name === key)
+    // record 为 2020-01-01 占位时间戳表示尚未真正同步过，按无记录处理。
     const recorded = resource?.record && !resource.record.startsWith('2020-01-01')
     const labelKey = resourceLabels[key]
     const label = labelKey ? ui(labelKey) : resource?.label ?? key
@@ -153,7 +176,7 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
     const value = resource?.value
     const currentText = recorded && value != null ? value.toLocaleString() : '—'
     const totalText = showTotal ? (total as number).toLocaleString() : undefined
-    /* 总行动力优先时总量与当前值互换；行动力以外的字段不受影响。 */
+    // 总行动力优先时总量与当前值互换；行动力以外的字段不受影响。
     const displayValue = prefs.totalFirst && totalText ? totalText : currentText
     const suffix = prefs.totalFirst && totalText ? currentText : recorded && showLimit ? limit.toLocaleString() : totalText
     const record = recordText(resource?.record)
@@ -167,7 +190,7 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
     prefs.fitText && 'resource-fit-text',
     prefs.dense && 'resource-dense'].filter(Boolean).join(' ')
 
-  /* 两种排法共用同一段卡片内部渲染，也都套在 .resource-card-body 里——那张二级面。 */
+  // 两种排法共用同一段卡片内部渲染，也都套在 .resource-card-body 里——那张二级面。
   const cardBody = (entry: typeof entries[number]) => <>
     <div className="resource-heading"><span>{entry.label}</span><div className="resource-image-wrap"><ResourceIcon resourceKey={entry.key} size={32} src={entry.iconSrc}/></div></div>
     <ResourceValue value={entry.displayValue} suffix={entry.suffix}/>
@@ -182,6 +205,10 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
       <div className="resource-card-body">{cardBody(entry)}</div>
     </section>)}</div>
 }
+/**
+ * 仪表盘卡片的编辑面板：上半是已选卡片的拖拽排序/移除列表，「添加」展开未展示资源的选择网格。
+ * 两个区可跨区拖动：拖进编辑区即加卡，拖出编辑区即移除。
+ */
 export function ResourceSettings({resources, selected, onChange}: {resources: Resource[]; selected: string[]; onChange: (keys: string[]) => void}) {
   const {ui} = useApp()
   const prefs = useSyncExternalStore(subscribeDashboardPrefs, readDashboardPrefs, readDashboardPrefs)
@@ -226,21 +253,21 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     return rects
   }
 
-  /* 换位动画的基准取布局位置：卡片身上的位移属于绘制结果，不是布局。 */
+  // 换位动画的基准取布局位置：卡片身上的位移属于绘制结果，不是布局。
   function captureLayout() {
     const positions = new Map<string, {left: number; top: number}>()
     editorRef.current?.querySelectorAll<HTMLElement>('[data-resource-key]').forEach(card => positions.set(card.dataset.resourceKey ?? '', {left: card.offsetLeft, top: card.offsetTop}))
     return positions
   }
 
-  /* 空位插进某一区会让它增减行、把另一区整块推移：这类变化不经过指针，布局一提交就要重算跟手。 */
+  // 空位插进某一区会让它增减行、把另一区整块推移：这类变化不经过指针，布局一提交就要重算跟手。
   useLayoutEffect(() => {
     if (pickerDragRef.current) followPickerPointer()
     if (dragAnchorRef.current) followPointer()
   }, [editorDropIndex, pickerDropIndex])
 
-  /* 跟手：卡片停在按下时的位置加指针位移处。减去卡片当前布局位置时要带上容器的视口原点——
-     跨区拖动会让容器增减行，未展示区随之整体位移，省掉这一段卡片就会错开一行。 */
+  // 跟手：卡片停在按下时的位置加指针位移处。减去卡片当前布局位置时要带上容器的视口原点——
+  // 跨区拖动会让容器增减行，未展示区随之整体位移，省掉这一段卡片就会错开一行。
   function moveCardTo(card: HTMLElement, viewportX: number, viewportY: number) {
     const origin = card.offsetParent instanceof HTMLElement ? card.offsetParent.getBoundingClientRect() : {left: 0, top: 0}
     card.style.transition = 'none'
@@ -259,7 +286,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     moveCardTo(start.card, start.left + start.movedX - start.x, start.top + start.movedY - start.y)
   }
 
-  /* 落点虚框钉在被拖卡片的格子上：卡片跟着指针走，虚框标出它会落在哪一格。 */
+  // 落点虚框钉在被拖卡片的格子上：卡片跟着指针走，虚框标出它会落在哪一格。
   function markDropFrame(frame: HTMLDivElement | null, card?: HTMLElement) {
     if (!frame) return
     if (!card) {frame.style.display = 'none'; return}
@@ -270,14 +297,14 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     frame.style.height = `${card.offsetHeight}px`
   }
 
-  /* 换位用 FLIP：重排后先把卡片移回原位，下一帧再放开，位移走独立的 translate 属性，
-     与拖起态的缩放互不覆盖；过渡结束后清掉内联值，落定不留痕迹。 */
+  // 换位用 FLIP：重排后先把卡片移回原位，下一帧再放开，位移走独立的 translate 属性，
+  // 与拖起态的缩放互不覆盖；过渡结束后清掉内联值，落定不留痕迹。
   useLayoutEffect(() => {
     const before = rectsRef.current
     const moved: HTMLElement[] = []
     editorRef.current?.querySelectorAll<HTMLElement>('[data-resource-key]').forEach(card => {
-      /* 被拖动的卡片不参与换位动画，改为按新布局重算跟手位移并重新捕获指针；
-         刚松手的那张只跳过动画。 */
+      // 被拖动的卡片不参与换位动画，改为按新布局重算跟手位移并重新捕获指针；
+      // 刚松手的那张只跳过动画。
       if (card.dataset.resourceKey === dragKeyRef.current) {
         followPointer()
         markDropFrame(editorFrameRef.current, card)
@@ -291,7 +318,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
       const dx = previous.left - card.offsetLeft
       const dy = previous.top - card.offsetTop
       if (!dx && !dy) return
-      /* 起点值瞬时到位，随后的放开才由过渡接管。 */
+      // 起点值瞬时到位，随后的放开才由过渡接管。
       card.style.transition = 'none'
       card.style.translate = `${dx}px ${dy}px`
       moved.push(card)
@@ -299,7 +326,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     rectsRef.current = captureLayout()
     releasedKeyRef.current = null
     if (!moved.length) return
-    /* 放开落在下一帧：中间隔着一次样式更新，过渡才会成立。 */
+    // 放开落在下一帧：中间隔着一次样式更新，过渡才会成立。
     framesRef.current.push(requestAnimationFrame(() => {
       framesRef.current.push(requestAnimationFrame(() => {
         moved.forEach(card => {
@@ -313,14 +340,14 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     }))
   }, [dragOrder, editorDropIndex])
 
-  /* 换位用 FLIP：重排后先把卡片移回原位，下一帧再放开，位移走独立的 translate 属性。
-     被拖动的卡片不参与换位动画，跟手位移由指针直接驱动。 */
+  // 换位用 FLIP：重排后先把卡片移回原位，下一帧再放开，位移走独立的 translate 属性。
+  // 被拖动的卡片不参与换位动画，跟手位移由指针直接驱动。
   useLayoutEffect(() => {
     const before = pickerRectsRef.current
     const moved: HTMLElement[] = []
     pickerGridRef.current?.querySelectorAll<HTMLElement>('[data-resource-key]').forEach(card => {
-      /* 被拖动的卡片不参与换位动画，改为按新布局重算跟手位移并重新捕获指针；
-         换位会移动这张卡的 DOM 节点，指针捕获随之丢失。 */
+      // 被拖动的卡片不参与换位动画，改为按新布局重算跟手位移并重新捕获指针；
+      // 换位会移动这张卡的 DOM 节点，指针捕获随之丢失。
       if (card.dataset.resourceKey === pickerDragRef.current) {
         followPickerPointer()
         markDropFrame(pickerFrameRef.current, card)
@@ -359,12 +386,12 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     framesRef.current = []
   }, [])
 
-  /* 上层把顺序写回同序后交还显示权：此时两边一致，DOM 不再变化。 */
+  // 上层把顺序写回同序后交还显示权：此时两边一致，DOM 不再变化。
   useEffect(() => {
     if (dragOrder && dragOrder.length === selected.length && dragOrder.every((key, index) => key === selected[index])) setDragOrder(null)
   }, [dragOrder, selected])
 
-  /* 未展示区与显示区同构：按下量一次布局与槽位，重排后按同一份快照算反向位移。 */
+  // 未展示区与显示区同构：按下量一次布局与槽位，重排后按同一份快照算反向位移。
   function capturePickerLayout() {
     const layout = new Map<string, {left: number; top: number}>()
     pickerGridRef.current?.querySelectorAll<HTMLElement>('[data-resource-key]').forEach(card => {
@@ -379,7 +406,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     })
   }
 
-  /* 加入显示区：给了落点就插到该位置，否则排到最后。 */
+  // 加入显示区：给了落点就插到该位置，否则排到最后。
   function add(key: string, index: number | null = null) {
     if (selected.includes(key)) return
     const next = [...selected]
@@ -398,18 +425,18 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     return x >= box.left && x <= box.right && y >= box.top && y <= box.bottom
   }
 
-  /* 是否落在容器内：容器在拖动期间会增减行而移动，这里按当前位置判，不用快照。 */
+  // 是否落在容器内：容器在拖动期间会增减行而移动，这里按当前位置判，不用快照。
   function inArea(element: Element | null | undefined, x: number, y: number) {
     return !!element && inside(boxOf(element), x, y)
   }
 
-  /* 跨区落点一律用按下时的快照：空位插进容器会让容器多一行，用实时位置判定会自己追自己。 */
+  // 跨区落点一律用按下时的快照：空位插进容器会让容器多一行，用实时位置判定会自己追自己。
   function captureEditorTargets() {
     const editor = editorRef.current
     return editor ? [...editor.querySelectorAll<HTMLElement>('[data-resource-key]')].map(boxOf) : null
   }
 
-  /* 落点：指针压在哪张卡上就插到它的位置，压在空白处则排到最后。 */
+  // 落点：指针压在哪张卡上就插到它的位置，压在空白处则排到最后。
   function editorDropTarget(x: number, y: number) {
     return pickerEditorRef.current ? dropIndexAt(pickerEditorRef.current, x, y) : displayed.length
   }
@@ -418,7 +445,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     return pickerTargetsRef.current ? dropIndexAt(pickerTargetsRef.current, x, y) : pickerShown.length
   }
 
-  /* 落点：取最近的那个格子，指针在它下半（同行在右半）时插到它后面；间隙按最近格子算，序号不会在格子与末尾之间来回跳。 */
+  // 落点：取最近的那个格子，指针在它下半（同行在右半）时插到它后面；间隙按最近格子算，序号不会在格子与末尾之间来回跳。
   function dropIndexAt(boxes: {left: number; top: number; right: number; bottom: number}[], x: number, y: number) {
     if (!boxes.length) return 0
     let best = 0
@@ -437,7 +464,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
   function finishDrag(pointerId: number, apply: boolean) {
     if (dragPointerRef.current !== pointerId) return
     const next = dragOrderRef.current
-    /* 松手结算：跟手的位移交回过渡，卡片滑入所在格子。 */
+    // 松手结算：跟手的位移交回过渡，卡片滑入所在格子。
     const anchor = dragAnchorRef.current
     if (anchor) {
       releasedKeyRef.current = anchor.key
@@ -456,7 +483,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
     setPickerDropIndex(null)
     markDropFrame(editorFrameRef.current)
     if (apply) {
-      /* 松手落在未展示区，这张卡就此移出仪表盘；其余情况按拖动后的顺序提交。 */
+      // 松手落在未展示区，这张卡就此移出仪表盘；其余情况按拖动后的顺序提交。
       const picker = editorRef.current?.parentElement?.querySelector('.resource-picker')
       const dropped = !!(anchor && inArea(picker, anchor.movedX, anchor.movedY))
       if (dropped) {
@@ -486,7 +513,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
             dragPointerRef.current = event.pointerId
             dragKeyRef.current = key
             dragOrderRef.current = [...selected]
-            /* 格子位置与各卡矩形都在按下时量一次：拖动期间卡片会重排，实时量会取到滞后一帧的 DOM。 */
+            // 格子位置与各卡矩形都在按下时量一次：拖动期间卡片会重排，实时量会取到滞后一帧的 DOM。
             const rects = captureRects()
             const cardBox = event.currentTarget.getBoundingClientRect()
             dragAnchorRef.current = {key, card: event.currentTarget, pointerX: event.clientX, pointerY: event.clientY, movedX: event.clientX, movedY: event.clientY, left: cardBox.left, top: cardBox.top}
@@ -564,7 +591,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
             const key = pickerDragRef.current
             pickerDragRef.current = null
             pickerStartRef.current = null
-            /* 交回过渡，卡片滑回原位。 */
+            // 交回过渡，卡片滑回原位。
             if (start) {start.card.style.transition = ''; start.card.style.translate = ''}
             pickerSlotsRef.current = []
             const editor = editorRef.current

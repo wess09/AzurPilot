@@ -25,6 +25,14 @@
   gap: 10px;
 }
 
+/* 空态副标题：引导文案贴在标题下，入口收敛到右上角主按钮 */
+.pairing-subtitle {
+  margin: -12px 0 20px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .pairing-header-icon {
   color: var(--accent, #269a81);
 }
@@ -40,7 +48,7 @@
   border-radius: 8px;
 }
 
-/* 未就绪提示（平整实底与细边框，拒绝突兀虚线） */
+/* 未就绪提示（平整实底与细边框，拒绝突兀虚线）：横向铺满卡片内容区 */
 .pairing-unready-notice {
   display: flex;
   align-items: center;
@@ -52,8 +60,7 @@
   border-radius: 12px;
   color: var(--muted);
   font-size: 13px;
-  margin: 0 auto 24px;
-  max-width: 560px;
+  margin: 0 0 24px;
   text-align: center;
 }
 
@@ -61,56 +68,17 @@
   margin: 0;
 }
 
-/* 尚未发起配对时的居中引导卡片 */
-.pairing-empty-lead {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
-  padding: 32px 24px;
-  background: var(--surface-muted, rgba(128, 128, 128, 0.04));
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  margin: 0 auto 24px;
-  max-width: 440px;
-}
-
-.pairing-empty-lead-icon {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
-  background: var(--accent-soft, rgba(38, 154, 129, 0.12));
-  color: var(--accent);
-  display: grid;
-  place-items: center;
-  margin-bottom: 4px;
-}
-
-.pairing-empty-lead h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.pairing-empty-lead p {
-  margin: 0 0 8px;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
 .pairing-session {
   width: 100%;
 }
 
-/* 主配对台（桌面端并排，移动端自适应上下折行） */
+/* 主配对台（桌面端并排，移动端自适应上下折行）：横向铺满卡片，不再居中收窄 */
 .pairing-stage {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 36px;
-  max-width: 680px;
-  margin: 0 auto 28px;
+  margin: 0 0 28px;
   width: 100%;
 }
 
@@ -125,6 +93,7 @@
   justify-content: center;
 }
 
+/* 二维码白底并留足 32px 静区（Quiet Zone），否则扫描器在深色主题下识别不稳 */
 .pairing-qr {
   box-sizing: border-box;
   width: 272px;
@@ -249,6 +218,7 @@
   color: var(--muted);
 }
 
+/* 窄屏：主配对台上下折行并整体居中 */
 @media (max-width: 768px) {
   .pairing-stage {
     flex-direction: column;
@@ -349,13 +319,12 @@
 
 /*
  * 已授权设备列表：
- * 与主会话区分隔 36px，宽度约束在 600px，居中对称对齐。
+ * 与主会话区分隔，横向铺满卡片内容区（不再收窄居中留大白）
  */
 .pairing-clients-section {
-  margin: 36px auto 0;
+  margin: 8px 0 0;
   padding-top: 24px;
   border-top: 1px solid var(--border);
-  max-width: 600px;
 }
 
 .pairing-clients-header {
@@ -452,27 +421,6 @@
   white-space: nowrap;
 }
 
-.pairing-device-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 10px;
-  font-weight: 500;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--accent-soft, rgba(38, 154, 129, 0.15));
-  color: var(--accent);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.pairing-device-badge .tiny-dot {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
 .pairing-device-meta {
   display: flex;
   align-items: center;
@@ -485,30 +433,31 @@
   flex-shrink: 0;
 }
 
+/* 移除配对：图标按钮，hover 转红底红字，明确破坏性语义 */
 .pairing-revoke-btn {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 6px;
+  justify-content: center;
+  border-radius: 7px;
   color: var(--muted);
   transition: all 0.15s ease;
 }
 
 .pairing-revoke-btn:hover {
   color: var(--red, #ef4444);
-  border-color: var(--red, #ef4444);
-  background: rgba(239, 68, 68, 0.08);
+  border-color: color-mix(in srgb, var(--red, #ef4444) 35%, transparent);
+  background: color-mix(in srgb, var(--red, #ef4444) 10%, transparent);
 }
 
-/* 在主题贴片边距之外保留 24px 底部留白，避免通用卡片样式覆盖。 */
+/* 在主题贴片边距之外保留 24px 底部留白，避免通用卡片样式覆盖 */
 .config-group.remote-pairing {
   padding-bottom: calc(var(--theme-plate-margin, 8px) + 24px);
 }
 
-/* 完整应用名在窄屏换行，保持配对操作和设备按钮可见。 */
+/* 完整应用名在窄屏换行，保持配对操作和设备按钮可见 */
 .remote-pairing .pairing-header {
   flex-wrap: wrap;
 }

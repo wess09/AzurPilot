@@ -39,6 +39,10 @@ import { REGIONS } from '../app/themeKnobs'
 import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 
+/**
+ * 全局材质检视器：把示例弹窗与菜单叠在真实页面上，直接调当前主题家族（THEME_FAMILY）的区域旋钮，写入即生效。
+ * 壁纸未开启时材质效果无从观察，因此面板顶部先给出一键开启默认壁纸的入口。
+ */
 export function MaterialInspector() {
   const inspector = useSyncExternalStore(subscribeMaterialInspector, getMaterialInspector, getMaterialInspector)
   const background = useSyncExternalStore(subscribeBackground, getBackground, getBackground)
@@ -128,6 +132,7 @@ export function MaterialInspector() {
               </div>
             </header>
 
+            {/* 材质调在真实页面上，壁纸关着时看不出毛玻璃效果，先给一键开启的入口 */}
             {!wallpaperActive && (
               <div
                 style={{
@@ -236,7 +241,7 @@ export function MaterialInspector() {
         )}
       </div>
 
-      {/* 测试用弹出菜单 (menu 区域) */}
+      {/* 测试用弹出菜单（menu 区域） */}
       {showMenu && (
         <div
           style={{
@@ -323,7 +328,7 @@ export function MaterialInspector() {
         </div>
       )}
 
-      {/* 测试用弹窗 (modal 区域) */}
+      {/* 测试用弹窗（modal 区域） */}
       {showModal && (
         <div
           style={{
@@ -397,6 +402,7 @@ export function MaterialInspector() {
     </>
   )
 
+  // 拿不到 document.body 时退回内联渲染，保证任何环境都能出结果。
   if (typeof document !== 'undefined' && document.body) {
     return createPortal(overlay, document.body)
   }

@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiClient } from './client'
+import { webSocketTransport } from './generated'
 
+/**
+ * 顶替全局 WebSocket 的桩：客户端在 connect() 里自建连接，测试经静态 `latest`
+ * 取到最新实例；`sent` 记录客户端发出的每条请求，`emit`/`emitBytes` 从服务端方向注入消息。
+ */
 class FakeSocket {
   static OPEN = 1
   static latest: FakeSocket
   readyState = 1
-  onmessage?: (event: {data: string}) => void
+  onmessage?: (event: {data: string | ArrayBuffer}) => void
   onclose?: () => void
   sent: Record<string, unknown>[] = []
   url: string
@@ -13,6 +18,7 @@ class FakeSocket {
   send(message: string) {this.sent.push(JSON.parse(message))}
   close() {this.readyState = 3; this.onclose?.()}
   emit(message: unknown) {this.onmessage?.({data: JSON.stringify(message)})}
+  emitBytes(bytes: ArrayBuffer) { this.onmessage?.({data: bytes}) }
 }
 
 describe('WebSocket 客户端', () => {
@@ -57,7 +63,7 @@ describe('WebSocket 客户端', () => {
     vi.stubGlobal('window', {location: {href: 'https://tunnel.example.com/example-peer-id/', protocol: 'https:'}})
     vi.stubGlobal('document', {baseURI: 'https://tunnel.example.com/example-peer-id/'})
     client.disconnect(); client = new ApiClient(); client.connect()
-    expect(FakeSocket.latest.url).toBe('wss://tunnel.example.com/example-peer-id/api/v1/ws')
+    expect(FakeSocket.latest.url).toBe('wss://tunnel.example.com/example-peer-id/api/v1/ws?channel=control')
   })
   it('保留校验失败的诊断详情供脚本编辑器定位行列', async () => {
     const request = client.request('system.ping', {})
@@ -101,5 +107,88 @@ describe('WebSocket 客户端', () => {
     await vi.advanceTimersByTimeAsync(0)
     expect(client.getSnapshot()).toBe('ready')
     expect(setItem).not.toHaveBeenCalled()
+  })
+
+  it('数据连接重组分片时操作请求仍能完成，重连后恢复订阅', async () => {
+    client.disconnect()
+    client = new ApiClient()
+    client.connect()
+    const session = (socket: FakeSocket, channel: string) => socket.emit({
+      v: 1, type: 'event', topic: 'session', seq: 1, data: {authRequired: false, channel},
+    })
+    const control = FakeSocket.latest
+    session(control, 'control')
+    const data = FakeSocket.latest
+    expect(data.url).toContain('channel=data')
+    session(data, 'data')
+    const subscription = client.request('events.subscribe', {instance: 'pilot', topics: ['instances', 'logs', 'preview']})
+    expect(control.sent.at(-1)?.params).toEqual({instance: 'pilot', topics: ['instances']})
+    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {instance: 'pilot'}})
+    await subscription
+    expect(data.sent.at(-1)?.params).toEqual({instance: 'pilot', topics: ['logs', 'preview']})
+    data.emit({v: 1, type: 'response', id: data.sent.at(-1)!.id, ok: true, result: {}})
+
+    const report = client.request('statistics.report', {instance: 'pilot'})
+    await Promise.resolve()
+    expect(data.sent.at(-1)?.method).toBe('statistics.report')
+    const result = '舰船数据'.repeat(14000)
+    const bytes = new TextEncoder().encode(JSON.stringify({
+      v: 1, type: 'response', id: data.sent.at(-1)!.id, ok: true, result,
+    }))
+    // 结果刻意超过单帧上限，按传输协议切成多片：每片首字节 1 表示末片、0 表示续片，
+    // 去掉旗标后的载荷不得超过 frameBytes - 1。
+    const chunks: Uint8Array<ArrayBuffer>[] = []
+    const chunkSize = webSocketTransport.frameBytes - 1
+    for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+      const content = bytes.subarray(offset, offset + chunkSize)
+      const part = new Uint8Array(content.length + 1)
+      part[0] = Number(offset + content.length === bytes.length)
+      part.set(content, 1)
+      chunks.push(part)
+    }
+    data.emitBytes(chunks[0].buffer)
+    const operation = client.request('scheduler.stop', {instance: 'pilot'})
+    expect(control.sent.at(-1)?.method).toBe('scheduler.stop')
+    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {status: 'stopped'}})
+    await expect(operation).resolves.toMatchObject({status: 'stopped'})
+    chunks.slice(1).forEach(part => data.emitBytes(part.buffer))
+    await expect(report).resolves.toBe(result)
+    const interrupted = client.request('statistics.report', {instance: 'pilot'})
+    await Promise.resolve()
+    data.close()
+    expect(client.getSnapshot()).toBe('ready')
+    await vi.advanceTimersByTimeAsync(2000)
+    const replacement = FakeSocket.latest
+    expect(replacement.url).toBe(data.url)
+    session(replacement, 'data')
+    expect(replacement.sent[0]).toMatchObject({method: 'events.subscribe', params: {
+      instance: 'pilot', topics: ['logs', 'preview'],
+    }})
+    await Promise.resolve()
+    expect(replacement.sent[1]?.method).toBe('statistics.report')
+    replacement.emit({v: 1, type: 'response', id: replacement.sent[1].id, ok: true, result: {series: []}})
+    await expect(interrupted).resolves.toEqual({series: []})
+  })
+
+  it('操作连接登录后，远程数据连接单独认证', async () => {
+    client.disconnect()
+    client = new ApiClient()
+    client.connect()
+    const control = FakeSocket.latest
+    control.emit({v: 1, type: 'event', topic: 'session', data: {authRequired: true, channel: 'control'}})
+    expect(FakeSocket.latest).toBe(control)
+    const login = client.login('测试访问密码')
+    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {authenticated: true}})
+    await login
+    const data = FakeSocket.latest
+    data.emit({v: 1, type: 'event', topic: 'session', data: {authRequired: true, channel: 'data'}})
+    expect(data.sent).toHaveLength(1)
+    expect(data.sent[0]).toMatchObject({method: 'auth.login', params: {password: '测试访问密码'}})
+    const read = client.request('config.get', {instance: 'pilot'})
+    data.emit({v: 1, type: 'response', id: data.sent[0].id, ok: true, result: {authenticated: true}})
+    await vi.advanceTimersByTimeAsync(0)
+    expect(data.sent[1]?.method).toBe('config.get')
+    data.emit({v: 1, type: 'response', id: data.sent[1].id, ok: true, result: {instance: 'pilot'}})
+    await expect(read).resolves.toEqual({instance: 'pilot'})
   })
 })

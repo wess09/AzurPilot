@@ -2,13 +2,13 @@
  * @fileoverview 预设与自定义配色方案计算、对比度判定与 CSS 变量生成。
  */
 export const palettes = ['ocean', 'forest', 'violet', 'sand', 'slate'] as const
-export type PresetPalette = typeof palettes[number]
+type PresetPalette = typeof palettes[number]
 export type Palette = PresetPalette | `custom:${string}`
 export const colorModes = ['auto', 'light', 'dark', 'terminal', 'retro-gray', 'retro-blue', 'retro-red'] as const
 export type ColorMode = typeof colorModes[number]
 
 export type ResolvedMode = 'light' | 'dark'
-export type BrandColors = {primary: string; secondary: string}
+type BrandColors = {primary: string; secondary: string}
 export type CustomPalette = {id: `custom:${string}`; primary: string; secondary: string}
 
 export const presetColors: Record<PresetPalette, Record<ResolvedMode, BrandColors>> = {
@@ -126,6 +126,7 @@ export function readCustomPalettes(value: string | null): CustomPalette[] {
   } catch { return [] }
 }
 
+/** 解析一个配色的品牌色：自定义配色按 id 优先，其次取预设的明暗版本，都没有则回落到 ocean。 */
 export function paletteColors(palette: Palette, custom: CustomPalette[], mode: ResolvedMode): BrandColors {
   const match = custom.find(item => item.id === palette)
   if (match) return {primary: match.primary, secondary: match.secondary}
@@ -136,11 +137,12 @@ function channels(color: string) {
   return [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16))
 }
 
-export function mixColor(color: string, background: string, weight: number): string {
+function mixColor(color: string, background: string, weight: number): string {
   const base = channels(background)
   return '#' + channels(color).map((value, index) => Math.round(value * weight + base[index] * (1 - weight)).toString(16).padStart(2, '0')).join('')
 }
 
+/** WCAG 的 sRGB 相对亮度：先做 gamma 展开，再按 Rec.709 系数加权。 */
 function luminance(color: string) {
   const rgb = channels(color).map(value => {
     const channel = value / 255
@@ -149,6 +151,7 @@ function luminance(color: string) {
   return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722
 }
 
+/** 按 WCAG 公式计算两色的对比度；readableColor 以 4.5（AA 正文标准）为达标线。 */
 export function contrastRatio(first: string, second: string): number {
   const a = luminance(first), b = luminance(second)
   return (Math.max(a, b) + .05) / (Math.min(a, b) + .05)
@@ -171,7 +174,7 @@ const brandBases = (mode: ResolvedMode) => ({
   mutedSurface: mode === 'dark' ? '#282f39' : '#edf2f7',
 })
 
-/** 只写强调色这一族：强调色、悬停、按压、浅底与前景字色。 */
+/** 只写强调色这一族：强调色、悬停、浅底与前景字色。 */
 function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: string, mode: ResolvedMode): Record<string, string> {
   const dark = mode === 'dark'
   const primary = readableColor(colors.primary, mutedSurface, mode)
@@ -179,7 +182,6 @@ function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: stri
   return {
     '--accent': primary,
     '--accent-hover': mixColor(primary, dark ? '#ffffff' : '#000000', .85),
-    '--accent-pressed': dark ? mixColor(primary, '#000000', .82) : mixColor(primary, '#000000', .70),
     '--accent-soft': mixColor(primary, surface, dark ? .12 : .07),
     '--secondary': secondary,
     '--secondary-soft': mixColor(secondary, surface, dark ? .12 : .07),
@@ -187,10 +189,10 @@ function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: stri
   }
 }
 
-/** 色板第一项跟随经典主题的原版强调色。 */
+/** 色板第一项跟随经典主题的原版强调色（组件库标准中性色）。 */
 export const stockBrands: Record<ResolvedMode, BrandColors> = {
-  light: {primary: '#005fb8', secondary: '#0078d4'},
-  dark: {primary: '#60cdff', secondary: '#4cc2ff'},
+  light: {primary: '#262626', secondary: '#525252'},
+  dark: {primary: '#e5e5e5', secondary: '#a3a3a3'},
 }
 
 /** 只改强调色一族，不碰中性色（表面/文字/边框归主题自己管）——材质与旧版要的就是这一份。 */

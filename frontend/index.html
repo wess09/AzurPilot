@@ -13,6 +13,25 @@
         document.write('<base href="' + location.pathname + '/">');
       }
     </script>
+    <script>
+      // 应用挂载前按上次会话的记录预载主题样式，避免默认主题先闪现再被皮肤覆盖。
+      // 插件停用或更新后旧链接会 404，应用挂载后写入的新记录会把缓存纠正回来。
+      // 插件管理页保持中性外观，不在该页预载。
+      try {
+        if (!/^#\/plugins$/.test(location.hash)) {
+          var apuCached = JSON.parse(localStorage.getItem('azurpilot.apu-styles') || 'null');
+          if (apuCached && typeof apuCached.id === 'string' && typeof apuCached.revision === 'string') {
+            Object.keys(apuCached.styles || {}).forEach(function (component) {
+              var link = document.createElement('link');
+              link.rel = 'stylesheet';
+              link.href = './api/v1/plugins/' + apuCached.id + '/' + apuCached.revision + '/' +
+                String(apuCached.styles[component]).split('/').map(encodeURIComponent).join('/') + '?component=' + component;
+              document.head.appendChild(link);
+            });
+          }
+        }
+      } catch (error) { /* 缓存不可用时交给应用按正常流程加载。 */ }
+    </script>
     <link rel="icon" type="image/webp" href="%BASE_URL%azurpilot.webp" />
     <title>AzurPilot</title>
     <script type="text/javascript">

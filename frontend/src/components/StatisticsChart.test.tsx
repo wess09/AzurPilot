@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
 import { translateUi } from '../i18n'
-import { StatisticsChart } from './StatisticsChart'
+import { StatisticsChart, bucketOptions } from './StatisticsChart'
 import type { StatSeries } from '../api/types'
 
 const context = {
@@ -86,38 +86,28 @@ describe('StatisticsChart 多数据源图表组件', () => {
     expect(html).toContain('行动力')
     expect(html).toContain('作战补给凭证')
     expect(html).toContain('特别兑换凭证')
-    expect(html).toContain('折线')
-    expect(html).toContain('K 线')
+    // Radix 在打开菜单后才挂载选项，静态渲染只检查入口；具体选项由浏览器测试覆盖。
+    expect(html).toContain('aria-label="图表类型"')
   })
 
   it('折线图模式下，采样粒度应包含“每次记录”且选项不重复', () => {
-    const html = renderToStaticMarkup(
-      <AppContext.Provider value={context}>
-        <StatisticsChart series={mockSeries} onToggleExpanded={() => {}}/>
-      </AppContext.Provider>,
-    )
+    const labels = bucketOptions(false, context.ui).map(option => option.label)
 
-    expect(html).toContain('每次记录')
-    expect(html).toContain('5 分钟')
-    expect(html).toContain('每小时')
-    expect(html).toContain('每天')
-    const hourlyMatches = html.match(/每小时/g)
-    expect(hourlyMatches).toHaveLength(1)
+    expect(labels).toContain('每次记录')
+    expect(labels).toContain('5 分钟')
+    expect(labels).toContain('每小时')
+    expect(labels).toContain('每天')
+    expect(labels.filter(label => label === '每小时')).toHaveLength(1)
   })
 
   it('K 线图模式下，采样粒度不应显示“每次记录”，且不应出现重复的“每小时”选项 (#1013)', () => {
-    const html = renderToStaticMarkup(
-      <AppContext.Provider value={context}>
-        <StatisticsChart series={mockSeries} initialMode="candlestick" onToggleExpanded={() => {}}/>
-      </AppContext.Provider>,
-    )
+    const labels = bucketOptions(true, context.ui).map(option => option.label)
 
-    expect(html).not.toContain('每次记录')
-    expect(html).toContain('5 分钟')
-    expect(html).toContain('每小时')
-    expect(html).toContain('每天')
-    const hourlyMatches = html.match(/每小时/g)
-    expect(hourlyMatches).toHaveLength(1)
+    expect(labels).not.toContain('每次记录')
+    expect(labels).toContain('5 分钟')
+    expect(labels).toContain('每小时')
+    expect(labels).toContain('每天')
+    expect(labels.filter(label => label === '每小时')).toHaveLength(1)
   })
 
   it('读取持久化偏好中保存的指标选择与采样粒度 (#1043)', async () => {
@@ -131,7 +121,7 @@ describe('StatisticsChart 多数据源图表组件', () => {
       </AppContext.Provider>,
     )
 
-    // 此时选中的是心智魔方，展示的芯片中心智魔方应处于 active 状态，而石油为非 active
+    // 此时选中的是心智魔方，展示的芯片中心智魔方应处于 active 状态，而石油为非 active。
     expect(html).toContain('心智魔方 (已启用，双击仅看此项)')
     expect(html).toContain('石油 (未启用，双击仅看此项)')
   })

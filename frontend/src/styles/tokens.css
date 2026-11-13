@@ -1,3 +1,4 @@
+/* 字体 */
 @font-face {
   font-family: 'JetBrains Mono';
   src: local('JetBrains Mono'), local('JetBrains Mono NL'), url('/JetBrainsMonoNL-Regular.woff2') format('woff2');
@@ -10,47 +11,45 @@
   font-display: swap;
 }
 
+/* 主题变量与基础排版 */
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  color: #1d1d1f; background: #f5f5f7; font-synthesis: none; text-rendering: optimizeLegibility;
+  color: var(--text); background: var(--bg); font-synthesis: none; text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --bg: #f5f5f7; --surface: #fff; --surface-muted: #f5f5f7; --text: #1d1d1f; --muted: #6e6e73;
-  --border: #e5e5ea; --accent: #0071e3; --accent-hover: #0062c4; --accent-soft: #e8f2ff;
-  /* 表格行分隔线。表格单元格没有自己的底，线是画在半透明贴片上的，
-     所以按文字色的低透明度派生：浅色下得到明确的黑灰、深色下得到明确的亮灰，两侧对比对称。 */
-  --theme-table-line: color-mix(in srgb, var(--text) 16%, transparent);
-  --theme-table-line-strong: color-mix(in srgb, var(--text) 24%, transparent);
-  --navy: #111f2e; --red: #c9342c; --radius: 20px; --shadow: 0 4px 24px #1d1d1f05;
+  /* 首帧兜底值：与 legacy-palette.css 的浅色取值保持一致，主题样式加载后会被覆盖 */
+  --bg: #ffffff; --surface: #fff; --surface-muted: #f5f5f5; --text: #262626; --muted: #737373;
+  --border: #e5e5e5; --accent: #262626; --accent-hover: #383838; --accent-soft: #f5f5f5;
+  --secondary: #525252; --secondary-soft: #f5f5f5;
+  --red: #e5484d; --radius: 20px; --shadow: 0 4px 24px #1d1d1f05;
   --sidebar: #fff; --sidebar-width: 240px; --right-rail-width: 320px;
   --topbar-height: 69px;
   --ui-scale: 1; --viewport-height: 100dvh;
-  --syntax-key: #126c9a; --syntax-string: #237342; --syntax-value: #96509e;
-  --syntax-comment: #72818a; --syntax-punctuation: #657581;
+  --syntax-key: var(--accent); --syntax-string: var(--secondary); --syntax-value: #a2591f;
+  --syntax-comment: var(--muted); --syntax-punctuation: var(--text);
   --theme-font-mono: "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace;
-  font-size: 14px;
 }
 
 * {box-sizing: border-box}
 body {margin: 0; color: var(--text); background: var(--bg)}
-button, input, select, textarea {font: inherit}
+button:not([data-slot]), input:not([data-slot]), select:not([data-slot]), textarea:not([data-slot]) {font: inherit}
 code, kbd, samp {font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace)}
 button, a, input, select, textarea {-webkit-tap-highlight-color: transparent}
 button, a {touch-action: manipulation}
-button {cursor: pointer; color: inherit}
-button:disabled {cursor: not-allowed; opacity: .5}
-a {color: inherit; text-decoration: none}
-button {border: 0; background: none}
-button:focus-visible, a:focus-visible, summary:focus-visible {outline: 2px solid var(--accent); outline-offset: 4px}
-input, select, textarea {border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; color: var(--text); background: var(--surface); min-width: 0; transition: border-color .15s}
-input:focus, select:focus, textarea:focus {outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
-input::placeholder {color: var(--muted)}
+button:not([data-slot]) {cursor: pointer; color: inherit}
+button:not([data-slot]):disabled {cursor: not-allowed; opacity: .5}
+a:not([data-slot]) {color: inherit; text-decoration: none}
+button:not([data-slot]) {border: 0; background: none}
+button:not([data-slot]):focus-visible, a:not([data-slot]):focus-visible, summary:focus-visible {outline: 2px solid var(--accent); outline-offset: 4px}
+input:not([data-slot]), select:not([data-slot]), textarea:not([data-slot]) {border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; color: var(--text); background: var(--surface); min-width: 0; transition: border-color .15s}
+input:not([data-slot]):focus, select:not([data-slot]):focus, textarea:not([data-slot]):focus {outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent)}
+input:not([data-slot])::placeholder {color: var(--muted)}
 input[type='checkbox'] {accent-color: var(--accent); width: 14px; height: 14px}
 h1, h2, h3, p {margin: 0}
 h1 {font-size: 30px; letter-spacing: -.8px; font-weight: 700; line-height: 1.3}
 h2 {font-size: 14px; font-weight: 650}
 small {font-size: 11px}
 svg {flex-shrink: 0; vertical-align: middle}
-/* 滚动条不显示也不占位：折叠会改变页面高度，占位一变内容宽度就会跟着跳。 */
+/* 滚动条不显示也不占位：折叠会改变页面高度，占位一变内容宽度就会跟着跳 */
 ::-webkit-scrollbar {width: 0; height: 0}
 ::-webkit-scrollbar-thumb {background: #95a5b73c; border-radius: 8px}
 .muted, .small-label {color: var(--muted)}
@@ -58,4 +57,5 @@ svg {flex-shrink: 0; vertical-align: middle}
 .spin {animation: spin 1.2s linear infinite}
 @keyframes spin {to {transform: rotate(360deg)}}
 
+/* 减少动态效果 */
 @media (prefers-reduced-motion: reduce) {*, *::before, *::after {animation: none !important; transition: none !important; scroll-behavior: auto !important}}

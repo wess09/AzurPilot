@@ -12,7 +12,7 @@ import { prefStore } from './prefStore'
  *
  * 与其它界面偏好一张存法：关掉再打开接着上次的样子，直到用户自己切回去。
  */
-export type OverviewPanel = 'logs' | 'stats'
+type OverviewPanel = 'logs' | 'stats'
 
 const store = prefStore<OverviewPanel>('azurpilot.legacy-overview-panel', raw => raw === 'stats' ? 'stats' : 'logs')
 

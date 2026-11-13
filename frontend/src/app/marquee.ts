@@ -11,7 +11,7 @@ const MARQUEE_SPEED = 40
 /** 时长下限：只溢出一两个字时也要看得清。 */
 const MARQUEE_MIN_SECONDS = 6
 
-export type MarqueePlan = { scrolling: boolean; shift: number; duration: number }
+type MarqueePlan = { scrolling: boolean; shift: number; duration: number }
 
 /** 位移取「一份文案宽 + 空隙」：滚过这一段，第二份正好落到第一份的位置，循环看不出接缝。 */
 export function marqueePlan(options: {
@@ -29,7 +29,7 @@ export function marqueePlan(options: {
 }
 
 /** 把灯带状态写进 DOM：标记落在容器上，位移/空隙/时长三个变量交给 CSS 消费。
-    返回是否在滚，调用方据此决定要不要放第二份文案。 */
+ * 返回是否在滚，调用方据此决定要不要放第二份文案。 */
 export function syncMarquee(container: HTMLElement | null, copy: HTMLElement | null): boolean {
   if (!container || !copy) return false
   const track = copy.parentElement

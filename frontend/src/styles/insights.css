@@ -14,17 +14,17 @@
 .resource-picker {margin-top:10px;padding:10px;border:1px solid color-mix(in srgb,var(--border) 76%,transparent);border-radius:16px;background:color-mix(in srgb,var(--surface-muted) 78%,var(--surface));box-shadow:inset 0 1px 0 #ffffff55}.resource-picker-grid {position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.resource-picker-card {min-width:0;min-height:50px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--text);font:inherit;font-size:12px;text-align:left;cursor:pointer;transition:background .15s,border-color .15s}.resource-picker-card>span:nth-child(2) {min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.resource-picker-card:hover {background:var(--surface);border-color:var(--border)}.resource-picker-card>svg {color:var(--accent);flex:0 0 auto}.resource-picker-empty {padding:14px;color:var(--muted);font-size:12px;text-align:center}
 .monitor-panel {min-width:0;overflow:hidden;display:flex;flex-direction:column}
 @media(min-width:951px) {
-  /* 外壳给确定高度，内层 height:100% 才解析得到；只设 min-height 时整条链按内容长。 */
-  .app-shell:has(.overview-page) {height: var(--viewport-height)}
-  /* 网格项的最小尺寸默认取内容高，归零后才受外壳高度约束。 */
-  .app-shell:has(.overview-page) .main-shell {min-height: 0}
-  /* 高度取父级 100%：外壳没给确定高度时它会退化成 auto。flex-basis 会盖过 height，所以不参与伸缩。 */
+  /* 外壳给确定高度，内层 height:100% 才解析得到；只设 min-height 时整条链按内容长 */
+  .app-shell:where(.modern-shell).mock-preview-shell {height: var(--viewport-height)}
+  /* 网格项的最小尺寸默认取内容高，归零后才受外壳高度约束 */
+  .app-shell:where(.modern-shell).mock-preview-shell > .main-shell:where(.modern-shell *) {min-height: 0}
+  /* 高度取父级 100%：外壳没给确定高度时它会退化成 auto；flex-basis 会盖过 height，所以不参与伸缩 */
   .overview-page {display:flex;flex-direction:column;flex:0 0 auto;height:100%;min-height:0;width:100%}
-  /* 总览日志必须按父容器的剩余高度收缩，溢出交给 .log-content 内部滚动。
-     basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；旧版总览也会被这条全局规则误伤。 */
+  /* 总览日志必须按父容器的剩余高度收缩，溢出交给 .log-content 内部滚动
+     basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；旧版总览也会被这条全局规则误伤 */
   .overview-page .monitor-panel,
   .instance-page-panel > .monitor-panel {flex:1 1 0;height:auto;min-height:0}
-}.task-state.running {color:#159b88;background:#159b881a;font-weight:700}.task-state.waiting {color:var(--muted)}
+}
 .monitor-tabs {display:flex;flex-direction:row;align-items:center;border-bottom:1px solid var(--border);padding:0 18px;gap:6px;flex-shrink:0;height:49px;box-sizing:border-box}
 .monitor-tabs button {display:inline-flex;align-items:center;gap:8px;padding:0 16px;height:100%;background:none;border:0;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;box-sizing:border-box}
 .monitor-tabs button[aria-selected=true] {color:var(--text);border-bottom-color:#159b88}
@@ -34,26 +34,26 @@
 .monitor-view[hidden] {display:none !important}
 .monitor-view:not([hidden]) {flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .monitor-panel .log-panel {display:flex;flex-direction:column;flex:1;min-height:0;height:100%}
-/* 趋势与细节整块共用一张二级贴片：自表头始、到末尾标注止，中间不再断开。
-   面板留出 --theme-plate-margin 的边距让贴片与一级底片之间露出层次；子元素各自的面全部撤掉，否则贴片会被切成两段。 */
+/* 趋势与细节整块共用一张二级贴片：自表头始、到末尾标注止，中间不再断开
+   面板留出 --theme-plate-margin 的边距让贴片与一级底片之间露出层次；子元素各自的面全部撤掉，否则贴片会被切成两段 */
 .panel.statistics-chart {position: relative; isolation: isolate; padding: var(--theme-plate-margin, 8px);
   --plate-edge: var(--theme-plate-margin, 8px); --plate-top: var(--plate-edge); --plate-bottom: var(--plate-edge);
   --plate-radius: calc(var(--theme-radius-panel, 26px) - var(--plate-edge));
   --plate-top-radius: var(--plate-radius); --plate-bottom-radius: var(--plate-radius)}
-/* 二级贴片圆角 = 一级底圆角 − 贴片边距（同心圆），否则内层看起来比外层更尖。 */
+/* 二级贴片圆角 = 一级底圆角 − 贴片边距（同心圆），否则内层看起来比外层更尖 */
 .panel.statistics-chart::before {content: ''; position: absolute; inset: var(--plate-top) var(--plate-edge) var(--plate-bottom); border-radius: var(--plate-top-radius) var(--plate-top-radius) var(--plate-bottom-radius) var(--plate-bottom-radius); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 .panel.statistics-chart > * {position: relative}
 /* 绘图区的三级面：含坐标轴、轴数字与底部时间滑块（滑块画在 canvas 内），所以只能整块给画布，
-   而不是只填轴内。圆角矩形，与二级贴片之间再留一点边距。 */
+   而不是只填轴内；圆角矩形，与二级贴片之间再留一点边距 */
 .panel.statistics-chart .chart-canvas {margin: 0; border-radius: var(--theme-inset-radius); background: var(--theme-inset-bg); -webkit-backdrop-filter: var(--theme-inset-filter); backdrop-filter: var(--theme-inset-filter)}
 /* 三级面与二级贴片的边距靠 plot 的内边距给：画布按 100% 宽算，给它 margin 只会把画布整体推偏、右侧溢出；
-   文字由各子元素自身的 22px 内边距定位，plot 用 23px 让三级面与它们站在同一条线上。 */
+   文字由各子元素自身的 22px 内边距定位，plot 用 23px 让三级面与它们站在同一条线上 */
 .panel.statistics-chart > .statistics-chart-plot {padding: 0 23px}
 .panel.statistics-chart > .statistics-controls {background: none; -webkit-backdrop-filter: none; backdrop-filter: none}
 .statistics-table, .log-panel {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-/* 数据来源表同样留出微弱边距并带微弱圆角，与趋势图那块保持同一种层次。 */
+/* 数据来源表同样留出微弱边距并带微弱圆角，与趋势图那块保持同一种层次 */
 .statistics-table {margin: 8px; border-radius: calc(var(--theme-radius-panel, 26px) - 8px); overflow: hidden}
-/* 链内相邻时二级层在接缝处相连，不再各留 8px 边距。 */
+/* 链内相邻时二级层在接缝处相连，不再各留 8px 边距 */
 .stat-card-chain > *:not(:last-child):not(:has(+ .stat-card-seam:last-child:not(.is-linked))) .statistics-table {margin-bottom:0;border-bottom-left-radius:0;border-bottom-right-radius:0}
 .stat-card-chain > *:not(:first-child) .statistics-table {margin-top:0;border-top-left-radius:0;border-top-right-radius:0}
 .monitor-panel .log-filters {flex-shrink:0;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--border)}.monitor-panel .log-filters input {min-width:0}
@@ -67,77 +67,77 @@
 .monitor-panel .preview-screen {flex:0 0 auto;aspect-ratio:16/9;width:calc(100% - 32px);max-height:calc(100% - 32px);height:auto;margin:auto auto 16px;position:relative;border-radius:7px;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .monitor-panel .preview-screen img {width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
 @supports (container-type: size) {
-  /* 日志条压缩了上方空间，用容器高度反推 16:9 的宽度，画面才不会被压成两侧留黑边的信箱形。 */
+  /* 日志条压缩了上方空间，用容器高度反推 16:9 的宽度，画面才不会被压成两侧留黑边的信箱形 */
   .monitor-panel .preview-stage {container-type:size}
   .monitor-panel .preview-screen {width:min(calc(100% - 32px),calc((100cqh - 32px)*16/9));max-height:none}
 }
 /* 周期控件条是紧贴下方卡片的一行小标题，不是卡片：它只是沿用了 .statistics-controls 的排版，
-   所以它自己不拿面。 */
+   所以它自己不拿面 */
 .statistics-controls.period-controls {background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0}
-.statistics-controls {display:flex;flex-wrap:wrap;align-items:end;gap:14px;padding:18px 22px;background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);border-radius:var(--theme-plate-radius)}.statistics-controls label {display:flex;flex-direction:column;gap:7px;font-size:11px;color:var(--muted)}.statistics-controls select,.statistics-controls input {max-width:200px;min-height:34px}.period-controls {padding:0 0 18px;align-items:center}.period-controls strong {margin-right:auto}.period-controls > span {font-size:12px;color:var(--muted);flex-basis:100%}
-/* 图表底部工具栏：没有面，与嵌面之间不画分隔线，靠内边距分开。 */
+.statistics-controls {display:flex;flex-wrap:wrap;align-items:end;gap:14px;padding:18px 22px;background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);border-radius:var(--theme-plate-radius)}.statistics-controls label {display:flex;flex-direction:column;gap:7px;font-size:11px;color:var(--muted)}.statistics-controls select,.statistics-controls input {max-width:200px;min-height:34px}.period-controls {padding:0 0 18px;align-items:center}.period-controls > span {font-size:12px;color:var(--muted);flex-basis:100%}
+/* 图表底部工具栏：没有面，与嵌面之间不画分隔线，靠内边距分开 */
 .statistics-chart .statistics-controls {display:flex; flex-wrap:wrap; align-items:flex-end; gap:16px; padding:14px 22px; background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; border-radius:0; border-top:none}
 .statistics-chart .statistics-controls label {display:flex; flex-direction:column; gap:6px; font-size:11px; color:var(--muted); font-weight:500}
 .statistics-chart .statistics-controls select, .statistics-chart .statistics-controls input {max-width:200px; min-height:34px}
 .statistics-chart .panel-note {border-top:none; padding:0 22px 14px; margin:0; color:var(--muted); font-size:11px; line-height:1.5}
-/* 月份格没有上方标签，与同排带标签的控件按底边对齐，两者的下边框落在同一条水平线上。 */
+/* 月份格没有上方标签，与同排带标签的控件按底边对齐，两者的下边框落在同一条水平线上 */
 .period-controls .statistics-inline-control:has(input) {align-self:flex-end}
-/* 卡片外壳：折叠开关与标题行右侧的按钮成组；没有标题行的卡片用角落开关，并给它留出一条带。 */
+/* 卡片外壳：折叠开关与标题行右侧的按钮成组；没有标题行的卡片用角落开关，并给它留出一条带 */
 .stat-card {position:relative}
 .stat-card-actions {display:flex;align-items:center;gap:10px}
 .stat-card-fold {display:inline-flex;align-items:center;color:var(--theme-muted)}
 .stat-card-fold svg {transition:transform .18s}
-/* 图表自身的折叠开关浮在画布左上角，左边与标题文字对齐；右上角被图表工具栏占着。 */
+/* 图表自身的折叠开关浮在画布左上角，左边与标题文字对齐；右上角被图表工具栏占着 */
 .statistics-chart-plot .stat-card-fold.is-corner {top:6px;left:22px;right:auto;z-index:2}
 .stat-card-fold.is-corner {position:absolute;top:4px;right:8px;width:24px;min-height:24px;height:24px;padding:0;justify-content:center}
-/* 卡片折叠后只剩一条，右侧居中的折叠键要给右上角的隐藏键让位，否则两者重叠。 */
+/* 卡片折叠后只剩一条，右侧居中的折叠键要给右上角的隐藏键让位，否则两者重叠 */
 .stat-card.is-folded .stat-card-fold svg,
 .stat-card.is-plot-folded .statistics-chart-plot .stat-card-fold svg {transform:rotate(-90deg)}
-/* 折叠只收各卡片自己那一段：表格收表体，容器内的其它卡片不受牵连。 */
+/* 折叠只收各卡片自己那一段：表格收表体，容器内的其它卡片不受牵连 */
 .stat-card.is-folded > .panel > .stat-metrics,
 .stat-card.is-folded > .statistics-table > :not(.panel-heading),
 .stat-card.is-folded > .panel > .statistics-table > :not(.panel-heading),
-/* 标题栏的折叠收整张图表卡的内容。 */
+/* 标题栏的折叠收整张图表卡的内容 */
 .stat-card.is-folded > .panel.statistics-chart > *:not(.panel-heading):not(.stat-card) {display:none}
-/* 图表自身的折叠只收画布与图表说明：指标条、摘要卡与配置栏保留，收起后仍留出箭头的位置。 */
+/* 图表自身的折叠只收画布与图表说明：指标条、摘要卡与配置栏保留，收起后仍留出箭头的位置 */
 .statistics-chart-plot {position:relative}
 .stat-card.is-plot-folded .statistics-chart-plot {height:34px}
 .stat-card.is-plot-folded .statistics-chart-plot > .chart-canvas,
 .stat-card.is-plot-folded > .panel.statistics-chart > .panel-note {display:none}
 
-/* 编辑模式下折叠的卡片至少要放得下左侧那一列控件，控件保持竖排。 */
+/* 编辑模式下折叠的卡片至少要放得下左侧那一列控件，控件保持竖排 */
 .statistics-sections.is-editing .stat-card.is-folded {min-height:84px}
-/* 编辑模式：控件贴在卡片左上角、与标题行齐平；上移在上、把手居中、下移在下。 */
+/* 编辑模式：控件贴在卡片左上角、与标题行齐平；上移在上、把手居中、下移在下 */
 .stat-card-edit-bar {position:absolute;left:6px;top:6px;z-index:3;display:flex;flex-direction:column;align-items:center;gap:2px}
-/* 卡片折叠后只有一条，左侧控件收成 22px 见方，容纳在卡片高度内。 */
+/* 卡片折叠后只有一条，左侧控件收成 22px 见方，容纳在卡片高度内 */
 .stat-card-edit-bar .text-button {width:24px;min-height:22px;height:22px;padding:0;justify-content:center;border-radius:4px;color:var(--muted);transition:color .15s ease, background .15s ease}
 .stat-card-edit-bar .text-button:hover:not(:disabled) {color:var(--accent);background:var(--accent-soft)}
 .stat-card-drag-handle {display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;padding:0;border:0;border-radius:4px;background:transparent;color:var(--muted);cursor:grab;touch-action:none;transition:color .15s ease, background .15s ease}
 .stat-card-drag-handle:hover {color:var(--accent);background:var(--accent-soft)}
 .stat-card-drag-handle:active {cursor:grabbing}
-/* 编辑模式下标题行让出左侧控件占用的宽度。 */
+/* 编辑模式下标题行让出左侧控件占用的宽度 */
 .statistics-sections.is-editing .stat-card .panel-heading {padding-left:34px}
 .stat-card.is-drop-before::before,
 .stat-card.is-drop-after::after {content:'';position:absolute;left:0;right:0;height:2px;border-radius:2px;background:var(--accent)}
 .stat-card.is-drop-before::before {top:-2px}
 .stat-card.is-drop-after::after {bottom:-2px}
 
-/* 相邻卡片之间的组合开关：未连接是加号，已连接是竖线；点它连接或拆开。 */
+/* 相邻卡片之间的组合开关：未连接是加号，已连接是竖线；点它连接或拆开 */
 .stat-card-junction {position:absolute;top:100%;bottom:auto;left:50%;z-index:4;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;min-width:26px;min-height:26px;padding:0;margin-top:var(--card-gap,14px);transform:translate(-50%,-50%);background:none;color:var(--theme-text);cursor:pointer}
 .stat-card-junction:hover {color:var(--accent);transform:translate(-50%,-50%) scale(1.1)}
-/* 连接符所在卡片抬到相邻卡片之上，交界处的连接符才不会被下一张卡盖住。 */
+/* 连接符所在卡片抬到相邻卡片之上，交界处的连接符才不会被下一张卡盖住 */
 .stat-card:has(.stat-card-junction) {position:relative;z-index:2}
 .stat-card-bar {width:2px;height:26px;border-radius:2px;background:currentColor}
-/* 组合成链后整条链共用一张一级底。相邻两张卡各自渲染毛玻璃时，两侧的 backdrop-filter
-   都在自己盒子的边缘采样，接缝处必然留下一条边缘伪影（与模糊度无关）。
-   边框不挪到链上：各 panel 自己的边框保留，左右边框天然连成一线，几何完全不变。 */
+/* 组合成链后整条链共用一张一级底；相邻两张卡各自渲染毛玻璃时，两侧的 backdrop-filter
+   都在自己盒子的边缘采样，接缝处必然留下一条边缘伪影（与模糊度无关）
+   边框不挪到链上：各 panel 自己的边框保留，左右边框天然连成一线，几何完全不变 */
 .stat-card-chain {display:flex;flex-direction:column;position:relative;isolation:isolate;overflow:hidden;
   border-radius:var(--theme-radius-panel,26px);box-shadow:var(--shadow);--card-gap:14px}
-/* 一级底与二级层都画在伪元素上：链尾的接缝条不该被表面覆盖时，两层要能各自收边。 */
+/* 一级底与二级层都画在伪元素上：链尾的接缝条不该被表面覆盖时，两层要能各自收边 */
 .stat-card-chain::after {content:'';position:absolute;inset:0;border-radius:inherit;
   background:var(--theme-surface-bg);-webkit-backdrop-filter:var(--theme-surface-filter);backdrop-filter:var(--theme-surface-filter);z-index:0}
 .stat-card-chain > * > .panel {background:none;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none}
-/* 二级层同样要在链上合成一张：只结合一级层时，各卡自己的二级面仍在接缝处各自渲染毛玻璃，伪影照旧。 */
+/* 二级层同样要在链上合成一张：只结合一级层时，各卡自己的二级面仍在接缝处各自渲染毛玻璃，伪影照旧 */
 .stat-card-chain::before {content:'';position:absolute;inset:8px;border-radius:calc(var(--theme-radius-panel,26px) - 8px);background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);z-index:1}
 .stat-card-chain > * {position:relative;z-index:2}
 .stat-card-chain:has(> .stat-card-seam:last-child:not(.is-linked)):not(:has(> .stat-card-seam:last-child > .stat-card-hidden))::after {bottom:calc(var(--card-gap) * 2)}
@@ -146,31 +146,31 @@
 .stat-card-chain .panel.summary-metrics-panel::before,
 .stat-card-chain .statistics-table {background:none;-webkit-backdrop-filter:none;backdrop-filter:none}
 .stat-card-chain > *:not(:first-child) > .panel {margin-top:0;border-top-left-radius:0;border-top-right-radius:0;border-top-color:transparent}
-/* 朝下连接处：抹圆角、去边框、二级层边距归零，三件事共用一个条件。
-   链尾后面只剩一条未连接的接缝条时，那张卡就是链尾，不参与连接。 */
+/* 朝下连接处：抹圆角、去边框、二级层边距归零，三件事共用一个条件
+   链尾后面只剩一条未连接的接缝条时，那张卡就是链尾，不参与连接 */
 .stat-card-chain > *:not(:last-child):not(:has(+ .stat-card-seam:last-child:not(.is-linked))) > .panel {border-bottom-left-radius:0;border-bottom-right-radius:0;border-bottom-color:transparent}
 .stat-card-chain .stat-card-junction.is-linked {margin-top:0}
 .stat-card-chain > *:not(:last-child):not(:has(+ .stat-card-seam:last-child:not(.is-linked))) > .panel.statistics-chart {--plate-bottom:0;--plate-bottom-radius:0}
 .stat-card-chain > *:not(:first-child) > .panel.statistics-chart {--plate-top:0;--plate-top-radius:0;border-top-color:transparent}
 
-/* 编辑模式下的隐藏入口在卡片右上角；隐藏后整卡消失，只留一条可恢复的占位条。 */
+/* 编辑模式下的隐藏入口在卡片右上角；隐藏后整卡消失，只留一条可恢复的占位条 */
 .stat-card-hide {position:absolute;top:6px;right:6px;z-index:4}
 .stat-card-hidden {position:relative;display:flex;align-items:center;justify-content:flex-end;gap:6px;min-height:22px;padding-right:6px;color:var(--muted)}
 .stat-card-hidden .stat-card-junction {top:50%;bottom:auto;margin:0;transform:translate(-50%,-50%)}
 .stat-card.is-folded > .panel.statistics-chart,
 .stat-card.is-folded > .panel > .stat-metrics:only-child,
 .stat-card.is-folded > .statistics-table {min-height:44px}
-/* 编辑模式：卡片轮廓可见，控制台的说明与还原入口排成一行。 */
+/* 编辑模式：卡片轮廓可见，控制台的说明与还原入口排成一行 */
 .statistics-sections.is-editing .panel {outline:1px dashed var(--theme-accent);outline-offset:2px}
 /* 样式编辑控制台与趋势图那块同理：面板自己是一级底，内容再垫一层二级层，
-   控件（排序项、组合页、动作按钮）保持控件族自用一套面。
-   它不参与组合链，所以自己和下方第一张卡片之间留出与卡片间距一致的间隔。 */
+   控件（排序项、组合页、动作按钮）保持控件族自用一套面
+   它不参与组合链，所以自己和下方第一张卡片之间留出与卡片间距一致的间隔 */
 .panel.statistics-edit-console {position: relative; isolation: isolate; padding: 8px; margin-bottom: 14px}
 .panel.statistics-edit-console::before {content: ''; position: absolute; inset: 8px; border-radius: calc(var(--theme-radius-panel, 26px) - 8px); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 .panel.statistics-edit-console > * {position: relative}
 .statistics-edit-console .panel-heading {display:flex;align-items:center;gap:10px}
 .monitor-segmented button.is-disabled {opacity:.55}
-/* 两张卡片之间的接缝：在流内，卡片间距与隐藏卡占位条由它承担，连接符在它内部居中。 */
+/* 两张卡片之间的接缝：在流内，卡片间距与隐藏卡占位条由它承担，连接符在它内部居中 */
 .stat-card-seam {position:relative;z-index:5;margin:var(--card-gap,14px) 0}
 .stat-card-seam.is-linked {margin:0}
 .stat-card-seam:has(.stat-card-hidden) {margin:0}
@@ -187,63 +187,35 @@
 .statistics-chain-card {display:inline-flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0 10px 0 14px;border:1px solid var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);font-size:13px;font-weight:500;color:var(--text)}
 .statistics-chain-slot {display:inline-flex;align-items:center}
 .statistics-chain-label {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-.statistics-chain-add, .statistics-chain-slot .select-control .select-trigger {display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0;border:1px dashed var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);color:var(--theme-muted);font-size:13px;cursor:pointer}
-.statistics-chain-slot .select-control {width:var(--chain-cell-width);min-width:0;height:var(--chain-cell-height)}
-/* 统计页动作组里的按钮取控件面（底 + 磨砂）：只挂这两个动作组，不写通用的 .title-actions 规则去波及其它页面。 */
-.statistics-toolbar-row .title-actions > .button {background: var(--theme-control-bg);
-  -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
-/* 页面切换入口这一排只有控件族自己的面，上方各层都没有面，于是直接压在底图上。
-   在它下面补一圈一级底，控件坐在底片中央：底每边比控件大 6px，圆角跟随控件。
-   控件面必须搬到 ::after —— ::before 排在元素自身背景之后，会把控件面盖住，
-   那样控件本体就变成「控件面 + 一级底」两层叠加，控件透明度滑块的力度会被冲淡。 */
-.monitor-segmented.statistics-category-control {position: relative; overflow: visible;
-  background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border-color: transparent}
-.statistics-category-control::before {content:'';position:absolute;inset:-6px;border-radius:inherit;
-  background:var(--theme-surface-bg);-webkit-backdrop-filter:var(--theme-surface-filter);backdrop-filter:var(--theme-surface-filter)}
-.statistics-category-control::after {content:'';position:absolute;inset:-1px;border-radius:inherit;
-  background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);
-  border:1px solid var(--theme-segment-border)}
-/* 按钮与选中指示器要在控件面之上；指示器本就是绝对定位，只提层级、不改定位。 */
-.statistics-category-control > button {position: relative; z-index: 1}
-.statistics-category-control > * {z-index: 1}
+/* 分类切换是 shadcn Tabs：根 .statistics-category-control > [data-slot=tabs-list] > [data-slot=tabs-trigger]。
+   外观全部交给组件自身，这里只管两件结构上的事：轨道不超出内容区；分类多到放不下时在轨道内横向滚动。
+   旧的分段控件皮相（一级底/控件面/13px/16px/竖分隔线）已随控件迁移整块删除，不要再往这里挂。 */
+.statistics-toolbar-row .statistics-category-control {min-width: 0; max-width: 100%}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content: flex-start; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list']::-webkit-scrollbar {display: none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex: 0 0 auto; white-space: nowrap}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity: .55}
 .statistics-category-control button.is-chained::after {content:'';width:5px;height:5px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.45}
-.statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0; margin-bottom:20px}
+.statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0}
 .statistics-category-picker > .statistics-category-select {flex:1; min-width:0}
-.statistics-category-picker > .statistics-single-view {flex-shrink:0; min-height:var(--form-height); padding:6px 12px; border:1px solid var(--theme-border); border-radius:var(--theme-radius-control); background:var(--theme-control-bg); white-space:nowrap}
 .statistics-chain-link {align-self:center;width:10px;height:1px;background:var(--theme-border)}
-.statistics-chain-add:hover {color:var(--theme-accent);border-color:var(--theme-accent)}
-.statistics-chain-picker {min-width:160px}
 .statistics-edit-actions {display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 22px;margin-bottom:8px}
-/* 这一行是「勾选哪些页面启用」的多选开关组，不是单选分段控件：每个页面一颗芯片，
-   启用时实心带彩点，隐藏时划线虚框；状态同时用 aria-pressed 表达，不依赖颜色。 */
-.statistics-page-toggle-chip {display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border:1px solid var(--theme-border);border-radius:var(--theme-radius-button, 20px);background:var(--theme-control-bg);color:var(--theme-text);font-size:12px;font-weight:500;cursor:pointer;user-select:none;transition:border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease}
-.statistics-page-toggle-chip:hover {border-color:var(--theme-accent);background:var(--theme-accent-soft);transform:translateY(-1px)}
-.statistics-page-toggle-chip:focus-visible {outline:2px solid var(--theme-accent);outline-offset:2px}
-.statistics-page-toggle-chip.active {border-color:color-mix(in srgb, var(--theme-accent) 50%, var(--theme-border));background:color-mix(in srgb, var(--theme-accent) 12%, var(--theme-control-bg))}
-.statistics-page-toggle-chip.is-disabled {opacity:.5;border-style:dashed;background:transparent;color:var(--theme-muted);text-decoration:line-through}
-.statistics-page-toggle-chip .stat-chip-dot {width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:transform .18s ease, box-shadow .18s ease}
-.statistics-page-toggle-chip.active .stat-chip-dot {box-shadow:0 0 6px color-mix(in srgb, var(--theme-accent) 70%, transparent)}
 .statistics-edit-state {margin-left:auto;font-size:12px;color:var(--theme-muted)}
-.statistics-edit-body {display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:0 22px 18px}
-.statistics-edit-body p {margin:0;font-size:12px;color:var(--theme-muted)}
-.statistics-edit-toggle[aria-pressed='true'] {border-color:var(--theme-accent);color:var(--theme-accent);background:var(--theme-accent-soft)}
-.sr-title {position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
-.date-input-wrap {position:relative;display:inline-flex;align-items:center;width:100%;max-width:200px}.date-input-wrap input {width:100%}.date-empty {color:transparent}.date-empty::-webkit-datetime-edit {color:transparent}.date-empty::-webkit-calendar-picker-indicator {opacity:1}.date-input-placeholder {position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px;user-select:none;font-variant-numeric:tabular-nums;letter-spacing:0.5px}
-/* 统计区与配置页一致采用自然贯穿流式布局，内容随页面自然向下延伸并在全局滚动。 */
+.date-input-wrap {position:relative;display:inline-flex;align-items:center;width:100%;max-width:200px}.date-input-wrap input {width:100%}.date-input-placeholder {position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;font-size:11px;user-select:none;font-variant-numeric:tabular-nums;letter-spacing:0.5px}
+/* 统计区与配置页一致采用自然贯穿流式布局，内容随页面自然向下延伸并在全局滚动 */
 .statistics-sections {display:flex;flex-direction:column}
 .statistics-sections > * {flex:0 0 auto}
 .statistics-sections > .statistics-chart:not(.chart-expanded) {height:auto;min-height:0}
-.statistics-note {padding:13px 17px;background:var(--surface);border-left:3px solid #159b88;border-radius:5px;font-size:12px;line-height:1.8;color:var(--muted);margin:0}
-/* 指标格下面已经有那张二级贴片，所以自己读三级面。 */
+/* 指标格下面已经有那张二级贴片，所以自己读三级面 */
 .stat-metrics {display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:12px;padding:14px 22px}
-/* 三级面只服务图表指标卡。 */
+/* 三级面只服务图表指标卡 */
 .stat-metrics > div:not(.summary-metric-card) {padding:10px 12px;border-radius:var(--theme-inset-radius);background:var(--theme-inset-bg);-webkit-backdrop-filter:var(--theme-inset-filter);backdrop-filter:var(--theme-inset-filter)}.stat-metrics span {display:block;color:var(--muted);font-size:11px;margin-bottom:10px}.stat-metrics strong {display:block;font-size:23px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.stat-metrics small {font-size:11px;font-weight:400;margin-left:6px;color:var(--muted)}.summary-metrics-panel .summary-metrics {padding:0;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:16px 20px}.summary-metrics {padding:0;grid-template-columns:repeat(auto-fill,minmax(165px,1fr))}.summary-metric-card, .summary-metrics section {padding:12px 14px;background:transparent;border:1px solid transparent;border-radius:12px;display:flex;flex-direction:column;justify-content:space-between;min-height:72px;transition:background .15s ease,border-color .15s ease,transform .15s ease}
-/* 「收获」的卡片形态与趋势图、样式控制台同一套：面板是一级底，内容再垫一层二级层。
-   卡片自己不拿三级层 —— 里面的指标格直接画在二级层上。 */
+/* 「收获」的卡片形态与趋势图、样式控制台同一套：面板是一级底，内容再垫一层二级层
+   卡片自己不拿三级层 —— 里面的指标格直接画在二级层上 */
 .panel.summary-metrics-panel {position: relative; isolation: isolate; padding: 8px}
 .panel.summary-metrics-panel::before {content: ''; position: absolute; inset: 8px; border-radius: calc(var(--theme-radius-panel, 26px) - 8px); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
 .panel.summary-metrics-panel > * {position: relative}
-/* 收获卡容器恒为透明，悬停时才浮二级面。 */
+/* 收获卡容器恒为透明，悬停时才浮二级面 */
 .summary-metrics-panel .summary-metric-card,
 .summary-metrics-panel .summary-metrics section {background: transparent; border: 1px solid transparent}
 .summary-metrics-panel .summary-metrics {padding:42px 48px}
@@ -260,10 +232,10 @@
 .statistics-metrics-container {display:flex;flex-direction:column;gap:8px;padding:14px 22px 0}
 .statistics-metrics-label {font-size:11px;color:var(--muted);font-weight:500}
 .statistics-metrics-chips {display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.stat-chip {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);color:var(--text);font-size:12px;cursor:pointer;user-select:none;transition:all .15s ease}
-.stat-chip:hover:not(:disabled) {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent)}
-.stat-chip.active {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent);font-weight:600;box-shadow:0 0 0 1px var(--accent-soft)}
-.stat-chip.empty {opacity:.45;cursor:not-allowed}
+.stat-chip:not([data-slot=button]) {display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--theme-plate-bg);-webkit-backdrop-filter:var(--theme-plate-filter);backdrop-filter:var(--theme-plate-filter);color:var(--text);font-size:12px;cursor:pointer;user-select:none;transition:all .15s ease}
+.stat-chip:not([data-slot=button]):hover:not(:disabled) {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent)}
+.stat-chip:not([data-slot=button]).active {border-color:var(--accent);background:color-mix(in srgb, var(--surface-muted) 78%, transparent);font-weight:600;box-shadow:0 0 0 1px var(--accent-soft)}
+.stat-chip:not([data-slot=button]).empty {opacity:.45;cursor:not-allowed}
 .stat-chip small {font-size:10px;color:var(--muted);margin-left:2px}
 .stat-chip-dot {width:9px;height:9px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .15s ease}
 .stat-chip-icon {width:20px;height:20px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;opacity:.75;transition:all .15s ease;filter:drop-shadow(0 1px 2px rgb(0 0 0 / .2))}
@@ -275,7 +247,7 @@
 .stat-chip-badge.secondary {background:var(--surface-muted);color:var(--muted);border:1px solid var(--border)}
 .stat-chip-badge.secondary:hover {border-color:var(--accent);color:var(--text)}
 .stat-multi-metrics {display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;padding:16px 22px}
-/* 多选时每个资源一张卡；卡画在图表面板那张二级贴片上，所以自己读三级面。 */
+/* 多选时每个资源一张卡；卡画在图表面板那张二级贴片上，所以自己读三级面 */
 .stat-metric-card {background:var(--theme-inset-bg);-webkit-backdrop-filter:var(--theme-inset-filter);backdrop-filter:var(--theme-inset-filter);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
 .stat-metric-header {display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
 .stat-metric-body {display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px}
@@ -284,31 +256,25 @@
 .stat-metric-body strong.positive {color:#10b981}
 .stat-metric-body strong.negative {color:#ef4444}
 .stat-metric-body strong.neutral {color:var(--text)}
-/* 统计图表面板：自然垂直流式布局，不设内部纵向滚动；图表保持适宜高度，下方内容自然排列。 */
+/* 统计图表面板：自然垂直流式布局，不设内部纵向滚动；图表保持适宜高度，下方内容自然排列 */
 .statistics-chart {display: flex; flex-direction: column}
 .statistics-chart:not(.chart-expanded) > .statistics-chart-plot > .chart-canvas {height: 380px; min-height: 320px; width: 100%; flex: 0 0 auto}
-/* 与 .panel.statistics-chart 同特异性：后者带 position: relative，低特异性会压掉放大态的 fixed。 */
+/* 与 .panel.statistics-chart 同特异性：后者带 position: relative，低特异性会压掉放大态的 fixed */
 .panel.chart-expanded {position:fixed;inset:20px;z-index:100;overflow:auto;background:var(--surface);box-shadow:0 0 0 50px #0008}.panel.chart-expanded .chart-canvas {flex: none; height:55vh}
 /* 放大视图铺满窗口后，右上角是 Electron 的窗口控制按钮，会压住「收起图表」；
-   同时面板自身可滚动，滚动后标题行会滚出视口。右侧让开按钮宽度并让它吸顶。
-   这里必须带 !important：紧凑主题用 padding 简写加 !important 压过面板内边距。 */
+   同时面板自身可滚动，滚动后标题行会滚出视口；右侧让开按钮宽度并让它吸顶
+   这里必须带 !important：紧凑主题用 padding 简写加 !important 压过面板内边距 */
 .panel.chart-expanded .panel-heading {position:sticky;top:0;z-index:2;padding-right:160px !important;background:var(--surface)}
-.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {overflow-x:auto;overflow-y:visible;max-height:none}.statistics-table table {border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}.statistics-table td,.statistics-table th {padding:13px 20px;text-align:center;border-bottom:1px solid var(--theme-table-line);font-variant-numeric:tabular-nums}
-/* 表头下面那条比行线重一档，把表头与表体分开。 */
-.statistics-table th {border-bottom-color: var(--theme-table-line-strong)}
-/* 单行表格把一批指标排成一横排：列名允许折行、数值紧凑，并补上列与列之间的分隔。 */
-.statistics-table.is-single-row table {font-size:11px;white-space:normal}
-.statistics-table.is-single-row td,.statistics-table.is-single-row th {padding:6px 8px;line-height:1.35;word-break:break-word}
-.statistics-table.is-single-row th:not(:first-child),.statistics-table.is-single-row td:not(:first-child) {border-left:1px solid var(--border)}.statistics-table th {position:sticky;top:0;z-index:1}.statistics-table th button {border:0;background:none;color:var(--text);cursor:pointer;font:inherit;padding:0}.statistics-table tbody tr:hover {background:color-mix(in srgb, var(--theme-inset-bg) 60%, transparent)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
-/* 卡片适应：列数由脚本按容器宽度写入，末排因此不会各自撑满整行。 */
+.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {overflow-x:auto;overflow-y:visible;max-height:none}.statistics-table [data-slot=table-header] {background:var(--theme-surface-muted)}.statistics-table [data-slot=table-head] {color:var(--theme-muted)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
+/* 卡片适应：列数由脚本按容器宽度写入，末排因此不会各自撑满整行 */
 .resource-grid.resource-fit {display:grid}
-/* 合并卡横跨整行，卡片的列布局由它内层承载。 */
+/* 合并卡横跨整行，卡片的列布局由它内层承载 */
 .resource-grid.resource-fit .resource-merged {grid-column:1/-1}
 .resource-grid.resource-fit .resource-merged > .resource-card-body {display:grid}
-/* 紧凑视图：只收紧间距；旧版主题有更具体的规则，仍按主题的紧凑度走。 */
+/* 紧凑视图：只收紧间距；旧版主题有更具体的规则，仍按主题的紧凑度走 */
 .resource-grid.resource-dense {gap:4px;margin-bottom:6px}
 /* 字体适应：窄卡片按容器宽度重排字号层级——数值统一收小并各卡一致（覆盖上游窄视口下的固定字号）；
-   标题、图标与记录时间上调，总量后缀随数值放大；权重高于各主题的同名规则，避免紧凑主题按自己的尺寸覆盖。 */
+   标题、图标与记录时间上调，总量后缀随数值放大；权重高于各主题的同名规则，避免紧凑主题按自己的尺寸覆盖 */
 :root .resource-grid.resource-fit-text .resource-card,
 :root .resource-grid.resource-fit-text .resource-merged-item {container-type:inline-size}
 :root .resource-grid.resource-fit-text .resource-heading {font-size:clamp(14px,6.6cqw,17px)}
@@ -317,12 +283,12 @@
 :root .resource-grid.resource-fit-text .resource-value {font-size:20px !important}
 :root .resource-grid.resource-fit-text .resource-value-content small {font-size:.8em}
 :root .resource-grid.resource-fit-text .resource-foot {font-size:clamp(12px,5.6cqw,14px)}
-/* 通用卡片：内部条目沿用资源卡自身的排版，仅由外层容器统一描边。 */
+/* 通用卡片：内部条目沿用资源卡自身的排版，仅由外层容器统一描边 */
 .resource-grid .resource-merged {flex:1 1 100%;box-shadow:var(--shadow)}
 .resource-merged > .resource-card-body {display:flex;flex-wrap:wrap;gap:8px}
 .resource-merged .resource-merged-item {flex:1 1 var(--resource-card-min);min-width:0;padding:10px 16px 9px}
 
-/* 仪表盘设置弹窗内的开关行：弹窗比设置页窄，用紧凑排法。 */
+/* 仪表盘设置弹窗内的开关行：弹窗比设置页窄，用紧凑排法 */
 .dashboard-options {display:flex;flex-direction:column}
 .dashboard-option {display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid color-mix(in srgb,var(--border) 70%,transparent)}
 .dashboard-option:last-child {border-bottom:0}
@@ -331,18 +297,18 @@
 .dashboard-option-label span {color:var(--muted);font-size:11px;line-height:1.6}
 .dashboard-option .toggle {flex:0 0 auto;margin-top:2px}
 
-@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.panel.chart-expanded {inset:5px}.statistics-note {font-size:11px}}
+@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.panel.chart-expanded {inset:5px}}
 
 @media(max-width:950px) {
-  /* 分类文字完整收在下拉菜单里，不再露出被切断的半个标签。 */
+  /* 分类文字完整收在下拉菜单里，不再露出被切断的半个标签 */
   .statistics-toolbar-row .statistics-category-control {display:none}
   .statistics-toolbar-row .statistics-category-picker {display:flex; width:100%}
 }
 
-/* 手机端：165px 起的网格在窄屏只放得下一列，而卡片是按多列设计的。
-   窄屏改成「图标 + 名字在左、数值在右」的紧凑行，并允许名字折行，长物品名不再被省略号吃掉。 */
+/* 手机端：165px 起的网格在窄屏只放得下一列，而卡片是按多列设计的
+   窄屏改成「图标 + 名字在左、数值在右」的紧凑行，并允许名字折行，长物品名不再被省略号吃掉 */
 @media(max-width:480px) {
-  /* 搜索独占一行，标题与导出操作保留在上方，避免按钮文字被挤成单字竖排。 */
+  /* 搜索独占一行，标题与导出操作保留在上方，避免按钮文字被挤成单字竖排 */
   .statistics-table > .panel-heading {flex-wrap:wrap; gap:10px}
   .statistics-table > .panel-heading > .table-search {order:1; flex-basis:100%}
   .statistics-table > .panel-heading > .table-search input {max-width:none}
@@ -355,45 +321,39 @@
   .summary-metrics-panel .summary-metric-icon-webp img {width:32px;height:32px}
 }
 
-/* 未展示资源的卡片外观复用编辑卡，点击即添加。 */
+/* 未展示资源的卡片外观复用编辑卡，点击即添加 */
 .resource-editor-card.resource-picker-card {cursor: pointer; font-size: inherit; color: inherit}
-/* 目录栏末尾的单页视图开关：选中态用强调色标出。 */
-.statistics-single-view[aria-pressed="true"] {color:var(--accent)}
-.statistics-zero-base[aria-pressed='true'] {color:var(--accent)}
-/* 图表表头的紧凑排列：一行一个资源，靠容器网格对齐，行内不画表格与边框。 */
+/* 图表表头的紧凑排列：一行一个资源，靠容器网格对齐，行内不画表格与边框 */
 .stat-multi-metrics.is-compact {display:grid; grid-template-columns:minmax(0, max-content) repeat(4, max-content); align-items:center; column-gap:16px; row-gap:2px; padding:10px 22px}
 .stat-multi-metrics.is-compact .stat-metric-row, .stat-multi-metrics.is-compact .stat-metric-labels {display:contents}
 .stat-multi-metrics.is-compact .stat-metric-name {display:flex; align-items:center; gap:6px; min-width:0; font-size:13px; color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-/* 槽位固定成图标大小，缺图标的资源才不会带着整行名称一起位移；槽位只定位，不放大图标或占位点本身。 */
+/* 槽位固定成图标大小，缺图标的资源才不会带着整行名称一起位移；槽位只定位，不放大图标或占位点本身 */
 .stat-multi-metrics.is-compact .stat-metric-icon {flex:none; display:flex; align-items:center; justify-content:center; width:20px; height:20px}
 .stat-multi-metrics.is-compact .stat-metric-value {font-size:13px; font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap}
 .stat-multi-metrics.is-compact .stat-metric-labels span {font-size:12px; font-weight:400; color:var(--muted); text-align:right}
-/* 点掉曲线的资源在表头里淡色保留：卡片本身不隐藏，再点一下回到图上。 */
-/* 收获表格复用明细表时标题留空：只藏重复的标题块，同一行右侧的折叠、切换钮与表格设置照常保留。 */
+/* 收获表格复用明细表时标题留空：只藏重复的标题块，同一行右侧的折叠、切换钮与表格设置照常保留 */
 .summary-metrics-panel .statistics-table > .panel-heading > div:first-child:has(> h3:empty) {display:none}
-/* 搜索与记录数在标题行里居中：左右两侧是标题与动作，中间留一块可伸缩的搜索区。 */
+/* 搜索与记录数在标题行里居中：左右两侧是标题与动作，中间留一块可伸缩的搜索区 */
 .statistics-table > .panel-heading > .table-search {flex:1 1 200px;display:flex;align-items:center;gap:10px;justify-content:center;min-width:0;color:var(--muted);font-size:12px}
 .statistics-table > .panel-heading > .table-search input {max-width:240px;width:100%;min-width:120px;min-height:var(--table-heading-control);padding:6px 12px}
 .stat-card.is-folded > .panel > .statistics-table > .panel-heading,
 .stat-card.is-folded > .statistics-table > .panel-heading {display:flex}
+/* 点掉曲线的资源在表头里淡色保留：卡片本身不隐藏，再点一下回到图上 */
 .stat-metric-card.is-filterable, .stat-metric-row.is-filterable > * {cursor:pointer}
 .stat-metric-card.is-filtered {opacity:.45}
 .stat-metric-row.is-filtered > * {opacity:.45}
 /* 已设为隐藏的页面：编辑模式里把标签与资源芯片淡色预览，表示这一行在非编辑模式下不会出现；
-   行内所有按钮（重置选择、紧凑、叠涨、隐藏选取器）都不跟着变淡。 */
+   行内所有按钮（重置选择、紧凑、叠涨、隐藏选取器）都不跟着变淡 */
 .statistics-metrics-container.is-picker-muted .statistics-metrics-label,
 .statistics-metrics-container.is-picker-muted .statistics-metrics-chips .stat-chip {opacity:.45}
 
-/* 表格的简洁显示：不渲染表头，每个数据行一行文字，行内不再有单元格分隔。 */
+/* 表格的简洁显示：不渲染表头，每个数据行一行文字，行内不再有单元格分隔 */
 .table-lines {padding: 10px 18px}
 .table-line {margin: 0; line-height: 1.9; font-size: 13px}
 .table-line-first {color:var(--text-weak); margin-right: 4px}
 .table-line-cell {white-space: nowrap}
 .table-line .table-resource-icon {display: inline-block; width: 16px; height: 16px; vertical-align: -3px}
 
-/* 表格设置控件：编辑模式下跟在标题右侧，与收获的模式开关同一排布。 */
+/* 表格设置控件：编辑模式下跟在标题右侧，与收获的模式开关同一排布 */
 .statistics-table-settings {display: inline-flex; align-items: center; flex-wrap: wrap; gap: 10px}
 .statistics-table-settings input {width: 58px}
-
-/* 掉落统计说明较长，允许窄屏换行。 */
-.statistics-hints {white-space:normal;line-height:1.5;max-width:100%}

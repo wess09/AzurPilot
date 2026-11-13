@@ -272,6 +272,7 @@ dependencies = [
     { name = "scipy" },
     { name = "starlette" },
     { name = "textual" },
+    { name = "tinycss2" },
     { name = "uiautomator2" },
     { name = "uiautomator2cache" },
     { name = "uv" },
@@ -330,6 +331,7 @@ requires-dist = [
     { name = "scipy", specifier = "==1.18.0" },
     { name = "starlette", specifier = "==0.49.1" },
     { name = "textual", specifier = ">=0.80.0" },
+    { name = "tinycss2", specifier = ">=1.4,<2" },
     { name = "uiautomator2", specifier = "==2.16.17" },
     { name = "uiautomator2cache", specifier = "==0.3.0.1" },
     { name = "uv", specifier = "==0.13.5" },
@@ -2683,6 +2685,18 @@ wheels = [
 ]
 
 [[package]]
+name = "tinycss2"
+version = "1.5.1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+dependencies = [
+    { name = "webencodings" },
+]
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/a3/ae/2ca4913e5c0f09781d75482874c3a95db9105462a92ddd303c7d285d3df2/tinycss2-1.5.1.tar.gz", hash = "sha256:d339d2b616ba90ccce58da8495a78f46e55d4d25f9fd71dfd526f07e7d53f957" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/60/45/c7b5c3168458db837e8ceab06dc77824e18202679d0463f0e8f002143a97/tinycss2-1.5.1-py3-none-any.whl", hash = "sha256:3415ba0f5839c062696996998176c4a3751d18b7edaaeeb658c9ce21ec150661" },
+]
+
+[[package]]
 name = "tldextract"
 version = "5.4.0"
 source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
@@ -2931,6 +2945,15 @@ wheels = [
     { url = "https://mirrors.aliyun.com/pypi/packages/51/cf/3b10b268b4b7f0fc26e9debb5eef1998b515887840f444cd3ec80c688755/watchfiles-1.2.0-cp314-cp314t-manylinux_2_31_riscv64.whl", hash = "sha256:4c887eba18b7945ac73067a8b4a66f21cd46c2539b2bc68588f7be6c7eb6d26b" },
     { url = "https://mirrors.aliyun.com/pypi/packages/3d/3e/a4302545cd589262a0dc7d140e86f7688eba3f9c72776c27f7e23b8864c4/watchfiles-1.2.0-cp314-cp314t-musllinux_1_1_aarch64.whl", hash = "sha256:3416ff151bb6b5a8d8d11664974fbef4d9305b9b2957839ab5a270468fd8df30" },
     { url = "https://mirrors.aliyun.com/pypi/packages/db/99/d5649df0a9a410d45b7c882304d0b790903ac9b6e8f2cfd12114e0c6b9f2/watchfiles-1.2.0-cp314-cp314t-musllinux_1_1_x86_64.whl", hash = "sha256:0e831a271c035d89789cffc386b6aa1375f39f1cd25eb7ca0997e4970d152fc5" },
+]
+
+[[package]]
+name = "webencodings"
+version = "0.6.1"
+source = { registry = "https://mirrors.aliyun.com/pypi/simple/" }
+sdist = { url = "https://mirrors.aliyun.com/pypi/packages/d5/a0/8fd707bcb776a7be556bad06a2ea5fb9bd519df78ef8e26f70ccf0f38bff/webencodings-0.6.1.tar.gz", hash = "sha256:565f9ad031c702dae404e27a099e3e09186a3ab1b9520f06d215502b651fd910" }
+wheels = [
+    { url = "https://mirrors.aliyun.com/pypi/packages/77/c6/040cbc72480d789a5f40d63fb484d3106554c4dfa2d2b70ad5022057750f/webencodings-0.6.1-py3-none-any.whl", hash = "sha256:7fab6269c8bf237c657876b52058ccb182e861518d1c695c1a9aaa8c1c105d5b" },
 ]
 
 [[package]]

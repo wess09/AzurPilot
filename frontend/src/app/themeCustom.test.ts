@@ -1,6 +1,11 @@
+/**
+ * @fileoverview 主题大类自定义的行为回归测试：存取、旧档迁移与 CSS 变量应用。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyFamilyCustom, clearFamilyKnob, clearFamilyPalette, clearFamilyRegion, readFamilyCustom, resetFamilyCustom, writeFamilyCustom } from './themeCustom'
 
+// 注入独立的 localStorage 假实现：存取只发生在用例自己的字典里，不落真实存储。
 const storage = (initial: Record<string, string> = {}) => {
   const data = {...initial}
   vi.stubGlobal('localStorage', {
@@ -11,6 +16,7 @@ const storage = (initial: Record<string, string> = {}) => {
   return data
 }
 
+// 假的根节点：只模拟 style 的 CSS 变量读写，applyFamilyCustom 写过哪些 token 可以直接断言。
 const fakeRoot = () => {
   const values = new Map<string, string>()
   return {
@@ -76,7 +82,7 @@ describe('按大类的区域参数', () => {
     expect(written).toEqual(['--theme-plate-alpha', '--theme-plate-blur'])
     expect(root.values.get('--theme-plate-alpha')).toBe('60%')
     expect(root.values.get('--theme-plate-blur')).toBe('12px')
-    /* 没动过的区域一个 token 都不写 */
+    // 没动过的区域一个 token 都不写。
     expect(written.some(token => token.startsWith('--theme-surface-'))).toBe(false)
   })
 

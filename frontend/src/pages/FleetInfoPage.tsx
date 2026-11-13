@@ -1,12 +1,25 @@
+/**
+ * @fileoverview 舰队信息页：查看 FleetScan 扫描出的六支舰队编成，并提供扫描开关。
+ */
+
 import {useEffect, useState} from 'react'
 import {useParams} from 'react-router-dom'
 import {Ship} from 'lucide-react'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
+import {Switch} from '../components/official-ui/switch'
+import {Checkbox} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
 import {editor} from '../config/editors'
 import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
 
+/**
+ * 舰队信息页：展示扫描结果并控制 FleetScan 任务。
+ *
+ * 扫描进行中每 3 秒轮询一次最新结果；启动扫描前先把「扫描时更新心情」写进实例配置，
+ * 任务按它决定是否更新心情。连接断开、后台更新或已有任务运行时只提示原因，不给操作入口。
+ */
 export function FleetInfoPage() {
   const {instance = ''} = useParams()
   const {ui, t, instances, notify} = useApp(), connection = useConnection()
@@ -43,6 +56,7 @@ export function FleetInfoPage() {
     try {
       if (scanning) await api.request('scheduler.stop', {instance})
       else {
+        // 先等该实例的配置编辑队列落定，再读 revision 发起 patch，避免排队中的改动丢进覆盖。
         await editor(`config:${instance}`).settled()
         const config = await api.request('config.get', {instance})
         await api.request('config.patch', {instance, revision: config.revision, changes: [
@@ -57,8 +71,8 @@ export function FleetInfoPage() {
 
   return <>
     <PageTitle title={t('Task.FleetInfo.name')} actions={<>
-      <label className="checkbox-label"><input type="checkbox" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onChange={event => setUpdateEmotion(event.target.checked)}/>{ui('fleet.updateEmotion')}</label>
-      <span>{t('Task.FleetScan.name')}</span><button type="button" className={`toggle ${scanning ? 'on' : ''}`} role="switch" aria-checked={scanning} aria-label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onClick={toggleScan}><span/></button>
+      <span className="flex items-center gap-3"><Checkbox id="fleet-update-emotion" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onCheckedChange={next => setUpdateEmotion(next === true)}/><Label htmlFor="fleet-update-emotion">{ui('fleet.updateEmotion')}</Label></span>
+      <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} aria-label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onCheckedChange={() => void toggleScan()}/>
     </>}/>
     <p className="muted">{ui('rotation.duplicates')}</p>
     {reason && <p className="muted" role="status">{reason}</p>}
@@ -68,6 +82,12 @@ export function FleetInfoPage() {
   </>
 }
 
+/**
+ * 渲染扫描结果：六支舰队各分先锋、主力、潜艇三列。
+ *
+ * value 是后端原始结果，可能是对象或 JSON 字符串；解析失败整体显示错误框。
+ * 舰位与心情超出合法范围时按「未知」显示，不猜测异常值。
+ */
 export function FleetInfo({value}: {value: unknown}) {
   const {ui} = useApp()
   if (!value || (typeof value === 'object' && !Object.keys(value).length)) return <Empty icon={<Ship size={32}/>} title={ui('fleet.emptyTitle')}>{ui('fleet.emptyHint')}</Empty>

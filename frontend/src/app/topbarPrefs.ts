@@ -3,7 +3,7 @@
  */
 
 export const TAB_SIZES = ['sm', 'md', 'lg', 'xl'] as const
-export type TabSize = typeof TAB_SIZES[number]
+type TabSize = typeof TAB_SIZES[number]
 
 const TAB_SIZE_KEY = 'azurpilot.topbar-tab-size'
 const LAST_PATH_KEY = 'azurpilot.last-path'
@@ -21,7 +21,7 @@ applyTabSize(readTabSize())
 
 const tabSizeListeners = new Set<() => void>()
 
-/** 标签页档位：落盘并通知订阅者，下次打开接着上次的档位。 */
+/** 读取标签页档位：旧档位 `xs` 迁移成 `sm`，存储不可用时回落到会话内值。 */
 export function readTabSize(): TabSize {
   try {
     const stored = localStorage.getItem(TAB_SIZE_KEY)
@@ -29,11 +29,13 @@ export function readTabSize(): TabSize {
   } catch { return sessionTabSize }
 }
 
+/** 订阅档位变化；返回取消订阅的函数。 */
 export const subscribeTabSize = (listener: () => void) => {
   tabSizeListeners.add(listener)
   return () => { tabSizeListeners.delete(listener) }
 }
 
+/** 设置标签页档位：落盘并通知订阅者，下次打开接着上次的档位。 */
 export function setTabSize(size: TabSize) {
   sessionTabSize = size
   applyTabSize(size)
@@ -42,7 +44,7 @@ export function setTabSize(size: TabSize) {
 }
 
 /** 上次停留的页面路径（如 `/configs` 或 `/i/ap/overview`）。
-  记路径而不是实例：用户说的是「上次停在哪个界面，下次打开就回哪个界面」。 */
+ * 记路径而不是实例：用户说的是「上次停在哪个界面，下次打开就回哪个界面」。 */
 export function readLastPath(): string {
   try { return localStorage.getItem(LAST_PATH_KEY) ?? '' } catch { return '' }
 }

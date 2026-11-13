@@ -22,10 +22,6 @@ def _database():
     return for_legacy_path(_LOCAL_DB, 'statistics')
 
 
-def _connect() -> sqlite3.Connection:
-    return _database().connect()
-
-
 # Dashboard 使用的资源名称与数据库列名保持在同一处，供区间聚合复用。
 RESOURCE_COLUMNS = {
     'Oil': 'oil',
@@ -62,6 +58,27 @@ def _overlay_opsi_snapshot(row: Dict[str, Any]) -> Dict[str, Any]:
     return row
 
 
+def _snapshot_row(instance: str, resources: Dict[str, Any], observed_at: datetime = None) -> Dict[str, Any]:
+    """把资源读数整理成一行快照，未读到的资源留空。"""
+    row = {'instance': instance, 'ts': (observed_at or datetime.now()).isoformat()}
+    row.update({column: resources.get(name) for name, column in RESOURCE_COLUMNS.items()})
+    return row
+
+
+def _apply_snapshot(connection, instance, row, provided, carry_forward):
+    """在给定事务内写入一行快照；同一批次的顺序写入与逐条写入语义一致。"""
+    from module.persistence.database import register_instance
+    register_instance(connection, instance)
+    if carry_forward:
+        latest = connection.execute('SELECT * FROM resource_snapshots WHERE instance = ? ORDER BY id DESC LIMIT 1',
+                                    (instance,)).fetchone()
+        if latest is not None:
+            for name, column in RESOURCE_COLUMNS.items():
+                if name not in provided:
+                    row[column] = latest[column]
+    connection.execute(_SNAPSHOT_INSERT_SQL, row)
+
+
 def record_resource_snapshot(instance: str, resources: Dict[str, Any], *, observed_at: datetime = None,
                              carry_forward: bool = False) -> bool:
     """以同一事务保存各项资源的当前读数。
@@ -75,28 +92,27 @@ def record_resource_snapshot(instance: str, resources: Dict[str, Any], *, observ
             运行中各个配置对象（例如战役使用的配置副本）的 Dashboard 值可能已过期，
             用它们补全整行会让曲线出现一个点的旧值尖刺。
     """
-    from module.persistence.database import register_instance
     try:
-        row = {'instance': instance, 'ts': (observed_at or datetime.now()).isoformat()}
-        row.update({column: resources.get(name) for name, column in RESOURCE_COLUMNS.items()})
-        if not carry_forward:
-            with _local_lock, _connect() as conn:
-                register_instance(conn, instance)
-                conn.execute(_SNAPSHOT_INSERT_SQL, row)
-            return True
+        row = _snapshot_row(instance, resources, observed_at)
         with _local_lock, _database().transaction() as conn:
-            register_instance(conn, instance)
-            latest = conn.execute('SELECT * FROM resource_snapshots WHERE instance = ? ORDER BY id DESC LIMIT 1',
-                                  (instance,)).fetchone()
-            if latest is not None:
-                for name, column in RESOURCE_COLUMNS.items():
-                    if name not in resources:
-                        row[column] = latest[column]
-            conn.execute(_SNAPSHOT_INSERT_SQL, row)
+            _apply_snapshot(conn, instance, row, frozenset(resources), carry_forward)
         return True
     except Exception as error:
         logger.warning(f'[统计-资源] 记录资源快照失败: {type(error).__name__}')
         return False
+
+
+def queue_resource_snapshot(instance: str, resources: Dict[str, Any], *, observed_at: datetime = None,
+                            carry_forward: bool = False) -> bool:
+    """把资源快照排队，由后台窗口合并成一次事务落库；调用方立即返回。"""
+    from module.persistence.write_queue import write_queue
+    row = _snapshot_row(instance, resources, observed_at)
+    provided = frozenset(resources)
+    write_queue.enqueue(
+        'append', None,
+        lambda connection: _apply_snapshot(connection, instance, row, provided, carry_forward),
+        directory=_database().directory)
+    return True
 
 
 def async_record_resource_snapshot(instance: str, resources: Dict[str, Any], *, observed_at: datetime = None,

@@ -4,6 +4,7 @@ import { AppContext, type AppContextValue } from '../app/context'
 import { PairingPanel } from './PairingPanel'
 import { translateUi } from '../i18n'
 
+// remote.clients 返回两台设备：面板只在就绪后才请求已授权列表，这里保证就绪路径有数据可渲染；其余方法返回空。
 vi.mock('../api/client', () => ({
   api: {
     request: vi.fn().mockImplementation((method: string) => {
@@ -18,6 +19,7 @@ vi.mock('../api/client', () => ({
   },
 }))
 
+// 补齐 AppContextValue 全字段：PairingPanel 消费面广，其余一律 noop，文案走真实翻译表以便多语言断言。
 function createMockContext(language: AppContextValue['language'] = 'zh-CN'): AppContextValue {
   return {
     instancesLoaded: true,
@@ -28,8 +30,7 @@ function createMockContext(language: AppContextValue['language'] = 'zh-CN'): App
     notify: () => {},
     previewEnabled: false,
     setPreviewEnabled: () => {},
-    devMode: false,
-    setDevMode: () => {},
+
     theme: 'legacy-light',
     setTheme: () => {},
     material: 'glass',

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 控制台主流程用例：总览与配置的实时更新、刷新持久化、新建实例、断线恢复与预览订阅。
+ */
+
 import { expect, test, type WebSocketRoute } from '@playwright/test'
 
 test('总览、配置实时更新与刷新持久化', async ({page}) => {
@@ -7,7 +11,6 @@ test('总览、配置实时更新与刷新持久化', async ({page}) => {
   await expect(page.getByRole('heading', {name: 'testpilot', exact: true})).toBeVisible()
   await expect(page.getByText('14,200')).toBeVisible()
   await page.screenshot({path: 'test-results/overview-desktop.png', fullPage: true, animations: 'disabled'})
-  await page.getByRole('button', {name: '展开任务搜索'}).click()
   await page.getByRole('textbox', {name: '搜索任务', exact: true}).fill('Alas')
   await page.locator('#task-group-Alas a[href$="/task/Alas"]').click()
   const serial = page.locator('[id="Alas.Emulator.Serial"]')
@@ -53,7 +56,7 @@ test('新建实例使用真实 API，移动端无横向溢出', async ({page}) =
 
 test('断线后自动恢复，保留未保存草稿', async ({page}) => {
   const sockets: WebSocketRoute[] = []
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await page.routeWebSocket(/\/api\/v1\/ws(?:\?channel=control)?$/, socket => {
     socket.connectToServer()
     sockets.push(socket)
   })
@@ -79,11 +82,15 @@ test('断线后自动恢复，保留未保存草稿', async ({page}) => {
 test('自动预览在重连后恢复订阅，离开总览后取消', async ({page}) => {
   const sockets: WebSocketRoute[] = []
   const subscriptions: string[][] = []
-  page.on('websocket', socket => socket.on('framesent', frame => {
-    const message = JSON.parse(String(frame.payload))
-    if (message.method === 'events.subscribe') subscriptions.push(message.params.topics)
-  }))
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  page.on('websocket', socket => {
+    if (new URL(socket.url()).searchParams.get('channel') !== 'data') return
+    socket.on('framesent', frame => {
+      if (typeof frame.payload !== 'string') return
+      const message = JSON.parse(frame.payload)
+      if (message.method === 'events.subscribe') subscriptions.push(message.params.topics)
+    })
+  })
+  await page.routeWebSocket(/\/api\/v1\/ws(?:\?channel=control)?$/, socket => {
     socket.connectToServer()
     sockets.push(socket)
   })

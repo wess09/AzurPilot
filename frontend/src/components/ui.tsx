@@ -2,56 +2,79 @@
  * @fileoverview 通用 UI 基础原子组件（按钮、弹窗、加载状态、错误框等）。
  */
 
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react'
-import { AlertCircle, LoaderCircle, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { AlertCircle, LoaderCircle } from 'lucide-react'
 import type { Status } from '../api/types'
 import { useApp } from '../app/context'
-import { useDevOverride } from '../app/devOverride'
+import { Alert, AlertDescription } from './ui/alert'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
+import { Empty as EmptyState, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty'
 
-export function StatusBadge({status, simulate = false}: {status: Status; simulate?: boolean}) {
+const STATUS_VARIANTS = {
+  running: 'default',
+  stopped: 'secondary',
+  error: 'destructive',
+  updating: 'outline',
+} as const
+
+/** 实例状态徽章：按 Status 映射颜色与 i18n 文案。 */
+export function StatusBadge({status}: {status: Status}) {
   const {ui} = useApp()
-  /* 实例列表上的徽章跟随开发者工具的「模拟状态」；控件预览里的徽章不跟随。 */
-  const override = useDevOverride().status
-  const shown = simulate && override ? override : status
-  return <span className={`status ${shown}`}><i />{{running: ui('status.running'), stopped: ui('status.stopped'), error: ui('status.error'), updating: ui('status.updating')}[shown]}</span>
+  return <Badge variant={STATUS_VARIANTS[status]}>{{running: ui('status.running'), stopped: ui('status.stopped'), error: ui('status.error'), updating: ui('status.updating')}[status]}</Badge>
 }
+
+/** 空态占位：图标 + 标题 + 可选描述，统一排版。 */
 export function Empty({icon, title, children}: {icon?: ReactNode; title: string; children?: ReactNode}) {
-  return <div className="empty">{icon}<strong>{title}</strong><div>{children}</div></div>
+  return <EmptyState>
+    <EmptyHeader>
+      {icon && <EmptyMedia variant="icon">{icon}</EmptyMedia>}
+      <EmptyTitle>{title}</EmptyTitle>
+      {children && <EmptyDescription>{children}</EmptyDescription>}
+    </EmptyHeader>
+  </EmptyState>
 }
+
+/** 区域级加载占位：旋转图标 + 「加载中」文案，带 role=status 供读屏识别。 */
 export function Loading() {
   const {ui} = useApp()
-  return <div className="loading" role="status"><LoaderCircle className="spin" size={22} />{ui('common.loading')}</div>
+  return <div data-slot="loading" role="status" className="flex min-h-[230px] items-center justify-center gap-2.5 text-muted-foreground">
+    <LoaderCircle className="animate-spin" size={22}/>{ui('common.loading')}
+  </div>
 }
+
+/** 错误提示框：destructive Alert，可带重试按钮。 */
 export function ErrorBox({message, retry}: {message: string; retry?: () => void}) {
   const {ui} = useApp()
-  return <div role="alert" className="error-box"><AlertCircle size={18}/><span>{message}</span>{retry && <button onClick={retry}>{ui('common.retry')}</button>}</div>
+  return <Alert variant="destructive">
+    <AlertCircle/>
+    <AlertDescription>
+      <span>{message}</span>
+      {retry && <Button variant="outline" size="sm" className="mt-2" onClick={retry}>{ui('common.retry')}</Button>}
+    </AlertDescription>
+  </Alert>
 }
+
+/** 简易弹窗：挂载即打开，点遮罩或 Esc 触发 onClose，关闭由调用方卸载完成。 */
 export function Modal({title, children, onClose, className = ''}: {title: string; children: ReactNode; onClose: () => void; className?: string}) {
-  const ref = useRef<HTMLDialogElement>(null)
-  const {ui} = useApp()
-  useEffect(() => { ref.current?.showModal(); return () => ref.current?.close() }, [])
-  /* 弹窗里的文件输入被点击后，原生窗口即将打开：它送来的那一次 cancel 只关它自己，
-     不关弹窗。原生窗口是另一个真窗口，页面收不到它的关闭事件，「刚点过文件输入」
-     是唯一可用的信号。 */
-  const picking = useRef(false)
-  /* 只保留 Esc：其他按键说明人已回到页面上。 */
-  function keepPicking(event: KeyboardEvent<HTMLDialogElement>) {
-    picking.current = picking.current && event.key === 'Escape'
-  }
-  return <dialog ref={ref} onKeyDown={keepPicking} onCancel={event => {
-    if (picking.current) { picking.current = false; event.preventDefault(); return }
-    onClose()
-  }} onClickCapture={event => { if ((event.target as HTMLElement).closest?.('input[type=file]')) picking.current = true }} className={`modal ${className}`.trim()}>
-    <div className="panel-heading"><h2>{title}</h2><button className="icon-button" aria-label={ui('common.close')} onClick={onClose}><X size={20}/></button></div>
-    {children}
-  </dialog>
+  return <Dialog open onOpenChange={open => {if (!open) onClose()}}>
+    <DialogContent className={className}>
+      <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
+      {children}
+    </DialogContent>
+  </Dialog>
 }
 
-/** 页面动作组：控件外面包一层一级底，挂载位置由调用方决定。 */
-export function ActionGroup({children}: {children: ReactNode}) {
-  return <div className="title-actions">{children}</div>
+/** 页面动作组：控件外面包一层容器，挂载位置由调用方决定。 */
+export function ActionGroup({children, className = ''}: {children: ReactNode; className?: string}) {
+  return <div className={`flex flex-wrap items-center gap-2.5 ${className}`.trim()}>{children}</div>
 }
 
+/** 页头：左侧标题、右侧动作区。 */
 export function PageTitle({title, actions, className = ''}: {title: string; actions?: ReactNode; className?: string}) {
-  return <div className={`page-title ${className}`.trim()}><h1 aria-label={title}>{title}</h1>{actions && <ActionGroup>{actions}</ActionGroup>}</div>
+  return <div className={`flex items-center justify-between gap-4.5 ${className}`.trim()}>
+    <h1 aria-label={title} className="page-title-heading text-3xl font-bold tracking-tight">{title}</h1>
+    {actions && <ActionGroup>{actions}</ActionGroup>}
+  </div>
 }

@@ -26,6 +26,7 @@ config/*.json
 !config/template*.json
 
 config/scheduler/
+/config/plugins/
 config/stock-exchange/
 config/opsi_secure/
 
@@ -47,6 +48,7 @@ dev_tools/debug_tools
 /campaign/test/
 /toolkit
 PaddleOCR
+.orphans-live.txt
 
 # Tests
 test/*
@@ -63,6 +65,7 @@ docs/*
 /f
 /workers
 /debug_img
+/.tmp/
 
 # AI and coding tools
 .codex/
@@ -71,6 +74,7 @@ docs/*
 .agents/
 .trae/
 .workbuddy/
+.codebuddy/
 .zcode/
 .cursor/
 .graphflow-cache/
@@ -78,7 +82,7 @@ docs/*
 RTK.md
 
 # Frontend
-frontend/node_modules/
+node_modules/
 frontend/test-results/
 frontend/playwright-report/
 frontend/*.tsbuildinfo
@@ -100,8 +104,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/

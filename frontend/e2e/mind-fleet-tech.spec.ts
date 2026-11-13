@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰队科技页用例：Tempesta 舰船前后排约束、里程碑依赖预览与手动记录显式合并的留存行为。
+ */
+
 import {expect as baseExpect, test} from '@playwright/test'
 import {rpc} from './fleet-helpers'
 
@@ -90,7 +94,7 @@ test('manual milestones survive current copies until explicit merge and remain a
   expect(corrected.ships.find(ship => ship.group_type === 10102)).toMatchObject({owned: false, full_star: false, lv120: false, current_count: 1, current_level: 120})
   await page.getByRole('button', {name: '合并舰船数据', exact: true}).click()
   await expect(milestone('Lv.120', '已完成')).toBeVisible()
-  // Reload proves the mock persisted the explicit merge, rather than only returning a preview.
+  // 用刷新验证 mock 持久化了这次显式合并，而不只是返回一次预览。
   await page.reload()
   await expect(milestone('Lv.120', '已完成')).toBeVisible()
   const current = await rpc(page, 'dock.report', {instance})

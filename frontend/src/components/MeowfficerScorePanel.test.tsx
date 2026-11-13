@@ -5,10 +5,13 @@ import { translateUi } from '../i18n'
 import type { MeowfficerScoreReport } from '../api/types'
 import { MeowfficerScoreList, splitHit, tierClass } from './MeowfficerScorePanel'
 
+// context 只给 ui 一个最小实现，文案走真实 zh-CN 表：断言直接对着界面实际显示的字串写。
 const context = {ui: (key: Parameters<AppContextValue['ui']>[0], params?: Parameters<AppContextValue['ui']>[1]) => translateUi('zh-CN', key, params)} as AppContextValue
 const render = (report: MeowfficerScoreReport) => renderToStaticMarkup(
   <AppContext.Provider value={context}><MeowfficerScoreList report={report}/></AppContext.Provider>,
 )
+
+// 夹具覆盖面板的全部渲染分支：主/次口径、推断天赋、洗点建议都在里面；note 特意带 <b> 标签，守住「后端文案按纯文本渲染」的断言。
 
 const report: MeowfficerScoreReport = {
   instance: 'test', generatedAt: '2026-09-20 11:44:26', count: 1,

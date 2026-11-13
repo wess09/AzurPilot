@@ -5,6 +5,9 @@ import { pathToFileURL, fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 import { WebSocketServer, WebSocket } from 'ws'
 import { createMockState, fail } from './state.mjs'
+import contract from '../src/api/contract.json' with {type: 'json'}
+
+const {frameBytes, requestBytes, responseBytes, dataTopics} = contract.webSocketTransport
 
 // 物品图标与真实后端 module/api/app.py 一致：优先专用图标，缺失时使用同名领奖模板。
 // mock 也照挂，否则统计页的图标列全是裂图，看不出图标布局对不对。
@@ -61,21 +64,55 @@ export function createMockServer({password = '', empty = false} = {}) {
   server.on('upgrade', (request, socket, head) => {
     let validOrigin = false
     try {validOrigin = new URL(request.headers.origin).host === request.headers.host} catch { /* 缺少来源时拒绝连接。 */ }
-    if (request.url !== '/api/v1/ws' || !validOrigin) {socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return}
-    sockets.handleUpgrade(request, socket, head, ws => sockets.emit('connection', ws))
+    const url = new URL(request.url, 'http://localhost')
+    const channel = url.searchParams.get('channel')
+    if (url.pathname !== '/api/v1/ws' || !validOrigin || ![null, 'control', 'data'].includes(channel)) {
+      socket.end('HTTP/1.1 403 Forbidden\r\n\r\n')
+      return
+    }
+    sockets.handleUpgrade(request, socket, head, ws => sockets.emit('connection', ws, channel))
   })
   const sessions = new Set()
-  sockets.on('connection', socket => {
+  sockets.on('connection', (socket, channel) => {
     const session = {socket, authenticated: !password, seq: 0, topics: [], instance: null, last: new Map(), ids: new Set()}
     sessions.add(session)
     const send = message => {
       if (socket.readyState !== WebSocket.OPEN) return
       if (socket.bufferedAmount > 4 * 1024 * 1024) {socket.close(1013); return}
-      socket.send(JSON.stringify(message))
+      const payload = JSON.stringify(message)
+      if (!channel || Buffer.byteLength(payload) <= frameBytes) {
+        socket.send(payload)
+        return
+      }
+      const bytes = Buffer.from(payload)
+      if (bytes.length > responseBytes) {socket.close(1009); return}
+      for (let offset = 0; offset < bytes.length; offset += frameBytes - 1) {
+        const end = offset + frameBytes - 1
+        socket.send(Buffer.concat([Buffer.from([Number(end >= bytes.length)]), bytes.subarray(offset, end)]))
+      }
     }
     session.event = (topic, data) => send({v: 1, type: 'event', topic, seq: ++session.seq, data})
-    session.event('session', {authRequired: !!password, protocolVersion: 1})
-    socket.on('message', async raw => {
+    session.event('session', {authRequired: !!password, protocolVersion: 1, ...(channel && {channel})})
+    let parts = [], size = 0
+    socket.on('message', async (raw, binary) => {
+      if (binary) {
+        const final = raw[0]
+        if (!channel || raw.length < 2 || raw.length > frameBytes ||
+            (final !== 1 && (final !== 0 || raw.length !== frameBytes))) {
+          socket.close(1002)
+          return
+        }
+        size += raw.length - 1
+        if (size > requestBytes) {socket.close(1009); return}
+        parts.push(raw.subarray(1))
+        if (!final) return
+        raw = Buffer.concat(parts, size)
+        parts = []
+        size = 0
+      } else if (channel && (size || raw.length > frameBytes)) {
+        socket.close(1002)
+        return
+      }
       let request
       try {
         request = JSON.parse(raw.toString())
@@ -90,6 +127,16 @@ export function createMockServer({password = '', empty = false} = {}) {
           session.authenticated = true; result = {authenticated: true}
         } else {
           if (!session.authenticated) fail('UNAUTHORIZED', '请先登录')
+          if (channel && request.method === 'events.subscribe') {
+            if (Array.isArray(request.params?.topics) && request.params.topics.some(topic => dataTopics.includes(topic) !== (channel === 'data'))) {
+              fail('WRONG_CHANNEL', '请在对应的 WebSocket 通道订阅')
+            }
+          } else if (channel && request.method !== 'system.ping') {
+            const entry = contract.methods[request.method]
+            if (channel === 'data' ? !entry || entry.mutates || entry.channel !== 'data' : entry?.channel === 'data') {
+              fail('WRONG_CHANNEL', '请在对应的 WebSocket 通道调用此方法')
+            }
+          }
           result = await state.dispatch(request.method, request.params)
           if (request.method === 'events.subscribe') {
             session.unsubscribeStock?.();session.unsubscribeStock=undefined

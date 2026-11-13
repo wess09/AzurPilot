@@ -1,0 +1,9 @@
+{
+  "id": "task-favorites",
+  "name": "任务收藏",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "permissions": ["instance.read", "storage"],
+  "pages": [{"id": "favorites", "title": "任务收藏", "entry": "ui/index.html", "icon": "ui/star.svg"}],
+  "panels": [{"id": "favorites", "title": "收藏任务", "entry": "ui/index.html", "icon": "ui/star.svg"}]
+}

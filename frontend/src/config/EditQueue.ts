@@ -7,11 +7,15 @@ import type { Value } from '../api/types'
 import { translateCurrentUi } from '../i18n'
 
 export interface Edit {
+  /** 字段上显示的草稿原文，可能未通过校验。 */
   value: Value
+  /** 实际提交给服务端的值，缺省场景与 value 相同；需要转换的（如字符串数字转数值）由调用方传入。 */
   payload: Value
+  /** 单调递增的输入版本号：旧响应只确认与自己相同版本的输入。 */
   sequence: number
   status: 'queued' | 'saving' | 'saved' | 'error'
   error?: string
+  /** false 表示永久失败（参数非法等），不自动重试，等用户改值后重新入队。 */
   retryable?: boolean
   /** 服务端确认这次提交的时刻。 */
   readyAt?: number
@@ -21,6 +25,7 @@ export interface Edit {
 const SAVED_QUIET_MS = 700
 /** 「已保存」显示后的最短停留。 */
 const SAVED_VISIBLE_MS = 800
+/** useSyncExternalStore 的快照：未结算条目与草稿持久化失败的提示文本。 */
 export interface EditSnapshot { edits: Record<string, Edit>; storageError: string }
 interface Transport {
   ready: () => boolean
@@ -58,38 +63,12 @@ export class EditQueue {
     return () => { this.listeners.delete(listener) }
   }
 
-  confirmed() {
-    return Object.fromEntries(Object.entries(this.state.edits)
-      .filter(([, edit]) => edit.status === 'saved').map(([path, edit]) => [path, edit.sequence]))
-  }
-
-  /** 提交刚成功、静默期未满：此刻不呈现保存结果。 */
+  /** 提交刚成功、还在静默期内：算作未到期。 */
   private idle(edit: Edit) {
     return edit.status === 'saved' && Date.now() - (edit.readyAt ?? 0) < SAVED_QUIET_MS
   }
 
-  /** 静默期内的「已保存」不呈现给用户。 */
-  savedVisible(edit: Edit) {
-    return !this.idle(edit)
-  }
-
-
-  /** 只清理由读取前已确认的覆盖值，读取期间的新输入和回执仍由队列保护。
-      未过静默期、仍在最短停留内的条目留到下一次。 */
-  reconcile(confirmed: Record<string, number>) {
-    const edits = {...this.state.edits}
-    for (const [path, sequence] of Object.entries(confirmed)) {
-      const edit = edits[path]
-      if (edit?.status !== 'saved' || edit.sequence !== sequence) continue
-      if (this.idle(edit)) continue
-      delete edits[path]
-    }
-    this.state = {...this.state, edits}
-    this.publish()
-    this.schedule()
-  }
-
-  /** 按当前条目算出最近一个到期时刻：静默期满或显示够久，到点后重新结算。 */
+  /** 按当前条目算出最近一个到期时刻：静默期满并停留够时长后，自动清掉已保存条目。 */
   private schedule() {
     if (this.settleTimer) return
     const now = Date.now()
@@ -133,6 +112,7 @@ export class EditQueue {
   /** 字段提交成功后收到的服务端配置。 */
   onSaved?: (data: unknown) => void
 
+  /** 记录一次输入并尝试提交：payload 缺省等于 value；传入 error 时以错误态入队、不提交，等用户修正。 */
   change(path: string, value: Value, payload: Value = value, error?: string) {
     this.replace(path, {value, payload, sequence: ++this.sequence, status: error ? 'error' : 'queued', error})
     void this.flush()
@@ -155,6 +135,7 @@ export class EditQueue {
     }
   }
 
+  /** 排空队列；已有排空在进行时返回同一个 Promise，不重复启动。 */
   flush(): Promise<void> {
     if (this.running) return this.running
     this.running = this.drain().finally(() => { this.running = undefined })

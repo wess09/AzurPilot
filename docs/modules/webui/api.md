@@ -4,17 +4,23 @@ Quick Tunnel 配对新增 `remote.pair.create`、`remote.pair.status`、`remote.
 `remote.revoke`，均沿用认证后的 `/api/v1/ws`，参数契约由生成器维护。
 独立配对凭据支持 `auth.login`；撤销在下一次请求或心跳生效，见 [远程访问](remote-access.md)。
 
-> WebUI 的后端服务：一个 Starlette ASGI 应用把 React 静态资源、同源 WebSocket 业务通道与 MCP SSE 子应用组装进同一进程；业务数据全部经 v1 信封走单一 WebSocket，HTTP 只保留静态资源、健康检查与一份自包含报告页。
+> WebUI 的后端服务：Starlette 在同一进程提供 React 静态资源、WebSocket 业务接口和 MCP SSE 子应用。
 
 ## 1. 模块概述
 
 `statistics.resourceFlows` 是资源管理的只读查询方法，参数模型为 `ResourceFlowsParams`，`resource_service.py` 核验实例、日期与分页后委托本地资源账本聚合，并补充可靠仪表盘及仓库库存。它不访问设备或启动游戏；石油控制设置继续通过原有配置 API 读写。数据与导出快照语义见 [资源管理](resource-management.md)。
 
-module/api 是 React WebUI 的全部后端。浏览器加载 `http://{host}:{port}` 后，页面资源由静态文件服务提供，而之后的一切业务——读配置、改配置、启动调度器、看日志、看截图、读统计、管理更新——都通过同一条 `/api/v1/ws` WebSocket 连接完成。这个「业务全走 WS」的决策是模块的设计核心：
+浏览器使用两个 WebSocket 连接，两者都转发到 `/api/v1/ws`。反向代理须保留查询参数、Host、Origin，并转发文本和二进制消息。两个连接分别验证访问凭据并维护独立的请求队列、心跳和重连。
 
-- **单一通道**：认证、限流、背压、请求去重集中在一个会话对象里实现，不需要每个 HTTP 端点重复一套防护；服务器推送事件（实例状态、日志、截图帧）与请求响应复用同一条连接，避免 HTTP 轮询。
-- **代理友好**：反向代理只需要正确转发一条 WebSocket Upgrade 路径，并保留外部 Host/Origin 即可；不需要为几十个 REST 端点配置路由。
-- **安全边界清晰**：WebSocket 不受浏览器 CORS 保护，因此在升级前必须做 Origin/Host 校验；认证、限流都在连接内完成，凭据只出现在消息体中，不进 URL 与日志。
+| 连接 | 用途 |
+| --- | --- |
+| `?channel=control` | 调度启停、配置保存、更新等操作，实例和总览状态，以及统计数据变化通知 |
+| `?channel=data` | 统计报表、资源流水、配置架构与快照、舰船目录、日志和截图。路由方法由生成的 API 契约标记 |
+| 无 `channel` 参数 | 旧客户端使用的单连接协议 |
+
+显式通道在 `session` 事件中回显 `channel`。认证和心跳在两条连接各自完成，数据连接重连后重订阅日志和截图。操作和数据各用独立的业务并发额度，数据通道拒绝写操作。
+
+显式通道使用 UTF-8 JSON。消息不超过 64 KiB 时发送文本，超过时按字节切成独立的二进制消息，每条最多 64 KiB。二进制消息的首字节 `0` 表示还有后续，`1` 表示末片。每个方向在同一连接中顺序发送整条消息的所有分片，接收方拼接后再解析 JSON。请求总量限制仍是普通请求 1 MiB、舰船导入和识别请求 8 MiB。显式通道的响应最多 64 MiB。分片降低单条 WebSocket 消息的大小，报表仍按原范围返回完整数据。
 
 模块本身刻意做成**薄适配层**：它不做游戏业务，只做「协议收发 + 参数校验 + 编排」。真正的业务要么委托给 `module/runtime/`（进程管理、更新器、部署设置），要么委托给 `module/config/transaction` 的跨进程事务与 `module/statistics/` 的统计数据源。这使 API 层可以在测试中用临时配置目录 + 关闭真实进程生命周期的方式完整运行（`create_app` 的测试参数），而不接触任何设备。
 
@@ -91,8 +97,8 @@ module/api/
 | 字段 | 类型 | 说明 |
 | --- | --- | --- |
 | `password` | str | 访问密码；为空表示免密（本机/回环部署） |
-| `connections` | int | 当前 WS 连接数，上限 32，超出以 1013 拒绝 |
-| `workers` | `asyncio.Semaphore(8)` | 全局并发业务线程上限，dispatch 与订阅采样共享 |
+| `connections` | int | 总连接上限 32，数据连接最多 16 条，超出以 1013 拒绝 |
+| `workers` / `data_workers` | asyncio.Semaphore | 操作及旧协议共享 8 个并发额度，数据通道独占 4 个额度 |
 | `failures` | OrderedDict | 按来源 IP 的登录失败退避表，上限 1024 条，超限淘汰最旧 |
 
 ### Session（socket.py）

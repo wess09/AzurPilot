@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 大世界模拟器用例（串行执行）：绘图模式运行与结果持久、长模拟中断重跑与窄屏布局可用性。
+ */
+
+import {routeRpc} from './rpc-route'
 import { expect, test, type Page } from '@playwright/test'
 
 test.describe.configure({mode: 'serial'})
@@ -25,8 +30,10 @@ test('三种绘图模式均可从页面运行，结果和独立日志在刷新�
   let heldId = ''
   let startId = ''
   let heldResponse: string | Buffer | undefined
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  let sendData: (message: string | Buffer) => void
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
+    if (socket.channel === 'data') sendData = socket.send
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
       methods.push(request.method)
@@ -42,7 +49,7 @@ test('三种绘图模式均可从页面运行，结果和独立日志在刷新�
         const stale = heldResponse
         holdStatus = false; heldResponse = undefined; heldId = ''
         // 模拟启动前的状态响应比启动响应更晚到达。
-        setTimeout(() => socket.send(stale), 100)
+        setTimeout(() => sendData(stale), 100)
       }
     })
   })

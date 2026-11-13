@@ -15,7 +15,6 @@ import { Annotation, Compartment, EditorState } from '@codemirror/state'
 import {
   Decoration,
   EditorView,
-  highlightActiveLine,
   keymap,
   MatchDecorator,
   ViewPlugin,
@@ -76,7 +75,7 @@ const COMMISSION_PATTERN =
 const SHOP_ITEM_PATTERN =
   /^(array|book|box|bulin|cat|chip|coin|cube|drill|food|plate|retrofit|pr|dr|specializedcore|logger|tuning|fragment|equip|gachaticket|meta|skinbox|oil|medal|merit|actionpoint|purplecoins|operationcoins|augment|expbook|oxycola|coolant|ship|geardesignplan|gearpart|developmentmaterial|ordnancetestingreport|metaredbook|crystallizedheatresistantsteel|nanoceramicalloy|neuroplasticprostheticarm|supercavitationgenerator|hiddenzonedatalogger|adventuregalley|albacore|bataan|bearn|bluegill|carabiniere|casablanca|contedicavour|dukeofyork|echo|eldridge|gangut|glorious|grenville|hibiki|hunter|icarus|kawakaze|kinggeorgev|kinu|kuroshio|lagalissonniere|lemalinmuse|letemeraire|littorio|mikuma|minsk|newcastle|oyashio|quincy|ryuujou|sanjuan|sheffieldmuse|trento|u37|vincennes|z24|z26|z28|z36)?(-)?(neptune|monarch|red|blue|yellow|general|gun|torpedo|antiair|plane|wild|random|dd|cl|bb|cv|iris|sardegna|abyssal|archive|obscure|unlock|combat|offence|offense|survival|ironblood|eagle|royal|sakura|enhance|change|core)?(-)?(s[1-5]|t[1-6]|ur|ssr|sr|r|n|\d+)?$/i
 
-/** 语法解析装饰器 */
+/** 语法解析装饰器。分支顺序即匹配优先级，先命中先上色；复合语法（9~12）必须排在通用等级后缀（16）之前，否则 PlateTorpedoT3、SameT4 这类整词会被拆碎。 */
 const tokenDecorator = new MatchDecorator({
   regexp: /[>＞﹥›˃ᐳ❯]+|[^\s>＞﹥›˃ᐳ❯]+/g,
   decorate: (add, from, to, match) => {
@@ -281,6 +280,18 @@ const filterHighlightPlugin = ViewPlugin.fromClass(
   {decorations: v => v.decorations}
 )
 
+/**
+ * Alas 过滤器语法高亮编辑器：CodeMirror 6 文本域，按词法给任务名、舰船、关卡等 token 上色。
+ *
+ * 提交契约是「失焦即提交」：输入过程不触发 onChange，失焦或卸载时才提交草稿，
+ * 避免每个按键都触发外层重渲染；外部 value 变化（重置、切换实例）会整体覆盖编辑内容。
+ *
+ * @param id 挂到可编辑内容上的 DOM id，invalid 时还用于拼接错误描述的 aria-describedby。
+ * @param value 外部受控值，仅在外部变化时同步进编辑器。
+ * @param onChange 失焦或卸载时以编辑器当前全文调用。
+ * @param label 可编辑内容的 aria-label。
+ * @param invalid 校验失败标记，联动 aria-invalid 与错误描述。
+ */
 export function FilterEditor({
   id,
   value,
@@ -304,6 +315,7 @@ export function FilterEditor({
   const lastCommitted = useRef(value)
   const editable = useRef(new Compartment())
 
+  // onChange/value 每次渲染都刷新进 ref：输入路径只读 ref，effect 不依赖它们，编辑器实例不会因 props 变化被重建。
   change.current = onChange
   latestValue.current = value
 
@@ -314,7 +326,6 @@ export function FilterEditor({
         doc: initial.current,
         extensions: [
           history(),
-          highlightActiveLine(),
           EditorView.lineWrapping,
           filterHighlightPlugin,
           keymap.of([...defaultKeymap, ...historyKeymap]),
@@ -369,7 +380,7 @@ export function FilterEditor({
     }
   }, [value])
 
-  // 响应只读与校验状态变化
+  // 只读与校验状态经 Compartment 热重配置，不必销毁重建整个编辑器。
   useEffect(() => {
     view.current?.dispatch({
       effects: editable.current.reconfigure([

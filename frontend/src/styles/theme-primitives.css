@@ -1,4 +1,4 @@
-/* 共用语义变量映射；材质由当前主题提供。 */
+/* 共用语义变量映射；材质由当前主题提供 */
 html, body {font-family: var(--theme-font-sans); color: var(--theme-text); background: var(--theme-bg)}
 body {background-attachment: fixed}
 ::selection {background: var(--theme-selection)}
@@ -10,7 +10,8 @@ input, select, textarea {
   border-color: var(--theme-input-border);
   border-radius: var(--theme-radius-control);
 }
-input:focus, select:focus, textarea:focus {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
+/* 焦点色只属于应用自己的原生控件；组件库控件（带 data-slot）走它自己的官方默认焦点色 */
+input:not([data-slot]):focus, select:not([data-slot]):focus, textarea:not([data-slot]):focus {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
 button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var(--theme-focus)}
 
 .sidebar, .right-rail {
@@ -21,13 +22,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
   backdrop-filter: var(--theme-sidebar-filter, none);
 }
 /* 旧版版式的左列容器装的是调度器与任务计划，与新版的右栏同属一级面；
-   只给有材质轴的族：简约与紧凑没有材质层，保持裸容器。 */
+   只给有材质轴的族：简约与紧凑没有材质层，保持裸容器 */
 :root[data-material] .instance-page-rail {
   background: var(--theme-surface-bg);
   -webkit-backdrop-filter: var(--theme-surface-filter);
   backdrop-filter: var(--theme-surface-filter);
 }
-/* 资源卡与面板同属一层：卡片底层走一级面，卡内的内容层自己走二级贴片（见 .resource-card-body）。 */
+/* 资源卡与面板同属一层：卡片底层走一级面，卡内的内容层自己走二级贴片（见 .resource-card-body） */
 .panel, .resource-card {
   background: var(--theme-surface-bg);
   border-color: var(--theme-glass-edge);
@@ -47,7 +48,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 }
 .instance-card {border-radius: var(--theme-radius-card)}
 
-/* 顶栏使用一级面。 */
+/* 顶栏使用一级面 */
 .topbar {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
 
 .primary-nav a {color: var(--theme-nav-text)}
@@ -79,7 +80,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .instance-menu button:hover, .instance-menu button:focus-visible, .instance-menu button[aria-checked='true'] {background: var(--theme-accent-soft); color: var(--theme-accent)}
 
 .topbar {border-color: var(--theme-glass-edge); border-bottom: none; box-shadow: var(--theme-glass-shadow)}
-.connection-label, .eyebrow, .text-button, .data-table summary {color: var(--theme-accent)}
+.connection-label, .text-button {color: var(--theme-accent)}
 .connection-banner {background: var(--theme-warning-soft); color: var(--theme-warning)}
 
 .button {border-radius: var(--theme-radius-button)}
@@ -109,13 +110,12 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .page-title h1::before {background: var(--theme-title-glass)}
 .page-title h1::after {-webkit-text-stroke-color: var(--theme-title-highlight-stroke)}
 
-.status.running, .task-state.running {color: var(--theme-success); background: var(--theme-success-soft)}
+.status.running {color: var(--theme-success); background: var(--theme-success-soft)}
 .status.stopped {color: var(--theme-status-stopped-text); background: var(--theme-status-stopped-bg)}
 .status.error {color: var(--theme-danger); background: var(--theme-danger-soft)}
 .status.updating {color: var(--theme-warning); background: var(--theme-warning-soft)}
-.scheduler-status.running {color: var(--theme-text)}
 
-.resource-heading, .resource-foot, .resource-value small, .count-badge, .task-state, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
+.resource-heading, .resource-foot, .resource-value small, .count-badge, .empty, .empty > svg, .empty strong, .input-icon {color: var(--theme-muted)}
 .resource-heading > div {background: var(--theme-resource-0-bg); color: var(--theme-resource-0-text)}
 .resource-1 .resource-heading > div {background: var(--theme-resource-1-bg); color: var(--theme-resource-1-text)}
 .resource-2 .resource-heading > div {background: var(--theme-resource-2-bg); color: var(--theme-resource-2-text)}
@@ -125,7 +125,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .home-instance-icon {background: var(--theme-instance-icon-bg); color: var(--theme-on-accent); box-shadow: var(--theme-instance-icon-shadow)}
 
 .preview-screen {background: var(--theme-preview-bg); color: var(--theme-preview-text)}
-.preview-screen > span, .preview-screen > .preview-resolution, .radar {color: var(--theme-preview-muted)}
+.preview-screen > span {color: var(--theme-preview-muted)}
 .live-label {color: var(--theme-success); border-color: color-mix(in srgb, var(--theme-success) 22%, transparent)}
 .live-label i {background: var(--theme-success)}
 
@@ -148,7 +148,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .toast {background: var(--theme-toast-bg); color: var(--theme-toast-text); box-shadow: var(--theme-shadow-popover)}
 .toast.error {background: var(--theme-toast-error-bg); color: var(--theme-on-accent)}
 .modal {background: var(--theme-modal-bg); -webkit-backdrop-filter: var(--theme-modal-filter); backdrop-filter: var(--theme-modal-filter); color: var(--theme-text); border-color: var(--theme-glass-edge); border-radius: var(--theme-radius-panel); box-shadow: var(--theme-shadow-modal)}
-/* 弹窗只是小窗，遮罩要能让背后的页面仍然看得见：一律半透明且不模糊。 */
+/* 弹窗只是小窗，遮罩要能让背后的页面仍然看得见：一律半透明且不模糊 */
 .modal::backdrop {background: var(--theme-overlay, color-mix(in srgb, var(--bg) 30%, transparent)); backdrop-filter: none}
 
 .login-page {background: var(--theme-bg)}
@@ -156,13 +156,12 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .login-art > span {color: var(--theme-login-art-text)}
 .login-card {background: var(--theme-surface)}
 
-.yaml-editor, .yaml-editor .cm-editor, .yaml-editor .cm-gutters, .field-row-multiline textarea, .storage-field pre {background: var(--theme-input-bg)}
-.yaml-editor {border-color: var(--theme-border)}
+.field-row-multiline textarea, .storage-field pre {background: var(--theme-input-bg)}
 .yaml-editor:focus-within {border-color: var(--theme-accent)}
 
-/* 二级面与队列层级都用主题色，不写死取值。 */
+/* 二级面与队列层级都用主题色，不写死取值 */
 .scheduler-widget {background: var(--theme-plate-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
-.nav-search, .input-icon, .count-badge {background: var(--theme-control-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
+.input-icon, .count-badge {background: var(--theme-control-bg); border-color: var(--theme-border); -webkit-backdrop-filter: var(--theme-control-filter); backdrop-filter: var(--theme-control-filter)}
 .group-nav {
   background: var(--theme-glass);
   border: 1px solid var(--theme-glass-edge);
@@ -190,25 +189,25 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .rail-queue-group.waiting {background: var(--theme-inset-bg); border-color: color-mix(in srgb, var(--theme-border) 42%, transparent)}
 .rail-task-item:hover {background: color-mix(in srgb, var(--theme-surface) 86%, transparent)}
 
-/* ===== 标签栏（全主题同一套）=====
+/* 标签栏（全主题同一套）
    结构、几何与交互在这里定义，各主题只在自己的文件里改圆角、颜色这类皮相。
-   标签页无框无面，只有选中与悬浮画底色；左侧那条短竖线用背景层画（伪元素留给选中标签的两个下角）。 */
+   标签页无框无面，只有选中与悬浮画底色；左侧那条短竖线用背景层画（伪元素留给选中标签的两个下角） */
 :root {
-  /* 标签的几何全部从 --row-scale 派生；五档尺寸只改 data-tab-size 的取值。 */
-  /* 标签页的底色接一级面，并按系数把它的不透明度加浓。 */
+  /* 标签的几何全部从 --row-scale 派生；五档尺寸只改 data-tab-size 的取值 */
+  /* 标签页的底色接一级面，并按系数把它的不透明度加浓 */
   --theme-tab-fill-boost: 1.25;
   --theme-tab-surface-bg: color-mix(in srgb, var(--surface) min(100%, calc(var(--theme-surface-alpha, 100%) * var(--theme-tab-fill-boost))), transparent);
-  /* 标签容器四角同半径；「脚」的弧半径与它相同，两者在同一处转角相接。 */
+  /* 标签容器四角同半径；「脚」的弧半径与它相同，两者在同一处转角相接 */
   --instance-tab-radius-shape: calc(var(--instance-tab-height) * var(--instance-tab-radius-ratio, .3));
   --instance-tab-foot: calc(2 * var(--instance-tab-radius-shape));
-  /* 加号的圆圈与它左侧那条竖线之间的间距。 */
+  /* 加号的圆圈与它左侧那条竖线之间的间距 */
   --instance-tab-plus-gap: calc(var(--instance-tab-height) * .16);
-  /* 标签上边框与栏上边框之间的细缝；五档同比例，栏与标签一起收窄。 */
+  /* 标签上边框与栏上边框之间的细缝；五档同比例，栏与标签一起收窄 */
   --instance-tab-gap-y: calc(var(--instance-tab-height) * .15);
   --instance-tab-divider-height: calc(var(--instance-tab-height) * .47);
   --instance-tab-create-size: calc(var(--instance-tab-height) * .85);
   --instance-tab-divider-color: color-mix(in srgb, var(--theme-text, currentColor) 26%, transparent);
-  /* 悬浮复用选中的底色，只把浓度压到一半。 */
+  /* 悬浮复用选中的底色，只把浓度压到一半 */
   --theme-tab-hover-bg: color-mix(in srgb, var(--theme-tab-current-bg) 50%, transparent);
 }
 
@@ -221,13 +220,13 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
   flex: 1 1 200px;
   overflow-x: auto;
   scrollbar-width: none;
-  /* 左右留出脚的位置：脚是绝对定位、不占布局，否则会被轨道的滚动边缘切掉。 */
+  /* 左右留出脚的位置：脚是绝对定位、不占布局，否则会被轨道的滚动边缘切掉 */
   padding: 0 var(--instance-tab-edge, 8px);
 }
 .instance-tabs::-webkit-scrollbar {display: none}
 
 /* 标签与加号共用的骨架：同高、同一条左边线、同样的悬停过渡。
-   标签自己不画边框：轮廓由底色的边缘给出，于是下侧两只「脚」与标签连成一片。 */
+   标签自己不画边框：轮廓由底色的边缘给出，于是下侧两只「脚」与标签连成一片 */
 .instance-tab,
 .instance-tab-create {
   position: relative;
@@ -249,7 +248,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
   max-width: var(--instance-tab-max);
   padding: 0 var(--instance-tab-pad);
   font-size: var(--instance-tab-font);
-  /* 容器是四角同半径的标准圆角矩形；下侧两角由「脚」补成直角并向外接上标签栏。 */
+  /* 容器是四角同半径的标准圆角矩形；下侧两角由「脚」补成直角并向外接上标签栏 */
   border-radius: var(--instance-tab-radius-shape);
   cursor: pointer;
 }
@@ -257,20 +256,20 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .instance-tab .lucide {width: var(--instance-tab-icon); height: var(--instance-tab-icon)}
 
 /* 选中与悬浮的底色共用一级面 token，悬浮只降浓度；文字、内边距、字号、竖直位置两态完全一致，
-   差别只有底色与圆角。脚的取色跟着各自的状态走。 */
+   差别只有底色与圆角。脚的取色跟着各自的状态走 */
 .instance-tab.current {
   background-color: var(--theme-tab-current-bg);
   color: var(--theme-text);
   --instance-tab-foot-color: var(--theme-tab-current-bg);
 }
-/* 已选中的标签不再响应悬浮。 */
+/* 已选中的标签不再响应悬浮 */
 .instance-tab:not(.current):hover {
   background-color: var(--theme-tab-hover-bg);
   color: var(--theme-text);
   --instance-tab-foot-color: var(--theme-tab-hover-bg);
 }
 
-/* 竖线归属：每个元素画自己左侧那一条；高亮块自身与它右邻的不画。 */
+/* 竖线归属：每个元素画自己左侧那一条；高亮块自身与它右邻的不画 */
 .instance-tab.current,
 .instance-tab:not(.current):hover,
 .instance-tab.current + .instance-tab,
@@ -280,7 +279,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 
 /* 标签下侧两角各一只与底色同色的「脚」：只画标签外侧那段凹弧，弧心落在标签的角上，与容器边挨边、不重叠。
    画脚的那一侧容器下角不取圆角，由容器自己的底色补成直角；被禁掉脚的那一侧恢复圆角。
-   形状（蒙版）常驻，颜色走 background-color，与容器同一条过渡一起淡入淡出。 */
+   形状（蒙版）常驻，颜色走 background-color，与容器同一条过渡一起淡入淡出 */
 .instance-tab::before,
 .instance-tab::after {
   content: '';
@@ -304,16 +303,16 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
   -webkit-mask-image: var(--instance-tab-foot-mask);
   mask-image: var(--instance-tab-foot-mask);
 }
-/* 高亮时下侧两角交给脚来收口：容器那一侧不画圆角，两块正好相接。 */
+/* 高亮时下侧两角交给脚来收口：容器那一侧不画圆角，两块正好相接 */
 .instance-tab.current,
 .instance-tab:not(.current):hover {border-bottom-left-radius: 0; border-bottom-right-radius: 0}
-/* 相邻已是选中标签的那一侧不画脚，那一侧恢复容器圆角：两只脚会叠在一起。 */
+/* 相邻已是选中标签的那一侧不画脚，那一侧恢复容器圆角：两只脚会叠在一起 */
 .instance-tab.current + .instance-tab:not(.current):hover {border-bottom-left-radius: var(--instance-tab-radius-shape)}
 .instance-tab:not(.current):hover:has(+ .instance-tab.current) {border-bottom-right-radius: var(--instance-tab-radius-shape)}
 .instance-tab.current + .instance-tab:not(.current):hover::before,
 .instance-tab:not(.current):hover:has(+ .instance-tab.current)::after {background-color: transparent}
 
-/* 标签内的两格控件：左格放状态与启停钮，右格放删除钮。格子定宽，悬停换图标不改变标签宽度。 */
+/* 标签内的两格控件：左格放状态与启停钮，右格放删除钮。格子定宽，悬停换图标不改变标签宽度 */
 .instance-tab-cell {position: relative; display: inline-flex; flex-shrink: 0; --tab-cell-icon: calc(var(--instance-tab-icon) * 6 / 7); width: var(--tab-cell-icon); height: var(--tab-cell-icon)}
 .instance-tab .instance-tab-icon {flex-shrink: 0; width: var(--tab-cell-icon); height: var(--tab-cell-icon)}
 .instance-tab-cell:not(.instance-tab-remove):hover .instance-tab-icon {visibility: hidden}
@@ -327,18 +326,18 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .instance-tab-remove:hover .lucide {display: block}
 .instance-tab-remove:hover {border-radius: 50%; cursor: pointer; color: var(--red); background: var(--surface)}
 
-/* 状态色只落在图标与实例名上：颜色即状态，不另加文字。 */
+/* 状态色只落在图标与实例名上：颜色即状态，不另加文字 */
 .instance-tab.running {color: var(--theme-success)}
 .instance-tab.updating {color: var(--muted)}
 .instance-tab.error {color: var(--theme-danger)}
-/* 状态色要落在图标与实例名上：这两层会被 .breadcrumb span 一类规则改成 muted。 */
+/* 状态色要落在图标与实例名上：这两层会被 .breadcrumb span 一类规则改成 muted */
 .instance-tab.running .instance-tab-icon, .instance-tab.running .instance-tab-name {color: var(--theme-success)}
 .instance-tab.error .instance-tab-icon, .instance-tab.error .instance-tab-name {color: var(--theme-danger)}
 .instance-tab.running .instance-tab-icon,
 .instance-tab.updating .instance-tab-icon {animation: spin 1.1s linear infinite}
 
 /* 加号：静态只有图标，悬停与按下才现出圆圈。圆圈由伪元素画，盒子比它左右各宽出一段间距——
-   左侧那条短竖线仍画在盒子左边缘（也就是紧贴前一个标签），圆因此不会压到线上。 */
+   左侧那条短竖线仍画在盒子左边缘（也就是紧贴前一个标签），圆因此不会压到线上 */
 .instance-tab-create {
   display: grid;
   place-items: center;
@@ -363,7 +362,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .instance-tab-create:active::after {border-color: var(--accent); transform: scale(.9)}
 .instance-tab-create:active > .lucide {transform: scale(.86)}
 
-/* 动效只作强化：关掉后选中态仍靠底色与竖线区分。 */
+/* 动效只作强化：关掉后选中态仍靠底色与竖线区分 */
 @media (prefers-reduced-motion: reduce) {
   .instance-tab, .instance-tab-create, .instance-tab-create > .lucide {transition: none}
   .instance-tab.running .instance-tab-icon, .instance-tab.updating .instance-tab-icon {animation: none}

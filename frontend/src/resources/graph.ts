@@ -1,6 +1,11 @@
+/**
+ * @fileoverview 资源流水桑基图的数据构造：把 ResourceFlowReport 折算成 ECharts 的节点与连线。
+ */
 import type {ResourceFlowReport} from '../api/types'
 
+/** 桑基图节点：资源居中层（depth 1），来源节点（depth 0）流入、去向节点（depth 2）流出。 */
 export interface FlowNode {name: string; label: string; depth: number; amount?: number; resource?: string; task?: string; itemStyle?: {color: string}}
+/** 桑基图连线：value 是占该资源总量（进出较大者）的百分比，amount 是绝对数量。 */
 export interface FlowLink {source: string; target: string; value: number; amount: number; label: string; resource: string}
 /** 单资源保持数量比例，多资源分别归一化；补足库存支出或区间结余以守恒。 */
 export function flowGraph(report: ResourceFlowReport, labels: {resource: (key: string) => string; task: (key: string) => string; stock: string; balance: string}) {

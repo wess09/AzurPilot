@@ -26,6 +26,15 @@ Button:focus {
     text-style: bold underline;
 }
 
+Button:disabled {
+    opacity: 0.45;
+}
+
+Footer {
+    background: #0d1117;
+    color: #8b949e;
+}
+
 DataTable {
     background: #12171f;
     color: #c9d1d9;
@@ -43,13 +52,18 @@ DataTable > .datatable--header {
     text-style: bold;
 }
 
+DataTable > .datatable--hover {
+    background: #1c2430;
+}
+
+/* 日志外框由 LogView 提供，RichLog 本身不再画边框，避免出现双层框。 */
 RichLog {
     background: #090d13;
-    border: solid #30363d;
+    border: none;
 }
 
 RichLog:focus {
-    border: solid #58a6ff;
+    border: none;
 }
 
 OptionList {
@@ -61,4 +75,34 @@ OptionList > .option-list--option-highlighted {
     background: #1f6feb;
     color: #ffffff;
     text-style: bold;
+}
+
+Input,
+TextArea {
+    background: #0d1117;
+    border: tall #30363d;
+}
+
+Input:focus,
+TextArea:focus {
+    border: tall #58a6ff;
+}
+
+/* Select 的边框画在内部的 SelectCurrent 上，直接给 Select 加边框会双层。 */
+Select {
+    background: #0d1117;
+}
+
+Select > SelectCurrent {
+    background: #0d1117;
+    border: tall #30363d;
+}
+
+Select:focus > SelectCurrent {
+    background: #0d1117;
+    border: tall #58a6ff;
+}
+
+Switch:focus > .switch--slider {
+    color: #58a6ff;
 }

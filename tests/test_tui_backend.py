@@ -13,7 +13,60 @@ from module.runtime.setting import State
 from module.runtime.updater import updater
 from module.tui.app import AzurPilotTUI
 from module.tui.backend import TUIBackend
-from module.tui.widgets import ConfigModal, HeaderBar, LogView, ResourceBar, Sidebar, TaskTable
+from module.tui.widgets import (
+    ConfigModal,
+    HeaderBar,
+    HelpScreen,
+    LogView,
+    ResourceBar,
+    Sidebar,
+    TaskModal,
+    TaskTable,
+)
+
+
+class TestLauncherTuiArgs(unittest.TestCase):
+    """启动器 ``--tui`` 参数解析。"""
+
+    def test_tui_request(self) -> None:
+        """未指定时不进入 TUI；指定时可选带实例名。"""
+        from gui import tui_request
+
+        self.assertEqual((False, None), tui_request([]))
+        self.assertEqual((False, None), tui_request(['-r']))
+        self.assertEqual((False, None), tui_request(['--host', '0.0.0.0']))
+        self.assertEqual((True, None), tui_request(['--tui']))
+        self.assertEqual((True, 'alas'), tui_request(['--tui', 'alas']))
+        self.assertEqual((True, 'alas'), tui_request(['--tui=alas']))
+        self.assertEqual((True, None), tui_request(['--tui', '--reload']))
+
+    def test_run_tui_delegates_to_app(self) -> None:
+        """run_tui 将实例名传给 Textual 应用并返回退出码。"""
+        from gui import run_tui
+
+        with (
+            patch('gui.configure_tui_console'),
+            patch('module.logger.logger.removeHandler'),
+            patch('module.tui.app.AzurPilotTUI') as app_cls,
+        ):
+            self.assertEqual(0, run_tui('alas'))
+
+        app_cls.assert_called_once_with(default_instance='alas')
+        app_cls.return_value.run.assert_called_once_with()
+
+    def test_run_tui_returns_failure_on_crash(self) -> None:
+        """界面异常退出时返回非零退出码。"""
+        from gui import run_tui
+
+        with (
+            patch('gui.configure_tui_console'),
+            patch('module.logger.logger.removeHandler'),
+            patch('module.tui.app.AzurPilotTUI') as app_cls,
+        ):
+            app_cls.return_value.run.side_effect = RuntimeError('boom')
+            self.assertEqual(1, run_tui())
+
+        app_cls.assert_called_once_with(default_instance=None)
 
 
 class IsolatedTUIFixture:
@@ -118,12 +171,53 @@ class TestTUIBackend(IsolatedTUIFixture, unittest.TestCase):
         self.assertIn("path", first_item)
         self.assertIn("title", first_item)
         self.assertIn("type", first_item)
+        self.assertIn("mode", first_item)
+        self.assertIn("valuetype", first_item)
 
     def test_get_logs(self) -> None:
         """测试日志拉取契约。"""
         cursor, entries = self.backend.get_logs(after=0)
         self.assertIsInstance(cursor, int)
         self.assertIsInstance(entries, list)
+        delta_cursor, delta_entries, reset = self.backend.get_logs_delta(after=0)
+        self.assertEqual(cursor, delta_cursor)
+        self.assertEqual(entries, delta_entries)
+        self.assertIsInstance(reset, bool)
+
+    def test_list_statuses_contract(self) -> None:
+        """轻量状态轮询不读配置，且覆盖全部实例。"""
+        statuses = self.backend.list_statuses()
+        self.assertEqual([item["name"] for item in statuses], self.backend.config_service.names())
+        for item in statuses:
+            self.assertIn(item["status"], ("running", "stopped", "error", "updating"))
+            self.assertIn("currentTask", item)
+
+    def test_overview_lists_disabled_tasks_and_can_reenable(self) -> None:
+        """禁用任务仍需出现在总览中，否则界面无法再次启用。"""
+        success, _, enabled = self.backend.toggle_task_enable("Commission")
+        self.assertTrue(success, "关闭任务计划失败")
+        self.assertFalse(enabled)
+
+        overview = self.backend.get_overview()
+        entry = next(item for item in overview["tasks"] if item["name"] == "Commission")
+        self.assertFalse(entry["enabled"])
+        self.assertEqual("disabled", entry["state"])
+
+        success, _, enabled = self.backend.toggle_task_enable("Commission")
+        self.assertTrue(success, "重新启用任务计划失败")
+        self.assertTrue(enabled)
+
+        overview = self.backend.get_overview()
+        entry = next(item for item in overview["tasks"] if item["name"] == "Commission")
+        self.assertTrue(entry["enabled"])
+        self.assertNotEqual("disabled", entry["state"])
+
+    def test_toggle_unsupported_task(self) -> None:
+        """没有 Scheduler.Enable 的任务不应被误写配置。"""
+        success, message, enabled = self.backend.toggle_task_enable("Storage")
+        self.assertFalse(success)
+        self.assertFalse(enabled)
+        self.assertIn("不支持", message)
 
 
 class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
@@ -174,6 +268,36 @@ class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
             # 模拟手动刷新动作
             app.action_refresh_data()
 
+    async def test_help_screen_toggles(self) -> None:
+        """快捷键弹层可打开并关闭，且不会误触发退出。"""
+        app = AzurPilotTUI()
+        async with app.run_test() as pilot:
+            await pilot.press("question_mark")
+            await pilot.pause()
+            self.assertIsInstance(app.screen, HelpScreen)
+            await pilot.press("escape")
+            await pilot.pause()
+            self.assertNotIsInstance(app.screen, HelpScreen)
+
+    async def test_task_modal_filter(self) -> None:
+        """单任务弹窗支持关键词过滤且 Esc 可关闭。"""
+        app = AzurPilotTUI()
+        async with app.run_test() as pilot:
+            await pilot.press("t")
+            await pilot.pause()
+            modal = app.screen
+            self.assertIsInstance(modal, TaskModal)
+
+            await pilot.press("s", "c", "a", "n")
+            await pilot.pause()
+            self.assertTrue(modal.filtered_tasks)
+            for code, title in modal.filtered_tasks:
+                self.assertIn("scan", f"{code}{title}".lower())
+
+            await pilot.press("escape")
+            await pilot.pause()
+            self.assertNotIsInstance(app.screen, TaskModal)
+
     async def test_config_modal_mount(self) -> None:
         """测试配置弹窗挂载与表单控件初始化，确保内部 Select 不会导致表单清空消失。"""
         backend = TUIBackend(root=self.root)
@@ -190,6 +314,8 @@ class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
             # 验证内部控件成功渲染挂载
             scroll = modal.query_one("#form-scroll")
             self.assertGreater(len(scroll.children), 0)
+            # 未编辑时不应产生任何虚假修改（否则 Esc 会误提示未保存）
+            self.assertEqual([], modal.collect_changes())
 
     async def test_emotion_same_value_can_be_explicitly_recalibrated(self) -> None:
         """挂载不校准，重新输入或回车确认同值后保存完整基准。"""
@@ -204,7 +330,7 @@ class TestTUIApp(IsolatedTUIFixture, unittest.IsolatedAsyncioTestCase):
                                      ('General', 'PublicEmotion', 'FleetValue')):
                 path = f'{task}.{group}.{arg}'
                 modal = ConfigModal(backend=backend, initial_task=task)
-                # 用真实元数据挂载心情输入，隔离其他参数的空值／多行文本归一化。
+                # 用真实元数据挂载心情输入，聚焦验证「同值重新校准」语义。
                 groups = [{**item, 'items': [field for field in item['items']
                                             if field['arg'] in ('Fleet1Value', 'Fleet2Value', 'FleetValue')]}
                           for item in backend.get_task_config_schema(task) if item['group_name'] == group]

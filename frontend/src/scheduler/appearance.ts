@@ -1,4 +1,7 @@
-/** 卡片类别和端口类型共用的调色板与图标映射，连线与来源端口保持同色。 */
+/**
+ * @fileoverview 卡片类别和端口类型共用的调色板与图标映射，连线与来源端口保持同色。
+ */
+
 import type {LucideIcon} from 'lucide-react'
 import {
   AlarmClock,
@@ -54,12 +57,15 @@ import {
 } from 'lucide-react'
 import type {PortType} from './types'
 
+/** 卡片类别 → 主题色。 */
 export const categoryColors: Record<string, string> = {
   '流程': '#6385d6', '逻辑': '#9970d1', '变量': '#329caa', '时间': '#c58a27',
   '资源': '#289a77', '任务': '#d45982', '列表': '#358dcc', '调度': '#c3733f', '组合': '#7963d3',
 }
+/** 取类别颜色，未知类别回落到中性灰。 */
 export const categoryColor = (category: string) => categoryColors[category] ?? '#7b8b9e'
 
+/** 卡片类别 → 图标。 */
 export const categoryIcons: Record<string, LucideIcon> = {
   '流程': Workflow,
   '逻辑': Cpu,
@@ -72,8 +78,9 @@ export const categoryIcons: Record<string, LucideIcon> = {
   '组合': Layers,
 }
 
+/** 卡片类型 → 图标，分组与类别一致。 */
 export const cardIcons: Record<string, LucideIcon> = {
-  // 流程
+  // 流程类：
   entry: Play,
   end: CircleStop,
   loop: Repeat,
@@ -84,7 +91,7 @@ export const cardIcons: Record<string, LucideIcon> = {
   output: ArrowRightFromLine,
   return: CornerDownLeft,
   debug: Bug,
-  // 逻辑
+  // 逻辑类：
   literal: Hash,
   compare: Scale,
   logic: Binary,
@@ -92,32 +99,32 @@ export const cardIcons: Record<string, LucideIcon> = {
   select: ToggleLeft,
   branch: GitBranch,
   field: Braces,
-  // 变量
+  // 变量类：
   get_variable: Variable,
   set_variable: PenTool,
-  // 时间
+  // 时间类：
   now: Clock,
   weekday: CalendarDays,
   time_window: CalendarRange,
   server_day: Sunrise,
   wait: Hourglass,
   wait_until: AlarmClock,
-  // 资源
+  // 资源类：
   resource: Coins,
   resource_fresh: Sparkles,
   refresh: RefreshCw,
-  // 任务
+  // 任务类：
   tasks: ListTodo,
   task: CheckSquare,
   last_result: History,
   requests: Radio,
   execute: Swords,
-  // 列表
+  // 列表类：
   filter: Filter,
   sort: ArrowUpDown,
   first: ArrowDownToDot,
   empty: CircleSlash,
-  // 调度
+  // 调度类：
   original_plan: Compass,
   original_settings: Settings2,
   priority: ArrowUpWideNarrow,
@@ -128,20 +135,27 @@ export const cardIcons: Record<string, LucideIcon> = {
   record: BookmarkPlus,
 }
 
+/** 取卡片图标：先按卡片类型查，再按类别兜底，最后落到通用方块图标。 */
 export function getCardIcon(type?: unknown, category?: string): LucideIcon {
   const key = typeof type === 'string' ? type : ''
   return cardIcons[key] ?? (category ? categoryIcons[category] : undefined) ?? Box
 }
+/** 控制流端口与连线的颜色，区别于数据端口。 */
 export const controlColor = '#64748b'
-export const portFamily = (type: PortType) => ({duration:'number', tasks:'list', resource:'object'} as Partial<Record<PortType,PortType>>)[type] ?? type
+/** 端口同族归并：duration 视作 number，tasks 视作 list，resource 视作 object。 */
+const portFamily = (type: PortType) => ({duration:'number', tasks:'list', resource:'object'} as Partial<Record<PortType,PortType>>)[type] ?? type
+/** 判断两端口能否连线：any 通配，或同族。 */
 export const compatiblePorts = (source: PortType, target: PortType) => source === 'any' || target === 'any' || portFamily(source) === portFamily(target)
+/** 端口类型 → 颜色；取值刻意复用类别色板（数值=变量蓝、布尔=逻辑紫、任务=任务红等）。 */
 export const portColors: Record<PortType, string> = {
   any: '#8191a5', number: '#329caa', boolean: '#9970d1', string: '#63a04a',
   time: '#c58a27', duration: '#329caa', resource: '#289a77', task: '#d45982',
   tasks: '#358dcc', result: '#c3733f', list: '#358dcc', object: '#289a77',
 }
+/** any 通配端口的彩环背景，轮播各类别色。 */
 export const wildcardBackground = 'conic-gradient(#329caa, #9970d1, #63a04a, #c58a27, #289a77, #d45982, #358dcc, #329caa)'
 
+/** 端口类型的界面文案。 */
 export const typeLabels: Record<PortType, string> = {
   any: '任意值',
   number: '数值',
@@ -157,6 +171,7 @@ export const typeLabels: Record<PortType, string> = {
   object: '对象',
 }
 
+/** 卡片参数键 → 界面文案。 */
 export const paramLabels: Record<string, string> = {
   name: '名称',
   value: '值',

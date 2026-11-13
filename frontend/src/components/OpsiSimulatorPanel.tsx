@@ -1,4 +1,6 @@
-/** 大世界模拟器的后台控制、结果图与独立日志。 */
+/**
+ * @fileoverview 大世界模拟器的后台控制、结果图与独立日志。
+ */
 import { useEffect, useRef, useState } from 'react'
 import { FlaskConical, Play, Square, Terminal } from 'lucide-react'
 import { api } from '../api/client'
@@ -7,6 +9,12 @@ import { useApp, useConnection } from '../app/context'
 import { LogPanel } from './LogPanel'
 import { ErrorBox } from './ui'
 
+/**
+ * 大世界（Opsi）模拟器面板：启停后台模拟，轮询进度、结果指标与结果图，模拟日志交给 LogPanel 渲染。
+ *
+ * @param instance 实例 ID。
+ * @param beforeStart 启动前的校验回调；它抛错时中止启动，错误显示在面板上。
+ */
 export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; beforeStart: () => Promise<void>}) {
   const {t, ui, language} = useApp()
   const connection = useConnection()
@@ -17,6 +25,7 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
   const [image, setImage] = useState<string | null>(null)
   const [figureError, setFigureError] = useState('')
   const [retry, setRetry] = useState(0)
+  // version 在启停动作开始与结束各加一：动作期间发出的轮询回包按版本丢弃，不顶掉动作刚拿到的状态。
   const action = useRef({busy: false, version: 0})
 
   useEffect(() => {
@@ -30,6 +39,7 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
         const value = await api.request('opsi.simulator.status', {instance, after})
         if (active && !action.current.busy && version === action.current.version) {
           after = value.logs.cursor
+          // 回包的 runId 更小视为迟到数据，保留较新的状态。
           setData(previous => previous && previous.runId > value.runId ? previous : value)
           setPollError('')
         }

@@ -1,9 +1,7 @@
 /**
- * AP 配对入口：标准二维码和六码共用服务器的一次性配对记录。
- * 遵循 Refactoring UI 核心设计法则：
- * - 纯正居中对称视流（Centered Pairing Architecture）
- * - 严格保障 DOM 盒模型 32px 物理安全空隙（Quiet Zone ≥ 4X）
- * - 一级操作与次级操作层级分明（Rule 2.8），彻底消除多余视觉干扰
+ * @fileoverview AP 配对入口：标准二维码和六码共用服务器的一次性配对记录。
+ *
+ * 二维码卡片四周保留 32px 静区（QR 规范的 Quiet Zone ≥ 4X），避免周围图形干扰扫码识别。
  */
 import { useEffect, useState } from 'react'
 import {
@@ -32,7 +30,7 @@ async function copyText(text: string): Promise<boolean> {
       return true
     }
   } catch {
-    // 忽略剪贴板权限异常并尝试降级
+    // 忽略剪贴板权限异常并尝试降级。
   }
   try {
     const textarea = document.createElement('textarea')
@@ -49,6 +47,12 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+/**
+ * 远程配对面板：生成二维码与六位配对码，等待手机端认领。
+ *
+ * pending 期间每 2 秒轮询 remote.pair.status，`claimed`（配对成功）或过期后结束等待；
+ * 重新生成前先撤销上一次配对的客户端，失败也不阻断，旧凭据本就可能已失效。
+ */
 export function PairingPanel({ ready }: { ready: boolean }) {
   const { language } = useApp()
   const copy = pairCopy[language]
@@ -76,7 +80,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
     }
   }, [ready])
 
-  // 1 秒本地倒计时
+  // 1 秒本地倒计时。
   useEffect(() => {
     if (!pairing || state !== 'pending') return
     const interval = setInterval(() => {
@@ -89,7 +93,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
     return () => clearInterval(interval)
   }, [pairing, state])
 
-  // 2 秒向服务端轮询配对状态
+  // 2 秒向服务端轮询配对状态。
   useEffect(() => {
     if (!pairing || state !== 'pending') return
     let active = true
@@ -137,7 +141,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
         try {
           await api.request('remote.revoke', { id: pairing.client_id })
         } catch {
-          // 忽略失效凭据撤销失败
+          // 忽略失效凭据撤销失败。
         }
       }
       const next = await api.request('remote.pair.create', {})
@@ -179,7 +183,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
         setTimeout(() => setCopiedLink(false), 2000)
       }
     } catch {
-      // 忽略 payload 格式错误
+      // 忽略 payload 格式错误。
     }
   }
 
@@ -218,23 +222,8 @@ export function PairingPanel({ ready }: { ready: boolean }) {
 
       {error && <p className="pairing-error-text" role="alert">{error}</p>}
 
-      {!pairing && ready && (
-        <div className="pairing-empty-lead">
-          <div className="pairing-empty-lead-icon">
-            <Smartphone size={32} />
-          </div>
-          <h3>{copy.title}</h3>
-          <p className="muted">{copy.hint}</p>
-          <button
-            type="button"
-            className="button primary"
-            disabled={busy}
-            onClick={() => void start()}
-          >
-            {busy ? copy.busy : copy.start}
-          </button>
-        </div>
-      )}
+      {/* 空态引导收敛为标题下的一行副标题：入口统一到右上角「开始配对」，不再放第二个主按钮 */}
+      {ready && !pairing && <p className="pairing-subtitle">{copy.hint}</p>}
 
       {pairing && (
         <div className="pairing-session" role="status" aria-live="polite">
@@ -253,7 +242,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                   <h3 className="pairing-guide-title">{copy.hint}</h3>
                 </div>
 
-                {/* 六位配对码大号卡片与内嵌快捷复制 */}
                 <div className="pairing-code-wrapper">
                   <button
                     type="button"
@@ -271,7 +259,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                   </button>
                 </div>
 
-                {/* 快捷操作胶囊按钮 */}
                 <div className="pairing-actions">
                   <button
                     type="button"
@@ -291,7 +278,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                   </button>
                 </div>
 
-                {/* 倒计时与安全提示 */}
                 <div className="pairing-meta-info">
                   <div className="pairing-countdown-line">
                     <Clock size={14} className="countdown-icon" />
@@ -336,7 +322,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
         </div>
       )}
 
-      {/* 已授权配对设备区域 */}
       <div className="pairing-clients-section">
         <div className="pairing-clients-header">
           <div className="pairing-clients-title">
@@ -364,10 +349,6 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     <strong className="pairing-device-name">
                       {copy.deviceClient} #{index + 1}
                     </strong>
-                    <span className="pairing-device-badge">
-                      <span className="tiny-dot" />
-                      {copy.deviceAuthorized}
-                    </span>
                   </div>
                   <div className="pairing-device-meta">
                     <Clock size={12} />
@@ -378,15 +359,16 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     </span>
                   </div>
                 </div>
+                {/* 破坏性动作缩成图标按钮：hover 转红，避免像普通次要操作一样被顺手点中 */}
                 <div className="pairing-device-action">
                   <button
                     type="button"
-                    className="button secondary pairing-revoke-btn"
+                    className="icon-button pairing-revoke-btn"
                     onClick={() => void revoke(item.id)}
                     title={copy.revoke}
+                    aria-label={`${copy.revoke} · ${copy.deviceClient} #${index + 1}`}
                   >
-                    <Trash2 size={14} />
-                    <span>{copy.revoke}</span>
+                    <Trash2 size={15} />
                   </button>
                 </div>
               </div>

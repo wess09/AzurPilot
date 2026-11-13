@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import appSource from './App.tsx?raw'
 
-/* App 的登录闸门是一句提前返回：它必须排在 App 全部 Hook 之后，
-   否则同一次会话里 Hook 数量会随连接状态变化，React 抛 #300 崩掉整页。 */
+// App 的登录闸门是一句提前返回：它必须排在 App 全部 Hook 之后，
+// 否则同一次会话里 Hook 数量会随连接状态变化，React 抛 #300 崩掉整页。
 const GATE = "if (connection === 'auth') return <Login/>"
 
 /** 取出 App 组件体：从 export function App() 起，到顶格的那个右花括号为止。 */

@@ -1,7 +1,12 @@
-"""凭证快照的抽稀边界：近 3 天逐条，更早每小时只留末条。"""
+"""凭证与黄币快照的抽稀边界：近期逐条，更早每小时只留末条。"""
 from datetime import datetime, timedelta
 
-from module.statistics.cl1_database import COINS_EXACT_DAYS, thin_coins_snapshots
+from module.statistics.cl1_database import (
+    COINS_EXACT_DAYS,
+    YELLOW_COIN_EXACT_HOURS,
+    thin_coins_snapshots,
+    thin_yellow_coin_snapshots,
+)
 
 
 def _at(days_ago: int, hour: int, minute: int) -> dict:
@@ -32,3 +37,17 @@ def test_thin_coins_snapshots_stays_bounded_for_repeated_hours():
 
     assert len(kept) == 1
     assert kept[0]['yellow_coins'] == '30d09:55'
+
+
+def test_thin_yellow_coin_snapshots_keeps_recent_hours():
+    now = datetime.now()
+    recent = [{'ts': (now - timedelta(minutes=minute)).isoformat(), 'yellow_coin': minute} for minute in (1, 2, 3)]
+    older = [
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 1)).replace(minute=5).isoformat(), 'yellow_coin': 5},
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 1)).replace(minute=55).isoformat(), 'yellow_coin': 55},
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 2)).replace(minute=30).isoformat(), 'yellow_coin': 30},
+    ]
+
+    kept = thin_yellow_coin_snapshots(recent + older)
+
+    assert [item['yellow_coin'] for item in kept] == [30, 55, 3, 2, 1]

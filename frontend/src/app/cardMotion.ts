@@ -15,9 +15,9 @@ const CARD_SELECTORS = [
   '.head-card',
   '.empty',
   '.error-box',
-  /* 左列调度器是一整块玻璃面板，必须作为一个动效单元整体入场：
-     分开动的话，面板里那块 .panel（「统计」行）会自己缩放淡入，玻璃背板按新比例重采样，
-     模糊就会在动画期间跳一下；而面板本体原地不动，又跟不上页面。 */
+  // 左列调度器是一整块玻璃面板，必须作为一个动效单元整体入场：
+  // 分开动的话，面板里那块 .panel（「统计」行）会自己缩放淡入，玻璃背板按新比例重采样，
+  // 模糊就会在动画期间跳一下；而面板本体原地不动，又跟不上页面。
   '.instance-page-rail-wrap',
 ].join(', ')
 
@@ -32,14 +32,13 @@ let sessionTimeoutId: number | null = null
  * 在根容器内查找所有顶层卡片元素。
  * 若存在嵌套卡片（例如大面板内包含子面板），只保留视觉顶层的独立卡片作为动效单元。
  */
-export function findTopLevelCards(root: HTMLElement): HTMLElement[] {
+function findTopLevelCards(root: HTMLElement): HTMLElement[] {
   const allCards = Array.from(root.querySelectorAll<HTMLElement>(CARD_SELECTORS))
   return allCards.filter(card => {
-    // 忽略不可见或尚未参与布局的元素
+    // 隐藏元素的 rect 全为 0：没有可播的入场动画，参与对角排序还会全部堆到 (0, 0)。
     if (card.offsetWidth === 0 && card.offsetHeight === 0 && card.getClientRects().length === 0) {
       return false
     }
-    // 过滤掉祖先节点已是卡片的深层嵌套元素
     let parent = card.parentElement
     while (parent && parent !== root) {
       if (allCards.includes(parent)) return false
@@ -108,14 +107,17 @@ export function applyCardStaggerMotion(cards: HTMLElement[], sessionId: number) 
   const speed = motionSpeedValue()
   const total = cards.length
 
-  cards.forEach((card, index) => {
-    ;(card as unknown as Record<string, number>)[MOTION_SESSION_KEY] = sessionId
-    const delay = calculateNonLinearDelay(index, total, speed)
+  // 已经播放中的卡片需要先取消旧动画；首播无需同步量布局。
+  const playing = cards.filter(card => card.classList.contains('motion-card-stagger'))
+  for (const card of playing) card.classList.remove('motion-card-stagger')
+  if (playing.length) void playing[0].offsetWidth
 
-    // 移除可能存在的旧动画类，触发回流后重新注入
-    card.classList.remove('motion-card-stagger')
+  cards.forEach((card, index) => {
+    // 双重断言绕开 HTMLElement 的类型限制：键名带 __azurpilot 前缀，不会撞上真实属性。
+    ;(card as unknown as Record<string, number>)[MOTION_SESSION_KEY] = sessionId
+
+    const delay = calculateNonLinearDelay(index, total, speed)
     card.style.setProperty('--card-stagger-delay', `${delay}ms`)
-    void card.offsetWidth
     card.classList.add('motion-card-stagger')
 
     const handleEnd = (event: AnimationEvent) => {
@@ -124,7 +126,7 @@ export function applyCardStaggerMotion(cards: HTMLElement[], sessionId: number) 
       card.classList.remove('motion-card-stagger')
       card.style.removeProperty('--card-stagger-delay')
     }
-    card.addEventListener('animationend', handleEnd, { once: true })
+    card.addEventListener('animationend', handleEnd)
   })
 }
 
@@ -141,6 +143,10 @@ function scanAndAnimateCards(root: HTMLElement, sessionId: number) {
   if (unplayedCards.length === 0) return
   const sorted = sortCardsFromTopLeft(unplayedCards, root)
   applyCardStaggerMotion(sorted, sessionId)
+}
+
+function includesTaskSettings(node: Node) {
+  return node instanceof Element && (node.matches('.task-config-settings-inner') || node.querySelector('.task-config-settings-inner') !== null)
 }
 
 /**
@@ -164,21 +170,26 @@ export function triggerCardStaggerMotion(root: HTMLElement | null) {
     sessionTimeoutId = null
   }
 
-  // 首帧立即扫描已有卡片
-  requestAnimationFrame(() => {
-    scanAndAnimateCards(root, sessionId)
-  })
-
-  // 监听异步渲染出来的新卡片
   let frameId: number | null = null
-  activeObserver = new MutationObserver(() => {
+  const scan = () => {
     if (frameId !== null) cancelAnimationFrame(frameId)
-    frameId = requestAnimationFrame(() => {
-      scanAndAnimateCards(root, sessionId)
-    })
+    frameId = null
+    if (sessionId === currentSessionId) scanAndAnimateCards(root, sessionId)
+  }
+  const scheduleScan = () => {
+    if (frameId === null) frameId = requestAnimationFrame(scan)
+  }
+
+  // 任务设置挂载时在首次绘制前定位卡片，避免卡片先在终点显示一帧再跳到起点。
+  // 其他异步更新继续合并到每帧一次，避免日志等高频变更反复扫描。
+  activeObserver = new MutationObserver(records => {
+    if (records.some(record => Array.from(record.addedNodes).some(includesTaskSettings))) scan()
+    else scheduleScan()
   })
 
   activeObserver.observe(root, { childList: true, subtree: true })
+  if (includesTaskSettings(root)) scan()
+  else scheduleScan()
 
   // 1.5 秒后断开监听，避免普通交互（表单打字、展开折叠）引发多余开销
   sessionTimeoutId = window.setTimeout(() => {
@@ -188,20 +199,4 @@ export function triggerCardStaggerMotion(root: HTMLElement | null) {
     }
     sessionTimeoutId = null
   }, 1500)
-}
-
-/**
- * 供开发者工具「重播页面转场」调用：重新播放当前页面卡片从左上角逐个上浮的效果。
- */
-export function replayCardStaggerMotion() {
-  if (typeof document === 'undefined') return
-  const root = document.getElementById('main-content')
-  if (!root || motionReducedActive()) return
-
-  currentSessionId += 1
-  const sessionId = currentSessionId
-
-  const cards = findTopLevelCards(root)
-  const sorted = sortCardsFromTopLeft(cards, root)
-  applyCardStaggerMotion(sorted, sessionId)
 }

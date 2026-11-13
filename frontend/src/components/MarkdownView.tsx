@@ -15,7 +15,7 @@ interface MarkdownViewProps {
   className?: string
 }
 
-// 创建并配置专用的 marked 实例
+// 独立的 marked 实例：数学公式等扩展只注册到这份解析器，不波及全局默认实例。
 const markedInstance = new Marked({
   gfm: true,
   breaks: true,
@@ -370,7 +370,7 @@ function sanitizeHtml(html: string): string {
     return DOMPurify.sanitize(html, DOMPURIFY_CONFIG)
   }
   // React SSR / Vitest 的 Node 环境没有浏览器 DOM。这里使用线性 tokenizer 做白名单过滤，
-  // 不使用正则“删除危险片段”，因此不会出现多次替换绕过或 ReDoS。
+  // 不使用正则「删除危险片段」，因此不会出现多次替换绕过或 ReDoS。
   return sanitizeSsrHtml(html)
 }
 
@@ -389,6 +389,7 @@ export function MarkdownView({ content, className = '' }: MarkdownViewProps) {
     }
   }, [content])
 
+  // 正文是整块注入的 innerHTML，里面的复制按钮接不到 React 事件：在容器上做一次事件委托。
   const handleContainerClick = (e: MouseEvent<HTMLDivElement>) => {
     const target = (e.target as HTMLElement).closest('.md-code-copy') as HTMLElement | null
     if (target) {

@@ -16,6 +16,7 @@ import type { SearchContentHit } from '../api/types'
 /** 命中项分两类：卡片（三级标题）与配置项；卡片命中没有配置项键。 */
 type Hit = SearchContentHit & {card?: boolean}
 
+/** 侧栏搜索的配置项命中列表：关键词防抖 200ms 后查后端索引，点击命中跳到所属任务页并定位。查询失败静默清空；关键词为空或无命中时不渲染。 */
 export function SearchHits({search, onNavigate}: {search: string; onNavigate?: () => void}) {
   const {schema, ui} = useApp()
   const {instance} = useParams()

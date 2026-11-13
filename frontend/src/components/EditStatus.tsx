@@ -1,21 +1,25 @@
 /**
- * @fileoverview 配置字段即时保存状态指示器组件。
+ * @fileoverview 配置字段错误提示组件：仅在字段处于错误态时渲染。
  */
 
-import type { Edit, EditQueue } from '../config/EditQueue'
-import { Check, CircleAlert, CloudOff, LoaderCircle } from 'lucide-react'
-import { useApp } from '../app/context'
+import type { Edit } from '../config/EditQueue'
+import { CircleAlert } from 'lucide-react'
+import { MarqueeText } from './MarqueeText'
 
-export function EditStatus({edit, id, retry, queue}: {edit?: Edit; id: string; retry: () => void; queue?: EditQueue}) {
-  const {ui} = useApp()
-  // 静默期内不显示保存结果。
-  if (!edit || (queue !== undefined && !queue.savedVisible(edit))) return null
-  const Icon = edit.status === 'error' ? CircleAlert : edit.status === 'saved' ? Check : edit.status === 'saving' ? LoaderCircle : CloudOff
-  // 状态贴在参数行里显示，文案会被省略号截断，所以全文同时交给 title 与 aria-label。
-  const full = edit.status === 'error' ? ui('edit.inputPreserved', {error: edit.error ?? ''}) : edit.status === 'saved' ? ui('edit.saved') : edit.status === 'saving' ? ui('edit.saving') : ui('edit.waitingConnection')
-  return <div id={`${id}-status`} className={`edit-status ${edit.status === 'error' ? 'edit-error' : ''}`} role={edit.status === 'error' ? 'alert' : 'status'} title={full} aria-label={full}>
-    <Icon size={14} aria-hidden="true" className={edit.status === 'saving' ? 'spin' : undefined}/>
-    <span className="edit-status-text" key={edit.readyAt ?? full}>{full}</span>
-    {edit.retryable && edit.status === 'error' && <button className="button subtle" onClick={retry}>{ui('edit.retry')}</button>}
-  </div>
+/**
+ * 字段旁的错误提示：只显示错误本体（已保存/正在保存等过程提示已移除）。
+ * 文案超宽时沿用侧栏任务名的灯带跑马灯（MarqueeText：双副本无缝循环、自动测宽）滚动展示全文；
+ * 动效偏好下静止，回落省略号与 title 提示。
+ *
+ * @param edit 字段最近一条保存记录，非错误态不渲染。
+ * @param id 用于拼装状态节点的 DOM id（`${id}-status`）：输入控件出错时以 aria-describedby 指向它。
+ */
+export function EditStatus({edit, id}: {edit?: Edit; id: string}) {
+  if (!edit || edit.status !== 'error') return null
+  return (
+    <div id={`${id}-status`} className="edit-status edit-error" role="alert" title={edit.error}>
+      <CircleAlert size={14} aria-hidden="true"/>
+      <MarqueeText className="edit-status-text" text={edit.error ?? ''}/>
+    </div>
+  )
 }

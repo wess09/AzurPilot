@@ -1,4 +1,4 @@
-/* Match the application's panels and typography without changing the page structure. */
+/* 沿用应用的面板与排版风格，不改动页面结构 */
 .fleet-analysis {
   --fleet-font-body: 13px;
   --fleet-font-note: 12px;
@@ -10,8 +10,8 @@
   color: var(--theme-text);
 }
 .fleet-analysis .button,
-.fleet-analysis input,
 .fleet-analysis select { font-size: var(--fleet-font-body); }
+/* 覆盖按钮默认禁用态：保存按钮禁用时保留强调色底，只是不可点 */
 .fleet-analysis .ft-savebar > .button.primary:disabled {
   opacity: 1;
   background: color-mix(in srgb, var(--theme-accent) 18%, var(--theme-surface));
@@ -40,11 +40,13 @@
 .fleet-analysis .mind-panel details { margin-top: 12px; }
 .fleet-analysis .mind-panel summary { color: var(--theme-accent); cursor: pointer; }
 .fleet-analysis .mind-panel details p { margin: 8px 0; color: var(--theme-muted); font-size: var(--fleet-font-note); }
+/* 台账差异 */
 .fleet-analysis .ledger-difference { border-color: var(--theme-border); }
 .fleet-analysis .ledger-difference h3 { margin-bottom: 8px; }
 .fleet-analysis .ledger-difference .button { margin-top: 8px; }
-/* The module has one page title; the technology panel title follows section headings. */
+/* 整个模块只有一个页标题，舰队科技面板的标题按分节标题处理 */
 .fleet-analysis .fleet-technology > .page-title { margin-bottom: 0; }
+/* 页标题自带渐变与描边装饰，这里还原成普通文本样式 */
 .fleet-analysis .fleet-technology > .page-title h1 { font-size: var(--fleet-font-heading); font-weight: 600; line-height: 1.6; letter-spacing: normal; color: var(--theme-text); background: none; -webkit-text-fill-color: currentColor; -webkit-text-stroke: 0; text-shadow: none; filter: none; }
 .fleet-analysis .fleet-technology > .page-title h1::before,
 .fleet-analysis .fleet-technology > .page-title h1::after { content: none; }

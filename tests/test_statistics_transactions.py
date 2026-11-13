@@ -220,6 +220,8 @@ class TestStatisticsTransactions(unittest.TestCase):
             conn.set_authorizer(lambda action, *args: sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_READ else sqlite3.SQLITE_OK)
             return conn
 
+        # 长连接会绕过被替换的 connect，先释放复用连接再注入只读拒绝。
+        self.db.store.close_all()
         with patch.object(persistence.sqlite3, "connect", side_effect=denied_connect):
             with self.assertRaises(sqlite3.DatabaseError):
                 self.db.increment_battle_count("test")

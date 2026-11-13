@@ -1,16 +1,28 @@
+/**
+ * @fileoverview 换船装备页：按舰种维护三槽装备码，写入 FleetInfo.FleetEquipment 供智能换船读取。
+ */
+
+import {Button} from '../components/ui/button'
 import {useEffect, useState} from 'react'
 import {useParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
+import {Switch} from '../components/official-ui/switch'
+import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
 import {ErrorBox, Loading, PageTitle} from '../components/ui'
 
+/** 支持配置装备码的舰种全集，顺序即设置页的分节顺序。 */
 export const equipmentTypes = ['DD', 'CL', 'CA', 'CB', 'BC', 'BB', 'CVL', 'CV', 'BBV', 'SS', 'SSV', 'AR', 'BM', 'AE', 'IX'] as const
 type ShipType = typeof equipmentTypes[number]
 type CodeSet = [string, string, string]
 type Codes = Record<ShipType, CodeSet>
 const codeSlots = [0, 1, 2] as const
 
+/**
+ * 解析并校验装备码配置：接受 JSON 字符串或已解析对象，键必须是 equipmentTypes 中的舰种，
+ * 值为至多 3 个字符串码；缺槽补空串，形状不符时抛「Invalid equipment codes」。
+ */
 export function equipmentCodes(value: unknown): Codes {
   const parsed = typeof value === 'string' ? JSON.parse(value) : value ?? {}
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)
@@ -23,19 +35,19 @@ export function equipmentCodes(value: unknown): Codes {
   })) as Codes
 }
 
+/** 按舰种渲染三格装备码输入框，槽位序号从 1 起。 */
 export function EquipmentCodeFields({codes, disabled, change}: {codes: Codes; disabled: boolean; change: (kind: ShipType, index: number, value: string) => void}) {
   const {ui} = useApp()
   return <div className="fleet-grid">{equipmentTypes.map(kind => <section className="panel" key={kind}>
-    <div className="panel-heading" style={{display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap'}}>
+    <div className="panel-heading flex flex-wrap items-center gap-2.5">
       <h2>{ui(`fleetEquipment.${kind}`)}</h2><span className="muted">{ui('fleetEquipment.code')}</span>
     </div>
-    <div className="fleet-column" style={{display: 'grid', gap: 10}}>{codeSlots.map(index => <label key={index}
-      htmlFor={`equipment-${kind}-${index + 1}`} style={{display: 'flex', alignItems: 'center', gap: 8}}>
-      <span aria-hidden="true">{index + 1}</span><input type="text" id={`equipment-${kind}-${index + 1}`}
+    <div className="fleet-column grid gap-2.5">{codeSlots.map(index => <label key={index}
+      htmlFor={`equipment-${kind}-${index + 1}`} className="flex items-center gap-2">
+      <span aria-hidden="true">{index + 1}</span><Input type="text" id={`equipment-${kind}-${index + 1}`}
         aria-label={`${ui(`fleetEquipment.${kind}`)} ${ui('fleetEquipment.code')} ${index + 1}`}
         dir="ltr" spellCheck={false} value={codes[kind][index]} disabled={disabled}
-        placeholder={ui('fleetEquipment.placeholder')} onChange={event => change(kind, index, event.target.value)}
-        style={{width: '100%', minWidth: 0, flex: 1}}/>
+        placeholder={ui('fleetEquipment.placeholder')} onChange={event => change(kind, index, event.target.value)}/>
     </label>)}</div>
   </section>)}</div>
 }
@@ -64,6 +76,7 @@ export function FleetEquipment() {
     if (!codes) return
     setBusy(true); setError('')
     try {
+      // 先等本实例未提交的编辑落定，再读最新 revision 提交，避免拿着旧修订号撞乐观锁。
       await editor(`config:${instance}`).settled()
       const current = await api.request('config.get', {instance})
       const result = await api.request('config.patch', {instance, revision: current.revision, changes: [
@@ -78,10 +91,9 @@ export function FleetEquipment() {
   }
   return <>
     <PageTitle title={ui('fleetEquipment.title')} actions={<>
-      <span>{ui('fleetEquipment.enable')}</span><button type="button" role="switch" aria-label={ui('fleetEquipment.enable')}
-        aria-checked={enabled} className={`toggle ${enabled ? 'on' : ''}`} disabled={disabled || !codes}
-        onClick={() => void save(!enabled)}><span/></button>
-      <button className="button primary" disabled={disabled || !dirty} onClick={() => void save()}>{ui('fleetEquipment.save')}</button>
+      <span>{ui('fleetEquipment.enable')}</span><Switch checked={enabled} aria-label={ui('fleetEquipment.enable')}
+        disabled={disabled || !codes} onCheckedChange={next => void save(next)}/>
+      <Button disabled={disabled || !dirty} onClick={() => void save()}>{ui('fleetEquipment.save')}</Button>
     </>}/>
     <section className="panel" style={{padding: '16px 20px', marginBottom: 20}}>
       <p>{ui('fleetEquipment.help')}</p><p>{ui('fleetEquipment.skip')}</p><p>{ui('fleetEquipment.support')}</p>
@@ -89,6 +101,7 @@ export function FleetEquipment() {
     {pending > 0 && <p role="status">{ui('fleetEquipment.pending', {number: pending})}</p>}
     {error && <ErrorBox message={error}/>}
     {codes ? <EquipmentCodeFields codes={codes} disabled={disabled} change={(kind, index, value) => {
+      // 该回调只在 codes 就绪的分支里挂载，previous 的非空断言不会落空。
       setCodes(previous => {
         const entries = [...previous![kind]] as CodeSet
         entries[index] = value

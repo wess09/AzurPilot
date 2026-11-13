@@ -43,6 +43,14 @@ class LauncherAutostartParams(Params):
     enabled: StrictBool
 
 
+class PluginStorageParams(Params):
+    id: StrictStr = Field(pattern=r'^[a-z0-9][a-z0-9._-]{0,79}$')
+    instance: StrictStr | None = Field(default=None, max_length=128)
+    key: StrictStr = Field(min_length=1, max_length=120)
+    action: Literal['get', 'set', 'delete']
+    value: Any = None
+
+
 class LauncherCommandParams(Params):
     commandId: StrictStr = Field(min_length=1, max_length=100)
 
@@ -289,7 +297,7 @@ class RevisionParams(InstanceParams):
 class SubscribeParams(Params):
     """WebSocket 主题订阅请求参数模型。"""
     instance: StrictStr | None = None
-    topics: list[Literal['instances', 'overview', 'logs', 'preview', 'stock', 'notifications', 'launcher']] = Field(max_length=7)
+    topics: list[Literal['instances', 'overview', 'logs', 'preview', 'stock', 'notifications', 'launcher', 'plugins']] = Field(max_length=8)
 
 
 class LogsParams(InstanceParams):

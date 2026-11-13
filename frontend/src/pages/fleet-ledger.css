@@ -5,19 +5,13 @@
 .ledger-level-range input { width: 85px; }
 .fleet-ledger .ledger-batch { margin-left: auto; padding: 0; }
 .ledger-hint { margin: 0; color: var(--theme-muted); font-size: var(--fleet-font-note, 12px); line-height: 1.6; }
-.fleet-ledger td .ledger-name { width: 13rem; max-width: 100%; color: inherit; }
-.fleet-ledger td .ledger-identity { display: block; max-width: 20rem; margin-top: 4px; }
-.fleet-ledger td .ledger-level { width: 5rem; text-align: center; }
-.fleet-ledger td input:not([type=checkbox]), .fleet-ledger td select { background: transparent; border-color: transparent; }
-.fleet-ledger td input:not([type=checkbox]):hover, .fleet-ledger td select:hover { border-color: var(--theme-input-border); }
-.fleet-ledger td input:focus, .fleet-ledger td select:focus { background: var(--theme-input-bg); border-color: var(--theme-focus); outline-color: var(--theme-focus); }
 .fleet-ledger input[type=checkbox] { min-height: auto; accent-color: var(--theme-accent); }
-.ledger-review { display: inline-flex; align-items: center; gap: 6px; }
+/* 行首警示条标记有未保存修改的行（草稿里存在的行），inset 阴影不占布局宽度 */
 .fleet-ledger .ledger-modified td:first-child { box-shadow: inset 3px 0 var(--theme-warning); }
+/* 当前选中或深链定位行的描边高亮，outline 同样不占布局，负 offset 让描边贴住单元格 */
 .fleet-ledger .ledger-highlight { outline: 2px solid var(--theme-focus); outline-offset: -2px; }
+/* 标记删除的行淡化显示，保留上下文 */
 .fleet-ledger .ledger-deleted td { opacity: .55; }
 .ledger-difference { padding: 1rem 0; border-top: 1px solid var(--theme-border); overflow-wrap: anywhere; }
 .fleet-ledger .file-button { cursor: pointer; }
 .fleet-ledger .file-button input { max-width: 16rem; }
-
-.fleet-ledger td input:not([type=checkbox]), .fleet-ledger td select { min-height: var(--table-heading-control, 36px); padding: 6px 8px; box-shadow: none; }

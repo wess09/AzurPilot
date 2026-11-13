@@ -401,29 +401,59 @@ class AzurStats:
             [(scope, int(row[0]), instance, get_device_id(), int(row[1]), *map(float, row[2:])) for row in data])
 
     @staticmethod
+    def _farming_watermark(connection, instance):
+        """取该统计范围的明细水位，用于复核聚合期间是否有新数据。"""
+        row = connection.execute('''SELECT COALESCE(MAX(id), 0) FROM opsi_items
+            WHERE device_id=? AND genre='opsi_meowfficer_farming'
+                AND (? IS NULL OR instance=?) AND hazard_level BETWEEN 1 AND 6''',
+            (get_device_id(), instance, instance)).fetchone()
+        return int(row[0])
+
+    @staticmethod
+    def _aggregate_farming(connection, instance):
+        """按原截图分组口径聚合六个等级的收益数据。"""
+        rows = connection.execute('''WITH selected AS (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY instance,device_id,imgid ORDER BY id) AS capture_row
+            FROM opsi_items WHERE device_id=? AND genre='opsi_meowfficer_farming'
+                AND (? IS NULL OR instance=?) AND hazard_level BETWEEN 1 AND 6
+        ) SELECT hazard_level,
+            SUM(CASE WHEN capture_row=1 THEN COALESCE(combat_count,0) ELSE 0 END) AS combats,
+            SUM(CASE WHEN substr(item,1,13)='OperationCoin' THEN COALESCE(amount,0) ELSE 0 END) AS coins,
+            SUM(CASE WHEN substr(item,1,5)='Plate' THEN COALESCE(amount,0) ELSE 0 END) AS plates,
+            SUM(CASE WHEN substr(item,1,17)='CoordinateAbyssal' THEN COALESCE(amount,0) ELSE 0 END) AS abyssal,
+            SUM(CASE WHEN substr(item,1,17)='CoordinateObscure' THEN COALESCE(amount,0) ELSE 0 END) AS obscure
+            FROM selected GROUP BY hazard_level''', (get_device_id(), instance, instance)).fetchall()
+        out_data = np.zeros((6, len(AzurStats.meowofficer_farming_labels)))
+        out_data[:, 0] = np.arange(1, 7)
+        out_data[:, 1] = int(datetime.timestamp(datetime.now()))
+        for row in rows:
+            hazard = row['hazard_level']
+            rounds = row['combats'] / AzurStats.unit_combat_count[hazard]
+            out_data[hazard - 1, 2] = rounds
+            amounts = [row[name] for name in ('coins', 'plates', 'abyssal', 'obscure')]
+            out_data[hazard - 1, 3:] = np.array(amounts) / rounds if rounds > 0 else amounts
+        return out_data
+
+    @staticmethod
     def get_meowofficer_farming(instance=None):
-        """在同一个写事务中按原截图分组口径重算并提交缓存。"""
+        """先只读聚合，再用短写事务复核水位后提交缓存。
+
+        整表窗口函数在只读事务里执行，写锁只覆盖缓存替换；
+        聚合期间若有新掉落插入，水位变化会触发重算，绝不写入陈旧缓存。
+        """
+        for _ in range(3):
+            with AzurStats._database().transaction(write=False) as connection:
+                watermark = AzurStats._farming_watermark(connection, instance)
+                out_data = AzurStats._aggregate_farming(connection, instance)
+            with AzurStats._database().transaction() as connection:
+                if AzurStats._farming_watermark(connection, instance) != watermark:
+                    continue
+                AzurStats._write_meowofficer_farming(out_data, instance, connection=connection)
+                logger.info(f'[本地统计] 本地统计数据更新成功: {instance or "全局共享"}')
+                return out_data
+        # 极端并发下退回单事务路径，保证缓存与明细一致。
         with AzurStats._database().transaction() as connection:
-            rows = connection.execute('''WITH selected AS (
-                SELECT *, ROW_NUMBER() OVER (PARTITION BY instance,device_id,imgid ORDER BY id) AS capture_row
-                FROM opsi_items WHERE device_id=? AND genre='opsi_meowfficer_farming'
-                    AND (? IS NULL OR instance=?) AND hazard_level BETWEEN 1 AND 6
-            ) SELECT hazard_level,
-                SUM(CASE WHEN capture_row=1 THEN COALESCE(combat_count,0) ELSE 0 END) AS combats,
-                SUM(CASE WHEN substr(item,1,13)='OperationCoin' THEN COALESCE(amount,0) ELSE 0 END) AS coins,
-                SUM(CASE WHEN substr(item,1,5)='Plate' THEN COALESCE(amount,0) ELSE 0 END) AS plates,
-                SUM(CASE WHEN substr(item,1,17)='CoordinateAbyssal' THEN COALESCE(amount,0) ELSE 0 END) AS abyssal,
-                SUM(CASE WHEN substr(item,1,17)='CoordinateObscure' THEN COALESCE(amount,0) ELSE 0 END) AS obscure
-                FROM selected GROUP BY hazard_level''', (get_device_id(), instance, instance)).fetchall()
-            out_data = np.zeros((6, len(AzurStats.meowofficer_farming_labels)))
-            out_data[:, 0] = np.arange(1, 7)
-            out_data[:, 1] = int(datetime.timestamp(datetime.now()))
-            for row in rows:
-                hazard = row['hazard_level']
-                rounds = row['combats'] / AzurStats.unit_combat_count[hazard]
-                out_data[hazard - 1, 2] = rounds
-                amounts = [row[name] for name in ('coins', 'plates', 'abyssal', 'obscure')]
-                out_data[hazard - 1, 3:] = np.array(amounts) / rounds if rounds > 0 else amounts
+            out_data = AzurStats._aggregate_farming(connection, instance)
             AzurStats._write_meowofficer_farming(out_data, instance, connection=connection)
             logger.info(f'[本地统计] 本地统计数据更新成功: {instance or "全局共享"}')
             return out_data

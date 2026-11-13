@@ -1,11 +1,16 @@
-/** 现代与简约主题的浏览器偏好。 */
+/**
+ * @fileoverview 主题偏好的读取、持久化与应用：解析最终明暗，把自定义外观写入 documentElement。
+ */
 import { applyColorOverrides } from './colorPalette'
 import { colorModes, fixedColorModes, paletteColors, palettes, paletteTokens, readCustomPalettes, type ColorMode, type CustomPalette, type Palette, type ResolvedMode } from './palettes'
 import { applyFamilyCustom } from './themeCustom'
 
+/** 主题档位。旧版本存储的 dark / extreme 值在读取时迁移为对应的 legacy 档。 */
 export type Theme = 'legacy-light' | 'legacy-dark' | 'minimal'
 export type Material = 'glass' | 'plain'
+/** 家族标识全集；本构建的自定义外观资源只按 legacy（THEME_FAMILY）提供。 */
 export type Family = 'legacy' | 'new' | 'minimal' | 'extreme'
+/** 本构建启用的主题家族：自定义外观（材质检视器等）按它读取对应资源。 */
 export const THEME_FAMILY = 'legacy'
 
 type Preference = {theme: Theme; material: Material; palette: Palette; colorMode: ColorMode; customPalettes: CustomPalette[]}
@@ -19,6 +24,7 @@ function migrateTheme(theme: string | null, colorMode: string | null): Theme {
   return 'legacy-light'
 }
 
+/** 从 localStorage 读取主题偏好；键缺失或存储不可用时整体回落默认值，不抛错。 */
 export function readThemePreference(): Preference {
   try {
     const colorMode = localStorage.getItem('azurpilot.color-mode') as ColorMode
@@ -46,8 +52,10 @@ function resolveMode({theme, colorMode}: Preference): ResolvedMode {
 const initial = readThemePreference()
 let preference = {...initial, resolvedMode: resolveMode(initial)}
 
-/** 清掉上一次写入的变量，再应用当前主题的自定义外观。
-    调色板永远最后写：它是最直接的「这一处就要这个色」，要压过品牌配色与整套配色。 */
+/**
+ * 清掉上一次写入的变量，再应用当前主题的自定义外观。
+ * 调色板永远最后写：它是最直接的「这一处就要这个色」，要压过品牌配色与整套配色。
+ */
 export function applyCustomLayer() {
   const root = document.documentElement
   for (const token of themeTokens) root.style.removeProperty(token)
@@ -62,7 +70,9 @@ export function applyCustomLayer() {
   themeTokens = [...themeTokens, ...applyColorOverrides(root, resolvedMode)]
 }
 
+/** 当前生效的主题偏好，已附带解析后的明暗模式（resolvedMode）。 */
 export const getThemePreference = () => preference
+/** 订阅主题变更通知，返回退订函数。 */
 export const subscribeTheme = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
@@ -71,6 +81,7 @@ export const subscribeTheme = (listener: () => void) => {
 function syncTheme(next: Preference) {
   const root = document.documentElement
   preference = {...next, resolvedMode: resolveMode(next)}
+  root.classList.toggle('dark', preference.resolvedMode === 'dark')
   if (next.theme === 'minimal') root.dataset.colorMode = preference.resolvedMode
   else delete root.dataset.colorMode
   applyCustomLayer()
@@ -81,6 +92,10 @@ function systemModeChanged() {
   syncTheme(preference)
 }
 
+/**
+ * 应用一份主题偏好：写 documentElement 的 data 标记并持久化到 localStorage（存储失败只影响持久化）。
+ * 仅 minimal + auto 挂系统明暗监听；切到其他组合时卸掉监听。
+ */
 export function applyTheme(next: Preference) {
   const root = document.documentElement
   const minimal = next.theme === 'minimal'

@@ -3,6 +3,11 @@
  */
 
 import { useSyncExternalStore } from 'react'
+
+/**
+ * 判断当前是否为桌面端：视口宽于 950px（阈值与 layout.css 的窄屏断点一致）
+ * 且指针支持悬停（hover: none 不命中，即非触屏）；无 window 环境返回 false。
+ */
 export function isDesktopDevice(): boolean {
   if (typeof window === 'undefined') return false
   const isWide = window.innerWidth > 950

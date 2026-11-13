@@ -1,3 +1,6 @@
+/**
+ * @fileoverview marqueePlan 的契约测试：守住 1px 容差、无缝接上的位移量、时长随倍率缩放与减少动态时停滚。
+ */
 import { describe, expect, it } from 'vitest'
 import { MARQUEE_GAP, marqueePlan } from './marquee'
 

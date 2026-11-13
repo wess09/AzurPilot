@@ -1,8 +1,10 @@
 /**
  * @fileoverview 数据统计与图表分析页面。
  */
+import {Button} from '../components/ui/button'
 
-import {NumberDraftInput, Select} from '../components/FormControls'
+import {useDraftInput} from '../components/FormControls'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import { Fragment, lazy, Suspense, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getSelectedKeysForCategory, getStatisticsPrefs, getStatisticsPrefsVersion, subscribeStatisticsPrefs } from '../app/statisticsPrefs'
 import { useParams, useSearchParams } from 'react-router-dom'
@@ -47,7 +49,8 @@ import type { StatTable, StatisticsReport } from '../api/types'
 import type { Parameters } from '../api/generated'
 import { useApp, useConnection } from '../app/context'
 import { ActionGroup, ErrorBox, Loading } from '../components/ui'
-import { SegmentedControl } from '../components/SegmentedControl'
+import { Input } from '../components/official-ui/input'
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { resolveIcon, resourceIcons, StatisticsTable, TEMPLATE_PREFIXES } from '../components/StatisticsTable'
 import { CategorySection } from '../components/CategorySection'
 import { PageChainSlots } from '../components/PageChainSlots'
@@ -120,6 +123,14 @@ const categories: Record<Category, UiKey> = {resources: 'stats.category.resource
 type Category = NonNullable<Parameters['statistics.report']['category']>
 type StatisticsView = Category | 'management'
 
+function NumberDraftInput({value, label, onCommit}: {value: number; label: string; onCommit: (value: number) => void}) {
+  const draft = useDraftInput(String(value), text => {
+    const parsed = Number(text)
+    if (Number.isFinite(parsed) && parsed >= 0) onCommit(Math.floor(parsed))
+  })
+  return <Input type="number" min={0} aria-label={label} title={label} {...draft}/>
+}
+
 /* 页面显示开关按固定顺序排列，与排序后的页面顺序无关。 */
 const fixedPageOrder = defaultStatisticsLayout().pages.flat()
 
@@ -132,18 +143,26 @@ function metricIcon(item: {label: string; icon?: string}) {
   if (Icon) return <span className="summary-metric-icon" aria-hidden="true"><Icon size={18} strokeWidth={1.8}/></span>
   return null
 }
-/** 这张表有没有图标可出：资源名认列名；科研与大世界掉落的图标写在单元格值里（research: / opsi: 前缀），
-   列名看不出来，两者都要查。 */
+/**
+ * 这张表有没有图标可出：资源名认列名；科研与大世界掉落的图标写在单元格值里（research: / opsi: 前缀），
+ * 列名看不出来，两者都要查。
+ */
 function hasTableIcons(table: StatTable): boolean {
   if (table.columns.some(column => column in resourceIcons || TEMPLATE_PREFIXES.some(prefix => column.startsWith(prefix)))) return true
   return table.rows.some(row => row.some(value => typeof value === 'string' && TEMPLATE_PREFIXES.some(prefix => value.startsWith(prefix))))
 }
 
-/** 收获的表格模式：把指标摊成一张单行表，复用明细表那套表格。
-    标题由调用方带前缀传入（如「大世界总结·收获」）。 */
+/**
+ * 收获的表格模式：把指标摊成一张单行表，复用明细表那套表格。
+ * 标题由调用方带前缀传入（如「大世界总结·收获」）。
+ */
 function metricsTableData(title: string, metrics: StatisticsReport['metrics']): StatTable {
   return {title, columns: metrics.map(item => item.label), rows: [metrics.map(item => item.value)]}
 }
+/**
+ * 统计分析页：按分类渲染指标卡、图表与明细表；编辑模式下支持卡片拖动、组合、隐藏等布局自定义，
+ * 并提供分类数据 CSV 导出；库存分类可触发后端盘点任务。
+ */
 export function Statistics() {
   const {ui, notify} = useApp()
   const {instance = ''} = useParams()
@@ -157,7 +176,7 @@ export function Statistics() {
   // 科研视图：'1'~'9' = 各期（默认 9 期），'consumable' = 心智/物资。
   // 后者不分期：心智与物资各期混着出，只有彩装备与舰船图纸绑定期数。
   const [researchSeries, setResearchSeriesState] = useState(initialPrefs.researchSelect)
-  // 大世界掉落视图：'' = 全部大世界任务，其余是任务标识（选项由后端 taskOptions 给出）
+  // 大世界掉落视图：'' = 全部大世界任务，其余是任务标识（选项由后端 taskOptions 给出）。
   const [lootTask, setLootTaskState] = useState(initialPrefs.lootTask)
   const [zeroBase, setZeroBaseState] = useState(initialPrefs.chartZeroBase)
 
@@ -263,18 +282,16 @@ export function Statistics() {
       ...(data.notes.length ? [[ui('stats.notes')], ...data.notes.map(note => [note])] : []),
     ])
   }
-  const actions = <>{category === 'storage' && <button className="button secondary" disabled={connection !== 'ready' || startingStorage} onClick={runStorageStatistics}><Play size={15}/>{ui('stats.runStorage')}</button>}<button className="button secondary" disabled={connection !== 'ready' || refreshing} onClick={refresh}><RefreshCw size={15}/>{refreshing ? ui('stats.refreshing') : ui('stats.refresh')}</button><button className="button secondary" disabled={!data} onClick={download}><Download size={15}/>{ui('stats.exportCategory')}</button><button className="button secondary statistics-edit-toggle" aria-pressed={editMode} onClick={toggleEditMode}><Paintbrush size={15}/>{ui('stats.editMode')}</button></>
+  const actions = <>{category === 'storage' && <Button variant="outline" disabled={connection !== 'ready' || startingStorage} onClick={runStorageStatistics}><Play size={15}/>{ui('stats.runStorage')}</Button>}<Button variant="outline" disabled={connection !== 'ready' || refreshing} onClick={refresh}><RefreshCw size={15}/>{refreshing ? ui('stats.refreshing') : ui('stats.refresh')}</Button><Button variant="outline" disabled={!data} onClick={download}><Download size={15}/>{ui('stats.exportCategory')}</Button><Button variant={editMode ? 'default' : 'outline'} aria-pressed={editMode} onClick={toggleEditMode}><Paintbrush size={15}/>{ui('stats.editMode')}</Button></>
   const rangeControls = <>
-    {(category === 'resources' || category === 'storage') && period === 'day' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.range')}</span><Select aria-label={ui('stats.days')} value={days} onChange={event => setDays(Number(event.target.value))}>{[1, 7, 30, 90, 365].map(value => <option value={value} key={value}>{ui('stats.recentDays', {days: value})}</option>)}</Select></label>}
+    {(category === 'resources' || category === 'storage') && period === 'day' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.range')}</span><Select value={String(days)} onValueChange={value => setDays(Number(value))}><SelectTrigger aria-label={ui('stats.days')}><SelectValue/></SelectTrigger><SelectContent>{[1, 7, 30, 90, 365].map(value => <SelectItem value={String(value)} key={value}>{ui('stats.recentDays', {days: value})}</SelectItem>)}</SelectContent></Select></label>}
     {/* 月份输入框自带日期格式，使用可访问名称区分控件。 */}
-    {(['action', 'opsi', 'commission', 'loot', 'resources', 'storage'].includes(category!) || category === 'research') && <label className="statistics-inline-control"><input aria-label={ui('stats.month')} type="month" min="2020-01" max="9998-12" value={month} disabled={(['commission', 'research', 'loot', 'resources', 'storage'].includes(category!)) && period !== 'month'} onChange={event => {if (event.target.value) setMonth(event.target.value)}}/></label>}
-    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.researchSeries')}</span><Select aria-label={ui('stats.researchSeries')} value={researchSeries} onChange={event => setResearchSeries(String(event.target.value))}>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => <option value={String(value)} key={value}>{ui('stats.seriesN', {n: value})}</option>)}<option value="consumable">{ui('stats.consumableScope')}</option></Select></label>}
-    {(category === 'resources' || category === 'storage') && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.recentDays', {days})}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
-    {category === 'commission' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.commissionPeriod')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
-    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
-    {/* 大世界掉落：任务筛选的选项来自后端（含当前窗口内没记录的任务），值就是任务标识 */}
-    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.lootTask')}</span><Select aria-label={ui('stats.lootTask')} value={lootTask} onChange={event => setLootTask(String(event.target.value))}><option value="">{ui('stats.lootTaskAll')}</option>{(data?.taskOptions ?? []).map(item => <option value={item.key} key={item.key}>{item.count ? `${item.label}（${item.count}）` : item.label}</option>)}</Select></label>}
-    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select aria-label={ui('stats.period')} value={period} onChange={event => setPeriod(event.target.value as typeof period)}><option value="day">{ui('stats.today')}</option><option value="week">{ui('stats.thisWeek')}</option><option value="month">{ui('stats.selectedMonth')}</option></Select></label>}
+    {(['action', 'opsi', 'commission', 'loot', 'resources', 'storage'].includes(category!) || category === 'research') && <label className="statistics-inline-control"><Input aria-label={ui('stats.month')} type="month" min="2020-01" max="9998-12" value={month} disabled={(['commission', 'research', 'loot', 'resources', 'storage'].includes(category!)) && period !== 'month'} onChange={event => {if (event.target.value) setMonth(event.target.value)}}/></label>}
+    {category === 'research' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.researchSeries')}</span><Select value={researchSeries} onValueChange={setResearchSeries}><SelectTrigger aria-label={ui('stats.researchSeries')}><SelectValue/></SelectTrigger><SelectContent>{[1, 2, 3, 4, 5, 6, 7, 8, 9].map(value => <SelectItem value={String(value)} key={value}>{ui('stats.seriesN', {n: value})}</SelectItem>)}<SelectItem value="consumable">{ui('stats.consumableScope')}</SelectItem></SelectContent></Select></label>}
+    {(category === 'resources' || category === 'storage' || category === 'commission' || category === 'research') && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui(category === 'commission' ? 'stats.commissionPeriod' : 'stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{category === 'resources' || category === 'storage' ? ui('stats.recentDays', {days}) : ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
+    {/* 大世界掉落：任务筛选的选项来自后端（含当前窗口内没记录的任务），值就是任务标识。 */}
+    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.lootTask')}</span><Select value={lootTask || '__all__'} onValueChange={value => setLootTask(value === '__all__' ? '' : value)}><SelectTrigger aria-label={ui('stats.lootTask')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('stats.lootTaskAll')}</SelectItem>{(data?.taskOptions ?? []).map(item => <SelectItem value={item.key} key={item.key}>{item.count ? `${item.label}（${item.count}）` : item.label}</SelectItem>)}</SelectContent></Select></label>}
+    {category === 'loot' && <label className="statistics-inline-control"><span className="statistics-inline-label">{ui('stats.period')}</span><Select value={period} onValueChange={value => setPeriod(value as typeof period)}><SelectTrigger aria-label={ui('stats.period')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="day">{ui('stats.today')}</SelectItem><SelectItem value="week">{ui('stats.thisWeek')}</SelectItem><SelectItem value="month">{ui('stats.selectedMonth')}</SelectItem></SelectContent></Select></label>}
   </>
   const hints = <>
     {category === 'ships' && <span>{ui('stats.shipHint')}</span>}
@@ -317,8 +334,8 @@ export function Statistics() {
     return {cardClass, foldControl, metricsKey, chartKey, plotKey, rawKey, tableKeys, cardKeys, chains, spaceOrder, visibleKeys: spaceOrder.filter(key => cardKeys.includes(key) && !isCardHidden(layout, key))}
   }
 
-  /* 卡片空间视图：一个空间（组合页或单页视图）渲染成一段，链与顺序在空间全量上算，
-     跨页的链因此落进同一个容器。 */
+  // 卡片空间视图：一个空间（组合页或单页视图）渲染成一段，链与顺序在空间全量上算，
+  // 跨页的链因此落进同一个容器。
   const spaceView = (space: Category[]) => {
     const keys = space.flatMap(page => pageCards(page, chainData[page]).cardKeys)
     const chains = readChains(layout, space[0], space.flatMap(page => pageCards(page, chainData[page]).defaultChains))
@@ -352,7 +369,7 @@ export function Statistics() {
   const applyChains = (page: Category, view: PageView, next: StatisticsLayout, moved?: string) => applyLayout({...next, cards: {...next.cards, [cardSpace(layout, page)]: rechain(view.chains, orderCards(next, page, spaceKeysOf(page)).filter(item => !isCardHidden(next, item)), moved)}})
   const pageIds = orderPages(layout)
   const singleView = layout.singleView
-  const singleViewToggle = editMode ? <button type="button" className="statistics-single-view" aria-pressed={singleView} aria-label={ui('stats.mergePages')} title={ui('stats.mergePages')} onClick={() => applyLayout({...layout, singleView: !singleView})}>{ui('stats.mergePages')}</button> : undefined
+  const singleViewToggle = editMode ? <Button type="button" variant={singleView ? 'default' : 'outline'} size="sm" aria-pressed={singleView} aria-label={ui('stats.mergePages')} title={ui('stats.mergePages')} onClick={() => applyLayout({...layout, singleView: !singleView})}>{ui('stats.mergePages')}</Button> : undefined
   const pageEntries = pageIds.map(id => [id, categories[id]] as [Category, UiKey])
   /* 非编辑模式一条链只留首个在前的页面；编辑模式七个页面都在，便于拆开组合。 */
   const chainOf = (page: Category) => layout.pages.find(chain => chain.includes(page)) ?? [page]
@@ -484,15 +501,15 @@ export function Statistics() {
       const claimed = view.spaceOrder.slice(0, view.spaceOrder.indexOf(key)).some(item => !isCardHidden(layout, item))
       if (claimed) return null
       return <div className="stat-card-hidden" key={key}>
-        <button type="button" className="text-button" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, key)}><Eye size={15}/></button>
+        <Button type="button" variant="ghost" size="icon-xs" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, key)}><Eye/></Button>
       </div>
     }
     const table = view.tableKeys.includes(key) ? report!.tables.find(item => cardKey(page, `table:${item.title}`) === key) : undefined
     const drop = dropTarget?.key === key ? (dropTarget.after ? ' is-drop-after' : ' is-drop-before') : ''
     const bar = editMode ? <div className="stat-card-edit-bar">
-      <button type="button" className="text-button" disabled={index === 0} aria-label={ui('stats.orderUp')} title={ui('stats.orderUp')} onClick={() => moveCard(page, view, key, index - 1)}><ArrowUp size={15}/></button>
+      <Button type="button" variant="ghost" size="icon-xs" disabled={index === 0} aria-label={ui('stats.orderUp')} title={ui('stats.orderUp')} onClick={() => moveCard(page, view, key, index - 1)}><ArrowUp/></Button>
       <button type="button" className="stat-card-drag-handle" aria-label={ui('stats.orderHandle')} title={ui('stats.orderHandle')} onPointerDown={event => { event.preventDefault(); setDraggingKey(key) }}><GripVertical size={15}/></button>
-      <button type="button" className="text-button" disabled={index === spaceKeysOf(page).length - 1} aria-label={ui('stats.orderDown')} title={ui('stats.orderDown')} onClick={() => moveCard(page, view, key, index + 1)}><ArrowDown size={15}/></button>
+      <Button type="button" variant="ghost" size="icon-xs" disabled={index === spaceKeysOf(page).length - 1} aria-label={ui('stats.orderDown')} title={ui('stats.orderDown')} onClick={() => moveCard(page, view, key, index + 1)}><ArrowDown/></Button>
     </div> : null
     /* 下一张按显示中的顺序取：隐藏卡是断开状态、不参与连接，它自己不出连接符。 */
     const next = isCardHidden(layout, key) ? undefined : view.visibleKeys[view.visibleKeys.indexOf(key) + 1] ?? boundary
@@ -502,13 +519,13 @@ export function Statistics() {
     /* 占位条只在编辑模式出现：非编辑模式下隐藏卡不留痕迹。 */
     const seam = next || slots.length > 0
       ? <div className={`stat-card-seam${next && isLinked(view.chains, key, next) ? ' is-linked' : ''}`}>{editMode ? slots.map(item => <div className="stat-card-hidden" key={item}>
-        <button type="button" className="text-button" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, item)}><Eye size={15}/></button>
+        <Button type="button" variant="ghost" size="icon-xs" aria-label={ui('stats.showCard')} title={ui('stats.showCard')} onClick={() => showKey(page, view, item)}><Eye/></Button>
       </div>) : null}{editMode && next ? junctionButton(page, view, key, next) : null}</div>
       : null
-    const hide = editMode ? <button type="button" className="text-button stat-card-hide" aria-label={ui('stats.hideCard')} title={ui('stats.hideCard')} onClick={() => hideKey(page, view, key)}><EyeOff size={15}/></button> : null
+    const hide = editMode ? <Button type="button" variant="ghost" size="icon-xs" className="stat-card-hide" aria-label={ui('stats.hideCard')} title={ui('stats.hideCard')} onClick={() => hideKey(page, view, key)}><EyeOff/></Button> : null
     const className = `${view.cardClass(key)}${key === view.chartKey && isCardFolded(layout, view.plotKey) ? ' is-plot-folded' : ''}${draggingKey === key ? ' is-dragging' : ''}${drop}`
     return <Fragment key={key}><div data-card-key={key} className={className}>{bar}{key === view.metricsKey
-      ? <><section className="panel summary-metrics-panel">{isMetricsTable(layout, page) ? <StatisticsTable data={metricsTable!} foldControl={view.foldControl(view.metricsKey)} editControls={editMode ? <><button type="button" className="text-button statistics-metrics-table" aria-pressed={isMetricsTable(layout, page)} aria-label={ui('stats.cardMode')} title={ui('stats.cardMode')} onClick={() => applyLayout(setMetricsTable(layout, page, false))}>{ui('stats.cardMode')}</button>{tableSettings(view.metricsKey, metricsTable!)}</> : undefined}/> : <><div className="panel-heading"><div><h3>{metricsTitle}</h3>{editMode ? <button type="button" className="text-button statistics-metrics-table" aria-pressed={isMetricsTable(layout, page)} aria-label={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} title={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} onClick={() => applyLayout(setMetricsTable(layout, page, !isMetricsTable(layout, page)))}>{isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')}</button> : undefined}</div><div className="stat-card-actions">{view.foldControl(view.metricsKey)}</div></div><div className="stat-metrics summary-metrics">{report!.metrics.map(item => {
+      ? <><section className="panel summary-metrics-panel">{isMetricsTable(layout, page) ? <StatisticsTable data={metricsTable!} foldControl={view.foldControl(view.metricsKey)} editControls={editMode ? <><Button type="button" variant="ghost" size="sm" aria-pressed={isMetricsTable(layout, page)} aria-label={ui('stats.cardMode')} title={ui('stats.cardMode')} onClick={() => applyLayout(setMetricsTable(layout, page, false))}>{ui('stats.cardMode')}</Button>{tableSettings(view.metricsKey, metricsTable!)}</> : undefined}/> : <><div className="panel-heading"><div><h3>{metricsTitle}</h3>{editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={isMetricsTable(layout, page)} aria-label={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} title={isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')} onClick={() => applyLayout(setMetricsTable(layout, page, !isMetricsTable(layout, page)))}>{isMetricsTable(layout, page) ? ui('stats.cardMode') : ui('stats.metricsTable')}</Button> : undefined}</div><div className="stat-card-actions">{view.foldControl(view.metricsKey)}</div></div><div className="stat-metrics summary-metrics">{report!.metrics.map(item => {
     return <div key={item.label} className="summary-metric-card">
       <div className="summary-metric-head">
         <span className="summary-metric-label">{item.label}</span>
@@ -518,7 +535,7 @@ export function Statistics() {
     </div>
   })}</div></>}</section></>
       : key === view.chartKey
-        ? <Suspense fallback={<Loading/>}><StatisticsChart key={page} category={page} compact={isChartCompact(layout, page)} compactControl={editMode ? <button type="button" className="text-button statistics-compact-toggle" aria-pressed={isChartCompact(layout, page)} aria-label={isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')} title={isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')} onClick={() => applyLayout(setChartCompact(layout, page, !isChartCompact(layout, page)))}>{isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')}</button> : undefined} showPicker={Boolean(editMode) || !isPickerHidden(layout, page)} pickerMuted={isPickerHidden(layout, page)} stackedRise={isStackedRise(layout, page)} stackedControl={editMode ? <button type="button" className="text-button statistics-stacked-rise" aria-pressed={isStackedRise(layout, page)} aria-label={isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')} title={isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')} onClick={() => applyLayout(setStackedRise(layout, page, !isStackedRise(layout, page)))}>{isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')}</button> : undefined} pickerControl={editMode ? <button type="button" className="text-button statistics-picker-toggle" aria-pressed={isPickerHidden(layout, page)} aria-label={isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')} title={isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')} onClick={() => applyLayout(setPickerHidden(layout, page, !isPickerHidden(layout, page)))}>{isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')}</button> : undefined} zeroBase={zeroBase} zeroBaseControl={editMode ? <button type="button" className="text-button statistics-zero-base" aria-pressed={zeroBase} aria-label={zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')} title={zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')} onClick={() => setZeroBase(!zeroBase)}>{zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')}</button> : undefined} filtered={layout.filteredSeries[page] ?? []} onToggleFilter={key => applyLayout(toggleSeriesFilter(layout, page, key))} series={report!.series} expanded={expandedChart === page} onToggleExpanded={() => toggleExpanded(page)} title={ui(categories[page])} foldControl={view.foldControl(view.chartKey)} plotFoldControl={view.foldControl(view.plotKey, 'corner', 'stats.foldChart', 'stats.unfoldChart')}/></Suspense>
+        ? <Suspense fallback={<Loading/>}><StatisticsChart key={page} category={page} compact={isChartCompact(layout, page)} compactControl={editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={isChartCompact(layout, page)} aria-label={isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')} title={isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')} onClick={() => applyLayout(setChartCompact(layout, page, !isChartCompact(layout, page)))}>{isChartCompact(layout, page) ? ui('stats.cardMode') : ui('stats.compactHeader')}</Button> : undefined} showPicker={Boolean(editMode) || !isPickerHidden(layout, page)} pickerMuted={isPickerHidden(layout, page)} stackedRise={isStackedRise(layout, page)} stackedControl={editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={isStackedRise(layout, page)} aria-label={isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')} title={isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')} onClick={() => applyLayout(setStackedRise(layout, page, !isStackedRise(layout, page)))}>{isStackedRise(layout, page) ? ui('stats.plainColor') : ui('stats.stackedRise')}</Button> : undefined} pickerControl={editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={isPickerHidden(layout, page)} aria-label={isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')} title={isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')} onClick={() => applyLayout(setPickerHidden(layout, page, !isPickerHidden(layout, page)))}>{isPickerHidden(layout, page) ? ui('stats.showPicker') : ui('stats.hidePicker')}</Button> : undefined} zeroBase={zeroBase} zeroBaseControl={editMode ? <Button type="button" variant="ghost" size="sm" aria-pressed={zeroBase} aria-label={zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')} title={zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')} onClick={() => setZeroBase(!zeroBase)}>{zeroBase ? ui('stats.axisAuto') : ui('stats.zeroBase')}</Button> : undefined} filtered={layout.filteredSeries[page] ?? []} onToggleFilter={key => applyLayout(toggleSeriesFilter(layout, page, key))} series={report!.series} expanded={expandedChart === page} onToggleExpanded={() => toggleExpanded(page)} title={ui(categories[page])} foldControl={view.foldControl(view.chartKey)} plotFoldControl={view.foldControl(view.plotKey, 'corner', 'stats.foldChart', 'stats.unfoldChart')}/></Suspense>
         : key === view.rawKey
           ? <section className="panel"><StatisticsTable data={rawTableOf(page, report)!} foldControl={view.foldControl(view.rawKey)} {...tableDisplay(layout, view.rawKey)} editControls={editMode ? tableSettings(view.rawKey, rawTableOf(page, report)!) : undefined}/></section>
           : <section className="panel"><StatisticsTable data={table!} foldControl={view.foldControl(key)} {...tableDisplay(layout, key)} editControls={editMode ? tableSettings(key, table!) : undefined}/></section>}{hide}</div>{seam}</Fragment>
@@ -538,21 +555,31 @@ export function Statistics() {
           <NumberDraftInput value={display.rows} label={ui('stats.tableRows')} onCommit={rows => applyLayout(setTableDisplay(layout, cardKey, {rows}))}/>
           {ui('stats.tableRows')}
         </label>}
-        {showIcons && <button type="button" className="text-button statistics-table-icons" aria-pressed={display.icons} disabled={display.plain}
+        {showIcons && <Button type="button" variant="ghost" size="sm" aria-pressed={display.icons} disabled={display.plain}
           aria-label={display.icons ? ui('stats.tableNoIcons') : ui('stats.tableIcons')} title={display.icons ? ui('stats.tableNoIcons') : ui('stats.tableIcons')}
-          onClick={() => applyLayout(setTableDisplay(layout, cardKey, {icons: !display.icons}))}>{display.icons ? ui('stats.tableNoIcons') : ui('stats.tableIcons')}</button>}
-        {showPlain && <button type="button" className="text-button statistics-table-plain" aria-pressed={display.plain}
+          onClick={() => applyLayout(setTableDisplay(layout, cardKey, {icons: !display.icons}))}>{display.icons ? ui('stats.tableNoIcons') : ui('stats.tableIcons')}</Button>}
+        {showPlain && <Button type="button" variant="ghost" size="sm" aria-pressed={display.plain}
           aria-label={display.plain ? ui('stats.tableNormal') : ui('stats.tablePlain')} title={display.plain ? ui('stats.tableNormal') : ui('stats.tablePlain')}
-          onClick={() => applyLayout(setTableDisplay(layout, cardKey, {plain: !display.plain}))}>{display.plain ? ui('stats.tableNormal') : ui('stats.tablePlain')}</button>}
+          onClick={() => applyLayout(setTableDisplay(layout, cardKey, {plain: !display.plain}))}>{display.plain ? ui('stats.tableNormal') : ui('stats.tablePlain')}</Button>}
       </div>
     )
   }
 
-  const categoryControl = <SegmentedControl<StatisticsView> className="statistics-category-control" label={ui('stats.categoryLabel')} value={management ? 'management' : category} onChange={selectPage} onItemContextMenu={editMode && !management ? id => {if (id !== 'management') togglePage(id, false)} : undefined} onItemMove={editMode && !management ? (id, delta) => {if (id !== 'management') movePageBy(id, delta)} : undefined} itemClassName={id => id === 'management' ? '' : `${isPageEnabled(layout, id) ? '' : 'is-disabled'}${!editMode && chainOf(id).length > 1 ? ' is-chained' : ''}`.trim()} trailing={!management && singleViewToggle} options={navigationEntries.map(([value, label]) => ({value, label: ui(label)}))}/>
+  const categoryControl = <Tabs className="statistics-category-control" value={management ? 'management' : category} onValueChange={value => selectPage(value as StatisticsView)}>
+    <TabsList aria-label={ui('stats.categoryLabel')}>
+      {navigationEntries.map(([id, label]) => <TabsTrigger key={id} value={id}
+        className={id === 'management' ? undefined : `${isPageEnabled(layout, id) ? '' : 'is-disabled'}${!editMode && chainOf(id).length > 1 ? ' is-chained' : ''}`.trim()}
+        onContextMenu={editMode && !management ? event => {event.preventDefault(); if (id !== 'management') togglePage(id, false)} : undefined}
+        onKeyDown={editMode && !management ? event => {if (event.altKey && (event.key === 'ArrowRight' || event.key === 'ArrowLeft')) {event.preventDefault(); event.stopPropagation(); if (id !== 'management') movePageBy(id, event.key === 'ArrowRight' ? 1 : -1)}} : undefined}
+      >{ui(label)}</TabsTrigger>)}
+      {!management && singleViewToggle}
+    </TabsList>
+  </Tabs>
   /* 窄屏用明确的下拉入口展示全部分类，编辑模式的合并开关仍可单独操作。 */
   const categoryPicker = <div className="statistics-category-picker">
-    <Select className="statistics-category-select" aria-label={ui('stats.categoryLabel')} value={management ? 'management' : category} onChange={event => selectPage(event.target.value as StatisticsView)}>
-      {navigationEntries.map(([value, label]) => <option value={value} key={value}>{ui(label)}</option>)}
+    <Select value={management ? 'management' : category} onValueChange={value => selectPage(value as StatisticsView)}>
+      <SelectTrigger className="statistics-category-select" aria-label={ui('stats.categoryLabel')}><SelectValue/></SelectTrigger>
+      <SelectContent>{navigationEntries.map(([value, label]) => <SelectItem value={value} key={value}>{ui(label)}</SelectItem>)}</SelectContent>
     </Select>
     {!management && singleViewToggle}
   </div>
@@ -560,9 +587,10 @@ export function Statistics() {
     <div className="statistics-toolbar-row">
       {categoryControl}
       {categoryPicker}
-      {!management && <ActionGroup>{actions}</ActionGroup>}
+      {/* 动作按钮贴行尾，与左侧分类切换分居两端 */}
+      {!management && <ActionGroup className="ml-auto">{actions}</ActionGroup>}
     </div>
-    {!management && <div className="statistics-controls period-controls"><strong>{ui(categories[category!])}</strong>{rangeControls}{hints}</div>}
+    {!management && <div className="statistics-controls period-controls">{rangeControls}{hints}</div>}
     {editMode && !management && <StatisticsEditConsole customized={customized} pages={fixedPageOrder.map(id => ({id, label: ui(categories[id]), enabled: isPageEnabled(layout, id)}))} onTogglePage={id => togglePage(id, !isPageEnabled(layout, id))} onReset={resetLayout}>
       {/* 顺序控件：一次挪一格，组合链整体挪动。 */}
       <div className="statistics-page-order">

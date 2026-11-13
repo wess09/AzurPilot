@@ -1,32 +1,40 @@
-/* 材质轴：玻璃与普通共用一份皮肤，只在面板底色与磨砂滤镜上分叉。
+/* 材质轴：玻璃与普通共用一份皮肤，只在面板底色与磨砂滤镜上分叉；
    玻璃取值由家族调色板给出（新版是 Apple 玻璃，旧版是旧版色板上的磨砂）；
-   这里声明「普通」分支，把四个 token 压回不透明、无滤镜。 */
+   这里声明「普通」分支，把四个 token 压回不透明、无滤镜 */
 :root[data-material='plain'],
 :root[data-theme='minimal'] {
   --theme-glass: var(--surface);
   --theme-glass-edge: var(--border);
   --theme-glass-shadow: none;
   --theme-material-filter: none;
-  /* 材质皮肤里还有直接读原始玻璃变量的规则，一并压平，否则部分卡片仍是半透明。 */
+  /* 材质皮肤里还有直接读原始玻璃变量的规则，一并压平，否则部分卡片仍是半透明 */
   --glass-tint: var(--surface);
   --glass-edge: var(--border);
   --glass-shadow: none;
-  /* 普通材质没有材质层：四个层级与四个区域一并压成不透明、无滤镜。 */
+  /* 普通材质没有材质层：四个层级与四个区域一并压成不透明、无滤镜 */
   --theme-surface-alpha: 100%; --theme-plate-alpha: 100%; --theme-inset-alpha: 100%; --theme-control-alpha: 100%;
   --theme-sidebar-alpha: 100%; --theme-topbar-alpha: 100%; --theme-modal-alpha: 100%; --theme-menu-alpha: 100%;
   --theme-surface-bg: var(--surface);
-  --theme-plate-bg: var(--surface-muted); --theme-inset-bg: var(--surface); --theme-control-bg: var(--surface-muted); --theme-control-marker-bg: var(--surface);
-  /* 四个区域与一级面同底：普通材质下它们只是位置不同，不再是独立材质层。 */
+  --theme-plate-bg: var(--surface-muted); --theme-inset-bg: var(--surface); --theme-control-bg: var(--surface-muted);
+  /* 四个区域与一级面同底：普通材质下它们只是位置不同，不再是独立材质层 */
   --theme-sidebar-bg: var(--surface); --theme-topbar-bg: var(--surface); --theme-modal-bg: var(--surface); --theme-menu-bg: var(--surface);
   --theme-surface-filter: none; --theme-plate-filter: none; --theme-inset-filter: none; --theme-control-filter: none;
   --theme-sidebar-filter: none; --theme-topbar-filter: none; --theme-modal-filter: none; --theme-menu-filter: none;
-  /* 普通材质下标签页与标签栏同为一个不透明底色，选中态显不出来，只能另给一个手工填充色。 */
+  /* 普通材质下标签页与标签栏同为一个不透明底色，选中态显不出来，只能另给一个手工填充色 */
   --theme-tab-current-bg: var(--surface-muted);
 }
 
-/* 普通材质与简约主题的整棵子树都关闭背景滤镜。 */
+/* 普通材质与简约主题的整棵子树都关闭背景滤镜 */
 :root[data-theme='minimal'] *, :root[data-theme='minimal'] *::before, :root[data-theme='minimal'] *::after,
 :root[data-material='plain'] *, :root[data-material='plain'] *::before, :root[data-material='plain'] *::after {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
+}
+
+/* 无壁纸或使用软件渲染时，常驻大面板保留玻璃底色，跳过实时背景模糊。 */
+:root[data-material='glass'][data-reduce-backdrop] .app-shell
+  :is(.sidebar, .topbar, .legacy-page-nav, .monitor-panel, .log-panel, .resource-card, .resource-card-body, .instance-page-rail):not(.mock-preview-shell *),
+:root[data-material='glass'][data-reduce-backdrop] .app-shell .task-config-legacy :is(.config-group, .task-help-panel) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }

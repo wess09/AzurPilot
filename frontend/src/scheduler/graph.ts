@@ -1,4 +1,6 @@
-/** 图编辑操作与端口校验，全部操作返回新文档以支持撤销。 */
+/**
+ * @fileoverview 图编辑操作与端口校验，全部操作返回新文档以支持撤销。
+ */
 import type {CardDefinition, Catalog, Graph, PortType, ProgramDocument, ProgramNode, Subgraph} from './types'
 import {compatiblePorts} from './appearance'
 
@@ -30,6 +32,10 @@ export function connectedPortType(graph: Graph, doc: ProgramDocument, catalog: C
   }
   return 'any'
 }
+/**
+ * 解析节点的有效卡片定义：call 指向子图时改用子图签名，变量、子图端口与字面量节点动态合成，
+ * 目录查不到时回落「未知」占位。
+ */
 export function definition(node: ProgramNode, doc: ProgramDocument, catalog: Catalog, graph: Graph): CardDefinition {
   const base = catalog.cards.find(c => c.type === node.type) ?? {type: node.type, label: node.type, category: '未知', pure: true, inputs: [], outputs: [], exits: [], params: {}}
   if (node.type === 'call') {
@@ -50,9 +56,14 @@ export function definition(node: ProgramNode, doc: ProgramDocument, catalog: Cat
   if (node.type === 'literal') return {...base, outputs: [{name: 'value', required: false, type: (node.params.valueType ?? 'any') as PortType}]}
   return base
 }
+/** 用新图整体替换 main 或指定子图，返回新文档。 */
 export function replaceGraph(doc: ProgramDocument, graphId: string, graph: Graph): ProgramDocument {
   return graphId === 'main' ? {...doc, ...graph} : {...doc, subgraphs: doc.subgraphs.map(s => s.id === graphId ? {...s, ...graph} : s)}
 }
+/**
+ * 复制选中节点与两端都在选区内的连线：新 id 按「旧 id → 新 id」映射重接，
+ * loop_end 与其循环卡片的配对关系跟随映射，位置整体右下偏移 40px。
+ */
 export function duplicate(graph: Graph, selection: Set<string>) {
   const ids = new Map([...selection].map(old => [old, id()]))
   return {
@@ -85,6 +96,11 @@ export function horizontalLayout(graph: Graph): Graph {
     return {...node, position:{x:level * 320, y:row * 640}}
   })}
 }
+/**
+ * 把选中的卡片封装成子图并在原位留下一个 call 节点：跨界连线改接到 call 的 inputN/outputN 端口，
+ * 纯度由选中卡片决定；选区含入口、返回或子图端口卡片、循环及其结束卡片拆散、纯组合无输出等
+ * 非法情形直接抛错。
+ */
 export function encapsulate(doc: ProgramDocument, graphId: string, selected: Set<string>, name: string, catalog: Catalog) {
   const graph = graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId)!
   const picked = graph.nodes.filter(n => selected.has(n.id))

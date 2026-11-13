@@ -1,6 +1,7 @@
 /**
  * @fileoverview 统计页布局自定义编辑控制台组件。
  */
+import {Button} from './ui/button'
 
 import { RotateCcw } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -25,23 +26,22 @@ export function StatisticsEditConsole({customized, pages, onTogglePage, onReset,
     <div className="panel-heading">
       <h3>{ui('stats.editConsole')}</h3>
       <span className="statistics-edit-state">{ui(customized ? 'stats.editLayoutCustom' : 'stats.editLayoutDefault')}</span>
-      <button className="button danger subtle" disabled={!customized} onClick={onReset}><RotateCcw size={15}/>{ui('stats.editReset')}</button>
+      <Button variant="destructive" disabled={!customized} onClick={onReset}><RotateCcw size={15}/>{ui('stats.editReset')}</Button>
     </div>
     {children}
     <p className="panel-note">{ui('stats.editConsoleHint')}</p>
     <p className="panel-note">{ui('stats.orderHint')}</p>
     <div className="statistics-edit-actions">
       {pages.map(page => (
-        <button
+        <Button
           key={page.id}
           type="button"
-          className={`statistics-page-toggle-chip ${page.enabled ? 'active' : 'is-disabled'}`}
+          size="sm" variant={page.enabled ? 'default' : 'outline'}
           aria-pressed={page.enabled}
           onClick={() => onTogglePage(page.id)}
         >
-          <span className="stat-chip-dot" style={{backgroundColor: page.enabled ? 'var(--theme-accent)' : 'var(--theme-muted)'}}/>
           <span>{page.label}</span>
-        </button>
+        </Button>
       ))}
     </div>
   </section>

@@ -1,33 +1,30 @@
-.app-shell {display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: var(--viewport-height)}
-.app-shell.with-rail {grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width)}
-.brand-mark {color: #77dec7; display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 39px}
-.sidebar {position: sticky; top: 0; height: var(--viewport-height); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 15px; z-index: 20}
+.app-shell:where(.modern-shell) {display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: var(--viewport-height)}
+.app-shell:where(.modern-shell).with-rail {grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width)}
+.brand-mark {color: var(--accent); display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 39px}
+.sidebar:where(.modern-shell *) {position: sticky; top: 0; height: var(--viewport-height); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 15px; z-index: 20}
 .sidebar-transition-wrap {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%; position: relative}
 .sidebar-transition-pane {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%}
 .sidebar-brand {height: 72px; flex-shrink: 0; padding: 24px 9px 0; display: flex; align-items: center; justify-content: space-between}
 .brand-title {display: inline-flex; align-items: center; gap: 9px; font-size: 22px; font-weight: 750; letter-spacing: -.8px}
 .brand-logo {width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0}
-.instance-icon {width: 31px; height: 34px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); border-radius: 7px; flex-shrink: 0}
 .instance-menu {position: absolute; top: calc(100% + 6px); left: 0; min-width: 220px; z-index: 40; padding: 6px; border: 1px solid var(--border); border-radius: 12px}
 .instance-menu button {display: flex; align-items: center; gap: 9px; padding: 10px 10px; width: 100%; text-align: left; border-radius: 7px; font-size: 13px; font-weight: 500; transition: all .15s ease}
 .instance-menu button span {flex: 1; overflow-wrap: anywhere; min-width: 0}
 .instance-menu button:hover, .instance-menu button:focus-visible, .instance-menu button[aria-checked='true'] {background: var(--accent-soft); color: var(--accent)}
-.sidebar-label {display: flex; align-items: center; justify-content: space-between; color: #97a4af; font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
-.sidebar-label button {padding: 0; color: #82929e; display: grid; place-items: center}
+.sidebar-label {display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 10px; padding: 0 10px; letter-spacing: 1px; margin-bottom: 12px}
+.sidebar-label button {padding: 0; color: var(--muted); display: grid; place-items: center}
 .sidebar-label > span {font: 10px var(--theme-font-sans); letter-spacing: 0; background: var(--surface-muted); padding: 1px 5px; border-radius: 3px}
 .primary-nav {position: relative; display: grid; gap: 4px; margin-bottom: 28px}
-.primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: #768593; border-radius: 7px; font-size: 12px; font-weight: 500}
+.primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: var(--muted); border-radius: 7px; font-size: 12px; font-weight: 500}
 .primary-nav a:hover {background: var(--surface-muted)}
 .primary-nav a.active {color: var(--accent); background: var(--accent-soft); font-weight: 600}
 .nav-pill {margin-left: auto; font-size: 8px; background: var(--surface); border-radius: 4px; padding: 2px 5px; color: var(--accent)}
-.nav-search {display: flex; align-items: center; gap: 6px; padding: 0 9px; border: 1px solid var(--border); border-radius: 6px; color: #91a0ad; margin: 0 3px 12px}
-.nav-search input {width: 100%; padding: 8px 0; background: none; border: 0; font-size: 11px; box-shadow: none}
 .task-nav-container {position: relative; display: flex; flex-direction: column; min-height: 0; flex: 1}
 .task-nav {overflow-y: auto; padding: 0 2px 15px; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 2px}
-.task-group-button {display: flex; align-items: center; gap: 10px; padding: 10px 9px; width: 100%; text-align: left; border-radius: 7px; color: #71818e; font-size: 12px; font-weight: 500; background: none; border: 1px solid transparent; transition: all .15s ease; user-select: none}
+.task-group-button {display: flex; align-items: center; gap: 10px; padding: 10px 9px; width: 100%; text-align: left; border-radius: 7px; color: var(--muted); font-size: 12px; font-weight: 500; background: none; border: 1px solid transparent; transition: all .15s ease; user-select: none}
 .task-group-button:hover {background: var(--surface-muted); color: var(--text)}
 .task-group-button.active {color: var(--accent); font-weight: 600}
-.task-group-button.expanded {background: var(--accent-soft); color: var(--accent); border-color: #138b7830}
+.task-group-button.expanded {background: var(--accent-soft); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 20%, transparent)}
 .task-group-icon {flex-shrink: 0; color: inherit}
 .task-group-title {flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .task-group-arrow {flex-shrink: 0; color: var(--muted); transition: transform .15s ease, color .15s ease}
@@ -45,67 +42,59 @@
 @media (prefers-reduced-motion: reduce) {
   .task-group .task-submenu-list {transition: none}
 }
-.task-submenu-item {display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 11px; color: #728290; line-height: 1.4; transition: all .12s ease}
+.task-submenu-item {display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 6px; font-size: 11px; color: var(--muted); line-height: 1.4; transition: all .12s ease}
 .task-submenu-item:hover {background: var(--surface-muted); color: var(--accent)}
 .task-submenu-item.active {background: var(--accent-soft); color: var(--accent); font-weight: 600}
-.task-submenu-dot {width: 5px; height: 5px; border-radius: 50%; background: #9aa7b2; flex-shrink: 0; transition: all .12s ease}
+.task-submenu-dot {width: 5px; height: 5px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all .12s ease}
 .task-submenu-item:hover .task-submenu-dot {background: var(--accent); transform: scale(1.2)}
-.task-submenu-item.active .task-submenu-dot {background: var(--accent); box-shadow: 0 0 0 2px #138b7825}
+.task-submenu-item.active .task-submenu-dot {background: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent)}
 .task-submenu-item-text {flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
-/* 长标题灯带：放得下就沿用省略号截断，放不下才滚动，两份文案首尾相接。 */
+/* 长标题灯带：放得下就沿用省略号截断，放不下才滚动，两份文案首尾相接 */
 .marquee-track {display: contents}
 [data-marquee='on'] > .marquee-track {display: inline-flex; align-items: center; gap: var(--marquee-gap); animation: marquee-scroll var(--marquee-duration, 8s) linear infinite}
 @keyframes marquee-scroll {from {transform: translateX(0)} to {transform: translateX(calc(-1 * var(--marquee-shift, 0px)))}}
 
-.sidebar-footer {margin-top: auto; border-top: 1px solid var(--border); padding: 19px 9px; display: flex; align-items: center; gap: 10px; font-size: 10px}
-.connection-dot {background: #d2ab67; width: 6px; height: 6px; border-radius: 50%}
-.connection-dot.online {background: #40b594; box-shadow: 0 0 0 3px #40b59412}
-.main-shell {min-width: 0; display: flex; flex-direction: column}
-/* 桌面配置页只让内容列滚动，长参数列表不能把外壳和浏览器页面撑高。 */
+.main-shell:where(.modern-shell *) {min-width: 0; display: flex; flex-direction: column}
+/* 桌面配置页只让内容列滚动，长参数列表不能把外壳和浏览器页面撑高 */
 @media (min-width: 951px) {
-  .app-shell.task-config-shell:not(.legacy-shell) {height: var(--viewport-height); overflow: hidden}
-  .app-shell.task-config-shell:not(.legacy-shell) .main-shell {min-height: 0}
-  .app-shell.task-config-shell:not(.legacy-shell) .main-shell > main {min-height: 0; overflow-y: auto}
-  .app-shell.task-config-shell:not(.legacy-shell) .group-nav {top: 16px}
+  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) {height: var(--viewport-height); overflow: hidden}
+  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .main-shell:where(.modern-shell *) {min-height: 0}
+  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .main-shell:where(.modern-shell *) > main:where(.modern-shell .main-shell > main) {min-height: 0; overflow-y: auto}
+  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .group-nav {top: 16px}
 }
-.topbar {height: var(--topbar-height, 69px); border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 31px; background: none; flex-shrink: 0}
+.topbar:where(.modern-shell *) {height: var(--topbar-height, 69px); border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 31px; background: none; flex-shrink: 0}
 .breadcrumb {font-size: 11px; color: var(--muted); display: flex; gap: 13px; align-items: center}
-.breadcrumb span {color: #c5cdd4}
+.breadcrumb span {color: var(--muted)}
 .breadcrumb strong {font-weight: 500; color: var(--text)}
 .breadcrumb a {color: var(--muted); text-decoration: none; transition: color .15s}
 .breadcrumb a:hover {color: var(--accent)}
 .breadcrumb a strong {color: var(--text); font-weight: 500; transition: color .15s}
 .breadcrumb a:hover strong {color: var(--accent)}
-/* 顶栏模式开关：开着时所有实例铺成一行分页，关着时仍收在下拉里。 */
+/* 顶栏模式开关：开着时所有实例铺成一行分页，关着时仍收在下拉里 */
 .breadcrumb.with-tabs {min-width: 0; flex: 1}
 @media (max-width: 950px) {
   .instance-tab-name {max-width: 5rem}
 }
-.topbar-right {display: flex; align-items: center; gap: 20px; color: var(--muted); font-size: 10px}
 .connection-label {display: flex; align-items: center; gap: 6px; color: var(--accent)}
-.topbar-divider {width: 1px; height: 14px; background: var(--border)}
-main {padding: 32px 32px 16px; flex: 1}
+main:where(.modern-shell .main-shell > main) {padding: 32px 32px 16px; flex: 1}
 .page-title {display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 26px}
 .page-title h1 {font-size: 34px; font-weight: 700; letter-spacing: -.9px; line-height: 1.25}
 .title-actions {display: flex; align-items: center; gap: 10px; flex-wrap: wrap}
-.connection-banner {padding: 10px 32px; display: flex; gap: 9px; align-items: center; background: #fbf2db; color: #8f6d25; font-size: 11px}
-.right-rail {position: sticky; top: 0; height: var(--viewport-height); min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); z-index: 18; overflow: hidden}
+.connection-banner {padding: 10px 32px; display: flex; gap: 9px; align-items: center; background: var(--theme-warning-soft); color: var(--theme-warning); font-size: 11px}
+.right-rail:where(.modern-shell *) {position: sticky; top: 0; height: var(--viewport-height); min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); z-index: 18; overflow: hidden}
 .right-rail-header {height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 0}
 .right-rail-header > div {min-width: 0}
 .right-rail-header strong {display: block; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px}
-.right-rail-eyebrow {display: block; color: var(--muted); font-size: 9px; letter-spacing: .9px; text-transform: uppercase}
 .scheduler-widget {flex-shrink: 0; margin: 14px 14px 12px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-muted)}
 .scheduler-widget-heading, .scheduler-widget-heading > div, .rail-section-heading, .rail-section-heading > div {display: flex; align-items: center}
 .scheduler-widget-heading {justify-content: space-between; gap: 10px; margin-bottom: 13px}
 .scheduler-widget-heading > div {gap: 7px; font-size: 12px; font-weight: 650}
-.scheduler-status {display: inline-flex; align-items: center; gap: 5px; font-size: 9px; color: var(--muted)}
-.scheduler-status.running {color: var(--text)}
 .scheduler-stats {display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px}
 .scheduler-stats > div {padding: 9px 8px; border-radius: 8px; background: var(--theme-inset-bg); border: 1px solid var(--border); -webkit-backdrop-filter: var(--theme-inset-filter); backdrop-filter: var(--theme-inset-filter)}
 .scheduler-stats span {display: block; margin-bottom: 3px; color: var(--muted); font-size: 9px}
 .scheduler-stats strong {font-size: 15px; font-variant-numeric: tabular-nums}
 .scheduler-toggle {width: 100%; justify-content: center; min-height: 36px}
-/* 与下面的队列卡片一样要有自己的底衬（二级贴片），否则「任务计划」标题直接浮在栏底上。 */
+/* 与下面的队列卡片一样要有自己的底衬（二级贴片），否则「任务计划」标题直接浮在栏底上 */
 .rail-schedule {flex: 1; min-height: 0; display: flex; flex-direction: column; border-top: 1px solid var(--border); padding: 12px 14px 10px; background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter); border-radius: var(--theme-plate-radius)}
 .rail-section-heading {justify-content: space-between; gap: 8px; margin-bottom: 8px; color: var(--muted); font-size: 10px}
 .rail-section-heading > div {gap: 7px; color: var(--text); font-weight: 600}
@@ -118,9 +107,8 @@ main {padding: 32px 32px 16px; flex: 1}
 .rail-task-item strong, .rail-task-item small {display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
 .rail-task-item strong {font-size: 10px; font-weight: 600}
 .rail-task-item small {margin-top: 2px; color: var(--muted); font-size: 9px}
-.rail-task-item .task-state {font-size: 9px; white-space: nowrap}
 .rail-empty {padding: 18px 8px; color: var(--muted); font-size: 10px; text-align: center}
-.mobile-toggle, .mobile-close {display: none !important}
+.mobile-toggle:where(.modern-shell *), .mobile-close:where(.modern-shell *) {display: none !important}
 .login-page {min-height: var(--viewport-height); display: grid; grid-template-columns: 1fr 1fr; background: var(--surface)}
 .login-art {background: #142d3a; color: #72c6b4; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 60px; position: relative; overflow: hidden}
 
@@ -133,14 +121,10 @@ main {padding: 32px 32px 16px; flex: 1}
 .welcome {padding: 110px 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center}
 .welcome > svg {color: var(--accent); margin-bottom: 10px}
 .welcome p {color: var(--muted)}
-@media (min-width: 2000px) {main {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
-@media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main {padding: 25px 24px 15px}.topbar {padding: 0 24px}.sidebar {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
+@media (min-width: 2000px) {main:where(.modern-shell .main-shell > main) {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
+@media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main:where(.modern-shell .main-shell > main) {padding: 25px 24px 15px}.topbar:where(.modern-shell *) {padding: 0 24px}.sidebar:where(.modern-shell *) {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
 @media (max-width: 1275px) {.preview-screen {max-height: 360px}.page-title {align-items: flex-start}.title-actions {justify-content: flex-end}.resource-grid {gap: 7px !important}.resource-card {--resource-card-inset: 8px; padding: var(--resource-card-inset) !important}.resource-foot {font-size: 8px !important}}
-@media (max-width: 950px) {.app-shell {display: block}.sidebar {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar {left: 0}.right-rail {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle, .mobile-close {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}.topbar-right .version, .topbar-divider {display: none}main {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
-
-/* 顶栏与右栏的公共容器：默认不参与布局，谁都不受影响；
-   新版玻璃主题在自己的样式里把它接管成真正的一级层容器。 */
-
+@media (max-width: 950px) {.app-shell:where(.modern-shell) {display: block}.sidebar:where(.modern-shell *) {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar:where(.modern-shell *) {left: 0}.right-rail:where(.modern-shell *) {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle:where(.modern-shell *), .mobile-close:where(.modern-shell *) {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close:where(.modern-shell *) {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar:where(.modern-shell *) {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}main:where(.modern-shell .main-shell > main) {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
 
 /* 侧栏宽度直接拖拽调整把手 */
 .sidebar-resize-handle {
@@ -151,7 +135,7 @@ main {padding: 32px 32px 16px; flex: 1}
   width: 10px;
   cursor: col-resize;
   z-index: 35;
-  touch-action: none;
+  touch-action: none; /* 拖动把手时不让浏览器接管触摸滚动 */
   user-select: none;
 }
 .sidebar-resize-handle::after {

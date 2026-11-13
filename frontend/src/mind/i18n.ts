@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 养成计算页（mind.*）的四语言文案包：zh-CN 为主源，其余语言按它的键集对齐。
+ */
+
+/** zh-CN 文案主源；Key 由它的键集派生，其余语言包须逐一对应。 */
 export const mindZhCN = {
   'mind.filterFunctions': '筛选功能',
   'mind.title': "养成计算",
@@ -52,6 +57,7 @@ export const mindZhCN = {
   'mind.tooMany': '最多保存 5000 艘舰船',
 } as const
 type Key = keyof typeof mindZhCN
+/** mindZhCN 的 zh-TW 版本。 */
 export const mindZhTW: Record<Key, string> = {
   'mind.filterFunctions': '篩選功能',
   'mind.title': "養成計算",
@@ -105,6 +111,7 @@ export const mindZhTW: Record<Key, string> = {
   'mind.empty': '沒有符合條件的艦船',
   'mind.tooMany': '最多儲存 5000 艘艦船',
 }
+/** mindZhCN 的 en-US 版本。 */
 export const mindEnUS: Record<Key, string> = {
   'mind.filterFunctions': 'Filter options',
   'mind.title': "Training calculator",
@@ -158,6 +165,7 @@ export const mindEnUS: Record<Key, string> = {
   'mind.empty': 'No matching ships',
   'mind.tooMany': 'A maximum of 5,000 ships can be saved',
 }
+/** mindZhCN 的 ja-JP 版本。 */
 export const mindJaJP: Record<Key, string> = {
   'mind.filterFunctions': '絞り込み機能',
   'mind.title': "育成計算",

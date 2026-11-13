@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 换船装备功能的界面文案（zh-CN/zh-TW/en-US/ja-JP）；键集以 zh-CN 为准，其余语言经 typeof 逐键对齐。
+ */
 export const equipmentZhCN = {
   'fleetEquipment.title': '换船装备', 'fleetEquipment.enable': '启用自动换装备', 'fleetEquipment.save': '保存装备码',
   'fleetEquipment.help': '仅联动智能换船，默认关闭。确定来源与舰位后，先清空所有待换出舰船的装备；换船全部完成后，按换入舰船详情左上角的舰种应用对应装备码，最后回到主界面继续任务。',

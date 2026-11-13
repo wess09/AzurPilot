@@ -7,15 +7,19 @@ import { createRoot } from 'react-dom/client'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { App } from './app/App'
 import { AppProvider } from './app/context'
+import { PluginProvider } from './plugins/context'
+import { PluginPage } from './plugins/views'
 import { ThemeWallpaper } from './components/ThemeWallpaper'
 import { applyTheme, getThemePreference } from './app/theme'
 import {StockExchangeBoundary,StockExchangeFallback} from './components/StockExchangeBoundary'
 import { translateCurrentUi } from './i18n'
 import './styles/legacy.css'
 import './styles/minimal.css'
+import './styles/shadcn.css'
+import './plugins/styles.css'
 
-/* 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
-   没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。 */
+// 顶层兜底与路由级兜底共用同一页：路由渲染出错时 React Router 会先接住，
+// 没有 errorElement 就落到它自带的崩溃页（带堆栈），所以两级都要挂上。
 function ErrorPage() {
   return <div className="welcome"><h1>{translateCurrentUi('error.pageTitle')}</h1><p>{translateCurrentUi('error.pageHint')}</p><button className="button primary" onClick={() => location.reload()}>{translateCurrentUi('error.reload')}</button></div>
 }
@@ -36,18 +40,19 @@ const Announcement = lazy(() => import('./pages/Announcement').then(module => ({
 const InterfaceSettings = lazy(() => import('./pages/InterfaceSettings').then(module => ({default: module.InterfaceSettings})))
 const RemoteAccess = lazy(() => import('./pages/RemoteAccess').then(module => ({default: module.RemoteAccess})))
 const Settings = lazy(() => import('./pages/Settings').then(module => ({default: module.Settings})))
-const DevControls = lazy(() => import('./pages/DevControls').then(module => ({default: module.DevControls})))
 const ConfigManager = lazy(() => import('./pages/ConfigManager').then(module => ({default: module.ConfigManager})))
 const SchedulerProgram = lazy(() => import('./pages/SchedulerProgram').then(module => ({default: module.SchedulerProgram})))
 const StockExchange = lazy(() => import('./pages/StockExchange').then(module => ({default: module.StockExchange})))
 const FleetAnalysis = lazy(() => import('./pages/FleetAnalysis').then(module => ({default: module.FleetAnalysis})))
 const FleetSwitch = lazy(() => import('./pages/FleetSwitch').then(module => ({default: module.FleetSwitch})))
+const Plugins = lazy(() => import('./pages/Plugins').then(module => ({default: module.Plugins})))
 
 const router = createHashRouter([
-  {path: '/', element: <App/>, errorElement: <ErrorPage/>, children: [{path: 'setup', element: <InstanceSetup/>}, {path: 'announcement', element: <Announcement/>}, {path: 'interface', element: <InterfaceSettings/>}, {path: 'remote', element: <RemoteAccess/>}, {path: 'settings', element: <Settings/>}, {path: 'updater', element: <Updater/>}, {path: 'configs', element: <ConfigManager/>}, {path: 'dev', element: <DevControls/>}]},
+  {path: '/', element: <App/>, errorElement: <ErrorPage/>, children: [{path: 'setup', element: <InstanceSetup/>}, {path: 'announcement', element: <Announcement/>}, {path: 'interface', element: <InterfaceSettings/>}, {path: 'remote', element: <RemoteAccess/>}, {path: 'settings', element: <Settings/>}, {path: 'updater', element: <Updater/>}, {path: 'configs', element: <ConfigManager/>}, {path: 'plugins', element: <Plugins/>}, {path: 'plugins/:pluginId/:pageId', element: <PluginPage/>}]},
   {path: '/i/:instance', element: <App/>, errorElement: <ErrorPage/>, children: [
     {index: true, element: <Navigate to="overview" replace/>},
     {path: 'overview', element: <Overview/>}, {path: 'task/:task', element: <TaskConfig/>},
+    {path: 'plugins/:pluginId/:pageId', element: <PluginPage/>},
     {path: 'resources', element: <Navigate to="../statistics?view=management" replace/>},
     {path: 'stock-exchange', element: <StockExchangeBoundary><Suspense fallback={<StockExchangeFallback/>}><StockExchange/></Suspense></StockExchangeBoundary>},
     {path: 'logs', element: <Navigate to="../overview" replace/>}, {path: 'statistics', element: <Statistics/>}, {path: 'scheduler', element: <Navigate to="../task/SchedulerProgram" replace/>}, {path: 'settings', element: <Navigate to="/settings" replace/>},
@@ -65,4 +70,4 @@ const router = createHashRouter([
 ])
 // 在挂载前应用已保存的主题，避免首屏闪过默认外观。
 applyTheme(getThemePreference())
-createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><ThemeWallpaper/><RouterProvider router={router}/></AppProvider></ErrorBoundary>)
+createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><PluginProvider><ThemeWallpaper/><RouterProvider router={router}/></PluginProvider></AppProvider></ErrorBoundary>)

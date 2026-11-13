@@ -1,8 +1,13 @@
+/**
+ * @fileoverview 舰队信息页用例：兼容旧版记录格式并正确展示心情与未知值，扫描启动前先保存心情选项。
+ */
+
+import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 
 test('舰队信息兼容旧记录并展示心情与未知值', async ({page}) => {
   const requests = new Map<string, string>()
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -42,7 +47,7 @@ test('舰队信息兼容旧记录并展示心情与未知值', async ({page}) =>
 
 test('扫描启动前先保存本次心情更新选项', async ({page}) => {
   const sent: Array<{method: string; params?: {changes?: Array<{path: string; value: unknown}>}}> = []
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))

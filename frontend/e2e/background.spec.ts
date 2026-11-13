@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 背景壁纸用例：代抓与上传接口的授权令牌校验，以及各背景来源切换后的铺图行为。
+ */
+
 import { expect, test } from '@playwright/test'
 
 test('背景代抓和上传携带授权令牌，未授权 HTTP 请求被拒绝', async ({page, request}) => {

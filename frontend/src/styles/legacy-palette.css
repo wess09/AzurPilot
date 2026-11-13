@@ -1,21 +1,21 @@
-/* 旧版主题配色：MD3 靛紫。
-   取值来自 master 的 assets/gui/css/light-alas.css 与 dark-alas.css；
-   简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值。 */
+/* 旧版主题配色：中性灰白面板 + 品牌青绿强调。
+   简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值；
+   颜色槽位的契约名与 app/colorPalette.ts 的 colorSlots 一一对应，改名会破坏调色板 */
 :root {
   color-scheme: light;
-  /* 基础色板 */
-  --bg: #f9f9f9; --surface: #ffffff; --surface-muted: #f6f6f9;
-  --text: #2c2c2c; --muted: #777777; --border: #e0e0e0;
-  --accent: #4e4c97; --accent-hover: #3f3d79; --accent-soft: #e8e8f8;
-  --secondary: #7a77bb; --secondary-soft: #eeedfa;
+  /* 基础色板：面板保持白面；页面背景垫一层极浅暖白（#faf9f5，仅背景，不动面板配色） */
+  --bg: #faf9f5; --surface: #ffffff; --surface-muted: #f5f5f5;
+  --text: #262626; --muted: #737373; --border: #e5e5e5;
+  --accent: #262626; --accent-hover: #383838; --accent-soft: #f5f5f5;
+  --secondary: #525252; --secondary-soft: #f5f5f5;
   --sidebar: var(--surface); --radius: 8px; --shadow: 0 1px 2px rgb(0 0 0 / .1);
-  --red: #c9342c; --green: #248a3d; --green-soft: #e8f4ec;
+  --red: #e5484d; --green: #2c9c57; --green-soft: #e4f3ea;
   --sidebar-width: 240px; --topbar-height: 56px;
-  /* 旧版家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明。 */
+  /* 旧版家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明 */
   --glass-tint: var(--theme-surface-bg);
   --glass-edge: color-mix(in srgb, var(--border) 82%, transparent);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / .12);
-  --syntax-key: var(--accent); --syntax-string: var(--secondary); --syntax-value: #7b5ea7;
+  --syntax-key: var(--accent); --syntax-string: var(--secondary); --syntax-value: #a2591f;
   --syntax-comment: var(--muted); --syntax-punctuation: var(--text);
   --theme-font-sans: 'MiSans', "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif;
   --theme-font-mono: 'JetBrains Mono', 'JetBrains Mono NL', Consolas, "Cascadia Code", "Microsoft YaHei", monospace;
@@ -23,20 +23,20 @@
   /* 契约层 —— 颜色 */
   --theme-bg: var(--bg); --theme-surface: var(--surface); --theme-surface-muted: var(--surface-muted);
   --theme-text: var(--text); --theme-muted: var(--muted); --theme-border: var(--border);
-  --theme-accent: var(--accent); --theme-accent-hover: var(--accent-hover); --theme-accent-soft: var(--accent-soft);
+  --theme-accent: var(--accent); --theme-accent-soft: var(--accent-soft);
   --theme-on-accent: #ffffff;
   --theme-on-danger: #ffffff;
-  --theme-danger: var(--red); --theme-danger-soft: #fcebeb;
+  --theme-danger: var(--red); --theme-danger-soft: #fbecec;
   --theme-success: var(--green); --theme-success-soft: var(--green-soft);
-  --theme-warning: #805a14; --theme-warning-soft: #faf0d6; --theme-info: var(--secondary);
+  --theme-warning: #8a6116; --theme-warning-soft: #faf0d6;
   --theme-glass: var(--theme-surface-bg); --theme-glass-edge: var(--glass-edge);
   --theme-glass-shadow: var(--glass-shadow); --theme-material-filter: var(--theme-surface-filter);
 
-  --theme-popover-filter: var(--theme-menu-filter); --theme-overlay-filter: none; --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent); --theme-chrome-filter: var(--theme-sidebar-filter);
-  /* 玻璃参数由旧版玻璃变体使用；普通材质由 theme-material.css 覆写为无滤镜。 */
-  --theme-glass-blur: var(--theme-surface-blur); --theme-glass-saturation: var(--theme-surface-saturation);
+  --theme-popover-filter: var(--theme-menu-filter); --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent);
+  /* 玻璃参数由旧版玻璃变体使用；普通材质由 theme-material.css 覆写为无滤镜 */
+  --theme-glass-blur: var(--theme-surface-blur);
   /* 区域化材质：参数键由旋钮写入、合成键由皮肤消费；默认值关系是一级面为基准，
-     二级菜单里每个区域都能独立调（动过的区写自己的参数键，没动过的区跟着一级面）。 */
+     二级菜单里每个区域都能独立调（动过的区写自己的参数键，没动过的区跟着一级面） */
   --theme-surface-alpha: 78%;
   --theme-surface-blur: 18px;
   --theme-surface-saturation: 120%;
@@ -45,29 +45,28 @@
   --theme-surface-filter: blur(var(--theme-surface-blur)) saturate(var(--theme-surface-saturation));
   --theme-surface-edge: var(--theme-glass-edge);
   --theme-surface-shadow: var(--theme-glass-shadow);
-  --theme-plate-alpha: var(--theme-surface-alpha); --theme-plate-blur: 12px; --theme-plate-saturation: 120%;
+  --theme-plate-alpha: var(--theme-surface-alpha); --theme-plate-blur: 18px; --theme-plate-saturation: 120%;
   --theme-plate-margin: 8px;
   --theme-plate-radius: var(--theme-radius-card);
   --theme-plate-bg: color-mix(in srgb, var(--surface) var(--theme-plate-alpha), transparent);
   --theme-plate-filter: blur(var(--theme-plate-blur)) saturate(var(--theme-plate-saturation));
   --theme-plate-edge: var(--theme-glass-edge); --theme-plate-shadow: var(--theme-glass-shadow);
-  /* 三级嵌面：贴在二级贴片内部的面（右栏的队列分组等）。 */
-  --theme-inset-alpha: var(--theme-plate-alpha); --theme-inset-blur: 8px; --theme-inset-saturation: 115%;
+  /* 三级嵌面：贴在二级贴片内部的面（右栏的队列分组等） */
+  --theme-inset-alpha: var(--theme-plate-alpha); --theme-inset-blur: 18px; --theme-inset-saturation: 115%;
   --theme-inset-radius: var(--theme-radius-control);
   --theme-inset-bg: color-mix(in srgb, var(--surface) var(--theme-inset-alpha), transparent);
   --theme-inset-filter: blur(var(--theme-inset-blur)) saturate(var(--theme-inset-saturation));
   --theme-inset-edge: var(--theme-glass-edge); --theme-inset-shadow: var(--theme-glass-shadow);
 
-  --theme-control-alpha: 92%; --theme-control-blur: 8px; --theme-control-saturation: 110%;
+  --theme-control-alpha: 92%; --theme-control-blur: 18px; --theme-control-saturation: 110%;
   --theme-control-radius: var(--theme-radius-control);
   --theme-control-bg: color-mix(in srgb, var(--surface) var(--theme-control-alpha), transparent);
-  --theme-control-marker-bg: color-mix(in srgb, var(--surface) min(100%, calc(var(--theme-control-alpha) + 8%)), transparent);
-  /* 图表画布内的颜色。数值与曲线都是画在 canvas 上的，只能用组件 token 交给脚本读。 */
-  --theme-chart-primary: #159b88; --theme-chart-secondary: #de7861;
+  /* 图表画布内的颜色。数值与曲线都是画在 canvas 上的，只能用组件 token 交给脚本读 */
+  --theme-chart-primary: var(--accent); --theme-chart-secondary: #de7861;
   --theme-chart-rise: #dc2626; --theme-chart-fall: #16a34a;
   --theme-control-filter: blur(var(--theme-control-blur)) saturate(var(--theme-control-saturation));
   --theme-control-edge: var(--theme-glass-edge); --theme-control-shadow: var(--theme-glass-shadow);
-  /* 区域面：本族的侧栏与顶栏贴边、无磨砂；弹窗与菜单沿用各自的阴影语言。 */
+  /* 区域面：本族的侧栏与顶栏贴边、无磨砂；弹窗与菜单沿用各自的阴影语言 */
   --theme-sidebar-alpha: var(--theme-surface-alpha); --theme-sidebar-blur: 0px; --theme-sidebar-saturation: 100%;
   --theme-sidebar-radius: var(--theme-surface-radius);
   --theme-sidebar-bg: color-mix(in srgb, var(--surface) var(--theme-sidebar-alpha), transparent);
@@ -91,8 +90,6 @@
 
   --theme-tab-current-bg: var(--theme-tab-surface-bg);
 
-  --theme-overlay-blur: 0px;
-
   /* 契约层 —— 形状与阴影：遵循 Material Design 3 (MD3) 规范 */
   --theme-radius-control: 8px; --theme-radius-button: 20px; --theme-radius-panel: 16px;
   --theme-radius-card: 12px; --theme-radius-popover: 12px; --theme-radius-modal: 28px; --theme-radius-pill: 999px;
@@ -112,13 +109,15 @@
   --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover);
 
   /* 契约层 —— 表单：旧版聚焦不加光圈，只换底边框颜色 */
-  --theme-input-bg: var(--theme-control-bg); --theme-input-text: var(--text); --theme-input-border: #8e8e8e;
+  --theme-input-bg: var(--theme-control-bg); --theme-input-text: var(--text);
+  --theme-input-border: color-mix(in srgb, var(--text) 32%, var(--surface));
   --theme-focus: var(--accent); --theme-focus-ring: transparent;
-  --theme-toggle-off: #79747e; --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
+  --theme-toggle-off: var(--muted); --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff; --theme-toggle-shadow: none;
    --theme-segment-border: var(--border);
   --theme-toast-bg: var(--text); --theme-toast-text: var(--surface); --theme-toast-error-bg: var(--red);
   --theme-error-bg: var(--theme-danger-soft); --theme-error-border: var(--red);
-  --theme-selection: color-mix(in srgb, var(--accent) 25%, transparent); --theme-scrollbar-thumb: #b5b5b5;
+  --theme-selection: color-mix(in srgb, var(--accent) 25%, transparent);
+  --theme-scrollbar-thumb: color-mix(in srgb, var(--text) 24%, var(--surface));
   --theme-status-stopped-bg: var(--surface-muted); --theme-status-stopped-text: var(--muted);
 
   /* 契约层 —— 日志 */
@@ -139,32 +138,32 @@
   --theme-title-highlight-stroke: var(--text); --theme-title-glass: var(--surface); --theme-title-shadow: none;
 }
 
-/* 深色变体是独立主题值，与前缀式反代的主题名一一对应。 */
+/* 深色变体是独立主题值，与前缀式反代的主题名一一对应 */
 :root[data-theme='legacy-dark'] {
   color-scheme: dark;
-  --bg: #282a2f; --surface: #2f3136; --surface-muted: #36393f;
-  --text: #eeeeee; --muted: #adb5bd; --border: #484b52;
-  --accent: #b4b1e5; --accent-hover: #928fcf; --accent-soft: #3e3b6a;
-  --secondary: #928fcf; --secondary-soft: #363560;
+  --bg: #191919; --surface: #262626; --surface-muted: #333333;
+  --text: #fafafa; --muted: #a3a3a3; --border: #ffffff1a;
+  --accent: #e5e5e5; --accent-hover: #d4d4d4; --accent-soft: #333333;
+  --secondary: #a3a3a3; --secondary-soft: #333333;
   --shadow: 0 1px 2px rgb(0 0 0 / .3);
-  --red: #f28b82; --green: #4ade80; --green-soft: #24362b;
-  --syntax-value: #c9a7f0;
+  --red: #ff6369; --green: #5ecf8a; --green-soft: #1d3226;
+  --syntax-value: #d9a15f;
 
-  --theme-danger-soft: #4a2c30;
-  --theme-on-danger: #282a2f;
-  --theme-warning: #e7c078; --theme-warning-soft: #403723;
+  --theme-danger-soft: #45302e;
+  --theme-on-danger: #1b1e22;
+  --theme-warning: #e7c078; --theme-warning-soft: #41392a;
   --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent);
 
   /* 深色下选中仍是同一条中性思路：文字色压进面里，越深越亮 */
   --theme-nav-icon: var(--text);
   --theme-nav-active-bg: color-mix(in srgb, var(--text) 13%, var(--surface)); --theme-nav-active-text: var(--text);
-  --theme-nav-popover-edge: #40444b;
+  --theme-nav-popover-edge: #3a4048;
   --theme-nav-popover-shadow: 0 2px 10px rgb(0 0 0 / .45);
-  --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover); --theme-on-accent: #1a1861;
+  --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover); --theme-on-accent: #262626;
 
   --theme-input-bg: var(--theme-control-bg); --theme-input-border: var(--border);
-  --theme-toggle-off: #938f99; --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff;
-  --theme-scrollbar-thumb: #5a5e66;
+  --theme-toggle-off: var(--muted); --theme-toggle-on: var(--accent); --theme-toggle-knob: #ffffff;
+  --theme-scrollbar-thumb: color-mix(in srgb, var(--text) 28%, var(--surface));
   --theme-shadow-panel: 0 1px 2px rgb(0 0 0 / .2);
   --theme-shadow-popover: 0 4px 12px rgb(0 0 0 / .25);
   --theme-shadow-modal: 0 8px 24px rgb(0 0 0 / .35);
@@ -174,6 +173,6 @@
 }
 
 /* 本族的控件语言是硬朗直角（控件圆角 8px），按钮不跟 apple.css 的 20px 药丸；
-   带 data-theme 前缀是为了压过 apple.css 的同名 .button 规则（同为单类，靠文件顺序会输给它）。 */
+   带 data-theme 前缀是为了压过 apple.css 的同名 .button 规则（同为单类，靠文件顺序会输给它） */
 :root[data-theme='legacy-light'] .button, :root[data-theme='legacy-light'] .icon-button,
 :root[data-theme='legacy-dark'] .button, :root[data-theme='legacy-dark'] .icon-button {border-radius: var(--theme-radius-control)}

@@ -12,7 +12,7 @@ test('独立资源页完成图表、归因筛选、分页、导出和控制设�
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await page.goto('/#/i/demo-main/resources')
-  await expect(page.getByRole('heading', {name: '资源管理', exact: true})).toBeVisible()
+  await expect(page.getByRole('tab', {name: '资源管理', exact: true})).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('img', {name: '资源流向', exact: true})).toBeVisible()
   await expect(page.locator('.resource-sankey svg path').first()).toBeVisible()
   await expect(page.locator('.resource-evidence.adjustment')).toHaveText('待归因变化')

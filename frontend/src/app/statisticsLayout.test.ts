@@ -13,6 +13,7 @@ function memoryStorage() {
   }
 }
 
+// 统一的装载入口：换上新的内存 localStorage 并重新导入模块，布局读写都落在这份隔离存储里，用例之间互不影响。
 async function loadLayout() {
   vi.resetModules()
   vi.stubGlobal('localStorage', memoryStorage())
@@ -331,7 +332,7 @@ describe('槽位行与页面组合', () => {
   })
 })
 
-/* 组合页里中间夹着隐藏卡时，两侧仍应能重新连接：隐藏只断开状态，不禁止连接。 */
+// 组合页里中间夹着隐藏卡时，两侧仍应能重新连接：隐藏只断开状态，不禁止连接。
 describe('组合页与隐藏卡的连接', () => {
   const state = (): StatisticsLayout => ({
     ...DEFAULT_STATISTICS_LAYOUT,

@@ -37,15 +37,18 @@ function read(): DashboardPrefs {
 
 let snapshot: DashboardPrefs = read()
 
+/** 读取当前偏好快照，配 useSyncExternalStore 作 getSnapshot 使用。 */
 export function readDashboardPrefs() {
   return snapshot
 }
 
+/** 订阅偏好变化，返回取消订阅函数。 */
 export const subscribeDashboardPrefs = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
 }
 
+/** 切换单个偏好开关并广播变更；落盘尽力而为，失败不影响本会话。 */
 export function setDashboardPref(key: keyof DashboardPrefs, enabled: boolean) {
   snapshot = {...snapshot, [key]: enabled}
   try { localStorage.setItem(PREFS_KEY, JSON.stringify(snapshot)) } catch { /* 存储不可用时本次会话内仍生效。 */ }

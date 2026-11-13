@@ -9,6 +9,7 @@ import { Anchor, CalendarDays, ChevronDown, Compass, Gift, Palmtree, Search, Set
 import { useApp } from '../app/context'
 import { taskNavItems, taskLabel } from './taskNavItems'
 import { SearchHits } from './SearchHits'
+import { Input } from './ui/input'
 
 const groupIcons: Record<string, LucideIcon> = {
   Alas: Settings2, Farm: Swords, Event: Sparkles, EventDaily: CalendarDays,
@@ -51,9 +52,10 @@ export function TaskNavTree({ defaultOpenKey, onNavigate }: { defaultOpenKey?: s
   return (
     <div className="task-nav-container">
       <div className="sidebar-label task-nav-heading">{ui('nav.taskConfig')}</div>
-      <div className="nav-search" id="task-search">
-        <Search size={14} />
-        <input
+      <div className="relative" id="task-search">
+        <Search size={14} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"/>
+        <Input
+          className="pl-9"
           aria-label={ui('nav.searchTask')}
           value={search}
           onChange={event => setSearch(event.target.value)}
@@ -98,7 +100,7 @@ export function TaskNavTree({ defaultOpenKey, onNavigate }: { defaultOpenKey?: s
                 </button>
                 <div className={'task-submenu-list' + (isExpanded ? ' expanded' : '')} id={`task-group-${key}`}>
                   <div className="task-submenu-inner">
-                    {tasks.map(task => (
+                    {isExpanded && tasks.map(task => (
                       <NavLink
                         key={task}
                         to={`${base}/task/${task}`}

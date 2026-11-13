@@ -24,14 +24,12 @@ export function useDeploySettings(pollRemote = false) {
   useEffect(() => {
     if (connection !== 'ready') return
     let active = true
-    const confirmed = queue.confirmed()
     let timer: ReturnType<typeof setTimeout>
     const load = () => void api.request('settings.get', {})
       .then(data => {
         if (active) {
           setData(data)
           setError('')
-          queue.reconcile(confirmed)
           if (pollRemote) timer = setTimeout(load, data.remote?.address ? 15000 : 3000)
         }
       })

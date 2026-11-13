@@ -79,6 +79,7 @@ describe('资源卡片', () => {
   })
 
   it('总行动力优先时两个数字互换', () => {
+    // 仪表盘偏好是模块级状态，改完必须在 finally 里还原，避免泄进后续用例。
     setDashboardPref('totalFirst', true)
     try {
       const html = renderResources([{name: 'ActionPoint', label: '行动力', value: 101, total: 1301, record: '2026-09-16 12:00:00'}])
@@ -154,7 +155,7 @@ describe('资源卡片', () => {
     expect(actionPointDogIcon(ap(12001, {record: '2020-01-01 00:00:00'}))).toBeUndefined()
     expect(actionPointDogIcon({name: 'Oil', label: '石油', value: 100, total: 12001})).toBeUndefined()
     expect(actionPointDogIcon(undefined)).toBeUndefined()
-    /* total 小于 value 时退回 value：异常数据不该被当成低档。 */
+    // total 小于 value 时退回 value：异常数据不该被当成低档。
     expect(actionPointDogIcon({name: 'ActionPoint', label: '行动力', value: 9000, total: 1})).toContain('dog_medium.webp')
   })
 })

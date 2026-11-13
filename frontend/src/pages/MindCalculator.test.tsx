@@ -29,6 +29,7 @@ const costs: CultivationReport = {instance: 'test', revision: 'r1', target_level
   unknown: 0, mind: 600, mind2: 0, gold: 6000, rules_sha256: 'rules', mind_costs_100_to_120: {SSR: 2200},
   ships: dock.ships.map(card => ({id: card.id, name: card.name, current_level: card.level, level: card.level,
     target_level: 120, mind: card.id * 100, mind2: 0, gold: card.id * 1000, status: 'exact', notes: [], stages: []}))}
+const isChecked = (element: HTMLElement) => element.getAttribute('aria-checked') === 'true'
 const all = () => screen.getByRole<HTMLInputElement>('checkbox', {name: '全选当前筛选'})
 const ship = (name: string) => screen.getByRole<HTMLInputElement>('checkbox', {name: `参与计算 ${name}`})
 const search = (value: string) => fireEvent.change(screen.getByRole('searchbox'), {target: {value}})
@@ -49,16 +50,16 @@ afterEach(cleanup)
 
 it('starts selected, follows individual choices, and toggles all visible ships together', async () => {
   await show()
-  expect(all().checked).toBe(true)
+  expect(isChecked(all())).toBe(true)
   expect(all().closest('th')?.textContent).toContain('参与计算')
   fireEvent.click(ship('企业'))
-  expect(all().checked).toBe(false)
-  expect(ship('杜威').checked).toBe(true)
+  expect(isChecked(all())).toBe(false)
+  expect(isChecked(ship('杜威'))).toBe(true)
   fireEvent.click(all())
-  expect(all().checked).toBe(true)
-  expect(ship('企业').checked).toBe(true)
+  expect(isChecked(all())).toBe(true)
+  expect(isChecked(ship('企业'))).toBe(true)
   fireEvent.click(all())
-  for (const name of ['企业', '埃塞克斯', '杜威']) expect(ship(name).checked).toBe(false)
+  for (const name of ['企业', '埃塞克斯', '杜威']) expect(isChecked(ship(name))).toBe(false)
   expect(screen.getByText('计入 0 种舰船', {exact: false})).toBeTruthy()
 })
 
@@ -67,34 +68,34 @@ it('clears all ships from a filtered view and only selects ships matching the cu
   fireEvent.click(screen.getAllByRole('button', {name: '航母'})[0])
   expect(screen.queryByRole('checkbox', {name: '参与计算 杜威'})).toBeNull()
   fireEvent.click(all())
-  expect(ship('企业').checked).toBe(false)
-  expect(ship('埃塞克斯').checked).toBe(false)
+  expect(isChecked(ship('企业'))).toBe(false)
+  expect(isChecked(ship('埃塞克斯'))).toBe(false)
   expect(screen.getByText('计入 0 种舰船', {exact: false})).toBeTruthy()
   fireEvent.click(screen.getAllByRole('button', {name: '全部'})[0])
-  expect(ship('杜威').checked).toBe(false)
+  expect(isChecked(ship('杜威'))).toBe(false)
   fireEvent.click(screen.getAllByRole('button', {name: '航母'})[0])
   search('企业')
   fireEvent.click(all())
-  expect(all().checked).toBe(true)
+  expect(isChecked(all())).toBe(true)
   search('')
-  expect(all().checked).toBe(false)
-  expect(ship('埃塞克斯').checked).toBe(false)
+  expect(isChecked(all())).toBe(false)
+  expect(isChecked(ship('埃塞克斯'))).toBe(false)
   search('不存在')
   expect(all().disabled).toBe(true)
-  expect(all().checked).toBe(false)
+  expect(isChecked(all())).toBe(false)
   expect(screen.getByText('计入 1 种舰船', {exact: false})).toBeTruthy()
 })
 
 it('respects saved exclusions and the included-only filter', async () => {
   localStorage.setItem('azurpilot.cultivation-auto.test', JSON.stringify({excluded_groups: [100]}))
   await show()
-  expect(all().checked).toBe(false)
+  expect(isChecked(all())).toBe(false)
   fireEvent.click(screen.getByRole('checkbox', {name: '仅显示参与计算'}))
-  expect(all().checked).toBe(true)
+  expect(isChecked(all())).toBe(true)
   fireEvent.click(all())
   expect(all().disabled).toBe(true)
   fireEvent.click(screen.getByRole('checkbox', {name: '仅显示参与计算'}))
-  for (const name of ['企业', '埃塞克斯', '杜威']) expect(ship(name).checked).toBe(false)
+  for (const name of ['企业', '埃塞克斯', '杜威']) expect(isChecked(ship(name))).toBe(false)
 })
 
 it('retains costs for excluded ships from initial load and updates totals without recalculating', async () => {
@@ -134,12 +135,13 @@ it('recalculates costs after the dock revision changes while preserving exclusio
   updated = true
   rendered.rerender(view({...dock, revision: 'r2'}))
   await within(ship('企业').closest('tr')!).findByText('1,500')
-  expect(ship('企业').checked).toBe(false)
+  expect(isChecked(ship('企业'))).toBe(false)
   expect([...document.querySelectorAll('.cultivation-totals strong')].map(el => el.textContent)).toEqual(['600', '6,000'])
   expect(vi.mocked(api.request).mock.calls.filter(([method]) => method === 'mind.plan')).toHaveLength(2)
 })
 
 it('excludes unknown costs from totals and keeps unknown counts scoped to selected ships', async () => {
+  // 直接改模块级夹具做 unknown 场景，finally 里还原，避免泄漏到其他用例。
   costs.ships[0] = {...costs.ships[0], status: 'unknown', mind: null, gold: null}
   try {
     await show()

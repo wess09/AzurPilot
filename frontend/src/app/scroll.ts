@@ -21,7 +21,7 @@ export function scrollTargetTop(
   return Math.max(0, Math.min(raw, Math.max(0, maxScrollTop)))
 }
 
-export function findScrollParent(element: HTMLElement): HTMLElement | null {
+function findScrollParent(element: HTMLElement): HTMLElement | null {
   let parent = element.parentElement
   while (parent) {
     const style = getComputedStyle(parent)
@@ -31,7 +31,7 @@ export function findScrollParent(element: HTMLElement): HTMLElement | null {
   return null
 }
 
-export function readScrollMarginTop(element: HTMLElement): number {
+function readScrollMarginTop(element: HTMLElement): number {
   const value = Number.parseFloat(getComputedStyle(element).scrollMarginTop)
   return Number.isFinite(value) ? value : 0
 }
@@ -39,6 +39,7 @@ export function readScrollMarginTop(element: HTMLElement): number {
 type ActiveScroll = {raf: number; cancel: () => void}
 const activeScrolls = new WeakMap<HTMLElement, ActiveScroll>()
 
+/** 把容器的 scrollTop 动画到目标值：同容器再次调用会取消进行中的动画；用户滚动输入（滚轮/触摸/按下）会立即中断动画交还控制权。 */
 export function animateScrollTop(container: HTMLElement, to: number, duration: number) {
   activeScrolls.get(container)?.cancel()
   const from = container.scrollTop

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 调度器卡片外观映射的契约测试：专属图标、按分类回退与未知兜底、全量分类配色。
+ */
 import {describe, expect, it} from 'vitest'
 import {Box, Coins, Cpu, Filter, Layers, Play, Settings2, Swords, Workflow} from 'lucide-react'
 import {cardIcons, categoryColor, categoryColors, categoryIcons, getCardIcon} from './appearance'

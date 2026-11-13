@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+/**
+ * @fileoverview 总览页调度器排布的回归测试：左右位置、宽度记忆与拖拽调整。
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -8,6 +11,7 @@ import { translateUi } from '../i18n'
 import { getLayout, setLegacyRailWidth, resetLegacyRailWidth } from '../app/layout'
 import { setSchedulerPosition } from '../app/schedulerPositionPrefs'
 
+// jsdom 没实现 ResizeObserver，而页面挂载的子树会用到；这里给空实现，避免挂载即抛错。
 class MockResizeObserver {
   observe() {}
   unobserve() {}
@@ -15,6 +19,7 @@ class MockResizeObserver {
 }
 vi.stubGlobal('ResizeObserver', MockResizeObserver)
 
+// api 桩成最小快照：本组用例只测排布与拖拽，不关心后端数据。
 vi.mock('../api/client', () => ({
   api: {
     request: vi.fn().mockResolvedValue({
@@ -29,6 +34,7 @@ vi.mock('../api/client', () => ({
   },
 }))
 
+// MonitorPanel 只桩不测：内容与本组用例无关，桩掉还能少渲染一整块。
 vi.mock('../components/MonitorPanel', () => ({
   MonitorPanel: () => <div data-testid="monitor-panel">Monitor Panel</div>,
 }))
@@ -43,8 +49,7 @@ function createMockContext(): AppContextValue {
     notify: () => {},
     previewEnabled: false,
     setPreviewEnabled: () => {},
-    devMode: false,
-    setDevMode: () => {},
+
     theme: 'legacy-light',
     setTheme: () => {},
     material: 'glass',
@@ -172,13 +177,12 @@ describe('Overview 总览页调度器位置与排布', () => {
     const handle = await screen.findByRole('separator')
     expect(handle.getAttribute('data-side')).toBe('right')
 
-    // 模拟向左拖拽 50px (增大宽度)
+    // 把手在右侧：向左拖 50px 等于把栏加宽 50。
     fireEvent.pointerDown(handle, { button: 0, pointerId: 3, clientX: 600 })
     fireEvent.pointerMove(handle, { pointerId: 3, clientX: 550 })
     expect(getLayout().legacyRailWidth).toBe(330)
     fireEvent.pointerUp(handle, { pointerId: 3 })
 
-    // 双击重置
     fireEvent.doubleClick(handle)
     expect(getLayout().legacyRailWidth).toBeNull()
   })

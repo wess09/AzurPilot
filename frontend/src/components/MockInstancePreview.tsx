@@ -48,13 +48,19 @@ import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 import { ThemeWallpaper } from './ThemeWallpaper'
 
-export type MockInstancePreviewProps = {
+type MockInstancePreviewProps = {
   onClose: () => void
   initialRegion?: RegionId
 }
 
+/**
+ * 材质检视器的全真预览：把一份写死的实例外壳渲染成全屏覆盖层，
+ * 供用户在顶栏、侧栏、资源卡、日志等区域上调材质并即时看到效果。
+ * 有 document 时经 Portal 挂到 body；焦点圈定在预览层内。
+ */
 export function MockInstancePreview({onClose, initialRegion}: MockInstancePreviewProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  // Tab 循环不出覆盖层、焦点逃逸即拉回；卸载时把焦点还给打开预览前的元素。
   useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const root = overlayRef.current
@@ -90,7 +96,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
 
   const [isRunning, setIsRunning] = useState(true)
 
-  // 检视面板状态：折叠/浮动/停靠
   const [isInspectorMinimized, setIsInspectorMinimized] = useState(false)
   const [isDocked, setIsDocked] = useState(true)
   const isDockedActive = isDocked && !isInspectorMinimized
@@ -98,7 +103,7 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
     <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={ui('settings.materialLivePreview')} tabIndex={-1} className={`mock-instance-preview-overlay legacy-shell-preview ${isDockedActive ? 'has-docked-inspector' : ''}`}>
       <ThemeWallpaper />
       {/* 全真模拟 AppShell 容器；里面的实例名、资源、任务与日志是写死的样本数据，用来撑起外壳，不随语言切换。 */}
-      <div className={`app-shell with-rail legacy-shell mock-preview-shell`}>
+      <div className={`app-shell modern-shell with-rail legacy-shell mock-preview-shell`}>
         {/* 侧栏 (sidebar 区域) */}
         <aside className="sidebar mock-preview-sidebar">
           <div className="sidebar-brand">
@@ -470,7 +475,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
               </div>
 
               <div className="inspector-controls">
-                {/* 停靠/浮动切换 */}
                 <button
                   type="button"
                   className="icon-button"
@@ -479,7 +483,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
                 >
                   {isDocked ? <PanelRightClose size={15} /> : <PanelRightOpen size={15} />}
                 </button>
-                {/* 最小化 */}
                 <button
                   type="button"
                   className="icon-button"
@@ -488,7 +491,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
                 >
                   <Minimize2 size={15} />
                 </button>
-                {/* 关闭预览 */}
                 <button
                   type="button"
                   className="icon-button"
@@ -500,7 +502,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
               </div>
             </div>
 
-            {/* 检视器主体：MaterialDetailPanel */}
             <div className="inspector-body">
               <MaterialDetailPanel
                 regions={REGIONS}
@@ -527,7 +528,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
               />
             </div>
 
-            {/* 检视器底部操作 */}
             <div className="inspector-footer">
               <button type="button" className="button primary full-width" onClick={onClose}>
                 {ui('settings.closePreview')}
@@ -542,5 +542,6 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
   if (typeof document !== 'undefined' && document.body) {
     return createPortal(overlay, document.body)
   }
+  // 没有 document 的环境（如 renderToStaticMarkup 测试）挂不了 Portal，直接返回节点本身。
   return overlay
 }

@@ -96,4 +96,10 @@ def refresh_resources(config, device, names):
             if value is not None and log.record(name, int(value), source='scheduler_refresh'):
                 acquired.add(name)
     config.save()
+    if not acquired:
+        return False
+    # 观测改为排队写入：刷新必须确认整批落库，否则调度器会拿到过期的读数。
+    from module.persistence.write_queue import write_queue
+    if not write_queue.flush(timeout=1.0):
+        return False
     return acquired == wanted

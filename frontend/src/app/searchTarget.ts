@@ -1,4 +1,6 @@
-/** 侧栏搜索命中的配置项路径：从侧栏传给配置页，读到之后即清空。 */
+/**
+ * @fileoverview 侧栏搜索命中的配置项路径：从侧栏传给配置页，读到之后即清空。
+ */
 
 let pending: string | null = null
 const listeners = new Set<() => void>()
@@ -11,6 +13,7 @@ export function setSearchTarget(path: string) {
   listeners.forEach(listener => listener())
 }
 
+/** 订阅待定位路径的变化，返回取消订阅函数。 */
 export function subscribeSearchTarget(listener: () => void) {
   listeners.add(listener)
   return () => {

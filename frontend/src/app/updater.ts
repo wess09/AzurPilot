@@ -7,6 +7,11 @@ import { api } from '../api/client'
 import type { UpdateStatus } from '../api/types'
 import { useConnection } from './context'
 
+/**
+ * 轮询版本更新状态：连接就绪后每 3 秒拉一次 updater.status，
+ * 出错只记入 error、不终止轮询，连接断开重连后重新开始。
+ * refresh 递增轮询代数，供「检查更新」入口手动触发一次重新拉取。
+ */
 export function useUpdater() {
   const connection = useConnection()
   const [data, setData] = useState<UpdateStatus>()
@@ -30,4 +35,5 @@ export function useUpdater() {
   return {data, error, refresh}
 }
 
+/** useUpdater 的返回类型，经路由 Outlet 上下文传给 /updater 页消费。 */
 export type UpdaterState = ReturnType<typeof useUpdater>

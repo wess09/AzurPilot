@@ -118,4 +118,9 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    finally:
+        # 离线工具用完即退出，显式释放复用的长连接，避免目录被句柄占住。
+        from module.persistence.database import close_all
+        close_all()

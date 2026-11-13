@@ -1,4 +1,6 @@
-/** 实例股票注册与绑定引导。交易账户、登录和交易仅在独立交易所提供。 */
+/**
+ * @fileoverview 实例股票注册与绑定引导。交易账户、登录和交易仅在独立交易所提供。
+ */
 import {useCallback,useEffect,useRef,useState,type FormEvent} from 'react'
 import {useParams,Link} from 'react-router-dom'
 import {ArrowLeft,CheckCircle2,Copy,ExternalLink,ShieldCheck,TrendingUp} from 'lucide-react'
@@ -6,14 +8,18 @@ import {api} from '../api/client'
 import type {StockExchangeStatus,StockExchangeRebuild} from '../api/types'
 import {useConnection} from '../app/context'
 import {ErrorBox,Loading,PageTitle} from '../components/ui'
+import {Checkbox} from '../components/FormControls'
+import {Input} from '../components/ui/input'
 import './stock-exchange.css'
 
 const EXCHANGE='https://stock.azurpilot.com'
 
+/** 注册实例股票、经 QQ 群机器人把股票绑定到交易账户，绑定成功后自动打开独立交易所。 */
 export function StockExchange(){
   const {instance=''}=useParams(),connection=useConnection()
   const [status,setStatus]=useState<StockExchangeStatus>(),[error,setError]=useState('')
   const [username,setUsername]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false),[rebuild,setRebuild]=useState<StockExchangeRebuild>(),[confirmRebuild,setConfirmRebuild]=useState(false),[consent,setConsent]=useState(false)
+  // current 镜像当前实例，异步回调据此丢弃切换实例后的过期响应。
   const current=useRef(instance),opened=useRef('');current.current=instance
   const refresh=useCallback(async()=>{
     if(connection!=='ready')return
@@ -23,10 +29,12 @@ export function StockExchange(){
   useEffect(()=>{
     setStatus(undefined);setUsername('');setError('');setCopied(false);setConsent(false);setBusy(false);setRebuild(undefined);setConfirmRebuild(false)
     void refresh()
+    // 隐藏的标签页不轮询，避免后台无谓请求。
     const timer=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},15000)
     const unsubscribe=api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)void refresh()})
     return ()=>{window.clearInterval(timer);unsubscribe()}
   },[instance,refresh])
+  // 绑定成功即自动打开交易所；opened 守卫同实例只开一次，轮询与事件触发的重渲染不会重复弹窗。
   useEffect(()=>{
     if(status?.registered&&status.bound&&opened.current!==instance){
       opened.current=instance
@@ -35,6 +43,7 @@ export function StockExchange(){
   },[status,instance])
   async function register(event:FormEvent){
     event.preventDefault();setBusy(true);setError('')
+    // noticeVersion 须与后端约定的公告版本逐字一致，否则注册被拒（STOCK_NOTICE_REQUIRED）；公告改版时两端同步更新。
     try{const next=await api.request('stock.register',{instance,username:username.trim(),noticeVersion:'stock-public-v2-20261101'});if(current.current===instance)setStatus(next)}
     catch(error){if(current.current===instance)setError((error as Error).message)}
     finally{if(current.current===instance)setBusy(false)}
@@ -55,15 +64,15 @@ export function StockExchange(){
       <div><span className="stock-instance-eyebrow">AZURPILOT · 茗交所</span><h2>让行动力成为你的股票</h2><p>当前实例独立发行股票，行情使用已有的总行动力记录。交易与账户管理在独立交易所完成，脚本任务继续照常运行。</p></div>
     </section>
     {error&&<><ErrorBox message={error} retry={()=>void refresh()}/><section className="panel stock-instance-card"><h3>玩家数据需要处理？</h3><p>网络故障请重试。若身份、历史或来源不一致，可先查看本地重建计划。重建会备份本地旧资料、创建新身份；远端账户与原股票不会被删除，脚本任务保持原状。</p><button className="button" disabled={busy} onClick={()=>void recovery()}>查看本地数据重建计划</button></section></>}
-    {rebuild&&<section className="panel stock-instance-card" role="dialog" aria-label="确认本地股票数据重建"><h3>完全重建本地股票数据</h3><p>范围：{rebuild.scope==='all'?'所有本地实例':'当前实例'}</p><p>受影响实例：{rebuild.affectedInstances.join('、')}</p><p>先备份后重建身份与股票历史登记，不删除远端账户、远端股票或脚本配置。新身份不会继承原绑定，无法用重建恢复管理员已删除的原股票。</p><label><input type="checkbox" checked={confirmRebuild} onChange={e=>setConfirmRebuild(e.target.checked)}/>我已理解本地身份与绑定将重建</label><button className="button" disabled={busy||!confirmRebuild} onClick={()=>void recovery(true)}>确认完全重建</button><button className="button" disabled={busy} onClick={()=>setRebuild(undefined)}>取消</button></section>}
+    {rebuild&&<section className="panel stock-instance-card" role="dialog" aria-label="确认本地股票数据重建"><h3>完全重建本地股票数据</h3><p>范围：{rebuild.scope==='all'?'所有本地实例':'当前实例'}</p><p>受影响实例：{rebuild.affectedInstances.join('、')}</p><p>先备份后重建身份与股票历史登记，不删除远端账户、远端股票或脚本配置。新身份不会继承原绑定，无法用重建恢复管理员已删除的原股票。</p><Checkbox checked={confirmRebuild} onChange={e=>setConfirmRebuild(e.target.checked)}>我已理解本地身份与绑定将重建</Checkbox><button className="button" disabled={busy||!confirmRebuild} onClick={()=>void recovery(true)}>确认完全重建</button><button className="button" disabled={busy} onClick={()=>setRebuild(undefined)}>取消</button></section>}
     {!status&&!error?<Loading/>:status&&<div className="stock-instance-grid">
       <section className="panel stock-instance-card">
         <div className="panel-heading"><h2>{status.registered?'当前实例股票':'注册当前实例股票'}</h2>{status.registered&&<CheckCircle2 size={20}/>}</div>
         <p className="muted">实例：{instance}</p>
         {status.deleted?<div role="status"><h3>股票已删除，上报已停止</h3><p>原实例不能重新登记。绑定的交易账户已解除绑定，须绑定其他实例股票后才可继续使用。</p></div>:!status.registered?<form onSubmit={event=>void register(event)}>
-          <label htmlFor="stock-username">股票用户名</label><input id="stock-username" autoComplete="nickname" minLength={2} maxLength={32} required value={username} onChange={event=>setUsername(event.target.value)} placeholder="输入你希望显示的股票名称" disabled={busy}/>
+          <label htmlFor="stock-username">股票用户名</label><Input id="stock-username" autoComplete="nickname" minLength={2} maxLength={32} required value={username} onChange={event=>setUsername(event.target.value)} placeholder="输入你希望显示的股票名称" disabled={busy}/>
           <p className="muted">只需设置用户名，无需交易账户或密码。首次注册后会开始补足已有历史，之后自动增量同步。</p>
-          <label><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>我已了解股票名称、行动力报价历史与交易数据公开，注册后后台持续自动同步。</label><button className="button primary" disabled={busy||!consent||[...username.trim()].length<2}>{busy?'正在注册…':'注册股票账户'}</button>
+          <Checkbox checked={consent} onChange={e=>setConsent(e.target.checked)}>我已了解股票名称、行动力报价历史与交易数据公开，注册后后台持续自动同步。</Checkbox><button className="button primary" disabled={busy||!consent||[...username.trim()].length<2}>{busy?'正在注册…':'注册股票账户'}</button>
         </form>:<>
           <dl className="stock-instance-facts"><div><dt>股票名称</dt><dd>{status.stock?.name??'等待交易所返回'}</dd></div><div><dt>股票编号</dt><dd>{status.stock?.symbol??'—'}</dd></div><div><dt>交易账户</dt><dd>{status.bound?'已绑定':'尚未绑定'}</dd></div><div><dt>行动力同步</dt><dd>{status.message}</dd></div></dl>
           {status.bound?<div className="stock-instance-success"><ShieldCheck size={21}/><p>股票已绑定交易账户，已尝试在新标签页打开交易所。浏览器拦截时可点击下方按钮。</p></div>:<>

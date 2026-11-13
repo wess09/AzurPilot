@@ -7,7 +7,7 @@ const rule = new RegExp(`^(?:${INSTANCE_NAME_PATTERN})$`, 'v')
 // 与后端 validate_name 同一顺序：先归一化首尾空白与点，再让正则判定。
 const validate = (name: string) => rule.test(name.trimStart().replace(/[\s.]+$/, ''))
 
-// 接受的里包含数字开头、点号与空格 —— 这些在上游都是合法配置文件名。
+// 接受名单里特意包含数字开头、点号与空格——这些在上游都是合法配置文件名。
 const accepted = ['测试', '测试实例', 'alas测试', '測試', '测试-2', 'a', 'A1_b-c', 'x'.repeat(64),
   '2ap', '12zz', 'zz.v2', 'ap 2', '测试.1', '1测试',
   'テスト', 'テスト2', 'アズール', 'ひらがな', 'ｱｽﾞｰﾙ']

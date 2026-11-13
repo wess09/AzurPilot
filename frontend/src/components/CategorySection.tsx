@@ -52,6 +52,8 @@ export function CategorySection({params, revision, onState, render}: {
     let pending = false
     let timer: ReturnType<typeof setTimeout> | undefined
     setData(undefined); setError('')
+    // 事件驱动的重取做合并：进行中的请求只记 pending，安静 300ms 后静默重取，
+    // silent 模式失败不置 error，页面保住已有数据。
     const load = (silent: boolean) => {
       if (!active) return
       if (running) {pending = true; return}
@@ -87,7 +89,7 @@ export function CategorySection({params, revision, onState, render}: {
     }
   }, [connection, instance, request, revision])
 
-  /* 后端标签是中文；在这里统一译成界面语言，下游的卡片、图表、表格和导出都用译文。 */
+  // 后端标签是中文；在这里统一译成界面语言，下游的卡片、图表、表格和导出都用译文。
   const shown = useMemo(() => data && localizeReport(data, language), [data, language])
 
   useEffect(() => onState?.({data: shown, error}), [shown, error, onState])

@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+/**
+ * @fileoverview 调度器栏拖动把手的交互测试：指针拖拽的方向与增减、键盘步进、快捷键与重置。
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { LegacyRailResizeHandle } from './LegacyRailResizeHandle'
@@ -39,6 +42,7 @@ describe('LegacyRailResizeHandle 调度器栏拖动把手', () => {
     setLegacyRailWidth(280)
     render(<LegacyRailResizeHandle side="left" />)
     const handle = screen.getByRole('separator')
+    // jsdom 未实现 pointer capture：组件在拖拽开始/结束时调用这两个方法，桩掉防止抛错。
     handle.setPointerCapture = vi.fn()
     handle.releasePointerCapture = vi.fn()
 
@@ -58,15 +62,16 @@ describe('LegacyRailResizeHandle 调度器栏拖动把手', () => {
     setLegacyRailWidth(280)
     render(<LegacyRailResizeHandle side="right" />)
     const handle = screen.getByRole('separator')
+    // jsdom 未实现 pointer capture：桩掉防止抛错，同上。
     handle.setPointerCapture = vi.fn()
     handle.releasePointerCapture = vi.fn()
 
-    // 模拟从 clientX = 800 开始向左拖拽 50px (clientX = 750)
+    // 模拟从 clientX = 800 开始向左拖拽 50px（clientX = 750）
     fireEvent.pointerDown(handle, { button: 0, pointerId: 2, clientX: 800 })
     fireEvent.pointerMove(handle, { pointerId: 2, clientX: 750 })
     expect(getLayout().legacyRailWidth).toBe(330)
 
-    // 向右拖拽 30px (clientX = 830)
+    // 向右拖拽 30px（clientX = 830）
     fireEvent.pointerMove(handle, { pointerId: 2, clientX: 830 })
     expect(getLayout().legacyRailWidth).toBe(250)
 
@@ -81,10 +86,11 @@ describe('LegacyRailResizeHandle 调度器栏拖动把手', () => {
       </div>
     )
     const handle = screen.getByRole('separator')
+    // jsdom 未实现 pointer capture：桩掉防止抛错，同上。
     handle.setPointerCapture = vi.fn()
     handle.releasePointerCapture = vi.fn()
 
-    // 向左拖拽 40px (从 500 拖到 460) -> 280 + 40 = 320
+    // 向左拖拽 40px（从 500 拖到 460）→ 280 + 40 = 320
     fireEvent.pointerDown(handle, { button: 0, pointerId: 10, clientX: 500 })
     fireEvent.pointerMove(handle, { pointerId: 10, clientX: 460 })
     expect(getLayout().legacyRailWidth).toBe(320)

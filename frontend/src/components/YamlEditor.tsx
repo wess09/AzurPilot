@@ -20,6 +20,13 @@ const colors = HighlightStyle.define([
 ])
 const externalChange = Annotation.define<boolean>()
 
+/**
+ * CodeMirror 6 的 YAML 受控编辑器。
+ *
+ * 编辑器实例只在 id/label 变化时重建；value 变化经外部回填写进文档，回填事务带
+ * 外部变更注解，不会触发 onChange——只有用户的输入才进入表单草稿。disabled 与
+ * invalid 用 Compartment 动态重配，避免重建编辑器丢掉历史与光标。
+ */
 export function YamlEditor({id, value, onChange, disabled = false, label, invalid}: {
   id: string; value: string; onChange: (value: string) => void; disabled?: boolean; label: string; invalid?: boolean
 }) {
@@ -59,5 +66,11 @@ export function YamlEditor({id, value, onChange, disabled = false, label, invali
       EditorView.contentAttributes.of({'aria-disabled': String(disabled), 'aria-invalid': String(!!invalid), ...(invalid ? {'aria-describedby': `${id}-status`} : {})}),
     ])})
   }, [disabled, invalid, id, label])
-  return <div aria-invalid={invalid || undefined} className={`yaml-editor ${disabled ? 'is-disabled' : ''}`}><div className="editor-heading">{ui('field.yaml')}</div><div ref={host}/></div>
+  return <div
+    aria-invalid={invalid || undefined}
+    className={`yaml-editor flex flex-col overflow-hidden rounded-md border border-input bg-transparent shadow-xs transition-[color,box-shadow] focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-[3px] aria-invalid:ring-destructive/20 ${disabled ? 'opacity-60' : ''}`}
+  >
+    <div className="border-b border-input px-3 py-1.5 text-xs text-muted-foreground">{ui('field.yaml')}</div>
+    <div ref={host}/>
+  </div>
 }

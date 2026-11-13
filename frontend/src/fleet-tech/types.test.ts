@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰队科技目录计算与筛选的回归：里程碑默认未记录、退役不等于从未获得、帆船舰种归一与修正联动。
+ */
+
 import {describe, expect, it} from 'vitest'
 import {catalogRows, changeMilestone, complete, matches, type Catalog, type Row} from './types'
 const row: Row = {group_type: 10102, code: 4, handbook_type: 0, blueprint: false, full_star_rule: 'ordinary_level_cap', name: '杜威', names: {cn: '杜威', en: 'Dewey'}, nationality: 1, rarity: 'R', type: 20,
@@ -35,7 +39,7 @@ describe('authoritative cumulative technology', () => {
 })
 
 describe('ship position and class filters', () => {
-  // Canonical group IDs and raw types from assets/ship/ship_data.json (group * 10 + 1).
+  // 分组 ID 与原始舰种码取自权威数据 assets/ship/ship_data.json（group * 10 + 1）。
   const sailing = [
     {...row, group_type: 960001, name: '皇家财富号', nationality: 96, type: 22},
     {...row, group_type: 960003, name: '金鹿号', nationality: 96, type: 23},

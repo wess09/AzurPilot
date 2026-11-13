@@ -21,6 +21,8 @@ SHIP_SCALARS = (
     ('last_check_time', 'checked_at', 'T'), ('target_level', 'target_level', 'I'),
     ('fleet_index', 'fleet_index', 'I'), ('battle_count_at_check', 'battle_count_at_check', 'I'),
 )
+MONTH_SCALAR_NAMES = frozenset(name for name, _, _ in MONTH_SCALARS)
+SHIP_SCALAR_NAMES = frozenset(name for name, _, _ in SHIP_SCALARS)
 HAZARD_FIELDS = (
     ('battle_raw_count', 'battle_raw_count', 'I'), ('effective_rounds', 'effective_rounds', 'R'),
     ('round_times', None, 'list'), ('battle_times', None, 'list'),
@@ -219,7 +221,8 @@ def save_month(connection, instance, month, data):
     owner = {'instance': instance, 'month': month}
     columns, _, extra_scalars = project(data, MONTH_SCALARS)
     extras = {name: ('value', value) for name, value in data.items() if name not in MONTH_FIELDS}
-    extras.update({name: ('value', value) for name, value in extra_scalars.items() if name in dict((f[0], f) for f in MONTH_SCALARS)})
+    # 只有落在原生标量列、但取值不适配的字段才需要兼容树按原值保存。
+    extras.update({name: ('value', value) for name, value in extra_scalars.items() if name in MONTH_SCALAR_NAMES})
     notification = data.get('last_ap_notification')
     notification_fields = (('ts', 'last_ap_notification_ts', 'T'), ('ap', 'last_ap_notification_value', 'I'))
     notification_columns = {field[1]: None for field in notification_fields}
@@ -358,7 +361,7 @@ def save_ship(connection, instance, data):
     owner = {'instance': instance, 'ship': True}
     columns, _, scalar_extra = project(data, SHIP_SCALARS)
     extras = {name: ('value', value) for name, value in data.items() if name not in SHIP_FIELDS}
-    extras.update({name: ('value', value) for name, value in scalar_extra.items() if name in {f[0] for f in SHIP_SCALARS}})
+    extras.update({name: ('value', value) for name, value in scalar_extra.items() if name in SHIP_SCALAR_NAMES})
     insert(connection, 'ship_exp_checks', dict(instance=instance, field_mask=presence(data, SHIP_FIELDS), **columns))
     if 'ships' in data:
         if type(data['ships']) is not list:
@@ -377,7 +380,6 @@ def save_ship(connection, instance, data):
         if type(group.get('samples')) is list:
             for ordinal, sample in enumerate(group['samples']):
                 valid, stored = scalar(sample, 'R')
-                valid = valid and type(sample) in (int, float)
                 value_id = None if valid else write_value(connection, value=sample, **owner)
                 insert(connection, 'ship_exp_duration_samples', dict(instance=instance, kind=kind, ordinal=ordinal,
                     duration_seconds=stored if valid else None, field_mask=1 if valid else 0,

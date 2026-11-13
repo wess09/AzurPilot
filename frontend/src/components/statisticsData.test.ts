@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 统计数据管道的回归测试：线上格式折算、时间聚合、多源合并与涨跌分段。
+ */
+
 import { describe, expect, it } from 'vitest'
 import {aggregatePoints, isActionPointSeries, mergeMultiSeriesRows, normalizeReport, riseFallDeltas, riseFallSegments} from './statisticsData'
 
