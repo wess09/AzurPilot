@@ -24,6 +24,7 @@ from module.combat.assets import (
     OPTS_INFO_D,
 )
 from module.exception import CampaignEnd, GameStuckError, GameTooManyClickError
+from module.os.camera import WALK_COUNTER_AREA
 from module.os.fleet import BossFleet, OSFleet
 from module.os.map import OSMap
 from module.os_combat.combat import Combat
@@ -640,6 +641,53 @@ class TestAutoSearchRetryBudgetScope(unittest.TestCase):
                 self.assertEqual(handler.os_auto_search_daemon(), int(progress == 'combat'))
                 self.assertTrue(progressed)
                 self.assertGreater(self.clock.now - started, 300)
+
+    def test_stationary_walk_counter_needs_a_readable_digit(self):
+        for counter in ('7', ''):
+            with self.subTest(counter=counter):
+                handler = self.make_map(state=AUTO_SEARCH_OS_MAP_OPTION_ON)
+                handler.device.image = BLANK_IMAGE
+                started = self.clock.now
+
+                def frames():
+                    for _ in range(75):
+                        yield
+                        self.clock.now += 1
+
+                handler.loop = frames
+                with patch('module.os.camera.OCR_WALK_COUNTER.ocr', return_value=counter) as read:
+                    if counter:
+                        with self.assertRaisesRegex(GameStuckError, '移动计数长时间未变化'):
+                            handler.os_auto_search_daemon()
+                        self.assertLess(self.clock.now - started, 70)
+                    else:
+                        self.assertEqual(handler.os_auto_search_daemon(), 0)
+                    self.assertGreater(self.clock.now - started, 60)
+                    read.assert_called_once()
+
+    def test_progress_restarts_the_walk_counter_window(self):
+        changed_counter = BLANK_IMAGE.copy()
+        x1, y1, x2, y2 = WALK_COUNTER_AREA
+        changed_counter[y1:y2, x1:x2] = 255
+
+        for progress in ('walk', 'combat', 'map_event'):
+            with self.subTest(progress=progress):
+                handler = self.make_map(state=AUTO_SEARCH_OS_MAP_OPTION_ON)
+                handler.auto_search_combat = Mock(return_value=True)
+                handler.on_auto_search_battle_count_add = Mock()
+
+                def frames():
+                    for index in range(80):
+                        handler.device.image = changed_counter if progress == 'walk' and index >= 40 else BLANK_IMAGE
+                        handler.combat_appear.return_value = progress == 'combat' and index == 40
+                        handler.handle_map_event.return_value = progress == 'map_event' and index == 40
+                        yield
+                        self.clock.now += 1
+
+                handler.loop = frames
+                with patch('module.os.camera.OCR_WALK_COUNTER.ocr', return_value='7') as read:
+                    self.assertEqual(handler.os_auto_search_daemon(), int(progress == 'combat'))
+                read.assert_not_called()
 
     def test_delayed_reward_still_resets_both_search_and_enable_budgets(self):
         handler = self.make_map('OpsiHazard1Leveling')
