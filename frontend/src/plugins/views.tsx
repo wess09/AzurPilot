@@ -4,13 +4,16 @@ import { useApp } from '../app/context'
 import { ErrorBox, Loading } from '../components/ui'
 import { PluginFrame } from './PluginFrame'
 import { usePlugins } from './context'
-import { pluginPage } from './types'
+import { pluginAsset, pluginPage } from './types'
 
 export function PluginLinks({instance, onNavigate}: {instance?: string; onNavigate?: () => void}) {
   return <>{usePlugins().plugins.filter(plugin => plugin.enabled).flatMap(plugin =>
     plugin.manifest.pages?.filter(page => (page.scope !== 'global') === Boolean(instance)).map(page =>
       <NavLink key={plugin.manifest.id + '/' + page.id} to={pluginPage(plugin, page, instance)} onClick={onNavigate}>
-        <Puzzle size={17} aria-hidden="true"/>{page.title}
+        {page.icon
+          ? <img src={pluginAsset(plugin, page.icon)} width={17} height={17} alt="" aria-hidden="true"/>
+          : <Puzzle size={17} aria-hidden="true"/>}
+        {page.title}
       </NavLink>) ?? [])}</>
 }
 
@@ -32,7 +35,10 @@ export function PluginPage() {
 export function PluginPanels({instance}: {instance: string}) {
   const panels = usePlugins().plugins.filter(plugin => plugin.enabled).flatMap(plugin =>
     plugin.manifest.panels?.map(panel => <section key={plugin.revision + ':' + panel.id + ':' + instance} className="panel apu-panel">
-      <h2 className="panel-heading m-0 text-sm font-semibold">{panel.title}</h2>
+      <h2 className="panel-heading m-0 text-sm font-semibold">
+        {panel.icon && <img src={pluginAsset(plugin, panel.icon)} width={16} height={16} alt="" aria-hidden="true"/>}
+        {panel.title}
+      </h2>
       <PluginFrame plugin={plugin} entry={panel.entry} title={panel.title} instance={instance}/>
     </section>) ?? [])
   return panels.length > 0 ? <div className="apu-panels">{panels}</div> : null

@@ -80,6 +80,15 @@ export function PluginProvider({children}: {children: ReactNode}) {
 
 export function PluginStyles() {
   const {theme} = usePlugins()
+  useEffect(() => {
+    try {
+      // 记录当前主题样式的直链，index.html 在应用挂载前用它预载皮肤，避免默认主题闪现。
+      // 插件停用或更新后旧链接会 404，这里写入的新记录会把缓存纠正回来。
+      localStorage.setItem('azurpilot.apu-styles', JSON.stringify(theme ? {
+        id: theme.manifest.id, revision: theme.revision, styles: theme.manifest.theme?.styles ?? {},
+      } : null))
+    } catch { /* 拿不到 localStorage 时退回应用内的常规加载。 */ }
+  }, [theme])
   if (!theme) return null
   return <>{Object.entries(theme.manifest.theme?.styles ?? {}).map(([component, path]) =>
     <link key={component} rel="stylesheet" href={pluginAsset(theme, path) + '?component=' + component}/>)}</>

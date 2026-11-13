@@ -51,6 +51,22 @@ def test_invalid_update_does_not_replace_installed_package():
         assert service.list() == [{'manifest': manifest, 'enabled': False, 'revision': sha256(data).hexdigest()}]
 
 
+def test_page_and_panel_icons_must_exist_in_package():
+    with tempfile.TemporaryDirectory() as directory:
+        service = PluginService(Path(directory))
+        manifest = {'id': 'bridge', 'name': 'Bridge', 'version': '1', 'apiVersion': 1,
+                    'pages': [{'id': 'view', 'title': 'View', 'entry': 'ui/index.html', 'icon': 'assets/star.svg'}],
+                    'panels': [{'id': 'panel', 'title': 'Panel', 'entry': 'ui/index.html', 'icon': 'assets/star.svg'}]}
+        files = {'ui/index.html': '<p>ok</p>'}
+        with pytest.raises(ValueError):
+            service.install(package(manifest, files))
+        data = package(manifest, {**files, 'assets/star.svg': '<svg xmlns="http://www.w3.org/2000/svg"/>'})
+        service.install(data)
+        stored = service.list()[0]['manifest']
+        assert stored['pages'][0]['icon'] == 'assets/star.svg'
+        assert stored['panels'][0]['icon'] == 'assets/star.svg'
+
+
 def test_http_import_requires_auth_and_survives_restart():
     with tempfile.TemporaryDirectory() as directory:
         root = fixture(directory)

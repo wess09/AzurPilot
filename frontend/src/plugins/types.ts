@@ -1,4 +1,4 @@
-export type ComponentSlot = 'shell' | 'navigation' | 'overview' | 'scheduler'
+export type ComponentSlot = 'shell' | 'navigation' | 'overview' | 'scheduler' | 'global'
 export type OverviewBlock = 'resources' | 'scheduler' | 'queue' | 'logs' | 'panels'
 export type PluginPermission = 'instance.read' | 'storage' | 'scheduler.control'
 
@@ -7,6 +7,7 @@ export interface PluginView {
   title: string
   entry: string
   scope?: 'global' | 'instance'
+  icon?: string
 }
 
 export interface PluginTheme {

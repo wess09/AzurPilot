@@ -11,9 +11,10 @@ from pydantic import Field, ValidationError
 from module.api.protocol import Params
 
 ID_PATTERN = r'^[a-z0-9][a-z0-9._-]{0,79}$'
-Component = Literal['shell', 'navigation', 'overview', 'scheduler']
+Component = Literal['shell', 'navigation', 'overview', 'scheduler', 'global']
 OverviewBlock = Literal['resources', 'scheduler', 'queue', 'logs', 'panels']
 Permission = Literal['instance.read', 'storage', 'scheduler.control']
+ICON_TYPES = {'.svg', '.png', '.webp', '.jpg', '.jpeg', '.gif', '.avif'}
 ASSET_TYPES = {
     '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
     '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp',
@@ -28,12 +29,14 @@ class View(Params):
     title: str = Field(min_length=1, max_length=100)
     entry: str
     scope: Literal['global', 'instance'] = 'instance'
+    icon: str | None = None
 
 
 class Panel(Params):
     id: str = Field(pattern=ID_PATTERN)
     title: str = Field(min_length=1, max_length=100)
     entry: str
+    icon: str | None = None
 
 
 class Theme(Params):
@@ -79,12 +82,15 @@ def validate_manifest(manifest, archive):
         entries.extend(path for path in (theme.scheduler, theme.navigationView, theme.overviewView) if path is not None)
     for path in entries:
         _require_asset(archive, path, {'.html'})
+    for view in (*result.pages, *result.panels):
+        if view.icon is not None:
+            _require_asset(archive, view.icon, ICON_TYPES)
     if theme:
         for slot, path in theme.styles.items():
             _require_asset(archive, path, {'.css'})
             theme_css(archive, path, slot, result.id)
         for path in theme.icons.values():
-            _require_asset(archive, path, {'.svg', '.png', '.webp', '.jpg', '.jpeg', '.gif', '.avif'})
+            _require_asset(archive, path, ICON_TYPES)
     return result.model_dump(exclude_unset=True)
 
 
@@ -104,6 +110,10 @@ def theme_css(archive, path, slot, identifier):
         validate_rule(rule, archive, path, identifier)
         target = globals_ if rule.type == 'at-rule' and rule.lower_at_keyword in ('font-face', 'keyframes') else scoped
         target.append(rule)
+    if slot == 'global':
+        # 全局槽位不包 @scope：主题需要触达 portal 到 body 的弹层组件，
+        # 并在 :root 派生点接管宿主色板（rail-panel/theme 系变量都在那里合成）。
+        return tinycss2.serialize(globals_) + tinycss2.serialize(scoped)
     return (tinycss2.serialize(globals_) +
             f'\n@scope ([data-apu-component="{slot}"]) {{\n{tinycss2.serialize(scoped)}\n}}')
 
