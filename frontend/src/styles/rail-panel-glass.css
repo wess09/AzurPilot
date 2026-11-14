@@ -1,0 +1,238 @@
+/* 玻璃材质整段：--rail-* 变量 + 三层玻璃皮相（production-style.spec.ts 以 toHaveCSS 锁定计算值，值零改动）（原 legacy.css 1414-1650） */
+
+/* 玻璃材质：一次采样，平色面 + 发丝边
+   两种明暗共用一套现代语言，只差底色浓度：一层背景模糊、一层压住壁纸的平色、
+   一根发丝边。不画斜向渐变、不做四边镜面高光、不往每张卡里塞内高光 ——
+   那套语言属于 2007 年的 Aero：一块面板上一圈亮边，每个控件再各叠一层高光，
+   十行排下来就是一串玻璃泡泡，显脏也显旧。
+
+   层次靠「面的亮度差」表达：运行中最亮，待运行居中，等待中几乎与面板同色、
+   连边都没有，只靠字色退后。没有明暗跳变，也就不会有塑料反光。
+
+   **整块面板只做一次背景采样**（只有 .instance-page-rail 挂 backdrop-filter）。
+   卡片、统计行、按钮曾经各自再叠一层 blur，但那层是糊在已经糊过的背板上的，
+   像素上几乎没有差别；代价却是队列每次重排都要给每张卡重新采样一次 ——
+   FLIP 位移、入场缩放、透明度淡入都会让这层模糊当场重算或直接失效，
+   肉眼看到的就是「模糊闪一下」。
+
+   每张卡的「面」与「影」打包成 --rail-*-paint / --rail-*-shadow-paint，
+   明暗两套只换这两组值，规则本身不用分叉 */
+
+:root[data-material='glass'] {
+  /* 整块面板的模糊与其余玻璃层取同一个值：模糊只有一档，不按层递减 */
+  --rail-glass-panel-blur: var(--theme-surface-blur);
+  --rail-glass-panel-saturate: 82%;
+
+  /* 面板：一块平色玻璃，一根发丝边。斜向渐变 + 顶沿镜面高光留给 2007 年。
+     70% 会把壁纸的彩色糊映到面板上，整块发灰发奶；88% 才只剩一层雾 */
+  --rail-panel-bg: color-mix(in srgb, var(--surface) 90%, transparent);
+  --rail-panel-edge: color-mix(in srgb, var(--text) 8%, transparent);
+  --rail-panel-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 20px 44px -30px rgba(0, 0, 0, .3);
+  --rail-panel-filter: blur(var(--rail-glass-panel-blur)) saturate(var(--rail-glass-panel-saturate));
+
+  /* 计数块：一块略沉的平色底，不做凹陷（凹槽要靠内外阴影，那是拟物） */
+  --rail-glass-well-bg: color-mix(in srgb, var(--text) 4%, transparent);
+  --rail-well-shadow: none;
+
+  /* 「统计」行退成一行字，没有框 */
+  --rail-stat-bg: transparent;
+  --rail-stat-edge: transparent;
+  --rail-stat-shadow: none;
+
+  /* 卡片：三档只差「面多亮、边多亮、有没有影子」，没有光斑、没有内高光 */
+  --rail-card-edge: color-mix(in srgb, var(--text) 7%, transparent);
+  --rail-run-edge: color-mix(in srgb, var(--text) 10%, transparent);
+  --rail-idle-edge: transparent;
+  --rail-card-paint: color-mix(in srgb, #ffffff 62%, transparent);
+  --rail-card-hover-paint: color-mix(in srgb, #ffffff 76%, transparent);
+  --rail-card-shadow-paint: none;
+  --rail-run-paint: color-mix(in srgb, #ffffff 90%, transparent);
+  --rail-run-hover-paint: color-mix(in srgb, #ffffff 96%, transparent);
+  --rail-run-shadow-paint: 0 1px 2px rgba(0, 0, 0, .05), 0 6px 16px -10px rgba(0, 0, 0, .24);
+  --rail-idle-paint: color-mix(in srgb, var(--text) 3%, transparent);
+  --rail-idle-hover-paint: color-mix(in srgb, var(--text) 5.5%, transparent);
+  --rail-idle-shadow-paint: none;
+}
+
+:root[data-material='glass'][data-theme='legacy-dark'] {
+  /* 暗色的取舍：背后壁纸一亮，透出来的就是一层灰，面板越透越像一块灰板。
+     这里给到接近实色，玻璃感只留在一根发丝边和模糊上；
+     卡片不再发亮片，等待中几乎与面板同色、连边都没有，只靠字色退后 */
+  --rail-glass-panel-saturate: 82%;
+  --rail-panel-bg: color-mix(in srgb, var(--surface) 93%, transparent);
+  --rail-panel-edge: color-mix(in srgb, #ffffff 7%, transparent);
+  --rail-panel-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 16px 38px -26px rgba(0, 0, 0, .7);
+
+  /* 计数块是一块平色底，不是刻出来的凹槽 */
+  --rail-glass-well-bg: color-mix(in srgb, #000000 18%, transparent);
+  --rail-well-shadow: none;
+
+  /* 「统计」行退成一行字，没有框 */
+  --rail-stat-bg: transparent;
+  --rail-stat-edge: transparent;
+  --rail-stat-shadow: none;
+
+  /* 卡片：三档只差「面多亮、边多亮」，没有光斑、没有内高光 */
+  --rail-card-edge: color-mix(in srgb, #ffffff 6%, transparent);
+  --rail-run-edge: color-mix(in srgb, #ffffff 15%, transparent);
+  --rail-card-paint: color-mix(in srgb, #ffffff 3.5%, transparent);
+  --rail-card-hover-paint: color-mix(in srgb, #ffffff 6%, transparent);
+  --rail-card-shadow-paint: none;
+  --rail-run-paint: color-mix(in srgb, #ffffff 11%, transparent);
+  --rail-run-hover-paint: color-mix(in srgb, #ffffff 14%, transparent);
+  --rail-run-shadow-paint: 0 1px 2px rgba(0, 0, 0, .26), 0 8px 18px -12px rgba(0, 0, 0, .6);
+  --rail-idle-paint: color-mix(in srgb, #ffffff 1.5%, transparent);
+  --rail-idle-hover-paint: color-mix(in srgb, #ffffff 3.5%, transparent);
+  --rail-idle-shadow-paint: none;
+}
+
+/* 第一层：面板。取值在上面 :root[data-material='glass'] 的 --rail-panel-* 里，
+   亮色是渐变玻璃，暗色是平色玻璃，规则本身不重复声明 */
+
+/* 第二层：计数块。亮色是刻出来的凹槽，暗色是一块平色底。
+   另外这里必须关掉分格自带的模糊：低透明度元素挂 backdrop-filter 时，
+   模糊在四边采样不到内容，会在每格边缘留下一圈亮框 */
+:root[data-material='glass'] .scheduler-stats {
+  background: var(--rail-glass-well-bg);
+  box-shadow: var(--rail-well-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-material='glass'] .scheduler-stats > div {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 「统计」行：与卡片同属中景，只给厚度与高光，不再单独挂模糊（理由见本节开头） */
+:root[data-material='glass'] .instance-page-rail .legacy-stat-card {
+  background: var(--rail-stat-bg);
+  border-color: var(--rail-stat-edge);
+  box-shadow: var(--rail-stat-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 第三层：任务卡片。三档共用一个骨架，面与影来自 --rail-*-paint */
+:root[data-material='glass'] .rail-task-item {
+  background: var(--rail-card-paint);
+  border-color: var(--rail-card-edge);
+  box-shadow: var(--rail-card-shadow-paint);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* 运行中：最靠前的一张，面最亮、边最清楚，影子投到下面的队列上 */
+:root[data-material='glass'] .rail-task-item.running {
+  background: var(--rail-run-paint);
+  border-color: var(--rail-run-edge);
+  box-shadow: var(--rail-run-shadow-paint);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* 等待中：最里面的一层，没有厚度、没有描边 */
+:root[data-material='glass'] .rail-task-item.waiting {
+  background: var(--rail-idle-paint);
+  border-color: var(--rail-idle-edge);
+  box-shadow: var(--rail-idle-shadow-paint);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* 玻璃会把字吃掉一档：等待中与分组标题的字色在玻璃上各提一级，层级仍在，但读得出来 */
+:root[data-material='glass'] .rail-task-heading strong {color: color-mix(in srgb, var(--text) 70%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting strong {color: color-mix(in srgb, var(--text) 68%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting small {color: color-mix(in srgb, var(--text) 42%, transparent)}
+:root[data-material='glass'] .rail-task-item.waiting .rail-task-state {color: color-mix(in srgb, var(--text) 44%, transparent)}
+
+/* 悬停只提一档面：不位移、不加投影、不动描边 */
+:root[data-material='glass'] .rail-task-item:hover {
+  background: var(--rail-card-hover-paint);
+  border-color: var(--rail-card-edge);
+  box-shadow: var(--rail-card-shadow-paint);
+  transform: none;
+}
+:root[data-material='glass'] .rail-task-item.waiting:hover {
+  background: var(--rail-idle-hover-paint);
+  border-color: var(--rail-idle-edge);
+  box-shadow: var(--rail-idle-shadow-paint);
+}
+:root[data-material='glass'] .rail-task-item.running:hover {
+  background: var(--rail-run-hover-paint);
+  border-color: var(--rail-run-edge);
+  box-shadow: var(--rail-run-shadow-paint);
+}
+
+/* 破坏性操作：亮色是一层染红的薄玻璃，暗色是一块没有边、没有内高光的淡红底 */
+:root[data-material='glass'] .instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red) 16%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #ffffff 26%, transparent);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-material='glass'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  border-color: color-mix(in srgb, var(--red) 24%, transparent);
+}
+/* 暗色里红字自己承担颜色，底子只负责「这一块可以点」 */
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  border-color: transparent;
+  color: var(--red);
+  box-shadow: none;
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 20%, transparent);
+  color: color-mix(in srgb, var(--red) 82%, #ffffff);
+}
+
+/* 暗色主按钮：一块干净的浅色实心，不要内高光（会把按钮变成胶囊形状的塑料） */
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary {
+  background: color-mix(in srgb, var(--text) 88%, transparent);
+  color: #15161a;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 96%, transparent);
+}
+
+/* 暗色下计数的最里一档要多一点亮度：30% 的白字压在深底上会糊成灰 */
+:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting strong,
+:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting span {
+  color: color-mix(in srgb, var(--text) 40%, transparent);
+}
+:root[data-material='glass'][data-theme='legacy-dark'] .rail-task-item.waiting .rail-task-state {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+}
+
+/* 不支持背景滤镜的浏览器：退回不透明面，避免出现「透明但什么都没模糊」的糊状 */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-material='glass'] .instance-page-rail,
+  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .rail-task-item,
+  :root[data-material='glass'] .rail-task-item.running {background: var(--surface)}
+  :root[data-material='glass'] .rail-task-item.waiting {background: color-mix(in srgb, var(--text) 3%, var(--surface))}
+}
+
+/* 高对比度模式下取消半透明，文字优先 */
+@media (prefers-contrast: more), (forced-colors: active) {
+  /* 三档卡片各自的类（.running / .waiting）特异度更高，必须一并列进来，
+     否则高对比度下它们仍会保留半透明的玻璃底 */
+  :root[data-material='glass'] .instance-page-rail,
+  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .scheduler-stats,
+  :root[data-material='glass'] .rail-task-item,
+  :root[data-material='glass'] .rail-task-item.running,
+  :root[data-material='glass'] .rail-task-item.waiting,
+  :root[data-material='glass'] .rail-task-item:hover,
+  :root[data-material='glass'] .rail-task-item.running:hover,
+  :root[data-material='glass'] .rail-task-item.waiting:hover {
+    background: var(--theme-surface);
+    border-color: var(--theme-border);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+

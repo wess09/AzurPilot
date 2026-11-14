@@ -1,0 +1,7 @@
+/* 小圆点域 —— B1 自 components.css:988-993 保序拆分，规则文本逐字未改 */
+/* 主页公告栏样式 */
+.tiny-dot.red {
+  background: var(--red, #e05252);
+  box-shadow: 0 0 6px var(--red, #e05252);
+}
+

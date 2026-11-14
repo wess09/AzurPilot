@@ -11,6 +11,7 @@ import type { UpdaterState } from '../app/updater'
 import { useApp, useConnection } from '../app/context'
 import { ActionGroup, Empty, ErrorBox, Loading, Modal } from '../components/ui'
 import { localeForLanguage, type UiKey } from '../i18n'
+import './Updater.css'
 
 /** 后端更新状态字符串 → 界面文案键；'run update' 与 apply 共用一条文案。 */
 const states: Record<string, UiKey> = {idle: 'updater.state.idle', android: 'updater.state.android', available: 'updater.state.available', fetch: 'updater.state.fetch', checking: 'updater.state.checking', apply: 'updater.state.apply', start: 'updater.state.start', wait: 'updater.state.wait', 'run update': 'updater.state.apply', reload: 'updater.state.reload', failed: 'updater.state.failed', finish: 'updater.state.finish', cancel: 'updater.state.cancel'}

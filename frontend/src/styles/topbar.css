@@ -75,102 +75,20 @@
 /* 选中的控件（日志筛选、卡片视图切换）：底与文字都取自主题强调色，随主题自动跟随 */
 .icon-button.filter-active {background: color-mix(in srgb, var(--theme-accent) 14%, transparent) !important; color: var(--theme-accent) !important}
 
-.branch-summary {display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px}
-.commit-panel .panel-heading {flex-wrap: wrap; gap: 12px}
-/* 更新器页头：状态摘要锚定左侧、操作按钮收进居中内容列右侧，不再孤悬屏幕角落 */
-.updater-head {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px}
-.updater-head > :last-child {margin-left: auto}
-/* 页头按钮直接悬在壁纸上：面取实底 surface + 描边，玻璃材质的半透明控件面在壁纸上会糊边 */
-.updater-head .button.secondary {background: var(--surface); border: 1px solid var(--border)}
-.updater-head-summary {display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted)}
-.updater-head-summary.update-available {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  padding: 3px 11px;
-  border-radius: 999px;
-  font-weight: 650;
-}
-/* 本地/上游 HEAD 双列并排：卡片高度减半，提交记录不再被挤下去 */
-.head-grid {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--config-card-gap, 12px)}
-.head-grid > .config-group {margin-bottom: 0}
-.update-summary {display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px}
-.update-summary > span {display: flex; align-items: center; gap: 6px}
-/* 「新版本可用」是关键状态信号：胶囊底色提视觉权重，与顶部更新按钮呼应 */
-.update-summary .update-available {
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-weight: 650;
-}
-.commit-row {display: flex; gap: 16px; padding: 19px 24px; border-top: 1px solid var(--border); align-items: flex-start}
-.commit-node {margin-top: 2px; color: var(--accent); flex-shrink: 0}
-.commit-detail {min-width: 0; flex: 1}
-.commit-subject {line-height: 1.7; overflow-wrap: anywhere}
-/* 本地/上游 HEAD 标识：实心主色徽章（当前版本所在）与浅色胶囊（上游目标）一眼可扫 */
-.commit-ref {display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 9px; background: var(--surface-muted); color: var(--muted); border-radius: 999px; margin-left: 9px; white-space: nowrap; vertical-align: 1px}
-.commit-ref.local {background: var(--accent); color: #fff}
-.commit-ref.upstream {background: var(--accent-soft); color: var(--accent)}
-.commit-meta {display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 8px}
-/* 行尾短哈希胶囊：填住右侧留白，等宽字体 */
-.commit-sha-chip {
-  align-self: flex-start;
-  flex-shrink: 0;
-  margin-top: 3px;
-  padding: 3px 9px;
-  border-radius: 7px;
-  background: var(--surface-muted);
-  color: var(--muted);
-  font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace);
-  font-size: 11px;
-  user-select: all;
-  white-space: nowrap;
-}
-.commit-detail details {margin-top: 6px; color: var(--muted); font-size: 12px}
-/* 展开详情：主题色文字 + 右侧箭头，点按热区实打实 */
-.commit-detail summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  user-select: none;
-  list-style: none;
-  color: var(--accent);
-  font-weight: 600;
-  font-size: 12px;
-  padding: 4px 10px;
-  margin: 2px 0 0 -10px;
-  border-radius: 7px;
-}
-.commit-detail summary::-webkit-details-marker {display: none}
-.commit-detail summary::after {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: rotate(-45deg);
-  transition: transform var(--dur-2, .2s) var(--ease-standard, ease);
-}
-.commit-detail details[open] > summary::after {transform: rotate(45deg)}
-.commit-detail summary:hover {background: var(--accent-soft)}
-.commit-detail pre {white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; color: var(--text)}
-.commit-pagination {display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 18px 24px; border-top: 1px solid var(--border)}
-.commit-pagination > span {margin-right: auto; color: var(--muted); font-size: 12px}
+/* updater 页私有样式（.branch-summary/.commit-panel/.updater-head* /.head-grid/.update-summary/.commit-*）已 colocate 到 src/pages/Updater.css */
+
 @media (max-width: 950px) {
   /* 窄屏保留导航与调度按钮的触控空间 */
   :root {--topbar-actual-height: calc(56px + var(--instance-tab-height) - 26px * 1.24)}
   .breadcrumb.with-tabs > .breadcrumb-current {display: none}
-  .topbar {gap: 8px}
-  .sidebar {z-index: 100}
+  .topbar:where(.modern-shell *) {gap: 8px}
+  .sidebar:where(.modern-shell *) {z-index: 100}
   .breadcrumb {gap: 6px; flex: 1}
   .update-notice {font-size: 10px; padding: 5px 6px}
   .update-notice > svg {display: none}
-  .commit-row {padding: 16px; gap: 10px}
-  .commit-pagination {padding: 16px; gap: 8px}
-  .head-grid {grid-template-columns: 1fr}
+  /* .commit-row/.commit-pagination/.head-grid 窄屏覆写已随基规则迁往 src/pages/Updater.css */
 }
 
 /* 「栏底边线 → 实例名」之间只留一小段空隙，三个新版主题一致
    只给实例名加上外边距：顶栏高度、标签页位置、栏底边线都不动 */
-:root[data-tab-size] .app-shell:not(.legacy-shell) .main-shell main .page-title {margin-top: 16px}
+:root[data-tab-size] .app-shell:where(.modern-shell):not(.legacy-shell) .main-shell:where(.modern-shell *) main .page-title {margin-top: 16px}

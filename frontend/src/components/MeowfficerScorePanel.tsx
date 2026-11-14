@@ -8,6 +8,7 @@ import { ApiError, api } from '../api/client'
 import type { MeowfficerAdvice, MeowfficerCat, MeowfficerRubric, MeowfficerScoreReport, MeowfficerTalent } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { Empty, ErrorBox, Loading, Modal } from './ui'
+import './MeowfficerScorePanel.css'
 
 /** 档位文案由后端按攻略口径给出（中文），这里只按关键词上色，未知档位走中性样式。 */
 const tierStyles: [string, string][] = [

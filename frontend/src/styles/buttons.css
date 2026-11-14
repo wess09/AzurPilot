@@ -1,0 +1,19 @@
+/* 按钮域 —— B1 自 components.css:9-26 保序拆分，规则文本逐字未改（含 tab-delete-confirm 三档抖动与 @keyframes） */
+.button {height: 37px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 7px; font-size: 11px; font-weight: 550; padding: 0 15px; white-space: nowrap; border: 1px solid transparent; transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard), border-color var(--dur-2) var(--ease-standard), box-shadow var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-standard)}
+.button.primary {background: var(--accent); color: white; box-shadow: 0 3px 7px #118b7820}
+.button.primary:hover:not(:disabled) {background: var(--accent-hover); transform: translateY(-1px)}
+.button.secondary {background: var(--surface); border-color: var(--border); color: #6c7d8b}
+.button.secondary:hover {border-color: #b6c7c5; color: var(--accent)}
+.button.danger {background: #bb5259; color: white}
+.button.danger.subtle {background: #bd555510; color: var(--red); border-color: #bd555525}
+/* 删除实例的三次确认：每档抖动幅度递增，末档转强调红，明示这一步不可逆 */
+.tab-delete-confirm.armed {animation: delete-nudge .22s ease-in-out}
+.tab-delete-confirm.danger {animation: delete-shake .3s ease-in-out; color: var(--red)}
+.tab-delete-confirm.execute {animation: delete-lurch .4s ease-in-out; background: var(--red); color: #fff}
+@keyframes delete-nudge {0%, 100% {transform: translateX(0)} 25% {transform: translateX(-2px)} 75% {transform: translateX(2px)}}
+@keyframes delete-shake {0%, 100% {transform: translateX(0)} 20% {transform: translateX(-5px)} 40% {transform: translateX(5px)} 60% {transform: translateX(-3px)} 80% {transform: translateX(3px)}}
+@keyframes delete-lurch {0%, 100% {transform: translateX(0)} 15% {transform: translateX(-9px)} 30% {transform: translateX(9px)} 45% {transform: translateX(-6px)} 60% {transform: translateX(6px)} 80% {transform: translateX(-2px)}}
+@media (prefers-reduced-motion: reduce) {.tab-delete-confirm.armed, .tab-delete-confirm.danger, .tab-delete-confirm.execute {animation: none}}
+.icon-button {display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; color: var(--muted); border-radius: 5px; transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-standard)}
+.icon-button:hover {background: var(--surface-muted); color: var(--accent)}
+.text-button {display: inline-flex; gap: 6px; align-items: center; color: var(--accent); font-size: 10px; padding: 5px; transition: color var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-standard)}

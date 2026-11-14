@@ -12,6 +12,11 @@ import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Empty as EmptyState, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty'
 
+/*
+ * 样式索引（混合分层 L2：本文件类名几乎全为 Tailwind 工具类与 shadcn 组件，唯一全局类是 page-title-heading）。
+ * - styles/layout-legacy.css  legacy-shell 段：.app-shell.legacy-shell .page-title-heading（经典外壳下视觉隐藏，全局唯一定义）
+ */
+
 const STATUS_VARIANTS = {
   running: 'default',
   stopped: 'secondary',

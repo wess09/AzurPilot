@@ -13,6 +13,15 @@ import { Empty } from '../components/ui'
 import { Input } from './ui/input'
 import { LogCardView, findVisibleRange, logWindowTop, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
 
+/*
+ * 样式索引（混合分层 L2：样式横跨多域文件，无法 colocate）。
+ * - styles/log.css         日志面板域基规则：log-panel / log-filters / log-msg / log-divider / rule-bar / rule-title / center-title-text
+ * - styles/insights.css    monitor 段：.monitor-panel .log-panel / .log-filters / .log-content / .log-line 布局约束
+ * - styles/topbar.css      filter-active（工具按钮激活态，全局唯一定义）
+ * - styles/layout.css      窄屏段（@media max-width:950px）log-filters 换行覆写
+ * - styles/skin-legacy.css 经典皮肤段：.monitor-panel .log-toolbar（log-toolbar 全局唯一定义）与 .log-rule .rule-bar 覆写
+ */
+
 /** 匹配标准日志行，捕获组依次为：等级、可选日期、时间、正文（以 │ 分隔）。 */
 export const LOG_LINE_RE = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/
 /** 匹配带标题的分割线，捕获组 1 为标题文本。 */

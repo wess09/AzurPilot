@@ -38,6 +38,17 @@ import { PluginLinks } from '../plugins/views'
 import { PluginStyles, usePlugins } from '../plugins/context'
 import type { NavigationProps, ShellProps } from '../themes/definition'
 
+/*
+ * 样式索引（混合分层 L2：外壳骨架宿主，样式横跨多域文件，无法 colocate）。
+ * 外壳骨架类 app-shell / sidebar / topbar / primary-nav 全挂在本文件的 JSX 上，规则分布于：
+ * - styles/layout.css           外壳骨架段：app-shell / sidebar / topbar / primary-nav / main-shell / breadcrumb / login-page / connection-banner / mobile-toggle
+ * - styles/layout-legacy.css    经典外壳段：legacy-shell 下的 sidebar / topbar / legacy-page-nav / legacy-topbar-* / page-title-heading 视觉隐藏
+ * - styles/theme-legacy.css     经典主题段：对 primary-nav / sidebar / topbar / breadcrumb / skip-link 的主题覆写
+ * - styles/topbar.css           顶栏域：topbar / app-shell / topbar-actions / filter-active 等顶栏与激活态规则
+ * - styles/theme-primitives.css 主题契约消费层：外壳类绑定 --theme-* 变量的段落
+ * 其余共享词汇类（button / icon-button / form-stack 等）由 buttons / forms / feedback 等域文件与主题系统统一提供，不逐处列出。
+ */
+
 /* 旧版外壳下也要显示居中页名的顶层路由。 */
 const PRIMARY_NAV_PATHS = ['/announcement', '/updater', '/interface', '/remote', '/configs', '/settings', '/plugins']
 const SETUP_PATH = '/setup'

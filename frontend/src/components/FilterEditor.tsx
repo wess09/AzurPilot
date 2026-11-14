@@ -22,6 +22,7 @@ import {
   type ViewUpdate,
 } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
+import './FilterEditor.css'
 
 const externalChange = Annotation.define<boolean>()
 

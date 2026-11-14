@@ -1,0 +1,303 @@
+/* Markdown 渲染组件私有样式 —— B3 自 components.css:674-975（经 markdown.css 保序拆分）逐字 colocate 搬入，规则文本未改；随 MarkdownView 所在 lazy chunk 加载，须位于 katex.min.css 与 atom-one-dark.css 之后 */
+/* Markdown 渲染容器与排版 */
+.markdown-view {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+/* 章节呼吸感：标题上方大间距拉开章节，标题与正文之间留明确层级；块级元素给确定的节奏 */
+.markdown-view h1, .markdown-view h2, .markdown-view h3,
+.markdown-view h4, .markdown-view h5, .markdown-view h6 {
+  margin: 26px 0 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text);
+}
+.markdown-view h1 {font-size: 20px}
+.markdown-view h2 {font-size: 18px}
+.markdown-view h3 {font-size: 16px}
+.markdown-view h4 {font-size: 14.5px}
+.markdown-view h5, .markdown-view h6 {font-size: 13.5px}
+.markdown-view > :first-child {margin-top: 0}
+.markdown-view p {margin: 8px 0}
+.markdown-view ul, .markdown-view ol {margin: 8px 0; padding-left: 22px}
+.markdown-view li {margin: 3px 0}
+.markdown-view hr {margin: 18px 0; border: none; border-top: 1px solid var(--border)}
+.markdown-view details[open] > summary + * {margin-top: 4px}
+
+/* 代码块容器、语言头部与复制按钮 */
+.markdown-view .md-code-wrap {
+  margin: 14px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: #1e222b;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.markdown-view .md-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: #181b22;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.markdown-view .md-code-lang {
+  color: #8b949e;
+  font-family: var(--theme-font-mono, monospace);
+  font-size: 11px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.markdown-view .md-code-copy {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  font-size: 11px;
+  border-radius: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: #c9d1d9;
+  cursor: pointer;
+  transition: all .15s ease;
+  user-select: none;
+}
+.markdown-view .md-code-copy:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.markdown-view .md-code-copy.copied {
+  background: var(--accent, #10b981);
+  color: #fff;
+  border-color: var(--accent, #10b981);
+}
+.markdown-view .md-pre {
+  margin: 0;
+  padding: 12px 16px;
+  background: transparent;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.markdown-view .md-pre code.hljs {
+  padding: 0;
+  background: transparent;
+  font-family: var(--theme-font-mono, "JetBrains Mono", "Cascadia Code", Consolas, monospace);
+  font-size: 12.5px;
+  line-height: 1.6;
+}
+
+.markdown-view .md-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  word-break: break-all;
+  font-weight: 500;
+  transition: opacity .15s;
+}
+.markdown-view .md-link:hover {
+  opacity: .85;
+}
+/* 外链在文字后面跟一个小小的外跳图标（mask 用 currentColor，随主题变色） */
+.markdown-view .md-link::after {
+  content: '';
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5'/></svg>") no-repeat center / contain;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h6v6'/><path d='M10 14 21 3'/><path d='M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5'/></svg>") no-repeat center / contain;
+}
+
+/* KaTeX 数学公式渲染容器 */
+.markdown-view .md-math-block {
+  display: block;
+  margin: 14px 0;
+  padding: 12px 16px;
+  text-align: center;
+  overflow-x: auto;
+  background: var(--surface-muted);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.markdown-view .md-math-inline {
+  display: inline-block;
+  padding: 0 3px;
+  vertical-align: baseline;
+}
+.markdown-view .md-math-fallback {
+  font-family: var(--theme-font-mono, monospace);
+  font-size: 12px;
+  color: var(--accent);
+}
+
+/* GitHub 风格呼出提示块（Admonition）：左侧 4px 粗色条 + 浅色底、无外边框 */
+.markdown-view .md-alert {
+  margin: 16px 0;
+  padding: 10px 14px 10px 16px;
+  border-radius: 8px;
+  border: none;
+  border-left: 4px solid var(--border);
+}
+.markdown-view .md-alert-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.markdown-view .md-alert-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.markdown-view .md-alert-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.markdown-view .md-alert-body p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.markdown-view .md-alert-note {
+  background: color-mix(in srgb, #3b82f6 10%, var(--surface));
+  border-left-color: #3b82f6;
+}
+.markdown-view .md-alert-note .md-alert-badge {
+  background: color-mix(in srgb, #3b82f6 20%, var(--surface));
+  color: #1d4ed8;
+}
+
+.markdown-view .md-alert-tip {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-left-color: var(--accent);
+}
+.markdown-view .md-alert-tip .md-alert-badge {
+  background: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  color: var(--accent);
+}
+
+.markdown-view .md-alert-important {
+  background: color-mix(in srgb, #a855f7 10%, var(--surface));
+  border-left-color: #a855f7;
+}
+.markdown-view .md-alert-important .md-alert-badge {
+  background: color-mix(in srgb, #a855f7 20%, var(--surface));
+  color: #7e22ce;
+}
+
+.markdown-view .md-alert-warning {
+  background: color-mix(in srgb, #f59e0b 10%, var(--surface));
+  border-left-color: #f59e0b;
+}
+.markdown-view .md-alert-warning .md-alert-badge {
+  background: color-mix(in srgb, #f59e0b 20%, var(--surface));
+  color: #b45309;
+}
+
+.markdown-view .md-alert-caution {
+  background: color-mix(in srgb, #ef4444 10%, var(--surface));
+  border-left-color: #ef4444;
+}
+.markdown-view .md-alert-caution .md-alert-badge {
+  background: color-mix(in srgb, #ef4444 20%, var(--surface));
+  color: #b91c1c;
+}
+
+/* HTML 折叠 details/summary：整行可点、右侧箭头给出交互暗示，展开后虚线分隔内容 */
+.markdown-view details {
+  margin: 14px 0;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-muted);
+}
+.markdown-view summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 -14px;
+  padding: 11px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--text);
+  outline: none;
+  list-style: none;
+  border-radius: 10px;
+}
+.markdown-view summary::-webkit-details-marker {display: none}
+.markdown-view summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(-45deg);
+  transition: transform var(--dur-2, .2s) var(--ease-standard, ease);
+}
+.markdown-view summary:hover {background: color-mix(in srgb, var(--text) 4%, transparent)}
+.markdown-view details[open] summary {
+  border-bottom: 1px dashed var(--border);
+  border-radius: 10px 10px 0 0;
+  margin-bottom: 10px;
+}
+.markdown-view details[open] summary::after {transform: rotate(45deg)}
+.markdown-view details[open] {padding-bottom: 12px}
+
+/* 常用 HTML 排版标签（kbd、mark、sub、sup） */
+.markdown-view kbd {
+  font-family: var(--theme-font-mono, monospace);
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  background: color-mix(in srgb, var(--text) 5%, var(--surface));
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
+}
+.markdown-view mark {
+  background: #fef08a;
+  color: #1e293b;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.markdown-view sub,
+.markdown-view sup {
+  font-size: 0.75em;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+.markdown-view sup { top: -0.5em; }
+.markdown-view sub { bottom: -0.25em; }
+
+/* 任务清单复选框 */
+.markdown-view input[type="checkbox"] {
+  margin: 0 8px 0 0;
+  accent-color: var(--accent);
+  vertical-align: middle;
+}
+.markdown-view li:has(input[type="checkbox"]) {
+  list-style-type: none;
+  margin-left: -18px;
+}

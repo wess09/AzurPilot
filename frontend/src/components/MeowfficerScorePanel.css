@@ -1,0 +1,77 @@
+/* 指挥喵评分面板组件私有样式 —— B3 自 components.css:471-546（经 meow-report.css 保序拆分）逐字 colocate 搬入，规则文本未改；随 MeowfficerScorePanel 所在 lazy chunk 加载 */
+/* 指挥喵评分报告：面板、每只猫的卡片、档位徽章、天赋标签与评分口径区块 */
+.meow-panel {margin-bottom: 22px}
+/* 旧版版式的设置列是固定高度的 flex 滚动容器，面板不能被压缩，否则卡片正文会被裁掉 */
+.task-config-legacy .meow-panel {margin-bottom: 0; flex: 0 0 auto}
+.meow-panel .panel-heading {flex-wrap: wrap; gap: 12px}
+.meow-panel-actions {flex-wrap: wrap; justify-content: flex-end}
+.meow-summary {font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums}
+.meow-body {padding: 18px 21px}
+.meow-body .error-box, .meow-body .empty {margin-bottom: 0}
+.meow-cats {display: grid; gap: 14px; padding: 16px 18px}
+.meow-card {border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden}
+.meow-card > .panel-heading {padding: 13px 16px}
+.meow-card > .panel-heading h2 {font-size: 16px; font-weight: 600; margin: 0}
+.meow-card > .panel-heading > div:first-child {flex-wrap: wrap; gap: 7px}
+.meow-card-score {display: flex; align-items: center; gap: 12px; flex-shrink: 0}
+.meow-tag {font-size: 9px; padding: 2px 7px; border-radius: 5px; background: var(--surface-muted); color: #7b8b98; font-weight: 400}
+.meow-flag {font-size: 9px; padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border); color: var(--muted); font-weight: 400}
+.meow-flag.is-maxed {border-color: #d9b25a55; background: #d9b25a14; color: #a8811f}
+.meow-flag.is-fixed {border-color: #3b82f655; background: #3b82f614; color: #2f74d0}
+.meow-flag.is-level {border-color: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--accent); font-variant-numeric: tabular-nums}
+.meow-tier {display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; background: var(--surface-muted); color: var(--muted)}
+.meow-tier.is-perfect {background: #d9b25a22; color: #a8811f}
+.meow-tier.is-near {background: #3b82f61a; color: #2f74d0}
+.meow-tier.is-graduate {background: #269a8120; color: #1f8a73}
+.meow-tier.is-transition {background: #8b5cf61a; color: #7451d8}
+.meow-tier.is-snack {background: #94a3b81f; color: #6b7a8d}
+.meow-tier.is-unsuitable {background: #bd555518; color: #b0555c}
+.meow-tier.is-thunder {background: #0ea5e91a; color: #0b83b8}
+.meow-score {display: inline-flex; align-items: baseline; gap: 5px; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text)}
+.meow-score small {font-size: 9px; font-weight: 400; color: var(--muted)}
+.meow-cat-note {padding: 11px 16px 0; margin: 0; font-size: 11px; line-height: 1.9; color: var(--muted)}
+.meow-talents {display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 11px 16px; border-bottom: 1px solid var(--border)}
+.meow-talent {display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); font-size: 11px; line-height: 1.5}
+.meow-talent.is-special {border-color: #d9b25a66; background: #d9b25a14; color: #9c7a1c; font-weight: 550}
+.meow-talent.is-special > svg:first-child {color: #c9a227}
+.meow-talent.is-inferred {border-style: dashed}
+.meow-talent.is-inferred > svg:last-child {color: var(--theme-warning, #a56d16)}
+.meow-level {font-size: 8px; line-height: 1; padding: 2px 4px; border-radius: 4px; background: #00000012; color: var(--muted); font-weight: 700}
+.meow-inferred-hint {display: inline-flex; align-items: center; gap: 5px; margin-left: auto; font-size: 10px; color: var(--theme-warning, #a56d16)}
+.meow-primary {display: grid; gap: 12px; padding: 14px 16px}
+.meow-rubric-minor {display: grid; gap: 10px; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted)}
+.meow-rubric-head {display: flex; flex-wrap: wrap; align-items: center; gap: 10px}
+.meow-rubric-head strong {font-size: 13px; font-weight: 600}
+.meow-rubric-head .meow-score {margin-left: auto; font-size: 14px}
+.meow-formula {font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums}
+.meow-score-bar {height: 5px; border-radius: 999px; background: var(--surface-muted); overflow: hidden}
+.meow-score-bar > i {display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #74bda8, #2f9e83)}
+.meow-axis {display: flex; flex-wrap: wrap; align-items: baseline; gap: 7px}
+.meow-axis-label {flex: 0 0 auto; min-width: 96px; max-width: 180px; font-size: 10px; color: var(--muted)}
+.meow-hit {display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-size: 11px; line-height: 1.5}
+.meow-hit.is-special {border: 1px solid #d9b25a55; background: #d9b25a14; color: #9c7a1c}
+.meow-hit.is-empty {background: transparent; color: var(--muted); font-style: italic}
+.meow-notes {display: grid; gap: 5px; margin: 0; padding-left: 18px; font-size: 11px; line-height: 1.9; color: var(--muted)}
+.meow-rubric-source {margin: 0; font-size: 10px; line-height: 1.8; color: var(--muted); overflow-wrap: anywhere}
+.meow-others {border-top: 1px solid var(--border)}
+.meow-others > summary {display: flex; align-items: center; gap: 7px; padding: 11px 16px; color: var(--muted); font-size: 11px; cursor: pointer; list-style: none}
+.meow-others > summary::-webkit-details-marker {display: none}
+.meow-others > summary > svg {transition: transform .2s}
+.meow-others[open] > summary > svg {transform: rotate(180deg)}
+.meow-others-body {display: grid; gap: 10px; padding: 0 16px 14px}
+.meow-card-foot {display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 10px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted)}
+/* 洗点推荐：配色由后端 verdict 决定，四种结论一眼可分 */
+.meow-advice {margin: 0 16px 12px; padding: 10px 13px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-muted)}
+.meow-advice.is-feed {border-color: color-mix(in srgb, var(--red) 42%, transparent); background: color-mix(in srgb, var(--red) 7%, transparent)}
+.meow-advice.is-reroll {border-color: color-mix(in srgb, #d9a441 46%, transparent); background: color-mix(in srgb, #d9a441 9%, transparent)}
+.meow-advice.is-pending {border-color: color-mix(in srgb, var(--accent) 42%, transparent); background: color-mix(in srgb, var(--accent) 7%, transparent)}
+.meow-advice.is-keep {border-color: color-mix(in srgb, #3fa86a 42%, transparent); background: color-mix(in srgb, #3fa86a 7%, transparent)}
+.meow-advice-head {display: flex; align-items: center; gap: 7px; font-size: 12px}
+.meow-advice-head svg {flex: 0 0 auto; opacity: .85}
+.meow-advice-reason {margin: 6px 0 0; font-size: 11px; color: var(--muted); line-height: 1.6}
+.meow-advice-cost {margin: 5px 0 0; font-size: 11px; color: var(--muted)}
+.meow-advice-targets {margin: 6px 0 0; padding: 0; list-style: none}
+.meow-advice-targets li {position: relative; padding-left: 13px; font-size: 11px; color: var(--text); margin: 3px 0}
+.meow-advice-targets li::before {content: '→'; position: absolute; left: 0; color: var(--accent); opacity: .8}
+.meow-shot {font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); overflow-wrap: anywhere}
+@media (max-width: 700px) {.meow-cats {padding: 12px}.meow-axis-label {flex-basis: 100%}.meow-card-score {width: 100%; justify-content: flex-start}}

@@ -11,6 +11,12 @@ import { tags } from '@lezer/highlight'
 import { yaml } from '@codemirror/lang-yaml'
 import { useApp } from '../app/context'
 
+/*
+ * 样式索引（混合分层 L2）。
+ * - styles/config-fields.css  yaml-editor 段：.yaml-editor / .yaml-editor .cm-*（CodeMirror 外观与滚动手感）/ .yaml-editor.is-disabled
+ * - 宿主元素的 aria-invalid 外观与 src/components/ui/input 同款：全部为 Tailwind 工具类（aria-invalid:border-destructive 等），无全局 CSS 依赖。
+ */
+
 const colors = HighlightStyle.define([
   {tag: [tags.propertyName, tags.definition(tags.propertyName)], color: 'var(--syntax-key)'},
   {tag: tags.string, color: 'var(--syntax-string)'},

@@ -43,6 +43,17 @@ import {
 import type { LogEntry } from '../api/types'
 import { LazyMarkdown } from './LazyMarkdown'
 
+/*
+ * 样式索引（混合分层 L2：本文件挂 130+ 全局类，横跨多域文件，无法 colocate）。
+ * - styles/log.css              日志卡片域：log-card / log-line / log-lvl / log-ts / hl-* / badge-pill / log-divider 等
+ *                               （hl-* 与 log-ts 在 log.css 与 theme-primitives.css:138-144 双定义：log.css 8 处 hl-* + log-ts，后者 6 处 hl-* + log-ts，主题变量覆写依赖文件顺序，故留 L2）
+ * - styles/map-grid.css         地图格子域：cell-* / dot-sea / legend-* / map-ascii-table
+ * - styles/map-cost.css         代价表域：cost-table / cost-cell / matrix-row / dot-origin / dot-cost-*
+ * - styles/error-card.css       错误卡与回溯域：error-card 复合在 log-card 上（.error-card 自身无规则），子元素规则 error-header / error-body / error-section / frame-* / locals-* / llm-* / data-table-viewport / grid-depth-line 等都在此文件
+ * - styles/feedback.css         反馈域：log-card-line / banner-double-rule / banner-title-text
+ * - styles/theme-primitives.css 日志高亮主题段（:138-144）：lvl-* / log-ts / hl-* / log-search-match 绑定 --theme-log-* 变量
+ */
+
 // 提取日志消息正文（剥离 LEVEL HH:MM:SS.mmm │ 前缀）。
 function extractLogMessage(raw: string): { level: string; time: string; message: string } {
   const match = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/.exec(raw)

@@ -1,0 +1,163 @@
+/* 模拟预览/材质检视器域 —— B1 自 components.css:1092-1253 保序拆分，规则文本逐字未改 */
+/* 全真模拟实例预览与材质检视器 */
+.mock-instance-preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  animation: mock-preview-in var(--dur-3) var(--ease-emphasized);
+}
+
+@keyframes mock-preview-in {
+  from {opacity: 0; transform: scale(0.985)}
+  to {opacity: 1; transform: scale(1)}
+}
+
+/* 预览外壳是真实例外壳的复刻，铺满视口；检视器停靠时整块让出 420px */
+.mock-preview-shell {
+  height: var(--viewport-height, 100vh);
+  width: 100vw;
+  overflow: hidden;
+  transition: width var(--dur-4) var(--ease-emphasized);
+}
+
+.mock-instance-preview-overlay.has-docked-inspector .mock-preview-shell,
+.app-shell:where(.modern-shell).has-docked-inspector {
+  width: calc(100vw - 420px);
+  max-width: calc(100vw - 420px);
+  transition: width var(--dur-4) var(--ease-emphasized), max-width var(--dur-4) var(--ease-emphasized);
+}
+
+/* 窄屏不为检视器扣除宽度，检视器覆盖在完整画布上方 */
+@media (max-width: 420px) {
+  .mock-instance-preview-overlay.has-docked-inspector .mock-preview-shell,
+  .app-shell:where(.modern-shell).has-docked-inspector {
+    width: 100vw;
+    max-width: 100vw;
+  }
+}
+
+.mock-preview-sidebar {overflow-y: auto}
+.mock-preview-rail {overflow-y: auto}
+
+/* 材质检视器：停靠形态贴右边、浮动形态悬在右下角，两种形态的面都跟随菜单与弹窗区域的材质 */
+.mock-preview-inspector {
+  transition: width var(--dur-4) var(--ease-emphasized), background-color var(--dur-4) var(--ease-emphasized),
+    box-shadow var(--dur-4) var(--ease-emphasized), border-radius var(--dur-4) var(--ease-emphasized);
+}
+
+.mock-preview-inspector.is-docked {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 420px;
+  max-width: 90vw;
+  z-index: 130;
+  background: var(--theme-menu-bg);
+  -webkit-backdrop-filter: var(--theme-menu-filter);
+  backdrop-filter: var(--theme-menu-filter);
+  box-shadow: var(--theme-menu-shadow);
+  border-left: 1px solid var(--theme-menu-edge);
+  display: flex;
+  flex-direction: column;
+}
+
+.mock-preview-inspector.is-floating {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  max-height: 82vh;
+  z-index: 130;
+  border-radius: var(--theme-modal-radius);
+  background: var(--theme-modal-bg);
+  -webkit-backdrop-filter: var(--theme-modal-filter);
+  backdrop-filter: var(--theme-modal-filter);
+  box-shadow: var(--theme-modal-shadow);
+  border: 1px solid var(--theme-modal-edge);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mock-preview-inspector.is-minimized {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 130;
+  width: auto;
+  height: auto;
+  background: transparent;
+  box-shadow: none;
+  border: none;
+}
+
+.inspector-expand-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: var(--theme-radius-pill);
+  background: var(--accent);
+  color: var(--theme-on-accent, #fff);
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: var(--theme-control-shadow);
+  cursor: pointer;
+  border: none;
+  transition: transform var(--dur-2) var(--ease-standard);
+}
+
+.inspector-expand-button:hover {transform: translateY(-2px) scale(1.02)}
+
+.inspector-panel-inner {display: flex; flex-direction: column; height: 100%; min-height: 0}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  gap: 10px;
+}
+
+.inspector-title {display: flex; align-items: center; gap: 8px; font-size: 14px; min-width: 0}
+.inspector-title strong {white-space: nowrap}
+
+.inspector-title .theme-tag {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: var(--theme-radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.inspector-controls {display: flex; align-items: center; gap: 4px}
+
+.inspector-body {flex: 1; min-height: 0; overflow-y: auto; padding: 16px 18px}
+.inspector-body .material-detail-body {display: flex; flex-direction: column; gap: 12px}
+
+.inspector-body .material-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.inspector-footer {padding: 12px 18px; border-top: 1px solid var(--border); background: var(--surface-muted)}
+.inspector-footer .button.full-width {width: 100%}
+
+/* 检视器只有 420px：旋钮行的标签列与滑块列按面板宽度收窄，默认给宽弹窗的宽度在这里会把标签截断 */
+.inspector-body .field-row {padding: 12px 0; gap: 10px}
+.inspector-body .field-label {flex: 0 0 62px; min-width: 0}
+.inspector-body .field-control {width: auto; flex: 1 1 auto; min-width: 0}
+

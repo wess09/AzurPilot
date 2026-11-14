@@ -1,0 +1,13 @@
+/* 侧栏搜索域 —— B1 自 components.css:1254-1265 保序拆分，规则文本逐字未改；与 legacy.css:154 存在 .nav-search-hits 同选择器双定义，禁止再搬迁 */
+/* 侧栏搜索的命中列表（卡片与配置项）：排在搜索框下方、任务树上方 */
+.nav-search-hits { display: flex; flex-direction: column; gap: 2px; padding: 4px 8px 8px; overflow-y: auto; flex: 0 1 auto; min-height: 0; max-height: 45%; }
+.nav-search-hit { display: flex; flex-direction: column; gap: 2px; align-items: flex-start; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.nav-search-hit:hover { background: var(--theme-inset-bg, var(--theme-plate-bg)); border-color: var(--theme-inset-edge, transparent); }
+.nav-search-hit-label { font-size: 13px; }
+.nav-search-hit-path { font-size: 11px; opacity: 0.6; }
+.nav-search-hit-help { font-size: 11px; opacity: 0.72; white-space: pre-wrap; }
+
+/* 从搜索跳进来的那一项：短暂描边，说明「就是这一项」 */
+.field-row.is-search-target { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.config-group.is-search-target { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--theme-radius-panel, 26px); }
+

@@ -1,0 +1,36 @@
+/* 右键菜单域 —— B1 自 components.css:1266-1301 保序拆分，规则文本逐字未改；维持 L2 不做 colocated 搬迁（B3 仲裁记录：.context-menu-item:disabled 与 legacy 层 button:disabled/.button:disabled 存在竞争面，存疑不搬） */
+/* 区域级右键菜单：贴着调用方给的动作，样式跟随主题的面板令牌 */
+.context-menu {
+  position: fixed;
+  z-index: 1500;
+  min-width: 148px;
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  /* 底色直接用不透明 surface：玻璃材质的 menu-bg 只有 78% 透明度加 0px 模糊，
+     压不住背后透出的文字；右键菜单要的是即时可读，不做玻璃 */
+  background: var(--surface);
+  box-shadow: var(--theme-menu-shadow, 0 8px 24px rgb(0 0 0 / .18));
+  border: 1px solid var(--theme-menu-edge, var(--theme-border));
+  animation: context-menu-in .12s cubic-bezier(.22, .61, .36, 1);
+}
+@keyframes context-menu-in {from {opacity: 0; transform: scale(.96)} to {opacity: 1; transform: none}}
+@media (prefers-reduced-motion: reduce) {.context-menu {animation: none}}
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.context-menu-item:hover:not(:disabled) {background: color-mix(in srgb, var(--text) 7%, transparent)}
+.context-menu-item:disabled {opacity: .4; cursor: default}
+.context-menu-item.danger {color: var(--theme-danger, var(--danger, #c0392b))}

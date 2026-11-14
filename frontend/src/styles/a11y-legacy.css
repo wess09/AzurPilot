@@ -1,0 +1,26 @@
+/* 滚动条隐藏 + period-controls 隐藏 + 高对比覆写（原 legacy.css 1011-1034） */
+
+/* 孤儿待确认：.dev-state-box / .dev-shadow-grid / .dev-nav-preview 全库无消费方（开发期残留样式），按批次约定仅标注不删除；其后 .field-control > .field-actions 规则为活规则，勿一并标注 */
+.dev-state-box, .dev-shadow-grid {background: var(--surface-muted)}
+.dev-nav-preview {background: var(--surface)}
+
+/* 按下「立刻运行」时底色与字色互换，与按钮的缩放动画叠加 */
+.field-control > .field-actions .icon-only:hover:active:not(:disabled) {background: var(--theme-accent); color: var(--theme-on-accent)}
+
+@keyframes rail-view-in-left {from {opacity: 0; transform: translateX(-7px)} to {opacity: 1; transform: none}}
+
+/* 任务设置列表与右侧栏不显示滚动条 */
+.app-shell:where(.modern-shell).legacy-shell .task-nav,
+.app-shell:where(.modern-shell).legacy-shell .group-nav {scrollbar-width: none}
+.app-shell:where(.modern-shell).legacy-shell .task-nav::-webkit-scrollbar,
+.app-shell:where(.modern-shell).legacy-shell .group-nav::-webkit-scrollbar {width: 0}
+
+/* 总览页的统计面板只留分类切换那一行与操作按钮：周期控件是为独占整页的独立统计页排的，
+   落在窄面板里会换行留白；它在面板下方还有一份，隐藏这里不影响选择时间范围与各类筛选 */
+.instance-panel-stats .statistics-controls.period-controls {display: none}
+
+/* 无障碍覆盖放在经典布局样式之后，避免普通规则重新打开滤镜 */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .sidebar:where(.modern-shell *), .right-rail:where(.modern-shell *), .instance-menu, .group-nav, .panel, .resource-card {background: var(--theme-surface); -webkit-backdrop-filter: none; backdrop-filter: none}
+}
+

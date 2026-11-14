@@ -1,0 +1,312 @@
+/* 经典主题皮相域（原 legacy.css 15-325）：静态覆写 + 紧凑开关 + skip-link + 侧栏/导航皮相 + 圆角 + MD3 按钮 */
+/* 旧版侧栏贴边、只有一条右边框，顶栏与右栏不带圆角 */
+.sidebar:where(.modern-shell *), .right-rail:where(.modern-shell *), .topbar:where(.modern-shell *) {border-radius: 0}
+/* 背景随内容滚，不固定在视口上（主题骨架默认 fixed） */
+body {background-attachment: scroll}
+
+/* 静默输入框：平色面 + 发丝边，聚焦只加深描边——无底线、无变色底、无发光环 */
+:root {--form-shadow: none}
+input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])),
+textarea, .select-trigger, .input-icon {
+  border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text) 2.5%, var(--theme-input-bg));
+  transition: border-color .16s ease, background-color .16s ease;
+}
+input:not([data-slot='input']):hover:not(:disabled):not(:focus), textarea:hover:not(:disabled):not(:focus),
+.select-trigger:hover:not(:disabled):not([aria-expanded='true']), .input-icon:hover:not(:focus-within) {
+  border-color: color-mix(in srgb, var(--text) 20%, transparent);
+}
+input:not([data-slot='input']):focus, textarea:focus,
+.select-trigger:focus-visible, .select-trigger[aria-expanded='true'], .input-icon:focus-within {
+  border-color: color-mix(in srgb, var(--text) 32%, transparent);
+  background: var(--theme-input-bg);
+  box-shadow: none;
+  outline: none;
+}
+input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true'], .select-trigger[aria-invalid='true'] {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 5%, var(--theme-input-bg));
+}
+
+/* 紧凑开关：38×22 轨道 + 18px 滑块，无描边。
+   关=中性灰轨 + 白滑块，开=强调色轨；按压时滑块轻微拉长 */
+.toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  background: transparent;
+  cursor: pointer;
+}
+.toggle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 16%, transparent);
+  box-sizing: border-box;
+  transition: background-color .18s ease;
+}
+.toggle > span {
+  position: relative;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--theme-toggle-knob);
+  box-shadow: 0 1px 2px rgb(0 0 0 / .18);
+  transform: translateX(2px);
+  transition: transform .18s cubic-bezier(.2, 0, .2, 1), width .18s ease;
+}
+.toggle.on::before {
+  background: var(--theme-toggle-on);
+}
+.toggle.on > span {
+  transform: translateX(18px);
+}
+.toggle:active:not(:disabled) > span {
+  width: 20px;
+}
+.toggle:not(.on):active:not(:disabled) > span {
+  transform: translateX(1px);
+}
+.toggle.on:active:not(:disabled) > span {
+  transform: translateX(17px);
+}
+.toggle:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* 跳转链接必须在网格流之外，否则会占掉侧栏那一列 */
+.skip-link {position: fixed; top: -100px; left: 16px; z-index: 200; background: var(--theme-control-bg); color: var(--accent); padding: 14px; border-radius: 8px}
+.skip-link:focus {top: 12px}
+
+/* 侧栏与顶栏各走自己的区域材质；普通材质分支会把它们压回不透明（见 theme-material.css） */
+.sidebar:where(.modern-shell *), .right-rail:where(.modern-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
+.topbar:where(.modern-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
+.sidebar:where(.modern-shell *) {padding: 0 14px 14px}
+/* 侧栏与调度器栏都是导航面板：文字禁止划选，免得拖动时把菜单文本刷蓝；输入框除外 */
+.sidebar:where(.modern-shell *), .instance-page-rail {user-select: none}
+.sidebar:where(.modern-shell *) input, .sidebar:where(.modern-shell *) textarea,
+.instance-page-rail input, .instance-page-rail textarea {user-select: text}
+.sidebar-brand {height: var(--topbar-height); padding: 0 8px; margin-bottom: 14px}
+.brand-title {font-size: 22px}
+.brand-mark {color: var(--secondary)}
+
+.sidebar-label, .sidebar-label button {color: color-mix(in srgb, var(--text) 55%, transparent)}
+.sidebar-label {
+  padding: 0 8px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .03em;
+}
+.sidebar-label button {width: 24px; height: 24px; border-radius: 6px}
+.sidebar-label button:hover {background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--text)}
+
+/* 一级导航 */
+.primary-nav {gap: 3px; margin-bottom: 22px}
+.primary-nav a {
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.primary-nav a svg {width: 17px; height: 17px; flex-shrink: 0}
+.primary-nav a:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.primary-nav a.active {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+/* 角标跟着褪色：一块品牌紫的小方块会把刚压下去的彩色又请回来 */
+.nav-pill {
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+.nav-search-hits {margin-bottom: 12px}
+
+/* 分组行 */
+.task-nav {gap: 3px}
+.task-group-button {
+  gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.task-group-icon {width: 17px; height: 17px}
+.task-group-button:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.task-group-button.active {color: var(--accent); font-weight: 600}
+/* 展开只改箭头方向与字色，不再给整行铺一层浅紫、再描一圈边 */
+.task-group-button.expanded {background: none; border: 0; color: var(--text)}
+.task-group-button.expanded .task-group-icon {color: inherit}
+/* 当前页所在的分组只提一档字重与字色，不铺底色、不染色：
+   分组和子项同时带色块会变成两行并排的选中态，真正的位置反而看不出来。
+   也不再用品牌色 —— 侧栏里唯一有颜色的地方应该是当前页本身，而不是一串紫 */
+.task-group-button.active,
+.task-group-button.active.expanded {background: none; color: var(--text); font-weight: 500}
+.task-group-button.active .task-group-icon,
+.task-group-button.active.expanded .task-group-icon {color: inherit}
+.task-group-arrow {width: 14px; height: 14px; color: color-mix(in srgb, var(--text) 30%, transparent)}
+.task-group-button:hover .task-group-arrow {color: color-mix(in srgb, var(--text) 55%, transparent); transform: none}
+.task-group .task-group-button.expanded .task-group-arrow {color: color-mix(in srgb, var(--text) 40%, transparent)}
+
+/* 子项：去掉圆点，靠缩进与左侧导轨表示层级 */
+.task-group .task-submenu-inner {
+  margin: 4px 0 14px 15px;
+  padding-left: 10px;
+  gap: 2px;
+  border-left-color: color-mix(in srgb, var(--text) 12%, transparent);
+}
+.task-submenu-item {
+  gap: 0;
+  min-height: 32px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--text) 64%, transparent);
+  transition: background-color .12s ease, color .12s ease;
+}
+.task-submenu-item:hover {background: color-mix(in srgb, var(--text) 5%, transparent); color: var(--text)}
+.task-submenu-item.active {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+  font-weight: 600;
+}
+.task-submenu-dot {display: none}
+.topbar:where(.modern-shell *) {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
+.right-rail:where(.modern-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
+.breadcrumb {font-size: 13px}
+/* 上内边距归零：内容区顶部那条「主页 / 实例」行已与下方留出距离，再加 24px 会在
+   「主页文字底到容器顶边框」之间多出一段空隙 */
+main:where(.modern-shell .main-shell > main) {padding: 0 28px 24px}
+main:where(.modern-shell .main-shell > main):focus {outline: none}
+.page-title h1 {font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.6px; overflow-wrap: anywhere}
+.title-actions {position: relative; gap: 8px; padding: 4px}
+.panel-heading h2 {font-size: 15px}
+.panel, .resource-card, .instance-card {border-radius: var(--theme-radius-panel)}
+
+/* MD3 按钮规范：高度 40px，全胶囊圆角 20px，文字 14px Medium，标准状态层 */
+.button {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: .1px;
+  height: 40px;
+  min-height: 40px;
+  border-radius: var(--theme-radius-button, 20px);
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  transition: background-color .2s cubic-bezier(.2, 0, 0, 1), box-shadow .2s cubic-bezier(.2, 0, 0, 1), border-color .2s cubic-bezier(.2, 0, 0, 1), color .2s cubic-bezier(.2, 0, 0, 1);
+}
+.button:has(> svg) {padding: 0 16px}
+.button.primary {
+  background: var(--theme-primary-bg);
+  color: var(--theme-on-accent);
+  box-shadow: var(--theme-shadow-panel);
+}
+.button.primary:hover:not(:disabled) {
+  transform: none;
+  background: var(--theme-primary-hover);
+  box-shadow: var(--theme-shadow-hover);
+}
+.button.secondary {
+  /* 按钮是控件族，面取控件区域的 token */
+  background: var(--theme-control-bg);
+  -webkit-backdrop-filter: var(--theme-control-filter);
+  backdrop-filter: var(--theme-control-filter);
+  color: var(--accent);
+  border-color: var(--border);
+  box-shadow: none;
+}
+.button.secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+  border-color: var(--accent);
+}
+.button.subtle:not(.danger) {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  box-shadow: none;
+}
+.button.subtle:not(.danger):hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 20%, var(--accent-soft));
+}
+.button.danger {
+  background: var(--red);
+  color: var(--theme-on-danger);
+  border-color: transparent;
+}
+.button.danger.subtle {
+  background: var(--theme-danger-soft);
+  color: var(--red);
+  border-color: transparent;
+}
+.button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 85%, black);
+}
+.icon-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color .15s, color .15s, transform .12s cubic-bezier(.2, 0, 0, 1);
+}
+.icon-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+/* 侧栏内的图标按钮（含搜索开关）保持中性，不闪强调色 */
+.sidebar-label button.icon-button:hover:not(:disabled),
+.sidebar-label button.icon-button:focus-visible {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  color: var(--text);
+}
+.text-button {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .1px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color .15s, transform .12s cubic-bezier(.2, 0, 0, 1);
+}
+.text-button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.input-icon > input:focus {outline: none}
+button:disabled, input:disabled, textarea:disabled, select:disabled, .select-trigger:disabled {opacity: 1; color: var(--muted)}
+.button:disabled {background: var(--surface-muted); border-color: var(--border); box-shadow: none}
+.input-icon, .count-badge {background: var(--surface-muted)}
+.status {border-radius: 8px; font-weight: 500}
+

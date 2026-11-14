@@ -1,0 +1,23 @@
+/* 配置管理页域 —— B1 自 components.css:403-424 保序拆分，规则文本逐字未改 */
+/* ── 配置管理页（/configs）：页头计数摘要锚定新建/导入按钮；实例卡片走响应式网格 ──
+   卡片沿用 .config-group 面板壳（圆角/贴片由主题变量决定），内部重新分区：
+   头部（名字与徽章同行）、元信息、当前任务、删除确认提示、满宽等分动作条——按钮永不孤儿换行。
+   卡片级属性用 .config-group.config-card 双类抬高优先级，避免被后加载的 legacy 层 .config-group 盖掉 */
+.config-head {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px}
+.config-head-summary {font-size: 13px; color: var(--muted)}
+.config-head > :last-child {margin-left: auto}
+.config-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: var(--config-card-gap, 12px)}
+.config-group.config-card {display: flex; flex-direction: column; padding: 16px 18px 14px; gap: 10px; margin-bottom: 0}
+.config-card-head {display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0}
+.config-card-head h2 {font-size: 16px; font-weight: 600; color: var(--text); margin: 0; overflow-wrap: anywhere}
+.config-card-meta {display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted)}
+.config-card-server {display: inline-flex; align-items: center; gap: 6px}
+.config-card-serial {font-variant-numeric: tabular-nums; overflow-wrap: anywhere}
+.config-card-task {display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); background: var(--accent-soft); border-radius: 6px; padding: 5px 9px; align-self: flex-start}
+.config-card-hint {font-size: 12px; color: var(--red); margin: 0; line-height: 1.6}
+.config-card-foot {display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto}
+.config-card-foot > .button {flex: 1 1 92px; min-width: 0; padding: 0 8px}
+.config-empty {display: flex; flex-direction: column; align-items: center; gap: 6px}
+.config-empty-actions {justify-content: center}
+@media (max-width: 950px) {.config-grid {grid-template-columns: 1fr}}
+.config-groups {min-width: 0}

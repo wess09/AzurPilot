@@ -39,6 +39,11 @@ import { REGIONS } from '../app/themeKnobs'
 import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 
+/*
+ * 样式索引（entry 静态树成员：经 App.tsx:20 静态链引入，L3 只对 lazy chunk 组件搬迁，故不 colocate）。
+ * - styles/mock-preview.css  inspector-* 段：inspector-panel-inner / inspector-header / inspector-title / inspector-body / inspector-footer / inspector-expand-button（与 MockInstancePreview 共用同一域文件）
+ */
+
 /**
  * 全局材质检视器：把示例弹窗与菜单叠在真实页面上，直接调当前主题家族（THEME_FAMILY）的区域旋钮，写入即生效。
  * 壁纸未开启时材质效果无从观察，因此面板顶部先给出一键开启默认壁纸的入口。

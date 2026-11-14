@@ -1,0 +1,179 @@
+/* FilterEditor 组件私有样式：CodeMirror 过滤器编辑器与语法高亮。
+   自 styles/forms.css 整块搬迁（原 233-408 行），选择器逐字未改；组件经 FieldInput lazy 引入。 */
+
+/* 过滤器语法高亮编辑器（CodeMirror 6） */
+.filter-editor {
+  position: relative;
+  width: 100%;
+}
+.filter-editor .cm-editor {
+  border: 1px solid var(--sc-input);
+  border-radius: calc(var(--sc-radius) - 2px);
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  min-height: 4rem;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  transition: color .15s, box-shadow .15s;
+  outline: none;
+}
+.filter-editor .cm-editor.cm-focused {
+  border-color: var(--sc-ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--sc-ring) 50%, transparent);
+}
+.filter-editor .cm-scroller {
+  font-family: inherit;
+  line-height: inherit;
+  overflow-x: hidden;
+}
+.filter-editor .cm-content {
+  padding: .5rem .75rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.filter-editor .cm-line {
+  padding: 0;
+}
+.filter-editor .cm-cursor {
+  border-left-color: var(--text);
+}
+.filter-editor.is-disabled .cm-editor {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (min-width: 768px) {
+  .filter-editor .cm-editor {font-size: .875rem; line-height: 1.25rem}
+}
+
+/* 语法高亮 Token —— 核心控制与连接符 */
+.cm-filter-arrow {
+  color: var(--accent);
+}
+.cm-filter-delimiter {
+  color: var(--muted);
+  opacity: 0.55;
+}
+.cm-filter-tier-marker {
+  color: #7c3aed;
+}
+.cm-filter-shortest {
+  color: #b45309;
+}
+.cm-filter-reset {
+  color: #dc2626;
+}
+.cm-filter-preset {
+  color: #d97706;
+}
+
+/* 语法高亮 Token —— 时间与数值 */
+.cm-filter-time {
+  color: #2563eb;
+}
+.cm-filter-number {
+  color: #2563eb;
+}
+
+/* 语法高亮 Token —— 委托系统 (Commission) */
+.cm-filter-comm-urgent {color: #e11d48;}
+.cm-filter-comm-extra {color: #7c3aed;}
+.cm-filter-comm-daily {color: #0284c7}
+.cm-filter-comm-major {color: #d97706;}
+.cm-filter-comm-night {color: #4f46e5}
+
+.cm-filter-genre-gem {color: #e11d48;}
+.cm-filter-genre-cube {color: #0284c7;}
+.cm-filter-genre-oil {color: #b45309}
+.cm-filter-genre-drill {color: #475569}
+.cm-filter-genre-box {color: #ea580c}
+.cm-filter-genre-chip {color: #9333ea}
+.cm-filter-genre-part {color: #0d9488}
+.cm-filter-genre-resource {color: #16a34a}
+.cm-filter-genre-event {color: #f43f5e}
+.cm-filter-genre-book {color: #6366f1}
+.cm-filter-genre-retrofit {color: #ec4899}
+.cm-filter-genre-ship {color: #059669}
+
+/* 语法高亮 Token —— 科研系统 (Research) */
+.cm-filter-series {color: #0284c7;}
+.cm-filter-dr {color: #d97706;}
+.cm-filter-pry {color: #9333ea;}
+.cm-filter-genre-code {color: #0d9488;}
+.cm-filter-ship {color: #059669;}
+
+/* 语法高亮 Token —— 商店与通用物品 */
+.cm-filter-shop-group {color: #6366f1;}
+.cm-filter-shop-sub {color: #0d9488;}
+.cm-filter-tier {color: #ea580c;}
+.cm-filter-fleet {color: #0891b2;}
+.cm-filter-stage {color: #3b82f6;}
+.cm-filter-rarity {color: #8b5cf6;}
+.cm-filter-item {color: var(--text);}
+
+/* 深色模式适配 */
+:root.dark .cm-filter-tier-marker {
+  color: #c084fc;
+}
+:root.dark .cm-filter-shortest {
+  color: #fbbf24;
+}
+:root.dark .cm-filter-reset {
+  color: #f87171;
+}
+:root.dark .cm-filter-time,
+:root.dark .cm-filter-number {
+  color: #60a5fa;
+}
+:root.dark .cm-filter-comm-urgent {
+  color: #fb7185;
+}
+:root.dark .cm-filter-comm-extra {
+  color: #c084fc;
+}
+:root.dark .cm-filter-comm-daily {
+  color: #38bdf8;
+}
+:root.dark .cm-filter-comm-major {
+  color: #fbbf24;
+}
+:root.dark .cm-filter-genre-gem {
+  color: #fb7185;
+}
+:root.dark .cm-filter-genre-cube {
+  color: #38bdf8;
+}
+:root.dark .cm-filter-genre-oil {
+  color: #f59e0b;
+}
+:root.dark .cm-filter-genre-drill {
+  color: #94a3b8;
+}
+:root.dark .cm-filter-genre-box {
+  color: #fb923c;
+}
+:root.dark .cm-filter-genre-chip {
+  color: #c084fc;
+}
+:root.dark .cm-filter-genre-part {
+  color: #2dd4bf;
+}
+:root.dark .cm-filter-series {
+  color: #38bdf8;
+}
+:root.dark .cm-filter-dr {
+  color: #fbbf24;
+}
+:root.dark .cm-filter-pry {
+  color: #c084fc;
+}
+:root.dark .cm-filter-genre-code {
+  color: #2dd4bf;
+}
+:root.dark .cm-filter-ship {
+  color: #34d399;
+}
+:root.dark .cm-filter-tier {
+  color: #fb923c;
+}

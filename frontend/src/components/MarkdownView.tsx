@@ -9,6 +9,7 @@ import hljs from 'highlight.js'
 import DOMPurify, { type Config } from 'dompurify'
 import 'katex/dist/katex.min.css'
 import 'highlight.js/styles/atom-one-dark.css'
+import './MarkdownView.css'
 
 interface MarkdownViewProps {
   content: string

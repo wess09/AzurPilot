@@ -1,0 +1,215 @@
+/* ≥951px 桌面网格 / 拖拽把手 / 统计带 / 任务设置双列（原 legacy.css 577-790） */
+
+@media (min-width: 951px) {
+  /* 顶栏占了第一行，侧栏与右栏从它下方开始各自滚动 */
+  .app-shell:where(.modern-shell).legacy-shell > .topbar:where(.modern-shell *) {position: relative; justify-content: flex-start; gap: 14px}
+  .legacy-topbar-title {position: absolute; left: 50%; transform: translateX(-50%); max-width: min(30rem, 38%); flex: 0 0 auto}
+  .app-shell:where(.modern-shell).legacy-shell > .sidebar:where(.modern-shell *),
+  .app-shell:where(.modern-shell).legacy-shell > .right-rail:where(.modern-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height))}
+  .app-shell:where(.modern-shell).legacy-shell > .sidebar:where(.modern-shell *) {padding-top: 14px}
+  .app-shell:where(.modern-shell).legacy-shell .legacy-sidebar-actions {display: none}
+
+  /* 旧版实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
+     所以左列由各页面自己渲染（LegacyRail），不是外壳的一列 */
+  .instance-page-grid,
+  .instance-page-grid.rail-left {
+    display: grid;
+    /* 用 flex 撑满 main 的剩余高度，不再按「视口 − 顶栏 − 页内行 − 常量」推算：
+       那个常量会随着顶栏与页内行的实际高度漂移，容器底边就跟着上下跳。
+       上面 main 与 .legacy-shell 已逐级撑满，所以不靠百分比高度也不会把整壳顶高 */
+    /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高 */
+    flex: 1 1 0;
+    min-height: 0;
+    grid-template-columns: var(--legacy-rail-width, 280px) minmax(24rem, 1fr);
+    grid-template-areas: "rail main";
+    gap: 14px;
+    align-items: stretch;
+  }
+  .instance-page-grid.rail-right {
+    grid-template-columns: minmax(24rem, 1fr) var(--legacy-rail-width, 280px);
+    grid-template-areas: "main rail";
+  }
+  /* 调度器栏包裹容器与拖拽把手 */
+  .instance-page-rail-wrap {
+    grid-area: rail;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+  }
+  .instance-page-main {
+    grid-area: main;
+  }
+  .instance-page-rail-wrap > .instance-page-rail {
+    flex: 1 1 0;
+    height: 100%;
+  }
+  .legacy-rail-resize-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: -12px;
+    width: 14px;
+    cursor: col-resize;
+    z-index: 25;
+    touch-action: none;
+    user-select: none;
+  }
+  .instance-page-grid.rail-left .legacy-rail-resize-handle,
+  .legacy-rail-resize-handle[data-side="left"] {
+    left: auto;
+    right: -12px;
+  }
+  .instance-page-grid.rail-right .legacy-rail-resize-handle,
+  .legacy-rail-resize-handle[data-side="right"] {
+    left: -12px;
+    right: auto;
+  }
+  .legacy-rail-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 6px;
+    width: 2px;
+    background: transparent;
+    transition: background-color .15s cubic-bezier(.2, 0, 0, 1);
+    pointer-events: none;
+    border-radius: 1px;
+  }
+  .legacy-rail-resize-handle:hover::after,
+  .legacy-rail-resize-handle.is-dragging::after,
+  .legacy-rail-resize-handle:focus-visible::after {
+    background: var(--accent);
+  }
+  .legacy-rail-resize-handle.is-dragging::after {
+    width: 3px;
+    left: 5.5px;
+  }
+  body.is-resizing-rail,
+  body.is-resizing-rail * {
+    cursor: col-resize !important;
+    user-select: none !important;
+  }
+  /* 面板骨架只留滚动与伸缩。底色、描边、滤镜集中在下文「调度器面板（2026-11 改版）」，
+     这里不再声明 —— 那批带 [data-theme][data-material] 的旧值会以更高特异度抢在玻璃规则前面，
+     深色玻璃就永远只是一块实的 #23252a，叠多少层模糊都透不出来 */
+  .instance-page-rail {
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .instance-page-rail .scheduler-widget {
+    padding: 16px 16px 14px;
+    flex-shrink: 0;
+  }
+  .instance-page-rail .legacy-stat-card {
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+  .instance-page-rail .rail-schedule {
+    padding: 14px 14px 12px;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .instance-page-rail .rail-task-list {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* 调度器主操作按钮柔和拟物阴影 */
+  .instance-page-rail .scheduler-toggle {
+    border-radius: var(--theme-radius-button, 20px);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+  }
+  .instance-page-rail .scheduler-toggle:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  .instance-page-rail .scheduler-toggle.danger {
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--red) 30%, transparent);
+  }
+  .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px color-mix(in srgb, var(--red) 40%, transparent);
+  }
+  /* 右栏不滚，滚动交给面板：滚动条只在面板内出现与消失，同列的资源卡片宽度不变 */
+  .instance-page-main {display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden}
+  .instance-page-main .resource-grid {margin-bottom: 0}
+  .instance-page-panel {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
+  /* 搜索框与参数卡同宽，「任务设置和搜索对齐」；下方间距交给 --config-card-gap，与卡片之间保持一致 */
+  .task-config-settings .config-toolbar .input-icon {max-width: none}
+  /* 资源统计在旧版下没有左列，整页一条内容带；和 .instance-page-grid 一样撑满 main 的剩余高度 */
+  .statistics-legacy {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* flex-basis 取 auto：内容比视口高时停在自己的内容高上，交给外层滚动；
+       本类有两处用法，外层滚动容器不同：独立统计页是 main；
+       总览页的日志/统计面板是 .instance-panel-stats（那边 main 是 overflow:hidden） */
+    flex: 1 0 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .statistics-legacy .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
+  /* 分类切换按内容自然宽度排列；宽度上限与溢出滚动见 insights.css 的工具栏段 */
+  .statistics-legacy .statistics-toolbar-row .statistics-category-control {flex: 0 0 auto; width: max-content; max-width: 100%}
+
+  /* 旧版的任务详细设置：参数卡在左、分组导航在右（旧版是 13rem≈208px 的右列）。
+     和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走 */
+  .task-config-legacy {
+    display: grid;
+    flex: 1 1 auto;
+    height: calc(var(--viewport-height) - var(--topbar-height) - 2 * var(--row-pad, 4px) - var(--legacy-page-nav-height, 42px) - 64px);
+    /* 右列宽度取自新版右栏的契约变量，与断点同步收放 */
+    grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width));
+    gap: 22px;
+    align-items: stretch;
+  }
+  /* 高度逐层传到右列：网格行高必须能压住这两层，内层的滚动才拿得到约束 */
+  .task-config-rail-slot {display: flex; flex-direction: column; min-height: 0; overflow: hidden}
+  /* 两个视图的标题行共用同一套字号、图标与间距 */
+  .task-rail-directory .rail-section-heading {margin-bottom: 13px; color: var(--text)}
+/* 调度块的外边距归零，内边距与目录卡片一致 */
+  .task-rail-directory .rail-section-heading > div {gap: 7px; font-size: 12px; font-weight: 650; color: var(--text)}
+/* 右栏里的调度器组件与新版本同层：二级贴片 */
+.scheduler-widget {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
+  /* 目录视图与调度视图同构：外层装饰容器画一级面，内层贴片画二级层，视图切换按钮因此落在同一坐标上 */
+  .task-rail-directory {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding: var(--rail-plate-gap);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--theme-surface-bg);
+    -webkit-backdrop-filter: var(--theme-surface-filter);
+    backdrop-filter: var(--theme-surface-filter);
+  }
+  .task-rail-directory .rail-section-heading {justify-content: space-between}
+  /* 贴片自己就是那张面，目录列表不再叠一层 */
+  .task-rail-directory .group-nav {
+    flex: 1 1 auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  /* 切视图时按方向滑入并淡入 */
+  .task-rail-directory {animation: rail-view-in .26s cubic-bezier(.22, .61, .36, 1)}
+  .task-rail-directory {animation-name: rail-view-in-left}
+  @media (prefers-reduced-motion: reduce) {.task-rail-directory {animation: none}}
+  /* 参数列给宽度上限：宽屏下与输入框等宽的控件会被拉到读不过来的一整行。
+     只限定这一列，不动外壳，所以中列填满视口的行为不受影响 */
+  .task-config-settings {width: 100%; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; max-width: 1108px; margin-inline: auto}
+  .task-config-legacy .group-nav {max-height: 100%}
+  /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px */
+  .task-config-legacy .config-group {scroll-margin-top: 0}
+}

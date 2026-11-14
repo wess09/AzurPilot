@@ -9,6 +9,7 @@ import { useApp } from '../app/context'
 import { Select } from './FormControls'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
+import './BackgroundPreferences.css'
 
 /** 地址行的稳定 id：用数组下标当 key，删一行后 React 会复用错误的输入节点。 */
 type Row = {id: string, value: string}

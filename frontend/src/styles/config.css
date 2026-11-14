@@ -1,0 +1,92 @@
+/* 配置页核心域 —— B1 自 components.css:312-402 保序拆分，规则文本逐字未改 */
+.config-toolbar {display: flex; gap: 16px; align-items: center; margin-bottom: var(--config-card-gap, 19px); font-size: 10px; color: var(--muted)}
+.config-toolbar .input-icon {flex: 1; max-width: 440px}
+.config-toolbar > span {display: flex; align-items: center; gap: 7px}
+.config-toolbar > button {margin-left: auto}
+.tool-log-panel {margin-top: 22px}
+.tool-log-panel .panel-heading {padding-bottom: 13px}
+.simulator-status {color: var(--muted); font-variant-numeric: tabular-nums; margin: 0 24px 16px}
+.simulator-results {display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin: 20px 24px}
+.simulator-results dt {color: var(--muted); font-size: 12px}
+.simulator-results dd {margin: 5px 0 0; font-variant-numeric: tabular-nums}
+.simulator-figure {display: block; width: calc(100% - 48px); height: auto; margin: 20px 24px}
+.group-nav {position: sticky; top: calc(var(--topbar-height, 69px) + 16px); display: flex; flex-direction: column; border-left: 1px solid var(--border); padding-left: 8px; font-size: 11px; max-height: calc(var(--viewport-height) - var(--topbar-height, 69px) - 32px); overflow-y: auto}
+.group-nav a {padding: 10px; color: var(--muted); border-radius: 5px; line-height: 1.7}
+.group-nav a:hover {color: var(--accent); background: var(--accent-soft)}
+/* 设置页的竖向节奏：搜索栏与参数卡用同一个间距，两者互不粘连 */
+.app-shell:where(.modern-shell) {--config-card-gap: 12px}
+/* 参数卡的内容层：与统计页同一套二级贴片——微弱边距取 --theme-plate-margin，
+   圆角 = 面板圆角 − 边距，两层同心 */
+.config-group {position: relative; isolation: isolate; padding: var(--theme-plate-margin, 8px); margin-bottom: var(--config-card-gap, 19px); scroll-margin-top: calc(var(--topbar-height, 69px) + 16px)}
+/* 任务级帮助卡：文案短，两级同尺寸——贴片与一级面重合，不留版心边距 */
+.task-help-panel {position: relative; isolation: isolate; margin-bottom: var(--config-card-gap, 19px)}
+.task-help-panel::before {content: ''; position: absolute; inset: 0; border-radius: var(--theme-radius-panel, 26px); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
+.task-help-panel > * {position: relative}
+.task-help-panel .task-help {font-size: 12px; color: var(--muted); line-height: 1.9; white-space: pre-line; overflow-wrap: anywhere; margin: 0; padding: 14px 20px}
+.config-group::before {content: ''; position: absolute; inset: var(--theme-plate-margin, 8px); border-radius: calc(var(--theme-radius-panel, 26px) - var(--theme-plate-margin, 8px)); background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter)}
+.config-group > * {position: relative}
+/* 分组标题：不再挂彩色竖条；现代设置页的层级靠字号、字重与留白表达 */
+.group-indicator {display: none}
+/* 字段行：紧凑节奏；分割线用极淡中性色（随明暗主题），最后一行不画 */
+.field-row {padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid color-mix(in srgb, var(--text) 6%, transparent)}
+.field-row:last-child {border-bottom: 0}
+.field-label {flex: 1; min-width: 120px}
+.field-label label, .field-label .field-name {font-size: 14px; font-weight: 500; line-height: 1.45}
+.field-label label > span {margin-left: 6px}
+.field-label p {font-size: 12px; color: var(--muted); line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; margin-top: 1px}
+.field-control {width: 260px; flex-shrink: 0; text-align: right}
+.field-control > input, .field-control > select, .field-control > textarea {width: 100%; font-size: 13px}
+.field-control textarea {resize: none; overflow-y: hidden; min-height: 0; line-height: 1.9}
+.field-actions {display: flex; flex-wrap: wrap; justify-content: flex-end; margin-top: 7px}
+/* 控件行内带动作按钮时：整行改成 flex，输入框在前、按钮在后 */
+.field-control:has(> .field-actions) {display: flex; align-items: center; gap: 7px}
+.field-control > .field-actions {margin-top: 0; flex-shrink: 0}
+/* 控件本身就是一排按钮时不再吃 240px 定宽：按钮多时向右排开、放不下才换行 */
+.field-control.field-actions {width: auto; max-width: 62%; display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap}
+/* 保存状态占原按钮那个位子（输入框左侧），脱流所以不挤输入框、也不推按钮；
+   那个位子比文案窄，超出就省略，全文看 title；flex-wrap 要显式关掉，否则图标与文字会折成两行 */
+.field-control:has(> .edit-status) {position: relative}
+/* 错误胶囊：实底 + 描边，滚动限制在胶囊内部，不与底下的标签文字叠印；
+   --edit-status-window = 200(max-width) − 左右 padding 18 − border 2 − 图标 14 − gap 5 = 161px，
+   跑马灯位移按它计算（forms.css 关键帧引用） */
+.field-control > .edit-status {position: absolute; right: 100%; top: 50%; transform: translateY(-50%); order: 0; margin: 0 7px 0 0; max-width: 200px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; padding: 3px 9px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: 8px; z-index: 2; --edit-status-window: 161px}
+/* 纯图标按钮：宽度收成与自身高度相等，不靠固定尺寸 */
+.field-control > .field-actions .icon-only {aspect-ratio: 1; padding: 0; gap: 0}
+/* 按下「立刻运行」时按钮回弹一下；颜色取自各主题的 accent，形状对各主题都成立 */
+@keyframes run-button-press {40% {transform: scale(.88)} 100% {transform: none}}
+.field-control > .field-actions .icon-only:active:not(:disabled) {animation: run-button-press .2s ease-out}
+.panel-note {font-size: 10px; color: var(--muted); padding: 13px 20px}
+.multi-options {display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end}
+.multi-options label {display: flex; gap: 5px; align-items: center; font-size: 11px}
+.fleet-grid {display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px}
+.fleet-column {padding: 18px 22px; border-bottom: 1px solid var(--border)}
+.fleet-column h3 {font-size: 10px; color: var(--muted); font-weight: 500; margin-bottom: 13px}
+.fleet-column > div {display: flex; justify-content: space-between; padding: 9px 0; font-size: 12px}
+.fleet-column small, .fleet-column p {font-size: 10px; color: var(--muted)}
+/* 设置卡片：小号 muted 分组标签 + 紧凑内边距 */
+.config-group .panel-heading {padding: 13px 18px 3px}
+.config-group .panel-heading h2 {font-size: 13px; font-weight: 500; color: var(--muted); letter-spacing: .3px}
+/* 卡片内控件比全站表单矮一档：32px 高，与紧凑行节奏对齐 */
+.config-group input:where(:not([type='checkbox']):not([type='radio']):not([type='range'])),
+.config-group textarea,
+.config-group .select-trigger {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.config-group .field-control {width: 240px}
+/* 行内动作按钮（立刻运行、清空进度）走中性发丝边，不再用强调色底 */
+.config-group .field-actions .button.subtle {
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--text) 13%, transparent);
+  color: var(--text);
+  box-shadow: none;
+}
+.config-group .field-actions .button.subtle:hover:not(:disabled) {background: color-mix(in srgb, var(--text) 5%, transparent)}
+.config-group .field-actions .icon-only {width: 32px; min-height: 32px; aspect-ratio: auto}
+/* 顶部搜索框跟设置行同高 */
+.config-toolbar {margin-bottom: var(--config-card-gap, 12px)}
+.config-toolbar .input-icon {min-height: 34px}
+.config-toolbar .input-icon > input {font-size: 13px}
+.config-group .small-label, .group-nav {font-size: 12px}
+

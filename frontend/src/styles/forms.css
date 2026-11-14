@@ -82,23 +82,7 @@ input[type='radio'] {accent-color: var(--theme-primary-bg); width: 18px; height:
 .field-row-multiline .edit-status {justify-content: flex-start}
 .field-row {gap: 24px}
 .field-label p {line-height: 1.65}
-.background-control {display: flex; flex-direction: column; gap: 10px; min-width: 0; text-align: left}
-.background-url-form {display: flex; flex-direction: column; gap: 8px; min-width: 0}
-.background-url-form > input {width: 100%}
-.background-url-actions {display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center}
-.background-url-actions > [data-slot='button'] {white-space: nowrap}
-/* 主按钮整宽：与上面的地址列表、下面的直链框同宽，整块读起来是一列而不是散件 */
-.background-apply {width: 100%}
-.background-upload {position: relative; display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 76px; padding: 14px; border: 1px dashed var(--form-edge); border-radius: calc(var(--theme-radius-control) + 2px); background: color-mix(in srgb, var(--theme-input-bg) 88%, var(--theme-accent-soft)); cursor: pointer; overflow-wrap: anywhere; transition: border-color .16s ease, background-color .16s ease, box-shadow .16s ease}
-.background-upload:hover {border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-input-bg) 76%, var(--theme-accent-soft))}
-.background-upload:focus-within {border-color: var(--theme-focus); box-shadow: 0 0 0 3px var(--theme-focus-ring)}
-.background-upload-input {position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0}
-.background-upload-icon {display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; color: var(--theme-accent); background: var(--theme-accent-soft)}
-.background-upload-icon svg {stroke-width: 1.8}
-.background-upload-copy {display: flex; flex-direction: column; gap: 3px; min-width: 0}
-.background-upload-copy strong {color: var(--theme-text); font-size: 13px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere}
-.background-upload-copy small {color: var(--theme-muted); font-size: 11px; line-height: 1.55}
-.background-error {margin: 0; color: var(--theme-danger); font-size: 12px; line-height: 1.5}
+/* .background-*（背景偏好表单：控件/上传/错误提示）已 colocate 到 src/components/BackgroundPreferences.css */
 .statistics-controls select, .statistics-controls input {min-height: var(--form-height)}
 .statistics-table th button {display: inline-flex; align-items: center; gap: 6px; min-height: 32px}
 
@@ -120,7 +104,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   :root {--form-height: 44px}
   .select-trigger {font-size: 16px}
   .monitor-segmented button {min-height: 44px}
-  .background-url-actions {grid-template-columns: minmax(0, 1fr) auto}
+  /* .background-url-actions 覆写已随基规则迁往 src/components/BackgroundPreferences.css */
 }
 @media (forced-colors: active) {
   input, select, textarea, .button {border-color: ButtonText}
@@ -129,8 +113,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   .toggle.on::before {background: Highlight}
   .toggle > span {background: ButtonText}
   input[type='range'] {appearance: auto}
-  .background-upload {border-style: solid}
-  .background-upload-icon {border: 1px solid ButtonText}
+  /* .background-upload / .background-upload-icon 覆写已随基规则迁往 src/components/BackgroundPreferences.css */
 }
 
 /* 下拉触发器 */
@@ -194,32 +177,7 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .knob-reset {white-space: nowrap}
 
 
-/* URL 模式的行列表：一行一条 API，行间虚线分隔，填满最后一行会自动长出下一行 */
-/* 地址可以很多：给列表高度上限并滚动，避免十几行白色大块把整页撑满 */
-/* 地址行：每行就是标准输入框 + 删除按钮，不再套公共外框、不再剥输入框自己的边框；
-   留 3px 内边距，聚焦光圈不会被滚动容器裁掉 */
-.background-url-rows {display: flex; flex-direction: column; gap: 8px; max-height: 264px; overflow-y: auto; padding: 3px}
-.background-url-row {display: flex; align-items: center; gap: 6px}
-.background-url-row > input {flex: 1 1 auto; min-width: 0}
-.background-url-hint {margin-top: 6px; font-size: 12px; color: var(--theme-muted); line-height: 1.7}
-/* 直链行：显示解析出的真实图片地址，可打开、可存入图库 */
-.background-direct {display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed color-mix(in srgb, var(--border) 75%, transparent)}
-.background-direct label {font-size: 12px; color: var(--theme-muted)}
-.background-direct input {width: 100%}
-/* 等宽两列：块宽只有 260px 上下，三个按钮放不下会折行，所以只留「打开 / 存入图库」两个 */
-.background-direct-actions {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px}
-.background-direct-actions a[aria-disabled='true'] {opacity: .45; pointer-events: none}
-/* 本地图库：一次可传多张，列表里随机播一张 */
-.background-gallery {display: flex; flex-direction: column; gap: 10px}
-.background-gallery-head {display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--theme-muted)}
-.background-gallery-list {display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow-y: auto; margin: 0; padding: 0; list-style: none}
-.background-gallery-list li {display: flex; align-items: center; gap: 8px; padding: 4px 6px; border: 1px solid transparent; border-radius: var(--theme-radius-control); transition: border-color .16s ease, background .16s ease}
-.background-gallery-list li:hover {background: color-mix(in srgb, var(--theme-accent-soft) 60%, transparent)}
-.background-gallery-list li.active {border-color: var(--theme-accent); background: color-mix(in srgb, var(--theme-accent-soft) 85%, transparent)}
-.background-gallery-list img {width: 44px; height: 30px; object-fit: cover; border-radius: var(--theme-radius-control); border: 1px solid var(--border)}
-.background-gallery-icon {width: 44px; text-align: center; font-size: 11px; color: var(--muted)}
-.background-gallery-name {flex: 1 1 auto; min-width: 0; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
-.background-gallery-head .button {font-size: 12px}
+/* .background-url-* / .background-direct* / .background-gallery*（URL 行列表/直链/图库）已 colocate 到 src/components/BackgroundPreferences.css */
 
 /* 材质二级菜单：轨道给可见底、已填充走强调色；标签与数值提对比度与字号 */
 .material-detail-body input[type='range'] {background: linear-gradient(to right, var(--theme-accent) 0 var(--knob-fill, 0%), color-mix(in srgb, var(--theme-text) 24%, transparent) var(--knob-fill, 0%) 100%); background-size: 100% 6px; background-position: 0 center; background-repeat: no-repeat; border-radius: 999px}
@@ -230,181 +188,4 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .material-detail-modal .field-label label {color: var(--theme-text); font-size: 13px}
 .material-detail-modal .knob-value {color: var(--theme-text); font-size: 13px}
 
-/* 过滤器语法高亮编辑器（CodeMirror 6） */
-.filter-editor {
-  position: relative;
-  width: 100%;
-}
-.filter-editor .cm-editor {
-  border: 1px solid var(--sc-input);
-  border-radius: calc(var(--sc-radius) - 2px);
-  background: transparent;
-  color: inherit;
-  font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.5;
-  min-height: 4rem;
-  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  transition: color .15s, box-shadow .15s;
-  outline: none;
-}
-.filter-editor .cm-editor.cm-focused {
-  border-color: var(--sc-ring);
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--sc-ring) 50%, transparent);
-}
-.filter-editor .cm-scroller {
-  font-family: inherit;
-  line-height: inherit;
-  overflow-x: hidden;
-}
-.filter-editor .cm-content {
-  padding: .5rem .75rem;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-.filter-editor .cm-line {
-  padding: 0;
-}
-.filter-editor .cm-cursor {
-  border-left-color: var(--text);
-}
-.filter-editor.is-disabled .cm-editor {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-@media (min-width: 768px) {
-  .filter-editor .cm-editor {font-size: .875rem; line-height: 1.25rem}
-}
-
-/* 语法高亮 Token —— 核心控制与连接符 */
-.cm-filter-arrow {
-  color: var(--accent);
-}
-.cm-filter-delimiter {
-  color: var(--muted);
-  opacity: 0.55;
-}
-.cm-filter-tier-marker {
-  color: #7c3aed;
-}
-.cm-filter-shortest {
-  color: #b45309;
-}
-.cm-filter-reset {
-  color: #dc2626;
-}
-.cm-filter-preset {
-  color: #d97706;
-}
-
-/* 语法高亮 Token —— 时间与数值 */
-.cm-filter-time {
-  color: #2563eb;
-}
-.cm-filter-number {
-  color: #2563eb;
-}
-
-/* 语法高亮 Token —— 委托系统 (Commission) */
-.cm-filter-comm-urgent {color: #e11d48;}
-.cm-filter-comm-extra {color: #7c3aed;}
-.cm-filter-comm-daily {color: #0284c7}
-.cm-filter-comm-major {color: #d97706;}
-.cm-filter-comm-night {color: #4f46e5}
-
-.cm-filter-genre-gem {color: #e11d48;}
-.cm-filter-genre-cube {color: #0284c7;}
-.cm-filter-genre-oil {color: #b45309}
-.cm-filter-genre-drill {color: #475569}
-.cm-filter-genre-box {color: #ea580c}
-.cm-filter-genre-chip {color: #9333ea}
-.cm-filter-genre-part {color: #0d9488}
-.cm-filter-genre-resource {color: #16a34a}
-.cm-filter-genre-event {color: #f43f5e}
-.cm-filter-genre-book {color: #6366f1}
-.cm-filter-genre-retrofit {color: #ec4899}
-.cm-filter-genre-ship {color: #059669}
-
-/* 语法高亮 Token —— 科研系统 (Research) */
-.cm-filter-series {color: #0284c7;}
-.cm-filter-dr {color: #d97706;}
-.cm-filter-pry {color: #9333ea;}
-.cm-filter-genre-code {color: #0d9488;}
-.cm-filter-ship {color: #059669;}
-
-/* 语法高亮 Token —— 商店与通用物品 */
-.cm-filter-shop-group {color: #6366f1;}
-.cm-filter-shop-sub {color: #0d9488;}
-.cm-filter-tier {color: #ea580c;}
-.cm-filter-fleet {color: #0891b2;}
-.cm-filter-stage {color: #3b82f6;}
-.cm-filter-rarity {color: #8b5cf6;}
-.cm-filter-item {color: var(--text);}
-
-/* 深色模式适配 */
-:root.dark .cm-filter-tier-marker {
-  color: #c084fc;
-}
-:root.dark .cm-filter-shortest {
-  color: #fbbf24;
-}
-:root.dark .cm-filter-reset {
-  color: #f87171;
-}
-:root.dark .cm-filter-time,
-:root.dark .cm-filter-number {
-  color: #60a5fa;
-}
-:root.dark .cm-filter-comm-urgent {
-  color: #fb7185;
-}
-:root.dark .cm-filter-comm-extra {
-  color: #c084fc;
-}
-:root.dark .cm-filter-comm-daily {
-  color: #38bdf8;
-}
-:root.dark .cm-filter-comm-major {
-  color: #fbbf24;
-}
-:root.dark .cm-filter-genre-gem {
-  color: #fb7185;
-}
-:root.dark .cm-filter-genre-cube {
-  color: #38bdf8;
-}
-:root.dark .cm-filter-genre-oil {
-  color: #f59e0b;
-}
-:root.dark .cm-filter-genre-drill {
-  color: #94a3b8;
-}
-:root.dark .cm-filter-genre-box {
-  color: #fb923c;
-}
-:root.dark .cm-filter-genre-chip {
-  color: #c084fc;
-}
-:root.dark .cm-filter-genre-part {
-  color: #2dd4bf;
-}
-:root.dark .cm-filter-series {
-  color: #38bdf8;
-}
-:root.dark .cm-filter-dr {
-  color: #fbbf24;
-}
-:root.dark .cm-filter-pry {
-  color: #c084fc;
-}
-:root.dark .cm-filter-genre-code {
-  color: #2dd4bf;
-}
-:root.dark .cm-filter-ship {
-  color: #34d399;
-}
-:root.dark .cm-filter-tier {
-  color: #fb923c;
-}
-
-
+/* .filter-editor / .cm-filter-*（CodeMirror 过滤器编辑器与语法高亮，含 :root.dark 深色）已 colocate 到 src/components/FilterEditor.css */
