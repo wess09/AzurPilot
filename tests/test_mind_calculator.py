@@ -432,7 +432,7 @@ class ServiceTests(unittest.TestCase):
                     scanner.config, scanner.device = config, Mock()
                     scanner.ui_ensure = scanner.dock_reset = scanner.dock_sort_method_dsc_set = Mock()
                     scanner._close_search = Mock()
-                    scanner.appear = lambda button: button is DOCK_SEARCH_CLOSED
+                    scanner.appear = lambda button, **kwargs: button is DOCK_SEARCH_CLOSED
                     scanner._prune_scan_evidence = Mock()
                     scrollbar.appear.return_value = scrollbar.at_top.return_value = True
                     def collect(*args):
