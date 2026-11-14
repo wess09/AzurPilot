@@ -125,7 +125,8 @@ class TestStatisticsTransactions(unittest.TestCase):
         if pause_target == "_get_stats_in_connection":
             hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot",
                           "_record_coins_snapshot", "_record_siren_device", "_increment_meow_battle",
-                          "_append_meow_sample", "_increment_meow_counter_field"))
+                          "_append_meow_sample", "_increment_meow_counter_field", "_record_akashi_ap_entry",
+                          "_set_last_ap_notification"))
         paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
@@ -225,6 +226,7 @@ class TestStatisticsTransactions(unittest.TestCase):
             "add_yellow_coin_snapshot": 64, "add_ap_snapshot": 16,
             "add_coins_snapshot": 128,
             "add_siren_research_device": 32768 | 65536,
+            "add_akashi_ap_entry": 4 | 8, "set_last_ap_notification": 32,
             "add_meow_round_time": 4096 | 16384, "add_meow_battle_time": 8192 | 16384,
             "increment_meow_akashi_encounter": 16384, "add_meow_akashi_ap": 16384,
         }
@@ -254,6 +256,16 @@ class TestStatisticsTransactions(unittest.TestCase):
                                                  new[:11] + new[12:13] + new[14:])
                                 self.assertEqual(new[11], old[11] | bit)
                                 self.assertEqual(new[13], old[13] | 1)
+                            elif name == "add_akashi_ap_entry":
+                                # 标量列累加：允许 akashi_ap 计数与家族位变化。
+                                self.assertEqual(old[:4] + old[5:11] + old[12:], new[:4] + new[5:11] + new[12:])
+                                self.assertEqual(new[4], (old[4] or 0) + 20)
+                                self.assertEqual(new[11], old[11] | bit)
+                            elif name == "set_last_ap_notification":
+                                # 通知列原样覆盖：ts/value/mask 与家族位允许变化。
+                                self.assertEqual(old[:9] + old[13:], new[:9] + new[13:])
+                                self.assertEqual(new[11], old[11] | 32)
+                                self.assertEqual(new[12], 3)
                             else:
                                 self.assertEqual(old[:11] + old[12:], new[:11] + new[12:])
                                 self.assertEqual(new[11], old[11] | bit)
@@ -417,6 +429,14 @@ class TestLastApLookups(unittest.TestCase):
         self.assertEqual(last["ap"], 90)
         self.assertEqual(last["ap_total"], 1090)
         self.assertEqual(last["yellow_coin"], 0)
+
+    def test_akashi_ap_entry_appends_and_accumulates(self):
+        self.db.add_akashi_ap_entry("test", 20, 10, 2, "cl1")
+        self.db.add_akashi_ap_entry("test", 30, 15, 3, "cl1")
+        stats = self.db.get_stats("test", datetime.now().strftime("%Y-%m"))
+        self.assertEqual(stats["akashi_ap"], 50)
+        self.assertEqual([(item["amount"], item["base"], item["count"], item["source"])
+                          for item in stats["akashi_ap_entries"]], [(20, 10, 2, "cl1"), (30, 15, 3, "cl1")])
 
 
 class TestSirenDeviceRecords(unittest.TestCase):

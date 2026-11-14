@@ -637,23 +637,33 @@ class Cl1Database:
     ):
         """记录明石行动力购买条目"""
         month = datetime.now().strftime("%Y-%m")
+        entry = {
+            "ts": datetime.now().isoformat(),
+            "amount": self._coerce_int(amount),
+            "base": self._coerce_int(base),
+            "count": self._coerce_int(count),
+            "source": source,
+        }
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            self._record_akashi_ap_entry(conn, instance, month, entry)
 
-            entry = {
-                "ts": datetime.now().isoformat(),
-                "amount": amount,
-                "base": base,
-                "count": count,
-                "source": source,
-            }
+    def _record_akashi_ap_entry(self, conn, instance: str, month: str, entry: Dict[str, Any]):
+        """明石行动力购买 O(1) 增量写：标量列累加与条目单行追加。
 
-            entries = data.get("akashi_ap_entries", [])
-            entries.append(entry)
-            data["akashi_ap_entries"] = entries
-
-            data["akashi_ap"] = data.get("akashi_ap", 0) + amount
-            self._save_stats_in_connection(conn, instance, month, data)
+        此前每次购买都整月读改写并重插全部购买条目，代价随月内条目线性增长。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, (1 << 2) | (1 << 3))
+        conn.execute(
+            'UPDATE cl1_months SET akashi_ap=COALESCE(akashi_ap,0)+?, field_mask=field_mask|? '
+            'WHERE instance=? AND month=?', (entry["amount"], 1 << 2, instance, month))
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM akashi_ap_purchases WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'akashi_ap_purchases', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['akashi_ap_entries'][1], {'instance': instance, 'month': month}, entry=True)
 
     def add_ap_snapshot(self, instance: str, ap_current: int | None, source: str = "cl1", distance: int = None,
                         ap_total: int = None, *, observed_at: datetime = None):
@@ -862,12 +872,19 @@ class Cl1Database:
         """记录最近一次成功推送时的行动力值。"""
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["last_ap_notification"] = {
-                "ts": datetime.now().isoformat(),
-                "ap": self._coerce_int(ap_current),
-            }
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._set_last_ap_notification(conn, instance, month, datetime.now().isoformat(),
+                                           self._coerce_int(ap_current))
+
+    def _set_last_ap_notification(self, conn, instance: str, month: str, ts: str, value: int):
+        """推送记录 O(1) 增量写：通知列原样覆盖，不触碰月份行其它字段。"""
+        register_instance(conn, instance)
+        # UPSERT 同时保留月份行写入拒绝的触发器契约。
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, last_ap_notification_ts, last_ap_notification_value, '
+            'last_ap_notification_mask, field_mask) VALUES(?, ?, ?, ?, 3, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET last_ap_notification_ts=excluded.last_ap_notification_ts, '
+            'last_ap_notification_value=excluded.last_ap_notification_value, last_ap_notification_mask=3, '
+            'field_mask=field_mask|?', (instance, month, ts, value, 1 << 5, 1 << 5))
 
     def add_yellow_coin_snapshot(
         self, instance: str, yellow_coin: int, source: str = "dashboard", *, observed_at: datetime = None
