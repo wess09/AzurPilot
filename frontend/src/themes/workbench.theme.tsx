@@ -1,7 +1,7 @@
 /**
  * @fileoverview 工作台主题的内置实现：壳层布局、主导航与总览页的组装。
  */
-import { Suspense } from 'react'
+import { Suspense, useSyncExternalStore } from 'react'
 import { Link, NavLink, matchPath, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, WifiOff } from 'lucide-react'
 import { useApp, useConnection } from '../app/context'
@@ -12,6 +12,9 @@ import { TaskQueue } from '../components/TaskQueue'
 import { TaskSwitcher } from '../components/TaskSwitcher'
 import { Button } from '../components/ui/button'
 import { SchedulerWidget } from '../components/SchedulerWidget'
+import { ModernRailResizeHandle } from '../components/ModernRailResizeHandle'
+import { getLayout, subscribeLayout } from '../app/layout'
+import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 import { usePlugins } from '../plugins/context'
 import { PluginLinks, PluginPanels } from '../plugins/views'
 import type { OverviewBlock } from '../plugins/types'
@@ -139,9 +142,15 @@ function ComposedOverview({instance, data, onData, selectedResources, onResource
   const {ui} = useApp()
   const SchedulerPanel = useThemeComponent('SchedulerPanel', SchedulerWidget)
   const order = usePlugins().theme?.manifest.theme?.overview ?? []
+  const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
+  const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
   const blocks: Record<OverviewBlock, React.ReactNode> = {
     resources: <ResourceCards resources={data.resources} selected={selectedResources}/>,
-    scheduler: <SchedulerPanel instance={instance} data={data} onData={onData}/>,
+    // 包一层与默认总览同名的栏容器：把手靠它测量当前列宽，拖拽起点不跳变。
+    scheduler: <div className="instance-page-rail-wrap">
+      <SchedulerPanel instance={instance} data={data} onData={onData}/>
+      <ModernRailResizeHandle side={schedulerPosition}/>
+    </div>,
     queue: <section className="panel p-4" aria-label={ui('scheduler.plan')}>
       <h2 className="m-0 mb-3 text-sm font-semibold">{ui('scheduler.plan')}</h2>
       <TaskQueue instance={instance} data={data} onData={onData}/>
@@ -149,7 +158,9 @@ function ComposedOverview({instance, data, onData, selectedResources, onResource
     logs: <div className="apu-layout-wide apu-layout-logs"><MonitorPanel key={instance} instance={instance}/></div>,
     panels: <PluginPanels instance={instance}/>,
   }
-  return <div className="workbench-overview apu-layout" data-apu-component="overview">
+  return <div className="workbench-overview apu-layout" data-apu-component="overview"
+    data-scheduler-position={schedulerPosition}
+    style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as React.CSSProperties) : undefined}>
     <div className="flex min-w-0 items-center justify-between gap-3">
       <h1 className="m-0 min-w-0 break-words text-xl font-semibold">{instance}</h1>
       <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange}/>

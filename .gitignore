@@ -86,6 +86,7 @@ node_modules/
 frontend/test-results/
 frontend/playwright-report/
 frontend/*.tsbuildinfo
+/frontend/plugin-src
 
 .github/scripts/node_modules/
 .github/scripts/package-lock.json

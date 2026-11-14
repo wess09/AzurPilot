@@ -10,6 +10,7 @@
 uv run python -m dev_tools.pack_apu frontend/plugin-sdk/examples/workbench dist/workbench.apu
 uv run python -m dev_tools.pack_apu frontend/plugin-sdk/examples/task-favorites dist/task-favorites.apu
 uv run python -m dev_tools.pack_apu frontend/plugin-sdk/examples/compact-scheduler dist/compact-scheduler.apu
+uv run python -m dev_tools.pack_apu frontend/plugin-src/legacy-scheduler/dist dist/legacy-scheduler.apu
 ```
 
 `.apu` 是 ZIP，根目录须有 `manifest.json`。可以用任意构建工具开发插件，导入的是可直接运行的 HTML、JS、CSS、图片和字体。使用 Vite 时设 `base: './'`，将 npm 依赖打入插件自己的构建产物，再把清单放进构建输出目录。包内路径使用英文字母、数字、点、下划线、连字符和斜杠。清单声明的入口和资源必须存在，导入失败会保留已安装版本。包体上限 20 MiB，解压后上限 80 MiB、512 个文件，清单上限 64 KiB。
