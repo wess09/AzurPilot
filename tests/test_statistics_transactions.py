@@ -482,6 +482,57 @@ class TestSirenDeviceRecords(unittest.TestCase):
         self.assertEqual(self.db.get_stats("test", MONTH)["siren_research_devices"], {"cl1": 1})
 
 
+class TestResearchDropRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+
+    def test_appends_dedups_and_keeps_compat_extras(self):
+        entry = self.db.add_research_drop("test", "D-737-MI", 6, {"Cube": 2}, imgid="a.png",
+                                          source_items=[{"item": "Cube", "amount": 2, "tag": ""}])
+        self.assertEqual(entry["items"], {"Cube": 2})
+        self.assertIsNone(self.db.add_research_drop("test", "D-737-MI", 6, {"Cube": 2}, imgid="a.png"))
+        self.db.add_research_drop("test", "Q-302-MI", 6, {"Gem": 1}, imgid="b.png")
+        entries = self.db.get_stats("test", MONTH)["research_drop_entries"]
+        self.assertEqual([item["imgid"] for item in entries], ["a.png", "b.png"])
+        self.assertEqual(entries[0]["source_items"], [{"item": "Cube", "amount": 2, "tag": ""}])
+        self.assertEqual(entries[0]["items"], {"Cube": 2})
+        self.assertEqual(entries[1]["items"], {"Gem": 1})
+
+    def test_drops_beyond_monthly_limit_are_trimmed_with_children_and_values(self):
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            set_id = conn.execute("INSERT INTO typed_value_sets(instance, month) VALUES('test', ?)",
+                                  (MONTH,)).lastrowid
+            conn.execute("INSERT INTO typed_value_nodes VALUES(?, 1, NULL, NULL, 0, 'null', NULL, NULL, NULL)",
+                         (set_id,))
+            conn.executemany(
+                "INSERT INTO research_drops(instance, month, ordinal, ts, completed_at, imgid, project, series, "
+                "entry_kind, field_mask) VALUES('test', ?, ?, ?, ?, ?, 'D', 6, 'record', 31)",
+                [(MONTH, ordinal, NOW.isoformat(), NOW.isoformat(), f"{ordinal:04d}.png") for ordinal in range(5000)])
+            conn.execute("UPDATE research_drops SET compat_value_set_id=? "
+                         "WHERE instance='test' AND month=? AND ordinal=0", (set_id, MONTH))
+        self.db.add_research_drop("test", "Q-302-MI", 6, {"Gem": 1}, imgid="new.png")
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM research_drops WHERE instance='test' AND month=?",
+                (MONTH,)).fetchone()
+            orphans, children = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM typed_value_sets WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM research_drop_items WHERE instance='test' AND month=?)",
+                (MONTH, MONTH)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual((orphans, children), (0, 1))
+        entries = self.db.get_stats("test", MONTH)["research_drop_entries"]
+        self.assertEqual(entries[-1]["imgid"], "new.png")
+
+
 class Cl1SchemaRepairTests(unittest.TestCase):
     """外部工具改坏 cl1_data 唯一键：构造 Cl1Database 即按原结构重建，数据保留、写入恢复。"""
 

@@ -26,6 +26,8 @@ COINS_CLEANUP_VERSION = 1
 YELLOW_COIN_EXACT_HOURS = 6
 # 塞壬研究装置事件条的月度上限；更早的按写入顺序截断。
 SIREN_DEVICE_ENTRY_LIMIT = 5000
+# 科研掉落条目的月度上限；更早的按写入顺序截断。
+RESEARCH_DROP_ENTRY_LIMIT = 5000
 
 
 def _field_bit(fields, name):
@@ -1898,17 +1900,43 @@ class Cl1Database:
             entry['source_items'] = source_items
             entry['item_entries'] = map_items(source_items, [])
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            entries = data.get("research_drop_entries", [])
-            if entry["imgid"] and any(
-                existing.get("imgid") == entry["imgid"] for existing in entries[-50:]
-            ):
+            if not self._record_research_drop(conn, instance, month, entry):
                 return None
-            entries.append(entry)
-            # 与委托收益保持一致：按月保留最近 5000 条
-            data["research_drop_entries"] = entries[-5000:]
-            self._save_stats_in_connection(conn, instance, month, data)
         return entry
+
+    def _record_research_drop(self, conn, instance: str, month: str, entry: Dict[str, Any]) -> bool:
+        """科研掉落 O(1) 增量写：imgid 查尾去重、单行追加、超限截断。
+
+        此前每次领奖都整月读改写并重插全部掉落条目与物品子表；imgid 去重保持
+        与原路径一致的最近 50 条范围，被截条目的物品子表与兼容值集合一并清理。
+        """
+        from module.persistence.snapshots import FAMILIES, save_children, save_row
+        register_instance(conn, instance)
+        if entry["imgid"] and conn.execute('''
+            SELECT 1 FROM (
+                SELECT imgid FROM research_drops WHERE instance=? AND month=? ORDER BY ordinal DESC LIMIT 50
+            ) WHERE imgid=?''', (instance, month, entry["imgid"])).fetchone() is not None:
+            return False
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 18)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM research_drops WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        row_id = save_row(conn, 'research_drops', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                          entry, FAMILIES['research_drop_entries'][1],
+                          {'instance': instance, 'month': month}, entry=True)
+        save_children(conn, 'research_drops', row_id, entry, {'instance': instance, 'month': month})
+        if ordinal + 1 > RESEARCH_DROP_ENTRY_LIMIT:
+            cutoff = ordinal + 1 - RESEARCH_DROP_ENTRY_LIMIT
+            trimmed = conn.execute(
+                'SELECT id, compat_value_set_id FROM research_drops WHERE instance=? AND month=? AND ordinal<?',
+                (instance, month, cutoff)).fetchall()
+            conn.executemany('DELETE FROM research_drop_items WHERE drop_id=?', [(row[0],) for row in trimmed])
+            conn.execute('DELETE FROM research_drops WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, cutoff))
+            conn.executemany('DELETE FROM typed_value_sets WHERE id=? AND instance=? AND month=?',
+                             [(row[1], instance, month) for row in trimmed if row[1] is not None])
+        return True
 
     def apply_template_mappings(self, mappings, *, instance=None):
         """Repair history atomically from immutable source IDs using storage abstractions."""
