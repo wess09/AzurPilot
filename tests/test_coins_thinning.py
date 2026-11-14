@@ -83,3 +83,17 @@ class IncrementalYellowCoinThinningTests(unittest.TestCase):
         actual = db.get_stats('t', month)['yellow_coin_snapshots']
         by_ts = lambda item: item['ts']
         self.assertEqual(sorted(actual, key=by_ts), sorted(expected, key=by_ts))
+
+    def test_incremental_meow_samples_keep_newest_100(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        db = Cl1Database(Path(directory.name) / 'config' / 'azurpilot.db')
+        self.addCleanup(close_all)
+        for index in range(105):
+            db.add_meow_round_time('t', float(index), 3)
+        month = datetime.now().strftime('%Y-%m')
+        samples = db.get_stats('t', month)
+        self.assertEqual([item['duration'] for item in samples['meow_round_times']],
+                         [float(index) for index in range(5, 105)])
+        self.assertEqual(samples['meow_hazard_stats']['3']['round_times'],
+                         [float(index) for index in range(5, 105)])

@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from collections import defaultdict
 from module.persistence.database import register_instance
+from module.persistence.snapshots import HAZARD_FIELDS, MONTH_FIELDS
 from module.config.time_source import now as current_time
 from module.logger import logger
 
@@ -23,6 +24,23 @@ COINS_HISTORY_VERSION = 2
 COINS_CLEANUP_VERSION = 1
 # 黄币快照逐条保留的时间窗口；更早的按小时抽稀，控制月度文档体积。
 YELLOW_COIN_EXACT_HOURS = 6
+
+
+def _field_bit(fields, name):
+    return 1 << [field if type(field) is str else field[0] for field in fields].index(name)
+
+
+MONTH_MEOW_RAW_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_raw_count')
+MONTH_MEOW_ROUNDS_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_count')
+MONTH_MEOW_SCALAR_BITS = MONTH_MEOW_RAW_BIT | MONTH_MEOW_ROUNDS_BIT
+MONTH_ROUND_SAMPLES_BIT = _field_bit(MONTH_FIELDS, 'meow_round_times')
+MONTH_BATTLE_SAMPLES_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_times')
+MONTH_MEOW_STATS_BIT = _field_bit(MONTH_FIELDS, 'meow_hazard_stats')
+COUNTER_BATTLE_BITS = _field_bit(HAZARD_FIELDS, 'battle_raw_count') | _field_bit(HAZARD_FIELDS, 'effective_rounds')
+COUNTER_ROUND_SAMPLES_BIT = _field_bit(HAZARD_FIELDS, 'round_times')
+COUNTER_BATTLE_SAMPLES_BIT = _field_bit(HAZARD_FIELDS, 'battle_times')
+COUNTER_AKASHI_ENCOUNTERS_BIT = _field_bit(HAZARD_FIELDS, 'akashi_encounters')
+COUNTER_AKASHI_AP_BIT = _field_bit(HAZARD_FIELDS, 'akashi_ap')
 
 
 def thin_snapshots(snapshots: List[Dict[str, Any]], exact: timedelta) -> List[Dict[str, Any]]:
@@ -523,6 +541,16 @@ class Cl1Database:
         data = read_month(conn, instance, month)
         return self._empty_data(month) if data is None else data
 
+    def _ensure_month_row(self, conn, instance: str, month: str, extra_bits: int = 0):
+        """月份行缺失时按文档路径建行的完整缺省形状写入；已存在仅按位补齐。"""
+        from module.persistence.snapshots import MONTH_FIELDS, presence
+        mask = presence(self._empty_data(month), MONTH_FIELDS) | extra_bits
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, battle_count, akashi_encounters, akashi_ap, '
+            'meow_battle_raw_count, meow_effective_rounds, field_mask) VALUES(?, ?, 0, 0, 0, 0, 0, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|?',
+            (instance, month, mask, extra_bits))
+
 
     def increment_battle_count(self, instance: str, delta: int = 1):
         """增加战斗次数"""
@@ -647,10 +675,7 @@ class Cl1Database:
                 snapshot["ap"] = self._coerce_int(reading["ap_current"])
 
         # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
-        conn.execute(
-            'INSERT INTO cl1_months(instance, month, field_mask) VALUES(?, ?, ?) '
-            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
-            (instance, month, 1 << MONTH_FIELDS.index('ap_snapshots')))
+        self._ensure_month_row(conn, instance, month, 1 << 4)
         ordinal = conn.execute(
             f'SELECT COALESCE(MAX(ordinal),-1)+1 FROM {table} WHERE instance=? AND month=?',
             (instance, month)).fetchone()[0]
@@ -851,10 +876,7 @@ class Cl1Database:
             return
         # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
         from module.persistence.snapshots import MONTH_FIELDS
-        conn.execute(
-            'INSERT INTO cl1_months(instance, month, field_mask) VALUES(?, ?, ?) '
-            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
-            (instance, month, 1 << MONTH_FIELDS.index('yellow_coin_snapshots')))
+        self._ensure_month_row(conn, instance, month, 1 << 6)
         ordinal = conn.execute(
             'SELECT COALESCE(MAX(ordinal),-1)+1 FROM yellow_coin_snapshots WHERE instance=? AND month=?',
             (instance, month)).fetchone()[0]
@@ -1044,20 +1066,62 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["meow_battle_raw_count"] = data.get("meow_battle_raw_count", 0) + 1
-            data["meow_battle_count"] = data.get("meow_battle_count", 0) + delta
+            if not self._increment_meow_battle(conn, instance, month, hazard_level, delta):
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["meow_battle_raw_count"] = data.get("meow_battle_raw_count", 0) + 1
+                data["meow_battle_count"] = data.get("meow_battle_count", 0) + delta
 
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                bucket["battle_raw_count"] = int(bucket.get("battle_raw_count", 0) or 0) + 1
-                bucket["effective_rounds"] = float(
-                    bucket.get("effective_rounds", 0) or 0
-                ) + delta
-                data["meow_hazard_stats"] = hazard_stats
+                if hazard_level in {2, 3, 4, 5, 6}:
+                    hazard_stats = self._normalize_meow_hazard_stats(data)
+                    bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
+                    bucket["battle_raw_count"] = int(bucket.get("battle_raw_count", 0) or 0) + 1
+                    bucket["effective_rounds"] = float(
+                        bucket.get("effective_rounds", 0) or 0
+                    ) + delta
+                    data["meow_hazard_stats"] = hazard_stats
 
-            self._save_stats_in_connection(conn, instance, month, data)
+                self._save_stats_in_connection(conn, instance, month, data)
+
+    def _increment_meow_battle(self, conn, instance: str, month: str, hazard_level, delta: float) -> bool:
+        """战斗次数与有效轮数 O(1) 递增；原生列位不齐时返回 False 走文档路径。"""
+        register_instance(conn, instance)
+        valid_hazard = hazard_level in {2, 3, 4, 5, 6}
+        bits = MONTH_MEOW_RAW_BIT | MONTH_MEOW_ROUNDS_BIT | (MONTH_MEOW_STATS_BIT if valid_hazard else 0)
+        month_row = conn.execute(
+            'SELECT field_mask FROM cl1_months WHERE instance=? AND month=?', (instance, month)).fetchone()
+        counter_row = None
+        if valid_hazard:
+            counter_row = conn.execute(
+                'SELECT field_mask FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+                (instance, month, hazard_level)).fetchone()
+        # 护栏全部先行：任何回退都必须发生在写入之前，避免部分应用后重复计数。
+        if month_row is not None and month_row[0] & MONTH_MEOW_SCALAR_BITS != MONTH_MEOW_SCALAR_BITS:
+            return False
+        if valid_hazard and counter_row is not None and counter_row[0] & COUNTER_BATTLE_BITS != COUNTER_BATTLE_BITS:
+            return False
+        if month_row is None:
+            self._ensure_month_row(conn, instance, month, bits)
+            conn.execute(
+                'UPDATE cl1_months SET meow_battle_raw_count=COALESCE(meow_battle_raw_count,0)+1, '
+                'meow_effective_rounds=COALESCE(meow_effective_rounds,0)+? WHERE instance=? AND month=?',
+                (delta, instance, month))
+        else:
+            conn.execute(
+                'UPDATE cl1_months SET meow_battle_raw_count=COALESCE(meow_battle_raw_count,0)+1, '
+                'meow_effective_rounds=COALESCE(meow_effective_rounds,0)+?, field_mask=field_mask|? '
+                'WHERE instance=? AND month=?', (delta, bits, instance, month))
+        if valid_hazard:
+            if counter_row is None:
+                conn.execute(
+                    'INSERT INTO meow_hazard_counters(instance, month, hazard_level, battle_raw_count, '
+                    'effective_rounds, field_mask) VALUES(?, ?, ?, 1, ?, ?)',
+                    (instance, month, hazard_level, delta, COUNTER_BATTLE_BITS))
+            else:
+                conn.execute(
+                    'UPDATE meow_hazard_counters SET battle_raw_count=COALESCE(battle_raw_count,0)+1, '
+                    'effective_rounds=COALESCE(effective_rounds,0)+? WHERE instance=? AND month=? AND hazard_level=?',
+                    (delta, instance, month, hazard_level))
+        return True
 
     def add_meow_round_time(
         self, instance: str, duration: float, hazard_level: int = None
@@ -1076,33 +1140,7 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-
-            normalized_times = self._normalize_meow_round_times(
-                data.get("meow_round_times", [])
-            )
-
-            # 保存为字典，包含时长和侵蚀等级
-            new_entry = {"duration": round(duration, 2), "hazard_level": hazard_level}
-            normalized_times.append(new_entry)
-
-            # 只保留最近100个样本
-            if len(normalized_times) > 100:
-                normalized_times = normalized_times[-100:]
-
-            data["meow_round_times"] = normalized_times
-
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                round_times = bucket.get("round_times", [])
-                round_times.append(round(duration, 2))
-                if len(round_times) > 100:
-                    round_times = round_times[-100:]
-                bucket["round_times"] = round_times
-                data["meow_hazard_stats"] = hazard_stats
-
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._append_meow_sample(conn, instance, month, 'round', round(duration, 2), hazard_level)
 
     def add_meow_battle_time(
         self, instance: str, duration: float, hazard_level: int = None
@@ -1120,31 +1158,46 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            self._append_meow_sample(conn, instance, month, 'battle', round(duration, 2), hazard_level)
 
-            if "meow_battle_times" not in data:
-                data["meow_battle_times"] = []
-
-            times = data["meow_battle_times"]
-            times.append(round(duration, 2))
-
-            # 只保留最近100个样本
-            if len(times) > 100:
-                times = times[-100:]
-
-            data["meow_battle_times"] = times
-
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                battle_times = bucket.get("battle_times", [])
-                battle_times.append(round(duration, 2))
-                if len(battle_times) > 100:
-                    battle_times = battle_times[-100:]
-                bucket["battle_times"] = battle_times
-                data["meow_hazard_stats"] = hazard_stats
-
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _append_meow_sample(self, conn, instance: str, month: str, kind: str, duration: float, hazard_level):
+        """样本 O(1) 追加：月份行位补齐、单行插入、保留最近 100 条。"""
+        from module.persistence.snapshots import insert, project
+        register_instance(conn, instance)
+        valid_hazard = hazard_level in {2, 3, 4, 5, 6}
+        month_bit = MONTH_ROUND_SAMPLES_BIT if kind == 'round' else MONTH_BATTLE_SAMPLES_BIT
+        bits = month_bit | (MONTH_MEOW_STATS_BIT if valid_hazard else 0)
+        self._ensure_month_row(conn, instance, month, bits)
+        if valid_hazard:
+            # read_month 只投影计数器行存在的分级桶；样本插入前确保桶存在。
+            conn.execute(
+                'INSERT INTO meow_hazard_counters(instance, month, hazard_level, field_mask) VALUES(?, ?, ?, ?) '
+                'ON CONFLICT(instance, month, hazard_level) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
+                (instance, month, hazard_level,
+                 COUNTER_ROUND_SAMPLES_BIT if kind == 'round' else COUNTER_BATTLE_SAMPLES_BIT))
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=0',
+            (instance, month, kind)).fetchone()[0]
+        month_sample = {'duration': duration, 'hazard_level': hazard_level}
+        columns, mask, extra = project(month_sample,
+                                       (('duration', 'duration_seconds', 'R'), ('hazard_level', 'observed_hazard', 'I')))
+        from module.persistence.snapshots import write_value
+        value_id = write_value(conn, instance, value=extra, month=month) if extra else None
+        insert(conn, 'meow_duration_samples', dict(instance=instance, month=month, kind=kind, bucket=0,
+            ordinal=ordinal, entry_format='object', hazard_present=int('hazard_level' in month_sample),
+            field_mask=mask, compat_value_set_id=value_id, **columns))
+        if valid_hazard:
+            ordinal = conn.execute(
+                'SELECT COALESCE(MAX(ordinal),-1)+1 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=?',
+                (instance, month, kind, hazard_level)).fetchone()[0]
+            insert(conn, 'meow_duration_samples', dict(instance=instance, month=month, kind=kind, bucket=hazard_level,
+                ordinal=ordinal, entry_format='number', hazard_present=0, field_mask=1,
+                compat_value_set_id=None, duration_seconds=duration, observed_hazard=None))
+        for bucket in ({0, hazard_level} if valid_hazard else {0}):
+            conn.execute(
+                'DELETE FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=? AND ordinal <= '
+                '(SELECT COALESCE(MAX(ordinal),-1)-100 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=?)',
+                (instance, month, kind, bucket, instance, month, kind, bucket))
 
     def increment_meow_akashi_encounter(
         self, instance: str, hazard_level: int, month: Optional[str] = None,
@@ -1162,14 +1215,19 @@ class Cl1Database:
 
         month = month or datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            hazard_stats = self._normalize_meow_hazard_stats(data)
-            bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-            bucket["akashi_encounters"] = bucket.get("akashi_encounters", 0) + 1
-            count = bucket["akashi_encounters"]
-            data["meow_hazard_stats"] = hazard_stats
-            self._save_stats_in_connection(conn, instance, month, data)
-        return count
+            if not self._increment_meow_counter_field(conn, instance, month, hazard_level,
+                                                      'akashi_encounters', COUNTER_AKASHI_ENCOUNTERS_BIT, 1):
+                data = self._get_stats_in_connection(conn, instance, month)
+                hazard_stats = self._normalize_meow_hazard_stats(data)
+                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
+                bucket["akashi_encounters"] = bucket.get("akashi_encounters", 0) + 1
+                count = bucket["akashi_encounters"]
+                data["meow_hazard_stats"] = hazard_stats
+                self._save_stats_in_connection(conn, instance, month, data)
+                return count
+            return conn.execute(
+                'SELECT akashi_encounters FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+                (instance, month, hazard_level)).fetchone()[0]
 
     def add_meow_akashi_ap(self, instance: str, hazard_level: int, amount: int):
         """记录耄耋相接明石商店购买的体力（按侵蚀等级拆分）。
@@ -1192,12 +1250,28 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            hazard_stats = self._normalize_meow_hazard_stats(data)
-            bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-            bucket["akashi_ap"] = int(bucket.get("akashi_ap", 0) or 0) + amount
-            data["meow_hazard_stats"] = hazard_stats
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._increment_meow_counter_field(conn, instance, month, hazard_level,
+                                               'akashi_ap', COUNTER_AKASHI_AP_BIT, amount)
+
+    def _increment_meow_counter_field(self, conn, instance: str, month: str, hazard_level: int,
+                                      column: str, bit: int, delta) -> bool:
+        """分级桶明石字段 O(1) 递增；计数器行存在但字段在兼容树时返回 False。"""
+        register_instance(conn, instance)
+        counter_row = conn.execute(
+            'SELECT field_mask FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+            (instance, month, hazard_level)).fetchone()
+        if counter_row is not None and counter_row[0] & bit == 0:
+            return False
+        self._ensure_month_row(conn, instance, month, MONTH_MEOW_STATS_BIT)
+        if counter_row is None:
+            conn.execute(
+                f'INSERT INTO meow_hazard_counters(instance, month, hazard_level, {column}, field_mask) '
+                f'VALUES(?, ?, ?, ?, ?)', (instance, month, hazard_level, delta, bit))
+        else:
+            conn.execute(
+                f'UPDATE meow_hazard_counters SET {column}=COALESCE({column},0)+? '
+                'WHERE instance=? AND month=? AND hazard_level=?', (delta, instance, month, hazard_level))
+        return True
 
     def get_meow_stats(
         self, instance: str, year: int = None, month: int = None,
