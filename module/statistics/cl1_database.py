@@ -2144,10 +2144,7 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-
-            self._append_gem_commission_entry(data, duration_hour, reward, datetime.now())
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._append_gem_commission_entry_fast(conn, instance, month, duration_hour, reward, datetime.now())
 
     def get_gem_commissions(
         self,

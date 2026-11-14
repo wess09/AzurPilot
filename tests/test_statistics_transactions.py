@@ -126,7 +126,7 @@ class TestStatisticsTransactions(unittest.TestCase):
             hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot",
                           "_record_coins_snapshot", "_record_siren_device", "_increment_meow_battle",
                           "_append_meow_sample", "_increment_meow_counter_field", "_record_akashi_ap_entry",
-                          "_set_last_ap_notification"))
+                          "_set_last_ap_notification", "_append_gem_commission_entry_fast"))
         paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
@@ -227,6 +227,7 @@ class TestStatisticsTransactions(unittest.TestCase):
             "add_coins_snapshot": 128,
             "add_siren_research_device": 32768 | 65536,
             "add_akashi_ap_entry": 4 | 8, "set_last_ap_notification": 32,
+            "add_gem_commission": 1 << 19,
             "add_meow_round_time": 4096 | 16384, "add_meow_battle_time": 8192 | 16384,
             "increment_meow_akashi_encounter": 16384, "add_meow_akashi_ap": 16384,
         }
