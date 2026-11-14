@@ -17,6 +17,12 @@ const PRIMARY_NAV_ORDER = ['/updater', '/interface', '/remote', '/configs', '/se
 // 这些页挂在实例路径前缀之下，orderIndex 对本表改用 endsWith 匹配。
 const INSTANCE_PAGE_ORDER = ['/overview', '/resources', '/statistics']
 
+/**
+ * 计算路由路径的层级深度。
+ *
+ * @param pathname 路由路径。
+ * @returns 非空路径段数量。
+ */
 export function routeDepth(pathname: string): number {
   return pathname.split('/').filter(Boolean).length
 }

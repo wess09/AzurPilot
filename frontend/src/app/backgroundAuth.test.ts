@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 背景代理地址与 HTTP 能力令牌的领取、缓存与重领行为。
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
 import { applyGalleryEntry, disableBackground, getBackground, readBackgroundPreference, refreshGallery, setBackgroundUrls, uploadBackgroundFile } from './background'

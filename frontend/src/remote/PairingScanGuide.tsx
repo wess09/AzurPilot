@@ -6,7 +6,11 @@ import { useEffect, useRef, useState } from 'react'
 import { QrCode } from 'lucide-react'
 import './pairing-scan-guide.css'
 
-/** 渲染扫码示意图；label 作为 figure 的无障碍名称。 */
+/**
+ * 渲染扫码示意图。
+ *
+ * @param label figure 的无障碍名称。
+ */
 export function PairingScanGuide({ label }: { label: string }) {
   const ref = useRef<HTMLElement>(null)
   const [playing, setPlaying] = useState(false)
@@ -18,6 +22,7 @@ export function PairingScanGuide({ label }: { label: string }) {
     let visible = false
     const update = () => setPlaying(visible && !document.hidden)
     const observer = new IntersectionObserver(([entry]) => {
+      if (!entry) return
       visible = entry.isIntersecting
       update()
     })

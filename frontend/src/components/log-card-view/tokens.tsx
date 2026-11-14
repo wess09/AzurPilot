@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 日志正文词法 token 渲染与 LRU 缓存。
  * 从 LogCardView.tsx 原 58-186 行提取，纯搬迁未改动。
- * 日志正文词法 token 渲染与 LRU 缓存。
  */
 
 import {
@@ -12,7 +12,7 @@ import {
 function extractLogMessage(raw: string): { level: string; time: string; message: string } {
   const match = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/.exec(raw)
   if (match) {
-    return { level: match[1], time: match[3], message: match[4] }
+    return { level: match[1] ?? 'INFO', time: match[3] ?? '', message: match[4] ?? raw }
   }
   return { level: 'INFO', time: '', message: raw }
 }

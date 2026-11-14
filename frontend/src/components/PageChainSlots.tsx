@@ -25,7 +25,7 @@ export function PageChainSlots({rows, labels, options, onPlace, onRemove}: {
     </Select>
   </span>
 
-  const lastFull = rows.length === 0 || rows[rows.length - 1].length >= 2
+  const lastFull = rows.length === 0 || (rows[rows.length - 1]?.length ?? 0) >= 2
 
   return <div className="statistics-chain-slots" aria-label={ui('stats.chainTitle')}>
     {rows.map((row, rowIndex) => <div className="statistics-chain-row" key={row[0]}>

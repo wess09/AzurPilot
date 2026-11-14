@@ -41,7 +41,7 @@ export function automaticCandidates(cards: DockCard[], catalog: Catalog, progres
   const completed = new Set(progress.filter(row => row.lv120 === true).map(row => row.group_type))
   const confirmed = cards.filter(card => !card.review && card.group_type && supported.has(card.group_type))
   const highest = new Set(highestCopies(confirmed))
-  return confirmed.filter(card => highest.has(card.id) && card.level < 120 && !completed.has(card.group_type!))
+  return confirmed.filter(card => card.group_type != null && highest.has(card.id) && card.level < 120 && !completed.has(card.group_type))
 }
 /** 解析手动排除计划：只保留目录里存在的分组号并去重；损坏或非法数据回落为空排除表。 */
 export function readPlan(raw: string | null, cards: DockCard[]): CultivationPlan {

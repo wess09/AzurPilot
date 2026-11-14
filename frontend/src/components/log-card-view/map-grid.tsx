@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 海图格子语义识别与地图网格卡片渲染。
  * 从 LogCardView.tsx 原 823-1079 行提取，纯搬迁未改动。
- * 海图格子语义识别与地图网格卡片渲染。
  */
 
 import {
@@ -62,9 +62,9 @@ const CELL_DICT: Record<string, { label: string; cls: string }> = {
 function getCellMeta(code: string): { label: string; cls: string } {
   if (CELL_DICT[code]) return CELL_DICT[code]
   if (/^[0-3][LMCET]/.test(code)) {
-    const star = code[0]
+    const star = code[0] ?? ''
     const genreMap: Record<string, string> = { L: '轻型巡逻', M: '主力战列', C: '航空航母', E: '未知敌舰', T: '运输舰队' }
-    const genre = genreMap[code[1]] || '敌舰'
+    const genre = genreMap[code[1] ?? ''] || '敌舰'
     return { label: `${star}★ ${genre}敌舰`, cls: 'cell-enemy' }
   }
   return { label: `未知标记 (${code})`, cls: 'cell-default' }

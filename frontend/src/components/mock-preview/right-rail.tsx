@@ -1,9 +1,10 @@
 /**
+ * @fileoverview 全真预览右栏样本：调度计划与任务队列，用于 right-rail 材质区域调节。
  * 从 MockInstancePreview.tsx 原 391-424 行提取，纯搬迁未改动（仅新增导出）。
- * 全真预览右栏样本：调度计划与任务队列，用于 right-rail 材质区域调节。
  */
 import { Clock } from 'lucide-react'
 
+/** 渲染预览右栏样本。 */
 export function mockRightRail() {
   return (
         <aside className="right-rail mock-preview-rail" style={{display: 'flex', flexDirection: 'column'}}>

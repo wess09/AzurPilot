@@ -7,6 +7,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../
 import {useEffect, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
+import type {Value} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
@@ -49,7 +50,7 @@ export function trainingRecordGroups({records, readings = {}, formation, rules}:
   const isCompleted = (row: Row) => !!row.completed_for && Object.keys(row.completed_for).length > 0
   const atPosition = (a: PositionedRow, b: PositionedRow) => (a.fleet ?? 7) - (b.fleet ?? 7)
     || (a.slot ?? 7) - (b.slot ?? 7) || a.name.localeCompare(b.name)
-  const training = ships.filter(ship => rules[String(ship.fleet)]?.slots.includes(ship.slot!))
+  const training = ships.filter(ship => ship.slot !== undefined && rules[String(ship.fleet)]?.slots.includes(ship.slot))
     .filter(ship => !byName.has(ship.name) || !isCompleted(records[ship.name] ?? {}))
     .map(ship => {
       // 同名的实读只属于当前舰位，不借用按舰名保存的完成记录，也不归入完成分类。
@@ -103,7 +104,7 @@ export function TrainingRecords({snapshot}: {snapshot: RecordSnapshot}) {
   </div>
 }
 
-function recordSnapshot(values: Record<string, Record<string, unknown>>): RecordSnapshot {
+function recordSnapshot(values: Record<string, Record<string, Value>>): RecordSnapshot {
   const saved = values.FleetTraining?.State as Pick<RecordSnapshot, 'records' | 'readings'> | undefined
   const snapshot = {records: saved?.records ?? {}, readings: saved?.readings ?? {},
     formation: values.FleetInfo?.Result, rules: rotationRules(values.FleetRotation?.Rules)}
@@ -144,7 +145,7 @@ export function FleetTraining() {
     setLoaded(false)
     void api.request('config.get', {instance}).then(config => {
       if (!active) return
-      const values = config.values.FleetInfo
+      const values = config.values.FleetInfo ?? {}
       setMorale(values.FleetRotation?.Enabled === true)
       setSelectedOnly(values.FleetRotation?.SelectedOnly === true)
       setDorm(values.FleetDorm?.Enabled === true)
@@ -166,7 +167,7 @@ export function FleetTraining() {
     let active = true
     const timer = setInterval(() => {
       void api.request('config.get', {instance}).then(config => {
-        if (active) setSnapshot(recordSnapshot(config.values.FleetInfo))
+        if (active) setSnapshot(recordSnapshot(config.values.FleetInfo ?? {}))
       }).catch(error => {if (active) setError((error as Error).message)})
     }, 3000)
     return () => {active = false; clearInterval(timer)}
@@ -206,7 +207,7 @@ export function FleetTraining() {
       await editor(`config:${instance}`).settled()
       const current = await api.request('config.get', {instance})
       const result = await api.request('fleetTraining.reset', {instance, revision: current.revision})
-      setSnapshot(recordSnapshot(result.values.FleetInfo)); notify(ui('training.resetDone'))
+      setSnapshot(recordSnapshot(result.values.FleetInfo ?? {})); notify(ui('training.resetDone'))
     } catch (error) {setError((error as Error).message)} finally {setBusy(false)}
   }
 

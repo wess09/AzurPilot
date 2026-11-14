@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 卡片入场动画的清理时机与变体收敛测试。
+ */
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 

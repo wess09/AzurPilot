@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 日志卡片域的共享轻量 helper 与复制按钮。
  * 从 LogCardView.tsx 原 188-214 行提取，纯搬迁未改动。
- * 日志卡片域的共享轻量 helper 与复制按钮。
  */
 
 import {

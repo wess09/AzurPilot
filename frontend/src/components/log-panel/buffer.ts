@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 流式日志纯数据域：行格式正则、微批缓冲、跟随步长、行高布局与安全截断合并。
  * 从 LogPanel.tsx 原 25-112 行提取，纯搬迁未改动。
- * 流式日志纯数据域：行格式正则、微批缓冲、跟随步长、行高布局与安全截断合并。
  */
 
 import type { LogEntry } from '../../api/types'
@@ -15,8 +15,9 @@ export const PURE_RULE_RE = /^[═─]{3,}$/
 export const CENTER_TITLE_RE = /^\s{3,}(.*?)\s{3,}$/
 /** 客户端独立的日志条数防御上限，背景见 mergeLogEntries 说明。 */
 export const LOG_ENTRY_LIMIT = 1000
-// 连续推送时每 50ms 最多提交一次日志列表，给滚动和拖拽留出渲染时间。
+/** 微批提交间隔：连续推送时每 50ms 最多提交一次日志列表，给滚动和拖拽留出渲染时间。 */
 export const LOG_RENDER_INTERVAL_MS = 50
+/** 行数超过该阈值才启用虚拟滚动，短日志直接整段渲染。 */
 export const VIRTUAL_LINE_THRESHOLD = 120
 /* 未实测到高度的日志行先按这个值占位，实测后替换。 */
 export const LINE_HEIGHT_ESTIMATE = 18
@@ -68,7 +69,8 @@ export function buildLineLayout(entries: LogEntry[], measured: Map<number, numbe
   const offsets = new Array<number>(entries.length)
   let total = 0
   for (let index = 0; index < entries.length; index++) {
-    const height = measured.get(entries[index].id) ?? estimate
+    const entry = entries[index]
+    const height = entry ? measured.get(entry.id) ?? estimate : estimate
     heights[index] = height
     offsets[index] = total
     total += height
@@ -85,7 +87,10 @@ export function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[], rese
   // previous 来自上一次合并，已按 id 升序且去重。正常增量只需拼接尾部。
   const retained = reset ? [] : previous
   const lastId = retained.at(-1)?.id ?? -Infinity
-  if (recent.every((entry, index) => entry.id > (index ? recent[index - 1].id : lastId))) {
+    if (recent.every((entry, index) => {
+      const previousEntry = recent[index - 1]
+      return entry.id > (previousEntry ? previousEntry.id : lastId)
+    })) {
     if (!recent.length) return retained
     return retained.slice(Math.max(0, retained.length + recent.length - LOG_ENTRY_LIMIT)).concat(recent)
   }

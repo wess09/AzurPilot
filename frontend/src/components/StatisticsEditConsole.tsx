@@ -13,7 +13,9 @@ interface StatisticsEditConsoleProps {
   customized: boolean
   /** 全部页面及其启用状态，按默认页序排列。 */
   pages: {id: PageId; label: string; enabled: boolean}[]
+  /** 切换某页的启用状态。 */
   onTogglePage: (id: PageId) => void
+  /** 还原为默认布局。 */
   onReset: () => void
   /** 组合链条的槽位区，随控制台一起收纳。 */
   children?: ReactNode

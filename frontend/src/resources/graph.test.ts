@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 资源桑基图节点构建的数量守恒与无环校验测试。
+ */
 import {describe, expect, it} from 'vitest'
 import {flowGraph} from './graph'
 import type {ResourceFlowReport} from '../api/types'

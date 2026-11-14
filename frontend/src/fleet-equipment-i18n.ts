@@ -15,6 +15,7 @@ export const equipmentZhCN = {
   'fleetEquipment.SS': '潜艇', 'fleetEquipment.SSV': '潜水空母', 'fleetEquipment.AR': '维修舰',
   'fleetEquipment.BM': '重炮舰', 'fleetEquipment.AE': '运输舰', 'fleetEquipment.IX': '风帆舰',
 }
+/** 繁体中文文案，键集与类型必须与中文版一致。 */
 export const equipmentZhTW: typeof equipmentZhCN = {
   'fleetEquipment.title': '換船裝備', 'fleetEquipment.enable': '啟用自動更換裝備', 'fleetEquipment.save': '儲存裝備碼',
   'fleetEquipment.help': '僅連動智慧換船，預設關閉。確定來源與艦位後，先卸下所有待換出艦船的裝備；全部換船完成後，依換入艦船詳情左上角的艦種套用裝備碼，最後回到主畫面繼續任務。',
@@ -29,6 +30,7 @@ export const equipmentZhTW: typeof equipmentZhCN = {
   'fleetEquipment.SS': '潛艇', 'fleetEquipment.SSV': '潛水空母', 'fleetEquipment.AR': '維修艦',
   'fleetEquipment.BM': '重砲艦', 'fleetEquipment.AE': '運輸艦', 'fleetEquipment.IX': '風帆艦',
 }
+/** 英文文案，键集与类型必须与中文版一致。 */
 export const equipmentEnUS: typeof equipmentZhCN = {
   'fleetEquipment.title': 'Rotation equipment', 'fleetEquipment.enable': 'Enable automatic equipment', 'fleetEquipment.save': 'Save equipment codes',
   'fleetEquipment.help': 'Used with smart ship rotation; off by default. After choosing the reserve and slots, remove equipment from all outgoing ships. After all swaps, recognize each incoming ship type and apply its equipment code, then return home and resume the task.',
@@ -43,6 +45,7 @@ export const equipmentEnUS: typeof equipmentZhCN = {
   'fleetEquipment.SS': 'Submarine', 'fleetEquipment.SSV': 'Submarine carrier', 'fleetEquipment.AR': 'Repair ship',
   'fleetEquipment.BM': 'Monitor', 'fleetEquipment.AE': 'Munition ship', 'fleetEquipment.IX': 'Sailing frigate',
 }
+/** 日文文案，键集与类型必须与中文版一致。 */
 export const equipmentJaJP: typeof equipmentZhCN = {
   'fleetEquipment.title': '交代時の装備', 'fleetEquipment.enable': '自動装備変更を有効化', 'fleetEquipment.save': '装備コードを保存',
   'fleetEquipment.help': '自動艦船交代と連動し、初期設定は無効です。交代元と配置を決定後、交代対象の旧艦船をすべて装備解除します。全交代後に新艦船の艦種を認識して装備コードを適用し、母港に戻って任務を再開します。',

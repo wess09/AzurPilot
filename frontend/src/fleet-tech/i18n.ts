@@ -157,7 +157,10 @@ const messages = {
 } as const
 type Key = keyof typeof messages
 type Dictionary = {[K in Key as `fleetTech.${K}`]: string}
-const dictionary = (index: number) => Object.fromEntries(Object.entries(messages).map(([key, values]) => [`fleetTech.${key}`, values[index]!])) as Dictionary
+const dictionary = (index: number) => Object.fromEntries(Object.entries(messages).flatMap(([key, values]) => {
+  const text = values[index]
+  return text === undefined ? [] : [[`fleetTech.${key}`, text]]
+})) as Dictionary
 /** 四个语言的文案字典：键带 `fleetTech.` 前缀，由 messages 按语言下标生成。 */
 export const fleetTechZhCN = dictionary(0), fleetTechZhTW = dictionary(1), fleetTechEnUS = dictionary(2), fleetTechJaJP = dictionary(3)
 /** 按语言取一条舰队科技文案；找不到该 key 时原样返回 key。 */

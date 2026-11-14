@@ -11,6 +11,7 @@ import {mindZhCN, mindZhTW, mindEnUS, mindJaJP} from './mind/i18n'
 import {resourceZhCN, resourceZhTW, resourceEnUS, resourceJaJP} from './i18n.resources'
 import {colorZhCN, colorZhTW, colorEnUS, colorJaJP} from './i18n.colors'
 
+/** 界面语言代码；与 languages 的显示名键一一对应，也用作各语言包的导出名后缀。 */
 export type Language = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP'
 type TranslationParams = Record<string, string | number>
 

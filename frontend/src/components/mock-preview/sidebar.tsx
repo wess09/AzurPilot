@@ -1,12 +1,13 @@
 /**
+ * @fileoverview 全真预览侧栏样本：品牌、主导航与任务目录，用于 sidebar 材质区域调节。
  * 从 MockInstancePreview.tsx 原 121-188 行提取，纯搬迁未改动（仅新增导出与入参）。
- * 全真预览侧栏样本：品牌、主导航与任务目录，用于 sidebar 材质区域调节。
  */
 import { Activity, ChevronDown, FileText, Home, LayoutDashboard, Sliders, Sword, TrendingUp } from 'lucide-react'
 
 import { ProjectLogo } from '../ProjectLogo'
 import type { UiTranslator } from '../../i18n'
 
+/** 渲染预览侧栏样本。 */
 export function mockSidebar(ui: UiTranslator) {
   return (
         <aside className="sidebar mock-preview-sidebar">

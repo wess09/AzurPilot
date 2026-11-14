@@ -20,7 +20,9 @@ export function SegmentedControl<T extends string>({label, value, options, onCha
       const next = event.key === 'ArrowRight' ? (index + 1) % options.length : event.key === 'ArrowLeft' ? (index - 1 + options.length) % options.length : event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : -1
       if (next < 0) return
       event.preventDefault()
-      onChange(options[next].value)
+      const option = options[next]
+      if (!option) return
+      onChange(option.value)
       const button = ref.current?.querySelectorAll<HTMLButtonElement>('button')[next]
       button?.focus({preventScroll: true})
       button?.scrollIntoView({block: 'nearest', inline: 'nearest'})

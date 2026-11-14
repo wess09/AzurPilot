@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 即时配置编辑队列的串行提交、草稿恢复与重试语义测试。
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import { translateCurrentUi } from '../i18n'
@@ -9,8 +12,8 @@ function storage() {
   return {getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => {values.set(key, value)}, removeItem: (key: string) => {values.delete(key)}}
 }
 function deferred() {
-  let resolve!: () => void
-  let reject!: (error: Error) => void
+  let resolve = () => {}
+  let reject: (error: Error) => void = () => {}
   const promise = new Promise<void>((yes, no) => {resolve = yes; reject = no})
   return {promise, resolve, reject}
 }
@@ -25,7 +28,7 @@ describe('即时配置队列', () => {
     expect(send).toHaveBeenCalledWith('serial', 'first')
     queue.change('serial', 'second')
     queue.change('serial', 'latest')
-    expect(queue.getSnapshot().edits.serial.value).toBe('latest')
+    expect(queue.getSnapshot().edits.serial?.value).toBe('latest')
     expect(send).toHaveBeenCalledTimes(1)
     first.resolve()
     await queue.settled()
@@ -40,11 +43,11 @@ describe('即时配置队列', () => {
     queue.change('enabled', true)
     await queue.flush()
     expect(queue.getSnapshot().edits.date).toMatchObject({value: '2026-', status: 'error'})
-    expect(queue.getSnapshot().edits.enabled.status).toBe('saved')
+    expect(queue.getSnapshot().edits.enabled?.status).toBe('saved')
     await expect(queue.settled()).rejects.toThrow(translateCurrentUi('edit.unsaved'))
     queue.change('date', '2026-09-14 12:00:00')
     await queue.settled()
-    expect(queue.getSnapshot().edits.date.status).toBe('saved')
+    expect(queue.getSnapshot().edits.date?.status).toBe('saved')
   })
 
   it('旧请求失败不能将新输入标记为错误', async () => {
@@ -71,7 +74,7 @@ describe('即时配置队列', () => {
     expect(restored.getSnapshot().edits.number).toMatchObject({value: '-', status: 'error'})
     const again = new EditQueue('instance-a', {ready: () => true, send}, memory)
     expect(again.getSnapshot().edits.serial).toBeUndefined()
-    expect(again.getSnapshot().edits.number.value).toBe('-')
+    expect(again.getSnapshot().edits.number?.value).toBe('-')
   })
 
   it('恢复草稿时丢弃服务端已拒绝的空值，字段回到配置里的值', () => {
@@ -101,13 +104,13 @@ describe('即时配置队列', () => {
     const queue = new EditQueue('a', {ready: () => true, send}, memory)
     queue.change('serial', 'retained')
     await queue.flush()
-    expect(queue.getSnapshot().edits.serial.value).toBe('retained')
+    expect(queue.getSnapshot().edits.serial?.value).toBe('retained')
     const other = new EditQueue('b', {ready: () => true, send}, memory)
     other.change('serial', 'other')
     await other.settled()
     await vi.advanceTimersByTimeAsync(1000)
     expect(send.mock.calls).toEqual([['serial', 'retained'], ['serial', 'other'], ['serial', 'retained']])
-    expect(queue.getSnapshot().edits.serial.status).toBe('saved')
+    expect(queue.getSnapshot().edits.serial?.status).toBe('saved')
   })
 
   it('浏览器存储失败不打断输入和提交，并明确提示', async () => {

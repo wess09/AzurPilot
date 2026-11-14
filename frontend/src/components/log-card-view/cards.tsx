@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 日志卡片域的透视、表格、热力矩阵、横幅与单行卡片组件。
  * 从 LogCardView.tsx 原 1081-1273、1615-1892 行提取，纯搬迁未改动。
- * 日志卡片域的透视、表格、热力矩阵、横幅与单行卡片组件。
  */
 
 import {
@@ -348,9 +348,12 @@ function getCostHeatmapStyle(num: number, maxCost: number): CSSProperties {
   }
   const t = Math.max(0, Math.min(1, maxCost > 1 ? (num - 1) / (maxCost - 1) : 0))
   for (let i = 0; i < HEATMAP_STOPS.length - 1; i++) {
-    const [t1, c1] = HEATMAP_STOPS[i]
-    const [t2, c2] = HEATMAP_STOPS[i + 1]
-    if (t >= t1 && t <= t2) {
+    const previousStop = HEATMAP_STOPS[i]
+    const nextStop = HEATMAP_STOPS[i + 1]
+    if (!previousStop || !nextStop) continue
+    const [t1, c1] = previousStop
+    const [t2, c2] = nextStop
+    if (t >= t1 && t <= t2 && t2 !== t1) {
       const factor = (t - t1) / (t2 - t1)
       return {
         backgroundColor: interpolateColor(c1, c2, factor),

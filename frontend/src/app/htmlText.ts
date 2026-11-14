@@ -1,4 +1,7 @@
 /**
+ * @fileoverview React 帮助文本展示前的 HTML 纯文本化。
+ */
+/**
  * 将仅用于 React 文本节点展示的 HTML 帮助文本转换为纯文本。
  *
  * 浏览器环境使用 DOMParser 读取 textContent；SSR / Node 环境没有 DOMParser 时

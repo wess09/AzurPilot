@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 图表设置控件：类型、坐标轴、采样粒度、时间范围与校验提示。
  * 从 StatisticsChart.tsx 原 434-491 行提取，纯搬迁未改动。
- * 图表设置控件：类型、坐标轴、采样粒度、时间范围与校验提示。
  */
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../official-ui/select'
 import { Input } from '../official-ui/input'
@@ -9,6 +9,7 @@ import { bucketOptions } from './shared'
 import type { ChartUi } from './shared'
 import type { ChartMode, ChartAxisMode } from '../../app/statisticsPrefs'
 
+/** 组装图表设置控件行：各下拉/输入受控属性由 StatisticsChart 传入。 */
 export function buildChartControls({ui, mode, setMode, bucket, setBucket, axisMode, setAxisMode, effectiveBucket, isCandlestick, isSingle, from, setFrom, to, setTo}: {
   ui: ChartUi
   mode: ChartMode

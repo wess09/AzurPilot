@@ -19,6 +19,7 @@ export const resourceZhCN = {
   'flow.saved': '已保存', 'flow.saving': '保存中', 'flow.save': '保存控制设置', 'flow.targetInvalid': '控制线须为 1000 至 24999 的整数',
 } as const
 type ResourceKeys = keyof typeof resourceZhCN
+/** 英文文案，键集与中文版一致。 */
 export const resourceEnUS: Record<ResourceKeys, string> = {
   'flow.food': 'Dorm food', 'flow.urPt': 'Event UR points', 'flow.furnitureCoin': 'Decor tokens', 'flow.gachaTicket': 'Build tickets',
   'nav.resources': 'Resource management', 'flow.hint': 'Trace what each task earns and spends, and where resources go.',
@@ -34,6 +35,7 @@ export const resourceEnUS: Record<ResourceKeys, string> = {
   'flow.oil': 'Automatic oil control', 'flow.oilEnable': 'Enable oil cleanup', 'flow.oilTarget': 'Target', 'flow.oilHint': 'Native scheduler only: farm due maps first, buy dorm food during cooldown. Checks accompany existing tasks without scheduled wakeups.',
   'flow.saved': 'Saved', 'flow.saving': 'Saving', 'flow.save': 'Save control settings', 'flow.targetInvalid': 'Target must be an integer from 1000 to 24999',
 }
+/** 日文文案，键集与中文版一致。 */
 export const resourceJaJP: Record<ResourceKeys, string> = {
   'flow.food': '寮舎の食料', 'flow.urPt': 'イベントURポイント', 'flow.furnitureCoin': '家具コイン', 'flow.gachaTicket': '建造チケット',
   'nav.resources': '資源管理', 'flow.hint': '各タスクの獲得・消費と資源の使い道を確認できます。',
@@ -49,6 +51,7 @@ export const resourceJaJP: Record<ResourceKeys, string> = {
   'flow.oil': '燃料の自動管理', 'flow.oilEnable': '燃料消費を有効にする', 'flow.oilTarget': '管理上限', 'flow.oilHint': '標準スケジューラーのみ：実行可能な海域を優先し、待機中は寮舎で食料を購入します。既存タスクに合わせて確認し、定期起動しません。',
   'flow.saved': '保存済み', 'flow.saving': '保存中', 'flow.save': '管理設定を保存', 'flow.targetInvalid': '1000〜24999の整数を入力してください',
 }
+/** 繁体中文文案，键集与中文版一致。 */
 export const resourceZhTW: Record<ResourceKeys, string> = {
   'flow.food': '後宅糧食', 'flow.urPt': '活動 UR 點數', 'flow.furnitureCoin': '家具幣', 'flow.gachaTicket': '建造券',
   'nav.resources': '資源管理', 'flow.hint': '追溯各個任務的獲取與消耗，查看資源的用途。',

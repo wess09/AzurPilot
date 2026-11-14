@@ -1,10 +1,17 @@
 /**
- * 从 SchedulerProgram.tsx 原 57-103 行提取，纯搬迁未改动（仅新增导出）。
- * JSON 编辑域：草稿随外部值重置，失焦时解析；解析失败显示错误并保留输入。
+ * @fileoverview JSON 参数编辑域：草稿随外部值重置，失焦时解析；解析失败显示错误并保留输入。
+ *
+ * 从 SchedulerProgram.tsx 拆分而来（仅新增导出）。
  */
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 
-/** JSON 编辑域：草稿随外部值重置，失焦时解析；解析失败显示错误并保留输入。 */
+/**
+ * JSON 编辑域：草稿随外部值重置，失焦时解析；解析失败显示错误并保留输入。
+ *
+ * @param label 输入框的可访问名称。
+ * @param value 外部传入的任意 JSON 值。
+ * @param onChange 解析成功后回传新值。
+ */
 export function JsonField({label, value, onChange}: {label: string; value: unknown; onChange: (value: unknown) => void}) {
   const serialized = JSON.stringify(value ?? null, null, 2)
   const [draft, setDraft] = useState(serialized)

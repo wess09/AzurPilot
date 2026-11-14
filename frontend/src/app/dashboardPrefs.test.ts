@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 仪表盘偏好开关的持久化与默认值测试。
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 // 本地存储是浏览器接口，这里用内存替身；模块读取它是在导入时，所以每个用例都重新导入。

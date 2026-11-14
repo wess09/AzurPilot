@@ -48,10 +48,10 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 /**
- * 远程配对面板：生成二维码与六位配对码，等待手机端认领。
+ * 生成并管理远程配对会话。
  *
- * pending 期间每 2 秒轮询 remote.pair.status，`claimed`（配对成功）或过期后结束等待；
- * 重新生成前先撤销上一次配对的客户端，失败也不阻断，旧凭据本就可能已失效。
+ * pending 期间每 2 秒轮询 `remote.pair.status`，配对成功或过期后结束等待。
+ * @param ready 远程访问是否已就绪。
  */
 export function PairingPanel({ ready }: { ready: boolean }) {
   const { language } = useApp()

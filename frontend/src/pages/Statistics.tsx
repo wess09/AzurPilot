@@ -78,7 +78,8 @@ export function Statistics() {
     applyLayout(setPageEnabled(layout, id, enabled))
     if (!enabled && id === category) {
       const rest = pageIds.filter(item => item !== id && isPageEnabled(layout, item))
-      if (rest.length) setCategory(rest[0])
+      const nextCategory = rest[0]
+      if (nextCategory) setCategory(nextCategory)
     }
   }
 
@@ -94,7 +95,9 @@ export function Statistics() {
     const from = layout.pages.findIndex(chain => chain.includes(page))
     const to = from + delta
     if (from < 0 || to < 0 || to >= layout.pages.length) return
-    const next = movePageBeside(layout, page, layout.pages[to][0], delta > 0)
+    const targetPage = layout.pages[to]?.[0]
+    if (!targetPage) return
+    const next = movePageBeside(layout, page, targetPage, delta > 0)
     if (next !== layout) applyLayout(next)
   }
 
@@ -124,7 +127,7 @@ export function Statistics() {
     const move = (event: PointerEvent) => setDropTarget(cardAt(event.clientX, event.clientY))
     const up = (event: PointerEvent) => {
       const target = cardAt(event.clientX, event.clientY)
-      const dragPage = dragged.split(':')[0] as Category
+        const dragPage = dragged.split(':')[0] as Category
       const dragView = pageView(dragPage, data)
       const current = orderCards(layout, dragPage, spaceKeysOf(dragPage))
       const from = current.indexOf(draggingKey)
@@ -174,7 +177,8 @@ export function Statistics() {
     {management ? <Suspense fallback={<Loading/>}><ResourceManagement key={instance}/></Suspense> : <>
     {storageError && <ErrorBox message={storageError}/>}
     <div className="statistics-page-sections">
-      {(singleView ? [spaceOf(category!)] : isPageEnabled(layout, category) ? [chainOf(category)] : []).map(space => {
+      {(singleView ? [spaceOf(category)] : isPageEnabled(layout, category) ? [chainOf(category)] : []).map(space => {
+        if (!space.length) return null
         const head = space[0]
         const view = spaceView(space)
         const error = space.map(page => chainError[page]).find(Boolean) ?? ''
@@ -192,9 +196,13 @@ export function Statistics() {
             {error ? <ErrorBox message={error} retry={() => setRevision(value => value + 1)}/>
               : !ready ? <Loading/>
                 : <div className={`statistics-sections${editMode ? ' is-editing' : ''}`}>
-                  {view.runs.map(run => run.keys.length > 1
-                    ? <div className="stat-card-chain" key={run.keys[0]}>{run.keys.map(key => draw(key, view.visible[view.visible.indexOf(key) + 1]))}</div>
-                    : draw(run.keys[0], view.visible[view.visible.indexOf(run.keys[0]) + 1]))}
+                  {view.runs.map(run => {
+                    const first = run.keys[0]
+                    if (!first) return null
+                    return run.keys.length > 1
+                      ? <div className="stat-card-chain" key={first}>{run.keys.map(key => draw(key, view.visible[view.visible.indexOf(key) + 1]))}</div>
+                      : draw(first, view.visible[view.visible.indexOf(first) + 1])
+                  })}
                 </div>}
           </section>
         </Fragment>

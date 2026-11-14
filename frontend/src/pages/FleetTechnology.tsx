@@ -117,21 +117,24 @@ export function FleetTechnology() {
       for (const type of new Set(types.map(shipType))) {const values = target[String(type)] ??= {}; values[String(attr)] = (values[String(attr)] ?? 0) + amount}
     }
     for (const row of previewRows) {
-      const t = row.technology!
+      const t = row.technology
+      if (!t) continue
       for (const stage of ['get', 'level'] as const) if (row[stage === 'get' ? 'owned' : 'lv120'] === true) {
         add(shipBonuses, t[`add_${stage}_shiptype`], t[`add_${stage}_attr`], t[`add_${stage}_value`])
         add(bonuses, t[`add_${stage}_shiptype`], t[`add_${stage}_attr`], t[`add_${stage}_value`])
       }
     }
-    for (const [id, level] of Object.entries({...report?.nation_levels, ...draft?.nations})) if (level && catalog?.nations[id]?.[level - 1]) {
-      for (const [types, attr, amount] of catalog.nations[id]![level - 1]!) {add(nationBonuses, types, attr, amount); add(bonuses, types, attr, amount)}
+    for (const [id, level] of Object.entries({...report?.nation_levels, ...draft?.nations})) {
+      const entries = level ? catalog?.nations[id]?.[level - 1] : undefined
+      if (entries) for (const [types, attr, amount] of entries) {add(nationBonuses, types, attr, amount); add(bonuses, types, attr, amount)}
     }
     return {shipBonuses, nationBonuses, bonuses, points: previewRows.reduce((sum, row) => sum + row.points, 0), counts: Object.fromEntries(milestones.map(key => [key, previewRows.filter(row => row[key] === true).length]))}
   }, [previewRows, report?.nation_levels, draft?.nations, catalog])
   const filtered = useMemo(() => {
     const collator = new Intl.Collator(language, {numeric: true}), previews = new Map(previewRows.map(row => [row.group_type, row]))
     const valueFor = (row: Row): string | number | null => {
-      const t = row.technology!
+      const t = row.technology
+      if (!t) return null
       switch (sort.column) {
         case 'code': return row.code
         case 'name': return nameFor(row, language)
@@ -154,7 +157,10 @@ export function FleetTechnology() {
       if (right === null && left !== null) return -1
       const result = typeof left === 'number' && typeof right === 'number' ? left - right : collator.compare(String(left), String(right))
       return result * (sort.direction === 'ascending' ? 1 : -1) || a.code - b.code || a.group_type - b.group_type
-    }).map(row => previews.get(row.group_type)!)
+    }).flatMap(row => {
+      const preview = previews.get(row.group_type)
+      return preview ? [preview] : []
+    })
   }, [rows, previewRows, filters, query, sort, language, catalog?.mind_costs_100_to_120])
   useEffect(() => {
     if (targetGroup && report && catalog) document.getElementById(`technology-${targetGroup}`)?.scrollIntoView?.({block: 'center'})
@@ -174,7 +180,8 @@ export function FleetTechnology() {
   function change(row: Row, key: RecordField, value: State) {
     if (!report || busy || connection !== 'ready') return
     setDraft(current => {
-      const changes = {...current?.changes}, original = rows.find(value => value.group_type === row.group_type)!
+      const changes = {...current?.changes}, original = rows.find(value => value.group_type === row.group_type)
+      if (!original) return current
       const state = {group_type: row.group_type, owned: original.owned, full_star: original.full_star, lv120: original.lv120, awakening_pending: original.awakening_pending, ...current?.changes[row.group_type]}
       const next = key === 'awakening_pending' ? {...state, awakening_pending: value} : changeMilestone(state, key, value, row.full_star_rule)
       // 里程碑三项要整体记录，觉醒标记是独立开关：只动标记时不得牵连里程碑状态。
@@ -202,14 +209,15 @@ export function FleetTechnology() {
     writing.current = true; setBusy(true); setError('')
     try {
       const changes = Object.values(draft.changes).map(change => {
-        const original = rows.find(row => row.group_type === change.group_type)!
+        const original = rows.find(row => row.group_type === change.group_type)
+        if (!original) return null
         // 觉醒标记单独改动时不得顺带重交或归一化里程碑状态：各项只在真变了时才进提交体。
         const final = {...original, ...change}
         return {group_type: change.group_type,
           ...(milestones.some(key => final[key] !== original[key]) ? {owned: final.owned, full_star: final.full_star, lv120: final.lv120} : {}),
           ...(final.awakening_pending !== original.awakening_pending ? {awakening_pending: final.awakening_pending} : {}),
         }
-      })
+      }).filter((change): change is Change => change !== null)
       const value = await api.request('fleetTech.patch', {instance, revision: draft.revision, changes, nations: draft.nations})
       if (token === scope.current) {setReport(value); setDraft(null); notify(tr('saved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
@@ -228,7 +236,16 @@ export function FleetTechnology() {
   function group(key: string, options: [string, string][], label = tr(key === 'type' ? 'category' : key)) {
     return <FleetFilterRow filter={key} label={label} options={options} filters={filters} setFilters={setFilters} all={tr('all')}/>
   }
-  function bonusList(values: Bonuses) {return <div className="ft-bonus-grid">{types.filter(type => values[String(type)] && Object.keys(values[String(type)]!).length).map(type => <div key={type}><b>{tr(`type.${type}`)}</b> {attrs.filter(attr => values[String(type)]![String(attr)]).map(attr => `${tr(`attr.${attr}`)}+${values[String(type)]![String(attr)]}`).join(' · ')}</div>)}</div>}
+  function bonusList(values: Bonuses) {
+    return <div className="ft-bonus-grid">{types.map(type => {
+      const bonuses = values[String(type)]
+      if (!bonuses || !Object.keys(bonuses).length) return null
+      return <div key={type}><b>{tr(`type.${type}`)}</b> {attrs.flatMap(attr => {
+        const value = bonuses[String(attr)]
+        return value == null ? [] : [`${tr(`attr.${attr}`)}+${value}`]
+      }).join(' · ')}</div>
+    })}</div>
+  }
   if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload(!catalog)}/> : <Loading/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">

@@ -4,8 +4,11 @@
 import type {CardDefinition, Catalog, Graph, PortType, ProgramDocument, ProgramNode, Subgraph} from './types'
 import {compatiblePorts} from './appearance'
 
+/** 生成新的节点 id（UUID）。 */
 export const id = () => crypto.randomUUID()
+/** 深拷贝任意可结构化克隆的值。 */
 export const clone = <T,>(value: T): T => structuredClone(value)
+/** 端口兼容判断的别名，语义见 compatiblePorts。 */
 export const compatible = compatiblePorts
 /** 兼容旧方案没有注释字段的节点：补上空串，让保存前后的文档表示一致。 */
 export function withComments(doc: ProgramDocument): ProgramDocument {
@@ -67,8 +70,14 @@ export function replaceGraph(doc: ProgramDocument, graphId: string, graph: Graph
 export function duplicate(graph: Graph, selection: Set<string>) {
   const ids = new Map([...selection].map(old => [old, id()]))
   return {
-    nodes: graph.nodes.filter(n => selection.has(n.id)).map(n => ({...clone(n), id: ids.get(n.id)!, position: {x: n.position.x + 40, y: n.position.y + 40}, params: {...clone(n.params), ...(n.type === 'loop_end' && ids.has(String(n.params.loop)) ? {loop: ids.get(String(n.params.loop))} : {})}})),
-    edges: graph.edges.filter(e => selection.has(e.source) && selection.has(e.target)).map(e => ({...e, id: id(), source: ids.get(e.source)!, target: ids.get(e.target)!})),
+    nodes: graph.nodes.filter(n => selection.has(n.id)).flatMap(n => {
+      const copiedId = ids.get(n.id)
+      return copiedId ? [{...clone(n), id: copiedId, position: {x: n.position.x + 40, y: n.position.y + 40}, params: {...clone(n.params), ...(n.type === 'loop_end' && ids.has(String(n.params.loop)) ? {loop: ids.get(String(n.params.loop))} : {})}}] : []
+    }),
+    edges: graph.edges.filter(e => selection.has(e.source) && selection.has(e.target)).flatMap(e => {
+      const sourceId = ids.get(e.source), targetId = ids.get(e.target)
+      return sourceId && targetId ? [{...e, id: id(), source: sourceId, target: targetId}] : []
+    }),
   }
 }
 /** 按连接依赖从左到右排布，循环返回由专门卡片表示，不添加可见回边。 */
@@ -76,22 +85,26 @@ export function horizontalLayout(graph: Graph): Graph {
   const indegree = new Map(graph.nodes.map(n => [n.id, 0]))
   const levels = new Map(graph.nodes.map(n => [n.id, 0]))
   const successors = new Map(graph.nodes.map(n => [n.id, new Set<string>()]))
-  for (const edge of graph.edges) if (successors.has(edge.source) && indegree.has(edge.target) && !successors.get(edge.source)!.has(edge.target)) {
-    successors.get(edge.source)!.add(edge.target)
-    indegree.set(edge.target, indegree.get(edge.target)! + 1)
+  for (const edge of graph.edges) {
+    const targets = successors.get(edge.source)
+    if (!targets || !indegree.has(edge.target) || targets.has(edge.target)) continue
+    targets.add(edge.target)
+    indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1)
   }
   const queue = graph.nodes.filter(n => indegree.get(n.id) === 0).map(n => n.id)
   for (let index = 0; index < queue.length; index++) {
-    const source = queue[index]!
-    for (const target of successors.get(source)!) {
-      levels.set(target, Math.max(levels.get(target)!, levels.get(source)! + 1))
-      indegree.set(target, indegree.get(target)! - 1)
+    const source = queue[index]
+    if (source === undefined) continue
+    for (const target of successors.get(source) ?? []) {
+      levels.set(target, Math.max(levels.get(target) ?? 0, (levels.get(source) ?? 0) + 1))
+      indegree.set(target, (indegree.get(target) ?? 0) - 1)
       if (indegree.get(target) === 0) queue.push(target)
     }
   }
   const rows = new Map<number, number>()
   return {...graph, nodes:graph.nodes.map(node => {
-    const level = levels.get(node.id)!, row = rows.get(level) ?? 0
+    const level = levels.get(node.id) ?? 0
+    const row = rows.get(level) ?? 0
     rows.set(level, row + 1)
     return {...node, position:{x:level * 320, y:row * 640}}
   })}
@@ -102,7 +115,8 @@ export function horizontalLayout(graph: Graph): Graph {
  * 非法情形直接抛错。
  */
 export function encapsulate(doc: ProgramDocument, graphId: string, selected: Set<string>, name: string, catalog: Catalog) {
-  const graph = graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId)!
+  const graph = graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId)
+  if (!graph) throw new Error('子图不存在')
   const picked = graph.nodes.filter(n => selected.has(n.id))
   if (!picked.length || picked.some(n => ['entry', 'return', 'input', 'output'].includes(n.type))) throw new Error('请选择逻辑卡片，入口和组合端口不能一起封装')
   const incoming = graph.edges.filter(e => !selected.has(e.source) && selected.has(e.target))
@@ -118,7 +132,8 @@ export function encapsulate(doc: ProgramDocument, graphId: string, selected: Set
   const parentEdges = graph.edges.filter(e => !selected.has(e.source) && !selected.has(e.target))
   incoming.filter(e => e.kind === 'data').forEach((e, index) => {
     const portName = `input${index + 1}`, inputId = id()
-    const target = picked.find(n => n.id === e.target)!
+    const target = picked.find(n => n.id === e.target)
+    if (!target) return
     const type = definition(target, doc, catalog, graph).inputs.find(p => p.name === e.targetPort)?.type ?? 'any'
     inputs.push({name: portName, type, required: true})
     inputNodes.push({id: inputId, type: 'input', label: portName, params: {name: portName}, position: {x: 0, y: index * 130}})
@@ -131,7 +146,8 @@ export function encapsulate(doc: ProgramDocument, graphId: string, selected: Set
     let portName = pairs.get(key)
     if (!portName) {
       portName = `output${pairs.size + 1}`; pairs.set(key, portName)
-      const source = picked.find(n => n.id === e.source)!
+      const source = picked.find(n => n.id === e.source)
+      if (!source) return
       const type = definition(source, doc, catalog, graph).outputs.find(p => p.name === e.sourcePort)?.type ?? 'any'
       outputs.push({name: portName, type, required: true})
       internal.push({...e, id: id(), target: outputId, targetPort: portName})
@@ -140,19 +156,24 @@ export function encapsulate(doc: ProgramDocument, graphId: string, selected: Set
   })
   const entryId = pure ? outputId : id()
   if (!pure) {
-    internal.push({id: id(), source: entryId, sourcePort: 'next', target: controlIn[0]!.target, targetPort: 'in', kind: 'control'})
+    const entryTarget = controlIn[0]?.target
+    if (!entryTarget) throw new Error('执行组合需要一个外部入口，出口应汇合到同一张后续卡片')
+    internal.push({id: id(), source: entryId, sourcePort: 'next', target: entryTarget, targetPort: 'in', kind: 'control'})
     for (const e of controlOut) internal.push({...e, id: id(), target: outputId, targetPort: 'in'})
     // 未连接的正常终点也返回组合，任务失败出口保持停止语义。
     for (const node of picked) for (const exit of definition(node, doc, catalog, graph).exits) {
       if (exit !== 'failed' && node.type !== 'loop_end' && !internal.some(e => e.kind === 'control' && e.source === node.id && e.sourcePort === exit)) internal.push({id:id(), source:node.id, sourcePort:exit, target:outputId, targetPort:'in', kind:'control'})
     }
     for (const e of controlIn) parentEdges.push({...e, target: callId})
-    if (controlOut.length) parentEdges.push({...controlOut[0]!, id: id(), source: callId, sourcePort: 'next'})
+    const controlOutFirst = controlOut[0]
+    if (controlOut.length && controlOutFirst) parentEdges.push({...controlOutFirst, id: id(), source: callId, sourcePort: 'next'})
   }
   const extra: ProgramNode[] = [{id: outputId, type: pure ? 'output' : 'return', label: '组合输出', params: {}, position: {x: 800, y: 100}}]
   if (!pure) extra.push({id: entryId, type: 'entry', label: '', params: {}, position: {x: 0, y: -160}})
   const sub: Subgraph = {id: subId, name, pure, inputs, outputs, entry: entryId, nodes: [...inputNodes, ...clone(picked), ...extra], edges: internal}
-  const call: ProgramNode = {id: callId, type: 'call', label: name, params: {graph: subId}, position: picked[0]!.position}
+  const firstPicked = picked[0]
+  if (!firstPicked) throw new Error('请选择逻辑卡片，入口和组合端口不能一起封装')
+  const call: ProgramNode = {id: callId, type: 'call', label: name, params: {graph: subId}, position: firstPicked.position}
   const result = replaceGraph(doc, graphId, {...graph, nodes: [...graph.nodes.filter(n => !selected.has(n.id)), call], edges: parentEdges})
   return {...result, subgraphs: [...result.subgraphs, sub]}
 }

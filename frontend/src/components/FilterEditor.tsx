@@ -255,7 +255,7 @@ const tokenDecorator = new MatchDecorator({
     // 16. 简单等级后缀 (如 PlateT3 中的 T3)
     const tier = /^(.*)(t[1-6]|s[1-5])$/i.exec(raw)
     if (tier) {
-      const prefixLen = tier[1].length
+      const prefixLen = tier[1]?.length ?? 0
       if (prefixLen > 0) {
         add(from, from + prefixLen, Decoration.mark({class: 'cm-filter-item'}))
       }
@@ -321,8 +321,10 @@ export function FilterEditor({
   latestValue.current = value
 
   useEffect(() => {
+    const parent = host.current
+    if (!parent) return
     const editor = new EditorView({
-      parent: host.current!,
+      parent,
       state: EditorState.create({
         doc: initial.current,
         extensions: [

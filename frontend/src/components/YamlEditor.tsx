@@ -44,8 +44,10 @@ export function YamlEditor({id, value, onChange, disabled = false, label, invali
   const editable = useRef(new Compartment())
   change.current = onChange
   useEffect(() => {
+    const parent = host.current
+    if (!parent) return
     const editor = new EditorView({
-      parent: host.current!,
+      parent,
       state: EditorState.create({doc: initial.current, extensions: [
         yaml(), lineNumbers(), history(), bracketMatching(), highlightActiveLine(),
         syntaxHighlighting(colors), EditorView.lineWrapping,

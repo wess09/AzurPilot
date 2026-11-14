@@ -1,11 +1,13 @@
 /**
- * 从 Statistics.tsx 原 171-206 行提取，纯搬迁未改动。
- * 统计页筛选偏好：分类、时间窗口与大世界/科研视图，修改时同步写回本地偏好。
+ * @fileoverview 统计页筛选偏好：分类、时间窗口与大世界/科研视图，修改时同步写回本地偏好。
+ *
+ * 从 Statistics.tsx 拆分而来。
  */
 import { useCallback, useRef, useState } from 'react'
 import { readStatisticsPrefs, updateStatisticsPrefs } from '../../app/statisticsPrefs'
 import type { Category } from './shared'
 
+/** 统计页筛选偏好 Hook：各偏好值与对应的写回函数；每次修改立即持久化到本地偏好。 */
 export function useStatisticsPrefs() {
   const initialPrefs = useRef(readStatisticsPrefs()).current
   const [category, setCategoryState] = useState<Category>(initialPrefs.category)

@@ -1,5 +1,5 @@
 /* components.css —— B1 保序拆分聚合器。
-   本文件原有 1300 行规则已按域切分为下列 22 个域文件（各文件头部注明原行号区间，
+   本文件原有 1300 行规则已按域切分为下列 21 个域文件（各文件头部注明原行号区间，
    规则文本逐字未改）；此处以纯 @import 聚合顶替原文件，Vite/postcss 按声明顺序内联展开，
    每条规则相对拆分前位置不变，最终计算样式不变。
    唯一许可的段内位移：原 976-986 行 .announcement-footer/.announcement-external-btn 并入
@@ -23,7 +23,6 @@
 @import './announcement.css';
 @import './markdown.css';
 @import './tiny-dot.css';
-@import './palette-picker.css';
 @import './nav-collapse.css';
 @import './mock-preview.css';
 @import './nav-search.css';

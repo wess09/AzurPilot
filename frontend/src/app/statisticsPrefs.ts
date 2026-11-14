@@ -2,8 +2,11 @@
  * @fileoverview 统计页外观偏好、时间跨度、图表类型与指标筛选持久化。
  */
 
+/** 统计页支持的业务分类。 */
 export type StatisticsCategory = 'resources' | 'action' | 'opsi' | 'commission' | 'ships' | 'loot' | 'research' | 'storage'
+/** 统计图表的呈现模式。 */
 export type ChartMode = 'line' | 'candlestick'
+/** 多序列图表的纵轴组织方式。 */
 export type ChartAxisMode = 'separate' | 'unified'
 type CommissionPeriod = 'day' | 'week' | 'month'
 
@@ -14,21 +17,29 @@ type CommissionPeriod = 'day' | 'week' | 'month'
  * 只存本浏览器，不区分实例。
  */
 interface StatisticsPrefs {
+  /** 当前统计分类。 */
   category: StatisticsCategory
+  /** 时间跨度天数。 */
   days: number
+  /** 委托统计的时间粒度。 */
   period: CommissionPeriod
   /** 科研页面的视图：'1'~'9' 是各期，'consumable' 是心智/物资 */
   researchSelect: string
   /** 大世界掉落页的任务筛选：'' 是全部大世界任务，其余是任务标识（opsi_xxx） */
   lootTask: string
+  /** 图表呈现模式。 */
   chartMode: ChartMode
+  /** 多序列图表的纵轴组织方式。 */
   chartAxisMode: ChartAxisMode
   /** 纵轴起始值固定为 0，缩放后不跟着可见范围浮动 */
   chartZeroBase: boolean
+  /** 采样粒度，单位为分钟，0 表示自动。 */
   bucket: number
   /** 图表与原始记录卡共用的时间范围，空表示不限 */
   rangeFrom: string
+  /** 时间范围结束值，空表示不限。 */
   rangeTo: string
+  /** 按统计分类保存的选中指标键。 */
   selectedKeys: Record<string, string[]>
 }
 
@@ -109,7 +120,12 @@ let snapshot: StatisticsPrefs = readStatisticsPrefs()
 let version = 0
 const listeners = new Set<() => void>()
 
-/** 订阅偏好写入，返回退订函数。 */
+/**
+ * 订阅偏好写入。
+ *
+ * @param listener 偏好变化后的回调。
+ * @returns 取消订阅函数。
+ */
 export function subscribeStatisticsPrefs(listener: () => void): () => void {
   listeners.add(listener)
   return () => listeners.delete(listener)
@@ -125,7 +141,11 @@ export function getStatisticsPrefs(): StatisticsPrefs {
   return snapshot
 }
 
-/** 合并写入偏好并持久化：其余字段保持不变，selectedKeys 按类目合并而不是整体替换。 */
+/**
+ * 合并写入偏好并持久化。
+ *
+ * @param partial 需要更新的字段；selectedKeys 按类目合并而不是整体替换。
+ */
 export function updateStatisticsPrefs(partial: Partial<StatisticsPrefs>) {
   snapshot = {
     ...snapshot,
@@ -144,7 +164,12 @@ export function updateStatisticsPrefs(partial: Partial<StatisticsPrefs>) {
   for (const listener of listeners) listener()
 }
 
-/** 覆写单个类目的选中指标并去重。 */
+/**
+ * 覆写单个类目的选中指标并去重。
+ *
+ * @param category 统计分类。
+ * @param keys 选中的指标键。
+ */
 export function setSelectedKeysForCategory(category: string, keys: string[]) {
   const nextKeys = {
     ...snapshot.selectedKeys,
@@ -153,7 +178,13 @@ export function setSelectedKeysForCategory(category: string, keys: string[]) {
   updateStatisticsPrefs({ selectedKeys: nextKeys })
 }
 
-/** 返回该类目下仍可用的已选指标；存过的键全部失效时返回空数组。 */
+/**
+ * 返回该类目下仍可用的已选指标。
+ *
+ * @param category 统计分类。
+ * @param availableSeries 当前可选的指标列表。
+ * @returns 仍然可用的已选指标；存过的键全部失效时返回空数组。
+ */
 export function getSelectedKeysForCategory(category: string, availableSeries: { key: string }[]): string[] {
   const saved = snapshot.selectedKeys[category]
   if (Array.isArray(saved) && saved.length > 0) {

@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 图表表头选取器：系列芯片、K 线主次标记与表头容器内的开关。
  * 从 StatisticsChart.tsx 原 504-548 行提取，纯搬迁未改动。
- * 图表表头选取器：系列芯片、K 线主次标记与表头容器内的开关。
  */
 import type {ReactNode} from 'react'
 import { Button } from '../ui/button'
@@ -9,6 +9,7 @@ import { getChartIcon } from './chart-icons'
 import type { ChartUi } from './shared'
 import type {StatSeries} from '../../api/types'
 
+/** 组装图表表头选取器：系列芯片与类型/堆叠等开关的容器。 */
 export function buildChartPicker({series, selectedKeys, toggleKey, selectOnly, setAsPrimary, isCandlestick, isSingle, ui, compactControl, stackedControl, pickerControl, zeroBaseControl, pickerMuted, showPicker}: {
   series: StatSeries[]
   selectedKeys: string[]
@@ -62,7 +63,10 @@ export function buildChartPicker({series, selectedKeys, toggleKey, selectOnly, s
         )
       })}
       {selectedKeys.length > 1 && (
-        <Button type="button" variant="ghost" size="sm" onClick={() => selectOnly(selectedKeys[0])}>{ui('stats.resetSelection')}</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => {
+          const firstKey = selectedKeys[0]
+          if (firstKey !== undefined) selectOnly(firstKey)
+        }}>{ui('stats.resetSelection')}</Button>
       )}
       {compactControl}
       {stackedControl}

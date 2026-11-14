@@ -8,9 +8,10 @@ import type { UpdateStatus } from '../api/types'
 import { useConnection } from './context'
 
 /**
- * 轮询版本更新状态：连接就绪后每 3 秒拉一次 updater.status，
- * 出错只记入 error、不终止轮询，连接断开重连后重新开始。
- * refresh 递增轮询代数，供「检查更新」入口手动触发一次重新拉取。
+ * 轮询版本更新状态并支持手动刷新。
+ *
+ * 连接就绪后每 3 秒拉取一次 `updater.status`，出错只记录错误且不终止轮询。
+ * @returns 更新状态、错误信息与触发重新拉取的函数。
  */
 export function useUpdater() {
   const connection = useConnection()

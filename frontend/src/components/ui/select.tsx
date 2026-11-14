@@ -1,5 +1,5 @@
 /**
- * shadcn/ui · Select
+ * @fileoverview shadcn/ui · Select
  * 结构与动效沿用官方实现；颜色/圆角由 `--sc-*` 令牌接到应用主题。
  */
 
@@ -8,18 +8,22 @@ import * as SelectPrimitive from '@radix-ui/react-select'
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
+/** 下拉选择根组件：value/onValueChange 由调用方管理。 */
 function Select(props: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props}/>
 }
 
+/** 选项分组容器。 */
 function SelectGroup(props: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props}/>
 }
 
+/** 当前选中值的展示位。 */
 function SelectValue(props: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props}/>
 }
 
+/** 触发器：显示当前值并内置展开箭头。 */
 function SelectTrigger({className, children, ...props}: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
   return <SelectPrimitive.Trigger
     data-slot="select-trigger"
@@ -42,6 +46,11 @@ function SelectTrigger({className, children, ...props}: React.ComponentProps<typ
   </SelectPrimitive.Trigger>
 }
 
+/**
+ * 下拉面板：popper 定位时按触发器宽度展开。
+ * @param position - 弹出定位方式，默认 'popper'。
+ * @param container - 挂载 Portal 的容器，默认 document.body。
+ */
 function SelectContent({className, children, position = 'popper', container, ...props}: React.ComponentProps<typeof SelectPrimitive.Content> & {container?: HTMLElement}) {
   return <SelectPrimitive.Portal container={container}>
     <SelectPrimitive.Content
@@ -67,10 +76,12 @@ function SelectContent({className, children, position = 'popper', container, ...
   </SelectPrimitive.Portal>
 }
 
+/** 选项分组标题。 */
 function SelectLabel({className, ...props}: React.ComponentProps<typeof SelectPrimitive.Label>) {
   return <SelectPrimitive.Label data-slot="select-label" className={cn('px-2 py-1.5 text-xs text-muted-foreground', className)} {...props}/>
 }
 
+/** 选项：选中态在右侧显示勾选图标。 */
 function SelectItem({className, children, ...props}: React.ComponentProps<typeof SelectPrimitive.Item>) {
   return <SelectPrimitive.Item
     data-slot="select-item"
@@ -92,16 +103,14 @@ function SelectItem({className, children, ...props}: React.ComponentProps<typeof
   </SelectPrimitive.Item>
 }
 
-function SelectSeparator({className, ...props}: React.ComponentProps<typeof SelectPrimitive.Separator>) {
-  return <SelectPrimitive.Separator data-slot="select-separator" className={cn('pointer-events-none -mx-1 my-1 h-px bg-border', className)} {...props}/>
-}
-
+/** 面板顶部上滚按钮。 */
 function SelectScrollUpButton({className, ...props}: React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
   return <SelectPrimitive.ScrollUpButton data-slot="select-scroll-up-button" className={cn('flex cursor-default items-center justify-center py-1', className)} {...props}>
     <ChevronUpIcon className="size-4"/>
   </SelectPrimitive.ScrollUpButton>
 }
 
+/** 面板底部下滚按钮。 */
 function SelectScrollDownButton({className, ...props}: React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
   return <SelectPrimitive.ScrollDownButton data-slot="select-scroll-down-button" className={cn('flex cursor-default items-center justify-center py-1', className)} {...props}>
     <ChevronDownIcon className="size-4"/>
@@ -116,7 +125,6 @@ export {
   SelectLabel,
   SelectScrollDownButton,
   SelectScrollUpButton,
-  SelectSeparator,
   SelectTrigger,
   SelectValue,
 }

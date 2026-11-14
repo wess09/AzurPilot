@@ -1,3 +1,5 @@
+/** @fileoverview 指挥喵评分面板的渲染回归：档位上色、等级徽章、天赋高亮与折叠行为。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
@@ -96,7 +98,7 @@ describe('指挥喵评分面板', () => {
   it('没有推荐时整个区块不渲染', () => {
     const withoutAdvice: MeowfficerScoreReport = {
       ...report,
-      cats: [{...report.cats[0], advice: null}],
+    cats: [report.cats[0] ? {...report.cats[0], advice: null} : {cat: 'fallback', advice: null}],
     }
     expect(render(withoutAdvice)).not.toContain('meow-advice')
   })

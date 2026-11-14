@@ -12,4 +12,5 @@ const HAN = '\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff'
 const CJK = `${HIRAGANA}${KATAKANA}${HAN}`
 
 // 前端 pattern 属性按 v 标志原样编译，不认 `\w` 这类转义，字符类要逐段写全。
+/** HTML 表单可直接使用的实例名称正则表达式。 */
 export const INSTANCE_NAME_PATTERN = `[A-Za-z0-9${CJK}][A-Za-z0-9_. ${CJK}\\-]{0,63}`

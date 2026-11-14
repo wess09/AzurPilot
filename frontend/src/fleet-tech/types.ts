@@ -23,8 +23,10 @@ export type Bonuses = Record<string, Record<string, number>>
 export interface Report {instance: string; revision: string; data_version?: string; ships: Progress[]; nation_levels: Record<string, number | null>; bonuses: Bonuses; ship_bonuses: Bonuses; nation_bonuses: Bonuses; confirmed_points: number; completed: number; milestone_counts: Record<Milestone, number>}
 /** 表格行：图鉴静态数据与用户进度的合并视图。 */
 export type Row = Ship & Progress
-export const milestones: Milestone[] = ['owned', 'full_star', 'lv120']
-export const recordFields: RecordField[] = [...milestones, 'awakening_pending']
+/** 科技点里程碑字段名，按界面展示顺序排列。 */
+export const milestones: readonly Milestone[] = ['owned', 'full_star', 'lv120']
+/** 可编辑字段：三个里程碑加独立维护的觉醒标记。 */
+export const recordFields: readonly RecordField[] = [...milestones, 'awakening_pending']
 /** 归并舰种代码：20、21 并入 1；22、23、24 并入 22；其余原样。 */
 export const shipType = (value: number) => [20, 21].includes(value) ? 1 : [22, 23, 24].includes(value) ? 22 : value
 /**
@@ -67,8 +69,9 @@ export function matches(row: Row, filters: Record<string, string[]>, query: stri
   if (filters.bonusType?.length || filters.attr?.length) {
     const t = row.technology
     if (!t) return false
+    const bonusTypes = filters.bonusType ?? [], bonusAttrs = filters.attr ?? []
     const effects = [[t.add_get_shiptype, t.add_get_attr], [t.add_level_shiptype, t.add_level_attr]] as const
-    if (!effects.some(([types, attr]) => (!filters.bonusType?.length || types.some(value => filters.bonusType!.includes(String(shipType(value))))) && (!filters.attr?.length || filters.attr.includes(String(attr))))) return false
+    if (!effects.some(([types, attr]) => (!bonusTypes.length || types.some(value => bonusTypes.includes(String(shipType(value))))) && (!bonusAttrs.length || bonusAttrs.includes(String(attr))))) return false
   }
   for (const stage of ['get', 'level'] as const) {
     const classes = filters[`${stage}BonusType`], attrs = filters[`${stage}Attr`], t = row.technology

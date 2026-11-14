@@ -10,7 +10,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useSyncExternalStore: (_subscribe: any, getSnapshot: any, getServerSnapshot?: any) => {
+    useSyncExternalStore: <T,>(_subscribe: (onStoreChange: () => void) => () => void, getSnapshot: () => T, getServerSnapshot?: () => T): T => {
       return (getServerSnapshot ?? getSnapshot)()
     },
   }

@@ -74,6 +74,7 @@ export const colorZhCN = {
 
 type ColorKeys = keyof typeof colorZhCN
 
+/** 英文文案，键集与中文版一致。 */
 export const colorEnUS: Record<ColorKeys, string> = {
   'settings.colorPalette': 'Color palette',
   'settings.colorPaletteHelp': 'Adjust every color in the interface one by one. Changes apply instantly and are stored per light/dark mode.',
@@ -145,6 +146,7 @@ export const colorEnUS: Record<ColorKeys, string> = {
   'settings.colorSlotChartFall': 'Fall',
 }
 
+/** 日文文案，键集与中文版一致。 */
 export const colorJaJP: Record<ColorKeys, string> = {
   'settings.colorPalette': 'カラーパレット',
   'settings.colorPaletteHelp': 'インターフェースの色をひとつずつ調整できます。変更はすぐ反映され、ライト／ダーク別に保存されます。',
@@ -216,6 +218,7 @@ export const colorJaJP: Record<ColorKeys, string> = {
   'settings.colorSlotChartFall': '下落',
 }
 
+/** 繁体中文文案，键集与中文版一致。 */
 export const colorZhTW: Record<ColorKeys, string> = {
   'settings.colorPalette': '調色盤',
   'settings.colorPaletteHelp': '逐項調整介面裡的每一個顏色，改動立即生效，明暗兩套分別儲存。',

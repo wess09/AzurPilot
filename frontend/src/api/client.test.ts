@@ -36,8 +36,11 @@ describe('WebSocket 客户端', () => {
     const first = client.request('system.ping', {})
     const second = client.request('instances.list', {})
     const socket = FakeSocket.latest
-    socket.emit({v: 1, type: 'response', id: socket.sent[1].id, ok: true, result: []})
-    socket.emit({v: 1, type: 'response', id: socket.sent[0].id, ok: true, result: {pong: true}})
+    const firstRequest = socket.sent[0], secondRequest = socket.sent[1]
+    expect(firstRequest).toBeDefined()
+    expect(secondRequest).toBeDefined()
+    socket.emit({v: 1, type: 'response', id: secondRequest!.id, ok: true, result: []})
+    socket.emit({v: 1, type: 'response', id: firstRequest!.id, ok: true, result: {pong: true}})
     expect(await first).toEqual({pong: true}); expect(await second).toEqual([])
   })
   it('断线拒绝未完成请求，不自动重复写操作', async () => {
@@ -70,8 +73,9 @@ describe('WebSocket 客户端', () => {
     const rejection = expect(request).rejects.toMatchObject({
       code: 'INVALID_PARAMS', details: [{message: '不允许调用 os.execute', line: 4, column: 12}],
     })
-    const sent = FakeSocket.latest.sent.at(-1)!
-    FakeSocket.latest.emit({v: 1, type: 'response', id: sent.id, ok: false, error: {
+    const sent = FakeSocket.latest.sent.at(-1)
+    expect(sent).toBeDefined()
+    FakeSocket.latest.emit({v: 1, type: 'response', id: sent!.id, ok: false, error: {
       code: 'INVALID_PARAMS', message: '策略校验失败', details: [{message: '不允许调用 os.execute', line: 4, column: 12}],
     }})
     await rejection
@@ -80,12 +84,16 @@ describe('WebSocket 客户端', () => {
     const values = new Map<string, string>()
     Object.assign(window, {localStorage: {getItem: (key: string) => values.get(key), setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key)}})
     const login = client.login('测试访问密码')
-    FakeSocket.latest.emit({v: 1, type: 'response', id: FakeSocket.latest.sent.at(-1)!.id, ok: true, result: {authenticated: true}})
+    const loginRequest = FakeSocket.latest.sent.at(-1)
+    expect(loginRequest).toBeDefined()
+    FakeSocket.latest.emit({v: 1, type: 'response', id: loginRequest!.id, ok: true, result: {authenticated: true}})
     await login
     client.disconnect(); client = new ApiClient(); client.connect()
     FakeSocket.latest.emit({v: 1, type: 'event', topic: 'session', seq: 1, data: {authRequired: true}})
     expect(FakeSocket.latest.sent.at(-1)).toMatchObject({method: 'auth.login', params: {password: '测试访问密码'}})
-    FakeSocket.latest.emit({v: 1, type: 'response', id: FakeSocket.latest.sent.at(-1)!.id, ok: false, error: {code: 'UNAUTHORIZED', message: '密码已更换'}})
+    const invalidPasswordRequest = FakeSocket.latest.sent.at(-1)
+    expect(invalidPasswordRequest).toBeDefined()
+    FakeSocket.latest.emit({v: 1, type: 'response', id: invalidPasswordRequest!.id, ok: false, error: {code: 'UNAUTHORIZED', message: '密码已更换'}})
     await vi.advanceTimersByTimeAsync(0)
     expect(client.getSnapshot()).toBe('auth')
     expect(values.size).toBe(0)
@@ -101,9 +109,10 @@ describe('WebSocket 客户端', () => {
     client = new ApiClient(); client.connect()
     expect(replaceState).toHaveBeenCalledWith(null, '', 'http://localhost:5173/?view=settings')
     FakeSocket.latest.emit({v: 1, type: 'event', topic: 'session', seq: 1, data: {authRequired: true}})
-    const request = FakeSocket.latest.sent.at(-1)!
+    const request = FakeSocket.latest.sent.at(-1)
+    expect(request).toBeDefined()
     expect(request).toMatchObject({method: 'auth.launcher', params: {ticket: 'opaque_ticket'}})
-    FakeSocket.latest.emit({v: 1, type: 'response', id: request.id, ok: true, result: {authenticated: true}})
+    FakeSocket.latest.emit({v: 1, type: 'response', id: request!.id, ok: true, result: {authenticated: true}})
     await vi.advanceTimersByTimeAsync(0)
     expect(client.getSnapshot()).toBe('ready')
     expect(setItem).not.toHaveBeenCalled()
@@ -123,17 +132,23 @@ describe('WebSocket 客户端', () => {
     session(data, 'data')
     const subscription = client.request('events.subscribe', {instance: 'pilot', topics: ['instances', 'logs', 'preview']})
     expect(control.sent.at(-1)?.params).toEqual({instance: 'pilot', topics: ['instances']})
-    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {instance: 'pilot'}})
+    const controlSubscription = control.sent.at(-1)
+    expect(controlSubscription).toBeDefined()
+    control.emit({v: 1, type: 'response', id: controlSubscription!.id, ok: true, result: {instance: 'pilot'}})
     await subscription
     expect(data.sent.at(-1)?.params).toEqual({instance: 'pilot', topics: ['logs', 'preview']})
-    data.emit({v: 1, type: 'response', id: data.sent.at(-1)!.id, ok: true, result: {}})
+    const dataSubscription = data.sent.at(-1)
+    expect(dataSubscription).toBeDefined()
+    data.emit({v: 1, type: 'response', id: dataSubscription!.id, ok: true, result: {}})
 
     const report = client.request('statistics.report', {instance: 'pilot'})
     await Promise.resolve()
     expect(data.sent.at(-1)?.method).toBe('statistics.report')
     const result = '舰船数据'.repeat(14000)
+    const reportRequest = data.sent.at(-1)
+    expect(reportRequest).toBeDefined()
     const bytes = new TextEncoder().encode(JSON.stringify({
-      v: 1, type: 'response', id: data.sent.at(-1)!.id, ok: true, result,
+      v: 1, type: 'response', id: reportRequest!.id, ok: true, result,
     }))
     // 结果刻意超过单帧上限，按传输协议切成多片：每片首字节 1 表示末片、0 表示续片，
     // 去掉旗标后的载荷不得超过 frameBytes - 1。
@@ -146,10 +161,14 @@ describe('WebSocket 客户端', () => {
       part.set(content, 1)
       chunks.push(part)
     }
-    data.emitBytes(chunks[0].buffer)
+    const firstChunk = chunks[0]
+    expect(firstChunk).toBeDefined()
+    data.emitBytes(firstChunk!.buffer)
     const operation = client.request('scheduler.stop', {instance: 'pilot'})
     expect(control.sent.at(-1)?.method).toBe('scheduler.stop')
-    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {status: 'stopped'}})
+    const operationRequest = control.sent.at(-1)
+    expect(operationRequest).toBeDefined()
+    control.emit({v: 1, type: 'response', id: operationRequest!.id, ok: true, result: {status: 'stopped'}})
     await expect(operation).resolves.toMatchObject({status: 'stopped'})
     chunks.slice(1).forEach(part => data.emitBytes(part.buffer))
     await expect(report).resolves.toBe(result)
@@ -161,12 +180,16 @@ describe('WebSocket 客户端', () => {
     const replacement = FakeSocket.latest
     expect(replacement.url).toBe(data.url)
     session(replacement, 'data')
-    expect(replacement.sent[0]).toMatchObject({method: 'events.subscribe', params: {
+    const replacementSubscription = replacement.sent[0]
+    expect(replacementSubscription).toBeDefined()
+    expect(replacementSubscription).toMatchObject({method: 'events.subscribe', params: {
       instance: 'pilot', topics: ['logs', 'preview'],
     }})
     await Promise.resolve()
     expect(replacement.sent[1]?.method).toBe('statistics.report')
-    replacement.emit({v: 1, type: 'response', id: replacement.sent[1].id, ok: true, result: {series: []}})
+    const replacementReport = replacement.sent[1]
+    expect(replacementReport).toBeDefined()
+    replacement.emit({v: 1, type: 'response', id: replacementReport!.id, ok: true, result: {series: []}})
     await expect(interrupted).resolves.toEqual({series: []})
   })
 
@@ -178,17 +201,23 @@ describe('WebSocket 客户端', () => {
     control.emit({v: 1, type: 'event', topic: 'session', data: {authRequired: true, channel: 'control'}})
     expect(FakeSocket.latest).toBe(control)
     const login = client.login('测试访问密码')
-    control.emit({v: 1, type: 'response', id: control.sent.at(-1)!.id, ok: true, result: {authenticated: true}})
+    const controlLogin = control.sent.at(-1)
+    expect(controlLogin).toBeDefined()
+    control.emit({v: 1, type: 'response', id: controlLogin!.id, ok: true, result: {authenticated: true}})
     await login
     const data = FakeSocket.latest
     data.emit({v: 1, type: 'event', topic: 'session', data: {authRequired: true, channel: 'data'}})
     expect(data.sent).toHaveLength(1)
     expect(data.sent[0]).toMatchObject({method: 'auth.login', params: {password: '测试访问密码'}})
     const read = client.request('config.get', {instance: 'pilot'})
-    data.emit({v: 1, type: 'response', id: data.sent[0].id, ok: true, result: {authenticated: true}})
+    const dataLogin = data.sent[0]
+    expect(dataLogin).toBeDefined()
+    data.emit({v: 1, type: 'response', id: dataLogin!.id, ok: true, result: {authenticated: true}})
     await vi.advanceTimersByTimeAsync(0)
     expect(data.sent[1]?.method).toBe('config.get')
-    data.emit({v: 1, type: 'response', id: data.sent[1].id, ok: true, result: {instance: 'pilot'}})
+    const readRequest = data.sent[1]
+    expect(readRequest).toBeDefined()
+    data.emit({v: 1, type: 'response', id: readRequest!.id, ok: true, result: {instance: 'pilot'}})
     await expect(read).resolves.toEqual({instance: 'pilot'})
   })
 })

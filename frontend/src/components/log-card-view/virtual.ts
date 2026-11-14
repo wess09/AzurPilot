@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 日志卡片虚拟窗口的常量、高度预估与可见区间计算。
  * 从 LogCardView.tsx 原 1894-2015 行提取，纯搬迁未改动。
- * 日志卡片虚拟窗口的常量、高度预估与可见区间计算。
  */
 
 import type { CardItem } from './aggregate'
@@ -101,7 +101,7 @@ export function findVisibleRange(
 
   while (low <= high) {
     const mid = (low + high) >> 1
-    const itemBottom = offsets[mid] + heights[mid]
+    const itemBottom = (offsets[mid] ?? 0) + (heights[mid] ?? 0)
     if (itemBottom >= visibleTop) {
       startIndex = mid
       high = mid - 1
@@ -117,7 +117,7 @@ export function findVisibleRange(
 
   while (low <= high) {
     const mid = (low + high) >> 1
-    if (offsets[mid] <= visibleBottom) {
+    if ((offsets[mid] ?? 0) <= visibleBottom) {
       endIndex = mid
       low = mid + 1
     } else {

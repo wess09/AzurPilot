@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 日志条目到结构化卡片的流式聚合与增量缓存。
  * 从 LogCardView.tsx 原 188-198、218-819 行提取，纯搬迁未改动。
- * 日志条目到结构化卡片的流式聚合与增量缓存。
  */
 
 import type { LogEntry } from '../../api/types'
@@ -148,6 +148,7 @@ export function aggregateSlice(
   while (index < endIndex) {
     const cardStart = index
     const entry = entries[index]
+    if (!entry) break
     const raw = entry.text.replace(/[\r\n]+$/, '')
     const { level, time, message } = extractLogMessage(raw)
     const trimmedMsg = message.trim()
@@ -157,34 +158,40 @@ export function aggregateSlice(
       trimmedMsg.includes('═'.repeat(10)) &&
       index + 2 < entries.length
     ) {
-      const next1 = extractLogMessage(entries[index + 1].text).message.trim()
-      const next2 = extractLogMessage(entries[index + 2].text).message.trim()
+      const nextEntry1 = entries[index + 1]
+      const nextEntry2 = entries[index + 2]
+      if (nextEntry1 && nextEntry2) {
+      const next1 = extractLogMessage(nextEntry1.text).message.trim()
+      const next2 = extractLogMessage(nextEntry2.text).message.trim()
       if (next2.includes('═'.repeat(10)) && next1 && !next1.includes('═')) {
         const card: CardItem = {
           type: 'system_banner',
           id: entry.id,
           time,
           title: next1,
-          rawText: [entry.text, entries[index + 1].text, entries[index + 2].text].join('\n'),
+          rawText: [entry.text, nextEntry1.text, nextEntry2.text].join('\n'),
         }
         index += 3
         cards.push(card)
         ranges.push({ card, start: cardStart, end: index })
         continue
       }
+      }
     }
 
     // 2. 任务/阶段带线标题（Level 1/2 HR：═ TITLE ═ + 紧随其后的同名 INFO）。
     const ruleMatch = /^[═─]{3,}\s*(.*?)\s*[═─]{3,}$/.exec(trimmedMsg)
-    if (ruleMatch && ruleMatch[1].trim()) {
-      const title = ruleMatch[1].trim()
+    const ruleTitle = ruleMatch?.[1]?.trim()
+    if (ruleMatch && ruleTitle) {
+      const title = ruleTitle
       const isDouble = trimmedMsg.includes('═')
       // 检查下一行是否重复输出了同名 INFO。
       let rawText = entry.text
-      if (index + 1 < entries.length) {
-        const nextMsg = extractLogMessage(entries[index + 1].text).message.trim()
+      const nextEntry = entries[index + 1]
+      if (nextEntry) {
+        const nextMsg = extractLogMessage(nextEntry.text).message.trim()
         if (nextMsg === title) {
-          rawText += '\n' + entries[index + 1].text
+          rawText += '\n' + nextEntry.text
           index++
         }
       }
@@ -204,24 +211,29 @@ export function aggregateSlice(
 
     // 3. 海域透视与边缘线识别：[地图-透视] 或 [地图-单应性]。
     const perspMatch = /^\[地图-(透视|单应性)\]\s+([\d.]+s)\s+(_)?\s*(水平:.*|边缘线:.*)$/.exec(trimmedMsg)
-    if (perspMatch && index + 1 < entries.length) {
-      const nextMsg = extractLogMessage(entries[index + 1].text).message
+    const nextPerspectiveEntry = entries[index + 1]
+    if (perspMatch && nextPerspectiveEntry) {
+      const nextMsg = extractLogMessage(nextPerspectiveEntry.text).message
       const nextPersp = /^\[地图-(透视|单应性)\]\s+边缘:\s*([\/ _\\]*?)\s+(垂直:.*|单应位置:.*)$/.exec(nextMsg.trim())
-      if (nextPersp) {
-        const edgesStr = nextPersp[2]
+      const edgesStr = nextPersp?.[2]
+      const model = perspMatch[1] === '透视' || perspMatch[1] === '单应性' ? perspMatch[1] : undefined
+      const duration = perspMatch[2]
+      const info1 = perspMatch[4]
+      const info2 = nextPersp?.[3]
+      if (nextPersp && edgesStr !== undefined && model !== undefined && duration !== undefined && info1 !== undefined && info2 !== undefined) {
         const card: CardItem = {
           type: 'perspective',
           id: entry.id,
           time,
-          model: perspMatch[1] as '透视' | '单应性',
-          duration: perspMatch[2],
+          model,
+          duration,
           lowerEdge: perspMatch[3] === '_',
           leftEdge: edgesStr.includes('/'),
           upperEdge: edgesStr.includes('_'),
           rightEdge: edgesStr.includes('\\'),
-          info1: perspMatch[4],
-          info2: nextPersp[3],
-          rawText: entry.text + '\n' + entries[index + 1].text,
+          info1,
+          info2,
+          rawText: entry.text + '\n' + nextPerspectiveEntry.text,
         }
         index += 2
         cards.push(card)
@@ -233,19 +245,25 @@ export function aggregateSlice(
     // 4. 全局海图主网格：[地图-显示] 行头 + A  B  C  D 列头。
     const mapHeaderMatch = /^\[地图-显示\]\s+([A-Z](\s+[A-Z])+)/.exec(trimmedMsg)
     if (mapHeaderMatch) {
-      const cols = mapHeaderMatch[1].trim().split(/\s+/)
+      const header = mapHeaderMatch[1]
+      if (!header) break
+      const cols = header.trim().split(/\s+/)
       const rows: Array<{ rowNum: number; cells: string[] }> = []
       const rawLines = [entry.text]
       let rIdx = index + 1
 
       while (rIdx < entries.length) {
-        const rMsg = extractLogMessage(entries[rIdx].text).message
+        const rowEntry = entries[rIdx]
+        if (!rowEntry) break
+        const rMsg = extractLogMessage(rowEntry.text).message
         const rowMatch = /^\s*(\d{1,2})\s+(([A-Za-z0-9_=+-]{2}\s*)+)$/.exec(rMsg)
-        if (rowMatch) {
-          const rowNum = parseInt(rowMatch[1], 10)
-          const cells = rowMatch[2].trim().split(/\s+/)
+        const rowNumText = rowMatch?.[1]
+        const cellsText = rowMatch?.[2]
+        if (rowMatch && rowNumText !== undefined && cellsText !== undefined) {
+          const rowNum = parseInt(rowNumText, 10)
+          const cells = cellsText.trim().split(/\s+/)
           rows.push({ rowNum, cells })
-          rawLines.push(entries[rIdx].text)
+          rawLines.push(rowEntry.text)
           rIdx++
         } else {
           break
@@ -271,20 +289,24 @@ export function aggregateSlice(
     // 5. 寻路代价网格（Cost Map）：大间距字母列头 + 行号数字行。
     const costHeaderMatch = /^\s*([A-Z](\s{2,}[A-Z])+)/.exec(trimmedMsg)
     if (costHeaderMatch && index + 1 < entries.length) {
-      const cols = costHeaderMatch[1].trim().split(/\s+/)
+      const header = costHeaderMatch[1]
+      if (!header) break
+      const cols = header.trim().split(/\s+/)
       const rows: Array<{ rowNum: number; values: string[] }> = []
       const rawLines = [entry.text]
       let rIdx = index + 1
 
       while (rIdx < entries.length) {
-        const rMsg = extractLogMessage(entries[rIdx].text).message
+        const rowEntry = entries[rIdx]
+        if (!rowEntry) break
+        const rMsg = extractLogMessage(rowEntry.text).message
         const fields = rMsg.trim().split(/[ \t]+/).filter(Boolean)
         const rowToken = fields[0] ?? ''
         const values = fields.slice(1)
         if (isAsciiDigits(rowToken, 1, 2) && values.length > 0 && values.every(isCostValue)) {
           const rowNum = Number(rowToken)
           rows.push({ rowNum, values })
-          rawLines.push(entries[rIdx].text)
+          rawLines.push(rowEntry.text)
           rIdx++
         } else {
           break
@@ -315,10 +337,12 @@ export function aggregateSlice(
       let rIdx = index + 1
 
       while (rIdx < entries.length) {
-        const rMsg = extractLogMessage(entries[rIdx].text).message.trim()
+        const rowEntry = entries[rIdx]
+        if (!rowEntry) break
+        const rMsg = extractLogMessage(rowEntry.text).message.trim()
         if (/^(([A-Za-z0-9_=+-]{2}|\.\.)\s*){3,}$/.test(rMsg) && !/^\d+/.test(rMsg)) {
           rows.push(rMsg.split(/\s+/))
-          rawLines.push(entries[rIdx].text)
+          rawLines.push(rowEntry.text)
           rIdx++
         } else {
           break
@@ -331,7 +355,7 @@ export function aggregateSlice(
           type: 'matrix_grid',
           id: entry.id,
           time,
-          title: rows[0].includes('..') ? '局部海域扫描切片 (Local View)' : '大世界战略雷达扫描 (Radar Map)',
+          title: rows[0]?.includes('..') ? '局部海域扫描切片 (Local View)' : '大世界战略雷达扫描 (Radar Map)',
           rows,
           rawText: rawLines.join('\n'),
         }
@@ -343,17 +367,23 @@ export function aggregateSlice(
 
     // 7. 连续右对齐属性块（attr_align: key: val）。
     const attrMatch = /^\s*([^:\n]{2,22}):\s*(.+)$/.exec(trimmedMsg)
-    if (attrMatch && !trimmedMsg.startsWith('http') && !trimmedMsg.startsWith('E:') && !trimmedMsg.startsWith('C:')) {
-      const items = [{ key: attrMatch[1].trim(), value: attrMatch[2].trim() }]
+    const attrKey = attrMatch?.[1]
+    const attrValue = attrMatch?.[2]
+    if (attrMatch && attrKey !== undefined && attrValue !== undefined && !trimmedMsg.startsWith('http') && !trimmedMsg.startsWith('E:') && !trimmedMsg.startsWith('C:')) {
+      const items = [{ key: attrKey.trim(), value: attrValue.trim() }]
       const rawLines = [entry.text]
       let rIdx = index + 1
 
       while (rIdx < entries.length) {
-        const rMsg = extractLogMessage(entries[rIdx].text).message.trim()
+        const rowEntry = entries[rIdx]
+        if (!rowEntry) break
+        const rMsg = extractLogMessage(rowEntry.text).message.trim()
         const nextAttr = /^\s*([^:\n]{2,22}):\s*(.+)$/.exec(rMsg)
-        if (nextAttr && !rMsg.startsWith('http') && !rMsg.startsWith('E:') && !rMsg.startsWith('C:')) {
-          items.push({ key: nextAttr[1].trim(), value: nextAttr[2].trim() })
-          rawLines.push(entries[rIdx].text)
+        const nextKey = nextAttr?.[1]
+        const nextValue = nextAttr?.[2]
+        if (nextAttr && nextKey !== undefined && nextValue !== undefined && !rMsg.startsWith('http') && !rMsg.startsWith('E:') && !rMsg.startsWith('C:')) {
+          items.push({ key: nextKey.trim(), value: nextValue.trim() })
+          rawLines.push(rowEntry.text)
           rIdx++
         } else {
           break
@@ -391,7 +421,8 @@ export function aggregateSlice(
       const rows: string[][] = []
 
       for (let i = 0; i < lines.length; i++) {
-        const l = lines[i].trim()
+        const rawLine = lines[i]
+        const l = rawLine?.trim() ?? ''
         if (
           l &&
           !l.includes('┌') && !l.includes('┐') && !l.includes('└') && !l.includes('┘') &&
@@ -483,13 +514,14 @@ export function aggregateSlice(
 
     // 10. 独立异常堆栈（Traceback）。
     if (raw.includes('Traceback (most recent call last)')) {
-      const excMatch = /([a-zA-Z0-9_]+Error|[a-zA-Z0-9_]+Exception|ScriptEnd):\s*(.*)$/.exec(raw)
+        const excMatch = /([a-zA-Z0-9_]+Error|[a-zA-Z0-9_]+Exception|ScriptEnd):\s*(.*)$/.exec(raw)
+        const excName = excMatch?.[1] && excMatch[2] !== undefined ? `${excMatch[1]}: ${excMatch[2]}` : 'Python 异常堆栈'
       index++
       const card: CardItem = {
         type: 'traceback',
         id: entry.id,
         time,
-        excName: excMatch ? `${excMatch[1]}: ${excMatch[2]}` : 'Python 异常堆栈',
+        excName,
         rawText: raw,
       }
       cards.push(card)
@@ -505,8 +537,9 @@ export function aggregateSlice(
       for (const line of lines) {
         const trimmed = line.trim()
         const modelMatch = trimmed.match(/由\s*([a-zA-Z0-9_.-]+)\s*提供/)
-        if (modelMatch) {
-          model = modelMatch[1]
+        const modelName = modelMatch?.[1]
+        if (modelName) {
+          model = modelName
         }
         if (/^[A-Z]{4,8}\s+.*?[│]\s*\[LLM\]\s*$/.test(trimmed) || trimmed === '[LLM]') continue
         if (trimmed.startsWith('[LLM 分析报告') || trimmed.startsWith('[LLM] 分析结束')) continue
@@ -583,14 +616,16 @@ export function aggregateEntriesToCards(entries: LogEntry[]): CardItem[] {
     return lastCards
   }
 
-  const dropped = lastEntries.findIndex(entry => entry.id === entries[0].id)
+  const firstEntry = entries[0]
+  if (!firstEntry) return []
+  const dropped = lastEntries.findIndex(entry => entry.id === firstEntry.id)
   const overlap = lastEntries.length - dropped
   if (dropped >= 0 && entries.length >= overlap) {
     let matched = 0
     while (matched < overlap) {
       const entry = entries[matched]
       const cached = lastEntries[dropped + matched]
-      if (entry !== cached && (entry.id !== cached.id || entry.text !== cached.text || entry.level !== cached.level)) break
+      if (!entry || !cached || (entry !== cached && (entry.id !== cached.id || entry.text !== cached.text || entry.level !== cached.level))) break
       matched++
     }
     if (matched === overlap) {
@@ -600,17 +635,21 @@ export function aggregateEntriesToCards(entries: LogEntry[]): CardItem[] {
       const tailIndex = lastRanges.length - 4
       const reuseIndex = lastRanges.findIndex(range => range.start >= dropped)
       if (reuseIndex >= 0 && reuseIndex < tailIndex) {
-        const headEnd = lastRanges[reuseIndex].start - dropped
-        const head = aggregateSlice(entries, 0, headEnd)
-        // 裁剪若切开多行卡片，重新解析的首张卡片可能跨过旧边界。
-        if ((head.ranges.at(-1)?.end ?? 0) === headEnd) {
-          const tail = aggregateSlice(entries, lastRanges[tailIndex].start - dropped)
-          const ranges = lastRanges.slice(reuseIndex, tailIndex)
-          const shifted = dropped ? ranges.map(({card, start, end}) => ({card, start: start - dropped, end: end - dropped})) : ranges
-          lastRanges = head.ranges.concat(shifted, tail.ranges)
-          lastCards = head.cards.concat(lastCards.slice(reuseIndex, tailIndex), tail.cards)
-          lastEntries = entries
-          return lastCards
+        const reuseRange = lastRanges[reuseIndex]
+        const tailRange = lastRanges[tailIndex]
+        if (reuseRange && tailRange) {
+          const headEnd = reuseRange.start - dropped
+          const head = aggregateSlice(entries, 0, headEnd)
+          // 裁剪若切开多行卡片，重新解析的首张卡片可能跨过旧边界。
+          if ((head.ranges.at(-1)?.end ?? 0) === headEnd) {
+            const tail = aggregateSlice(entries, tailRange.start - dropped)
+            const ranges = lastRanges.slice(reuseIndex, tailIndex)
+            const shifted = dropped ? ranges.map(({card, start, end}) => ({card, start: start - dropped, end: end - dropped})) : ranges
+            lastRanges = head.ranges.concat(shifted, tail.ranges)
+            lastCards = head.cards.concat(lastCards.slice(reuseIndex, tailIndex), tail.cards)
+            lastEntries = entries
+            return lastCards
+          }
         }
       }
     }
@@ -623,6 +662,7 @@ export function aggregateEntriesToCards(entries: LogEntry[]): CardItem[] {
   return lastCards
 }
 
+/** 聚合结果的数据类型，供消费方与测试复用。 */
 export type {
   CardItem,
   CardRange,

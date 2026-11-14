@@ -1,3 +1,5 @@
+/** @fileoverview 全真模拟实例预览的渲染回归：外壳各区域、材质检视器与初始区域。 */
+
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

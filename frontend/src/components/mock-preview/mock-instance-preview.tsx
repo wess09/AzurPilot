@@ -1,4 +1,5 @@
 /**
+ * @fileoverview 全真模拟实例预览主组件。
  * 从 MockInstancePreview.tsx 原组件骨架（65-77、106-120、425-427、553-561 行）组装，
  * 各段落正文逐字搬迁至同目录域文件，调用位置与顺序和原文件保持一致。
  * 全真模拟实例预览主组件：组装外壳各区域与材质调节面板，有 document 时经 Portal 挂到 body。
@@ -21,7 +22,9 @@ import { mockSampleModal } from './sample-modal'
 import { mockInspector } from './inspector'
 
 type MockInstancePreviewProps = {
+  /** 关闭预览层回调。 */
   onClose: () => void
+  /** 初始选中的材质调节区域。 */
   initialRegion?: RegionId
 }
 

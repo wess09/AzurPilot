@@ -14,7 +14,17 @@ import { SegmentedControl } from './SegmentedControl'
 /** 截图视图顶部展示的日志条数，够看清当前进度即可，再多会挤掉画面。 */
 export const RECENT_LOG_LINES = 3
 
-interface CompactLine {id: number; level: string; time: string; text: string}
+/** 监控视图的单行日志摘要。 */
+export interface CompactLine {
+  /** 来源日志条目 id，用于去重与合并。 */
+  id: number
+  /** 小写等级。 */
+  level: string
+  /** 时间文本；分割线摘要没有时间，为空串。 */
+  time: string
+  /** 摘要正文或分割线标题。 */
+  text: string
+}
 
 /**
  * 把一条渲染后的日志压成单行摘要。
@@ -25,9 +35,16 @@ export function compactLine(entry: LogEntry): CompactLine | null {
   const raw = entry.text.replace(/[\r\n]+/g, ' ').trim()
   if (!raw || PURE_RULE_RE.test(raw)) return null
   const rule = RULE_RE.exec(raw)
-  if (rule) return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: rule[1]}
+  const ruleTitle = rule?.[1]
+  if (rule && ruleTitle !== undefined) return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: ruleTitle}
   const log = LOG_LINE_RE.exec(raw)
-  if (log) return {id: entry.id, level: log[1].toLowerCase(), time: `${log[2] ? `${log[2]} ` : ''}${log[3]}`, text: log[4]}
+  const level = log?.[1]
+  const date = log?.[2]
+  const time = log?.[3]
+  const message = log?.[4]
+  if (log && level !== undefined && time !== undefined && message !== undefined) {
+    return {id: entry.id, level: level.toLowerCase(), time: `${date ? `${date} ` : ''}${time}`, text: message}
+  }
   // Traceback 等原始行格式不固定，整体折成一行。
   return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: raw}
 }

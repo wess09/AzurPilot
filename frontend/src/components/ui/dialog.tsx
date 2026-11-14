@@ -1,36 +1,27 @@
 "use client"
 
+/** @fileoverview shadcn/ui 对话框：Radix 封装，居中内容面板与可选关闭按钮。 */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { XIcon } from "lucide-react"
 import { Dialog as DialogPrimitive } from "radix-ui"
 
-import { Button } from "./button"
-
+/** 对话框根组件：管理 open 状态，其余属性透传 Radix Root。 */
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogTrigger({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
-}
-
+/** Portal 容器：把浮层挂到 body，避免被父级 overflow 裁剪。 */
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
 }
 
-function DialogClose({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
-}
-
+/** 遮罩层：半透明黑底，随开关状态淡入淡出。 */
 function DialogOverlay({
   className,
   ...props
@@ -47,6 +38,10 @@ function DialogOverlay({
   )
 }
 
+/**
+ * 对话框内容：居中浮层，内置遮罩。
+ * @param showCloseButton - 是否渲染右上角关闭按钮，默认 true。
+ */
 function DialogContent({
   className,
   children,
@@ -81,6 +76,7 @@ function DialogContent({
   )
 }
 
+/** 对话框标题区：纵向排布标题与描述。 */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -91,33 +87,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function DialogFooter({
-  className,
-  showCloseButton = false,
-  children,
-  ...props
-}: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean
-}) {
-  return (
-    <div
-      data-slot="dialog-footer"
-      className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-        className
-      )}
-      {...props}
-    >
-      {children}
-      {showCloseButton && (
-        <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
-        </DialogPrimitive.Close>
-      )}
-    </div>
-  )
-}
-
+/** 对话框标题：Radix 用于无障碍命名。 */
 function DialogTitle({
   className,
   ...props
@@ -131,28 +101,12 @@ function DialogTitle({
   )
 }
 
-function DialogDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Description>) {
-  return (
-    <DialogPrimitive.Description
-      data-slot="dialog-description"
-      className={cn("text-sm text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
 
 export {
   Dialog,
-  DialogClose,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-  DialogTrigger,
 }

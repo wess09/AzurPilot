@@ -1,16 +1,28 @@
+/**
+ * @fileoverview 插件上下文：加载已安装插件列表，维护启用状态、主题皮肤选择与插件 API 请求通道。
+ */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useConnection } from '../app/context'
 import { pluginAsset, type InstalledPlugin } from './types'
 
+/** 插件上下文对外暴露的状态与操作；组件一律通过 usePlugins() 读取。 */
 interface PluginState {
+  /** 已安装插件列表；未就绪或未登录时为空数组。 */
   plugins: InstalledPlugin[]
+  /** 插件列表是否完成过一次成功加载。 */
   ready: boolean
+  /** 最近一次加载失败的错误文案；正常为空字符串。 */
   error: string
+  /** 重新向后端拉取插件列表。 */
   refresh: () => Promise<void>
+  /** 以插件身份请求宿主后端接口，自动附带插件访问令牌。 */
   request: (path: string, options: RequestInit) => Promise<void>
+  /** 当前启用且声明了主题皮肤、被选为皮肤源的插件。 */
   theme?: InstalledPlugin
+  /** 持久化的皮肤插件 ID；空字符串表示使用内置外观。 */
   themeId: string
+  /** 选择皮肤插件并写入 localStorage。 */
   setTheme: (id: string) => void
 }
 
@@ -19,8 +31,13 @@ const initial: PluginState = {
   refresh: async () => {}, request: async () => {}, setTheme: () => {},
 }
 const PluginContext = createContext(initial)
+/** 读取插件上下文；未在 PluginProvider 之内调用时得到初始空状态。 */
 export const usePlugins = () => useContext(PluginContext)
 
+/**
+ * 插件状态 Provider：连接就绪后拉取插件列表并监听后端变更事件。
+ * 皮肤选择持久化在 localStorage，连接进入 auth 时清空已加载状态。
+ */
 export function PluginProvider({children}: {children: ReactNode}) {
   const connection = useConnection()
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([])
@@ -78,6 +95,7 @@ export function PluginProvider({children}: {children: ReactNode}) {
   return <PluginContext.Provider value={state}>{children}</PluginContext.Provider>
 }
 
+/** 将启用主题的样式表按槽位注入页面，并同步给 index.html 的预载记录。 */
 export function PluginStyles() {
   const {theme} = usePlugins()
   useEffect(() => {

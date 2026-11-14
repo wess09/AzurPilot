@@ -41,9 +41,9 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('system_banner')
-    if (cards[0].type === 'system_banner') {
-      expect(cards[0].title).toBe('启动')
+    expect(cards[0]?.type).toBe('system_banner')
+    if (cards[0]?.type === 'system_banner') {
+      expect(cards[0]?.title).toBe('启动')
     }
   })
 
@@ -54,10 +54,10 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('stage_header')
-    if (cards[0].type === 'stage_header') {
-      expect(cards[0].title).toBe('COMMISSION')
-      expect(cards[0].level).toBe(1)
+    expect(cards[0]?.type).toBe('stage_header')
+    if (cards[0]?.type === 'stage_header') {
+      expect(cards[0]?.title).toBe('COMMISSION')
+      expect(cards[0]?.level).toBe(1)
     }
   })
 
@@ -68,13 +68,13 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('perspective')
-    if (cards[0].type === 'perspective') {
-      expect(cards[0].duration).toBe('0.045s')
-      expect(cards[0].lowerEdge).toBe(true)
-      expect(cards[0].leftEdge).toBe(true)
-      expect(cards[0].upperEdge).toBe(true)
-      expect(cards[0].rightEdge).toBe(true)
+    expect(cards[0]?.type).toBe('perspective')
+    if (cards[0]?.type === 'perspective') {
+      expect(cards[0]?.duration).toBe('0.045s')
+      expect(cards[0]?.lowerEdge).toBe(true)
+      expect(cards[0]?.leftEdge).toBe(true)
+      expect(cards[0]?.upperEdge).toBe(true)
+      expect(cards[0]?.rightEdge).toBe(true)
 
       const html = renderToStaticMarkup(<PerspectiveCard card={cards[0]} />)
       expect(html).toContain('perspective-card')
@@ -92,12 +92,12 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('perspective')
-    if (cards[0].type === 'perspective') {
-      expect(cards[0].lowerEdge).toBe(false)
-      expect(cards[0].rightEdge).toBe(false)
-      expect(cards[0].leftEdge).toBe(true)
-      expect(cards[0].upperEdge).toBe(true)
+    expect(cards[0]?.type).toBe('perspective')
+    if (cards[0]?.type === 'perspective') {
+      expect(cards[0]?.lowerEdge).toBe(false)
+      expect(cards[0]?.rightEdge).toBe(false)
+      expect(cards[0]?.leftEdge).toBe(true)
+      expect(cards[0]?.upperEdge).toBe(true)
 
       const html = renderToStaticMarkup(<PerspectiveCard card={cards[0]} />)
       expect(html).toContain('edge-missing')
@@ -114,11 +114,11 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('map_grid')
-    if (cards[0].type === 'map_grid') {
-      expect(cards[0].cols).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
-      expect(cards[0].rows).toHaveLength(3)
-      expect(cards[0].rows[0].cells).toEqual(['++', '++', '++', '--', '--', '--', '--', '--'])
+    expect(cards[0]?.type).toBe('map_grid')
+    if (cards[0]?.type === 'map_grid') {
+      expect(cards[0]?.cols).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+      expect(cards[0]?.rows).toHaveLength(3)
+      expect(cards[0]?.rows[0]?.cells).toEqual(['++', '++', '++', '--', '--', '--', '--', '--'])
 
       const html = renderToStaticMarkup(<MapGridCard card={cards[0]} />)
       expect(html).toContain('map-card')
@@ -139,10 +139,10 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('property_sheet')
-    if (cards[0].type === 'property_sheet') {
-      expect(cards[0].items).toHaveLength(3)
-      expect(cards[0].items[0]).toEqual({ key: '摄像机', value: '(4, 3)' })
+    expect(cards[0]?.type).toBe('property_sheet')
+    if (cards[0]?.type === 'property_sheet') {
+      expect(cards[0]?.items).toHaveLength(3)
+      expect(cards[0]?.items[0]).toEqual({ key: '摄像机', value: '(4, 3)' })
 
       const html = renderToStaticMarkup(<PropertySheetCard card={cards[0]} search="" />)
       expect(html).toContain('property-card')
@@ -164,10 +164,10 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     const entries = [{ id: 1, level: 'INFO', text: rawTable }]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('data_table')
-    if (cards[0].type === 'data_table') {
-      expect(cards[0].headers).toEqual(['Device', 'Method', 'FPS', 'Latency'])
-      expect(cards[0].rows[0]).toEqual(['MuMuPlayer12', 'nemu_ipc', '58.4', '0.005s'])
+    expect(cards[0]?.type).toBe('data_table')
+    if (cards[0]?.type === 'data_table') {
+      expect(cards[0]?.headers).toEqual(['Device', 'Method', 'FPS', 'Latency'])
+      expect(cards[0]?.rows[0]).toEqual(['MuMuPlayer12', 'nemu_ipc', '58.4', '0.005s'])
 
       const html = renderToStaticMarkup(<DataTableCard card={cards[0]} />)
       expect(html).toContain('table-card')
@@ -191,11 +191,11 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     const entries = [{ id: 1, level: 'INFO', text: rawAsciiTable }]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('data_table')
-    if (cards[0].type === 'data_table') {
-      expect(cards[0].title).toBe('Legacy ASCII Benchmark')
-      expect(cards[0].headers).toEqual(['Screenshot', 'Time', 'Speed'])
-      expect(cards[0].rows).toHaveLength(3)
+    expect(cards[0]?.type).toBe('data_table')
+    if (cards[0]?.type === 'data_table') {
+      expect(cards[0]?.title).toBe('Legacy ASCII Benchmark')
+      expect(cards[0]?.headers).toEqual(['Screenshot', 'Time', 'Speed'])
+      expect(cards[0]?.rows).toHaveLength(3)
 
       const html = renderToStaticMarkup(<DataTableCard card={cards[0]} />)
       expect(html).toContain('Legacy ASCII Benchmark')
@@ -224,12 +224,12 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     const entries = [{ id: 1, level: 'ERROR', text: rawError }]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('error_context')
-    if (cards[0].type === 'error_context') {
-      expect(cards[0].title).toBe('任务执行发生未处理异常（opsi_ash_beacon）')
-      expect(cards[0].reason).toBe('程序抛出了 ScriptEnd。')
-      expect(cards[0].action).toBe('查看完整堆栈。')
-      expect(cards[0].stackTrace).toContain('Traceback')
+    expect(cards[0]?.type).toBe('error_context')
+    if (cards[0]?.type === 'error_context') {
+      expect(cards[0]?.title).toBe('任务执行发生未处理异常（opsi_ash_beacon）')
+      expect(cards[0]?.reason).toBe('程序抛出了 ScriptEnd。')
+      expect(cards[0]?.action).toBe('查看完整堆栈。')
+      expect(cards[0]?.stackTrace).toContain('Traceback')
 
       const html = renderToStaticMarkup(<ErrorContextCard card={cards[0]} />)
       expect(html).toContain('error-card')
@@ -295,9 +295,9 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
     ]
     const cards = aggregateEntriesToCards(entries)
     expect(cards).toHaveLength(1)
-    expect(cards[0].type).toBe('cost_grid')
+    expect(cards[0]?.type).toBe('cost_grid')
 
-    if (cards[0].type === 'cost_grid') {
+    if (cards[0]?.type === 'cost_grid') {
       const html = renderToStaticMarkup(<CostGridCard card={cards[0]} />)
       expect(html).toContain('寻路移动代价热力图')
       expect(html).toContain('cost-wall')
@@ -555,7 +555,7 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
         const window = [...history.slice(1), entry(16, '1 ++ --')]
         const updated = aggregateEntriesToCards(window)
         expect(updated[1]).toBe(initial[1])
-        expect(updated[0].type).toBe('single')
+        expect(updated[0]?.type).toBe('single')
         expect(updated.at(-1)?.type).toBe('map_grid')
         clearAggregationCache()
         expect(updated).toEqual(aggregateEntriesToCards(window))
@@ -578,7 +578,7 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
         const resetCards = aggregateEntriesToCards(entriesShort)
         expect(resetCards).toHaveLength(1)
         expect(getAggregationCacheInfo().cachedEntriesCount).toBe(1)
-        expect(resetCards[0].id).toBe(101)
+        expect(resetCards[0]?.id).toBe(101)
       })
     })
 
@@ -603,14 +603,14 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
         }
 
         // React.memo 会将比较函数存放在 compare 属性上。
-        const compareSingle = (SingleLogLineCard as any).compare
+        const compareSingle = (SingleLogLineCard as typeof SingleLogLineCard & {compare?: (prevProps: unknown, nextProps: unknown) => boolean}).compare
         if (compareSingle) {
           expect(compareSingle({ card: dummyCard, search: '' }, { card: dummyCard, search: '' })).toBe(true)
           expect(compareSingle({ card: dummyCard, search: 'a' }, { card: dummyCard, search: 'b' })).toBe(false)
           expect(compareSingle({ card: dummyCard, search: '' }, { card: { ...dummyCard }, search: '' })).toBe(false)
         }
 
-        const compareProp = (PropertySheetCard as any).compare
+        const compareProp = (PropertySheetCard as typeof PropertySheetCard & {compare?: (prevProps: unknown, nextProps: unknown) => boolean}).compare
         if (compareProp) {
           expect(compareProp({ card: dummyPropCard, search: '' }, { card: dummyPropCard, search: '' })).toBe(true)
           expect(compareProp({ card: dummyPropCard, search: 'x' }, { card: dummyPropCard, search: 'y' })).toBe(false)
@@ -627,7 +627,7 @@ describe('LogCardView 块级聚合器与卡片组件', () => {
         ]
         const sampleCard = { id: 99, time: '', rawText: '' }
         for (const comp of cardComponents) {
-          const compCompare = (comp as any).compare
+          const compCompare = (comp as typeof comp & {compare?: (prevProps: unknown, nextProps: unknown) => boolean}).compare
           if (compCompare) {
             expect(compCompare({ card: sampleCard }, { card: sampleCard })).toBe(true)
             expect(compCompare({ card: sampleCard }, { card: { ...sampleCard } })).toBe(false)

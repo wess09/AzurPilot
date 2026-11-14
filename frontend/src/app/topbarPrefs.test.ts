@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 实例标签栏档位与 :root 变量应用测试。
+ */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // 模块在导入时就会往 document 上落一次档位，所以桩必须早于导入建立。

@@ -8,10 +8,13 @@ import { getThemePreference, subscribeTheme, type Material } from './theme'
 
 /** `default` 只是旧记录里的档位：读入时折算成 URL 模式的内置 API，不再写回。 */
 export type BackgroundSource = 'off' | 'url' | 'upload'
+/** 背景媒体类型。 */
 export type BackgroundKind = 'image' | 'video'
 
 interface BackgroundPreference {
+  /** 背景来源档位。 */
   source: BackgroundSource
+  /** 媒体类型。 */
   kind: BackgroundKind
   /** URL 模式：一行一个随机图 API，本次生效其中一条。 */
   urls: string[]
@@ -28,9 +31,13 @@ export interface BackgroundSnapshot extends BackgroundPreference {
   assetUrl: string
   /** URL 模式解析出的直链（解析失败时为空）。 */
   directUrl: string
+  /** 是否正在解析随机图 API。 */
   resolving: boolean
+  /** 最近一次地址解析失败的信息。 */
   resolveError: string
+  /** 是否正在加载图库或浏览器上传文件。 */
   loading: boolean
+  /** 快照版本，每次发布状态时递增。 */
   revision: number
 }
 
@@ -58,7 +65,7 @@ function pickActive(count: number): number {
   if (count <= 1) return 0
   const buffer = new Uint32Array(1)
   crypto.getRandomValues(buffer)
-  return buffer[0] % count
+  return (buffer[0] ?? 0) % count
 }
 const DATABASE_NAME = 'azurpilot-preferences'
 const DATABASE_VERSION = 1
@@ -151,7 +158,14 @@ let gallery: BackgroundGalleryEntry[] = []
 let objectUrl = ''
 let uploadLoad: Promise<void> | undefined
 
+/** 读取当前背景状态快照，供 `useSyncExternalStore` 使用。 */
 export const getBackground = () => snapshot
+/**
+ * 订阅背景状态变化。
+ *
+ * @param listener 状态变化回调。
+ * @returns 取消订阅函数。
+ */
 export const subscribeBackground = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
@@ -302,9 +316,10 @@ export function setBackgroundUrls(values: string[], kind: BackgroundKind) {
   const cleaned = normalizeBackgroundUrls(values)
   const urls = cleaned.length ? cleaned : [...DEFAULT_BACKGROUND_URLS]
   const preference: BackgroundPreference = {source: 'url', kind, urls, active: pickActive(urls.length), name: ''}
+  const activeUrl = urls[preference.active] ?? urls[0] ?? DEFAULT_BACKGROUND_URLS[0] ?? ''
   replaceObjectUrl()
   savePreference(preference)
-  publish({...preference, assetUrl: directMediaUrl(urls[preference.active]), directUrl: '', resolveError: '', loading: false})
+  publish({...preference, assetUrl: directMediaUrl(activeUrl), directUrl: '', resolveError: '', loading: false})
   void deleteStoredFile()
   void resolveActiveBackground()
 }

@@ -42,7 +42,8 @@ type PanelProps = {
  * 区域用一排可换行的芯片表示，选中项实心，该区域有自定义值时另带一个小圆点。
  */
 export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, onResetRegion, onResetAll, initialRegion, onRegionChange}: PanelProps & {initialRegion?: RegionId}) {
-  const [region, setRegion] = useState<RegionId>(initialRegion ?? regions[0])
+  const fallbackRegion = regions[0] ?? 'surface'
+  const [region, setRegion] = useState<RegionId>(initialRegion ?? fallbackRegion)
   const dirtyIn = (target: RegionId) => Object.keys(custom.params).some(id => id.startsWith(`${target}.`))
   const knobs = regionKnobs.filter(knob => knob.region === region)
   const selectRegion = (next: RegionId) => {
@@ -57,7 +58,10 @@ export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, o
           <div className="material-scope-chips" role="tablist" aria-label={ui('settings.materialDetailScope')}>
             {regions.map((item, index) => {
               const Icon = REGION_ICONS[item]
-              const move = (delta: number) => selectRegion(regions[(index + delta + regions.length) % regions.length])
+              const move = (delta: number) => {
+                const target = regions[(index + delta + regions.length) % regions.length]
+                if (target) selectRegion(target)
+              }
               return (
                 <button
                   key={item}
@@ -96,7 +100,7 @@ export function MaterialDetailPanel({regions, custom, ui, onKnob, onResetKnob, o
               step={knob.step}
               value={[value]}
               /* 值没变就不落盘：写盘会把这一项标成「已调过」。 */
-              onValueChange={([next]) => { if (next !== value) onKnob(knob.id, next) }}
+              onValueChange={([next]) => { if (next !== undefined && next !== value) onKnob(knob.id, next) }}
             />
             <span className="knob-value">{value}{knob.unit}</span>
             <Button type="button" variant="ghost" size="icon-xs" title={ui('settings.resetItem')} aria-label={`${ui('settings.resetItem')} · ${label}`} disabled={stored === undefined} onClick={() => onResetKnob(knob.id)}><RotateCcw size={14} aria-hidden="true"/></Button>

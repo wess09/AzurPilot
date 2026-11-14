@@ -1,9 +1,12 @@
 "use client"
 
+/** @fileoverview shadcn/ui 表单标签：Radix 封装，随相邻控件禁用态联动。 */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { Label as LabelPrimitive } from "radix-ui"
 
+/** 表单标签：所在分组的控件禁用时自动降透明度。 */
 function Label({
   className,
   ...props

@@ -1,6 +1,11 @@
+"use client"
+
+/** @fileoverview 原生 input 的组件封装（shadcn 风格）：统一 data-slot 与主题样式，供表单引用。 */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 
+/** 输入框：统一样式的原生 input，属性透传。 */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input

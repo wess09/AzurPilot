@@ -1,11 +1,12 @@
 /**
+ * @fileoverview 资源图标域：资源键 i18n 标签、内置图标映射、行动力狗头档位与键序工具。
  * 从 ResourceCards.tsx 原 12-71 行提取，纯搬迁未改动。
- * 资源图标域：资源键 i18n 标签、内置图标映射、行动力狗头档位与键序工具。
  */
 
 import { Box } from 'lucide-react'
 import type { Resource } from '../../api/types'
 import type { UiKey } from '../../i18n'
+/** 资源键 → i18n 标签键映射，卡片标题与选择网格共用。 */
 export const resourceLabels: Record<string, UiKey> = {Oil: 'resource.Oil', Coin: 'resource.Coin', Gem: 'resource.Gem', Cube: 'resource.Cube', Pt: 'resource.Pt', ActionPoint: 'resource.ActionPoint', YellowCoin: 'resource.YellowCoin', PurpleCoin: 'resource.PurpleCoin', Core: 'resource.Core', Medal: 'resource.Medal', Merit: 'resource.Merit', GuildCoin: 'resource.GuildCoin', Chip: 'resource.Chip', Distance: 'resource.Distance', ActionAsset: 'resource.ActionAsset'}
 const iconBase = import.meta.env.BASE_URL
 const iconImages: Record<string, string> = {
@@ -48,6 +49,7 @@ export function actionPointDogIcon(resource?: Resource): string | undefined {
   return dogIconTiers.find(tier => total > tier.threshold)?.icon
 }
 
+/** 资源图标：优先内置图标图，缺失时回落到通用箱型图标。 */
 export function ResourceIcon({resourceKey, size = 32, src}: {resourceKey: string; size?: number; src?: string}) {
   const imageSrc = src ?? iconImages[resourceKey]
   return imageSrc ? <img className="resource-icon-image" src={imageSrc} alt="" width={size} height={size} draggable={false}/> : <Box size={Math.round(size * .62)}/>
@@ -62,7 +64,7 @@ export function moveResourceKey(keys: string[], fromKey: string, toKey: string):
   const to = keys.indexOf(toKey)
   if (from < 0 || to < 0) return keys
   const next = [...keys]
-  const [moved] = next.splice(from, 1)
-  next.splice(to, 0, moved)
+  const moved = next.splice(from, 1)[0]
+  if (moved !== undefined) next.splice(to, 0, moved)
   return next
 }

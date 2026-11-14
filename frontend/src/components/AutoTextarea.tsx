@@ -21,7 +21,8 @@ export function AutoTextarea({id, value, disabled, onChange, label, invalid}: {
 
   // useLayoutEffect 在首帧绘制前量好高度，避免出现跳动；此时 ref 必已挂到渲染出的 Textarea 上。
   useLayoutEffect(() => {
-    const input = ref.current!
+    const input = ref.current
+    if (!input) return
     const resize = () => {
       // 先收起再测量，删除内容时也能缩回一行；scrollHeight 包含自动换行。
       input.style.height = '0px'

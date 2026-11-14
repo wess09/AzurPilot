@@ -1,6 +1,7 @@
 /**
- * 从 SchedulerProgram.tsx 原 105-513 行提取，纯搬迁未改动（仅新增导出）。
- * 编辑器主体：画布、卡片库、属性面板与调试抽屉共用一份文档状态与撤销历史。
+ * @fileoverview 调度程序编辑器主体：画布、卡片库、属性面板与调试抽屉共用一份文档状态与撤销历史。
+ *
+ * 从 SchedulerProgram.tsx 拆分而来（仅新增导出）。
  */
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties} from 'react'
 import {useParams} from 'react-router-dom'
@@ -172,18 +173,20 @@ export function Editor() {
     if (!source || !target || !link.sourceHandle || !link.targetHandle) return false
     const a = definition(source, doc, catalog, graph), b = definition(target, doc, catalog, graph)
     const [kind, port] = link.sourceHandle.split(':'); const [other, input] = link.targetHandle.split(':')
-    if (kind !== other) return false
-    if (kind === 'control') return a.exits.includes(port!) && !b.pure && b.type !== 'entry' && !b.entry && input === 'in'
+    if (kind !== other || port === undefined || input === undefined) return false
+    if (kind === 'control') return a.exits.includes(port) && !b.pure && b.type !== 'entry' && !b.entry && input === 'in'
     const output = a.outputs.find(p => p.name === port), incoming = b.inputs.find(p => p.name === input)
     return !!output && !!incoming && compatible(output.type, incoming.type)
   }
   function connect(link: FlowConnection) {
     if (!graph || !connectValid(link)) {notify('连接端口不兼容', true); return}
-    const [kind, sourcePort] = link.sourceHandle!.split(':')
-    const targetPort = link.targetHandle!.split(':')[1]!
+    const sourceHandle = link.sourceHandle?.split(':')
+    const targetHandle = link.targetHandle?.split(':')
+    const kind = sourceHandle?.[0], sourcePort = sourceHandle?.[1], targetPort = targetHandle?.[1]
+    if (!kind || !sourcePort || !targetPort || (kind !== 'data' && kind !== 'control')) return
     // 端口独占：数据边一个输入口只接一条；控制边一个输出口只发一条，落新边前先摘掉同口旧边。
     const edges = graph.edges.filter(e => kind === 'data' ? !(e.target === link.target && e.targetPort === targetPort && e.kind === kind) : !(e.source === link.source && e.sourcePort === sourcePort && e.kind === kind))
-    updateGraph({...graph, edges:[...edges, {id:id(), source:link.source, sourcePort:sourcePort!, target:link.target, targetPort, kind:kind as 'data' | 'control'}]})
+    updateGraph({...graph, edges:[...edges, {id:id(), source:link.source, sourcePort, target:link.target, targetPort, kind}]})
   }
   const onParamsChange = useCallback((node: string, patch: Record<string, unknown>) => {
     const currentDoc = docRef.current
@@ -300,7 +303,7 @@ export function Editor() {
     <div className={`program-workspace mobile-${mobilePanel} ${canvasExpanded ? 'canvas-expanded' : ''} ${picked ? 'has-selection' : ''}`}>
       <main className="program-canvas" tabIndex={0} aria-label="调度画布" onPointerDown={event => {if (!editingText(event.target)) event.currentTarget.focus({preventScroll:true})}} onDragOver={e => {e.preventDefault(); e.dataTransfer.dropEffect = 'copy'}} onDrop={e => {e.preventDefault(); try {const data = JSON.parse(e.dataTransfer.getData('application/azurpilot-card')); add(data.type, data.graph, flow.screenToFlowPosition({x:e.clientX,y:e.clientY}))} catch { /* 忽略非卡片拖放。 */ }}}>
         <ProgramCanvas key={graphId} nodes={nodes} edges={edges} focusEntry={graphId === 'main' && graph.edges.some(e => e.kind === 'control') && graph.nodes.some(n => n.type === 'original_settings') ? graph.entry : undefined} nodeTypes={nodeTypes} deleteKeyCode={null} onNodeClick={() => {if (compactEditor) setMobilePanel('properties')}} onSelectionChange={onSelectionChange} onConnect={connect} isValidConnection={connectValid}
-          onPositionsCommit={moved => {const positions = new Map(moved.map(n => [n.id, n.position])); if (moved.some(n => {const old=graph.nodes.find(x => x.id === n.id); return old && (old.position.x !== n.position.x || old.position.y !== n.position.y)})) updateGraph({...graph, nodes:graph.nodes.map(n => positions.has(n.id) ? {...n, position:positions.get(n.id)!} : n)})}}
+          onPositionsCommit={moved => {const positions = new Map(moved.map(n => [n.id, n.position])); if (moved.some(n => {const old=graph.nodes.find(x => x.id === n.id); return old && (old.position.x !== n.position.x || old.position.y !== n.position.y)})) updateGraph({...graph, nodes:graph.nodes.map(n => {const position = positions.get(n.id); return position ? {...n, position} : n})})}}
           onEdgesDelete={deleted => updateGraph({...graph, edges:graph.edges.filter(e => !deleted.some(d => d.id === e.id))})}
           onEdgeDoubleClick={(_,edge) => updateGraph({...graph, edges:graph.edges.filter(e => e.id !== edge.id)})}/>
         <div className="program-canvas-hint">左键框选 · 中键或空格拖动 · Ctrl/Cmd+C/V 复制粘贴 · 退格删除<br/>同色端口可连接 · 彩环为通用端口 · 方形为执行端口</div>
@@ -333,7 +336,7 @@ export function Editor() {
           {graphId !== 'main' && currentGraph.pure && <button className="button secondary" onClick={() => updateGraph({...graph, entry:picked.id})}>作为数据输出入口</button>}
           {renderParams.map(([key,value]) => {
             if (key === 'overrides') return <div key={key}><h3>本次任务参数</h3>{Object.entries(catalog.overrides).map(([param,kind]) => <label key={param}>{param}<input placeholder="沿用任务配置" value={String((value as Record<string, unknown>)?.[param] ?? '')} onChange={e => {const next = {...value as object}; if (e.target.value === '') delete (next as Record<string,unknown>)[param]; else (next as Record<string,unknown>)[param] = kind === 'integer' ? Number(e.target.value) : e.target.value; changeParam(key, next)}}/></label>)}</div>
-            if (key === 'order') return <div key={key}><h3>任务优先级</h3>{(value as string[]).map((task,index,list) => <div className="program-priority-row" key={`${task}-${index}`} draggable onDragStart={e => e.dataTransfer.setData('text/priority-index', String(index))} onDragOver={e => e.preventDefault()} onDrop={e => {e.preventDefault(); const raw = e.dataTransfer.getData('text/priority-index'); if (!raw.trim()) return; const from = Number(raw); if (!Number.isInteger(from) || from < 0 || from >= list.length) return; const next = [...list]; const [moved] = next.splice(from,1); if (moved) {next.splice(index,0,moved); changeParam(key,next)}}}><GripVertical size={14}/><span>{task}</span><button disabled={index === 0} title="提高优先级" onClick={() => {const next=[...list]; [next[index-1],next[index]]=[next[index]!,next[index-1]!]; changeParam(key,next)}}><ArrowUp size={13}/></button><button disabled={index === list.length-1} title="降低优先级" onClick={() => {const next=[...list]; [next[index],next[index+1]]=[next[index+1]!,next[index]!]; changeParam(key,next)}}><ArrowDown size={13}/></button><button title="移除优先级" onClick={() => changeParam(key,list.filter((_,i) => i !== index))}><Trash2 size={13}/></button></div>)}<select aria-label="添加优先级任务" value="" onChange={e => {if (e.target.value) changeParam(key,[...value as string[],e.target.value])}}><option value="">添加任务…</option>{catalog.tasks.filter(t => !(value as string[]).includes(t.name)).map(t => <option key={t.name}>{t.name}</option>)}</select></div>
+            if (key === 'order') return <div key={key}><h3>任务优先级</h3>{(value as string[]).map((task,index,list) => <div className="program-priority-row" key={`${task}-${index}`} draggable onDragStart={e => e.dataTransfer.setData('text/priority-index', String(index))} onDragOver={e => e.preventDefault()} onDrop={e => {e.preventDefault(); const raw = e.dataTransfer.getData('text/priority-index'); if (!raw.trim()) return; const from = Number(raw); if (!Number.isInteger(from) || from < 0 || from >= list.length) return; const next = [...list]; const [moved] = next.splice(from,1); if (moved) {next.splice(index,0,moved); changeParam(key,next)}}}><GripVertical size={14}/><span>{task}</span><button disabled={index === 0} title="提高优先级" onClick={() => {const previous=list[index-1], current=list[index]; if (previous === undefined || current === undefined) return; const next=[...list]; next[index-1]=current; next[index]=previous; changeParam(key,next)}}><ArrowUp size={13}/></button><button disabled={index === list.length-1} title="降低优先级" onClick={() => {const current=list[index], nextValue=list[index+1]; if (current === undefined || nextValue === undefined) return; const next=[...list]; next[index]=nextValue; next[index+1]=current; changeParam(key,next)}}><ArrowDown size={13}/></button><button title="移除优先级" onClick={() => changeParam(key,list.filter((_,i) => i !== index))}><Trash2 size={13}/></button></div>)}<select aria-label="添加优先级任务" value="" onChange={e => {if (e.target.value) changeParam(key,[...value as string[],e.target.value])}}><option value="">添加任务…</option>{catalog.tasks.filter(t => !(value as string[]).includes(t.name)).map(t => <option key={t.name}>{t.name}</option>)}</select></div>
             if (key === 'resources' || key === 'names') return <fieldset key={key}><legend>{key === 'resources' ? '资源' : '指定任务（空为全部）'}</legend>{(key === 'resources' ? catalog.resources : catalog.tasks).map(item => <label key={item.name}><input type="checkbox" checked={(value as string[]).includes(item.name)} onChange={e => changeParam(key,e.target.checked ? [...value as string[],item.name] : (value as string[]).filter(x => x !== item.name))}/>{item.name}</label>)}</fieldset>
             let options: string[] | undefined
             if (key === 'graph' || key === 'guard') options = doc.subgraphs.filter(s => key !== 'guard' || s.pure).map(s => s.id)

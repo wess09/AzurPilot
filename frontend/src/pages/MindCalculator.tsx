@@ -91,7 +91,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   const candidates = useMemo(() => facts ? automaticCandidates(facts.dock.ships, facts.catalog, facts.technology.ships) : [], [facts])
   const technologyRows = useMemo(() => new Map(facts ? catalogRows(facts.catalog, facts.technology.ships).map(row => [row.group_type, row]) : []), [facts])
   const candidateIds = useMemo(() => candidates.map(card => card.id), [candidates])
-  const included = useMemo(() => new Set(candidates.filter(card => !plan?.excluded_groups.includes(card.group_type!)).map(card => card.id)), [candidates, plan?.excluded_groups])
+  const included = useMemo(() => new Set(candidates.filter(card => card.group_type != null && !plan?.excluded_groups.includes(card.group_type)).map(card => card.id)), [candidates, plan?.excluded_groups])
   useEffect(() => {
     if (!facts || facts.dock.instance !== instance || !plan) return
     memory.current = {instance, plan}
@@ -123,7 +123,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }, [result, included])
   const efficiencies = useMemo(() => {
     const mindCosts = result?.mind_costs_100_to_120 ?? {}
-    return new Map(candidates.map(card => [card.id, technologyEfficiency(technologyRows.get(card.group_type!), mindCosts)]))
+    return new Map(candidates.map(card => [card.id, technologyEfficiency(card.group_type == null ? undefined : technologyRows.get(card.group_type), mindCosts)]))
   }, [candidates, technologyRows, result?.mind_costs_100_to_120])
   const rows = useMemo(() => {
     const collator = new Intl.Collator(language, {numeric: true})
@@ -137,7 +137,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
       }
     }
     return candidates.filter(card => {
-      const technology = technologyRows.get(card.group_type!)
+      const technology = card.group_type == null ? undefined : technologyRows.get(card.group_type)
       const search = query.trim()
       return technology && matches(technology, filters, '')
         && (!search || card.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) || matches(technology, {}, search))
@@ -162,7 +162,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }
   const allSelected = rows.length > 0 && rows.every(card => included.has(card.id))
   function selectFiltered(selected: boolean) {
-    const groups = new Set((selected ? rows : candidates).map(card => card.group_type!))
+    const groups = new Set((selected ? rows : candidates).map(card => card.group_type).filter((group): group is number => group !== undefined))
     setPlan(current => current && ({...current, excluded_groups: selected
       ? current.excluded_groups.filter(group => !groups.has(group))
       : [...new Set([...current.excluded_groups, ...groups])]}))
@@ -212,12 +212,13 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
     </div>
     <div className="ft-table-wrap cultivation-table"><Table className="min-w-[900px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow><TableHead scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></TableHead>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <TableHead key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>)}<TableHead scope="col">{tr('awakening_pending')}</TableHead></TableRow></TableHeader><TableBody>
       {rows.map(card => {
-        const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = technologyRows.get(card.group_type!)?.awakening_pending === true
+        const groupType = card.group_type
+        const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = groupType != null && technologyRows.get(groupType)?.awakening_pending === true
         return <TableRow key={card.id} className={participating ? '' : 'cultivation-excluded'}>
-          <TableCell><CheckboxControl aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onCheckedChange={next => exclude(card.group_type!, !next)}/></TableCell>
+          <TableCell>{groupType != null && <CheckboxControl aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onCheckedChange={next => exclude(groupType, !next)}/>}</TableCell>
           <TableCell className="ft-name"><Link to={`?tab=data&ship=${card.id}`}>{card.name}</Link>{participating && row?.status === 'unknown' && <small className="cultivation-warning">{ui('mind.unknownCost')} · <Link to={`?tab=data&ship=${card.id}`}>{ui('mind.check')}</Link></small>}</TableCell>
           <TableCell className="text-center">{card.level || ui('mind.unknown')}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.mind)}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.gold)}</TableCell>
-          <TableCell className="text-right tabular-nums" title={efficiency?.value == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points!, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+          <TableCell className="text-right tabular-nums" title={efficiency?.value == null || efficiency.points == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
           <TableCell className={`text-center ${awakeningPending ? 'ft-awakening-pending' : ''}`} title={ui('mind.awakeningHint')}><span className="ft-mark" aria-label={`${card.name} · ${tr('awakening_pending')} · ${tr(awakeningPending ? 'marked' : 'notMarked')}`}>{awakeningPending ? '✓' : '—'}</span></TableCell>
         </TableRow>
       })}

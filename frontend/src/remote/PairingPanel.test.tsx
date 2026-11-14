@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 远程访问配对面板的就绪状态与前置说明渲染测试。
+ */
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

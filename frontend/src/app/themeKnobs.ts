@@ -8,12 +8,14 @@ import type { UiKey } from '../i18n'
  * 控件独立成组，因为它挂在哪一层随放置位置漂移；弹窗与菜单同理，它们不是某一层，而是分层覆盖不到的两类面。
  */
 export const REGIONS = ['surface', 'plate', 'inset', 'control', 'modal', 'menu'] as const
+/** 可调区域标识。 */
 export type RegionId = typeof REGIONS[number]
 
 /** 参数全集。契约层给每个区域都铺了圆角与阴影的键，界面只暴露实测有可见效果的那几组（见 regionProps）。 */
 const PROPS = ['alpha', 'blur', 'saturation', 'radius', 'shadow'] as const
 type KnobProp = typeof PROPS[number]
 
+/** 主题外观旋钮的完整描述，包含偏好键、取值范围、CSS 令牌与格式化规则。 */
 export type RegionKnob = {
   /** 旋钮标识：`<区域>.<参数>`，也是偏好里的键。 */
   id: `${RegionId}.${KnobProp}`
@@ -52,7 +54,7 @@ export const regionLabels: Record<RegionId, UiKey> = {
   control: 'settings.regionControl',
   modal: 'settings.regionModal',
   menu: 'settings.regionMenu',
-}
+} as const
 
 /**
  * 每个区域实际接入界面的旋钮，只列实测有可见效果的参数：磨砂给带材质的面（一至三级与弹窗、菜单），
@@ -65,7 +67,7 @@ export const regionProps: Record<RegionId, readonly KnobProp[]> = {
   control: ['alpha'],
   modal: ['alpha', 'blur', 'saturation'],
   menu: ['alpha', 'blur', 'saturation'],
-}
+} as const
 
 /** 全量旋钮目录：按区域展开 regionProps × propSpec 生成，设置界面据此渲染滑块。 */
 export const regionKnobs: readonly RegionKnob[] = REGIONS.flatMap(region =>
@@ -74,5 +76,10 @@ export const regionKnobs: readonly RegionKnob[] = REGIONS.flatMap(region =>
     return {id: `${region}.${prop}`, region, prop, token: `--theme-${region}-${prop}`, ...spec}
   }))
 
-/** 按偏好键（`<区域>.<参数>`）查找旋钮；id 不在目录里时返回 undefined。 */
+/**
+ * 按偏好键查找旋钮。
+ *
+ * @param id 旋钮标识，格式为 `<区域>.<参数>`。
+ * @returns 匹配的旋钮；id 不在目录里时返回 undefined。
+ */
 export const knobFor = (id: string) => regionKnobs.find(knob => knob.id === id)

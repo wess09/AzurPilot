@@ -101,13 +101,15 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
         ships.push(...value.ships)
       }
       if (!alive.current) return
-      publish(await api.request('dock.stageImport', {instance, revision: report!.revision, ships})); setProgress(ui('analysis.received'))
+      if (!report) return
+      publish(await api.request('dock.stageImport', {instance, revision: report.revision, ships})); setProgress(ui('analysis.received'))
     })
   }
   async function review(accept: boolean, items: LedgerDifference[]) {
     await action(async () => {
       // 目标卡片选「新增独立卡片」时 ship_id 传 null：null 即不归属任何已有舰船。
-      publish(await api.request('dock.review', {instance, revision: report!.revision, pending_revision: report!.pending_revision!, decisions: items.map(item => ({id: item.id, accept, ...(accept && item.operation === 'resolve' ? {ship_id: targets[item.id] === 'new' ? null : Number(targets[item.id])} : {})}))}))
+      if (!report || report.pending_revision === null) return
+      publish(await api.request('dock.review', {instance, revision: report.revision, pending_revision: report.pending_revision, decisions: items.map(item => ({id: item.id, accept, ...(accept && item.operation === 'resolve' ? {ship_id: targets[item.id] === 'new' ? null : Number(targets[item.id])} : {})}))}))
     })
   }
   function fieldValue(key: string, value: unknown): string {
@@ -131,7 +133,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
       <div className="mind-toolbar"><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => importInput.current?.click()}>{ui('mind.import')}</Button><input ref={importInput} type="file" accept=".json,.csv,.xlsx" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, false)}/><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => screenshotInput.current?.click()}>{ui('mind.screenshots')}</Button><input ref={screenshotInput} type="file" accept="image/*" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, true)}/><Button variant="outline" disabled={disabled} title={ui('analysis.exportHint')} onClick={() => void exportShips()}>{ui('analysis.exportJson')}</Button></div>
       <p>{ui('analysis.exportHint')}</p>
       {!!pending.length && <p role="status">{ui('analysis.pendingBlock')}</p>}
-      <details><summary>{ui('analysis.importLegacy')}</summary><p>{ui('analysis.legacyHint')}</p><Button variant="outline" disabled={disabled || !!pending.length || report?.legacy_imported} onClick={() => void action(async () => {publish(await api.request('dock.importLegacy', {instance, revision: report!.revision})); setProgress(ui('analysis.received'))})}>{ui(report?.legacy_imported ? 'analysis.legacyImported' : 'analysis.importLegacy')}</Button></details>
+      <details><summary>{ui('analysis.importLegacy')}</summary><p>{ui('analysis.legacyHint')}</p><Button variant="outline" disabled={disabled || !!pending.length || report?.legacy_imported} onClick={() => void action(async () => {if (!report) return; publish(await api.request('dock.importLegacy', {instance, revision: report.revision})); setProgress(ui('analysis.received'))})}>{ui(report?.legacy_imported ? 'analysis.legacyImported' : 'analysis.importLegacy')}</Button></details>
     </section>
     <section className="mind-panel"><h2>2. {ui('analysis.progress')}</h2><p role="status">{scanning ? ui('mind.scanInProgress') : pending.length ? ui('analysis.received') : reading ? ui('analysis.readSaved') : progress || ui('analysis.empty')}</p><p>{ui('analysis.readCount')}: {reading?.observed_count ?? '—'} · {ui('analysis.review')}: {reading?.review_count ?? '—'} · {ui(reading?.complete ? 'analysis.complete' : 'analysis.partial')}</p>{reading && <p>{ui('analysis.time')}: {reading.updated_at} · {reading.source}</p>}<p>{ui('analysis.confirmedCount')}: {report?.ships.length ?? 0} · {ui('analysis.pendingCount')}: {pending.length}</p></section>
     <section className="mind-panel"><h2>3. {ui('analysis.pending')}</h2><p>{ui('analysis.pendingHint')}</p>

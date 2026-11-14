@@ -1,6 +1,6 @@
 /**
+ * @fileoverview Python Traceback 解析、栈帧视图与错误上下文卡片。
  * 从 LogCardView.tsx 原 1275-1613 行提取，纯搬迁未改动。
- * Python Traceback 解析、栈帧视图与错误上下文卡片。
  */
 
 import {
@@ -16,28 +16,42 @@ import type { CardItem } from './aggregate'
 import { CopyButton } from './shared'
 
 interface StackCodeLine {
+  /** 源码行号。 */
   lineNum: number
+  /** 是否为抛错的帧行，渲染时高亮。 */
   isFault: boolean
+  /** 清理分隔符后的源码文本。 */
   code: string
 }
 
 interface StackLocalVar {
+  /** 变量名。 */
   name: string
+  /** 变量值文本。 */
   value: string
 }
 
 interface ParsedStackFrame {
+  /** 原始文件路径。 */
   file: string
+  /** 仅文件名部分，用于展示。 */
   fileName: string
+  /** 出错行号。 */
   line: number
+  /** 函数名。 */
   func: string
+  /** 该帧上下文的源码行。 */
   codeLines: StackCodeLine[]
+  /** 该帧的局部变量表。 */
   locals: StackLocalVar[]
 }
 
 interface ParsedTraceback {
+  /** 从顶到底的调用栈帧。 */
   frames: ParsedStackFrame[]
+  /** 异常摘要行（最后的 `XxxError: ...`）。 */
   excLine: string
+  /** 原始 Traceback 文本，供复制与兜底展示。 */
   rawText: string
 }
 
@@ -68,11 +82,12 @@ function parseTraceback(raw: string): ParsedTraceback {
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i]
+    if (rawLine === undefined) continue
     const stripped = rawLine.replace(/^[│\s]+|[│\s]+$/g, '').trim()
 
     // 检查最后的异常类型与说明：ScriptEnd: ... 或 FooError: ...。
     const excMatch = rawLine.match(/^([a-zA-Z0-9_.]*(?:Error|Exception|Exit|Interrupt|ScriptEnd))(?::\s*(.*))?$/)
-    if (excMatch && excMatch[1] && !rawLine.includes('Traceback') && !rawLine.includes('File ')) {
+    if (excMatch?.[1] && !rawLine.includes('Traceback') && !rawLine.includes('File ')) {
       excLine = rawLine.trim()
       continue
     }
@@ -92,13 +107,16 @@ function parseTraceback(raw: string): ParsedTraceback {
       }
       currentLocals = []
       inLocals = false
-      const fullPath = frameMatch[1].trim()
+      const frameFile = frameMatch[1]
+      const frameLine = frameMatch[2]
+      if (frameFile === undefined || frameLine === undefined) continue
+      const fullPath = frameFile.trim()
       const fileName = fullPath.split(/[\\\/]/).pop() || fullPath
       currentFrame = {
         file: fullPath,
         fileName,
-        line: parseInt(frameMatch[2], 10),
-        func: (frameMatch[3] || '<module>').trim(),
+        line: parseInt(frameLine, 10),
+        func: (frameMatch[3] ?? '<module>').trim(),
         codeLines: [],
         locals: [],
       }
@@ -118,18 +136,22 @@ function parseTraceback(raw: string): ParsedTraceback {
         continue
       }
       const localMatch = rawLine.match(/[│]?\s*([a-zA-Z0-9_]+)\s*=\s*(.*?)\s*[│]?$/)
-      if (localMatch && localMatch[1] !== 'locals') {
-        currentLocals.push({ name: localMatch[1], value: localMatch[2].replace(/\s*│$/, '').trim() })
+      const localName = localMatch?.[1]
+      const localValue = localMatch?.[2]
+      if (localMatch && localName && localName !== 'locals' && localValue !== undefined) {
+        currentLocals.push({ name: localName, value: localValue.replace(/\s*│$/, '').trim() })
       }
       continue
     }
 
     // 匹配 Rich 代码行（含行号、故障标记 ❱/▶/> 与代码）。
     const richCodeMatch = rawLine.match(/[│]?\s*(❱|▶|>)?\s*(\d+)\s*│\s*(.*?)\s*[│]?$/)
-    if (richCodeMatch) {
+    const codeLineNum = richCodeMatch?.[2]
+    const codeText = richCodeMatch?.[3]
+    if (richCodeMatch && codeLineNum !== undefined && codeText !== undefined) {
       const isFault = Boolean(richCodeMatch[1])
-      const lineNum = parseInt(richCodeMatch[2], 10)
-      const code = richCodeMatch[3].replace(/[│\s]+$/, '')
+      const lineNum = parseInt(codeLineNum, 10)
+      const code = codeText.replace(/[│\s]+$/, '')
       currentFrame.codeLines.push({ lineNum, isFault, code })
       continue
     }
@@ -353,6 +375,7 @@ const TracebackCard = memo(
   (prev, next) => prev.card === next.card
 )
 
+/** 堆栈解析结果的数据类型，供渲染层与测试复用。 */
 export type {
   StackCodeLine,
   StackLocalVar,

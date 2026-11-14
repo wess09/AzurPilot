@@ -1,18 +1,33 @@
+/**
+ * @fileoverview 插件 iframe 沙箱帧：完成握手后经 MessagePort 提供受权限控制的宿主 API。
+ */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useApp, useConnection } from '../app/context'
 import { pluginAsset, type InstalledPlugin } from './types'
 
+/** 插件帧的渲染参数；scheduler 与 navigation 供插件回调宿主能力。 */
 interface FrameProps {
+  /** 目标插件。 */
   plugin: InstalledPlugin
+  /** 插件内相对入口路径。 */
   entry: string
+  /** 无障碍标题。 */
   title: string
+  /** 所属实例名；全局视图为 undefined。 */
   instance?: string
+  /** 授权后可被插件调用的调度器状态与切换入口。 */
   scheduler?: {state: object; toggle: () => void; disabled: boolean}
+  /** 授权后可被插件调用的导航项目与跳转入口。 */
   navigation?: {items: {title: string; to: string}[]; go: (to: string) => void}
+  /** 插件加载失败或超时后的回退内容。 */
   fallback?: ReactNode
 }
 
+/**
+ * 渲染插件入口：握手成功前显示加载态，8 秒未握手或握手失败时回落 fallback。
+ * 通过 nonce 校验握手消息，消息通道按 manifest 权限裁剪可用的宿主操作。
+ */
 export function PluginFrame({plugin, entry, title, instance, scheduler, navigation, fallback}: FrameProps) {
   const {ui, language, resolvedMode, schema} = useApp()
   const connection = useConnection()

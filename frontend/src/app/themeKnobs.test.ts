@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 区域旋钮目录与 CSS 变量声明的覆盖关系测试。
+ */
 import { describe, expect, it } from 'vitest'
 import modernPalette from '../styles/modern-palette.css?raw'
 import { REGIONS, knobFor, regionKnobs, regionProps } from './themeKnobs'

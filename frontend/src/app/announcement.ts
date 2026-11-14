@@ -10,9 +10,13 @@ import { useConnection } from './context'
 const READ_KEY = 'azurpilot.announcement.last-read-id'
 
 interface AnnouncementStoreState {
+  /** 当前公告；尚无公告时为 null。 */
   data: Announcement | null
+  /** 是否正在拉取公告。 */
   loading: boolean
+  /** 最近一次拉取失败的信息，成功后清空。 */
   error: string
+  /** 当前已读的公告 ID。 */
   lastReadId: string | null
 }
 
@@ -92,8 +96,10 @@ function markAnnouncementAsRead() {
 }
 
 /**
- * 订阅系统公告：连接就绪后拉取一次并转入每 2 分钟的轮询；refresh 可强制重新拉取，
- * markAsRead 把当前公告 ID 写进 localStorage 作为未读基准。
+ * 订阅系统公告并管理未读状态。
+ *
+ * 连接就绪后拉取一次并转入每 2 分钟的轮询，`refresh` 可强制重新拉取。
+ * @returns 公告数据、加载状态、错误、未读状态及读写操作。
  */
 export function useAnnouncement() {
   const connection = useConnection()

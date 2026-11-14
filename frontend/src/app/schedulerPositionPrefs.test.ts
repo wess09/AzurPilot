@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 调度器停靠位置偏好的持久化与应用测试。
+ */
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {

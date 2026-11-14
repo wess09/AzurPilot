@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 工作台主题的内置实现：壳层布局、主导航与总览页的组装。
+ */
 import { Suspense } from 'react'
 import { Link, NavLink, matchPath, useLocation, useNavigate } from 'react-router-dom'
 import { Plus, WifiOff } from 'lucide-react'
@@ -52,6 +55,7 @@ const styles = `
   }
 `
 
+/** 工作台默认的主导航链接组，覆盖全局页面、实例内页面与插件页面入口。 */
 export function TopNavigation({instance, onNavigate, announcementUnread, updateAvailable}: NavigationProps) {
   const {ui} = useApp()
   const base = instance ? `/i/${encodeURIComponent(instance)}` : ''
@@ -75,6 +79,7 @@ export function TopNavigation({instance, onNavigate, announcementUnread, updateA
   </nav>
 }
 
+/** 工作台壳层：工具栏、实例切换、导航区与内容区；页面滚动由内容区承接。 */
 export function WorkbenchShell({children, instance, pageTitle, onCreate, updateAvailable, announcementUnread}: ShellProps) {
   const {instances, ui} = useApp()
   const connection = useConnection()
@@ -117,6 +122,7 @@ export function WorkbenchShell({children, instance, pageTitle, onCreate, updateA
   </div>
 }
 
+/** 主题总览入口：启用插件总览视图时渲染插件帧，否则回落内置的组合布局。 */
 export function WorkbenchOverview(props: OverviewViewProps) {
   const {ui} = useApp()
   const theme = usePlugins().theme

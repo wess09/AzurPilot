@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 悬浮/停靠材质调节面板：最小化与关闭控制、区域选择与参数调节表单。
  * 从 MockInstancePreview.tsx 原 468-552 行提取，纯搬迁未改动（仅新增导出与入参）。
- * 悬浮/停靠材质调节面板：最小化与关闭控制、区域选择与参数调节表单。
  */
 import type { Dispatch, SetStateAction } from 'react'
 import { Minimize2, PanelRightClose, PanelRightOpen, Sliders, X } from 'lucide-react'
@@ -13,19 +13,31 @@ import { MaterialDetailPanel } from '../ThemeCustomPreference'
 import type { UiTranslator } from '../../i18n'
 
 type MockInspectorParams = {
+  /** 翻译函数。 */
   ui: UiTranslator
+  /** 关闭预览层。 */
   onClose: () => void
+  /** 面板是否停靠在右侧边缘。 */
   isDocked: boolean
+  /** 切换停靠状态。 */
   setIsDocked: Dispatch<SetStateAction<boolean>>
+  /** 面板是否最小化为悬浮球。 */
   isInspectorMinimized: boolean
+  /** 切换最小化状态。 */
   setIsInspectorMinimized: Dispatch<SetStateAction<boolean>>
+  /** 当前材质族的自定义参数。 */
   custom: FamilyCustom
+  /** 材质参数变更后刷新预览层样式。 */
   refresh: () => void
+  /** 当前材质族。 */
   family: Family
+  /** 当前选中的调节区域。 */
   activeRegion: RegionId
+  /** 切换调节区域。 */
   handleRegionSelect: (next: RegionId) => void
 }
 
+/** 渲染悬浮/停靠材质调节面板样本。 */
 export function mockInspector({ui, onClose, isDocked, setIsDocked, isInspectorMinimized, setIsInspectorMinimized, custom, refresh, family, activeRegion, handleRegionSelect}: MockInspectorParams) {
   return (
       <div

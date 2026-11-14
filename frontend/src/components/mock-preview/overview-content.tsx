@@ -1,9 +1,10 @@
 /**
+ * @fileoverview 全真预览主内容区样本：页面标题、资源卡、任务状态面板与实时日志，全部为写死样本数据。
  * 从 MockInstancePreview.tsx 原 276-388 行提取，纯搬迁未改动（仅新增导出）。
- * 全真预览主内容区样本：页面标题、资源卡、任务状态面板与实时日志，全部为写死样本数据。
  */
 import { Award, Calendar, CheckCircle2, Clock, Fuel, Gem, RotateCcw, Settings, Shield, Sword } from 'lucide-react'
 
+/** 渲染预览主内容区样本。 */
 export function mockOverviewContent() {
   return (
           <main style={{flex: 1, padding: '24px 28px', overflowY: 'auto'}}>

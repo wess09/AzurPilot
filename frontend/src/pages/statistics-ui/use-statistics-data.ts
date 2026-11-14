@@ -1,6 +1,7 @@
 /**
- * 从 Statistics.tsx 原 208-230、256-284、361-368 行提取，纯搬迁未改动。
- * 统计页数据流：刷新/盘点/导出、原始记录表数据与分节上报的数据缓存。
+ * @fileoverview 统计页数据流：刷新/盘点/导出、原始记录表数据与分节上报的数据缓存。
+ *
+ * 从 Statistics.tsx 拆分而来。
  */
 import { useCallback, useState, useSyncExternalStore } from 'react'
 import { getSelectedKeysForCategory, getStatisticsPrefs, getStatisticsPrefsVersion, subscribeStatisticsPrefs } from '../../app/statisticsPrefs'
@@ -12,6 +13,12 @@ import type { StatisticsReport } from '../../api/types'
 import type { Category } from './shared'
 import { categories } from './shared'
 
+/**
+ * 统计页数据流 Hook：当前分类报表、刷新/盘点/导出动作，以及分节渲染所需的多页数据缓存。
+ *
+ * @param params.instance 实例名。
+ * @param params.category 当前统计分类。
+ */
 export function useStatisticsData({instance, category}: {instance: string; category: Category}) {
   const {ui, notify} = useApp()
   const [revision, setRevision] = useState(0)
@@ -27,9 +34,11 @@ export function useStatisticsData({instance, category}: {instance: string; categ
   const rawTableOf = (page: Category, report: StatisticsReport | undefined) => {
     if (!report) return null
     const view = buildSeriesView(report.series, {selectedKeys: getSelectedKeysForCategory(page, report.series), mode: prefs.chartMode, bucket: prefs.bucket, from: prefs.rangeFrom, to: prefs.rangeTo})
+    const firstSeries = view.selectedSeries[0]
+    const isSingle = view.isSingle && firstSeries !== undefined
     return {
-      title: view.isSingle ? ui('stats.rawTitle', {label: view.selectedSeries[0].label}) : ui('stats.multiMetrics'),
-      columns: view.isSingle ? [ui('stats.time'), ui('stats.value'), ui('stats.source')] : [ui('stats.time'), ...view.selectedSeries.map(item => item.label), ui('stats.source')],
+      title: isSingle ? ui('stats.rawTitle', {label: firstSeries.label}) : ui('stats.multiMetrics'),
+      columns: isSingle ? [ui('stats.time'), ui('stats.value'), ui('stats.source')] : [ui('stats.time'), ...view.selectedSeries.map(item => item.label), ui('stats.source')],
       rows: view.mergedRows,
       defaultSort: {index: 0, descending: true},
     }
@@ -57,7 +66,7 @@ export function useStatisticsData({instance, category}: {instance: string; categ
   }
   function download() {
     if (!data) return
-    downloadCsv(`${instance}-${ui(categories[category!])}-${data.month}`, [
+    downloadCsv(`${instance}-${ui(categories[category])}-${data.month}`, [
       [ui('stats.metric'), ui('stats.value'), ui('stats.unit')], ...data.metrics.map(item => [item.label, item.value, item.unit]),
       ...data.tables.flatMap(table => [[table.title], table.columns, ...table.rows, []]),
       ...data.series.flatMap(series => [[series.label], [ui('stats.time'), ui('stats.value'), ui('stats.source')], ...series.points.map(point => [point.time, point.value, point.source ?? '']), []]),

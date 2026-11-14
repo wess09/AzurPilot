@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 单行日志渲染：分割线/等级行/居中标题/原文行的判定与展示。
  * 从 LogPanel.tsx 原 115-187 行提取，纯搬迁未改动。
- * 单行日志渲染：分割线/等级行/居中标题/原文行的判定与展示。
  */
 
 import { memo } from 'react'
@@ -33,21 +33,26 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
 
   // RULE_RE 对纯分割线也会命中（标题捕获为空），要求标题非空才算带线标题。
   const ruleMatch = RULE_RE.exec(trimmed)
-  if (ruleMatch && ruleMatch[1].trim()) {
-    const title = ruleMatch[1].trim()
+  const title = ruleMatch?.[1]?.trim()
+  if (ruleMatch && title) {
     const char = trimmed.includes('═') ? '═' : '─'
-    return (
+    const ruleTitle = ruleMatch?.[1]?.trim()
+    return ruleTitle ? (
       <div className={`log-rule ${char === '═' ? 'rule-double' : 'rule-single'}${freshClass}`} data-line-id={entry.id}>
         <span className="rule-bar" />
-        <span className="rule-title">{renderTokens(title, search)}</span>
+        <span className="rule-title">{renderTokens(ruleTitle, search)}</span>
         <span className="rule-bar" />
       </div>
-    )
+    ) : null
   }
 
   const logMatch = LOG_LINE_RE.exec(rawText)
   if (logMatch) {
-    const [, levelStr, dateStr, timeStr, messageStr] = logMatch
+    const levelStr = logMatch[1]
+    const dateStr = logMatch[2]
+    const timeStr = logMatch[3]
+    const messageStr = logMatch[4]
+    if (levelStr === undefined || timeStr === undefined || messageStr === undefined) return null
     const levelKey = levelStr.toLowerCase()
     return (
       <div className={`log-line log-entry-line level-${levelKey}${freshClass}`} data-line-id={entry.id}>
@@ -61,10 +66,11 @@ export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {
 
   const isSingleLine = !rawText.includes('\n')
   const centerMatch = isSingleLine ? CENTER_TITLE_RE.exec(rawText) : null
+  const centerTitle = centerMatch?.[1]?.trim()
   const shouldCenter = Boolean(
     isSingleLine && trimmed && (
       isCenter ||
-      (centerMatch && centerMatch[1].trim())
+      centerTitle
     )
   )
   if (shouldCenter) {

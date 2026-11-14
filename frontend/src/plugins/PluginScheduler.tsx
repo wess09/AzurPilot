@@ -1,9 +1,13 @@
+/**
+ * @fileoverview 总览页调度面板的插件接管入口：启用主题声明 scheduler 槽位时改渲染插件帧。
+ */
 import { useApp } from '../app/context'
 import { SchedulerWidget } from '../components/SchedulerWidget'
 import { useSchedulerControls, type SchedulerPanelProps } from '../components/useSchedulerControls'
 import { PluginFrame } from './PluginFrame'
 import { usePlugins } from './context'
 
+/** 调度面板槽位：插件视图不可用或未声明时回落内置 SchedulerWidget。 */
 export function PluginScheduler(props: SchedulerPanelProps) {
   const theme = usePlugins().theme
   const entry = theme?.manifest.theme?.scheduler

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 插件主导航视图：把全局页面、实例内页面与插件页面汇总给插件导航实现。
+ */
 import { useNavigate } from 'react-router-dom'
 import { useApp } from '../app/context'
 import type { NavigationProps } from '../themes/definition'
@@ -5,6 +8,7 @@ import { PluginFrame } from './PluginFrame'
 import { usePlugins } from './context'
 import { pluginPage } from './types'
 
+/** 插件导航视图：不可用时回落传入的 fallback（内置主导航）。 */
 export function PluginNavigation({instance, onNavigate, fallback}: NavigationProps) {
   const {ui} = useApp()
   const {theme, plugins} = usePlugins()

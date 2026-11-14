@@ -1,3 +1,5 @@
+/** @fileoverview 项目 logo 组件与图源常量。 */
+
 import type { ComponentProps } from 'react'
 
 /** 项目 logo 图源：部署基址下的内置 azurpilot.webp。 */

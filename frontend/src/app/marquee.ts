@@ -13,7 +13,12 @@ const MARQUEE_MIN_SECONDS = 6
 
 type MarqueePlan = { scrolling: boolean; shift: number; duration: number }
 
-/** 位移取「一份文案宽 + 空隙」：滚过这一段，第二份正好落到第一份的位置，循环看不出接缝。 */
+/**
+ * 计算跑马灯的位移与播放时长。
+ *
+ * @param options 文案宽度、容器宽度、空隙、速度倍率与减少动效状态。
+ * @returns 是否滚动、位移与动画时长。
+ */
 export function marqueePlan(options: {
   copyWidth: number
   containerWidth: number
@@ -28,8 +33,13 @@ export function marqueePlan(options: {
   return { scrolling: true, shift, duration: Math.max(MARQUEE_MIN_SECONDS, shift / MARQUEE_SPEED) * (speed / 2) }
 }
 
-/** 把灯带状态写进 DOM：标记落在容器上，位移/空隙/时长三个变量交给 CSS 消费。
- * 返回是否在滚，调用方据此决定要不要放第二份文案。 */
+/**
+ * 把跑马灯计划写进 DOM 供 CSS 消费。
+ *
+ * @param container 容器元素。
+ * @param copy 单份文案元素。
+ * @returns 当前是否处于滚动状态。
+ */
 export function syncMarquee(container: HTMLElement | null, copy: HTMLElement | null): boolean {
   if (!container || !copy) return false
   const track = copy.parentElement

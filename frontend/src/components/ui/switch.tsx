@@ -1,7 +1,10 @@
+/** @fileoverview shadcn/ui 开关：Radix 封装的布尔切换。 */
+
 import * as React from 'react'
 import * as SwitchPrimitive from '@radix-ui/react-switch'
 import { cn } from '../../lib/utils'
 
+/** 开关：checked/onCheckedChange 由调用方管理。 */
 function Switch({className, ...props}: React.ComponentProps<typeof SwitchPrimitive.Root>) {
   return <SwitchPrimitive.Root
     data-slot="switch"

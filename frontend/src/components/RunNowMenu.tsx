@@ -37,6 +37,7 @@ export function runNowChanges(tasks: string[], args: Schema['args']) {
   })
 }
 
+/** 批量立刻运行入口：聚合等待中任务并弹窗确认后，分批下发把 NextRun 清零的补丁。 */
 export function RunNowMenu({instance, tasks}: {instance: string; tasks: Task[]}) {
   const {schema, t, ui, notify} = useApp()
   const connection = useConnection()

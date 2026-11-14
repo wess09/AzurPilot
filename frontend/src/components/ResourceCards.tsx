@@ -33,15 +33,17 @@ export function ResourceCards({resources, selected}: {resources: Resource[]; sel
       const natural = contents.map(content => content.getBoundingClientRect().width)
       const shrunk = contents.flatMap((content, index) => {
         const width = widths[index]
-        if (width <= 0 || natural[index] <= width) return []
-        const scale = Math.max(0, width - 4) / natural[index]
+        const naturalWidth = natural[index]
+        if (width === undefined || naturalWidth === undefined || width <= 0 || naturalWidth <= width) return []
+        const scale = Math.max(0, width - 4) / naturalWidth
         content.style.fontSize = `${scale}em`
         return [{content, width, scale}]
       })
       // 字形栅格化会使缩放后的字宽与比例估算有偏差，只对仍溢出的数值修正一次。
       const rendered = shrunk.map(({content}) => content.getBoundingClientRect().width)
       shrunk.forEach(({content, width, scale}, index) => {
-        if (rendered[index] > width) content.style.fontSize = `${scale * Math.max(0, width - 4) / rendered[index]}em`
+        const renderedWidth = rendered[index]
+        if (renderedWidth !== undefined && renderedWidth > width) content.style.fontSize = `${scale * Math.max(0, width - 4) / renderedWidth}em`
       })
     }
     fit()

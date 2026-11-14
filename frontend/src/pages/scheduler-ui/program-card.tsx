@@ -1,6 +1,7 @@
 /**
- * 从 SchedulerProgram.tsx 原 25-55 行提取，纯搬迁未改动（仅新增导出）。
- * 画布节点卡片：按规格渲染标题、端口与内联参数，并注册为 react-flow 节点类型。
+ * @fileoverview 画布节点卡片：按规格渲染标题、端口与内联参数，并注册为 react-flow 节点类型。
+ *
+ * 从 SchedulerProgram.tsx 拆分而来（仅新增导出）。
  */
 import {memo, type CSSProperties} from 'react'
 import {Handle, Position, useConnection as useFlowConnection, type NodeProps} from '@xyflow/react'
@@ -10,6 +11,7 @@ import type {CanvasNode} from '../../scheduler/Canvas'
 import type {PortType} from '../../scheduler/types'
 import {exits} from './labels'
 
+/** 画布节点卡片视图；选中态、执行态与校验失败态由 data 里的标志决定样式。 */
 export const Card = memo(function Card({data, selected}: NodeProps<CanvasNode>) {
   const {card, spec} = data
   const CardIcon = getCardIcon(card.type, spec.category)
@@ -39,4 +41,5 @@ export const Card = memo(function Card({data, selected}: NodeProps<CanvasNode>) 
     />
   </div>
 })
+/** react-flow 节点类型注册表：卡片类型 id → 渲染组件。 */
 export const nodeTypes = {card: Card}

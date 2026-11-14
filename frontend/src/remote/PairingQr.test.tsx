@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 配对二维码组件与 azurpilot:// 协议 URI 生成测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { PairingQr, generateQrSvgData, pairingQrPayload } from './PairingQr'

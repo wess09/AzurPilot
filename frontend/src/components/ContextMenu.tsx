@@ -11,9 +11,13 @@ import { createPortal } from 'react-dom'
 
 /** 右键菜单的一个动作项；danger 为真时渲染警示样式，用于删除等不可逆操作。 */
 export interface ContextMenuItem {
+  /** 菜单项显示文本。 */
   label: string
+  /** 选中后执行的动作，执行前菜单会先关闭。 */
   run: () => void
+  /** 置灰禁用。 */
   disabled?: boolean
+  /** 警示样式，用于删除等不可逆操作。 */
   danger?: boolean
 }
 

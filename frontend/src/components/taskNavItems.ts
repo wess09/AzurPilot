@@ -6,11 +6,13 @@
 /** 仅提供 WebUI 页面的导航项，不注册成可执行的游戏任务。 */
 const SCHEDULER_EDITOR = 'SchedulerProgram'
 const FLEET_ANALYSIS = 'FleetAnalysis'
+/** 编队系任务的 Task 名常量：导航项据此注册分组，搜索归属换算据此映射回任务。 */
 export const FLEET_SWITCH = 'FleetSwitch'
 export const FLEET_ROTATION = 'FleetRotation'
 export const FLEET_EQUIPMENT = 'FleetEquipment'
 export const FLEET_LEVEL_TRAINING = 'FleetLevelTraining'
 export const FLEET_AFFINITY_TRAINING = 'FleetAffinityTraining'
+/** 培养系统任务的 Task 名，编队系分组按任务表顺序排在最后。 */
 export const FLEET_TRAINING = 'FleetTraining'
 /**
  * 拼出某个分组下的导航项序列：DockScan 永不进导航；舰队管理组前置智能换船、

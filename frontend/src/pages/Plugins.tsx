@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 插件管理页：导入 .apu 插件包、启停、切换主题插件与卸载。
+ */
+
 import { useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { useApp, useConnection } from '../app/context'
@@ -6,7 +10,7 @@ import { Button } from '../components/ui/button'
 import { usePlugins } from '../plugins/context'
 import type { InstalledPlugin } from '../plugins/types'
 
-// 导入是主操作。已安装插件按名称、状态和操作排列，沿用设置面板的颜色与间距。
+/** 插件列表页：导入是主操作；已安装插件按名称、状态和操作排列，沿用设置面板的配色与间距。 */
 export function Plugins() {
   const {ui} = useApp()
   const connection = useConnection()

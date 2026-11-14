@@ -58,7 +58,7 @@ import {
 import type {PortType} from './types'
 
 /** 卡片类别 → 主题色。 */
-export const categoryColors: Record<string, string> = {
+export const categoryColors: Readonly<Record<string, string>> = {
   '流程': '#6385d6', '逻辑': '#9970d1', '变量': '#329caa', '时间': '#c58a27',
   '资源': '#289a77', '任务': '#d45982', '列表': '#358dcc', '调度': '#c3733f', '组合': '#7963d3',
 }
@@ -66,7 +66,7 @@ export const categoryColors: Record<string, string> = {
 export const categoryColor = (category: string) => categoryColors[category] ?? '#7b8b9e'
 
 /** 卡片类别 → 图标。 */
-export const categoryIcons: Record<string, LucideIcon> = {
+export const categoryIcons: Readonly<Record<string, LucideIcon>> = {
   '流程': Workflow,
   '逻辑': Cpu,
   '变量': Variable,
@@ -79,7 +79,7 @@ export const categoryIcons: Record<string, LucideIcon> = {
 }
 
 /** 卡片类型 → 图标，分组与类别一致。 */
-export const cardIcons: Record<string, LucideIcon> = {
+export const cardIcons: Readonly<Record<string, LucideIcon>> = {
   // 流程类：
   entry: Play,
   end: CircleStop,
@@ -147,7 +147,7 @@ const portFamily = (type: PortType) => ({duration:'number', tasks:'list', resour
 /** 判断两端口能否连线：any 通配，或同族。 */
 export const compatiblePorts = (source: PortType, target: PortType) => source === 'any' || target === 'any' || portFamily(source) === portFamily(target)
 /** 端口类型 → 颜色；取值刻意复用类别色板（数值=变量蓝、布尔=逻辑紫、任务=任务红等）。 */
-export const portColors: Record<PortType, string> = {
+export const portColors: Readonly<Record<PortType, string>> = {
   any: '#8191a5', number: '#329caa', boolean: '#9970d1', string: '#63a04a',
   time: '#c58a27', duration: '#329caa', resource: '#289a77', task: '#d45982',
   tasks: '#358dcc', result: '#c3733f', list: '#358dcc', object: '#289a77',
@@ -156,7 +156,7 @@ export const portColors: Record<PortType, string> = {
 export const wildcardBackground = 'conic-gradient(#329caa, #9970d1, #63a04a, #c58a27, #289a77, #d45982, #358dcc, #329caa)'
 
 /** 端口类型的界面文案。 */
-export const typeLabels: Record<PortType, string> = {
+export const typeLabels: Readonly<Record<PortType, string>> = {
   any: '任意值',
   number: '数值',
   boolean: '布尔',
@@ -172,7 +172,7 @@ export const typeLabels: Record<PortType, string> = {
 }
 
 /** 卡片参数键 → 界面文案。 */
-export const paramLabels: Record<string, string> = {
+export const paramLabels: Readonly<Record<string, string>> = {
   name: '名称',
   value: '值',
   operator: '运算符',

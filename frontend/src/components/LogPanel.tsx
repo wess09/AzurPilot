@@ -18,6 +18,7 @@ import { LogLine } from './log-panel/log-line'
 import { LOG_LEVELS, filterLogEntries, loadLogDescending, loadLogLevel, loadLogViewMode } from './log-panel/prefs'
 
 export {CENTER_TITLE_RE, LOG_ENTRY_LIMIT, LOG_LINE_RE, LINE_HEIGHT_ESTIMATE, MAX_FOLLOW_STEP, PURE_RULE_RE, RULE_RE, buildLineLayout, followStep, mergeLogEntries, queueLogEvent} from './log-panel/buffer'
+/** 日志缓冲状态类型，供 LogPanel 消费方复用。 */
 export type {LogBufferState} from './log-panel/buffer'
 export {LogLine} from './log-panel/log-line'
 
@@ -377,7 +378,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
                 )
               })}
               {lineLayout && lineEnd < ordered.length - 1 && (
-                <div style={{height: lineLayout.total - lineLayout.offsets[lineEnd] - lineLayout.heights[lineEnd]}} aria-hidden="true" />
+                <div style={{height: lineLayout.total - (lineLayout.offsets[lineEnd] ?? 0) - (lineLayout.heights[lineEnd] ?? 0)}} aria-hidden="true" />
               )}
             </>
           )

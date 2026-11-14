@@ -6,10 +6,13 @@ import type {Catalog, ProgramSaved, ProgramSimulation, ProgramValidation, Runtim
 import type {MindCatalog, MindShip} from '../mind/types'
 import type {Catalog as FleetTechCatalog, Report as FleetTechReport} from '../fleet-tech/types'
 
+/** JSON 标量值：字符串、数字、布尔或 null。 */
 export type Scalar = string | number | boolean | null
+/** 配置树中允许的任意 JSON 值。 */
 export type Value = Scalar | Value[] | {[key: string]: Value}
 /** 三层嵌套的配置值表：实例 → 参数组 → 参数名。 */
 type Values = Record<string, Record<string, Record<string, Value>>>
+/** 实例运行状态。 */
 export type Status = 'running' | 'stopped' | 'error' | 'updating'
 /** 一个实例的摘要：模拟器串口、运行状态与当前任务。 */
 export interface Instance { name: string; status: Status; serial: string; server: string; region?: 'cn' | 'en' | 'jp' | 'tw' | null; currentTask?: string | null }
@@ -69,12 +72,16 @@ export interface Overview {
   instance: string; revision: string; status: Status; tasks: ScheduledTask[]
   resources: Resource[]; emulator: Record<string, Value>
 }
+/** 单条日志：后端自增 id 用于增量拉取定位。 */
 export interface LogEntry { id: number; level: string; text: string }
 /** 一页日志：cursor 用于下次增量拉取。 */
 export interface Logs { instance: string; cursor: number; reset: boolean; entries: LogEntry[] }
+/** 一帧预览截图：image 为 dataURL，未截图时为 null。 */
 export interface Preview { instance: string; image: string | null; capturedAt: string | null }
 interface Statistics { instance: string; resource: string; points: {time: string; value: number}[]; truncated: boolean }
+/** 单个统计点位；source 标记该点的数据来源。 */
 export interface StatPoint {time: string; value: number; source?: string}
+/** 一条统计曲线：key 为筛选标识，label 为展示名。 */
 export interface StatSeries {key: string; label: string; icon?: string; points: StatPoint[]}
 /** 紧凑点位：t/v/s 为 time/value/source 的缩写键。 */
 interface StatPointCompact {t: number; v: number; s?: string}
@@ -84,7 +91,9 @@ interface StatSeriesCompact {key: string; label: string; icon?: string; points: 
 interface StatSeriesColumn {key: string; label: string; icon?: string; values: number[]; sources?: string[]}
 /** series 的线上形态：紧凑序列或共用时间轴的列式，二者二选一。 */
 type StatSeriesWire = StatSeriesCompact | StatSeriesColumn
+/** 统计明细表：列名、二维数据行与默认排序。 */
 export interface StatTable {title: string; columns: string[]; rows: Scalar[][]; note?: string; defaultSort?: TableSort}
+/** 表格默认排序：按第 index 列排序。 */
 export interface TableSort {index: number; descending: boolean}
 /** 统计报表：指标卡片、曲线、表格与备注。 */
 export interface StatisticsReport {
@@ -137,9 +146,13 @@ interface RemoteAccessStatus { enabled: boolean; state: string; address: string;
 export interface Settings { groups: {key: string; label: string; fields: DeployField[]}[]; notice: string; demo: boolean; remote?: RemoteAccessStatus }
 /** 远程配对凭据：客户端凭 code 认领连接，expires_at 为过期时间。 */
 export interface RemotePairing { id: string; client_id: string; code: string; particle_secret: string; expires_at: number }
+/** 已创建的远程访问客户端记录。 */
 export interface RemoteClient { id: string; created_at: number }
+/** 服务端推送的事件帧。 */
 export interface ApiEvent { v: 1; type: 'event'; topic: string; seq: number; data: unknown }
+/** RPC 响应帧；失败时 error 带 code/message/details。 */
 export interface ApiResponse { v: 1; type: 'response'; id: string; ok: boolean; result?: unknown; error?: {code: string; message: string; details?: unknown} }
+/** 公告内容：正文支持多行文本，url 为可选跳转链接。 */
 export interface Announcement {
   announcementId: string
   title: string

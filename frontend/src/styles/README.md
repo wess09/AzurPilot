@@ -30,7 +30,7 @@
 
 判定标准：类被 **≥2 个组件消费**，或被**任一主题/皮肤文件覆盖**（如 `.button` 被 9 个 CSS 文件覆盖、`.panel` 被 6 个、`.field-row`/`.toggle` 被 5 个），或四查判据有任一不过——都留在 L2。域文件头部注明原始行区间，规则文本逐字未改。
 
-### B1 拆分（原 components.css 1300 行 → 22 个域文件，聚合于 components.css）
+### B1 拆分（原 components.css 1300 行 → 21 个域文件，聚合于 components.css）
 
 | 域文件 | 原 components.css 行区间 | 备注 |
 | --- | --- | --- |
@@ -51,7 +51,6 @@
 | `announcement.css` | 548-673 | 跨段并入原 976-986 行 `.announcement-footer`/`.announcement-external-btn`（四查复核：与 markdown 段类名零交集、无同特异度属性竞争） |
 | `markdown.css` | 已搬空 | 占位指针：Markdown 域整体 colocate 至 `../components/MarkdownView.css`；聚合器 `@import` 勿删 |
 | `tiny-dot.css` | 988-993 | |
-| `palette-picker.css` | 994-1056 | 孤儿待确认，见「死样式清单」 |
 | `nav-collapse.css` | 1057-1091 | `@property --sidebar-width-preview` 随块保留全局作用 |
 | `mock-preview.css` | 1092-1253 | 模拟预览/材质检视器 |
 | `nav-search.css` | 1254-1265 | 留守，见「不搬清单」 |
@@ -111,9 +110,7 @@ entry 静态树组件（App/MaterialInspector 等）一律留 L2，不做 coloca
 
 ## 死样式清单（孤儿待确认——只标注，未删除）
 
-1. **`palette-picker.css` 调色板域**（原 components.css:994-1056）：`.palette-option`/`.palette-options` 等全 `src/` 无 tsx 消费者（grep `palette-option` 于 `*.tsx` 0 命中），仅 `e2e/themes.spec.ts:27,57` 引用；`settings-modern.css:47-48` 另有 `.settings-page .palette-options`/`.custom-palette-actions` 引用。孤儿状态标注在 palette-picker.css:1 头注。
-2. **`a11y-modern.css:4-5` 的 dev-* 系**（原 modern.css:1012-1013）：`.dev-state-box`/`.dev-shadow-grid`/`.dev-nav-preview` 全库无消费方（开发期残留）；「其后 `.field-control > .field-actions` 规则为活规则，勿一并标注」的警示在 a11y-modern.css:3。
-3. **四个无定义 token 类**：`text-warning`/`text-danger`/`text-success`/`text-mono`——`LogCardView.tsx:1079,1417,1564,1587` 等 tsx 消费，但全 styles/ 与 colocated CSS 均无 `.text-warning` 等规则定义，shadcn `@theme` 亦无 `--color-warning/--color-danger/--color-success`（grep 0 命中），当前渲染无效果。待确认是补定义还是清理类名，未动。
+1. **四个无定义 token 类**：`text-warning`/`text-danger`/`text-success`/`text-mono`——`LogCardView.tsx:1079,1417,1564,1587` 等 tsx 消费，但全 styles/ 与 colocated CSS 均无 `.text-warning` 等规则定义，shadcn `@theme` 亦无 `--color-warning/--color-danger/--color-success`（grep 0 命中），当前渲染无效果。待确认是补定义还是清理类名，未动。
 
 ## 令牌三层命名规律（新令牌照此取名）
 

@@ -149,6 +149,7 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
   }, [])
 
   const single = seriesData[0]
+  if (!single) return null
 
   useChartRender({element, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase})
 

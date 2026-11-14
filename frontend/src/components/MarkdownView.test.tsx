@@ -1,3 +1,5 @@
+/** @fileoverview MarkdownView 的渲染与安全回归：基础排版、KaTeX 公式、HTML 净化与折叠块。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MarkdownView } from './MarkdownView'

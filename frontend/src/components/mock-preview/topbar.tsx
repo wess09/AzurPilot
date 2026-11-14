@@ -1,20 +1,27 @@
 /**
+ * @fileoverview 全真预览顶栏样本：面包屑状态、菜单与弹窗触发点、启停控制与模拟菜单。
  * 从 MockInstancePreview.tsx 原 193-273 行提取，纯搬迁未改动（仅新增导出与入参）。
- * 全真预览顶栏样本：面包屑状态、菜单与弹窗触发点、启停控制与模拟菜单。
  */
 import type { Dispatch, SetStateAction } from 'react'
 import { FileText, MoreVertical, Pause, Play, RotateCcw, Settings, Sparkles } from 'lucide-react'
 import type { UiTranslator } from '../../i18n'
 
 type MockTopbarParams = {
+  /** 翻译函数。 */
   ui: UiTranslator
+  /** 模拟任务是否运行中。 */
   isRunning: boolean
+  /** 切换运行状态。 */
   setIsRunning: Dispatch<SetStateAction<boolean>>
+  /** 模拟菜单是否展开。 */
   showMenu: boolean
+  /** 切换模拟菜单。 */
   setShowMenu: Dispatch<SetStateAction<boolean>>
+  /** 打开模拟弹窗。 */
   setShowModal: Dispatch<SetStateAction<boolean>>
 }
 
+/** 渲染预览顶栏样本。 */
 export function mockTopbar({ui, isRunning, setIsRunning, showMenu, setShowMenu, setShowModal}: MockTopbarParams) {
   return (
           <header className="topbar mock-preview-topbar" style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>

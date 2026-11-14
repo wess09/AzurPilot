@@ -143,14 +143,7 @@
 .remote-address > code {flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--theme-radius-control); background: var(--theme-inset-bg); font-size: 12px; overflow-wrap: anywhere; user-select: all}
 /* 组件库下拉在设置字段里的宽度：固定控件列宽，窄屏回退撑满 */
 .settings-page [data-slot='select-trigger'] {width: 240px; max-width: 100%}
-/* 色板选择器别被字段宽度拉开：跟着旧控件列的节奏走 */
-.settings-page .palette-options {max-width: 480px}
-.settings-page .custom-palette-actions {max-width: 480px}
-/* 卡片里的行内状态文字：弱化显示，出错时换危险色 */
-.field-status {color: var(--muted); font-size: 12px; margin: 0}
-.field-status[data-error] {color: var(--red); font-weight: 500}
-/* 远程访问卡片正文与加载行：弱化色说明文字 */
-.remote-body {display: flex; flex-direction: column; gap: 10px; color: var(--muted); font-size: 13px}
+/* 远程访问卡片加载行：弱化色说明文字 */
 .remote-loading {display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px}
 /* 更新器的 HEAD 哈希：与设置行里的输入框同高同边 */
 /* HEAD 哈希：纯等宽文本（不再做成输入框的样子），右侧配一枚复制小按钮 */

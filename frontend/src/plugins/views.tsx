@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 插件页面的导航链接、整页路由与实例内面板的公共渲染入口。
+ */
 import { NavLink, useParams } from 'react-router-dom'
 import { Puzzle } from 'lucide-react'
 import { useApp } from '../app/context'
@@ -6,6 +9,12 @@ import { PluginFrame } from './PluginFrame'
 import { usePlugins } from './context'
 import { pluginAsset, pluginPage } from './types'
 
+/**
+ * 渲染启用插件的页面入口链接；按 scope 自动匹配全局或实例内上下文。
+ *
+ * @param instance - 当前实例名；全局上下文为 undefined。
+ * @param onNavigate - 链接点击后的回调，用于收起移动端抽屉。
+ */
 export function PluginLinks({instance, onNavigate}: {instance?: string; onNavigate?: () => void}) {
   return <>{usePlugins().plugins.filter(plugin => plugin.enabled).flatMap(plugin =>
     plugin.manifest.pages?.filter(page => (page.scope !== 'global') === Boolean(instance)).map(page =>
@@ -17,6 +26,7 @@ export function PluginLinks({instance, onNavigate}: {instance?: string; onNaviga
       </NavLink>) ?? [])}</>
 }
 
+/** 插件整页路由：按路由参数定位启用插件的页面视图并渲染插件帧。 */
 export function PluginPage() {
   const {pluginId, pageId, instance} = useParams()
   const {ui} = useApp()
@@ -32,6 +42,7 @@ export function PluginPage() {
   </section>
 }
 
+/** 渲染启用插件声明的全部实例内面板；无面板时不输出节点。 */
 export function PluginPanels({instance}: {instance: string}) {
   const panels = usePlugins().plugins.filter(plugin => plugin.enabled).flatMap(plugin =>
     plugin.manifest.panels?.map(panel => <section key={plugin.revision + ':' + panel.id + ':' + instance} className="panel apu-panel">

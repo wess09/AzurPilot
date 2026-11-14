@@ -23,7 +23,7 @@ export function TabBarResizeHandle({label}: {label: string}) {
 
   function resize(nextIndex: number) {
     const next = TAB_SIZES[Math.max(0, Math.min(nextIndex, TAB_SIZES.length - 1))]
-    if (next !== readTabSize()) setTabSize(next)
+    if (next && next !== readTabSize()) setTabSize(next)
   }
 
   return <div

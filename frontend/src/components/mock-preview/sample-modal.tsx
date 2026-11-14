@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 全真预览模拟弹窗样本：遮罩、标题、说明与确认按钮，供 modal 材质区域调节。
  * 从 MockInstancePreview.tsx 原 429-464 行提取，纯搬迁未改动（仅新增导出与入参）。
- * 全真预览模拟弹窗样本：遮罩、标题、说明与确认按钮，供 modal 材质区域调节。
  */
 import type { Dispatch, SetStateAction } from 'react'
 import { X } from 'lucide-react'
@@ -11,6 +11,7 @@ type MockSampleModalParams = {
   setShowModal: Dispatch<SetStateAction<boolean>>
 }
 
+/** 渲染模拟弹窗样本。 */
 export function mockSampleModal({ui, setShowModal}: MockSampleModalParams) {
   return (
         <div

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 远程访问状态聚合（disabled/configuring/ready）测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { remoteStatus } from './remoteStatus'
 

@@ -1,3 +1,5 @@
+/** @fileoverview shadcn/ui 警告条：默认与 destructive 两种配色的提示块。 */
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
@@ -18,6 +20,7 @@ const alertVariants = cva(
   }
 )
 
+/** 警告条容器：variant 决定配色，默认中性、destructive 为红色系。 */
 function Alert({
   className,
   variant,
@@ -33,19 +36,7 @@ function Alert({
   )
 }
 
-function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="alert-title"
-      className={cn(
-        "col-start-2 line-clamp-1 min-h-4 font-medium tracking-tight",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
+/** 警告条正文：位于图标右侧第二列，弱化文字色。 */
 function AlertDescription({
   className,
   ...props
@@ -62,4 +53,4 @@ function AlertDescription({
   )
 }
 
-export { Alert, AlertTitle, AlertDescription }
+export { Alert, AlertDescription }

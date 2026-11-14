@@ -1,3 +1,5 @@
+/** @fileoverview 统计报表紧凑点位的还原回归：时间文本还原与列式共用时间轴。 */
+
 import {describe, expect, it} from 'vitest'
 import {normalizeReport} from './statisticsData'
 
@@ -11,7 +13,7 @@ describe('统计报表的紧凑点位还原', () => {
         {t: 1767225600000001, v: 3},
       ]}],
     }
-    const points = normalizeReport(report).series[0].points
+    const points = normalizeReport(report).series[0]?.points ?? []
 
     expect(points.map(point => point.time)).toEqual([
       '2026-10-02 14:32:39.404030',
@@ -32,10 +34,10 @@ describe('统计报表的紧凑点位还原', () => {
     }
     const series = normalizeReport(report).series
 
-    expect(series[0].points.map(point => point.time)).toEqual([
+    expect(series[0]?.points.map(point => point.time)).toEqual([
       '2026-10-02 14:32:39.404030', '2026-10-02 14:32:39', '2026-01-01 00:00:00.000001',
     ])
-    expect(series[0].points.map(point => point.value)).toEqual([1, 2, 3])
-    expect(series[1].points.map(point => point.source)).toEqual(['ocr', '', ''])
+    expect(series[0]?.points.map(point => point.value)).toEqual([1, 2, 3])
+    expect(series[1]?.points.map(point => point.source)).toEqual(['ocr', '', ''])
   })
 })

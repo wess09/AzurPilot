@@ -1,6 +1,9 @@
+/** @fileoverview shadcn/ui 多行输入框：原生 textarea 的统一样式封装。 */
+
 import * as React from 'react'
 import { cn } from '../../lib/utils'
 
+/** 多行输入框：统一样式的原生 textarea，属性透传。 */
 function Textarea({className, ...props}: React.ComponentProps<'textarea'>) {
   return <textarea
     data-slot="textarea"

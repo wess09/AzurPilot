@@ -16,7 +16,7 @@ import { Button } from './ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 
 const iconBase = import.meta.env.BASE_URL
-// 键为中文名；withTranslatedKeys 补上译名，翻译后的列名、物品名仍能找到图标。
+/** 列名/物品名 → 图标映射；键为中文名，withTranslatedKeys 补上译名，翻译后仍能找到图标。 */
 export const resourceIcons: Record<string, string> = withTranslatedKeys({
   '钻石': `${iconBase}diamond.webp`,
   '心智魔方': `${iconBase}cube.webp`,
@@ -37,13 +37,14 @@ export const resourceIcons: Record<string, string> = withTranslatedKeys({
 
 // 科研掉落用仓库里的模板图当图标，后端把 /research-items 挂到 assets/stats/research_items，
 // 不走前端构建，补了新模板立刻生效。单元格值形如 'research:BlueprintValparaiso'。
+/** 表格值里的模板图标前缀：命中即整行按模板图标渲染，不再套资源图标。 */
 const RESEARCH_PREFIX = 'research:'
 // 大世界掉落同理，值形如 'opsi:PlateGeneralT4'，后端把 /opsi-items 挂到
 // assets/stats/opsi_reward_items，缺失时回退到 opsi_items 中的同名领奖模板。
 const OPSI_PREFIX = 'opsi:'
 const STORAGE_PREFIX = 'storage:'
 /** 带模板图标的单元格值前缀全集；判断一行是否模板行时用它。 */
-export const TEMPLATE_PREFIXES = [RESEARCH_PREFIX, OPSI_PREFIX, STORAGE_PREFIX]
+export const TEMPLATE_PREFIXES = [RESEARCH_PREFIX, OPSI_PREFIX, STORAGE_PREFIX] as const
 
 /**
  * 把单元格值解析成图标：模板前缀（storage:/research:/opsi:）走对应模板目录，否则按资源名查 resourceIcons。
@@ -112,10 +113,12 @@ function numericValue(value: StatTable['rows'][number][number]): number | undefi
   // 只有一页时不画分页栏：页码恒为 1 / 1，两个翻页钮也点不动。
   return <section className={`statistics-table${singleRow ? ' is-single-row' : ''}`}><div className="panel-heading"><h3>{data.title}</h3><div className="table-search"><Search size={14}/><Input className="w-full min-w-30 max-w-60" aria-label={ui('stats.searchTable', {title: data.title})} value={search} onChange={event => {setSearch(event.target.value); setPage(0)}} placeholder={ui('stats.searchPlaceholder')}/><span>{ui('stats.records', {count: rows.length})}</span></div><div className="stat-card-actions">{editControls}{foldControl}<Button variant="ghost" size="sm" disabled={!rows.length} onClick={() => downloadCsv(data.title, [data.columns, ...rows])}>{ui('stats.exportDetails')}</Button></div></div>{data.note && <p className="panel-note">{data.note}</p>}<div className="table-scroll">{plain ? (<div className="table-lines">{rows.slice(current * perPage, (current + 1) * perPage).map((row, index) => (
               <p className="table-line" key={index}>
-                <span className="table-line-first">{cellText(row[0])}：</span>
+                <span className="table-line-first">{cellText(row[0] ?? '')}：</span>
                 {row.slice(1).map((value, cell) => {const icon = typeof value === 'string' ? resolveIcon(value, false) : undefined
-                  const src = icon?.src ?? (numericValue(value) !== undefined ? resourceIcons[data.columns[cell + 1]] : undefined)
-                  return ({src, text: cellText(value, icon)})}).filter(item => item.src && item.text !== '—').map((item, cell) => (
+                  const scalarValue = value ?? ''
+                  const column = data.columns[cell + 1]
+                  const src = icon?.src ?? (column !== undefined && numericValue(scalarValue) !== undefined ? resourceIcons[column] : undefined)
+                  return ({src, text: cellText(scalarValue, icon)})}).filter(item => item.src && item.text !== '—').map((item, cell) => (
                   <span className="table-line-cell" key={cell}>{cell ? '、' : ''}{item.src ? <img className="table-resource-icon" src={item.src} alt="" draggable={false}/> : null}{item.src ? '×' : ''}{item.text}</span>))}
-      </p>))}</div>) : (<Table className="min-w-full whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{data.columns.map((column, index) => {const colIcon = resourceIcons[column]; return <TableHead key={column} aria-sort={activeSort?.index === index ? activeSort.descending ? 'descending' : 'ascending' : 'none'}><Button type="button" variant="ghost" size="sm" onClick={() => {setPage(0); setSort(currentSort => {const current = currentSort ?? data.defaultSort; return {index, descending: current?.index === index ? !current.descending : false}})}}>{colIcon && <img className="table-resource-icon table-header-icon" src={colIcon} alt="" width={24} height={24} draggable={false}/>}{column}{activeSort?.index === index ? activeSort.descending ? <ArrowDown size={14} aria-hidden="true"/> : <ArrowUp size={14} aria-hidden="true"/> : null}</Button></TableHead>})}</TableRow></TableHeader><TableBody>{rows.slice(current * perPage, (current + 1) * perPage).map((row, index) => {const templateRow = row.some(value => typeof value === 'string' && TEMPLATE_PREFIXES.some(prefix => value.startsWith(prefix))); return <TableRow key={index}>{row.map((value, cell) => {const icon = typeof value === 'string' ? resolveIcon(value, !templateRow) : undefined; const formatted = cellText(value, icon); const columnIcon = numericValue(value) !== undefined && (icons || plain) ? resourceIcons[data.columns[cell]] : undefined; return <TableCell key={cell}>{icon ? <span className="table-resource-cell"><img className="table-resource-icon" src={icon.src} alt="" width={26} height={26} draggable={false}/><span>{formatted}</span></span> : columnIcon ? <span className="table-resource-cell"><img className="table-resource-icon" src={columnIcon} alt="" width={26} height={26} draggable={false}/><span>{formatted}</span></span> : formatted}</TableCell>})}</TableRow>})}</TableBody></Table>)}{!rows.length && <p className="panel-note">{ui('stats.noRecords')}</p>}</div>{pages > 1 && <div className="table-toolbar"><Button variant="ghost" size="sm" disabled={!current} onClick={() => setPage(current - 1)}>{ui('common.previous')}</Button><span>{current + 1} / {pages}</span><Button variant="ghost" size="sm" disabled={current + 1 === pages} onClick={() => setPage(current + 1)}>{ui('common.next')}</Button></div>}</section>
+      </p>))}</div>) : (<Table className="min-w-full whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{data.columns.map((column, index) => {const colIcon = resourceIcons[column]; return <TableHead key={column} aria-sort={activeSort?.index === index ? activeSort.descending ? 'descending' : 'ascending' : 'none'}><Button type="button" variant="ghost" size="sm" onClick={() => {setPage(0); setSort(currentSort => {const current = currentSort ?? data.defaultSort; return {index, descending: current?.index === index ? !current.descending : false}})}}>{colIcon && <img className="table-resource-icon table-header-icon" src={colIcon} alt="" width={24} height={24} draggable={false}/>}{column}{activeSort?.index === index ? activeSort.descending ? <ArrowDown size={14} aria-hidden="true"/> : <ArrowUp size={14} aria-hidden="true"/> : null}</Button></TableHead>})}</TableRow></TableHeader><TableBody>{rows.slice(current * perPage, (current + 1) * perPage).map((row, index) => {const templateRow = row.some(value => typeof value === 'string' && TEMPLATE_PREFIXES.some(prefix => value.startsWith(prefix))); return <TableRow key={index}>{row.map((value, cell) => {const icon = typeof value === 'string' ? resolveIcon(value, !templateRow) : undefined; const formatted = cellText(value, icon); const column = data.columns[cell]; const columnIcon = column !== undefined && numericValue(value) !== undefined && (icons || plain) ? resourceIcons[column] : undefined; return <TableCell key={cell}>{icon ? <span className="table-resource-cell"><img className="table-resource-icon" src={icon.src} alt="" width={26} height={26} draggable={false}/><span>{formatted}</span></span> : columnIcon ? <span className="table-resource-cell"><img className="table-resource-icon" src={columnIcon} alt="" width={26} height={26} draggable={false}/><span>{formatted}</span></span> : formatted}</TableCell>})}</TableRow>})}</TableBody></Table>)}{!rows.length && <p className="panel-note">{ui('stats.noRecords')}</p>}</div>{pages > 1 && <div className="table-toolbar"><Button variant="ghost" size="sm" disabled={!current} onClick={() => setPage(current - 1)}>{ui('common.previous')}</Button><span>{current + 1} / {pages}</span><Button variant="ghost" size="sm" disabled={current + 1 === pages} onClick={() => setPage(current + 1)}>{ui('common.next')}</Button></div>}</section>
 }

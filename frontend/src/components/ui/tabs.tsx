@@ -1,10 +1,13 @@
 "use client"
 
+/** @fileoverview shadcn/ui 标签页：Radix 封装，支持横竖布局与 default/line 变体。 */
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 import { Tabs as TabsPrimitive } from "radix-ui"
 
+/** 标签页根：orientation 决定 trigger 排布方向，默认水平。 */
 function Tabs({
   className,
   orientation = "horizontal",
@@ -24,6 +27,7 @@ function Tabs({
   )
 }
 
+/** 标签列表变体表，供需要同款样式的外部类名组合使用。 */
 const tabsListVariants = cva(
   "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-[orientation=horizontal]/tabs:h-9 group-data-[orientation=vertical]/tabs:h-fit group-data-[orientation=vertical]/tabs:flex-col data-[variant=line]:rounded-none",
   {
@@ -39,6 +43,7 @@ const tabsListVariants = cva(
   }
 )
 
+/** 标签列表：variant 决定底色，line 变体以下划线高亮激活项。 */
 function TabsList({
   className,
   variant = "default",
@@ -55,6 +60,7 @@ function TabsList({
   )
 }
 
+/** 单个标签：激活态样式由所属 TabsList 的 variant 驱动。 */
 function TabsTrigger({
   className,
   ...props
@@ -74,6 +80,7 @@ function TabsTrigger({
   )
 }
 
+/** 标签对应的内容面板。 */
 function TabsContent({
   className,
   ...props

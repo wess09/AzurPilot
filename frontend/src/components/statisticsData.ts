@@ -56,10 +56,10 @@ export function mergeMultiSeriesRows(
   }
   const sortedTimes = [...timeMap.keys()].sort((a, b) => b.localeCompare(a))
   return sortedTimes.map(time => {
-    const entry = timeMap.get(time)!
+    const entry = timeMap.get(time) ?? {values: {}, source: ''}
     return [
       time,
-      ...seriesList.map(s => (entry.values[s.key] != null ? entry.values[s.key] : '—')),
+      ...seriesList.map(s => entry.values[s.key] ?? '—'),
       entry.source || '—',
     ]
   })
@@ -95,7 +95,10 @@ function resolveSelectedKeys(series: StatSeries[], saved: string[]): string[] {
 export function buildSeriesView(series: StatSeries[], options: {selectedKeys: string[]; mode: ChartMode; bucket: number; from: string; to: string}): StatisticsView {
   const {selectedKeys, mode, bucket, from, to} = options
   const keys = resolveSelectedKeys(series, selectedKeys)
-  const selectedSeries = keys.map(key => series.find(item => item.key === key)!).filter(Boolean)
+  const selectedSeries = keys.flatMap(key => {
+    const item = series.find(seriesItem => seriesItem.key === key)
+    return item ? [item] : []
+  })
   const isSingle = selectedSeries.length === 1
   const effectiveBucket = mode === 'candlestick' && bucket === 0 ? 60 : bucket
   const seriesData = selectedSeries.map(s => {
@@ -104,7 +107,7 @@ export function buildSeriesView(series: StatSeries[], options: {selectedKeys: st
     return {
       series: s, points, buckets: aggregatePoints(points, effectiveBucket), values,
       latest: values.at(-1),
-      change: values.length >= 2 ? (values.at(-1)! - values[0]) : 0,
+      change: values.length >= 2 ? (values.at(-1) ?? 0) - (values[0] ?? 0) : 0,
       minimum: values.length ? Math.min(...values) : 0,
       maximum: values.length ? Math.max(...values) : 0,
     }
@@ -126,10 +129,13 @@ export function riseFallSegments(times: number[], closes: (number | null)[]): {r
   const deltas = riseFallDeltas(closes)
   for (let index = 1; index < closes.length; index += 1) {
     const previous = closes[index - 1]
+    const time = times[index - 1]
+    const currentTime = times[index]
     const current = closes[index]
-    if (previous == null || current == null) continue
-    const target = deltas[index] >= 0 ? rise : fall
-    target.push([times[index - 1], previous], [times[index], current], '-')
+    if (previous == null || current == null || time === undefined || currentTime === undefined) continue
+    const delta = deltas[index]
+    const target = (delta ?? 0) >= 0 ? rise : fall
+    target.push([time, previous], [currentTime, current], '-')
   }
   return {rise, fall}
 }
@@ -162,11 +168,12 @@ const wallClock = (micros: number) => {
 /** 把传输用的紧凑点还原成内部点位。 */
 export function normalizeReport(report: StatisticsReportWire): StatisticsReport {
   const {axis, series, ...rest} = report
+  const axisValues = axis ?? []
   return {
     ...rest,
     series: series.map(item => 'values' in item
       ? {key: item.key, label: item.label, icon: item.icon, points: item.values.map((value, index) => ({
-        time: wallClock(axis![index]), value, source: item.sources?.[index] ?? '',
+        time: wallClock(axisValues[index] ?? 0), value, source: item.sources?.[index] ?? '',
       }))}
       : {key: item.key, label: item.label, icon: item.icon, points: item.points.map(point => ({
         time: wallClock(point.t), value: point.v, source: point.s ?? '',

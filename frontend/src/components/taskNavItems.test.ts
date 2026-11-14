@@ -1,3 +1,5 @@
+/** @fileoverview 侧栏导航拼装的纯函数回归：配置项归属任务解析与舰队分析入口。 */
+
 import { describe, expect, it } from 'vitest'
 import { ownerTaskOf, ownerTaskOfGroup, taskNavItems } from './taskNavItems'
 

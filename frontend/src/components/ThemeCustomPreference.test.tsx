@@ -31,7 +31,10 @@ const render = (params: Record<string, number> = {}, initialRegion?: (typeof REG
 describe('材质细节二级菜单', () => {
   it('顶部列出四个类别，默认只显示第一类接入的滑块', () => {
     const html = render()
-    for (const region of REGIONS) expect(html, region).toContain(`settings.region${region[0].toUpperCase()}${region.slice(1)}`)
+    for (const region of REGIONS) {
+      const firstChar = region[0] ?? ''
+      expect(html, region).toContain(`settings.region${firstChar.toUpperCase()}${region.slice(1)}`)
+    }
     expect(html.match(/role="slider"/g) ?? []).toHaveLength(regionProps.surface.length)
     for (const key of ['settings.propAlpha', 'settings.glassBlur', 'settings.glassSaturation']) expect(html, key).toContain(key)
     expect(html).toContain('settings.materialDetailScope')

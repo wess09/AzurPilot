@@ -4,6 +4,7 @@
 
 import { VALID_CATEGORIES, type StatisticsCategory } from './statisticsPrefs'
 
+/** 统计布局中的页面标识。 */
 export type PageId = StatisticsCategory
 
 /** 卡片顺序、组合链与隐藏名单共用的落盘键：平时是链首页面，单页视图下是全部启用页面共用的一个键。 */
@@ -11,14 +12,23 @@ type SpaceKey = string
 
 /** 统计页布局文档，落盘于 localStorage；version 只认 1，对不上就整份回落默认布局。 */
 export interface StatisticsLayout {
+  /** 布局文档版本，当前固定为 1。 */
   version: 1
+  /** 页面组合链，链内页面共用卡片空间。 */
   pages: PageId[][]
+  /** 编辑态页面槽位行，已填满的两页行会合并成链。 */
   slots: PageId[][]
+  /** 各统计页是否启用。 */
   enabled: Record<PageId, boolean>
+  /** 是否把启用页面合并为单页视图。 */
   singleView: boolean
+  /** 各卡片空间的卡片连接链。 */
   cards: Partial<Record<SpaceKey, string[][]>>
+  /** 各卡片空间的卡片显示顺序。 */
   order: Partial<Record<SpaceKey, string[]>>
+  /** 各卡片空间的隐藏卡片键。 */
   hidden: Partial<Record<SpaceKey, string[]>>
+  /** 处于折叠状态的卡片键。 */
   folded: string[]
   /** 图表表头用紧凑排列的页面：一行一个资源。 */
   compactChart: PageId[]
@@ -40,7 +50,9 @@ export const DEFAULT_TABLE_ROWS = 25
 /** 单张表格的显示设置：每页行数（0 = 全部）、数值补图标、只留内容行。 */
 type TableDisplay = {rows?: number; icons?: boolean; plain?: boolean}
 
+/** 统计布局文档的 localStorage 键。 */
 export const LAYOUT_KEY = 'azurpilot.statistics.layout'
+/** 统计页编辑模式的 localStorage 键。 */
 export const EDIT_MODE_KEY = 'azurpilot.statistics.edit-mode'
 
 const PAGE_IDS = VALID_CATEGORIES
@@ -53,6 +65,7 @@ function isCardKey(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0
 }
 
+/** 创建未自定义时使用的统计页默认布局。 */
 export function defaultStatisticsLayout(): StatisticsLayout {
   const enabled: Partial<Record<PageId, boolean>> = {}
   for (const id of PAGE_IDS) enabled[id] = true
@@ -75,6 +88,7 @@ export function defaultStatisticsLayout(): StatisticsLayout {
   }
 }
 
+/** 共享的默认布局实例。 */
 export const DEFAULT_STATISTICS_LAYOUT: StatisticsLayout = defaultStatisticsLayout()
 
 /** 键在整份文档里只保留第一次出现：重复项丢弃，空链丢弃。 */
@@ -294,14 +308,17 @@ export function setChartCompact(layout: StatisticsLayout, page: PageId, compact:
   return {...layout, compactChart: next}
 }
 
+/** 判断卡片是否处于折叠状态。 */
 export function isCardFolded(layout: StatisticsLayout, key: string): boolean {
   return layout.folded.includes(key)
 }
 
+/** 折叠指定卡片并返回新布局。 */
 export function foldCard(layout: StatisticsLayout, key: string): StatisticsLayout {
   return isCardFolded(layout, key) ? layout : {...layout, folded: [...layout.folded, key]}
 }
 
+/** 展开指定卡片并返回新布局。 */
 export function unfoldCard(layout: StatisticsLayout, key: string): StatisticsLayout {
   return isCardFolded(layout, key) ? {...layout, folded: layout.folded.filter(item => item !== key)} : layout
 }
@@ -405,10 +422,11 @@ export function rechain(chains: string[][], orderedKeys: string[], moved?: strin
     const merged: string[] = []
     for (let index = 0; index < orderedKeys.length; index += 1) {
       const key = orderedKeys[index]
+      if (!key) continue
       if (chain.includes(key)) { merged.push(key); continue }
       const before = orderedKeys[index - 1]
       const after = orderedKeys[index + 1]
-      if (moved && before && after && chain.includes(before) && chain.includes(after)) merged.push(key)
+      if (moved && before !== undefined && after !== undefined && chain.includes(before) && chain.includes(after)) merged.push(key)
     }
     let run: string[] = []
     for (const key of orderedKeys) {
@@ -436,6 +454,7 @@ export function placeCard(layout: StatisticsLayout, page: PageId, keys: string[]
   return {...layout, order: {...layout.order, [cardSpace(layout, page)]: next}}
 }
 
+/** 读取并规范化统计页布局，损坏或缺失时返回默认布局。 */
 export function readStatisticsLayout(): StatisticsLayout {
   try {
     const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(LAYOUT_KEY) : null
@@ -447,6 +466,7 @@ export function readStatisticsLayout(): StatisticsLayout {
   return defaultStatisticsLayout()
 }
 
+/** 规范化并持久化统计页布局。 */
 export function writeStatisticsLayout(layout: StatisticsLayout): void {
   try {
     if (typeof localStorage === 'undefined') return
@@ -465,6 +485,7 @@ export function hasStatisticsLayout(): boolean {
   }
 }
 
+/** 删除统计页布局记录并恢复默认布局。 */
 export function resetStatisticsLayout(): void {
   try {
     if (typeof localStorage !== 'undefined') localStorage.removeItem(LAYOUT_KEY)
@@ -473,6 +494,7 @@ export function resetStatisticsLayout(): void {
   }
 }
 
+/** 读取统计页编辑模式。 */
 export function readStatisticsEditMode(): boolean {
   try {
     return typeof localStorage !== 'undefined' && localStorage.getItem(EDIT_MODE_KEY) === '1'
@@ -481,6 +503,11 @@ export function readStatisticsEditMode(): boolean {
   }
 }
 
+/**
+ * 写入统计页编辑模式。
+ *
+ * @param enabled 是否进入编辑模式。
+ */
 export function writeStatisticsEditMode(enabled: boolean): void {
   try {
     if (typeof localStorage === 'undefined') return
@@ -501,6 +528,14 @@ export function isPageEnabled(layout: StatisticsLayout, page: PageId): boolean {
   return layout.enabled[page] !== false
 }
 
+/**
+ * 设置统计页入口的启用状态。
+ *
+ * @param layout 当前布局。
+ * @param page 统计页标识。
+ * @param enabled 是否启用该页入口。
+ * @returns 新布局。
+ */
 export function setPageEnabled(layout: StatisticsLayout, page: PageId, enabled: boolean): StatisticsLayout {
   return {...layout, enabled: {...layout.enabled, [page]: enabled}}
 }

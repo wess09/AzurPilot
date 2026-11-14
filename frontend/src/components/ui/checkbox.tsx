@@ -1,8 +1,11 @@
+/** @fileoverview shadcn/ui 复选框：Radix 封装，选中态显示 Check 图标。 */
+
 import * as React from 'react'
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
 import { CheckIcon } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
+/** 复选框：checked/onCheckedChange 由调用方管理，其余属性透传 Radix Root。 */
 function Checkbox({className, ...props}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
   return <CheckboxPrimitive.Root
     data-slot="checkbox"

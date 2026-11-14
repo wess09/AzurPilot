@@ -1,9 +1,5 @@
 /* 滚动条隐藏 + period-controls 隐藏 + 高对比覆写（原 modern.css 1011-1034） */
 
-/* 孤儿待确认：.dev-state-box / .dev-shadow-grid / .dev-nav-preview 全库无消费方（开发期残留样式），按批次约定仅标注不删除；其后 .field-control > .field-actions 规则为活规则，勿一并标注 */
-.dev-state-box, .dev-shadow-grid {background: var(--surface-muted)}
-.dev-nav-preview {background: var(--surface)}
-
 /* 按下「立刻运行」时底色与字色互换，与按钮的缩放动画叠加 */
 .field-control > .field-actions .icon-only:hover:active:not(:disabled) {background: var(--theme-accent); color: var(--theme-on-accent)}
 

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 统计页与图表选项的规范默认值和持久化迁移测试。
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DEFAULT_STATISTICS_PREFS,

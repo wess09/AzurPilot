@@ -30,11 +30,17 @@ function loadResourceSelection(instance: string) {
   return defaultResourceKeys
 }
 
+/** 总览视图的共享数据契约：主题视图只负责展示，数据与偏好由路由控制器持有。 */
 export interface OverviewViewProps {
+  /** 当前实例名，用于标题与插件面板取数。 */
   instance: string
+  /** 最近一次总览数据，来自 useInstanceOverview 的订阅。 */
   data: OverviewData
+  /** 数据更新回调：视图内部刷新后写回控制器状态。 */
   onData: (data: OverviewData) => void
+  /** 当前展示的资源卡 key 列表（已去重）。 */
   selectedResources: string[]
+  /** 资源选择变化回调：控制器负责持久化。 */
   onResourcesChange: (keys: string[]) => void
 }
 

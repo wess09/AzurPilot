@@ -6,15 +6,15 @@ import type {Dispatch, SetStateAction} from 'react'
 import {Button} from '../components/ui/button'
 
 /** 舰队科技与心智计算共用的舰种类型 ID，顺序即筛选 chip 的展示顺序。 */
-export const fleetShipTypes = [1, 2, 3, 18, 4, 5, 7, 6, 13, 12, 10, 8, 17, 19, 22]
+export const fleetShipTypes: readonly number[] = [1, 2, 3, 18, 4, 5, 7, 6, 13, 12, 10, 8, 17, 19, 22]
 /** 舰船属性 ID，顺序即筛选 chip 的展示顺序。 */
-export const fleetAttributes = [1, 2, 3, 4, 5, 6, 9, 8, 12]
+export const fleetAttributes: readonly number[] = [1, 2, 3, 4, 5, 6, 9, 8, 12]
 /** 舰船稀有度档位；船坞台账只用前五档（N–UR）。 */
-export const fleetRarities = ['N', 'R', 'SR', 'SSR', 'UR', 'PR', 'DR']
+export const fleetRarities: readonly string[] = ['N', 'R', 'SR', 'SSR', 'UR', 'PR', 'DR']
 /** 台账舰船身份用图鉴名称区分：导驱与驱逐同为类型 1，按数字 ID 分不出来，所以按名称另维护一份。 */
-export const ledgerShipTypes = ['驱逐', '轻巡', '重巡', '超巡', '战巡', '战列', '正航', '轻航', '重炮', '维修', '航战', '潜艇', '潜母', '运输', '导驱', '风帆']
+export const ledgerShipTypes: readonly string[] = ['驱逐', '轻巡', '重巡', '超巡', '战巡', '战列', '正航', '轻航', '重炮', '维修', '航战', '潜艇', '潜母', '运输', '导驱', '风帆']
 /** 舰种名称 → 图鉴类型 ID；导驱与驱逐共用 1，身份靠名称区分。 */
-export const ledgerTypeIds: Record<string, number> = {'驱逐': 1, '轻巡': 2, '重巡': 3, '超巡': 18, '战巡': 4, '战列': 5, '正航': 7, '轻航': 6, '重炮': 13, '维修': 12, '航战': 10, '潜艇': 8, '潜母': 17, '运输': 19, '导驱': 1, '风帆': 22}
+export const ledgerTypeIds: Readonly<Record<string, number>> = {'驱逐': 1, '轻巡': 2, '重巡': 3, '超巡': 18, '战巡': 4, '战列': 5, '正航': 7, '轻航': 6, '重炮': 13, '维修': 12, '航战': 10, '潜艇': 8, '潜母': 17, '运输': 19, '导驱': 1, '风帆': 22}
 type FleetFilters = Record<string, string[]>
 
 /**
@@ -30,6 +30,6 @@ export function FleetFilterRow({filter, label, options, filters, setFilters, all
 }) {
   return <div className="ft-filter-row"><strong>{label}</strong><div className="ft-chips">{[['', all], ...options].map(([value, text]) => {
     const selected = value ? filters[filter]?.includes(value) ?? false : !filters[filter]?.length
-    return <Button type="button" size="sm" variant={selected ? 'default' : 'outline'} key={value} aria-pressed={selected} onClick={() => setFilters(current => ({...current, [filter]: value ? current[filter]?.includes(value) ? current[filter]!.filter(item => item !== value) : [...current[filter] ?? [], value] : []}))}>{text}</Button>
+    return <Button type="button" size="sm" variant={selected ? 'default' : 'outline'} key={value} aria-pressed={selected} onClick={() => setFilters(current => ({...current, [filter]: value ? current[filter]?.includes(value) ? (current[filter] ?? []).filter(item => item !== value) : [...current[filter] ?? [], value] : []}))}>{text}</Button>
   })}</div></div>
 }

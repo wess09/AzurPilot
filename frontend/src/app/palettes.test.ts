@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 品牌配色的对比度、令牌生成与自定义调色板校验测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { accentTokens, contrastRatio, paletteColors, palettes, presetColors, readCustomPalettes, stockBrands, type CustomPalette } from './palettes'
 
@@ -9,8 +12,11 @@ describe('品牌配色生成与校验', () => {
       expect(presetColors[id].light).not.toEqual(presetColors[id].dark)
       for (const mode of ['light', 'dark'] as const) {
         const tokens = accentTokens(presetColors[id][mode], mode)
-        expect(contrastRatio(tokens['--accent'], tokens['--accent-soft'])).toBeGreaterThanOrEqual(4.5)
-        expect(contrastRatio(tokens['--theme-on-accent'], tokens['--accent'])).toBeGreaterThanOrEqual(4.5)
+        const accent = tokens['--accent']
+        const accentSoft = tokens['--accent-soft']
+        const onAccent = tokens['--theme-on-accent']
+        expect(contrastRatio(accent ?? '', accentSoft ?? '')).toBeGreaterThanOrEqual(4.5)
+        expect(contrastRatio(onAccent ?? '', accent ?? '')).toBeGreaterThanOrEqual(4.5)
       }
     }
   })
@@ -19,8 +25,11 @@ describe('品牌配色生成与校验', () => {
       expect(paletteColors(custom.id, [custom], mode)).toEqual({primary: '#ffffff', secondary: '#ffff00'})
       const tokens = accentTokens(paletteColors(custom.id, [custom], mode), mode)
       expect(Object.values(tokens).every(value => /^#[\da-f]{6}$/i.test(value))).toBe(true)
-      expect(contrastRatio(tokens['--accent'], tokens['--secondary-soft'])).toBeGreaterThanOrEqual(4.5)
-      expect(contrastRatio(tokens['--secondary'], tokens['--secondary-soft'])).toBeGreaterThanOrEqual(4.5)
+      const accent = tokens['--accent']
+      const secondary = tokens['--secondary']
+      const secondarySoft = tokens['--secondary-soft']
+      expect(contrastRatio(accent ?? '', secondarySoft ?? '')).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio(secondary ?? '', secondarySoft ?? '')).toBeGreaterThanOrEqual(4.5)
     }
   })
   it('损坏、重复和非实色的存储条目不进入可选方案，并兼容旧版双色模式数据', () => {
@@ -55,9 +64,13 @@ describe('品牌配色只动强调色', () => {
     expect(dark.primary).toBe('#e5e5e5')
     const lightTokens = accentTokens(light, 'light')
     const darkTokens = accentTokens(dark, 'dark')
-    expect(contrastRatio(lightTokens['--accent'], '#ffffff')).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio(lightTokens['--theme-on-accent'], lightTokens['--accent'])).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio(darkTokens['--accent'], '#20252d')).toBeGreaterThanOrEqual(4.5)
-    expect(contrastRatio(darkTokens['--theme-on-accent'], darkTokens['--accent'])).toBeGreaterThanOrEqual(4.5)
+    const lightAccent = lightTokens['--accent']
+    const lightOnAccent = lightTokens['--theme-on-accent']
+    const darkAccent = darkTokens['--accent']
+    const darkOnAccent = darkTokens['--theme-on-accent']
+    expect(contrastRatio(lightAccent ?? '', '#ffffff')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(lightOnAccent ?? '', lightAccent ?? '')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(darkAccent ?? '', '#20252d')).toBeGreaterThanOrEqual(4.5)
+    expect(contrastRatio(darkOnAccent ?? '', darkAccent ?? '')).toBeGreaterThanOrEqual(4.5)
   })
 })

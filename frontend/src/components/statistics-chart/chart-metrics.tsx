@@ -1,11 +1,12 @@
 /**
+ * @fileoverview 图表下方指标区：单序列摘要与多序列卡片/紧凑行。
  * 从 StatisticsChart.tsx 原 552-609 行提取，纯搬迁未改动。
- * 图表下方指标区：单序列摘要与多序列卡片/紧凑行。
  */
 import type {KeyboardEvent as ReactKeyboardEvent} from 'react'
 import { getChartIcon } from './chart-icons'
 import type { ChartUi, SeriesDatumWithColor } from './shared'
 
+/** 组装图表下方指标区：单序列显示摘要，多序列按紧凑与否渲染卡片或行。 */
 export function buildChartMetrics({isSingle, single, seriesData, compact, filtered, selectedKeys, shownData, onToggleFilter, isCandlestick, ui}: {
   isSingle: boolean
   single: SeriesDatumWithColor

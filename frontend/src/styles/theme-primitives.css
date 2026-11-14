@@ -122,12 +122,9 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
 .resource-3 .resource-heading > div {background: var(--theme-resource-3-bg); color: var(--theme-resource-3-text)}
 .resource-heading > div.resource-image-wrap {background: transparent}
 .instance-card:hover {border-color: color-mix(in srgb, var(--theme-accent) 35%, var(--theme-border)); box-shadow: var(--theme-shadow-hover)}
-.home-instance-icon {background: var(--theme-instance-icon-bg); color: var(--theme-on-accent); box-shadow: var(--theme-instance-icon-shadow)}
 
 .preview-screen {background: var(--theme-preview-bg); color: var(--theme-preview-text)}
 .preview-screen > span {color: var(--theme-preview-muted)}
-.live-label {color: var(--theme-success); border-color: color-mix(in srgb, var(--theme-success) 22%, transparent)}
-.live-label i {background: var(--theme-success)}
 
 .log-content {color: var(--theme-text)}
 .lvl-debug {color: var(--theme-log-debug)}

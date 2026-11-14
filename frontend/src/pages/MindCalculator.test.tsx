@@ -27,8 +27,8 @@ const technology: Report = {instance: 'test', revision: 't1', data_version: 'r1'
   completed: 0, milestone_counts: {owned: 0, full_star: 0, lv120: 0}}
 const costs: CultivationReport = {instance: 'test', revision: 'r1', target_level: 120, included: 3,
   unknown: 0, mind: 600, mind2: 0, gold: 6000, rules_sha256: 'rules', mind_costs_100_to_120: {SSR: 2200},
-  ships: dock.ships.map(card => ({id: card.id, name: card.name, current_level: card.level, level: card.level,
-    target_level: 120, mind: card.id * 100, mind2: 0, gold: card.id * 1000, status: 'exact', notes: [], stages: []}))}
+  ships: dock.ships.map(card => ({id: card.id, name: card.name, current_level: card.level ?? 0, level: card.level ?? 0,
+    target_level: 120, mind: card.id * 100, mind2: 0, gold: card.id * 1000, status: 'exact' as const, notes: [], stages: []}))}
 const isChecked = (element: HTMLElement) => element.getAttribute('aria-checked') === 'true'
 const all = () => screen.getByRole<HTMLInputElement>('checkbox', {name: '全选当前筛选'})
 const ship = (name: string) => screen.getByRole<HTMLInputElement>('checkbox', {name: `参与计算 ${name}`})
@@ -65,15 +65,20 @@ it('starts selected, follows individual choices, and toggles all visible ships t
 
 it('clears all ships from a filtered view and only selects ships matching the current filters', async () => {
   await show()
-  fireEvent.click(screen.getAllByRole('button', {name: '航母'})[0])
+  const carrierFilter = screen.getAllByRole('button', {name: '航母'})[0]
+  expect(carrierFilter).toBeDefined()
+  fireEvent.click(carrierFilter!)
   expect(screen.queryByRole('checkbox', {name: '参与计算 杜威'})).toBeNull()
   fireEvent.click(all())
   expect(isChecked(ship('企业'))).toBe(false)
   expect(isChecked(ship('埃塞克斯'))).toBe(false)
   expect(screen.getByText('计入 0 种舰船', {exact: false})).toBeTruthy()
-  fireEvent.click(screen.getAllByRole('button', {name: '全部'})[0])
+  const allFilter = screen.getAllByRole('button', {name: '全部'})[0]
+  expect(allFilter).toBeDefined()
+  fireEvent.click(allFilter!)
   expect(isChecked(ship('杜威'))).toBe(false)
-  fireEvent.click(screen.getAllByRole('button', {name: '航母'})[0])
+  expect(carrierFilter).toBeDefined()
+  fireEvent.click(carrierFilter!)
   search('企业')
   fireEvent.click(all())
   expect(isChecked(all())).toBe(true)
@@ -101,13 +106,17 @@ it('respects saved exclusions and the included-only filter', async () => {
 it('retains costs for excluded ships from initial load and updates totals without recalculating', async () => {
   localStorage.setItem('azurpilot.cultivation-auto.test', JSON.stringify({excluded_groups: [100]}))
   await show()
-  const row = within(ship('企业').closest('tr')!)
+  const rowElement = ship('企业').closest('tr')
+  expect(rowElement).toBeDefined()
+  const row = within(rowElement!)
   expect(row.getAllByText('100')).toHaveLength(2)
   expect(row.getByText('1,000')).toBeTruthy()
   const totalValues = () => [...document.querySelectorAll('.cultivation-totals strong')].map(el => el.textContent)
   expect(totalValues()).toEqual(['500', '5,000'])
   fireEvent.click(ship('埃塞克斯'))
-  expect(within(ship('埃塞克斯').closest('tr')!).getByText('2,000')).toBeTruthy()
+  const essexRow = ship('埃塞克斯').closest('tr')
+  expect(essexRow).toBeDefined()
+  expect(within(essexRow!).getByText('2,000')).toBeTruthy()
   expect(totalValues()).toEqual(['300', '3,000'])
   fireEvent.click(all())
   expect(totalValues()).toEqual(['600', '6,000'])
@@ -125,7 +134,7 @@ it('recalculates costs after the dock revision changes while preserving exclusio
     if (method === 'fleetTech.catalog') return catalog
     if (method === 'fleetTech.report') return updated ? {...technology, revision: 't2', data_version: 'r2'} : technology
     if (method === 'mind.plan') return updated ? {...costs, revision: 'r2',
-      ships: costs.ships.map(row => ({...row, mind: row.mind! + 50, gold: row.gold! + 500}))} : costs
+      ships: costs.ships.map(row => ({...row, mind: (row.mind ?? 0) + 50, gold: (row.gold ?? 0) + 500}))} : costs
     throw new Error(`Unexpected method: ${method}`)
   })
   const view = (report: DockReport) => <MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={report}/>}/></Routes></MemoryRouter>
@@ -134,7 +143,9 @@ it('recalculates costs after the dock revision changes while preserving exclusio
   fireEvent.click(ship('企业'))
   updated = true
   rendered.rerender(view({...dock, revision: 'r2'}))
-  await within(ship('企业').closest('tr')!).findByText('1,500')
+  const updatedRow = ship('企业').closest('tr')
+  expect(updatedRow).toBeDefined()
+  await within(updatedRow!).findByText('1,500')
   expect(isChecked(ship('企业'))).toBe(false)
   expect([...document.querySelectorAll('.cultivation-totals strong')].map(el => el.textContent)).toEqual(['600', '6,000'])
   expect(vi.mocked(api.request).mock.calls.filter(([method]) => method === 'mind.plan')).toHaveLength(2)
@@ -142,7 +153,9 @@ it('recalculates costs after the dock revision changes while preserving exclusio
 
 it('excludes unknown costs from totals and keeps unknown counts scoped to selected ships', async () => {
   // 直接改模块级夹具做 unknown 场景，finally 里还原，避免泄漏到其他用例。
-  costs.ships[0] = {...costs.ships[0], status: 'unknown', mind: null, gold: null}
+  const originalCostRow = costs.ships[0]
+  expect(originalCostRow).toBeDefined()
+  costs.ships[0] = {...originalCostRow!, status: 'unknown', mind: null, gold: null}
   try {
     await show()
     expect(screen.getByText('计入 2 种舰船', {exact: false}).textContent).toContain('信息不足 1 种')
@@ -150,5 +163,9 @@ it('excludes unknown costs from totals and keeps unknown counts scoped to select
     fireEvent.click(ship('企业'))
     expect(screen.getByText('计入 2 种舰船', {exact: false}).textContent).not.toContain('信息不足')
     expect([...document.querySelectorAll('.cultivation-totals strong')].map(el => el.textContent)).toEqual(['500', '5,000'])
-  } finally {costs.ships[0] = {...costs.ships[0], status: 'exact', mind: 100, gold: 1000}}
+  } finally {
+    const changedCostRow = costs.ships[0]
+    expect(changedCostRow).toBeDefined()
+    costs.ships[0] = {...changedCostRow!, status: 'exact', mind: 100, gold: 1000}
+  }
 })

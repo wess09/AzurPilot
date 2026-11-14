@@ -1,7 +1,10 @@
+/** @fileoverview shadcn/ui 表格：原生 table 语义元素加统一分隔线与 hover 底色。 */
+
 import * as React from "react"
 
 import { cn } from "../../lib/utils"
 
+/** 表格：外层容器支持横向滚动。 */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
@@ -14,6 +17,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   )
 }
 
+/** 表头容器：底部分隔线。 */
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
@@ -24,6 +28,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   )
 }
 
+/** 表体容器：末行无分隔线。 */
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
@@ -34,16 +39,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   )
 }
 
-function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
-  return (
-    <tfoot
-      data-slot="table-footer"
-      className={cn("bg-muted/50 border-t font-medium [&>tr]:last:border-b-0", className)}
-      {...props}
-    />
-  )
-}
-
+/** 行：hover 与 selected 状态显示 muted 底色。 */
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
@@ -57,6 +53,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
+/** 表头单元格。 */
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
@@ -70,6 +67,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   )
 }
 
+/** 数据单元格。 */
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
@@ -83,14 +81,4 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   )
 }
 
-function TableCaption({ className, ...props }: React.ComponentProps<"caption">) {
-  return (
-    <caption
-      data-slot="table-caption"
-      className={cn("text-muted-foreground mt-4 text-sm", className)}
-      {...props}
-    />
-  )
-}
-
-export { Table, TableHeader, TableBody, TableFooter, TableHead, TableRow, TableCell, TableCaption }
+export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell }

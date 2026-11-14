@@ -12,7 +12,9 @@ import 'highlight.js/styles/atom-one-dark.css'
 import './MarkdownView.css'
 
 interface MarkdownViewProps {
+  /** Markdown 源文本。 */
   content: string
+  /** 挂到容器元素的类名，用于外部控制布局。 */
   className?: string
 }
 
@@ -37,7 +39,7 @@ markedInstance.use({
           return {
             type: 'mathBlock',
             raw: match[0],
-            text: match[1].trim(),
+            text: match[1]?.trim() ?? '',
           }
         }
         return undefined
@@ -67,7 +69,7 @@ markedInstance.use({
           return {
             type: 'mathInline',
             raw: match[0],
-            text: match[1].trim(),
+            text: match[1]?.trim() ?? '',
           }
         }
         return undefined
@@ -114,8 +116,8 @@ markedInstance.use({
     blockquote({ text }: { text: string }) {
       const alertMatch = text.match(/^\s*(?:<p>)?\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:\s*<br\s*\/?>|\s*\n|\s+)?([\s\S]*)$/i)
       if (alertMatch) {
-        const type = alertMatch[1].toUpperCase()
-        const body = alertMatch[2].replace(/<\/p>\s*$/, '')
+        const type = (alertMatch[1] ?? '').toUpperCase()
+        const body = (alertMatch[2] ?? '').replace(/<\/p>\s*$/, '')
         const typeLabels: Record<string, string> = {
           NOTE: '说明',
           TIP: '提示',
@@ -232,7 +234,7 @@ function safeHtmlUrl(value: string, attribute: string): boolean {
 function findHtmlTagEnd(html: string, start: number): number {
   let quote = ''
   for (let index = start + 1; index < html.length; index++) {
-    const char = html[index]
+    const char = html.charAt(index)
     if (quote) {
       if (char === quote) quote = ''
       continue
@@ -248,18 +250,18 @@ function findHtmlTagEnd(html: string, start: number): number {
 
 function sanitizeSsrTag(raw: string): {html: string; name: string; closing: boolean; dropContent: boolean} {
   let cursor = 1
-  while (cursor < raw.length && raw[cursor] <= ' ') cursor++
+  while (cursor < raw.length && raw.charAt(cursor) <= ' ') cursor++
 
   let closing = false
-  if (raw[cursor] === '/') {
+  if (raw.charAt(cursor) === '/') {
     closing = true
     cursor++
-    while (cursor < raw.length && raw[cursor] <= ' ') cursor++
+    while (cursor < raw.length && raw.charAt(cursor) <= ' ') cursor++
   }
 
   const nameStart = cursor
   while (cursor < raw.length) {
-    const char = raw[cursor]
+    const char = raw.charAt(cursor)
     const code = char.charCodeAt(0)
     const isName = (code >= 48 && code <= 57) || (code >= 65 && code <= 90)
       || (code >= 97 && code <= 122) || char === ':' || char === '-'
@@ -278,9 +280,9 @@ function sanitizeSsrTag(raw: string): {html: string; name: string; closing: bool
   const attributes: string[] = []
   let selfClosing = false
   while (cursor < raw.length) {
-    while (cursor < raw.length && raw[cursor] <= ' ') cursor++
-    if (raw[cursor] === '>' || cursor >= raw.length) break
-    if (raw[cursor] === '/') {
+    while (cursor < raw.length && raw.charAt(cursor) <= ' ') cursor++
+    if (raw.charAt(cursor) === '>' || cursor >= raw.length) break
+    if (raw.charAt(cursor) === '/') {
       selfClosing = true
       cursor++
       continue
@@ -288,7 +290,7 @@ function sanitizeSsrTag(raw: string): {html: string; name: string; closing: bool
 
     const attrStart = cursor
     while (cursor < raw.length) {
-      const char = raw[cursor]
+    const char = raw.charAt(cursor)
       if (char <= ' ' || char === '=' || char === '>' || char === '/') break
       cursor++
     }
@@ -298,20 +300,20 @@ function sanitizeSsrTag(raw: string): {html: string; name: string; closing: bool
       continue
     }
 
-    while (cursor < raw.length && raw[cursor] <= ' ') cursor++
+    while (cursor < raw.length && raw.charAt(cursor) <= ' ') cursor++
     let value: string | null = null
-    if (raw[cursor] === '=') {
+    if (raw.charAt(cursor) === '=') {
       cursor++
-      while (cursor < raw.length && raw[cursor] <= ' ') cursor++
-      const quote = raw[cursor] === '"' || raw[cursor] === "'" ? raw[cursor++] : ''
+      while (cursor < raw.length && raw.charAt(cursor) <= ' ') cursor++
+      const quote = raw.charAt(cursor) === '"' || raw.charAt(cursor) === "'" ? raw.charAt(cursor++) : ''
       const valueStart = cursor
       if (quote) {
-        while (cursor < raw.length && raw[cursor] !== quote) cursor++
+        while (cursor < raw.length && raw.charAt(cursor) !== quote) cursor++
         value = raw.slice(valueStart, cursor)
-        if (raw[cursor] === quote) cursor++
+        if (raw.charAt(cursor) === quote) cursor++
       } else {
         while (cursor < raw.length) {
-          const char = raw[cursor]
+          const char = raw.charAt(cursor)
           if (char <= ' ' || char === '>' || char === '/') break
           cursor++
         }

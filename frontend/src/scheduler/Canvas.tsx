@@ -6,6 +6,7 @@ import {applyEdgeChanges, applyNodeChanges, Background, Controls, MiniMap, React
 import {categoryColor} from './appearance'
 import type {CardDefinition, Catalog, PortType, ProgramDocument, ProgramNode} from './types'
 
+/** 画布节点数据：卡片、定义、选择/校验状态与参数回调都随节点分发，供端口渲染使用。 */
 export type CanvasNode = Node<{card: ProgramNode; spec: CardDefinition; current: boolean; invalid: boolean; catalog: Catalog; document: ProgramDocument; connectedInputs: string[]; inputTypes: Record<string,PortType>; outputTypes: Record<string,PortType>; onParamsChange: (node: string, patch: Record<string, unknown>) => void}, 'card'>
 type Props = ReactFlowProps<CanvasNode> & {onPositionsCommit: (nodes: CanvasNode[]) => void; focusEntry?: string}
 

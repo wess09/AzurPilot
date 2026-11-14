@@ -1,8 +1,11 @@
+/** @fileoverview shadcn/ui 徽章：小号圆角标签，六种配色变体。 */
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "../../lib/utils"
 import { Slot } from "radix-ui"
 
+/** 徽章配色变体表，供需要同款样式的外部类名组合使用。 */
 const badgeVariants = cva(
   "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
   {
@@ -25,6 +28,7 @@ const badgeVariants = cva(
   }
 )
 
+/** 徽章：默认 span，asChild 时经 Slot 渲染为任意元素（如链接）。 */
 function Badge({
   className,
   variant = "default",

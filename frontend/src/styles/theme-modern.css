@@ -128,15 +128,6 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
   color: var(--text);
   font-weight: 600;
 }
-/* 角标跟着褪色：一块品牌紫的小方块会把刚压下去的彩色又请回来 */
-.nav-pill {
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 500;
-  background: color-mix(in srgb, var(--text) 7%, transparent);
-  color: color-mix(in srgb, var(--text) 62%, transparent);
-}
 
 .nav-search-hits {margin-bottom: 12px}
 

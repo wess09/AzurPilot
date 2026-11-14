@@ -211,7 +211,8 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
   function setReview(row: DraftCard, review: boolean) {
     if (!review && !row.group_type) {
       const candidates = identityCandidates(row)
-      if (candidates.length === 1) identify(row, candidates[0]!)
+      const candidate = candidates[0]
+      if (candidates.length === 1 && candidate) identify(row, candidate)
       else setError(ui('analysis.identityRequired'))
     } else change(row, {review})
   }

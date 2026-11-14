@@ -18,8 +18,11 @@ interface CategoryParams {
   days: number
   month: string
   period: 'day' | 'week' | 'month'
+  /** 研究系列取数键：'consumable' 表示消耗品口径，其余为具体系列编号字符串。 */
   researchSeries: string
+  /** 掉落任务名，空串表示不过滤。 */
   lootTask: string
+  /** 是否在响应里附带系列明细。 */
   includeSeries: boolean
 }
 

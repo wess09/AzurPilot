@@ -1,3 +1,5 @@
+/** @fileoverview Markdown 视图的按需加载封装：代码分割引入 katex 与 highlight.js。 */
+
 import { lazy, Suspense } from 'react'
 import { useApp } from '../app/context'
 

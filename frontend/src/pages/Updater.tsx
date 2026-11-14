@@ -63,7 +63,8 @@ export function Updater() {
     else void act('updater.apply')
   }
   const disabled = busy || connection !== 'ready' || !data || data.busy
-  const statusLabel = !local || !upstream ? ui('updater.noVersion') : data?.state === 'failed' ? ui('updater.state.failed') : data?.available && !data.busy ? ui('updater.state.available') : states[data?.state ?? ''] ? ui(states[data?.state ?? '']) : data?.state
+  const stateLabel = states[data?.state ?? '']
+  const statusLabel = !local || !upstream ? ui('updater.noVersion') : data?.state === 'failed' ? ui('updater.state.failed') : data?.available && !data.busy ? ui('updater.state.available') : stateLabel ? ui(stateLabel) : data?.state
   return <div className="settings-page">
     {!data?.managedByAndroid && <header className="updater-head">
       <h1 className="sr-only">{ui('nav.updater')}</h1>

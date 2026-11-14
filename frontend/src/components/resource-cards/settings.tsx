@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 仪表盘卡片编辑面板：已选卡片拖拽排序/移除与「添加」选择网格，两区可跨区拖动。
  * 从 ResourceCards.tsx 原 208-608 行提取，纯搬迁未改动。
- * 仪表盘卡片编辑面板：已选卡片拖拽排序/移除与「添加」选择网格，两区可跨区拖动。
  */
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
@@ -261,6 +261,7 @@ export function ResourceSettings({resources, selected, onChange}: {resources: Re
       if (dist < bestDist) {bestDist = dist; best = index}
     })
     const box = boxes[best]
+    if (!box) return best
     const inRow = y >= box.top && y <= box.bottom
     return y > (box.top + box.bottom) / 2 || (inRow && x > (box.left + box.right) / 2) ? best + 1 : best
   }

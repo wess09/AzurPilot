@@ -108,7 +108,7 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
     </div>
     <p className="simulator-status" role="status">
       {ui(`simulator.${data?.state ?? 'idle'}`)}
-      {Boolean(data?.totalSamples) && ` · ${number(data!.completedSamples)} / ${number(data!.totalSamples)}`}
+      {Boolean(data?.totalSamples) && data ? ` · ${number(data.completedSamples)} / ${number(data.totalSamples)}` : false}
     </p>
     {error && <ErrorBox message={error}/>}
     {pollError && <ErrorBox message={pollError}/>}

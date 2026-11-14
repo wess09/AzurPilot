@@ -1,3 +1,6 @@
+/**
+ * @fileoverview CSS 变量与主题档位的契约测试：材质轴、旧键委托与声明覆盖。
+ */
 import { describe, expect, it } from 'vitest'
 import modernPalette from '../styles/modern-palette.css?raw'
 import materialAxis from '../styles/theme-material.css?raw'

@@ -54,7 +54,8 @@ export function BackgroundPreferences() {
   function changeRow(index: number, value: string) {
     setRows(current => {
       const next = [...current]
-      next[index] = {...next[index], value}
+      const currentRow = next[index] ?? newRow()
+      next[index] = {...currentRow, value}
       if (index === next.length - 1 && value.trim()) next.push(newRow())
       return next
     })

@@ -8,6 +8,7 @@ import { usePlugins } from '../plugins/context'
 import { pluginAsset } from '../plugins/types'
 import { useSchedulerControls, type SchedulerPanelProps } from './useSchedulerControls'
 
+/** 调度器面板 Props 类型，供 useSchedulerControls 消费方复用。 */
 export type { SchedulerPanelProps } from './useSchedulerControls'
 
 /**

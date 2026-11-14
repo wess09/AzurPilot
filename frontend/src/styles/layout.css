@@ -18,7 +18,6 @@
 .primary-nav a {display: flex; align-items: center; gap: 11px; padding: 11px 12px; color: var(--muted); border-radius: 7px; font-size: 12px; font-weight: 500}
 .primary-nav a:hover {background: var(--surface-muted)}
 .primary-nav a.active {color: var(--accent); background: var(--accent-soft); font-weight: 600}
-.nav-pill {margin-left: auto; font-size: 8px; background: var(--surface); border-radius: 4px; padding: 2px 5px; color: var(--accent)}
 .task-nav-container {position: relative; display: flex; flex-direction: column; min-height: 0; flex: 1}
 .task-nav {overflow-y: auto; padding: 0 2px 15px; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 2px}
 .task-group-button {display: flex; align-items: center; gap: 10px; padding: 10px 9px; width: 100%; text-align: left; border-radius: 7px; color: var(--muted); font-size: 12px; font-weight: 500; background: none; border: 1px solid transparent; transition: all .15s ease; user-select: none}

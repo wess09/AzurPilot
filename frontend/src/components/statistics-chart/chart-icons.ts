@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 图表系列图标：按系列自带图标或中文名匹配本地资源图标。
  * 从 StatisticsChart.tsx 原 63-94 行提取，纯搬迁未改动。
- * 图表系列图标：按系列自带图标或中文名匹配本地资源图标。
  */
 import {resolveIcon} from '../StatisticsTable'
 import {withTranslatedKeys} from '../statisticsText'
@@ -29,6 +29,7 @@ const chartResourceIcons: Record<string, string> = withTranslatedKeys({
 })
 
 /** 图表系列图标：优先用系列自带的 icon，否则按中文名精确匹配资源图标，再退到互相包含的模糊匹配。 */
+/** 取系列图标：优先系列自带 icon 字段，否则按中文名查本地资源图标表。 */
 export function getChartIcon(series: StatSeries): string | undefined {
   if (series.icon) return resolveIcon(series.icon)?.src
   const {label} = series

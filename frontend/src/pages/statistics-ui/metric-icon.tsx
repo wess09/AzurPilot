@@ -1,6 +1,7 @@
 /**
- * 从 Statistics.tsx 原 65-118、137-145 行提取，纯搬迁未改动。
- * 收获指标卡片的图标解析：内置图标、本地 webp 与自定义图标。
+ * @fileoverview 收获指标卡片的图标解析：内置图标、本地 webp 与自定义图标。
+ *
+ * 从 Statistics.tsx 拆分而来。
  */
 import {
   Award,
@@ -68,6 +69,7 @@ const metricWebpIcons: Record<string, string> = withTranslatedKeys({
   '物资': `${iconBase}gold.webp`,
 })
 
+/** 按指标名模糊匹配本地 webp 图标；先精确命中，再双向包含匹配。 */
 function getMetricWebp(label: string): string | undefined {
   if (metricWebpIcons[label]) return metricWebpIcons[label]
   for (const [key, src] of Object.entries(metricWebpIcons)) {
@@ -76,6 +78,7 @@ function getMetricWebp(label: string): string | undefined {
   return undefined
 }
 
+/** 按指标名模糊匹配内置图标；先精确命中，再双向包含匹配。 */
 function getMetricIcon(label: string): LucideIcon | undefined {
   if (metricIcons[label]) return metricIcons[label]
   for (const [key, icon] of Object.entries(metricIcons)) {
@@ -84,7 +87,12 @@ function getMetricIcon(label: string): LucideIcon | undefined {
   return undefined
 }
 
-/* 收获指标图标：自定义图标优先，其次本地 webp，再次内置图标。 */
+/**
+ * 渲染收获指标图标：自定义图标优先，其次本地 webp，再次内置图标；都未命中返回 null。
+ *
+ * @param item.label 指标名（含译名键）。
+ * @param item.icon 后端指定的图标名，如 `research:<模板名>`。
+ */
 export function metricIcon(item: {label: string; icon?: string}) {
   const custom = item.icon ? resolveIcon(item.icon) : undefined
   const webp = custom?.src ?? getMetricWebp(item.label)

@@ -1,13 +1,15 @@
 /**
+ * @fileoverview ECharts 画布渲染副作用：主题监听、轴配置、涨跌分段与缩放控件。
  * 从 StatisticsChart.tsx 原 247-431 行提取，纯搬迁未改动。
- * ECharts 画布渲染副作用：主题监听、轴配置、涨跌分段与缩放控件。
  */
 import { useEffect, type RefObject } from 'react'
 import * as echarts from 'echarts/core'
+import type { YAxisComponentOption } from 'echarts'
 import { isActionPointSeries, riseFallSegments } from '../statisticsData'
 import type { ChartAxisMode } from '../../app/statisticsPrefs'
 import type { ChartUi, SeriesDatumWithColor } from './shared'
 
+/** 将系列数据渲染到 ECharts 画布：轴、涨跌分段与主题变化时重建配置。 */
 export function useChartRender({element, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase}: {
   element: RefObject<HTMLDivElement | null>
   seriesData: SeriesDatumWithColor[]
@@ -64,9 +66,10 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
       const padPairs = (pairs: Array<[number, number]>): Array<[number, number]> => {
         if (category === 'storage' || !padRange || pairs.length === 0) return pairs
         const padded: Array<[number, number]> = [...pairs]
-        if (padded[0][0] > axisStart) padded.unshift([axisStart, 0])
+        const first = padded[0]
+        if (first && first[0] > axisStart) padded.unshift([axisStart, 0])
         const last = padded[padded.length - 1]
-        if (last[0] < axisEnd) padded.push([axisEnd, last[1]])
+        if (last && last[0] < axisEnd) padded.push([axisEnd, last[1]])
         return padded
       }
       // 涨跌分段模式下只补下跌段。
@@ -75,17 +78,23 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
         const pairs = segments.filter((entry): entry is number[] => entry !== '-')
         if (pairs.length === 0) return segments
         const padded: Array<number[] | '-'> = [...segments]
-        if (pairs[0][0] > axisStart) padded.unshift([axisStart, 0])
+        const firstTime = pairs[0]?.[0]
+        if (firstTime !== undefined && firstTime > axisStart) padded.unshift([axisStart, 0])
         const last = pairs[pairs.length - 1]
-        if (last[0] < axisEnd) padded.push([axisEnd, last[1]])
+        const lastTime = last?.[0]
+        const lastValue = last?.[1]
+        if (lastTime !== undefined && lastValue !== undefined && lastTime < axisEnd) padded.push([axisEnd, lastValue])
         return padded
       }
 
-      let yAxes: any[] = []
+      let yAxes: YAxisComponentOption[] = []
       if (isSingle || axisMode === 'unified') {
         yAxes = [{type: 'value', scale: true, splitLine: {lineStyle: {color: border, opacity: gridOpacity}}, axisLabel: {color: text}}]
       } else {
-        const c0 = colorFor(seriesData[0]), c1 = colorFor(seriesData[1])
+        const firstSeries = seriesData[0]
+        const secondSeries = seriesData[1]
+        const c0 = firstSeries ? colorFor(firstSeries) : primary
+        const c1 = secondSeries ? colorFor(secondSeries) : secondary
         yAxes = [
           {type: 'value', scale: true, position: 'left', splitLine: {lineStyle: {color: border, opacity: gridOpacity}}, axisLine: {show: true, lineStyle: {color: c0}}, axisLabel: {color: c0}},
           {type: 'value', scale: true, position: 'right', splitLine: {show: false}, axisLine: {show: true, lineStyle: {color: c1}}, axisLabel: {color: c1}},
@@ -163,7 +172,7 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
         legend: !isSingle ? {show: true, top: 16, left: 'center', textStyle: {color: text}, data: shownData.map(item => item.series.label)} : undefined,
         tooltip: {
           trigger: 'axis', confine: true, renderMode: 'richText', axisPointer: {type: 'cross'},
-          valueFormatter: (val: any) => typeof val === 'number' ? val.toLocaleString(undefined, {maximumFractionDigits: 2}) : String(val),
+          valueFormatter: (val: unknown) => typeof val === 'number' ? val.toLocaleString(undefined, {maximumFractionDigits: 2}) : String(val),
           backgroundColor: surface, borderColor: border, textStyle: {color: text}, extraCssText: '', shadowBlur: 0,
         },
         toolbox: {

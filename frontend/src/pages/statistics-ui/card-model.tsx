@@ -1,6 +1,7 @@
 /**
- * 从 Statistics.tsx 原 300-360、369、423-441、488-492 行提取，纯搬迁未改动。
- * 卡片视图模型：卡片键/组合链/顺序计算与连接、隐藏、移位等布局操作。
+ * @fileoverview 卡片视图模型：卡片键/组合链/顺序计算与连接、隐藏、移位等布局操作。
+ *
+ * 从 Statistics.tsx 拆分而来。
  */
 import type {ReactNode} from 'react'
 import {ChevronDown, Plus} from 'lucide-react'
@@ -10,21 +11,41 @@ import type {UiKey, UiTranslator} from '../../i18n'
 import type { StatisticsReport } from '../../api/types'
 import type {Category} from './shared'
 
-/* 单页卡片视图的结构化类型：与 pageView 返回值逐字段对应，供其他域文件以独立类型引用。 */
+/** 单页卡片视图的结构化类型：与 pageView 返回值逐字段对应，供其他域文件以独立类型引用。 */
 export interface PageView {
+  /** 卡片类名（含折叠态）。 */
   cardClass: (key: string) => string
+  /** 折叠/展开按钮；place 决定是否带角落样式。 */
   foldControl: (key: string, place?: 'corner' | 'center', foldLabel?: UiKey, unfoldLabel?: UiKey) => ReactNode
+  /** 收获指标卡键。 */
   metricsKey: string
+  /** 图表卡键。 */
   chartKey: string
+  /** 图表内绘图区折叠键。 */
   plotKey: string
+  /** 原始记录表卡键。 */
   rawKey: string
+  /** 该页全部明细表的卡键。 */
   tableKeys: string[]
+  /** 该页全部卡片键（含明细表）。 */
   cardKeys: string[]
+  /** 该页的组合链。 */
   chains: string[][]
+  /** 所属空间的整链顺序（可能跨页）。 */
   spaceOrder: string[]
+  /** 空间内显示中的卡片键。 */
   visibleKeys: string[]
 }
 
+/**
+ * 生成统计页的卡片布局操作集合：页面/空间的键与顺序计算，及连接、拆分、隐藏、移位等编辑动作。
+ *
+ * @param params.layout 当前统计布局。
+ * @param params.chainData 各页面已加载的统计报表（未加载页为空卡）。
+ * @param params.editMode 是否处于编辑模式。
+ * @param params.ui 文案函数。
+ * @param params.applyLayout 布局写回回调。
+ */
 export function createCardModel({layout, chainData, editMode, ui, applyLayout}: {
   layout: StatisticsLayout
   chainData: Partial<Record<Category, StatisticsReport>>
@@ -72,14 +93,17 @@ export function createCardModel({layout, chainData, editMode, ui, applyLayout}: 
   // 卡片空间视图：一个空间（组合页或单页视图）渲染成一段，链与顺序在空间全量上算，
   // 跨页的链因此落进同一个容器。
   const spaceView = (space: Category[]) => {
+    const firstPage = space[0]
+    if (!firstPage) return {chains: [], ordered: [], visible: [], runs: []}
     const keys = space.flatMap(page => pageCards(page, chainData[page]).cardKeys)
-    const chains = readChains(layout, space[0], space.flatMap(page => pageCards(page, chainData[page]).defaultChains))
-    const ordered = orderCards(layout, space[0], keys)
+    const chains = readChains(layout, firstPage, space.flatMap(page => pageCards(page, chainData[page]).defaultChains))
+    const ordered = orderCards(layout, firstPage, keys)
     const visible = ordered.filter(key => !isCardHidden(layout, key))
     const runs: {keys: string[]}[] = []
     let lastShown: string | undefined
     for (let index = 0; index < ordered.length; index += 1) {
       const key = ordered[index]
+      if (!key) continue
       const hidden = isCardHidden(layout, key)
       if (hidden && !editMode) continue
       const current = runs[runs.length - 1]

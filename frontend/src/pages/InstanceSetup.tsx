@@ -219,10 +219,10 @@ export function InstanceSetup() {
     }}))
   }
 
-  const current = STEPS[step - 1]
-  const artwork = current.artwork
-  const choosingLanguage = current.title === 'WelcomeSelectLanguage'
-  const importing = current.title === 'ImportTitle'
+  const current = STEPS[Math.max(0, Math.min(step - 1, STEPS.length - 1))]
+  const artwork = current?.artwork ?? 'language'
+  const choosingLanguage = current?.title === 'WelcomeSelectLanguage'
+  const importing = current?.title === 'ImportTitle'
   const packageField = <label>
     {t('Emulator.PackageName.name')}
     <Select value={packageName} onChange={event => choosePackage(event.target.value)}>
@@ -263,8 +263,8 @@ export function InstanceSetup() {
     <form className="setup-form" onSubmit={submit}>
       <div className="setup-step-content form-stack" key={step}>
         <header>
-          <h1 id="instance-setup-title">{label(current.title)}</h1>
-          <p className="muted">{label(current.hint)}</p>
+          <h1 id="instance-setup-title">{label(current?.title ?? 'WelcomeTitle')}</h1>
+          <p className="muted">{label(current?.hint ?? 'WelcomeHint')}</p>
         </header>
         {importing && <div className="setup-import">
           <FileUp size={22} aria-hidden="true"/>

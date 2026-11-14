@@ -26,5 +26,3 @@
 .preview-screen > strong {margin-top: 10px; font-size: 12px; font-weight: 450; z-index: 1}
 .preview-screen > span {font-size: 9px; color: #718c99; margin-top: 8px; z-index: 1}
 .preview-error {padding: 9px 18px 0; color: var(--red); font-size: 10px; line-height: 1.7}
-.live-label {font-size: 8px; letter-spacing: .5px; display: flex; align-items: center; gap: 5px; color: #7c9d91; border: 1px solid #65b89922; border-radius: 4px; padding: 3px 6px}
-.live-label i {width: 4px; height: 4px; border-radius: 50%; background: #6aba9e}

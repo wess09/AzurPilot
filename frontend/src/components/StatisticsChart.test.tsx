@@ -1,3 +1,5 @@
+/** @fileoverview StatisticsChart 的渲染回归：指标芯片、默认选中、多数据源与采样粒度选项。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

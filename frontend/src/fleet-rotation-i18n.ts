@@ -15,6 +15,7 @@ export const rotationZhCN = {
   'rotation.inProgress': '正在完成第 {number} 舰队的轮换', 'rotation.none': '尚未轮换',
   'rotation.uncertain': '上轮未完成，下次运行会自动清理旧记录并重扫实际编队，无需手动清空。', 'rotation.reset': '清空轮换记录', 'rotation.saved': '换船规则已保存',
 }
+/** 繁体中文文案，键集与类型必须与中文版一致。 */
 export const rotationZhTW: typeof rotationZhCN = {
   'rotation.favourite': '常用', 'rotation.lastFavourite': '上輪來源：常用',
   'rotation.favouriteHelp': '預設關閉。對應艦位的候補艦隊均無可選艦船後，才從常用選擇；自動排除已編隊、占用、同名待核對及已畢業艦船。常用選船目前僅支援國服。',
@@ -29,6 +30,7 @@ export const rotationZhTW: typeof rotationZhCN = {
   'rotation.inProgress': '正在完成第 {number} 艦隊的輪換', 'rotation.none': '尚未輪換',
   'rotation.uncertain': '上輪未完成，下次執行會自動清除舊紀錄並重新掃描實際編隊，無須手動清除。', 'rotation.reset': '清空輪換記錄', 'rotation.saved': '換船規則已儲存',
 }
+/** 英文文案，键集与类型必须与中文版一致。 */
 export const rotationEnUS: typeof rotationZhCN = {
   'rotation.favourite': 'Favourites', 'rotation.lastFavourite': 'Last source: Favourites',
   'rotation.favouriteHelp': 'Off by default. Use favourites only after reserve fleets have no eligible ship for the slot. Excludes assigned, busy, ambiguous duplicate and graduated ships. Favourites recruitment currently supports CN only.',
@@ -43,6 +45,7 @@ export const rotationEnUS: typeof rotationZhCN = {
   'rotation.inProgress': 'Completing rotation from Fleet {number}', 'rotation.none': 'No rotation yet',
   'rotation.uncertain': 'The previous round was incomplete. The next run automatically clears old progress and rescans the actual formation; no manual reset is needed.', 'rotation.reset': 'Clear rotation history', 'rotation.saved': 'Rotation rules saved',
 }
+/** 日文文案，键集与类型必须与中文版一致。 */
 export const rotationJaJP: typeof rotationZhCN = {
   'rotation.favourite': '常用', 'rotation.lastFavourite': '前回の候補：常用',
   'rotation.favouriteHelp': '初期設定は無効。対応配置の候補艦隊に適切な艦がなくなってから常用を使用します。編成済み、使用中、同名で未確認、育成完了の艦は除外します。常用からの選択は現在中国版のみ対応です。',

@@ -126,6 +126,7 @@ export const analysisZhCN = {
   'analysis.time': '数据时间', 'analysis.range': '扫描范围', 'analysis.review': '识别待核对', 'analysis.empty': '尚无扫描数据',
   'analysis.complete': '全船坞已核验', 'analysis.partial': '局部范围或尚未核验全船坞', 'analysis.scan': '扫描船坞', 'analysis.count': '舰船条目',
 }
+/** 英文文案，键集与中文版一致。 */
 export const analysisEnUS: Record<keyof typeof analysisZhCN, string> = {
   'analysis.exportJson': 'Export ships as JSON',
   'analysis.exportHint': 'Export saved ship data with pending changes kept separately. Exporting does not accept changes.',
@@ -249,6 +250,7 @@ export const analysisEnUS: Record<keyof typeof analysisZhCN, string> = {
   'analysis.time': 'Data updated', 'analysis.range': 'Scan range', 'analysis.review': 'Recognition needs review', 'analysis.empty': 'No scan data yet',
   'analysis.complete': 'Full dock verified', 'analysis.partial': 'Partial range or full dock not verified', 'analysis.scan': 'Scan dock', 'analysis.count': 'Ship records',
 }
+/** 繁体中文文案，键集与中文版一致。 */
 export const analysisZhTW: Record<keyof typeof analysisZhCN, string> = {
   'analysis.exportJson': '匯出艦船 JSON',
   'analysis.exportHint': '匯出目前已儲存的艦船資料，待確認差異另外保留，不會自動採納。',
@@ -372,6 +374,7 @@ export const analysisZhTW: Record<keyof typeof analysisZhCN, string> = {
   'analysis.time': '資料時間', 'analysis.range': '掃描範圍', 'analysis.review': '辨識待核對', 'analysis.empty': '尚無掃描資料',
   'analysis.complete': '全船塢已核驗', 'analysis.partial': '局部範圍或尚未核驗全船塢', 'analysis.scan': '掃描船塢', 'analysis.count': '艦船項目',
 }
+/** 日文文案，键集与中文版一致。 */
 export const analysisJaJP: Record<keyof typeof analysisZhCN, string> = {
   'analysis.exportJson': '艦船 JSON をエクスポート',
   'analysis.exportHint': '保存済みの艦船データを出力し、未確認の変更は別に保持します。変更は自動で承認されません。',

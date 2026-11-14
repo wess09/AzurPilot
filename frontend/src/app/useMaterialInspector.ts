@@ -7,7 +7,12 @@ import { applyCustomLayer, type Family } from './theme'
 import { readFamilyCustom, type FamilyCustom } from './themeCustom'
 import type { RegionId } from './themeKnobs'
 
-/** 家族自定义参数：切换家族时重新读取；refresh 在落盘后重新应用并刷新界面。 */
+/**
+ * 读取并刷新主题家族自定义参数。
+ *
+ * @param family 主题家族。
+ * @returns 当前自定义参数与应用最新设置的函数。
+ */
 export function useFamilyCustom(family: Family) {
   const [custom, setCustom] = useState<FamilyCustom>(() => readFamilyCustom(family))
   useEffect(() => setCustom(readFamilyCustom(family)), [family])
@@ -18,7 +23,12 @@ export function useFamilyCustom(family: Family) {
   return {custom, refresh}
 }
 
-/** 当前调节的区域与两个样本层：切到弹窗或菜单区域时自动打开对应样本，切走则一起关闭。 */
+/**
+ * 管理材质检视器当前区域与样本层显隐。
+ *
+ * @param initial 初始调节区域。
+ * @returns 区域、样本显隐状态及其更新函数。
+ */
 export function useSampleLayers(initial: RegionId = 'surface') {
   const [region, setRegion] = useState<RegionId>(initial)
   const [showModal, setShowModal] = useState(false)

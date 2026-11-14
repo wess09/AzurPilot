@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 路由深度、切换方向与卡片错峰动画参数测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { routeDepth, routeDirection, triggerCardStaggerMotion } from './pageMotion'
 import { calculateCardDiagonalScore, calculateNonLinearDelay, sortCardsFromTopLeft } from './cardMotion'

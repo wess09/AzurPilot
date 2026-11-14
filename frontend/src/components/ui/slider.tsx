@@ -1,9 +1,12 @@
 "use client"
 
+/** @fileoverview shadcn/ui 滑块：Radix 封装，按 value 长度渲染拇指数量。 */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 import { Slider as SliderPrimitive } from "radix-ui"
 
+/** 滑块：单/双拇指均可，未受控时按 min/max 渲染。 */
 function Slider({
   className,
   defaultValue,

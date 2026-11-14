@@ -1,9 +1,10 @@
 /**
+ * @fileoverview 预览层焦点圈定：Tab 循环不出覆盖层、焦点逃逸即拉回；卸载时把焦点还给打开预览前的元素。
  * 从 MockInstancePreview.tsx 原 76-105 行提取，纯搬迁未改动（焦点圈定副作用改为独立 Hook）。
- * 预览层焦点圈定：Tab 循环不出覆盖层、焦点逃逸即拉回；卸载时把焦点还给打开预览前的元素。
  */
 import { useEffect, type RefObject } from 'react'
 
+/** 把键盘焦点圈定在覆盖层内，关闭时恢复触发前的焦点位置。 */
 export function useFocusTrap(overlayRef: RefObject<HTMLDivElement | null>) {
   // Tab 循环不出覆盖层、焦点逃逸即拉回；卸载时把焦点还给打开预览前的元素。
   useEffect(() => {

@@ -3,21 +3,29 @@
  */
 export const palettes = ['ocean', 'forest', 'violet', 'sand', 'slate'] as const
 type PresetPalette = typeof palettes[number]
+
+/** 配色方案标识：预设方案或自定义方案。 */
 export type Palette = PresetPalette | `custom:${string}`
+
+/** 支持的颜色模式：自动跟随系统、明暗主题或固定复古配色。 */
 export const colorModes = ['auto', 'light', 'dark', 'terminal', 'retro-gray', 'retro-blue', 'retro-red'] as const
+/** 颜色模式标识。 */
 export type ColorMode = typeof colorModes[number]
 
+/** 最终解析出的明暗模式。 */
 export type ResolvedMode = 'light' | 'dark'
 type BrandColors = {primary: string; secondary: string}
+/** 一条自定义配色方案，始终保存主色与辅助色。 */
 export type CustomPalette = {id: `custom:${string}`; primary: string; secondary: string}
 
+/** 预设配色方案在明暗模式下的品牌色。 */
 export const presetColors: Record<PresetPalette, Record<ResolvedMode, BrandColors>> = {
   ocean: {light: {primary: '#245dbe', secondary: '#147d83'}, dark: {primary: '#8ab4ff', secondary: '#71cbc9'}},
   forest: {light: {primary: '#286747', secondary: '#956020'}, dark: {primary: '#86cba3', secondary: '#dfb472'}},
   violet: {light: {primary: '#7050a3', secondary: '#a14865'}, dark: {primary: '#c1a4ee', secondary: '#efa2bb'}},
   sand: {light: {primary: '#915a2b', secondary: '#426b70'}, dark: {primary: '#e1b082', secondary: '#92c3c8'}},
   slate: {light: {primary: '#45566b', secondary: '#96553b'}, dark: {primary: '#acbdd2', secondary: '#dfaa8e'}},
-}
+} as const
 
 type FixedMode = {mode: ResolvedMode; tokens: Record<string, string>}
 
@@ -95,13 +103,19 @@ export const fixedColorModes: Partial<Record<ColorMode, FixedMode>> = {
       '--theme-on-accent': '#ffffff',
     },
   },
-}
+} as const
 
+/** 判断值是否为合法的六位十六进制实色。 */
 export const isHexColor = (value: unknown): value is string => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value)
 const validColors = (value: unknown): value is BrandColors => !!value && typeof value === 'object'
   && isHexColor((value as BrandColors).primary) && isHexColor((value as BrandColors).secondary)
 
-/** 只接收完整的实色配置，避免损坏的本地数据进入 CSS。 */
+/**
+ * 从本地存储字符串解析自定义配色。
+ *
+ * @param value JSON 文本，解析失败或条目不合法时忽略该条目。
+ * @returns 合法且去重后的自定义配色列表。
+ */
 export function readCustomPalettes(value: string | null): CustomPalette[] {
   try {
     const data: unknown = JSON.parse(value ?? '[]')
@@ -126,20 +140,31 @@ export function readCustomPalettes(value: string | null): CustomPalette[] {
   } catch { return [] }
 }
 
-/** 解析一个配色的品牌色：自定义配色按 id 优先，其次取预设的明暗版本，都没有则回落到 ocean。 */
+/**
+ * 解析配色方案在指定明暗模式下的品牌色。
+ *
+ * @param palette 配色方案标识。
+ * @param custom 可用的自定义配色列表。
+ * @param mode 最终明暗模式。
+ * @returns 品牌主色与辅助色。
+ */
 export function paletteColors(palette: Palette, custom: CustomPalette[], mode: ResolvedMode): BrandColors {
   const match = custom.find(item => item.id === palette)
   if (match) return {primary: match.primary, secondary: match.secondary}
   return presetColors[palette as PresetPalette]?.[mode] ?? presetColors.ocean[mode]
 }
 
-function channels(color: string) {
-  return [1, 3, 5].map(index => parseInt(color.slice(index, index + 2), 16))
+function channels(color: string): [number, number, number] {
+  return [
+    parseInt(color.slice(1, 3), 16),
+    parseInt(color.slice(3, 5), 16),
+    parseInt(color.slice(5, 7), 16),
+  ]
 }
 
 function mixColor(color: string, background: string, weight: number): string {
   const base = channels(background)
-  return '#' + channels(color).map((value, index) => Math.round(value * weight + base[index] * (1 - weight)).toString(16).padStart(2, '0')).join('')
+  return '#' + channels(color).map((value, index) => Math.round(value * weight + (base[index] ?? 0) * (1 - weight)).toString(16).padStart(2, '0')).join('')
 }
 
 /** WCAG 的 sRGB 相对亮度：先做 gamma 展开，再按 Rec.709 系数加权。 */
@@ -148,10 +173,16 @@ function luminance(color: string) {
     const channel = value / 255
     return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4
   })
-  return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722
+  return (rgb[0] ?? 0) * .2126 + (rgb[1] ?? 0) * .7152 + (rgb[2] ?? 0) * .0722
 }
 
-/** 按 WCAG 公式计算两色的对比度；readableColor 以 4.5（AA 正文标准）为达标线。 */
+/**
+ * 按 WCAG 公式计算两色的对比度；readableColor 以 4.5（AA 正文标准）为达标线。
+ *
+ * @param first 第一个十六进制颜色。
+ * @param second 第二个十六进制颜色。
+ * @returns 对比度倍数。
+ */
 export function contrastRatio(first: string, second: string): number {
   const a = luminance(first), b = luminance(second)
   return (Math.max(a, b) + .05) / (Math.min(a, b) + .05)
@@ -193,15 +224,27 @@ function accentTokensOn(colors: BrandColors, surface: string, mutedSurface: stri
 export const stockBrands: Record<ResolvedMode, BrandColors> = {
   light: {primary: '#262626', secondary: '#525252'},
   dark: {primary: '#e5e5e5', secondary: '#a3a3a3'},
-}
+} as const
 
-/** 只改强调色一族，不碰中性色（表面/文字/边框归主题自己管）——材质与现代主题要的就是这一份。 */
+/**
+ * 只改强调色一族，不碰中性色（表面/文字/边框归主题自己管）——材质与现代主题要的就是这一份。
+ *
+ * @param colors 品牌主色与辅助色。
+ * @param mode 最终明暗模式。
+ * @returns 强调色一族的 CSS 变量。
+ */
 export function accentTokens(colors: BrandColors, mode: ResolvedMode): Record<string, string> {
   const {surface, mutedSurface} = brandBases(mode)
   return accentTokensOn(colors, surface, mutedSurface, mode)
 }
 
-/** 整块换色：中性色也一起换，简约与紧凑走这一份。 */
+/**
+ * 整块换色：中性色也一起换，简约与紧凑走这一份。
+ *
+ * @param colors 品牌主色与辅助色。
+ * @param mode 最终明暗模式。
+ * @returns 完整主题色板的 CSS 变量。
+ */
 export function paletteTokens(colors: BrandColors, mode: ResolvedMode): Record<string, string> {
   const {dark, surface, mutedSurface} = brandBases(mode)
   return {

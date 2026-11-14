@@ -6,8 +6,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { getBackground, initBackgroundGallery, subscribeBackground } from '../app/background'
 
 interface DisplayItem {
+  /** 背景项唯一键。 */
   id: string
+  /** 媒体图源地址。 */
   url: string
+  /** 媒体类型，决定预加载与淡入时机。 */
   kind: 'image' | 'video'
 }
 

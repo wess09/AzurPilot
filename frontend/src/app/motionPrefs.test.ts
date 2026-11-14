@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 全局动效偏好的速度倍率与系统减弱动效联动测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { motionReducedActive, motionSpeedValue } from './motionPrefs'
 

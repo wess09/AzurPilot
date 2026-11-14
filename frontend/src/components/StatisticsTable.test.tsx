@@ -1,3 +1,5 @@
+/** @fileoverview 统计表格的渲染回归：默认排序与分页行为。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

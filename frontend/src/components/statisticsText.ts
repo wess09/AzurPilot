@@ -236,39 +236,42 @@ const PATTERNS: readonly Pattern[] = [
     'ja-JP': `最後の完全スキャン：${time}、サーバー：${server}、${pages} ページを確認。`,
     'zh-TW': `最近完整掃描：${time}；伺服器：${server}；複核 ${pages} 頁。`,
   })[language]],
-  [/^上次检测：(.+)；舰队：(.+)。$/, ([, time, fleet], language, term) => ({
-    'en-US': `Last check: ${term(time)}; fleet: ${fleet}.`,
-    'ja-JP': `前回のチェック：${term(time)}、艦隊：${fleet}。`,
-    'zh-TW': `上次檢測：${term(time)}；艦隊：${fleet}。`,
+  [/^上次检测：(.+)；舰队：(.+)。$/, (match, language, term) => ({
+    'en-US': `Last check: ${term(match[1] ?? '')}; fleet: ${match[2] ?? ''}.`,
+    'ja-JP': `前回のチェック：${term(match[1] ?? '')}、艦隊：${match[2] ?? ''}。`,
+    'zh-TW': `上次檢測：${term(match[1] ?? '')}；艦隊：${match[2] ?? ''}。`,
   })[language]],
-  [/^第 (\d+) 期收获明细$/, ([, series], language) => ({
-    'en-US': `Series ${series} harvest details`, 'ja-JP': `第 ${series} 期の収穫明細`, 'zh-TW': `第 ${series} 期收穫明細`,
+  [/^第 (\d+) 期收获明细$/, (match, language) => ({
+    'en-US': `Series ${match[1] ?? ''} harvest details`, 'ja-JP': `第 ${match[1] ?? ''} 期の収穫明細`, 'zh-TW': `第 ${match[1] ?? ''} 期收穫明細`,
   })[language]],
-  [/^第 (\d+) 期在统计区间内没有记录；有记录的期数：(.+)（可把「汇总周期」改成选定月份再看）$/, ([, series, available], language) => {
-    const list = [...available.matchAll(/第 (\d+) 期/g)].map(item => item[1])
+  [/^第 (\d+) 期在统计区间内没有记录；有记录的期数：(.+)（可把「汇总周期」改成选定月份再看）$/, (match, language) => {
+    const series = match[1] ?? ''
+    const available = match[2] ?? ''
+    const list = [...available.matchAll(/第 (\d+) 期/g)].flatMap(item => item[1] ? [item[1]] : [])
     return ({
       'en-US': `No records for series ${series} in this period. Series with records: ${list.join(', ')} (try “Selected month” under “Summary period”).`,
       'ja-JP': `第 ${series} 期はこの期間に記録がありません。記録のある期：${list.map(item => `第 ${item} 期`).join('、')}（「集計期間」を「選択した月」にして確認してください）`,
       'zh-TW': `第 ${series} 期在統計區間內沒有記錄；有記錄的期數：${list.map(item => `第 ${item} 期`).join('、')}（可把「彙總週期」改成選定月份再看）`,
     })[language]
   }],
-  [/^(\d+)小时(\d+)分钟$/, ([, hours, minutes], language) => ({
-    'en-US': `${hours} h ${minutes} min`, 'ja-JP': `${hours}時間${minutes}分`, 'zh-TW': `${hours}小時${minutes}分鐘`,
+  [/^(\d+)小时(\d+)分钟$/, (match, language) => ({
+    'en-US': `${match[1] ?? ''} h ${match[2] ?? ''} min`, 'ja-JP': `${match[1] ?? ''}時間${match[2] ?? ''}分`, 'zh-TW': `${match[1] ?? ''}小時${match[2] ?? ''}分鐘`,
   })[language]],
-  [/^(\d+)分钟$/, ([, minutes], language) => ({'en-US': `${minutes} min`, 'ja-JP': `${minutes}分`, 'zh-TW': `${minutes}分鐘`})[language]],
-  [/^(\S+海域)(?: (.+?))?(?:（侵蚀(\d+)）)?$/, ([, zone, name, hazard], language, term) => {
-    const head = [term(zone), name].filter(Boolean).join(' ')
+  [/^(\d+)分钟$/, (match, language) => ({'en-US': `${match[1] ?? ''} min`, 'ja-JP': `${match[1] ?? ''}分`, 'zh-TW': `${match[1] ?? ''}分鐘`})[language]],
+  [/^(\S+海域)(?: (.+?))?(?:（侵蚀(\d+)）)?$/, (match, language, term) => {
+    const head = [term(match[1] ?? ''), match[2]].filter(Boolean).join(' ')
+    const hazard = match[3]
     if (!hazard) return head
     return ({'en-US': `${head} (hazard ${hazard})`, 'ja-JP': `${head}（侵食${hazard}）`, 'zh-TW': `${head}（侵蝕${hazard}）`})[language]
   }],
-  [/^购买 (.+) × (\d+)$/, ([, item, count], language, term) => ({
-    'en-US': `Bought ${term(item)} × ${count}`, 'ja-JP': `${term(item)} × ${count} を購入`, 'zh-TW': `購買 ${term(item)} × ${count}`,
+  [/^购买 (.+) × (\d+)$/, (match, language, term) => ({
+    'en-US': `Bought ${term(match[1] ?? '')} × ${match[2] ?? ''}`, 'ja-JP': `${term(match[1] ?? '')} × ${match[2] ?? ''} を購入`, 'zh-TW': `購買 ${term(match[1] ?? '')} × ${match[2] ?? ''}`,
   })[language]],
-  [/^建造 (.+) × (\d+)$/, ([, pool, count], language, term) => ({
-    'en-US': `Built ${term(pool)} × ${count}`, 'ja-JP': `${term(pool)} × ${count} を建造`, 'zh-TW': `建造 ${term(pool)} × ${count}`,
+  [/^建造 (.+) × (\d+)$/, (match, language, term) => ({
+    'en-US': `Built ${term(match[1] ?? '')} × ${match[2] ?? ''}`, 'ja-JP': `${term(match[1] ?? '')} × ${match[2] ?? ''} を建造`, 'zh-TW': `建造 ${term(match[1] ?? '')} × ${match[2] ?? ''}`,
   })[language]],
-  [/^启动科研 (.+)$/, ([, project], language, term) => ({
-    'en-US': `Started research ${term(project)}`, 'ja-JP': `科研 ${term(project)} を開始`, 'zh-TW': `啟動科研 ${term(project)}`,
+  [/^启动科研 (.+)$/, (match, language, term) => ({
+    'en-US': `Started research ${term(match[1] ?? '')}`, 'ja-JP': `科研 ${term(match[1] ?? '')} を開始`, 'zh-TW': `啟動科研 ${term(match[1] ?? '')}`,
   })[language]],
 ]
 
@@ -277,7 +280,11 @@ const termMaps = new Map<Target, Map<string, string>>()
 function termMap(language: Target) {
   let map = termMaps.get(language)
   if (!map) {
-    map = new Map([...TERMS, ...SENTENCES].map(row => [row[0], row[columnOf[language]]]))
+    const column = columnOf[language]
+    map = new Map([...TERMS, ...SENTENCES].flatMap(row => {
+      const value = row[column]
+      return value === undefined ? [] : [[row[0], value] as const]
+    }))
     termMaps.set(language, map)
   }
   return map
@@ -308,13 +315,15 @@ export function translateStatText(language: Language, text: string, glossary: St
   if (text.includes('、') && !/[。；]/.test(text)) {
     const parts = text.split('、').map(part => {
       const match = part.match(/^(.*?)\s*x(\d+)$/)
-      return match ? `${term(match[1])} x${match[2]}` : term(part)
+      return match ? `${term(match[1] ?? '')} x${match[2] ?? ''}` : term(part)
     })
     return parts.join(language === 'en-US' ? ', ' : '、')
   }
   let result = text
+  const targetColumn = columnOf[language]
   for (const row of sentencesByLength) {
-    if (result.includes(row[0])) result = result.split(row[0]).join(row[columnOf[language]])
+    const replacement = row[targetColumn]
+    if (replacement !== undefined && result.includes(row[0])) result = result.split(row[0]).join(replacement)
   }
   return result
 }
@@ -372,7 +381,12 @@ export function withTranslatedKeys<T>(icons: Record<string, T>): Record<string, 
   const result = {...icons}
   for (const row of TERMS) {
     if (!(row[0] in icons)) continue
-    for (const index of [1, 2, 3]) if (row[index] && !(row[index] in result)) result[row[index]] = icons[row[0]]
+    for (const index of [1, 2, 3] as const) {
+      const translated = row[index]
+      const source = row[0]
+      const icon = icons[source]
+      if (translated && icon !== undefined && !(translated in result)) result[translated] = icon
+    }
   }
   return result
 }

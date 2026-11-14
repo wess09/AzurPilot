@@ -7,7 +7,13 @@ import type {ResourceFlowReport} from '../api/types'
 export interface FlowNode {name: string; label: string; depth: number; amount?: number; resource?: string; task?: string; itemStyle?: {color: string}}
 /** 桑基图连线：value 是占该资源总量（进出较大者）的百分比，amount 是绝对数量。 */
 export interface FlowLink {source: string; target: string; value: number; amount: number; label: string; resource: string}
-/** 单资源保持数量比例，多资源分别归一化；补足库存支出或区间结余以守恒。 */
+/**
+ * 将资源流水报表折算成桑基图节点与连线。
+ *
+ * @param report 资源流水报表。
+ * @param labels 资源、任务及守恒补足节点的文案映射。
+ * @returns 可交给 ECharts 桑基图渲染的数据。
+ */
 export function flowGraph(report: ResourceFlowReport, labels: {resource: (key: string) => string; task: (key: string) => string; stock: string; balance: string}) {
   const nodes: FlowNode[] = [], links: FlowLink[] = []
   const keys = [...new Set(report.flows.map(row => row.resource))]
@@ -16,7 +22,7 @@ export function flowGraph(report: ResourceFlowReport, labels: {resource: (key: s
     const income = rows.reduce((sum, row) => sum + row.income, 0), expense = rows.reduce((sum, row) => sum + row.expense, 0)
     const total = Math.max(income, expense)
     if (!total) return
-    const color = ['#549ad0', '#d6a653', '#77ab80', '#ad85c5', '#d48078', '#69adb3'][index % 6]
+    const color = ['#549ad0', '#d6a653', '#77ab80', '#ad85c5', '#d48078', '#69adb3'][index % 6] ?? '#549ad0'
     const center = `resource:${resource}`
     nodes.push({name: center, label: labels.resource(resource), depth: 1, resource, itemStyle: {color}})
     const add = (id: string, label: string, amount: number, incoming: boolean, task?: string) => {

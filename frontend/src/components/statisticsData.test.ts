@@ -52,7 +52,7 @@ describe('多数据源行合并', () => {
     ]
     const rows = mergeMultiSeriesRows(seriesList, '2026-09-20T11:00')
     expect(rows).toHaveLength(1)
-    expect(rows[0][0]).toBe('2026-09-20 12:00:00')
+    expect(rows[0]?.[0]).toBe('2026-09-20 12:00:00')
   })
 })
 

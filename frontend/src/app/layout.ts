@@ -112,6 +112,7 @@ export function clampSidebarWidth(width: number) {
 /** 写入侧栏宽度（像素）并持久化，null 恢复主题默认。 */
 export const setSidebarWidth = (width: number | null) => publish({sidebarWidth: width == null ? null : clampSidebarWidth(width)})
 
+/** 恢复侧栏主题默认宽度并持久化。 */
 export const resetSidebarWidth = () => publish({sidebarWidth: null})
 
 /** 写入调度器栏宽度（像素）并持久化：按上下限与「视口 60%」收拢，null 恢复默认。 */
@@ -127,4 +128,5 @@ export const setModernRailWidth = (width: number | null) => {
   publish({railWidth: clamped})
 }
 
+/** 恢复调度器栏默认宽度并持久化。 */
 export const resetModernRailWidth = () => publish({railWidth: null})

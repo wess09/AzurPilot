@@ -1,6 +1,6 @@
 /**
+ * @fileoverview 图表选取与筛选状态：选中系列、图表类型、坐标轴、采样粒度与时间范围。
  * 从 StatisticsChart.tsx 原 130-168 行提取，纯搬迁未改动。
- * 图表选取与筛选状态：选中系列、图表类型、坐标轴、采样粒度与时间范围。
  */
 import { useCallback, useState } from 'react'
 import {
@@ -13,6 +13,7 @@ import {
 } from '../../app/statisticsPrefs'
 import type {StatSeries} from '../../api/types'
 
+/** 管理图表的选中系列与展示偏好，偏好值按类目持久化到 localStorage。 */
 export function useChartSelection({category, series}: {category: string; series: StatSeries[]}) {
   const [selectedKeys, setSelectedKeysState] = useState<string[]>(() => {
     const remembered = getSelectedKeysForCategory(category, series)

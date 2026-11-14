@@ -195,7 +195,8 @@ export function App() {
   const {pluginId, pageId} = useParams()
   const pluginTitle = plugins.find(plugin => plugin.enabled && plugin.manifest.id === pluginId)
     ?.manifest.pages?.find(page => page.id === pageId)?.title
-  const entryPath = instances.length > 0 ? `/i/${encodeURIComponent(instances[0].name)}/overview` : '/configs'
+  const firstInstance = instances[0]
+  const entryPath = firstInstance ? `/i/${encodeURIComponent(firstInstance.name)}/overview` : '/configs'
   const setup = location.pathname === SETUP_PATH
   const empty = instancesLoaded && instances.length === 0
   useEffect(() => {

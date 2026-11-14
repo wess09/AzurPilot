@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 校验 App 登录闸门不影响 Hook 调用顺序的源码级测试。
+ */
 import { describe, expect, it } from 'vitest'
 import appSource from './App.tsx?raw'
 

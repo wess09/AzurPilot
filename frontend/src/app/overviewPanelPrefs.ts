@@ -28,5 +28,7 @@ try {
 } catch { /* 存储不可用时跳过迁移，本次会话内按默认值工作。 */ }
 
 export const readOverviewPanel = store.read
+/** 订阅总览主区显示模式变化，返回退订函数。 */
 export const subscribeOverviewPanel = store.subscribe
+/** 写入并持久化总览主区显示模式。 */
 export const setOverviewPanel = store.write

@@ -78,7 +78,6 @@
 .monitor-segmented button:focus-visible {outline-offset: -2px}
 .log-rule .rule-bar {opacity: 1; background: var(--border)}
 .log-rule.rule-double .rule-bar {opacity: 1; border-color: var(--border)}
-.live-label {border-color: var(--green)}
 .rail-task-list {display: flex; flex-direction: column; gap: 10px}
 .rail-queue-group {
   flex-shrink: 0;

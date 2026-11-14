@@ -83,7 +83,12 @@ export function FleetEquipment() {
         {path: 'FleetInfo.FleetEquipment.Enabled', value: nextEnabled},
         {path: 'FleetInfo.FleetEquipment.Codes', value: JSON.stringify(equipmentCodes(codes))},
       ]})
-      const values = result.values.FleetInfo.FleetEquipment
+      const values = result.values.FleetInfo?.FleetEquipment
+      if (!values) {
+        setEnabled(false); setCodes(equipmentCodes(undefined))
+        setPending(0); setError(''); setDirty(false)
+        return
+      }
       setEnabled(values.Enabled === true); setCodes(equipmentCodes(values.Codes))
       setPending(Object.keys(values.State ?? {}).length); setDirty(false); notify(ui('fleetEquipment.saved'))
     } catch (error) {setError((error as Error).message)}
@@ -101,11 +106,11 @@ export function FleetEquipment() {
     {pending > 0 && <p role="status">{ui('fleetEquipment.pending', {number: pending})}</p>}
     {error && <ErrorBox message={error}/>}
     {codes ? <EquipmentCodeFields codes={codes} disabled={disabled} change={(kind, index, value) => {
-      // 该回调只在 codes 就绪的分支里挂载，previous 的非空断言不会落空。
       setCodes(previous => {
-        const entries = [...previous![kind]] as CodeSet
+        if (!previous) return undefined
+        const entries = [...previous[kind]] as CodeSet
         entries[index] = value
-        return {...previous!, [kind]: entries}
+        return {...previous, [kind]: entries}
       }); setDirty(true)
     }}/> : !error && <Loading/>}
   </>

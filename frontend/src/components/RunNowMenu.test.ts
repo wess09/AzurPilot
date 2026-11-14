@@ -1,3 +1,5 @@
+/** @fileoverview 批量立刻运行的纯函数回归：等待任务筛选、菜单分组与 NextRun 补丁值。 */
+
 import { describe, expect, it } from 'vitest'
 import type { Schema } from '../api/types'
 import { groupWaiting, runNowChanges, waitingTasks } from './RunNowMenu'

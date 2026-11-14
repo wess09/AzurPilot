@@ -49,6 +49,11 @@ export function readLastPath(): string {
   try { return localStorage.getItem(LAST_PATH_KEY) ?? '' } catch { return '' }
 }
 
+/**
+ * 写入上次停留的页面路径。
+ *
+ * @param path 下次启动优先恢复的路由路径。
+ */
 export function writeLastPath(path: string) {
   try { localStorage.setItem(LAST_PATH_KEY, path) } catch { /* 存储不可用只影响下次启动的落点。 */ }
 }

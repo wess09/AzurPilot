@@ -1,3 +1,5 @@
+/** @fileoverview 统计页后端文本翻译的回归：多语言覆盖、对照表翻译与未知文本保留。 */
+
 import { describe, expect, it } from 'vitest'
 import type { ResourceFlowReport, StatisticsReport } from '../api/types'
 import { localizeFlowReport, localizeReport, translateStatText, withTranslatedKeys } from './statisticsText'
@@ -54,8 +56,8 @@ describe('统计页后端文本翻译', () => {
     }
     const shown = localizeReport(report, 'en-US')
     expect(shown.metrics[0]).toMatchObject({label: 'Battles', unit: ' battles'})
-    expect(shown.metrics[1].unit).toBe('%')
-    expect(shown.tables[0].rows[0]).toEqual(['research:CognitiveChips', 'Cognitive chips', 2])
+    expect(shown.metrics[1]?.unit).toBe('%')
+    expect(shown.tables[0]?.rows[0]).toEqual(['research:CognitiveChips', 'Cognitive chips', 2])
     expect(localizeReport(report, 'zh-CN')).toBe(report)
   })
 
@@ -68,8 +70,8 @@ describe('统计页后端文本翻译', () => {
     } as unknown as ResourceFlowReport
     const shown = localizeFlowReport(report, 'en-US')
     expect(shown.resources[0]).toMatchObject({label: 'Oil', group: 'Currency'})
-    expect(shown.flows[0].operation).toBe('Reward collected')
-    expect(shown.entries[0].operation).toBe('Change between tasks or offline')
+    expect(shown.flows[0]?.operation).toBe('Reward collected')
+    expect(shown.entries[0]?.operation).toBe('Change between tasks or offline')
   })
 
   it('图标表补上译名后，翻译后的标签仍能找到图标', () => {

@@ -1,13 +1,4 @@
 /* 配置列表域 —— B1 自 components.css:459-470 保序拆分，规则文本逐字未改 */
 /* 配置管理：一行一份配置，右侧依次是状态徽章与操作按钮 */
 .config-list {display: grid; gap: 12px}
-.config-row {display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 16px; padding: 18px 22px}
-.config-row-main {min-width: 0}
-.config-row-main h3 {font-size: 16px; font-weight: 650; overflow-wrap: anywhere}
-.config-row-meta {display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; color: var(--muted); font-size: 12px}
-.config-row-actions {display: flex; flex-wrap: wrap; gap: 8px}
-@media (max-width: 950px) {
-  .config-row {grid-template-columns: minmax(0, 1fr); gap: 12px}
-  .config-row-actions .button {flex: 1 1 auto; justify-content: center}
-}
 

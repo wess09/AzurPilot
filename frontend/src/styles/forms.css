@@ -131,19 +131,9 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
   .select-trigger {border-color: ButtonText}
 }
 
-/* 设置页的分段选择跟随主题的控件圆角；胶囊造型留给材质主题的监视器控件 */
-:root[data-theme='modern-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
-
 /* 自定义外观的滑块行：滑块占满分到的宽度，当前值固定在右侧，数字用等宽字形避免抖动 */
 .knob-control {display: flex; align-items: center; gap: 12px}
 .knob-value {min-width: 56px; text-align: right; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums}
-
-/* 设置页的分段选择与上方选择框等宽、按钮等分 */
-:root[data-theme='modern-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented {width: 100%}
-:root[data-theme='modern-light'] .monitor-segmented.settings-segmented button,
-:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
 
 /* 这一排是 标签 + 滑块 + 数值 + 还原，宽度不够时滑块被压得很短 */
 .material-detail-modal {width: min(960px, calc(100vw / var(--ui-scale) - 30px))}
@@ -169,12 +159,6 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 .material-detail-modal .knob-row + .knob-row {border-top: 1px solid color-mix(in srgb, var(--border) 45%, transparent)}
 /* 滑块本身加高：整条都是可抓取区域，不必非要点中那个圆点 */
 .material-detail-body input[type='range'] {flex: 1 1 auto; min-height: 40px}
-/* 单项还原只用图标，按钮小一圈 */
-.knob-reset {display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; padding: 0; border: 0; border-radius: var(--theme-radius-control); background: transparent; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
-.knob-reset:hover:not(:disabled) {color: var(--theme-accent); background: var(--theme-accent-soft)}
-.knob-reset:focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
-.knob-reset:disabled {opacity: .5; cursor: default}
-.knob-reset {white-space: nowrap}
 
 
 /* .background-url-* / .background-direct* / .background-gallery*（URL 行列表/直链/图库）已 colocate 到 src/components/BackgroundPreferences.css */

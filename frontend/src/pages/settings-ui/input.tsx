@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 设置页基础输入框（shadcn 风格封装）。
+ */
+
 import * as React from "react"
 import { cn } from "../../lib/utils"
 

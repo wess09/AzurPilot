@@ -1,3 +1,5 @@
+/** @fileoverview 资源卡片的纯函数与排版回归：重排不可变性、记录时间文案与行动力展示。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

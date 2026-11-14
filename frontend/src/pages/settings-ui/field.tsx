@@ -9,20 +9,6 @@ import { cn } from "../../lib/utils"
 
 import { Label } from "../../components/ui/label"
 
-/** 字段分组容器：纵向排列多个 Field，并提供 @container 查询的容器上下文。 */
-function FieldGroup({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="field-group"
-      className={cn(
-        "group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&>[data-slot=field-group]]:gap-4",
-        className
-      )}
-      {...props}
-    />
-  )
-}
-
 const fieldVariants = cva(
   "group/field flex w-full gap-3 data-[invalid=true]:text-destructive",
   {
@@ -59,20 +45,6 @@ function Field({
       data-slot="field"
       data-orientation={orientation}
       className={cn(fieldVariants({ orientation }), className)}
-      {...props}
-    />
-  )
-}
-
-/** 字段内容区：容纳标题与说明等文本，占满剩余宽度。 */
-function FieldContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="field-content"
-      className={cn(
-        "group/field-content flex flex-1 flex-col gap-1.5 leading-snug",
-        className
-      )}
       {...props}
     />
   )
@@ -117,6 +89,4 @@ export {
   Field,
   FieldLabel,
   FieldDescription,
-  FieldGroup,
-  FieldContent,
 }

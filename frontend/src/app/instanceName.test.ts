@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 实例名校验正则的合法性测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { INSTANCE_NAME_PATTERN } from './instanceName'
 

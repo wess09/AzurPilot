@@ -5,15 +5,22 @@
 let pending: string | null = null
 const listeners = new Set<() => void>()
 
-/** 记下要定位的配置项路径，并通知订阅者。
+/**
+ * 记下要定位的配置项路径并通知订阅者。
  *
- * 路径形如 `Task.Group.Arg`，与配置页字段的 DOM id 一致。 */
+ * @param path 形如 `Task.Group.Arg` 的字段路径。
+ */
 export function setSearchTarget(path: string) {
   pending = path
   listeners.forEach(listener => listener())
 }
 
-/** 订阅待定位路径的变化，返回取消订阅函数。 */
+/**
+ * 订阅待定位路径变化。
+ *
+ * @param listener 路径变化回调。
+ * @returns 取消订阅函数。
+ */
 export function subscribeSearchTarget(listener: () => void) {
   listeners.add(listener)
   return () => {
