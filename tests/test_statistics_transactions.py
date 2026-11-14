@@ -123,7 +123,7 @@ class TestStatisticsTransactions(unittest.TestCase):
         # 标量列递增没有读阶段，事务内的单行 UPSERT 同样是暂停点。
         hooks = [pause_target]
         if pause_target == "_get_stats_in_connection":
-            hooks.append("_increment_month_scalar")
+            hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot"))
         paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
@@ -218,10 +218,12 @@ class TestStatisticsTransactions(unittest.TestCase):
         with closing(sqlite3.connect(self.path)) as conn, conn:
             conn.execute("DELETE FROM typed_value_nodes WHERE parent_no IS NULL")
         scalar_columns = {"increment_battle_count": 2, "increment_akashi_encounter": 3}
+        # 增量追加不读兼容树：只允许月份行的 field_mask 按位补齐自身家族位。
+        family_bits = {"add_yellow_coin_snapshot": 64, "add_ap_snapshot": 16}
         for name, args in MUTATIONS:
             with self.subTest(method=name):
                 before = self.rows()
-                if name in scalar_columns:
+                if name in scalar_columns or name in family_bits:
                     # 标量列递增不读兼容树：允许成功，但只允许自身计数变化。
                     try:
                         getattr(self.db, name)("test", *args)
@@ -230,10 +232,16 @@ class TestStatisticsTransactions(unittest.TestCase):
                         continue
                     after = self.rows()
                     self.assertEqual(len(after), len(before))
-                    column = scalar_columns[name]
-                    for old, new in zip(before, after):
-                        self.assertEqual(old[:column] + old[column + 1:], new[:column] + new[column + 1:])
-                        self.assertEqual(new[column], (old[column] or 0) + 1)
+                    if name in scalar_columns:
+                        column = scalar_columns[name]
+                        for old, new in zip(before, after):
+                            self.assertEqual(old[:column] + old[column + 1:], new[:column] + new[column + 1:])
+                            self.assertEqual(new[column], (old[column] or 0) + 1)
+                    else:
+                        bit = family_bits[name]
+                        for old, new in zip(before, after):
+                            self.assertEqual(old[:11] + old[12:], new[:11] + new[12:])
+                            self.assertEqual(new[11], old[11] | bit)
                 else:
                     with self.assertRaises(ValueError):
                         getattr(self.db, name)("test", *args)

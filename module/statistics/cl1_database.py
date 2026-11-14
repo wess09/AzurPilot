@@ -603,37 +603,59 @@ class Cl1Database:
         with self._stats_transaction() as conn:
             # 补齐必须先于本次读取。
             self.ensure_coins_history(instance, conn)
-            data = self._get_stats_in_connection(conn, instance, month)
-            now = observed_at
-
-            # CL5 效率：1700 / 30 ≈ 56.67
-            cl5_efficiency = 1700.0 / 30.0
-
-            # 获取最近的黄币值
-            yellow_coin = 0
-            yellow_coin_snapshots = data.get("yellow_coin_snapshots", [])
-            if yellow_coin_snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    yellow_coin = int(yellow_coin_snapshots[-1].get("yellow_coin", 0))
-
-            snapshot = {
-                "ts": now.isoformat(),
+            self._record_ap_snapshot(conn, instance, month, {
+                "observed_at": observed_at,
                 "source": source,
-            }
-            if distance is not None:
-                snapshot["distance"] = self._coerce_int(distance)
-            if ap_total is not None:
-                # 当前读数不能替代总量，独立海里数也不附带缓存行动力或资产。
-                ap_total = self._coerce_int(ap_total)
-                snapshot.update(ap_total=ap_total, yellow_coin=yellow_coin,
-                                asset=round(ap_total * cl5_efficiency + yellow_coin, 2))
-                if ap_current is not None:
-                    snapshot["ap"] = self._coerce_int(ap_current)
+                "distance": distance,
+                "ap_total": ap_total,
+                "ap_current": ap_current,
+            })
 
-            snapshots = data.get("ap_snapshots", [])
-            snapshots.append(snapshot)
-            data["ap_snapshots"] = snapshots
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_ap_snapshot(self, conn, instance: str, month: str, reading: Dict[str, Any]):
+        """行动力快照 O(1) 增量写：最近黄币查尾、单行追加，不再整月读改写。"""
+        from module.persistence.snapshots import FAMILIES, MONTH_FIELDS, save_row
+        register_instance(conn, instance)
+        table = FAMILIES['ap_snapshots'][0]
+        now = reading["observed_at"]
+
+        # CL5 效率：1700 / 30 ≈ 56.67
+        cl5_efficiency = 1700.0 / 30.0
+
+        # 获取最近的黄币值
+        yellow_coin = 0
+        last = conn.execute(
+            'SELECT yellow_coin FROM yellow_coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if last is not None and last[0] is not None:
+            with suppress(ValueError, TypeError, IndexError, KeyError):
+                yellow_coin = int(last[0])
+
+        snapshot = {
+            "ts": now.isoformat(),
+            "source": reading["source"],
+        }
+        distance = reading["distance"]
+        ap_total = reading["ap_total"]
+        if distance is not None:
+            snapshot["distance"] = self._coerce_int(distance)
+        if ap_total is not None:
+            # 当前读数不能替代总量，独立海里数也不附带缓存行动力或资产。
+            ap_total = self._coerce_int(ap_total)
+            snapshot.update(ap_total=ap_total, yellow_coin=yellow_coin,
+                            asset=round(ap_total * cl5_efficiency + yellow_coin, 2))
+            if reading["ap_current"] is not None:
+                snapshot["ap"] = self._coerce_int(reading["ap_current"])
+
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, field_mask) VALUES(?, ?, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
+            (instance, month, 1 << MONTH_FIELDS.index('ap_snapshots')))
+        ordinal = conn.execute(
+            f'SELECT COALESCE(MAX(ordinal),-1)+1 FROM {table} WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, table, {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['ap_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
 
     def ensure_coins_cleanup(self, instance: str, conn) -> None:
         """清掉月初残留的紫币读数，按版本号只执行一次。
@@ -806,24 +828,54 @@ class Cl1Database:
         """
         observed_at = observed_at or datetime.now()
         month = observed_at.strftime("%Y-%m")
+        yellow_coin = self._coerce_int(yellow_coin)
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            yellow_coin = self._coerce_int(yellow_coin)
-
-            snapshot = {
+            self._record_yellow_coin_snapshot(conn, instance, month, {
                 "ts": observed_at.isoformat(),
                 "yellow_coin": yellow_coin,
                 "source": source,
-            }
+            })
 
-            snapshots = data.get("yellow_coin_snapshots", [])
-            if snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    if self._coerce_int(snapshots[-1].get("yellow_coin", -1)) == yellow_coin:
-                        return
-            snapshots.append(snapshot)
-            data["yellow_coin_snapshots"] = thin_yellow_coin_snapshots(snapshots)
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_yellow_coin_snapshot(self, conn, instance: str, month: str, snapshot: Dict[str, Any]):
+        """黄币快照 O(1) 增量写：查尾去重、单行追加、SQL 端按小时抽稀。
+
+        此前每场战斗都整月读改写并重插全部快照，代价随月内条目线性增长；
+        抽稀由窗口函数在库内完成，未命中的历史行不再往返 Python。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        last = conn.execute(
+            'SELECT yellow_coin FROM yellow_coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if last is not None and last[0] == snapshot["yellow_coin"]:
+            return
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        from module.persistence.snapshots import MONTH_FIELDS
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, field_mask) VALUES(?, ?, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
+            (instance, month, 1 << MONTH_FIELDS.index('yellow_coin_snapshots')))
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM yellow_coin_snapshots WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'yellow_coin_snapshots', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['yellow_coin_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
+        self._thin_snapshots(conn, instance, month, 'yellow_coin_snapshots', YELLOW_COIN_EXACT_HOURS)
+
+    def _thin_snapshots(self, conn, instance: str, month: str, table: str, exact_hours: int):
+        """删除抽稀窗口外每小时除最后一条外的快照行，语义对齐 thin_snapshots。
+
+        只处理原生 record 行且 ts 可按 ISO 前缀解析；无法解析的行按原路径保留。
+        """
+        cutoff = (datetime.now() - timedelta(hours=exact_hours)).isoformat()
+        conn.execute(f'''
+            DELETE FROM {table} WHERE rowid IN (
+                SELECT rowid FROM (
+                    SELECT rowid, RANK() OVER (PARTITION BY substr(ts,1,13) ORDER BY ts DESC, ordinal DESC) AS rn
+                    FROM {table}
+                    WHERE instance=? AND month=? AND ts < ? AND entry_kind='record'
+                      AND ts GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]*'
+                ) WHERE rn > 1)''', (instance, month, cutoff))
 
     def add_coins_snapshot(
         self,
