@@ -55,6 +55,7 @@ class TestAkashiAsyncPersistence(unittest.TestCase):
         with (
             patch.object(database, 'db', self.db),
             patch.object(self.db, '_save_stats_in_connection', side_effect=RuntimeError('写入失败')),
+            patch.object(self.db, '_increment_month_scalar', side_effect=RuntimeError('写入失败')),
             patch.object(opsi_runtime.logger, 'attr') as log,
             patch.object(opsi_runtime.logger, 'exception') as failure,
         ):

@@ -12,6 +12,7 @@ from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from collections import defaultdict
+from module.persistence.database import register_instance
 from module.config.time_source import now as current_time
 from module.logger import logger
 
@@ -527,18 +528,38 @@ class Cl1Database:
         """增加战斗次数"""
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["battle_count"] = data.get("battle_count", 0) + delta
-            self._save_stats_in_connection(conn, instance, month, data)
+            if not self._increment_month_scalar(conn, instance, month, 'battle_count', 0, delta):
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["battle_count"] = data.get("battle_count", 0) + delta
+                self._save_stats_in_connection(conn, instance, month, data)
+
+    def _increment_month_scalar(self, conn, instance: str, month: str, column: str, bit: int, delta: int) -> bool:
+        """原生标量列 O(1) 递增；月份行缺失直接建行，标量不在原生列时返回 False。
+
+        战斗计数等高频递增此前走整月读改写，代价随月内条目数线性增长；
+        标量列命中时退化为单行 UPSERT，不再触碰任何明细表。
+        """
+        register_instance(conn, instance)
+        cursor = conn.execute(
+            f'INSERT INTO cl1_months(instance, month, {column}, field_mask) VALUES(?, ?, ?, ?) '
+            f'ON CONFLICT(instance, month) DO UPDATE SET {column}=COALESCE({column},0)+excluded.{column} '
+            'WHERE field_mask & ? != 0',
+            (instance, month, delta, 1 << bit, 1 << bit))
+        return cursor.rowcount == 1
 
     def increment_akashi_encounter(self, instance: str, month: Optional[str] = None) -> int:
         """增加明石奇遇次数，返回事务提交后的累计值。"""
         month = month or datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["akashi_encounters"] = data.get("akashi_encounters", 0) + 1
-            self._save_stats_in_connection(conn, instance, month, data)
-            encounters = data["akashi_encounters"]
+            if self._increment_month_scalar(conn, instance, month, 'akashi_encounters', 1, 1):
+                encounters = conn.execute(
+                    'SELECT akashi_encounters FROM cl1_months WHERE instance=? AND month=?',
+                    (instance, month)).fetchone()[0]
+            else:
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["akashi_encounters"] = data.get("akashi_encounters", 0) + 1
+                self._save_stats_in_connection(conn, instance, month, data)
+                encounters = data["akashi_encounters"]
         return encounters
 
     def add_akashi_ap_entry(

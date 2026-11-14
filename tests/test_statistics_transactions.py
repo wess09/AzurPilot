@@ -7,7 +7,7 @@ import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing, nullcontext
+from contextlib import ExitStack, closing, nullcontext
 from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
@@ -105,16 +105,26 @@ class TestStatisticsTransactions(unittest.TestCase):
         read_done = threading.Event()
         release = threading.Event()
         competing_begin = threading.Event()
-        original = getattr(owner or self.db, pause_target)
         connect = sqlite3.connect
 
-        def paused(*args, **kwargs):
-            result = original(*args, **kwargs)
-            if not read_done.is_set():
-                read_done.set()
-                if not release.wait(5):
-                    raise TimeoutError("未放行第一个统计写者")
-            return result
+        def paused_hook(target):
+            original = getattr(owner or self.db, target)
+
+            def paused(*args, **kwargs):
+                result = original(*args, **kwargs)
+                if not read_done.is_set():
+                    read_done.set()
+                    if not release.wait(5):
+                        raise TimeoutError("未放行第一个统计写者")
+                return result
+
+            return paused
+
+        # 标量列递增没有读阶段，事务内的单行 UPSERT 同样是暂停点。
+        hooks = [pause_target]
+        if pause_target == "_get_stats_in_connection":
+            hooks.append("_increment_month_scalar")
+        paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
             conn = connect(*args, **kwargs)
@@ -124,10 +134,12 @@ class TestStatisticsTransactions(unittest.TestCase):
                 )
             return conn
 
-        with patch.object(owner or self.db, pause_target, side_effect=paused), \
-                patch.object(persistence.sqlite3, "connect", side_effect=traced_connect), \
+        with ExitStack() as hooks, \
                 ThreadPoolExecutor(max_workers=1) as first_pool, \
                 ThreadPoolExecutor(max_workers=1, thread_name_prefix="stats-other") as second_pool:
+            for hook in paused:
+                hooks.enter_context(hook)
+            hooks.enter_context(patch.object(persistence.sqlite3, "connect", side_effect=traced_connect))
             first_future = first_pool.submit(first)
             try:
                 self.assertTrue(read_done.wait(5), "第一个写者未在事务中读取")
@@ -205,11 +217,27 @@ class TestStatisticsTransactions(unittest.TestCase):
     def test_all_mutations_reject_corrupt_rows_without_replacing_them(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:
             conn.execute("DELETE FROM typed_value_nodes WHERE parent_no IS NULL")
-        before = self.rows()
+        scalar_columns = {"increment_battle_count": 2, "increment_akashi_encounter": 3}
         for name, args in MUTATIONS:
-            with self.subTest(method=name), self.assertRaises(ValueError):
-                getattr(self.db, name)("test", *args)
-            self.assertEqual(self.rows(), before)
+            with self.subTest(method=name):
+                before = self.rows()
+                if name in scalar_columns:
+                    # 标量列递增不读兼容树：允许成功，但只允许自身计数变化。
+                    try:
+                        getattr(self.db, name)("test", *args)
+                    except ValueError:
+                        self.assertEqual(self.rows(), before)
+                        continue
+                    after = self.rows()
+                    self.assertEqual(len(after), len(before))
+                    column = scalar_columns[name]
+                    for old, new in zip(before, after):
+                        self.assertEqual(old[:column] + old[column + 1:], new[:column] + new[column + 1:])
+                        self.assertEqual(new[column], (old[column] or 0) + 1)
+                else:
+                    with self.assertRaises(ValueError):
+                        getattr(self.db, name)("test", *args)
+                    self.assertEqual(self.rows(), before)
 
     def test_sqlite_read_error_propagates_without_empty_snapshot_write(self):
         before = self.rows()
