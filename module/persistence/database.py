@@ -237,6 +237,11 @@ class BusinessDatabase:
             connection.execute('PRAGMA foreign_keys=ON')
             # WAL 下 NORMAL 不逐笔 fsync：进程崩溃不丢已提交事务，掉电最多丢最后一小段观测数据。
             connection.execute('PRAGMA synchronous=NORMAL')
+            # mmap 让读路径免拷贝直达页缓存；内存临时表与更大的页缓存
+            # 加速整月快照这类大批量读改写事务。
+            connection.execute('PRAGMA mmap_size=268435456')
+            connection.execute('PRAGMA temp_store=MEMORY')
+            connection.execute('PRAGMA cache_size=-8000')
             connection.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
             try:
                 connection.database_path = str(self.path)

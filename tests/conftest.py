@@ -9,12 +9,19 @@
 """
 import tempfile
 import unittest
+import os
 
 from module.persistence.database import close_all
 from module.persistence.write_queue import write_queue
 
 _original_do_cleanups = unittest.TestCase.doCleanups
 _original_temporary_directory_init = tempfile.TemporaryDirectory.__init__
+
+# SQLite 临时文件走 TMP/TEMP，不探测可写性；受限环境里该目录不可写会让
+# 大语句报 SQLITE_CANTOPEN。为测试进程统一指向可写目录，裸连接同样受益。
+_sqlite_temp = tempfile.TemporaryDirectory(prefix='pytest-sqlite-temp-')
+os.environ['TMP'] = os.environ['TEMP'] = _sqlite_temp.name
+tempfile.tempdir = None
 
 
 def _do_cleanups(self):
