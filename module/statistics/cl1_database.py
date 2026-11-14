@@ -28,6 +28,9 @@ YELLOW_COIN_EXACT_HOURS = 6
 SIREN_DEVICE_ENTRY_LIMIT = 5000
 # 科研掉落条目的月度上限；更早的按写入顺序截断。
 RESEARCH_DROP_ENTRY_LIMIT = 5000
+# 委托收益与钻石委托归档条目的月度上限；更早的按写入顺序截断。
+COMMISSION_INCOME_ENTRY_LIMIT = 5000
+GEM_COMMISSION_ENTRY_LIMIT = 5000
 
 
 def _field_bit(fields, name):
@@ -1722,33 +1725,101 @@ class Cl1Database:
         }
         removed = None
         with self._stats_transaction() as conn:
-            read_months = months if gem_duration is not None else months[:1]
-            data = {month: self._get_stats_in_connection(conn, instance, month) for month in read_months}
-            entries = data[months[0]].get("commission_income_entries", [])
-            entries.append(entry)
-            data[months[0]]["commission_income_entries"] = entries[-5000:]
-            changed = {months[0]}
             if gem_duration is not None:
-                for commission in self._running_commissions_from_months(data, months):
-                    if commission.get("duration") != gem_duration:
-                        continue
-                    try:
-                        finish_time = datetime.fromisoformat(commission["finish_time"])
-                    except (KeyError, TypeError, ValueError):
-                        logger.warning(f"钻石委托完成时间无效，跳过结算: {commission}")
-                        continue
-                    if finish_time > completed_at:
-                        continue
-                    removed, source_month = self._settle_running_in_months(
-                        data, months, now, items.get("Gem", 0),
-                        name=commission.get("name"), duration_hour=gem_duration,
-                        create_time=commission.get("create_time"),
-                    )
-                    if source_month is not None:
-                        changed.add(source_month)
-                    break
-            self._save_commission_months(conn, instance, data, months, changed)
+                removed = self._settle_commission_fast(conn, instance, months, now, completed_at,
+                                                       gem_duration, items.get("Gem", 0))
+            self._record_commission_income(conn, instance, months[0], entry)
         return removed
+
+    def _record_commission_income(self, conn, instance: str, month: str, entry: Dict[str, Any]) -> None:
+        """委托收益 O(1) 增量写：单行追加（物品与截图落子表）、超限截断。
+
+        此前每次结算都整月读改写并重插全部收益条目，代价随月内条目线性增长。
+        """
+        from module.persistence.snapshots import FAMILIES, save_children, save_row
+        register_instance(conn, instance)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 17)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM commission_income WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        row_id = save_row(conn, 'commission_income', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                          entry, FAMILIES['commission_income_entries'][1],
+                          {'instance': instance, 'month': month}, entry=True)
+        save_children(conn, 'commission_income', row_id, entry, {'instance': instance, 'month': month})
+        if ordinal + 1 > COMMISSION_INCOME_ENTRY_LIMIT:
+            cutoff = ordinal + 1 - COMMISSION_INCOME_ENTRY_LIMIT
+            trimmed = conn.execute(
+                'SELECT id, compat_value_set_id FROM commission_income WHERE instance=? AND month=? AND ordinal<?',
+                (instance, month, cutoff)).fetchall()
+            conn.executemany('DELETE FROM commission_income_items WHERE income_id=?', [(row[0],) for row in trimmed])
+            conn.executemany('DELETE FROM commission_income_screenshots WHERE income_id=?',
+                             [(row[0],) for row in trimmed])
+            conn.execute('DELETE FROM commission_income WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, cutoff))
+            conn.executemany('DELETE FROM typed_value_sets WHERE id=? AND instance=? AND month=?',
+                             [(row[1], instance, month) for row in trimmed if row[1] is not None])
+
+    def _settle_commission_fast(self, conn, instance: str, months, now, completed_at,
+                                gem_duration: int, reward: int) -> Optional[Dict[str, Any]]:
+        """钻石委托增量结算：小列表内存匹配、源月单行删除、当前月归档追加。
+
+        候选沿上月优先去重并按完成时间排序，与文档路径的选取语义一致；
+        增量路径不重排运行列表的存储序，后续匹配仍会先排序。
+        """
+        candidates = []
+        seen = set()
+        for month in reversed(months):
+            for row in conn.execute(
+                    'SELECT id, ordinal, name, duration_hours, created_at, finishes_at FROM running_gem_commissions '
+                    'WHERE instance=? AND month=?', (instance, month)):
+                identity = (row['name'], row['created_at'])
+                if identity not in seen:
+                    seen.add(identity)
+                    candidates.append((month, row))
+        candidates.sort(key=lambda item: item[1]['finishes_at'] or '')
+        for month, row in candidates:
+            if row['duration_hours'] != gem_duration:
+                continue
+            try:
+                finish_time = datetime.fromisoformat(row['finishes_at'])
+            except (KeyError, TypeError, ValueError):
+                logger.warning(f"钻石委托完成时间无效，跳过结算: {dict(row)}")
+                continue
+            if finish_time > completed_at:
+                continue
+            # 三字段精确匹配沿用当前月优先；IS 同时支持取值为空的旧条目。
+            for source_month in months:
+                removed_row = conn.execute(
+                    'SELECT id, name, duration_hours, created_at, finishes_at FROM running_gem_commissions '
+                    'WHERE instance=? AND month=? AND name IS ? AND duration_hours IS ? AND created_at IS ? LIMIT 1',
+                    (instance, source_month, row['name'], gem_duration, row['created_at'])).fetchone()
+                if removed_row is not None:
+                    conn.execute('DELETE FROM running_gem_commissions WHERE id=?', (removed_row['id'],))
+                    self._append_gem_commission_entry_fast(conn, instance, months[0], removed_row['duration_hours'],
+                                                           reward, now)
+                    return {'name': removed_row['name'], 'duration': removed_row['duration_hours'],
+                            'create_time': removed_row['created_at'], 'finish_time': removed_row['finishes_at']}
+        return None
+
+    def _append_gem_commission_entry_fast(self, conn, instance: str, month: str, duration_hour, reward: int, now):
+        """钻石委托归档 O(1) 增量写：单行追加、超限截断（无子表与兼容值）。"""
+        from module.persistence.snapshots import FAMILIES, save_row
+        entry = {
+            "ts": now.isoformat(),
+            "duration": self._coerce_int(duration_hour),
+            "reward": self._coerce_int(reward),
+            "success": self._coerce_int(reward) > 0,
+        }
+        self._ensure_month_row(conn, instance, month, 1 << 19)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM gem_commission_history WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'gem_commission_history', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['gem_commission_entries'][1], {'instance': instance, 'month': month}, entry=True)
+        if ordinal + 1 > GEM_COMMISSION_ENTRY_LIMIT:
+            conn.execute('DELETE FROM gem_commission_history WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, ordinal + 1 - GEM_COMMISSION_ENTRY_LIMIT))
 
     def get_commission_reward_stats(self, instance: str):
         """

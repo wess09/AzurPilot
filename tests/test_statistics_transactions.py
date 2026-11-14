@@ -533,6 +533,72 @@ class TestResearchDropRecords(unittest.TestCase):
         self.assertEqual(entries[-1]["imgid"], "new.png")
 
 
+class TestCommissionIncomeRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+
+    def test_income_appends_with_items_and_screenshots(self):
+        self.db.add_commission_income("test", {"Cube": 2}, commission_count=1, screenshots=["log/a.png"])
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["commission_income_entries"], [
+            {"ts": NOW.isoformat(), "items": {"Cube": 2}, "commission_count": 1, "screenshots": ["log/a.png"]}])
+
+    def test_income_settles_due_gem_commission_and_archives_reward(self):
+        self.db.add_running_gem_commission("test", {
+            "name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+            "finish_time": "2026-01-01T06:00:00"})
+        removed = self.db.add_commission_income("test", {"Gem": 5, "Cube": 2}, gem_duration=8, completed_at=NOW)
+        self.assertEqual(removed, {"name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+                                   "finish_time": "2026-01-01T06:00:00"})
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["running_gem_commissions"], [])
+        self.assertEqual(stats["gem_commission_entries"], [
+            {"ts": NOW.isoformat(), "duration": 8, "reward": 5, "success": True}])
+        self.assertEqual(len(stats["commission_income_entries"]), 1)
+
+    def test_income_keeps_undue_gem_commission(self):
+        self.db.add_running_gem_commission("test", {
+            "name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+            "finish_time": "2026-01-01T18:00:00"})
+        self.assertIsNone(self.db.add_commission_income("test", {"Gem": 5}, gem_duration=8, completed_at=NOW))
+        stats = self.db.get_stats("test", MONTH)
+        self.assertNotIn("gem_commission_entries", stats)
+        self.assertEqual(len(stats["running_gem_commissions"]), 1)
+
+    def test_income_beyond_monthly_limit_is_trimmed_with_children_and_values(self):
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            set_id = conn.execute("INSERT INTO typed_value_sets(instance, month) VALUES('test', ?)",
+                                  (MONTH,)).lastrowid
+            conn.execute("INSERT INTO typed_value_nodes VALUES(?, 1, NULL, NULL, 0, 'null', NULL, NULL, NULL)",
+                         (set_id,))
+            conn.executemany(
+                "INSERT INTO commission_income(instance, month, ordinal, ts, commission_count, "
+                "entry_kind, field_mask) VALUES('test', ?, ?, ?, 1, 'record', 3)",
+                [(MONTH, ordinal, NOW.isoformat()) for ordinal in range(5000)])
+            conn.execute("UPDATE commission_income SET compat_value_set_id=? "
+                         "WHERE instance='test' AND month=? AND ordinal=0", (set_id, MONTH))
+        self.db.add_commission_income("test", {"Cube": 2}, screenshots=["log/a.png"])
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM commission_income WHERE instance='test' AND month=?",
+                (MONTH,)).fetchone()
+            orphans, children, shots = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM typed_value_sets WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM commission_income_items WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM commission_income_screenshots WHERE instance='test' AND month=?)",
+                (MONTH, MONTH, MONTH)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual((orphans, children, shots), (0, 1, 1))
+
+
 class Cl1SchemaRepairTests(unittest.TestCase):
     """外部工具改坏 cl1_data 唯一键：构造 Cl1Database 即按原结构重建，数据保留、写入恢复。"""
 
