@@ -26,6 +26,8 @@ class PluginService:
     def _connect(self):
         self.directory.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.directory / 'plugins.db', timeout=10)
+        connection.execute('PRAGMA journal_mode=WAL')
+        connection.execute('PRAGMA synchronous=NORMAL')
         connection.execute('''CREATE TABLE IF NOT EXISTS plugins (
             id TEXT PRIMARY KEY, manifest TEXT NOT NULL, package BLOB NOT NULL,
             enabled INTEGER NOT NULL DEFAULT 0, revision TEXT NOT NULL

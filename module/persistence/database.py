@@ -235,7 +235,8 @@ class BusinessDatabase:
         try:
             connection.row_factory = sqlite3.Row
             connection.execute('PRAGMA foreign_keys=ON')
-            connection.execute('PRAGMA synchronous=FULL')
+            # WAL 下 NORMAL 不逐笔 fsync：进程崩溃不丢已提交事务，掉电最多丢最后一小段观测数据。
+            connection.execute('PRAGMA synchronous=NORMAL')
             connection.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
             try:
                 connection.database_path = str(self.path)

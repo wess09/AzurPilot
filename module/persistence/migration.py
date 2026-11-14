@@ -656,7 +656,7 @@ def migrate(database):
                 connection.row_factory = sqlite3.Row
                 connection.execute('PRAGMA foreign_keys=ON')
                 connection.execute('PRAGMA journal_mode=WAL')
-                connection.execute('PRAGMA synchronous=FULL')
+                connection.execute('PRAGMA synchronous=NORMAL')
                 create_schema(connection)
                 connection.execute('BEGIN IMMEDIATE')
                 ordered = sorted(sources.items(), key=lambda pair: (pair[1] not in ('statistics', 'cl1', 'storage', 'daily', 'scheduler'), str(pair[0])))
