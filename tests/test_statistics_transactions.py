@@ -8,7 +8,7 @@ import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack, closing, nullcontext
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -365,6 +365,50 @@ class TestStatisticsTransactions(unittest.TestCase):
     def test_explicit_save_stats_remains_a_full_snapshot_replacement(self):
         self.db.save_stats("test", MONTH, {"replacement": True})
         self.assertEqual(self.db.get_stats("test", MONTH), {"replacement": True})
+
+
+class TestLastApLookups(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+
+    def stamp_notification(self, month, ts, value, mask):
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            conn.execute("UPDATE cl1_months SET last_ap_notification_ts=?, "
+                         "last_ap_notification_value=?, last_ap_notification_mask=? "
+                         "WHERE instance='test' AND month=?", (ts, value, mask, month))
+
+    def test_notification_prefers_latest_month_and_falls_back(self):
+        self.db.save_stats("test", "2025-12", {"battle_count": 1})
+        self.stamp_notification("2025-12", "2025-12-31T23:00:00", 40, 3)
+        self.assertEqual(self.db.get_last_ap_notification("test"),
+                         {"ts": "2025-12-31T23:00:00", "ap": 40})
+        self.db.set_last_ap_notification("test", 100)
+        self.assertEqual(self.db.get_last_ap_notification("test")["ap"], 100)
+
+    def test_notification_without_ap_value_skips_that_month(self):
+        self.db.save_stats("test", "2025-12", {"battle_count": 1})
+        self.stamp_notification("2025-12", "2025-12-31T23:00:00", 40, 3)
+        current = datetime.now().strftime("%Y-%m")
+        self.db.save_stats("test", current, {"battle_count": 1})
+        self.stamp_notification(current, "2026-01-01T00:00:00", None, 1)
+        self.assertEqual(self.db.get_last_ap_notification("test"),
+                         {"ts": "2025-12-31T23:00:00", "ap": 40})
+
+    def test_last_snapshot_reads_family_tail_across_months(self):
+        stamp = datetime(2025, 12, 31, 23)
+        self.db.add_ap_snapshot("test", 100, source="cl1", ap_total=1100, observed_at=stamp)
+        self.db.add_ap_snapshot("test", 95, source="cl1", ap_total=1095,
+                                observed_at=stamp + timedelta(minutes=30))
+        self.db.add_ap_snapshot("test", 90, source="cl1", ap_total=1090,
+                                observed_at=datetime.now())
+        last = self.db.get_last_ap_snapshot("test")
+        self.assertEqual(last["ap"], 90)
+        self.assertEqual(last["ap_total"], 1090)
+        self.assertEqual(last["yellow_coin"], 0)
 
 
 class Cl1SchemaRepairTests(unittest.TestCase):

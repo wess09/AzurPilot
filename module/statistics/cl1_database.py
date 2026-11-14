@@ -794,42 +794,27 @@ class Cl1Database:
             logger.warning(f'[统计] 凭证历史补齐失败，下次再试: {error}')
 
     def get_last_ap_snapshot(self, instance: str) -> Optional[Dict[str, Any]]:
-        """获取最近一次行动力快照，优先读取当前月份，必要时回退到历史月份。"""
-        current_month = datetime.now().strftime("%Y-%m")
-        current_data = self.get_stats(instance, current_month)
-        snapshots = current_data.get("ap_snapshots", [])
-        if snapshots:
-            return snapshots[-1]
-
-        rows = self._list_stats_rows(instance=instance)
-        for _, month_key in reversed(rows):
-            if month_key == current_month:
-                continue
-            data = self.get_stats(instance, month_key)
-            snapshots = data.get("ap_snapshots", [])
-            if snapshots:
-                return snapshots[-1]
-
-        return None
+        """获取最近一次行动力快照；按 (month, ordinal) 索引直取最后一行。"""
+        from module.persistence.snapshots import FAMILIES, load_row
+        with self.store.transaction(write=False) as connection:
+            row = connection.execute(
+                'SELECT * FROM action_point_snapshots WHERE instance=? '
+                'ORDER BY month DESC, ordinal DESC LIMIT 1', (instance,)).fetchone()
+            return load_row(connection, row, FAMILIES['ap_snapshots'][1]) if row is not None else None
 
     def get_last_ap_notification(self, instance: str) -> Optional[Dict[str, Any]]:
-        """获取最近一次成功推送时记录的行动力值。"""
-        current_month = datetime.now().strftime("%Y-%m")
-        current_data = self.get_stats(instance, current_month)
-        last_notification = current_data.get("last_ap_notification")
-        if isinstance(last_notification, dict) and "ap" in last_notification:
-            return last_notification
-
-        rows = self._list_stats_rows(instance=instance)
-        for _, month_key in reversed(rows):
-            if month_key == current_month:
-                continue
-            data = self.get_stats(instance, month_key)
-            last_notification = data.get("last_ap_notification")
-            if isinstance(last_notification, dict) and "ap" in last_notification:
-                return last_notification
-
-        return None
+        """获取最近一次成功推送时记录的行动力值；月份行原生列单行查询。"""
+        with self.store.transaction(write=False) as connection:
+            row = connection.execute(
+                'SELECT last_ap_notification_ts, last_ap_notification_value, last_ap_notification_mask '
+                'FROM cl1_months WHERE instance=? AND last_ap_notification_mask & 2 != 0 '
+                'ORDER BY month DESC LIMIT 1', (instance,)).fetchone()
+            if row is None:
+                return None
+            notification = {'ap': row[1]}
+            if row[2] & 1:
+                notification = {'ts': row[0], 'ap': row[1]}
+            return notification
 
     def set_last_ap_notification(self, instance: str, ap_current: int):
         """记录最近一次成功推送时的行动力值。"""
