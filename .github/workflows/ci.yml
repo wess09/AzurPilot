@@ -24,11 +24,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-14 为 Apple Silicon，标签来源见 GitHub runner 文档。
+        # macos-15 为 Apple Silicon，标签来源见 GitHub runner 文档。
         # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
         # 不含 macos-15-intel：llvmlite（numba 依赖）无 macOS x86_64 wheel（上游 0.46 起删除），
         # 源码编译需 LLVM 的 CMake 包，该 runner 上 uv sync 必然失败。
-        os: [ubuntu-latest, windows-latest, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
