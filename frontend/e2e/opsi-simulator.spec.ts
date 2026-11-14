@@ -125,8 +125,8 @@ test('长模拟可在刷新后中断，并可重新运行', async ({page}) => {
   await expect(panel.locator('.simulator-results')).toContainText('485.3')
 })
 
-test('非法利用率显示失败，修正后能重跑，旧版与窄屏布局可操作', async ({page}, testInfo) => {
-  await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'legacy-light'))
+test('非法利用率显示失败，修正后能重跑，现代主题与窄屏布局可操作', async ({page}, testInfo) => {
+  await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'modern-light'))
   await page.goto('/#/i/testpilot/task/OpsiSimulator')
   const panel = page.locator(panelSelector)
   await setNumber(page, 'TimeUseRatio', 0)
@@ -137,7 +137,7 @@ test('非法利用率显示失败，修正后能重跑，旧版与窄屏布局�
   await panel.getByRole('button', {name: '开始模拟', exact: true}).click()
   await expect(panel.getByRole('status')).toContainText('模拟完成')
   await panel.locator('.simulator-results').scrollIntoViewIfNeeded()
-  await page.screenshot({path: testInfo.outputPath('opsi-simulator-legacy.png'), animations: 'disabled'})
+  await page.screenshot({path: testInfo.outputPath('opsi-simulator-modern.png'), animations: 'disabled'})
   await page.setViewportSize({width: 390, height: 844})
   await panel.scrollIntoViewIfNeeded()
   await expect(panel.getByRole('button', {name: '开始模拟', exact: true})).toBeVisible()

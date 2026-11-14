@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import legacyPalette from '../styles/legacy-palette.css?raw'
+import modernPalette from '../styles/modern-palette.css?raw'
 import materialAxis from '../styles/theme-material.css?raw'
-import legacySkin from '../styles/legacy.css?raw'
+import modernSkin from '../styles/modern.css?raw'
 
-const palettes = [legacyPalette]
+const palettes = [modernPalette]
 
 // 有材质轴的家族必须真的声明玻璃取值：漏了就只有普通一种观感，
 // 「玻璃 / 普通」两个选项会长得一模一样，而不会报任何错。
 describe('材质轴取值', () => {
   // 磨砂参数只在一级面声明一次，旧的 --theme-glass-* 键改为委托，避免两套同值 token 以后漂移。
   it('现代主题声明磨砂参数，并将旧键委托给一级面', () => {
-    expect(legacyPalette).toMatch(/--theme-surface-blur:\s*(?!0px)\d/)
-    expect(legacyPalette).toMatch(/--theme-surface-saturation:\s*\d/)
-    expect(legacyPalette).toMatch(/--theme-glass-blur:\s*var\(--theme-surface-blur\)/)
-    expect(legacyPalette).toMatch(/--theme-material-filter:\s*var\(--theme-surface-filter\)/)
-    expect(legacyPalette).toMatch(/--theme-glass:\s*var\(--theme-surface-bg\)/)
+    expect(modernPalette).toMatch(/--theme-surface-blur:\s*(?!0px)\d/)
+    expect(modernPalette).toMatch(/--theme-surface-saturation:\s*\d/)
+    expect(modernPalette).toMatch(/--theme-glass-blur:\s*var\(--theme-surface-blur\)/)
+    expect(modernPalette).toMatch(/--theme-material-filter:\s*var\(--theme-surface-filter\)/)
+    expect(modernPalette).toMatch(/--theme-glass:\s*var\(--theme-surface-bg\)/)
   })
 
   it('普通材质分支把玻璃压回不透明与无滤镜', () => {
@@ -24,7 +24,7 @@ describe('材质轴取值', () => {
   })
 
   it('现代主题引入材质轴样式表', () => {
-    expect(legacySkin).toContain('theme-material.css')
+    expect(modernSkin).toContain('theme-material.css')
   })
 })
 

@@ -58,7 +58,7 @@ test('简约主题跟随系统明暗并恢复已保存的配色', async ({page})
 
   await theme.click()
   await page.getByRole('option', {name: '现代'}).click()
-  await expect(root).toHaveAttribute('data-theme', 'legacy-dark')
+  await expect(root).toHaveAttribute('data-theme', 'modern-dark')
   await expect(root).not.toHaveAttribute('data-color-mode', /.+/)
   await expect(root).toHaveAttribute('data-material', 'glass')
   await expect(root).not.toHaveCSS('--bg', '#0b0b0b')
@@ -71,7 +71,7 @@ test('现代主题浅色与深色的日志在面板内部滚动', async ({page})
   await page.setViewportSize({width: 1440, height: 900})
   await page.goto('/#/i/testpilot/overview')
 
-  for (const theme of ['legacy-light', 'legacy-dark']) {
+  for (const theme of ['modern-light', 'modern-dark']) {
     await page.evaluate(value => localStorage.setItem('azurpilot.theme', value), theme)
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)

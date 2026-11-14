@@ -1,7 +1,7 @@
-/* 侧栏子菜单展开（interpolate-size）+ task-group-button 展开态 + task-picker 下拉（原 legacy.css 553-576） */
+/* 侧栏子菜单展开（interpolate-size）+ task-group-button 展开态 + task-picker 下拉（原 modern.css 553-576） */
 
 
-/* 侧栏任务菜单：分组展开后具体任务往下列（旧版树状格式） */
+/* 侧栏任务菜单：分组展开后具体任务往下列（现代树状格式） */
 .task-group-button:hover .task-group-arrow {transform: none}
 .task-group-button.expanded .task-group-arrow {color: var(--accent); transform: rotate(180deg)}
 /* 内层承载外边距，外层高度从 0 过渡到自身高度，展开折叠才有动画 */
@@ -12,7 +12,7 @@
 .task-submenu-list:not(.expanded) .task-submenu-inner {visibility: hidden}
 @media (prefers-reduced-motion: reduce) {.task-submenu-list {transition: none} .rail-task-item {animation: none !important}}
 
-/* 顶栏的「任务配置」下拉：旧版实例页删掉了页内的分组导航，跨任务跳转放在这里 */
+/* 顶栏的「任务配置」下拉：现代实例页删掉了页内的分组导航，跨任务跳转放在这里 */
 .task-picker {position: relative; flex-shrink: 0}
 .task-picker-trigger {display: inline-flex; align-items: center; gap: 4px; color: var(--muted); font-size: 13px; white-space: nowrap}
 .task-picker-trigger:hover, .task-picker-trigger[aria-expanded='true'] {color: var(--accent)}

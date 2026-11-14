@@ -13,7 +13,7 @@
  * - styles/insights.css       monitor 段：monitor-panel / overview-page
  * - styles/log.css            log-content
  * - styles/feedback.css       modal
- * 主题/皮肤对上述共享类的变量绑定（theme-primitives.css / theme-legacy.css 等）随主题系统生效，不逐处列出。
+ * 主题/皮肤对上述共享类的变量绑定（theme-primitives.css / theme-modern.css 等）随主题系统生效，不逐处列出。
  * 归属说明：已核实全库无 app 侧消费方（仅 MockInstancePreview.test.tsx:4 引用），非 entry 静态树；不 colocate 属保守原则——
  * 无生产消费者时搬迁虽计算等价（生产无元素命中），但会使规则脱离常规加载路径，留 L2 待确认归属。
  */

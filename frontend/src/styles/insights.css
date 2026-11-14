@@ -15,13 +15,13 @@
 .monitor-panel {min-width:0;overflow:hidden;display:flex;flex-direction:column}
 @media(min-width:951px) {
   /* 外壳给确定高度，内层 height:100% 才解析得到；只设 min-height 时整条链按内容长 */
-  .app-shell:where(.modern-shell).mock-preview-shell {height: var(--viewport-height)}
+  .app-shell.mock-preview-shell {height: var(--viewport-height)}
   /* 网格项的最小尺寸默认取内容高，归零后才受外壳高度约束 */
-  .app-shell:where(.modern-shell).mock-preview-shell > .main-shell:where(.modern-shell *) {min-height: 0}
+  .app-shell.mock-preview-shell > .main-shell:where(.app-shell *) {min-height: 0}
   /* 高度取父级 100%：外壳没给确定高度时它会退化成 auto；flex-basis 会盖过 height，所以不参与伸缩 */
   .overview-page {display:flex;flex-direction:column;flex:0 0 auto;height:100%;min-height:0;width:100%}
   /* 总览日志必须按父容器的剩余高度收缩，溢出交给 .log-content 内部滚动
-     basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；旧版总览也会被这条全局规则误伤 */
+     basis:auto 会把日志内容纳入面板基准高度，日志越多面板就越长；总览页也会被这条全局规则误伤 */
   .overview-page .monitor-panel,
   .instance-page-panel > .monitor-panel {flex:1 1 0;height:auto;min-height:0}
 }
@@ -271,7 +271,7 @@
 /* 合并卡横跨整行，卡片的列布局由它内层承载 */
 .resource-grid.resource-fit .resource-merged {grid-column:1/-1}
 .resource-grid.resource-fit .resource-merged > .resource-card-body {display:grid}
-/* 紧凑视图：只收紧间距；旧版主题有更具体的规则，仍按主题的紧凑度走 */
+/* 紧凑视图：只收紧间距；现代主题有更具体的规则，仍按主题的紧凑度走 */
 .resource-grid.resource-dense {gap:4px;margin-bottom:6px}
 /* 字体适应：窄卡片按容器宽度重排字号层级——数值统一收小并各卡一致（覆盖上游窄视口下的固定字号）；
    标题、图标与记录时间上调，总量后缀随数值放大；权重高于各主题的同名规则，避免紧凑主题按自己的尺寸覆盖 */

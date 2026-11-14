@@ -42,13 +42,13 @@ describe('品牌配色生成与校验', () => {
 describe('品牌配色只动强调色', () => {
   const ACCENT_KEYS = ['--accent', '--accent-hover', '--accent-soft', '--secondary', '--secondary-soft', '--theme-on-accent']
 
-  it('材质与旧版用它换色：不碰表面/文字/边框，材质层与底图才不会被冲掉', () => {
+  it('材质与现代主题用它换色：不碰表面/文字/边框，材质层与底图才不会被冲掉', () => {
     const tokens = accentTokens({primary: '#7050a3', secondary: '#a14865'}, 'light')
     expect(Object.keys(tokens).sort()).toEqual([...ACCENT_KEYS].sort())
     expect(tokens['--accent']).toBe('#7050a3')
   })
 
-  it('经典主题的标准中性强调色在深浅色模式下均符合 WCAG 4.5:1 对比度标准', () => {
+  it('现代主题的标准中性强调色在深浅色模式下均符合 WCAG 4.5:1 对比度标准', () => {
     const light = stockBrands.light
     const dark = stockBrands.dark
     expect(light.primary).toBe('#262626')

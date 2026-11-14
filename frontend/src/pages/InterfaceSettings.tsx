@@ -36,7 +36,7 @@ export function InterfaceSettings() {
   const minimal = theme === 'minimal'
 
   return <>
-    <h1 className="legacy-sr-title">{ui('nav.interface')}</h1>
+    <h1 className="modern-sr-title">{ui('nav.interface')}</h1>
     <div className="settings-page">
       <SettingsGroup title={ui('settings.theme')}>
         <div className="field-row">
@@ -44,10 +44,10 @@ export function InterfaceSettings() {
             <label htmlFor="ui-theme">{ui('settings.theme')}</label>
           </div>
           <div className="field-control">
-            <Select id="ui-theme" value={minimal ? 'minimal' : 'legacy'} onChange={event => {
-              setTheme(event.target.value === 'minimal' ? 'minimal' : resolvedMode === 'dark' ? 'legacy-dark' : 'legacy-light')
+            <Select id="ui-theme" value={minimal ? 'minimal' : 'modern'} onChange={event => {
+              setTheme(event.target.value === 'minimal' ? 'minimal' : resolvedMode === 'dark' ? 'modern-dark' : 'modern-light')
             }}>
-              <option value="legacy">{ui('settings.familyLegacy')}</option>
+              <option value="modern">{ui('settings.familyModern')}</option>
               <option value="minimal">{ui('settings.themeMinimal')}</option>
             </Select>
           </div>
@@ -69,7 +69,7 @@ export function InterfaceSettings() {
               <label htmlFor="ui-mode">{ui('settings.mode')}</label>
             </div>
             <div className="field-control">
-              <Select id="ui-mode" value={resolvedMode} onChange={event => setTheme(event.target.value === 'dark' ? 'legacy-dark' : 'legacy-light')}>
+              <Select id="ui-mode" value={resolvedMode} onChange={event => setTheme(event.target.value === 'dark' ? 'modern-dark' : 'modern-light')}>
                 <option value="light">{ui('settings.themeLight')}</option>
                 <option value="dark">{ui('settings.themeDark')}</option>
               </Select>

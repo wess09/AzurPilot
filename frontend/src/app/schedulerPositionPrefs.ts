@@ -1,5 +1,5 @@
 /**
- * @fileoverview 旧版总览页调度器放置位置（左侧或右侧）偏好管理与持久化。
+ * @fileoverview 总览页页调度器放置位置（左侧或右侧）偏好管理与持久化。
  */
 
 import { prefStore } from './prefStore'

@@ -75,7 +75,7 @@ test('从 WebUI 安装主题和功能包并跨浏览器恢复', async ({page, br
   // The E2E server intercepts the host RPC and prevents real game actions.
   await expect(page.getByText('浏览器测试服务不会执行游戏任务')).toBeVisible()
   await page.goto('/#/i/testpilot/task/Guild')
-  await expect(page.locator('.task-config-legacy')).toBeVisible()
+  await expect(page.locator('.task-config-modern')).toBeVisible()
   await navigation.getByRole('button', {name: '插件', exact: true}).click()
   await expect(page.getByRole('heading', {name: '已安装插件'})).toBeVisible()
 })

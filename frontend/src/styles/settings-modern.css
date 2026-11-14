@@ -1,37 +1,37 @@
-/* 任务设置三列网格 + 全局设置页 + 设置卡压平（原 legacy.css 1651-1754） */
+/* 任务设置三列网格 + 全局设置页 + 设置卡压平（原 modern.css 1651-1754） */
 /* 任务设置页：目录列 + 调度器列（2026-11）
    目录与调度器各自独立成列，不堆在同一栏里。
    目录常驻设置区右侧；调度器独占另一列，停靠边与显隐来自界面设置
    （schedulerPositionPrefs / railPrefs）。两列都按内容收高，不拉满整页 */
 @media (min-width: 951px) {
-  .task-config-page.task-config-legacy {
-    grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width)) var(--legacy-rail-width, 280px);
+  .task-config-page.task-config-modern {
+    grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width)) var(--modern-rail-width, 280px);
   }
-  .task-config-page.task-config-legacy .task-config-settings {grid-column: 1; grid-row: 1}
-  .task-config-page.task-config-legacy .task-config-directory {grid-column: 2; grid-row: 1; min-width: 0; align-self: start}
+  .task-config-page.task-config-modern .task-config-settings {grid-column: 1; grid-row: 1}
+  .task-config-page.task-config-modern .task-config-directory {grid-column: 2; grid-row: 1; min-width: 0; align-self: start}
   /* 调度器列与总览页同高层：占满整列高度，任务列表在列内滚动 */
-  .task-config-page.task-config-legacy .task-config-rail-slot {grid-column: 3; grid-row: 1; align-self: stretch}
+  .task-config-page.task-config-modern .task-config-rail-slot {grid-column: 3; grid-row: 1; align-self: stretch}
   /* 拖拽把手挂在 wrap 上，wrap 必须撑满列高，rail 才能 100% 铺满 */
-  .task-config-page.task-config-legacy .task-config-rail-slot > .instance-page-rail-wrap {flex: 1 1 0; min-height: 0}
+  .task-config-page.task-config-modern .task-config-rail-slot > .instance-page-rail-wrap {flex: 1 1 0; min-height: 0}
   /* 目录列直接挂 instance-page-rail：--rail-panel-* 那一套材质（底色、玻璃滤镜、
      投影、圆角、内边距）由同一个类提供，普通/玻璃/暗色主题自动同步，不另写一套。
      只把描边压成透明，并把标题行的旧 margin 交给面板自带的 gap */
-  .task-config-page.task-config-legacy .task-config-directory {border-color: transparent}
-  .task-config-page.task-config-legacy .task-config-directory .rail-section-heading {margin-bottom: 0}
+  .task-config-page.task-config-modern .task-config-directory {border-color: transparent}
+  .task-config-page.task-config-modern .task-config-directory .rail-section-heading {margin-bottom: 0}
   /* 调度器停靠左侧：整列移到设置区左边，目录仍在最右 */
-  .task-config-page.task-config-legacy.rail-left {
-    grid-template-columns: var(--legacy-rail-width, 280px) minmax(0, 1fr) min(268px, var(--right-rail-width));
+  .task-config-page.task-config-modern.rail-left {
+    grid-template-columns: var(--modern-rail-width, 280px) minmax(0, 1fr) min(268px, var(--right-rail-width));
   }
-  .task-config-page.task-config-legacy.rail-left .task-config-rail-slot {grid-column: 1; grid-row: 1}
-  .task-config-page.task-config-legacy.rail-left .task-config-settings {grid-column: 2; grid-row: 1}
-  .task-config-page.task-config-legacy.rail-left .task-config-directory {grid-column: 3; grid-row: 1}
+  .task-config-page.task-config-modern.rail-left .task-config-rail-slot {grid-column: 1; grid-row: 1}
+  .task-config-page.task-config-modern.rail-left .task-config-settings {grid-column: 2; grid-row: 1}
+  .task-config-page.task-config-modern.rail-left .task-config-directory {grid-column: 3; grid-row: 1}
   /* 关掉调度器列：目录跟上，不留空轨 */
-  .task-config-page.task-config-legacy.rail-hidden {
+  .task-config-page.task-config-modern.rail-hidden {
     grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width));
   }
-  .task-config-page.task-config-legacy.rail-hidden .task-config-settings {grid-column: 1}
-  .task-config-page.task-config-legacy.rail-hidden .task-config-directory {grid-column: 2}
-  .task-config-page.task-config-legacy.rail-hidden .task-config-rail-slot {display: none}
+  .task-config-page.task-config-modern.rail-hidden .task-config-settings {grid-column: 1}
+  .task-config-page.task-config-modern.rail-hidden .task-config-directory {grid-column: 2}
+  .task-config-page.task-config-modern.rail-hidden .task-config-rail-slot {display: none}
 }
 
 /* —— 窄屏自动折叠（951px 以上的两档降级，2026-11-13）——
@@ -42,22 +42,22 @@
    （1440/1600）之下，不碰测试；与 TaskConfig 的 useFoldFlag 查询串保持同步。 */
 @media (min-width: 951px) and (max-width: 1319px) {
   /* 第一档：目录收起，栅格退成 设置+调度器（rail-left 时调度器仍在左） */
-  .task-config-page.task-config-legacy {
-    grid-template-columns: minmax(0, 1fr) var(--legacy-rail-width, 280px);
+  .task-config-page.task-config-modern {
+    grid-template-columns: minmax(0, 1fr) var(--modern-rail-width, 280px);
   }
-  .task-config-page.task-config-legacy .task-config-settings {grid-column: 1; grid-row: 1}
-  .task-config-page.task-config-legacy .task-config-rail-slot {grid-column: 2; grid-row: 1}
-  .task-config-page.task-config-legacy.rail-left {
-    grid-template-columns: var(--legacy-rail-width, 280px) minmax(0, 1fr);
+  .task-config-page.task-config-modern .task-config-settings {grid-column: 1; grid-row: 1}
+  .task-config-page.task-config-modern .task-config-rail-slot {grid-column: 2; grid-row: 1}
+  .task-config-page.task-config-modern.rail-left {
+    grid-template-columns: var(--modern-rail-width, 280px) minmax(0, 1fr);
   }
-  .task-config-page.task-config-legacy.rail-left .task-config-rail-slot {grid-column: 1; grid-row: 1}
-  .task-config-page.task-config-legacy.rail-left .task-config-settings {grid-column: 2; grid-row: 1}
-  .task-config-page.task-config-legacy .task-config-directory {display: none}
+  .task-config-page.task-config-modern.rail-left .task-config-rail-slot {grid-column: 1; grid-row: 1}
+  .task-config-page.task-config-modern.rail-left .task-config-settings {grid-column: 2; grid-row: 1}
+  .task-config-page.task-config-modern .task-config-directory {display: none}
   /* 手动隐藏过调度器栏的（界面设置），这一档就只剩参数卡一列，别留 280px 空轨 */
-  .task-config-page.task-config-legacy.rail-hidden {
+  .task-config-page.task-config-modern.rail-hidden {
     grid-template-columns: minmax(0, 1fr);
   }
-  .task-config-page.task-config-legacy.rail-hidden .task-config-rail-slot {display: none}
+  .task-config-page.task-config-modern.rail-hidden .task-config-rail-slot {display: none}
   /* 折叠后的边缘浮标：贴边的窄竖签，主题材质跟随 --theme-plate-* */
   .rail-fold-chip {
     position: fixed;
@@ -83,10 +83,10 @@
   .rail-fold-chip-rail.chip-left {left: 0; border-left-width: 0; border-radius: 0 10px 10px 0}
   .rail-fold-chip-rail.chip-right {right: 0; left: auto; top: calc(50% + 72px); border-right-width: 0; border-radius: 10px 0 0 10px}
   /* 目录抽屉：从右缘滑出浮在内容上（display:none→flex 会重放入场动画） */
-  .task-config-page.task-config-legacy.pop-directory .task-config-directory {
+  .task-config-page.task-config-modern.pop-directory .task-config-directory {
     display: flex;
     position: fixed;
-    top: calc(var(--topbar-height, 58px) + var(--legacy-page-nav-height, 42px) + 10px);
+    top: calc(var(--topbar-height, 58px) + var(--modern-page-nav-height, 42px) + 10px);
     bottom: 12px;
     right: 12px;
     width: min(268px, 86vw);
@@ -101,34 +101,34 @@
     background: rgb(16 36 55 / 0.18);
   }
   @media (prefers-reduced-motion: reduce) {
-    .task-config-page.task-config-legacy.pop-directory .task-config-directory {animation: none}
+    .task-config-page.task-config-modern.pop-directory .task-config-directory {animation: none}
   }
 }
 @media (min-width: 951px) and (max-width: 1089px) {
   /* 第二档：调度器栏也收起，只剩参数卡一列（rail-left/rail-hidden 的栅格一并覆盖） */
-  .task-config-page.task-config-legacy,
-  .task-config-page.task-config-legacy.rail-left,
-  .task-config-page.task-config-legacy.rail-hidden {
+  .task-config-page.task-config-modern,
+  .task-config-page.task-config-modern.rail-left,
+  .task-config-page.task-config-modern.rail-hidden {
     grid-template-columns: minmax(0, 1fr);
   }
-  .task-config-page.task-config-legacy .task-config-settings {grid-column: 1; grid-row: 1}
-  .task-config-page.task-config-legacy .task-config-directory,
-  .task-config-page.task-config-legacy .task-config-rail-slot {display: none}
+  .task-config-page.task-config-modern .task-config-settings {grid-column: 1; grid-row: 1}
+  .task-config-page.task-config-modern .task-config-directory,
+  .task-config-page.task-config-modern .task-config-rail-slot {display: none}
   /* 调度器抽屉：贴停靠边滑出；固定定位下拖拽把手没意义，藏掉 */
-  .task-config-page.task-config-legacy.pop-rail .task-config-rail-slot {
+  .task-config-page.task-config-modern.pop-rail .task-config-rail-slot {
     display: flex;
     position: fixed;
-    top: calc(var(--topbar-height, 58px) + var(--legacy-page-nav-height, 42px) + 10px);
+    top: calc(var(--topbar-height, 58px) + var(--modern-page-nav-height, 42px) + 10px);
     bottom: 12px;
-    width: min(var(--legacy-rail-width, 280px), 86vw);
+    width: min(var(--modern-rail-width, 280px), 86vw);
     z-index: 60;
     box-shadow: 0 18px 50px rgb(16 36 55 / 0.25);
   }
-  .task-config-page.task-config-legacy.pop-rail.rail-left .task-config-rail-slot {left: 12px}
-  .task-config-page.task-config-legacy.pop-rail:not(.rail-left) .task-config-rail-slot {right: 12px}
-  .task-config-page.task-config-legacy.pop-rail .legacy-rail-resize-handle {display: none}
+  .task-config-page.task-config-modern.pop-rail.rail-left .task-config-rail-slot {left: 12px}
+  .task-config-page.task-config-modern.pop-rail:not(.rail-left) .task-config-rail-slot {right: 12px}
+  .task-config-page.task-config-modern.pop-rail .modern-rail-resize-handle {display: none}
   @media (prefers-reduced-motion: reduce) {
-    .task-config-page.task-config-legacy.pop-rail .task-config-rail-slot {animation: none}
+    .task-config-page.task-config-modern.pop-rail .task-config-rail-slot {animation: none}
   }
 }
 /* 抽屉态的关闭钮：目录的落在标题行右端，调度器的浮在面板右上角 */
@@ -162,7 +162,7 @@
    在玻璃材质下就成了一张白卡里再套一张白卡，跟调度器那种单张面板完全不是一回事。
    这里把它压成一层：底色/描边/投影/滤镜全部取 --rail-panel-*，
    普通材质是实色白面，玻璃材质是同一档磨砂 */
-.task-config-page.task-config-legacy .config-group,
+.task-config-page.task-config-modern .config-group,
 .settings-page .config-group {
   padding: 0;
   border: 1px solid var(--rail-panel-edge);
@@ -172,29 +172,29 @@
   backdrop-filter: var(--rail-panel-filter);
   box-shadow: var(--rail-panel-shadow);
 }
-.task-config-page.task-config-legacy .config-group::before,
+.task-config-page.task-config-modern .config-group::before,
 .settings-page .config-group::before {display: none}
 /* 远程配对卡：内部自带分区（标头/会话/设备列表），卡片自己承担内边距、标头不再吃行级 padding；
    不抬优先级的话，上面这条 padding: 0 会把它压成内容贴边、底部裁切 */
 .settings-page .config-group.remote-pairing {padding: 24px 28px}
 .settings-page .config-group.remote-pairing > .panel-heading {padding: 0}
 /* 分组标题：与面板里的节标题同节奏，比正文大一点、比页面标题小得多 */
-.task-config-page.task-config-legacy .config-group > .panel-heading,
+.task-config-page.task-config-modern .config-group > .panel-heading,
 .settings-page .config-group > .panel-heading {padding: 16px 18px 10px}
-.task-config-page.task-config-legacy .config-group > .panel-heading h2,
+.task-config-page.task-config-modern .config-group > .panel-heading h2,
 .settings-page .config-group > .panel-heading h2 {font-size: 15px; font-weight: 600; letter-spacing: .1px}
-/* 配置管理页实例卡（.config-card）：legacy 把 .config-group 的 padding 压成了 0（旧行自带头部/行内边距），
+/* 配置管理页实例卡（.config-card）：modern 把 .config-group 的 padding 压成了 0（旧行自带头部/行内边距），
    这张卡改为整体分区（头部/元信息/任务/动作条），容器要按双类抬优先级补回呼吸内边距；
    网格间距由 .config-grid 的 gap 负责，基底的 margin-bottom 归零防双倍间距 */
 .settings-page .config-group.config-card {display: flex; flex-direction: column; padding: 16px 18px 14px; gap: 10px; margin-bottom: 0}
 /* 行距收紧一档，分隔线仍只在行与行之间 */
-.task-config-page.task-config-legacy .config-group .field-row,
+.task-config-page.task-config-modern .config-group .field-row,
 .settings-page .config-group .field-row {padding: 11px 18px}
 /* 带说明的行：控件跟标签首行对齐，别再垂直居中飘在几行文字中间 */
-.task-config-page.task-config-legacy .config-group .field-row:has(.field-label p),
+.task-config-page.task-config-modern .config-group .field-row:has(.field-label p),
 .settings-page .config-group .field-row:has(.field-label p) {align-items: flex-start}
 /* 任务说明卡同理：一张面，不叠内贴片 */
-.task-config-page.task-config-legacy .task-help-panel {
+.task-config-page.task-config-modern .task-help-panel {
   border: 1px solid var(--rail-panel-edge);
   border-radius: 16px;
   background: var(--rail-panel-bg);
@@ -202,4 +202,4 @@
   backdrop-filter: var(--rail-panel-filter);
   box-shadow: var(--rail-panel-shadow);
 }
-.task-config-page.task-config-legacy .task-help-panel::before {display: none}
+.task-config-page.task-config-modern .task-help-panel::before {display: none}

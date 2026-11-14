@@ -16,14 +16,16 @@ describe('主题偏好恢复', () => {
   // 旧版的皮肤取值已不在现存的 Theme 类型里，这个矩阵按 migrateTheme 的规则钉死它们的去向，
   // 防止升级后的老用户主题显示错乱。程序员配色（terminal）是旧固定模式里唯一的深色档。
   it.each([
-    ['dark', 'auto', 'legacy-dark'],
-    ['legacy-dark', 'auto', 'legacy-dark'],
+    ['dark', 'auto', 'modern-dark'],
+    ['legacy-dark', 'auto', 'modern-dark'],
+    ['legacy-light', 'auto', 'modern-light'],
+    ['modern-dark', 'auto', 'modern-dark'],
     ['minimal', 'dark', 'minimal'],
-    ['extreme', 'terminal', 'legacy-dark'],
-    ['extreme', 'retro-blue', 'legacy-light'],
+    ['extreme', 'terminal', 'modern-dark'],
+    ['extreme', 'retro-blue', 'modern-light'],
     ['minimal', 'auto', 'minimal'],
-    ['light', 'dark', 'legacy-light'],
-    ['unknown', 'dark', 'legacy-light'],
+    ['light', 'dark', 'modern-light'],
+    ['unknown', 'dark', 'modern-light'],
   ])('把 %s / %s 恢复为 %s', (theme, colorMode, expected) => {
     storage({'azurpilot.theme': theme, 'azurpilot.color-mode': colorMode})
     expect(readThemePreference().theme).toBe(expected)
@@ -48,7 +50,7 @@ describe('主题偏好恢复', () => {
       'azurpilot.palette': 'custom:missing',
       'azurpilot.custom-palettes': '{损坏的数据',
     })
-    const expected = {theme: 'legacy-light', material: 'plain', colorMode: 'auto', palette: 'ocean', customPalettes: []}
+    const expected = {theme: 'modern-light', material: 'plain', colorMode: 'auto', palette: 'ocean', customPalettes: []}
     expect(readThemePreference()).toEqual(expected)
     vi.stubGlobal('localStorage', {getItem: () => {throw new Error('存储不可用')}})
     expect(readThemePreference()).toEqual(expected)

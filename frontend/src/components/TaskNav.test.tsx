@@ -1,5 +1,5 @@
 /**
- * @fileoverview TaskNavTree 侧栏导航树的渲染契约：分组归属、常驻子菜单与旧版主题行为；
+ * @fileoverview TaskNavTree 侧栏导航树的渲染契约：分组归属、常驻子菜单与现代主题行为；
  * 末尾附 isDesktopDevice 的设备判定测试。
  */
 import { describe, expect, it } from 'vitest'
@@ -66,7 +66,7 @@ function contextWith(theme: Theme): AppContextValue {
   }
 }
 
-function render(path: string, props: {defaultOpenKey?: string} = {}, theme: Theme = 'legacy-light') {
+function render(path: string, props: {defaultOpenKey?: string} = {}, theme: Theme = 'modern-light') {
   return renderToStaticMarkup(
     <AppContext.Provider value={contextWith(theme)}>
       <MemoryRouter initialEntries={[path]}>
@@ -79,7 +79,7 @@ function render(path: string, props: {defaultOpenKey?: string} = {}, theme: Them
 }
 
 describe('TaskNav 导航组件', () => {
-  it.each(['legacy-light', 'legacy-dark'] as Theme[])('在 %s 主题中将智能换船与舰船数据放在舰队管理', theme => {
+  it.each(['modern-light', 'modern-dark'] as Theme[])('在 %s 主题中将智能换船与舰船数据放在舰队管理', theme => {
     const html = render('/i/default/task/FleetAnalysis', {defaultOpenKey: 'FleetManagement'}, theme)
     expect(html).toContain('舰队管理')
     expect(html).toContain('task-group-button expanded active')
@@ -117,7 +117,7 @@ describe('TaskNav 导航组件', () => {
     expect(html).not.toContain('task-group-badge')
   })
 
-  it('旧版主题展开分组后，具体任务往下列在侧栏里', () => {
+  it('现代主题展开分组后，具体任务往下列在侧栏里', () => {
     const html = render('/i/default/overview', {defaultOpenKey: 'Alas'})
 
     expect(html).toContain('task-group-button expanded')
@@ -132,12 +132,12 @@ describe('TaskNav 导航组件', () => {
     expect(html).toContain('href="/i/default/task/General"')
     expect(html).toContain('href="/i/default/task/Restart"')
 
-    // 旧版是树状内联列表，不再有浮出的二级面板。
+    // 现代是树状内联列表，不再有浮出的二级面板。
     expect(html).not.toContain('task-submenu-flyout')
     expect(html).not.toContain('aria-haspopup="menu"')
   })
 
-  it('旧版主题处于某任务页时，所属分组自动展开并高亮', () => {
+  it('现代主题处于某任务页时，所属分组自动展开并高亮', () => {
     const html = render('/i/default/task/Main')
 
     // Main 任务属于 Farm 分组（出击）。

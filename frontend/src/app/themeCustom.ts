@@ -10,6 +10,8 @@ import type { Family } from './theme'
 export type FamilyCustom = {params: Record<string, number>; palette?: Palette}
 
 const knobsKey = (family: Family) => `azurpilot.custom.${family}`
+/** 大类更名前的旋钮键：modern 首次读取时迁移，避免用户自定义外观丢失。 */
+const legacyKnobsKey = (family: Family) => (family === 'modern' ? 'azurpilot.custom.legacy' : undefined)
 /** 自定义配色的定义是全局资产，只有「选哪套」按大类各存。 */
 const customPalettesKey = 'azurpilot.custom-palettes'
 
@@ -49,9 +51,18 @@ function readParams(input: Record<string, unknown>) {
 /** 读取某大类的自定义参数与品牌配色：记录损坏或缺键时按默认态（空参数）处理，并把旧版全局旋钮折算进来。 */
 export function readFamilyCustom(family: Family): FamilyCustom {
   try {
-    const raw = JSON.parse(localStorage.getItem(knobsKey(family)) ?? '{}') as Record<string, unknown>
-    if (!raw || typeof raw !== 'object') return {params: {}}
-    return {params: readParams(raw), ...(isPalette(raw.palette) ? {palette: raw.palette} : {})}
+    let raw = localStorage.getItem(knobsKey(family))
+    const fallbackKey = legacyKnobsKey(family)
+    if (raw == null && fallbackKey) {
+      raw = localStorage.getItem(fallbackKey)
+      if (raw != null) {
+        localStorage.setItem(knobsKey(family), raw)
+        localStorage.removeItem(fallbackKey)
+      }
+    }
+    const parsed = JSON.parse(raw ?? '{}') as Record<string, unknown>
+    if (!parsed || typeof parsed !== 'object') return {params: {}}
+    return {params: readParams(parsed), ...(isPalette(parsed.palette) ? {palette: parsed.palette} : {})}
   } catch { return {params: {}} }
 }
 
@@ -76,7 +87,7 @@ export function applyFamilyCustom(root: HTMLElement, family: Family, mode: Resol
   }
   if (custom.palette) {
     const palettes2 = readCustomPalettes(localStorage.getItem(customPalettesKey))
-    /* 材质与旧版的表面/文字/边框归主题自己管，品牌配色只换强调色一族。 */
+    /* 材质与现代主题的表面/文字/边框归主题自己管，品牌配色只换强调色一族。 */
     const tokens = accentTokens(paletteColors(custom.palette, palettes2, mode), mode)
     for (const [token, value] of Object.entries(tokens)) {
       if (root.style.getPropertyValue(token) !== value) root.style.setProperty(token, value)

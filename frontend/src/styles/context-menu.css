@@ -1,4 +1,4 @@
-/* 右键菜单域 —— B1 自 components.css:1266-1301 保序拆分，规则文本逐字未改；维持 L2 不做 colocated 搬迁（B3 仲裁记录：.context-menu-item:disabled 与 legacy 层 button:disabled/.button:disabled 存在竞争面，存疑不搬） */
+/* 右键菜单域 —— B1 自 components.css:1266-1301 保序拆分，规则文本逐字未改；维持 L2 不做 colocated 搬迁（B3 仲裁记录：.context-menu-item:disabled 与 modern 层 button:disabled/.button:disabled 存在竞争面，存疑不搬） */
 /* 区域级右键菜单：贴着调用方给的动作，样式跟随主题的面板令牌 */
 .context-menu {
   position: fixed;

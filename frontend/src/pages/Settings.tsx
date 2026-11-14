@@ -23,7 +23,7 @@ export function Settings() {
   const {t, ui} = useApp()
 
   return <>
-    <h1 className="legacy-sr-title">{ui('nav.settings')}</h1>
+    <h1 className="modern-sr-title">{ui('nav.settings')}</h1>
     <div className="settings-page">
       {error && <Alert variant="destructive"><AlertCircle/><AlertDescription>{error}</AlertDescription></Alert>}
       {edits.storageError && <Alert variant="destructive"><AlertCircle/><AlertDescription>{edits.storageError}</AlertDescription></Alert>}

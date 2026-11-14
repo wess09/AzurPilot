@@ -38,7 +38,7 @@ test('生产构建保留高斯模糊且资源图标能够解码', async ({page})
     await expect(page.locator(selector).first()).toHaveCSS('backdrop-filter', filter)
   }
   await expectFilterFrom('.sidebar', '--theme-surface-filter')
-  await expectFilterFrom('.legacy-page-nav', '--theme-surface-filter')
+  await expectFilterFrom('.modern-page-nav', '--theme-surface-filter')
   // 一级面：面板与资源卡都走一级面滤镜。
   await expectFilterFrom('.monitor-panel', '--theme-surface-filter')
   await expectFilterFrom('.resource-card', '--theme-surface-filter')

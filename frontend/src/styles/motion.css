@@ -1,5 +1,5 @@
 /* motion.css —— AzurPilot 全站动效系统
-   由各皮肤（classic / minimal / legacy）在自身条目之后引入，确保覆盖同级规则。
+   由各皮肤（classic / minimal / modern）在自身条目之后引入，确保覆盖同级规则。
    纪律：
    - 只动 transform / opacity / 颜色；不新增 blur 层；
    - 不改 DOM 结构（:has(> …) 选择器依赖直接子级）；
@@ -37,16 +37,16 @@
 
 /* 移动侧栏：用 transform 移入视口，避免逐帧重排 */
 @media (max-width: 950px) {
-  .sidebar:where(.modern-shell *) {
+  .sidebar:where(.app-shell *) {
     left: 0;
     transform: translateX(-230px);
     visibility: hidden;
     transition: transform var(--dur-4) var(--ease-decelerate), visibility var(--dur-4) allow-discrete;
     will-change: transform;
   }
-  .mobile-open .sidebar:where(.modern-shell *) { left: 0; transform: none; visibility: visible }
+  .mobile-open .sidebar:where(.app-shell *) { left: 0; transform: none; visibility: visible }
 
-  .right-rail:where(.modern-shell *) {
+  .right-rail:where(.app-shell *) {
     right: 0;
     opacity: 0;
     transform: translateX(100%);

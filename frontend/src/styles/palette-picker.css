@@ -1,5 +1,5 @@
 /* 调色板域 —— B1 自 components.css:994-1056 保序拆分，规则文本逐字未改；无 tsx 消费者，仅 e2e/themes.spec.ts:27,57 引用，孤儿待确认 */
-/* 配色选择器：四个大类共用，放共享层（材质与旧版没有自己的版本，色板球宽度会塌成 0） */
+/* 配色选择器：四个大类共用，放共享层（材质与现代主题没有自己的版本，色板球宽度会塌成 0） */
 .palette-field {align-items: flex-start}
 .palette-options {display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; border: 0; margin: 0; padding: 0; width: 100%}
 .palette-options legend {position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)}

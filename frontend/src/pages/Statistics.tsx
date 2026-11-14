@@ -203,10 +203,10 @@ export function Statistics() {
     </>}
   </>
 
-  // 旧版版式：整页只放统计内容（不放调度器与任务计划），页名由顶栏居中显示。
+  // 现代版式：整页只放统计内容（不放调度器与任务计划），页名由顶栏居中显示。
   return <>
-    <div className="statistics-legacy">
-      <h1 className="legacy-sr-title">{ui('nav.statistics')}</h1>
+    <div className="statistics-modern">
+      <h1 className="modern-sr-title">{ui('nav.statistics')}</h1>
       {content}
     </div>
   </>

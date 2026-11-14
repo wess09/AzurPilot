@@ -4,7 +4,7 @@
    每条规则相对拆分前位置不变，最终计算样式不变。
    唯一许可的段内位移：原 976-986 行 .announcement-footer/.announcement-external-btn 并入
    announcement.css（四查复核：与 markdown 段类名零交集、无同特异度属性竞争）。
-   legacy.css 第 4 行对 './components.css' 的引用不变，本文件仍是共享组件样式的唯一入口。
+   modern.css 第 4 行对 './components.css' 的引用不变，本文件仍是共享组件样式的唯一入口。
    新组件私有样式走 colocated（与 tsx 同目录同名），共享词汇进对应域文件，见 styles/README.md。 */
 @import './wallpaper.css';
 @import './buttons.css';

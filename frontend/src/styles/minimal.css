@@ -44,7 +44,7 @@
 
 /* 组件级覆盖：外壳取直角，输入框统一描边与焦点环 */
 :root[data-theme='minimal'] {
-  & :is(.sidebar, .topbar, .legacy-page-nav) {border-radius: 0; background: var(--surface)}
+  & :is(.sidebar, .topbar, .modern-page-nav) {border-radius: 0; background: var(--surface)}
   & .instance-tabs {--instance-tab-foot: 0px}
   & .button {font-size: 13px; font-weight: 600}
   & .icon-button {border-radius: var(--theme-radius-control)}

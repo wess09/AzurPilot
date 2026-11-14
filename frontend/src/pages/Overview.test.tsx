@@ -8,7 +8,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { Overview } from './Overview'
 import { AppContext, type AppContextValue } from '../app/context'
 import { translateUi } from '../i18n'
-import { getLayout, setLegacyRailWidth, resetLegacyRailWidth } from '../app/layout'
+import { getLayout, setModernRailWidth, resetModernRailWidth } from '../app/layout'
 import { setSchedulerPosition } from '../app/schedulerPositionPrefs'
 
 // jsdom 没实现 ResizeObserver，而页面挂载的子树会用到；这里给空实现，避免挂载即抛错。
@@ -50,7 +50,7 @@ function createMockContext(): AppContextValue {
     previewEnabled: false,
     setPreviewEnabled: () => {},
 
-    theme: 'legacy-light',
+    theme: 'modern-light',
     setTheme: () => {},
     material: 'glass',
     setMaterial: () => {},
@@ -78,13 +78,13 @@ function renderOverview() {
 describe('Overview 总览页调度器位置与排布', () => {
   beforeEach(() => {
     localStorage.clear()
-    resetLegacyRailWidth()
+    resetModernRailWidth()
     setSchedulerPosition('left')
   })
 
   afterEach(() => {
     cleanup()
-    resetLegacyRailWidth()
+    resetModernRailWidth()
     localStorage.clear()
   })
 
@@ -117,18 +117,18 @@ describe('Overview 总览页调度器位置与排布', () => {
     expect(handle.getAttribute('data-side')).toBe('right')
   })
 
-  it('自定义宽度时传递 --legacy-rail-width 样式变量', async () => {
-    setLegacyRailWidth(340)
+  it('自定义宽度时传递 --modern-rail-width 样式变量', async () => {
+    setModernRailWidth(340)
     renderOverview()
     const grid = await screen.findByRole('heading', { name: 'test-instance' })
       .then(heading => heading.closest('.instance-page-grid'))
 
-    expect(grid?.getAttribute('style')).toContain('--legacy-rail-width: 340px')
+    expect(grid?.getAttribute('style')).toContain('--modern-rail-width: 340px')
   })
 
   it('从 localStorage 恢复用户选择的右侧位置与宽度记忆', async () => {
     localStorage.setItem('azurpilot.layout.scheduler-position', 'right')
-    setLegacyRailWidth(320)
+    setModernRailWidth(320)
 
     renderOverview()
     const grid = await screen.findByRole('heading', { name: 'test-instance' })
@@ -136,9 +136,9 @@ describe('Overview 总览页调度器位置与排布', () => {
 
     expect(grid?.className).toContain('rail-right')
     expect(grid?.getAttribute('data-scheduler-position')).toBe('right')
-    expect(grid?.getAttribute('style')).toContain('--legacy-rail-width: 320px')
+    expect(grid?.getAttribute('style')).toContain('--modern-rail-width: 320px')
     expect(screen.getByRole('separator').getAttribute('data-side')).toBe('right')
-    expect(localStorage.getItem('azurpilot.layout.legacy-rail-width')).toBe('320')
+    expect(localStorage.getItem('azurpilot.layout.rail-width')).toBe('320')
   })
 
   it('运行时动态切换调度器位置时即时响应排布变更', async () => {
@@ -171,7 +171,7 @@ describe('Overview 总览页调度器位置与排布', () => {
 
   it('调度器在右侧时可在总览页直接拖拽调整宽度并双击重置', async () => {
     setSchedulerPosition('right')
-    setLegacyRailWidth(280)
+    setModernRailWidth(280)
     renderOverview()
 
     const handle = await screen.findByRole('separator')
@@ -180,10 +180,10 @@ describe('Overview 总览页调度器位置与排布', () => {
     // 把手在右侧：向左拖 50px 等于把栏加宽 50。
     fireEvent.pointerDown(handle, { button: 0, pointerId: 3, clientX: 600 })
     fireEvent.pointerMove(handle, { pointerId: 3, clientX: 550 })
-    expect(getLayout().legacyRailWidth).toBe(330)
+    expect(getLayout().railWidth).toBe(330)
     fireEvent.pointerUp(handle, { pointerId: 3 })
 
     fireEvent.doubleClick(handle)
-    expect(getLayout().legacyRailWidth).toBeNull()
+    expect(getLayout().railWidth).toBeNull()
   })
 })

@@ -42,14 +42,14 @@ import type { NavigationProps, ShellProps } from '../themes/definition'
  * 样式索引（混合分层 L2：外壳骨架宿主，样式横跨多域文件，无法 colocate）。
  * 外壳骨架类 app-shell / sidebar / topbar / primary-nav 全挂在本文件的 JSX 上，规则分布于：
  * - styles/layout.css           外壳骨架段：app-shell / sidebar / topbar / primary-nav / main-shell / breadcrumb / login-page / connection-banner / mobile-toggle
- * - styles/layout-legacy.css    经典外壳段：legacy-shell 下的 sidebar / topbar / legacy-page-nav / legacy-topbar-* / page-title-heading 视觉隐藏
- * - styles/theme-legacy.css     经典主题段：对 primary-nav / sidebar / topbar / breadcrumb / skip-link 的主题覆写
+ * - styles/layout-modern.css    现代外壳段：modern-shell 下的 sidebar / topbar / modern-page-nav / modern-topbar-* / page-title-heading 视觉隐藏
+ * - styles/theme-modern.css     现代主题段：对 primary-nav / sidebar / topbar / breadcrumb / skip-link 的主题覆写
  * - styles/topbar.css           顶栏域：topbar / app-shell / topbar-actions / filter-active 等顶栏与激活态规则
  * - styles/theme-primitives.css 主题契约消费层：外壳类绑定 --theme-* 变量的段落
  * 其余共享词汇类（button / icon-button / form-stack 等）由 buttons / forms / feedback 等域文件与主题系统统一提供，不逐处列出。
  */
 
-/* 旧版外壳下也要显示居中页名的顶层路由。 */
+/* 现代外壳下也要显示居中页名的顶层路由。 */
 const PRIMARY_NAV_PATHS = ['/announcement', '/updater', '/interface', '/remote', '/configs', '/settings', '/plugins']
 const SETUP_PATH = '/setup'
 
@@ -236,7 +236,7 @@ export function App() {
   }, [subscribedInstance, connection, notify, previewEnabled, stockExchange])
   // 「有可用更新」的角标，这里统一算一次。
   const updateAvailable = Boolean(update.data?.available)
-  // 旧版顶栏的第三列是居中的页面名：实例页写任务名，无实例时写导航项名。
+  // 现代顶栏的第三列是居中的页面名：实例页写任务名，无实例时写导航项名。
   const pageTitle = pluginTitle ?? (instance
     ? currentTask ? currentTaskLabel : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
     : activeSection)
@@ -265,8 +265,8 @@ function ModernShell({children, instance, pageTitle, onCreate, updateAvailable, 
   const base = instance ? '/i/' + encodeURIComponent(instance) : ''
   const currentTask = pathname.match(/\/task\/([^/]+)/)?.[1]
   const pluginManager = pathname === '/plugins'
-  const legacyGlobalShell = PRIMARY_NAV_PATHS.includes(pathname)
-  const legacyShell = Boolean(instance) || legacyGlobalShell
+  const modernGlobalShell = PRIMARY_NAV_PATHS.includes(pathname)
+  const modernShell = Boolean(instance) || modernGlobalShell
   const Navigation = useThemeComponent('Navigation', ModernNavigation)
   const brand = <><Link to="/settings" className="brand-title" aria-label={`AzurPilot ${ui('nav.settings')}`} onClick={closeDrawer}><ProjectLogo className="brand-logo"/><span>AzurPilot</span></Link>{updateAvailable && <Link className="update-notice sidebar-update-notice" to="/updater" aria-label={ui('nav.newVersion')} title={ui('nav.newVersion')}><span>{ui('nav.newBadge')}</span></Link>}</>
   const allowBulkToggle = useIsDesktop() && instances.length > 0
@@ -307,17 +307,17 @@ function ModernShell({children, instance, pageTitle, onCreate, updateAvailable, 
     <InstanceTabs onCreate={onCreate}/>
   </>
   const topbar = <header className="topbar">
-    {legacyShell && <div className="sidebar-brand legacy-topbar-brand"><div className="sidebar-brand-left">{brand}</div></div>}
+    {modernShell && <div className="sidebar-brand modern-topbar-brand"><div className="sidebar-brand-left">{brand}</div></div>}
     <button className="mobile-toggle icon-button" aria-label={ui('nav.open')} onClick={() => setMobileOpen(true)}><Menu size={20}/></button>
-    {legacyShell
-      ? <span className="legacy-topbar-title">{pageTitle}</span>
+    {modernShell
+      ? <span className="modern-topbar-title">{pageTitle}</span>
       : <div className="breadcrumb with-tabs">{tabNav}{currentTask
         ? <Link className="breadcrumb-current" to={`${base}/task/${currentTask}`}><strong>{pageTitle}</strong></Link>
         : pageTitle && <strong className="breadcrumb-current">{pageTitle}</strong>}</div>}
-    {!legacyShell && <TabBarResizeHandle label={ui('nav.tabSize')}/>}
+    {!modernShell && <TabBarResizeHandle label={ui('nav.tabSize')}/>}
   </header>
-  // 旧版在居中页名下方显示实例标签与任务切换器。
-  const pageNav = <div className="legacy-page-nav">
+  // 现代主题在居中页名下方显示实例标签与任务切换器。
+  const pageNav = <div className="modern-page-nav">
     <div className="breadcrumb with-tabs">{tabNav}{currentTask && <TaskSwitcher/>}</div>
     <TabBarResizeHandle label={ui('nav.tabSize')}/>
   </div>
@@ -329,17 +329,17 @@ function ModernShell({children, instance, pageTitle, onCreate, updateAvailable, 
   const PrimaryNavigation = pluginManager ? ModernNavigation : Navigation
   const navigationProps = {instance, onNavigate: closeDrawer, updateAvailable, announcementUnread}
   return <div
-    className={`app-shell modern-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${legacyShell ? 'legacy-shell' : ''} ${legacyGlobalShell ? 'legacy-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
+    className={`app-shell ${layout.sidebarCollapsed ? 'nav-collapsed' : ''} ${hasDockedInspector ? 'has-docked-inspector' : ''} ${currentTask ? 'task-config-shell' : ''} ${modernShell ? 'modern-shell' : ''} ${modernGlobalShell ? 'modern-global-shell' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
     data-apu-component={pluginManager ? undefined : 'shell'}
   >
     <a className="skip-link" href="#main-content" onClick={event => {event.preventDefault(); document.getElementById('main-content')?.focus()}}>{ui('nav.skipContent')}</a>
-    {legacyShell && topbar}
+    {modernShell && topbar}
     <NavHandle/>
     {/* 导航面板没有可编辑内容，右键默认菜单只会碍事：整块禁掉。 */}
     <aside className="sidebar" style={layout.sidebarWidth != null ? ({'--sidebar-width': `${layout.sidebarWidth}px`} as React.CSSProperties) : undefined} onContextMenu={event => event.preventDefault()}>
       <SidebarResizeHandle label="拖动调整侧边栏宽度（双击恢复默认）"/>
-      {/* 旧版把招牌放进顶栏，桌面端这一行隐藏；窄屏侧栏是抽屉，招牌回抽屉里。 */}
-      <div className={`sidebar-brand ${legacyShell ? 'legacy-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
+      {/* 现代主题把招牌放进顶栏，桌面端这一行隐藏；窄屏侧栏是抽屉，招牌回抽屉里。 */}
+      <div className={`sidebar-brand ${modernShell ? 'modern-sidebar-actions' : ''}`.trim()}><div className="sidebar-brand-left">{brand}</div><button className="mobile-close icon-button" aria-label={ui('nav.close')} onClick={() => setMobileOpen(false)}><X size={18}/></button></div>
       <SidebarTransition viewKey={instance ? `instance:${instance}` : 'global'}>
         <Suspense fallback={<ModernNavigation {...navigationProps}/>}>
           <PrimaryNavigation {...navigationProps} fallback={<ModernNavigation {...navigationProps}/>}/>
@@ -348,8 +348,8 @@ function ModernShell({children, instance, pageTitle, onCreate, updateAvailable, 
       </SidebarTransition>
     </aside>
     <div className="main-shell">
-      {!legacyShell && topbar}
-      {legacyShell && pageNav}
+      {!modernShell && topbar}
+      {modernShell && pageNav}
       {connection !== 'ready' && <div className="connection-banner" role="status"><WifiOff size={16}/>{ui('connection.connecting')}</div>}
       <main id="main-content" tabIndex={-1}>{children}</main>
     </div>

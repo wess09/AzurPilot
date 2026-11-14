@@ -3,7 +3,7 @@ import { mockWebGLRenderer } from '../webgl'
 
 test.beforeEach(async ({page}) => {
   await page.addInitScript(() => {
-    localStorage.setItem('azurpilot.theme', 'legacy-dark')
+    localStorage.setItem('azurpilot.theme', 'modern-dark')
     localStorage.setItem('azurpilot.motion.speed', '4')
     localStorage.removeItem('azurpilot.motion.reduced')
   })
@@ -53,7 +53,7 @@ test('暗色玻璃卡片中的开关首次绘制与切换后保持一致', async
   const context = await browser.newContext({baseURL: 'http://127.0.0.1:5174', viewport: {width: 2560, height: 1249}})
   try {
     await context.addInitScript(() => {
-      localStorage.setItem('azurpilot.theme', 'legacy-dark')
+      localStorage.setItem('azurpilot.theme', 'modern-dark')
       localStorage.setItem('azurpilot.material', 'glass')
       localStorage.setItem('azurpilot.motion.speed', '2')
       localStorage.setItem('azurpilot.background', JSON.stringify({source: 'url', kind: 'image', urls: ['http://127.0.0.1:5174/azurpilot.webp'], active: 0, name: ''}))
@@ -155,7 +155,7 @@ test('暗色开关在不同窗口宽度和设备缩放下保持对齐', async ({
     const context = await browser.newContext({baseURL: 'http://127.0.0.1:5174', viewport: {width, height: 900}, deviceScaleFactor: dpr})
     try {
       await context.addInitScript(() => {
-        localStorage.setItem('azurpilot.theme', 'legacy-dark')
+        localStorage.setItem('azurpilot.theme', 'modern-dark')
         localStorage.setItem('azurpilot.motion.speed', '4')
       })
       const page = await context.newPage()

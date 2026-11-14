@@ -2,7 +2,7 @@
 /* 收起侧栏（看图模式）：收起时把承载它的那一列宽度收到 0，宽度由 --sidebar-width 决定；
    只在桌面生效，窄屏侧栏是抽屉形态，不吃这套 */
 /* 看图把手只用于桌面侧栏，窄屏由顶栏按钮打开导航抽屉 */
-.nav-handle:where(.modern-shell *) {display: none}
+.nav-handle:where(.app-shell *) {display: none}
 @property --sidebar-width-preview {
   syntax: '*';
   inherits: false;
@@ -10,27 +10,27 @@
 @media (min-width: 951px) {
   /* 收起/展开为瞬时切换，避免低帧率下宽度动画挤压主内容；
      grid 轨道用 auto，宽度由 .sidebar 自己的 width 承担 */
-  .sidebar:where(.modern-shell *) {width: var(--sidebar-width-preview, var(--sidebar-width)); min-width: 0}
+  .sidebar:where(.app-shell *) {width: var(--sidebar-width-preview, var(--sidebar-width)); min-width: 0}
   /* 收起时把侧栏那一列收到 0，展开时回到主题的侧栏宽度 */
-  :root body .app-shell:where(.modern-shell) {grid-template-columns: auto minmax(0, 1fr)}
-  :root body .app-shell:where(.modern-shell).with-rail {grid-template-columns: auto minmax(0, 1fr) auto}
-  .right-rail:where(.modern-shell *) {width: var(--right-rail-width)}
+  :root body .app-shell {grid-template-columns: auto minmax(0, 1fr)}
+  :root body .app-shell.with-rail {grid-template-columns: auto minmax(0, 1fr) auto}
+  .right-rail:where(.app-shell *) {width: var(--right-rail-width)}
   /* 收起规则统一带 :root body 前缀：皮肤里 .app-shell.with-rail .sidebar 这类规则与它们特异性打平，
      靠源码顺序决胜时 components.css 在前会输，导致类名加上了却不生效 */
-  :root body .app-shell:where(.modern-shell).nav-collapsed .sidebar:where(.modern-shell *) {width: 0; opacity: 0; pointer-events: none; padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden}
+  :root body .app-shell.nav-collapsed .sidebar:where(.app-shell *) {width: 0; opacity: 0; pointer-events: none; padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden}
   /* 全隐藏：shell 的直接子元素（含右栏与顶栏）一起隐藏，只留把手 */
-  :root body .app-shell:where(.modern-shell).nav-collapsed > *:not(.nav-handle:where(.modern-shell *)) {opacity: 0; pointer-events: none}
+  :root body .app-shell.nav-collapsed > *:not(.nav-handle:where(.app-shell *)) {opacity: 0; pointer-events: none}
   /* 右栏（调度器 / 任务计划）在未合并的版式里是 .main-shell 的兄弟，需一并隐藏 */
-  :root body .app-shell:where(.modern-shell).nav-collapsed .right-rail:where(.modern-shell *) {width: 0; overflow: hidden}
+  :root body .app-shell.nav-collapsed .right-rail:where(.app-shell *) {width: 0; overflow: hidden}
   /* 收起/展开把手：侧栏边缘一条很细的竖带，带上一枚扁的指示标记 */
   /* 隐形按键：常态没有底色也没有投影，只剩那枚图标 */
-  .nav-handle:where(.modern-shell *) {position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 70; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 64px; padding: 0; border: 0; border-radius: 0 8px 8px 0; background: transparent; box-shadow: none; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
+  .nav-handle:where(.app-shell *) {position: fixed; left: 0; top: 50%; transform: translateY(-50%); z-index: 70; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 64px; padding: 0; border: 0; border-radius: 0 8px 8px 0; background: transparent; box-shadow: none; color: var(--theme-muted); cursor: pointer; transition: color .15s ease, background .15s ease}
   /* 悬停/聚焦才浮出淡淡的底：既保持「隐形」，又不至于让人找不到它 */
-  .nav-handle:where(.modern-shell *):hover {color: var(--theme-accent); background: color-mix(in srgb, var(--surface) 55%, transparent)}
-  .nav-handle:where(.modern-shell *):focus-visible {background: color-mix(in srgb, var(--surface) 55%, transparent)}
-  .nav-handle:where(.modern-shell *):focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
+  .nav-handle:where(.app-shell *):hover {color: var(--theme-accent); background: color-mix(in srgb, var(--surface) 55%, transparent)}
+  .nav-handle:where(.app-shell *):focus-visible {background: color-mix(in srgb, var(--surface) 55%, transparent)}
+  .nav-handle:where(.app-shell *):focus-visible {outline: 2px solid var(--theme-focus); outline-offset: 2px}
 }
 @media (prefers-reduced-motion: reduce) {
-  .app-shell:where(.modern-shell), .sidebar:where(.modern-shell *) {transition: none}
+  .app-shell, .sidebar:where(.app-shell *) {transition: none}
 }
 

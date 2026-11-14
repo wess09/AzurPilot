@@ -16,7 +16,7 @@ export interface SchedulerPanelProps {
 }
 
 /**
- * 调度器启停逻辑：总览页、旧版主题等几处渲染同一张卡片，
+ * 调度器启停逻辑：总览页、现代主题等几处渲染同一张卡片，
  * 启停与计数统一从这里取，保证「不带旧配置启动调度器」的屏障不会在某一处漏掉。
  */
 export function useSchedulerControls({instance, data, onData}: SchedulerPanelProps) {

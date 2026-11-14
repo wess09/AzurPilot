@@ -5,12 +5,12 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   getLayout,
-  setLegacyRailWidth,
-  resetLegacyRailWidth,
+  setModernRailWidth,
+  resetModernRailWidth,
   subscribeLayout,
-  LEGACY_RAIL_WIDTH_MIN,
-  LEGACY_RAIL_WIDTH_MAX,
-  LEGACY_RAIL_WIDTH_DEFAULT,
+  RAIL_WIDTH_MIN,
+  RAIL_WIDTH_MAX,
+  RAIL_WIDTH_DEFAULT,
 } from '../app/layout'
 import {
   readSchedulerPosition,
@@ -25,12 +25,12 @@ const KEYBOARD_STEP = 8
 const HANDLE_LABEL = '拖动调整调度器栏宽度（双击恢复默认）'
 
 /**
- * 旧版总览页调度器栏的宽度把手（role=separator）：指针拖拽、双击重置默认，
+ * 总览页页调度器栏的宽度把手（role=separator）：指针拖拽、双击重置默认，
  * 键盘方向键微调、Home/End 直达边界、Enter/Backspace 重置。
  *
  * @param side 把手贴在哪一侧：right 时方向取反（向左拖才加宽）。缺省跟随全局调度器栏位置偏好。
  */
-export function LegacyRailResizeHandle({
+export function ModernRailResizeHandle({
   side: propSide,
 }: {
   side?: SchedulerPosition
@@ -58,7 +58,7 @@ export function LegacyRailResizeHandle({
     const measured = railWrap ? Math.round(railWrap.getBoundingClientRect().width) : 0
     const currentWidth = measured > 0
       ? measured
-      : (layout.legacyRailWidth ?? LEGACY_RAIL_WIDTH_DEFAULT)
+      : (layout.railWidth ?? RAIL_WIDTH_DEFAULT)
 
     dragRef.current = {
       pointerId: event.pointerId,
@@ -80,7 +80,7 @@ export function LegacyRailResizeHandle({
 
     const deltaX = event.clientX - drag.startX
     const targetWidth = side === 'right' ? drag.startWidth - deltaX : drag.startWidth + deltaX
-    setLegacyRailWidth(targetWidth)
+    setModernRailWidth(targetWidth)
   }
 
   function handlePointerEnd(event: React.PointerEvent<HTMLDivElement>) {
@@ -99,31 +99,31 @@ export function LegacyRailResizeHandle({
   }
 
   function handleDoubleClick() {
-    resetLegacyRailWidth()
+    resetModernRailWidth()
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    const current = layout.legacyRailWidth ?? LEGACY_RAIL_WIDTH_DEFAULT
+    const current = layout.railWidth ?? RAIL_WIDTH_DEFAULT
     switch (event.key) {
       case 'ArrowLeft':
-        setLegacyRailWidth(side === 'right' ? current + KEYBOARD_STEP : current - KEYBOARD_STEP)
+        setModernRailWidth(side === 'right' ? current + KEYBOARD_STEP : current - KEYBOARD_STEP)
         event.preventDefault()
         break
       case 'ArrowRight':
-        setLegacyRailWidth(side === 'right' ? current - KEYBOARD_STEP : current + KEYBOARD_STEP)
+        setModernRailWidth(side === 'right' ? current - KEYBOARD_STEP : current + KEYBOARD_STEP)
         event.preventDefault()
         break
       case 'Home':
-        setLegacyRailWidth(LEGACY_RAIL_WIDTH_MIN)
+        setModernRailWidth(RAIL_WIDTH_MIN)
         event.preventDefault()
         break
       case 'End':
-        setLegacyRailWidth(LEGACY_RAIL_WIDTH_MAX)
+        setModernRailWidth(RAIL_WIDTH_MAX)
         event.preventDefault()
         break
       case 'Enter':
       case 'Backspace':
-        resetLegacyRailWidth()
+        resetModernRailWidth()
         event.preventDefault()
         break
     }
@@ -133,11 +133,11 @@ export function LegacyRailResizeHandle({
     <div
       aria-label={HANDLE_LABEL}
       aria-orientation="vertical"
-      aria-valuemax={LEGACY_RAIL_WIDTH_MAX}
-      aria-valuemin={LEGACY_RAIL_WIDTH_MIN}
-      aria-valuenow={layout.legacyRailWidth ?? LEGACY_RAIL_WIDTH_DEFAULT}
+      aria-valuemax={RAIL_WIDTH_MAX}
+      aria-valuemin={RAIL_WIDTH_MIN}
+      aria-valuenow={layout.railWidth ?? RAIL_WIDTH_DEFAULT}
       data-side={side}
-      className={`legacy-rail-resize-handle ${isDragging ? 'is-dragging' : ''}`}
+      className={`modern-rail-resize-handle ${isDragging ? 'is-dragging' : ''}`}
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
       onLostPointerCapture={handlePointerEnd}

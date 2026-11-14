@@ -1,6 +1,6 @@
-/* 经典主题皮相域（原 legacy.css 15-325）：静态覆写 + 紧凑开关 + skip-link + 侧栏/导航皮相 + 圆角 + MD3 按钮 */
-/* 旧版侧栏贴边、只有一条右边框，顶栏与右栏不带圆角 */
-.sidebar:where(.modern-shell *), .right-rail:where(.modern-shell *), .topbar:where(.modern-shell *) {border-radius: 0}
+/* 现代主题皮相域（原 modern.css 15-325）：静态覆写 + 紧凑开关 + skip-link + 侧栏/导航皮相 + 圆角 + MD3 按钮 */
+/* 现代侧栏贴边、只有一条右边框，顶栏与右栏不带圆角 */
+.sidebar:where(.app-shell *), .right-rail:where(.app-shell *), .topbar:where(.app-shell *) {border-radius: 0}
 /* 背景随内容滚，不固定在视口上（主题骨架默认 fixed） */
 body {background-attachment: scroll}
 
@@ -87,12 +87,12 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
 .skip-link:focus {top: 12px}
 
 /* 侧栏与顶栏各走自己的区域材质；普通材质分支会把它们压回不透明（见 theme-material.css） */
-.sidebar:where(.modern-shell *), .right-rail:where(.modern-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-.topbar:where(.modern-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
-.sidebar:where(.modern-shell *) {padding: 0 14px 14px}
+.sidebar:where(.app-shell *), .right-rail:where(.app-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
+.topbar:where(.app-shell *) {background: var(--theme-surface-bg); -webkit-backdrop-filter: var(--theme-surface-filter); backdrop-filter: var(--theme-surface-filter)}
+.sidebar:where(.app-shell *) {padding: 0 14px 14px}
 /* 侧栏与调度器栏都是导航面板：文字禁止划选，免得拖动时把菜单文本刷蓝；输入框除外 */
-.sidebar:where(.modern-shell *), .instance-page-rail {user-select: none}
-.sidebar:where(.modern-shell *) input, .sidebar:where(.modern-shell *) textarea,
+.sidebar:where(.app-shell *), .instance-page-rail {user-select: none}
+.sidebar:where(.app-shell *) input, .sidebar:where(.app-shell *) textarea,
 .instance-page-rail input, .instance-page-rail textarea {user-select: text}
 .sidebar-brand {height: var(--topbar-height); padding: 0 8px; margin-bottom: 14px}
 .brand-title {font-size: 22px}
@@ -193,13 +193,13 @@ input:not([data-slot='input'])[aria-invalid='true'], textarea[aria-invalid='true
   font-weight: 600;
 }
 .task-submenu-dot {display: none}
-.topbar:where(.modern-shell *) {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
-.right-rail:where(.modern-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
+.topbar:where(.app-shell *) {position: sticky; top: 0; z-index: 80; height: var(--topbar-height); margin: 0; padding: 0 24px}
+.right-rail:where(.app-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height)); z-index: 70}
 .breadcrumb {font-size: 13px}
 /* 上内边距归零：内容区顶部那条「主页 / 实例」行已与下方留出距离，再加 24px 会在
    「主页文字底到容器顶边框」之间多出一段空隙 */
-main:where(.modern-shell .main-shell > main) {padding: 0 28px 24px}
-main:where(.modern-shell .main-shell > main):focus {outline: none}
+main:where(.app-shell .main-shell > main) {padding: 0 28px 24px}
+main:where(.app-shell .main-shell > main):focus {outline: none}
 .page-title h1 {font-size: clamp(24px, 2.4vw, 32px); letter-spacing: -.6px; overflow-wrap: anywhere}
 .title-actions {position: relative; gap: 8px; padding: 4px}
 .panel-heading h2 {font-size: 15px}

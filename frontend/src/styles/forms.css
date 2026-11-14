@@ -132,18 +132,18 @@ input[type='range']:focus-visible {outline: 2px solid var(--theme-focus); outlin
 }
 
 /* 设置页的分段选择跟随主题的控件圆角；胶囊造型留给材质主题的监视器控件 */
-:root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
+:root[data-theme='modern-light'] .monitor-segmented.settings-segmented,
+:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented {border-radius: var(--theme-radius-control)}
 
 /* 自定义外观的滑块行：滑块占满分到的宽度，当前值固定在右侧，数字用等宽字形避免抖动 */
 .knob-control {display: flex; align-items: center; gap: 12px}
 .knob-value {min-width: 56px; text-align: right; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums}
 
 /* 设置页的分段选择与上方选择框等宽、按钮等分 */
-:root[data-theme='legacy-light'] .monitor-segmented.settings-segmented,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented {width: 100%}
-:root[data-theme='legacy-light'] .monitor-segmented.settings-segmented button,
-:root[data-theme='legacy-dark'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
+:root[data-theme='modern-light'] .monitor-segmented.settings-segmented,
+:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented {width: 100%}
+:root[data-theme='modern-light'] .monitor-segmented.settings-segmented button,
+:root[data-theme='modern-dark'] .monitor-segmented.settings-segmented button {flex: 1 1 0; justify-content: center}
 
 /* 这一排是 标签 + 滑块 + 数值 + 还原，宽度不够时滑块被压得很短 */
 .material-detail-modal {width: min(960px, calc(100vw / var(--ui-scale) - 30px))}

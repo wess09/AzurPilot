@@ -1,5 +1,5 @@
 /**
- * @fileoverview 旧版实例页右列偏好管理：调度器栏的显隐。
+ * @fileoverview 实例页右列偏好管理：调度器栏的显隐。
  *
  * 目录与调度器已经改为同栏并存，不再二选一；这里只保留栏本身的开关。
  * 停靠边沿用 schedulerPositionPrefs（运行总览与任务设置页共用同一个值）。
@@ -10,7 +10,18 @@ import { prefStore } from './prefStore'
 /** `shown` —— 默认，右列显示「目录 + 调度器」。`hidden` —— 整栏收起。 */
 type RailVisibility = 'shown' | 'hidden'
 
-const store = prefStore<RailVisibility>('azurpilot.legacy-rail-visible', raw => raw === 'hidden' ? 'hidden' : 'shown')
+const store = prefStore<RailVisibility>('azurpilot.rail-visible', raw => raw === 'hidden' ? 'hidden' : 'shown')
+
+// 键名来自旧版命名，首次读取时迁移到新键；重置没有清键路径，迁移一次即可。
+try {
+  if (localStorage.getItem('azurpilot.rail-visible') == null) {
+    const migrated = localStorage.getItem('azurpilot.legacy-rail-visible')
+    if (migrated != null) {
+      localStorage.setItem('azurpilot.rail-visible', migrated)
+      localStorage.removeItem('azurpilot.legacy-rail-visible')
+    }
+  }
+} catch { /* 存储不可用时跳过迁移，本次会话内按默认值工作。 */ }
 
 /** 读取右列显隐：存储不可用或存的值不是 'hidden' 时一律回落 'shown'。 */
 export const readRailVisible = store.read

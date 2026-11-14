@@ -1,0 +1,137 @@
+/* 现代外壳网格 / 按压反馈 / 页面入场 / 现代顶栏 / modern-page-nav 全套（原 modern.css 417-552） */
+/* 现代版式：只在实例视图生效（App.tsx 的 .modern-shell）。
+   现代外壳是「顶栏跨全宽 + 文字菜单在顶栏下方」，与共享层的「侧栏整列 + 顶栏在主内容列内」
+   是两套网格，所以在这里整块重排，主页视图不受影响 */
+.app-shell.modern-shell {
+  /* 现代文字菜单宽 12rem(16px 基准)=192px，但那是 12px 字的年代：
+     现在的行是 13px 字 + 16px 图标 + 右侧箭头，192px 会把长任务名挤成省略号，
+     整列也显得局促。按 240px 排，正好容下「活动-每日任务」这类最长的一项 */
+  --sidebar-width: 240px;
+  /* 内容区顶部那行「主页 / 实例 / 任务」，算进页内两列的高度预算里；
+     分页模式下这行会被放缩，所以取值与它的实际高度同源，不能写死 */
+  --modern-page-nav-height: var(--instance-page-nav-height, 42px);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  /* 行高的隐含最小值是 auto，内容算高了会把整壳顶出视口、页面就能滚；钳成 0 让内容自己滚 */
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas: 'topbar topbar' 'sidebar main';
+  /* 光是 minmax(0, 1fr) 还不够：外壳不裁剪时网格会按内容测量，行照样被撑高、整壳溢出视口。
+     裁掉溢出后这一行才真正只占「视口 − 顶栏」，多出来的部分由各列自己滚 */
+  overflow: hidden;
+  /* 基类的 .app-shell 只给了 min-height，网格就会跟着内容长到视口之外。
+     钉成正好一屏，内容多出来的部分交给内部滚动 */
+  height: var(--viewport-height);
+}
+.app-shell.modern-shell.with-rail {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width);
+  grid-template-areas: 'topbar topbar topbar' 'sidebar main rail';
+}
+.app-shell.modern-shell > .topbar:where(.app-shell *) {grid-area: topbar; width: auto}
+.app-shell.modern-shell > .sidebar:where(.app-shell *) {grid-area: sidebar; padding-top: 12px}
+.app-shell.modern-shell > .main-shell:where(.app-shell *) {grid-area: main; min-height: 0; overflow: hidden; display: flex; flex-direction: column}
+/* 内容列的高度：非实例页（如设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
+   增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴 */
+.app-shell.modern-shell > .main-shell:where(.app-shell *) > main {min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 28px 24px}
+.app-shell.modern-shell > .main-shell:where(.app-shell *) > main:has(> .instance-page-grid, > .task-config-modern) {overflow-y: hidden}
+.app-shell.modern-shell > .main-shell:where(.app-shell *) > main > * {flex-shrink: 0}
+/* 现代主题两种明暗的按压反馈：鼠标按下时轻微收缩，主按钮同时收回悬停的上移 */
+:root[data-theme='modern-light'] .button,
+:root[data-theme='modern-dark'] .button {transition: background-color .15s, box-shadow .15s, border-color .15s, color .15s, transform .12s cubic-bezier(.2, 0, 0, 1)}
+:root[data-theme='modern-light'] .button:active:not(:disabled),
+:root[data-theme='modern-dark'] .button:active:not(:disabled),
+:root[data-theme='modern-light'] .icon-button:active:not(:disabled),
+:root[data-theme='modern-dark'] .icon-button:active:not(:disabled),
+:root[data-theme='modern-light'] .text-button:active:not(:disabled),
+:root[data-theme='modern-dark'] .text-button:active:not(:disabled),
+:root[data-theme='modern-light'] .modern-stat-title:active,
+:root[data-theme='modern-dark'] .modern-stat-title:active {transform: scale(.97)}
+:root[data-theme='modern-light'] .button.primary:active:not(:disabled),
+:root[data-theme='modern-dark'] .button.primary:active:not(:disabled) {transform: translateY(0) scale(.97)}
+:root[data-theme='modern-light'] .toggle:active,
+:root[data-theme='modern-dark'] .toggle:active {transform: scale(.96)}
+:root[data-theme='modern-light'] .monitor-segmented button:active,
+:root[data-theme='modern-dark'] .monitor-segmented button:active {background: var(--accent-soft)}
+/* 现代外壳下换页：页面内容淡入，动画挂在页面根元素与内容列上 */
+.app-shell.modern-shell .instance-page-grid,
+.app-shell.modern-shell .statistics-modern,
+.app-shell.modern-shell .task-config-settings-inner,
+.app-shell.modern-shell .task-config-rail-slot .task-rail-directory {animation: modern-page-in .22s cubic-bezier(.22, .61, .36, 1)}
+/* 玻璃设置卡独立入场，整列淡入会让卡片在结束时重新采样壁纸。 */
+:root[data-material='glass'] .app-shell.modern-shell .task-config-settings-inner {animation: none}
+@keyframes modern-page-in {from {opacity: 0} to {opacity: 1}}
+/* 总览页在两个视图间切换：面板用自己的动画，按切换方向淡入 */
+.app-shell.modern-shell .instance-page-panel {animation: none}
+.app-shell.modern-shell .instance-page-panel.panel-drop {animation: panel-drop .24s cubic-bezier(.22, .61, .36, 1)}
+.app-shell.modern-shell .instance-page-panel.panel-rise {animation: panel-rise .24s cubic-bezier(.22, .61, .36, 1)}
+@keyframes panel-drop {from {opacity: 0} to {opacity: 1}}
+@keyframes panel-rise {from {opacity: 0} to {opacity: 1}}
+@media (prefers-reduced-motion: reduce) {.app-shell.modern-shell .instance-page-grid, .app-shell.modern-shell .statistics-modern, .app-shell.modern-shell .task-config-settings-inner, .app-shell.modern-shell .instance-page-panel, .app-shell.modern-shell .instance-page-panel.panel-drop, .app-shell.modern-shell .instance-page-panel.panel-rise, .app-shell.modern-shell .task-config-rail-slot .task-rail-directory {animation: none}}
+.app-shell.modern-shell > .main-shell:where(.app-shell *) > main > .instance-page-grid,
+.app-shell.modern-shell > .main-shell:where(.app-shell *) > main > .task-config-modern {flex-shrink: 1; min-height: 0}
+.app-shell.modern-shell > .right-rail:where(.app-shell *) {grid-area: rail}
+/* 招牌随顶栏走：顶栏里的那份紧贴左侧，不参与侧栏那套 72px 间距 */
+.modern-topbar-brand {height: auto; margin-bottom: 0; padding: 0}
+/* 现代顶栏的第三列是居中的页面名 */
+.modern-topbar-title {flex: 1; min-width: 0; text-align: center; font-size: 1.2rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+/* 现代实例页的页名由顶栏居中显示，内容区只留一个给读屏的标题 */
+.modern-sr-title {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; opacity: 1 !important; z-index: 4}
+/* 还在用 PageTitle 的页面同理：顶栏已有页名，内容区不再重复一个大标题，只留动作区 */
+.app-shell.modern-shell .page-title-heading {position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap}
+/* 现代标签栏：槽是一级面加磨砂；内容盒 = 标签高 + 上缝 + 下边框——
+   上面那条缝是标签上边框与栏上边框之间的间距，下面 1px 是栏自己的下边框。标签贴底，底边因此落在栏的下边框上。
+   标签的形状、竖线、加号与状态色由 theme-primitives 统一给出，这里只给皮相 */
+:root[data-theme='modern-light'] .modern-page-nav,
+:root[data-theme='modern-dark'] .modern-page-nav,
+.app-shell.modern-shell .modern-page-nav {
+  background: var(--theme-surface-bg);
+  -webkit-backdrop-filter: var(--theme-surface-filter);
+  backdrop-filter: var(--theme-surface-filter);
+  height: calc(var(--instance-tab-height) + var(--instance-tab-gap-y) + 1px);
+  padding: 0 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-sizing: border-box !important;
+}
+/* 轨道贴底：标签的下边缘压在栏的下边框上 */
+.app-shell.modern-shell .modern-page-nav .instance-tabs {align-self: flex-end}
+/* 竖线取固定色，不跟主题的文字色走 */
+:root[data-theme='modern-light'] {--instance-tab-divider-color: rgba(0, 0, 0, .22)}
+:root[data-theme='modern-dark'] {--instance-tab-divider-color: rgba(255, 255, 255, .26)}
+
+/* 「主页」链接：与标签同高、同一条基准线；纵向内边距归零，选中框因此不会探出栏外 */
+.modern-page-nav .breadcrumb .topbar-actions > a {
+  padding-top: 0;
+  padding-bottom: 0;
+  height: var(--instance-tab-height);
+  align-self: flex-end;
+}
+
+:root[data-tab-size] .app-shell.modern-shell .modern-page-nav .breadcrumb,
+.app-shell.modern-shell .modern-page-nav .breadcrumb {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  gap: 8px !important;
+}
+
+/* 选中或悬浮时的容器必须留在标签栏内：去掉上下内边距，高度与文字行齐平并纵向居中 */
+.modern-page-nav .breadcrumb > a {
+  align-self: center;
+  height: 26px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all .15s ease;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  max-height: 26px;
+}
+.modern-page-nav .breadcrumb > a:hover {
+  background: color-mix(in srgb, var(--theme-plate-bg) 50%, transparent);
+  color: var(--text);
+}

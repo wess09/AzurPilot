@@ -13,7 +13,7 @@ export type { SchedulerPanelProps } from './useSchedulerControls'
 /**
  * 调度器卡片：状态、三类任务计数与启停按钮。
  *
- * 旧版主题的总览页左列、其余主题的右栏、实例设置页的调度器栏都渲染它，
+ * 现代主题的总览页左列、其余主题的右栏、实例设置页的调度器栏都渲染它，
  * 三处共用同一份启停逻辑，保证「不带旧配置启动调度器」的排队屏障不会在某一处漏掉。
  */
 export function SchedulerWidget(props: SchedulerPanelProps) {

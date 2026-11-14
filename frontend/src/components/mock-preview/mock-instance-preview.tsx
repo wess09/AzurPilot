@@ -44,10 +44,10 @@ export function MockInstancePreview({onClose, initialRegion}: MockInstancePrevie
   const [isDocked, setIsDocked] = useState(true)
   const isDockedActive = isDocked && !isInspectorMinimized
   const overlay = (
-    <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={ui('settings.materialLivePreview')} tabIndex={-1} className={`mock-instance-preview-overlay legacy-shell-preview ${isDockedActive ? 'has-docked-inspector' : ''}`}>
+    <div ref={overlayRef} role="dialog" aria-modal="true" aria-label={ui('settings.materialLivePreview')} tabIndex={-1} className={`mock-instance-preview-overlay modern-shell-preview ${isDockedActive ? 'has-docked-inspector' : ''}`}>
       <ThemeWallpaper />
       {/* 全真模拟 AppShell 容器；里面的实例名、资源、任务与日志是写死的样本数据，用来撑起外壳，不随语言切换。 */}
-      <div className={`app-shell modern-shell with-rail legacy-shell mock-preview-shell`}>
+      <div className={`app-shell with-rail modern-shell mock-preview-shell`}>
         {/* 侧栏 (sidebar 区域) */}
         {mockSidebar(ui)}
         {/* 主视图区域 */}

@@ -22,8 +22,8 @@ import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
 import { OpsiSimulatorPanel } from '../components/OpsiSimulatorPanel'
 import { FieldInput } from '../components/FieldInput'
 import { StorageField } from '../components/StorageField'
-import { LegacyRail } from '../components/LegacyRail'
-import { LegacyRailResizeHandle } from '../components/LegacyRailResizeHandle'
+import { ModernRail } from '../components/ModernRail'
+import { ModernRailResizeHandle } from '../components/ModernRailResizeHandle'
 import { useInstanceOverview } from '../components/useInstanceOverview'
 import { editor, prepareValue } from '../config/editors'
 import { EditStatus } from '../components/EditStatus'
@@ -33,7 +33,7 @@ import { FleetInfoPage } from './FleetInfoPage'
 
 /**
  * 视口命中折叠区间时返回 true：目录 <1320px、调度器栏 <1090px 自动收起
- * （阈值与 settings-legacy.css 的折叠栅格同步；e2e 视口 1440/1600 都在阈值之上）。
+ * （阈值与 settings-modern.css 的折叠栅格同步；e2e 视口 1440/1600 都在阈值之上）。
  * matchMedia 不可用的环境（单测 jsdom）一律 false，面板照常渲染。
  */
 function useFoldFlag(query: string): boolean {
@@ -355,7 +355,7 @@ export function TaskConfig() {
   </nav>
 
   // 目录与调度器是两列，不是一栏里的两块：目录常驻设置区右侧，调度器独占一列。
-  // 调度器列就是总览页那一个 LegacyRail，不换外壳、不套 panel；
+  // 调度器列就是总览页那一个 ModernRail，不换外壳、不套 panel；
   // 停靠边与显隐都来自界面设置（schedulerPositionPrefs / railPrefs）。
   const directory = <aside className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
     <div className="rail-section-heading">
@@ -365,7 +365,7 @@ export function TaskConfig() {
     {groupNav}
   </aside>
 
-  const rail = <LegacyRail instance={instance} data={railData} onData={setRailData}/>
+  const rail = <ModernRail instance={instance} data={railData} onData={setRailData}/>
 
   const configToolbar = showConfigToolbar && <div className="config-toolbar">
       <div className="input-icon">
@@ -398,14 +398,14 @@ export function TaskConfig() {
     <LogPanel />
   </section>
 
-  // 旧版的任务详细设置：参数卡在中列，目录与调度器各占一列，页名由顶栏居中显示。
-  // 调度器列的宽度沿用总览页那套 `--legacy-rail-width`，边上挂同一个拖拽把手。
+  // 现代版式的任务详细设置：参数卡在中列，目录与调度器各占一列，页名由顶栏居中显示。
+  // 调度器列的宽度沿用总览页那套 `--modern-rail-width`，边上挂同一个拖拽把手。
   return <>
     <div
-      className={`task-config-page task-config-legacy${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${popout ? ` pop-${popout}` : ''}`}
-      style={layout.legacyRailWidth ? ({'--legacy-rail-width': `${layout.legacyRailWidth}px`} as CSSProperties) : undefined}
+      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${popout ? ` pop-${popout}` : ''}`}
+      style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as CSSProperties) : undefined}
     >
-      <h1 className="legacy-sr-title">{t(`Task.${task}.name`)}</h1>
+      <h1 className="modern-sr-title">{t(`Task.${task}.name`)}</h1>
       <div className="task-config-settings">
         {/* 换任务时重挂内容列，触发该任务的卡片入场。 */}
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>
@@ -414,7 +414,7 @@ export function TaskConfig() {
       <div className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
         <div className="instance-page-rail-wrap">
           {rail}
-          <LegacyRailResizeHandle side={schedulerPosition}/>
+          <ModernRailResizeHandle side={schedulerPosition}/>
           {popout === 'rail' && <button type="button" className="icon-button rail-pop-close rail-pop-close-rail" aria-label={ui('nav.close')} onClick={() => setPopout(null)}><X size={15}/></button>}
         </div>
       </div>

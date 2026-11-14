@@ -1,4 +1,4 @@
-/* 玻璃材质整段：--rail-* 变量 + 三层玻璃皮相（production-style.spec.ts 以 toHaveCSS 锁定计算值，值零改动）（原 legacy.css 1414-1650） */
+/* 玻璃材质整段：--rail-* 变量 + 三层玻璃皮相（production-style.spec.ts 以 toHaveCSS 锁定计算值，值零改动）（原 modern.css 1414-1650） */
 
 /* 玻璃材质：一次采样，平色面 + 发丝边
    两种明暗共用一套现代语言，只差底色浓度：一层背景模糊、一层压住壁纸的平色、
@@ -54,7 +54,7 @@
   --rail-idle-shadow-paint: none;
 }
 
-:root[data-material='glass'][data-theme='legacy-dark'] {
+:root[data-material='glass'][data-theme='modern-dark'] {
   /* 暗色的取舍：背后壁纸一亮，透出来的就是一层灰，面板越透越像一块灰板。
      这里给到接近实色，玻璃感只留在一根发丝边和模糊上；
      卡片不再发亮片，等待中几乎与面板同色、连边都没有，只靠字色退后 */
@@ -104,7 +104,7 @@
 }
 
 /* 「统计」行：与卡片同属中景，只给厚度与高光，不再单独挂模糊（理由见本节开头） */
-:root[data-material='glass'] .instance-page-rail .legacy-stat-card {
+:root[data-material='glass'] .instance-page-rail .modern-stat-card {
   background: var(--rail-stat-bg);
   border-color: var(--rail-stat-edge);
   box-shadow: var(--rail-stat-shadow);
@@ -174,42 +174,42 @@
   border-color: color-mix(in srgb, var(--red) 24%, transparent);
 }
 /* 暗色里红字自己承担颜色，底子只负责「这一块可以点」 */
-:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
+:root[data-material='glass'][data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.danger {
   background: color-mix(in srgb, var(--red) 14%, transparent);
   border-color: transparent;
   color: var(--red);
   box-shadow: none;
 }
-:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+:root[data-material='glass'][data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--red) 20%, transparent);
   color: color-mix(in srgb, var(--red) 82%, #ffffff);
 }
 
 /* 暗色主按钮：一块干净的浅色实心，不要内高光（会把按钮变成胶囊形状的塑料） */
-:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary {
+:root[data-material='glass'][data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.primary {
   background: color-mix(in srgb, var(--text) 88%, transparent);
   color: #15161a;
   box-shadow: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-:root[data-material='glass'][data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.primary:hover:not(:disabled) {
+:root[data-material='glass'][data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.primary:hover:not(:disabled) {
   background: color-mix(in srgb, var(--text) 96%, transparent);
 }
 
 /* 暗色下计数的最里一档要多一点亮度：30% 的白字压在深底上会糊成灰 */
-:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting strong,
-:root[data-material='glass'][data-theme='legacy-dark'] .scheduler-stats > div.waiting span {
+:root[data-material='glass'][data-theme='modern-dark'] .scheduler-stats > div.waiting strong,
+:root[data-material='glass'][data-theme='modern-dark'] .scheduler-stats > div.waiting span {
   color: color-mix(in srgb, var(--text) 40%, transparent);
 }
-:root[data-material='glass'][data-theme='legacy-dark'] .rail-task-item.waiting .rail-task-state {
+:root[data-material='glass'][data-theme='modern-dark'] .rail-task-item.waiting .rail-task-state {
   color: color-mix(in srgb, var(--text) 50%, transparent);
 }
 
 /* 不支持背景滤镜的浏览器：退回不透明面，避免出现「透明但什么都没模糊」的糊状 */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   :root[data-material='glass'] .instance-page-rail,
-  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .instance-page-rail .modern-stat-card,
   :root[data-material='glass'] .rail-task-item,
   :root[data-material='glass'] .rail-task-item.running {background: var(--surface)}
   :root[data-material='glass'] .rail-task-item.waiting {background: color-mix(in srgb, var(--text) 3%, var(--surface))}
@@ -220,7 +220,7 @@
   /* 三档卡片各自的类（.running / .waiting）特异度更高，必须一并列进来，
      否则高对比度下它们仍会保留半透明的玻璃底 */
   :root[data-material='glass'] .instance-page-rail,
-  :root[data-material='glass'] .instance-page-rail .legacy-stat-card,
+  :root[data-material='glass'] .instance-page-rail .modern-stat-card,
   :root[data-material='glass'] .scheduler-stats,
   :root[data-material='glass'] .rail-task-item,
   :root[data-material='glass'] .rail-task-item.running,

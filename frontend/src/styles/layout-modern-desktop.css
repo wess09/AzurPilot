@@ -1,32 +1,32 @@
-/* ≥951px 桌面网格 / 拖拽把手 / 统计带 / 任务设置双列（原 legacy.css 577-790） */
+/* ≥951px 桌面网格 / 拖拽把手 / 统计带 / 任务设置双列（原 modern.css 577-790） */
 
 @media (min-width: 951px) {
   /* 顶栏占了第一行，侧栏与右栏从它下方开始各自滚动 */
-  .app-shell:where(.modern-shell).legacy-shell > .topbar:where(.modern-shell *) {position: relative; justify-content: flex-start; gap: 14px}
-  .legacy-topbar-title {position: absolute; left: 50%; transform: translateX(-50%); max-width: min(30rem, 38%); flex: 0 0 auto}
-  .app-shell:where(.modern-shell).legacy-shell > .sidebar:where(.modern-shell *),
-  .app-shell:where(.modern-shell).legacy-shell > .right-rail:where(.modern-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height))}
-  .app-shell:where(.modern-shell).legacy-shell > .sidebar:where(.modern-shell *) {padding-top: 14px}
-  .app-shell:where(.modern-shell).legacy-shell .legacy-sidebar-actions {display: none}
+  .app-shell.modern-shell > .topbar:where(.app-shell *) {position: relative; justify-content: flex-start; gap: 14px}
+  .modern-topbar-title {position: absolute; left: 50%; transform: translateX(-50%); max-width: min(30rem, 38%); flex: 0 0 auto}
+  .app-shell.modern-shell > .sidebar:where(.app-shell *),
+  .app-shell.modern-shell > .right-rail:where(.app-shell *) {top: var(--topbar-height); height: calc(var(--viewport-height) - var(--topbar-height))}
+  .app-shell.modern-shell > .sidebar:where(.app-shell *) {padding-top: 14px}
+  .app-shell.modern-shell .modern-sidebar-actions {display: none}
 
-  /* 旧版实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
-     所以左列由各页面自己渲染（LegacyRail），不是外壳的一列 */
+  /* 现代实例页：左列调度器与任务计划，右列页面内容。总览与资源统计共用这一套，
+     所以左列由各页面自己渲染（ModernRail），不是外壳的一列 */
   .instance-page-grid,
   .instance-page-grid.rail-left {
     display: grid;
     /* 用 flex 撑满 main 的剩余高度，不再按「视口 − 顶栏 − 页内行 − 常量」推算：
        那个常量会随着顶栏与页内行的实际高度漂移，容器底边就跟着上下跳。
-       上面 main 与 .legacy-shell 已逐级撑满，所以不靠百分比高度也不会把整壳顶高 */
+       上面 main 与 .modern-shell 已逐级撑满，所以不靠百分比高度也不会把整壳顶高 */
     /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高 */
     flex: 1 1 0;
     min-height: 0;
-    grid-template-columns: var(--legacy-rail-width, 280px) minmax(24rem, 1fr);
+    grid-template-columns: var(--modern-rail-width, 280px) minmax(24rem, 1fr);
     grid-template-areas: "rail main";
     gap: 14px;
     align-items: stretch;
   }
   .instance-page-grid.rail-right {
-    grid-template-columns: minmax(24rem, 1fr) var(--legacy-rail-width, 280px);
+    grid-template-columns: minmax(24rem, 1fr) var(--modern-rail-width, 280px);
     grid-template-areas: "main rail";
   }
   /* 调度器栏包裹容器与拖拽把手 */
@@ -45,7 +45,7 @@
     flex: 1 1 0;
     height: 100%;
   }
-  .legacy-rail-resize-handle {
+  .modern-rail-resize-handle {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -56,17 +56,17 @@
     touch-action: none;
     user-select: none;
   }
-  .instance-page-grid.rail-left .legacy-rail-resize-handle,
-  .legacy-rail-resize-handle[data-side="left"] {
+  .instance-page-grid.rail-left .modern-rail-resize-handle,
+  .modern-rail-resize-handle[data-side="left"] {
     left: auto;
     right: -12px;
   }
-  .instance-page-grid.rail-right .legacy-rail-resize-handle,
-  .legacy-rail-resize-handle[data-side="right"] {
+  .instance-page-grid.rail-right .modern-rail-resize-handle,
+  .modern-rail-resize-handle[data-side="right"] {
     left: -12px;
     right: auto;
   }
-  .legacy-rail-resize-handle::after {
+  .modern-rail-resize-handle::after {
     content: '';
     position: absolute;
     top: 0;
@@ -78,12 +78,12 @@
     pointer-events: none;
     border-radius: 1px;
   }
-  .legacy-rail-resize-handle:hover::after,
-  .legacy-rail-resize-handle.is-dragging::after,
-  .legacy-rail-resize-handle:focus-visible::after {
+  .modern-rail-resize-handle:hover::after,
+  .modern-rail-resize-handle.is-dragging::after,
+  .modern-rail-resize-handle:focus-visible::after {
     background: var(--accent);
   }
-  .legacy-rail-resize-handle.is-dragging::after {
+  .modern-rail-resize-handle.is-dragging::after {
     width: 3px;
     left: 5.5px;
   }
@@ -103,7 +103,7 @@
     padding: 16px 16px 14px;
     flex-shrink: 0;
   }
-  .instance-page-rail .legacy-stat-card {
+  .instance-page-rail .modern-stat-card {
     padding: 10px 14px;
     flex-shrink: 0;
   }
@@ -143,8 +143,8 @@
   .instance-page-panel {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
   /* 搜索框与参数卡同宽，「任务设置和搜索对齐」；下方间距交给 --config-card-gap，与卡片之间保持一致 */
   .task-config-settings .config-toolbar .input-icon {max-width: none}
-  /* 资源统计在旧版下没有左列，整页一条内容带；和 .instance-page-grid 一样撑满 main 的剩余高度 */
-  .statistics-legacy {
+  /* 资源统计在现代主题下没有左列，整页一条内容带；和 .instance-page-grid 一样撑满 main 的剩余高度 */
+  .statistics-modern {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -155,16 +155,16 @@
     min-height: 0;
     overflow-y: auto;
   }
-  .statistics-legacy .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
+  .statistics-modern .statistics-toolbar-row {display: flex; align-items: center; gap: 12px; flex-wrap: wrap}
   /* 分类切换按内容自然宽度排列；宽度上限与溢出滚动见 insights.css 的工具栏段 */
-  .statistics-legacy .statistics-toolbar-row .statistics-category-control {flex: 0 0 auto; width: max-content; max-width: 100%}
+  .statistics-modern .statistics-toolbar-row .statistics-category-control {flex: 0 0 auto; width: max-content; max-width: 100%}
 
-  /* 旧版的任务详细设置：参数卡在左、分组导航在右（旧版是 13rem≈208px 的右列）。
+  /* 现代版式的任务详细设置：参数卡在左、分组导航在右（现代是 13rem≈208px 的右列）。
      和总览一样定高 + 内部滚动，顶栏与侧栏才不会跟着滚走 */
-  .task-config-legacy {
+  .task-config-modern {
     display: grid;
     flex: 1 1 auto;
-    height: calc(var(--viewport-height) - var(--topbar-height) - 2 * var(--row-pad, 4px) - var(--legacy-page-nav-height, 42px) - 64px);
+    height: calc(var(--viewport-height) - var(--topbar-height) - 2 * var(--row-pad, 4px) - var(--modern-page-nav-height, 42px) - 64px);
     /* 右列宽度取自新版右栏的契约变量，与断点同步收放 */
     grid-template-columns: minmax(0, 1fr) min(268px, var(--right-rail-width));
     gap: 22px;
@@ -209,7 +209,7 @@
   /* 参数列给宽度上限：宽屏下与输入框等宽的控件会被拉到读不过来的一整行。
      只限定这一列，不动外壳，所以中列填满视口的行为不受影响 */
   .task-config-settings {width: 100%; min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; max-width: 1108px; margin-inline: auto}
-  .task-config-legacy .group-nav {max-height: 100%}
+  .task-config-modern .group-nav {max-height: 100%}
   /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px */
-  .task-config-legacy .config-group {scroll-margin-top: 0}
+  .task-config-modern .config-group {scroll-margin-top: 0}
 }

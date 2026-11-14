@@ -36,7 +36,7 @@ export function Plugins() {
   }
 
   return <div className="settings-page">
-    <h1 className="legacy-sr-title">{ui('nav.plugins')}</h1>
+    <h1 className="modern-sr-title">{ui('nav.plugins')}</h1>
     <section className="panel config-group">
       <div className="panel-heading flex flex-wrap items-center justify-between gap-3">
         <h2 className="m-0">{ui('plugins.installed')}</h2>

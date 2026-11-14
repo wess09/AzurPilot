@@ -675,7 +675,7 @@ test('舰队科技完整图鉴区分累计里程碑与当前持有', async ({pag
   )).toBe(true)
 })
 
-for (const theme of ['legacy-light', 'legacy-dark']) {
+for (const theme of ['modern-light', 'modern-dark']) {
   test(`舰船表格 ${theme} 输入框保留组件默认样式`, async ({page}) => {
     await page.addInitScript(theme => {
       localStorage.setItem('azurpilot.language', 'zh-CN')
@@ -714,7 +714,7 @@ test('舰船导入按钮打开对应的多文件选择器', async ({page}) => {
 test('暗色资源统计与舰队科技使用可操作的官方控件', async ({page}) => {
   await page.addInitScript(() => {
     localStorage.setItem('azurpilot.language', 'zh-CN')
-    localStorage.setItem('azurpilot.theme', 'legacy-dark')
+    localStorage.setItem('azurpilot.theme', 'modern-dark')
   })
   await page.goto('/#/i/demo-main/task/FleetAnalysis?tab=technology')
   const filter = page.getByRole('button', {name: '未获得', exact: true})
@@ -1077,7 +1077,7 @@ test('资源数值按可用宽度缩放并保持当前值与上限在同一行',
   page.on('pageerror', error => errors.push(error.message))
   await page.addInitScript(() => {
     localStorage.setItem('azurpilot.resources.demo-main', JSON.stringify(['Oil', 'Coin', 'Gem', 'Cube', 'Pt', 'ActionPoint', 'YellowCoin', 'PurpleCoin', 'Core', 'Medal', 'Merit', 'GuildCoin']))
-    if (!localStorage.getItem('azurpilot.theme')) localStorage.setItem('azurpilot.theme', 'legacy-light')
+    if (!localStorage.getItem('azurpilot.theme')) localStorage.setItem('azurpilot.theme', 'modern-light')
   })
   await page.setViewportSize({width: 1996, height: 900})
   await page.goto('/#/i/demo-main/overview')
@@ -1115,7 +1115,7 @@ test('资源数值按可用宽度缩放并保持当前值与上限在同一行',
   expect(errors).toEqual([])
 })
 
-for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+for (const theme of ['modern-light', 'modern-dark'] as const) {
   test(`${theme} 窄屏总览与统计内容完整可访问`, async ({page}) => {
     test.setTimeout(60000)
     await page.addInitScript(value => localStorage.setItem('azurpilot.theme', value), theme)
@@ -1374,7 +1374,7 @@ test('配置字体、多行输入与 YAML 编辑实时保存及主题颜色', as
   await page.getByRole('tablist', {name: '明暗', exact: true}).getByRole('tab', {name: '深色', exact: true}).click()
   await page.goto('/#/i/demo-main/task/Alas')
   await expect(editor).toBeVisible()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'legacy-dark')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'modern-dark')
   expect(await token.evaluate(node => getComputedStyle(node).color)).not.toBe(lightColor)
   await row.scrollIntoViewIfNeeded()
   await page.screenshot({path: 'test-results/yaml-dark.png'})
@@ -1918,7 +1918,7 @@ test('商店配置只显示官源购买设置并保留普通过滤器保存', as
   await page.screenshot({path: 'test-results/shop-upstream-mobile.png', fullPage: true})
 })
 
-for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+for (const theme of ['modern-light', 'modern-dark'] as const) {
   test(`过滤器保留语法高亮并在${theme}保存`, async ({page}) => {
     await page.addInitScript(value => {
       localStorage.setItem('azurpilot.language', 'zh-CN')
@@ -1927,7 +1927,7 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
     await page.goto('/#/i/demo-main/task/EventShop')
     const filter = page.locator('[id="EventShop.EventShop.CustomFilter"]')
     await expect(filter).toHaveAttribute('contenteditable', 'true')
-    const value = theme === 'legacy-light' ? 'Daily > Gem > shortest' : 'Daily > Cube > shortest'
+    const value = theme === 'modern-light' ? 'Daily > Gem > shortest' : 'Daily > Cube > shortest'
     await filter.fill(value)
     const editor = filter.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " cm-editor ")]')
     await expect(editor.locator('.cm-filter-shortest')).toHaveText('shortest')
@@ -1945,7 +1945,7 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
 }
 
 test('暗色任务配置的开关按状态切换颜色', async ({page}) => {
-  await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'legacy-dark'))
+  await page.addInitScript(() => localStorage.setItem('azurpilot.theme', 'modern-dark'))
   await page.goto('/#/i/demo-main/task/Main')
   await expect(page.locator('html')).toHaveClass(/\bdark\b/)
   const control = page.locator('.config-group [data-slot="switch"]').first()

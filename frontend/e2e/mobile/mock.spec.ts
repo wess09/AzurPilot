@@ -20,7 +20,7 @@ async function expectNoPageOverflow(page: Page) {
   expect(await page.locator('main').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
 }
 
-for (const theme of ['legacy-light', 'legacy-dark']) {
+for (const theme of ['modern-light', 'modern-dark']) {
   test(`移动端 ${theme} 统计分类完整显示，搜索与导出可用`, async ({page}, testInfo) => {
     await preferences(page, theme)
     await page.goto('/#/i/demo-main/statistics')

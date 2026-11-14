@@ -37,7 +37,7 @@ function mockContext(overrides?: Partial<AppContextValue>): AppContextValue {
     notify: vi.fn(),
     previewEnabled: false,
     setPreviewEnabled: () => {},
-    theme: 'legacy-light',
+    theme: 'modern-light',
     setTheme: () => {},
     material: 'glass',
     setMaterial: () => {},

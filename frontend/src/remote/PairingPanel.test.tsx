@@ -31,7 +31,7 @@ function createMockContext(language: AppContextValue['language'] = 'zh-CN'): App
     previewEnabled: false,
     setPreviewEnabled: () => {},
 
-    theme: 'legacy-light',
+    theme: 'modern-light',
     setTheme: () => {},
     material: 'glass',
     setMaterial: () => {},

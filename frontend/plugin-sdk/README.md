@@ -46,15 +46,15 @@ uv run python -m dev_tools.pack_apu frontend/plugin-sdk/examples/compact-schedul
 
 | 变量 | 宿主定义位置 | 用途 |
 | --- | --- | --- |
-| `--bg`、`--surface`、`--surface-muted`、`--text`、`--muted`、`--border`、`--accent`、`--red`、`--radius`、`--shadow` | `frontend/src/styles/tokens.css`（首帧兜底值）与 `frontend/src/styles/legacy-palette.css`（明暗色板） | 旧版布局的基础色板与基调 |
-| `--theme-surface`、`--theme-surface-bg`、`--theme-surface-alpha`、`--theme-glass`、`--theme-radius-*` | `frontend/src/styles/legacy-palette.css`，变体在 `frontend/src/styles/minimal.css`、`theme-material.css` | 面板、玻璃拟态等派生外观 |
-| `--rail-panel-*` | `frontend/src/styles/legacy.css` | 任务配置卡、侧栏面板 |
+| `--bg`、`--surface`、`--surface-muted`、`--text`、`--muted`、`--border`、`--accent`、`--red`、`--radius`、`--shadow` | `frontend/src/styles/tokens.css`（首帧兜底值）与 `frontend/src/styles/modern-palette.css`（明暗色板） | 现代主题的基础色板与基调 |
+| `--theme-surface`、`--theme-surface-bg`、`--theme-surface-alpha`、`--theme-glass`、`--theme-radius-*` | `frontend/src/styles/modern-palette.css`，变体在 `frontend/src/styles/minimal.css`、`theme-material.css` | 面板、玻璃拟态等派生外观 |
+| `--rail-panel-*` | `frontend/src/styles/modern.css` | 任务配置卡、侧栏面板 |
 | `--sc-*` | `frontend/src/styles/shadcn.css` | shadcn 控件（开关、下拉、对话框、表格） |
 
 实战提示：
 
 - 基础色在 `:root` / `:root.dark` 上接管后，`--theme-*`、`--rail-panel-*` 等派生值会自动跟随；把 `--theme-surface-alpha` 设为 `100%` 可以关掉半透明玻璃效果，让实底色板生效。
-- 宿主部分规则使用多级类选择器（如 `.task-config-page.task-config-legacy .config-group`），皮肤需要同等或更高特异度的选择器压过它们；在皮肤选择器里加一个元素名即可抬一级。
+- 宿主部分规则使用多级类选择器（如 `.task-config-page.task-config-modern .config-group`），皮肤需要同等或更高特异度的选择器压过它们；在皮肤选择器里加一个元素名即可抬一级。
 - 弹层（`[data-slot=select-content]` 等）挂在 `body` 下，只能由 `global` 槽位触达。
 - Tailwind preflight 的 `button:not([data-slot])` 特异度高于单个类选择器，覆盖控件文字颜色时需要提高皮肤选择器的特异度。
 - 变量名与类名以后可能调整，主题应在覆盖后用浏览器计算样式验证关键控件。

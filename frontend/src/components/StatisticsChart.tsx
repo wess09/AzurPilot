@@ -31,7 +31,7 @@ export { bucketOptions } from './statistics-chart/shared'
  * 样式索引（混合分层 L2：样式横跨多域文件，无法 colocate）。
  * - styles/insights.css      统计域主文件：statistics-controls / statistics-metrics-* / stat-chip-* / stat-metric-* / stat-card-actions / statistics-chart-plot / chart-canvas / panel-note
  * - styles/forms.css         表单域：.statistics-controls select/input 控件高度（--form-height）
- * - styles/a11y-legacy.css   无障碍段：隐藏窄面板的 .instance-panel-stats .statistics-controls.period-controls
+ * - styles/a11y-modern.css   无障碍段：隐藏窄面板的 .instance-panel-stats .statistics-controls.period-controls
  * - styles/resource-card.css preview-error（时间范围校验错误提示）
  */
 

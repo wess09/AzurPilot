@@ -2,7 +2,7 @@
 /* ── 配置管理页（/configs）：页头计数摘要锚定新建/导入按钮；实例卡片走响应式网格 ──
    卡片沿用 .config-group 面板壳（圆角/贴片由主题变量决定），内部重新分区：
    头部（名字与徽章同行）、元信息、当前任务、删除确认提示、满宽等分动作条——按钮永不孤儿换行。
-   卡片级属性用 .config-group.config-card 双类抬高优先级，避免被后加载的 legacy 层 .config-group 盖掉 */
+   卡片级属性用 .config-group.config-card 双类抬高优先级，避免被后加载的 modern 层 .config-group 盖掉 */
 .config-head {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px}
 .config-head-summary {font-size: 13px; color: var(--muted)}
 .config-head > :last-child {margin-left: auto}

@@ -116,7 +116,7 @@ main.instance-setup {
       radial-gradient(ellipse at 88% 93%, color-mix(in srgb, var(--setup-accent) 18%, transparent), transparent 58%),
       var(--bg);
   }
-  :root[data-theme='legacy-dark'] main.instance-setup {
+  :root[data-theme='modern-dark'] main.instance-setup {
     --setup-accent: #60cdff;
     --setup-accent-hover: #8bd9ff;
     --setup-on-accent: #102431;

@@ -1,4 +1,4 @@
-/* 调度器面板 2026-11 改版：--rail-panel-* 变量段整体保留，单面板白面 + 入场动效 + 任务卡三态（原 legacy.css 1035-1413） */
+/* 调度器面板 2026-11 改版：--rail-panel-* 变量段整体保留，单面板白面 + 入场动效 + 任务卡三态（原 modern.css 1035-1413） */
 /* 调度器面板（2026-11 改版）
    左列是一块面板而不是三张卡片：调度器、统计入口、任务计划同处一个白面，
    内边距 20、节间 18，和设计稿的单面板结构一致。
@@ -32,7 +32,7 @@
 }
 /* 三块内容退成面板里的普通区块：不再各自带面、描边、投影 */
 .instance-page-rail .scheduler-widget,
-.instance-page-rail .legacy-stat-card,
+.instance-page-rail .modern-stat-card,
 .instance-page-rail .rail-schedule {
   margin: 0;
   padding: 0;
@@ -45,7 +45,7 @@
   transition: none;
 }
 .instance-page-rail .scheduler-widget {flex-shrink: 0}
-.instance-page-rail .legacy-stat-card {flex-shrink: 0}
+.instance-page-rail .modern-stat-card {flex-shrink: 0}
 /* 面板撑满左列上下两端：高度与内部滚动沿用布局层的 951px 规则，
    这里只把三块内容的面去掉，别再改它们的伸缩方式 */
 
@@ -97,8 +97,8 @@
   backdrop-filter: none;
 }
 .scheduler-stats > div:hover {background: none; box-shadow: none; transform: none}
-:root[data-theme='legacy-dark'] .scheduler-stats > div,
-:root[data-theme='legacy-dark'] .scheduler-stats > div:hover {
+:root[data-theme='modern-dark'] .scheduler-stats > div,
+:root[data-theme='modern-dark'] .scheduler-stats > div:hover {
   background: none;
   border: 0;
   box-shadow: none;
@@ -167,7 +167,7 @@
 
 /* 「统计」入口：一行字，标题在左、仪表盘设置在右，两者都在同一行内。
    不再给它一圈描边 —— 面板里每一块都带框，正是旧式控件最典型的写法 */
-.instance-page-rail .legacy-stat-card {
+.instance-page-rail .modern-stat-card {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -177,7 +177,7 @@
   border-radius: 10px;
   box-shadow: none;
 }
-.legacy-stat-title {
+.modern-stat-title {
   display: inline-flex;
   align-items: center;
   justify-content: flex-start;
@@ -193,17 +193,17 @@
   font-weight: 500;
   color: var(--text);
 }
-.legacy-stat-title > svg {color: color-mix(in srgb, var(--text) 30%, transparent); transition: transform .15s ease}
-.legacy-stat-title:hover > svg {transform: none; color: color-mix(in srgb, var(--text) 55%, transparent)}
+.modern-stat-title > svg {color: color-mix(in srgb, var(--text) 30%, transparent); transition: transform .15s ease}
+.modern-stat-title:hover > svg {transform: none; color: color-mix(in srgb, var(--text) 55%, transparent)}
 /* 悬停与「已切到统计」都用中性灰：面板里不该再出现第二种强调色 */
-.legacy-stat-title:hover,
-.legacy-stat-title[aria-pressed='true'] {
+.modern-stat-title:hover,
+.modern-stat-title[aria-pressed='true'] {
   background: color-mix(in srgb, var(--text) 4%, transparent);
   color: var(--text);
   box-shadow: none;
 }
 /* 齿轮是行内图标按钮，不要再套一层白色方块 */
-.instance-page-rail .legacy-stat-card > .button {
+.instance-page-rail .modern-stat-card > .button {
   width: 28px;
   height: 28px;
   min-height: 28px;
@@ -214,7 +214,7 @@
   box-shadow: none;
   color: color-mix(in srgb, var(--text) 40%, transparent);
 }
-.instance-page-rail .legacy-stat-card > .button:hover:not(:disabled) {
+.instance-page-rail .modern-stat-card > .button:hover:not(:disabled) {
   background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--text);
 }
@@ -354,19 +354,19 @@
 }
 
 /* 暗色：淡红底要提亮，字才能压在底上 */
-:root[data-theme='legacy-dark'] .scheduler-toggle.danger,
-:root[data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger {
+:root[data-theme='modern-dark'] .scheduler-toggle.danger,
+:root[data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.danger {
   background: color-mix(in srgb, var(--red) 16%, transparent);
   color: color-mix(in srgb, var(--red) 55%, #ffffff);
 }
-:root[data-theme='legacy-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
+:root[data-theme='modern-dark'] .instance-page-rail .scheduler-toggle.danger:hover:not(:disabled) {
   background: color-mix(in srgb, var(--red) 22%, transparent);
 }
-:root[data-theme='legacy-dark'] .rail-task-item.running {
+:root[data-theme='modern-dark'] .rail-task-item.running {
   background: color-mix(in srgb, #ffffff 7%, var(--surface, #2f3136));
   border-color: color-mix(in srgb, #ffffff 14%, transparent);
 }
-:root[data-theme='legacy-dark'] .rail-task-item.waiting {
+:root[data-theme='modern-dark'] .rail-task-item.waiting {
   background: color-mix(in srgb, var(--text) 5%, var(--surface, #2f3136));
   border-color: transparent;
   box-shadow: none;

@@ -14,7 +14,7 @@
 .group-nav a {padding: 10px; color: var(--muted); border-radius: 5px; line-height: 1.7}
 .group-nav a:hover {color: var(--accent); background: var(--accent-soft)}
 /* 设置页的竖向节奏：搜索栏与参数卡用同一个间距，两者互不粘连 */
-.app-shell:where(.modern-shell) {--config-card-gap: 12px}
+.app-shell {--config-card-gap: 12px}
 /* 参数卡的内容层：与统计页同一套二级贴片——微弱边距取 --theme-plate-margin，
    圆角 = 面板圆角 − 边距，两层同心 */
 .config-group {position: relative; isolation: isolate; padding: var(--theme-plate-margin, 8px); margin-bottom: var(--config-card-gap, 19px); scroll-margin-top: calc(var(--topbar-height, 69px) + 16px)}

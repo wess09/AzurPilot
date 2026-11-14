@@ -1,5 +1,5 @@
 /**
- * @fileoverview 旧版实例视图左侧调度器与任务列表面板组件。
+ * @fileoverview 现代实例视图左侧调度器与任务列表面板组件。
  */
 
 import { Suspense, type ReactNode } from 'react'
@@ -17,7 +17,7 @@ import { SchedulerWidget } from './SchedulerWidget'
  * 里面的启停逻辑、队列刷新、右键菜单都只有这一份，别处不要再自己拼
  * `SchedulerWidget` + `TaskQueue`。`children` 插在两者之间，供总览页放「统计界面」入口。
  */
-export function LegacyRail({instance, data, onData, children}: {instance: string; data?: Overview; onData: (data: Overview) => void; children?: ReactNode}) {
+export function ModernRail({instance, data, onData, children}: {instance: string; data?: Overview; onData: (data: Overview) => void; children?: ReactNode}) {
   const {ui} = useApp()
   const SchedulerPanel = useThemeComponent('SchedulerPanel', SchedulerWidget)
   return <div className="instance-page-rail" onContextMenu={event => event.preventDefault()}>

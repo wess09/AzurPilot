@@ -1,7 +1,7 @@
-.app-shell:where(.modern-shell) {display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: var(--viewport-height)}
-.app-shell:where(.modern-shell).with-rail {grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width)}
+.app-shell {display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: var(--viewport-height)}
+.app-shell.with-rail {grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--right-rail-width)}
 .brand-mark {color: var(--accent); display: grid; place-items: center; width: 39px; height: 39px; margin-bottom: 39px}
-.sidebar:where(.modern-shell *) {position: sticky; top: 0; height: var(--viewport-height); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 15px; z-index: 20}
+.sidebar:where(.app-shell *) {position: sticky; top: 0; height: var(--viewport-height); background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0 15px; z-index: 20}
 .sidebar-transition-wrap {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%; position: relative}
 .sidebar-transition-pane {display: flex; flex-direction: column; min-height: 0; flex: 1; width: 100%}
 .sidebar-brand {height: 72px; flex-shrink: 0; padding: 24px 9px 0; display: flex; align-items: center; justify-content: space-between}
@@ -30,7 +30,7 @@
 .task-group-arrow {flex-shrink: 0; color: var(--muted); transition: transform .15s ease, color .15s ease}
 .task-group-button:hover .task-group-arrow, .task-group-button.expanded .task-group-arrow {color: var(--accent); transform: translateX(2px)}
 .task-submenu-list {display: flex; flex-direction: column; gap: 2px}
-/* 树状折叠菜单（用于经典主题及移动端窄屏抽屉手风琴导航） */
+/* 树状折叠菜单（用于现代主题及移动端窄屏抽屉手风琴导航） */
 .task-group {display: flex; flex-direction: column}
 .task-group .task-group-button:hover .task-group-arrow {transform: none}
 .task-group .task-group-button.expanded .task-group-arrow {color: var(--accent); transform: rotate(180deg)}
@@ -54,15 +54,15 @@
 [data-marquee='on'] > .marquee-track {display: inline-flex; align-items: center; gap: var(--marquee-gap); animation: marquee-scroll var(--marquee-duration, 8s) linear infinite}
 @keyframes marquee-scroll {from {transform: translateX(0)} to {transform: translateX(calc(-1 * var(--marquee-shift, 0px)))}}
 
-.main-shell:where(.modern-shell *) {min-width: 0; display: flex; flex-direction: column}
+.main-shell:where(.app-shell *) {min-width: 0; display: flex; flex-direction: column}
 /* 桌面配置页只让内容列滚动，长参数列表不能把外壳和浏览器页面撑高 */
 @media (min-width: 951px) {
-  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) {height: var(--viewport-height); overflow: hidden}
-  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .main-shell:where(.modern-shell *) {min-height: 0}
-  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .main-shell:where(.modern-shell *) > main:where(.modern-shell .main-shell > main) {min-height: 0; overflow-y: auto}
-  .app-shell:where(.modern-shell).task-config-shell:not(.legacy-shell) .group-nav {top: 16px}
+  .app-shell.task-config-shell:not(.modern-shell) {height: var(--viewport-height); overflow: hidden}
+  .app-shell.task-config-shell:not(.modern-shell) .main-shell:where(.app-shell *) {min-height: 0}
+  .app-shell.task-config-shell:not(.modern-shell) .main-shell:where(.app-shell *) > main:where(.app-shell .main-shell > main) {min-height: 0; overflow-y: auto}
+  .app-shell.task-config-shell:not(.modern-shell) .group-nav {top: 16px}
 }
-.topbar:where(.modern-shell *) {height: var(--topbar-height, 69px); border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 31px; background: none; flex-shrink: 0}
+.topbar:where(.app-shell *) {height: var(--topbar-height, 69px); border-bottom: none; display: flex; align-items: center; justify-content: space-between; padding: 0 31px; background: none; flex-shrink: 0}
 .breadcrumb {font-size: 11px; color: var(--muted); display: flex; gap: 13px; align-items: center}
 .breadcrumb span {color: var(--muted)}
 .breadcrumb strong {font-weight: 500; color: var(--text)}
@@ -76,12 +76,12 @@
   .instance-tab-name {max-width: 5rem}
 }
 .connection-label {display: flex; align-items: center; gap: 6px; color: var(--accent)}
-main:where(.modern-shell .main-shell > main) {padding: 32px 32px 16px; flex: 1}
+main:where(.app-shell .main-shell > main) {padding: 32px 32px 16px; flex: 1}
 .page-title {display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 26px}
 .page-title h1 {font-size: 34px; font-weight: 700; letter-spacing: -.9px; line-height: 1.25}
 .title-actions {display: flex; align-items: center; gap: 10px; flex-wrap: wrap}
 .connection-banner {padding: 10px 32px; display: flex; gap: 9px; align-items: center; background: var(--theme-warning-soft); color: var(--theme-warning); font-size: 11px}
-.right-rail:where(.modern-shell *) {position: sticky; top: 0; height: var(--viewport-height); min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); z-index: 18; overflow: hidden}
+.right-rail:where(.app-shell *) {position: sticky; top: 0; height: var(--viewport-height); min-width: 0; display: flex; flex-direction: column; background: var(--surface); border-left: 1px solid var(--border); z-index: 18; overflow: hidden}
 .right-rail-header {height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; border-bottom: 0}
 .right-rail-header > div {min-width: 0}
 .right-rail-header strong {display: block; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px}
@@ -108,7 +108,7 @@ main:where(.modern-shell .main-shell > main) {padding: 32px 32px 16px; flex: 1}
 .rail-task-item strong {font-size: 10px; font-weight: 600}
 .rail-task-item small {margin-top: 2px; color: var(--muted); font-size: 9px}
 .rail-empty {padding: 18px 8px; color: var(--muted); font-size: 10px; text-align: center}
-.mobile-toggle:where(.modern-shell *), .mobile-close:where(.modern-shell *) {display: none !important}
+.mobile-toggle:where(.app-shell *), .mobile-close:where(.app-shell *) {display: none !important}
 .login-page {min-height: var(--viewport-height); display: grid; grid-template-columns: 1fr 1fr; background: var(--surface)}
 .login-art {background: #142d3a; color: #72c6b4; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 60px; position: relative; overflow: hidden}
 
@@ -121,10 +121,10 @@ main:where(.modern-shell .main-shell > main) {padding: 32px 32px 16px; flex: 1}
 .welcome {padding: 110px 20px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center}
 .welcome > svg {color: var(--accent); margin-bottom: 10px}
 .welcome p {color: var(--muted)}
-@media (min-width: 2000px) {main:where(.modern-shell .main-shell > main) {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
-@media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main:where(.modern-shell .main-shell > main) {padding: 25px 24px 15px}.topbar:where(.modern-shell *) {padding: 0 24px}.sidebar:where(.modern-shell *) {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
+@media (min-width: 2000px) {main:where(.app-shell .main-shell > main) {padding: 40px 44px 20px}.page-title {margin-bottom: 32px}.page-title h1 {font-size: 38px}}
+@media (max-width: 1562.5px) {:root {--sidebar-width: 194px; --right-rail-width: 292px}main:where(.app-shell .main-shell > main) {padding: 25px 24px 15px}.topbar:where(.app-shell *) {padding: 0 24px}.sidebar:where(.app-shell *) {padding: 0 11px}.resource-value {font-size: 23px !important}.page-title h1 {font-size: 29px}}
 @media (max-width: 1275px) {.preview-screen {max-height: 360px}.page-title {align-items: flex-start}.title-actions {justify-content: flex-end}.resource-grid {gap: 7px !important}.resource-card {--resource-card-inset: 8px; padding: var(--resource-card-inset) !important}.resource-foot {font-size: 8px !important}}
-@media (max-width: 950px) {.app-shell:where(.modern-shell) {display: block}.sidebar:where(.modern-shell *) {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar:where(.modern-shell *) {left: 0}.right-rail:where(.modern-shell *) {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle:where(.modern-shell *), .mobile-close:where(.modern-shell *) {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close:where(.modern-shell *) {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar:where(.modern-shell *) {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}main:where(.modern-shell .main-shell > main) {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
+@media (max-width: 950px) {.app-shell {display: block}.sidebar:where(.app-shell *) {position: fixed; width: 220px; left: -230px; transition: left .2s; box-shadow: 20px 0 60px #10243730}.mobile-open .sidebar:where(.app-shell *) {left: 0}.right-rail:where(.app-shell *) {position: fixed; top: 0; right: calc(-1 * min(360px, 92vw)); width: min(360px, 92vw); height: var(--viewport-height); transition: right .2s; box-shadow: -20px 0 60px #10243730; z-index: 30}.mobile-toggle:where(.app-shell *), .mobile-close:where(.app-shell *) {display: inline-flex !important}.sidebar-brand {height: var(--topbar-height, 58px); padding: 0; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px}.sidebar-brand-left {display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1}.sidebar-brand .brand-title {font-size: 16px; gap: 6px; min-width: 0; letter-spacing: -.3px}.sidebar-brand .brand-title .brand-logo {width: 22px; height: 22px; flex-shrink: 0}.sidebar-brand .brand-title span {overflow: hidden; text-overflow: ellipsis; white-space: nowrap}.update-notice.sidebar-update-notice {padding: 2px 6px; font-size: 10px; flex-shrink: 0}.sidebar-brand .mobile-close:where(.app-shell *) {position: static; margin-left: auto; flex-shrink: 0; width: 30px; height: 30px}.topbar:where(.app-shell *) {height: 58px; padding: 0 15px; gap: 12px}.breadcrumb {margin-right: auto; font-size: 10px; gap: 7px}main:where(.app-shell .main-shell > main) {padding: 24px 17px 12px}.page-title {flex-wrap: wrap; gap: 17px}.page-title h1 {font-size: 26px}.title-actions {justify-content: flex-start}.resource-grid {grid-template-columns: 1fr 1fr !important}.field-row {flex-wrap: wrap; gap: 16px !important}.field-label {min-width: 100% !important}.field-control {width: 100% !important}.panel-heading {padding: 16px !important}.login-page {grid-template-columns: 1fr}.login-art {display: none}.config-toolbar > span {display: none}.log-filters {flex-wrap: wrap}.panel-heading > div {gap: 8px !important}}
 
 /* 侧栏宽度直接拖拽调整把手 */
 .sidebar-resize-handle {

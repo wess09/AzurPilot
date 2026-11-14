@@ -21,7 +21,7 @@ button:focus-visible, a:focus-visible, summary:focus-visible {outline-color: var
   -webkit-backdrop-filter: var(--theme-sidebar-filter, none);
   backdrop-filter: var(--theme-sidebar-filter, none);
 }
-/* 旧版版式的左列容器装的是调度器与任务计划，与新版的右栏同属一级面；
+/* 现代版式的左列容器装的是调度器与任务计划，与新版的右栏同属一级面；
    只给有材质轴的族：简约与紧凑没有材质层，保持裸容器 */
 :root[data-material] .instance-page-rail {
   background: var(--theme-surface-bg);

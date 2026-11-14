@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import legacyPalette from '../styles/legacy-palette.css?raw'
+import modernPalette from '../styles/modern-palette.css?raw'
 import { REGIONS, knobFor, regionKnobs, regionProps } from './themeKnobs'
 
-const contractKeys = new Set([...legacyPalette.matchAll(/(--theme-[a-z0-9-]+)\s*:/g)].map(m => m[1]))
+const contractKeys = new Set([...modernPalette.matchAll(/(--theme-[a-z0-9-]+)\s*:/g)].map(m => m[1]))
 
 describe('区域旋钮目录', () => {
   it('每个区域只暴露 regionProps 声明的旋钮，不多不少', () => {

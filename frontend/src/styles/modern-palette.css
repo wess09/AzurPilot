@@ -1,4 +1,4 @@
-/* 旧版主题配色：中性灰白面板 + 品牌青绿强调。
+/* 现代主题配色：中性灰白面板 + 品牌青绿强调。
    简约主题沿用同一份变量契约，在 minimal.css 覆盖自己的取值；
    颜色槽位的契约名与 app/colorPalette.ts 的 colorSlots 一一对应，改名会破坏调色板 */
 :root {
@@ -11,7 +11,7 @@
   --sidebar: var(--surface); --radius: 8px; --shadow: 0 1px 2px rgb(0 0 0 / .1);
   --red: #e5484d; --green: #2c9c57; --green-soft: #e4f3ea;
   --sidebar-width: 240px; --topbar-height: 56px;
-  /* 旧版家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明 */
+  /* 现代家族的玻璃原始取值；普通材质由 theme-material.css 覆写成不透明 */
   --glass-tint: var(--theme-surface-bg);
   --glass-edge: color-mix(in srgb, var(--border) 82%, transparent);
   --glass-shadow: 0 8px 32px rgb(0 0 0 / .12);
@@ -33,7 +33,7 @@
   --theme-glass-shadow: var(--glass-shadow); --theme-material-filter: var(--theme-surface-filter);
 
   --theme-popover-filter: var(--theme-menu-filter); --theme-overlay: color-mix(in srgb, var(--bg) 30%, transparent);
-  /* 玻璃参数由旧版玻璃变体使用；普通材质由 theme-material.css 覆写为无滤镜 */
+  /* 玻璃参数由现代主题的玻璃材质使用；普通材质由 theme-material.css 覆写为无滤镜 */
   --theme-glass-blur: var(--theme-surface-blur);
   /* 区域化材质：参数键由旋钮写入、合成键由皮肤消费；默认值关系是一级面为基准，
      二级菜单里每个区域都能独立调（动过的区写自己的参数键，没动过的区跟着一级面） */
@@ -108,7 +108,7 @@
   --theme-nav-popover-shadow: 0 1px 2px rgb(0 0 0 / .1);
   --theme-primary-bg: var(--accent); --theme-primary-hover: var(--accent-hover);
 
-  /* 契约层 —— 表单：旧版聚焦不加光圈，只换底边框颜色 */
+  /* 契约层 —— 表单：现代聚焦不加光圈，只换底边框颜色 */
   --theme-input-bg: var(--theme-control-bg); --theme-input-text: var(--text);
   --theme-input-border: color-mix(in srgb, var(--text) 32%, var(--surface));
   --theme-focus: var(--accent); --theme-focus-ring: transparent;
@@ -133,13 +133,13 @@
   --theme-login-art-bg: var(--accent-soft); --theme-login-art-text: var(--accent);
   --theme-instance-icon-bg: var(--accent); --theme-instance-icon-shadow: none;
 
-  /* 契约层 —— 标题：旧版是普通实色标题，不做玻璃字 */
+  /* 契约层 —— 标题：现代是普通实色标题，不做玻璃字 */
   --theme-title-fill: none; --theme-title-color: var(--text); --theme-title-stroke: var(--text);
   --theme-title-highlight-stroke: var(--text); --theme-title-glass: var(--surface); --theme-title-shadow: none;
 }
 
 /* 深色变体是独立主题值，与前缀式反代的主题名一一对应 */
-:root[data-theme='legacy-dark'] {
+:root[data-theme='modern-dark'] {
   color-scheme: dark;
   --bg: #191919; --surface: #262626; --surface-muted: #333333;
   --text: #fafafa; --muted: #a3a3a3; --border: #ffffff1a;
@@ -174,5 +174,5 @@
 
 /* 本族的控件语言是硬朗直角（控件圆角 8px），按钮不跟 apple.css 的 20px 药丸；
    带 data-theme 前缀是为了压过 apple.css 的同名 .button 规则（同为单类，靠文件顺序会输给它） */
-:root[data-theme='legacy-light'] .button, :root[data-theme='legacy-light'] .icon-button,
-:root[data-theme='legacy-dark'] .button, :root[data-theme='legacy-dark'] .icon-button {border-radius: var(--theme-radius-control)}
+:root[data-theme='modern-light'] .button, :root[data-theme='modern-light'] .icon-button,
+:root[data-theme='modern-dark'] .button, :root[data-theme='modern-dark'] .icon-button {border-radius: var(--theme-radius-control)}

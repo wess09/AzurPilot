@@ -1,7 +1,7 @@
 import {routeRpc} from '../rpc-route'
 import { expect, test } from '@playwright/test'
 
-for (const theme of ['legacy-light', 'legacy-dark'] as const) {
+for (const theme of ['modern-light', 'modern-dark'] as const) {
   test(`系统设置在 ${theme} 下渲染并保存开关`, async ({page}) => {
     let enabled = false
     const requests = new Set<string>()
@@ -37,12 +37,12 @@ for (const theme of ['legacy-light', 'legacy-dark'] as const) {
     await expect(control).toHaveAttribute('aria-checked', 'false')
     await expect(control).toHaveAttribute('aria-describedby', 'deploy-SSLVerify-description')
     await expect(page.locator('#deploy-SSLVerify-description')).toHaveText('检查证书')
-    await expect(page.locator('html')).toHaveClass(theme === 'legacy-dark' ? /\bdark\b/ : /^(?!.*\bdark\b)/)
+    await expect(page.locator('html')).toHaveClass(theme === 'modern-dark' ? /\bdark\b/ : /^(?!.*\bdark\b)/)
     const uncheckedColor = await thumb.evaluate(element => getComputedStyle(element).backgroundColor)
     await control.check()
     await expect(control).toHaveAttribute('aria-checked', 'true')
     await expect(page.locator('#deploy-SSLVerify-status')).toContainText('已保存')
-    if (theme === 'legacy-dark') {
+    if (theme === 'modern-dark') {
       await expect.poll(() => thumb.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(uncheckedColor)
     }
     await page.reload()
