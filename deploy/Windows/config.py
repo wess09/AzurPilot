@@ -71,6 +71,8 @@ class ConfigModel:
     RemoteAccessMode: str = "auto"
     CloudflareRegistry: str = "https://remote.azurpilot.com"
     CloudflareDeviceId: str = ""
+    RemoteAccessPort: int = 0
+    RemoteAccessPublicPort: int = 0
     SSHUser: Optional[str] = None
     SSHServer: Optional[str] = None
     SSHExecutable: Optional[str] = None

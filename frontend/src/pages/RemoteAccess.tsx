@@ -77,7 +77,7 @@ export function RemoteAccess() {
         {!address && status === 'disabled' && <p className="panel-note">{ui('remote.disabledHint')}</p>}
         {data?.remote?.error && <p className="panel-note">{data.remote.error}</p>}
       </section>
-      <PairingPanel ready={!!address && data?.remote?.state === 'cloudflare_ready'}/>
+      <PairingPanel ready={!!address && ['cloudflare_ready', 'direct_ready'].includes(data?.remote?.state ?? '')}/>
       {!data ? (
         <span role="status" className="remote-loading">
           <Spinner aria-hidden="true"/>{ui('common.loading')}

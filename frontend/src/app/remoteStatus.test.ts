@@ -15,6 +15,7 @@ describe('remoteStatus', () => {
     expect(remoteStatus('direct_p2p', true)).toBe('ready')
     expect(remoteStatus('turn_relay', true)).toBe('ready')
     expect(remoteStatus('ssh_forward', true)).toBe('ready')
+    expect(remoteStatus('direct_ready', true)).toBe('ready')
   })
 
   it('启动与重连阶段是 starting', () => {

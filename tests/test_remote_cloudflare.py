@@ -91,7 +91,7 @@ def test_stop_interrupts_reconnect_backoff_and_start_is_idempotent():
     async def unavailable():
         attempted.set()
         raise ValueError('模拟注册暂不可用')
-    with patch.object(provider, '_tunnel', side_effect=unavailable):
+    with patch.object(provider, '_connect', side_effect=unavailable):
         provider.start()
         thread = provider.thread
         provider.start()
