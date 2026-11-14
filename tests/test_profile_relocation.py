@@ -12,6 +12,7 @@ from module.api.stock_exchange_identity import load_identity
 from module.persistence.scheduler import read_observations, write_observation
 from module.runtime.game_data import GameDataProtector
 from module.scheduler.store import ProgramStore
+from module.persistence.database import close_all
 
 
 class ProfileRelocationTests(unittest.TestCase):
@@ -23,6 +24,7 @@ class ProfileRelocationTests(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name) / 'project'
         self.config_dir = self.root / 'config'
+        self.addCleanup(close_all, self.config_dir)
         self.config_dir.mkdir(parents=True)
         self.config = self.config_dir / 'test.json'
         self.config.write_text(json.dumps({'Alas': {}}), encoding='utf-8')

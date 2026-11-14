@@ -15,6 +15,7 @@ from module.api.stock_exchange_service import StockExchangeService
 from module.runtime.game_data import GameDataProtector
 from module.scheduler.action_history import ActionPointChain
 from module.scheduler.store import ProgramStore
+from module.persistence.database import close_all
 from tests.test_api import fixture
 
 
@@ -23,6 +24,7 @@ class StockRecoveryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = fixture(Path(self.temp.name).resolve())
+        self.addCleanup(close_all, self.root / 'config')
         self.configs = ConfigService(self.root)
         self.configs.create('other')
         self.service = StockExchangeService(self.configs)

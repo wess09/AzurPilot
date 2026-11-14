@@ -76,6 +76,7 @@ jobs:
       - name: 校验 API 与前端
         run: |
           uv run ruff check module/api module/runtime deploy/frontend.py --select F821,F401
+          uv run python -m pytest tests/test_remote_direct.py tests/test_remote_cloudflare.py -q
           uv run python -m unittest tests.test_api tests.test_api_lifecycle tests.test_config_transaction tests.test_runtime_task_handler tests.test_frontend_build tests.test_gui_supervisor_exit
           uv run python -m unittest tests.test_island_walk_rules tests.test_island_cargo_preparation tests.test_mind_calculator tests.test_mind_scan tests.test_mind_scan_stuck tests.test_mind_scan_bottom tests.test_mind_scan_identity tests.test_dock_scan_recovery tests.test_fleet_tech tests.test_fleet_tech_scan
           uv run python -m unittest tests.test_dock_data tests.test_dock_service tests.test_fleet_database tests.test_fleet_database_lifecycle tests.test_fleet_ledger tests.test_fleet_legacy tests.test_fleet_legacy_service tests.test_mind_calculator_mock
