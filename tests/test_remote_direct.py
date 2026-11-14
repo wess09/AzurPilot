@@ -156,6 +156,10 @@ def test_no_direct_route_starts_cloudflare(tmp_path):
                 patch.object(DirectAccessServer, 'serve', serve), patch.object(provider, '_tunnel', tunnel):
             task = asyncio.create_task(provider._connect())
             await asyncio.wait_for(started.wait(), 3)
+            assert provider.address == 'https://registry.example/d/test/'
+            assert provider.state == 'registered'
+            assert not provider._tunnel_ready
+            assert provider.error == ''
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
     asyncio.run(scenario())

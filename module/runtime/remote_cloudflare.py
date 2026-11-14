@@ -22,6 +22,7 @@ from module.logger import logger
 
 DEFAULT_REGISTRY = 'https://remote.azurpilot.com'
 LEGACY_REGISTRY = 'https://ap-remote.108-186-180-52.sslip.io:8443'
+TUNNEL_UNREADY_TIMEOUT = 120
 _store_lock = threading.RLock()
 _pyflared_import_lock = threading.RLock()
 
@@ -33,6 +34,14 @@ class RemoteRegistryError(ValueError):
         self.status, self.code = status, code
         route = re.sub(r'/[a-zA-Z0-9_-]{16,80}$', '/<id>', path)
         super().__init__(f'远程注册服务：{message}（HTTP {status}，{method} {route}）')
+
+
+class TunnelHealthError(ValueError):
+    """保留 Cloudflare 公网响应状态，区分短暂故障与持续失效的入口。"""
+
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f'Quick Tunnel 公网健康检查返回 HTTP {status}')
 
 
 def _device_id(value):
@@ -123,7 +132,7 @@ def _request_proxy(url):
     return getproxies().get(parsed.scheme)
 
 
-def _quick_tunnel_context(service):
+def _quick_tunnel_context(service, protocol=None):
     """将 pyflared 0.1.0 的导入期数据放入项目缓存，不改写其他库的目录。"""
     import platformdirs
 
@@ -142,7 +151,16 @@ def _quick_tunnel_context(service):
             from pyflared import run_quick_tunnel
         finally:
             platformdirs.user_data_dir = original
-    return run_quick_tunnel(service)
+    context = run_quick_tunnel(service)
+    if protocol:
+        command = context.cmd_args
+
+        async def arguments():
+            values = await command
+            return (*values[:1], '--protocol', protocol, *values[1:])
+
+        context.cmd_args = arguments()
+    return context
 
 
 def _failure_reason(error):
@@ -168,6 +186,7 @@ class CloudflareRemoteAccessProvider:
         self.tunnel_url = ''
         self.retry_after = 0
         self._tunnel_ready = False
+        self._tunnel_protocol = None
         self._lock = threading.Lock()
 
     def identity(self):
@@ -289,6 +308,7 @@ class CloudflareRemoteAccessProvider:
         tunnel_task = None
         retry_at = 0
         delay = 2
+        registered_at = 0
         try:
             async with DirectAccessServer(self).serve() as direct:
                 while not self.stop_event.is_set():
@@ -296,7 +316,7 @@ class CloudflareRemoteAccessProvider:
                         try:
                             tunnel_task.result()
                         except (Exception, asyncio.CancelledError) as exc:
-                            self.error = f'Cloudflare 正在恢复（{_failure_reason(exc)}）'
+                            logger.warning(f'Cloudflare 正在恢复（{_failure_reason(exc)}）')
                         tunnel_task = None
                         self.tunnel_url, self._tunnel_ready = '', False
                         retry_at = time.monotonic() + max(30, self.retry_after)
@@ -318,19 +338,18 @@ class CloudflareRemoteAccessProvider:
                         delay = min(delay * 2, 15)
                         continue
                     except (aiohttp.ClientError, http.RequestException, TimeoutError, ValueError) as exc:
-                        self.address, self.state = '', 'failed'
+                        if time.monotonic() - registered_at >= 180:
+                            self.address, self.state = '', 'failed'
                         self.error = f'远程入口正在恢复（{_failure_reason(exc)}）'
                         await asyncio.sleep(delay)
                         delay = min(delay * 2, 15)
                         continue
                     delay = 2
+                    registered_at = time.monotonic()
                     endpoints = result.get('endpoints', [])
-                    if endpoints or self._tunnel_ready:
-                        self.address = result['url']
-                        self.state = 'direct_ready' if endpoints else 'cloudflare_ready'
-                        self.error = ''
-                    else:
-                        self.address, self.state = '', 'starting'
+                    self.address = result['url']
+                    self.state = 'direct_ready' if endpoints else 'cloudflare_ready' if self._tunnel_ready else 'registered'
+                    self.error = ''
                     if result.get('fallback_required', True) and not tunnel_task and time.monotonic() >= retry_at:
                         tunnel_task = asyncio.create_task(self._tunnel(managed=True))
                     await asyncio.sleep(10)
@@ -358,7 +377,9 @@ class CloudflareRemoteAccessProvider:
         scheme = 'https' if State.deploy_config.WebuiSSLCert else 'http'
         if not managed:
             self.state, self.address, self.error = 'starting', '', ''
-        context = _quick_tunnel_context(f'{scheme}://{host}:{State.deploy_config.WebuiPort}')
+        service = f'{scheme}://{host}:{State.deploy_config.WebuiPort}'
+        context = (_quick_tunnel_context(service, protocol=self._tunnel_protocol)
+                   if self._tunnel_protocol else _quick_tunnel_context(service))
         from pyflared.shared.types import ChunkSignal
         diagnostic = ''
         async def safe_chunker(stream, channel):
@@ -393,10 +414,12 @@ class CloudflareRemoteAccessProvider:
                     raise ValueError(diagnostic or 'Cloudflare 在 90 秒内未分配 Quick Tunnel 地址') from None
                 identity = self.identity().load()
                 delay = 2
+                unready_since = None
                 while True:
                     try:
                         # CLI 输出 URL 只表示分配成功，公网健康检查成功才能宣告可访问。
                         await self.check_tunnel(self.tunnel_url)
+                        unready_since = None
                         self._tunnel_ready = True
                         if managed:
                             await asyncio.sleep(60)
@@ -406,12 +429,24 @@ class CloudflareRemoteAccessProvider:
                             'tunnel_url': self.tunnel_url,
                         })
                     except (aiohttp.ClientError, http.RequestException, TimeoutError, ValueError) as exc:
+                        if isinstance(exc, TunnelHealthError) and exc.status == 530:
+                            if unready_since is None:
+                                unready_since = time.monotonic()
+                            if time.monotonic() - unready_since >= TUNNEL_UNREADY_TIMEOUT:
+                                self._tunnel_protocol = 'http2'
+                                raise ValueError('Cloudflare 入口持续不可达，使用 HTTP/2 重建隧道') from None
+                        else:
+                            unready_since = None
                         # 注册或探测瞬断只重试同一 URL，不销毁健康进程重新申请 Tunnel。
                         self._tunnel_ready = False
                         if not managed:
                             self.address, self.state = '', 'failed'
                         reason = '网络请求超时' if isinstance(exc, TimeoutError) else _failure_reason(exc)
-                        self.error = f'Quick Tunnel 正在恢复（{reason}），保留当前隧道重试'
+                        message = f'Quick Tunnel 正在恢复（{reason}），保留当前隧道重试'
+                        if managed:
+                            logger.warning(message)
+                        else:
+                            self.error = message
                         await asyncio.sleep(delay)
                         delay = min(delay * 2, 60)
                     else:
@@ -438,7 +473,7 @@ class CloudflareRemoteAccessProvider:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=8)) as session:
                 async with session.get(url, allow_redirects=False, proxy=_request_proxy(url)) as response:
                     if response.status != 200:
-                        raise ValueError(f'Quick Tunnel 公网健康检查返回 HTTP {response.status}')
+                        raise TunnelHealthError(response.status)
                     try:
                         data = await response.json()
                     except (ValueError, aiohttp.ContentTypeError):
