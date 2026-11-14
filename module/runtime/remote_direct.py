@@ -152,8 +152,9 @@ class DirectAccessServer:
             try:
                 for family, host, label in ((socket.AF_INET, '0.0.0.0', 'ipv4'),
                                             (socket.AF_INET6, '::', 'ipv6')):
-                    listener = socket.socket(family, socket.SOCK_STREAM)
+                    listener = None
                     try:
+                        listener = socket.socket(family, socket.SOCK_STREAM)
                         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                         if family == socket.AF_INET6:
                             listener.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
@@ -162,7 +163,8 @@ class DirectAccessServer:
                         await web.SockSite(runner, listener).start()
                         self.bound_families.add(label)
                     except OSError:
-                        listener.close()
+                        if listener is not None:
+                            listener.close()
                 yield self
             finally:
                 await runner.cleanup()

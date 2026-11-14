@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import aiohttp
 from aiohttp import web
+import pytest
 
 from module.runtime.remote_cloudflare import CloudflareRemoteAccessProvider, RemoteIdentity
 from module.runtime.remote_direct import DirectAccessServer, public_addresses
@@ -113,13 +114,14 @@ def test_direct_ready_does_not_allocate_cloudflare(tmp_path):
     asyncio.run(scenario())
 
 
-def test_unavailable_listener_reports_no_direct_candidates(tmp_path):
+@pytest.mark.parametrize('unavailable', ['socket.socket.bind', 'module.runtime.remote_direct.socket.socket'])
+def test_unavailable_listener_reports_no_direct_candidates(unavailable):
     async def scenario():
         provider = CloudflareRemoteAccessProvider()
         config = SimpleNamespace(WebuiPort=25548, WebuiHost='127.0.0.1', WebuiSSLCert=None,
                                  RemoteAccessPort=25549, RemoteAccessPublicPort=0)
         with patch('module.runtime.setting.State.deploy_config', config), \
-                patch.object(socket.socket, 'bind', side_effect=OSError('port occupied')), \
+                patch(unavailable, side_effect=OSError('listener unavailable')), \
                 patch('module.runtime.remote_direct.public_addresses', return_value={
                     'ipv4': ['1.1.1.1'], 'ipv6': ['2606:4700:4700::1111']}):
             async with DirectAccessServer(provider).serve() as direct:
