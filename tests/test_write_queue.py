@@ -14,7 +14,8 @@ class WriteQueueTests(unittest.TestCase):
     def setUp(self):
         """准备一个只有单表的最小总库，跳过旧来源迁移。"""
         self.directory = Path(self.enterContext(tempfile.TemporaryDirectory()))
-        self.enterContext(patch('module.persistence.database.BusinessDatabase.ensure_ready', lambda self: None))
+        self.enterContext(patch(
+            'module.persistence.database.BusinessDatabase.ensure_ready', lambda self, identity=None: None))
         self.database = get_database(self.directory)
         with closing(sqlite3.connect(self.database.path)) as connection:
             connection.row_factory = sqlite3.Row

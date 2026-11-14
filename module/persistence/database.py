@@ -80,9 +80,11 @@ def acquire_write(connection, budget=10.0, label=None):
         remaining = total - (time.perf_counter() - started)
         if last_error is not None and remaining <= 0:
             raise last_error
-        slice_seconds = 0.0 if total <= 0 else min(
-            BUSY_WAIT_SLICE_MAX, max(BUSY_WAIT_SLICE, remaining))
-        connection.execute(f'PRAGMA busy_timeout={int(slice_seconds * 1000)}')
+        if total <= 0:
+            # 零预算语义：本次 BEGIN 不等待，立即取得或失败。
+            if getattr(connection, '_session_busy_timeout_ms', 0) != 0:
+                connection.execute('PRAGMA busy_timeout=0')
+                connection._session_busy_timeout_ms = 0
         try:
             connection.execute('BEGIN IMMEDIATE')
         except sqlite3.OperationalError as error:
@@ -94,6 +96,11 @@ def acquire_write(connection, budget=10.0, label=None):
             if total <= 0 or remaining <= 0:
                 raise
             delay = min(BUSY_WAIT_BACKOFF * attempts, remaining)
+            slice_seconds = min(BUSY_WAIT_SLICE_MAX, max(BUSY_WAIT_SLICE, remaining))
+            slice_ms = int(slice_seconds * 1000)
+            if getattr(connection, '_session_busy_timeout_ms', None) != slice_ms:
+                connection.execute(f'PRAGMA busy_timeout={slice_ms}')
+                connection._session_busy_timeout_ms = slice_ms
             time.sleep(delay * (0.5 + random.random()))
             continue
         waited = time.perf_counter() - started
@@ -170,9 +177,9 @@ class BusinessDatabase:
             sources = self.legacy_sources.setdefault(kind, set())
             sources.add(path)
 
-    def ensure_ready(self):
-        """检查总库与迁移状态，必要时完成首次初始化。"""
-        if self._ready and self.path.is_file():
+    def ensure_ready(self, identity=None):
+        """检查总库与迁移状态，必要时完成首次初始化；identity 供调用方复用文件探测。"""
+        if self._ready and (identity is not None or self.path.is_file()):
             return
         from module.logger import logger
         started = time.perf_counter()
@@ -244,6 +251,9 @@ class BusinessDatabase:
             connection.execute('PRAGMA cache_size=-8000')
             connection.execute(f'PRAGMA busy_timeout={int(timeout * 1000)}')
             try:
+                # 会话状态缓存：borrow 后 _prepare 只在状态变化时重发 PRAGMA。
+                connection._session_query_only = False
+                connection._session_busy_timeout_ms = int(timeout * 1000)
                 connection.database_path = str(self.path)
                 connection.write_budget = timeout
             except AttributeError:
@@ -272,12 +282,13 @@ class BusinessDatabase:
             self._reused.add(connection)
         return connection
 
-    def _borrow(self, depth):
+    def _borrow(self, depth, identity=None):
         """取当前线程指定嵌套深度的长连接，文件被替换或关闭后自动重建。"""
         slots = getattr(self._local, 'slots', None)
         if slots is None:
             slots = self._local.slots = []
-        identity = self._file_identity()
+        if identity is None:
+            identity = self._file_identity()
         if depth < len(slots):
             entry = slots[depth]
             if entry[0] == self._generation and entry[1] == identity and entry[2] is not None:
@@ -298,13 +309,20 @@ class BusinessDatabase:
     @staticmethod
     def _prepare(connection, write, timeout):
         """借用连接后恢复本次事务需要的会话状态。"""
-        connection.execute(f'PRAGMA query_only={"OFF" if write else "ON"}')
-        connection.execute(f'PRAGMA busy_timeout={int(max(0.0, timeout) * 1000)}')
+        query_only = not write
+        if getattr(connection, '_session_query_only', None) != query_only:
+            connection.execute(f'PRAGMA query_only={"OFF" if write else "ON"}')
+            connection._session_query_only = query_only
+        timeout_ms = int(max(0.0, timeout) * 1000)
+        if getattr(connection, '_session_busy_timeout_ms', None) != timeout_ms:
+            connection.execute(f'PRAGMA busy_timeout={timeout_ms}')
+            connection._session_busy_timeout_ms = timeout_ms
 
     @contextmanager
     def session(self, *, write=True, timeout=10.0, label=None):
         """在复用连接上执行一个事务；退出时提交或回滚后归还连接。"""
-        self.ensure_ready()
+        identity = self._file_identity()
+        self.ensure_ready(identity)
         label = label or caller_label(2)
         depth = getattr(self._local, 'depth', 0)
         self._local.depth = depth + 1
@@ -312,7 +330,7 @@ class BusinessDatabase:
         one_shot = False
         try:
             if depth < MAX_SESSION_DEPTH:
-                connection = self._borrow(depth)
+                connection = self._borrow(depth, identity)
             if connection is None:
                 one_shot = True
                 connection = self.connect(timeout=timeout, factory=ReusableConnection)
