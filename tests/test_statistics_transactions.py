@@ -124,8 +124,8 @@ class TestStatisticsTransactions(unittest.TestCase):
         hooks = [pause_target]
         if pause_target == "_get_stats_in_connection":
             hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot",
-                          "_record_coins_snapshot", "_increment_meow_battle", "_append_meow_sample",
-                          "_increment_meow_counter_field"))
+                          "_record_coins_snapshot", "_record_siren_device", "_increment_meow_battle",
+                          "_append_meow_sample", "_increment_meow_counter_field"))
         paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
@@ -224,6 +224,7 @@ class TestStatisticsTransactions(unittest.TestCase):
         family_bits = {
             "add_yellow_coin_snapshot": 64, "add_ap_snapshot": 16,
             "add_coins_snapshot": 128,
+            "add_siren_research_device": 32768 | 65536,
             "add_meow_round_time": 4096 | 16384, "add_meow_battle_time": 8192 | 16384,
             "increment_meow_akashi_encounter": 16384, "add_meow_akashi_ap": 16384,
         }
@@ -247,8 +248,15 @@ class TestStatisticsTransactions(unittest.TestCase):
                     else:
                         bit = family_bits[name]
                         for old, new in zip(before, after):
-                            self.assertEqual(old[:11] + old[12:], new[:11] + new[12:])
-                            self.assertEqual(new[11], old[11] | bit)
+                            if name == "add_siren_research_device":
+                                # 计数落独立主键行，月份行除家族位外还按位补 siren_fields_mask。
+                                self.assertEqual(old[:11] + old[12:13] + old[14:],
+                                                 new[:11] + new[12:13] + new[14:])
+                                self.assertEqual(new[11], old[11] | bit)
+                                self.assertEqual(new[13], old[13] | 1)
+                            else:
+                                self.assertEqual(old[:11] + old[12:], new[:11] + new[12:])
+                                self.assertEqual(new[11], old[11] | bit)
                 else:
                     with self.assertRaises(ValueError):
                         getattr(self.db, name)("test", *args)
@@ -409,6 +417,49 @@ class TestLastApLookups(unittest.TestCase):
         self.assertEqual(last["ap"], 90)
         self.assertEqual(last["ap_total"], 1090)
         self.assertEqual(last["yellow_coin"], 0)
+
+
+class TestSirenDeviceRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+
+    def seed_event_rows(self, count):
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            conn.executemany(
+                "INSERT INTO siren_device_events(instance, month, ordinal, ts, source, entry_kind, field_mask) "
+                "VALUES('test', ?, ?, ?, 'cl1', 'record', 3)",
+                [(MONTH, ordinal, NOW.isoformat()) for ordinal in range(count)])
+
+    def test_counts_and_entries_are_read_back_from_native_rows(self):
+        self.db.add_siren_research_device("test")
+        self.db.add_siren_research_device("test", "meow", 3)
+        self.db.add_siren_research_device("test", "meow", 3)
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["siren_research_devices"], {"cl1": 1, "meow": {"3": 2}})
+        self.assertEqual(
+            stats["siren_research_device_entries"],
+            [{"ts": NOW.isoformat(), "source": "cl1", "hazard_level": None},
+             {"ts": NOW.isoformat(), "source": "meow", "hazard_level": 3},
+             {"ts": NOW.isoformat(), "source": "meow", "hazard_level": 3}])
+
+    def test_events_beyond_monthly_limit_are_trimmed_from_the_head(self):
+        self.seed_event_rows(5000)
+        self.db.add_siren_research_device("test")
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM siren_device_events "
+                "WHERE instance='test' AND month=?", (MONTH,)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual(self.db.get_stats("test", MONTH)["siren_research_devices"], {"cl1": 1})
 
 
 class Cl1SchemaRepairTests(unittest.TestCase):

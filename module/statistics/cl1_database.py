@@ -24,6 +24,8 @@ COINS_HISTORY_VERSION = 2
 COINS_CLEANUP_VERSION = 1
 # 黄币快照逐条保留的时间窗口；更早的按小时抽稀，控制月度文档体积。
 YELLOW_COIN_EXACT_HOURS = 6
+# 塞壬研究装置事件条的月度上限；更早的按写入顺序截断。
+SIREN_DEVICE_ENTRY_LIMIT = 5000
 
 
 def _field_bit(fields, name):
@@ -167,31 +169,71 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            if source in ("cl1", "meow"):
+                self._record_siren_device(conn, instance, month, source, hazard_level)
+            else:
+                self._record_siren_device_document(conn, instance, month, source, hazard_level)
 
-            devices = self._normalize_siren_research_devices(data)
-            if source == "cl1":
-                devices["cl1"] = devices.get("cl1", 0) + 1
-            elif source == "meow":
-                meow = devices.get("meow", {})
-                key = str(self._coerce_int(hazard_level or 0))
-                meow[key] = int(meow.get(key, 0) or 0) + 1
-                devices["meow"] = meow
-            data["siren_research_devices"] = devices
+    def _record_siren_device(self, conn, instance: str, month: str, source: str, hazard_level: int):
+        """塞壬研究装置 O(1) 增量写：计数单行 UPSERT、事件单行追加、超限截断。
 
-            entries = data.get("siren_research_device_entries", [])
-            if not isinstance(entries, list):
-                entries = []
-            entries.append({
-                "ts": datetime.now().isoformat(),
-                "source": source,
-                "hazard_level": self._coerce_int(hazard_level or 0) if source == "meow" else None,
-            })
-            if len(entries) > 5000:
-                entries = entries[-5000:]
-            data["siren_research_device_entries"] = entries
+        此前每次记录都整月读改写并重插全部事件行，代价随月内条目线性增长；
+        计数落在 (instance, month, source, hazard_level) 主键行上，事件按 ordinal 追加。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        level = 0 if source == "cl1" else self._coerce_int(hazard_level or 0)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, (1 << 15) | (1 << 16))
+        conn.execute('UPDATE cl1_months SET siren_fields_mask=siren_fields_mask|? '
+                     'WHERE instance=? AND month=?', (1 if source == "cl1" else 2, instance, month))
+        conn.execute(
+            'INSERT INTO siren_device_counts(instance, month, source, hazard_level, device_count) '
+            'VALUES(?, ?, ?, ?, 1) ON CONFLICT(instance, month, source, hazard_level) '
+            'DO UPDATE SET device_count=COALESCE(device_count,0)+1, compat_value_set_id=NULL',
+            (instance, month, source, level))
+        entry = {
+            "ts": datetime.now().isoformat(),
+            "source": source,
+            "hazard_level": None if source == "cl1" else level,
+        }
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM siren_device_events WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'siren_device_events', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['siren_research_device_entries'][1],
+                 {'instance': instance, 'month': month}, entry=True)
+        if ordinal + 1 > SIREN_DEVICE_ENTRY_LIMIT:
+            conn.execute('DELETE FROM siren_device_events WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, ordinal + 1 - SIREN_DEVICE_ENTRY_LIMIT))
 
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_siren_device_document(self, conn, instance: str, month: str, source: str, hazard_level: int):
+        """未知来源时的整月读改写兜底，语义与原实现一致。"""
+        data = self._get_stats_in_connection(conn, instance, month)
+
+        devices = self._normalize_siren_research_devices(data)
+        if source == "cl1":
+            devices["cl1"] = devices.get("cl1", 0) + 1
+        elif source == "meow":
+            meow = devices.get("meow", {})
+            key = str(self._coerce_int(hazard_level or 0))
+            meow[key] = int(meow.get(key, 0) or 0) + 1
+            devices["meow"] = meow
+        data["siren_research_devices"] = devices
+
+        entries = data.get("siren_research_device_entries", [])
+        if not isinstance(entries, list):
+            entries = []
+        entries.append({
+            "ts": datetime.now().isoformat(),
+            "source": source,
+            "hazard_level": self._coerce_int(hazard_level or 0) if source == "meow" else None,
+        })
+        if len(entries) > SIREN_DEVICE_ENTRY_LIMIT:
+            entries = entries[-SIREN_DEVICE_ENTRY_LIMIT:]
+        data["siren_research_device_entries"] = entries
+
+        self._save_stats_in_connection(conn, instance, month, data)
 
     """
     CL1 月度统计存储管理类。
