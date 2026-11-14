@@ -116,7 +116,23 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
 
     async def health(request):
         """健康检查接口，返回协议版本及正常状态。"""
-        return JSONResponse({'status': 'ok', 'protocolVersion': 1})
+        from module.runtime.remote_cloudflare import cloudflare
+        result = {'status': 'ok', 'protocolVersion': 1}
+        if cloudflare._direct_server is not None:
+            result['device_id'] = cloudflare.identity().load()['device_id']
+        return JSONResponse(result)
+
+    async def remote_probe(request):
+        """在现有 WebUI 端口验证直连候选归属。"""
+        from module.runtime.remote_cloudflare import cloudflare
+        direct = cloudflare._direct_server
+        if direct is None:
+            return JSONResponse({'error': '远程访问未启动'}, status_code=503)
+        try:
+            result = direct.proof(request.query_params.get('challenge', ''))
+        except ValueError:
+            return JSONResponse({'error': '无效探测挑战'}, status_code=400)
+        return JSONResponse(result, headers={'Cache-Control': 'no-store'})
 
     ROBOTS_TXT_CONTENT = (
         '# AzurPilot WebUI - Private Control Console\n'
@@ -239,6 +255,7 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
         return Response(data, media_type=content_type, headers={'Cache-Control': 'no-cache'})
 
     routes = [Route('/healthz', health),
+              Route('/api/v1/remote/probe', remote_probe),
               Route('/robots.txt', robots_txt),
               Route('/api/v1/background/media', background_media),
               Route('/reports/meowfficer_score', meowfficer_score_report),

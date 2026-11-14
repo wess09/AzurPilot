@@ -160,7 +160,7 @@ Deploy:
     # Quick Tunnel 固定入口注册服务，设备密钥保存在 config/remote-access.json
     CloudflareRegistry: https://remote.azurpilot.com
     CloudflareDeviceId: ""
-    # Direct HTTP/WS port; 0 uses WebuiPort + 1. External port 0 uses the listening port.
+    # 0 reuses HTTP WebuiPort; HTTPS uses WebuiPort + 1. External port 0 uses the listening port.
     RemoteAccessPort: 0
     RemoteAccessPublicPort: 0
     # SSH 服务器登录用户名

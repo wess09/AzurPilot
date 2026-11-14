@@ -7962,7 +7962,7 @@
       "RemoteAccessModeHelp": "auto/cloudflare 优先公网 HTTP 直连，失败时使用 Cloudflare；webrtc 使用旧 P2P/TURN；ssh 仅 SSH。",
       "CloudflareRegistry": "固定入口服务器",
       "RemoteAccessPort": "直连监听端口",
-      "RemoteAccessPortHelp": "0 使用 WebUI 端口加一；监听公网 HTTP/WS，修改后重启。",
+      "RemoteAccessPortHelp": "0 复用 HTTP WebUI 端口；HTTPS WebUI 才另用端口加一。修改后重启。",
       "RemoteAccessPublicPort": "直连外部端口",
       "RemoteAccessPublicPortHelp": "0 使用监听端口；路由器端口映射不同时填写公网端口。",
       "CloudflareRegistryHelp": "用于 Quick Tunnel 注册、续约与配对的 HTTPS 服务地址。",

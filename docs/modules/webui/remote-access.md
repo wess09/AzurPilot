@@ -23,8 +23,9 @@ SHA-256 摘要。AFA 第一次启用时将 Android ID 与随机安装因子的�
 上游库导入时创建的数据库目录定向到项目 `cache/cloudflare/pyflared/`，无需写入
 Windows `AppData/Local/Azmain`。适配仅匹配 pyflared 的应用标识，导入后恢复通用目录函数。
 AP 每十秒用设备密钥向独立 Go 服务续约，上报网卡上的公网 IPv4、IPv6 和对外端口；
-私网、共享地址和带作用域的 IPv6 不参与注册。默认独立 HTTP/WS 监听端口为 WebUI 端口 + 1
-（通常为 25549）。`RemoteAccessPort` 可指定监听端口，`RemoteAccessPublicPort` 可指定路由器映射后的外部端口，
+私网、共享地址和带作用域的 IPv6 不参与注册。默认复用已有 HTTP WebUI 端口（通常为 25548），
+挑战验证接口和设备健康检查也使用该端口。HTTPS WebUI 才默认另启端口 + 1 的 HTTP 入口。
+`RemoteAccessPort` 可指定独立 HTTP 监听端口，`RemoteAccessPublicPort` 可指定路由器映射后的外部端口，
 两者为 0 时分别使用上述默认值和监听端口。AP 不自动修改路由器或防火墙。
 
 Go 服务以随机挑战和 HMAC-SHA256 验证各候选属于该 AP，通过后才发布直连地址；

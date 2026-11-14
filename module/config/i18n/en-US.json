@@ -7962,7 +7962,7 @@
       "RemoteAccessModeHelp": "auto/cloudflare prefer public HTTP direct access with Cloudflare fallback; webrtc uses legacy P2P/TURN; ssh uses SSH only.",
       "CloudflareRegistry": "Stable entry server",
       "RemoteAccessPort": "Direct listening port",
-      "RemoteAccessPortHelp": "0 uses the WebUI port plus one. Public HTTP/WS; restart after changing.",
+      "RemoteAccessPortHelp": "0 reuses the HTTP WebUI port; HTTPS uses a separate port plus one. Restart after changing.",
       "RemoteAccessPublicPort": "Direct external port",
       "RemoteAccessPublicPortHelp": "0 uses the listening port. Set this when the router maps a different external port.",
       "CloudflareRegistryHelp": "HTTPS service for Quick Tunnel registration, lease renewal and pairing.",

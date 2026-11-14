@@ -7962,7 +7962,7 @@
       "RemoteAccessModeHelp": "auto/cloudflare は公開 HTTP 直接接続を優先し、失敗時は Cloudflare を使用。webrtc は従来の P2P/TURN、ssh は SSH のみ。",
       "CloudflareRegistry": "固定アクセス先サーバー",
       "RemoteAccessPort": "直接接続ポート",
-      "RemoteAccessPortHelp": "0 は WebUI ポート + 1。HTTP/WS で待ち受けます。変更後は再起動。",
+      "RemoteAccessPortHelp": "0 は HTTP WebUI のポートを共用。HTTPS の場合のみポート + 1。変更後は再起動。",
       "RemoteAccessPublicPort": "外部接続ポート",
       "RemoteAccessPublicPortHelp": "0 は待受ポートを使用。ルーターで異なる外部ポートを割り当てる場合に指定。",
       "CloudflareRegistryHelp": "Quick Tunnel の登録、リース更新、ペアリングに使う HTTPS サービス URL。",

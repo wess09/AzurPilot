@@ -187,6 +187,9 @@ class CloudflareRemoteAccessProvider:
         self.retry_after = 0
         self._tunnel_ready = False
         self._tunnel_protocol = None
+        self._direct_server = None
+        self._peer_server = None
+        self._legacy_registry = False
         self._lock = threading.Lock()
 
     def identity(self):
@@ -300,6 +303,7 @@ class CloudflareRemoteAccessProvider:
     async def _connect(self):
         """先注册直连候选；按服务端结果或客户端请求启动 Cloudflare。"""
         from module.runtime.remote_direct import DirectAccessServer
+        from module.runtime.remote_p2p import PeerServer
         from module.runtime.setting import State
         from module.runtime.password_utils import is_webui_password_set
         if not is_webui_password_set(State.deploy_config.Password):
@@ -310,7 +314,9 @@ class CloudflareRemoteAccessProvider:
         delay = 2
         registered_at = 0
         try:
-            async with DirectAccessServer(self).serve() as direct:
+            async with DirectAccessServer(self).serve() as direct, PeerServer(self).serve() as peer:
+                self._direct_server = direct
+                self._peer_server = peer
                 while not self.stop_event.is_set():
                     if tunnel_task and tunnel_task.done():
                         try:
@@ -322,13 +328,18 @@ class CloudflareRemoteAccessProvider:
                         retry_at = time.monotonic() + max(30, self.retry_after)
                         self.retry_after = 0
                     try:
-                        result = await self.request('POST', '/api/v1/devices/register', {
+                        registration = {
                             'device_id': identity['device_id'], 'name': socket.gethostname()[:80],
                             'tunnel_url': self.tunnel_url if self._tunnel_ready else '',
-                            'direct': direct.registration(),
-                        })
+                        }
+                        if not self._legacy_registry:
+                            registration['direct'] = {**direct.registration(), 'p2p': True}
+                        result = await self.request('POST', '/api/v1/devices/register', registration)
                     except RemoteRegistryError as exc:
-                        # Old registries reject the new field; retain Quick Tunnel during upgrades.
+                        if exc.status == 400 and not self._legacy_registry:
+                            self._legacy_registry = True
+                            continue
+                        # 旧注册服务仍不可用时保留 Quick Tunnel，避免远程入口彻底中断。
                         if exc.status == 400 and not tunnel_task and time.monotonic() >= retry_at:
                             tunnel_task = asyncio.create_task(self._tunnel())
                         if not self._tunnel_ready:
@@ -354,6 +365,8 @@ class CloudflareRemoteAccessProvider:
                         tunnel_task = asyncio.create_task(self._tunnel(managed=True))
                     await asyncio.sleep(10)
         finally:
+            self._direct_server = None
+            self._peer_server = None
             if tunnel_task:
                 tunnel_task.cancel()
                 await asyncio.gather(tunnel_task, return_exceptions=True)

@@ -25,6 +25,40 @@ def test_only_public_interface_addresses_are_reported():
         assert public_addresses() == {'ipv4': ['1.1.1.1'], 'ipv6': ['2606:4700:4700::1111']}
 
 
+def test_default_reuses_existing_http_webui_port():
+    async def scenario():
+        provider = CloudflareRemoteAccessProvider()
+        config = SimpleNamespace(WebuiPort=25548, WebuiHost='0.0.0.0', WebuiSSLCert=None,
+                                 RemoteAccessPort=0, RemoteAccessPublicPort=0)
+        with patch('module.runtime.setting.State.deploy_config', config), \
+                patch.object(socket.socket, 'bind', side_effect=AssertionError('unexpected extra listener')):
+            async with DirectAccessServer(provider).serve() as direct:
+                assert direct.registration()['port'] == 25548
+    asyncio.run(scenario())
+
+
+def test_existing_webui_serves_device_health_and_probe(tmp_path):
+    from starlette.testclient import TestClient
+    from module.api.app import create_app
+    from module.runtime.remote_cloudflare import cloudflare
+    from tests.test_api import fixture
+
+    identity = RemoteIdentity(tmp_path / 'identity')
+    direct = DirectAccessServer(cloudflare)
+    app = create_app(root=fixture(tmp_path), password='test-password',
+                     manage_runtime=False, mount_mcp=False)
+    with TestClient(app) as client:
+        assert client.get('/api/v1/remote/probe?challenge=' + 'c' * 64).status_code == 503
+        with patch.object(cloudflare, '_direct_server', direct), \
+                patch.object(cloudflare, 'identity', return_value=identity):
+            assert client.get('/healthz').json()['device_id'] == identity.load()['device_id']
+            response = client.get('/api/v1/remote/probe?challenge=' + 'c' * 64)
+            assert response.status_code == 200
+            assert response.json()['proof'] == hmac.new(direct.probe_token.encode(), b'c' * 64, hashlib.sha256).hexdigest()
+            assert direct.probe_token not in response.text
+            assert client.get('/api/v1/remote/probe?challenge=invalid').status_code == 400
+
+
 def test_http_and_websocket_proxy_preserve_remote_authentication(tmp_path):
     async def scenario():
         application = web.Application()

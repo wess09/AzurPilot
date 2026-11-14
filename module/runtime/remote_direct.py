@@ -61,15 +61,22 @@ class DirectAccessServer:
             raise ValueError('远程访问外部端口必须在 1–65535 之间')
         return {**addresses, 'port': port, 'probe_token': self.probe_token}
 
-    async def probe(self, request):
+    def proof(self, challenge):
         """仅返回随机挑战的摘要，不通过探测接口暴露任何认证凭据。"""
-        challenge = request.query.get('challenge', '')
         if not re.fullmatch(r'[a-f0-9]{32,128}', challenge):
-            raise web.HTTPBadRequest()
-        return web.json_response({
+            raise ValueError('无效探测挑战')
+        return {
             'device_id': self.provider.identity().load()['device_id'],
             'proof': hmac.new(self.probe_token.encode(), challenge.encode(), hashlib.sha256).hexdigest(),
-        }, headers={'Cache-Control': 'no-store'})
+        }
+
+    async def probe(self, request):
+        """处理独立 HTTP 监听的挑战验证请求。"""
+        try:
+            result = self.proof(request.query.get('challenge', ''))
+        except ValueError:
+            raise web.HTTPBadRequest() from None
+        return web.json_response(result, headers={'Cache-Control': 'no-store'})
 
     async def health(self, request):
         """为客户端提供无凭据的设备身份探测。"""
@@ -134,9 +141,17 @@ class DirectAccessServer:
         from module.runtime.remote_access import _local_host
         from module.runtime.setting import State
         config = State.deploy_config
-        self.port = int(getattr(config, 'RemoteAccessPort', 0) or config.WebuiPort + 1)
-        if not 1 <= self.port <= 65535 or self.port == config.WebuiPort:
-            raise ValueError('远程访问端口必须与 WebUI 端口不同，且在 1–65535 之间')
+        default_port = config.WebuiPort + 1 if config.WebuiSSLCert else config.WebuiPort
+        self.port = int(getattr(config, 'RemoteAccessPort', 0) or default_port)
+        if not 1 <= self.port <= 65535 or self.port == config.WebuiPort and config.WebuiSSLCert:
+            raise ValueError('直连 HTTP 端口必须在 1–65535 之间，且不能复用 HTTPS 端口')
+        if self.port == config.WebuiPort:
+            self.bound_families.update(('ipv4', 'ipv6'))
+            try:
+                yield self
+            finally:
+                self.bound_families.clear()
+            return
         host = _local_host()
         if ':' in host and not host.startswith('['):
             host = f'[{host}]'
