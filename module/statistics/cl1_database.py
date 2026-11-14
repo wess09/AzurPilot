@@ -727,15 +727,16 @@ class Cl1Database:
         except Exception as error:
             logger.warning(f'[统计] 月初紫币残留清理失败，下次再试: {error}')
 
-    def _get_previous_coins_snapshot(self, conn, instance: str, month: str) -> Optional[Dict[str, Any]]:
-        """取上个月的最后一条凭证快照，用于判断月初读数是否为上月残留。"""
+    def _previous_coins_tail(self, conn, instance: str, month: str) -> Optional[Tuple[Any, Any]]:
+        """取上个月最后一条原生凭证行的 (yellow, purple)，供增量路径查残留与续借。"""
         try:
             year, number = (int(part) for part in month.split('-'))
             previous_month = f'{year - 1:04d}-12' if number == 1 else f'{year:04d}-{number - 1:02d}'
         except (ValueError, AttributeError):
             return None
-        snapshots = self._get_stats_in_connection(conn, instance, previous_month).get('coins_snapshots') or []
-        return snapshots[-1] if snapshots else None
+        return conn.execute(
+            'SELECT yellow_coin, purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, previous_month)).fetchone()
 
     def ensure_coins_history(self, instance: str, conn) -> None:
         """用资源快照补齐凭证历史，按版本号只执行一次。
@@ -922,45 +923,67 @@ class Cl1Database:
         with self._stats_transaction() as conn:
             # 补齐必须先于本次读取。
             self.ensure_coins_history(instance, conn)
-            data = self._get_stats_in_connection(conn, instance, month)
             yellow_coins = self._coerce_int(yellow_coins)
-            purple_coins = self._coerce_int(purple_coins) if purple_coins is not None else None
-            if carry_purple and purple_coins is None:
-                previous = next((point for point in reversed(data.get('coins_snapshots', []))
-                                 if point.get('purple_coins') is not None), None)
-                if previous is None:
-                    previous = self._get_previous_coins_snapshot(conn, instance, month)
-                if previous is not None and previous.get('purple_coins') is not None:
-                    purple_coins = self._coerce_int(previous['purple_coins'])
-
             snapshot = {
                 "ts": observed_at.isoformat(),
                 "yellow_coins": yellow_coins,
                 "source": source,
             }
             if purple_coins is not None:
-                snapshot["purple_coins"] = purple_coins
+                snapshot["purple_coins"] = self._coerce_int(purple_coins)
+            self._record_coins_snapshot(conn, instance, month, snapshot, carry_purple=carry_purple)
 
-            snapshots = data.get("coins_snapshots", [])
-            if not snapshots and purple_coins is not None:
+    def _record_coins_snapshot(self, conn, instance: str, month: str, snapshot: Dict[str, Any],
+                               carry_purple: bool = False):
+        """凭证快照 O(1) 增量写：查尾去重、单行追加、SQL 端按小时抽稀。
+
+        此前每次写入都整月读改写并重插全部凭证快照，代价随月内条目线性增长；
+        carry_purple 沿用最近一次紫币读数，月初残留与尾部重复按文档路径条件丢弃。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        yellow_coins = snapshot["yellow_coins"]
+        purple_coins = snapshot.get("purple_coins")
+        if carry_purple and purple_coins is None:
+            last_purple = conn.execute(
+                'SELECT purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+                'AND purple_coin IS NOT NULL ORDER BY ordinal DESC LIMIT 1',
+                (instance, month)).fetchone()
+            if last_purple is not None:
+                purple_coins = self._coerce_int(last_purple[0])
+            else:
+                previous = self._previous_coins_tail(conn, instance, month)
+                if previous is not None and previous[1] is not None:
+                    purple_coins = self._coerce_int(previous[1])
+        tail = conn.execute(
+            'SELECT yellow_coin, purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if tail is None:
+            if purple_coins is not None:
                 # 与上月最后一条相同的月初读数视为残留，不记录。
-                previous = self._get_previous_coins_snapshot(conn, instance, month)
-                if previous is not None and self._coerce_int(previous.get('purple_coins', -1)) == purple_coins:
+                previous = self._previous_coins_tail(conn, instance, month)
+                if previous is not None and self._coerce_int(
+                        -1 if previous[1] is None else previous[1]) == purple_coins:
                     return
-            if snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    last = snapshots[-1]
-                    if self._coerce_int(last.get("yellow_coins", -1)) == yellow_coins:
-                        if (
-                            purple_coins is not None
-                            and self._coerce_int(last.get("purple_coins", -1)) == purple_coins
-                        ):
-                            return
-                        if purple_coins is None and "purple_coins" not in last:
-                            return
-            snapshots.append(snapshot)
-            data["coins_snapshots"] = thin_coins_snapshots(snapshots)
-            self._save_stats_in_connection(conn, instance, month, data)
+        else:
+            try:
+                if self._coerce_int(tail[0]) == yellow_coins:
+                    if purple_coins is not None and self._coerce_int(tail[1]) == purple_coins:
+                        return
+                    if purple_coins is None and tail[1] is None:
+                        return
+            except (ValueError, TypeError):
+                pass
+        if purple_coins is not None and "purple_coins" not in snapshot:
+            snapshot = {**snapshot, "purple_coins": purple_coins}
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 7)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM coin_snapshots WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'coin_snapshots', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['coins_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
+        self._thin_snapshots(conn, instance, month, 'coin_snapshots', COINS_EXACT_DAYS * 24)
 
     def async_add_coins_snapshot(
         self,

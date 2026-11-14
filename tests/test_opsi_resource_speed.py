@@ -657,36 +657,32 @@ class TestDeferredResourceHistory(unittest.TestCase):
         db = Cl1Database.__new__(Cl1Database)
         db._stats_transaction = lambda: nullcontext(object())
         db.ensure_coins_history = Mock()
-        db._get_stats_in_connection = Mock(return_value={})
-        db._get_previous_coins_snapshot = Mock(return_value=None)
-        db._save_stats_in_connection = Mock()
+        db._record_coins_snapshot = Mock()
         stamp = datetime(2026, 10, 31, 23, 59, 59)
         db.add_coins_snapshot('isolated', 500, 20, source='meow', observed_at=stamp)
-        args = db._save_stats_in_connection.call_args.args
+        args = db._record_coins_snapshot.call_args.args
         self.assertEqual(args[1:3], ('isolated', '2026-10'))
-        self.assertEqual(args[3]['coins_snapshots'][0], {
+        self.assertEqual(args[3], {
             'ts': stamp.isoformat(), 'yellow_coins': 500, 'purple_coins': 20, 'source': 'meow',
         })
 
     def test_purple_history_carry_happens_in_background_writer(self):
-        db = Cl1Database.__new__(Cl1Database)
-        db._stats_transaction = lambda: nullcontext(object())
-        db.ensure_coins_history = Mock()
-        db._get_stats_in_connection = Mock(return_value={'coins_snapshots': [
-            {'yellow_coins': 10, 'purple_coins': 0},
-        ]})
-        db._save_stats_in_connection = Mock()
-        db.add_coins_snapshot('isolated', 20, carry_purple=True)
-        data = db._save_stats_in_connection.call_args.args[3]
-        self.assertEqual(data['coins_snapshots'][-1]['purple_coins'], 0)
+        with tempfile.TemporaryDirectory() as directory:
+            db = Cl1Database(Path(directory) / 'config' / 'azurpilot.db')
+            db.ensure_coins_history = Mock()
+            stamp = datetime(2026, 10, 31, 12)
+            db.add_coins_snapshot('isolated', 10, 0, observed_at=stamp)
+            db.add_coins_snapshot('isolated', 20, carry_purple=True, observed_at=stamp + timedelta(seconds=2))
+            snapshots = db.get_stats('isolated', stamp.strftime('%Y-%m'))['coins_snapshots']
+            self.assertEqual(snapshots[-1]['yellow_coins'], 20)
+            self.assertEqual(snapshots[-1]['purple_coins'], 0)
+            db.store.close_all()
 
     def test_async_submission_captures_month_before_delayed_execution(self):
         db = Cl1Database.__new__(Cl1Database)
         db._stats_transaction = lambda: nullcontext(object())
         db.ensure_coins_history = Mock()
-        db._get_stats_in_connection = Mock(return_value={})
-        db._get_previous_coins_snapshot = Mock(return_value=None)
-        db._save_stats_in_connection = Mock()
+        db._record_coins_snapshot = Mock()
         stamp = datetime(2026, 10, 31, 23, 59, 59)
         with patch('module.statistics.cl1_database.datetime', wraps=datetime) as clock, \
                 patch('module.base.async_executor.async_executor') as queue:
@@ -695,7 +691,7 @@ class TestDeferredResourceHistory(unittest.TestCase):
             clock.now.return_value = stamp + timedelta(seconds=2)
             call = queue.submit.call_args
             call.args[0](*call.args[1:], **call.kwargs)
-        self.assertEqual(db._save_stats_in_connection.call_args.args[2], '2026-10')
+        self.assertEqual(db._record_coins_snapshot.call_args.args[2], '2026-10')
 
     def test_resource_snapshots_keep_submission_order_and_copied_values(self):
         from threading import Event

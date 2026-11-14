@@ -124,7 +124,8 @@ class TestStatisticsTransactions(unittest.TestCase):
         hooks = [pause_target]
         if pause_target == "_get_stats_in_connection":
             hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot",
-                          "_increment_meow_battle", "_append_meow_sample", "_increment_meow_counter_field"))
+                          "_record_coins_snapshot", "_increment_meow_battle", "_append_meow_sample",
+                          "_increment_meow_counter_field"))
         paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
@@ -222,6 +223,7 @@ class TestStatisticsTransactions(unittest.TestCase):
         # 增量追加不读兼容树：只允许月份行的 field_mask 按位补齐自身家族位。
         family_bits = {
             "add_yellow_coin_snapshot": 64, "add_ap_snapshot": 16,
+            "add_coins_snapshot": 128,
             "add_meow_round_time": 4096 | 16384, "add_meow_battle_time": 8192 | 16384,
             "increment_meow_akashi_encounter": 16384, "add_meow_akashi_ap": 16384,
         }
