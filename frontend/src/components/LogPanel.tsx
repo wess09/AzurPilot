@@ -2,6 +2,7 @@
  * @fileoverview 实例实时日志面板组件，及流式日志微批缓冲、行高布局等纯数据辅助。
  */
 
+import { Select } from './FormControls'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ArrowDownUp, Download, LayoutGrid, Pause, Play, Search, Terminal, Trash2 } from 'lucide-react'
@@ -11,7 +12,8 @@ import { useApp, useConnection } from '../app/context'
 import { Empty } from '../components/ui'
 import { Input } from './ui/input'
 import { LogCardView, findVisibleRange, logWindowTop, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
-import { LOG_ENTRY_LIMIT, LOG_LINE_RE, LOG_RENDER_INTERVAL_MS, LINE_HEIGHT_ESTIMATE, PURE_RULE_RE, RULE_RE, VIRTUAL_LINE_THRESHOLD, buildLineLayout, followStep, mergeLogEntries, queueLogEvent } from './log-panel/buffer'
+import { LOG_ENTRY_LIMIT, LOG_LINE_RE, LOG_RENDER_INTERVAL_MS, LINE_HEIGHT_ESTIMATE, PURE_RULE_RE, VIRTUAL_LINE_THRESHOLD, buildLineLayout, followStep, mergeLogEntries, queueLogEvent } from './log-panel/buffer'
+import type { LogBufferState } from './log-panel/buffer'
 import { LogLine } from './log-panel/log-line'
 import { LOG_LEVELS, filterLogEntries, loadLogDescending, loadLogLevel, loadLogViewMode } from './log-panel/prefs'
 
