@@ -128,6 +128,7 @@ THRESHOLD_GROUPS = {
         5103: 'IslandRancher.IslandFishery.MinTuna',
         5104: 'IslandRancher.IslandFishery.MinSalmon',
         5105: 'IslandRancher.IslandFishery.MinRedSeaBream',
+        5106: 'IslandRancher.IslandFishery.MinBlackPorgy',
         5107: 'IslandRancher.IslandFishery.MinYellowfinTuna',
         5108: 'IslandRancher.IslandFishery.MinSeaCucumber',
     },
@@ -140,7 +141,7 @@ PRODUCT_ITEM_IDS = {
     'fishery': {
         'shell': 5001, 'catfish': 5002, 'koi_carp': 5003, 'common_carp': 5004, 'shrimp': 5005,
         'crayfish': 5006, 'bass': 5007, 'crab': 5008, 'squid': 5101, 'mackerel': 5102, 'tuna': 5103,
-        'salmon': 5104, 'red_sea_bream': 5105, 'yellowfin_tuna': 5107, 'sea_cucumber': 5108,
+        'salmon': 5104, 'red_sea_bream': 5105, 'black_porgy': 5106, 'yellowfin_tuna': 5107, 'sea_cucumber': 5108,
     },
 }
 

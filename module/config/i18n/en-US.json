@@ -4779,6 +4779,10 @@
       "name": "Red Sea Bream min stock",
       "help": ""
     },
+    "MinBlackPorgy": {
+      "name": "Black Porgy min stock",
+      "help": ""
+    },
     "MinYellowfinTuna": {
       "name": "Yellowfin Tuna min stock",
       "help": ""
@@ -4819,6 +4823,7 @@
       "tuna": "Tuna",
       "salmon": "Salmon",
       "red_sea_bream": "Red Sea Bream",
+      "black_porgy": "Black Porgy",
       "yellowfin_tuna": "Yellowfin Tuna",
       "sea_cucumber": "Sea Cucumber"
     },
@@ -7266,6 +7271,7 @@
       "tuna": "Tuna",
       "salmon": "Salmon",
       "red_sea_bream": "Red Sea Bream",
+      "black_porgy": "Black Porgy",
       "yellowfin_tuna": "Yellowfin Tuna",
       "sea_cucumber": "Sea Cucumber"
     },
