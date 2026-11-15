@@ -172,6 +172,7 @@ async def _signal_scenario():
             self.configuration = configuration
             self.handlers = {}
             self.localDescription = None
+            self.connectionState = 'new'
             self.closed = False
             self.__class__.instances.append(self)
 
@@ -186,6 +187,8 @@ async def _signal_scenario():
 
         async def setLocalDescription(self, description):
             self.localDescription = description
+            self.connectionState = 'connecting'
+            self.handlers['connectionstatechange']()
 
         def close(self):
             self.closed = True
@@ -204,8 +207,18 @@ async def _signal_scenario():
         with patch('module.runtime.setting.State.deploy_config', config), \
                 patch('module.runtime.remote_access.State.webui_host', None), \
                 patch('module.runtime.remote_p2p.RTCPeerConnection', FakePeerConnection):
-            async with PeerServer(provider).serve():
+            server = PeerServer(provider)
+            async with server.serve():
                 await asyncio.wait_for(provider.answered.wait(), 2)
+                peer = FakePeerConnection.instances[-1]
+                assert server._peer_connections['signal-1'] is peer
+                peer.connectionState = 'connected'
+                peer.handlers['connectionstatechange']()
+                assert server._peer_connections['signal-1'] is peer
+                peer.connectionState = 'closed'
+                peer.closed = True
+                peer.handlers['connectionstatechange']()
+                assert 'signal-1' not in server._peer_connections
     finally:
         provider.answered.set()
 
@@ -215,6 +228,7 @@ async def _signal_scenario():
         {'answer': 'local-answer'},
     )
     peer = FakePeerConnection.instances[-1]
+    assert 'connectionstatechange' in peer.handlers
     assert peer.remoteDescription.sdp == 'remote-offer'
     assert peer.localDescription.sdp == 'local-answer'
     assert peer.closed

@@ -257,8 +257,8 @@ class PeerServer:
                 return
             self._handle_channel(channel)
 
-        def connection_state(state):
-            if state in ('closed', 'failed'):
+        def connection_state():
+            if peer.connectionState in ('closed', 'failed'):
                 if self._peer_connections.get(signal_id) is peer:
                     self._peer_connections.pop(signal_id, None)
 
