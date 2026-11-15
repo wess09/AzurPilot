@@ -12,8 +12,6 @@ import time
 from functools import wraps
 from ctypes import wintypes
 
-import psutil
-
 from deploy.Windows.utils import DataProcessInfo
 from module.base.decorator import run_once
 from module.base.runtime_params import (
@@ -359,6 +357,10 @@ class PlatformWindows(PlatformBase, EmulatorManager):
         Returns:
             int: 已终止的进程数量
         """
+        # Import psutil on demand, it costs about 11ms and is only used here,
+        # keeping it out of the startup path of the device stack
+        import psutil
+
         count = 0
 
         for proc in psutil.process_iter():
