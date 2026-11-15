@@ -9,6 +9,7 @@ import { motionReducedActive } from '../app/motionPrefs'
 interface SidebarTransitionProps {
   /** 区分视图状态的唯一键，例如 'global' 或 `instance:${instance}` */
   viewKey: string
+  /** 切换中的侧边栏内容。 */
   children: ReactNode
 }
 

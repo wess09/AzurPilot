@@ -1,3 +1,4 @@
+import {routeRpc} from '../rpc-route'
 import {expect,test} from '@playwright/test'
 
 test('股票独立注册、QQ 引导及各主题布局',async({page})=>{
@@ -39,7 +40,7 @@ test('股票独立注册、QQ 引导及各主题布局',async({page})=>{
 
 test('已绑定实例自动新标签页打开独立交易所',async({page,context})=>{
   await context.route('https://stock.azurpilot.com/**',route=>route.fulfill({contentType:'text/html',body:'<h1>交易所站点夹具</h1>'}))
-  await page.routeWebSocket('**/api/v1/ws',socket=>{
+  await routeRpc(page,socket=>{
     const server=socket.connectToServer(),pending=new Set<string>()
     socket.onMessage(message=>{const request=JSON.parse(String(message));if(request.method==='stock.status')pending.add(request.id);server.send(message)})
     server.onMessage(message=>{const reply=JSON.parse(String(message));if(pending.has(reply.id)&&reply.ok){reply.result={...reply.result,registered:true,bound:true,stock:{id:1,symbol:'MM000001',name:'已绑定实例',bound:true,price:800000,observedAt:Date.now()},bindingCode:''};socket.send(JSON.stringify(reply))}else socket.send(message)})
@@ -56,7 +57,7 @@ test('已绑定实例自动新标签页打开独立交易所',async({page,contex
 
 
 test('管理员删股状态明确展示且不能重新注册原股票',async({page})=>{
- await page.routeWebSocket('**/api/v1/ws',socket=>{
+ await routeRpc(page,socket=>{
   const server=socket.connectToServer(),pending=new Set<string>()
   socket.onMessage(message=>{const request=JSON.parse(String(message));if(request.method==='stock.status')pending.add(request.id);server.send(message)})
   server.onMessage(message=>{const reply=JSON.parse(String(message));if(pending.has(reply.id)&&reply.ok){reply.result={...reply.result,registered:false,deleted:true,bound:false,stock:null,bindingCode:'',message:'股票已被管理员删除，已停止行动力上报'};socket.send(JSON.stringify(reply))}else socket.send(message)})

@@ -2,21 +2,25 @@
  * @fileoverview 实例运行总览页面（资源卡、调度器计划与实时日志）。
  */
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { lazy, Suspense, useState, useSyncExternalStore } from 'react'
 import { useParams } from 'react-router-dom'
-import { api } from '../api/client'
+import { ChevronRight } from 'lucide-react'
 import type { Overview as OverviewData } from '../api/types'
-import { useApp, useConnection } from '../app/context'
-import { usesLegacyLayout } from '../app/theme'
+import { useApp } from '../app/context'
+import { useThemeComponent } from '../themes/context'
+import { useInstanceOverview } from '../components/useInstanceOverview'
 import { getLayout, subscribeLayout } from '../app/layout'
-import { ErrorBox, Loading, PageTitle } from '../components/ui'
+import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
+import { ErrorBox, Loading } from '../components/ui'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
 import { InstanceActions } from '../components/InstanceActions'
-import { LegacyRail } from '../components/LegacyRail'
-import { LegacyRailResizeHandle } from '../components/LegacyRailResizeHandle'
-import { Statistics } from './Statistics'
+import { ModernRail } from '../components/ModernRail'
+import { ModernRailResizeHandle } from '../components/ModernRailResizeHandle'
 import { readOverviewPanel, setOverviewPanel, subscribeOverviewPanel } from '../app/overviewPanelPrefs'
+import { PluginPanels } from '../plugins/views'
+
+const Statistics = lazy(() => import('./Statistics').then(module => ({default: module.Statistics})))
 
 function loadResourceSelection(instance: string) {
   try {
@@ -26,17 +30,30 @@ function loadResourceSelection(instance: string) {
   return defaultResourceKeys
 }
 
+/** 总览视图的共享数据契约：主题视图只负责展示，数据与偏好由路由控制器持有。 */
+export interface OverviewViewProps {
+  /** 当前实例名，用于标题与插件面板取数。 */
+  instance: string
+  /** 最近一次总览数据，来自 useInstanceOverview 的订阅。 */
+  data: OverviewData
+  /** 数据更新回调：视图内部刷新后写回控制器状态。 */
+  onData: (data: OverviewData) => void
+  /** 当前展示的资源卡 key 列表（已去重）。 */
+  selectedResources: string[]
+  /** 资源选择变化回调：控制器负责持久化。 */
+  onResourcesChange: (keys: string[]) => void
+}
+
+/** 路由控制器在主题切换时保留数据订阅与资源偏好。 */
 export function Overview() {
   const {instance = ''} = useParams()
-  const {theme, ui} = useApp()
-  const [data, setData] = useState<OverviewData>()
-  const [error, setError] = useState('')
-  const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
-  const connection = useConnection()
-  const panel = useSyncExternalStore(subscribeOverviewPanel, readOverviewPanel, readOverviewPanel)
-  const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
+  return <OverviewController key={instance} instance={instance}/>
+}
 
-  useEffect(() => setSelectedResources(loadResourceSelection(instance)), [instance])
+function OverviewController({instance}: {instance: string}) {
+  const View = useThemeComponent('Overview', ModernOverview)
+  const [data, setData, error] = useInstanceOverview(instance, true, {notifyErrors: false})
+  const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
 
   function updateResourceSelection(keys: string[]) {
     const next = [...new Set(keys)]
@@ -44,62 +61,53 @@ export function Overview() {
     try { localStorage.setItem(`azurpilot.resources.${instance}`, JSON.stringify(next)) } catch { /* 无存储权限时仅本页生效。 */ }
   }
 
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    void api.request('overview.get', {instance})
-      .then(value => { if (active) {setData(value); setError('')} })
-      .catch(error => { if (active) setError(error.message) })
-    return () => { active = false }
-  }, [instance, connection])
-
-  useEffect(() => api.onEvent(event => {
-    if (event.topic === 'overview' && (event.data as OverviewData).instance === instance) setData(event.data as OverviewData)
-  }), [instance])
-
   if (error) return <ErrorBox message={error}/>
   if (!data) return <Loading/>
+  return <Suspense fallback={<Loading/>}>
+    <View instance={instance} data={data} onData={setData}
+      selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>
+  </Suspense>
+}
 
-  // 紧凑主题省略与面包屑重复的标题行，设置按钮改挂日志面板工具栏。
-  const condensed = theme === 'extreme'
-  const actions = <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={updateResourceSelection} showLabel={condensed}/>
+/** 默认总览视图持有布局状态；数据和资源选择由控制器管理。 */
+export function ModernOverview({instance, data, onData, selectedResources, onResourcesChange}: OverviewViewProps) {
+  const {ui} = useApp()
+  const panel = useSyncExternalStore(subscribeOverviewPanel, readOverviewPanel, readOverviewPanel)
+  const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
+  const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
+  const actions = <InstanceActions resources={data.resources} selectedResources={selectedResources} onResourcesChange={onResourcesChange}/>
 
-  // 旧版版式：左列调度器与任务计划，右列资源卡与日志；右栏在旧版主题下不渲染。
-  if (usesLegacyLayout(theme)) return <div
-    className="instance-page-grid"
-    style={layout.legacyRailWidth ? ({'--legacy-rail-width': `${layout.legacyRailWidth}px`} as React.CSSProperties) : undefined}
+  // 现代版式：调度器在左列或右列，另一侧是资源卡与日志；右栏在现代主题下不渲染。
+  return <div
+    className={`instance-page-grid ${schedulerPosition === 'right' ? 'rail-right' : 'rail-left'}`}
+    data-apu-component="overview"
+    data-scheduler-position={schedulerPosition}
+    style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as React.CSSProperties) : undefined}
   >
-    <h1 className="legacy-sr-title">{instance}</h1>
+    <h1 className="modern-sr-title">{instance}</h1>
     <div className="instance-page-rail-wrap">
-      <LegacyRail instance={instance} data={data} onData={setData}>
+      <ModernRail instance={instance} data={data} onData={onData}>
         {/* 标题即切换主区显示日志还是统计的按钮。 */}
-        <section className="panel legacy-stat-card">
-          <button type="button" className="legacy-stat-title" aria-pressed={panel === 'stats'}
+        <section className="panel modern-stat-card">
+          <button type="button" className="modern-stat-title" aria-pressed={panel === 'stats'}
             aria-label={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             title={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             onClick={() => {setOverviewPanel(panel === 'stats' ? 'logs' : 'stats')}}
-          >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}</button>
+          >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}<ChevronRight size={13}/></button>
           {actions}
         </section>
-      </LegacyRail>
-      <LegacyRailResizeHandle />
+      </ModernRail>
+      <ModernRailResizeHandle side={schedulerPosition} />
     </div>
     <div className="instance-page-main">
       <ResourceCards resources={data.resources} selected={selectedResources}/>
+      <PluginPanels instance={instance}/>
       {/* 换面板时重挂一次，让内容列的淡入重放；方向类决定从哪一侧滑入。 */}
       <div className={`instance-page-panel ${panel === 'stats' ? 'panel-drop' : 'panel-rise'}`} key={panel}>
         {panel === 'stats'
-          ? <div className="instance-panel-stats"><Statistics/></div>
+          ? <div className="instance-panel-stats"><Suspense fallback={<Loading/>}><Statistics/></Suspense></div>
           : <MonitorPanel instance={instance}/>}
       </div>
-    </div>
-  </div>
-
-  return <div className="overview-page">
-    {!condensed && <PageTitle className="instance-page-title" title={instance} actions={actions}/>}
-    <ResourceCards resources={data.resources} selected={selectedResources}/>
-    <div className="overview-main">
-      <MonitorPanel instance={instance} actions={condensed ? actions : undefined}/>
     </div>
   </div>
 }

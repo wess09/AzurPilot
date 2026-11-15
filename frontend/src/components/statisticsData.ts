@@ -5,6 +5,7 @@
 import type { StatSeries,  Scalar, StatPoint, StatisticsReport, StatisticsReportWire } from '../api/types'
 import type { ChartMode } from '../app/statisticsPrefs'
 
+/** 把点位按 minutes 分钟聚成开高低收桶：时间截断到桶起点；1440 表示按天（零点对齐），0 表示不聚合、逐点透传。 */
 export function aggregatePoints(points: StatPoint[], minutes: number) {
   const buckets = new Map<string, {time: string; open: number; close: number; low: number; high: number}>()
   for (const [index, point] of points.entries()) {
@@ -20,6 +21,7 @@ export function aggregatePoints(points: StatPoint[], minutes: number) {
   return [...buckets.values()]
 }
 
+/** 把二维表下载为 CSV 文件（自动补 .csv 后缀）：加 BOM 兼容 Excel 读 UTF-8，行尾用 CRLF。 */
 export function downloadCsv(name: string, rows: Scalar[][]) {
   const escape = (value: Scalar) => {
     let text = value == null ? '' : String(value)
@@ -31,6 +33,7 @@ export function downloadCsv(name: string, rows: Scalar[][]) {
   const link = document.createElement('a'); link.href = url; link.download = `${name}.csv`; link.click(); URL.revokeObjectURL(url)
 }
 
+/** 把多条系列按时刻对齐成表格行：一行一时刻、各系列一列，缺值补 '—'，末列为来源；时间倒序，from/to 为空表示不限。 */
 export function mergeMultiSeriesRows(
   seriesList: {key: string; label: string; points: StatPoint[]}[],
   from = '',
@@ -53,17 +56,17 @@ export function mergeMultiSeriesRows(
   }
   const sortedTimes = [...timeMap.keys()].sort((a, b) => b.localeCompare(a))
   return sortedTimes.map(time => {
-    const entry = timeMap.get(time)!
+    const entry = timeMap.get(time) ?? {values: {}, source: ''}
     return [
       time,
-      ...seriesList.map(s => (entry.values[s.key] != null ? entry.values[s.key] : '—')),
+      ...seriesList.map(s => entry.values[s.key] ?? '—'),
       entry.source || '—',
     ]
   })
 }
 
 /** 图表与原始记录表共用的视图：同一份选中、聚合与时间范围，两边各自算出同一结果。 */
-export interface StatisticsView {
+interface StatisticsView {
   selectedSeries: StatSeries[]
   seriesData: {
     series: StatSeries
@@ -88,10 +91,14 @@ function resolveSelectedKeys(series: StatSeries[], saved: string[]): string[] {
   return active ? [active] : []
 }
 
+/** 算出图表与原始记录表共用的视图：按保存顺序取选中的系列，桶与统计值随模式与聚合粒度变化（蜡烛图下粒度 0 视作 60 分钟）；单系列表格直接用原点位，多系列按时刻合并。 */
 export function buildSeriesView(series: StatSeries[], options: {selectedKeys: string[]; mode: ChartMode; bucket: number; from: string; to: string}): StatisticsView {
   const {selectedKeys, mode, bucket, from, to} = options
   const keys = resolveSelectedKeys(series, selectedKeys)
-  const selectedSeries = keys.map(key => series.find(item => item.key === key)!).filter(Boolean)
+  const selectedSeries = keys.flatMap(key => {
+    const item = series.find(seriesItem => seriesItem.key === key)
+    return item ? [item] : []
+  })
   const isSingle = selectedSeries.length === 1
   const effectiveBucket = mode === 'candlestick' && bucket === 0 ? 60 : bucket
   const seriesData = selectedSeries.map(s => {
@@ -100,7 +107,7 @@ export function buildSeriesView(series: StatSeries[], options: {selectedKeys: st
     return {
       series: s, points, buckets: aggregatePoints(points, effectiveBucket), values,
       latest: values.at(-1),
-      change: values.length >= 2 ? (values.at(-1)! - values[0]) : 0,
+      change: values.length >= 2 ? (values.at(-1) ?? 0) - (values[0] ?? 0) : 0,
       minimum: values.length ? Math.min(...values) : 0,
       maximum: values.length ? Math.max(...values) : 0,
     }
@@ -112,18 +119,23 @@ export function buildSeriesView(series: StatSeries[], options: {selectedKeys: st
   return {selectedSeries, seriesData, isSingle, effectiveBucket, mergedRows}
 }
 
-/** 涨跌分段：相邻两点之间按方向归入上涨（持平并入上涨）与下跌两组，组间用 '-' 断开，
-    这样每组是一条独立折线，可以各自上色。 */
+/**
+ * 涨跌分段：相邻两点之间按方向归入上涨（持平并入上涨）与下跌两组，组间用 '-' 断开，
+ * 这样每组是一条独立折线，可以各自上色。
+ */
 export function riseFallSegments(times: number[], closes: (number | null)[]): {rise: (number[] | '-')[]; fall: (number[] | '-')[]} {
   const rise: (number[] | '-')[] = []
   const fall: (number[] | '-')[] = []
   const deltas = riseFallDeltas(closes)
   for (let index = 1; index < closes.length; index += 1) {
     const previous = closes[index - 1]
+    const time = times[index - 1]
+    const currentTime = times[index]
     const current = closes[index]
-    if (previous == null || current == null) continue
-    const target = deltas[index] >= 0 ? rise : fall
-    target.push([times[index - 1], previous], [times[index], current], '-')
+    if (previous == null || current == null || time === undefined || currentTime === undefined) continue
+    const delta = deltas[index]
+    const target = (delta ?? 0) >= 0 ? rise : fall
+    target.push([time, previous], [currentTime, current], '-')
   }
   return {rise, fall}
 }
@@ -156,11 +168,12 @@ const wallClock = (micros: number) => {
 /** 把传输用的紧凑点还原成内部点位。 */
 export function normalizeReport(report: StatisticsReportWire): StatisticsReport {
   const {axis, series, ...rest} = report
+  const axisValues = axis ?? []
   return {
     ...rest,
     series: series.map(item => 'values' in item
       ? {key: item.key, label: item.label, icon: item.icon, points: item.values.map((value, index) => ({
-        time: wallClock(axis![index]), value, source: item.sources?.[index] ?? '',
+        time: wallClock(axisValues[index] ?? 0), value, source: item.sources?.[index] ?? '',
       }))}
       : {key: item.key, label: item.label, icon: item.icon, points: item.points.map(point => ({
         time: wallClock(point.t), value: point.v, source: point.s ?? '',

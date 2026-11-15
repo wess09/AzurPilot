@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="doc/logo.webp" alt="AzurPilot Logo" width="400">
+  <img src="docs/images/logo.webp" alt="AzurPilot Logo" width="400">
 </p>
 
 <p align="center">
@@ -62,7 +62,7 @@ AzurPilot은 [AzurLaneAutoScript](https://github.com/LmeSzinc/AzurLaneAutoScript
 ## GUI 미리보기
 
 <div align="center">
-  <img src="doc/GUI.png" alt="GUI Preview" width="800">
+  <img src="docs/images/GUI.png" alt="GUI Preview" width="800">
 </div>
 
 ## 빠른 시작
@@ -218,17 +218,17 @@ URL만 입력할 수 있고 요청 헤더를 설정할 수 없는 클라이언�
 > 📥 [AzurPilot 공식 웹사이트](https://azurpilot.com/download.html)에서 Windows / macOS / Linux 런처 다운로드
 
 <div align="center">
-  <img src="doc/loading.png" alt="loading" width="500" />
+  <img src="docs/images/loading.png" alt="loading" width="500" />
   <p>로딩 화면</p>
   <table align="center">
     <tr>
-      <td align="center"><img src="doc/GUI.png" alt="신버전" width="260"><br>신버전</td>
-      <td align="center"><img src="doc/GUI-legacy.webp" alt="구버전" width="260"><br>구버전</td>
-      <td align="center"><img src="doc/GUI-minimal.png" alt="심플" width="260"><br>심플</td>
+      <td align="center"><img src="docs/images/GUI.png" alt="신버전" width="260"><br>신버전</td>
+      <td align="center"><img src="docs/images/GUI-legacy.webp" alt="구버전" width="260"><br>구버전</td>
+      <td align="center"><img src="docs/images/GUI-minimal.png" alt="심플" width="260"><br>심플</td>
     </tr>
   </table>
   <p>Windows 클라이언트 화면</p>
-  <img src="doc/macGUI.png" alt="macGUI" width="500" />
+  <img src="docs/images/macGUI.png" alt="macGUI" width="500" />
   <p>Mac 클라이언트 화면</p>
 </div>
 
@@ -330,7 +330,7 @@ uv run -m module.config.config_updater
 
 <p align="center">
   <a href="https://afdian.com/a/miaonaa">
-    <img src="doc/afdian.jfif" alt="爱发电" width="200">
+    <img src="docs/images/afdian.jfif" alt="爱发电" width="200">
   </a>
   <br>
   <b>이 프로젝트 후원(서버 비용 또는 새 모델 훈련 등에 사용)</b>

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 远程访问状态聚合（disabled/configuring/ready）测试。
+ */
 import { describe, expect, it } from 'vitest'
 import { remoteStatus } from './remoteStatus'
 
@@ -12,6 +15,8 @@ describe('remoteStatus', () => {
     expect(remoteStatus('direct_p2p', true)).toBe('ready')
     expect(remoteStatus('turn_relay', true)).toBe('ready')
     expect(remoteStatus('ssh_forward', true)).toBe('ready')
+    expect(remoteStatus('direct_ready', true)).toBe('ready')
+    expect(remoteStatus('registered', true)).toBe('ready')
   })
 
   it('启动与重连阶段是 starting', () => {

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 养成计算页：汇总船坞报告、科技报告与图鉴，估算舰船 100→120 级的心智与黄币开销，并可生成自动培养方案。
+ */
+
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
 import {useEffect, useMemo, useRef, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
@@ -8,6 +12,11 @@ import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox, Loading} from '../components/ui'
+import {Checkbox as CheckboxControl} from '../components/official-ui/checkbox'
+import {Label} from '../components/ui/label'
+import {Button} from '../components/ui/button'
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
+import {Input} from '../components/official-ui/input'
 import {automaticCandidates, readPlan, technologyEfficiency, type CultivationPlan, type CultivationReport} from '../mind/cultivation'
 import '../fleet-tech/style.css'
 import '../mind/cultivation.css'
@@ -18,6 +27,14 @@ const columns = {name: 'ship', level: 'level', mind: 'units', gold: 'gold', effi
 type Column = keyof typeof columns
 type Sort = {column: Column; direction: 'ascending' | 'descending'}
 interface Facts {dock: DockReport; technology: Report; catalog: Catalog}
+/**
+ * 养成计算页：汇总船坞报告、科技报告与图鉴，估算每艘舰船 100→120 级的心智与黄币开销。
+ *
+ * 三类数据齐备才出结果；服务端返回 CONFLICT 时经 onRefresh 重取船坞快照再重算。
+ *
+ * @param report 共享的船坞确认报告，决定参与计算的舰船名单。
+ * @param onRefresh 数据冲突时的回调，由外层重新拉取船坞报告。
+ */
 export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; onRefresh?: () => void}) {
   const {instance = ''} = useParams(), connection = useConnection(), {language, ui} = useApp()
   const [facts, setFacts] = useState<Facts>(), [plan, setPlan] = useState<CultivationPlan>()
@@ -59,11 +76,11 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }, [instance, connection, dock, reload])
   useEffect(() => {
     if (!dock || dock.instance !== instance || !catalog || !technology) return
-    // The technology projection can arrive before or after the shared dock snapshot.
+    // 科技数据与共享船坞快照的到达顺序不定，版本对不上时本轮先不算，等下一次对齐。
     if (technology.data_version && technology.data_version !== dock.revision) return
     const previous = memory.current?.instance === instance ? memory.current.plan : undefined
     let stored: string | null = null
-    if (!previous) try {stored = localStorage.getItem(key)} catch { /* Optional browser preferences. */ }
+    if (!previous) try {stored = localStorage.getItem(key)} catch { /* localStorage 被禁时读不到历史计划，按默认重新计算即可。 */ }
     const next = readPlan(previous ? JSON.stringify(previous) : stored, dock.ships)
     if (!previous || JSON.stringify(previous) !== JSON.stringify(next)) {
       memory.current = {instance, plan: next}; setPlan(next)
@@ -74,18 +91,18 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   const candidates = useMemo(() => facts ? automaticCandidates(facts.dock.ships, facts.catalog, facts.technology.ships) : [], [facts])
   const technologyRows = useMemo(() => new Map(facts ? catalogRows(facts.catalog, facts.technology.ships).map(row => [row.group_type, row]) : []), [facts])
   const candidateIds = useMemo(() => candidates.map(card => card.id), [candidates])
-  const included = useMemo(() => new Set(candidates.filter(card => !plan?.excluded_groups.includes(card.group_type!)).map(card => card.id)), [candidates, plan?.excluded_groups])
+  const included = useMemo(() => new Set(candidates.filter(card => card.group_type != null && !plan?.excluded_groups.includes(card.group_type)).map(card => card.id)), [candidates, plan?.excluded_groups])
   useEffect(() => {
     if (!facts || facts.dock.instance !== instance || !plan) return
     memory.current = {instance, plan}
-    try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* Calculation works without browser storage. */ }
+    try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* localStorage 被禁时计划只留在内存，本次会话仍然可用。 */ }
   }, [facts, plan, instance, key])
   useEffect(() => {
     if (!facts || facts.dock.instance !== instance || connection !== 'ready') return
     let active = true
-    // Keep the completed view mounted during subsequent recalculations.
+    // 重算期间保留已完成的结果视图，只标记计算中状态。
     setCalculating(true)
-    // Selection only changes totals; keep cost details for every candidate.
+    // 勾选只影响合计，单个舰船的花销对每个候补都要算，因此请求带全部候选 id。
     void api.request('mind.plan', {instance, revision: facts.dock.revision, ship_ids: candidateIds,
       target_level: 120}).then(value => {
       if (active) {setResult(value); setCalculating(false); setError('')}
@@ -106,7 +123,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }, [result, included])
   const efficiencies = useMemo(() => {
     const mindCosts = result?.mind_costs_100_to_120 ?? {}
-    return new Map(candidates.map(card => [card.id, technologyEfficiency(technologyRows.get(card.group_type!), mindCosts)]))
+    return new Map(candidates.map(card => [card.id, technologyEfficiency(card.group_type == null ? undefined : technologyRows.get(card.group_type), mindCosts)]))
   }, [candidates, technologyRows, result?.mind_costs_100_to_120])
   const rows = useMemo(() => {
     const collator = new Intl.Collator(language, {numeric: true})
@@ -120,7 +137,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
       }
     }
     return candidates.filter(card => {
-      const technology = technologyRows.get(card.group_type!)
+      const technology = card.group_type == null ? undefined : technologyRows.get(card.group_type)
       const search = query.trim()
       return technology && matches(technology, filters, '')
         && (!search || card.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()) || matches(technology, {}, search))
@@ -145,7 +162,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }
   const allSelected = rows.length > 0 && rows.every(card => included.has(card.id))
   function selectFiltered(selected: boolean) {
-    const groups = new Set((selected ? rows : candidates).map(card => card.group_type!))
+    const groups = new Set((selected ? rows : candidates).map(card => card.group_type).filter((group): group is number => group !== undefined))
     setPlan(current => current && ({...current, excluded_groups: selected
       ? current.excluded_groups.filter(group => !groups.has(group))
       : [...new Set([...current.excluded_groups, ...groups])]}))
@@ -186,25 +203,26 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
       {group('attr', attrs.map(value => [String(value), tr(`attr.${value}`)]))}
       {extra && <>{group('getBonusType', types.map(value => [String(value), tr(`type.${value}`)]), `${tr('unlock')} · ${tr('shipClass')}`)}{group('getAttr', attrs.map(value => [String(value), tr(`attr.${value}`)]), `${tr('unlock')} · ${tr('attr')}`)}{group('levelBonusType', types.map(value => [String(value), tr(`type.${value}`)]), `${tr('completionBonus')} · ${tr('shipClass')}`)}{group('levelAttr', attrs.map(value => [String(value), tr(`attr.${value}`)]), `${tr('completionBonus')} · ${tr('attr')}`)}</>}
       {group('status', ['notTrained120', 'missingStar', 'awakening_pending'].map(key => [key, tr(key)]))}
-      <div className="ft-filter-row"><strong>{ui('mind.filterFunctions')}</strong><div className="ft-chips"><button type="button" aria-expanded={extra} onClick={toggleExtra}>{tr('extra')}</button></div></div>
+      <div className="ft-filter-row"><strong>{ui('mind.filterFunctions')}</strong><div className="ft-chips"><Button type="button" size="sm" variant={extra ? 'default' : 'outline'} aria-expanded={extra} onClick={toggleExtra}>{tr('extra')}</Button></div></div>
     </section>
     <p className="ft-edit-hint">{ui('mind.costHint')}</p>
     <p className="ft-edit-hint">{ui('mind.efficiencyHint')}</p>
-    <div className="ft-search"><input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
-      <label className="cultivation-included"><input type="checkbox" checked={includedOnly} onChange={event => setIncludedOnly(event.target.checked)}/>{ui('mind.includedOnly')}</label>
+    <div className="ft-search"><Input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
+      <span className="flex items-center gap-3"><CheckboxControl id="mind-included-only" checked={includedOnly} onCheckedChange={next => setIncludedOnly(next === true)}/><Label htmlFor="mind-included-only">{ui('mind.includedOnly')}</Label></span>
     </div>
-    <div className="ft-table-wrap cultivation-table"><table><thead><tr><th scope="col"><label><input type="checkbox" aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onChange={event => selectFiltered(event.target.checked)}/> {ui('mind.participating')}</label></th>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <th key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><button type="button" className="ft-sort" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></button></th>)}<th scope="col">{tr('awakening_pending')}</th></tr></thead><tbody>
+    <div className="ft-table-wrap cultivation-table"><Table className="min-w-[900px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow><TableHead scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></TableHead>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <TableHead key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>)}<TableHead scope="col">{tr('awakening_pending')}</TableHead></TableRow></TableHeader><TableBody>
       {rows.map(card => {
-        const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = technologyRows.get(card.group_type!)?.awakening_pending === true
-        return <tr key={card.id} className={participating ? '' : 'cultivation-excluded'}>
-          <td><input type="checkbox" aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onChange={event => exclude(card.group_type!, !event.target.checked)}/></td>
-          <td className="ft-name"><Link to={`?tab=data&ship=${card.id}`}>{card.name}</Link>{participating && row?.status === 'unknown' && <small className="cultivation-warning">{ui('mind.unknownCost')} · <Link to={`?tab=data&ship=${card.id}`}>{ui('mind.check')}</Link></small>}</td>
-          <td>{card.level || ui('mind.unknown')}</td><td>{amount(row?.mind)}</td><td>{amount(row?.gold)}</td>
-          <td title={efficiency?.value == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points!, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-          <td className={awakeningPending ? 'ft-awakening-pending' : ''} title={ui('mind.awakeningHint')}><span className="ft-mark" aria-label={`${card.name} · ${tr('awakening_pending')} · ${tr(awakeningPending ? 'marked' : 'notMarked')}`}>{awakeningPending ? '✓' : '—'}</span></td>
-        </tr>
+        const groupType = card.group_type
+        const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = groupType != null && technologyRows.get(groupType)?.awakening_pending === true
+        return <TableRow key={card.id} className={participating ? '' : 'cultivation-excluded'}>
+          <TableCell>{groupType != null && <CheckboxControl aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onCheckedChange={next => exclude(groupType, !next)}/>}</TableCell>
+          <TableCell className="ft-name"><Link to={`?tab=data&ship=${card.id}`}>{card.name}</Link>{participating && row?.status === 'unknown' && <small className="cultivation-warning">{ui('mind.unknownCost')} · <Link to={`?tab=data&ship=${card.id}`}>{ui('mind.check')}</Link></small>}</TableCell>
+          <TableCell className="text-center">{card.level || ui('mind.unknown')}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.mind)}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.gold)}</TableCell>
+          <TableCell className="text-right tabular-nums" title={efficiency?.value == null || efficiency.points == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+          <TableCell className={`text-center ${awakeningPending ? 'ft-awakening-pending' : ''}`} title={ui('mind.awakeningHint')}><span className="ft-mark" aria-label={`${card.name} · ${tr('awakening_pending')} · ${tr(awakeningPending ? 'marked' : 'notMarked')}`}>{awakeningPending ? '✓' : '—'}</span></TableCell>
+        </TableRow>
       })}
-    </tbody></table></div>
+    </TableBody></Table></div>
     {!rows.length && <p>{ui(candidates.length ? 'mind.noMatches' : 'mind.noCandidates')}</p>}
   </div>
 }

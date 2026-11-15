@@ -7,6 +7,7 @@ import {translateFleetTech} from './i18n'
 import type {Row} from './types'
 
 const row: Row = {group_type: 100, code: 1, handbook_type: 0, blueprint: false, full_star_rule: 'ordinary_level_cap', name: 'Enterprise', names: {}, nationality: 1, rarity: 'SSR', type: 7, owned: true, full_star: false, lv120: false, awakening_pending: false, current_count: 0, current_level: null, evidence: {owned: [], full_star: [], lv120: []}, points: 3, status: 'unfinished', technology: {pt_get: 3, pt_upgrage: 7, pt_level: 5, max_star: 5, add_get_shiptype: [7], add_get_attr: 5, add_get_value: 1, add_level_shiptype: [7], add_level_attr: 5, add_level_value: 2}}
+// 固定用英文语言渲染：列名与按钮的 aria 名都是英文，断言才能直接按英文查找。
 function table(value: Row = row, props: Partial<Parameters<typeof TechnologyTable>[0]> = {}) {
   return render(<MemoryRouter><TechnologyTable rows={[value]} language="en-US" tr={key => translateFleetTech('en-US', key)} {...props}/></MemoryRouter>)
 }

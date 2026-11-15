@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp, useConnection } from '../app/context'
+import { Switch } from './Switch'
 import { api, ApiError } from '../api/client'
 import type { LauncherStatus } from '../api/types'
 
@@ -21,6 +22,12 @@ export function launcherStatusText(phase: Phase, state: {enabled: boolean; pendi
   return `${t('Gui.Launcher.Connected')} · ${flag}`
 }
 
+/**
+ * 启动器卡片：连接就绪后读取 launcher.status 并监听 launcher 事件，驱动自启开关的状态机。
+ *
+ * 自启切换是乐观更新：先翻开关进入 setting，等后端命令回执（pending/failed/expired）落定；
+ * 经远程隧道拿不到启动器（LOCAL_ONLY）时停在 remote 态。
+ */
 export function LauncherCard() {
   const {t} = useApp()
   const connection = useConnection()
@@ -84,20 +91,23 @@ export function LauncherCard() {
   return (
     <section className="panel config-group">
       <div className="panel-heading">
-        <h2 data-text={t('Gui.Launcher.StartupTitle')}>{t('Gui.Launcher.StartupTitle')}</h2>
+        <div>
+          <span className="group-indicator"/>
+          <h2 role="heading" aria-level={2}>{t('Gui.Launcher.StartupTitle')}</h2>
+        </div>
       </div>
       <div className="field-row">
         <div className="field-label">
           <label htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</label>
-          <p>{t('Gui.Launcher.AutoStartHelp')}</p>
-          <p role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
+          <p id="launcher-autostart-description">{t('Gui.Launcher.AutoStartHelp')}</p>
         </div>
         <div className="field-control">
-          <button id="launcher-autostart" type="button" role="switch" aria-checked={enabled}
-            aria-label={t('Gui.Launcher.AutoStart')} className={`toggle ${enabled ? 'on' : ''}`}
-            disabled={phase !== 'ready'} onClick={() => { void toggle() }}><span/></button>
+          <Switch id="launcher-autostart" checked={enabled} disabled={phase !== 'ready'}
+            label={t('Gui.Launcher.AutoStart')} describedBy="launcher-autostart-description"
+            onChange={() => { void toggle() }}/>
         </div>
       </div>
+      <p className="panel-note" role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
     </section>
   )
 }

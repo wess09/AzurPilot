@@ -28,31 +28,40 @@ import {
   toggleMaterialInspectorDocked,
   toggleMaterialInspectorMinimized,
 } from '../app/materialInspectorState'
-import { familyOf, showsWallpaper } from '../app/theme'
+import { THEME_FAMILY } from '../app/theme'
 import {
   clearFamilyKnob,
   clearFamilyRegion,
   resetFamilyCustom,
   writeFamilyCustom,
 } from '../app/themeCustom'
-import { familyRegions } from '../app/themeKnobs'
+import { REGIONS } from '../app/themeKnobs'
 import { useFamilyCustom, useSampleLayers } from '../app/useMaterialInspector'
 import { MaterialDetailPanel } from './ThemeCustomPreference'
 
+/*
+ * 样式索引（entry 静态树成员：经 App.tsx:20 静态链引入，L3 只对 lazy chunk 组件搬迁，故不 colocate）。
+ * - styles/mock-preview.css  inspector-* 段：inspector-panel-inner / inspector-header / inspector-title / inspector-body / inspector-footer / inspector-expand-button（与 MockInstancePreview 共用同一域文件）
+ */
+
+/**
+ * 全局材质检视器：把示例弹窗与菜单叠在真实页面上，直接调当前主题家族（THEME_FAMILY）的区域旋钮，写入即生效。
+ * 壁纸未开启时材质效果无从观察，因此面板顶部先给出一键开启默认壁纸的入口。
+ */
 export function MaterialInspector() {
   const inspector = useSyncExternalStore(subscribeMaterialInspector, getMaterialInspector, getMaterialInspector)
   const background = useSyncExternalStore(subscribeBackground, getBackground, getBackground)
-  const { ui, theme } = useApp()
+  const { ui } = useApp()
   const location = useLocation()
   const navigate = useNavigate()
 
-  const family = familyOf(theme)
+  const family = THEME_FAMILY
   const {custom, refresh} = useFamilyCustom(family)
   const {region: activeRegion, showModal, showMenu, select: handleRegionSelect, setShowModal, setShowMenu} = useSampleLayers()
 
   if (!inspector.open) return null
 
-  const wallpaperActive = showsWallpaper(theme, background.source)
+  const wallpaperActive = background.source !== 'off'
 
   const isDocked = inspector.docked
   const isMinimized = inspector.minimized
@@ -83,7 +92,7 @@ export function MaterialInspector() {
                 <Sliders size={16} />
                 <span className="inspector-title">{ui('settings.materialDetail')}</span>
                 <span>
-                  {family === 'new' ? 'Apple HIG' : 'Google M3'}
+                  Google M3
                 </span>
               </div>
               <div>
@@ -128,6 +137,7 @@ export function MaterialInspector() {
               </div>
             </header>
 
+            {/* 材质调在真实页面上，壁纸关着时看不出毛玻璃效果，先给一键开启的入口 */}
             {!wallpaperActive && (
               <div
                 style={{
@@ -198,7 +208,7 @@ export function MaterialInspector() {
               </div>
 
               <MaterialDetailPanel
-                regions={familyRegions[family]}
+                regions={REGIONS}
                 custom={custom}
                 ui={ui}
                 initialRegion={activeRegion}
@@ -236,7 +246,7 @@ export function MaterialInspector() {
         )}
       </div>
 
-      {/* 测试用弹出菜单 (menu 区域) */}
+      {/* 测试用弹出菜单（menu 区域） */}
       {showMenu && (
         <div
           style={{
@@ -323,7 +333,7 @@ export function MaterialInspector() {
         </div>
       )}
 
-      {/* 测试用弹窗 (modal 区域) */}
+      {/* 测试用弹窗（modal 区域） */}
       {showModal && (
         <div
           style={{
@@ -397,6 +407,7 @@ export function MaterialInspector() {
     </>
   )
 
+  // 拿不到 document.body 时退回内联渲染，保证任何环境都能出结果。
   if (typeof document !== 'undefined' && document.body) {
     return createPortal(overlay, document.body)
   }

@@ -7,8 +7,8 @@ import tempfile
 import threading
 import unittest
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing, nullcontext
-from datetime import datetime
+from contextlib import ExitStack, closing, nullcontext
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -105,16 +105,29 @@ class TestStatisticsTransactions(unittest.TestCase):
         read_done = threading.Event()
         release = threading.Event()
         competing_begin = threading.Event()
-        original = getattr(owner or self.db, pause_target)
         connect = sqlite3.connect
 
-        def paused(*args, **kwargs):
-            result = original(*args, **kwargs)
-            if not read_done.is_set():
-                read_done.set()
-                if not release.wait(5):
-                    raise TimeoutError("未放行第一个统计写者")
-            return result
+        def paused_hook(target):
+            original = getattr(owner or self.db, target)
+
+            def paused(*args, **kwargs):
+                result = original(*args, **kwargs)
+                if not read_done.is_set():
+                    read_done.set()
+                    if not release.wait(5):
+                        raise TimeoutError("未放行第一个统计写者")
+                return result
+
+            return paused
+
+        # 标量列递增没有读阶段，事务内的单行 UPSERT 同样是暂停点。
+        hooks = [pause_target]
+        if pause_target == "_get_stats_in_connection":
+            hooks.extend(("_increment_month_scalar", "_record_yellow_coin_snapshot", "_record_ap_snapshot",
+                          "_record_coins_snapshot", "_record_siren_device", "_increment_meow_battle",
+                          "_append_meow_sample", "_increment_meow_counter_field", "_record_akashi_ap_entry",
+                          "_set_last_ap_notification", "_append_gem_commission_entry_fast"))
+        paused = [patch.object(owner or self.db, hook, side_effect=paused_hook(hook)) for hook in hooks]
 
         def traced_connect(*args, **kwargs):
             conn = connect(*args, **kwargs)
@@ -124,10 +137,12 @@ class TestStatisticsTransactions(unittest.TestCase):
                 )
             return conn
 
-        with patch.object(owner or self.db, pause_target, side_effect=paused), \
-                patch.object(persistence.sqlite3, "connect", side_effect=traced_connect), \
+        with ExitStack() as hooks, \
                 ThreadPoolExecutor(max_workers=1) as first_pool, \
                 ThreadPoolExecutor(max_workers=1, thread_name_prefix="stats-other") as second_pool:
+            for hook in paused:
+                hooks.enter_context(hook)
+            hooks.enter_context(patch.object(persistence.sqlite3, "connect", side_effect=traced_connect))
             first_future = first_pool.submit(first)
             try:
                 self.assertTrue(read_done.wait(5), "第一个写者未在事务中读取")
@@ -205,11 +220,60 @@ class TestStatisticsTransactions(unittest.TestCase):
     def test_all_mutations_reject_corrupt_rows_without_replacing_them(self):
         with closing(sqlite3.connect(self.path)) as conn, conn:
             conn.execute("DELETE FROM typed_value_nodes WHERE parent_no IS NULL")
-        before = self.rows()
+        scalar_columns = {"increment_battle_count": 2, "increment_akashi_encounter": 3}
+        # 增量追加不读兼容树：只允许月份行的 field_mask 按位补齐自身家族位。
+        family_bits = {
+            "add_yellow_coin_snapshot": 64, "add_ap_snapshot": 16,
+            "add_coins_snapshot": 128,
+            "add_siren_research_device": 32768 | 65536,
+            "add_akashi_ap_entry": 4 | 8, "set_last_ap_notification": 32,
+            "add_gem_commission": 1 << 19,
+            "add_meow_round_time": 4096 | 16384, "add_meow_battle_time": 8192 | 16384,
+            "increment_meow_akashi_encounter": 16384, "add_meow_akashi_ap": 16384,
+        }
         for name, args in MUTATIONS:
-            with self.subTest(method=name), self.assertRaises(ValueError):
-                getattr(self.db, name)("test", *args)
-            self.assertEqual(self.rows(), before)
+            with self.subTest(method=name):
+                before = self.rows()
+                if name in scalar_columns or name in family_bits:
+                    # 标量列递增不读兼容树：允许成功，但只允许自身计数变化。
+                    try:
+                        getattr(self.db, name)("test", *args)
+                    except ValueError:
+                        self.assertEqual(self.rows(), before)
+                        continue
+                    after = self.rows()
+                    self.assertEqual(len(after), len(before))
+                    if name in scalar_columns:
+                        column = scalar_columns[name]
+                        for old, new in zip(before, after):
+                            self.assertEqual(old[:column] + old[column + 1:], new[:column] + new[column + 1:])
+                            self.assertEqual(new[column], (old[column] or 0) + 1)
+                    else:
+                        bit = family_bits[name]
+                        for old, new in zip(before, after):
+                            if name == "add_siren_research_device":
+                                # 计数落独立主键行，月份行除家族位外还按位补 siren_fields_mask。
+                                self.assertEqual(old[:11] + old[12:13] + old[14:],
+                                                 new[:11] + new[12:13] + new[14:])
+                                self.assertEqual(new[11], old[11] | bit)
+                                self.assertEqual(new[13], old[13] | 1)
+                            elif name == "add_akashi_ap_entry":
+                                # 标量列累加：允许 akashi_ap 计数与家族位变化。
+                                self.assertEqual(old[:4] + old[5:11] + old[12:], new[:4] + new[5:11] + new[12:])
+                                self.assertEqual(new[4], (old[4] or 0) + 20)
+                                self.assertEqual(new[11], old[11] | bit)
+                            elif name == "set_last_ap_notification":
+                                # 通知列原样覆盖：ts/value/mask 与家族位允许变化。
+                                self.assertEqual(old[:9] + old[13:], new[:9] + new[13:])
+                                self.assertEqual(new[11], old[11] | 32)
+                                self.assertEqual(new[12], 3)
+                            else:
+                                self.assertEqual(old[:11] + old[12:], new[:11] + new[12:])
+                                self.assertEqual(new[11], old[11] | bit)
+                else:
+                    with self.assertRaises(ValueError):
+                        getattr(self.db, name)("test", *args)
+                    self.assertEqual(self.rows(), before)
 
     def test_sqlite_read_error_propagates_without_empty_snapshot_write(self):
         before = self.rows()
@@ -220,6 +284,8 @@ class TestStatisticsTransactions(unittest.TestCase):
             conn.set_authorizer(lambda action, *args: sqlite3.SQLITE_DENY if action == sqlite3.SQLITE_READ else sqlite3.SQLITE_OK)
             return conn
 
+        # 长连接会绕过被替换的 connect，先释放复用连接再注入只读拒绝。
+        self.db.store.close_all()
         with patch.object(persistence.sqlite3, "connect", side_effect=denied_connect):
             with self.assertRaises(sqlite3.DatabaseError):
                 self.db.increment_battle_count("test")
@@ -320,6 +386,218 @@ class TestStatisticsTransactions(unittest.TestCase):
     def test_explicit_save_stats_remains_a_full_snapshot_replacement(self):
         self.db.save_stats("test", MONTH, {"replacement": True})
         self.assertEqual(self.db.get_stats("test", MONTH), {"replacement": True})
+
+
+class TestLastApLookups(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+
+    def stamp_notification(self, month, ts, value, mask):
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            conn.execute("UPDATE cl1_months SET last_ap_notification_ts=?, "
+                         "last_ap_notification_value=?, last_ap_notification_mask=? "
+                         "WHERE instance='test' AND month=?", (ts, value, mask, month))
+
+    def test_notification_prefers_latest_month_and_falls_back(self):
+        self.db.save_stats("test", "2025-12", {"battle_count": 1})
+        self.stamp_notification("2025-12", "2025-12-31T23:00:00", 40, 3)
+        self.assertEqual(self.db.get_last_ap_notification("test"),
+                         {"ts": "2025-12-31T23:00:00", "ap": 40})
+        self.db.set_last_ap_notification("test", 100)
+        self.assertEqual(self.db.get_last_ap_notification("test")["ap"], 100)
+
+    def test_notification_without_ap_value_skips_that_month(self):
+        self.db.save_stats("test", "2025-12", {"battle_count": 1})
+        self.stamp_notification("2025-12", "2025-12-31T23:00:00", 40, 3)
+        current = datetime.now().strftime("%Y-%m")
+        self.db.save_stats("test", current, {"battle_count": 1})
+        self.stamp_notification(current, "2026-01-01T00:00:00", None, 1)
+        self.assertEqual(self.db.get_last_ap_notification("test"),
+                         {"ts": "2025-12-31T23:00:00", "ap": 40})
+
+    def test_last_snapshot_reads_family_tail_across_months(self):
+        stamp = datetime(2025, 12, 31, 23)
+        self.db.add_ap_snapshot("test", 100, source="cl1", ap_total=1100, observed_at=stamp)
+        self.db.add_ap_snapshot("test", 95, source="cl1", ap_total=1095,
+                                observed_at=stamp + timedelta(minutes=30))
+        self.db.add_ap_snapshot("test", 90, source="cl1", ap_total=1090,
+                                observed_at=datetime.now())
+        last = self.db.get_last_ap_snapshot("test")
+        self.assertEqual(last["ap"], 90)
+        self.assertEqual(last["ap_total"], 1090)
+        self.assertEqual(last["yellow_coin"], 0)
+
+    def test_akashi_ap_entry_appends_and_accumulates(self):
+        self.db.add_akashi_ap_entry("test", 20, 10, 2, "cl1")
+        self.db.add_akashi_ap_entry("test", 30, 15, 3, "cl1")
+        stats = self.db.get_stats("test", datetime.now().strftime("%Y-%m"))
+        self.assertEqual(stats["akashi_ap"], 50)
+        self.assertEqual([(item["amount"], item["base"], item["count"], item["source"])
+                          for item in stats["akashi_ap_entries"]], [(20, 10, 2, "cl1"), (30, 15, 3, "cl1")])
+
+
+class TestSirenDeviceRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+
+    def seed_event_rows(self, count):
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            conn.executemany(
+                "INSERT INTO siren_device_events(instance, month, ordinal, ts, source, entry_kind, field_mask) "
+                "VALUES('test', ?, ?, ?, 'cl1', 'record', 3)",
+                [(MONTH, ordinal, NOW.isoformat()) for ordinal in range(count)])
+
+    def test_counts_and_entries_are_read_back_from_native_rows(self):
+        self.db.add_siren_research_device("test")
+        self.db.add_siren_research_device("test", "meow", 3)
+        self.db.add_siren_research_device("test", "meow", 3)
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["siren_research_devices"], {"cl1": 1, "meow": {"3": 2}})
+        self.assertEqual(
+            stats["siren_research_device_entries"],
+            [{"ts": NOW.isoformat(), "source": "cl1", "hazard_level": None},
+             {"ts": NOW.isoformat(), "source": "meow", "hazard_level": 3},
+             {"ts": NOW.isoformat(), "source": "meow", "hazard_level": 3}])
+
+    def test_events_beyond_monthly_limit_are_trimmed_from_the_head(self):
+        self.seed_event_rows(5000)
+        self.db.add_siren_research_device("test")
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM siren_device_events "
+                "WHERE instance='test' AND month=?", (MONTH,)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual(self.db.get_stats("test", MONTH)["siren_research_devices"], {"cl1": 1})
+
+
+class TestResearchDropRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+
+    def test_appends_dedups_and_keeps_compat_extras(self):
+        entry = self.db.add_research_drop("test", "D-737-MI", 6, {"Cube": 2}, imgid="a.png",
+                                          source_items=[{"item": "Cube", "amount": 2, "tag": ""}])
+        self.assertEqual(entry["items"], {"Cube": 2})
+        self.assertIsNone(self.db.add_research_drop("test", "D-737-MI", 6, {"Cube": 2}, imgid="a.png"))
+        self.db.add_research_drop("test", "Q-302-MI", 6, {"Gem": 1}, imgid="b.png")
+        entries = self.db.get_stats("test", MONTH)["research_drop_entries"]
+        self.assertEqual([item["imgid"] for item in entries], ["a.png", "b.png"])
+        self.assertEqual(entries[0]["source_items"], [{"item": "Cube", "amount": 2, "tag": ""}])
+        self.assertEqual(entries[0]["items"], {"Cube": 2})
+        self.assertEqual(entries[1]["items"], {"Gem": 1})
+
+    def test_drops_beyond_monthly_limit_are_trimmed_with_children_and_values(self):
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            set_id = conn.execute("INSERT INTO typed_value_sets(instance, month) VALUES('test', ?)",
+                                  (MONTH,)).lastrowid
+            conn.execute("INSERT INTO typed_value_nodes VALUES(?, 1, NULL, NULL, 0, 'null', NULL, NULL, NULL)",
+                         (set_id,))
+            conn.executemany(
+                "INSERT INTO research_drops(instance, month, ordinal, ts, completed_at, imgid, project, series, "
+                "entry_kind, field_mask) VALUES('test', ?, ?, ?, ?, ?, 'D', 6, 'record', 31)",
+                [(MONTH, ordinal, NOW.isoformat(), NOW.isoformat(), f"{ordinal:04d}.png") for ordinal in range(5000)])
+            conn.execute("UPDATE research_drops SET compat_value_set_id=? "
+                         "WHERE instance='test' AND month=? AND ordinal=0", (set_id, MONTH))
+        self.db.add_research_drop("test", "Q-302-MI", 6, {"Gem": 1}, imgid="new.png")
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM research_drops WHERE instance='test' AND month=?",
+                (MONTH,)).fetchone()
+            orphans, children = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM typed_value_sets WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM research_drop_items WHERE instance='test' AND month=?)",
+                (MONTH, MONTH)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual((orphans, children), (0, 1))
+        entries = self.db.get_stats("test", MONTH)["research_drop_entries"]
+        self.assertEqual(entries[-1]["imgid"], "new.png")
+
+
+class TestCommissionIncomeRecords(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        self.path = Path(directory.name) / "config" / "azurpilot.db"
+        with nullcontext():
+            self.db = database.Cl1Database(self.path)
+        fixed = patch.object(database, "datetime", FixedDatetime)
+        fixed.start()
+        self.addCleanup(fixed.stop)
+        self.db.save_stats("test", MONTH, {"battle_count": 1})
+
+    def test_income_appends_with_items_and_screenshots(self):
+        self.db.add_commission_income("test", {"Cube": 2}, commission_count=1, screenshots=["log/a.png"])
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["commission_income_entries"], [
+            {"ts": NOW.isoformat(), "items": {"Cube": 2}, "commission_count": 1, "screenshots": ["log/a.png"]}])
+
+    def test_income_settles_due_gem_commission_and_archives_reward(self):
+        self.db.add_running_gem_commission("test", {
+            "name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+            "finish_time": "2026-01-01T06:00:00"})
+        removed = self.db.add_commission_income("test", {"Gem": 5, "Cube": 2}, gem_duration=8, completed_at=NOW)
+        self.assertEqual(removed, {"name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+                                   "finish_time": "2026-01-01T06:00:00"})
+        stats = self.db.get_stats("test", MONTH)
+        self.assertEqual(stats["running_gem_commissions"], [])
+        self.assertEqual(stats["gem_commission_entries"], [
+            {"ts": NOW.isoformat(), "duration": 8, "reward": 5, "success": True}])
+        self.assertEqual(len(stats["commission_income_entries"]), 1)
+
+    def test_income_keeps_undue_gem_commission(self):
+        self.db.add_running_gem_commission("test", {
+            "name": "Gem", "duration": 8, "create_time": "2025-12-31T22:00:00",
+            "finish_time": "2026-01-01T18:00:00"})
+        self.assertIsNone(self.db.add_commission_income("test", {"Gem": 5}, gem_duration=8, completed_at=NOW))
+        stats = self.db.get_stats("test", MONTH)
+        self.assertNotIn("gem_commission_entries", stats)
+        self.assertEqual(len(stats["running_gem_commissions"]), 1)
+
+    def test_income_beyond_monthly_limit_is_trimmed_with_children_and_values(self):
+        with closing(sqlite3.connect(self.path)) as conn, conn:
+            set_id = conn.execute("INSERT INTO typed_value_sets(instance, month) VALUES('test', ?)",
+                                  (MONTH,)).lastrowid
+            conn.execute("INSERT INTO typed_value_nodes VALUES(?, 1, NULL, NULL, 0, 'null', NULL, NULL, NULL)",
+                         (set_id,))
+            conn.executemany(
+                "INSERT INTO commission_income(instance, month, ordinal, ts, commission_count, "
+                "entry_kind, field_mask) VALUES('test', ?, ?, ?, 1, 'record', 3)",
+                [(MONTH, ordinal, NOW.isoformat()) for ordinal in range(5000)])
+            conn.execute("UPDATE commission_income SET compat_value_set_id=? "
+                         "WHERE instance='test' AND month=? AND ordinal=0", (set_id, MONTH))
+        self.db.add_commission_income("test", {"Cube": 2}, screenshots=["log/a.png"])
+        with closing(sqlite3.connect(self.path)) as conn:
+            low, high = conn.execute(
+                "SELECT MIN(ordinal), MAX(ordinal) FROM commission_income WHERE instance='test' AND month=?",
+                (MONTH,)).fetchone()
+            orphans, children, shots = conn.execute(
+                "SELECT (SELECT COUNT(*) FROM typed_value_sets WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM commission_income_items WHERE instance='test' AND month=?), "
+                "(SELECT COUNT(*) FROM commission_income_screenshots WHERE instance='test' AND month=?)",
+                (MONTH, MONTH, MONTH)).fetchone()
+        self.assertEqual((low, high), (1, 5000))
+        self.assertEqual((orphans, children, shots), (0, 1, 1))
 
 
 class Cl1SchemaRepairTests(unittest.TestCase):

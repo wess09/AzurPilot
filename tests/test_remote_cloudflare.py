@@ -16,7 +16,7 @@ import pytest
 
 from module.api.protocol import ApiError
 from module.api.socket import Gateway
-from module.runtime.remote_cloudflare import CloudflareRemoteAccessProvider, RemoteIdentity, registry_url
+from module.runtime.remote_cloudflare import CloudflareRemoteAccessProvider, RemoteIdentity, TunnelHealthError, registry_url
 
 
 def test_device_identity_survives_restart_and_client_revocation():
@@ -91,7 +91,7 @@ def test_stop_interrupts_reconnect_backoff_and_start_is_idempotent():
     async def unavailable():
         attempted.set()
         raise ValueError('模拟注册暂不可用')
-    with patch.object(provider, '_tunnel', side_effect=unavailable):
+    with patch.object(provider, '_connect', side_effect=unavailable):
         provider.start()
         thread = provider.thread
         provider.start()
@@ -255,6 +255,54 @@ def test_network_failure_retries_without_reallocating_tunnel(failed_step):
             assert process.exited == 1
     with tempfile.TemporaryDirectory() as directory:
         asyncio.run(scenario(directory))
+
+
+def test_persistent_530_rebuilds_without_blocking_registered_entry(tmp_path):
+    class Process:
+        exited = False
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            self.exited = True
+
+        def __aiter__(self):
+            async def events():
+                yield SimpleNamespace(data=b'https://unready.trycloudflare.com')
+                await asyncio.Future()
+            return events()
+
+    async def scenario():
+        provider, process = CloudflareRemoteAccessProvider(), Process()
+        provider.address = 'https://registry.example/d/device/'
+        provider.state = 'registered'
+        config = SimpleNamespace(Password='test-password', WebuiSSLCert=None,
+                                 WebuiHost='127.0.0.1', WebuiPort=25548)
+        with patch('module.runtime.setting.State.deploy_config', config), \
+                patch('module.runtime.remote_cloudflare.TUNNEL_UNREADY_TIMEOUT', 0), \
+                patch('module.runtime.remote_cloudflare._quick_tunnel_context', return_value=process), \
+                patch.object(provider, 'identity', return_value=RemoteIdentity(tmp_path)), \
+                patch.object(provider, 'check_tunnel', side_effect=TunnelHealthError(530)):
+            with pytest.raises(ExceptionGroup, match='TaskGroup'):
+                await asyncio.wait_for(provider._tunnel(managed=True), 3)
+            assert process.exited
+            assert provider._tunnel_protocol == 'http2'
+            assert provider.address == 'https://registry.example/d/device/'
+            assert provider.state == 'registered'
+            assert provider.error == ''
+    asyncio.run(scenario())
+
+
+def test_http2_context_passes_protocol_to_cloudflared():
+    from module.runtime.remote_cloudflare import _quick_tunnel_context
+
+    async def scenario():
+        context = _quick_tunnel_context('http://127.0.0.1:25548', protocol='http2')
+        arguments = await context.cmd_args
+        assert arguments == ('tunnel', '--protocol', 'http2', '--no-autoupdate', '--url',
+                             'http://127.0.0.1:25548')
+    asyncio.run(scenario())
 
 
 def test_requests_use_environment_proxy_without_origin_netrc_credentials(tmp_path):

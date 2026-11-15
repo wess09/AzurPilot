@@ -4,6 +4,7 @@ from pathlib import Path
 
 from module.api.protocol import AuthParams, LauncherTicketParams, SubscribeParams
 from module.api.router import Method, Router
+from module.api.ws_transport import DATA_TOPICS, FRAME_BYTES, REQUEST_BYTES, RESPONSE_BYTES
 
 
 def typescript(schema, definitions):
@@ -43,13 +44,23 @@ def main():
     registry['auth.launcher'] = Method(LauncherTicketParams, lambda _: None, local_only=True)
     registry['events.subscribe'] = Method(SubscribeParams, lambda _: None)
     contracts, lines = {}, ['// 由 dev_tools.export_api_schema 生成，请勿手动编辑。', 'export interface Parameters {']
+    data_methods = []
     for name, entry in registry.items():
         schema = entry.params.model_json_schema()
         contracts[name] = {'mutates': entry.mutates, 'params': schema}
         if entry.local_only:
             contracts[name]['localOnly'] = True
+        if entry.data_channel:
+            if entry.mutates:
+                raise ValueError(f'{name}: 写操作必须走操作通道')
+            contracts[name]['channel'] = 'data'
+            data_methods.append(name)
         lines.append(f'  "{name}": {typescript(schema, schema.get("$defs", {}))}')
     lines.append('}')
+    transport = {'frameBytes': FRAME_BYTES, 'requestBytes': REQUEST_BYTES, 'responseBytes': RESPONSE_BYTES,
+                 'dataTopics': sorted(DATA_TOPICS)}
+    lines.append(f'export const webSocketTransport = {json.dumps(transport)} as const')
+    lines.append(f'export const dataMethods = {json.dumps(data_methods)} as const')
     from module.scheduler.models import (ProgramDocument, CardDefinition, PortDefinition, ResourceObservation,
                                         TaskInvocation, TaskOutcome, ProgramState)
     models = {}
@@ -71,7 +82,8 @@ def main():
                                                'result': AutostartState.model_json_schema()}},
                 'request': LauncherRequest.model_json_schema(), 'response': LauncherResponse.model_json_schema(),
                 'command': LauncherCommand.model_json_schema(), 'event': LauncherEvent.model_json_schema()}
-    (directory / 'contract.json').write_text(json.dumps({'version': 1, 'methods': contracts, 'schedulerModels': models,
+    (directory / 'contract.json').write_text(json.dumps({'version': 1, 'webSocketTransport': transport,
+                                                        'methods': contracts, 'schedulerModels': models,
                                                         'launcher': launcher},
                                                      ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 

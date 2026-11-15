@@ -1,5 +1,5 @@
 /**
- * @fileoverview 任务通知的系统级推送：把 WS 的 notifications 事件弹成 Windows 原生通知。
+ * @fileoverview 任务通知的系统级推送：把 WS 的 notifications 事件经浏览器 Notification API 弹成系统通知。
  */
 
 import {useEffect} from 'react'
@@ -23,6 +23,7 @@ function armPermissionRequest(data: TaskNotification) {
   document.addEventListener('pointerdown', request, {once: true})
 }
 
+/** 弹出一条系统通知；环境不支持或权限被拒时静默放弃，权限还停在 default 时先挂起等手势。 */
 function show(data: TaskNotification) {
   if (typeof Notification === 'undefined' || Notification.permission === 'denied') return
   if (Notification.permission === 'default') {
@@ -36,6 +37,7 @@ function show(data: TaskNotification) {
   notification.onclick = () => { window.focus(); notification.close() }
 }
 
+/** 订阅 WS 的 notifications 事件并把每条弹成系统通知；在应用顶层挂载一次。 */
 export function useSystemNotifications() {
   useEffect(() => api.onEvent(event => {
     if (event.topic !== 'notifications') return

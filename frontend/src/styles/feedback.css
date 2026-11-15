@@ -1,0 +1,37 @@
+/* 反馈域 —— B1 自 components.css:276-311 保序拆分，规则文本逐字未改（横幅、toast、modal、form-stack、toggle、input-icon） */
+/* 系统横幅与阶段卡片 */
+.system-banner-card {text-align: center; padding: 10px 0; margin: 6px 0; border: 0; background: transparent; box-shadow: none}
+.banner-double-rule {height: 2px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 4px 0}
+.banner-title-text {font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--accent)}
+.stage-header-card {display: flex; align-items: center; gap: 12px; margin: 6px 0; border: 0; background: transparent; box-shadow: none}
+.stage-rule-bar {flex: 1; height: 1px; background: var(--border)}
+.stage-title-wrap {display: flex; align-items: center; gap: 8px}
+.stage-title {font-weight: 700; font-size: 12px; color: var(--text); padding: 0 4px}
+.stage-time {font-size: 10px; color: var(--theme-log-time, #06b6d4)}
+
+/* 常规单行卡片 */
+.log-card-line {padding: 3px 6px; border-radius: 4px; background: transparent}
+
+.empty {flex: 0 1 auto; min-height: 160px; padding: 35px 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 12px; text-align: center; line-height: 1.8; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 11px}
+.empty > svg {color: #a7b9c1; margin-bottom: 3px}
+.empty strong {font-weight: 500; font-size: 12px; color: #8398a5}
+.loading {min-height: 230px; display: flex; gap: 10px; align-items: center; justify-content: center; color: var(--muted)}
+.error-box {display: flex; gap: 10px; align-items: center; padding: 14px 17px; border: 1px solid #d7767520; background: #d7767510; border-radius: 8px; margin-bottom: 16px; color: var(--red); font-size: 12px; line-height: 1.7}
+.error-box button {margin-left: auto; text-decoration: underline; white-space: nowrap}
+.toast {position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 100; max-width: 90vw; padding: 14px 23px; border-radius: 9px; color: white; background: #1c7466; box-shadow: 0 5px 25px #102b4e30; font-size: 12px}
+.toast.error {background: #a45159}
+/* 只留布局：材质（背景/滤镜/圆角/投影）由令牌层 .modal 规则提供，两处写会各说各话 */
+.modal {color: var(--text); border: 1px solid var(--border); padding: 24px; width: 440px; max-width: calc(100vw / var(--ui-scale) - 30px)}
+.modal::backdrop {background: #1323301a}
+.mismatch-note {display: flex; gap: 8px; align-items: center; margin: 0 0 16px; padding: 10px 14px; border-radius: 8px; background: var(--theme-warning-soft); color: var(--theme-warning); font-size: 12px; line-height: 1.7}
+.mismatch-note svg {flex-shrink: 0}
+.mismatch-reasons {margin: -6px 0 20px; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.9}
+.modal .panel-heading {padding: 0 0 17px; margin-bottom: 18px}
+.modal > p {line-height: 1.9; margin-bottom: 20px; color: var(--muted)}
+.form-stack {display: flex; flex-direction: column; gap: 19px}
+.form-stack label {display: flex; flex-direction: column; gap: 9px; font-size: 12px}
+.form-stack p {font-size: 12px; line-height: 1.8}
+.toggle {display: inline-flex; align-items: center; flex-shrink: 0; border-radius: 12px}
+.toggle > span {display: block; border-radius: 50%; transition: transform .2s}
+.input-icon {display: flex; align-items: center; padding: 0 11px; gap: 8px; border: 1px solid var(--border); border-radius: 7px; color: #98a7b2; background: var(--surface)}
+.input-icon > input {border: 0; background: transparent; box-shadow: none; flex: 1; width: 100%; padding-left: 0; font-size: 11px}

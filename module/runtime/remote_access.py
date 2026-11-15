@@ -1340,7 +1340,7 @@ class AutoRemoteAccessProvider(RemoteAccessProvider):
             RemoteAccessProvider: 选中的提供者对象。
         """
         mode = _remote_mode()
-        if mode == "cloudflare":
+        if mode in ("auto", "cloudflare"):
             return self.cloudflare
         return self.ssh if mode == "ssh" else self.webrtc
 

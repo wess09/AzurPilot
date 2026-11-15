@@ -1,3 +1,5 @@
+/** @fileoverview 调度栏任务条目移动判定的回归：静止不动画、亚像素抖动与跨组反向位移。 */
+
 import { describe, expect, it } from 'vitest'
 import { movedBy } from './TaskQueue'
 

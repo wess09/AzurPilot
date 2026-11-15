@@ -1,0 +1,92 @@
+/* Updater 页面私有样式：更新器页头、HEAD 双列、提交历史与分页。
+   自 styles/topbar.css 搬迁（原 78-159 行），选择器逐字未改；页面经 main.tsx lazy 引入。
+   窄屏覆写按规则级随迁（原 169-171 行）：@media(max-width: 950px) 块重建于对应基规则之后，防止被入口层反压。 */
+
+.branch-summary {display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px}
+.commit-panel .panel-heading {flex-wrap: wrap; gap: 12px}
+/* 更新器页头：状态摘要锚定左侧、操作按钮收进居中内容列右侧，不再孤悬屏幕角落 */
+.updater-head {display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px}
+.updater-head > :last-child {margin-left: auto}
+/* 页头按钮直接悬在壁纸上：面取实底 surface + 描边，玻璃材质的半透明控件面在壁纸上会糊边 */
+.updater-head .button.secondary {background: var(--surface); border: 1px solid var(--border)}
+.updater-head-summary {display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted)}
+.updater-head-summary.update-available {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  padding: 3px 11px;
+  border-radius: 999px;
+  font-weight: 650;
+}
+/* 本地/上游 HEAD 双列并排：卡片高度减半，提交记录不再被挤下去 */
+.head-grid {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--config-card-gap, 12px)}
+.head-grid > .config-group {margin-bottom: 0}
+.update-summary {display: flex; align-items: center; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px}
+.update-summary > span {display: flex; align-items: center; gap: 6px}
+/* 「新版本可用」是关键状态信号：胶囊底色提视觉权重，与顶部更新按钮呼应 */
+.update-summary .update-available {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 650;
+}
+.commit-row {display: flex; gap: 16px; padding: 19px 24px; border-top: 1px solid var(--border); align-items: flex-start}
+.commit-node {margin-top: 2px; color: var(--accent); flex-shrink: 0}
+.commit-detail {min-width: 0; flex: 1}
+.commit-subject {line-height: 1.7; overflow-wrap: anywhere}
+/* 本地/上游 HEAD 标识：实心主色徽章（当前版本所在）与浅色胶囊（上游目标）一眼可扫 */
+.commit-ref {display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 9px; background: var(--surface-muted); color: var(--muted); border-radius: 999px; margin-left: 9px; white-space: nowrap; vertical-align: 1px}
+.commit-ref.local {background: var(--accent); color: #fff}
+.commit-ref.upstream {background: var(--accent-soft); color: var(--accent)}
+.commit-meta {display: flex; align-items: center; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 8px}
+/* 行尾短哈希胶囊：填住右侧留白，等宽字体 */
+.commit-sha-chip {
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-top: 3px;
+  padding: 3px 9px;
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace);
+  font-size: 11px;
+  user-select: all;
+  white-space: nowrap;
+}
+.commit-detail details {margin-top: 6px; color: var(--muted); font-size: 12px}
+/* 展开详情：主题色文字 + 右侧箭头，点按热区实打实 */
+.commit-detail summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+  padding: 4px 10px;
+  margin: 2px 0 0 -10px;
+  border-radius: 7px;
+}
+.commit-detail summary::-webkit-details-marker {display: none}
+.commit-detail summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform var(--dur-2, .2s) var(--ease-standard, ease);
+}
+.commit-detail details[open] > summary::after {transform: rotate(45deg)}
+.commit-detail summary:hover {background: var(--accent-soft)}
+.commit-detail pre {white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; color: var(--text)}
+.commit-pagination {display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 18px 24px; border-top: 1px solid var(--border)}
+.commit-pagination > span {margin-right: auto; color: var(--muted); font-size: 12px}
+
+@media (max-width: 950px) {
+  .commit-row {padding: 16px; gap: 10px}
+  .commit-pagination {padding: 16px; gap: 8px}
+  .head-grid {grid-template-columns: 1fr}
+}

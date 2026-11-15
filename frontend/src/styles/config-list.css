@@ -1,0 +1,4 @@
+/* 配置列表域 —— B1 自 components.css:459-470 保序拆分，规则文本逐字未改 */
+/* 配置管理：一行一份配置，右侧依次是状态徽章与操作按钮 */
+.config-list {display: grid; gap: 12px}
+

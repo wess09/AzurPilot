@@ -1,7 +1,69 @@
+/**
+ * @fileoverview 主题用例：简约主题跟随系统明暗并恢复配色、现代主题日志内滚、自定义背景的持久化。
+ */
+
 import { expect, test } from '@playwright/test'
 
 test.beforeEach(async ({page}) => {
   await page.route('https://www.clarity.ms/**', route => route.abort())
+})
+
+test('简约主题跟随系统明暗并恢复已保存的配色', async ({page}) => {
+  await page.addInitScript(() => localStorage.setItem('azurpilot.material', 'glass'))
+  await page.route('https://api.yppp.net/**', route => route.abort())
+  await page.emulateMedia({colorScheme: 'light'})
+  await page.goto('/#/interface')
+  const root = page.locator('html')
+  const theme = page.getByRole('combobox', {name: '界面主题'})
+  await theme.click()
+  await page.getByRole('option', {name: '简约'}).click()
+  await expect(root).toHaveAttribute('data-theme', 'minimal')
+  await expect(root).toHaveAttribute('data-color-mode', 'light')
+  await expect(page.locator('.wallpaper')).toHaveCount(0)
+  await expect(page.locator('.sidebar')).toHaveCSS('backdrop-filter', 'none')
+  await expect(page.locator('.sidebar')).toHaveCSS('border-radius', '0px')
+  await expect(page.locator('.config-group')).toHaveCSS('border-radius', '14px')
+
+  const forest = page.locator('.palette-option').filter({has: page.locator('input[value="forest"]')})
+  await forest.click()
+  await expect(root).toHaveCSS('--accent', '#286747')
+  await page.emulateMedia({colorScheme: 'dark'})
+  await expect(root).toHaveAttribute('data-color-mode', 'dark')
+  await expect(root).toHaveCSS('--accent', '#86cba3')
+
+  const mode = page.getByRole('combobox', {name: '主题模式'})
+  await mode.click()
+  await page.getByRole('option', {name: '深色'}).click()
+  await page.emulateMedia({colorScheme: 'light'})
+  await page.reload()
+  await expect(theme).toHaveText('简约')
+  await expect(mode).toHaveText('深色')
+  await expect(root).toHaveAttribute('data-color-mode', 'dark')
+  await expect(forest.locator('input')).toBeChecked()
+
+  await page.getByRole('button', {name: '添加自定义配色'}).click()
+  const paletteEditor = page.getByRole('dialog').filter({has: page.getByRole('heading', {name: '自定义配色'})})
+  await paletteEditor.getByRole('textbox', {name: '主色', exact: true}).fill('#ffffff')
+  await paletteEditor.getByRole('button', {name: '保存并应用'}).click()
+  await expect(root).toHaveCSS('--accent', '#ffffff')
+  await page.reload()
+  await expect(root).toHaveCSS('--accent', '#ffffff')
+  await page.getByRole('button', {name: '删除方案'}).click()
+  await expect(root).toHaveCSS('--accent', '#8ab4ff')
+
+  await mode.click()
+  await page.getByRole('option', {name: '程序员'}).click()
+  await expect(root).toHaveCSS('--bg', '#0b0b0b')
+  await expect(page.locator('.palette-options')).toHaveCount(0)
+
+  await theme.click()
+  await page.getByRole('option', {name: '现代'}).click()
+  await expect(root).toHaveAttribute('data-theme', 'modern-dark')
+  await expect(root).not.toHaveAttribute('data-color-mode', /.+/)
+  await expect(root).toHaveAttribute('data-material', 'glass')
+  await expect(root).not.toHaveCSS('--bg', '#0b0b0b')
+  const reducedBackdrop = await root.getAttribute('data-reduce-backdrop')
+  await expect(page.locator('.sidebar')).toHaveCSS('backdrop-filter', reducedBackdrop === null ? /blur\(/ : 'none')
 })
 
 test('现代主题浅色与深色的日志在面板内部滚动', async ({page}) => {
@@ -9,7 +71,7 @@ test('现代主题浅色与深色的日志在面板内部滚动', async ({page})
   await page.setViewportSize({width: 1440, height: 900})
   await page.goto('/#/i/testpilot/overview')
 
-  for (const theme of ['legacy-light', 'legacy-dark']) {
+  for (const theme of ['modern-light', 'modern-dark']) {
     await page.evaluate(value => localStorage.setItem('azurpilot.theme', value), theme)
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)

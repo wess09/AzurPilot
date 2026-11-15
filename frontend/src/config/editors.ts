@@ -10,6 +10,12 @@ import { translateCurrentUi } from '../i18n'
 const prefix = 'azurpilot.edits.'
 const queues = new Map<string, EditQueue>()
 
+/**
+ * 取某个作用域的字段编辑队列（同作用域复用同一实例）。
+ *
+ * 作用域是 `deploy`、`config:<实例>` 或 `startup:<实例>`，决定提交走哪个后端接口。
+ * 草稿落在 sessionStorage，刷新后由 resumeEditors 恢复；浏览器禁用存储时退化为纯内存队列。
+ */
 export function editor(scope: string) {
   let queue = queues.get(scope)
   if (queue) return queue
@@ -39,10 +45,14 @@ export function resumeEditors() {
   for (const queue of queues.values()) queue.retry()
 }
 
-/** 数字的原始文本与提交值分离，保留负号、小数点等输入中间态。
- *  文本框、时间或数字内容被全部清空时，按旧版本逻辑自动还原为默认设置，便于后续修改。
- *  配置加载时 `config_update()` 也把空值还原成默认值。NextRun 的默认值落在过去，
- *  保存后调度器下一轮就把它当待运行任务。 */
+/**
+ * 规范化配置字段的草稿值与提交值。
+ *
+ * 数字的原始文本与提交值分离，清空值时按旧版规则回落默认值。
+ * @param value 用户输入值。
+ * @param field 字段类型、默认值、数值类型与校验范围。
+ * @returns 提交值、可回填的默认文本及校验错误。
+ */
 export function prepareValue(value: Value, field: Pick<Field, 'type' | 'value' | 'valuetype' | 'validate' | 'preserve_empty'>): {payload: Value; text?: Value; error?: string} {
   const valueType = field.valuetype ?? field.type
   const numeric = valueType !== 'str' && !['select', 'multiselect', 'checkbox'].includes(field.type)
@@ -65,8 +75,10 @@ export function prepareValue(value: Value, field: Pick<Field, 'type' | 'value' |
   }
   if (integer && !Number.isSafeInteger(number)) return {payload: value, error: translateCurrentUi('edit.invalidInteger')}
   if (Number.isInteger(number) && !Number.isSafeInteger(number)) return {payload: value, error: translateCurrentUi('edit.numberOutOfRange')}
-  if (Array.isArray(field.validate) && (number < field.validate[0] || number > field.validate[1])) {
-    return {payload: value, error: translateCurrentUi('edit.validateRange', {min: field.validate[0], max: field.validate[1]})}
+  const range = Array.isArray(field.validate) ? [field.validate[0], field.validate[1]] : []
+  const [minimum, maximum] = range
+  if (minimum !== undefined && maximum !== undefined && (number < minimum || number > maximum)) {
+    return {payload: value, error: translateCurrentUi('edit.validateRange', {min: minimum, max: maximum})}
   }
   return {payload: number}
 }

@@ -1,3 +1,5 @@
+/** @fileoverview 配置输入控件的渲染回归：显式类型声明优先于旧配置里的数字值。 */
+
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'

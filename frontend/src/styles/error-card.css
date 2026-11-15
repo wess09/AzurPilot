@@ -1,0 +1,91 @@
+/* 错误/追踪卡域 —— B1 自 components.css:168-257 保序拆分，规则文本逐字未改（透视边界卡、属性清单卡、表格卡、错误自愈、traceback、LLM 卡；.llm-markdown-view 随本域留守） */
+/* 透视与边界卡片（向前倾斜，近大远小） */
+.perspective-body {display: flex; gap: 20px; align-items: center; flex-wrap: wrap}
+.trapezoid-visual {width: 168px; height: 118px; padding: 4px; border-radius: 6px; background: var(--surface-muted); border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; flex-shrink: 0}
+.trapezoid-svg {overflow: visible; display: block}
+.trapezoid-fill {fill: transparent}
+.trapezoid-fill.fill-all {fill: #10b98110}
+.trapezoid-fill.fill-broken {fill: #ef444406}
+.grid-depth-line {stroke: var(--border); stroke-dasharray: 2 3; stroke-width: 1; opacity: 0.45}
+.edge-stroke {stroke-linecap: round}
+.edge-stroke.edge-active {stroke: #10b981; stroke-width: 3.5}
+.edge-stroke.edge-missing {stroke: #ef4444; stroke-width: 2.5; stroke-dasharray: 5 4}
+.perspective-metrics {flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; font-size: 11px}
+.metric-row {display: flex; gap: 8px}
+.metric-label {color: var(--muted); min-width: 65px}
+.metric-val {color: var(--text); font-family: var(--theme-font-mono)}
+
+/* 属性清单卡片（Property Sheet：紧凑双列对齐，无悬停动效） */
+.property-card {width: fit-content; max-width: 100%; align-self: flex-start}
+.property-grid {display: flex; flex-direction: column; gap: 3px; padding: 2px 0}
+.property-row {display: flex; align-items: baseline; gap: 4px; padding: 1px 4px; font-size: 11px}
+.prop-key {color: var(--muted); font-weight: 500; font-family: var(--theme-font-mono); flex-shrink: 0}
+.prop-divider {color: var(--muted); margin-right: 4px; flex-shrink: 0; user-select: none}
+.prop-val {color: var(--text); font-family: var(--theme-font-mono); word-break: break-word}
+
+/* 数据表格卡片（紧凑型，消除全屏拉伸与冗余留白） */
+.table-card {width: fit-content; max-width: 100%; align-self: flex-start}
+.table-card-header {padding: 4px 10px}
+.table-card-body {padding: 0}
+.data-table-viewport {overflow-x: auto; max-width: 100%}
+.native-log-table {width: auto; border-collapse: collapse; font-size: 11px; font-family: var(--theme-font-mono); white-space: nowrap}
+.native-log-table th {background: var(--surface-muted); padding: 5px 14px; border-bottom: 1px solid var(--border); font-weight: 600; color: var(--muted); font-size: 11px}
+.native-log-table td {padding: 4px 14px; border-bottom: 1px solid var(--border); color: var(--text); font-size: 11px; line-height: 1.4}
+.native-log-table tbody tr:last-child td {border-bottom: none}
+.native-log-table tbody tr:nth-child(even) {background: color-mix(in srgb, var(--surface-muted) 35%, transparent)}
+
+/* 错误与自愈指南卡片 */
+.error-header {background: #ef444410}
+.error-title {color: #ef4444; font-weight: 600}
+.error-body {display: flex; flex-direction: column; gap: 8px}
+.error-section {display: flex; gap: 8px; font-size: 11px; align-items: flex-start}
+.error-tag {min-width: 52px; text-align: center; font-size: 10px; font-weight: 600; padding: 1px 4px; border-radius: 3px; flex-shrink: 0}
+.tag-reason {background: #f9731620; color: #f97316}
+.tag-impact {background: #eab30820; color: #eab308}
+.tag-action {background: #22c55e20; color: #22c55e}
+.tag-exc {background: #ef444420; color: #ef4444}
+.section-action {background: #22c55e10; padding: 6px 10px; border-radius: 6px; border: 1px dashed #22c55e40}
+.text-action {font-weight: 600; color: var(--theme-success, #15803d)}
+/* 异常堆栈追踪（Traceback Viewer：结构化多帧展示与源码高亮） */
+.error-stack-wrapper {margin-top: 8px}
+.traceback-viewer {border-radius: 6px; border: 1px solid var(--border); background: var(--surface-muted); overflow: hidden}
+.traceback-toolbar {display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 11px; flex-wrap: wrap; gap: 6px}
+.traceback-tool-info {display: flex; align-items: center; gap: 6px}
+.traceback-tool-title {font-weight: 600; font-size: 11px; color: var(--text)}
+.traceback-tool-actions {display: flex; align-items: center; gap: 6px}
+.traceback-frames-list {display: flex; flex-direction: column; gap: 8px; padding: 8px}
+.traceback-frame-card {border: 1px solid var(--border); border-radius: 5px; background: var(--surface); overflow: hidden}
+.traceback-frame-header {display: flex; justify-content: space-between; align-items: center; padding: 5px 8px; background: var(--surface-muted); border-bottom: 1px solid var(--border); font-size: 11px; flex-wrap: wrap; gap: 4px}
+.frame-header-left {display: flex; align-items: center; gap: 6px}
+.frame-filename {font-weight: 700; color: var(--text); font-family: var(--theme-font-mono)}
+.frame-line-badge {font-weight: 600; color: #ef4444; font-family: var(--theme-font-mono)}
+.frame-func {color: var(--muted); font-size: 11px}
+.func-name {color: var(--accent); font-family: var(--theme-font-mono); font-weight: 600}
+.frame-filepath {color: var(--muted); font-size: 10px; font-family: var(--theme-font-mono); max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap}
+.traceback-code-block {padding: 4px 0; font-family: var(--theme-font-mono); font-size: 11px; line-height: 1.5; overflow-x: auto}
+.traceback-code-row {display: flex; align-items: center; padding: 1px 8px}
+.traceback-code-row.fault-row {background: #ef444415; border-left: 3px solid #ef4444; padding-left: 5px}
+.gutter-col {display: flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 48px; padding-right: 10px; color: var(--muted); font-size: 10px; user-select: none; flex-shrink: 0}
+.fault-marker {color: #ef4444; font-weight: 700; font-size: 9px}
+.gutter-spacer {width: 9px; display: inline-block}
+.line-num {font-family: var(--theme-font-mono)}
+.fault-row .line-num {color: #ef4444; font-weight: 700}
+.code-col {flex: 1; white-space: pre; color: var(--text)}
+.fault-row .code-col {font-weight: 600; color: #f87171}
+.traceback-locals-block {border-top: 1px solid var(--border); padding: 5px 8px; background: var(--surface-muted); font-size: 10px; font-family: var(--theme-font-mono)}
+.locals-title {font-size: 10px; font-weight: 600; color: var(--muted); margin-bottom: 3px}
+.locals-list {display: flex; flex-direction: column; gap: 2px}
+.local-var-row {display: flex; align-items: baseline; gap: 6px; font-size: 10px}
+.local-key {color: #0ea5e9; font-weight: 600}
+.local-eq {color: var(--muted)}
+.local-val {color: var(--text); word-break: break-all}
+.traceback-exc-banner {display: flex; align-items: center; gap: 8px; padding: 6px 10px; margin: 0 8px 8px; background: #ef444415; border: 1px solid #ef444435; border-radius: 5px; font-size: 11px; font-family: var(--theme-font-mono); font-weight: 600; color: #ef4444}
+.exc-banner-text {word-break: break-word}
+.traceback-raw-pre {margin: 0; padding: 8px 10px; font-size: 10px; font-family: var(--theme-font-mono); line-height: 1.4; color: var(--text); overflow-x: auto; white-space: pre}
+
+/* LLM 智能诊断卡片与 Markdown 格式化排版 */
+.llm-header {background: #8b5cf610}
+.text-llm {color: #8b5cf6}
+.llm-model {background: #8b5cf620; color: #8b5cf6}
+.llm-markdown-view {font-size: 12px; line-height: 1.6}
+

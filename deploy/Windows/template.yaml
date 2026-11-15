@@ -94,12 +94,15 @@ Deploy:
     # See here (http://app.azurlane.cloud/en.html) for more infomation.
     EnableRemoteAccess: false
     # Remote access mode
-    # [Auto] auto (prefer P2P/TURN and fall back to SSH forwarding)
+    # [Auto] auto (prefer public HTTP direct access with Cloudflare fallback)
     # [SSH] ssh (legacy SSH reverse tunnel only)
     # [WebRTC] webrtc (prefer P2P and keep SSH fallback)
     RemoteAccessMode: auto
     CloudflareRegistry: https://remote.azurpilot.com
     CloudflareDeviceId: ""
+    # 0 reuses HTTP WebuiPort; HTTPS uses WebuiPort + 1. External port 0 uses the listening port.
+    RemoteAccessPort: 0
+    RemoteAccessPublicPort: 0
     # Username when login into ssh server
     # [Default] null (will generate a random one when startup)
     SSHUser: null

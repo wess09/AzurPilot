@@ -1,7 +1,8 @@
-"""AzurPilot WebUI 启动器与多进程监督服务。
+"""AzurPilot 启动器：默认启动 WebUI，`--tui` 启动终端界面。
 
-负责管理 WebUI 子进程（Uvicorn / FastAPI / Starlette）、处理热重载、
-跨平台进程清理以及在独立子进程中执行 Python 依赖同步（uv sync）。
+WebUI 模式下负责管理子进程（Uvicorn / FastAPI / Starlette）、处理热重载、
+跨平台进程清理以及在独立子进程中执行 Python 依赖同步（uv sync）；
+TUI 模式复用同一套存储初始化，直接在当前终端运行 Textual 界面。
 """
 
 # 启动器行为参数集中在 module/base/runtime_params.py(WebUI 启动器域);
@@ -13,6 +14,7 @@ from module.base.runtime_params import (
     WEBUI_STABLE_RUNTIME,
     WEBUI_START_RETRY_LIMIT,
 )
+import argparse
 import errno
 import os
 import queue
@@ -1227,8 +1229,104 @@ def run_webui_supervisor(watch_sources: bool = False) -> int:
     return fatal_error.exit_code if fatal_error is not None else EXIT_SUCCESS
 
 
+def tui_request(argv: list[str]) -> tuple[bool, Optional[str]]:
+    """解析 ``--tui [INSTANCE]``，判断是否进入终端界面模式。
+
+    启动器允许未知参数原样传给 WebUI 子进程，因此这里使用
+    ``parse_known_args`` 且不注册 ``--help``，避免抢占其他入口的参数。
+
+    Args:
+        argv (list[str]): 不含程序名的命令行参数。
+
+    Returns:
+        tuple[bool, Optional[str]]: 是否请求 TUI；请求时的实例名（未指定为 None）。
+    """
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--tui",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="INSTANCE",
+        help="启动终端界面，可选指定配置实例名",
+    )
+    try:
+        args, _ = parser.parse_known_args(argv)
+    except SystemExit:
+        # 参数本身有误时保持启动器原有行为：当作未请求 TUI。
+        return False, None
+    if args.tui is None:
+        return False, None
+    return True, args.tui or None
+
+
+def configure_tui_console() -> None:
+    """为 TUI 启用 Windows ANSI 色彩与 UTF-8 输出，忽略不可重定向的输出流。"""
+    if sys.platform == "win32":
+        try:
+            # 让 Windows 传统控制台识别 ANSI 转义序列。
+            os.system("")
+        except Exception:
+            pass
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):
+            pass
+
+
+def run_tui(instance: Optional[str] = None) -> int:
+    """在当前终端运行 Textual 终端界面。
+
+    调用前需已完成 ``module.persistence.database.initialize()``；
+    界面运行期间移除控制台日志 handler，避免后台日志破坏全屏渲染。
+
+    Args:
+        instance (Optional[str], optional): 启动时选中的配置实例名。默认为 None。
+
+    Returns:
+        int: 进程退出码，0 表示正常退出。
+    """
+    configure_tui_console()
+    # 标记当前进程运行于 TUI 全屏环境；业务子进程据此关闭控制台日志。
+    os.environ["AZURPILOT_TUI"] = "1"
+
+    try:
+        import textual  # noqa: F401
+    except ImportError:
+        print(
+            "缺少 textual 依赖，请先运行：uv sync\n"
+            "或安装：uv add textual",
+            file=sys.stderr,
+        )
+        return 1
+
+    # 进入界面之前移除控制台日志处理器，避免后台日志污染终端渲染。
+    try:
+        from module.logger import console_hdlr
+        logger.removeHandler(console_hdlr)
+    except Exception:
+        pass
+
+    from module.tui.app import AzurPilotTUI
+
+    app = AzurPilotTUI(default_instance=instance)
+    try:
+        app.run()
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    except Exception as exc:
+        # Textual 已退出终端，这里把异常打印到标准错误便于排查。
+        print(f"TUI 运行异常：{exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main() -> int:
-    """初始化普通业务数据并启动 WebUI，失败原因写入 GUI 日志。"""
+    """初始化普通业务数据，按 ``--tui`` 启动终端界面，否则启动 WebUI。"""
     # Windows 父进程保留启动日志；文件不可写时继续输出到控制台。
     try:
         logger.set_file_logger('gui-launcher')
@@ -1248,7 +1346,12 @@ def main() -> int:
             level=50,
         )
         return EXIT_STARTUP_FAILURE
-    logger.info('[GUI] 存储已就绪，继续初始化 WebUI')
+    logger.info('[GUI] 存储已就绪，继续启动')
+
+    tui_requested, tui_instance = tui_request(sys.argv[1:])
+    if tui_requested:
+        logger.info('[GUI] 进入终端界面（TUI）模式')
+        return run_tui(tui_instance)
 
     # 设置multiprocessing启动方式为spawn（macOS兼容性要求）
     try:

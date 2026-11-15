@@ -1,0 +1,13 @@
+{
+  "id": "workbench",
+  "name": "工作台",
+  "version": "1.0.0",
+  "apiVersion": 1,
+  "theme": {
+    "navigation": "top",
+    "overview": ["resources", "scheduler", "queue", "logs", "panels"],
+    "styles": {"scheduler": "styles/scheduler.css"},
+    "replaceSchedulerStyles": true,
+    "icons": {"scheduler.start": "assets/start.svg", "scheduler.stop": "assets/stop.svg"}
+  }
+}

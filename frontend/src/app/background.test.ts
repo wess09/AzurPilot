@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 背景图偏好读取的回归测试：地址校验、旧记录折算与按材质回落。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_BACKGROUND_URLS, normalizeBackgroundUrl, readBackgroundPreference } from './background'
 
@@ -16,6 +20,7 @@ describe('背景地址校验', () => {
 })
 
 describe('背景记录按材质读回', () => {
+  // 每个用例注入独立的 localStorage 假实现：读回逻辑只看到测试自己写入的记录，不落真实存储。
   const store = (data: Record<string, string>) => {
     vi.stubGlobal('localStorage', {
       getItem: (key: string) => data[key] ?? null,
@@ -26,7 +31,7 @@ describe('背景记录按材质读回', () => {
   }
   afterEach(() => vi.unstubAllGlobals())
 
-  /* 回归：普通材质的默认档是「关闭」，漏判 default 就会把用户选的随机图读成关闭（刷新即被重置）。 */
+  // 回归：普通材质的默认档是「关闭」，漏判 default 就会把用户选的随机图读成关闭（刷新即被重置）。
   it('普通材质下「默认随机图」读回来还是随机图（旧 default 记录折成 URL 模式的内置 API）', () => {
     store({'azurpilot.background.plain': JSON.stringify({source: 'default', kind: 'image', url: '', name: ''})})
     const preference = readBackgroundPreference('plain')

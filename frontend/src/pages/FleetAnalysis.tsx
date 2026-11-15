@@ -1,3 +1,9 @@
+/**
+ * @fileoverview 舰船数据页容器：装载船坞报告并分发给台账、舰队科技、养成计算与扫描更新四个标签页。
+ */
+
+import {Button} from '../components/ui/button'
+import {Tabs, TabsContent, TabsList, TabsTrigger} from '../components/ui/tabs'
 import {useEffect, useRef, useState} from 'react'
 import {useParams, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
@@ -12,6 +18,13 @@ import {ScanUpdate} from './ScanUpdate'
 import '../mind/mind.css'
 import './fleet-analysis.css'
 
+/**
+ * 舰船数据页：装载 dock.report 并分发给数据台账、舰队科技、养成计算与扫描更新四个标签页。
+ *
+ * 子页经 onBusy/onReport 上报写状态与新报告，两者都会递增 epoch：装载请求返回时
+ * epoch 对不上就丢弃响应，避免旧装载覆盖子页刚提交的数据；写入期间标签页切换与
+ * 刷新按钮一并禁用。
+ */
 export function FleetAnalysis() {
   const {instance = ''} = useParams(), [params, setParams] = useSearchParams()
   const {ui} = useApp(), connection = useConnection()
@@ -39,13 +52,15 @@ export function FleetAnalysis() {
   }, [instance, connection])
   const onBusy = (value: boolean) => {epoch.current++; writing.current = value; setBusy(value)}
   const onReport = (value: DockReport) => {epoch.current++; setReport(value)}
-  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab !== 'technology' && <button className="button secondary" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</button>}/>{error && <ErrorBox message={error}/>}
-    <div className="ft-chips" role="tablist" aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <button key={value} role="tab" disabled={busy} aria-selected={tab === value} aria-controls={`analysis-${value}`} id={`tab-${value}`} onClick={() => setParams({tab: value}, {replace: true})}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</button>)}</div>
-    <section role="tabpanel" id={`analysis-${tab}`} aria-labelledby={`tab-${tab}`}>
+  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab !== 'technology' && <Button variant="outline" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</Button>}/>{error && <ErrorBox message={error}/>}
+    <Tabs value={tab} onValueChange={value => setParams({tab: value}, {replace: true})}>
+    <TabsList aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <TabsTrigger key={value} value={value} disabled={busy}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</TabsTrigger>)}</TabsList>
+    <TabsContent value={tab}>
       {tab === 'data' && <FleetLedger key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
       {tab === 'technology' && <FleetTechnology key={instance}/>}
       {tab === 'mind' && <MindCalculator key={instance} report={report} onRefresh={() => refresh.current?.()}/>}
       {tab === 'scan' && <ScanUpdate key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
-    </section>
+    </TabsContent>
+    </Tabs>
   </div>
 }

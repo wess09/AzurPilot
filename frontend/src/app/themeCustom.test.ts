@@ -1,6 +1,11 @@
+/**
+ * @fileoverview 主题大类自定义的行为回归测试：存取、旧档迁移与 CSS 变量应用。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyFamilyCustom, clearFamilyKnob, clearFamilyPalette, clearFamilyRegion, readFamilyCustom, resetFamilyCustom, writeFamilyCustom } from './themeCustom'
 
+// 注入独立的 localStorage 假实现：存取只发生在用例自己的字典里，不落真实存储。
 const storage = (initial: Record<string, string> = {}) => {
   const data = {...initial}
   vi.stubGlobal('localStorage', {
@@ -11,6 +16,7 @@ const storage = (initial: Record<string, string> = {}) => {
   return data
 }
 
+// 假的根节点：只模拟 style 的 CSS 变量读写，applyFamilyCustom 写过哪些 token 可以直接断言。
 const fakeRoot = () => {
   const values = new Map<string, string>()
   return {
@@ -29,15 +35,15 @@ describe('按大类的区域参数', () => {
   it('没有存过时是空集（默认态零变化的来源）', () => {
     storage()
     expect(readFamilyCustom('new')).toEqual({params: {}})
-    expect(readFamilyCustom('legacy')).toEqual({params: {}})
+    expect(readFamilyCustom('modern')).toEqual({params: {}})
   })
 
   it('两个大类各存一套，互不串味', () => {
     storage()
     writeFamilyCustom('new', {params: {'plate.alpha': 60}})
-    writeFamilyCustom('legacy', {params: {'plate.alpha': 90, 'surface.blur': 8}})
+    writeFamilyCustom('modern', {params: {'plate.alpha': 90, 'surface.blur': 8}})
     expect(readFamilyCustom('new').params).toEqual({'plate.alpha': 60})
-    expect(readFamilyCustom('legacy').params).toEqual({'plate.alpha': 90, 'surface.blur': 8})
+    expect(readFamilyCustom('modern').params).toEqual({'plate.alpha': 90, 'surface.blur': 8})
   })
 
   it('损坏的数据当作没存过', () => {
@@ -49,12 +55,12 @@ describe('按大类的区域参数', () => {
     storage({'azurpilot.custom.legacy': JSON.stringify({params: {
       'sidebar.blur': 8, 'topbar.alpha': 70, 'segment.blur': 20, 'tab.radius': 12, 'chrome.alpha': 55,
     }})})
-    expect(readFamilyCustom('legacy').params).toEqual({'surface.blur': 8, 'surface.alpha': 55})
+    expect(readFamilyCustom('modern').params).toEqual({'surface.blur': 8, 'surface.alpha': 55})
   })
 
   it('弹窗与菜单是独立区域，旧值不被搬到一级面', () => {
     storage({'azurpilot.custom.legacy': JSON.stringify({params: {'modal.blur': 30, 'menu.alpha': 60}})})
-    expect(readFamilyCustom('legacy').params).toEqual({'modal.blur': 30, 'menu.alpha': 60})
+    expect(readFamilyCustom('modern').params).toEqual({'modal.blur': 30, 'menu.alpha': 60})
   })
 
   it('未知旋钮与越界值按目录处理', () => {
@@ -64,7 +70,7 @@ describe('按大类的区域参数', () => {
 
   it('早期全局旋钮的记录折算到一级面（目录里没有的参数一并丢弃）', () => {
     storage({'azurpilot.custom.legacy': JSON.stringify({blur: 30, opacity: 40, radius: 6, shadow: 20, palette: 'ocean'})})
-    const custom = readFamilyCustom('legacy')
+    const custom = readFamilyCustom('modern')
     expect(custom.params).toEqual({'surface.blur': 30, 'surface.alpha': 40})
     expect(custom.palette).toBe('ocean')
   })
@@ -76,7 +82,7 @@ describe('按大类的区域参数', () => {
     expect(written).toEqual(['--theme-plate-alpha', '--theme-plate-blur'])
     expect(root.values.get('--theme-plate-alpha')).toBe('60%')
     expect(root.values.get('--theme-plate-blur')).toBe('12px')
-    /* 没动过的区域一个 token 都不写 */
+    // 没动过的区域一个 token 都不写。
     expect(written.some(token => token.startsWith('--theme-surface-'))).toBe(false)
   })
 
@@ -103,10 +109,10 @@ describe('按大类的区域参数', () => {
 
   it('全部还原后不留键（无记录与默认态等价）', () => {
     const data = storage()
-    writeFamilyCustom('legacy', {params: {'control.alpha': 50}})
-    expect(data['azurpilot.custom.legacy']).toBeDefined()
-    clearFamilyKnob('legacy', 'control.alpha')
-    expect(data['azurpilot.custom.legacy']).toBeUndefined()
+    writeFamilyCustom('modern', {params: {'control.alpha': 50}})
+    expect(data['azurpilot.custom.modern']).toBeDefined()
+    clearFamilyKnob('modern', 'control.alpha')
+    expect(data['azurpilot.custom.modern']).toBeUndefined()
   })
 
   it('简洁与紧凑没有区域旋钮，一个 token 都不写', () => {
@@ -119,7 +125,7 @@ describe('按大类的区域参数', () => {
     storage({'azurpilot.custom.new': JSON.stringify({params: {'plate.alpha': 60}}), 'azurpilot.custom.legacy': JSON.stringify({params: {'surface.blur': 4}})})
     const root = fakeRoot()
     for (const token of applyFamilyCustom(root as unknown as HTMLElement, 'new', 'light')) root.style.removeProperty(token)
-    const second = applyFamilyCustom(root as unknown as HTMLElement, 'legacy', 'light')
+    const second = applyFamilyCustom(root as unknown as HTMLElement, 'modern', 'light')
     expect(second).toContain('--theme-surface-blur')
     expect(root.values.get('--theme-plate-alpha')).toBeUndefined()
   })

@@ -21,6 +21,8 @@ SHIP_SCALARS = (
     ('last_check_time', 'checked_at', 'T'), ('target_level', 'target_level', 'I'),
     ('fleet_index', 'fleet_index', 'I'), ('battle_count_at_check', 'battle_count_at_check', 'I'),
 )
+MONTH_SCALAR_NAMES = frozenset(name for name, _, _ in MONTH_SCALARS)
+SHIP_SCALAR_NAMES = frozenset(name for name, _, _ in SHIP_SCALARS)
 HAZARD_FIELDS = (
     ('battle_raw_count', 'battle_raw_count', 'I'), ('effective_rounds', 'effective_rounds', 'R'),
     ('round_times', None, 'list'), ('battle_times', None, 'list'),
@@ -148,20 +150,33 @@ def save_children(connection, table, row_id, record, owner):
                 'month': owner['month'], 'ordinal': ordinal, 'path': stored if valid else None, 'compat_value_set_id': value_id})
 
 
-def load_children(connection, table, row_id):
-    """读取关联子表并恢复嵌套条目。"""
-    if table not in ('commission_income', 'research_drops'):
+def load_children_bulk(connection, table, owner, row_ids):
+    """一次拉回整月条目的关联子表并按行分组，避免逐行两查的 N+1 读。
+
+    分组语义与整月逐条读取完全一致：条目按 rowid 分组，
+    items 组内保持 rowid 序，screenshots 组内保持 ordinal 序。
+    """
+    if table not in ('commission_income', 'research_drops') or not row_ids:
         return {}
     key = 'income_id' if table == 'commission_income' else 'drop_id'
     child_table = 'commission_income_items' if table == 'commission_income' else 'research_drop_items'
-    items = {}
-    for row in connection.execute(f'SELECT * FROM {child_table} WHERE {key}=? ORDER BY rowid', (row_id,)):
-        items[row['item']] = read_value(connection, row['compat_value_set_id']) if row['compat_value_set_id'] is not None else row['amount']
-    collections = {'items': items}
+    instance, month = owner['instance'], owner['month']
+    grouped = {row_id: ({'items': {}, 'screenshots': []} if table == 'commission_income' else {'items': {}})
+               for row_id in row_ids}
+    for row in connection.execute(f'SELECT * FROM {child_table} WHERE instance=? AND month=? ORDER BY rowid',
+                                  (instance, month)):
+        target = grouped.get(row[key])
+        if target is not None:
+            target['items'][row['item']] = read_value(connection, row['compat_value_set_id']) \
+                if row['compat_value_set_id'] is not None else row['amount']
     if table == 'commission_income':
-        collections['screenshots'] = [read_value(connection, row['compat_value_set_id']) if row['compat_value_set_id'] is not None else row['path']
-            for row in connection.execute('SELECT * FROM commission_income_screenshots WHERE income_id=? ORDER BY ordinal', (row_id,))]
-    return collections
+        for row in connection.execute('SELECT * FROM commission_income_screenshots WHERE instance=? AND month=? '
+                                      'ORDER BY ordinal', (instance, month)):
+            target = grouped.get(row['income_id'])
+            if target is not None:
+                target['screenshots'].append(read_value(connection, row['compat_value_set_id'])
+                                             if row['compat_value_set_id'] is not None else row['path'])
+    return grouped
 
 
 def canonical_integer(key):
@@ -219,7 +234,8 @@ def save_month(connection, instance, month, data):
     owner = {'instance': instance, 'month': month}
     columns, _, extra_scalars = project(data, MONTH_SCALARS)
     extras = {name: ('value', value) for name, value in data.items() if name not in MONTH_FIELDS}
-    extras.update({name: ('value', value) for name, value in extra_scalars.items() if name in dict((f[0], f) for f in MONTH_SCALARS)})
+    # 只有落在原生标量列、但取值不适配的字段才需要兼容树按原值保存。
+    extras.update({name: ('value', value) for name, value in extra_scalars.items() if name in MONTH_SCALAR_NAMES})
     notification = data.get('last_ap_notification')
     notification_fields = (('ts', 'last_ap_notification_ts', 'T'), ('ap', 'last_ap_notification_value', 'I'))
     notification_columns = {field[1]: None for field in notification_fields}
@@ -311,8 +327,11 @@ def read_month(connection, instance, month):
             (('ts', 'last_ap_notification_ts'), ('ap', 'last_ap_notification_value'))) if row['last_ap_notification_mask'] & (1 << index)}
     for name, (table, fields) in FAMILIES.items():
         if name in present:
-            result[name] = [load_row(connection, event, fields, load_children(connection, table, event['id']))
-                for event in connection.execute(f'SELECT * FROM {table} WHERE instance=? AND month=? ORDER BY ordinal', (instance, month))]
+            events = connection.execute(
+                f'SELECT * FROM {table} WHERE instance=? AND month=? ORDER BY ordinal', (instance, month)).fetchall()
+            children = load_children_bulk(connection, table, {'instance': instance, 'month': month},
+                                          [event['id'] for event in events])
+            result[name] = [load_row(connection, event, fields, children.get(event['id'])) for event in events]
     for name, kind in (('meow_round_times', 'round'), ('meow_battle_times', 'battle')):
         if name in present:
             result[name] = load_meow_samples(connection, instance, month, kind, 0)
@@ -358,7 +377,7 @@ def save_ship(connection, instance, data):
     owner = {'instance': instance, 'ship': True}
     columns, _, scalar_extra = project(data, SHIP_SCALARS)
     extras = {name: ('value', value) for name, value in data.items() if name not in SHIP_FIELDS}
-    extras.update({name: ('value', value) for name, value in scalar_extra.items() if name in {f[0] for f in SHIP_SCALARS}})
+    extras.update({name: ('value', value) for name, value in scalar_extra.items() if name in SHIP_SCALAR_NAMES})
     insert(connection, 'ship_exp_checks', dict(instance=instance, field_mask=presence(data, SHIP_FIELDS), **columns))
     if 'ships' in data:
         if type(data['ships']) is not list:
@@ -377,7 +396,6 @@ def save_ship(connection, instance, data):
         if type(group.get('samples')) is list:
             for ordinal, sample in enumerate(group['samples']):
                 valid, stored = scalar(sample, 'R')
-                valid = valid and type(sample) in (int, float)
                 value_id = None if valid else write_value(connection, value=sample, **owner)
                 insert(connection, 'ship_exp_duration_samples', dict(instance=instance, kind=kind, ordinal=ordinal,
                     duration_seconds=stored if valid else None, field_mask=1 if valid else 0,

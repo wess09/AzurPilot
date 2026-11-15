@@ -2,31 +2,24 @@
  * @fileoverview 任务队列与拖拽排序列表组件。
  */
 
-import { useLayoutEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { ChevronRight, CirclePlay, Hourglass, ListTodo } from 'lucide-react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ChevronRight } from 'lucide-react'
 import type { Overview } from '../api/types'
+import { api } from '../api/client'
 import { useApp } from '../app/context'
-import type { UiKey } from '../i18n'
+import { RunNowMenu } from './RunNowMenu'
+import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 
-const taskStateLabel = {
-  running: 'scheduler.running',
-  pending: 'scheduler.pending',
-  waiting: 'scheduler.waiting',
-} as const
-
-const taskGroups = [
-  {state: 'running', label: 'scheduler.running', empty: 'scheduler.noRunning', icon: CirclePlay},
-  {state: 'pending', label: 'scheduler.pending', empty: 'scheduler.noPending', icon: ListTodo},
-  {state: 'waiting', label: 'scheduler.waiting', empty: 'scheduler.noWaiting', icon: Hourglass},
-] as const
-
+/** NextRun 的出厂默认值：所有任务共用，落在过去，
+ *  调度器下一轮扫描就把它当待运行任务——「清空下一次运行时间」的等价写法。 */
+const IMMEDIATE_NEXT_RUN = '2020-01-01 00:00:00'
 /** 条目位置。用布局坐标：它不含脚本正在写的 transform，
  *  动画没停时也能读到真实位置。 */
-export type Box = {left: number; top: number}
+type Box = {left: number; top: number}
 
 /** 条目位置与尺寸。条目被移除后，靠它才能在原地画出一份等大的副本。 */
-export type Placement = Box & {width: number; height: number}
+type Placement = Box & {width: number; height: number}
 
 /** 条目在文档里的布局坐标：沿 offsetParent 链累加到 body，
  *  谁当 offsetParent 都得到同一套数值；动画未结束时读到的仍是真实落点。 */
@@ -52,17 +45,19 @@ export function movedBy(before: Box | undefined, after: Box) {
 }
 
 /**
- * 任务计划：正在运行 / 待运行 / 等待中三组。
+ * 任务计划：运行中、待运行、等待中合并为一个列表。
  *
- * 条目显示任务名、执行时间与状态徽章。时间只写值不带「执行时间：」前缀，
+ * 条目显示任务名、下次执行时间与状态文字。时间只写值不带「执行时间：」前缀，
  * 运行中的任务同样把时间列出来（只标状态的话就看不出它排在什么时候）。
- * `onNavigate` 供移动端抽屉在点击任务后收起使用，桌面端不传。
+ * 运行中的状态文字带三点呼吸与扫光，用来表示调度器正在跑它。
  *
- * 三组同处一个容器，条目在组间移动时能被测到位置变化并连续平移过去。
- * 组的高度用补间兑现，离开的条目在原地收缩塌陷，插入的条目自中心放大。
+ * 条目同处一个容器，状态变化时能被测到位置变化并连续平移过去。
+ * 容器的高度用补间兑现，离开的条目在原地收缩塌陷，插入的条目自中心放大。
  */
-export function TaskQueue({instance, data, onNavigate}: {instance: string; data?: Overview; onNavigate?: () => void}) {
-  const {t, ui} = useApp()
+export function TaskQueue({instance, data, onData}: {instance: string; data?: Overview; onData?: (data: Overview) => void}) {
+  const {t, ui, notify} = useApp()
+  const navigate = useNavigate()
+  const [menu, setMenu] = useState<{task: Overview['tasks'][number]; x: number; y: number}>()
   const positions = useRef(new Map<string, Placement>())
   const known = useRef(new Set<string>())
   const list = useRef<HTMLDivElement>(null)
@@ -93,7 +88,7 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
     const origin = documentBox(container)
     for (const body of container.querySelectorAll<HTMLElement>('.rail-queue-body')) {
       bodies.push(body)
-      const state = body.closest('.rail-queue-group')!.className.split(' ').pop()!
+      const state = body.closest('.rail-queue-group')?.className.split(' ').pop() ?? ''
       for (const element of body.querySelectorAll<HTMLElement>('[data-task]')) {
         // 键带上组名：同一条目换组后是另一个节点，位置按组分别记账。
         const key = `${state}/${element.dataset.task}`
@@ -111,7 +106,7 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
       if (!next.has(key)) departed.push({key, box})
     }
     for (const element of container.querySelectorAll<HTMLElement>('[data-task]')) {
-      const state = element.closest('.rail-queue-group')!.className.split(' ').pop()!
+      const state = element.closest('.rail-queue-group')?.className.split(' ').pop() ?? ''
       if (!known.current.has(`${state}/${element.dataset.task}`)) arrived.push(element)
     }
     for (const key of next.keys()) known.current.add(key)
@@ -122,7 +117,7 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
     if (fresh || matchMedia('(prefers-reduced-motion: reduce)').matches) return
     // 组的挤压缩放：高度骤变会让下方内容瞬移，补间后容器不再跳。
     for (const body of bodies) {
-      const state = body.closest('.rail-queue-group')!.className.split(' ').pop()!
+      const state = body.closest('.rail-queue-group')?.className.split(' ').pop() ?? ''
       const target = body.offsetHeight
       const seen = heights.current.get(state)
       // 动画中途量到的 offsetHeight 是中间值，取两者较大者当起点。
@@ -148,7 +143,7 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
     // 移除：把副本送回原位收缩塌陷；它塌掉的就是腾出的那段高度。
     for (const {key} of departed) {
       const source = snapshots.current.get(key)
-      const state = key.split('/')[0]
+      const state = key.split('/')[0] ?? ''
       const body = container.querySelector<HTMLElement>(`.rail-queue-group.${state} .rail-queue-body`)
       const target = heights.current.get(state)
       if (!source || !body || target === undefined) continue
@@ -168,30 +163,65 @@ export function TaskQueue({instance, data, onNavigate}: {instance: string; data?
   /* 条目位置只在 data 变化时改变。 */
   }, [data])
 
+  const labels = {
+    running: ui('scheduler.running'),
+    pending: ui('scheduler.pending'),
+    waiting: ui('scheduler.waiting'),
+  }
+  // 运行中与待运行同组：按「运行中 → 待运行 → 等待中」排，组内保持后端给出的优先级顺序。
+  const tasks = (['running', 'pending', 'waiting'] as const)
+    .flatMap(state => (data?.tasks ?? []).filter(task => task.state === state))
+
+  /** 右键菜单：打开配置页与立刻运行（运行中的条目不用再催）。
+   *  「立刻运行」不是直接执行，而是把下一次运行时间清空回落到默认值，
+   *  调度器下一轮扫描就排它——与配置页里清空该字段同一条路径。 */
+  const menuItems = (task: Overview['tasks'][number]): ContextMenuItem[] => [
+    {label: ui('queue.openConfig'), run: () => navigate(`/i/${instance}/task/${task.name}`)},
+    {label: ui('task.runNow'), disabled: task.state === 'running', run: () => void runNow(task.name)},
+  ]
+
+  /** 把 NextRun 写回默认值并立刻刷新列表；后端校验只认合法日期，
+   *  所以这里提交的是「清空后自动回落」的那个默认值。 */
+  async function runNow(task: string) {
+    try {
+      await api.request('config.patch', {instance, changes: [{path: `${task}.Scheduler.NextRun`, value: IMMEDIATE_NEXT_RUN}]})
+      notify(ui('queue.runNowDone'))
+      onData?.(await api.request('overview.get', {instance}))
+    } catch (error) {
+      notify((error as Error).message, true)
+    }
+  }
+
   return <div className="rail-task-list" ref={list}>
-    {data?.tasks.length ? taskGroups.map(group => {
-      const tasks = data.tasks.filter(task => task.state === group.state)
-      const GroupIcon = group.icon
-      return <section className={`rail-queue-group ${group.state}`} key={group.state} aria-label={ui(group.label as UiKey)}>
-        <div className="rail-queue-heading">
-          <div><GroupIcon size={16}/><strong>{ui(group.label as UiKey)}</strong></div>
+    {tasks.length > 0 ? (
+      <>
+        <div className="rail-task-heading">
+          <strong>{ui('scheduler.plan')}</strong>
           <span>{tasks.length}</span>
+          <RunNowMenu instance={instance} tasks={tasks}/>
         </div>
-        <div className="rail-queue-body">
-          {tasks.length ? tasks.map(task => {
-            const nextRun = task.nextRun?.replace('T', ' ').trim()
-            return <Link key={task.name} data-task={task.name} className="rail-task-item"
-                         to={`/i/${instance}/task/${task.name}`} onClick={onNavigate}>
-              <div>
-                <strong>{t(`Task.${task.name}.name`)}</strong>
-                {nextRun && <small>{nextRun}</small>}
-              </div>
-              <span className={`task-state ${task.state}`}><GroupIcon size={12}/>{ui(taskStateLabel[task.state])}</span>
-              <ChevronRight size={13}/>
-            </Link>
-          }) : <div className="rail-queue-empty">{ui(group.empty as UiKey)}</div>}
-        </div>
-      </section>
-    }) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
+        <section className="rail-queue-group tasks" aria-label={ui('scheduler.plan')}>
+          <div className="rail-queue-body">
+            {tasks.map(task => {
+              const nextRun = task.nextRun?.replace('T', ' ').trim()
+              return <Link key={task.name} data-task={task.name} className={`rail-task-item ${task.state}`}
+                           to={`/i/${instance}/task/${task.name}`}
+                           onContextMenu={event => {event.preventDefault(); setMenu({task, x: event.clientX, y: event.clientY})}}>
+                <div className="rail-task-main">
+                  <strong>{t(`Task.${task.name}.name`)}</strong>
+                  {nextRun && <small>{nextRun}</small>}
+                </div>
+                <span className={`rail-task-state ${task.state}`}>
+                  {task.state === 'running' && <span className="thinking-dots" aria-hidden="true"><i/><i/><i/></span>}
+                  <span className="state-label">{labels[task.state]}</span>
+                </span>
+                <ChevronRight size={13}/>
+              </Link>
+            })}
+          </div>
+        </section>
+      </>
+    ) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
+    {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.task)} onClose={() => setMenu(undefined)}/>}
   </div>
 }

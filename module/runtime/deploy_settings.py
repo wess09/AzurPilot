@@ -98,6 +98,8 @@ DEPLOY_GROUPS: tuple[tuple[str, tuple[DeployField, ...]], ...] = (
             DeployField("EnableRemoteAccess", "bool"),
             DeployField("RemoteAccessMode", "select", tuple(REMOTE_ACCESS_MODE_OPTIONS)),
             DeployField("CloudflareRegistry"),
+            DeployField("RemoteAccessPort", "int"),
+            DeployField("RemoteAccessPublicPort", "int"),
             DeployField("SSHUser", "nullable_string"),
             DeployField("SSHServer", "nullable_string"),
             DeployField("SSHExecutable", "nullable_string"),
@@ -363,6 +365,8 @@ def _parse_value(field: DeployField, value: Any) -> Any:
             raise ValueError(f"{field.key} 必须是整数") from e
         if parsed < 0:
             raise ValueError(f"{field.key} 不能小于 0")
+        if field.key in ('RemoteAccessPort', 'RemoteAccessPublicPort') and parsed > 65535:
+            raise ValueError(f"{field.key} 不能大于 65535")
         return parsed
 
     if field.kind == "select":

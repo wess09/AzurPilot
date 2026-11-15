@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 养成页导航用例：资源管理与舰队管理的入口与跳转记忆，舰队扫描开关与其他任务的互斥禁用。
+ */
+
+import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 
 test.beforeEach(async ({page}) => {
@@ -25,7 +30,7 @@ test('资源管理位于资源趋势旁边，旧入口跳转且刷新保持选�
 test('舰队管理打开舰船数据与智能换船，扫描开关只运行工具并刷新结果', async ({page}) => {
   const requests: string[] = []
   let finished = false
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer(), methods = new Map<string, string>()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -84,7 +89,7 @@ test('舰队管理打开舰船数据与智能换船，扫描开关只运行工�
 test('舰队扫描开关遇到其他运行任务或更新时禁用，不发送停止请求', async ({page}) => {
   let status = 'running'
   const sent: string[] = []
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer(), methods = new Map<string, string>()
     socket.onMessage(message => {
       const request = JSON.parse(String(message)); methods.set(request.id, request.method); sent.push(request.method); server.send(message)

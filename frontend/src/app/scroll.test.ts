@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 平滑滚动辅助函数的行为回归测试。
+ */
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { animateScrollTop, easeOutCubic, scrollTargetTop, smoothScrollToElement } from './scroll'
 
@@ -32,6 +36,7 @@ describe('animateScrollTop', () => {
     const cancelled: number[] = []
     vi.stubGlobal('requestAnimationFrame', vi.fn(() => nextFrame++))
     vi.stubGlobal('cancelAnimationFrame', vi.fn((frame: number) => cancelled.push(frame)))
+    // node 环境没有真元素：用 EventTarget 充当容器，它自带 add/removeEventListener，滚动位置就是挂上去的普通字段。
     const container = Object.assign(new EventTarget(), {scrollTop: 0}) as HTMLElement
 
     animateScrollTop(container, 100, 280)
@@ -53,6 +58,7 @@ describe('smoothScrollToElement', () => {
       parentElement: null,
       getBoundingClientRect: () => ({top: 600 - scroller.scrollTop}),
     } as HTMLElement
+    // 桩掉 document 与 getComputedStyle：目标没有可滚动父级，走文档滚动路径，scroll-margin 读作 0。
     vi.stubGlobal('document', {scrollingElement: scroller})
     vi.stubGlobal('getComputedStyle', () => ({scrollMarginTop: '0px'}))
 

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 换船调度（fleet-training）模块的界面文案语言包：zh-CN 为源，
+ * zh-TW / en-US / ja-JP 的键集与类型必须与 zh-CN 一致。
+ */
 export const trainingZhCN = {
   'training.stopOnComplete': '本轮全部达标后停止练级任务',
   'training.stopHelp': '默认关闭。勾选舰船全部达到已启用的等级/好感目标后停止当前任务；先达标的舰船留在原位。',
@@ -26,6 +30,7 @@ export const trainingZhCN = {
   'training.slotConfig': '换船配置：设置舰位与候补舰队', 'training.saved': '换船调度设置已保存', 'training.records': '培养记录（重启后保留）', 'training.empty': '尚无实读记录',
   'training.ship': '舰船', 'training.status': '培养状态', 'training.completed': '培养完成', 'training.pending': '继续培养／待核对',
 }
+/** 繁体中文文案，键集与类型必须与中文版一致。 */
 export const trainingZhTW: typeof trainingZhCN = {
   'training.stopOnComplete': '本輪全部達標後停止練級任務',
   'training.stopHelp': '預設關閉。勾選艦船全部達到已啟用的等級／好感目標後停止目前任務；先達標的艦船留在原位。',
@@ -54,6 +59,7 @@ export const trainingZhTW: typeof trainingZhCN = {
   'training.slotConfig': '換船設定：配置艦位及候補艦隊', 'training.saved': '換船調度設定已儲存', 'training.records': '培養紀錄（重啟後保留）', 'training.empty': '尚無實讀紀錄',
   'training.ship': '艦船', 'training.status': '培養狀態', 'training.completed': '培養完成', 'training.pending': '繼續培養／待確認',
 }
+/** 英文文案，键集与类型必须与中文版一致。 */
 export const trainingEnUS: typeof trainingZhCN = {
   'training.stopOnComplete': 'Stop leveling when all current training ships graduate',
   'training.stopHelp': 'Off by default. Stop the current task once all selected ships meet their enabled level/affinity goals. Keep early graduates in place.',
@@ -82,6 +88,7 @@ export const trainingEnUS: typeof trainingZhCN = {
   'training.slotConfig': 'Rotation configuration: slots and reserves', 'training.saved': 'Rotation scheduling settings saved', 'training.records': 'Training records (persist across restarts)', 'training.empty': 'No verified readings',
   'training.ship': 'Ship', 'training.status': 'Training status', 'training.completed': 'Training complete', 'training.pending': 'Training / verify',
 }
+/** 日文文案，键集与类型必须与中文版一致。 */
 export const trainingJaJP: typeof trainingZhCN = {
   'training.stopOnComplete': '現在の育成艦がすべて目標達成後に周回を停止',
   'training.stopHelp': '初期設定は無効。選択艦が有効なレベル・好感度目標をすべて達成すると現在のタスクを停止します。先に達成した艦は維持します。',

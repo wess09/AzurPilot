@@ -1641,12 +1641,12 @@
       "coalition_20251120": "DATE A LANE",
       "coalition_20260122": "光影風尚-拍攝進行時",
       "coalition_20260723": "怪談紀實",
-      "event_20200227_cn": "北境序曲",
+      "event_20200227_cn": "Northern Overture",
       "event_20200312_cn": "斯圖爾特的硝煙",
-      "event_20200326_cn": "微層混合",
-      "event_20200423_cn": "蒼紅的迴響",
-      "event_20200507_cn": "夜幕下的歸途",
-      "event_20200521_cn": "穹頂下的聖詠曲",
+      "event_20200326_cn": "Microlayer Medley",
+      "event_20200423_cn": "Crimson Echoes Rerun",
+      "event_20200507_cn": "The Way Home in the Night",
+      "event_20200521_cn": "穹顶下的圣咏曲",
       "event_20200521_en": "Iris of Light and Dark Rerun",
       "event_20200603_cn": "復刻峽灣間的反擊",
       "event_20200603_en": "Prelude under the Moon Rerun",
@@ -1700,7 +1700,7 @@
       "event_20230803_cn": "奏響鳶尾之歌",
       "event_20230817_cn": "愚者的天平",
       "event_20230914_cn": "須臾望月抄",
-      "event_20231026_cn": "颶風與青春之泉",
+      "event_20231026_cn": "飓風與青春之泉",
       "event_20231123_cn": "蒼閃忍法帖",
       "event_20231221_cn": "星海逐光",
       "event_20240229_cn": "雪境迷蹤",
@@ -1725,7 +1725,7 @@
       "event_20260326_cn": "漫遊者招募計劃",
       "event_20260417_cn": "假日航線閃耀海濱",
       "event_20260520_cn": "聖印前的同盟",
-      "event_20260625_cn": "美夢巡演奇妙夜",
+      "event_20260625_cn": "美夢巡演奇秒夜",
       "event_20260813_cn": "沉溺於星光之城",
       "event_20260908_cn": "幽影迷城",
       "event_20261022_cn": "颶風與霧靄迴廊",
@@ -1787,6 +1787,7 @@
       "war_archives_20230223_cn": "檔案 湮燼塵墟",
       "war_archives_20230525_cn": "檔案 空相交會點",
       "war_archives_20230803_cn": "檔案 奏響鳶尾之歌",
+      "war_archives_20230817_cn": "檔案 愚者的天平",
       "war_archives_20231026_cn": "檔案 飓風與青春之泉",
       "war_archives_20240725_cn": "檔案 幻夢間奏曲",
       "war_archives_20241024_cn": "檔案 颶風與沉眠之海",
@@ -3835,7 +3836,7 @@
   "OpsiAshAssist": {
     "_info": {
       "name": "META支援",
-      "help": "打每天三次的信標支援"
+      "help": "打每天三次的信標支援\n使用此功能前必須通關大世界主線。"
     },
     "Enable": {
       "name": "啟用META支援",
@@ -3849,7 +3850,7 @@
   "OpsiGeneral": {
     "_info": {
       "name": "大世界通用設定",
-      "help": "所有大世界功能都會使用這些設定"
+      "help": "所有大世界功能都會使用這些設定\n使用此功能前必須通關大世界主線。"
     },
     "UseLogger": {
       "name": "使用座標記錄儀",
@@ -3921,7 +3922,7 @@
   "OpsiAshBeacon": {
     "_info": {
       "name": "META作戰",
-      "help": ""
+      "help": "使用此功能前必須通關大世界主線。"
     },
     "AttackMode": {
       "name": "META作戰",
@@ -3962,7 +3963,7 @@
   "OpsiFleetFilter": {
     "_info": {
       "name": "艦隊設定",
-      "help": ""
+      "help": "使用此功能前必須通關大世界主線。"
     },
     "Filter": {
       "name": "出擊艦隊過濾器",
@@ -3972,7 +3973,7 @@
   "OpsiFleet": {
     "_info": {
       "name": "艦隊設定",
-      "help": ""
+      "help": "使用此功能前必須通關大世界主線。"
     },
     "Fleet": {
       "name": "出擊艦隊",
@@ -4024,7 +4025,7 @@
   "OpsiExploreCleanup": {
     "_info": {
       "name": "普通海域事件補掃",
-      "help": "每月開荒達到 100% 後，依原順序重新進入普通海域（不進入安全海域），全圖辨識並逐隊掃描雷達，處理遺漏事件及事件生成的敵人。使用獨立月度進度，每張圖退出成功後儲存，本月完成後不重複。開荒未完成時提示重新執行每月開荒。"
+      "help": "每月開荒達到 100% 後，依原順序重新進入普通海域（不進入安全海域），全圖辨識並逐隊掃描雷達，處理遺漏事件及事件生成的敵人。使用獨立月度進度，每張圖退出成功後儲存，本月完成後不重複。開荒未完成時提示重新執行每月開荒。\n使用此功能前必須通關大世界主線。"
     },
     "Progress": {
       "name": "補掃進度",
@@ -4065,7 +4066,7 @@
     },
     "Filter": {
       "name": "商店過濾器",
-      "help": "支援 戰役訊息記錄儀(LoggerUnlock), 隱秘海域資訊紀錄儀(HiddenZoneDataLogger)\n參考文件 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string 你可以自行設定：LoggerUnlock > HiddenZoneDataLogger > LoggerAbyssal > LoggerObscure > Book > Coin > Fragment 來購買戰役訊息記錄儀和隱秘海域資訊紀錄儀。"
+      "help": "支援 戰役訊息記錄儀(LoggerUnlock), 隱秘海域資訊紀錄儀(HiddenZoneDataLogger)\n參考檔案 https://github.com/LmeSzinc/AzurLaneAutoScript/wiki/reward_shop_filter_string 你可以自行設定：LoggerUnlock > HiddenZoneDataLogger > LoggerAbyssal > LoggerObscure > Book > Coin > Fragment 來購買戰役訊息記錄儀和隱秘海域資訊紀錄儀。"
     }
   },
   "OpsiDaily": {
@@ -4219,7 +4220,7 @@
   "OpsiTarget": {
     "_info": {
       "name": "海域成就",
-      "help": ""
+      "help": "使用此功能前必須通關大世界主線。"
     },
     "TargetFarming": {
       "name": "刷取安全海域成就",
@@ -4237,7 +4238,7 @@
   "OpsiHazard1Leveling": {
     "_info": {
       "name": "侵蝕1練級",
-      "help": "消耗作戰補給憑證以獲取大量經驗和少量行動力\n推薦攜帶1-2艘預裝填航母以獲取最高的時均收益\n\n原版 AzurPilot 的一些防呆限制已被解除，請謹慎設定參數"
+      "help": "消耗作戰補給憑證以獲取大量經驗和少量行動力\n推薦攜帶1-2艘預裝填航母以獲取最高的時均收益\n\n原版 AzurPilot 的一些防呆限制已被解除，請謹慎設定參數\n使用此功能前必須通關大世界主線。"
     },
     "TargetZone": {
       "name": "指定海域",
@@ -4300,7 +4301,7 @@
   "OpsiSirenBug": {
     "_info": {
       "name": "塞壬研究裝置",
-      "help": "設定塞壬研究裝置的基礎處理選項"
+      "help": "設定塞壬研究裝置的基礎處理選項\n使用此功能前必須通關大世界主線。"
     },
     "SirenResearch_Enable": {
       "name": "啟用塞壬研究裝置",
@@ -4325,7 +4326,7 @@
   "OpsiCheckLeveling": {
     "_info": {
       "name": "大世界艦隊經驗檢測",
-      "help": "檢測出擊艦隊所有船是否已經獲取滿經驗，是的話則發送一條推送訊息\n需要先在 AzurPilot 設定中設定好\"錯誤推送設定\"\n沒成功檢測經驗會重新檢測，建議上滿六艘艦船不然就將檢測時間調大，連續3次失敗會推送並延時"
+      "help": "檢測出擊艦隊所有船是否已經獲取滿經驗，是的話則發送一條推送訊息\n需要先在 AzurPilot 設定中設定好\"錯誤推送設定\"\n沒成功檢測經驗會重新檢測，建議上滿六艘艦船不然就將檢測時間調大，連續3次失敗會推送並延時\n使用此功能前必須通關大世界主線。"
     },
     "TargetLevel": {
       "name": "當所有艦船經驗可升至此等級時推送 (0為不限制)",
@@ -4357,7 +4358,7 @@
   "OpsiFleetAutoChange": {
     "_info": {
       "name": "侵蝕一艦隊自動配隊",
-      "help": "自動更換已滿經驗的艦船\n當經驗檢測發現指定艦位已滿經驗時，自動進入船塢選擇替換艦船\n使用大世界經驗檢測的目標等級和自訂檢測艦位設定\n使用教學：1.必須將所有常用艦船全部取消，只能留下練級艦船 2.必須啟用自訂艦船檢測並設定艦位 3.艦隊必須為艦隊1\n原理：每次大世界經驗檢測後，大世界自動配隊運行時會將滿經驗的指定艦船的常用標記取消，回到港區後會從常用艦船裡替換指定艦船"
+      "help": "自動更換已滿經驗的艦船\n當經驗檢測發現指定艦位已滿經驗時，自動進入船塢選擇替換艦船\n使用大世界經驗檢測的目標等級和自訂檢測艦位設定\n使用教學：1.必須將所有常用艦船全部取消，只能留下練級艦船 2.必須啟用自訂艦船檢測並設定艦位 3.艦隊必須為艦隊1\n原理：每次大世界經驗檢測後，大世界自動配隊運行時會將滿經驗的指定艦船的常用標記取消，回到港區後會從常用艦船裡替換指定艦船\n使用此功能前必須通關大世界主線。"
     },
     "Enable": {
       "name": "啟用自動配隊",
@@ -4381,7 +4382,7 @@
   "OpsiScheduling": {
     "_info": {
       "name": "智慧排程",
-      "help": "智慧排程相關配置"
+      "help": "智慧排程相關配置\n使用此功能前必須通關大世界主線。"
     },
     "BuyActionPoint": {
       "name": "行動力不足時購買港口行動力",
@@ -4469,7 +4470,7 @@
   "OpsiSmartExplore": {
     "_info": {
       "name": "智慧開荒",
-      "help": "智慧開荒和每月開荒不能同時啟用；啟用智慧開荒前請關閉每月開荒任務。若本月每月開荒已達到 100%，無需啟用智慧開荒，誤開也會跳過三輪路線。"
+      "help": "智慧開荒和每月開荒不能同時啟用；啟用智慧開荒前請關閉每月開荒任務。若本月每月開荒已達到 100%，無需啟用智慧開荒，誤開也會跳過三輪路線。\n使用此功能前必須通關大世界主線。"
     },
     "Enable": {
       "name": "啟用智慧開荒",
@@ -4491,7 +4492,7 @@
   "OpsiPreventActionPointOverflow": {
     "_info": {
       "name": "防止行動力溢位",
-      "help": "當前行動力達到上限時執行大世界任務消耗行動力\n選擇智慧排程時，如果行動力和黃幣都不足導致沒有可執行任務，將執行短貓相接清理當前行動力"
+      "help": "當前行動力達到上限時執行大世界任務消耗行動力\n選擇智慧排程時，如果行動力和黃幣都不足導致沒有可執行任務，將執行短貓相接清理當前行動力\n使用此功能前必須通關大世界主線。"
     },
     "Task": {
       "name": "執行任務",
@@ -6436,6 +6437,7 @@
       "help": "",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -6451,6 +6453,7 @@
       "help": "",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -6466,6 +6469,7 @@
       "help": "",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -6481,6 +6485,7 @@
       "help": "",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -6496,6 +6501,7 @@
       "help": "",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -6511,6 +6517,7 @@
       "help": "白熊飲品目前季節飲品庫存不足時替換成該飲品",
       "None": "無",
       "spring_flower_tea": "迎春花茶",
+      "banana_mango": "香蕉芒果汁",
       "strawberry_lemon": "草莓蜜沁",
       "strawberry_honey": "草莓蜂蜜冰沙",
       "floral_fruity": "花香果韻",
@@ -7551,7 +7558,7 @@
   "OpsiSimulatorParameters": {
     "_info": {
       "name": "參數設定",
-      "help": ""
+      "help": "使用此功能前必須通關大世界主線。"
     },
     "Samples": {
       "name": "採樣數",
@@ -7952,8 +7959,12 @@
       "EnableRemoteAccess": "啟用遠端存取",
       "EnableRemoteAccessHelp": "透過所選模式提供遠端 WebUI；開放網際網路存取前必須設定密碼。",
       "RemoteAccessMode": "遠端存取模式",
-      "RemoteAccessModeHelp": "cloudflare 使用 Quick Tunnel 與固定入口；auto 優先 P2P/TURN 並回退 SSH；webrtc 優先 P2P；ssh 僅 SSH。",
+      "RemoteAccessModeHelp": "auto/cloudflare 優先公網 HTTP 直連，失敗時使用 Cloudflare；webrtc 使用舊 P2P/TURN；ssh 僅 SSH。",
       "CloudflareRegistry": "固定入口伺服器",
+      "RemoteAccessPort": "直連監聽連接埠",
+      "RemoteAccessPortHelp": "0 共用 HTTP WebUI 連接埠；HTTPS WebUI 才另用連接埠加一。修改後重新啟動。",
+      "RemoteAccessPublicPort": "直連外部連接埠",
+      "RemoteAccessPublicPortHelp": "0 使用監聽連接埠；路由器映射不同時填寫外部連接埠。",
       "CloudflareRegistryHelp": "用於 Quick Tunnel 註冊、續約與配對的 HTTPS 服務網址。",
       "SSHUser": "SSH 使用者",
       "SSHUserHelp": "遠端存取服務登入使用者名稱，留空時啟動時生成。",

@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 统计页布局文档、卡片显隐与表格选项的持久化测试。
+ */
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { VALID_CATEGORIES } from './statisticsPrefs'
 import type {StatisticsLayout} from './statisticsLayout'
@@ -13,6 +16,7 @@ function memoryStorage() {
   }
 }
 
+// 统一的装载入口：换上新的内存 localStorage 并重新导入模块，布局读写都落在这份隔离存储里，用例之间互不影响。
 async function loadLayout() {
   vi.resetModules()
   vi.stubGlobal('localStorage', memoryStorage())
@@ -181,13 +185,15 @@ describe('统计页卡片顺序', () => {
   it('跨页组合时移位写入组键，而不是卡片自身所在页', async () => {
     const layout = await loadLayout()
     const [head, other] = VALID_CATEGORIES
-    const base = {...DEFAULT_STATISTICS_LAYOUT, pages: [[head, other]]}
-    const keys = [cardKey(head, 'chart'), cardKey(other, 'chart')]
+    expect(head).toBeDefined()
+    expect(other).toBeDefined()
+    const base = {...DEFAULT_STATISTICS_LAYOUT, pages: [[head!, other!]]}
+    const keys = [cardKey(head!, 'chart'), cardKey(other!, 'chart')]
 
-    const moved = layout.placeCard(base, other, keys, cardKey(other, 'chart'), 0)
+    const moved = layout.placeCard(base, other!, keys, cardKey(other!, 'chart'), 0)
 
-    expect(moved.order[head]).toEqual([cardKey(other, 'chart'), cardKey(head, 'chart')])
-    expect(moved.order[other]).toBeUndefined()
+    expect(moved.order[head!]).toEqual([cardKey(other!, 'chart'), cardKey(head!, 'chart')])
+    expect(moved.order[other!]).toBeUndefined()
   })
 
   it('顺序表随文档落盘并能读回', async () => {
@@ -293,8 +299,10 @@ describe('槽位行与页面组合', () => {
     const base = layout.defaultStatisticsLayout()
     const first = VALID_CATEGORIES[0]
     const second = VALID_CATEGORIES[1]
-    const merged = layout.applySlots(base, [[first, second]])
-    expect(merged.pages.filter(chain => chain.includes(first))).toEqual([[first, second]])
+    expect(first).toBeDefined()
+    expect(second).toBeDefined()
+    const merged = layout.applySlots(base, [[first!, second!]])
+    expect(merged.pages.filter(chain => chain.includes(first!))).toEqual([[first!, second!]])
     expect(merged.pages.flat().length).toBe(VALID_CATEGORIES.length)
   })
 
@@ -302,15 +310,20 @@ describe('槽位行与页面组合', () => {
     const layout = await import('./statisticsLayout')
     const base = layout.defaultStatisticsLayout()
     const only = VALID_CATEGORIES[2]
-    const placed = layout.applySlots(base, [[only]])
+    expect(only).toBeDefined()
+    const placed = layout.applySlots(base, [[only!]])
     expect(placed.pages).toEqual(base.pages)
-    expect(placed.slots).toEqual([[only]])
+    expect(placed.slots).toEqual([[only!]])
   })
 
   it('清空槽位行后页面回到各自单独成行', async () => {
     const layout = await import('./statisticsLayout')
     const base = layout.defaultStatisticsLayout()
-    const merged = layout.applySlots(base, [[VALID_CATEGORIES[0], VALID_CATEGORIES[1]]])
+    const first = VALID_CATEGORIES[0]
+    const second = VALID_CATEGORIES[1]
+    expect(first).toBeDefined()
+    expect(second).toBeDefined()
+    const merged = layout.applySlots(base, [[first!, second!]])
     expect(layout.applySlots(merged, []).pages).toEqual(base.pages)
   })
 
@@ -319,8 +332,10 @@ describe('槽位行与页面组合', () => {
     const base = layout.defaultStatisticsLayout()
     const first = VALID_CATEGORIES[1]
     const later = VALID_CATEGORIES[3]
-    const merged = layout.applySlots(base, [[first, later]])
-    expect(merged.pages[1]).toEqual([first, later])
+    expect(first).toBeDefined()
+    expect(later).toBeDefined()
+    const merged = layout.applySlots(base, [[first!, later!]])
+    expect(merged.pages[1]).toEqual([first!, later!])
   })
 
   it('存档里只有一页的槽位行读回来仍是槽位行', async () => {
@@ -331,7 +346,7 @@ describe('槽位行与页面组合', () => {
   })
 })
 
-/* 组合页里中间夹着隐藏卡时，两侧仍应能重新连接：隐藏只断开状态，不禁止连接。 */
+// 组合页里中间夹着隐藏卡时，两侧仍应能重新连接：隐藏只断开状态，不禁止连接。
 describe('组合页与隐藏卡的连接', () => {
   const state = (): StatisticsLayout => ({
     ...DEFAULT_STATISTICS_LAYOUT,

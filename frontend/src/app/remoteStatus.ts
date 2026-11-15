@@ -3,10 +3,10 @@
  */
 
 /** 远程访问状态在界面上的四档归并。 */
-export type RemoteState = 'disabled' | 'starting' | 'ready' | 'failed'
+type RemoteState = 'disabled' | 'starting' | 'ready' | 'failed'
 
 /** 已有可用地址：等待连接、直连、中继、SSH 转发。 */
-const READY = new Set(['waiting_peer', 'direct_p2p', 'turn_relay', 'ssh_forward', 'cloudflare_ready'])
+const READY = new Set(['waiting_peer', 'direct_p2p', 'turn_relay', 'ssh_forward', 'cloudflare_ready', 'direct_ready', 'registered'])
 /** 还在连信令或重连，地址尚未可用。 */
 const STARTING = new Set(['starting', 'signaling', 'reconnecting'])
 

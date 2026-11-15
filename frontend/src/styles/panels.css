@@ -1,0 +1,12 @@
+/* 面板域 —— B1 自 components.css:27-37 保序拆分，规则文本逐字未改 */
+.panel {background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden}
+.panel-heading {padding: 19px 21px; display: flex; align-items: center; justify-content: space-between; gap: 10px}
+.panel-heading > div {display: flex; align-items: center; gap: 10px}
+.panel-heading > div > svg {color: #8596a3}
+.status {font-size: 10px; border-radius: 5px; display: inline-flex; gap: 5px; align-items: center; padding: 4px 7px; font-weight: 450; white-space: nowrap}
+.status i, .tiny-dot {width: 5px; height: 5px; border-radius: 50%; display: inline-block; background: currentColor; flex-shrink: 0}
+.status.running {background: var(--accent-soft); color: var(--accent)}
+.status.stopped {background: #e7edf350; color: #899baa}
+.status.error {background: #c95e6212; color: var(--red)}
+.status.updating {background: #d9b25a16; color: #b2954a}
+.tiny-dot.teal {color: #269a81}

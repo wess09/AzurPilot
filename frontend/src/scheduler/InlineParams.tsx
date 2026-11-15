@@ -1,4 +1,7 @@
-/** 卡片内编辑常用参数与端口一体化呈现；统一端口与内联参数行。 */
+/**
+ * @fileoverview 编辑器卡片的内嵌参数面板：常用参数与输入/输出端口一体化呈现。
+ */
+
 import {memo} from 'react'
 import type {CSSProperties} from 'react'
 import {Handle, Position} from '@xyflow/react'
@@ -7,7 +10,7 @@ import type {UiKey} from '../i18n'
 import type {CardDefinition, Catalog, PortType, ProgramDocument, ProgramNode} from './types'
 import {paramLabels, portColors, typeLabels, wildcardBackground} from './appearance'
 
-export interface InlineParamsProps {
+interface InlineParamsProps {
   card: ProgramNode
   spec: CardDefinition
   catalog: Catalog
@@ -19,7 +22,7 @@ export interface InlineParamsProps {
   onChange: (node: string, patch: Record<string, unknown>) => void
 }
 
-export const fields: Record<string, Array<[string, string]>> = {
+const fields: Record<string, Array<[string, string]>> = {
   resource: [['name', '读取资源'], ['field', '读取数值'], ['maxAge', '有效期（秒）'], ['autoRefresh', '过期时自动刷新']],
   task: [['name', '指定任务']],
   execute: [['task', '执行任务'], ['followOriginal', '检查原计划任务切换']],
@@ -47,6 +50,10 @@ export const fields: Record<string, Array<[string, string]>> = {
 
 const valueTypes = ['number', 'boolean', 'string', 'time', 'duration', 'task', 'tasks', 'resource', 'result', 'list', 'object', 'any']
 
+/**
+ * 卡片下方的内嵌参数面板：纯配置字段逐行编辑，输入/输出端口与内联控件并排。
+ * 端口已连线时对应控件禁用并显示「由连线提供」。
+ */
 export const InlineParams = memo(function InlineParams({
   card,
   spec,
@@ -71,6 +78,7 @@ export const InlineParams = memo(function InlineParams({
   })
   const getHandleStyle = handleStyle ?? defaultHandleStyle
 
+  // 换 valueType 时把 value 重置成新类型的空值：控件按 typeof value 选形态，残留旧形态会渲染出错误控件。
   const update = (key: string, value: unknown) => {
     onChange(card.id, {
       ...{[key]: value},
@@ -92,7 +100,7 @@ export const InlineParams = memo(function InlineParams({
   }
 
   const cardFieldEntries = fields[card.type] ?? []
-  // 区分纯配置项与端口项
+  // 字段表里的键同时也是输入端口名的归端口区渲染，剩下的才是纯配置行。
   const configFields = cardFieldEntries.filter(([key]) => !spec.inputs.some(p => p.name === key))
   const portFieldMap = new Map(cardFieldEntries.filter(([key]) => spec.inputs.some(p => p.name === key)))
 

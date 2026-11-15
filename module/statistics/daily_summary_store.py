@@ -15,6 +15,8 @@ from module.persistence.database import register_instance
 
 DEFAULT_DAILY_SUMMARY_DB = Path('./config/daily_summary.db')
 DAILY_SUMMARY_RETENTION_DAYS = 35
+# 日报是低频写入，允许等待秒级写锁；失败仍由上层标记采集缺口。
+DAILY_SUMMARY_WRITE_TIMEOUT = 2.0
 
 
 class DailySummaryStore:
@@ -36,8 +38,8 @@ class DailySummaryStore:
         return self.store.path
 
     def _connect(self) -> sqlite3.Connection:
-        # 日报保留 50 毫秒锁等待，记录失败时标记采集缺口。
-        return self.store.connect(timeout=0.05)
+        # 写入使用秒级预算；失败仍由上层标记采集缺口，不影响调度。
+        return self.store.connect(timeout=DAILY_SUMMARY_WRITE_TIMEOUT)
 
     def _ensure_tables(self) -> None:
         self.store.ensure_ready()
@@ -77,6 +79,20 @@ class DailySummaryStore:
     ) -> None:
         with self._lock:
             self._pending_degradations.difference_update(persisted)
+
+    def _persist_pending_degradations(self) -> None:
+        """用一次短写事务落盘采集缺口，让后续聚合可以走只读事务。"""
+        with self._lock:
+            pending = set(self._pending_degradations)
+        if not pending:
+            return
+        try:
+            with self._lock, self._connect() as connection:
+                self._flush_pending_degradations(connection)
+        except Exception as error:
+            logger.warning(f'[日报] 写入采集缺口失败，已忽略: {type(error).__name__}')
+            return
+        self._clear_pending_degradations(pending)
 
     def _get_collection_gap(
         self,
@@ -212,8 +228,8 @@ class DailySummaryStore:
             dict[str, Any]: 结构化任务统计结果字典。
         """
         self._ensure_tables()
-        with self._lock, self._connect() as connection:
-            persisted = self._flush_pending_degradations(connection)
+        self._persist_pending_degradations()
+        with self._lock, self.store.transaction(write=False) as connection:
             state = connection.execute(
                 '''
                 SELECT task_tracking_started_at
@@ -250,7 +266,6 @@ class DailySummaryStore:
                         self._serialize_time(end),
                     ),
                 ).fetchall()
-        self._clear_pending_degradations(persisted)
         if tracking_started_at is None or tracking_started_at > self._serialize_time(start) or degraded_at:
             return {
                 'available': False,
@@ -346,8 +361,8 @@ class DailySummaryStore:
             dict[str, Any]: 侵蚀 1 战斗聚合统计字典。
         """
         self._ensure_tables()
-        with self._lock, self._connect() as connection:
-            persisted = self._flush_pending_degradations(connection)
+        self._persist_pending_degradations()
+        with self._lock, self.store.transaction(write=False) as connection:
             state = connection.execute(
                 '''
                 SELECT cl1_tracking_started_at
@@ -376,7 +391,6 @@ class DailySummaryStore:
                        'duration_seconds': sum(r['duration_seconds'] for r in decoded),
                        'first_observed_at': decoded[0]['ts'] if decoded else None,
                        'last_observed_at': decoded[-1]['ts'] if decoded else None}
-        self._clear_pending_degradations(persisted)
         if tracking_started_at is None or tracking_started_at > self._serialize_time(start) or degraded_at:
             return {
                 'start': self._serialize_time(start),
@@ -550,7 +564,7 @@ class DailySummaryStore:
             dict[str, Any] | None: 周期记录字典，不存在返回 None。
         """
         self._ensure_tables()
-        with self._lock, self._connect() as connection:
+        with self._lock, self.store.transaction(write=False) as connection:
             row = connection.execute(
                 '''
                 SELECT * FROM daily_summary_periods

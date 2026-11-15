@@ -2,7 +2,7 @@
  * @fileoverview 模拟器画面监控与截图捕获面板组件。
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { Download, Image, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { LogEntry, Logs as LogsData, Preview } from '../api/types'
@@ -14,21 +14,42 @@ import { SegmentedControl } from './SegmentedControl'
 /** 截图视图顶部展示的日志条数，够看清当前进度即可，再多会挤掉画面。 */
 export const RECENT_LOG_LINES = 3
 
-interface CompactLine {id: number; level: string; time: string; text: string}
+/** 监控视图的单行日志摘要。 */
+export interface CompactLine {
+  /** 来源日志条目 id，用于去重与合并。 */
+  id: number
+  /** 小写等级。 */
+  level: string
+  /** 时间文本；分割线摘要没有时间，为空串。 */
+  time: string
+  /** 摘要正文或分割线标题。 */
+  text: string
+}
 
-// 把一条渲染后的日志压成单行摘要。纯分割线没有信息量，返回 null 由调用方丢弃。
+/**
+ * 把一条渲染后的日志压成单行摘要。
+ *
+ * 纯分割线没有信息量，返回 null 由调用方丢弃。
+ */
 export function compactLine(entry: LogEntry): CompactLine | null {
   const raw = entry.text.replace(/[\r\n]+/g, ' ').trim()
   if (!raw || PURE_RULE_RE.test(raw)) return null
   const rule = RULE_RE.exec(raw)
-  if (rule) return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: rule[1]}
+  const ruleTitle = rule?.[1]
+  if (rule && ruleTitle !== undefined) return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: ruleTitle}
   const log = LOG_LINE_RE.exec(raw)
-  if (log) return {id: entry.id, level: log[1].toLowerCase(), time: `${log[2] ? `${log[2]} ` : ''}${log[3]}`, text: log[4]}
+  const level = log?.[1]
+  const date = log?.[2]
+  const time = log?.[3]
+  const message = log?.[4]
+  if (log && level !== undefined && time !== undefined && message !== undefined) {
+    return {id: entry.id, level: level.toLowerCase(), time: `${date ? `${date} ` : ''}${time}`, text: message}
+  }
   // Traceback 等原始行格式不固定，整体折成一行。
   return {id: entry.id, level: entry.level.toLowerCase(), time: '', text: raw}
 }
 
-// 按 id 合并增量，服务端重置游标时整体替换，最后只保留尾部若干条。
+/** 按 id 合并增量，服务端重置游标时整体替换，最后只保留尾部若干条。 */
 export function mergeLines(previous: CompactLine[], entries: (LogEntry | CompactLine)[], reset: boolean): CompactLine[] {
   const byId = new Map((reset ? [] : previous).map(line => [line.id, line]))
   entries.forEach(entry => {
@@ -94,8 +115,15 @@ function RecentLogs({instance}: {instance: string}) {
   </div>
 }
 
-/** actions：紧凑主题把实例设置按钮挂到工具栏右侧。 */
-export function MonitorPanel({instance, actions}: {instance: string; actions?: ReactNode}) {
+/**
+ * 监控面板：日志视图与截图视图二选一。
+ *
+ * 切到截图视图才开启预览流，离开视图或卸载即关闭；截图顶部常驻最近几条日志，
+ * 画面占满面板时仍能看清当前进度。
+ *
+ * @param instance 目标实例名，预览事件与日志订阅都按它过滤。
+ */
+export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: string}) {
   const [view, setView] = useState('logs')
   const [frame, setFrame] = useState<Preview>()
   const {setPreviewEnabled, ui} = useApp()
@@ -111,13 +139,12 @@ export function MonitorPanel({instance, actions}: {instance: string; actions?: R
       {value: 'logs', label: <><Terminal size={15}/>{ui('monitor.logs')}</>},
       {value: 'preview', label: <><Image size={15}/>{ui('monitor.preview')}</>},
     ]}/>
-    {actions}
     {view === 'preview' && frame?.image && <a className="text-button" href={frame.image} download={`${instance}-screenshot.jpg`}><Download size={14}/>{ui('monitor.saveScreenshot')}</a>}
   </div>
     <div className="monitor-view" hidden={view !== 'logs'}><LogPanel active={view === 'logs'}/></div>
     <div className="monitor-view" hidden={view !== 'preview'}>
-      <RecentLogs instance={instance}/>
+      {view === 'preview' && <RecentLogs instance={instance}/>}
       <div className="preview-stage"><div className="preview-screen">{frame?.image ? <img src={frame.image} alt={ui('monitor.screenshotAlt')}/> : <Empty icon={<Image size={42}/>} title={ui('monitor.waitingScreenshot')}>{ui('monitor.screenshotHint')}</Empty>}</div></div>
     </div>
   </section>
-}
+})

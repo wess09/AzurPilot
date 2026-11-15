@@ -1,3 +1,7 @@
+/**
+ * @fileoverview AFA 远程配对全流程用例：真实交互完成配对，并在多视口做滚轮巡检、审计数据落盘出报告。
+ */
+
 import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -11,7 +15,7 @@ const VIEWPORTS = [
   { name: '360x640-small-mobile', width: 360, height: 640 },
 ]
 
-export interface AuditRecord {
+interface AuditRecord {
   viewport: string
   width: number
   height: number

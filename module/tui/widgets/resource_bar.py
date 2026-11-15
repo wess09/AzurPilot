@@ -9,6 +9,17 @@ from textual.widget import Widget
 from textual.widgets import Label
 
 
+def format_value(value: Any) -> str:
+    """把资源数值格式化成便于阅读的文本。"""
+    if isinstance(value, bool) or value is None:
+        return "-"
+    if isinstance(value, int):
+        return f"{value:,}"
+    if isinstance(value, float):
+        return f"{value:,.1f}" if not value.is_integer() else f"{int(value):,}"
+    return str(value)
+
+
 class ResourceBar(Widget):
     """游戏与大世界资源状态条。"""
 
@@ -24,38 +35,41 @@ class ResourceBar(Widget):
         height: 100%;
         align: left middle;
     }
-    .res-item {
-        margin-right: 3;
+    #res-summary {
+        width: 100%;
+        text-wrap: nowrap;
+        text-overflow: ellipsis;
     }
     """
-
-    def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
 
     def compose(self) -> ComposeResult:
         with Horizontal(id="resource-container"):
             yield Label("📊 资源看板: 暂无数据", id="res-summary")
 
     def update_resources(self, resources: List[Dict[str, Any]]) -> None:
-        """更新资源统计数据。"""
-        summary_label = self.query_one("#res-summary", Label)
-        if not resources:
+        """更新资源统计数据，忽略没有数值的条目。"""
+        try:
+            summary_label = self.query_one("#res-summary", Label)
+        except Exception:
+            return
+
+        items = [res for res in resources if res.get("value") is not None]
+        if not items:
             summary_label.update(Text("📊 资源看板: 暂无统计数据", style="dim"))
             return
 
         res_text = Text()
         res_text.append("📊 资源: ", style="bold cyan")
-        for idx, res in enumerate(resources):
+        for idx, res in enumerate(items):
             label = res.get("label") or res.get("name", "")
-            val = res.get("value")
+            value = format_value(res.get("value"))
             limit = res.get("limit")
-            val_str = str(val) if val is not None else "-"
             if limit is not None:
-                val_str += f"/{limit}"
+                value += f"/{format_value(limit)}"
 
             res_text.append(f"{label}: ", style="dim")
-            res_text.append(f"{val_str}", style="bold cyan")
-            if idx < len(resources) - 1:
+            res_text.append(value, style="bold cyan")
+            if idx < len(items) - 1:
                 res_text.append("  │  ", style="dim")
 
         summary_label.update(res_text)

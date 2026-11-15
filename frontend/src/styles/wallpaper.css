@@ -1,0 +1,9 @@
+/* 壁纸域 —— B1 自 components.css:1-8 保序拆分，规则文本逐字未改 */
+/* 壁纸层的定位与铺法：外壳级规则，所有皮肤共用（材质皮肤另有淡入动画） */
+/* 让壁纸层（z-index: -1）留在 #root 的层叠上下文里：否则它会被画布底色盖住，只有材质皮肤看得见 */
+#root {isolation: isolate}
+.wallpaper {position: fixed; inset: 0; z-index: -1; pointer-events: none; background: none; overflow: hidden}
+.wallpaper img, .wallpaper video {position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover}
+.wallpaper-media {opacity: 1; backface-visibility: hidden; transform: translateZ(0)}
+.wallpaper-media.wallpaper-hidden {opacity: 0}
+

@@ -13,12 +13,13 @@ from pydantic import ValidationError
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from module.api.protocol import ApiError, AuthParams, LauncherTicketParams, Request, SubscribeParams, failure, response
+from module.api.ws_transport import DATA_TOPICS, FRAME_BYTES, REQUEST_BYTES, RESPONSE_BYTES, frames, receive
 from module.logger import logger
 from module.runtime.password_utils import REMOTE_ACCESS_HEADER, is_local_client
 from module.runtime.launcher import is_local_request
 
 # 重主题仍按各自节奏采样；日志由 worker 队列逐条到达事件直接唤醒。
-TOPIC_INTERVAL = {'overview': 1, 'instances': 2, 'launcher': 1}
+TOPIC_INTERVAL = {'overview': 1, 'instances': 2, 'launcher': 1, 'plugins': 2}
 TICK = min(TOPIC_INTERVAL.values())
 
 
@@ -47,7 +48,9 @@ class Gateway:
         if self.router is not None:
             self.router.access_password = self.password
         self.connections = 0
+        self.data_connections = 0
         self.workers = asyncio.Semaphore(8)
+        self.data_workers = asyncio.Semaphore(4)
         self.failures = OrderedDict()
 
     async def endpoint(self, ws: WebSocket):
@@ -65,14 +68,21 @@ class Gateway:
             if parsed.scheme not in ('http', 'https') or parsed.netloc != ws.headers.get('host'):
                 await ws.close(code=1008)
                 return
-        if self.connections >= 32:
+        channel = ws.query_params.get('channel')
+        if channel not in (None, 'control', 'data'):
+            await ws.close(code=1008)
+            return
+        is_data = channel == 'data'
+        if self.connections >= 32 or is_data and self.data_connections >= 16:
             await ws.close(code=1013)
             return
         self.connections += 1
+        self.data_connections += is_data
         try:
-            await Session(self, ws, self.is_local(ws)).run()
+            await Session(self, ws, self.is_local(ws), channel).run()
         finally:
             self.connections -= 1
+            self.data_connections -= is_data
 
     @staticmethod
     def is_local(ws: WebSocket) -> bool:
@@ -151,7 +161,7 @@ class Session:
         preview_pending: 待发送的最新的预览帧数据。
     """
 
-    def __init__(self, gateway: Gateway, ws: WebSocket, local: bool = False):
+    def __init__(self, gateway: Gateway, ws: WebSocket, local: bool = False, channel=None):
         """初始化 WebSocket 会话。
 
         Args:
@@ -160,6 +170,7 @@ class Session:
             local: 是否为本机免密直连。
         """
         self.gateway, self.ws = gateway, ws
+        self.channel = channel
         self.authorized = local or not bool(gateway.password)
         self.paired_token = ''
         self.queue = asyncio.Queue(maxsize=32)
@@ -179,6 +190,10 @@ class Session:
         self.stock_update = {}
         self.notification_changed = asyncio.Event()
         self.notification_pending: list[dict] = []
+
+    @property
+    def workers(self):
+        return self.gateway.data_workers if self.channel == 'data' else self.gateway.workers
 
     async def enqueue(self, message: dict):
         """将消息放入发送队列，遇到慢客户端时主动断开连接以实现背压保护。
@@ -222,20 +237,43 @@ class Session:
             if message.get('type') == 'event':
                 self.sequence += 1
                 message['seq'] = self.sequence
-            await asyncio.wait_for(self.ws.send_json(message), timeout=10)
+            if self.channel is None:
+                await asyncio.wait_for(self.ws.send_json(message), timeout=10)
+                continue
+            payload = await asyncio.to_thread(self.encode, message)
+            if len(payload) > RESPONSE_BYTES:
+                if message['type'] != 'response':
+                    await self.ws.close(code=1009)
+                    raise WebSocketDisconnect(1009)
+                payload = self.encode(failure(message['id'], ApiError(
+                    'MESSAGE_TOO_LARGE', '响应超过 64 MiB 限制，请缩小查询范围')))
+            async with asyncio.timeout(10):
+                if len(payload) <= FRAME_BYTES:
+                    await self.ws.send_text(payload.decode())
+                else:
+                    for part in frames(payload):
+                        await self.ws.send_bytes(part)
+                        await asyncio.sleep(0)
+
+    @staticmethod
+    def encode(message):
+        return json.dumps(message, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode()
 
     async def run(self):
         """启动会话主生命周期，协调读写协程与数据生产者的并发运行。"""
         await self.ws.accept()
         writer = asyncio.create_task(self.writer())
-        producer = asyncio.create_task(self.producer())
         reader = asyncio.create_task(self.reader())
-        logs = asyncio.create_task(self.log_producer())
-        preview = asyncio.create_task(self.preview_producer())
-        stock = asyncio.create_task(self.stock_producer())
-        notifications = asyncio.create_task(self.notification_producer())
-        await self.event('session', {'authRequired': not self.authorized, 'protocolVersion': 1})
-        tasks = [writer, producer, reader, logs, preview, stock, notifications]
+        tasks = [writer, reader]
+        if self.channel != 'data':
+            tasks.extend(asyncio.create_task(producer()) for producer in (
+                self.producer, self.stock_producer, self.notification_producer))
+        if self.channel != 'control':
+            tasks.extend(asyncio.create_task(producer()) for producer in (self.log_producer, self.preview_producer))
+        session = {'authRequired': not self.authorized, 'protocolVersion': 1}
+        if self.channel is not None:
+            session['channel'] = self.channel
+        await self.event('session', session)
         try:
             done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             for task in done:
@@ -255,18 +293,22 @@ class Session:
     async def reader(self):
         """消息读取与分发协程，持续解析客户端请求并入队响应。"""
         while True:
-            raw = await asyncio.wait_for(self.ws.receive_text(), timeout=60 if self.authorized else 30)
+            raw = await asyncio.wait_for(receive(self.ws, self.channel is not None),
+                                         timeout=60 if self.authorized else 30)
             request_id = None
             decoded = None
             try:
-                size = len(raw.encode())
-                if size > 8 * 1024 * 1024:
+                size = len(raw)
+                if size > REQUEST_BYTES:
                     raise ApiError('INVALID_REQUEST', '请求超过 8 MiB 限制')
                 now = time.monotonic()
                 if now - self.window > 1:
                     self.window, self.requests = now, 0
                 self.requests += 1
-                decoded = json.loads(raw)
+                if size > FRAME_BYTES:
+                    decoded = await asyncio.to_thread(json.loads, raw)
+                else:
+                    decoded = json.loads(raw)
                 if isinstance(decoded, dict) and isinstance(decoded.get('id'), str):
                     request_id = decoded['id'][:100]
                 request = Request.model_validate(decoded)
@@ -282,6 +324,8 @@ class Session:
                 if request_id in self.responses:
                     raise ApiError('DUPLICATE_REQUEST', '请求 ID 已使用，请检查状态后使用新 ID')
                 if request.method == 'auth.launcher':
+                    if self.channel == 'data':
+                        raise ApiError('WRONG_CHANNEL', '启动器票据请在操作通道使用')
                     params = LauncherTicketParams.model_validate(request.params)
                     if not is_local_request(self.ws) or not self.gateway.router.launcher.trust.consume(params.ticket):
                         raise ApiError('UNAUTHORIZED', '启动器登录票据无效或已使用')
@@ -302,9 +346,13 @@ class Session:
                     raise ApiError('UNAUTHORIZED', '请先登录')
                 elif request.method == 'events.subscribe':
                     subscription = SubscribeParams.model_validate(request.params)
+                    if self.channel is not None and any(
+                        (topic in DATA_TOPICS) != (self.channel == 'data') for topic in subscription.topics
+                    ):
+                        raise ApiError('WRONG_CHANNEL', '请在对应的 WebSocket 通道订阅')
                     if 'launcher' in subscription.topics and not is_local_request(self.ws):
                         raise ApiError('LOCAL_ONLY', '启动器状态只允许本机读取')
-                    if any(topic not in ('instances', 'notifications', 'launcher') for topic in subscription.topics):
+                    if any(topic not in ('instances', 'notifications', 'launcher', 'plugins') for topic in subscription.topics):
                         self.gateway.router.configs.path(subscription.instance)
                     self.subscription = subscription
                     self.cache.clear()
@@ -316,7 +364,15 @@ class Session:
                     self.stock_changed.set()
                     result = {'topics': subscription.topics, 'instance': subscription.instance}
                 else:
-                    async with self.gateway.workers:
+                    if self.channel is not None and request.method != 'system.ping':
+                        method = self.gateway.router.methods.get(request.method)
+                        if self.channel == 'data':
+                            wrong_channel = method is None or method.mutates or not method.data_channel
+                        else:
+                            wrong_channel = method is not None and method.data_channel
+                        if wrong_channel:
+                            raise ApiError('WRONG_CHANNEL', '请在对应的 WebSocket 通道调用此方法')
+                    async with self.workers:
                         result = await asyncio.to_thread(self.gateway.router.dispatch, request.method, request.params,
                                                          local=is_local_request(self.ws))
                 reply = response(request_id, result)
@@ -359,9 +415,11 @@ class Session:
                         action = runtime.instances
                     elif topic == 'launcher':
                         action = self.gateway.router.launcher.status
+                    elif topic == 'plugins':
+                        action = self.gateway.router.plugins.list
                     elif topic == 'overview':
                         action = lambda: runtime.overview(subscription.instance)
-                    async with self.gateway.workers:
+                    async with self.workers:
                         data = await asyncio.to_thread(action)
                     # 用户切换实例期间完成的旧结果不允许覆盖新工作区。
                     if subscription is not self.subscription:
@@ -460,7 +518,7 @@ class Session:
                     continue
                 initial = not self.logs_initialized
                 try:
-                    async with self.gateway.workers:
+                    async with self.workers:
                         data = await asyncio.to_thread(
                             self.gateway.router.runtime.logs, subscription.instance, self.log_cursor
                         )

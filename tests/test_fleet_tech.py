@@ -160,7 +160,7 @@ class FleetTechTests(unittest.TestCase):
             runner._close_search = lambda: None
             stack.enter_context(patch('module.retire.enhancement.OCR_DOCK_AMOUNT.ocr', return_value=(1, 0, 1)))
             runner.ui_ensure = runner.dock_reset = runner.dock_sort_method_dsc_set = lambda *args: None
-            runner.appear = lambda button, *args: button is DOCK_SEARCH_CLOSED
+            runner.appear = lambda button, *args, **kwargs: button is DOCK_SEARCH_CLOSED
 
             def scan(*args):
                 service = FleetTechService(configs)

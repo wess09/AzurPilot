@@ -12,11 +12,12 @@ _local = threading.local()
 
 
 @contextmanager
-def config_transaction(path):
+def config_transaction(path, *, timeout=15):
     """对同一个配置文件串行化读改写；进程退出时操作系统自动释放锁。
 
     Args:
         path (str | Path): 配置文件路径。
+        timeout (float): 等待进程间文件锁的秒数。
 
     Yields:
         None: 获得文件锁后进入上下文。
@@ -38,7 +39,7 @@ def config_transaction(path):
             if file.tell() == 0:
                 file.write(b'0')
                 file.flush()
-            deadline = time.monotonic() + 15
+            deadline = time.monotonic() + timeout
             while True:
                 try:
                     file.seek(0)

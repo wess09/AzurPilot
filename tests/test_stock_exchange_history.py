@@ -16,6 +16,7 @@ from module.api.stock_exchange_history import ActionHistory, SHANGHAI, history_p
 from module.api.stock_exchange_identity import binding_key, load_identity, make_instance_request
 from module.api.stock_exchange_service import StockExchangeService
 from module.scheduler.store import ProgramStore
+from module.persistence.database import close_all
 
 
 class HistoryTests(unittest.TestCase):
@@ -23,6 +24,7 @@ class HistoryTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = (Path(self.temp.name) / 'project').resolve()
+        self.addCleanup(close_all, self.root / 'config')
         (self.root / 'config').mkdir(parents=True)
         (self.root / 'config' / 'test.json').write_text(json.dumps({'Alas': {}}), encoding='utf-8')
         self.store = ProgramStore(self.root / 'config')

@@ -1,0 +1,51 @@
+/* 海图网格域 —— B1 自 components.css:118-167 保序拆分，规则文本逐字未改（25 色单元格） */
+/* 海图网格卡片 */
+.map-grid-viewport {overflow-x: auto; max-width: 100%; padding-bottom: 4px}
+.map-ascii-table {border-collapse: collapse; font-family: var(--theme-font-mono); font-size: 11px; line-height: 1}
+.map-th-col {text-align: center; width: 28px; min-width: 28px; max-width: 28px; color: var(--muted); padding: 4px 0; font-weight: 600}
+.map-th-corner {width: 24px; color: var(--muted); text-align: right; padding-right: 6px}
+.map-td-row {color: var(--muted); text-align: right; padding-right: 6px; font-size: 10px; font-weight: 500}
+.map-td-cell {text-align: center; padding: 0; line-height: 0; border: none}
+.map-badge {display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 0; font-size: 11px; font-weight: 600; text-align: center; cursor: default; user-select: none; box-sizing: border-box; border: none}
+.cell-icon-wrap {display: inline-flex; align-items: center; justify-content: center; position: relative}
+.cell-sub-star {font-size: 8px; font-weight: 800; margin-left: 1px; font-family: var(--theme-font-mono); line-height: 1}
+.cell-blind-dots {font-weight: 700; letter-spacing: 1px; font-size: 11px; opacity: 0.4}
+
+.cell-fleet-1 {background: #0284c7; color: #fff}
+.cell-fleet-2 {background: #0891b2; color: #fff}
+.cell-submarine {background: #4f46e5; color: #fff}
+.cell-boss {background: #d97706; color: #fff; font-weight: 700}
+.cell-enemy {background: #dc2626; color: #fff}
+.cell-mystery {background: #059669; color: #fff}
+.cell-ammo {background: #ca8a04; color: #fff}
+.cell-land {background: #ef4444; color: #fff}
+.cell-sea {background: #0284c730; color: #38bdf8}
+.cell-cleared {background: #0284c718; color: #38bdf8; opacity: 0.7}
+.cell-caught {background: #b91c1c; color: #fff}
+.cell-akashi {background: #15803d; color: #dcfce7}
+.cell-resource {background: #16a34a; color: #fff}
+.cell-event {background: #eab308; color: #000}
+.cell-meowfficer {background: #06b6d4; color: #fff}
+.cell-question {background: #6366f1; color: #fff}
+.cell-device {background: #8b5cf6; color: #fff}
+.cell-archive {background: #6366f1; color: #fff}
+.cell-port {background: #0284c7; color: #fff}
+.cell-fortress {background: #ef4444; color: #fff}
+.cell-missile {background: #f97316; color: #fff}
+.cell-blind {background: var(--surface-muted); color: var(--muted); opacity: 0.4}
+.cell-default {background: var(--surface-muted); color: var(--text)}
+
+.map-legend-bar {display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; padding-top: 6px; border-top: 1px solid var(--border); font-size: 10px; color: var(--muted)}
+.legend-item {display: inline-flex; align-items: center; gap: 4px}
+.legend-icon {display: inline-block; vertical-align: middle}
+.text-fleet {color: #0284c7}
+.text-boss {color: #d97706}
+.text-enemy {color: #dc2626}
+.text-mystery {color: #059669}
+.text-meowfficer {color: #06b6d4}
+.text-event {color: #eab308}
+.text-device {color: #8b5cf6}
+.text-impassable {color: #ef4444}
+.legend-dot {width: 8px; height: 8px; border-radius: 2px; display: inline-block; margin-right: 4px}
+.dot-sea {background: #0284c730; border: 1px solid #38bdf8; box-sizing: border-box}
+

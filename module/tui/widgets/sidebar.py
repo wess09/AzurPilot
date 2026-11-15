@@ -1,19 +1,30 @@
 """TUI 侧边栏组件。
 
-包含实例列表选择与核心生命周期操作按钮。
+包含实例列表选择与核心生命周期操作按钮。实例列表只在名称或运行状态变化时
+重建，避免每秒刷新打断用户的方向键浏览。
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
+from rich.text import Text
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import ScrollableContainer
 from textual.message import Message
-from textual.widget import Widget
 from textual.widgets import Button, Label, OptionList
 from textual.widgets.option_list import Option
 
+# 状态 → (符号, 颜色)，使用通用符号，避免旧终端无法渲染 emoji。
+STATUS_STYLE = {
+    "running": ("●", "bold green"),
+    "error": ("●", "bold red"),
+    "updating": ("◐", "bold yellow"),
+    "stopped": ("○", "dim white"),
+}
 
-class Sidebar(Widget):
+ACTION_BUTTON_IDS = ("btn-config", "btn-task", "btn-refresh")
+
+
+class Sidebar(ScrollableContainer):
     """侧边栏面板。"""
 
     DEFAULT_CSS = """
@@ -23,6 +34,8 @@ class Sidebar(Widget):
         background: $panel;
         border-right: solid $primary-darken-2;
         padding: 0 1;
+        overflow-y: auto;
+        scrollbar-size-vertical: 1;
     }
     #instances-title {
         text-style: bold;
@@ -31,7 +44,9 @@ class Sidebar(Widget):
         margin-bottom: 0;
     }
     #instance-list {
-        height: 10;
+        height: auto;
+        max-height: 8;
+        min-height: 3;
         background: $surface;
         border: solid $primary-darken-3;
         margin-bottom: 1;
@@ -40,16 +55,18 @@ class Sidebar(Widget):
         text-style: bold;
         color: $accent;
         margin-top: 1;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
     .action-btn {
         width: 100%;
-        margin-bottom: 1;
+        margin-bottom: 0;
     }
     #hint-label {
         color: $text-muted;
         margin-top: 1;
         text-align: center;
+        text-wrap: wrap;
+        height: auto;
     }
     """
 
@@ -71,60 +88,109 @@ class Sidebar(Widget):
         super().__init__(**kwargs)
         self.instance_names: List[str] = []
         self.current_selected: str = ""
+        self._signature: Optional[tuple] = None
 
     def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Label("📁 配置实例 (1-9)", id="instances-title")
-            yield OptionList(id="instance-list")
-            yield Label("⚡ 快捷操作", id="actions-title")
-            yield Button("▶ 启动调度器", id="btn-start", variant="success", classes="action-btn")
-            yield Button("⏹ 停止运行", id="btn-stop", variant="error", classes="action-btn")
-            yield Button("⚙ 功能配置 [C]", id="btn-config", variant="primary", classes="action-btn")
-            yield Button("🎯 单任务执行", id="btn-task", variant="default", classes="action-btn")
-            yield Button("🔄 刷新状态", id="btn-refresh", variant="default", classes="action-btn")
-            yield Label("[Space] 启动/停止\n[C] 配置  [E] 编辑任务\n[Enter] 开关任务", id="hint-label")
+        yield Label("📁 配置实例 (1-9)", id="instances-title")
+        yield OptionList(id="instance-list")
+        yield Label("⚡ 快捷操作", id="actions-title")
+        # Text 不会被当作 Rich markup 解析，方括号提示才能原样显示。
+        yield Button(Text("▶ 启动调度器"), id="btn-start", variant="success", classes="action-btn")
+        yield Button(Text("⏹ 停止运行"), id="btn-stop", variant="error", classes="action-btn")
+        yield Button(Text("⚙ 功能配置 [C]"), id="btn-config", variant="primary", classes="action-btn")
+        yield Button(Text("🎯 单任务执行 [T]"), id="btn-task", variant="default", classes="action-btn")
+        yield Button(Text("🔄 刷新状态 [R]"), id="btn-refresh", variant="default", classes="action-btn")
+        yield Label(
+            "Space 启停  C 配置\nE 编辑  ? 帮助\nEnter 开关任务  R 刷新",
+            id="hint-label",
+            markup=False,
+        )
+
+    @staticmethod
+    def _option_label(index: int, instance: Dict[str, Any]) -> Text:
+        """构造带状态色点的实例选项。"""
+        status = instance.get("status", "stopped")
+        symbol, style = STATUS_STYLE.get(status, STATUS_STYLE["stopped"])
+        name = str(instance.get("name", ""))
+        label = Text()
+        label.append(f"{index + 1}. ")
+        label.append(f"{symbol} ", style=style)
+        label.append(name)
+        if status == "running":
+            task = instance.get("currentTask")
+            if task:
+                label.append(f"  {task}", style="dim")
+        return label
 
     def update_instances(self, instances: List[Dict[str, Any]], current: str) -> None:
-        """更新实例列表。"""
-        self.instance_names = [inst["name"] for inst in instances]
-        self.current_selected = current
+        """更新实例列表，仅在内容变化时重建选项。"""
+        signature = tuple((inst.get("name"), inst.get("status"), inst.get("currentTask")) for inst in instances)
         option_list = self.query_one("#instance-list", OptionList)
-        option_list.clear_options()
+        current_changed = current != self.current_selected
+        self.current_selected = current
 
-        current_idx = 0
-        for idx, inst in enumerate(instances):
-            name = inst["name"]
-            status = inst.get("status", "stopped")
-            if status == "running":
-                icon = "🟢"
-            elif status == "error":
-                icon = "🔴"
-            elif status == "updating":
-                icon = "🔄"
-            else:
-                icon = "⚪"
-            label = f"{idx + 1}. {icon} {name}"
-            option_list.add_option(Option(prompt=label, id=name))
-            if name == current:
-                current_idx = idx
+        if signature == self._signature and not current_changed:
+            return
 
-        if self.instance_names and current_idx < len(self.instance_names):
-            option_list.highlighted = current_idx
+        highlighted_id = self._highlighted_id(option_list)
+        previous_names = self.instance_names
+        self.instance_names = [str(inst.get("name", "")) for inst in instances]
 
-    def update_button_states(self, is_running: bool) -> None:
-        """根据当前运行状态更新按钮文案与可用性。"""
-        start_btn = self.query_one("#btn-start", Button)
-        stop_btn = self.query_one("#btn-stop", Button)
-        if is_running:
-            start_btn.disabled = True
-            stop_btn.disabled = False
+        if self.instance_names != previous_names:
+            option_list.clear_options()
+            option_list.add_options([
+                Option(prompt=self._option_label(index, inst), id=self.instance_names[index])
+                for index, inst in enumerate(instances)
+            ])
+        elif signature != self._signature:
+            # 实例集合不变时原地更新 prompt，保留用户当前高亮位置。
+            for index, inst in enumerate(instances):
+                option_list.replace_option_prompt_at_index(index, self._option_label(index, inst))
+
+        self._signature = signature
+
+        if not self.instance_names:
+            return
+        # 通过数字键或外部切换实例时，把高亮同步到当前实例。
+        if current_changed:
+            preferred = current if current in self.instance_names else self.instance_names[0]
+        elif highlighted_id in self.instance_names:
+            preferred = highlighted_id
         else:
-            start_btn.disabled = False
-            stop_btn.disabled = True
+            preferred = self.instance_names[0]
+
+        index = self.instance_names.index(preferred)
+        if option_list.highlighted != index:
+            option_list.highlighted = index
+
+    @staticmethod
+    def _highlighted_id(option_list: OptionList) -> Optional[str]:
+        """读取当前高亮选项 ID，读取失败时返回 None。"""
+        try:
+            index = option_list.highlighted
+            if index is not None and 0 <= index < option_list.option_count:
+                option = option_list.get_option_at_index(index)
+                return str(option.id) if option.id is not None else None
+        except Exception:
+            pass
+        return None
+
+    def update_button_states(self, is_running: bool, busy: bool = False) -> None:
+        """根据运行状态与忙碌态更新按钮可用性。"""
+        try:
+            start_btn = self.query_one("#btn-start", Button)
+            stop_btn = self.query_one("#btn-stop", Button)
+            start_btn.disabled = busy or is_running
+            stop_btn.disabled = busy or not is_running
+            for button_id in ACTION_BUTTON_IDS:
+                self.query_one(f"#{button_id}", Button).disabled = busy
+        except Exception:
+            # 界面尚未挂载完成时忽略。
+            pass
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         """实例列表选项被选中时触发。"""
-        if event.option_id and event.option_id != self.current_selected:
+        if event.option_id and str(event.option_id) != self.current_selected:
             self.current_selected = str(event.option_id)
             self.post_message(self.InstanceSelected(self.current_selected))
 

@@ -1,5 +1,10 @@
+/**
+ * @fileoverview Vite 配置：dev 代理指向本机后端（mock 模式指向 mock 服务），构建产物用相对 base 以适配远程反代。
+ */
+
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig(({mode}) => {
   const backend = mode === 'mock' ? `http://127.0.0.1:${process.env.AZURPILOT_MOCK_PORT ?? 22392}` : process.env.AZURPILOT_BACKEND ?? 'http://127.0.0.1:22267'
@@ -9,7 +14,7 @@ export default defineConfig(({mode}) => {
     // 配套要求：deploy.yaml 的 RemoteAccessMode 必须为 ssh——P2P 模式下 <script src>
     // 不经过隧道页面的 fetch 接管，静态资源无论如何都拿不到。
     base: './',
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
     server: {
       port: 5173,
       strictPort: true,
@@ -25,11 +30,18 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
-      sourcemap: false,
-      // 主题通过 ?inline 作为文本注入，保留规则与声明的原始顺序及语法，
-      // 避免生产构建额外执行 Lightning CSS 压缩、合并和语法转换。
-      // 仅关闭 CSS 压缩，JavaScript 继续使用默认生产优化。
-      cssMinify: false,
+      minify: 'oxc',
+      cssMinify: 'lightningcss',
+      rolldownOptions: {
+        output: {
+          codeSplitting: {
+            groups: [{
+              name: 'react-runtime',
+              test: /[/\\]node_modules[/\\](?:react|react-dom|react-router|react-router-dom|scheduler)[/\\]/,
+            }],
+          },
+        },
+      },
     },
   }
 })

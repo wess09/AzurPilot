@@ -1,7 +1,18 @@
-"""凭证快照的抽稀边界：近 3 天逐条，更早每小时只留末条。"""
+"""凭证与黄币快照的抽稀边界：近期逐条，更早每小时只留末条。"""
 from datetime import datetime, timedelta
+import tempfile
+import unittest
+from pathlib import Path
 
-from module.statistics.cl1_database import COINS_EXACT_DAYS, thin_coins_snapshots
+from module.persistence.database import close_all
+from module.statistics.cl1_database import Cl1Database
+
+from module.statistics.cl1_database import (
+    COINS_EXACT_DAYS,
+    YELLOW_COIN_EXACT_HOURS,
+    thin_coins_snapshots,
+    thin_yellow_coin_snapshots,
+)
 
 
 def _at(days_ago: int, hour: int, minute: int) -> dict:
@@ -32,3 +43,85 @@ def test_thin_coins_snapshots_stays_bounded_for_repeated_hours():
 
     assert len(kept) == 1
     assert kept[0]['yellow_coins'] == '30d09:55'
+
+
+def test_thin_yellow_coin_snapshots_keeps_recent_hours():
+    now = datetime.now()
+    recent = [{'ts': (now - timedelta(minutes=minute)).isoformat(), 'yellow_coin': minute} for minute in (1, 2, 3)]
+    older = [
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 1)).replace(minute=5).isoformat(), 'yellow_coin': 5},
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 1)).replace(minute=55).isoformat(), 'yellow_coin': 55},
+        {'ts': (now - timedelta(hours=YELLOW_COIN_EXACT_HOURS + 2)).replace(minute=30).isoformat(), 'yellow_coin': 30},
+    ]
+
+    kept = thin_yellow_coin_snapshots(recent + older)
+
+    assert [item['yellow_coin'] for item in kept] == [30, 55, 3, 2, 1]
+
+
+class IncrementalYellowCoinThinningTests(unittest.TestCase):
+    def test_incremental_append_thinning_matches_document_path(self):
+        """增量追加的 SQL 抽稀结果必须与文档路径的 thin_snapshots 一致。"""
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        db = Cl1Database(Path(directory.name) / 'config' / 'azurpilot.db')
+        self.addCleanup(close_all)
+        now = datetime.now()
+        month = now.strftime('%Y-%m')
+        # 乱序插入跨三个历史小时，覆盖「按时间排序取每小时末条」的等价性。
+        seeded = [
+            {'ts': (now - timedelta(hours=hours, minutes=minute)).isoformat(),
+             'yellow_coin': hours * 100 + minute, 'source': 't'}
+            for hours in (9, 8, 7) for minute in (40, 10, 25)
+        ]
+        db.save_stats('t', month, {'yellow_coin_snapshots': seeded})
+        db.add_yellow_coin_snapshot('t', 99, source='t', observed_at=now)
+        db.add_yellow_coin_snapshot('t', 99, source='t', observed_at=now)
+        expected = thin_yellow_coin_snapshots(
+            seeded + [{'ts': now.isoformat(), 'yellow_coin': 99, 'source': 't'}])
+        # 存活集合必须一致；增量路径保持插入序，不承担文档路径写后的 ts 重排。
+        actual = db.get_stats('t', month)['yellow_coin_snapshots']
+        by_ts = lambda item: item['ts']
+        self.assertEqual(sorted(actual, key=by_ts), sorted(expected, key=by_ts))
+
+    def test_incremental_meow_samples_keep_newest_100(self):
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        db = Cl1Database(Path(directory.name) / 'config' / 'azurpilot.db')
+        self.addCleanup(close_all)
+        for index in range(105):
+            db.add_meow_round_time('t', float(index), 3)
+        month = datetime.now().strftime('%Y-%m')
+        samples = db.get_stats('t', month)
+        self.assertEqual([item['duration'] for item in samples['meow_round_times']],
+                         [float(index) for index in range(5, 105)])
+        self.assertEqual(samples['meow_hazard_stats']['3']['round_times'],
+                         [float(index) for index in range(5, 105)])
+
+
+class IncrementalCoinsThinningTests(unittest.TestCase):
+    def test_incremental_append_thinning_matches_document_path(self):
+        """凭证快照的 SQL 抽稀结果必须与文档路径的 thin_coins_snapshots 一致。"""
+        directory = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(directory.cleanup)
+        db = Cl1Database(Path(directory.name) / 'config' / 'azurpilot.db')
+        self.addCleanup(close_all)
+        now = datetime.now()
+        month = now.strftime('%Y-%m')
+        # 乱序插入跨三个历史小时，覆盖「按时间排序取每小时末条」的等价性。
+        seeded = [
+            {'ts': (now - timedelta(hours=hours, minutes=minute)).isoformat(),
+             'yellow_coins': hours * 100 + minute, 'purple_coins': hours, 'source': 't'}
+            for hours in (100, 90, 80) for minute in (40, 10, 25)
+        ]
+        db.save_stats('t', month, {'coins_snapshots': seeded})
+        db.add_coins_snapshot('t', 99, 1, source='t', observed_at=now)
+        db.add_coins_snapshot('t', 99, 1, source='t', observed_at=now)
+        expected = thin_coins_snapshots(
+            seeded + [{'ts': now.isoformat(), 'yellow_coins': 99, 'purple_coins': 1, 'source': 't'}])
+        # 存活集合必须一致；增量路径保持插入序，不承担文档路径写后的 ts 重排。
+        actual = db.get_stats('t', month)['coins_snapshots']
+        by_ts = lambda item: item['ts']
+        self.assertEqual(sorted(actual, key=by_ts), sorted(expected, key=by_ts))
+
+

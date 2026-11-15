@@ -47,6 +47,21 @@ class DatabaseTests(unittest.TestCase):
         self.assertEqual(4, len(self.store.observations('pilot')))
         self.assertEqual(current['revision'], self.store.get('pilot')['revision'])
 
+    def test_observation_retries_after_write_lock_is_released(self):
+        self.store.database.ensure_ready()
+        with self.store.database.transaction() as blocker, \
+                patch('module.scheduler.store.sleep', side_effect=lambda _: blocker.commit()) as backoff:
+            self.assertTrue(self.store.observe('pilot', 'Oil', 100, '2026-09-28 10:00:00', 'fixture'))
+        backoff.assert_called_once_with(0.05)
+        self.assertEqual(100, self.store.observations('pilot')['Oil']['Value'])
+
+    def test_observation_propagates_non_lock_operational_error(self):
+        with self.store.database.transaction() as connection:
+            connection.execute('DROP TABLE scheduler_observations')
+        with self.assertRaises(sqlite3.OperationalError) as caught:
+            self.store.observe('pilot', 'Oil', 100, '2026-09-28 10:00:00', 'fixture')
+        self.assertEqual(sqlite3.SQLITE_ERROR, caught.exception.sqlite_errorcode)
+
     def test_backup_and_legacy_migration(self):
         legacy = self.store.directory / 'programs/pilot.json'
         legacy.parent.mkdir(parents=True)
@@ -212,6 +227,31 @@ class RuntimeTests(unittest.TestCase):
         self.runtime.request('Restart')
         self.assertTrue(self.runtime.recovery_requested)
         self.assertEqual([], self.runtime.requests)
+
+    def test_refresh_reports_failure_when_fresh_readings_cannot_be_persisted(self):
+        from module.scheduler.resources import refresh_resources
+
+        self.config.config_name = 'testpilot'
+        self.config.modified = {}
+        self.config.data['Dashboard'] = {
+            name: {'Value': 0, 'Limit': 0, 'Record': None} for name in ('Coin', 'Oil')
+        }
+
+        def refresh(_):
+            self.runtime.refresh_result = refresh_resources(self.config, self.script.device, self.runtime.refresh_names)
+            return True
+
+        self.script.run.side_effect = refresh
+        store = self.runtime.store
+        with patch('module.config.utils.filepath_config', return_value=self.configs.path('testpilot')), \
+                patch('module.campaign.campaign_status.CampaignStatus'), \
+                patch('module.scheduler.resources.stable_read', return_value={'Value': 123, 'Limit': 1000}), \
+                store.database.transaction():
+            self.assertFalse(self.runtime.refresh(['Oil']))
+
+        self.config.save.assert_called_once()
+        self.assertEqual(123, self.config.modified['Dashboard.Oil.Value'])
+        self.assertEqual({}, store.observations('testpilot'))
 
 
 class ExtraEngineTests(unittest.TestCase):

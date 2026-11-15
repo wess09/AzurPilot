@@ -15,6 +15,13 @@ interface AnnouncementCardProps {
   showFullLink?: boolean
 }
 
+/**
+ * 系统公告卡片：未读时加高亮与「新」角标；正文按 Markdown 渲染，url 渲染为外部链接。
+ *
+ * @param unread 未读态，显示「新」角标与「标为已读」按钮。
+ * @param onMarkRead 点击「标为已读」的回调，不传则不显示该按钮。
+ * @param showFullLink 是否显示「查看详情」链接；公告全页（/announcement）里以 false 嵌入，避免链接指向当前页。
+ */
 export function AnnouncementCard({
   announcement,
   unread = false,

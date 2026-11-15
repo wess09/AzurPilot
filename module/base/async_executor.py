@@ -64,11 +64,16 @@ class AsyncExecutor:
     def flush(self, timeout: float = 5.0):
         """等待队列内已有任务尽量执行完毕。
 
-        利用提交一个空任务并等待返回值，实现简单的 flush 效果。
+        先排空进程内写入队列，再利用提交一个空任务并等待返回值，实现简单的 flush 效果。
 
         Args:
             timeout (float): 等待超时时间（秒），默认为 5.0 秒。
         """
+        try:
+            from module.persistence.write_queue import write_queue
+            write_queue.flush(timeout=timeout)
+        except Exception as e:
+            logger.warning(f"[异步执行器] 刷新写入队列失败: {type(e).__name__}")
         try:
             future = self.submit(lambda: None)
             future.result(timeout=timeout)

@@ -9,11 +9,15 @@ import { useApp } from '../app/context'
 import { AnnouncementCard } from '../components/AnnouncementCard'
 import { Empty, ErrorBox, Loading, PageTitle } from '../components/ui'
 
+/**
+ * 公告详情页：展示当前系统公告并提供刷新；进入页面即把未读标记为已读。
+ * 内容列限宽居中（.announcement-page），超宽屏下正文行宽可控、两侧留出壁纸；
+ * 刷新按钮走实底次级样式，直接悬在壁纸上也能看清。
+ */
 export function Announcement() {
   const { ui } = useApp()
   const { data, loading, error, unread, refresh, markAsRead } = useAnnouncement()
 
-  // 进入公告页面时自动将未读状态消除
   useEffect(() => {
     if (unread && data?.announcementId) {
       markAsRead()
@@ -21,13 +25,13 @@ export function Announcement() {
   }, [unread, data, markAsRead])
 
   return (
-    <>
+    <div className="announcement-page">
       <PageTitle
         title={ui('nav.announcement')}
         actions={
           <button
             type="button"
-            className="button"
+            className="button secondary"
             disabled={loading}
             onClick={() => void refresh(true)}
           >
@@ -56,6 +60,6 @@ export function Announcement() {
           <p>{ui('announcement.noAnnouncementDesc')}</p>
         </Empty>
       )}
-    </>
+    </div>
   )
 }

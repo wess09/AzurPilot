@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 舰船数据工作流用例：导入的重复舰船待确认后才生效，自动培养跟随已确认副本而草稿独立丢弃。
+ */
+
 import {expect, test} from '@playwright/test'
 import {fleetAnalysisHash, rpc} from './fleet-helpers'
 

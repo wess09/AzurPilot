@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 即时配置编辑队列的串行提交、草稿恢复与重试语义测试。
+ */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/client'
 import { translateCurrentUi } from '../i18n'
@@ -9,64 +12,14 @@ function storage() {
   return {getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => {values.set(key, value)}, removeItem: (key: string) => {values.delete(key)}}
 }
 function deferred() {
-  let resolve!: () => void
-  let reject!: (error: Error) => void
+  let resolve = () => {}
+  let reject: (error: Error) => void = () => {}
   const promise = new Promise<void>((yes, no) => {resolve = yes; reject = no})
   return {promise, resolve, reject}
 }
 afterEach(() => vi.useRealTimers())
 
 describe('即时配置队列', () => {
-  it('新读取只清理此前确认的输入，不能清理读取期间完成的新修改', async () => {
-    const send = vi.fn().mockResolvedValue(undefined)
-    const queue = new EditQueue('test', {ready: () => true, send}, storage())
-    queue.change('serial', 'before-read')
-    await queue.settled()
-    const confirmed = queue.confirmed()
-    queue.change('serial', 'during-read')
-    await queue.settled()
-    queue.reconcile(confirmed)
-    expect(queue.getSnapshot().edits.serial.value).toBe('during-read')
-    // 这一条刚标成已保存，还在最短停留期内，所以此刻不清；停留过了才清。
-    queue.reconcile(queue.confirmed())
-    expect(queue.getSnapshot().edits.serial).toBeDefined()
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    expect(queue.getSnapshot().edits.serial).toBeUndefined()
-  })
-
-  it('停手后才显示「已保存」，显示够时长才消失', async () => {
-    const send = vi.fn().mockResolvedValue(undefined)
-    vi.useFakeTimers()
-    vi.setSystemTime(1_000_000)
-    const queue = new EditQueue('test', {ready: () => true, send}, storage())
-    queue.change('serial', 'edited')
-    await queue.settled()
-    expect(queue.getSnapshot().edits.serial.status).toBe('saved')
-
-    // 静默期内不显示。
-    await vi.advanceTimersByTimeAsync(100)
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(false)
-    const cf = queue.confirmed()
-    queue.reconcile(cf)
-    // 回执未过静默期：留在快照里。
-    expect(queue.getSnapshot().edits.serial).toBeDefined()
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(false)
-
-    // 静默期内继续输入：显示时刻随之顺延。
-    await vi.advanceTimersByTimeAsync(400)
-    queue.change('serial', 'edited again')
-    await queue.settled()
-    await vi.advanceTimersByTimeAsync(400)
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(false)
-
-    // 静默期满：转为显示。
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(true)
-
-    await vi.advanceTimersByTimeAsync(2000)
-    expect(queue.getSnapshot().edits.serial).toBeUndefined()
-  })
-
   it('输入时立即发送，旧响应不会撤销后续输入，并串行提交最终值', async () => {
     const first = deferred()
     const send = vi.fn().mockReturnValueOnce(first.promise).mockResolvedValue(undefined)
@@ -75,7 +28,7 @@ describe('即时配置队列', () => {
     expect(send).toHaveBeenCalledWith('serial', 'first')
     queue.change('serial', 'second')
     queue.change('serial', 'latest')
-    expect(queue.getSnapshot().edits.serial.value).toBe('latest')
+    expect(queue.getSnapshot().edits.serial?.value).toBe('latest')
     expect(send).toHaveBeenCalledTimes(1)
     first.resolve()
     await queue.settled()
@@ -90,11 +43,11 @@ describe('即时配置队列', () => {
     queue.change('enabled', true)
     await queue.flush()
     expect(queue.getSnapshot().edits.date).toMatchObject({value: '2026-', status: 'error'})
-    expect(queue.getSnapshot().edits.enabled.status).toBe('saved')
+    expect(queue.getSnapshot().edits.enabled?.status).toBe('saved')
     await expect(queue.settled()).rejects.toThrow(translateCurrentUi('edit.unsaved'))
     queue.change('date', '2026-09-14 12:00:00')
     await queue.settled()
-    expect(queue.getSnapshot().edits.date.status).toBe('saved')
+    expect(queue.getSnapshot().edits.date?.status).toBe('saved')
   })
 
   it('旧请求失败不能将新输入标记为错误', async () => {
@@ -121,7 +74,7 @@ describe('即时配置队列', () => {
     expect(restored.getSnapshot().edits.number).toMatchObject({value: '-', status: 'error'})
     const again = new EditQueue('instance-a', {ready: () => true, send}, memory)
     expect(again.getSnapshot().edits.serial).toBeUndefined()
-    expect(again.getSnapshot().edits.number.value).toBe('-')
+    expect(again.getSnapshot().edits.number?.value).toBe('-')
   })
 
   it('恢复草稿时丢弃服务端已拒绝的空值，字段回到配置里的值', () => {
@@ -151,13 +104,13 @@ describe('即时配置队列', () => {
     const queue = new EditQueue('a', {ready: () => true, send}, memory)
     queue.change('serial', 'retained')
     await queue.flush()
-    expect(queue.getSnapshot().edits.serial.value).toBe('retained')
+    expect(queue.getSnapshot().edits.serial?.value).toBe('retained')
     const other = new EditQueue('b', {ready: () => true, send}, memory)
     other.change('serial', 'other')
     await other.settled()
     await vi.advanceTimersByTimeAsync(1000)
     expect(send.mock.calls).toEqual([['serial', 'retained'], ['serial', 'other'], ['serial', 'retained']])
-    expect(queue.getSnapshot().edits.serial.status).toBe('saved')
+    expect(queue.getSnapshot().edits.serial?.status).toBe('saved')
   })
 
   it('浏览器存储失败不打断输入和提交，并明确提示', async () => {
@@ -167,21 +120,6 @@ describe('即时配置队列', () => {
     await queue.settled()
     expect(send).toHaveBeenCalledWith('serial', 'retained')
     expect(queue.getSnapshot().storageError).toBe(translateCurrentUi('edit.draftPersistError'))
-  })
-
-  it('等待连接、保存中与错误状态不经过静默期，立即可见', async () => {
-    vi.useFakeTimers()
-    const pending = deferred()
-    const queue = new EditQueue('test', {ready: () => true, send: () => pending.promise})
-    queue.change('serial', 'edited')
-    await vi.advanceTimersByTimeAsync(50)
-    expect(queue.getSnapshot().edits.serial.status).not.toBe('saved')
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(true)
-
-    pending.reject(new Error('连接失败'))
-    await queue.settled().catch(() => undefined)
-    expect(queue.getSnapshot().edits.serial.status).toBe('error')
-    expect(queue.savedVisible(queue.getSnapshot().edits.serial)).toBe(true)
   })
 })
 

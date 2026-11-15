@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 智能开荒用例：分组位于智能调度末尾并显示前置条件，独立开关与只读进度的清空保存。
+ */
+
+import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 
 test('智能开荒位于智能调度末尾，显示前置条件并持久化独立开关', async ({page}, testInfo) => {
@@ -39,7 +44,7 @@ test('智能开荒位于智能调度末尾，显示前置条件并持久化独�
 
 test('两处只读开荒进度可通过清空按钮保存为空', async ({page}) => {
   let seed: {task: string; group: string; arg: string} | undefined
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     let getId: string | undefined
     socket.onMessage(message => {

@@ -3,24 +3,27 @@
  */
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { CalendarClock, Clock3, ListTree, Play, RotateCcw, Search, Settings2, Terminal } from 'lucide-react'
+import { ListTree, PanelLeft, PanelRight, Play, RotateCcw, Search, Settings2, Terminal, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { Config } from '../api/types'
 import { useApp, useConnection } from '../app/context'
-import { usesLegacyLayout } from '../app/theme'
 import { htmlToPlainText } from '../app/htmlText'
-import { readRailView, setRailView, subscribeRailView } from '../app/railPrefs'
+import { getLayout, subscribeLayout } from '../app/layout'
+import { readRailVisible, subscribeRailVisible } from '../app/railPrefs'
+import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 import { smoothScrollToElement } from '../app/scroll'
 import { clearSearchTarget, peekSearchTarget, subscribeSearchTarget } from '../app/searchTarget'
-import { Empty, ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
+import { Empty, ErrorBox, Loading, Modal } from '../components/ui'
+import { Input } from '../components/ui/input'
 import { LogPanel } from '../components/LogPanel'
 import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
 import { OpsiSimulatorPanel } from '../components/OpsiSimulatorPanel'
 import { FieldInput } from '../components/FieldInput'
 import { StorageField } from '../components/StorageField'
-import { SchedulerWidget } from '../components/SchedulerWidget'
-import { TaskQueue } from '../components/TaskQueue'
+import { ModernRail } from '../components/ModernRail'
+import { ModernRailResizeHandle } from '../components/ModernRailResizeHandle'
 import { useInstanceOverview } from '../components/useInstanceOverview'
 import { editor, prepareValue } from '../config/editors'
 import { EditStatus } from '../components/EditStatus'
@@ -28,13 +31,51 @@ import { AccountPanel } from '../components/AccountPanel'
 import { isFieldVisible } from './configVisibility'
 import { FleetInfoPage } from './FleetInfoPage'
 
+/**
+ * 视口命中折叠区间时返回 true：目录 <1320px、调度器栏 <1090px 自动收起
+ * （阈值与 settings-modern.css 的折叠栅格同步；e2e 视口 1440/1600 都在阈值之上）。
+ * matchMedia 不可用的环境（单测 jsdom）一律 false，面板照常渲染。
+ */
+function useFoldFlag(query: string): boolean {
+  const subscribe = useCallback((listener: () => void) => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
+    const media = window.matchMedia(query)
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
+  }, [query])
+  const getSnapshot = useCallback(() => (
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(query).matches
+  ), [query])
+  return useSyncExternalStore(subscribe, getSnapshot, () => false)
+}
+
+/** 任务参数设置页：参数卡就地编辑、侧栏搜索定位、任务级说明与启动开关；工具任务页改为挂日志面板。 */
 export function TaskConfig() {
   const {instance = '', task = ''} = useParams()
-  const {schema, t, ui, notify, theme} = useApp()
+  const {schema, t, ui, notify} = useApp()
   const connection = useConnection()
-  const railView = useSyncExternalStore(subscribeRailView, readRailView, readRailView)
-  // 只在真的切到调度器时才请求总览数据，否则这一页白拉一份队列。
-  const [railData, setRailData] = useInstanceOverview(instance, railView === 'scheduler')
+  const railVisibility = useSyncExternalStore(subscribeRailVisible, readRailVisible, readRailVisible)
+  const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
+  // 调度器列的宽度与总览页共用同一个持久化值，拖动任一处另一边跟着变。
+  const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
+  // 窄屏自动折叠：窄视口下固定宽的目录列与调度器列会把参数卡挤到读不了，
+  // 分两档收起（目录先收、调度器后收），收起后从边缘浮标唤出抽屉。
+  const directoryFolded = useFoldFlag('(min-width: 951px) and (max-width: 1319px)')
+  const railFolded = useFoldFlag('(min-width: 951px) and (max-width: 1089px)')
+  // 抽屉一次只开一个；窗口跨回宽档或用户手动隐藏调度器栏时自动收回。
+  const [popout, setPopout] = useState<'directory' | 'rail' | null>(null)
+  useEffect(() => {
+    if (popout === 'directory' && !directoryFolded) setPopout(null)
+    if (popout === 'rail' && (!railFolded || railVisibility !== 'shown')) setPopout(null)
+  }, [popout, directoryFolded, railFolded, railVisibility])
+  useEffect(() => {
+    if (!popout) return
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPopout(null) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [popout])
+  // 右列现在同时承载目录与调度器，进页面就要拉一份总览数据。
+  const [railData, setRailData] = useInstanceOverview(instance, true)
   const [config, setConfig] = useState<Config>()
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
@@ -47,12 +88,9 @@ export function TaskConfig() {
   const startupEdits = useSyncExternalStore(startupQueue.subscribe, startupQueue.getSnapshot, startupQueue.getSnapshot)
   const [startupEnabled, setStartupEnabled] = useState<boolean>()
   const [startupRemember, setStartupRemember] = useState<boolean>()
-  const legacy = usesLegacyLayout(theme)
   const reload = useCallback(async () => {
     try {
-      const confirmed = queue.confirmed()
       setConfig(await api.request('config.get', {instance}))
-      queue.reconcile(confirmed)
       setError('')
     } catch (error) {
       setError((error as Error).message)
@@ -78,19 +116,17 @@ export function TaskConfig() {
   useEffect(() => {
     if (connection !== 'ready' || task === 'FleetInfo') return
     let active = true
-    const confirmed = queue.confirmed()
     void api.request('config.get', {instance}).then(value => {
-      if (active) { setConfig(value); queue.reconcile(confirmed); setError('') }
+      if (active) { setConfig(value); setError('') }
     }).catch(error => { if (active) setError(error.message) })
     return () => { active = false }
   }, [connection, instance, task, queue])
-  /* 开关状态取自部署层的运行列表，不在任务配置里。 */
+  // 开关状态取自部署层的运行列表，不在任务配置里。
   useEffect(() => {
     if (connection !== 'ready' || task !== 'Alas') return
     let active = true
-    const confirmed = startupQueue.confirmed()
     void api.request('startup.get', {instance}).then(value => {
-      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember); startupQueue.reconcile(confirmed) }
+      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember) }
     }).catch(error => { if (active) setError(error.message) })
     return () => { active = false }
   }, [connection, instance, task, startupQueue])
@@ -134,7 +170,7 @@ export function TaskConfig() {
       if (!path || !path.startsWith(`${task}.`)) return
       if (find) window.clearInterval(find)
       let attempts = 0
-      // 卡片命中给两段路径（任务.分组），配置项命中给三段；据此选 DOM id 与滚动方式
+      // 卡片命中给两段路径（任务.分组），配置项命中给三段；据此选 DOM id 与滚动方式。
       const segments = path.split('.')
       const isCard = segments.length <= 2
       const elementId = isCard ? `group-${segments[1]}` : path
@@ -150,7 +186,7 @@ export function TaskConfig() {
           row.classList.add('is-search-target')
           window.setTimeout(() => row.classList.remove('is-search-target'), 3000)
         } else if (attempts > 20) {
-          // 等不到字段（被隐藏或该任务下没有这一项）就放弃，不再重试
+          // 等不到字段（被隐藏或该任务下没有这一项）就放弃，不再重试。
           window.clearInterval(find)
           find = undefined
           clearSearchTarget()
@@ -211,7 +247,7 @@ export function TaskConfig() {
               {/* 优先级调整直接跳到图形调度编辑器：它才是真正编排顺序的地方。 */}
               {task === 'General' && group === 'YukikazeTaskManager' && arg === 'TaskPriorityAdjustment' && <Link className="button secondary" to={`/i/${instance}/task/SchedulerProgram`}>{ui('nav.schedulerProgram')}</Link>}
               {/* 多行控件的提示跟标题同一行，浮在它右端。 */}
-              {isMultiline && <EditStatus id={path} edit={edit} retry={queue.retry} queue={queue} />}
+              {isMultiline && <EditStatus id={path} edit={edit} />}
             </div>
             <div className="field-control">
               {field.type === 'storage' ? (
@@ -253,7 +289,7 @@ export function TaskConfig() {
                     onClick={() => queue.change(path, '')}><RotateCcw size={15}/></button>
                 </div>
               )}
-              {!isMultiline && <EditStatus id={path} edit={edit} retry={queue.retry} queue={queue} />}
+              {!isMultiline && <EditStatus id={path} edit={edit} />}
             </div>
           </div>
         )
@@ -265,7 +301,6 @@ export function TaskConfig() {
 
   const hasGroups = task !== 'FleetInfo' && Boolean(groups) && visibleGroups.length > 0
   // 只有紧凑主题把搜索框并进左列（跳转栏下方），其余主题保持标题下方的原样。
-  const condensed = theme === 'extreme'
   // 启动开关挂在系统设置（Alas）任务页顶部；搜索时只显示匹配项。
   const startupPanel = task === 'Alas' && !search && <section className="panel config-group">
     <div className="panel-heading">
@@ -281,7 +316,7 @@ export function TaskConfig() {
       </div>
       <div className="field-control">
         <FieldInput id="instance-startup" label={ui('instance.autoRun')} value={startupEdits.edits.enabled?.value ?? startupEnabled ?? false} disabled={startupEnabled === undefined} onChange={value => startupQueue.change('enabled', value)}/>
-        <EditStatus id="instance-startup" edit={startupEdits.edits.enabled} retry={startupQueue.retry} queue={startupQueue}/>
+        <EditStatus id="instance-startup" edit={startupEdits.edits.enabled}/>
       </div>
     </div>
     <div className="field-row">
@@ -291,12 +326,12 @@ export function TaskConfig() {
       </div>
       <div className="field-control">
         <FieldInput id="instance-remember" label={ui('instance.rememberRun')} value={startupEdits.edits.remember?.value ?? startupRemember ?? false} disabled={startupRemember === undefined} onChange={value => startupQueue.change('remember', value)}/>
-        <EditStatus id="instance-remember" edit={startupEdits.edits.remember} retry={startupQueue.retry} queue={startupQueue}/>
+        <EditStatus id="instance-remember" edit={startupEdits.edits.remember}/>
       </div>
     </div>
   </section>
 
-  /* 任务级说明（Task.<task>.help）：作为卡片列首卡，与参数卡同宽同层。 */
+  // 任务级说明（Task.<task>.help）：作为卡片列首卡，与参数卡同宽同层。
   const taskHelp = t(`Task.${task}.help`)
   const taskHelpBlock = taskHelp && taskHelp !== 'help' && !taskHelp.startsWith('Task.')
     ? <section className="panel task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></section>
@@ -319,50 +354,30 @@ export function TaskConfig() {
     ))}
   </nav>
 
-  // 有分组导航时，搜索框随导航一起放进左列（导航下方）；没有导航时才留在标题下方。
-  // 右列默认是任务设置的锚点目录，点右上角切到调度器；两种视图共用同一个外壳。
-  const railToggle = <button
-    type="button"
-    className="task-rail-toggle icon-button"
-    aria-pressed={railView === 'scheduler'}
-    aria-label={railView === 'scheduler' ? ui('nav.railDirectory') : ui('nav.railScheduler')}
-    title={railView === 'scheduler' ? ui('nav.railDirectory') : ui('nav.railScheduler')}
-    onClick={() => setRailView(railView === 'scheduler' ? 'directory' : 'scheduler')}
-  >{railView === 'scheduler' ? <CalendarClock size={17}/> : <ListTree size={17}/>}</button>
-
-  const rail = <aside className={`task-config-rail is-${railView}`} aria-label={railView === 'scheduler' ? ui('scheduler.rail') : ui('task.groupNav')}>
-    {railView === 'scheduler'
-      ? <div className="task-rail-scheduler">
-          <SchedulerWidget instance={instance} data={railData} onData={setRailData} action={railToggle}/>
-          <section className="rail-schedule" aria-label={ui('scheduler.plan')}>
-            <div className="rail-section-heading">
-              <div><Clock3 size={15}/><span>{ui('scheduler.plan')}</span></div>
-              <span>{railData?.tasks.length ?? 0}</span>
-            </div>
-            <TaskQueue instance={instance} data={railData}/>
-          </section>
-        </div>
-      : <div className="task-rail-directory">
-          <div className="rail-plate">
-            <div className="rail-section-heading">
-              <div>{railToggle}<span>{ui('task.groupNav')}</span></div>
-            </div>
-            {groupNav}
-          </div>
-        </div>}
+  // 目录与调度器是两列，不是一栏里的两块：目录常驻设置区右侧，调度器独占一列。
+  // 调度器列就是总览页那一个 ModernRail，不换外壳、不套 panel；
+  // 停靠边与显隐都来自界面设置（schedulerPositionPrefs / railPrefs）。
+  const directory = <aside className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
+    <div className="rail-section-heading">
+      <div><ListTree size={15}/><span>{ui('task.groupNav')}</span></div>
+      {popout === 'directory' && <button type="button" className="icon-button rail-pop-close" aria-label={ui('nav.close')} onClick={() => setPopout(null)}><X size={15}/></button>}
+    </div>
+    {groupNav}
   </aside>
+
+  const rail = <ModernRail instance={instance} data={railData} onData={setRailData}/>
 
   const configToolbar = showConfigToolbar && <div className="config-toolbar">
       <div className="input-icon">
         <Search size={17} />
-        <input placeholder={ui('task.searchConfigPlaceholder')} aria-label={ui('task.searchConfig')} value={search} onChange={event => setSearch(event.target.value)} />
+        <Input placeholder={ui('task.searchConfigPlaceholder')} aria-label={ui('task.searchConfig')} value={search} onChange={event => setSearch(event.target.value)}/>
       </div>
     </div>
 
   const head = <>
     {error && <ErrorBox message={error} retry={reload} />}
     {storageError && <ErrorBox message={storageError} />}
-    {(!hasGroups || !condensed) && configToolbar}
+    {configToolbar}
   </>
 
   const groupsSection = !hasGroups ? (
@@ -383,30 +398,31 @@ export function TaskConfig() {
     <LogPanel />
   </section>
 
-  // 旧版的任务详细设置：参数卡在左、右列在「分组目录 / 调度器」之间切，页名由顶栏居中显示。
-  if (legacy) return <>
-    <div className="task-config-legacy">
-      <h1 className="legacy-sr-title">{t(`Task.${task}.name`)}</h1>
+  // 现代版式的任务详细设置：参数卡在中列，目录与调度器各占一列，页名由顶栏居中显示。
+  // 调度器列的宽度沿用总览页那套 `--modern-rail-width`，边上挂同一个拖拽把手。
+  return <>
+    <div
+      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${popout ? ` pop-${popout}` : ''}`}
+      style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as CSSProperties) : undefined}
+    >
+      <h1 className="modern-sr-title">{t(`Task.${task}.name`)}</h1>
       <div className="task-config-settings">
-        {/* 换任务时重挂一次，让内容列的淡入重放。 */}
+        {/* 换任务时重挂内容列，触发该任务的卡片入场。 */}
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>
       </div>
-      {/* 目录是逐页内容，跟着任务换；调度器是常驻的，换任务不重挂。 */}
-      <div className="task-config-rail-slot" key={railView === 'directory' ? task : 'scheduler'}>{rail}</div>
+      {directory}
+      <div className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
+        <div className="instance-page-rail-wrap">
+          {rail}
+          <ModernRailResizeHandle side={schedulerPosition}/>
+          {popout === 'rail' && <button type="button" className="icon-button rail-pop-close rail-pop-close-rail" aria-label={ui('nav.close')} onClick={() => setPopout(null)}><X size={15}/></button>}
+        </div>
+      </div>
+      {/* 窄屏折叠后的边缘浮标：唤出对应侧列的抽屉；手动隐藏调度器栏（界面设置）时不给浮标 */}
+      {directoryFolded && <button type="button" className="rail-fold-chip rail-fold-chip-directory" aria-label={ui('task.groupNav')} title={ui('task.groupNav')} aria-expanded={popout === 'directory'} onClick={() => setPopout(current => current === 'directory' ? null : 'directory')}><ListTree size={16}/></button>}
+      {railFolded && railVisibility === 'shown' && <button type="button" className={`rail-fold-chip rail-fold-chip-rail${schedulerPosition === 'left' ? ' chip-left' : ' chip-right'}`} aria-label={ui('scheduler.rail')} title={ui('scheduler.rail')} aria-expanded={popout === 'rail'} onClick={() => setPopout(current => current === 'rail' ? null : 'rail')}>{schedulerPosition === 'left' ? <PanelLeft size={16}/> : <PanelRight size={16}/>}</button>}
+      {popout && <div className="task-config-pop-backdrop" onClick={() => setPopout(null)}/>}
     </div>
-    {modal}
-  </>
-
-  return <>
-    {/* 紧凑主题下任务名与面包屑末段重复，省掉标题行让内容上移，只留无障碍标题 */}
-    {theme === 'extreme'
-      ? <h1 className="sr-title">{t(`Task.${task}.name`)}</h1>
-      : <PageTitle title={t(`Task.${task}.name`)}/>}
-    {head}
-    {hasGroups ? <div className="config-layout">{groupNav}{groupCardsBlock}</div> : groupsSection}
-    {/* 报告面板放在日志上方：先看完参数与运行入口，再看结果 */}
-    {scorePanel}
-    {toolPanel}
     {modal}
   </>
 }

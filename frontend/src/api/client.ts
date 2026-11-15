@@ -1,45 +1,69 @@
 /**
- * @fileoverview 后端 WebSocket API 客户端实现，管理连接生命周期、请求分发、事件订阅与心跳重试。
+ * @fileoverview 统一分发 WebUI RPC：操作连接的状态驱动登录界面，数据连接独立恢复。
  */
+import {dataMethods, webSocketTransport, type Parameters} from './generated'
+import {ApiError, RpcSocket} from './socket'
+import type {ApiEvent, Results} from './types'
 
-import type { Parameters } from './generated'
-import type { ApiEvent, ApiResponse, Results } from './types'
-import { translateCurrentUi } from '../i18n'
+export {ApiError} from './socket'
 
-/** API 业务错误。 */
-export class ApiError extends Error {
-  constructor(public code: string, message: string, public details?: unknown) { super(message) }
-}
-type Connection = 'connecting' | 'ready' | 'auth' | 'offline'
-type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }
+const dataRequests = new Set<string>(dataMethods)
+const dataTopics = new Set<string>(webSocketTransport.dataTopics)
+type Subscription = Parameters['events.subscribe']
 
+/**
+ * WebUI 的统一 RPC 客户端：按方法把请求分发到操作、数据两条连接，并把事件广播给订阅者。
+ * 操作连接的状态（getSnapshot）驱动登录界面；数据连接断开后独立恢复，读取类请求重连成功后自动重试一次。
+ */
 export class ApiClient {
-  private socket?: WebSocket
-  private pending = new Map<string, Pending>()
-  private listeners = new Set<() => void>()
-  private events = new Set<(event: ApiEvent) => void>()
-  private retry?: ReturnType<typeof setTimeout>
-  private heartbeat?: ReturnType<typeof setInterval>
   private password = ''
   private launcherTicket?: string
-  private attempt = 0
-  private stopped = true
-  private state: Connection = 'connecting'
-  private counter = 0
-  private lastReceived = 0
+  private events = new Set<(event: ApiEvent) => void>()
+  private dataSubscription?: Subscription
+  private emit = (event: ApiEvent) => this.events.forEach(listener => listener(event))
 
-  /** 获取当前连接状态快照。 */
-  getSnapshot = () => this.state
-  /** 订阅连接状态变化。 */
-  subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
-  /** 注册全量 API 事件监听器。 */
-  onEvent = (listener: (event: ApiEvent) => void) => { this.events.add(listener); return () => { this.events.delete(listener) } }
-  private setState(state: Connection) { this.state = state; this.listeners.forEach(listener => listener()) }
+  private data = new RpcSocket('data', session => {
+    if (!session.authRequired) return
+    if (!this.password) throw new Error('Missing data connection credentials')
+    return this.data.request<void>('auth.login', {password: this.password})
+  }, event => {
+    if (event.topic !== 'session') this.emit(event)
+  }, () => this.subscribeData())
 
+  private control = new RpcSocket('control', (session, current) => {
+    if (this.launcherTicket) {
+      const ticket = this.launcherTicket
+      this.launcherTicket = undefined
+      return this.control.request<void>('auth.launcher', {ticket}).catch(error => {
+        if (session.authRequired) throw error
+      })
+    }
+    if (!session.authRequired) return
+    if (!this.password) throw new Error('Missing access password')
+    return this.authenticate(this.password, current)
+  }, this.emit, () => {
+    if (!this.control.splitTransport) {
+      this.data.disconnect()
+      return
+    }
+    if (this.data.getSnapshot() === 'auth') this.data.disconnect()
+    this.data.connect()
+  })
+
+  getSnapshot = this.control.getSnapshot
+  subscribe = this.control.subscribe
+  /** 订阅事件广播；返回取消订阅函数。 */
+  onEvent = (listener: (event: ApiEvent) => void) => {
+    this.events.add(listener)
+    return () => { this.events.delete(listener) }
+  }
+
+  /** 恢复本地保存的密码、从地址栏摘走启动器票据后接通连接；存储不可用时仍走会话内登录。 */
   connect = () => {
-    if (this.socket && this.socket.readyState < 2) return
-    if (!this.password) { try { this.password = window.localStorage.getItem('azurpilot.access-password') ?? '' } catch { /* 浏览器禁用存储时保留会话登录。 */ } }
-    this.stopped = false
+    if (!this.password) {
+      try { this.password = window.localStorage.getItem('azurpilot.access-password') ?? '' }
+      catch { /* 浏览器禁用存储时保留会话登录。 */ }
+    }
     try {
       const page = new URL(window.location.href)
       const ticket = page.searchParams.get('launcherTicket')
@@ -49,110 +73,81 @@ export class ApiClient {
         window.history.replaceState(null, '', page.toString())
       }
     } catch { /* 无导航上下文的测试及受限浏览器仍可正常连接。 */ }
-    this.setState('connecting')
-    // 远程访问隧道把页面挂在 /<peer_id>/ 前缀下（index.html 用 <base> 固定该前缀），
-    // 绝对路径 /api/v1/ws 会打到隧道服务端而不是本机，必须跟着 document.baseURI 走。
-    const url = new URL('api/v1/ws', document.baseURI)
-    url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const socket = this.socket = new WebSocket(url)
-    socket.onmessage = event => {
-      if (socket !== this.socket) return
-      this.lastReceived = Date.now()
-      let message: ApiResponse | ApiEvent
-      try { message = JSON.parse(event.data) } catch { socket.close(4002); return }
-      if (message.v !== 1) { socket.close(4002); return }
-      if (message.type === 'response') {
-        const pending = this.pending.get(message.id)
-        if (!pending) return
-        clearTimeout(pending.timer)
-        this.pending.delete(message.id)
-        if (message.ok) pending.resolve(message.result)
-        else pending.reject(new ApiError(message.error?.code ?? 'UNKNOWN', message.error?.message ?? translateCurrentUi('api.requestFailed'), message.error?.details))
-      } else if (message.type === 'event') {
-        if (message.topic === 'session') {
-          const data = message.data as {authRequired: boolean}
-          if (this.launcherTicket) {
-            const ticket = this.launcherTicket
-            this.launcherTicket = undefined
-            void this.request('auth.launcher', {ticket}).then(() => this.ready())
-              .catch(() => { if (!data.authRequired) this.ready(); else this.setState('auth') })
-          }
-          else if (!data.authRequired) this.ready()
-          else if (this.password) void this.login(this.password).catch(() => this.setState('auth'))
-          else this.setState('auth')
-        }
-        this.events.forEach(listener => listener(message as ApiEvent))
-      }
-    }
-    socket.onclose = () => {
-      if (socket !== this.socket) return
-      clearInterval(this.heartbeat)
-      this.pending.forEach(pending => {
-        clearTimeout(pending.timer)
-        pending.reject(new ApiError('DISCONNECTED', translateCurrentUi('api.disconnected')))
-      })
-      this.pending.clear()
-      this.setState('offline')
-      if (!this.stopped) this.retry = setTimeout(this.connect, Math.min(15000, 800 * 2 ** this.attempt++) + Math.random() * 400)
-    }
-    socket.onerror = () => socket.close()
+    this.control.connect()
   }
 
-  /** 进入就绪状态并启动心跳定时器。 */
-  private ready() {
-    this.attempt = 0
-    this.setState('ready')
-    clearInterval(this.heartbeat)
-    this.heartbeat = setInterval(() => {
-      if (Date.now() - this.lastReceived > 45000) { this.socket?.close(); return }
-      void this.request('system.ping', {}).catch(() => this.socket?.close())
-    }, 15000)
-  }
-
-  /**
-   * 使用访问密码执行鉴权登录。
-   */
-  async login(password: string) {
-    try { await this.request('auth.login', {password}) } catch (error) {
-      if (error instanceof ApiError && error.code === 'UNAUTHORIZED') {
+  private async authenticate(password: string, current = () => true) {
+    try { await this.control.request('auth.login', {password}) }
+    catch (error) {
+      if (current() && error instanceof ApiError && error.code === 'UNAUTHORIZED') {
         this.password = ''
         try { window.localStorage.removeItem('azurpilot.access-password') } catch { /* 存储不可用。 */ }
       }
       throw error
     }
-    try { window.localStorage.setItem('azurpilot.access-password', password) } catch { /* 存储不可用时仍允许登录。 */ }
-    this.password = password
-    this.ready()
+    if (current()) {
+      this.password = password
+      try { window.localStorage.setItem('azurpilot.access-password', password) } catch { /* 保留会话登录。 */ }
+    }
   }
 
-  /**
-   * 发送 RPC 请求并等待返回结果。
-   */
-  request<M extends keyof Results & keyof Parameters>(method: M, params: Parameters[M]): Promise<Results[M]> {
-    if (!this.socket || this.socket.readyState !== WebSocket.OPEN || (this.state !== 'ready' && method !== 'auth.login' && method !== 'auth.launcher')) {
-      return Promise.reject(new ApiError('DISCONNECTED', translateCurrentUi('api.notConnected')))
-    }
-    const id = `${Date.now()}-${++this.counter}`
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id)
-        reject(new ApiError('TIMEOUT', translateCurrentUi('api.timeout')))
-      }, 45000)
-      this.pending.set(id, {resolve: value => resolve(value as Results[M]), reject, timer})
-      this.socket!.send(JSON.stringify({v: 1, type: 'request', id, method, params}))
+  /** 用密码认证并把操作连接置为就绪；认证成功后密码写入 localStorage 供下次自动恢复。 */
+  async login(password: string) {
+    await this.authenticate(password)
+    this.control.ready()
+  }
+
+  private subscribeData() {
+    const subscription = this.dataSubscription
+    if (!subscription || this.data.getSnapshot() !== 'ready') return
+    void this.data.request('events.subscribe', subscription).catch(error => {
+      if (this.dataSubscription !== subscription || this.data.getSnapshot() !== 'ready') return
+      for (const topic of subscription.topics) {
+        this.emit({v: 1, type: 'event', seq: 0, topic: 'subscription.error', data: {
+          topic, instance: subscription.instance, code: error.code, message: error.message,
+        }})
+      }
     })
   }
 
-  /**
-   * 断开连接并重置定时器与凭据。
-   */
+  private async subscribeEvents(params: Subscription): Promise<Results['events.subscribe']> {
+    const result = await this.control.request<Results['events.subscribe']>('events.subscribe', {
+      instance: params.instance, topics: params.topics.filter(topic => !dataTopics.has(topic)),
+    })
+    this.dataSubscription = {instance: params.instance, topics: params.topics.filter(topic => dataTopics.has(topic))}
+    this.subscribeData()
+    return {...result, topics: params.topics}
+  }
+
+  private async requestData<T>(method: string, params: unknown): Promise<T> {
+    await this.data.waitReady()
+    try { return await this.data.request<T>(method, params) }
+    catch (error) {
+      if (!(error instanceof ApiError) || error.code !== 'DISCONNECTED') throw error
+      // 数据通道只处理读取，重连后可以重试一次。写操作始终由调用方决定是否重试。
+      await this.data.waitReady()
+      return this.data.request<T>(method, params)
+    }
+  }
+
+  request<M extends keyof Results & keyof Parameters>(method: M, params: Parameters[M]): Promise<Results[M]> {
+    if (this.control.splitTransport && method === 'events.subscribe') {
+      return this.subscribeEvents(params as Subscription) as Promise<Results[M]>
+    }
+    if (this.control.splitTransport && dataRequests.has(method)) {
+      return this.requestData<Results[M]>(method, params)
+    }
+    return this.control.request<Results[M]>(method, params)
+  }
+
   disconnect() {
-    this.stopped = true
     this.password = ''
-    clearTimeout(this.retry)
-    clearInterval(this.heartbeat)
-    this.socket?.close()
+    this.launcherTicket = undefined
+    this.dataSubscription = undefined
+    this.data.disconnect()
+    this.control.disconnect()
   }
 }
 
+/** 全局唯一实例：整个前端直接 import 使用，不自行 new。 */
 export const api = new ApiClient()

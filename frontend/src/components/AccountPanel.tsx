@@ -9,8 +9,16 @@ import type { AccountStatus } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { FieldInput } from './FieldInput'
 import { Modal } from './ui'
+import { Input } from './ui/input'
 import { accountText } from './accountText'
 
+/**
+ * 账号保险库面板：展示保险库状态并管理初始化、解锁/锁定、TPM 与本地绑定、档案切换与删除。
+ * 敏感操作先经 Modal 二次确认；epoch 计数器丢弃实例/连接切换后迟到的旧回包；
+ * 保险库被销毁（VAULT_DESTROYED）时自动重拉状态刷新界面。
+ *
+ * @param instance 目标实例 ID；实例或连接变化时重新拉取状态。
+ */
 export function AccountPanel({instance}: {instance: string}) {
   const {language, notify, ui} = useApp()
   const text = accountText[language]
@@ -113,10 +121,10 @@ export function AccountPanel({instance}: {instance: string}) {
     </>}
     {pending && <Modal title={pending.title} onClose={cancel}>
       <form className="form-stack" onSubmit={event => { event.preventDefault(); if (canSubmit) void run(pending.action, {...pending.extra, ...(pending.action === 'capture' ? {label} : {})}) }}>
-        <label htmlFor="account-password">{text.password}<input ref={passwordInput} id="account-password" type="password" autoComplete="new-password" maxLength={256} value={password} onChange={event => setPassword(event.target.value)} /></label>
-        {pending.action === 'password' && <label htmlFor="account-new-password">{text.newPassword}<input id="account-new-password" type="password" autoComplete="new-password" maxLength={256} value={newPassword} onChange={event => setNewPassword(event.target.value)} /></label>}
-        {(pending.action === 'create' || pending.action === 'password') && <label htmlFor="account-confirm">{text.confirm}<input id="account-confirm" type="password" autoComplete="new-password" maxLength={256} value={confirm} onChange={event => setConfirm(event.target.value)} /></label>}
-        {pending.action === 'capture' && <label htmlFor="account-label">{text.label}<input id="account-label" autoComplete="off" maxLength={64} value={label} onChange={event => setLabel(event.target.value)} /></label>}
+        <label htmlFor="account-password">{text.password}<Input ref={passwordInput} id="account-password" type="password" autoComplete="new-password" maxLength={256} value={password} onChange={event => setPassword(event.target.value)}/></label>
+        {pending.action === 'password' && <label htmlFor="account-new-password">{text.newPassword}<Input id="account-new-password" type="password" autoComplete="new-password" maxLength={256} value={newPassword} onChange={event => setNewPassword(event.target.value)}/></label>}
+        {(pending.action === 'create' || pending.action === 'password') && <label htmlFor="account-confirm">{text.confirm}<Input id="account-confirm" type="password" autoComplete="new-password" maxLength={256} value={confirm} onChange={event => setConfirm(event.target.value)}/></label>}
+        {pending.action === 'capture' && <label htmlFor="account-label">{text.label}<Input id="account-label" autoComplete="off" maxLength={64} value={label} onChange={event => setLabel(event.target.value)}/></label>}
         {(pending.action === 'bind_tpm' || pending.action === 'unbind_tpm') && <p>{text.tpmHelp}</p>}
         {(pending.action === 'bind_local' || pending.action === 'unbind_local') && <div><strong>{text.localWarning}</strong><p>{text.localHelp}</p></div>}
         {error && <p role="alert">{error}</p>}

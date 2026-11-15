@@ -1,3 +1,5 @@
+/** @fileoverview 指挥喵评分面板的渲染回归：档位上色、等级徽章、天赋高亮与折叠行为。 */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { AppContext, type AppContextValue } from '../app/context'
@@ -5,10 +7,13 @@ import { translateUi } from '../i18n'
 import type { MeowfficerScoreReport } from '../api/types'
 import { MeowfficerScoreList, splitHit, tierClass } from './MeowfficerScorePanel'
 
+// context 只给 ui 一个最小实现，文案走真实 zh-CN 表：断言直接对着界面实际显示的字串写。
 const context = {ui: (key: Parameters<AppContextValue['ui']>[0], params?: Parameters<AppContextValue['ui']>[1]) => translateUi('zh-CN', key, params)} as AppContextValue
 const render = (report: MeowfficerScoreReport) => renderToStaticMarkup(
   <AppContext.Provider value={context}><MeowfficerScoreList report={report}/></AppContext.Provider>,
 )
+
+// 夹具覆盖面板的全部渲染分支：主/次口径、推断天赋、洗点建议都在里面；note 特意带 <b> 标签，守住「后端文案按纯文本渲染」的断言。
 
 const report: MeowfficerScoreReport = {
   instance: 'test', generatedAt: '2026-09-20 11:44:26', count: 1,
@@ -93,7 +98,7 @@ describe('指挥喵评分面板', () => {
   it('没有推荐时整个区块不渲染', () => {
     const withoutAdvice: MeowfficerScoreReport = {
       ...report,
-      cats: [{...report.cats[0], advice: null}],
+    cats: [report.cats[0] ? {...report.cats[0], advice: null} : {cat: 'fallback', advice: null}],
     }
     expect(render(withoutAdvice)).not.toContain('meow-advice')
   })

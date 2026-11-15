@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 背景代理地址与 HTTP 能力令牌的领取、缓存与重领行为。
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
 import { applyGalleryEntry, disableBackground, getBackground, readBackgroundPreference, refreshGallery, setBackgroundUrls, uploadBackgroundFile } from './background'
@@ -5,6 +8,7 @@ import { getThemePreference } from './theme'
 
 vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
 
+// 背景模块维护模块级快照与图库状态，每例先关闭背景复位，防止用例间串扰。
 beforeEach(() => {
   vi.resetAllMocks()
   vi.stubGlobal('localStorage', {getItem: () => null, setItem: vi.fn()})
@@ -58,7 +62,7 @@ describe('背景 HTTP 能力令牌', () => {
   })
 })
 
-/* 关闭背景只停铺图，已填地址在重读后仍在。 */
+// 关闭背景只停铺图，已填地址在重读后仍在。
 describe('背景关闭档保留已填地址', () => {
   const store = new Map<string, string>()
 

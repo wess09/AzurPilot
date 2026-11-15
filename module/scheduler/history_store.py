@@ -71,7 +71,7 @@ class AuthenticatedHistoryStore:
                     connection.commit()
                 if write:
                     connection.execute('PRAGMA journal_mode=WAL')
-                    connection.execute('PRAGMA synchronous=FULL')
+                    connection.execute('PRAGMA synchronous=NORMAL')
                     connection.executescript('''
                     CREATE TABLE IF NOT EXISTS action_point_history (
                         seq INTEGER PRIMARY KEY AUTOINCREMENT,

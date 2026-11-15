@@ -1,8 +1,13 @@
+/**
+ * @fileoverview 换船配置页用例：六队舰位与候补舰队的保存独立于调度开关，页面导航不触发扫描调度。
+ */
+
+import {routeRpc} from './rpc-route'
 import {expect, test} from '@playwright/test'
 
 test('换船配置保存六队舰位与多选候补，并与调度开关分开保存', async ({page}) => {
   const requests: string[] = []
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {requests.push(JSON.parse(String(message)).method); server.send(message)})
     server.onMessage(message => socket.send(message))

@@ -6,11 +6,14 @@
 
 # -*- coding: utf-8 -*-
 import json
+import time
 from contextlib import contextmanager, suppress
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Tuple
 from collections import defaultdict
+from module.persistence.database import register_instance
+from module.persistence.snapshots import HAZARD_FIELDS, MONTH_FIELDS
 from module.config.time_source import now as current_time
 from module.logger import logger
 
@@ -19,23 +22,50 @@ from module.logger import logger
 COINS_EXACT_DAYS = 3
 COINS_HISTORY_VERSION = 2
 COINS_CLEANUP_VERSION = 1
+# 黄币快照逐条保留的时间窗口；更早的按小时抽稀，控制月度文档体积。
+YELLOW_COIN_EXACT_HOURS = 6
+# 塞壬研究装置事件条的月度上限；更早的按写入顺序截断。
+SIREN_DEVICE_ENTRY_LIMIT = 5000
+# 科研掉落条目的月度上限；更早的按写入顺序截断。
+RESEARCH_DROP_ENTRY_LIMIT = 5000
+# 委托收益与钻石委托归档条目的月度上限；更早的按写入顺序截断。
+COMMISSION_INCOME_ENTRY_LIMIT = 5000
+GEM_COMMISSION_ENTRY_LIMIT = 5000
 
 
-def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """按保留策略整理凭证快照：最近若干天逐条，更早的每小时只留最后一条。
+def _field_bit(fields, name):
+    return 1 << [field if type(field) is str else field[0] for field in fields].index(name)
 
-    凭证写入很频繁（约 3 分钟一条），逐条无限增长会让月度 JSON 越来越大；
-    早期实现直接丢弃最旧的记录，历史因此只剩几天。改为抽稀后体积有界、历史保留。
+
+MONTH_MEOW_RAW_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_raw_count')
+MONTH_MEOW_ROUNDS_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_count')
+MONTH_MEOW_SCALAR_BITS = MONTH_MEOW_RAW_BIT | MONTH_MEOW_ROUNDS_BIT
+MONTH_ROUND_SAMPLES_BIT = _field_bit(MONTH_FIELDS, 'meow_round_times')
+MONTH_BATTLE_SAMPLES_BIT = _field_bit(MONTH_FIELDS, 'meow_battle_times')
+MONTH_MEOW_STATS_BIT = _field_bit(MONTH_FIELDS, 'meow_hazard_stats')
+COUNTER_BATTLE_BITS = _field_bit(HAZARD_FIELDS, 'battle_raw_count') | _field_bit(HAZARD_FIELDS, 'effective_rounds')
+COUNTER_ROUND_SAMPLES_BIT = _field_bit(HAZARD_FIELDS, 'round_times')
+COUNTER_BATTLE_SAMPLES_BIT = _field_bit(HAZARD_FIELDS, 'battle_times')
+COUNTER_AKASHI_ENCOUNTERS_BIT = _field_bit(HAZARD_FIELDS, 'akashi_encounters')
+COUNTER_AKASHI_AP_BIT = _field_bit(HAZARD_FIELDS, 'akashi_ap')
+
+
+def thin_snapshots(snapshots: List[Dict[str, Any]], exact: timedelta) -> List[Dict[str, Any]]:
+    """按保留策略整理快照：最近 ``exact`` 内逐条保留，更早的每小时只留最后一条。
+
+    高频写入的月度文档会随明细无限增长，而每次写入都要整月重写；抽稀后体积有界、
+    历史仍然保留。整月重写代价与行数成正比，抽稀直接决定写锁持有时长。
 
     Args:
-        snapshots: 凭证快照列表，元素含 ts 等字段。
+        snapshots: 快照列表，元素含 ``ts`` 等字段。
+        exact: 逐条保留的时间窗口。
 
     Returns:
         list[dict]: 按时间升序整理后的快照列表。
     """
     if not snapshots:
         return snapshots
-    cutoff = datetime.now() - timedelta(days=COINS_EXACT_DAYS)
+    cutoff = datetime.now() - exact
     kept: List[Dict[str, Any]] = []
     last_hour = None
     for snapshot in sorted(snapshots, key=lambda item: str(item.get('ts', ''))):
@@ -56,6 +86,16 @@ def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]
             kept.append(snapshot)
             last_hour = hour
     return kept
+
+
+def thin_coins_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """凭证快照按天抽稀：最近若干天逐条，更早的每小时只留最后一条。"""
+    return thin_snapshots(snapshots, timedelta(days=COINS_EXACT_DAYS))
+
+
+def thin_yellow_coin_snapshots(snapshots: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """黄币快照按小时抽稀：黄币随每次战斗刷新，逐条保留会让整月重写长达数秒。"""
+    return thin_snapshots(snapshots, timedelta(hours=YELLOW_COIN_EXACT_HOURS))
 
 
 class Cl1Database:
@@ -134,31 +174,71 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            if source in ("cl1", "meow"):
+                self._record_siren_device(conn, instance, month, source, hazard_level)
+            else:
+                self._record_siren_device_document(conn, instance, month, source, hazard_level)
 
-            devices = self._normalize_siren_research_devices(data)
-            if source == "cl1":
-                devices["cl1"] = devices.get("cl1", 0) + 1
-            elif source == "meow":
-                meow = devices.get("meow", {})
-                key = str(self._coerce_int(hazard_level or 0))
-                meow[key] = int(meow.get(key, 0) or 0) + 1
-                devices["meow"] = meow
-            data["siren_research_devices"] = devices
+    def _record_siren_device(self, conn, instance: str, month: str, source: str, hazard_level: int):
+        """塞壬研究装置 O(1) 增量写：计数单行 UPSERT、事件单行追加、超限截断。
 
-            entries = data.get("siren_research_device_entries", [])
-            if not isinstance(entries, list):
-                entries = []
-            entries.append({
-                "ts": datetime.now().isoformat(),
-                "source": source,
-                "hazard_level": self._coerce_int(hazard_level or 0) if source == "meow" else None,
-            })
-            if len(entries) > 5000:
-                entries = entries[-5000:]
-            data["siren_research_device_entries"] = entries
+        此前每次记录都整月读改写并重插全部事件行，代价随月内条目线性增长；
+        计数落在 (instance, month, source, hazard_level) 主键行上，事件按 ordinal 追加。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        level = 0 if source == "cl1" else self._coerce_int(hazard_level or 0)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, (1 << 15) | (1 << 16))
+        conn.execute('UPDATE cl1_months SET siren_fields_mask=siren_fields_mask|? '
+                     'WHERE instance=? AND month=?', (1 if source == "cl1" else 2, instance, month))
+        conn.execute(
+            'INSERT INTO siren_device_counts(instance, month, source, hazard_level, device_count) '
+            'VALUES(?, ?, ?, ?, 1) ON CONFLICT(instance, month, source, hazard_level) '
+            'DO UPDATE SET device_count=COALESCE(device_count,0)+1, compat_value_set_id=NULL',
+            (instance, month, source, level))
+        entry = {
+            "ts": datetime.now().isoformat(),
+            "source": source,
+            "hazard_level": None if source == "cl1" else level,
+        }
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM siren_device_events WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'siren_device_events', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['siren_research_device_entries'][1],
+                 {'instance': instance, 'month': month}, entry=True)
+        if ordinal + 1 > SIREN_DEVICE_ENTRY_LIMIT:
+            conn.execute('DELETE FROM siren_device_events WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, ordinal + 1 - SIREN_DEVICE_ENTRY_LIMIT))
 
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_siren_device_document(self, conn, instance: str, month: str, source: str, hazard_level: int):
+        """未知来源时的整月读改写兜底，语义与原实现一致。"""
+        data = self._get_stats_in_connection(conn, instance, month)
+
+        devices = self._normalize_siren_research_devices(data)
+        if source == "cl1":
+            devices["cl1"] = devices.get("cl1", 0) + 1
+        elif source == "meow":
+            meow = devices.get("meow", {})
+            key = str(self._coerce_int(hazard_level or 0))
+            meow[key] = int(meow.get(key, 0) or 0) + 1
+            devices["meow"] = meow
+        data["siren_research_devices"] = devices
+
+        entries = data.get("siren_research_device_entries", [])
+        if not isinstance(entries, list):
+            entries = []
+        entries.append({
+            "ts": datetime.now().isoformat(),
+            "source": source,
+            "hazard_level": self._coerce_int(hazard_level or 0) if source == "meow" else None,
+        })
+        if len(entries) > SIREN_DEVICE_ENTRY_LIMIT:
+            entries = entries[-SIREN_DEVICE_ENTRY_LIMIT:]
+        data["siren_research_device_entries"] = entries
+
+        self._save_stats_in_connection(conn, instance, month, data)
 
     """
     CL1 月度统计存储管理类。
@@ -508,23 +588,53 @@ class Cl1Database:
         data = read_month(conn, instance, month)
         return self._empty_data(month) if data is None else data
 
+    def _ensure_month_row(self, conn, instance: str, month: str, extra_bits: int = 0):
+        """月份行缺失时按文档路径建行的完整缺省形状写入；已存在仅按位补齐。"""
+        from module.persistence.snapshots import MONTH_FIELDS, presence
+        mask = presence(self._empty_data(month), MONTH_FIELDS) | extra_bits
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, battle_count, akashi_encounters, akashi_ap, '
+            'meow_battle_raw_count, meow_effective_rounds, field_mask) VALUES(?, ?, 0, 0, 0, 0, 0, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET field_mask=field_mask|?',
+            (instance, month, mask, extra_bits))
+
 
     def increment_battle_count(self, instance: str, delta: int = 1):
         """增加战斗次数"""
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["battle_count"] = data.get("battle_count", 0) + delta
-            self._save_stats_in_connection(conn, instance, month, data)
+            if not self._increment_month_scalar(conn, instance, month, 'battle_count', 0, delta):
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["battle_count"] = data.get("battle_count", 0) + delta
+                self._save_stats_in_connection(conn, instance, month, data)
+
+    def _increment_month_scalar(self, conn, instance: str, month: str, column: str, bit: int, delta: int) -> bool:
+        """原生标量列 O(1) 递增；月份行缺失直接建行，标量不在原生列时返回 False。
+
+        战斗计数等高频递增此前走整月读改写，代价随月内条目数线性增长；
+        标量列命中时退化为单行 UPSERT，不再触碰任何明细表。
+        """
+        register_instance(conn, instance)
+        cursor = conn.execute(
+            f'INSERT INTO cl1_months(instance, month, {column}, field_mask) VALUES(?, ?, ?, ?) '
+            f'ON CONFLICT(instance, month) DO UPDATE SET {column}=COALESCE({column},0)+excluded.{column} '
+            'WHERE field_mask & ? != 0',
+            (instance, month, delta, 1 << bit, 1 << bit))
+        return cursor.rowcount == 1
 
     def increment_akashi_encounter(self, instance: str, month: Optional[str] = None) -> int:
         """增加明石奇遇次数，返回事务提交后的累计值。"""
         month = month or datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["akashi_encounters"] = data.get("akashi_encounters", 0) + 1
-            self._save_stats_in_connection(conn, instance, month, data)
-            encounters = data["akashi_encounters"]
+            if self._increment_month_scalar(conn, instance, month, 'akashi_encounters', 1, 1):
+                encounters = conn.execute(
+                    'SELECT akashi_encounters FROM cl1_months WHERE instance=? AND month=?',
+                    (instance, month)).fetchone()[0]
+            else:
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["akashi_encounters"] = data.get("akashi_encounters", 0) + 1
+                self._save_stats_in_connection(conn, instance, month, data)
+                encounters = data["akashi_encounters"]
         return encounters
 
     def add_akashi_ap_entry(
@@ -532,23 +642,33 @@ class Cl1Database:
     ):
         """记录明石行动力购买条目"""
         month = datetime.now().strftime("%Y-%m")
+        entry = {
+            "ts": datetime.now().isoformat(),
+            "amount": self._coerce_int(amount),
+            "base": self._coerce_int(base),
+            "count": self._coerce_int(count),
+            "source": source,
+        }
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            self._record_akashi_ap_entry(conn, instance, month, entry)
 
-            entry = {
-                "ts": datetime.now().isoformat(),
-                "amount": amount,
-                "base": base,
-                "count": count,
-                "source": source,
-            }
+    def _record_akashi_ap_entry(self, conn, instance: str, month: str, entry: Dict[str, Any]):
+        """明石行动力购买 O(1) 增量写：标量列累加与条目单行追加。
 
-            entries = data.get("akashi_ap_entries", [])
-            entries.append(entry)
-            data["akashi_ap_entries"] = entries
-
-            data["akashi_ap"] = data.get("akashi_ap", 0) + amount
-            self._save_stats_in_connection(conn, instance, month, data)
+        此前每次购买都整月读改写并重插全部购买条目，代价随月内条目线性增长。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, (1 << 2) | (1 << 3))
+        conn.execute(
+            'UPDATE cl1_months SET akashi_ap=COALESCE(akashi_ap,0)+?, field_mask=field_mask|? '
+            'WHERE instance=? AND month=?', (entry["amount"], 1 << 2, instance, month))
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM akashi_ap_purchases WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'akashi_ap_purchases', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['akashi_ap_entries'][1], {'instance': instance, 'month': month}, entry=True)
 
     def add_ap_snapshot(self, instance: str, ap_current: int | None, source: str = "cl1", distance: int = None,
                         ap_total: int = None, *, observed_at: datetime = None):
@@ -568,37 +688,56 @@ class Cl1Database:
         with self._stats_transaction() as conn:
             # 补齐必须先于本次读取。
             self.ensure_coins_history(instance, conn)
-            data = self._get_stats_in_connection(conn, instance, month)
-            now = observed_at
-
-            # CL5 效率：1700 / 30 ≈ 56.67
-            cl5_efficiency = 1700.0 / 30.0
-
-            # 获取最近的黄币值
-            yellow_coin = 0
-            yellow_coin_snapshots = data.get("yellow_coin_snapshots", [])
-            if yellow_coin_snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    yellow_coin = int(yellow_coin_snapshots[-1].get("yellow_coin", 0))
-
-            snapshot = {
-                "ts": now.isoformat(),
+            self._record_ap_snapshot(conn, instance, month, {
+                "observed_at": observed_at,
                 "source": source,
-            }
-            if distance is not None:
-                snapshot["distance"] = self._coerce_int(distance)
-            if ap_total is not None:
-                # 当前读数不能替代总量，独立海里数也不附带缓存行动力或资产。
-                ap_total = self._coerce_int(ap_total)
-                snapshot.update(ap_total=ap_total, yellow_coin=yellow_coin,
-                                asset=round(ap_total * cl5_efficiency + yellow_coin, 2))
-                if ap_current is not None:
-                    snapshot["ap"] = self._coerce_int(ap_current)
+                "distance": distance,
+                "ap_total": ap_total,
+                "ap_current": ap_current,
+            })
 
-            snapshots = data.get("ap_snapshots", [])
-            snapshots.append(snapshot)
-            data["ap_snapshots"] = snapshots
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_ap_snapshot(self, conn, instance: str, month: str, reading: Dict[str, Any]):
+        """行动力快照 O(1) 增量写：最近黄币查尾、单行追加，不再整月读改写。"""
+        from module.persistence.snapshots import FAMILIES, MONTH_FIELDS, save_row
+        register_instance(conn, instance)
+        table = FAMILIES['ap_snapshots'][0]
+        now = reading["observed_at"]
+
+        # CL5 效率：1700 / 30 ≈ 56.67
+        cl5_efficiency = 1700.0 / 30.0
+
+        # 获取最近的黄币值
+        yellow_coin = 0
+        last = conn.execute(
+            'SELECT yellow_coin FROM yellow_coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if last is not None and last[0] is not None:
+            with suppress(ValueError, TypeError, IndexError, KeyError):
+                yellow_coin = int(last[0])
+
+        snapshot = {
+            "ts": now.isoformat(),
+            "source": reading["source"],
+        }
+        distance = reading["distance"]
+        ap_total = reading["ap_total"]
+        if distance is not None:
+            snapshot["distance"] = self._coerce_int(distance)
+        if ap_total is not None:
+            # 当前读数不能替代总量，独立海里数也不附带缓存行动力或资产。
+            ap_total = self._coerce_int(ap_total)
+            snapshot.update(ap_total=ap_total, yellow_coin=yellow_coin,
+                            asset=round(ap_total * cl5_efficiency + yellow_coin, 2))
+            if reading["ap_current"] is not None:
+                snapshot["ap"] = self._coerce_int(reading["ap_current"])
+
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 4)
+        ordinal = conn.execute(
+            f'SELECT COALESCE(MAX(ordinal),-1)+1 FROM {table} WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, table, {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['ap_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
 
     def ensure_coins_cleanup(self, instance: str, conn) -> None:
         """清掉月初残留的紫币读数，按版本号只执行一次。
@@ -645,15 +784,16 @@ class Cl1Database:
         except Exception as error:
             logger.warning(f'[统计] 月初紫币残留清理失败，下次再试: {error}')
 
-    def _get_previous_coins_snapshot(self, conn, instance: str, month: str) -> Optional[Dict[str, Any]]:
-        """取上个月的最后一条凭证快照，用于判断月初读数是否为上月残留。"""
+    def _previous_coins_tail(self, conn, instance: str, month: str) -> Optional[Tuple[Any, Any]]:
+        """取上个月最后一条原生凭证行的 (yellow, purple)，供增量路径查残留与续借。"""
         try:
             year, number = (int(part) for part in month.split('-'))
             previous_month = f'{year - 1:04d}-12' if number == 1 else f'{year:04d}-{number - 1:02d}'
         except (ValueError, AttributeError):
             return None
-        snapshots = self._get_stats_in_connection(conn, instance, previous_month).get('coins_snapshots') or []
-        return snapshots[-1] if snapshots else None
+        return conn.execute(
+            'SELECT yellow_coin, purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, previous_month)).fetchone()
 
     def ensure_coins_history(self, instance: str, conn) -> None:
         """用资源快照补齐凭证历史，按版本号只执行一次。
@@ -711,53 +851,45 @@ class Cl1Database:
             logger.warning(f'[统计] 凭证历史补齐失败，下次再试: {error}')
 
     def get_last_ap_snapshot(self, instance: str) -> Optional[Dict[str, Any]]:
-        """获取最近一次行动力快照，优先读取当前月份，必要时回退到历史月份。"""
-        current_month = datetime.now().strftime("%Y-%m")
-        current_data = self.get_stats(instance, current_month)
-        snapshots = current_data.get("ap_snapshots", [])
-        if snapshots:
-            return snapshots[-1]
-
-        rows = self._list_stats_rows(instance=instance)
-        for _, month_key in reversed(rows):
-            if month_key == current_month:
-                continue
-            data = self.get_stats(instance, month_key)
-            snapshots = data.get("ap_snapshots", [])
-            if snapshots:
-                return snapshots[-1]
-
-        return None
+        """获取最近一次行动力快照；按 (month, ordinal) 索引直取最后一行。"""
+        from module.persistence.snapshots import FAMILIES, load_row
+        with self.store.transaction(write=False) as connection:
+            row = connection.execute(
+                'SELECT * FROM action_point_snapshots WHERE instance=? '
+                'ORDER BY month DESC, ordinal DESC LIMIT 1', (instance,)).fetchone()
+            return load_row(connection, row, FAMILIES['ap_snapshots'][1]) if row is not None else None
 
     def get_last_ap_notification(self, instance: str) -> Optional[Dict[str, Any]]:
-        """获取最近一次成功推送时记录的行动力值。"""
-        current_month = datetime.now().strftime("%Y-%m")
-        current_data = self.get_stats(instance, current_month)
-        last_notification = current_data.get("last_ap_notification")
-        if isinstance(last_notification, dict) and "ap" in last_notification:
-            return last_notification
-
-        rows = self._list_stats_rows(instance=instance)
-        for _, month_key in reversed(rows):
-            if month_key == current_month:
-                continue
-            data = self.get_stats(instance, month_key)
-            last_notification = data.get("last_ap_notification")
-            if isinstance(last_notification, dict) and "ap" in last_notification:
-                return last_notification
-
-        return None
+        """获取最近一次成功推送时记录的行动力值；月份行原生列单行查询。"""
+        with self.store.transaction(write=False) as connection:
+            row = connection.execute(
+                'SELECT last_ap_notification_ts, last_ap_notification_value, last_ap_notification_mask '
+                'FROM cl1_months WHERE instance=? AND last_ap_notification_mask & 2 != 0 '
+                'ORDER BY month DESC LIMIT 1', (instance,)).fetchone()
+            if row is None:
+                return None
+            notification = {'ap': row[1]}
+            if row[2] & 1:
+                notification = {'ts': row[0], 'ap': row[1]}
+            return notification
 
     def set_last_ap_notification(self, instance: str, ap_current: int):
         """记录最近一次成功推送时的行动力值。"""
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["last_ap_notification"] = {
-                "ts": datetime.now().isoformat(),
-                "ap": self._coerce_int(ap_current),
-            }
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._set_last_ap_notification(conn, instance, month, datetime.now().isoformat(),
+                                           self._coerce_int(ap_current))
+
+    def _set_last_ap_notification(self, conn, instance: str, month: str, ts: str, value: int):
+        """推送记录 O(1) 增量写：通知列原样覆盖，不触碰月份行其它字段。"""
+        register_instance(conn, instance)
+        # UPSERT 同时保留月份行写入拒绝的触发器契约。
+        conn.execute(
+            'INSERT INTO cl1_months(instance, month, last_ap_notification_ts, last_ap_notification_value, '
+            'last_ap_notification_mask, field_mask) VALUES(?, ?, ?, ?, 3, ?) '
+            'ON CONFLICT(instance, month) DO UPDATE SET last_ap_notification_ts=excluded.last_ap_notification_ts, '
+            'last_ap_notification_value=excluded.last_ap_notification_value, last_ap_notification_mask=3, '
+            'field_mask=field_mask|?', (instance, month, ts, value, 1 << 5, 1 << 5))
 
     def add_yellow_coin_snapshot(
         self, instance: str, yellow_coin: int, source: str = "dashboard", *, observed_at: datetime = None
@@ -771,24 +903,51 @@ class Cl1Database:
         """
         observed_at = observed_at or datetime.now()
         month = observed_at.strftime("%Y-%m")
+        yellow_coin = self._coerce_int(yellow_coin)
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            yellow_coin = self._coerce_int(yellow_coin)
-
-            snapshot = {
+            self._record_yellow_coin_snapshot(conn, instance, month, {
                 "ts": observed_at.isoformat(),
                 "yellow_coin": yellow_coin,
                 "source": source,
-            }
+            })
 
-            snapshots = data.get("yellow_coin_snapshots", [])
-            if snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    if self._coerce_int(snapshots[-1].get("yellow_coin", -1)) == yellow_coin:
-                        return
-            snapshots.append(snapshot)
-            data["yellow_coin_snapshots"] = snapshots
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _record_yellow_coin_snapshot(self, conn, instance: str, month: str, snapshot: Dict[str, Any]):
+        """黄币快照 O(1) 增量写：查尾去重、单行追加、SQL 端按小时抽稀。
+
+        此前每场战斗都整月读改写并重插全部快照，代价随月内条目线性增长；
+        抽稀由窗口函数在库内完成，未命中的历史行不再往返 Python。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        last = conn.execute(
+            'SELECT yellow_coin FROM yellow_coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if last is not None and last[0] == snapshot["yellow_coin"]:
+            return
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        from module.persistence.snapshots import MONTH_FIELDS
+        self._ensure_month_row(conn, instance, month, 1 << 6)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM yellow_coin_snapshots WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'yellow_coin_snapshots', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['yellow_coin_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
+        self._thin_snapshots(conn, instance, month, 'yellow_coin_snapshots', YELLOW_COIN_EXACT_HOURS)
+
+    def _thin_snapshots(self, conn, instance: str, month: str, table: str, exact_hours: int):
+        """删除抽稀窗口外每小时除最后一条外的快照行，语义对齐 thin_snapshots。
+
+        只处理原生 record 行且 ts 可按 ISO 前缀解析；无法解析的行按原路径保留。
+        """
+        cutoff = (datetime.now() - timedelta(hours=exact_hours)).isoformat()
+        conn.execute(f'''
+            DELETE FROM {table} WHERE rowid IN (
+                SELECT rowid FROM (
+                    SELECT rowid, RANK() OVER (PARTITION BY substr(ts,1,13) ORDER BY ts DESC, ordinal DESC) AS rn
+                    FROM {table}
+                    WHERE instance=? AND month=? AND ts < ? AND entry_kind='record'
+                      AND ts GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]*'
+                ) WHERE rn > 1)''', (instance, month, cutoff))
 
     def add_coins_snapshot(
         self,
@@ -813,45 +972,67 @@ class Cl1Database:
         with self._stats_transaction() as conn:
             # 补齐必须先于本次读取。
             self.ensure_coins_history(instance, conn)
-            data = self._get_stats_in_connection(conn, instance, month)
             yellow_coins = self._coerce_int(yellow_coins)
-            purple_coins = self._coerce_int(purple_coins) if purple_coins is not None else None
-            if carry_purple and purple_coins is None:
-                previous = next((point for point in reversed(data.get('coins_snapshots', []))
-                                 if point.get('purple_coins') is not None), None)
-                if previous is None:
-                    previous = self._get_previous_coins_snapshot(conn, instance, month)
-                if previous is not None and previous.get('purple_coins') is not None:
-                    purple_coins = self._coerce_int(previous['purple_coins'])
-
             snapshot = {
                 "ts": observed_at.isoformat(),
                 "yellow_coins": yellow_coins,
                 "source": source,
             }
             if purple_coins is not None:
-                snapshot["purple_coins"] = purple_coins
+                snapshot["purple_coins"] = self._coerce_int(purple_coins)
+            self._record_coins_snapshot(conn, instance, month, snapshot, carry_purple=carry_purple)
 
-            snapshots = data.get("coins_snapshots", [])
-            if not snapshots and purple_coins is not None:
+    def _record_coins_snapshot(self, conn, instance: str, month: str, snapshot: Dict[str, Any],
+                               carry_purple: bool = False):
+        """凭证快照 O(1) 增量写：查尾去重、单行追加、SQL 端按小时抽稀。
+
+        此前每次写入都整月读改写并重插全部凭证快照，代价随月内条目线性增长；
+        carry_purple 沿用最近一次紫币读数，月初残留与尾部重复按文档路径条件丢弃。
+        """
+        from module.persistence.snapshots import FAMILIES, save_row
+        register_instance(conn, instance)
+        yellow_coins = snapshot["yellow_coins"]
+        purple_coins = snapshot.get("purple_coins")
+        if carry_purple and purple_coins is None:
+            last_purple = conn.execute(
+                'SELECT purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+                'AND purple_coin IS NOT NULL ORDER BY ordinal DESC LIMIT 1',
+                (instance, month)).fetchone()
+            if last_purple is not None:
+                purple_coins = self._coerce_int(last_purple[0])
+            else:
+                previous = self._previous_coins_tail(conn, instance, month)
+                if previous is not None and previous[1] is not None:
+                    purple_coins = self._coerce_int(previous[1])
+        tail = conn.execute(
+            'SELECT yellow_coin, purple_coin FROM coin_snapshots WHERE instance=? AND month=? '
+            'ORDER BY ordinal DESC LIMIT 1', (instance, month)).fetchone()
+        if tail is None:
+            if purple_coins is not None:
                 # 与上月最后一条相同的月初读数视为残留，不记录。
-                previous = self._get_previous_coins_snapshot(conn, instance, month)
-                if previous is not None and self._coerce_int(previous.get('purple_coins', -1)) == purple_coins:
+                previous = self._previous_coins_tail(conn, instance, month)
+                if previous is not None and self._coerce_int(
+                        -1 if previous[1] is None else previous[1]) == purple_coins:
                     return
-            if snapshots:
-                with suppress(ValueError, TypeError, IndexError, KeyError):
-                    last = snapshots[-1]
-                    if self._coerce_int(last.get("yellow_coins", -1)) == yellow_coins:
-                        if (
-                            purple_coins is not None
-                            and self._coerce_int(last.get("purple_coins", -1)) == purple_coins
-                        ):
-                            return
-                        if purple_coins is None and "purple_coins" not in last:
-                            return
-            snapshots.append(snapshot)
-            data["coins_snapshots"] = thin_coins_snapshots(snapshots)
-            self._save_stats_in_connection(conn, instance, month, data)
+        else:
+            try:
+                if self._coerce_int(tail[0]) == yellow_coins:
+                    if purple_coins is not None and self._coerce_int(tail[1]) == purple_coins:
+                        return
+                    if purple_coins is None and tail[1] is None:
+                        return
+            except (ValueError, TypeError):
+                pass
+        if purple_coins is not None and "purple_coins" not in snapshot:
+            snapshot = {**snapshot, "purple_coins": purple_coins}
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 7)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM coin_snapshots WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'coin_snapshots', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 snapshot, FAMILIES['coins_snapshots'][1], {'instance': instance, 'month': month}, entry=True)
+        self._thin_snapshots(conn, instance, month, 'coin_snapshots', COINS_EXACT_DAYS * 24)
 
     def async_add_coins_snapshot(
         self,
@@ -880,6 +1061,33 @@ class Cl1Database:
             logger.warning('[统计-快照] 后台写入被取消')
         elif future.exception() is not None:
             logger.error(f'[统计-快照] 后台写入失败: {type(future.exception()).__name__}')
+
+    # 同类型失败在窗口内只记一条，避免争用期刷屏。
+    _background_failure_at = {}
+    _background_failure_interval = 60.0
+
+    @classmethod
+    def _background_finished(cls, future):
+        """后台写入失败只报类型名，丢弃无主的 asyncio 异常栈。"""
+        if future.cancelled():
+            return
+        error = future.exception()
+        if error is None:
+            return
+        name = type(error).__name__
+        stamp = time.monotonic()
+        if stamp - cls._background_failure_at.get(name, 0.0) < cls._background_failure_interval:
+            return
+        cls._background_failure_at[name] = stamp
+        logger.warning(f'[统计-后台] 写入失败（可在下个周期重试）：{name}')
+
+    def _submit_write(self, function, *args, **kwargs):
+        """提交后台写入并挂降噪失败回调，避免 asyncio 打出无主 traceback。"""
+        from module.base.async_executor import async_executor
+
+        future = async_executor.submit(function, *args, **kwargs)
+        future.add_done_callback(self._background_finished)
+        return future
 
     def migrate_from_json(self, json_path: Path, instance: str):
         """显式导入旧月份文件，只补缺月，不修改源文件。"""
@@ -930,20 +1138,62 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            data["meow_battle_raw_count"] = data.get("meow_battle_raw_count", 0) + 1
-            data["meow_battle_count"] = data.get("meow_battle_count", 0) + delta
+            if not self._increment_meow_battle(conn, instance, month, hazard_level, delta):
+                data = self._get_stats_in_connection(conn, instance, month)
+                data["meow_battle_raw_count"] = data.get("meow_battle_raw_count", 0) + 1
+                data["meow_battle_count"] = data.get("meow_battle_count", 0) + delta
 
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                bucket["battle_raw_count"] = int(bucket.get("battle_raw_count", 0) or 0) + 1
-                bucket["effective_rounds"] = float(
-                    bucket.get("effective_rounds", 0) or 0
-                ) + delta
-                data["meow_hazard_stats"] = hazard_stats
+                if hazard_level in {2, 3, 4, 5, 6}:
+                    hazard_stats = self._normalize_meow_hazard_stats(data)
+                    bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
+                    bucket["battle_raw_count"] = int(bucket.get("battle_raw_count", 0) or 0) + 1
+                    bucket["effective_rounds"] = float(
+                        bucket.get("effective_rounds", 0) or 0
+                    ) + delta
+                    data["meow_hazard_stats"] = hazard_stats
 
-            self._save_stats_in_connection(conn, instance, month, data)
+                self._save_stats_in_connection(conn, instance, month, data)
+
+    def _increment_meow_battle(self, conn, instance: str, month: str, hazard_level, delta: float) -> bool:
+        """战斗次数与有效轮数 O(1) 递增；原生列位不齐时返回 False 走文档路径。"""
+        register_instance(conn, instance)
+        valid_hazard = hazard_level in {2, 3, 4, 5, 6}
+        bits = MONTH_MEOW_RAW_BIT | MONTH_MEOW_ROUNDS_BIT | (MONTH_MEOW_STATS_BIT if valid_hazard else 0)
+        month_row = conn.execute(
+            'SELECT field_mask FROM cl1_months WHERE instance=? AND month=?', (instance, month)).fetchone()
+        counter_row = None
+        if valid_hazard:
+            counter_row = conn.execute(
+                'SELECT field_mask FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+                (instance, month, hazard_level)).fetchone()
+        # 护栏全部先行：任何回退都必须发生在写入之前，避免部分应用后重复计数。
+        if month_row is not None and month_row[0] & MONTH_MEOW_SCALAR_BITS != MONTH_MEOW_SCALAR_BITS:
+            return False
+        if valid_hazard and counter_row is not None and counter_row[0] & COUNTER_BATTLE_BITS != COUNTER_BATTLE_BITS:
+            return False
+        if month_row is None:
+            self._ensure_month_row(conn, instance, month, bits)
+            conn.execute(
+                'UPDATE cl1_months SET meow_battle_raw_count=COALESCE(meow_battle_raw_count,0)+1, '
+                'meow_effective_rounds=COALESCE(meow_effective_rounds,0)+? WHERE instance=? AND month=?',
+                (delta, instance, month))
+        else:
+            conn.execute(
+                'UPDATE cl1_months SET meow_battle_raw_count=COALESCE(meow_battle_raw_count,0)+1, '
+                'meow_effective_rounds=COALESCE(meow_effective_rounds,0)+?, field_mask=field_mask|? '
+                'WHERE instance=? AND month=?', (delta, bits, instance, month))
+        if valid_hazard:
+            if counter_row is None:
+                conn.execute(
+                    'INSERT INTO meow_hazard_counters(instance, month, hazard_level, battle_raw_count, '
+                    'effective_rounds, field_mask) VALUES(?, ?, ?, 1, ?, ?)',
+                    (instance, month, hazard_level, delta, COUNTER_BATTLE_BITS))
+            else:
+                conn.execute(
+                    'UPDATE meow_hazard_counters SET battle_raw_count=COALESCE(battle_raw_count,0)+1, '
+                    'effective_rounds=COALESCE(effective_rounds,0)+? WHERE instance=? AND month=? AND hazard_level=?',
+                    (delta, instance, month, hazard_level))
+        return True
 
     def add_meow_round_time(
         self, instance: str, duration: float, hazard_level: int = None
@@ -962,33 +1212,7 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-
-            normalized_times = self._normalize_meow_round_times(
-                data.get("meow_round_times", [])
-            )
-
-            # 保存为字典，包含时长和侵蚀等级
-            new_entry = {"duration": round(duration, 2), "hazard_level": hazard_level}
-            normalized_times.append(new_entry)
-
-            # 只保留最近100个样本
-            if len(normalized_times) > 100:
-                normalized_times = normalized_times[-100:]
-
-            data["meow_round_times"] = normalized_times
-
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                round_times = bucket.get("round_times", [])
-                round_times.append(round(duration, 2))
-                if len(round_times) > 100:
-                    round_times = round_times[-100:]
-                bucket["round_times"] = round_times
-                data["meow_hazard_stats"] = hazard_stats
-
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._append_meow_sample(conn, instance, month, 'round', round(duration, 2), hazard_level)
 
     def add_meow_battle_time(
         self, instance: str, duration: float, hazard_level: int = None
@@ -1006,31 +1230,46 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
+            self._append_meow_sample(conn, instance, month, 'battle', round(duration, 2), hazard_level)
 
-            if "meow_battle_times" not in data:
-                data["meow_battle_times"] = []
-
-            times = data["meow_battle_times"]
-            times.append(round(duration, 2))
-
-            # 只保留最近100个样本
-            if len(times) > 100:
-                times = times[-100:]
-
-            data["meow_battle_times"] = times
-
-            if hazard_level in {2, 3, 4, 5, 6}:
-                hazard_stats = self._normalize_meow_hazard_stats(data)
-                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-                battle_times = bucket.get("battle_times", [])
-                battle_times.append(round(duration, 2))
-                if len(battle_times) > 100:
-                    battle_times = battle_times[-100:]
-                bucket["battle_times"] = battle_times
-                data["meow_hazard_stats"] = hazard_stats
-
-            self._save_stats_in_connection(conn, instance, month, data)
+    def _append_meow_sample(self, conn, instance: str, month: str, kind: str, duration: float, hazard_level):
+        """样本 O(1) 追加：月份行位补齐、单行插入、保留最近 100 条。"""
+        from module.persistence.snapshots import insert, project
+        register_instance(conn, instance)
+        valid_hazard = hazard_level in {2, 3, 4, 5, 6}
+        month_bit = MONTH_ROUND_SAMPLES_BIT if kind == 'round' else MONTH_BATTLE_SAMPLES_BIT
+        bits = month_bit | (MONTH_MEOW_STATS_BIT if valid_hazard else 0)
+        self._ensure_month_row(conn, instance, month, bits)
+        if valid_hazard:
+            # read_month 只投影计数器行存在的分级桶；样本插入前确保桶存在。
+            conn.execute(
+                'INSERT INTO meow_hazard_counters(instance, month, hazard_level, field_mask) VALUES(?, ?, ?, ?) '
+                'ON CONFLICT(instance, month, hazard_level) DO UPDATE SET field_mask=field_mask|excluded.field_mask',
+                (instance, month, hazard_level,
+                 COUNTER_ROUND_SAMPLES_BIT if kind == 'round' else COUNTER_BATTLE_SAMPLES_BIT))
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=0',
+            (instance, month, kind)).fetchone()[0]
+        month_sample = {'duration': duration, 'hazard_level': hazard_level}
+        columns, mask, extra = project(month_sample,
+                                       (('duration', 'duration_seconds', 'R'), ('hazard_level', 'observed_hazard', 'I')))
+        from module.persistence.snapshots import write_value
+        value_id = write_value(conn, instance, value=extra, month=month) if extra else None
+        insert(conn, 'meow_duration_samples', dict(instance=instance, month=month, kind=kind, bucket=0,
+            ordinal=ordinal, entry_format='object', hazard_present=int('hazard_level' in month_sample),
+            field_mask=mask, compat_value_set_id=value_id, **columns))
+        if valid_hazard:
+            ordinal = conn.execute(
+                'SELECT COALESCE(MAX(ordinal),-1)+1 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=?',
+                (instance, month, kind, hazard_level)).fetchone()[0]
+            insert(conn, 'meow_duration_samples', dict(instance=instance, month=month, kind=kind, bucket=hazard_level,
+                ordinal=ordinal, entry_format='number', hazard_present=0, field_mask=1,
+                compat_value_set_id=None, duration_seconds=duration, observed_hazard=None))
+        for bucket in ({0, hazard_level} if valid_hazard else {0}):
+            conn.execute(
+                'DELETE FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=? AND ordinal <= '
+                '(SELECT COALESCE(MAX(ordinal),-1)-100 FROM meow_duration_samples WHERE instance=? AND month=? AND kind=? AND bucket=?)',
+                (instance, month, kind, bucket, instance, month, kind, bucket))
 
     def increment_meow_akashi_encounter(
         self, instance: str, hazard_level: int, month: Optional[str] = None,
@@ -1048,14 +1287,19 @@ class Cl1Database:
 
         month = month or datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            hazard_stats = self._normalize_meow_hazard_stats(data)
-            bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-            bucket["akashi_encounters"] = bucket.get("akashi_encounters", 0) + 1
-            count = bucket["akashi_encounters"]
-            data["meow_hazard_stats"] = hazard_stats
-            self._save_stats_in_connection(conn, instance, month, data)
-        return count
+            if not self._increment_meow_counter_field(conn, instance, month, hazard_level,
+                                                      'akashi_encounters', COUNTER_AKASHI_ENCOUNTERS_BIT, 1):
+                data = self._get_stats_in_connection(conn, instance, month)
+                hazard_stats = self._normalize_meow_hazard_stats(data)
+                bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
+                bucket["akashi_encounters"] = bucket.get("akashi_encounters", 0) + 1
+                count = bucket["akashi_encounters"]
+                data["meow_hazard_stats"] = hazard_stats
+                self._save_stats_in_connection(conn, instance, month, data)
+                return count
+            return conn.execute(
+                'SELECT akashi_encounters FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+                (instance, month, hazard_level)).fetchone()[0]
 
     def add_meow_akashi_ap(self, instance: str, hazard_level: int, amount: int):
         """记录耄耋相接明石商店购买的体力（按侵蚀等级拆分）。
@@ -1078,12 +1322,28 @@ class Cl1Database:
 
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            hazard_stats = self._normalize_meow_hazard_stats(data)
-            bucket = self._ensure_meow_hazard_bucket(hazard_stats, hazard_level)
-            bucket["akashi_ap"] = int(bucket.get("akashi_ap", 0) or 0) + amount
-            data["meow_hazard_stats"] = hazard_stats
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._increment_meow_counter_field(conn, instance, month, hazard_level,
+                                               'akashi_ap', COUNTER_AKASHI_AP_BIT, amount)
+
+    def _increment_meow_counter_field(self, conn, instance: str, month: str, hazard_level: int,
+                                      column: str, bit: int, delta) -> bool:
+        """分级桶明石字段 O(1) 递增；计数器行存在但字段在兼容树时返回 False。"""
+        register_instance(conn, instance)
+        counter_row = conn.execute(
+            'SELECT field_mask FROM meow_hazard_counters WHERE instance=? AND month=? AND hazard_level=?',
+            (instance, month, hazard_level)).fetchone()
+        if counter_row is not None and counter_row[0] & bit == 0:
+            return False
+        self._ensure_month_row(conn, instance, month, MONTH_MEOW_STATS_BIT)
+        if counter_row is None:
+            conn.execute(
+                f'INSERT INTO meow_hazard_counters(instance, month, hazard_level, {column}, field_mask) '
+                f'VALUES(?, ?, ?, ?, ?)', (instance, month, hazard_level, delta, bit))
+        else:
+            conn.execute(
+                f'UPDATE meow_hazard_counters SET {column}=COALESCE({column},0)+? '
+                'WHERE instance=? AND month=? AND hazard_level=?', (delta, instance, month, hazard_level))
+        return True
 
     def get_meow_stats(
         self, instance: str, year: int = None, month: int = None,
@@ -1273,29 +1533,21 @@ class Cl1Database:
 
     def async_save_stats(self, instance: str, month: str, data: Dict[str, Any]):
         """异步保存指定月份的 CL1 统计数据。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.save_stats, instance, month, data)
+        return self._submit_write(self.save_stats, instance, month, data)
 
     def async_increment_battle_count(self, instance: str, delta: int = 1):
         """异步增加战斗场次计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.increment_battle_count, instance, delta)
+        return self._submit_write(self.increment_battle_count, instance, delta)
 
     def async_increment_akashi_encounter(self, instance: str, month: Optional[str] = None):
         """异步增加明石遭遇次数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(self.increment_akashi_encounter, instance, month)
+        return self._submit_write(self.increment_akashi_encounter, instance, month)
 
     def async_add_akashi_ap_entry(
         self, instance: str, amount: int, base: int, count: int, source: str
     ):
         """异步记录明石购买行动力条目。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_akashi_ap_entry, instance, amount, base, count, source
         )
 
@@ -1313,9 +1565,7 @@ class Cl1Database:
 
     def async_set_last_ap_notification(self, instance: str, ap_current: int):
         """异步记录最近一次行动力通知值。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.set_last_ap_notification, instance, ap_current
         )
 
@@ -1336,9 +1586,7 @@ class Cl1Database:
         self, instance: str, hazard_level: int = None, delta: float = None
     ):
         """异步增加短猫相接战斗场次计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.increment_meow_battle_count, instance, hazard_level, delta
         )
 
@@ -1346,9 +1594,7 @@ class Cl1Database:
         self, instance: str, duration: float, hazard_level: int = None
     ):
         """异步记录短猫相接单轮耗时。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_round_time, instance, duration, hazard_level
         )
 
@@ -1356,9 +1602,7 @@ class Cl1Database:
         self, instance: str, duration: float, hazard_level: int = None
     ):
         """异步记录短猫相接战斗耗时。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_battle_time, instance, duration, hazard_level
         )
 
@@ -1372,9 +1616,7 @@ class Cl1Database:
         self, instance: str, source: str = "cl1", hazard_level: int = None
     ):
         """异步记录塞壬研究装置出现。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_siren_research_device, instance, source, hazard_level
         )
 
@@ -1382,17 +1624,13 @@ class Cl1Database:
         self, instance: str, hazard_level: int, month: Optional[str] = None,
     ):
         """异步增加短猫相接明石遭遇计数。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.increment_meow_akashi_encounter, instance, hazard_level, month
         )
 
     def async_add_meow_akashi_ap(self, instance: str, hazard_level: int, amount: int):
         """异步记录短猫相接明石行动力购买。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_meow_akashi_ap, instance, hazard_level, amount
         )
 
@@ -1487,33 +1725,101 @@ class Cl1Database:
         }
         removed = None
         with self._stats_transaction() as conn:
-            read_months = months if gem_duration is not None else months[:1]
-            data = {month: self._get_stats_in_connection(conn, instance, month) for month in read_months}
-            entries = data[months[0]].get("commission_income_entries", [])
-            entries.append(entry)
-            data[months[0]]["commission_income_entries"] = entries[-5000:]
-            changed = {months[0]}
             if gem_duration is not None:
-                for commission in self._running_commissions_from_months(data, months):
-                    if commission.get("duration") != gem_duration:
-                        continue
-                    try:
-                        finish_time = datetime.fromisoformat(commission["finish_time"])
-                    except (KeyError, TypeError, ValueError):
-                        logger.warning(f"钻石委托完成时间无效，跳过结算: {commission}")
-                        continue
-                    if finish_time > completed_at:
-                        continue
-                    removed, source_month = self._settle_running_in_months(
-                        data, months, now, items.get("Gem", 0),
-                        name=commission.get("name"), duration_hour=gem_duration,
-                        create_time=commission.get("create_time"),
-                    )
-                    if source_month is not None:
-                        changed.add(source_month)
-                    break
-            self._save_commission_months(conn, instance, data, months, changed)
+                removed = self._settle_commission_fast(conn, instance, months, now, completed_at,
+                                                       gem_duration, items.get("Gem", 0))
+            self._record_commission_income(conn, instance, months[0], entry)
         return removed
+
+    def _record_commission_income(self, conn, instance: str, month: str, entry: Dict[str, Any]) -> None:
+        """委托收益 O(1) 增量写：单行追加（物品与截图落子表）、超限截断。
+
+        此前每次结算都整月读改写并重插全部收益条目，代价随月内条目线性增长。
+        """
+        from module.persistence.snapshots import FAMILIES, save_children, save_row
+        register_instance(conn, instance)
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 17)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM commission_income WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        row_id = save_row(conn, 'commission_income', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                          entry, FAMILIES['commission_income_entries'][1],
+                          {'instance': instance, 'month': month}, entry=True)
+        save_children(conn, 'commission_income', row_id, entry, {'instance': instance, 'month': month})
+        if ordinal + 1 > COMMISSION_INCOME_ENTRY_LIMIT:
+            cutoff = ordinal + 1 - COMMISSION_INCOME_ENTRY_LIMIT
+            trimmed = conn.execute(
+                'SELECT id, compat_value_set_id FROM commission_income WHERE instance=? AND month=? AND ordinal<?',
+                (instance, month, cutoff)).fetchall()
+            conn.executemany('DELETE FROM commission_income_items WHERE income_id=?', [(row[0],) for row in trimmed])
+            conn.executemany('DELETE FROM commission_income_screenshots WHERE income_id=?',
+                             [(row[0],) for row in trimmed])
+            conn.execute('DELETE FROM commission_income WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, cutoff))
+            conn.executemany('DELETE FROM typed_value_sets WHERE id=? AND instance=? AND month=?',
+                             [(row[1], instance, month) for row in trimmed if row[1] is not None])
+
+    def _settle_commission_fast(self, conn, instance: str, months, now, completed_at,
+                                gem_duration: int, reward: int) -> Optional[Dict[str, Any]]:
+        """钻石委托增量结算：小列表内存匹配、源月单行删除、当前月归档追加。
+
+        候选沿上月优先去重并按完成时间排序，与文档路径的选取语义一致；
+        增量路径不重排运行列表的存储序，后续匹配仍会先排序。
+        """
+        candidates = []
+        seen = set()
+        for month in reversed(months):
+            for row in conn.execute(
+                    'SELECT id, ordinal, name, duration_hours, created_at, finishes_at FROM running_gem_commissions '
+                    'WHERE instance=? AND month=?', (instance, month)):
+                identity = (row['name'], row['created_at'])
+                if identity not in seen:
+                    seen.add(identity)
+                    candidates.append((month, row))
+        candidates.sort(key=lambda item: item[1]['finishes_at'] or '')
+        for month, row in candidates:
+            if row['duration_hours'] != gem_duration:
+                continue
+            try:
+                finish_time = datetime.fromisoformat(row['finishes_at'])
+            except (KeyError, TypeError, ValueError):
+                logger.warning(f"钻石委托完成时间无效，跳过结算: {dict(row)}")
+                continue
+            if finish_time > completed_at:
+                continue
+            # 三字段精确匹配沿用当前月优先；IS 同时支持取值为空的旧条目。
+            for source_month in months:
+                removed_row = conn.execute(
+                    'SELECT id, name, duration_hours, created_at, finishes_at FROM running_gem_commissions '
+                    'WHERE instance=? AND month=? AND name IS ? AND duration_hours IS ? AND created_at IS ? LIMIT 1',
+                    (instance, source_month, row['name'], gem_duration, row['created_at'])).fetchone()
+                if removed_row is not None:
+                    conn.execute('DELETE FROM running_gem_commissions WHERE id=?', (removed_row['id'],))
+                    self._append_gem_commission_entry_fast(conn, instance, months[0], removed_row['duration_hours'],
+                                                           reward, now)
+                    return {'name': removed_row['name'], 'duration': removed_row['duration_hours'],
+                            'create_time': removed_row['created_at'], 'finish_time': removed_row['finishes_at']}
+        return None
+
+    def _append_gem_commission_entry_fast(self, conn, instance: str, month: str, duration_hour, reward: int, now):
+        """钻石委托归档 O(1) 增量写：单行追加、超限截断（无子表与兼容值）。"""
+        from module.persistence.snapshots import FAMILIES, save_row
+        entry = {
+            "ts": now.isoformat(),
+            "duration": self._coerce_int(duration_hour),
+            "reward": self._coerce_int(reward),
+            "success": self._coerce_int(reward) > 0,
+        }
+        self._ensure_month_row(conn, instance, month, 1 << 19)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM gem_commission_history WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        save_row(conn, 'gem_commission_history', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                 entry, FAMILIES['gem_commission_entries'][1], {'instance': instance, 'month': month}, entry=True)
+        if ordinal + 1 > GEM_COMMISSION_ENTRY_LIMIT:
+            conn.execute('DELETE FROM gem_commission_history WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, ordinal + 1 - GEM_COMMISSION_ENTRY_LIMIT))
 
     def get_commission_reward_stats(self, instance: str):
         """
@@ -1665,17 +1971,43 @@ class Cl1Database:
             entry['source_items'] = source_items
             entry['item_entries'] = map_items(source_items, [])
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-            entries = data.get("research_drop_entries", [])
-            if entry["imgid"] and any(
-                existing.get("imgid") == entry["imgid"] for existing in entries[-50:]
-            ):
+            if not self._record_research_drop(conn, instance, month, entry):
                 return None
-            entries.append(entry)
-            # 与委托收益保持一致：按月保留最近 5000 条
-            data["research_drop_entries"] = entries[-5000:]
-            self._save_stats_in_connection(conn, instance, month, data)
         return entry
+
+    def _record_research_drop(self, conn, instance: str, month: str, entry: Dict[str, Any]) -> bool:
+        """科研掉落 O(1) 增量写：imgid 查尾去重、单行追加、超限截断。
+
+        此前每次领奖都整月读改写并重插全部掉落条目与物品子表；imgid 去重保持
+        与原路径一致的最近 50 条范围，被截条目的物品子表与兼容值集合一并清理。
+        """
+        from module.persistence.snapshots import FAMILIES, save_children, save_row
+        register_instance(conn, instance)
+        if entry["imgid"] and conn.execute('''
+            SELECT 1 FROM (
+                SELECT imgid FROM research_drops WHERE instance=? AND month=? ORDER BY ordinal DESC LIMIT 50
+            ) WHERE imgid=?''', (instance, month, entry["imgid"])).fetchone() is not None:
+            return False
+        # 家族行外键要求月份行先存在；UPSERT 同时保留月份行写入拒绝的触发器契约。
+        self._ensure_month_row(conn, instance, month, 1 << 18)
+        ordinal = conn.execute(
+            'SELECT COALESCE(MAX(ordinal),-1)+1 FROM research_drops WHERE instance=? AND month=?',
+            (instance, month)).fetchone()[0]
+        row_id = save_row(conn, 'research_drops', {'instance': instance, 'month': month, 'ordinal': ordinal},
+                          entry, FAMILIES['research_drop_entries'][1],
+                          {'instance': instance, 'month': month}, entry=True)
+        save_children(conn, 'research_drops', row_id, entry, {'instance': instance, 'month': month})
+        if ordinal + 1 > RESEARCH_DROP_ENTRY_LIMIT:
+            cutoff = ordinal + 1 - RESEARCH_DROP_ENTRY_LIMIT
+            trimmed = conn.execute(
+                'SELECT id, compat_value_set_id FROM research_drops WHERE instance=? AND month=? AND ordinal<?',
+                (instance, month, cutoff)).fetchall()
+            conn.executemany('DELETE FROM research_drop_items WHERE drop_id=?', [(row[0],) for row in trimmed])
+            conn.execute('DELETE FROM research_drops WHERE instance=? AND month=? AND ordinal<?',
+                         (instance, month, cutoff))
+            conn.executemany('DELETE FROM typed_value_sets WHERE id=? AND instance=? AND month=?',
+                             [(row[1], instance, month) for row in trimmed if row[1] is not None])
+        return True
 
     def apply_template_mappings(self, mappings, *, instance=None):
         """Repair history atomically from immutable source IDs using storage abstractions."""
@@ -1785,9 +2117,7 @@ class Cl1Database:
         self, instance: str, project: str, series: int, items: Dict[str, int], imgid: str = ''
     ):
         """异步写入科研掉落，避免解析结果落库时阻塞主循环。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_research_drop, instance, project, series, items, imgid=imgid
         )
 
@@ -1814,10 +2144,7 @@ class Cl1Database:
         """
         month = datetime.now().strftime("%Y-%m")
         with self._stats_transaction() as conn:
-            data = self._get_stats_in_connection(conn, instance, month)
-
-            self._append_gem_commission_entry(data, duration_hour, reward, datetime.now())
-            self._save_stats_in_connection(conn, instance, month, data)
+            self._append_gem_commission_entry_fast(conn, instance, month, duration_hour, reward, datetime.now())
 
     def get_gem_commissions(
         self,
@@ -2049,9 +2376,7 @@ class Cl1Database:
         screenshots: Optional[List[str]] = None,
     ):
         """异步记录委托收益。"""
-        from module.base.async_executor import async_executor
-
-        return async_executor.submit(
+        return self._submit_write(
             self.add_commission_income, instance, items, commission_count, screenshots
         )
 

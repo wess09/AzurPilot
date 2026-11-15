@@ -1,0 +1,35 @@
+/* 配置字段域 —— B1 自 components.css:425-458 保序拆分，规则文本逐字未改（yaml-editor、storage-field、remote-address） */
+.field-row-multiline {flex-direction: column; align-items: stretch; gap: 13px}
+.field-row-multiline .field-control {width: 100%; min-width: 0; text-align: left}
+/* 控件占满整行时，提示浮在标题行右上角：进流会触发换行撑高整行，把输入框顶下去 */
+.field-row-multiline .field-label {position: relative}
+.field-row-multiline .field-label > .edit-status {position: absolute; top: 0; right: 0; margin: 0; max-width: 200px; transform: none; overflow: hidden; padding: 3px 9px; background: var(--surface); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: 8px; --edit-status-window: 161px}
+@media (max-width: 950px) {
+  /* 窄屏下所有控件都撑满整行，同样要给提示腾一行 */
+  .field-control:has(> .edit-status) {position: static; display: flex; flex-direction: column; align-items: flex-start; gap: 6px}
+  .field-control > .edit-status {position: static; order: -1; margin: 0; max-width: 200px; transform: none}
+}
+.field-row-multiline textarea {padding: 10px 14px; background: var(--surface-muted); font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace)}
+.yaml-editor {overflow: hidden; text-align: left}
+.yaml-editor .cm-editor {color: var(--text); outline: none; font-size: 13px}
+.yaml-editor .cm-scroller {max-height: 480px; overflow: auto; font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); line-height: 1.9}
+.yaml-editor .cm-content {padding: 12px 0; caret-color: var(--text)}
+.yaml-editor .cm-line {padding: 0 14px}
+.yaml-editor .cm-gutters {background: transparent; color: var(--muted)}
+.yaml-editor .cm-activeLine {background: var(--accent-soft)}
+.yaml-editor .cm-cursor {border-left-color: var(--text)}
+.yaml-editor.is-disabled {opacity: .65}
+.storage-field {display: grid; gap: 12px}
+.storage-field pre {margin: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); font: 13px/1.9 var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 480px; overflow-y: auto}
+.storage-field .button {justify-self: start}
+.edit-status {margin-top: 6px; font-size: 12px}
+.remote-address {display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 21px}
+.remote-address code {flex: 1 1 260px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); font: 13px/1.7 var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Microsoft YaHei", monospace); overflow-wrap: anywhere; user-select: all}
+.remote-hint {margin: 0; padding: 0 21px 16px; font-size: 12px}
+.remote-badge {display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap}
+.remote-badge .tiny-dot {width: 6px; height: 6px}
+.remote-badge-ready {background: #269a8120; color: #269a81}
+.remote-badge-starting {background: #b8860b20; color: #a97b0a}
+.remote-badge-failed {background: #bd555520; color: var(--red)}
+.remote-badge-disabled {background: var(--surface-muted); color: var(--muted)}
+

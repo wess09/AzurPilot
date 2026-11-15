@@ -1,3 +1,7 @@
+/**
+ * @fileoverview LogPanel 的解析、渲染与缓冲回归：超大日志截断、分割线与居中标题识别、流式微批队列与行高布局。
+ */
+
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
@@ -24,7 +28,7 @@ describe('LogPanel 日志解析与渲染', () => {
 
     const retained = mergeLogEntries([], entries, true)
     expect(retained).toHaveLength(LOG_ENTRY_LIMIT)
-    expect(retained[0].id).toBe(42_000 - LOG_ENTRY_LIMIT + 1)
+    expect(retained[0]?.id).toBe(42_000 - LOG_ENTRY_LIMIT + 1)
     expect(retained.at(-1)?.id).toBe(42_000)
   })
 
@@ -40,7 +44,7 @@ describe('LogPanel 日志解析与渲染', () => {
 
     const retained = mergeLogEntries(previous, incoming)
     expect(retained).toHaveLength(LOG_ENTRY_LIMIT)
-    expect(retained[0].id).toBe(3)
+    expect(retained[0]?.id).toBe(3)
     expect(retained.at(-1)?.id).toBe(LOG_ENTRY_LIMIT + 2)
     expect(retained.find(entry => entry.id === LOG_ENTRY_LIMIT)?.level).toBe('WARNING')
   })
@@ -52,7 +56,6 @@ describe('LogPanel 日志解析与渲染', () => {
     const centerTitleText = ' '.repeat(20) + 'COMMISSION' + ' '.repeat(20)
     expect(CENTER_TITLE_RE.test(centerTitleText)).toBe(true)
 
-    // 单行居中渲染
     const htmlCenter = renderToStaticMarkup(
       <LogLine entry={{ id: 2, level: 'INFO', text: centerTitleText }} search="" />
     )
@@ -63,7 +66,7 @@ describe('LogPanel 日志解析与渲染', () => {
   })
 
   it('在空格被剥离时，仍可通过夹心上下文将 level=0 标题居中', () => {
-    // 假设极端情况下前后端空格丢失，只有 "COMMISSION"
+    // 假设极端情况下前后端空格丢失，只有 `COMMISSION` 一个词
     const htmlCenterByContext = renderToStaticMarkup(
       <LogLine entry={{ id: 2, level: 'INFO', text: 'COMMISSION' }} search="" isCenter={true} />
     )
@@ -164,7 +167,6 @@ describe('LogPanel 日志解析与渲染', () => {
         cursor: 5,
       }
 
-      // 收到 reset
       queueLogEvent(buffer, {
         entries: [{ id: 10, level: 'INFO', text: '重置后的第一条' }],
         reset: true,
@@ -172,7 +174,7 @@ describe('LogPanel 日志解析与渲染', () => {
       })
       expect(buffer.reset).toBe(true)
       expect(buffer.entries).toHaveLength(1)
-      expect(buffer.entries[0].id).toBe(10)
+      expect(buffer.entries[0]?.id).toBe(10)
       expect(buffer.cursor).toBe(20)
 
       // 同一动画帧内后续到达的事件继续追加
@@ -185,6 +187,21 @@ describe('LogPanel 日志解析与渲染', () => {
       expect(buffer.entries).toHaveLength(2)
       expect(buffer.entries.map(e => e.id)).toEqual([10, 11])
       expect(buffer.cursor).toBe(21)
+    })
+
+    it('渲染暂停时限制待提交日志数量', () => {
+      const buffer: LogBufferState = {entries: [], reset: false, cursor: null}
+      const entries = Array.from({length: LOG_ENTRY_LIMIT + 5}, (_, index) => ({
+        id: index + 1, level: 'INFO', text: `日志 ${index + 1}`,
+      }))
+      queueLogEvent(buffer, {entries, reset: true, cursor: entries.length})
+      queueLogEvent(buffer, {
+        entries: [{id: entries.length + 1, level: 'INFO', text: '最新日志'}],
+        cursor: entries.length + 1,
+      })
+      expect(buffer.entries).toHaveLength(LOG_ENTRY_LIMIT)
+      expect(buffer.entries[0]?.id).toBe(7)
+      expect(buffer.entries.at(-1)?.id).toBe(entries.length + 1)
     })
   })
 

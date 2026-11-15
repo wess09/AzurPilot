@@ -1,4 +1,7 @@
-/** 远程配对的四语言文案。 */
+/**
+ * @fileoverview 远程配对的四语言文案。
+ */
+
 import type {Language} from '../i18n'
 
 const zh = {
@@ -24,6 +27,7 @@ const zh = {
   scanGuide: '用手机扫描二维码',
 }
 type Copy = typeof zh
+/** 远程配对页的界面文案，按语言取用；键结构以 zh 为准。 */
 export const pairCopy: Record<Language, Copy> = {
   'zh-CN': zh,
   'zh-TW': {

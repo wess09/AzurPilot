@@ -1,3 +1,6 @@
+/**
+ * @fileoverview 实例一键启停的批量操作按钮状态判定。
+ */
 import {describe, expect, it} from 'vitest'
 import type {Instance} from '../api/types'
 import {bulkAction, bulkTargets} from './instanceBulk'

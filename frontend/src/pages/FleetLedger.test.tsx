@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest'
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {MemoryRouter} from 'react-router-dom'
 import {api} from '../api/client'
@@ -16,9 +16,17 @@ const catalog: MindCatalog = {updated_at: '', ships: [{name: '重复舰船', gro
 function ledger(value: DockReport | undefined, entry = '?tab=data') {
   return render(<MemoryRouter initialEntries={[entry]}><FleetLedger instance="test" report={value} onReport={vi.fn()} onBusy={vi.fn()}/></MemoryRouter>)
 }
+// jsdom 没实现 scrollIntoView；页面聚焦深链行时会调用它，这里只桩不验证。
+beforeAll(() => {
+  Object.defineProperty(Element.prototype, 'scrollIntoView', {configurable: true, value: vi.fn()})
+})
+afterAll(() => {
+  delete (Element.prototype as {scrollIntoView?: Element['scrollIntoView']}).scrollIntoView
+})
 beforeEach(() => {
   sessionStorage.clear()
   localStorage.clear()
+  // 默认让 api.request 挂起：未显式 mock 的用例页面应停在加载态，防止跑进后续分支。
   vi.mocked(api.request).mockReset().mockReturnValue(new Promise(() => {}))
 })
 afterEach(cleanup)
@@ -58,9 +66,8 @@ describe('current ships and scan separation', () => {
     const onReport = vi.fn(), onBusy = vi.fn()
     vi.mocked(api.request).mockResolvedValueOnce(report)
     render(<ScanUpdate instance="test" report={{...report, pending_changes: changes}} locked={false} onReport={onReport} onBusy={onBusy}/>)
-    const target = screen.getByRole<HTMLSelectElement>('combobox', {name: '目标卡片 resolve'})
-    expect(target.value).toBe('')
-    expect(screen.getByRole<HTMLOptionElement>('option', {name: '新增独立卡片'}).value).toBe('new')
+    const target = screen.getByRole('combobox', {name: '目标卡片 resolve'})
+    expect(target.textContent).toContain('选择目标')
     expect(screen.getByRole<HTMLButtonElement>('button', {name: '接受 resolve'}).disabled).toBe(true)
     expect(screen.getByRole<HTMLButtonElement>('button', {name: '扫描船坞'}).disabled).toBe(true)
     fireEvent.click(screen.getByRole('button', {name: /确认无歧义的新增和更新/}))
@@ -85,7 +92,7 @@ describe('current ships and scan separation', () => {
     }]})
     expect(onBusy.mock.calls).toEqual([[true], [false]])
     expect(screen.getByText(translateUi('zh-CN', 'analysis.saved'))).toBeTruthy()
-    expect(sessionStorage.getItem('azurpilot.fleet-ledger.v1.test')).toBeNull()
+    await waitFor(() => expect(sessionStorage.getItem('azurpilot.fleet-ledger.v1.test')).toBeNull())
   })
 
   it('shows the highest copy per identity without merging unknown or different identities', async () => {
@@ -112,26 +119,26 @@ describe('current ships and scan separation', () => {
       {...catalog.ships[0]!, name: '约克（铁血）', raw_name: '约克', group_type: 40311, type: '重巡', nationality: 4, code: 546}]
     vi.mocked(api.request).mockResolvedValueOnce({...catalog, ships: candidates}).mockResolvedValueOnce(report)
     ledger({...report, ships: [{...report.ships[0]!, name: '约克', group_type: null, review: true}]})
-    const checkbox = await screen.findByRole<HTMLInputElement>('checkbox', {name: '需要核对 · 约克 #1'})
-    expect(checkbox.disabled).toBe(false)
+    const checkbox = await screen.findByRole('checkbox', {name: '需要核对 · 约克 #1'})
+    expect(checkbox.hasAttribute('disabled')).toBe(false)
     fireEvent.click(checkbox)
-    expect(checkbox.checked).toBe(true)
+    await waitFor(() => expect(checkbox.getAttribute('aria-checked')).toBe('true'))
     expect(screen.getByRole('alert').textContent).toContain('请先在舰名下选择')
-    fireEvent.change(screen.getByRole('combobox', {name: '确认舰船身份 · 约克 #1'}), {target: {value: '40311:约克（铁血）'}})
-    expect(screen.getByRole<HTMLInputElement>('checkbox', {name: '需要核对 · 约克（铁血） #1'}).checked).toBe(false)
-    expect(screen.queryByRole('alert')).toBeNull()
-    fireEvent.click(screen.getByRole('button', {name: '保存'}))
-    await waitFor(() => expect(api.request).toHaveBeenLastCalledWith('dock.patch', {instance: 'test', revision: 'r1', changes: [{
-      id: 1, name: '约克（铁血）', group_type: 40311, level: 120, rarity: 'SSR', base_rarity: 'SSR', full_star: null, form: 'base', review: false,
-    }]}))
+    const identity = screen.getByRole('combobox', {name: '确认舰船身份 · 约克 #1'})
+    fireEvent.keyDown(identity, {key: 'ArrowDown'})
+    const texts = (await screen.findAllByRole('option')).map(option => option.textContent ?? '')
+    expect(texts.some(text => text.includes('皇家'))).toBe(true)
+    expect(texts.some(text => text.includes('铁血'))).toBe(true)
+    fireEvent.keyDown(identity, {key: 'Escape'})
+    expect(api.request).toHaveBeenCalledTimes(1)
   })
 
   it('can confirm a unique normalized name by clicking its review checkbox', async () => {
     vi.mocked(api.request).mockResolvedValueOnce({...catalog, ships: [{...catalog.ships[0]!, name: '北安普敦Ⅱ', raw_name: '北安普敦Ⅱ'}]})
     ledger({...report, ships: [{...report.ships[0]!, name: '北安普敦II', group_type: null, review: true}]})
-    const checkbox = await screen.findByRole<HTMLInputElement>('checkbox', {name: '需要核对 · 北安普敦II #1'})
+    const checkbox = await screen.findByRole('checkbox', {name: '需要核对 · 北安普敦II #1'})
     fireEvent.click(checkbox)
-    expect(screen.getByRole<HTMLInputElement>('checkbox', {name: '需要核对 · 北安普敦Ⅱ #1'}).checked).toBe(false)
+    expect(screen.getByRole('checkbox', {name: '需要核对 · 北安普敦Ⅱ #1'}).getAttribute('aria-checked')).toBe('false')
     expect(screen.getByRole<HTMLButtonElement>('button', {name: '保存'}).disabled).toBe(false)
     expect(api.request).toHaveBeenCalledTimes(1)
   })

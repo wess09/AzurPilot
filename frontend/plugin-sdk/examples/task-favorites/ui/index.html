@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>任务收藏</title>
+<style>
+  :root {color-scheme: light dark; font: 14px system-ui, sans-serif}
+  body {margin: 0; padding: 12px 16px}
+  form {display:flex; flex-wrap:wrap; align-items:center; gap:8px}
+  button, select {font:inherit}
+  ul {padding-left: 1.5em}
+  li {margin-block: 6px}
+</style>
+<form>
+  <label for="task">任务</label>
+  <select id="task" required></select>
+  <button type="button">收藏</button>
+</form>
+<ul aria-label="已收藏任务"></ul>
+<p role="status"></p>
+<script type="module" src="./favorites.js"></script>
+</html>

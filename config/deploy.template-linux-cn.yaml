@@ -151,8 +151,8 @@ Deploy:
     EnableRemoteAccess: false
     # 远程访问模式
     # Remote access mode
-    # [自动] auto（优先 P2P/TURN，失败回退 SSH 转发）
-    # [Auto] auto (prefer P2P/TURN and fall back to SSH forwarding)
+    # [自动] auto（优先 HTTP 公网直连，失败回退 Cloudflare）
+    # [Auto] auto (prefer public HTTP direct access with Cloudflare fallback)
     # [SSH] ssh（仅使用旧版 SSH 反向隧道）
     # [WebRTC] webrtc（P2P 优先，仍依赖 SSH 获取 fallback 入口）
     RemoteAccessMode: auto
@@ -160,6 +160,9 @@ Deploy:
     # Quick Tunnel 固定入口注册服务，设备密钥保存在 config/remote-access.json
     CloudflareRegistry: https://remote.azurpilot.com
     CloudflareDeviceId: ""
+    # 0 reuses HTTP WebuiPort; HTTPS uses WebuiPort + 1. External port 0 uses the listening port.
+    RemoteAccessPort: 0
+    RemoteAccessPublicPort: 0
     # SSH 服务器登录用户名
     # Username when login into ssh server
     # [默认] null（启动时会随机生成一个）

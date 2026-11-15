@@ -43,6 +43,14 @@ class LauncherAutostartParams(Params):
     enabled: StrictBool
 
 
+class PluginStorageParams(Params):
+    id: StrictStr = Field(pattern=r'^[a-z0-9][a-z0-9._-]{0,79}$')
+    instance: StrictStr | None = Field(default=None, max_length=128)
+    key: StrictStr = Field(min_length=1, max_length=120)
+    action: Literal['get', 'set', 'delete']
+    value: Any = None
+
+
 class LauncherCommandParams(Params):
     commandId: StrictStr = Field(min_length=1, max_length=100)
 
@@ -62,7 +70,7 @@ class RemoteClientParams(Params):
 
 
 class MindShip(Params):
-    """导入的舰船字段与核对状态。"""
+    """导入的舰船字段与核对状态；导出文件可原样导回，底账内部序号除外。"""
     name: StrictStr = Field(min_length=1, max_length=100)
     level: StrictInt = Field(ge=0, le=125)
     rarity: Literal['', 'N', 'R', 'SR', 'SSR', 'UR'] = ''
@@ -70,6 +78,9 @@ class MindShip(Params):
     extra_exp: StrictInt | None = Field(default=None, ge=0)
     review: StrictBool = False
     source: StrictStr = Field(default='', max_length=200)
+    group_type: StrictInt | None = Field(default=None, ge=1)
+    full_star: StrictBool | None = None
+    form: Literal['base', 'retrofit'] | None = None
 
 
 class Request(Params):
@@ -286,7 +297,7 @@ class RevisionParams(InstanceParams):
 class SubscribeParams(Params):
     """WebSocket 主题订阅请求参数模型。"""
     instance: StrictStr | None = None
-    topics: list[Literal['instances', 'overview', 'logs', 'preview', 'stock', 'notifications', 'launcher']] = Field(max_length=7)
+    topics: list[Literal['instances', 'overview', 'logs', 'preview', 'stock', 'notifications', 'launcher', 'plugins']] = Field(max_length=8)
 
 
 class LogsParams(InstanceParams):

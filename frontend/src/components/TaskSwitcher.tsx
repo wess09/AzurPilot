@@ -11,7 +11,7 @@ import { taskNavItems, taskLabel } from './taskNavItems'
 /**
  * 顶栏的「任务配置」下拉：列出该实例的全部任务，点一下直接跳到对应任务页。
  *
- * 旧版实例页把左侧的分组导航让给了调度器与任务计划，页内就没有了跨任务的入口，
+ * 现代实例页把左侧的分组导航让给了调度器与任务计划，页内就没有了跨任务的入口，
  * 所以这个跳转放在顶栏（面包屑的第三段），与实例下拉同一套交互。
  */
 export function TaskSwitcher() {
@@ -44,7 +44,8 @@ export function TaskSwitcher() {
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
     event.preventDefault()
     if (!open) {setOpen(true); return}
-    const items = Array.from(container.current!.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]:not(:disabled)'))
+    // 键盘事件挂在容器自身：能收到事件时容器必已挂载。
+    const items = Array.from(container.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]:not(:disabled)') ?? [])
     const current = items.indexOf(document.activeElement as HTMLButtonElement)
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
     items[next]?.focus()

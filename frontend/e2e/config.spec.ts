@@ -1,8 +1,18 @@
-import { expect, test } from '@playwright/test'
+/**
+ * @fileoverview 配置页保存行为用例：草稿式提交在越界、延迟、断线、非法输入等边界下的持久化与立刻运行。
+ */
+
+import {routeRpc} from './rpc-route'
+import { expect, test, type Page } from '@playwright/test'
 
 const serialSelector = '[id="Alas.Emulator.Serial"]'
-const serialStatus = '[id="Alas.Emulator.Serial-status"]'
+const draftKey = 'azurpilot.edits.config:testpilot'
 // 字段为草稿式提交：键入期间不写配置，失焦或回车才提交，故断言保存前先 blur。
+// 保存成功的信号：草稿存储只保留待保存条目，字段落盘即该路径不再出现在草稿里（错误提示已改用 aria-invalid 与字段旁错误文本）。
+const savedOf = (page: Page, path: string) => page.evaluate(({key, path}: {key: string; path: string}) => {
+  const draft = JSON.parse(sessionStorage.getItem(key) ?? '{}') as Record<string, unknown>
+  return !(path in draft)
+}, {key: draftKey, path})
 
 test('大舰队作战比例允许小数，越界输入不覆盖已保存设置', async ({page}, testInfo) => {
   const path = 'Guild.GuildOperation.JoinThreshold'
@@ -50,7 +60,7 @@ test('海里数检测使用天数输入，关闭、每轮和按天检测保存�
   for (const interval of ['0', '3', '-1']) {
     await value.fill(interval)
     await value.press('Enter')
-    await expect(status).toHaveText('已保存')
+    await expect.poll(() => savedOf(page, path)).toBe(true)
     await page.reload()
     await expect(value).toHaveValue(interval, {timeout: 15000})
   }
@@ -67,13 +77,13 @@ for (const [task, stage] of [['EventA', 'a3'], ['EventB', 'B3'], ['EventC', 'c3'
     await expect(value).not.toHaveAttribute('inputmode', 'decimal')
     await value.fill(stage)
     await value.blur()
-    await expect(status).toHaveText('已保存')
+    await expect.poll(() => savedOf(page, path)).toBe(true)
     await expect(value).not.toHaveAttribute('aria-invalid', 'true')
     await page.reload()
     await expect(value).toHaveValue(stage)
     await value.fill('0')
     await value.press('Enter')
-    await expect(status).toHaveText('已保存')
+    await expect.poll(() => savedOf(page, path)).toBe(true)
     await page.reload()
     await expect(value).toHaveValue('0')
   })
@@ -112,7 +122,7 @@ test('两个页面的旧快照均能保存，字段更新互不覆盖', async ({
 test('旧响应延迟期间连续输入并切页，最终值继续保存', async ({page}) => {
   let release: (() => void) | undefined
   let firstId: string | undefined
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       const request = JSON.parse(String(message))
@@ -145,7 +155,7 @@ test('旧响应延迟期间连续输入并切页，最终值继续保存', async
 test('请求尚未送达就断线并刷新，恢复后自动保存原输入', async ({page}) => {
   let drop = true
   let dropped = false
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
       if (JSON.parse(String(message)).method === 'config.patch' && drop) {
@@ -179,7 +189,7 @@ test('非法数字、日期和 YAML 保留草稿，其他字段失焦后保存',
   await expect(page.locator('[id="Alas.Error.OnePushConfig-status"]')).toContainText('YAML 格式不正确')
   await page.locator(serialSelector).fill('valid-despite-invalid-fields')
   await page.locator(serialSelector).blur()
-  await expect(page.locator(serialStatus)).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Alas.Emulator.Serial')).toBe(true)
   await page.reload()
   await expect(threshold).toHaveValue('-')
   await expect(yaml).toHaveText('provider: [')
@@ -187,8 +197,8 @@ test('非法数字、日期和 YAML 保留草稿，其他字段失焦后保存',
   await threshold.fill('3')
   await threshold.blur()
   await yaml.fill('provider: null')
-  await expect(page.locator('[id="Alas.Error.GameStuckThreshold-status"]')).toHaveText('已保存')
-  await expect(page.locator('[id="Alas.Error.OnePushConfig-status"]')).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Alas.Error.GameStuckThreshold')).toBe(true)
+  await expect.poll(() => savedOf(page, 'Alas.Error.OnePushConfig')).toBe(true)
   await page.goto('/#/i/testpilot/task/Main')
   const date = page.locator('[id="Main.Scheduler.NextRun"]')
   await date.fill('2026-02-30 12:00:00')
@@ -197,12 +207,12 @@ test('非法数字、日期和 YAML 保留草稿，其他字段失焦后保存',
   await expect(date).toHaveValue('2026-02-30 12:00:00')
   await date.fill('2099-01-01 12:00:00')
   await date.blur()
-  await expect(page.locator('[id="Main.Scheduler.NextRun-status"]')).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Scheduler.NextRun')).toBe(true)
   // 清空时间要回落到参数默认值：它落在过去，调度器下一轮就把任务当作待运行。
   await date.fill('')
   await date.blur()
   await expect(date).toHaveValue('2020-01-01 00:00:00')
-  await expect(page.locator('[id="Main.Scheduler.NextRun-status"]')).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Scheduler.NextRun')).toBe(true)
   await page.reload()
   await expect(date).toHaveValue('2020-01-01 00:00:00')
 })
@@ -224,14 +234,13 @@ test('遗留的空时间草稿在恢复时被丢弃，字段回到配置里的�
 test('立刻运行按钮把调度时间改成可立即运行', async ({page}) => {
   await page.goto('/#/i/testpilot/task/Main')
   const date = page.locator('[id="Main.Scheduler.NextRun"]')
-  const status = page.locator('[id="Main.Scheduler.NextRun-status"]')
   await date.fill('2099-01-01 12:00:00')
   await date.blur()
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Scheduler.NextRun')).toBe(true)
   // 按钮等同清空该字段：提交参数默认值，它落在过去，调度器下一轮即运行。
   await page.getByRole('button', {name: '立刻运行', exact: true}).click()
   await expect(date).toHaveValue('2020-01-01 00:00:00')
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Scheduler.NextRun')).toBe(true)
   await page.reload()
   await expect(date).toHaveValue('2020-01-01 00:00:00')
 })
@@ -239,14 +248,13 @@ test('立刻运行按钮把调度时间改成可立即运行', async ({page}) =>
 test('清空数字字段回落到参数默认值，不再提示格式错误', async ({page}) => {
   await page.goto('/#/i/testpilot/task/Main')
   const value = page.locator('[id="Main.Emotion.Fleet1Value"]')
-  const status = page.locator('[id="Main.Emotion.Fleet1Value-status"]')
   await value.fill('95')
   await value.blur()
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Emotion.Fleet1Value')).toBe(true)
   await value.fill('')
   await value.blur()
   await expect(value).toHaveValue('119')
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Main.Emotion.Fleet1Value')).toBe(true)
   await page.reload()
   await expect(value).toHaveValue('119')
 })
@@ -254,14 +262,13 @@ test('清空数字字段回落到参数默认值，不再提示格式错误', as
 test('清空文本字段回落到参数默认值，便于后续修改', async ({page}) => {
   await page.goto('/#/i/testpilot/task/Alas')
   const serial = page.locator(serialSelector)
-  const status = page.locator(serialStatus)
   await serial.fill('custom-serial-for-test')
   await serial.blur()
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Alas.Emulator.Serial')).toBe(true)
   await serial.fill('')
   await serial.blur()
   await expect(serial).toHaveValue('auto')
-  await expect(status).toHaveText('已保存')
+  await expect.poll(() => savedOf(page, 'Alas.Emulator.Serial')).toBe(true)
   await page.reload()
   await expect(serial).toHaveValue('auto')
 })

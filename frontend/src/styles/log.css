@@ -1,0 +1,52 @@
+/* 日志域 —— B1 自 components.css:67-117 保序拆分，规则文本逐字未改（日志面板 + 卡片式日志 LogCardView） */
+.log-panel {display: flex; flex-direction: column}
+.log-panel .panel-heading {padding-top: 14px; padding-bottom: 14px; flex-shrink: 0}
+.log-content {background: var(--theme-plate-bg); -webkit-backdrop-filter: var(--theme-plate-filter); backdrop-filter: var(--theme-plate-filter); padding: 13px 17px; height: 62vh; min-height: 220px; overflow: auto; font-family: var(--theme-font-mono, "JetBrains Mono", "JetBrains Mono NL", "Cascadia Code", "Consolas", "Courier New", monospace); font-size: 11px; line-height: 1.6; color: var(--text)}
+/* 滚动内容只绘制底色，磨砂由外层面板处理，避免滚动时再合成一层模糊。 */
+.log-panel > .log-content {contain: layout paint; -webkit-backdrop-filter: none; backdrop-filter: none}
+.compact .log-content {height: 178px; min-height: 0}
+.log-entry-line {display: flex; gap: 8px; padding: 2px 0; white-space: pre-wrap; word-break: break-all}
+.log-entry-line.log-raw {display: block}
+.log-lvl {font-weight: 600; min-width: 60px; flex-shrink: 0}
+.lvl-debug {color: #85929e}
+.lvl-info {color: #0ea5e9}
+.lvl-warning {color: #eab308}
+.lvl-error {color: #ef4444}
+.lvl-critical {color: #f43f5e; font-weight: 700}
+.log-ts {color: #06b6d4; flex-shrink: 0}
+.log-divider {color: var(--border); user-select: none; flex-shrink: 0}
+.log-msg {flex: 1; min-width: 0}
+.log-rule {display: flex; align-items: center; gap: 12px; margin: 8px 0; color: var(--muted); font-size: 11px}
+.log-rule .rule-bar {flex: 1; height: 1px; background: currentColor; opacity: .35}
+.log-rule.rule-double .rule-bar {height: 2px; border-top: 1px solid currentColor; border-bottom: 1px solid currentColor; background: transparent; opacity: .45}
+.log-rule .rule-title {font-weight: 700; color: var(--text); padding: 0 4px; letter-spacing: .5px}
+.log-line.log-center-title {display: flex; justify-content: center; align-items: center; padding: 3px 0; text-align: center}
+.log-line.log-center-title .center-title-text {font-weight: 700; color: var(--text); padding: 0 4px; letter-spacing: .5px; font-size: 11px}
+.hl-bool-true {color: #22c55e; font-style: italic; font-weight: 550}
+.hl-bool-false {color: #ef4444; font-style: italic; font-weight: 550}
+.hl-none {color: #d946ef; font-style: italic}
+.hl-brace {font-weight: 700; color: var(--text)}
+.hl-path {color: #a855f7}
+.hl-time {color: #06b6d4}
+.hl-attr {color: #14b8a6; font-weight: 550}
+.hl-title {font-weight: 700; color: var(--accent)}
+.log-search-match {background: #fbbf2445; color: inherit; border-radius: 2px; padding: 0 1px}
+.log-filters {display: flex; align-items: center; gap: 12px; padding: 14px 20px; font-size: 11px; color: var(--muted); flex-shrink: 0}
+.log-filters .input-icon {flex: 1}
+
+/* 卡片式日志体系（Log Card View） */
+.log-cards-container {display: flex; flex-direction: column; gap: 8px; padding: 4px 0}
+.log-card-virtual-item {display: flex; flex-direction: column; width: 100%; min-width: 0}
+.log-card {border: 1px solid var(--border); border-radius: 6px; background: var(--surface); box-shadow: none; overflow: hidden}
+.card-header {display: flex; justify-content: space-between; align-items: center; padding: 7px 12px; border-bottom: 1px solid var(--border); background: var(--surface-muted); cursor: pointer; user-select: none}
+.card-title {display: flex; align-items: center; gap: 8px; font-size: 11px}
+.title-bold {font-weight: 600; color: var(--text)}
+.card-time {font-size: 10px; color: var(--theme-log-time, #06b6d4); font-family: var(--theme-font-mono)}
+.card-actions {display: flex; align-items: center; gap: 6px}
+.card-btn-action {display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 7px; border-radius: 4px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer}
+.card-btn-icon {padding: 3px; border-radius: 4px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center}
+.card-body {padding: 10px 14px}
+.badge-shape {font-size: 9px; padding: 1px 5px; border-radius: 4px; background: var(--surface-muted); border: 1px solid var(--border); color: var(--muted); font-family: var(--theme-font-mono)}
+.badge-pill {font-size: 9px; padding: 1px 6px; border-radius: 9px; font-weight: 500}
+.badge-pill.duration {background: #0ea5e920; color: #0ea5e9}
+

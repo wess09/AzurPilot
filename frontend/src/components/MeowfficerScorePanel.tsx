@@ -8,6 +8,7 @@ import { ApiError, api } from '../api/client'
 import type { MeowfficerAdvice, MeowfficerCat, MeowfficerRubric, MeowfficerScoreReport, MeowfficerTalent } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { Empty, ErrorBox, Loading, Modal } from './ui'
+import './MeowfficerScorePanel.css'
 
 /** 档位文案由后端按攻略口径给出（中文），这里只按关键词上色，未知档位走中性样式。 */
 const tierStyles: [string, string][] = [
@@ -20,6 +21,7 @@ const tierStyles: [string, string][] = [
   ['雷暴', 'is-thunder'],
 ]
 
+/** 按档位关键词取样式类名；关键词表见上方 tierStyles，未命中时走 is-other 中性样式。 */
 export function tierClass(tier: string): string {
   return tierStyles.find(([keyword]) => tier.includes(keyword))?.[1] ?? 'is-other'
 }
@@ -27,7 +29,7 @@ export function tierClass(tier: string): string {
 /** 命中标签形如「雷击长·潜艇 Lv3」，把等级拆出来单独做成小徽章。 */
 export function splitHit(hit: string): {name: string; level: number} {
   const match = /^(.*?)\s*Lv\s*(\d+)$/.exec(hit.trim())
-  return {name: match ? match[1] : hit.trim(), level: match ? Number(match[2]) : 0}
+  return {name: match?.[1] ?? hit.trim(), level: match?.[2] === undefined ? 0 : Number(match[2])}
 }
 
 const levelBadges = ['Ⅰ', 'Ⅱ', 'Ⅲ']
@@ -206,7 +208,7 @@ export function MeowfficerScorePanel({instance}: {instance: string}) {
             ? previous
             : value))
       }).catch(() => {
-        // 轮询失败不打扰用户：手动「刷新」仍会给出明确报错
+        // 轮询失败不打扰用户：手动「刷新」仍会给出明确报错。
       })
     }, AUTO_REFRESH_INTERVAL)
     return () => clearInterval(timer)

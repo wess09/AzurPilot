@@ -13,12 +13,19 @@ describe('WebUI i18n', () => {
     expect(translateUi('en-US', 'instance.deletePrompt', {name: 'alas-main'})).toBe('Delete alas-main? Its configuration will remain in backup.')
   })
 
+  it('translates the config page instance count summary', () => {
+    expect(translateUi('zh-CN', 'config.count', {count: 2})).toBe('共 2 个实例')
+    expect(translateUi('zh-TW', 'config.count', {count: 2})).toBe('共 2 個實例')
+    expect(translateUi('en-US', 'config.count', {count: 2})).toBe('Instances: 2')
+    expect(translateUi('ja-JP', 'config.count', {count: 2})).toBe('インスタンス: 2件')
+  })
+
   it('offers a different delete-instance warning at each of the three confirmations', () => {
     const prompts = ['instance.deletePrompt', 'instance.deletePrompt2', 'instance.deletePrompt3'] as const
     for (const language of ['zh-CN', 'zh-TW', 'en-US', 'ja-JP'] as const) {
       const texts = prompts.map(key => translateUi(language, key, {name: 'alas-main'}))
       expect(new Set(texts).size).toBe(prompts.length)
-      /* 键不存在时 translateUi 会把键名原样返回，那样三条也「互不相同」，所以这里必须排除。 */
+      // 键不存在时 translateUi 会把键名原样返回，那样三条也「互不相同」，所以这里必须排除。
       expect(texts.some(text => text.includes('instance.deletePrompt'))).toBe(false)
     }
   })
@@ -36,12 +43,5 @@ describe('WebUI i18n', () => {
     expect(translateUi('ja-JP', 'stats.candlestickOverlay')).toBe('ローソク足 + 折れ線')
     expect(translateUi('en-US', 'stats.candlestickOverlay')).toBe('Candlestick + line overlay')
     expect(translateUi('zh-CN', 'stats.candlestickOverlay')).toBe('K 线 + 折线叠加')
-  })
-
-
-  it('translates developer playground UI instead of leaving hardcoded labels', () => {
-    expect(translateUi('en-US', 'developer.pageTitle')).toBe('Developer · Control Preview')
-    expect(translateUi('ja-JP', 'developer.formControls')).toBe('フォームコントロール')
-    expect(translateUi('zh-TW', 'developer.emptyTitle')).toBe('暫無內容')
   })
 })

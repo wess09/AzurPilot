@@ -1,0 +1,19 @@
+/* 寻路热力图域 —— B1 自 components.css:258-275 保序拆分，规则文本逐字未改 */
+/* 寻路移动代价热力图与无缝网格（Cost Grid Heatmap） */
+.cost-table {border-collapse: collapse; font-family: var(--theme-font-mono); font-size: 11px; line-height: 1}
+.cost-table .map-th-col {text-align: center; width: 32px; min-width: 32px; max-width: 32px; color: var(--muted); padding: 4px 0; font-weight: 600}
+.cost-table .map-td-cell {text-align: center; padding: 0; line-height: 0; border: none}
+.cost-cell {display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 28px; border-radius: 0; font-size: 11px; font-weight: 600; text-align: center; cursor: default; user-select: none; box-sizing: border-box; border: none; font-family: var(--theme-font-mono); line-height: 1}
+.cost-cell.cost-wall {background: #000000; color: #52525b; font-size: 10px}
+.cost-cell.cost-origin {background: #10b981; color: #ffffff; font-weight: 700}
+.cost-cell.cost-path {color: #ffffff}
+
+.dot-origin {background: #10b981}
+.dot-cost-low {background: #0284c7}
+.dot-cost-mid {background: #7c3aed}
+.dot-cost-high {background: #e11d48}
+.dot-cost-wall {background: #000000; border: 1px solid var(--border)}
+
+.matrix-grid-rows {display: inline-flex; flex-direction: column; gap: 0}
+.matrix-row {display: flex; gap: 0}
+

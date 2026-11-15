@@ -49,6 +49,7 @@ dependencies = [
     "openpyxl>=3.1.5,<4",
     "pyflared==0.1.0",
     "niquests>=3.21.2,<4",
+    "tinycss2>=1.4,<2",
 ]
 
 [dependency-groups]

@@ -1,3 +1,7 @@
+/**
+ * @fileoverview 养成计算页用例：最高副本选取、边界费用、副本去重与分组排除，及移动端表格不溢出。
+ */
+
 import {expect as baseExpect, test, type Page} from '@playwright/test'
 import {fleetAnalysisHash, rpc} from './fleet-helpers'
 import type {Parameters} from '../src/api/generated'

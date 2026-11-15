@@ -1,185 +1,34 @@
 /**
- * @fileoverview 实例实时控制台日志面板组件。
+ * @fileoverview 实例实时日志面板组件，及流式日志微批缓冲、行高布局等纯数据辅助。
  */
 
 import { Select } from './FormControls'
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ArrowDownUp, Download, LayoutGrid, Pause, Play, Search, Terminal, Trash2 } from 'lucide-react'
 import { api } from '../api/client'
 import type { Logs as LogsData, LogEntry } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { Empty } from '../components/ui'
-import { LogCardView, findVisibleRange, renderTokens, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
+import { Input } from './ui/input'
+import { LogCardView, findVisibleRange, logWindowTop, safeRaf, safeCancelRaf, OVERSCAN_BUFFER_PX } from './LogCardView'
+import { LOG_ENTRY_LIMIT, LOG_LINE_RE, LOG_RENDER_INTERVAL_MS, LINE_HEIGHT_ESTIMATE, PURE_RULE_RE, VIRTUAL_LINE_THRESHOLD, buildLineLayout, followStep, mergeLogEntries, queueLogEvent } from './log-panel/buffer'
+import type { LogBufferState } from './log-panel/buffer'
+import { LogLine } from './log-panel/log-line'
+import { LOG_LEVELS, filterLogEntries, loadLogDescending, loadLogLevel, loadLogViewMode } from './log-panel/prefs'
 
-export const LOG_LINE_RE = /^([A-Z]{4,8})\s+(?:(\d{4}-\d{2}-\d{2})\s+)?(\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s*│\s*([\s\S]*)$/
-export const RULE_RE = /^[═─]{3,}\s*(.*?)\s*[═─]{3,}$/
-export const PURE_RULE_RE = /^[═─]{3,}$/
-export const CENTER_TITLE_RE = /^\s{3,}(.*?)\s{3,}$/
-export const LOG_ENTRY_LIMIT = 1000
-const VIRTUAL_LINE_THRESHOLD = 120
-/* 未实测到高度的日志行先按这个值占位，实测后替换。 */
-export const LINE_HEIGHT_ESTIMATE = 18
-
-/** 日志跟随的每帧步长上限（像素）；距离更近时按距离收比例。 */
-export const MAX_FOLLOW_STEP = 24
-
-export interface LogBufferState {
-  entries: LogEntry[]
-  reset: boolean
-  cursor: number | null
-}
+export {CENTER_TITLE_RE, LOG_ENTRY_LIMIT, LOG_LINE_RE, LINE_HEIGHT_ESTIMATE, MAX_FOLLOW_STEP, PURE_RULE_RE, RULE_RE, buildLineLayout, followStep, mergeLogEntries, queueLogEvent} from './log-panel/buffer'
+/** 日志缓冲状态类型，供 LogPanel 消费方复用。 */
+export type {LogBufferState} from './log-panel/buffer'
+export {LogLine} from './log-panel/log-line'
 
 /**
- * 将高频推送的流式日志加入微批缓冲队列
- * 若收到 reset 信号，则清除前置缓冲并标记 reset，后序同一批次的 entries 连续追加
+ * 实例实时日志面板：优先消费外部传入的 logs 流，否则自行拉取初始日志并订阅推送事件；
+ * 提供搜索、等级过滤、正倒序、跟随滚动与卡片/经典两种视图。
+ *
+ * @param active 面板是否在前台；false 时暂停跟随滚动。
+ * @param logs 外部注入的日志流；提供后组件不再自行订阅推送，仅接受该实例的日志。
  */
-export function queueLogEvent(
-  buffer: LogBufferState,
-  data: { entries: LogEntry[]; reset?: boolean; cursor: number }
-): void {
-  if (data.reset) {
-    buffer.reset = true
-    buffer.entries = [...data.entries]
-  } else {
-    buffer.entries.push(...data.entries)
-  }
-  buffer.cursor = data.cursor
-}
-
-/** 跟随步长：远时按上限匀速，近时按距离收比例，新日志逐帧滚入而不跳到末尾。 */
-export function followStep(remaining: number, maxStep = MAX_FOLLOW_STEP) {
-  return Math.sign(remaining) * Math.min(maxStep, Math.max(1, Math.abs(remaining) * .35))
-}
-
-/** 逐行高度表：已实测的行用实测值，其余用实测均高占位（无实测时用估值），并给出每行的偏移与总高。 */
-export function buildLineLayout(entries: LogEntry[], measured: Map<number, number>, fallback: number) {
-  let sum = 0
-  let count = 0
-  for (const height of measured.values()) {
-    sum += height
-    count += 1
-  }
-  const estimate = count ? sum / count : fallback
-  const heights = new Array<number>(entries.length)
-  const offsets = new Array<number>(entries.length)
-  let total = 0
-  for (let index = 0; index < entries.length; index++) {
-    const height = measured.get(entries[index].id) ?? estimate
-    heights[index] = height
-    offsets[index] = total
-    total += height
-  }
-  return {heights, offsets, total}
-}
-
-/**
- * 所有日志入口先在纯数据层截断，避免异常历史 payload 进入 React state 后创建数万 DOM。
- * 正常后端只保留约 400 条；这里的 1000 条是客户端独立的防御上限。
- */
-export function mergeLogEntries(previous: LogEntry[], incoming: LogEntry[], reset = false): LogEntry[] {
-  const recent = incoming.length > LOG_ENTRY_LIMIT ? incoming.slice(-LOG_ENTRY_LIMIT) : incoming
-  const entries = new Map<number, LogEntry>()
-  if (!reset) for (const entry of previous.slice(-LOG_ENTRY_LIMIT)) entries.set(entry.id, entry)
-  for (const entry of recent) entries.set(entry.id, entry)
-  return [...entries.values()].sort((a, b) => a.id - b.id).slice(-LOG_ENTRY_LIMIT)
-}
-
-export const LogLine = memo(function LogLine({entry, search, isCenter, fresh}: {entry: LogEntry; search: string; isCenter?: boolean; fresh?: boolean}) {
-  const rawText = entry.text.replace(/[\r\n]+$/, '')
-  const trimmed = rawText.trim()
-  const freshClass = fresh ? ' motion-enter' : ''
-
-  // 1. 判断是否为纯分割线 (Pure Rule)
-  const isPureRule = PURE_RULE_RE.test(trimmed)
-  if (isPureRule) {
-    const char = trimmed.includes('═') ? '═' : '─'
-    return (
-      <div className={`log-rule ${char === '═' ? 'rule-double' : 'rule-single'}${freshClass}`} data-line-id={entry.id}>
-        <span className="rule-bar" />
-        <span className="rule-bar" />
-      </div>
-    )
-  }
-
-  // 2. 判断是否为带线标题 (Rule with title, 如 level 1/2)
-  const ruleMatch = RULE_RE.exec(trimmed)
-  if (ruleMatch && ruleMatch[1].trim()) {
-    const title = ruleMatch[1].trim()
-    const char = trimmed.includes('═') ? '═' : '─'
-    return (
-      <div className={`log-rule ${char === '═' ? 'rule-double' : 'rule-single'}${freshClass}`} data-line-id={entry.id}>
-        <span className="rule-bar" />
-        <span className="rule-title">{renderTokens(title, search)}</span>
-        <span className="rule-bar" />
-      </div>
-    )
-  }
-
-  // 3. 判断是否为标准日志行
-  const logMatch = LOG_LINE_RE.exec(rawText)
-  if (logMatch) {
-    const [, levelStr, dateStr, timeStr, messageStr] = logMatch
-    const levelKey = levelStr.toLowerCase()
-    return (
-      <div className={`log-line log-entry-line level-${levelKey}${freshClass}`} data-line-id={entry.id}>
-        <span className={`log-lvl lvl-${levelKey}`}>{levelStr}</span>
-        <span className="log-ts">{dateStr ? `${dateStr} ` : ''}{timeStr}</span>
-        <span className="log-divider">│</span>
-        <span className="log-msg">{renderTokens(messageStr, search)}</span>
-      </div>
-    )
-  }
-
-  // 4. 判断是否为居中标题 (level 0 或其他居中文本)
-  const isSingleLine = !rawText.includes('\n')
-  const centerMatch = isSingleLine ? CENTER_TITLE_RE.exec(rawText) : null
-  const shouldCenter = Boolean(
-    isSingleLine && trimmed && (
-      isCenter ||
-      (centerMatch && centerMatch[1].trim())
-    )
-  )
-  if (shouldCenter) {
-    const title = trimmed
-    return (
-      <div className={`log-line log-entry-line log-center-title${freshClass}`} data-line-id={entry.id}>
-        <span className="center-title-text">{renderTokens(title, search)}</span>
-      </div>
-    )
-  }
-
-  // 5. 其他非标准行或多行 Traceback
-  return (
-    <div className={`log-line log-entry-line log-raw level-${entry.level.toLowerCase()}${freshClass}`} data-line-id={entry.id}>
-      <span className="log-msg">{renderTokens(rawText, search)}</span>
-    </div>
-  )
-})
-
-const LOG_LEVELS = ['ALL', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-
-function loadLogLevel(instance: string): string {
-  try {
-    const saved = localStorage.getItem(`azurpilot.log.level.${instance}`)
-    if (saved && LOG_LEVELS.includes(saved)) return saved
-  } catch { /* 存储不可用时使用默认等级。 */ }
-  return 'ALL'
-}
-
-/** 日志排序：默认正序（旧→新），与自动滚到底的行为配套。 */
-function loadLogDescending(instance: string): boolean {
-  try { return localStorage.getItem(`azurpilot.log.order.${instance}`) === 'desc' } catch { return false }
-}
-
-function loadLogViewMode(): 'cards' | 'classic' {
-  try {
-    const saved = localStorage.getItem('azurpilot.log.viewMode')
-    if (saved === 'cards' || saved === 'classic') return saved
-  } catch { /* 存储不可用时默认卡片视图 */ }
-  return 'cards'
-}
-
 export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsData | null}) {
   const {instance = ''} = useParams()
   const [entries, setEntries] = useState<LogEntry[]>([])
@@ -197,20 +46,19 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   /* 已渲染到的最大日志 id：大于它的增量行做入场动画（初始加载不播）。 */
   const freshFrom = useRef<number | null>(null)
 
-  /** 流式日志微批处理缓冲队列，防止高频 WebSocket 推送造成密集 React 重绘 */
-  const logBuffer = useRef<LogBufferState & { rafId: number | null }>({
+  const logBuffer = useRef<LogBufferState & { timer: ReturnType<typeof setTimeout> | null }>({
     entries: [],
     reset: false,
     cursor: null,
-    rafId: null,
+    timer: null,
   })
 
   const flushBuffer = useRef(() => {})
   flushBuffer.current = () => {
     const buf = logBuffer.current
-    if (buf.rafId !== null) {
-      safeCancelRaf(buf.rafId)
-      buf.rafId = null
+    if (buf.timer !== null) {
+      clearTimeout(buf.timer)
+      buf.timer = null
     }
     const { entries: bufEntries, reset: bufReset, cursor: bufCursor } = buf
     if (bufEntries.length === 0 && !bufReset && bufCursor === null) return
@@ -240,7 +88,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   function toggleViewMode() {
     setViewMode(prev => {
       const next = prev === 'cards' ? 'classic' : 'cards'
-      try { localStorage.setItem('azurpilot.log.viewMode', next) } catch { /* 同上 */ }
+      try { localStorage.setItem('azurpilot.log.viewMode', next) } catch { /* 存储不可用时仅本次会话生效。 */ }
       return next
     })
   }
@@ -248,7 +96,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   function toggleOrder() {
     setDescending(previous => {
       const next = !previous
-      try { localStorage.setItem(`azurpilot.log.order.${instance}`, next ? 'desc' : 'asc') } catch { /* 同上。 */ }
+      try { localStorage.setItem(`azurpilot.log.order.${instance}`, next ? 'desc' : 'asc') } catch { /* 存储不可用时仅本次会话生效。 */ }
       return next
     })
   }
@@ -257,9 +105,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     if (connection !== 'ready' || external) return
     let active = true
     const buf = logBuffer.current
-    if (buf.rafId !== null) {
-      safeCancelRaf(buf.rafId)
-      buf.rafId = null
+    if (buf.timer !== null) {
+      clearTimeout(buf.timer)
+      buf.timer = null
     }
     buf.entries = []
     buf.reset = false
@@ -272,9 +120,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     }).catch(error => notify(error.message, true))
     return () => {
       active = false
-      if (buf.rafId !== null) {
-        safeCancelRaf(buf.rafId)
-        buf.rafId = null
+      if (buf.timer !== null) {
+        clearTimeout(buf.timer)
+        buf.timer = null
       }
       buf.entries = []
       buf.reset = false
@@ -298,20 +146,15 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
       const buf = logBuffer.current
       queueLogEvent(buf, data)
 
-      if (buf.rafId === null) {
-        buf.rafId = safeRaf(() => {
-          buf.rafId = null
-          flushBuffer.current()
-        })
-      }
+      if (buf.timer === null) buf.timer = setTimeout(() => flushBuffer.current(), LOG_RENDER_INTERVAL_MS)
     })
 
     return () => {
       unsubscribe()
       const buf = logBuffer.current
-      if (buf.rafId !== null) {
-        safeCancelRaf(buf.rafId)
-        buf.rafId = null
+      if (buf.timer !== null) {
+        clearTimeout(buf.timer)
+        buf.timer = null
       }
       buf.entries = []
       buf.reset = false
@@ -326,9 +169,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   useLayoutEffect(() => {
     if (!active || !follow || !scroll.current) return
     const container = scroll.current
-    /* 量与写都放进 rAF：layout effect 阶段刚改完 DOM，此刻读 scrollHeight 会强制同步布局；
-       每帧只在帧首读一次 scrollTop、帧尾写一次。
-       只改日志容器自身的滚动位置，不会像尾部元素的 scrollIntoView 那样连带滚动整个页面。 */
+    // 量与写都放进 rAF：layout effect 阶段刚改完 DOM，此刻读 scrollHeight 会强制同步布局；
+    // 每帧只在帧首读一次 scrollTop、帧尾写一次。
+    // 只改日志容器自身的滚动位置，不会像尾部元素的 scrollIntoView 那样连带滚动整个页面。
     let frame = requestAnimationFrame(function step() {
       const top = container.scrollTop
       const target = descending ? 0 : container.scrollHeight - container.clientHeight
@@ -343,13 +186,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   }, [entries, follow, active, descending])
 
   const searchLower = search.trim().toLowerCase()
-  const visible = entries.filter(entry =>
-    entry.id > floor &&
-    (level === 'ALL' || entry.level === level) &&
-    (!searchLower || entry.text.toLowerCase().includes(searchLower))
-  )
+  const visible = useMemo(() => filterLogEntries(entries, floor, level, searchLower), [entries, floor, level, searchLower])
   // 倒序只反转渲染顺序；相邻行的居中标题判断是对称的（前后都要求是分割线），不受影响。
-  const ordered = descending ? [...visible].reverse().slice(0, LOG_ENTRY_LIMIT) : visible.slice(-LOG_ENTRY_LIMIT)
+  const ordered = useMemo(() => descending ? [...visible].reverse() : visible, [descending, visible])
 
   /* 经典视图行数超过阈值时只渲染视口附近的行，其余用占位高度撑住滚动条。 */
   const virtualLines = viewMode === 'classic' && ordered.length >= VIRTUAL_LINE_THRESHOLD
@@ -363,7 +202,11 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     if (!virtualLines) return
     const container = scroll.current
     if (!container) return
-    const sync = () => setLineScroll({top: container.scrollTop, client: container.clientHeight})
+    const sync = () => {
+      const top = logWindowTop(container.scrollTop)
+      const client = container.clientHeight
+      setLineScroll(previous => previous.top === top && previous.client === client ? previous : {top, client})
+    }
     sync()
     let rafId: number | null = null
     const onScroll = () => {
@@ -423,18 +266,33 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
     lineObserver.current = null
   }, [])
 
+  useEffect(() => {
+    const heights = lineHeights.current
+    if (heights.size <= 2 * LOG_ENTRY_LIMIT) return
+    const retained = new Set(entries.map(entry => entry.id))
+    for (const id of heights.keys()) {
+      if (!retained.has(id)) heights.delete(id)
+    }
+    setLineVersion(version => version + 1)
+  }, [entries])
+
   const lineLayout = useMemo(
-    () => buildLineLayout(ordered, lineHeights.current, LINE_HEIGHT_ESTIMATE),
-    [ordered, lineVersion]
+    () => virtualLines ? buildLineLayout(ordered, lineHeights.current, LINE_HEIGHT_ESTIMATE) : null,
+    [ordered, lineVersion, virtualLines]
   )
 
-  const [lineStart, lineEnd] = virtualLines
+  // clientHeight 首次量到前为 0，按 800 兜底一屏高度。
+  const [lineStart, lineEnd] = lineLayout
     ? findVisibleRange(lineLayout.offsets, lineLayout.heights, lineScroll.top - OVERSCAN_BUFFER_PX, lineScroll.top + (lineScroll.client || 800) + OVERSCAN_BUFFER_PX, ordered.length)
     : [0, Math.max(0, ordered.length - 1)]
 
   function download() {
+    const {entries: pending, reset, cursor} = logBuffer.current
+    const exported = cursor === null ? visible : filterLogEntries(
+      mergeLogEntries(entries, pending, reset), cursor < floor ? 0 : floor, level, searchLower,
+    )
     flushBuffer.current()
-    const url = URL.createObjectURL(new Blob([visible.map(entry => entry.text).join('\n')], {type: 'text/plain;charset=utf-8'}))
+    const url = URL.createObjectURL(new Blob([exported.map(entry => entry.text).join('\n')], {type: 'text/plain;charset=utf-8'}))
     const link = document.createElement('a')
     link.href = url
     link.download = `${instance}-logs.txt`
@@ -480,9 +338,9 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
         </button>
       </div>
       {filtersOpen && <div className="log-filters" id="log-filters">
-        <div className="input-icon">
-          <Search size={15} />
-          <input aria-label={ui('log.search')} placeholder={ui('log.searchPlaceholder')} value={search} onChange={event => setSearch(event.target.value)} />
+        <div className="relative flex-1">
+          <Search size={15} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"/>
+          <Input className="pl-9" aria-label={ui('log.search')} placeholder={ui('log.searchPlaceholder')} value={search} onChange={event => setSearch(event.target.value)}/>
         </div>
         <Select aria-label={ui('log.level')} value={level} onChange={event => updateLevel(event.target.value)}>
           {LOG_LEVELS.map(item => (
@@ -497,7 +355,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
             <LogCardView entries={ordered} search={search} scrollRef={scroll} />
           ) : (
             <>
-              {virtualLines && lineStart > 0 && <div style={{height: lineLayout.offsets[lineStart]}} aria-hidden="true" />}
+              {lineLayout && lineStart > 0 && <div style={{height: lineLayout.offsets[lineStart]}} aria-hidden="true" />}
               {ordered.slice(lineStart, lineEnd + 1).map((entry, offset) => {
                 const index = lineStart + offset
                 const prev = ordered[index - 1]
@@ -519,8 +377,8 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
                   />
                 )
               })}
-              {virtualLines && lineEnd < ordered.length - 1 && (
-                <div style={{height: lineLayout.total - lineLayout.offsets[lineEnd] - lineLayout.heights[lineEnd]}} aria-hidden="true" />
+              {lineLayout && lineEnd < ordered.length - 1 && (
+                <div style={{height: lineLayout.total - (lineLayout.offsets[lineEnd] ?? 0) - (lineLayout.heights[lineEnd] ?? 0)}} aria-hidden="true" />
               )}
             </>
           )

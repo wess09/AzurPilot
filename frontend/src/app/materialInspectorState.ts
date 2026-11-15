@@ -1,10 +1,15 @@
 /**
  * @fileoverview 材质检视器状态：整站悬浮/停靠的开关、停靠与最小化三态，跨组件共享。
+ *
+ * 检视器本体见 MaterialInspector.tsx；仅停靠值持久化，开合与最小化刷新后回到默认。
  */
 
-export interface MaterialInspectorState {
+interface MaterialInspectorState {
+  /** 检视器当前是否打开。 */
   open: boolean
+  /** 检视器是否停靠在主画布旁。 */
   docked: boolean
+   /** 检视器是否只显示标题栏。 */
   minimized: boolean
 }
 
@@ -28,8 +33,10 @@ let state: MaterialInspectorState = {
 
 const listeners = new Set<() => void>()
 
+/** 读取检视器当前状态快照，配 useSyncExternalStore 作 getSnapshot 使用。 */
 export const getMaterialInspector = () => state
 
+/** 订阅检视器状态变化，返回取消订阅函数。 */
 export function subscribeMaterialInspector(listener: () => void) {
   listeners.add(listener)
   return () => {
@@ -37,6 +44,7 @@ export function subscribeMaterialInspector(listener: () => void) {
   }
 }
 
+/** 合并 patch 进状态并广播；停靠值变化时落盘，存储不可用则只保本会话。 */
 function publish(patch: Partial<MaterialInspectorState>) {
   const previous = state
   state = { ...state, ...patch }
@@ -50,8 +58,11 @@ function publish(patch: Partial<MaterialInspectorState>) {
   listeners.forEach(l => l())
 }
 
-export const openMaterialInspector = () => publish({ open: true, minimized: false })
+/** 关闭检视器，不影响停靠与最小化状态。 */
 export const closeMaterialInspector = () => publish({ open: false })
+/** 在悬浮与停靠之间切换；停靠选择落盘，刷新后保留。 */
 export const toggleMaterialInspectorDocked = () => publish({ docked: !state.docked })
+/** 切换最小化（收起内容但保持打开）。 */
 export const toggleMaterialInspectorMinimized = () => publish({ minimized: !state.minimized })
+/** 直接设置最小化与否。 */
 export const setMaterialInspectorMinimized = (minimized: boolean) => publish({ minimized })

@@ -6,12 +6,15 @@ import { api } from '../api/client'
 import type { BackgroundGalleryEntry } from '../api/types'
 import { getThemePreference, subscribeTheme, type Material } from './theme'
 
-/** 'default' 只是旧记录里的档位：读入时折算成 URL 模式的内置 API，不再写回。 */
+/** `default` 只是旧记录里的档位：读入时折算成 URL 模式的内置 API，不再写回。 */
 export type BackgroundSource = 'off' | 'url' | 'upload'
+/** 背景媒体类型。 */
 export type BackgroundKind = 'image' | 'video'
 
-export interface BackgroundPreference {
+interface BackgroundPreference {
+  /** 背景来源档位。 */
   source: BackgroundSource
+  /** 媒体类型。 */
   kind: BackgroundKind
   /** URL 模式：一行一个随机图 API，本次生效其中一条。 */
   urls: string[]
@@ -22,42 +25,47 @@ export interface BackgroundPreference {
   entry?: string
 }
 
+/** 对外发布的背景状态快照：界面经 getBackground/subscribeBackground 消费，revision 自增表示有更新。 */
 export interface BackgroundSnapshot extends BackgroundPreference {
   /** 真正交给 <img>/<video> 的地址：URL 模式是解析出的直链，图库模式是服务器上的文件。 */
   assetUrl: string
   /** URL 模式解析出的直链（解析失败时为空）。 */
   directUrl: string
+  /** 是否正在解析随机图 API。 */
   resolving: boolean
+  /** 最近一次地址解析失败的信息。 */
   resolveError: string
+  /** 是否正在加载图库或浏览器上传文件。 */
   loading: boolean
+  /** 快照版本，每次发布状态时递增。 */
   revision: number
 }
 
-/** 内置默认随机图列表：**全部实测可用**的二次元图库。
-    只收"每次请求都出新图"的二次元随机图接口，风景/3D/必应日图之类不收。
-    R18 接口**不放进仓库**；需要时由用户自己加进地址列表。 */
+/**
+ * 内置默认随机图列表：**全部实测可用**的二次元图库。
+ * 只收「每次请求都出新图」的二次元随机图接口，风景/3D/必应日图之类不收。
+ * R18 接口**不放进仓库**；需要时由用户自己加进地址列表。
+ */
 export const DEFAULT_BACKGROUND_URLS = [
   'https://api.yppp.net/api.php',
 ]
 
-/** 单独一条内置地址。 */
-
-/** 历史上唯一的那条内置 API：只用来识别"老用户的列表还是旧默认"，从而升级成整份列表。 */
+/** 历史上唯一的那条内置 API：只用来识别「老用户的列表还是旧默认」，从而升级成整份列表。 */
 const LEGACY_DEFAULT_URL = 'https://api.yppp.net/api.php'
 const STORAGE_KEY = 'azurpilot.background'
 
 /** 背景记录按材质各存一档：玻璃用原键（老用户设置不变），普通用新键。 */
-export const backgroundStorageKey = (material: Material) => material === 'plain' ? `${STORAGE_KEY}.plain` : STORAGE_KEY
+const backgroundStorageKey = (material: Material) => material === 'plain' ? `${STORAGE_KEY}.plain` : STORAGE_KEY
 
 /** 各材质的默认档：玻璃默认铺内置随机图，普通默认关闭，用户手动改了才铺。 */
-export const defaultBackgroundFor = (material: Material): BackgroundSource => material === 'plain' ? 'off' : 'url'
+const defaultBackgroundFor = (material: Material): BackgroundSource => material === 'plain' ? 'off' : 'url'
 
 /** 多行 API 里挑一条生效。用 crypto 取随机数，避免 Math.random 的分布争议。 */
 function pickActive(count: number): number {
   if (count <= 1) return 0
   const buffer = new Uint32Array(1)
   crypto.getRandomValues(buffer)
-  return buffer[0] % count
+  return (buffer[0] ?? 0) % count
 }
 const DATABASE_NAME = 'azurpilot-preferences'
 const DATABASE_VERSION = 1
@@ -68,7 +76,7 @@ const listeners = new Set<() => void>()
 export const galleryUrl = (identifier: string) => `/background-library/${encodeURIComponent(identifier)}`
 
 /** 网图的同源代理地址：服务端先抓下来再回传，浏览器加载它与直链是同一张图。 */
-export const proxyUrl = (url: string, token: string) => `/api/v1/background/media?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`
+const proxyUrl = (url: string, token: string) => `/api/v1/background/media?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`
 
 const MIGRATED_KEY = 'azurpilot.background.migrated'
 /** initBackgroundGallery 只跑一次的守卫（它是幂等的引导流程，重复调用会引发重解析循环）。 */
@@ -92,7 +100,7 @@ export function readBackgroundPreference(material: Material): BackgroundPreferen
     if (raw?.source === 'off') {
       return {...fallback, source: 'off', kind, urls: Array.isArray(raw.urls) ? normalizeBackgroundUrls(raw.urls.filter((item): item is string => typeof item === 'string')) : [], active: typeof raw.active === 'number' && raw.active >= 0 ? raw.active : 0, name: typeof raw.name === 'string' ? raw.name : '', entry: typeof raw.entry === 'string' ? raw.entry : undefined}
     }
-    /* 旧记录：'default' 就是「用内置 API」，折成 URL 模式的一条。 */
+    /* 旧记录：`default` 就是「用内置 API」，折成 URL 模式的一条。 */
     if (raw?.source === 'default') return {source: 'url', kind, urls: [...DEFAULT_BACKGROUND_URLS], active: pickActive(DEFAULT_BACKGROUND_URLS.length), name: ''}
     if (raw?.source === 'url') {
       /* 新记录是 urls 列表，旧记录是单条 url；两者都读。 */
@@ -121,14 +129,21 @@ export function readBackgroundPreference(material: Material): BackgroundPreferen
 }
 
 /** 某条记录当前实际铺的地址（URL 模式取生效那条，其余为空）。 */
-export const activeBackgroundUrl = (preference: BackgroundPreference) => preference.source === 'url' ? preference.urls[preference.active] ?? '' : ''
+const activeBackgroundUrl = (preference: BackgroundPreference) => preference.source === 'url' ? preference.urls[preference.active] ?? '' : ''
 
 /** 这一条地址本身就是图片/视频文件时才可直接铺；随机图 API 端点每次请求都换图，必须先解析。 */
 const directMediaUrl = (url: string) => /\.(?:jpe?g|png|webp|gif|bmp|avif|mp4|webm)(?:[?#]|$)/i.test(url) ? url : ''
 /** 记着上一张真正铺出来的图：解析失败时保留它，避免回退到随机端点换出新图。 */
 let lastGoodAssetUrl = ''
 
-const initial = readBackgroundPreference(getThemePreference().material)
+function readActiveBackground(): BackgroundPreference {
+  const {theme, material} = getThemePreference()
+  return theme === 'minimal'
+    ? {source: 'off', kind: 'image', urls: [], active: 0, name: ''}
+    : readBackgroundPreference(material)
+}
+
+const initial = readActiveBackground()
 let snapshot: BackgroundSnapshot = {
   ...initial,
   assetUrl: initial.source === 'upload' && initial.entry ? galleryUrl(initial.entry) : directMediaUrl(activeBackgroundUrl(initial)),
@@ -143,7 +158,14 @@ let gallery: BackgroundGalleryEntry[] = []
 let objectUrl = ''
 let uploadLoad: Promise<void> | undefined
 
+/** 读取当前背景状态快照，供 `useSyncExternalStore` 使用。 */
 export const getBackground = () => snapshot
+/**
+ * 订阅背景状态变化。
+ *
+ * @param listener 状态变化回调。
+ * @returns 取消订阅函数。
+ */
 export const subscribeBackground = (listener: () => void) => {
   listeners.add(listener)
   return () => { listeners.delete(listener) }
@@ -210,7 +232,7 @@ async function deleteStoredFile() {
 }
 
 /** 一行一个地址：去空行、去重、逐条校验。全空时返回空数组，交给调用方回填内置默认。 */
-export function normalizeBackgroundUrls(values: string[]): string[] {
+function normalizeBackgroundUrls(values: string[]): string[] {
   const seen = new Set<string>()
   for (const value of values) {
     const trimmed = value.trim()
@@ -220,6 +242,7 @@ export function normalizeBackgroundUrls(values: string[]): string[] {
   return [...seen]
 }
 
+/** 校验并规范化单条背景地址：去首尾空白、要求 http(s) 协议、限长 2048；不合法时抛出对应中文错误。 */
 export function normalizeBackgroundUrl(value: string): string {
   const input = value.trim()
   if (!input || input.length > 2048) throw new Error('请输入不超过 2048 个字符的背景地址。')
@@ -229,18 +252,18 @@ export function normalizeBackgroundUrl(value: string): string {
   return parsed.href
 }
 
-/* 切换材质时换成那一档自己的记录：普通默认关闭、玻璃默认随机图，各档独立保存。 */
+/* 切换主题或材质时读取当前背景，简约主题保留原有记录供切回时使用。 */
 subscribeTheme(() => {
-  const next = readBackgroundPreference(getThemePreference().material)
+  const next = readActiveBackground()
   if (next.source === snapshot.source && activeBackgroundUrl(next) === activeBackgroundUrl(snapshot) && next.name === snapshot.name) return
   replaceObjectUrl()
   const initialAsset = next.source === 'upload' ? (next.entry ? galleryUrl(next.entry) : '') : next.source === 'url' ? (directMediaUrl(activeBackgroundUrl(next)) || lastGoodAssetUrl) : ''
-  publish({...next, assetUrl: initialAsset, loading: next.source === 'upload'})
+  publish({...next, assetUrl: initialAsset, directUrl: '', resolving: false, resolveError: '', loading: next.source === 'upload'})
   if (next.source === 'upload') void loadUploadedBackground()
   if (next.source === 'url') void resolveActiveBackground()
 })
 
-export async function loadUploadedBackground() {
+async function loadUploadedBackground() {
   if (snapshot.source !== 'upload' || snapshot.assetUrl || uploadLoad) return uploadLoad
   uploadLoad = (async () => {
     try {
@@ -268,7 +291,7 @@ export async function loadUploadedBackground() {
 }
 
 /** 把当前生效的那条 API 交给服务端解析成真实直链（跨域时浏览器读不到最终地址）。 */
-export async function resolveActiveBackground() {
+async function resolveActiveBackground() {
   if (snapshot.source !== 'url') return
   const url = activeBackgroundUrl(snapshot)
   if (!url) return
@@ -276,11 +299,12 @@ export async function resolveActiveBackground() {
   try {
     const {token} = await api.request('background.access', {})
     const result = await api.request('background.resolve', {url})
-    if (activeBackgroundUrl(snapshot) !== url) return
-    /* 解析成功：壁纸改用直链 —— 同一个地址同时用于预览与"存入图库"，不会出现两次随机。 */
+    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
+    /* 解析成功：壁纸改用直链 —— 同一个地址同时用于预览与「存入图库」，不会出现两次随机。 */
     lastGoodAssetUrl = proxyUrl(result.final_url, token)
     publish({assetUrl: lastGoodAssetUrl, directUrl: result.final_url, resolving: false, resolveError: ''})
   } catch (error) {
+    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
     /* 解析失败就退回原地址直接当图片用（很多 API 本身就是图片），并把原因留给界面显示。 */
     const fallback = lastGoodAssetUrl || url
     publish({assetUrl: fallback, resolving: false, resolveError: (error as Error).message})
@@ -292,9 +316,10 @@ export function setBackgroundUrls(values: string[], kind: BackgroundKind) {
   const cleaned = normalizeBackgroundUrls(values)
   const urls = cleaned.length ? cleaned : [...DEFAULT_BACKGROUND_URLS]
   const preference: BackgroundPreference = {source: 'url', kind, urls, active: pickActive(urls.length), name: ''}
+  const activeUrl = urls[preference.active] ?? urls[0] ?? DEFAULT_BACKGROUND_URLS[0] ?? ''
   replaceObjectUrl()
   savePreference(preference)
-  publish({...preference, assetUrl: directMediaUrl(urls[preference.active]), directUrl: '', resolveError: '', loading: false})
+  publish({...preference, assetUrl: directMediaUrl(activeUrl), directUrl: '', resolveError: '', loading: false})
   void deleteStoredFile()
   void resolveActiveBackground()
 }
@@ -302,13 +327,13 @@ export function setBackgroundUrls(values: string[], kind: BackgroundKind) {
 
 /** 启动时把图库拉回来：图库模式随机铺一张，并把旧的浏览器上传图迁移进图库（只做一次）。 */
 export async function initBackgroundGallery() {
-  /* 只做一次：壁纸的加载 effect 依赖 revision，而这里会 publish；
-     没有这个守卫就会「解析→revision 变→effect 重跑→再解析」无限重解析（随机图 API 每次都是新图，表现就是背景狂闪）。 */
+  // 只做一次：壁纸的加载 effect 依赖 revision，而这里会 publish；
+  // 没有这个守卫就会「解析→revision 变→effect 重跑→再解析」无限重解析（随机图 API 每次都是新图，表现就是背景狂闪）。
   if (bootstrapped) return
   bootstrapped = true
   await refreshGallery()
-  /* 迁移必须排在"随机铺一张"之前：随机铺一张会把快照里的名字换成库里的条目名，
-     迁移再拿这个名字去登记，旧图的文件名就丢了。 */
+  // 迁移必须排在「随机铺一张」之前：随机铺一张会把快照里的名字换成库里的条目名，
+  // 迁移再拿这个名字去登记，旧图的文件名就丢了。
   await migrateStoredUpload()
   if (snapshot.source === 'upload') {
     if (snapshot.entry && gallery.some(item => item.id === snapshot.entry)) publish({assetUrl: galleryUrl(snapshot.entry), loading: false})
@@ -348,6 +373,7 @@ export async function refreshGallery() {
   return gallery
 }
 
+/** 当前缓存的图库列表；未经 refreshGallery 拉取时为空。 */
 export const getGallery = () => gallery
 
 /** 让图库里的某一条生效；不传 id 则随机抽一条（多图随机播放）。 */
@@ -385,6 +411,7 @@ export async function saveDirectUrlToGallery() {
   return result.entry
 }
 
+/** 从图库删除一条；删的是当前生效条目时随机换一张。 */
 export async function removeGalleryEntry(identifier: string) {
   await api.request('background.gallery.remove', {id: identifier})
   await refreshGallery()

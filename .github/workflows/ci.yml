@@ -4,8 +4,8 @@ name: CI
 # 原 lint.yml（ruff / button-config-check）与 import-test.yml（import-smoke）
 # 合并于此，三者均为 push / pull_request 触发，直接作为 PR 的 check 显示。
 #
-# 其余 workflow（docker-publish / git-over-cdn-* / sync2 / ai-issue-labeler）
-# 触发条件与职责不同（tags 发布、master 镜像、issues 自动化），保持独立，
+# 其余 workflow（git-over-cdn-* / sync2 / ai-issue-labeler）
+# 触发条件与职责不同（tags 发布、issues 自动化），保持独立，
 # 不并入本工作流。
 
 on: [push, pull_request]
@@ -24,11 +24,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # macos-14 为 Apple Silicon，标签来源见 GitHub runner 文档。
+        # macos-15 为 Apple Silicon，标签来源见 GitHub runner 文档。
         # https://docs.github.com/en/actions/reference/runners/github-hosted-runners
         # 不含 macos-15-intel：llvmlite（numba 依赖）无 macOS x86_64 wheel（上游 0.46 起删除），
         # 源码编译需 LLVM 的 CMake 包，该 runner 上 uv sync 必然失败。
-        os: [ubuntu-latest, windows-latest, macos-14]
+        os: [ubuntu-latest, windows-latest, macos-15]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -76,6 +76,7 @@ jobs:
       - name: 校验 API 与前端
         run: |
           uv run ruff check module/api module/runtime deploy/frontend.py --select F821,F401
+          uv run python -m pytest tests/test_remote_direct.py tests/test_remote_cloudflare.py -q
           uv run python -m unittest tests.test_api tests.test_api_lifecycle tests.test_config_transaction tests.test_runtime_task_handler tests.test_frontend_build tests.test_gui_supervisor_exit
           uv run python -m unittest tests.test_island_walk_rules tests.test_island_cargo_preparation tests.test_mind_calculator tests.test_mind_scan tests.test_mind_scan_stuck tests.test_mind_scan_bottom tests.test_mind_scan_identity tests.test_dock_scan_recovery tests.test_fleet_tech tests.test_fleet_tech_scan
           uv run python -m unittest tests.test_dock_data tests.test_dock_service tests.test_fleet_database tests.test_fleet_database_lifecycle tests.test_fleet_ledger tests.test_fleet_legacy tests.test_fleet_legacy_service tests.test_mind_calculator_mock
@@ -135,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # OpenCV 在无头 CI 环境需要系统运行库（与 deploy/docker/Dockerfile 保持一致）。
+      # OpenCV 在无头 CI 环境需要系统运行库。
       - name: Install system deps
         run: sudo apt-get update && sudo apt-get install -y libgl1 libglib2.0-0 libgomp1
 

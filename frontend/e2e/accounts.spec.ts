@@ -1,8 +1,13 @@
+/**
+ * @fileoverview 账号操作用例：按次弹出密码验证并覆盖 TPM 分支，取消时不执行操作也不保存密码。
+ */
+
+import {routeRpc} from './rpc-route'
 import { expect, test } from '@playwright/test'
 
 test('账号操作按次弹出密码验证，取消不执行且不保存密码', async ({page}, testInfo) => {
   let advertisedTPM = false
-  await page.routeWebSocket('**/api/v1/ws', socket => {
+  await routeRpc(page, socket => {
     const server = socket.connectToServer()
     server.onMessage(message => {
       const response = JSON.parse(String(message))

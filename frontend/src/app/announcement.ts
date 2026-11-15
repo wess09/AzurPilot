@@ -10,12 +10,17 @@ import { useConnection } from './context'
 const READ_KEY = 'azurpilot.announcement.last-read-id'
 
 interface AnnouncementStoreState {
+  /** 当前公告；尚无公告时为 null。 */
   data: Announcement | null
+  /** 是否正在拉取公告。 */
   loading: boolean
+  /** 最近一次拉取失败的信息，成功后清空。 */
   error: string
+  /** 当前已读的公告 ID。 */
   lastReadId: string | null
 }
 
+// 公告状态放在模块级单例：多个组件实例共用一份轮询与未读状态，经 useSyncExternalStore 订阅。
 let storeState: AnnouncementStoreState = {
   data: null,
   loading: false,
@@ -45,18 +50,18 @@ function writeStoredId(id: string) {
   }
 }
 
-export function subscribeAnnouncement(listener: () => void) {
+function subscribeAnnouncement(listener: () => void) {
   listeners.add(listener)
   return () => {
     listeners.delete(listener)
   }
 }
 
-export function getAnnouncementSnapshot(): AnnouncementStoreState {
+function getAnnouncementSnapshot(): AnnouncementStoreState {
   return storeState
 }
 
-export async function fetchAnnouncement(force = false) {
+async function fetchAnnouncement(force = false) {
   storeState = { ...storeState, loading: true }
   notifyListeners()
   try {
@@ -78,7 +83,7 @@ export async function fetchAnnouncement(force = false) {
   notifyListeners()
 }
 
-export function markAnnouncementAsRead() {
+function markAnnouncementAsRead() {
   const currentId = storeState.data?.announcementId
   if (currentId) {
     writeStoredId(currentId)
@@ -90,15 +95,20 @@ export function markAnnouncementAsRead() {
   }
 }
 
+/**
+ * 订阅系统公告并管理未读状态。
+ *
+ * 连接就绪后拉取一次并转入每 2 分钟的轮询，`refresh` 可强制重新拉取。
+ * @returns 公告数据、加载状态、错误、未读状态及读写操作。
+ */
 export function useAnnouncement() {
   const connection = useConnection()
   const state = useSyncExternalStore(subscribeAnnouncement, getAnnouncementSnapshot, getAnnouncementSnapshot)
 
   useEffect(() => {
     if (connection !== 'ready') return
-    // 首屏拉取
     void fetchAnnouncement(false)
-    // 后台定期检查（每 2 分钟）
+    // 之后每 2 分钟后台轮询一次。
     const timer = setInterval(() => {
       void fetchAnnouncement(false)
     }, 120_000)

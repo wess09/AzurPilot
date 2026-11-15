@@ -20,7 +20,7 @@ async function expectNoPageOverflow(page: Page) {
   expect(await page.locator('main').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
 }
 
-for (const theme of ['legacy-light', 'legacy-dark']) {
+for (const theme of ['modern-light', 'modern-dark']) {
   test(`移动端 ${theme} 统计分类完整显示，搜索与导出可用`, async ({page}, testInfo) => {
     await preferences(page, theme)
     await page.goto('/#/i/demo-main/statistics')
@@ -39,7 +39,7 @@ for (const theme of ['legacy-light', 'legacy-dark']) {
     await expectNoPageOverflow(page)
 
     await page.getByRole('button', {name: '样式编辑', exact: true}).click()
-    const merge = page.locator('.statistics-category-picker .statistics-single-view')
+    const merge = page.locator('.statistics-category-picker').getByRole('button', {name: '合并单页', exact: true})
     await expect(merge).toBeVisible()
     await expectNoPageOverflow(page)
     await page.locator('.statistics-category-picker').screenshot({path: testInfo.outputPath('statistics-category-edit.png'), animations: 'disabled'})
@@ -59,13 +59,16 @@ for (const theme of ['legacy-light', 'legacy-dark']) {
     await select.scrollIntoViewIfNeeded()
     await page.screenshot({path: testInfo.outputPath('statistics-mobile.png'), animations: 'disabled'})
     await page.locator('.statistics-category-picker').screenshot({path: testInfo.outputPath('statistics-category-picker.png'), animations: 'disabled'})
-    const labels = await page.locator('.statistics-category-select select option').allTextContents()
+    await select.click()
+    const labels = await page.getByRole('option').allTextContents()
+    expect(labels.length).toBeGreaterThan(0)
+    await page.keyboard.press('Escape')
     for (const label of labels) {
       await select.click()
       const option = page.getByRole('option', {name: label, exact: true})
       await option.scrollIntoViewIfNeeded()
       await expect(option).toBeInViewport({ratio: 1})
-      expect(await option.locator('span').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+      expect(await option.locator('span[id]').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
       await option.click()
       await expect(select).toHaveText(label)
     }

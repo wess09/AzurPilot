@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="doc/logo.webp" alt="AzurPilot Logo" width="400">
+  <img src="docs/images/logo.webp" alt="AzurPilot Logo" width="400">
 </p>
 
 <p align="center">
@@ -63,7 +63,7 @@ AzurPilot 是基于 AzurLaneAutoScript 修改而来的碧蓝航线自动化辅�
 ## GUI 预览
 
 <div align="center">
-  <img src="doc/GUI.png" alt="GUI Preview" width="800">
+  <img src="docs/images/GUI.png" alt="GUI Preview" width="800">
 </div>
 
 ## 快速开始
@@ -227,17 +227,17 @@ MCP 复用 WebUI 的密码（`--key` / `config/deploy.yaml` 的 `Password`），
 > 📥 从 [AzurPilot 官网](https://azurpilot.com/download.html) 下载 Windows / macOS / Linux 启动器
 
 <div align="center">
-  <img src="doc/loading.png" alt="loading" width="500" />
+  <img src="docs/images/loading.png" alt="loading" width="500" />
   <p>启动加载界面</p>
   <table align="center">
     <tr>
-      <td align="center"><img src="doc/GUI.png" alt="新版" width="260"><br>新版</td>
-      <td align="center"><img src="doc/GUI-legacy.webp" alt="旧版" width="260"><br>旧版</td>
-      <td align="center"><img src="doc/GUI-minimal.png" alt="简约" width="260"><br>简约</td>
+      <td align="center"><img src="docs/images/GUI.png" alt="新版" width="260"><br>新版</td>
+      <td align="center"><img src="docs/images/GUI-legacy.webp" alt="旧版" width="260"><br>旧版</td>
+      <td align="center"><img src="docs/images/GUI-minimal.png" alt="简约" width="260"><br>简约</td>
     </tr>
   </table>
   <p>Windows 客户端界面</p>
-  <img src="doc/macGUI.png" alt="macGUI" width="500" />
+  <img src="docs/images/macGUI.png" alt="macGUI" width="500" />
   <p>Mac 客户端界面</p>
 </div>
 
@@ -339,7 +339,7 @@ uv run -m module.config.config_updater
 
 <p align="center">
   <a href="https://afdian.com/a/miaonaa">
-    <img src="doc/afdian.jfif" alt="爱发电" width="200">
+    <img src="docs/images/afdian.jfif" alt="爱发电" width="200">
   </a>
   <br>
   <b>支持本项目（用于支付服务器费用或训练新模型等？）</b>

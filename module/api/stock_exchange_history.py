@@ -77,7 +77,7 @@ class ActionHistory:
                     finally:
                         seal.close()
                 connection.execute('PRAGMA journal_mode=WAL')
-                connection.execute('PRAGMA synchronous=FULL')
+                connection.execute('PRAGMA synchronous=NORMAL')
                 connection.executescript('''
                 CREATE TABLE IF NOT EXISTS samples (seq INTEGER PRIMARY KEY AUTOINCREMENT,
                     time INTEGER NOT NULL UNIQUE,total INTEGER NOT NULL,month TEXT NOT NULL,uploaded INTEGER NOT NULL DEFAULT 0,source INTEGER NOT NULL DEFAULT 0);

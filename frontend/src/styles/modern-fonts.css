@@ -1,0 +1,7 @@
+/* 正文使用 MiSans，等宽字体由 tokens.css 提供 */
+@font-face {
+  font-family: 'MiSans';
+  src: url('/MiSans-Demibold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
