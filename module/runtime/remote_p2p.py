@@ -192,9 +192,19 @@ class PeerServer:
         if not task.cancelled():
             task.exception()
 
-    def _ice_servers(self):
-        """按注册服务主机生成 STUN 候选，并保留公共 STUN 兜底。"""
-        hostname = urlsplit(self.provider.registry()).hostname
+    async def _ice_servers(self):
+        """按直连 STUN 主机生成候选，并保留公共 STUN 兜底。"""
+        hostname = ''
+        try:
+            data = await self.provider.request('GET', '/api/v1/devices/' + quote(
+                self.provider.identity().load()['device_id'], safe='',
+            ) + '/resolve')
+            if isinstance(data, dict) and isinstance(data.get('stun'), str):
+                hostname = data['stun']
+        except Exception:
+            hostname = ''
+        if not hostname:
+            hostname = urlsplit(self.provider.registry()).hostname
         if not hostname:
             return []
         if ':' in hostname:
@@ -238,7 +248,7 @@ class PeerServer:
     async def _answer_signal(self, signal_id, offer):
         """为单个 offer 建立无数据通道的应答连接并回传本地 SDP。"""
         device_id = quote(self.provider.identity().load()['device_id'], safe='')
-        peer = RTCPeerConnection(RTCConfiguration(iceServers=self._ice_servers()))
+        peer = RTCPeerConnection(RTCConfiguration(iceServers=await self._ice_servers()))
         self._peer_connections[signal_id] = peer
 
         def datachannel(channel):

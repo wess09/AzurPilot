@@ -194,6 +194,8 @@ async def _signal_scenario():
     provider.pending['requests'] = [{'id': 'signal-1', 'offer': 'remote-offer'}]
 
     async def request(method, path, data=None):
+        if path.endswith('/resolve'):
+            return {'stun': '192.0.2.1'}
         return await StubProvider.request(provider, method, path, data)
 
     provider.request = request
@@ -217,8 +219,8 @@ async def _signal_scenario():
     assert peer.localDescription.sdp == 'local-answer'
     assert peer.closed
     assert [ice.urls for ice in peer.configuration.iceServers] == [
-        ['stun:signal.example:3478'],
-        ['stun:signal.example:34788'],
+        ['stun:192.0.2.1:3478'],
+        ['stun:192.0.2.1:34788'],
         ['stun:stun.cloudflare.com:3478'],
         ['stun:stun.l.google.com:19302'],
     ]
