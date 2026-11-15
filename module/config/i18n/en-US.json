@@ -4728,63 +4728,63 @@
       "3": "3"
     },
     "MinShell": {
-      "name": "Shell stock threshold",
+      "name": "Shellfish min stock",
       "help": ""
     },
     "MinCatfish": {
-      "name": "Catfish stock threshold",
+      "name": "Catfish min stock",
       "help": ""
     },
     "MinKoiCarp": {
-      "name": "Koi carp stock threshold",
+      "name": "Koi Carp min stock",
       "help": ""
     },
     "MinCommonCarp": {
-      "name": "Common carp stock threshold",
+      "name": "Common Carp min stock",
       "help": ""
     },
     "MinShrimp": {
-      "name": "Shrimp stock threshold",
+      "name": "Freshwater Shrimp min stock",
       "help": ""
     },
     "MinCrayfish": {
-      "name": "Crayfish stock threshold",
+      "name": "Crayfish min stock",
       "help": ""
     },
     "MinBass": {
-      "name": "Bass stock threshold",
+      "name": "Sea Bass min stock",
       "help": ""
     },
     "MinCrab": {
-      "name": "Crab stock threshold",
+      "name": "Crab min stock",
       "help": ""
     },
     "MinSquid": {
-      "name": "Squid stock threshold",
+      "name": "Squid min stock",
       "help": ""
     },
     "MinMackerel": {
-      "name": "Mackerel stock threshold",
+      "name": "Mackerel min stock",
       "help": ""
     },
     "MinTuna": {
-      "name": "Tuna stock threshold",
+      "name": "Tuna min stock",
       "help": ""
     },
     "MinSalmon": {
-      "name": "Salmon stock threshold",
+      "name": "Salmon min stock",
       "help": ""
     },
     "MinRedSeaBream": {
-      "name": "Red sea bream stock threshold",
+      "name": "Red Sea Bream min stock",
       "help": ""
     },
     "MinYellowfinTuna": {
-      "name": "Yellowfin tuna stock threshold",
+      "name": "Yellowfin Tuna min stock",
       "help": ""
     },
     "MinSeaCucumber": {
-      "name": "Sea cucumber stock threshold",
+      "name": "Sea Cucumber min stock",
       "help": ""
     },
     "MinFreshwaterFishMeat": {
@@ -4863,23 +4863,23 @@
       "help": "Connect with >, e.g. ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci > Taihou > Nagato > Agir > HwahJah > Argus > Ognevoy\nOnly recognizes the first two rows in default order. If the specified character is unavailable, falls back to WorkerJuu."
     },
     "MinCopper": {
-      "name": "Copper ore min stock",
+      "name": "Copper Ore min stock",
       "help": "Mine positions only produce when copper ore in warehouse falls below this value."
     },
     "MinAluminium": {
-      "name": "Aluminium ore min stock",
+      "name": "Bauxite Ore min stock",
       "help": "Mine positions only produce when aluminium ore in warehouse falls below this value."
     },
     "MinIron": {
-      "name": "Iron ore min stock",
+      "name": "Iron Ore min stock",
       "help": "Mine positions only produce when iron ore in warehouse falls below this value."
     },
     "MinSulphur": {
-      "name": "Sulphur min stock",
+      "name": "Sulfur min stock",
       "help": "Mine positions only produce when sulphur in warehouse falls below this value."
     },
     "MinSilver": {
-      "name": "Silver ore min stock",
+      "name": "Silver Ore min stock",
       "help": "Mine positions only produce when silver ore in warehouse falls below this value."
     }
   },
@@ -4917,15 +4917,15 @@
       "help": "Connect with >, e.g. ChaoHo > NewJersey > Amagi_chan\nSaratoga > Akashi > Tashkent > YingSwei\nLeMalin > Unicorn > Shimakaze > Cheshire\nChenHai > WilliamDPorter\nHelena > Friedrich > Atago\nYixian > August > Eugen > Hood > Javelin > Laffey > Explorer > Navigator > OceanCrosser > FeiYun > Takao > Anchorage > Belfast > ChangFeng > Mogador > RoyalFortune > DaVinci > Taihou > Nagato > Agir > HwahJah > Argus > Ognevoy\nOnly recognizes the first two rows in default order. If the specified character is unavailable, falls back to WorkerJuu."
     },
     "MinElegant": {
-      "name": "Elegant wood min stock",
+      "name": "Elegant Wood min stock",
       "help": "Forest positions only produce when elegant wood in warehouse falls below this value."
     },
     "MinPractical": {
-      "name": "Practical wood min stock",
+      "name": "Workable Wood min stock",
       "help": "Forest positions only produce when practical wood in warehouse falls below this value."
     },
     "MinSelected": {
-      "name": "Selected wood min stock",
+      "name": "Premium Wood min stock",
       "help": "Forest positions only produce when selected wood in warehouse falls below this value."
     }
   },
