@@ -319,6 +319,7 @@ class GeneratedConfig:
     Campaign_UseClearMode = True
     Campaign_UseFleetLock = True
     Campaign_UseAutoSearch = True
+    Campaign_MultipleSortiesCount = 0
     Campaign_ContinueAfterRestart = False
     Campaign_Use2xBook = False
     Campaign_AmbushEvade = True

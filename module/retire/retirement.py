@@ -520,7 +520,10 @@ class Retirement(Enhancement, QuickRetireSettingHandler):
         # 2025.05.29 进入船坞时游戏会弹出皮肤信息提示
         # 但「船坞已满」弹窗不是游戏提示：若被 handle_game_tips() 抢先点掉，
         # 弹窗消失而退役流程不会执行，船坞仍然满着，于是反复弹出
-        if not self.retirement_appear():
+        dock_full = self.retirement_appear()
+        if dock_full and self.__dict__.get('_multiple_sorties_requested', 0):
+            self._multiple_sorties_dock_interrupted = True
+        if not dock_full:
             if self.handle_game_tips():
                 return True
         if self._unable_to_enhance:

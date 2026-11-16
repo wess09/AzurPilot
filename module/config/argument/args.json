@@ -1296,6 +1296,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -1770,6 +1779,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -2243,6 +2261,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": true
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
       },
       "ContinueAfterRestart": {
         "type": "checkbox",
@@ -2845,6 +2872,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -3421,6 +3457,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -3987,6 +4032,15 @@
         "value": false,
         "display": "hide"
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -4479,6 +4533,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -4969,6 +5032,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -5458,6 +5530,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": true
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
       },
       "ContinueAfterRestart": {
         "type": "checkbox",
@@ -5968,6 +6049,15 @@
         "value": false,
         "display": "hide"
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -6293,6 +6383,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": true
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
       },
       "ContinueAfterRestart": {
         "type": "checkbox",
@@ -6986,6 +7085,15 @@
         "value": false,
         "display": "hide"
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -7328,6 +7436,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": false,
+        "display": "hide"
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
         "display": "hide"
       },
       "ContinueAfterRestart": {
@@ -8110,6 +8227,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -8657,6 +8783,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -9164,6 +9299,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": true
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
       },
       "ContinueAfterRestart": {
         "type": "checkbox",
@@ -9673,6 +9817,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -10181,6 +10334,15 @@
         "type": "checkbox",
         "value": true
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "display"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false
@@ -10677,6 +10839,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": true
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
       },
       "ContinueAfterRestart": {
         "type": "checkbox",
@@ -11185,6 +11356,15 @@
         "value": false,
         "display": "hide"
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -11497,6 +11677,15 @@
       "UseAutoSearch": {
         "type": "checkbox",
         "value": false,
+        "display": "hide"
+      },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
         "display": "hide"
       },
       "ContinueAfterRestart": {
@@ -12930,6 +13119,15 @@
         "value": true,
         "display": "hide"
       },
+      "MultipleSortiesCount": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          999
+        ],
+        "display": "hide"
+      },
       "ContinueAfterRestart": {
         "type": "checkbox",
         "value": false,
@@ -13029,6 +13227,273 @@
         "type": "stored",
         "value": "2020-01-01 00:00:00",
         "display": "hide"
+      }
+    },
+    "Fleet": {
+      "Fleet1": {
+        "type": "select",
+        "value": 1,
+        "option": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "Fleet1Formation": {
+        "type": "select",
+        "value": "double_line",
+        "option": [
+          "line_ahead",
+          "double_line",
+          "diamond"
+        ]
+      },
+      "Fleet1Mode": {
+        "type": "select",
+        "value": "combat_auto",
+        "option": [
+          "combat_auto",
+          "combat_manual",
+          "stand_still_in_the_middle",
+          "hide_in_bottom_left",
+          "hide_in_upper_left"
+        ]
+      },
+      "Fleet1Step": {
+        "type": "select",
+        "value": 3,
+        "option": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "Fleet2": {
+        "type": "select",
+        "value": 2,
+        "option": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ]
+      },
+      "Fleet2Formation": {
+        "type": "select",
+        "value": "double_line",
+        "option": [
+          "line_ahead",
+          "double_line",
+          "diamond"
+        ]
+      },
+      "Fleet2Mode": {
+        "type": "select",
+        "value": "combat_auto",
+        "option": [
+          "combat_auto",
+          "combat_manual",
+          "stand_still_in_the_middle",
+          "hide_in_bottom_left",
+          "hide_in_upper_left"
+        ]
+      },
+      "Fleet2Step": {
+        "type": "select",
+        "value": 2,
+        "option": [
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "FleetOrder": {
+        "type": "select",
+        "value": "fleet1_mob_fleet2_boss",
+        "option": [
+          "fleet1_mob_fleet2_boss",
+          "fleet1_boss_fleet2_mob",
+          "fleet1_all_fleet2_standby",
+          "fleet1_standby_fleet2_all"
+        ]
+      },
+      "SkipPreparation": {
+        "type": "checkbox",
+        "value": false
+      }
+    },
+    "Submarine": {
+      "Fleet": {
+        "type": "select",
+        "value": 0,
+        "option": [
+          0,
+          1,
+          2
+        ]
+      },
+      "Mode": {
+        "type": "select",
+        "value": "do_not_use",
+        "option": [
+          "do_not_use",
+          "hunt_only",
+          "boss_only",
+          "hunt_and_boss",
+          "every_combat",
+          "advanced"
+        ]
+      },
+      "AutoSearchMode": {
+        "type": "select",
+        "value": "sub_standby",
+        "option": [
+          "sub_standby",
+          "sub_auto_call"
+        ]
+      },
+      "DistanceToBoss": {
+        "type": "select",
+        "value": "2_grid_to_boss",
+        "option": [
+          "to_boss_position",
+          "1_grid_to_boss",
+          "2_grid_to_boss",
+          "use_open_ocean_support"
+        ]
+      },
+      "AdvancedConfig": {
+        "type": "textarea",
+        "value": "# 弹药数\nammo: 7\n\n# 远洋支援数\nsupport: 1\n\n# 松鲷的狩猎范围\nrange:\n  - \"ONONOOO\"\n  - \"ONNNNOO\"\n  - \"NNNNNNO\"\n  - \"ONNHNNN\"\n  - \"NNNNNNO\"\n  - \"ONOONOO\"\n  - \"OOOOOOO\"\n\n# 规则\nrules:\n  battle_0: # 所有战斗\n    type: hunt  # 出击类型为狩猎\n    condition:  # 出击条件\n      ammo: \">2\"  # 弹药数大于2\n      enemy:  # 敌人类型为\n        - \"2C\"  # 中航\n        - \"3T\"  # 大运\n        - \"0E\"  # 未知敌人\n      in_range: true  # 在狩猎范围里\n    move: false # 不移动\n  battle_2: # 第二场战斗\n    type: call  # 出击类型为召唤\n    condition:  # 出击条件\n      ammo: \">=2\" # 弹药数大于等于2\n      support: \"!=0\" # 远洋支援数不等于0\n      enemy:  # 敌人类型为\n        - \"3*\"  # 所有大型舰队\n      in_range: false  # 不要求在狩猎范围里\n    move: false # 不移动\n  battle_-1:  # 最后一场战斗\n    type: call  # 出击类型为召唤\n    # 这里没写条件所以是必定出击\n    support: true # 远洋支援\n    move: true # 移动\n",
+        "mode": "yaml"
+      }
+    },
+    "Emotion": {
+      "Mode": {
+        "type": "select",
+        "value": "calculate",
+        "option": [
+          "calculate",
+          "ignore",
+          "calculate_ignore"
+        ]
+      },
+      "IgnoreShipwreck": {
+        "type": "checkbox",
+        "value": false
+      },
+      "MinReserve": {
+        "type": "input",
+        "value": 0,
+        "validate": [
+          0,
+          150
+        ]
+      },
+      "RecoveryWait": {
+        "type": "stored",
+        "value": null,
+        "display": "hide"
+      },
+      "Fleet1Value": {
+        "type": "input",
+        "value": 119,
+        "validate": [
+          0,
+          150
+        ]
+      },
+      "Fleet1Record": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      },
+      "Fleet1RecoveryState": {
+        "type": "stored",
+        "value": null,
+        "display": "hide"
+      },
+      "Fleet1Control": {
+        "type": "select",
+        "value": "prevent_green_face",
+        "option": [
+          "keep_exp_bonus",
+          "prevent_green_face",
+          "prevent_yellow_face",
+          "prevent_red_face"
+        ]
+      },
+      "Fleet1Recover": {
+        "type": "select",
+        "value": "not_in_dormitory",
+        "option": [
+          "not_in_dormitory",
+          "dormitory_floor_1",
+          "dormitory_floor_2"
+        ]
+      },
+      "Fleet1Oath": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Fleet1Onsen": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Fleet2Value": {
+        "type": "input",
+        "value": 119,
+        "validate": [
+          0,
+          150
+        ]
+      },
+      "Fleet2Record": {
+        "type": "datetime",
+        "value": "2020-01-01 00:00:00",
+        "validate": "datetime",
+        "display": "disabled"
+      },
+      "Fleet2RecoveryState": {
+        "type": "stored",
+        "value": null,
+        "display": "hide"
+      },
+      "Fleet2Control": {
+        "type": "select",
+        "value": "prevent_green_face",
+        "option": [
+          "keep_exp_bonus",
+          "prevent_green_face",
+          "prevent_yellow_face",
+          "prevent_red_face"
+        ]
+      },
+      "Fleet2Recover": {
+        "type": "select",
+        "value": "not_in_dormitory",
+        "option": [
+          "not_in_dormitory",
+          "dormitory_floor_1",
+          "dormitory_floor_2"
+        ]
+      },
+      "Fleet2Oath": {
+        "type": "checkbox",
+        "value": false
+      },
+      "Fleet2Onsen": {
+        "type": "checkbox",
+        "value": false
       }
     },
     "Storage": {

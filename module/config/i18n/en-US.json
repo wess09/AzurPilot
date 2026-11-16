@@ -1811,6 +1811,10 @@
       "name": "Use auto-search",
       "help": ""
     },
+    "MultipleSortiesCount": {
+      "name": "Continuous sortie batch",
+      "help": "Use 0 for regular sorties. A positive value sets the maximum stages per batch, subject to game limits, remaining runs, and stop conditions."
+    },
     "ContinueAfterRestart": {
       "name": "Continue battle after restart",
       "help": "Available for main and event map tasks, including daily event stages, SP, urgent commissions and three-oil farming; off by default. Requires clearing mode and auto search. After an abnormal restart returns to the original map, enable auto search and account for morale normally in each subsequent battle. Does not resume a pre-restart battle or settlement. Map context exists only in this scheduler process; changed settings or exhausted retries fall back to the existing flow."

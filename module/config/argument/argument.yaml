@@ -687,6 +687,10 @@ Campaign:
   UseClearMode: true
   UseFleetLock: true
   UseAutoSearch: true
+  MultipleSortiesCount:
+    value: 0
+    validate: [0, 999]
+    display: hide
   ContinueAfterRestart: false
   Use2xBook: false
   AmbushEvade: true
