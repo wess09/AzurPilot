@@ -13,7 +13,7 @@ import module.config.server as server
 server.server = 'cn'
 
 from module.campaign.multiple_sorties import (
-    OCR_MULTIPLE_COMPLETED, OCR_MULTIPLE_COUNT, OCR_MULTIPLE_OIL, OCR_MULTIPLE_PLANNED,
+    OCR_MULTIPLE_COUNT, OCR_MULTIPLE_OIL,
     MultipleSorties, multiple_sorties_count,
 )
 from module.combat.auto_search_combat import AutoSearchCombat
@@ -75,13 +75,6 @@ def test_real_numeric_ocr_does_not_include_chinese_unit(name, count, cost):
         assert OCR_MULTIPLE_OIL.last_valid
 
 
-def test_real_result_counts():
-    with patch('module.ocr.ocr.OCR_MODEL', OCR_MODEL):
-        image = screenshot('multiple_result')
-        assert OCR_MULTIPLE_PLANNED.ocr(image) == 1
-        assert OCR_MULTIPLE_COMPLETED.ocr(image) == 1
-
-
 def test_batch_respects_remaining_runs_and_single_stage_constraints():
     config = SimpleNamespace(Campaign_MultipleSortiesCount=10, StopCondition_MapAchievement='non_stop')
     assert multiple_sorties_count(config, remaining=2) == 2
@@ -91,16 +84,6 @@ def test_batch_respects_remaining_runs_and_single_stage_constraints():
     assert multiple_sorties_count(config) == 1
     config.Campaign_MultipleSortiesCount = 0
     assert multiple_sorties_count(config) == 0
-
-
-@pytest.mark.parametrize('actual,valid,expected', [(1, True, 1), (0, True, 0), (0, False, None)])
-def test_result_uses_actual_completed_count(actual, valid, expected):
-    context = SimpleNamespace(device=SimpleNamespace(image=None), _multiple_sorties_target=2)
-    with patch.object(OCR_MULTIPLE_PLANNED, 'ocr', return_value=2), \
-            patch.object(OCR_MULTIPLE_PLANNED, 'last_valid', True, create=True), \
-            patch.object(OCR_MULTIPLE_COMPLETED, 'ocr', return_value=actual), \
-            patch.object(OCR_MULTIPLE_COMPLETED, 'last_valid', valid, create=True):
-        assert MultipleSorties.multiple_sorties_read_result(context) == expected
 
 
 def test_final_handover_may_exceed_daily_budget():
@@ -272,12 +255,11 @@ def test_continuous_sorties_delegate_to_the_existing_round_trip(dock_full):
         emotion=Mock(), map_get_info=Mock(), get_oil=lambda: 5000,
         MAP=object(), ENTRANCE=entrance, _map_battle=5, lv_reset=Mock(), enter_map=Mock(),
         multiple_sorties_result_appear=lambda: state['page'] == 'result',
-        multiple_sorties_read_result=lambda: 1,
         appear=lambda button: state['page'] == 'chapter', appear_then_click=click,
         handle_urgent_commission=lambda: False, handle_story_skip=lambda: False,
         auto_search_execute_a_battle=Mock(side_effect=battle),
     )
-    assert MultipleSorties.run_multiple_sorties(context, 2) == 1
+    assert MultipleSorties.run_multiple_sorties(context, 2) == (0 if dock_full else 2)
     context.auto_search_execute_a_battle.assert_called_once_with()
     assert context._multiple_sorties_requested == 0
     assert context._multiple_sorties_dock_interrupted is dock_full

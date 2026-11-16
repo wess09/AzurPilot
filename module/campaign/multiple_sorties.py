@@ -4,15 +4,14 @@ import cv2
 import numpy as np
 
 from module.base.timer import Timer
-from module.exception import CampaignEnd, RequestHumanTakeover, ScriptEnd
+from module.exception import CampaignEnd, ScriptEnd
 from module.handler.assets import AUTO_SEARCH_MAP_OPTION_ON, NEW_SHIP_SKIP
 from module.logger import logger
 from module.map.assets import (
     MULTIPLE_SORTIES_BOOK, MULTIPLE_SORTIES_BOOK_ON, MULTIPLE_SORTIES_CHECK, MULTIPLE_SORTIES_CLOSE,
     MULTIPLE_SORTIES_COUNT_MAX, MULTIPLE_SORTIES_COUNT_MINUS, MULTIPLE_SORTIES_COUNT_OCR,
     MULTIPLE_SORTIES_COUNT_PLUS, MULTIPLE_SORTIES_OIL_OCR,
-    MULTIPLE_SORTIES_RESULT_CHECK, MULTIPLE_SORTIES_RESULT_COMPLETED_OCR,
-    MULTIPLE_SORTIES_RESULT_EXIT, MULTIPLE_SORTIES_RESULT_PLANNED_OCR, MULTIPLE_SORTIES_START,
+    MULTIPLE_SORTIES_RESULT_CHECK, MULTIPLE_SORTIES_RESULT_EXIT, MULTIPLE_SORTIES_START,
 )
 from module.ocr.ocr import Digit
 
@@ -33,10 +32,6 @@ class MultipleSortiesOil(Digit):
 
 OCR_MULTIPLE_COUNT = Digit(MULTIPLE_SORTIES_COUNT_OCR, alphabet='0123456789')
 OCR_MULTIPLE_OIL = MultipleSortiesOil(MULTIPLE_SORTIES_OIL_OCR, alphabet='0123456789')
-OCR_MULTIPLE_PLANNED = Digit(MULTIPLE_SORTIES_RESULT_PLANNED_OCR,
-                             letter=(180, 220, 150), threshold=100, alphabet='0123456789')
-OCR_MULTIPLE_COMPLETED = Digit(MULTIPLE_SORTIES_RESULT_COMPLETED_OCR,
-                               letter=(180, 220, 150), threshold=100, alphabet='0123456789')
 
 
 def multiple_sorties_count(config, remaining=0, total_remaining=0, one_time=False):
@@ -147,17 +142,6 @@ class MultipleSorties:
             return True
         return False
 
-    def multiple_sorties_read_result(self):
-        """从结算中的实际完成数记账，中断或战败不能按计划次数计数。"""
-        planned = OCR_MULTIPLE_PLANNED.ocr(self.device.image)
-        completed = OCR_MULTIPLE_COMPLETED.ocr(self.device.image)
-        if not (OCR_MULTIPLE_PLANNED.last_valid and OCR_MULTIPLE_COMPLETED.last_valid
-                and 0 <= completed <= planned <= self._multiple_sorties_target):
-            return None
-        logger.attr('连续作战计划次数', planned)
-        logger.attr('连续作战实际完成', completed)
-        return completed
-
     def run_multiple_sorties(self, count=1, oil_limit=None):
         """复用舰队准备与逐场战斗处理，完成一批游戏原生连续作战。
 
@@ -166,7 +150,7 @@ class MultipleSorties:
             oil_limit (int | None): 委托解锁使用自身油量下限，普通任务沿用停止条件。
 
         Returns:
-            int: 游戏结算确认的实际完成次数。
+            int: 正常批次按启动次数计入任务；已检测到中断时不计入整批。
 
         Pages:
             in: 章节选择页 / 关卡准备页
@@ -183,6 +167,7 @@ class MultipleSorties:
         self._multiple_sorties_abort = None
         self._multiple_sorties_stop_requested = False
         self._multiple_sorties_dock_interrupted = False
+        self._multiple_sorties_interrupted = False
         self.config.DOCK_FULL_TRIGGERED = False
         self._multiple_sorties_oil = self.get_oil()
         self._multiple_sorties_oil_limit = (max(
@@ -193,9 +178,7 @@ class MultipleSorties:
         self.map = self.MAP
         self.battle_count = 0
         self.lv_reset()
-        result = None
         result_seen = False
-        result_timer = Timer(10).start()
         try:
             self.ENTRANCE.area = self.ENTRANCE.button
             self.enter_map(self.ENTRANCE, mode=self.config.Campaign_Mode)
@@ -203,35 +186,30 @@ class MultipleSorties:
             while True:
                 self.device.screenshot()
                 if self.multiple_sorties_result_appear():
-                    if not result_seen:
-                        result_seen = True
-                        result_timer.reset()
-                    if result is None:
-                        result = self.multiple_sorties_read_result()
-                        if result is None:
-                            if result_timer.reached():
-                                raise RequestHumanTakeover('[连续作战] 无法确认实际完成次数')
-                            continue
+                    result_seen = True
                     if self.appear_then_click(MULTIPLE_SORTIES_RESULT_EXIT, offset=(20, 20), interval=2):
                         continue
-                else:
-                    result_seen = False
-                    result_timer.reset()
-                if result is not None and self.appear(self.ENTRANCE):
-                    return result
+                if result_seen and self.appear(self.ENTRANCE):
+                    interrupted = (self._multiple_sorties_interrupted
+                                   or self._multiple_sorties_stop_requested
+                                   or self._multiple_sorties_dock_interrupted
+                                   or self.config.DOCK_FULL_TRIGGERED)
+                    return 0 if interrupted else self._multiple_sorties_target
                 if self.handle_urgent_commission():
                     continue
                 if self.appear_then_click(NEW_SHIP_SKIP, offset=(20, 20), interval=2, similarity=0.75):
                     continue
                 if self.handle_story_skip():
                     continue
-                if result is not None:
+                if result_seen:
                     continue
                 try:
                     # 周回已负责船坞满、强化/退役、低心情、战败及处理后的自律恢复。
                     self.auto_search_execute_a_battle()
                 except CampaignEnd:
-                    # 原生批次结算由外层读实际次数并离开，不点击「再次前往」。
+                    if getattr(getattr(self, 'combat_result', None), 'defeated', False):
+                        self._multiple_sorties_interrupted = True
+                    # 原生批次结算由外层关闭，不点击「再次前往」。
                     continue
                 training = self.__dict__.get('_fleet_training_after_battle')
                 if training is not None:
