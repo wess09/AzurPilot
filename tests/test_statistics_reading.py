@@ -1,6 +1,7 @@
 """报表读取的展示路径：不产生写入副作用，缺数据时明确降级。"""
 import tempfile
 import unittest
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -51,6 +52,59 @@ class StatisticsReadingTests(unittest.TestCase):
         self.assertNotIn('meow_battle_raw_count', self.database.get_stats('inst', '2026-09'))
         self.assertTrue(self.database.backfill_meow_stats('inst', 2026, 9))
         self.assertEqual(self.database.get_stats('inst', '2026-09')['meow_battle_raw_count'], result['battle_count'])
+
+    def test_meow_battle_average_accepts_mixed_sample_formats(self):
+        cases = [
+            ([], 0.0),
+            ([20.5, 39.5], 30.0),
+            ([{'duration': 12, 'hazard_level': 3}, {'duration': 19}], 15.5),
+            ([10.0, {'duration': 20, 'hazard_level': 5}, 30], 20.0),
+            ([10.125, {'duration': 20}, None, {}, {'duration': None},
+              {'duration': 'invalid'}, {'duration': {}}, 'invalid'], 15.06),
+            ([None, {}, {'duration': None}, {'duration': 'invalid'}], 0.0),
+        ]
+        for samples, expected in cases:
+            with self.subTest(samples=samples):
+                data = self.database.get_stats('inst', '2026-09')
+                data['meow_battle_times'] = samples
+                self.database.save_stats('inst', '2026-09', data)
+                with patch.object(self.database, '_stats_transaction', side_effect=AssertionError('展示不能进入写事务')):
+                    result = self.database.get_meow_stats('inst', 2026, 9)
+                self.assertEqual(result['avg_battle_time'], expected)
+                self.assertEqual(result['battle_times'], samples)
+                self.assertEqual(self.database.get_stats('inst', '2026-09')['meow_battle_times'], samples)
+
+    def test_meow_hazard_averages_accept_mixed_battle_samples(self):
+        data = self.database.get_stats('inst', '2026-09')
+        data['meow_battle_times'] = [10, {'duration': 50, 'hazard_level': 5}]
+        data['meow_hazard_stats']['3']['battle_times'] = [10, {'duration': 30}, None]
+        data['meow_hazard_stats']['5'] = {
+            'battle_raw_count': 3, 'effective_rounds': 1.0,
+            'battle_times': [{'duration': 30}, 50, {'duration': None}],
+        }
+        self.database.save_stats('inst', '2026-09', data)
+        result = self.database.get_meow_stats('inst', 2026, 9)
+        self.assertEqual(result['avg_battle_time'], 30.0)
+        for hazard, expected in ((3, 20.0), (5, 40.0)):
+            with self.subTest(hazard=hazard):
+                self.assertEqual(result['by_hazard'][str(hazard)]['avg_battle_time'], expected)
+                filtered = self.database.get_meow_stats('inst', 2026, 9, hazard_level=hazard)
+                self.assertEqual(filtered['avg_battle_time'], expected)
+
+    def test_report_handles_legacy_and_new_meow_battle_samples(self):
+        with patch('module.statistics.cl1_database.datetime') as clock:
+            clock.now.return_value = datetime(2026, 9, 1, 12)
+            self.database.add_meow_battle_time('inst', 39.5, hazard_level=3)
+        samples = self.database.get_stats('inst', '2026-09')['meow_battle_times']
+        self.assertEqual(samples, [20.5, {'duration': 39.5, 'hazard_level': 3}])
+        before = self.database.db_path.read_bytes()
+        with patch.object(self.database, '_stats_transaction', side_effect=AssertionError('展示不能进入写事务')):
+            result = self.database.get_meow_stats('inst', 2026, 9)
+            report_data = self.get_report()
+        self.assertEqual(result['avg_battle_time'], 30.0)
+        meow_table = next(table for table in report_data['tables'] if table['key'] == 'meow_runs')
+        self.assertEqual(meow_table['rows'][0][3], 29.75)
+        self.assertEqual(self.database.db_path.read_bytes(), before)
 
     def test_fingerprint_tracks_wal_changes_without_overview_events(self):
         original = get_statistics_fingerprint('inst', self.root / 'config')
