@@ -4779,6 +4779,10 @@
       "name": "マダイ在庫閾値",
       "help": ""
     },
+    "MinBlackPorgy": {
+      "name": "クロダイ在庫閾値",
+      "help": ""
+    },
     "MinYellowfinTuna": {
       "name": "キハダマグロ在庫閾値",
       "help": ""
@@ -4819,6 +4823,7 @@
       "tuna": "マグロ",
       "salmon": "サーモン",
       "red_sea_bream": "マダイ",
+      "black_porgy": "クロダイ",
       "yellowfin_tuna": "キハダ",
       "sea_cucumber": "ナマコ"
     },
@@ -7266,6 +7271,7 @@
       "tuna": "マグロ",
       "salmon": "サーモン",
       "red_sea_bream": "マダイ",
+      "black_porgy": "クロダイ",
       "yellowfin_tuna": "キハダ",
       "sea_cucumber": "ナマコ"
     },

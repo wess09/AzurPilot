@@ -4779,6 +4779,10 @@
       "name": "红鲷鱼底线",
       "help": ""
     },
+    "MinBlackPorgy": {
+      "name": "黑鲷鱼底线",
+      "help": ""
+    },
     "MinYellowfinTuna": {
       "name": "黄鳍金枪鱼底线",
       "help": ""
@@ -4819,6 +4823,7 @@
       "tuna": "金枪鱼",
       "salmon": "三文鱼",
       "red_sea_bream": "红鲷鱼",
+      "black_porgy": "黑鲷鱼",
       "yellowfin_tuna": "黄鳍金枪鱼",
       "sea_cucumber": "海参"
     },
@@ -7266,6 +7271,7 @@
       "tuna": "金枪鱼",
       "salmon": "三文鱼",
       "red_sea_bream": "红鲷鱼",
+      "black_porgy": "黑鲷鱼",
       "yellowfin_tuna": "黄鳍金枪鱼",
       "sea_cucumber": "海参"
     },
