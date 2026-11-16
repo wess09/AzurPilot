@@ -22,7 +22,7 @@ test('简约主题跟随系统明暗并恢复已保存的配色', async ({page})
   await expect(page.locator('.wallpaper')).toHaveCount(0)
   await expect(page.locator('.sidebar')).toHaveCSS('backdrop-filter', 'none')
   await expect(page.locator('.sidebar')).toHaveCSS('border-radius', '0px')
-  await expect(page.locator('.config-group')).toHaveCSS('border-radius', '14px')
+  await expect(page.locator('.config-group').first()).toHaveCSS('border-radius', '14px')
 
   const forest = page.locator('.palette-option').filter({has: page.locator('input[value="forest"]')})
   await forest.click()

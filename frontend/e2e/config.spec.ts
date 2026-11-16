@@ -68,8 +68,9 @@ test('海里数检测使用天数输入，关闭、每轮和按天检测保存�
 
 for (const [task, stage] of [['EventA', 'a3'], ['EventB', 'B3'], ['EventC', 'c3'], ['EventD', 'D3']]) {
   test(`${task} 活动日常断点从旧数字 0 改成关卡名，刷新后保留并可重置`, async ({page}) => {
+    const path = `${task}.EventDaily.LastStage`
     await page.goto(`/#/i/testpilot/task/${task}`)
-    const value = page.locator(`[id="${task}.EventDaily.LastStage"]`)
+    const value = page.locator(`[id="${path}"]`)
     const status = page.locator(`[id="${task}.EventDaily.LastStage-status"]`)
     await expect(value).toBeVisible({timeout: 15000})
     await expect(value).toHaveValue('0')
