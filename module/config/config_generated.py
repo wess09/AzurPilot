@@ -1151,6 +1151,7 @@ class GeneratedConfig:
     IslandBusiness_Batch2Shops = [2, 4]  # 1, 2, 3, 4, 5
     IslandBusiness_SeasonalReplaceEnabled = True  # True, False
     IslandBusiness_SeasonalThreshold = 7
+    IslandBusiness_FillEmptySlots = False  # True, False
 
     # 配置组 `IslandBusinessShop1`
     IslandBusinessShop1_Char1 = 'None'  # None, WorkerJuu, Cheshire, YingSwei, Saratoga, Akashi, NewJersey, Tashkent, LeMalin, Shimakaze, Amagi_chan, Unicorn, ChaoHo, ChenHai, WilliamDPorter, Helena, Friedrich, Atago, Yixian, August, Eugen, Hood, Javelin, Laffey, Explorer, Navigator, OceanCrosser, FeiYun, Takao, Anchorage, Belfast, ChangFeng, Mogador, RoyalFortune, DaVinci, Taihou, Nagato, Agir, HwahJah, Argus, Ognevoy

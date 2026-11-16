@@ -2310,6 +2310,10 @@ IslandBusiness:
   SeasonalThreshold:
     type: input
     value: 7
+  FillEmptySlots:
+    type: checkbox
+    value: false
+    option: [ true, false ]
 
 # ---------- Island Business Shops ----------
 _IslandBusinessChar: &IslandBusinessChar

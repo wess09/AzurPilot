@@ -3290,7 +3290,8 @@
         4
       ],
       "SeasonalReplaceEnabled": true,
-      "SeasonalThreshold": 7
+      "SeasonalThreshold": 7,
+      "FillEmptySlots": false
     },
     "IslandBusinessShop1": {
       "Char1": "None",
