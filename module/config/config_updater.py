@@ -586,7 +586,7 @@ class ConfigGenerator:
                             for task in RAIDS:
                                 insert(task)
                     elif event.is_war_archives:
-                        for task in WAR_ARCHIVES:
+                        for task in WAR_ARCHIVES + ['OperationHandover']:
                             insert(task)
                     elif event.is_coalition:
                         if not hasattr(self, f'_{server}_latest_coalition_date'):

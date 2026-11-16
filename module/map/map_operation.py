@@ -196,22 +196,24 @@ class MapOperation(MultipleSorties, MysteryHandler, FleetPreparation, Retirement
             handover.campaign = self
             if handover.handover_reward():
                 self.config.cross_set(
-                    ['OperationHandover', 'OperationHandover', 'CommissionEnd'], HANDOVER_COMMISSION_NONE)
+                    'OperationHandover.OperationHandover.CommissionEnd', HANDOVER_COMMISSION_NONE)
                 logger.info('[作战委托] 已领取完成的委托，继续当前主线或活动任务')
                 return True
             return False
 
         remaining = OCR_HANDOVER_STOP_TIME.ocr(self.device.image)
-        if remaining > timedelta():
+        commission_end = None
+        if OCR_HANDOVER_STOP_TIME.last_valid and remaining > timedelta():
+            commission_end = current_time() + remaining
             self.config.cross_set(
-                ['OperationHandover', 'OperationHandover', 'CommissionEnd'], current_time() + remaining)
+                'OperationHandover.OperationHandover.CommissionEnd', commission_end)
 
         logger.hr('功能冲突: 作战委托进行中', level=2)
 
         # 无论委托是不是脚本自己开的都要先关掉弹窗，
         # 否则脚本会卡在这个页面上，之后所有页面识别都会失败。
         closed = self.handover_close_conflict()
-        target = self.handover_conflict_delay()
+        target = self.handover_conflict_delay(commission_end=commission_end)
 
         if self.config.is_task_enabled('OperationHandover'):
             handle_notify(
@@ -229,7 +231,7 @@ class MapOperation(MultipleSorties, MysteryHandler, FleetPreparation, Retirement
 
         self.config.task_stop('作战委托进行中，无法出击')
 
-    def handover_conflict_delay(self):
+    def handover_conflict_delay(self, commission_end=None):
         """把当前任务推迟到作战委托结束之后。
 
         只使用委托结束时间。NextRun 也可能代表下周的触发计划，不能当作结束时间。
@@ -239,8 +241,9 @@ class MapOperation(MultipleSorties, MysteryHandler, FleetPreparation, Retirement
             datetime.datetime: 实际推迟到的时间点。
         """
         now = current_time()
-        commission_end = self.config.cross_get(
-            keys=['OperationHandover', 'OperationHandover', 'CommissionEnd'], default=None)
+        if commission_end is None:
+            commission_end = self.config.cross_get(
+                keys=['OperationHandover', 'OperationHandover', 'CommissionEnd'], default=None)
         if isinstance(commission_end, datetime) and commission_end > now:
             end = commission_end
             target = (end + timedelta(minutes=1)).replace(microsecond=0)

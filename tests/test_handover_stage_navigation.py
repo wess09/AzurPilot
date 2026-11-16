@@ -33,6 +33,12 @@ class HandoverStageNavigationTests(unittest.TestCase):
             campaign.ENTRANCE = SimpleNamespace(name=runner.stage)
             campaign.ui_goto_event = Mock()
             campaign.ui_goto_sp = Mock()
+            def ensure_mode(mode):
+                state['mode'] = mode
+                if mode == 'hard':
+                    campaign.config.override(Campaign_Mode='hard')
+
+            campaign.campaign_ensure_mode = Mock(side_effect=ensure_mode)
             campaign.campaign_ensure_mode_20241219 = Mock()
             campaign.campaign_ensure_aside_20241219 = Mock()
             campaign.campaign_ensure_aside_20260326 = Mock()
@@ -125,6 +131,7 @@ class HandoverStageNavigationTests(unittest.TestCase):
             ('SP3', 'event_20261022_cn', 't3'),
             ('A1', 'event_20261022_cn', 't1'),
             ('VSP', 'event_20260417_cn', 'sp'),
+            ('D3', 'war_archives_20230817_cn', 'd3'),
         ):
             with self.subTest(stage=stage, folder=folder):
                 runner, _, _ = self.prepare_runner(stage=stage, folder=folder)
@@ -132,6 +139,8 @@ class HandoverStageNavigationTests(unittest.TestCase):
                 self.assertEqual(runner.folder, folder)
                 self.assertEqual(runner.name, name)
                 self.assertEqual(runner.module.__name__, f'campaign.{folder}.{name}')
+                if folder.startswith('war_archives_'):
+                    self.assertTrue(runner.campaign.config.USE_DATA_KEY)
 
     def test_shared_entrance_switches_to_target_difficulty_before_fleet(self):
         for stage, initial, target in (('C2', 'normal', 'hard'), ('D3', 'normal', 'hard'),

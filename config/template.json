@@ -2449,6 +2449,9 @@
     },
     "OperationHandover": {
       "Count": 1,
+      "DailyRunCount": 1,
+      "DailyRunCountUsed": 0,
+      "DailyRunCountRecord": "2020-01-01 00:00:00",
       "AutoSupplementTime": false,
       "UseHandoverBook": false,
       "ConsumeAllBook": false,

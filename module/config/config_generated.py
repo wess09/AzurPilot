@@ -328,6 +328,9 @@ class GeneratedConfig:
 
     # 配置组 `OperationHandover`
     OperationHandover_Count = 1
+    OperationHandover_DailyRunCount = 1
+    OperationHandover_DailyRunCountUsed = 0
+    OperationHandover_DailyRunCountRecord = datetime.datetime(2020, 1, 1, 0, 0)
     OperationHandover_AutoSupplementTime = False
     OperationHandover_UseHandoverBook = False
     OperationHandover_ConsumeAllBook = False  # True, False
