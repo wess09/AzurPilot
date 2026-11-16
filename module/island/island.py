@@ -63,7 +63,9 @@ ISLAND_SWITCH_TIMEOUT = 12
 # 各账号、各服务器的格子顺序都可能不同（如国际服未解锁洋葱时，草莓格子上是棉花）。
 # 因此商品按图标在整页范围内模板搜索定位，而不是在国服坐标上做颜色检测；
 # 种子包外观相同、只有中间图案不同，相似度需提高到 0.93 才不会误认成其他商品。
-ISLAND_SHOP_ITEM_SEARCH_OFFSET = (700, 300)
+# 横向偏移要覆盖整排格子（约 x=225~1190）：解锁新商品后商品会换行，例如国际服解锁洋葱后
+# 薰衣草从第一行最右移到第二行最左，700 的偏移从任一端都够不到另一端。
+ISLAND_SHOP_ITEM_SEARCH_OFFSET = (950, 300)
 ISLAND_SHOP_ITEM_SIMILARITY = 0.93
 # 模板匹配只比形状：同形不同色的商品（如国服鲈鱼苗与国际服鲫鱼苗）会互相误认。
 # 匹配后再逐像素比较颜色（5x5 模糊后各像素 RGB 最大差的 95 分位数），
@@ -1219,6 +1221,13 @@ class Island(SelectCharacter):
         # 补滑轮次放宽后单轮可达十几秒，45 秒预算在低端机上撑不满整条重试链，
         # 放宽到 90 秒；正常路径在补滑命中时就退出，不受影响。
         for image in self.loop(timeout=90, skip_first=False):
+            # 上一个岗位收取后，「获得物品」弹窗（如矿山的额外掉落）可能晚一点才弹出，
+            # 盖住岗位列表；不关掉它，目标岗位一直识别不到，等到卡死超时
+            if self.appear(ISLAND_GET, offset=1):
+                if self.appear(ISLAND_GET, offset=1, interval=1):
+                    self.device.click(ISLAND_POST_SAFE_AREA)
+                retry_swipe_timer.reset()
+                continue
             post_appear = self.appear(post, offset=300)
             if post_appear:
                 retry_swipe_timer.reset()

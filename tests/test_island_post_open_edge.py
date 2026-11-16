@@ -69,5 +69,48 @@ class PostOpenEdgeTest(unittest.TestCase):
         island.device.click.assert_called_once()
 
 
+class PostOpenItemsObtainedTest(unittest.TestCase):
+    """上一个岗位收取后迟到的「获得物品」弹窗盖住列表：先点空白处关闭，再打开目标岗位
+    （国际服 2026-11-15 08:34 矿山岗位 2 因此卡死 60 秒后重启游戏）。"""
+
+    def setUp(self):
+        self.lock = patch.object(island_module.TEMPLATE_POST_LOCK, 'match', Mock(return_value=False))
+        self.lock.start()
+
+    def tearDown(self):
+        self.lock.stop()
+
+    def test_closes_popup_then_opens_post(self):
+        with patch.object(Island, '__init__', lambda self: None):
+            island = Island()
+        island.device = Mock()
+        island.loop = Mock(side_effect=lambda **kwargs: iter([np.zeros((720, 1280, 3), np.uint8)] * 10))
+        post = Button(area=POST_AREA, color=(0, 0, 0), button=POST_AREA, name='POST')
+        state = {'popup': True, 'opened': False}
+
+        def appear(button, offset=0, **kwargs):
+            if button is island_module.ISLAND_GET:
+                return state['popup']
+            if button is post:
+                # 弹窗盖住时识别不到岗位
+                return not state['popup'] and not state['opened']
+            if button is island_module.ISLAND_POST_CHECK:
+                return state['opened']
+            return False
+
+        def click(button, **kwargs):
+            if button is island_module.ISLAND_POST_SAFE_AREA:
+                state['popup'] = False
+            if button is post:
+                state['opened'] = True
+
+        island.appear = appear
+        island.device.click = Mock(side_effect=click)
+
+        self.assertTrue(island.post_open(post))
+        clicked = [call.args[0] for call in island.device.click.call_args_list]
+        self.assertEqual(clicked, [island_module.ISLAND_POST_SAFE_AREA, post])
+
+
 if __name__ == '__main__':
     unittest.main()
