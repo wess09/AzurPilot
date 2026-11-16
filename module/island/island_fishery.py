@@ -60,6 +60,7 @@ FISH_MEAT_FISH_IDS = {
     'tuna': 5103,
     'salmon': 5104,
     'red_sea_bream': 5105,
+    'black_porgy': 5106,
     'yellowfin_tuna': 5107,
 }
 
@@ -104,6 +105,7 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             'tuna': self.config.IslandFishery_MinTuna,
             'salmon': self.config.IslandFishery_MinSalmon,
             'red_sea_bream': self.config.IslandFishery_MinRedSeaBream,
+            'black_porgy': self.config.IslandFishery_MinBlackPorgy,
             'yellowfin_tuna': self.config.IslandFishery_MinYellowfinTuna,
             'sea_cucumber': self.config.IslandFishery_MinSeaCucumber,
         }
@@ -168,6 +170,10 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
              'selection': SELECT_RED_SEA_BREAM, 'selection_check': SELECT_RED_SEA_BREAM_CHECK,
              'post_action': None, 'category': 'fishery',
              'shop': SHOP_FRY_RED_SEA_BREAM, 'tab': 'seawater', 'yield': 4, 'buy_max': 4},
+            {'cn_name': '黑鲷鱼', 'name': 'black_porgy', 'template': TEMPLATE_BLACK_PORGY, 'var_name': 'black_porgy',
+             'selection': SELECT_BLACK_PORGY, 'selection_check': SELECT_BLACK_PORGY_CHECK,
+             'post_action': None, 'category': 'fishery',
+             'shop': SHOP_FRY_BLACK_PORGY, 'tab': 'seawater', 'yield': 4, 'buy_max': 4},
             {'cn_name': '黄鳍金枪鱼', 'name': 'yellowfin_tuna', 'template': TEMPLATE_YELLOWFIN_TUNA, 'var_name': 'yellowfin_tuna',
              'selection': SELECT_YELLOWFIN_TUNA, 'selection_check': SELECT_YELLOWFIN_TUNA_CHECK,
              'post_action': POST_YELLOWFIN_TUNA, 'category': 'fishery',

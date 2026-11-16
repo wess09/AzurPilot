@@ -179,7 +179,7 @@ ISLAND_ITEM_CN_NAMES = {
     # 渔场
     'bass': '鲈鱼', 'yellowfin_tuna': '黄鳍金枪鱼', 'shell': '贝壳', 'shrimp': '小河虾',
     'crayfish': '小龙虾', 'crab': '螃蟹', 'squid': '鱿鱼', 'sea_cucumber': '海参', 'koi_carp': '鲤鱼', 'mackerel': '马鲛鱼',
-    'catfish': '鲶鱼', 'common_carp': '鲫鱼', 'tuna': '金枪鱼', 'salmon': '三文鱼', 'red_sea_bream': '红鲷鱼',
+    'catfish': '鲶鱼', 'common_carp': '鲫鱼', 'tuna': '金枪鱼', 'salmon': '三文鱼', 'red_sea_bream': '红鲷鱼', 'black_porgy': '黑鲷鱼',
     # 矿山/林场
     'Copper': '铜矿', 'Aluminium': '铝矿', 'Iron': '铁矿', 'Sulphur': '硫磺',
     'Silver': '银矿', 'Elegant': '典雅之木', 'Practical': '实用之木', 'Selected': '精选之木',
