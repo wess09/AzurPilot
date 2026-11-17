@@ -154,6 +154,20 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
         except Exception as e:
             logger.debug(f"[大世界-侵蚀1练级] 侵蚀 1 数据提交触发失败: {e}")
 
+    def _cl1_can_reuse_zone(self):
+        if not self.__dict__.pop('_cl1_next_search_ready', False) or not self.is_in_map():
+            return False
+
+        # 行动力耗尽会退回同一普通海域，计划作战按钮仍然可见。
+        name = self.get_zone_name()
+        if not self.is_zone_name_hidden:
+            return False
+        try:
+            return self.name_to_zone(name) == self.zone
+        except ScriptError:
+            # 当前截图的标题可能未显示完整，交给原来的海域识别流程重读。
+            return False
+
     def os_hazard1_leveling(self):
         """侵蚀 1 练级任务入口。"""
         self.run_hazard1_leveling()
@@ -211,11 +225,8 @@ class OpsiHazard1Leveling(CoinTaskMixin, OSMap):
             fresh_ap, cost=120, avoid_ap_overflow=True,
         )
 
-        # 已完成事件、EMP/修理后确认的同一海域不再重复 OCR；其他入口仍实时定位。
-        continue_ready = self.__dict__.pop('_cl1_next_search_ready', False) and self.is_in_map()
-        # 获取当前区域
         try:
-            if not continue_ready:
+            if not self._cl1_can_reuse_zone():
                 self.get_current_zone()
         except MapDetectionError as e:
             logger.error("[大世界-侵蚀1练级] 大世界地图区域识别失败，请确保游戏已进入大世界海域地图界面")
