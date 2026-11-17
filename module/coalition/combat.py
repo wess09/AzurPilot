@@ -18,6 +18,7 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
     """联合出击战斗处理器。"""
 
     battle_status_click_interval = 2
+    battle_result_retry_interval = battle_status_click_interval
     auto_search_defeat_recovery = False
     coalition_result_confirm_buttons = (COALITION_REWARD_CONFIRM,)
 

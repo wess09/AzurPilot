@@ -54,9 +54,11 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
     Attributes:
         _automation_set_timer (Timer): 自动化模式设置的防抖计时器。
         battle_status_click_interval (int): 战斗状态点击间隔。
+        battle_result_retry_interval (float): 评价页的默认间隔及经验页的重试间隔。
     """
     _automation_set_timer = Timer(1)
     battle_status_click_interval = 2
+    battle_result_retry_interval = 2
     combat_shipwreck_emotion = True
 
     @cached_property
@@ -597,6 +599,10 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
             return False
         if self.handle_combat_defeat(drop=drop):
             return True
+        # 掉落记录传入专用间隔时，评价页先给截图留出时间。
+        interval = self.battle_status_click_interval
+        if interval == Combat.battle_status_click_interval:
+            interval = self.battle_result_retry_interval
         for rank, button in (
                 ('S', BATTLE_STATUS_S), ('A', BATTLE_STATUS_A), ('B', BATTLE_STATUS_B),
                 ('C', BATTLE_STATUS_C), ('D', BATTLE_STATUS_D)):
@@ -605,7 +611,7 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
             # 字母 C/D 的灰色区域会误匹配转场，失败只由 DEFEAT 正向确认。
             if rank in ('S', 'A', 'B'):
                 self.combat_result_record(rank=rank)
-            if self.appear(button, interval=self.battle_status_click_interval):
+            if self.appear(button, interval=interval):
                 if rank != 'S':
                     logger.warning(f'[战斗-结算] 战斗评价 {rank}')
                 if drop:
@@ -670,7 +676,7 @@ class Combat(Level, HPBalancer, Retirement, EquipmentConfigHandler, SubmarineCal
                 continue
             if rank in ('S', 'A', 'B'):
                 self.combat_result_record(rank=rank)
-            self.appear_then_click(button, interval=2)
+            self.appear_then_click(button, interval=self.battle_result_retry_interval)
             return True
         return False
 
