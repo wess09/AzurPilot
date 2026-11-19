@@ -502,6 +502,26 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(self.task.device.click_record_clear.call_count, snapshot['pages'])
         self.task.config.task_delay.assert_called_once_with(minute=10080)
 
+    def test_transient_grid_failure_is_retried_after_page_stabilizes(self):
+        real_detect_rows = detect_rows
+        calls = 0
+
+        def detect(image):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise StorageRecognitionError('材料网格列数或间距不完整')
+            return real_detect_rows(image)
+
+        with patch.object(self.module, 'detect_rows', side_effect=detect):
+            self.task.run()
+        snapshot = latest_snapshot('test', database=self.path)
+        expected = json.loads((FIXTURES / 'expected.json').read_text(encoding='utf-8'))
+        self.assertEqual({item['id']: item['amount'] for item in snapshot['items']},
+                         {item['id']: item['amount'] for item in expected})
+        self.assertGreater(calls, 1)
+        self.task.config.task_delay.assert_called_once_with(minute=10080)
+
     def test_fatal_next_page_error_stops_without_partial_commit_or_second_pass(self):
         def read(*args, **kwargs):
             if reader.call_count == 2:

@@ -91,7 +91,14 @@ class StorageStatistics(StorageUI):
                     timeout.reset()
                     layout = previous = None
                 continue
-            rows = detect_rows(image)
+            try:
+                rows = detect_rows(image)
+            except StorageRecognitionError as error:
+                # 页面切换动画和点击反馈会短暂破坏方框轮廓；在统一超时内等待
+                # 下一帧重新推导网格，不能把首帧未稳定的画面当成永久布局故障。
+                last_error = str(error)
+                layout = previous = None
+                continue
             current_layout = (tuple(row[0].area[1] for row in rows), tuple(pixels))
             if current_layout != layout:
                 if previous is not None:
