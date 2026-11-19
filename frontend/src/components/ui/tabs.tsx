@@ -47,14 +47,19 @@ const tabsListVariants = cva(
 function TabsList({
   className,
   variant = "default",
+  wrap = false,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.List> &
-  VariantProps<typeof tabsListVariants>) {
+  VariantProps<typeof tabsListVariants> & { wrap?: boolean }) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
       data-variant={variant}
-      className={cn(tabsListVariants({ variant }), className)}
+      className={cn(
+        tabsListVariants({ variant }),
+        wrap && "max-w-full flex-wrap justify-start group-data-[orientation=horizontal]/tabs:h-auto [&_[data-slot=tabs-trigger]]:h-auto [&_[data-slot=tabs-trigger]]:min-h-8 [&_[data-slot=tabs-trigger]]:min-w-0 [&_[data-slot=tabs-trigger]]:max-w-full [&_[data-slot=tabs-trigger]]:flex-[1_1_auto] [&_[data-slot=tabs-trigger]]:whitespace-normal [&_[data-slot=tabs-trigger]]:text-center [&_[data-slot=tabs-trigger]]:[overflow-wrap:anywhere]",
+        className
+      )}
       {...props}
     />
   )

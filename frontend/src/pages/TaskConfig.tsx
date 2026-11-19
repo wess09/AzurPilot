@@ -2,7 +2,7 @@
  * @fileoverview 任务参数设置页面。
  */
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ListTree, PanelLeft, PanelRight, Play, RotateCcw, Search, Settings2, Terminal, X } from 'lucide-react'
@@ -31,11 +31,7 @@ import { AccountPanel } from '../components/AccountPanel'
 import { isFieldVisible } from './configVisibility'
 import { FleetInfoPage } from './FleetInfoPage'
 
-/**
- * 视口命中折叠区间时返回 true：目录 <1320px、调度器栏 <1090px 自动收起
- * （阈值与 settings-modern.css 的折叠栅格同步；e2e 视口 1440/1600 都在阈值之上）。
- * matchMedia 不可用的环境（单测 jsdom）一律 false，面板照常渲染。
- */
+/** Match viewport rules, including the mobile stacked layout. */
 function useFoldFlag(query: string): boolean {
   const subscribe = useCallback((listener: () => void) => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
@@ -58,21 +54,65 @@ export function TaskConfig() {
   const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
   // 调度器列的宽度与总览页共用同一个持久化值，拖动任一处另一边跟着变。
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
-  // 窄屏自动折叠：窄视口下固定宽的目录列与调度器列会把参数卡挤到读不了，
-  // 分两档收起（目录先收、调度器后收），收起后从边缘浮标唤出抽屉。
-  const directoryFolded = useFoldFlag('(min-width: 951px) and (max-width: 1319px)')
-  const railFolded = useFoldFlag('(min-width: 951px) and (max-width: 1089px)')
+  // Measure the grid itself: saved or dragged sidebar widths change the space
+  // available without changing the viewport. Thresholds match the old desktop
+  // breakpoints after subtracting the default sidebar and main padding.
+  const [gridNode, setGridNode] = useState<HTMLDivElement | null>(null)
+  const [gridWidth, setGridWidth] = useState<number | null>(null)
+  useEffect(() => {
+    if (!gridNode || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => { if (entry) setGridWidth(entry.contentRect.width) })
+    observer.observe(gridNode)
+    return () => observer.disconnect()
+  }, [gridNode])
+  const desktop = useFoldFlag('(min-width: 951px)')
+  const directoryViewportFolded = useFoldFlag('(min-width: 951px) and (max-width: 1319px)')
+  const railViewportFolded = useFoldFlag('(min-width: 951px) and (max-width: 1089px)')
+  const directoryFolded = directoryViewportFolded || (desktop && gridWidth !== null && gridWidth < 1024)
+  const railFolded = railViewportFolded || (desktop && gridWidth !== null && gridWidth < 794)
   // 抽屉一次只开一个；窗口跨回宽档或用户手动隐藏调度器栏时自动收回。
   const [popout, setPopout] = useState<'directory' | 'rail' | null>(null)
+  const directoryRef = useRef<HTMLElement>(null)
+  const railRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<HTMLButtonElement | null>(null)
   useEffect(() => {
     if (popout === 'directory' && !directoryFolded) setPopout(null)
     if (popout === 'rail' && (!railFolded || railVisibility !== 'shown')) setPopout(null)
   }, [popout, directoryFolded, railFolded, railVisibility])
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!popout) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPopout(null) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const drawer = popout === 'directory' ? directoryRef.current : railRef.current
+    if (!drawer) return
+    const opener = openerRef.current
+    const focusable = () => Array.from(drawer.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    )).filter(element => element.getClientRects().length > 0 && element.tabIndex >= 0)
+    // The scheduler can open a portalled confirmation dialog or context menu.
+    // Let that surface manage focus and Escape until it closes.
+    const hasPortalledSurface = () => Array.from(document.querySelectorAll('[role="dialog"][data-state="open"], .context-menu[role="menu"]'))
+      .some(element => !drawer.contains(element))
+    const focusFirst = () => (focusable()[0] ?? drawer).focus()
+    focusFirst()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || hasPortalledSurface() || (event.target instanceof Element && !drawer.contains(event.target) && event.target.closest('[role="dialog"], [role="menu"]'))) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        setPopout(null)
+      } else if (event.key === 'Tab') {
+        const items = focusable()
+        const index = items.indexOf(document.activeElement as HTMLElement)
+        if (!items.length || index < 0 || (event.shiftKey && index === 0) || (!event.shiftKey && index === items.length - 1)) {
+          event.preventDefault()
+          ;((event.shiftKey ? items[items.length - 1] : items[0]) ?? drawer).focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (opener?.isConnected && opener.getClientRects().length) opener.focus()
+    }
   }, [popout])
   // 右列现在同时承载目录与调度器，进页面就要拉一份总览数据。
   const [railData, setRailData] = useInstanceOverview(instance, true)
@@ -357,7 +397,7 @@ export function TaskConfig() {
   // 目录与调度器是两列，不是一栏里的两块：目录常驻设置区右侧，调度器独占一列。
   // 调度器列就是总览页那一个 ModernRail，不换外壳、不套 panel；
   // 停靠边与显隐都来自界面设置（schedulerPositionPrefs / railPrefs）。
-  const directory = <aside className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
+  const directory = <aside ref={directoryRef} id="task-config-directory" role={popout === 'directory' ? 'dialog' : undefined} aria-modal={popout === 'directory' || undefined} tabIndex={popout === 'directory' ? -1 : undefined} className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
     <div className="rail-section-heading">
       <div><ListTree size={15}/><span>{ui('task.groupNav')}</span></div>
       {popout === 'directory' && <button type="button" className="icon-button rail-pop-close" aria-label={ui('nav.close')} onClick={() => setPopout(null)}><X size={15}/></button>}
@@ -402,7 +442,8 @@ export function TaskConfig() {
   // 调度器列的宽度沿用总览页那套 `--modern-rail-width`，边上挂同一个拖拽把手。
   return <>
     <div
-      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${popout ? ` pop-${popout}` : ''}`}
+      ref={setGridNode}
+      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${directoryFolded ? ' directory-folded' : ''}${railFolded ? ' rail-folded' : ''}${popout ? ` pop-${popout}` : ''}`}
       style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as CSSProperties) : undefined}
     >
       <h1 className="modern-sr-title">{t(`Task.${task}.name`)}</h1>
@@ -411,7 +452,7 @@ export function TaskConfig() {
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>
       </div>
       {directory}
-      <div className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
+      <div ref={railRef} id="task-config-rail" role={popout === 'rail' ? 'dialog' : undefined} aria-modal={popout === 'rail' || undefined} tabIndex={popout === 'rail' ? -1 : undefined} className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
         <div className="instance-page-rail-wrap">
           {rail}
           <ModernRailResizeHandle side={schedulerPosition}/>
@@ -419,8 +460,8 @@ export function TaskConfig() {
         </div>
       </div>
       {/* 窄屏折叠后的边缘浮标：唤出对应侧列的抽屉；手动隐藏调度器栏（界面设置）时不给浮标 */}
-      {directoryFolded && <button type="button" className="rail-fold-chip rail-fold-chip-directory" aria-label={ui('task.groupNav')} title={ui('task.groupNav')} aria-expanded={popout === 'directory'} onClick={() => setPopout(current => current === 'directory' ? null : 'directory')}><ListTree size={16}/></button>}
-      {railFolded && railVisibility === 'shown' && <button type="button" className={`rail-fold-chip rail-fold-chip-rail${schedulerPosition === 'left' ? ' chip-left' : ' chip-right'}`} aria-label={ui('scheduler.rail')} title={ui('scheduler.rail')} aria-expanded={popout === 'rail'} onClick={() => setPopout(current => current === 'rail' ? null : 'rail')}>{schedulerPosition === 'left' ? <PanelLeft size={16}/> : <PanelRight size={16}/>}</button>}
+      {directoryFolded && <button type="button" className="rail-fold-chip rail-fold-chip-directory" aria-label={ui('task.groupNav')} title={ui('task.groupNav')} aria-haspopup="dialog" aria-controls="task-config-directory" aria-expanded={popout === 'directory'} onClick={event => {openerRef.current = event.currentTarget; setPopout(current => current === 'directory' ? null : 'directory')}}><ListTree size={16}/></button>}
+      {railFolded && railVisibility === 'shown' && <button type="button" className={`rail-fold-chip rail-fold-chip-rail${schedulerPosition === 'left' ? ' chip-left' : ' chip-right'}`} aria-label={ui('scheduler.rail')} title={ui('scheduler.rail')} aria-haspopup="dialog" aria-controls="task-config-rail" aria-expanded={popout === 'rail'} onClick={event => {openerRef.current = event.currentTarget; setPopout(current => current === 'rail' ? null : 'rail')}}>{schedulerPosition === 'left' ? <PanelLeft size={16}/> : <PanelRight size={16}/>}</button>}
       {popout && <div className="task-config-pop-backdrop" onClick={() => setPopout(null)}/>}
     </div>
     {modal}

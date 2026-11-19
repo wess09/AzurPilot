@@ -27,11 +27,14 @@
 }
 .app-shell.modern-shell > .topbar:where(.app-shell *) {grid-area: topbar; width: auto}
 .app-shell.modern-shell > .sidebar:where(.app-shell *) {grid-area: sidebar; padding-top: 12px}
-.app-shell.modern-shell > .main-shell:where(.app-shell *) {grid-area: main; min-height: 0; overflow: hidden; display: flex; flex-direction: column}
+.app-shell.modern-shell > .main-shell:where(.app-shell *) {grid-area: main; min-width: 0; min-height: 0; overflow: hidden; display: flex; flex-direction: column; container: modern-main / inline-size}
 /* 内容列的高度：非实例页（如设置）由 main 自身滚动并防止卡片挤压，实例页由内部两列各自滚。
    增加 padding-top 确保页面卡片与标签栏底部分割线保持舒适的安全呼吸间隙，避免紧贴 */
 .app-shell.modern-shell > .main-shell:where(.app-shell *) > main {min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; overflow-y: auto; padding: 14px 28px 24px}
 .app-shell.modern-shell > .main-shell:where(.app-shell *) > main:has(> .instance-page-grid, > .task-config-modern) {overflow-y: hidden}
+@media (max-width: 950px) {
+  .app-shell.modern-shell > .main-shell:where(.app-shell *) > main {padding-inline: clamp(12px, 4vw, 28px)}
+}
 .app-shell.modern-shell > .main-shell:where(.app-shell *) > main > * {flex-shrink: 0}
 /* 现代主题两种明暗的按压反馈：鼠标按下时轻微收缩，主按钮同时收回悬停的上移 */
 :root[data-theme='modern-light'] .button,

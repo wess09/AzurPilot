@@ -50,3 +50,19 @@
 .fleet-analysis .fleet-technology > .page-title h1 { font-size: var(--fleet-font-heading); font-weight: 600; line-height: 1.6; letter-spacing: normal; color: var(--theme-text); background: none; -webkit-text-fill-color: currentColor; -webkit-text-stroke: 0; text-shadow: none; filter: none; }
 .fleet-analysis .fleet-technology > .page-title h1::before,
 .fleet-analysis .fleet-technology > .page-title h1::after { content: none; }
+
+/* Adapt to the space available inside the app shell, including browser zoom. */
+.fleet-analysis { container-type: inline-size; min-width: 0; }
+.fleet-analysis [data-slot=tabs], .fleet-analysis [data-slot=tabs-content] { min-width: 0; }
+.fleet-analysis .ft-filter-row > .ft-chips { min-width: 0; }
+.fleet-analysis .ft-table-wrap > [data-slot=table-container] { overscroll-behavior-y: auto; }
+.fleet-analysis .ft-table-wrap > [data-slot=table-container]:focus-visible { outline: 2px solid var(--theme-focus); outline-offset: 2px; }
+.fleet-analysis .mind-toolbar > button { max-width: 100%; white-space: normal; height: auto; min-height: 2.25rem; }
+@container (max-width: 480px) {
+  .fleet-analysis .ft-filter-row > strong { flex-basis: 72px; overflow-wrap: anywhere; }
+  .fleet-analysis .ft-chips button { max-width: 100%; height: auto; min-height: 2rem; white-space: normal; }
+  .fleet-analysis .ft-search > input { min-width: min(180px, 100%); }
+}
+@media (max-height: 600px) {
+  .fleet-analysis .ft-table-wrap > [data-slot=table-container] { max-height: 60dvh; }
+}

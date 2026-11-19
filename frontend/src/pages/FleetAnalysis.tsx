@@ -54,7 +54,7 @@ export function FleetAnalysis() {
   const onReport = (value: DockReport) => {epoch.current++; setReport(value)}
   return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab !== 'technology' && <Button variant="outline" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</Button>}/>{error && <ErrorBox message={error}/>}
     <Tabs value={tab} onValueChange={value => setParams({tab: value}, {replace: true})}>
-    <TabsList aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <TabsTrigger key={value} value={value} disabled={busy}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</TabsTrigger>)}</TabsList>
+    <TabsList wrap aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <TabsTrigger key={value} value={value} disabled={busy}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</TabsTrigger>)}</TabsList>
     <TabsContent value={tab}>
       {tab === 'data' && <FleetLedger key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
       {tab === 'technology' && <FleetTechnology key={instance}/>}

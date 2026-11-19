@@ -41,15 +41,15 @@ function effectFor(row: Row, stage: 'get' | 'level', tr: (key: string) => string
  * 舰队科技明细表：里程碑与觉醒标记逐格切换，编辑结果经 onChange 报给父级草稿。
  * modified 里的行加草稿高亮，targetGroup 指定的行加定位高亮（深链滚动目标）。
  */
-export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = false, disabled = false, sort = {column: 'code', direction: 'ascending'}, onSort, onChange, modified = [], targetGroup}: {
+export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = false, disabled = false, sort = {column: 'code', direction: 'ascending'}, onSort, onChange, modified = [], targetGroup, scrollLabel}: {
   rows: Row[]; language: string; tr: (key: string) => string; editing?: boolean; disabled?: boolean; sort?: Sort
-  mindCosts?: Record<string, number>
+  scrollLabel?: string; mindCosts?: Record<string, number>
   onSort?: (column: Column) => void; onChange?: (row: Row, key: RecordField, value: State) => void; modified?: number[]; targetGroup?: string | null
 }) {
   function header(column: Column, rowSpan = 1) {
     return <TableHead key={column} scope="col" rowSpan={rowSpan} className="text-center" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? tr('efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => onSort?.(column)}>{tr(column)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>
   }
-  return <div className="ft-table-wrap"><Table className="min-w-[1000px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
+  return <div className="ft-table-wrap"><Table scrollLabel={scrollLabel} className="min-w-[1000px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
     const title = `${tr('held')}: ${row.current_count} · ${row.current_level === null ? tr('unknown') : `Lv.${row.current_level}`}`
     const identityHighlight = row.lv120 ? 'ft-marked' : ''
     const efficiency = technologyEfficiency(row, mindCosts)
@@ -267,7 +267,7 @@ export function FleetTechnology() {
     {bonuses && <section id="fleet-tech-bonuses" className="ft-bonuses"><h2>{tr('bonuses')}{dirty && ` · ${tr('draftPreview')}`}</h2><div className="ft-nation-levels">{Object.entries(catalog.nations).map(([id, values]) => <label key={id}>{tr(`nation.${id}`)} {tr('factionLevel')}<Select disabled={disabled} value={levels[id] == null ? '__unspecified__' : String(levels[id])} onValueChange={value => changeNation(id, value === '__unspecified__' ? null : Number(value))}><SelectTrigger aria-label={`${tr(`nation.${id}`)} ${tr('factionLevel')}`}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__unspecified__">{tr('unspecified')}</SelectItem>{Array.from({length: values.length + 1}, (_, value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></label>)}</div><h3>{tr('shipBonuses')}</h3>{bonusList(totals.shipBonuses)}<h3>{tr('nationBonuses')}</h3>{bonusList(totals.nationBonuses)}<h3>{tr('total')}</h3>{bonusList(totals.bonuses)}<p>{tr('unknownImpact')}</p></section>}
     <div className="ft-search"><Input aria-label={tr('search')} placeholder={tr('search')} value={query} onChange={event => setQuery(event.target.value)}/><span>{ui('mind.rowCount', {count: filtered.length})}</span><span className="ft-state-legend">✓ {tr('finished')} · — {tr('notFinished')}</span></div>
     {editing && <p className="ft-edit-hint">{tr('inlineEditHint')}</p>}
-    <TechnologyTable rows={filtered} language={language} tr={tr} mindCosts={catalog.mind_costs_100_to_120} editing={editing} disabled={disabled} sort={sort} onSort={column => setSort(current => ({column, direction: current.column === column ? current.direction === 'ascending' ? 'descending' : 'ascending' : column === 'efficiency' ? 'descending' : 'ascending'}))} onChange={change} modified={Object.keys(draft?.changes ?? {}).map(Number)} targetGroup={targetGroup}/>
+    <TechnologyTable scrollLabel={ui('analysis.technology')} rows={filtered} language={language} tr={tr} mindCosts={catalog.mind_costs_100_to_120} editing={editing} disabled={disabled} sort={sort} onSort={column => setSort(current => ({column, direction: current.column === column ? current.direction === 'ascending' ? 'descending' : 'ascending' : column === 'efficiency' ? 'descending' : 'ascending'}))} onChange={change} modified={Object.keys(draft?.changes ?? {}).map(Number)} targetGroup={targetGroup}/>
     {!filtered.length && <p>{ui('mind.empty')}</p>}
     <footer><small>{tr('version')}：{catalog.updated_at}</small><a href="https://wiki.biligame.com/blhx/舰队科技#舰队科技列表" target="_blank" rel="noreferrer">{tr('attribution')}</a></footer>
   </div>

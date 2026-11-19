@@ -26,7 +26,7 @@ export function FleetSwitch() {
   return <div className="fleet-switch">
     <PageTitle title={ui('rotation.pageTitle')}/>
     <Tabs value={tab} onValueChange={next => setParams({tab: next}, {replace: true})} className="gap-4">
-      <TabsList aria-label={ui('rotation.pageTitle')}>
+      <TabsList wrap aria-label={ui('rotation.pageTitle')}>
         {tabs.map(({id, label}) => <TabsTrigger key={id} value={id} id={`fleet-switch-tab-${id}`}>{label}</TabsTrigger>)}
       </TabsList>
       {/* key 带上实例名：切换实例时强制重挂载页签内容，避免上一个实例的状态残留 */}
