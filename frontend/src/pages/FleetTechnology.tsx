@@ -71,17 +71,18 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
  * 舰队科技页：明细表 + 筛选 + 加成汇总；编辑以草稿暂存 sessionStorage，保存时按 revision 提交。
  * 草稿的 revision 与当前报告不一致（stale）时禁止保存，防止覆盖扫描期间的新确认结果。
  */
-export function FleetTechnology({onReloadChange}: {onReloadChange: (value: {reload: () => Promise<void>} | null) => void}) {
+export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current: (() => Promise<void>) | undefined}; busy: boolean; onBusy: (value: boolean) => void}) {
   const [search] = useSearchParams(), targetGroup = search.get('group')
   const {instance = ''} = useParams(), {language, ui, notify} = useApp(), connection = useConnection()
   const tr = (key: string) => key === 'Lv.120' ? key : translateFleetTech(language, key)
   const [catalog, setCatalog] = useState<Catalog>(), [report, setReport] = useState<Report>()
-  const [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'technology.query', ''), [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'technology.filters', {})
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'technology.sort', {column: 'code', direction: 'ascending'})
   const [editing, setEditing] = useFleetPreference<boolean>(instance, 'technology.editing', false), [bonuses, setBonuses] = useFleetPreference<boolean>(instance, 'technology.bonuses', false), [extra, setExtra] = useFleetPreference<boolean>(instance, 'technology.extra', false)
   // scope 是会话序号：切换实例或连接时自增，旧请求返回后凭 token 失配被丢弃；writing 防止保存重入。
   const scope = useRef(0), writing = useRef(false)
+  const catalogRef = useRef<Catalog | undefined>(undefined), pending = useRef<symbol | undefined>(undefined)
   const storageKey = `azurpilot.fleet-tech.v1.${instance}`
   const [draft, setDraft] = useState<Draft | null>(() => {
     try {
@@ -165,23 +166,42 @@ export function FleetTechnology({onReloadChange}: {onReloadChange: (value: {relo
   useEffect(() => {
     if (targetGroup && report && catalog) document.getElementById(`technology-${targetGroup}`)?.scrollIntoView?.({block: 'center'})
   }, [targetGroup, report, catalog])
-  const reload = useCallback(async (includeCatalog = false) => {
-    const token = scope.current
+  const reload = useCallback(async () => {
+    if (connection !== 'ready' || writing.current || pending.current) return
+    const request = Symbol()
+    pending.current = request
     try {
-      const [data, value] = await Promise.all([includeCatalog ? api.request('fleetTech.catalog', {instance}) : Promise.resolve(undefined), api.request('fleetTech.report', {instance})])
-      if (scope.current === token) {if (data) setCatalog(data); setReport(value); setError('')}
-    } catch (e) {if (scope.current === token) setError((e as Error).message)}
-  }, [instance])
-  const reloadReady = !!catalog && !!report && !busy && connection === 'ready'
+      const [data, value] = await Promise.allSettled([
+        catalogRef.current ? Promise.resolve(undefined) : api.request('fleetTech.catalog', {instance}),
+        api.request('fleetTech.report', {instance}),
+      ])
+      if (pending.current !== request) return
+      if (data.status === 'fulfilled' && data.value) {
+        catalogRef.current = data.value
+        setCatalog(data.value)
+      }
+      if (value.status === 'fulfilled') setReport(value.value)
+      if (data.status === 'rejected') throw data.reason
+      if (value.status === 'rejected') throw value.reason
+      setError('')
+    } catch (e) {
+      if (pending.current === request) setError((e as Error).message)
+    } finally {
+      if (pending.current === request) pending.current = undefined
+    }
+  }, [instance, connection])
   useLayoutEffect(() => {
-    onReloadChange(reloadReady ? {reload} : null)
-    return () => onReloadChange(null)
-  }, [onReloadChange, reload, reloadReady])
-  useEffect(() => {
-    scope.current++; setCatalog(undefined); setReport(undefined); setError(''); setBusy(false); writing.current = false
-    if (connection === 'ready') void reload(true)
-    return () => {scope.current++}
-  }, [instance, connection, reload])
+    scope.current++; catalogRef.current = undefined
+    setCatalog(undefined); setReport(undefined); setError(''); writing.current = false
+    reloadRef.current = reload
+    if (connection === 'ready') void reload()
+    return () => {
+      scope.current++
+      pending.current = undefined
+      reloadRef.current = undefined
+      onBusy(false)
+    }
+  }, [connection, reload, reloadRef, onBusy])
   function change(row: Row, key: RecordField, value: State) {
     if (!report || busy || connection !== 'ready') return
     setDraft(current => {
@@ -211,7 +231,8 @@ export function FleetTechnology({onReloadChange}: {onReloadChange: (value: {relo
   async function save() {
     if (!report || !draft || !dirty || stale || writing.current) return
     const token = scope.current
-    writing.current = true; setBusy(true); setError('')
+    pending.current = undefined
+    writing.current = true; onBusy(true); setError('')
     try {
       const changes = Object.values(draft.changes).map(change => {
         const original = rows.find(row => row.group_type === change.group_type)
@@ -226,17 +247,18 @@ export function FleetTechnology({onReloadChange}: {onReloadChange: (value: {relo
       const value = await api.request('fleetTech.patch', {instance, revision: draft.revision, changes, nations: draft.nations})
       if (token === scope.current) {setReport(value); setDraft(null); notify(tr('saved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
-    finally {if (token === scope.current) {writing.current = false; setBusy(false)}}
+    finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
   async function mergeShips() {
     if (!report || dirty || writing.current) return
     const token = scope.current
-    writing.current = true; setBusy(true); setError('')
+    pending.current = undefined
+    writing.current = true; onBusy(true); setError('')
     try {
       const value = await api.request('fleetTech.mergeShips', {instance, revision: report.revision})
       if (token === scope.current) {setReport(value); notify(tr('mergeSaved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
-    finally {if (token === scope.current) {writing.current = false; setBusy(false)}}
+    finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
   function group(key: string, options: [string, string][], label = tr(key === 'type' ? 'category' : key)) {
     return <FleetFilterRow filter={key} label={label} options={options} filters={filters} setFilters={setFilters} all={tr('all')}/>
@@ -251,7 +273,7 @@ export function FleetTechnology({onReloadChange}: {onReloadChange: (value: {relo
       }).join(' · ')}</div>
     })}</div>
   }
-  if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload(!catalog)}/> : <Loading/>
+  if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload()}/> : <Loading/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">
     <PageTitle title={tr('title')}/>

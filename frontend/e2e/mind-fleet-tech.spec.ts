@@ -29,7 +29,7 @@ test('technology reload stays in the page header and preserves the draft', async
     server.onMessage(message => {
       const response = JSON.parse(message)
       if (!releaseCatalog && response.type === 'response' && requests.some(request => request.id === response.id && request.method === 'fleetTech.catalog')) {
-        releaseCatalog = () => {responses.push(response.id); socket.send(message)}
+        releaseCatalog = () => socket.send(JSON.stringify({...response, ok: false, error: {code: 'INTERNAL_ERROR', message: '测试图鉴读取失败'}}))
         return
       }
       if (response.type === 'response') responses.push(response.id)
@@ -40,17 +40,20 @@ test('technology reload stays in the page header and preserves the draft', async
   const reload = page.getByRole('button', {name: '重新载入', exact: true})
   await expect(reload).toHaveCount(1)
   await expect(reload).toBeVisible()
-  await expect(reload).toBeDisabled()
   const original = await reload.elementHandle()
   expect(original).not.toBeNull()
   await expect.poll(() => !!releaseCatalog).toBe(true)
-  const loadingStart = requests.length
-  await reload.evaluate(element => (element as HTMLButtonElement).click())
-  expect(requests.slice(loadingStart)).toEqual([])
-  releaseCatalog!()
   await expect(reload).toBeEnabled()
+  await reload.click()
+  releaseCatalog!()
+  await expect(page.getByText('测试图鉴读取失败', {exact: true})).toBeVisible()
+  await expect(reload).toBeEnabled()
+  const technologyRequests = () => requests.filter(request => request.method.startsWith('fleetTech.')).map(request => request.method).sort()
+  expect(technologyRequests()).toEqual(['fleetTech.catalog', 'fleetTech.report'])
+  await reload.click()
   expect(await reload.evaluate((element, initial) => element === initial, original)).toBe(true)
   await page.getByLabel('搜索舰名', {exact: true}).fill('杜威')
+  expect(technologyRequests()).toEqual(['fleetTech.catalog', 'fleetTech.catalog', 'fleetTech.report', 'fleetTech.report'])
   await page.getByRole('button', {name: '记录编辑模式', exact: true}).click()
   const milestone = page.getByRole('button', {name: '杜威 · 获得 · 未完成', exact: true})
   await milestone.click()
@@ -70,7 +73,7 @@ test('technology reload stays in the page header and preserves the draft', async
   for (const tab of ['我的舰船', '养成计算', '扫描更新']) {
     await page.getByRole('tab', {name: tab, exact: true}).click()
     await expect(reload).toHaveCount(1)
-    await expect(reload).toBeVisible()
+    await expect(reload).toBeEnabled()
     expect(await reload.evaluate((element, initial) => element === initial, original)).toBe(true)
   }
   await page.getByRole('tab', {name: '舰队科技', exact: true}).click()
@@ -104,7 +107,33 @@ test('Tempesta sailing ships respect front and back positions', async ({page}, i
 
 test('inline milestones preview dependency changes and save together independently of holdings', async ({page}, info) => {
   const instance = `tech-facts-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
-  await page.goto('/'); await rpc(page, 'instances.create', {name: instance}); await page.goto('about:blank'); await page.goto('/')
+  await page.goto('/'); await rpc(page, 'instances.create', {name: instance}); await page.goto('about:blank')
+  let holdWrite = false
+  let releaseReport: (() => void) | undefined, releaseSave: (() => void) | undefined
+  await routeRpc(page, socket => {
+    const server = socket.connectToServer()
+    const methods = new Map<string, string>()
+    socket.onMessage(message => {
+      const request = JSON.parse(message)
+      if (request.type === 'request') methods.set(request.id, request.method)
+      server.send(message)
+    })
+    server.onMessage(message => {
+      const response = JSON.parse(message)
+      if (response.type === 'response' && holdWrite) {
+        const method = methods.get(response.id)
+        if (method === 'fleetTech.report' && !releaseReport) {
+          releaseReport = () => socket.send(message)
+          return
+        }
+        if (method === 'fleetTech.patch' && !releaseSave) {
+          releaseSave = () => socket.send(message)
+          return
+        }
+      }
+      socket.send(message)
+    })
+  })
   await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology&group=10102`)
   await page.getByLabel('搜索舰名', {exact: true}).fill('杜威')
   const row = page.locator('.ft-table-wrap tbody tr[data-group="10102"]')
@@ -116,9 +145,18 @@ test('inline milestones preview dependency changes and save together independent
   const before = await rpc(page, 'fleetTech.report', {instance})
   expect(before.ships.find(ship => ship.group_type === 10102)).toMatchObject({owned: false, full_star: false, lv120: false})
   await expect(page.getByRole('button', {name: '合并舰船数据', exact: true})).toBeDisabled()
+  const reload = page.getByRole('button', {name: '重新载入', exact: true})
+  holdWrite = true
+  await reload.click()
+  await expect.poll(() => !!releaseReport).toBe(true)
   await page.getByRole('button', {name: '保存', exact: true}).click()
+  await expect.poll(() => !!releaseSave).toBe(true)
+  await expect(reload).toBeDisabled()
+  releaseSave!()
   await expect(page.locator('.ft-modified')).toHaveCount(0)
   await expect(page.getByRole('button', {name: '保存', exact: true})).toBeDisabled()
+  await expect(reload).toBeEnabled()
+  releaseReport!()
   const saved = await rpc(page, 'fleetTech.report', {instance})
   expect(saved.ships.find(ship => ship.group_type === 10102)).toMatchObject({owned: true, full_star: true, lv120: true, current_count: 0, points: 15})
   await milestone('满星', '已完成').click()
