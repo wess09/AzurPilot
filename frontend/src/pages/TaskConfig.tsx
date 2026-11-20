@@ -118,7 +118,8 @@ export function TaskConfig() {
   }, [popout])
   // 右列现在同时承载目录与调度器，进页面就要拉一份总览数据。
   const [railData, setRailData] = useInstanceOverview(instance, true)
-  const loadConfig = useCallback(() => api.request('config.get', {instance}), [instance])
+  // Task navigation revalidates the instance snapshot through usePageRead's loader lifecycle.
+  const loadConfig = useCallback(() => api.request('config.get', {instance}), [instance, task])
   const {data: config, error: configError, reload, setData: setConfig} = usePageRead(instance, connection === 'ready' && task !== 'FleetInfo', loadConfig)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')

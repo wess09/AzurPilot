@@ -38,6 +38,45 @@ it('loads catalog and report in parallel, caches catalog, and prevents an older 
   await waitFor(() => expect(vi.mocked(api.request).mock.calls.filter(([method]) => method === 'fleetTech.mergeShips')[1]?.[1]).toMatchObject({revision: 'written'}))
 })
 
+it('ignores repeated reloads while a report refresh is pending', async () => {
+  const refresh = deferred<Report>()
+  let reportReads = 0
+  vi.mocked(api.request).mockReset().mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') return catalog
+    if (method === 'fleetTech.report') return ++reportReads === 1 ? report : refresh.promise
+    throw new Error(`Unexpected method: ${method}`)
+  })
+  const reloadRef: {current: (() => void) | undefined} = {current: undefined}, onBusy = vi.fn()
+  render(<MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<FleetTechnology reloadRef={reloadRef} busy={false} onBusy={onBusy}/>}/></Routes></MemoryRouter>)
+  await screen.findByRole('table')
+  act(() => reloadRef.current?.())
+  act(() => {reloadRef.current?.(); reloadRef.current?.()})
+  await act(async () => refresh.resolve(report))
+  expect(reportReads).toBe(2)
+  expect(vi.mocked(api.request).mock.calls.filter(([method]) => method === 'fleetTech.catalog')).toHaveLength(1)
+})
+
+it('waits for both reads to settle before offering retry for a failed catalog', async () => {
+  const initialReport = deferred<Report>()
+  let catalogReads = 0, reportReads = 0
+  vi.mocked(api.request).mockReset().mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') {if (++catalogReads === 1) throw new Error('catalog failed'); return catalog}
+    if (method === 'fleetTech.report') return ++reportReads === 1 ? initialReport.promise : report
+    throw new Error(`Unexpected method: ${method}`)
+  })
+  const reloadRef: {current: (() => void) | undefined} = {current: undefined}, onBusy = vi.fn()
+  render(<MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<FleetTechnology reloadRef={reloadRef} busy={false} onBusy={onBusy}/>}/></Routes></MemoryRouter>)
+  await act(async () => {})
+  expect(screen.queryByText('catalog failed')).toBeNull()
+  expect(screen.queryByRole('button', {name: 'Retry'})).toBeNull()
+  await act(async () => initialReport.resolve(report))
+  await screen.findByText('catalog failed')
+  fireEvent.click(screen.getByRole('button', {name: 'Retry'}))
+  await screen.findByRole('table')
+  expect(catalogReads).toBe(2)
+  expect(reportReads).toBe(2)
+})
+
 it('retries a failed catalog refresh even when cached catalog data exists', async () => {
   let catalogReads = 0
   vi.mocked(api.request).mockReset().mockImplementation(async method => {

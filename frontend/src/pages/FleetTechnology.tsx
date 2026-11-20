@@ -98,6 +98,7 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
   const loadReport = useCallback(() => api.request('fleetTech.report', {instance}), [instance])
   const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data
   const reportRead = usePageRead(instance, connection === 'ready', loadReport), report = reportRead.data
+  const reading = catalogRead.busy || reportRead.busy
   const [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'technology.query', ''), [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'technology.filters', {})
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'technology.sort', {column: 'code', direction: 'ascending'})
@@ -188,11 +189,11 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
     if (targetGroup && report && catalog) document.getElementById(`technology-${targetGroup}`)?.scrollIntoView?.({block: 'center'})
   }, [targetGroup, report, catalog])
   const reload = useCallback(() => {
-    if (connection !== 'ready' || writing.current) return
+    if (connection !== 'ready' || writing.current || reading) return
     setError('')
     if (!catalog || catalogRead.error) catalogRead.reload()
     reportRead.reload()
-  }, [connection, catalog, catalogRead.error, catalogRead.reload, reportRead.reload])
+  }, [connection, catalog, reading, catalogRead.error, catalogRead.reload, reportRead.reload])
   useLayoutEffect(() => {
     scope.current++; writing.current = false
     return () => {scope.current++; onBusy(false)}
@@ -272,7 +273,8 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
       }).join(' · ')}</div>
     })}</div>
   }
-  const readError = catalogRead.error || reportRead.error
+  // Show a retry only after both reads settle, when the unified reload can run.
+  const readError = reading ? '' : catalogRead.error || reportRead.error
   if (!catalog || !report) return <LoadBoundary ready={false} error={error || readError} retry={reload}/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">
