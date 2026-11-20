@@ -2,7 +2,7 @@
  * @fileoverview 通用 UI 基础原子组件（按钮、弹窗、加载状态、错误框等）。
  */
 
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { AlertCircle, LoaderCircle } from 'lucide-react'
 import type { Status } from '../api/types'
 import { useApp } from '../app/context'
@@ -63,8 +63,17 @@ export function ErrorBox({message, retry}: {message: string; retry?: () => void}
 
 /** 简易弹窗：挂载即打开，点遮罩或 Esc 触发 onClose，关闭由调用方卸载完成。 */
 export function Modal({title, children, onClose, className = ''}: {title: string; children: ReactNode; onClose: () => void; className?: string}) {
+  // Capture before mounting: an autoFocus input can take focus before Radix's open callback.
+  const opener = useRef<HTMLElement | null>(
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null,
+  )
   return <Dialog open onOpenChange={open => {if (!open) onClose()}}>
-    <DialogContent className={className}>
+    <DialogContent className={className} onCloseAutoFocus={event => {
+      if (opener.current?.isConnected) {
+        event.preventDefault()
+        opener.current.focus({preventScroll: true})
+      }
+    }}>
       <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
       {children}
     </DialogContent>

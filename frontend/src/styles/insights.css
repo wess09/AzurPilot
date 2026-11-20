@@ -187,14 +187,14 @@
 .statistics-chain-card {display:inline-flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0 10px 0 14px;border:1px solid var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);font-size:13px;font-weight:500;color:var(--text)}
 .statistics-chain-slot {display:inline-flex;align-items:center}
 .statistics-chain-label {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-/* 分类切换是 shadcn Tabs：根 .statistics-category-control > [data-slot=tabs-list] > [data-slot=tabs-trigger]。
-   外观全部交给组件自身，这里只管两件结构上的事：轨道不超出内容区；分类多到放不下时在轨道内横向滚动。
-   旧的分段控件皮相（一级底/控件面/13px/16px/竖分隔线）已随控件迁移整块删除，不要再往这里挂。 */
-.statistics-toolbar-row .statistics-category-control {min-width: 0; max-width: 100%}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content: flex-start; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list']::-webkit-scrollbar {display: none}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex: 0 0 auto; white-space: nowrap}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity: .55}
+.statistics-toolbar-row {position:relative; min-width:0}
+.statistics-category-measure {min-width:0; max-width:100%}
+.statistics-toolbar-row .statistics-category-control {width:max-content; max-width:none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content:flex-start; width:max-content}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex:0 0 auto; white-space:nowrap}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity:.55}
+.statistics-toolbar-row.is-compact .statistics-category-measure {position:absolute; width:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none}
+.statistics-toolbar-row.is-compact .statistics-category-picker {display:flex; width:100%}
 .statistics-category-control button.is-chained::after {content:'';width:5px;height:5px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.45}
 .statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0}
 .statistics-category-picker > .statistics-category-select {flex:1; min-width:0}
@@ -299,11 +299,6 @@
 
 @media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.panel.chart-expanded {inset:5px}}
 
-@media(max-width:950px) {
-  /* 分类文字完整收在下拉菜单里，不再露出被切断的半个标签 */
-  .statistics-toolbar-row .statistics-category-control {display:none}
-  .statistics-toolbar-row .statistics-category-picker {display:flex; width:100%}
-}
 
 /* 手机端：165px 起的网格在窄屏只放得下一列，而卡片是按多列设计的
    窄屏改成「图标 + 名字在左、数值在右」的紧凑行，并允许名字折行，长物品名不再被省略号吃掉 */

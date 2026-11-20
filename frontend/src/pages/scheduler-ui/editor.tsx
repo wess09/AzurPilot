@@ -32,6 +32,7 @@ export function Editor() {
   const [mode, setMode] = useState<ProgramMode>('takeover')
   const [graphId, setGraphId] = useState('main')
   const [search, setSearch] = useState('')
+  const [extraActionsOpen, setExtraActionsOpen] = useState(false)
   const [selection, setSelection] = useState<string[]>([])
   const [validation, setValidation] = useState<ProgramValidation>()
   const [simulation, setSimulation] = useState<ProgramSimulation>()
@@ -55,6 +56,7 @@ export function Editor() {
   const history = useRef<{past: ProgramDocument[]; future: ProgramDocument[]}>({past:[], future:[]})
   const clipboard = useRef<Pick<Graph,'nodes' | 'edges'> | undefined>(undefined)
   // 请求版本号：实例切换或再次操作时只有最新一次请求的结果才准写进状态，过期响应直接丢弃。
+  const importInputRef = useRef<HTMLInputElement>(null)
   const requestVersion = useRef(0)
   const wrapper = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -275,6 +277,7 @@ export function Editor() {
     </header>
     {error && <ErrorBox message={error}/>}
     <div className="program-subtoolbar"><input aria-label="方案名称" value={doc.name} onChange={e => change({...doc, name:e.target.value})}/><select aria-label="编辑流程" value={graphId} onChange={e => {setGraphId(e.target.value); setSelection([]); setTimeout(() => void flow.fitView(), 0)}}><option value="main">主程序</option>{doc.subgraphs.map(s => <option key={s.id} value={s.id}>{s.name}{s.pure ? ' · 数据' : ' · 执行'}</option>)}</select>
+      <div className={`program-extra-actions${extraActionsOpen ? ' is-open' : ''}`}><button type="button" className="button secondary program-extra-actions-toggle" aria-expanded={extraActionsOpen} aria-controls="program-extra-actions-list" onClick={() => setExtraActionsOpen(open => !open)}>更多操作</button><div id="program-extra-actions-list" className="program-extra-actions-list">
       <button className="button secondary" onClick={focusStart} title="将程序入口移回可视区域"><LocateFixed size={14}/>定位入口</button>
       <button className="button secondary" onClick={() => {change(clone(catalog.templates[mode === 'enhance' ? 'enhance' : 'takeover'])); setGraphId('main'); setSelection([])}}><FolderOpen size={14}/>载入原调度方案</button>
       {catalog.templates && 'all' in catalog.templates && <button className="button secondary" onClick={() => {change(clone(catalog.templates.all)); setGraphId('main'); setSelection([]); setTimeout(() => void flow.fitView({padding:0.12}), 0)}}><Layers size={14}/>全卡片排列</button>}
@@ -286,8 +289,9 @@ export function Editor() {
       <button className="button secondary" disabled={!selection.length} onClick={() => {try {change(encapsulate(doc, graphId, new Set(selection), '自定义组合卡片', catalog)); setSelection([])} catch (error) {notify((error as Error).message, true)}}}>封装卡片</button>
       <button className="button secondary" disabled={!selection.length} onClick={deleteSelected} title="删除选中卡片"><Trash2 size={14}/></button>
       <button className="button secondary" onClick={() => {const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${doc.name}.scheduler.json`; link.click(); URL.revokeObjectURL(url)}}><Download size={14}/>导出</button>
-      <label className="button secondary program-file"><Upload size={14}/>导入<input type="file" accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/></label>
+      <button type="button" className="button secondary" onClick={() => importInputRef.current?.click()}><Upload size={14}/>导入</button><input ref={importInputRef} type="file" hidden accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/>
       {saved.mode !== 'native' && <button className="button secondary" disabled={busy} onClick={() => void action('native')}>切回原调度</button>}
+      </div></div>
     </div>
     {variablesOpen && <section className="program-schema-panel">
       <div><strong>变量</strong><button className="button secondary" onClick={() => change({...doc, variables:[...doc.variables, {name:`variable${doc.variables.length + 1}`, type:'number', initial:0, persistent:false}]})}><Plus size={13}/>添加</button></div>

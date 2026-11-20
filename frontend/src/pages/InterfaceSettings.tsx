@@ -81,11 +81,11 @@ export function InterfaceSettings() {
       <SettingsGroup title={ui('settings.schedulerPosition')}>
         <div className="field-row">
           <div className="field-label">
-            <label>{ui('settings.schedulerPosition')}</label>
-            <p>{ui('settings.schedulerPositionHelp')}</p>
+            <label htmlFor="ui-scheduler-position">{ui('settings.schedulerPosition')}</label>
+            <p id="ui-scheduler-position-help">{ui('settings.schedulerPositionHelp')}</p>
           </div>
           <div className="field-control">
-            <Select id="ui-scheduler-position" value={schedulerPosition} onChange={event => setSchedulerPosition(event.target.value as typeof schedulerPosition)}>
+            <Select id="ui-scheduler-position" aria-describedby="ui-scheduler-position-help" value={schedulerPosition} onChange={event => setSchedulerPosition(event.target.value as typeof schedulerPosition)}>
               <option value="left">{ui('settings.schedulerPositionLeft')}</option>
               <option value="right">{ui('settings.schedulerPositionRight')}</option>
             </Select>

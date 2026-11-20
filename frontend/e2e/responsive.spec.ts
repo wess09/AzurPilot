@@ -68,6 +68,7 @@ test('narrow view keeps navigation, fleet tabs and settings operable', async ({p
 
   await page.goto('/#/interface')
   await expect(page.locator('#ui-theme')).toBeVisible()
+  await expect(page.locator('#ui-scheduler-position')).toHaveAccessibleName('Scheduler position')
   await expectHorizontallyVisible(page.locator('#ui-theme'))
   await expectContentFits(page)
 })
@@ -99,6 +100,50 @@ test('minimal theme mode aligns with the other interface settings', async ({page
   await page.getByRole('option', {name: '深色', exact: true}).click()
   await expect(page.locator('html')).toHaveAttribute('data-color-mode', 'dark')
   await expect(mode).toHaveText('深色')
+})
+
+test('statistics category navigation responds to available content width', async ({page}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('azurpilot.language', 'en-US')
+    localStorage.setItem('azurpilot.layout.sidebar-width', '350')
+  })
+  await page.setViewportSize({width: 960, height: 460})
+  await page.goto('/#/i/testpilot/statistics')
+  const picker = page.getByRole('combobox', {name: 'Statistics category', exact: true})
+  const tabs = page.getByRole('tablist', {name: 'Statistics category', exact: true})
+  await expect(picker).toBeVisible()
+  await expect(tabs).toBeHidden()
+  await picker.click()
+  await page.getByRole('option', {name: 'Inventory', exact: true}).click()
+  await page.setViewportSize({width: 1880, height: 900})
+  await expect(tabs.getByRole('tab', {name: 'Inventory', exact: true})).toHaveAttribute('aria-selected', 'true')
+  await expect(picker).toBeHidden()
+  await expectContentFits(page)
+})
+
+test('narrow scheduler exposes secondary actions without horizontal scrolling', async ({page}) => {
+  await page.setViewportSize({width: 390, height: 640})
+  await page.goto('/#/i/testpilot/task/SchedulerProgram')
+  const toolbar = page.locator('.program-subtoolbar')
+  const more = toolbar.getByRole('button', {name: '更多操作', exact: true})
+  await expect(more).toBeVisible()
+  await expect.poll(() => toolbar.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
+  await more.press('Enter')
+  await expect(more).toHaveAttribute('aria-expanded', 'true')
+  const exportButton = toolbar.getByRole('button', {name: '导出', exact: true})
+  const importButton = toolbar.getByRole('button', {name: '导入', exact: true})
+  await expectHorizontallyVisible(exportButton)
+  await expectHorizontallyVisible(importButton)
+  await exportButton.focus()
+  await page.keyboard.press('Tab')
+  await expect(importButton).toBeFocused()
+  const [chooser] = await Promise.all([
+    page.waitForEvent('filechooser', {timeout: 8000}),
+    importButton.press('Enter'),
+  ])
+  expect(await chooser.element().getAttribute('accept')).toBe('application/json')
+  await more.press('Enter')
+  await expect(toolbar.getByRole('button', {name: '导出', exact: true})).toBeHidden()
 })
 
 for (const position of ['left', 'right']) {
@@ -181,7 +226,8 @@ test('keyboard resizing starts at the visible scheduler width', async ({page}) =
 test('short viewport scrolls shared dialogs to their last action', async ({page}) => {
   await page.setViewportSize({width: 640, height: 240})
   await page.goto('/#/configs')
-  await page.getByRole('button', {name: '新建配置', exact: true}).click()
+  const trigger = page.getByRole('button', {name: '新建配置', exact: true})
+  await trigger.click()
   const dialog = page.getByRole('dialog')
   await expect(dialog).toBeVisible()
   await expect.poll(() => dialog.evaluate(element => {
@@ -197,4 +243,5 @@ test('short viewport scrolls shared dialogs to their last action', async ({page}
   await expect(submit).toBeEnabled()
   await page.keyboard.press('Escape')
   await expect(dialog).toHaveCount(0)
+  await expect(trigger).toBeFocused()
 })

@@ -11,10 +11,10 @@ test.setTimeout(60000)
 test.use({launchOptions: {ignoreDefaultArgs: ['--hide-scrollbars']}})
 
 test.beforeEach(async ({page}, info) => {
-  await page.addInitScript(language => {
-    localStorage.setItem('azurpilot.theme', 'light')
+  await page.addInitScript(({language, theme}) => {
+    localStorage.setItem('azurpilot.theme', theme)
     localStorage.setItem('azurpilot.language', language)
-  }, info.title.endsWith('(en-US)') ? 'en-US' : 'zh-CN')
+  }, {language: info.title.endsWith('(en-US)') ? 'en-US' : 'zh-CN', theme: info.title.includes('dark theme') ? 'modern-dark' : 'modern-light'})
 })
 
 for (const {language, width} of [{language: 'zh-CN', width: 1280}, {language: 'en-US', width: 1440}]) {
@@ -37,6 +37,12 @@ for (const {language, width} of [{language: 'zh-CN', width: 1280}, {language: 'e
     await expect(control).toHaveCount(0)
     await lastHeader.scrollIntoViewIfNeeded()
     await expect(lastHeader).toBeInViewport()
+    if (language === 'zh-CN') {
+      for (const label of ['编号', '舰种', '合计']) {
+        const text = region.getByRole('button', {name: label, exact: true}).locator('span').first()
+        await expect(text).toHaveCSS('white-space', 'nowrap')
+      }
+    }
 
     await page.setViewportSize({width: 390, height: 600})
     await expect.poll(overflow).toBeGreaterThan(100)
@@ -48,6 +54,42 @@ for (const {language, width} of [{language: 'zh-CN', width: 1280}, {language: 'e
     await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBe(0)
   })
 }
+
+test('technology milestone data stays legible in dark theme outside edit mode', async ({page}, info) => {
+  const instance = `tech-contrast-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
+  await page.goto('/')
+  await rpc(page, 'instances.create', {name: instance})
+  const original = await rpc(page, 'fleetTech.report', {instance})
+  await rpc(page, 'fleetTech.patch', {instance, revision: original.revision, changes: [{group_type: 10102, owned: true, full_star: true, lv120: true, awakening_pending: true}], nations: {}})
+  await page.goto('about:blank')
+  await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'modern-dark')
+  const row = page.locator('#technology-10102')
+  await expect(row.locator('.ft-marked').first()).toBeVisible()
+  await expect(row.locator('.ft-point button').first()).toBeDisabled()
+  const ratios = await row.locator('td:is(.ft-marked,.ft-state-finished,.ft-awakening-pending)').evaluateAll(cells => {
+    const context = document.createElement('canvas').getContext('2d', {willReadFrequently: true})!
+    const luminance = (color: string) => {
+      context.clearRect(0, 0, 1, 1)
+      context.fillStyle = color
+      context.fillRect(0, 0, 1, 1)
+      return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3).map(value => {
+        const channel = value / 255
+        return channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4
+      }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0)
+    }
+    return cells.flatMap(cell => {
+      const background = luminance(getComputedStyle(cell).backgroundColor)
+      return [cell.querySelector('button,a') ?? cell, ...cell.querySelectorAll('.ft-mark')].map(text => {
+        const foreground = luminance(getComputedStyle(text).color)
+        return (Math.max(background, foreground) + .05) / (Math.min(background, foreground) + .05)
+      })
+    })
+  })
+  expect(ratios.length).toBeGreaterThan(5)
+  for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5)
+  await expect(row.locator('.ft-point button').first()).toHaveCSS('opacity', '1')
+})
 
 test('sticky technology header paints its own separators over scrolled rows', async ({page}, info) => {
   await page.setViewportSize({width: 1050, height: 780})

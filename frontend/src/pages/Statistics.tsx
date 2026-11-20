@@ -6,7 +6,7 @@
  * use-statistics-edit / card-model / card-render / toolbar。
  */
 import {Button} from '../components/ui/button'
-import {Fragment, lazy, Suspense, useEffect, useState} from 'react'
+import {Fragment, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useApp, useConnection } from '../app/context'
 import { ActionGroup, ErrorBox, Loading } from '../components/ui'
@@ -33,6 +33,19 @@ const StatisticsChart = lazy(() => import('../components/StatisticsChart').then(
  */
 export function Statistics() {
   const {ui, notify} = useApp()
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const [compactCategories, setCompactCategories] = useState(false)
+  useLayoutEffect(() => {
+    const row = toolbarRef.current
+    const tabs = row?.querySelector<HTMLElement>("[data-slot='tabs-list']")
+    if (!row || !tabs) return
+    const measure = () => setCompactCategories(tabs.scrollWidth > row.clientWidth)
+    const observer = new ResizeObserver(measure)
+    observer.observe(row)
+    observer.observe(tabs)
+    measure()
+    return () => observer.disconnect()
+  }, [])
   const {instance = ''} = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const management = searchParams.get('view') === 'management'
@@ -150,8 +163,8 @@ export function Statistics() {
 
   const cardContext = {ui, layout, editMode, dropTarget, draggingKey, setDraggingKey, applyLayout, spaceKeysOf, showKey, moveCard, hideKey, junctionButton, expandedChart, toggleExpanded, zeroBase, setZeroBase, rawTableOf, tableSettings, StatisticsChart}
   const content = <>
-    <div className="statistics-toolbar-row">
-      {categoryControl}
+    <div ref={toolbarRef} className={`statistics-toolbar-row${compactCategories ? ' is-compact' : ''}`}>
+      <div className="statistics-category-measure" inert={compactCategories}>{categoryControl}</div>
       {categoryPicker}
       {/* 动作按钮贴行尾，与左侧分类切换分居两端 */}
       {!management && <ActionGroup className="ml-auto">{actions}</ActionGroup>}

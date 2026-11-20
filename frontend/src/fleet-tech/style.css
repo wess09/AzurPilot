@@ -68,12 +68,13 @@
 .ft-table-wrap td.ft-rarity-SR { color: color-mix(in srgb, #8b39d2 75%, var(--theme-text)); }
 .ft-table-wrap td.ft-rarity-SSR, .ft-table-wrap td.ft-rarity-PR { color: color-mix(in srgb, #b8860b 75%, var(--theme-text)); }
 .ft-table-wrap td.ft-rarity-UR, .ft-table-wrap td.ft-rarity-DR { color: color-mix(in srgb, #b04f91 75%, var(--theme-text)); }
-.ft-table-wrap tbody tr td.ft-marked, .ft-table-wrap tbody tr td.ft-point.ft-state-finished { background: #87f6d6; }
-.ft-table-wrap tbody tr td.ft-awakening-pending { background: #ffd096; }
-.ft-awakening-pending .ft-mark { color: #8b4300; }
+.ft-technology-table tbody td:is(.ft-marked, .ft-state-finished) { background: var(--theme-success-soft); }
+.ft-technology-table tbody td.ft-awakening-pending { background: var(--theme-warning-soft); }
+.ft-technology-table tbody td:is(.ft-marked, .ft-state-finished, .ft-awakening-pending),
+.ft-technology-table tbody td:is(.ft-marked, .ft-state-finished, .ft-awakening-pending) .ft-mark { color: var(--theme-text); }
+.ft-technology-table tbody td button:disabled { opacity: 1; }
 .ft-point-value { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 27px; }
 .ft-mark { font-size: var(--fleet-font-note, 12px); font-weight: 700; color: var(--theme-muted); }
-.ft-state-finished .ft-mark, .ft-marked .ft-mark { color: #13775f; }
 /* 未保存修改的行：左缘用内嵌阴影画一条警示色 */
 .ft-table-wrap .ft-modified td:first-child { box-shadow: inset 3px 0 var(--theme-warning); }
 .ft-table-wrap .ft-target { outline: 2px solid var(--theme-focus); outline-offset: -2px; }
@@ -102,6 +103,7 @@
 .fleet-technology .ft-technology-table td { padding: 4px 6px; }
 .fleet-technology .ft-technology-table th button,
 .fleet-technology .ft-technology-table td button { padding-inline: 6px; font-size: 13px; }
+.fleet-technology .ft-technology-table th button { gap: 4px; padding-inline: 4px; }
 .fleet-technology .ft-technology-table th,
 .fleet-technology .ft-technology-table th button,
 .fleet-technology .ft-technology-table td.ft-description,
