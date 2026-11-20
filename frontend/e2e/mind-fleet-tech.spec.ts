@@ -13,6 +13,34 @@ test.beforeEach(async ({page}) => {
   await page.addInitScript(() => {localStorage.setItem('azurpilot.theme', 'light'); localStorage.setItem('azurpilot.language', 'zh-CN')})
 })
 
+test('sticky technology header paints its own separators over scrolled rows', async ({page}, info) => {
+  await page.setViewportSize({width: 1050, height: 780})
+  const instance = `tech-header-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
+  await page.goto('/')
+  await rpc(page, 'instances.create', {name: instance})
+  await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
+
+  const region = page.getByRole('region', {name: '舰队科技', exact: true})
+  const header = region.locator('thead')
+  await header.scrollIntoViewIfNeeded()
+  const clip = await region.evaluate(element => {
+    element.scrollTop = 113
+    element.scrollLeft = 80
+    const regionBounds = element.getBoundingClientRect()
+    const headerBounds = element.querySelector('thead')!.getBoundingClientRect()
+    const x = Math.ceil(regionBounds.left), y = Math.ceil(headerBounds.top)
+    return {x, y, width: Math.floor(regionBounds.right) - x, height: Math.floor(headerBounds.bottom) - y}
+  })
+  const original = await page.screenshot({clip})
+  await page.addStyleTag({content: '.fleet-technology tbody td { background: magenta !important; }'})
+  const overRecoloredRows = await page.screenshot({clip})
+  expect(overRecoloredRows.equals(original)).toBe(true)
+  for (const cell of await header.locator('th').all()) {
+    await expect(cell).toHaveCSS('border-bottom-width', '1px')
+    await expect(cell).toHaveCSS('border-bottom-style', 'solid')
+  }
+})
+
 test('technology reload stays in the page header and preserves the draft', async ({page}, info) => {
   await page.setViewportSize({width: 390, height: 844})
   const instance = `tech-reload-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`

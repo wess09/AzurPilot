@@ -50,6 +50,13 @@
 .ft-table-wrap [data-slot=table-header] { background: var(--theme-surface-muted); }
 .ft-table-wrap [data-slot=table-head] { color: var(--theme-muted); }
 .ft-table-wrap [data-slot=table-head][aria-sort=ascending], .ft-table-wrap [data-slot=table-head][aria-sort=descending] { color: var(--theme-accent); }
+/* 固定表头的边线随表头移动，避免折叠边框留下能看到表体的缝隙。 */
+.fleet-technology .ft-table-wrap table { border-collapse: separate; border-spacing: 0; }
+.fleet-technology .ft-table-wrap th {
+  background: var(--theme-surface-muted);
+  border-bottom: 1px solid var(--ft-line);
+}
+.fleet-technology .ft-table-wrap tbody > tr:not(:last-child) > td { border-bottom: 1px solid var(--theme-text); }
 /* 等宽数字让数值列上下对齐 */
 .ft-table-wrap td { font-variant-numeric: tabular-nums; }
 .ft-table-wrap td.ft-name { min-width: 130px; }
