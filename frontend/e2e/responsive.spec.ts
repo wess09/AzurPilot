@@ -72,6 +72,35 @@ test('narrow view keeps navigation, fleet tabs and settings operable', async ({p
   await expectContentFits(page)
 })
 
+test('minimal theme mode aligns with the other interface settings', async ({page}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('azurpilot.theme', 'minimal')
+    localStorage.setItem('azurpilot.language', 'zh-CN')
+  })
+  await page.setViewportSize({width: 1280, height: 800})
+  await page.goto('/#/interface')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'minimal')
+  const theme = page.getByRole('combobox', {name: '界面主题', exact: true})
+  const mode = page.getByRole('combobox', {name: '主题模式', exact: true})
+  const themeLabel = page.locator('label[for="ui-theme"]')
+  const modeLabel = page.locator('label[for="ui-color-mode"]')
+  for (const viewport of [{width: 1280, height: 800}, {width: 800, height: 380}, {width: 320, height: 568}]) {
+    await page.setViewportSize(viewport)
+    const themeBox = (await theme.boundingBox())!
+    const modeBox = (await mode.boundingBox())!
+    const themeLabelBox = (await themeLabel.boundingBox())!
+    const modeLabelBox = (await modeLabel.boundingBox())!
+    expect(Math.abs(modeBox.x - themeBox.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(modeBox.width - themeBox.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(modeLabelBox.x - themeLabelBox.x)).toBeLessThanOrEqual(1)
+    await expectContentFits(page)
+  }
+  await mode.click()
+  await page.getByRole('option', {name: '深色', exact: true}).click()
+  await expect(page.locator('html')).toHaveAttribute('data-color-mode', 'dark')
+  await expect(mode).toHaveText('深色')
+})
+
 for (const position of ['left', 'right']) {
   test(`short desktop can reach both the dashboard and settings with a saved ${position} rail`, async ({page}) => {
     await page.addInitScript(side => {

@@ -6,8 +6,7 @@ import { useSyncExternalStore } from 'react'
 import { useApp } from '../app/context'
 import { colorModes, type ColorMode } from '../app/palettes'
 import { applyTheme, getThemePreference, subscribeTheme } from '../app/theme'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../pages/settings-ui/select'
-import { Field, FieldDescription, FieldLabel } from '../pages/settings-ui/field'
+import { Select } from './FormControls'
 
 const modeLabels = {
   auto: 'settings.modeAuto',
@@ -23,16 +22,16 @@ const modeLabels = {
 export function ThemePreferences() {
   const {ui} = useApp()
   const {colorMode} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
-  return <Field orientation="vertical">
-    <FieldLabel htmlFor="ui-color-mode">{ui('settings.colorMode')}</FieldLabel>
-    <Select value={colorMode} onValueChange={next => applyTheme({...getThemePreference(), colorMode: next as ColorMode})}>
-      <SelectTrigger id="ui-color-mode" aria-label={ui('settings.colorMode')} className="w-full max-w-64">
-        <SelectValue/>
-      </SelectTrigger>
-      <SelectContent>
-        {colorModes.map(mode => <SelectItem key={mode} value={mode}>{ui(modeLabels[mode])}</SelectItem>)}
-      </SelectContent>
-    </Select>
-    <FieldDescription>{ui('settings.colorModeHelp')}</FieldDescription>
-  </Field>
+  return <div className="field-row">
+    <div className="field-label">
+      <label htmlFor="ui-color-mode">{ui('settings.colorMode')}</label>
+      <p id="ui-color-mode-help">{ui('settings.colorModeHelp')}</p>
+    </div>
+    <div className="field-control">
+      <Select id="ui-color-mode" aria-describedby="ui-color-mode-help" value={colorMode}
+        onChange={event => applyTheme({...getThemePreference(), colorMode: event.target.value as ColorMode})}>
+        {colorModes.map(mode => <option key={mode} value={mode}>{ui(modeLabels[mode])}</option>)}
+      </Select>
+    </div>
+  </div>
 }
