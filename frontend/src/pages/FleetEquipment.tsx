@@ -11,10 +11,12 @@ import {usePageRead} from '../app/usePageRead'
 import {Panel, PanelHeading} from '../components/ui/page'
 import {useParams} from 'react-router-dom'
 import {api} from '../api/client'
+import type {Config} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
 import {PageTitle} from '../components/ui'
 
 /** 支持配置装备码的舰种全集，顺序即设置页的分节顺序。 */
@@ -70,7 +72,7 @@ export function FleetEquipment() {
     return config
   }, [instance])
   const read = usePageRead(instance, connection === 'ready', load)
-  const baseline = useRef<{key: string; value?: string}>({key: instance})
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
   if (baseline.current.key !== instance) baseline.current = {key: instance}
   const editing = useRef(false)
   editing.current = dirty || busy
@@ -80,7 +82,7 @@ export function FleetEquipment() {
     const values = read.data.values.FleetInfo?.FleetEquipment
     if (!editing.current || baseline.current.value === undefined) {
       const nextCodes = equipmentCodes(values?.Codes), nextEnabled = values?.Enabled === true
-      baseline.current.value = JSON.stringify([nextEnabled, nextCodes])
+      baseline.current.value = read.data
       setEnabled(nextEnabled); setCodes(nextCodes); setDirty(false)
     }
     setPending(Object.keys(values?.State ?? {}).length)
@@ -90,17 +92,12 @@ export function FleetEquipment() {
     if (!codes) return
     setBusy(true); setError('')
     try {
-      // 先等本实例未提交的编辑落定，再读最新 revision 提交，避免拿着旧修订号撞乐观锁。
       await editor(`config:${instance}`).settled()
-      const current = await api.request('config.get', {instance})
-      const latest = current.values.FleetInfo?.FleetEquipment
-      if (JSON.stringify([latest?.Enabled === true, equipmentCodes(latest?.Codes)]) !== baseline.current.value) {setConflict(true); return}
-      const result = await api.request('config.patch', {instance, revision: current.revision, changes: [
+      const result = await api.request('config.patch', {instance, changes: expectConfig(baseline.current.value, [
         {path: 'FleetInfo.FleetEquipment.Enabled', value: nextEnabled},
         {path: 'FleetInfo.FleetEquipment.Codes', value: JSON.stringify(equipmentCodes(codes))},
-      ]})
-      const saved = result.values.FleetInfo?.FleetEquipment
-      baseline.current.value = JSON.stringify([saved?.Enabled === true, equipmentCodes(saved?.Codes)])
+      ])})
+      baseline.current.value = result
       setConflict(false)
       read.setData(result)
       const values = result.values.FleetInfo?.FleetEquipment
@@ -111,7 +108,7 @@ export function FleetEquipment() {
       }
       setEnabled(values.Enabled === true); setCodes(equipmentCodes(values.Codes))
       setPending(Object.keys(values.State ?? {}).length); setDirty(false); notify(ui('fleetEquipment.saved'))
-    } catch (error) {setError((error as Error).message)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)}
     finally {setBusy(false)}
   }
   return <>

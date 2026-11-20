@@ -52,6 +52,10 @@ for (const dirty of [false, true]) {
         await page.getByRole('button', {name:'保存草稿'}).click()
         await expect(page.getByText('调度方案已被其他窗口修改，请重新加载')).toBeVisible()
         await expect(name).toHaveValue('local unsaved draft')
+        await page.getByRole('button', {name:'撤销', exact:true}).click()
+        await expect(name).toHaveValue('external dirty revision')
+        await expect(page.getByRole('button', {name:'重做', exact:true})).toBeDisabled()
+        await expect(page.locator('.program-toolbar small')).toContainText('草稿已保存')
       } else {
         await expect(name).toHaveValue('external clean revision')
         await name.fill('saved after reconnect')
@@ -82,4 +86,111 @@ test('scheduler variable fields edit through the shared controls', async ({page}
   await row.getByRole('checkbox', {name: '重启保留'}).check()
   await expect(row.getByRole('checkbox', {name: '重启保留'})).toBeChecked()
   await expect(row.getByRole('textbox', {name: '初始值'})).toHaveAttribute('data-slot', 'textarea')
+})
+
+test('scheduler reconnect retains a mode-only edit and its base revision', async ({page, browser}) => {
+  const socket = await openEditor(page)
+  const mode = page.getByRole('combobox', {name:'调度模式'})
+  await mode.click()
+  await page.getByRole('option', {name:'增强调度'}).click()
+  const other = await browser.newPage()
+  try {
+    await openEditor(other)
+    await other.getByRole('textbox', {name:'方案名称'}).fill('external mode conflict')
+    await other.getByRole('button', {name:'保存草稿'}).click()
+    await expect(other.getByText('草稿已保存').last()).toBeVisible()
+    await reconnect(page, socket)
+    await expect(mode).toContainText('增强调度')
+    await page.getByRole('button', {name:'保存草稿'}).click()
+    await expect(page.getByText('调度方案已被其他窗口修改，请重新加载')).toBeVisible()
+    await expect(mode).toContainText('增强调度')
+  } finally {await other.close()}
+})
+
+async function delayFirstSave(page: Page) {
+  let saveId: string | undefined
+  let release: (() => void) | undefined
+  await page.routeWebSocket('**/api/v1/ws*', socket => {
+    const server = socket.connectToServer()
+    socket.onMessage(message => {
+      const request = JSON.parse(String(message)) as {id?: string; method?: string}
+      if (request.method === 'scheduler.program.save' && !saveId) saveId = request.id
+      server.send(message)
+    })
+    let fragments: Buffer[] = []
+    server.onMessage(message => {
+      if (Buffer.isBuffer(message)) {
+        fragments.push(message)
+        if (message[0] === 0) return
+      }
+      const frames = Buffer.isBuffer(message) ? fragments : [message]
+      fragments = []
+      const payload = Buffer.isBuffer(message) ? Buffer.concat((frames as Buffer[]).map(frame => frame.subarray(1))).toString() : message
+      const response = JSON.parse(payload) as {id?: string}
+      const forward = () => frames.forEach(frame => socket.send(frame))
+      if (saveId && response.id === saveId && !release) release = forward
+      else forward()
+    })
+  })
+  return {ready: () => !!release, release: () => release?.()}
+}
+
+test('scheduler retains edits made while a save is in flight', async ({page}) => {
+  const delayedSave = await delayFirstSave(page)
+  await page.goto('/#/i/testpilot/task/SchedulerProgram')
+  const name = page.getByRole('textbox', {name:'方案名称'})
+  await expect(name).toBeVisible()
+  await name.fill('first save')
+  await page.getByRole('button', {name:'保存草稿'}).click()
+  await expect.poll(delayedSave.ready).toBe(true)
+  await name.fill('later edit')
+  delayedSave.release()
+  await expect(page.getByText('草稿已保存').last()).toBeVisible()
+  await expect(name).toHaveValue('later edit')
+  await expect(page.getByText('有未保存修改')).toBeVisible()
+  await page.getByRole('button', {name:'保存草稿'}).click()
+  await expect(page.getByText('有未保存修改')).not.toBeVisible()
+  await expect(name).toHaveValue('later edit')
+})
+
+
+test('scheduler undo and restoring mode return to the saved state', async ({page}) => {
+  await openEditor(page)
+  const status = page.locator('.program-toolbar small')
+  const name = page.getByRole('textbox', {name:'方案名称'})
+  const original = await name.inputValue()
+  await name.fill('temporary edit')
+  await expect(status).toContainText('有未保存修改')
+  await page.getByRole('button', {name:'撤销', exact:true}).click()
+  await expect(name).toHaveValue(original)
+  await expect(status).toContainText('草稿已保存')
+  await page.getByRole('button', {name:'重做', exact:true}).click()
+  await expect(status).toContainText('有未保存修改')
+  await page.getByRole('button', {name:'撤销', exact:true}).click()
+  const mode = page.getByRole('combobox', {name:'调度模式'})
+  const originalMode = await mode.innerText()
+  await mode.click()
+  await page.getByRole('option', {name:originalMode.includes('增强调度') ? '完全接管' : '增强调度'}).click()
+  await expect(status).toContainText('有未保存修改')
+  await mode.click()
+  await page.getByRole('option', {name:originalMode.trim()}).click()
+  await expect(status).toContainText('草稿已保存')
+})
+
+test('scheduler retains an undo made while saving', async ({page}) => {
+  const delayedSave = await delayFirstSave(page)
+  await page.goto('/#/i/testpilot/task/SchedulerProgram')
+  const name = page.getByRole('textbox', {name:'方案名称'})
+  await expect(name).toBeVisible()
+  const original = await name.inputValue()
+  await name.fill('submitted edit')
+  await page.getByRole('button', {name:'保存草稿'}).click()
+  await expect.poll(delayedSave.ready).toBe(true)
+  await page.getByRole('button', {name:'撤销', exact:true}).click()
+  await expect(name).toHaveValue(original)
+  delayedSave.release()
+  await expect(page.locator('.program-toolbar small')).toContainText('有未保存修改')
+  await expect(name).toHaveValue(original)
+  await page.getByRole('button', {name:'保存草稿'}).click()
+  await expect(page.locator('.program-toolbar small')).toContainText('草稿已保存')
 })

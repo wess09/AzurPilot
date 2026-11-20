@@ -12,7 +12,7 @@ import {usePageRead} from '../app/usePageRead'
 import {Panel, PanelHeading} from '../components/ui/page'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
-import type {Value} from '../api/types'
+import type {Config, Value} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
@@ -20,6 +20,7 @@ import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
 import {PageTitle} from '../components/ui'
 import {rotationRules} from './FleetRotation'
 
@@ -117,16 +118,6 @@ function recordSnapshot(values: Record<string, Record<string, Value>>): RecordSn
   trainingRecordGroups(snapshot)
   return snapshot
 }
-/** Only fields written by the scheduling form participate in conflict checks. */
-function trainingFingerprint(values: Record<string, Record<string, Value>>): string {
-  return JSON.stringify([
-    values.FleetRotation?.Enabled === true, values.FleetRotation?.SelectedOnly === true,
-    values.FleetDorm?.Enabled === true, values.FleetDorm?.Floor === 'floor_2' ? 'floor_2' : 'floor_1',
-    Number(values.FleetTraining?.CheckIntervalHours ?? 6), values.FleetTraining?.StopOnComplete === true,
-    values.FleetTraining?.Notify === true,
-    ...metrics.flatMap(metric => [values[groups[metric]]?.Enabled === true, Number(values[groups[metric]]?.Target ?? (metric === 'level' ? 120 : 100))]),
-  ])
-}
 type Goal = {enabled: boolean; target: string}
 const groups = {level: 'FleetLevelTraining', affinity: 'FleetAffinityTraining'} as const
 type Metric = keyof typeof groups
@@ -162,7 +153,7 @@ export function FleetTraining() {
   }, [instance])
   const pollAfter = useCallback(() => running ? 3000 : 0, [running])
   const read = usePageRead(instance, connection === 'ready', load, pollAfter)
-  const baseline = useRef<{key: string; value?: string}>({key: instance})
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
   if (baseline.current.key !== instance) baseline.current = {key: instance}
   const editing = useRef(false)
   editing.current = dirty || busy
@@ -172,7 +163,7 @@ export function FleetTraining() {
     if (!read.data) return
     const values = read.data.values.FleetInfo ?? {}
     if (!editing.current || baseline.current.value === undefined) {
-      baseline.current.value = trainingFingerprint(values)
+      baseline.current.value = read.data
       setMorale(values.FleetRotation?.Enabled === true)
       setSelectedOnly(values.FleetRotation?.SelectedOnly === true)
       setDorm(values.FleetDorm?.Enabled === true)
@@ -199,9 +190,7 @@ export function FleetTraining() {
     setBusy(true); setError('')
     try {
       await editor(`config:${instance}`).settled()
-      const config = await api.request('config.get', {instance})
-      if (trainingFingerprint(config.values.FleetInfo ?? {}) !== baseline.current.value) {setConflict(true); return}
-      const result = await api.request('config.patch', {instance, revision: config.revision, changes: [
+      const result = await api.request('config.patch', {instance, changes: expectConfig(baseline.current.value, [
         {path: 'FleetInfo.FleetRotation.Enabled', value: nextMorale},
         {path: 'FleetInfo.FleetRotation.SelectedOnly', value: selectedOnly},
         {path: 'FleetInfo.FleetDorm.Enabled', value: nextDorm},
@@ -213,12 +202,12 @@ export function FleetTraining() {
           {path: `FleetInfo.${groups[metric]}.Enabled`, value: nextSettings[metric].enabled},
           {path: `FleetInfo.${groups[metric]}.Target`, value: Number(nextSettings[metric].target)},
         ]),
-      ]})
-      baseline.current.value = trainingFingerprint(result.values.FleetInfo ?? {})
+      ])})
+      baseline.current.value = result
       setConflict(false)
       read.setData(result)
       setMorale(nextMorale); setSettings(nextSettings); setDorm(nextDorm); setDirty(false); notify(ui('training.saved'))
-    } catch (error) {setError((error as Error).message)} finally {setBusy(false)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)} finally {setBusy(false)}
   }
 
   async function resetStatus() {

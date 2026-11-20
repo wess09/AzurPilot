@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {act, renderHook, waitFor} from '@testing-library/react'
+import {StrictMode} from 'react'
 import {afterEach, describe, expect, it, vi} from 'vitest'
 import {usePageRead} from './usePageRead'
 
@@ -125,4 +126,59 @@ describe('usePageRead', () => {
     expect(result.current.error).toBe('')
     expect(result.current.data).toBe('ready')
   })
+  it('shares one trailing promise and invalidation cancels it without cancelling the active wait', async () => {
+    const initial = deferred<string>(), active = deferred<string>(), later = deferred<string>()
+    const loader = vi.fn().mockReturnValueOnce(initial.promise).mockReturnValueOnce(active.promise).mockReturnValueOnce(later.promise)
+    const {result} = renderHook(() => usePageRead('a', true, loader))
+    await act(async () => initial.resolve('initial'))
+    let activeWait!: Promise<void>, first!: Promise<void>, second!: Promise<void>
+    act(() => {
+      activeWait = result.current.reloadAndWait()
+      first = result.current.reloadAndWait()
+      second = result.current.reloadAndWait()
+    })
+    expect(first).toBe(second)
+    const cancelledWait = first.catch(error => error)
+    act(() => result.current.invalidate())
+    expect((await cancelledWait as Error).name).toBe('AbortError')
+    await act(async () => {active.resolve('obsolete'); await activeWait})
+    expect(result.current.data).toBe('initial')
+    expect(loader).toHaveBeenCalledTimes(2)
+    act(() => {first = result.current.reloadAndWait()})
+    await act(async () => {later.resolve('new'); await first})
+    expect(result.current.data).toBe('new')
+  })
+  it('rejects active and trailing waits on disconnect and ignores late completions', async () => {
+    const initial = deferred<string>(), active = deferred<string>()
+    const loader = vi.fn().mockReturnValueOnce(initial.promise).mockReturnValueOnce(active.promise)
+    const {result, rerender} = renderHook(({enabled}) => usePageRead('a', enabled, loader), {initialProps: {enabled: true}})
+    await act(async () => initial.resolve('initial'))
+    let activeWait!: Promise<unknown>, trailingWait!: Promise<unknown>
+    act(() => {
+      activeWait = result.current.reloadAndWait().catch(error => error)
+      trailingWait = result.current.reloadAndWait().catch(error => error)
+    })
+    rerender({enabled: false})
+    expect((await activeWait as Error).name).toBe('AbortError')
+    expect((await trailingWait as Error).name).toBe('AbortError')
+    expect(result.current.busy).toBe(false)
+    await act(async () => active.resolve('late'))
+    expect(result.current.data).toBe('initial')
+    expect(result.current.busy).toBe(false)
+    expect(loader).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores completion from the first StrictMode effect after it restarts', async () => {
+    const first = deferred<string>(), second = deferred<string>()
+    const loader = vi.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    const {result} = renderHook(() => usePageRead('a', true, loader), {wrapper: StrictMode})
+    expect(loader).toHaveBeenCalledTimes(2)
+    await act(async () => first.resolve('stale'))
+    expect(result.current.data).toBeUndefined()
+    expect(result.current.busy).toBe(true)
+    await act(async () => second.resolve('fresh'))
+    expect(result.current.data).toBe('fresh')
+    expect(result.current.busy).toBe(false)
+  })
+
 })

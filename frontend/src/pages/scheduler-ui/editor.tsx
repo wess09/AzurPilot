@@ -30,6 +30,9 @@ import {nodeTypes} from './program-card'
 import {JsonField} from './json-field'
 
 const runtimePollInterval = () => 2000
+const editableMode = (mode: ProgramMode) => mode === 'native' ? 'takeover' : mode
+// Compare only on user edits or write acknowledgements, never to gate server reads.
+const sameDocument = (a: ProgramDocument, b: ProgramDocument) => JSON.stringify(withComments(a)) === JSON.stringify(withComments(b))
 
 /** 编辑器主体：画布、卡片库、属性面板与调试抽屉共用一份文档状态与撤销历史。 */
 export function Editor() {
@@ -37,19 +40,21 @@ export function Editor() {
   const {notify, ui} = useApp()
   const connection = useConnection()
   const flow = useReactFlow<CanvasNode>()
-  const [catalog, setCatalog] = useState<Catalog>()
-  const [saved, setSaved] = useState<ProgramSaved>()
-  const [loadedInstance, setLoadedInstance] = useState<string>()
-  const mutationVersion = useRef(0)
   const mutationInFlight = useRef<object | undefined>(undefined)
   const loadProgram = useCallback(async () => {
-    const version = mutationVersion.current
     const [catalog, saved] = await Promise.all([api.request('scheduler.program.catalog', {instance}), api.request('scheduler.program.get', {instance})])
-    return {catalog, saved, version}
+    return {catalog, saved}
   }, [instance])
   const programRead = usePageRead(instance, connection === 'ready', loadProgram)
-  const [doc, setDoc] = useState<ProgramDocument>()
-  const [mode, setMode] = useState<ProgramMode>('takeover')
+  const {catalog, saved} = programRead.data ?? {}
+  const savedSnapshot = useRef(saved)
+  savedSnapshot.current = saved
+  const [draft, setDraft] = useState<{document: ProgramDocument; mode: ProgramMode; revision: string; baseDocument: ProgramDocument; baseMode: ProgramMode; docDirty: boolean; modeDirty: boolean}>()
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  const updateDraft = (next: typeof draft) => {draftRef.current = next; setDraft(next)}
+  const doc = draft?.document ?? saved?.draft
+  const mode = draft?.mode ?? editableMode(saved?.mode ?? 'takeover')
   const [graphId, setGraphId] = useState('main')
   const [search, setSearch] = useState('')
   const [extraActionsOpen, setExtraActionsOpen] = useState(false)
@@ -89,41 +94,40 @@ export function Editor() {
     observer.observe(wrapper.current)
     return () => observer.disconnect()
   }, [!!doc])
-  const dirty = !!doc && !!saved && JSON.stringify(doc) !== JSON.stringify(saved.draft)
+  const dirty = !!draft?.docDirty || !!draft?.modeDirty
   // 渲染期同步 ref：回调里读最新文档与流程图 id，不依赖闭包的新旧。
   const docRef = useRef(doc)
   docRef.current = doc
-  const savedRef = useRef(saved)
-  savedRef.current = saved
-  const modeRef = useRef(mode)
-  modeRef.current = mode
   const graphIdRef = useRef(graphId)
   graphIdRef.current = graphId
   const graph = doc && (graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId))
   const picked = graph?.nodes.find(n => n.id === selection[0])
 
+  const resetEditorView = () => {
+    setGraphId('main'); setSelection([]); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
+    history.current = {past:[], future:[]}
+  }
+  const discardDraft = (current: NonNullable<typeof draft>) => {
+    if (savedSnapshot.current && current.revision !== savedSnapshot.current.revision) resetEditorView()
+    updateDraft(undefined)
+  }
+  const keepDraft = (next: NonNullable<typeof draft>) => {
+    if (next.docDirty || next.modeDirty || mutationInFlight.current) updateDraft(next)
+    else discardDraft(next)
+  }
+
+  useEffect(() => () => {++requestVersion.current}, [])
+  const initialized = useRef(false)
+  const knownRevision = useRef<string | undefined>(undefined)
   useEffect(() => {
-    ++requestVersion.current
-    mutationInFlight.current = undefined
-    setValidation(undefined); setSimulation(undefined); setSimSteps(0)
-    setCatalog(undefined); setSaved(undefined); setDoc(undefined); setLoadedInstance(undefined)
-    setBusy(false); setError(''); setSelection([]); setGraphId('main'); history.current = {past:[], future:[]}
-  }, [instance])
-  useEffect(() => {
-    const snapshot = programRead.data
-    if (!snapshot || mutationInFlight.current || snapshot.version !== mutationVersion.current) return
-    const initial = loadedInstance !== instance
-    const previous = savedRef.current, current = docRef.current
-    // Retain the old revision as well as the draft when the user has local changes.
-    if (!initial && (!previous || !current || JSON.stringify(current) !== JSON.stringify(previous.draft) || modeRef.current !== (previous.mode === 'native' ? 'takeover' : previous.mode))) return
-    setCatalog(snapshot.catalog); setSaved(snapshot.saved); setDoc(snapshot.saved.draft)
-    setMode(snapshot.saved.mode === 'native' ? 'takeover' : snapshot.saved.mode)
-    if (initial) {setSimTasks(snapshot.catalog.tasks); setLoadedInstance(instance)}
-    else if (JSON.stringify(current) !== JSON.stringify(snapshot.saved.draft)) {
-      setGraphId('main'); setSelection([]); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
-      history.current = {past:[], future:[]}
+    if (!programRead.data) return
+    const revision = programRead.data.saved.revision
+    if (!initialized.current) {setSimTasks(programRead.data.catalog.tasks); initialized.current = true}
+    else if (!draftRef.current && knownRevision.current !== revision) {
+      resetEditorView()
     }
-  }, [programRead.data, loadedInstance, instance])
+    knownRevision.current = revision
+  }, [programRead.data])
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {if (dirty) {event.preventDefault(); event.returnValue = ''}}
     window.addEventListener('beforeunload', guard)
@@ -132,8 +136,13 @@ export function Editor() {
 
   const change = useCallback((next: ProgramDocument, track = true) => {
     if (doc && track) {history.current.past.push(clone(doc)); history.current.past = history.current.past.slice(-100); history.current.future = []}
-    setDoc(withComments(next)); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
-  }, [doc])
+    if (!saved) return
+    const current = draftRef.current
+    const document = withComments(next)
+    const baseDocument = current?.baseDocument ?? saved.draft
+    keepDraft({document, mode:current?.mode ?? mode, revision:current?.revision ?? saved.revision, baseDocument, baseMode:current?.baseMode ?? editableMode(saved.mode), docDirty:!sameDocument(document, baseDocument), modeDirty:current?.modeDirty ?? false})
+    setValidation(undefined); setSimulation(undefined); setSimSteps(0)
+  }, [doc, mode, saved])
   const updateGraph = (next: Graph, track = true) => {if (doc) change(replaceGraph(doc, graphId, next), track)}
   function undo(redo = false) {
     if (!doc) return
@@ -241,23 +250,47 @@ export function Editor() {
     const mutation = kind !== 'validate'
     if (mutation && mutationInFlight.current) return
     const mutationToken = mutation ? {} : undefined
-    if (mutationToken) {mutationInFlight.current = mutationToken; mutationVersion.current++}
+    if (mutationToken) {mutationInFlight.current = mutationToken; programRead.invalidate()}
     setBusy(true); setError('')
+    const submittedDraft = draftRef.current
     try {
       if (kind === 'validate') {
         setDebugOpen(true)
         const result = await api.request('scheduler.program.validate', {instance, document:doc, mode}); if (version === requestVersion.current) setValidation(result)
       } else {
         let latest = saved
-        if (kind !== 'native') latest = await api.request('scheduler.program.save', {instance, revision:saved.revision, document:doc})
-        if (version !== requestVersion.current) return
-        if (version === requestVersion.current) setSaved(latest)
-        if (kind === 'apply' || kind === 'native') latest = await api.request('scheduler.program.apply', {instance, revision:latest.revision, mode:kind === 'native' ? 'native' : mode})
-        if (version === requestVersion.current) {setSaved(latest); notify(kind === 'save' ? '草稿已保存' : kind === 'native' ? '已切回原调度' : '方案已应用，将在安全边界生效')}
+        const revision = submittedDraft?.revision ?? saved.revision
+        const publish = (value: ProgramSaved, savedDocument: boolean, applied: boolean) => {
+          knownRevision.current = value.revision
+          savedSnapshot.current = value
+          programRead.setData(previous => previous ? {...previous, saved:value} : previous)
+          const current = draftRef.current
+          if (!current) return
+          const baseDocument = savedDocument ? value.draft : current.baseDocument
+          const baseMode = applied ? editableMode(value.mode) : current.baseMode
+          const document = savedDocument && current.document === doc ? value.draft : current.document
+          updateDraft({...current, document, revision:value.revision, baseDocument, baseMode, docDirty:!sameDocument(document, baseDocument), modeDirty:current.mode !== baseMode})
+        }
+        if (kind !== 'native') {
+          latest = await api.request('scheduler.program.save', {instance, revision, document:doc})
+          if (version !== requestVersion.current) return
+          publish(latest, true, false)
+        }
+        if (kind === 'apply' || kind === 'native') {
+          programRead.invalidate()
+          latest = await api.request('scheduler.program.apply', {instance, revision:kind === 'native' ? revision : latest.revision, mode:kind === 'native' ? 'native' : mode})
+          if (version !== requestVersion.current) return
+          publish(latest, false, true)
+        }
+        notify(kind === 'save' ? '草稿已保存' : kind === 'native' ? '已切回原调度' : '方案已应用，将在安全边界生效')
       }
     } catch (error) {if (version === requestVersion.current) {setError((error as Error).message); const details = (error as {details?: ProgramValidation['diagnostics']}).details; if (Array.isArray(details)) setValidation({valid:false, diagnostics:details})}}
     finally {
-      if (mutationToken && mutationInFlight.current === mutationToken) {mutationInFlight.current = undefined; mutationVersion.current++}
+      if (mutationToken && mutationInFlight.current === mutationToken) {
+        mutationInFlight.current = undefined
+        const current = draftRef.current
+        if (current && !current.docDirty && !current.modeDirty) discardDraft(current)
+      }
       if (version === requestVersion.current) {
         setBusy(false)
         if (mutation) programRead.reload({silent:true})
@@ -277,7 +310,7 @@ export function Editor() {
     } catch (error) {if (version === requestVersion.current) setError((error as Error).message)} finally {if (version === requestVersion.current) setBusy(false)}
   }
 
-  if (loadedInstance !== instance || !doc || !catalog || !graph || !saved) return <LoadBoundary ready={false} error={programRead.error} retry={() => programRead.reload()}/>
+  if (!doc || !catalog || !graph || !saved) return <LoadBoundary ready={false} error={programRead.error} retry={() => programRead.reload()}/>
   const spec = picked && definition(picked, doc, catalog, graph)
   const changeParam = (key: string, value: unknown) => {if (picked) updateNode({...picked, params:{...picked.params, [key]:value, ...(key === 'valueType' ? {value:value === 'boolean' ? false : value === 'number' || value === 'duration' ? 0 : value === 'list' || value === 'tasks' ? [] : ['object','resource','task','result'].includes(String(value)) ? {} : ''} : {})}})}
   const currentGraph = graph as Subgraph
@@ -303,7 +336,7 @@ export function Editor() {
   }}>
     <header className="program-toolbar"><div><Layers size={21}/><div><PageTitle title={ui('nav.schedulerProgram')}/><small>{saved.mode === 'native' ? '当前使用原调度' : saved.mode === 'enhance' ? '当前使用增强调度' : '当前由卡片程序完全接管'} · {dirty ? '有未保存修改' : '草稿已保存'}</small></div></div>
       <ActionGroup className="program-actions"><Button variant="secondary" onClick={() => undo()} disabled={!history.current.past.length} title="撤销" aria-label="撤销"><Undo2 size={15}/></Button><Button variant="secondary" onClick={() => undo(true)} disabled={!history.current.future.length} title="重做" aria-label="重做"><Redo2 size={15}/></Button>
-        <Select value={mode} onValueChange={value => {setMode(value as ProgramMode); setValidation(undefined)}}><SelectTrigger width="fit" aria-label="调度模式"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="takeover">完全接管</SelectItem><SelectItem value="enhance">增强调度</SelectItem></SelectContent></Select>
+        <Select value={mode} onValueChange={value => {const current = draftRef.current; const baseMode = current?.baseMode ?? editableMode(saved.mode); keepDraft({document:doc, mode:value as ProgramMode, revision:current?.revision ?? saved.revision, baseDocument:current?.baseDocument ?? saved.draft, baseMode, docDirty:current?.docDirty ?? false, modeDirty:value !== baseMode}); setValidation(undefined)}}><SelectTrigger width="fit" aria-label="调度模式"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="takeover">完全接管</SelectItem><SelectItem value="enhance">增强调度</SelectItem></SelectContent></Select>
         <Button variant="secondary" disabled={busy} onClick={() => void action('validate')}>校验</Button>
         <Button type="button" variant="secondary" className={`program-debug-btn ${debugOpen ? 'active' : ''}`} onClick={() => setDebugOpen(open => !open)} title={debugOpen ? '收起调试面板' : '展开调试面板'} aria-expanded={debugOpen}><Bug size={14}/><span>调试</span></Button>
         <Button variant="secondary" disabled={busy} onClick={() => void action('save')}><Save size={15}/>保存草稿</Button><Button disabled={busy} onClick={() => void action('apply')}><Play size={15}/>应用方案</Button>

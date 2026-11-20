@@ -611,6 +611,16 @@ export function createMockState({ empty = false } = {}) {
       case 'config.patch': {
         const data = snapshot(name)
         const seen = new Set()
+        const equal = (a, b) => {
+          if (a === b) return true
+          if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false
+          const keys = Object.keys(a)
+          return keys.length === Object.keys(b).length && keys.every(key => Object.hasOwn(b, key) && equal(a[key], b[key]))
+        }
+        for (const change of params.changes) {
+          const [task, group, arg] = change.path.split('.')
+          if (Object.hasOwn(change, 'expected') && (!Object.hasOwn(data.values[task]?.[group] ?? {}, arg) || !equal(data.values[task][group][arg], change.expected))) fail('CONFLICT', '配置已变化，请重新载入后再提交')
+        }
         for (const { path, value } of params.changes) {
           const [task, group, arg] = validateField(path, value)
           if (seen.has(path)) fail('INVALID_PARAMS', '同一次保存不能重复修改同一个参数')

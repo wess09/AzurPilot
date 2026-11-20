@@ -11,8 +11,10 @@ import {usePageRead} from '../app/usePageRead'
 import {Panel, PanelHeading} from '../components/ui/page'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
+import type {Config} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {editor} from '../config/editors'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
 import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {PageTitle} from '../components/ui'
@@ -54,7 +56,7 @@ export function FleetRotation() {
   }, [instance])
   const pollAfter = useCallback(() => running ? 3000 : 0, [running])
   const read = usePageRead(instance, connection === 'ready', load, pollAfter)
-  const baseline = useRef<{key: string; value?: string}>({key: instance})
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
   if (baseline.current.key !== instance) baseline.current = {key: instance}
   const editing = useRef(false)
   editing.current = dirty || busy
@@ -64,7 +66,7 @@ export function FleetRotation() {
     const values = read.data.values.FleetInfo?.FleetRotation
     if (!editing.current || baseline.current.value === undefined) {
       const next = rotationRules(values?.Rules)
-      baseline.current.value = JSON.stringify(next)
+      baseline.current.value = read.data
       setRules(next); setDirty(false)
     }
     setProgress(rotationProgress(values?.State))
@@ -85,20 +87,19 @@ export function FleetRotation() {
     if (!rules) return
     setBusy(true); setError('')
     try {
-      // 先等配置编辑器把未落盘改动提交完（有格式错误会在这里抛出），再取 revision 提交，避免用过期的乐观锁。
       await editor(`config:${instance}`).settled()
-      const config = await api.request('config.get', {instance})
-      if (JSON.stringify(rotationRules(config.values.FleetInfo?.FleetRotation?.Rules)) !== baseline.current.value) {setConflict(true); return}
-      const result = await api.request('config.patch', {instance, revision: config.revision, changes: [
+      const result = await api.request('config.patch', {instance, changes: [
+        ...expectConfig(baseline.current.value, [
         {path: 'FleetInfo.FleetRotation.Rules', value: JSON.stringify(rules)},
+        ]),
         ...(reset ? [{path: 'FleetInfo.FleetRotation.State', value: {}}] : []),
       ]})
-      baseline.current.value = JSON.stringify(rotationRules(result.values.FleetInfo?.FleetRotation?.Rules))
+      baseline.current.value = result
       setConflict(false)
       read.setData(result)
       setProgress(rotationProgress(result.values.FleetInfo?.FleetRotation?.State))
       setDirty(false); notify(ui('rotation.saved'))
-    } catch (error) {setError((error as Error).message)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)}
     finally {setBusy(false)}
   }
 

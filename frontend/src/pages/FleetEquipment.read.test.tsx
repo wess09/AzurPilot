@@ -7,8 +7,13 @@ import {translateUi} from '../i18n'
 import {FleetEquipment} from './FleetEquipment'
 
 const state = vi.hoisted(() => ({connection: 'ready', code: '', patches: 0}))
-vi.mock('../api/client', () => ({api: {request: vi.fn(async (method: string) => {
-  if (method === 'config.patch') state.patches++
+vi.mock('../api/client', () => ({api: {request: vi.fn(async (method: string, params?: {changes?: {path: string; value: unknown; expected?: unknown}[]}) => {
+  if (method === 'config.patch') {
+    state.patches++
+    const codes = params?.changes?.find(change => change.path.endsWith('.Codes'))
+    if (codes?.expected !== JSON.stringify({DD: [state.code]})) throw Object.assign(new Error('conflict'), {code: 'CONFLICT'})
+    state.code = JSON.parse(codes.value as string).DD[0]
+  }
   return {revision: 1, values: {FleetInfo: {FleetEquipment: {Enabled: false, Codes: JSON.stringify({DD: [state.code]}), State: {}}}}}
 })}}))
 vi.mock('../config/editors', () => ({editor: () => ({settled: async () => {}})}))
@@ -40,7 +45,7 @@ describe('fleet equipment reads', () => {
     expect(input().value).toBe('draft')
     fireEvent.click(screen.getByRole('button', {name: '保存装备码'}))
     await screen.findByText(/配置已在其他位置更改/)
-    expect(state.patches).toBe(0)
+    expect(state.patches).toBe(1)
     expect(input().value).toBe('draft')
     fireEvent.click(screen.getByRole('button', {name: '放弃草稿并重新加载'}))
     await waitFor(() => expect(input().value).toBe('external'))

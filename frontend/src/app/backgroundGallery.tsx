@@ -28,7 +28,7 @@ export function BackgroundGalleryProvider({children}: {children: ReactNode}) {
   const background = useSyncExternalStore(subscribeBackground, getBackground, getBackground)
   useEffect(() => {
     if (connection === 'ready' && read.data && !read.busy && !read.error) reconcileGallery(read.data)
-  }, [connection, read.data, read.busy, read.error, background.source, background.entry])
+  }, [connection, read.data, read.busy, read.error, background.source, background.entry, background.legacy])
 
   const select = (id?: string) => {
     const entries = read.data

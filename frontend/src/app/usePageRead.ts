@@ -1,30 +1,35 @@
 import type {SetStateAction} from 'react'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
-type Waiter = {resolve: () => void; reject: (error: unknown) => void}
-type ReadState<T> = {key: string; data?: T; error: string; errorCause?: unknown; busy: boolean; version: number; queued: boolean; queuedSilent: boolean; active: boolean; runId: number; timer?: ReturnType<typeof setTimeout>; waiters: Waiter[]; queuedWaiters: Waiter[]}
+type Read = {silent: boolean; promise: Promise<void>; resolve: () => void; reject: (error: unknown) => void}
+type ReadState<T> = {data?: T; error: string; errorCause?: unknown; version: number; queued?: Read; running?: Read; active: boolean; timer?: ReturnType<typeof setTimeout>}
 const cancelled = () => new DOMException('Read cancelled', 'AbortError')
-const rejectWaiters = (waiters: Waiter[]) => {for (const waiter of waiters.splice(0)) waiter.reject(cancelled())}
-const newState = <T,>(key: string): ReadState<T> => ({key, error: '', busy: false, version: 0, queued: false, queuedSilent: true, active: false, runId: 0, waiters: [], queuedWaiters: []})
+const newRead = (silent: boolean): Read => {
+  let resolve!: () => void, reject!: (error: unknown) => void
+  const promise = new Promise<void>((yes, no) => {resolve = yes; reject = no})
+  // Fire-and-forget reads still need their rejection observed.
+  void promise.catch(() => {})
+  return {silent, promise, resolve, reject}
+}
+const newState = <T,>(): ReadState<T> => ({error: '', version: 0, active: false})
 
 type PollOptions = {when?: () => boolean; silent?: boolean}
 
 /** Read one identity at a time. Concurrent refresh requests coalesce into one trailing read. */
 export function usePageRead<T>(identity: string, enabled: boolean, loader: () => Promise<T>, pollAfter?: (data: T | undefined, error: string) => number, {when: canPoll, silent: silentPoll = false}: PollOptions = {}) {
   const [, render] = useState(0)
-  const snapshot = useMemo(() => newState<T>(identity), [identity])
+  const snapshot = useMemo(() => newState<T>(), [identity])
   const state = useRef(snapshot)
   const update = useCallback(() => render(value => value + 1), [])
-  const request = useCallback((options?: {silent?: boolean}, waiter?: Waiter) => {
+  const request = useCallback((options?: {silent?: boolean}): Promise<void> => {
     const current = state.current
-    if (current !== snapshot || !enabled || !current.active) {waiter?.reject(cancelled()); return}
+    if (current !== snapshot || !enabled || !current.active) return Promise.reject(cancelled())
     if (current.timer) {clearTimeout(current.timer); current.timer = undefined}
-    if (current.busy) {
-      current.queued = true; current.queuedSilent = current.queuedSilent && !!options?.silent
-      if (waiter) current.queuedWaiters.push(waiter)
-      return
+    if (current.running) {
+      if (!current.queued) current.queued = newRead(!!options?.silent)
+      else current.queued.silent = current.queued.silent && !!options?.silent
+      return current.queued.promise
     }
-    if (waiter) current.waiters.push(waiter)
     const schedulePoll = () => {
       const delay = pollAfter?.(current.data, current.error)
       if (delay === undefined || !Number.isFinite(delay) || delay <= 0) return
@@ -32,39 +37,40 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
         current.timer = undefined
         if (!current.active || state.current !== current) return
         if (canPoll && !canPoll()) schedulePoll()
-        else void run(silentPoll)
+        else void run(newRead(silentPoll))
       }, delay)
     }
-    const run = async (silent: boolean) => {
-      current.busy = true; current.queued = false; current.queuedSilent = true; update()
-      const version = current.version, runId = ++current.runId
+    const run = async (read: Read) => {
+      current.running = read; update()
+      const version = current.version
       let failure: unknown, failed = false
       try {
         const data = await loader()
         if (state.current === current && current.active && version === current.version) {current.data = data; current.error = ''; current.errorCause = undefined}
       } catch (error) {
         failure = error; failed = true
-        if (state.current === current && current.active && version === current.version && (!silent || current.data === undefined)) {
+        if (state.current === current && current.active && version === current.version && (!read.silent || current.data === undefined)) {
           current.error = error instanceof Error ? error.message : String(error)
           current.errorCause = error
         }
       } finally {
-        if (current.runId !== runId || !current.active) return
-        if (state.current !== current) {rejectWaiters(current.waiters); rejectWaiters(current.queuedWaiters); return}
-        const waiters = current.waiters.splice(0)
-        for (const waiter of waiters) failed ? waiter.reject(failure) : waiter.resolve()
-        current.busy = false; update()
+        if (current.running !== read || !current.active) return
+        if (state.current !== current) {read.reject(cancelled()); current.queued?.reject(cancelled()); current.queued = undefined; return}
+        failed ? read.reject(failure) : read.resolve()
+        current.running = undefined; update()
         if (current.queued) {
-          current.waiters = current.queuedWaiters.splice(0)
-          void run(current.queuedSilent)
+          const queued = current.queued; current.queued = undefined
+          void run(queued)
         } else schedulePoll()
       }
     }
-    void run(!!options?.silent)
+    const read = newRead(!!options?.silent)
+    void run(read)
+    return read.promise
   }, [snapshot, enabled, loader, pollAfter, canPoll, silentPoll, update])
-  const reload = useCallback((options?: {silent?: boolean}) => request(options), [request])
-  const reloadAndWait = useCallback(() => new Promise<void>((resolve, reject) => request(undefined, {resolve, reject})), [request])
-  const invalidate = useCallback(() => {snapshot.version++; snapshot.queued = false; snapshot.queuedSilent = true; rejectWaiters(snapshot.queuedWaiters)}, [snapshot])
+  const reload = useCallback((options?: {silent?: boolean}) => {void request(options).catch(() => {})}, [request])
+  const reloadAndWait = useCallback(() => request(), [request])
+  const invalidate = useCallback(() => {snapshot.version++; snapshot.queued?.reject(cancelled()); snapshot.queued = undefined}, [snapshot])
   const setData = useCallback((data: SetStateAction<T | undefined>) => {
     if (state.current !== snapshot) return
     const next = typeof data === 'function' ? (data as (previous: T | undefined) => T | undefined)(snapshot.data) : data
@@ -77,10 +83,11 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
     snapshot.active = true
     if (enabled) reload()
     return () => {
-      snapshot.active = false; snapshot.version++; snapshot.runId++; snapshot.busy = false; snapshot.queued = false; snapshot.queuedSilent = true
-      rejectWaiters(snapshot.waiters); rejectWaiters(snapshot.queuedWaiters)
+      snapshot.active = false; snapshot.version++
+      snapshot.running?.reject(cancelled()); snapshot.running = undefined
+      snapshot.queued?.reject(cancelled()); snapshot.queued = undefined
       if (snapshot.timer) {clearTimeout(snapshot.timer); snapshot.timer = undefined}
     }
   }, [snapshot, enabled, reload])
-  return {data: snapshot.data, ready: snapshot.data !== undefined, error: snapshot.error, errorCause: snapshot.errorCause, busy: snapshot.busy, reload, reloadAndWait, setData, invalidate}
+  return {data: snapshot.data, ready: snapshot.data !== undefined, error: snapshot.error, errorCause: snapshot.errorCause, busy: enabled && !!snapshot.running, reload, reloadAndWait, setData, invalidate}
 }

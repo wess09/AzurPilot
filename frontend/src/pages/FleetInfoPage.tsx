@@ -12,11 +12,13 @@ import {Panel, PanelHeading} from '../components/ui/page'
 import {useParams} from 'react-router-dom'
 import {Ship} from 'lucide-react'
 import {api} from '../api/client'
+import type {Config} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {editor} from '../config/editors'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
 import {Empty, ErrorBox, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
 
@@ -42,7 +44,7 @@ export function FleetInfoPage() {
   const load = useCallback(() => api.request('config.get', {instance}), [instance])
   const pollAfter = useCallback(() => scanning ? 3000 : 0, [scanning])
   const read = usePageRead(instance, connection === 'ready', load, pollAfter)
-  const baseline = useRef<{key: string; value?: string}>({key: instance})
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
   if (baseline.current.key !== instance) baseline.current = {key: instance}
   const editing = useRef(false)
   editing.current = dirty || busy
@@ -52,7 +54,7 @@ export function FleetInfoPage() {
   useEffect(() => {
     if (read.data && (!editing.current || baseline.current.value === undefined)) {
       const next = read.data.values.FleetInfo?.FleetInfo?.UpdateEmotion !== false
-      baseline.current.value = JSON.stringify(next)
+      baseline.current.value = read.data
       setUpdateEmotion(next)
     }
   }, [instance, read.data])
@@ -62,20 +64,17 @@ export function FleetInfoPage() {
     try {
       if (scanning) await api.request('scheduler.stop', {instance})
       else {
-        // 先等该实例的配置编辑队列落定，再读 revision 发起 patch，避免排队中的改动丢进覆盖。
         await editor(`config:${instance}`).settled()
-        const config = await api.request('config.get', {instance})
-        if (JSON.stringify(config.values.FleetInfo?.FleetInfo?.UpdateEmotion !== false) !== baseline.current.value) {setConflict(true); return}
-        const result = await api.request('config.patch', {instance, revision: config.revision, changes: [
+        const result = await api.request('config.patch', {instance, changes: expectConfig(baseline.current.value, [
           {path: 'FleetInfo.FleetInfo.UpdateEmotion', value: updateEmotion},
-        ]})
-        baseline.current.value = JSON.stringify(result.values.FleetInfo?.FleetInfo?.UpdateEmotion !== false)
+        ])})
+        baseline.current.value = result
         setDirty(false); setConflict(false)
         read.setData(result)
         await api.request('tasks.run', {instance, task: 'FleetScan'})
         notify(ui('task.started'))
       }
-    } catch (error) {setError((error as Error).message)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)}
     finally {setBusy(false)}
   }
 

@@ -23,6 +23,8 @@ interface BackgroundPreference {
   name: string
   /** 图库模式的生效条目 id（本地上传/直链存入的图都进同一个图库）。 */
   entry?: string
+  /** The old browser media key referenced by this preference. */
+  legacy?: boolean
 }
 
 /** 对外发布的背景状态快照：界面经 getBackground/subscribeBackground 消费，revision 自增表示有更新。 */
@@ -92,9 +94,10 @@ export function readBackgroundPreference(material: Material): BackgroundPreferen
   try {
     const raw = JSON.parse(localStorage.getItem(backgroundStorageKey(material)) ?? 'null') as Record<string, unknown> | null
     const kind = raw?.kind === 'image' || raw?.kind === 'video' ? raw.kind : 'image'
+    const legacy = (raw?.source === 'upload' || raw?.source === 'off') && typeof raw.name === 'string' && !!raw.name && !raw.entry && raw.legacy !== false && localStorage.getItem(MIGRATED_KEY) !== '1'
     /* 关闭档保留已存的地址与图库条目，重新打开时回到关闭前的那一档。 */
     if (raw?.source === 'off') {
-      return {...fallback, source: 'off', kind, urls: Array.isArray(raw.urls) ? normalizeBackgroundUrls(raw.urls.filter((item): item is string => typeof item === 'string')) : [], active: typeof raw.active === 'number' && raw.active >= 0 ? raw.active : 0, name: typeof raw.name === 'string' ? raw.name : '', entry: typeof raw.entry === 'string' ? raw.entry : undefined}
+      return {...fallback, source: 'off', kind, urls: Array.isArray(raw.urls) ? normalizeBackgroundUrls(raw.urls.filter((item): item is string => typeof item === 'string')) : [], active: typeof raw.active === 'number' && raw.active >= 0 ? raw.active : 0, name: typeof raw.name === 'string' ? raw.name : '', entry: typeof raw.entry === 'string' ? raw.entry : undefined, legacy}
     }
     /* 旧记录：`default` 就是「用内置 API」，折成 URL 模式的一条。 */
     if (raw?.source === 'default') return {source: 'url', kind, urls: [...DEFAULT_BACKGROUND_URLS], active: pickActive(DEFAULT_BACKGROUND_URLS.length), name: ''}
@@ -117,7 +120,7 @@ export function readBackgroundPreference(material: Material): BackgroundPreferen
       return {
         source: 'upload', kind, urls: [], active: 0,
         name: typeof raw.name === 'string' ? raw.name : '',
-        entry: typeof raw.entry === 'string' ? raw.entry : undefined,
+        entry: typeof raw.entry === 'string' ? raw.entry : undefined, legacy,
       }
     }
   } catch { /* 存储不可用或旧数据损坏时使用默认背景。 */ }
@@ -174,7 +177,7 @@ function publish(patch: Partial<BackgroundSnapshot>) {
 let selectionVersion = 0
 function publishSelection(patch: Partial<BackgroundSnapshot>) {
   selectionVersion++
-  publish(patch)
+  publish({legacy: false, ...patch})
 }
 
 export function captureBackgroundSelection() {
@@ -227,18 +230,16 @@ async function storedFile(mode: IDBTransactionMode, value?: Blob): Promise<Blob 
 }
 
 async function deleteStoredFile() {
-  let database: IDBDatabase | undefined
+  const database = await openDatabase()
   try {
-    const opened = await openDatabase()
-    database = opened
     await new Promise<void>((resolve, reject) => {
-      const transaction = opened.transaction(STORE_NAME, 'readwrite')
+      const transaction = database.transaction(STORE_NAME, 'readwrite')
       const request = transaction.objectStore(STORE_NAME).delete(UPLOAD_KEY)
       request.onerror = () => reject(request.error)
+      transaction.onabort = () => reject(transaction.error ?? new Error('背景文件存储事务已中止。'))
       transaction.oncomplete = () => resolve()
     })
-  } catch { /* 清理失败不应阻止切换到其他背景。 */ }
-  finally { database?.close() }
+  } finally { database.close() }
 }
 
 /** 一行一个地址：去空行、去重、逐条校验。全空时返回空数组，交给调用方回填内置默认。 */
@@ -274,7 +275,7 @@ subscribeTheme(() => {
 })
 
 async function loadUploadedBackground() {
-  if (snapshot.source !== 'upload' || snapshot.entry || snapshot.assetUrl || uploadLoad) return uploadLoad
+  if (snapshot.source !== 'upload' || !snapshot.legacy || snapshot.assetUrl || uploadLoad) return uploadLoad
   const isCurrent = captureBackgroundSelection()
   uploadLoad = (async () => {
     try {
@@ -322,26 +323,47 @@ export function setBackgroundUrls(values: string[], kind: BackgroundKind) {
 
 
 let migration: Promise<void> | undefined
-let legacyFileMissing = false
-/** Retry failed legacy migration on the next gallery read; concurrent reads share one attempt. */
+/** Import the shared IndexedDB file once, preserving every preference that references it. */
 export function migrateStoredUpload(): Promise<void> {
   if (migration) return migration
+  const syncActive = (material: Material, current: BackgroundPreference) => {
+    const active = getThemePreference()
+    if (active.theme === 'minimal' || active.material !== material || !snapshot.legacy
+      || current.legacy || current.source !== snapshot.source || current.kind !== snapshot.kind || current.name !== snapshot.name) return
+    replaceObjectUrl()
+    publishSelection({...current, assetUrl: current.source === 'upload' && current.entry ? galleryUrl(current.entry) : '', loading: false})
+  }
   migration = (async () => {
-    try {
-      if (localStorage.getItem(MIGRATED_KEY)) {legacyFileMissing = true; return}
-      const isCurrent = captureBackgroundSelection()
-      const name = snapshot.name || 'legacy-upload'
-      const file = await storedFile('readonly')
-      if (file && file.size) {
-        const entry = await uploadBackgroundFile(new File([file], name, {type: file.type || 'image/jpeg'}))
-        if (isCurrent() && snapshot.source === 'upload' && !snapshot.entry) applyGalleryEntry(entry)
-        logger('已把旧的浏览器上传背景迁移进图库')
+    const saved = localStorage.getItem(MIGRATED_KEY)
+    if (saved === '1') {
+      const {material} = getThemePreference()
+      syncActive(material, readBackgroundPreference(material))
+      return
+    }
+    const savedEntry = saved ? JSON.parse(saved) as BackgroundGalleryEntry : undefined
+    const materials = ['glass', 'plain'] as const
+    const legacyPreference = materials.map(readBackgroundPreference).find(preference => preference.legacy)
+    const file = await storedFile('readonly')
+    if (savedEntry || file) {
+      const originalName = legacyPreference?.name || 'legacy-upload'
+      const extensions: Record<string, string> = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/gif': '.gif', 'image/bmp': '.bmp', 'image/avif': '.avif', 'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'}
+      const fallback = legacyPreference?.kind === 'video' ? '.mp4' : '.jpg'
+      const name = /\.(jpe?g|png|webp|gif|bmp|avif|mp4|webm|mov)$/i.test(originalName) ? originalName : originalName + (extensions[file?.type ?? ''] || fallback)
+      const entry = savedEntry ?? await uploadBackgroundFile(new File([file!], name, {type: file!.type || (fallback === '.mp4' ? 'video/mp4' : 'image/jpeg')}), true)
+      if (!savedEntry) localStorage.setItem(MIGRATED_KEY, JSON.stringify(entry))
+      for (const material of materials) {
+        const current = readBackgroundPreference(material)
+        const updated = current.legacy ? {...current, entry: entry.id, legacy: false} : current
+        if (current.legacy) localStorage.setItem(backgroundStorageKey(material), JSON.stringify(updated))
+        syncActive(material, updated)
       }
-      await deleteStoredFile()
-      legacyFileMissing = true
-      localStorage.setItem(MIGRATED_KEY, '1')
-    } catch { /* A later read retries migration. */ }
-  })().finally(() => { migration = undefined })
+      logger('已把旧的浏览器上传背景迁移进图库')
+    }
+    if (file) await deleteStoredFile()
+    localStorage.setItem(MIGRATED_KEY, '1')
+    const {material} = getThemePreference()
+    syncActive(material, readBackgroundPreference(material))
+  })().catch(() => { /* Keep the old file and retry on a later gallery read. */ }).finally(() => { migration = undefined })
   return migration
 }
 
@@ -372,10 +394,7 @@ export function enterGallery(identifier?: string) {
 /** Reconcile the active upload with a complete, successfully loaded gallery. */
 export function reconcileGallery(entries: BackgroundGalleryEntry[]) {
   if (snapshot.source !== 'upload') return
-  if (!snapshot.entry && snapshot.name && !legacyFileMissing) {
-    void loadUploadedBackground()
-    return
-  }
+  if (snapshot.legacy) { void loadUploadedBackground(); return }
   const entry = entries.find(item => item.id === snapshot.entry) ?? entries[pickActive(entries.length)]
   if (entry) {
     if (snapshot.entry !== entry.id || snapshot.assetUrl !== galleryUrl(entry.id) || snapshot.loading) applyGalleryEntry(entry)
@@ -384,9 +403,10 @@ export function reconcileGallery(entries: BackgroundGalleryEntry[]) {
   }
 }
 
-export async function uploadBackgroundFile(file: File) {
+export async function uploadBackgroundFile(file: File, legacy = false) {
   const form = new FormData()
   form.append('file', file)
+  if (legacy) form.append('legacy', '1')
   const {token} = await api.request('background.access', {})
   const response = await fetch('/api/v1/background/gallery', {method: 'POST', body: form, headers: {'x-azurpilot-background-token': token}})
   const payload = await response.json().catch(() => ({}))
@@ -409,7 +429,7 @@ export async function removeGalleryEntry(identifier: string) {
 /** 关闭背景：普通材质的默认档；玻璃材质下也可显式关掉（上传文件保留，便于切回）。 */
 export function disableBackground() {
   /* 保留地址列表与图库条目：只关铺图，下次切回各自档位时接着用。 */
-  const preference: BackgroundPreference = {source: 'off', kind: snapshot.kind, urls: snapshot.urls, active: snapshot.active, name: snapshot.name, entry: snapshot.entry}
+  const preference: BackgroundPreference = {source: 'off', kind: snapshot.kind, urls: snapshot.urls, active: snapshot.active, name: snapshot.name, entry: snapshot.entry, legacy: snapshot.legacy}
   replaceObjectUrl()
   savePreference(preference)
   publishSelection({...preference, assetUrl: '', loading: false})

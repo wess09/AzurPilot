@@ -85,6 +85,17 @@ def accepts_name(value):
         return False
 
 
+def json_equal(left, right):
+    """Compare JSON values structurally, keeping booleans distinct from numbers."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    if isinstance(left, dict) and isinstance(right, dict):
+        return left.keys() == right.keys() and all(json_equal(left[k], right[k]) for k in left)
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(json_equal(a, b) for a, b in zip(left, right))
+    return left == right
+
+
 class ConfigService:
     """参数驱动的配置服务。
 
@@ -567,12 +578,19 @@ class ConfigService:
             if require_revision and revision != current:
                 raise ApiError('CONFLICT', '配置已变化，请重新读取 revision 后再提交')
             seen = set()
-            edited_groups = {}
+            # Check every expectation against the same pre-write snapshot.
             for change in changes:
                 task, group, arg = self.validate(change.path, change.value)
                 if change.path in seen:
                     raise ApiError('INVALID_PARAMS', '同一次保存不能重复修改同一个参数')
                 seen.add(change.path)
+                if 'expected' in change.model_fields_set:
+                    fields = data.get(task, {}).get(group, {})
+                    if arg not in fields or not json_equal(fields[arg], change.expected):
+                        raise ApiError('CONFLICT', '配置已变化，请重新载入后再提交')
+            edited_groups = {}
+            for change in changes:
+                task, group, arg = change.path.split('.')
                 value = self._normalize_number(self.args[task][group][arg], change.value)
                 data.setdefault(task, {}).setdefault(group, {})[arg] = value
                 if change.path in OPSI_EXPLORE_PROGRESS:
