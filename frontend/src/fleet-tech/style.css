@@ -77,6 +77,46 @@
 /* 未保存修改的行：左缘用内嵌阴影画一条警示色 */
 .ft-table-wrap .ft-modified td:first-child { box-shadow: inset 3px 0 var(--theme-warning); }
 .ft-table-wrap .ft-target { outline: 2px solid var(--theme-focus); outline-offset: -2px; }
+/* Technology has one scrollport for both axes; its range control remains above it. */
+.ft-technology-table { container: ft-technology-table / inline-size; }
+.ft-technology-table > [data-slot=table-container] {
+  overscroll-behavior-y: auto;
+  scroll-padding: 84px 8px 8px;
+}
+@supports not selector(::-webkit-scrollbar) {
+  .ft-technology-table > [data-slot=table-container] {
+    scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-surface);
+  }
+}
+.ft-technology-table > [data-slot=table-container]::-webkit-scrollbar { width: 12px; height: 12px; }
+.ft-technology-table > [data-slot=table-container]::-webkit-scrollbar-track { background: var(--theme-surface); }
+.ft-technology-table > [data-slot=table-container]::-webkit-scrollbar-thumb {
+  min-height: 28px;
+  min-width: 28px;
+  background: var(--theme-scrollbar-thumb);
+  border-radius: 8px;
+}
+.ft-technology-table > [data-slot=table-container]::-webkit-scrollbar-corner { background: var(--theme-surface); }
+.fleet-technology .ft-technology-table table { font-size: 13px; }
+.fleet-technology .ft-technology-table th,
+.fleet-technology .ft-technology-table td { padding: 4px 6px; }
+.fleet-technology .ft-technology-table th button,
+.fleet-technology .ft-technology-table td button { padding-inline: 6px; font-size: 13px; }
+.fleet-technology .ft-technology-table tbody > tr:not(:last-child) > td { border-bottom-color: var(--ft-line); }
+.ft-technology-table tbody > tr:nth-child(even) { --ft-row-bg: color-mix(in srgb, var(--theme-surface-muted) 60%, var(--theme-surface)); }
+.ft-technology-table tbody > tr:hover { --ft-row-bg: var(--theme-surface-muted); }
+.ft-technology-table tbody > tr > td { background: var(--ft-row-bg, var(--theme-surface)); }
+@container ft-technology-table (min-width: 560px) {
+  /* Bound long localized names only while the column is pinned. */
+  .ft-technology-table td.ft-name a { display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  .ft-technology-table > [data-slot=table-container] { scroll-padding-inline-start: 178px; }
+  .ft-technology-table .ft-name-head,
+  .ft-technology-table td.ft-name { position: sticky; inset-inline-start: 0; }
+  .ft-technology-table .ft-name-head { z-index: 2; }
+  .ft-technology-table td.ft-name { z-index: 1; }
+  .ft-technology-table .ft-modified td.ft-name { box-shadow: inset 3px 0 var(--theme-warning); }
+  .ft-technology-table .ft-target td.ft-name { outline: 2px solid var(--theme-focus); outline-offset: -2px; }
+}
 /* 加成计算 */
 .ft-bonuses { padding: 16px; background: var(--theme-plate-bg); border: 1px solid var(--ft-line); border-radius: var(--theme-radius-control); }
 .ft-bonuses h2 { font-size: var(--fleet-font-heading, 15px); margin: 0 0 12px; }

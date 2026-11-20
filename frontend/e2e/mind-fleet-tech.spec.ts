@@ -8,6 +8,7 @@ import {routeRpc} from './rpc-route'
 
 const expect = baseExpect.configure({timeout: 15000})
 test.setTimeout(60000)
+test.use({launchOptions: {ignoreDefaultArgs: ['--hide-scrollbars']}})
 
 test.beforeEach(async ({page}) => {
   await page.addInitScript(() => {localStorage.setItem('azurpilot.theme', 'light'); localStorage.setItem('azurpilot.language', 'zh-CN')})
@@ -18,6 +19,7 @@ test('sticky technology header paints its own separators over scrolled rows', as
   const instance = `tech-header-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
   await page.goto('/')
   await rpc(page, 'instances.create', {name: instance})
+  await page.goto('about:blank')
   await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
 
   const region = page.getByRole('region', {name: '舰队科技', exact: true})
@@ -39,6 +41,95 @@ test('sticky technology header paints its own separators over scrolled rows', as
     await expect(cell).toHaveCSS('border-bottom-width', '1px')
     await expect(cell).toHaveCSS('border-bottom-style', 'solid')
   }
+})
+
+test('wheel and drag reach both ends while the ship name stays in view on wider tables', async ({page}, info) => {
+  await page.setViewportSize({width: 1050, height: 780})
+  const instance = `tech-scroll-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
+  await page.goto('/')
+  await rpc(page, 'instances.create', {name: instance})
+  await page.goto('about:blank')
+  await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
+
+  const region = page.getByRole('region', {name: '舰队科技', exact: true})
+  const horizontal = page.locator('.fleet-technology [data-slot=table-scroll-control]')
+  const name = region.locator('thead th').filter({hasText: '名称'})
+  const lastColumn = region.getByRole('columnheader').filter({hasText: '满级待觉醒'})
+  const main = page.locator('main')
+  const innerScroll = () => region.evaluate(element => element.scrollTop)
+  const pageScroll = () => main.evaluate(element => element.scrollTop)
+  await region.scrollIntoViewIfNeeded()
+  await expect(horizontal).toBeInViewport()
+  await expect(name).toHaveCSS('position', 'sticky')
+  await region.hover({position: {x: 240, y: 130}})
+  const pageBeforeWheel = await pageScroll()
+  await page.mouse.wheel(0, 180)
+  await expect.poll(innerScroll).toBeGreaterThan(100)
+  expect(await pageScroll()).toBe(pageBeforeWheel)
+
+  await horizontal.press('Home')
+  const drag = (await horizontal.boundingBox())!
+  await page.mouse.move(drag.x + 15, drag.y + drag.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(drag.x + drag.width * 0.75, drag.y + drag.height / 2, {steps: 8})
+  await page.mouse.up()
+  await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(240)
+  await expect.poll(async () => (await name.boundingBox())!.x - (await region.boundingBox())!.x).toBeCloseTo(0, 0)
+  await horizontal.press('End')
+  await expect.poll(() => region.evaluate(element => element.scrollWidth - element.clientWidth - element.scrollLeft)).toBeLessThanOrEqual(1)
+  await expect(lastColumn).toBeInViewport()
+  await name.getByRole('button').focus()
+  await page.keyboard.press('Tab')
+  const faction = region.getByRole('button', {name: '阵营/分组', exact: true})
+  await expect(faction).toBeFocused()
+  await expect.poll(() => faction.evaluate(element => {
+    const {x, y, width, height} = element.getBoundingClientRect()
+    return element.contains(document.elementFromPoint(x + width / 2, y + height / 2))
+  })).toBe(true)
+
+  // Drag the native vertical thumb, then continue scrolling the page at either boundary.
+  await region.evaluate(element => {element.scrollTop = 0})
+  await expect.poll(innerScroll).toBe(0)
+  const geometry = await region.evaluate(element => {
+    const {left, right, top} = element.getBoundingClientRect()
+    return {x: (left + element.clientWidth + right) / 2, y: top + 6, gutter: right - left - element.clientWidth}
+  })
+  expect(geometry.gutter).toBeGreaterThanOrEqual(8)
+  await page.mouse.move(geometry.x, geometry.y)
+  await page.mouse.down()
+  await page.mouse.move(geometry.x, geometry.y + 120, {steps: 8})
+  await page.mouse.up()
+  await expect.poll(innerScroll).toBeGreaterThan(1000)
+  await region.evaluate(element => {
+    const main = element.closest('main')!
+    main.scrollTop += element.getBoundingClientRect().top - main.getBoundingClientRect().top - 225
+    element.scrollTop = element.scrollHeight
+  })
+  const bottomTarget = (await region.boundingBox())!
+  await page.mouse.move(bottomTarget.x + 240, bottomTarget.y + 130)
+  const beforeBottomWheel = await pageScroll()
+  expect(beforeBottomWheel).toBeLessThan(await main.evaluate(element => element.scrollHeight - element.clientHeight))
+  await page.mouse.wheel(0, 500)
+  await page.mouse.wheel(0, 500)
+  await expect.poll(pageScroll).toBeGreaterThan(beforeBottomWheel)
+  await region.evaluate(element => {element.scrollTop = 0})
+  const beforeTopWheel = await pageScroll()
+  await page.mouse.wheel(0, -500)
+  await expect.poll(pageScroll).toBeLessThan(beforeTopWheel)
+
+  await page.setViewportSize({width: 390, height: 550})
+  await horizontal.scrollIntoViewIfNeeded()
+  await expect(name).not.toHaveCSS('position', 'sticky')
+  const longName = region.locator('tbody .ft-name a').first()
+  await longName.evaluate(element => {element.textContent = 'A long localized ship name that must stay readable on a narrow screen'})
+  await expect.poll(() => longName.evaluate(element => {
+    const text = document.createRange()
+    text.selectNodeContents(element)
+    return text.getBoundingClientRect().width - element.getBoundingClientRect().width
+  })).toBeLessThanOrEqual(1)
+  await horizontal.press('End')
+  await expect(lastColumn).toBeInViewport()
+  await expect.poll(() => main.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
 })
 
 test('technology reload stays in the page header and preserves the draft', async ({page}, info) => {
