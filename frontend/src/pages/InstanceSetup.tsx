@@ -14,7 +14,7 @@ import { motionReducedActive } from '../app/motionPrefs'
 import { Select } from '../components/FormControls'
 import { ProjectLogo } from '../components/ProjectLogo'
 import { useIsDesktop } from '../app/useIsDesktop'
-import { ErrorBox } from '../components/ui'
+import { ErrorBox, PageTitle } from '../components/ui'
 import { languages, type Language } from '../i18n'
 
 const STEPS = [
@@ -263,7 +263,7 @@ export function InstanceSetup() {
     <form className="setup-form" onSubmit={submit}>
       <div className="setup-step-content form-stack" key={step}>
         <header>
-          <h1 id="instance-setup-title">{label(current?.title ?? 'WelcomeTitle')}</h1>
+          <PageTitle id="instance-setup-title" title={label(current?.title ?? 'WelcomeTitle')} placement="content"/>
           <p className="muted">{label(current?.hint ?? 'WelcomeHint')}</p>
         </header>
         {importing && <div className="setup-import">

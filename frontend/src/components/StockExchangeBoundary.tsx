@@ -4,7 +4,7 @@
 
 import {Component,type ReactNode} from 'react'
 import {Link,useParams} from 'react-router-dom'
-import {ErrorBox,Loading} from './ui'
+import {LoadBoundary} from './ui/load-boundary'
 import {Button} from './ui/button'
 import {useApp} from '../app/context'
 import {stockText} from '../i18n.stock'
@@ -13,7 +13,7 @@ import '../pages/stock-exchange.css'
 /** 股票页的回落视图：有 message 显示错误提示，否则显示加载态，总带一条「返回总览」的出口。 */
 export function StockExchangeFallback({failed=false}:{failed?:boolean}){
   const {instance=''}=useParams(),{language}=useApp(),t=stockText[language]
-  return <div className="stock-instance-fallback">{failed?<ErrorBox message={t.failed}/>:<Loading/>}<Button variant="outline" asChild><Link to={`/i/${encodeURIComponent(instance)}/overview`}>{t.back}</Link></Button></div>
+  return <div className="stock-instance-fallback"><LoadBoundary ready={false} error={failed ? t.failed : undefined}/><Button variant="outline" asChild><Link to={`/i/${encodeURIComponent(instance)}/overview`}>{t.back}</Link></Button></div>
 }
 /** 类组件错误边界：子树渲染期抛错就整体切换为回落视图。 */
 class Boundary extends Component<{children:ReactNode},{failed:boolean}>{

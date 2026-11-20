@@ -8,7 +8,8 @@ import type {ChangeEvent} from 'react'
 import {api} from '../api/client'
 import type {DockReport, LedgerDifference} from '../api/types'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading} from '../components/ui'
+import {ErrorBox} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Input} from '../components/official-ui/input'
 import type {MindShip} from '../mind/types'
@@ -127,7 +128,7 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
       ? [`${ui(fieldLabels[key])}: ${fieldValue(key, item)}`] : []).join(' / ')
   }
   return <div className="fleet-ledger">
-    {error && <ErrorBox message={error}/>}{!report && <Loading/>}
+    {error && <ErrorBox message={error}/>}{!report && <LoadBoundary ready={false}/>}
     <section className="mind-panel"><h2>1. {ui('analysis.startRead')}</h2><p>{ui('analysis.readFields')}</p><p>{ui('analysis.scanHint')}</p>
       <div className="mind-toolbar"><label>{ui('mind.minLevel')}<Input type="number" min={1} max={125} value={min} disabled={disabled || !!startReason} onChange={e => setMin(e.target.value)}/></label><label>{ui('mind.maxLevel')}<Input type="number" min={1} max={125} value={max} disabled={disabled || !!startReason} onChange={e => setMax(e.target.value)}/></label><Button disabled={disabled || !!startReason} title={startReason} onClick={() => void run()}>{ui('analysis.scan')}</Button>{scanning && <Button variant="outline" disabled={disabled} onClick={() => void action(async () => {await api.request('scheduler.stop', {instance})})}>{ui('mind.stop')}</Button>}</div>
       <div className="mind-toolbar"><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => importInput.current?.click()}>{ui('mind.import')}</Button><input ref={importInput} type="file" accept=".json,.csv,.xlsx" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, false)}/><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => screenshotInput.current?.click()}>{ui('mind.screenshots')}</Button><input ref={screenshotInput} type="file" accept="image/*" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, true)}/><Button variant="outline" disabled={disabled} title={ui('analysis.exportHint')} onClick={() => void exportShips()}>{ui('analysis.exportJson')}</Button></div>

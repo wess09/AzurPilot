@@ -1,6 +1,7 @@
 /**
  * @fileoverview 插件 iframe 沙箱帧：完成握手后经 MessagePort 提供受权限控制的宿主 API。
  */
+import { ErrorBox, Loading } from '../components/ui'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useApp, useConnection } from '../app/context'
@@ -134,9 +135,9 @@ export function PluginFrame({plugin, entry, title, instance, scheduler, navigati
     target.postMessage({type: 'apu.connect', apiVersion: 1}, '*', [port2])
   }
 
-  if (failed) return fallback ?? <p role="alert">{ui('plugins.viewFailed')}</p>
+  if (failed) return fallback ?? <ErrorBox message={ui('plugins.viewFailed')}/>
   return <div className="apu-frame">
-    {!connected && <p role="status" className="apu-frame-loading">{ui('plugins.loadingView')}</p>}
+    {!connected && <Loading compact message={ui('plugins.loadingView')} className="apu-frame-loading"/>}
     <iframe ref={frame} src={source} title={title} sandbox="allow-scripts" referrerPolicy="no-referrer"
       className={connected ? '' : 'apu-frame-pending'}/>
   </div>

@@ -1,9 +1,10 @@
 /**
  * @fileoverview 插件上下文：加载已安装插件列表，维护启用状态、主题皮肤选择与插件 API 请求通道。
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api } from '../api/client'
 import { useConnection } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
 import { pluginAsset, type InstalledPlugin } from './types'
 
 /** 插件上下文对外暴露的状态与操作；组件一律通过 usePlugins() 读取。 */
@@ -26,6 +27,8 @@ interface PluginState {
   setTheme: (id: string) => void
 }
 
+const readPlugins = () => api.request('plugins.list', {})
+
 const initial: PluginState = {
   plugins: [], ready: false, error: '', themeId: '',
   refresh: async () => {}, request: async () => {}, setTheme: () => {},
@@ -40,38 +43,22 @@ export const usePlugins = () => useContext(PluginContext)
  */
 export function PluginProvider({children}: {children: ReactNode}) {
   const connection = useConnection()
-  const [plugins, setPlugins] = useState<InstalledPlugin[]>([])
-  const [ready, setReady] = useState(false)
-  const [error, setError] = useState('')
   const [themeId, setSelectedTheme] = useState(() => {
     try { return localStorage.getItem('azurpilot.apu-theme') ?? '' } catch { return '' }
   })
-  const requestId = useRef(0)
-  const accept = useCallback((next: InstalledPlugin[]) => {
-    setPlugins(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next)
-    setReady(true)
-    setError('')
-  }, [])
+  const {data: plugins = initial.plugins, ready, error, reloadAndWait, setData} = usePageRead(connection === 'auth' ? 'auth' : 'plugins', connection === 'ready', readPlugins)
   const refresh = useCallback(async () => {
-    const id = ++requestId.current
-    try {
-      const result = await api.request('plugins.list', {})
-      if (requestId.current === id) accept(result)
-    } catch (failure) {
-      if (requestId.current === id) setError((failure as Error).message)
-    }
-  }, [accept])
+    try {await reloadAndWait()}
+    catch { /* The shared read exposes failures to the plugin views. */ }
+  }, [reloadAndWait])
   useEffect(() => {
-    if (connection === 'ready') void refresh()
-    if (connection === 'auth') {setPlugins([]); setReady(false); setError('')}
-    return () => { requestId.current++ }
-  }, [connection, refresh])
-  useEffect(() => api.onEvent(event => {
-    if (event.topic === 'plugins') {
-      requestId.current++
-      accept(event.data as InstalledPlugin[])
-    }
-  }), [accept])
+    if (connection !== 'ready') return
+    return api.onEvent(event => {
+      if (event.topic !== 'plugins') return
+      const next = event.data as InstalledPlugin[]
+      setData(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next)
+    })
+  }, [connection, setData])
   const request = useCallback(async (path: string, options: RequestInit) => {
     const {token} = await api.request('plugins.access', {})
     const headers = new Headers(options.headers)

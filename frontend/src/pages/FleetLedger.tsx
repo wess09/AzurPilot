@@ -5,17 +5,19 @@
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {FleetFilterRow, fleetRarities, ledgerShipTypes as shipTypes, ledgerTypeIds as typeIds} from '../fleet-tech/filters'
-import {useEffect, useId, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react'
 import {Link, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
 import type {DockCard, DockReport} from '../api/types'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading} from '../components/ui'
+import {ErrorBox} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Checkbox as CheckboxControl} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {Input} from '../components/official-ui/input'
-import type {CatalogShip, MindCatalog} from '../mind/types'
+import type {CatalogShip} from '../mind/types'
+import {usePageRead} from '../app/usePageRead'
 import type {UiKey} from '../i18n'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
@@ -43,14 +45,16 @@ type Changes = Parameters<typeof api.request<'dock.patch'>>[1]['changes']
  * @param report 最近一次确认的船坞报告，为空时只渲染加载/错误占位。
  * @param onBusy 保存进行中回调 true/false，外层据此锁全局操作。
  */
-export function FleetLedger({instance, report, onReport, onBusy, locked = false}: {
-  instance: string; report?: DockReport; locked?: boolean; onReport: (report: DockReport) => void
+export function FleetLedger({instance, report, reportError, retryReport, onReport, onBusy, locked = false}: {
+  instance: string; report?: DockReport; reportError?: string; retryReport?: () => void; locked?: boolean; onReport: (report: DockReport) => void
   onBusy: (busy: boolean) => void
 }) {
   const alive = useRef(true), list = useId(), table = useRef<HTMLDivElement>(null), focusedShip = useRef('')
   useEffect(() => {alive.current = true; return () => {alive.current = false}}, [])
   const {ui, language} = useApp(), connection = useConnection(), [params, setParams] = useSearchParams()
-  const [catalog, setCatalog] = useState<MindCatalog>(), [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false)
+  const loadCatalog = useCallback(() => api.request('mind.catalog', {instance}), [instance])
+  const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data
+  const [error, setError] = useState(''), [busy, setBusy] = useState(false), [saved, setSaved] = useState(false)
   const storageKey = `azurpilot.fleet-ledger.v1.${instance}`
   const [draft, setDraft] = useState<Draft | null>(() => {
     try {
@@ -86,12 +90,6 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
   const [minimum, setMinimum] = useFleetPreference<string>(instance, 'ledger.minimum', ''), [maximum, setMaximum] = useFleetPreference<string>(instance, 'ledger.maximum', '')
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'ledger.sort', {column: 'code', direction: 'ascending'})
   const [batch, setBatch] = useState(false), [selected, setSelected] = useState<number[]>([])
-  useEffect(() => {
-    let active = true
-    setCatalog(undefined)
-    if (connection === 'ready') void api.request('mind.catalog', {instance}).then(value => {if (active) setCatalog(value)}).catch(e => {if (active) setError((e as Error).message)})
-    return () => {active = false}
-  }, [instance, connection])
   const tr = (key: string) => translateFleetTech(language, key)
   const typeName = (value: string) => value === '导驱' ? value : typeIds[value] ? tr(`type.${typeIds[value]}`) : value
   const catalogIndex = useMemo(() => {
@@ -273,8 +271,10 @@ export function FleetLedger({instance, report, onReport, onBusy, locked = false}
   const showFilters = filtersOpen ?? !compactViewport
   const activeFilters = Object.values(filters).reduce((count, values) => count + values.length, 0)
     + Number(minimum !== '') + Number(maximum !== '')
-  if (!report || !catalog) return error ? <ErrorBox message={error}/> : <Loading/>
+  if (!report || !catalog) return <LoadBoundary ready={false} error={reportError || catalogRead.error || error} retry={() => {if (reportError) retryReport?.(); if (catalogRead.error) catalogRead.reload()}}/>
   return <div className="fleet-ledger fleet-technology">
+    {reportError && <ErrorBox message={reportError} retry={retryReport}/>}
+    {catalogRead.error && <ErrorBox message={catalogRead.error} retry={catalogRead.reload}/>}
     {error && <ErrorBox message={error}/>}
     <div className="ft-toolbar ledger-summary" role="status"><strong>{ui('analysis.confirmedCount')}: {report?.ships.length ?? 0}</strong><span>{ui('analysis.species')}: {counts.size}</span><span>{ui('analysis.needsReview')}: {report?.ships.filter(row => row.review || !row.group_type).length ?? 0}</span><span>{ui('analysis.time')}: {report?.updated_at || '—'}</span></div>
     {groupFilter && <p>{ui('analysis.filter')}: {report?.ships.find(row => row.group_type === Number(groupFilter))?.name || groupFilter} <Button variant="outline" onClick={() => {const next = new URLSearchParams(params); next.delete('group'); setParams(next, {replace: true})}}>{ui('analysis.all')}</Button></p>}

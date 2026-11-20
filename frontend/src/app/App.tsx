@@ -15,8 +15,9 @@ import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
 import { useApp, useConnection } from './context'
-import { useAnnouncement } from './announcement'
-import { ErrorBox, Loading, Modal } from '../components/ui'
+import { useAnnouncementOwner } from './announcement'
+import { ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { MaterialInspector } from '../components/MaterialInspector'
 import { ProjectLogo } from '../components/ProjectLogo'
 import { taskLabel } from '../components/taskNavItems'
@@ -155,7 +156,7 @@ function Login() {
     try { await api.login(password) } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
   return <div className="login-page"><div className="login-art"><ProjectLogo size={192}/><span>{ui('auth.slogan')}</span></div>
-    <form onSubmit={submit} className="login-card"><ProjectLogo size={48} className="brand-mark" alt="AzurPilot"/><h1>{ui('auth.welcome')}</h1>
+    <form onSubmit={submit} className="login-card"><ProjectLogo size={48} className="brand-mark" alt="AzurPilot"/><PageTitle title={ui('auth.welcome')} placement="content"/>
       <label htmlFor="password">{ui('auth.password')}</label><PasswordInput id="password" autoComplete="current-password" autoFocus required value={password} onChange={event => setPassword(event.target.value)}/>
       {error && <ErrorBox message={error}/>}
       <button className="button primary" disabled={busy}>{busy ? ui('auth.verifying') : ui('auth.enter')}<ArrowRight size={16}/></button>
@@ -169,7 +170,7 @@ function Login() {
  */
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled} = useApp()
+  const {instancesLoaded, instances, schema, bootstrapError, retryBootstrap, t, ui, notify, previewEnabled} = useApp()
   const {instance} = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -178,7 +179,7 @@ export function App() {
   // 刷新时地址栏已经是用户要停留的页面，写进去就不再改。
   const freshOpen = useRef((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'navigate')
   const update = useUpdater()
-  const announcement = useAnnouncement()
+  const announcement = useAnnouncementOwner()
   usePageMotion()
   useSystemNotifications()
   const current = instances.find(item => item.name === instance)
@@ -242,9 +243,14 @@ export function App() {
     ? currentTask ? currentTaskLabel : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
     : activeSection)
   if (connection === 'auth') return <Login/>
-  if (setup || (empty && !pluginManager && !globalPlugin)) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
-  const content = !schema || location.pathname === '/' || (instance && (!instancesLoaded || !current))
-    ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>
+  if (setup || (empty && !pluginManager && !globalPlugin)) return <main className="instance-setup">
+    <LoadBoundary ready={setup && empty && !!schema} error={bootstrapError} retry={retryBootstrap}>
+      <Suspense fallback={<Loading/>}><Outlet/></Suspense>
+    </LoadBoundary>
+  </main>
+  const content = <LoadBoundary ready={!!schema && instancesLoaded && location.pathname !== '/' && (!instance || !!current)} error={bootstrapError} retry={retryBootstrap}>
+    <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>
+  </LoadBoundary>
   const props = {instance, pageTitle, onCreate: () => setCreating(true), updateAvailable, announcementUnread: announcement.unread}
   const ActiveShell = pluginManager ? ModernShell : Shell
   return <>

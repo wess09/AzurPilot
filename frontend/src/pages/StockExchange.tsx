@@ -7,8 +7,10 @@ import {ArrowLeft,CheckCircle2,Copy,ExternalLink,ShieldCheck} from 'lucide-react
 import {api} from '../api/client'
 import type {StockExchangeStatus,StockExchangeRebuild} from '../api/types'
 import {useApp,useConnection} from '../app/context'
+import {usePageRead} from '../app/usePageRead'
 import {stockText} from '../i18n.stock'
-import {ErrorBox,Loading,Modal,PageTitle} from '../components/ui'
+import {ErrorBox,Modal,Panel,PanelHeading,PageTitle} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Checkbox} from '../components/FormControls'
 import {Input} from '../components/ui/input'
 import {Button} from '../components/ui/button'
@@ -19,23 +21,23 @@ const EXCHANGE='https://stock.azurpilot.com'
 /** 注册实例股票、经 QQ 群机器人把股票绑定到交易账户，绑定成功后自动打开独立交易所。 */
 export function StockExchange(){
   const {instance=''}=useParams(),connection=useConnection(),{language,ui}=useApp(),t=stockText[language]
-  const [status,setStatus]=useState<StockExchangeStatus>(),[error,setError]=useState(''),[recoveryAvailable,setRecoveryAvailable]=useState(false),[rebuildError,setRebuildError]=useState('')
+  const [error,setError]=useState(''),[recoveryAvailable,setRecoveryAvailable]=useState(false),[rebuildError,setRebuildError]=useState('')
   const [username,setUsername]=useState(''),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false),[rebuild,setRebuild]=useState<StockExchangeRebuild>(),[confirmRebuild,setConfirmRebuild]=useState(false),[consent,setConsent]=useState(false)
   // current 镜像当前实例，异步回调据此丢弃切换实例后的过期响应。
-  const current=useRef(instance),opened=useRef(''),recoveryActive=useRef(false),planButton=useRef<HTMLButtonElement>(null);current.current=instance
-  const refresh=useCallback(async()=>{
-    if(connection!=='ready')return
-    try{const next=await api.request('stock.status',{instance});if(current.current===instance){setStatus(next);setError('');if(!recoveryActive.current)setRecoveryAvailable(false)}}
-    catch(error){if(current.current===instance){setError((error as Error).message);setRecoveryAvailable(true)}}
-  },[instance,connection])
+  const current=useRef(instance),opened=useRef(''),recoveryActive=useRef(false),writeActive=useRef(false),planButton=useRef<HTMLButtonElement>(null);current.current=instance
+  const loadStatus=useCallback(()=>api.request('stock.status',{instance}),[instance])
+  const read=usePageRead<StockExchangeStatus>(`stock:${instance}`,connection==='ready',loadStatus)
+  const {data:status,reload:refresh,reloadAndWait,setData:setStatus,invalidate}=read
   useEffect(()=>{
-    recoveryActive.current=false;setRecoveryAvailable(false);setRebuildError('');setStatus(undefined);setUsername('');setError('');setCopied(false);setConsent(false);setBusy(false);setRebuild(undefined);setConfirmRebuild(false)
+    recoveryActive.current=false;writeActive.current=false;setRecoveryAvailable(false);setRebuildError('');setUsername('');setError('');setCopied(false);setConsent(false);setBusy(false);setRebuild(undefined);setConfirmRebuild(false)
   },[instance])
+  useEffect(()=>{if(read.error)setRecoveryAvailable(true)},[read.error])
+  useEffect(()=>{if(status&&!recoveryActive.current){setRecoveryAvailable(false);setError('')}},[status])
   useEffect(()=>{
-    void refresh()
     // 隐藏的标签页不轮询，避免后台无谓请求。
-    const timer=window.setInterval(()=>{if(document.visibilityState==='visible')void refresh()},15000)
-    const unsubscribe=api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)void refresh()})
+    const autoRefresh=()=>{if(!writeActive.current&&!recoveryActive.current)refresh()}
+    const timer=window.setInterval(()=>{if(document.visibilityState==='visible')autoRefresh()},15000)
+    const unsubscribe=api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)autoRefresh()})
     return ()=>{window.clearInterval(timer);unsubscribe()}
   },[instance,refresh])
   // 绑定成功即自动打开交易所；opened 守卫同实例只开一次，轮询与事件触发的重渲染不会重复弹窗。
@@ -46,11 +48,11 @@ export function StockExchange(){
     }
   },[status,instance])
   async function register(event:FormEvent){
-    event.preventDefault();setBusy(true);setError('')
+    event.preventDefault();if(writeActive.current)return;writeActive.current=true;invalidate();setBusy(true);setError('')
     // noticeVersion 须与后端约定的公告版本逐字一致，否则注册被拒（STOCK_NOTICE_REQUIRED）；公告改版时两端同步更新。
     try{const next=await api.request('stock.register',{instance,username:username.trim(),noticeVersion:'stock-public-v2-20261101'});if(current.current===instance)setStatus(next)}
     catch(error){if(current.current===instance)setError((error as Error).message)}
-    finally{if(current.current===instance)setBusy(false)}
+    finally{if(current.current===instance){writeActive.current=false;setBusy(false)}}
   }
   async function copyCode(){
     try{await navigator.clipboard.writeText(`绑定股票 ${status?.bindingCode??''}`);if(current.current===instance)setCopied(true)}
@@ -62,22 +64,22 @@ export function StockExchange(){
     requestAnimationFrame(()=>planButton.current?.focus())
   }
   async function recovery(confirm=false){
-    if(busy)return
-    recoveryActive.current=true;setRecoveryAvailable(true);setBusy(true);setRebuildError('')
-    try{const plan=await api.request('stock.rebuild',{instance,confirm,scope:rebuild?.scope??'instance'});if(current.current!==instance)return;if(plan.rebuilt){recoveryActive.current=false;setRebuild(undefined);setConfirmRebuild(false);opened.current='';await refresh()}else{setRebuild(plan);setConfirmRebuild(false)}}
-    catch(error){if(current.current===instance){if(confirm)setRebuildError((error as Error).message);else{recoveryActive.current=false;setError((error as Error).message)}}}finally{if(current.current===instance)setBusy(false)}
+    if(writeActive.current)return
+    recoveryActive.current=true;writeActive.current=true;invalidate();setRecoveryAvailable(true);setBusy(true);setRebuildError('')
+    try{const plan=await api.request('stock.rebuild',{instance,confirm,scope:rebuild?.scope??'instance'});if(current.current!==instance)return;if(plan.rebuilt){recoveryActive.current=false;setRebuild(undefined);setConfirmRebuild(false);opened.current='';try{await reloadAndWait()}catch{/* Read errors are displayed by the boundary. */}}else{setRebuild(plan);setConfirmRebuild(false)}}
+    catch(error){if(current.current===instance){if(confirm)setRebuildError((error as Error).message);else{recoveryActive.current=false;setError((error as Error).message)}}}finally{if(current.current===instance){writeActive.current=false;setBusy(false)}}
   }
   return <section className="stock-instance-page">
     <PageTitle title={ui('stock.name')} actions={<Button variant="outline" asChild><Link to={`/i/${encodeURIComponent(instance)}/overview`}><ArrowLeft/>{t.back}</Link></Button>}/>
     <p className="stock-instance-intro">{t.intro}</p>
-    {error&&<ErrorBox message={error} retry={()=>void refresh()}/>}
-    {(error||recoveryAvailable)&&<section className="panel stock-instance-card"><h3>{t.recoveryHelp}</h3><p>{t.recoveryDesc}</p><Button ref={planButton} variant="outline" aria-disabled={busy} onClick={()=>void recovery()}>{t.plan}</Button></section>}
+    {(error||read.error||recoveryAvailable)&&<Panel className="stock-instance-card"><h3>{t.recoveryHelp}</h3><p>{t.recoveryDesc}</p><Button ref={planButton} variant="outline" aria-disabled={busy} onClick={()=>void recovery()}>{t.plan}</Button></Panel>}
     {rebuild&&<Modal title={t.rebuild} onClose={closeRecovery}>
       <div className="stock-rebuild-content"><p>{t.scope}: {rebuild.scope==='all'?t.all:t.current}</p><p>{t.affected}: {rebuild.affectedInstances.join('、')}</p><p>{t.rebuildDesc}</p>{rebuildError&&<ErrorBox message={rebuildError}/>}<Checkbox checked={confirmRebuild} onChange={e=>setConfirmRebuild(e.target.checked)}>{t.understand}</Checkbox><div className="stock-rebuild-actions"><Button variant="outline" disabled={busy} onClick={closeRecovery}>{t.cancel}</Button><Button variant="destructive" disabled={busy||!confirmRebuild} onClick={()=>void recovery(true)}>{t.confirm}</Button></div></div>
     </Modal>}
-    {!status&&!error?<Loading/>:status&&<div className="stock-instance-grid">
-      <section className="panel stock-instance-card">
-        <div className="panel-heading"><h2>{status.registered?t.registered:t.registerTitle}</h2>{status.registered&&<CheckCircle2 size={20}/>}</div>
+    <LoadBoundary ready={!!status} error={error||read.error} retry={()=>{if(!writeActive.current&&!recoveryActive.current)refresh()}}>
+      {status&&<div className="stock-instance-grid">
+      <Panel className="stock-instance-card">
+        <PanelHeading title={status.registered?t.registered:t.registerTitle} actions={status.registered&&<CheckCircle2 size={20}/>}/>
         <p className="muted">{t.instance}: {instance}</p>
         {status.deleted?<div role="status"><h3>{t.deleted}</h3><p>{t.deletedDesc}</p></div>:!status.registered?<form onSubmit={event=>void register(event)}>
           <label htmlFor="stock-username">{t.username}</label><Input id="stock-username" autoComplete="nickname" minLength={2} maxLength={32} required value={username} onChange={event=>setUsername(event.target.value)} placeholder={t.placeholder} disabled={busy}/>
@@ -93,8 +95,9 @@ export function StockExchange(){
           </>}
           <Button asChild><a href={EXCHANGE} target="_blank" rel="noreferrer">{status.bound?t.enter:t.browse}<ExternalLink/></a></Button>
         </>}
-      </section>
+      </Panel>
       <aside className="panel stock-instance-card stock-instance-guide"><h2>{t.guide}</h2><ol><li><strong>{t.step1}</strong><p>{t.step1Desc}</p></li><li><strong>{t.step2}</strong><p>{t.step2Before}<a href="https://qm.qq.com/q/93NWF3S362" target="_blank" rel="noreferrer">1126124220</a>{t.step2After}</p></li><li><strong>{t.step3}</strong><p>{t.step3Before}<a href={EXCHANGE} target="_blank" rel="noreferrer">stock.azurpilot.com</a>{t.step3After}</p></li></ol><p className="muted">{t.disclaimer}</p></aside>
     </div>}
+    </LoadBoundary>
   </section>
 }

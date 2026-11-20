@@ -8,12 +8,14 @@ import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from
 import {Link, useParams, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading, PageTitle} from '../components/ui'
+import {usePageRead} from '../app/usePageRead'
+import {ErrorBox, PageTitle} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Input} from '../components/official-ui/input'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
-import {catalogRows, changeMilestone, complete, matches, milestones, recordFields, shipType, type Bonuses, type Catalog, type Change, type Milestone, type RecordField, type Report, type Row, type State} from '../fleet-tech/types'
+import {catalogRows, changeMilestone, complete, matches, milestones, recordFields, shipType, type Bonuses, type Change, type Milestone, type RecordField, type Row, type State} from '../fleet-tech/types'
 import {technologyEfficiency} from '../mind/cultivation'
 import '../fleet-tech/style.css'
 
@@ -88,18 +90,20 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
  * 舰队科技页：明细表 + 筛选 + 加成汇总；编辑以草稿暂存 sessionStorage，保存时按 revision 提交。
  * 草稿的 revision 与当前报告不一致（stale）时禁止保存，防止覆盖扫描期间的新确认结果。
  */
-export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current: (() => Promise<void>) | undefined}; busy: boolean; onBusy: (value: boolean) => void}) {
+export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current: (() => void) | undefined}; busy: boolean; onBusy: (value: boolean) => void}) {
   const [search] = useSearchParams(), targetGroup = search.get('group')
   const {instance = ''} = useParams(), {language, ui, notify} = useApp(), connection = useConnection()
   const tr = (key: string) => key === 'Lv.120' ? key : translateFleetTech(language, key)
-  const [catalog, setCatalog] = useState<Catalog>(), [report, setReport] = useState<Report>()
+  const loadCatalog = useCallback(() => api.request('fleetTech.catalog', {instance}), [instance])
+  const loadReport = useCallback(() => api.request('fleetTech.report', {instance}), [instance])
+  const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data
+  const reportRead = usePageRead(instance, connection === 'ready', loadReport), report = reportRead.data
   const [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'technology.query', ''), [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'technology.filters', {})
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'technology.sort', {column: 'code', direction: 'ascending'})
   const [editing, setEditing] = useFleetPreference<boolean>(instance, 'technology.editing', false), [bonuses, setBonuses] = useFleetPreference<boolean>(instance, 'technology.bonuses', false), [extra, setExtra] = useFleetPreference<boolean>(instance, 'technology.extra', false)
   // scope 是会话序号：切换实例或连接时自增，旧请求返回后凭 token 失配被丢弃；writing 防止保存重入。
   const scope = useRef(0), writing = useRef(false)
-  const catalogRef = useRef<Catalog | undefined>(undefined), pending = useRef<symbol | undefined>(undefined)
   const storageKey = `azurpilot.fleet-tech.v1.${instance}`
   const [draft, setDraft] = useState<Draft | null>(() => {
     try {
@@ -183,42 +187,20 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
   useEffect(() => {
     if (targetGroup && report && catalog) document.getElementById(`technology-${targetGroup}`)?.scrollIntoView?.({block: 'center'})
   }, [targetGroup, report, catalog])
-  const reload = useCallback(async () => {
-    if (connection !== 'ready' || writing.current || pending.current) return
-    const request = Symbol()
-    pending.current = request
-    try {
-      const [data, value] = await Promise.allSettled([
-        catalogRef.current ? Promise.resolve(undefined) : api.request('fleetTech.catalog', {instance}),
-        api.request('fleetTech.report', {instance}),
-      ])
-      if (pending.current !== request) return
-      if (data.status === 'fulfilled' && data.value) {
-        catalogRef.current = data.value
-        setCatalog(data.value)
-      }
-      if (value.status === 'fulfilled') setReport(value.value)
-      if (data.status === 'rejected') throw data.reason
-      if (value.status === 'rejected') throw value.reason
-      setError('')
-    } catch (e) {
-      if (pending.current === request) setError((e as Error).message)
-    } finally {
-      if (pending.current === request) pending.current = undefined
-    }
-  }, [instance, connection])
+  const reload = useCallback(() => {
+    if (connection !== 'ready' || writing.current) return
+    setError('')
+    if (!catalog || catalogRead.error) catalogRead.reload()
+    reportRead.reload()
+  }, [connection, catalog, catalogRead.error, catalogRead.reload, reportRead.reload])
   useLayoutEffect(() => {
-    scope.current++; catalogRef.current = undefined
-    setCatalog(undefined); setReport(undefined); setError(''); writing.current = false
+    scope.current++; writing.current = false
+    return () => {scope.current++; onBusy(false)}
+  }, [connection, instance, onBusy])
+  useLayoutEffect(() => {
     reloadRef.current = reload
-    if (connection === 'ready') void reload()
-    return () => {
-      scope.current++
-      pending.current = undefined
-      reloadRef.current = undefined
-      onBusy(false)
-    }
-  }, [connection, reload, reloadRef, onBusy])
+    return () => {reloadRef.current = undefined}
+  }, [reload, reloadRef])
   function change(row: Row, key: RecordField, value: State) {
     if (!report || busy || connection !== 'ready') return
     setDraft(current => {
@@ -248,7 +230,7 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
   async function save() {
     if (!report || !draft || !dirty || stale || writing.current) return
     const token = scope.current
-    pending.current = undefined
+    reportRead.invalidate()
     writing.current = true; onBusy(true); setError('')
     try {
       const changes = Object.values(draft.changes).map(change => {
@@ -262,18 +244,18 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
         }
       }).filter((change): change is Change => change !== null)
       const value = await api.request('fleetTech.patch', {instance, revision: draft.revision, changes, nations: draft.nations})
-      if (token === scope.current) {setReport(value); setDraft(null); notify(tr('saved'))}
+      if (token === scope.current) {reportRead.setData(value); setDraft(null); notify(tr('saved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
     finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
   async function mergeShips() {
     if (!report || dirty || writing.current) return
     const token = scope.current
-    pending.current = undefined
+    reportRead.invalidate()
     writing.current = true; onBusy(true); setError('')
     try {
       const value = await api.request('fleetTech.mergeShips', {instance, revision: report.revision})
-      if (token === scope.current) {setReport(value); notify(tr('mergeSaved'))}
+      if (token === scope.current) {reportRead.setData(value); notify(tr('mergeSaved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
     finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
@@ -290,11 +272,12 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
       }).join(' · ')}</div>
     })}</div>
   }
-  if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload()}/> : <Loading/>
+  const readError = catalogRead.error || reportRead.error
+  if (!catalog || !report) return <LoadBoundary ready={false} error={error || readError} retry={reload}/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">
     <PageTitle title={tr('title')}/>
-    {error && <ErrorBox message={error}/>}
+    {(error || readError) && <ErrorBox message={error || readError} retry={reload}/>}
     <section className="ft-summary"><div><p>{tr('max')}：<b>{catalog.max_points.toLocaleString()}</b> · {tr('confirmed')}：<b>{totals.points.toLocaleString()}</b>{dirty && <span className="ft-draft-label">{tr('draftPreview')}</span>}</p><p>{tr('four')}：{['1', '2', '3', '4'].map(id => `${tr(`nation.${id}`)} ${catalog.nation_points[id] ?? 0}`).join(' · ')}</p><p>{milestones.map(key => <span key={key}>{tr(stageLabel[key])}：{totals.counts[key]} / {rows.length}　</span>)}</p><small>{tr('independentHint')}</small></div></section>
     <section className="ft-filters">
       {group('type', [['front', tr('front')], ['back', tr('back')], ...types.map(value => [String(value), tr(`type.${value}`)] as [string, string])])}

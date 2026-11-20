@@ -6,8 +6,8 @@ import { isLanguage, translateCurrentUi, translateUi } from "../../i18n"
 import { cn } from "../../lib/utils"
 import "./table.css"
 
-/** 表格：外层容器支持横向滚动。 */
-function Table({ className, scrollLabel, ...props }: React.ComponentProps<"table"> & {scrollLabel?: string}) {
+/** Shared horizontal viewport for tables and other wide content. */
+function TableViewport({ children, className, scrollLabel }: {children: React.ReactNode; className?: string; scrollLabel?: string}) {
   const containerRef = React.useRef<HTMLDivElement>(null)
   const containerId = React.useId()
   const [scroll, setScroll] = React.useState({ max: 0, left: 0 })
@@ -26,8 +26,8 @@ function Table({ className, scrollLabel, ...props }: React.ComponentProps<"table
     updateScroll()
     const observer = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(updateScroll)
     observer?.observe(container)
-    const table = container.querySelector("table")
-    if (table) observer?.observe(table)
+    const content = container.firstElementChild
+    if (content) observer?.observe(content)
     window.addEventListener("resize", updateScroll)
     return () => {
       observer?.disconnect()
@@ -65,15 +65,18 @@ function Table({ className, scrollLabel, ...props }: React.ComponentProps<"table
           updateScroll()
         }}
       />}
-      <div ref={containerRef} id={containerId} onScroll={updateScroll} data-slot="table-container" className="relative w-full overflow-x-auto" role={scrollLabel ? "region" : undefined} aria-label={scrollLabel} tabIndex={scrollLabel ? 0 : undefined}>
-        <table
-          data-slot="table"
-          className={cn("w-full caption-bottom text-sm", className)}
-          {...props}
-        />
+      <div ref={containerRef} id={containerId} onScroll={updateScroll} data-slot="table-container" className={cn("relative w-full overflow-x-auto", className)} role={scrollLabel ? "region" : undefined} aria-label={scrollLabel} tabIndex={scrollLabel ? 0 : undefined}>
+        {children}
       </div>
     </>
   )
+}
+
+/** 表格：外层容器支持横向滚动。 */
+function Table({ className, scrollLabel, ...props }: React.ComponentProps<"table"> & {scrollLabel?: string}) {
+  return <TableViewport scrollLabel={scrollLabel}>
+    <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
+  </TableViewport>
 }
 
 /** 表头容器：底部分隔线。 */
@@ -140,4 +143,4 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   )
 }
 
-export { Table, TableHeader, TableBody, TableHead, TableRow, TableCell }
+export { Table, TableViewport, TableHeader, TableBody, TableHead, TableRow, TableCell }

@@ -28,6 +28,7 @@ import {
   Table as TableIcon,
 } from 'lucide-react'
 import { LazyMarkdown } from '../LazyMarkdown'
+import { TableViewport } from '../ui/table'
 import type { CardItem } from './aggregate'
 import { getCellMeta, renderCellContent } from './map-grid'
 import { CopyButton } from './shared'
@@ -196,7 +197,7 @@ const DataTableCard = memo(
           </div>
         </div>
         <div className="card-body table-card-body">
-          <div className="data-table-viewport">
+          <TableViewport className="data-table-viewport" scrollLabel={card.title || "日志数据表"}>
             <table className="native-log-table">
               <thead>
                 <tr>
@@ -219,7 +220,7 @@ const DataTableCard = memo(
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableViewport>
         </div>
       </div>
     )
@@ -274,7 +275,7 @@ const MatrixGridCard = memo(
         </div>
         {open && (
           <div className="card-body">
-            <div className="map-grid-viewport">
+            <TableViewport className="map-grid-viewport" scrollLabel={card.title || "矩阵网格"}>
               <div className="matrix-grid-rows">
                 {card.rows.map((row, rIdx) => (
                   <div key={rIdx} className="matrix-row">
@@ -289,7 +290,7 @@ const MatrixGridCard = memo(
                   </div>
                 ))}
               </div>
-            </div>
+            </TableViewport>
 
             <div className="map-legend-bar">
               <span className="legend-item"><Ship size={12} className="legend-icon text-fleet" /> 旗舰 (FL)</span>
@@ -404,7 +405,7 @@ const CostGridCard = memo(
         </div>
         {open && (
           <div className="card-body">
-            <div className="map-grid-viewport">
+            <TableViewport className="map-grid-viewport" scrollLabel="寻路移动代价热力图">
               <table className="map-ascii-table cost-table">
                 <thead>
                   <tr>
@@ -445,7 +446,7 @@ const CostGridCard = memo(
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableViewport>
 
             <div className="map-legend-bar">
               <span className="legend-item"><span className="legend-dot dot-origin" /> 起点 (0)</span>

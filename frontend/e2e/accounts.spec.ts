@@ -90,3 +90,45 @@ test('账号操作按次弹出密码验证，取消不执行且不保存密码',
   await expect(panel.getByRole('button', {name: '绑定本机密钥自动解锁', exact: true})).toBeVisible()
   await expect(panel.getByRole('button', {name: '绑定本机 TPM 自动解锁', exact: true})).toHaveCount(0)
 })
+
+test('hiding the tab preserves status loading and redacts names from a pending account-list response', async ({page}) => {
+  const status = {initialized: true, enabled: false, unlocked: true, tpm_bound: false}
+  let sendStatus: (() => void) | undefined
+  let sendProfiles: (() => void) | undefined
+  await routeRpc(page, socket => {
+    const server = socket.connectToServer()
+    socket.onMessage(message => {
+      const request = JSON.parse(String(message))
+      const reply = (result: object) => socket.send(JSON.stringify({v: 1, type: 'response', id: request.id, ok: true, result}))
+      if (request.method === 'accounts.status') {
+        sendStatus = () => reply(status)
+      } else if (request.method === 'accounts.manage' && request.params.action === 'list') {
+        sendProfiles = () => reply({...status, enabled: true, selected: 'sample', profiles: [{id: 'sample', label: 'Sample private profile', users: [{uid: '101', name: 'Sample private user'}]}]})
+      } else {
+        server.send(message)
+      }
+    })
+    server.onMessage(message => socket.send(message))
+  })
+  const changeVisibility = async (hidden: boolean) => page.evaluate(value => {
+    Object.defineProperty(document, 'hidden', {configurable: true, value})
+    document.dispatchEvent(new Event('visibilitychange'))
+  }, hidden)
+  await page.goto('/#/i/testpilot/task/Alas')
+  await expect.poll(() => !!sendStatus).toBe(true)
+  await changeVisibility(true)
+  await changeVisibility(false)
+  sendStatus?.()
+  const panel = page.getByTestId('account-panel')
+  await panel.getByRole('button', {name: '验证密码并查看账号', exact: true}).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.locator('#account-password').fill('browser-test-placeholder')
+  await dialog.getByRole('button', {name: '确认', exact: true}).click()
+  await expect.poll(() => !!sendProfiles).toBe(true)
+  await changeVisibility(true)
+  await changeVisibility(false)
+  sendProfiles?.()
+  await expect(panel.getByRole('switch')).toBeChecked()
+  await expect(panel.getByText('Sample private profile')).toHaveCount(0)
+  await expect(panel.getByText('Sample private user')).toHaveCount(0)
+})

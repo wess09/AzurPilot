@@ -9,13 +9,15 @@ import { ListTree, PanelLeft, PanelRight, Play, RotateCcw, Search, Settings2, Te
 import { api } from '../api/client'
 import type { Config } from '../api/types'
 import { useApp, useConnection } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
 import { htmlToPlainText } from '../app/htmlText'
 import { getLayout, subscribeLayout } from '../app/layout'
 import { readRailVisible, subscribeRailVisible } from '../app/railPrefs'
 import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 import { smoothScrollToElement } from '../app/scroll'
 import { clearSearchTarget, peekSearchTarget, subscribeSearchTarget } from '../app/searchTarget'
-import { Empty, ErrorBox, Loading, Modal } from '../components/ui'
+import { Empty, ErrorBox, Modal, PageTitle, Panel, PanelHeading } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { Input } from '../components/ui/input'
 import { LogPanel } from '../components/LogPanel'
 import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
@@ -116,7 +118,8 @@ export function TaskConfig() {
   }, [popout])
   // 右列现在同时承载目录与调度器，进页面就要拉一份总览数据。
   const [railData, setRailData] = useInstanceOverview(instance, true)
-  const [config, setConfig] = useState<Config>()
+  const loadConfig = useCallback(() => api.request('config.get', {instance}), [instance])
+  const {data: config, error: configError, reload, setData: setConfig} = usePageRead(instance, connection === 'ready' && task !== 'FleetInfo', loadConfig)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -126,53 +129,22 @@ export function TaskConfig() {
   const {edits, storageError} = useSyncExternalStore(queue.subscribe, queue.getSnapshot, queue.getSnapshot)
   const startupQueue = editor(`startup:${instance}`)
   const startupEdits = useSyncExternalStore(startupQueue.subscribe, startupQueue.getSnapshot, startupQueue.getSnapshot)
-  const [startupEnabled, setStartupEnabled] = useState<boolean>()
-  const [startupRemember, setStartupRemember] = useState<boolean>()
-  const reload = useCallback(async () => {
-    try {
-      setConfig(await api.request('config.get', {instance}))
-      setError('')
-    } catch (error) {
-      setError((error as Error).message)
-    }
-  }, [instance, queue])
+  const loadStartup = useCallback(() => api.request('startup.get', {instance}), [instance])
+  const {data: startup, error: startupError, reload: reloadStartup, setData: setStartup} = usePageRead(instance, connection === 'ready' && task === 'Alas', loadStartup)
+  const {enabled: startupEnabled, remember: startupRemember} = startup ?? {}
 
-  // 字段保存成功后用服务端回传的整份配置替换本地副本。
+  // Publish the save response through the read controller to invalidate older reads.
   useEffect(() => {
     queue.onSaved = data => setConfig(data as Config)
-    return () => { queue.onSaved = undefined }
-  }, [queue])
-
-  // 启动开关保存成功后用服务端回传的状态替换本地值，队列丢弃已保存条目后开关不回弹。
+    return () => {queue.onSaved = undefined}
+  }, [queue, setConfig])
   useEffect(() => {
-    startupQueue.onSaved = data => {
-      const value = data as {enabled: boolean; remember: boolean}
-      setStartupEnabled(value.enabled)
-      setStartupRemember(value.remember)
-    }
-    return () => { startupQueue.onSaved = undefined }
-  }, [startupQueue])
-
-  useEffect(() => {
-    if (connection !== 'ready' || task === 'FleetInfo') return
-    let active = true
-    void api.request('config.get', {instance}).then(value => {
-      if (active) { setConfig(value); setError('') }
-    }).catch(error => { if (active) setError(error.message) })
-    return () => { active = false }
-  }, [connection, instance, task, queue])
-  // 开关状态取自部署层的运行列表，不在任务配置里。
-  useEffect(() => {
-    if (connection !== 'ready' || task !== 'Alas') return
-    let active = true
-    void api.request('startup.get', {instance}).then(value => {
-      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember) }
-    }).catch(error => { if (active) setError(error.message) })
-    return () => { active = false }
-  }, [connection, instance, task, startupQueue])
+    startupQueue.onSaved = data => setStartup(data as NonNullable<typeof startup>)
+    return () => {startupQueue.onSaved = undefined}
+  }, [startupQueue, setStartup])
 
   async function run() {
-    setBusy(true)
+    setBusy(true); setError('')
     try {
       await queue.settled()
       await api.request('tasks.run', {instance, task})
@@ -243,7 +215,7 @@ export function TaskConfig() {
   }, [config, task])
 
   if (task === 'FleetInfo') return <FleetInfoPage key={instance}/>
-  if (!config) return error ? <ErrorBox message={error} retry={reload} /> : <Loading />
+  if (!config) return <LoadBoundary ready={false} error={configError} retry={reload}/>
 
   const modal = confirmRun && (
     <Modal title={ui('task.runTitle', {task: t(`Task.${task}.name`)})} onClose={() => setConfirmRun(false)}>
@@ -255,13 +227,8 @@ export function TaskConfig() {
   )
 
   const groupCards = <>{visibleGroups.map(({group, visible}) => (
-    <section className="panel config-group" key={group} id={`group-${group}`}>
-      <div className="panel-heading">
-        <div>
-          <span className="group-indicator" />
-          <h2 data-text={t(`${group}._info.name`)}>{t(`${group}._info.name`)}</h2>
-        </div>
-      </div>
+    <Panel compact key={group} id={'group-' + group}>
+      <PanelHeading title={t(group + '._info.name')} icon={<span className="group-indicator"/>}/>
       {visible.map(([arg, definition]) => {
         const path = `${task}.${group}.${arg}`
         const field = {...definition, option: config.options?.[path] ?? definition.option}
@@ -334,7 +301,7 @@ export function TaskConfig() {
           </div>
         )
       })}
-    </section>
+    </Panel>
   ))}
   {search && !visibleGroups.length && <Empty icon={<Search size={26} />} title={ui('task.noConfigFound')}>{ui('task.tryOtherKeyword')}</Empty>}
   </>
@@ -342,13 +309,8 @@ export function TaskConfig() {
   const hasGroups = task !== 'FleetInfo' && Boolean(groups) && visibleGroups.length > 0
   // 只有紧凑主题把搜索框并进左列（跳转栏下方），其余主题保持标题下方的原样。
   // 启动开关挂在系统设置（Alas）任务页顶部；搜索时只显示匹配项。
-  const startupPanel = task === 'Alas' && !search && <section className="panel config-group">
-    <div className="panel-heading">
-      <div>
-        <span className="group-indicator"/>
-        <h2>{ui('instance.startup')}</h2>
-      </div>
-    </div>
+  const startupPanel = task === 'Alas' && !search && <Panel compact>
+    <PanelHeading title={ui('instance.startup')} icon={<span className="group-indicator"/>}/>
     <div className="field-row">
       <div className="field-label">
         <span className="field-name">{ui('instance.autoRun')}</span>
@@ -369,7 +331,7 @@ export function TaskConfig() {
         <EditStatus id="instance-remember" edit={startupEdits.edits.remember}/>
       </div>
     </div>
-  </section>
+  </Panel>
 
   // 任务级说明（Task.<task>.help）：作为卡片列首卡，与参数卡同宽同层。
   const taskHelp = t(`Task.${task}.help`)
@@ -415,7 +377,9 @@ export function TaskConfig() {
     </div>
 
   const head = <>
-    {error && <ErrorBox message={error} retry={reload} />}
+    {configError && <ErrorBox message={configError} retry={reload}/>}
+    {task === 'Alas' && startupError && <ErrorBox message={startupError} retry={reloadStartup}/>}
+    {error && <ErrorBox message={error}/>}
     {storageError && <ErrorBox message={storageError} />}
     {configToolbar}
   </>
@@ -446,7 +410,7 @@ export function TaskConfig() {
       className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${directoryFolded ? ' directory-folded' : ''}${railFolded ? ' rail-folded' : ''}${popout ? ` pop-${popout}` : ''}`}
       style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as CSSProperties) : undefined}
     >
-      <h1 className="modern-sr-title">{t(`Task.${task}.name`)}</h1>
+      <PageTitle title={t(`Task.${task}.name`)} placement="screen-reader"/>
       <div className="task-config-settings">
         {/* 换任务时重挂内容列，触发该任务的卡片入场。 */}
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>

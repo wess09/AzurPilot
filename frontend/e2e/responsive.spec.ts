@@ -121,30 +121,41 @@ test('statistics category navigation responds to available content width', async
   await expectContentFits(page)
 })
 
-test('narrow scheduler exposes secondary actions without horizontal scrolling', async ({page}) => {
-  await page.setViewportSize({width: 390, height: 640})
-  await page.goto('/#/i/testpilot/task/SchedulerProgram')
-  const toolbar = page.locator('.program-subtoolbar')
-  const more = toolbar.getByRole('button', {name: '更多操作', exact: true})
-  await expect(more).toBeVisible()
-  await expect.poll(() => toolbar.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
-  await more.press('Enter')
-  await expect(more).toHaveAttribute('aria-expanded', 'true')
-  const exportButton = toolbar.getByRole('button', {name: '导出', exact: true})
-  const importButton = toolbar.getByRole('button', {name: '导入', exact: true})
-  await expectHorizontallyVisible(exportButton)
-  await expectHorizontallyVisible(importButton)
-  await exportButton.focus()
-  await page.keyboard.press('Tab')
-  await expect(importButton).toBeFocused()
-  const [chooser] = await Promise.all([
-    page.waitForEvent('filechooser', {timeout: 8000}),
-    importButton.press('Enter'),
-  ])
-  expect(await chooser.element().getAttribute('accept')).toBe('application/json')
-  await more.press('Enter')
-  await expect(toolbar.getByRole('button', {name: '导出', exact: true})).toBeHidden()
-})
+for (const viewport of [{width: 390, height: 320}, {width: 720, height: 300}]) {
+  test(`scheduler actions stay operable at ${viewport.width}x${viewport.height}`, async ({page}) => {
+    await page.setViewportSize(viewport)
+    await page.goto('/#/i/testpilot/task/SchedulerProgram')
+    const toolbar = page.locator('.program-subtoolbar')
+    const more = toolbar.getByRole('button', {name: '更多操作', exact: true})
+    await expect(more).toBeVisible()
+    await expect.poll(() => toolbar.evaluate(element => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1)
+    await more.press('Enter')
+    await expect(more).toHaveAttribute('aria-expanded', 'true')
+    const actions = page.locator('.program-extra-actions-list')
+    await expect(actions).toBeVisible()
+    expect(await actions.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)')
+    const exportButton = actions.getByRole('button', {name: '导出', exact: true})
+    const importButton = actions.getByRole('button', {name: '导入', exact: true})
+    await exportButton.scrollIntoViewIfNeeded()
+    await expectHorizontallyVisible(exportButton)
+    await exportButton.focus()
+    await page.keyboard.press('Tab')
+    await expect(importButton).toBeFocused()
+    await importButton.scrollIntoViewIfNeeded()
+    const bounds = await importButton.boundingBox()
+    expect(bounds).not.toBeNull()
+    expect(bounds!.y).toBeGreaterThanOrEqual(0)
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+    const [chooser] = await Promise.all([
+      page.waitForEvent('filechooser', {timeout: 8000}),
+      importButton.press('Enter'),
+    ])
+    expect(await chooser.element().getAttribute('accept')).toBe('application/json')
+    await page.keyboard.press('Escape')
+    await expect(more).toHaveAttribute('aria-expanded', 'false')
+    await expect(more).toBeFocused()
+  })
+}
 
 for (const position of ['left', 'right']) {
   test(`short desktop can reach both the dashboard and settings with a saved ${position} rail`, async ({page}) => {
@@ -204,6 +215,7 @@ test('task settings folds the directory when the sidebar takes more of the same 
   await expect(toggle).toBeFocused()
   await expectContentFits(page)
 })
+
 
 test('keyboard resizing starts at the visible scheduler width', async ({page}) => {
   await page.addInitScript(() => {

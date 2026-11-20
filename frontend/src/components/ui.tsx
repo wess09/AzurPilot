@@ -12,6 +12,8 @@ import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Empty as EmptyState, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty'
 
+export { Panel, PanelBody, PanelHeading } from './ui/page'
+
 /*
  * 样式索引（混合分层 L2：本文件类名几乎全为 Tailwind 工具类与 shadcn 组件，唯一全局类是 page-title-heading）。
  * - styles/layout-modern.css  modern-shell 段：.app-shell.modern-shell .page-title-heading（现代外壳下视觉隐藏，全局唯一定义）
@@ -42,10 +44,10 @@ export function Empty({icon, title, children}: {icon?: ReactNode; title: string;
 }
 
 /** 区域级加载占位：旋转图标 + 「加载中」文案，带 role=status 供读屏识别。 */
-export function Loading() {
+export function Loading({compact = false, message, className = ''}: {compact?: boolean; message?: string; className?: string} = {}) {
   const {ui} = useApp()
-  return <div data-slot="loading" role="status" className="flex min-h-[230px] items-center justify-center gap-2.5 text-muted-foreground">
-    <LoaderCircle className="animate-spin" size={22}/>{ui('common.loading')}
+  return <div data-slot="loading" role="status" className={"flex items-center justify-center gap-2.5 text-muted-foreground " + (compact ? "min-h-8" : "min-h-[230px]") + " " + className}>
+    <LoaderCircle className="animate-spin" size={compact ? 16 : 22} aria-hidden="true"/>{message ?? ui('common.loading')}
   </div>
 }
 
@@ -86,9 +88,12 @@ export function ActionGroup({children, className = ''}: {children: ReactNode; cl
 }
 
 /** 页头：左侧标题、右侧动作区。 */
-export function PageTitle({title, actions, className = ''}: {title: string; actions?: ReactNode; className?: string}) {
+export function PageTitle({title, actions, className = '', placement = 'auto', id}: {title: string; actions?: ReactNode; className?: string; placement?: 'auto' | 'content' | 'screen-reader'; id?: string}) {
+  const headingClass = placement === 'auto' ? 'page-title-heading' : placement === 'screen-reader' ? 'sr-only' : ''
+  const heading = <h1 id={id} className={headingClass + ' text-3xl font-bold tracking-tight'}>{title}</h1>
+  if (placement !== 'auto' && !actions && !className) return heading
   return <div className={`flex items-center justify-between gap-4.5 ${className}`.trim()}>
-    <h1 aria-label={title} className="page-title-heading text-3xl font-bold tracking-tight">{title}</h1>
+    {heading}
     {actions && <ActionGroup>{actions}</ActionGroup>}
   </div>
 }

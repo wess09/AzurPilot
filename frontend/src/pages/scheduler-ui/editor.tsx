@@ -9,7 +9,13 @@ import {MarkerType, useReactFlow, type Connection as FlowConnection} from '@xyfl
 import {ArrowDown, ArrowLeft, ArrowUp, Bug, Copy, Download, FolderOpen, GripVertical, Layers, LocateFixed, Play, Plus, Redo2, Save, Search, StepForward, Trash2, Undo2, Upload, X} from 'lucide-react'
 import {api} from '../../api/client'
 import {useApp, useConnection} from '../../app/context'
-import {ErrorBox, Loading} from '../../components/ui'
+import {usePageRead} from '../../app/usePageRead'
+import {ActionGroup, ErrorBox, PageTitle} from '../../components/ui'
+import {LoadBoundary} from '../../components/ui/load-boundary'
+import {Button} from '../../components/ui/button'
+import {Input} from '../../components/ui/input'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../../components/ui/select'
+import {Popover} from 'radix-ui'
 import {clone, compatible, connectedPortType, definition, duplicate, encapsulate, horizontalLayout, id, replaceGraph, withComments} from '../../scheduler/graph'
 import {ProgramCanvas, type CanvasNode} from '../../scheduler/Canvas'
 import {categoryColor, controlColor, getCardIcon, portColors} from '../../scheduler/appearance'
@@ -28,6 +34,15 @@ export function Editor() {
   const flow = useReactFlow<CanvasNode>()
   const [catalog, setCatalog] = useState<Catalog>()
   const [saved, setSaved] = useState<ProgramSaved>()
+  const [loadedInstance, setLoadedInstance] = useState<string>()
+  const mutationVersion = useRef(0)
+  const mutationInFlight = useRef<object | undefined>(undefined)
+  const loadProgram = useCallback(async () => {
+    const version = mutationVersion.current
+    const [catalog, saved] = await Promise.all([api.request('scheduler.program.catalog', {instance}), api.request('scheduler.program.get', {instance})])
+    return {catalog, saved, version}
+  }, [instance])
+  const programRead = usePageRead(instance, connection === 'ready', loadProgram)
   const [doc, setDoc] = useState<ProgramDocument>()
   const [mode, setMode] = useState<ProgramMode>('takeover')
   const [graphId, setGraphId] = useState('main')
@@ -72,23 +87,37 @@ export function Editor() {
   // 渲染期同步 ref：回调里读最新文档与流程图 id，不依赖闭包的新旧。
   const docRef = useRef(doc)
   docRef.current = doc
+  const savedRef = useRef(saved)
+  savedRef.current = saved
+  const modeRef = useRef(mode)
+  modeRef.current = mode
   const graphIdRef = useRef(graphId)
   graphIdRef.current = graphId
   const graph = doc && (graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId))
   const picked = graph?.nodes.find(n => n.id === selection[0])
 
   useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    const version = ++requestVersion.current
+    ++requestVersion.current
+    mutationInFlight.current = undefined
     setValidation(undefined); setSimulation(undefined); setSimSteps(0); setRuntime(undefined)
-    setDoc(undefined); setError(''); setSelection([]); setGraphId('main'); history.current = {past:[], future:[]}
-    void Promise.all([api.request('scheduler.program.catalog', {instance}), api.request('scheduler.program.get', {instance})]).then(([catalog, saved]) => {
-      if (!active || version !== requestVersion.current) return
-      setCatalog(catalog); setSaved(saved); setDoc(saved.draft); setSimTasks(catalog.tasks); setMode(saved.mode === 'native' ? 'takeover' : saved.mode)
-    }).catch(error => {if (active) setError(error.message)})
-    return () => {active = false}
-  }, [instance, connection])
+    setCatalog(undefined); setSaved(undefined); setDoc(undefined); setLoadedInstance(undefined)
+    setBusy(false); setError(''); setSelection([]); setGraphId('main'); history.current = {past:[], future:[]}
+  }, [instance])
+  useEffect(() => {
+    const snapshot = programRead.data
+    if (!snapshot || mutationInFlight.current || snapshot.version !== mutationVersion.current) return
+    const initial = loadedInstance !== instance
+    const previous = savedRef.current, current = docRef.current
+    // Retain the old revision as well as the draft when the user has local changes.
+    if (!initial && (!previous || !current || JSON.stringify(current) !== JSON.stringify(previous.draft) || modeRef.current !== (previous.mode === 'native' ? 'takeover' : previous.mode))) return
+    setCatalog(snapshot.catalog); setSaved(snapshot.saved); setDoc(snapshot.saved.draft)
+    setMode(snapshot.saved.mode === 'native' ? 'takeover' : snapshot.saved.mode)
+    if (initial) {setSimTasks(snapshot.catalog.tasks); setLoadedInstance(instance)}
+    else if (JSON.stringify(current) !== JSON.stringify(snapshot.saved.draft)) {
+      setGraphId('main'); setSelection([]); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
+      history.current = {past:[], future:[]}
+    }
+  }, [programRead.data, loadedInstance, instance])
   useEffect(() => {
     if (connection !== 'ready') return
     let active = true, polling = false
@@ -215,6 +244,10 @@ export function Editor() {
   async function action(kind: 'save' | 'apply' | 'native' | 'validate') {
     if (!doc || !saved) return
     const version = requestVersion.current
+    const mutation = kind !== 'validate'
+    if (mutation && mutationInFlight.current) return
+    const mutationToken = mutation ? {} : undefined
+    if (mutationToken) {mutationInFlight.current = mutationToken; mutationVersion.current++}
     setBusy(true); setError('')
     try {
       if (kind === 'validate') {
@@ -223,12 +256,19 @@ export function Editor() {
       } else {
         let latest = saved
         if (kind !== 'native') latest = await api.request('scheduler.program.save', {instance, revision:saved.revision, document:doc})
+        if (version !== requestVersion.current) return
         if (version === requestVersion.current) setSaved(latest)
         if (kind === 'apply' || kind === 'native') latest = await api.request('scheduler.program.apply', {instance, revision:latest.revision, mode:kind === 'native' ? 'native' : mode})
         if (version === requestVersion.current) {setSaved(latest); notify(kind === 'save' ? '草稿已保存' : kind === 'native' ? '已切回原调度' : '方案已应用，将在安全边界生效')}
       }
     } catch (error) {if (version === requestVersion.current) {setError((error as Error).message); const details = (error as {details?: ProgramValidation['diagnostics']}).details; if (Array.isArray(details)) setValidation({valid:false, diagnostics:details})}}
-    finally {if (version === requestVersion.current) setBusy(false)}
+    finally {
+      if (mutationToken && mutationInFlight.current === mutationToken) {mutationInFlight.current = undefined; mutationVersion.current++}
+      if (version === requestVersion.current) {
+        setBusy(false)
+        if (mutation) programRead.reload({silent:true})
+      }
+    }
   }
   async function simulate(steps: number) {
     if (!doc) return
@@ -243,7 +283,7 @@ export function Editor() {
     } catch (error) {if (version === requestVersion.current) setError((error as Error).message)} finally {if (version === requestVersion.current) setBusy(false)}
   }
 
-  if (!doc || !catalog || !graph || !saved) return error ? <ErrorBox message={error}/> : <Loading/>
+  if (loadedInstance !== instance || !doc || !catalog || !graph || !saved) return <LoadBoundary ready={false} error={programRead.error} retry={() => programRead.reload()}/>
   const spec = picked && definition(picked, doc, catalog, graph)
   const changeParam = (key: string, value: unknown) => {if (picked) updateNode({...picked, params:{...picked.params, [key]:value, ...(key === 'valueType' ? {value:value === 'boolean' ? false : value === 'number' || value === 'duration' ? 0 : value === 'list' || value === 'tasks' ? [] : ['object','resource','task','result'].includes(String(value)) ? {} : ''} : {})}})}
   const currentGraph = graph as Subgraph
@@ -267,31 +307,32 @@ export function Editor() {
     else if (command === 'all') setSelection(graph.nodes.map(n => n.id))
     else if (command === 'clear') setSelection([])
   }}>
-    <header className="program-toolbar"><div><Layers size={21}/><div><h1>{ui('nav.schedulerProgram')}</h1><small>{saved.mode === 'native' ? '当前使用原调度' : saved.mode === 'enhance' ? '当前使用增强调度' : '当前由卡片程序完全接管'} · {dirty ? '有未保存修改' : '草稿已保存'}</small></div></div>
-      <div className="program-actions"><button className="button secondary" onClick={() => undo()} disabled={!history.current.past.length} title="撤销"><Undo2 size={15}/></button><button className="button secondary" onClick={() => undo(true)} disabled={!history.current.future.length} title="重做"><Redo2 size={15}/></button>
-        <select aria-label="调度模式" value={mode} onChange={e => {setMode(e.target.value as ProgramMode); setValidation(undefined)}}><option value="takeover">完全接管</option><option value="enhance">增强调度</option></select>
-        <button className="button secondary" disabled={busy} onClick={() => void action('validate')}>校验</button>
-        <button type="button" className={`button secondary program-debug-btn ${debugOpen ? 'active' : ''}`} onClick={() => setDebugOpen(open => !open)} title={debugOpen ? '收起调试面板' : '展开调试面板'} aria-expanded={debugOpen}><Bug size={14}/><span>调试</span></button>
-        <button className="button secondary" disabled={busy} onClick={() => void action('save')}><Save size={15}/>保存草稿</button><button className="button primary" disabled={busy} onClick={() => void action('apply')}><Play size={15}/>应用方案</button>
-      </div>
+    <header className="program-toolbar"><div><Layers size={21}/><div><PageTitle title={ui('nav.schedulerProgram')}/><small>{saved.mode === 'native' ? '当前使用原调度' : saved.mode === 'enhance' ? '当前使用增强调度' : '当前由卡片程序完全接管'} · {dirty ? '有未保存修改' : '草稿已保存'}</small></div></div>
+      <ActionGroup className="program-actions"><Button variant="secondary" onClick={() => undo()} disabled={!history.current.past.length} title="撤销" aria-label="撤销"><Undo2 size={15}/></Button><Button variant="secondary" onClick={() => undo(true)} disabled={!history.current.future.length} title="重做" aria-label="重做"><Redo2 size={15}/></Button>
+        <Select value={mode} onValueChange={value => {setMode(value as ProgramMode); setValidation(undefined)}}><SelectTrigger width="fit" aria-label="调度模式"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="takeover">完全接管</SelectItem><SelectItem value="enhance">增强调度</SelectItem></SelectContent></Select>
+        <Button variant="secondary" disabled={busy} onClick={() => void action('validate')}>校验</Button>
+        <Button type="button" variant="secondary" className={`program-debug-btn ${debugOpen ? 'active' : ''}`} onClick={() => setDebugOpen(open => !open)} title={debugOpen ? '收起调试面板' : '展开调试面板'} aria-expanded={debugOpen}><Bug size={14}/><span>调试</span></Button>
+        <Button variant="secondary" disabled={busy} onClick={() => void action('save')}><Save size={15}/>保存草稿</Button><Button disabled={busy} onClick={() => void action('apply')}><Play size={15}/>应用方案</Button>
+      </ActionGroup>
     </header>
+    <LoadBoundary ready error={programRead.error} retry={() => programRead.reload()}/>
     {error && <ErrorBox message={error}/>}
-    <div className="program-subtoolbar"><input aria-label="方案名称" value={doc.name} onChange={e => change({...doc, name:e.target.value})}/><select aria-label="编辑流程" value={graphId} onChange={e => {setGraphId(e.target.value); setSelection([]); setTimeout(() => void flow.fitView(), 0)}}><option value="main">主程序</option>{doc.subgraphs.map(s => <option key={s.id} value={s.id}>{s.name}{s.pure ? ' · 数据' : ' · 执行'}</option>)}</select>
-      <div className={`program-extra-actions${extraActionsOpen ? ' is-open' : ''}`}><button type="button" className="button secondary program-extra-actions-toggle" aria-expanded={extraActionsOpen} aria-controls="program-extra-actions-list" onClick={() => setExtraActionsOpen(open => !open)}>更多操作</button><div id="program-extra-actions-list" className="program-extra-actions-list">
-      <button className="button secondary" onClick={focusStart} title="将程序入口移回可视区域"><LocateFixed size={14}/>定位入口</button>
-      <button className="button secondary" onClick={() => {change(clone(catalog.templates[mode === 'enhance' ? 'enhance' : 'takeover'])); setGraphId('main'); setSelection([])}}><FolderOpen size={14}/>载入原调度方案</button>
-      {catalog.templates && 'all' in catalog.templates && <button className="button secondary" onClick={() => {change(clone(catalog.templates.all)); setGraphId('main'); setSelection([]); setTimeout(() => void flow.fitView({padding:0.12}), 0)}}><Layers size={14}/>全卡片排列</button>}
-      <button className="button secondary" onClick={() => setVariablesOpen(!variablesOpen)}>变量与端口</button>
-      <button className="button secondary" onClick={() => {updateGraph(horizontalLayout(graph)); requestAnimationFrame(() => void flow.fitView({padding:0.12}))}}>从左到右排列</button>
-      <button className="button secondary" onClick={() => setCanvasExpanded(value => !value)}>{canvasExpanded ? '显示面板' : '展开画布'}</button>
-      <button className="button secondary" onClick={() => copySelected()} disabled={!selection.length} title="复制（Ctrl/Cmd+C）"><Copy size={14}/>复制</button>
-      <button className="button secondary" onClick={() => void pasteSelected()} title="粘贴（Ctrl/Cmd+V）">粘贴</button>
-      <button className="button secondary" disabled={!selection.length} onClick={() => {try {change(encapsulate(doc, graphId, new Set(selection), '自定义组合卡片', catalog)); setSelection([])} catch (error) {notify((error as Error).message, true)}}}>封装卡片</button>
-      <button className="button secondary" disabled={!selection.length} onClick={deleteSelected} title="删除选中卡片"><Trash2 size={14}/></button>
-      <button className="button secondary" onClick={() => {const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${doc.name}.scheduler.json`; link.click(); URL.revokeObjectURL(url)}}><Download size={14}/>导出</button>
-      <button type="button" className="button secondary" onClick={() => importInputRef.current?.click()}><Upload size={14}/>导入</button><input ref={importInputRef} type="file" hidden accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/>
-      {saved.mode !== 'native' && <button className="button secondary" disabled={busy} onClick={() => void action('native')}>切回原调度</button>}
-      </div></div>
+    <div className="program-subtoolbar"><Input aria-label="方案名称" value={doc.name} onChange={e => change({...doc, name:e.target.value})}/><Select value={graphId} onValueChange={value => {setGraphId(value); setSelection([]); setTimeout(() => void flow.fitView(), 0)}}><SelectTrigger aria-label="编辑流程"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="main">主程序</SelectItem>{doc.subgraphs.map(s => <SelectItem key={s.id} value={s.id}>{s.name}{s.pure ? ' · 数据' : ' · 执行'}</SelectItem>)}</SelectContent></Select>
+      <Popover.Root open={extraActionsOpen} onOpenChange={setExtraActionsOpen}><Popover.Trigger asChild><Button type="button" variant="secondary">更多操作</Button></Popover.Trigger><Popover.Portal><Popover.Content className="program-extra-actions-list" align="end" sideOffset={6} collisionPadding={8} aria-label="更多操作">
+      <Button variant="secondary" onClick={focusStart} title="将程序入口移回可视区域"><LocateFixed size={14}/>定位入口</Button>
+      <Button variant="secondary" onClick={() => {change(clone(catalog.templates[mode === 'enhance' ? 'enhance' : 'takeover'])); setGraphId('main'); setSelection([])}}><FolderOpen size={14}/>载入原调度方案</Button>
+      {catalog.templates && 'all' in catalog.templates && <Button variant="secondary" onClick={() => {change(clone(catalog.templates.all)); setGraphId('main'); setSelection([]); setTimeout(() => void flow.fitView({padding:0.12}), 0)}}><Layers size={14}/>全卡片排列</Button>}
+      <Button variant="secondary" onClick={() => setVariablesOpen(!variablesOpen)}>变量与端口</Button>
+      <Button variant="secondary" onClick={() => {updateGraph(horizontalLayout(graph)); requestAnimationFrame(() => void flow.fitView({padding:0.12}))}}>从左到右排列</Button>
+      <Button variant="secondary" onClick={() => setCanvasExpanded(value => !value)}>{canvasExpanded ? '显示面板' : '展开画布'}</Button>
+      <Button variant="secondary" onClick={() => copySelected()} disabled={!selection.length} title="复制（Ctrl/Cmd+C）"><Copy size={14}/>复制</Button>
+      <Button variant="secondary" onClick={() => void pasteSelected()} title="粘贴（Ctrl/Cmd+V）">粘贴</Button>
+      <Button variant="secondary" disabled={!selection.length} onClick={() => {try {change(encapsulate(doc, graphId, new Set(selection), '自定义组合卡片', catalog)); setSelection([])} catch (error) {notify((error as Error).message, true)}}}>封装卡片</Button>
+      <Button variant="secondary" disabled={!selection.length} onClick={deleteSelected} title="删除选中卡片"><Trash2 size={14}/></Button>
+      <Button variant="secondary" onClick={() => {const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${doc.name}.scheduler.json`; link.click(); URL.revokeObjectURL(url)}}><Download size={14}/>导出</Button>
+      <Button type="button" variant="secondary" onClick={() => importInputRef.current?.click()}><Upload size={14}/>导入</Button>
+      {saved.mode !== 'native' && <Button variant="secondary" disabled={busy} onClick={() => void action('native')}>切回原调度</Button>}
+      </Popover.Content></Popover.Portal></Popover.Root><input ref={importInputRef} type="file" hidden accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/>
     </div>
     {variablesOpen && <section className="program-schema-panel">
       <div><strong>变量</strong><button className="button secondary" onClick={() => change({...doc, variables:[...doc.variables, {name:`variable${doc.variables.length + 1}`, type:'number', initial:0, persistent:false}]})}><Plus size={13}/>添加</button></div>
