@@ -5,6 +5,7 @@ import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
 import {useEffect, useMemo, useRef, useState} from 'react'
+import {createPortal} from 'react-dom'
 import {Link, useParams, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
@@ -71,7 +72,7 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
  * 舰队科技页：明细表 + 筛选 + 加成汇总；编辑以草稿暂存 sessionStorage，保存时按 revision 提交。
  * 草稿的 revision 与当前报告不一致（stale）时禁止保存，防止覆盖扫描期间的新确认结果。
  */
-export function FleetTechnology() {
+export function FleetTechnology({actionsHost}: {actionsHost: HTMLElement | null}) {
   const [search] = useSearchParams(), targetGroup = search.get('group')
   const {instance = ''} = useParams(), {language, ui, notify} = useApp(), connection = useConnection()
   const tr = (key: string) => key === 'Lv.120' ? key : translateFleetTech(language, key)
@@ -249,7 +250,8 @@ export function FleetTechnology() {
   if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload(!catalog)}/> : <Loading/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">
-    <PageTitle title={tr('title')} actions={<Button variant="outline" disabled={disabled} onClick={() => void reload()}>{ui('mind.reload')}</Button>}/>
+    {actionsHost && createPortal(<Button variant="outline" disabled={disabled} onClick={() => void reload()}>{ui('mind.reload')}</Button>, actionsHost)}
+    <PageTitle title={tr('title')}/>
     {error && <ErrorBox message={error}/>}
     <section className="ft-summary"><div><p>{tr('max')}：<b>{catalog.max_points.toLocaleString()}</b> · {tr('confirmed')}：<b>{totals.points.toLocaleString()}</b>{dirty && <span className="ft-draft-label">{tr('draftPreview')}</span>}</p><p>{tr('four')}：{['1', '2', '3', '4'].map(id => `${tr(`nation.${id}`)} ${catalog.nation_points[id] ?? 0}`).join(' · ')}</p><p>{milestones.map(key => <span key={key}>{tr(stageLabel[key])}：{totals.counts[key]} / {rows.length}　</span>)}</p><small>{tr('independentHint')}</small></div></section>
     <section className="ft-filters">
