@@ -16,6 +16,36 @@ async function expectHorizontallyVisible(control: Locator) {
   })).toBe(true)
 }
 
+test('task configuration menu fits the viewport and scrolls to its last task', async ({page}) => {
+  await page.emulateMedia({reducedMotion: 'reduce'})
+  const trigger = page.getByRole('button', {name: '跳转到任务', exact: true})
+  const menu = page.getByRole('menu', {name: '跳转到任务', exact: true})
+  const items = menu.getByRole('menuitemradio')
+  for (const viewport of [{width: 320, height: 568}, {width: 640, height: 240}, {width: 960, height: 480}, {width: 1707, height: 440}]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/#/i/testpilot/task/Guild')
+    await expect(page.locator('[id="Guild.GuildOperation.JoinThreshold"]')).toBeVisible()
+    await trigger.press('ArrowDown')
+    await expect(menu).toBeVisible()
+    await expect.poll(() => menu.evaluate(element => {
+      const {left, right, top, bottom} = element.getBoundingClientRect()
+      return left >= -1 && right <= innerWidth + 1 && top >= -1 && bottom <= innerHeight + 1
+    })).toBe(true)
+    await expect(items.filter({hasText: '大舰队'})).toHaveAttribute('aria-checked', 'true')
+    await page.keyboard.press('End')
+    await expect(items.last()).toBeFocused()
+    await expect(items.last()).toBeInViewport()
+    await page.keyboard.press('Escape')
+    await expect(menu).toHaveCount(0)
+    await expect(trigger).toBeFocused()
+  }
+
+  await trigger.click()
+  await menu.getByRole('menuitemradio', {name: '系统设置', exact: true}).click()
+  await expect(page).toHaveURL(/\/task\/Alas$/)
+  await expect(menu).toHaveCount(0)
+})
+
 test('narrow view keeps navigation, fleet tabs and settings operable', async ({page}) => {
   await page.addInitScript(() => localStorage.setItem('azurpilot.language', 'en-US'))
   await page.setViewportSize({width: 320, height: 568})

@@ -24,6 +24,7 @@ export const languages: Record<Language, string> = {
 }
 
 const zhCN = {
+  'table.horizontalScroll': '横向滚动表格',
   'nav.plugins': "插件",
   'plugins.installed': "已安装插件",
   'plugins.import': "导入 .apu",
@@ -558,6 +559,7 @@ export type UiKey = keyof typeof zhCN
 export type UiTranslator = (key: UiKey, params?: TranslationParams) => string
 
 const enUS: Record<UiKey, string> = {
+  'table.horizontalScroll': 'Scroll table horizontally',
   'nav.plugins': "Plugins",
   'plugins.installed': "Installed plugins",
   'plugins.import': "Import .apu",
@@ -715,6 +717,7 @@ const enUS: Record<UiKey, string> = {
 }
 
 const jaJP: Record<UiKey, string> = {
+  'table.horizontalScroll': '表を横にスクロール',
   'nav.plugins': "プラグイン",
   'plugins.installed': "インストール済みプラグイン",
   'plugins.import': ".apu をインポート",
@@ -931,6 +934,7 @@ const jaJP: Record<UiKey, string> = {
 }
 
 const zhTW: Record<UiKey, string> = {
+  'table.horizontalScroll': '水平捲動表格',
   'nav.plugins': "外掛程式",
   'plugins.installed': "已安裝的外掛",
   'plugins.import': "匯入 .apu",

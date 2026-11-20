@@ -18,6 +18,7 @@ test('technology reload stays in the page header and preserves the draft', async
   const instance = `tech-reload-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
   await page.goto('/'); await rpc(page, 'instances.create', {name: instance}); await page.goto('about:blank')
   const requests: Array<{id: string; method: string}> = [], responses: string[] = []
+  let releaseCatalog: (() => void) | undefined
   await routeRpc(page, socket => {
     const server = socket.connectToServer()
     socket.onMessage(message => {
@@ -25,16 +26,36 @@ test('technology reload stays in the page header and preserves the draft', async
       if (request.type === 'request' && /^(fleetTech|dock)\./.test(request.method)) requests.push(request)
       server.send(message)
     })
-    server.onMessage(message => {const response = JSON.parse(message); if (response.type === 'response') responses.push(response.id); socket.send(message)})
+    server.onMessage(message => {
+      const response = JSON.parse(message)
+      if (!releaseCatalog && response.type === 'response' && requests.some(request => request.id === response.id && request.method === 'fleetTech.catalog')) {
+        releaseCatalog = () => {responses.push(response.id); socket.send(message)}
+        return
+      }
+      if (response.type === 'response') responses.push(response.id)
+      socket.send(message)
+    })
   })
   await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
+  const reload = page.getByRole('button', {name: '重新载入', exact: true})
+  await expect(reload).toHaveCount(1)
+  await expect(reload).toBeVisible()
+  await expect(reload).toBeDisabled()
+  const original = await reload.elementHandle()
+  expect(original).not.toBeNull()
+  await expect.poll(() => !!releaseCatalog).toBe(true)
+  const loadingStart = requests.length
+  await reload.evaluate(element => (element as HTMLButtonElement).click())
+  expect(requests.slice(loadingStart)).toEqual([])
+  releaseCatalog!()
+  await expect(reload).toBeEnabled()
+  expect(await reload.evaluate((element, initial) => element === initial, original)).toBe(true)
   await page.getByLabel('搜索舰名', {exact: true}).fill('杜威')
   await page.getByRole('button', {name: '记录编辑模式', exact: true}).click()
   const milestone = page.getByRole('button', {name: '杜威 · 获得 · 未完成', exact: true})
   await milestone.click()
   const changed = page.getByRole('button', {name: '杜威 · 获得 · 已完成', exact: true})
   await expect(changed).toHaveAttribute('aria-pressed', 'true')
-  const reload = page.getByRole('button', {name: '重新载入', exact: true})
   await expect(reload).toHaveCount(1)
   const reloadBox = await reload.boundingBox(), tabsBox = await page.getByRole('tablist', {name: '舰船数据'}).boundingBox()
   expect(reloadBox).not.toBeNull(); expect(tabsBox).not.toBeNull()
@@ -46,10 +67,15 @@ test('technology reload stays in the page header and preserves the draft', async
   expect(requests.slice(start).map(request => request.method)).toEqual(['fleetTech.report'])
   await expect(changed).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('button', {name: '放弃草稿', exact: true})).toBeVisible()
-  await page.getByRole('tab', {name: '我的舰船', exact: true}).click()
-  await expect(reload).toHaveCount(1)
+  for (const tab of ['我的舰船', '养成计算', '扫描更新']) {
+    await page.getByRole('tab', {name: tab, exact: true}).click()
+    await expect(reload).toHaveCount(1)
+    await expect(reload).toBeVisible()
+    expect(await reload.evaluate((element, initial) => element === initial, original)).toBe(true)
+  }
   await page.getByRole('tab', {name: '舰队科技', exact: true}).click()
   await expect(reload).toHaveCount(1)
+  expect(await reload.evaluate((element, initial) => element === initial, original)).toBe(true)
   await expect(changed).toHaveAttribute('aria-pressed', 'true')
 })
 

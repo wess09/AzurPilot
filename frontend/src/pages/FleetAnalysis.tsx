@@ -29,7 +29,7 @@ export function FleetAnalysis() {
   const {instance = ''} = useParams(), [params, setParams] = useSearchParams()
   const {ui} = useApp(), connection = useConnection()
   const [report, setReport] = useState<DockReport>(), [error, setError] = useState(''), [busy, setBusy] = useState(false)
-  const [technologyActions, setTechnologyActions] = useState<HTMLDivElement | null>(null)
+  const [technologyReload, setTechnologyReload] = useState<{reload: () => Promise<void>} | null>(null)
   const writing = useRef(false), epoch = useRef(0), refresh = useRef<(() => Promise<void>) | undefined>(undefined)
   const [lastTab, setLastTab] = useFleetPreference<string>(instance, 'tab', 'data')
   const value = params.get('tab') ?? lastTab, tab = value === 'technology' || value === 'mind' || value === 'scan' ? value : 'data'
@@ -53,12 +53,12 @@ export function FleetAnalysis() {
   }, [instance, connection])
   const onBusy = (value: boolean) => {epoch.current++; writing.current = value; setBusy(value)}
   const onReport = (value: DockReport) => {epoch.current++; setReport(value)}
-  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={tab === 'technology' ? <div ref={setTechnologyActions}/> : <Button variant="outline" disabled={busy || connection !== 'ready'} onClick={() => void refresh.current?.()}>{ui('mind.reload')}</Button>}/>{error && <ErrorBox message={error}/>}
+  return <div className="mind-calculator fleet-analysis"><PageTitle title={ui('analysis.title')} actions={<Button variant="outline" disabled={busy || connection !== 'ready' || (tab === 'technology' && !technologyReload)} onClick={() => {if (tab === 'technology') void technologyReload?.reload(); else void refresh.current?.()}}>{ui('mind.reload')}</Button>}/>{error && <ErrorBox message={error}/>}
     <Tabs value={tab} onValueChange={value => setParams({tab: value}, {replace: true})}>
     <TabsList wrap aria-label={ui('analysis.title')}>{(['technology', 'mind', 'scan', 'data'] as const).map(value => <TabsTrigger key={value} value={value} disabled={busy}>{ui(value === 'scan' ? 'analysis.scanPage' : `analysis.${value}`)}</TabsTrigger>)}</TabsList>
     <TabsContent value={tab}>
       {tab === 'data' && <FleetLedger key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
-      {tab === 'technology' && <FleetTechnology key={instance} actionsHost={technologyActions}/>}
+      {tab === 'technology' && <FleetTechnology key={instance} onReloadChange={setTechnologyReload}/>}
       {tab === 'mind' && <MindCalculator key={instance} report={report} onRefresh={() => refresh.current?.()}/>}
       {tab === 'scan' && <ScanUpdate key={instance} instance={instance} report={report} locked={busy} onReport={onReport} onBusy={onBusy}/>}
     </TabsContent>

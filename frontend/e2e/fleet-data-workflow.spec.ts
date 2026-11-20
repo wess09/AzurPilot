@@ -136,10 +136,30 @@ for (const language of ['zh-CN', 'en-US'] as const) {
       await region.focus()
       await expect(region).toBeFocused()
       const horizontalOverflow = await region.evaluate(element => element.scrollWidth > element.clientWidth + 1)
+      const horizontalControl = panel.locator('[data-slot="table-scroll-control"]')
       if (viewport.width === 320) expect(horizontalOverflow).toBe(true)
       if (horizontalOverflow) {
+        await expect(horizontalControl).toBeVisible()
         await page.keyboard.press('ArrowRight')
         await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(0)
+        if (viewport.width === 320 && viewport.height === 800) {
+          // A mouse can drag the visible thumb even when the OS hides its native scrollbar.
+          await expect(horizontalControl).toHaveCSS('cursor', 'ew-resize')
+          await horizontalControl.press('Home')
+          await horizontalControl.scrollIntoViewIfNeeded()
+          const {x, y, width, height} = (await horizontalControl.boundingBox())!
+          await page.mouse.move(x + 12, y + height / 2)
+          await page.mouse.down()
+          await page.mouse.move(x + width * 0.8, y + height / 2, {steps: 8})
+          await page.mouse.up()
+          await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(100)
+          await horizontalControl.press('End')
+          await expect.poll(() => region.evaluate(element => element.scrollWidth - element.clientWidth - element.scrollLeft)).toBeLessThanOrEqual(1)
+          await region.evaluate(element => {element.scrollLeft = 0})
+          await expect(horizontalControl).toHaveValue('0')
+        }
+      } else {
+        await expect(horizontalControl).toHaveCount(0)
       }
       // At the top of the table, an upward wheel gesture continues to its ancestor.
       await region.evaluate(element => {element.scrollTop = 0})
