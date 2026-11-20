@@ -10,9 +10,44 @@ const expect = baseExpect.configure({timeout: 15000})
 test.setTimeout(60000)
 test.use({launchOptions: {ignoreDefaultArgs: ['--hide-scrollbars']}})
 
-test.beforeEach(async ({page}) => {
-  await page.addInitScript(() => {localStorage.setItem('azurpilot.theme', 'light'); localStorage.setItem('azurpilot.language', 'zh-CN')})
+test.beforeEach(async ({page}, info) => {
+  await page.addInitScript(language => {
+    localStorage.setItem('azurpilot.theme', 'light')
+    localStorage.setItem('azurpilot.language', language)
+  }, info.title.endsWith('(en-US)') ? 'en-US' : 'zh-CN')
 })
+
+for (const {language, width} of [{language: 'zh-CN', width: 1280}, {language: 'en-US', width: 1440}]) {
+  test(`technology columns fit available width before enabling horizontal scroll (${language})`, async ({page}, info) => {
+    await page.setViewportSize({width, height: 750})
+    const instance = `tech-fit-${info.testId.replace(/[^a-z0-9]/gi, '').slice(-12)}-${info.retry}`
+    await page.goto('/')
+    await rpc(page, 'instances.create', {name: instance})
+    await page.goto('about:blank')
+    await page.goto(`/#/i/${instance}/task/FleetAnalysis?tab=technology`)
+
+    const surface = page.locator('.ft-technology-table')
+    const region = surface.getByRole('region')
+    const control = surface.locator('[data-slot=table-scroll-control]')
+    const lastHeader = region.locator('thead tr:first-child th').last()
+    const overflow = () => region.evaluate(element => element.scrollWidth - element.clientWidth)
+    await expect(region.locator('tbody tr').first()).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('lang', language)
+    await expect.poll(overflow).toBe(0)
+    await expect(control).toHaveCount(0)
+    await lastHeader.scrollIntoViewIfNeeded()
+    await expect(lastHeader).toBeInViewport()
+
+    await page.setViewportSize({width: 390, height: 600})
+    await expect.poll(overflow).toBeGreaterThan(100)
+    await control.press('End')
+    await expect(lastHeader).toBeInViewport()
+    await page.setViewportSize({width, height: 750})
+    await expect.poll(overflow).toBe(0)
+    await expect(control).toHaveCount(0)
+    await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBe(0)
+  })
+}
 
 test('sticky technology header paints its own separators over scrolled rows', async ({page}, info) => {
   await page.setViewportSize({width: 1050, height: 780})
@@ -73,7 +108,7 @@ test('wheel and drag reach both ends while the ship name stays in view on wider 
   await page.mouse.down()
   await page.mouse.move(drag.x + drag.width * 0.75, drag.y + drag.height / 2, {steps: 8})
   await page.mouse.up()
-  await expect.poll(() => region.evaluate(element => element.scrollLeft)).toBeGreaterThan(240)
+  await expect.poll(() => region.evaluate(element => element.scrollLeft / (element.scrollWidth - element.clientWidth))).toBeGreaterThan(0.5)
   await expect.poll(async () => (await name.boundingBox())!.x - (await region.boundingBox())!.x).toBeCloseTo(0, 0)
   await horizontal.press('End')
   await expect.poll(() => region.evaluate(element => element.scrollWidth - element.clientWidth - element.scrollLeft)).toBeLessThanOrEqual(1)

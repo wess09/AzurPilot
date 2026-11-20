@@ -46,15 +46,31 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
   scrollLabel?: string; mindCosts?: Record<string, number>
   onSort?: (column: Column) => void; onChange?: (row: Row, key: RecordField, value: State) => void; modified?: number[]; targetGroup?: string | null
 }) {
+  const tableWrapRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const wrapper = tableWrapRef.current
+    const header = wrapper?.querySelector('thead')
+    if (!wrapper || !header) return
+    const updateHeaderHeight = () => wrapper.style.setProperty('--ft-header-height', `${header.getBoundingClientRect().height}px`)
+    updateHeaderHeight()
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(updateHeaderHeight)
+    observer?.observe(header)
+    window.addEventListener('resize', updateHeaderHeight)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateHeaderHeight)
+      wrapper.style.removeProperty('--ft-header-height')
+    }
+  }, [])
   function header(column: Column, rowSpan = 1) {
-    return <TableHead key={column} scope="col" rowSpan={rowSpan} className={`text-center ${column === 'name' ? 'ft-name-head' : ''}`} aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? tr('efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => onSort?.(column)}>{tr(column)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>
+    return <TableHead key={column} scope="col" rowSpan={rowSpan} className={`text-center ${column === 'name' ? 'ft-name-head' : ''} ${column === 'efficiency' || column === 'awakening_pending' ? 'ft-long-head' : ''}`} aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? tr('efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => onSort?.(column)}><span>{tr(column)}</span><span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>
   }
-  return <div className="ft-table-wrap ft-technology-table"><Table scrollLabel={scrollLabel} className="min-w-[1000px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
+  return <div ref={tableWrapRef} className="ft-table-wrap ft-technology-table"><Table scrollLabel={scrollLabel}><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
     const title = `${tr('held')}: ${row.current_count} · ${row.current_level === null ? tr('unknown') : `Lv.${row.current_level}`}`
     const identityHighlight = row.lv120 ? 'ft-marked' : ''
     const efficiency = technologyEfficiency(row, mindCosts)
     return <TableRow key={row.group_type} id={`technology-${row.group_type}`} data-group={row.group_type} className={[complete(row) ? 'ft-complete' : '', modified.includes(row.group_type) ? 'ft-modified' : '', targetGroup === String(row.group_type) ? 'ft-target' : ''].filter(Boolean).join(' ')}>
-      <TableCell className={`text-center tabular-nums ${identityHighlight}`}>{String(row.code).padStart(3, '0')}</TableCell><TableCell className={`ft-name text-center ${identityHighlight} ft-rarity-${row.rarity}`}><Link to={`?tab=data&group=${row.group_type}`} title={`${nameFor(row, language)} · ${title}`}>{nameFor(row, language)}</Link></TableCell><TableCell className={`text-center ${identityHighlight}`}>{tr(`nation.${row.nationality}`)}</TableCell><TableCell className={`text-center ${identityHighlight}`}>{tr(`type.${shipType(row.type)}`)}</TableCell>
+      <TableCell className={`text-center tabular-nums ${identityHighlight}`}>{String(row.code).padStart(3, '0')}</TableCell><TableCell className={`ft-name text-center ${identityHighlight} ft-rarity-${row.rarity}`}><Link to={`?tab=data&group=${row.group_type}`} title={`${nameFor(row, language)} · ${title}`}>{nameFor(row, language)}</Link></TableCell><TableCell className={`ft-description text-center ${identityHighlight}`}>{tr(`nation.${row.nationality}`)}</TableCell><TableCell className={`ft-description text-center ${identityHighlight}`}>{tr(`type.${shipType(row.type)}`)}</TableCell>
       {milestones.map(key => <TableCell key={key} className={`ft-point ft-state-${stateKey(row[key])} text-center`}><Button type="button" variant="ghost" size="sm" disabled={!editing || disabled} aria-pressed={row[key]} aria-label={`${row.name} · ${tr(stageLabel[key])} · ${tr(stateKey(row[key]))}`} title={editing ? tr('toggleMilestone') : tr(stateKey(row[key]))} onClick={() => onChange?.(row, key, nextState(row[key]))}><span className="ft-point-value"><b>{pointsFor(row, key)}</b><span className="ft-mark" aria-hidden="true">{stateSymbol(row[key])}</span></span></Button></TableCell>)}
       <TableCell className={`text-center tabular-nums ${complete(row) ? 'ft-marked' : ''}`} title={`${tr('confirmed')}: ${row.points}`}>{maximumPoints(row)}</TableCell>
       {(['get', 'level'] as const).map(stage => {

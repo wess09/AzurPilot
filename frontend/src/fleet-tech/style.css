@@ -81,7 +81,7 @@
 .ft-technology-table { container: ft-technology-table / inline-size; }
 .ft-technology-table > [data-slot=table-container] {
   overscroll-behavior-y: auto;
-  scroll-padding: 84px 8px 8px;
+  scroll-padding: calc(var(--ft-header-height, 76px) + 8px) 8px 8px;
 }
 @supports not selector(::-webkit-scrollbar) {
   .ft-technology-table > [data-slot=table-container] {
@@ -102,13 +102,26 @@
 .fleet-technology .ft-technology-table td { padding: 4px 6px; }
 .fleet-technology .ft-technology-table th button,
 .fleet-technology .ft-technology-table td button { padding-inline: 6px; font-size: 13px; }
+.fleet-technology .ft-technology-table th,
+.fleet-technology .ft-technology-table th button,
+.fleet-technology .ft-technology-table td.ft-description,
+.fleet-technology .ft-technology-table td.ft-name,
+.fleet-technology .ft-technology-table td.ft-unlock,
+.fleet-technology .ft-technology-table td.ft-unlock button { white-space: normal; }
+.fleet-technology .ft-technology-table th button,
+.fleet-technology .ft-technology-table td.ft-unlock button { height: auto; min-height: 32px; line-height: 1.3; }
+.fleet-technology .ft-technology-table th button > span:last-child,
+.fleet-technology .ft-technology-table td.ft-unlock button > .ft-mark { flex-shrink: 0; }
+.fleet-technology .ft-technology-table .ft-long-head button > span:first-child { min-width: 4em; }
+.fleet-technology .ft-technology-table td.ft-unlock { min-width: 100px; }
+.fleet-technology .ft-technology-table td.ft-unlock button { width: 100%; }
+.ft-technology-table td.ft-name a { display: block; max-width: 160px; overflow-wrap: anywhere; }
 .fleet-technology .ft-technology-table tbody > tr:not(:last-child) > td { border-bottom-color: var(--ft-line); }
 .ft-technology-table tbody > tr:nth-child(even) { --ft-row-bg: color-mix(in srgb, var(--theme-surface-muted) 60%, var(--theme-surface)); }
 .ft-technology-table tbody > tr:hover { --ft-row-bg: var(--theme-surface-muted); }
 .ft-technology-table tbody > tr > td { background: var(--ft-row-bg, var(--theme-surface)); }
 @container ft-technology-table (min-width: 560px) {
-  /* Bound long localized names only while the column is pinned. */
-  .ft-technology-table td.ft-name a { display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+  /* Bound the pinned column while keeping full names visible. */
   .ft-technology-table > [data-slot=table-container] { scroll-padding-inline-start: 178px; }
   .ft-technology-table .ft-name-head,
   .ft-technology-table td.ft-name { position: sticky; inset-inline-start: 0; }
