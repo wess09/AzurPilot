@@ -7,7 +7,7 @@ import { Download, Image, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { LogEntry, Preview } from '../api/types'
 import { useApp } from '../app/context'
-import { Empty } from './ui'
+import { Empty, Panel } from './ui'
 import { LogPanel, LOG_LINE_RE, PURE_RULE_RE, RULE_RE } from './LogPanel'
 import { SegmentedControl } from './SegmentedControl'
 
@@ -98,7 +98,7 @@ export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: st
   useEffect(() => api.onEvent(event => {
     if (event.topic === 'preview' && (event.data as Preview).instance === instance) setFrame(event.data as Preview)
   }), [instance])
-  return <section className="panel monitor-panel"><div className="monitor-tabs" aria-label={ui('monitor.title')}>
+  return <Panel className="monitor-panel"><div className="monitor-tabs" aria-label={ui('monitor.title')}>
     <SegmentedControl label={ui('monitor.view')} value={view} onChange={setView} options={[
       {value: 'logs', label: <><Terminal size={15}/>{ui('monitor.logs')}</>},
       {value: 'preview', label: <><Image size={15}/>{ui('monitor.preview')}</>},
@@ -110,5 +110,5 @@ export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: st
       {view === 'preview' && <RecentLogs entries={entries}/>}
       <div className="preview-stage"><div className="preview-screen">{frame?.image ? <img src={frame.image} alt={ui('monitor.screenshotAlt')}/> : <Empty icon={<Image size={42}/>} title={ui('monitor.waitingScreenshot')}>{ui('monitor.screenshotHint')}</Empty>}</div></div>
     </div>
-  </section>
+  </Panel>
 })

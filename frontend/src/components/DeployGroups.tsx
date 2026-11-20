@@ -1,3 +1,4 @@
+import { Panel, PanelHeading } from './ui/page'
 /**
  * @fileoverview 部署设置分组表单渲染组件。
  *
@@ -31,13 +32,8 @@ export function DeployGroups({data, only, edits, queue}: {
     : true)
   return <>
     {groups.map(group => (
-      <section className="panel config-group" key={group.key}>
-        <div className="panel-heading">
-          <div>
-            <span className="group-indicator"/>
-            <h2 role="heading" aria-level={2}>{t(`Gui.DeploySetting.Group${group.key}`)}</h2>
-          </div>
-        </div>
+      <Panel compact key={group.key}>
+        <PanelHeading title={t('Gui.DeploySetting.Group' + group.key)} icon={<span className="group-indicator"/>}/>
         {group.fields.map(field => {
           const id = `deploy-${field.key}`
           const current = edits.edits[field.key]?.value ?? field.value
@@ -67,7 +63,7 @@ export function DeployGroups({data, only, edits, queue}: {
             </div>
           </div>
         })}
-      </section>
+      </Panel>
     ))}
   </>
 }

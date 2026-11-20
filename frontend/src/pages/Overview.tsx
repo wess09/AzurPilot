@@ -11,7 +11,7 @@ import { useThemeComponent } from '../themes/context'
 import { useInstanceOverview } from '../components/useInstanceOverview'
 import { getLayout, subscribeLayout } from '../app/layout'
 import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
-import { Loading, PageTitle } from '../components/ui'
+import { Loading, PageTitle, Panel } from '../components/ui'
 import { LoadBoundary } from '../components/ui/load-boundary'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
@@ -88,14 +88,14 @@ export function ModernOverview({instance, data, onData, selectedResources, onRes
     <div className="instance-page-rail-wrap">
       <ModernRail instance={instance} data={data} onData={onData}>
         {/* 标题即切换主区显示日志还是统计的按钮。 */}
-        <section className="panel modern-stat-card">
+        <Panel className="modern-stat-card">
           <button type="button" className="modern-stat-title" aria-pressed={panel === 'stats'}
             aria-label={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             title={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             onClick={() => {setOverviewPanel(panel === 'stats' ? 'logs' : 'stats')}}
           >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}<ChevronRight size={13}/></button>
           {actions}
-        </section>
+        </Panel>
       </ModernRail>
       <ModernRailResizeHandle side={schedulerPosition} />
     </div>

@@ -46,11 +46,11 @@ function OilControl({instance, value}: {instance: string; value: ResourceFlowRep
       setState('saved')
     } catch (error) {setError((error as Error).message); setState('')}
   }
-  return <section className="panel resource-panel resource-compact oil-control"><div><h2><Fuel size={17}/>{ui('flow.oil')}</h2><p className="muted">{ui('flow.oilHint')}</p></div><form onSubmit={save}>
+  return <Panel className="resource-panel resource-compact oil-control"><div><h2><Fuel size={17}/>{ui('flow.oil')}</h2><p className="muted">{ui('flow.oilHint')}</p></div><form onSubmit={save}>
     <span className="flex items-center gap-3"><Checkbox id="resource-oil-enable" checked={enable} disabled={state === 'saving'} onCheckedChange={next => {setEnable(next === true); setDirty(true); setState('')}}/><Label htmlFor="resource-oil-enable">{ui('flow.oilEnable')}</Label></span>
     <label>{ui('flow.oilTarget')}<Input required disabled={state === 'saving'} type="number" min="1000" max="24999" step="1" value={target} onChange={event => {setTarget(event.target.value); setDirty(true); setState('')}}/></label>
     <Button variant="outline" disabled={state === 'saving'}>{ui('flow.save')}</Button><span role="status">{state === 'saving' ? ui('flow.saving') : state === 'saved' ? ui('flow.saved') : ''}</span>
-  </form>{error && <ErrorBox message={error}/>}</section>
+  </form>{error && <ErrorBox message={error}/>}</Panel>
 }
 
 /**
@@ -104,13 +104,13 @@ export function ResourceManagement() {
   const number = (value: number | null) => value === null ? '—' : value.toLocaleString()
   return <div className="resource-management">
     <PageTitle title={ui('nav.resources')} placement="screen-reader" className="justify-end" actions={<><Button variant="outline" disabled={busy} onClick={() => reload()}><RefreshCw size={15}/>{ui('stats.refresh')}</Button><Button variant="outline" disabled={!shown || !ready || !shown.total || exporting || busy || !!error} onClick={exportEntries}><Download size={15}/>{ui('flow.export')}</Button></>}/>
-    <section className="panel resource-panel resource-compact resource-filters">
+    <Panel className="resource-panel resource-compact resource-filters">
       <p className="muted resource-intro">{ui('flow.hint')}</p>
       <label>{ui('flow.range')}<Select value={days} onValueChange={value => {setDays(value); if (value !== 'custom') setInterval({}); setOffset(0)}}><SelectTrigger aria-label={ui('flow.range')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="1">{ui('flow.day')}</SelectItem><SelectItem value="7">{ui('flow.week')}</SelectItem><SelectItem value="30">{ui('flow.month')}</SelectItem><SelectItem value="custom">{ui('flow.custom')}</SelectItem></SelectContent></Select></label>
       {days === 'custom' && <form onSubmit={event => {event.preventDefault(); setInterval({start: draftStart, end: draftEnd}); setOffset(0)}}><label>{ui('flow.start')}<Input required type="datetime-local" value={draftStart} onChange={event => setDraftStart(event.target.value)}/></label><label>{ui('flow.end')}<Input required type="datetime-local" value={draftEnd} onChange={event => setDraftEnd(event.target.value)}/></label><Button variant="outline">{ui('flow.apply')}</Button></form>}
       <label>{ui('flow.resource')}<Select value={resource || '__all__'} onValueChange={value => {setResource(value === '__all__' ? '' : value); setOffset(0)}}><SelectTrigger aria-label={ui('flow.resource')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('flow.allResources')}</SelectItem>{menuData?.resources.map(item => <SelectItem key={item.key} value={item.key}>{resourceLabel(item.key)}</SelectItem>)}</SelectContent></Select></label>
       <label>{ui('flow.task')}<Select value={task || '__all__'} onValueChange={value => {setTask(value === '__all__' ? '' : value); setOffset(0)}}><SelectTrigger aria-label={ui('flow.task')}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__all__">{ui('flow.allTasks')}</SelectItem>{menuData?.tasks.map(key => <SelectItem key={key} value={key}>{taskLabel(key)}</SelectItem>)}</SelectContent></Select></label>
-    </section>
+    </Panel>
     {exportError && <ErrorBox message={exportError}/>}
     {/* 保持同一实例的油量草稿；结果只属于当前筛选条件。 */}
     {menuData && <OilControl key={instance} instance={instance} value={menuData.oilControl}/>}

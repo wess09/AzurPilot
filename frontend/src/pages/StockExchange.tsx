@@ -17,6 +17,7 @@ import {Button} from '../components/ui/button'
 import './stock-exchange.css'
 
 const EXCHANGE='https://stock.azurpilot.com'
+const stockPollInterval = () => 15000
 
 /** 注册实例股票、经 QQ 群机器人把股票绑定到交易账户，绑定成功后自动打开独立交易所。 */
 export function StockExchange(){
@@ -26,7 +27,8 @@ export function StockExchange(){
   // current 镜像当前实例，异步回调据此丢弃切换实例后的过期响应。
   const current=useRef(instance),opened=useRef(''),recoveryActive=useRef(false),writeActive=useRef(false),planButton=useRef<HTMLButtonElement>(null);current.current=instance
   const loadStatus=useCallback(()=>api.request('stock.status',{instance}),[instance])
-  const read=usePageRead<StockExchangeStatus>(`stock:${instance}`,connection==='ready',loadStatus)
+  const canPoll = useCallback(() => document.visibilityState === 'visible' && !writeActive.current && !recoveryActive.current, [])
+  const read=usePageRead<StockExchangeStatus>(`stock:${instance}`,connection==='ready',loadStatus,stockPollInterval,{when: canPoll})
   const {data:status,reload:refresh,reloadAndWait,setData:setStatus,invalidate}=read
   useEffect(()=>{
     recoveryActive.current=false;writeActive.current=false;setRecoveryAvailable(false);setRebuildError('');setUsername('');setError('');setCopied(false);setConsent(false);setBusy(false);setRebuild(undefined);setConfirmRebuild(false)
@@ -34,11 +36,8 @@ export function StockExchange(){
   useEffect(()=>{if(read.error)setRecoveryAvailable(true)},[read.error])
   useEffect(()=>{if(status&&!recoveryActive.current){setRecoveryAvailable(false);setError('')}},[status])
   useEffect(()=>{
-    // 隐藏的标签页不轮询，避免后台无谓请求。
     const autoRefresh=()=>{if(!writeActive.current&&!recoveryActive.current)refresh()}
-    const timer=window.setInterval(()=>{if(document.visibilityState==='visible')autoRefresh()},15000)
-    const unsubscribe=api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)autoRefresh()})
-    return ()=>{window.clearInterval(timer);unsubscribe()}
+    return api.onEvent(event=>{if(event.topic==='stock'&&(event.data as {instance?:string}).instance===instance)autoRefresh()})
   },[instance,refresh])
   // 绑定成功即自动打开交易所；opened 守卫同实例只开一次，轮询与事件触发的重渲染不会重复弹窗。
   useEffect(()=>{

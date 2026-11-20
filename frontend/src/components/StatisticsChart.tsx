@@ -12,7 +12,7 @@ import { LineChart, CandlestickChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type {StatSeries} from '../api/types'
-import { Empty } from './ui'
+import { Empty, Panel } from './ui'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import {buildSeriesView} from './statisticsData'
@@ -157,7 +157,7 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
   const metrics = buildChartMetrics({isSingle, single, seriesData, compact, filtered, selectedKeys, shownData, onToggleFilter, isCandlestick, ui})
 
   const chart = (
-    <section className={`panel statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
+    <Panel className={`statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
       <div className="panel-heading">
         {expanded ? <DialogTitle asChild><h2>{title || headingLabel}</h2></DialogTitle> : <h2>{headingLabel}</h2>}
         <div className="stat-card-actions">{foldControl}<Button ref={expanded ? undefined : expandButton} variant="ghost" size="sm" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</Button></div>
@@ -181,7 +181,7 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
           <Empty title={ui('stats.noValidTitle')}>{ui('stats.noValidHint')}</Empty>
         </>
       )}
-    </section>
+    </Panel>
   )
 
   return <Dialog open={expanded} onOpenChange={open => {if (!open && expanded) onToggleExpanded()}}>

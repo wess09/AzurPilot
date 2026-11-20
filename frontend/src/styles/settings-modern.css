@@ -157,7 +157,7 @@
 .settings-page .config-group {
   padding: 0;
   border: 1px solid var(--rail-panel-edge);
-  border-radius: 16px;
+  border-radius: var(--theme-radius-panel);
   background: var(--rail-panel-bg);
   -webkit-backdrop-filter: var(--rail-panel-filter);
   backdrop-filter: var(--rail-panel-filter);
@@ -187,7 +187,7 @@
 /* 任务说明卡同理：一张面，不叠内贴片 */
 .task-config-page.task-config-modern .task-help-panel {
   border: 1px solid var(--rail-panel-edge);
-  border-radius: 16px;
+  border-radius: var(--theme-radius-panel);
   background: var(--rail-panel-bg);
   -webkit-backdrop-filter: var(--rail-panel-filter);
   backdrop-filter: var(--rail-panel-filter);

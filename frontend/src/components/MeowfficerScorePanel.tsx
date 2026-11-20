@@ -2,7 +2,7 @@
  * @fileoverview 指挥喵评分结果详情与洗点推荐面板组件。
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Cat, ChevronDown, FileText, PawPrint, RefreshCw, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import { ApiError, api } from '../api/client'
 import type { MeowfficerAdvice, MeowfficerCat, MeowfficerRubric, MeowfficerScoreReport, MeowfficerTalent } from '../api/types'
@@ -91,6 +91,7 @@ function RubricDetail({rubric}: {rubric: MeowfficerRubric}) {
 
 /** 自动刷新间隔（毫秒）：扫描结束后最多这么久，报告就会自己更新出来。 */
 const AUTO_REFRESH_INTERVAL = 5000
+const reportPollInterval = () => AUTO_REFRESH_INTERVAL
 
 /**
  * 洗点推荐。配色由后端的 verdict 决定，文案（含成本）全部由后端给出：
@@ -172,6 +173,8 @@ export function MeowfficerScorePanel({instance}: {instance: string}) {
   const [actionError, setActionError] = useState('')
   const [confirmClear, setConfirmClear] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const clearingNow = useRef(false)
+  const canPoll = useCallback(() => !clearingNow.current && document.visibilityState === 'visible', [])
   const load = useCallback(async () => {
     try {return await api.request('meowfficer.scoreReport', {instance})}
     catch (error) {
@@ -179,18 +182,12 @@ export function MeowfficerScorePanel({instance}: {instance: string}) {
       throw error
     }
   }, [instance])
-  const {data: report, ready, error, busy, reload, setData, invalidate} = usePageRead(instance, connection === 'ready', load)
-
-  // Only poll while visible. A failed background read leaves the existing report intact.
-  useEffect(() => {
-    if (connection !== 'ready' || clearing) return
-    const timer = setInterval(() => {
-      if (document.visibilityState === 'visible') reload({silent: true})
-    }, AUTO_REFRESH_INTERVAL)
-    return () => clearInterval(timer)
-  }, [connection, clearing, reload])
+  const {data: report, ready, error, busy, reload, setData, invalidate} = usePageRead(
+    instance, connection === 'ready', load, reportPollInterval, {when: canPoll, silent: true},
+  )
 
   async function clearReport() {
+    clearingNow.current = true
     invalidate()
     setClearing(true); setActionError('')
     try {
@@ -200,6 +197,7 @@ export function MeowfficerScorePanel({instance}: {instance: string}) {
     } catch (error) {
       setActionError(error instanceof Error ? error.message : String(error))
     } finally {
+      clearingNow.current = false
       setClearing(false)
     }
   }

@@ -33,6 +33,7 @@ export interface BackgroundSnapshot extends BackgroundPreference {
   directUrl: string
   /** 是否正在解析随机图 API。 */
   resolving: boolean
+  urlGeneration: number
   /** 最近一次地址解析失败的信息。 */
   resolveError: string
   /** 是否正在加载图库或浏览器上传文件。 */
@@ -75,12 +76,7 @@ const listeners = new Set<() => void>()
 /** 图库文件由服务器直接提供（与模板图同一套做法），同源、无跨域。 */
 export const galleryUrl = (identifier: string) => `/background-library/${encodeURIComponent(identifier)}`
 
-/** 网图的同源代理地址：服务端先抓下来再回传，浏览器加载它与直链是同一张图。 */
-const proxyUrl = (url: string, token: string) => `/api/v1/background/media?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`
-
 const MIGRATED_KEY = 'azurpilot.background.migrated'
-/** initBackgroundGallery 只跑一次的守卫（它是幂等的引导流程，重复调用会引发重解析循环）。 */
-let bootstrapped = false
 
 /** 迁移这类一次性动作的留痕，失败也不该打断用户。 */
 function logger(message: string) {
@@ -148,13 +144,12 @@ let snapshot: BackgroundSnapshot = {
   ...initial,
   assetUrl: initial.source === 'upload' && initial.entry ? galleryUrl(initial.entry) : directMediaUrl(activeBackgroundUrl(initial)),
   directUrl: '',
-  resolving: false,
+  resolving: initial.source === 'url',
+  urlGeneration: 0,
   resolveError: '',
   loading: initial.source === 'upload',
   revision: 0,
 }
-/** 图库条目缓存：列表接口回来一次就存这里，界面与随机取图都读它。 */
-let gallery: BackgroundGalleryEntry[] = []
 let objectUrl = ''
 let uploadLoad: Promise<void> | undefined
 
@@ -174,6 +169,21 @@ export const subscribeBackground = (listener: () => void) => {
 function publish(patch: Partial<BackgroundSnapshot>) {
   snapshot = {...snapshot, ...patch, revision: snapshot.revision + 1}
   listeners.forEach(listener => listener())
+}
+
+let selectionVersion = 0
+function publishSelection(patch: Partial<BackgroundSnapshot>) {
+  selectionVersion++
+  publish(patch)
+}
+
+export function captureBackgroundSelection() {
+  const version = selectionVersion
+  const {theme, material} = getThemePreference()
+  return () => {
+    const current = getThemePreference()
+    return selectionVersion === version && current.theme === theme && current.material === material
+  }
 }
 
 function savePreference(value: BackgroundPreference) {
@@ -255,34 +265,27 @@ export function normalizeBackgroundUrl(value: string): string {
 /* 切换主题或材质时读取当前背景，简约主题保留原有记录供切回时使用。 */
 subscribeTheme(() => {
   const next = readActiveBackground()
-  if (next.source === snapshot.source && activeBackgroundUrl(next) === activeBackgroundUrl(snapshot) && next.name === snapshot.name) return
+  if (next.source === snapshot.source && next.kind === snapshot.kind && next.entry === snapshot.entry
+    && next.active === snapshot.active && JSON.stringify(next.urls) === JSON.stringify(snapshot.urls) && next.name === snapshot.name) return
   replaceObjectUrl()
   const initialAsset = next.source === 'upload' ? (next.entry ? galleryUrl(next.entry) : '') : next.source === 'url' ? (directMediaUrl(activeBackgroundUrl(next)) || lastGoodAssetUrl) : ''
-  publish({...next, assetUrl: initialAsset, directUrl: '', resolving: false, resolveError: '', loading: next.source === 'upload'})
+  publishSelection({...next, assetUrl: initialAsset, directUrl: '', resolving: next.source === 'url', resolveError: '', urlGeneration: snapshot.urlGeneration + 1, loading: next.source === 'upload'})
   if (next.source === 'upload') void loadUploadedBackground()
-  if (next.source === 'url') void resolveActiveBackground()
 })
 
 async function loadUploadedBackground() {
-  if (snapshot.source !== 'upload' || snapshot.assetUrl || uploadLoad) return uploadLoad
+  if (snapshot.source !== 'upload' || snapshot.entry || snapshot.assetUrl || uploadLoad) return uploadLoad
+  const isCurrent = captureBackgroundSelection()
   uploadLoad = (async () => {
     try {
       const file = await storedFile('readonly')
-      if (!file || snapshot.source !== 'upload') {
-        const {revision: _, ...current} = snapshot
-        return publish({...current, loading: false})
-      }
+      if (!isCurrent()) return
+      if (!file) { if (snapshot.loading) publish({loading: false}); return }
       const url = URL.createObjectURL(file)
       replaceObjectUrl(url)
-      if (snapshot.source === 'upload') {
-        const {revision: _, ...current} = snapshot
-        publish({...current, assetUrl: url, loading: false})
-      }
+      publish({assetUrl: url, loading: false})
     } catch {
-      if (snapshot.source === 'upload') {
-        const {revision: _, ...current} = snapshot
-        publish({...current, loading: false})
-      }
+      if (isCurrent() && snapshot.loading) publish({loading: false})
     } finally {
       uploadLoad = undefined
     }
@@ -290,25 +293,20 @@ async function loadUploadedBackground() {
   return uploadLoad
 }
 
-/** 把当前生效的那条 API 交给服务端解析成真实直链（跨域时浏览器读不到最终地址）。 */
-async function resolveActiveBackground() {
-  if (snapshot.source !== 'url') return
-  const url = activeBackgroundUrl(snapshot)
-  if (!url) return
-  publish({resolving: true, resolveError: ''})
-  try {
-    const {token} = await api.request('background.access', {})
-    const result = await api.request('background.resolve', {url})
-    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
-    /* 解析成功：壁纸改用直链 —— 同一个地址同时用于预览与「存入图库」，不会出现两次随机。 */
-    lastGoodAssetUrl = proxyUrl(result.final_url, token)
-    publish({assetUrl: lastGoodAssetUrl, directUrl: result.final_url, resolving: false, resolveError: ''})
-  } catch (error) {
-    if (snapshot.source !== 'url' || activeBackgroundUrl(snapshot) !== url) return
-    /* 解析失败就退回原地址直接当图片用（很多 API 本身就是图片），并把原因留给界面显示。 */
-    const fallback = lastGoodAssetUrl || url
-    publish({assetUrl: fallback, resolving: false, resolveError: (error as Error).message})
+export function publishResolvedBackground(generation: number, media: {assetUrl: string; directUrl: string} | undefined, error: string) {
+  if (snapshot.source !== 'url' || snapshot.urlGeneration !== generation) return
+  if (error) {
+    const fallback = lastGoodAssetUrl || activeBackgroundUrl(snapshot)
+    publish({assetUrl: fallback, resolving: false, resolveError: error})
+  } else if (media) {
+    lastGoodAssetUrl = media.assetUrl
+    publish({...media, resolving: false, resolveError: ''})
   }
+}
+
+export function retryBackgroundUrl() {
+  if (snapshot.source !== 'url') return
+  publish({urlGeneration: snapshot.urlGeneration + 1, resolving: true, resolveError: ''})
 }
 
 /** 设置 URL 模式的多行 API：一行一条，本次随机生效一条；全清空自动回填内置随机图 API。 */
@@ -319,77 +317,73 @@ export function setBackgroundUrls(values: string[], kind: BackgroundKind) {
   const activeUrl = urls[preference.active] ?? urls[0] ?? DEFAULT_BACKGROUND_URLS[0] ?? ''
   replaceObjectUrl()
   savePreference(preference)
-  publish({...preference, assetUrl: directMediaUrl(activeUrl), directUrl: '', resolveError: '', loading: false})
-  void deleteStoredFile()
-  void resolveActiveBackground()
+  publishSelection({...preference, assetUrl: directMediaUrl(activeUrl), directUrl: '', resolving: true, resolveError: '', urlGeneration: snapshot.urlGeneration + 1, loading: false})
 }
 
 
-/** 启动时把图库拉回来：图库模式随机铺一张，并把旧的浏览器上传图迁移进图库（只做一次）。 */
-export async function initBackgroundGallery() {
-  // 只做一次：壁纸的加载 effect 依赖 revision，而这里会 publish；
-  // 没有这个守卫就会「解析→revision 变→effect 重跑→再解析」无限重解析（随机图 API 每次都是新图，表现就是背景狂闪）。
-  if (bootstrapped) return
-  bootstrapped = true
-  await refreshGallery()
-  // 迁移必须排在「随机铺一张」之前：随机铺一张会把快照里的名字换成库里的条目名，
-  // 迁移再拿这个名字去登记，旧图的文件名就丢了。
-  await migrateStoredUpload()
-  if (snapshot.source === 'upload') {
-    if (snapshot.entry && gallery.some(item => item.id === snapshot.entry)) publish({assetUrl: galleryUrl(snapshot.entry), loading: false})
-    else applyGalleryEntry()
-  }
-  /* 刷新页面后也要把当前 URL 档解析成直链。 */
-  if (snapshot.source === 'url') void resolveActiveBackground()
-}
-
-/** 旧的单图存在浏览器 IndexedDB 里：取出来上传进图库，再清掉旧记录，避免丢图。 */
-async function migrateStoredUpload() {
-  if (localStorage.getItem(MIGRATED_KEY)) return
-  try {
-    const file = await storedFile('readonly')
-    if (file && file.size) {
+let migration: Promise<void> | undefined
+let legacyFileMissing = false
+/** Retry failed legacy migration on the next gallery read; concurrent reads share one attempt. */
+export function migrateStoredUpload(): Promise<void> {
+  if (migration) return migration
+  migration = (async () => {
+    try {
+      if (localStorage.getItem(MIGRATED_KEY)) {legacyFileMissing = true; return}
+      const isCurrent = captureBackgroundSelection()
       const name = snapshot.name || 'legacy-upload'
-      await uploadBackgroundFile(new File([file], name, {type: file.type || 'image/jpeg'}))
-      logger('已把旧的浏览器上传背景迁移进图库')
-    }
-    await deleteStoredFile()
-    localStorage.setItem(MIGRATED_KEY, '1')
-  } catch { /* 迁移失败不影响使用：图库照常工作，下次启动再试。 */ }
+      const file = await storedFile('readonly')
+      if (file && file.size) {
+        const entry = await uploadBackgroundFile(new File([file], name, {type: file.type || 'image/jpeg'}))
+        if (isCurrent() && snapshot.source === 'upload' && !snapshot.entry) applyGalleryEntry(entry)
+        logger('已把旧的浏览器上传背景迁移进图库')
+      }
+      await deleteStoredFile()
+      legacyFileMissing = true
+      localStorage.setItem(MIGRATED_KEY, '1')
+    } catch { /* A later read retries migration. */ }
+  })().finally(() => { migration = undefined })
+  return migration
 }
 
-/** 在系统文件管理器里打开图库文件夹。 */
 export async function openGalleryFolder() {
   const result = await api.request('background.gallery.open', {})
   return result.path
 }
 
-/** 拉取图库列表；界面与随机取图都依赖它。 */
-export async function refreshGallery() {
-  try {
-    gallery = await api.request('background.gallery.list', {})
-  } catch { /* 拉取失败按空图库处理，界面显示为空。 */ gallery = [] }
-  listeners.forEach(listener => listener())
-  return gallery
-}
-
-/** 当前缓存的图库列表；未经 refreshGallery 拉取时为空。 */
-export const getGallery = () => gallery
-
-/** 让图库里的某一条生效；不传 id 则随机抽一条（多图随机播放）。 */
-export function applyGalleryEntry(identifier?: string) {
-  if (!gallery.length) return
-  const entry = (identifier ? gallery.find(item => item.id === identifier) : undefined)
-    ?? gallery[Math.floor(pickActive(gallery.length))]
-  if (!entry) return
+/** Select an entry supplied by the gallery owner. */
+export function applyGalleryEntry(entry: BackgroundGalleryEntry) {
   const preference: BackgroundPreference = {source: 'upload', kind: entry.kind, urls: [], active: 0, name: entry.name, entry: entry.id}
   replaceObjectUrl()
   savePreference(preference)
-  publish({...preference, assetUrl: galleryUrl(entry.id), directUrl: '', resolveError: '', loading: false})
+  publishSelection({...preference, assetUrl: galleryUrl(entry.id), directUrl: '', resolving: false, resolveError: '', loading: false})
 }
 
+/** Enter an empty gallery so later reads can restore an upload selection. */
+export function enterGallery(identifier?: string) {
+  const preference: BackgroundPreference = {
+    source: 'upload', kind: snapshot.kind, urls: [], active: 0,
+    name: identifier && identifier === snapshot.entry ? snapshot.name : '', entry: identifier,
+  }
+  replaceObjectUrl()
+  savePreference(preference)
+  publishSelection({...preference, assetUrl: identifier ? galleryUrl(identifier) : '', loading: false, directUrl: '', resolving: false, resolveError: ''})
+}
 
-/** 上传本地图片到图库（服务端落盘）。 */
+/** Reconcile the active upload with a complete, successfully loaded gallery. */
+export function reconcileGallery(entries: BackgroundGalleryEntry[]) {
+  if (snapshot.source !== 'upload') return
+  if (!snapshot.entry && snapshot.name && !legacyFileMissing) {
+    void loadUploadedBackground()
+    return
+  }
+  const entry = entries.find(item => item.id === snapshot.entry) ?? entries[pickActive(entries.length)]
+  if (entry) {
+    if (snapshot.entry !== entry.id || snapshot.assetUrl !== galleryUrl(entry.id) || snapshot.loading) applyGalleryEntry(entry)
+  } else if (snapshot.assetUrl || snapshot.entry || snapshot.loading) {
+    enterGallery()
+  }
+}
+
 export async function uploadBackgroundFile(file: File) {
   const form = new FormData()
   form.append('file', file)
@@ -397,25 +391,19 @@ export async function uploadBackgroundFile(file: File) {
   const response = await fetch('/api/v1/background/gallery', {method: 'POST', body: form, headers: {'x-azurpilot-background-token': token}})
   const payload = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(payload?.error || '上传失败。')
-  await refreshGallery()
-  applyGalleryEntry(payload.entry?.id)
+  if (!payload.entry?.id) throw new Error('上传响应缺少图库条目。')
   return payload.entry as BackgroundGalleryEntry
 }
 
-/** 把当前解析出的直链存进图库（服务端代抓，跨域也能存）。 */
 export async function saveDirectUrlToGallery() {
   const url = snapshot.directUrl
   if (!url) throw new Error('还没有解析出直链。')
   const result = await api.request('background.gallery.add', {url, name: snapshot.name || ''})
-  await refreshGallery()
   return result.entry
 }
 
-/** 从图库删除一条；删的是当前生效条目时随机换一张。 */
 export async function removeGalleryEntry(identifier: string) {
   await api.request('background.gallery.remove', {id: identifier})
-  await refreshGallery()
-  if (snapshot.entry === identifier) applyGalleryEntry()
 }
 
 /** 关闭背景：普通材质的默认档；玻璃材质下也可显式关掉（上传文件保留，便于切回）。 */
@@ -424,6 +412,6 @@ export function disableBackground() {
   const preference: BackgroundPreference = {source: 'off', kind: snapshot.kind, urls: snapshot.urls, active: snapshot.active, name: snapshot.name, entry: snapshot.entry}
   replaceObjectUrl()
   savePreference(preference)
-  publish({...preference, assetUrl: '', loading: false})
+  publishSelection({...preference, assetUrl: '', loading: false})
 }
 

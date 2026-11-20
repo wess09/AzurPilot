@@ -12,7 +12,7 @@ import { api } from '../api/client'
 import { useApp, useConnection } from '../app/context'
 import { CreateInstance } from '../app/App'
 import { taskLabel } from '../components/taskNavItems'
-import { ActionGroup, Empty, ErrorBox, PageTitle, StatusBadge } from '../components/ui'
+import { ActionGroup, Empty, ErrorBox, PageTitle, Panel, StatusBadge } from '../components/ui'
 
 /** 把配置写成 json 文件下载。内容即配置本体（含 Alas 段），与导入接口期望的格式一致。 */
 function downloadJson(filename: string, data: unknown) {
@@ -72,7 +72,7 @@ export function ConfigManager() {
     </header>
     {error && <ErrorBox message={error}/>}
     <LoadBoundary ready={instancesLoaded}>{instances.length ? <div className="config-grid">
-      {instances.map(item => <section className="panel config-group config-card" key={item.name}>
+      {instances.map(item => <Panel compact className="config-card" key={item.name}>
         <div className="config-card-head">
           <h2 role="heading" aria-level={2}>{item.name}</h2>
           <StatusBadge status={item.status}/>
@@ -90,7 +90,7 @@ export function ConfigManager() {
             ? <button className="button danger" disabled={busy === item.name} onClick={() => void remove(item.name)}><Trash2 size={15}/>{ui('instance.deleteConfirm')}</button>
             : <button className="button danger subtle" onClick={() => setConfirming(item.name)}><Trash2 size={15}/>{ui('instance.delete')}</button>}
         </div>
-      </section>)}
+      </Panel>)}
     </div>
       : <div className="config-empty">
         <Empty icon={<FileJson size={30}/>} title={ui('config.empty')}>{ui('config.emptyHint')}</Empty>

@@ -27,6 +27,22 @@ describe('usePageRead', () => {
     await act(async () => {vi.advanceTimersByTime(2000); await Promise.resolve()})
     expect(loader).toHaveBeenCalledTimes(3)
   })
+  it('skips blocked poll ticks and keeps the last successful value on a silent failure', async () => {
+    vi.useFakeTimers()
+    let canPoll = false
+    const loader = vi.fn().mockResolvedValueOnce('ready').mockRejectedValueOnce(new Error('poll failed'))
+    const interval = () => 1000
+    const when = () => canPoll
+    const {result} = renderHook(() => usePageRead('a', true, loader, interval, {when, silent: true}))
+    await act(async () => {})
+    await act(async () => {vi.advanceTimersByTime(1000)})
+    expect(loader).toHaveBeenCalledTimes(1)
+    canPoll = true
+    await act(async () => {vi.advanceTimersByTime(1000)})
+    expect(loader).toHaveBeenCalledTimes(2)
+    expect(result.current.data).toBe('ready')
+    expect(result.current.error).toBe('')
+  })
   it('does not rerender on an unchanged setData', async () => {
     const loader = vi.fn().mockResolvedValue('ready')
     let renders = 0

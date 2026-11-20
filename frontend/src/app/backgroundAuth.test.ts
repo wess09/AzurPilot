@@ -3,7 +3,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { api } from '../api/client'
-import { applyGalleryEntry, disableBackground, getBackground, readBackgroundPreference, refreshGallery, setBackgroundUrls, uploadBackgroundFile } from './background'
+import { applyGalleryEntry, disableBackground, getBackground, reconcileGallery, readBackgroundPreference, setBackgroundUrls, uploadBackgroundFile } from './background'
 import { getThemePreference } from './theme'
 
 vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
@@ -17,27 +17,6 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('背景 HTTP 能力令牌', () => {
-  it('代理地址使用当前授权会话领取的令牌，后续解析重新领取', async () => {
-    let token = 'first-token'
-    vi.mocked(api.request).mockImplementation(async method => {
-      if (method === 'background.access') return {token}
-      if (method === 'background.resolve') return {final_url: 'https://example.com/final.png', content_type: 'image/png'}
-      throw new Error(`非预期请求：${method}`)
-    })
-    setBackgroundUrls(['https://example.com/random'], 'image')
-    await vi.waitFor(() => expect(getBackground().resolving).toBe(false))
-    let url = new URL(getBackground().assetUrl, 'http://localhost')
-    expect(url.pathname).toBe('/api/v1/background/media')
-    expect(url.searchParams.get('url')).toBe('https://example.com/final.png')
-    expect(url.searchParams.get('token')).toBe('first-token')
-    token = 'new-token'
-    setBackgroundUrls(['https://example.com/another'], 'image')
-    await vi.waitFor(() => expect(getBackground().resolving).toBe(false))
-    url = new URL(getBackground().assetUrl, 'http://localhost')
-    expect(url.searchParams.get('token')).toBe('new-token')
-    expect(JSON.stringify(vi.mocked(localStorage.setItem).mock.calls)).not.toContain('token')
-  })
-
   it('上传在领取令牌后通过请求头发送，不把令牌放入 URL', async () => {
     vi.mocked(api.request).mockImplementation(async method => {
       if (method === 'background.access') return {token: 'upload-token'}
@@ -107,11 +86,18 @@ describe('背景关闭档保留已填地址', () => {
       if (method === 'background.gallery.list') return [{id: 'mock_bg', name: 'kept.png', kind: 'image', size: 1024, added: 0}]
       throw new Error(`非预期请求：${method}`)
     })
-    await refreshGallery()
-    applyGalleryEntry('mock_bg')
+    applyGalleryEntry({id: 'mock_bg', name: 'kept.png', kind: 'image', size: 1024, added: 0})
     disableBackground()
     const restored = readBackgroundPreference(getThemePreference().material)
     expect(restored.entry).toBe('mock_bg')
     expect(restored.name).toBe('kept.png')
   })
+})
+
+it('clears the selected wallpaper when the final gallery entry disappears', () => {
+  applyGalleryEntry({id: 'last', name: 'last.png', kind: 'image', size: 1024, added: 0})
+  reconcileGallery([])
+  expect(getBackground().entry).toBeUndefined()
+  expect(getBackground().assetUrl).toBe('')
+  expect(getBackground().source).toBe('upload')
 })

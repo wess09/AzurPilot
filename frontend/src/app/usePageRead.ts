@@ -7,8 +7,10 @@ const cancelled = () => new DOMException('Read cancelled', 'AbortError')
 const rejectWaiters = (waiters: Waiter[]) => {for (const waiter of waiters.splice(0)) waiter.reject(cancelled())}
 const newState = <T,>(key: string): ReadState<T> => ({key, error: '', busy: false, version: 0, queued: false, queuedSilent: true, active: false, runId: 0, waiters: [], queuedWaiters: []})
 
+type PollOptions = {when?: () => boolean; silent?: boolean}
+
 /** Read one identity at a time. Concurrent refresh requests coalesce into one trailing read. */
-export function usePageRead<T>(identity: string, enabled: boolean, loader: () => Promise<T>, pollAfter?: (data: T | undefined, error: string) => number) {
+export function usePageRead<T>(identity: string, enabled: boolean, loader: () => Promise<T>, pollAfter?: (data: T | undefined, error: string) => number, {when: canPoll, silent: silentPoll = false}: PollOptions = {}) {
   const [, render] = useState(0)
   const snapshot = useMemo(() => newState<T>(identity), [identity])
   const state = useRef(snapshot)
@@ -23,6 +25,16 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
       return
     }
     if (waiter) current.waiters.push(waiter)
+    const schedulePoll = () => {
+      const delay = pollAfter?.(current.data, current.error)
+      if (delay === undefined || !Number.isFinite(delay) || delay <= 0) return
+      current.timer = setTimeout(() => {
+        current.timer = undefined
+        if (!current.active || state.current !== current) return
+        if (canPoll && !canPoll()) schedulePoll()
+        else void run(silentPoll)
+      }, delay)
+    }
     const run = async (silent: boolean) => {
       current.busy = true; current.queued = false; current.queuedSilent = true; update()
       const version = current.version, runId = ++current.runId
@@ -45,14 +57,11 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
         if (current.queued) {
           current.waiters = current.queuedWaiters.splice(0)
           void run(current.queuedSilent)
-        } else if (pollAfter) {
-          const delay = pollAfter(current.data, current.error)
-          if (Number.isFinite(delay) && delay > 0) current.timer = setTimeout(() => {current.timer = undefined; if (current.active && state.current === current) void run(false)}, delay)
-        }
+        } else schedulePoll()
       }
     }
     void run(!!options?.silent)
-  }, [snapshot, enabled, loader, pollAfter, update])
+  }, [snapshot, enabled, loader, pollAfter, canPoll, silentPoll, update])
   const reload = useCallback((options?: {silent?: boolean}) => request(options), [request])
   const reloadAndWait = useCallback(() => new Promise<void>((resolve, reject) => request(undefined, {resolve, reject})), [request])
   const invalidate = useCallback(() => {snapshot.version++; snapshot.queued = false; snapshot.queuedSilent = true; rejectWaiters(snapshot.queuedWaiters)}, [snapshot])

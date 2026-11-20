@@ -64,12 +64,12 @@ export function Updater() {
     </header>}
     <LoadBoundary ready={!!data} error={error || statusError || data?.error} retry={refresh}>
     {data && <>
-      {data.managedByAndroid && <section className="panel config-group"><p className="panel-note">{ui('updater.androidManaged')}</p></section>}
+      {data.managedByAndroid && <Panel compact><p className="panel-note">{ui('updater.androidManaged')}</p></Panel>}
       <div className="head-grid">
         {[
           {label: ui('updater.localHead'), sha: local, isLocal: true},
           {label: ui('updater.upstreamHead'), sha: upstream, isLocal: false},
-        ].map(({label, sha, isLocal}) => <section className="panel config-group head-card" key={label}>
+        ].map(({label, sha, isLocal}) => <Panel compact className="head-card" key={label}>
           <div className="panel-heading">
             <div><h2 role="heading" aria-level={2}>{label}</h2></div>
             {isLocal && <div className="update-summary">
@@ -84,7 +84,7 @@ export function Updater() {
               {copiedSha === sha ? <Check size={14}/> : <Copy size={14}/>}
             </button>}
           </div>
-        </section>)}
+        </Panel>)}
       </div>
       {data.shaMismatch ? <p className="mismatch-note" role="alert"><TriangleAlert size={15}/><span>{ui('updater.shaMismatch.banner')}</span></p>
         : data.ahead > 0 && <p className="muted">{ui('updater.aheadCommits', {count: data.ahead})}</p>}

@@ -336,7 +336,7 @@ export function TaskConfig() {
   // 任务级说明（Task.<task>.help）：作为卡片列首卡，与参数卡同宽同层。
   const taskHelp = t(`Task.${task}.help`)
   const taskHelpBlock = taskHelp && taskHelp !== 'help' && !taskHelp.startsWith('Task.')
-    ? <section className="panel task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></section>
+    ? <Panel className="task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></Panel>
     : null
 
   const groupCardsBlock = <div className="config-groups">{taskHelpBlock}{startupPanel}{task === 'Alas' && !search && <AccountPanel key={instance} instance={instance}/>} {groupCards}</div>
@@ -392,15 +392,14 @@ export function TaskConfig() {
 
   const toolPanel = task === 'OpsiSimulator'
     ? <OpsiSimulatorPanel key={instance} instance={instance} beforeStart={() => queue.settled()}/>
-    : tool && <section className="panel tool-log-panel" aria-label={ui('monitor.logs')}>
-    <div className="panel-heading">
-      <div><Terminal size={18}/><h2>{ui('monitor.logs')}</h2></div>
+    : tool && <Panel className="tool-log-panel" aria-label={ui('monitor.logs')}>
+    <PanelHeading title={ui('monitor.logs')} icon={<Terminal size={18}/>} actions={
       <button className="button primary" onClick={() => setConfirmRun(true)} disabled={busy || connection !== 'ready'}>
         <Play size={16}/>{ui('task.runTool')}
       </button>
-    </div>
+    }/>
     <LogPanel />
-  </section>
+  </Panel>
 
   // 现代版式的任务详细设置：参数卡在中列，目录与调度器各占一列，页名由顶栏居中显示。
   // 调度器列的宽度沿用总览页那套 `--modern-rail-width`，边上挂同一个拖拽把手。
