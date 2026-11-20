@@ -136,7 +136,7 @@ class GuildLogistics(GuildBase):
                 break
 
     @Config.when(SERVER='en')
-    def _guild_logistics_mission_available(self):
+    def _guild_logistics_mission_available(self, accept_timer):
         """检测大舰队任务按钮当前是否可点击或已激活（EN 服规则）。
 
         通过颜色采样判断任务是已完成、进行中、可领取还是可接取。
@@ -169,40 +169,47 @@ class GuildLogistics(GuildBase):
             return False
 
     @Config.when(SERVER='jp')
-    def _guild_logistics_mission_available(self):
-        """检测大舰队任务按钮当前是否可点击或已激活（JP 服规则）。
+    def _guild_logistics_mission_available(self, accept_timer):
+        """根据日服后勤页面的模板判断每周任务状态。
+
+        Args:
+            accept_timer (Timer): 确认接取按钮持续可见的计时器。
 
         Returns:
-            bool: 按钮处于激活状态返回 True，否则返回 False。
+            bool | None: 可接取或领奖为 True，当前无操作为 False，等待下一帧为 None。
 
         Pages:
             in: GUILD_LOGISTICS
             out: GUILD_LOGISTICS
         """
-        r, g, b = get_color(self.device.image, GUILD_MISSION.area)
-        if g > max(r, b) - 10:
-            # 任务完成时右下角有绿色对勾
+        if self.info_bar_count():
+            accept_timer.clear()
+            return None
+
+        if self.appear(GUILD_MISSION_FINISHED, offset=(20, 20)):
             logger.info('[大舰队-后勤] 本周大舰队任务已完成')
             self._guild_logistics_mission_finished = True
             return False
-        elif self.image_color_count(GUILD_MISSION, color=(255, 255, 255), threshold=1, count=50):
-            # JP 服中 0/300 为 (255, 255, 255)
-            logger.info('[大舰队-后勤] 大舰队任务按钮未激活')
+        # 进度文案居中，数字位数变化会改变 /300 的横向位置。
+        if self.appear(GUILD_MISSION_IN_PROGRESS, offset=(40, 20)):
+            logger.info('[大舰队-后勤] 大舰队任务进行中')
             return False
-        elif self.image_color_count(GUILD_MISSION, color=(255, 255, 255), threshold=75, count=400):
-            # (255, 255, 255) 少于 50，但有很多蓝白色像素
-            logger.info('[大舰队-后勤] 大舰队任务按钮已激活')
+        if self.appear(GUILD_MISSION_CLAIM, offset=(20, 20)):
+            accept_timer.clear()
+            logger.info('[大舰队-后勤] 大舰队任务奖励可领取')
             return True
-        elif not self.image_color_count(GUILD_MISSION, color=(255, 255, 255), threshold=75, count=50):
-            # 无任务计数
-            logger.info('[大舰队-后勤] 未找到大舰队任务，本周任务可能未开始')
-            return False
-        else:
-            logger.info('[大舰队-后勤] 未知的大舰队任务条件，跳过')
-            return False
+        if self.appear(GUILD_MISSION_ACCEPT, offset=(20, 20)):
+            # 新任务加载时会短暂显示接取按钮，由外层循环换帧确认。
+            if accept_timer.start().reached():
+                logger.info('[大舰队-后勤] 大舰队任务可接取')
+                return True
+            return None
+
+        logger.info('[大舰队-后勤] 大舰队任务按钮未激活')
+        return False
 
     @Config.when(SERVER=None)
-    def _guild_logistics_mission_available(self):
+    def _guild_logistics_mission_available(self, accept_timer):
         """检测大舰队任务按钮当前是否可点击或已激活（默认规则，如 CN/TW 服）。
 
         Returns:
@@ -383,12 +390,13 @@ class GuildLogistics(GuildBase):
 
         return False
 
-    def _guild_logistics_mission_handle(self, mission_checked, click_interval):
+    def _guild_logistics_mission_handle(self, mission_checked, click_interval, accept_timer):
         """处理大舰队每周任务的领取或接取操作。
 
         Args:
             mission_checked (bool): 任务是否已被检查。
             click_interval (Timer): 点击间隔计时器。
+            accept_timer (Timer): 日服接取按钮的稳定确认计时器。
 
         Returns:
             tuple[bool, bool]: 更新后的已检查状态，以及循环是否应继续处理下一帧。
@@ -396,12 +404,16 @@ class GuildLogistics(GuildBase):
         if mission_checked:
             return True, False
 
-        if not self._guild_logistics_mission_available():
+        available = self._guild_logistics_mission_available(accept_timer)
+        if available is None:
+            return False, True
+        if not available:
             return True, False
 
         if click_interval.reached():
             self.device.click(GUILD_MISSION)
             click_interval.reset()
+            accept_timer.clear()
         return False, True
 
     def _guild_logistics_exchange_handle(self, exchange_checked, exchange_count, exchange_interval):
@@ -442,6 +454,7 @@ class GuildLogistics(GuildBase):
         confirm_timer = Timer(1.5, count=3).start()
         exchange_interval = Timer(1.5, count=3)
         click_interval = Timer(0.5, count=1)
+        mission_accept_timer = Timer(0.5, count=1)
         supply_state = {
             'checked': False,
             'clicked': False,
@@ -459,13 +472,16 @@ class GuildLogistics(GuildBase):
                 self.device.screenshot()
 
             if self._guild_logistics_popup_handle(supply_state, confirm_timer, exchange_interval):
+                mission_accept_timer.clear()
                 continue
 
             if self._is_in_guild_logistics():
                 if self._guild_logistics_supply_handle(supply_state, click_interval, supply_result_timer):
+                    mission_accept_timer.clear()
                     self._guild_logistics_timer_reset(confirm_timer)
                     continue
-                mission_checked, handled = self._guild_logistics_mission_handle(mission_checked, click_interval)
+                mission_checked, handled = self._guild_logistics_mission_handle(
+                    mission_checked, click_interval, mission_accept_timer)
                 if handled:
                     self._guild_logistics_timer_reset(confirm_timer)
                     continue
@@ -479,6 +495,7 @@ class GuildLogistics(GuildBase):
                 self._guild_logistics_exchange_bug_check(exchange_count)
 
             else:
+                mission_accept_timer.clear()
                 confirm_timer.reset()
 
         logger.info(f"supply_checked: {supply_state['checked']}, mission_checked: {mission_checked}, "
