@@ -2,7 +2,7 @@ import type {SetStateAction} from 'react'
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 
 type Waiter = {resolve: () => void; reject: (error: unknown) => void}
-type ReadState<T> = {key: string; data?: T; error: string; busy: boolean; version: number; queued: boolean; queuedSilent: boolean; active: boolean; runId: number; timer?: ReturnType<typeof setTimeout>; waiters: Waiter[]; queuedWaiters: Waiter[]}
+type ReadState<T> = {key: string; data?: T; error: string; errorCause?: unknown; busy: boolean; version: number; queued: boolean; queuedSilent: boolean; active: boolean; runId: number; timer?: ReturnType<typeof setTimeout>; waiters: Waiter[]; queuedWaiters: Waiter[]}
 const cancelled = () => new DOMException('Read cancelled', 'AbortError')
 const rejectWaiters = (waiters: Waiter[]) => {for (const waiter of waiters.splice(0)) waiter.reject(cancelled())}
 const newState = <T,>(key: string): ReadState<T> => ({key, error: '', busy: false, version: 0, queued: false, queuedSilent: true, active: false, runId: 0, waiters: [], queuedWaiters: []})
@@ -29,10 +29,13 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
       let failure: unknown, failed = false
       try {
         const data = await loader()
-        if (state.current === current && current.active && version === current.version) {current.data = data; current.error = ''}
+        if (state.current === current && current.active && version === current.version) {current.data = data; current.error = ''; current.errorCause = undefined}
       } catch (error) {
         failure = error; failed = true
-        if (state.current === current && current.active && version === current.version && (!silent || current.data === undefined)) current.error = error instanceof Error ? error.message : String(error)
+        if (state.current === current && current.active && version === current.version && (!silent || current.data === undefined)) {
+          current.error = error instanceof Error ? error.message : String(error)
+          current.errorCause = error
+        }
       } finally {
         if (current.runId !== runId || !current.active) return
         if (state.current !== current) {rejectWaiters(current.waiters); rejectWaiters(current.queuedWaiters); return}
@@ -58,7 +61,7 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
     const next = typeof data === 'function' ? (data as (previous: T | undefined) => T | undefined)(snapshot.data) : data
     snapshot.version++
     if (Object.is(next, snapshot.data) && !snapshot.error) return
-    snapshot.data = next; snapshot.error = ''; update()
+    snapshot.data = next; snapshot.error = ''; snapshot.errorCause = undefined; update()
   }, [snapshot, update])
   useEffect(() => {
     state.current = snapshot
@@ -70,5 +73,5 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
       if (snapshot.timer) {clearTimeout(snapshot.timer); snapshot.timer = undefined}
     }
   }, [snapshot, enabled, reload])
-  return {data: snapshot.data, ready: snapshot.data !== undefined, error: snapshot.error, busy: snapshot.busy, reload, reloadAndWait, setData, invalidate}
+  return {data: snapshot.data, ready: snapshot.data !== undefined, error: snapshot.error, errorCause: snapshot.errorCause, busy: snapshot.busy, reload, reloadAndWait, setData, invalidate}
 }

@@ -40,18 +40,15 @@ interface Facts {dock: DockReport; technology: Report; catalog: Catalog}
 export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}: {report?: DockReport; reportError?: string; onRefresh?: () => void; reloadRef?: {current: (() => void) | undefined}}) {
   const {instance = ''} = useParams(), connection = useConnection(), {language, ui} = useApp()
   const [facts, setFacts] = useState<Facts>(), [plan, setPlan] = useState<CultivationPlan>()
-  const [result, setResult] = useState<CultivationReport>(), [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'mind.query', ''), [includedOnly, setIncludedOnly] = useFleetPreference<boolean>(instance, 'mind.includedOnly', false)
   const [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'mind.filters', {}), [extra, setExtra] = useFleetPreference<boolean>(instance, 'mind.extra', false)
   const tr = (key: string) => translateFleetTech(language, key)
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'mind.sort', {column: 'efficiency', direction: 'descending'})
-  const [calculating, setCalculating] = useState(false)
   const loadCatalog = useCallback(() => api.request('fleetTech.catalog', {instance}), [instance])
   const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data, catalogError = catalogRead.error
   const loadTechnology = useCallback(() => api.request('fleetTech.report', {instance}), [instance])
   const technologyRead = usePageRead(JSON.stringify([instance, dock?.revision]), connection === 'ready', loadTechnology)
   const technology = technologyRead.data, technologyError = technologyRead.error
-  const [calculateAttempt, setCalculateAttempt] = useState(0)
   const refreshDock = useRef(onRefresh), refreshTechnology = useRef(technologyRead.reload)
   refreshDock.current = onRefresh; refreshTechnology.current = technologyRead.reload
   useEffect(() => {
@@ -62,7 +59,7 @@ export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}
   const memory = useRef<{instance: string; plan: CultivationPlan} | null>(null)
   const key = `azurpilot.cultivation-auto.${instance}`
   useEffect(() => {
-    setFacts(undefined); setResult(undefined); setError('')
+    setFacts(undefined)
   }, [instance, connection])
   useEffect(() => {
     if (!dock || dock.instance !== instance || !catalog || !technology) return
@@ -87,23 +84,28 @@ export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}
     memory.current = {instance, plan}
     try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* localStorage 被禁时计划只留在内存，本次会话仍然可用。 */ }
   }, [facts, plan, instance, key])
+  const dockRevision = facts?.dock.revision ?? ''
+  const calculationKey = JSON.stringify([instance, dockRevision, facts?.technology.revision, candidateIds])
+  const loadPlan = useCallback(() => api.request('mind.plan', {
+    instance, revision: dockRevision, ship_ids: candidateIds, target_level: 120,
+  }), [instance, dockRevision, candidateIds])
+  const planRead = usePageRead(calculationKey,
+    connection === 'ready' && facts?.dock.instance === instance && dockRevision === dock?.revision, loadPlan)
+  const [lastResult, setLastResult] = useState<{instance: string; value: CultivationReport}>()
   useEffect(() => {
-    if (!facts || facts.dock.instance !== instance || connection !== 'ready') return
-    let active = true
-    // 重算期间保留已完成的结果视图，只标记计算中状态。
-    setCalculating(true)
-    // 勾选只影响合计，单个舰船的花销对每个候补都要算，因此请求带全部候选 id。
-    void api.request('mind.plan', {instance, revision: facts.dock.revision, ship_ids: candidateIds,
-      target_level: 120}).then(value => {
-      if (active) {setResult(value); setCalculating(false); setError('')}
-    }).catch(e => {
-      if (!active) return
-      setCalculating(false)
-      if (e instanceof ApiError && e.code === 'CONFLICT') {refreshDock.current?.(); refreshTechnology.current()}
-      else setError((e as Error).message)
-    })
-    return () => {active = false}
-  }, [facts, candidateIds, connection, instance, calculateAttempt])
+    if (connection !== 'ready') setLastResult(undefined)
+    else if (planRead.data) setLastResult({instance, value: planRead.data})
+  }, [instance, connection, planRead.data])
+  const result = planRead.data ?? (connection === 'ready' && lastResult?.instance === instance ? lastResult.value : undefined)
+  const {busy: calculating, error} = planRead
+  const conflict = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const failure = planRead.errorCause
+    if (!(failure instanceof ApiError) || failure.code !== 'CONFLICT' || conflict.current === calculationKey) return
+    conflict.current = calculationKey
+    refreshDock.current?.()
+    refreshTechnology.current()
+  }, [calculationKey, planRead.errorCause])
   const estimates = useMemo(() => new Map(result?.ships.map(row => [row.id, row])), [result])
   const totals = useMemo(() => {
     const selected = result?.ships.filter(row => included.has(row.id)) ?? []
@@ -171,7 +173,7 @@ export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}
   const review = facts?.dock.ships.filter(card => card.review || !card.group_type).length ?? 0
   function retry() {
     if (!catalog || catalogError) catalogRead.reload()
-    technologyRead.reload(); setCalculateAttempt(value => value + 1); refreshDock.current?.()
+    technologyRead.reload(); planRead.reload(); refreshDock.current?.()
   }
   if (!facts || facts.dock.instance !== instance || !plan || !result) return <LoadBoundary ready={false} error={reportError || catalogError || technologyError || error} retry={retry}/>
   return <div className="fleet-technology cultivation-calculator">

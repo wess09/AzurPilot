@@ -3,7 +3,7 @@
  *
  * 二维码卡片四周保留 32px 静区（QR 规范的 Quiet Zone ≥ 4X），避免周围图形干扰扫码识别。
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Check,
   CheckCircle2,
@@ -18,8 +18,12 @@ import {
 import { PairingQr, pairingQrPayload } from './PairingQr'
 import { PairingScanGuide } from './PairingScanGuide'
 import { api } from '../api/client'
-import type { RemoteClient, RemotePairing } from '../api/types'
+import type { RemotePairing } from '../api/types'
 import { useApp } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
+import { ErrorBox, Panel, PanelHeading } from '../components/ui'
+import { Button } from '../components/ui/button'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { pairCopy } from './i18n'
 import './pairing.css'
 
@@ -47,6 +51,9 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+const loadClients = () => api.request('remote.clients', {})
+const pollPending = (result?: {state: string}) => !result || result.state === 'pending' ? 2000 : 0
+
 /**
  * 生成并管理远程配对会话。
  *
@@ -63,22 +70,12 @@ export function PairingPanel({ ready }: { ready: boolean }) {
   const [busy, setBusy] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
-  const [clients, setClients] = useState<RemoteClient[]>([])
-
-  useEffect(() => {
-    let active = true
-    if (ready) {
-      void api
-        .request('remote.clients', {})
-        .then((items) => {
-          if (active) setClients(items)
-        })
-        .catch(() => {})
-    }
-    return () => {
-      active = false
-    }
-  }, [ready])
+  const clientsRead = usePageRead('remote.clients', ready, loadClients)
+  const {reload: refreshClients, setData: setClients} = clientsRead
+  const clients = clientsRead.data ?? []
+  const pairingId = pairing?.id ?? ''
+  const loadStatus = useCallback(() => api.request('remote.pair.status', {id: pairingId}), [pairingId])
+  const statusRead = usePageRead(pairingId, ready && !!pairingId && state === 'pending', loadStatus, pollPending)
 
   // 1 秒本地倒计时。
   useEffect(() => {
@@ -93,42 +90,12 @@ export function PairingPanel({ ready }: { ready: boolean }) {
     return () => clearInterval(interval)
   }, [pairing, state])
 
-  // 2 秒向服务端轮询配对状态。
   useEffect(() => {
-    if (!pairing || state !== 'pending') return
-    let active = true
-    let timer: ReturnType<typeof setTimeout>
-    const update = async () => {
-      const left = Math.max(0, pairing.expires_at - Math.floor(Date.now() / 1000))
-      if (!left) {
-        if (active) {
-          setError('')
-          setState('expired')
-        }
-        return
-      }
-      try {
-        const result = await api.request('remote.pair.status', { id: pairing.id })
-        if (!active) return
-        setError('')
-        if (result.state !== 'pending') {
-          setState(result.state)
-          if (result.state === 'claimed') {
-            setClients(await api.request('remote.clients', {}))
-          }
-          return
-        }
-      } catch (err) {
-        if (active) setError((err as Error).message)
-      }
-      if (active) timer = setTimeout(update, 2000)
-    }
-    void update()
-    return () => {
-      active = false
-      clearTimeout(timer)
-    }
-  }, [pairing, state])
+    const status = statusRead.data?.state
+    if (!ready || state !== 'pending' || !status || status === 'pending') return
+    setState(status)
+    if (status === 'claimed') refreshClients()
+  }, [ready, state, statusRead.data, refreshClients])
 
   async function start() {
     setBusy(true)
@@ -158,7 +125,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
   async function revoke(id: string) {
     try {
       await api.request('remote.revoke', { id })
-      setClients((previous) => previous.filter((item) => item.id !== id))
+      setClients((previous) => previous?.filter((item) => item.id !== id))
     } catch (err) {
       setError((err as Error).message)
     }
@@ -188,15 +155,11 @@ export function PairingPanel({ ready }: { ready: boolean }) {
   }
 
   return (
-    <section className="panel config-group remote-pairing">
-      <div className="panel-heading pairing-header">
-        <div className="pairing-header-left">
-          <QrCode size={18} className="pairing-header-icon" />
-          <h2>{copy.title}</h2>
-        </div>
-        <button
+    <Panel compact className="remote-pairing">
+      <PanelHeading className="pairing-header" icon={<QrCode size={18} className="pairing-header-icon" />} title={copy.title} actions={
+        <Button
           type="button"
-          className={pairing ? 'button secondary pairing-action-trigger' : 'button primary pairing-action-trigger'}
+          variant={pairing ? 'secondary' : 'default'} className="pairing-action-trigger"
           disabled={!ready || busy}
           onClick={() => void start()}
         >
@@ -210,8 +173,8 @@ export function PairingPanel({ ready }: { ready: boolean }) {
             ) : (
               copy.start
             )}
-          </button>
-      </div>
+        </Button>
+      }/>
 
       {!ready && (
         <div className="pairing-unready-notice">
@@ -220,7 +183,8 @@ export function PairingPanel({ ready }: { ready: boolean }) {
         </div>
       )}
 
-      {error && <p className="pairing-error-text" role="alert">{error}</p>}
+      {error && <ErrorBox message={error}/>}
+      {state === 'pending' && statusRead.error && <ErrorBox message={statusRead.error} retry={() => statusRead.reload()}/>}
 
       {/* 空态引导收敛为标题下的一行副标题：入口统一到右上角「开始配对」，不再放第二个主按钮 */}
       {ready && !pairing && <p className="pairing-subtitle">{copy.hint}</p>}
@@ -333,6 +297,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
           </div>
         </div>
 
+        <LoadBoundary ready={!ready || clientsRead.ready} error={ready ? clientsRead.error : ''} retry={() => clientsRead.reload()}>
         {clients.length === 0 ? (
           <div className="pairing-no-clients">
             <p className="muted">{copy.noDevices}</p>
@@ -375,7 +340,8 @@ export function PairingPanel({ ready }: { ready: boolean }) {
             ))}
           </div>
         )}
+        </LoadBoundary>
       </div>
-    </section>
+    </Panel>
   )
 }

@@ -61,3 +61,25 @@ for (const dirty of [false, true]) {
     } finally {await other.close()}
   })
 }
+
+test('scheduler variable fields edit through the shared controls', async ({page}) => {
+  await openEditor(page)
+  const more = page.getByRole('button', {name: '更多操作', exact: true})
+  await more.click()
+  await page.getByRole('button', {name: '变量与端口', exact: true}).click()
+  await page.keyboard.press('Escape')
+  const fields = page.locator('.program-schema-panel')
+  await fields.getByRole('button', {name: '添加', exact: true}).click()
+  const row = fields.locator('.program-schema-row').last()
+  const select = row.getByRole('combobox', {name: '变量类型'})
+  await expect(select).toHaveAttribute('data-slot', 'select-trigger')
+  await select.press('Enter')
+  const options = page.getByRole('listbox')
+  await expect(options).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(select).toBeFocused()
+  await expect(row.getByRole('checkbox', {name: '重启保留'})).toHaveAttribute('data-slot', 'checkbox')
+  await row.getByRole('checkbox', {name: '重启保留'}).check()
+  await expect(row.getByRole('checkbox', {name: '重启保留'})).toBeChecked()
+  await expect(row.getByRole('textbox', {name: '初始值'})).toHaveAttribute('data-slot', 'textarea')
+})

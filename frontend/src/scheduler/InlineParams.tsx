@@ -5,6 +5,9 @@
 import {memo} from 'react'
 import type {CSSProperties} from 'react'
 import {Handle, Position} from '@xyflow/react'
+import {Input} from '../components/ui/input'
+import {Checkbox} from '../components/ui/checkbox'
+import {Select} from '../components/Select'
 import {useApp} from '../app/context'
 import type {UiKey} from '../i18n'
 import type {CardDefinition, Catalog, PortType, ProgramDocument, ProgramNode} from './types'
@@ -173,7 +176,7 @@ export const InlineParams = memo(function InlineParams({
 
     if (options) {
       return (
-        <select
+        <Select
           id={inputId}
           aria-label={label}
           disabled={connected}
@@ -186,19 +189,18 @@ export const InlineParams = memo(function InlineParams({
               {txt}
             </option>
           ))}
-        </select>
+        </Select>
       )
     }
 
     if (typeof value === 'boolean') {
       return (
-        <input
+        <Checkbox
           id={inputId}
-          type="checkbox"
           aria-label={label}
           disabled={connected}
           checked={Boolean(value)}
-          onChange={e => update(key, e.target.checked)}
+          onCheckedChange={checked => update(key, checked === true)}
         />
       )
     }
@@ -206,7 +208,7 @@ export const InlineParams = memo(function InlineParams({
     const isNumeric = typeof value === 'number' || (card.type === 'literal' && values.valueType === 'number')
 
     return (
-      <input
+      <Input
         id={inputId}
         aria-label={label}
         type={

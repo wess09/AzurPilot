@@ -14,5 +14,5 @@ export function editorCommand(event: {key:string; ctrlKey:boolean; metaKey:boole
 }
 /** 判断事件目标是否落在可输入文本的控件里，调用方据此跳过画布快捷键。 */
 export function editingText(target: EventTarget | null) {
-  return target instanceof Element && !!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"]')
+  return target instanceof Element && !!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"], [role="textbox"], [role="combobox"], [role="listbox"], [role="option"], [role="checkbox"]')
 }

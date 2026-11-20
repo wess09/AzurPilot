@@ -2,14 +2,14 @@
 import {afterEach, beforeEach, expect, it, vi} from 'vitest'
 import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import {MemoryRouter, Route, Routes} from 'react-router-dom'
-import {api} from '../api/client'
+import {api, ApiError} from '../api/client'
 import type {DockReport} from '../api/types'
 import type {Catalog, Report} from '../fleet-tech/types'
 import {translateUi} from '../i18n'
 import type {CultivationReport} from '../mind/cultivation'
 import {MindCalculator} from './MindCalculator'
 
-vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
+vi.mock('../api/client', async importOriginal => ({...await importOriginal<typeof import('../api/client')>(), api: {request: vi.fn()}}))
 const connection = vi.hoisted(() => ({value: 'ready'}))
 vi.mock('../app/context', () => ({useConnection: () => connection.value, useApp: () => ({language: 'zh-CN',
   ui: (key: Parameters<typeof translateUi>[1], params: Parameters<typeof translateUi>[2]) => translateUi('zh-CN', key, params)})}))
@@ -225,4 +225,24 @@ it('shows and retries a failed catalog refresh while cached data is available', 
   fireEvent.click(screen.getByRole('button', {name: '重试'}))
   await waitFor(() => expect(screen.queryByText('catalog failed')).toBeNull())
   expect(catalogReads).toBe(3)
+})
+
+it('refreshes the reports once after a revision conflict and exposes retry', async () => {
+  const refresh = vi.fn()
+  let calculations = 0
+  vi.mocked(api.request).mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') return catalog
+    if (method === 'fleetTech.report') return technology
+    if (method === 'mind.plan') {
+      if (++calculations === 1) throw new ApiError('CONFLICT', '版本已更新')
+      return costs
+    }
+    throw new Error('Unexpected API method')
+  })
+  render(<MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={dock} onRefresh={refresh}/>}/></Routes></MemoryRouter>)
+  await screen.findByText('版本已更新')
+  expect(refresh).toHaveBeenCalledTimes(1)
+  fireEvent.click(screen.getByRole('button', {name: '重试'}))
+  await screen.findByRole('table')
+  expect(calculations).toBe(2)
 })

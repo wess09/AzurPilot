@@ -15,6 +15,7 @@ import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
 import { useApp, useConnection } from './context'
+import { usePageRead } from './usePageRead'
 import { useAnnouncementOwner } from './announcement'
 import { ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
 import { LoadBoundary } from '../components/ui/load-boundary'
@@ -76,6 +77,8 @@ function ModernNavigation({instance, onNavigate, announcementUnread, updateAvail
   </nav>
 }
 
+const readImportableInstances = () => api.request('instances.importable', {})
+
 /**
  * 创建实例的弹窗：支持选初始配置或从本机导入 JSON 配置文件。
  *
@@ -86,17 +89,16 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
   const [name, setName] = useState('')
   const [source, setSource] = useState('')
   const [importFile, setImportFile] = useState('')
-  /* 导入候选按需拉取：点「导入配置」时才取，不在 dialog 打开时打接口。 */
-  const [importState, setImportState] = useState<{loading: boolean; items: Array<{name: string; modified: number}>}>({loading: false, items: []})
-  async function pickImport() {
-    setImportState({loading: true, items: importState.items})
-    try {
-      const items = await api.request('instances.importable', {})
-      setImportState({loading: false, items})
-    } catch (error) { setImportState({loading: false, items: []}); setError((error as Error).message) }
+  const [showImports, setShowImports] = useState(startWithImport)
+  const [uploading, setUploading] = useState(false)
+  const connection = useConnection()
+  const imports = usePageRead('instances.importable', showImports && connection === 'ready', readImportableInstances)
+  const importLoading = uploading || imports.busy
+  const importItems = imports.data ?? []
+  function pickImport() {
+    if (showImports) imports.reload()
+    else setShowImports(true)
   }
-  /* 从「配置管理 → 导入配置」进来时，直接把可导入的配置文件列出来。 */
-  useEffect(() => { if (startWithImport) void pickImport() }, [])
 
   /* 上传本机配置文件：读文件文本后上传，浏览器只给内容、给不了服务器路径。 */
   async function uploadImport(event: ChangeEvent<HTMLInputElement>) {
@@ -105,13 +107,14 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
     input.value = ''
     if (!file) return
     const stem = file.name.replace(/\.json$/i, '')
-    setImportState({loading: true, items: importState.items})
+    setUploading(true); setError('')
     try {
       await api.request('instances.importConfig', {name: stem, content: await file.text()})
-      const items = await api.request('instances.importable', {})
-      setImportState({loading: false, items})
+      if (showImports) await imports.reloadAndWait()
+      else setShowImports(true)
       chooseImport(stem)
-    } catch (error) { setImportState({loading: false, items: importState.items}); setError((error as Error).message) }
+    } catch (error) { setError((error as Error).message) }
+    finally { setUploading(false) }
   }
   /* 两处选择互斥：导入来的配置与「初始配置」二选一。 */
   function chooseImport(chosen: string) {
@@ -136,12 +139,12 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
   }
   return <Modal title={ui('instance.createTitle')} onClose={onClose}><form onSubmit={submit} className="form-stack">
     <p className="muted">{ui('instance.createHint')}</p>
-    <label className="button secondary file-button" htmlFor="instance-import-file">{ui('instance.importPick')}<input id="instance-import-file" type="file" accept="application/json,.json" onChange={uploadImport}/></label>
-    <button type="button" className="button secondary" disabled={importState.loading} onClick={pickImport}>{importState.loading ? ui('instance.importLoading') : ui('instance.importConfig')}</button>
-    {importState.items.length > 0 && <label>{ui('instance.importSelect')}<Select value={importFile} onChange={event => chooseImport(event.target.value)}><option value="">{ui('instance.defaultConfig')}</option>{importState.items.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}</Select><span className="muted">{ui('instance.importHint')}</span></label>}
+    <label className="button secondary file-button" htmlFor="instance-import-file">{ui('instance.importPick')}<input id="instance-import-file" type="file" accept="application/json,.json" onChange={uploadImport} disabled={importLoading}/></label>
+    <button type="button" className="button secondary" disabled={importLoading} onClick={pickImport}>{importLoading ? ui('instance.importLoading') : ui('instance.importConfig')}</button>
+    {importItems.length > 0 && <label>{ui('instance.importSelect')}<Select value={importFile} onChange={event => chooseImport(event.target.value)}><option value="">{ui('instance.defaultConfig')}</option>{importItems.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}</Select><span className="muted">{ui('instance.importHint')}</span></label>}
     <label>{ui('instance.name')}<Input autoFocus required pattern={INSTANCE_NAME_PATTERN} value={name} onChange={event => setName(event.target.value)} placeholder={ui('instance.namePlaceholder')} maxLength={64}/></label>
     <label>{ui('instance.initialConfig')}<Select value={source} onChange={event => {setSource(event.target.value); setImportFile('')}}><option value="">{ui('instance.defaultConfig')}</option>{instances.map(item => <option key={item.name}>{item.name}</option>)}</Select></label>
-    {error && <ErrorBox message={error}/>}
+    {(error || imports.error) && <ErrorBox message={error || imports.error} retry={imports.error ? pickImport : undefined}/>}
     <button className="button primary" disabled={busy}>{busy ? ui('instance.creating') : ui('instance.create')}<ArrowRight size={16}/></button>
   </form></Modal>
 }

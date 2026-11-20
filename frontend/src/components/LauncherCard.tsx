@@ -3,6 +3,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useApp, useConnection } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
+import { Panel, PanelHeading } from './ui'
 import { Switch } from './Switch'
 import { api, ApiError } from '../api/client'
 import type { LauncherStatus } from '../api/types'
@@ -21,6 +23,8 @@ export function launcherStatusText(phase: Phase, state: {enabled: boolean; pendi
   const flag = state.pending ? t('Gui.Launcher.Loading') : state.enabled ? t('Gui.Launcher.Enabled') : t('Gui.Launcher.Disabled')
   return `${t('Gui.Launcher.Connected')} · ${flag}`
 }
+
+const readLauncher = () => api.request('launcher.status', {})
 
 /**
  * 启动器卡片：连接就绪后读取 launcher.status 并监听 launcher 事件，驱动自启开关的状态机。
@@ -53,49 +57,40 @@ export function LauncherCard() {
     } else { setPhase('ready') }
   }, [])
 
-  const read = useCallback(async () => {
-    try { applyState(await api.request('launcher.status', {})) }
-    catch (error) {
-      if (error instanceof ApiError && error.code === 'LOCAL_ONLY') { setPhase('remote'); return }
-      setDetail(error instanceof Error ? error.message : String(error))
-      setPhase('failed')
-    }
-  }, [applyState])
+  const {data, error, errorCause, reload, setData, invalidate} = usePageRead(connection, connection === 'ready', readLauncher)
+  useEffect(() => {
+    if (connection !== 'ready') {command.current = undefined; setPhase('loading'); return}
+    if (errorCause instanceof ApiError && errorCause.code === 'LOCAL_ONLY') {setPhase('remote'); return}
+    if (error) {setDetail(error); setPhase('failed'); return}
+    if (data) applyState(data)
+  }, [connection, data, error, errorCause, applyState])
 
   const toggle = useCallback(async () => {
     if (busy.current || command.current) return
     busy.current = true
     const target = !enabled
+    invalidate()
     setEnabled(target); setPhase('setting')
     try {
       const result = await api.request('launcher.autostart.set', {enabled: target})
       command.current = result.commandId
-      await read()
+      reload()
     } catch (error) {
       setEnabled(!target)
       setDetail(error instanceof Error ? error.message : String(error))
       setPhase('failed')
     } finally { busy.current = false }
-  }, [enabled, read])
+  }, [enabled, invalidate, reload])
 
-  useEffect(() => {
-    if (connection === 'ready') void read()
-    else { command.current = undefined; setPhase('loading') }
-  }, [connection, read])
   useEffect(() => api.onEvent(event => {
-    if (event.topic === 'launcher') applyState(event.data as LauncherStatus)
-  }), [applyState])
+    if (event.topic === 'launcher') setData(event.data as LauncherStatus)
+  }), [setData])
 
   const status = launcherStatusText(phase, {enabled, pending, detail}, t)
 
   return (
-    <section className="panel config-group">
-      <div className="panel-heading">
-        <div>
-          <span className="group-indicator"/>
-          <h2 role="heading" aria-level={2}>{t('Gui.Launcher.StartupTitle')}</h2>
-        </div>
-      </div>
+    <Panel compact>
+      <PanelHeading title={t('Gui.Launcher.StartupTitle')} icon={<span className="group-indicator"/>}/>
       <div className="field-row">
         <div className="field-label">
           <label htmlFor="launcher-autostart">{t('Gui.Launcher.AutoStart')}</label>
@@ -108,6 +103,6 @@ export function LauncherCard() {
         </div>
       </div>
       <p className="panel-note" role={phase === 'failed' ? 'alert' : 'status'}>{status}</p>
-    </section>
+    </Panel>
   )
 }
