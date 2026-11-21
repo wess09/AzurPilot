@@ -69,6 +69,17 @@ describe('usePageRead', () => {
     expect(result.current.data).toBe('push')
     expect(finished).toBe(true)
   })
+  it('passes the accepted value when a trailing read actually starts', async () => {
+    const initial = deferred<string>(), trailing = deferred<string>()
+    const loader = vi.fn().mockReturnValueOnce(initial.promise).mockReturnValueOnce(trailing.promise)
+    const {result} = renderHook(() => usePageRead<string>('a', true, loader))
+    expect(loader).toHaveBeenNthCalledWith(1, undefined)
+    act(() => {result.current.reload(); result.current.setData('pushed')})
+    await act(async () => initial.resolve('obsolete'))
+    expect(loader).toHaveBeenNthCalledWith(2, 'pushed')
+    await act(async () => trailing.resolve('fresh'))
+    expect(result.current.data).toBe('fresh')
+  })
   it('propagates refresh failure and cancels pending awaiters on disconnect', async () => {
     const initial = deferred<string>(), refreshResult = deferred<string>(), cancelledResult = deferred<string>()
     const loader = vi.fn().mockReturnValueOnce(initial.promise).mockReturnValueOnce(refreshResult.promise).mockReturnValueOnce(cancelledResult.promise)

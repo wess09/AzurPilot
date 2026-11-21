@@ -584,7 +584,7 @@ class ConfigService:
                 if change.path in seen:
                     raise ApiError('INVALID_PARAMS', '同一次保存不能重复修改同一个参数')
                 seen.add(change.path)
-                if 'expected' in change.model_fields_set:
+                if 'expected' in getattr(change, 'model_fields_set', ()):
                     fields = data.get(task, {}).get(group, {})
                     if arg not in fields or not json_equal(fields[arg], change.expected):
                         raise ApiError('CONFLICT', '配置已变化，请重新载入后再提交')

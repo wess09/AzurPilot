@@ -1,7 +1,7 @@
 /**
  * @fileoverview 大世界模拟器的后台控制、结果图与独立日志。
  */
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FlaskConical, Play, Square, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { OpsiSimulatorStatus } from '../api/types'
@@ -24,20 +24,12 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
   const connection = useConnection()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  // Keep the log cursor and newest run together for each instance. An action invalidates
-  // any older status read before it can advance the cursor or overwrite the action result.
-  const action = useRef({busy: false, version: 0})
-  const cursor = useRef<{instance: string; after: number; latest?: OpsiSimulatorStatus}>({instance, after: 0})
-  if (cursor.current.instance !== instance) cursor.current = {instance, after: 0}
-  const load = useCallback(async () => {
-    const owner = cursor.current, version = action.current.version
-    const value = await api.request('opsi.simulator.status', {instance, after: owner.after})
-    if (cursor.current === owner && !action.current.busy && version === action.current.version) {
-      owner.after = value.logs.cursor
-      if (!owner.latest || owner.latest.runId <= value.runId) owner.latest = value
-      return owner.latest
-    }
-    return value
+  const load = useCallback(async (previous: OpsiSimulatorStatus | undefined) => {
+    const next = await api.request('opsi.simulator.status', {instance, after: previous?.logs.cursor ?? 0})
+    // A changed run without a reset can be a restarted server whose cursor has caught up.
+    if (previous && previous.runId !== next.runId && !next.logs.reset)
+      return api.request('opsi.simulator.status', {instance, after: 0})
+    return next
   }, [instance])
   const {data, ready, error: pollError, reload, setData, invalidate} = usePageRead(instance, connection === 'ready' && !busy, load, pollEveryHalfSecond)
   const loadFigure = useCallback(() => api.request('opsi.simulator.figure', {instance}), [instance])
@@ -45,8 +37,6 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
 
   async function toggle() {
     invalidate()
-    action.current.busy = true
-    action.current.version += 1
     setBusy(true)
     setError('')
     try {
@@ -56,13 +46,10 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
         await beforeStart()
         next = await api.request('opsi.simulator.start', {instance})
       }
-      cursor.current.latest = next
       setData(next)
     } catch (error) {
       setError((error as Error).message)
     } finally {
-      action.current.busy = false
-      action.current.version += 1
       setBusy(false)
     }
   }

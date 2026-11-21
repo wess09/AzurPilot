@@ -16,7 +16,7 @@ const newState = <T,>(): ReadState<T> => ({error: '', version: 0, active: false}
 type PollOptions = {when?: () => boolean; silent?: boolean}
 
 /** Read one identity at a time. Concurrent refresh requests coalesce into one trailing read. */
-export function usePageRead<T>(identity: string, enabled: boolean, loader: () => Promise<T>, pollAfter?: (data: T | undefined, error: string) => number, {when: canPoll, silent: silentPoll = false}: PollOptions = {}) {
+export function usePageRead<T>(identity: string, enabled: boolean, loader: (previous: T | undefined) => Promise<T>, pollAfter?: (data: T | undefined, error: string) => number, {when: canPoll, silent: silentPoll = false}: PollOptions = {}) {
   const [, render] = useState(0)
   const snapshot = useMemo(() => newState<T>(), [identity])
   const state = useRef(snapshot)
@@ -45,7 +45,7 @@ export function usePageRead<T>(identity: string, enabled: boolean, loader: () =>
       const version = current.version
       let failure: unknown, failed = false
       try {
-        const data = await loader()
+        const data = await loader(current.data)
         if (state.current === current && current.active && version === current.version) {current.data = data; current.error = ''; current.errorCause = undefined}
       } catch (error) {
         failure = error; failed = true
