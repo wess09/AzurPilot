@@ -53,6 +53,15 @@ class IslandDailyOrder(Island):
 
     # 左侧页面图标检测区域
     LEFT_PANEL_AREA = (60, 60, 832, 580)
+    # 请求地图标记的搜索区域：整个地图（右侧面板从 x≈850 开始）。
+    # 标记的角标可能贴近屏幕顶部或底部，LEFT_PANEL_AREA 会漏掉它们。
+    MARKER_AREA = (0, 0, 850, 720)
+    # 角标位于气泡右上角，点击时向气泡中心偏移，避免点到顶部文字
+    MARKER_TAP_OFFSET = (-35, 35)
+    MARKER_SIMILARITY = 0.75
+    # 同一位置判定距离（像素）与单次 ③ 最多点击次数
+    MARKER_SAME_DISTANCE = 40
+    MARKER_TAP_LIMIT = 15
 
     # 冷却时间 OCR 区域相对于紧急模板匹配左上角的偏移 (x1, y1, x2, y2)
     URGENT_COOLDOWN_OFFSET = (-54, 120, 0, 113)
@@ -87,6 +96,9 @@ class IslandDailyOrder(Island):
         # 主流程
         self._first_right_panel_check = True
         self._should_exit_reenter = False
+        # 季节请求（奖杯角标）无法驳回：每次运行只点一次，能交付就交付，否则换下一个请求
+        self._seasonal_tried = False
+        self._seasonal_selected = False
         self.reject_count = self.config.IslandDailyOrder_RejectCount
 
         self._enter_daily_order()
@@ -215,19 +227,49 @@ class IslandDailyOrder(Island):
         region = self.image_crop(self.LEFT_PANEL_AREA, copy=False)
         return template.match(region, similarity=similarity)
 
-    def _find_template_matches(self, template, similarity=0.85):
-        """返回左侧面板中所有匹配位置（全屏坐标中心点）的列表。"""
-        region = self.image_crop(self.LEFT_PANEL_AREA, copy=False)
+    def _find_template_matches(self, template, similarity=None, area=None):
+        """返回地图上所有匹配位置（全屏坐标中心点）的列表。"""
+        if similarity is None:
+            similarity = self.MARKER_SIMILARITY
+        if area is None:
+            area = self.MARKER_AREA
+        region = self.image_crop(area, copy=False)
         matches = template.match_multi(
             region, similarity=similarity, threshold=5,
             name='daily_order_matches'
         )
         results = []
         for m in matches:
-            cx = (m.button[0] + m.button[2]) // 2 + self.LEFT_PANEL_AREA[0]
-            cy = (m.button[1] + m.button[3]) // 2 + self.LEFT_PANEL_AREA[1]
-            results.append((cx, cy))
+            cx = (m.button[0] + m.button[2]) // 2 + area[0]
+            cy = (m.button[1] + m.button[3]) // 2 + area[1]
+            results.append((int(cx), int(cy)))
         return results
+
+    def _find_markers(self):
+        """
+        在当前截图中查找所有请求标记。
+
+        Returns:
+            list[tuple[tuple[int, int], str]]: (角标中心坐标, 类型)，类型为 挑战 / 轻松 / 季节
+        """
+        markers = []
+        for template, label in [
+            (TEMPLATE_DAILY_ORDER_CHALLENGE, '挑战'),
+            (TEMPLATE_DAILY_ORDER_EASY, '轻松'),
+            (TEMPLATE_DAILY_ORDER_SEASONAL, '季节'),
+        ]:
+            for pos in self._find_template_matches(template):
+                markers.append((pos, label))
+        return markers
+
+    def _is_same_marker(self, a, b):
+        return abs(a[0] - b[0]) <= self.MARKER_SAME_DISTANCE and abs(a[1] - b[1]) <= self.MARKER_SAME_DISTANCE
+
+    def _click_marker(self, pos):
+        """点击标记气泡（角标向气泡中心偏移）。"""
+        x = min(max(pos[0] + self.MARKER_TAP_OFFSET[0], 0), self.MARKER_AREA[2] - 1)
+        y = min(max(pos[1] + self.MARKER_TAP_OFFSET[1], 0), self.MARKER_AREA[3] - 1)
+        self._click_position(x, y)
 
     def _click_position(self, x, y):
         """点击全屏坐标 (x, y)。"""
@@ -451,8 +493,15 @@ class IslandDailyOrder(Island):
                     logger.info('[岛屿-每日订单] 交付后右侧非空，退出重进刷新状态')
                     return 'reenter'
 
+            if self._seasonal_selected:
+                # 季节请求无法驳回，留给之后资源足够时交付
+                self._seasonal_selected = False
+                logger.info('[岛屿-每日订单] 季节请求资源不足（无法驳回），跳到 ③')
+                return 'to_step3'
+
             logger.info('[岛屿-每日订单] 订单资源不足，执行驳回')
 
+        self._seasonal_selected = False
         self.appear_then_click(DAILY_ORDER_REJECT, interval=2)
         self.device.sleep(self.FAST_POPUP_CHECK_INTERVAL)
 
@@ -477,17 +526,40 @@ class IslandDailyOrder(Island):
         Returns:
             str: 'reenter' / 'next_day' / 'to_step2' / 'to_step4'
         """
-        # 收集所有挑战和轻松图标的匹配位置
-        all_matches = []
-        for template, label in [
-            (TEMPLATE_DAILY_ORDER_CHALLENGE, '挑战'),
-            (TEMPLATE_DAILY_ORDER_EASY, '轻松'),
-        ]:
-            positions = self._find_template_matches(template)
-            for pos in positions:
-                all_matches.append((pos, template, label))
+        # 每次点击后重新截图并重新查找标记：等待中的标记可能换位置，
+        # 不能沿用第一张截图里的坐标。
+        tapped = []
+        for _ in range(self.MARKER_TAP_LIMIT):
+            markers = [
+                (pos, label) for pos, label in self._find_markers()
+                if not any(self._is_same_marker(pos, t) for t in tapped)
+                and not (label == '季节' and self._seasonal_tried)
+            ]
+            if not markers:
+                break
+            pos, label = markers[0]
+            tapped.append(pos)
+            if label == '季节':
+                self._seasonal_tried = True
 
-        if not all_matches:
+            logger.info(f'[岛屿-每日订单] 处理 {label} 图标 (pos={pos})')
+            self._click_marker(pos)
+            self.device.sleep(1)
+
+            # 检测右侧状态
+            self.device.screenshot()
+            if self._is_preparing():
+                logger.info(f'[岛屿-每日订单] {label} 筹备中，继续检测下一个')
+                continue
+            elif self._has_reject_button():
+                logger.info(f'[岛屿-每日订单] {label} 已选中，跳到 ② 尝试交付')
+                self._seasonal_selected = label == '季节'
+                return 'to_step2'
+            else:
+                logger.warning(f'[岛屿-每日订单] {label} 状态未知，继续下一个')
+                continue
+
+        if not tapped:
             if self.appear_then_click(DAILY_ORDER_CHALLENGE_EASY_SPECIAL_CHECK, interval=2):
                 logger.info('[岛屿-每日订单] 通过固定位置检测到挑战/轻松订单')
                 self.device.sleep(1)
@@ -504,31 +576,6 @@ class IslandDailyOrder(Island):
             logger.info('[岛屿-每日订单] 没有更多挑战/轻松图标')
             return 'to_step4'
 
-        # 逐个处理
-        processed_positions = set()
-        for pos, template, label in all_matches:
-            pos_key = (pos[0] // 10 * 10, pos[1] // 10 * 10)
-            if pos_key in processed_positions:
-                continue
-            processed_positions.add(pos_key)
-
-            logger.info(f'[岛屿-每日订单] 处理 {label} 图标 (pos={pos_key})')
-            self._click_position(pos[0], pos[1])
-            self.device.sleep(1)
-
-            # 检测右侧状态
-            self.device.screenshot()
-            if self._is_preparing():
-                logger.info(f'[岛屿-每日订单] {label} 筹备中，继续检测下一个')
-                continue
-            elif self._has_reject_button():
-                logger.info(f'[岛屿-每日订单] {label} 已选中，跳到 ② 尝试交付')
-                return 'to_step2'
-            else:
-                logger.warning(f'[岛屿-每日订单] {label} 状态未知，继续下一个')
-                continue
-
-        # 所有图标处理完毕
         logger.info('[岛屿-每日订单] 所有挑战/轻松图标已处理')
         return 'to_step4'
 

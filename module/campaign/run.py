@@ -489,14 +489,29 @@ class CampaignRun(CampaignEvent, ShopStatus):
             # 运行
             self.device.stuck_record_clear()
             self.device.click_record_clear()
+            completed_count = 1
             try:
                 self.campaign._resume_after_restart = resume_map
                 from module.campaign.fleet_rotation import preflight_rotation
                 self.campaign._fleet_rotation_preflight = lambda battle: preflight_rotation(self, battle, mode)
                 from module.campaign.fleet_training import after_battle_due
                 self.campaign._fleet_training_after_battle = lambda: after_battle_due(self, mode)
+                from module.campaign.multiple_sorties import multiple_sorties_count
+                batch_count = multiple_sorties_count(
+                    self.config, remaining=self.config.StopCondition_RunCount,
+                    total_remaining=max(total - self.run_count, 0),
+                    one_time=self.campaign.config.MAP_IS_ONE_TIME_STAGE or self.is_stage_loop)
+                eligible = batch_count and self.config.task.command in (
+                    'Main', 'Main2', 'Main3', 'Event', 'Event2', 'Event3',
+                    'EventA', 'EventB', 'EventC', 'EventD')
+                if batch_count and eligible and not resume_map:
+                    if self.campaign.get_event_pt_limit() > 0:
+                        batch_count = 1
+                    self.campaign._multiple_sorties_should_stop = self.config.task_switched
+                    completed_count = self.campaign.run_multiple_sorties(batch_count)
+                else:
+                    self.campaign.run()
                 resume_map = False
-                self.campaign.run()
             except ScriptEnd as e:
                 logger.hr('脚本结束')
                 logger.info(str(e))
@@ -510,10 +525,15 @@ class CampaignRun(CampaignEvent, ShopStatus):
                 logger.info('[战役-运行] 更新仪表盘配置')
                 self.campaign.config.update()
             # 运行后处理
-            self.run_count += 1
+            if completed_count == 0:
+                self.config.task_delay(minute=5)
+                break
+            self.run_count += completed_count
             if self.config.StopCondition_RunCount:
-                self.config.StopCondition_RunCount -= 1
-            self.after_campaign_run()
+                self.config.StopCondition_RunCount = max(
+                    self.config.StopCondition_RunCount - completed_count, 0)
+            for _ in range(completed_count):
+                self.after_campaign_run()
             # 结束条件
             if self.triggered_stop_condition(oil_check=False):
                 break

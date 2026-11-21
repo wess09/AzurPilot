@@ -46,9 +46,9 @@
 .program-toolbar, .program-toolbar>div, .program-actions, .program-subtoolbar {display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .program-toolbar {justify-content:space-between; padding:8px 16px; background:var(--program-chrome); border-bottom:1px solid var(--border,#d7dce3); flex-shrink:0; -webkit-backdrop-filter:var(--theme-surface-filter); backdrop-filter:var(--theme-surface-filter)}
 .program-toolbar h1 {font-size:18px; margin:0 0 2px}.program-toolbar small {color:var(--muted); font-size:11px}
-.program-editor input, .program-editor select, .program-editor textarea {max-width:100%; min-width:0; padding:6px 8px; border:1px solid var(--border, #d7dce3); background:var(--surface-muted, var(--program-panel)); color:var(--text); border-radius:7px; font-size:12px}
 .program-subtoolbar {padding:6px 16px; background:var(--program-chrome); border-bottom:1px solid var(--border,#d7dce3); flex-shrink:0; -webkit-backdrop-filter:var(--theme-surface-filter); backdrop-filter:var(--theme-surface-filter)}
-.program-subtoolbar>input {max-width:180px}.program-subtoolbar select {max-width:200px}
+.program-extra-actions-list {z-index:100; display:flex; flex-wrap:wrap; gap:6px; width:min(340px, calc(100vw - 16px)); max-height:var(--radix-popover-content-available-height); overflow-y:auto; padding:10px; background:var(--surface, #fff); border:1px solid var(--border); border-radius:7px; box-shadow:0 8px 24px rgb(0 0 0 / .2)}
+.program-subtoolbar>input {max-width:180px}.program-subtoolbar>[data-slot=select-trigger] {max-width:200px}
 .program-editor .button {font-size:12px; min-height:30px; padding:5px 9px; display:inline-flex; align-items:center; gap:5px}
 
 /* 编辑区工作台：作为全屏舞台容器，画布全屏铺底，控件悬浮在画布上方 */
@@ -267,7 +267,7 @@
 .program-properties p {font-size:12px; line-height:1.65}
 .program-json {width:100%; font:11px/1.55 var(--theme-font-mono, "JetBrains Mono", Consolas, monospace); min-height:72px; max-height:none; resize:vertical; overflow:visible; box-sizing:border-box}
 .program-priority-row {display:flex; align-items:center; gap:4px; padding:4px 0; font-size:11px}.program-priority-row span {flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis}.program-priority-row button {padding:3px; background:none; border:0; color:var(--text); cursor:pointer}.program-priority-row button:disabled {opacity:.3}
-.program-connect {margin-top:14px; font-size:11px}.program-connect summary {cursor:pointer; margin-bottom:10px}.program-file input {display:none}
+.program-connect {margin-top:14px; font-size:11px}.program-connect summary {cursor:pointer; margin-bottom:10px}
 
 /* 原调度业务流程引导条：悬浮在画布上方顶部 */
 .program-default-guide {
@@ -509,10 +509,6 @@
 .program-sim-params-content label input {
   width: 100%;
   padding: 6px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: var(--input-bg, transparent);
-  color: var(--text);
   font-size: 12px;
   box-sizing: border-box;
 }
@@ -669,16 +665,12 @@
   font-weight: 600;
   color: var(--muted);
 }
-.program-card-configs input, .program-card-configs select {
+.program-card-configs :is([data-slot=input], [data-slot=select-trigger]) {
   width: 100%;
   height: 28px;
   min-height: 28px;
   padding: 3px 8px;
-  border-radius: 6px;
   font-size: 12px;
-  color: var(--text);
-  background: var(--surface, var(--program-panel));
-  border: 1px solid var(--border);
 }
 .program-card-configs .program-card-checkbox {
   display: flex;
@@ -696,11 +688,10 @@
   justify-content: space-between;
   width: 100%;
 }
-.program-card-configs .program-card-checkbox input {
+.program-card-configs .program-card-checkbox [data-slot=checkbox] {
   width: 15px;
   height: 15px;
   min-height: 0;
-  accent-color: var(--card-color);
   cursor: pointer;
 }
 .program-card-resource-note {
@@ -783,21 +774,13 @@
   padding: 2px 6px;
   font-size: 12px;
   text-align: right;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-  background: var(--surface, var(--program-panel));
-  color: var(--text);
 }
-.program-port-control select {
+.program-port-control [data-slot=select-trigger] {
   width: 92px;
   height: 24px;
   min-height: 24px;
   padding: 1px 4px;
   font-size: 11px;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-  background: var(--surface, var(--program-panel));
-  color: var(--text);
 }
 .program-port-badge {
   font-size: 10px;
@@ -837,33 +820,21 @@
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
-  .program-mobile-panels .button {
+  .program-mobile-panels [data-slot=button] {
     flex: 1;
     min-height: 32px;
     justify-content: center;
     font-size: 12px;
     border-radius: 6px;
   }
-  .program-mobile-panels .button.active {
+  .program-mobile-panels [data-slot=button].active {
     background: var(--accent, #3b82f6) !important;
     color: #fff !important;
     border-color: var(--accent, #3b82f6) !important;
     font-weight: 600;
   }
-  .program-subtoolbar {
-    overflow-x: auto;
-    flex-wrap: nowrap !important;
-    padding: 6px 12px;
-    gap: 6px;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .program-subtoolbar::-webkit-scrollbar {
-    display: none;
-  }
-  .program-subtoolbar > * {
-    flex-shrink: 0;
-  }
+  .program-subtoolbar {padding:6px 12px; gap:6px; position:relative; z-index:40}
+  .program-subtoolbar > input, .program-subtoolbar > [data-slot=select-trigger] {flex:1 1 100px; min-width:0}
   .program-toolbar {
     padding: 8px 12px;
     gap: 6px;
@@ -877,8 +848,9 @@
   .program-actions {
     gap: 6px;
   }
-  .program-actions .button {
+  .program-actions [data-slot=button] {
     padding: 4px 8px;
+    height: 28px;
     min-height: 28px;
     font-size: 11px;
   }
@@ -917,7 +889,7 @@
     border-radius: 8px;
   }
   .program-properties input,
-  .program-properties select,
+  .program-properties [data-slot=select-trigger],
   .program-properties textarea {
     min-height: 34px;
     font-size: 13px;

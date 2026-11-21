@@ -5,10 +5,13 @@
  * `.field-row`（标签与说明在左、控件在右侧固定列）。
  */
 
+import {LoadBoundary} from '../components/ui/load-boundary'
+
+
 import { AlertCircle } from 'lucide-react'
+import { PageTitle, Panel, PanelHeading } from '../components/ui'
 import { useApp } from '../app/context'
 import { Alert, AlertDescription } from '../components/ui/alert'
-import { Spinner } from './settings-ui/spinner'
 import { EditStatus } from '../components/EditStatus'
 import { LauncherCard } from '../components/LauncherCard'
 import { htmlToPlainText } from '../app/htmlText'
@@ -19,24 +22,18 @@ import { SettingsField } from './SettingsField'
 
 /** 系统级部署设置与启动器设置；外观偏好在「界面设置」，远程访问与 WebUI 在「远程访问」。 */
 export function Settings() {
-  const {data, error, edits, queue} = useDeploySettings()
+  const {data, error, reload, edits, queue} = useDeploySettings()
   const {t, ui} = useApp()
 
   return <>
-    <h1 className="modern-sr-title">{ui('nav.settings')}</h1>
+    <PageTitle title={ui('nav.settings')} placement="screen-reader"/>
     <div className="settings-page">
-      {error && <Alert variant="destructive"><AlertCircle/><AlertDescription>{error}</AlertDescription></Alert>}
       {edits.storageError && <Alert variant="destructive"><AlertCircle/><AlertDescription>{edits.storageError}</AlertDescription></Alert>}
       <LauncherCard/>
-      {!data ? <span role="status"><Spinner aria-hidden="true"/>{ui('common.loading')}</span> : (
+      <LoadBoundary ready={!!data} error={error} retry={reload}>{data && (
         data.groups.filter(group => !REMOTE_ACCESS_GROUPS.includes(group.key)).map(group => (
-          <section className="panel config-group" key={group.key}>
-            <div className="panel-heading">
-              <div>
-                <span className="group-indicator"/>
-                <h2 role="heading" aria-level={2}>{t(`Gui.DeploySetting.Group${group.key}`)}</h2>
-              </div>
-            </div>
+          <Panel compact key={group.key}>
+            <PanelHeading title={t(`Gui.DeploySetting.Group${group.key}`)} icon={<span className="group-indicator"/>}/>
             {group.fields.map(field => {
               const id = `deploy-${field.key}`
               const current = edits.edits[field.key]?.value ?? field.value
@@ -66,9 +63,9 @@ export function Settings() {
                 </div>
               </div>
             })}
-          </section>
+          </Panel>
         ))
-      )}
+      )}</LoadBoundary>
     </div>
   </>
 }

@@ -20,6 +20,7 @@ class FakeHandover:
     """只挂 handover_handle_popup 的桩，记录实际点到了哪个按钮。"""
 
     handover_handle_popup = OperationHandover.handover_handle_popup
+    handle_handover_help = OperationHandover.handle_handover_help
 
     def __init__(self, reward=False, urgent=False, skip=False):
         self.reward = reward

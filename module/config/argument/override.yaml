@@ -20,12 +20,18 @@ Restart:
 Main:
   Campaign:
     Event: campaign_main
+    MultipleSortiesCount:
+      display: display
 Main2:
   Campaign:
     Event: campaign_main
+    MultipleSortiesCount:
+      display: display
 Main3:
   Campaign:
     Event: campaign_main
+    MultipleSortiesCount:
+      display: display
 GemsFarming:
   Campaign:
     Mode: normal
@@ -119,12 +125,20 @@ Ambush11:
 
 Event:
   Campaign:
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     AmbushEvade: true
 Event2:
   Campaign:
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     AmbushEvade: true
+Event3:
+  Campaign:
+    MultipleSortiesCount:
+      display: display
 EventA:
   Scheduler:
     SuccessInterval: 30
@@ -132,6 +146,8 @@ EventA:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -148,6 +164,8 @@ EventB:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -164,6 +182,8 @@ EventC:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     Use2xBook: false
     AmbushEvade: true
@@ -180,6 +200,8 @@ EventD:
     ServerUpdate: 00:00
   Campaign:
     Name: dynamic
+    MultipleSortiesCount:
+      display: display
     Mode: normal
     Use2xBook: false
     AmbushEvade: true

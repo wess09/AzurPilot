@@ -112,7 +112,9 @@ class CampaignConfigOptionsTests(unittest.TestCase):
         self.assertEqual(main, current['Main']['Campaign'])
 
     def test_handover_event_selection_survives_api_and_runtime_reload(self):
-        for event in self.configs.args['OperationHandover']['Campaign']['Event']['option_cn']:
+        candidates = self.configs.args['OperationHandover']['Campaign']['Event']['option_cn']
+        selections = [candidates[0], candidates[-1], 'war_archives_20230525_cn']
+        for event in dict.fromkeys(selections):
             with self.subTest(event=event):
                 self.legacy()
                 current = self.configs.patch('testpilot', None, [
@@ -123,6 +125,13 @@ class CampaignConfigOptionsTests(unittest.TestCase):
                 for values in (current['values'], ConfigUpdater().config_update(saved)):
                     self.assertEqual(event, values['OperationHandover']['Campaign']['Event'])
                     self.assertEqual('T6', values['OperationHandover']['Campaign']['Name'])
+
+    def test_handover_can_select_archives_for_each_region(self):
+        handover = self.configs.args['OperationHandover']['Campaign']['Event']
+        archives = self.configs.args['WarArchives']['Campaign']['Event']
+        for region in ('cn', 'en', 'jp', 'tw'):
+            with self.subTest(region=region):
+                self.assertTrue(set(archives[f'option_{region}']).issubset(handover[f'option_{region}']))
 
     def test_old_handover_main_stage_is_preserved_when_event_list_refreshes(self):
         path, values = self.legacy()

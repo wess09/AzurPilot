@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { getBackground, initBackgroundGallery, subscribeBackground } from '../app/background'
+import { getBackground, subscribeBackground } from '../app/background'
 
 interface DisplayItem {
   /** 背景项唯一键。 */
@@ -26,8 +26,6 @@ export function Wallpaper() {
 
   useEffect(() => {
     setFailed(false)
-    // 图库模式没有现成地址时，启动流程会随机铺一张。
-    void initBackgroundGallery()
   }, [background.source, background.assetUrl, background.revision])
 
   useEffect(() => {

@@ -1,8 +1,8 @@
 """作战委托模块。
 
-在主线或活动关卡页启动「作战委托」：消耗石油与作战全权委托书，让舰队离线自动
-执行指定关卡若干次，委托结束后再领取掉落。委托期间出击类任务（主线、
-活动）都会失败，只有大世界照常可用，因此本任务排在调度优先级的末尾。
+在主线、活动或作战档案关卡页启动「作战委托」。基础委托只增加大讲堂熟练度；
+投入作战全权委托书并消耗额外石油才会获得对应的关卡掉落。委托期间主线、活动
+及作战档案无法出击，因此启动前为已安排的出击预留时间。
 
 流程：
 1. 查一次停服维护时间（OperationHandover.MaintainOverride 开启时）：按当前游戏
@@ -20,18 +20,17 @@
 6. 已完成（HANDOVER_PASS_CLICK）则领取奖励。领奖路上游戏会连着弹「合计获得奖励」
    的结算、紧急委托提示、新船入手演出，全部收掉后退回章节选择页，重新点一次关卡
    把上面的流程再走一遍，继续开下一个委托（见 handover_handle_popup）
-7. 检测该关卡是否支持作战委托（HANDOVER_TAB / HANDOVER_TAB_UNSUPPORTED）
+7. 检测该关卡是否支持作战委托；未启用时补一次完整连续作战，中途船坞满则复用周回
+   清理并重做一次，返回关卡正向复查入口（HANDOVER_TAB / HANDOVER_TAB_UNSUPPORTED）
 8. 记录当前石油数量，低于 OperationHandover.OilLimit 时直接推迟
 9. 打开作战委托面板定次数：维护前拉满 > 一键消耗按委托书数量 >
    配置里的次数（见 handover_consume_all_book）
-10. 比较「需要时间」与「剩余可用时间」，判断剩余时间能否完成委托
+10. 比较「需要时间」与「剩余可用时间」，额度只需覆盖最后一次启动前的消耗
 11. 时间不足且启用了自动补充时，用作战全权委托书兑换可用时间（1 本 = 1 小时）
 12. 把面板上的「预计消耗」石油和当前石油比较，不够就关掉面板推迟，不点「开始」
 13. 启用了使用委托书时，把委托书投入量拉到最大
-14. 点击「开始」，确认面板真的关掉了才算成功
-15. 一键消耗这一路开不成委托时，按原因分流：手上没有可投入的委托书、石油不够
-    这类当天等不来的原因直接放弃本周（记下记录，按定时功能排下一次运行，见
-    handover_consume_all_book_give_up）；界面操作失败才隔一段时间重试
+14. 点击「开始」，从章节页重新进入原关卡，以委托详情确认启动成功
+15. 一键消耗仅在委托确认启动后记录本周触发；资源不足或识别失败时推迟重试
 
 配置路径: Campaign.Name, Campaign.Event, OperationHandover.Count,
          OperationHandover.AutoSupplementTime, OperationHandover.UseHandoverBook,
@@ -44,6 +43,9 @@ import math
 import re
 from datetime import datetime, timedelta, timezone
 
+import cv2
+import numpy as np
+
 from module.base import http
 
 from deploy.api_endpoints import MAINTENANCE_API_URL
@@ -54,27 +56,31 @@ from module.base.runtime_params import (
     HANDOVER_MAINTAIN_LEAD_MINUTES,
 )
 from module.base.timer import Timer
-from module.config.utils import read_run_param
-from module.base.utils import crop
+from module.config.utils import get_server_last_update, read_run_param
 from module.campaign.run import CampaignRun
 from module.campaign.stage_name import normalize_event_stage, normalize_post_loop_stage
+from module.exception import GameStuckError, ScriptEnd
 from module.config.time_source import now as current_time
 from module.config.utils import SERVER_TO_TIMEZONE
-from module.handler.assets import NEW_SHIP_SKIP, POPUP_CONFIRM
+from module.handler.assets import NEW_SHIP_SKIP
 from module.handler.fast_forward import to_map_file_name
+from module.handover.planning import daily_runs, fit_sortie_window, next_sortie
 from module.logger import logger
 from module.map.assets import (FLEET_PREPARATION, HANDOVER_BOOK_AMOUNT_OCR,
                                HANDOVER_BOOK_COUNT_OCR, HANDOVER_BOOK_ITEM,
                                HANDOVER_BOOK_MAX, HANDOVER_CHECK, HANDOVER_COUNT_INPUT,
-                               HANDOVER_COUNT_MAX, HANDOVER_COUNT_MINUS,
-                               HANDOVER_COUNT_OCR, HANDOVER_COUNT_PLUS,
+                               HANDOVER_COUNT_MAX, HANDOVER_COUNT_OCR,
                                HANDOVER_DIALOG_CLOSE, HANDOVER_EXCHANGE_TIME,
                                HANDOVER_OIL_COST_OCR, HANDOVER_PANEL_CLOSE,
                                HANDOVER_PASS_CLICK, HANDOVER_REWARD, HANDOVER_REWARD_CHECK,
                                HANDOVER_START_CLICK, HANDOVER_STOP_CHECK, HANDOVER_STOP_TIME_OCR,
                                HANDOVER_TAB, HANDOVER_TAB_UNSUPPORTED,
                                HANDOVER_TIME_NEEDED_OCR, HANDOVER_TIME_REMAINING_OCR)
-from module.ocr.models import OCR_MODEL
+from module.map.assets import (
+    HANDOVER_EXCHANGE_ADDED_OCR, HANDOVER_EXCHANGE_CHECK,
+    HANDOVER_HELP_CHECK, HANDOVER_HELP_CLOSE, HANDOVER_HELP_SCROLL,
+    MULTIPLE_SORTIES_RESULT_CHECK, MULTIPLE_SORTIES_RESULT_EXIT,
+)
 from module.ocr.ocr import Digit, Duration
 
 OCR_HANDOVER_COUNT = Digit(HANDOVER_COUNT_OCR, letter=(255, 255, 255), threshold=128, alphabet='0123456789')
@@ -82,13 +88,44 @@ OCR_HANDOVER_BOOK_COUNT = Digit(HANDOVER_BOOK_COUNT_OCR, letter=(255, 255, 255),
                                 alphabet='0123456789')
 OCR_HANDOVER_BOOK_AMOUNT = Digit(HANDOVER_BOOK_AMOUNT_OCR, letter=(255, 255, 255), threshold=128,
                                  alphabet='0123456789')
-OCR_HANDOVER_TIME_NEEDED = Duration(HANDOVER_TIME_NEEDED_OCR, letter=(255, 255, 255), threshold=128)
+class HandoverDuration(Duration):
+    """区分有效的零额度与时长识别失败。"""
+
+    def after_process(self, result):
+        result = super().after_process(result).strip()
+        self.last_valid = bool(re.fullmatch(r'\d{1,2}:?\d{2}:?\d{2}', result))
+        return result
+
+
+class HandoverOil(Digit):
+    """提取绿色或红色的数字，剔除油桶图标和「石油」单位。"""
+
+    def pre_process(self, image):
+        rgb = image.astype(np.int16)
+        green = (rgb[:, :, 1] - rgb[:, :, 0] > 20) & (rgb[:, :, 1] - rgb[:, :, 2] > 25)
+        red = (rgb[:, :, 0] - rgb[:, :, 1] > 35) & (rgb[:, :, 0] - rgb[:, :, 2] > 35)
+        mask = ((green | red) & (rgb.max(axis=2) > 140)).astype(np.uint8)
+        _, _, stats, _ = cv2.connectedComponentsWithStats(mask)
+        units = [x for x, y, width, height, area in stats[1:] if width >= 17 and height >= 14]
+        if not units:
+            return np.full(image.shape[:2], 255, dtype=np.uint8)
+        mask = mask[:, :min(units)]
+        visible = np.flatnonzero(mask.any(axis=0))
+        if visible.size:
+            mask = mask[:, visible[0]:visible[-1] + 1]
+        return (255 - mask * 255).astype(np.uint8)
+
+
+OCR_HANDOVER_OIL_COST = HandoverOil(HANDOVER_OIL_COST_OCR, alphabet='0123456789')
+OCR_HANDOVER_TIME_NEEDED = HandoverDuration(HANDOVER_TIME_NEEDED_OCR, letter=(255, 255, 255), threshold=128)
 # 剩余可用时间是绿色字 (110,184,48)，面板上其余文字都是白/浅灰。extract_letters() 对
 # 白色 letter 走「按最小通道取反」的快速分支，非白色走逐通道差值分支；绿字用白色会把
 # 文字和深色背景一起提成纯白，送模图成为空白图，OCR 恒返回 0:00:00。
-OCR_HANDOVER_TIME_REMAINING = Duration(HANDOVER_TIME_REMAINING_OCR, letter=(110, 184, 48), threshold=128)
+OCR_HANDOVER_TIME_REMAINING = HandoverDuration(HANDOVER_TIME_REMAINING_OCR, letter=(110, 184, 48), threshold=128)
 # 进行中委托的剩余时间同样是绿色字 (99,215,131)，理由同上
-OCR_HANDOVER_STOP_TIME = Duration(HANDOVER_STOP_TIME_OCR, letter=(99, 215, 131), threshold=128)
+OCR_HANDOVER_STOP_TIME = HandoverDuration(HANDOVER_STOP_TIME_OCR, letter=(99, 215, 131), threshold=128)
+OCR_HANDOVER_EXCHANGE_ADDED = HandoverDuration(
+    HANDOVER_EXCHANGE_ADDED_OCR, letter=(158, 234, 94), threshold=128)
 
 # 一本作战全权委托书可兑换 1 小时可用时间
 HANDOVER_BOOK_HOURS = 1
@@ -115,8 +152,8 @@ class OperationHandover(CampaignRun):
 
     继承 CampaignRun 以复用 load_campaign()，拿到 self.campaign（config 已
     deepcopy 合并过的 CampaignBase 实例），借它的 ensure_campaign_ui() 与
-    fleet_preparation() 复用战役 UI 能力。全程不调用 self.campaign.run()，
-    因此不会进入地图战斗。
+    fleet_preparation() 复用战役 UI 能力。入口未启用时调用连续作战补充记录；
+    已启用的关卡直接设置离线委托。
 
     Attributes:
         campaign: 战役执行实例，由 CampaignRun.load_campaign() 提供。
@@ -149,26 +186,33 @@ class OperationHandover(CampaignRun):
         logger.attr('维护当天作战委托', f'是（{maintain_reason}）' if maintain_run
                     else f'否（{maintain_reason}）')
 
+        commission_end = self.handover_commission_end()
+        maintenance_claim_only = False
         if maintain_run:
             lead_minutes = int(read_run_param(
                 self.config, 'Handover_MaintainLeadMinutes',
                 HANDOVER_MAINTAIN_LEAD_MINUTES, 2, 60))
             run_at = maintain - timedelta(minutes=lead_minutes)
             if current_time() < run_at:
-                logger.info(f'[作战委托] 还没到维护前的运行时间，推迟到 {run_at}')
-                self.config.task_delay(target=run_at)
-                return
+                if commission_end > current_time():
+                    self.config.task_delay(target=min(run_at, commission_end))
+                    return
+                if commission_end > HANDOVER_COMMISSION_NONE:
+                    maintenance_claim_only = True
+                else:
+                    logger.info(f'[作战委托] 还没到维护前的运行时间，推迟到 {run_at}')
+                    self.config.task_delay(target=run_at)
+                    return
             logger.info(f'[作战委托] 到维护前 {lead_minutes} 分钟了，'
                         f'作战次数拉满跑最后一次')
 
         # 委托次数为 0：这个任务平时没事可做，只在开启的定时功能触发时才动。
         # 三个开关全关就直接关掉任务，避免每天空跑
         now = current_time()
-        commission_end = self.handover_commission_end()
         if count <= 0:
             consume_enabled = self.config.OperationHandover_ConsumeAllBook
             maintain_enabled = self.config.OperationHandover_MaintainOverride
-            if not consume_enabled and not maintain_enabled:
+            if not consume_enabled and not maintain_enabled and commission_end <= HANDOVER_COMMISSION_NONE:
                 logger.warning('[作战委托] 委托次数为 0，一键消耗委托书和维护当天作战委托'
                                '都没开启，这个任务没有事可做，直接关闭')
                 self.config.cross_set(keys='OperationHandover.Scheduler.Enable', value=False)
@@ -207,31 +251,66 @@ class OperationHandover(CampaignRun):
 
         # 上一次的委托已完成，领取奖励。领完退回章节选择页，要重新点一次关卡
         claimed = self.handover_reward()
+        if claimed or commission_end > HANDOVER_COMMISSION_NONE:
+            self.handover_commission_clear()
+        if maintenance_claim_only:
+            self.config.task_delay(target=run_at)
+            return
 
         # 委托次数为 0 又没有定时功能要跑：奖励领完就收工，不开新委托
         if count <= 0 and not maintain_run and not consume_all:
             self.handover_commission_clear()
+            if not consume_enabled and not maintain_enabled:
+                self.config.cross_set(keys='OperationHandover.Scheduler.Enable', value=False)
+                self.config.task_stop('已有委托已回收，关闭无启动计划的任务')
             self.handover_idle_delay(maintain, maintain_queried)
+            return
+
+        used = daily_runs(self.config, get_server_last_update('00:00'), current_time())
+        limit = getattr(self.config, 'OperationHandover_DailyRunCount', 1)
+        if not (maintain_run or consume_all) and limit > 0 and used >= limit:
+            logger.info(f'[作战委托] 今日普通委托已启动 {used}/{limit} 批，等待次日刷新')
+            self.config.task_delay(server_update=True)
+            return
+
+        sortie = next_sortie(self.config)
+        now = current_time()
+        if sortie is not None and sortie[1] <= now + timedelta(minutes=2):
+            logger.info(f'[作战委托] 为出击任务 {sortie[0]} 保留运行窗口，暂不启动新委托')
+            self.config.task_delay(target=max(now + timedelta(minutes=2), sortie[1] + timedelta(minutes=1)))
             return
 
         if claimed:
             self.handover_enter()
 
-        # 检测该关卡是否支持作战委托
-        if not self.handover_check_support():
-            self.handover_delay()
-            return
-
         # 面板打开后就看不到顶栏的石油了，先把当前油量读出来备用
         oil = self.get_oil()
         logger.attr('当前石油', oil)
-        if oil_limit and oil < oil_limit:
+        if oil_limit and oil < oil_limit and (use_book or consume_all):
             logger.warning(f'[作战委托] 石油 {oil} 低于设定值 {oil_limit}，推迟任务')
             self.handover_delay()
             return
 
+        # 灰色入口也可能只是没有完整自律记录；船坞满中断后允许清理并重做一次。
+        support = self.handover_check_support()
+        if support is None:
+            self.config.task_delay(minute=5)
+            return
+        if not support:
+            if not self.handover_unlock():
+                self.handover_delay()
+                return
+            oil = self.get_oil()
+
         # 打开作战委托面板
         self.handover_panel_enter()
+
+        # 游戏的「最大」已经受剩余额度限制，补时间必须在拉满或限制次数前进行。
+        if auto_supplement and not self.handover_prepare_time(
+                count if count > 0 and not (maintain_run or consume_all) else 1,
+                oil, use_book=use_book or consume_all):
+            self.handover_close_panel()
+            return
 
         # 次数怎么定：维护前拉满 > 一键消耗按委托书数量 > 配置里的次数
         if maintain_run:
@@ -246,33 +325,79 @@ class OperationHandover(CampaignRun):
                 self.handover_delay()
                 return
             if book == 0:
-                # 手上没有可投入的委托书，本周的一键消耗再试也不会有结果
+                # 本次无书可投入时保留每周触发，后续获得委托书后仍可重试。
                 self.handover_close_panel()
-                self.handover_consume_all_book_give_up('没有可投入的作战全权委托书', maintain,
-                                                       maintain_queried)
+                self.handover_delay()
                 return
         else:
-            self.handover_set_count(count)
+            if not self.handover_set_count(count):
+                self.handover_close_panel()
+                self.handover_delay()
+                return
+
+        consume_partial = False
+        if sortie is not None:
+            self.device.screenshot()
+            selected = OCR_HANDOVER_COUNT.ocr(self.device.image)
+            needed = OCR_HANDOVER_TIME_NEEDED.ocr(self.device.image)
+            if not (OCR_HANDOVER_COUNT.last_valid and OCR_HANDOVER_TIME_NEEDED.last_valid):
+                self.handover_close_panel()
+                self.config.task_delay(minute=5)
+                return
+            allowed = fit_sortie_window(selected, needed, sortie[1], current_time())
+            if allowed <= 0:
+                self.handover_close_panel()
+                self.config.task_delay(target=max(current_time() + timedelta(minutes=2),
+                                                  sortie[1] + timedelta(minutes=1)))
+                return
+            if allowed < selected:
+                logger.info(f'[作战委托] 为 {sortie[0]} 留出时间，次数 {selected} -> {allowed}')
+                if not self.handover_input_count(allowed):
+                    self.handover_close_panel()
+                    self.config.task_delay(minute=5)
+                    return
+                consume_partial = consume_all and not maintain_run
+
+        if consume_partial and not self.handover_book_max():
+            self.handover_close_panel()
+            self.config.task_delay(minute=5)
+            return
+
+        if use_book and not (consume_all and not maintain_run):
+            if not self.handover_book_max():
+                self.handover_close_panel()
+                self.handover_delay()
+                return
+
+        # 兑换会实际消耗委托书，必须先确认本次投入后的油量够用。
+        self.device.screenshot()
+        if not self.handover_oil_enough(oil):
+            self.handover_close_panel()
+            self.handover_delay()
+            return
 
         # 判断剩余可用时间能否完成委托
         self.device.screenshot()
         needed, remaining = self.handover_get_time()
-        if needed > remaining:
+        actual_count = OCR_HANDOVER_COUNT.ocr(self.device.image)
+        if (needed <= timedelta() or actual_count <= 0 or not OCR_HANDOVER_COUNT.last_valid
+                or not OCR_HANDOVER_TIME_NEEDED.last_valid or not OCR_HANDOVER_TIME_REMAINING.last_valid):
+            self.handover_close_panel()
+            self.config.task_delay(minute=5)
+            return
+        deficit = self.handover_time_deficit(needed, remaining, actual_count)
+        if deficit > timedelta():
             if not auto_supplement:
                 logger.warning('[作战委托] 剩余可用时间不足以完成委托，且未启用自动补充时间')
                 self.handover_close_panel()
                 self.handover_delay()
                 return
-            if not self.handover_exchange_time(needed - remaining):
+            if not self.handover_exchange_time(deficit, reserve_books=int(use_book or consume_all)):
                 self.handover_close_panel()
                 self.handover_delay()
                 return
             # 兑换弹窗关闭后画面已更新，重新截图供后续使用
             self.device.screenshot()
-
-        # 点击确定前按需把委托书投入量拉满。一键消耗委托书那条路上面已经拉满过了
-        if use_book and not (consume_all and not maintain_run):
-            self.handover_book_max()
 
         # 点「开始」之前用面板上的「预计消耗」核对油量：油不够时游戏不会关面板，
         # 只会在面板里提示「资源不足，无法开始」，面板留在屏幕上会把后面所有
@@ -280,11 +405,7 @@ class OperationHandover(CampaignRun):
         self.device.screenshot()
         if not self.handover_oil_enough(oil):
             self.handover_close_panel()
-            if consume_all and not maintain_run:
-                # 面板上算出来的油耗摆在这，等几十分钟也凑不出这一次的消耗
-                self.handover_consume_all_book_give_up('石油不足', maintain, maintain_queried)
-            else:
-                self.handover_delay()
+            self.handover_delay()
             return
 
         if not self.handover_start():
@@ -292,11 +413,101 @@ class OperationHandover(CampaignRun):
             self.handover_delay()
             return
 
-        if consume_all and not maintain_run:
+        if not (consume_all or maintain_run):
+            with self.config.multi_set():
+                self.config.OperationHandover_DailyRunCountUsed = used + 1
+                self.config.OperationHandover_DailyRunCountRecord = current_time()
+
+        if consume_all and not maintain_run and not consume_partial:
             self.handover_consume_all_book_record()
         # 记下委托什么时候结束：次数为 0 时靠它回来领奖励，别的任务靠它算推迟多久
         self.handover_commission_set(current_time() + needed)
         self.config.task_delay(minute=needed.total_seconds() / 60)
+
+    def handover_unlock(self):
+        """补充完整连续作战记录；船坞满中断时清理后重做，并以入口状态确认解锁。
+
+        Pages:
+            in: 关卡页
+            out: 关卡页
+        """
+        if self.campaign.config.MAP_IS_ONE_TIME_STAGE:
+            logger.warning('[作战委托] 一次性关卡不尝试补充连续作战记录')
+            return False
+        for attempt in range(2):
+            logger.info('[作战委托] 尚未解锁，先完成一次完整连续作战')
+            try:
+                self.campaign.run_multiple_sorties(
+                    1, oil_limit=self.config.OperationHandover_OilLimit)
+            except ScriptEnd as exc:
+                logger.warning(f'[作战委托] 连续作战未完成: {exc}')
+                self.handover_enter()
+                return False
+            self.handover_enter()
+            support = self.handover_check_support()
+            if support is True:
+                return True
+            if support is None:
+                return False
+            if not self.campaign.__dict__.get('_multiple_sorties_dock_interrupted', False):
+                return False
+            if attempt == 0:
+                logger.info('[作战委托] 船坞满中断了通关记录，已按周回策略清理，重新完成一次')
+        logger.warning('[作战委托] 清理后仍未解锁，停止本轮尝试，避免反复刷图')
+        return False
+
+    @staticmethod
+    def handover_time_deficit(needed, remaining, count):
+        """额度只需覆盖最后一次开始前的消耗，最后一次允许超出剩余额度。"""
+        if count <= 0 or needed <= timedelta():
+            raise ValueError('委托次数与耗时必须大于零')
+        required = needed - needed / count + timedelta(seconds=1)
+        return max(required - remaining, timedelta())
+
+    def handover_prepare_time(self, count, oil, use_book=False):
+        """先按请求次数检查额度，预留掉落用书和石油后再兑换时间。
+
+        Pages:
+            in: 作战委托面板
+            out: 作战委托面板
+        """
+        self.device.screenshot()
+        current = OCR_HANDOVER_COUNT.ocr(self.device.image)
+        needed, remaining = self.handover_get_time()
+        if not (current > 0 and OCR_HANDOVER_COUNT.last_valid and needed > timedelta()
+                and OCR_HANDOVER_TIME_NEEDED.last_valid and OCR_HANDOVER_TIME_REMAINING.last_valid):
+            self.config.task_delay(minute=5)
+            return False
+        requested = needed / current * count
+        sortie = next_sortie(self.config)
+        if sortie is not None:
+            allowed = fit_sortie_window(count, requested, sortie[1], current_time())
+            if allowed <= 0:
+                self.config.task_delay(target=max(current_time() + timedelta(minutes=2),
+                                                  sortie[1] + timedelta(minutes=1)))
+                return False
+            count = allowed
+            requested = needed / current * count
+        deficit = self.handover_time_deficit(requested, remaining, count)
+        if deficit <= timedelta():
+            return True
+        if use_book:
+            if not self.handover_book_max():
+                self.handover_delay()
+                return False
+            books = OCR_HANDOVER_BOOK_COUNT.ocr(self.device.image)
+            cost = self.handover_oil_cost()
+            if not OCR_HANDOVER_BOOK_COUNT.last_valid or books <= 0 or cost is None:
+                self.config.task_delay(minute=5)
+                return False
+            if oil < math.ceil(cost / books * count):
+                logger.warning('[作战委托] 石油不足以支持请求次数，不兑换时间')
+                self.handover_delay()
+                return False
+        if not self.handover_exchange_time(deficit, reserve_books=int(use_book)):
+            self.handover_delay()
+            return False
+        return True
 
     def handover_enter(self):
         """进入主线或活动关卡页，并按 Fleet 组准备编队。
@@ -320,6 +531,8 @@ class OperationHandover(CampaignRun):
         folder = 'campaign_main' if self.stage_is_main(name) else self.config.Campaign_Event
         name = normalize_post_loop_stage(normalize_event_stage(name, folder), folder)
         self.load_campaign(name, folder=folder)
+        if folder.startswith('war_archives_'):
+            self.campaign.config.override(USE_DATA_KEY=True)
 
         self.device.screenshot()
         self.campaign.ensure_campaign_ui(name=self.stage, mode='normal', skip_first_screenshot=True)
@@ -394,10 +607,14 @@ class OperationHandover(CampaignRun):
         Returns:
             bool: 处理了画面返回 True，调用方应重新截图。
         """
+        if self.handle_handover_help():
+            return True
+        if self.appear(MULTIPLE_SORTIES_RESULT_CHECK, offset=(20, 20)):
+            return self.appear_then_click(MULTIPLE_SORTIES_RESULT_EXIT, offset=(20, 20), interval=2)
+
         # 委托结算「合计获得奖励」，点「确定」收起
         if self.appear(HANDOVER_REWARD_CHECK, offset=(20, 20)):
-            self.appear_then_click(HANDOVER_REWARD, offset=(20, 20), interval=3)
-            return True
+            return self.appear_then_click(HANDOVER_REWARD, offset=(20, 20), interval=3)
 
         # 紧急委托提示「出现紧急委托《XXX》」，点「确定」收起
         if self.handle_urgent_commission():
@@ -411,6 +628,14 @@ class OperationHandover(CampaignRun):
 
         return False
 
+    def handle_handover_help(self):
+        """关闭首次进入时的说明；滚动条同时确认，避免误关委托冲突弹窗。"""
+        if (self.appear(HANDOVER_HELP_CHECK, offset=(20, 20))
+                and self.image_color_count(HANDOVER_HELP_SCROLL.area,
+                                           color=(255, 215, 74), threshold=45, count=30)):
+            return self.appear_then_click(HANDOVER_HELP_CLOSE, offset=(20, 20), interval=2)
+        return False
+
     def handover_check_support(self):
         """检测当前关卡是否支持作战委托。
 
@@ -418,17 +643,24 @@ class OperationHandover(CampaignRun):
         因此用颜色判定区分。
 
         Returns:
-            bool: 该关卡支持作战委托返回 True。
+            bool | None: 支持返回 True，稳定的灰色入口返回 False，未确认入口返回 None。
         """
-        self.device.screenshot()
-        if self.appear(HANDOVER_TAB):
-            logger.info('[作战委托] 该关卡支持作战委托')
-            return True
-        if self.appear(HANDOVER_TAB_UNSUPPORTED):
-            logger.warning('[作战委托] 该关卡不支持作战委托')
-            return False
-        logger.warning('[作战委托] 未找到作战委托入口')
-        return False
+        unsupported = Timer(0.8, count=2).start()
+        timeout = Timer(4).start()
+        while True:
+            self.device.screenshot()
+            if self.appear(HANDOVER_TAB):
+                logger.info('[作战委托] 该关卡支持作战委托')
+                return True
+            if self.appear(HANDOVER_TAB_UNSUPPORTED):
+                if unsupported.reached():
+                    logger.warning('[作战委托] 该关卡尚未启用作战委托')
+                    return False
+            else:
+                unsupported.reset()
+            if timeout.reached():
+                logger.warning('[作战委托] 未确认作战委托入口，稍后重试')
+                return None
 
     def handover_panel_appear(self):
         """作战委托设置面板是否已打开。
@@ -454,6 +686,9 @@ class OperationHandover(CampaignRun):
 
             if self.handover_panel_appear():
                 break
+
+            if self.handle_handover_help():
+                continue
 
             if self.appear_then_click(HANDOVER_TAB, interval=2):
                 continue
@@ -483,11 +718,15 @@ class OperationHandover(CampaignRun):
         # 把后面所有任务带崩，所以要求连续两帧以上、且持续 0.6 秒都只剩章节选择页
         # 才算真的领完
         settled = Timer(0.6, count=1).start()
+        reward_confirmed = False
         while 1:
             self.device.screenshot()
 
             # 领取结算界面、紧急委托提示、新船入手演出
+            settlement = (self.appear(HANDOVER_REWARD_CHECK, offset=(20, 20))
+                          and not self.appear(MULTIPLE_SORTIES_RESULT_CHECK, offset=(20, 20)))
             if self.handover_handle_popup():
+                reward_confirmed |= settlement
                 settled.reset()
                 continue
 
@@ -499,6 +738,10 @@ class OperationHandover(CampaignRun):
             # 弹窗上的按钮先判，保证弹窗还在时不会误判成已经退回章节选择页
             if self.appear_then_click(HANDOVER_PASS_CLICK, offset=(20, 20), interval=3):
                 settled.reset()
+                continue
+
+            # 领取后可能先露出章节页，再播放新船和总奖励；必须确认已收起总奖励。
+            if not reward_confirmed:
                 continue
 
             # 退回章节选择页，关卡入口重新出现，委托已经没有了
@@ -521,26 +764,21 @@ class OperationHandover(CampaignRun):
     def handover_set_count(self, count):
         """把委托次数设置到指定值。
 
-        ui_ensure_index() 以游戏显示的次数为唯一依据点击加减号，点击丢失时能自行补齐。
-
-        count 为 0 时改成反复点减号降到游戏允许的最小值：游戏的最少次数不一定是
-        0，用 ui_ensure_index() 会一直点不到目标值而空转，最后只能靠卡死检测报错。
+        先确认游戏当前的最大次数，再通过输入框设置并回读，避免向不可达的值连点。
 
         Args:
-            count (int): 目标委托次数，0 表示降到最小。
-        """
-        if count == 0:
-            self.handover_click_until_stable(
-                HANDOVER_COUNT_MINUS, OCR_HANDOVER_COUNT, '作战次数(最小)')
-            return
+            count (int): 目标委托次数。
 
-        self.ui_ensure_index(
-            count,
-            letter=OCR_HANDOVER_COUNT,
-            next_button=HANDOVER_COUNT_PLUS,
-            prev_button=HANDOVER_COUNT_MINUS,
-            skip_first_screenshot=True,
-        )
+        Returns:
+            bool: 设置后回读与实际目标一致。
+        """
+        maximum = self.handover_count_max()
+        if maximum <= 0:
+            return False
+        target = min(max(count, 0), maximum)
+        if target != count:
+            logger.info(f'[作战委托] 次数 {count} 超过当前上限，改用 {target}')
+        return self.handover_input_count(target)
 
     def handover_get_time(self):
         """识别委托需要的时间和当天剩余可用时间。
@@ -554,13 +792,14 @@ class OperationHandover(CampaignRun):
         logger.attr('剩余可用时间', remaining)
         return needed, remaining
 
-    def handover_exchange_time(self, deficit):
+    def handover_exchange_time(self, deficit, reserve_books=0):
         """用作战全权委托书兑换可用时间。
 
         Pages: in: 作战委托面板, out: 作战委托面板
 
         Args:
             deficit (timedelta): 缺少的时间。
+            reserve_books (int): 兑换后至少保留的掉落用委托书。
 
         Returns:
             bool: 兑换成功返回 True。
@@ -568,48 +807,59 @@ class OperationHandover(CampaignRun):
         need = math.ceil(deficit.total_seconds() / HANDOVER_BOOK_SECONDS)
         logger.info(f'[作战委托] 剩余时间不足，需补充 {need} 小时，即 {need} 本作战全权委托书')
 
-        # 点击「兑换可用时间」打开兑换弹窗
-        skip_first_screenshot = True
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
-            if self.appear(POPUP_CONFIRM, offset=self._popup_offset):
-                break
-
-            if self.appear_then_click(HANDOVER_EXCHANGE_TIME, interval=2):
-                continue
-
-        # 识别持有的委托书数量，判断是否足够
-        current = OCR_HANDOVER_BOOK_AMOUNT.ocr(self.device.image)
-        logger.attr('作战全权委托书', f'持有 {current}')
-        if current < need:
-            logger.critical(f'[作战委托] 作战全权委托书不足，需要 {need} 本，持有 {current} 本')
-            self.handle_popup_cancel('HANDOVER')
+        before = OCR_HANDOVER_TIME_REMAINING.ocr(self.device.image)
+        if not OCR_HANDOVER_TIME_REMAINING.last_valid:
             return False
-
-        # 点击委托书道具，累计到需要的本数
-        clicked = 0
-        while clicked < need:
+        expected = before + timedelta(hours=need)
+        inventory_checked = False
+        cancelled = False
+        confirmed = False
+        timeout = Timer(20).start()
+        while True:
             self.device.screenshot()
-            if self.appear_then_click(HANDOVER_BOOK_ITEM, offset=(20, 20), interval=1):
-                clicked += 1
-
-        # 通用的确认按钮
-        while 1:
-            self.device.screenshot()
-            if not self.handle_popup_confirm('HANDOVER'):
-                break
-
-        logger.info(f'[作战委托] 已补充 {need} 小时可用时间')
-        return True
+            if timeout.reached():
+                raise GameStuckError('[作战委托] 兑换时间后未确认额度变化')
+            if self.handover_panel_appear():
+                if cancelled:
+                    return False
+                if confirmed:
+                    remaining = OCR_HANDOVER_TIME_REMAINING.ocr(self.device.image)
+                    if OCR_HANDOVER_TIME_REMAINING.last_valid and remaining >= expected:
+                        logger.info(f'[作战委托] 已确认补充 {need} 小时可用时间')
+                        return True
+                    continue
+                if self.appear_then_click(HANDOVER_EXCHANGE_TIME, interval=2):
+                    continue
+            if self.appear(HANDOVER_EXCHANGE_CHECK, offset=(20, 20)):
+                if not inventory_checked:
+                    current = OCR_HANDOVER_BOOK_AMOUNT.ocr(self.device.image)
+                    if not OCR_HANDOVER_BOOK_AMOUNT.last_valid:
+                        continue
+                    inventory_checked = True
+                    cancelled = current < need + reserve_books
+                    logger.attr('作战全权委托书', f'持有 {current}，兑换需要 {need}，保留 {reserve_books}')
+                if cancelled:
+                    if self.handle_popup_cancel('HANDOVER'):
+                        continue
+                else:
+                    selected = OCR_HANDOVER_EXCHANGE_ADDED.ocr(self.device.image)
+                    if not OCR_HANDOVER_EXCHANGE_ADDED.last_valid:
+                        continue
+                    if selected < timedelta(hours=need):
+                        if self.appear_then_click(HANDOVER_BOOK_ITEM, offset=(20, 20), interval=1):
+                            continue
+                    elif selected > timedelta(hours=need):
+                        cancelled = True
+                    elif self.handle_popup_confirm('HANDOVER'):
+                        confirmed = True
+                        continue
+            elif confirmed and self.handle_popup_confirm('HANDOVER'):
+                continue
 
     def handover_click_until_stable(self, button, ocr, name):
         """反复点同一个按钮，直到数值不再变化。
 
-        读两次数值相同就认为已经到头，多按几次也不会出错。
+        至少两次实际点击后，要求有效 OCR 数值持续稳定，避免把延迟反馈当成上限。
 
         Args:
             button (Button): 要点的按钮，比如「最大」或减号。
@@ -624,14 +874,26 @@ class OperationHandover(CampaignRun):
             return -1
 
         value = -1
+        clicks = 0
+        stable = Timer(0.6, count=2).start()
+        timeout = Timer(12).start()
         while 1:
             self.device.screenshot()
+            if timeout.reached():
+                logger.warning(f'[作战委托] 未能确认{name}，停止本次设置')
+                return -1
             current = ocr.ocr(self.device.image)
-            if current == value:
+            if not getattr(ocr, 'last_valid', True):
+                stable.reset()
+                continue
+            if current != value:
+                value = current
+                stable.reset()
+            if clicks >= 2 and stable.reached():
                 break
-            value = current
-
             if self.appear_then_click(button, offset=(20, 20), interval=2):
+                clicks += 1
+                stable.reset()
                 continue
 
         logger.attr(name, value)
@@ -645,8 +907,11 @@ class OperationHandover(CampaignRun):
         Returns:
             bool: 找到并使用「最大」按钮返回 True。
         """
-        return self.handover_click_until_stable(
-            HANDOVER_BOOK_MAX, OCR_HANDOVER_BOOK_COUNT, '投入作战全权委托书') >= 0
+        count = self.handover_click_until_stable(
+            HANDOVER_BOOK_MAX, OCR_HANDOVER_BOOK_COUNT, '投入作战全权委托书')
+        if count == 0:
+            logger.warning('[作战委托] 没有可投入的委托书，本次不启动仅熟练度委托')
+        return count > 0
 
     def handover_count_max(self):
         """把作战次数拉到最大。
@@ -719,7 +984,9 @@ class OperationHandover(CampaignRun):
         # 委托书拉满后的数值，就是要设置的作战次数
         book = self.handover_click_until_stable(HANDOVER_BOOK_MAX, OCR_HANDOVER_BOOK_COUNT,
                                        '投入作战全权委托书')
-        if book <= 0:
+        if book < 0:
+            return -1
+        if book == 0:
             logger.warning('[作战委托] 没有可投入的作战全权委托书')
             return 0
 
@@ -1077,21 +1344,23 @@ class OperationHandover(CampaignRun):
     def handover_oil_cost(self):
         """识别面板上的「预计消耗」石油数量。
 
-        这个数字油够时是白色、不够时变红，颜色不固定，而 Ocr 类的 letter 参数
-        要求固定颜色，所以直接用不带颜色要求的 AlOcr 识别。
+        额外油耗以绿色或红色显示。只识别数字，避免把油桶图标拼成额外的 1。
 
         Pages: in: 作战委托面板
 
         Returns:
-            int: 预计消耗的石油，读不到返回 0。
+            int | None: 预计消耗石油；无委托书时为 0，无法确认时返回 None。
         """
-        text = OCR_MODEL.azur_lane.ocr_for_single_line(
-            crop(self.device.image, HANDOVER_OIL_COST_OCR.area))
-        digits = ''.join(char for char in text if char.isdigit())
-        if not digits:
-            logger.warning(f'[作战委托] 预计消耗石油识别失败: {text!r}')
+        books = OCR_HANDOVER_BOOK_COUNT.ocr(self.device.image)
+        if not OCR_HANDOVER_BOOK_COUNT.last_valid:
+            return None
+        if books == 0:
             return 0
-        return int(digits)
+        cost = OCR_HANDOVER_OIL_COST.ocr(self.device.image)
+        if not OCR_HANDOVER_OIL_COST.last_valid or cost <= 0:
+            logger.warning('[作战委托] 未识别到有效的额外油耗')
+            return None
+        return cost
 
     def handover_oil_enough(self, oil):
         """点「开始」之前，用面板上的「预计消耗」核对油量。
@@ -1100,13 +1369,13 @@ class OperationHandover(CampaignRun):
             oil (int): 打开面板之前读到的石油数量。
 
         Returns:
-            bool: 油量足够（或读不到预计消耗）返回 True。
+            bool: 已确认无额外油耗，或当前石油足够时返回 True。
         """
         cost = self.handover_oil_cost()
         logger.attr('预计消耗石油', cost)
-        if cost <= 0:
-            logger.warning('[作战委托] 读不到预计消耗石油，跳过油量检查')
-            return True
+        if cost is None:
+            logger.warning('[作战委托] 未确认预计油耗，本次不启动或兑换时间')
+            return False
         if oil < cost:
             logger.warning(f'[作战委托] 石油不足，需要 {cost}，当前 {oil}')
             return False
@@ -1127,13 +1396,12 @@ class OperationHandover(CampaignRun):
             else:
                 self.device.screenshot()
 
-            if not self.handover_panel_appear():
+            if self.appear(HANDOVER_TAB) or self.appear(HANDOVER_TAB_UNSUPPORTED):
                 logger.info('[作战委托] 已关闭作战委托面板')
                 return
 
             if timeout.reached():
-                logger.warning('[作战委托] 关闭作战委托面板失败')
-                return
+                raise GameStuckError('[作战委托] 无法确认已回到关卡页')
 
             if self.appear_then_click(HANDOVER_PANEL_CLOSE, offset=(20, 20), interval=2):
                 continue
@@ -1141,17 +1409,17 @@ class OperationHandover(CampaignRun):
     def handover_start(self, skip_first_screenshot=True):
         """点击「开始」，并确认委托真的开起来了。
 
-        资源不足时游戏不会关掉面板，只在面板里显示「资源不足，无法开始」，
-        所以不能只看「开始」按钮消失就当作成功——那样面板会留在屏幕上，
-        后面所有任务的页面识别都会失败。这里以「面板关掉」作为成功的依据。
+        返回章节页后重新进入原关卡，以进行中或已完成的委托详情确认成功。
+        未看到详情时，不更新结束时间或本周消耗记录。
 
-        Pages: in: 作战委托面板, out: 关卡页
+        Pages: in: 作战委托面板, out: 章节选择页
 
         Returns:
             bool: 委托已开始返回 True。
         """
         clicked = False
-        timeout = Timer(10).start()
+        verified = False
+        timeout = Timer(15).start()
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -1161,16 +1429,25 @@ class OperationHandover(CampaignRun):
             if self.handle_popup_confirm('HANDOVER_START'):
                 continue
 
-            # 面板关掉了，委托已经开始
-            if not self.handover_panel_appear():
-                logger.info('[作战委托] 委托已开始，委托期间无法出击主线与活动关卡')
-                return True
-
-            if clicked and timeout.reached():
-                logger.warning('[作战委托] 点击开始后面板没有关闭，委托没有开起来')
+            if timeout.reached():
+                logger.warning('[作战委托] 未确认委托启动成功')
                 return False
 
-            if self.appear_then_click(HANDOVER_START_CLICK, offset=(20, 20), interval=3):
+            if clicked and self.handover_dialog_appear():
+                verified = True
+                if self.appear_then_click(HANDOVER_DIALOG_CLOSE, offset=(20, 20), interval=2):
+                    continue
+
+            # 开始后返回章节页，再进入原关卡，以委托详情正向验证启动结果。
+            if clicked and self.campaign.appear(self.campaign.ENTRANCE):
+                if verified:
+                    logger.info('[作战委托] 已确认委托详情，启动成功')
+                    return True
+                if self.campaign.appear_then_click(self.campaign.ENTRANCE, interval=2):
+                    continue
+
+            if self.handover_panel_appear() and self.appear_then_click(
+                    HANDOVER_START_CLICK, offset=(20, 20), interval=3):
                 if not clicked:
                     clicked = True
                     timeout.reset()

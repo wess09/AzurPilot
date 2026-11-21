@@ -15,3 +15,7 @@
 .ledger-difference { padding: 1rem 0; border-top: 1px solid var(--theme-border); overflow-wrap: anywhere; }
 .fleet-ledger .file-button { cursor: pointer; }
 .fleet-ledger .file-button input { max-width: 16rem; }
+.fleet-ledger .ledger-filters { min-width: 0; }
+.fleet-ledger .ledger-filters > summary { cursor: pointer; color: var(--theme-accent); font-weight: 600; }
+.fleet-ledger .ledger-filters[open] > summary { margin-bottom: 8px; }
+.ledger-level-range label { flex-wrap: wrap; max-width: 100%; }

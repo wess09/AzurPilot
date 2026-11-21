@@ -42,7 +42,7 @@ describe('technology catalog table', () => {
   it('links names to held ships and marks fully completed rows', () => {
     table({...row, full_star: true, lv120: true, current_count: 2, current_level: 125})
     const link = screen.getByRole('link', {name: 'Enterprise'})
-    expect(link.getAttribute('title')).toBe('Currently held: 2 · Lv.125')
+    expect(link.getAttribute('title')).toBe('Enterprise · Currently held: 2 · Lv.125')
     expect(new URL((link as HTMLAnchorElement).href).searchParams.get('group')).toBe('100')
     expect(new URL((link as HTMLAnchorElement).href).searchParams.get('tab')).toBe('data')
     expect(link.closest('tr')?.classList.contains('ft-complete')).toBe(true)

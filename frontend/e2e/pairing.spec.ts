@@ -50,6 +50,7 @@ test.describe('AFA 远程配对全流程真实交互与全视口滚轮巡检', (
   for (const vp of VIEWPORTS) {
     test(`视口 ${vp.name} (${vp.width}x${vp.height}) 完整逐屏滚动与操作验收`, async ({ page }) => {
       await page.setViewportSize({ width: vp.width, height: vp.height })
+      await page.route('https://www.clarity.ms/**', route => route.fulfill({status: 200, contentType: 'application/javascript', body: ''}))
 
       const consoleErrors: string[] = []
       page.on('console', (msg) => {

@@ -20,9 +20,10 @@ import cv2
 
 from module.base.runtime_params import HANDOVER_CONFLICT_RETRY_MINUTES
 from module.base.timer import Timer
+from module.campaign.multiple_sorties import MultipleSorties
 from module.config.time_source import now as current_time
 from module.config.utils import read_run_param
-from module.exception import CampaignEnd, RequestHumanTakeover, ScriptEnd
+from module.exception import CampaignEnd, GameStuckError, RequestHumanTakeover, ScriptEnd
 from module.handler.fast_forward import FastForwardHandler
 from module.handler.mystery import MysteryHandler
 from module.logger import logger
@@ -36,7 +37,7 @@ from module.ui.assets import BACK_ARROW, DAILY_CHECK
 # （RunParams.Handover），默认值集中在 module/base/runtime_params.py。
 
 
-class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHandler):
+class MapOperation(MultipleSorties, MysteryHandler, FleetPreparation, Retirement, FastForwardHandler):
     """地图操作处理器。
 
     封装战役地图中的所有基础操作，包括进入关卡、舰队切换、
@@ -166,9 +167,11 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
         截图循环空转；「作战委托 INFORM」弹窗的按钮更是完全另一套。必须用弹窗
         各自的专用素材点击。
 
-        关掉弹窗后把当前任务推迟到作战委托结束之后：委托期间出击类任务都无法
-        进行，但委托是有明确结束时间的，不必整天不刷。委托是脚本自己开的
-        （任务开关为开）时额外推送一次「功能冲突」提示。
+        先查看真实详情；已完成时领取奖励并继续当前任务，仍在进行时读取剩余
+        时间并推迟当前任务。此处理同样用于主线、活动和作战档案的进入循环。
+
+        Returns:
+            bool: 已执行查看或领奖动作，调用方应重新截图。
 
         Pages:
             in: 关卡页（阻止弹窗）
@@ -178,14 +181,39 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
             TaskEnd: 作战委托进行中无法出击，当前任务到此为止。
         """
         if not self.handover_conflict_appear():
-            return
+            return False
+
+        # 其他主线或活动关卡只给出通用提示，正文在委托已完成时仍写「正在进行」。
+        # 必须先打开详情，不能凭提示或本地结束时间判断是否仍需等待。
+        if self.appear(HANDOVER_CONFLICT_CHECK, offset=(20, 20)):
+            return self.appear_then_click(HANDOVER_CHECK, offset=(20, 20), interval=2)
+
+        from module.handover.handover import (
+            HANDOVER_COMMISSION_NONE, OCR_HANDOVER_STOP_TIME, OperationHandover,
+        )
+        if self.appear(HANDOVER_PASS_CLICK, offset=(20, 20)):
+            handover = OperationHandover(config=self.config, device=self.device)
+            handover.campaign = self
+            if handover.handover_reward():
+                self.config.cross_set(
+                    'OperationHandover.OperationHandover.CommissionEnd', HANDOVER_COMMISSION_NONE)
+                logger.info('[作战委托] 已领取完成的委托，继续当前主线或活动任务')
+                return True
+            return False
+
+        remaining = OCR_HANDOVER_STOP_TIME.ocr(self.device.image)
+        commission_end = None
+        if OCR_HANDOVER_STOP_TIME.last_valid and remaining > timedelta():
+            commission_end = current_time() + remaining
+            self.config.cross_set(
+                'OperationHandover.OperationHandover.CommissionEnd', commission_end)
 
         logger.hr('功能冲突: 作战委托进行中', level=2)
 
         # 无论委托是不是脚本自己开的都要先关掉弹窗，
         # 否则脚本会卡在这个页面上，之后所有页面识别都会失败。
         closed = self.handover_close_conflict()
-        target = self.handover_conflict_delay()
+        target = self.handover_conflict_delay(commission_end=commission_end)
 
         if self.config.is_task_enabled('OperationHandover'):
             handle_notify(
@@ -199,33 +227,25 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                            '当前委托可能是手动开启的，本次不推送通知')
 
         if not closed:
-            logger.warning('[功能冲突] 阻止弹窗关闭失败，当前页面可能无法正常操作')
+            raise GameStuckError('[功能冲突] 无法关闭作战委托详情')
 
         self.config.task_stop('作战委托进行中，无法出击')
 
-    def handover_conflict_delay(self):
+    def handover_conflict_delay(self, commission_end=None):
         """把当前任务推迟到作战委托结束之后。
 
-        作战委托开委托时会把结束时间记在 OperationHandover.CommissionEnd，
-        优先用它——作战委托任务自己的 NextRun 不一定是委托结束时间（委托次数为 0
-        时它只是下一次触发时刻，可能在一周以后）。两个都读不到或者都已经过期时，
-        改为 HANDOVER_CONFLICT_RETRY_MINUTES 分钟后再试，避免把任务排到过去。
+        只使用委托结束时间。NextRun 也可能代表下周的触发计划，不能当作结束时间。
+        未确认或已过期时，按 Handover_ConflictRetryMinutes 稍后重试。
 
         Returns:
             datetime.datetime: 实际推迟到的时间点。
         """
         now = current_time()
-        commission_end = self.config.cross_get(
-            keys=['OperationHandover', 'OperationHandover', 'CommissionEnd'], default=None)
-        next_run = self.config.cross_get(
-            keys=['OperationHandover', 'Scheduler', 'NextRun'], default=None)
-        candidates = [
-            t for t in (commission_end, next_run)
-            if isinstance(t, datetime) and t > now
-        ]
-
-        if candidates:
-            end = min(candidates)
+        if commission_end is None:
+            commission_end = self.config.cross_get(
+                keys=['OperationHandover', 'OperationHandover', 'CommissionEnd'], default=None)
+        if isinstance(commission_end, datetime) and commission_end > now:
+            end = commission_end
             target = (end + timedelta(minutes=1)).replace(microsecond=0)
             logger.info(f'[功能冲突] 作战委托预计 {end} 结束，推迟到 {target}')
         else:
@@ -234,10 +254,12 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                 HANDOVER_CONFLICT_RETRY_MINUTES, 5, 120))
             target = (now + timedelta(minutes=conflict_retry)).replace(microsecond=0)
             logger.warning(f'[功能冲突] 读不到作战委托的结束时间'
-                           f'（{commission_end} / {next_run}），'
+                           f'（{commission_end}），'
                            f'{conflict_retry} 分钟后再试')
 
         self.config.task_delay(target=target)
+        if self.config.is_task_enabled('OperationHandover'):
+            self.config.task_delay(target=target - timedelta(seconds=30), task='OperationHandover')
         return target
 
     def handover_close_conflict(self):
@@ -339,7 +361,19 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                     continue
 
                 # 作战委托进行中，出击会被游戏阻止
-                self.handle_handover_conflict()
+                if self.handover_conflict_appear():
+                    self.handle_handover_conflict()
+                    continue
+
+                if self.__dict__.get('_multiple_sorties_requested', 0) and self.multiple_sorties_panel_appear():
+                    if self.handle_multiple_sorties_preparation():
+                        campaign_timer.reset()
+                        fleet_timer.reset()
+                    continue
+                if (self.__dict__.get('_multiple_sorties_requested', 0)
+                        and self._multiple_sorties_abort is not None
+                        and self.appear(FLEET_PREPARATION, offset=(20, 50))):
+                    raise self._multiple_sorties_abort
 
                 # 地图准备
                 if map_timer.reached() and self.handle_map_mode_switch(mode):
@@ -378,7 +412,12 @@ class MapOperation(MysteryHandler, FleetPreparation, Retirement, FastForwardHand
                         if not self.appear(FLEET_PREPARATION, offset=(20, 50)):
                             logger.warning('FLEET_PREPARATION button disappeared after fleet_preparation()')
                             continue
-                    self.device.click(FLEET_PREPARATION)
+                    if self.__dict__.get('_multiple_sorties_requested', 0):
+                        if not self.appear(MULTIPLE_SORTIES_ENTER, offset=(20, 20)):
+                            raise ScriptEnd('[连续作战] 当前关卡没有连续作战入口')
+                        self.device.click(MULTIPLE_SORTIES_ENTER)
+                    else:
+                        self.device.click(FLEET_PREPARATION)
                     fleet_click += 1
                     fleet_timer.reset()
                     campaign_timer.reset()

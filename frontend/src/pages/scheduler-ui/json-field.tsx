@@ -3,6 +3,7 @@
  *
  * 从 SchedulerProgram.tsx 拆分而来（仅新增导出）。
  */
+import {Textarea} from '../../components/ui/textarea'
 import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'react'
 
 /**
@@ -46,7 +47,7 @@ export function JsonField({label, value, onChange}: {label: string; value: unkno
 
   const calculatedRows = Math.min(Math.max((draft.match(/\n/g)?.length ?? 0) + 1, 3), 40)
 
-  return <label onMouseEnter={autoResize}>{label}<textarea
+  return <label onMouseEnter={autoResize}>{label}<Textarea
     ref={textareaRef}
     className="program-json"
     rows={calculatedRows}

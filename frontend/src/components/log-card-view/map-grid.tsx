@@ -27,6 +27,7 @@ import {
   Swords,
   Zap,
 } from 'lucide-react'
+import { TableViewport } from '../ui/table'
 import type { CardItem } from './aggregate'
 import { CopyButton } from './shared'
 
@@ -238,7 +239,7 @@ const MapGridCard = memo(
 
         {expanded && (
           <div className="card-body">
-            <div className="map-grid-viewport">
+            <TableViewport className="map-grid-viewport" scrollLabel="海域战术地图快照">
               <table className="map-ascii-table">
                 <thead>
                   <tr>
@@ -269,7 +270,7 @@ const MapGridCard = memo(
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableViewport>
 
             <div className="map-legend-bar">
               <span className="legend-item"><Ship size={12} className="legend-icon text-fleet" /> 旗舰 (FL)</span>

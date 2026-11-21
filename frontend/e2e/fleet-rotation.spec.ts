@@ -40,3 +40,50 @@ test('换船配置保存六队舰位与多选候补，并与调度开关分开�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({path: test.info().outputPath('fleet-rotation-mobile.png'), fullPage: true, animations: 'disabled'})
 })
+
+test('换船规则提交期间遇到并发修改，保留草稿并显示最新已保存规则', async ({page, context}) => {
+  const methods: string[] = []
+  let sendSave: (() => void) | undefined
+  await routeRpc(page, socket => {
+    const server = socket.connectToServer()
+    socket.onMessage(message => {
+      const {method} = JSON.parse(message)
+      methods.push(method)
+      if (method === 'config.patch') sendSave = () => server.send(message)
+      else server.send(message)
+    })
+    server.onMessage(message => socket.send(message))
+  })
+  const other = await context.newPage()
+  const url = '/#/i/testpilot/task/FleetRotation'
+  const slot = (target: typeof page, number: number) => target
+    .getByRole('region', {name: '第 1 舰队', exact: true})
+    .getByRole('checkbox', {name: new RegExp(`^舰位 ${number} ·`)})
+  const save = (target: typeof page) => target.getByRole('button', {name: '保存规则', exact: true})
+  try {
+    await page.goto(url)
+    await other.goto(url)
+    const local = slot(page, 1), external = slot(other, 2)
+    await expect(local).toBeVisible()
+    await expect(external).toBeVisible()
+    const originalLocal = await local.isChecked(), originalExternal = await external.isChecked()
+    await local.click()
+    methods.length = 0
+    await save(page).click()
+    await expect.poll(() => !!sendSave).toBe(true)
+    expect(methods).not.toContain('config.get')
+
+    await external.click()
+    await save(other).click()
+    await expect(other.getByText('换船规则已保存', {exact: true})).toBeVisible()
+    sendSave!()
+    const discard = page.getByRole('button', {name: '放弃草稿并重新加载', exact: true})
+    await expect(discard).toBeVisible()
+    await expect(local).toBeChecked({checked: !originalLocal})
+    await discard.click()
+    await expect(local).toBeChecked({checked: originalLocal})
+    await expect(slot(page, 2)).toBeChecked({checked: !originalExternal})
+  } finally {
+    await other.close()
+  }
+})

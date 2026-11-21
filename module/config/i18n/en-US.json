@@ -1811,6 +1811,10 @@
       "name": "Use auto-search",
       "help": ""
     },
+    "MultipleSortiesCount": {
+      "name": "Continuous sortie batch",
+      "help": "Use 0 for regular sorties. A positive value sets the maximum stages per batch, subject to game limits, remaining runs, and stop conditions."
+    },
     "ContinueAfterRestart": {
       "name": "Continue battle after restart",
       "help": "Available for main and event map tasks, including daily event stages, SP, urgent commissions and three-oil farming; off by default. Requires clearing mode and auto search. After an abnormal restart returns to the original map, enable auto search and account for morale normally in each subsequent battle. Does not resume a pre-restart battle or settlement. Map context exists only in this scheduler process; changed settings or exhausted retries fall back to the existing flow."
@@ -1838,11 +1842,23 @@
   "OperationHandover": {
     "_info": {
       "name": "Operation handover settings",
-      "help": "Supports main and event stages. Names such as 12-4 use the main campaign; D3, T6, and SP3 use the selected event. Event difficulty follows the stage name. Handover availability is checked in game."
+      "help": "Supports main campaign, current events, and War Archives. Use 12-4 for a main stage; select an event or archive before entering D3, T6, or SP3. A locked handover entry triggers one continuous sortie when the stage and fleet are ready."
     },
     "Count": {
-      "name": "Handover count",
-      "help": "How many sorties this Operation Handover runs\n0 means the minimum the game allows: in that case the task is disabled unless Consume all Handover Books is on"
+      "name": "Stages per handover batch",
+      "help": "Stages included in each batch, limited by the game, remaining quota, and the next scheduled sortie. 0 only collects rewards unless a weekly-book or maintenance plan is due. With no pending reward or timed plan, this task disables itself."
+    },
+    "DailyRunCount": {
+      "name": "Regular batches per day",
+      "help": "Maximum regular batches started per server day; default 1, or 0 for unlimited. Only verified starts count. Resets at server midnight. Existing rewards are still collected. Weekly-order and maintenance plans run independently."
+    },
+    "DailyRunCountUsed": {
+      "name": "Regular batches started today",
+      "help": ""
+    },
+    "DailyRunCountRecord": {
+      "name": "Regular batch count timestamp",
+      "help": ""
     },
     "AutoSupplementTime": {
       "name": "Auto supplement time",
@@ -1850,7 +1866,7 @@
     },
     "UseHandoverBook": {
       "name": "Use handover book",
-      "help": "Max out the invested Handover Books before starting"
+      "help": "Off: gain Lecture Hall proficiency without spending oil or orders; a full Lecture Hall receives no additional benefit. On: spend available orders and extra oil for stage drops. If no orders can be selected, defer instead of starting a proficiency-only batch."
     },
     "ConsumeAllBook": {
       "name": "Consume all Handover Books",
@@ -1881,7 +1897,7 @@
     },
     "OilLimit": {
       "name": "Postpone if oil is below X",
-      "help": "Postpone the task while oil is below this value, resume when oil is enough\n0 to disable"
+      "help": "Defer batches using orders when oil is below this threshold. 0 disables the threshold. Proficiency-only batches use no oil; continuous sorties used to unlock handover still check oil."
     },
     "ConsumeAllBookRecord": {
       "name": "Last consume time",
@@ -6150,6 +6166,12 @@
     "SeasonalThreshold": {
       "name": "Replace seasonal items when below X",
       "help": "Replace seasonal product when stock is below this number"
+    },
+    "FillEmptySlots": {
+      "name": "Fill empty shelves with other dishes",
+      "help": "When a planned dish is out of stock and a shelf is still empty, also select other dishes this shop has in stock (highest price first). The number of shelves comes from the shop grade in the Island Production Planner. Dishes kept for season points or tasks may be sold.",
+      "True": "Enabled",
+      "False": "Disabled"
     }
   },
   "IslandBusinessShop1": {

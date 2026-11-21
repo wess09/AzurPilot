@@ -8,6 +8,7 @@
 import { useSyncExternalStore } from 'react'
 import { Select } from '../components/FormControls'
 import { Switch } from '../components/Switch'
+import { PageTitle, Panel, PanelHeading } from '../components/ui'
 import { useApp, useConnection, languages } from '../app/context'
 import { ThemePreferences } from '../components/ThemePreferences'
 import { BackgroundPreferences } from '../components/BackgroundPreferences'
@@ -16,15 +17,10 @@ import { readRailVisible, setRailVisible, subscribeRailVisible } from '../app/ra
 
 /** 设置分组卡：标题占面板首行，正文由调用方给出的 `.field-row` 组成。 */
 function SettingsGroup({title, children}: {title: string; children: React.ReactNode}) {
-  return <section className="panel config-group">
-    <div className="panel-heading">
-      <div>
-        <span className="group-indicator"/>
-        <h2 role="heading" aria-level={2}>{title}</h2>
-      </div>
-    </div>
+  return <Panel compact>
+    <PanelHeading title={title} icon={<span className="group-indicator"/>}/>
     {children}
-  </section>
+  </Panel>
 }
 
 /** 界面设置：主题、调度器位置、材质、明暗、配色、背景与语言，只影响当前浏览器，不写进实例配置。 */
@@ -36,7 +32,7 @@ export function InterfaceSettings() {
   const minimal = theme === 'minimal'
 
   return <>
-    <h1 className="modern-sr-title">{ui('nav.interface')}</h1>
+    <PageTitle title={ui('nav.interface')} placement="screen-reader"/>
     <div className="settings-page">
       <SettingsGroup title={ui('settings.theme')}>
         <div className="field-row">
@@ -81,11 +77,11 @@ export function InterfaceSettings() {
       <SettingsGroup title={ui('settings.schedulerPosition')}>
         <div className="field-row">
           <div className="field-label">
-            <label>{ui('settings.schedulerPosition')}</label>
-            <p>{ui('settings.schedulerPositionHelp')}</p>
+            <label htmlFor="ui-scheduler-position">{ui('settings.schedulerPosition')}</label>
+            <p id="ui-scheduler-position-help">{ui('settings.schedulerPositionHelp')}</p>
           </div>
           <div className="field-control">
-            <Select id="ui-scheduler-position" value={schedulerPosition} onChange={event => setSchedulerPosition(event.target.value as typeof schedulerPosition)}>
+            <Select id="ui-scheduler-position" aria-describedby="ui-scheduler-position-help" value={schedulerPosition} onChange={event => setSchedulerPosition(event.target.value as typeof schedulerPosition)}>
               <option value="left">{ui('settings.schedulerPositionLeft')}</option>
               <option value="right">{ui('settings.schedulerPositionRight')}</option>
             </Select>

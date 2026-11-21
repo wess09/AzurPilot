@@ -4,16 +4,18 @@
 import {Button} from '../components/ui/button'
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react'
 import {Link, useParams, useSearchParams} from 'react-router-dom'
 import {api} from '../api/client'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading, PageTitle} from '../components/ui'
+import {usePageRead} from '../app/usePageRead'
+import {ErrorBox, PageTitle} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Input} from '../components/official-ui/input'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
-import {catalogRows, changeMilestone, complete, matches, milestones, recordFields, shipType, type Bonuses, type Catalog, type Change, type Milestone, type RecordField, type Report, type Row, type State} from '../fleet-tech/types'
+import {catalogRows, changeMilestone, complete, matches, milestones, recordFields, shipType, type Bonuses, type Change, type Milestone, type RecordField, type Row, type State} from '../fleet-tech/types'
 import {technologyEfficiency} from '../mind/cultivation'
 import '../fleet-tech/style.css'
 
@@ -41,20 +43,37 @@ function effectFor(row: Row, stage: 'get' | 'level', tr: (key: string) => string
  * 舰队科技明细表：里程碑与觉醒标记逐格切换，编辑结果经 onChange 报给父级草稿。
  * modified 里的行加草稿高亮，targetGroup 指定的行加定位高亮（深链滚动目标）。
  */
-export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = false, disabled = false, sort = {column: 'code', direction: 'ascending'}, onSort, onChange, modified = [], targetGroup}: {
+export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = false, disabled = false, sort = {column: 'code', direction: 'ascending'}, onSort, onChange, modified = [], targetGroup, scrollLabel}: {
   rows: Row[]; language: string; tr: (key: string) => string; editing?: boolean; disabled?: boolean; sort?: Sort
-  mindCosts?: Record<string, number>
+  scrollLabel?: string; mindCosts?: Record<string, number>
   onSort?: (column: Column) => void; onChange?: (row: Row, key: RecordField, value: State) => void; modified?: number[]; targetGroup?: string | null
 }) {
+  const tableWrapRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const wrapper = tableWrapRef.current
+    const header = wrapper?.querySelector('thead')
+    if (!wrapper || !header) return
+    const updateHeaderHeight = () => wrapper.style.setProperty('--ft-header-height', `${header.getBoundingClientRect().height}px`)
+    updateHeaderHeight()
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(updateHeaderHeight)
+    observer?.observe(header)
+    window.addEventListener('resize', updateHeaderHeight)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', updateHeaderHeight)
+      wrapper.style.removeProperty('--ft-header-height')
+    }
+  }, [])
   function header(column: Column, rowSpan = 1) {
-    return <TableHead key={column} scope="col" rowSpan={rowSpan} className="text-center" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? tr('efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => onSort?.(column)}>{tr(column)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>
+    const label = tr(column)
+    return <TableHead key={column} scope="col" rowSpan={rowSpan} className={`text-center ${column === 'name' ? 'ft-name-head' : ''} ${column === 'efficiency' || column === 'awakening_pending' ? 'ft-long-head' : ''}`} aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? tr('efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => onSort?.(column)}><span className={label.length <= 3 ? 'whitespace-nowrap' : undefined}>{label}</span><span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>
   }
-  return <div className="ft-table-wrap"><Table className="min-w-[1000px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
+  return <div ref={tableWrapRef} className="ft-table-wrap ft-technology-table"><Table scrollLabel={scrollLabel}><TableHeader className="sticky top-0 z-10"><TableRow>{columns.slice(0, 4).map(column => header(column, 2))}<TableHead scope="colgroup" colSpan={4} className="text-center">{tr('points')}</TableHead><TableHead scope="colgroup" colSpan={2} className="text-center">{tr('statBonuses')}</TableHead>{header('efficiency', 2)}{header('awakening_pending', 2)}</TableRow><TableRow>{columns.slice(4, 10).map(column => header(column))}</TableRow></TableHeader><TableBody>{rows.map(row => {
     const title = `${tr('held')}: ${row.current_count} · ${row.current_level === null ? tr('unknown') : `Lv.${row.current_level}`}`
     const identityHighlight = row.lv120 ? 'ft-marked' : ''
     const efficiency = technologyEfficiency(row, mindCosts)
     return <TableRow key={row.group_type} id={`technology-${row.group_type}`} data-group={row.group_type} className={[complete(row) ? 'ft-complete' : '', modified.includes(row.group_type) ? 'ft-modified' : '', targetGroup === String(row.group_type) ? 'ft-target' : ''].filter(Boolean).join(' ')}>
-      <TableCell className={`text-center tabular-nums ${identityHighlight}`}>{String(row.code).padStart(3, '0')}</TableCell><TableCell className={`ft-name text-center ${identityHighlight} ft-rarity-${row.rarity}`}><Link to={`?tab=data&group=${row.group_type}`} title={title}>{nameFor(row, language)}</Link></TableCell><TableCell className={`text-center ${identityHighlight}`}>{tr(`nation.${row.nationality}`)}</TableCell><TableCell className={`text-center ${identityHighlight}`}>{tr(`type.${shipType(row.type)}`)}</TableCell>
+      <TableCell className={`text-center tabular-nums ${identityHighlight}`}>{String(row.code).padStart(3, '0')}</TableCell><TableCell className={`ft-name text-center ${identityHighlight} ft-rarity-${row.rarity}`}><Link to={`?tab=data&group=${row.group_type}`} title={`${nameFor(row, language)} · ${title}`}>{nameFor(row, language)}</Link></TableCell><TableCell className={`ft-description text-center ${identityHighlight}`}>{tr(`nation.${row.nationality}`)}</TableCell><TableCell className={`ft-description text-center ${identityHighlight}`}>{tr(`type.${shipType(row.type)}`)}</TableCell>
       {milestones.map(key => <TableCell key={key} className={`ft-point ft-state-${stateKey(row[key])} text-center`}><Button type="button" variant="ghost" size="sm" disabled={!editing || disabled} aria-pressed={row[key]} aria-label={`${row.name} · ${tr(stageLabel[key])} · ${tr(stateKey(row[key]))}`} title={editing ? tr('toggleMilestone') : tr(stateKey(row[key]))} onClick={() => onChange?.(row, key, nextState(row[key]))}><span className="ft-point-value"><b>{pointsFor(row, key)}</b><span className="ft-mark" aria-hidden="true">{stateSymbol(row[key])}</span></span></Button></TableCell>)}
       <TableCell className={`text-center tabular-nums ${complete(row) ? 'ft-marked' : ''}`} title={`${tr('confirmed')}: ${row.points}`}>{maximumPoints(row)}</TableCell>
       {(['get', 'level'] as const).map(stage => {
@@ -71,12 +90,16 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
  * 舰队科技页：明细表 + 筛选 + 加成汇总；编辑以草稿暂存 sessionStorage，保存时按 revision 提交。
  * 草稿的 revision 与当前报告不一致（stale）时禁止保存，防止覆盖扫描期间的新确认结果。
  */
-export function FleetTechnology() {
+export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current: (() => void) | undefined}; busy: boolean; onBusy: (value: boolean) => void}) {
   const [search] = useSearchParams(), targetGroup = search.get('group')
   const {instance = ''} = useParams(), {language, ui, notify} = useApp(), connection = useConnection()
   const tr = (key: string) => key === 'Lv.120' ? key : translateFleetTech(language, key)
-  const [catalog, setCatalog] = useState<Catalog>(), [report, setReport] = useState<Report>()
-  const [busy, setBusy] = useState(false), [error, setError] = useState('')
+  const loadCatalog = useCallback(() => api.request('fleetTech.catalog', {instance}), [instance])
+  const loadReport = useCallback(() => api.request('fleetTech.report', {instance}), [instance])
+  const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data
+  const reportRead = usePageRead(instance, connection === 'ready', loadReport), report = reportRead.data
+  const reading = catalogRead.busy || reportRead.busy
+  const [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'technology.query', ''), [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'technology.filters', {})
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'technology.sort', {column: 'code', direction: 'ascending'})
   const [editing, setEditing] = useFleetPreference<boolean>(instance, 'technology.editing', false), [bonuses, setBonuses] = useFleetPreference<boolean>(instance, 'technology.bonuses', false), [extra, setExtra] = useFleetPreference<boolean>(instance, 'technology.extra', false)
@@ -165,18 +188,20 @@ export function FleetTechnology() {
   useEffect(() => {
     if (targetGroup && report && catalog) document.getElementById(`technology-${targetGroup}`)?.scrollIntoView?.({block: 'center'})
   }, [targetGroup, report, catalog])
-  async function reload(includeCatalog = false) {
-    const token = scope.current
-    try {
-      const [data, value] = await Promise.all([includeCatalog ? api.request('fleetTech.catalog', {instance}) : Promise.resolve(undefined), api.request('fleetTech.report', {instance})])
-      if (scope.current === token) {if (data) setCatalog(data); setReport(value); setError('')}
-    } catch (e) {if (scope.current === token) setError((e as Error).message)}
-  }
-  useEffect(() => {
-    scope.current++; setCatalog(undefined); setReport(undefined); setError(''); setBusy(false); writing.current = false
-    if (connection === 'ready') void reload(true)
-    return () => {scope.current++}
-  }, [instance, connection])
+  const reload = useCallback(() => {
+    if (connection !== 'ready' || writing.current || reading) return
+    setError('')
+    if (!catalog || catalogRead.error) catalogRead.reload()
+    reportRead.reload()
+  }, [connection, catalog, reading, catalogRead.error, catalogRead.reload, reportRead.reload])
+  useLayoutEffect(() => {
+    scope.current++; writing.current = false
+    return () => {scope.current++; onBusy(false)}
+  }, [connection, instance, onBusy])
+  useLayoutEffect(() => {
+    reloadRef.current = reload
+    return () => {reloadRef.current = undefined}
+  }, [reload, reloadRef])
   function change(row: Row, key: RecordField, value: State) {
     if (!report || busy || connection !== 'ready') return
     setDraft(current => {
@@ -206,7 +231,8 @@ export function FleetTechnology() {
   async function save() {
     if (!report || !draft || !dirty || stale || writing.current) return
     const token = scope.current
-    writing.current = true; setBusy(true); setError('')
+    reportRead.invalidate()
+    writing.current = true; onBusy(true); setError('')
     try {
       const changes = Object.values(draft.changes).map(change => {
         const original = rows.find(row => row.group_type === change.group_type)
@@ -219,19 +245,20 @@ export function FleetTechnology() {
         }
       }).filter((change): change is Change => change !== null)
       const value = await api.request('fleetTech.patch', {instance, revision: draft.revision, changes, nations: draft.nations})
-      if (token === scope.current) {setReport(value); setDraft(null); notify(tr('saved'))}
+      if (token === scope.current) {reportRead.setData(value); setDraft(null); notify(tr('saved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
-    finally {if (token === scope.current) {writing.current = false; setBusy(false)}}
+    finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
   async function mergeShips() {
     if (!report || dirty || writing.current) return
     const token = scope.current
-    writing.current = true; setBusy(true); setError('')
+    reportRead.invalidate()
+    writing.current = true; onBusy(true); setError('')
     try {
       const value = await api.request('fleetTech.mergeShips', {instance, revision: report.revision})
-      if (token === scope.current) {setReport(value); notify(tr('mergeSaved'))}
+      if (token === scope.current) {reportRead.setData(value); notify(tr('mergeSaved'))}
     } catch (e) {if (token === scope.current) setError((e as Error).message)}
-    finally {if (token === scope.current) {writing.current = false; setBusy(false)}}
+    finally {if (token === scope.current) {writing.current = false; onBusy(false)}}
   }
   function group(key: string, options: [string, string][], label = tr(key === 'type' ? 'category' : key)) {
     return <FleetFilterRow filter={key} label={label} options={options} filters={filters} setFilters={setFilters} all={tr('all')}/>
@@ -246,11 +273,13 @@ export function FleetTechnology() {
       }).join(' · ')}</div>
     })}</div>
   }
-  if (!catalog || !report) return error ? <ErrorBox message={error} retry={() => void reload(!catalog)}/> : <Loading/>
+  // Show a retry only after both reads settle, when the unified reload can run.
+  const readError = reading ? '' : catalogRead.error || reportRead.error
+  if (!catalog || !report) return <LoadBoundary ready={false} error={error || readError} retry={reload}/>
   const disabled = busy || connection !== 'ready'
   return <div className="fleet-technology">
-    <PageTitle title={tr('title')} actions={<Button variant="outline" disabled={disabled} onClick={() => void reload()}>{ui('mind.reload')}</Button>}/>
-    {error && <ErrorBox message={error}/>}
+    <PageTitle title={tr('title')}/>
+    {(error || readError) && <ErrorBox message={error || readError} retry={reload}/>}
     <section className="ft-summary"><div><p>{tr('max')}：<b>{catalog.max_points.toLocaleString()}</b> · {tr('confirmed')}：<b>{totals.points.toLocaleString()}</b>{dirty && <span className="ft-draft-label">{tr('draftPreview')}</span>}</p><p>{tr('four')}：{['1', '2', '3', '4'].map(id => `${tr(`nation.${id}`)} ${catalog.nation_points[id] ?? 0}`).join(' · ')}</p><p>{milestones.map(key => <span key={key}>{tr(stageLabel[key])}：{totals.counts[key]} / {rows.length}　</span>)}</p><small>{tr('independentHint')}</small></div></section>
     <section className="ft-filters">
       {group('type', [['front', tr('front')], ['back', tr('back')], ...types.map(value => [String(value), tr(`type.${value}`)] as [string, string])])}
@@ -267,7 +296,7 @@ export function FleetTechnology() {
     {bonuses && <section id="fleet-tech-bonuses" className="ft-bonuses"><h2>{tr('bonuses')}{dirty && ` · ${tr('draftPreview')}`}</h2><div className="ft-nation-levels">{Object.entries(catalog.nations).map(([id, values]) => <label key={id}>{tr(`nation.${id}`)} {tr('factionLevel')}<Select disabled={disabled} value={levels[id] == null ? '__unspecified__' : String(levels[id])} onValueChange={value => changeNation(id, value === '__unspecified__' ? null : Number(value))}><SelectTrigger aria-label={`${tr(`nation.${id}`)} ${tr('factionLevel')}`}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="__unspecified__">{tr('unspecified')}</SelectItem>{Array.from({length: values.length + 1}, (_, value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}</SelectContent></Select></label>)}</div><h3>{tr('shipBonuses')}</h3>{bonusList(totals.shipBonuses)}<h3>{tr('nationBonuses')}</h3>{bonusList(totals.nationBonuses)}<h3>{tr('total')}</h3>{bonusList(totals.bonuses)}<p>{tr('unknownImpact')}</p></section>}
     <div className="ft-search"><Input aria-label={tr('search')} placeholder={tr('search')} value={query} onChange={event => setQuery(event.target.value)}/><span>{ui('mind.rowCount', {count: filtered.length})}</span><span className="ft-state-legend">✓ {tr('finished')} · — {tr('notFinished')}</span></div>
     {editing && <p className="ft-edit-hint">{tr('inlineEditHint')}</p>}
-    <TechnologyTable rows={filtered} language={language} tr={tr} mindCosts={catalog.mind_costs_100_to_120} editing={editing} disabled={disabled} sort={sort} onSort={column => setSort(current => ({column, direction: current.column === column ? current.direction === 'ascending' ? 'descending' : 'ascending' : column === 'efficiency' ? 'descending' : 'ascending'}))} onChange={change} modified={Object.keys(draft?.changes ?? {}).map(Number)} targetGroup={targetGroup}/>
+    <TechnologyTable scrollLabel={ui('analysis.technology')} rows={filtered} language={language} tr={tr} mindCosts={catalog.mind_costs_100_to_120} editing={editing} disabled={disabled} sort={sort} onSort={column => setSort(current => ({column, direction: current.column === column ? current.direction === 'ascending' ? 'descending' : 'ascending' : column === 'efficiency' ? 'descending' : 'ascending'}))} onChange={change} modified={Object.keys(draft?.changes ?? {}).map(Number)} targetGroup={targetGroup}/>
     {!filtered.length && <p>{ui('mind.empty')}</p>}
     <footer><small>{tr('version')}：{catalog.updated_at}</small><a href="https://wiki.biligame.com/blhx/舰队科技#舰队科技列表" target="_blank" rel="noreferrer">{tr('attribution')}</a></footer>
   </div>

@@ -2,7 +2,7 @@
  * @fileoverview 任务队列与拖拽排序列表组件。
  */
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight } from 'lucide-react'
 import type { Overview } from '../api/types'
@@ -57,7 +57,6 @@ export function movedBy(before: Box | undefined, after: Box) {
 export function TaskQueue({instance, data, onData}: {instance: string; data?: Overview; onData?: (data: Overview) => void}) {
   const {t, ui, notify} = useApp()
   const navigate = useNavigate()
-  const [menu, setMenu] = useState<{task: Overview['tasks'][number]; x: number; y: number}>()
   const positions = useRef(new Map<string, Placement>())
   const known = useRef(new Set<string>())
   const list = useRef<HTMLDivElement>(null)
@@ -204,9 +203,8 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
           <div className="rail-queue-body">
             {tasks.map(task => {
               const nextRun = task.nextRun?.replace('T', ' ').trim()
-              return <Link key={task.name} data-task={task.name} className={`rail-task-item ${task.state}`}
-                           to={`/i/${instance}/task/${task.name}`}
-                           onContextMenu={event => {event.preventDefault(); setMenu({task, x: event.clientX, y: event.clientY})}}>
+              return <ContextMenu key={task.name} items={menuItems(task)}><Link data-task={task.name} className={`rail-task-item ${task.state}`}
+                           to={`/i/${instance}/task/${task.name}`}>
                 <div className="rail-task-main">
                   <strong>{t(`Task.${task.name}.name`)}</strong>
                   {nextRun && <small>{nextRun}</small>}
@@ -216,12 +214,11 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
                   <span className="state-label">{labels[task.state]}</span>
                 </span>
                 <ChevronRight size={13}/>
-              </Link>
+              </Link></ContextMenu>
             })}
           </div>
         </section>
       </>
     ) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
-    {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.task)} onClose={() => setMenu(undefined)}/>}
   </div>
 }

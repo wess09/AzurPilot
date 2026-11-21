@@ -281,6 +281,7 @@ class ConfigChange(Params):
     """单个配置项修改条目模型。"""
     path: StrictStr = Field(min_length=1, max_length=180)
     value: Any
+    expected: Any = Field(default_factory=lambda: None)
 
 
 class PatchParams(InstanceParams):

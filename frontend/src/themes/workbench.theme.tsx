@@ -54,7 +54,6 @@ const styles = `
     .workbench-shell .workbench-content {padding:12px; scroll-padding:12px}
     .workbench-shell .workbench-overview {gap:16px}
     .workbench-shell .workbench-toolbar .task-picker {max-width:100%}
-    .workbench-shell .workbench-toolbar .task-picker-menu {left:0; right:auto; max-width:calc(100vw - 24px)}
   }
 `
 

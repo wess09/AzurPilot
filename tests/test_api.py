@@ -624,6 +624,28 @@ class SocketApiTests(unittest.TestCase):
             self.assertEqual('5555', merged['result']['values']['Alas']['Emulator']['Serial'])
 
 
+    def test_expected_config_values_are_atomic_and_allow_unrelated_updates(self):
+        with self.client.websocket_connect('/api/v1/ws') as ws:
+            self.login(ws)
+            initial = self.call(ws, 'config.get', {'instance': 'testpilot'})['result']
+            serial = initial['values']['Alas']['Emulator']['Serial']
+            enabled = initial['values']['Main']['Scheduler']['Enable']
+            self.assertTrue(self.call(ws, 'config.patch', {'instance': 'testpilot', 'changes': [
+                {'path': 'Main.Scheduler.Enable', 'value': not enabled},
+            ]})['ok'])
+            merged = self.call(ws, 'config.patch', {'instance': 'testpilot', 'changes': [
+                {'path': 'Alas.Emulator.Serial', 'value': 'new-serial', 'expected': serial},
+            ]})
+            self.assertTrue(merged['ok'])
+            self.assertEqual(not enabled, merged['result']['values']['Main']['Scheduler']['Enable'])
+            for expected in (enabled, None, int(not enabled)):
+                rejected = self.call(ws, 'config.patch', {'instance': 'testpilot', 'changes': [
+                    {'path': 'Alas.Emulator.Serial', 'value': 'must-not-save', 'expected': 'new-serial'},
+                    {'path': 'Main.Scheduler.Enable', 'value': enabled, 'expected': expected},
+                ]})
+                self.assertEqual('CONFLICT', rejected['error']['code'])
+                self.assertEqual('new-serial', self.call(ws, 'config.get', {'instance': 'testpilot'})['result']['values']['Alas']['Emulator']['Serial'])
+
     def test_overview_and_scheduler_controls_accept_instance_identity(self):
         """启停实际完成后，总览响应不能因内部身份字段而失败。"""
         from module.runtime.process_manager import ProcessManager

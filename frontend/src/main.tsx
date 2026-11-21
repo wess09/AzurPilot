@@ -7,6 +7,8 @@ import { createRoot } from 'react-dom/client'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { App } from './app/App'
 import { AppProvider } from './app/context'
+import { BackgroundGalleryProvider } from './app/backgroundGallery'
+import { BackgroundUrlResolver } from './app/backgroundUrl'
 import { PluginProvider } from './plugins/context'
 import { PluginPage } from './plugins/views'
 import { ThemeWallpaper } from './components/ThemeWallpaper'
@@ -70,4 +72,4 @@ const router = createHashRouter([
 ])
 // 在挂载前应用已保存的主题，避免首屏闪过默认外观。
 applyTheme(getThemePreference())
-createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><PluginProvider><ThemeWallpaper/><RouterProvider router={router}/></PluginProvider></AppProvider></ErrorBoundary>)
+createRoot(document.getElementById('root')!).render(<ErrorBoundary><AppProvider><BackgroundGalleryProvider><BackgroundUrlResolver/><PluginProvider><ThemeWallpaper/><RouterProvider router={router}/></PluginProvider></BackgroundGalleryProvider></AppProvider></ErrorBoundary>)

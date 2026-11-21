@@ -104,7 +104,7 @@ export function Select({children, id, className, style, disabled, autoFocus, ope
   const label = current === '' ? undefined : items.find(item => item.value === current)?.label
   const placeholder = String(items[0]?.label ?? ui('common.select'))
   // 空值时 Radix 拿到的是哨兵值，不会走自己的 placeholder 分支，这里直接把显示文本交出去。
-  const display = typeof label === 'string' || typeof label === 'number' ? String(label) : plainValue(current) || placeholder
+  const display = label ?? (plainValue(current) || placeholder)
 
   function change(next: string) {
     const value = next === EMPTY ? '' : next

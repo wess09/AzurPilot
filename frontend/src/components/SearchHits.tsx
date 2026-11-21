@@ -5,10 +5,11 @@
  * 任务名由各自本地过滤，页面里的文字统一走这个分组查后端索引。
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../api/client'
-import { useApp } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
+import { useApp, useConnection } from '../app/context'
 import { setSearchTarget } from '../app/searchTarget'
 import { ownerTaskOf, ownerTaskOfGroup } from './taskNavItems'
 import type { SearchContentHit } from '../api/types'
@@ -22,26 +23,22 @@ export function SearchHits({search, onNavigate}: {search: string; onNavigate?: (
   const {instance} = useParams()
   const navigate = useNavigate()
   const base = instance ? `/i/${instance}` : ''
-  const [hits, setHits] = useState<Hit[]>([])
+  const connection = useConnection()
   const keyword = search.trim()
-
+  const [settledKeyword, setSettledKeyword] = useState('')
   useEffect(() => {
     if (!keyword) {
-      setHits([])
+      setSettledKeyword('')
       return
     }
-    const timer = window.setTimeout(() => {
-      void api.request('search.content', {query: keyword})
-        .then(result => setHits([
-          ...(result?.groups ?? []).map(hit => ({...hit, card: true})),
-          ...(result?.options ?? []),
-        ]))
-        .catch(() => setHits([]))
-    }, 200)
+    const timer = window.setTimeout(() => setSettledKeyword(keyword), 200)
     return () => window.clearTimeout(timer)
   }, [keyword])
 
-  if (!keyword) return null
+  const load = useCallback(() => api.request('search.content', {query: keyword}), [keyword])
+  const {data, error} = usePageRead(keyword, !!keyword && settledKeyword === keyword && connection === 'ready', load)
+  if (!keyword || settledKeyword !== keyword || !data || error) return null
+  const hits: Hit[] = [...(data.groups ?? []).map(hit => ({...hit, card: true})), ...(data.options ?? [])]
 
   /** 打开一条命中项：跳到它所属的任务页，并请配置页滚动定位到该项；卡片命中定位到整张卡片。 */
   function openHit(hit: Hit) {

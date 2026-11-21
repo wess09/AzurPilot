@@ -74,6 +74,8 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
 
     def handle_auto_search_map_option(self):
         """重启续接时以模板和颜色共同确认 OFF，沿用原点击冷却。"""
+        if self.__dict__.get('_multiple_sorties_stop_requested', False):
+            return False
         if not self.__dict__.get('_restart_resume_guard', False):
             return super().handle_auto_search_map_option()
         if self._restart_resume_timer is None:
@@ -146,6 +148,9 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
         self._auto_search_off_frame = None
         for _ in self.loop():
 
+            if (self.__dict__.get('_multiple_sorties_requested', 0)
+                    and self.multiple_sorties_result_appear()):
+                raise CampaignEnd
             if self.handle_auto_search_map_option():
                 self.interval_reset(AUTO_SEARCH_MAP_OPTION_ON)
                 continue
@@ -307,6 +312,8 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
                 if not checked_oil or not checked_coin:
                     checked_oil = self.auto_search_watch_oil(checked_oil)
                     checked_coin = self.auto_search_watch_coin(checked_coin)
+                if self.handle_multiple_sorties_stop():
+                    continue
             if self.handle_retirement():
                 self.map_offensive_auto_search()
                 # 地图出击在 is_combat_loading 处结束
@@ -526,6 +533,10 @@ class AutoSearchCombat(MapOperation, Combat, CampaignStatus):
         for _ in self.loop():
 
             if self.handle_combat_defeat():
+                continue
+            if self.handle_retirement():
+                self.map_offensive_auto_search()
+                self._auto_search_status_confirm = False
                 continue
             # 该正文意味着游戏将自动换队；不能让通用「确定」误识别成紧急委托。
             if self.appear(FLEET_UNAVAILABLE, offset=(160, 30)):

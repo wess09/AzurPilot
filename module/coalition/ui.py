@@ -511,7 +511,9 @@ class CoalitionUI(Combat):
                 continue
 
             # 作战委托进行中，出击会被游戏阻止
-            self.handle_handover_conflict()
+            if self.handover_conflict_appear():
+                self.handle_handover_conflict()
+                continue
 
             # 进入关卡
             if campaign_timer.reached() and self.in_coalition():

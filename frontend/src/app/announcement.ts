@@ -2,10 +2,11 @@
  * @fileoverview 系统公告拉取、未读状态管理与轮询订阅。
  */
 
-import { useCallback, useEffect, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { api } from '../api/client'
 import type { Announcement } from '../api/types'
 import { useConnection } from './context'
+import { usePageRead } from './usePageRead'
 
 const READ_KEY = 'azurpilot.announcement.last-read-id'
 
@@ -14,6 +15,7 @@ interface AnnouncementStoreState {
   data: Announcement | null
   /** 是否正在拉取公告。 */
   loading: boolean
+  ready: boolean
   /** 最近一次拉取失败的信息，成功后清空。 */
   error: string
   /** 当前已读的公告 ID。 */
@@ -24,6 +26,7 @@ interface AnnouncementStoreState {
 let storeState: AnnouncementStoreState = {
   data: null,
   loading: false,
+  ready: false,
   error: '',
   lastReadId: readStoredId(),
 }
@@ -61,27 +64,8 @@ function getAnnouncementSnapshot(): AnnouncementStoreState {
   return storeState
 }
 
-async function fetchAnnouncement(force = false) {
-  storeState = { ...storeState, loading: true }
-  notifyListeners()
-  try {
-    const result = await api.request('announcement.get', { force })
-    storeState = {
-      ...storeState,
-      data: result,
-      loading: false,
-      error: '',
-      lastReadId: readStoredId(),
-    }
-  } catch (err) {
-    storeState = {
-      ...storeState,
-      loading: false,
-      error: (err as Error).message || '获取公告失败',
-    }
-  }
-  notifyListeners()
-}
+let refreshOwner: ((force: boolean) => Promise<void>) | undefined
+const pollAnnouncement = () => 120_000
 
 function markAnnouncementAsRead() {
   const currentId = storeState.data?.announcementId
@@ -95,42 +79,39 @@ function markAnnouncementAsRead() {
   }
 }
 
-/**
- * 订阅系统公告并管理未读状态。
- *
- * 连接就绪后拉取一次并转入每 2 分钟的轮询，`refresh` 可强制重新拉取。
- * @returns 公告数据、加载状态、错误、未读状态及读写操作。
- */
-export function useAnnouncement() {
+/** Own the shared announcement read once, at the application level. */
+export function useAnnouncementOwner() {
   const connection = useConnection()
-  const state = useSyncExternalStore(subscribeAnnouncement, getAnnouncementSnapshot, getAnnouncementSnapshot)
+  const forceNext = useRef(false)
+  const load = useCallback(() => {
+    const force = forceNext.current
+    forceNext.current = false
+    return api.request('announcement.get', { force })
+  }, [])
+  const read = usePageRead('announcement', connection === 'ready', load, pollAnnouncement)
+  const {data, ready, busy, error, reloadAndWait} = read
+
+  useEffect(() => {
+    storeState = {...storeState, data: data ?? null, ready, loading: busy, error, lastReadId: readStoredId() ?? storeState.lastReadId}
+    notifyListeners()
+  }, [data, ready, busy, error])
 
   useEffect(() => {
     if (connection !== 'ready') return
-    void fetchAnnouncement(false)
-    // 之后每 2 分钟后台轮询一次。
-    const timer = setInterval(() => {
-      void fetchAnnouncement(false)
-    }, 120_000)
-    return () => clearInterval(timer)
-  }, [connection])
-
-  const refresh = useCallback(async (force = true) => {
-    if (connection === 'ready') {
-      await fetchAnnouncement(force)
+    const refresh = async (force: boolean) => {
+      forceNext.current ||= force
+      try { await reloadAndWait() } catch { /* Read errors are exposed through the store. */ }
     }
-  }, [connection])
+    refreshOwner = refresh
+    return () => { if (refreshOwner === refresh) refreshOwner = undefined; forceNext.current = false }
+  }, [connection, reloadAndWait])
+  return useAnnouncement()
+}
 
-  const unread = Boolean(
-    state.data?.announcementId && state.data.announcementId !== state.lastReadId
-  )
-
-  return {
-    data: state.data,
-    loading: state.loading,
-    error: state.error,
-    unread,
-    refresh,
-    markAsRead: markAnnouncementAsRead,
-  }
+/** Subscribe to the shared announcement read and unread state. */
+export function useAnnouncement() {
+  const state = useSyncExternalStore(subscribeAnnouncement, getAnnouncementSnapshot, getAnnouncementSnapshot)
+  const refresh = useCallback(async (force = true) => { await refreshOwner?.(force) }, [])
+  const unread = Boolean(state.data?.announcementId && state.data.announcementId !== state.lastReadId)
+  return {...state, unread, refresh, markAsRead: markAnnouncementAsRead}
 }

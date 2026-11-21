@@ -9,6 +9,7 @@ from module.base.utils import color_bar_percentage
 from module.handler.assets import *
 from module.handler.auto_search import AutoSearchHandler
 from module.logger import logger
+from module.map.assets import MULTIPLE_SORTIES_RESULT_CHECK, MULTIPLE_SORTIES_RESULT_EXIT
 from module.ui.switch import Switch
 
 
@@ -523,6 +524,8 @@ class FastForwardHandler(AutoSearchHandler):
         Returns:
             bool: 是否执行了继续操作。
         """
+        if self.appear(MULTIPLE_SORTIES_RESULT_CHECK, offset=(20, 20)):
+            return self.appear_then_click(MULTIPLE_SORTIES_RESULT_EXIT, offset=(20, 20), interval=2)
         if self.appear(AUTO_SEARCH_MENU_CONTINUE, offset=self._auto_search_menu_offset, interval=2):
             self.map_is_2x_book = self.config.Campaign_Use2xBook
             self.handle_2x_book_setting(mode='auto')
