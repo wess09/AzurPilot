@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
+import {useEffect} from 'react'
 import {act, cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react'
 import {MemoryRouter, Route, Routes} from 'react-router-dom'
 import {api} from '../api/client'
@@ -9,9 +10,10 @@ import {FleetAnalysis} from './FleetAnalysis'
 vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
 vi.mock('../app/context', () => ({useConnection: () => 'ready', useApp: () => ({ui: (key: Parameters<typeof translateUi>[1]) => translateUi('zh-CN', key), instances: [], notify: vi.fn()})}))
 // 四个子页全部换成带标记的桩：断言只看「哪个标记挂在文档里」，子页自身的渲染不在本文件职责内。
-vi.mock('./MindCalculator', () => ({MindCalculator: () => <p>mind content</p>}))
+const mindReload = vi.hoisted(() => vi.fn())
+vi.mock('./MindCalculator', () => ({MindCalculator: ({reloadRef}: {reloadRef: {current: (() => void) | undefined}}) => {useEffect(() => {reloadRef.current = mindReload; return () => {reloadRef.current = undefined}}, [reloadRef]); return <p>mind content</p>}}))
 vi.mock('./FleetTechnology', () => ({FleetTechnology: () => <p>technology content</p>}))
-vi.mock('./FleetLedger', () => ({FleetLedger: () => <p>data content</p>}))
+vi.mock('./FleetLedger', () => ({FleetLedger: ({reportError}: {reportError?: string}) => reportError ? <div role="alert">{reportError}</div> : <p>data content</p>}))
 vi.mock('./ScanUpdate', () => ({ScanUpdate: () => <p>scan content</p>}))
 const tabs = ['data', 'technology', 'mind', 'scan'] as const
 function page(tab: string) {
@@ -27,7 +29,7 @@ describe('ship data navigation', () => {
     expect(screen.getAllByRole('tab')).toHaveLength(4)
     expect(screen.getAllByRole('tab').map(tab => tab.textContent)).toEqual(['舰队科技', '养成计算', '扫描更新', '我的舰船'])
     const panel = screen.getByRole('tabpanel')
-    expect(panel.textContent).toBe(`${tab} content`)
+    expect(panel.textContent).toBe(tab === 'scan' ? '正在加载…' : `${tab} content`)
     const selected = screen.getByRole('tab', {selected: true})
     expect(panel.getAttribute('aria-labelledby')).toBe(selected.id)
     for (const other of tabs.filter(value => value !== tab)) expect(screen.queryByText(`${other} content`)).toBeNull()
@@ -37,7 +39,7 @@ describe('ship data navigation', () => {
   it('switches tabs on click and unmounts the previous page', () => {
     page('data')
     fireEvent.mouseDown(screen.getByRole('tab', {name: translateUi('zh-CN', 'analysis.scanPage')}), {button: 0})
-    expect(screen.getByRole('tabpanel').textContent).toBe('scan content')
+    expect(screen.getByRole('tabpanel').textContent).toBe('正在加载…')
     expect(screen.queryByText('data content')).toBeNull()
     expect(screen.getByRole('tab', {selected: true}).textContent).toBe(translateUi('zh-CN', 'analysis.scanPage'))
     expect(api.request).toHaveBeenCalledTimes(1)
@@ -57,6 +59,16 @@ describe('ship data navigation', () => {
     second.unmount()
     page('data')
     expect(screen.getByRole('tabpanel').textContent).toBe('data content')
+  })
+
+  it('refreshes both dock and technology on the calculator tab', async () => {
+    vi.mocked(api.request).mockResolvedValue({} as never)
+    mindReload.mockClear()
+    page('mind')
+    await waitFor(() => expect(api.request).toHaveBeenCalledTimes(1))
+    await act(async () => fireEvent.click(screen.getByRole('button', {name: translateUi('zh-CN', 'mind.reload')})))
+    expect(api.request).toHaveBeenCalledTimes(2)
+    expect(mindReload).toHaveBeenCalledTimes(1)
   })
 
   it('only reloads the snapshot on request instead of polling', async () => {

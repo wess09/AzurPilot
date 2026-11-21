@@ -3,7 +3,7 @@
  */
 
 import {FleetFilterRow, fleetShipTypes as types, fleetAttributes as attrs, fleetRarities as rarities} from '../fleet-tech/filters'
-import {useEffect, useMemo, useRef, useState} from 'react'
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react'
 import {Link, useParams} from 'react-router-dom'
 import {api, ApiError} from '../api/client'
 import type {DockReport} from '../api/types'
@@ -11,7 +11,9 @@ import {catalogRows, matches, type Catalog, type Report} from '../fleet-tech/typ
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading} from '../components/ui'
+import {ErrorBox} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
+import {usePageRead} from '../app/usePageRead'
 import {Checkbox as CheckboxControl} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {Button} from '../components/ui/button'
@@ -35,45 +37,30 @@ interface Facts {dock: DockReport; technology: Report; catalog: Catalog}
  * @param report 共享的船坞确认报告，决定参与计算的舰船名单。
  * @param onRefresh 数据冲突时的回调，由外层重新拉取船坞报告。
  */
-export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; onRefresh?: () => void}) {
+export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}: {report?: DockReport; reportError?: string; onRefresh?: () => void; reloadRef?: {current: (() => void) | undefined}}) {
   const {instance = ''} = useParams(), connection = useConnection(), {language, ui} = useApp()
   const [facts, setFacts] = useState<Facts>(), [plan, setPlan] = useState<CultivationPlan>()
-  const [result, setResult] = useState<CultivationReport>(), [error, setError] = useState('')
   const [query, setQuery] = useFleetPreference<string>(instance, 'mind.query', ''), [includedOnly, setIncludedOnly] = useFleetPreference<boolean>(instance, 'mind.includedOnly', false)
   const [filters, setFilters] = useFleetPreference<Record<string, string[]>>(instance, 'mind.filters', {}), [extra, setExtra] = useFleetPreference<boolean>(instance, 'mind.extra', false)
   const tr = (key: string) => translateFleetTech(language, key)
   const [sort, setSort] = useFleetPreference<Sort>(instance, 'mind.sort', {column: 'efficiency', direction: 'descending'})
-  const [reload, setReload] = useState(0), [calculating, setCalculating] = useState(false)
-  const [catalog, setCatalog] = useState<Catalog>(), [technology, setTechnology] = useState<Report>()
-  const [catalogError, setCatalogError] = useState(''), [catalogAttempt, setCatalogAttempt] = useState(0)
-  const [technologyError, setTechnologyError] = useState(''), [calculateAttempt, setCalculateAttempt] = useState(0)
-  const refreshDock = useRef(onRefresh)
-  refreshDock.current = onRefresh
+  const loadCatalog = useCallback(() => api.request('fleetTech.catalog', {instance}), [instance])
+  const catalogRead = usePageRead(instance, connection === 'ready', loadCatalog), catalog = catalogRead.data, catalogError = catalogRead.error
+  const loadTechnology = useCallback(() => api.request('fleetTech.report', {instance}), [instance])
+  const technologyRead = usePageRead(JSON.stringify([instance, dock?.revision]), connection === 'ready', loadTechnology)
+  const technology = technologyRead.data, technologyError = technologyRead.error
+  const refreshDock = useRef(onRefresh), refreshTechnology = useRef(technologyRead.reload)
+  refreshDock.current = onRefresh; refreshTechnology.current = technologyRead.reload
+  useEffect(() => {
+    if (!reloadRef) return
+    reloadRef.current = () => {technologyRead.reload(); if (catalogRead.error) catalogRead.reload()}
+    return () => {reloadRef.current = undefined}
+  }, [reloadRef, technologyRead.reload, catalogRead.reload, catalogRead.error])
   const memory = useRef<{instance: string; plan: CultivationPlan} | null>(null)
   const key = `azurpilot.cultivation-auto.${instance}`
   useEffect(() => {
-    let active = true
-    setCatalog(undefined); setTechnology(undefined); setFacts(undefined); setResult(undefined); setCatalogError(''); setTechnologyError(''); setError('')
-    if (connection === 'ready') void api.request('fleetTech.catalog', {instance}).then(value => {
-      if (active) {setCatalog(value); setCatalogError('')}
-    }).catch(e => {if (active) setCatalogError((e as Error).message)})
-    return () => {active = false}
-  }, [instance, connection, catalogAttempt])
-  useEffect(() => {
-    let active = true, pending = false
-    if (connection !== 'ready') return
-    const load = async () => {
-      if (pending) return
-      pending = true
-      try {
-        const value = await api.request('fleetTech.report', {instance})
-        if (active) {setTechnology(current => current?.revision === value.revision ? current : value); setTechnologyError('')}
-      } catch (e) {if (active) setTechnologyError((e as Error).message)}
-      finally {pending = false}
-    }
-    void load()
-    return () => {active = false}
-  }, [instance, connection, dock, reload])
+    setFacts(undefined)
+  }, [instance, connection])
   useEffect(() => {
     if (!dock || dock.instance !== instance || !catalog || !technology) return
     // 科技数据与共享船坞快照的到达顺序不定，版本对不上时本轮先不算，等下一次对齐。
@@ -97,23 +84,28 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
     memory.current = {instance, plan}
     try {localStorage.setItem(key, JSON.stringify(plan))} catch { /* localStorage 被禁时计划只留在内存，本次会话仍然可用。 */ }
   }, [facts, plan, instance, key])
+  const dockRevision = facts?.dock.revision ?? ''
+  const calculationKey = JSON.stringify([instance, dockRevision, facts?.technology.revision, candidateIds])
+  const loadPlan = useCallback(() => api.request('mind.plan', {
+    instance, revision: dockRevision, ship_ids: candidateIds, target_level: 120,
+  }), [instance, dockRevision, candidateIds])
+  const planRead = usePageRead(calculationKey,
+    connection === 'ready' && facts?.dock.instance === instance && dockRevision === dock?.revision, loadPlan)
+  const [lastResult, setLastResult] = useState<{instance: string; value: CultivationReport}>()
   useEffect(() => {
-    if (!facts || facts.dock.instance !== instance || connection !== 'ready') return
-    let active = true
-    // 重算期间保留已完成的结果视图，只标记计算中状态。
-    setCalculating(true)
-    // 勾选只影响合计，单个舰船的花销对每个候补都要算，因此请求带全部候选 id。
-    void api.request('mind.plan', {instance, revision: facts.dock.revision, ship_ids: candidateIds,
-      target_level: 120}).then(value => {
-      if (active) {setResult(value); setCalculating(false); setError('')}
-    }).catch(e => {
-      if (!active) return
-      setCalculating(false)
-      if (e instanceof ApiError && e.code === 'CONFLICT') {refreshDock.current?.(); setReload(value => value + 1)}
-      else setError((e as Error).message)
-    })
-    return () => {active = false}
-  }, [facts, candidateIds, connection, instance, calculateAttempt])
+    if (connection !== 'ready') setLastResult(undefined)
+    else if (planRead.data) setLastResult({instance, value: planRead.data})
+  }, [instance, connection, planRead.data])
+  const result = planRead.data ?? (connection === 'ready' && lastResult?.instance === instance ? lastResult.value : undefined)
+  const {busy: calculating, error} = planRead
+  const conflict = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    const failure = planRead.errorCause
+    if (!(failure instanceof ApiError) || failure.code !== 'CONFLICT' || conflict.current === calculationKey) return
+    conflict.current = calculationKey
+    refreshDock.current?.()
+    refreshTechnology.current()
+  }, [calculationKey, planRead.errorCause])
   const estimates = useMemo(() => new Map(result?.ships.map(row => [row.id, row])), [result])
   const totals = useMemo(() => {
     const selected = result?.ships.filter(row => included.has(row.id)) ?? []
@@ -180,11 +172,13 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
   }
   const review = facts?.dock.ships.filter(card => card.review || !card.group_type).length ?? 0
   function retry() {
-    if (!catalog) setCatalogAttempt(value => value + 1)
-    setReload(value => value + 1); setCalculateAttempt(value => value + 1); refreshDock.current?.()
+    if (!catalog || catalogError) catalogRead.reload()
+    technologyRead.reload(); planRead.reload(); refreshDock.current?.()
   }
-  if (!facts || !plan || !result) return catalogError || technologyError || error ? <ErrorBox message={catalogError || technologyError || error} retry={retry}/> : <Loading/>
+  if (!facts || facts.dock.instance !== instance || !plan || !result) return <LoadBoundary ready={false} error={reportError || catalogError || technologyError || error} retry={retry}/>
   return <div className="fleet-technology cultivation-calculator">
+    {reportError && <ErrorBox message={reportError} retry={onRefresh}/>}
+    {catalogError && <ErrorBox message={catalogError} retry={retry}/>}
     {technologyError && <ErrorBox message={technologyError} retry={retry}/>}
     {error && <ErrorBox message={error} retry={retry}/>}
     <section className="ft-summary" aria-busy={calculating}>
@@ -210,7 +204,7 @@ export function MindCalculator({report: dock, onRefresh}: {report?: DockReport; 
     <div className="ft-search"><Input type="search" aria-label={ui('mind.search')} placeholder={ui('mind.searchPlaceholder')} value={query} onChange={event => setQuery(event.target.value)}/><span title={ui('mind.detailHint')}>{ui('mind.shownCount', {shown: rows.length, total: candidates.length})}</span>
       <span className="flex items-center gap-3"><CheckboxControl id="mind-included-only" checked={includedOnly} onCheckedChange={next => setIncludedOnly(next === true)}/><Label htmlFor="mind-included-only">{ui('mind.includedOnly')}</Label></span>
     </div>
-    <div className="ft-table-wrap cultivation-table"><Table className="min-w-[900px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow><TableHead scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></TableHead>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <TableHead key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>)}<TableHead scope="col">{tr('awakening_pending')}</TableHead></TableRow></TableHeader><TableBody>
+    <div className="ft-table-wrap cultivation-table"><Table scrollLabel={ui('analysis.mind')} className="min-w-[900px] whitespace-nowrap"><TableHeader className="sticky top-0 z-10"><TableRow><TableHead scope="col"><label className="flex items-center gap-2"><CheckboxControl aria-label={ui('mind.selectAll')} checked={allSelected} disabled={!rows.length} onCheckedChange={next => selectFiltered(next === true)}/> {ui('mind.participating')}</label></TableHead>{(Object.entries(columns) as [Column, typeof columns[Column]][]).map(([column, label]) => <TableHead key={column} scope="col" aria-sort={sort.column === column ? sort.direction : 'none'} title={column === 'efficiency' ? ui('mind.efficiencyHint') : undefined}><Button type="button" variant="ghost" size="sm" onClick={() => sortBy(column)}>{ui(`mind.${label}`)}<span aria-hidden="true">{sort.column === column ? sort.direction === 'ascending' ? '↑' : '↓' : '↕'}</span></Button></TableHead>)}<TableHead scope="col">{tr('awakening_pending')}</TableHead></TableRow></TableHeader><TableBody>
       {rows.map(card => {
         const groupType = card.group_type
         const row = estimates.get(card.id), participating = included.has(card.id), efficiency = efficiencies.get(card.id), awakeningPending = groupType != null && technologyRows.get(groupType)?.awakening_pending === true

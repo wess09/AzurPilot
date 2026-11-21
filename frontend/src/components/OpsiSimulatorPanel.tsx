@@ -1,13 +1,17 @@
 /**
  * @fileoverview 大世界模拟器的后台控制、结果图与独立日志。
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FlaskConical, Play, Square, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { OpsiSimulatorStatus } from '../api/types'
 import { useApp, useConnection } from '../app/context'
 import { LogPanel } from './LogPanel'
-import { ErrorBox } from './ui'
+import { ErrorBox, Panel, PanelHeading } from './ui'
+import {LoadBoundary} from './ui/load-boundary'
+import {usePageRead} from '../app/usePageRead'
+
+const pollEveryHalfSecond = () => 500
 
 /**
  * 大世界（Opsi）模拟器面板：启停后台模拟，轮询进度、结果指标与结果图，模拟日志交给 LogPanel 渲染。
@@ -18,69 +22,34 @@ import { ErrorBox } from './ui'
 export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; beforeStart: () => Promise<void>}) {
   const {t, ui, language} = useApp()
   const connection = useConnection()
-  const [data, setData] = useState<OpsiSimulatorStatus>()
   const [error, setError] = useState('')
-  const [pollError, setPollError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [image, setImage] = useState<string | null>(null)
-  const [figureError, setFigureError] = useState('')
-  const [retry, setRetry] = useState(0)
-  // version 在启停动作开始与结束各加一：动作期间发出的轮询回包按版本丢弃，不顶掉动作刚拿到的状态。
-  const action = useRef({busy: false, version: 0})
-
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    let timer: ReturnType<typeof setTimeout>
-    let after = 0
-    async function poll() {
-      const version = action.current.version
-      try {
-        const value = await api.request('opsi.simulator.status', {instance, after})
-        if (active && !action.current.busy && version === action.current.version) {
-          after = value.logs.cursor
-          // 回包的 runId 更小视为迟到数据，保留较新的状态。
-          setData(previous => previous && previous.runId > value.runId ? previous : value)
-          setPollError('')
-        }
-      } catch (error) {
-        if (active) setPollError((error as Error).message)
-      } finally {
-        // 等本次请求完成再轮询，避免慢设备上积累请求。
-        if (active) timer = setTimeout(poll, 500)
-      }
-    }
-    void poll()
-    return () => { active = false; clearTimeout(timer) }
-  }, [connection, instance])
-
-  useEffect(() => {
-    setImage(null)
-    setFigureError('')
-    if (!data?.figure || connection !== 'ready') return
-    let active = true
-    void api.request('opsi.simulator.figure', {instance}).then(value => {
-      if (active) setImage(value.image)
-    }).catch(error => { if (active) setFigureError(error.message) })
-    return () => { active = false }
-  }, [connection, instance, data?.figure, retry])
+  const load = useCallback(async (previous: OpsiSimulatorStatus | undefined) => {
+    const next = await api.request('opsi.simulator.status', {instance, after: previous?.logs.cursor ?? 0})
+    // A changed run without a reset can be a restarted server whose cursor has caught up.
+    if (previous && previous.runId !== next.runId && !next.logs.reset)
+      return api.request('opsi.simulator.status', {instance, after: 0})
+    return next
+  }, [instance])
+  const {data, ready, error: pollError, reload, setData, invalidate} = usePageRead(instance, connection === 'ready' && !busy, load, pollEveryHalfSecond)
+  const loadFigure = useCallback(() => api.request('opsi.simulator.figure', {instance}), [instance])
+  const figure = usePageRead(JSON.stringify([instance, data?.figure]), connection === 'ready' && !!data?.figure, loadFigure)
 
   async function toggle() {
-    action.current.busy = true
-    action.current.version += 1
+    invalidate()
     setBusy(true)
     setError('')
     try {
-      if (data?.running) setData(await api.request('opsi.simulator.stop', {instance}))
+      let next: OpsiSimulatorStatus
+      if (data?.running) next = await api.request('opsi.simulator.stop', {instance})
       else {
         await beforeStart()
-        setData(await api.request('opsi.simulator.start', {instance}))
+        next = await api.request('opsi.simulator.start', {instance})
       }
+      setData(next)
     } catch (error) {
       setError((error as Error).message)
     } finally {
-      action.current.busy = false
-      action.current.version += 1
       setBusy(false)
     }
   }
@@ -97,28 +66,27 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
     [ui('simulator.coin'), number(result.coin)],
   ]
 
-  return <section className="panel tool-log-panel opsi-simulator-panel" aria-label={t('Task.OpsiSimulator.name')} data-run-id={data?.runId}>
-    <div className="panel-heading">
-      <div><FlaskConical size={18}/><h2>{t('Task.OpsiSimulator.name')}</h2></div>
-      <button className="button primary" onClick={toggle}
+  return <Panel className="tool-log-panel opsi-simulator-panel" aria-label={t('Task.OpsiSimulator.name')} data-run-id={data?.runId}>
+    <PanelHeading title={t('Task.OpsiSimulator.name')} icon={<FlaskConical size={18}/>} actions={<button className="button primary" onClick={toggle}
         disabled={busy || connection !== 'ready' || !data || data.state === 'stopping'}>
         {data?.running ? <Square size={16}/> : <Play size={16}/>}
         {ui(data?.running ? 'simulator.stop' : 'simulator.start')}
-      </button>
-    </div>
+      </button>}/>
+    {error && <ErrorBox message={error}/>}
+    <LoadBoundary ready={ready} error={pollError} retry={reload}>
     <p className="simulator-status" role="status">
       {ui(`simulator.${data?.state ?? 'idle'}`)}
       {Boolean(data?.totalSamples) && data ? ` · ${number(data.completedSamples)} / ${number(data.totalSamples)}` : false}
     </p>
-    {error && <ErrorBox message={error}/>}
-    {pollError && <ErrorBox message={pollError}/>}
     {data?.error && <ErrorBox message={data.error}/>}
     {metrics && <dl className="simulator-results" aria-label={ui('simulator.results')}>
       {metrics.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
     </dl>}
-    {figureError && <ErrorBox message={figureError} retry={() => setRetry(value => value + 1)}/>}
-    {image && <img className="simulator-figure" src={image} alt={ui('simulator.figure')}/>}
-    <div className="panel-heading"><div><Terminal size={18}/><h2>{ui('monitor.logs')}</h2></div></div>
+    {data?.figure && <LoadBoundary ready={figure.ready} error={figure.error} retry={figure.reload}>
+      {figure.data?.image && <img className="simulator-figure" src={figure.data.image} alt={ui('simulator.figure')}/>}
+    </LoadBoundary>}
+    <PanelHeading title={ui('monitor.logs')} icon={<Terminal size={18}/>}/>
     <LogPanel logs={data?.logs ?? null}/>
-  </section>
+    </LoadBoundary>
+  </Panel>
 }

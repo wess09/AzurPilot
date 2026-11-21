@@ -10,3 +10,7 @@
 .status.error {background: #c95e6212; color: var(--red)}
 .status.updating {background: #d9b25a16; color: #b2954a}
 .tiny-dot.teal {color: #269a81}
+
+/* Shared content inset for sections with a separate heading. */
+.panel-body {padding: 0 21px 20px; min-width: 0}
+@media (max-width: 900px) {.panel-body {padding: 0 14px 14px}}

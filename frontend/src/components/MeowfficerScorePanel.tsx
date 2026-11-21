@@ -2,12 +2,14 @@
  * @fileoverview 指挥喵评分结果详情与洗点推荐面板组件。
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Cat, ChevronDown, FileText, PawPrint, RefreshCw, Sparkles, Trash2, TriangleAlert } from 'lucide-react'
 import { ApiError, api } from '../api/client'
 import type { MeowfficerAdvice, MeowfficerCat, MeowfficerRubric, MeowfficerScoreReport, MeowfficerTalent } from '../api/types'
 import { useApp, useConnection } from '../app/context'
-import { Empty, ErrorBox, Loading, Modal } from './ui'
+import { Empty, ErrorBox, Modal, Panel, PanelHeading } from './ui'
+import {LoadBoundary} from './ui/load-boundary'
+import {usePageRead} from '../app/usePageRead'
 import './MeowfficerScorePanel.css'
 
 /** 档位文案由后端按攻略口径给出（中文），这里只按关键词上色，未知档位走中性样式。 */
@@ -89,6 +91,7 @@ function RubricDetail({rubric}: {rubric: MeowfficerRubric}) {
 
 /** 自动刷新间隔（毫秒）：扫描结束后最多这么久，报告就会自己更新出来。 */
 const AUTO_REFRESH_INTERVAL = 5000
+const reportPollInterval = () => AUTO_REFRESH_INTERVAL
 
 /**
  * 洗点推荐。配色由后端的 verdict 决定，文案（含成本）全部由后端给出：
@@ -167,93 +170,60 @@ export function MeowfficerScoreList({report}: {report: MeowfficerScoreReport}) {
 export function MeowfficerScorePanel({instance}: {instance: string}) {
   const {ui} = useApp()
   const connection = useConnection()
-  const [report, setReport] = useState<MeowfficerScoreReport>()
-  const [missing, setMissing] = useState(false)
-  const [error, setError] = useState('')
-  const [revision, setRevision] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
+  const [actionError, setActionError] = useState('')
   const [confirmClear, setConfirmClear] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const clearingNow = useRef(false)
+  const canPoll = useCallback(() => !clearingNow.current && document.visibilityState === 'visible', [])
+  const load = useCallback(async () => {
+    try {return await api.request('meowfficer.scoreReport', {instance})}
+    catch (error) {
+      if (error instanceof ApiError && error.code === 'NOT_FOUND') return null
+      throw error
+    }
+  }, [instance])
+  const {data: report, ready, error, busy, reload, setData, invalidate} = usePageRead(
+    instance, connection === 'ready', load, reportPollInterval, {when: canPoll, silent: true},
+  )
 
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    setReport(undefined); setMissing(false); setError('')
-    void api.request('meowfficer.scoreReport', {instance}).then(value => {
-      if (active) setReport(value)
-    }).catch(error => {
-      if (!active) return
-      // 报告不存在属于正常情况（还没跑过任务），单独走空状态。
-      if (error instanceof ApiError && error.code === 'NOT_FOUND') setMissing(true)
-      else setError(error.message)
-    }).finally(() => {if (active) setRefreshing(false)})
-    return () => {active = false}
-  }, [connection, instance, revision])
-
-  function refresh() {
-    setRefreshing(true)
-    setRevision(value => value + 1)
-  }
-
-  // 报告在任务结束时一次性写入，轮询能接住扫描完成；后端读本地 JSON，成本很低。
-  // 只在页面可见时轮询，且仅数据变化才更新 state——避免每次轮询重渲染、冲掉展开状态。
-  useEffect(() => {
-    if (connection !== 'ready') return
-    const timer = setInterval(() => {
-      if (document.visibilityState !== 'visible') return
-      void api.request('meowfficer.scoreReport', {instance}).then(value => {
-        setMissing(false)
-        setReport(previous => (
-          previous && previous.generatedAt === value.generatedAt && previous.cats.length === value.cats.length
-            ? previous
-            : value))
-      }).catch(() => {
-        // 轮询失败不打扰用户：手动「刷新」仍会给出明确报错。
-      })
-    }, AUTO_REFRESH_INTERVAL)
-    return () => clearInterval(timer)
-  }, [connection, instance])
-
-  /** 清空报告：三份产物都由后端删掉，成功后本地直接切回空状态，不必再请求一次。 */
   async function clearReport() {
-    setClearing(true)
+    clearingNow.current = true
+    invalidate()
+    setClearing(true); setActionError('')
     try {
       await api.request('meowfficer.clearReport', {instance})
       setConfirmClear(false)
-      setReport(undefined); setMissing(true); setError('')
+      setData(null)
     } catch (error) {
-      setError(error instanceof Error ? error.message : String(error))
+      setActionError(error instanceof Error ? error.message : String(error))
     } finally {
+      clearingNow.current = false
       setClearing(false)
     }
   }
 
   const empty = <Empty icon={<Cat size={32}/>} title={ui('meow.emptyTitle')}>{ui('meow.emptyHint')}</Empty>
   return <>
-    <section className="panel meow-panel" aria-label={ui('meow.title')}>
-    <div className="panel-heading">
-      <div><PawPrint size={18}/><h2>{ui('meow.title')}</h2></div>
-      <div className="meow-panel-actions">
+    <Panel className="meow-panel" aria-label={ui('meow.title')}>
+    <PanelHeading title={ui('meow.title')} icon={<PawPrint size={18}/>} actions={<div className="meow-panel-actions">
         {report && <span className="meow-summary">{ui('meow.summary', {count: report.cats.length, time: report.generatedAt || '—'})}</span>}
         {/* HTML 报告与面板读的是同一份产物，有数据即存在。 */}
         {!!report?.cats.length && <a className="button secondary" href="/reports/meowfficer_score" target="_blank" rel="noopener noreferrer">
           <FileText size={15}/>{ui('meow.openReport')}
         </a>}
-        {!!report?.cats.length && <button className="button secondary" disabled={connection !== 'ready'} onClick={() => setConfirmClear(true)}>
+        {!!report?.cats.length && <button className="button secondary" disabled={connection !== 'ready' || clearing} onClick={() => setConfirmClear(true)}>
           <Trash2 size={15}/>{ui('meow.clear')}
         </button>}
-        <button className="button secondary" disabled={connection !== 'ready' || refreshing} onClick={refresh}>
-          <RefreshCw size={15}/>{refreshing ? ui('meow.refreshing') : ui('meow.refresh')}
+        <button className="button secondary" disabled={connection !== 'ready' || busy || clearing} onClick={() => reload()}>
+          <RefreshCw size={15}/>{busy ? ui('meow.refreshing') : ui('meow.refresh')}
         </button>
-      </div>
-    </div>
-    {error ? <div className="meow-body"><ErrorBox message={error} retry={refresh}/></div>
-      : missing ? <div className="meow-body">{empty}</div>
-      : !report ? <Loading/>
-      : !report.cats.length ? <div className="meow-body">{empty}</div>
-      : <MeowfficerScoreList report={report}/>}
+      </div>}/>
+    {actionError && <div className="meow-body"><ErrorBox message={actionError}/></div>}
+    <LoadBoundary ready={ready} error={error} retry={reload}>
+      {!report?.cats.length ? <div className="meow-body">{empty}</div> : <MeowfficerScoreList report={report}/>}
+    </LoadBoundary>
     <p className="panel-note">{ui('meow.disclaimer')}</p>
-    </section>
+    </Panel>
     {confirmClear && <Modal title={ui('meow.clearTitle')} onClose={() => setConfirmClear(false)}>
       <p>{ui('meow.clearWarning')}</p>
       <button className="button danger" disabled={clearing} onClick={clearReport}>

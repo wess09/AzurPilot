@@ -8,7 +8,8 @@ import type {ChangeEvent} from 'react'
 import {api} from '../api/client'
 import type {DockReport, LedgerDifference} from '../api/types'
 import {useApp, useConnection} from '../app/context'
-import {ErrorBox, Loading} from '../components/ui'
+import {ErrorBox, Panel, PanelBody, PanelHeading} from '../components/ui'
+import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Input} from '../components/official-ui/input'
 import type {MindShip} from '../mind/types'
@@ -127,16 +128,16 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
       ? [`${ui(fieldLabels[key])}: ${fieldValue(key, item)}`] : []).join(' / ')
   }
   return <div className="fleet-ledger">
-    {error && <ErrorBox message={error}/>}{!report && <Loading/>}
-    <section className="mind-panel"><h2>1. {ui('analysis.startRead')}</h2><p>{ui('analysis.readFields')}</p><p>{ui('analysis.scanHint')}</p>
+    {error && <ErrorBox message={error}/>}{!report && <LoadBoundary ready={false}/>}
+    <Panel><PanelHeading title={`1. ${ui('analysis.startRead')}`}/><PanelBody className="scan-panel-body"><p>{ui('analysis.readFields')}</p><p>{ui('analysis.scanHint')}</p>
       <div className="mind-toolbar"><label>{ui('mind.minLevel')}<Input type="number" min={1} max={125} value={min} disabled={disabled || !!startReason} onChange={e => setMin(e.target.value)}/></label><label>{ui('mind.maxLevel')}<Input type="number" min={1} max={125} value={max} disabled={disabled || !!startReason} onChange={e => setMax(e.target.value)}/></label><Button disabled={disabled || !!startReason} title={startReason} onClick={() => void run()}>{ui('analysis.scan')}</Button>{scanning && <Button variant="outline" disabled={disabled} onClick={() => void action(async () => {await api.request('scheduler.stop', {instance})})}>{ui('mind.stop')}</Button>}</div>
       <div className="mind-toolbar"><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => importInput.current?.click()}>{ui('mind.import')}</Button><input ref={importInput} type="file" accept=".json,.csv,.xlsx" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, false)}/><Button type="button" variant="outline" disabled={disabled || !!pending.length} onClick={() => screenshotInput.current?.click()}>{ui('mind.screenshots')}</Button><input ref={screenshotInput} type="file" accept="image/*" multiple hidden disabled={disabled || !!pending.length} onChange={event => void upload(event, true)}/><Button variant="outline" disabled={disabled} title={ui('analysis.exportHint')} onClick={() => void exportShips()}>{ui('analysis.exportJson')}</Button></div>
       <p>{ui('analysis.exportHint')}</p>
       {!!pending.length && <p role="status">{ui('analysis.pendingBlock')}</p>}
       <details><summary>{ui('analysis.importLegacy')}</summary><p>{ui('analysis.legacyHint')}</p><Button variant="outline" disabled={disabled || !!pending.length || report?.legacy_imported} onClick={() => void action(async () => {if (!report) return; publish(await api.request('dock.importLegacy', {instance, revision: report.revision})); setProgress(ui('analysis.received'))})}>{ui(report?.legacy_imported ? 'analysis.legacyImported' : 'analysis.importLegacy')}</Button></details>
-    </section>
-    <section className="mind-panel"><h2>2. {ui('analysis.progress')}</h2><p role="status">{scanning ? ui('mind.scanInProgress') : pending.length ? ui('analysis.received') : reading ? ui('analysis.readSaved') : progress || ui('analysis.empty')}</p><p>{ui('analysis.readCount')}: {reading?.observed_count ?? '—'} · {ui('analysis.review')}: {reading?.review_count ?? '—'} · {ui(reading?.complete ? 'analysis.complete' : 'analysis.partial')}</p>{reading && <p>{ui('analysis.time')}: {reading.updated_at} · {reading.source}</p>}<p>{ui('analysis.confirmedCount')}: {report?.ships.length ?? 0} · {ui('analysis.pendingCount')}: {pending.length}</p></section>
-    <section className="mind-panel"><h2>3. {ui('analysis.pending')}</h2><p>{ui('analysis.pendingHint')}</p>
+    </PanelBody></Panel>
+    <Panel><PanelHeading title={`2. ${ui('analysis.progress')}`}/><PanelBody className="scan-panel-body"><p role="status">{scanning ? ui('mind.scanInProgress') : pending.length ? ui('analysis.received') : reading ? ui('analysis.readSaved') : progress || ui('analysis.empty')}</p><p>{ui('analysis.readCount')}: {reading?.observed_count ?? '—'} · {ui('analysis.review')}: {reading?.review_count ?? '—'} · {ui(reading?.complete ? 'analysis.complete' : 'analysis.partial')}</p>{reading && <p>{ui('analysis.time')}: {reading.updated_at} · {reading.source}</p>}<p>{ui('analysis.confirmedCount')}: {report?.ships.length ?? 0} · {ui('analysis.pendingCount')}: {pending.length}</p></PanelBody></Panel>
+    <Panel><PanelHeading title={`3. ${ui('analysis.pending')}`}/><PanelBody className="scan-panel-body"><p>{ui('analysis.pendingHint')}</p>
       <p>{Object.entries(operationLabels).map(([operation, label]) => `${ui(label)}: ${pending.filter(item => item.operation === operation).length}`).join(' · ')}</p>
       <div className="mind-toolbar"><Button disabled={disabled || !safe.length} onClick={() => void review(true, safe)}>{ui('analysis.safeAccept')} ({safe.length})</Button><Button variant="outline" disabled={disabled || !pending.length} onClick={() => void review(false, pending)}>{ui('analysis.rejectAll')}</Button></div>
       {!pending.length && <p>{ui('analysis.noPending')}</p>}
@@ -145,6 +146,6 @@ export function ScanUpdate({instance, report, locked, onReport, onBusy}: {instan
         {item.operation === 'remove' && <p>{ui('analysis.retireHint')}</p>}
         <Button disabled={disabled || item.operation === 'resolve' && !targets[item.id]} aria-label={`${ui('analysis.accept')} ${item.id}`} onClick={() => {if (item.operation === 'remove' && removal !== item.id) setRemoval(item.id); else void review(true, [item])}}>{ui(item.operation === 'remove' && removal === item.id ? 'analysis.retireConfirm' : 'analysis.accept')}</Button>{' '}<Button variant="outline" disabled={disabled} onClick={() => void review(false, [item])}>{ui('analysis.reject')}</Button>
       </article>)}
-    </section>
+    </PanelBody></Panel>
   </div>
 }

@@ -13,7 +13,7 @@ const context = {ui, language: 'zh-CN'} as unknown as AppContextValue
 
 const snapshot = (source: 'off' | 'url' | 'upload'): BackgroundSnapshot => ({
   source, kind: 'image', urls: ['https://example.com/a.png'], active: 0, name: '',
-  assetUrl: '', directUrl: '', resolving: false, resolveError: '', loading: false, revision: 0,
+  assetUrl: '', directUrl: '', resolving: false, urlGeneration: 0, resolveError: '', loading: false, revision: 0,
 })
 
 // 只断言把手节点是否出现，用静态字符串渲染即可，不必为此挂 jsdom。

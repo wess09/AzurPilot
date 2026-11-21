@@ -11,7 +11,8 @@ import { useThemeComponent } from '../themes/context'
 import { useInstanceOverview } from '../components/useInstanceOverview'
 import { getLayout, subscribeLayout } from '../app/layout'
 import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
-import { ErrorBox, Loading } from '../components/ui'
+import { Loading, PageTitle, Panel } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { MonitorPanel } from '../components/MonitorPanel'
 import { defaultResourceKeys, ResourceCards } from '../components/ResourceCards'
 import { InstanceActions } from '../components/InstanceActions'
@@ -52,7 +53,7 @@ export function Overview() {
 
 function OverviewController({instance}: {instance: string}) {
   const View = useThemeComponent('Overview', ModernOverview)
-  const [data, setData, error] = useInstanceOverview(instance, true, {notifyErrors: false})
+  const [data, setData, error, reload] = useInstanceOverview(instance, true, {notifyErrors: false})
   const [selectedResources, setSelectedResources] = useState<string[]>(() => loadResourceSelection(instance))
 
   function updateResourceSelection(keys: string[]) {
@@ -61,12 +62,11 @@ function OverviewController({instance}: {instance: string}) {
     try { localStorage.setItem(`azurpilot.resources.${instance}`, JSON.stringify(next)) } catch { /* 无存储权限时仅本页生效。 */ }
   }
 
-  if (error) return <ErrorBox message={error}/>
-  if (!data) return <Loading/>
-  return <Suspense fallback={<Loading/>}>
-    <View instance={instance} data={data} onData={setData}
+  return <LoadBoundary ready={!!data} error={error} retry={reload}>
+    {data && <Suspense fallback={<Loading/>}><View instance={instance} data={data} onData={setData}
       selectedResources={selectedResources} onResourcesChange={updateResourceSelection}/>
-  </Suspense>
+    </Suspense>}
+  </LoadBoundary>
 }
 
 /** 默认总览视图持有布局状态；数据和资源选择由控制器管理。 */
@@ -84,18 +84,18 @@ export function ModernOverview({instance, data, onData, selectedResources, onRes
     data-scheduler-position={schedulerPosition}
     style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as React.CSSProperties) : undefined}
   >
-    <h1 className="modern-sr-title">{instance}</h1>
+    <PageTitle title={instance} placement="screen-reader"/>
     <div className="instance-page-rail-wrap">
       <ModernRail instance={instance} data={data} onData={onData}>
         {/* 标题即切换主区显示日志还是统计的按钮。 */}
-        <section className="panel modern-stat-card">
+        <Panel className="modern-stat-card">
           <button type="button" className="modern-stat-title" aria-pressed={panel === 'stats'}
             aria-label={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             title={ui(panel === 'stats' ? 'overview.showLogs' : 'overview.showStats')}
             onClick={() => {setOverviewPanel(panel === 'stats' ? 'logs' : 'stats')}}
           >{ui(panel === 'stats' ? 'monitor.logs' : 'overview.statCard')}<ChevronRight size={13}/></button>
           {actions}
-        </section>
+        </Panel>
       </ModernRail>
       <ModernRailResizeHandle side={schedulerPosition} />
     </div>

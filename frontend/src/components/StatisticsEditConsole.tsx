@@ -1,6 +1,7 @@
 /**
  * @fileoverview 统计页布局自定义编辑控制台组件。
  */
+import {Panel} from './ui/page'
 import {Button} from './ui/button'
 
 import { RotateCcw } from 'lucide-react'
@@ -24,7 +25,7 @@ interface StatisticsEditConsoleProps {
 /** 布局编辑的控制台：收纳不便放在卡片上的控件，并给出还原入口。 */
 export function StatisticsEditConsole({customized, pages, onTogglePage, onReset, children}: StatisticsEditConsoleProps) {
   const {ui} = useApp()
-  return <section className="panel statistics-edit-console" aria-label={ui('stats.editConsole')}>
+  return <Panel className="statistics-edit-console" aria-label={ui('stats.editConsole')}>
     <div className="panel-heading">
       <h3>{ui('stats.editConsole')}</h3>
       <span className="statistics-edit-state">{ui(customized ? 'stats.editLayoutCustom' : 'stats.editLayoutDefault')}</span>
@@ -46,5 +47,5 @@ export function StatisticsEditConsole({customized, pages, onTogglePage, onReset,
         </Button>
       ))}
     </div>
-  </section>
+  </Panel>
 }

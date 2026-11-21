@@ -2,12 +2,17 @@
  * @fileoverview 换船调度页：调度目标表单与培养舰船、完成舰船、旧记录舰船三组记录展示。
  */
 
+import {LoadBoundary} from '../components/ui/load-boundary'
+
+
 import {Button} from '../components/ui/button'
-import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
-import {useEffect, useState} from 'react'
+import {TableViewport, TableBody, TableCell, TableHead, TableHeader, TableRow} from '../components/ui/table'
+import {useCallback, useEffect, useRef, useState} from 'react'
+import {usePageRead} from '../app/usePageRead'
+import {Panel, PanelHeading} from '../components/ui/page'
 import {Link, useParams} from 'react-router-dom'
 import {api} from '../api/client'
-import type {Value} from '../api/types'
+import type {Config, Value} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
@@ -15,7 +20,8 @@ import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {Input} from '../components/official-ui/input'
 import {editor} from '../config/editors'
-import {ErrorBox, Loading, PageTitle} from '../components/ui'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
+import {PageTitle} from '../components/ui'
 import {rotationRules} from './FleetRotation'
 
 type Row = {
@@ -84,11 +90,11 @@ export function TrainingRecords({snapshot}: {snapshot: RecordSnapshot}) {
     <p className="muted" style={{margin: 0}}>{ui('training.recordHelp')}</p>
     {(['training', 'completed', 'history'] as const).map(kind => {
       const rows = result[kind], total = kind === 'training' ? rows.length : kind === 'completed' ? result.completedCount : result.historyCount
-      return <section className="panel" key={kind} aria-label={ui(`training.${kind}Ships`)} style={{padding: 20, minWidth: 0}}>
+      return <Panel key={kind} aria-label={ui(`training.${kind}Ships`)} style={{padding: 20, minWidth: 0}}>
         <h2>{ui(`training.${kind}Ships`)} · {rows.length}</h2>
         {kind !== 'training' && <p className="muted">{ui('training.historyLimit', {count: total})}</p>}
-        {!rows.length ? <p className="muted">{ui('training.empty')}</p> : <div className="training-record-table overflow-x-auto">
-          <Table className="min-w-[900px] whitespace-nowrap tabular-nums">
+        {!rows.length ? <p className="muted">{ui('training.empty')}</p> : <TableViewport className="training-record-table" scrollLabel={`${ui(`training.${kind}Ships`)} — ${ui('table.horizontalScroll')}`}>
+          <table data-slot="table" className="w-full caption-bottom text-sm min-w-[900px] whitespace-nowrap tabular-nums">
           <TableHeader><TableRow><TableHead>{ui('training.fleet')}</TableHead><TableHead>{ui('training.slot')}</TableHead><TableHead>{ui('training.ship')}</TableHead><TableHead>{ui('training.emotion')}</TableHead><TableHead>{ui('training.level')}</TableHead><TableHead>{ui('training.exp')}</TableHead><TableHead>{ui('training.affinity')}</TableHead><TableHead>{ui('training.checkedAt')}</TableHead></TableRow></TableHeader>
           <TableBody>{rows.map(row => <TableRow key={row.key}>
             <TableCell>{row.fleet ? ui('fleet.title', {number: row.fleet}) : ui('training.unread')}</TableCell>
@@ -97,9 +103,9 @@ export function TrainingRecords({snapshot}: {snapshot: RecordSnapshot}) {
             <TableCell title={row.display_level == null ? undefined : ui('training.displayLevel', {level: row.display_level})}>{row.level ?? ui('training.unread')}</TableCell><TableCell>{row.exp ?? ui('training.unread')}</TableCell><TableCell>{row.affinity ?? ui('training.unread')}</TableCell>
             <TableCell>{row.checked_at ? row.checked_at.replace('T', ' ') : ui('training.unread')}</TableCell>
           </TableRow>)}</TableBody>
-          </Table>
-        </div>}
-      </section>
+          </table>
+        </TableViewport>}
+      </Panel>
     })}
   </div>
 }
@@ -131,21 +137,33 @@ export function FleetTraining() {
     level: {enabled: false, target: '120'},
     affinity: {enabled: false, target: '100'},
   })
-  const [loaded, setLoaded] = useState(false), [snapshot, setSnapshot] = useState<RecordSnapshot>(emptySnapshot)
+  const [snapshot, setSnapshot] = useState<RecordSnapshot>(emptySnapshot)
   const [busy, setBusy] = useState(false), [dirty, setDirty] = useState(false), [error, setError] = useState('')
+  const [conflict, setConflict] = useState(false)
   const disabled = busy || connection !== 'ready', running = instances.some(item => item.name === instance && item.status === 'running')
   const valid = metrics.every(metric => {
     const {target} = settings[metric], limit = metric === 'level' ? 125 : 200
     return target.trim() !== '' && Number.isInteger(Number(target)) && Number(target) >= 1 && Number(target) <= limit
       && hours.trim() !== '' && Number.isFinite(Number(hours)) && Number(hours) >= 0
   })
+  const load = useCallback(async () => {
+    const config = await api.request('config.get', {instance})
+    recordSnapshot(config.values.FleetInfo ?? {})
+    return config
+  }, [instance])
+  const pollAfter = useCallback(() => running ? 3000 : 0, [running])
+  const read = usePageRead(instance, connection === 'ready', load, pollAfter)
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
+  if (baseline.current.key !== instance) baseline.current = {key: instance}
+  const editing = useRef(false)
+  editing.current = dirty || busy
+  useEffect(() => {setDirty(false); setConflict(false); setError('')}, [instance])
+  const loaded = read.ready && baseline.current.value !== undefined
   useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    setLoaded(false)
-    void api.request('config.get', {instance}).then(config => {
-      if (!active) return
-      const values = config.values.FleetInfo ?? {}
+    if (!read.data) return
+    const values = read.data.values.FleetInfo ?? {}
+    if (!editing.current || baseline.current.value === undefined) {
+      baseline.current.value = read.data
       setMorale(values.FleetRotation?.Enabled === true)
       setSelectedOnly(values.FleetRotation?.SelectedOnly === true)
       setDorm(values.FleetDorm?.Enabled === true)
@@ -157,21 +175,10 @@ export function FleetTraining() {
         const value = values[groups[metric]]
         return [metric, {enabled: value?.Enabled === true, target: String(value?.Target ?? (metric === 'level' ? 120 : 100))}]
       })) as Record<Metric, Goal>)
-      setSnapshot(recordSnapshot(values))
-      setLoaded(true); setDirty(false); setError('')
-    }).catch(error => {if (active) setError((error as Error).message)})
-    return () => {active = false}
-  }, [instance, connection])
-  useEffect(() => {
-    if (connection !== 'ready' || !running) return
-    let active = true
-    const timer = setInterval(() => {
-      void api.request('config.get', {instance}).then(config => {
-        if (active) setSnapshot(recordSnapshot(config.values.FleetInfo ?? {}))
-      }).catch(error => {if (active) setError((error as Error).message)})
-    }, 3000)
-    return () => {active = false; clearInterval(timer)}
-  }, [instance, connection, running])
+      setDirty(false)
+    }
+    setSnapshot(recordSnapshot(values))
+  }, [instance, read.data])
 
   function change(metric: Metric, field: 'target', value: string) {
     setSettings(previous => ({...previous, [metric]: {...previous[metric], [field]: value}}))
@@ -183,8 +190,7 @@ export function FleetTraining() {
     setBusy(true); setError('')
     try {
       await editor(`config:${instance}`).settled()
-      const config = await api.request('config.get', {instance})
-      await api.request('config.patch', {instance, revision: config.revision, changes: [
+      const result = await api.request('config.patch', {instance, changes: expectConfig(baseline.current.value, [
         {path: 'FleetInfo.FleetRotation.Enabled', value: nextMorale},
         {path: 'FleetInfo.FleetRotation.SelectedOnly', value: selectedOnly},
         {path: 'FleetInfo.FleetDorm.Enabled', value: nextDorm},
@@ -196,9 +202,12 @@ export function FleetTraining() {
           {path: `FleetInfo.${groups[metric]}.Enabled`, value: nextSettings[metric].enabled},
           {path: `FleetInfo.${groups[metric]}.Target`, value: Number(nextSettings[metric].target)},
         ]),
-      ]})
+      ])})
+      baseline.current.value = result
+      setConflict(false)
+      read.setData(result)
       setMorale(nextMorale); setSettings(nextSettings); setDorm(nextDorm); setDirty(false); notify(ui('training.saved'))
-    } catch (error) {setError((error as Error).message)} finally {setBusy(false)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)} finally {setBusy(false)}
   }
 
   async function resetStatus() {
@@ -207,6 +216,7 @@ export function FleetTraining() {
       await editor(`config:${instance}`).settled()
       const current = await api.request('config.get', {instance})
       const result = await api.request('fleetTraining.reset', {instance, revision: current.revision})
+      read.setData(result)
       setSnapshot(recordSnapshot(result.values.FleetInfo ?? {})); notify(ui('training.resetDone'))
     } catch (error) {setError((error as Error).message)} finally {setBusy(false)}
   }
@@ -220,40 +230,35 @@ export function FleetTraining() {
     }/>
     <p className="muted">{ui('training.help')}</p>
     <p><Link to={`/i/${instance}/task/FleetSwitch?tab=rotation`}>{ui('training.slotConfig')}</Link></p>
-    {error && <ErrorBox message={error}/>}
-    {!loaded ? !error && <Loading/> : <>
-      <section className="panel" style={{padding: 20, margin: '20px 0'}}>
+    {conflict && <p role="alert">{ui('edit.conflict')} <Button type="button" variant="outline" onClick={() => {setDirty(false); setConflict(false); read.reload()}}>{ui('edit.reloadDiscard')}</Button></p>}
+    <LoadBoundary ready={loaded} error={error || read.error} retry={read.reload}>
+    {loaded && <>
+      <Panel style={{padding: 20, margin: '20px 0'}}>
         <span className="flex items-center gap-3"><Checkbox id="training-selected-only" checked={selectedOnly} disabled={disabled} onCheckedChange={next => {setSelectedOnly(next === true); setDirty(true)}}/><Label htmlFor="training-selected-only">{ui('rotation.selectedOnly')}</Label></span>
         <p className="muted">{ui('rotation.emotionHelp')}</p>
         <label style={{display: 'grid', gap: 8, marginTop: 16}}>{ui('training.interval')}
           <Input type="number" min={0} step="any" value={hours} disabled={disabled} onChange={event => {setHours(event.target.value); setDirty(true)}}/>
         </label>
         <p className="muted">{ui('training.intervalHelp')}</p>
-      </section>
+      </Panel>
       <div className="fleet-grid" style={{marginBottom: 20}}>
-        <section className="panel" aria-label={ui('training.moraleTitle')}>
-          <div className="panel-heading"><h2>{ui('training.moraleTitle')}</h2>
-            <Switch checked={morale} aria-label={ui('training.moraleEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(next)}/>
-          </div>
+        <Panel aria-label={ui('training.moraleTitle')}>
+          <PanelHeading title={ui('training.moraleTitle')} actions={<Switch checked={morale} aria-label={ui('training.moraleEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(next)}/>}/>
           <div style={{padding: 20}}><p className="muted">{ui('training.moraleHelp')}</p></div>
-        </section>
+        </Panel>
         {metrics.map(metric => {
           const goal = settings[metric], isLevel = metric === 'level'
-          return <section className="panel" key={metric} aria-label={ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')}>
-            <div className="panel-heading"><h2>{ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')}</h2>
-              <Switch checked={goal.enabled} aria-label={ui(isLevel ? 'training.levelEnable' : 'training.affinityEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, {...settings, [metric]: {...goal, enabled: next}})}/>
-            </div>
+          return <Panel key={metric} aria-label={ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')}>
+            <PanelHeading title={ui(isLevel ? 'training.levelTitle' : 'training.affinityTitle')} actions={<Switch checked={goal.enabled} aria-label={ui(isLevel ? 'training.levelEnable' : 'training.affinityEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, {...settings, [metric]: {...goal, enabled: next}})}/>}/>
             <div style={{padding: 20, display: 'grid', gap: 16}}>
               <label style={{display: 'grid', gap: 8}}>{ui(isLevel ? 'training.targetLevel' : 'training.targetAffinity')}
                 <Input type="number" min={1} max={isLevel ? 125 : 200} step={1} value={goal.target} disabled={disabled} onChange={event => change(metric, 'target', event.target.value)}/>
               </label>
             </div>
-          </section>
+          </Panel>
         })}
-        <section className="panel" aria-label={ui('training.dormTitle')}>
-          <div className="panel-heading"><h2>{ui('training.dormTitle')}</h2>
-            <Switch checked={dorm} aria-label={ui('training.dormEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, settings, next)}/>
-          </div>
+        <Panel aria-label={ui('training.dormTitle')}>
+          <PanelHeading title={ui('training.dormTitle')} actions={<Switch checked={dorm} aria-label={ui('training.dormEnable')} disabled={disabled || !valid} onCheckedChange={next => void save(morale, settings, next)}/>}/>
           <div style={{padding: 20, display: 'grid', gap: 16}}>
             <label style={{display: 'grid', gap: 8}}>{ui('training.dormFloor')}
               <Select value={dormFloor} disabled={disabled} onValueChange={value => {setDormFloor(value); setDirty(true)}}>
@@ -263,16 +268,16 @@ export function FleetTraining() {
             </label>
             <p className="muted" style={{margin: 0}}>{ui('training.dormHelp')}</p>
           </div>
-        </section>
+        </Panel>
       </div>
-      <section className="panel" style={{padding: 20, margin: '20px 0'}}>
+      <Panel style={{padding: 20, margin: '20px 0'}}>
         <span className="flex items-center gap-3"><Checkbox id="training-stop-on-complete" checked={stopOnComplete} disabled={disabled} onCheckedChange={next => {setStopOnComplete(next === true); setDirty(true)}}/><Label htmlFor="training-stop-on-complete">{ui('training.stopOnComplete')}</Label></span>
         <p className="muted">{ui('training.stopHelp')}</p>
         <span className="flex items-center gap-3"><Checkbox id="training-notify" checked={push} disabled={disabled} onCheckedChange={next => {setPush(next === true); setDirty(true)}}/><Label htmlFor="training-notify">{ui('training.notify')}</Label></span>
         <p className="muted">{ui('training.notifyHelp')}</p>
-      </section>
+      </Panel>
       <p className="muted">{ui('training.resetHelp')}</p>
       <TrainingRecords snapshot={snapshot}/>
-    </>}
+    </>}</LoadBoundary>
   </>
 }

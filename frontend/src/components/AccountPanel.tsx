@@ -2,13 +2,14 @@
  * @fileoverview 账号管理与密码设置面板组件。
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, api } from '../api/client'
 import type { Parameters } from '../api/generated'
-import type { AccountStatus } from '../api/types'
 import { useApp, useConnection } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
 import { FieldInput } from './FieldInput'
-import { Modal } from './ui'
+import { ErrorBox, Modal, Panel, PanelHeading } from './ui'
+import { LoadBoundary } from './ui/load-boundary'
 import { Input } from './ui/input'
 import { accountText } from './accountText'
 
@@ -23,7 +24,9 @@ export function AccountPanel({instance}: {instance: string}) {
   const {language, notify, ui} = useApp()
   const text = accountText[language]
   const connection = useConnection()
-  const [status, setStatus] = useState<AccountStatus>()
+  const loadStatus = useCallback(() => api.request('accounts.status', {instance}), [instance])
+  const read = usePageRead(JSON.stringify([instance, connection]), connection === 'ready', loadStatus)
+  const {data: status, setData: setStatus} = read
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -32,6 +35,7 @@ export function AccountPanel({instance}: {instance: string}) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const epoch = useRef(0)
+  const privacyEpoch = useRef(0)
   const passwordInput = useRef<HTMLInputElement>(null)
   useEffect(() => {
     // 原生 dialog 打开后再聚焦，避免 showModal 将焦点重置到关闭按钮。
@@ -39,25 +43,24 @@ export function AccountPanel({instance}: {instance: string}) {
     const frame = requestAnimationFrame(() => passwordInput.current?.focus())
     return () => cancelAnimationFrame(frame)
   }, [pending])
-  const clearFields = () => { setPassword(''); setConfirm(''); setNewPassword(''); setLabel(''); setPending(undefined) }
-  const hide = () => {
-    setStatus(value => value ? {...value, profiles: undefined, selected: undefined} : value)
+  const clearFields = useCallback(() => { setPassword(''); setConfirm(''); setNewPassword(''); setLabel(''); setPending(undefined) }, [])
+  const hasVisibleProfiles = status?.profiles !== undefined || status?.selected !== undefined
+  const hide = useCallback(() => {
+    privacyEpoch.current++
+    if (hasVisibleProfiles) setStatus(value => value ? {...value, profiles: undefined, selected: undefined} : value)
     clearFields()
-  }
+  }, [hasVisibleProfiles, setStatus, clearFields])
   useEffect(() => {
-    const current = ++epoch.current
-    setStatus(undefined); clearFields(); setError(''); setBusy(false)
-    if (connection === 'ready') void api.request('accounts.status', {instance}).then(value => {
-      if (epoch.current === current) setStatus(value)
-    }).catch(error => { if (epoch.current === current) setError((error as Error).message) })
+    epoch.current++
+    clearFields(); setError(''); setBusy(false)
     return () => { epoch.current++ }
-  }, [instance, connection])
+  }, [instance, connection, clearFields])
   useEffect(() => {
     const hideOnLeave = () => { if (document.hidden) hide() }
     document.addEventListener('visibilitychange', hideOnLeave)
     const timer = status?.profiles ? window.setTimeout(hide, 60_000) : undefined
     return () => { document.removeEventListener('visibilitychange', hideOnLeave); window.clearTimeout(timer) }
-  }, [status?.profiles])
+  }, [status?.profiles, hide])
   const run = async (action: Parameters['accounts.manage']['action'], extra: Partial<Parameters['accounts.manage']> = {}) => {
     if ((action === 'create' && password !== confirm) || (action === 'password' && newPassword !== confirm)) {
       setError(text.mismatch); return
@@ -65,16 +68,21 @@ export function AccountPanel({instance}: {instance: string}) {
     const current = epoch.current
     setBusy(true); setError('')
     const params = {instance, action, password, new_password: action === 'password' ? newPassword : '', ...extra}
+    read.invalidate()
     hide()
+    const privacy = privacyEpoch.current
     try {
       const result = await api.request('accounts.manage', params)
-      if (epoch.current === current) { setStatus(result); if (action !== 'list') notify(text.done) }
+      if (epoch.current === current) {
+        const visible = privacy === privacyEpoch.current && !document.hidden
+        setStatus(visible ? result : {...result, profiles: undefined, selected: undefined})
+        if (action !== 'list') notify(text.done)
+      }
     } catch (error) {
       if (epoch.current === current) {
         setError((error as Error).message)
         if (error instanceof ApiError && error.code === 'VAULT_DESTROYED') {
-          const result = await api.request('accounts.status', {instance}).catch(() => undefined)
-          if (result && epoch.current === current) setStatus(result)
+          await read.reloadAndWait().catch(() => undefined)
         }
       }
     }
@@ -87,11 +95,12 @@ export function AccountPanel({instance}: {instance: string}) {
   const cancel = () => clearFields()
   const disabled = busy || connection !== 'ready' || !status
   const canSubmit = !disabled && !!password && (!(pending?.action === 'create' || pending?.action === 'password') || !!confirm) && (pending?.action !== 'password' || !!newPassword)
-  return <section className="panel config-group" aria-label={text.title} data-testid="account-panel">
-    <div className="panel-heading"><div><span className="group-indicator"/><h2>{text.title}</h2></div></div>
+  return <Panel compact aria-label={text.title} data-testid="account-panel">
+    <PanelHeading title={text.title} icon={<span className="group-indicator"/>}/>
     <div className="field-row"><div className="field-label"><p>{text.help}</p><p>{text.security}</p></div></div>
-    {error && <p className="field-row" role="alert">{error}</p>}
+    {error && <ErrorBox message={error}/>}
     {status?.destroyed && <p className="field-row" role="alert">{text.destroyed}</p>}
+    <LoadBoundary ready={read.ready} error={read.error} retry={read.reload}>
     {status && <>
       {status.initialized && <div className="field-row"><span>{status.unlocked ? text.unlocked : text.locked} · {status.local_bound ? text.localBound : status.tpm_bound ? text.bound : text.unbound}</span></div>}
       {!status.initialized ? <div className="field-row"><button className="button primary" disabled={disabled} onClick={() => ask('create', text.create)}>{text.create}</button></div> : <>
@@ -119,6 +128,7 @@ export function AccountPanel({instance}: {instance: string}) {
         </>}
       </>}
     </>}
+    </LoadBoundary>
     {pending && <Modal title={pending.title} onClose={cancel}>
       <form className="form-stack" onSubmit={event => { event.preventDefault(); if (canSubmit) void run(pending.action, {...pending.extra, ...(pending.action === 'capture' ? {label} : {})}) }}>
         <label htmlFor="account-password">{text.password}<Input ref={passwordInput} id="account-password" type="password" autoComplete="new-password" maxLength={256} value={password} onChange={event => setPassword(event.target.value)}/></label>
@@ -134,5 +144,5 @@ export function AccountPanel({instance}: {instance: string}) {
         </div>
       </form>
     </Modal>}
-  </section>
+  </Panel>
 }

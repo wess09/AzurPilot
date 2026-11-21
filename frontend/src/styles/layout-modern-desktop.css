@@ -20,13 +20,14 @@
     /* 基准写 0 而不是 auto：auto 会以内容高度为基准把容器撑到内容那么高 */
     flex: 1 1 0;
     min-height: 0;
-    grid-template-columns: var(--modern-rail-width, 280px) minmax(24rem, 1fr);
+    /* A saved rail width is a preference, bounded by the space the main panel needs. */
+    grid-template-columns: min(var(--modern-rail-width, 280px), calc(100% - 24rem - 14px)) minmax(24rem, 1fr);
     grid-template-areas: "rail main";
     gap: 14px;
     align-items: stretch;
   }
   .instance-page-grid.rail-right {
-    grid-template-columns: minmax(24rem, 1fr) var(--modern-rail-width, 280px);
+    grid-template-columns: minmax(24rem, 1fr) min(var(--modern-rail-width, 280px), calc(100% - 24rem - 14px));
     grid-template-areas: "main rail";
   }
   /* 调度器栏包裹容器与拖拽把手 */
@@ -212,4 +213,31 @@
   .task-config-modern .group-nav {max-height: 100%}
   /* 参数列自己滚，锚点跳转不需要再给吸顶的顶栏留出 72px */
   .task-config-modern .config-group {scroll-margin-top: 0}
+}
+
+/* When the actual pane cannot fit a 240px rail and a 24rem content area,
+   switch to the same ordinary vertical flow used by narrow screens. */
+@media (min-width: 951px) {
+  @container modern-main (max-width: 694px) {
+    .app-shell.modern-shell > .main-shell:where(.app-shell *) > main:has(> .instance-page-grid) {overflow-y: auto}
+    .instance-page-grid,
+    .instance-page-grid.rail-left,
+    .instance-page-grid.rail-right {display: flex; flex: 0 0 auto; flex-direction: column; height: auto; min-height: max-content}
+    .app-shell.modern-shell > .main-shell:where(.app-shell *) > main > .instance-page-grid {flex: 0 0 auto; min-height: max-content}
+    .instance-page-grid .instance-page-rail-wrap,
+    .instance-page-grid .instance-page-main {flex: 0 0 auto}
+    .instance-page-rail-wrap > .instance-page-rail {flex: 0 0 auto; height: auto}
+    .instance-page-grid .modern-rail-resize-handle {display: none}
+    .instance-page-grid .instance-page-main {overflow: visible}
+    .instance-page-grid .instance-page-panel {flex: 0 0 auto; height: 500px}
+  }
+}
+
+/* The desktop shell is a fixed-height flex chain: normally each pane owns its
+   scroll. Short windows instead scroll main so controls and a useful log panel
+   remain reachable without squeezing either down to a few pixels. */
+@media (min-width: 951px) and (max-height: 600px) {
+  .app-shell.modern-shell > .main-shell:where(.app-shell *) > main:has(> .instance-page-grid, > .task-config-modern) {overflow-y: auto}
+  .app-shell.modern-shell > .main-shell:where(.app-shell *) > main > .instance-page-grid,
+  .app-shell.modern-shell > .main-shell:where(.app-shell *) > main > .task-config-modern {flex: 0 0 auto; min-height: 620px}
 }

@@ -4,8 +4,11 @@
 
 import { useEffect, useState, useSyncExternalStore, type FormEvent } from 'react'
 import { BookmarkPlus, ExternalLink, FolderOpen, ListPlus, Shuffle, Upload, X } from 'lucide-react'
-import { DEFAULT_BACKGROUND_URLS, applyGalleryEntry, disableBackground, galleryUrl, getBackground, getGallery, initBackgroundGallery, openGalleryFolder, refreshGallery, removeGalleryEntry, saveDirectUrlToGallery, setBackgroundUrls, subscribeBackground, uploadBackgroundFile, type BackgroundKind, type BackgroundSource } from '../app/background'
+import { DEFAULT_BACKGROUND_URLS, disableBackground, galleryUrl, getBackground, openGalleryFolder, retryBackgroundUrl, setBackgroundUrls, subscribeBackground, type BackgroundKind, type BackgroundSource } from '../app/background'
 import { useApp } from '../app/context'
+import { useBackgroundGallery } from '../app/backgroundGallery'
+import { ErrorBox } from './ui'
+import { LoadBoundary } from './ui/load-boundary'
 import { Select } from './FormControls'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -28,10 +31,10 @@ export function BackgroundPreferences() {
   const [kind, setKind] = useState<BackgroundKind>(background.kind)
   const [rows, setRows] = useState<Row[]>(() => toRows(background.urls))
   const [busy, setBusy] = useState(false)
-  const gallery = useSyncExternalStore(subscribeBackground, getGallery, getGallery)
+  const galleryRead = useBackgroundGallery()
+  const gallery = galleryRead.entries ?? []
   const [error, setError] = useState('')
 
-  useEffect(() => { void initBackgroundGallery() }, [])
   useEffect(() => {
     setSource(background.source)
     setKind(background.kind)
@@ -47,7 +50,7 @@ export function BackgroundPreferences() {
       try { applyRows() } catch (error) { setError((error as Error).message) }
     }
     /* 切回图库档就铺上原来那张；它已被删除时随机抽一张。 */
-    if (next === 'upload') applyGalleryEntry(background.entry)
+    if (next === 'upload') galleryRead.select(background.entry)
   }
 
   /** 改某一行；改的是最后一行且非空时，自动补一个空行（填一行就长一行）。 */
@@ -88,15 +91,14 @@ export function BackgroundPreferences() {
     if (!files?.length) return
     setBusy(true); setError('')
     try {
-      for (const file of Array.from(files)) await uploadBackgroundFile(file)
-      setSource('upload')
+      await galleryRead.upload(Array.from(files))
       notify(ui('settings.backgroundApplied'))
     } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
   async function saveDirect() {
     setBusy(true); setError('')
     try {
-      await saveDirectUrlToGallery()
+      await galleryRead.saveDirect()
       notify(ui('settings.backgroundSaved'))
     } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
@@ -107,7 +109,7 @@ export function BackgroundPreferences() {
   }
   async function dropEntry(identifier: string) {
     setBusy(true); setError('')
-    try { await removeGalleryEntry(identifier); await refreshGallery() }
+    try { await galleryRead.remove(identifier) }
     catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
 
@@ -166,7 +168,7 @@ export function BackgroundPreferences() {
             <BookmarkPlus size={14} aria-hidden="true"/>{ui('settings.backgroundSaveToGallery')}
           </Button>
         </div>
-        {background.resolveError && <p className="background-error" role="status">{ui('settings.backgroundResolveFailed')}：{background.resolveError}</p>}
+        {background.resolveError && <ErrorBox message={ui('settings.backgroundResolveFailed') + '：' + background.resolveError} retry={retryBackgroundUrl}/>}
       </div>}
       {source === 'upload' && <div className="background-gallery">
         <label className="background-upload">
@@ -184,10 +186,11 @@ export function BackgroundPreferences() {
           <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void openFolder()}>
             <FolderOpen size={14} aria-hidden="true"/>{ui('settings.backgroundGallery')}（{gallery.length}）
           </Button>
-          <Button type="button" variant="outline" size="sm" disabled={gallery.length < 2} onClick={() => applyGalleryEntry()}>
+          <Button type="button" variant="outline" size="sm" disabled={gallery.length < 2} onClick={() => galleryRead.select()}>
             <Shuffle size={14} aria-hidden="true"/>{ui('settings.backgroundShuffle')}
           </Button>
         </div>
+        <LoadBoundary ready={galleryRead.ready} error={galleryRead.error} retry={galleryRead.reload}>
         {gallery.length ? <ul className="background-gallery-list">
           {gallery.map(entry => <li key={entry.id} className={entry.id === background.entry ? 'active' : undefined}>
             {entry.kind === 'video' ? <span className="background-gallery-icon">{ui('settings.backgroundVideo')}</span> : <img src={galleryUrl(entry.id)} alt=""/>}
@@ -195,8 +198,9 @@ export function BackgroundPreferences() {
             <Button type="button" variant="ghost" size="icon-xs" aria-label={ui('settings.backgroundDelete')} title={ui('settings.backgroundDelete')} disabled={busy} onClick={() => void dropEntry(entry.id)}><X size={14} aria-hidden="true"/></Button>
           </li>)}
         </ul> : <p className="background-url-hint">{ui('settings.backgroundGalleryEmpty')}</p>}
+        </LoadBoundary>
       </div>}
-      {error && <p className="background-error" role="alert">{error}</p>}
+      {error && <ErrorBox message={error}/>}
     </div>
   </div>
 }

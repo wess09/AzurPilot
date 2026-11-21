@@ -330,6 +330,9 @@
               },
               "value": {
                 "title": "Value"
+              },
+              "expected": {
+                "title": "Expected"
               }
             },
             "required": [

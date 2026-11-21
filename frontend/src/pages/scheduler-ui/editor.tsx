@@ -9,16 +9,30 @@ import {MarkerType, useReactFlow, type Connection as FlowConnection} from '@xyfl
 import {ArrowDown, ArrowLeft, ArrowUp, Bug, Copy, Download, FolderOpen, GripVertical, Layers, LocateFixed, Play, Plus, Redo2, Save, Search, StepForward, Trash2, Undo2, Upload, X} from 'lucide-react'
 import {api} from '../../api/client'
 import {useApp, useConnection} from '../../app/context'
-import {ErrorBox, Loading} from '../../components/ui'
+import {usePageRead} from '../../app/usePageRead'
+import {ActionGroup, ErrorBox, PageTitle} from '../../components/ui'
+import {LoadBoundary} from '../../components/ui/load-boundary'
+import {Button} from '../../components/ui/button'
+import {Input} from '../../components/ui/input'
+import {Checkbox} from '../../components/ui/checkbox'
+import {Textarea} from '../../components/ui/textarea'
+import {Select as FieldSelect} from '../../components/Select'
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../../components/ui/select'
+import {Popover} from 'radix-ui'
 import {clone, compatible, connectedPortType, definition, duplicate, encapsulate, horizontalLayout, id, replaceGraph, withComments} from '../../scheduler/graph'
 import {ProgramCanvas, type CanvasNode} from '../../scheduler/Canvas'
 import {categoryColor, controlColor, getCardIcon, portColors} from '../../scheduler/appearance'
 import {editingText, editorCommand} from '../../scheduler/shortcuts'
-import type {Catalog, Graph, PortType, ProgramDocument, ProgramMode, ProgramNode, ProgramSaved, ProgramSimulation, ProgramState, ProgramValidation, Subgraph} from '../../scheduler/types'
+import type {Catalog, Graph, PortType, ProgramDocument, ProgramMode, ProgramNode, ProgramSaved, ProgramSimulation, ProgramValidation, Subgraph} from '../../scheduler/types'
 import type {UiKey} from '../../i18n'
 import {exits, labels, typeLabels} from './labels'
 import {nodeTypes} from './program-card'
 import {JsonField} from './json-field'
+
+const runtimePollInterval = () => 2000
+const editableMode = (mode: ProgramMode) => mode === 'native' ? 'takeover' : mode
+// Compare only on user edits or write acknowledgements, never to gate server reads.
+const sameDocument = (a: ProgramDocument, b: ProgramDocument) => JSON.stringify(withComments(a)) === JSON.stringify(withComments(b))
 
 /** 编辑器主体：画布、卡片库、属性面板与调试抽屉共用一份文档状态与撤销历史。 */
 export function Editor() {
@@ -26,16 +40,29 @@ export function Editor() {
   const {notify, ui} = useApp()
   const connection = useConnection()
   const flow = useReactFlow<CanvasNode>()
-  const [catalog, setCatalog] = useState<Catalog>()
-  const [saved, setSaved] = useState<ProgramSaved>()
-  const [doc, setDoc] = useState<ProgramDocument>()
-  const [mode, setMode] = useState<ProgramMode>('takeover')
+  const mutationInFlight = useRef<object | undefined>(undefined)
+  const loadProgram = useCallback(async () => {
+    const [catalog, saved] = await Promise.all([api.request('scheduler.program.catalog', {instance}), api.request('scheduler.program.get', {instance})])
+    return {catalog, saved}
+  }, [instance])
+  const programRead = usePageRead(instance, connection === 'ready', loadProgram)
+  const {catalog, saved} = programRead.data ?? {}
+  const savedSnapshot = useRef(saved)
+  savedSnapshot.current = saved
+  const [draft, setDraft] = useState<{document: ProgramDocument; mode: ProgramMode; revision: string; baseDocument: ProgramDocument; baseMode: ProgramMode; docDirty: boolean; modeDirty: boolean}>()
+  const draftRef = useRef(draft)
+  draftRef.current = draft
+  const updateDraft = (next: typeof draft) => {draftRef.current = next; setDraft(next)}
+  const doc = draft?.document ?? saved?.draft
+  const mode = draft?.mode ?? editableMode(saved?.mode ?? 'takeover')
   const [graphId, setGraphId] = useState('main')
   const [search, setSearch] = useState('')
+  const [extraActionsOpen, setExtraActionsOpen] = useState(false)
   const [selection, setSelection] = useState<string[]>([])
   const [validation, setValidation] = useState<ProgramValidation>()
   const [simulation, setSimulation] = useState<ProgramSimulation>()
-  const [runtime, setRuntime] = useState<ProgramState>()
+  const loadRuntime = useCallback(async () => (await api.request('scheduler.program.state', {instance})).state, [instance])
+  const {data: runtime} = usePageRead(instance, connection === 'ready', loadRuntime, runtimePollInterval)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [tab, setTab] = useState<'simulate' | 'runtime'>('simulate')
@@ -55,6 +82,7 @@ export function Editor() {
   const history = useRef<{past: ProgramDocument[]; future: ProgramDocument[]}>({past:[], future:[]})
   const clipboard = useRef<Pick<Graph,'nodes' | 'edges'> | undefined>(undefined)
   // 请求版本号：实例切换或再次操作时只有最新一次请求的结果才准写进状态，过期响应直接丢弃。
+  const importInputRef = useRef<HTMLInputElement>(null)
   const requestVersion = useRef(0)
   const wrapper = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
@@ -66,7 +94,7 @@ export function Editor() {
     observer.observe(wrapper.current)
     return () => observer.disconnect()
   }, [!!doc])
-  const dirty = !!doc && !!saved && JSON.stringify(doc) !== JSON.stringify(saved.draft)
+  const dirty = !!draft?.docDirty || !!draft?.modeDirty
   // 渲染期同步 ref：回调里读最新文档与流程图 id，不依赖闭包的新旧。
   const docRef = useRef(doc)
   docRef.current = doc
@@ -75,30 +103,31 @@ export function Editor() {
   const graph = doc && (graphId === 'main' ? doc : doc.subgraphs.find(s => s.id === graphId))
   const picked = graph?.nodes.find(n => n.id === selection[0])
 
+  const resetEditorView = () => {
+    setGraphId('main'); setSelection([]); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
+    history.current = {past:[], future:[]}
+  }
+  const discardDraft = (current: NonNullable<typeof draft>) => {
+    if (savedSnapshot.current && current.revision !== savedSnapshot.current.revision) resetEditorView()
+    updateDraft(undefined)
+  }
+  const keepDraft = (next: NonNullable<typeof draft>) => {
+    if (next.docDirty || next.modeDirty || mutationInFlight.current) updateDraft(next)
+    else discardDraft(next)
+  }
+
+  useEffect(() => () => {++requestVersion.current}, [])
+  const initialized = useRef(false)
+  const knownRevision = useRef<string | undefined>(undefined)
   useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    const version = ++requestVersion.current
-    setValidation(undefined); setSimulation(undefined); setSimSteps(0); setRuntime(undefined)
-    setDoc(undefined); setError(''); setSelection([]); setGraphId('main'); history.current = {past:[], future:[]}
-    void Promise.all([api.request('scheduler.program.catalog', {instance}), api.request('scheduler.program.get', {instance})]).then(([catalog, saved]) => {
-      if (!active || version !== requestVersion.current) return
-      setCatalog(catalog); setSaved(saved); setDoc(saved.draft); setSimTasks(catalog.tasks); setMode(saved.mode === 'native' ? 'takeover' : saved.mode)
-    }).catch(error => {if (active) setError(error.message)})
-    return () => {active = false}
-  }, [instance, connection])
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true, polling = false
-    const poll = async () => {
-      if (polling) return
-      polling = true
-      try {const result = await api.request('scheduler.program.state', {instance}); if (active) setRuntime(result.state)} catch { /* 重连后重新采样。 */ }
-      finally {polling = false}
+    if (!programRead.data) return
+    const revision = programRead.data.saved.revision
+    if (!initialized.current) {setSimTasks(programRead.data.catalog.tasks); initialized.current = true}
+    else if (!draftRef.current && knownRevision.current !== revision) {
+      resetEditorView()
     }
-    void poll(); const timer = setInterval(poll, 2000)
-    return () => {active = false; clearInterval(timer)}
-  }, [instance, connection])
+    knownRevision.current = revision
+  }, [programRead.data])
   useEffect(() => {
     const guard = (event: BeforeUnloadEvent) => {if (dirty) {event.preventDefault(); event.returnValue = ''}}
     window.addEventListener('beforeunload', guard)
@@ -107,8 +136,13 @@ export function Editor() {
 
   const change = useCallback((next: ProgramDocument, track = true) => {
     if (doc && track) {history.current.past.push(clone(doc)); history.current.past = history.current.past.slice(-100); history.current.future = []}
-    setDoc(withComments(next)); setValidation(undefined); setSimulation(undefined); setSimSteps(0)
-  }, [doc])
+    if (!saved) return
+    const current = draftRef.current
+    const document = withComments(next)
+    const baseDocument = current?.baseDocument ?? saved.draft
+    keepDraft({document, mode:current?.mode ?? mode, revision:current?.revision ?? saved.revision, baseDocument, baseMode:current?.baseMode ?? editableMode(saved.mode), docDirty:!sameDocument(document, baseDocument), modeDirty:current?.modeDirty ?? false})
+    setValidation(undefined); setSimulation(undefined); setSimSteps(0)
+  }, [doc, mode, saved])
   const updateGraph = (next: Graph, track = true) => {if (doc) change(replaceGraph(doc, graphId, next), track)}
   function undo(redo = false) {
     if (!doc) return
@@ -213,20 +247,55 @@ export function Editor() {
   async function action(kind: 'save' | 'apply' | 'native' | 'validate') {
     if (!doc || !saved) return
     const version = requestVersion.current
+    const mutation = kind !== 'validate'
+    if (mutation && mutationInFlight.current) return
+    const mutationToken = mutation ? {} : undefined
+    if (mutationToken) {mutationInFlight.current = mutationToken; programRead.invalidate()}
     setBusy(true); setError('')
+    const submittedDraft = draftRef.current
     try {
       if (kind === 'validate') {
         setDebugOpen(true)
         const result = await api.request('scheduler.program.validate', {instance, document:doc, mode}); if (version === requestVersion.current) setValidation(result)
       } else {
         let latest = saved
-        if (kind !== 'native') latest = await api.request('scheduler.program.save', {instance, revision:saved.revision, document:doc})
-        if (version === requestVersion.current) setSaved(latest)
-        if (kind === 'apply' || kind === 'native') latest = await api.request('scheduler.program.apply', {instance, revision:latest.revision, mode:kind === 'native' ? 'native' : mode})
-        if (version === requestVersion.current) {setSaved(latest); notify(kind === 'save' ? '草稿已保存' : kind === 'native' ? '已切回原调度' : '方案已应用，将在安全边界生效')}
+        const revision = submittedDraft?.revision ?? saved.revision
+        const publish = (value: ProgramSaved, savedDocument: boolean, applied: boolean) => {
+          knownRevision.current = value.revision
+          savedSnapshot.current = value
+          programRead.setData(previous => previous ? {...previous, saved:value} : previous)
+          const current = draftRef.current
+          if (!current) return
+          const baseDocument = savedDocument ? value.draft : current.baseDocument
+          const baseMode = applied ? editableMode(value.mode) : current.baseMode
+          const document = savedDocument && current.document === doc ? value.draft : current.document
+          updateDraft({...current, document, revision:value.revision, baseDocument, baseMode, docDirty:!sameDocument(document, baseDocument), modeDirty:current.mode !== baseMode})
+        }
+        if (kind !== 'native') {
+          latest = await api.request('scheduler.program.save', {instance, revision, document:doc})
+          if (version !== requestVersion.current) return
+          publish(latest, true, false)
+        }
+        if (kind === 'apply' || kind === 'native') {
+          programRead.invalidate()
+          latest = await api.request('scheduler.program.apply', {instance, revision:kind === 'native' ? revision : latest.revision, mode:kind === 'native' ? 'native' : mode})
+          if (version !== requestVersion.current) return
+          publish(latest, false, true)
+        }
+        notify(kind === 'save' ? '草稿已保存' : kind === 'native' ? '已切回原调度' : '方案已应用，将在安全边界生效')
       }
     } catch (error) {if (version === requestVersion.current) {setError((error as Error).message); const details = (error as {details?: ProgramValidation['diagnostics']}).details; if (Array.isArray(details)) setValidation({valid:false, diagnostics:details})}}
-    finally {if (version === requestVersion.current) setBusy(false)}
+    finally {
+      if (mutationToken && mutationInFlight.current === mutationToken) {
+        mutationInFlight.current = undefined
+        const current = draftRef.current
+        if (current && !current.docDirty && !current.modeDirty) discardDraft(current)
+      }
+      if (version === requestVersion.current) {
+        setBusy(false)
+        if (mutation) programRead.reload({silent:true})
+      }
+    }
   }
   async function simulate(steps: number) {
     if (!doc) return
@@ -241,7 +310,7 @@ export function Editor() {
     } catch (error) {if (version === requestVersion.current) setError((error as Error).message)} finally {if (version === requestVersion.current) setBusy(false)}
   }
 
-  if (!doc || !catalog || !graph || !saved) return error ? <ErrorBox message={error}/> : <Loading/>
+  if (!doc || !catalog || !graph || !saved) return <LoadBoundary ready={false} error={programRead.error} retry={() => programRead.reload()}/>
   const spec = picked && definition(picked, doc, catalog, graph)
   const changeParam = (key: string, value: unknown) => {if (picked) updateNode({...picked, params:{...picked.params, [key]:value, ...(key === 'valueType' ? {value:value === 'boolean' ? false : value === 'number' || value === 'duration' ? 0 : value === 'list' || value === 'tasks' ? [] : ['object','resource','task','result'].includes(String(value)) ? {} : ''} : {})}})}
   const currentGraph = graph as Subgraph
@@ -251,7 +320,7 @@ export function Editor() {
   const status = (tab === 'simulate' ? simulation?.state : runtime)
 
   return <div className={`program-editor ${compactEditor ? 'is-compact' : ''}`} ref={wrapper} onKeyDown={event => {
-    if (editingText(event.target)) return
+    if (event.defaultPrevented || editingText(event.target)) return
     const command = editorCommand(event)
     if (!command) return
     event.preventDefault(); event.stopPropagation()
@@ -265,40 +334,43 @@ export function Editor() {
     else if (command === 'all') setSelection(graph.nodes.map(n => n.id))
     else if (command === 'clear') setSelection([])
   }}>
-    <header className="program-toolbar"><div><Layers size={21}/><div><h1>{ui('nav.schedulerProgram')}</h1><small>{saved.mode === 'native' ? '当前使用原调度' : saved.mode === 'enhance' ? '当前使用增强调度' : '当前由卡片程序完全接管'} · {dirty ? '有未保存修改' : '草稿已保存'}</small></div></div>
-      <div className="program-actions"><button className="button secondary" onClick={() => undo()} disabled={!history.current.past.length} title="撤销"><Undo2 size={15}/></button><button className="button secondary" onClick={() => undo(true)} disabled={!history.current.future.length} title="重做"><Redo2 size={15}/></button>
-        <select aria-label="调度模式" value={mode} onChange={e => {setMode(e.target.value as ProgramMode); setValidation(undefined)}}><option value="takeover">完全接管</option><option value="enhance">增强调度</option></select>
-        <button className="button secondary" disabled={busy} onClick={() => void action('validate')}>校验</button>
-        <button type="button" className={`button secondary program-debug-btn ${debugOpen ? 'active' : ''}`} onClick={() => setDebugOpen(open => !open)} title={debugOpen ? '收起调试面板' : '展开调试面板'} aria-expanded={debugOpen}><Bug size={14}/><span>调试</span></button>
-        <button className="button secondary" disabled={busy} onClick={() => void action('save')}><Save size={15}/>保存草稿</button><button className="button primary" disabled={busy} onClick={() => void action('apply')}><Play size={15}/>应用方案</button>
-      </div>
+    <header className="program-toolbar"><div><Layers size={21}/><div><PageTitle title={ui('nav.schedulerProgram')}/><small>{saved.mode === 'native' ? '当前使用原调度' : saved.mode === 'enhance' ? '当前使用增强调度' : '当前由卡片程序完全接管'} · {dirty ? '有未保存修改' : '草稿已保存'}</small></div></div>
+      <ActionGroup className="program-actions"><Button variant="secondary" onClick={() => undo()} disabled={!history.current.past.length} title="撤销" aria-label="撤销"><Undo2 size={15}/></Button><Button variant="secondary" onClick={() => undo(true)} disabled={!history.current.future.length} title="重做" aria-label="重做"><Redo2 size={15}/></Button>
+        <Select value={mode} onValueChange={value => {const current = draftRef.current; const baseMode = current?.baseMode ?? editableMode(saved.mode); keepDraft({document:doc, mode:value as ProgramMode, revision:current?.revision ?? saved.revision, baseDocument:current?.baseDocument ?? saved.draft, baseMode, docDirty:current?.docDirty ?? false, modeDirty:value !== baseMode}); setValidation(undefined)}}><SelectTrigger width="fit" aria-label="调度模式"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="takeover">完全接管</SelectItem><SelectItem value="enhance">增强调度</SelectItem></SelectContent></Select>
+        <Button variant="secondary" disabled={busy} onClick={() => void action('validate')}>校验</Button>
+        <Button type="button" variant="secondary" className={`program-debug-btn ${debugOpen ? 'active' : ''}`} onClick={() => setDebugOpen(open => !open)} title={debugOpen ? '收起调试面板' : '展开调试面板'} aria-expanded={debugOpen}><Bug size={14}/><span>调试</span></Button>
+        <Button variant="secondary" disabled={busy} onClick={() => void action('save')}><Save size={15}/>保存草稿</Button><Button disabled={busy} onClick={() => void action('apply')}><Play size={15}/>应用方案</Button>
+      </ActionGroup>
     </header>
+    <LoadBoundary ready error={programRead.error} retry={() => programRead.reload()}/>
     {error && <ErrorBox message={error}/>}
-    <div className="program-subtoolbar"><input aria-label="方案名称" value={doc.name} onChange={e => change({...doc, name:e.target.value})}/><select aria-label="编辑流程" value={graphId} onChange={e => {setGraphId(e.target.value); setSelection([]); setTimeout(() => void flow.fitView(), 0)}}><option value="main">主程序</option>{doc.subgraphs.map(s => <option key={s.id} value={s.id}>{s.name}{s.pure ? ' · 数据' : ' · 执行'}</option>)}</select>
-      <button className="button secondary" onClick={focusStart} title="将程序入口移回可视区域"><LocateFixed size={14}/>定位入口</button>
-      <button className="button secondary" onClick={() => {change(clone(catalog.templates[mode === 'enhance' ? 'enhance' : 'takeover'])); setGraphId('main'); setSelection([])}}><FolderOpen size={14}/>载入原调度方案</button>
-      {catalog.templates && 'all' in catalog.templates && <button className="button secondary" onClick={() => {change(clone(catalog.templates.all)); setGraphId('main'); setSelection([]); setTimeout(() => void flow.fitView({padding:0.12}), 0)}}><Layers size={14}/>全卡片排列</button>}
-      <button className="button secondary" onClick={() => setVariablesOpen(!variablesOpen)}>变量与端口</button>
-      <button className="button secondary" onClick={() => {updateGraph(horizontalLayout(graph)); requestAnimationFrame(() => void flow.fitView({padding:0.12}))}}>从左到右排列</button>
-      <button className="button secondary" onClick={() => setCanvasExpanded(value => !value)}>{canvasExpanded ? '显示面板' : '展开画布'}</button>
-      <button className="button secondary" onClick={() => copySelected()} disabled={!selection.length} title="复制（Ctrl/Cmd+C）"><Copy size={14}/>复制</button>
-      <button className="button secondary" onClick={() => void pasteSelected()} title="粘贴（Ctrl/Cmd+V）">粘贴</button>
-      <button className="button secondary" disabled={!selection.length} onClick={() => {try {change(encapsulate(doc, graphId, new Set(selection), '自定义组合卡片', catalog)); setSelection([])} catch (error) {notify((error as Error).message, true)}}}>封装卡片</button>
-      <button className="button secondary" disabled={!selection.length} onClick={deleteSelected} title="删除选中卡片"><Trash2 size={14}/></button>
-      <button className="button secondary" onClick={() => {const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${doc.name}.scheduler.json`; link.click(); URL.revokeObjectURL(url)}}><Download size={14}/>导出</button>
-      <label className="button secondary program-file"><Upload size={14}/>导入<input type="file" accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/></label>
-      {saved.mode !== 'native' && <button className="button secondary" disabled={busy} onClick={() => void action('native')}>切回原调度</button>}
+    <div className="program-subtoolbar"><Input aria-label="方案名称" value={doc.name} onChange={e => change({...doc, name:e.target.value})}/><Select value={graphId} onValueChange={value => {setGraphId(value); setSelection([]); setTimeout(() => void flow.fitView(), 0)}}><SelectTrigger aria-label="编辑流程"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="main">主程序</SelectItem>{doc.subgraphs.map(s => <SelectItem key={s.id} value={s.id}>{s.name}{s.pure ? ' · 数据' : ' · 执行'}</SelectItem>)}</SelectContent></Select>
+      <Popover.Root open={extraActionsOpen} onOpenChange={setExtraActionsOpen}><Popover.Trigger asChild><Button type="button" variant="secondary">更多操作</Button></Popover.Trigger><Popover.Portal><Popover.Content className="program-extra-actions-list" align="end" sideOffset={6} collisionPadding={8} aria-label="更多操作">
+      <Button variant="secondary" onClick={focusStart} title="将程序入口移回可视区域"><LocateFixed size={14}/>定位入口</Button>
+      <Button variant="secondary" onClick={() => {change(clone(catalog.templates[mode === 'enhance' ? 'enhance' : 'takeover'])); setGraphId('main'); setSelection([])}}><FolderOpen size={14}/>载入原调度方案</Button>
+      {catalog.templates && 'all' in catalog.templates && <Button variant="secondary" onClick={() => {change(clone(catalog.templates.all)); setGraphId('main'); setSelection([]); setTimeout(() => void flow.fitView({padding:0.12}), 0)}}><Layers size={14}/>全卡片排列</Button>}
+      <Button variant="secondary" onClick={() => setVariablesOpen(!variablesOpen)}>变量与端口</Button>
+      <Button variant="secondary" onClick={() => {updateGraph(horizontalLayout(graph)); requestAnimationFrame(() => void flow.fitView({padding:0.12}))}}>从左到右排列</Button>
+      <Button variant="secondary" onClick={() => setCanvasExpanded(value => !value)}>{canvasExpanded ? '显示面板' : '展开画布'}</Button>
+      <Button variant="secondary" onClick={() => copySelected()} disabled={!selection.length} title="复制（Ctrl/Cmd+C）"><Copy size={14}/>复制</Button>
+      <Button variant="secondary" onClick={() => void pasteSelected()} title="粘贴（Ctrl/Cmd+V）">粘贴</Button>
+      <Button variant="secondary" disabled={!selection.length} onClick={() => {try {change(encapsulate(doc, graphId, new Set(selection), '自定义组合卡片', catalog)); setSelection([])} catch (error) {notify((error as Error).message, true)}}}>封装卡片</Button>
+      <Button variant="secondary" disabled={!selection.length} onClick={deleteSelected} title="删除选中卡片"><Trash2 size={14}/></Button>
+      <Button variant="secondary" onClick={() => {const blob = new Blob([JSON.stringify(doc, null, 2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `${doc.name}.scheduler.json`; link.click(); URL.revokeObjectURL(url)}}><Download size={14}/>导出</Button>
+      <Button type="button" variant="secondary" onClick={() => importInputRef.current?.click()}><Upload size={14}/>导入</Button>
+      {saved.mode !== 'native' && <Button variant="secondary" disabled={busy} onClick={() => void action('native')}>切回原调度</Button>}
+      </Popover.Content></Popover.Portal></Popover.Root><input ref={importInputRef} type="file" hidden accept="application/json" onChange={event => {const file = event.target.files?.[0]; if (file) void file.text().then(text => {const next = JSON.parse(text) as ProgramDocument; if (next.schemaVersion !== 1 || !Array.isArray(next.nodes) || !Array.isArray(next.subgraphs)) throw new Error('不是版本 1 的调度文档'); change(next); setGraphId('main'); setSelection([])}).catch(error => notify(error.message, true)); event.target.value = ''}}/>
     </div>
     {variablesOpen && <section className="program-schema-panel">
-      <div><strong>变量</strong><button className="button secondary" onClick={() => change({...doc, variables:[...doc.variables, {name:`variable${doc.variables.length + 1}`, type:'number', initial:0, persistent:false}]})}><Plus size={13}/>添加</button></div>
-      {doc.variables.map((v, index) => <div className="program-schema-row" key={index}><input aria-label="变量名称" value={v.name} onChange={e => change({...doc, variables:doc.variables.map((x, i) => i === index ? {...x, name:e.target.value} : x)})}/><select value={v.type} aria-label="变量类型" onChange={e => change({...doc, variables:doc.variables.map((x, i) => i === index ? {...x, type:e.target.value as PortType} : x)})}>{Object.entries(typeLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select><JsonField label="初始值" value={v.initial} onChange={value => change({...doc, variables:doc.variables.map((x,i) => i === index ? {...x, initial:value} : x)})}/><label><input type="checkbox" checked={v.persistent} onChange={e => change({...doc, variables:doc.variables.map((x,i) => i === index ? {...x, persistent:e.target.checked} : x)})}/>重启保留</label><button onClick={() => change({...doc, variables:doc.variables.filter((_,i) => i !== index)})}><Trash2 size={14}/></button></div>)}
-      {graphId !== 'main' && <><label>组合名称<input value={currentGraph.name} onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, name:e.target.value} : s)})}/></label><label><input type="checkbox" checked={currentGraph.pure} onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, pure:e.target.checked} : s)})}/>无副作用数据组合</label>
-        {(['inputs','outputs'] as const).map(kind => <div key={kind}><strong>{kind === 'inputs' ? '输入端口' : '输出端口'}</strong><button onClick={() => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:[...s[kind], {name:`${kind}${s[kind].length + 1}`, type:'any', required:true}]} : s)})}>添加端口</button>{currentGraph[kind].map((p,index) => <div className="program-schema-row" key={index}><input aria-label="端口名称" value={p.name} onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].map((x,i) => i === index ? {...x, name:e.target.value} : x)} : s)})}/><select value={p.type} aria-label="端口类型" onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].map((x,i) => i === index ? {...x, type:e.target.value} : x)} : s)})}>{Object.entries(typeLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select><button onClick={() => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].filter((_,i) => i !== index)} : s)})}>删除</button></div>)}</div>)}</>}
+      <div><strong>变量</strong><Button variant="secondary" onClick={() => change({...doc, variables:[...doc.variables, {name:`variable${doc.variables.length + 1}`, type:'number', initial:0, persistent:false}]})}><Plus size={13}/>添加</Button></div>
+      {doc.variables.map((v, index) => <div className="program-schema-row" key={index}><Input aria-label="变量名称" value={v.name} onChange={e => change({...doc, variables:doc.variables.map((x, i) => i === index ? {...x, name:e.target.value} : x)})}/><FieldSelect value={v.type} aria-label="变量类型" onChange={e => change({...doc, variables:doc.variables.map((x, i) => i === index ? {...x, type:e.target.value as PortType} : x)})}>{Object.entries(typeLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</FieldSelect><JsonField label="初始值" value={v.initial} onChange={value => change({...doc, variables:doc.variables.map((x,i) => i === index ? {...x, initial:value} : x)})}/><label><Checkbox checked={v.persistent} onCheckedChange={checked => change({...doc, variables:doc.variables.map((x,i) => i === index ? {...x, persistent:(checked === true)} : x)})}/>重启保留</label><Button variant="ghost" aria-label="删除变量" size="icon-xs" onClick={() => change({...doc, variables:doc.variables.filter((_,i) => i !== index)})}><Trash2 size={14}/></Button></div>)}
+      {graphId !== 'main' && <><label>组合名称<Input value={currentGraph.name} onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, name:e.target.value} : s)})}/></label><label><Checkbox checked={currentGraph.pure} onCheckedChange={checked => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, pure:(checked === true)} : s)})}/>无副作用数据组合</label>
+        {(['inputs','outputs'] as const).map(kind => <div key={kind}><strong>{kind === 'inputs' ? '输入端口' : '输出端口'}</strong><Button variant="ghost" onClick={() => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:[...s[kind], {name:`${kind}${s[kind].length + 1}`, type:'any', required:true}]} : s)})}>添加端口</Button>{currentGraph[kind].map((p,index) => <div className="program-schema-row" key={index}><Input aria-label="端口名称" value={p.name} onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].map((x,i) => i === index ? {...x, name:e.target.value} : x)} : s)})}/><FieldSelect value={p.type} aria-label="端口类型" onChange={e => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].map((x,i) => i === index ? {...x, type:e.target.value} : x)} : s)})}>{Object.entries(typeLabels).map(([key,label]) => <option key={key} value={key}>{label}</option>)}</FieldSelect><Button variant="ghost" onClick={() => change({...doc, subgraphs:doc.subgraphs.map(s => s.id === graphId ? {...s, [kind]:s[kind].filter((_,i) => i !== index)} : s)})}>删除</Button></div>)}</div>)}</>}
     </section>}
     <div className="program-mobile-panels">
-      <button type="button" className={`button ${mobilePanel === 'canvas' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('canvas')}>画布</button>
-      <button type="button" className={`button ${mobilePanel === 'library' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('library')}>卡片库</button>
-      <button type="button" className={`button ${mobilePanel === 'properties' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('properties')}>属性与连接</button>
+      <Button variant="ghost" type="button" className={`${mobilePanel === 'canvas' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('canvas')}>画布</Button>
+      <Button variant="ghost" type="button" className={`${mobilePanel === 'library' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('library')}>卡片库</Button>
+      <Button variant="ghost" type="button" className={`${mobilePanel === 'properties' ? 'primary active' : 'secondary'}`} onClick={() => setMobilePanel('properties')}>属性与连接</Button>
     </div>
     <div className={`program-workspace mobile-${mobilePanel} ${canvasExpanded ? 'canvas-expanded' : ''} ${picked ? 'has-selection' : ''}`}>
       <main className="program-canvas" tabIndex={0} aria-label="调度画布" onPointerDown={event => {if (!editingText(event.target)) event.currentTarget.focus({preventScroll:true})}} onDragOver={e => {e.preventDefault(); e.dataTransfer.dropEffect = 'copy'}} onDrop={e => {e.preventDefault(); try {const data = JSON.parse(e.dataTransfer.getData('application/azurpilot-card')); add(data.type, data.graph, flow.screenToFlowPosition({x:e.clientX,y:e.clientY}))} catch { /* 忽略非卡片拖放。 */ }}}>
@@ -310,34 +382,34 @@ export function Editor() {
       </main>
       <aside className="program-library nowheel nopan nodrag">
         <div className="program-mobile-back-bar">
-          <button type="button" className="button secondary program-mobile-back" onClick={() => setMobilePanel('canvas')}>
+          <Button type="button" variant="secondary" className="program-mobile-back" onClick={() => setMobilePanel('canvas')}>
             <ArrowLeft size={14}/>返回画布
-          </button>
+          </Button>
         </div>
-        <label className="program-search"><Search size={15}/><input placeholder="搜索卡片…" value={search} onChange={e => setSearch(e.target.value)}/></label>
+        <label className="program-search"><Search size={15}/><Input placeholder="搜索卡片…" value={search} onChange={e => setSearch(e.target.value)}/></label>
         {[...new Set(catalog.cards.map(c => c.category))].map(category => <div key={category} style={{'--card-color':categoryColor(category)} as CSSProperties}><h3><i className="program-category-dot"/>{category}</h3>{catalog.cards.filter(c => c.category === category && `${c.label} ${c.type}`.toLowerCase().includes(search.toLowerCase())).map(card => {
           const Icon = getCardIcon(card.type, card.category)
-          return <button key={card.type} draggable onDragStart={event => event.dataTransfer.setData('application/azurpilot-card', JSON.stringify({type:card.type}))} onClick={() => add(card.type)}><Icon size={14} aria-hidden="true"/>{card.label}</button>
+          return <Button variant="ghost" key={card.type} draggable onDragStart={event => event.dataTransfer.setData('application/azurpilot-card', JSON.stringify({type:card.type}))} onClick={() => add(card.type)}><Icon size={14} aria-hidden="true"/>{card.label}</Button>
         })}</div>)}
-        <h3>组合卡片</h3>{doc.subgraphs.filter(s => s.name.includes(search)).map(sub => <div className="program-library-composite" key={sub.id}><button draggable onDragStart={event => event.dataTransfer.setData('application/azurpilot-card', JSON.stringify({type:'call', graph:sub.id}))} onClick={() => add('call', sub.id)}><Layers size={14} aria-hidden="true"/>{sub.name}</button><button title="打开内部逻辑" onClick={() => {setGraphId(sub.id); setSelection([])}}>↗</button></div>)}
+        <h3>组合卡片</h3>{doc.subgraphs.filter(s => s.name.includes(search)).map(sub => <div className="program-library-composite" key={sub.id}><Button variant="ghost" draggable onDragStart={event => event.dataTransfer.setData('application/azurpilot-card', JSON.stringify({type:'call', graph:sub.id}))} onClick={() => add('call', sub.id)}><Layers size={14} aria-hidden="true"/>{sub.name}</Button><Button variant="ghost" title="打开内部逻辑" onClick={() => {setGraphId(sub.id); setSelection([])}}>↗</Button></div>)}
       </aside>
       <aside className="program-properties nowheel nopan nodrag">
         <div className="program-properties-title-row">
           <h2>{picked && spec ? <>{(() => {const PickedIcon = getCardIcon(picked.type, spec.category); return <PickedIcon size={16} className="program-properties-icon" style={{color:categoryColor(spec.category)}} aria-hidden="true"/>})()}{spec.label}</> : '卡片属性'}</h2>
-          <button type="button" className="button secondary program-mobile-back" onClick={() => setMobilePanel('canvas')}>
+          <Button type="button" variant="secondary" className="program-mobile-back" onClick={() => setMobilePanel('canvas')}>
             <ArrowLeft size={14}/>返回画布
-          </button>
+          </Button>
         </div>
         {picked?.label && <div className="program-card-alias" style={{marginBottom:10}}>别名：{picked.label}</div>}
         {!picked && <p className="muted">点击卡片设置参数。拖拽端口连线，也可以使用下方的连接表单。</p>}
-        {picked && <><label htmlFor="program-card-label">卡片名称<input id="program-card-label" aria-label="卡片名称" placeholder="自定义别名（优先显示原名）" value={picked.label} onChange={e => updateNode({...picked, label:e.target.value})}/></label>
-          <label htmlFor="program-card-comment">卡片注释<textarea id="program-card-comment" aria-label="卡片注释" value={picked.comment ?? ''} rows={Math.max((picked.comment?.match(/\n/g)?.length ?? 0) + 1, 3)} maxLength={2000} placeholder="单独设置卡片注释，说明具体用途…" onChange={e => updateNode({...picked, comment:e.target.value})}/></label>
-          {picked.type === 'call' && <button className="button secondary" onClick={() => {setGraphId(String(picked.params.graph)); setSelection([])}}>打开内部逻辑</button>}
-          {graphId !== 'main' && currentGraph.pure && <button className="button secondary" onClick={() => updateGraph({...graph, entry:picked.id})}>作为数据输出入口</button>}
+        {picked && <><label htmlFor="program-card-label">卡片名称<Input id="program-card-label" aria-label="卡片名称" placeholder="自定义别名（优先显示原名）" value={picked.label} onChange={e => updateNode({...picked, label:e.target.value})}/></label>
+          <label htmlFor="program-card-comment">卡片注释<Textarea id="program-card-comment" aria-label="卡片注释" value={picked.comment ?? ''} rows={Math.max((picked.comment?.match(/\n/g)?.length ?? 0) + 1, 3)} maxLength={2000} placeholder="单独设置卡片注释，说明具体用途…" onChange={e => updateNode({...picked, comment:e.target.value})}/></label>
+          {picked.type === 'call' && <Button variant="secondary" onClick={() => {setGraphId(String(picked.params.graph)); setSelection([])}}>打开内部逻辑</Button>}
+          {graphId !== 'main' && currentGraph.pure && <Button variant="secondary" onClick={() => updateGraph({...graph, entry:picked.id})}>作为数据输出入口</Button>}
           {renderParams.map(([key,value]) => {
-            if (key === 'overrides') return <div key={key}><h3>本次任务参数</h3>{Object.entries(catalog.overrides).map(([param,kind]) => <label key={param}>{param}<input placeholder="沿用任务配置" value={String((value as Record<string, unknown>)?.[param] ?? '')} onChange={e => {const next = {...value as object}; if (e.target.value === '') delete (next as Record<string,unknown>)[param]; else (next as Record<string,unknown>)[param] = kind === 'integer' ? Number(e.target.value) : e.target.value; changeParam(key, next)}}/></label>)}</div>
-            if (key === 'order') return <div key={key}><h3>任务优先级</h3>{(value as string[]).map((task,index,list) => <div className="program-priority-row" key={`${task}-${index}`} draggable onDragStart={e => e.dataTransfer.setData('text/priority-index', String(index))} onDragOver={e => e.preventDefault()} onDrop={e => {e.preventDefault(); const raw = e.dataTransfer.getData('text/priority-index'); if (!raw.trim()) return; const from = Number(raw); if (!Number.isInteger(from) || from < 0 || from >= list.length) return; const next = [...list]; const [moved] = next.splice(from,1); if (moved) {next.splice(index,0,moved); changeParam(key,next)}}}><GripVertical size={14}/><span>{task}</span><button disabled={index === 0} title="提高优先级" onClick={() => {const previous=list[index-1], current=list[index]; if (previous === undefined || current === undefined) return; const next=[...list]; next[index-1]=current; next[index]=previous; changeParam(key,next)}}><ArrowUp size={13}/></button><button disabled={index === list.length-1} title="降低优先级" onClick={() => {const current=list[index], nextValue=list[index+1]; if (current === undefined || nextValue === undefined) return; const next=[...list]; next[index]=nextValue; next[index+1]=current; changeParam(key,next)}}><ArrowDown size={13}/></button><button title="移除优先级" onClick={() => changeParam(key,list.filter((_,i) => i !== index))}><Trash2 size={13}/></button></div>)}<select aria-label="添加优先级任务" value="" onChange={e => {if (e.target.value) changeParam(key,[...value as string[],e.target.value])}}><option value="">添加任务…</option>{catalog.tasks.filter(t => !(value as string[]).includes(t.name)).map(t => <option key={t.name}>{t.name}</option>)}</select></div>
-            if (key === 'resources' || key === 'names') return <fieldset key={key}><legend>{key === 'resources' ? '资源' : '指定任务（空为全部）'}</legend>{(key === 'resources' ? catalog.resources : catalog.tasks).map(item => <label key={item.name}><input type="checkbox" checked={(value as string[]).includes(item.name)} onChange={e => changeParam(key,e.target.checked ? [...value as string[],item.name] : (value as string[]).filter(x => x !== item.name))}/>{item.name}</label>)}</fieldset>
+            if (key === 'overrides') return <div key={key}><h3>本次任务参数</h3>{Object.entries(catalog.overrides).map(([param,kind]) => <label key={param}>{param}<Input placeholder="沿用任务配置" value={String((value as Record<string, unknown>)?.[param] ?? '')} onChange={e => {const next = {...value as object}; if (e.target.value === '') delete (next as Record<string,unknown>)[param]; else (next as Record<string,unknown>)[param] = kind === 'integer' ? Number(e.target.value) : e.target.value; changeParam(key, next)}}/></label>)}</div>
+            if (key === 'order') return <div key={key}><h3>任务优先级</h3>{(value as string[]).map((task,index,list) => <div className="program-priority-row" key={`${task}-${index}`} draggable onDragStart={e => e.dataTransfer.setData('text/priority-index', String(index))} onDragOver={e => e.preventDefault()} onDrop={e => {e.preventDefault(); const raw = e.dataTransfer.getData('text/priority-index'); if (!raw.trim()) return; const from = Number(raw); if (!Number.isInteger(from) || from < 0 || from >= list.length) return; const next = [...list]; const [moved] = next.splice(from,1); if (moved) {next.splice(index,0,moved); changeParam(key,next)}}}><GripVertical size={14}/><span>{task}</span><Button variant="ghost" size="icon-xs" disabled={index === 0} title="提高优先级" onClick={() => {const previous=list[index-1], current=list[index]; if (previous === undefined || current === undefined) return; const next=[...list]; next[index-1]=current; next[index]=previous; changeParam(key,next)}}><ArrowUp size={13}/></Button><Button variant="ghost" size="icon-xs" disabled={index === list.length-1} title="降低优先级" onClick={() => {const current=list[index], nextValue=list[index+1]; if (current === undefined || nextValue === undefined) return; const next=[...list]; next[index]=nextValue; next[index+1]=current; changeParam(key,next)}}><ArrowDown size={13}/></Button><Button variant="ghost" size="icon-xs" title="移除优先级" onClick={() => changeParam(key,list.filter((_,i) => i !== index))}><Trash2 size={13}/></Button></div>)}<FieldSelect aria-label="添加优先级任务" value="" onChange={e => {if (e.target.value) changeParam(key,[...value as string[],e.target.value])}}><option value="">添加任务…</option>{catalog.tasks.filter(t => !(value as string[]).includes(t.name)).map(t => <option key={t.name}>{t.name}</option>)}</FieldSelect></div>
+            if (key === 'resources' || key === 'names') return <fieldset key={key}><legend>{key === 'resources' ? '资源' : '指定任务（空为全部）'}</legend>{(key === 'resources' ? catalog.resources : catalog.tasks).map(item => <label key={item.name}><Checkbox checked={(value as string[]).includes(item.name)} onCheckedChange={checked => changeParam(key,(checked === true) ? [...value as string[],item.name] : (value as string[]).filter(x => x !== item.name))}/>{item.name}</label>)}</fieldset>
             let options: string[] | undefined
             if (key === 'graph' || key === 'guard') options = doc.subgraphs.filter(s => key !== 'guard' || s.pure).map(s => s.id)
             else if (key === 'task' || (key === 'name' && picked.type === 'task')) options = catalog.tasks.map(t => t.name)
@@ -360,35 +432,35 @@ export function Editor() {
                 }
                 return opt
               }
-              return <label key={key}>{labels[key] ?? key}<select value={String(value)} onChange={e => changeParam(key,e.target.value)}><option value="">未设置</option>{options.map(option => <option key={option} value={option}>{optionLabel(option)}</option>)}</select></label>
+              return <label key={key}>{labels[key] ?? key}<FieldSelect value={String(value)} onChange={e => changeParam(key,e.target.value)}><option value="">未设置</option>{options.map(option => <option key={option} value={option}>{optionLabel(option)}</option>)}</FieldSelect></label>
             }
-            if (typeof value === 'boolean') return <label className="program-checkbox" key={key}><input type="checkbox" checked={value} onChange={e => changeParam(key,e.target.checked)}/>{labels[key] ?? key}</label>
-            if (typeof value === 'number' || typeof value === 'string') return <label key={key}>{labels[key] ?? key}<input type={typeof value === 'number' ? 'number' : 'text'} value={value} onChange={e => changeParam(key,typeof value === 'number' ? Number(e.target.value) : e.target.value)}/></label>
+            if (typeof value === 'boolean') return <label className="program-checkbox" key={key}><Checkbox checked={value} onCheckedChange={checked => changeParam(key,(checked === true))}/>{labels[key] ?? key}</label>
+            if (typeof value === 'number' || typeof value === 'string') return <label key={key}>{labels[key] ?? key}<Input type={typeof value === 'number' ? 'number' : 'text'} value={value} onChange={e => changeParam(key,typeof value === 'number' ? Number(e.target.value) : e.target.value)}/></label>
             return <JsonField key={key} label={labels[key] ?? key} value={value} onChange={next => changeParam(key,next)}/>
           })}
           {spec?.inputs.filter(p => !renderParams.some(([key]) => key === p.name)).map(p => <JsonField key={p.name} label={`${p.name} · ${typeLabels[p.type]}（可用连线代替）`} value={picked.params[p.name]} onChange={value => changeParam(p.name,value)}/>)}
           {picked.type === 'resource' && status?.resources?.[String(picked.params.name)] && <pre className="program-observation">{JSON.stringify(status.resources[String(picked.params.name)],null,2)}</pre>}{picked.type === 'resource' && <small>{catalog.resources.find(r => r.name === picked.params.name)?.refreshable ? '支持在任务边界主动刷新' : '使用任务观察记录，不支持主动刷新'}</small>}
         </>}
-        <details className="program-connect"><summary>按钮式连接</summary><label>来源卡片<select aria-label="来源卡片" value={connector.source} onChange={e => setConnector({...connector,source:e.target.value,sourcePort:''})}><option value="">选择来源…</option>{graph.nodes.map(n => <option key={n.id} value={n.id}>{definition(n,doc,catalog,graph).label}{n.label ? `（${n.label}）` : ''} · {n.id.slice(0,7)}</option>)}</select></label><label>输出端口<select aria-label="输出端口" value={connector.sourcePort} onChange={e => setConnector({...connector,sourcePort:e.target.value})}><option value="">选择输出…</option>{sourceSpec?.outputs.map(p => <option key={p.name} value={`data:${p.name}`}>{p.name} · {typeLabels[p.type]}</option>)}{sourceSpec?.exits.map(e => <option key={e} value={`control:${e}`}>{exits[e] ?? e} · 执行</option>)}</select></label><label>目标卡片<select aria-label="目标卡片" value={connector.target} onChange={e => setConnector({...connector,target:e.target.value,targetPort:''})}><option value="">选择目标…</option>{graph.nodes.map(n => <option key={n.id} value={n.id}>{definition(n,doc,catalog,graph).label}{n.label ? `（${n.label}）` : ''} · {n.id.slice(0,7)}</option>)}</select></label><label>输入端口<select aria-label="输入端口" value={connector.targetPort} onChange={e => setConnector({...connector,targetPort:e.target.value})}><option value="">选择输入…</option>{targetSpec?.inputs.map(p => <option key={p.name} value={`data:${p.name}`}>{p.name} · {typeLabels[p.type]}</option>)}{targetSpec && !targetSpec.pure && targetSpec.type !== 'entry' && !targetSpec.entry && <option value="control:in">执行入口</option>}</select></label><button className="button secondary" onClick={() => connect({source:connector.source,target:connector.target,sourceHandle:connector.sourcePort,targetHandle:connector.targetPort})}>连接</button></details>
+        <details className="program-connect"><summary>按钮式连接</summary><label>来源卡片<FieldSelect aria-label="来源卡片" value={connector.source} onChange={e => setConnector({...connector,source:e.target.value,sourcePort:''})}><option value="">选择来源…</option>{graph.nodes.map(n => <option key={n.id} value={n.id}>{definition(n,doc,catalog,graph).label}{n.label ? `（${n.label}）` : ''} · {n.id.slice(0,7)}</option>)}</FieldSelect></label><label>输出端口<FieldSelect aria-label="输出端口" value={connector.sourcePort} onChange={e => setConnector({...connector,sourcePort:e.target.value})}><option value="">选择输出…</option>{sourceSpec?.outputs.map(p => <option key={p.name} value={`data:${p.name}`}>{p.name} · {typeLabels[p.type]}</option>)}{sourceSpec?.exits.map(e => <option key={e} value={`control:${e}`}>{exits[e] ?? e} · 执行</option>)}</FieldSelect></label><label>目标卡片<FieldSelect aria-label="目标卡片" value={connector.target} onChange={e => setConnector({...connector,target:e.target.value,targetPort:''})}><option value="">选择目标…</option>{graph.nodes.map(n => <option key={n.id} value={n.id}>{definition(n,doc,catalog,graph).label}{n.label ? `（${n.label}）` : ''} · {n.id.slice(0,7)}</option>)}</FieldSelect></label><label>输入端口<FieldSelect aria-label="输入端口" value={connector.targetPort} onChange={e => setConnector({...connector,targetPort:e.target.value})}><option value="">选择输入…</option>{targetSpec?.inputs.map(p => <option key={p.name} value={`data:${p.name}`}>{p.name} · {typeLabels[p.type]}</option>)}{targetSpec && !targetSpec.pure && targetSpec.type !== 'entry' && !targetSpec.entry && <option value="control:in">执行入口</option>}</FieldSelect></label><Button variant="secondary" onClick={() => connect({source:connector.source,target:connector.target,sourceHandle:connector.sourcePort,targetHandle:connector.targetPort})}>连接</Button></details>
       </aside>
       {!guideDismissed && graph.edges.some(e => e.kind === 'control') && graph.nodes.some(n => n.type === 'original_settings') && (
         <div className="program-default-guide">
           <span>原调度业务流程：读取任务 → 过滤启用与到期状态 → 按当前实例优先级排序 → 执行；没有到期任务时等待最近计划。任务结束后立即重新判断。维护检测、登录恢复和运行监护由原执行器处理。</span>
-          <button type="button" className="program-guide-close" title="关闭说明" onClick={() => setGuideDismissed(true)}><X size={13}/></button>
+          <Button variant="ghost" type="button" className="program-guide-close" title="关闭说明" onClick={() => setGuideDismissed(true)}><X size={13}/></Button>
         </div>
       )}
       <aside className={`program-console program-debug-drawer nowheel nopan nodrag ${debugOpen ? 'open' : 'closed'}`} aria-label="调试面板" onWheel={e => e.stopPropagation()}>
         <div className="program-console-tabs">
           <div className="program-console-tab-buttons">
-            <button type="button" className={tab === 'simulate' ? 'active' : ''} onClick={() => setTab('simulate')}>隔离模拟</button>
-            <button type="button" className={tab === 'runtime' ? 'active' : ''} onClick={() => setTab('runtime')}>运行轨迹</button>
+            <Button variant="ghost" type="button" className={tab === 'simulate' ? 'active' : ''} onClick={() => setTab('simulate')}>隔离模拟</Button>
+            <Button variant="ghost" type="button" className={tab === 'runtime' ? 'active' : ''} onClick={() => setTab('runtime')}>运行轨迹</Button>
           </div>
           <div className="program-console-status">
             <span>{status?.status ?? '尚未执行'}{status?.task ? ` · ${status.task}` : ''}{status?.reason ? ` · ${status.reason}` : ''}</span>
           </div>
-          <button type="button" className="program-debug-close" aria-label="关闭调试面板" title="关闭调试面板" onClick={() => setDebugOpen(false)}>
+          <Button variant="ghost" type="button" className="program-debug-close" aria-label="关闭调试面板" title="关闭调试面板" onClick={() => setDebugOpen(false)}>
             <X size={15}/>
-          </button>
+          </Button>
         </div>
         <div className="program-console-body nowheel nopan nodrag" onWheel={e => e.stopPropagation()}>
           {validation && <div className={`program-diagnostics ${validation.valid ? 'valid' : ''}`}>{validation.valid ? '程序校验通过' : validation.diagnostics.map((d,index) => {
@@ -397,12 +469,12 @@ export function Editor() {
             const targetSpec = target ? definition(target, doc, catalog, g ?? graph) : undefined
             const DiagIcon = target ? getCardIcon(target.type, targetSpec?.category) : undefined
             const targetTitle = target ? `${targetSpec?.label ?? target.type}${target.label ? `（${target.label}）` : ''}` : d.node
-            return <button key={index} onClick={() => {setGraphId(d.graph); setSelection(d.node ? [d.node] : [])}}>{DiagIcon && <DiagIcon size={13} style={{color:targetSpec ? categoryColor(targetSpec.category) : undefined, flexShrink:0}} aria-hidden="true"/>}{d.message}{targetTitle ? ` · ${targetTitle}` : ''}</button>
+            return <Button variant="ghost" key={index} onClick={() => {setGraphId(d.graph); setSelection(d.node ? [d.node] : [])}}>{DiagIcon && <DiagIcon size={13} style={{color:targetSpec ? categoryColor(targetSpec.category) : undefined, flexShrink:0}} aria-hidden="true"/>}{d.message}{targetTitle ? ` · ${targetTitle}` : ''}</Button>
           })}</div>}
           {tab === 'simulate' && <>
             <div className="program-sim-actions">
-              <button type="button" className="button secondary" disabled={busy} onClick={() => void simulate(Math.min(simSteps+1,1000))}><StepForward size={14}/>单步</button>
-              <button type="button" className="button primary" disabled={busy} onClick={() => void simulate(100)}><Play size={14}/>模拟运行</button>
+              <Button type="button" variant="secondary" disabled={busy} onClick={() => void simulate(Math.min(simSteps+1,1000))}><StepForward size={14}/>单步</Button>
+              <Button type="button" disabled={busy} onClick={() => void simulate(100)}><Play size={14}/>模拟运行</Button>
             </div>
             <details className="program-sim-params">
               <summary>
@@ -410,11 +482,11 @@ export function Editor() {
                 <small>（时间、资源等参数，点击展开修改）</small>
               </summary>
               <div className="program-sim-params-content">
-                <label>模拟时间<input type="datetime-local" value={simTime} onChange={e => {setSimTime(e.target.value); setSimSteps(0)}}/></label>
+                <label>模拟时间<Input type="datetime-local" value={simTime} onChange={e => {setSimTime(e.target.value); setSimSteps(0)}}/></label>
                 {/* 数字输入框聚焦时滚轮会直接改数值，onWheel 先把输入框失焦，滚动面板才安全 */}
-                {catalog.resources.map(r => <label key={r.name}>{r.name.startsWith('Emotion') ? `舰队 ${r.name.slice(-1)} 心情` : ui(`resource.${r.name}` as UiKey)}<input type="number" placeholder="数据不可用" value={resources[r.name] ?? ''} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setResources({...resources,[r.name]:e.target.value}); setSimSteps(0)}}/></label>)}
-                <label>含体力箱的总行动力<input type="number" value={apTotal} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setApTotal(e.target.value); setSimSteps(0)}}/></label>
-                <label>任务结果序列<input value={outcomes} onChange={e => {setOutcomes(e.target.value); setSimSteps(0)}} placeholder="completed,yielded,failed"/></label>
+                {catalog.resources.map(r => <label key={r.name}>{r.name.startsWith('Emotion') ? `舰队 ${r.name.slice(-1)} 心情` : ui(`resource.${r.name}` as UiKey)}<Input type="number" placeholder="数据不可用" value={resources[r.name] ?? ''} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setResources({...resources,[r.name]:e.target.value}); setSimSteps(0)}}/></label>)}
+                <label>含体力箱的总行动力<Input type="number" value={apTotal} onWheel={e => (e.target as HTMLInputElement).blur()} onChange={e => {setApTotal(e.target.value); setSimSteps(0)}}/></label>
+                <label>任务结果序列<Input value={outcomes} onChange={e => {setOutcomes(e.target.value); setSimSteps(0)}} placeholder="completed,yielded,failed"/></label>
               </div>
             </details>
           </>}
@@ -424,7 +496,7 @@ export function Editor() {
             const sub = line.graph && line.graph !== 'main' ? doc.subgraphs.find(s => s.id === line.graph) : undefined
             const orig = cardDef?.label ?? sub?.name ?? line.type ?? line.node
             const displayLabel = line.label ? `${orig}（${line.label}） · ${line.type}` : `${orig} · ${line.type}`
-            return <div key={index}><span>{index + 1}</span><button onClick={() => {setGraphId(String(line.graph ?? 'main')); setSelection([String(line.node)])}}><TraceIcon size={12} style={{color:categoryColor(cardDef?.category ?? ''), flexShrink:0}} aria-hidden="true"/>{displayLabel}</button><code>{JSON.stringify(line.input ?? line.value ?? line.output ?? line.exit ?? '')}</code></div>
+            return <div key={index}><span>{index + 1}</span><Button variant="ghost" onClick={() => {setGraphId(String(line.graph ?? 'main')); setSelection([String(line.node)])}}><TraceIcon size={12} style={{color:categoryColor(cardDef?.category ?? ''), flexShrink:0}} aria-hidden="true"/>{displayLabel}</Button><code>{JSON.stringify(line.input ?? line.value ?? line.output ?? line.exit ?? '')}</code></div>
           }) : <p className="muted">模拟不会连接设备，也不会修改资源或持久变量。执行后可查看每张卡片的输入、出口和结果。</p>}</div>
         </div>
       </aside>

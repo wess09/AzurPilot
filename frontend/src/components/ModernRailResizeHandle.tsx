@@ -39,11 +39,37 @@ export function ModernRailResizeHandle({
   const storedSide = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
   const side = propSide ?? storedSide
   const [isDragging, setIsDragging] = useState(false)
+  const [renderedWidth, setRenderedWidth] = useState<number | null>(null)
+  const handleRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<{
     pointerId: number
     startX: number
     startWidth: number
   } | null>(null)
+
+  // 响应式布局可能限制保存的宽度；无障碍数值始终反映实际栏宽。
+  useEffect(() => {
+    const railWrap = handleRef.current?.closest('.instance-page-rail-wrap') as HTMLElement | null
+    if (!railWrap) return
+    const measure = () => {
+      const width = Math.round(railWrap.getBoundingClientRect().width)
+      setRenderedWidth(width > 0 ? width : null)
+    }
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    observer?.observe(railWrap)
+    window.addEventListener('resize', measure)
+    return () => {
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
+
+  function currentRailWidth(handle: HTMLElement) {
+    const railWrap = handle.closest('.instance-page-rail-wrap') as HTMLElement | null
+    const measured = railWrap ? Math.round(railWrap.getBoundingClientRect().width) : 0
+    return measured > 0 ? measured : (layout.railWidth ?? RAIL_WIDTH_DEFAULT)
+  }
 
   // 卸载时兜底移除拖拽态类名：拖拽中途组件被卸载的话，pointerup 与 lostpointercapture 都不会再触发。
   useEffect(() => {
@@ -54,11 +80,7 @@ export function ModernRailResizeHandle({
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.button !== 0 || dragRef.current) return
-    const railWrap = event.currentTarget.closest('.instance-page-rail-wrap') as HTMLElement | null
-    const measured = railWrap ? Math.round(railWrap.getBoundingClientRect().width) : 0
-    const currentWidth = measured > 0
-      ? measured
-      : (layout.railWidth ?? RAIL_WIDTH_DEFAULT)
+    const currentWidth = currentRailWidth(event.currentTarget)
 
     dragRef.current = {
       pointerId: event.pointerId,
@@ -103,7 +125,7 @@ export function ModernRailResizeHandle({
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    const current = layout.railWidth ?? RAIL_WIDTH_DEFAULT
+    const current = currentRailWidth(event.currentTarget)
     switch (event.key) {
       case 'ArrowLeft':
         setModernRailWidth(side === 'right' ? current + KEYBOARD_STEP : current - KEYBOARD_STEP)
@@ -131,11 +153,12 @@ export function ModernRailResizeHandle({
 
   return (
     <div
+      ref={handleRef}
       aria-label={HANDLE_LABEL}
       aria-orientation="vertical"
-      aria-valuemax={RAIL_WIDTH_MAX}
-      aria-valuemin={RAIL_WIDTH_MIN}
-      aria-valuenow={layout.railWidth ?? RAIL_WIDTH_DEFAULT}
+      aria-valuemax={Math.max(RAIL_WIDTH_MAX, renderedWidth ?? 0)}
+      aria-valuemin={Math.min(RAIL_WIDTH_MIN, renderedWidth ?? RAIL_WIDTH_MIN)}
+      aria-valuenow={renderedWidth ?? layout.railWidth ?? RAIL_WIDTH_DEFAULT}
       data-side={side}
       className={`modern-rail-resize-handle ${isDragging ? 'is-dragging' : ''}`}
       onDoubleClick={handleDoubleClick}

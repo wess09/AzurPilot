@@ -15,8 +15,10 @@ import { api } from '../api/client'
 import { editor } from '../config/editors'
 import {bulkAction, bulkTargets} from './instanceBulk'
 import { useApp, useConnection } from './context'
-import { useAnnouncement } from './announcement'
-import { ErrorBox, Loading, Modal } from '../components/ui'
+import { usePageRead } from './usePageRead'
+import { useAnnouncementOwner } from './announcement'
+import { ErrorBox, Loading, Modal, PageTitle } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { MaterialInspector } from '../components/MaterialInspector'
 import { ProjectLogo } from '../components/ProjectLogo'
 import { taskLabel } from '../components/taskNavItems'
@@ -75,6 +77,8 @@ function ModernNavigation({instance, onNavigate, announcementUnread, updateAvail
   </nav>
 }
 
+const readImportableInstances = () => api.request('instances.importable', {})
+
 /**
  * 创建实例的弹窗：支持选初始配置或从本机导入 JSON 配置文件。
  *
@@ -85,17 +89,16 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
   const [name, setName] = useState('')
   const [source, setSource] = useState('')
   const [importFile, setImportFile] = useState('')
-  /* 导入候选按需拉取：点「导入配置」时才取，不在 dialog 打开时打接口。 */
-  const [importState, setImportState] = useState<{loading: boolean; items: Array<{name: string; modified: number}>}>({loading: false, items: []})
-  async function pickImport() {
-    setImportState({loading: true, items: importState.items})
-    try {
-      const items = await api.request('instances.importable', {})
-      setImportState({loading: false, items})
-    } catch (error) { setImportState({loading: false, items: []}); setError((error as Error).message) }
+  const [showImports, setShowImports] = useState(startWithImport)
+  const [uploading, setUploading] = useState(false)
+  const connection = useConnection()
+  const imports = usePageRead('instances.importable', showImports && connection === 'ready', readImportableInstances)
+  const importLoading = uploading || imports.busy
+  const importItems = imports.data ?? []
+  function pickImport() {
+    if (showImports) imports.reload()
+    else setShowImports(true)
   }
-  /* 从「配置管理 → 导入配置」进来时，直接把可导入的配置文件列出来。 */
-  useEffect(() => { if (startWithImport) void pickImport() }, [])
 
   /* 上传本机配置文件：读文件文本后上传，浏览器只给内容、给不了服务器路径。 */
   async function uploadImport(event: ChangeEvent<HTMLInputElement>) {
@@ -104,13 +107,14 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
     input.value = ''
     if (!file) return
     const stem = file.name.replace(/\.json$/i, '')
-    setImportState({loading: true, items: importState.items})
+    setUploading(true); setError('')
     try {
       await api.request('instances.importConfig', {name: stem, content: await file.text()})
-      const items = await api.request('instances.importable', {})
-      setImportState({loading: false, items})
+      if (showImports) await imports.reloadAndWait()
+      else setShowImports(true)
       chooseImport(stem)
-    } catch (error) { setImportState({loading: false, items: importState.items}); setError((error as Error).message) }
+    } catch (error) { setError((error as Error).message) }
+    finally { setUploading(false) }
   }
   /* 两处选择互斥：导入来的配置与「初始配置」二选一。 */
   function chooseImport(chosen: string) {
@@ -135,12 +139,12 @@ export function CreateInstance({onClose, startWithImport = false}: {onClose: () 
   }
   return <Modal title={ui('instance.createTitle')} onClose={onClose}><form onSubmit={submit} className="form-stack">
     <p className="muted">{ui('instance.createHint')}</p>
-    <label className="button secondary file-button" htmlFor="instance-import-file">{ui('instance.importPick')}<input id="instance-import-file" type="file" accept="application/json,.json" onChange={uploadImport}/></label>
-    <button type="button" className="button secondary" disabled={importState.loading} onClick={pickImport}>{importState.loading ? ui('instance.importLoading') : ui('instance.importConfig')}</button>
-    {importState.items.length > 0 && <label>{ui('instance.importSelect')}<Select value={importFile} onChange={event => chooseImport(event.target.value)}><option value="">{ui('instance.defaultConfig')}</option>{importState.items.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}</Select><span className="muted">{ui('instance.importHint')}</span></label>}
+    <label className="button secondary file-button" htmlFor="instance-import-file">{ui('instance.importPick')}<input id="instance-import-file" type="file" accept="application/json,.json" onChange={uploadImport} disabled={importLoading}/></label>
+    <button type="button" className="button secondary" disabled={importLoading} onClick={pickImport}>{importLoading ? ui('instance.importLoading') : ui('instance.importConfig')}</button>
+    {importItems.length > 0 && <label>{ui('instance.importSelect')}<Select value={importFile} onChange={event => chooseImport(event.target.value)}><option value="">{ui('instance.defaultConfig')}</option>{importItems.map(item => <option key={item.name} value={item.name}>{item.name}</option>)}</Select><span className="muted">{ui('instance.importHint')}</span></label>}
     <label>{ui('instance.name')}<Input autoFocus required pattern={INSTANCE_NAME_PATTERN} value={name} onChange={event => setName(event.target.value)} placeholder={ui('instance.namePlaceholder')} maxLength={64}/></label>
     <label>{ui('instance.initialConfig')}<Select value={source} onChange={event => {setSource(event.target.value); setImportFile('')}}><option value="">{ui('instance.defaultConfig')}</option>{instances.map(item => <option key={item.name}>{item.name}</option>)}</Select></label>
-    {error && <ErrorBox message={error}/>}
+    {(error || imports.error) && <ErrorBox message={error || imports.error} retry={imports.error ? pickImport : undefined}/>}
     <button className="button primary" disabled={busy}>{busy ? ui('instance.creating') : ui('instance.create')}<ArrowRight size={16}/></button>
   </form></Modal>
 }
@@ -155,7 +159,7 @@ function Login() {
     try { await api.login(password) } catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
   return <div className="login-page"><div className="login-art"><ProjectLogo size={192}/><span>{ui('auth.slogan')}</span></div>
-    <form onSubmit={submit} className="login-card"><ProjectLogo size={48} className="brand-mark" alt="AzurPilot"/><h1>{ui('auth.welcome')}</h1>
+    <form onSubmit={submit} className="login-card"><ProjectLogo size={48} className="brand-mark" alt="AzurPilot"/><PageTitle title={ui('auth.welcome')} placement="content"/>
       <label htmlFor="password">{ui('auth.password')}</label><PasswordInput id="password" autoComplete="current-password" autoFocus required value={password} onChange={event => setPassword(event.target.value)}/>
       {error && <ErrorBox message={error}/>}
       <button className="button primary" disabled={busy}>{busy ? ui('auth.verifying') : ui('auth.enter')}<ArrowRight size={16}/></button>
@@ -169,7 +173,7 @@ function Login() {
  */
 export function App() {
   const connection = useConnection()
-  const {instancesLoaded, instances, schema, t, ui, notify, previewEnabled} = useApp()
+  const {instancesLoaded, instances, schema, bootstrapError, retryBootstrap, t, ui, notify, previewEnabled} = useApp()
   const {instance} = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -178,7 +182,7 @@ export function App() {
   // 刷新时地址栏已经是用户要停留的页面，写进去就不再改。
   const freshOpen = useRef((performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'navigate')
   const update = useUpdater()
-  const announcement = useAnnouncement()
+  const announcement = useAnnouncementOwner()
   usePageMotion()
   useSystemNotifications()
   const current = instances.find(item => item.name === instance)
@@ -242,9 +246,14 @@ export function App() {
     ? currentTask ? currentTaskLabel : location.pathname.endsWith('/resources') ? ui('nav.resources') : location.pathname.endsWith('/statistics') ? ui('nav.statistics') : ui('nav.overview')
     : activeSection)
   if (connection === 'auth') return <Login/>
-  if (setup || (empty && !pluginManager && !globalPlugin)) return <main className="instance-setup">{setup && empty && schema ? <Suspense fallback={<Loading/>}><Outlet/></Suspense> : <Loading/>}</main>
-  const content = !schema || location.pathname === '/' || (instance && (!instancesLoaded || !current))
-    ? <Loading/> : <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>
+  if (setup || (empty && !pluginManager && !globalPlugin)) return <main className="instance-setup">
+    <LoadBoundary ready={setup && empty && !!schema} error={bootstrapError} retry={retryBootstrap}>
+      <Suspense fallback={<Loading/>}><Outlet/></Suspense>
+    </LoadBoundary>
+  </main>
+  const content = <LoadBoundary ready={!!schema && instancesLoaded && location.pathname !== '/' && (!instance || !!current)} error={bootstrapError} retry={retryBootstrap}>
+    <Suspense fallback={<Loading/>}><Outlet context={update} key={instance ?? 'global'}/></Suspense>
+  </LoadBoundary>
   const props = {instance, pageTitle, onCreate: () => setCreating(true), updateAvailable, announcementUnread: announcement.unread}
   const ActiveShell = pluginManager ? ModernShell : Shell
   return <>

@@ -2,6 +2,9 @@
  * @fileoverview 配置实例管理页面，提供实例列表概览、导出、导入与删除。
  */
 
+import {LoadBoundary} from '../components/ui/load-boundary'
+
+
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Download, FileJson, MonitorSmartphone, Play, Plus, Trash2 } from 'lucide-react'
@@ -9,7 +12,7 @@ import { api } from '../api/client'
 import { useApp, useConnection } from '../app/context'
 import { CreateInstance } from '../app/App'
 import { taskLabel } from '../components/taskNavItems'
-import { ActionGroup, Empty, ErrorBox, Loading, StatusBadge } from '../components/ui'
+import { ActionGroup, Empty, ErrorBox, PageTitle, Panel, StatusBadge } from '../components/ui'
 
 /** 把配置写成 json 文件下载。内容即配置本体（含 Alas 段），与导入接口期望的格式一致。 */
 function downloadJson(filename: string, data: unknown) {
@@ -64,13 +67,12 @@ export function ConfigManager() {
 
   return <div className="settings-page">
     <header className="config-head">
-      <h1 className="sr-only">{ui('nav.configs')}</h1>
       {instancesLoaded && <span className="config-head-summary">{ui('config.count', {count: instances.length})}</span>}
-      <ActionGroup>{actions}</ActionGroup>
+      <PageTitle title={ui('nav.configs')} placement="screen-reader" actions={actions}/>
     </header>
     {error && <ErrorBox message={error}/>}
-    {!instancesLoaded ? <Loading/> : instances.length ? <div className="config-grid">
-      {instances.map(item => <section className="panel config-group config-card" key={item.name}>
+    <LoadBoundary ready={instancesLoaded}>{instances.length ? <div className="config-grid">
+      {instances.map(item => <Panel compact className="config-card" key={item.name}>
         <div className="config-card-head">
           <h2 role="heading" aria-level={2}>{item.name}</h2>
           <StatusBadge status={item.status}/>
@@ -88,12 +90,12 @@ export function ConfigManager() {
             ? <button className="button danger" disabled={busy === item.name} onClick={() => void remove(item.name)}><Trash2 size={15}/>{ui('instance.deleteConfirm')}</button>
             : <button className="button danger subtle" onClick={() => setConfirming(item.name)}><Trash2 size={15}/>{ui('instance.delete')}</button>}
         </div>
-      </section>)}
+      </Panel>)}
     </div>
       : <div className="config-empty">
         <Empty icon={<FileJson size={30}/>} title={ui('config.empty')}>{ui('config.emptyHint')}</Empty>
         <ActionGroup className="config-empty-actions">{actions}</ActionGroup>
-      </div>}
+      </div>}</LoadBoundary>
     {creating && <CreateInstance onClose={() => setCreating(null)} startWithImport={creating === 'import'}/>}
   </div>
 }

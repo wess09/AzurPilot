@@ -2,20 +2,22 @@
  * @fileoverview 任务参数设置页面。
  */
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { CSSProperties } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ListTree, PanelLeft, PanelRight, Play, RotateCcw, Search, Settings2, Terminal, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { Config } from '../api/types'
 import { useApp, useConnection } from '../app/context'
+import { usePageRead } from '../app/usePageRead'
 import { htmlToPlainText } from '../app/htmlText'
 import { getLayout, subscribeLayout } from '../app/layout'
 import { readRailVisible, subscribeRailVisible } from '../app/railPrefs'
 import { readSchedulerPosition, subscribeSchedulerPosition } from '../app/schedulerPositionPrefs'
 import { smoothScrollToElement } from '../app/scroll'
 import { clearSearchTarget, peekSearchTarget, subscribeSearchTarget } from '../app/searchTarget'
-import { Empty, ErrorBox, Loading, Modal } from '../components/ui'
+import { Empty, ErrorBox, Modal, PageTitle, Panel, PanelHeading } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { Input } from '../components/ui/input'
 import { LogPanel } from '../components/LogPanel'
 import { MeowfficerScorePanel } from '../components/MeowfficerScorePanel'
@@ -31,11 +33,7 @@ import { AccountPanel } from '../components/AccountPanel'
 import { isFieldVisible } from './configVisibility'
 import { FleetInfoPage } from './FleetInfoPage'
 
-/**
- * 视口命中折叠区间时返回 true：目录 <1320px、调度器栏 <1090px 自动收起
- * （阈值与 settings-modern.css 的折叠栅格同步；e2e 视口 1440/1600 都在阈值之上）。
- * matchMedia 不可用的环境（单测 jsdom）一律 false，面板照常渲染。
- */
+/** Match viewport rules, including the mobile stacked layout. */
 function useFoldFlag(query: string): boolean {
   const subscribe = useCallback((listener: () => void) => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {}
@@ -58,25 +56,71 @@ export function TaskConfig() {
   const schedulerPosition = useSyncExternalStore(subscribeSchedulerPosition, readSchedulerPosition, readSchedulerPosition)
   // 调度器列的宽度与总览页共用同一个持久化值，拖动任一处另一边跟着变。
   const layout = useSyncExternalStore(subscribeLayout, getLayout, getLayout)
-  // 窄屏自动折叠：窄视口下固定宽的目录列与调度器列会把参数卡挤到读不了，
-  // 分两档收起（目录先收、调度器后收），收起后从边缘浮标唤出抽屉。
-  const directoryFolded = useFoldFlag('(min-width: 951px) and (max-width: 1319px)')
-  const railFolded = useFoldFlag('(min-width: 951px) and (max-width: 1089px)')
+  // Measure the grid itself: saved or dragged sidebar widths change the space
+  // available without changing the viewport. Thresholds match the old desktop
+  // breakpoints after subtracting the default sidebar and main padding.
+  const [gridNode, setGridNode] = useState<HTMLDivElement | null>(null)
+  const [gridWidth, setGridWidth] = useState<number | null>(null)
+  useEffect(() => {
+    if (!gridNode || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => { if (entry) setGridWidth(entry.contentRect.width) })
+    observer.observe(gridNode)
+    return () => observer.disconnect()
+  }, [gridNode])
+  const desktop = useFoldFlag('(min-width: 951px)')
+  const directoryViewportFolded = useFoldFlag('(min-width: 951px) and (max-width: 1319px)')
+  const railViewportFolded = useFoldFlag('(min-width: 951px) and (max-width: 1089px)')
+  const directoryFolded = directoryViewportFolded || (desktop && gridWidth !== null && gridWidth < 1024)
+  const railFolded = railViewportFolded || (desktop && gridWidth !== null && gridWidth < 794)
   // 抽屉一次只开一个；窗口跨回宽档或用户手动隐藏调度器栏时自动收回。
   const [popout, setPopout] = useState<'directory' | 'rail' | null>(null)
+  const directoryRef = useRef<HTMLElement>(null)
+  const railRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef<HTMLButtonElement | null>(null)
   useEffect(() => {
     if (popout === 'directory' && !directoryFolded) setPopout(null)
     if (popout === 'rail' && (!railFolded || railVisibility !== 'shown')) setPopout(null)
   }, [popout, directoryFolded, railFolded, railVisibility])
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!popout) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setPopout(null) }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    const drawer = popout === 'directory' ? directoryRef.current : railRef.current
+    if (!drawer) return
+    const opener = openerRef.current
+    const focusable = () => Array.from(drawer.querySelectorAll<HTMLElement>(
+      'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+    )).filter(element => element.getClientRects().length > 0 && element.tabIndex >= 0)
+    // The scheduler can open a portalled confirmation dialog or context menu.
+    // Let that surface manage focus and Escape until it closes.
+    const hasPortalledSurface = () => Array.from(document.querySelectorAll('[role="dialog"][data-state="open"], .context-menu[role="menu"]'))
+      .some(element => !drawer.contains(element))
+    const focusFirst = () => (focusable()[0] ?? drawer).focus()
+    focusFirst()
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || hasPortalledSurface() || (event.target instanceof Element && !drawer.contains(event.target) && event.target.closest('[role="dialog"], [role="menu"]'))) return
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        setPopout(null)
+      } else if (event.key === 'Tab') {
+        const items = focusable()
+        const index = items.indexOf(document.activeElement as HTMLElement)
+        if (!items.length || index < 0 || (event.shiftKey && index === 0) || (!event.shiftKey && index === items.length - 1)) {
+          event.preventDefault()
+          ;((event.shiftKey ? items[items.length - 1] : items[0]) ?? drawer).focus()
+        }
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (opener?.isConnected && opener.getClientRects().length) opener.focus()
+    }
   }, [popout])
   // 右列现在同时承载目录与调度器，进页面就要拉一份总览数据。
   const [railData, setRailData] = useInstanceOverview(instance, true)
-  const [config, setConfig] = useState<Config>()
+  // Task navigation revalidates the instance snapshot through usePageRead's loader lifecycle.
+  const loadConfig = useCallback(() => api.request('config.get', {instance}), [instance, task])
+  const {data: config, error: configError, reload, setData: setConfig} = usePageRead(instance, connection === 'ready' && task !== 'FleetInfo', loadConfig)
   const [search, setSearch] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -86,53 +130,22 @@ export function TaskConfig() {
   const {edits, storageError} = useSyncExternalStore(queue.subscribe, queue.getSnapshot, queue.getSnapshot)
   const startupQueue = editor(`startup:${instance}`)
   const startupEdits = useSyncExternalStore(startupQueue.subscribe, startupQueue.getSnapshot, startupQueue.getSnapshot)
-  const [startupEnabled, setStartupEnabled] = useState<boolean>()
-  const [startupRemember, setStartupRemember] = useState<boolean>()
-  const reload = useCallback(async () => {
-    try {
-      setConfig(await api.request('config.get', {instance}))
-      setError('')
-    } catch (error) {
-      setError((error as Error).message)
-    }
-  }, [instance, queue])
+  const loadStartup = useCallback(() => api.request('startup.get', {instance}), [instance])
+  const {data: startup, error: startupError, reload: reloadStartup, setData: setStartup} = usePageRead(instance, connection === 'ready' && task === 'Alas', loadStartup)
+  const {enabled: startupEnabled, remember: startupRemember} = startup ?? {}
 
-  // 字段保存成功后用服务端回传的整份配置替换本地副本。
+  // Publish the save response through the read controller to invalidate older reads.
   useEffect(() => {
     queue.onSaved = data => setConfig(data as Config)
-    return () => { queue.onSaved = undefined }
-  }, [queue])
-
-  // 启动开关保存成功后用服务端回传的状态替换本地值，队列丢弃已保存条目后开关不回弹。
+    return () => {queue.onSaved = undefined}
+  }, [queue, setConfig])
   useEffect(() => {
-    startupQueue.onSaved = data => {
-      const value = data as {enabled: boolean; remember: boolean}
-      setStartupEnabled(value.enabled)
-      setStartupRemember(value.remember)
-    }
-    return () => { startupQueue.onSaved = undefined }
-  }, [startupQueue])
-
-  useEffect(() => {
-    if (connection !== 'ready' || task === 'FleetInfo') return
-    let active = true
-    void api.request('config.get', {instance}).then(value => {
-      if (active) { setConfig(value); setError('') }
-    }).catch(error => { if (active) setError(error.message) })
-    return () => { active = false }
-  }, [connection, instance, task, queue])
-  // 开关状态取自部署层的运行列表，不在任务配置里。
-  useEffect(() => {
-    if (connection !== 'ready' || task !== 'Alas') return
-    let active = true
-    void api.request('startup.get', {instance}).then(value => {
-      if (active) { setStartupEnabled(value.enabled); setStartupRemember(value.remember) }
-    }).catch(error => { if (active) setError(error.message) })
-    return () => { active = false }
-  }, [connection, instance, task, startupQueue])
+    startupQueue.onSaved = data => setStartup(data as NonNullable<typeof startup>)
+    return () => {startupQueue.onSaved = undefined}
+  }, [startupQueue, setStartup])
 
   async function run() {
-    setBusy(true)
+    setBusy(true); setError('')
     try {
       await queue.settled()
       await api.request('tasks.run', {instance, task})
@@ -203,7 +216,7 @@ export function TaskConfig() {
   }, [config, task])
 
   if (task === 'FleetInfo') return <FleetInfoPage key={instance}/>
-  if (!config) return error ? <ErrorBox message={error} retry={reload} /> : <Loading />
+  if (!config) return <LoadBoundary ready={false} error={configError} retry={reload}/>
 
   const modal = confirmRun && (
     <Modal title={ui('task.runTitle', {task: t(`Task.${task}.name`)})} onClose={() => setConfirmRun(false)}>
@@ -215,13 +228,8 @@ export function TaskConfig() {
   )
 
   const groupCards = <>{visibleGroups.map(({group, visible}) => (
-    <section className="panel config-group" key={group} id={`group-${group}`}>
-      <div className="panel-heading">
-        <div>
-          <span className="group-indicator" />
-          <h2 data-text={t(`${group}._info.name`)}>{t(`${group}._info.name`)}</h2>
-        </div>
-      </div>
+    <Panel compact key={group} id={'group-' + group}>
+      <PanelHeading title={t(group + '._info.name')} icon={<span className="group-indicator"/>}/>
       {visible.map(([arg, definition]) => {
         const path = `${task}.${group}.${arg}`
         const field = {...definition, option: config.options?.[path] ?? definition.option}
@@ -294,7 +302,7 @@ export function TaskConfig() {
           </div>
         )
       })}
-    </section>
+    </Panel>
   ))}
   {search && !visibleGroups.length && <Empty icon={<Search size={26} />} title={ui('task.noConfigFound')}>{ui('task.tryOtherKeyword')}</Empty>}
   </>
@@ -302,13 +310,8 @@ export function TaskConfig() {
   const hasGroups = task !== 'FleetInfo' && Boolean(groups) && visibleGroups.length > 0
   // 只有紧凑主题把搜索框并进左列（跳转栏下方），其余主题保持标题下方的原样。
   // 启动开关挂在系统设置（Alas）任务页顶部；搜索时只显示匹配项。
-  const startupPanel = task === 'Alas' && !search && <section className="panel config-group">
-    <div className="panel-heading">
-      <div>
-        <span className="group-indicator"/>
-        <h2>{ui('instance.startup')}</h2>
-      </div>
-    </div>
+  const startupPanel = task === 'Alas' && !search && <Panel compact>
+    <PanelHeading title={ui('instance.startup')} icon={<span className="group-indicator"/>}/>
     <div className="field-row">
       <div className="field-label">
         <span className="field-name">{ui('instance.autoRun')}</span>
@@ -329,12 +332,12 @@ export function TaskConfig() {
         <EditStatus id="instance-remember" edit={startupEdits.edits.remember}/>
       </div>
     </div>
-  </section>
+  </Panel>
 
   // 任务级说明（Task.<task>.help）：作为卡片列首卡，与参数卡同宽同层。
   const taskHelp = t(`Task.${task}.help`)
   const taskHelpBlock = taskHelp && taskHelp !== 'help' && !taskHelp.startsWith('Task.')
-    ? <section className="panel task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></section>
+    ? <Panel className="task-help-panel"><p className="task-help">{htmlToPlainText(taskHelp)}</p></Panel>
     : null
 
   const groupCardsBlock = <div className="config-groups">{taskHelpBlock}{startupPanel}{task === 'Alas' && !search && <AccountPanel key={instance} instance={instance}/>} {groupCards}</div>
@@ -357,7 +360,7 @@ export function TaskConfig() {
   // 目录与调度器是两列，不是一栏里的两块：目录常驻设置区右侧，调度器独占一列。
   // 调度器列就是总览页那一个 ModernRail，不换外壳、不套 panel；
   // 停靠边与显隐都来自界面设置（schedulerPositionPrefs / railPrefs）。
-  const directory = <aside className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
+  const directory = <aside ref={directoryRef} id="task-config-directory" role={popout === 'directory' ? 'dialog' : undefined} aria-modal={popout === 'directory' || undefined} tabIndex={popout === 'directory' ? -1 : undefined} className="task-config-directory task-rail-directory instance-page-rail" aria-label={ui('task.groupNav')} onContextMenu={event => event.preventDefault()}>
     <div className="rail-section-heading">
       <div><ListTree size={15}/><span>{ui('task.groupNav')}</span></div>
       {popout === 'directory' && <button type="button" className="icon-button rail-pop-close" aria-label={ui('nav.close')} onClick={() => setPopout(null)}><X size={15}/></button>}
@@ -375,7 +378,9 @@ export function TaskConfig() {
     </div>
 
   const head = <>
-    {error && <ErrorBox message={error} retry={reload} />}
+    {configError && <ErrorBox message={configError} retry={reload}/>}
+    {task === 'Alas' && startupError && <ErrorBox message={startupError} retry={reloadStartup}/>}
+    {error && <ErrorBox message={error}/>}
     {storageError && <ErrorBox message={storageError} />}
     {configToolbar}
   </>
@@ -388,30 +393,30 @@ export function TaskConfig() {
 
   const toolPanel = task === 'OpsiSimulator'
     ? <OpsiSimulatorPanel key={instance} instance={instance} beforeStart={() => queue.settled()}/>
-    : tool && <section className="panel tool-log-panel" aria-label={ui('monitor.logs')}>
-    <div className="panel-heading">
-      <div><Terminal size={18}/><h2>{ui('monitor.logs')}</h2></div>
+    : tool && <Panel className="tool-log-panel" aria-label={ui('monitor.logs')}>
+    <PanelHeading title={ui('monitor.logs')} icon={<Terminal size={18}/>} actions={
       <button className="button primary" onClick={() => setConfirmRun(true)} disabled={busy || connection !== 'ready'}>
         <Play size={16}/>{ui('task.runTool')}
       </button>
-    </div>
+    }/>
     <LogPanel />
-  </section>
+  </Panel>
 
   // 现代版式的任务详细设置：参数卡在中列，目录与调度器各占一列，页名由顶栏居中显示。
   // 调度器列的宽度沿用总览页那套 `--modern-rail-width`，边上挂同一个拖拽把手。
   return <>
     <div
-      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${popout ? ` pop-${popout}` : ''}`}
+      ref={setGridNode}
+      className={`task-config-page task-config-modern${schedulerPosition === 'left' ? ' rail-left' : ''}${railVisibility === 'hidden' ? ' rail-hidden' : ''}${directoryFolded ? ' directory-folded' : ''}${railFolded ? ' rail-folded' : ''}${popout ? ` pop-${popout}` : ''}`}
       style={layout.railWidth ? ({'--modern-rail-width': `${layout.railWidth}px`} as CSSProperties) : undefined}
     >
-      <h1 className="modern-sr-title">{t(`Task.${task}.name`)}</h1>
+      <PageTitle title={t(`Task.${task}.name`)} placement="screen-reader"/>
       <div className="task-config-settings">
         {/* 换任务时重挂内容列，触发该任务的卡片入场。 */}
         <div className="task-config-settings-inner" key={task}>{head}{groupsSection}{scorePanel}{toolPanel}</div>
       </div>
       {directory}
-      <div className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
+      <div ref={railRef} id="task-config-rail" role={popout === 'rail' ? 'dialog' : undefined} aria-modal={popout === 'rail' || undefined} tabIndex={popout === 'rail' ? -1 : undefined} className="task-config-rail-slot" aria-label={ui('scheduler.rail')}>
         <div className="instance-page-rail-wrap">
           {rail}
           <ModernRailResizeHandle side={schedulerPosition}/>
@@ -419,8 +424,8 @@ export function TaskConfig() {
         </div>
       </div>
       {/* 窄屏折叠后的边缘浮标：唤出对应侧列的抽屉；手动隐藏调度器栏（界面设置）时不给浮标 */}
-      {directoryFolded && <button type="button" className="rail-fold-chip rail-fold-chip-directory" aria-label={ui('task.groupNav')} title={ui('task.groupNav')} aria-expanded={popout === 'directory'} onClick={() => setPopout(current => current === 'directory' ? null : 'directory')}><ListTree size={16}/></button>}
-      {railFolded && railVisibility === 'shown' && <button type="button" className={`rail-fold-chip rail-fold-chip-rail${schedulerPosition === 'left' ? ' chip-left' : ' chip-right'}`} aria-label={ui('scheduler.rail')} title={ui('scheduler.rail')} aria-expanded={popout === 'rail'} onClick={() => setPopout(current => current === 'rail' ? null : 'rail')}>{schedulerPosition === 'left' ? <PanelLeft size={16}/> : <PanelRight size={16}/>}</button>}
+      {directoryFolded && <button type="button" className="rail-fold-chip rail-fold-chip-directory" aria-label={ui('task.groupNav')} title={ui('task.groupNav')} aria-haspopup="dialog" aria-controls="task-config-directory" aria-expanded={popout === 'directory'} onClick={event => {openerRef.current = event.currentTarget; setPopout(current => current === 'directory' ? null : 'directory')}}><ListTree size={16}/></button>}
+      {railFolded && railVisibility === 'shown' && <button type="button" className={`rail-fold-chip rail-fold-chip-rail${schedulerPosition === 'left' ? ' chip-left' : ' chip-right'}`} aria-label={ui('scheduler.rail')} title={ui('scheduler.rail')} aria-haspopup="dialog" aria-controls="task-config-rail" aria-expanded={popout === 'rail'} onClick={event => {openerRef.current = event.currentTarget; setPopout(current => current === 'rail' ? null : 'rail')}}>{schedulerPosition === 'left' ? <PanelLeft size={16}/> : <PanelRight size={16}/>}</button>}
       {popout && <div className="task-config-pop-backdrop" onClick={() => setPopout(null)}/>}
     </div>
     {modal}

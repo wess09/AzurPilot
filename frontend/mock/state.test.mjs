@@ -89,6 +89,20 @@ describe('前端模拟服务', () => {
     expect(() => dispatch('config.patch', {...params, revision: saved.revision, changes: [{path: 'Alas.Emulator.Serial', value: '不应部分保存'}, {path: 'Main.Scheduler.Enable', value: 'false'}]})).toThrow()
     expect(dispatch('config.get', {instance: 'demo-main'})).toEqual(saved)
   })
+  it('compares expected values atomically while preserving unrelated updates', () => {
+    const {dispatch} = createMockState()
+    const instance = 'demo-main'
+    const initial = dispatch('config.get', {instance})
+    const serial = initial.values.Alas.Emulator.Serial
+    dispatch('config.patch', {instance, changes: [{path: 'Main.Scheduler.Enable', value: true}]})
+    const saved = dispatch('config.patch', {instance, changes: [{path: 'Alas.Emulator.Serial', value: 'new', expected: serial}]})
+    expect(saved.values.Main.Scheduler.Enable).toBe(true)
+    expect(() => dispatch('config.patch', {instance, changes: [
+      {path: 'Alas.Emulator.Serial', value: 'lost', expected: 'new'},
+      {path: 'Main.Scheduler.Enable', value: false, expected: null},
+    ]})).toThrow()
+    expect(dispatch('config.get', {instance}).values.Alas.Emulator.Serial).toBe('new')
+  })
   it('空场景支持创建、复制和删除，重启后恢复初始数据', () => {
     const {dispatch} = createMockState({empty: true})
     expect(dispatch('instances.list')).toEqual([])

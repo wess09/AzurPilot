@@ -9,12 +9,14 @@ import { resumeEditors } from '../config/editors'
 import { detectLanguage, isLanguage, languages, localeForLanguage, translateUi, type Language, type UiTranslator } from '../i18n'
 import { applyTheme, getThemePreference, subscribeTheme, type Theme, type Material } from './theme'
 import { palettes, type CustomPalette, type ResolvedMode } from './palettes'
+import { usePageRead } from './usePageRead'
 
 export { languages }
 
 /** AppProvider 对外提供的上下文值；组件一律通过 useApp() 读取。 */
 export interface AppContextValue {
   instancesLoaded: boolean; instances: Instance[]; schema?: Schema; refresh: () => Promise<void>; t: (key: string) => string; ui: UiTranslator
+  bootstrapError?: string; retryBootstrap?: () => void
   notify: (message: string, error?: boolean) => void
   previewEnabled: boolean; setPreviewEnabled: (enabled: boolean) => void
   theme: Theme; setTheme: (theme: Theme) => void
@@ -29,6 +31,8 @@ export const AppContext = createContext<AppContextValue | null>(null)
 export const useConnection = () => useSyncExternalStore(api.subscribe, api.getSnapshot, api.getSnapshot)
 /** 读取全局上下文；必须在 AppProvider 之内使用，Provider 外拿到 null 时这里的断言即失效。 */
 export const useApp = () => useContext(AppContext)!
+const EMPTY_INSTANCES: Instance[] = []
+const readInstances = () => api.request('instances.list', {})
 
 function initialLanguage(): Language {
   try {
@@ -44,12 +48,17 @@ function initialLanguage(): Language {
  */
 export function AppProvider({children}: {children: ReactNode}) {
   const connection = useConnection()
-  const [instances, setInstances] = useState<Instance[]>([])
-  const [instancesLoaded, setInstancesLoaded] = useState(false)
-  const [schema, setSchema] = useState<Schema>()
   const [previewEnabled, setPreviewEnabled] = useState(false)
   const {theme, resolvedMode, customPalettes, material} = useSyncExternalStore(subscribeTheme, getThemePreference, getThemePreference)
   const [language, setLanguage] = useState<Language>(initialLanguage)
+  const instancesRead = usePageRead('instances', connection === 'ready', readInstances)
+  const readSchema = useCallback(() => api.request('schema.get', {language}), [language])
+  // Keep the current schema available during a language change so editors stay mounted.
+  const schemaRead = usePageRead('schema', connection === 'ready', readSchema)
+  const {data: instances = EMPTY_INSTANCES, ready: instancesLoaded, setData: setInstances, reload: reloadInstances} = instancesRead
+  const {data: schema, reload: reloadSchema} = schemaRead
+  const bootstrapError = (!instancesLoaded && instancesRead.error) || (!schema && schemaRead.error) || ''
+  const retryBootstrap = useCallback(() => {reloadInstances(); reloadSchema()}, [reloadInstances, reloadSchema])
   const [toast, setToast] = useState<{message: string; error: boolean}>()
   const setTheme = useCallback((theme: Theme) => applyTheme({...getThemePreference(), theme}), [])
   const setMaterial = useCallback((material: Material) => applyTheme({...getThemePreference(), material}), [])
@@ -74,31 +83,17 @@ export function AppProvider({children}: {children: ReactNode}) {
   useEffect(() => { api.connect(); return () => api.disconnect() }, [])
   useEffect(() => { if (connection === 'ready') resumeEditors() }, [connection])
   const notify = useCallback((message: string, error = false) => setToast({message, error}), [])
-  const refresh = useCallback(async () => setInstances(await api.request('instances.list', {})), [])
+  const refresh = instancesRead.reloadAndWait
   useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    void api.request('instances.list', {}).then(instances => {
-      if (active) {setInstances(instances); setInstancesLoaded(true)}
-    }).catch(error => notify(error.message, true))
-    return () => { active = false }
-  }, [connection, notify])
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    void api.request('schema.get', {language}).then(schema => {
-      if (active) {
-        setSchema(schema)
-      }
-    }).catch(error => {if (active) notify(error.message, true)})
-    return () => {active = false}
-  }, [connection, language, notify])
+    const refreshError = (instancesLoaded && instancesRead.error) || (schema && schemaRead.error)
+    if (refreshError) notify(refreshError, true)
+  }, [instancesLoaded, instancesRead.error, schema, schemaRead.error, notify])
   useEffect(() => api.onEvent(event => {
     if (event.topic !== 'instances') return
     const next = event.data as Instance[]
     // 后端每 2s 推一次快照；内容没变就留住旧引用，避免整棵消费树跟着重渲染。
     setInstances(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next)
-  }), [])
+  }), [setInstances])
   useEffect(() => {
     if (!toast) return
     const timer = setTimeout(() => setToast(undefined), 6000)
@@ -112,8 +107,8 @@ export function AppProvider({children}: {children: ReactNode}) {
   }, [schema])
   const ui = useCallback<UiTranslator>((key, params) => translateUi(language, key, params), [language])
   // value 固定身份：provider 因 toast、连接状态等无关状态重渲染时，消费点不跟着重渲染。
-  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
-    [instancesLoaded, instances, schema, refresh, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
+  const value = useMemo(() => ({instancesLoaded, instances, schema, refresh, bootstrapError, retryBootstrap, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage}),
+    [instancesLoaded, instances, schema, refresh, bootstrapError, retryBootstrap, t, ui, notify, previewEnabled, setPreviewEnabled, theme, setTheme, material, setMaterial, resolvedMode, customPalettes, saveCustomPalette, deleteCustomPalette, language, setLanguage])
   return <AppContext.Provider value={value}>
     {children}
     {toast && <div role={toast.error ? 'alert' : 'status'} className={`toast ${toast.error ? 'error' : ''}`} onClick={() => setToast(undefined)}>{toast.message}</div>}

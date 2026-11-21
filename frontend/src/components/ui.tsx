@@ -2,7 +2,7 @@
  * @fileoverview 通用 UI 基础原子组件（按钮、弹窗、加载状态、错误框等）。
  */
 
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { AlertCircle, LoaderCircle } from 'lucide-react'
 import type { Status } from '../api/types'
 import { useApp } from '../app/context'
@@ -11,6 +11,8 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Empty as EmptyState, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from './ui/empty'
+
+export { Panel, PanelBody, PanelHeading } from './ui/page'
 
 /*
  * 样式索引（混合分层 L2：本文件类名几乎全为 Tailwind 工具类与 shadcn 组件，唯一全局类是 page-title-heading）。
@@ -42,10 +44,10 @@ export function Empty({icon, title, children}: {icon?: ReactNode; title: string;
 }
 
 /** 区域级加载占位：旋转图标 + 「加载中」文案，带 role=status 供读屏识别。 */
-export function Loading() {
+export function Loading({compact = false, message, className = ''}: {compact?: boolean; message?: string; className?: string} = {}) {
   const {ui} = useApp()
-  return <div data-slot="loading" role="status" className="flex min-h-[230px] items-center justify-center gap-2.5 text-muted-foreground">
-    <LoaderCircle className="animate-spin" size={22}/>{ui('common.loading')}
+  return <div data-slot="loading" role="status" className={"flex items-center justify-center gap-2.5 text-muted-foreground " + (compact ? "min-h-8" : "min-h-[230px]") + " " + className}>
+    <LoaderCircle className="animate-spin" size={compact ? 16 : 22} aria-hidden="true"/>{message ?? ui('common.loading')}
   </div>
 }
 
@@ -63,8 +65,17 @@ export function ErrorBox({message, retry}: {message: string; retry?: () => void}
 
 /** 简易弹窗：挂载即打开，点遮罩或 Esc 触发 onClose，关闭由调用方卸载完成。 */
 export function Modal({title, children, onClose, className = ''}: {title: string; children: ReactNode; onClose: () => void; className?: string}) {
+  // Capture before mounting: an autoFocus input can take focus before Radix's open callback.
+  const opener = useRef<HTMLElement | null>(
+    typeof document !== 'undefined' && document.activeElement instanceof HTMLElement ? document.activeElement : null,
+  )
   return <Dialog open onOpenChange={open => {if (!open) onClose()}}>
-    <DialogContent className={className}>
+    <DialogContent className={className} onCloseAutoFocus={event => {
+      if (opener.current?.isConnected) {
+        event.preventDefault()
+        opener.current.focus({preventScroll: true})
+      }
+    }}>
       <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
       {children}
     </DialogContent>
@@ -77,9 +88,12 @@ export function ActionGroup({children, className = ''}: {children: ReactNode; cl
 }
 
 /** 页头：左侧标题、右侧动作区。 */
-export function PageTitle({title, actions, className = ''}: {title: string; actions?: ReactNode; className?: string}) {
+export function PageTitle({title, actions, className = '', placement = 'auto', id}: {title: string; actions?: ReactNode; className?: string; placement?: 'auto' | 'content' | 'screen-reader'; id?: string}) {
+  const headingClass = placement === 'auto' ? 'page-title-heading' : placement === 'screen-reader' ? 'sr-only' : ''
+  const heading = <h1 id={id} className={headingClass + ' text-3xl font-bold tracking-tight'}>{title}</h1>
+  if (placement !== 'auto' && !actions && !className) return heading
   return <div className={`flex items-center justify-between gap-4.5 ${className}`.trim()}>
-    <h1 aria-label={title} className="page-title-heading text-3xl font-bold tracking-tight">{title}</h1>
+    {heading}
     {actions && <ActionGroup>{actions}</ActionGroup>}
   </div>
 }
