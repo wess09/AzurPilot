@@ -26,6 +26,7 @@ if IS_WINDOWS:
     from module.device.platform.platform_windows import (
         EMULATOR_START_WATCH_TIMEOUTS,
         MUMU12_DEEP_WAIT_TIMEOUT,
+        MUMU12_MAIN_START_TIMEOUT,
         MUMU12_STOP_WAIT_TIMEOUT,
         PlatformWindows,
     )
@@ -167,11 +168,13 @@ class TestMumu12Lifecycle(unittest.TestCase):
         self.platform.emulator_start_watch = Mock(return_value=True)
         self.platform._clean_mumu12_residue = Mock()
         self.platform._mumu12_wait_stopped = Mock(return_value=True)
+        self.platform._mumu12_instances = Mock(return_value={'2': {'info_source': 'rpc'}})
         self.platform.execute = Mock(return_value=subprocess.CompletedProcess([], 0))
         self.help = self.enterContext(patch.object(
             platform_windows, 'run_mumu_manager',
             return_value='SUBCOMMANDS:\n  launch   Launch players.\n  shutdown   Shutdown players.\n',
         ))
+        self.desktop_launch = self.enterContext(patch.object(platform_windows.subprocess, 'run'))
 
     def test_normal_start_uses_targeted_control_and_preserves_shared_launcher(self):
         steps = Mock()
@@ -186,6 +189,45 @@ class TestMumu12Lifecycle(unittest.TestCase):
             call.execute(f'{self.MANAGER} control -v 2 launch'),
         ])
         self.platform._clean_mumu12_residue.assert_not_called()
+        self.desktop_launch.assert_not_called()
+
+    def test_cold_start_waits_for_main_rpc_before_launching_instance(self):
+        local = {'2': {'info_source': 'local'}}
+        rpc = {'2': {'info_source': 'rpc'}}
+        self.platform._mumu12_instances.side_effect = [local, local, rpc]
+        steps = Mock()
+        steps.attach_mock(self.platform._mumu12_instances, 'instances')
+        steps.attach_mock(self.desktop_launch, 'desktop')
+        steps.attach_mock(self.platform.execute, 'execute')
+
+        with patch.object(platform_windows.time, 'sleep'):
+            self.assertTrue(self.platform.emulator_start())
+
+        self.assertEqual([step[0] for step in steps.mock_calls],
+                         ['execute', 'instances', 'desktop', 'instances', 'instances', 'execute'])
+        self.platform.execute.assert_called_with(f'{self.MANAGER} control -v 2 launch')
+        self.assertEqual(self.desktop_launch.call_args.kwargs['env']['AP_MUMU_LAUNCHER_PATH'],
+                         r'F:\Program Files\MuMu\nx_main\mumunxmain.exe')
+
+    def test_cold_start_times_out_when_main_rpc_is_unavailable(self):
+        self.platform._mumu12_instances.return_value = {'2': {'info_source': 'local'}}
+
+        with patch.object(platform_windows, 'MUMU12_MAIN_START_TIMEOUT', 0):
+            self.assertFalse(self.platform.emulator_start())
+
+        self.desktop_launch.assert_called_once()
+        self.platform.execute.assert_called_once_with(
+            f'{self.MANAGER} control -v 2 shutdown', wait=True, timeout=30)
+        self.platform.emulator_start_watch.assert_not_called()
+
+    def test_desktop_launch_failure_keeps_manager_fallback(self):
+        self.platform._mumu12_instances.return_value = {'2': {'info_source': 'local'}}
+        self.desktop_launch.side_effect = OSError('desktop unavailable')
+
+        self.assertTrue(self.platform.emulator_start())
+
+        self.desktop_launch.assert_called_once()
+        self.platform.execute.assert_called_with(f'{self.MANAGER} control -v 2 launch')
 
     def test_old_manager_uses_legacy_commands_and_accepts_already_stopped(self):
         self.help.return_value = 'unknown cmd: control'
@@ -197,6 +239,7 @@ class TestMumu12Lifecycle(unittest.TestCase):
             call(f'{self.MANAGER} api -v 2 shutdown_player', wait=True, timeout=30),
             call(f'{self.MANAGER} api -v 2 launch_player'),
         ])
+        self.desktop_launch.assert_not_called()
 
     def test_stop_failure_does_not_reopen_mumu(self):
         self.platform.execute.return_value = subprocess.CompletedProcess([], 1)
@@ -525,11 +568,13 @@ class TestRestartTimeoutBudget(unittest.TestCase):
         #   _emulator_stop(subprocess timeout=30)
         #   + 深度清场（control -v all shutdown ≤60 + 等进程退出 ≤30）
         #   + 等实例真正关闭
+        #   + CLI 能力与状态查询，以及冷启动桌面 Shell 和主程序等待
         #   + 启动监视（阶梯上限）
         deep_clean_budget = 60 + MUMU12_DEEP_WAIT_TIMEOUT
+        launcher_budget = 4 * 15 + 10 + MUMU12_MAIN_START_TIMEOUT
         platform_budget = (
             30 + deep_clean_budget + MUMU12_STOP_WAIT_TIMEOUT
-            + max(EMULATOR_START_WATCH_TIMEOUTS)
+            + launcher_budget + max(EMULATOR_START_WATCH_TIMEOUTS)
         )
 
         self.assertGreaterEqual(RESTART_EMULATOR_OP_TIMEOUT, platform_budget)

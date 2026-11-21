@@ -46,6 +46,8 @@ EMULATOR_START_WATCH_TIMEOUTS = (60, 90, 120, 180, 300)
 # 启动监视间隔常量集中在 module/base/runtime_params.py（设备域），
 # 可调参数走 WebUI「运行参数」页（RunParams.Device）。
 
+MUMU12_MAIN_START_TIMEOUT = 20
+
 # MuMu12 启动失败后可清理的僵死进程名（小写）。
 # 启动请求可能卡在已有的 MuMuNxMain.exe，重试时可清理后重新拉起。
 MUMU12_RESIDUE_PROCESS_NAMES = (
@@ -368,6 +370,61 @@ class PlatformWindows(PlatformBase, EmulatorManager):
 
         return count
 
+    def _mumu12_prepare_launcher(self, exe: str, index: int) -> bool:
+        """新版 MuMu 冷启动时通过桌面 Shell 拉起主进程，等待控制接口可用。"""
+        if os.path.basename(exe).lower() != 'mumunxmain.exe':
+            return True
+
+        def info_source():
+            entry = (self._mumu12_instances(exe) or {}).get(str(index))
+            return entry.get('info_source') if isinstance(entry, dict) else None
+
+        # info_source=local 表示 MuMuManager 只能读到本地实例数据，尚未连上主进程。
+        if info_source() != 'local':
+            return True
+
+        logger.info('[设备-Windows] 正在后台启动 MuMu 主程序')
+        # 让 Explorer 用桌面快捷方式的工作目录和参数启动，并请求隐藏主窗口。
+        # 实测直接从当前进程启动 CLI 会因主进程初始化失败而返回 -503。
+        script = r'''
+$ErrorActionPreference = 'Stop'
+$shell = New-Object -ComObject Shell.Application
+$desktopHandle = 0
+# SWC_DESKTOP = 8, SWFO_NEEDDISPATCH = 1
+$desktop = $shell.Windows().FindWindowSW(0, 0, 8, [ref]$desktopHandle, 1)
+if (-not $desktop) { throw 'Windows desktop shell is unavailable' }
+$exe = $env:AP_MUMU_LAUNCHER_PATH
+$desktop.Document.Application.ShellExecute($exe, '--from-shortcut', (Split-Path -LiteralPath $exe), 'open', 0)
+'''
+        try:
+            subprocess.run(
+                ['powershell.exe', '-NoProfile', '-NonInteractive', '-STA', '-Command', script],
+                env={**os.environ, 'AP_MUMU_LAUNCHER_PATH': os.path.normpath(exe)},
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                capture_output=True,
+                text=True,
+                errors='replace',
+                timeout=10,
+                check=True,
+            )
+        except (OSError, subprocess.CalledProcessError) as e:
+            detail = str(e) if isinstance(e, OSError) else f'退出码 {e.returncode}'
+            if isinstance(e, subprocess.CalledProcessError) and e.stderr:
+                detail = e.stderr.strip().split('\n', 1)[0] or detail
+            logger.warning(f'[设备-Windows] 桌面 Shell 启动 MuMu 失败，交由 MuMuManager 启动: {detail}')
+            return True
+        except subprocess.TimeoutExpired:
+            # Shell 可能已经提交启动请求，继续用实例信息确认主进程状态。
+            logger.warning('[设备-Windows] 桌面 Shell 启动命令超时，等待 MuMu 控制接口')
+
+        deadline = time.monotonic() + MUMU12_MAIN_START_TIMEOUT
+        while time.monotonic() < deadline:
+            if info_source() == 'rpc':
+                return True
+            time.sleep(1)
+        logger.warning('[设备-Windows] MuMu 主程序未能就绪，跳过本次实例启动')
+        return False
+
     def _mumu12_control(self, instance: EmulatorInstance, action: str) -> bool:
         """通过 MuMuManager 启停指定实例，兼容早期的 api 命令。"""
         index = instance.MuMuPlayer12_id
@@ -386,6 +443,8 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             command = f'"{manager}" control -v {index} {action}'
 
         if action == 'launch':
+            if not legacy and not self._mumu12_prepare_launcher(exe, index):
+                return False
             self.execute(command)
             return True
 
