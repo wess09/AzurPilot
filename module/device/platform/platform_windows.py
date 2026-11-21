@@ -46,10 +46,8 @@ EMULATOR_START_WATCH_TIMEOUTS = (60, 90, 120, 180, 300)
 # 启动监视间隔常量集中在 module/base/runtime_params.py（设备域），
 # 可调参数走 WebUI「运行参数」页（RunParams.Device）。
 
-# MuMu12 启动前需要清理的僵死进程名（小写）。
-# MuMuNxMain.exe 是 nx_main 新版布局的启动器主窗口：它卡在加载态时不清理掉，
-# 后面的 launch_player 只会把启动请求交给这个僵死的启动器，表现为
-# "窗口一直转圈、模拟器起不来"。
+# MuMu12 启动失败后可清理的僵死进程名（小写）。
+# 启动请求可能卡在已有的 MuMuNxMain.exe，重试时可清理后重新拉起。
 MUMU12_RESIDUE_PROCESS_NAMES = (
     'mumuplayer.exe', 'mumunxmain.exe', 'mumumanager.exe',
     'nemuplayer.exe', 'nemuheadless.exe',
@@ -80,12 +78,10 @@ def run_mumu_manager(exe, args, timeout=15):
     Returns:
         str: 命令的标准输出；执行失败返回空字符串。
     """
-    manager = Emulator.single_to_console(exe).replace('\\', '/')
-    command = f'"{manager}" {args}'
+    command = [Emulator.single_to_console(exe), *args.split()]
     try:
         result = subprocess.run(
             command,
-            shell=True,
             timeout=timeout,
             close_fds=True,
             creationflags=subprocess.CREATE_NO_WINDOW,
@@ -309,7 +305,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
 
         if wait:
             # 同步执行，等待命令完成
-            # 用于需要确保命令执行完毕的场景（如MuMu12的shutdown_player）
+            # 用于需要读取命令退出码的场景（如 MuMu12 的 shutdown）
             try:
                 result = subprocess.run(
                     command,
@@ -372,6 +368,33 @@ class PlatformWindows(PlatformBase, EmulatorManager):
 
         return count
 
+    def _mumu12_control(self, instance: EmulatorInstance, action: str) -> bool:
+        """通过 MuMuManager 启停指定实例，兼容早期的 api 命令。"""
+        index = instance.MuMuPlayer12_id
+        if index is None:
+            logger.error(f'[设备-Windows] 无法从名称 {instance.name} 获取 MuMu 实例索引')
+            return False
+
+        exe = instance.emulator.path
+        manager = Emulator.single_to_console(exe)
+        # 检查子命令是否受支持，避免用另一条启停命令重试已提交的请求。
+        help_text = run_mumu_manager(exe, 'control --help')
+        legacy = not re.search(rf'^\s*{action}\s', help_text, re.MULTILINE)
+        if legacy:
+            command = f'"{manager}" api -v {index} {action}_player'
+        else:
+            command = f'"{manager}" control -v {index} {action}'
+
+        if action == 'launch':
+            self.execute(command)
+            return True
+
+        result = self.execute(command, wait=True, timeout=30)
+        if result is None:
+            return False
+        # 旧版 shutdown_player 对已停止的实例返回 -2（player not running）。
+        return result.returncode == 0 or (legacy and result.returncode in (-2, 0xFFFFFFFE))
+
     def _emulator_start(self, instance: EmulatorInstance):
         """
         启动模拟器（不含错误处理）。
@@ -388,13 +411,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             # NemuPlayer.exe -m nemu-12.0-x64-default
             self.execute(f'"{exe}" -m {instance.name}')
         elif instance == Emulator.MuMuPlayer12:
-            # MuMuManager.exe api -v 0 launch_player
-            # 通过 MuMuManager 启动而非 MuMuPlayer.exe/MuMuNxMain.exe
-            # MuMuNxMain.exe 为 GUI 单例，若同时启动两个实例，第二个启动请求会被转发到正在初始化的 MuMuNxMain.exe 并被静默丢弃
-            # 而 MuMuManager 会在后台服务中排队处理请求
-            if instance.MuMuPlayer12_id is None:
-                logger.warning(f'[设备-Windows] 无法从名称 {instance.name} 获取MuMu实例索引')
-            self.execute(f'"{Emulator.single_to_console(exe)}" api -v {instance.MuMuPlayer12_id} launch_player')
+            return self._mumu12_control(instance, 'launch')
         elif instance == Emulator.LDPlayer14 or instance == Emulator.LDPlayer9:
             # ldconsole.exe launch --index 0 --mini
             # 雷电9及以上版本支持 `--mini` 启动为最小化窗口，`--hide` 启动为无前端窗口
@@ -457,16 +474,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
                 rf')'
             )
         elif instance == Emulator.MuMuPlayer12:
-            # MuMuManager.exe api -v 1 shutdown_player
-            # 使用同步执行等待关闭完成，避免异步执行导致的实例查找失败
-            if instance.MuMuPlayer12_id is None:
-                logger.warning(f'[设备-Windows] 无法从名称 {instance.name} 获取MuMu实例索引')
-            logger.info('[设备-Windows] MuMuPlayer12 关闭: 使用同步执行')
-            self.execute(
-                f'"{Emulator.single_to_console(exe)}" api -v {instance.MuMuPlayer12_id} shutdown_player',
-                wait=True,
-                timeout=30
-            )
+            return self._mumu12_control(instance, 'shutdown')
         elif instance == Emulator.LDPlayerFamily:
             # ldconsole.exe quit --index 0
             self.execute(f'"{Emulator.single_to_console(exe)}" quit --index {instance.LDPlayer_id}')
@@ -505,8 +513,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             bool: 是否成功
         """
         try:
-            func(self.emulator_instance)
-            return True
+            return func(self.emulator_instance) is not False
         except OSError as e:
             msg = str(e)
             # OSError: [WinError 740] 请求的操作需要提升。
@@ -710,7 +717,7 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             if time.monotonic() >= deadline:
                 logger.warning(
                     f'[设备-Windows] MuMuPlayer12 实例 {index} 在 '
-                    f'{stop_wait} 秒内仍未关闭，继续启动流程'
+                    f'{stop_wait} 秒内仍未关闭，跳过本次启动'
                 )
                 return False
             time.sleep(poll_interval)
@@ -958,31 +965,26 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             min(max(failures, 0), len(EMULATOR_START_WATCH_TIMEOUTS) - 1)
         ]
 
-        # 检查是否为 MuMuPlayer12，添加实例查找失败的处理逻辑
-        emulator_type = getattr(self.config, 'EmulatorInfo_Emulator', '')
-        is_mumu12 = emulator_type == 'MuMuPlayer12' or (
-            hasattr(self, '_emulator_instance') and
-            self._emulator_instance and
-            self._emulator_instance.type == 'MuMuPlayer12'
-        )
-
-        # 先停止（MuMu12 已使用同步执行确保关闭完成）
-        if not self._emulator_function_wrapper(self._emulator_stop):
-            return False
-
-        # MuMu12: 清场并确认实例真的停下来了再启动
-        if is_mumu12:
-            index = self.emulator_instance.MuMuPlayer12_id
-            exe = self.emulator_instance.emulator.path
+        stopped = self._emulator_function_wrapper(self._emulator_stop)
+        instance = self.__dict__.get('emulator_instance')
+        if instance is not None and instance.type == Emulator.MuMuPlayer12:
+            index = instance.MuMuPlayer12_id
+            exe = instance.emulator.path
+            if index is None:
+                return False
             if deep:
                 # 深度重启：结束 MuMu 全部进程（不检查多开）
                 self._deep_clean_mumu12(exe)
-            else:
-                # 清理僵死的启动器/播放器进程（多开时自动跳过，见方法注释）
+            elif failures > 0:
+                # 恢复失败后才清理僵死进程。正常关闭保留共享启动器，避免反复弹出主界面。
                 self._clean_mumu12_residue(exe, index)
-            # shutdown 是异步的，必须确认实例真的停了再启动，
-            # 否则启动请求会被吞掉（命令报成功、实例起不来）
-            self._mumu12_wait_stopped(exe, index)
+            elif not stopped:
+                return False
+            # shutdown 是异步的，关闭尚未完成时 MuMu 可能丢弃启动请求。
+            if not self._mumu12_wait_stopped(exe, index):
+                return False
+        elif not stopped:
+            return False
 
         # 再启动
         if not self._emulator_function_wrapper(self._emulator_start):
@@ -1010,12 +1012,12 @@ class PlatformWindows(PlatformBase, EmulatorManager):
             if self._emulator_function_wrapper(self._emulator_stop):
                 # 成功
                 return True
-            else:
-                # 停止失败，启动后重试
-                if self._emulator_function_wrapper(self._emulator_start):
-                    continue
-                else:
-                    return False
+            instance = self.__dict__.get('emulator_instance')
+            if instance is not None and instance.type == Emulator.MuMuPlayer12:
+                # MuMuManager 可直接关闭指定实例，无需先拉起模拟器再重试。
+                return False
+            if not self._emulator_function_wrapper(self._emulator_start):
+                return False
 
         logger.error('[设备-Windows] 尝试3次停止模拟器失败，已停止')
         return False

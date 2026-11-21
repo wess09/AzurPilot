@@ -477,7 +477,7 @@ class AzurLaneAutoScript:
             )
             time.sleep(5)
             logger.info('[AzurPilot] 正在启动模拟器...')
-            self._emulator_op_with_timeout(
+            started = self._emulator_op_with_timeout(
                 # consecutive_adb_offline 在函数开头已 +1，减 1 得到"本次之前
                 # 已经连续失败过几次"；平台据此选取启动监视的等待时长，
                 # 连续失败越多等得越久（60 → 90 → 120 → 180 → 300 秒），
@@ -490,6 +490,9 @@ class AzurLaneAutoScript:
                 timeout=RESTART_EMULATOR_OP_TIMEOUT,
                 operation_name='模拟器启动',
             )
+            if started is False:
+                logger.warning('[AzurPilot] 模拟器启动失败，将在后续恢复时重试')
+                return False
             logger.info('[AzurPilot] 模拟器重启完成')
 
             # 清除 device 缓存，下次访问时重新建立连接
