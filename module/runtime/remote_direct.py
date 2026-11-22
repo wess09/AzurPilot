@@ -35,9 +35,9 @@ def public_addresses():
                 continue
             family = 'ipv4' if address.version == 4 else 'ipv6'
             value = str(address)
-            if value not in result[family] and len(result[family]) < 4:
+            if value not in result[family]:
                 result[family].append(value)
-    return result
+    return {family: sorted(addresses)[:4] for family, addresses in result.items()}
 
 
 class DirectAccessServer:
@@ -50,7 +50,7 @@ class DirectAccessServer:
         self.bound_families = set()
 
     def registration(self):
-        """每次心跳重新发现地址，外部端口可与监听端口分别配置。"""
+        """在本机重新发现地址，外部端口可与监听端口分别配置。"""
         from module.runtime.setting import State
         addresses = public_addresses()
         for family in addresses:
