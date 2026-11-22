@@ -148,6 +148,7 @@ class PeerServer:
         self.provider = provider
         self.session = None
         self.upstream = ''
+        self.fallback_requested = False
         self._tasks = set()
         self._channels = {}
         self._signal_tasks = {}
@@ -225,6 +226,8 @@ class PeerServer:
             try:
                 result = await self.provider.request('GET', path)
                 requests = result.get('requests', []) if isinstance(result, dict) else []
+                if isinstance(result, dict):
+                    self.fallback_requested = result.get('fallback_requested') is True
             except asyncio.CancelledError:
                 raise
             except Exception:
