@@ -91,7 +91,14 @@ class StorageStatistics(StorageUI):
                     timeout.reset()
                     layout = previous = None
                 continue
-            rows = detect_rows(image)
+            try:
+                rows = detect_rows(image)
+            except StorageRecognitionError as error:
+                # 页面切换动画和点击反馈会短暂破坏方框轮廓；在统一超时内等待
+                # 下一帧重新推导网格，不能把首帧未稳定的画面当成永久布局故障。
+                last_error = str(error)
+                layout = previous = None
+                continue
             current_layout = (tuple(row[0].area[1] for row in rows), tuple(pixels))
             if current_layout != layout:
                 if previous is not None:
@@ -127,8 +134,12 @@ class StorageStatistics(StorageUI):
                 action.reset()
                 timeout.reset()
                 continue
-            if len(rows) != 3 and not at_bottom:
-                raise StorageRecognitionError('三行页面未完整显示')
+            if len(rows) < 2 and not at_bottom:
+                # 拖到列表内部时，下一行可能只露出一部分；两行完整材料已经
+                # 足够按滚动距离确定行号，未完整露出的行留给下一次滚动读取。
+                last_error = '材料页面未露出至少两行完整材料'
+                layout = previous = None
+                continue
             if single_page:
                 row_start = 0
             else:
@@ -137,10 +148,16 @@ class StorageStatistics(StorageUI):
                 offset = (thumb - origin_thumb) * scale
                 estimated = (offset + rows[0][0].area[1] - origin_y) / pitch
                 row_start = int(round(estimated))
-                if abs(estimated - row_start) > .12:
-                    raise StorageRecognitionError('滚动距离与材料行位置不一致')
+                # 游戏列表会按亚像素位置绘制，滑块中心和首行位置并非严格同步。
+                # 相邻候选相差一整行，半行以内的误差仍能唯一确定行号。
+                if abs(estimated - row_start) > .35:
+                    raise StorageRecognitionError(
+                        f'滚动距离与材料行位置不一致：估计第 {estimated:.3f} 行，'
+                        f'最近完整行 {row_start}')
                 if not at_bottom and row_start != len(traversal.rows):
-                    raise StorageRecognitionError('三行定位未到达下一组完整材料')
+                    raise StorageRecognitionError(
+                        f'三行定位未到达下一组完整材料：定位第 {row_start} 行，'
+                        f'已读 {len(traversal.rows)} 行')
             partial = [i for i, row in enumerate(rows) if any(not card.present for card in row)]
             if partial and (partial != [len(rows) - 1] or not at_bottom):
                 raise StorageRecognitionError('只有确认到底后的末行才允许空格')
@@ -194,7 +211,9 @@ class StorageStatistics(StorageUI):
             if server.server not in catalog.servers:
                 raise StorageRecognitionError('当前仓库模板仅经国服截图验证，尚不支持此服务器')
             self.ui_goto_storage()
-            self._storage_enter_material()
+            # ui_goto_storage 的末帧只证明已到仓库页；这里重新截图再判断材料栏，
+            # 避免默认停留在装备页或切换动画时把旧画面误判为材料页。
+            self._storage_enter_material(skip_first_screenshot=False)
             scan = self._scan_pass(catalog)
             skipped = sum(card.error is not None for row in scan.rows for card in row)
             if skipped:
