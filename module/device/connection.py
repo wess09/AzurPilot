@@ -4,6 +4,7 @@
 import ipaddress
 import json
 import logging
+import os
 import re
 import socket
 import subprocess
@@ -515,9 +516,16 @@ class Connection(ConnectionAttr):
         logger.info(f'[设备-连接] 反向服务器监听 {host_port[0]}:{host_port[1]}, '
                     f'客户端可发送数据到 {host_port[2]}:{host_port[3]}')
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(host_port[:2])
-        server.settimeout(5)
-        server.listen(5)
+        try:
+            # Windows 的 SO_REUSEADDR 允许绑定正在使用的地址，保留默认行为。
+            if os.name == 'posix':
+                server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server.bind(host_port[:2])
+            server.settimeout(5)
+            server.listen(5)
+        except Exception:
+            server.close()
+            raise
         return server
 
     @cached_property
@@ -937,11 +945,17 @@ class Connection(ConnectionAttr):
         return True
 
     def release_resource(self):
+        # 任务仍可能持有旧 Device，移除缓存引用不能代替关闭监听。
+        listener = self.__dict__.pop('reverse_server', None)
+        if listener is not None:
+            try:
+                listener.close()
+            except OSError as error:
+                logger.warning(f'[设备-连接] 关闭旧截图监听失败: {error}')
         del_cached_property(self, 'hermit_session')
         del_cached_property(self, 'droidcast_session')
         del_cached_property(self, '_minitouch_builder')
         del_cached_property(self, '_maatouch_builder')
-        del_cached_property(self, 'reverse_server')
 
     def adb_disconnect(self):
         msg = self.adb_client.disconnect(self.serial)

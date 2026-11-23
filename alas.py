@@ -494,6 +494,7 @@ class AzurLaneAutoScript:
 
             # 清除 device 缓存，下次访问时重新建立连接
             if 'device' in self.__dict__:
+                self.device.release_resource()
                 del_cached_property(self, 'device')
             # 新的模拟器会话不沿用重启前的离线或游戏退出计数。
             self.consecutive_adb_offline = 0
@@ -808,6 +809,7 @@ class AzurLaneAutoScript:
             ):
                 logger.info('[AzurPilot] 长时间等待后模拟器启动完成')
                 if 'device' in self.__dict__:
+                    self.device.release_resource()
                     del_cached_property(self, 'device')
                 return True
 
@@ -2442,6 +2444,7 @@ class AzurLaneAutoScript:
                     except Exception as e:
                         logger.warning(f'[AzurPilot] 等待期间关闭模拟器失败，继续等待: {e}')
                     if 'device' in self.__dict__:
+                        self.device.release_resource()
                         del_cached_property(self, 'device')
                     if stopped and can_warmup(True):
                         # 预热路径：等到预热点，提前启动模拟器并登录到主界面，再
