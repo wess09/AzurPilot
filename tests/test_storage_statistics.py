@@ -16,7 +16,8 @@ from module.base.utils import load_image
 from module.exception import StorageStatisticsError
 from module.statistics.storage_snapshot import get_storage_timeline, latest_snapshot, save_snapshot
 from module.storage.statistics_recognition import (StorageCard, StorageCatalog, StorageItemRecognitionError,
-    StorageRecognitionError, StorageTraversal, detect_rows, recognize_rows, same_card, same_row, verify_targets)
+    StorageRecognitionError, StorageTraversal, _is_material_rectangle, detect_rows, recognize_rows, same_card,
+    same_row, verify_targets)
 
 FIXTURES = Path(__file__).parent / 'fixtures/storage_statistics'
 
@@ -39,6 +40,11 @@ class RecognitionTests(unittest.TestCase):
                     with self.subTest(page=page, row=row, column=column):
                         self.assertEqual(card.identifier, case['id'] if case else None)
                         self.assertEqual(card.amount, case['amount'] if case else None)
+
+    def test_material_rectangle_accepts_subpixel_border_and_rejects_outer_glow(self):
+        self.assertTrue(_is_material_rectangle(129, 130))
+        self.assertTrue(_is_material_rectangle(129, 131))
+        self.assertFalse(_is_material_rectangle(138, 139))
 
     def test_items_can_move_between_columns_and_rows(self):
         image = self.images[3].copy()
@@ -491,7 +497,7 @@ class TaskTests(unittest.TestCase):
             self.task.run()
         scanner.assert_called_once()
         self.task.ui_goto_storage.assert_called_once()
-        self.task._storage_enter_material.assert_called_once()
+        self.task._storage_enter_material.assert_called_once_with(skip_first_screenshot=False)
         snapshot = latest_snapshot('test', database=self.path)
         expected = json.loads((FIXTURES / 'expected.json').read_text(encoding='utf-8'))
         self.assertEqual({item['id']: item['amount'] for item in snapshot['items']},
@@ -500,6 +506,60 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(reader.call_count, snapshot['pages'])
         self.assertGreater(len(self.task.device.swipes), 4)
         self.assertEqual(self.task.device.click_record_clear.call_count, snapshot['pages'])
+        self.task.config.task_delay.assert_called_once_with(minute=10080)
+
+    def test_transient_grid_failure_is_retried_after_page_stabilizes(self):
+        real_detect_rows = detect_rows
+        calls = 0
+
+        def detect(image):
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                raise StorageRecognitionError('材料网格列数或间距不完整')
+            return real_detect_rows(image)
+
+        with patch.object(self.module, 'detect_rows', side_effect=detect):
+            self.task.run()
+        snapshot = latest_snapshot('test', database=self.path)
+        expected = json.loads((FIXTURES / 'expected.json').read_text(encoding='utf-8'))
+        self.assertEqual({item['id']: item['amount'] for item in snapshot['items']},
+                         {item['id']: item['amount'] for item in expected})
+        self.assertGreater(calls, 1)
+        self.task.config.task_delay.assert_called_once_with(minute=10080)
+
+    def test_transient_incomplete_rows_are_retried_after_page_stabilizes(self):
+        real_detect_rows = detect_rows
+        calls = 0
+
+        def detect(image):
+            nonlocal calls
+            calls += 1
+            rows = real_detect_rows(image)
+            return rows[:2] if calls == 1 else rows
+
+        with patch.object(self.module, 'detect_rows', side_effect=detect):
+            self.task.run()
+        snapshot = latest_snapshot('test', database=self.path)
+        expected = json.loads((FIXTURES / 'expected.json').read_text(encoding='utf-8'))
+        self.assertEqual({item['id']: item['amount'] for item in snapshot['items']},
+                         {item['id']: item['amount'] for item in expected})
+        self.assertGreater(calls, 1)
+        self.task.config.task_delay.assert_called_once_with(minute=10080)
+
+    def test_two_complete_rows_advance_without_waiting_for_a_partial_third_row(self):
+        real_detect_rows = detect_rows
+
+        def visible_rows(image):
+            return real_detect_rows(image)[:2]
+
+        with patch.object(self.module, 'detect_rows', side_effect=visible_rows):
+            self.task.run()
+        snapshot = latest_snapshot('test', database=self.path)
+        expected = json.loads((FIXTURES / 'expected.json').read_text(encoding='utf-8'))
+        self.assertEqual({item['id']: item['amount'] for item in snapshot['items']},
+                         {item['id']: item['amount'] for item in expected})
+        self.assertEqual(snapshot['pages'], 6)
         self.task.config.task_delay.assert_called_once_with(minute=10080)
 
     def test_fatal_next_page_error_stops_without_partial_commit_or_second_pass(self):
