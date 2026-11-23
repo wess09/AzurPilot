@@ -174,6 +174,6 @@ function ComposedOverview({instance, data, onData, selectedResources, onResource
 
 export default defineTheme({
   id: 'workbench',
-  name: language => ({'zh-CN': '工作台', 'zh-TW': '工作台', 'en-US': 'Workbench', 'ja-JP': 'ワークベンチ'}[language]),
+  name: language => ({'zh-CN': '工作台', 'zh-TW': '工作台', 'en-US': 'Workbench', 'ja-JP': 'ワークベンチ', 'zh-CN-neko': "工作台喵~ (ฅ'ω'ฅ)"}[language]),
   components: {Shell: WorkbenchShell, Navigation: TopNavigation, Overview: WorkbenchOverview},
 })

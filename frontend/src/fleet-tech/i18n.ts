@@ -165,6 +165,6 @@ const dictionary = (index: number) => Object.fromEntries(Object.entries(messages
 export const fleetTechZhCN = dictionary(0), fleetTechZhTW = dictionary(1), fleetTechEnUS = dictionary(2), fleetTechJaJP = dictionary(3)
 /** 按语言取一条舰队科技文案；找不到该 key 时原样返回 key。 */
 export function translateFleetTech(language: Language, key: string) {
-  const index = {'zh-CN': 0, 'zh-TW': 1, 'en-US': 2, 'ja-JP': 3}[language]
+  const index = {'zh-CN': 0, 'zh-TW': 1, 'en-US': 2, 'ja-JP': 3, 'zh-CN-neko': 4}[language]
   return (messages as Record<string, readonly string[]>)[key]?.[index] ?? key
 }

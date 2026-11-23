@@ -20,6 +20,7 @@ import { PairingScanGuide } from './PairingScanGuide'
 import { api } from '../api/client'
 import type { RemoteClient, RemotePairing } from '../api/types'
 import { useApp } from '../app/context'
+import { localeForLanguage } from '../i18n'
 import { pairCopy } from './i18n'
 import './pairing.css'
 
@@ -354,7 +355,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     <Clock size={12} />
                     <span>
                       {new Date(item.created_at * 1000).toLocaleString(
-                        language,
+                        localeForLanguage(language),
                       )}
                     </span>
                   </div>

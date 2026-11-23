@@ -50,4 +50,4 @@ const ja: Text = {
   switch: '切替してゲームを起動', selected: '選択済み', delete: 'スナップショットを削除', empty: '保存したアカウントはありません。ゲームにログインしてから保存してください。', hidden: '情報は非表示です。パスワードを検証すると 60 秒間表示されます。', hide: 'アカウント情報を隠す', mismatch: 'パスワードが一致しません', done: 'アカウント操作が完了しました',
 }
 /** 账号管理面板的四种语言文案表：zh-CN 为基准，en/tw/ja 同键对译，按当前语言整表取用。 */
-export const accountText: Record<Language, Text> = {'zh-CN': zh, 'en-US': en, 'zh-TW': tw, 'ja-JP': ja}
+export const accountText: Record<Language, Text> = {'zh-CN': zh, 'en-US': en, 'zh-TW': tw, 'ja-JP': ja, 'zh-CN-neko': zh}

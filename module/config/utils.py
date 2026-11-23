@@ -29,7 +29,7 @@ from module.base.decorator import run_once
 from module.config.time_source import now as current_time, timestamp as current_timestamp
 from module.logger import logger
 
-LANGUAGES = ['zh-CN', 'en-US', 'ja-JP', 'zh-TW']
+LANGUAGES = ['zh-CN', 'en-US', 'ja-JP', 'zh-TW', 'zh-CN-neko']
 SERVER_TO_LANG = {
     'cn': 'zh-CN',
     'en': 'en-US',
@@ -37,6 +37,7 @@ SERVER_TO_LANG = {
     'tw': 'zh-TW',
 }
 LANG_TO_SERVER = {v: k for k, v in SERVER_TO_LANG.items()}
+LANG_TO_SERVER['zh-CN-neko'] = 'cn'
 SERVER_TO_TIMEZONE = {
     'cn': timedelta(hours=8),
     'en': timedelta(hours=-7),
