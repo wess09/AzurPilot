@@ -53,6 +53,24 @@ def _proc_start_ticks(pid: int) -> int:
     return start_ticks
 
 
+def process_identity(pid: int) -> str | None:
+    """读取 Linux 开机 ID 和进程启动刻度，避免校时改变进程身份。"""
+    boot_id_file = PROCFS_PATH / "sys/kernel/random/boot_id"
+    if os.name != "posix":
+        return None
+    try:
+        boot_id = boot_id_file.read_text(encoding="ascii").strip()
+    except (FileNotFoundError, PermissionError):
+        # 非 Linux 系统或受限的 Android 沙箱继续使用现有身份机制。
+        return None
+    try:
+        return f"{boot_id}:{_proc_start_ticks(pid)}"
+    except FileNotFoundError:
+        raise
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"无法读取进程 PID {pid} 的启动标识: {exc}") from exc
+
+
 def process_created_at(pid: int, process=None) -> float:
     """返回可持久化的进程身份时间戳，兼容 Android 对 /proc/stat 的限制。
 
@@ -112,14 +130,23 @@ def process_matches(record: dict) -> bool | None:
         raise RuntimeError("缺少 psutil，无法验证进程身份") from exc
     try:
         process = psutil.Process(pid)
-        if abs(process_created_at(pid, process) - created_at) >= 0.01:
+        identity = record.get("identity")
+        if identity is not None:
+            if not isinstance(identity, str):
+                raise RuntimeError("进程启动标识无效")
+            actual_identity = process_identity(pid)
+            if actual_identity is None:
+                raise RuntimeError(f"无法读取进程 PID {pid} 的启动标识")
+            if actual_identity != identity:
+                return False
+        elif abs(process_created_at(pid, process) - created_at) >= 0.01:
             return False
         if process.status() in (psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD):
             return None
         return True
-    except psutil.NoSuchProcess:
+    except (psutil.NoSuchProcess, FileNotFoundError):
         return None
-    except psutil.Error as exc:
+    except (psutil.Error, OSError) as exc:
         raise RuntimeError(f"无法验证进程 PID {pid}: {exc}") from exc
 
 
@@ -229,10 +256,12 @@ def _kill_record(record: dict) -> bool:
     try:
         import psutil
 
+        process = psutil.Process(record["pid"])
         if not _may_signal(record):
             return True
-        process = psutil.Process(record["pid"])
-        if abs(process_created_at(record["pid"], process) - record["created_at"]) >= 0.01:
+        if record.get("identity") is None and abs(
+            process_created_at(record["pid"], process) - record["created_at"]
+        ) >= 0.01:
             return False
         # 负身份表示 Android /proc 启动 tick；此时 psutil.kill() 会再次调用
         # 依赖 /proc/stat 的 create_time()，改为在已验证身份后直接发信号。
@@ -347,12 +376,15 @@ def stop_process_tree(process=None, *, record: dict = None, name: str = "进程"
         else:
             if process is not None and process.pid != record["pid"]:
                 return False
+            parent = psutil.Process(record["pid"])
             if not _may_signal(record):
                 if process is not None:
                     return stop_process(process, timeout=0, record=record)
                 return True
-            parent = psutil.Process(record["pid"])
-        if abs(process_created_at(parent.pid, parent) - record["created_at"]) >= 0.01:
+        # 已验证的 Linux 启动标识不受系统校时影响，不再比较墙钟时间。
+        if record.get("identity") is None and abs(
+            process_created_at(parent.pid, parent) - record["created_at"]
+        ) >= 0.01:
             return False
         children = []
         for child in parent.children(recursive=True):
