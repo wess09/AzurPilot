@@ -133,7 +133,7 @@ gui.py 通过 `State` 与子进程/更新器交换信息：
 
 ### worker 登记记录（`worker_registry`）
 
-`cache/webui-workers.json` 中的每条记录形如 `{"pid": int, "created_at": float}`，外层附 `owner_pid`/`owner_created_at`。**创建时间与 PID 组成进程身份**：仅凭 PID 终止进程在 PID 复用后可能误杀无关进程，所以所有终止动作前都要用 psutil 比对 `create_time`。
+`cache/webui-workers.json` 中的每条记录形如 `{"pid": int, "created_at": float}`，外层附 `owner_pid`/`owner_created_at`。**登记身份用于防止 PID 复用后误终止进程**。Linux 在可读 `/proc` 时另外记录开机 ID 与进程启动时钟刻度（`identity` / `owner_identity`），避免校时改变墙钟时间时误判进程。没有稳定标识的旧记录或平台按原有创建时间校验。
 
 ## 6. 工作流程
 

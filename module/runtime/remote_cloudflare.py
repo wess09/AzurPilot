@@ -10,6 +10,7 @@ import socket
 import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import getproxies, proxy_bypass
@@ -23,6 +24,9 @@ from module.logger import logger
 DEFAULT_REGISTRY = 'https://remote.azurpilot.com'
 LEGACY_REGISTRY = 'https://ap-remote.108-186-180-52.sslip.io:8443'
 TUNNEL_UNREADY_TIMEOUT = 120
+REGISTRATION_INTERVAL = 600
+REGISTRATION_MARGIN = 120
+REGISTRATION_POLL_INTERVAL = 10
 _store_lock = threading.RLock()
 _pyflared_import_lock = threading.RLock()
 
@@ -235,6 +239,22 @@ class CloudflareRemoteAccessProvider:
                     raise RemoteRegistryError(response.status_code, code, message, method, path)
                 return await response.json()
 
+    @asynccontextmanager
+    async def signal_events(self):
+        """监听服务端事件，使用设备凭据鉴权并遵守现有代理配置。"""
+        identity = self.identity().load()
+        url = f"{self.registry()}/api/v1/devices/{identity['device_id']}/signal/events"
+        timeout = aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=45)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                url, proxy=_request_proxy(url), allow_redirects=False,
+                headers={'Authorization': 'Bearer ' + identity['device_key'], 'Accept': 'text/event-stream'},
+            ) as response:
+                response.raise_for_status()
+                if response.status != 200 or response.content_type != 'text/event-stream':
+                    raise ValueError('远程注册服务未返回信令事件流')
+                yield response.content
+
     def start(self):
         """幂等启动后台线程，不阻塞 WebUI 启动。"""
         with self._lock:
@@ -313,6 +333,9 @@ class CloudflareRemoteAccessProvider:
         retry_at = 0
         delay = 2
         registered_at = 0
+        lease_seconds = 180
+        last_registration = None
+        result = {}
         try:
             async with DirectAccessServer(self).serve() as direct, PeerServer(self).serve() as peer:
                 self._direct_server = direct
@@ -334,14 +357,22 @@ class CloudflareRemoteAccessProvider:
                         }
                         if not self._legacy_registry:
                             registration['direct'] = {**direct.registration(), 'p2p': True}
-                        result = await self.request('POST', '/api/v1/devices/register', registration)
+                        interval = (REGISTRATION_INTERVAL if result.get('signal_events') is True
+                                    and lease_seconds >= REGISTRATION_INTERVAL + REGISTRATION_MARGIN
+                                    else REGISTRATION_POLL_INTERVAL)
+                        if registration != last_registration or time.monotonic() - registered_at >= interval:
+                            result = await self.request('POST', '/api/v1/devices/register', registration)
+                            lease = result.get('lease_seconds')
+                            lease_seconds = lease if type(lease) is int and lease > 0 else 180
+                            registered_at = time.monotonic()
+                            last_registration = registration
                     except RemoteRegistryError as exc:
                         if exc.status == 400 and not self._legacy_registry:
                             self._legacy_registry = True
                             continue
                         # 旧注册服务仍不可用时保留 Quick Tunnel，避免远程入口彻底中断。
                         if exc.status == 400 and not tunnel_task and time.monotonic() >= retry_at:
-                            tunnel_task = asyncio.create_task(self._tunnel())
+                            tunnel_task = asyncio.create_task(self._tunnel(managed=True))
                         if not self._tunnel_ready:
                             self.address, self.state = '', 'failed'
                         self.error = str(exc)
@@ -349,21 +380,21 @@ class CloudflareRemoteAccessProvider:
                         delay = min(delay * 2, 15)
                         continue
                     except (aiohttp.ClientError, http.RequestException, TimeoutError, ValueError) as exc:
-                        if time.monotonic() - registered_at >= 180:
+                        if time.monotonic() - registered_at >= lease_seconds:
                             self.address, self.state = '', 'failed'
                         self.error = f'远程入口正在恢复（{_failure_reason(exc)}）'
                         await asyncio.sleep(delay)
                         delay = min(delay * 2, 15)
                         continue
                     delay = 2
-                    registered_at = time.monotonic()
                     endpoints = result.get('endpoints', [])
                     self.address = result['url']
                     self.state = 'direct_ready' if endpoints else 'cloudflare_ready' if self._tunnel_ready else 'registered'
                     self.error = ''
-                    if result.get('fallback_required', True) and not tunnel_task and time.monotonic() >= retry_at:
+                    if ((result.get('fallback_required', True) or peer.fallback_requested)
+                            and not tunnel_task and time.monotonic() >= retry_at):
                         tunnel_task = asyncio.create_task(self._tunnel(managed=True))
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(REGISTRATION_POLL_INTERVAL)
         finally:
             self._direct_server = None
             self._peer_server = None

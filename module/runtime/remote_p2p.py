@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import random
 import re
 import struct
 from contextlib import asynccontextmanager
@@ -16,7 +17,6 @@ from module.runtime.password_utils import REMOTE_ACCESS_HEADER
 
 MAX_FRAME_PAYLOAD = 49152
 MAX_STREAM_BODY = 64 * 1024 * 1024
-SIGNAL_POLL_INTERVAL = 2
 MAX_SIGNAL_CONCURRENCY = 4
 FRAME_HEADER = struct.Struct('>BHI')
 FRAME_HEADER_SIZE = FRAME_HEADER.size
@@ -148,6 +148,7 @@ class PeerServer:
         self.provider = provider
         self.session = None
         self.upstream = ''
+        self._fallback_deadline = 0
         self._tasks = set()
         self._channels = {}
         self._signal_tasks = {}
@@ -175,7 +176,7 @@ class PeerServer:
             timeout=aiohttp.ClientTimeout(total=None, sock_connect=5),
         )
         try:
-            self.track(asyncio.create_task(self._poll_signals()))
+            self.track(asyncio.create_task(self._listen_signals()))
             yield self
         finally:
             await self.cleanup()
@@ -217,33 +218,48 @@ class PeerServer:
         ]
         return [RTCIceServer(urls=[url]) for url in urls]
 
-    async def _poll_signals(self):
-        """每两秒拉取待应答 offer，并限制同时进行的 WebRTC 协商数量。"""
-        device_id = quote(self.provider.identity().load()['device_id'], safe='')
-        path = f'/api/v1/devices/{device_id}/signal/pending'
+    @property
+    def fallback_requested(self):
+        """仅在回退请求的有效期内保持请求状态。"""
+        return self._fallback_deadline > asyncio.get_running_loop().time()
+
+    async def _listen_signals(self):
+        """等待服务端推送；断线后退避，避免服务恢复时所有设备同时重连。"""
+        retry = 2
         while True:
             try:
-                result = await self.provider.request('GET', path)
-                requests = result.get('requests', []) if isinstance(result, dict) else []
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                requests = []
-            if isinstance(requests, list):
-                for request in requests[:MAX_SIGNAL_CONCURRENCY * 2]:
-                    if len(self._signal_tasks) >= MAX_SIGNAL_CONCURRENCY:
-                        break
-                    if not isinstance(request, dict):
-                        continue
-                    signal_id, offer = request.get('id'), request.get('offer')
-                    if (not isinstance(signal_id, str) or not signal_id
-                            or not isinstance(offer, str) or not offer
-                            or signal_id in self._signal_tasks
-                            or signal_id in self._peer_connections):
-                        continue
-                    task = self.track(asyncio.create_task(self._answer_signal(signal_id, offer)))
-                    self._signal_tasks[signal_id] = task
-            await asyncio.sleep(SIGNAL_POLL_INTERVAL)
+                async with self.provider.signal_events() as content:
+                    while line := await content.readline():
+                        if line.startswith(b'data: '):
+                            self._receive_signals(json.loads(line[6:]))
+                        retry = 2
+            except (aiohttp.ClientError, TimeoutError, OSError, ValueError):
+                pass
+            await asyncio.sleep(retry + random.uniform(0, retry / 2))
+            retry = min(retry * 2, 60)
+
+    def _receive_signals(self, state):
+        if not isinstance(state, dict):
+            return
+        remaining = state.get('fallback_seconds', 0)
+        self._fallback_deadline = (asyncio.get_running_loop().time() + remaining
+                                   if type(remaining) is int and remaining > 0 else 0)
+        requests = state.get('requests', [])
+        if not isinstance(requests, list):
+            return
+        for request in requests[:MAX_SIGNAL_CONCURRENCY * 2]:
+            if len(self._signal_tasks) >= MAX_SIGNAL_CONCURRENCY:
+                break
+            if not isinstance(request, dict):
+                continue
+            signal_id, offer = request.get('id'), request.get('offer')
+            if (not isinstance(signal_id, str) or not signal_id
+                    or not isinstance(offer, str) or not offer
+                    or signal_id in self._signal_tasks
+                    or signal_id in self._peer_connections):
+                continue
+            task = self.track(asyncio.create_task(self._answer_signal(signal_id, offer)))
+            self._signal_tasks[signal_id] = task
 
     async def _answer_signal(self, signal_id, offer):
         """为单个 offer 建立无数据通道的应答连接并回传本地 SDP。"""

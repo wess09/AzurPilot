@@ -22,14 +22,17 @@ SHA-256 摘要。AFA 第一次启用时将 Android ID 与随机安装因子的�
 `CloudflareRemoteAccessProvider` 在线程内调用 `pyflared==0.1.0` 的 `run_quick_tunnel()`。
 上游库导入时创建的数据库目录定向到项目 `cache/cloudflare/pyflared/`，无需写入
 Windows `AppData/Local/Azmain`。适配仅匹配 pyflared 的应用标识，导入后恢复通用目录函数。
-AP 每十秒用设备密钥向独立 Go 服务续约，上报网卡上的公网 IPv4、IPv6 和对外端口；
+AP 启动时用设备密钥向独立 Go 服务注册，上报网卡上的公网 IPv4、IPv6 和对外端口。
+之后每十秒在本机检查一次，地址、外部端口或隧道状态变化时提前上报，稳定时每十分钟续约一次。
+注册服务未更新到支持事件流的版本时，AP 继续每十秒续约，以接收旧服务的回退状态。
 私网、共享地址和带作用域的 IPv6 不参与注册。默认复用已有 HTTP WebUI 端口（通常为 25548），
 挑战验证接口和设备健康检查也使用该端口。HTTPS WebUI 才默认另启端口 + 1 的 HTTP 入口。
 `RemoteAccessPort` 可指定独立 HTTP 监听端口，`RemoteAccessPublicPort` 可指定路由器映射后的外部端口，
 两者为 0 时分别使用上述默认值和监听端口。AP 不自动修改路由器或防火墙。
 
 Go 服务以随机挑战和 HMAC-SHA256 验证各候选属于该 AP，通过后才发布直连地址；
-后台每三分钟复检，候选变化立即重新验证。直连使用裸 IP 的 HTTP/WS，不申请设备域名或证书。
+验证结果随设备地址和端口保存，首次上报或候选变化时验证。IP 不变但防火墙或运营商网络变化时，
+历史结果可能失准，可使用 Cloudflare 回退。直连使用裸 IP 的 HTTP/WS，不申请设备域名或证书。
 独立转发入口始终标记为远程请求，交给现有 WebUI 网关鉴权，不因回源是本机而绕过密码。
 若独立端口无法监听或没有可达公网地址，仍走 Cloudflare 回退。
 
@@ -43,8 +46,10 @@ AFA 每次连接请求 `/api/v1/devices/{id}/resolve`，从当前网络检查直
 无可用直连，或用户主动选择 Cloudflare 时，AP 才启动 Quick Tunnel；启动后保留该进程，
 避免网络切换造成反复申请。每次启动分配新的 `*.trycloudflare.com` URL，通过公网健康检查后才上报。
 
-优雅停止时上报离线并回收 cloudflared；异常退出后服务端租约 180 秒失效。
-旧客户端的 Tunnel 跳转还会用四秒超时请求 `/healthz`，确认 AP 的协议健康状态；不跟随探测跳转或携带凭据。
+优雅停止时上报离线并回收 cloudflared。服务端在十二分钟未收到续约时将设备标为离线。
+旧客户端的 Tunnel 跳转使用 AP 主动上报的可用 URL。
+AP 使用一条经设备密钥认证的 HTTP 事件流接收 WebRTC 协商与 Cloudflare 回退通知。
+空闲时每 25 秒只有一条保活注释，AP 不再周期性发起信令请求。
 设备不存在、离线或租约过期时，以 302 跳到同域 `/error`；连接选择页刷新时则显示离线状态。
 cloudflared 沿用自动传输选择；网络须允许连接 Cloudflare 边缘的 7844 端口。
 CLI 分配 URL 后还须通过公网 `/healthz` 协议检查，才注册并显示就绪。

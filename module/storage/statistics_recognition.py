@@ -16,7 +16,9 @@ from module.storage.amount_glyphs import StorageAmountGlyphs, native_glyph
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = ROOT / 'assets/stats/storage_items/catalog.json'
-GRID_AREA = (130, 65, 1235, 637)
+# 列表停在行间时，首个完整卡框可能从顶部栏下缘约 50px 开始。
+# 从 40px 起裁剪，既保留该行完整边框，又不把 0–40px 的导航装饰算入网格。
+GRID_AREA = (130, 40, 1235, 637)
 
 
 class StorageRecognitionError(ValueError):
@@ -266,6 +268,11 @@ class StorageCatalog:
                      amount=None if item['id'] in unconfirmed else amounts.get(item['id'])) for item in self.items]
 
 
+def _is_material_rectangle(width, height):
+    """内层卡框会随亚像素绘制在 129–131px 间变化，外围高亮约为 138px。"""
+    return 126 <= width <= 134 and 126 <= height <= 134
+
+
 def detect_rows(image):
     """从方框推导网格，不把物品绑定到固定格子或纵坐标。"""
     if image.shape != (720, 1280, 3):
@@ -276,14 +283,16 @@ def detect_rows(image):
     rectangles = []
     for contour in contours:
         x, y, width, height = cv2.boundingRect(contour)
-        if 127 <= width <= 130 and 127 <= height <= 130:
+        if _is_material_rectangle(width, height):
             rectangles.append((x + x0, y + y0))
     columns = []
     for x, _ in sorted(rectangles):
         if not columns or x - columns[-1] > 5:
             columns.append(x)
     if len(columns) != 7 or any(not 156 <= b - a <= 161 for a, b in zip(columns, columns[1:])):
-        raise StorageRecognitionError('材料网格列数或间距不完整')
+        spacing = ','.join(str(b - a) for a, b in zip(columns, columns[1:]))
+        raise StorageRecognitionError(
+            f'材料网格列数或间距不完整：检测到 {len(columns)} 列，间距 {spacing or "无"}')
     starts = []
     for _, y in sorted(rectangles, key=lambda entry: entry[1]):
         if not starts or y - starts[-1] > 5:

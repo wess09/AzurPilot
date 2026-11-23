@@ -223,6 +223,30 @@ class TestProcessControl(unittest.TestCase):
                 patch("module.runtime.process_control.subprocess.run", return_value=Mock(returncode=1)):
             self.assertFalse(control.stop_process_tree(record=self.record, kill_timeout=0))
 
+    @unittest.skipUnless(sys.platform.startswith("linux"), "需要 Linux /proc 进程标识")
+    def test_stable_worker_identity_survives_wall_clock_correction(self):
+        for with_local_handle in (True, False):
+            with self.subTest(with_local_handle=with_local_handle):
+                process = multiprocessing.get_context("spawn").Process(target=time.sleep, args=(60,))
+                process.start()
+                try:
+                    record = {
+                        "pid": process.pid,
+                        "created_at": psutil.Process(process.pid).create_time() - 120,
+                        "identity": control.process_identity(process.pid),
+                    }
+                    self.assertIsNotNone(record["identity"])
+                    self.assertTrue(control.stop_process_tree(
+                        process if with_local_handle else None, record=record,
+                    ))
+                    process.join(timeout=3)
+                    self.assertFalse(process.is_alive())
+                finally:
+                    if process.is_alive():
+                        process.kill()
+                        process.join(timeout=3)
+                    process.close()
+
     def test_registered_real_worker_remains_joinable_by_multiprocessing(self):
         process = multiprocessing.get_context("spawn").Process(target=time.sleep, args=(60,))
         process.start()

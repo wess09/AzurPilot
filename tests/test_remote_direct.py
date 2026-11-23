@@ -14,6 +14,7 @@ import pytest
 
 from module.runtime.remote_cloudflare import CloudflareRemoteAccessProvider, RemoteIdentity
 from module.runtime.remote_direct import DirectAccessServer, public_addresses
+from module.runtime.remote_p2p import PeerServer
 
 
 def test_only_public_interface_addresses_are_reported():
@@ -145,6 +146,102 @@ def test_direct_ready_does_not_allocate_cloudflare(tmp_path):
             await asyncio.gather(task, return_exceptions=True)
             assert calls[0][1]['tunnel_url'] == ''
             assert calls[-1][0] == 'DELETE'
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(('lease_seconds', 'renewed_at'), [(720, 600), (180, 10)])
+def test_register_renews_on_schedule_or_address_change(tmp_path, lease_seconds, renewed_at):
+    async def scenario():
+        provider = CloudflareRemoteAccessProvider()
+        elapsed = 0
+        reports = []
+
+        def registration():
+            return {'ipv4': ['1.1.1.1' if elapsed < renewed_at + 10 else '8.8.8.8'],
+                    'ipv6': [], 'port': 25549, 'probe_token': 'p' * 43}
+
+        @asynccontextmanager
+        async def serve_direct(_):
+            yield SimpleNamespace(registration=registration)
+
+        @asynccontextmanager
+        async def serve_peer(_):
+            yield SimpleNamespace(fallback_requested=False)
+
+        async def request(method, path, data=None):
+            if method == 'POST':
+                assert path == '/api/v1/devices/register'
+                reports.append((elapsed, data['direct']['ipv4']))
+            return {'url': 'https://registry.example/d/test/', 'endpoints': [{'url': 'http://1.1.1.1:25549'}],
+                    'lease_seconds': lease_seconds, 'fallback_required': False, 'signal_events': True}
+
+        async def advance(seconds):
+            nonlocal elapsed
+            elapsed += seconds
+            if elapsed > renewed_at + 10:
+                provider.stop_event.set()
+
+        with patch('module.runtime.setting.State.deploy_config', SimpleNamespace(Password='test-password')), \
+                patch('module.runtime.remote_cloudflare.time', SimpleNamespace(monotonic=lambda: elapsed)), \
+                patch('module.runtime.remote_cloudflare.asyncio', SimpleNamespace(sleep=advance)), \
+                patch.object(provider, 'identity', return_value=RemoteIdentity(tmp_path)), \
+                patch.object(provider, 'request', side_effect=request), \
+                patch.object(DirectAccessServer, 'serve', serve_direct), patch.object(PeerServer, 'serve', serve_peer):
+            await provider._connect()
+
+        assert reports == [(0, ['1.1.1.1']), (renewed_at, ['1.1.1.1']), (renewed_at + 10, ['8.8.8.8'])]
+
+    asyncio.run(scenario())
+
+
+def test_fallback_request_updates_tunnel_before_next_renewal(tmp_path):
+    async def scenario():
+        provider = CloudflareRemoteAccessProvider()
+        elapsed = 0
+        reports = []
+        peer = SimpleNamespace(fallback_requested=False)
+
+        @asynccontextmanager
+        async def serve_direct(_):
+            yield SimpleNamespace(registration=lambda: {'ipv4': ['1.1.1.1'], 'ipv6': [], 'port': 25549,
+                                                         'probe_token': 'p' * 43})
+
+        @asynccontextmanager
+        async def serve_peer(_):
+            yield peer
+
+        async def request(method, path, data=None):
+            if method == 'POST':
+                reports.append((elapsed, data['tunnel_url']))
+            return {'url': 'https://registry.example/d/test/', 'endpoints': [{'url': 'http://1.1.1.1:25549'}],
+                    'lease_seconds': 720, 'fallback_required': False, 'signal_events': True}
+
+        async def tunnel(managed=False):
+            assert managed
+            provider.tunnel_url = 'https://fallback.trycloudflare.com'
+            provider._tunnel_ready = True
+            await asyncio.Future()
+
+        async def advance(seconds):
+            nonlocal elapsed
+            elapsed += seconds
+            peer.fallback_requested = True
+            if elapsed >= 30:
+                provider.stop_event.set()
+            await asyncio.sleep(0)
+
+        with patch('module.runtime.setting.State.deploy_config', SimpleNamespace(Password='test-password')), \
+                patch('module.runtime.remote_cloudflare.time', SimpleNamespace(monotonic=lambda: elapsed)), \
+                patch('module.runtime.remote_cloudflare.asyncio', SimpleNamespace(
+                    sleep=advance, create_task=asyncio.create_task, gather=asyncio.gather)), \
+                patch.object(provider, 'identity', return_value=RemoteIdentity(tmp_path)), \
+                patch.object(provider, 'request', side_effect=request), \
+                patch.object(provider, '_tunnel', tunnel), \
+                patch.object(DirectAccessServer, 'serve', serve_direct), patch.object(PeerServer, 'serve', serve_peer):
+            await provider._connect()
+
+        assert reports == [(0, ''), (20, 'https://fallback.trycloudflare.com')]
+
     asyncio.run(scenario())
 
 
