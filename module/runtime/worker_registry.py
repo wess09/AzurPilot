@@ -15,6 +15,7 @@ from deploy.atomic import atomic_remove, atomic_replace, atomic_write
 from module.runtime.process_control import (
     pid_exists as _pid_exists,
     process_created_at,
+    process_identity,
     process_matches,
 )
 
@@ -41,6 +42,7 @@ class WorkerRegistryLockError(RuntimeError):
 def _empty_registry(
     owner_pid: Optional[int] = None,
     owner_created_at: Optional[float] = None,
+    owner_identity: Optional[str] = None,
 ) -> dict:
     """构建空的基础登记字典结构。
 
@@ -53,6 +55,7 @@ def _empty_registry(
     """
     return {
         "owner_created_at": owner_created_at,
+        "owner_identity": owner_identity,
         "owner_pid": owner_pid,
         "workers": {},
     }
@@ -309,6 +312,7 @@ def _read_registry(registry_file: Path) -> dict:
         registry = parsed
         owner_pid = registry.get("owner_pid")
         owner_created_at = registry.get("owner_created_at")
+        owner_identity = registry.get("owner_identity")
         workers = registry.get("workers")
         if owner_pid is not None:
             owner_pid = int(owner_pid)
@@ -316,6 +320,9 @@ def _read_registry(registry_file: Path) -> dict:
                 owner_created_at = float(owner_created_at)
         else:
             owner_created_at = None
+            owner_identity = None
+        if owner_identity is not None and not isinstance(owner_identity, str):
+            raise ValueError("owner_identity 不是字符串")
         if not isinstance(workers, dict):
             raise ValueError("workers 不是对象")
     except (TypeError, ValueError, json.JSONDecodeError) as exc:
@@ -328,6 +335,7 @@ def _read_registry(registry_file: Path) -> dict:
 
     return {
         "owner_created_at": owner_created_at,
+        "owner_identity": owner_identity,
         "owner_pid": owner_pid,
         "workers": workers,
     }
@@ -381,6 +389,8 @@ def _owner_record(registry: dict) -> Optional[dict]:
     record = {"pid": owner_pid}
     if registry["owner_created_at"] is not None:
         record["created_at"] = registry["owner_created_at"]
+    if registry["owner_identity"] is not None:
+        record["identity"] = registry["owner_identity"]
     return record
 
 
@@ -408,12 +418,15 @@ def _require_current_owner(registry: dict, owner_pid: int) -> None:
         raise WorkerRegistryOwnershipError("worker 登记所有者缺少进程身份信息")
 
     try:
-        created_at = _process_created_at(expected_pid)
+        if "identity" in record:
+            matches = process_matches(record)
+        else:
+            matches = abs(_process_created_at(expected_pid) - record["created_at"]) < 0.01
     except RuntimeError as exc:
         raise WorkerRegistryOwnershipError(
             f"无法验证 WebUI 所有者 PID {expected_pid}: {exc}"
         ) from exc
-    if abs(created_at - record["created_at"]) < 0.01:
+    if matches is True:
         return
     raise WorkerRegistryOwnershipError(
         f"WebUI 所有者 PID {expected_pid} 身份不匹配，拒绝修改登记"
@@ -470,14 +483,16 @@ def claim_owner(owner_pid: int) -> None:
     except (TypeError, ValueError) as exc:
         raise WorkerRegistryOwnershipError(f"无效的 WebUI 所有者 PID: {owner_pid}") from exc
     owner_created_at = _process_created_at(owner_pid)
+    owner_identity = process_identity(owner_pid)
 
     with _locked_registry() as registry_file:
         registry = _read_registry(registry_file)
         previous_owner = _owner_record(registry)
         if previous_owner is not None:
-            same_owner = (
-                previous_owner["pid"] == owner_pid
-                and previous_owner.get("created_at") is not None
+            same_owner = previous_owner["pid"] == owner_pid and (
+                process_matches(previous_owner) is True
+                if "identity" in previous_owner
+                else previous_owner.get("created_at") is not None
                 and abs(previous_owner["created_at"] - owner_created_at) < 0.01
             )
             if same_owner:
@@ -508,7 +523,9 @@ def claim_owner(owner_pid: int) -> None:
                     "必须先由父进程完成回收"
                 )
 
-        _write_registry(_empty_registry(owner_pid, owner_created_at), registry_file)
+        _write_registry(
+            _empty_registry(owner_pid, owner_created_at, owner_identity), registry_file
+        )
 
 
 def register_worker(owner_pid: int, config_name: str, pid: int) -> None:
@@ -535,6 +552,9 @@ def register_worker(owner_pid: int, config_name: str, pid: int) -> None:
             "created_at": _process_created_at(pid),
             "pid": pid,
         }
+        identity = process_identity(pid)
+        if identity is not None:
+            registry["workers"][config_name]["identity"] = identity
         _write_registry(registry, registry_file)
 
 

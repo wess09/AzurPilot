@@ -27,6 +27,12 @@ def _get_gui():
 
 
 class TestWorkerRegistry(unittest.TestCase):
+    def setUp(self):
+        # 原有用例使用虚构 PID，保留其对旧格式登记的验证。
+        identity_patcher = patch.object(worker_registry, "process_identity", return_value=None)
+        identity_patcher.start()
+        self.addCleanup(identity_patcher.stop)
+
     def test_new_registry_is_only_written_to_cache(self):
         with tempfile.TemporaryDirectory() as directory:
             current_file = Path(directory) / "cache" / "webui-workers.json"
@@ -200,6 +206,7 @@ class TestWorkerRegistry(unittest.TestCase):
                 self.assertEqual(
                     {
                         "owner_created_at": 10.5,
+                        "owner_identity": None,
                         "owner_pid": 100,
                         "workers": {"alas": {"created_at": 10.5, "pid": 200}},
                     },
@@ -325,6 +332,7 @@ class TestWorkerRegistry(unittest.TestCase):
                 self.assertEqual(
                     {
                         "owner_created_at": 10.5,
+                        "owner_identity": None,
                         "owner_pid": 200,
                         "workers": {},
                     },
