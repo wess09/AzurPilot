@@ -32,12 +32,12 @@
         }
       } catch (error) { /* 缓存不可用时交给应用按正常流程加载。 */ }
     </script>
-    <link rel="icon" type="image/webp" href="%BASE_URL%azurpilot.webp" />
+    <link rel="icon" type="image/webp" href="%BASE_URL%azurpilot-icon.webp" />
     <title>AzurPilot</title>
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        t=l.createElement(r);t.async=1;t.fetchPriority="low";t.src="https://www.clarity.ms/tag/"+i;
         y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
       })(window, document, "clarity", "script", "yhqqveymur");
     </script>

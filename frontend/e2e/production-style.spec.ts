@@ -48,14 +48,10 @@ test('生产构建保留高斯模糊且资源图标能够解码', async ({page})
   await expect.poll(() => icons.evaluateAll(elements => elements.every(element =>
     element instanceof HTMLImageElement && element.complete && element.naturalWidth > 0,
   ))).toBe(true)
-  const loadedFonts = await page.evaluate(async () => {
-    const faces = await Promise.all([
-      document.fonts.load('600 16px MiSans', '碧蓝航线'),
-      document.fonts.load('16px "JetBrains Mono"', 'AzurPilot'),
-    ])
-    return faces.map(items => items.some(face => face.status === 'loaded'))
-  })
-  expect(loadedFonts).toEqual([true, true])
+  expect(await page.evaluate(async () => {
+    const faces = await document.fonts.load('16px "JetBrains Mono"', 'AzurPilot')
+    return faces.some(face => face.status === 'loaded')
+  })).toBe(true)
   // 无障碍模式仍应关闭模糊，防止调整前缀顺序破坏降级样式。
   await page.emulateMedia({forcedColors: 'active'})
   await expect(page.locator('.sidebar')).toHaveCSS('backdrop-filter', 'none')

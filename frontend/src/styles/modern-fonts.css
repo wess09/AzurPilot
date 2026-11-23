@@ -1,7 +1,6 @@
-/* 正文使用 MiSans，等宽字体由 tokens.css 提供 */
+/* 本机装有 MiSans 时沿用原字形，否则直接使用系统字体。 */
 @font-face {
   font-family: 'MiSans';
-  src: url('/MiSans-Demibold.woff2') format('woff2');
+  src: local('MiSans Demibold'), local('MiSans-Demibold');
   font-weight: 600;
-  font-display: swap;
 }

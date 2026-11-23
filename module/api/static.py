@@ -1,8 +1,11 @@
 """提供完整前端构建目录，区分页面导航与静态资源请求。"""
 import mimetypes
+import re
 from pathlib import Path, PurePosixPath
 
+from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
 # 浏览器对 ES module 与样式表做强制 MIME 检查，类型不对就直接拒绝执行，前端整片白屏。
@@ -22,6 +25,41 @@ def ensure_static_mime_types() -> None:
 
 
 ensure_static_mime_types()
+
+
+class FrontendAssetFiles(StaticFiles):
+    """为 Vite 的构建资源提供缓存，并压缩 JavaScript 和 CSS。"""
+
+    _fingerprinted = re.compile(r'-[A-Za-z0-9_-]{8}\.[^.]+$')
+    _compressible = {'.js', '.mjs', '.css'}
+    _gzip_disabled = re.compile(r'(?:^|,)\s*gzip\s*;\s*q=0(?:\.0*)?\s*(?:,|$)', re.IGNORECASE)
+
+    def __init__(self, directory: Path):
+        super().__init__(directory=directory)
+        self._gzip = GZipMiddleware(super().__call__, minimum_size=1024, compresslevel=4)
+
+    async def __call__(self, scope, receive, send):
+        # 保留二进制资产和 Range 请求的原始字节表示。
+        if (scope['type'] == 'http' and scope['method'] == 'GET'
+                and PurePosixPath(scope['path']).suffix in self._compressible):
+            headers = Headers(scope=scope)
+            if 'range' not in headers and not self._gzip_disabled.search(headers.get('accept-encoding', '')):
+                await self._gzip(scope, receive, send)
+                return
+        await super().__call__(scope, receive, send)
+
+    async def get_response(self, path, scope):
+        response = await super().get_response(path, scope)
+        if self._fingerprinted.search(path):
+            response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
+        if PurePosixPath(path).suffix in self._compressible and 'etag' in response.headers:
+            # 原始表示与 gzip 表示共用内容验证器，只能做弱比较。
+            response.headers['etag'] = 'W/' + response.headers['etag']
+            headers = Headers(scope=scope)
+            if (response.status_code == 304 or scope['method'] == 'HEAD' or 'range' in headers
+                    or self._gzip_disabled.search(headers.get('accept-encoding', ''))):
+                response.headers.add_vary_header('Accept-Encoding')
+        return response
 
 
 class ItemTemplateFiles(StaticFiles):
