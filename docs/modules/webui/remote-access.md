@@ -24,7 +24,7 @@ SHA-256 摘要。AFA 第一次启用时将 Android ID 与随机安装因子的�
 Windows `AppData/Local/Azmain`。适配仅匹配 pyflared 的应用标识，导入后恢复通用目录函数。
 AP 启动时用设备密钥向独立 Go 服务注册，上报网卡上的公网 IPv4、IPv6 和对外端口。
 之后每十秒在本机检查一次，地址、外部端口或隧道状态变化时提前上报，稳定时每十分钟续约一次。
-使用旧版三分钟租约的注册服务时，AP 继续每十秒续约。
+注册服务未更新到支持事件流的版本时，AP 继续每十秒续约，以接收旧服务的回退状态。
 私网、共享地址和带作用域的 IPv6 不参与注册。默认复用已有 HTTP WebUI 端口（通常为 25548），
 挑战验证接口和设备健康检查也使用该端口。HTTPS WebUI 才默认另启端口 + 1 的 HTTP 入口。
 `RemoteAccessPort` 可指定独立 HTTP 监听端口，`RemoteAccessPublicPort` 可指定路由器映射后的外部端口，
@@ -48,7 +48,8 @@ AFA 每次连接请求 `/api/v1/devices/{id}/resolve`，从当前网络检查直
 
 优雅停止时上报离线并回收 cloudflared。服务端在十二分钟未收到续约时将设备标为离线。
 旧客户端的 Tunnel 跳转使用 AP 主动上报的可用 URL。
-按需启动 Cloudflare 的请求通过 AP 已有的信令轮询传达。
+AP 使用一条经设备密钥认证的 HTTP 事件流接收 WebRTC 协商与 Cloudflare 回退通知。
+空闲时每 25 秒只有一条保活注释，AP 不再周期性发起信令请求。
 设备不存在、离线或租约过期时，以 302 跳到同域 `/error`；连接选择页刷新时则显示离线状态。
 cloudflared 沿用自动传输选择；网络须允许连接 Cloudflare 边缘的 7844 端口。
 CLI 分配 URL 后还须通过公网 `/healthz` 协议检查，才注册并显示就绪。

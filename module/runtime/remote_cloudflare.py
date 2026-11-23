@@ -10,6 +10,7 @@ import socket
 import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 from urllib.request import getproxies, proxy_bypass
@@ -238,6 +239,22 @@ class CloudflareRemoteAccessProvider:
                     raise RemoteRegistryError(response.status_code, code, message, method, path)
                 return await response.json()
 
+    @asynccontextmanager
+    async def signal_events(self):
+        """监听服务端事件，使用设备凭据鉴权并遵守现有代理配置。"""
+        identity = self.identity().load()
+        url = f"{self.registry()}/api/v1/devices/{identity['device_id']}/signal/events"
+        timeout = aiohttp.ClientTimeout(total=None, sock_connect=10, sock_read=45)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with session.get(
+                url, proxy=_request_proxy(url), allow_redirects=False,
+                headers={'Authorization': 'Bearer ' + identity['device_key'], 'Accept': 'text/event-stream'},
+            ) as response:
+                response.raise_for_status()
+                if response.status != 200 or response.content_type != 'text/event-stream':
+                    raise ValueError('远程注册服务未返回信令事件流')
+                yield response.content
+
     def start(self):
         """幂等启动后台线程，不阻塞 WebUI 启动。"""
         with self._lock:
@@ -340,7 +357,8 @@ class CloudflareRemoteAccessProvider:
                         }
                         if not self._legacy_registry:
                             registration['direct'] = {**direct.registration(), 'p2p': True}
-                        interval = (REGISTRATION_INTERVAL if lease_seconds >= REGISTRATION_INTERVAL + REGISTRATION_MARGIN
+                        interval = (REGISTRATION_INTERVAL if result.get('signal_events') is True
+                                    and lease_seconds >= REGISTRATION_INTERVAL + REGISTRATION_MARGIN
                                     else REGISTRATION_POLL_INTERVAL)
                         if registration != last_registration or time.monotonic() - registered_at >= interval:
                             result = await self.request('POST', '/api/v1/devices/register', registration)
