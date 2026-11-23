@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -54,6 +55,12 @@ class StubProvider:
 
     def registry(self):
         return 'https://signal.example'
+
+    @asynccontextmanager
+    async def signal_events(self):
+        lines = asyncio.Queue()
+        lines.put_nowait(b'data: ' + json.dumps(self.pending).encode() + b'\n')
+        yield SimpleNamespace(readline=lines.get)
 
     async def request(self, method, path, data=None):
         self.calls.append((method, path, data))
@@ -164,6 +171,45 @@ def test_ping_returns_pong():
     asyncio.run(_ping_scenario())
 
 
+def test_waits_for_push_on_one_connection_without_polling():
+    async def scenario():
+        provider = StubProvider()
+        received = asyncio.Event()
+        lines = asyncio.Queue()
+        subscriptions = 0
+
+        @asynccontextmanager
+        async def signal_events():
+            nonlocal subscriptions
+            subscriptions += 1
+            yield SimpleNamespace(readline=lines.get)
+
+        provider.signal_events = signal_events
+        peer = PeerServer(provider)
+
+        async def answer(signal_id, offer):
+            assert (signal_id, offer) == ('incoming', 'offer-sdp')
+            received.set()
+
+        with patch.object(peer, '_answer_signal', side_effect=answer) as answer_signal:
+            peer.track(asyncio.create_task(peer._listen_signals()))
+            try:
+                lines.put_nowait(b':\n')
+                lines.put_nowait(b'data: {"requests":[] }\n')
+                await asyncio.sleep(0)
+                answer_signal.assert_not_called()
+                assert not peer.fallback_requested
+                lines.put_nowait(b'data: {"requests":[{"id":"incoming","offer":"offer-sdp"}],"fallback_seconds":300}\n')
+                await asyncio.wait_for(received.wait(), 2)
+                assert peer.fallback_requested
+                assert subscriptions == 1
+                assert provider.calls == []
+            finally:
+                await peer.cleanup()
+
+    asyncio.run(scenario())
+
+
 async def _signal_scenario():
     class FakePeerConnection:
         instances = []
@@ -240,5 +286,5 @@ async def _signal_scenario():
     ]
 
 
-def test_signal_pending_creates_answer():
+def test_pushed_signal_creates_answer():
     asyncio.run(_signal_scenario())

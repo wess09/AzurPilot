@@ -173,7 +173,7 @@ def test_register_renews_on_schedule_or_address_change(tmp_path, lease_seconds, 
                 assert path == '/api/v1/devices/register'
                 reports.append((elapsed, data['direct']['ipv4']))
             return {'url': 'https://registry.example/d/test/', 'endpoints': [{'url': 'http://1.1.1.1:25549'}],
-                    'lease_seconds': lease_seconds, 'fallback_required': False}
+                    'lease_seconds': lease_seconds, 'fallback_required': False, 'signal_events': True}
 
         async def advance(seconds):
             nonlocal elapsed
@@ -214,7 +214,7 @@ def test_fallback_request_updates_tunnel_before_next_renewal(tmp_path):
             if method == 'POST':
                 reports.append((elapsed, data['tunnel_url']))
             return {'url': 'https://registry.example/d/test/', 'endpoints': [{'url': 'http://1.1.1.1:25549'}],
-                    'lease_seconds': 720, 'fallback_required': False}
+                    'lease_seconds': 720, 'fallback_required': False, 'signal_events': True}
 
         async def tunnel(managed=False):
             assert managed
