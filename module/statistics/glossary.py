@@ -9,7 +9,7 @@ import typing as t
 
 from module.logger import logger
 
-LANGUAGES = ('en-US', 'ja-JP', 'zh-TW')
+LANGUAGES = ('en-US', 'ja-JP', 'zh-TW', 'zh-CN-neko')
 # 掉落记录单元格形如「钛合金 x2、HBX炸药 x1」，委托记录等也可能用顿号拼接。
 _SPLIT = re.compile(r'[、，,]\s*')
 _AMOUNT = re.compile(r'^(.*?)\s*[x×]\s*\d+$')
