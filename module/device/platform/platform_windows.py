@@ -663,6 +663,8 @@ $desktop.Document.Application.ShellExecute($exe, '--from-shortcut', (Split-Path 
             )
             return
 
+        import psutil
+
         has_mumu_process = False
         for proc in psutil.process_iter(['name', 'cmdline']):
             try:
@@ -681,6 +683,8 @@ $desktop.Document.Application.ShellExecute($exe, '--from-shortcut', (Split-Path 
     @staticmethod
     def _mumu_deep_processes_alive():
         """检查深度重启名单里是否还有 MuMu 进程存活。"""
+        import psutil
+
         for proc in psutil.process_iter(['name']):
             try:
                 if (proc.info['name'] or '').lower() in MUMU12_DEEP_PROCESS_NAMES:
@@ -715,6 +719,8 @@ $desktop.Document.Application.ShellExecute($exe, '--from-shortcut', (Split-Path 
             self.execute(f'"{manager}" control -v all shutdown', wait=True, timeout=60)
         except Exception as e:
             logger.warning(f'[设备-Windows] 深度重启：关闭全部实例失败，继续清理进程: {e}')
+
+        import psutil
 
         killed = 0
         for proc in psutil.process_iter(['name']):
@@ -845,6 +851,8 @@ $desktop.Document.Application.ShellExecute($exe, '--from-shortcut', (Split-Path 
             marker = [instance.name]
         else:
             return 0
+
+        import psutil
 
         path = os.path.normcase(os.path.abspath(exe))
         pids = []

@@ -17,6 +17,8 @@ import unittest
 from unittest.mock import Mock, call, create_autospec, patch
 
 from alas import RESTART_EMULATOR_OP_TIMEOUT, AzurLaneAutoScript
+import psutil
+
 from module.device.env import IS_WINDOWS
 from module.exception import EmulatorNotRunningError, EmulatorOpBusy
 
@@ -314,7 +316,7 @@ class TestMumu12StateQuery(unittest.TestCase):
         platform, patched = self.make_platform(
             mumu_info({'is_process_started': True}, {'is_process_started': True})
         )
-        with patched, patch.object(platform_windows.psutil, 'process_iter') as process_iter:
+        with patched, patch.object(psutil, 'process_iter') as process_iter:
             platform._clean_mumu12_residue('F:/mumu/shell/MuMuPlayer.exe', 0)
 
         process_iter.assert_not_called()
@@ -322,7 +324,7 @@ class TestMumu12StateQuery(unittest.TestCase):
     def test_residue_cleanup_skipped_when_state_unknown(self):
         """查不到状态时不清理——宁可少清理，不可误杀。"""
         platform, patched = self.make_platform('')
-        with patched, patch.object(platform_windows.psutil, 'process_iter') as process_iter:
+        with patched, patch.object(psutil, 'process_iter') as process_iter:
             platform._clean_mumu12_residue('F:/mumu/shell/MuMuPlayer.exe', 0)
 
         process_iter.assert_not_called()
@@ -398,7 +400,7 @@ class TestDeepRestart(unittest.TestCase):
         mumu_vm = self.fake_process('MuMuVMMHeadless.exe')
         unrelated = self.fake_process('notepad.exe')
 
-        with patch.object(platform_windows.psutil, 'process_iter',
+        with patch.object(psutil, 'process_iter',
                           side_effect=[[mumu_player, mumu_vm, unrelated], []]):
             self.assertTrue(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
 
@@ -409,7 +411,7 @@ class TestDeepRestart(unittest.TestCase):
     def test_deep_clean_asks_mumu_to_shutdown_all_instances(self):
         platform = self.make_platform()
         platform.execute = Mock()
-        with patch.object(platform_windows.psutil, 'process_iter', side_effect=[[], []]):
+        with patch.object(psutil, 'process_iter', side_effect=[[], []]):
             platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe')
 
         self.assertTrue(platform.execute.called)
@@ -423,7 +425,7 @@ class TestDeepRestart(unittest.TestCase):
 
         with (
             patch.object(platform_windows, 'run_mumu_manager', return_value=multi_open) as query,
-            patch.object(platform_windows.psutil, 'process_iter', side_effect=[[], []]),
+            patch.object(psutil, 'process_iter', side_effect=[[], []]),
         ):
             platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe')
 
@@ -436,7 +438,7 @@ class TestDeepRestart(unittest.TestCase):
         platform.execute = Mock()
         alive = [self.fake_process('MuMuVMMHeadless.exe')]
         with (
-            patch.object(platform_windows.psutil, 'process_iter', return_value=alive),
+            patch.object(psutil, 'process_iter', return_value=alive),
             patch.object(platform_windows, 'read_run_param', return_value=0),
         ):
             self.assertFalse(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
@@ -450,7 +452,7 @@ class TestDeepRestart(unittest.TestCase):
         platform.execute = Mock(side_effect=OSError('MuMuManager missing'))
         mumu_vm = self.fake_process('MuMuVMMHeadless.exe')
 
-        with patch.object(platform_windows.psutil, 'process_iter', side_effect=[[mumu_vm], []]):
+        with patch.object(psutil, 'process_iter', side_effect=[[mumu_vm], []]):
             self.assertTrue(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
 
         mumu_vm.kill.assert_called_once()
