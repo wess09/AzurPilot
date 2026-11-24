@@ -139,6 +139,9 @@ COMMON_OVERRIDES = {
 
     "edit.draftReadError": "浏览器草稿被猫爪抓花了读不出来，请保持页面打开直到保存完成喵呜……(つд⊂)",
     "edit.draftPersistError": "浏览器小抽屉卡住了存不下草稿，请保持页面打开直到保存完成喵！(•̀_•́)",
+    "table.horizontalScroll": "横向滑动表格喵~",
+    "edit.conflict": "配置被别处的猫爪改过啦，草稿本喵还留着呢，重新载入后再改一遍喵~(つд⊂)",
+    "edit.reloadDiscard": "扔掉草稿重新载入喵！",
     "edit.unsaved": "配置还没全部锁进保险箱呢，请先改好错误或者等连接恢复喵！(•̀へ•́)",
     "edit.discard": "不要啦！把草稿揉成纸团扔掉喵！(ฅ`ω´ฅ)",
     "edit.keep": "留着留着！本喵还要继续写喵！(ง •_•)ง",

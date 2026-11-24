@@ -5,7 +5,7 @@
 import { PasswordInput, Select } from '../components/FormControls'
 import { Input } from '../components/ui/input'
 import { Suspense, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type ChangeEvent } from 'react'
-import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { getLayout, subscribeLayout } from './layout'
 import {NavHandle} from './NavHandle'
 import {TabBarResizeHandle} from './TabBarResizeHandle'
@@ -189,7 +189,6 @@ export function App() {
   const subscribedInstance = current?.name ?? null
   const taskMatch = location.pathname.match(/\/task\/([^/]+)/)
   const currentTask = taskMatch ? taskMatch[1] : null
-  const isOverview = useMatch('/i/:instance/overview') !== null
   const stockExchange = location.pathname.endsWith('/stock-exchange')
   const currentTaskLabel = currentTask ? taskLabel(currentTask, ui, t) : ''
   const pluginManager = location.pathname === '/plugins'
