@@ -197,6 +197,8 @@ class TestTUIBackend(IsolatedTUIFixture, unittest.TestCase):
         success, _, enabled = self.backend.toggle_task_enable("Commission")
         self.assertTrue(success, "关闭任务计划失败")
         self.assertFalse(enabled)
+        data, _ = self.backend.config_service.read(self.backend.current_instance)
+        self.assertFalse(data["Commission"]["Scheduler"]["Enable"])
 
         overview = self.backend.get_overview()
         entry = next(item for item in overview["tasks"] if item["name"] == "Commission")
@@ -211,6 +213,15 @@ class TestTUIBackend(IsolatedTUIFixture, unittest.TestCase):
         entry = next(item for item in overview["tasks"] if item["name"] == "Commission")
         self.assertTrue(entry["enabled"])
         self.assertNotEqual("disabled", entry["state"])
+
+    def test_save_task_config_persists_changes(self) -> None:
+        """TUI 保存配置后，重新读取实例应返回新值。"""
+        success, message = self.backend.save_task_config([
+            {"path": "Alas.Emulator.Serial", "value": "127.0.0.1:5555"},
+        ])
+        self.assertTrue(success, message)
+        data, _ = self.backend.config_service.read(self.backend.current_instance)
+        self.assertEqual("127.0.0.1:5555", data["Alas"]["Emulator"]["Serial"])
 
     def test_toggle_unsupported_task(self) -> None:
         """没有 Scheduler.Enable 的任务不应被误写配置。"""

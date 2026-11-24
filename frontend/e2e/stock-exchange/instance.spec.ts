@@ -67,3 +67,57 @@ test('管理员删股状态明确展示且不能重新注册原股票',async({pa
  await expect(page.getByRole('button',{name:'注册股票账户',exact:true})).toHaveCount(0)
  await expect(page.getByText(/交易账户已解除绑定/)).toBeVisible()
 })
+
+test('rebuild requires consent and supports Escape and cancel',async({page})=>{
+  const rebuilds:boolean[]=[]
+  let failConfirm=true
+  await routeRpc(page,socket=>{
+    const server=socket.connectToServer()
+    socket.onMessage(message=>{
+      const request=JSON.parse(String(message))
+      if(request.method==='stock.status') socket.send(JSON.stringify({v:1,type:'response',id:request.id,ok:false,error:{code:'STOCK_IDENTITY_DAMAGED',message:'实例股票身份需要恢复备份'}}))
+      else if(request.method==='stock.rebuild'){
+        rebuilds.push(request.params.confirm)
+        if(request.params.confirm&&failConfirm){failConfirm=false;socket.send(JSON.stringify({v:1,type:'response',id:request.id,ok:false,error:{code:'REBUILD_FAILED',message:'重建失败，请重试'}}))}
+        else socket.send(JSON.stringify({v:1,type:'response',id:request.id,ok:true,result:{scope:'instance',affectedInstances:['demo-main'],rebuilt:request.params.confirm}}))
+      } else server.send(message)
+    })
+    server.onMessage(message=>socket.send(message))
+  })
+  await page.goto('/#/i/demo-main/stock-exchange')
+  const planButton=page.getByRole('button',{name:'查看本地数据重建计划'})
+  await planButton.click()
+  const dialog=page.getByRole('dialog',{name:'完全重建本地股票数据'})
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button',{name:'确认完全重建'})).toBeDisabled()
+  await dialog.getByRole('checkbox').check()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(planButton).toBeFocused()
+  await expect(planButton).toBeVisible()
+  await planButton.click()
+  await expect(dialog.getByRole('button',{name:'确认完全重建'})).toBeDisabled()
+  await dialog.getByRole('button',{name:'取消'}).click()
+  await expect(planButton).toBeFocused()
+  await expect(planButton).toBeVisible()
+  await planButton.click()
+  await dialog.getByRole('checkbox').check()
+  await dialog.getByRole('button',{name:'确认完全重建'}).click()
+  await expect(dialog.getByRole('alert')).toContainText('重建失败，请重试')
+  await dialog.getByRole('button',{name:'确认完全重建'}).click()
+  await expect(dialog).toHaveCount(0)
+  expect(rebuilds).toEqual([false,false,false,true,true])
+})
+
+test('stock registration uses the selected language',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('azurpilot.language','en-US'))
+  await routeRpc(page,socket=>{
+    const server=socket.connectToServer(),pending=new Set<string>()
+    socket.onMessage(message=>{const request=JSON.parse(String(message));if(request.method==='stock.status')pending.add(request.id);server.send(message)})
+    server.onMessage(message=>{const reply=JSON.parse(String(message));if(pending.has(reply.id)&&reply.ok)reply.result={...reply.result,registered:false,bound:false,deleted:false};socket.send(JSON.stringify(reply))})
+  })
+  await page.goto('/#/i/demo-main/stock-exchange')
+  await expect(page.getByRole('heading',{name:'Register instance stock'})).toBeVisible()
+  await expect(page.getByRole('checkbox',{name:/stock name, action point price history and trading data are public/})).toBeVisible()
+  await expect(page.getByText(/绑定股票 <绑定码>/)).toBeVisible()
+})

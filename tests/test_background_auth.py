@@ -62,7 +62,7 @@ class BackgroundAuthTests(unittest.TestCase):
             response = client.post('/api/v1/background/gallery', headers={'x-azurpilot-background-token': token},
                                    files={'file': ('test.png', b'image', 'image/png')})
             self.assertEqual(200, response.status_code)
-            add.assert_called_once_with(b'image', 'test.png', 'image/png')
+            add.assert_called_once_with(b'image', 'test.png', 'image/png', legacy=False)
             # 媒体 URL 中的令牌不能通过查询参数授权上传。
             self.assertEqual(401, client.post('/api/v1/background/gallery', params={'token': token}).status_code)
             self.assertEqual(1, add.call_count)

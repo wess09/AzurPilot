@@ -14,6 +14,8 @@ from module.base.button import Button
 from module.base.template import Template
 from module.base.utils import crop, get_color, color_similar
 from module.island.island_season import SEASONAL_ITEMS
+from module.island_planner.data import DIC_ISLAND_ITEM
+from module.island_planner.settings_map import DISH_ITEM_IDS
 from datetime import timedelta
 
 from module.config.time_source import now as current_time
@@ -2145,25 +2147,80 @@ class IslandBusiness(Island):
         selected = 0
         # 逐个选择配置的餐品
         for p in products:
-            b = p.get('button')
-            if not b or not b.file:
-                continue
-            self.device.screenshot()
-            area_img = crop(self.device.image, self.BUSINESS_PRODUCT_AREA)
-            sim, btn = b.match_result(area_img)
-            if sim >= 0.7:
-                # 偏移回全屏坐标
-                old_area = btn.area
-                new_area = (old_area[0] + self.BUSINESS_PRODUCT_AREA[0],
-                            old_area[1] + self.BUSINESS_PRODUCT_AREA[1],
-                            old_area[2] + self.BUSINESS_PRODUCT_AREA[0],
-                            old_area[3] + self.BUSINESS_PRODUCT_AREA[1])
-                offset_btn = Button(area=new_area, color=(), button=new_area, file=b.file)
-                logger.info(f"[岛屿-经营] 选择餐品: {p['name']} (相似度: {sim:.2f})")
-                self.device.click(offset_btn)
-                self.device.sleep(0.5)
+            if self._click_business_product(p):
+                selected += 1
+        # 配置的餐品缺货时，用库存里的其他餐品填满空货架（可选）
+        return self._fill_empty_shelves(shop_name, {p['name'] for p in products}, selected)
+
+    # 填满空货架：每个商店在岛屿生产规划器中的等级设置，以及各等级的货架数（与规划器一致）
+    SHOP_GRADE_KEYS = {
+        '有鱼餐馆': 'IslandProductionPlanner.IslandProductionPlanner.RestaurantGrade',
+        '白熊饮品': 'IslandProductionPlanner.IslandProductionPlanner.TeahouseGrade',
+        '啾啾简餐': 'IslandProductionPlanner.IslandProductionPlanner.JuuEateryGrade',
+        '乌鱼烤肉': 'IslandProductionPlanner.IslandProductionPlanner.GrillGrade',
+        '啾咖啡': 'IslandProductionPlanner.IslandProductionPlanner.JuuCoffeeGrade',
+    }
+    SHELVES_BY_GRADE = {'bronze': 2, 'silver': 2, 'gold': 3, 'diamond': 4}
+
+    def _shop_shelf_count(self, shop_name):
+        """按岛屿生产规划器里的店铺等级返回货架数，未知时返回 None。"""
+        key = self.SHOP_GRADE_KEYS.get(shop_name)
+        # 等级设置属于规划器任务，经营任务运行时需要跨任务读取
+        grade = self.config.cross_get(key) if key else None
+        return self.SHELVES_BY_GRADE.get(str(grade).lower()) if grade else None
+
+    @staticmethod
+    def _product_price(name):
+        item_id = DISH_ITEM_IDS.get(name)
+        return DIC_ISLAND_ITEM.get(item_id, {}).get('order_price', 0) if item_id else 0
+
+    def _fill_empty_shelves(self, shop_name, chosen, selected):
+        """
+        配置的餐品缺货导致货架有空位时，按售价从高到低选择该店库存里的其他餐品。
+
+        Args:
+            shop_name (str): 商店名。
+            chosen (set[str]): 已处理过的餐品名（配置的餐品），不再重复点击。
+            selected (int): 已选中的餐品数量。
+
+        Returns:
+            int: 选中的餐品总数。
+        """
+        if not getattr(self.config, 'IslandBusiness_FillEmptySlots', False):
+            return selected
+        shelves = self._shop_shelf_count(shop_name)
+        if not shelves or selected >= shelves:
+            return selected
+        others = [p for p in self.shop_products.get(shop_name, []) if p['name'] not in chosen]
+        others.sort(key=lambda p: -self._product_price(p['name']))
+        for p in others:
+            if selected >= shelves:
+                break
+            if self._click_business_product(p):
+                logger.info(f"[岛屿-经营] 空货架补上: {p['name']} ({selected + 1}/{shelves})")
                 selected += 1
         return selected
+
+    def _click_business_product(self, p):
+        """在餐品列表中查找并点击餐品，找到返回 True。"""
+        b = p.get('button')
+        if not b or not b.file:
+            return False
+        self.device.screenshot()
+        area_img = crop(self.device.image, self.BUSINESS_PRODUCT_AREA)
+        sim, btn = b.match_result(area_img)
+        if sim < 0.7:
+            return False
+        old_area = btn.area
+        new_area = (old_area[0] + self.BUSINESS_PRODUCT_AREA[0],
+                    old_area[1] + self.BUSINESS_PRODUCT_AREA[1],
+                    old_area[2] + self.BUSINESS_PRODUCT_AREA[0],
+                    old_area[3] + self.BUSINESS_PRODUCT_AREA[1])
+        offset_btn = Button(area=new_area, color=(), button=new_area, file=b.file)
+        logger.info(f"[岛屿-经营] 选择餐品: {p['name']} (相似度: {sim:.2f})")
+        self.device.click(offset_btn)
+        self.device.sleep(0.5)
+        return True
 
     # 商店没有可出售的餐品时，多久后再试（等后厨做出餐品）
     NO_FOOD_RETRY_MINUTES = 60

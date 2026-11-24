@@ -2,12 +2,12 @@
  * @fileoverview 模拟器画面监控与截图捕获面板组件。
  */
 
-import { memo, useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Download, Image, Terminal } from 'lucide-react'
 import { api } from '../api/client'
-import type { LogEntry, Logs as LogsData, Preview } from '../api/types'
-import { useApp, useConnection } from '../app/context'
-import { Empty } from './ui'
+import type { LogEntry, Preview } from '../api/types'
+import { useApp } from '../app/context'
+import { Empty, Panel } from './ui'
 import { LogPanel, LOG_LINE_RE, PURE_RULE_RE, RULE_RE } from './LogPanel'
 import { SegmentedControl } from './SegmentedControl'
 
@@ -65,46 +65,9 @@ export function mergeLines(previous: CompactLine[], entries: (LogEntry | Compact
  * 只读展示最后几条，不参与日志视图的搜索、级别筛选与清空，
  * 也不影响日志视图已滚到的位置。
  */
-function RecentLogs({instance}: {instance: string}) {
-  const [lines, setLines] = useState<CompactLine[]>([])
-  const connection = useConnection()
-  const {notify, ui} = useApp()
-  useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    setLines([])
-    void api.request('logs.get', {instance}).then(value => {
-      if (active) setLines(mergeLines([], value.entries, true))
-    }).catch(error => notify(error.message, true))
-    return () => { active = false }
-  }, [connection, instance, notify])
-  /* 服务端每条日志发一个事件；这里按帧归并后再进 state。 */
-  const pending = useRef<{entries: CompactLine[]; reset: boolean}>({entries: [], reset: false})
-  const frame = useRef<number | null>(null)
-  useEffect(() => {
-    const flush = () => {
-      frame.current = null
-      const batch = pending.current
-      if (!batch.entries.length && !batch.reset) return
-      pending.current = {entries: [], reset: false}
-      setLines(previous => mergeLines(previous, batch.entries, batch.reset))
-    }
-    const unsubscribe = api.onEvent(event => {
-      if (event.topic !== 'logs') return
-      const data = event.data as LogsData
-      if (data.instance !== instance) return
-      const batch = pending.current
-      batch.entries = mergeLines(batch.entries, data.entries, !!data.reset)
-      batch.reset ||= !!data.reset
-      if (frame.current === null) frame.current = requestAnimationFrame(flush)
-    })
-    return () => {
-      unsubscribe()
-      if (frame.current !== null) cancelAnimationFrame(frame.current)
-      frame.current = null
-      pending.current = {entries: [], reset: false}
-    }
-  }, [instance])
+function RecentLogs({entries}: {entries: LogEntry[]}) {
+  const {ui} = useApp()
+  const lines = mergeLines([], entries, true)
   if (!lines.length) return null
   return <div className="preview-log" aria-label={ui('monitor.recentLogs')}>
     {lines.map(line => <div className="preview-log-line" key={line.id} title={line.text}>
@@ -126,6 +89,7 @@ function RecentLogs({instance}: {instance: string}) {
 export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: string}) {
   const [view, setView] = useState('logs')
   const [frame, setFrame] = useState<Preview>()
+  const [entries, setEntries] = useState<LogEntry[]>([])
   const {setPreviewEnabled, ui} = useApp()
   useEffect(() => {
     setPreviewEnabled(view === 'preview')
@@ -134,17 +98,17 @@ export const MonitorPanel = memo(function MonitorPanel({instance}: {instance: st
   useEffect(() => api.onEvent(event => {
     if (event.topic === 'preview' && (event.data as Preview).instance === instance) setFrame(event.data as Preview)
   }), [instance])
-  return <section className="panel monitor-panel"><div className="monitor-tabs" aria-label={ui('monitor.title')}>
+  return <Panel className="monitor-panel"><div className="monitor-tabs" aria-label={ui('monitor.title')}>
     <SegmentedControl label={ui('monitor.view')} value={view} onChange={setView} options={[
       {value: 'logs', label: <><Terminal size={15}/>{ui('monitor.logs')}</>},
       {value: 'preview', label: <><Image size={15}/>{ui('monitor.preview')}</>},
     ]}/>
     {view === 'preview' && frame?.image && <a className="text-button" href={frame.image} download={`${instance}-screenshot.jpg`}><Download size={14}/>{ui('monitor.saveScreenshot')}</a>}
   </div>
-    <div className="monitor-view" hidden={view !== 'logs'}><LogPanel active={view === 'logs'}/></div>
+    <div className="monitor-view" hidden={view !== 'logs'}><LogPanel key={instance} active={view === 'logs'} onEntries={setEntries}/></div>
     <div className="monitor-view" hidden={view !== 'preview'}>
-      {view === 'preview' && <RecentLogs instance={instance}/>}
+      {view === 'preview' && <RecentLogs entries={entries}/>}
       <div className="preview-stage"><div className="preview-screen">{frame?.image ? <img src={frame.image} alt={ui('monitor.screenshotAlt')}/> : <Empty icon={<Image size={42}/>} title={ui('monitor.waitingScreenshot')}>{ui('monitor.screenshotHint')}</Empty>}</div></div>
     </div>
-  </section>
+  </Panel>
 })

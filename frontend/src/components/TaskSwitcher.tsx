@@ -2,9 +2,10 @@
  * @fileoverview 顶栏快速任务跳转下拉菜单组件。
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Check, ChevronDown } from 'lucide-react'
+import { DropdownMenu } from 'radix-ui'
 import { useApp } from '../app/context'
 import { taskNavItems, taskLabel } from './taskNavItems'
 
@@ -20,47 +21,33 @@ export function TaskSwitcher() {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const container = useRef<HTMLDivElement>(null)
-  const trigger = useRef<HTMLButtonElement>(null)
   const currentTask = location.pathname.match(/\/task\/([^/]+)/)?.[1] ?? null
 
-  useEffect(() => {
-    if (!open) return
-    const outside = (event: PointerEvent) => {
-      if (!container.current?.contains(event.target as Node)) setOpen(false)
-    }
-    document.addEventListener('pointerdown', outside)
-    container.current?.querySelector<HTMLButtonElement>('[aria-checked="true"], [role="menuitem"]')?.focus()
-    return () => document.removeEventListener('pointerdown', outside)
-  }, [open])
   useEffect(() => {setOpen(false)}, [location.pathname])
 
   const groups = Object.entries(schema?.menu ?? {}).filter(([, group]) => group.page !== 'tool' && group.tasks.length)
 
-  return <div className="task-picker" ref={container} onBlur={event => {
-    if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false)
-  }} onKeyDown={event => {
-    if (event.key === 'Escape') {setOpen(false); trigger.current?.focus()}
-    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
-    event.preventDefault()
-    if (!open) {setOpen(true); return}
-    // 键盘事件挂在容器自身：能收到事件时容器必已挂载。
-    const items = Array.from(container.current?.querySelectorAll<HTMLButtonElement>('[role^="menuitem"]:not(:disabled)') ?? [])
-    const current = items.indexOf(document.activeElement as HTMLButtonElement)
-    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length
-    items[next]?.focus()
-  }}>
-    <button ref={trigger} type="button" className="task-picker-trigger" aria-label={ui('nav.taskJump')} title={ui('nav.taskJump')} aria-haspopup="menu" aria-expanded={open} aria-controls="task-picker-menu" onClick={() => setOpen(!open)}>
-      {ui('nav.taskConfig')}<ChevronDown size={12}/>
-    </button>
-    {open && <div className="task-picker-menu" id="task-picker-menu" role="menu" aria-label={ui('nav.taskJump')}>
-      {groups.length ? groups.map(([key, group]) => <div className="task-picker-group" key={key}>
-        <span className="task-picker-group-name">{t(`Menu.${key}.name`)}</span>
-        {taskNavItems(key, group.tasks).map(task => <button key={task} role="menuitemradio" aria-checked={task === currentTask} onClick={() => {
-          setOpen(false); trigger.current?.focus()
-          if (task !== currentTask) navigate(`/i/${instance}/task/${task}`)
-        }}><span>{taskLabel(task, ui, t)}</span>{task === currentTask && <Check size={15}/>}</button>)}
-      </div>) : <div className="task-picker-empty">{ui('nav.taskJumpEmpty')}</div>}
-    </div>}
+  return <div className="task-picker">
+    <DropdownMenu.Root open={open} onOpenChange={setOpen}>
+      <DropdownMenu.Trigger asChild>
+        <button type="button" className="task-picker-trigger" aria-label={ui('nav.taskJump')} title={ui('nav.taskJump')}>
+          {ui('nav.taskConfig')}<ChevronDown size={12}/>
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content className="task-picker-menu" aria-label={ui('nav.taskJump')} align="end" sideOffset={8} collisionPadding={8} loop>
+          {groups.length ? <DropdownMenu.RadioGroup value={currentTask ?? ''} onValueChange={task => {
+            if (task !== currentTask) navigate(`/i/${instance}/task/${task}`)
+          }}>
+            {groups.map(([key, group]) => <DropdownMenu.Group className="task-picker-group" key={key}>
+              <DropdownMenu.Label className="task-picker-group-name">{t(`Menu.${key}.name`)}</DropdownMenu.Label>
+              {taskNavItems(key, group.tasks).map(task => <DropdownMenu.RadioItem className="task-picker-item" key={task} value={task}>
+                <span>{taskLabel(task, ui, t)}</span><DropdownMenu.ItemIndicator><Check size={15}/></DropdownMenu.ItemIndicator>
+              </DropdownMenu.RadioItem>)}
+            </DropdownMenu.Group>)}
+          </DropdownMenu.RadioGroup> : <div className="task-picker-empty">{ui('nav.taskJumpEmpty')}</div>}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   </div>
 }

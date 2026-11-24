@@ -172,7 +172,9 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
                 return JSONResponse({'error': '没有收到文件。'}, status_code=400)
             data = await upload.read()
             try:
-                entry = gallery_add_bytes(data, getattr(upload, 'filename', '') or '', getattr(upload, 'content_type', '') or '')
+                filename = getattr(upload, 'filename', '') or ''
+                content_type = getattr(upload, 'content_type', '') or ''
+                entry = await asyncio.to_thread(gallery_add_bytes, data, filename, content_type, legacy=form.get('legacy') == '1')
             except Exception as error:
                 return JSONResponse({'error': str(error)}, status_code=400)
             return JSONResponse({'entry': entry})

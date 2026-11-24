@@ -7,7 +7,9 @@ import { Megaphone, RefreshCw } from 'lucide-react'
 import { useAnnouncement } from '../app/announcement'
 import { useApp } from '../app/context'
 import { AnnouncementCard } from '../components/AnnouncementCard'
-import { Empty, ErrorBox, Loading, PageTitle } from '../components/ui'
+import { Empty, PageTitle } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
+import { Button } from '../components/ui/button'
 
 /**
  * 公告详情页：展示当前系统公告并提供刷新；进入页面即把未读标记为已读。
@@ -16,7 +18,7 @@ import { Empty, ErrorBox, Loading, PageTitle } from '../components/ui'
  */
 export function Announcement() {
   const { ui } = useApp()
-  const { data, loading, error, unread, refresh, markAsRead } = useAnnouncement()
+  const { data, ready, loading, error, unread, refresh, markAsRead } = useAnnouncement()
 
   useEffect(() => {
     if (unread && data?.announcementId) {
@@ -29,23 +31,20 @@ export function Announcement() {
       <PageTitle
         title={ui('nav.announcement')}
         actions={
-          <button
+          <Button
             type="button"
-            className="button secondary"
+            variant="outline"
             disabled={loading}
             onClick={() => void refresh(true)}
           >
             <RefreshCw size={16} className={loading ? 'spin' : ''} />
             <span>{loading ? ui('announcement.refreshing') : ui('announcement.refresh')}</span>
-          </button>
+          </Button>
         }
       />
 
-      {error && <ErrorBox message={error} />}
-
-      {loading && !data ? (
-        <Loading />
-      ) : data && (data.title || data.content) ? (
+      <LoadBoundary ready={ready} error={error} retry={() => void refresh(true)}>
+        {data && (data.title || data.content) ? (
         <AnnouncementCard
           announcement={data}
           unread={unread}
@@ -59,7 +58,8 @@ export function Announcement() {
         >
           <p>{ui('announcement.noAnnouncementDesc')}</p>
         </Empty>
-      )}
+        )}
+      </LoadBoundary>
     </div>
   )
 }

@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
 import {afterEach, beforeEach, expect, it, vi} from 'vitest'
-import {cleanup, fireEvent, render, screen, within} from '@testing-library/react'
+import {act, cleanup, fireEvent, render, screen, waitFor, within} from '@testing-library/react'
 import {MemoryRouter, Route, Routes} from 'react-router-dom'
-import {api} from '../api/client'
+import {api, ApiError} from '../api/client'
 import type {DockReport} from '../api/types'
 import type {Catalog, Report} from '../fleet-tech/types'
 import {translateUi} from '../i18n'
 import type {CultivationReport} from '../mind/cultivation'
 import {MindCalculator} from './MindCalculator'
 
-vi.mock('../api/client', () => ({api: {request: vi.fn()}}))
-vi.mock('../app/context', () => ({useConnection: () => 'ready', useApp: () => ({language: 'zh-CN',
+vi.mock('../api/client', async importOriginal => ({...await importOriginal<typeof import('../api/client')>(), api: {request: vi.fn()}}))
+const connection = vi.hoisted(() => ({value: 'ready'}))
+vi.mock('../app/context', () => ({useConnection: () => connection.value, useApp: () => ({language: 'zh-CN',
   ui: (key: Parameters<typeof translateUi>[1], params: Parameters<typeof translateUi>[2]) => translateUi('zh-CN', key, params)})}))
 const dock: DockReport = {instance: 'test', revision: 'r1', updated_at: null, min_level: 1, max_level: 125,
   complete: false, review_count: 0, source: 'manual', pending_revision: null, pending_changes: [],
@@ -46,7 +47,7 @@ beforeEach(() => {
     throw new Error(`Unexpected method: ${method}`)
   })
 })
-afterEach(cleanup)
+afterEach(() => {cleanup(); connection.value = 'ready'})
 
 it('starts selected, follows individual choices, and toggles all visible ships together', async () => {
   await show()
@@ -168,4 +169,80 @@ it('excludes unknown costs from totals and keeps unknown counts scoped to select
     expect(changedCostRow).toBeDefined()
     costs.ships[0] = {...changedCostRow!, status: 'exact', mind: 100, gold: 1000}
   }
+})
+
+ it('ignores a delayed technology report after the dock revision changes again', async () => {
+  let resolveOld!: (value: Report) => void, resolveNew!: (value: Report) => void
+  const old = new Promise<Report>(resolve => {resolveOld = resolve}), next = new Promise<Report>(resolve => {resolveNew = resolve})
+  let reads = 0
+  vi.mocked(api.request).mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') return catalog
+    if (method === 'fleetTech.report') return ++reads === 1 ? technology : reads === 2 ? old : next
+    if (method === 'mind.plan') return costs
+    throw new Error(`Unexpected method: ${method}`)
+  })
+  const view = (value: DockReport) => <MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={value}/>}/></Routes></MemoryRouter>
+  const rendered = render(view(dock))
+  await screen.findByRole('table')
+  rendered.rerender(view({...dock, revision: 'r2'}))
+  rendered.rerender(view({...dock, revision: 'r3'}))
+  await act(async () => resolveNew({...technology, revision: 't3', data_version: 'r3'}))
+  await waitFor(() => expect(vi.mocked(api.request).mock.calls.some(([method, args]) => method === 'mind.plan' && (args as {revision: string}).revision === 'r3')).toBe(true))
+  await act(async () => resolveOld({...technology, revision: 't2', data_version: 'r2'}))
+  expect(vi.mocked(api.request).mock.calls.some(([method, args]) => method === 'mind.plan' && (args as {revision: string}).revision === 'r2')).toBe(false)
+})
+
+it('refreshes technology and recalculates when the dock revision is unchanged', async () => {
+  let reads = 0
+  vi.mocked(api.request).mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') return catalog
+    if (method === 'fleetTech.report') return {...technology, revision: ++reads === 1 ? 't1' : 't2'}
+    if (method === 'mind.plan') return costs
+    throw new Error(`Unexpected method: ${method}`)
+  })
+  const reloadRef: {current: (() => void) | undefined} = {current: undefined}
+  render(<MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={dock} reloadRef={reloadRef}/>}/></Routes></MemoryRouter>)
+  await screen.findByRole('table')
+  act(() => reloadRef.current?.())
+  await waitFor(() => expect(vi.mocked(api.request).mock.calls.filter(([method]) => method === 'mind.plan')).toHaveLength(2))
+  expect(reads).toBe(2)
+})
+
+it('shows and retries a failed catalog refresh while cached data is available', async () => {
+  let catalogReads = 0
+  vi.mocked(api.request).mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') {if (++catalogReads === 2) throw new Error('catalog failed'); return catalog}
+    if (method === 'fleetTech.report') return technology
+    if (method === 'mind.plan') return costs
+    throw new Error(`Unexpected method: ${method}`)
+  })
+  const view = () => <MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={dock}/>}/></Routes></MemoryRouter>
+  const rendered = render(view())
+  await screen.findByRole('table')
+  connection.value = 'offline'; rendered.rerender(view())
+  connection.value = 'ready'; rendered.rerender(view())
+  await screen.findByText('catalog failed')
+  fireEvent.click(screen.getByRole('button', {name: '重试'}))
+  await waitFor(() => expect(screen.queryByText('catalog failed')).toBeNull())
+  expect(catalogReads).toBe(3)
+})
+
+it('refreshes the reports once after a revision conflict and exposes retry', async () => {
+  const refresh = vi.fn()
+  let calculations = 0
+  vi.mocked(api.request).mockImplementation(async method => {
+    if (method === 'fleetTech.catalog') return catalog
+    if (method === 'fleetTech.report') return technology
+    if (method === 'mind.plan') {
+      if (++calculations === 1) throw new ApiError('CONFLICT', '版本已更新')
+      return costs
+    }
+    throw new Error('Unexpected API method')
+  })
+  render(<MemoryRouter initialEntries={['/test']}><Routes><Route path="/:instance" element={<MindCalculator report={dock} onRefresh={refresh}/>}/></Routes></MemoryRouter>)
+  await screen.findByText('版本已更新')
+  expect(refresh).toHaveBeenCalledTimes(1)
+  fireEvent.click(screen.getByRole('button', {name: '重试'}))
+  await screen.findByRole('table')
+  expect(calculations).toBe(2)
 })

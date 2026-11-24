@@ -2,7 +2,7 @@
  * @fileoverview 调度器的任务计划与状态分组。
  */
 
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ChevronRight, CirclePlay, Hourglass, ListTodo } from 'lucide-react'
 import type { Overview } from '../api/types'
@@ -62,7 +62,6 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
   const {t, ui, notify, theme} = useApp()
   const grouped = theme === 'minimal'
   const navigate = useNavigate()
-  const [menu, setMenu] = useState<{task: QueueTask; x: number; y: number}>()
   const positions = useRef(new Map<string, Placement>())
   const known = useRef(new Set<string>())
   const list = useRef<HTMLDivElement>(null)
@@ -201,10 +200,9 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
 
   function renderTask(task: QueueTask) {
     const nextRun = task.nextRun?.replace('T', ' ').trim()
-    return <Link key={task.name} data-task={task.name}
+    return <ContextMenu key={task.name} items={menuItems(task)}><Link data-task={task.name}
       className={grouped ? 'rail-task-item' : `rail-task-item ${task.state}`}
-      to={`/i/${instance}/task/${task.name}`}
-      onContextMenu={event => {event.preventDefault(); setMenu({task, x: event.clientX, y: event.clientY})}}>
+      to={`/i/${instance}/task/${task.name}`}>
       <div className="rail-task-main">
         <strong>{t(`Task.${task.name}.name`)}</strong>
         {nextRun && <small>{nextRun}</small>}
@@ -216,7 +214,7 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
         </span>
       )}
       <ChevronRight size={13}/>
-    </Link>
+    </Link></ContextMenu>
   }
 
   return <div key={grouped ? 'grouped' : 'flat'} className="rail-task-list" ref={list}>
@@ -243,6 +241,5 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
         )}
       </>
     ) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
-    {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.task)} onClose={() => setMenu(undefined)}/>}
   </div>
 }

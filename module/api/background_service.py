@@ -12,6 +12,11 @@
 from module.base.runtime_params import DOWNLOAD_TIMEOUT
 import ipaddress
 import json
+import tempfile
+from functools import wraps
+
+from deploy.atomic import atomic_write
+from module.config.transaction import config_transaction
 import os
 import subprocess
 import sys
@@ -212,6 +217,19 @@ def _read_index() -> List[Dict[str, Any]]:
         return []
 
 
+def _atomic_write(path: Path, data: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    atomic_write(str(path), data)
+
+
+def _gallery_mutation(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        with config_transaction(LIBRARY_DIR.parent / 'gallery-index.json', timeout=60):
+            return function(*args, **kwargs)
+    return wrapped
+
+
 def _write_index(entries: List[Dict[str, Any]]) -> None:
     """将图库条目列表写入索引文件。
 
@@ -219,7 +237,7 @@ def _write_index(entries: List[Dict[str, Any]]) -> None:
         entries: 待写入的图库条目列表。
     """
     LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
-    INDEX_FILE.write_text(json.dumps(entries, ensure_ascii=False, indent=2), encoding='utf-8')
+    _atomic_write(INDEX_FILE, json.dumps(entries, ensure_ascii=False, indent=2).encode('utf-8'))
 
 
 PROXY_DIR = PROJECT_ROOT / 'cache' / 'background' / 'proxy'
@@ -302,30 +320,37 @@ def gallery_add(url: str, name: str = '') -> Dict[str, Any]:
     except (requests.RequestException, http.RequestException) as error:
         raise BackgroundError(f'抓取失败：{type(error).__name__}') from error
     written = 0
-    with response, open(target, 'wb') as handle:
-        for chunk in response.iter_content(64 * 1024):
-            written += len(chunk)
-            if written > MAX_BYTES:
-                handle.close()
-                target.unlink(missing_ok=True)
-                raise BackgroundError('文件超过 20 MB，已放弃。')
-            handle.write(chunk)
-    entry = {
-        'id': identifier,
-        'name': name or Path(urlparse(meta['final_url']).path).name or identifier,
-        'size': written,
-        'added': int(time.time()),
-        'kind': 'video' if meta['content_type'].startswith('video/') else 'image',
-        'source': meta['final_url'],
-    }
-    entries = [item for item in _read_index() if item.get('id') != identifier]
-    entries.append(entry)
-    _write_index(entries)
+    temporary = None
+    try:
+        with response, tempfile.NamedTemporaryFile(dir=LIBRARY_DIR.parent, delete=False) as handle:
+            temporary = Path(handle.name)
+            for chunk in response.iter_content(64 * 1024):
+                written += len(chunk)
+                if written > MAX_BYTES:
+                    raise BackgroundError('文件超过 20 MB，已放弃。')
+                handle.write(chunk)
+        entry = {
+            'id': identifier,
+            'name': name or Path(urlparse(meta['final_url']).path).name or identifier,
+            'size': written,
+            'added': int(time.time()),
+            'kind': 'video' if meta['content_type'].startswith('video/') else 'image',
+            'source': meta['final_url'],
+        }
+        with config_transaction(LIBRARY_DIR.parent / 'gallery-index.json', timeout=60):
+            os.replace(temporary, target)
+            entries = [item for item in _read_index() if item.get('id') != identifier]
+            entries.append(entry)
+            _write_index(entries)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     logger.info(f'[背景图库] 已存入 {identifier}（{written} 字节）')
     return entry
 
 
-def gallery_add_bytes(data: bytes, filename: str, content_type: str = '') -> Dict[str, Any]:
+@_gallery_mutation
+def gallery_add_bytes(data: bytes, filename: str, content_type: str = '', *, legacy: bool = False) -> Dict[str, Any]:
     """把浏览器上传的文件存进图库（本地图片走这条；服务端不再去网上抓）。
 
     Args:
@@ -349,10 +374,18 @@ def gallery_add_bytes(data: bytes, filename: str, content_type: str = '') -> Dic
         raise BackgroundError('只支持图片或视频文件。')
     if suffix not in IMAGE_SUFFIX + VIDEO_SUFFIX:
         suffix = '.mp4' if is_video else '.jpg'
-    digest = hashlib.sha1(data).hexdigest()[:10]
-    identifier = f'{int(time.time() * 1000):x}-{digest}{suffix}'
-    LIBRARY_DIR.mkdir(parents=True, exist_ok=True)
-    (LIBRARY_DIR / identifier).write_bytes(data)
+    if legacy:
+        canonical = {'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp',
+                     'image/gif': '.gif', 'image/bmp': '.bmp', 'image/avif': '.avif',
+                     'video/mp4': '.mp4', 'video/webm': '.webm', 'video/quicktime': '.mov'}
+        suffix = canonical.get(content_type.split(';', 1)[0].strip().lower(), suffix)
+    digest = hashlib.sha256(data).hexdigest()
+    identifier = f'legacy-{digest}{suffix}' if legacy else f'{time.time_ns():x}-{digest[:10]}{suffix}'
+    if legacy:
+        existing = next((item for item in _read_index() if item.get('id') == identifier), None)
+        if existing and (LIBRARY_DIR / identifier).is_file():
+            return existing
+    _atomic_write(LIBRARY_DIR / identifier, data)
     entry = {
         'id': identifier,
         'name': Path(filename or '').name or identifier,
@@ -368,6 +401,7 @@ def gallery_add_bytes(data: bytes, filename: str, content_type: str = '') -> Dic
     return entry
 
 
+@_gallery_mutation
 def gallery_remove(identifier: str) -> bool:
     """从图库删除一个条目（包括文件与索引）。
 

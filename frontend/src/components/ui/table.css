@@ -1,0 +1,55 @@
+input.table-scroll-control[type='range'] {
+  display: block;
+  width: 100%;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+
+input.table-scroll-control[type='range']::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--theme-border, #a5b1bd);
+}
+
+input.table-scroll-control[type='range']::-moz-range-track,
+input.table-scroll-control[type='range']::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--theme-border, #a5b1bd);
+}
+
+input.table-scroll-control[type='range']::-webkit-slider-thumb {
+  width: 36px;
+  height: 16px;
+  margin-top: -4px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  background: var(--theme-text, #334155);
+  box-shadow: none;
+}
+
+input.table-scroll-control[type='range']::-moz-range-thumb {
+  width: 36px;
+  height: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--theme-text, #334155);
+  box-shadow: none;
+}
+
+input.table-scroll-control[type='range']:focus-visible {
+  outline: 2px solid var(--theme-focus, #2563eb);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (forced-colors: active) {
+  input.table-scroll-control[type='range'] { appearance: auto; }
+}

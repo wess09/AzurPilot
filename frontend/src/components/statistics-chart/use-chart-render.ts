@@ -2,7 +2,7 @@
  * @fileoverview ECharts 画布渲染副作用：主题监听、轴配置、涨跌分段与缩放控件。
  * 从 StatisticsChart.tsx 原 247-431 行提取，纯搬迁未改动。
  */
-import { useEffect, type RefObject } from 'react'
+import { useEffect } from 'react'
 import * as echarts from 'echarts/core'
 import type { YAxisComponentOption } from 'echarts'
 import { isActionPointSeries, riseFallSegments } from '../statisticsData'
@@ -11,7 +11,7 @@ import type { ChartUi, SeriesDatumWithColor } from './shared'
 
 /** 将系列数据渲染到 ECharts 画布：轴、涨跌分段与主题变化时重建配置。 */
 export function useChartRender({element, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase}: {
-  element: RefObject<HTMLDivElement | null>
+  element: HTMLDivElement | null
   seriesData: SeriesDatumWithColor[]
   shownData: SeriesDatumWithColor[]
   hasPoints: boolean
@@ -27,8 +27,8 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
   zeroBase: boolean
 }) {
   useEffect(() => {
-    if (!element.current || !hasPoints) return
-    const container = element.current
+    if (!element || !hasPoints) return
+    const container = element
     const chart = echarts.getInstanceByDom(container) ?? echarts.init(container, undefined, {locale: language.startsWith('zh') ? 'ZH' : 'EN'})
 
     // 重绘只取决于下面这几个 CSS 变量。这个观察者还会被与图表无关的 <html> style
@@ -209,7 +209,7 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
 
     render()
     const observer = new ResizeObserver(() => chart.resize())
-    observer.observe(element.current)
+    observer.observe(container)
     const themeObserver = new MutationObserver(render)
     themeObserver.observe(document.documentElement, {attributeFilter: ['data-theme', 'style']})
     return () => {
@@ -217,5 +217,5 @@ export function useChartRender({element, seriesData, shownData, hasPoints, isCan
       observer.disconnect()
       themeObserver.disconnect()
     }
-  }, [shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase])
+  }, [element, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase])
 }

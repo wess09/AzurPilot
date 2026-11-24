@@ -130,6 +130,40 @@ class IslandFisheryQuantityTests(unittest.TestCase):
                     self.assertEqual(sum(quantity for _, quantity in ui.buys), max(0, capacity - stock))
                     self.assertEqual(ui.fishery.to_plant_list, [])
 
+    def meat_ui(self, owned, working=None, saltwater=0):
+        ui = FisheryUI(positions=2, default_posts=2, working=working)
+        ui.fishery.config.IslandFishery_MinFreshwaterFishMeat = 100
+        ui.fishery.config.IslandFishery_MinSaltwaterFishMeat = saltwater
+        ui.fishery.run_fish_meat_exchange = Mock(return_value=owned)
+        return ui
+
+    def test_fish_meat_shortfall_farms_best_freshwater_fish_before_default(self):
+        # 39/100 freshwater meat: 61 short, Sea Bass gives 3 meat per fish and 6 fish per fry
+        # -> 21 fish -> 4 fry, ahead of the default Yellowfin Tuna
+        ui = self.meat_ui({2521: 39})
+        ui.run()
+        ui.fishery.run_fish_meat_exchange.assert_called_once()
+        self.assertEqual(ui.orders, [('bass', 4), ('yellowfin_tuna', 5)])
+
+    def test_fish_meat_shortfall_counts_fish_already_farming(self):
+        # a post already farming 4 Sea Bass fry covers the shortfall
+        ui = self.meat_ui({2521: 39}, working={0: ('bass', 4)})
+        ui.run()
+        self.assertEqual(ui.orders, [('yellowfin_tuna', 5)])
+
+    def test_fish_meat_target_met_or_unknown_adds_no_fish(self):
+        for owned in ({2521: 100}, {2521: None}, {}):
+            with self.subTest(owned=owned):
+                ui = self.meat_ui(owned)
+                ui.run()
+                self.assertEqual(ui.orders, [('yellowfin_tuna', 5), ('yellowfin_tuna', 5)])
+
+    def test_saltwater_fish_meat_shortfall_farms_yellowfin_tuna(self):
+        # Yellowfin Tuna: 18 meat per fish, 2 fish per fry -> 50 short = 3 fish = 2 fry
+        ui = self.meat_ui({2521: 100, 2522: 0}, saltwater=50)
+        ui.run()
+        self.assertEqual(ui.orders, [('yellowfin_tuna', 2), ('yellowfin_tuna', 5)])
+
     def test_multiple_posts_target_exact_remaining_demand(self):
         for demand, quantities in ((1, [1]), (6, [5, 1]), (10, [5, 5]), (11, [5, 5, 1]),
                                    (16, [5, 5, 5])):

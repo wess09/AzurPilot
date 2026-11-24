@@ -187,14 +187,14 @@
 .statistics-chain-card {display:inline-flex;align-items:center;justify-content:space-between;gap:6px;box-sizing:border-box;width:var(--chain-cell-width);height:var(--chain-cell-height);padding:0 10px 0 14px;border:1px solid var(--theme-border);border-radius:0;background:var(--theme-control-bg);-webkit-backdrop-filter:var(--theme-control-filter);backdrop-filter:var(--theme-control-filter);font-size:13px;font-weight:500;color:var(--text)}
 .statistics-chain-slot {display:inline-flex;align-items:center}
 .statistics-chain-label {flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-/* 分类切换是 shadcn Tabs：根 .statistics-category-control > [data-slot=tabs-list] > [data-slot=tabs-trigger]。
-   外观全部交给组件自身，这里只管两件结构上的事：轨道不超出内容区；分类多到放不下时在轨道内横向滚动。
-   旧的分段控件皮相（一级底/控件面/13px/16px/竖分隔线）已随控件迁移整块删除，不要再往这里挂。 */
-.statistics-toolbar-row .statistics-category-control {min-width: 0; max-width: 100%}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content: flex-start; max-width: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: none}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list']::-webkit-scrollbar {display: none}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex: 0 0 auto; white-space: nowrap}
-.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity: .55}
+.statistics-toolbar-row {position:relative; min-width:0}
+.statistics-category-measure {min-width:0; max-width:100%}
+.statistics-toolbar-row .statistics-category-control {width:max-content; max-width:none}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-list'] {justify-content:flex-start; width:max-content}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'] {flex:0 0 auto; white-space:nowrap}
+.statistics-toolbar-row .statistics-category-control [data-slot='tabs-trigger'].is-disabled {opacity:.55}
+.statistics-toolbar-row.is-compact .statistics-category-measure {position:absolute; width:0; height:0; overflow:hidden; visibility:hidden; pointer-events:none}
+.statistics-toolbar-row.is-compact .statistics-category-picker {display:flex; width:100%}
 .statistics-category-control button.is-chained::after {content:'';width:5px;height:5px;margin-left:6px;border-radius:50%;background:currentColor;opacity:.45}
 .statistics-category-picker {display:none; align-items:center; gap:10px; min-width:0}
 .statistics-category-picker > .statistics-category-select {flex:1; min-width:0}
@@ -260,12 +260,13 @@
 .statistics-chart {display: flex; flex-direction: column}
 .statistics-chart:not(.chart-expanded) > .statistics-chart-plot > .chart-canvas {height: 380px; min-height: 320px; width: 100%; flex: 0 0 auto}
 /* 与 .panel.statistics-chart 同特异性：后者带 position: relative，低特异性会压掉放大态的 fixed */
-.panel.chart-expanded {position:fixed;inset:20px;z-index:100;overflow:auto;background:var(--surface);box-shadow:0 0 0 50px #0008}.panel.chart-expanded .chart-canvas {flex: none; height:55vh}
+.statistics-chart-dialog[data-slot=dialog-content] {width:calc(100vw - 40px);max-width:none;height:calc(100dvh - 40px);max-height:none;padding:0;display:block;overflow:hidden;background:var(--surface)}
+.panel.chart-expanded {height:100%;overflow:auto;background:var(--surface)}.panel.chart-expanded .chart-canvas {flex:none;height:55vh}
 /* 放大视图铺满窗口后，右上角是 Electron 的窗口控制按钮，会压住「收起图表」；
    同时面板自身可滚动，滚动后标题行会滚出视口；右侧让开按钮宽度并让它吸顶
    这里必须带 !important：紧凑主题用 padding 简写加 !important 压过面板内边距 */
 .panel.chart-expanded .panel-heading {position:sticky;top:0;z-index:2;padding-right:160px !important;background:var(--surface)}
-.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {overflow-x:auto;overflow-y:visible;max-height:none}.statistics-table [data-slot=table-header] {background:var(--theme-surface-muted)}.statistics-table [data-slot=table-head] {color:var(--theme-muted)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
+.statistics-table {min-width:0}.statistics-table h3,.summary-metrics-panel h3 {margin:0;font-size:14px}.table-toolbar {padding:10px 22px;margin:0;flex-wrap:wrap}.table-toolbar input {max-width:240px}.table-scroll {min-width:0;max-height:none}.statistics-table [data-slot=table-header] {background:var(--theme-surface-muted)}.statistics-table [data-slot=table-head] {color:var(--theme-muted)}.table-resource-cell {display:inline-flex;align-items:center;gap:8px;vertical-align:middle}.table-resource-icon {width:26px;height:26px;object-fit:contain;flex-shrink:0;display:block;user-select:none;pointer-events:none;filter:drop-shadow(0 1px 3px rgb(0 0 0 / .2))}.table-header-icon {width:24px;height:24px;margin-right:2px}
 /* 卡片适应：列数由脚本按容器宽度写入，末排因此不会各自撑满整行 */
 .resource-grid.resource-fit {display:grid}
 /* 合并卡横跨整行，卡片的列布局由它内层承载 */
@@ -297,13 +298,8 @@
 .dashboard-option-label span {color:var(--muted);font-size:11px;line-height:1.6}
 .dashboard-option .toggle {flex:0 0 auto;margin-top:2px}
 
-@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.panel.chart-expanded {inset:5px}}
+@media(max-width:950px) {.resource-grid:not(.resource-fit) {grid-template-columns:repeat(auto-fit,minmax(140px,1fr)) !important}.resource-card-editor,.resource-picker-grid {grid-template-columns:1fr}.resource-settings-heading {gap:10px}.stat-metrics {grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.statistics-controls {padding:15px;gap:10px}.statistics-controls label {max-width:100%}.statistics-controls input {max-width:100%}.statistics-sections {flex:none;grid-template-rows:auto auto}.monitor-panel {height:500px}.statistics-chart-dialog[data-slot=dialog-content] {width:calc(100vw - 10px);height:calc(100dvh - 10px)}}
 
-@media(max-width:950px) {
-  /* 分类文字完整收在下拉菜单里，不再露出被切断的半个标签 */
-  .statistics-toolbar-row .statistics-category-control {display:none}
-  .statistics-toolbar-row .statistics-category-picker {display:flex; width:100%}
-}
 
 /* 手机端：165px 起的网格在窄屏只放得下一列，而卡片是按多列设计的
    窄屏改成「图标 + 名字在左、数值在右」的紧凑行，并允许名字折行，长物品名不再被省略号吃掉 */

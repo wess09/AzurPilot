@@ -6,7 +6,7 @@
 from module.island_fishery.assets import *
 from module.island_rancher.assets import *
 from module.island.island import *
-from module.island.island_fish_meat import FRESHWATER_FISH_MEAT, SALTWATER_FISH_MEAT, IslandFishMeatExchange
+from module.island.island_fish_meat import FISH_MEAT_SOURCES, FRESHWATER_FISH_MEAT, SALTWATER_FISH_MEAT, IslandFishMeatExchange
 from module.base.button import Button
 
 def _click_area(device, area):
@@ -287,6 +287,71 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             idx += 1
 
         return products_to_plant, remaining_idle, supply_post_counts
+
+    def _fish_meat_targets(self):
+        return {
+            FRESHWATER_FISH_MEAT: int(getattr(self.config, 'IslandFishery_MinFreshwaterFishMeat', 0) or 0),
+            SALTWATER_FISH_MEAT: int(getattr(self.config, 'IslandFishery_MinSaltwaterFishMeat', 0) or 0),
+        }
+
+    def _run_fish_meat_exchange(self):
+        """
+        鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）；
+        兑换时保留各鱼的养殖底线，避免把菜品要用的鱼换光。
+
+        Returns:
+            dict: {鱼肉ID: 兑换后持有数量}，读取失败为 None。
+
+        Pages:
+            in: 任意页面
+            out: page_island
+        """
+        return self.run_fish_meat_exchange(
+            self._fish_meat_targets(),
+            keep={fish_id: self.fishery_threshold.get(name, 0) for name, fish_id in FISH_MEAT_FISH_IDS.items()},
+        )
+
+    def _best_fish_for_meat(self, meat_id):
+        """每批鱼苗产出鱼肉最多的鱼（每苗产量 × 每条鱼肉），没有则返回 None。"""
+        sources = FISH_MEAT_SOURCES.get(meat_id, {})
+        best = None
+        for item in self.FISHERY_ITEMS:
+            per_fish = sources.get(FISH_MEAT_FISH_IDS.get(item['name']), 0)
+            per_fry = item.get('yield', 1) * per_fish
+            if per_fry > 0 and (best is None or per_fry > best[1]):
+                best = (item, per_fry, per_fish)
+        return best
+
+    def _add_fish_meat_demand(self, owned):
+        """
+        鱼肉兑换后仍不足目标时，按缺口把鱼苗加入养殖需求。
+
+        Args:
+            owned (dict | None): {鱼肉ID: 兑换后持有数量}，读取失败为 None。
+        """
+        owned = owned or {}
+        for meat_id, target in self._fish_meat_targets().items():
+            if target <= 0:
+                continue
+            have = owned.get(meat_id)
+            meat_name = '淡水鱼肉' if meat_id == FRESHWATER_FISH_MEAT else '海水鱼肉'
+            if have is None:
+                logger.info(f'[岛屿-渔场] {meat_name}持有数量未知，不按鱼肉缺口养殖')
+                continue
+            shortfall = target - have
+            if shortfall <= 0:
+                continue
+            best = self._best_fish_for_meat(meat_id)
+            if best is None:
+                continue
+            item, _, per_fish = best
+            yield_amount = item.get('yield', 1)
+            fish_needed = (shortfall + per_fish - 1) // per_fish
+            fry_needed = (fish_needed + yield_amount - 1) // yield_amount
+            logger.info(f'[岛屿-渔场] {meat_name} {have}/{target}，缺{shortfall}，'
+                        f'养殖{self._item_cn(item["name"])}（每条{per_fish}鱼肉，每苗产{yield_amount}），'
+                        f'需{fish_needed}条，加入{fry_needed}个鱼苗')
+            self.to_plant_list.extend([item['name']] * fry_needed)
 
     def _remove_working_fishery_demand(self):
         """从补养殖需求中扣除首轮岗位扫描发现的工作中鱼苗数量。"""
@@ -632,6 +697,10 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
             logger.info("[岛屿-渔场] 首轮渔场岗位检查没有发现可收取鱼获")
 
         self.check_inventory_and_prepare_list()
+        # 先兑换鱼肉再安排养殖：兑换后仍不足目标时，把缺口换算成鱼苗加入养殖需求，
+        # 否则鱼肉目标只会消耗现有的鱼，空闲岗位全给默认产品
+        fish_meat_owned = self._run_fish_meat_exchange()
+        self._add_fish_meat_demand(fish_meat_owned)
         self._remove_working_fishery_demand()
 
         logger.info("[岛屿-渔场] \n当前库存统计:")
@@ -703,12 +772,6 @@ class IslandFishery(Island, WarehouseOCR, LoginHandler, IslandFishMeatExchange):
 
         logger.info("[岛屿-渔场] \n渔场管理完成！")
 
-        # 鱼肉不足目标时把鱼兑换成鱼肉（目标为 0 时跳过，岛屿生产规划器会按货运缺口与菜品用量写入）；
-        # 兑换时保留各鱼的养殖底线，避免把菜品要用的鱼换光
-        self.run_fish_meat_exchange({
-            FRESHWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinFreshwaterFishMeat', 0),
-            SALTWATER_FISH_MEAT: getattr(self.config, 'IslandFishery_MinSaltwaterFishMeat', 0),
-        }, keep={fish_id: self.fishery_threshold.get(name, 0) for name, fish_id in FISH_MEAT_FISH_IDS.items()})
 
         # 设置下次运行时间：合并牧场和渔场的计时器，取最早的时间
         future_finish = []

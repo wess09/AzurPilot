@@ -2,16 +2,24 @@
  * @fileoverview 舰队信息页：查看 FleetScan 扫描出的六支舰队编成，并提供扫描开关。
  */
 
-import {useEffect, useState} from 'react'
+import {LoadBoundary} from '../components/ui/load-boundary'
+import {Button} from '../components/ui/button'
+
+
+import {useCallback, useEffect, useRef, useState} from 'react'
+import {usePageRead} from '../app/usePageRead'
+import {Panel, PanelHeading} from '../components/ui/page'
 import {useParams} from 'react-router-dom'
 import {Ship} from 'lucide-react'
 import {api} from '../api/client'
+import type {Config} from '../api/types'
 import {useApp, useConnection} from '../app/context'
 import {Switch} from '../components/official-ui/switch'
 import {Checkbox} from '../components/official-ui/checkbox'
 import {Label} from '../components/ui/label'
 import {editor} from '../config/editors'
-import {Empty, ErrorBox, Loading, PageTitle} from '../components/ui'
+import {expectConfig, isConfigConflict} from '../config/expectConfig'
+import {Empty, ErrorBox, PageTitle} from '../components/ui'
 import {LogPanel} from '../components/LogPanel'
 
 /**
@@ -25,60 +33,61 @@ export function FleetInfoPage() {
   const {ui, t, instances, notify} = useApp(), connection = useConnection()
   const current = instances.find(item => item.name === instance)
   const scanning = current?.status === 'running' && current.currentTask === 'FleetScan'
-  const [value, setValue] = useState<unknown>(), [loaded, setLoaded] = useState(false)
   const [error, setError] = useState(''), [busy, setBusy] = useState(false)
+  const [dirty, setDirty] = useState(false), [conflict, setConflict] = useState(false)
   const [updateEmotion, setUpdateEmotion] = useState(true)
   const reason = connection !== 'ready' ? ui('mind.scanDisconnected')
     : !current ? ui('mind.scanLoading')
     : current.status === 'updating' ? ui('mind.scanUpdating')
     : current.status === 'running' && !scanning ? ui('mind.scanRunning') : ''
 
+  const load = useCallback(() => api.request('config.get', {instance}), [instance])
+  const pollAfter = useCallback(() => scanning ? 3000 : 0, [scanning])
+  const read = usePageRead(instance, connection === 'ready', load, pollAfter)
+  const baseline = useRef<{key: string; value?: Config}>({key: instance})
+  if (baseline.current.key !== instance) baseline.current = {key: instance}
+  const editing = useRef(false)
+  editing.current = dirty || busy
+  useEffect(() => {setDirty(false); setConflict(false); setError('')}, [instance])
+  const loaded = read.ready
+  const value = read.data?.values.FleetInfo?.FleetInfo?.Result
   useEffect(() => {
-    if (connection !== 'ready') return
-    let active = true
-    const load = async () => {
-      try {
-        const config = await api.request('config.get', {instance})
-        if (active) {
-          setValue(config.values.FleetInfo?.FleetInfo?.Result)
-          setUpdateEmotion(config.values.FleetInfo?.FleetInfo?.UpdateEmotion !== false)
-          setLoaded(true); setError('')
-        }
-      } catch (error) {if (active) setError((error as Error).message)}
+    if (read.data && (!editing.current || baseline.current.value === undefined)) {
+      const next = read.data.values.FleetInfo?.FleetInfo?.UpdateEmotion !== false
+      baseline.current.value = read.data
+      setUpdateEmotion(next)
     }
-    void load()
-    const timer = scanning ? setInterval(() => void load(), 3000) : undefined
-    return () => {active = false; clearInterval(timer)}
-  }, [instance, connection, scanning])
+  }, [instance, read.data])
 
   async function toggleScan() {
     setBusy(true); setError('')
     try {
       if (scanning) await api.request('scheduler.stop', {instance})
       else {
-        // 先等该实例的配置编辑队列落定，再读 revision 发起 patch，避免排队中的改动丢进覆盖。
         await editor(`config:${instance}`).settled()
-        const config = await api.request('config.get', {instance})
-        await api.request('config.patch', {instance, revision: config.revision, changes: [
+        const result = await api.request('config.patch', {instance, changes: expectConfig(baseline.current.value, [
           {path: 'FleetInfo.FleetInfo.UpdateEmotion', value: updateEmotion},
-        ]})
+        ])})
+        baseline.current.value = result
+        setDirty(false); setConflict(false)
+        read.setData(result)
         await api.request('tasks.run', {instance, task: 'FleetScan'})
         notify(ui('task.started'))
       }
-    } catch (error) {setError((error as Error).message)}
+    } catch (error) {if (isConfigConflict(error)) setConflict(true); else setError((error as Error).message)}
     finally {setBusy(false)}
   }
 
   return <>
     <PageTitle title={t('Task.FleetInfo.name')} actions={<>
-      <span className="flex items-center gap-3"><Checkbox id="fleet-update-emotion" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onCheckedChange={next => setUpdateEmotion(next === true)}/><Label htmlFor="fleet-update-emotion">{ui('fleet.updateEmotion')}</Label></span>
+      <span className="flex items-center gap-3"><Checkbox id="fleet-update-emotion" checked={updateEmotion} disabled={!loaded || scanning || busy || !!reason} onCheckedChange={next => {setUpdateEmotion(next === true); setDirty(true)}}/><Label htmlFor="fleet-update-emotion">{ui('fleet.updateEmotion')}</Label></span>
       <span>{t('Task.FleetScan.name')}</span><Switch checked={scanning} aria-label={t('Task.FleetScan.name')} disabled={!loaded || busy || !!reason} title={reason || undefined} onCheckedChange={() => void toggleScan()}/>
     </>}/>
     <p className="muted">{ui('rotation.duplicates')}</p>
     {reason && <p className="muted" role="status">{reason}</p>}
-    {error && <ErrorBox message={error}/>}
-    {loaded ? <FleetInfo value={value}/> : !error && <Loading/>}
-    {scanning && <section className="panel"><h2>{ui('monitor.logs')}</h2><LogPanel/></section>}
+    {conflict && <p role="alert">{ui('edit.conflict')} <Button type="button" variant="outline" onClick={() => {setDirty(false); setConflict(false); read.reload()}}>{ui('edit.reloadDiscard')}</Button></p>}
+    <LoadBoundary ready={loaded} error={error || read.error} retry={read.reload}>{loaded && <FleetInfo value={value}/>}</LoadBoundary>
+    {scanning && <Panel><h2>{ui('monitor.logs')}</h2><LogPanel/></Panel>}
   </>
 }
 
@@ -94,7 +103,7 @@ export function FleetInfo({value}: {value: unknown}) {
   let fleets: Record<string, Record<string, Array<{name: string; level?: number; emotion?: number | null; slot?: number} | string>>>
   try {fleets = typeof value === 'string' ? JSON.parse(value) : value} catch {return <ErrorBox message={ui('fleet.invalid')}/>}
   const columns = {vanguard: ui('fleet.vanguard'), main: ui('fleet.main'), submarine: ui('fleet.submarine')}
-  return <div className="fleet-grid">{[1, 2, 3, 4, 5, 6].map(fleet => <section className="panel" key={fleet}><div className="panel-heading"><h2>{ui('fleet.title', {number: fleet})}</h2><Ship size={18}/></div>{Object.entries(columns).map(([key, label]) => <div className="fleet-column" key={key}><h3>{label}</h3>{fleets[key]?.[fleet]?.length ? fleets[key][fleet].map((ship, index) => <div key={index}>
+  return <div className="fleet-grid">{[1, 2, 3, 4, 5, 6].map(fleet => <Panel key={fleet}><PanelHeading title={ui('fleet.title', {number: fleet})} actions={<Ship size={18}/>}/>{Object.entries(columns).map(([key, label]) => <div className="fleet-column" key={key}><h3>{label}</h3>{fleets[key]?.[fleet]?.length ? fleets[key][fleet].map((ship, index) => <div key={index}>
     <span>{(() => {
       const slot = typeof ship === 'string' ? undefined : ship.slot
       if (slot === undefined || !Number.isInteger(slot) || slot < 1 || slot > 6) return ''
@@ -105,5 +114,5 @@ export function FleetInfo({value}: {value: unknown}) {
       if (emotion == null || !Number.isInteger(emotion) || emotion < 0 || emotion > 150) return ui('fleet.unknown')
       return emotion
     })()})}</small>
-  </div>) : <p>{ui('fleet.noRecord')}</p>}</div>)}</section>)}</div>
+  </div>) : <p>{ui('fleet.noRecord')}</p>}</div>)}</Panel>)}</div>
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { BackgroundGalleryProvider } from '../app/backgroundGallery'
 import { AppContext, type AppContextValue } from '../app/context'
 import { InterfaceSettings } from './InterfaceSettings'
 import { translateUi } from '../i18n'
@@ -52,7 +53,7 @@ function createMockContext(theme: AppContextValue['theme']): AppContextValue {
 function render(theme: AppContextValue['theme'], material: AppContextValue['material'] = 'glass') {
   return renderToStaticMarkup(
     <AppContext.Provider value={{...createMockContext(theme), material}}>
-      <InterfaceSettings />
+      <BackgroundGalleryProvider><InterfaceSettings /></BackgroundGalleryProvider>
     </AppContext.Provider>
   )
 }

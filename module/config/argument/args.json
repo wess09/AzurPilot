@@ -17471,6 +17471,14 @@
       "SeasonalThreshold": {
         "type": "input",
         "value": 7
+      },
+      "FillEmptySlots": {
+        "type": "checkbox",
+        "value": false,
+        "option": [
+          true,
+          false
+        ]
       }
     },
     "IslandBusinessShop1": {

@@ -6,7 +6,7 @@ AzurPilot 改动：
 - 只补到目标数量（`IslandFishery.MinFreshwaterFishMeat` / `MinSaltwaterFishMeat`），
   按每条鱼的鱼肉产量从高到低选鱼，不全部兑换；
 - 商店侧栏、确认弹窗、获得物品弹窗按颜色识别（国际服通用弹窗资源不匹配），不新增截图；
-- 由渔场任务在养殖完成后调用。
+- 由渔场任务在读取库存后、安排养殖前调用；兑换后仍不足的部分由渔场换算成鱼苗加入养殖需求。
 
 页面布局（1280×720）：岛屿主页右上「商店」→ 左侧栏第 7 项「鱼肉加工」，下方子页签「淡水」「海水」；
 鱼卡每行 4 张，点卡片 +1，卡片右上「-」减 1；右下「加工」按钮，弹出「是否加工」确认。
@@ -364,6 +364,10 @@ class IslandFishMeatExchange:
 
         Args:
             targets (dict): {鱼肉ID: 目标持有数量}，0 或负数跳过。
+            keep (dict): {鱼ID: 保留数量}。
+
+        Returns:
+            dict: {鱼肉ID: 兑换后持有数量}，读取或兑换失败为 None。
 
         Pages:
             in: 任意页面
@@ -371,8 +375,10 @@ class IslandFishMeatExchange:
         """
         targets = {meat_id: int(target or 0) for meat_id, target in targets.items() if int(target or 0) > 0}
         if not targets:
-            return
+            return {}
         logger.hr('Island fish meat exchange', level=1)
+        owned = {}
         for meat_id, target in targets.items():
-            self.exchange_fish_meat(meat_id, target, keep)
+            owned[meat_id] = self.exchange_fish_meat(meat_id, target, keep)
         self._leave_fish_meat_page()
+        return owned

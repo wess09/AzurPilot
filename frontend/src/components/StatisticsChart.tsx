@@ -6,15 +6,15 @@
  * chart-controls / chart-picker / chart-metrics。
  */
 
-import { createPortal } from 'react-dom'
-import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as echarts from 'echarts/core'
 import { LineChart, CandlestickChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, DataZoomComponent, ToolboxComponent, LegendComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type {StatSeries} from '../api/types'
-import { Empty } from './ui'
+import { Empty, Panel } from './ui'
 import { Button } from './ui/button'
+import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
 import {buildSeriesView} from './statisticsData'
 import { updateStatisticsPrefs } from '../app/statisticsPrefs'
 import { useApp } from '../app/context'
@@ -73,18 +73,12 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
   const {ui, language, theme} = useApp()
   const {selectedKeys, setSelectedKeys, mode, setMode, axisMode, setAxisMode, bucket, setBucket, from, setFrom, to, setTo} = useChartSelection({category, series})
 
-  useEffect(() => {
-    if (!expanded) return
-    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') onToggleExpanded() }
-    window.addEventListener('keydown', close)
-    return () => window.removeEventListener('keydown', close)
-  }, [expanded, onToggleExpanded])
-
-  const element = useRef<HTMLDivElement>(null)
+  const [canvasNode, setCanvas] = useState<HTMLDivElement | null>(null)
+  const expandButton = useRef<HTMLButtonElement>(null)
 
   // 全屏放大模式下根据固定视口计算高度；常规贯穿模式下沿用样式表定义的舒适高度。
   useLayoutEffect(() => {
-    const canvas = element.current
+    const canvas = canvasNode
     const panel = canvas?.closest<HTMLElement>('.statistics-chart')
     if (!canvas || !panel) return
     if (!expanded) {
@@ -106,7 +100,7 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
     observer.observe(panel)
     for (const child of panel.children) if (child !== canvas) observer.observe(child)
     return () => observer.disconnect()
-  }, [series, language, expanded])
+  }, [series, language, expanded, canvasNode])
 
   function toggleKey(key: string) {
     setSelectedKeys(prev => (prev.includes(key) ? (prev.length <= 1 ? prev : prev.filter(k => k !== key)) : [...prev, key]))
@@ -142,16 +136,16 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
 
   const hasPoints = shownData.some(item => item.points.length > 0)
   useEffect(() => {
-    const el = element.current
+    const el = canvasNode
     return () => {
       if (el) echarts.getInstanceByDom(el)?.dispose()
     }
-  }, [])
+  }, [canvasNode])
+
+  useChartRender({element: canvasNode, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase})
 
   const single = seriesData[0]
   if (!single) return null
-
-  useChartRender({element, seriesData, shownData, hasPoints, isCandlestick, axisMode, isSingle, categoryTimes, category, language, ui, theme, stackedRise, zeroBase})
 
   // 图表设置（类型、坐标轴、采样粒度、时间范围）排在图表下方：先看数据，再决定怎么画。
   const {controls, rangeError} = buildChartControls({ui, mode, setMode, bucket, setBucket, axisMode, setAxisMode, effectiveBucket, isCandlestick, isSingle, from, setFrom, to, setTo})
@@ -163,10 +157,10 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
   const metrics = buildChartMetrics({isSingle, single, seriesData, compact, filtered, selectedKeys, shownData, onToggleFilter, isCandlestick, ui})
 
   const chart = (
-    <section className={`panel statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
+    <Panel className={`statistics-chart ${expanded ? 'chart-expanded' : ''}`}>
       <div className="panel-heading">
-        <h2>{expanded && title ? title : headingLabel}</h2>
-        <div className="stat-card-actions">{foldControl}<Button variant="ghost" size="sm" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</Button></div>
+        {expanded ? <DialogTitle asChild><h2>{title || headingLabel}</h2></DialogTitle> : <h2>{headingLabel}</h2>}
+        <div className="stat-card-actions">{foldControl}<Button ref={expanded ? undefined : expandButton} variant="ghost" size="sm" onClick={onToggleExpanded}>{expanded ? ui('stats.collapseChart') : ui('stats.expandChart')}</Button></div>
       </div>
 
       {picker}
@@ -175,7 +169,7 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
         <>
           {metrics}
 
-          <div className="statistics-chart-plot">{plotFoldControl}<div ref={element} className="chart-canvas" role="img" aria-label={ui('stats.chartAria', {label: shownData.map(item => item.series.label).join(', ')})}/></div>
+          <div className="statistics-chart-plot">{plotFoldControl}<div ref={setCanvas} className="chart-canvas" role="img" aria-label={ui('stats.chartAria', {label: shownData.map(item => item.series.label).join(', ')})}/></div>
           {controls}
           {rangeError}
           <p className="panel-note">{ui('stats.chartHint')}</p>
@@ -187,9 +181,13 @@ export function StatisticsChart({series, expanded = false, onToggleExpanded, tit
           <Empty title={ui('stats.noValidTitle')}>{ui('stats.noValidHint')}</Empty>
         </>
       )}
-    </section>
+    </Panel>
   )
 
-  // 放大态挂到 body：卡片链给每张卡设了 z-index，面板留在卡内会被顶栏盖住。
-  return expanded ? createPortal(chart, document.body) : chart
+  return <Dialog open={expanded} onOpenChange={open => {if (!open && expanded) onToggleExpanded()}}>
+    {!expanded && chart}
+    <DialogContent className="statistics-chart-dialog" aria-describedby={undefined} onCloseAutoFocus={event => {event.preventDefault(); requestAnimationFrame(() => expandButton.current?.focus())}}>
+      {expanded && chart}
+    </DialogContent>
+  </Dialog>
 }

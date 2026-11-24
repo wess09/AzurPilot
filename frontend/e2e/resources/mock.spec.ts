@@ -78,3 +78,47 @@ test('窄屏有收支时展示实际数量并可从桑基图筛选任务', async
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
   expect(errors).toEqual([])
 })
+
+test('筛选失败时隐藏旧结果并保留油量草稿，同条件刷新失败保留结果', async ({page}) => {
+  let failNext = false
+  let release: (() => void) | undefined
+  await page.routeWebSocket(/\/api\/v1\/ws/, ws => {
+    const server = ws.connectToServer()
+    ws.onMessage(message => {
+      if (typeof message === 'string') {
+        const request = JSON.parse(message) as {id: string; method: string}
+        if (failNext && request.method === 'statistics.resourceFlows') {
+          failNext = false
+          release = () => ws.send(JSON.stringify({v: 1, type: 'response', id: request.id, ok: false, error: {code: 'TEST', message: '测试读取失败', details: null}}))
+          return
+        }
+      }
+      server.send(message)
+    })
+  })
+  await page.goto('/#/i/demo-main/resources')
+  const details = page.locator('.resource-panel').filter({has: page.getByRole('heading', {name: '收支明细'})})
+  await expect(details).toBeVisible()
+  await page.getByLabel('控制线', {exact: true}).fill('23000')
+
+  failNext = true
+  await page.getByRole('button', {name: '刷新统计', exact: true}).click()
+  await expect.poll(() => !!release).toBe(true)
+  release!(); release = undefined
+  await expect(page.getByText('测试读取失败')).toBeVisible()
+  await expect(details).toBeVisible()
+
+  failNext = true
+  await choose(page, '任务', '委托')
+  await expect.poll(() => !!release).toBe(true)
+  await expect(details).toHaveCount(0)
+  await expect(page.getByRole('button', {name: '导出全部筛选明细', exact: true})).toBeDisabled()
+  await expect(page.getByLabel('控制线', {exact: true})).toHaveValue('23000')
+  release!(); release = undefined
+  await expect(page.getByText('测试读取失败')).toBeVisible()
+  await expect(details).toHaveCount(0)
+  await expect(page.getByLabel('控制线', {exact: true})).toHaveValue('23000')
+  await page.getByRole('button', {name: '重试', exact: true}).click()
+  await expect(page.getByText('共 1 条', {exact: true})).toBeVisible()
+  await expect(page.getByLabel('控制线', {exact: true})).toHaveValue('23000')
+})

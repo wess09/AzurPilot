@@ -2,10 +2,13 @@
  * @fileoverview 插件管理页：导入 .apu 插件包、启停、切换主题插件与卸载。
  */
 
+import {LoadBoundary} from '../components/ui/load-boundary'
+
+
 import { useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { useApp, useConnection } from '../app/context'
-import { ErrorBox, Loading, Modal } from '../components/ui'
+import { ErrorBox, Modal, PageTitle, Panel, PanelHeading } from '../components/ui'
 import { Button } from '../components/ui/button'
 import { usePlugins } from '../plugins/context'
 import type { InstalledPlugin } from '../plugins/types'
@@ -40,10 +43,9 @@ export function Plugins() {
   }
 
   return <div className="settings-page">
-    <h1 className="modern-sr-title">{ui('nav.plugins')}</h1>
-    <section className="panel config-group">
-      <div className="panel-heading flex flex-wrap items-center justify-between gap-3">
-        <h2 className="m-0">{ui('plugins.installed')}</h2>
+    <PageTitle title={ui('nav.plugins')} placement="screen-reader"/>
+    <Panel compact>
+      <PanelHeading className="flex flex-wrap items-center justify-between gap-3" title={ui('plugins.installed')} actions={<>
         <input ref={fileInput} type="file" accept=".apu" hidden aria-label={ui('plugins.import')} onChange={event => {
           const file = event.currentTarget.files?.[0]
           event.currentTarget.value = ''
@@ -52,10 +54,9 @@ export function Plugins() {
           void run('', {method: 'POST', body: file})
         }}/>
         <Button type="button" disabled={disabled} onClick={() => fileInput.current?.click()}><Upload aria-hidden="true"/>{ui('plugins.import')}</Button>
-      </div>
+      </>}/>
       {message && <div className="px-4 pb-4"><ErrorBox message={message}/></div>}
-      {error && <div className="px-4 pb-4"><ErrorBox message={error} retry={refresh}/></div>}
-      {!ready && !error && <Loading/>}
+      <LoadBoundary ready={ready} error={error} retry={refresh}>
       {ready && plugins.length === 0 && <p className="m-0 border-t border-[var(--border)] px-4 py-4 text-sm text-[var(--muted)]">{ui('plugins.empty')}</p>}
       {plugins.map(plugin => {
         const {manifest, enabled} = plugin
@@ -78,8 +79,8 @@ export function Plugins() {
             <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={() => setRemove(plugin)}>{ui('plugins.remove')}</Button>
           </div>
         </article>
-      })}
-    </section>
+      })}</LoadBoundary>
+    </Panel>
     {remove && <Modal title={ui('plugins.remove')} onClose={() => {if (!busy) setRemove(undefined)}}>
       <p>{ui('plugins.removePrompt', {name: remove.manifest.name})}</p>
       <div className="flex justify-end gap-2">

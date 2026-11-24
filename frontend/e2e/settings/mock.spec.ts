@@ -41,7 +41,7 @@ for (const theme of ['modern-light', 'modern-dark'] as const) {
     const uncheckedColor = await thumb.evaluate(element => getComputedStyle(element).backgroundColor)
     await control.check()
     await expect(control).toHaveAttribute('aria-checked', 'true')
-    await expect(page.locator('#deploy-SSLVerify-status')).toContainText('已保存')
+    await expect.poll(() => enabled).toBe(true)
     if (theme === 'modern-dark') {
       await expect.poll(() => thumb.evaluate(element => getComputedStyle(element).backgroundColor)).not.toBe(uncheckedColor)
     }

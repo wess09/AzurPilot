@@ -7,6 +7,7 @@
 
 import { useRef, useState } from 'react'
 import { AlertCircle, Check, Copy } from 'lucide-react'
+import { PageTitle, Panel, PanelHeading } from '../components/ui'
 import { useApp } from '../app/context'
 import { Alert, AlertDescription } from '../components/ui/alert'
 import { Button } from '../components/ui/button'
@@ -14,13 +15,13 @@ import { DeployGroups } from '../components/DeployGroups'
 import { useDeploySettings } from '../app/useDeploySettings'
 import { remoteStatus } from '../app/remoteStatus'
 import { REMOTE_ACCESS_GROUPS } from '../app/settingsGroups'
-import { Spinner } from './settings-ui/spinner'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import {PairingPanel} from '../remote/PairingPanel'
 
 /** 远程访问页：顶部是当前可直接打开的地址与密码提示，下面是配对卡与远程访问/WebUI 设置。 */
 export function RemoteAccess() {
   const {ui} = useApp()
-  const {data, error, edits, queue} = useDeploySettings(true)
+  const {data, error, reload, edits, queue} = useDeploySettings(true)
   const [copied, setCopied] = useState(false)
   const addressRef = useRef<HTMLElement>(null)
 
@@ -51,18 +52,11 @@ export function RemoteAccess() {
   }
 
   return <>
-    <h1 className="modern-sr-title">{ui('nav.remote')}</h1>
+    <PageTitle title={ui('nav.remote')} placement="screen-reader"/>
     <div className="settings-page">
-      {error && <Alert variant="destructive"><AlertCircle/><AlertDescription>{error}</AlertDescription></Alert>}
       {edits.storageError && <Alert variant="destructive"><AlertCircle/><AlertDescription>{edits.storageError}</AlertDescription></Alert>}
-      <section className="panel config-group remote-address-card">
-        <div className="panel-heading">
-          <div>
-            <h2 role="heading" aria-level={2}>{ui('remote.title')}</h2>
-          </div>
-          {/* 状态指示用浅色胶囊 + 圆点：与可点击的实底按钮区分开 */}
-          <span className={`remote-badge remote-badge-${status}`}><span className="tiny-dot"/>{stateLabel}</span>
-        </div>
+      <Panel compact className="remote-address-card">
+        <PanelHeading title={ui('remote.title')} actions={<span className={`remote-badge remote-badge-${status}`}><span className="tiny-dot"/>{stateLabel}</span>}/>
         {address ? <>
           <div className="remote-address">
             <code ref={addressRef}>{address}</code>
@@ -76,15 +70,11 @@ export function RemoteAccess() {
         </> : null}
         {!address && status === 'disabled' && <p className="panel-note">{ui('remote.disabledHint')}</p>}
         {data?.remote?.error && <p className="panel-note">{data.remote.error}</p>}
-      </section>
+      </Panel>
       <PairingPanel ready={!!address && ['cloudflare_ready', 'direct_ready', 'registered'].includes(data?.remote?.state ?? '')}/>
-      {!data ? (
-        <span role="status" className="remote-loading">
-          <Spinner aria-hidden="true"/>{ui('common.loading')}
-        </span>
-      ) : (
-        <DeployGroups data={data} only={REMOTE_ACCESS_GROUPS} edits={edits} queue={queue} />
-      )}
+      <LoadBoundary ready={!!data} error={error} retry={reload}>
+        {data && <DeployGroups data={data} only={REMOTE_ACCESS_GROUPS} edits={edits} queue={queue} />}
+      </LoadBoundary>
     </div>
   </>
 }

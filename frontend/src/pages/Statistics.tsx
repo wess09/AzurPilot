@@ -6,10 +6,11 @@
  * use-statistics-edit / card-model / card-render / toolbar。
  */
 import {Button} from '../components/ui/button'
-import {Fragment, lazy, Suspense, useEffect, useState} from 'react'
+import {Fragment, lazy, Suspense, useEffect, useLayoutEffect, useRef, useState} from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { useApp, useConnection } from '../app/context'
-import { ActionGroup, ErrorBox, Loading } from '../components/ui'
+import { ActionGroup, ErrorBox, Loading, PageTitle } from '../components/ui'
+import { LoadBoundary } from '../components/ui/load-boundary'
 import { applySlots, isPageEnabled, movePageBeside, orderCards, orderPages, pageNeedsSeries, setPageEnabled } from '../app/statisticsLayout'
 import type { UiKey } from '../i18n'
 import { CategorySection } from '../components/CategorySection'
@@ -33,6 +34,19 @@ const StatisticsChart = lazy(() => import('../components/StatisticsChart').then(
  */
 export function Statistics() {
   const {ui, notify} = useApp()
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const [compactCategories, setCompactCategories] = useState(false)
+  useLayoutEffect(() => {
+    const row = toolbarRef.current
+    const tabs = row?.querySelector<HTMLElement>("[data-slot='tabs-list']")
+    if (!row || !tabs) return
+    const measure = () => setCompactCategories(tabs.scrollWidth > row.clientWidth)
+    const observer = new ResizeObserver(measure)
+    observer.observe(row)
+    observer.observe(tabs)
+    measure()
+    return () => observer.disconnect()
+  }, [])
   const {instance = ''} = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const management = searchParams.get('view') === 'management'
@@ -150,8 +164,8 @@ export function Statistics() {
 
   const cardContext = {ui, layout, editMode, dropTarget, draggingKey, setDraggingKey, applyLayout, spaceKeysOf, showKey, moveCard, hideKey, junctionButton, expandedChart, toggleExpanded, zeroBase, setZeroBase, rawTableOf, tableSettings, StatisticsChart}
   const content = <>
-    <div className="statistics-toolbar-row">
-      {categoryControl}
+    <div ref={toolbarRef} className={`statistics-toolbar-row${compactCategories ? ' is-compact' : ''}`}>
+      <div className="statistics-category-measure" inert={compactCategories}>{categoryControl}</div>
       {categoryPicker}
       {/* 动作按钮贴行尾，与左侧分类切换分居两端 */}
       {!management && <ActionGroup className="ml-auto">{actions}</ActionGroup>}
@@ -191,11 +205,10 @@ export function Statistics() {
         }
         return <Fragment key={head}>
           {space.map(page => <CategorySection key={page} params={{instance, category: page, days, month, period, researchSeries, lootTask, includeSeries: pageNeedsSeries(layout, page)}} revision={revision}
-            onState={state => reportOf(page, state.data, state.error)} render={() => null}/>)}
+            onState={reportOf}/>)}
           <section className="statistics-page-section">
-            {error ? <ErrorBox message={error} retry={() => setRevision(value => value + 1)}/>
-              : !ready ? <Loading/>
-                : <div className={`statistics-sections${editMode ? ' is-editing' : ''}`}>
+            <LoadBoundary ready={ready} error={error} retry={() => setRevision(value => value + 1)}>
+                <div className={`statistics-sections${editMode ? ' is-editing' : ''}`}>
                   {view.runs.map(run => {
                     const first = run.keys[0]
                     if (!first) return null
@@ -203,7 +216,8 @@ export function Statistics() {
                       ? <div className="stat-card-chain" key={first}>{run.keys.map(key => draw(key, view.visible[view.visible.indexOf(key) + 1]))}</div>
                       : draw(first, view.visible[view.visible.indexOf(first) + 1])
                   })}
-                </div>}
+                </div>
+            </LoadBoundary>
           </section>
         </Fragment>
       })}
@@ -214,7 +228,7 @@ export function Statistics() {
   // 现代版式：整页只放统计内容（不放调度器与任务计划），页名由顶栏居中显示。
   return <>
     <div className="statistics-modern">
-      <h1 className="modern-sr-title">{ui('nav.statistics')}</h1>
+      <PageTitle title={ui('nav.statistics')} placement="screen-reader"/>
       {content}
     </div>
   </>

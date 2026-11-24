@@ -286,6 +286,7 @@ def _grid_starts(positions, inner_positions):
     ]
 
 
+
 def detect_rows(image):
     """从方框推导网格，不把物品绑定到固定格子或纵坐标。"""
     if image.shape != (720, 1280, 3):

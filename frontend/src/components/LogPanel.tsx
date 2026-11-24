@@ -3,11 +3,12 @@
  */
 
 import { Select } from './FormControls'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ArrowDownUp, Download, LayoutGrid, Pause, Play, Search, Terminal, Trash2 } from 'lucide-react'
 import { api } from '../api/client'
 import type { Logs as LogsData, LogEntry } from '../api/types'
+import { usePageRead } from '../app/usePageRead'
 import { useApp, useConnection } from '../app/context'
 import { Empty } from '../components/ui'
 import { Input } from './ui/input'
@@ -29,7 +30,7 @@ export {LogLine} from './log-panel/log-line'
  * @param active 面板是否在前台；false 时暂停跟随滚动。
  * @param logs 外部注入的日志流；提供后组件不再自行订阅推送，仅接受该实例的日志。
  */
-export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsData | null}) {
+export function LogPanel({active = true, logs, onEntries}: {active?: boolean; logs?: LogsData | null; onEntries?: (entries: LogEntry[]) => void}) {
   const {instance = ''} = useParams()
   const [entries, setEntries] = useState<LogEntry[]>([])
   const [search, setSearch] = useState('')
@@ -42,6 +43,14 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
   const connection = useConnection()
   const external = logs !== undefined
   const {notify, ui} = useApp()
+  const streamGeneration = useRef(0)
+  const loadSnapshot = useCallback(async () => {
+    const generation = streamGeneration.current
+    const snapshot = await api.request('logs.get', {instance})
+    return {generation, snapshot}
+  }, [instance])
+  const snapshotRead = usePageRead(JSON.stringify([instance, connection, external]), connection === 'ready' && !external, loadSnapshot)
+  useEffect(() => {onEntries?.(entries)}, [onEntries, entries])
   const scroll = useRef<HTMLDivElement>(null)
   /* 已渲染到的最大日志 id：大于它的增量行做入场动画（初始加载不播）。 */
   const freshFrom = useRef<number | null>(null)
@@ -103,7 +112,6 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
 
   useEffect(() => {
     if (connection !== 'ready' || external) return
-    let active = true
     const buf = logBuffer.current
     if (buf.timer !== null) {
       clearTimeout(buf.timer)
@@ -115,11 +123,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
 
     setFloor(0)
     setEntries([])
-    void api.request('logs.get', {instance}).then(value => {
-      if (active) setEntries(previous => mergeLogEntries(previous, value.entries))
-    }).catch(error => notify(error.message, true))
     return () => {
-      active = false
       if (buf.timer !== null) {
         clearTimeout(buf.timer)
         buf.timer = null
@@ -128,7 +132,16 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
       buf.reset = false
       buf.cursor = null
     }
-  }, [connection, instance, notify, external])
+  }, [connection, instance, external])
+
+  const loadedSnapshot = snapshotRead.data
+  useEffect(() => {
+    if (!loadedSnapshot || loadedSnapshot.generation !== streamGeneration.current) return
+    // Buffered live events are authoritative if their ids overlap the snapshot.
+    const initialEntries = mergeLogEntries([], loadedSnapshot.snapshot.entries)
+    setEntries(previous => mergeLogEntries(initialEntries, previous))
+  }, [loadedSnapshot])
+  useEffect(() => {if (snapshotRead.error) notify(snapshotRead.error, true)}, [notify, snapshotRead.error])
 
   useEffect(() => {
     if (!logs || logs.instance !== instance) return
@@ -143,6 +156,7 @@ export function LogPanel({active = true, logs}: {active?: boolean; logs?: LogsDa
       const data = event.data as LogsData
       if (data.instance !== instance) return
 
+      if (data.reset) streamGeneration.current++
       const buf = logBuffer.current
       queueLogEvent(buf, data)
 

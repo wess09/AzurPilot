@@ -6167,6 +6167,12 @@
     "SeasonalThreshold": {
       "name": "Replace seasonal items when below X",
       "help": "Replace seasonal product when stock is below this number"
+    },
+    "FillEmptySlots": {
+      "name": "Fill empty shelves with other dishes",
+      "help": "When a planned dish is out of stock and a shelf is still empty, also select other dishes this shop has in stock (highest price first). The number of shelves comes from the shop grade in the Island Production Planner. Dishes kept for season points or tasks may be sold.",
+      "True": "Enabled",
+      "False": "Disabled"
     }
   },
   "IslandBusinessShop1": {
