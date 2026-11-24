@@ -59,10 +59,10 @@
     outline-offset: 2px;
   }
   & .input-icon > input:focus {outline: none}
+  & .monitor-panel:has(> .monitor-tabs) {--monitor-segment-radius: 9px}
   & .monitor-segmented {
     gap: 3px;
     padding: 3px;
-    border-radius: 9px;
     background: var(--surface-muted);
     overflow-x: auto;
   }
