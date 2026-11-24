@@ -7043,22 +7043,24 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ],
         "option_cn": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_tw": [
           "coalition_20260723"
         ],
         "option_bold": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ]
       },
       "Mode": {
@@ -7396,22 +7398,24 @@
         "type": "state",
         "value": "campaign_main",
         "option": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ],
         "option_cn": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_tw": [
           "coalition_20260723"
         ],
         "option_bold": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ]
       },
       "Mode": {
@@ -11637,22 +11641,24 @@
         "type": "select",
         "value": "campaign_main",
         "option": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ],
         "option_cn": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_en": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_jp": [
-          "coalition_20260723"
+          "coalition_20261124"
         ],
         "option_tw": [
           "coalition_20260723"
         ],
         "option_bold": [
-          "coalition_20260723"
+          "coalition_20260723",
+          "coalition_20261124"
         ]
       },
       "Mode": {

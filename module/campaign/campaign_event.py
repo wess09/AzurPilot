@@ -22,13 +22,14 @@ import re
 from datetime import datetime
 
 from module.campaign.campaign_status import CampaignStatus
+from module.coalition.assets import VERITAS_MAIN_ENTRANCE
 from module.config.config_updater import COALITIONS, EVENTS, GEMS_FARMINGS, HOSPITAL, MARITIME_ESCORTS, RAIDS
 from module.config.time_source import now as current_time
 from module.config.utils import DEFAULT_TIME
 from module.logger import logger
 from module.notify import handle_notify
 from module.ui.assets import CAMPAIGN_MENU_NO_EVENT
-from module.ui.page import page_campaign_menu, page_coalition, page_event, page_sp
+from module.ui.page import get_coalition_page, page_campaign_menu, page_event, page_sp
 from module.war_archives.assets import WAR_ARCHIVES_CAMPAIGN_CHECK
 
 
@@ -297,17 +298,21 @@ class CampaignEvent(CampaignStatus):
 
         Pages:
             in: 任意页面
-            out: page_coalition
+            out: 当前活动对应的联合出击页面
         """
-        # 已在 page_coalition，跳过活动检查。
-        if self.ui_get_current_page() == page_coalition:
+        page = get_coalition_page(self.config.Campaign_Event)
+        if self.ui_get_current_page() == page:
             logger.info('[活动战役] 已在联动页面')
+            return True
+        elif (self.config.Campaign_Event == 'coalition_20261124' and self.is_in_main()
+              and self.appear_then_click(VERITAS_MAIN_ENTRANCE, offset=(20, 20), interval=2)):
+            self.ui_goto(page, skip_first_screenshot=False)
             return True
         else:
             self.ui_goto(page_campaign_menu)
             # 检查活动是否可用
             if self.is_event_entrance_available():
-                self.ui_goto(page_coalition)
+                self.ui_goto(page)
                 return True
 
     def disable_raid_on_event(self):

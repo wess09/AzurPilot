@@ -43,6 +43,8 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
         status_clicked = False
         click_timer = Timer(0.3)
         click_last = Timer(1, count=3)
+        veritas_ex = getattr(self.config, 'Campaign_Name', '') == 'coalition_20261124_ex'
+        result_timer = Timer(2)
         while 1:
             if skip_first_screenshot:
                 skip_first_screenshot = False
@@ -78,6 +80,11 @@ class CoalitionCombat(CoalitionUI, CampaignBase):
                 continue
             if self.handle_exp_info():
                 continue
+            if veritas_ex and result_timer.reached():
+                result_timer.reset()
+                if self.handle_veritas_ex_result():
+                    status_clicked = False
+                    continue
             # 持续点击 BATTLE_STATUS 以快速跳过结算动画
             if status_clicked:
                 if click_timer.reached() and not click_last.reached():

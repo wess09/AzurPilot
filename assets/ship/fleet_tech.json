@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "source_commit": "5177b8efaaa0736f54449df8fa008b0caa800669",
-  "updated_at": "2026-10-22",
+  "source_commit": "71b2c04c566363fca2b297d08211256afb96cf13",
+  "updated_at": "2026-11-24",
   "ships": [
     {
       "group_type": 10000,
@@ -16445,6 +16445,80 @@
       }
     },
     {
+      "group_type": 70213,
+      "code": 765,
+      "handbook_type": 0,
+      "blueprint": false,
+      "technology": {
+        "pt_get": 20,
+        "pt_upgrage": 42,
+        "pt_level": 32,
+        "max_star": 6,
+        "add_get_shiptype": [
+          2
+        ],
+        "add_get_attr": 1,
+        "add_get_value": 1,
+        "add_level_shiptype": [
+          2
+        ],
+        "add_level_attr": 2,
+        "add_level_value": 2
+      }
+    },
+    {
+      "group_type": 70510,
+      "code": 766,
+      "handbook_type": 0,
+      "blueprint": false,
+      "technology": {
+        "pt_get": 44,
+        "pt_upgrage": 88,
+        "pt_level": 66,
+        "max_star": 6,
+        "add_get_shiptype": [
+          4,
+          5,
+          10
+        ],
+        "add_get_attr": 1,
+        "add_get_value": 2,
+        "add_level_shiptype": [
+          4,
+          5,
+          10
+        ],
+        "add_level_attr": 2,
+        "add_level_value": 1
+      }
+    },
+    {
+      "group_type": 70511,
+      "code": 767,
+      "handbook_type": 0,
+      "blueprint": false,
+      "technology": {
+        "pt_get": 28,
+        "pt_upgrage": 56,
+        "pt_level": 42,
+        "max_star": 5,
+        "add_get_shiptype": [
+          4,
+          5,
+          10
+        ],
+        "add_get_attr": 1,
+        "add_get_value": 1,
+        "add_level_shiptype": [
+          4,
+          5,
+          10
+        ],
+        "add_level_attr": 2,
+        "add_level_value": 1
+      }
+    },
+    {
       "group_type": 1010001,
       "code": 10001,
       "handbook_type": 1,
@@ -17049,6 +17123,20 @@
     {
       "group_type": 1170002,
       "code": 10172,
+      "handbook_type": 1,
+      "blueprint": false,
+      "technology": null
+    },
+    {
+      "group_type": 1180001,
+      "code": 10181,
+      "handbook_type": 1,
+      "blueprint": false,
+      "technology": null
+    },
+    {
+      "group_type": 1180002,
+      "code": 10182,
       "handbook_type": 1,
       "blueprint": false,
       "technology": null
@@ -19878,6 +19966,32 @@
           21
         ],
         "add_level_attr": 9,
+        "add_level_value": 1
+      }
+    },
+    {
+      "group_type": 970114,
+      "code": 30067,
+      "handbook_type": 3,
+      "blueprint": false,
+      "technology": {
+        "pt_get": 9,
+        "pt_upgrage": 18,
+        "pt_level": 13,
+        "max_star": 5,
+        "add_get_shiptype": [
+          1,
+          20,
+          21
+        ],
+        "add_get_attr": 1,
+        "add_get_value": 1,
+        "add_level_shiptype": [
+          1,
+          20,
+          21
+        ],
+        "add_level_attr": 2,
         "add_level_value": 1
       }
     }

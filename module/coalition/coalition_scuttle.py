@@ -51,7 +51,7 @@ class CoalitionScuttleRun(Coalition, CoalitionScuttleCombat):
             logger.warning('AL does not allow single coalition with emotion < 30, '
                            'emotion control is forced to prevent_yellow_face')
             self.config.override(Emotion_Fleet1Control='prevent_yellow_face')
-        if stage == 'sp':
+        if stage == 'sp' or (event == 'coalition_20261124' and stage == 'ex'):
             self.config.override(Coalition_Fleet='multi')
 
         # 联盟沉船：整个关卡只扣1次2点心情，不按内部战斗次数预估
