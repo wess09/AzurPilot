@@ -1016,6 +1016,10 @@ for _d in [
 
 # Backend Tasks & Menus specialized overrides
 BACKEND_OVERRIDES = {
+    "IslandBusiness.FillEmptySlots.name": "空余货架上架其他餐品喵~",
+    "IslandBusiness.FillEmptySlots.help": "配置的餐品缺货、货架还有空位时，本喵会额外从店里库存挑别的餐品摆上去喵，售价高的优先哦~ 货架数按岛屿生产规划器里的店铺等级算哒喵！(ฅ'ω'ฅ) 不过要小心，为季节点数或任务留着的餐品可能被卖掉喵…… (つд⊂)",
+    "IslandBusiness.FillEmptySlots.True": "开启喵！(•̀ω•́)",
+    "IslandBusiness.FillEmptySlots.False": "关闭喵~ (=^-ω-^=)",
     "Menu.Alas.name": "猫窝中枢喵~ (•̀ω•́)",
     "Menu.Farm.name": "海域出击抓鱼作战喵！(ﾉ>ω<)ﾉ",
     "Menu.Event.name": "限时活动狂欢捞大鱼喵~ (*^▽^*)",
