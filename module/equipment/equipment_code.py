@@ -9,7 +9,6 @@ import numpy as np
 import yaml
 
 from module.base.timer import Timer
-from module.device.method.utils import HierarchyButton
 from module.equipment.assets import *
 from module.exception import EmulatorNotRunningError, RequestHumanTakeover
 from module.logger import logger
@@ -45,10 +44,8 @@ class EquipmentCodeHandler(StorageHandler):
 
     Attributes:
         last_code (str): 上一次暂存的装备码字符串。
-        FASTINPUT_IME (str): uiautomator 输入法服务组件名称。
     """
     last_code: str = None
-    FASTINPUT_IME = 'com.github.uiautomator/.FastInputIME'
 
     @property
     def equipment_code_config_key(self):
@@ -323,56 +320,6 @@ class EquipmentCodeHandler(StorageHandler):
         else:
             return False
 
-    def fastinput_ime_enable(self):
-        """通过系统设置页面启用 FastInputIME 虚拟键盘。"""
-        self.device.adb_shell(['am', 'start', '-a', 'android.settings.INPUT_METHOD_SETTINGS'])
-        timeout = Timer(10).start()
-        while 1:
-            if timeout.reached():
-                logger.warning("启用FastInputIME超时")
-                break
-
-            h = self.device.dump_hierarchy_adb()
-
-            def appear(xpath):
-                return bool(HierarchyButton(h, xpath))
-
-            def appear_then_click(xpath):
-                b = HierarchyButton(h, xpath)
-                if b:
-                    self.device.click(b)
-                    return True
-                else:
-                    return False
-
-            if appear_then_click('//*[@resource-id="android:id/title" and @text="FastInputIME"]/following-sibling::*[@resource-id="android:id/switch_widget" and @checked="false"]'):
-                continue
-            if appear_then_click('//*[@resource-id="android:id/button1"]'):
-                continue
-            # Disable one other enabled IME at a time
-            if appear_then_click('(//*[@resource-id="android:id/title" and @text!="FastInputIME"]/following-sibling::*[@resource-id="android:id/switch_widget" and @enabled="true" and @checked="true"])[1]'):
-                continue
-            if appear('//*[@resource-id="android:id/title" and @text="FastInputIME"]/following-sibling::*[@resource-id="android:id/switch_widget" and @checked="true"]') \
-                    and not appear('//*[@resource-id="android:id/title" and @text!="FastInputIME"]/following-sibling::*[@resource-id="android:id/switch_widget" and @enabled="true" and @checked="true"]'):
-                break
-
-        self.device.adb_shell(['input', 'keyevent', '4'])
-
-    def set_fastinput_ime(self):
-        """设置系统当前输入法为 FastInputIME。"""
-        d = self.device.u2
-        try:
-            name, _ = d.current_ime()
-        except Exception:
-            name = None
-        if name == self.FASTINPUT_IME:
-            return
-        try:
-            d.set_fastinput_ime(True)
-        except Exception:
-            logger.warning("[装备-代码] FastInputIME未启用，尝试启用")
-            self.fastinput_ime_enable()
-
     @staticmethod
     def _adb_input_text_escape(text):
         """对 ADB input text 命令中的特殊字符进行转义。
@@ -411,32 +358,18 @@ class EquipmentCodeHandler(StorageHandler):
             logger.warning(f"通过 ADB 输入装备码失败: {e}")
             return False
 
-    def _code_input_uiautomator2(self, code):
-        """通过 uiautomator2 向输入框输入装备码文本。
+    def _code_wait_preview_loaded(self, wait_for_keyboard=False):
+        """等待装备码预览加载完成。
 
         Args:
-            code (str): 装备码文本。
-
-        Returns:
-            bool: 输入成功返回 True，失败返回 False。
-        """
-        try:
-            d = self.device.u2
-            d.send_keys(text=code, clear=True)
-            d.send_action(code="done")
-            logger.info("通过 uiautomator2 输入装备码")
-            return True
-        except Exception as e:
-            logger.warning(f"通过 uiautomator2 输入装备码失败: {e}")
-            return False
-
-    def _code_wait_preview_loaded(self):
-        """等待装备码预览加载完成。
+            wait_for_keyboard (bool): 使用设备输入后端时等待键盘收起。
 
         Returns:
             bool: 成功加载预览返回 True，超时返回 False。
         """
         for _ in self.loop(timeout=10, skip_first=False):
+            if wait_for_keyboard and self.device.current_ime_adb()[1]:
+                continue
             # End：正向退出判断必须位于点击操作之前。
             if self.is_code_preview_loaded():
                 return True
@@ -471,9 +404,9 @@ class EquipmentCodeHandler(StorageHandler):
             if self._code_wait_preview_loaded():
                 return True
 
-        if self._code_input_uiautomator2(code):
-            if self._code_wait_preview_loaded():
-                return True
+        self.device.input_text_fastinput_ime(code, EQUIPMENT_CODE_TEXTBOX)
+        if self._code_wait_preview_loaded(wait_for_keyboard=True):
+            return True
 
         logger.warning("装备码加载失败")
         return False
@@ -687,41 +620,19 @@ class EquipmentCodeHandler(StorageHandler):
 
         return None
 
-    def _clipboard_uiautomator2(self):
-        """通过 uiautomator2 读取系统剪贴板中的装备码。
-
-        Returns:
-            str | None: 读取到的装备码字符串，失败返回 None。
-        """
-        try:
-            output = self.device.clipboard
-        except (EmulatorNotRunningError, RequestHumanTakeover):
-            raise
-        except Exception as e:
-            logger.warning(f"通过 uiautomator2 读取剪贴板失败: {e}")
-            return None
-
-        code = self._code_from_clipboard_output(output)
-        if code is not None:
-            logger.info("通过 uiautomator2 读取装备码剪贴板成功")
-        return code
-
-    def _clipboard_get(self):
-        """从系统剪贴板获取导出的装备码。
-
-        Returns:
-            str | None: 装备码字符串，获取失败返回 None。
-        """
-        code = self._clipboard_adb()
-        if code is not None:
-            return code
-
-        code = self._clipboard_uiautomator2()
-        if code is not None:
-            return code
-
-        logger.warning("读取装备码剪贴板失败")
-        return None
+    def _code_copy(self):
+        """点击导出并用新出现的信息栏确认本次复制。"""
+        copied = False
+        for _ in self.loop(timeout=10, skip_first=False):
+            # 上次复制留下的提示必须消失，才能识别本次点击后的提示。
+            if self.info_bar_count():
+                if copied:
+                    return True
+                continue
+            if self.appear_then_click(EQUIPMENT_CODE_EXPORT, offset=(5, 5), interval=3):
+                copied = True
+        logger.warning('未确认装备码导出成功')
+        return False
 
     def _code_export(self):
         """在装备码界面点击导出并将装备码复制到系统剪贴板读取。
@@ -729,15 +640,24 @@ class EquipmentCodeHandler(StorageHandler):
         Returns:
             str | None: 导出的装备码字符串，导出失败返回 None。
         """
-        self.handle_info_bar()
-        self.set_fastinput_ime()
-        for _ in self.loop(timeout=10):
-            if self.info_bar_count():
-                return self._clipboard_get()
-            if self.appear_then_click(EQUIPMENT_CODE_EXPORT, offset=(5, 5), interval=3):
-                continue
-        logger.warning('未确认装备码导出成功，不读取可能残留的剪贴板')
-        return None
+        if not self._code_copy():
+            return None
+        code = self._clipboard_adb()
+        if code is not None:
+            return code
+
+        # 先准备备用后端，再复制新内容，避免初始化占用剪贴板的读取窗口。
+        self.device.ensure_clipboard_uiautomator2()
+        if not self._code_copy():
+            return None
+        try:
+            code = self._code_from_clipboard_output(self.device.get_clipboard_uiautomator2())
+        finally:
+            # 备用后端可能临时切换前台，恢复游戏后重新记录画面。
+            self.device.stuck_record_clear()
+        if code is None:
+            logger.warning('读取装备码剪贴板失败')
+        return code
 
     def code_clear(self, name=None):
         """通过装备码功能清空当前舰船的所有装备，若配置开启则自动备份原装备码。

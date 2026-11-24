@@ -2,13 +2,15 @@
 
 import unittest
 from contextlib import contextmanager
+from datetime import datetime
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
-from module.exception import GameStuckError
+from module.exception import GameStuckError, ScriptError
 from module.map.map_grids import SelectedGrids
 from module.os.map import OSMap
 from module.os.map_base import OSCampaignMap
+from module.os.map_event_resume import PENDING_MAP_EVENT_KEY
 from module.os.tasks.meowfficer_farming import OpsiMeowfficerFarming
 from module.statistics.azurstats import DropImage
 
@@ -132,6 +134,111 @@ class MeowRescanTests(unittest.TestCase):
                 runner.map_rescan.assert_called_once_with()
                 runner._meow_fixed_patrol_scan.assert_called_once()
                 runner.handle_after_auto_search.assert_called_once()
+
+    def single_zone_runner(self, stay_in_zone, **event):
+        runner, zone = self.runner()
+        runner.zone = zone
+        runner.is_zone_name_hidden = True
+        runner.is_in_map = Mock(return_value=True)
+        runner.config.SERVER = 'cn'
+        runner.config.OpsiMeowfficerFarming_StayInZone = stay_in_zone
+        runner.config.OpsiMeowfficerFarming_TargetZone = str(zone.zone_id)
+        runner._meow_target_zone_list = [zone] if stay_in_zone else []
+        runner._meow_traditional_zone = None if stay_in_zone else zone
+        reset = datetime(2026, 12, 1)
+        state = dict(version=1, reset=reset.isoformat(), server='cn', zone=zone.zone_id,
+                     type='akashi', node='B3', mode=None, submitted=False, remaining=0)
+        state.update(event)
+        stored = {
+            PENDING_MAP_EVENT_KEY: state,
+            'OpsiMeowfficerFarming.OpsiMeowfficerFarming.TargetZone': str(zone.zone_id),
+        }
+
+        def cross_set(keys, value):
+            stored[keys] = value
+
+        runner.config.cross_get = lambda keys, default=None: stored.get(keys, default)
+        runner.config.cross_set = cross_set
+        runner.name_to_zone = Mock(return_value=zone)
+        runner._meow_ap_check = Mock(return_value=True)
+        runner._meow_handle_stay_in_zone = Mock()
+        runner._meow_handle_traditional_zone = Mock()
+        runner.invalidate_action_point_cache = Mock()
+        runner._run_siren_followup_search = Mock()
+        runner._execute_fixed_patrol_scan = Mock()
+        runner.map_rescan = Mock(return_value=False)
+        self.enterContext(patch('module.os.map_event_resume.get_os_next_reset', return_value=reset))
+        self.enterContext(patch('module.base.debug_clip.cleanup_clips_if_due'))
+        return runner, zone, stored
+
+    def test_single_zone_resumes_device_before_battle_once(self):
+        for stay_in_zone in (False, True):
+            with self.subTest(stay_in_zone=stay_in_zone):
+                runner, zone, stored = self.single_zone_runner(
+                    stay_in_zone, type='scanning_device', mode='enemy', submitted=True, remaining=2,
+                )
+                actions = Mock()
+                actions.attach_mock(runner._run_siren_followup_search, 'resume')
+                actions.attach_mock(runner._meow_handle_stay_in_zone, 'stay')
+                actions.attach_mock(runner._meow_handle_traditional_zone, 'traditional')
+                saved = stored[PENDING_MAP_EVENT_KEY]
+                fresh_ap = (1000, 120)
+
+                runner.run_meowfficer_farming_once(ap_checked=True, prepared=True, fresh_ap=fresh_ap)
+
+                first_battle = call.stay(zone, fresh_ap=None) if stay_in_zone else call.traditional(zone)
+                self.assertEqual(actions.mock_calls, [call.resume('enemy', drop=None, remaining=2), first_battle])
+                self.assertIsNone(stored[PENDING_MAP_EVENT_KEY])
+                runner.invalidate_action_point_cache.assert_called_once_with()
+                runner.map_rescan.assert_not_called()
+                runner._execute_fixed_patrol_scan.assert_not_called()
+
+                stored[PENDING_MAP_EVENT_KEY] = saved
+                runner.run_meowfficer_farming_once(ap_checked=True, prepared=True, fresh_ap=fresh_ap)
+
+                second_battle = call.stay(zone, fresh_ap=fresh_ap) if stay_in_zone else call.traditional(zone)
+                self.assertEqual(actions.mock_calls[-1], second_battle)
+                runner._run_siren_followup_search.assert_called_once()
+                self.assertIs(stored[PENDING_MAP_EVENT_KEY], saved)
+
+    def test_single_zone_scan_miss_clears_record_and_continues_without_moving_fleets(self):
+        runner, zone, stored = self.single_zone_runner(stay_in_zone=False)
+
+        runner.run_meowfficer_farming_once(ap_checked=True, prepared=True)
+
+        runner.map_rescan.assert_called_once_with(rescan_mode='full', drop=None)
+        runner._execute_fixed_patrol_scan.assert_not_called()
+        self.assertIsNone(stored[PENDING_MAP_EVENT_KEY])
+        runner._meow_handle_traditional_zone.assert_called_once_with(zone)
+
+    def test_multi_zone_and_other_zone_records_keep_the_normal_search(self):
+        runner, zone, stored = self.single_zone_runner(stay_in_zone=True, zone=44)
+        pending = stored[PENDING_MAP_EVENT_KEY]
+        runner.run_meowfficer_farming_once(ap_checked=True, prepared=True, fresh_ap=(1000, 120))
+        runner._meow_handle_stay_in_zone.assert_called_once_with(zone, fresh_ap=(1000, 120))
+        runner.map_rescan.assert_not_called()
+        self.assertIs(stored[PENDING_MAP_EVENT_KEY], pending)
+
+        runner, zone, stored = self.single_zone_runner(stay_in_zone=True)
+        pending = stored[PENDING_MAP_EVENT_KEY]
+        runner._meow_target_zone_list.append(SimpleNamespace(zone_id=44))
+        runner._meow_handle_target_zone_search = Mock()
+        runner.run_meowfficer_farming_once(ap_checked=True, prepared=True)
+        runner._meow_handle_target_zone_search.assert_called_once_with(zone)
+        runner.map_rescan.assert_not_called()
+        self.assertIs(stored[PENDING_MAP_EVENT_KEY], pending)
+
+    def test_initial_search_defers_only_for_current_single_zone_with_pending_event(self):
+        runner, zone, stored = self.single_zone_runner(stay_in_zone=True)
+        target_path = 'OpsiMeowfficerFarming.OpsiMeowfficerFarming.TargetZone'
+        with patch.object(OSMap, 'run_first_auto_search') as first_search:
+            runner.run_first_auto_search()
+            first_search.assert_not_called()
+
+            stored[target_path] = f'{zone.zone_id},44'
+            runner.name_to_zone.side_effect = ScriptError('not a single zone')
+            runner.run_first_auto_search()
+            first_search.assert_called_once_with()
 
     def test_sorted_scan_log_matches_actual_focus_target(self):
         map_ = OSCampaignMap()

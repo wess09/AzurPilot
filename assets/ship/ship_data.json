@@ -19295,7 +19295,7 @@
       "cn": "圣地亚哥.改",
       "en": "San Diego Retrofit",
       "jp": "サンディエゴ改",
-      "tw": "聖地牙哥·改",
+      "tw": "聖地牙哥.改",
       "kr": "샌디에이고·改"
     },
     "english_name": "USS San Diego",
@@ -22354,7 +22354,7 @@
       "cn": "海伦娜.改",
       "en": "Helena Retrofit",
       "jp": "ヘレナ改",
-      "tw": "海倫娜·改",
+      "tw": "海倫娜.改",
       "kr": "헬레나·改"
     },
     "english_name": "USS Helena",
@@ -32975,7 +32975,7 @@
       "cn": "科罗拉多·改",
       "en": "Colorado (Retrofit)",
       "jp": "コロラド改",
-      "tw": "科羅拉多·改",
+      "tw": "科羅拉多.改",
       "kr": "콜로라도·改"
     },
     "english_name": "USS Colorado",
@@ -33343,7 +33343,7 @@
       "cn": "马里兰·改",
       "en": "Maryland (Retrofit)",
       "jp": "メリーランド改",
-      "tw": "馬里蘭·改",
+      "tw": "馬里蘭.改",
       "kr": "메릴랜드·改"
     },
     "english_name": "USS Maryland",
@@ -33711,7 +33711,7 @@
       "cn": "西弗吉尼亚·改",
       "en": "West Virginia (Retrofit)",
       "jp": "ウェストバージニア改",
-      "tw": "西維吉尼亞·改",
+      "tw": "西維吉尼亞.改",
       "kr": "웨스트버지니아·改"
     },
     "english_name": "USS West Virginia",
@@ -43799,7 +43799,7 @@
       "cn": "独立.改",
       "en": "Independence Retrofit",
       "jp": "インディペンデンス改",
-      "tw": "獨立‧改",
+      "tw": "獨立.改",
       "kr": "인디펜던스·改"
     },
     "english_name": "USS Independence",
@@ -68450,7 +68450,7 @@
       "cn": "伦敦.改",
       "en": "London (Retrofit)",
       "jp": "ロンドン改",
-      "tw": "倫敦‧改",
+      "tw": "倫敦.改",
       "kr": "런던·改"
     },
     "english_name": "HMS London",
@@ -140412,7 +140412,7 @@
       "cn": "科隆.改",
       "en": "Köln (Retrofit)",
       "jp": "ケルン·改",
-      "tw": "科隆·改",
+      "tw": "科隆.改",
       "kr": "쾰른·改"
     },
     "english_name": "KMS Köln",
@@ -165257,7 +165257,7 @@
       "cn": "华甲·改",
       "en": "Hwah Jah (Retrofit)",
       "jp": "華甲改",
-      "tw": "華甲·改",
+      "tw": "華甲.改",
       "kr": "화지아·改"
     },
     "english_name": "Hwah Jah",
@@ -181823,6 +181823,302 @@
     "oil_at_end": 11,
     "max_level": 100
   },
+  "702131": {
+    "name": {
+      "cn": "莫洛托夫",
+      "en": null,
+      "jp": "モロトフ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Molotov",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 70213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 788,
+      "cannon": 33,
+      "torpedo": 47,
+      "antiaircraft": 78,
+      "air": 0,
+      "reload": 69,
+      "armor": 0,
+      "hit": 54,
+      "dodge": 35,
+      "speed": 36.7,
+      "luck": 60,
+      "antisub": 37
+    },
+    "attrs_growth": {
+      "durability": 20195,
+      "cannon": 457,
+      "torpedo": 643,
+      "antiaircraft": 1594,
+      "air": 0,
+      "reload": 478,
+      "armor": 0,
+      "hit": 798,
+      "dodge": 759,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 442
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 5,
+    "max_level": 100
+  },
+  "702132": {
+    "name": {
+      "cn": "莫洛托夫",
+      "en": null,
+      "jp": "モロトフ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Molotov",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 70213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 980,
+      "cannon": 41,
+      "torpedo": 59,
+      "antiaircraft": 97,
+      "air": 0,
+      "reload": 69,
+      "armor": 0,
+      "hit": 54,
+      "dodge": 35,
+      "speed": 36.7,
+      "luck": 60,
+      "antisub": 46
+    },
+    "attrs_growth": {
+      "durability": 20195,
+      "cannon": 457,
+      "torpedo": 643,
+      "antiaircraft": 1594,
+      "air": 0,
+      "reload": 478,
+      "armor": 0,
+      "hit": 798,
+      "dodge": 759,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 442
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 7,
+    "max_level": 100
+  },
+  "702133": {
+    "name": {
+      "cn": "莫洛托夫",
+      "en": null,
+      "jp": "モロトフ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Molotov",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 70213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1365,
+      "cannon": 57,
+      "torpedo": 82,
+      "antiaircraft": 135,
+      "air": 0,
+      "reload": 69,
+      "armor": 0,
+      "hit": 54,
+      "dodge": 35,
+      "speed": 36.7,
+      "luck": 60,
+      "antisub": 65
+    },
+    "attrs_growth": {
+      "durability": 20195,
+      "cannon": 457,
+      "torpedo": 643,
+      "antiaircraft": 1594,
+      "air": 0,
+      "reload": 478,
+      "armor": 0,
+      "hit": 798,
+      "dodge": 759,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 442
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "702134": {
+    "name": {
+      "cn": "莫洛托夫",
+      "en": null,
+      "jp": "モロトフ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Molotov",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 70213,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1942,
+      "cannon": 82,
+      "torpedo": 116,
+      "antiaircraft": 192,
+      "air": 0,
+      "reload": 69,
+      "armor": 0,
+      "hit": 54,
+      "dodge": 35,
+      "speed": 36.7,
+      "luck": 60,
+      "antisub": 93
+    },
+    "attrs_growth": {
+      "durability": 20195,
+      "cannon": 457,
+      "torpedo": 643,
+      "antiaircraft": 1594,
+      "air": 0,
+      "reload": 478,
+      "armor": 0,
+      "hit": 798,
+      "dodge": 759,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 442
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
   "702081": {
     "name": {
       "cn": "奥列格",
@@ -186035,6 +186331,598 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 15,
+    "max_level": 100
+  },
+  "705101": {
+    "name": {
+      "cn": "锡诺普",
+      "en": null,
+      "jp": "シノープ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Sinop",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 70510,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1494,
+      "cannon": 80,
+      "torpedo": 0,
+      "antiaircraft": 42,
+      "air": 0,
+      "reload": 54,
+      "armor": 0,
+      "hit": 23,
+      "dodge": 7,
+      "speed": 27,
+      "luck": 29,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 42563,
+      "cannon": 995,
+      "torpedo": 0,
+      "antiaircraft": 916,
+      "air": 0,
+      "reload": 378,
+      "armor": 0,
+      "hit": 346,
+      "dodge": 189,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 9,
+    "max_level": 100
+  },
+  "705102": {
+    "name": {
+      "cn": "锡诺普",
+      "en": null,
+      "jp": "シノープ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Sinop",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 70510,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1858,
+      "cannon": 100,
+      "torpedo": 0,
+      "antiaircraft": 52,
+      "air": 0,
+      "reload": 54,
+      "armor": 0,
+      "hit": 23,
+      "dodge": 7,
+      "speed": 27,
+      "luck": 29,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 42563,
+      "cannon": 995,
+      "torpedo": 0,
+      "antiaircraft": 916,
+      "air": 0,
+      "reload": 378,
+      "armor": 0,
+      "hit": 346,
+      "dodge": 189,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 11,
+    "max_level": 100
+  },
+  "705103": {
+    "name": {
+      "cn": "锡诺普",
+      "en": null,
+      "jp": "シノープ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Sinop",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 70510,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 2587,
+      "cannon": 140,
+      "torpedo": 0,
+      "antiaircraft": 73,
+      "air": 0,
+      "reload": 54,
+      "armor": 0,
+      "hit": 23,
+      "dodge": 7,
+      "speed": 27,
+      "luck": 29,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 42563,
+      "cannon": 995,
+      "torpedo": 0,
+      "antiaircraft": 916,
+      "air": 0,
+      "reload": 378,
+      "armor": 0,
+      "hit": 346,
+      "dodge": 189,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 13,
+    "max_level": 100
+  },
+  "705104": {
+    "name": {
+      "cn": "锡诺普",
+      "en": null,
+      "jp": "シノープ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Sinop",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 70510,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 3680,
+      "cannon": 199,
+      "torpedo": 0,
+      "antiaircraft": 104,
+      "air": 0,
+      "reload": 54,
+      "armor": 0,
+      "hit": 23,
+      "dodge": 7,
+      "speed": 27,
+      "luck": 29,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 42563,
+      "cannon": 995,
+      "torpedo": 0,
+      "antiaircraft": 916,
+      "air": 0,
+      "reload": 378,
+      "armor": 0,
+      "hit": 346,
+      "dodge": 189,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 15,
+    "max_level": 100
+  },
+  "705111": {
+    "name": {
+      "cn": "玛丽亚皇后",
+      "en": null,
+      "jp": "インペラトリッツァ・マリーヤ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Empress Maria",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 70511,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1101,
+      "cannon": 64,
+      "torpedo": 0,
+      "antiaircraft": 44,
+      "air": 0,
+      "reload": 56,
+      "armor": 0,
+      "hit": 22,
+      "dodge": 4,
+      "speed": 21,
+      "luck": 30,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29784,
+      "cannon": 838,
+      "torpedo": 0,
+      "antiaircraft": 955,
+      "air": 0,
+      "reload": 391,
+      "armor": 0,
+      "hit": 354,
+      "dodge": 165,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
+  "705112": {
+    "name": {
+      "cn": "玛丽亚皇后",
+      "en": null,
+      "jp": "インペラトリッツァ・マリーヤ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Empress Maria",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 70511,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1370,
+      "cannon": 80,
+      "torpedo": 0,
+      "antiaircraft": 55,
+      "air": 0,
+      "reload": 56,
+      "armor": 0,
+      "hit": 22,
+      "dodge": 4,
+      "speed": 21,
+      "luck": 30,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29784,
+      "cannon": 838,
+      "torpedo": 0,
+      "antiaircraft": 955,
+      "air": 0,
+      "reload": 391,
+      "armor": 0,
+      "hit": 354,
+      "dodge": 165,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "705113": {
+    "name": {
+      "cn": "玛丽亚皇后",
+      "en": null,
+      "jp": "インペラトリッツァ・マリーヤ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Empress Maria",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 70511,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 1907,
+      "cannon": 112,
+      "torpedo": 0,
+      "antiaircraft": 76,
+      "air": 0,
+      "reload": 56,
+      "armor": 0,
+      "hit": 22,
+      "dodge": 4,
+      "speed": 21,
+      "luck": 30,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29784,
+      "cannon": 838,
+      "torpedo": 0,
+      "antiaircraft": 955,
+      "air": 0,
+      "reload": 391,
+      "armor": 0,
+      "hit": 354,
+      "dodge": 165,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 12,
+    "max_level": 100
+  },
+  "705114": {
+    "name": {
+      "cn": "玛丽亚皇后",
+      "en": null,
+      "jp": "インペラトリッツァ・マリーヤ",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "SN Empress Maria",
+    "nationality": 7,
+    "nation_name": "北方联合",
+    "type": 5,
+    "type_name": "战列",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 70511,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 3,
+    "attrs": {
+      "durability": 2712,
+      "cannon": 159,
+      "torpedo": 0,
+      "antiaircraft": 108,
+      "air": 0,
+      "reload": 56,
+      "armor": 0,
+      "hit": 22,
+      "dodge": 4,
+      "speed": 21,
+      "luck": 30,
+      "antisub": 0
+    },
+    "attrs_growth": {
+      "durability": 29784,
+      "cannon": 838,
+      "torpedo": 0,
+      "antiaircraft": 955,
+      "air": 0,
+      "reload": 391,
+      "armor": 0,
+      "hit": 354,
+      "dodge": 165,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 0
+    },
+    "equip_slots": [
+      [
+        4
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        6,
+        21
+      ],
+      [
+        10
+      ],
+      [
+        10
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 14,
     "max_level": 100
   },
   "707011": {
@@ -231698,10 +232586,10 @@
   "900563": {
     "name": {
       "cn": "皇家财富号（前排）",
-      "en": null,
+      "en": "皇家财富号（前排）",
       "jp": "皇家财富号（前排）",
-      "tw": null,
-      "kr": null
+      "tw": "皇家幸運號（前排）",
+      "kr": "皇家财富号（前排）"
     },
     "english_name": "MOT Royal Fortune",
     "nationality": 96,
@@ -231770,10 +232658,10 @@
   "900564": {
     "name": {
       "cn": "铁角号（前排）",
-      "en": null,
+      "en": "铁角号（前排）",
       "jp": "铁角号（前排）",
-      "tw": null,
-      "kr": null
+      "tw": "鐵角號（前排）",
+      "kr": "铁角号（前排）"
     },
     "english_name": "MOT Jernbarden",
     "nationality": 96,
@@ -231842,10 +232730,10 @@
   "900565": {
     "name": {
       "cn": "雷伊尔·贝号（后排）",
-      "en": null,
+      "en": "雷伊尔·贝号（后排）",
       "jp": "雷伊尔·贝号（后排）",
-      "tw": null,
-      "kr": null
+      "tw": "雷伊爾·貝號（後排）",
+      "kr": "雷伊尔·贝号（后排）"
     },
     "english_name": "MOT Real bey",
     "nationality": 96,
@@ -241311,10 +242199,10 @@
   "9600171": {
     "name": {
       "cn": "水星号",
-      "en": null,
+      "en": "Merkuriy",
       "jp": "メルクーリィ",
-      "tw": null,
-      "kr": null
+      "tw": "水星號",
+      "kr": "메르쿠리"
     },
     "english_name": "MOT Merkuriy",
     "nationality": 96,
@@ -241383,10 +242271,10 @@
   "9600172": {
     "name": {
       "cn": "水星号",
-      "en": null,
+      "en": "Merkuriy",
       "jp": "メルクーリィ",
-      "tw": null,
-      "kr": null
+      "tw": "水星號",
+      "kr": "메르쿠리"
     },
     "english_name": "MOT Merkuriy",
     "nationality": 96,
@@ -241455,10 +242343,10 @@
   "9600173": {
     "name": {
       "cn": "水星号",
-      "en": null,
+      "en": "Merkuriy",
       "jp": "メルクーリィ",
-      "tw": null,
-      "kr": null
+      "tw": "水星號",
+      "kr": "메르쿠리"
     },
     "english_name": "MOT Merkuriy",
     "nationality": 96,
@@ -241527,10 +242415,10 @@
   "9600174": {
     "name": {
       "cn": "水星号",
-      "en": null,
+      "en": "Merkuriy",
       "jp": "メルクーリィ",
-      "tw": null,
-      "kr": null
+      "tw": "水星號",
+      "kr": "메르쿠리"
     },
     "english_name": "MOT Merkuriy",
     "nationality": 96,
@@ -241599,10 +242487,10 @@
   "9600181": {
     "name": {
       "cn": "铁角号",
-      "en": null,
+      "en": "Járnbarðinn",
       "jp": "ヤーンバアデン",
-      "tw": null,
-      "kr": null
+      "tw": "鐵角號",
+      "kr": "예른바르덴"
     },
     "english_name": "MOT Jernbarden",
     "nationality": 96,
@@ -241671,10 +242559,10 @@
   "9600182": {
     "name": {
       "cn": "铁角号",
-      "en": null,
+      "en": "Járnbarðinn",
       "jp": "ヤーンバアデン",
-      "tw": null,
-      "kr": null
+      "tw": "鐵角號",
+      "kr": "예른바르덴"
     },
     "english_name": "MOT Jernbarden",
     "nationality": 96,
@@ -241743,10 +242631,10 @@
   "9600183": {
     "name": {
       "cn": "铁角号",
-      "en": null,
+      "en": "Járnbarðinn",
       "jp": "ヤーンバアデン",
-      "tw": null,
-      "kr": null
+      "tw": "鐵角號",
+      "kr": "예른바르덴"
     },
     "english_name": "MOT Jernbarden",
     "nationality": 96,
@@ -241815,10 +242703,10 @@
   "9600184": {
     "name": {
       "cn": "铁角号",
-      "en": null,
+      "en": "Járnbarðinn",
       "jp": "ヤーンバアデン",
-      "tw": null,
-      "kr": null
+      "tw": "鐵角號",
+      "kr": "예른바르덴"
     },
     "english_name": "MOT Jernbarden",
     "nationality": 96,
@@ -241887,10 +242775,10 @@
   "9600191": {
     "name": {
       "cn": "塞利米耶号",
-      "en": null,
+      "en": "Selimiye",
       "jp": "セリミエ",
-      "tw": null,
-      "kr": null
+      "tw": "塞利米耶號",
+      "kr": "셀리미예"
     },
     "english_name": "MOT Selimiye",
     "nationality": 96,
@@ -241959,10 +242847,10 @@
   "9600192": {
     "name": {
       "cn": "塞利米耶号",
-      "en": null,
+      "en": "Selimiye",
       "jp": "セリミエ",
-      "tw": null,
-      "kr": null
+      "tw": "塞利米耶號",
+      "kr": "셀리미예"
     },
     "english_name": "MOT Selimiye",
     "nationality": 96,
@@ -242031,10 +242919,10 @@
   "9600193": {
     "name": {
       "cn": "塞利米耶号",
-      "en": null,
+      "en": "Selimiye",
       "jp": "セリミエ",
-      "tw": null,
-      "kr": null
+      "tw": "塞利米耶號",
+      "kr": "셀리미예"
     },
     "english_name": "MOT Selimiye",
     "nationality": 96,
@@ -242103,10 +242991,10 @@
   "9600194": {
     "name": {
       "cn": "塞利米耶号",
-      "en": null,
+      "en": "Selimiye",
       "jp": "セリミエ",
-      "tw": null,
-      "kr": null
+      "tw": "塞利米耶號",
+      "kr": "셀리미예"
     },
     "english_name": "MOT Selimiye",
     "nationality": 96,
@@ -242175,10 +243063,10 @@
   "9600201": {
     "name": {
       "cn": "长蛇号",
-      "en": null,
+      "en": "Ormrinn Langi",
       "jp": "オーメン・ランゲ",
-      "tw": null,
-      "kr": null
+      "tw": "長蛇號",
+      "kr": "오름린 랑기"
     },
     "english_name": "MOT Ormen Lange",
     "nationality": 96,
@@ -242247,10 +243135,10 @@
   "9600202": {
     "name": {
       "cn": "长蛇号",
-      "en": null,
+      "en": "Ormrinn Langi",
       "jp": "オーメン・ランゲ",
-      "tw": null,
-      "kr": null
+      "tw": "長蛇號",
+      "kr": "오름린 랑기"
     },
     "english_name": "MOT Ormen Lange",
     "nationality": 96,
@@ -242319,10 +243207,10 @@
   "9600203": {
     "name": {
       "cn": "长蛇号",
-      "en": null,
+      "en": "Ormrinn Langi",
       "jp": "オーメン・ランゲ",
-      "tw": null,
-      "kr": null
+      "tw": "長蛇號",
+      "kr": "오름린 랑기"
     },
     "english_name": "MOT Ormen Lange",
     "nationality": 96,
@@ -242391,10 +243279,10 @@
   "9600204": {
     "name": {
       "cn": "长蛇号",
-      "en": null,
+      "en": "Ormrinn Langi",
       "jp": "オーメン・ランゲ",
-      "tw": null,
-      "kr": null
+      "tw": "長蛇號",
+      "kr": "오름린 랑기"
     },
     "english_name": "MOT Ormen Lange",
     "nationality": 96,
@@ -242463,10 +243351,10 @@
   "9600211": {
     "name": {
       "cn": "雷伊尔·贝号",
-      "en": null,
+      "en": "Riyala Bey",
       "jp": "リヤラ・ベイ",
-      "tw": null,
-      "kr": null
+      "tw": "雷伊爾·貝號",
+      "kr": "리얄라 베이"
     },
     "english_name": "MOT Real bey",
     "nationality": 96,
@@ -242535,10 +243423,10 @@
   "9600212": {
     "name": {
       "cn": "雷伊尔·贝号",
-      "en": null,
+      "en": "Riyala Bey",
       "jp": "リヤラ・ベイ",
-      "tw": null,
-      "kr": null
+      "tw": "雷伊爾·貝號",
+      "kr": "리얄라 베이"
     },
     "english_name": "MOT Real bey",
     "nationality": 96,
@@ -242607,10 +243495,10 @@
   "9600213": {
     "name": {
       "cn": "雷伊尔·贝号",
-      "en": null,
+      "en": "Riyala Bey",
       "jp": "リヤラ・ベイ",
-      "tw": null,
-      "kr": null
+      "tw": "雷伊爾·貝號",
+      "kr": "리얄라 베이"
     },
     "english_name": "MOT Real bey",
     "nationality": 96,
@@ -242679,10 +243567,10 @@
   "9600214": {
     "name": {
       "cn": "雷伊尔·贝号",
-      "en": null,
+      "en": "Riyala Bey",
       "jp": "リヤラ・ベイ",
-      "tw": null,
-      "kr": null
+      "tw": "雷伊爾·貝號",
+      "kr": "리얄라 베이"
     },
     "english_name": "MOT Real bey",
     "nationality": 96,
@@ -246569,6 +247457,302 @@
       "armor": 0,
       "hit": 746,
       "dodge": 863,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701141": {
+    "name": {
+      "cn": "凯尔圣·META",
+      "en": null,
+      "jp": "ケルサン(META)",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 2,
+    "star_max": 5,
+    "group_type": 970114,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 309,
+      "cannon": 27,
+      "torpedo": 56,
+      "antiaircraft": 30,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 58,
+      "dodge": 62,
+      "speed": 43,
+      "luck": 44,
+      "antisub": 47
+    },
+    "attrs_growth": {
+      "durability": 6264,
+      "cannon": 337,
+      "torpedo": 747,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 787,
+      "dodge": 952,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701142": {
+    "name": {
+      "cn": "凯尔圣·META",
+      "en": null,
+      "jp": "ケルサン(META)",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 3,
+    "star_max": 5,
+    "group_type": 970114,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 384,
+      "cannon": 34,
+      "torpedo": 70,
+      "antiaircraft": 37,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 58,
+      "dodge": 62,
+      "speed": 43,
+      "luck": 44,
+      "antisub": 59
+    },
+    "attrs_growth": {
+      "durability": 6264,
+      "cannon": 337,
+      "torpedo": 747,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 787,
+      "dodge": 952,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701143": {
+    "name": {
+      "cn": "凯尔圣·META",
+      "en": null,
+      "jp": "ケルサン(META)",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 4,
+    "star_max": 5,
+    "group_type": 970114,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 535,
+      "cannon": 47,
+      "torpedo": 97,
+      "antiaircraft": 52,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 58,
+      "dodge": 62,
+      "speed": 43,
+      "luck": 44,
+      "antisub": 82
+    },
+    "attrs_growth": {
+      "durability": 6264,
+      "cannon": 337,
+      "torpedo": 747,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 787,
+      "dodge": 952,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 632
+    },
+    "equip_slots": [
+      [
+        1
+      ],
+      [
+        5
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "9701144": {
+    "name": {
+      "cn": "凯尔圣·META",
+      "en": null,
+      "jp": "ケルサン(META)",
+      "tw": null,
+      "kr": null
+    },
+    "english_name": "Soobrazitelny.META",
+    "nationality": 97,
+    "nation_name": "META",
+    "type": 1,
+    "type_name": "驱逐",
+    "rarity": 4,
+    "rarity_name": "SR",
+    "star": 5,
+    "star_max": 5,
+    "group_type": 970114,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 761,
+      "cannon": 67,
+      "torpedo": 139,
+      "antiaircraft": 74,
+      "air": 0,
+      "reload": 77,
+      "armor": 0,
+      "hit": 58,
+      "dodge": 62,
+      "speed": 43,
+      "luck": 44,
+      "antisub": 117
+    },
+    "attrs_growth": {
+      "durability": 6264,
+      "cannon": 337,
+      "torpedo": 747,
+      "antiaircraft": 411,
+      "air": 0,
+      "reload": 534,
+      "armor": 0,
+      "hit": 787,
+      "dodge": 952,
       "speed": 0,
       "luck": 0,
       "antisub": 632
@@ -289362,6 +290546,598 @@
     ],
     "oil_at_start": 1,
     "oil_at_end": 11,
+    "max_level": 100
+  },
+  "11800011": {
+    "name": {
+      "cn": "莉莉艾露 天使空降队/理理沙",
+      "en": "Liliel Angel Paratroopers/Ririsa",
+      "jp": "リリエル 天使空挺隊/リリサ",
+      "tw": "莉莉艾露 天使空降隊/理理沙",
+      "kr": null
+    },
+    "english_name": "Liliel Angel Paratroopers/Ririsa",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 6,
+    "type_name": "轻航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 1180001,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 854,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 49,
+      "air": 72,
+      "reload": 65,
+      "armor": 0,
+      "hit": 27,
+      "dodge": 19,
+      "speed": 28,
+      "luck": 25,
+      "antisub": 24
+    },
+    "attrs_growth": {
+      "durability": 22935,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1072,
+      "air": 919,
+      "reload": 450,
+      "armor": 0,
+      "hit": 441,
+      "dodge": 397,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 291
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        15
+      ],
+      [
+        10,
+        15
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 6,
+    "max_level": 100
+  },
+  "11800012": {
+    "name": {
+      "cn": "莉莉艾露 天使空降队/理理沙",
+      "en": "Liliel Angel Paratroopers/Ririsa",
+      "jp": "リリエル 天使空挺隊/リリサ",
+      "tw": "莉莉艾露 天使空降隊/理理沙",
+      "kr": null
+    },
+    "english_name": "Liliel Angel Paratroopers/Ririsa",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 6,
+    "type_name": "轻航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 1180001,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1062,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 61,
+      "air": 90,
+      "reload": 65,
+      "armor": 0,
+      "hit": 27,
+      "dodge": 19,
+      "speed": 28,
+      "luck": 25,
+      "antisub": 30
+    },
+    "attrs_growth": {
+      "durability": 22935,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1072,
+      "air": 919,
+      "reload": 450,
+      "armor": 0,
+      "hit": 441,
+      "dodge": 397,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 291
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        15
+      ],
+      [
+        10,
+        15
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
+  "11800013": {
+    "name": {
+      "cn": "莉莉艾露 天使空降队/理理沙",
+      "en": "Liliel Angel Paratroopers/Ririsa",
+      "jp": "リリエル 天使空挺隊/リリサ",
+      "tw": "莉莉艾露 天使空降隊/理理沙",
+      "kr": null
+    },
+    "english_name": "Liliel Angel Paratroopers/Ririsa",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 6,
+    "type_name": "轻航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 1180001,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 1479,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 85,
+      "air": 126,
+      "reload": 65,
+      "armor": 0,
+      "hit": 27,
+      "dodge": 19,
+      "speed": 28,
+      "luck": 25,
+      "antisub": 42
+    },
+    "attrs_growth": {
+      "durability": 22935,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1072,
+      "air": 919,
+      "reload": 450,
+      "armor": 0,
+      "hit": 441,
+      "dodge": 397,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 291
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        15
+      ],
+      [
+        10,
+        15
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
+    "max_level": 100
+  },
+  "11800014": {
+    "name": {
+      "cn": "莉莉艾露 天使空降队/理理沙",
+      "en": "Liliel Angel Paratroopers/Ririsa",
+      "jp": "リリエル 天使空挺隊/リリサ",
+      "tw": "莉莉艾露 天使空降隊/理理沙",
+      "kr": null
+    },
+    "english_name": "Liliel Angel Paratroopers/Ririsa",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 6,
+    "type_name": "轻航",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 1180001,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 2,
+    "attrs": {
+      "durability": 2104,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 122,
+      "air": 179,
+      "reload": 65,
+      "armor": 0,
+      "hit": 27,
+      "dodge": 19,
+      "speed": 28,
+      "luck": 25,
+      "antisub": 59
+    },
+    "attrs_growth": {
+      "durability": 22935,
+      "cannon": 0,
+      "torpedo": 0,
+      "antiaircraft": 1072,
+      "air": 919,
+      "reload": 450,
+      "armor": 0,
+      "hit": 441,
+      "dodge": 397,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 291
+    },
+    "equip_slots": [
+      [
+        7
+      ],
+      [
+        8
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        15
+      ],
+      [
+        10,
+        15
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 12,
+    "max_level": 100
+  },
+  "11800021": {
+    "name": {
+      "cn": "美莉艾拉 天使空降队/美花莉",
+      "en": "Miriella Angel Paratroopers/Mikari",
+      "jp": "ミリエラ 天使空挺隊/美花莉",
+      "tw": "美莉艾拉 天使空降隊/美花莉",
+      "kr": null
+    },
+    "english_name": "Miriella Angel Paratroopers/Mikari",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 3,
+    "star_max": 6,
+    "group_type": 1180002,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 734,
+      "cannon": 27,
+      "torpedo": 0,
+      "antiaircraft": 66,
+      "air": 0,
+      "reload": 76,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 39,
+      "speed": 40,
+      "luck": 25,
+      "antisub": 36
+    },
+    "attrs_growth": {
+      "durability": 20909,
+      "cannon": 373,
+      "torpedo": 0,
+      "antiaircraft": 1386,
+      "air": 0,
+      "reload": 526,
+      "armor": 0,
+      "hit": 863,
+      "dodge": 737,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 423
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 4,
+    "max_level": 100
+  },
+  "11800022": {
+    "name": {
+      "cn": "美莉艾拉 天使空降队/美花莉",
+      "en": "Miriella Angel Paratroopers/Mikari",
+      "jp": "ミリエラ 天使空挺隊/美花莉",
+      "tw": "美莉艾拉 天使空降隊/美花莉",
+      "kr": null
+    },
+    "english_name": "Miriella Angel Paratroopers/Mikari",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 4,
+    "star_max": 6,
+    "group_type": 1180002,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 913,
+      "cannon": 34,
+      "torpedo": 0,
+      "antiaircraft": 82,
+      "air": 0,
+      "reload": 76,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 39,
+      "speed": 40,
+      "luck": 25,
+      "antisub": 45
+    },
+    "attrs_growth": {
+      "durability": 20909,
+      "cannon": 373,
+      "torpedo": 0,
+      "antiaircraft": 1386,
+      "air": 0,
+      "reload": 526,
+      "armor": 0,
+      "hit": 863,
+      "dodge": 737,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 423
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 6,
+    "max_level": 100
+  },
+  "11800023": {
+    "name": {
+      "cn": "美莉艾拉 天使空降队/美花莉",
+      "en": "Miriella Angel Paratroopers/Mikari",
+      "jp": "ミリエラ 天使空挺隊/美花莉",
+      "tw": "美莉艾拉 天使空降隊/美花莉",
+      "kr": null
+    },
+    "english_name": "Miriella Angel Paratroopers/Mikari",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 5,
+    "star_max": 6,
+    "group_type": 1180002,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1271,
+      "cannon": 47,
+      "torpedo": 0,
+      "antiaircraft": 114,
+      "air": 0,
+      "reload": 76,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 39,
+      "speed": 40,
+      "luck": 25,
+      "antisub": 62
+    },
+    "attrs_growth": {
+      "durability": 20909,
+      "cannon": 373,
+      "torpedo": 0,
+      "antiaircraft": 1386,
+      "air": 0,
+      "reload": 526,
+      "armor": 0,
+      "hit": 863,
+      "dodge": 737,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 423
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 8,
+    "max_level": 100
+  },
+  "11800024": {
+    "name": {
+      "cn": "美莉艾拉 天使空降队/美花莉",
+      "en": "Miriella Angel Paratroopers/Mikari",
+      "jp": "ミリエラ 天使空挺隊/美花莉",
+      "tw": "美莉艾拉 天使空降隊/美花莉",
+      "kr": null
+    },
+    "english_name": "Miriella Angel Paratroopers/Mikari",
+    "nationality": 118,
+    "nation_name": "2.5次元的诱惑",
+    "type": 2,
+    "type_name": "轻巡",
+    "rarity": 5,
+    "rarity_name": "SSR",
+    "star": 6,
+    "star_max": 6,
+    "group_type": 1180002,
+    "is_retrofit": false,
+    "retrofit_base_id": null,
+    "is_type2": false,
+    "type2_base_id": null,
+    "armor_type": 1,
+    "attrs": {
+      "durability": 1808,
+      "cannon": 67,
+      "torpedo": 0,
+      "antiaircraft": 163,
+      "air": 0,
+      "reload": 76,
+      "armor": 0,
+      "hit": 60,
+      "dodge": 39,
+      "speed": 40,
+      "luck": 25,
+      "antisub": 89
+    },
+    "attrs_growth": {
+      "durability": 20909,
+      "cannon": 373,
+      "torpedo": 0,
+      "antiaircraft": 1386,
+      "air": 0,
+      "reload": 526,
+      "armor": 0,
+      "hit": 863,
+      "dodge": 737,
+      "speed": 0,
+      "luck": 0,
+      "antisub": 423
+    },
+    "equip_slots": [
+      [
+        2
+      ],
+      [
+        1
+      ],
+      [
+        6
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        10,
+        14
+      ]
+    ],
+    "oil_at_start": 1,
+    "oil_at_end": 10,
     "max_level": 100
   },
   "299011": {

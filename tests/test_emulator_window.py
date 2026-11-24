@@ -6,6 +6,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+import psutil
+
 from module.device.env import IS_WINDOWS
 
 if IS_WINDOWS:
@@ -156,7 +158,7 @@ class TestEmulatorWindow(unittest.TestCase):
                     SimpleNamespace(pid=3, info={'exe': path.lower().replace('/', '\\'), 'cmdline': [path, *args]}),
                 ]
                 self.window.reset_mock()
-                with patch.object(platform_windows.psutil, 'process_iter', return_value=processes):
+                with patch.object(psutil, 'process_iter', return_value=processes):
                     self.assertEqual(self.platform._get_emulator_window(), 100)
                 self.window.assert_called_once_with(3)
 
@@ -166,7 +168,7 @@ class TestEmulatorWindow(unittest.TestCase):
             'exe': 'D:/Nox/bin/Nox.exe', 'cmdline': ['Nox.exe', '-clone:Nox_1'],
         })
         for processes in ([], [process, process]):
-            with patch.object(platform_windows.psutil, 'process_iter', return_value=processes):
+            with patch.object(psutil, 'process_iter', return_value=processes):
                 self.assertEqual(self.platform._get_emulator_window(), 0)
         self.window.assert_not_called()
 

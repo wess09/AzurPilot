@@ -255,8 +255,7 @@ class CampaignBase(CampaignBase_):
         # appear 检查误判失败，导致 ui_ensure(page_archives) 绕经主页重新进档
         # 案。作战档案不支持续战，刷星每轮结束后游戏停在菜单中，先退出菜单，
         # 让当前战役界面（WAR_ARCHIVES_CAMPAIGN_CHECK 可见）可以直接复用
-        if self.is_in_auto_search_menu():
-            self.ensure_auto_search_exit()
+        self.ensure_auto_search_exit()
         if self.first_run or not self.appear(WAR_ARCHIVES_CAMPAIGN_CHECK, offset=(20, 20)):
             result = self.ui_ensure(destination=page_archives)
 

@@ -53,12 +53,21 @@ class LuaLoader:
         Returns:
             str: 匹配到的目录名称。
         """
+        try:
+            with os.scandir(self.folder) as entries:
+                directories = {
+                    entry.name.lower(): entry.name
+                    for entry in entries if entry.is_dir()
+                }
+        except OSError:
+            return server
+
         for alias_list in self.server_alias:
             if server in alias_list:
                 for alias in alias_list:
-                    folder = os.path.join(self.folder, alias)
-                    if os.path.exists(folder) and os.path.isdir(folder):
-                        return alias
+                    name = directories.get(alias.lower())
+                    if name is not None:
+                        return name
 
         return server
 

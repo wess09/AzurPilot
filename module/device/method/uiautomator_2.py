@@ -5,6 +5,7 @@
 """
 
 import base64
+import time
 import typing as t
 from dataclasses import dataclass
 from functools import partial
@@ -87,6 +88,33 @@ class ShellBackgroundResponse:
 
 
 class Uiautomator2(Connection):
+    @retry
+    def ensure_clipboard_uiautomator2(self):
+        # 在游戏复制之前预热服务，避免初始化占用复制后的读取窗口。
+        _ = self.u2.info
+
+    @retry
+    def get_clipboard_uiautomator2(self):
+        if self.sdk_ver < 29 or (self.current_ime_adb()[0] or '').split('/')[0] == 'com.github.uiautomator':
+            return self.u2.clipboard or ''
+        with self._preserve_foreground_adb():
+            self.ensure_clipboard_uiautomator2()
+            helper = 'com.github.uiautomator/com.github.uiautomator.MainActivity'
+            self.adb_shell(['am', 'start', '-W', '-n', helper], timeout=15)
+            deadline = time.monotonic() + 8
+            while True:
+                _, current = self._foreground_adb()
+                if current == helper:
+                    return self.u2.clipboard or ''
+                if current:
+                    package, name = current.split('/', 1)
+                    if package in ('com.android.permissioncontroller', 'com.google.android.permissioncontroller',
+                                   'com.android.packageinstaller') and name.endswith('.GrantPermissionsActivity'):
+                        # 读取剪贴板无需授予辅助应用的电话或定位权限。
+                        self.adb_shell(['input', 'keyevent', 'KEYCODE_BACK'])
+                if time.monotonic() >= deadline:
+                    raise OSError('UIAutomator MainActivity did not receive clipboard focus')
+
     @retry(on_exhausted=EmulatorNotRunningError)
     def screenshot_uiautomator2(self):
         image = self.u2.screenshot(format='raw')

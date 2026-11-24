@@ -19,7 +19,7 @@ class StatisticsGlossaryTest(unittest.TestCase):
 
     def test_task_names_follow_config_i18n(self):
         glossary = build_glossary(['深渊坐标'])
-        self.assertEqual(set(glossary['深渊坐标']), {'en-US', 'ja-JP', 'zh-TW'})
+        self.assertEqual(set(glossary['深渊坐标']), {'en-US', 'ja-JP', 'zh-TW', 'zh-CN-neko'})
 
     def test_report_texts_cover_labels_tables_and_task_options(self):
         result = {

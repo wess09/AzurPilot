@@ -9,7 +9,7 @@ Classes:
     OpsiExplore: 每月开荒处理器，继承 OSMap。
 """
 
-from module.config.utils import get_os_next_reset, DEFAULT_TIME
+from module.config.utils import DEFAULT_TIME, get_os_next_reset, get_os_reset_cycle, is_os_reset_cycle
 from module.exception import GameStuckError, ScriptError
 from module.logger import logger
 from module.os.globe_operation import OSExploreError
@@ -22,9 +22,9 @@ class OpsiExplore(OSMap):
 
     def _os_explore_end(self):
         """保存开荒完成状态，并唤起已启用的独立补扫任务。"""
-        reset = get_os_next_reset().isoformat()
+        reset = get_os_reset_cycle()
         state = self.config.OpsiExplore_MeowfficerCleanupState
-        if isinstance(state, dict) and state.get('reset') != reset:
+        if isinstance(state, dict) and not is_os_reset_cycle(state.get('reset'), reset):
             raise GameStuckError('开荒期间跨月，停止本轮收尾，下次重新开荒')
         logger.info('每月开荒已完成，延迟到下次重置')
         with self.config.multi_set():
@@ -151,8 +151,8 @@ class OpsiExplore(OSMap):
             GameStuckError: 开荒重试失败且无法解锁目标海域时抛出。
         """
         state = self.config.OpsiExplore_MeowfficerCleanupState
-        reset = get_os_next_reset().isoformat()
-        if isinstance(state, dict) and state.get('reset') != reset:
+        reset = get_os_reset_cycle()
+        if isinstance(state, dict) and not is_os_reset_cycle(state.get('reset'), reset):
             with self.config.multi_set():
                 self.config.OpsiExplore_LastZone = 0
                 self.config.OpsiExplore_ExploreProgress = '已完成百分之0.00'

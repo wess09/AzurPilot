@@ -318,32 +318,61 @@ class BackgroundRuntimeTests(unittest.TestCase):
         self.assertNotIn('_coin_background', self.runner.__dict__)
         self.assertNotIn('_last_yellow_owner', self.runner.__dict__)
 
-    def test_completed_event_enters_next_plan_without_repeating_zone_ocr_or_screenshots(self):
-        config = self.runner.config
+    def prepare_cl1_after_event(self):
+        runner = self.runner
+        config = runner.config
+        config.SERVER = 'cn'
         config.override = Mock()
         config.is_task_enabled = Mock(return_value=False)
         config.OpsiHazard1Leveling_MinimumActionPointReserve = 200
-        config.OpsiHazard1Leveling_TargetZone = 22
+        config.OpsiHazard1Leveling_TargetZone = 44
         config.OpsiHazard1Leveling_RecordSeaMiles = -1
         config.OpsiFleet_Fleet = 1
-        self.runner._cl1_next_search_ready = True
-        self.runner.zone = SimpleNamespace(zone_id=22, hazard_level=1)
-        self.runner.is_zone_name_hidden = True
-        self.runner._prepare_scheduling_action_point = Mock(return_value=(9000, 130))
-        self.runner.get_current_zone = Mock(side_effect=AssertionError('重复海域 OCR'))
-        self.runner.fleet_set = Mock()
-        self.runner._record_ap_and_coins = Mock()
-        self.runner._cl1_handle_telemetry = Mock()
-        self.runner.interval_clear = Mock()
+        runner._cl1_next_search_ready = True
+        runner.zone = runner.name_to_zone(44)
+        runner.is_zone_name_hidden = True
+        runner._prepare_scheduling_action_point = Mock(return_value=(9000, 130))
+        runner.fleet_set = Mock()
+        runner._record_ap_and_coins = Mock()
+        runner._cl1_handle_telemetry = Mock()
+        runner.globe_goto = Mock()
+        runner._cl1_run_battle = Mock()
+        return runner
+
+    def test_completed_event_in_same_safe_zone_reuses_map_screenshot(self):
+        runner = self.prepare_cl1_after_event()
+        runner.interval_clear = Mock()
         opened = []
-        self.runner.appear = Mock(side_effect=lambda *args, **kwargs: bool(opened))
-        self.runner.match_template_color = Mock(return_value=True)
-        self.runner.device.click.side_effect = opened.append
-        self.runner.device.screenshot.side_effect = lambda: self.assertTrue(opened)
-        self.runner._cl1_run_battle = self.runner.strategy_search_enter
-        self.runner.run_hazard1_leveling_once()
-        self.runner.device.click.assert_called_once()
-        self.runner.get_current_zone.assert_not_called()
+        runner.appear = Mock(side_effect=lambda *args, **kwargs: bool(opened))
+        runner.match_template_color = Mock(return_value=True)
+        runner.device.click.side_effect = opened.append
+        runner.device.screenshot.side_effect = lambda: self.assertTrue(opened)
+        runner._cl1_run_battle = runner.strategy_search_enter
+        with patch('module.os.map_operation.Ocr.ocr', return_value='西大陆架D-安全海域') as read_title:
+            runner.run_hazard1_leveling_once()
+        read_title.assert_called_once()
+        runner.device.sleep.assert_not_called()
+        runner.device.click.assert_called_once()
+        runner.globe_goto.assert_not_called()
+
+    def test_completed_event_in_normal_zone_reenters_safe_zone_before_next_plan(self):
+        runner = self.prepare_cl1_after_event()
+
+        def check_navigation_before_search():
+            runner.globe_goto.assert_called_once_with(runner.name_to_zone(44), types='SAFE', refresh=True)
+
+        runner._cl1_run_battle.side_effect = check_navigation_before_search
+        with patch('module.os.map_operation.Ocr.ocr', return_value='西大陆架D'):
+            runner.run_hazard1_leveling_once()
+        runner._cl1_run_battle.assert_called_once()
+
+    def test_unreadable_event_frame_refreshes_the_map_title(self):
+        runner = self.prepare_cl1_after_event()
+        with patch('module.os.map_operation.Ocr.ocr', side_effect=['安全海域', '西大陆架D-安全海域']):
+            runner.run_hazard1_leveling_once()
+        runner.device.screenshot.assert_called_once()
+        runner.globe_goto.assert_not_called()
+        runner._cl1_run_battle.assert_called_once()
 
     def test_combat_loading_and_executing_poll_interrupt_without_waiting_for_battle_end(self):
         self.runner.is_in_map.return_value = False

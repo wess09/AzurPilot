@@ -18,7 +18,7 @@ import {Label} from '../components/ui/label'
 import {Input} from '../components/official-ui/input'
 import type {CatalogShip} from '../mind/types'
 import {usePageRead} from '../app/usePageRead'
-import type {UiKey} from '../i18n'
+import {localeForLanguage, type UiKey} from '../i18n'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import '../fleet-tech/style.css'
@@ -149,7 +149,7 @@ export function FleetLedger({instance, report, reportError, retryReport, onRepor
               || (row.form === 'retrofit') === (previous.form === 'retrofit') && row.id < previous.id))) representatives.set(row.group_type, row)
     }
     const visible = filters.records?.includes('unique') ? result.filter(row => row.group_type == null || representatives.get(row.group_type)?.id === row.id) : result
-    const collator = new Intl.Collator(language, {numeric: true})
+    const collator = new Intl.Collator(localeForLanguage(language), {numeric: true})
     function sortValue(row: DockCard): string | number | null {
       const ship = shipInfo.get(row.id)
       switch (sort.column) {

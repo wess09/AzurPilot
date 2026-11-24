@@ -37,6 +37,7 @@ const DEFAULT_PACKAGES: Record<Language, string> = {
   'en-US': 'com.YoStarEN.AzurLane',
   'ja-JP': 'com.YoStarJP.AzurLane',
   'zh-TW': 'com.hkmanjuu.azurlane.gp',
+  'zh-CN-neko': 'com.bilibili.azurlane',
 }
 const SERIAL_PRESETS = [
   ['auto', 'Auto'],

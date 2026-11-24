@@ -104,7 +104,7 @@ class AnnouncementParams(Params):
 
 class SchemaParams(Params):
     """配置界面架构查询参数模型。"""
-    language: Literal['zh-CN', 'en-US', 'ja-JP', 'zh-TW'] = 'zh-CN'
+    language: Literal['zh-CN', 'en-US', 'ja-JP', 'zh-TW', 'zh-CN-neko'] = 'zh-CN'
 
 
 class SearchContentParams(Params):

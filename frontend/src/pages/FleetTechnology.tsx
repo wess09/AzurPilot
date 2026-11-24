@@ -13,6 +13,7 @@ import {ErrorBox, PageTitle} from '../components/ui'
 import {LoadBoundary} from '../components/ui/load-boundary'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '../components/official-ui/select'
 import {Input} from '../components/official-ui/input'
+import {localeForLanguage} from '../i18n'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {catalogRows, changeMilestone, complete, matches, milestones, recordFields, shipType, type Bonuses, type Change, type Milestone, type RecordField, type Row, type State} from '../fleet-tech/types'
@@ -80,7 +81,7 @@ export function TechnologyTable({rows, language, tr, mindCosts = {}, editing = f
         const key = stage === 'get' ? 'owned' : 'lv120', label = `${row.name} · ${tr(stage === 'get' ? 'unlock' : 'completionBonus')} · ${tr(stateKey(row[key]))}`
         return <TableCell key={stage} className={`ft-unlock text-center ${row[key] === true ? 'ft-marked' : ''}`}><Button type="button" variant="ghost" size="sm" disabled={!editing || disabled} aria-pressed={row[key]} aria-label={label} title={editing ? tr('toggleMilestone') : tr(stateKey(row[key]))} onClick={() => onChange?.(row, key, nextState(row[key]))}><span>{effectFor(row, stage, tr)}</span><span className="ft-mark" aria-hidden="true">{stateSymbol(row[key])}</span></Button></TableCell>
       })}
-      <TableCell className="text-center tabular-nums" title={efficiency.value == null ? undefined : `${efficiency.points} ÷ ${efficiency.mind?.toLocaleString(language)} × 1000（100→120）`}>{efficiency.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+      <TableCell className="text-center tabular-nums" title={efficiency.value == null ? undefined : `${efficiency.points} ÷ ${efficiency.mind?.toLocaleString(localeForLanguage(language))} × 1000（100→120）`}>{efficiency.value == null ? '—' : efficiency.value.toLocaleString(localeForLanguage(language), {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
       <TableCell className={`ft-flag text-center ${row.awakening_pending ? 'ft-awakening-pending' : ''}`}><Button type="button" variant="ghost" size="sm" disabled={!editing || disabled} aria-pressed={row.awakening_pending} aria-label={`${row.name} · ${tr('awakening_pending')} · ${tr(row.awakening_pending ? 'marked' : 'notMarked')}`} title={tr('awakeningHint')} onClick={() => onChange?.(row, 'awakening_pending', !row.awakening_pending)}><span className="ft-mark" aria-hidden="true">{stateSymbol(row.awakening_pending)}</span></Button></TableCell>
     </TableRow>
   })}</TableBody></Table></div>
@@ -154,7 +155,7 @@ export function FleetTechnology({reloadRef, busy, onBusy}: {reloadRef: {current:
     return {shipBonuses, nationBonuses, bonuses, points: previewRows.reduce((sum, row) => sum + row.points, 0), counts: Object.fromEntries(milestones.map(key => [key, previewRows.filter(row => row[key] === true).length]))}
   }, [previewRows, report?.nation_levels, draft?.nations, catalog])
   const filtered = useMemo(() => {
-    const collator = new Intl.Collator(language, {numeric: true}), previews = new Map(previewRows.map(row => [row.group_type, row]))
+    const collator = new Intl.Collator(localeForLanguage(language), {numeric: true}), previews = new Map(previewRows.map(row => [row.group_type, row]))
     const valueFor = (row: Row): string | number | null => {
       const t = row.technology
       if (!t) return null

@@ -1,10 +1,10 @@
 /**
- * @fileoverview 任务队列与拖拽排序列表组件。
+ * @fileoverview 调度器的任务计划与状态分组。
  */
 
 import { useLayoutEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, CirclePlay, Hourglass, ListTodo } from 'lucide-react'
 import type { Overview } from '../api/types'
 import { api } from '../api/client'
 import { useApp } from '../app/context'
@@ -14,6 +14,10 @@ import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 /** NextRun 的出厂默认值：所有任务共用，落在过去，
  *  调度器下一轮扫描就把它当待运行任务——「清空下一次运行时间」的等价写法。 */
 const IMMEDIATE_NEXT_RUN = '2020-01-01 00:00:00'
+
+type QueueTask = Overview['tasks'][number]
+const groupIcons = {running: CirclePlay, pending: ListTodo, waiting: Hourglass}
+
 /** 条目位置。用布局坐标：它不含脚本正在写的 transform，
  *  动画没停时也能读到真实位置。 */
 type Box = {left: number; top: number}
@@ -45,17 +49,18 @@ export function movedBy(before: Box | undefined, after: Box) {
 }
 
 /**
- * 任务计划：运行中、待运行、等待中合并为一个列表。
+ * 任务计划按运行中、待运行、等待中的顺序展示，简约主题为每种状态提供独立区块。
  *
  * 条目显示任务名、下次执行时间与状态文字。时间只写值不带「执行时间：」前缀，
  * 运行中的任务同样把时间列出来（只标状态的话就看不出它排在什么时候）。
- * 运行中的状态文字带三点呼吸与扫光，用来表示调度器正在跑它。
+ * 合并列表中，运行状态文字带三点呼吸与扫光。
  *
  * 条目同处一个容器，状态变化时能被测到位置变化并连续平移过去。
  * 容器的高度用补间兑现，离开的条目在原地收缩塌陷，插入的条目自中心放大。
  */
 export function TaskQueue({instance, data, onData}: {instance: string; data?: Overview; onData?: (data: Overview) => void}) {
-  const {t, ui, notify} = useApp()
+  const {t, ui, notify, theme} = useApp()
+  const grouped = theme === 'minimal'
   const navigate = useNavigate()
   const positions = useRef(new Map<string, Placement>())
   const known = useRef(new Set<string>())
@@ -67,7 +72,7 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
 
   useLayoutEffect(() => {
     const container = list.current
-    if (!container) return
+    if (!container || grouped) return
     // 容器被换掉时，先前的记账对新节点作废，重新建基准。
     const fresh = !synced.current || host.current !== container
     synced.current = true
@@ -159,22 +164,24 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
       )
       animation.finished.then(() => source.remove()).catch(() => source.remove())
     }
-  /* 条目位置只在 data 变化时改变。 */
-  }, [data])
+  }, [data, grouped])
 
   const labels = {
     running: ui('scheduler.running'),
     pending: ui('scheduler.pending'),
     waiting: ui('scheduler.waiting'),
   }
-  // 运行中与待运行同组：按「运行中 → 待运行 → 等待中」排，组内保持后端给出的优先级顺序。
-  const tasks = (['running', 'pending', 'waiting'] as const)
-    .flatMap(state => (data?.tasks ?? []).filter(task => task.state === state))
+  // 各组保留后端给出的优先级顺序。
+  const groups = (['running', 'pending', 'waiting'] as const).map(state => ({
+    state,
+    tasks: (data?.tasks ?? []).filter(task => task.state === state),
+  }))
+  const tasks = groups.flatMap(group => group.tasks)
 
   /** 右键菜单：打开配置页与立刻运行（运行中的条目不用再催）。
    *  「立刻运行」不是直接执行，而是把下一次运行时间清空回落到默认值，
    *  调度器下一轮扫描就排它——与配置页里清空该字段同一条路径。 */
-  const menuItems = (task: Overview['tasks'][number]): ContextMenuItem[] => [
+  const menuItems = (task: QueueTask): ContextMenuItem[] => [
     {label: ui('queue.openConfig'), run: () => navigate(`/i/${instance}/task/${task.name}`)},
     {label: ui('task.runNow'), disabled: task.state === 'running', run: () => void runNow(task.name)},
   ]
@@ -191,7 +198,26 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
     }
   }
 
-  return <div className="rail-task-list" ref={list}>
+  function renderTask(task: QueueTask) {
+    const nextRun = task.nextRun?.replace('T', ' ').trim()
+    return <ContextMenu key={task.name} items={menuItems(task)}><Link data-task={task.name}
+      className={grouped ? 'rail-task-item' : `rail-task-item ${task.state}`}
+      to={`/i/${instance}/task/${task.name}`}>
+      <div className="rail-task-main">
+        <strong>{t(`Task.${task.name}.name`)}</strong>
+        {nextRun && <small>{nextRun}</small>}
+      </div>
+      {grouped ? <span className="sr-only">{labels[task.state]}</span> : (
+        <span className={`rail-task-state ${task.state}`}>
+          {task.state === 'running' && <span className="thinking-dots" aria-hidden="true"><i/><i/><i/></span>}
+          <span className="state-label">{labels[task.state]}</span>
+        </span>
+      )}
+      <ChevronRight size={13}/>
+    </Link></ContextMenu>
+  }
+
+  return <div key={grouped ? 'grouped' : 'flat'} className="rail-task-list" ref={list}>
     {tasks.length > 0 ? (
       <>
         <div className="rail-task-heading">
@@ -199,25 +225,20 @@ export function TaskQueue({instance, data, onData}: {instance: string; data?: Ov
           <span>{tasks.length}</span>
           <RunNowMenu instance={instance} tasks={tasks}/>
         </div>
-        <section className="rail-queue-group tasks" aria-label={ui('scheduler.plan')}>
-          <div className="rail-queue-body">
-            {tasks.map(task => {
-              const nextRun = task.nextRun?.replace('T', ' ').trim()
-              return <ContextMenu key={task.name} items={menuItems(task)}><Link data-task={task.name} className={`rail-task-item ${task.state}`}
-                           to={`/i/${instance}/task/${task.name}`}>
-                <div className="rail-task-main">
-                  <strong>{t(`Task.${task.name}.name`)}</strong>
-                  {nextRun && <small>{nextRun}</small>}
-                </div>
-                <span className={`rail-task-state ${task.state}`}>
-                  {task.state === 'running' && <span className="thinking-dots" aria-hidden="true"><i/><i/><i/></span>}
-                  <span className="state-label">{labels[task.state]}</span>
-                </span>
-                <ChevronRight size={13}/>
-              </Link></ContextMenu>
-            })}
-          </div>
-        </section>
+        {grouped ? groups.map(({state, tasks}) => {
+          const Icon = groupIcons[state]
+          return <section className="rail-queue-group rail-queue-section" key={state} aria-label={labels[state]}>
+            <div className="rail-queue-heading">
+              <h3><Icon size={16} aria-hidden="true"/>{labels[state]}</h3>
+              <span>{tasks.length}</span>
+            </div>
+            {tasks.length > 0 && <div className="rail-queue-body">{tasks.map(renderTask)}</div>}
+          </section>
+        }) : (
+          <section className="rail-queue-group tasks" aria-label={ui('scheduler.plan')}>
+            <div className="rail-queue-body">{tasks.map(renderTask)}</div>
+          </section>
+        )}
       </>
     ) : <div className="rail-empty">{ui('scheduler.noEnabled')}</div>}
   </div>

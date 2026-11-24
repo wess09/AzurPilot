@@ -211,12 +211,11 @@ class EventShopItem(Item):
                 self.name = 'URpt'
             elif self.name.isdigit():
                 logger.warning(f'[活动商店-物品] 未识别的物品，价格 {self.price}，总数 {self.total_count}，'
-                               f'保存图像以便分析。')
+                               '按金装备优先级筛选，保存图像以便分析。')
                 import os
                 from module.base.utils import save_image
                 os.mkdir('assets/shop/event/new_templates/') if not os.path.exists('assets/shop/event/new_templates/') else None
                 save_image(self.image, f'assets/shop/event/new_templates/{self.name}.png')
-                # self.name = 'EquipSSR'
 
     def predict_genre(self):
         """使用正则表达式解析物品名称，填充 group、sub_genre 和 tier 属性。"""
@@ -224,6 +223,9 @@ class EventShopItem(Item):
 
         # 使用正则表达式快速填充新属性
         name = self.name.lower()
+        if not self.is_known_item():
+            # 保留未知商品的模板名供重扫定位，仅在筛选时按金装备处理。
+            name = 'equipssr'
         result = re.search(FILTER_REGEX, name)
         if result:
             self.group, self.sub_genre, self.tier = \

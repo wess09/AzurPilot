@@ -29,7 +29,7 @@ from module.base.decorator import run_once
 from module.config.time_source import now as current_time, timestamp as current_timestamp
 from module.logger import logger
 
-LANGUAGES = ['zh-CN', 'en-US', 'ja-JP', 'zh-TW']
+LANGUAGES = ['zh-CN', 'en-US', 'ja-JP', 'zh-TW', 'zh-CN-neko']
 SERVER_TO_LANG = {
     'cn': 'zh-CN',
     'en': 'en-US',
@@ -37,6 +37,7 @@ SERVER_TO_LANG = {
     'tw': 'zh-TW',
 }
 LANG_TO_SERVER = {v: k for k, v in SERVER_TO_LANG.items()}
+LANG_TO_SERVER['zh-CN-neko'] = 'cn'
 SERVER_TO_TIMEZONE = {
     'cn': timedelta(hours=8),
     'en': timedelta(hours=-7),
@@ -501,6 +502,12 @@ def ensure_time(second, n=3, precision=3):
         return second
 
 
+def _get_os_next_server_reset(server_time):
+    """以服务器日期为准取下月首日零点。"""
+    return (server_time.replace(day=1) + timedelta(days=32)).replace(
+        day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
 def get_os_next_reset_after(moment):
     """
     获取指定时间之后的下一次大世界重置时间。
@@ -516,9 +523,7 @@ def get_os_next_reset_after(moment):
     """
     diff = server_time_offset()
     server_moment = moment - diff
-    server_reset = (server_moment.replace(day=1) + timedelta(days=32)) \
-        .replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    server_reset = server_reset.replace(tzinfo=timezone(server_timezone()))
+    server_reset = _get_os_next_server_reset(server_moment).replace(tzinfo=timezone(server_timezone()))
     local_reset = server_reset.astimezone().replace(tzinfo=None)
     return local_reset
 
@@ -531,6 +536,32 @@ def get_os_next_reset():
         datetime.datetime: 下次重置的本地时间。
     """
     return get_os_next_reset_after(current_time())
+
+
+def get_os_reset_cycle() -> str:
+    """以带时区的服务器重置时间标识月度存档。"""
+    server_now = current_time(timezone(server_timezone()))
+    return _get_os_next_server_reset(server_now).isoformat()
+
+
+def is_os_reset_cycle(saved: object, cycle: str) -> bool:
+    """判断存档标记是否对应这个重置周期，兼容旧版的本地时间。"""
+    if not isinstance(saved, str) or 'T' not in saved:
+        return False
+    if saved == cycle:
+        return True
+    try:
+        saved_reset = datetime.fromisoformat(saved)
+    except ValueError:
+        return False
+
+    reset = datetime.fromisoformat(cycle)
+    if saved_reset.tzinfo is not None:
+        return saved_reset == reset
+
+    # 旧版丢弃了时区。所有合法 UTC 偏移的绝对值都小于一天，且相邻月的范围互不重叠。
+    reset_utc = reset.astimezone(timezone.utc).replace(tzinfo=None)
+    return abs(saved_reset - reset_utc) < timedelta(days=1)
 
 
 def get_os_reset_remain():

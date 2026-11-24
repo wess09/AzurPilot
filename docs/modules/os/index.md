@@ -371,7 +371,7 @@ OCR：行动力面板 / 黄币 / 紫币 ──▶ 决策（智能调度状态机
 ## 17. 已知限制
 
 - `alas.py` 的 `opsi_daily_delay()` 转发到 `OSCampaignRun.opsi_daily_delay()`，但该方法在整个 `module/` 中没有定义（截至 2026-09）——启用该任务会 `AttributeError`，属待修缺陷。
-- 地图事件续查目前只在 `OpsiHazard1Leveling` 单轮入口触发（`_run_hazard1_leveling_once()` → `_resume_pending_map_event()`）；其他大世界任务在事件处卡死重启后仍按各自流程重新扫描，不在本轮开始主动续查。
+- 地图事件续查由侵蚀一单轮入口和短猫单海域入口触发。短猫首次开工时在原指定安全海域检查 `PendingMapEvent`，重扫一次或补完装置剩余自律，然后走常规循环。续查阶段不挪队重扫。
 - `OpsiHazard1Leveling` 的练度检查 `os_check_leveling` 没有独立调度入口，只能作为 CL1 前置或被代理调用；`OpsiCheckLeveling` 是配置组而非任务，WebUI 上不可单独启用。
 - 自律寻敌要求游戏内已通关大世界剧情；未解锁的账号在 `run_auto_search` 会持续卡识别直到底层超时。
 - 球面图定位依赖固定模板与单应性参数，分辨率/画质异常时的恢复能力有限（详见[地图系统与检测](../map.md)的限制节）。

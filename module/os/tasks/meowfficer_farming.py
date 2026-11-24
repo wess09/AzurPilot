@@ -156,6 +156,58 @@ class MeowfficerTargetZoneMixin:
 
 
 class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
+    def run_first_auto_search(self):
+        """有单海域断点时，将原海域留到短猫开工后续查。
+
+        Pages:
+            in: page_os
+            out: page_os
+        """
+        task = self._get_prevent_action_point_overflow_target_task() or self.config.task.command
+        if task == 'OpsiMeowfficerFarming' and self.is_zone_name_hidden:
+            state = self._read_pending_map_event()
+            if state is not None and self._pending_event_valid(state):
+                target = self.config.cross_get(
+                    'OpsiMeowfficerFarming.OpsiMeowfficerFarming.TargetZone', default='0',
+                )
+                try:
+                    zone = self.name_to_zone(str(target).strip())
+                except ScriptError:
+                    pass
+                else:
+                    if zone.zone_id == self.zone.zone_id:
+                        logger.info('[大世界-耄耋相接] 保留当前海域，待开工后续查事件')
+                        return
+        super().run_first_auto_search()
+
+    def _meow_resume_event_once(self, zone):
+        """首次单海域开工时，在原安全海域尝试续查一次。
+
+        Pages:
+            in: page_os
+            out: page_os
+        """
+        if getattr(self, '_meow_event_resume_checked', False):
+            return False
+        self._meow_event_resume_checked = True
+        current = getattr(self, 'zone', None)
+        if current is None or current.zone_id != zone.zone_id or not self.is_zone_name_hidden:
+            return False
+        state = self._read_pending_map_event()
+        if state is None or state.get('zone') != zone.zone_id or not self.is_in_map():
+            return False
+        if not self._pending_event_valid(state):
+            self._clear_pending_map_event()
+            return False
+
+        self.fleet_set(self.config.OpsiFleet_Fleet)
+        self._resume_pending_map_event(allow_forced_move=False)
+        if state.get('type') == 'akashi':
+            self._meow_record_akashi_if_solved()
+        # 续查可能消耗行动力，开工时需要重新确认。
+        self.invalidate_action_point_cache()
+        return True
+
     def _meow_ap_check(self, preserve, ap_checked):
         """
         行动力检查。
@@ -545,6 +597,7 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
         # ===== 传统目标海域模式 =====
         traditional_zone = getattr(self, '_meow_traditional_zone', None)
         if traditional_zone is not None:
+            self._meow_resume_event_once(traditional_zone)
             self._meow_handle_traditional_zone(traditional_zone)
             return ap_checked
 
@@ -554,6 +607,8 @@ class OpsiMeowfficerFarming(MeowfficerTargetZoneMixin, CoinTaskMixin, OSMap):
             zone, _ = self._meow_target_zone_at(target_zones, getattr(self, '_meow_target_zone_index', 0))
             self._meow_target_zone_index = getattr(self, '_meow_target_zone_index', 0) + 1
             if len(target_zones) == 1:
+                if self._meow_resume_event_once(zone):
+                    fresh_ap = None
                 self._meow_handle_stay_in_zone(zone, fresh_ap=fresh_ap)
             else:
                 self._meow_handle_target_zone_search(zone)

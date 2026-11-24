@@ -12,7 +12,7 @@ Classes:
 import numpy as np
 
 from module.config.config import TaskEnd
-from module.config.utils import get_os_next_reset, get_os_reset_remain
+from module.config.utils import get_os_reset_cycle, get_os_reset_remain, is_os_reset_cycle
 from module.exception import ScriptError
 from module.logger import logger
 from module.map.map_grids import SelectedGrids
@@ -36,7 +36,7 @@ class OpsiDaily(OSMap):
         storage = self.config.cross_get('OpsiScheduling.Storage.Storage', default={})
         state = storage.get('SmartExplore') if isinstance(storage, dict) else None
         return not (isinstance(state, dict)
-                    and state.get('reset') == get_os_next_reset().isoformat()
+                    and is_os_reset_cycle(state.get('reset'), get_os_reset_cycle())
                     and state.get('phase') in ('cleanup', 'done'))
 
     def run_first_auto_search(self):

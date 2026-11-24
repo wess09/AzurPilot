@@ -6,14 +6,12 @@
 直接漏掉。
 
 续查语义：
-- 明石：重新全图扫描并点击，仍点不到就换其他舰队，最后升级强制移动。
+- 明石和未提交的装置先全图扫描。侵蚀一仍找不到时再尝试强制移动。
 - 塞壬研究装置：装置已提交物品后按模式补自律寻敌（敌人模式 3 次：自律
   可能被游戏暂停，需要重新点击直到三次；资源模式 1 次，点自律收柱子；
   信息收集 0 次；未知模式 1 次），资源点完即被消耗，不要求对应事件再次
-  完成；卡死重启后只补记录里剩下的次数。未提交物品时按普通事件走全图
-  扫描 + 强制移动。
-- 全图扫描和强制移动都没能看到事件时清掉记录、继续下一轮正常任务，
-  不把“这一遍没找到”当成卡死。
+  完成；卡死重启后只补记录里剩下的次数。
+- 短猫单海域续查扫不到事件就清掉记录并继续作战，不挪队重扫。
 
 记录在事件真正处理完之前写入（明石开始点击购买前、装置提交物品后的自律
 开始前），正常状态下事件处理完立即清除；只有处理中途抛出异常（卡死重启）
@@ -255,17 +253,16 @@ class MapEventResumeMixin:
                 logger.info(f"[大世界-事件] 切换回原舰队: {current_fleet}")
                 self.fleet_set(current_fleet)
 
-    def _resume_pending_map_event(self, drop=None):
+    def _resume_pending_map_event(self, drop=None, *, allow_forced_move=True):
         """重启后续查上次没处理完的地图事件。
 
         装置已提交物品：按记录里剩余次数补自律寻敌（敌人模式共 3 次，
         资源模式 1 次），补完清记录。
-        其他情况：先全图扫描重新找事件；仍没处理完就升级强制移动（不受
-        “强制移动”开关限制，因为事件已经看见了）；全图扫描和强制移动都没能
-        看到事件时清记录，继续下一轮正常任务。
+        其他情况先全图扫描。侵蚀一可以升级强制移动，短猫扫不到就继续本轮作战。
 
         Args:
             drop: 掉落记录对象。
+            allow_forced_move (bool): 全图扫描后是否允许挪队重扫。
         """
         state = self._load_pending_map_event()
         if state is None:
@@ -298,16 +295,17 @@ class MapEventResumeMixin:
             logger.info("[大世界-事件续查] 全图扫描已处理上次的事件")
             return
 
-        logger.info("[大世界-事件续查] 全图扫描仍未处理，升级强制移动")
-        # 事件已经看见了，挪舰队找它不受“强制移动”开关和行动力门槛限制。
-        self._question_unreachable = True
-        self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True, recovery=True)
-        if self._read_pending_map_event() is None:
-            logger.info("[大世界-事件续查] 强制移动已处理上次的事件")
-            return
-
-        logger.warning(
-            "[大世界-事件续查] 全图扫描与强制移动都没能看到事件，"
-            "清除续查记录，继续下一轮"
-        )
+        if allow_forced_move:
+            logger.info("[大世界-事件续查] 全图扫描仍未处理，升级强制移动")
+            self._question_unreachable = True
+            self._execute_fixed_patrol_scan(ExecuteFixedPatrolScan=True, recovery=True)
+            if self._read_pending_map_event() is None:
+                logger.info("[大世界-事件续查] 强制移动已处理上次的事件")
+                return
+            logger.warning(
+                "[大世界-事件续查] 全图扫描与强制移动都没能看到事件，"
+                "清除续查记录，继续下一轮"
+            )
+        else:
+            logger.info("[大世界-事件续查] 全图扫描未完成待办事件，清除记录并继续作战")
         self._finish_pending_map_event(event_type, node=node)

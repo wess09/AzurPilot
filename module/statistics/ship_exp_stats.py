@@ -20,6 +20,7 @@ from __future__ import annotations
 import math
 import time
 import sqlite3
+from collections.abc import Callable
 from pathlib import Path
 from datetime import datetime, date
 from typing import Any
@@ -70,14 +71,25 @@ class ShipExpStats:
         return {} if data is None else data
 
 
-    def _save(self) -> None:
+    def _save(self, *, merge: Callable[[dict[str, Any]], dict[str, Any]] | None = None) -> None:
         """用总库事务替换当前实例经验快照，失败完整回滚。"""
-        from module.persistence.snapshots import save_ship
+        from module.persistence.snapshots import read_ship, save_ship
         try:
             with self.store.transaction() as connection:
-                save_ship(connection, self._instance_name, self.data)
+                data = self.data
+                if merge is not None:
+                    data = merge(read_ship(connection, self._instance_name) or {})
+                save_ship(connection, self._instance_name, data)
+            self.data = data
         except (OSError, ValueError, TypeError, sqlite3.Error) as error:
             logger.warning(f'[统计-经验] 保存舰船经验失败: {type(error).__name__}')
+
+
+    def _preserve_round_times(self, stored: dict[str, Any]) -> dict[str, Any]:
+        """同步保存战斗和舰船数据时，保留后台已经提交的轮次样本。"""
+        if 'round_times' in stored:
+            self.data['round_times'] = stored['round_times']
+        return self.data
 
 
     # ========== 战斗时间记录 ==========
@@ -167,7 +179,7 @@ class ShipExpStats:
         if samples:
             self.data[key]['average'] = round(sum(samples) / len(samples), 2)
 
-        self._save()
+        self._save(merge=self._preserve_round_times)
 
     def record_round_time(self, round_duration: float, *, round_count: float = 1) -> None:
         """记录完整练级耗时，按实际轮数加权保留最近100轮。
@@ -180,32 +192,34 @@ class ShipExpStats:
                 or not math.isfinite(round_count) or round_count <= 0:
             return
 
-        group = self.data.get('round_times', {})
-        if group.get('scope') != 'full_cycle':
-            # 旧样本只覆盖搜索内两场战斗，保留原值但不与完整流程混算。
-            previous = group
-            group = {'samples': [], 'round_counts': [], 'scope': 'full_cycle'}
-            if previous:
-                group['legacy'] = previous
-            self.data['round_times'] = group
+        def add_sample(data: dict[str, Any]) -> dict[str, Any]:
+            group = data.get('round_times', {})
+            if group.get('scope') != 'full_cycle':
+                # 旧样本只覆盖搜索内两场战斗，保留原值但不与完整流程混算。
+                previous = group
+                group = {'samples': [], 'round_counts': [], 'scope': 'full_cycle'}
+                if previous:
+                    group['legacy'] = previous
+                data['round_times'] = group
 
-        samples = group['samples']
-        counts = group['round_counts']
-        samples.append(round_duration / round_count)
-        counts.append(min(round_count, 100))
+            samples = group['samples']
+            counts = group['round_counts']
+            samples.append(round_duration / round_count)
+            counts.append(min(round_count, 100))
 
-        # 一次计划作战可以包含多轮，裁剪权重而不是把整次搜索当作一轮。
-        excess = sum(counts) - 100
-        while excess > 0:
-            if counts[0] <= excess:
-                excess -= counts.pop(0)
-                samples.pop(0)
-            else:
-                counts[0] -= excess
-                excess = 0
-        group['average'] = round(sum(value * count for value, count in zip(samples, counts)) / sum(counts), 2)
+            # 一次计划作战可以包含多轮，按折算轮数裁剪窗口。
+            excess = sum(counts) - 100
+            while excess > 0:
+                if counts[0] <= excess:
+                    excess -= counts.pop(0)
+                    samples.pop(0)
+                else:
+                    counts[0] -= excess
+                    excess = 0
+            group['average'] = round(sum(value * count for value, count in zip(samples, counts)) / sum(counts), 2)
+            return data
 
-        self._save()
+        self._save(merge=add_sample)
 
     # ========== 每日经验效率统计 ==========
 
@@ -242,7 +256,7 @@ class ShipExpStats:
         # 清理旧数据
         self._cleanup_old_daily_stats()
 
-        self._save()
+        self._save(merge=self._preserve_round_times)
 
     def _cleanup_old_daily_stats(self) -> None:
         """清理超过保留天数的旧统计数据。"""
@@ -333,7 +347,7 @@ class ShipExpStats:
         self.data['fleet_index'] = fleet_index
         self.data['battle_count_at_check'] = battle_count_at_check
         self.data['ships'] = ships
-        self._save()
+        self._save(merge=self._preserve_round_times)
         logger.info(f'[统计-经验] 舰船经验数据已保存: {len(ships)} 艘舰船，目标等级 {target_level}')
 
     def calculate_progress(

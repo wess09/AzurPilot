@@ -6,14 +6,18 @@ import subprocess
 import tempfile
 import threading
 import unittest
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
+
+import numpy as np
 
 from alas import AzurLaneAutoScript
 from module.base import log_watermark
 from module.config.config_updater import ConfigUpdater
 from module.config.config_generated import GeneratedConfig
+from module.logger import get_log_file_path, logger
 
 
 class TestSourceWatermark(unittest.TestCase):
@@ -282,6 +286,79 @@ class TestErrorLogIntegration(unittest.TestCase):
         self.assertIs(updated['Alas']['Error']['SaveError'], False)
         self.assertIs(updated['Alas']['Error']['HandleError'], False)
         self.assertIs(old['Alas']['Error']['LogWatermark'], False)
+
+
+class TestErrorLogRollover(unittest.TestCase):
+    def setUp(self):
+        self.root = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.addCleanup(os.chdir, Path.cwd())
+        os.chdir(self.root)
+
+        self.before_midnight = datetime(2026, 11, 9, 23, 59, 55)
+        self.after_midnight = datetime(2026, 11, 10, 0, 0, 5)
+        self.clock = self.enterContext(patch('time.time', return_value=self.before_midnight.timestamp()))
+        self.enterContext(patch('time.time_ns', side_effect=lambda: int(self.clock.return_value * 10**9)))
+        self.enterContext(patch.object(logger, 'handlers', []))
+        self.enterContext(patch.object(logger, 'log_file', None, create=True))
+        self.enterContext(patch.object(log_watermark.threading, 'Thread'))
+        self.enterContext(patch.object(log_watermark, '_last_watermark', '[来源水印] 跨日测试'))
+
+        self.script = AzurLaneAutoScript.__new__(AzurLaneAutoScript)
+        self.script.config_name = 'account_a'
+        self.script.__dict__['config'] = SimpleNamespace(Error_SaveError=True, Error_LlmAnalysis=False)
+        self.script.cleanup_error_logs = Mock()
+        logger.set_file_logger(self.script.config_name)
+        handler, = logger.handlers
+        self.addCleanup(handler.close)
+        self.addCleanup(lambda: handler.richd.console.file.close())
+
+    def test_archive_reads_rotated_file_even_without_a_task_heading(self):
+        logger.hr('跨日任务', level=0)
+        logger.info('午夜前的旧记录')
+        self.clock.return_value = self.after_midnight.timestamp()
+        logger.info('故障前的运行记录')
+        logger.info('[Adb_binary] D:/private-test/AzurLaneAutoScript/adb.exe')
+        logger.error('当天故障')
+
+        image = np.zeros((720, 1280, 3), dtype=np.uint8)
+        self.script.__dict__['device'] = SimpleNamespace(
+            screenshot_deque=[{'time': self.after_midnight, 'image': image}],
+        )
+        with patch('module.handler.sensitive_info.handle_sensitive_image', return_value=image) as mask:
+            self.script.save_error_log()
+        mask.assert_called_once_with(image)
+
+        archive, = (self.root / 'log/error/account_a').iterdir()
+        saved = (archive / 'log.txt').read_text(encoding='utf-8')
+        active_file = get_log_file_path('account_a', self.root, self.after_midnight.date())
+        self.assertEqual(Path(logger.log_file), active_file.resolve())
+        self.assertEqual(archive.name, str(int(self.after_midnight.timestamp() * 1000)))
+        self.assertTrue((archive / '2026-11-10_00-00-05-000000.png').is_file())
+        self.assertIn('2026-11-10 00:00:05.000 | ERROR | 当天故障', saved)
+        self.assertIn('故障前的运行记录', saved)
+        self.assertIn(r'[Adb_binary] C:\fakepath\AzurLaneAutoScript', saved)
+        self.assertIn('保存错误日志:', saved)
+        self.assertNotIn('午夜前的旧记录', saved)
+
+    def test_archive_preserves_the_failure_when_the_save_notice_rotates_the_file(self):
+        logger.info('前一任务的记录')
+        logger.hr('当前任务', level=0)
+        logger.error('午夜前故障')
+        write_watermark = self.script._log_source_watermark
+
+        def watermark_then_midnight(cached=False):
+            write_watermark(cached=cached)
+            self.clock.return_value = self.after_midnight.timestamp()
+
+        with patch.object(self.script, '_log_source_watermark', side_effect=watermark_then_midnight):
+            self.script.save_error_log()
+
+        file, = (self.root / 'log/error/account_a').glob('*/log.txt')
+        saved = file.read_text(encoding='utf-8')
+        self.assertIn('2026-11-09 23:59:55.000 | ERROR | 午夜前故障', saved)
+        self.assertLess(saved.index('[来源水印]'), saved.index('保存错误日志:'))
+        self.assertIn('2026-11-10 00:00:05.000 | WARNING | [AzurPilot] 保存错误日志:', saved)
+        self.assertNotIn('前一任务的记录', saved)
 
 
 class TestStartupWatermark(unittest.TestCase):

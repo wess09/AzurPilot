@@ -126,6 +126,8 @@ class Coalition(CoalitionCombat, CampaignEvent):
         elif event == 'coalition_20260723':
             threshold = 256 if self.config.SERVER == 'en' else 221
             ocr = Digit(HORROR_PT_OCR, name='OCR_PT', lang='cnocr', letter=(228, 230, 237), threshold=threshold)
+        elif event == 'coalition_20261124':
+            ocr = Digit(VERITAS_PT_OCR, name='OCR_PT', letter=(192, 208, 227), threshold=192)
         else:
             logger.error(f'[联动] 活动 {event} 未定义OCR对象')
             raise ScriptError
@@ -145,16 +147,18 @@ class Coalition(CoalitionCombat, CampaignEvent):
     def check_oil(self):
         """检查燃油是否低于限制值。
 
-        部分联动活动不显示燃油图标，此时跳过检查。
+        真理学院在战役菜单读取燃油，其他活动沿用已有的燃油图标判断。
         首次检测到燃油不足时，等待画面稳定后二次确认。
 
         Returns:
             bool: 燃油不足返回 True，否则返回 False。
         """
-        # 无燃油图标的联动活动跳过检查
+        # 真理学院作战页没有燃油数字，确认回到战役菜单后才读取。
         if not self._coalition_has_oil_icon:
-            logger.info('联动活动无石油图标，跳过石油检查')
-            return False
+            if (self.config.Campaign_Event != 'coalition_20261124'
+                    or not self.ui_page_appear(page_campaign_menu)):
+                logger.info('联动活动无石油图标，跳过石油检查')
+                return False
 
         limit = max(self.config.StopCondition_OilLimitHardFloor, self.config.StopCondition_OilLimit)
         if not (self.get_oil() < limit):
@@ -184,6 +188,7 @@ class Coalition(CoalitionCombat, CampaignEvent):
         if self.config.Campaign_Event in [
             'coalition_20260122',
             'coalition_20260723',
+            'coalition_20261124',
         ]:
             return False
         return True
@@ -211,7 +216,8 @@ class Coalition(CoalitionCombat, CampaignEvent):
         if oil_check:
             # 检查 ui_current 是否存在，避免属性异常
             ui_is_campaign_menu = hasattr(self, 'ui_current') and self.ui_current == page_campaign_menu
-            if (self._coalition_has_oil_icon or ui_is_campaign_menu) and self.check_oil():
+            if (self._coalition_has_oil_icon or ui_is_campaign_menu
+                    or self.config.Campaign_Event == 'coalition_20261124') and self.check_oil():
                 logger.hr('触发停止条件: 石油上限')
                 self.config.task_delay(minute=(120, 240))
                 return True
@@ -256,8 +262,8 @@ class Coalition(CoalitionCombat, CampaignEvent):
         if self.config.Coalition_Fleet == 'single' and self.config.Emotion_Fleet1Control == 'prevent_red_face':
             logger.warning('[联动] 不允许单舰队联动心情低于30，强制切换为防止黄脸模式')
             self.config.override(Emotion_Fleet1Control='prevent_yellow_face')
-        if stage == 'sp':
-            # SP 关卡需要多舰队
+        if stage == 'sp' or (event == 'coalition_20261124' and stage == 'ex'):
+            # SP 和真理学院的 EX 关卡需要多舰队。
             self.config.override(
                 Coalition_Fleet='multi',
             )

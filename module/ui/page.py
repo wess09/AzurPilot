@@ -198,11 +198,22 @@ page_campaign_menu.link(button=CAMPAIGN_MENU_GOTO_EVENT, destination=page_sp)
 page_campaign.link(button=CAMPAIGN_GOTO_EVENT, destination=page_sp)
 
 # 联动活动
-# 恐怖故事
 page_coalition = Page(HORROR_COALITION_CHECK)
 page_coalition.link(button=GOTO_MAIN, destination=page_main)
 page_coalition.link(button=BACK_ARROW, destination=page_campaign_menu)
 page_campaign_menu.link(button=CAMPAIGN_MENU_GOTO_EVENT, destination=page_coalition)
+
+page_coalition_veritas = Page(VERITAS_COALITION_CHECK)
+page_coalition_veritas.link(button=VERITAS_HOME, destination=page_main)
+page_coalition_veritas.link(button=VERITAS_BACK, destination=page_campaign_menu)
+page_campaign_menu.link(button=CAMPAIGN_MENU_GOTO_EVENT, destination=page_coalition_veritas)
+
+
+def get_coalition_page(event):
+    """按当前活动选择页面，避免资源导入顺序影响分服入口。"""
+    return page_coalition_veritas if event == 'coalition_20261124' else page_coalition
+
+
 # 小学院
 # page_coalition_menu = Page(COALITION_ACADEMY_MAIN_CHECK)
 # page_coalition_menu.link(button=COALITION_ACADEMY_HOME, destination=page_main)

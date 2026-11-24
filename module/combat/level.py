@@ -78,7 +78,7 @@ class Level(ModuleBase):
         Returns:
             ButtonGrid: 等级区域按钮网格对象。
         """
-        return ButtonGrid(origin=(34, 128), delta=(0, 100), button_shape=(68, 19), grid_shape=(1, 6))
+        return ButtonGrid(origin=(34, 125), delta=(0, 100), button_shape=(68, 19), grid_shape=(1, 6))
 
     @Config.when(SERVER=None)
     def _lv_grid(self):

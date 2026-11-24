@@ -11,19 +11,24 @@
 
 import inspect
 import json
+import subprocess
 import threading
 import unittest
 from unittest.mock import Mock, call, create_autospec, patch
 
 from alas import RESTART_EMULATOR_OP_TIMEOUT, AzurLaneAutoScript
+import psutil
+
 from module.device.env import IS_WINDOWS
 from module.exception import EmulatorNotRunningError, EmulatorOpBusy
 
 if IS_WINDOWS:
     from module.device.platform import platform_windows
+    from module.device.platform.emulator_windows import EmulatorInstance
     from module.device.platform.platform_windows import (
         EMULATOR_START_WATCH_TIMEOUTS,
         MUMU12_DEEP_WAIT_TIMEOUT,
+        MUMU12_MAIN_START_TIMEOUT,
         MUMU12_STOP_WAIT_TIMEOUT,
         PlatformWindows,
     )
@@ -152,6 +157,116 @@ def mumu_info(*players):
 
 
 @unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台测试')
+class TestMumu12Lifecycle(unittest.TestCase):
+    MANAGER = '"F:/Program Files/MuMu/nx_main/MuMuManager.exe"'
+
+    def setUp(self):
+        self.platform = PlatformWindows.__new__(PlatformWindows)
+        self.platform.emulator_instance = EmulatorInstance(
+            serial='127.0.0.1:16448',
+            name='MuMuPlayer-15.0-2',
+            path='F:/Program Files/MuMu/nx_main/mumunxmain.exe',
+        )
+        self.platform.emulator_start_watch = Mock(return_value=True)
+        self.platform._clean_mumu12_residue = Mock()
+        self.platform._mumu12_wait_stopped = Mock(return_value=True)
+        self.platform._mumu12_instances = Mock(return_value={'2': {'info_source': 'rpc'}})
+        self.platform.execute = Mock(return_value=subprocess.CompletedProcess([], 0))
+        self.help = self.enterContext(patch.object(
+            platform_windows, 'run_mumu_manager',
+            return_value='SUBCOMMANDS:\n  launch   Launch players.\n  shutdown   Shutdown players.\n',
+        ))
+        self.desktop_launch = self.enterContext(patch.object(platform_windows.subprocess, 'run'))
+
+    def test_normal_start_uses_targeted_control_and_preserves_shared_launcher(self):
+        steps = Mock()
+        steps.attach_mock(self.platform.execute, 'execute')
+        steps.attach_mock(self.platform._mumu12_wait_stopped, 'wait_stopped')
+
+        self.assertTrue(self.platform.emulator_start())
+
+        self.assertEqual(steps.mock_calls, [
+            call.execute(f'{self.MANAGER} control -v 2 shutdown', wait=True, timeout=30),
+            call.wait_stopped(self.platform.emulator_instance.path, 2),
+            call.execute(f'{self.MANAGER} control -v 2 launch'),
+        ])
+        self.platform._clean_mumu12_residue.assert_not_called()
+        self.desktop_launch.assert_not_called()
+
+    def test_cold_start_waits_for_main_rpc_before_launching_instance(self):
+        local = {'2': {'info_source': 'local'}}
+        rpc = {'2': {'info_source': 'rpc'}}
+        self.platform._mumu12_instances.side_effect = [local, local, rpc]
+        steps = Mock()
+        steps.attach_mock(self.platform._mumu12_instances, 'instances')
+        steps.attach_mock(self.desktop_launch, 'desktop')
+        steps.attach_mock(self.platform.execute, 'execute')
+
+        with patch.object(platform_windows.time, 'sleep'):
+            self.assertTrue(self.platform.emulator_start())
+
+        self.assertEqual([step[0] for step in steps.mock_calls],
+                         ['execute', 'instances', 'desktop', 'instances', 'instances', 'execute'])
+        self.platform.execute.assert_called_with(f'{self.MANAGER} control -v 2 launch')
+        self.assertEqual(self.desktop_launch.call_args.kwargs['env']['AP_MUMU_LAUNCHER_PATH'],
+                         r'F:\Program Files\MuMu\nx_main\mumunxmain.exe')
+
+    def test_cold_start_times_out_when_main_rpc_is_unavailable(self):
+        self.platform._mumu12_instances.return_value = {'2': {'info_source': 'local'}}
+
+        with patch.object(platform_windows, 'MUMU12_MAIN_START_TIMEOUT', 0):
+            self.assertFalse(self.platform.emulator_start())
+
+        self.desktop_launch.assert_called_once()
+        self.platform.execute.assert_called_once_with(
+            f'{self.MANAGER} control -v 2 shutdown', wait=True, timeout=30)
+        self.platform.emulator_start_watch.assert_not_called()
+
+    def test_desktop_launch_failure_keeps_manager_fallback(self):
+        self.platform._mumu12_instances.return_value = {'2': {'info_source': 'local'}}
+        self.desktop_launch.side_effect = OSError('desktop unavailable')
+
+        self.assertTrue(self.platform.emulator_start())
+
+        self.desktop_launch.assert_called_once()
+        self.platform.execute.assert_called_with(f'{self.MANAGER} control -v 2 launch')
+
+    def test_old_manager_uses_legacy_commands_and_accepts_already_stopped(self):
+        self.help.return_value = 'unknown cmd: control'
+        self.platform.execute.return_value = subprocess.CompletedProcess([], 0xFFFFFFFE)
+
+        self.assertTrue(self.platform.emulator_start())
+
+        self.assertEqual(self.platform.execute.call_args_list, [
+            call(f'{self.MANAGER} api -v 2 shutdown_player', wait=True, timeout=30),
+            call(f'{self.MANAGER} api -v 2 launch_player'),
+        ])
+        self.desktop_launch.assert_not_called()
+
+    def test_stop_failure_does_not_reopen_mumu(self):
+        self.platform.execute.return_value = subprocess.CompletedProcess([], 1)
+
+        self.assertFalse(self.platform.emulator_stop())
+        self.platform.execute.assert_called_once_with(
+            f'{self.MANAGER} control -v 2 shutdown', wait=True, timeout=30)
+
+    def test_start_skips_launch_while_shutdown_is_pending(self):
+        self.platform._mumu12_wait_stopped.return_value = False
+
+        self.assertFalse(self.platform.emulator_start())
+        self.platform.execute.assert_called_once_with(
+            f'{self.MANAGER} control -v 2 shutdown', wait=True, timeout=30)
+        self.platform.emulator_start_watch.assert_not_called()
+
+    def test_unknown_instance_id_does_not_run_any_manager_command(self):
+        self.platform.emulator_instance.name = 'unknown'
+
+        self.assertFalse(self.platform.emulator_stop())
+        self.help.assert_not_called()
+        self.platform.execute.assert_not_called()
+
+
+@unittest.skipUnless(IS_WINDOWS, 'Windows 模拟器平台测试')
 class TestMumu12StateQuery(unittest.TestCase):
     """MuMuManager info 查询：按实例精确判断状态，替代靠进程名猜测。"""
 
@@ -201,7 +316,7 @@ class TestMumu12StateQuery(unittest.TestCase):
         platform, patched = self.make_platform(
             mumu_info({'is_process_started': True}, {'is_process_started': True})
         )
-        with patched, patch.object(platform_windows.psutil, 'process_iter') as process_iter:
+        with patched, patch.object(psutil, 'process_iter') as process_iter:
             platform._clean_mumu12_residue('F:/mumu/shell/MuMuPlayer.exe', 0)
 
         process_iter.assert_not_called()
@@ -209,7 +324,7 @@ class TestMumu12StateQuery(unittest.TestCase):
     def test_residue_cleanup_skipped_when_state_unknown(self):
         """查不到状态时不清理——宁可少清理，不可误杀。"""
         platform, patched = self.make_platform('')
-        with patched, patch.object(platform_windows.psutil, 'process_iter') as process_iter:
+        with patched, patch.object(psutil, 'process_iter') as process_iter:
             platform._clean_mumu12_residue('F:/mumu/shell/MuMuPlayer.exe', 0)
 
         process_iter.assert_not_called()
@@ -285,7 +400,7 @@ class TestDeepRestart(unittest.TestCase):
         mumu_vm = self.fake_process('MuMuVMMHeadless.exe')
         unrelated = self.fake_process('notepad.exe')
 
-        with patch.object(platform_windows.psutil, 'process_iter',
+        with patch.object(psutil, 'process_iter',
                           side_effect=[[mumu_player, mumu_vm, unrelated], []]):
             self.assertTrue(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
 
@@ -296,7 +411,7 @@ class TestDeepRestart(unittest.TestCase):
     def test_deep_clean_asks_mumu_to_shutdown_all_instances(self):
         platform = self.make_platform()
         platform.execute = Mock()
-        with patch.object(platform_windows.psutil, 'process_iter', side_effect=[[], []]):
+        with patch.object(psutil, 'process_iter', side_effect=[[], []]):
             platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe')
 
         self.assertTrue(platform.execute.called)
@@ -310,7 +425,7 @@ class TestDeepRestart(unittest.TestCase):
 
         with (
             patch.object(platform_windows, 'run_mumu_manager', return_value=multi_open) as query,
-            patch.object(platform_windows.psutil, 'process_iter', side_effect=[[], []]),
+            patch.object(psutil, 'process_iter', side_effect=[[], []]),
         ):
             platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe')
 
@@ -323,7 +438,7 @@ class TestDeepRestart(unittest.TestCase):
         platform.execute = Mock()
         alive = [self.fake_process('MuMuVMMHeadless.exe')]
         with (
-            patch.object(platform_windows.psutil, 'process_iter', return_value=alive),
+            patch.object(psutil, 'process_iter', return_value=alive),
             patch.object(platform_windows, 'read_run_param', return_value=0),
         ):
             self.assertFalse(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
@@ -337,7 +452,7 @@ class TestDeepRestart(unittest.TestCase):
         platform.execute = Mock(side_effect=OSError('MuMuManager missing'))
         mumu_vm = self.fake_process('MuMuVMMHeadless.exe')
 
-        with patch.object(platform_windows.psutil, 'process_iter', side_effect=[[mumu_vm], []]):
+        with patch.object(psutil, 'process_iter', side_effect=[[mumu_vm], []]):
             self.assertTrue(platform._deep_clean_mumu12('F:/mumu/shell/MuMuPlayer.exe'))
 
         mumu_vm.kill.assert_called_once()
@@ -357,9 +472,9 @@ class TestDeepRestart(unittest.TestCase):
     def test_start_with_deep_uses_deep_clean(self):
         platform = self.make_platform()
         platform.emulator_instance = Mock()
+        platform.emulator_instance.type = 'MuMuPlayer12'
         platform.emulator_instance.emulator.path = 'F:/mumu/shell/MuMuPlayer.exe'
         platform.emulator_instance.MuMuPlayer12_id = 0
-        platform.config.EmulatorInfo_Emulator = 'MuMuPlayer12'
         platform._clean_mumu12_residue = Mock()
         platform._deep_clean_mumu12 = Mock()
         platform._mumu12_wait_stopped = Mock()
@@ -369,18 +484,17 @@ class TestDeepRestart(unittest.TestCase):
         platform._deep_clean_mumu12.assert_called_once()
         platform._clean_mumu12_residue.assert_not_called()
 
-    def test_start_without_deep_keeps_old_cleanup(self):
-        """默认仍是普通清理——深度重启必须显式开启。"""
+    def test_start_after_failure_can_clean_stuck_processes(self):
         platform = self.make_platform()
         platform.emulator_instance = Mock()
+        platform.emulator_instance.type = 'MuMuPlayer12'
         platform.emulator_instance.emulator.path = 'F:/mumu/shell/MuMuPlayer.exe'
         platform.emulator_instance.MuMuPlayer12_id = 0
-        platform.config.EmulatorInfo_Emulator = 'MuMuPlayer12'
         platform._clean_mumu12_residue = Mock()
         platform._deep_clean_mumu12 = Mock()
         platform._mumu12_wait_stopped = Mock()
 
-        self.assertTrue(platform.emulator_start())
+        self.assertTrue(platform.emulator_start(failures=1))
 
         platform._clean_mumu12_residue.assert_called_once()
         platform._deep_clean_mumu12.assert_not_called()
@@ -456,11 +570,13 @@ class TestRestartTimeoutBudget(unittest.TestCase):
         #   _emulator_stop(subprocess timeout=30)
         #   + 深度清场（control -v all shutdown ≤60 + 等进程退出 ≤30）
         #   + 等实例真正关闭
+        #   + CLI 能力与状态查询，以及冷启动桌面 Shell 和主程序等待
         #   + 启动监视（阶梯上限）
         deep_clean_budget = 60 + MUMU12_DEEP_WAIT_TIMEOUT
+        launcher_budget = 4 * 15 + 10 + MUMU12_MAIN_START_TIMEOUT
         platform_budget = (
             30 + deep_clean_budget + MUMU12_STOP_WAIT_TIMEOUT
-            + max(EMULATOR_START_WATCH_TIMEOUTS)
+            + launcher_budget + max(EMULATOR_START_WATCH_TIMEOUTS)
         )
 
         self.assertGreaterEqual(RESTART_EMULATOR_OP_TIMEOUT, platform_budget)
@@ -548,6 +664,16 @@ class TestRestartEmulatorBusyHandling(unittest.TestCase):
         self.assertTrue(script._try_restart_emulator())
         self.assertEqual(0, script.consecutive_adb_offline)
         self.assertEqual(0, script.consecutive_game_not_running)
+
+    def test_failed_start_preserves_failure_count_for_later_recovery(self):
+        script = self.make_script()
+        device = self.make_device()
+        device.emulator_start.return_value = False
+        script.__dict__['device'] = device
+
+        self.assertFalse(script._try_restart_emulator())
+        self.assertEqual(1, script.consecutive_adb_offline)
+        self.assertIs(device, script.__dict__['device'])
 
     def test_passes_deep_flag_matching_the_threshold(self):
         """未达阈值时必须以 deep=False 调用——参数名写错会在这里炸出来。"""

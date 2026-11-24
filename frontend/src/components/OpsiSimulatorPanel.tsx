@@ -6,6 +6,7 @@ import { FlaskConical, Play, Square, Terminal } from 'lucide-react'
 import { api } from '../api/client'
 import type { OpsiSimulatorStatus } from '../api/types'
 import { useApp, useConnection } from '../app/context'
+import { localeForLanguage } from '../i18n'
 import { LogPanel } from './LogPanel'
 import { ErrorBox, Panel, PanelHeading } from './ui'
 import {LoadBoundary} from './ui/load-boundary'
@@ -54,7 +55,7 @@ export function OpsiSimulatorPanel({instance, beforeStart}: {instance: string; b
     }
   }
 
-  const number = (value: number) => value.toLocaleString(language, {maximumFractionDigits: 2})
+  const number = (value: number) => value.toLocaleString(localeForLanguage(language), {maximumFractionDigits: 2})
   const result = data?.result
   const metrics = result && [
     [ui('simulator.cl1Count'), number(result.cl1Count)],

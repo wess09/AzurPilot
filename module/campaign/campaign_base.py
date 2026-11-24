@@ -38,6 +38,7 @@ class CampaignBase(CampaignUI, Map, AutoSearchCombat):
     """
     FUNCTION_NAME_BASE = 'battle_'
     MAP: CampaignMap
+    battle_result_retry_interval = 0.5
     # 三战撤退类地图（如 D3-3）置为 True：自律寻敌打满 _map_battle 后
     # 关闭自律寻敌并撤退（#275）。普通地图保持 False，避免 boss 战败后
     # 被误撤退。

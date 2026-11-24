@@ -81,7 +81,8 @@
               "zh-CN",
               "en-US",
               "ja-JP",
-              "zh-TW"
+              "zh-TW",
+              "zh-CN-neko"
             ],
             "title": "Language",
             "type": "string"

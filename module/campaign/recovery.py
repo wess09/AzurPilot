@@ -167,9 +167,16 @@ class CampaignRecovery:
             logger.warning('[战役续接] 重新读盘后原任务设置或账本已改变，放弃续接')
             self.runner.campaign._recovery_map_active = False
             return False
-        # 心情读取当前持久化账本；恢复后每场出击仍按普通战斗入口正常扣减。
+        from module.campaign.fleet_rotation_emotion import RotationEmotion
+
+        # 重新读取整队账本时，轮换心情还需要保留本图已确认的舰位与培养记录。
         campaign = self.runner.campaign
-        campaign.emotion = type(campaign.emotion)(campaign.config)
+        emotion = campaign.emotion
+        emotion_type = type(emotion)
+        if isinstance(emotion, RotationEmotion):
+            campaign.emotion = emotion_type(campaign.config, emotion.context, emotion.rules, emotion.selected)
+        else:
+            campaign.emotion = emotion_type(campaign.config)
         campaign.emotion.map_is_2x_book = campaign.map_is_2x_book
         logger.info(f'[战役续接] 尝试恢复原任务 {config.task.command}，第 {self.attempts}/{self.MAX_ATTEMPTS} 次')
         state = self.find_state()

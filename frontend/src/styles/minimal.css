@@ -59,14 +59,16 @@
     outline-offset: 2px;
   }
   & .input-icon > input:focus {outline: none}
+  & .monitor-panel:has(> .monitor-tabs) {
+    --monitor-segment-padding: 3px;
+    --monitor-segment-inner-radius: 6px;
+  }
   & .monitor-segmented {
     gap: 3px;
-    padding: 3px;
-    border-radius: 9px;
     background: var(--surface-muted);
     overflow-x: auto;
   }
-  & .monitor-segmented button {border-right: 0; border-radius: 6px}
+  & .monitor-segmented button {border-right: 0; border-radius: var(--monitor-segment-inner-radius)}
   & main.instance-setup {
     --setup-accent: var(--accent);
     --setup-accent-hover: var(--accent-hover);
@@ -76,4 +78,68 @@
   & .setup-illustration-mark::after,
   & .instance-setup-card.setup-wizard {background: var(--surface)}
   & .setup-illustration {background: var(--surface-muted)}
+}
+
+/* 分栏式调度器：控制卡、统计入口和各状态各自成块。 */
+:root[data-theme='minimal'] {
+  & .instance-page-rail:has(> .rail-schedule) {
+    gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  & .instance-page-rail > :is(.scheduler-widget, .modern-stat-card),
+  & .rail-queue-section {
+    border: 1px solid var(--border);
+    border-radius: var(--theme-radius-panel);
+    background: var(--surface);
+  }
+  & .instance-page-rail > .scheduler-widget {padding: 14px}
+  & .scheduler-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    padding: 0;
+    background: none;
+  }
+  & .scheduler-stats > div {
+    padding: 8px 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--theme-radius-control);
+    text-align: center;
+  }
+  & .scheduler-stats strong {font-size: 20px}
+  & .scheduler-stats :is(strong, span) {color: var(--text)}
+  & .scheduler-stats span {font-size: 11px; overflow-wrap: anywhere}
+  & .scheduler-widget .scheduler-toggle {
+    background: var(--text);
+    color: var(--surface);
+  }
+  & .scheduler-widget .scheduler-toggle:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--text) 88%, var(--surface));
+  }
+  & .scheduler-widget .scheduler-toggle:disabled {
+    background: color-mix(in srgb, var(--text) 10%, var(--surface));
+    color: var(--muted);
+  }
+  & .rail-task-list {
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+  }
+  & .rail-queue-heading,
+  & .rail-queue-heading h3 {display: flex; align-items: center; gap: 8px}
+  & .rail-queue-heading {justify-content: space-between; padding: 10px 12px}
+  & .rail-queue-heading h3 {margin: 0; font-size: 12px; font-weight: 600}
+  & .rail-queue-heading > span {color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums}
+  & .rail-queue-section .rail-queue-body {gap: 0; border-top: 1px solid var(--border)}
+  & .rail-queue-section .rail-task-item {
+    grid-template-columns: minmax(0, 1fr) 13px;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+  & .rail-queue-section .rail-task-item + .rail-task-item {border-top: 1px solid var(--border)}
+  & .rail-queue-section .rail-task-item:hover {background: var(--surface-muted)}
+  & .rail-queue-section .rail-task-item:focus-visible {outline-offset: -2px}
 }

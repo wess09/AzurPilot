@@ -33,7 +33,25 @@
 .instance-panel-stats {display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; overflow-y: auto}
 .group-nav {padding: 6px; border-radius: var(--theme-radius-panel)}
 .group-nav a {border-radius: 4px}
-.monitor-tabs {height: auto; min-height: 60px; padding: 10px 16px; flex-wrap: wrap; gap: 8px}
+/* 面板与切换组的上角按外缘间距对齐，间距包含面板边框。 */
+.monitor-panel:has(> .monitor-tabs) {
+  --monitor-panel-border-width: 1px;
+  --monitor-tabs-inset: 11px;
+  --monitor-segment-padding: 4px;
+  --monitor-segment-inner-radius: 15px;
+  --monitor-segment-border-width: 1px;
+  --monitor-segment-radius: calc(var(--monitor-segment-inner-radius) + var(--monitor-segment-padding) + var(--monitor-segment-border-width));
+  --monitor-panel-top-radius: calc(var(--monitor-segment-radius) + var(--monitor-tabs-inset));
+  border-width: var(--monitor-panel-border-width);
+  border-start-start-radius: var(--monitor-panel-top-radius);
+  border-start-end-radius: var(--monitor-panel-top-radius);
+}
+.monitor-tabs {
+  height: auto;
+  padding: calc(var(--monitor-tabs-inset) - var(--monitor-panel-border-width));
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .monitor-panel .log-toolbar {display: flex; align-items: center; margin-left: auto; gap: 4px}
 .monitor-panel .log-panel {border: 0; border-radius: 0}
 .monitor-panel .log-content {font-size: 12px; line-height: 1.8}
@@ -71,9 +89,15 @@
 .badge-pill {
   border-radius: 999px;
 }
-.monitor-segmented {display: inline-flex; align-items: center; gap: 0; padding: 0; border: 1px solid var(--border); border-radius: 20px; background: transparent; max-width: 100%; overflow: hidden}
-.monitor-segmented button {display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 36px; padding: 6px 16px; border: 0; border-right: 1px solid var(--border); border-radius: 0; color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: background-color .15s, color .15s}
-.monitor-segmented button:last-child {border-right: 0}
+.monitor-segmented {
+  display: inline-flex; align-items: center; gap: 0;
+  padding: var(--monitor-segment-padding);
+  border: var(--monitor-segment-border-width) solid var(--border);
+  min-height: calc(2 * var(--monitor-segment-radius));
+  border-radius: var(--monitor-segment-radius);
+  background: transparent; max-width: 100%; overflow: hidden
+}
+.monitor-segmented button {display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex-shrink: 0; min-height: 30px; padding: 6px 16px; border: 0; border-radius: var(--monitor-segment-inner-radius); color: var(--muted); font-size: 13px; font-weight: 500; white-space: nowrap; transition: background-color .15s, color .15s}
 .monitor-segmented button[aria-selected='true'] {background: var(--accent-soft); color: var(--accent)}
 .monitor-segmented button:focus-visible {outline-offset: -2px}
 .log-rule .rule-bar {opacity: 1; background: var(--border)}

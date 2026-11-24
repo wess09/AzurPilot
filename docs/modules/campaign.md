@@ -496,6 +496,8 @@ stateDiagram-v2
 
 开启 `Hard.RunAt18` 后，若困难图在服务器时间 18:00 前被调起，只将任务延后到当天 18:00，不进入困难关卡；18:00 后到期则正常执行剩余次数，完成后安排到下一次 18:00。旧配置自动补齐为关闭，保留原有零点调度。
 
+18:00 模式下打完困难图还会补领一次任务奖励（`CampaignHard.claim_mission_reward()`）：`Reward` 任务当天零点已经跑过，18:00 打完新增的每日/周常任务奖励不会再有人领取，因此退出自动搜索后按 `Reward.CollectMission` / `Reward.CollectWeeklyMission` 的配置回主页调用 `Reward.reward_mission()`；两项都关闭时不进主页、直接跳过。关闭 `RunAt18` 时仍由 `Reward` 任务在零点后领取，困难图自身不额外领奖。
+
 关键关联：`GemsFarming`/`ThreeOilLowCost` 共用同一组 `GemsFarming.*` 参数；`StopCondition_MapAchievement` 与 `can_use_auto_search_continue()` 联动（非 `non_stop` 时禁用续战，因为自动搜索菜单里读不到地图信息）；活动类配置 `MAP_CHAPTER_SWITCH_*`、`STAGE_ENTRANCE` 由地图文件 `Config` 注入而非用户设置。
 
 ## 11. 异常与错误处理

@@ -184,6 +184,19 @@
 /* 带说明的行：控件跟标签首行对齐，别再垂直居中飘在几行文字中间 */
 .task-config-page.task-config-modern .config-group .field-row:has(.field-label p),
 .settings-page .config-group .field-row:has(.field-label p) {align-items: flex-start}
+/* 开关与整行的标题和说明垂直居中。 */
+.task-config-page.task-config-modern .config-group .field-control:has(> [data-slot='switch']) {
+  align-self: center;
+  display: flex;
+  justify-content: flex-end;
+}
+@media (max-width: 950px) {
+  /* 窄屏也让开关与说明并排，错误提示出现时沿用堆叠布局。 */
+  .task-config-page.task-config-modern .config-group .field-row:has(> .field-control > [data-slot='switch']):not(:has(> .field-control > .edit-status)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
 /* 任务说明卡同理：一张面，不叠内贴片 */
 .task-config-page.task-config-modern .task-help-panel {
   border: 1px solid var(--rail-panel-edge);

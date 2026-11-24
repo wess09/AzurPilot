@@ -17,6 +17,7 @@ from module.handler.fast_forward import to_map_file_name
 from module.hard.assets import *
 from module.logger import logger
 from module.ocr.ocr import Digit
+from module.reward.reward import Reward
 
 OCR_HARD_REMAIN = Digit(OCR_HARD_REMAIN, letter=(123, 227, 66), threshold=128, alphabet='0123')
 
@@ -39,11 +40,13 @@ class CampaignHard(CampaignRun):
         """执行困难关卡出击主流程。
 
         流程包括：覆写困难模式配置、加载战役与地图模块、导航至困难关卡界面、
-        OCR 识别剩余次数并循环出击，完成后退出自动搜索并按配置延迟到服务器零点或18点。
+        OCR 识别剩余次数并循环出击，完成后退出自动搜索；18 点运行会先补领任务奖励，
+        再按配置延迟到服务器零点或18点。
 
         Pages:
             in: 任意页面
-            out: 延后时保留当前页面，否则为 page_campaign 或关卡选择界面
+            out: 延后时保留当前页面；18 点运行补领任务奖励后停在 page_mission；
+                否则为 page_campaign 或关卡选择界面
         """
         logger.hr('困难战役', level=1)
         if self.config.Hard_RunAt18 and (current_time() - server_time_offset()).hour < 18:
@@ -86,6 +89,32 @@ class CampaignHard(CampaignRun):
         self.campaign.ensure_auto_search_exit()
         # self.campaign.equipment_take_off_when_finished()
 
+        # 18 点运行时 Reward 任务当天零点已经执行过，困难图打完新增的任务奖励
+        # 不会再有人领取，因此在关卡结束后原地补领一次。
+        if self.config.Hard_RunAt18:
+            self.claim_mission_reward()
+
         # 调度器
         self.config.task_delay(server_update='18:00' if self.config.Hard_RunAt18 else True)
         self.config.task_call('Reward', force_call=False)
+
+    def claim_mission_reward(self):
+        """补领困难图出击产生的任务奖励。
+
+        18 点运行模式下 Reward 任务已在当天零点执行过，困难图打完新增的任务奖励
+        不会再被领取，因此在关卡结束后补领一次；领取项跟随 Reward 任务的配置。
+
+        Pages:
+            in: 任意页面
+            out: page_mission（没有可领取的任务奖励时保持原页面）
+        """
+        # 跨任务读取 Reward 任务配置，路径为 <Task>.<Group>.<Argument>。
+        daily = self.config.cross_get(keys=['Reward', 'Reward', 'CollectMission'], default=True)
+        weekly = self.config.cross_get(keys=['Reward', 'Reward', 'CollectWeeklyMission'], default=False)
+        if not daily and not weekly:
+            logger.info('[困难战役] Reward 任务未开启任务奖励领取，跳过补领')
+            return
+
+        logger.hr('任务奖励', level=1)
+        self.ui_goto_main()
+        Reward(self.config, self.device).reward_mission(daily=daily, weekly=weekly)

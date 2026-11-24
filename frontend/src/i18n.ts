@@ -10,17 +10,19 @@ import {fleetTechZhCN, fleetTechZhTW, fleetTechEnUS, fleetTechJaJP} from './flee
 import {mindZhCN, mindZhTW, mindEnUS, mindJaJP} from './mind/i18n'
 import {resourceZhCN, resourceZhTW, resourceEnUS, resourceJaJP} from './i18n.resources'
 import {colorZhCN, colorZhTW, colorEnUS, colorJaJP} from './i18n.colors'
+import {zhCNNeko} from './i18n.neko'
 
 /** 界面语言代码；与 languages 的显示名键一一对应，也用作各语言包的导出名后缀。 */
-export type Language = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP'
+export type Language = 'zh-CN' | 'zh-TW' | 'en-US' | 'ja-JP' | 'zh-CN-neko'
 type TranslationParams = Record<string, string | number>
 
-/** 四种界面语言的显示名，各自用原文书写（如「简体中文」），供语言选择器渲染。 */
+/** 界面语言的显示名，各自用原文书写（如「简体中文」），供语言选择器渲染。 */
 export const languages: Record<Language, string> = {
   'zh-CN': '简体中文',
   'zh-TW': '繁體中文',
   'en-US': 'English',
   'ja-JP': '日本語',
+  'zh-CN-neko': "猫娘语 (ฅ'ω'ฅ)",
 }
 
 const zhCN = {
@@ -1199,6 +1201,7 @@ const dictionaries: Record<Language, Record<UiKey, string>> = {
   'zh-TW': zhTW,
   'en-US': enUS,
   'ja-JP': jaJP,
+  'zh-CN-neko': zhCNNeko,
 }
 
 /** 判断任意字符串是否为受支持的界面语言，用于校验存储或 URL 里读出的旧值。 */
@@ -1206,9 +1209,9 @@ export function isLanguage(value: string | null | undefined): value is Language 
   return !!value && Object.prototype.hasOwnProperty.call(languages, value)
 }
 
-/** 映射成 BCP-47 地区标签，供 `<html lang>` 与 Intl、图表库使用；四个语言名本身合法，故原样返回。 */
-export function localeForLanguage(language: Language): string {
-  return language
+/** 映射成 BCP-47 地区标签，供 `<html lang>` 与 Intl、图表库使用；四个语言名本身合法，猫娘语回退简体中文以防 Intl 报错。 */
+export function localeForLanguage(language: Language | string): string {
+  return language === 'zh-CN-neko' ? 'zh-CN' : language
 }
 
 /** 按候选列表依次匹配语言；zh 系变体归并到繁/简两支，全部不中回落简体中文。 */

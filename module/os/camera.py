@@ -22,8 +22,15 @@ from module.map.camera import Camera
 from module.map.map_base import location2node, location_ensure
 from module.map_detection.os_grid import OSGrid
 from module.map_detection.view import View
+from module.ocr.ocr import Ocr
 from module.os.map_operation import OSMapOperation
 from module.os.radar import Radar
+
+
+# 1280×720 画面中，居中舰队旁边的移动计数。
+WALK_COUNTER_AREA = (574, 253, 594, 270)
+WALK_COUNTER_MAX_MEAN_DIFFERENCE = 20
+OCR_WALK_COUNTER = Ocr(WALK_COUNTER_AREA, name='OS_WALK_COUNTER')
 
 
 class OSCamera(OSMapOperation, Camera):
@@ -72,6 +79,29 @@ class OSCamera(OSMapOperation, Camera):
         """扫描小地图雷达并将目标合并到地图数据中。"""
         self.radar.predict(self.device.image)
         self.radar.show()
+
+    _walk_counter_image = None
+
+    def walk_counter_changed(self, reset=False):
+        """比较移动计数区域，返回变化状态，无可用帧时返回 None。"""
+        if reset or self.device.image is None:
+            self._walk_counter_image = None
+            return None
+
+        image = cv2.cvtColor(self.image_crop(WALK_COUNTER_AREA, copy=False), cv2.COLOR_RGB2GRAY)
+        previous = self._walk_counter_image
+        if previous is not None:
+            difference = cv2.norm(image, previous, cv2.NORM_L1) / image.size
+            if difference <= WALK_COUNTER_MAX_MEAN_DIFFERENCE:
+                return False
+
+        self._walk_counter_image = image
+        return True
+
+    def walk_counter_visible(self):
+        """计数区域长时间不变时，确认其中仍可读到数字。"""
+        text = OCR_WALK_COUNTER.ocr(self.device.image).strip()
+        return text.isascii() and text.isdecimal()
 
     def grid_is_in_sight(self, grid, camera=None, sight=None):
         """判断指定格子是否在当前相机视野内。

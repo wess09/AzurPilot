@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from module.config.utils import get_os_next_reset, get_server_next_update
+from module.config.utils import get_os_next_reset, get_os_reset_cycle, get_server_next_update, is_os_reset_cycle
 from module.exception import GameStuckError
 from module.logger import logger
 
@@ -36,7 +36,7 @@ def monthly_explore_complete(config):
     """只认可带本月标记的 100%，不依赖每月开荒任务开关。"""
     month = config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')
     return (config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress', default='') == '已完成百分之100.00'
-            and isinstance(month, dict) and month.get('reset') == get_os_next_reset().isoformat())
+            and isinstance(month, dict) and is_os_reset_cycle(month.get('reset'), get_os_reset_cycle()))
 
 
 def smart_explore_enabled(config):
@@ -55,13 +55,13 @@ def _smart_explore_pending(config, min_zones=SMART_EXPLORE_TASK_MIN_ZONES):
     """本月压制普通海域达到任务门槛后，不再等待开荒。"""
     if not smart_explore_enabled(config) or monthly_explore_complete(config):
         return False
-    reset = get_os_next_reset().isoformat()
+    reset = get_os_reset_cycle()
     count = config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones')
-    if (isinstance(count, dict) and count.get('reset') == reset
+    if (isinstance(count, dict) and is_os_reset_cycle(count.get('reset'), reset)
             and type(count.get('count')) is int and min_zones <= count['count'] <= 72):
         return False
     state = config.cross_get('OpsiScheduling.Storage.Storage.SmartExplore')
-    if not isinstance(state, dict) or state.get('reset') != reset:
+    if not isinstance(state, dict) or not is_os_reset_cycle(state.get('reset'), reset):
         return True
     if state.get('phase') in ('cleanup', 'done'):
         return False
@@ -148,30 +148,32 @@ class SmartExploreMixin:
     def _get_smart_explore_state(self):
         """以大世界重置周期隔离三轮断点，保留其他智能调度状态。"""
         state = self._get_smart_scheduling_state_value('SmartExplore')
-        reset = get_os_next_reset().isoformat()
-        if not isinstance(state, dict) or state.get('reset') != reset:
+        reset = get_os_reset_cycle()
+        if not isinstance(state, dict) or not is_os_reset_cycle(state.get('reset'), reset):
             state = dict(reset=reset, next=[0, 0, 0], second_started=False, second_decided=False,
                          phase='explore', attempts=0)
             self._save_smart_explore_state(state)
-        return dict(state, next=list(state['next']))
+        return dict(state, reset=reset, next=list(state['next']))
 
     def _save_smart_explore_state(self, state):
-        if state['reset'] != get_os_next_reset().isoformat():
+        reset = get_os_reset_cycle()
+        if not is_os_reset_cycle(state['reset'], reset):
             raise GameStuckError('智能开荒期间跨月，停止保存旧月份进度')
-        self._set_smart_scheduling_state_value('SmartExplore', state)
+        self._set_smart_scheduling_state_value('SmartExplore', dict(state, reset=reset))
         completed = sum(sum(zone >= 11 for zone in route[:index])
                         for route, index in zip(SMART_EXPLORE_ROUTES, state['next']))
         if (completed >= SMART_EXPLORE_TASK_MIN_ZONES
-                and self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.reset') != state['reset']):
+                and not is_os_reset_cycle(
+                    self.config.cross_get('OpsiScheduling.Storage.Storage.SuppressedZones.reset'), reset)):
             self.config.cross_set('OpsiScheduling.Storage.Storage.SuppressedZones',
-                                  dict(reset=state['reset'], count=completed))
+                                  dict(reset=reset, count=completed))
         phase = {'explore': '开荒', 'cleanup': '事件补扫', 'done': '已完成'}[state['phase']]
         self.config.cross_set(SMART_EXPLORE_CONFIG + 'Progress',
                               f'已开荒 {completed}/{len(SMART_EXPLORE_ZONES)}，阶段：{phase}')
 
     def _smart_explore_first_round_complete(self):
         state = self._get_smart_scheduling_state_value('SmartExplore')
-        return (isinstance(state, dict) and state.get('reset') == get_os_next_reset().isoformat()
+        return (isinstance(state, dict) and is_os_reset_cycle(state.get('reset'), get_os_reset_cycle())
                 and state['next'][0] >= len(SMART_EXPLORE_ROUTES[0]))
 
     def _try_scheduling_action_point_purchase(self):
@@ -186,9 +188,9 @@ class SmartExploreMixin:
             return False
         if not (monthly_explore_complete(self.config) or self._smart_explore_first_round_complete()):
             return False
-        reset = get_os_next_reset().isoformat()
+        reset = get_os_reset_cycle()
         state = self._get_smart_scheduling_state_value('ActionPointPurchase')
-        if isinstance(state, dict) and state.get('reset') == reset and state.get('phase') == 'done':
+        if isinstance(state, dict) and is_os_reset_cycle(state.get('reset'), reset) and state.get('phase') == 'done':
             return False
         # 旧版的全商店复扫误报会留下 attempts >= 3，不能继续用它阻止本月续购。
         # 实际导航或购买异常仍由上层统一恢复；只在正常退出港口后记为完成。
@@ -200,7 +202,7 @@ class SmartExploreMixin:
         self._run_with_opsi_task_context(
             'OpsiShop', self.perform_port_shop_purchase, action_point_only=True,
         )
-        if reset != get_os_next_reset().isoformat():
+        if reset != get_os_reset_cycle():
             raise GameStuckError('购买行动力期间跨月，停止旧月份流程')
         self._set_smart_scheduling_state_value('ActionPointPurchase', dict(state, phase='done'))
         return True
@@ -267,7 +269,7 @@ class SmartExploreMixin:
             state = self.config.OpsiExploreCleanup_State
             if not isinstance(state, dict):
                 self.config.OpsiExploreCleanup_State = dict(
-                    reset=get_os_next_reset().isoformat(), phase='cleanup',
+                    reset=get_os_reset_cycle(), phase='cleanup',
                     order=list(SMART_EXPLORE_ZONES), next=0, attempts=0,
                 )
             if self.config.OpsiExploreCleanup_State.get('phase') != 'done':
@@ -292,7 +294,7 @@ class SmartExploreMixin:
         if not smart_explore_enabled(self.config) or self.is_running_prevent_action_point_overflow_task():
             return False
         previous = self._get_smart_scheduling_state_value('SmartExplore')
-        current = isinstance(previous, dict) and previous.get('reset') == get_os_next_reset().isoformat()
+        current = isinstance(previous, dict) and is_os_reset_cycle(previous.get('reset'), get_os_reset_cycle())
         if current and previous.get('phase') == 'done':
             return False
         # 本月已完成普通开荒时，不必再启动三轮；智能开荒自己的待补扫断点仍须继续。

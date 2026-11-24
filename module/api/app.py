@@ -21,7 +21,7 @@ from module.api.plugin_service import MAX_PACKAGE_SIZE
 from module.api.router import Router
 from module.api.runtime_service import RuntimeService
 from module.api.socket import Gateway
-from module.api.static import FrontendFiles, ItemTemplateFiles
+from module.api.static import FrontendAssetFiles, FrontendFiles, ItemTemplateFiles
 from module.logger import logger
 from module.runtime.password_utils import ensure_password_for_host, is_demo_mode
 from module.runtime.setting import State
@@ -274,7 +274,7 @@ def create_app(*, root: Path = ROOT, password=None, manage_runtime=True, mount_m
     routes.append(Route('/api/v1/plugins/{identifier}/{revision}/{path:path}', plugin_asset, methods=['GET']))
     routes.append(Mount('/background-library', StaticFiles(directory=LIBRARY_DIR)))
     if (dist / 'assets').is_dir():
-        routes.append(Mount('/assets', StaticFiles(directory=dist / 'assets')))
+        routes.append(Mount('/assets', FrontendAssetFiles(directory=dist / 'assets')))
     # 科研掉落的物品图标直接用仓库里的模板图，不走前端构建，
     # 这样补了新模板立刻生效，不用重新 npm build。
     research_items = root / 'assets' / 'stats' / 'research_items'

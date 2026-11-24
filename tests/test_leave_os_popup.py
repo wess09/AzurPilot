@@ -10,14 +10,20 @@ True，拦住后续通用确认；没有弹窗时不越权处理。另固定出�
 
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
+from module.equipment.assets import EQUIPMENT_OPEN
+from module.equipment.equipment import Equipment
 from module.os.tasks.fleet_auto_change import OpsiFleetAutoChange
 from module.os_handler.assets import (AUTO_SEARCH_REWARD, DEPART_CONFIRM_BUTTON,
                                       DEPART_CONFIRM_TEMPLATE,
                                       DEPART_IMMEDIATELY_BUTTON,
                                       LEAVE_OS_POPUP_CHECK,
-                                      LEAVE_OS_POPUP_CLOSE, PORT_GOTO_SUPPLY)
+                                      LEAVE_OS_POPUP_CLOSE, ORDER_ENTER,
+                                      OS_FLEET_SLOT_NAV_4_BUTTON, PORT_GOTO_SUPPLY)
 from module.os_handler.map_event import MapEventHandler
+from module.retire.assets import DOCK_CHECK
+from module.ui.assets import BACK_ARROW
 
 
 class FakePopupMain:
@@ -77,134 +83,121 @@ class TestLeaveOsPopup(unittest.TestCase):
 
 
 class FakeAutoChangeMain:
-    """只挂等待方法所需接口的桩，用脚本化状态模拟画面变化。"""
+    """按顺序播放截图状态，并使用真实回图和舰船详情循环。"""
 
+    loop = OpsiFleetAutoChange.loop
+    _handle_fleet_map_transition = OpsiFleetAutoChange._handle_fleet_map_transition
+    _is_fleet_map_ready = OpsiFleetAutoChange._is_fleet_map_ready
     _wait_until_back_in_os_map = OpsiFleetAutoChange._wait_until_back_in_os_map
+    _ensure_return_to_os_map = OpsiFleetAutoChange._ensure_return_to_os_map
+    _run_exp_check_after_auto_change = OpsiFleetAutoChange._run_exp_check_after_auto_change
+    ship_info_enter = Equipment.ship_info_enter
 
-    def __init__(self, popup_visible=False, port_visible=False):
-        self.popup_visible = popup_visible
-        self.port_visible = port_visible
+    def __init__(self, frames):
+        self.frames = iter(frames)
+        self.screenshots = []
         self.clicked = []
+        self.now = 100.0
+        self.config = SimpleNamespace()
+        self.device = SimpleNamespace(image='cached_map', screenshot=self._screenshot, long_click=self._long_click)
 
-    def loop(self, skip_first=True, timeout=None):
-        while True:
-            yield None
+    def _screenshot(self):
+        try:
+            self.device.image = next(self.frames)
+        except StopIteration:
+            raise AssertionError('流程未结束，截图已用完') from None
+        self.screenshots.append(self.device.image)
+        self.now += 0.6
+
+    def _long_click(self, button, duration):
+        self.clicked.append((button.name, self.device.image))
 
     def handle_leave_os_popup(self):
-        if self.popup_visible:
-            self.popup_visible = False
+        if self.device.image in ('popup', 'port_with_popup'):
             self.clicked.append(LEAVE_OS_POPUP_CLOSE.name)
             return True
         return False
 
     def is_combat_loading(self):
+        return self.device.image == 'loading'
+
+    def handle_game_tips(self):
         return False
 
-    def appear_then_click(self, button, offset=0, interval=0, similarity=0.85, threshold=10):
+    def appear_then_click(self, button, **kwargs):
+        if self.appear(button, **kwargs):
+            self.clicked.append(button.name)
+            return True
+        return False
+
+    def appear(self, button, **kwargs):
+        frame = self.device.image
+        if button is PORT_GOTO_SUPPLY:
+            return frame in ('port', 'port_without_back', 'port_with_popup')
+        if button is BACK_ARROW:
+            return frame in ('port', 'port_with_popup')
+        if button is ORDER_ENTER:
+            return frame in ('map', 'cached_map')
         if button is AUTO_SEARCH_REWARD:
+            return frame == 'reward'
+        if button is EQUIPMENT_OPEN:
+            return frame == 'ship_info'
+        if button is DOCK_CHECK:
             return False
         raise AssertionError(f'未预期的按钮: {button}')
 
-    def appear(self, button, offset=0, interval=0, similarity=0.85, threshold=10):
-        if button is PORT_GOTO_SUPPLY:
-            return self.port_visible
-        raise AssertionError(f'未预期的按钮: {button}')
-
     def is_in_map(self):
-        # 弹窗遮挡（变暗）或仍在港口时都识别不到海域地图
-        return not self.popup_visible and not self.port_visible
-
-    def port_quit(self, skip_first_screenshot=False):
-        self.port_visible = False
-        self.clicked.append('port_quit')
-
-    def wait_os_map_buttons(self):
-        pass
+        return self.device.image in ('map', 'cached_map', 'map_without_order')
 
 
 class TestWaitUntilBackInOsMap(unittest.TestCase):
-    def test_returns_when_map_visible(self):
-        fake = FakeAutoChangeMain()
-
-        self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
-        self.assertEqual(fake.clicked, [])
+    def make_main(self, frames):
+        fake = FakeAutoChangeMain(frames)
+        self.enterContext(patch('module.base.timer.time', new=lambda: fake.now))
+        return fake
 
     def test_closes_popup_before_returning(self):
         """弹窗挡在画面上时先点 X 关闭，再确认回到海域地图。"""
-        fake = FakeAutoChangeMain(popup_visible=True)
+        fake = self.make_main(['popup'] + ['map'] * 3)
 
         self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
 
         self.assertEqual(fake.clicked, [LEAVE_OS_POPUP_CLOSE.name])
 
-    def test_quits_port_before_returning(self):
-        """误入港口时退出港口，再确认回到海域地图。"""
-        fake = FakeAutoChangeMain(port_visible=True)
-
-        self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
-
-        self.assertEqual(fake.clicked, ['port_quit'])
-
     def test_popup_takes_priority_over_port(self):
         """弹窗与港口按钮同时在画面上时，先关弹窗再退港口，不误点。"""
-        fake = FakeAutoChangeMain(popup_visible=True, port_visible=True)
+        fake = self.make_main(['port_with_popup', 'port'] + ['map'] * 3)
 
         self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
 
-        self.assertEqual(fake.clicked, [LEAVE_OS_POPUP_CLOSE.name, 'port_quit'])
+        self.assertEqual(fake.clicked, [LEAVE_OS_POPUP_CLOSE.name, BACK_ARROW.name])
 
-
-class FakeFreshFrameMain(FakeAutoChangeMain):
-    """复用真实截图循环，模拟缓存地图后才出现港口或过渡画面。"""
-
-    loop = OpsiFleetAutoChange.loop
-    _ensure_return_to_os_map = OpsiFleetAutoChange._ensure_return_to_os_map
-
-    def __init__(self, frames):
-        super().__init__()
-        self.frames = iter(frames)
-        self.screenshots = []
-        self.device = SimpleNamespace(image='cached_map', screenshot=self._screenshot)
-
-    def _screenshot(self):
-        try:
-            frame = next(self.frames)
-        except StopIteration:
-            raise AssertionError('已用完截图，流程仍未确认返回地图') from None
-        self.device.image = frame
-        self.screenshots.append(frame)
-        self.popup_visible = frame == 'popup'
-        self.port_visible = frame == 'port'
-
-    def is_in_map(self):
-        return self.device.image in ('cached_map', 'map')
-
-    def is_combat_loading(self):
-        return self.device.image == 'loading'
-
-    def appear_then_click(self, button, **kwargs):
-        if button is AUTO_SEARCH_REWARD and self.device.image == 'reward':
-            self.clicked.append(AUTO_SEARCH_REWARD.name)
-            return True
-        return super().appear_then_click(button, **kwargs)
-
-
-class TestReturnToOsMapFreshScreenshot(unittest.TestCase):
     def test_cached_map_does_not_skip_port_exit(self):
-        fake = FakeFreshFrameMain(['port', 'map'])
+        frames = ['port'] + ['map'] * 3
+        fake = self.make_main(frames)
 
         self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
 
-        self.assertEqual(fake.clicked, ['port_quit'])
-        self.assertEqual(fake.screenshots, ['port', 'map'])
+        self.assertEqual(fake.clicked, [BACK_ARROW.name])
+        self.assertEqual(fake.screenshots, frames)
 
-    def test_ensure_map_refreshes_cache_before_exp_check(self):
-        fake = FakeFreshFrameMain(['port', 'map'])
+    def test_transient_map_before_port_does_not_complete_departure(self):
+        frames = ['map', 'map', 'port_without_back', 'port'] + ['map'] * 3
+        fake = self.make_main(frames)
 
         self.assertTrue(fake._ensure_return_to_os_map())
 
-        self.assertEqual(fake.clicked, ['port_quit'])
-        self.assertEqual(fake.device.image, 'map')
+        self.assertEqual(fake.clicked, [BACK_ARROW.name])
+        self.assertEqual(fake.screenshots, frames)
+
+    def test_waits_for_map_controls_after_port_exit(self):
+        frames = ['port'] + ['map_without_order'] * 3 + ['map'] * 3
+        fake = self.make_main(frames)
+
+        self.assertTrue(fake._wait_until_back_in_os_map())
+
+        self.assertEqual(fake.clicked, [BACK_ARROW.name])
+        self.assertEqual(fake.screenshots, frames)
 
     def test_transitions_are_handled_before_port_and_map(self):
         for frame, clicks in (
@@ -214,20 +207,57 @@ class TestReturnToOsMapFreshScreenshot(unittest.TestCase):
             ('unknown', []),
         ):
             with self.subTest(frame=frame):
-                fake = FakeFreshFrameMain([frame, 'port', 'map'])
+                frames = [frame, 'port'] + ['map'] * 3
+                fake = self.make_main(frames)
 
                 self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
 
-                self.assertEqual(fake.clicked, clicks + ['port_quit'])
-                self.assertEqual(fake.screenshots, [frame, 'port', 'map'])
+                self.assertEqual(fake.clicked, clicks + [BACK_ARROW.name])
+                self.assertEqual(fake.screenshots, frames)
 
     def test_fresh_map_returns_without_clicking(self):
-        fake = FakeFreshFrameMain(['map'])
+        frames = ['map'] * 3
+        fake = self.make_main(frames)
 
         self.assertTrue(fake._wait_until_back_in_os_map(timeout=5))
 
         self.assertEqual(fake.clicked, [])
-        self.assertEqual(fake.screenshots, ['map'])
+        self.assertEqual(fake.screenshots, frames)
+
+    def test_exp_check_exits_late_port_before_long_press(self):
+        frames = ['map'] * 3 + ['port', 'map_without_order', 'map', 'ship_info']
+        fake = self.make_main(frames)
+
+        def check_leveling(*, open_ship_info):
+            open_ship_info(OS_FLEET_SLOT_NAV_4_BUTTON)
+
+        leveling = SimpleNamespace(ship_info_enter=fake.ship_info_enter, os_check_leveling=check_leveling)
+        with patch('module.os.tasks.hazard_leveling.OpsiHazard1Leveling', return_value=leveling):
+            fake._run_exp_check_after_auto_change([4])
+
+        self.assertEqual(fake.clicked, [BACK_ARROW.name, (OS_FLEET_SLOT_NAV_4_BUTTON.name, 'map')])
+        self.assertEqual(fake.screenshots, frames)
+
+    def test_port_is_exited_during_long_press_retry_cooldown(self):
+        fake = self.make_main(['map', 'port'] + ['map'] * 16 + ['ship_info'])
+
+        fake.ship_info_enter(
+            OS_FLEET_SLOT_NAV_4_BUTTON,
+            skip_first_screenshot=False,
+            additional=fake._handle_fleet_map_transition,
+            can_click=fake._is_fleet_map_ready,
+        )
+
+        long_click = (OS_FLEET_SLOT_NAV_4_BUTTON.name, 'map')
+        self.assertEqual(fake.clicked, [long_click, BACK_ARROW.name, long_click])
+
+    def test_ship_info_enter_keeps_default_click_behavior(self):
+        fake = self.make_main(['ship_info'])
+        fake.device.image = 'other_page'
+
+        fake.ship_info_enter(OS_FLEET_SLOT_NAV_4_BUTTON)
+
+        self.assertEqual(fake.clicked, [(OS_FLEET_SLOT_NAV_4_BUTTON.name, 'other_page')])
 
 
 class FakeDepartureMain:

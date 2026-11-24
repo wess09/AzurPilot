@@ -1037,6 +1037,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         Raises:
             CampaignEnd: 自动搜索结束时抛出。
             RequestHumanTakeover: 没有自动搜索选项时抛出。
+            GameStuckError: 移动计数停滞或自律寻敌超时。
 
         Pages:
             in: AUTO_SEARCH_OS_MAP_OPTION_OFF
@@ -1069,13 +1070,18 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
         died_timer = Timer(1.5, count=3)
         self.hp_reset()
         auto_search_time_limit_timer = Timer(self.config.OpsiGeneral_AutoSearchTimeLimit * 60, count=1).start()
+        walk_counter_timer = Timer(60, count=60)
+        watching_walk_counter = False
         for _ in self.loop():
+            was_watching_walk_counter = watching_walk_counter
+            watching_walk_counter = False
             # 结束条件
             if not unlock_checked and unlock_check_timer.reached():
                 logger.critical("[大世界] 当前海域未解锁自律，请先完成剧情任务。")
                 raise RequestHumanTakeover
             self.handle_background_coin_interrupt(drop=drop)
-            if self.is_in_map():
+            in_map = self.is_in_map()
+            if in_map:
                 self.device.stuck_record_clear()
                 if not success:
                     if died_timer.reached():
@@ -1120,6 +1126,7 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 auto_search_time_limit_timer.reset()
                 continue
             if self.combat_appear():
+                in_map = False  # 战斗交接后用下一帧重新确认移动计数。
                 self.on_auto_search_battle_count_add()
                 stop_event = self.config.stop_event
                 if strategic and stop_event is not None and stop_event.is_set():
@@ -1156,6 +1163,17 @@ class OSMap(MapEventResumeMixin, OSFleet, Map, GlobeCamera, StorageHandler, Stra
                 continue
             if auto_search_time_limit_timer.reached():
                 raise GameStuckError('自律寻敌卡死')
+
+            if not (in_map and success
+                    and self.match_template_color(AUTO_SEARCH_OS_MAP_OPTION_ON, offset=(5, 120))):
+                continue
+            if not was_watching_walk_counter:
+                self.walk_counter_changed(reset=True)
+            watching_walk_counter = True
+            if self.walk_counter_changed() is not False:
+                walk_counter_timer.reset()
+            elif walk_counter_timer.reached_and_reset() and self.walk_counter_visible():
+                raise GameStuckError('自律寻敌移动计数长时间未变化')
 
         return finished_combat
 

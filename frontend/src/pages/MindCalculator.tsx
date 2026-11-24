@@ -9,6 +9,7 @@ import {api, ApiError} from '../api/client'
 import type {DockReport} from '../api/types'
 import {catalogRows, matches, type Catalog, type Report} from '../fleet-tech/types'
 import {fleetFactionOrder, translateFleetTech} from '../fleet-tech/i18n'
+import {localeForLanguage} from '../i18n'
 import {useFleetPreference} from '../fleet-tech/preferences'
 import {useApp, useConnection} from '../app/context'
 import {ErrorBox} from '../components/ui'
@@ -118,7 +119,7 @@ export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}
     return new Map(candidates.map(card => [card.id, technologyEfficiency(card.group_type == null ? undefined : technologyRows.get(card.group_type), mindCosts)]))
   }, [candidates, technologyRows, result?.mind_costs_100_to_120])
   const rows = useMemo(() => {
-    const collator = new Intl.Collator(language, {numeric: true})
+    const collator = new Intl.Collator(localeForLanguage(language), {numeric: true})
     const valueFor = (card: DockReport['ships'][number]): string | number | null => {
       switch (sort.column) {
         case 'name': return card.name
@@ -212,7 +213,7 @@ export function MindCalculator({report: dock, reportError, onRefresh, reloadRef}
           <TableCell>{groupType != null && <CheckboxControl aria-label={ui('mind.participatingShip', {name: card.name})} checked={participating} onCheckedChange={next => exclude(groupType, !next)}/>}</TableCell>
           <TableCell className="ft-name"><Link to={`?tab=data&ship=${card.id}`}>{card.name}</Link>{participating && row?.status === 'unknown' && <small className="cultivation-warning">{ui('mind.unknownCost')} · <Link to={`?tab=data&ship=${card.id}`}>{ui('mind.check')}</Link></small>}</TableCell>
           <TableCell className="text-center">{card.level || ui('mind.unknown')}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.mind)}</TableCell><TableCell className="text-right tabular-nums">{amount(row?.gold)}</TableCell>
-          <TableCell className="text-right tabular-nums" title={efficiency?.value == null || efficiency.points == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(language, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
+          <TableCell className="text-right tabular-nums" title={efficiency?.value == null || efficiency.points == null ? undefined : ui('mind.efficiencyDetail', {points: efficiency.points, mind: amount(efficiency.mind)})}>{efficiency?.value == null ? '—' : efficiency.value.toLocaleString(localeForLanguage(language), {minimumFractionDigits: 2, maximumFractionDigits: 2})}</TableCell>
           <TableCell className={`text-center ${awakeningPending ? 'ft-awakening-pending' : ''}`} title={ui('mind.awakeningHint')}><span className="ft-mark" aria-label={`${card.name} · ${tr('awakening_pending')} · ${tr(awakeningPending ? 'marked' : 'notMarked')}`}>{awakeningPending ? '✓' : '—'}</span></TableCell>
         </TableRow>
       })}

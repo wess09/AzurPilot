@@ -111,7 +111,7 @@
       "help": ""
     },
     "Coalition": {
-      "name": "夜勤病栋",
+      "name": "联合出击",
       "help": ""
     },
     "CoalitionScuttle": {
@@ -155,7 +155,7 @@
       "help": ""
     },
     "CoalitionSp": {
-      "name": "怪谈纪实：逃离白夜山庄SP",
+      "name": "联合出击每日 SP",
       "help": ""
     },
     "Commission": {
@@ -1641,6 +1641,7 @@
       "coalition_20251120": "DATE A LANE",
       "coalition_20260122": "光影风尚-拍摄进行时",
       "coalition_20260723": "怪谈纪实",
+      "coalition_20261124": "真理学院的转校生",
       "event_20200227_cn": "北境序曲",
       "event_20200312_cn": "复刻斯图尔特的硝烟",
       "event_20200326_cn": "微层混合",

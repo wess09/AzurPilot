@@ -30,6 +30,7 @@ type Copy = typeof zh
 /** 远程配对页的界面文案，按语言取用；键结构以 zh 为准。 */
 export const pairCopy: Record<Language, Copy> = {
   'zh-CN': zh,
+  'zh-CN-neko': zh,
   'zh-TW': {
     title: '與 AzurPilot for Android 配對', start: '開始配對', refresh: '重新產生',
     hint: '在 AzurPilot for Android 中掃描 QR Code，或輸入下方的六位配對碼。', waiting: '等待 AzurPilot for Android 連線',

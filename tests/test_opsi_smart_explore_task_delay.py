@@ -4,7 +4,7 @@ import copy
 import json
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -23,7 +23,7 @@ from module.os.tasks.smart_explore import SMART_EXPLORE_ROUTES
 
 NOW = datetime(2026, 10, 4, 8)
 UPDATE = datetime(2026, 10, 5)
-RESET = datetime(2026, 11, 1)
+RESET = datetime(2026, 11, 1, tzinfo=timezone(timedelta(hours=8)))
 ENTRIES = {'OpsiDaily': 'opsi_daily', 'OpsiShop': 'opsi_shop',
            'OpsiPreventActionPointOverflow': 'opsi_prevent_action_point_overflow',
            'OpsiAbyssal': 'opsi_abyssal', 'OpsiObscure': 'opsi_obscure',
@@ -67,8 +67,8 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
             ('module.config.config.current_time', NOW),
             ('module.config.utils.current_time', NOW),
             ('module.os.tasks.shop.current_time', NOW),
-            ('module.os.tasks.smart_explore.get_os_next_reset', RESET),
-            ('module.os.globe_operation.get_os_next_reset', RESET),
+            ('module.os.tasks.smart_explore.get_os_reset_cycle', RESET.isoformat()),
+            ('module.os.globe_operation.get_os_reset_cycle', RESET.isoformat()),
             ('module.os.tasks.smart_explore.get_server_next_update', UPDATE),
         ):
             patcher = patch(target, return_value=value)
@@ -449,9 +449,10 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.campaign.config = self.config
         self.campaign.perform_port_shop_purchase = Mock(side_effect=AssertionError('禁购期间不能购买'))
         self.campaign.os_shop.side_effect = lambda: OpsiShop.os_shop(self.campaign)
-        with self.assertRaises(TaskEnd):
+        local_offset = timedelta(hours=1)
+        with patch('module.config.utils.server_time_offset', return_value=local_offset), self.assertRaises(TaskEnd):
             self.run_task('OpsiShop')
-        self.assertEqual(self.config.cross_get('OpsiShop.Scheduler.NextRun'), UPDATE)
+        self.assertEqual(self.config.cross_get('OpsiShop.Scheduler.NextRun'), UPDATE + local_offset)
         self.campaign.perform_port_shop_purchase.assert_not_called()
 
     def test_shop_date_limit_does_not_change_smart_exploration_queue(self):
@@ -511,7 +512,7 @@ class TestSmartExploreTaskDelay(unittest.TestCase):
         self.assertEqual(self.pending(), ORDER + ADDITIONAL_TASKS)
         self.suppressed(30)
         self.assertEqual(self.pending(), ADDITIONAL_TASKS[:-1] + ORDER + ['OpsiArchive'])
-        self.suppressed(72)
+        self.suppressed(72, reset=datetime(2026, 10, 31, 8))
         self.assertEqual(self.pending(), ADDITIONAL_TASKS + ORDER)
 
     def test_route_progress_releases_new_tasks_without_counting_ports(self):

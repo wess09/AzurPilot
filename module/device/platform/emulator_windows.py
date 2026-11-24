@@ -199,11 +199,9 @@ class Emulator(EmulatorBase):
         Returns:
             str: 模拟器控制台工具路径
         """
-        if 'MuMuPlayer.exe' in exe:
-            return exe.replace('MuMuPlayer.exe', 'MuMuManager.exe')
-        # MuMuPlayer12 5.0
-        elif 'MuMuNxMain.exe' in exe:
-            return exe.replace('MuMuNxMain.exe', 'MuMuManager.exe')
+        name = os.path.basename(exe)
+        if name.lower() in ('mumuplayer.exe', 'mumunxmain.exe'):
+            return exe[:-len(name)] + 'MuMuManager.exe'
         elif 'LDPlayer.exe' in exe:
             return exe.replace('LDPlayer.exe', 'ldconsole.exe')
         elif 'dnplayer.exe' in exe:

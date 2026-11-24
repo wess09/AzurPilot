@@ -26,6 +26,8 @@ from module.campaign.os_run import OSCampaignRun
 
 
 RESET = datetime(2026, 11, 1)
+RESET_CYCLE = '2026-11-01T00:00:00+08:00'
+NEXT_CYCLE = '2026-12-01T00:00:00+08:00'
 
 
 class Config:
@@ -66,9 +68,8 @@ class Config:
 class SmartExploreTests(unittest.TestCase):
     def setUp(self):
         for module in ('smart_explore', 'explore_cleanup', 'scheduling'):
-            clock = patch(f'module.os.tasks.{module}.get_os_next_reset', return_value=RESET)
-            clock.start()
-            self.addCleanup(clock.stop)
+            self.enterContext(patch(f'module.os.tasks.{module}.get_os_next_reset', return_value=RESET))
+            self.enterContext(patch(f'module.os.tasks.{module}.get_os_reset_cycle', return_value=RESET_CYCLE))
         self.runner = OperationSiren.__new__(OperationSiren)
         self.runner.config = Config()
         self.runner._execute_hazard1_leveling = Mock()
@@ -84,7 +85,7 @@ class SmartExploreTests(unittest.TestCase):
         self.runner.globe_goto = Mock()
 
     def state(self, first=True, second=False, third=False, immediate=False, decided=True):
-        state = dict(reset=RESET.isoformat(), phase='explore', attempts=0,
+        state = dict(reset=RESET_CYCLE, phase='explore', attempts=0,
                      next=[len(route) if done else 0 for route, done in
                            zip(SMART_EXPLORE_ROUTES, (first, second, third))],
                      second_started=immediate, second_decided=decided)
@@ -97,7 +98,7 @@ class SmartExploreTests(unittest.TestCase):
     def mark_monthly_complete(self):
         self.runner.config.cross_set('OpsiExplore.OpsiExplore.ExploreProgress', '已完成百分之100.00')
         self.runner.config.cross_set('OpsiExplore.OpsiExplore.MeowfficerCleanupState',
-                                     {'reset': RESET.isoformat(), 'phase': 'done'})
+                                     {'reset': RESET_CYCLE, 'phase': 'done'})
 
     def test_current_month_completed_exploration_skips_smart_routes(self):
         self.mark_monthly_complete()
@@ -380,7 +381,7 @@ class SmartExploreTests(unittest.TestCase):
         self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.ExploreProgress'),
                          '已完成百分之100.00')
         self.assertEqual(self.runner.config.cross_get('OpsiExplore.OpsiExplore.MeowfficerCleanupState')['reset'],
-                         RESET.isoformat())
+                         RESET_CYCLE)
 
     def test_partial_exploration_never_marks_monthly_exploration_100_percent(self):
         self.state(second=True)
@@ -397,13 +398,13 @@ class SmartExploreTests(unittest.TestCase):
 
     def test_month_reset_clears_routes_but_keeps_other_scheduler_state(self):
         self.state(second=True)
-        with patch('module.os.tasks.smart_explore.get_os_next_reset', return_value=datetime(2026, 12, 1)):
+        with patch('module.os.tasks.smart_explore.get_os_reset_cycle', return_value=NEXT_CYCLE):
             self.assertEqual(self.runner._get_smart_explore_state()['next'], [0, 0, 0])
         self.assertEqual(self.runner._get_smart_scheduling_state_value('Unrelated'), 'keep')
 
     def test_cross_month_does_not_save_old_progress(self):
         state = self.state()
-        with patch('module.os.tasks.smart_explore.get_os_next_reset', return_value=datetime(2026, 12, 1)):
+        with patch('module.os.tasks.smart_explore.get_os_reset_cycle', return_value=NEXT_CYCLE):
             with self.assertRaises(GameStuckError):
                 self.runner._save_smart_explore_state(state)
 
@@ -428,6 +429,8 @@ class SmartExploreTests(unittest.TestCase):
         self.assertTrue(self.runner._try_scheduling_action_point_purchase())
         self.assertFalse(self.runner._try_scheduling_action_point_purchase())
         self.runner.perform_port_shop_purchase.assert_called_once_with(action_point_only=True)
+        self.runner._set_smart_scheduling_state_value(
+            'ActionPointPurchase', dict(reset='2026-10-31T08:00:00', phase='done'))
         restarted = OperationSiren.__new__(OperationSiren)
         restarted.config = self.runner.config
         self.assertFalse(restarted._try_scheduling_action_point_purchase())
@@ -446,7 +449,7 @@ class SmartExploreTests(unittest.TestCase):
         self.state()
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
         self.runner._set_smart_scheduling_state_value('ActionPointPurchase',
-                                                     dict(reset=RESET.isoformat(), phase='buying', attempts=3))
+                                                     dict(reset=RESET_CYCLE, phase='buying', attempts=3))
         self.assertTrue(self.runner._try_scheduling_action_point_purchase())
         self.assertFalse(self.runner._try_scheduling_action_point_purchase())
         self.assertEqual(self.runner.perform_port_shop_purchase.call_count, 1)
@@ -455,25 +458,26 @@ class SmartExploreTests(unittest.TestCase):
     def test_purchase_crossing_month_does_not_mark_old_month_done(self):
         self.state()
         self.runner.config.cross_set(ACTION_POINT_PURCHASE_CONFIG, True)
-        with patch('module.os.tasks.smart_explore.get_os_next_reset',
-                   side_effect=[RESET, RESET, datetime(2026, 12, 1)]):
+        with patch('module.os.tasks.smart_explore.get_os_reset_cycle',
+                   side_effect=[RESET_CYCLE, RESET_CYCLE, NEXT_CYCLE]):
             with self.assertRaises(GameStuckError):
                 self.runner._try_scheduling_action_point_purchase()
         self.assertEqual(self.runner._get_smart_scheduling_state_value('ActionPointPurchase'),
-                         dict(reset=RESET.isoformat(), phase='buying'))
+                         dict(reset=RESET_CYCLE, phase='buying'))
 
-    def test_reported_state_resumes_without_clearing_scheduler_storage(self):
-        reset = datetime(2026, 12, 1)
+    def test_legacy_timezone_checkpoint_resumes_without_clearing_scheduler_storage(self):
+        legacy_reset = '2026-12-01T01:00:00'
         reported = {
             'SchedulingMode': 'coin_target',
-            'MonthEndCleanupCycle': reset.isoformat(),
-            'SmartExplore': dict(reset=reset.isoformat(), next=[30, 7, 6], second_started=True,
+            'MonthEndCleanupCycle': legacy_reset,
+            'SmartExplore': dict(reset=legacy_reset, next=[30, 7, 6], second_started=True,
                                  second_decided=True, phase='explore', attempts=3),
-            'ActionPointPurchase': dict(reset=reset.isoformat(), phase='done'),
+            'SuppressedZones': dict(reset=legacy_reset, count=72),
+            'ActionPointPurchase': dict(reset=legacy_reset, phase='done'),
             'StrongholdNextCheck': '2026-11-01T02:00:00',
             'ObscureClearedAt': '2026-10-31T12:30:09.497998',
             'AbyssalClearedAt': '2026-10-31T12:30:12.611592',
-            'MonthEndCleanupFirstRun': True,
+            'MonthEndCleanupFirstRun': False,
         }
         self.runner.config.cross_set('OpsiScheduling.Storage.Storage', reported)
         self.runner._run_smart_explore_node = OpsiScheduling._run_smart_explore_node.__get__(self.runner)
@@ -495,18 +499,18 @@ class SmartExploreTests(unittest.TestCase):
         self.runner.globe_goto.side_effect = enter_zone
         self.runner._clear_smart_explore_zone = Mock()
         with (
-            patch('module.os.tasks.smart_explore.get_os_next_reset', return_value=reset),
-            patch('module.os.tasks.scheduling.get_os_next_reset', return_value=reset),
+            patch('module.os.tasks.smart_explore.get_os_reset_cycle', return_value=NEXT_CYCLE),
+            patch('module.os.tasks.scheduling.get_os_reset_cycle', return_value=NEXT_CYCLE),
         ):
             self.runner.run_smart_scheduling_once()
 
         self.assertEqual(actions, ['open_ap', 'close_ap', ('zone', 53)])
         stored = self.runner._get_smart_scheduling_state()
-        self.assertEqual(stored['SmartExplore'], dict(reported['SmartExplore'], next=[31, 7, 6],
-                                                     attempts=0, return_to_port=True))
-        for key, value in reported.items():
-            if key != 'SmartExplore':
-                self.assertEqual(stored[key], value)
+        self.assertEqual(stored, dict(
+            reported, MonthEndCleanupCycle=NEXT_CYCLE,
+            SmartExplore=dict(reported['SmartExplore'], reset=NEXT_CYCLE, next=[31, 7, 6],
+                              attempts=0, return_to_port=True),
+        ))
         self.runner._clear_smart_explore_zone.assert_not_called()
         self.runner.perform_port_shop_purchase.assert_not_called()
         self.runner._execute_hazard1_leveling.assert_not_called()

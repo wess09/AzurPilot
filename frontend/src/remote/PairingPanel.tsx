@@ -20,6 +20,7 @@ import { PairingScanGuide } from './PairingScanGuide'
 import { api } from '../api/client'
 import type { RemotePairing } from '../api/types'
 import { useApp } from '../app/context'
+import { localeForLanguage } from '../i18n'
 import { usePageRead } from '../app/usePageRead'
 import { ErrorBox, Panel, PanelHeading } from '../components/ui'
 import { Button } from '../components/ui/button'
@@ -319,7 +320,7 @@ export function PairingPanel({ ready }: { ready: boolean }) {
                     <Clock size={12} />
                     <span>
                       {new Date(item.created_at * 1000).toLocaleString(
-                        language,
+                        localeForLanguage(language),
                       )}
                     </span>
                   </div>

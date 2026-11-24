@@ -19,16 +19,17 @@ from module.os.tasks.explore_cleanup import OpsiExploreCleanup
 from module.campaign.os_run import OSCampaignRun
 
 RESET = datetime(2026, 11, 1)
+RESET_CYCLE = '2026-11-01T00:00:00+08:00'
+LEGACY_RESET = '2026-10-31T08:00:00'
 
 
 class CleanupTests(unittest.TestCase):
     def setUp(self):
-        self.clock = patch('module.os.tasks.explore_cleanup.get_os_next_reset', return_value=RESET)
-        self.clock.start()
-        self.addCleanup(self.clock.stop)
+        self.enterContext(patch('module.os.tasks.explore_cleanup.get_os_next_reset', return_value=RESET))
+        self.enterContext(patch('module.os.tasks.explore_cleanup.get_os_reset_cycle', return_value=RESET_CYCLE))
 
     def state(self):
-        return dict(reset=RESET.isoformat(), phase='cleanup', order=[44, 24, 22], next=0, attempts=0)
+        return dict(reset=RESET_CYCLE, phase='cleanup', order=[44, 24, 22], next=0, attempts=0)
 
     def runner(self, state=None, progress='已完成百分之100.00', month=None):
         runner = OpsiExploreCleanup.__new__(OpsiExploreCleanup)
@@ -166,12 +167,12 @@ class CleanupTests(unittest.TestCase):
     def test_existing_exhausted_checkpoint_resumes_without_manual_reset(self):
         for attempts in (3, 8):
             with self.subTest(attempts=attempts):
-                runner = self.runner(dict(self.state(), next=1, attempts=attempts))
+                runner = self.runner(dict(self.state(), reset=LEGACY_RESET, next=1, attempts=attempts))
                 with self.assertRaises(TaskEnd):
                     runner.os_explore_cleanup()
                 self.assertEqual([zone for stage, zone in runner.calls if stage == 'enter'], [24, 22])
                 self.assertEqual(runner.config.OpsiExploreCleanup_State,
-                                 dict(self.state(), next=3, phase='done'))
+                                 dict(self.state(), reset=LEGACY_RESET, next=3, phase='done'))
 
     def test_new_month_resets_own_progress_and_rejects_stale_100_percent(self):
         state = self.state()
@@ -215,15 +216,17 @@ class CleanupTests(unittest.TestCase):
         self.assertIsNone(opsi_explore_cleanup_state_redirect({'reset': RESET.isoformat(), 'phase': 'explore'}))
         self.assertIsNone(opsi_explore_cleanup_state_redirect({'reset': RESET.isoformat(), 'phase': 'done'}))
 
+    @patch('module.os.tasks.explore.get_os_reset_cycle', return_value=RESET_CYCLE)
     @patch('module.os.tasks.explore.get_os_next_reset', return_value=RESET)
-    def test_exploration_only_schedules_independent_cleanup(self, reset):
+    def test_exploration_with_legacy_marker_only_schedules_independent_cleanup(self, reset, cycle):
         runner = OpsiExplore.__new__(OpsiExplore)
         runner.config = SimpleNamespace(
-            OpsiExplore_MeowfficerCleanupState=None, multi_set=nullcontext,
+            OpsiExplore_MeowfficerCleanupState=dict(reset=LEGACY_RESET, phase='explore'), multi_set=nullcontext,
             task_delay=Mock(), task_call=Mock(), task_stop=Mock(side_effect=TaskEnd))
         with self.assertRaises(TaskEnd):
             runner._os_explore_end()
         self.assertEqual(runner.config.OpsiExplore_ExploreProgress, '已完成百分之100.00')
+        self.assertEqual(runner.config.OpsiExplore_MeowfficerCleanupState, dict(reset=RESET_CYCLE, phase='done'))
         runner.config.task_call.assert_any_call('OpsiExploreCleanup', force_call=False)
 
     def test_initialization_skips_unnecessary_battles(self):

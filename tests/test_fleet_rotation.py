@@ -225,6 +225,38 @@ class RotationIntegrationTests(unittest.TestCase):
         self.manager.prepare_rotation.assert_not_called()
         self.manager.run.assert_not_called()
 
+    def test_campaign_restart_preserves_rotation_morale_and_double_book(self):
+        from module.campaign.campaign_base import CampaignBase
+        from module.campaign.recovery import CampaignRecovery
+
+        timestamp = datetime.now()
+        self.stack.enter_context(patch('module.config.time_source.network_time.now',
+                                       side_effect=lambda tz=None: timestamp if tz is None else timestamp.astimezone(tz)))
+        self.config.Campaign_ContinueAfterRestart = True
+        emotion = self.morale_policy()
+        emotion.map_is_2x_book = True
+        emotion.reduce(1)
+
+        campaign = CampaignBase.__new__(CampaignBase)
+        campaign.__dict__.update(vars(self.campaign))
+        campaign.map_is_auto_search = campaign.map_is_clear_mode = campaign.map_is_2x_book = True
+        campaign._recovery_map_active = True
+        campaign.is_auto_search_running = Mock(return_value=False)
+        self.runner.campaign = campaign
+        recovery = CampaignRecovery.capture(self.runner)
+        self.assertIsNotNone(recovery)
+        recovery.find_state = Mock(return_value='map')
+
+        self.assertTrue(recovery.prepare(self.config, self.runner.device))
+        resumed = campaign.emotion
+        self.assertIs(type(resumed), type(emotion))
+        self.assertIs(resumed.context, self.runner._fleet_rotation_context)
+        resumed.check_fleet(1, after_restart=True)
+        self.assertEqual((66, 146), (resumed.fleet_1.lower, resumed.training_lower(1)))
+        resumed.reduce(1)
+        self.assertEqual((62, 142), (resumed.fleet_1.lower, resumed.training_lower(1)))
+        self.manager.rotate_slot.assert_not_called()
+
     def test_switch_off_waits_for_fixed_70_instead_of_swapping_training_150(self):
         emotion = self.morale_policy(selected_only=False)
         self.manager.rotate_slot.assert_not_called()

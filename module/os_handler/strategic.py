@@ -77,9 +77,9 @@ class StrategicSearchHandler(MapEventHandler):
         logger.info('[大世界-策略] 设置策略搜索选项')
         is_jp = self.config.SERVER == 'jp'
         if is_jp:
-            # 日服选项文本换行：先确保区域模式与商人选项在同一个可见范围。
-            STRATEGIC_SEARCH_SCROLL.drag_threshold = 0.01
-            STRATEGIC_SEARCH_SCROLL.set(0.17, main=self, random_range=(-0.01, 0.01), distance_check=False)
+            # 让日服的两排勾选项居中，为实际滚动偏差留出余量。
+            STRATEGIC_SEARCH_SCROLL.drag_threshold = 0.05
+            STRATEGIC_SEARCH_SCROLL.set(0.12, main=self, distance_check=False)
             if not self._strategy_search_scroll_appear():
                 return False
 

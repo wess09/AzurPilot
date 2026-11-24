@@ -477,7 +477,7 @@ class AzurLaneAutoScript:
             )
             time.sleep(5)
             logger.info('[AzurPilot] 正在启动模拟器...')
-            self._emulator_op_with_timeout(
+            started = self._emulator_op_with_timeout(
                 # consecutive_adb_offline 在函数开头已 +1，减 1 得到"本次之前
                 # 已经连续失败过几次"；平台据此选取启动监视的等待时长，
                 # 连续失败越多等得越久（60 → 90 → 120 → 180 → 300 秒），
@@ -490,6 +490,9 @@ class AzurLaneAutoScript:
                 timeout=RESTART_EMULATOR_OP_TIMEOUT,
                 operation_name='模拟器启动',
             )
+            if started is False:
+                logger.warning('[AzurPilot] 模拟器启动失败，将在后续恢复时重试')
+                return False
             logger.info('[AzurPilot] 模拟器重启完成')
 
             # 清除 device 缓存，下次访问时重新建立连接
@@ -1563,7 +1566,8 @@ class AzurLaneAutoScript:
         from module.base.utils import save_image
         from module.handler.sensitive_info import (handle_sensitive_image,
                                                    handle_sensitive_logs)
-                                                   
+
+        initial_log_file = getattr(logger, 'log_file', None)
         # LLM 错误分析放在最前面，避免后续截图保存时二次崩溃导致分析未执行
         try:
             if hasattr(self, 'config') and getattr(self.config, 'Error_LlmAnalysis', False):
@@ -1599,15 +1603,22 @@ class AzurLaneAutoScript:
                 logger.error(f"[AzurPilot] 保存错误截图失败: {e}")
 
             try:
-                with open(logger.log_file, 'r', encoding='utf-8') as f:
+                active_log_file = logger.log_file
+                with open(active_log_file, 'r', encoding='utf-8') as f:
                     lines = f.readlines()
-                    start = 0
-                    for index, line in enumerate(lines):
-                        line = line.strip(' \r\t\n')
-                        if re.match('^═{15,}$', line):
-                            start = index
-                    lines = lines[start - 2:]
-                    lines = handle_sensitive_logs(lines)
+                if initial_log_file and initial_log_file != active_log_file:
+                    # 保存期间轮转时，触发归档的异常可能仍在前一个文件。
+                    try:
+                        with open(initial_log_file, 'r', encoding='utf-8') as f:
+                            lines = f.readlines() + lines
+                    except (OSError, UnicodeError) as e:
+                        logger.warning(f'[AzurPilot] 无法读取轮转前的日志，继续保存当前日志: {e}')
+                start = 0
+                for index, line in enumerate(lines):
+                    line = line.strip(' \r\t\n')
+                    if re.match('^═{15,}$', line):
+                        start = max(0, index - 2)
+                lines = handle_sensitive_logs(lines[start:])
                 with open(f'{folder}/log.txt', 'w', encoding='utf-8') as f:
                     f.writelines(lines)
             except Exception as e:

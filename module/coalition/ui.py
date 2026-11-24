@@ -5,15 +5,28 @@
 NeoncitySwitch 用于检测带红字提示的特殊状态。
 """
 
+import unicodedata
+
+from module.base.button import Button
 from module.base.timer import Timer
+from module.base.utils import crop
 from module.coalition.assets import *
 from module.combat.assets import BATTLE_PREPARATION
 from module.combat.combat import Combat
 from module.exception import CampaignNameError, RequestHumanTakeover, ScriptError
 from module.logger import logger
+from module.ocr.models import OCR_MODEL
 from module.ui.assets import BACK_ARROW
-from module.ui.page import page_coalition
+from module.ui.page import get_coalition_page
 from module.ui.switch import Switch
+
+
+# 三服共用图像素材，EX 按各服的关卡名和结算文案读取。
+VERITAS_EX_TEXT = {
+    'cn': ('cnocr', '图书馆', '总得分', '确定'),
+    'en': ('ppocr_v6', 'LIBRARY', 'TOTALSCORE', 'CONFIRM'),
+    'jp': ('jp', '図書館', '合計スコア', '確定'),
+}
 
 
 class NeoncitySwitch(Switch):
@@ -69,7 +82,15 @@ class CoalitionUI(Combat):
             bool: 是否在联合出击主界面。
         """
         # 与突袭活动界面判断一致
-        return self.ui_page_appear(page_coalition, offset=(20, 20))
+        return self.ui_page_appear(get_coalition_page(self.config.Campaign_Event), offset=(20, 20))
+
+    def ui_additional(self, get_ship=True):
+        """导航遇到真理学院编队窗口时，先关闭编队再识别活动页。"""
+        if (self.config.Campaign_Event == 'coalition_20261124'
+                and self.appear(VERITAS_FLEET_PREPARATION, offset=(20, 50))
+                and self.appear_then_click(VERITAS_FLEET_CLOSE, offset=(20, 20), interval=3)):
+            return True
+        return super().ui_additional(get_ship=get_ship)
 
     def in_coalition_20251120_difficulty_selection(self):
         """判断是否处于 20251120 联动活动的难度选择界面。
@@ -121,6 +142,10 @@ class CoalitionUI(Combat):
             mode_switch = HorrorSwitch('CoalitionMode', offset=(50, 20))
             mode_switch.add_state('story', HORROR_MODE_STORY)
             mode_switch.add_state('battle', HORROR_MODE_BATTLE)
+        elif event == 'coalition_20261124':
+            mode_switch = HorrorSwitch('CoalitionMode', is_selector=True, offset=0)
+            mode_switch.add_state('story', VERITAS_MODE_STORY)
+            mode_switch.add_state('battle', VERITAS_MODE_BATTLE)
         else:
             logger.error(f'[联动-UI] MODE_SWITCH未定义在活动中 {event}')
             raise ScriptError
@@ -167,17 +192,20 @@ class CoalitionUI(Combat):
         elif event == 'coalition_20260723':
             fleet_switch.add_state('single', HORROR_SWITCH_SINGLE)
             fleet_switch.add_state('multi', HORROR_SWITCH_MULTI)
+        elif event == 'coalition_20261124':
+            fleet_switch.add_state('single', VERITAS_SWITCH_SINGLE)
+            fleet_switch.add_state('multi', VERITAS_SWITCH_MULTI)
         else:
             logger.error(f'[联动-UI] FLEET_SWITCH未定义在活动中 {event}')
             raise ScriptError
 
         if fleet_switch.get(main=self) == mode:
             return False
-        if mode == 'single':
-            fleet_switch.set('single', main=self)
-            return True
-        elif mode == 'multi':
-            fleet_switch.set('multi', main=self)
+        if mode in ('single', 'multi'):
+            if event == 'coalition_20261124':
+                fleet_switch.click(mode, main=self)
+            else:
+                fleet_switch.set(mode, main=self)
             return True
         else:
             logger.warning(f'未知的联动舰队模式: {mode}')
@@ -241,6 +269,11 @@ class CoalitionUI(Combat):
             ('coalition_20260723', 'hard'): HORROR_HARD,
             ('coalition_20260723', 'sp'): HORROR_SP,
             ('coalition_20260723', 'ex'): HORROR_EX,
+            # VERITAS
+            ('coalition_20261124', 'easy'): VERITAS_EASY,
+            ('coalition_20261124', 'normal'): VERITAS_NORMAL,
+            ('coalition_20261124', 'hard'): VERITAS_HARD,
+            ('coalition_20261124', 'sp'): VERITAS_SP,
         }
         stage = stage.lower()
         try:
@@ -248,6 +281,42 @@ class CoalitionUI(Combat):
         except KeyError as e:
             logger.error(e)
             raise CampaignNameError
+
+    def veritas_text_buttons(self, area, labels):
+        """将真理学院页面上的指定文字位置转换为点击区域。"""
+        model_name, _, _, _ = VERITAS_EX_TEXT[self.config.SERVER]
+        ocr = getattr(OCR_MODEL, model_name)
+        left, top, _, _ = area
+        for text, box, _ in ocr.det(crop(self.device.image, area)):
+            label = ''.join(unicodedata.normalize('NFKC', text).split()).upper().replace('.', '')
+            if label not in labels:
+                continue
+            x, y = zip(*box)
+            rect = (left + int(min(x)), top + int(min(y)), left + int(max(x)), top + int(max(y)))
+            center_x = (rect[0] + rect[2]) // 2
+            center_y = (rect[1] + rect[3]) // 2
+            # OCR 边框可能包含按钮外沿，点击集中在文字中央。
+            click_area = (center_x - 4, center_y - 4, center_x + 4, center_y + 4)
+            yield Button(area=rect, color=(), button=click_area, name=label)
+
+    def veritas_ex_entrance(self):
+        """定位通关 SP 后显示的图书馆入口。"""
+        _, name, _, _ = VERITAS_EX_TEXT[self.config.SERVER]
+        labels = (name, f'EX{name}', f'{name}EX')
+        buttons = list(self.veritas_text_buttons((0, 106, 1280, 613), (*labels, 'EX')))
+        # 优先点击关卡名。只识别出 EX 标志时，该标志也位于关卡入口内。
+        matches = [button for button in buttons if button.name in labels] or buttons
+        return matches[0] if len(matches) == 1 else None
+
+    def handle_veritas_ex_result(self):
+        """识别 EX 总得分页面的确定按钮，返回是否点击。"""
+        _, _, score, confirm = VERITAS_EX_TEXT[self.config.SERVER]
+        buttons = list(self.veritas_text_buttons((0, 0, 1280, 720), (score, confirm)))
+        confirms = [button for button in buttons if button.name == confirm]
+        if len(confirms) == 1 and any(button.name == score for button in buttons):
+            self.device.click(confirms[0])
+            return True
+        return False
 
     @staticmethod
     def coalition_20251120_get_entrance_difficulty(event, stage):
@@ -343,6 +412,12 @@ class CoalitionUI(Combat):
             ('coalition_20260723', 'hard'): 3,
             ('coalition_20260723', 'sp'): 4,
             ('coalition_20260723', 'ex'): 5,
+            # VERITAS
+            ('coalition_20261124', 'easy'): 1,
+            ('coalition_20261124', 'normal'): 2,
+            ('coalition_20261124', 'hard'): 3,
+            ('coalition_20261124', 'sp'): 4,
+            ('coalition_20261124', 'ex'): 5,
         }
         stage = stage.lower()
         try:
@@ -377,6 +452,8 @@ class CoalitionUI(Combat):
             return NEONCITY_FLEET_PREPARATION
         elif event == 'coalition_20260723':
             return HORROR_FLEET_PREPARATION
+        elif event == 'coalition_20261124':
+            return VERITAS_FLEET_PREPARATION
         else:
             logger.error(f'[联动-UI] FLEET_PREPARATION未定义在活动中 {event}')
             raise ScriptError
@@ -406,12 +483,15 @@ class CoalitionUI(Combat):
             'coalition_20250626',
             'coalition_20260122',
             'coalition_20260723',
+            'coalition_20261124',
         ]:
             # easy 固定单队，SP 和 EX 必须多队
             if stage in ['easy', 'sp', 'ex']:
                 return False
 
         clicked = self.coalition_set_fleet(event, mode)
+        if clicked and event == 'coalition_20261124':
+            return True
 
         if self.appear(FLEET_NOT_PREPARED, offset=(20, 20)):
             logger.critical('[联动] 舰队未就绪')
@@ -440,6 +520,12 @@ class CoalitionUI(Combat):
         """
         logger.info('联动地图退出')
         fleet_preparation = self.coalition_get_fleet_preparation(event)
+        if event == 'coalition_20261124':
+            fleet_exit = VERITAS_FLEET_CLOSE
+            fleet_offset = (20, 50)
+        else:
+            fleet_exit = NEONCITY_PREPARATION_EXIT
+            fleet_offset = (20, 20)
         for _ in self.loop():
             if self.in_coalition():
                 break
@@ -450,9 +536,9 @@ class CoalitionUI(Combat):
                 logger.info(f'{BATTLE_PREPARATION} -> {BACK_ARROW}')
                 self.device.click(BACK_ARROW)
                 continue
-            if self.appear(fleet_preparation, offset=(20, 20), interval=3):
-                logger.info(f'{fleet_preparation} -> {NEONCITY_PREPARATION_EXIT}')
-                self.device.click(NEONCITY_PREPARATION_EXIT)
+            if self.appear(fleet_preparation, offset=fleet_offset, interval=3):
+                logger.info(f'{fleet_preparation} -> {fleet_exit}')
+                self.device.click(fleet_exit)
                 continue
             if event == 'coalition_20251120':
                 if self.appear_then_click(DAL_DIFFICULTY_EXIT, offset=(20, 20), interval=3):
@@ -474,7 +560,8 @@ class CoalitionUI(Combat):
         Raises:
             RequestHumanTakeover: 进入关卡或准备舰队连续失败超过阈值。
         """
-        button = self.coalition_get_entrance(event, stage)
+        veritas_ex = event == 'coalition_20261124' and stage.lower() == 'ex'
+        button = None if veritas_ex else self.coalition_get_entrance(event, stage)
         if event in ['coalition_20251120']:
             button_difficulty = self.coalition_20251120_get_entrance_difficulty(event, stage)
         else:
@@ -490,7 +577,7 @@ class CoalitionUI(Combat):
         for _ in self.loop():
             # 异常检查
             if campaign_click > 5:
-                logger.critical(f"[联动] 无法进入 {button}，点击次数过多")
+                logger.critical(f"[联动] 无法进入 {button or stage}，尝试次数过多")
                 logger.critical("[联动] 可能的原因1: 你还没有通关前置关卡，无法解锁该关卡。")
                 raise RequestHumanTakeover
             if campaign_difficulty_click > 5:
@@ -517,7 +604,10 @@ class CoalitionUI(Combat):
 
             # 进入关卡
             if campaign_timer.reached() and self.in_coalition():
-                self.device.click(button)
+                if veritas_ex:
+                    button = self.veritas_ex_entrance()
+                if button is not None:
+                    self.device.click(button)
                 campaign_click += 1
                 campaign_timer.reset()
                 continue
@@ -530,7 +620,10 @@ class CoalitionUI(Combat):
 
             # 舰队准备
             if fleet_timer.reached() and self.appear(fleet_preparation, offset=(20, 50)):
-                self.handle_fleet_preparation(event, stage, mode)
+                if self.handle_fleet_preparation(event, stage, mode) and event == 'coalition_20261124':
+                    # 切换舰队模式会改变编队内容，先用新截图确认再出击。
+                    fleet_timer.reset()
+                    continue
                 self.device.click(fleet_preparation)
                 fleet_click += 1
                 fleet_timer.reset()

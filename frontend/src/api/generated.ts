@@ -4,7 +4,7 @@ export interface Parameters {
   "launcher.autostart.set": { enabled: boolean }
   "launcher.command.get": { commandId: string }
   "system.ping": Record<string, never>
-  "schema.get": { language?: "zh-CN" | "en-US" | "ja-JP" | "zh-TW" }
+  "schema.get": { language?: "zh-CN" | "en-US" | "ja-JP" | "zh-TW" | "zh-CN-neko" }
   "search.content": { query: string }
   "instances.list": Record<string, never>
   "instances.create": { name: string; source?: string | null; import_file?: string | null; emulator?: { serial: string; package_name: string; server_name: string } | null }
