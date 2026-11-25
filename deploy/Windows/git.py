@@ -10,6 +10,7 @@ from deploy.Windows.logger import Progress, logger
 from deploy.Windows.utils import cached_property
 from deploy.git_over_cdn.client import GitOverCdnClient
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
+from deploy.mirrorchyan.client import MirrorChyanClient
 
 
 def peer_fallback_repository(url: str) -> Optional[str]:
@@ -282,9 +283,33 @@ class GitManager(DeployConfig):
         client.logger = logger
         return client
 
+    @property
+    def mirrorchyan_client(self):
+        """获取 Windows 环境下的 Mirror 酱 Git Pack 客户端实例。"""
+        client = MirrorChyanClient(
+            folder=self.root_filepath,
+            cdk=getattr(self, 'MirrorChyanCdk', None) or '',
+            source='origin',
+            branch=self.Branch,
+            git=self.git,
+        )
+        client.logger = logger
+        return client
+
     def git_install(self):
         """执行 Git 仓库的更新或完整初始化流程。"""
         logger.hr('Update AzurPilot', 0)
+
+        if self.MirrorChyan:
+            Progress.GitInit()
+            client = self.mirrorchyan_client
+            try:
+                if client.update():
+                    Progress.GitShowVersion()
+                    return
+            finally:
+                client.close()
+            logger.warning('MirrorChyan update failed, falling back to Git')
 
         if self.GitOverCdn:
             if self.goc_client.update():

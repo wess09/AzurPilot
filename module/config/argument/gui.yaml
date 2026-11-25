@@ -264,6 +264,10 @@ DeploySetting:
   GitProxyHelp:
   SSLVerify:
   SSLVerifyHelp:
+  UseMirrorChyan:
+  UseMirrorChyanHelp:
+  MirrorChyanCdk:
+  MirrorChyanCdkHelp:
   PythonExecutable:
   PythonExecutableHelp:
   PypiMirror:

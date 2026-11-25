@@ -55,6 +55,8 @@ DEPLOY_GROUPS: tuple[tuple[str, tuple[DeployField, ...]], ...] = (
             DeployField("GitExecutable"),
             DeployField("GitProxy", "nullable_string"),
             DeployField("SSLVerify", "bool"),
+            DeployField("UseMirrorChyan", "bool"),
+            DeployField("MirrorChyanCdk", "nullable_string"),
         ),
     ),
     (

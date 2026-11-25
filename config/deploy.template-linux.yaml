@@ -33,6 +33,12 @@ Deploy:
     # [其他情况] 连接到不受信任的网络时使用 false
     # [Other] Use false to when connected to an untrusted network
     SSLVerify: true
+    # 是否启用 Mirror 酱更新（仅 master 分支生效）
+    # Enable MirrorChyan Git Pack updates (master branch only)
+    UseMirrorChyan: false
+    # Mirror 酱 CDK（请妥善保管）
+    # MirrorChyan CDK (keep secret)
+    MirrorChyanCdk: null
   Python:
     # Python 可执行文件路径
     # Filepath of python executable.

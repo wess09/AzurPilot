@@ -147,6 +147,22 @@ class Updater(DeployConfig, RuntimeGitManager):
         if force_update is None:
             logger.warning("强制更新开关不可访问，按关闭处理")
 
+        if getattr(State.deploy_config, 'MirrorChyan', False):
+            client = self.mirrorchyan_client
+            try:
+                status = client.get_status()
+            finally:
+                client.close()
+            if status == "uptodate":
+                logger.info("无更新")
+                return False
+            elif status == "behind":
+                logger.info("有新更新可用")
+                return True
+            else:
+                # 失败时回退到 git pull
+                pass
+
         if State.deploy_config.GitOverCdn:
             client = self.goc_client
             try:

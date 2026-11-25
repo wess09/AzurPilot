@@ -22,6 +22,8 @@ export interface UpdateStatus {
   ahead: number; behind: number; available: boolean; busy: boolean; canApply: boolean; canCancel: boolean; error: string
   /** 本地与更新源历史互不包含（例如镜像重写历史导致 SHA 分离），更新前需弹窗确认。 */
   shaMismatch?: boolean
+  mirrorChyanEnabled?: boolean
+  mirrorChyanConfigured?: boolean
   managedByAndroid?: boolean
 }
 interface Commit { sha: string; author: string; date: string; message: string }

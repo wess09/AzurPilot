@@ -16,6 +16,7 @@ from deploy.git_over_cdn.client import (
     _read_device_id,
 )
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
+from deploy.mirrorchyan.client import MirrorChyanClient
 from module.base import http
 from module.logger import logger
 
@@ -52,6 +53,16 @@ class RuntimeGitOverCdnClient(GitOverCdnClient):
         return self.update_refs()
 
 
+class RuntimeMirrorChyanClient(MirrorChyanClient):
+    """Reuse MirrorChyan Git Pack flow with runtime HTTP networking."""
+
+    @staticmethod
+    def _create_session(max_retries=2):
+        session = http.Session(download=True, retries=max_retries)
+        session.trust_env = False
+        return session
+
+
 class RuntimeGitManager(GitManager):
     """Application-only network overrides; deploy never imports this class."""
 
@@ -61,6 +72,18 @@ class RuntimeGitManager(GitManager):
             url=CLOUDFLARE_UPDATE_URLS,
             fallback_urls=FALLBACK_UPDATE_URLS,
             folder=self.root_filepath,
+            source='origin',
+            branch=self.Branch,
+            git=self.git,
+        )
+        client.logger = logger
+        return client
+
+    @property
+    def mirrorchyan_client(self):
+        client = RuntimeMirrorChyanClient(
+            folder=self.root_filepath,
+            cdk=getattr(self, 'MirrorChyanCdk', None) or '',
             source='origin',
             branch=self.Branch,
             git=self.git,
@@ -98,8 +121,18 @@ class RuntimeGitManager(GitManager):
         return None
 
     def fetch_update(self, source='origin', branch=None, max_retry=3, delay=1):
-        """Prepare a version check through CDN, falling back to the existing Git fetch."""
+        """Prepare a version check through MirrorChyan or CDN, falling back to Git fetch."""
         branch = branch or self.Branch
+        if getattr(self, 'MirrorChyan', False) and source == 'origin' and branch == self.Branch:
+            client = self.mirrorchyan_client
+            try:
+                if client.fetch():
+                    self._mirrorchyan_error = ''
+                    return
+                self._mirrorchyan_error = client.last_error
+            finally:
+                client.close()
+            logger.warning('MirrorChyan fetch failed, falling back to Git')
         if self.GitOverCdn and source == 'origin' and branch == self.Branch:
             client = self.goc_client
             try:
@@ -111,8 +144,18 @@ class RuntimeGitManager(GitManager):
         return self._fetch_with_retry(source, branch, max_retry=max_retry, delay=delay)
 
     def git_install(self):
-        """Apply CDN objects or use the existing repository update fallback."""
+        """Apply MirrorChyan or CDN objects, or use the existing repository update fallback."""
         logger.hr('Update AzurPilot', 0)
+        if getattr(self, 'MirrorChyan', False):
+            client = self.mirrorchyan_client
+            try:
+                if client.update():
+                    self._mirrorchyan_error = ''
+                    return
+                self._mirrorchyan_error = client.last_error
+            finally:
+                client.close()
+            logger.warning('MirrorChyan update failed, falling back to Git')
         if self.GitOverCdn:
             client = self.goc_client
             try:

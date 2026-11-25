@@ -161,19 +161,26 @@ class UpdateService:
                 ahead = 0
         # 剩余的 ahead 是真分叉：本地与上游互不包含（例如镜像仓库重写过历史导致
         # SHA 分离，或本地有自己的提交）。更新仍允许，但由前端弹窗向用户确认后果。
-        mismatch = bool(local and upstream and ahead and behind)
+        is_mirrorchyan = bool(getattr(self.updater, 'MirrorChyan', False))
+        # MirrorChyan Git Pack 跳版本会写入 shallow 截断历史，导致 local...upstream 互不可达而被算成 ahead+behind，
+        # 这属于正常浅历史现象，不应误报为本地分叉弹窗。
+        mismatch = False if is_mirrorchyan else bool(local and upstream and ahead and behind)
+        has_update = bool(behind > 0 or (is_mirrorchyan and local and upstream and local != upstream))
         from module.runtime.setting import State
         state = self.updater.state
         busy = self.operation is not None or state not in (0, 1, 'failed', 'finish') or getattr(self.updater, '_force_update_checking', False)
         visible_state = {0: 'idle', 1: 'available'}.get(state, state)
         if self.operation == 'fetch' or self.operation == 'apply' and state in (0, 1, 'finish'):
             visible_state = self.operation
+        available = has_update or state == 1
         return {'state': visible_state,
                 'localHead': local or None, 'upstreamHead': upstream or None,
                 'branch': self.updater.Branch, 'ahead': ahead, 'behind': behind,
-                'available': behind > 0 or state == 1, 'busy': busy, 'error': self.error,
+                'available': available, 'busy': busy, 'error': self.error,
                 'shaMismatch': mismatch,
-                'canApply': bool(local and upstream and behind and not busy
+                'mirrorChyanEnabled': is_mirrorchyan,
+                'mirrorChyanConfigured': bool(getattr(self.updater, 'MirrorChyanCdk', None)),
+                'canApply': bool(available and not busy
                                  and State.restart_event is not None and State.dependency_sync_event is not None),
                 'canCancel': state in ('start', 'wait'), 'managedByAndroid': False}
 
@@ -194,6 +201,9 @@ class UpdateService:
             return {'entries': [], 'total': 0, 'hasMore': False,
                     'localHead': local, 'upstreamHead': local}
         local, upstream = self.heads()
+        if getattr(self.updater, 'MirrorChyan', False):
+            return {'entries': [], 'total': 0, 'hasMore': False,
+                    'localHead': local or None, 'upstreamHead': upstream or None}
         refs = list(dict.fromkeys(ref for ref in (local, upstream) if ref))
         entries = []
         if refs:
@@ -255,15 +265,22 @@ class UpdateService:
                     owns_check = True
                     self.updater.fetch_update('origin', self.updater.Branch, max_retry=3, delay=1)
                     local, upstream = self.heads()
-                    behind = int(self.git('rev-list', '--count', f'{local}..{upstream}')) if local and upstream else 0
-                    self.updater.state = bool(behind)
+                    if getattr(self.updater, 'MirrorChyan', False) and local and upstream:
+                        self.updater.state = local != upstream
+                    else:
+                        behind = int(self.git('rev-list', '--count', f'{local}..{upstream}')) if local and upstream else 0
+                        self.updater.state = bool(behind)
             else:
                 if self.updater.state == 'finish':
                     self.updater.state = 0
                 if not self.updater.run_update():
                     raise ApiError('UPDATE_FAILED', '更新失败，请检查服务日志')
         except Exception:
-            self.error = '获取更新失败，请检查网络或服务日志' if operation == 'fetch' else '更新失败，请检查服务日志'
+            mc_err = getattr(self.updater, '_mirrorchyan_error', '')
+            if mc_err:
+                self.error = mc_err
+            else:
+                self.error = '获取更新失败，请检查网络或服务日志' if operation == 'fetch' else '更新失败，请检查服务日志'
             if owns_check:
                 self.updater.state = 'failed'
         finally:
