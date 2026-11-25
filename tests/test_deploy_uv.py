@@ -159,3 +159,10 @@ class TestUvCommandOutput(unittest.TestCase):
             uv.dependency_sync_service(requests, queue.Queue(), root=Path("."))
 
         parent.is_alive.assert_called_once_with()
+
+    def test_dependency_service_exits_on_keyboard_interrupt(self):
+        requests = Mock()
+        requests.get.side_effect = KeyboardInterrupt
+
+        uv.dependency_sync_service(requests, queue.Queue(), root=Path("."))
+        requests.get.assert_called_once_with(timeout=1)

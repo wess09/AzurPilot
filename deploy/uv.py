@@ -587,52 +587,56 @@ def dependency_sync_service(
     root = Path(root) if root is not None else project_root()
     parent = multiprocessing.parent_process()
 
-    while True:
-        try:
-            request = request_queue.get(timeout=1)
-        except queue.Empty:
-            # 启动器强制结束 gui.py 时不会执行 finally，此处避免遗留服务。
-            if parent is not None and not parent.is_alive():
+    try:
+        while True:
+            try:
+                request = request_queue.get(timeout=1)
+            except queue.Empty:
+                # 启动器强制结束 gui.py 时不会执行 finally，此处避免遗留服务。
+                if parent is not None and not parent.is_alive():
+                    return
+                continue
+            if request == "shutdown":
                 return
-            continue
-        if request == "shutdown":
-            return
-        if request != "sync":
+            if request != "sync":
+                response_queue.put(
+                    {
+                        "success": False,
+                        "command": [],
+                        "output": "",
+                        "error": f"Unknown dependency sync request: {request}",
+                    }
+                )
+                continue
+
+            try:
+                result = sync_project_venv(
+                    root=root,
+                    capture_output=True,
+                    timeout=timeout,
+                )
+            except Exception as exc:
+                response_queue.put(
+                    {
+                        "success": False,
+                        "command": [str(part) for part in (getattr(exc, "cmd", None) or [])],
+                        "output": command_output(exc),
+                        "error": str(exc),
+                    }
+                )
+                continue
+
             response_queue.put(
                 {
-                    "success": False,
-                    "command": [],
-                    "output": "",
-                    "error": f"Unknown dependency sync request: {request}",
+                    "success": True,
+                    "command": result.command,
+                    "output": result.output,
+                    "error": "",
                 }
             )
-            continue
-
-        try:
-            result = sync_project_venv(
-                root=root,
-                capture_output=True,
-                timeout=timeout,
-            )
-        except Exception as exc:
-            response_queue.put(
-                {
-                    "success": False,
-                    "command": [str(part) for part in (getattr(exc, "cmd", None) or [])],
-                    "output": command_output(exc),
-                    "error": str(exc),
-                }
-            )
-            continue
-
-        response_queue.put(
-            {
-                "success": True,
-                "command": result.command,
-                "output": result.output,
-                "error": "",
-            }
-        )
+    except KeyboardInterrupt:
+        # Windows 控制台 Ctrl+C 会同时发给子进程，静默退出避免打印冗余堆栈。
+        return
 
 
 def ensure_uv_environment():

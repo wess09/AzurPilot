@@ -7,6 +7,7 @@
 import argparse
 import multiprocessing
 import pickle
+import signal
 import threading
 import time
 
@@ -418,6 +419,10 @@ def start_ocr_server(port=22268):
             cnocr: AlOcr = self.__getattribute__(lang)
             return cnocr.debug(img_list)
 
+    if multiprocessing.parent_process() is not None:
+        # Windows 控制台 Ctrl+C 会同时发给子进程；由父进程负责回收，避免 gevent 打印冗余堆栈。
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     server = zerorpc.Server(OCRServer())
     try:
         server.bind(f"tcp://*:{port}")
@@ -425,7 +430,10 @@ def start_ocr_server(port=22268):
         logger.error(f"[OCR-RPC] OCR 服务器无法绑定端口 {port}")
         return
     logger.info(f"[OCR-RPC] 服务器监听端口 {port}")
-    server.run()
+    try:
+        server.run()
+    except KeyboardInterrupt:
+        server.stop()
 
 
 def start_ocr_server_process(port=22268):
