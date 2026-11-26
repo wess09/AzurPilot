@@ -106,8 +106,16 @@ def active_fish_meat(image):
     """当前子页签对应的鱼肉 ID，无法判断时为 None。"""
     pills = {meat_id: _fraction(image, area, (247, 247, 247), threshold=25)
              for meat_id, area in SHOP_SUB_TAB_PILL.items()}
-    meat_id = max(pills, key=pills.get)
-    return meat_id if pills[meat_id] > 0.2 else None
+    ranked = sorted(pills.items(), key=lambda kv: kv[1], reverse=True)
+    meat_id, score = ranked[0]
+    runner_up = ranked[1][1] if len(ranked) > 1 else 0.0
+    if score <= 0.2:
+        return None
+    # 两个子页签的白色胶囊底都可能过阈值，差值不够就别下判断，
+    # 否则会在淡水/海水之间来回点
+    if score - runner_up < 0.05:
+        return None
+    return meat_id
 
 
 def exchange_popup_appear(image):
@@ -212,14 +220,20 @@ class IslandFishMeatExchange:
                 and fish_meat_tab_active(self.device.image)):
             self.ui_ensure(page_island)
         click_timer = Timer(2)
+        sub_tab_clicks = 0
         # 只在点过「商店」之后才点侧栏：岗位管理等页面也有深色侧栏与返回按钮，同一位置是别的按钮
         shop_clicked = self.appear(ISLAND_EXCHANGE_CONFIRM, offset=(20, 20))
         for image in self.loop(timeout=30):
             if self.appear(ISLAND_EXCHANGE_CONFIRM, offset=(20, 20)) and fish_meat_tab_active(image):
                 if active_fish_meat(image) == meat_id:
                     return True
+                if sub_tab_clicks >= 2:
+                    logger.info(f'[岛屿-鱼肉加工] 子页签判定不稳定，已点过 {sub_tab_clicks} 次，'
+                                f'按已切到 {meat_id} 继续')
+                    return True
                 if click_timer.reached():
                     self.device.click(SHOP_SUB_TABS[meat_id])
+                    sub_tab_clicks += 1
                     click_timer.reset()
                 continue
             if reward_popup_appear(image):
