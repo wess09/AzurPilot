@@ -3,16 +3,14 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useOutletContext } from 'react-router-dom'
-import { ArrowDown, ArrowUp, Check, CircleAlert, Copy, Download, ExternalLink, Eye, EyeOff, GitBranch, GitCommitHorizontal, RefreshCw, TriangleAlert, X } from 'lucide-react'
+import { useNavigate, useOutletContext } from 'react-router-dom'
+import { ArrowDown, ArrowUp, Check, CircleAlert, Copy, Download, ExternalLink, GitBranch, GitCommitHorizontal, RefreshCw, Settings, TriangleAlert, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { UpdaterState } from '../app/updater'
 import { useApp, useConnection } from '../app/context'
 import { usePageRead } from '../app/usePageRead'
 import { ActionGroup, Empty, Modal, PageTitle, Panel, PanelBody, PanelHeading } from '../components/ui'
 import { LoadBoundary } from '../components/ui/load-boundary'
-import { Button } from '../components/ui/button'
-import { Input } from '../components/ui/input'
 import { Switch } from './settings-ui/switch'
 import { localeForLanguage, type UiKey } from '../i18n'
 import './Updater.css'
@@ -30,30 +28,26 @@ const states: Record<string, UiKey> = {idle: 'updater.state.idle', android: 'upd
 export function Updater() {
   const {data, error: statusError, refresh} = useOutletContext<UpdaterState>()
   const {ui} = useApp()
+  const navigate = useNavigate()
   const connection = useConnection()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirmMismatch, setConfirmMismatch] = useState(false)
   const [copiedSha, setCopiedSha] = useState('')
   const [mcEnabled, setMcEnabled] = useState(Boolean(data?.mirrorChyanEnabled))
-  const [mcCdk, setMcCdk] = useState('')
-  const [mcShowCdk, setMcShowCdk] = useState(false)
   const [mcSaving, setMcSaving] = useState(false)
-  const [mcNotice, setMcNotice] = useState('')
   useEffect(() => {
     if (data?.mirrorChyanEnabled !== undefined) setMcEnabled(data.mirrorChyanEnabled)
   }, [data?.mirrorChyanEnabled])
   const local = data?.localHead, upstream = data?.upstreamHead
-  async function saveMirrorChyan(nextEnabled = mcEnabled) {
-    setMcSaving(true); setMcNotice(''); setError('')
+  async function toggleMirrorChyan(nextEnabled: boolean) {
+    setMcEnabled(nextEnabled)
+    setMcSaving(true); setError('')
     try {
-      const values: Record<string, unknown> = {UseMirrorChyan: nextEnabled}
-      if (mcCdk.trim()) values.MirrorChyanCdk = mcCdk.trim()
-      await api.request('settings.patch', {values})
-      setMcCdk('')
-      setMcNotice(ui('updater.mirrorchyan.saved'))
+      await api.request('settings.patch', {values: {UseMirrorChyan: nextEnabled}})
       refresh()
     } catch (err) {
+      setMcEnabled(!nextEnabled)
       setError((err as Error).message)
     } finally {
       setMcSaving(false)
@@ -117,43 +111,15 @@ export function Updater() {
       {!data.managedByAndroid && <Panel className="mirrorchyan-panel">
         <PanelHeading
           title={ui('updater.mirrorchyan.title')}
-          actions={<a className="mirrorchyan-link" href="https://mirrorchyan.com?source=azurpilot_updater" target="_blank" rel="noreferrer">{ui('updater.mirrorchyan.getCdk')}<ExternalLink size={12}/></a>}
+          actions={<div className="mirrorchyan-head-actions">
+            <a className="mirrorchyan-link" href="https://mirrorchyan.com?source=azurpilot_updater" target="_blank" rel="noreferrer">{ui('updater.mirrorchyan.getCdk')}<ExternalLink size={12}/></a>
+            <Switch aria-label={ui('updater.mirrorchyan.title')} checked={mcEnabled} disabled={mcSaving || connection !== 'ready'} onCheckedChange={next => void toggleMirrorChyan(next)}/>
+          </div>}
         />
         <PanelBody className="mirrorchyan-body">
-          <p className="mirrorchyan-desc">{ui('updater.mirrorchyan.desc')}</p>
-          <div className="mirrorchyan-controls">
-            <label className="mirrorchyan-toggle">
-              <Switch checked={mcEnabled} disabled={mcSaving || connection !== 'ready'} onCheckedChange={next => {
-                setMcEnabled(next)
-                void saveMirrorChyan(next)
-              }}/>
-              <span>{ui('updater.mirrorchyan.toggle')}</span>
-            </label>
-            <div className="mirrorchyan-cdk-group">
-              <Input
-                type={mcShowCdk ? 'text' : 'password'}
-                className="mirrorchyan-cdk"
-                value={mcCdk}
-                autoComplete="new-password"
-                disabled={mcSaving || connection !== 'ready'}
-                placeholder={data.mirrorChyanConfigured ? ui('updater.mirrorchyan.cdkSaved') : ui('updater.mirrorchyan.cdkPlaceholder')}
-                onChange={e => setMcCdk(e.target.value)}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                disabled={mcSaving || connection !== 'ready'}
-                aria-label={mcShowCdk ? ui('common.hidePassword') : ui('common.showPassword')}
-                aria-pressed={mcShowCdk}
-                onClick={() => setMcShowCdk(v => !v)}
-              >
-                {mcShowCdk ? <EyeOff/> : <Eye/>}
-              </Button>
-            </div>
-            <button type="button" className="button secondary" disabled={mcSaving || connection !== 'ready'} onClick={() => void saveMirrorChyan(mcEnabled)}>{ui('updater.mirrorchyan.save')}</button>
+          <div className="mirrorchyan-row">
+            <button type="button" className="button secondary" onClick={() => navigate('/settings')}><Settings size={14}/>{ui('updater.mirrorchyan.openSettings')}</button>
           </div>
-          {mcNotice && <p className="mirrorchyan-status">{mcNotice}</p>}
         </PanelBody>
       </Panel>}
       {!data.managedByAndroid && !data.mirrorChyanEnabled && <CommitList key={JSON.stringify([local, upstream])} local={local} upstream={upstream} branch={data.branch}/>}
