@@ -473,6 +473,21 @@ class IslandRancher(Island, WarehouseOCR, LoginHandler):
         return False
 
     def ranch_post_get_and_add(self, post_id, character='WorkerJuu'):
+        """在牧场岗位中收取产物并追加派遣角色，失败时先点空白关闭追加页再重试一次。
+
+        岗位上的角色立绘会挡住「追加」按钮，一次没点中就会一直空转到超时，
+        原来的行为是直接返回 False 交给上层重启。这里改成先点一次空白区域
+        （点空白会关闭追加面板）再重试一次，两次都失败才交回上层处理。
+        """
+        if self._ranch_post_get_and_add_loop(post_id, character):
+            return True
+        logger.info(f"[岛屿-牧场] 牧场岗位{post_id}收取并追加派遣未完成，点空白关闭后重试一次")
+        self.device.click(ISLAND_POST_SAFE_AREA)
+        self.device.sleep(0.5)
+        self.device.screenshot()
+        return self._ranch_post_get_and_add_loop(post_id, character)
+
+    def _ranch_post_get_and_add_loop(self, post_id, character='WorkerJuu'):
         """在牧场岗位中收取产物并追加派遣角色。
 
         Args:
