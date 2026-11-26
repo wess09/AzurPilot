@@ -40,6 +40,8 @@ class ConfigModel:
     GitExecutable: str = "./.venv/Scripts/git/cmd/git.exe"
     GitProxy: Optional[str] = None
     SSLVerify: bool = False
+    UseMirrorChyan: bool = False
+    MirrorChyanCdk: Optional[str] = None
 
     # Python 配置
     PythonExecutable: str = "./.venv/Scripts/python.exe"
@@ -100,6 +102,7 @@ class ConfigModel:
 
     # 动态配置
     GitOverCdn: bool = False
+    MirrorChyan: bool = False
 
 
 class DeployConfig(DeployConfigTransaction, ConfigModel):
@@ -128,7 +131,7 @@ class DeployConfig(DeployConfigTransaction, ConfigModel):
         """展示非默认的部署配置项。"""
         logger.hr("Show deploy config", 1)
         for k, v in self.config.items():
-            if k in ("Password", "SSHUser"):
+            if k in ("Password", "SSHUser", "MirrorChyanCdk"):
                 continue
             if self.config_template.get(k) == v:
                 continue
@@ -145,9 +148,14 @@ class DeployConfig(DeployConfigTransaction, ConfigModel):
         self._redirect_github_repository()
         # 绕过 webui.config.DeployConfig.__setattr__()，不写入 deploy.yaml
         super().__setattr__('GitOverCdn', self.Repository in ['cn', GIT_OVER_CDN_REPOSITORY])
+        super().__setattr__(
+            'MirrorChyan',
+            (bool(getattr(self, 'UseMirrorChyan', False)) or self.Repository == 'mirrorchyan')
+            and self.Branch == 'master'
+        )
         if self.Repository in ['global']:
             super().__setattr__('Repository', 'https://github.com/wess09/AzurPilot')
-        if self.Repository in ['cn', GIT_OVER_CDN_REPOSITORY]:
+        if self.Repository in ['cn', GIT_OVER_CDN_REPOSITORY, 'mirrorchyan']:
             super().__setattr__('Repository', choose_fallback_repository())
         if self.Repository in ['cnb']:
             super().__setattr__('Repository', GIT_OVER_CDN_FALLBACK_REPOSITORIES[0])

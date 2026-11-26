@@ -84,6 +84,16 @@
 .commit-detail pre {white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; line-height: 1.8; color: var(--text)}
 .commit-pagination {display: flex; align-items: center; justify-content: flex-end; gap: 12px; padding: 18px 24px; border-top: 1px solid var(--border)}
 .commit-pagination > span {margin-right: auto; color: var(--muted); font-size: 12px}
+.mirrorchyan-panel .panel-heading {border-bottom: 1px solid var(--border)}
+.mirrorchyan-link {display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); text-decoration: none}
+.mirrorchyan-link:hover {color: var(--text); text-decoration: underline}
+.mirrorchyan-body {padding: 14px 24px 18px}
+.mirrorchyan-desc {margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5}
+.mirrorchyan-controls {display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px}
+.mirrorchyan-toggle {display: inline-flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; cursor: pointer; user-select: none}
+.mirrorchyan-cdk-group {display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px}
+.mirrorchyan-cdk {flex: 1 1 auto; min-width: 0}
+.mirrorchyan-status {margin: 10px 0 0; font-size: 12px; color: var(--accent)}
 
 @media (max-width: 950px) {
   .commit-row {padding: 16px; gap: 10px}

@@ -2,15 +2,18 @@
  * @fileoverview 系统版本更新与 Git 提交历史检查页面。
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { ArrowDown, ArrowUp, Check, CircleAlert, Copy, Download, GitBranch, GitCommitHorizontal, RefreshCw, TriangleAlert, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Check, CircleAlert, Copy, Download, ExternalLink, Eye, EyeOff, GitBranch, GitCommitHorizontal, RefreshCw, TriangleAlert, X } from 'lucide-react'
 import { api } from '../api/client'
 import type { UpdaterState } from '../app/updater'
 import { useApp, useConnection } from '../app/context'
 import { usePageRead } from '../app/usePageRead'
-import { ActionGroup, Empty, Modal, PageTitle, Panel, PanelHeading } from '../components/ui'
+import { ActionGroup, Empty, Modal, PageTitle, Panel, PanelBody, PanelHeading } from '../components/ui'
 import { LoadBoundary } from '../components/ui/load-boundary'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Switch } from './settings-ui/switch'
 import { localeForLanguage, type UiKey } from '../i18n'
 import './Updater.css'
 
@@ -32,7 +35,30 @@ export function Updater() {
   const [error, setError] = useState('')
   const [confirmMismatch, setConfirmMismatch] = useState(false)
   const [copiedSha, setCopiedSha] = useState('')
+  const [mcEnabled, setMcEnabled] = useState(Boolean(data?.mirrorChyanEnabled))
+  const [mcCdk, setMcCdk] = useState('')
+  const [mcShowCdk, setMcShowCdk] = useState(false)
+  const [mcSaving, setMcSaving] = useState(false)
+  const [mcNotice, setMcNotice] = useState('')
+  useEffect(() => {
+    if (data?.mirrorChyanEnabled !== undefined) setMcEnabled(data.mirrorChyanEnabled)
+  }, [data?.mirrorChyanEnabled])
   const local = data?.localHead, upstream = data?.upstreamHead
+  async function saveMirrorChyan(nextEnabled = mcEnabled) {
+    setMcSaving(true); setMcNotice(''); setError('')
+    try {
+      const values: Record<string, unknown> = {UseMirrorChyan: nextEnabled}
+      if (mcCdk.trim()) values.MirrorChyanCdk = mcCdk.trim()
+      await api.request('settings.patch', {values})
+      setMcCdk('')
+      setMcNotice(ui('updater.mirrorchyan.saved'))
+      refresh()
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setMcSaving(false)
+    }
+  }
   async function act(method: 'updater.fetch' | 'updater.apply' | 'updater.cancel') {
     setBusy(true); setError('')
     try {await api.request(method, {}); refresh()}
@@ -44,9 +70,9 @@ export function Updater() {
     setCopiedSha(sha)
     window.setTimeout(() => setCopiedSha(value => value === sha ? '' : value), 1500)
   }
-  // SHA 不匹配时更新会重置掉本地独有的提交，先弹窗确认再执行。
+  // SHA 不匹配时更新会重置掉本地独有的提交，先弹窗确认再执行（Mirror 酱模式不弹窗）。
   function requestUpdate() {
-    if (data?.shaMismatch) setConfirmMismatch(true)
+    if (data?.shaMismatch && !data?.mirrorChyanEnabled) setConfirmMismatch(true)
     else void act('updater.apply')
   }
   const disabled = busy || connection !== 'ready' || !data || data.busy
@@ -74,8 +100,8 @@ export function Updater() {
             <div><h2 role="heading" aria-level={2}>{label}</h2></div>
             {isLocal && <div className="update-summary">
               <span className={data.available ? 'update-available' : ''}>{data.busy ? <RefreshCw size={15} className="spin"/> : data.state === 'failed' || !upstream ? <CircleAlert size={15}/> : <Check size={15}/>} {statusLabel}</span>
-              {data.ahead > 0 && <span title={ui('updater.localAhead')}><ArrowUp size={14}/>{data.ahead}</span>}
-              {data.behind > 0 && <span title={ui('updater.localBehind')}><ArrowDown size={14}/>{data.behind}</span>}
+              {!data.mirrorChyanEnabled && data.ahead > 0 && <span title={ui('updater.localAhead')}><ArrowUp size={14}/>{data.ahead}</span>}
+              {!data.mirrorChyanEnabled && data.behind > 0 && <span title={ui('updater.localBehind')}><ArrowDown size={14}/>{data.behind}</span>}
             </div>}
           </div>
           <div className="head-sha-row">
@@ -86,9 +112,51 @@ export function Updater() {
           </div>
         </Panel>)}
       </div>
-      {data.shaMismatch ? <p className="mismatch-note" role="alert"><TriangleAlert size={15}/><span>{ui('updater.shaMismatch.banner')}</span></p>
-        : data.ahead > 0 && <p className="muted">{ui('updater.aheadCommits', {count: data.ahead})}</p>}
-      {!data.managedByAndroid && <CommitList key={JSON.stringify([local, upstream])} local={local} upstream={upstream} branch={data.branch}/>}
+      {!data.mirrorChyanEnabled && (data.shaMismatch ? <p className="mismatch-note" role="alert"><TriangleAlert size={15}/><span>{ui('updater.shaMismatch.banner')}</span></p>
+        : data.ahead > 0 && <p className="muted">{ui('updater.aheadCommits', {count: data.ahead})}</p>)}
+      {!data.managedByAndroid && <Panel className="mirrorchyan-panel">
+        <PanelHeading
+          title={ui('updater.mirrorchyan.title')}
+          actions={<a className="mirrorchyan-link" href="https://mirrorchyan.com?source=azurpilot_updater" target="_blank" rel="noreferrer">{ui('updater.mirrorchyan.getCdk')}<ExternalLink size={12}/></a>}
+        />
+        <PanelBody className="mirrorchyan-body">
+          <p className="mirrorchyan-desc">{ui('updater.mirrorchyan.desc')}</p>
+          <div className="mirrorchyan-controls">
+            <label className="mirrorchyan-toggle">
+              <Switch checked={mcEnabled} disabled={mcSaving || connection !== 'ready'} onCheckedChange={next => {
+                setMcEnabled(next)
+                void saveMirrorChyan(next)
+              }}/>
+              <span>{ui('updater.mirrorchyan.toggle')}</span>
+            </label>
+            <div className="mirrorchyan-cdk-group">
+              <Input
+                type={mcShowCdk ? 'text' : 'password'}
+                className="mirrorchyan-cdk"
+                value={mcCdk}
+                autoComplete="new-password"
+                disabled={mcSaving || connection !== 'ready'}
+                placeholder={data.mirrorChyanConfigured ? ui('updater.mirrorchyan.cdkSaved') : ui('updater.mirrorchyan.cdkPlaceholder')}
+                onChange={e => setMcCdk(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={mcSaving || connection !== 'ready'}
+                aria-label={mcShowCdk ? ui('common.hidePassword') : ui('common.showPassword')}
+                aria-pressed={mcShowCdk}
+                onClick={() => setMcShowCdk(v => !v)}
+              >
+                {mcShowCdk ? <EyeOff/> : <Eye/>}
+              </Button>
+            </div>
+            <button type="button" className="button secondary" disabled={mcSaving || connection !== 'ready'} onClick={() => void saveMirrorChyan(mcEnabled)}>{ui('updater.mirrorchyan.save')}</button>
+          </div>
+          {mcNotice && <p className="mirrorchyan-status">{mcNotice}</p>}
+        </PanelBody>
+      </Panel>}
+      {!data.managedByAndroid && !data.mirrorChyanEnabled && <CommitList key={JSON.stringify([local, upstream])} local={local} upstream={upstream} branch={data.branch}/>}
       {confirmMismatch && <Modal title={ui('updater.shaMismatch.title')} onClose={() => setConfirmMismatch(false)}>
         <p>{ui('updater.shaMismatch.body', {count: data?.ahead ?? 0})}</p>
         <ul className="mismatch-reasons">

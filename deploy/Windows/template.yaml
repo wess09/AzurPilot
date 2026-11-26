@@ -19,6 +19,10 @@ Deploy:
     # [In most cases] Use true
     # [Other] Use false to when connected to an untrusted network
     SSLVerify: true
+    # Enable MirrorChyan Git Pack source updates (recommended on master branch)
+    UseMirrorChyan: false
+    # MirrorChyan CDK for Git Pack source updates (keep secret)
+    MirrorChyanCdk: null
   Python:
     # Filepath of python executable `python.exe`
     # [Other] Use you own python, and its version should be 3.14.x 64bit

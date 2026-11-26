@@ -13,7 +13,7 @@ from module.base.utils import crop
 from module.coalition.assets import *
 from module.combat.assets import BATTLE_PREPARATION
 from module.combat.combat import Combat
-from module.exception import CampaignNameError, RequestHumanTakeover, ScriptError
+from module.exception import CampaignNameError, RequestHumanTakeover, ScriptEnd, ScriptError
 from module.logger import logger
 from module.ocr.models import OCR_MODEL
 from module.ui.assets import BACK_ARROW
@@ -584,6 +584,13 @@ class CoalitionUI(Combat):
                 logger.critical(f"[联动] 无法进入 {button_difficulty}，点击次数过多")
                 logger.critical("[联动] 可能的原因1: 难度资源的图片不正确。")
                 raise RequestHumanTakeover
+            if fleet_click > 5 and stage.lower() == 'sp':
+                # SP 每天只能出击一次；当天已手动打过时游戏只弹出短暂提示，出击无反应。
+                # 视为今日已完成，退出关卡并由 CoalitionSP 推迟到下次服务器刷新，避免重启模拟器循环。
+                logger.warning(f"[联动] {button} 出击无反应，视为今日 SP 次数已用完，推迟到下次服务器刷新")
+                self.coalition_map_exit(event)
+                self.sp_attempt_used = True
+                raise ScriptEnd('SP attempt already used today')
             if fleet_click > 5:
                 logger.critical(f"[联动] 无法进入 {button}，点击次数过多")
                 logger.critical("[联动] 可能的原因1: 你的舰队未达到该关卡的属性要求。")

@@ -396,10 +396,10 @@ class Router:
         from module.runtime.deploy_settings import deploy_settings_schema
         from module.runtime.remote_access import remote_access_status
         result = deploy_settings_schema(self.configs.translate)
-        # 密码只写不读，前端留空表示保持原密码。
+        # 密码和 CDK 只写不读，前端留空表示保持原值。
         for group in result['groups']:
             for field in group['fields']:
-                if field['key'] == 'Password':
+                if field['key'] in ('Password', 'MirrorChyanCdk'):
                     field['value'] = ''
                     field['type'] = 'password'
         # 远程访问地址不属于设置，但设置页要展示，一并带回。
@@ -419,8 +419,12 @@ class Router:
         values = dict(params.values)
         if values.get('Password') == '':
             values.pop('Password')
+        if values.get('MirrorChyanCdk') == '':
+            values.pop('MirrorChyanCdk')
         with self.configs.lock:
-            return save_deploy_settings({'values': values})
+            result = save_deploy_settings({'values': values})
+        self.updates.updater.read()
+        return result
 
     def get_startup(self, params: p.InstanceParams):
         """获取实例的开机自启与状态保持配置。

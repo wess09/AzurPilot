@@ -41,7 +41,7 @@ MAX_REDIRECTS = 5
 MAX_BYTES = 20 * 1024 * 1024
 IMAGE_SUFFIX = ('.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif')
 VIDEO_SUFFIX = ('.mp4', '.webm', '.mov')
-USER_AGENT = http.BROWSER_USER_AGENT
+USER_AGENT = http.USER_AGENT
 
 
 def _download_get(url, **kwargs):

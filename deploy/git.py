@@ -9,6 +9,7 @@ from deploy.api_endpoints import FORCE_UPDATE_CONTROL_URL as CLOUD_FORCE_UPDATE_
 from deploy.config import GIT_OVER_CDN_FALLBACK_REPOSITORIES, DeployConfig, ErrorCodes, ExecutionError
 from deploy.git_over_cdn.client import GitOverCdnClient
 from deploy.git_over_cdn.endpoints import CLOUDFLARE_UPDATE_URLS, FALLBACK_UPDATE_URLS
+from deploy.mirrorchyan.client import MirrorChyanClient
 from deploy.logger import logger
 from deploy.utils import *
 
@@ -265,9 +266,31 @@ class GitManager(DeployConfig):
         logger.info(f'Cloud update control is inaccessible: {text}')
         return None
 
+    @property
+    def mirrorchyan_client(self):
+        """获取 Mirror 酱 Git Pack 客户端实例。"""
+        client = MirrorChyanClient(
+            folder=self.root_filepath,
+            cdk=getattr(self, 'MirrorChyanCdk', None) or '',
+            source='origin',
+            branch=self.Branch,
+            git=self.git,
+        )
+        client.logger = logger
+        return client
+
     def git_install(self):
         """根据本地配置执行 Git 源码拉取与更新。"""
         logger.hr('Update AzurPilot', 0)
+
+        if self.MirrorChyan:
+            client = self.mirrorchyan_client
+            try:
+                if client.update():
+                    return
+            finally:
+                client.close()
+            logger.warning('MirrorChyan update failed, falling back to Git')
 
         if self.GitOverCdn:
             if self.goc_client.update():

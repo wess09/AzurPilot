@@ -1,0 +1,40 @@
+name: mirrorchyan_source
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirrorchyan-source-AzurPilot-stable
+  cancel-in-progress: false
+
+jobs:
+  mirrorchyan:
+    if: ${{ github.repository_owner == 'wess09' }}
+    runs-on: ubuntu-latest
+    env:
+      UPLOAD_TOKEN: ${{ secrets.MirrorChyanUploadToken }}
+    steps:
+      - name: Skip without upload token
+        if: env.UPLOAD_TOKEN == ''
+        run: echo "MirrorChyanUploadToken is not set, skip uploading"
+
+      - uses: actions/checkout@v4
+        if: env.UPLOAD_TOKEN != ''
+        with:
+          repository: wess09/AzurPilot
+          ref: master
+          fetch-depth: 1
+
+      - id: upload
+        uses: MirrorChyan/git-pack-uploading-action@v1
+        if: env.UPLOAD_TOKEN != ''
+        with:
+          mirrorchyan_rid: AzurPilot
+          upload_token: ${{ env.UPLOAD_TOKEN }}
+          branch: master
+          channel: stable
