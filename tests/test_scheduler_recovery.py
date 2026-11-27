@@ -253,6 +253,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         del script.__dict__['_try_restart_emulator']
         script.config.task.command = 'Commission'
         script.config.Error_AdbOfflineThreshold = 3
+        script.config.Error_LowPushMode = False
         connected_device = Mock()
         with (
             patch(
@@ -261,6 +262,7 @@ class TestSchedulerRecovery(unittest.TestCase):
             ) as device_class,
             patch('module.device.platform.Platform') as platform_class,
         ):
+            platform_class.return_value.emulator_start.return_value = True
             self.run_tasks(script, ['Commission', 'Restart'])
 
         self.assertEqual(device_class.call_args_list, [
@@ -274,6 +276,43 @@ class TestSchedulerRecovery(unittest.TestCase):
         script.restart.assert_called_once_with()
         script.commission.assert_not_called()
         self.assertEqual(self.sleep.call_args_list, [call(5), call(20)])
+        self.assertEqual(self.notify.call_count, 2)
+        self.assertIn('正在尝试重启模拟器', self.notify.call_args_list[0].kwargs['content'])
+        self.assertIn('模拟器重启成功', self.notify.call_args_list[1].kwargs['content'])
+
+    def test_offline_restart_reports_attempt_and_result_in_order(self):
+        for started, low_push, expected in (
+            (True, False, '模拟器重启成功'),
+            (False, False, '本次模拟器重启失败'),
+            (None, False, '未能确认模拟器上线'),
+            (True, True, None),
+        ):
+            with self.subTest(started=started, low_push=low_push):
+                script = self.make_script()
+                del script.__dict__['_try_restart_emulator']
+                script.config.Error_AdbOfflineThreshold = 3
+                script.config.Error_LowPushMode = low_push
+                script.commission.side_effect = EmulatorNotRunningError('设备离线')
+                script.device.emulator_start.return_value = started
+                self.notify.reset_mock()
+                self.webui.reset_mock()
+                recovery = Mock()
+                recovery.attach_mock(self.notify, 'push')
+                recovery.attach_mock(self.webui, 'webui')
+                recovery.attach_mock(script.device.emulator_stop, 'stop')
+                recovery.attach_mock(script.device.emulator_start, 'start')
+                recovery.attach_mock(script.config.task_call, 'schedule')
+
+                self.assertEqual(script.run('commission', skip_first_screenshot=True), 'recoverable')
+                script.config.task_call.assert_called_once_with('Restart')
+                steps = [entry[0] for entry in recovery.mock_calls]
+                if low_push:
+                    self.assertEqual(steps, ['stop', 'start', 'schedule'])
+                else:
+                    self.assertEqual(steps, ['push', 'webui', 'stop', 'start', 'push', 'webui', 'schedule'])
+                    self.assertIn('正在尝试重启模拟器', self.notify.call_args_list[0].kwargs['content'])
+                    self.assertIn(expected, self.notify.call_args.kwargs['content'])
+                    self.assertIn(expected, self.webui.call_args.kwargs['content'])
 
     def test_mind_scan_recognition_failure_reports_cause_without_restart(self):
         script = self.make_script()
@@ -381,7 +420,10 @@ class TestSchedulerRecovery(unittest.TestCase):
                 script.commission.side_effect = error_type('运行环境未恢复')
                 self.run_tasks(script, ['Commission'])
 
-                script._try_restart_emulator.assert_called_once_with()
+                if error_type is EmulatorNotRunningError:
+                    script._try_restart_emulator.assert_called_once_with(notify_offline=True)
+                else:
+                    script._try_restart_emulator.assert_called_once_with()
                 script.config.task_delay.assert_not_called()
                 self.assertEqual(script.task_restart_record, {'Commission': 1})
 
@@ -712,7 +754,7 @@ class TestSchedulerRecovery(unittest.TestCase):
         with patch('alas.get_server_next_update', return_value=tomorrow):
             self.run_tasks(script, ['Commission'])
         self.assertEqual(recovery.mock_calls, [
-            call.emulator(), call.game('Restart'),
+            call.emulator(notify_offline=True), call.game('Restart'),
         ])
         self.assertEqual(script.task_restart_record, {})
 

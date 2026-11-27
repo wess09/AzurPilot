@@ -428,13 +428,16 @@ class AzurLaneAutoScript:
             return False
         return self.consecutive_adb_offline >= threshold
 
-    def _try_restart_emulator(self):
+    def _try_restart_emulator(self, *, notify_offline=False):
         """
         尝试重启模拟器。永不放弃，一直重试。
 
         不再受 Error_AdbOfflineRestart 开关限制，
         超过阈值时仅增加等待间隔，不停止重试。
         优先使用已缓存的 device 对象，否则根据平台回退创建新实例。
+
+        Args:
+            notify_offline (bool): 本次由模拟器离线触发，推送尝试开始及结果。
 
         Returns:
             bool: 重启成功返回 True，本次重启失败返回 False（调度器会继续尝试）。
@@ -453,6 +456,14 @@ class AzurLaneAutoScript:
             time.sleep(wait_seconds)
 
         logger.hr('[AzurPilot] 正在重启模拟器', level=1)
+        if notify_offline:
+            self._notify_recoverable(
+                title=f'AzurPilot <{self.config_name}> 警告',
+                content=f'<{self.config_name}> 模拟器离线 - 正在尝试重启模拟器',
+                webui_title=f'{self.config_name} 出了点小问题喵~',
+                webui_content='模拟器离线喵 正在重启模拟器喵',
+            )
+        online_confirmed = False
         try:
             # 优先使用已缓存的设备对象
             device = self.__dict__.get('device', None)
@@ -502,6 +513,8 @@ class AzurLaneAutoScript:
             # 新的模拟器会话不沿用重启前的离线或游戏退出计数。
             self.consecutive_adb_offline = 0
             self.consecutive_game_not_running = 0
+            # 仅在平台明确确认启动后推送成功，部分平台只尝试执行启停命令。
+            online_confirmed = started
             return True
         except EmulatorOpBusy as e:
             # 上一轮的重启操作还在后台跑（很可能正在冷启动模拟器）。
@@ -509,6 +522,7 @@ class AzurLaneAutoScript:
             # "模拟器窗口一直卡在加载、永远起不来"的成因。放弃本轮即可，
             # 后台那次操作结束后，下一轮调度自然会接手。
             logger.warning(f'[AzurPilot] 上一轮模拟器重启仍在进行，放弃本轮重启：{e}')
+            online_confirmed = None
             return False
         except Exception as e:
             logger.exception_context(
@@ -518,6 +532,23 @@ class AzurLaneAutoScript:
                 action='检查模拟器进程权限、ADB 服务和模拟器管理配置。',
             )
             return False
+        finally:
+            if notify_offline:
+                if online_confirmed is True:
+                    title = '提示'
+                    result = '模拟器重启成功，已重新上线'
+                elif online_confirmed is False:
+                    title = '警告'
+                    result = '本次模拟器重启失败，调度器将继续尝试恢复'
+                else:
+                    title = '警告'
+                    result = '本次重启未能确认模拟器上线，调度器将继续尝试恢复'
+                self._notify_recoverable(
+                    title=f'AzurPilot <{self.config_name}> {title}',
+                    content=f'<{self.config_name}> {result}',
+                    webui_title=f'<{self.config_name}> {title}',
+                    webui_content=result,
+                )
 
     def _emulator_op_with_timeout(self, func, *, timeout, operation_name):
         """带硬超时执行模拟器启停操作，防止恢复流程本身卡死。
@@ -1395,14 +1426,8 @@ class AzurLaneAutoScript:
             self.save_error_log()
             self._check_sensitive_exit(command, e)
             # 始终尝试重启模拟器，即使失败也不退出
-            self._try_restart_emulator()
+            self._try_restart_emulator(notify_offline=True)
             self.config.task_call('Restart')
-            self._notify_recoverable(
-                title=f"AzurPilot <{self.config_name}> 警告",
-                content=f"<{self.config_name}> 模拟器离线 - 正在尝试重启模拟器",
-                webui_title=f"{self.config_name} 出了点小问题喵~",
-                webui_content=f"模拟器离线喵 正在重启模拟器喵",
-            )
             return 'recoverable'
         except RequestHumanTakeover as e:
             self._check_error_recovery(command, e)
@@ -2898,7 +2923,9 @@ class AzurLaneAutoScript:
                 # 尝试重启模拟器
                 logger.warning("[AzurPilot] 尝试通过重启模拟器 + 强制执行 RESTART 任务来恢复...")
                 try:
-                    if task is None or isinstance(e, (GameNotRunningError, EmulatorNotRunningError)):
+                    if isinstance(e, EmulatorNotRunningError):
+                        self._try_restart_emulator(notify_offline=True)
+                    elif task is None or isinstance(e, GameNotRunningError):
                         self._try_restart_emulator()
                     else:
                         self._restart_emulator_for_task(task)

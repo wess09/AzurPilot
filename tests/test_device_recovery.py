@@ -178,7 +178,7 @@ class TestSchedulerDeviceBoundary(unittest.TestCase):
         with patch('module.device.device.Device', side_effect=EmulatorNotRunningError('设备离线')):
             self.assertEqual(self.script.run('commission'), 'recoverable')
 
-        self.script._try_restart_emulator.assert_called_once_with()
+        self.script._try_restart_emulator.assert_called_once_with(notify_offline=True)
         self.script.config.task_call.assert_called_once_with('Restart')
 
     def test_initialization_offline_preserves_strict_sensitive_stop(self):
